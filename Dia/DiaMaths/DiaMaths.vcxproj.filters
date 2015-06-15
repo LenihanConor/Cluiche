@@ -1,0 +1,251 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Vector">
+      <UniqueIdentifier>{23def727-16e3-4498-9075-604bb220f45e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Vector\Source">
+      <UniqueIdentifier>{9f58dc83-7f91-4e80-aa09-73e7235393de}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core">
+      <UniqueIdentifier>{5109f3d1-2b8d-4ee3-8183-fe21eab889e9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\Source">
+      <UniqueIdentifier>{2887f993-ef39-4734-84b0-c6e87c51547a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Orientation">
+      <UniqueIdentifier>{8e0801b1-c359-4370-b464-1be028535689}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Matrix">
+      <UniqueIdentifier>{2890fb7d-0781-4162-a246-2edb9945a05a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Matrix\Source">
+      <UniqueIdentifier>{8cec973b-2a80-481a-baa7-d6321f72b8de}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shape">
+      <UniqueIdentifier>{0155783c-6919-4fdf-b174-9989cfbb72f6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shape\2D">
+      <UniqueIdentifier>{f7e2cfb9-17a1-439c-b2be-012c58de0bd0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shape\2D\Source">
+      <UniqueIdentifier>{5a160c38-a964-44ad-b065-bb9a12a8bef8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shape\Common">
+      <UniqueIdentifier>{3035ffe4-4aaf-421b-a29f-be6e3ef347b1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shape\Common\Source">
+      <UniqueIdentifier>{1fec2d7c-2a1b-413c-84b9-ecf87d411316}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Vector\Vector2D.h">
+      <Filter>Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="Vector\Vector2DAdapter.h">
+      <Filter>Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="Vector\Vector3D.h">
+      <Filter>Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="Vector\Vector3DAdapter.h">
+      <Filter>Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="Vector\Vector4D.h">
+      <Filter>Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="Vector\Vector4DAdapter.h">
+      <Filter>Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="Vector\VectorHalf2D.h">
+      <Filter>Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="Vector\VectorUtils.h">
+      <Filter>Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Angle.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\CoreMaths.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\FloatMaths.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\HalfFloat.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\MathsDefines.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Trigonometry.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Matrix\Matrix22.h">
+      <Filter>Matrix</Filter>
+    </ClInclude>
+    <ClInclude Include="Matrix\Matrix33.h">
+      <Filter>Matrix</Filter>
+    </ClInclude>
+    <ClInclude Include="Matrix\Matrix44.h">
+      <Filter>Matrix</Filter>
+    </ClInclude>
+    <ClInclude Include="Shape\2D\AARect2D.h">
+      <Filter>Shape\2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Shape\2D\Arc2D.h">
+      <Filter>Shape\2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Shape\2D\Capsule2D.h">
+      <Filter>Shape\2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Shape\2D\Circle2D.h">
+      <Filter>Shape\2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Shape\2D\IntersectionPoint2D.h">
+      <Filter>Shape\2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Shape\2D\Line2D.h">
+      <Filter>Shape\2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Shape\2D\OORect2D.h">
+      <Filter>Shape\2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Shape\2D\Triangle2D.h">
+      <Filter>Shape\2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Shape\Common\IntersectionClassify.h">
+      <Filter>Shape\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Shape\Common\IntersectionTests.h">
+      <Filter>Shape\Common</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Vector\Vector2D.cpp">
+      <Filter>Vector\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Vector\Vector2DAdapter.cpp">
+      <Filter>Vector\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Vector\Vector3D.cpp">
+      <Filter>Vector\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Vector\Vector3DAdapter.cpp">
+      <Filter>Vector\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Vector\Vector4D.cpp">
+      <Filter>Vector\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Vector\Vector4DAdapter.cpp">
+      <Filter>Vector\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Vector\VectorHalf2D.cpp">
+      <Filter>Vector\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Vector\VectorUtils.cpp">
+      <Filter>Vector\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Angle.cpp">
+      <Filter>Core\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\CoreMaths.cpp">
+      <Filter>Core\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\FloatMaths.cpp">
+      <Filter>Core\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\HalfFloat.cpp">
+      <Filter>Core\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Matrix\Matrix22.cpp">
+      <Filter>Matrix\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Matrix\Matrix33.cpp">
+      <Filter>Matrix\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Matrix\Matrix44.cpp">
+      <Filter>Matrix\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Shape\2D\AARect2D.cpp">
+      <Filter>Shape\2D\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Shape\2D\Arc2D.cpp">
+      <Filter>Shape\2D\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Shape\2D\Capsule2D.cpp">
+      <Filter>Shape\2D\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Shape\2D\Circle2D.cpp">
+      <Filter>Shape\2D\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Shape\2D\IntersectionPoint2D.cpp">
+      <Filter>Shape\2D\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Shape\2D\Line2D.cpp">
+      <Filter>Shape\2D\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Shape\2D\OORect2D.cpp">
+      <Filter>Shape\2D\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Shape\2D\Triangle2D.cpp">
+      <Filter>Shape\2D\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Shape\Common\IntersectionClassify.cpp">
+      <Filter>Shape\Common\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Shape\Common\IntersectionTests.cpp">
+      <Filter>Shape\Common\Source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Vector\Vector2D.inl">
+      <Filter>Vector\Source</Filter>
+    </None>
+    <None Include="Vector\VectorHalf2D.inl">
+      <Filter>Vector\Source</Filter>
+    </None>
+    <None Include="Core\Angle.inl">
+      <Filter>Core\Source</Filter>
+    </None>
+    <None Include="Core\CoreMaths.inl">
+      <Filter>Core\Source</Filter>
+    </None>
+    <None Include="Core\FloatMaths.inl">
+      <Filter>Core\Source</Filter>
+    </None>
+    <None Include="Core\HalfFloat.inl">
+      <Filter>Core\Source</Filter>
+    </None>
+    <None Include="Core\Trigonometry.inl">
+      <Filter>Core\Source</Filter>
+    </None>
+    <None Include="Shape\2D\AARect2D.inl">
+      <Filter>Shape\2D\Source</Filter>
+    </None>
+    <None Include="Shape\2D\Arc2D.inl">
+      <Filter>Shape\2D\Source</Filter>
+    </None>
+    <None Include="Shape\2D\Capsule2D.inl">
+      <Filter>Shape\2D\Source</Filter>
+    </None>
+    <None Include="Shape\2D\Circle2D.inl">
+      <Filter>Shape\2D\Source</Filter>
+    </None>
+    <None Include="Shape\2D\IntersectionPoint2D.inl">
+      <Filter>Shape\2D\Source</Filter>
+    </None>
+    <None Include="Shape\2D\Line2D.inl">
+      <Filter>Shape\2D\Source</Filter>
+    </None>
+    <None Include="Shape\2D\OORect2D.inl">
+      <Filter>Shape\2D\Source</Filter>
+    </None>
+    <None Include="Shape\2D\Triangle2D.inl">
+      <Filter>Shape\2D\Source</Filter>
+    </None>
+    <None Include="Shape\Common\IntersectionClassify.inl">
+      <Filter>Shape\Common\Source</Filter>
+    </None>
+  </ItemGroup>
+</Project>

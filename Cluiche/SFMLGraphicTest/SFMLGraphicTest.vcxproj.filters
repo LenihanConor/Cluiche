@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="Main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Conversion">
+      <UniqueIdentifier>{9be43ebc-c88d-4af4-860b-3579b4764849}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

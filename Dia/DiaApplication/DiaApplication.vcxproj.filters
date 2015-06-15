@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="ApplicationModule.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationPhase.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationProcessingUnit.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationStateObject.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFrameControl.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ApplicationModule.h" />
+    <ClInclude Include="ApplicationPhase.h" />
+    <ClInclude Include="ApplicationProcessingUnit.h" />
+    <ClInclude Include="ApplicationStateObject.h" />
+    <ClInclude Include="ApplicationFrameControl.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source">
+      <UniqueIdentifier>{7986a84f-f3fc-4047-847d-b92dbc3679f3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

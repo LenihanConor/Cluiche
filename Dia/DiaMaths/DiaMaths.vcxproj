@@ -1,0 +1,160 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{2BBA0AD3-D449-4C0E-8C84-ACFA8BCA456B}</ProjectGuid>
+    <RootNamespace>DiaMaths</RootNamespace>
+    <Keyword>ManagedCProj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <CLRSupport>true</CLRSupport>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <CLRSupport>false</CLRSupport>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>11.0.51106.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir>..\DiaBin\$(TargetName)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir>..\DiaBin\$(TargetName)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>./;./../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>DEBUG;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <BrowseInformation>true</BrowseInformation>
+    </ClCompile>
+    <Bscmake>
+      <PreserveSbr>true</PreserveSbr>
+    </Bscmake>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>./;./../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="Vector\Vector2D.h" />
+    <ClInclude Include="Vector\Vector2DAdapter.h" />
+    <ClInclude Include="Vector\Vector3D.h" />
+    <ClInclude Include="Vector\Vector3DAdapter.h" />
+    <ClInclude Include="Vector\Vector4D.h" />
+    <ClInclude Include="Vector\Vector4DAdapter.h" />
+    <ClInclude Include="Vector\VectorHalf2D.h" />
+    <ClInclude Include="Vector\VectorUtils.h" />
+    <ClInclude Include="Core\Angle.h" />
+    <ClInclude Include="Core\CoreMaths.h" />
+    <ClInclude Include="Core\FloatMaths.h" />
+    <ClInclude Include="Core\HalfFloat.h" />
+    <ClInclude Include="Core\MathsDefines.h" />
+    <ClInclude Include="Core\Trigonometry.h" />
+    <ClInclude Include="Matrix\Matrix22.h" />
+    <ClInclude Include="Matrix\Matrix33.h" />
+    <ClInclude Include="Matrix\Matrix44.h" />
+    <ClInclude Include="Shape\2D\AARect2D.h" />
+    <ClInclude Include="Shape\2D\Arc2D.h" />
+    <ClInclude Include="Shape\2D\Capsule2D.h" />
+    <ClInclude Include="Shape\2D\Circle2D.h" />
+    <ClInclude Include="Shape\2D\IntersectionPoint2D.h" />
+    <ClInclude Include="Shape\2D\Line2D.h" />
+    <ClInclude Include="Shape\2D\OORect2D.h" />
+    <ClInclude Include="Shape\2D\Triangle2D.h" />
+    <ClInclude Include="Shape\Common\IntersectionClassify.h" />
+    <ClInclude Include="Shape\Common\IntersectionTests.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Vector\Vector2D.cpp" />
+    <ClCompile Include="Vector\Vector2DAdapter.cpp" />
+    <ClCompile Include="Vector\Vector3D.cpp" />
+    <ClCompile Include="Vector\Vector3DAdapter.cpp" />
+    <ClCompile Include="Vector\Vector4D.cpp" />
+    <ClCompile Include="Vector\Vector4DAdapter.cpp" />
+    <ClCompile Include="Vector\VectorHalf2D.cpp" />
+    <ClCompile Include="Vector\VectorUtils.cpp" />
+    <ClCompile Include="Core\Angle.cpp" />
+    <ClCompile Include="Core\CoreMaths.cpp" />
+    <ClCompile Include="Core\FloatMaths.cpp" />
+    <ClCompile Include="Core\HalfFloat.cpp" />
+    <ClCompile Include="Matrix\Matrix22.cpp" />
+    <ClCompile Include="Matrix\Matrix33.cpp" />
+    <ClCompile Include="Matrix\Matrix44.cpp" />
+    <ClCompile Include="Shape\2D\AARect2D.cpp" />
+    <ClCompile Include="Shape\2D\Arc2D.cpp" />
+    <ClCompile Include="Shape\2D\Capsule2D.cpp" />
+    <ClCompile Include="Shape\2D\Circle2D.cpp" />
+    <ClCompile Include="Shape\2D\IntersectionPoint2D.cpp" />
+    <ClCompile Include="Shape\2D\Line2D.cpp" />
+    <ClCompile Include="Shape\2D\OORect2D.cpp" />
+    <ClCompile Include="Shape\2D\Triangle2D.cpp" />
+    <ClCompile Include="Shape\Common\IntersectionClassify.cpp" />
+    <ClCompile Include="Shape\Common\IntersectionTests.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Vector\Vector2D.inl" />
+    <None Include="Vector\VectorHalf2D.inl" />
+    <None Include="Core\Angle.inl" />
+    <None Include="Core\CoreMaths.inl" />
+    <None Include="Core\FloatMaths.inl" />
+    <None Include="Core\HalfFloat.inl" />
+    <None Include="Core\Trigonometry.inl" />
+    <None Include="Shape\2D\AARect2D.inl" />
+    <None Include="Shape\2D\Arc2D.inl" />
+    <None Include="Shape\2D\Capsule2D.inl" />
+    <None Include="Shape\2D\Circle2D.inl" />
+    <None Include="Shape\2D\IntersectionPoint2D.inl" />
+    <None Include="Shape\2D\Line2D.inl" />
+    <None Include="Shape\2D\OORect2D.inl" />
+    <None Include="Shape\2D\Triangle2D.inl" />
+    <None Include="Shape\Common\IntersectionClassify.inl" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
+      <Project>{8d41cbe3-c493-428d-95f3-627e56500667}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

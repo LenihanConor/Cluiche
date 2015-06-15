@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Frame">
+      <UniqueIdentifier>{1c115255-75f5-4177-99d3-d28bd4652c20}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Frame\Source">
+      <UniqueIdentifier>{dfcda20f-866a-43db-b8aa-734c03d1ecad}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Canvas">
+      <UniqueIdentifier>{166f8784-c1b7-4c37-9342-a0c57f9e5ad7}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Frame\DebugFrame.cpp">
+      <Filter>Frame\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Frame\Frame.cpp">
+      <Filter>Frame\Source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Frame\DebugFrame.h">
+      <Filter>Frame</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\Frame.h">
+      <Filter>Frame</Filter>
+    </ClInclude>
+    <ClInclude Include="Canvas\CanvasSettings.h">
+      <Filter>Canvas</Filter>
+    </ClInclude>
+    <ClInclude Include="Canvas\ICanvasInterface.h">
+      <Filter>Canvas</Filter>
+    </ClInclude>
+    <ClInclude Include="Canvas\IRenderTarget.h">
+      <Filter>Canvas</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

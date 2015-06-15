@@ -1,0 +1,563 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Core">
+      <UniqueIdentifier>{96e98d69-538d-45e5-aa21-3cf46a28190c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\Source">
+      <UniqueIdentifier>{8622f943-5b38-4a8b-82e3-2dc69953c54a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Time">
+      <UniqueIdentifier>{b473c684-0a02-4c22-a252-e3f8f0972ce6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Time\Source">
+      <UniqueIdentifier>{317f8437-84cd-4e78-b0e8-1267cc0e2bec}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Memory">
+      <UniqueIdentifier>{1f1ef674-2c72-4267-8eea-67ea84719f44}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Timer">
+      <UniqueIdentifier>{251419e1-083e-48d4-8f69-35396d6fa036}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Timer\Source">
+      <UniqueIdentifier>{3537fef1-3f81-436e-a3ae-4210548f5e3b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CRC">
+      <UniqueIdentifier>{ad4aa2ad-f0ac-4e89-af2b-defc3ea7fadc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CRC\Source">
+      <UniqueIdentifier>{f5a3628a-1ba4-40e7-a916-e8450abd5399}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Type">
+      <UniqueIdentifier>{7d1abbc4-5748-4184-a23a-719033b81ad1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Type\Interfaces">
+      <UniqueIdentifier>{5c3bacdc-9d23-41f0-a562-f2411efd461e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Type\Interfaces\Source">
+      <UniqueIdentifier>{312ea2c8-7634-4411-a8aa-5a7e80a0b2da}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Type\Internals">
+      <UniqueIdentifier>{c496659c-6a39-4bb4-bfa1-b898dfa52677}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Type\Internals\Source">
+      <UniqueIdentifier>{bd65c902-3a11-4959-97d6-df230137de1b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Strings">
+      <UniqueIdentifier>{596d4694-f233-441d-8fbb-7e6ca63d948e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Strings\Source">
+      <UniqueIdentifier>{3a5562ad-8ac8-40ca-921b-d32ccb908c31}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Containers">
+      <UniqueIdentifier>{2800f986-3b9d-4a14-ae2a-e007658dae34}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Containers\LinkLists">
+      <UniqueIdentifier>{a7d9a53f-379d-4ea0-91ab-90adb324c3d0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Containers\LinkLists\Source">
+      <UniqueIdentifier>{437eb34d-1bf6-40d7-a1aa-024610953e0d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Containers\HashTables">
+      <UniqueIdentifier>{4e3ae7a2-27fc-4342-91d7-796c3c61b555}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Containers\HashTables\Source">
+      <UniqueIdentifier>{99adbda7-ee34-4323-b181-945096f9f612}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Containers\Arrays">
+      <UniqueIdentifier>{d1f41b46-81fc-40b8-a76b-e9757777dcd0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Containers\Arrays\Source">
+      <UniqueIdentifier>{1e0ea13b-008b-477b-a14e-d88079791b74}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Containers\BitFlag">
+      <UniqueIdentifier>{c283daa9-cc7d-4c28-88dd-1c61f0a9bd20}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Containers\BitFlag\Source">
+      <UniqueIdentifier>{1459292f-fef7-4940-aba4-95c74d83dfef}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Containers\Strings">
+      <UniqueIdentifier>{dc77b744-770c-4e42-96eb-e17220c25ca6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Containers\Strings\Source">
+      <UniqueIdentifier>{371d2c05-bbb8-4f47-804c-009d0a64714c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Containers\Graphs">
+      <UniqueIdentifier>{b72c3e62-2854-44a8-8f65-fb2116d2f2ee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Architecture">
+      <UniqueIdentifier>{e0d6069c-6f08-4000-884f-53bf622c4955}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Architecture\Components">
+      <UniqueIdentifier>{2cdccfe9-6169-478d-80de-c94d789c8833}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Architecture\Singleton">
+      <UniqueIdentifier>{a2488200-c774-43b8-a466-4e028b1cab04}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Architecture\Components\Interface">
+      <UniqueIdentifier>{f122460b-a74c-4bd8-839e-3314bddecde0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Architecture\Components\Interface\Source">
+      <UniqueIdentifier>{a6f5b006-af6b-4a80-93a9-e01be5365f73}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Architecture\Components\Concrete">
+      <UniqueIdentifier>{76c9dc03-ba1e-46cd-a7e7-d6fe704c6e7f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Architecture\Components\Concrete\Source">
+      <UniqueIdentifier>{46d4f6e0-a570-43ac-b834-57a4a5973ed7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Containers\Misc">
+      <UniqueIdentifier>{185de9e0-5cde-43a6-9502-fd026771219a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Containers\Misc\source">
+      <UniqueIdentifier>{0c59c66d-2df5-432d-880c-153129939120}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Frame">
+      <UniqueIdentifier>{0f1abddd-5815-43db-8cd3-6324be46c66f}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Core\Assert.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\CallStack.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\EnumClass.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Functor.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Log.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\MetaLogic.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\System.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Time\SystemClock.h">
+      <Filter>Time</Filter>
+    </ClInclude>
+    <ClInclude Include="Time\TimeAbsolute.h">
+      <Filter>Time</Filter>
+    </ClInclude>
+    <ClInclude Include="Time\TimeAbstract.h">
+      <Filter>Time</Filter>
+    </ClInclude>
+    <ClInclude Include="Time\TimeRelative.h">
+      <Filter>Time</Filter>
+    </ClInclude>
+    <ClInclude Include="Time\TimeServer.h">
+      <Filter>Time</Filter>
+    </ClInclude>
+    <ClInclude Include="Memory\Memory.h">
+      <Filter>Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="Timer\Timer.h">
+      <Filter>Timer</Filter>
+    </ClInclude>
+    <ClInclude Include="Timer\TimerExpiry.h">
+      <Filter>Timer</Filter>
+    </ClInclude>
+    <ClInclude Include="Timer\TimerSystem.h">
+      <Filter>Timer</Filter>
+    </ClInclude>
+    <ClInclude Include="CRC\CRC.h">
+      <Filter>CRC</Filter>
+    </ClInclude>
+    <ClInclude Include="CRC\StringCRC.h">
+      <Filter>CRC</Filter>
+    </ClInclude>
+    <ClInclude Include="CRC\StripStringCRC.h">
+      <Filter>CRC</Filter>
+    </ClInclude>
+    <ClInclude Include="Type\BasicTypeDefines.h">
+      <Filter>Type\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="Type\TypeDeclarationMacros.h">
+      <Filter>Type\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="Type\TypeDefinitionMacros.h">
+      <Filter>Type\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="Type\TypeFacade.h">
+      <Filter>Type\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="Type\TypeRegistry.h">
+      <Filter>Type\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="Type\TypeTextSerializer.h">
+      <Filter>Type\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="Type\TypeTraits.h">
+      <Filter>Type\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="Type\TypeDefinition.h">
+      <Filter>Type\Internals</Filter>
+    </ClInclude>
+    <ClInclude Include="Type\TypeInstance.h">
+      <Filter>Type\Internals</Filter>
+    </ClInclude>
+    <ClInclude Include="Type\TypeMember.h">
+      <Filter>Type\Internals</Filter>
+    </ClInclude>
+    <ClInclude Include="Type\TypeParameterInput.h">
+      <Filter>Type\Internals</Filter>
+    </ClInclude>
+    <ClInclude Include="Type\TypeVariable.h">
+      <Filter>Type\Internals</Filter>
+    </ClInclude>
+    <ClInclude Include="Type\TypeVariableAttributes.h">
+      <Filter>Type\Internals</Filter>
+    </ClInclude>
+    <ClInclude Include="Type\TypeVariableData.h">
+      <Filter>Type\Internals</Filter>
+    </ClInclude>
+    <ClInclude Include="Strings\String.h">
+      <Filter>Strings</Filter>
+    </ClInclude>
+    <ClInclude Include="Strings\String1024.h">
+      <Filter>Strings</Filter>
+    </ClInclude>
+    <ClInclude Include="Strings\String128.h">
+      <Filter>Strings</Filter>
+    </ClInclude>
+    <ClInclude Include="Strings\String256.h">
+      <Filter>Strings</Filter>
+    </ClInclude>
+    <ClInclude Include="Strings\String32.h">
+      <Filter>Strings</Filter>
+    </ClInclude>
+    <ClInclude Include="Strings\String512.h">
+      <Filter>Strings</Filter>
+    </ClInclude>
+    <ClInclude Include="Strings\String64.h">
+      <Filter>Strings</Filter>
+    </ClInclude>
+    <ClInclude Include="Strings\String8.h">
+      <Filter>Strings</Filter>
+    </ClInclude>
+    <ClInclude Include="Strings\stringutils.h">
+      <Filter>Strings</Filter>
+    </ClInclude>
+    <ClInclude Include="Containers\LinkList\LinkListC.h">
+      <Filter>Containers\LinkLists</Filter>
+    </ClInclude>
+    <ClInclude Include="Containers\LinkList\LinkListNode.h">
+      <Filter>Containers\LinkLists</Filter>
+    </ClInclude>
+    <ClInclude Include="Containers\HashTables\HashTable.h">
+      <Filter>Containers\HashTables</Filter>
+    </ClInclude>
+    <ClInclude Include="Containers\HashTables\HashTableC.h">
+      <Filter>Containers\HashTables</Filter>
+    </ClInclude>
+    <ClInclude Include="Containers\HashTables\HashTableHashFunctionData.h">
+      <Filter>Containers\HashTables</Filter>
+    </ClInclude>
+    <ClInclude Include="Containers\HashTables\HashTableNode.h">
+      <Filter>Containers\HashTables</Filter>
+    </ClInclude>
+    <ClInclude Include="Containers\Arrays\Array.h">
+      <Filter>Containers\Arrays</Filter>
+    </ClInclude>
+    <ClInclude Include="Containers\Arrays\ArrayC.h">
+      <Filter>Containers\Arrays</Filter>
+    </ClInclude>
+    <ClInclude Include="Containers\Arrays\ArrayIterator.h">
+      <Filter>Containers\Arrays</Filter>
+    </ClInclude>
+    <ClInclude Include="Containers\Arrays\DynamicArray.h">
+      <Filter>Containers\Arrays</Filter>
+    </ClInclude>
+    <ClInclude Include="Containers\Arrays\DynamicArrayC.h">
+      <Filter>Containers\Arrays</Filter>
+    </ClInclude>
+    <ClInclude Include="Containers\Arrays\ReverseArrayIterator.h">
+      <Filter>Containers\Arrays</Filter>
+    </ClInclude>
+    <ClInclude Include="Containers\BitFlag\BitArray16.h">
+      <Filter>Containers\BitFlag</Filter>
+    </ClInclude>
+    <ClInclude Include="Containers\BitFlag\BitArray32.h">
+      <Filter>Containers\BitFlag</Filter>
+    </ClInclude>
+    <ClInclude Include="Containers\BitFlag\BitArray64.h">
+      <Filter>Containers\BitFlag</Filter>
+    </ClInclude>
+    <ClInclude Include="Containers\BitFlag\BitArray8.h">
+      <Filter>Containers\BitFlag</Filter>
+    </ClInclude>
+    <ClInclude Include="Containers\Strings\StringReader.h">
+      <Filter>Containers\Strings</Filter>
+    </ClInclude>
+    <ClInclude Include="Containers\Strings\StringWriter.h">
+      <Filter>Containers\Strings</Filter>
+    </ClInclude>
+    <ClInclude Include="CRC\CRCHashFunctor.h">
+      <Filter>CRC</Filter>
+    </ClInclude>
+    <ClInclude Include="Containers\Graphs\Graph.h">
+      <Filter>Containers\Graphs</Filter>
+    </ClInclude>
+    <ClInclude Include="Containers\Graphs\GraphEdge.h">
+      <Filter>Containers\Graphs</Filter>
+    </ClInclude>
+    <ClInclude Include="Containers\Graphs\GraphVertex.h">
+      <Filter>Containers\Graphs</Filter>
+    </ClInclude>
+    <ClInclude Include="Architecture\Singleton\Singleton.h">
+      <Filter>Architecture\Singleton</Filter>
+    </ClInclude>
+    <ClInclude Include="Architecture\Components\Interface\ComponentID.h">
+      <Filter>Architecture\Components\Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="Architecture\Components\Interface\IComponent.h">
+      <Filter>Architecture\Components\Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="Architecture\Components\Interface\IComponentFactory.h">
+      <Filter>Architecture\Components\Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="Architecture\Components\Interface\IComponentObject.h">
+      <Filter>Architecture\Components\Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="Architecture\Components\Concrete\DynamicComponentFactory.h">
+      <Filter>Architecture\Components\Concrete</Filter>
+    </ClInclude>
+    <ClInclude Include="Architecture\Components\Concrete\StaticPooledComponentFactory.h">
+      <Filter>Architecture\Components\Concrete</Filter>
+    </ClInclude>
+    <ClInclude Include="Architecture\Components\Concrete\StaticSizedComponentObject.h">
+      <Filter>Architecture\Components\Concrete</Filter>
+    </ClInclude>
+    <ClInclude Include="Containers\Misc\CircularBufferC.h">
+      <Filter>Containers\Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="Containers\Misc\CircularBufferIterator.h">
+      <Filter>Containers\Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\FrameDataManager.h">
+      <Filter>Frame</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\FrameStream.h">
+      <Filter>Frame</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Core\Assert.cpp">
+      <Filter>Core\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\CallStack.cpp">
+      <Filter>Core\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\EnumClass.cpp">
+      <Filter>Core\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Log.cpp">
+      <Filter>Core\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Time\SystemClock.cpp">
+      <Filter>Time\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Time\TimeAbsolute.cpp">
+      <Filter>Time\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Time\TimeAbstract.cpp">
+      <Filter>Time\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Time\TimeRelative.cpp">
+      <Filter>Time\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Time\TimeServer.cpp">
+      <Filter>Time\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Memory\Memory.cpp">
+      <Filter>Memory</Filter>
+    </ClCompile>
+    <ClCompile Include="Timer\Timer.cpp">
+      <Filter>Timer\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Timer\TimerExpiry.cpp">
+      <Filter>Timer\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Timer\TimerSystem.cpp">
+      <Filter>Timer\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="CRC\CRC.cpp">
+      <Filter>CRC\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="CRC\StringCRC.cpp">
+      <Filter>CRC\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="CRC\StripStringCRC.cpp">
+      <Filter>CRC\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Type\TypeFacade.cpp">
+      <Filter>Type\Interfaces\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Type\TypeRegistry.cpp">
+      <Filter>Type\Interfaces\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Type\TypeTextSerializer.cpp">
+      <Filter>Type\Interfaces\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Type\TypeDefinition.cpp">
+      <Filter>Type\Internals\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Type\TypeInstance.cpp">
+      <Filter>Type\Internals\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Type\TypeMember.cpp">
+      <Filter>Type\Internals\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Type\TypeParameterInput.cpp">
+      <Filter>Type\Internals\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Type\TypeVariable.cpp">
+      <Filter>Type\Internals\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Type\TypeVariableAttributes.cpp">
+      <Filter>Type\Internals\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Type\TypeVariableData.cpp">
+      <Filter>Type\Internals\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Containers\HashTables\HashTableHashFunctionData.cpp">
+      <Filter>Containers\HashTables\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Containers\Strings\StringReader.cpp">
+      <Filter>Containers\Strings\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Containers\Strings\StringWriter.cpp">
+      <Filter>Containers\Strings\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Architecture\Components\Interface\IComponent.cpp">
+      <Filter>Architecture\Components\Interface\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Architecture\Components\Interface\IComponentFactory.cpp">
+      <Filter>Architecture\Components\Interface\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Architecture\Components\Interface\IComponentObject.cpp">
+      <Filter>Architecture\Components\Interface\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Frame\FrameDataManager.cpp">
+      <Filter>Frame</Filter>
+    </ClCompile>
+    <ClCompile Include="Frame\FrameStream.cpp">
+      <Filter>Frame</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Type\TypeFacade.inl">
+      <Filter>Type\Interfaces\Source</Filter>
+    </None>
+    <None Include="Type\TypeVariable.inl">
+      <Filter>Type\Internals\Source</Filter>
+    </None>
+    <None Include="Type\TypeVariableData.inl">
+      <Filter>Type\Internals\Source</Filter>
+    </None>
+    <None Include="Strings\String.inl">
+      <Filter>Strings\Source</Filter>
+    </None>
+    <None Include="Strings\String1024.inl">
+      <Filter>Strings\Source</Filter>
+    </None>
+    <None Include="Strings\String128.inl">
+      <Filter>Strings\Source</Filter>
+    </None>
+    <None Include="Strings\String256.inl">
+      <Filter>Strings\Source</Filter>
+    </None>
+    <None Include="Strings\String32.inl">
+      <Filter>Strings\Source</Filter>
+    </None>
+    <None Include="Strings\String512.inl">
+      <Filter>Strings\Source</Filter>
+    </None>
+    <None Include="Strings\String64.inl">
+      <Filter>Strings\Source</Filter>
+    </None>
+    <None Include="Strings\String8.inl">
+      <Filter>Strings\Source</Filter>
+    </None>
+    <None Include="Strings\stringutils.inl">
+      <Filter>Strings\Source</Filter>
+    </None>
+    <None Include="Containers\LinkList\LinkListC.inl">
+      <Filter>Containers\LinkLists\Source</Filter>
+    </None>
+    <None Include="Containers\LinkList\LinkListNode.inl">
+      <Filter>Containers\LinkLists\Source</Filter>
+    </None>
+    <None Include="Containers\HashTables\HashTable.inl">
+      <Filter>Containers\HashTables\Source</Filter>
+    </None>
+    <None Include="Containers\HashTables\HashTableC.inl">
+      <Filter>Containers\HashTables\Source</Filter>
+    </None>
+    <None Include="Containers\HashTables\HashTableNode.inl">
+      <Filter>Containers\HashTables\Source</Filter>
+    </None>
+    <None Include="Containers\Arrays\Array.inl">
+      <Filter>Containers\Arrays\Source</Filter>
+    </None>
+    <None Include="Containers\Arrays\ArrayC.inl">
+      <Filter>Containers\Arrays\Source</Filter>
+    </None>
+    <None Include="Containers\Arrays\ArrayIterator.inl">
+      <Filter>Containers\Arrays\Source</Filter>
+    </None>
+    <None Include="Containers\Arrays\DynamicArray.inl">
+      <Filter>Containers\Arrays\Source</Filter>
+    </None>
+    <None Include="Containers\Arrays\DynamicArrayC.inl">
+      <Filter>Containers\Arrays\Source</Filter>
+    </None>
+    <None Include="Containers\Arrays\ReverseArrayIterator.inl">
+      <Filter>Containers\Arrays\Source</Filter>
+    </None>
+    <None Include="Containers\BitFlag\BitArray16.inl">
+      <Filter>Containers\BitFlag\Source</Filter>
+    </None>
+    <None Include="Containers\BitFlag\BitArray32.inl">
+      <Filter>Containers\BitFlag\Source</Filter>
+    </None>
+    <None Include="Containers\BitFlag\BitArray64.inl">
+      <Filter>Containers\BitFlag\Source</Filter>
+    </None>
+    <None Include="Containers\BitFlag\BitArray8.inl">
+      <Filter>Containers\BitFlag\Source</Filter>
+    </None>
+    <None Include="Containers\Graphs\Graph.inl">
+      <Filter>Containers\Graphs</Filter>
+    </None>
+    <None Include="Containers\Graphs\GraphEdge.inl">
+      <Filter>Containers\Graphs</Filter>
+    </None>
+    <None Include="Containers\Graphs\GraphVertex.inl">
+      <Filter>Containers\Graphs</Filter>
+    </None>
+    <None Include="Architecture\Singleton\Singleton.inl">
+      <Filter>Architecture\Singleton</Filter>
+    </None>
+    <None Include="Architecture\Components\Concrete\DynamicComponentFactory.inl">
+      <Filter>Architecture\Components\Concrete\Source</Filter>
+    </None>
+    <None Include="Architecture\Components\Concrete\StaticPooledComponentFactory.inl">
+      <Filter>Architecture\Components\Concrete\Source</Filter>
+    </None>
+    <None Include="Architecture\Components\Concrete\StaticSizedComponentObject.inl">
+      <Filter>Architecture\Components\Concrete\Source</Filter>
+    </None>
+    <None Include="Containers\Misc\CircularBufferC.inl">
+      <Filter>Containers\Misc\source</Filter>
+    </None>
+    <None Include="Containers\Misc\CircularBufferIterator.inl">
+      <Filter>Containers\Misc\source</Filter>
+    </None>
+  </ItemGroup>
+</Project>

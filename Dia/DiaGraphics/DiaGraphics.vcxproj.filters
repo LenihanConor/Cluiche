@@ -1,0 +1,66 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="Misc\RGBA.cpp">
+      <Filter>Misc</Filter>
+    </ClCompile>
+    <ClCompile Include="Frame\FrameData.cpp">
+      <Filter>Frame</Filter>
+    </ClCompile>
+    <ClCompile Include="Frame\DebugFrameData.cpp">
+      <Filter>Frame</Filter>
+    </ClCompile>
+    <ClCompile Include="Frame\DebugFrameDataCircle2D.cpp">
+      <Filter>Frame</Filter>
+    </ClCompile>
+    <ClCompile Include="Frame\DebugFrameDataLine2D.cpp">
+      <Filter>Frame</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Interface\IView.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="Interface\ICanvas.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="Interface\IDrawable.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="Interface\IRenderTarget.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="Misc\RGBA.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\FrameData.h">
+      <Filter>Frame</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\DebugFrameData.h">
+      <Filter>Frame</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\DebugFrameDataVisitor.h">
+      <Filter>Frame</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\DebugFrameDataBase.h">
+      <Filter>Frame</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\DebugFrameDataCircle2D.h">
+      <Filter>Frame</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\DebugFrameDataLine2D.h">
+      <Filter>Frame</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Frame">
+      <UniqueIdentifier>{81bc9439-ca54-4c90-9919-27647de0fff6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Interface">
+      <UniqueIdentifier>{6840bf93-b82e-46ef-80d7-6be5d332ceae}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Misc">
+      <UniqueIdentifier>{71a9b7ee-c0d2-4041-b9ca-02c4f519b545}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

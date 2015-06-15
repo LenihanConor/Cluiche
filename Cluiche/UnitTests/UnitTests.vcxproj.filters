@@ -1,0 +1,331 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Tests">
+      <UniqueIdentifier>{31c014d1-108d-414c-88f1-b2f6c8cbaa27}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Tests\Core">
+      <UniqueIdentifier>{17cc83f0-01b0-446f-84a3-51dedf1b4b4a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Tests\Core\source">
+      <UniqueIdentifier>{845660e4-a5e5-4bd1-b1f6-15546ac08a8c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Tests\Collections">
+      <UniqueIdentifier>{cd3c0bdf-a1ee-4e0a-829b-8c6793e61447}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Tests\Collections\Source">
+      <UniqueIdentifier>{2c927bc1-1224-4b74-9b63-57b5dd98dc18}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Tests\Maths">
+      <UniqueIdentifier>{6d244049-8de7-401d-8cb0-689598ec3baa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Tests\Maths\source">
+      <UniqueIdentifier>{30f81f84-1f30-4c77-8ac7-115651b4137c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Infrastructure">
+      <UniqueIdentifier>{3a91cddd-eca9-43b0-9769-31d772b33ef9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Infrastructure\Source">
+      <UniqueIdentifier>{96d920d0-9f25-457c-87b1-3ae67cc711c4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Tests\Application">
+      <UniqueIdentifier>{22ef1831-2ae2-4191-a425-4de0abd93356}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Tests\Application\source">
+      <UniqueIdentifier>{b21fda54-5837-4482-b1fe-f3921fb22894}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Tests\Graphics">
+      <UniqueIdentifier>{b051dd0c-ff7f-4401-9805-77799619372d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Tests\Graphics\source">
+      <UniqueIdentifier>{3cab97aa-3dc3-4993-a8c8-d3c96c598b71}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Tests\Core\UnitTestBitFlag.h">
+      <Filter>Tests\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Core\UnitTestCore.h">
+      <Filter>Tests\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Core\UnitTestCRC.h">
+      <Filter>Tests\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Core\UnitTestEnum.h">
+      <Filter>Tests\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Core\UnitTestMetaLogic.h">
+      <Filter>Tests\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Core\UnitTestTimeAbsolute.h">
+      <Filter>Tests\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Core\UnitTestTimer.h">
+      <Filter>Tests\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Core\UnitTestTimeRelative.h">
+      <Filter>Tests\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Core\UnitTestTimerExpiry.h">
+      <Filter>Tests\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Core\UnitTestTimerSystem.h">
+      <Filter>Tests\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Core\UnitTestTimeServer.h">
+      <Filter>Tests\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Core\UnitTestTypes.h">
+      <Filter>Tests\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Core\UnitTestTypeTraits.h">
+      <Filter>Tests\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Collections\UnitTestArray.h">
+      <Filter>Tests\Collections</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Collections\UnitTestArrayC.h">
+      <Filter>Tests\Collections</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Collections\UnitTestArrayIterators.h">
+      <Filter>Tests\Collections</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Collections\UnitTestCollections.h">
+      <Filter>Tests\Collections</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Collections\UnitTestDynamicArray.h">
+      <Filter>Tests\Collections</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Collections\UnitTestDynamicArrayC.h">
+      <Filter>Tests\Collections</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Collections\UnitTestHashTable.h">
+      <Filter>Tests\Collections</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Collections\UnitTestLinkListC.h">
+      <Filter>Tests\Collections</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Collections\UnitTestSingleton.h">
+      <Filter>Tests\Collections</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Collections\UnitTestString.h">
+      <Filter>Tests\Collections</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Collections\UnitTestStringWriter.h">
+      <Filter>Tests\Collections</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Maths\UnitTestAngle.h">
+      <Filter>Tests\Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Maths\UnitTestCircle2D.h">
+      <Filter>Tests\Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Maths\UnitTestCoreMaths.h">
+      <Filter>Tests\Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Maths\UnitTestFloatMaths.h">
+      <Filter>Tests\Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Maths\UnitTestHalfFloat.h">
+      <Filter>Tests\Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Maths\UnitTestHalfVector2D.h">
+      <Filter>Tests\Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Maths\UnitTestIntersectionClassify.h">
+      <Filter>Tests\Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Maths\UnitTestIntersectionTest.h">
+      <Filter>Tests\Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Maths\UnitTestMaths.h">
+      <Filter>Tests\Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Maths\UnitTestMatrix22.h">
+      <Filter>Tests\Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Maths\UnitTestMatrix33.h">
+      <Filter>Tests\Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Maths\UnitTestMatrix44.h">
+      <Filter>Tests\Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Maths\UnitTestTrigonometry.h">
+      <Filter>Tests\Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Maths\UnitTestVector2D.h">
+      <Filter>Tests\Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Maths\UnitTestVector3D.h">
+      <Filter>Tests\Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Maths\UnitTestVector4D.h">
+      <Filter>Tests\Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Maths\UnitTestVectorUtil.h">
+      <Filter>Tests\Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="Infrastructure\UnitTestInterface.h">
+      <Filter>Infrastructure</Filter>
+    </ClInclude>
+    <ClInclude Include="Infrastructure\UnitTestMacros.h">
+      <Filter>Infrastructure</Filter>
+    </ClInclude>
+    <ClInclude Include="Infrastructure\UnitTestManager.h">
+      <Filter>Infrastructure</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Application\UnitTestApplication.h">
+      <Filter>Tests\Application</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Collections\UnitTestComponent.h">
+      <Filter>Tests\Collections</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Graphics\UnitTestRGBA.h">
+      <Filter>Tests\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Graphics\UnitTestGraphics.h">
+      <Filter>Tests\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Tests\Collections\UnitTestCircularBuffer.h">
+      <Filter>Tests\Collections</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Tests\Core\UnitTestBitFlag.cpp">
+      <Filter>Tests\Core\source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Core\UnitTestCRC.cpp">
+      <Filter>Tests\Core\source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Core\UnitTestEnum.cpp">
+      <Filter>Tests\Core\source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Core\UnitTestMetaLogic.cpp">
+      <Filter>Tests\Core\source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Core\UnitTestTimeAbsolute.cpp">
+      <Filter>Tests\Core\source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Core\UnitTestTimer.cpp">
+      <Filter>Tests\Core\source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Core\UnitTestTimeRelative.cpp">
+      <Filter>Tests\Core\source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Core\UnitTestTimerExpiry.cpp">
+      <Filter>Tests\Core\source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Core\UnitTestTimerSystem.cpp">
+      <Filter>Tests\Core\source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Core\UnitTestTimeServer.cpp">
+      <Filter>Tests\Core\source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Core\UnitTestTypes.cpp">
+      <Filter>Tests\Core\source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Core\UnitTestTypeTraits.cpp">
+      <Filter>Tests\Core\source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Collections\UnitTestArray.cpp">
+      <Filter>Tests\Collections\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Collections\UnitTestArrayC.cpp">
+      <Filter>Tests\Collections\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Collections\UnitTestArrayIterators.cpp">
+      <Filter>Tests\Collections\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Collections\UnitTestDynamicArray.cpp">
+      <Filter>Tests\Collections\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Collections\UnitTestDynamicArrayC.cpp">
+      <Filter>Tests\Collections\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Collections\UnitTestHashTable.cpp">
+      <Filter>Tests\Collections\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Collections\UnitTestLinkListC.cpp">
+      <Filter>Tests\Collections\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Collections\UnitTestSingleton.cpp">
+      <Filter>Tests\Collections\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Collections\UnitTestString.cpp">
+      <Filter>Tests\Collections\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Collections\UnitTestStringWriter.cpp">
+      <Filter>Tests\Collections\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Maths\UnitTestAngle.cpp">
+      <Filter>Tests\Maths\source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Maths\UnitTestCircle2D.cpp">
+      <Filter>Tests\Maths\source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Maths\UnitTestCoreMaths.cpp">
+      <Filter>Tests\Maths\source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Maths\UnitTestFloatMaths.cpp">
+      <Filter>Tests\Maths\source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Maths\UnitTestHalfFloat.cpp">
+      <Filter>Tests\Maths\source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Maths\UnitTestHalfVector2D.cpp">
+      <Filter>Tests\Maths\source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Maths\UnitTestIntersectionClassify.cpp">
+      <Filter>Tests\Maths\source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Maths\UnitTestIntersectionTest.cpp">
+      <Filter>Tests\Maths\source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Maths\UnitTestMatrix22.cpp">
+      <Filter>Tests\Maths\source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Maths\UnitTestMatrix33.cpp">
+      <Filter>Tests\Maths\source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Maths\UnitTestMatrix44.cpp">
+      <Filter>Tests\Maths\source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Maths\UnitTestTrigonometry.cpp">
+      <Filter>Tests\Maths\source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Maths\UnitTestVector2D.cpp">
+      <Filter>Tests\Maths\source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Maths\UnitTestVector3D.cpp">
+      <Filter>Tests\Maths\source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Maths\UnitTestVector4D.cpp">
+      <Filter>Tests\Maths\source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Maths\UnitTestVectorUtil.cpp">
+      <Filter>Tests\Maths\source</Filter>
+    </ClCompile>
+    <ClCompile Include="Infrastructure\UnitTestInterface.cpp">
+      <Filter>Infrastructure\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Infrastructure\UnitTestMacros.cpp">
+      <Filter>Infrastructure\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Infrastructure\UnitTestManager.cpp">
+      <Filter>Infrastructure\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Tests\Application\UnitTestApplication.cpp">
+      <Filter>Tests\Application\source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Collections\UnitTestComponent.cpp">
+      <Filter>Tests\Collections\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Graphics\UnitTestRGBA.cpp">
+      <Filter>Tests\Graphics\source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Collections\UnitTestCircularBuffer.cpp">
+      <Filter>Tests\Collections\Source</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

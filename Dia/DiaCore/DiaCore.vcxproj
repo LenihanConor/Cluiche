@@ -1,0 +1,242 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{8D41CBE3-C493-428D-95F3-627E56500667}</ProjectGuid>
+    <RootNamespace>DiaCore</RootNamespace>
+    <Keyword>ManagedCProj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <CLRSupport>true</CLRSupport>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <CLRSupport>false</CLRSupport>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>11.0.51106.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir>..\DiaBin\$(TargetName)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir>..\DiaBin\$(TargetName)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <BuildLog>
+      <Path>$(IntDir)BuildLog.htm</Path>
+    </BuildLog>
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>./;./../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>DEBUG;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ProgramDataBaseFileName>$(IntDir)vc90.pdb</ProgramDataBaseFileName>
+      <XMLDocumentationFileName>$(IntDir)</XMLDocumentationFileName>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <BrowseInformation>true</BrowseInformation>
+    </ClCompile>
+    <Lib>
+      <OutputFile>$(OutDir)$(ProjectName).lib</OutputFile>
+      <AdditionalLibraryDirectories>$(WindowsSdkDir)lib\;$(WindowsSdkDir)bin\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
+    <Bscmake>
+      <PreserveSbr>true</PreserveSbr>
+    </Bscmake>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>./;./../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="Architecture\Components\Concrete\DynamicComponentFactory.h" />
+    <ClInclude Include="Architecture\Components\Concrete\StaticPooledComponentFactory.h" />
+    <ClInclude Include="Architecture\Components\Concrete\StaticSizedComponentObject.h" />
+    <ClInclude Include="Architecture\Components\Interface\ComponentID.h" />
+    <ClInclude Include="Architecture\Components\Interface\IComponent.h" />
+    <ClInclude Include="Architecture\Components\Interface\IComponentFactory.h" />
+    <ClInclude Include="Architecture\Components\Interface\IComponentObject.h" />
+    <ClInclude Include="Architecture\Singleton\Singleton.h" />
+    <ClInclude Include="Containers\Graphs\Graph.h" />
+    <ClInclude Include="Containers\Graphs\GraphEdge.h" />
+    <ClInclude Include="Containers\Graphs\GraphVertex.h" />
+    <ClInclude Include="Containers\Misc\CircularBufferC.h" />
+    <ClInclude Include="Containers\Misc\CircularBufferIterator.h" />
+    <ClInclude Include="Core\Assert.h" />
+    <ClInclude Include="Core\CallStack.h" />
+    <ClInclude Include="Core\EnumClass.h" />
+    <ClInclude Include="Core\Functor.h" />
+    <ClInclude Include="Core\Log.h" />
+    <ClInclude Include="Core\MetaLogic.h" />
+    <ClInclude Include="Core\System.h" />
+    <ClInclude Include="CRC\CRCHashFunctor.h" />
+    <ClInclude Include="Frame\FrameDataManager.h" />
+    <ClInclude Include="Frame\FrameStream.h" />
+    <ClInclude Include="Time\SystemClock.h" />
+    <ClInclude Include="Time\TimeAbsolute.h" />
+    <ClInclude Include="Time\TimeAbstract.h" />
+    <ClInclude Include="Time\TimeRelative.h" />
+    <ClInclude Include="Time\TimeServer.h" />
+    <ClInclude Include="Memory\Memory.h" />
+    <ClInclude Include="Timer\Timer.h" />
+    <ClInclude Include="Timer\TimerExpiry.h" />
+    <ClInclude Include="Timer\TimerSystem.h" />
+    <ClInclude Include="CRC\CRC.h" />
+    <ClInclude Include="CRC\StringCRC.h" />
+    <ClInclude Include="CRC\StripStringCRC.h" />
+    <ClInclude Include="Type\BasicTypeDefines.h" />
+    <ClInclude Include="Type\TypeDeclarationMacros.h" />
+    <ClInclude Include="Type\TypeDefinitionMacros.h" />
+    <ClInclude Include="Type\TypeFacade.h" />
+    <ClInclude Include="Type\TypeRegistry.h" />
+    <ClInclude Include="Type\TypeTextSerializer.h" />
+    <ClInclude Include="Type\TypeTraits.h" />
+    <ClInclude Include="Type\TypeDefinition.h" />
+    <ClInclude Include="Type\TypeInstance.h" />
+    <ClInclude Include="Type\TypeMember.h" />
+    <ClInclude Include="Type\TypeParameterInput.h" />
+    <ClInclude Include="Type\TypeVariable.h" />
+    <ClInclude Include="Type\TypeVariableAttributes.h" />
+    <ClInclude Include="Type\TypeVariableData.h" />
+    <ClInclude Include="Strings\String.h" />
+    <ClInclude Include="Strings\String1024.h" />
+    <ClInclude Include="Strings\String128.h" />
+    <ClInclude Include="Strings\String256.h" />
+    <ClInclude Include="Strings\String32.h" />
+    <ClInclude Include="Strings\String512.h" />
+    <ClInclude Include="Strings\String64.h" />
+    <ClInclude Include="Strings\String8.h" />
+    <ClInclude Include="Strings\stringutils.h" />
+    <ClInclude Include="Containers\LinkList\LinkListC.h" />
+    <ClInclude Include="Containers\LinkList\LinkListNode.h" />
+    <ClInclude Include="Containers\HashTables\HashTable.h" />
+    <ClInclude Include="Containers\HashTables\HashTableC.h" />
+    <ClInclude Include="Containers\HashTables\HashTableHashFunctionData.h" />
+    <ClInclude Include="Containers\HashTables\HashTableNode.h" />
+    <ClInclude Include="Containers\Arrays\Array.h" />
+    <ClInclude Include="Containers\Arrays\ArrayC.h" />
+    <ClInclude Include="Containers\Arrays\ArrayIterator.h" />
+    <ClInclude Include="Containers\Arrays\DynamicArray.h" />
+    <ClInclude Include="Containers\Arrays\DynamicArrayC.h" />
+    <ClInclude Include="Containers\Arrays\ReverseArrayIterator.h" />
+    <ClInclude Include="Containers\BitFlag\BitArray16.h" />
+    <ClInclude Include="Containers\BitFlag\BitArray32.h" />
+    <ClInclude Include="Containers\BitFlag\BitArray64.h" />
+    <ClInclude Include="Containers\BitFlag\BitArray8.h" />
+    <ClInclude Include="Containers\Strings\StringReader.h" />
+    <ClInclude Include="Containers\Strings\StringWriter.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Architecture\Components\Interface\IComponent.cpp" />
+    <ClCompile Include="Architecture\Components\Interface\IComponentFactory.cpp" />
+    <ClCompile Include="Architecture\Components\Interface\IComponentObject.cpp" />
+    <ClCompile Include="Core\Assert.cpp" />
+    <ClCompile Include="Core\CallStack.cpp" />
+    <ClCompile Include="Core\EnumClass.cpp" />
+    <ClCompile Include="Core\Log.cpp" />
+    <ClCompile Include="Frame\FrameDataManager.cpp" />
+    <ClCompile Include="Frame\FrameStream.cpp" />
+    <ClCompile Include="Time\SystemClock.cpp" />
+    <ClCompile Include="Time\TimeAbsolute.cpp" />
+    <ClCompile Include="Time\TimeAbstract.cpp" />
+    <ClCompile Include="Time\TimeRelative.cpp" />
+    <ClCompile Include="Time\TimeServer.cpp" />
+    <ClCompile Include="Memory\Memory.cpp" />
+    <ClCompile Include="Timer\Timer.cpp" />
+    <ClCompile Include="Timer\TimerExpiry.cpp" />
+    <ClCompile Include="Timer\TimerSystem.cpp" />
+    <ClCompile Include="CRC\CRC.cpp" />
+    <ClCompile Include="CRC\StringCRC.cpp" />
+    <ClCompile Include="CRC\StripStringCRC.cpp" />
+    <ClCompile Include="Type\TypeFacade.cpp" />
+    <ClCompile Include="Type\TypeRegistry.cpp" />
+    <ClCompile Include="Type\TypeTextSerializer.cpp" />
+    <ClCompile Include="Type\TypeDefinition.cpp" />
+    <ClCompile Include="Type\TypeInstance.cpp" />
+    <ClCompile Include="Type\TypeMember.cpp" />
+    <ClCompile Include="Type\TypeParameterInput.cpp" />
+    <ClCompile Include="Type\TypeVariable.cpp" />
+    <ClCompile Include="Type\TypeVariableAttributes.cpp" />
+    <ClCompile Include="Type\TypeVariableData.cpp" />
+    <ClCompile Include="Containers\HashTables\HashTableHashFunctionData.cpp" />
+    <ClCompile Include="Containers\Strings\StringReader.cpp" />
+    <ClCompile Include="Containers\Strings\StringWriter.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Architecture\Components\Concrete\DynamicComponentFactory.inl" />
+    <None Include="Architecture\Components\Concrete\StaticPooledComponentFactory.inl" />
+    <None Include="Architecture\Components\Concrete\StaticSizedComponentObject.inl" />
+    <None Include="Architecture\Singleton\Singleton.inl" />
+    <None Include="Containers\Graphs\Graph.inl" />
+    <None Include="Containers\Graphs\GraphEdge.inl" />
+    <None Include="Containers\Graphs\GraphVertex.inl" />
+    <None Include="Containers\Misc\CircularBufferC.inl" />
+    <None Include="Containers\Misc\CircularBufferIterator.inl" />
+    <None Include="Type\TypeFacade.inl" />
+    <None Include="Type\TypeVariable.inl" />
+    <None Include="Type\TypeVariableData.inl" />
+    <None Include="Strings\String.inl" />
+    <None Include="Strings\String1024.inl" />
+    <None Include="Strings\String128.inl" />
+    <None Include="Strings\String256.inl" />
+    <None Include="Strings\String32.inl" />
+    <None Include="Strings\String512.inl" />
+    <None Include="Strings\String64.inl" />
+    <None Include="Strings\String8.inl" />
+    <None Include="Strings\stringutils.inl" />
+    <None Include="Containers\LinkList\LinkListC.inl" />
+    <None Include="Containers\LinkList\LinkListNode.inl" />
+    <None Include="Containers\HashTables\HashTable.inl" />
+    <None Include="Containers\HashTables\HashTableC.inl" />
+    <None Include="Containers\HashTables\HashTableNode.inl" />
+    <None Include="Containers\Arrays\Array.inl" />
+    <None Include="Containers\Arrays\ArrayC.inl" />
+    <None Include="Containers\Arrays\ArrayIterator.inl" />
+    <None Include="Containers\Arrays\DynamicArray.inl" />
+    <None Include="Containers\Arrays\DynamicArrayC.inl" />
+    <None Include="Containers\Arrays\ReverseArrayIterator.inl" />
+    <None Include="Containers\BitFlag\BitArray16.inl" />
+    <None Include="Containers\BitFlag\BitArray32.inl" />
+    <None Include="Containers\BitFlag\BitArray64.inl" />
+    <None Include="Containers\BitFlag\BitArray8.inl" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

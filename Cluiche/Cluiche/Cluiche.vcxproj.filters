@@ -1,0 +1,85 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Source\ApplicationModel\Phases\ApplicationBootPhase.cpp">
+      <Filter>Source\ApplicationModel\Phases</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\ApplicationModel\Phases\ApplicationCorePhase.cpp">
+      <Filter>Source\ApplicationModel\Phases</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\ApplicationModel\ProcessingUnits\SimulationProcessingUnit.cpp">
+      <Filter>Source\ApplicationModel\ProcessingUnits</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\ApplicationModel\ProcessingUnits\InputProcessingUnit.cpp">
+      <Filter>Source\ApplicationModel\ProcessingUnits</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\ApplicationModel\ProcessingUnits\RenderProcessingUnit.cpp">
+      <Filter>Source\ApplicationModel\ProcessingUnits</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\ApplicationModel\ApplicationProcessingUnit.cpp">
+      <Filter>Source\ApplicationModel\ProcessingUnits</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\ApplicationModel\Phases\InputBootPhase.cpp">
+      <Filter>Source\ApplicationModel\Phases</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\ApplicationModel\Phases\RenderBootPhase.cpp">
+      <Filter>Source\ApplicationModel\Phases</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\ApplicationModel\Phases\SimulationBootPhase.cpp">
+      <Filter>Source\ApplicationModel\Phases</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\ApplicationModel\Modules\ApplicationTimeModule.cpp">
+      <Filter>Source\ApplicationModel\Modules</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source">
+      <UniqueIdentifier>{fb0f7af3-faaf-4448-a5ae-d15aeaec192b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\ApplicationModel">
+      <UniqueIdentifier>{6c85a97e-3261-43ea-be98-4c9c72a1a6c7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\ApplicationModel\Phases">
+      <UniqueIdentifier>{184dd8fe-3db4-4dd1-bc2b-0b082e4eb41b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\ApplicationModel\ProcessingUnits">
+      <UniqueIdentifier>{2455af44-d6be-4dbc-a846-812abd7ca1fe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\ApplicationModel\Modules">
+      <UniqueIdentifier>{9cabca9b-9bdc-48ba-83c5-f939c5c485e9}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Source\ApplicationModel\Phases\ApplicationBootPhase.h">
+      <Filter>Source\ApplicationModel\Phases</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ApplicationModel\Phases\ApplicationCorePhase.h">
+      <Filter>Source\ApplicationModel\Phases</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ApplicationModel\ProcessingUnits\SimulationProcessingUnit.h">
+      <Filter>Source\ApplicationModel\ProcessingUnits</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ApplicationModel\ProcessingUnits\InputProcessingUnit.h">
+      <Filter>Source\ApplicationModel\ProcessingUnits</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ApplicationModel\ProcessingUnits\RenderProcessingUnit.h">
+      <Filter>Source\ApplicationModel\ProcessingUnits</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ApplicationModel\ApplicationProcessingUnit.h">
+      <Filter>Source\ApplicationModel\ProcessingUnits</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ApplicationModel\Phases\InputBootPhase.h">
+      <Filter>Source\ApplicationModel\Phases</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ApplicationModel\Phases\RenderBootPhase.h">
+      <Filter>Source\ApplicationModel\Phases</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ApplicationModel\Phases\SimulationBootPhase.h">
+      <Filter>Source\ApplicationModel\Phases</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ApplicationModel\Modules\ApplicationTimeModule.h">
+      <Filter>Source\ApplicationModel\Modules</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

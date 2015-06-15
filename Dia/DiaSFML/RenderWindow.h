@@ -1,0 +1,59 @@
+////////////////////////////////////////////////////////////////////////////////
+// Filename: RenderWindow.h
+////////////////////////////////////////////////////////////////////////////////
+#pragma once
+
+#include <DiaGraphics/Interface/ICanvas.h>
+#include <DiaWindow/Interface/IWindow.h>
+
+#include "DiaSFML/InputSource.h"
+
+// Forward Declare
+namespace sf
+{
+	class RenderWindow;
+}
+
+namespace Dia
+{
+	namespace SFML
+	{
+		////////////////////////////////////////////////////////////////////////////////
+		// Enum name: RenderWindow
+		////////////////////////////////////////////////////////////////////////////////
+		class RenderWindow : public Graphics::ICanvas, public Window::IWindow, public InputSource
+		{
+		public:
+			friend class RenderWindowFactory;
+
+			virtual ~RenderWindow();
+
+			// Inherited from ICanvas
+			virtual void Initialize(const Graphics::ICanvas::Settings& settings)override;
+			virtual void SetCanvasSize(const Dia::Maths::Vector2D& size)override;
+			virtual void StartFrame(const Dia::Graphics::FrameData& nextFrame)override;
+			virtual void ProcessFrame(const Dia::Graphics::FrameData& nextFrame)override;
+			virtual void EndFrame(const Dia::Graphics::FrameData& nextFrame)override;
+
+			// Inherited from IWindow
+			virtual void Initialize(const Window::IWindow::Settings& settings) override;
+			virtual void Close() override;
+			virtual bool IsOpen() const override;
+			virtual Maths::Vector2D GetPosition() const override;
+			virtual void SetPosition(const Maths::Vector2D& position) override;
+			virtual Maths::Vector2D GetSize() const override;
+			virtual void SetSize(const Maths::Vector2D& size) override;
+			virtual void SetTitle(const Core::Containers::String64& title) override;
+			virtual void SetIcon(unsigned int width, unsigned int height, const unsigned char* pixels) override;
+			virtual void SetVisible(bool visible) override;
+			virtual bool SetActive(bool active = true) const override;
+			virtual void SetMouseCursorVisible(bool visible) override;
+
+		private:
+			RenderWindow();
+			RenderWindow(const Window::IWindow::Settings& windowSetting, const Graphics::ICanvas::Settings& canvasSettings);
+
+			sf::RenderWindow* mWindowContext;
+		};
+	}
+}

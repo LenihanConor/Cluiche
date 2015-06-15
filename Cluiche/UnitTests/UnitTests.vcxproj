@@ -1,0 +1,203 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{FFFEB7B0-7616-4D75-8E3D-08C7CFD93D71}</ProjectGuid>
+    <RootNamespace>UnitTests</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>11.0.51106.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)\bin\$(TargetName)\$(Configuration)\</IntDir>
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir>$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)../../DIA/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>DEBUG;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <BrowseInformation>true</BrowseInformation>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>$(OutDir)DiaApplication.lib;$(OutDir)DiaCore.lib;$(OutDir)DiaMaths.lib;$(OutDir)DiaGraphics.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+    <Bscmake>
+      <PreserveSbr>true</PreserveSbr>
+    </Bscmake>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)../../DIA/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>RELEASE;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="Tests\Application\UnitTestApplication.h" />
+    <ClInclude Include="Tests\Collections\UnitTestCircularBuffer.h" />
+    <ClInclude Include="Tests\Collections\UnitTestComponent.h" />
+    <ClInclude Include="Tests\Core\UnitTestBitFlag.h" />
+    <ClInclude Include="Tests\Core\UnitTestCore.h" />
+    <ClInclude Include="Tests\Core\UnitTestCRC.h" />
+    <ClInclude Include="Tests\Core\UnitTestEnum.h" />
+    <ClInclude Include="Tests\Core\UnitTestMetaLogic.h" />
+    <ClInclude Include="Tests\Core\UnitTestTimeAbsolute.h" />
+    <ClInclude Include="Tests\Core\UnitTestTimer.h" />
+    <ClInclude Include="Tests\Core\UnitTestTimeRelative.h" />
+    <ClInclude Include="Tests\Core\UnitTestTimerExpiry.h" />
+    <ClInclude Include="Tests\Core\UnitTestTimerSystem.h" />
+    <ClInclude Include="Tests\Core\UnitTestTimeServer.h" />
+    <ClInclude Include="Tests\Core\UnitTestTypes.h" />
+    <ClInclude Include="Tests\Core\UnitTestTypeTraits.h" />
+    <ClInclude Include="Tests\Collections\UnitTestArray.h" />
+    <ClInclude Include="Tests\Collections\UnitTestArrayC.h" />
+    <ClInclude Include="Tests\Collections\UnitTestArrayIterators.h" />
+    <ClInclude Include="Tests\Collections\UnitTestCollections.h" />
+    <ClInclude Include="Tests\Collections\UnitTestDynamicArray.h" />
+    <ClInclude Include="Tests\Collections\UnitTestDynamicArrayC.h" />
+    <ClInclude Include="Tests\Collections\UnitTestHashTable.h" />
+    <ClInclude Include="Tests\Collections\UnitTestLinkListC.h" />
+    <ClInclude Include="Tests\Collections\UnitTestSingleton.h" />
+    <ClInclude Include="Tests\Collections\UnitTestString.h" />
+    <ClInclude Include="Tests\Collections\UnitTestStringWriter.h" />
+    <ClInclude Include="Tests\Graphics\UnitTestGraphics.h" />
+    <ClInclude Include="Tests\Graphics\UnitTestRGBA.h" />
+    <ClInclude Include="Tests\Maths\UnitTestAngle.h" />
+    <ClInclude Include="Tests\Maths\UnitTestCircle2D.h" />
+    <ClInclude Include="Tests\Maths\UnitTestCoreMaths.h" />
+    <ClInclude Include="Tests\Maths\UnitTestFloatMaths.h" />
+    <ClInclude Include="Tests\Maths\UnitTestHalfFloat.h" />
+    <ClInclude Include="Tests\Maths\UnitTestHalfVector2D.h" />
+    <ClInclude Include="Tests\Maths\UnitTestIntersectionClassify.h" />
+    <ClInclude Include="Tests\Maths\UnitTestIntersectionTest.h" />
+    <ClInclude Include="Tests\Maths\UnitTestMaths.h" />
+    <ClInclude Include="Tests\Maths\UnitTestMatrix22.h" />
+    <ClInclude Include="Tests\Maths\UnitTestMatrix33.h" />
+    <ClInclude Include="Tests\Maths\UnitTestMatrix44.h" />
+    <ClInclude Include="Tests\Maths\UnitTestTrigonometry.h" />
+    <ClInclude Include="Tests\Maths\UnitTestVector2D.h" />
+    <ClInclude Include="Tests\Maths\UnitTestVector3D.h" />
+    <ClInclude Include="Tests\Maths\UnitTestVector4D.h" />
+    <ClInclude Include="Tests\Maths\UnitTestVectorUtil.h" />
+    <ClInclude Include="Infrastructure\UnitTestInterface.h" />
+    <ClInclude Include="Infrastructure\UnitTestMacros.h" />
+    <ClInclude Include="Infrastructure\UnitTestManager.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Tests\Application\UnitTestApplication.cpp" />
+    <ClCompile Include="Tests\Collections\UnitTestCircularBuffer.cpp" />
+    <ClCompile Include="Tests\Collections\UnitTestComponent.cpp" />
+    <ClCompile Include="Tests\Core\UnitTestBitFlag.cpp" />
+    <ClCompile Include="Tests\Core\UnitTestCRC.cpp" />
+    <ClCompile Include="Tests\Core\UnitTestEnum.cpp" />
+    <ClCompile Include="Tests\Core\UnitTestMetaLogic.cpp" />
+    <ClCompile Include="Tests\Core\UnitTestTimeAbsolute.cpp" />
+    <ClCompile Include="Tests\Core\UnitTestTimer.cpp" />
+    <ClCompile Include="Tests\Core\UnitTestTimeRelative.cpp" />
+    <ClCompile Include="Tests\Core\UnitTestTimerExpiry.cpp" />
+    <ClCompile Include="Tests\Core\UnitTestTimerSystem.cpp" />
+    <ClCompile Include="Tests\Core\UnitTestTimeServer.cpp" />
+    <ClCompile Include="Tests\Core\UnitTestTypes.cpp" />
+    <ClCompile Include="Tests\Core\UnitTestTypeTraits.cpp" />
+    <ClCompile Include="Tests\Collections\UnitTestArray.cpp" />
+    <ClCompile Include="Tests\Collections\UnitTestArrayC.cpp" />
+    <ClCompile Include="Tests\Collections\UnitTestArrayIterators.cpp" />
+    <ClCompile Include="Tests\Collections\UnitTestDynamicArray.cpp" />
+    <ClCompile Include="Tests\Collections\UnitTestDynamicArrayC.cpp" />
+    <ClCompile Include="Tests\Collections\UnitTestHashTable.cpp" />
+    <ClCompile Include="Tests\Collections\UnitTestLinkListC.cpp" />
+    <ClCompile Include="Tests\Collections\UnitTestSingleton.cpp" />
+    <ClCompile Include="Tests\Collections\UnitTestString.cpp" />
+    <ClCompile Include="Tests\Collections\UnitTestStringWriter.cpp" />
+    <ClCompile Include="Tests\Graphics\UnitTestRGBA.cpp" />
+    <ClCompile Include="Tests\Maths\UnitTestAngle.cpp" />
+    <ClCompile Include="Tests\Maths\UnitTestCircle2D.cpp" />
+    <ClCompile Include="Tests\Maths\UnitTestCoreMaths.cpp" />
+    <ClCompile Include="Tests\Maths\UnitTestFloatMaths.cpp" />
+    <ClCompile Include="Tests\Maths\UnitTestHalfFloat.cpp" />
+    <ClCompile Include="Tests\Maths\UnitTestHalfVector2D.cpp" />
+    <ClCompile Include="Tests\Maths\UnitTestIntersectionClassify.cpp" />
+    <ClCompile Include="Tests\Maths\UnitTestIntersectionTest.cpp" />
+    <ClCompile Include="Tests\Maths\UnitTestMatrix22.cpp" />
+    <ClCompile Include="Tests\Maths\UnitTestMatrix33.cpp" />
+    <ClCompile Include="Tests\Maths\UnitTestMatrix44.cpp" />
+    <ClCompile Include="Tests\Maths\UnitTestTrigonometry.cpp" />
+    <ClCompile Include="Tests\Maths\UnitTestVector2D.cpp" />
+    <ClCompile Include="Tests\Maths\UnitTestVector3D.cpp" />
+    <ClCompile Include="Tests\Maths\UnitTestVector4D.cpp" />
+    <ClCompile Include="Tests\Maths\UnitTestVectorUtil.cpp" />
+    <ClCompile Include="Infrastructure\UnitTestInterface.cpp" />
+    <ClCompile Include="Infrastructure\UnitTestMacros.cpp" />
+    <ClCompile Include="Infrastructure\UnitTestManager.cpp" />
+    <ClCompile Include="Main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Dia\DiaCore\DiaCore.vcxproj">
+      <Project>{8d41cbe3-c493-428d-95f3-627e56500667}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaMaths\DiaMaths.vcxproj">
+      <Project>{2bba0ad3-d449-4c0e-8c84-acfa8bca456b}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Interface">
+      <UniqueIdentifier>{484e33bf-bd75-43f2-bb75-aa721e961aea}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Interface\IWindow.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="Interface\IWindowFactory.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="DummyClass.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="DummyClass.cpp" />
+  </ItemGroup>
+</Project>
