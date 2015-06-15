@@ -218,7 +218,7 @@ namespace Dia
 			void* m_hProcess;
 			LPSTR m_szSymPath;
 
-			typedef struct IMAGEHLP_MODULE64_V2 {
+			struct IMAGEHLP_MODULE64_V2 {
 				unsigned long    SizeOfStruct;           // set to sizeof(IMAGEHLP_MODULE64)
 				unsigned long long  BaseOfImage;            // base load address of module
 				unsigned long    ImageSize;              // virtual size of the loaded module
@@ -1090,7 +1090,7 @@ cleanup:
 			OSVERSIONINFOEXA ver;
 			ZeroMemory(&ver, sizeof(OSVERSIONINFOEXA));
 			ver.dwOSVersionInfoSize = sizeof(ver);
-			if (GetVersionExA( (OSVERSIONINFOA*) &ver) != FALSE)
+			if (GetVersionEx( (OSVERSIONINFOA*) &ver) != FALSE)
 			{
 				_snprintf_s(buffer, STACKWALK_MAX_NAMELEN, "OS-Version: %d.%d.%d (%s) 0x%x-0x%x\n", 
 					ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber,

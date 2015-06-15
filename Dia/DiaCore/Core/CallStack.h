@@ -43,7 +43,7 @@ namespace Dia
 			int ShowCallstack( void* hThread = NULL, const void *context = NULL);
 		protected:		
 
-			typedef enum CallstackEntryType {firstEntry, nextEntry, lastEntry};
+			enum CallstackEntryType {firstEntry, nextEntry, lastEntry};
 
 			virtual void OnSymInit(const char* szSearchPath, unsigned long symOptions, const char* szUserName);
 			virtual void OnLoadModule(const char* img, const char* mod, unsigned long long baseAddr, unsigned long size, unsigned long result, const char* symType, const char* pdbName, unsigned long long fileVersion);
