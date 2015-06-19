@@ -1087,14 +1087,15 @@ cleanup:
 				OnOutput(buffer);
 			}
 #else
-			OSVERSIONINFOEXA ver;
-			ZeroMemory(&ver, sizeof(OSVERSIONINFOEXA));
-			ver.dwOSVersionInfoSize = sizeof(ver);
-			if (GetVersionEx( (OSVERSIONINFOA*) &ver) != FALSE)
+			OSVERSIONINFO ver;
+			ZeroMemory(&ver, sizeof(OSVERSIONINFO));
+			ver.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+
+			if (GetVersionEx(&ver) != FALSE)
 			{
-				_snprintf_s(buffer, STACKWALK_MAX_NAMELEN, "OS-Version: %d.%d.%d (%s) 0x%x-0x%x\n", 
+				_snprintf_s(buffer, STACKWALK_MAX_NAMELEN, "OS-Version: %d.%d.%d (%d)\n", 
 					ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber,
-					ver.szCSDVersion, ver.wSuiteMask, ver.wProductType);
+					ver.dwPlatformId);
 				OnOutput(buffer);
 			}
 #endif

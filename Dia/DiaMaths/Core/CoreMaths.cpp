@@ -16,7 +16,7 @@ namespace Dia
 		{
 			DIA_ASSERT (number >= 0, "Can not sqrt a negative");
 
-			return sqrt(number);
+			return sqrtf(number);
 		}
 
 		//returns the factorial to it
