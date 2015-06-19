@@ -8,6 +8,67 @@
 #include <DiaInput/ConsoleGamepadManager.h>
 #include <DiaInput/InputSourceManager.h>
 
+#include <thread>
+
+Dia::Maths::Vector2D dynamicCirclePos(0.0f, 0.0f);
+Dia::Graphics::RGBA dynamicCircleColour = Dia::Graphics::RGBA::Red;
+
+struct SimThreadStruct
+{
+public:
+
+	SimThreadStruct(Dia::Graphics::FrameData& renderFrameBuffer)
+		: mRenderFrameBuffer(renderFrameBuffer)
+	{}
+
+	void operator()()
+	{
+		Run();
+	}
+
+	void Run()
+	{
+		// This is where the simulation (Model) would go...
+		// In good architetcure you would only do simualtion events here and have a seperate step to interpret that into game specific rendering
+
+		// This below is just a test
+		mRenderFrameBuffer.RequestDraw(Dia::Graphics::DebugFrameDataCircle2D(Dia::Maths::Vector2D(100.0f, 100.0f), 75.0f));
+		mRenderFrameBuffer.RequestDraw(Dia::Graphics::DebugFrameDataCircle2D(dynamicCirclePos, 25.0f, dynamicCircleColour));
+		mRenderFrameBuffer.RequestDraw(Dia::Graphics::DebugFrameDataLine2D(Dia::Maths::Vector2D(100.0f, 100.0f), dynamicCirclePos));
+	}
+
+private:
+	Dia::Graphics::FrameData& mRenderFrameBuffer;
+};
+
+struct RenderThreadStruct
+{
+public:
+	RenderThreadStruct(Dia::Graphics::ICanvas* pCanvas, Dia::Graphics::FrameData& renderFrameBuffer)
+		: mpCanvas(pCanvas)
+		, mRenderFrameBuffer(renderFrameBuffer)
+	{}
+
+	void operator()()
+	{
+		Run();
+	}
+
+	void Run()
+	{
+		// Render (View) Part
+		// In good architecture this is completley generic.
+		mpCanvas->StartFrame(mRenderFrameBuffer);
+
+		mpCanvas->ProcessFrame(mRenderFrameBuffer);
+
+		mpCanvas->EndFrame(mRenderFrameBuffer);
+	}
+
+private:
+	Dia::Graphics::ICanvas* mpCanvas;
+	Dia::Graphics::FrameData& mRenderFrameBuffer;
+};
 
 int main(int argc, const char* argv[])
 {
@@ -32,11 +93,8 @@ int main(int argc, const char* argv[])
 	// We are using a dia specific source for the gamepad
 	inputSourceManager.AddInputSource(&gamepadManager); // Getting gamepads from the DIA
 	
-	Dia::Maths::Vector2D dynamicCirclePos(0.0f, 0.0f);
-	Dia::Graphics::RGBA dynamicCircleColour = Dia::Graphics::RGBA::Red;
-
 	Dia::Core::TimeServer timeServer(30.0f, Dia::Core::TimeAbsolute::Zero());	// With only one time server everything in the main loop will increment at its frequency
-	//FrameManager<GrphicsFrameData> graphicsFrameManager;
+	//FrameManager<GraphicsFrameData> frameManager;
 
 	// run the main loop
 	bool running = true;
@@ -46,7 +104,6 @@ int main(int argc, const char* argv[])
 		{
 			inputSourceManager.StartFrame();
 			
-
 	//		Register
 
 			Dia::Input::EventStream eventStream; // Scope will wipe this for next turn
@@ -54,6 +111,8 @@ int main(int argc, const char* argv[])
 			// Input (Control) part		
 			inputSourceManager.Update(eventStream);
 
+
+			/// Hmmm... this probably belongs in simulation as it is the interpetation of the buttons
 			// This is where an application will handle any user input
 			for (unsigned int i = 0; i < eventStream.Size(); i++)
 			{
@@ -93,26 +152,21 @@ int main(int argc, const char* argv[])
 			inputSourceManager.EndFrame();
 		}
 
-		{
-			// Dia::Graphics::FrameData& simulationRenderData = frameManager.FetchNewFrame(timeServer);
-			 
 
-			// This is where the simulation (Model) would go...
-			// In good architetcure you would only do simualtion events here and have a seperate step to interpret that into game specific rendering
+	//	std::thread sim(Sim);
 
-			// This below is just a test
-			simulationRenderData.RequestDraw(Dia::Graphics::DebugFrameDataCircle2D(Dia::Maths::Vector2D(100.0f, 100.0f), 75.0f));
-			simulationRenderData.RequestDraw(Dia::Graphics::DebugFrameDataCircle2D(dynamicCirclePos, 25.0f, dynamicCircleColour));
-			simulationRenderData.RequestDraw(Dia::Graphics::DebugFrameDataLine2D(Dia::Maths::Vector2D(100.0f, 100.0f), dynamicCirclePos));
 
-			// Render (View) Part
-			// In good architecture this is completley generic.
-			canvas->StartFrame(simulationRenderData);
+		Dia::Graphics::FrameData simulationRenderFrame;
 
-			canvas->ProcessFrame(simulationRenderData);
+		SimThreadStruct simThreadStruct(simulationRenderFrame);
+		RenderThreadStruct renderThreadStruct(canvas, simulationRenderFrame);
 
-			canvas->EndFrame(simulationRenderData);
-		}
+		std::thread simThread(simThreadStruct);
+		simThread.join();
+		
+	//	renderThreadStruct.Run();
+		std::thread renderThread(renderThreadStruct);
+		renderThread.join();
 
 		timeServer.Tick();// Move us onto the next frame
 	}
