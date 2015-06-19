@@ -87,7 +87,13 @@ namespace Dia
 
 			return _strnicmp(str1, str2, num); 
 		}
-			
+		
+		inline
+		void StringToWString(const char* input, wchar_t* output)
+		{
+			swprintf(output, L"%S", input);
+		}
+
 		inline 
 		void StringConvertFromShort	(char* result, const int resultCapacity, const short val)
 		{

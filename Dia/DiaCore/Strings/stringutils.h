@@ -20,6 +20,7 @@ namespace Dia
 		int					StringCompareNoCase		(const char* str1, const char* str2, const int n);
 		void				StringToLower			(char* str);
 		void				StringToUpper			(char* str);
+		void				StringToWString			(const char* input, wchar_t* output);
 
 		// Create String from Primitive
 		void				StringConvertFromShort	(char* result, const int resultCapacity, const short val);
