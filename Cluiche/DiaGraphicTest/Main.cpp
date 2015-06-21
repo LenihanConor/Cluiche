@@ -2,6 +2,7 @@
 #include <DiaSFML/RenderWindow.h>
 #include <DiaCore/Time/TimeServer.h>
 #include <DiaCore/Time/TimeAbsolute.h>
+#include <DiaCore/Time/TimeThreadLimiter.h>
 #include <DiaInput/IInputSource.h>
 #include <DiaGraphics/Interface/ICanvas.h>
 
@@ -9,6 +10,8 @@
 #include <DiaInput/InputSourceManager.h>
 
 #include <thread>
+#include <mutex>
+#include <iostream>
 
 Dia::Maths::Vector2D dynamicCirclePos(0.0f, 0.0f);
 Dia::Graphics::RGBA dynamicCircleColour = Dia::Graphics::RGBA::Red;
@@ -17,8 +20,7 @@ struct SimThreadStruct
 {
 public:
 
-	SimThreadStruct(Dia::Graphics::FrameData& renderFrameBuffer)
-		: mRenderFrameBuffer(renderFrameBuffer)
+	SimThreadStruct()
 	{}
 
 	void operator()()
@@ -37,16 +39,17 @@ public:
 		mRenderFrameBuffer.RequestDraw(Dia::Graphics::DebugFrameDataLine2D(Dia::Maths::Vector2D(100.0f, 100.0f), dynamicCirclePos));
 	}
 
-private:
-	Dia::Graphics::FrameData& mRenderFrameBuffer;
+	Dia::Graphics::FrameData mRenderFrameBuffer;
+
 };
 
 struct RenderThreadStruct
 {
 public:
-	RenderThreadStruct(Dia::Graphics::ICanvas* pCanvas, Dia::Graphics::FrameData& renderFrameBuffer)
-		: mpCanvas(pCanvas)
-		, mRenderFrameBuffer(renderFrameBuffer)
+	RenderThreadStruct(const bool& running, Dia::Graphics::ICanvas* pCanvas)
+		: mRunning(running)
+		, mThreadLimiter(30.0)
+		, mpCanvas(pCanvas)
 	{}
 
 	void operator()()
@@ -54,20 +57,46 @@ public:
 		Run();
 	}
 
+	void PushRenderBuffer(const Dia::Graphics::FrameData& renderFrameBuffer)
+	{
+		{
+			std::lock_guard<std::mutex> lock(mRenderFrameBufferMutex);
+
+			mRenderFrameBuffer.Clear();
+			mRenderFrameBuffer.Copy(renderFrameBuffer);
+		}
+	}
+
 	void Run()
 	{
 		// Render (View) Part
 		// In good architecture this is completley generic.
-		mpCanvas->StartFrame(mRenderFrameBuffer);
+		while (mRunning)
+		{
+			mThreadLimiter.Start();
+			
+			{
+				std::lock_guard<std::mutex> lock(mRenderFrameBufferMutex);
 
-		mpCanvas->ProcessFrame(mRenderFrameBuffer);
+				mpCanvas->StartFrame(mRenderFrameBuffer);
+				mpCanvas->ProcessFrame(mRenderFrameBuffer);
+				mpCanvas->EndFrame(mRenderFrameBuffer);
+			}
 
-		mpCanvas->EndFrame(mRenderFrameBuffer);
+			mThreadLimiter.Stop();
+			
+			std::cout << "Wait " << mThreadLimiter.RemainingTimeInMilliseconds() << " ms\n";
+			mThreadLimiter.SleepThread();
+		}
 	}
 
 private:
+	const bool& mRunning; 
+	Dia::Core::TimeThreadLimiter mThreadLimiter;
 	Dia::Graphics::ICanvas* mpCanvas;
-	Dia::Graphics::FrameData& mRenderFrameBuffer;
+
+	std::mutex mRenderFrameBufferMutex;
+	Dia::Graphics::FrameData mRenderFrameBuffer;
 };
 
 int main(int argc, const char* argv[])
@@ -78,7 +107,6 @@ int main(int argc, const char* argv[])
 	Dia::Graphics::ICanvas::Settings canvasSettings(Dia::Graphics::ICanvas::Settings::VSyncEnum::kEnable, 0, 0, 2, 0);
 	
 	Dia::SFML::RenderWindow* renderWindow = static_cast<Dia::SFML::RenderWindow*>(windowFactory.Create(windowSetting, canvasSettings));
-	
 	
 	// Abstract Interfaces
 	Dia::Window::IWindow* window = renderWindow;
@@ -94,13 +122,18 @@ int main(int argc, const char* argv[])
 	inputSourceManager.AddInputSource(&gamepadManager); // Getting gamepads from the DIA
 	
 	Dia::Core::TimeServer timeServer(30.0f, Dia::Core::TimeAbsolute::Zero());	// With only one time server everything in the main loop will increment at its frequency
-	//FrameManager<GraphicsFrameData> frameManager;
+
+	canvas->SetActiveContext(false); // Need to disable active context before starting rendering thread
+
+	bool running = true;
+
+	RenderThreadStruct renderThreadStruct(running, canvas);
+	std::thread renderThread(std::ref(renderThreadStruct));
 
 	// run the main loop
-	bool running = true;
+	
 	while (running)
 	{
-
 		{
 			inputSourceManager.StartFrame();
 			
@@ -111,8 +144,7 @@ int main(int argc, const char* argv[])
 			// Input (Control) part		
 			inputSourceManager.Update(eventStream);
 
-
-			/// Hmmm... this probably belongs in simulation as it is the interpetation of the buttons
+			// Hmmm... this probably belongs in simulation as it is the interpetation of the buttons
 			// This is where an application will handle any user input
 			for (unsigned int i = 0; i < eventStream.Size(); i++)
 			{
@@ -152,24 +184,13 @@ int main(int argc, const char* argv[])
 			inputSourceManager.EndFrame();
 		}
 
-
-	//	std::thread sim(Sim);
-
-
-		Dia::Graphics::FrameData simulationRenderFrame;
-
-		SimThreadStruct simThreadStruct(simulationRenderFrame);
-		RenderThreadStruct renderThreadStruct(canvas, simulationRenderFrame);
-
-		std::thread simThread(simThreadStruct);
-		simThread.join();
-		
-	//	renderThreadStruct.Run();
-		std::thread renderThread(renderThreadStruct);
-		renderThread.join();
-
-		timeServer.Tick();// Move us onto the next frame
+		SimThreadStruct simThreadStruct;
+		simThreadStruct.Run();
+	
+		renderThreadStruct.PushRenderBuffer(simThreadStruct.mRenderFrameBuffer);
 	}
+
+	renderThread.join();
 
 	windowFactory.Destroy(window);
 
