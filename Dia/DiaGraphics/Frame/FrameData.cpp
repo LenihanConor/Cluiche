@@ -9,5 +9,15 @@ namespace Dia
 	{
 		FrameData::FrameData()
 		{}
+
+		void FrameData::Clear()
+		{
+			DebugFrameData::ClearDebugBuffer();
+		}
+
+		void FrameData::Copy(const FrameData& rhs)
+		{
+			DebugFrameData::CopyDebugBuffer(rhs);
+		}
 	}
 }

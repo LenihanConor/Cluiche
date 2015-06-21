@@ -25,7 +25,8 @@ namespace Dia
 			DebugFrameData();
 			~DebugFrameData();
 
-			void RemoveAllDebugBuffer();
+			void ClearDebugBuffer();
+			void CopyDebugBuffer(const DebugFrameData& rhs);
 
 			void RequestDraw(const DebugFrameDataCircle2D& object);
 			void RequestDraw(const DebugFrameDataLine2D& object);

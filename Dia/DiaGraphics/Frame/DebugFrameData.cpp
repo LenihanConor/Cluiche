@@ -18,10 +18,17 @@ namespace Dia
 		{}
 
 		//------------------------------------------------------------------------------
-		void DebugFrameData::RemoveAllDebugBuffer()
+		void DebugFrameData::ClearDebugBuffer()
 		{
 			mDebug2DCircleBuffer.RemoveAll();
 			mDebug2DLineBuffer.RemoveAll();
+		}
+
+		//------------------------------------------------------------------------------
+		void DebugFrameData::CopyDebugBuffer(const DebugFrameData& rhs)
+		{
+			mDebug2DCircleBuffer = rhs.mDebug2DCircleBuffer;
+			mDebug2DLineBuffer = rhs.mDebug2DLineBuffer;
 		}
 
 		//------------------------------------------------------------------------------
