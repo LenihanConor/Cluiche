@@ -12,6 +12,7 @@
 namespace sf
 {
 	class RenderWindow;
+	class Context;
 }
 
 namespace Dia
@@ -31,6 +32,8 @@ namespace Dia
 			// Inherited from ICanvas
 			virtual void Initialize(const Graphics::ICanvas::Settings& settings)override;
 			virtual void SetCanvasSize(const Dia::Maths::Vector2D& size)override;
+			virtual void SetActiveContext(bool active)override;
+
 			virtual void StartFrame(const Dia::Graphics::FrameData& nextFrame)override;
 			virtual void ProcessFrame(const Dia::Graphics::FrameData& nextFrame)override;
 			virtual void EndFrame(const Dia::Graphics::FrameData& nextFrame)override;

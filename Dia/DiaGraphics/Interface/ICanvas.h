@@ -57,6 +57,7 @@ namespace Dia
 			
 			virtual void Initialize(const Settings& settings) = 0;
 			virtual void SetCanvasSize(const Dia::Maths::Vector2D& size) = 0;
+			virtual void SetActiveContext(bool active)=0;
 
 			virtual void StartFrame(const FrameData& nextFrame) = 0;
 			virtual void ProcessFrame(const FrameData& nextFrame) = 0;

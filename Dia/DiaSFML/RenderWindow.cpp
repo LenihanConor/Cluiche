@@ -9,6 +9,7 @@
 #include <DiaGraphics/Frame/FrameData.h>
 #include <DiaGraphics/Frame/DebugFrameDataVisitor.h>
 #include <DiaCore/Memory/Memory.h>
+#include <DiaCore/Strings/stringutils.h>
 
 #include <SFML/Graphics.hpp>
 #include <SFML/OpenGL.hpp>
@@ -28,14 +29,17 @@ namespace Dia
 		RenderWindow::RenderWindow(const Window::IWindow::Settings& windowSetting, const Graphics::ICanvas::Settings& canvasSettings)
 		{
 			// Extract the SF settings for the window
-			sf::String title(windowSetting.GetTitle().AsCStr());
+			wchar_t titleBuffer[1024];
+			Dia::Core::StringToWString(windowSetting.GetTitle().AsCStr(), &titleBuffer[0]);
+			std::wstring titleTempWString(&titleBuffer[0]);
+		
 			unsigned int style = windowSetting.GetStyle().GetAllBits();
 
 			sf::VideoMode videoMode(windowSetting.GetDimensions().GetWidth(), windowSetting.GetDimensions().GetHeight(), windowSetting.GetDimensions().GetBitsPerPixel());
 			sf::ContextSettings context(canvasSettings.GetDepth(), canvasSettings.GetStencil(), canvasSettings.GetAntialiasing(), canvasSettings.GetOpenGLMajor(), canvasSettings.GetOpenGLMinor());
 
-			mWindowContext = DIA_NEW(sf::RenderWindow(videoMode, title, style, context));
-
+			mWindowContext = DIA_NEW(sf::RenderWindow(videoMode, sf::String(titleTempWString), style, context));
+		
 			InputSource::SetWindowContext(mWindowContext);
 		}
 
@@ -90,6 +94,17 @@ namespace Dia
 		}
 
 		//-------------------------------------------------------------------------------------
+		void RenderWindow::SetActiveContext(bool active)
+		{
+			DIA_ASSERT(mWindowContext, "mWindowContext is NULL");
+
+			if (mWindowContext)
+			{
+				mWindowContext->setActive(false);
+			}
+		}
+
+		//-------------------------------------------------------------------------------------
 		// Get the frame ready for rendering
 		void RenderWindow::StartFrame(const Dia::Graphics::FrameData& nextFrame)
 		{
@@ -104,10 +119,10 @@ namespace Dia
 			DIA_ASSERT(mWindowContext, "mWindowContext is NULL");
 
 			if (mWindowContext)
-			{
+			{			
 				DebugFrameRendererVisitor renderDebugObjects(mWindowContext);
-
-				renderDebugObjects.Visit(nextFrame);
+				
+				renderDebugObjects.Visit(nextFrame);	
 			}
 		}
 
@@ -126,9 +141,7 @@ namespace Dia
 
 		//-------------------------------------------------------------------------------------
 		void RenderWindow::Initialize(const Window::IWindow::Settings& settings)
-		{
-
-		}
+		{}
 
 		//-------------------------------------------------------------------------------------
 		void RenderWindow::Close()
