@@ -345,6 +345,9 @@
     <ClInclude Include="Frame\FrameStream.h">
       <Filter>Frame</Filter>
     </ClInclude>
+    <ClInclude Include="Time\TimeThreadLimiter.h">
+      <Filter>Time</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\Assert.cpp">
@@ -448,6 +451,9 @@
     </ClCompile>
     <ClCompile Include="Frame\FrameStream.cpp">
       <Filter>Frame</Filter>
+    </ClCompile>
+    <ClCompile Include="Time\TimeThreadLimiter.cpp">
+      <Filter>Time\Source</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

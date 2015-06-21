@@ -120,6 +120,7 @@
     <ClInclude Include="CRC\CRC.h" />
     <ClInclude Include="CRC\StringCRC.h" />
     <ClInclude Include="CRC\StripStringCRC.h" />
+    <ClInclude Include="Time\TimeThreadLimiter.h" />
     <ClInclude Include="Type\BasicTypeDefines.h" />
     <ClInclude Include="Type\TypeDeclarationMacros.h" />
     <ClInclude Include="Type\TypeDefinitionMacros.h" />
@@ -184,6 +185,7 @@
     <ClCompile Include="CRC\CRC.cpp" />
     <ClCompile Include="CRC\StringCRC.cpp" />
     <ClCompile Include="CRC\StripStringCRC.cpp" />
+    <ClCompile Include="Time\TimeThreadLimiter.cpp" />
     <ClCompile Include="Type\TypeFacade.cpp" />
     <ClCompile Include="Type\TypeRegistry.cpp" />
     <ClCompile Include="Type\TypeTextSerializer.cpp" />
