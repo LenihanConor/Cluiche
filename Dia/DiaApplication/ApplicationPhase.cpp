@@ -4,7 +4,6 @@
 #include "DiaApplication/ApplicationPhase.h"
 
 #include "DiaApplication/ApplicationProcessingUnit.h"
-#include <DiaCore/Containers/LinkList/LinkListC.h>
 
 #include <DiaCore/Strings/String1024.h>
 #include <DiaCore/Time/TimeRelative.h>

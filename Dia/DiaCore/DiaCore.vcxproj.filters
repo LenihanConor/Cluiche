@@ -339,14 +339,11 @@
     <ClInclude Include="Containers\Misc\CircularBufferIterator.h">
       <Filter>Containers\Misc</Filter>
     </ClInclude>
-    <ClInclude Include="Frame\FrameDataManager.h">
-      <Filter>Frame</Filter>
-    </ClInclude>
     <ClInclude Include="Frame\FrameStream.h">
       <Filter>Frame</Filter>
     </ClInclude>
-    <ClInclude Include="Time\TimeThreadLimiter.h">
-      <Filter>Time</Filter>
+    <ClInclude Include="Timer\TimeThreadLimiter.h">
+      <Filter>Timer</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -446,14 +443,8 @@
     <ClCompile Include="Architecture\Components\Interface\IComponentObject.cpp">
       <Filter>Architecture\Components\Interface\Source</Filter>
     </ClCompile>
-    <ClCompile Include="Frame\FrameDataManager.cpp">
-      <Filter>Frame</Filter>
-    </ClCompile>
-    <ClCompile Include="Frame\FrameStream.cpp">
-      <Filter>Frame</Filter>
-    </ClCompile>
-    <ClCompile Include="Time\TimeThreadLimiter.cpp">
-      <Filter>Time\Source</Filter>
+    <ClCompile Include="Timer\TimeThreadLimiter.cpp">
+      <Filter>Timer\Source</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -564,6 +555,9 @@
     </None>
     <None Include="Containers\Misc\CircularBufferIterator.inl">
       <Filter>Containers\Misc\source</Filter>
+    </None>
+    <None Include="Frame\FrameStream.inl">
+      <Filter>Frame</Filter>
     </None>
   </ItemGroup>
 </Project>

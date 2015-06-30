@@ -106,8 +106,8 @@
     <ClInclude Include="Core\MetaLogic.h" />
     <ClInclude Include="Core\System.h" />
     <ClInclude Include="CRC\CRCHashFunctor.h" />
-    <ClInclude Include="Frame\FrameDataManager.h" />
     <ClInclude Include="Frame\FrameStream.h" />
+    <ClInclude Include="Timer\TimeThreadLimiter.h" />
     <ClInclude Include="Time\SystemClock.h" />
     <ClInclude Include="Time\TimeAbsolute.h" />
     <ClInclude Include="Time\TimeAbstract.h" />
@@ -120,7 +120,6 @@
     <ClInclude Include="CRC\CRC.h" />
     <ClInclude Include="CRC\StringCRC.h" />
     <ClInclude Include="CRC\StripStringCRC.h" />
-    <ClInclude Include="Time\TimeThreadLimiter.h" />
     <ClInclude Include="Type\BasicTypeDefines.h" />
     <ClInclude Include="Type\TypeDeclarationMacros.h" />
     <ClInclude Include="Type\TypeDefinitionMacros.h" />
@@ -171,8 +170,7 @@
     <ClCompile Include="Core\CallStack.cpp" />
     <ClCompile Include="Core\EnumClass.cpp" />
     <ClCompile Include="Core\Log.cpp" />
-    <ClCompile Include="Frame\FrameDataManager.cpp" />
-    <ClCompile Include="Frame\FrameStream.cpp" />
+    <ClCompile Include="Timer\TimeThreadLimiter.cpp" />
     <ClCompile Include="Time\SystemClock.cpp" />
     <ClCompile Include="Time\TimeAbsolute.cpp" />
     <ClCompile Include="Time\TimeAbstract.cpp" />
@@ -185,7 +183,6 @@
     <ClCompile Include="CRC\CRC.cpp" />
     <ClCompile Include="CRC\StringCRC.cpp" />
     <ClCompile Include="CRC\StripStringCRC.cpp" />
-    <ClCompile Include="Time\TimeThreadLimiter.cpp" />
     <ClCompile Include="Type\TypeFacade.cpp" />
     <ClCompile Include="Type\TypeRegistry.cpp" />
     <ClCompile Include="Type\TypeTextSerializer.cpp" />
@@ -210,6 +207,7 @@
     <None Include="Containers\Graphs\GraphVertex.inl" />
     <None Include="Containers\Misc\CircularBufferC.inl" />
     <None Include="Containers\Misc\CircularBufferIterator.inl" />
+    <None Include="Frame\FrameStream.inl" />
     <None Include="Type\TypeFacade.inl" />
     <None Include="Type\TypeVariable.inl" />
     <None Include="Type\TypeVariableData.inl" />
