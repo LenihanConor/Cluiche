@@ -2,6 +2,7 @@
 #define DIA_STRING_UTILITIES__
 
 #include <stdarg.h>
+#include "DiaCore/Type/BasicTypeDefines.h"
 
 namespace Dia
 {
