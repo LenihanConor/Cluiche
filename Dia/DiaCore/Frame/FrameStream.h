@@ -1,17 +1,49 @@
 #pragma once
 
-#include "DiaCore/Time/TimeRelative.h"
+#include <DiaCore/Time/TimeAbsolute.h>
+#include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+
+#include <deque>
+#include <mutex>
 
 namespace Dia
 {
 	namespace Core
 	{
+		template <class T>
 		class FrameStream
 		{
 		public:
+			FrameStream();
+
+			void InsertCopyOfDataToStream(const T& data, const Dia::Core::TimeAbsolute& timeStamp);
+
+			const T* FetchDataClosestToTime(const Dia::Core::TimeAbsolute& timeStamp, Dia::Core::TimeAbsolute& timeStampOfOutput)const;
+			void FetchAllDataUpToTime(const Dia::Core::TimeAbsolute& timeStamp, Dia::Core::Containers::DynamicArrayC<const T*, 32>& ptrBuffer)const;
+
+			void GarbageCollectAllFramesOlderThan(const Dia::Core::TimeAbsolute& timeStamp);
 
 		private:
-			TimeRelative mFrequencyHertz;	// How often are we going to be adding to the steam
+			class InternalData
+			{
+			public:
+				InternalData();
+
+				void Create(const T& data, const Dia::Core::TimeAbsolute& timeStamp);
+
+				InternalData& operator=(const InternalData &rhs);
+				int operator==(const InternalData &rhs) const;
+				int operator<(const InternalData &rhs) const;
+
+				int mFrameIndex;
+				Dia::Core::TimeAbsolute mTimeStamp;
+				T mFrameData;
+			};
+
+			mutable std::mutex mMutex;
+			std::deque<InternalData> mFrameList;
 		}; 
 	}
 }
+
+#include "DiaCore/Frame/FrameStream.inl"
