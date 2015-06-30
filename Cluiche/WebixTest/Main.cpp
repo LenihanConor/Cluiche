@@ -17,6 +17,8 @@
 #include <thread>
 #include <future>
 
+#include <DiaCore/Strings/stringutils.h>
+
 sf::Color backColour;
 using namespace Awesomium;
 class TutorialApp : public Application::Listener 
@@ -150,7 +152,11 @@ int main(int argc, const char* argv[])
 	backColour = sf::Color(211, 211, 211);
 
 	// create the window
-	sf::RenderWindow window(sf::VideoMode(800, 600), "OpenGL", sf::Style::Default, sf::ContextSettings(32));
+	wchar_t titleBuffer[1024];
+	Dia::Core::StringToWString("OpenGL", &titleBuffer[0]);
+	std::wstring titleTempWString(&titleBuffer[0]);
+
+	sf::RenderWindow window(sf::VideoMode(800, 600), sf::String(titleTempWString), sf::Style::Default, sf::ContextSettings(32));
 
 	window.setVerticalSyncEnabled(true);
 	window.setActive();
@@ -162,8 +168,7 @@ int main(int argc, const char* argv[])
 		int x = 0;
 		x++;
 	}
-
-	
+		
 	sf::RenderTexture backBuffer;
 
 	bool b = backBuffer.create(window.getSize().x, window.getSize().y);
@@ -172,8 +177,6 @@ int main(int argc, const char* argv[])
 	sf::Sprite uiSprite;
 	sf::Sprite renderSprite;
 	
-	
-
 	if (!sf::Shader::isAvailable())
 	{
 		int x = 0;
