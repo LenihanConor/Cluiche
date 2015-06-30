@@ -114,9 +114,6 @@
     <ProjectReference Include="..\..\Dia\DiaWindow\DiaWindow.vcxproj">
       <Project>{52178c86-628d-4fe4-ae55-d3485faec070}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\SFMLGraphicTest\SFMLGraphicTest.vcxproj">
-      <Project>{4e378cee-0a60-4886-be38-6f519d2519d4}</Project>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application.h" />
