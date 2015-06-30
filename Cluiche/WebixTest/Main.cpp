@@ -63,7 +63,7 @@ public:
 
 		BindMethods(view_);
 
-		WebURL url(WSLit("file:///C:/_git/Dia/Cluiche/WebixTest/app.html"));
+		WebURL url(WSLit("file:///Z:/GitHub/Cluiche/Cluiche/WebixTest/app.html")); 
 		view_->LoadURL(url);
 
 		while (view_->IsLoading())
