@@ -3,7 +3,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include "DiaInput\EventStream.h"
+#include "DiaInput\EventData.h"
 
 namespace Dia
 {
@@ -19,7 +19,7 @@ namespace Dia
 			virtual ~IInputSource(){}
 			
 			virtual void StartFrame(){}
-			virtual void Poll(EventStream& outStream) = 0;
+			virtual void Poll(EventData& outStream) = 0;
 			virtual void EndFrame(){}
 
 			int GetUniqueID()const { return mId; }

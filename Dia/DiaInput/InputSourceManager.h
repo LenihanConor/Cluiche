@@ -3,7 +3,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include "DiaInput/EventStream.h"
+#include "DiaInput/EventData.h"
 #include "DiaInput/IInputSource.h"
 
 namespace Dia
@@ -24,7 +24,7 @@ namespace Dia
 			void RemoveInputSource(IInputSource* inputSource);
 
 			void StartFrame();
-			void Update(EventStream& outStream);
+			void Update(EventData& outStream);
 			void EndFrame();
 			
 		private:

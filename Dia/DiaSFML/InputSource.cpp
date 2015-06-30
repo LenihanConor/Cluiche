@@ -31,7 +31,7 @@ namespace Dia
 		}
 
 		//------------------------------------------------------
-		void InputSource::Poll(Dia::Input::EventStream& outStream)
+		void InputSource::Poll(Dia::Input::EventData& outStream)
 		{
 			DIA_ASSERT(mWindowContext, "mWindowContext is NULL");
 

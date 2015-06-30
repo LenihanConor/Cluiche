@@ -30,7 +30,7 @@ namespace Dia
 		}
 
 		//-----------------------------------------------------------------------------
-		void ConsoleGamepadManager::Poll(EventStream& outStream)
+		void ConsoleGamepadManager::Poll(EventData& outStream)
 		{
 			// Test for any disconnection
 			for (int i = mGamepadActiveList.Size() -1; i >= 0; i--)

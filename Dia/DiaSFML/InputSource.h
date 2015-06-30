@@ -55,7 +55,7 @@ namespace Dia
 
 			void ListenForInputSources(Dia::Core::BitArray8 listeningToSource);
 
-			virtual void Poll(Dia::Input::EventStream& outStream)override;
+			virtual void Poll(Dia::Input::EventData& outStream)override;
 
 		private:
 			void Convert(Dia::Input::Event& lhs, const sf::Event& rhs)const;

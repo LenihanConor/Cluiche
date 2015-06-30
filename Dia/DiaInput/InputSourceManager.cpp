@@ -31,11 +31,11 @@ namespace Dia
 			}
 		}
 
-		void InputSourceManager::Update(EventStream& outStream)
+		void InputSourceManager::Update(EventData& outData)
 		{
 			for (unsigned int i = 0; i < mInputSourceList.Size(); i++)
 			{
-				mInputSourceList[i]->Poll(outStream);
+				mInputSourceList[i]->Poll(outData);
 			}
 		}
 

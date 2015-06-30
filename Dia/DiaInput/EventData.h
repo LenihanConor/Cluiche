@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
-// Filename: EventStream.h: A single frame of key strokes
+// Filename: EventData.h: A single frame of key strokes
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
@@ -14,10 +14,10 @@ namespace Dia
 		////////////////////////////////////////////////////////////////////////////////
 		// Enum name: EventStream: we make out at 16 simulataneous button presses
 		////////////////////////////////////////////////////////////////////////////////
-		class EventStream: public Dia::Core::Containers::DynamicArrayC<Event, 16>
+		class EventData : public Dia::Core::Containers::DynamicArrayC<Event, 16>
 		{
 		public:
-			EventStream() : Dia::Core::Containers::DynamicArrayC<Event, 16>(){};
+			EventData() : Dia::Core::Containers::DynamicArrayC<Event, 16>(){};
 		};
 	}
 }

@@ -24,7 +24,7 @@ namespace Dia
 			ConsoleGamepadManager();
 
 			virtual void StartFrame()override;
-			virtual void Poll(EventStream& outStream)override;;
+			virtual void Poll(EventData& outStream)override;;
 			virtual void EndFrame()override;
 
 			bool IsRegisteredAsActive(const ConsoleGamepad& gamepad)const;
