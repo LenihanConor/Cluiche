@@ -16,6 +16,8 @@ namespace Dia
 		public:
 			FrameData();
 
+			FrameData& operator=(const FrameData& rhs);
+
 			void Clear();
 			void Copy(const FrameData& rhs);
 		};

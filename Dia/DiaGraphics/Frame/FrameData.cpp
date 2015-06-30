@@ -10,6 +10,13 @@ namespace Dia
 		FrameData::FrameData()
 		{}
 
+		FrameData& FrameData::operator=(const FrameData& rhs)
+		{
+			Copy(rhs);
+
+			return *this;
+		}
+
 		void FrameData::Clear()
 		{
 			DebugFrameData::ClearDebugBuffer();
