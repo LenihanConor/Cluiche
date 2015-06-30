@@ -1,4 +1,4 @@
-#include "DiaCore/Time/TimeThreadLimiter.h"
+#include "DiaCore/Timer/TimeThreadLimiter.h"
 
 #include <chrono>
 #include <thread>
@@ -46,21 +46,21 @@ namespace Dia
 		//------------------------------------------------------------------------------
 		void TimeThreadLimiter::SleepThread()
 		{
-			long remainingTimeInMilliseconds = RemainingTimeInMilliseconds();
+			Dia::Core::TimeRelative remainingTime = RemainingTime();
 
-			if (remainingTimeInMilliseconds > 0)
+			if (remainingTime > Dia::Core::TimeRelative::Zero())
 			{
-				std::this_thread::sleep_for(std::chrono::milliseconds(remainingTimeInMilliseconds));
+				std::this_thread::sleep_for(std::chrono::milliseconds(remainingTime.AsIntInMilliseconds()));
 			}
 		}
 
 		//------------------------------------------------------------------------------
-		long TimeThreadLimiter::RemainingTimeInMilliseconds()const
+		Dia::Core::TimeRelative TimeThreadLimiter::RemainingTime()const
 		{
 			std::chrono::duration<double, std::milli> elapsedMilliseconds = mEnd - mStart;
 			std::chrono::duration<double, std::milli> sleepTime = std::chrono::duration<double, std::milli>(mFramesPerMillisecond) - elapsedMilliseconds;
 
-			return sleepTime.count();
+			return Dia::Core::TimeRelative::CreateFromMilliseconds(static_cast<float>(sleepTime.count()));
 		}
 	}
 }

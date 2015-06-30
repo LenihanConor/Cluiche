@@ -1,5 +1,7 @@
 #pragma once
 
+#include <DiaCore/Time/TimeRelative.h>
+
 #include <chrono>
 
 namespace Dia
@@ -21,7 +23,7 @@ namespace Dia
 			void					Stop();
 			void					SleepThread();
 
-			long					RemainingTimeInMilliseconds()const;		// If this negative the frame has gone over!
+			TimeRelative			RemainingTime()const;		// If this negative the frame has gone over!
 	
 		private:
 			TimeThreadLimiter();
