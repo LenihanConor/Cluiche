@@ -8,7 +8,7 @@
 // Forward Declare
 namespace sf
 {
-	class RenderWindow;
+	class RenderTarget;
 }
 
 namespace Dia
@@ -28,7 +28,7 @@ namespace Dia
 		class DebugFrameRendererVisitor : public Dia::Graphics::DebugFrameDataVisitor
 		{
 		public:
-			DebugFrameRendererVisitor(sf::RenderWindow* renderWindow) : mRenderWindow(renderWindow){}
+			DebugFrameRendererVisitor(sf::RenderTarget* renderTarget) : mRenderTarget(renderTarget){}
 
 			virtual void Visit(const Dia::Graphics::DebugFrameData& object)const override;
 
@@ -36,7 +36,7 @@ namespace Dia
 			virtual void Visit(const Dia::Graphics::DebugFrameDataCircle2D& object)const override;
 			virtual void Visit(const Dia::Graphics::DebugFrameDataLine2D& object)const override;
 
-			sf::RenderWindow* mRenderWindow;
+			sf::RenderTarget* mRenderTarget;
 		};
 	}
 }

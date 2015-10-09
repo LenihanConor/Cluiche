@@ -18,11 +18,11 @@ namespace Dia
 	{
 		void DebugFrameRendererVisitor::Visit(const Dia::Graphics::DebugFrameData& object)const
 		{
-			mRenderWindow->pushGLStates();
+			mRenderTarget->pushGLStates();
 
 			object.AcceptVisitor(*this);
 
-			mRenderWindow->popGLStates();
+			mRenderTarget->popGLStates();
 		}
 
 		void DebugFrameRendererVisitor::Visit(const Dia::Graphics::DebugFrameDataCircle2D& object)const
@@ -41,7 +41,7 @@ namespace Dia
 			shape.setOutlineColor(sfColour);
 
 			// Now draw the circle
-			mRenderWindow->draw(shape);
+			mRenderTarget->draw(shape);
 		}
 
 		void DebugFrameRendererVisitor::Visit(const Dia::Graphics::DebugFrameDataLine2D& object)const
@@ -56,7 +56,7 @@ namespace Dia
 			};
 
 			// Now draw the circle
-			mRenderWindow->draw(line, 2, sf::Lines);
+			mRenderTarget->draw(line, 2, sf::Lines);
 		}
 	}
 }
