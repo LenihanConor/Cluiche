@@ -12,6 +12,10 @@
 namespace sf
 {
 	class RenderWindow;
+	class RenderTexture;
+	class Shader;
+	class Sprite;
+	class Texture;
 	class Context;
 }
 
@@ -56,7 +60,12 @@ namespace Dia
 			RenderWindow();
 			RenderWindow(const Window::IWindow::Settings& windowSetting, const Graphics::ICanvas::Settings& canvasSettings);
 
-			sf::RenderWindow* mWindowContext;
+			sf::RenderWindow* mWindowContext;	// Window context used to render too
+			sf::RenderTexture* mBackBuffer;		// Texture we rednder too that will be used to render to final window context
+			
+			// UI Variables
+			sf::Shader* mUIShader;				// Shader used to merge the backbuffer and the UI sprite before pushing to window context
+			sf::Texture* mUIOverlayTexture;		//TODO: Replace this with a DIA texture when i create one
 		};
 	}
 }

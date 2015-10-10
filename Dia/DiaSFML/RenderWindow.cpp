@@ -23,6 +23,7 @@ namespace Dia
 		//-------------------------------------------------------------------------------------
 		RenderWindow::RenderWindow()
 			: mWindowContext(nullptr)
+			, mBackBuffer(nullptr)
 		{}
 
 		//-------------------------------------------------------------------------------------
@@ -39,7 +40,26 @@ namespace Dia
 			sf::ContextSettings context(canvasSettings.GetDepth(), canvasSettings.GetStencil(), canvasSettings.GetAntialiasing(), canvasSettings.GetOpenGLMajor(), canvasSettings.GetOpenGLMinor());
 
 			mWindowContext = DIA_NEW(sf::RenderWindow(videoMode, sf::String(titleTempWString), style, context));
-		
+			mBackBuffer = DIA_NEW(sf::RenderTexture());
+
+			bool isBackBufferCreated = mBackBuffer->create(windowSetting.GetDimensions().GetWidth(), windowSetting.GetDimensions().GetHeight());
+			
+			DIA_ASSERT(isBackBufferCreated, "Rendering backbuffer is not allocated");
+			DIA_ASSERT(sf::Shader::isAvailable(), "Shaders are not available on this platform");
+
+			mUIShader = DIA_NEW(sf::Shader());
+			mUIOverlayTexture = DIA_NEW(sf::Texture());
+			
+			//TODO: Replace with a better file load system
+			//TODO: Move this shader to a centralized place
+			bool isLoadedUIShader = mUIShader->loadFromFile("ui.frag", sf::Shader::Fragment); 
+			DIA_ASSERT(isLoadedUIShader, "Could not load ui.frag");
+
+			bool isTextureCreatedCorrectly = mUIOverlayTexture->create(mWindowContext->getSize().x, mWindowContext->getSize().y);
+			DIA_ASSERT(isTextureCreatedCorrectly, "Could not create ui texture");
+
+			mUIShader->setParameter("uiOverlayTex", *mUIOverlayTexture);
+
 			InputSource::SetWindowContext(mWindowContext);
 		}
 
@@ -66,7 +86,7 @@ namespace Dia
 				// Make it the active window for OpenGL calls
 				mWindowContext->setActive();
 
-				// TODO: Allow this to be set from our out settings not hardcoded
+				// TODO: Allow this to be set from our settings not hardcoded
 
 				// Enable Z-buffer read and write
 				glEnable(GL_DEPTH_TEST);
@@ -110,17 +130,19 @@ namespace Dia
 		{
 			// clear the buffers
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+			mWindowContext->clear();
 		}
 
 		//-------------------------------------------------------------------------------------
 		// Handle a frame buffer
 		void RenderWindow::ProcessFrame(const Dia::Graphics::FrameData& nextFrame)
 		{
-			DIA_ASSERT(mWindowContext, "mWindowContext is NULL");
+			DIA_ASSERT(mBackBuffer, "mBackBuffer is NULL");
 
-			if (mWindowContext)
+			if (mBackBuffer)
 			{			
-				DebugFrameRendererVisitor renderDebugObjects(mWindowContext);
+				DebugFrameRendererVisitor renderDebugObjects(mBackBuffer);
 				
 				renderDebugObjects.Visit(nextFrame);	
 			}
@@ -129,11 +151,24 @@ namespace Dia
 		//-------------------------------------------------------------------------------------
 		// Finish the frame
 		void RenderWindow::EndFrame(const Dia::Graphics::FrameData& nextFrame)
-		{
+		{			
+			DIA_ASSERT(mUIShader, "mUIShader is NULL");
 			DIA_ASSERT(mWindowContext, "mWindowContext is NULL");
 
 			if (mWindowContext)
 			{
+				mUIShader->setParameter("backBufferTex", mBackBuffer->getTexture());
+				
+				// Push the ui overlay texture to a sprite for rendering
+				sf::Sprite uiSprite;
+				uiSprite.setTexture(*mUIOverlayTexture);
+
+				mWindowContext->pushGLStates();
+				mWindowContext->draw(uiSprite, mUIShader);
+				mWindowContext->popGLStates();
+
+				mBackBuffer->clear();
+
 				// end the current frame (internally swaps the front and back buffers)
 				mWindowContext->display();
 			}
