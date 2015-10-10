@@ -93,6 +93,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="RenderThreadStruct.cpp" />
+    <ClCompile Include="SimThreadStruct.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaCore\DiaCore.vcxproj">
@@ -112,6 +114,13 @@
     <ProjectReference Include="..\..\Dia\DiaWindow\DiaWindow.vcxproj">
       <Project>{52178c86-628d-4fe4-ae55-d3485faec070}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="RenderThreadStruct.h" />
+    <ClInclude Include="SimThreadStruct.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\Dia\DiaSFML\ui.frag" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
