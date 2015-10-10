@@ -5,9 +5,9 @@
 #include <Awesomium/BitmapSurface.h>
 #include <Awesomium/STLHelpers.h>
 
-#include "application.h"
-#include "view.h"
-#include "method_dispatcher.h"
+#include "DiaUIAwesomium/External/application.h"
+#include "DiaUIAwesomium/External/view.h"
+#include "DiaUIAwesomium/External/method_dispatcher.h"
 #include <Awesomium/WebCore.h>
 #include <Awesomium/STLHelpers.h>
 #ifdef _WIN32
@@ -20,59 +20,59 @@
 #include <DiaCore/Strings/stringutils.h>
 
 sf::Color backColour;
-using namespace Awesomium;
 class TutorialApp : public Application::Listener 
 {
 public:
-	Application* app_;
-	WebView* view_;
+	Application* mPlatformAbstractedUIApplicaton;
+	Awesomium::WebView* view_;
 	MethodDispatcher method_dispatcher_;
 	HWND windowHandle_;
+	bool isFinishedLoad;
 
 public:
 	TutorialApp(HWND windowHandle)
-		: app_(Application::Create())
+		: mPlatformAbstractedUIApplicaton(Application::Create())
 		, view_(nullptr)
 		, windowHandle_(windowHandle)
 	{
-		app_->set_listener(this);
-		isFinished = false;
+		mPlatformAbstractedUIApplicaton->set_listener(this);
+		isFinishedLoad = false;
 	}
 
 	virtual ~TutorialApp()
 	{
-		if (app_)
-			delete app_;
+		if (mPlatformAbstractedUIApplicaton)
+			delete mPlatformAbstractedUIApplicaton;
 	}
 
 	void Run() 
 	{
-		app_->Run();
+		mPlatformAbstractedUIApplicaton->Run();
 	}
 
-	void DoSomething()
+	void Load()
 	{
-		app_->Load();
+		mPlatformAbstractedUIApplicaton->Load();
 	}
 
 	// Inherited from Application::Listener
 	virtual void OnLoaded() 
 	{
-		view_ = app_->web_core()->CreateWebView(800, 600);
+		view_ = mPlatformAbstractedUIApplicaton->web_core()->CreateWebView(800, 600);
 		view_->SetTransparent(true);
 
 		BindMethods(view_);
 
-		WebURL url(WSLit("file:///Z:/GitHub/Cluiche/Cluiche/WebixTest/app.html")); 
+		Awesomium::WebURL url(Awesomium::WSLit("file:///Z:/GitHub/Cluiche/Cluiche/WebixTest/app.html"));
 		view_->LoadURL(url);
 
 		while (view_->IsLoading())
-			app_->web_core()->Update();
+			mPlatformAbstractedUIApplicaton->web_core()->Update();
 
 		Sleep(300);
-		app_->web_core()->Update();
+		mPlatformAbstractedUIApplicaton->web_core()->Update();
 
-		isFinished = true;
+		isFinishedLoad = true;
 	}
 
 	// Inherited from Application::Listener
@@ -84,22 +84,22 @@ public:
 	virtual void OnShutdown() {
 	}
 
-	void BindMethods(WebView* web_view) {
+	void BindMethods(Awesomium::WebView* web_view) {
 		// Create a global js object named 'app'
-		JSValue result = web_view->CreateGlobalJavascriptObject(WSLit("app"));
+		Awesomium::JSValue result = web_view->CreateGlobalJavascriptObject(Awesomium::WSLit("app"));
 		if (result.IsObject()) {
 			// Bind our custom method to it.
-			JSObject& app_object = result.ToObject();
+			Awesomium::JSObject& app_object = result.ToObject();
 			method_dispatcher_.Bind(app_object,
-				WSLit("backgroundGrey"),
+				Awesomium::WSLit("backgroundGrey"),
 				JSDelegate(this, &TutorialApp::BackgroundGrey));
 
 			method_dispatcher_.Bind(app_object,
-				WSLit("backgroundWhite"),
+				Awesomium::WSLit("backgroundWhite"),
 				JSDelegate(this, &TutorialApp::BackgroundWhite));
 
 			method_dispatcher_.Bind(app_object,
-				WSLit("backgroundBluish"),
+				Awesomium::WSLit("backgroundBluish"),
 				JSDelegate(this, &TutorialApp::BackgroundBluish));
 		}
 
@@ -108,41 +108,51 @@ public:
 	}
 
 	// Bound to app.sayHello() in JavaScript
-	void BackgroundGrey(WebView* caller,
-		const JSArray& args) {
+	void BackgroundGrey(Awesomium::WebView* caller,
+		const Awesomium::JSArray& args) {
 		backColour = sf::Color(211, 211, 211);
 	}
 
 	// Bound to app.sayHello() in JavaScript
-	void BackgroundWhite(WebView* caller,
-		const JSArray& args) {
+	void BackgroundWhite(Awesomium::WebView* caller,
+		const Awesomium::JSArray& args) {
 		backColour = sf::Color(255, 255, 255);
 	}
 
 	// Bound to app.sayHello() in JavaScript
-	void BackgroundBluish(WebView* caller,
-		const JSArray& args) {
-		backColour = sf::Color(255, 128, 128);
+	void BackgroundBluish(Awesomium::WebView* caller,
+		const Awesomium::JSArray& args) 
+	{
+	//	backColour = sf::Color(255, 128, 128);
+		Awesomium::WebURL url(Awesomium::WSLit("file:///Z:/GitHub/Cluiche/Cluiche/WebixTest/app2.html"));
+		view_->LoadURL(url);
+
+		while (view_->IsLoading())
+			mPlatformAbstractedUIApplicaton->web_core()->Update();
+
+		Sleep(300);
+		mPlatformAbstractedUIApplicaton->web_core()->Update();
+
 	}
 
-	const BitmapSurface* surface()const
+	const Awesomium::BitmapSurface* surface()const
 	{
-		return static_cast<BitmapSurface*>(view_->surface());
+		return static_cast<Awesomium::BitmapSurface*>(view_->surface());
 	};
 
 
 	void SetMouseClick(int _x, int _y)
 	{
 		view_->InjectMouseMove(_x, _y);
-		view_->InjectMouseDown(kMouseButton_Left);
-		view_->InjectMouseUp(kMouseButton_Left);
+		view_->InjectMouseDown(Awesomium::kMouseButton_Left);
+		view_->InjectMouseUp(Awesomium::kMouseButton_Left);
 	}
 
 	void SetMouseMove(int _x, int _y)
 	{
 		view_->InjectMouseMove(_x, _y);
 	}
-	bool isFinished;
+	
 };
 
 int main(int argc, const char* argv[])
@@ -151,7 +161,7 @@ int main(int argc, const char* argv[])
 
 	backColour = sf::Color(211, 211, 211);
 
-	// create the window
+	////// create the window -> Start
 	wchar_t titleBuffer[1024];
 	Dia::Core::StringToWString("OpenGL", &titleBuffer[0]);
 	std::wstring titleTempWString(&titleBuffer[0]);
@@ -160,10 +170,12 @@ int main(int argc, const char* argv[])
 
 	window.setVerticalSyncEnabled(true);
 	window.setActive();
-	
+	////// create the window -> End
+
+	///// Initialize UI System -> start
 	TutorialApp app(window.getSystemHandle());
-	app.DoSomething();
-	while (!app.isFinished)
+	app.Load();
+	while (!app.isFinishedLoad)
 	{
 		int x = 0;
 		x++;
@@ -172,10 +184,8 @@ int main(int argc, const char* argv[])
 	sf::RenderTexture backBuffer;
 
 	bool b = backBuffer.create(window.getSize().x, window.getSize().y);
-	
 
 	sf::Sprite uiSprite;
-	sf::Sprite renderSprite;
 	
 	if (!sf::Shader::isAvailable())
 	{
@@ -190,6 +200,17 @@ int main(int argc, const char* argv[])
 		x++;
 	}
 
+	sf::Texture uiOverlayTex;
+
+	bool a = uiOverlayTex.create(window.getSize().x, window.getSize().y);
+	uiSprite.setTexture(uiOverlayTex);
+	shader.setParameter("uiOverlayTex", uiOverlayTex);
+	//// Initialize UI System -> end
+
+
+
+
+	// Rando Drawing stuff
 	sf::CircleShape shape(50);
 	shape.setPosition(10, 500);
 	shape.setFillColor(sf::Color(150, 50, 250));
@@ -214,13 +235,6 @@ int main(int argc, const char* argv[])
 	glLoadIdentity();
 	GLfloat ratio = static_cast<float>(window.getSize().x) / window.getSize().y;
 	glFrustum(-ratio, ratio, -1.f, 1.f, 1.f, 500.f);
-
-	sf::Texture uiOverlayTex;
-
-	bool a = uiOverlayTex.create(window.getSize().x, window.getSize().y);
-	uiSprite.setTexture(uiOverlayTex);
-	shader.setParameter("uiOverlayTex", uiOverlayTex);
-
 	int i = 0;
 	// run the main loop
 	bool running = true;
@@ -251,14 +265,30 @@ int main(int argc, const char* argv[])
 			}
 		}
 
-		app.Run();
-
-		// clear the buffers
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		
+// clear the buffers
 		window.clear(backColour);
 
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	
-		const BitmapSurface* surface = app.surface();
+
+
+
+
+
+		backBuffer.pushGLStates();
+			backBuffer.draw(shape);
+		backBuffer.popGLStates();
+
+
+
+
+
+
+		///// Render UI -> start
+		app.Run();
+
+
+		const Awesomium::BitmapSurface* surface = app.surface();
 
 		int w = surface->width();
 		int h = surface->height();
@@ -267,10 +297,6 @@ int main(int argc, const char* argv[])
 		surface->CopyTo(buffer, w * 4, 4, false, false);
 
 		uiOverlayTex.update(buffer);
-
-		backBuffer.pushGLStates();
-			backBuffer.draw(shape);
-		backBuffer.popGLStates();
 
 		if (i == 0)
 		{
@@ -287,13 +313,16 @@ int main(int argc, const char* argv[])
 		window.pushGLStates();
 		window.draw(uiSprite, &shader);
 		window.popGLStates();
+		///// Render UI -> start
 
 		delete[] buffer;
 
+
+
+
+
 		// end the current frame (internally swaps the front and back buffers)
 		window.display();
-
-		
 	}
 
 	

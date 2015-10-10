@@ -62,7 +62,7 @@
       <BrowseInformation>true</BrowseInformation>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>$(OutDir)DiaCore.lib;$(OutDir)DiaMaths.lib;$(OutDir)DiaGraphics.lib;$(OutDir)DiaSFML.lib;$(OutDir)DiaWindow.lib;sfml-main-d.lib;sfml-system-d.lib;sfml-window-d.lib;sfml-graphics-d.lib;glu32.lib;opengl32.lib;awesomium.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)DiaCore.lib;$(OutDir)DiaMaths.lib;$(OutDir)DiaGraphics.lib;$(OutDir)DiaSFML.lib;$(OutDir)DiaWindow.lib;$(OutDir)DiaUI.lib;$(OutDir)DiaUIAwesomium.lib;sfml-main-d.lib;sfml-system-d.lib;sfml-window-d.lib;sfml-graphics-d.lib;glu32.lib;opengl32.lib;awesomium.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <TargetMachine>MachineX86</TargetMachine>
       <AdditionalLibraryDirectories>$(AWE_DIR)build\lib;$(SolutionDir)..\SFML\Build\lib\Debug;$(SolutionDir)..\SFML\Build\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -92,9 +92,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="application_win.cc" />
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="view_win.cc" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaCore\DiaCore.vcxproj">
@@ -114,12 +112,6 @@
     <ProjectReference Include="..\..\Dia\DiaWindow\DiaWindow.vcxproj">
       <Project>{52178c86-628d-4fe4-ae55-d3485faec070}</Project>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="application.h" />
-    <ClInclude Include="js_delegate.h" />
-    <ClInclude Include="method_dispatcher.h" />
-    <ClInclude Include="view.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ui.frag" />
