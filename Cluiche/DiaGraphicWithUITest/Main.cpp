@@ -6,6 +6,7 @@
 #include <DiaCore/Frame/FrameStream.h>
 #include <DiaInput/IInputSource.h>
 #include <DiaGraphics/Interface/ICanvas.h>
+#include <DiaUIAwesomium/AwesomiumUISystem.h>
 
 #include <DiaInput/ConsoleGamepadManager.h>
 #include <DiaInput/InputSourceManager.h>
@@ -34,6 +35,8 @@ int main(int argc, const char* argv[])
 	// Set up generic input sources
 	Dia::Input::InputSourceManager inputSourceManager;
 	Dia::Input::ConsoleGamepadManager gamepadManager;
+
+	Dia::UI::Awesomium::UISystem awesomiumUISystem;
 
 	// We are using SFML for keyboard and mouse support
 	renderWindow->ListenForInputSources(Dia::Core::BitArray8(Dia::SFML::InputSource::ESources::kSystem | Dia::SFML::InputSource::ESources::kKeyboard | Dia::SFML::InputSource::ESources::kMouse));	// We are getting mouse and keyboard only from SFML

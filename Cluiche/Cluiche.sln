@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.22823.1
+VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Library", "Library", "{2291F464-9B87-42F1-AA90-34FE22DD5F9B}"
 EndProject
@@ -58,10 +58,17 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Prototypes", "Prototypes", "{EBA25838-6955-40C1-B5A9-68B931306AEC}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WebixTest", "WebixTest\WebixTest.vcxproj", "{AB8E1CE1-1FCB-4B17-9054-9CE101EE9E79}"
+	ProjectSection(ProjectDependencies) = postProject
+		{A5B2650D-8283-483F-827E-CA29140CFA63} = {A5B2650D-8283-483F-827E-CA29140CFA63}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DiaInput", "..\Dia\DiaInput\DiaInput.vcxproj", "{936FA28F-E171-401F-8185-D2AF48DB4098}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DiaGraphicTestWithUI", "DiaGraphicWithUITest\DiaGraphicTestWithUI.vcxproj", "{647D7522-76F5-459E-8023-73BF424B9AF0}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DiaUI", "..\Dia\DiaUI\DiaUI.vcxproj", "{835CA128-691F-4CEA-A0B3-CE6E41C394E7}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DiaUIAwesomium", "..\Dia\DiaUIAwesomium\DiaUIAwesomium.vcxproj", "{A5B2650D-8283-483F-827E-CA29140CFA63}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -175,6 +182,22 @@ Global
 		{647D7522-76F5-459E-8023-73BF424B9AF0}.Release|Win32.Build.0 = Release|Win32
 		{647D7522-76F5-459E-8023-73BF424B9AF0}.RelWithDebInfo|Win32.ActiveCfg = Release|Win32
 		{647D7522-76F5-459E-8023-73BF424B9AF0}.RelWithDebInfo|Win32.Build.0 = Release|Win32
+		{835CA128-691F-4CEA-A0B3-CE6E41C394E7}.Debug|Win32.ActiveCfg = Debug|Win32
+		{835CA128-691F-4CEA-A0B3-CE6E41C394E7}.Debug|Win32.Build.0 = Debug|Win32
+		{835CA128-691F-4CEA-A0B3-CE6E41C394E7}.MinSizeRel|Win32.ActiveCfg = Release|Win32
+		{835CA128-691F-4CEA-A0B3-CE6E41C394E7}.MinSizeRel|Win32.Build.0 = Release|Win32
+		{835CA128-691F-4CEA-A0B3-CE6E41C394E7}.Release|Win32.ActiveCfg = Release|Win32
+		{835CA128-691F-4CEA-A0B3-CE6E41C394E7}.Release|Win32.Build.0 = Release|Win32
+		{835CA128-691F-4CEA-A0B3-CE6E41C394E7}.RelWithDebInfo|Win32.ActiveCfg = Release|Win32
+		{835CA128-691F-4CEA-A0B3-CE6E41C394E7}.RelWithDebInfo|Win32.Build.0 = Release|Win32
+		{A5B2650D-8283-483F-827E-CA29140CFA63}.Debug|Win32.ActiveCfg = Debug|Win32
+		{A5B2650D-8283-483F-827E-CA29140CFA63}.Debug|Win32.Build.0 = Debug|Win32
+		{A5B2650D-8283-483F-827E-CA29140CFA63}.MinSizeRel|Win32.ActiveCfg = Release|Win32
+		{A5B2650D-8283-483F-827E-CA29140CFA63}.MinSizeRel|Win32.Build.0 = Release|Win32
+		{A5B2650D-8283-483F-827E-CA29140CFA63}.Release|Win32.ActiveCfg = Release|Win32
+		{A5B2650D-8283-483F-827E-CA29140CFA63}.Release|Win32.Build.0 = Release|Win32
+		{A5B2650D-8283-483F-827E-CA29140CFA63}.RelWithDebInfo|Win32.ActiveCfg = Release|Win32
+		{A5B2650D-8283-483F-827E-CA29140CFA63}.RelWithDebInfo|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -194,5 +217,7 @@ Global
 		{AB8E1CE1-1FCB-4B17-9054-9CE101EE9E79} = {EBA25838-6955-40C1-B5A9-68B931306AEC}
 		{936FA28F-E171-401F-8185-D2AF48DB4098} = {2291F464-9B87-42F1-AA90-34FE22DD5F9B}
 		{647D7522-76F5-459E-8023-73BF424B9AF0} = {EBA25838-6955-40C1-B5A9-68B931306AEC}
+		{835CA128-691F-4CEA-A0B3-CE6E41C394E7} = {2291F464-9B87-42F1-AA90-34FE22DD5F9B}
+		{A5B2650D-8283-483F-827E-CA29140CFA63} = {2291F464-9B87-42F1-AA90-34FE22DD5F9B}
 	EndGlobalSection
 EndGlobal
