@@ -12,27 +12,12 @@
                     { 
                         view:"toolbar", elements:[
                             { view:"button", value:"Grey", width: 70, click:"grey_row"},
-                            { view:"button", value:"White", width: 70, click:"white_row" },
-                            { view:"button", value:"Red", width: 70, click:"red_row" }]
-                    },
-                {
-                view:"list", 
-                template:"#title# - #year#", // which data to show
-                select:true, //enables selection 
-                height: 400,
-                    width: 200,
-                data: [
-                    { id:1, title:"The Shawshank Redemption", year:1994},
-                    { id:2, title:"The Godfather", year:1972},
-                    { id:3, title:"The Godfather: Part II", year:1974},
-                    { id:4, title:"The Good, the Bad and the Ugly", year:1966},
-                    { id:5, title:"My Fair Lady", year:1964},
-                    { id:6, title:"12 Angry Men", year:1957}
+                            { view:"button", value:"White", width: 70, click:"white_row" }]
+                    }
                 ]
-                } 
-                    ]
             });
             
+
             function grey_row()
             {
                 app.backgroundGrey();
