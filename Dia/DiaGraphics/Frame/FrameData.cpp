@@ -20,11 +20,13 @@ namespace Dia
 		void FrameData::Clear()
 		{
 			DebugFrameData::ClearDebugBuffer();
+//			UIFrameData::ClearUIBuffer();
 		}
 
 		void FrameData::Copy(const FrameData& rhs)
 		{
 			DebugFrameData::CopyDebugBuffer(rhs);
+//			UIFrameData::CopyUIBuffer(rhs);
 		}
 	}
 }

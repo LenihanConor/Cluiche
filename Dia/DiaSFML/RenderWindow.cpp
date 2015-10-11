@@ -24,6 +24,8 @@ namespace Dia
 		RenderWindow::RenderWindow()
 			: mWindowContext(nullptr)
 			, mBackBuffer(nullptr)
+			, mUIShader(nullptr)
+			, mUIOverlayTexture(nullptr)
 		{}
 
 		//-------------------------------------------------------------------------------------
@@ -59,6 +61,7 @@ namespace Dia
 			DIA_ASSERT(isTextureCreatedCorrectly, "Could not create ui texture");
 
 			mUIShader->setParameter("uiOverlayTex", *mUIOverlayTexture);
+			mUIShader->setParameter("backBufferTex", mBackBuffer->getTexture());
 
 			InputSource::SetWindowContext(mWindowContext);
 		}
@@ -66,12 +69,17 @@ namespace Dia
 		//-------------------------------------------------------------------------------------
 		RenderWindow::~RenderWindow()
 		{
-			DIA_ASSERT(mWindowContext, "Window is NULL");
+			DIA_ASSERT(mWindowContext, "Window is NULL");	
+			DIA_DELETE(mWindowContext);
 
-			if (mWindowContext)
-			{
-				DIA_DELETE(mWindowContext);
-			}
+			DIA_ASSERT(mBackBuffer, "mBackBuffer is NULL");
+			DIA_DELETE(mBackBuffer);
+
+			DIA_ASSERT(mUIShader, "mUIShader is NULL");
+			DIA_DELETE(mUIShader);
+
+			DIA_ASSERT(mUIOverlayTexture, "mUIOverlayTexture is NULL");
+			DIA_DELETE(mUIOverlayTexture);
 		}
 
 		//-------------------------------------------------------------------------------------
@@ -157,12 +165,12 @@ namespace Dia
 
 			if (mWindowContext)
 			{
-				mUIShader->setParameter("backBufferTex", mBackBuffer->getTexture());
-				
 				// Push the ui overlay texture to a sprite for rendering
 				sf::Sprite uiSprite;
 				uiSprite.setTexture(*mUIOverlayTexture);
 
+				mUIOverlayTexture->update(nextFrame.GetUIData().GetBuffer());	
+				
 				mWindowContext->pushGLStates();
 				mWindowContext->draw(uiSprite, mUIShader);
 				mWindowContext->popGLStates();
@@ -319,6 +327,14 @@ namespace Dia
 			{
 				mWindowContext->setMouseCursorVisible(visible);
 			}
+		}
+
+		//-------------------------------------------------------------------------------------
+		Window::SystemHandle RenderWindow::GetSystemHandle() const
+		{
+			DIA_ASSERT(mWindowContext, "mWindowContext is NULL");
+
+			return mWindowContext->getSystemHandle();
 		}
 	}
 }

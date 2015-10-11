@@ -3,6 +3,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 #include "DebugFrameData.h"
+#include "UIFrameData.h"
 
 namespace Dia
 {
@@ -11,7 +12,7 @@ namespace Dia
 		///
 		/// Frame - A single frame that stores all the info that the render
 		///
-		class FrameData: public DebugFrameData
+		class FrameData: public DebugFrameData, public UIFrameData
 		{
 		public:
 			FrameData();

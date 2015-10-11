@@ -16,6 +16,9 @@
     <ClCompile Include="Frame\DebugFrameDataLine2D.cpp">
       <Filter>Frame</Filter>
     </ClCompile>
+    <ClCompile Include="Frame\UIFrameData.cpp">
+      <Filter>Frame</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Interface\IView.h">
@@ -49,6 +52,9 @@
       <Filter>Frame</Filter>
     </ClInclude>
     <ClInclude Include="Frame\DebugFrameDataLine2D.h">
+      <Filter>Frame</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\UIFrameData.h">
       <Filter>Frame</Filter>
     </ClInclude>
   </ItemGroup>

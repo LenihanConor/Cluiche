@@ -25,6 +25,7 @@ namespace Dia
 			DebugFrameData();
 			~DebugFrameData();
 
+			// Required by system
 			void ClearDebugBuffer();
 			void CopyDebugBuffer(const DebugFrameData& rhs);
 
