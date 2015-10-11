@@ -7,25 +7,38 @@
 
 namespace Dia
 {
+	namespace Window
+	{
+		class IWindow;
+	}
+
 	namespace UI
 	{
+		class UIDataBuffer;
+
 		namespace Awesomium
 		{
+			class UISystemImpl;
+
 			class UISystem : public IUISystem
 			{
 			public:
-				UISystem() {};
-				virtual ~UISystem() {};
+				UISystem(const Window::IWindow* windowContext);
+				virtual ~UISystem();
 
-				virtual void LoadScreen() {};
-				virtual void OnLoadedScreen() {};
-				virtual void IsLoadingScreen() {};
-				virtual void UnloadScreen() {};
+				virtual void Initialize() override;
 
-				virtual void Update() {};
+				virtual void LoadScreen() override {};
+				virtual void OnLoadedScreen() override {};
+				virtual void IsLoadingScreen() override {};
+				virtual void UnloadScreen()override {};
 
-				virtual void FetchTexture() {};
+				virtual void Update() override;
 
+				virtual void FetchUIDataBuffer(UIDataBuffer& outBuffer)const override;
+
+			private:
+				UISystemImpl* mUISystemImpl; // Using the impl pattern here to not spread the awesomium includes further afield
 			};
 		}
 	}
