@@ -13,6 +13,7 @@
       <Filter>Interface</Filter>
     </ClInclude>
     <ClInclude Include="DummyClass.h" />
+    <ClInclude Include="SystemHandle.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DummyClass.cpp" />
