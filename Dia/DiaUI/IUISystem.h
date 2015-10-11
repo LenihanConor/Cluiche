@@ -1,17 +1,12 @@
 //////////////////
 #pragma once
 
+#include "DiaUI/IURendering.h"
 
 namespace Dia
 {
 	namespace UI
 	{
-		class IUIRendering
-		{
-		public:
-			virtual void FetchTexture() = 0;
-		};
-
 		class IUIInput
 		{
 		public:
@@ -22,6 +17,8 @@ namespace Dia
 		public:
 			IUISystem() {};
 			virtual ~IUISystem() {};
+
+			virtual void Initialize() = 0;
 
 			virtual void LoadScreen() = 0;
 			virtual void OnLoadedScreen() = 0;

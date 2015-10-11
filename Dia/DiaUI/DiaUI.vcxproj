@@ -77,11 +77,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="DummyClass.cpp" />
+    <ClCompile Include="UIDataBuffer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DummyClass.h" />
     <ClInclude Include="IUISystem.h" />
+    <ClInclude Include="IURendering.h" />
+    <ClInclude Include="UIDataBuffer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
