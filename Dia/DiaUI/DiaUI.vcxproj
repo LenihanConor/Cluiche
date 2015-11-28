@@ -81,7 +81,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="IUISystem.h" />
-    <ClInclude Include="IURendering.h" />
     <ClInclude Include="UIDataBuffer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -15,7 +15,8 @@ namespace Dia
 			UIDataBuffer(const UIDataBuffer&);
 			UIDataBuffer& operator=(const UIDataBuffer&);
 			~UIDataBuffer();
-
+			
+			void CreateFromPreallocatedBuffer(int width, int height, unsigned char* data, int datasize);
 			void Create(int width, int height, const unsigned char* data, int datasize);
 			void Destroy();
 
