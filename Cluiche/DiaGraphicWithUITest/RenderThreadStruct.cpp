@@ -10,16 +10,14 @@
 RenderThreadStruct::RenderThreadStruct(const bool& running,
 										const Dia::Core::TimeServer& timeServer,
 										Dia::Core::FrameStream<Dia::Graphics::FrameData>& frameStream,
-										Dia::Graphics::ICanvas* pCanvas,
-										const Dia::Window::IWindow* windowContext)
+										Dia::Graphics::ICanvas* pCanvas)
 	: mRunning(running)
 	, mTimeServer(timeServer)
 	, mFrameStream(frameStream)
 	, mThreadLimiter(60.0)
 	, mpCanvas(pCanvas)
-	, awesomiumUISystem(windowContext)
 {
-	awesomiumUISystem.Initialize();
+	
 }
 
 void RenderThreadStruct::operator()()
@@ -45,9 +43,7 @@ void RenderThreadStruct::Run()
 		// UI
 	//	awesomiumUISystem.Update();
 
-		Dia::UI::UIDataBuffer uiBuffer;
-		awesomiumUISystem.FetchUIDataBuffer(uiBuffer);
-		const_cast< Dia::Graphics::FrameData*>(pRenderFrameBuffer)->RequestDrawUI(uiBuffer);
+		
 
 		mpCanvas->StartFrame(*pRenderFrameBuffer);
 		mpCanvas->ProcessFrame(*pRenderFrameBuffer);

@@ -10,14 +10,16 @@ Dia::Graphics::RGBA dynamicCircleColour = Dia::Graphics::RGBA::Red;
 
 
 SimThreadStruct::SimThreadStruct(bool& running,
-				const Dia::Core::TimeServer& timeServer,
-				Dia::Core::FrameStream<Dia::Input::EventData>& inputToSimFrameStream,
-				Dia::Core::FrameStream<Dia::Graphics::FrameData>& SimToRenderFrameStream)
+	const Dia::Core::TimeServer& timeServer,
+	Dia::UI::IUISystem& uiSystem,
+	Dia::Core::FrameStream<Dia::Input::EventData>& inputToSimFrameStream,
+	Dia::Core::FrameStream<Dia::Graphics::FrameData>& SimToRenderFrameStream)
 	: mRunning(running)
 	, mTimeServer(timeServer)
+	, mUISystem(uiSystem)
 	, mInputToSimFrameStream(inputToSimFrameStream)
 	, mSimToRenderFrameStream(SimToRenderFrameStream)
-	, mThreadLimiter(30.0) 
+	, mThreadLimiter(30.0)
 {}
 
 void SimThreadStruct::operator()()
@@ -74,6 +76,16 @@ void SimThreadStruct::Run()
 					}
 
 					break;
+				case Dia::Input::Event::EType::kMouseMoved:
+					{
+			//			mUISystem.InjectMouseMove(event.mouseMove.x, event.mouseMove.y);
+					}
+					break;
+				case Dia::Input::Event::EType::kMouseButtonPressed:
+					{
+			//			mUISystem.InjectMouseDown(event.mouseButton.AsMouseButton());
+					}
+					break;
 				default:
 					break;
 				}
@@ -87,6 +99,11 @@ void SimThreadStruct::Run()
 		renderFrameBuffer.RequestDraw(Dia::Graphics::DebugFrameDataCircle2D(Dia::Maths::Vector2D(100.0f, 100.0f), 75.0f));
 		renderFrameBuffer.RequestDraw(Dia::Graphics::DebugFrameDataCircle2D(dynamicCirclePos, 25.0f, dynamicCircleColour));
 		renderFrameBuffer.RequestDraw(Dia::Graphics::DebugFrameDataLine2D(Dia::Maths::Vector2D(100.0f, 100.0f), dynamicCirclePos));
+
+		// Update 
+		Dia::UI::UIDataBuffer uiBuffer;
+		mUISystem.FetchUIDataBuffer(uiBuffer);
+		renderFrameBuffer.RequestDrawUI(uiBuffer);
 
 		mSimToRenderFrameStream.InsertCopyOfDataToStream(renderFrameBuffer, mTimeServer.GetTime());
 
