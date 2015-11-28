@@ -5,6 +5,8 @@
 
 #include <DiaUI/IUISystem.h>
 
+#include <mutex>
+
 namespace Dia
 {
 	namespace Window
@@ -28,16 +30,23 @@ namespace Dia
 
 				virtual void Initialize() override;
 
-				virtual void LoadScreen() override {};
-				virtual void OnLoadedScreen() override {};
-				virtual void IsLoadingScreen() override {};
-				virtual void UnloadScreen()override {};
+				virtual void LoadPage(const Page& newPage) override;
+				virtual void OnLoadedPage() override {};
+				virtual void IsLoadingPage() override {};
+				virtual void UnloadPage() override {};
 
 				virtual void Update() override;
 
 				virtual void FetchUIDataBuffer(UIDataBuffer& outBuffer)const override;
 
+				//Input
+				virtual void InjectMouseMove(int x, int y)override;
+				virtual void InjectMouseDown(Dia::Input::EMouseButton button, int x, int y)override;
+				virtual void InjectMouseUp(Dia::Input::EMouseButton button, int x, int y)override;
+				virtual void InjectMouseClick(Dia::Input::EMouseButton button, int x, int y)override;
+				virtual void InjectMouseWheel(int scroll_vert, int scroll_horz)override;
 			private:
+				mutable std::mutex mSystemMutex;	// Mutex to the system to allow multithreading
 				UISystemImpl* mUISystemImpl; // Using the impl pattern here to not spread the awesomium includes further afield
 			};
 		}

@@ -22,9 +22,6 @@ class Application {
     // Event is fired when app (and WebCore) have been loaded.
     virtual void OnLoaded() = 0;
 
-    // Event is fired for each iteration of the Run loop.
-    virtual void OnUpdate() = 0;
-
     // Event is fired when the app is shutting down.
     virtual void OnShutdown() = 0;
   };
@@ -35,7 +32,7 @@ class Application {
   static Application* Create();
 
   // Begin the Run loop.
-  virtual void Run() = 0;
+  virtual void UpdateCore() = 0;
 
   // Ends the Run loop.
   virtual void Quit() = 0;

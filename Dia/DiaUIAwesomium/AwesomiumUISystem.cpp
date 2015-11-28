@@ -32,7 +32,7 @@ namespace Dia
 			public:
 				UISystemImpl(const Window::IWindow* windowContext)
 					: mPlatformAbstractedUIApplicaton(Application::Create())
-					, view_(nullptr)
+					, mView(nullptr)
 					, mSystemHandle(windowContext->GetSystemHandle())
 					, mIsInitialized(false)
 				{
@@ -52,6 +52,52 @@ namespace Dia
 						mPlatformAbstractedUIApplicaton->Load();
 				}
 
+				void LoadPage(const Page& newPage)
+				{
+					const Dia::Core::Containers::String256& newPageUrl = newPage.GetUrl();
+					::Awesomium::WebURL url(::Awesomium::WSLit(newPageUrl.AsCStr()));
+
+
+
+
+					TODO - REMOVE THIS
+//					newPage.BindMethods();
+					newPage.GetBoundMenthods();
+
+					JSValue result = web_view->CreateGlobalJavascriptObject(WSLit("app"));
+					if (result.IsObject()) {
+						// Bind our custom method to it.
+						JSObject& app_object = result.ToObject();
+						method_dispatcher_.Bind(app_object,
+							WSLit("backgroundGrey"),
+							JSDelegate(this, &TutorialApp::BackgroundGrey));
+
+						method_dispatcher_.Bind(app_object,
+							WSLit("backgroundWhite"),
+							JSDelegate(this, &TutorialApp::BackgroundWhite));
+
+						method_dispatcher_.Bind(app_object,
+							WSLit("backgroundBluish"),
+							JSDelegate(this, &TutorialApp::BackgroundBluish));
+					}
+
+					// Bind our method dispatcher to the WebView
+					web_view->set_js_method_handler(&method_dispatcher_);
+					TODO - REMOVE THIS
+
+
+
+
+
+
+
+
+					mView->LoadURL(url);
+			
+					while (mView->IsLoading())
+						mPlatformAbstractedUIApplicaton->web_core()->Update();
+				}
+
 				bool IsInitialized()const
 				{
 					return mIsInitialized;
@@ -59,59 +105,119 @@ namespace Dia
 
 				void Update()
 				{
-					mPlatformAbstractedUIApplicaton->Run();
+					mPlatformAbstractedUIApplicaton->UpdateCore();
 				}
 
 				// Inherited from Application::Listener
 				virtual void OnLoaded()
 				{
-					view_ = mPlatformAbstractedUIApplicaton->web_core()->CreateWebView(800, 600);
-					view_->SetTransparent(true);
-
-				//	BindMethods(view_);
-
-					::Awesomium::WebURL url(::Awesomium::WSLit("file:///Z:/GitHub/Cluiche/Cluiche/WebixTest/app.html"));
-					view_->LoadURL(url);
-
-					while (view_->IsLoading())
-						mPlatformAbstractedUIApplicaton->web_core()->Update();
-
-					Sleep(300);
-					mPlatformAbstractedUIApplicaton->web_core()->Update();
-
+					mView = mPlatformAbstractedUIApplicaton->web_core()->CreateWebView(800, 600);
+					mView->SetTransparent(true);
+				
 					mIsInitialized = true;
 				}
 
 				// Inherited from Application::Listener
 				virtual void OnUpdate()
-				{
-				}
+				{}
 
 				// Inherited from Application::Listener
-				virtual void OnShutdown() {
-				}
+				virtual void OnShutdown()
+				{}
 
 				void FetchUIDataBuffer(Dia::UI::UIDataBuffer& outBuffer)const
 				{
-					::Awesomium::BitmapSurface* bitmap = static_cast<::Awesomium::BitmapSurface*>(view_->surface());
-
-
-					// REMOVE
-					bitmap->SaveToJPEG(::Awesomium::WSLit("./AwesomiumTest.jpg"));
+					::Awesomium::BitmapSurface* bitmap = static_cast<::Awesomium::BitmapSurface*>(mView->surface());
 
 					//TODO: This is crap that i need to assign to a local buffer to just memcopy below
 					int buffersize = bitmap->width() * bitmap->height() * 4;
 					unsigned char *buffer = new unsigned char[buffersize];
 					bitmap->CopyTo(buffer, bitmap->width() * 4, 4, false, false);
 
-					outBuffer.Create(bitmap->width(), bitmap->height(), buffer, buffersize);
-					
-					delete[] buffer;
+
+					// We do not delete the memory, the buffer will take care of it.
+					outBuffer.CreateFromPreallocatedBuffer(bitmap->width(), bitmap->height(), buffer, buffersize);
 				}
+
+				//-------------------------------------------------------------------
+				void InjectMouseMove(int x, int y)
+				{
+					if (mView)
+						mView->InjectMouseMove(x, y);
+				}
+
+				//-------------------------------------------------------------------
+				void InjectMouseDown(Dia::Input::EMouseButton button, int x, int y)
+				{			
+					if (mView)
+					{
+						::Awesomium::MouseButton button = ::Awesomium::kMouseButton_Left;
+						switch (button)
+						{
+						case Dia::Input::EMouseButton::kLeft: button = ::Awesomium::kMouseButton_Left; break;
+						case Dia::Input::EMouseButton::kMiddle: button = ::Awesomium::kMouseButton_Middle; break;
+						case Dia::Input::EMouseButton::kRight: button = ::Awesomium::kMouseButton_Right; break;
+						default: 
+							break;
+						}
+
+						mView->InjectMouseMove(x, y);
+						mView->InjectMouseDown(button);
+					}
+				}
+
+				//-------------------------------------------------------------------
+				void InjectMouseUp(Dia::Input::EMouseButton button, int x, int y)
+				{
+					if (mView)
+					{
+						::Awesomium::MouseButton button = ::Awesomium::kMouseButton_Left;
+						switch (button)
+						{
+						case Dia::Input::EMouseButton::kLeft: button = ::Awesomium::kMouseButton_Left; break;
+						case Dia::Input::EMouseButton::kMiddle: button = ::Awesomium::kMouseButton_Middle; break;
+						case Dia::Input::EMouseButton::kRight: button = ::Awesomium::kMouseButton_Right; break;
+						default:
+							break;
+						}
+
+						mView->InjectMouseMove(x, y);
+						mView->InjectMouseUp(button);
+					}
+				}
+
+				//-------------------------------------------------------------------
+				void InjectMouseClick(Dia::Input::EMouseButton button, int x, int y)
+				{
+					if (mView)
+					{
+						::Awesomium::MouseButton button = ::Awesomium::kMouseButton_Left;
+						switch (button)
+						{
+						case Dia::Input::EMouseButton::kLeft: button = ::Awesomium::kMouseButton_Left; break;
+						case Dia::Input::EMouseButton::kMiddle: button = ::Awesomium::kMouseButton_Middle; break;
+						case Dia::Input::EMouseButton::kRight: button = ::Awesomium::kMouseButton_Right; break;
+						default:
+							break;
+						}
+
+						mView->InjectMouseMove(x, y);
+						mView->InjectMouseDown(button);
+						mView->InjectMouseUp(button);
+					}
+				}
+
+				//-------------------------------------------------------------------
+				void InjectMouseWheel(int scroll_vert, int scroll_horz)
+				{
+					if (mView)
+						mView->InjectMouseWheel(scroll_vert, scroll_horz);
+				}
+
 			private:
 				Application* mPlatformAbstractedUIApplicaton;
-				::Awesomium::WebView* view_;
-				MethodDispatcher method_dispatcher_;
+				::Awesomium::WebView* mView;
+				MethodDispatcher mMethodDispatcher;
 				HWND mSystemHandle;
 				bool mIsInitialized;
 			};
@@ -135,6 +241,9 @@ namespace Dia
 			void UISystem::Initialize()
 			{
 				DIA_ASSERT(mUISystemImpl, "mUISystemImpl is NULL");
+
+				std::lock_guard<std::mutex> lock(mSystemMutex);
+
 				mUISystemImpl->Initialize();
 				
 				while (!mUISystemImpl->IsInitialized())
@@ -144,19 +253,83 @@ namespace Dia
 			}
 
 			//-------------------------------------------------------------------
+			void UISystem::LoadPage(const Page& newPage)
+			{
+				DIA_ASSERT(mUISystemImpl, "mUISystemImpl is NULL");
+
+				std::lock_guard<std::mutex> lock(mSystemMutex);
+
+				mUISystemImpl->LoadPage(newPage);
+			}
+
+			//-------------------------------------------------------------------
 			void UISystem::Update()
 			{
 				DIA_ASSERT(mUISystemImpl, "mUISystemImpl is NULL");
+
+				std::lock_guard<std::mutex> lock(mSystemMutex);
+
 				mUISystemImpl->Update();
 			}
 
 			//-------------------------------------------------------------------
 			void UISystem::FetchUIDataBuffer(UIDataBuffer& outBuffer)const
 			{
-
 				DIA_ASSERT(mUISystemImpl, "mUISystemImpl is NULL");
 
+				std::lock_guard<std::mutex> lock(mSystemMutex);
+
 				mUISystemImpl->FetchUIDataBuffer(outBuffer);
+			}
+
+			//-------------------------------------------------------------------
+			void UISystem::InjectMouseMove(int x, int y)
+			{
+				DIA_ASSERT(mUISystemImpl, "mUISystemImpl is NULL");
+
+				std::lock_guard<std::mutex> lock(mSystemMutex);
+
+				mUISystemImpl->InjectMouseMove(x,y);
+			}
+
+			//-------------------------------------------------------------------
+			void UISystem::InjectMouseDown(Dia::Input::EMouseButton button, int x, int y)
+			{
+				DIA_ASSERT(mUISystemImpl, "mUISystemImpl is NULL");
+
+				std::lock_guard<std::mutex> lock(mSystemMutex);
+
+				mUISystemImpl->InjectMouseDown(button, x, y);
+			}
+
+			//-------------------------------------------------------------------
+			void UISystem::InjectMouseUp(Dia::Input::EMouseButton button, int x, int y)
+			{
+				DIA_ASSERT(mUISystemImpl, "mUISystemImpl is NULL");
+
+				std::lock_guard<std::mutex> lock(mSystemMutex);
+
+				mUISystemImpl->InjectMouseUp(button, x, y);
+			}
+
+			//-------------------------------------------------------------------
+			void UISystem::InjectMouseClick(Dia::Input::EMouseButton button, int x, int y)
+			{
+				DIA_ASSERT(mUISystemImpl, "mUISystemImpl is NULL");
+
+				std::lock_guard<std::mutex> lock(mSystemMutex);
+
+				mUISystemImpl->InjectMouseClick(button, x, y);
+			}
+
+			//-------------------------------------------------------------------
+			void UISystem::InjectMouseWheel(int scroll_vert, int scroll_horz)
+			{
+				DIA_ASSERT(mUISystemImpl, "mUISystemImpl is NULL");
+
+				std::lock_guard<std::mutex> lock(mSystemMutex);
+
+				mUISystemImpl->InjectMouseWheel(scroll_vert, scroll_horz);
 			}
 		}
 	}
