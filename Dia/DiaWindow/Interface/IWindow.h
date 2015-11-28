@@ -8,6 +8,7 @@
 #include <DiaCore/Core/EnumClass.h>
 
 #include <DiaMaths/Vector/Vector2D.h>
+#include <DiaWindow/SystemHandle.h>
 
 namespace Dia
 {
@@ -136,6 +137,11 @@ namespace Dia
 			////////////////////////////////////////////////////////////
 			/// Show or hide the mouse cursor
 			virtual void SetMouseCursorVisible(bool visible) = 0;
+
+			////////////////////////////////////////////////////////////
+			///  Get the OS-specific handle of the window
+			///
+			virtual SystemHandle GetSystemHandle() const = 0;
 		};
 	}
 }

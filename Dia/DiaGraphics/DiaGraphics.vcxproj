@@ -15,6 +15,7 @@
     <ClCompile Include="Frame\DebugFrameDataCircle2D.cpp" />
     <ClCompile Include="Frame\DebugFrameDataLine2D.cpp" />
     <ClCompile Include="Frame\FrameData.cpp" />
+    <ClCompile Include="Frame\UIFrameData.cpp" />
     <ClCompile Include="Misc\RGBA.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -24,6 +25,7 @@
     <ClInclude Include="Frame\DebugFrameDataLine2D.h" />
     <ClInclude Include="Frame\DebugFrameDataVisitor.h" />
     <ClInclude Include="Frame\FrameData.h" />
+    <ClInclude Include="Frame\UIFrameData.h" />
     <ClInclude Include="Interface\ICanvas.h" />
     <ClInclude Include="Interface\IDrawable.h" />
     <ClInclude Include="Interface\IRenderTarget.h" />
@@ -82,7 +84,7 @@
     <Lib>
       <AdditionalDependencies>
       </AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir)DiaMaths.lib;$(OutDir)DiaCore.lib;$(OutDir)DiaGraphics.lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OutDir)DiaUI.lib;$(OutDir)DiaMaths.lib;$(OutDir)DiaCore.lib;$(OutDir)DiaGraphics.lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
     <Bscmake>
       <PreserveSbr>true</PreserveSbr>

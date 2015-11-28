@@ -14,9 +14,7 @@ namespace sf
 	class RenderWindow;
 	class RenderTexture;
 	class Shader;
-	class Sprite;
 	class Texture;
-	class Context;
 }
 
 namespace Dia
@@ -55,6 +53,7 @@ namespace Dia
 			virtual void SetVisible(bool visible) override;
 			virtual bool SetActive(bool active = true) const override;
 			virtual void SetMouseCursorVisible(bool visible) override;
+			virtual Window::SystemHandle GetSystemHandle() const override;
 
 		private:
 			RenderWindow();

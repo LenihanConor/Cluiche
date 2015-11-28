@@ -6,6 +6,10 @@
 #include <DiaGraphics/Frame/FrameData.h>
 #include <DiaGraphics/Interface/ICanvas.h>
 
+
+#include <DiaUIAwesomium/AwesomiumUISystem.h>
+#include  <DiaWindow/Interface/IWindow.h>
+
 struct RenderThreadStruct
 {
 public:
@@ -15,7 +19,7 @@ public:
 						Dia::Graphics::ICanvas* pCanvas);
 
 	void operator()();
-
+	
 	void Run();
 
 private:

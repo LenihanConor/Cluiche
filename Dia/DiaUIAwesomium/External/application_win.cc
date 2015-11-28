@@ -21,26 +21,21 @@ class ApplicationWin : public Application {
     if (web_core_)
       web_core_->Shutdown();
   }
-
-
-  virtual void Run() {
-  //  Load();
-
-    // Main message loop:
+  
+  virtual void UpdateCore()
+  {
+	   // Main message loop:
     MSG msg;
     if (is_running_) 
 	{
-		if (listener())
-			listener()->OnUpdate();
-
+		//TODO - What do all thes functions do?
 		GetMessage(&msg, NULL, 0, 0);
-		web_core_->Update();
 		TranslateMessage(&msg);
+		web_core_->Update();
 		DispatchMessage(&msg);
-		
     }
   }
-  
+
   virtual void Quit() {
     is_running_ = false;
   }

@@ -10,12 +10,16 @@
 #include "DiaUIAwesomium/External/method_dispatcher.h"
 #include <Awesomium/WebCore.h>
 #include <Awesomium/STLHelpers.h>
+#include <DiaCore/Timer/TimeThreadLimiter.h>
+#include <DiaCore/Time/TimeServer.h>
+
 #ifdef _WIN32
 #include <Windows.h>
 #endif
 
 #include <thread>
 #include <future>
+#include <iostream>
 
 #include <DiaCore/Strings/stringutils.h>
 
@@ -28,6 +32,7 @@ public:
 	MethodDispatcher method_dispatcher_;
 	HWND windowHandle_;
 	bool isFinishedLoad;
+	Awesomium::JSValue app_object
 
 public:
 	TutorialApp(HWND windowHandle)
@@ -45,9 +50,13 @@ public:
 			delete mPlatformAbstractedUIApplicaton;
 	}
 
+	void Do()
+	{
+		mPlatformAbstractedUIApplicaton->UpdateCore();
+	}
 	void Run() 
 	{
-		mPlatformAbstractedUIApplicaton->Run();
+		mPlatformAbstractedUIApplicaton->UpdateCore();
 	}
 
 	void Load()
@@ -61,6 +70,10 @@ public:
 		view_ = mPlatformAbstractedUIApplicaton->web_core()->CreateWebView(800, 600);
 		view_->SetTransparent(true);
 
+		app_object = view_->CreateGlobalJavascriptObject(Awesomium::WSLit("app"));
+		// Bind our method dispatcher to the WebView
+		view_->set_js_method_handler(&method_dispatcher_);
+
 		BindMethods(view_);
 
 		Awesomium::WebURL url(Awesomium::WSLit("file:///Z:/GitHub/Cluiche/Cluiche/WebixTest/app.html"));
@@ -69,8 +82,8 @@ public:
 		while (view_->IsLoading())
 			mPlatformAbstractedUIApplicaton->web_core()->Update();
 
-		Sleep(300);
-		mPlatformAbstractedUIApplicaton->web_core()->Update();
+	//	Sleep(300);
+	//	mPlatformAbstractedUIApplicaton->web_core()->Update();
 
 		isFinishedLoad = true;
 	}
@@ -86,25 +99,24 @@ public:
 
 	void BindMethods(Awesomium::WebView* web_view) {
 		// Create a global js object named 'app'
-		Awesomium::JSValue result = web_view->CreateGlobalJavascriptObject(Awesomium::WSLit("app"));
-		if (result.IsObject()) {
+		
+		if (app_object.IsObject()) {
 			// Bind our custom method to it.
-			Awesomium::JSObject& app_object = result.ToObject();
-			method_dispatcher_.Bind(app_object,
+			Awesomium::JSObject& app_object_1 = result.ToObject();
+			method_dispatcher_.Bind(app_object_1,
 				Awesomium::WSLit("backgroundGrey"),
 				JSDelegate(this, &TutorialApp::BackgroundGrey));
 
-			method_dispatcher_.Bind(app_object,
+			method_dispatcher_.Bind(app_object_1,
 				Awesomium::WSLit("backgroundWhite"),
 				JSDelegate(this, &TutorialApp::BackgroundWhite));
 
-			method_dispatcher_.Bind(app_object,
+			method_dispatcher_.Bind(app_object_1,
 				Awesomium::WSLit("backgroundBluish"),
 				JSDelegate(this, &TutorialApp::BackgroundBluish));
 		}
 
-		// Bind our method dispatcher to the WebView
-		web_view->set_js_method_handler(&method_dispatcher_);
+		
 	}
 
 	// Bound to app.sayHello() in JavaScript
@@ -238,8 +250,13 @@ int main(int argc, const char* argv[])
 	int i = 0;
 	// run the main loop
 	bool running = true;
+	Dia::Core::TimeServer timeServer(60.0f, Dia::Core::TimeAbsolute::Zero());	// With only one time server everything in the main loop will increment at its frequency
+	Dia::Core::TimeThreadLimiter threadLimiter(1.0f / timeServer.GetStep().AsFloatInSeconds());
+
 	while (running)
 	{
+		threadLimiter.Start();
+
 		// handle events
 		sf::Event event;
 		while (window.pollEvent(event))
@@ -287,7 +304,6 @@ int main(int argc, const char* argv[])
 		///// Render UI -> start
 		app.Run();
 
-
 		const Awesomium::BitmapSurface* surface = app.surface();
 
 		int w = surface->width();
@@ -323,6 +339,11 @@ int main(int argc, const char* argv[])
 
 		// end the current frame (internally swaps the front and back buffers)
 		window.display();
+
+
+		threadLimiter.Stop();
+		std::cout << "Main: Wait " << threadLimiter.RemainingTime().AsIntInMilliseconds() << " ms\n";
+		threadLimiter.SleepThread();
 	}
 
 	

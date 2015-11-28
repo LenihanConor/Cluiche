@@ -19,7 +19,7 @@ namespace Dia
 			template <class T>
 			Array<T>::~Array()
 			{
-				DIA_DELETEARRAY(mData);
+				DIA_DELETE_ARRAY(mData);
 				mSize = 0;
 			}
 			
@@ -432,7 +432,7 @@ namespace Dia
 					T* temp = DIA_NEW_ARRAY(Size(), T);
 					MemorySet(temp, 0, sizeof(T)*Size());
 					MemoryCopy(temp, mData, Size());
-					DIA_DELETEARRAY(mData);
+					DIA_DELETE_ARRAY(mData);
 					mData = temp;
 				}		
 			}

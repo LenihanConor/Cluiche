@@ -3,8 +3,8 @@
 
 #	define DIA_NEW(obj)					new  obj
 #	define DIA_NEW_ARRAY(size, obj)		new obj[size]
-#	define DIA_DELETE(mem)				delete (mem); mem = NULL
-#	define DIA_DELETEARRAY(mem)			delete[] (mem); mem = NULL
+#	define DIA_DELETE(mem)				delete (mem); mem = nullptr
+#	define DIA_DELETE_ARRAY(mem)			delete[] (mem); mem = nullptr
 
 namespace Dia
 {

@@ -3,6 +3,7 @@
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaCore/Timer/TimeThreadLimiter.h>
 #include <DiaCore/Frame/FrameStream.h>
+#include <DiaUI/UIDataBuffer.h>
 
 #include <iostream>
 
@@ -15,7 +16,9 @@ RenderThreadStruct::RenderThreadStruct(const bool& running,
 	, mFrameStream(frameStream)
 	, mThreadLimiter(60.0)
 	, mpCanvas(pCanvas)
-{}
+{
+	
+}
 
 void RenderThreadStruct::operator()()
 {
@@ -36,6 +39,11 @@ void RenderThreadStruct::Run()
 		{
 			continue;
 		}
+
+		// UI
+	//	awesomiumUISystem.Update();
+
+		
 
 		mpCanvas->StartFrame(*pRenderFrameBuffer);
 		mpCanvas->ProcessFrame(*pRenderFrameBuffer);

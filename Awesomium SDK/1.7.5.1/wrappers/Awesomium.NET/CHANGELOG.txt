@@ -1,0 +1,286 @@
+Awesomium.NET 1.7.5 May 5 2015
+
+    API Changes:
+        - [Added] DocumentReadyState
+        - [Added] DocumentReadyEventArgs
+        - [Added] DocumentReadyEventHandler
+        - [Added] WebTouchEvent
+        - [Added] WebTouchPoint
+        - [Added] NativeHandle
+        - [Added] WebCore.DoWork
+        - [Added] WebCore.UsedMemory
+        - [Added] WebCore.StartTime
+        - [Added] WebCore.ReleaseMemory
+        - [Added] WebCore.UsedMemory
+        - [Added] WebCore.Run(CoreStartEventHandler)
+        - [Added] WebConfig.ASSET_PROTOCOL_DEFAULT
+        - [Added] WebConfig.CustomCSS
+        - [Added] WebPreferences.MaxHttpCacheStorage
+        - [Added] WebPreferences.PdfJS
+        - [Added] WebPreferences.UserScript
+        - [Added] WebPreferences.JavascriptViews
+        - [Added] WebPreferences.JavascriptApplicationInfo
+        - [Added] WebPreferences.JavascriptGlobalEvents
+        - [Added] WebPreferences.JavascriptViewEvents
+        - [Added] WebPreferences.JavascriptViewExecute
+        - [Added] WebPreferences.JavascriptViewChangeSource
+        - [Added] JavascriptRequest
+        - [Added] JavascriptMessageEventArgs
+        - [Added] JavascriptRequestEventArgs
+        - [Added] IWebView.JavascriptRequest
+        - [Added] IWebView.JavascriptMessage
+        - [Added] IWebView.CreateJavascriptExecutionContext
+        - [Added] IWebView.InjectTouchEvent
+        - [Added] IWebView.CreationTime
+        - [Modified] IWebView.DocumentReady
+        - [Modified] IWebView.Instance -> NativeHandle
+        - [Added] JSFunction
+        - [Added] JSObject.GetPropertyDescriptor
+        - [Added] JSObject[..., JSPropertyDescriptor]
+        - [Added] JSObject.BindAsync
+        - [Added] JSValue[...]
+        - [Added] JSValue.IsNaN
+        - [Added] JSValue.IsInfinity
+        - [Added] JSValue (All Unary & Binary operators)
+        - [Modified] JSValue struct -> class
+        - [Added] Global
+        - [Added] DocumentReadyEventArgs.Environment
+        - [Obsolete] JavascriptMethodEventHandler
+        - [Obsolete] JavascriptAsynchMethodEventHandler
+        - [Added] JavascriptMethodHandler
+        - [Added] JavascriptAsyncMethodHandler
+        - [Added] JSFunctionHandler
+        - [Added] JSFunctionAsyncHandler
+        - [Added] JSPropertyDescriptor
+        - [Added] ResourceRequest.IgnoreDataSources
+        - [Added] WebContextMenuInfo.IsEmpty        
+        - [Added] (WPF) WebControlService.PressAndHoldDelay
+        - [Added] (WPF) Utilities.SetCulture
+    - 1.7.5.1:
+        - [Added] (Mono) IWebView.CreateInspectorView
+        - [Added] (Mono) IWebView.GetInspectorView
+        - [Added] (Mono) IWebView.GetInspectedView
+        - [Added] (Mono) IWebView.IsInspectorView
+        - [Added] (Mono) IWebView.HasInspectorView
+        - [Added] (Mono) ShowCreatedWebViewEventArgs.IsInspectorView
+
+    Core Changes:
+        - [Feature] Code optimizations and performance improvements
+                    all throughout the Awesomium.NET project.
+        - [Feature] Added logging of Awesomium.NET events to 
+                    application log.
+        - [Feature] Improved initial position specs for 'window.open'
+                    calls.
+        - [Feature] Improved JIF to assist native DocumentReady, 
+                    improve HTML property contents and handle pending
+                    'window.close' calls.
+        - [Feature] Added PDF.js integration.
+        - [Feature] Added support for environment variables in DataPath, 
+                    LogPath etc.
+        - [Modified] Improved performance of WebCore.QueueWork.
+        - [Feature] Added support for JavaScript 'navigator.language'.
+        - [Feature] Added support for DOM 'HTMLAnchorElement.click'.
+        - [Feature] Added standard 'onXXXX' touch event handler setting
+                    properties to JavaScript Node prototype.
+        - [Feature] Improved JSValue -> bool operator to process all 
+                    data types.
+        - [Feature] Added binary and unary operators to JSValue.
+        - [Modified] JSValue is now a class.
+        - [Feature] Many performance improvements in 
+                    ResourceInterceptor.
+        - [Feature] Added support for asynchronous ResourceInterceptor
+                    responses through ResourceRequest.IgnoreDataSources
+                    and DataSources.
+        - [Feature] Completely redesigned (re-wrote) JIF using
+                    supported ECMAScript 5 features.
+        - [Feature] Designed and created the OSMJIF instance that
+                    exposes a fully operational Javascript Framework
+                    to JavaScript clients.
+        - [Feature] OSMJIF API allows clients obtain global and
+                    per-view information.
+        - [Feature] OSMJIF API allows clients add listeners for global
+                    or per-view native events.
+        - [Feature] OSMJIF API allows clients control parts of the
+                    native application.
+        - [Feature] OSMJIF extends the DOM to handle all
+                    multi-touch-related features (such as scrolling).
+        - [Feature] OSMInfo, OSMEventArgs and OSMView fully configured
+                    JavaScript prototypes part of the new API.
+        - [Feature] Made it so Javascript-related events and custom
+                    JavaScript method handlers are called in a 
+                    Javascript Execution Context (JEC).
+        - [Feature] JSObjects acquired or created in a Javascript
+                    Execution Context (JEC) don't need to explicitly
+                    disposed.
+        - [Feature] Errors or exceptions that occur in a Javascript
+                    Execution Context (JEC) are silently propagated 
+                    to the JavaScript console.
+        - [Feature] Made it so most JSObjects operations are first
+                    handled by JIF, if available, significantly
+                    improving performance.
+        - [Feature] Made it so implicit casting of JSValue to JSObject
+                    or JSFunction always succeeds returning an invalid
+                    object.
+        - [Feature] Added full support for dynamically indexing
+                    JSObjects.
+        - [Feature] Made it so local JSObjects hold members in internal
+                    managed dictionaries.
+        - [Feature] Made it so all dynamic expressions on JSObjects
+                    return either JSValue or JSObject.
+        - [Modified] Many optimizations and performance improvements
+                     on JSObject.
+        - [Modified] JSObject is not sealed any more.
+        - [Feature] Added JSObject indexer overloads that take a
+                    JSPropertyDescriptor.
+        - [Feature] JSObject is now enumerable (enumerates ECMAScript
+                    enumerable property names).
+        - [Feature] Made it so users can restore local JSObjects back
+                    to their original subclass when reacquired from V8.
+        - [Modified] Most late binding errors on JSObject (in DLR) no
+                     longer throw an exception.
+        - [Feature] Added dynamic conversion support to JSObjects.
+        - [Feature] Added support for passing managed handlers as 
+                    callbacks directly to dynamic expressions.
+        - [Feature] Added all unary and binary operators to JSValue
+                    with support from JScript.NET.
+        - [Feature] Added basic support of DLR to JSValue.
+        - [Feature] Added indexer to JSValue that allows accessing and
+                    editing arrays, objects and strings.
+        - [Feature] Added support for passing objects through the
+                    synchronous OSMJIF.sendMessage.
+        - [Feature] Made it so all methods or events executed in a JEC
+                    have access to essential JavaScript objects.
+        - [Modified] More VB.NET DLR improvements.
+        - [Modified] A single background thread is now handling
+                     auto-update in InAutoUpdate mode.
+        - [Modified] Significantly improved and added more
+                     documentation.
+        - [Feature] (WPF) Added http://schemas.awesomium.com/core
+                    XMLNS schema for Core assembly.
+        - [Feature] (WPF) Added WPF Designer extensions for WebControl
+                    and WebSessionProvider for Visual Studio 2010, 2012
+                    and 2013.
+        - [Feature] (WPF) Added full WPF Touch/Stylus support.
+        - [Feature] (WPF) Made it so we cancel touch manipulation when
+                    Javascript is disabled.
+        - [Feature] (WPF) Made it so mouse is only injected on tap or
+                    after press-and-hold.
+        - [Feature] (WPF) Added support for scrolling (touch-drag)
+                    parent scrollable elements instead of the view.
+        - [Feature] (Unity) Added WebSessionProvider component.
+        - [Feature] (Unity) Implemented Undo/Redo for Inspector
+                    changes.
+    - 1.7.5.1:
+        - [Feature] (Mono/Xamarin) Added API to create Inspector
+                    Views.
+
+    Bug Fixes:
+        - [Bugfix] (Native) Fixed crash on Windows XP when using
+                   Facebook Connect (and other sites with similar
+                   certificate signing modes).
+        - [Bugfix] (Native) Fixed crash that occurs if user unfocuses
+                   a textbox during an IME composition.
+        - [Bugfix] (Native) Fixed crash with very large strings of
+                   WebConfig.UserScript.
+        - [Bugfix] Fixed issue in ResourceDataSource (Folders with a
+                   dash are replaced by an underscore).
+        - [Bugfix] Assigning null string to JSValue doesn't set
+                   JSValue.IsNull. (#19)
+        - [Bugfix] Fixed invalid synchronization context issues that
+                   may occur on UpdateTimerCallback, when UpdateState
+                   is InAutoUpdate. (#48)
+        - [Bugfix] Fixed illegal disposal of the managed wrapper of
+                   the global Null and Undefined JSValues. (#53)
+        - [Bugfix] Fixed issues with IWebView.HTML not returning the
+                   full page contents. (#61)
+        - [Bugfix] Fixed issue where early 'window.close' calls where
+                   not being processed. (#61)
+        - [Bugfix] Using invoke on several threads crashes
+                   Awesomium. (#59)
+        - [Bugfix] Fixed issues with JSObject dynamic indexer calls
+                   on VB.NET.
+        - [Bugfix] Fixed issues with IWebView.SaveImageAt.
+        - [Bugfix] Fixed issue with JSObject.ToString crashing when
+                   called on Global objects.
+        - [Bugfix] Fixed issue in WebSession.HasViews that could
+                   cause a WebSession being prematurely released.
+        - [Bugfix] Fixed issue where local JSObjects being assigned as
+                   members of other local JSObjects are set by value.
+        - [Bugfix] Fixed massive thread spawning at InAutoUpdate mode
+                   when UI thread is blocked. (#71)
+        - [Bugfix] Fixed issue where SurfaceFactory would fail to
+                   destroy unused surfaces.
+        - [Bugfix] Fixed issue preventing navigation when only the
+                   anchor of a URL is changed. (#52)
+        - [Bugfix] (WPF) Fixed ArgumentException at RenderProcess
+                   getter. (#69)
+        - [Bugfix] (WPF) Fixed exception that occurred during the
+                   initialization of WebControlCommands. (#57)
+        - [Bugfix] (WPF) Fixed error in
+                   ISynchronizeInvoke.InvokeRequired implementation.
+        - [Bugfix] (WPF) Fixed issue with
+                   DataPakSourceProvider.PakPath validation.
+        - [Bugfix] (WPF) Fixed issue that would prevent temporarily
+                   unloaded WebControl containers (such as those in a
+                   TabControl's tab), accessing the WebDialogsLayer
+                   decorator.
+    - 1.7.5.1:
+        - [Bugfix] Fixed issue with IsDocumentReady being set to false
+                   when secondary frames are being edited or 
+                   unloaded. (#75)
+        - [Bugfix] Fixed issues with, and improved behavior of
+                   CreateGlobalJavascriptObject.
+        - [Bugfix] Fixed Win32Exception when building PackagePath.
+                   (#73)
+        - [Bugfix] Added support for loading local PDF files through
+                    the file:// protocol. (#86)
+        - [Bugfix] (WPF) Fixed issue that caused windowed WebControls
+                   crash the app when being destroyed.
+        - [Bugfix] (WPF) Fixed issue that prevented windowed WebControls
+                   from loading the initial (design-time) Source. (#81)
+        - [Bugfix] (WPF) Fixed issue that prevented user code from 
+                   overriding the WPF "Sad Tab". (#84)
+        - [Bugfix] (WPF) Fixed issue that caused the Cut/Paste commands 
+                   be always enabled in the WPF context menu. (#85)
+        - [Bugfix] (Mono/Xamarin) Fixed issue that prevented
+                   subclassing of OSMApplication.
+        - [Bugfix] (Mono/Xamarin) Fixed issue with exception thrown
+                   occasionally at NSApplication.NextEvent.
+        - [Bugfix] (Mono/Xamarin) Fixed issue with locating PAK files
+                   of internal DataSources.
+        - [Bugfix] (Mono/Xamarin) Fixed issue with creating on-disk
+                   WebSessions through an OSMWebViewController.
+
+    Samples Major Changes:
+        - [Modified] Updated all samples to use a standard
+                     WebCore.Shutdown policy.
+        - [Modified] Fixes and improvements in BasicAsyncSample to 
+                     use latest features.
+        - [Modified] Updated JavascriptSample to reflect the new JEC
+                     features and new DLR support features.
+        - [Modified] Updated WinFormsSample demonstrating
+                     asynchronously loading resources through
+                     ResourceInterceptor+DataSource
+        - [Modified] Updated TabbedWPFSample demonstrating how to
+                     extend JIF.
+        - [Modified] Updated WPF WebControlSample to reflect the new
+                     JEC features and new DLR support features.
+        - [Modified] Updated WPFJavascriptSample to reflect the new
+                     JEC features and new DLR support features.
+        - [Modified] Expanded WPF StarterSample and VBStarterSample
+                     with examples of taking screenshot and interacting
+                     with the page.
+        - [Modified] Updated WPF StarterSample and VBStarterSample to
+                     reflect the new JEC features and new DLR support
+                     features.
+    - 1.7.5.1:
+        - [Modified] Updated WPF WebControlSample to demonstrate
+                     forcing use of SKIA.
+        - [Modified] Added simple JavaScript interaction sample to 
+                     TabbedMonoMacSample.
+
+
+------------------------------------------------------------------------------
+Awesomium.NET 1.7.4.1 Mar 20 2014
+
+    Please visit: http://wiki.awesomium.net/changelogs/whats-new-1-7-4.html
