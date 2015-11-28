@@ -60,7 +60,7 @@
 			<Tool
 				Name="VCLibrarianTool"
 				AdditionalDependencies="d3d11.lib d3dx11d.lib d3dx9d.lib dxerr.lib dxguid.lib winmm.lib comctl32.lib User32.lib $(OutDir)\DiaCore.lib $(OutDir)\DiaMaths.lib"
-				AdditionalLibraryDirectories="&quot;$(OutDir)\DiaMaths.lib&quot;;&quot;$(OutDir)\DiaCore.lib&quot;;&quot;$(OutDir)\DiaGraphics.lib&quot;"
+				AdditionalLibraryDirectories="&quot;$(OutDir)\DiaMaths.lib&quot;;&quot;$(OutDir)\DiaCore.lib&quot;"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -151,52 +151,6 @@
 	</Configurations>
 	<References>
 	</References>
-	<Files>
-		<Filter
-			Name="Interface"
-			>
-			<File
-				RelativePath=".\Interface\DirectX11Interface.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\Interface\DirectX11Interface.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Interface\GraphicsAPIEnum.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Interface\GraphicsInterface.h"
-				>
-			</File>
-		</Filter>
-		<Filter
-			Name="Frame"
-			>
-			<File
-				RelativePath=".\Frame\DebugFrame.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Frame\Frame.h"
-				>
-			</File>
-			<Filter
-				Name="Source"
-				>
-				<File
-					RelativePath=".\Frame\DebugFrame.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\Frame\Frame.cpp"
-					>
-				</File>
-			</Filter>
-		</Filter>
-	</Files>
 	<Globals>
 	</Globals>
 </VisualStudioProject>
