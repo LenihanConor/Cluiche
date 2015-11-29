@@ -16,8 +16,8 @@ namespace Dia
 			UIDataBuffer& operator=(const UIDataBuffer&);
 			~UIDataBuffer();
 			
-			void CreateFromPreallocatedBuffer(int width, int height, unsigned char* data, int datasize);
-			void Create(int width, int height, const unsigned char* data, int datasize);
+			void CreateFromPreallocatedBuffer(int width, int height, unsigned char* data, int datasize, bool deleteWhenDone = true);
+			void Create(int width, int height, const unsigned char* data, int datasize, bool deleteWhenDone = true);
 			void Destroy();
 
 			int GetWidth()const;
@@ -30,6 +30,7 @@ namespace Dia
 			int mHeight;
 			int mBufferSize;
 			unsigned char* mBuffer;
+			bool mDeleteWhenDone;
 		};
 	}
 }

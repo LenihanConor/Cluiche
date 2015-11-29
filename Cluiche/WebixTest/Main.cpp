@@ -32,7 +32,7 @@ public:
 	MethodDispatcher method_dispatcher_;
 	HWND windowHandle_;
 	bool isFinishedLoad;
-	Awesomium::JSValue app_object
+	Awesomium::JSValue app_object;
 
 public:
 	TutorialApp(HWND windowHandle)
@@ -100,9 +100,10 @@ public:
 	void BindMethods(Awesomium::WebView* web_view) {
 		// Create a global js object named 'app'
 		
-		if (app_object.IsObject()) {
+		if (app_object.IsObject()) 
+		{
 			// Bind our custom method to it.
-			Awesomium::JSObject& app_object_1 = result.ToObject();
+			Awesomium::JSObject& app_object_1 = app_object.ToObject();
 			method_dispatcher_.Bind(app_object_1,
 				Awesomium::WSLit("backgroundGrey"),
 				JSDelegate(this, &TutorialApp::BackgroundGrey));
@@ -115,25 +116,20 @@ public:
 				Awesomium::WSLit("backgroundBluish"),
 				JSDelegate(this, &TutorialApp::BackgroundBluish));
 		}
-
-		
 	}
 
 	// Bound to app.sayHello() in JavaScript
-	void BackgroundGrey(Awesomium::WebView* caller,
-		const Awesomium::JSArray& args) {
+	void BackgroundGrey(const Dia::UI::BoundMethod::Args& args) {
 		backColour = sf::Color(211, 211, 211);
 	}
 
 	// Bound to app.sayHello() in JavaScript
-	void BackgroundWhite(Awesomium::WebView* caller,
-		const Awesomium::JSArray& args) {
+	void BackgroundWhite(const Dia::UI::BoundMethod::Args& args) {
 		backColour = sf::Color(255, 255, 255);
 	}
 
 	// Bound to app.sayHello() in JavaScript
-	void BackgroundBluish(Awesomium::WebView* caller,
-		const Awesomium::JSArray& args) 
+	void BackgroundBluish(const Dia::UI::BoundMethod::Args& args)
 	{
 	//	backColour = sf::Color(255, 128, 128);
 		Awesomium::WebURL url(Awesomium::WSLit("file:///Z:/GitHub/Cluiche/Cluiche/WebixTest/app2.html"));
@@ -219,9 +215,6 @@ int main(int argc, const char* argv[])
 	shader.setParameter("uiOverlayTex", uiOverlayTex);
 	//// Initialize UI System -> end
 
-
-
-
 	// Rando Drawing stuff
 	sf::CircleShape shape(50);
 	shape.setPosition(10, 500);
@@ -287,19 +280,9 @@ int main(int argc, const char* argv[])
 // clear the buffers
 		window.clear(backColour);
 
-
-
-
-
-
 		backBuffer.pushGLStates();
 			backBuffer.draw(shape);
 		backBuffer.popGLStates();
-
-
-
-
-
 
 		///// Render UI -> start
 		app.Run();
@@ -332,10 +315,6 @@ int main(int argc, const char* argv[])
 		///// Render UI -> start
 
 		delete[] buffer;
-
-
-
-
 
 		// end the current frame (internally swaps the front and back buffers)
 		window.display();

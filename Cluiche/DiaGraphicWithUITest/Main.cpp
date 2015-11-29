@@ -18,53 +18,31 @@
 #include "RenderThreadStruct.h"
 
 #include <DiaUI/IUISystem.h>
+
+
+void DoSomething(const Dia::UI::BoundMethod::Args *)
+{
+	int x = 0;
+	x++;
+}
+
 class LaunchUIPage: public Dia::UI::Page
 {
 public:
 	LaunchUIPage()
 		: Dia::UI::Page("file:///Z:/GitHub/Cluiche/Cluiche/WebixTest/app.html")
-	{}
+	{
+//		BindMethod(Dia::UI::BoundMethod("DoSomething", &DoSomething));
+	}
 
 	void BindMethods(Dia::UI::IUISystem* parentSystem)
 	{
 		DIA_ASSERT(parentSystem, "parentSystem can not be NULL");
 
-		parentSystem->BindMethod()
+		//parentSystem->
 	}
-}
+};
 
-
-
-// Bound to app.sayHello() in JavaScript
-void BackgroundGrey(WebView* caller,
-	const JSArray& args) {
-	backColour = sf::Color(211, 211, 211);
-}
-
-#define CREATE_AWESOMIUM_BOUND_METHOD(_methodName, _ptrToMethod)\
-	void _methodName(WebView* caller, const JSArray& args)\
-	{\
-		_ptrToMethod();\
-	}
-	
-
-#define CREATE_AWESOMIUM_BOUND_METHOD_WITH_ARGS(_methodName, _ptrToMethod)\
-	void _methodName(WebView* caller, const JSArray& args)\
-	{\
-		_ptrToMethod();\
-	}
-
-void DoSomething()
-{
-
-}
-
-CREATE_AWESOMIUM_BOUND_METHOD(DoSomething)
-
-void DoSomething(int args)
-{
-
-}
 
 
 
@@ -119,7 +97,7 @@ int main(int argc, const char* argv[])
 	while (running)
 	{
 		threadLimiter.Start();
-		
+
 		awesomiumUISystem.Update();
 
 		// Input thread :)

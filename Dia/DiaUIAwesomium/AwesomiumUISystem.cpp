@@ -21,6 +21,17 @@
 
 #include <thread>
 
+
+
+#define CREATE_AWESOMIUM_BOUND(_methodName, _ptrToMethod)\
+	void _methodName(WebView* caller, const JSArray& args)\
+	{\
+		Dia::UI::BoundMethodArgs diaArgs;\
+		Convert(args, diaArgs);\
+		(*_ptrToMethod)(diaArgs);\
+	}
+
+
 namespace Dia
 {
 	namespace UI
@@ -49,7 +60,9 @@ namespace Dia
 				void Initialize()
 				{
 					if (!mIsInitialized)	// only initialize once
+					{
 						mPlatformAbstractedUIApplicaton->Load();
+					}
 				}
 
 				void LoadPage(const Page& newPage)
@@ -60,42 +73,36 @@ namespace Dia
 
 
 
-					TODO - REMOVE THIS
-//					newPage.BindMethods();
-					newPage.GetBoundMenthods();
+				//	Dia::UI::BoundMethodList boundMethodList = newPage.GetBoundMenthods();
 
-					JSValue result = web_view->CreateGlobalJavascriptObject(WSLit("app"));
-					if (result.IsObject()) {
+	/*				::Awesomium::JSValue result = mView->CreateGlobalJavascriptObject(::Awesomium::WSLit("app"));
+					if (result.IsObject()) 
+					{
 						// Bind our custom method to it.
-						JSObject& app_object = result.ToObject();
-						method_dispatcher_.Bind(app_object,
-							WSLit("backgroundGrey"),
-							JSDelegate(this, &TutorialApp::BackgroundGrey));
+						::Awesomium::JSObject& app_object = result.ToObject();
 
-						method_dispatcher_.Bind(app_object,
-							WSLit("backgroundWhite"),
-							JSDelegate(this, &TutorialApp::BackgroundWhite));
+						
+					//	const Dia::Core::Containers::String32* name = &boundMethodList[0].GetName();
 
-						method_dispatcher_.Bind(app_object,
-							WSLit("backgroundBluish"),
-							JSDelegate(this, &TutorialApp::BackgroundBluish));
+						mMethodDispatcher.Bind(app_object,
+							::Awesomium::WSLit("functionRouter"),
+							JSDelegate(this, &UISystemImpl::BoundMethodRouter));
 					}
 
 					// Bind our method dispatcher to the WebView
-					web_view->set_js_method_handler(&method_dispatcher_);
-					TODO - REMOVE THIS
-
-
-
-
-
-
-
+					mView->set_js_method_handler(&mMethodDispatcher);*/
+				
 
 					mView->LoadURL(url);
 			
 					while (mView->IsLoading())
 						mPlatformAbstractedUIApplicaton->web_core()->Update();
+				}
+
+				void BoundMethodRouter(::Awesomium::WebView* caller,
+					const ::Awesomium::JSArray& args)
+				{
+
 				}
 
 				bool IsInitialized()const
@@ -113,7 +120,7 @@ namespace Dia
 				{
 					mView = mPlatformAbstractedUIApplicaton->web_core()->CreateWebView(800, 600);
 					mView->SetTransparent(true);
-				
+					
 					mIsInitialized = true;
 				}
 
@@ -125,18 +132,36 @@ namespace Dia
 				virtual void OnShutdown()
 				{}
 
+		//		 = 1920000;
+				
+
 				void FetchUIDataBuffer(Dia::UI::UIDataBuffer& outBuffer)const
 				{
-					::Awesomium::BitmapSurface* bitmap = static_cast<::Awesomium::BitmapSurface*>(mView->surface());
+					if (IsInitialized())
+					{
+					//	static unsigned char buffer[1920000];
 
-					//TODO: This is crap that i need to assign to a local buffer to just memcopy below
-					int buffersize = bitmap->width() * bitmap->height() * 4;
-					unsigned char *buffer = new unsigned char[buffersize];
-					bitmap->CopyTo(buffer, bitmap->width() * 4, 4, false, false);
+						::Awesomium::BitmapSurface* bitmap = static_cast<::Awesomium::BitmapSurface*>(mView->surface());
 
 
-					// We do not delete the memory, the buffer will take care of it.
-					outBuffer.CreateFromPreallocatedBuffer(bitmap->width(), bitmap->height(), buffer, buffersize);
+						//TODO: This is crap that i need to assign to a local buffer to just memcopy below
+						int buffersize = bitmap->width() * bitmap->height() * 4;
+
+						DIA_ASSERT(buffersize > sBuffersize); // Need to increase size of UI buffer
+					//	unsigned char *buffer = new unsigned char[buffersize];
+					//	bitmap->CopyTo(buffer, bitmap->width() * 4, 4, false, false);
+
+
+						bitmap->CopyTo(&mBuffer[0], bitmap->width() * 4, 4, false, false);
+
+						// We do not delete the memory, the buffer will take care of it.
+						outBuffer.CreateFromPreallocatedBuffer(bitmap->width(), bitmap->height(), &mBuffer[0], sBuffersize, false);
+					}
+				}
+
+				void BindMethod(const Dia::Core::Containers::String64& methodName, BoundMethod* pMethod)
+				{
+
 				}
 
 				//-------------------------------------------------------------------
@@ -220,6 +245,9 @@ namespace Dia
 				MethodDispatcher mMethodDispatcher;
 				HWND mSystemHandle;
 				bool mIsInitialized;
+
+				static const int sBuffersize = 7000000;
+				mutable unsigned char mBuffer[sBuffersize];
 			};
 
 			//-------------------------------------------------------------------
@@ -280,6 +308,16 @@ namespace Dia
 				std::lock_guard<std::mutex> lock(mSystemMutex);
 
 				mUISystemImpl->FetchUIDataBuffer(outBuffer);
+			}
+
+			//-------------------------------------------------------------------
+			void UISystem::BindMethod(const Dia::Core::Containers::String64& methodName, BoundMethod* pMethod)
+			{
+				DIA_ASSERT(mUISystemImpl, "mUISystemImpl is NULL");
+
+				std::lock_guard<std::mutex> lock(mSystemMutex);
+
+				mUISystemImpl->BindMethod(methodName, pMethod);
 			}
 
 			//-------------------------------------------------------------------

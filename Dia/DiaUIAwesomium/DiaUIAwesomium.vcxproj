@@ -67,7 +67,7 @@
     </Lib>
     <PreBuildEvent>
       <Command>xcopy /Y /d "$(ProjectDir)Deploy\*" "$(TargetDir)"  </Command>
-      <Message>Push files to the .exe file</Message>
+      <Message>Push awesomium deploy files to the .exe directory</Message>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

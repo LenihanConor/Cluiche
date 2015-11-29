@@ -92,6 +92,11 @@
     <Bscmake>
       <PreserveSbr>true</PreserveSbr>
     </Bscmake>
+    <PreBuildEvent>
+      <Command>xcopy /Y /d "$(SolutionDir)..\SFML\build\lib\debug\*.dll" "$(TargetDir)"  
+</Command>
+      <Message>Push dll to the exe directory</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>

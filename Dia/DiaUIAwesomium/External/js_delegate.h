@@ -2105,14 +2105,15 @@ FastDelegate8<Param1, Param2, Param3, Param4, Param5, Param6, Param7, Param8, FA
 } // namespace fastdelegate
 
 #include <Awesomium/WebCore.h>
+#include <DiaUI/IUISystem.h>
 
 // Callbacks wrapped via JSDelegate should have the following function signature:
-//   void MyCallback(WebView* caller, const JSArray& args);
-typedef fastdelegate::FastDelegate2<Awesomium::WebView*, const Awesomium::JSArray&> JSDelegate;
+//   void MyCallback(const Dia::UI::BoundMethod::Args&);
+typedef fastdelegate::FastDelegate1<const Dia::UI::BoundMethod::Args&> JSDelegate;
 
 // Callbacks wrapped via JSDelegateWithRetval should have the following function signature:
-//   JSValue MyCallback(WebView* caller, const JSArray& args);
-typedef fastdelegate::FastDelegate2<Awesomium::WebView*, const Awesomium::JSArray&, Awesomium::JSValue> JSDelegateWithRetval;
+//   JSValue MyCallback(const Dia::UI::BoundMethod::Args&);
+typedef fastdelegate::FastDelegate1<const Dia::UI::BoundMethod::Args&, Awesomium::JSValue> JSDelegateWithRetval;
 
 #endif // !defined(FASTDELEGATE_H)
 
