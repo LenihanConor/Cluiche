@@ -101,6 +101,8 @@ void MethodDispatcher::BindWithRetval(Awesomium::JSObject& object,
   bound_methods_with_retval_[key] = callback;
 }
 
+#include <DiaUIAwesomium\Conversion.h>
+
 void MethodDispatcher::OnMethodCall(Awesomium::WebView* caller,
                   unsigned int remote_object_id, 
                   const Awesomium::WebString& method_name,
@@ -112,7 +114,8 @@ void MethodDispatcher::OnMethodCall(Awesomium::WebView* caller,
   // Call the method
   if (i != bound_methods_.end())
   {
-	  Dia::UI::BoundMethod::Args diaArgs;
+	  Dia::UI::BoundMethodArgs diaArgs;
+	  Dia::UI::Awesomium::Convert(diaArgs, args);
 	  i->second(diaArgs);
   }
 }
@@ -128,7 +131,9 @@ Awesomium::JSValue MethodDispatcher::OnMethodCallWithReturnValue(Awesomium::WebV
   // Call the method
   if (i != bound_methods_with_retval_.end())
   {
-	  Dia::UI::BoundMethod::Args diaArgs;
+	  Dia::UI::BoundMethodArgs diaArgs;
+	  Dia::UI::Awesomium::Convert(diaArgs, args);
+
 	  return i->second(diaArgs);
   }
 
