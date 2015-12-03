@@ -85,6 +85,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="AwesomiumUISystem.h" />
+    <ClInclude Include="Conversion.h" />
     <ClInclude Include="External\application.h" />
     <ClInclude Include="External\js_delegate.h" />
     <ClInclude Include="External\method_dispatcher.h" />
@@ -92,6 +93,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AwesomiumUISystem.cpp" />
+    <ClCompile Include="Conversion.cpp" />
     <ClCompile Include="External\application_win.cc" />
     <ClCompile Include="External\view_win.cc" />
   </ItemGroup>

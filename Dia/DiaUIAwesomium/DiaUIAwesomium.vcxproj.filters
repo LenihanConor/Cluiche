@@ -8,6 +8,7 @@
     <ClCompile Include="External\view_win.cc">
       <Filter>External</Filter>
     </ClCompile>
+    <ClCompile Include="Conversion.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AwesomiumUISystem.h" />
@@ -23,6 +24,7 @@
     <ClInclude Include="External\application.h">
       <Filter>External</Filter>
     </ClInclude>
+    <ClInclude Include="Conversion.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="External">
