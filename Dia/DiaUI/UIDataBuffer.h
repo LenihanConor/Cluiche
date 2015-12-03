@@ -17,7 +17,7 @@ namespace Dia
 			~UIDataBuffer();
 			
 			void CreateFromPreallocatedBuffer(int width, int height, unsigned char* data, int datasize, bool deleteWhenDone = true);
-			void Create(int width, int height, const unsigned char* data, int datasize, bool deleteWhenDone = true);
+			void Create(int width, int height, const unsigned char* data, int datasize);
 			void Destroy();
 
 			int GetWidth()const;
