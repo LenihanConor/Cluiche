@@ -30,7 +30,7 @@ namespace Dia
 
 				virtual void Initialize() override;
 
-				virtual void LoadPage(const Page& newPage) override;
+				virtual void LoadPage(Page& newPage) override;
 				virtual void OnLoadedPage() override {};
 				virtual void IsLoadingPage() override {};
 				virtual void UnloadPage() override {};

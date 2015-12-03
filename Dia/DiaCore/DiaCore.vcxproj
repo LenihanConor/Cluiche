@@ -98,6 +98,7 @@
     <ClInclude Include="Containers\Graphs\GraphVertex.h" />
     <ClInclude Include="Containers\Misc\CircularBufferC.h" />
     <ClInclude Include="Containers\Misc\CircularBufferIterator.h" />
+    <ClInclude Include="Containers\Misc\FastDelegate.h" />
     <ClInclude Include="Core\Assert.h" />
     <ClInclude Include="Core\CallStack.h" />
     <ClInclude Include="Core\EnumClass.h" />

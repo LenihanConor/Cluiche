@@ -15,6 +15,7 @@ namespace Dia
 			, mHeight(0)
 			, mBufferSize(0)
 			, mBuffer(nullptr)
+			, mDeleteWhenDone(true)
 		{}
 
 		UIDataBuffer::UIDataBuffer(int width, int height, const unsigned char* data, int datasize)
@@ -32,6 +33,7 @@ namespace Dia
 			, mHeight(0)
 			, mBufferSize(0)
 			, mBuffer(nullptr)
+			, mDeleteWhenDone(true)
 		{
 			// Only copy if this is already been set
 			if (rhs.mBuffer != nullptr)
@@ -44,6 +46,7 @@ namespace Dia
 			mHeight = 0;
 			mBufferSize = 0;
 			mBuffer = nullptr;
+			mDeleteWhenDone = true;
 			// Only copy if this is already been set
 			if (rhs.mBuffer != nullptr)
 				Create(rhs.GetWidth(), rhs.GetHeight(), rhs.GetBuffer(), rhs.GetBufferSize());
@@ -62,10 +65,10 @@ namespace Dia
 			mBufferSize = datasize;
 			mBuffer = DIA_NEW_ARRAY(datasize, unsigned char);
 			Dia::Core::MemoryCopy(static_cast<void*>(mBuffer), data, datasize);
-
+			mDeleteWhenDone = true;
 		}
 
-		void UIDataBuffer::CreateFromPreallocatedBuffer(int width, int height, unsigned char* data, int datasize)
+		void UIDataBuffer::CreateFromPreallocatedBuffer(int width, int height, unsigned char* data, int datasize, bool deleteWhenDone)
 		{
 			DIA_ASSERT(mWidth > 0, "Buffer width is set to zero");
 			DIA_ASSERT(mHeight > 0, "Buffer height is set to zero");
@@ -77,11 +80,12 @@ namespace Dia
 			mBuffer = data;
 			Dia::Core::MemoryCopy(static_cast<void*>(mBuffer), data, datasize);
 
+			mDeleteWhenDone = deleteWhenDone;
 		}
 
 		void UIDataBuffer::Destroy()
 		{
-			if (mBuffer != nullptr)
+			if (mBuffer != nullptr && mDeleteWhenDone)
 			{
 				DIA_DELETE_ARRAY(mBuffer);
 			}

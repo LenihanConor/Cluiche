@@ -1,14 +1,18 @@
 #include <DiaSFML/RenderWindowFactory.h>
 #include <DiaSFML/RenderWindow.h>
+
 #include <DiaCore/Time/TimeServer.h>
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaCore/Timer/TimeThreadLimiter.h>
 #include <DiaCore/Frame/FrameStream.h>
-#include <DiaInput/IInputSource.h>
+
 #include <DiaGraphics/Interface/ICanvas.h>
 
 #include <DiaInput/ConsoleGamepadManager.h>
 #include <DiaInput/InputSourceManager.h>
+#include <DiaInput/IInputSource.h>
+
+#include <DiaUI/Page.h>
 
 #include <thread>
 #include <mutex>
@@ -18,54 +22,22 @@
 #include "RenderThreadStruct.h"
 
 #include <DiaUI/IUISystem.h>
+
 class LaunchUIPage: public Dia::UI::Page
 {
 public:
-	LaunchUIPage()
-		: Dia::UI::Page("file:///Z:/GitHub/Cluiche/Cluiche/WebixTest/app.html")
-	{}
-
-	void BindMethods(Dia::UI::IUISystem* parentSystem)
+	void DoSomething(const Dia::UI::BoundMethodArgs&)
 	{
-		DIA_ASSERT(parentSystem, "parentSystem can not be NULL");
-
-		parentSystem->BindMethod()
-	}
-}
-
-
-
-// Bound to app.sayHello() in JavaScript
-void BackgroundGrey(WebView* caller,
-	const JSArray& args) {
-	backColour = sf::Color(211, 211, 211);
-}
-
-#define CREATE_AWESOMIUM_BOUND_METHOD(_methodName, _ptrToMethod)\
-	void _methodName(WebView* caller, const JSArray& args)\
-	{\
-		_ptrToMethod();\
-	}
-	
-
-#define CREATE_AWESOMIUM_BOUND_METHOD_WITH_ARGS(_methodName, _ptrToMethod)\
-	void _methodName(WebView* caller, const JSArray& args)\
-	{\
-		_ptrToMethod();\
+		int x = 0;
+		x++;
 	}
 
-void DoSomething()
-{
-
-}
-
-CREATE_AWESOMIUM_BOUND_METHOD(DoSomething)
-
-void DoSomething(int args)
-{
-
-}
-
+	LaunchUIPage()
+		: Dia::UI::Page("file:///Z:/GitHub/Cluiche/Cluiche/DiaGraphicTestWithUI/bootscreen.html")
+	{
+		BindMethod(Dia::UI::BoundMethod("backgroundGrey", Dia::UI::BoundMethod::MethodPtr(this, &LaunchUIPage::DoSomething)));
+	}
+};
 
 
 int main(int argc, const char* argv[])
@@ -115,11 +87,10 @@ int main(int argc, const char* argv[])
 	// Main thread
 	Dia::Core::TimeThreadLimiter threadLimiter(1.0f/timeServer.GetStep().AsFloatInSeconds());
 
-	
 	while (running)
 	{
 		threadLimiter.Start();
-		
+
 		awesomiumUISystem.Update();
 
 		// Input thread :)
@@ -136,7 +107,6 @@ int main(int argc, const char* argv[])
 				inputToSimFrameStream.InsertCopyOfDataToStream(eventData, timeServer.GetTime());
 			}
 
-			//for (unsigned int i = 0; i < eventData.Size(); i++)
 			{
 				const Dia::Input::EventData* pEventData = &eventData;
 
@@ -167,7 +137,7 @@ int main(int argc, const char* argv[])
 		timeServer.Tick();
 
 		threadLimiter.Stop();
-		std::cout << "Main: Wait " << threadLimiter.RemainingTime().AsIntInMilliseconds() << " ms\n";
+	//	std::cout << "Main: Wait " << threadLimiter.RemainingTime().AsIntInMilliseconds() << " ms\n";
 		threadLimiter.SleepThread();
 	}
 

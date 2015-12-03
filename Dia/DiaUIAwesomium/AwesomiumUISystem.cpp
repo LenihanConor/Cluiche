@@ -9,8 +9,10 @@
 
 #include <DiaCore/Core/Assert.h>
 #include <DiaCore/Memory/Memory.h>
+#include <DiaCore/Strings/String256.h>
 
 #include <DiaUI/UIDataBuffer.h>
+#include <DiaUI/Page.h>
 
 #include  <DiaWindow/SystemHandle.h>
 #include  <DiaWindow/Interface/IWindow.h>
@@ -43,59 +45,55 @@ namespace Dia
 				{
 					DIA_ASSERT(mPlatformAbstractedUIApplicaton, "mPlatformAbstractedUIApplicaton is NULL");
 					if (mPlatformAbstractedUIApplicaton)
+					{
 						delete mPlatformAbstractedUIApplicaton;
+
+					}
 				}
 
 				void Initialize()
 				{
 					if (!mIsInitialized)	// only initialize once
+					{
 						mPlatformAbstractedUIApplicaton->Load();
+					}
 				}
 
-				void LoadPage(const Page& newPage)
+				void LoadPage(Page& newPage)
 				{
 					const Dia::Core::Containers::String256& newPageUrl = newPage.GetUrl();
 					::Awesomium::WebURL url(::Awesomium::WSLit(newPageUrl.AsCStr()));
 
+					Dia::UI::BoundMethodList boundMethodList = newPage.GetBoundMenthods();
 
+					::Awesomium::JSValue result = mView->CreateGlobalJavascriptObject(::Awesomium::WSLit("app"));
+					if (result.IsObject())
+					{
+						::Awesomium::JSObject& app_object = result.ToObject();
 
+						for (unsigned int i = 0; i < boundMethodList.Size(); i++)
+						{
+							const Dia::Core::Containers::String32& name = boundMethodList[0].GetName();
 
-					TODO - REMOVE THIS
-//					newPage.BindMethods();
-					newPage.GetBoundMenthods();
+							Dia::UI::BoundMethod::MethodPtr func = boundMethodList[0].GetMethodPtr();
 
-					JSValue result = web_view->CreateGlobalJavascriptObject(WSLit("app"));
-					if (result.IsObject()) {
-						// Bind our custom method to it.
-						JSObject& app_object = result.ToObject();
-						method_dispatcher_.Bind(app_object,
-							WSLit("backgroundGrey"),
-							JSDelegate(this, &TutorialApp::BackgroundGrey));
-
-						method_dispatcher_.Bind(app_object,
-							WSLit("backgroundWhite"),
-							JSDelegate(this, &TutorialApp::BackgroundWhite));
-
-						method_dispatcher_.Bind(app_object,
-							WSLit("backgroundBluish"),
-							JSDelegate(this, &TutorialApp::BackgroundBluish));
+							mMethodDispatcher.Bind(app_object,
+								::Awesomium::WSLit(name.AsCStr()),
+								JSDelegate(func));
+						}
+						mView->set_js_method_handler(&mMethodDispatcher);
 					}
-
-					// Bind our method dispatcher to the WebView
-					web_view->set_js_method_handler(&method_dispatcher_);
-					TODO - REMOVE THIS
-
-
-
-
-
-
-
 
 					mView->LoadURL(url);
 			
 					while (mView->IsLoading())
 						mPlatformAbstractedUIApplicaton->web_core()->Update();
+				}
+
+				void BoundMethodRouter(::Awesomium::WebView* caller,
+					const ::Awesomium::JSArray& args)
+				{
+
 				}
 
 				bool IsInitialized()const
@@ -113,7 +111,7 @@ namespace Dia
 				{
 					mView = mPlatformAbstractedUIApplicaton->web_core()->CreateWebView(800, 600);
 					mView->SetTransparent(true);
-				
+					
 					mIsInitialized = true;
 				}
 
@@ -127,16 +125,31 @@ namespace Dia
 
 				void FetchUIDataBuffer(Dia::UI::UIDataBuffer& outBuffer)const
 				{
-					::Awesomium::BitmapSurface* bitmap = static_cast<::Awesomium::BitmapSurface*>(mView->surface());
+					if (IsInitialized())
+					{
+					//	static unsigned char buffer[1920000];
 
-					//TODO: This is crap that i need to assign to a local buffer to just memcopy below
-					int buffersize = bitmap->width() * bitmap->height() * 4;
-					unsigned char *buffer = new unsigned char[buffersize];
-					bitmap->CopyTo(buffer, bitmap->width() * 4, 4, false, false);
+						::Awesomium::BitmapSurface* bitmap = static_cast<::Awesomium::BitmapSurface*>(mView->surface());
 
 
-					// We do not delete the memory, the buffer will take care of it.
-					outBuffer.CreateFromPreallocatedBuffer(bitmap->width(), bitmap->height(), buffer, buffersize);
+						//TODO: This is crap that i need to assign to a local buffer to just memcopy below
+						int buffersize = bitmap->width() * bitmap->height() * 4;
+
+						DIA_ASSERT(buffersize > sBuffersize); // Need to increase size of UI buffer
+					//	unsigned char *buffer = new unsigned char[buffersize];
+					//	bitmap->CopyTo(buffer, bitmap->width() * 4, 4, false, false);
+
+
+						bitmap->CopyTo(&mBuffer[0], bitmap->width() * 4, 4, false, false);
+
+						// We do not delete the memory, the buffer will take care of it.
+						outBuffer.CreateFromPreallocatedBuffer(bitmap->width(), bitmap->height(), &mBuffer[0], sBuffersize, false);
+					}
+				}
+
+				void BindMethod(const Dia::Core::Containers::String64& methodName, BoundMethod* pMethod)
+				{
+
 				}
 
 				//-------------------------------------------------------------------
@@ -220,6 +233,9 @@ namespace Dia
 				MethodDispatcher mMethodDispatcher;
 				HWND mSystemHandle;
 				bool mIsInitialized;
+
+				static const int sBuffersize = 7000000;
+				mutable unsigned char mBuffer[sBuffersize];
 			};
 
 			//-------------------------------------------------------------------
@@ -253,7 +269,7 @@ namespace Dia
 			}
 
 			//-------------------------------------------------------------------
-			void UISystem::LoadPage(const Page& newPage)
+			void UISystem::LoadPage(Page& newPage)
 			{
 				DIA_ASSERT(mUISystemImpl, "mUISystemImpl is NULL");
 

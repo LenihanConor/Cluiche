@@ -25,14 +25,14 @@ class ApplicationWin : public Application {
   virtual void UpdateCore()
   {
 	   // Main message loop:
-    MSG msg;
+  //  MSG msg;
     if (is_running_) 
 	{
-		//TODO - What do all thes functions do?
-		GetMessage(&msg, NULL, 0, 0);
-		TranslateMessage(&msg);
+		//TODO - I do not see the need for these.
+//		GetMessage(&msg, NULL, 0, 0);
+//		TranslateMessage(&msg);
 		web_core_->Update();
-		DispatchMessage(&msg);
+//		DispatchMessage(&msg);
     }
   }
 

@@ -101,6 +101,8 @@ void MethodDispatcher::BindWithRetval(Awesomium::JSObject& object,
   bound_methods_with_retval_[key] = callback;
 }
 
+#include <DiaUIAwesomium\Conversion.h>
+
 void MethodDispatcher::OnMethodCall(Awesomium::WebView* caller,
                   unsigned int remote_object_id, 
                   const Awesomium::WebString& method_name,
@@ -108,10 +110,14 @@ void MethodDispatcher::OnMethodCall(Awesomium::WebView* caller,
   // Find the method that matches the object id + method name
   std::map<ObjectMethodKey, JSDelegate>::iterator i = 
     bound_methods_.find(ObjectMethodKey(remote_object_id, method_name));
-
+  const wchar16* a = method_name.data();
   // Call the method
   if (i != bound_methods_.end())
-    i->second(caller, args);
+  {
+	  Dia::UI::BoundMethodArgs diaArgs;
+	  Dia::UI::Awesomium::Convert(diaArgs, args);
+	  i->second(diaArgs);
+  }
 }
 
 Awesomium::JSValue MethodDispatcher::OnMethodCallWithReturnValue(Awesomium::WebView* caller,
@@ -121,10 +127,15 @@ Awesomium::JSValue MethodDispatcher::OnMethodCallWithReturnValue(Awesomium::WebV
   // Find the method that matches the object id + method name
   std::map<ObjectMethodKey, JSDelegateWithRetval>::iterator i =
     bound_methods_with_retval_.find(ObjectMethodKey(remote_object_id, method_name));
-
+  const wchar16* a = method_name.data();
   // Call the method
   if (i != bound_methods_with_retval_.end())
-    return i->second(caller, args);
+  {
+	  Dia::UI::BoundMethodArgs diaArgs;
+	  Dia::UI::Awesomium::Convert(diaArgs, args);
+
+	  return i->second(diaArgs);
+  }
 
   return Awesomium::JSValue::Undefined();
 }

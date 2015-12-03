@@ -345,6 +345,9 @@
     <ClInclude Include="Timer\TimeThreadLimiter.h">
       <Filter>Timer</Filter>
     </ClInclude>
+    <ClInclude Include="Containers\Misc\FastDelegate.h">
+      <Filter>Containers\Misc</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\Assert.cpp">
