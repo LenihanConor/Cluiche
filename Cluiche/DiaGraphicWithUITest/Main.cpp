@@ -1,14 +1,18 @@
 #include <DiaSFML/RenderWindowFactory.h>
 #include <DiaSFML/RenderWindow.h>
+
 #include <DiaCore/Time/TimeServer.h>
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaCore/Timer/TimeThreadLimiter.h>
 #include <DiaCore/Frame/FrameStream.h>
-#include <DiaInput/IInputSource.h>
+
 #include <DiaGraphics/Interface/ICanvas.h>
 
 #include <DiaInput/ConsoleGamepadManager.h>
 #include <DiaInput/InputSourceManager.h>
+#include <DiaInput/IInputSource.h>
+
+#include <DiaUI/Page.h>
 
 #include <thread>
 #include <mutex>
@@ -19,31 +23,21 @@
 
 #include <DiaUI/IUISystem.h>
 
-
-void DoSomething(const Dia::UI::BoundMethod::Args *)
-{
-	int x = 0;
-	x++;
-}
-
 class LaunchUIPage: public Dia::UI::Page
 {
 public:
-	LaunchUIPage()
-		: Dia::UI::Page("file:///Z:/GitHub/Cluiche/Cluiche/WebixTest/app.html")
+	void DoSomething(const Dia::UI::BoundMethodArgs&)
 	{
-//		BindMethod(Dia::UI::BoundMethod("DoSomething", &DoSomething));
+		int x = 0;
+		x++;
 	}
 
-	void BindMethods(Dia::UI::IUISystem* parentSystem)
+	LaunchUIPage()
+		: Dia::UI::Page("file:///Z:/GitHub/Cluiche/Cluiche/DiaGraphicTestWithUI/bootscreen.html")
 	{
-		DIA_ASSERT(parentSystem, "parentSystem can not be NULL");
-
-		//parentSystem->
+		BindMethod(Dia::UI::BoundMethod("backgroundGrey", Dia::UI::BoundMethod::MethodPtr(this, &LaunchUIPage::DoSomething)));
 	}
 };
-
-
 
 
 int main(int argc, const char* argv[])
@@ -93,7 +87,6 @@ int main(int argc, const char* argv[])
 	// Main thread
 	Dia::Core::TimeThreadLimiter threadLimiter(1.0f/timeServer.GetStep().AsFloatInSeconds());
 
-	
 	while (running)
 	{
 		threadLimiter.Start();
@@ -114,7 +107,6 @@ int main(int argc, const char* argv[])
 				inputToSimFrameStream.InsertCopyOfDataToStream(eventData, timeServer.GetTime());
 			}
 
-			//for (unsigned int i = 0; i < eventData.Size(); i++)
 			{
 				const Dia::Input::EventData* pEventData = &eventData;
 
@@ -145,7 +137,7 @@ int main(int argc, const char* argv[])
 		timeServer.Tick();
 
 		threadLimiter.Stop();
-		std::cout << "Main: Wait " << threadLimiter.RemainingTime().AsIntInMilliseconds() << " ms\n";
+	//	std::cout << "Main: Wait " << threadLimiter.RemainingTime().AsIntInMilliseconds() << " ms\n";
 		threadLimiter.SleepThread();
 	}
 
