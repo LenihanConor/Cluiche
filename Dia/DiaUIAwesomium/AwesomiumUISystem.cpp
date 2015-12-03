@@ -9,8 +9,10 @@
 
 #include <DiaCore/Core/Assert.h>
 #include <DiaCore/Memory/Memory.h>
+#include <DiaCore/Strings/String256.h>
 
 #include <DiaUI/UIDataBuffer.h>
+#include <DiaUI/Page.h>
 
 #include  <DiaWindow/SystemHandle.h>
 #include  <DiaWindow/Interface/IWindow.h>
@@ -20,17 +22,6 @@
 #include <Awesomium/STLHelpers.h>
 
 #include <thread>
-
-
-
-#define CREATE_AWESOMIUM_BOUND(_methodName, _ptrToMethod)\
-	void _methodName(WebView* caller, const JSArray& args)\
-	{\
-		Dia::UI::BoundMethodArgs diaArgs;\
-		Convert(args, diaArgs);\
-		(*_ptrToMethod)(diaArgs);\
-	}
-
 
 namespace Dia
 {
@@ -54,7 +45,10 @@ namespace Dia
 				{
 					DIA_ASSERT(mPlatformAbstractedUIApplicaton, "mPlatformAbstractedUIApplicaton is NULL");
 					if (mPlatformAbstractedUIApplicaton)
+					{
 						delete mPlatformAbstractedUIApplicaton;
+
+					}
 				}
 
 				void Initialize()
@@ -65,33 +59,30 @@ namespace Dia
 					}
 				}
 
-				void LoadPage(const Page& newPage)
+				void LoadPage(Page& newPage)
 				{
 					const Dia::Core::Containers::String256& newPageUrl = newPage.GetUrl();
 					::Awesomium::WebURL url(::Awesomium::WSLit(newPageUrl.AsCStr()));
 
+					Dia::UI::BoundMethodList boundMethodList = newPage.GetBoundMenthods();
 
-
-
-				//	Dia::UI::BoundMethodList boundMethodList = newPage.GetBoundMenthods();
-
-	/*				::Awesomium::JSValue result = mView->CreateGlobalJavascriptObject(::Awesomium::WSLit("app"));
-					if (result.IsObject()) 
+					::Awesomium::JSValue result = mView->CreateGlobalJavascriptObject(::Awesomium::WSLit("app"));
+					if (result.IsObject())
 					{
-						// Bind our custom method to it.
 						::Awesomium::JSObject& app_object = result.ToObject();
 
-						
-					//	const Dia::Core::Containers::String32* name = &boundMethodList[0].GetName();
+						for (unsigned int i = 0; i < boundMethodList.Size(); i++)
+						{
+							const Dia::Core::Containers::String32& name = boundMethodList[0].GetName();
 
-						mMethodDispatcher.Bind(app_object,
-							::Awesomium::WSLit("functionRouter"),
-							JSDelegate(this, &UISystemImpl::BoundMethodRouter));
+							Dia::UI::BoundMethod::MethodPtr func = boundMethodList[0].GetMethodPtr();
+
+							mMethodDispatcher.Bind(app_object,
+								::Awesomium::WSLit(name.AsCStr()),
+								JSDelegate(func));
+						}
+						mView->set_js_method_handler(&mMethodDispatcher);
 					}
-
-					// Bind our method dispatcher to the WebView
-					mView->set_js_method_handler(&mMethodDispatcher);*/
-				
 
 					mView->LoadURL(url);
 			
@@ -131,9 +122,6 @@ namespace Dia
 				// Inherited from Application::Listener
 				virtual void OnShutdown()
 				{}
-
-		//		 = 1920000;
-				
 
 				void FetchUIDataBuffer(Dia::UI::UIDataBuffer& outBuffer)const
 				{
@@ -281,7 +269,7 @@ namespace Dia
 			}
 
 			//-------------------------------------------------------------------
-			void UISystem::LoadPage(const Page& newPage)
+			void UISystem::LoadPage(Page& newPage)
 			{
 				DIA_ASSERT(mUISystemImpl, "mUISystemImpl is NULL");
 
@@ -308,16 +296,6 @@ namespace Dia
 				std::lock_guard<std::mutex> lock(mSystemMutex);
 
 				mUISystemImpl->FetchUIDataBuffer(outBuffer);
-			}
-
-			//-------------------------------------------------------------------
-			void UISystem::BindMethod(const Dia::Core::Containers::String64& methodName, BoundMethod* pMethod)
-			{
-				DIA_ASSERT(mUISystemImpl, "mUISystemImpl is NULL");
-
-				std::lock_guard<std::mutex> lock(mSystemMutex);
-
-				mUISystemImpl->BindMethod(methodName, pMethod);
 			}
 
 			//-------------------------------------------------------------------

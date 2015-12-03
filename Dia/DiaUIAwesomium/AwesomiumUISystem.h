@@ -30,7 +30,7 @@ namespace Dia
 
 				virtual void Initialize() override;
 
-				virtual void LoadPage(const Page& newPage) override;
+				virtual void LoadPage(Page& newPage) override;
 				virtual void OnLoadedPage() override {};
 				virtual void IsLoadingPage() override {};
 				virtual void UnloadPage() override {};
@@ -38,7 +38,6 @@ namespace Dia
 				virtual void Update() override;
 
 				virtual void FetchUIDataBuffer(UIDataBuffer& outBuffer)const override;
-				virtual void BindMethod(const Dia::Core::Containers::String64& methodName, BoundMethod* pMethod)override;
 
 				//Input
 				virtual void InjectMouseMove(int x, int y)override;

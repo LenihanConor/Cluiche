@@ -119,17 +119,17 @@ public:
 	}
 
 	// Bound to app.sayHello() in JavaScript
-	void BackgroundGrey(const Dia::UI::BoundMethod::Args& args) {
+	void BackgroundGrey(const Dia::UI::BoundMethodArgs& args) {
 		backColour = sf::Color(211, 211, 211);
 	}
 
 	// Bound to app.sayHello() in JavaScript
-	void BackgroundWhite(const Dia::UI::BoundMethod::Args& args) {
+	void BackgroundWhite(const Dia::UI::BoundMethodArgs& args) {
 		backColour = sf::Color(255, 255, 255);
 	}
 
 	// Bound to app.sayHello() in JavaScript
-	void BackgroundBluish(const Dia::UI::BoundMethod::Args& args)
+	void BackgroundBluish(const Dia::UI::BoundMethodArgs& args)
 	{
 	//	backColour = sf::Color(255, 128, 128);
 		Awesomium::WebURL url(Awesomium::WSLit("file:///Z:/GitHub/Cluiche/Cluiche/WebixTest/app2.html"));

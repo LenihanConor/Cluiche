@@ -77,10 +77,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BoundMethod.cpp" />
     <ClCompile Include="UIDataBuffer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BoundMethod.h" />
     <ClInclude Include="IUISystem.h" />
+    <ClInclude Include="Page.h" />
     <ClInclude Include="UIDataBuffer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
