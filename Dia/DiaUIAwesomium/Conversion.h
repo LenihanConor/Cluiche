@@ -16,6 +16,9 @@ namespace Dia
 		{
 			void Convert(BoundMethodArgs& lhs, const ::Awesomium::JSArray& rhs);
 			void Convert(BoundMethodValue& lhs, const ::Awesomium::JSValue& rhs);
+
+			void Convert(::Awesomium::JSArray& lhs, const BoundMethodArgs& rhs);
+			void Convert(::Awesomium::JSValue& lhs, const BoundMethodValue& rhs);
 		}
 	}
 }
