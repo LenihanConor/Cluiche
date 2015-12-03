@@ -20,7 +20,6 @@ namespace Dia
 
 		UIDataBuffer::UIDataBuffer(int width, int height, const unsigned char* data, int datasize)
 		{
-			
 			Create(width, height, data, datasize);
 		}
 
