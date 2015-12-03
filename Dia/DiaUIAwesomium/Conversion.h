@@ -4,6 +4,7 @@
 #pragma once
 
 namespace Awesomium { class JSArray; }
+namespace Awesomium { class JSValue; }
 namespace Dia { namespace UI { class BoundMethodArgs;  } }
 namespace Dia { namespace UI { class BoundMethodValue; } }
 
