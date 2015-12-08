@@ -18,11 +18,15 @@ namespace Dia
 
 			void InsertCopyOfDataToStream(const T& data, const Dia::Core::TimeAbsolute& timeStamp);
 
+			const T* FetchLatestData(Dia::Core::TimeAbsolute& timeStampOfOutput)const;
 			const T* FetchDataClosestToTime(const Dia::Core::TimeAbsolute& timeStamp, Dia::Core::TimeAbsolute& timeStampOfOutput)const;
 			void FetchAllDataUpToTime(const Dia::Core::TimeAbsolute& timeStamp, Dia::Core::Containers::DynamicArrayC<const T*, 32>& ptrBuffer)const;
 
+			bool IsTimeStampGreaterThanCurrentData(const Dia::Core::TimeAbsolute& timeStamp)const;
+
 			void GarbageCollectAllFramesOlderThan(const Dia::Core::TimeAbsolute& timeStamp);
 
+			
 		private:
 			class InternalData
 			{

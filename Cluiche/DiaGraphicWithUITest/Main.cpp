@@ -33,7 +33,7 @@ public:
 	}
 
 	LaunchUIPage()
-		: Dia::UI::Page("file:///Z:/GitHub/Cluiche/Cluiche/DiaGraphicTestWithUI/bootscreen.html")
+		: Dia::UI::Page("file:///Z:/GitHub/Cluiche/Cluiche/DiaGraphicWithUITest/bootscreen.html")
 	{
 		BindMethod(Dia::UI::BoundMethod("backgroundGrey", Dia::UI::BoundMethod::MethodPtr(this, &LaunchUIPage::DoSomething)));
 	}
@@ -44,7 +44,7 @@ int main(int argc, const char* argv[])
 {
 	Dia::SFML::RenderWindowFactory windowFactory;
 	
-	Dia::Window::IWindow::Settings windowSetting("GraphicsTestWithUI", Dia::Window::IWindow::Settings::Dimensions(800, 600), Dia::Window::IWindow::Settings::Style());
+	Dia::Window::IWindow::Settings windowSetting("GraphicsTestWithUI", Dia::Window::IWindow::Settings::Dimensions(900, 700), Dia::Window::IWindow::Settings::Style());
 	Dia::Graphics::ICanvas::Settings canvasSettings(Dia::Graphics::ICanvas::Settings::VSyncEnum::kEnable, 0, 0, 2, 0);
 	
 	Dia::SFML::RenderWindow* renderWindow = static_cast<Dia::SFML::RenderWindow*>(windowFactory.Create(windowSetting, canvasSettings));
@@ -57,6 +57,7 @@ int main(int argc, const char* argv[])
 	Dia::Input::InputSourceManager inputSourceManager;
 	Dia::Input::ConsoleGamepadManager gamepadManager;
 
+	// Setup UI
 	LaunchUIPage launchUIPage;
 	Dia::UI::Awesomium::UISystem awesomiumUISystem(window);
 	awesomiumUISystem.Initialize();
@@ -77,10 +78,10 @@ int main(int argc, const char* argv[])
 	Dia::Core::FrameStream<Dia::Input::EventData> inputToSimFrameStream;
 	Dia::Core::FrameStream<Dia::Graphics::FrameData> simToRenderFrameStream;
 
-	SimThreadStruct simThreadStruct(running, timeServer, awesomiumUISystem, inputToSimFrameStream, simToRenderFrameStream);
+	SimThreadStruct simThreadStruct(running, awesomiumUISystem, inputToSimFrameStream, simToRenderFrameStream);
 	std::thread simThread(std::ref(simThreadStruct));
 
-	RenderThreadStruct renderThreadStruct(running, timeServer, simToRenderFrameStream, canvas);
+	RenderThreadStruct renderThreadStruct(running, simToRenderFrameStream, canvas);
 	std::thread renderThread(std::ref(renderThreadStruct));
 
 	// run the main loop

@@ -14,7 +14,6 @@ struct RenderThreadStruct
 {
 public:
 	RenderThreadStruct(const bool& running,
-						const Dia::Core::TimeServer& timeServer,
 						Dia::Core::FrameStream<Dia::Graphics::FrameData>& frameStream,
 						Dia::Graphics::ICanvas* pCanvas);
 
@@ -25,7 +24,6 @@ public:
 private:
 	// Shared resources
 	const bool& mRunning;
-	const Dia::Core::TimeServer& mTimeServer;
 	Dia::Core::FrameStream<Dia::Graphics::FrameData>& mFrameStream;
 	Dia::Graphics::ICanvas* mpCanvas;
 

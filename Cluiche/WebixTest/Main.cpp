@@ -297,6 +297,7 @@ int main(int argc, const char* argv[])
 
 		uiOverlayTex.update(buffer);
 
+		// Test code - only enable  if we want to print just UI
 		if (i == 0)
 		{
 			sf::Image img = backBuffer.getTexture().copyToImage();
