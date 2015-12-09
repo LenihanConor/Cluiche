@@ -15,6 +15,7 @@ namespace Dia
 		class FrameData: public DebugFrameData, public UIFrameData
 		{
 		public:
+			// TODO - UI SHOULD BE SAVE AT A DIFFERENT FRAME RATE AS I DONT WANT IT BEING PLAYED BACK
 			FrameData();
 
 			FrameData& operator=(const FrameData& rhs);
