@@ -10,16 +10,15 @@ Dia::Graphics::RGBA dynamicCircleColour = Dia::Graphics::RGBA::Red;
 
 
 SimThreadStruct::SimThreadStruct(bool& running,
-	const Dia::Core::TimeServer& timeServer,
 	Dia::UI::IUISystem& uiSystem,
 	Dia::Core::FrameStream<Dia::Input::EventData>& inputToSimFrameStream,
 	Dia::Core::FrameStream<Dia::Graphics::FrameData>& SimToRenderFrameStream)
 	: mRunning(running)
-	, mTimeServer(timeServer)
+	, mTimeServer(30.0f, Dia::Core::TimeAbsolute::Zero())
 	, mUISystem(uiSystem)
 	, mInputToSimFrameStream(inputToSimFrameStream)
 	, mSimToRenderFrameStream(SimToRenderFrameStream)
-	, mThreadLimiter(30.0)
+	, mThreadLimiter(1.0f / mTimeServer.GetStep().AsFloatInSeconds())
 {}
 
 void SimThreadStruct::operator()()
@@ -106,6 +105,8 @@ void SimThreadStruct::Run()
 		renderFrameBuffer.RequestDrawUI(uiBuffer);
 
 		mSimToRenderFrameStream.InsertCopyOfDataToStream(renderFrameBuffer, mTimeServer.GetTime());
+
+		mTimeServer.Tick();
 
 		mThreadLimiter.Stop();
 //		std::cout << "SIM: Wait " << mThreadLimiter.RemainingTime().AsIntInMilliseconds() << " ms\n";

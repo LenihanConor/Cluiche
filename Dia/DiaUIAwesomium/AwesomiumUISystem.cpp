@@ -29,7 +29,10 @@ namespace Dia
 	{
 		namespace Awesomium
 		{
-			class UISystemImpl: public Application::Listener
+			class UISystemImpl: public Application::Listener,
+										::Awesomium::WebViewListener::Load,
+										::Awesomium::WebViewListener::Process
+
 			{
 			public:
 				UISystemImpl(const Window::IWindow* windowContext)
@@ -37,6 +40,7 @@ namespace Dia
 					, mView(nullptr)
 					, mSystemHandle(windowContext->GetSystemHandle())
 					, mIsInitialized(false)
+					, mWindowContext(windowContext)
 				{
 					mPlatformAbstractedUIApplicaton->set_listener(this);
 				}
@@ -47,7 +51,6 @@ namespace Dia
 					if (mPlatformAbstractedUIApplicaton)
 					{
 						delete mPlatformAbstractedUIApplicaton;
-
 					}
 				}
 
@@ -60,9 +63,11 @@ namespace Dia
 				}
 
 				void LoadPage(Page& newPage)
-				{
+				{						 
 					const Dia::Core::Containers::String256& newPageUrl = newPage.GetUrl();
 					::Awesomium::WebURL url(::Awesomium::WSLit(newPageUrl.AsCStr()));
+
+					mView->set_js_method_handler(&mMethodDispatcher);
 
 					Dia::UI::BoundMethodList boundMethodList = newPage.GetBoundMenthods();
 
@@ -81,19 +86,12 @@ namespace Dia
 								::Awesomium::WSLit(name.AsCStr()),
 								JSDelegate(func));
 						}
-						mView->set_js_method_handler(&mMethodDispatcher);
 					}
 
 					mView->LoadURL(url);
 			
 					while (mView->IsLoading())
 						mPlatformAbstractedUIApplicaton->web_core()->Update();
-				}
-
-				void BoundMethodRouter(::Awesomium::WebView* caller,
-					const ::Awesomium::JSArray& args)
-				{
-
 				}
 
 				bool IsInitialized()const
@@ -109,9 +107,11 @@ namespace Dia
 				// Inherited from Application::Listener
 				virtual void OnLoaded()
 				{
-					mView = mPlatformAbstractedUIApplicaton->web_core()->CreateWebView(800, 600);
+					mView = mPlatformAbstractedUIApplicaton->web_core()->CreateWebView(mWindowContext->GetSize().X(), mWindowContext->GetSize().Y());
 					mView->SetTransparent(true);
-					
+					mView->set_load_listener(this);
+					mView->set_process_listener(this);
+
 					mIsInitialized = true;
 				}
 
@@ -127,29 +127,16 @@ namespace Dia
 				{
 					if (IsInitialized())
 					{
-					//	static unsigned char buffer[1920000];
-
 						::Awesomium::BitmapSurface* bitmap = static_cast<::Awesomium::BitmapSurface*>(mView->surface());
 
-
-						//TODO: This is crap that i need to assign to a local buffer to just memcopy below
 						int buffersize = bitmap->width() * bitmap->height() * 4;
-
 						DIA_ASSERT(buffersize > sBuffersize); // Need to increase size of UI buffer
-					//	unsigned char *buffer = new unsigned char[buffersize];
-					//	bitmap->CopyTo(buffer, bitmap->width() * 4, 4, false, false);
-
 
 						bitmap->CopyTo(&mBuffer[0], bitmap->width() * 4, 4, false, false);
 
 						// We do not delete the memory, the buffer will take care of it.
 						outBuffer.CreateFromPreallocatedBuffer(bitmap->width(), bitmap->height(), &mBuffer[0], sBuffersize, false);
 					}
-				}
-
-				void BindMethod(const Dia::Core::Containers::String64& methodName, BoundMethod* pMethod)
-				{
-
 				}
 
 				//-------------------------------------------------------------------
@@ -227,10 +214,69 @@ namespace Dia
 						mView->InjectMouseWheel(scroll_vert, scroll_horz);
 				}
 
+				//-------------------------------------------------------------------
+				// This event occurs when the page begins loading a frame.
+				virtual void OnBeginLoadingFrame(::Awesomium::WebView* caller,
+					int64 frame_id,
+					bool is_main_frame,
+					const ::Awesomium::WebURL& url,
+					bool is_error_page)override
+				{}
+
+				//-------------------------------------------------------------------
+				// This event occurs when a frame fails to load. See error_desc for additional information.
+				virtual void OnFailLoadingFrame(::Awesomium::WebView* caller,
+					int64 frame_id,
+					bool is_main_frame,
+					const ::Awesomium::WebURL& url,
+					int error_code,
+					const ::Awesomium::WebString& error_desc)override
+				{
+					Dia::Core::Containers::String256 str;
+					url.filename().ToUTF8(str.AsCStr(), str.Size());
+					DIA_ASSERT(0, "Failed to load %s", str.AsCStr());
+				}
+
+				//-------------------------------------------------------------------
+				// This event occurs when the page finishes loading a frame.
+				// The main frame always finishes loading last for a given page load.
+				virtual void OnFinishLoadingFrame(::Awesomium::WebView* caller,
+					int64 frame_id,
+					bool is_main_frame,
+					const ::Awesomium::WebURL& url)override
+				{}
+
+				//-------------------------------------------------------------------
+				// This event occurs when the DOM has finished parsing and the
+				// window object is available for JavaScript execution.
+				virtual void OnDocumentReady(::Awesomium::WebView* caller,
+					const ::Awesomium::WebURL& url)override
+				{}
+
+				//-------------------------------------------------------------------
+				// This even occurs when a new WebView render process is launched.
+				virtual void OnLaunch(::Awesomium::WebView* caller)override{}
+
+				/// This event occurs when the render process hangs.
+				virtual void OnUnresponsive(::Awesomium::WebView* caller)override
+				{
+					DIA_ASSERT(0, "Awesomium rendering is unresponsive");
+				}
+
+				/// This event occurs when the render process becomes responsive after a hang.
+				virtual void OnResponsive(::Awesomium::WebView* caller)override{}
+
+				/// This event occurs when the render process crashes.
+				virtual void OnCrashed(::Awesomium::WebView* caller, ::Awesomium::TerminationStatus status)override
+				{
+					DIA_ASSERT(0, "Awesomium rendering has crashed");
+				}
+
 			private:
 				Application* mPlatformAbstractedUIApplicaton;
 				::Awesomium::WebView* mView;
 				MethodDispatcher mMethodDispatcher;
+				const Window::IWindow* mWindowContext;
 				HWND mSystemHandle;
 				bool mIsInitialized;
 

@@ -134,7 +134,10 @@ Awesomium::JSValue MethodDispatcher::OnMethodCallWithReturnValue(Awesomium::WebV
 	  Dia::UI::BoundMethodArgs diaArgs;
 	  Dia::UI::Awesomium::Convert(diaArgs, args);
 
-	  return i->second(diaArgs);
+	  Awesomium::JSValue returnValue;
+	  Dia::UI::Awesomium::Convert(returnValue, i->second(diaArgs));
+	  
+	  return returnValue;
   }
 
   return Awesomium::JSValue::Undefined();

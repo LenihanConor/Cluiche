@@ -11,9 +11,38 @@ namespace Dia
 		{
 			std::lock_guard<std::mutex> lock(mMutex);
 
+			DIA_ASSERT(IsTimeStampGreaterThanCurrentData(timeStamp), "Inserting data into FrameStream that is not greater in time since the last update");
+
 			InternalData tempStamp;
 			mFrameList.push_back(tempStamp);				// Create a default value then insert the data so that it is faster
 			mFrameList.back().Create(data, timeStamp);
+		}
+
+		template <class T> inline
+		bool FrameStream<T>::IsTimeStampGreaterThanCurrentData(const Dia::Core::TimeAbsolute& timeStamp)const
+		{
+			if (mFrameList.size() > 0)
+			{
+				return mFrameList.back().mTimeStamp < timeStamp;
+			}
+
+			return true;
+		}
+
+		template <class T> inline
+		const T* FrameStream<T>::FetchLatestData(Dia::Core::TimeAbsolute& timeStampOfOutput)const
+		{
+			std::lock_guard<std::mutex> lock(mMutex);
+
+			if (mFrameList.size() == 0)
+			{
+				return nullptr;
+			}
+
+			const InternalData* returnValue = &mFrameList.back();
+
+			timeStampOfOutput = returnValue->mTimeStamp;
+			return &(returnValue->mFrameData);
 		}
 
 		template <class T> inline

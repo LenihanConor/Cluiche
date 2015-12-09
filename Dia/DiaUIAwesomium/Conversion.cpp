@@ -49,6 +49,41 @@ namespace Dia
 					DIA_ASSERT(0, "Cannot convert JSValue to Dia BoundMethodArgs")
 				}
 			}
+
+			void Convert(::Awesomium::JSArray& lhs, const BoundMethodArgs& rhs)
+			{
+				for (unsigned int i = 0; i < rhs.Size(); i++)
+				{
+					const BoundMethodValue& diaValue = rhs.At(i);
+					::Awesomium::JSValue value;
+					Convert(value, diaValue);
+					lhs.Push(value);
+				}
+			}
+
+			void Convert(::Awesomium::JSValue& lhs, const BoundMethodValue& rhs)
+			{
+				if (rhs.IsBoolean())
+				{
+					lhs = ::Awesomium::JSValue(rhs.GetBoolean());
+				}
+				else if (rhs.IsInteger())
+				{
+					lhs = ::Awesomium::JSValue(rhs.GetInteger());
+				}
+				else if (rhs.IsDouble())
+				{
+					lhs = ::Awesomium::JSValue(rhs.GetDouble());
+				}
+				else if (rhs.IsString())
+				{
+					lhs = ::Awesomium::JSValue(rhs.GetString().AsCStr());
+				}
+				else
+				{
+					DIA_ASSERT(0, "Cannot convert JSValue to Dia BoundMethodArgs")
+				}
+			}
 		}
 	}
 }
