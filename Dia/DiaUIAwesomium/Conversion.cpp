@@ -77,7 +77,7 @@ namespace Dia
 				}
 				else if (rhs.IsString())
 				{
-					lhs = ::Awesomium::JSValue(rhs.GetString().AsCStr());
+					lhs = ::Awesomium::JSValue(::Awesomium::WebString::CreateFromUTF8(rhs.GetString().AsCStr(), rhs.GetString().Size()));
 				}
 				else
 				{
