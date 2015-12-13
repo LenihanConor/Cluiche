@@ -10,6 +10,7 @@
 #include <DiaCore/Core/Assert.h>
 #include <DiaCore/Memory/Memory.h>
 #include <DiaCore/Strings/String256.h>
+#include <DiaCore/Core/Log.h>
 
 #include <DiaUI/UIDataBuffer.h>
 #include <DiaUI/Page.h>
@@ -30,6 +31,7 @@ namespace Dia
 		namespace Awesomium
 		{
 			class UISystemImpl: public Application::Listener,
+										::Awesomium::WebViewListener::View,
 										::Awesomium::WebViewListener::Load,
 										::Awesomium::WebViewListener::Process
 
@@ -213,6 +215,71 @@ namespace Dia
 					if (mView)
 						mView->InjectMouseWheel(scroll_vert, scroll_horz);
 				}
+
+				//-------------------------------------------------------------------
+				// This event occurs when the page title has changed.
+				virtual void OnChangeTitle(::Awesomium::WebView* caller,
+					const ::Awesomium::WebString& title) override {}
+
+				//-------------------------------------------------------------------
+				// This event occurs when the page URL has changed.
+				virtual void OnChangeAddressBar(::Awesomium::WebView* caller,
+					const ::Awesomium::WebURL& url) override {}
+
+				//-------------------------------------------------------------------
+				// This event occurs when the tooltip text has changed. You
+				// should hide the tooltip when the text is empty.
+				virtual void OnChangeTooltip(::Awesomium::WebView* caller,
+					const ::Awesomium::WebString& tooltip) override {}
+
+				//-------------------------------------------------------------------
+				// This event occurs when the target URL has changed. This
+				// is usually the result of hovering over a link on a page.
+				virtual void OnChangeTargetURL(::Awesomium::WebView* caller,
+					const ::Awesomium::WebURL& url) override {}
+
+				//-------------------------------------------------------------------
+				// This event occurs when the cursor has changed. This is
+				// is usually the result of hovering over different content.
+				virtual void OnChangeCursor(::Awesomium::WebView* caller,
+					::Awesomium::Cursor cursor) override {}
+
+				//-------------------------------------------------------------------
+				// This event occurs when the focused element changes on the page.
+				// This is usually the result of textbox being focused or some other
+				// user-interaction event.
+				virtual void OnChangeFocus(::Awesomium::WebView* caller,
+					::Awesomium::FocusedElementType focused_type)override {}
+
+				//-------------------------------------------------------------------
+				// This event occurs when a message is added to the console on the page.
+				// This is usually the result of a JavaScript error being encountered
+				// on a page.
+				virtual void OnAddConsoleMessage(::Awesomium::WebView* caller,
+					const ::Awesomium::WebString& message,
+					int line_number,
+					const ::Awesomium::WebString& source)override
+				{
+					Dia::Core::Log::OutputVaradicLine("DiaAwesomiumUI Log - Source: %s, Line: %d, Message: %s", source.data(), line_number, message.data());
+				}
+
+				//-------------------------------------------------------------------
+				// This event occurs when a WebView creates a new child WebView
+				// (usually the result of window.open or an external link). It
+				// is your responsibility to display this child WebView in your
+				// application. You should call Resize on the child WebView
+				// immediately after this event to make it match your container
+				// size.
+				//
+				// If this is a child of a Windowed WebView, you should call
+				// WebView::set_parent_window on the new view immediately within
+				// this event
+				virtual void OnShowCreatedWebView(::Awesomium::WebView* caller,
+					::Awesomium::WebView* new_view,
+					const ::Awesomium::WebURL& opener_url,
+					const ::Awesomium::WebURL& target_url,
+					const ::Awesomium::Rect& initial_pos,
+					bool is_popup) override {}
 
 				//-------------------------------------------------------------------
 				// This event occurs when the page begins loading a frame.
