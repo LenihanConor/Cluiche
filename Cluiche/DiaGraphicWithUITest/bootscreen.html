@@ -1,53 +1,88 @@
 <html>
     <head>
-    <link rel="stylesheet" href="webix_codebase/webix.css" type="text/css">
-    <script src="webix_codebase/webix.js" type="text/javascript"></script>  
+    <link rel="stylesheet" href="../../Webix/3.1.2/codebase/webix.css" type="text/css">
+    <script src="../../Webix/3.1.2/codebase/webix.js" type="text/javascript"></script>  
+	</style>
+
     </head>
     <body>
-        <div id="testA" style="width:400px; height:0px; margin:0px;"></div>
+        <div id="bootscreen"></div>
         <script type="text/javascript">
-            webix.ui({
-                type:"line",
-                rows: [
-                    { 
-                        view:"toolbar", elements:[
-                            { view:"button", value:"Grey", width: 70, click:"grey_row"},
-                            { view:"button", value:"White", width: 70, click:"white_row" },
-                            { view:"button", value:"Red", width: 70, click:"red_row" }]
-                    },
+            var launch_menu_data =
+            [
                 {
-                view:"list", 
-                template:"#title# - #year#", // which data to show
-                select:true, //enables selection 
-                height: 400,
-                    width: 200,
-                data: [
-                    { id:1, title:"The Shawshank Redemption", year:1994},
-                    { id:2, title:"The Godfather", year:1972},
-                    { id:3, title:"The Godfather: Part II", year:1974},
-                    { id:4, title:"The Good, the Bad and the Ugly", year:1966},
-                    { id:5, title:"My Fair Lady", year:1964},
-                    { id:6, title:"12 Angry Men", year:1957}
-                ]
-                } 
-                    ]
-            });
-            
-            function grey_row()
+                    id: 1,
+                    title: "Test Application",
+                    unique_name:"test_application",
+                    details: "Dummy application to allow quick testing"
+                },
+                {
+                    id: 2,
+                    title: "Pong",
+                    unique_name: "pong",
+                    detail: "When I build this I will give details :)"
+                },
+                {
+                    id: 3,
+                    title: "Ultimate Frisbee",
+                    unique_name: "frisbee",
+                    detail: "When I build this I will give details :)"
+                },
+                {
+                    id: 4,
+                    title: "Eco",
+                    unique_name: "eco",
+                    detail: "When I build this I will give details :)"
+                }
+            ];
+
+            // This is what will be passed to the C++
+            var launch_unique_name = "";
+
+            webix.ui
+            (
+                {
+                    view:"window", 
+                    head:"Select Game To Launch",
+                    position: "center",
+                    body:
+                    {
+                        type:"line",
+                        rows:
+                        [
+                            {
+                                view:"list", 
+                                template: "<strong>#title#</strong> <div style='padding-left:18px'> Details: <em>#detail#</em></div>",
+                                
+                                select: true, //enables selection 
+                                scroll:false,
+                                autoheight:true,
+                                autowidth: true,
+                               
+                                data:launch_menu_data,
+                                on: {
+                                    'onAfterSelect': function (id)
+                                    {
+                                        launch_unique_name = this.getItem(id).unique_name;
+                                    }
+                                },
+                            }, 
+                            { 
+                                view: "toolbar", elements:
+                                [
+                                    { view:"button", value:"Launch Level", click:"launch_level"}
+                                ]
+                            }
+                        ]
+                    }
+                }
+            ).show();
+                   
+            function launch_level()
             {
-                app.backgroundGrey();
-            }
-            
-            function white_row()
-            {
-                app.backgroundWhite();
-            }
-            
-            function red_row()
-            {
-                app.backgroundBluish();
-            }
-            
+                webix.message("Selected: " + launch_unique_name)
+                app.launch_level(launch_unique_name);
+            }            
         </script>
     </body>
 </html>
