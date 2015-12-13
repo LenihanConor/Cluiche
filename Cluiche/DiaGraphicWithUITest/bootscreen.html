@@ -14,30 +14,42 @@
                     id: 1,
                     title: "Test Application",
                     unique_name:"test_application",
-                    details: "Dummy application to allow quick testing"
+                    status:"Complete",
+                    details: "Dummy application to allow quick testing of new idea's"
                 },
-                {
-                    id: 2,
-                    title: "Pong",
-                    unique_name: "pong",
-                    detail: "When I build this I will give details :)"
-                },
+                 {
+                     id: 2,
+                     title: "Unit Test",
+                     unique_name: "unit_test",
+                     status:"In Development",
+                     detail: "Run through C++ unit tests and show results in UI and output file"
+                 },
                 {
                     id: 3,
-                    title: "Ultimate Frisbee",
-                    unique_name: "frisbee",
-                    detail: "When I build this I will give details :)"
+                    title: "Pong",
+                    unique_name: "pong",
+                    status:"In Development",
+                    detail: "Pong, hopefully with network play :)"
                 },
                 {
                     id: 4,
+                    title: "Ultimate Frisbee",
+                    unique_name: "frisbee",
+                    status:"Not Started",
+                    detail: "This is a simple game to prove out gameplay technology"
+                },
+                {
+                    id: 5,
                     title: "Eco",
                     unique_name: "eco",
-                    detail: "When I build this I will give details :)"
+                    status: "Not Started",
+                    detail: "What I always want to build :)"
                 }
             ];
 
             // This is what will be passed to the C++
             var launch_unique_name = "";
+            var launch_id = 0;
 
             webix.ui
             (
@@ -63,7 +75,8 @@
                                 on: {
                                     'onAfterSelect': function (id)
                                     {
-                                        launch_unique_name = this.getItem(id).unique_name;
+                                        launch_unique_name = this.getItem(id).unique_name; 
+                                        launch_id = id;
                                     }
                                 },
                             }, 
@@ -77,11 +90,39 @@
                     }
                 }
             ).show();
-                   
+                
+            function getItem(dataArray, id)
+            {
+                var arrayLength = dataArray.length;
+                for (var i = 0; i < arrayLength; i++) 
+                {
+                    var data = dataArray[i];
+                    if (data.id == id)
+                    {
+                        return data;
+                    }
+                }
+                return null;
+            }
+
             function launch_level()
             {
-                webix.message("Selected: " + launch_unique_name)
-                app.launch_level(launch_unique_name);
+                // If the launch_id = zero then we have no selected Id, through up a pop up
+                if (launch_id == 0)
+                {
+                    webix.alert({ type: "alert-warning", text: "Select a game to launch." });
+                    return;
+                }
+                var foundItem = getItem(launch_menu_data, launch_id);
+
+                // If we cannot find the correct id then we have a problem
+                if (foundItem == null)
+                {
+                    webix.alert({ type: "alert-error", text: "There has been a problem we could not find the selected item. Talk to an engineer" });
+                    return;
+                }
+
+                app.launch_level(getItem(launch_menu_data, id).unique_name);
             }            
         </script>
     </body>
