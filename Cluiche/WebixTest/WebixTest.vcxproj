@@ -65,7 +65,7 @@
       <AdditionalDependencies>$(OutDir)DiaCore.lib;$(OutDir)DiaMaths.lib;$(OutDir)DiaGraphics.lib;$(OutDir)DiaSFML.lib;$(OutDir)DiaWindow.lib;$(OutDir)DiaUI.lib;$(OutDir)DiaUIAwesomium.lib;sfml-main-d.lib;sfml-system-d.lib;sfml-window-d.lib;sfml-graphics-d.lib;glu32.lib;opengl32.lib;awesomium.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalLibraryDirectories>$(AWE_DIR)build\lib;$(SolutionDir)..\SFML\Build\lib\Debug;$(SolutionDir)..\SFML\Build\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\Awesomium SDK\1.7.5.1\builds\lib;$(SolutionDir)..\SFML\Build\lib\Debug;$(SolutionDir)..\SFML\Build\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <Bscmake>
       <PreserveSbr>true</PreserveSbr>
