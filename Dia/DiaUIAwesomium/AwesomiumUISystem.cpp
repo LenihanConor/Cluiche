@@ -32,7 +32,78 @@ namespace Dia
 	{
 		namespace Awesomium
 		{
-			std::map<int, std::pair<const char*, const char*>> sErrorDetailMap = { {-6, {"FILE_NOT_FOUND", "The file or directory cannot be found"}} };
+			// Key/value pair of error code/{error name&error description}
+			std::map<int, std::pair<const char*, const char*>> sErrorDetailMap = { 
+				{-2, {"FAILED","A generic failure occurred."}},
+				{-3, {"ABORTED","An operation was aborted (due to user action)."}},
+				{-4, {"INVALID_ARGUMENT","An argument to the function is incorrect."}},
+				{-5, {"INVALID_HANDLE","The handle or file descriptor is invalid."}},
+				{-6, {"FILE_NOT_FOUND","The file or directory cannot be found."}},
+				{-7, {"TIMED_OUT","An operation timed out."}},
+				{-8, {"FILE_TOO_BIG","The file is too large."}},
+				{-9, {"UNEXPECTED","An unexpected error. This may be caused by a programming mistake or an invalid assumption."}},
+				{-10, {"ACCESS_DENIED","Permission to access a resource, other than the network, was denied."}},
+				{-11, {"NOT_IMPLEMENTED","The operation failed because of unimplemented functionality."}},
+				{-12, {"INSUFFICIENT_RESOURCES","There were not enough resources to complete the operation."}},
+				{-13, {"OUT_OF_MEMORY","Memory allocation failed."}},
+				{-14, {"UPLOAD_FILE_CHANGED","The file upload failed because the file's modification time was different from the expectation."}},
+				{-15, {"SOCKET_NOT_CONNECTED","The socket is not connected."}},
+				{-16, {"FILE_EXISTS","The file already exists."}},
+				{-17, {"FILE_PATH_TOO_LONG","The path or file name is too long."}},
+				{-18, {"FILE_NO_SPACE","Not enough room left on the disk."}},
+				{-19, {"FILE_VIRUS_INFECTED","The file has a virus."}},
+				{-20, {"BLOCKED_BY_CLIENT","The client chose to block the request."}},
+				{-100,{"CONNECTION_CLOSED","A connection was closed (corresponding to a TCP FIN)." } },
+				{-101,{"CONNECTION_RESET","A connection was reset (corresponding to a TCP RST)." } },
+				{-102,{"CONNECTION_REFUSED","A connection attempt was refused." } },
+				{-103,{"CONNECTION_ABORTED","This can include a FIN packet that did not get ACK'd." } },
+				{-104,{"CONNECTION_FAILED","A connection attempt failed." } },
+				{-105,{"NAME_NOT_RESOLVED","The host name could not be resolved." } },
+				{-106,{"INTERNET_DISCONNECTED","The Internet connection has been lost." } },
+				{-107,{"SSL_PROTOCOL_ERROR","An SSL protocol error occurred." } },
+				{-108,{"ADDRESS_INVALID","The IP address or port number is invalid (e.g., cannot connect to the IP address 0 or the port 0)." } },
+				{-109,{"ADDRESS_UNREACHABLE","The IP address is unreachable. This usually means that there is no route to the specified host or network." } },
+				{-110,{"SSL_CLIENT_AUTH_CERT_NEEDED","The server requested a client certificate for SSL client authentication." } },
+				{-111,{"TUNNEL_CONNECTION_FAILED","A tunnel connection through the proxy could not be established." } },
+				{-112,{"NO_SSL_VERSIONS_ENABLED","No SSL protocol versions are enabled." } },
+				{-113,{"SSL_VERSION_OR_CIPHER_MISMATCH","cipher suite." } },
+				{-114,{"SSL_RENEGOTIATION_REQUESTED","The server requested a renegotiation (rehandshake)." } },
+				{-115,{"PROXY_AUTH_UNSUPPORTED","The proxy requested authentication (for tunnel establishment) with an unsupported method." } },
+				{-116,{"CERT_ERROR_IN_SSL_RENEGOTIATION","During SSL renegotiation (rehandshake), the server sent a certificate with an error." } },
+				{-117,{"BAD_SSL_CLIENT_AUTH_CERT","The SSL handshake failed because of a bad or missing client certificate." } },
+				{-118,{"CONNECTION_TIMED_OUT","A connection attempt timed out." } },
+				{-119,{"HOST_RESOLVER_QUEUE_TOO_LARGE","There are too many pending DNS resolves, so a request in the queue was aborted." } },
+				{-120,{"SOCKS_CONNECTION_FAILED","Failed establishing a connection to the SOCKS proxy server for a target host." } },
+				{-121,{"SOCKS_CONNECTION_HOST_UNREACHABLE"," The SOCKS proxy server failed establishing connection to the target host because that host is unreachable." } },
+				{-122,{"NPN_NEGOTIATION_FAILED","The request to negotiate an alternate protocol failed." } },
+				{-123,{"SSL_NO_RENEGOTIATION","The peer sent an SSL no_renegotiation alert message." } },
+				{-124,{"WINSOCK_UNEXPECTED_WRITTEN_BYTES","Winsock sometimes reports more data written than passed.This is probably due to a broken LSP." } },
+				{-125,{"SSL_DECOMPRESSION_FAILURE_ALERT","An SSL peer sent us a fatal decompression_failure alert. This typically occurs when a peer selects DEFLATE compression in the mistaken belief that it supports it." } },
+				{-126,{"SSL_BAD_RECORD_MAC_ALERT","An SSL peer sent us a fatal bad_record_mac alert. This has been observed from servers with buggy DEFLATE support." } },
+				{-127,{"PROXY_AUTH_REQUESTED","The proxy requested authentication (for tunnel establishment)." } },
+				{-128,{"SSL_UNSAFE_NEGOTIATION","A known TLS strict server didn't offer the renegotiation extension." } },
+				{-129,{"SSL_WEAK_SERVER_EPHEMERAL_DH_KEY"," The SSL server attempted to use a weak ephemeral Diffie-Hellman key." } },
+				{-130,{"PROXY_CONNECTION_FAILED","Could not create a connection to the proxy server. An error occurred either in resolving its name, or in connecting a socket to it. Note that this does NOT include failures during the actual \"CONNECT\" method of an HTTP proxy." } },
+				{-131,{"MANDATORY_PROXY_CONFIGURATION_FAILED","A mandatory proxy configuration could not be used. Currently this mean that a mandatory PAC script could not be fetched, parsed or executed." } },
+				{-133,{"PRECONNECT_MAX_SOCKET_LIMIT","We've hit the max socket limit for the socket pool while pre-connecting. We don't bother trying to pre-connect more sockets." } },
+				{-134,{"SSL_CLIENT_AUTH_PRIVATE_KEY_ACCESS_DENIED","The permission to use the SSL client certificate's private key was denied."}},
+				{-135,{"SSL_CLIENT_AUTH_CERT_NO_PRIVATE_KEY","The SSL client certificate has no private key." }},
+				{-136,{"PROXY_CERTIFICATE_INVALID","The certificate presented by the HTTPS Proxy was invalid." } },
+				{-137,{"NAME_RESOLUTION_FAILED","An error occurred when trying to do a name resolution (DNS)." } },
+				{-138,{"NETWORK_ACCESS_DENIED","Permission to access the network was denied. This is used to distinguish errors that were most likely caused by a firewall from other access denied errors. See also ERR_ACCESS_DENIED."}},
+				{-139,{"TEMPORARILY_THROTTLED","The request throttler module canceled this request to avoid DDOS." }},
+				{-140,{"HTTPS_PROXY_TUNNEL_RESPONSE","A request to create an SSL tunnel connection through the HTTPS proxy received a non-200 (OK) and non-407 (Proxy Auth) response. The responsebody might include a description of why the request failed." } },
+				{-141,{"SSL_CLIENT_AUTH_SIGNATURE_FAILED","We were unable to sign the CertificateVerify data of an SSL client auth handshake with the client certificate's private key." } },
+				{-142,{"MSG_TOO_BIG","The message was too large for the transport.(for example a UDP message which exceeds size threshold)." } },
+				{-143,{"SPDY_SESSION_ALREADY_EXISTS","A SPDY session already exists, and should be used instead of this connection." } },
+				{-146,{"PROTOCOL_SWITCHED","Connection was aborted for switching to another protocol. WebSocket abort SocketStream connection when alternate protocol is found." } },
+				{-147,{"ADDRESS_IN_USE","Returned when attempting to bind an address that is already in use." } },
+				{-148,{"SSL_HANDSHAKE_NOT_COMPLETED","An operation failed because the SSL handshake has not completed." } },
+				{-149,{"SSL_BAD_PEER_PUBLIC_KEY","SSL peer's public key is invalid." } },
+				{-150,{"SSL_PINNED_KEY_NOT_IN_CERT_CHAIN","The certificate didn't match the built-in public key pins for the host name. The pins are set in net/base/transport_security_state. cc and require that one of a set of public keys exist on the path from the leaf to the root."}},
+				{-151,{"CLIENT_AUTH_CERT_TYPE_UNSUPPORTED","Server request for client certificate did not contain any types we support." }},
+				{-152,{"ORIGIN_BOUND_CERT_GENERATION_TYPE_MISMATCH","Server requested one type of cert, then requested a different type while the first was still being generated." } }
+				};
 
 			class UISystemImpl: public Application::Listener,
 										::Awesomium::WebViewListener::View,
@@ -306,14 +377,15 @@ namespace Dia
 					Dia::Core::Containers::String256 strUrl;
 					url.filename().ToUTF8(strUrl.AsCStr(), strUrl.Size());
 					
-					const char* errorName = ""; 
-					const char* errorDesc = "";
+					const char* errorName = "Unknown"; 
+					const char* errorDesc = "Find error code at: http://docs.awesomium.net/html/T_Awesomium_Core_LoadingFrameFailedEventArgs.htm";
 					auto it = sErrorDetailMap.find(error_code);
 					if (it != sErrorDetailMap.end())
 					{
 						errorName = it->second.first;
 						errorDesc = it->second.second;
 					}
+
 					DIA_ASSERT(0, "Failed to load %s. \n\tError Code: %d. \n\tName: %s\n\tDesc: %s", strUrl.AsCStr(), error_code, errorName, errorDesc);
 				}
 
