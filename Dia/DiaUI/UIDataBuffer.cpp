@@ -56,8 +56,8 @@ namespace Dia
 
 		void UIDataBuffer::Create(int width, int height, const unsigned char* data, int datasize)
 		{
-			DIA_ASSERT(mWidth > 0, "Buffer width is set to zero");
-			DIA_ASSERT(mHeight > 0, "Buffer height is set to zero");
+			DIA_ASSERT(width > 0, "Buffer width is set to zero");
+			DIA_ASSERT(height > 0, "Buffer height is set to zero");
 			DIA_ASSERT(data != nullptr, "Buffer data is null");
 
 			mWidth = width;
@@ -70,8 +70,8 @@ namespace Dia
 
 		void UIDataBuffer::CreateFromPreallocatedBuffer(int width, int height, unsigned char* data, int datasize, bool deleteWhenDone)
 		{
-			DIA_ASSERT(mWidth > 0, "Buffer width is set to zero");
-			DIA_ASSERT(mHeight > 0, "Buffer height is set to zero");
+			DIA_ASSERT(width > 0, "Buffer width is set to zero");
+			DIA_ASSERT(height > 0, "Buffer height is set to zero");
 			DIA_ASSERT(data != nullptr, "Buffer data is null");
 
 			mWidth = width;

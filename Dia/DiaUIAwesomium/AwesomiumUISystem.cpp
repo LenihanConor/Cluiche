@@ -23,6 +23,8 @@
 #include <Awesomium/STLHelpers.h>
 
 #include <thread>
+#include <map>
+#include <utility>
 
 namespace Dia
 {
@@ -30,6 +32,8 @@ namespace Dia
 	{
 		namespace Awesomium
 		{
+			std::map<int, std::pair<const char*, const char*>> sErrorDetailMap = { {-6, {"FILE_NOT_FOUND", "The file or directory cannot be found"}} };
+
 			class UISystemImpl: public Application::Listener,
 										::Awesomium::WebViewListener::View,
 										::Awesomium::WebViewListener::Load,
@@ -132,7 +136,7 @@ namespace Dia
 						::Awesomium::BitmapSurface* bitmap = static_cast<::Awesomium::BitmapSurface*>(mView->surface());
 
 						int buffersize = bitmap->width() * bitmap->height() * 4;
-						DIA_ASSERT(buffersize > sBuffersize); // Need to increase size of UI buffer
+						DIA_ASSERT(buffersize < sBuffersize, "Awesomium failed to get allocate a large enough buffersize"); // Need to increase size of UI buffer
 
 						bitmap->CopyTo(&mBuffer[0], bitmap->width() * 4, 4, false, false);
 
@@ -299,9 +303,18 @@ namespace Dia
 					int error_code,
 					const ::Awesomium::WebString& error_desc)override
 				{
-					Dia::Core::Containers::String256 str;
-					url.filename().ToUTF8(str.AsCStr(), str.Size());
-					DIA_ASSERT(0, "Failed to load %s", str.AsCStr());
+					Dia::Core::Containers::String256 strUrl;
+					url.filename().ToUTF8(strUrl.AsCStr(), strUrl.Size());
+					
+					const char* errorName = ""; 
+					const char* errorDesc = "";
+					auto it = sErrorDetailMap.find(error_code);
+					if (it != sErrorDetailMap.end())
+					{
+						errorName = it->second.first;
+						errorDesc = it->second.second;
+					}
+					DIA_ASSERT(0, "Failed to load %s. \n\tError Code: %d. \n\tName: %s\n\tDesc: %s", strUrl.AsCStr(), error_code, errorName, errorDesc);
 				}
 
 				//-------------------------------------------------------------------

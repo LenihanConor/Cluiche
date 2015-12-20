@@ -46,7 +46,7 @@ namespace Dia
 				}
 				else
 				{
-					DIA_ASSERT(0, "Cannot convert JSValue to Dia BoundMethodArgs")
+					DIA_ASSERT(0, "Cannot convert JSValue to Dia BoundMethodArgs");
 				}
 			}
 
@@ -81,7 +81,7 @@ namespace Dia
 				}
 				else
 				{
-					DIA_ASSERT(0, "Cannot convert JSValue to Dia BoundMethodArgs")
+					DIA_ASSERT(0, "Cannot convert JSValue to Dia BoundMethodArgs");
 				}
 			}
 		}
