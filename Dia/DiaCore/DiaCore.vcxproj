@@ -107,6 +107,8 @@
     <ClInclude Include="Core\MetaLogic.h" />
     <ClInclude Include="Core\System.h" />
     <ClInclude Include="CRC\CRCHashFunctor.h" />
+    <ClInclude Include="FilePath\FilePath.h" />
+    <ClInclude Include="FilePath\FilePathStore.h" />
     <ClInclude Include="Frame\FrameStream.h" />
     <ClInclude Include="Timer\TimeThreadLimiter.h" />
     <ClInclude Include="Time\SystemClock.h" />
@@ -171,6 +173,8 @@
     <ClCompile Include="Core\CallStack.cpp" />
     <ClCompile Include="Core\EnumClass.cpp" />
     <ClCompile Include="Core\Log.cpp" />
+    <ClCompile Include="FilePath\FilePath.cpp" />
+    <ClCompile Include="FilePath\FilePathStore.cpp" />
     <ClCompile Include="Timer\TimeThreadLimiter.cpp" />
     <ClCompile Include="Time\SystemClock.cpp" />
     <ClCompile Include="Time\TimeAbsolute.cpp" />

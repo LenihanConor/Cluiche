@@ -140,8 +140,11 @@ namespace Dia
 				}
 
 				void LoadPage(Page& newPage)
-				{						 
-					const Dia::Core::Containers::String256& newPageUrl = newPage.GetUrl();
+				{	
+					// Get Url to load
+					Dia::Core::FilePath::ResoledFilePath newPageUrl;
+					newPage.GetUrl().Resolve(newPageUrl);
+
 					::Awesomium::WebURL url(::Awesomium::WSLit(newPageUrl.AsCStr()));
 
 					mView->set_js_method_handler(&mMethodDispatcher);
@@ -184,7 +187,7 @@ namespace Dia
 				// Inherited from Application::Listener
 				virtual void OnLoaded()
 				{
-					mView = mPlatformAbstractedUIApplicaton->web_core()->CreateWebView(mWindowContext->GetSize().X(), mWindowContext->GetSize().Y());
+					mView = mPlatformAbstractedUIApplicaton->web_core()->CreateWebView(static_cast<int>(mWindowContext->GetSize().X()), static_cast<int>(mWindowContext->GetSize().Y()));
 					mView->SetTransparent(true);
 					mView->set_load_listener(this);
 					mView->set_process_listener(this);

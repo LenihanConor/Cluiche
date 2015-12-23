@@ -120,6 +120,30 @@ namespace Dia
 		{
 			return (mCRC != crc.mCRC);
 		}
+		
+		// -----------------------------------------------------------------------------
+		bool CRC::operator <(const CRC &x) const
+		{
+			return mCRC < x.mCRC;
+		}
+		
+		// -----------------------------------------------------------------------------
+		bool CRC::operator >(const CRC &x) const
+		{
+			return mCRC > x.mCRC;
+		}
+
+		// -----------------------------------------------------------------------------
+		bool CRC::operator <=(const CRC &x) const
+		{
+			return mCRC <= x.mCRC;
+		}
+
+		// -----------------------------------------------------------------------------
+		bool CRC::operator >=(const CRC &x) const
+		{
+			return mCRC >= x.mCRC;
+		}
 
 		// -----------------------------------------------------------------------------
 		const unsigned int CRC::Calc(const char* data, const size_t size)

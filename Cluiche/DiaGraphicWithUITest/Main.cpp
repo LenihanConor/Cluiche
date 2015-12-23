@@ -5,6 +5,7 @@
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaCore/Timer/TimeThreadLimiter.h>
 #include <DiaCore/Frame/FrameStream.h>
+#include <DiaCore/FilePath/FilePathStore.h>
 
 #include <DiaGraphics/Interface/ICanvas.h>
 
@@ -33,15 +34,18 @@ public:
 	}
 
 	LaunchUIPage()
-		: Dia::UI::Page("file:///Z:/GitHub/Cluiche/Cluiche/DiaGraphicWithUITest/bootscreen.html")
+		: Dia::UI::Page(Dia::Core::FilePath("root", "DiaGraphicWithUITest/", "bootscreen.html")) 
 	{
 		BindMethod(Dia::UI::BoundMethod("backgroundGrey", Dia::UI::BoundMethod::MethodPtr(this, &LaunchUIPage::DoSomething)));
 	}
 };
 
-
 int main(int argc, const char* argv[])
 {
+	//Setup paths
+	Dia::Core::FilePathStore::RegisterPathRootToStore("root", "file:///C:/Users/Conor/Documents/GitHub/Cluiche/Cluiche/");
+
+	// Setup the rendering windoow
 	Dia::SFML::RenderWindowFactory windowFactory;
 	
 	Dia::Window::IWindow::Settings windowSetting("GraphicsTestWithUI", Dia::Window::IWindow::Settings::Dimensions(900, 700), Dia::Window::IWindow::Settings::Style());

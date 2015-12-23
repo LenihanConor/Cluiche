@@ -1,7 +1,7 @@
 //////////////////
 #pragma once
 
-#include <DiaCore/Strings/String256.h>
+#include <DiaCore/FilePath/FilePath.h>
 #include <DiaUI/BoundMethod.h>
 
 namespace Dia
@@ -14,11 +14,11 @@ namespace Dia
 		{
 		public:
 			Page() {};
-			Page(const Dia::Core::Containers::String256& url)
+			Page(const Dia::Core::FilePath& url)
 				: mUrl(url)
 			{}
 
-			const Dia::Core::Containers::String256& GetUrl()const { return mUrl; };
+			const Dia::Core::FilePath& GetUrl()const { return mUrl; };
 			BoundMethodList& GetBoundMenthods() { return mBoundMethodList; }
 			
 			void BindMethod(BoundMethod& method)
@@ -27,7 +27,7 @@ namespace Dia
 			}
 
 		private:
-			Dia::Core::Containers::String256 mUrl;		// Address for page, this is used to load the page.
+			Dia::Core::FilePath mUrl;		// Address for page, this is used to load the page.
 			BoundMethodList mBoundMethodList;			// List of all bound messages from UI -> C++
 		};
 	}

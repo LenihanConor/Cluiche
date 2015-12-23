@@ -24,6 +24,12 @@ namespace Dia
 			bool				operator == (const CRC& crc)const;
 			bool				operator != (const CRC& crc)const;
 			
+			bool operator <(const CRC &x) const;
+			bool operator >(const CRC &x) const;
+
+			bool operator <=(const CRC &x) const;
+			bool operator >=(const CRC &x) const;
+
 			const unsigned int	Value () const;							/// accessor		
 			
 			const float AsFractionOfMaxCRC() const;

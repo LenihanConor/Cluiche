@@ -115,6 +115,9 @@
     <Filter Include="Frame">
       <UniqueIdentifier>{0f1abddd-5815-43db-8cd3-6324be46c66f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="FilePath">
+      <UniqueIdentifier>{aacdf484-6764-43dd-9fa4-5a26854fd233}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Assert.h">
@@ -348,6 +351,12 @@
     <ClInclude Include="Containers\Misc\FastDelegate.h">
       <Filter>Containers\Misc</Filter>
     </ClInclude>
+    <ClInclude Include="FilePath\FilePath.h">
+      <Filter>FilePath</Filter>
+    </ClInclude>
+    <ClInclude Include="FilePath\FilePathStore.h">
+      <Filter>FilePath</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\Assert.cpp">
@@ -448,6 +457,12 @@
     </ClCompile>
     <ClCompile Include="Timer\TimeThreadLimiter.cpp">
       <Filter>Timer\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="FilePath\FilePath.cpp">
+      <Filter>FilePath</Filter>
+    </ClCompile>
+    <ClCompile Include="FilePath\FilePathStore.cpp">
+      <Filter>FilePath</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
