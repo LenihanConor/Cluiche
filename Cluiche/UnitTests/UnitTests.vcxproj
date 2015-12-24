@@ -97,6 +97,7 @@
     <ClInclude Include="Tests\Core\UnitTestCore.h" />
     <ClInclude Include="Tests\Core\UnitTestCRC.h" />
     <ClInclude Include="Tests\Core\UnitTestEnum.h" />
+    <ClInclude Include="Tests\Core\UnitTestJsonTypes.h" />
     <ClInclude Include="Tests\Core\UnitTestMetaLogic.h" />
     <ClInclude Include="Tests\Core\UnitTestTimeAbsolute.h" />
     <ClInclude Include="Tests\Core\UnitTestTimer.h" />
@@ -147,6 +148,7 @@
     <ClCompile Include="Tests\Core\UnitTestBitFlag.cpp" />
     <ClCompile Include="Tests\Core\UnitTestCRC.cpp" />
     <ClCompile Include="Tests\Core\UnitTestEnum.cpp" />
+    <ClCompile Include="Tests\Core\UnitTestJsonTypes.cpp" />
     <ClCompile Include="Tests\Core\UnitTestMetaLogic.cpp" />
     <ClCompile Include="Tests\Core\UnitTestTimeAbsolute.cpp" />
     <ClCompile Include="Tests\Core\UnitTestTimer.cpp" />

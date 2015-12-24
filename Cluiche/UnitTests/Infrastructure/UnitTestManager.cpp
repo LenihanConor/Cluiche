@@ -22,6 +22,7 @@
 #include "UnitTests/Tests/Core/UnitTestMetaLogic.h"
 #include "UnitTests/Tests/Core/UnitTestTypeTraits.h"
 #include "UnitTests/Tests/Core/UnitTestTypes.h"
+#include "UnitTests/Tests/Core/UnitTestJsonTypes.h"
 
 #include "UnitTests/Tests/Collections/UnitTestArray.h"
 #include "UnitTests/Tests/Collections/UnitTestArrayC.h"
@@ -84,7 +85,8 @@ namespace UnitTests
 		mUnitTestArray.Add( DIA_NEW( UnitTestStringCRC("StringCRC")));
 		mUnitTestArray.Add( DIA_NEW( UnitTestStripStringCRC("StripStringCRC")));
 		mUnitTestArray.Add( DIA_NEW( UnitTestMetaLogic("MetaLogic")));
-		mUnitTestArray.Add( DIA_NEW( UnitTestTypeTraits("TypeTraits")));
+		mUnitTestArray.Add( DIA_NEW( UnitTestTypeTraits("TypeTextTraits")));
+		mUnitTestArray.Add( DIA_NEW( UnitTestJsonTypes("TypeJsonTraits")));
 
 		Dia::Core::Log::OutputLine("TODO: Types - DEFAULT VALUE ATTRIBUTE");
 		Dia::Core::Log::OutputLine("TODO: Types - FLOATING POINT PRESCION ATTRIBUTE");

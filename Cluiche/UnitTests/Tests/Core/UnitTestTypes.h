@@ -15,4 +15,161 @@ namespace UnitTests
 		
 		void DoTest();
 	};
+
+	//Helper Classes
+	//------------------------------------------------------------------------------
+	class PrimitiveTypeTest
+	{
+	public:
+		DIA_TYPE_DECLARATION;
+
+		bool mBool;
+		char mChar;
+		unsigned char mCharUnsigned;
+		short mShort;
+		unsigned short mShortUnsigned;
+		int mInt;
+		unsigned int mIntUnsigned;
+		long mLong;
+		unsigned long mLongUnsigned;
+		long long mLongLong;
+		unsigned long long mLongLongUnsigned;
+		float mFloat;
+		double mDouble;
+	};
+
+	//------------------------------------------------------------------------------
+	class ClassTypeTest
+	{
+	public:
+		DIA_TYPE_DECLARATION;
+
+		PrimitiveTypeTest mType1;
+		PrimitiveTypeTest mType2;
+	};
+
+	//------------------------------------------------------------------------------
+	class ClassInheritanceBaseTypeTest
+	{
+	public:
+		DIA_TYPE_DECLARATION;
+		char mChar;
+		float mFloat;
+	};
+
+	class ClassInheritanceDerivedTypeTest : public ClassInheritanceBaseTypeTest
+	{
+	public:
+		DIA_TYPE_DECLARATION;
+		short mShort;
+		int mInt;
+	};
+
+	//------------------------------------------------------------------------------
+	class ClassInheritanceSimpleClassTypeTest
+	{
+	public:
+		DIA_TYPE_DECLARATION;
+		float mFloat;
+	};
+
+	class ClassInheritanceBaseWithClassTypeTest
+	{
+	public:
+		DIA_TYPE_DECLARATION;
+		ClassInheritanceSimpleClassTypeTest mType1;
+		ClassInheritanceSimpleClassTypeTest mType2;
+	};
+
+	class ClassInheritanceDerivedWithClassTypeTest : public ClassInheritanceBaseWithClassTypeTest
+	{
+	public:
+		DIA_TYPE_DECLARATION;
+		ClassInheritanceSimpleClassTypeTest mType3;
+	};
+
+	//------------------------------------------------------------------------------
+	class ClassVirtualInheritanceBaseTypeTest
+	{
+	public:
+		DIA_TYPE_POLYMORPHIC_DECLARATION;
+		virtual ~ClassVirtualInheritanceBaseTypeTest() {}
+		virtual void DoSomeThing() {};
+
+		char mChar;
+		float mFloat;
+	};
+
+	class ClassVirtualInheritanceDerivedTypeTest : public ClassVirtualInheritanceBaseTypeTest
+	{
+	public:
+		DIA_TYPE_POLYMORPHIC_DECLARATION;
+		short mShort;
+		int mInt;
+	};
+
+	//------------------------------------------------------------------------------
+	class PrimitivePointerTypeTest
+	{
+	public:
+		DIA_TYPE_DECLARATION;
+
+		bool mBool;
+		bool* mBoolPtr1;
+		bool* mBoolPtr2;
+		char mChar;
+		char* mCharPtr1;
+		char* mCharPtr2;
+		int mInt;
+		int* mIntPtr1;
+		int* mIntPtr2;
+	};
+
+	//------------------------------------------------------------------------------
+	class ClassPointerTypeTest
+	{
+	public:
+		DIA_TYPE_DECLARATION;
+
+		ClassInheritanceSimpleClassTypeTest mClass;
+		ClassInheritanceSimpleClassTypeTest* mClassPtr;
+	};
+
+	//------------------------------------------------------------------------------
+	class PointerAsObjectTypeTest
+	{
+	public:
+		DIA_TYPE_DECLARATION;
+
+		float* mFloat;
+		int* mInt;
+		ClassInheritanceSimpleClassTypeTest* mClass;
+	};
+
+	//------------------------------------------------------------------------------
+	class StaticArrayTypeTest
+	{
+	public:
+		DIA_TYPE_DECLARATION;
+
+		float mFloatArray[3];
+	};
+
+	//------------------------------------------------------------------------------
+	class StaticArrayClass
+	{
+	public:
+		DIA_TYPE_DECLARATION;
+
+		short mShort;
+		int mInt;
+	};
+
+	class StaticArrayClassTypeTest
+	{
+	public:
+		DIA_TYPE_DECLARATION;
+
+		StaticArrayClass mClassArray[2];
+	};
 }

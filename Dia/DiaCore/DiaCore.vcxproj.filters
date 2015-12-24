@@ -118,6 +118,15 @@
     <Filter Include="FilePath">
       <UniqueIdentifier>{aacdf484-6764-43dd-9fa4-5a26854fd233}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Json">
+      <UniqueIdentifier>{cdb42dc0-fedf-4724-9e84-449d3348f884}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Json\External">
+      <UniqueIdentifier>{eeadd68e-5cad-418e-99bc-bac6d7d4f9dc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Json\External\Source">
+      <UniqueIdentifier>{0cb1bcc9-388a-45a6-b410-038bf96e521e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Assert.h">
@@ -357,6 +366,42 @@
     <ClInclude Include="FilePath\FilePathStore.h">
       <Filter>FilePath</Filter>
     </ClInclude>
+    <ClInclude Include="Json\external\json\json.h">
+      <Filter>Json\External</Filter>
+    </ClInclude>
+    <ClInclude Include="Json\external\json\reader.h">
+      <Filter>Json\External</Filter>
+    </ClInclude>
+    <ClInclude Include="Json\external\json\value.h">
+      <Filter>Json\External</Filter>
+    </ClInclude>
+    <ClInclude Include="Json\external\json\version.h">
+      <Filter>Json\External</Filter>
+    </ClInclude>
+    <ClInclude Include="Json\external\json\writer.h">
+      <Filter>Json\External</Filter>
+    </ClInclude>
+    <ClInclude Include="Json\external\json\assertions.h">
+      <Filter>Json\External</Filter>
+    </ClInclude>
+    <ClInclude Include="Json\external\json\autolink.h">
+      <Filter>Json\External</Filter>
+    </ClInclude>
+    <ClInclude Include="Json\external\json\config.h">
+      <Filter>Json\External</Filter>
+    </ClInclude>
+    <ClInclude Include="Json\external\json\features.h">
+      <Filter>Json\External</Filter>
+    </ClInclude>
+    <ClInclude Include="Json\external\json\forwards.h">
+      <Filter>Json\External</Filter>
+    </ClInclude>
+    <ClInclude Include="Json\external\json_tool.h">
+      <Filter>Json\External\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="Type\TypeJsonSerializer.h">
+      <Filter>Type\Interfaces</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\Assert.cpp">
@@ -463,6 +508,18 @@
     </ClCompile>
     <ClCompile Include="FilePath\FilePathStore.cpp">
       <Filter>FilePath</Filter>
+    </ClCompile>
+    <ClCompile Include="Json\external\json_writer.cpp">
+      <Filter>Json\External\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Json\external\json_reader.cpp">
+      <Filter>Json\External\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Json\external\json_value.cpp">
+      <Filter>Json\External\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Type\TypeJsonSerializer.cpp">
+      <Filter>Type\Interfaces\Source</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -576,6 +633,9 @@
     </None>
     <None Include="Frame\FrameStream.inl">
       <Filter>Frame</Filter>
+    </None>
+    <None Include="Json\external\json_valueiterator.inl">
+      <Filter>Json\External\Source</Filter>
     </None>
   </ItemGroup>
 </Project>

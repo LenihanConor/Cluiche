@@ -16,6 +16,18 @@ namespace Dia
 			{
 				return mTextSerializer;
 			}
+
+			inline
+			TypeJsonSerializer&	TypeFacade::JsonSerializer()
+			{
+				return mJsonSerializer;
+			}
+
+			inline
+			const TypeJsonSerializer& TypeFacade::JsonSerializer()const
+			{
+				return mJsonSerializer;
+			}
 		}
 	}
 }

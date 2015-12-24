@@ -8,17 +8,6 @@
 
 namespace UnitTests
 {	
-	/* 	class TimerExpiry
-		{
-		public:
-
-			TimeRelative			TimeSinceExpiry( const TimeAbsolute& timeNow ) const;            
-			TimeRelative			TimeUntilExpiry( const TimeAbsolute& timeNow ) const;
-		            
-		protected:
-			TimeAbsolute			mExpiryTime;
-			bool                    mIsSet;
-			*/
 	UnitTestTimerExpiry::UnitTestTimerExpiry(const Dia::Core::Containers::String32& name)
 		: UnitTestCore(name)
 	{}
@@ -41,7 +30,7 @@ namespace UnitTests
 			
 			Dia::Core::TimerExpiry timer;
 			
-			timer.Start(Dia::Core::TimeAbsolute::Zero(), Dia::Core::TimeRelative::CreateFromSeconds(60.0f));
+			timer.Start(Dia::Core::TimeAbsolute::Zero(), Dia::Core::TimeRelative::CreateFromSeconds(3.0f));
 
 			UNIT_TEST_POSITIVE(timer.IsRunning(Dia::Core::TimeAbsolute::Zero()) == true, "TimerExpiry");
 			
@@ -68,7 +57,7 @@ namespace UnitTests
 		UNIT_TEST_BLOCK_START()
 			
 			Dia::Core::TimerExpiry timer;
-			Dia::Core::TimeServer time(60.0f, Dia::Core::TimeAbsolute::Zero());
+			Dia::Core::TimeServer time(1.0f, Dia::Core::TimeAbsolute::Zero());
 
 			Dia::Core::TimeAbsolute expireAt = time.GetTime() + Dia::Core::TimeRelative::CreateFromSeconds(0.1f);
 			timer.Start(expireAt);

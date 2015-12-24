@@ -24,27 +24,6 @@ namespace UnitTests
 		: UnitTestCore()
 	{}
 
-	//------------------------------------------------------------------------------
-	class PrimitiveTypeTest
-	{
-	public:
-		DIA_TYPE_DECLARATION;
-			
-		bool mBool;
-		char mChar;
-		unsigned char mCharUnsigned;
-		short mShort;
-		unsigned short mShortUnsigned;
-		int mInt;
-		unsigned int mIntUnsigned;
-		long mLong;
-		unsigned long mLongUnsigned;
-		long long mLongLong;
-		unsigned long long mLongLongUnsigned;
-		float mFloat;
-		double mDouble;
-	};
-	
 	DIA_TYPE_DEFINITION( PrimitiveTypeTest )
 		DIA_TYPE_ADD_VARIABLE( "mBool", mBool )
 		DIA_TYPE_ADD_VARIABLE( "mChar", mChar )
@@ -61,138 +40,46 @@ namespace UnitTests
 		DIA_TYPE_ADD_VARIABLE( "mDouble", mDouble )
 	DIA_TYPE_DEFINITION_END()
 
-	//------------------------------------------------------------------------------
-	class ClassTypeTest
-	{
-	public:
-		DIA_TYPE_DECLARATION;
-
-		PrimitiveTypeTest mType1;
-		PrimitiveTypeTest mType2;
-	};
-
 	DIA_TYPE_DEFINITION( ClassTypeTest )
 		DIA_TYPE_ADD_VARIABLE( "mType1", mType1 )
 		DIA_TYPE_ADD_VARIABLE( "mType2", mType2 )
 	DIA_TYPE_DEFINITION_END()
-
-
-	//------------------------------------------------------------------------------
-	class ClassInheritanceBaseTypeTest
-	{
-	public:
-		DIA_TYPE_DECLARATION;
-		char mChar;
-		float mFloat;
-	};
 
 	DIA_TYPE_DEFINITION( ClassInheritanceBaseTypeTest )
 		DIA_TYPE_ADD_VARIABLE( "mChar", mChar )
 		DIA_TYPE_ADD_VARIABLE( "mFloat", mFloat )
 	DIA_TYPE_DEFINITION_END()
 
-	class ClassInheritanceDerivedTypeTest : public ClassInheritanceBaseTypeTest
-	{
-	public:
-		DIA_TYPE_DECLARATION;
-		short mShort;
-		int mInt;
-	};
-
 	DIA_TYPE_DEFINITION( ClassInheritanceDerivedTypeTest )
 		DIA_TYPE_BASE_TYPE( ClassInheritanceBaseTypeTest )		
 		DIA_TYPE_ADD_VARIABLE( "mShort", mShort )
 		DIA_TYPE_ADD_VARIABLE( "mInt", mInt )
 	DIA_TYPE_DEFINITION_END()
-
-
-	//------------------------------------------------------------------------------
-	class ClassInheritanceSimpleClassTypeTest
-	{
-	public:
-		DIA_TYPE_DECLARATION;
-		float mFloat;
-	};
 	
 	DIA_TYPE_DEFINITION( ClassInheritanceSimpleClassTypeTest )
 		DIA_TYPE_ADD_VARIABLE( "mFloat", mFloat )
 	DIA_TYPE_DEFINITION_END()
-
-	class ClassInheritanceBaseWithClassTypeTest
-	{
-	public:
-		DIA_TYPE_DECLARATION;
-		ClassInheritanceSimpleClassTypeTest mType1;
-		ClassInheritanceSimpleClassTypeTest mType2;
-	};
 
 	DIA_TYPE_DEFINITION( ClassInheritanceBaseWithClassTypeTest )
 		DIA_TYPE_ADD_VARIABLE( "mType1", mType1 )
 		DIA_TYPE_ADD_VARIABLE( "mType2", mType2 )
 	DIA_TYPE_DEFINITION_END()
 
-	class ClassInheritanceDerivedWithClassTypeTest : public ClassInheritanceBaseWithClassTypeTest
-	{
-	public:
-		DIA_TYPE_DECLARATION;
-		ClassInheritanceSimpleClassTypeTest mType3;
-	};
-
 	DIA_TYPE_DEFINITION( ClassInheritanceDerivedWithClassTypeTest )
 		DIA_TYPE_BASE_TYPE( ClassInheritanceBaseWithClassTypeTest )		
 		DIA_TYPE_ADD_VARIABLE( "mType3", mType3 )
 	DIA_TYPE_DEFINITION_END()
-
-
-	//------------------------------------------------------------------------------
-	class ClassVirtualInheritanceBaseTypeTest
-	{
-	public:
-		DIA_TYPE_POLYMORPHIC_DECLARATION;
-		virtual ~ClassVirtualInheritanceBaseTypeTest(){}
-		virtual void DoSomeThing(){};
-
-		char mChar;
-		float mFloat;
-	};
 
 	DIA_TYPE_DEFINITION( ClassVirtualInheritanceBaseTypeTest )
 		DIA_TYPE_ADD_VARIABLE( "mChar", mChar )
 		DIA_TYPE_ADD_VARIABLE( "mFloat", mFloat )
 	DIA_TYPE_DEFINITION_END()
 
-	class ClassVirtualInheritanceDerivedTypeTest : public ClassVirtualInheritanceBaseTypeTest
-	{
-	public:
-		DIA_TYPE_POLYMORPHIC_DECLARATION;
-		short mShort;
-		int mInt;
-	};
-
 	DIA_TYPE_DEFINITION( ClassVirtualInheritanceDerivedTypeTest )
 		DIA_TYPE_BASE_TYPE( ClassVirtualInheritanceBaseTypeTest )		
 		DIA_TYPE_ADD_VARIABLE( "mShort", mShort )
 		DIA_TYPE_ADD_VARIABLE( "mInt", mInt )
 	DIA_TYPE_DEFINITION_END()
-	
-	
-
-	//------------------------------------------------------------------------------
-	class PrimitivePointerTypeTest
-	{
-	public:
-		DIA_TYPE_DECLARATION;
-
- 		bool mBool;
- 		bool* mBoolPtr1;
- 		bool* mBoolPtr2;
- 		char mChar;
- 		char* mCharPtr1;
-		char* mCharPtr2;
-		int mInt;
-		int* mIntPtr1;
-		int* mIntPtr2;
-	};
 
 	DIA_TYPE_DEFINITION( PrimitivePointerTypeTest )
 		DIA_TYPE_ADD_VARIABLE( "mChar", mChar )
@@ -206,31 +93,10 @@ namespace UnitTests
 		DIA_TYPE_ADD_VARIABLE( "mIntPtr2", mIntPtr2 )
 	DIA_TYPE_DEFINITION_END()
 
-	//------------------------------------------------------------------------------
-	class ClassPointerTypeTest
-	{
-	public:
-		DIA_TYPE_DECLARATION;
-
-		ClassInheritanceSimpleClassTypeTest mClass;
-		ClassInheritanceSimpleClassTypeTest* mClassPtr;
-	};
-
 	DIA_TYPE_DEFINITION( ClassPointerTypeTest )
 		DIA_TYPE_ADD_VARIABLE( "mClass", mClass )
 		DIA_TYPE_ADD_VARIABLE( "mClassPtr", mClassPtr )
 	DIA_TYPE_DEFINITION_END()
-
-	//------------------------------------------------------------------------------
-	class PointerAsObjectTypeTest
-	{
-	public:
-		DIA_TYPE_DECLARATION;
-
-		float* mFloat;
-		int* mInt;
-		ClassInheritanceSimpleClassTypeTest* mClass;
-	};
 
 	DIA_TYPE_DEFINITION( PointerAsObjectTypeTest )
 		DIA_TYPE_ADD_VARIABLE( "mFloat", mFloat )
@@ -241,48 +107,18 @@ namespace UnitTests
 			DIA_TYPE_ADD_VARIABLE_ATTRIBUTE( Dia::Core::Types::TypeVariableAttributesPointerAsObject )
 	DIA_TYPE_DEFINITION_END()
 
-	//------------------------------------------------------------------------------
-	class StaticArrayTypeTest
-	{
-	public:
-		DIA_TYPE_DECLARATION;
-
-		float mFloatArray[3];
-	};
-
 	DIA_TYPE_DEFINITION( StaticArrayTypeTest )
 		DIA_TYPE_ADD_VARIABLE_ARRAY( "mFloatArray", mFloatArray, 3 )
 	DIA_TYPE_DEFINITION_END()
-
-	//------------------------------------------------------------------------------
-	class StaticArrayClass
-	{
-	public:
-		DIA_TYPE_DECLARATION;
-
-		short mShort;
-		int mInt;
-	};
 
 	DIA_TYPE_DEFINITION( StaticArrayClass )	
 		DIA_TYPE_ADD_VARIABLE( "mShort", mShort )
 		DIA_TYPE_ADD_VARIABLE( "mInt", mInt )
 	DIA_TYPE_DEFINITION_END()
 
-	class StaticArrayClassTypeTest
-	{
-	public:
-		DIA_TYPE_DECLARATION;
-
-		StaticArrayClass mClassArray[2];
-	};
-
 	DIA_TYPE_DEFINITION( StaticArrayClassTypeTest )	
 		DIA_TYPE_ADD_VARIABLE_ARRAY( "mClassArray", mClassArray, 2 )
 	DIA_TYPE_DEFINITION_END()
-
-
-
 
 	void UnitTestTypes::DoTest()
 	{

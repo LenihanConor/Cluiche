@@ -189,6 +189,9 @@
     <ClInclude Include="Tests\Collections\UnitTestCircularBuffer.h">
       <Filter>Tests\Collections</Filter>
     </ClInclude>
+    <ClInclude Include="Tests\Core\UnitTestJsonTypes.h">
+      <Filter>Tests\Core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Tests\Core\UnitTestBitFlag.cpp">
@@ -326,6 +329,9 @@
     </ClCompile>
     <ClCompile Include="Tests\Collections\UnitTestCircularBuffer.cpp">
       <Filter>Tests\Collections\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Tests\Core\UnitTestJsonTypes.cpp">
+      <Filter>Tests\Core\source</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -57,7 +57,7 @@
     </BuildLog>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>./;./../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)\Json\external\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>DEBUG;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
@@ -111,6 +111,17 @@
     <ClInclude Include="FilePath\FilePath.h" />
     <ClInclude Include="FilePath\FilePathStore.h" />
     <ClInclude Include="Frame\FrameStream.h" />
+    <ClInclude Include="Json\external\json\assertions.h" />
+    <ClInclude Include="Json\external\json\autolink.h" />
+    <ClInclude Include="Json\external\json\config.h" />
+    <ClInclude Include="Json\external\json\features.h" />
+    <ClInclude Include="Json\external\json\forwards.h" />
+    <ClInclude Include="Json\external\json\json.h" />
+    <ClInclude Include="Json\external\json\reader.h" />
+    <ClInclude Include="Json\external\json\value.h" />
+    <ClInclude Include="Json\external\json\version.h" />
+    <ClInclude Include="Json\external\json\writer.h" />
+    <ClInclude Include="Json\external\json_tool.h" />
     <ClInclude Include="Timer\TimeThreadLimiter.h" />
     <ClInclude Include="Time\SystemClock.h" />
     <ClInclude Include="Time\TimeAbsolute.h" />
@@ -128,6 +139,7 @@
     <ClInclude Include="Type\TypeDeclarationMacros.h" />
     <ClInclude Include="Type\TypeDefinitionMacros.h" />
     <ClInclude Include="Type\TypeFacade.h" />
+    <ClInclude Include="Type\TypeJsonSerializer.h" />
     <ClInclude Include="Type\TypeRegistry.h" />
     <ClInclude Include="Type\TypeTextSerializer.h" />
     <ClInclude Include="Type\TypeTraits.h" />
@@ -176,6 +188,9 @@
     <ClCompile Include="Core\Log.cpp" />
     <ClCompile Include="FilePath\FilePath.cpp" />
     <ClCompile Include="FilePath\FilePathStore.cpp" />
+    <ClCompile Include="Json\external\json_reader.cpp" />
+    <ClCompile Include="Json\external\json_value.cpp" />
+    <ClCompile Include="Json\external\json_writer.cpp" />
     <ClCompile Include="Timer\TimeThreadLimiter.cpp" />
     <ClCompile Include="Time\SystemClock.cpp" />
     <ClCompile Include="Time\TimeAbsolute.cpp" />
@@ -190,6 +205,7 @@
     <ClCompile Include="CRC\StringCRC.cpp" />
     <ClCompile Include="CRC\StripStringCRC.cpp" />
     <ClCompile Include="Type\TypeFacade.cpp" />
+    <ClCompile Include="Type\TypeJsonSerializer.cpp" />
     <ClCompile Include="Type\TypeRegistry.cpp" />
     <ClCompile Include="Type\TypeTextSerializer.cpp" />
     <ClCompile Include="Type\TypeDefinition.cpp" />
@@ -214,6 +230,7 @@
     <None Include="Containers\Misc\CircularBufferC.inl" />
     <None Include="Containers\Misc\CircularBufferIterator.inl" />
     <None Include="Frame\FrameStream.inl" />
+    <None Include="Json\external\json_valueiterator.inl" />
     <None Include="Type\TypeFacade.inl" />
     <None Include="Type\TypeVariable.inl" />
     <None Include="Type\TypeVariableData.inl" />
