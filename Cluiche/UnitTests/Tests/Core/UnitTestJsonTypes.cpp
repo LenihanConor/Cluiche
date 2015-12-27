@@ -423,6 +423,7 @@ namespace UnitTests
 			UNIT_TEST_POSITIVE(testDeserialize.mClassArray[1].mInt == 9, "DiaArrayTypeTest");
 
 		UNIT_TEST_BLOCK_END()
+
 		mState = kFinished;
 	}
 }
