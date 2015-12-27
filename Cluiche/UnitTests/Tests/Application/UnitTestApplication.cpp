@@ -3,9 +3,9 @@
 
 #include "UnitTests/Infrastructure/UnitTestMacros.h"
 
-#include <DiaApplication/ApplicationProcessingUnit.h>
-#include <DiaApplication/ApplicationPhase.h>
-#include <DiaApplication/ApplicationModule.h>
+//#include <DiaApplication/ApplicationProcessingUnit.h>
+//#include <DiaApplication/ApplicationPhase.h>
+//#include <DiaApplication/ApplicationModule.h>
 #include <DiaCore/Time/TimeRelative.h>
 #include <DiaCore/Timer/TimerSystem.h>
 
@@ -16,7 +16,7 @@
 
 namespace UnitTests
 {	
-	class MyModuleA: public Dia::Application::Module
+/*	class MyModuleA: public Dia::Application::Module
 	{
 	public:
 		static const Dia::Core::StringCRC kUniqueId;
@@ -201,7 +201,7 @@ namespace UnitTests
 	};
 
 	const Dia::Core::StringCRC MyProcessingUnitA::kUniqueId("MyProcessingUnitA");
-
+	*/
 	UnitTestApplication::UnitTestApplication(const Dia::Core::Containers::String32& name)
 		: UnitTestCore(name)
 	{}
@@ -212,7 +212,7 @@ namespace UnitTests
 
 	void UnitTestApplication::DoTest()
 	{
-		UNIT_TEST_BLOCK_START()
+/*		UNIT_TEST_BLOCK_START()
 
 			MyProcessingUnitA pu;
 			
@@ -256,7 +256,7 @@ namespace UnitTests
 			pu.Stop();
 
 		UNIT_TEST_BLOCK_END()
-
+		*/
 		mState = kFinished;
 	}
 }
