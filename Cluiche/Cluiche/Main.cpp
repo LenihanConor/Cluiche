@@ -1,10 +1,10 @@
 #include <stdio.h>
 
-#include "Source/ApplicationModel/ProcessingUnits/ApplicationProcessingUnit.h"
+//#include "Source/ApplicationModel/ProcessingUnits/ApplicationProcessingUnit.h"
 
 int main( int argc, const char* argv[] )
 {
-	ApplicationProcessingUnit application;
+/*	ApplicationProcessingUnit application;
 
 	application.Start();
 
@@ -13,5 +13,5 @@ int main( int argc, const char* argv[] )
 		application.Update();
 	}
 	
-	application.Stop();
+	application.Stop();*/
 }

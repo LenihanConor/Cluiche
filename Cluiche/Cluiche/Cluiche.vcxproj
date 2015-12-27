@@ -12,28 +12,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="Source\ApplicationModel\ApplicationProcessingUnit.cpp" />
-    <ClCompile Include="Source\ApplicationModel\Modules\ApplicationTimeModule.cpp" />
-    <ClCompile Include="Source\ApplicationModel\Phases\ApplicationBootPhase.cpp" />
-    <ClCompile Include="Source\ApplicationModel\Phases\ApplicationCorePhase.cpp" />
-    <ClCompile Include="Source\ApplicationModel\Phases\InputBootPhase.cpp" />
-    <ClCompile Include="Source\ApplicationModel\Phases\RenderBootPhase.cpp" />
-    <ClCompile Include="Source\ApplicationModel\Phases\SimulationBootPhase.cpp" />
-    <ClCompile Include="Source\ApplicationModel\ProcessingUnits\InputProcessingUnit.cpp" />
-    <ClCompile Include="Source\ApplicationModel\ProcessingUnits\RenderProcessingUnit.cpp" />
-    <ClCompile Include="Source\ApplicationModel\ProcessingUnits\SimulationProcessingUnit.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="Source\ApplicationModel\ApplicationProcessingUnit.h" />
-    <ClInclude Include="Source\ApplicationModel\Modules\ApplicationTimeModule.h" />
-    <ClInclude Include="Source\ApplicationModel\Phases\ApplicationBootPhase.h" />
-    <ClInclude Include="Source\ApplicationModel\Phases\ApplicationCorePhase.h" />
-    <ClInclude Include="Source\ApplicationModel\Phases\InputBootPhase.h" />
-    <ClInclude Include="Source\ApplicationModel\Phases\RenderBootPhase.h" />
-    <ClInclude Include="Source\ApplicationModel\Phases\SimulationBootPhase.h" />
-    <ClInclude Include="Source\ApplicationModel\ProcessingUnits\InputProcessingUnit.h" />
-    <ClInclude Include="Source\ApplicationModel\ProcessingUnits\RenderProcessingUnit.h" />
-    <ClInclude Include="Source\ApplicationModel\ProcessingUnits\SimulationProcessingUnit.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{CEC960D4-B8B3-463B-9F68-716C5C3C4315}</ProjectGuid>
