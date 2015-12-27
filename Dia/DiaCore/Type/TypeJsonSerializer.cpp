@@ -95,18 +95,6 @@ namespace Dia
 
 						DIA_ASSERT(isArithmeticType || isClassType || isPointerType, "Do not recognize type info on %s", currentTypeVariable.GetName());
 
-						// Open Array Scope
-				/*		if (currentTypeVariable.IsArrayType())
-						{
-							const char* name = currentTypeVariable.GetName();
-
-							Containers::String32 tabs;
-							CreateTabs(tabs);
-
-							mBuffer << tabs.AsCStr() << name << " @" << HeaderStrings::GetFlag(HeaderStrings::EFlagName::NumberElements).AsCStr() << ":" << currentTypeVariable.GetNumberOfElements() << "@\n";
-							WriteOpenScope();
-						}*/
-
 						if (isArithmeticType)
 						{
 							WriteArithmeticType(instance, currentTypeVariable, jsonData);
@@ -149,37 +137,56 @@ namespace Dia
 					bool isUnsigned = currentTypeVariable.IsArithmeticUnsigned();
 
 					TypeVariableDataArithmetic::ArithmeticType type = currentTypeVariable.GetArithmeticType();
-
-					for (unsigned int i = 0; i < currentTypeVariable.GetNumberOfElements(); i++)
+				
+					unsigned int size = currentTypeVariable.GetNumberOfElements();
+					for (unsigned int i = 0; i < size; i++)
 					{
 						if (isUnsigned)
 						{
 							switch (type)
 							{
 							case TypeVariableDataArithmetic::kIsArithmeticBool: 
-								jsonData[currentTypeVariable.GetName()] = currentTypeVariable.GetArithmeticValue<bool>(instance, i);
+								if(size > 1)
+									jsonData[currentTypeVariable.GetName()][i] = currentTypeVariable.GetArithmeticValue<bool>(instance, i);
+								else
+									jsonData[currentTypeVariable.GetName()] = currentTypeVariable.GetArithmeticValue<bool>(instance, i);
 								break;
 							case TypeVariableDataArithmetic::kIsArithmeticChar: 
-								jsonData[currentTypeVariable.GetName()] = currentTypeVariable.GetArithmeticValue<unsigned char>(instance, i);
+								if (size > 1)
+									jsonData[currentTypeVariable.GetName()][i] = currentTypeVariable.GetArithmeticValue<unsigned char>(instance, i);
+								else
+									jsonData[currentTypeVariable.GetName()] = currentTypeVariable.GetArithmeticValue<unsigned char>(instance, i);
 								break;
 							case TypeVariableDataArithmetic::kIsArithmeticShort:
-								jsonData[currentTypeVariable.GetName()] = currentTypeVariable.GetArithmeticValue<unsigned short>(instance, i);
+								if (size > 1)
+									jsonData[currentTypeVariable.GetName()][i] = currentTypeVariable.GetArithmeticValue<unsigned short>(instance, i);
+								else
+									jsonData[currentTypeVariable.GetName()] = currentTypeVariable.GetArithmeticValue<unsigned short>(instance, i);
 								break;
 							case TypeVariableDataArithmetic::kIsArithmeticInt: 
-								jsonData[currentTypeVariable.GetName()] = currentTypeVariable.GetArithmeticValue<unsigned int>(instance, i);
+								if (size > 1)
+									jsonData[currentTypeVariable.GetName()][i] = currentTypeVariable.GetArithmeticValue<unsigned int>(instance, i);
+								else
+									jsonData[currentTypeVariable.GetName()] = currentTypeVariable.GetArithmeticValue<unsigned int>(instance, i);
 								break;
 							case TypeVariableDataArithmetic::kIsArithmeticLong:
 								{
 									Containers::String64 valueString;
 									Convert(currentTypeVariable.GetArithmeticValue<unsigned long>(instance, i), valueString);
-									jsonData[currentTypeVariable.GetName()] = valueString.AsCStr();
+									if (size > 1)
+										jsonData[currentTypeVariable.GetName()][i] = valueString.AsCStr();
+									else
+										jsonData[currentTypeVariable.GetName()] = valueString.AsCStr();
 								}
 								break;
 							case TypeVariableDataArithmetic::kIsArithmeticLongLong:
 								{
 									Containers::String64 valueString;
 									Convert(currentTypeVariable.GetArithmeticValue<unsigned long long>(instance, i), valueString);
-									jsonData[currentTypeVariable.GetName()] = valueString.AsCStr();
+									if (size > 1)
+										jsonData[currentTypeVariable.GetName()][i] = valueString.AsCStr();
+									else
+										jsonData[currentTypeVariable.GetName()] = valueString.AsCStr();
 								}
 								break;
 							default: DIA_ASSERT(false, "Could not recognize unsigned type"); break;
@@ -190,33 +197,54 @@ namespace Dia
 							switch (type)
 							{
 							case TypeVariableDataArithmetic::kIsArithmeticChar:
-								jsonData[currentTypeVariable.GetName()] = currentTypeVariable.GetArithmeticValue<char>(instance, i);
+								if (size > 1)
+									jsonData[currentTypeVariable.GetName()][i] = currentTypeVariable.GetArithmeticValue<char>(instance, i);
+								else
+									jsonData[currentTypeVariable.GetName()] = currentTypeVariable.GetArithmeticValue<char>(instance, i);
 								break;
 							case TypeVariableDataArithmetic::kIsArithmeticShort:
-								jsonData[currentTypeVariable.GetName()] = currentTypeVariable.GetArithmeticValue<short>(instance, i);
+								if (size > 1)
+									jsonData[currentTypeVariable.GetName()][i] = currentTypeVariable.GetArithmeticValue<short>(instance, i);
+								else
+									jsonData[currentTypeVariable.GetName()] = currentTypeVariable.GetArithmeticValue<short>(instance, i);
 								break;
 							case TypeVariableDataArithmetic::kIsArithmeticInt: 
-								jsonData[currentTypeVariable.GetName()] = currentTypeVariable.GetArithmeticValue<int>(instance, i);
+								if (size > 1)
+									jsonData[currentTypeVariable.GetName()][i] = currentTypeVariable.GetArithmeticValue<int>(instance, i);
+								else
+									jsonData[currentTypeVariable.GetName()] = currentTypeVariable.GetArithmeticValue<int>(instance, i);
 								break;
 							case TypeVariableDataArithmetic::kIsArithmeticLong: 
 								{
 									Containers::String64 valueString;
 									Convert(currentTypeVariable.GetArithmeticValue<long>(instance, i), valueString);
-									jsonData[currentTypeVariable.GetName()] = valueString.AsCStr();
+									if (size > 1)
+										jsonData[currentTypeVariable.GetName()][i] = valueString.AsCStr();
+									else
+										jsonData[currentTypeVariable.GetName()] = valueString.AsCStr();
 								}
 								break;
 							case TypeVariableDataArithmetic::kIsArithmeticLongLong: 
 								{
 									Containers::String64 valueString;
 									Convert(currentTypeVariable.GetArithmeticValue<long long>(instance, i), valueString);
-									jsonData[currentTypeVariable.GetName()] = valueString.AsCStr();
+									if (size > 1)
+										jsonData[currentTypeVariable.GetName()][i] = valueString.AsCStr();
+									else
+										jsonData[currentTypeVariable.GetName()] = valueString.AsCStr();
 								}
 								break;
 							case TypeVariableDataArithmetic::kIsArithmeticFloat:
-								jsonData[currentTypeVariable.GetName()] = currentTypeVariable.GetArithmeticValue<float>(instance, i);
+								if (size > 1)
+									jsonData[currentTypeVariable.GetName()][i] = currentTypeVariable.GetArithmeticValue<float>(instance, i);
+								else
+									jsonData[currentTypeVariable.GetName()] = currentTypeVariable.GetArithmeticValue<float>(instance, i);
 								break;
 							case TypeVariableDataArithmetic::kIsArithmeticDouble:
-								jsonData[currentTypeVariable.GetName()] = currentTypeVariable.GetArithmeticValue<double>(instance, i);
+								if (size > 1)
+									jsonData[currentTypeVariable.GetName()][i] = currentTypeVariable.GetArithmeticValue < double > (instance, i);
+								else
+									jsonData[currentTypeVariable.GetName()] = currentTypeVariable.GetArithmeticValue<double>(instance, i);
 								break;
 							default: DIA_ASSERT(false, "Could not recognize type"); break;
 							}
@@ -241,8 +269,10 @@ namespace Dia
 						TypeInstance newInstance(currentTypeVariable.GetClassDefinition(), currentTypeVariable.GetClassPointee(instance, i));
 
 						WriteVariables(newInstance, newClassJsonData);
-						
-						jsonData[name] = newClassJsonData;
+						if (currentTypeVariable.GetNumberOfElements() > 1)
+							jsonData[name][i] = newClassJsonData;
+						else
+							jsonData[name] = newClassJsonData;
 					}
 				}
 				//------------------------------------------------------------------------------------
@@ -357,7 +387,7 @@ namespace Dia
 
 						if (isArithmeticType || isPointerActingAsArthmethicObject)
 						{
-							ReadArithmeticType(instance, currentTypeVariable, currentJsonValue, isPointerActingAsArthmethicObject);
+							ReadArithmeticType(instance, currentTypeVariable, currentJsonValue);
 						}
 						else if (isClassType || isPointerActingAsClassObject)
 						{
@@ -423,16 +453,37 @@ namespace Dia
 				//------------------------------------------------------------------------------------
 				void ReadClassType( TypeInstance& instance, const TypeVariable& currentTypeVariable, const Json::Value& jsonData)
 				{
-					for (unsigned int i = 0; i < currentTypeVariable.GetNumberOfElements(); i++)
+					unsigned int size = currentTypeVariable.GetNumberOfElements();
+					for (unsigned int i = 0; i < size; i++)
 					{
 						TypeInstance newInstance(currentTypeVariable.GetClassDefinition(), currentTypeVariable.GetClassPointee(instance, i) );
 
-						DIA_ASSERT_SUPPORT(Dia::Core::Containers::String64 name(jsonData[MetaData::GetMetaData(MetaData::EFlagName::ClassName).AsCStr()].asString().c_str()));
-						DIA_ASSERT_SUPPORT(unsigned int hashID = jsonData[MetaData::GetMetaData(MetaData::EFlagName::CRC).AsCStr()].asUInt());
-						DIA_ASSERT(name == newInstance.GetTypeDescriptor()->GetName(), "An object of [%s] is trying to deserialise into object of [%s]", jsonData[MetaData::GetMetaData(MetaData::EFlagName::ClassName).AsCStr()].asString().c_str(), newInstance.GetTypeDescriptor()->GetName());
-						DIA_ASSERT(hashID == newInstance.GetTypeDescriptor()->GetUniqueCRC().Value(), "%s crc is not correct", jsonData[MetaData::GetMetaData(MetaData::EFlagName::ClassName).AsCStr()].asString().c_str());
+						unsigned int hashID = 0;
+						std::string strTemp;
+						if (size > 1)
+						{
+							strTemp = jsonData[i][MetaData::GetMetaData(MetaData::EFlagName::ClassName).AsCStr()].asString();
+							hashID = jsonData[i][MetaData::GetMetaData(MetaData::EFlagName::CRC).AsCStr()].asUInt();
+						}
+						else
+						{
+							strTemp = jsonData[MetaData::GetMetaData(MetaData::EFlagName::ClassName).AsCStr()].asString();
+							hashID = jsonData[MetaData::GetMetaData(MetaData::EFlagName::CRC).AsCStr()].asUInt();
+						}
+						const char* className = strTemp.c_str();
+
+						DIA_ASSERT_SUPPORT(Dia::Core::Containers::String64 name(className));
+						DIA_ASSERT(name == newInstance.GetTypeDescriptor()->GetName(), "An object of [%s] is trying to deserialise into object of [%s]", className, newInstance.GetTypeDescriptor()->GetName());
+						DIA_ASSERT(hashID == newInstance.GetTypeDescriptor()->GetUniqueCRC().Value(), "%s crc is not correct", className);
 						
-						ReadVariable(newInstance, jsonData);
+						if (size > 1)
+						{
+							ReadVariable(newInstance, jsonData[i]);
+						}
+						else
+						{
+							ReadVariable(newInstance, jsonData);
+						}
 					}
 				}
 				
@@ -473,20 +524,29 @@ namespace Dia
 				}
 
 				//------------------------------------------------------------------------------------
-				void ReadArithmeticType( TypeInstance& instance, const TypeVariable& currentTypeVariable, const Json::Value& val, bool isArthmeticPointer )
+				void ReadArithmeticType( TypeInstance& instance, const TypeVariable& currentTypeVariable, const Json::Value& val)
 				{
-					for (unsigned int i = 0; i < currentTypeVariable.GetNumberOfElements(); i++)
+					bool isArthmeticPointer = currentTypeVariable.IsPointerArthmeticType() && currentTypeVariable.HasAttribute<TypeVariableAttributesPointerAsObject>();
+
+					unsigned int size = currentTypeVariable.GetNumberOfElements();
+					for (unsigned int i = 0; i < size; i++)
 					{						
 						bool isBool = currentTypeVariable.IsArithmeticBool();
 						bool isChar = currentTypeVariable.IsArithmeticChar();
 						
 						if (isBool)
 						{
-							currentTypeVariable.SetArithmeticValue(val.asBool(), instance, i, isArthmeticPointer);
+							if (size > 1)
+								currentTypeVariable.SetArithmeticValue(val[i].asBool(), instance, i, isArthmeticPointer);
+							else
+								currentTypeVariable.SetArithmeticValue(val.asBool(), instance, i, isArthmeticPointer);
 						}
 						else if (isChar)
 						{
-							currentTypeVariable.SetArithmeticValue(static_cast<char>(val.asInt()), instance, i, isArthmeticPointer);
+							if (size > 1)
+								currentTypeVariable.SetArithmeticValue(static_cast<char>(val[i].asInt()), instance, i, isArthmeticPointer);
+							else
+								currentTypeVariable.SetArithmeticValue(static_cast<char>(val.asInt()), instance, i, isArthmeticPointer);
 						}
 						else 
 						{
@@ -499,16 +559,28 @@ namespace Dia
 								switch (type)
 								{
 									case TypeVariableDataArithmetic::kIsArithmeticShort: 
-										currentTypeVariable.SetArithmeticValue(static_cast<unsigned short>(val.asInt()), instance, i, isArthmeticPointer); 
+										if (size > 1)
+											currentTypeVariable.SetArithmeticValue(static_cast<unsigned short>(val[i].asInt()), instance, i, isArthmeticPointer);
+										else
+											currentTypeVariable.SetArithmeticValue(static_cast<unsigned short>(val.asInt()), instance, i, isArthmeticPointer);
 										break;
 									case TypeVariableDataArithmetic::kIsArithmeticInt: 
-										currentTypeVariable.SetArithmeticValue(val.asUInt(), instance, i, isArthmeticPointer);
+										if (size > 1)
+											currentTypeVariable.SetArithmeticValue(val[i].asUInt(), instance, i, isArthmeticPointer);
+										else
+											currentTypeVariable.SetArithmeticValue(val.asUInt(), instance, i, isArthmeticPointer);
 										break;
 									case TypeVariableDataArithmetic::kIsArithmeticLong: 
-										currentTypeVariable.SetArithmeticValue(StringConvertToULong( val.asString().c_str() ), instance, i, isArthmeticPointer); 
+										if (size > 1)
+											currentTypeVariable.SetArithmeticValue(StringConvertToULong(val[i].asString().c_str()), instance, i, isArthmeticPointer);
+										else
+											currentTypeVariable.SetArithmeticValue(StringConvertToULong( val.asString().c_str() ), instance, i, isArthmeticPointer);
 										break;
 									case TypeVariableDataArithmetic::kIsArithmeticLongLong: 
-										currentTypeVariable.SetArithmeticValue(StringConvertToUInt64( val.asString().c_str()), instance, i, isArthmeticPointer);
+										if (size > 1)
+											currentTypeVariable.SetArithmeticValue(StringConvertToUInt64(val[i].asString().c_str()), instance, i, isArthmeticPointer);
+										else
+											currentTypeVariable.SetArithmeticValue(StringConvertToUInt64( val.asString().c_str()), instance, i, isArthmeticPointer);
 										break;
 									default: DIA_ASSERT(false, "Could not recognize unsigned type"); break;
 								}
@@ -518,22 +590,40 @@ namespace Dia
 								switch (type)
 								{
 									case TypeVariableDataArithmetic::kIsArithmeticShort: 
-										currentTypeVariable.SetArithmeticValue(static_cast<short>(val.asInt()), instance, i, isArthmeticPointer);
+										if (size > 1)
+											currentTypeVariable.SetArithmeticValue(static_cast<short>(val[i].asInt()), instance, i, isArthmeticPointer);
+										else
+											currentTypeVariable.SetArithmeticValue(static_cast<short>(val.asInt()), instance, i, isArthmeticPointer);
 										break;
 									case TypeVariableDataArithmetic::kIsArithmeticInt: 
-										currentTypeVariable.SetArithmeticValue(val.asInt(), instance, i, isArthmeticPointer);
+										if (size > 1)
+											currentTypeVariable.SetArithmeticValue(val[i].asInt(), instance, i, isArthmeticPointer);
+										else
+											currentTypeVariable.SetArithmeticValue(val.asInt(), instance, i, isArthmeticPointer);
 										break;
 									case TypeVariableDataArithmetic::kIsArithmeticLong: 
-										currentTypeVariable.SetArithmeticValue(StringConvertToLong(val.asString().c_str()), instance, i, isArthmeticPointer);
+										if (size > 1)
+											currentTypeVariable.SetArithmeticValue(StringConvertToLong(val[i].asString().c_str()), instance, i, isArthmeticPointer);
+										else
+											currentTypeVariable.SetArithmeticValue(StringConvertToLong(val.asString().c_str()), instance, i, isArthmeticPointer);
 										break;
 									case TypeVariableDataArithmetic::kIsArithmeticLongLong: 
-										currentTypeVariable.SetArithmeticValue(StringConvertToInt64(val.asString().c_str()), instance, i, isArthmeticPointer);
+										if (size > 1)
+											currentTypeVariable.SetArithmeticValue(StringConvertToInt64(val[i].asString().c_str()), instance, i, isArthmeticPointer);
+										else
+											currentTypeVariable.SetArithmeticValue(StringConvertToInt64(val.asString().c_str()), instance, i, isArthmeticPointer);
 										break;							
 									case TypeVariableDataArithmetic::kIsArithmeticFloat: 
-										currentTypeVariable.SetArithmeticValue(val.asFloat(), instance, i, isArthmeticPointer); 
+										if (size > 1)
+											currentTypeVariable.SetArithmeticValue(val[i].asFloat(), instance, i, isArthmeticPointer);
+										else
+											currentTypeVariable.SetArithmeticValue(val.asFloat(), instance, i, isArthmeticPointer);
 										break;
 									case TypeVariableDataArithmetic::kIsArithmeticDouble: 
-										currentTypeVariable.SetArithmeticValue(val.asDouble(), instance, i, isArthmeticPointer); 
+										if (size > 1)
+											currentTypeVariable.SetArithmeticValue(val[i].asDouble(), instance, i, isArthmeticPointer);
+										else
+											currentTypeVariable.SetArithmeticValue(val.asDouble(), instance, i, isArthmeticPointer);
 										break;
 									default: DIA_ASSERT(false, "Could not recognize type"); break;
 								}
