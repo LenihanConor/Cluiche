@@ -4,6 +4,7 @@
 
 #include <DiaCore/Type/TypeDeclarationMacros.h>
 #include <DiaCore/Type/TypeDefinitionMacros.h>
+#include <DiaCore/Containers/Arrays/ArrayC.h>
 
 namespace UnitTests
 {
@@ -171,5 +172,15 @@ namespace UnitTests
 		DIA_TYPE_DECLARATION;
 
 		StaticArrayClass mClassArray[2];
+	};
+	
+	//------------------------------------------------------------------------------
+	class DiaArrayTypeTest
+	{
+	public:
+		DIA_TYPE_DECLARATION;
+
+		Dia::Core::Containers::ArrayC<int, 2> mIntArray;
+		Dia::Core::Containers::ArrayC<StaticArrayClass, 2> mClassArray;
 	};
 }

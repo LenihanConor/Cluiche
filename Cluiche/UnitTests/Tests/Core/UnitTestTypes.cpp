@@ -12,6 +12,7 @@
 #include "DiaCore/Containers/Strings/StringWriter.h"
 #include "DiaCore/Containers/Strings/StringReader.h"
 #include "DiaCore/Core/Log.h"
+#include "DiaCore/Containers/Arrays/ArrayC.h"
 #include "DiaMaths/Core/FloatMaths.h"
 
 namespace UnitTests
@@ -118,6 +119,11 @@ namespace UnitTests
 
 	DIA_TYPE_DEFINITION( StaticArrayClassTypeTest )	
 		DIA_TYPE_ADD_VARIABLE_ARRAY( "mClassArray", mClassArray, 2 )
+	DIA_TYPE_DEFINITION_END()
+
+	DIA_TYPE_DEFINITION(DiaArrayTypeTest)
+		DIA_TYPE_ADD_VARIABLE("mIntArray", mIntArray)
+		DIA_TYPE_ADD_VARIABLE("mClassArray", mClassArray)
 	DIA_TYPE_DEFINITION_END()
 
 	void UnitTestTypes::DoTest()

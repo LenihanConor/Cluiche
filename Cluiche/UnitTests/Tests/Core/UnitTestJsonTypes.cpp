@@ -394,7 +394,35 @@ namespace UnitTests
 			UNIT_TEST_POSITIVE( testDeserialize.mClassArray[1].mInt == 4, "StaticArrayClassTypeTest");
 
 		UNIT_TEST_BLOCK_END()
-	
+
+		UNIT_TEST_BLOCK_START()
+
+			DiaArrayTypeTest testSerialize;
+			testSerialize.mIntArray[0] = 1;
+			testSerialize.mIntArray[1] = 2;
+
+			testSerialize.mClassArray[0].mShort = 3;
+			testSerialize.mClassArray[0].mInt = 4;
+			testSerialize.mClassArray[1].mShort = 5;
+			testSerialize.mClassArray[1].mInt = 9;
+
+			char bufferMemory[32 * 1024];
+			Dia::Core::Containers::StringWriter bufferSerial(&bufferMemory[0], 32 * 1024);
+
+			Dia::Core::Types::GetTypeFacade().JsonSerializer().Serialize(testSerialize, bufferSerial);
+
+			DiaArrayTypeTest testDeserialize;
+			Dia::Core::Containers::StringReader bufferDeserial(&bufferMemory[0]);
+			Dia::Core::Types::GetTypeFacade().JsonSerializer().Deserialize(testDeserialize, bufferDeserial);
+
+			UNIT_TEST_POSITIVE(testDeserialize.mIntArray[0] == 1, "DiaArrayTypeTest");
+			UNIT_TEST_POSITIVE(testDeserialize.mIntArray[1] == 2, "DiaArrayTypeTest");
+			UNIT_TEST_POSITIVE(testDeserialize.mClassArray[0].mShort == 3, "DiaArrayTypeTest");
+			UNIT_TEST_POSITIVE(testDeserialize.mClassArray[0].mInt == 4, "DiaArrayTypeTest");
+			UNIT_TEST_POSITIVE(testDeserialize.mClassArray[1].mShort == 5, "DiaArrayTypeTest");
+			UNIT_TEST_POSITIVE(testDeserialize.mClassArray[1].mInt == 9, "DiaArrayTypeTest");
+
+		UNIT_TEST_BLOCK_END()
 		mState = kFinished;
 	}
 }
