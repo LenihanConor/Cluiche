@@ -16,7 +16,7 @@ namespace Dia
 				static MyType foo; \
 				static Dia::Core::Types::TypeParameterInput typeInput; \
 				Dia::Core::Types::TypeVariable* lastVariable = NULL; \
-				DIA_TYPE_ADD_VARIABLE_ARRAY("mData", mData, SizeOfArray(mData))
+				DIA_TYPE_ADD_VARIABLE_ARRAY("mData", mData, size)
 				return typeInput; \
 			}\
 

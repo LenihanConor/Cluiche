@@ -5,14 +5,6 @@
 #include "DiaCore/Type/TypeVariable.h"
 #include "DiaCore/Type/TypeParameterInput.h"
 
-// Used for arrays
-template <typename T, size_t N>
-inline
-size_t SizeOfArray(const T(&)[N])
-{
-	return N;
-}
-
 // --------------------------------------------------------------------------------------------------------------------
 #define DIA_TYPE_DEFINITION( className )\
 	Dia::Core::Types::TypeDefinition* className::sType;\
