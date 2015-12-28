@@ -5,6 +5,7 @@
 #include "DiaCore/Core/Assert.h"
 #include "DiaCore/Containers/Arrays/ArrayIterator.h"
 #include "DiaCore/Containers/Arrays/ReverseArrayIterator.h"
+#include "DiaCore/Type/TypeDeclarationMacros.h"
 
 //------------------------------------------------------------------------------------
 //			
@@ -30,6 +31,8 @@ namespace Dia
 			class ArrayC
 			{
 			public:
+				DIA_TYPE_DECLARATION;
+				
 				typedef	T			ValueType;
 				typedef	T*			Pointer;
 				typedef	T&			Reference;

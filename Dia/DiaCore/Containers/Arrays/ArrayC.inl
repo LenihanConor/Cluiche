@@ -1,13 +1,29 @@
+#include "DiaCore/Type/TypeDefinitionMacros.h"
+
 namespace Dia
 {
 	namespace Core
 	{
 		namespace Containers
 		{
+			template <class T, unsigned int size> Dia::Core::Types::TypeDefinition* ArrayC<T, size>::sType;
+			template <class T, unsigned int size> Dia::Core::Types::TypeDefinition& ArrayC<T, size>::GetType() { if (sType == nullptr) { sType = DIA_NEW(Dia::Core::Types::TypeDefinition("ArrayC<T, size>", sizeof(ArrayC<T, size>), __is_polymorphic(ArrayC<T, size>), ArrayC<T, size>::TypeCreationalInput())); } return *sType; }\
+			template <class T, unsigned int size> Dia::Core::Types::TypeInstance ArrayC<T, size>::CreateTypeInstance() { return (Dia::Core::Types::TypeInstance(ArrayC<T, size>::GetType(), this)); }\
+			template <class T, unsigned int size> Dia::Core::Types::TypeInstance ArrayC<T, size>::CreateTypeInstanceConst()const { return (Dia::Core::Types::TypeInstance(ArrayC<T, size>::GetType(), this)); }\
+			template <class T, unsigned int size> Dia::Core::Types::TypeParameterInput& ArrayC<T, size>::TypeCreationalInput()\
+			{ \
+				typedef ArrayC<T, size> MyType; \
+				static MyType foo; \
+				static Dia::Core::Types::TypeParameterInput typeInput; \
+				Dia::Core::Types::TypeVariable* lastVariable = NULL; \
+				DIA_TYPE_ADD_VARIABLE_ARRAY("mData", mData, SizeOfArray(mData))
+				return typeInput; \
+			}\
+
 			//------------------------------------------------------------------------------------
 			//	Implementation
 			//------------------------------------------------------------------------------------
-			template <class T, unsigned int size>
+			template <class T, unsigned int size> 
 			ArrayC<T, size>::ArrayC()
 			{
 				memset(mData, 0, sizeof(T)*size);

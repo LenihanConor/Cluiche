@@ -5,6 +5,13 @@
 #include "DiaCore/Type/TypeVariable.h"
 #include "DiaCore/Type/TypeParameterInput.h"
 
+// Used for arrays
+template <typename T, size_t N>
+inline
+size_t SizeOfArray(const T(&)[N])
+{
+	return N;
+}
 
 // --------------------------------------------------------------------------------------------------------------------
 #define DIA_TYPE_DEFINITION( className )\
@@ -20,19 +27,6 @@
 		static MyType foo;\
 		static Dia::Core::Types::TypeParameterInput typeInput;\
 		Dia::Core::Types::TypeVariable* lastVariable = NULL;\
-
-// --------------------------------------------------------------------------------------------------------------------
-#define DIA_TYPE_TEMPLATE_2_DEFINITION( className, templateDesc_1, templateDesc_2) \
-	template <templateDesc_1, templateDesc_2> Dia::Core::Types::TypeDefinition* ArrayC<T, size>::sType;/* = DIA_NEW(Dia::Core::Types::TypeDefinition("ArrayC<T, size>", sizeof(ArrayC<T, size>), __is_polymorphic(ArrayC<T, size>), ArrayC<T, size>::TypeCreationalInput())); */\
-	template <templateDesc_1, templateDesc_2> Dia::Core::Types::TypeDefinition& ArrayC<T, size>::GetType() { if (sType == nullptr) { sType = DIA_NEW(Dia::Core::Types::TypeDefinition("ArrayC<T, size>", sizeof(ArrayC<T, size>), __is_polymorphic(ArrayC<T, size>), ArrayC<T, size>::TypeCreationalInput())); } return *sType; }\
-	template <templateDesc_1, templateDesc_2> Dia::Core::Types::TypeInstance ArrayC<T, size>::CreateTypeInstance() { return (Dia::Core::Types::TypeInstance(ArrayC<T, size>::GetType(), this)); }\
-	template <templateDesc_1, templateDesc_2> Dia::Core::Types::TypeInstance ArrayC<T, size>::CreateTypeInstanceConst()const { return (Dia::Core::Types::TypeInstance(ArrayC<T, size>::GetType(), this)); }\
-	template <templateDesc_1, templateDesc_2> Dia::Core::Types::TypeParameterInput& ArrayC<T, size>::TypeCreationalInput()\
-	{ \
-		typedef ArrayC<T, size> MyType; \
-		static MyType foo; \
-		static Dia::Core::Types::TypeParameterInput typeInput; \
-		Dia::Core::Types::TypeVariable* lastVariable = NULL; \
 
 // --------------------------------------------------------------------------------------------------------------------
 #define DIA_TYPE_DEFINITION_END()\
