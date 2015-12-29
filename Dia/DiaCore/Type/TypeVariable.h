@@ -6,7 +6,6 @@
 #include "DiaCore/Type/TypeVariableAttributes.h"
 #include "DiaCore/Type/TypeVariableData.h"
 #include "DiaCore/Containers/BitFlag/BitArray8.h"
-#include "DiaCore/Containers/BitFlag/BitArray16.h"
 #include "DiaCore/Containers/LinkList/LinkListC.h"
 
 namespace Dia

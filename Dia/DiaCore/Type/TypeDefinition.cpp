@@ -5,6 +5,8 @@
 #include "DiaCore/Type/TypeFacade.h"
 #include "DiaCore/Type/TypeParameterInput.h"
 #include "DiaCore/Strings/String1024.h"
+#include "DiaCore/crc/CRC.h"
+
 namespace Dia
 {
 	namespace Core
@@ -87,14 +89,14 @@ namespace Dia
 					nextVariable = nextVariable->GetNextConst();
 				}
 
-				mUniqueCRC = CRC(runningCRC);
+				mUniqueCRC = runningCRC;
 				
 				GetTypeFacade().Registry().Add(this);
 			}
 		
 			const CRC& TypeDefinition::GetUniqueCRC()const 
 			{ 
-				return mUniqueCRC; 
+				return Dia::Core::CRC(mUniqueCRC); 
 			}
 
 			bool TypeDefinition::IsPolymorphicType()const

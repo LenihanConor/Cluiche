@@ -83,7 +83,7 @@ namespace Dia
 
 					if ( variableAddress == address)
 					{
-						resultPath.Add(currentTypeVariable);
+						resultPath.push_back(currentTypeVariable);
 						return true;
 					}
 
@@ -94,7 +94,7 @@ namespace Dia
 
 						if (address >= startClassAddress && address <= endClassAddress)
 						{
-							resultPath.Add(currentTypeVariable);
+							resultPath.push_back(currentTypeVariable);
 							return FindVariablePathFromPointerAddressInternal(address, resultPath, currentClassOffset + currentTypeVariable->GetOffsetFromParent(), currentTypeVariable->GetClassDefinition()->GetVariables());
 						}
 					}
@@ -125,9 +125,9 @@ namespace Dia
 					{		
 						bool arithmeticLeafFound = currentTypeVariable->IsArithmeticType() && crcResult == currentTypeVariable->GetNameCRC();
 						bool classInPathFound = currentTypeVariable->IsClassType() && crcResult == currentTypeVariable->GetNameCRC();
-						bool classLeafFound = classInPathFound && currentPathIndex+1 == pathCRC.Size();
+						bool classLeafFound = classInPathFound && currentPathIndex+1 == pathCRC.size();
 						
-						DIA_ASSERT( DIA_IMPLIES(arithmeticLeafFound, currentPathIndex+1 == pathCRC.Size()), "Can not dig deaper into a arithmetic variable %s", currentTypeVariable->GetName());
+						DIA_ASSERT( DIA_IMPLIES(arithmeticLeafFound, currentPathIndex+1 == pathCRC.size()), "Can not dig deaper into a arithmetic variable %s", currentTypeVariable->GetName());
 
 						if ( arithmeticLeafFound || classLeafFound)
 						{

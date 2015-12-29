@@ -1,12 +1,14 @@
 #ifndef DIA_TYPE_DEFINITION_H
 #define DIA_TYPE_DEFINITION_H
 
-#include "DiaCore/crc/StringCRC.h"
+
 #include "DiaCore/Type/BasicTypeDefines.h"
 #include "DiaCore/Memory/Memory.h"
 #include "DiaCore/Containers/LinkList/LinkListC.h"
 #include "DiaCore/Type/TypeMember.h"
 #include "DiaCore/Containers/BitFlag/BitArray8.h"
+
+namespace Dia { namespace Core { class CRC; } }
 
 namespace Dia
 {
@@ -41,7 +43,7 @@ namespace Dia
 				
 				void AppendBaseVariable(VariableLinkList& variableToAppendTo);
 
-				CRC	mUniqueCRC;					// CRC to uniquely identify the class and its data members
+				unsigned int	mUniqueCRC;					// CRC to uniquely identify the class and its data members
 						
 				const TypeDefinition* mBaseType;
 				VariableLinkList mVariables;

@@ -263,7 +263,7 @@ namespace Dia
 
 						mBuffer << tabs.AsCStr() << name << " = " << instance.GetTypeDescriptor()->GetName();
 						
-						for (unsigned int i = 0; i < variablePath.Size(); i++)
+						for (unsigned int i = 0; i < variablePath.size(); i++)
 						{
 							mBuffer << "." << variablePath[i]->GetName();
 						}
@@ -609,7 +609,7 @@ namespace Dia
 							{
 								lastCharWasFullStop = true;
 								CRC newCrc( startPtr, numberCharacters );
-								crcPath.Add(newCrc);
+								crcPath.push_back(newCrc);
 							}
 
 							numberCharacters++;
@@ -617,7 +617,7 @@ namespace Dia
 						}					
 
 						CRC newCrc( startPtr, numberCharacters);
-						crcPath.Add(newCrc);
+						crcPath.push_back(newCrc);
 
 						unsigned int addressResult = 0;
 						instance.FindPointerAddressFromVariableCRCPath( crcPath, addressResult );

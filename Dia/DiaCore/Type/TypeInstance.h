@@ -1,10 +1,10 @@
 #ifndef DIA_TYPE_TEXT_INSTANCE_H
 #define DIA_TYPE_TEXT_INSTANCE_H
 
-#include "DiaCore/Containers/LinkList/LinkListC.h"
-#include "DiaCore/Containers/Arrays/DynamicArrayC.h"
 #include "DiaCore/Type/TypeVariable.h"
 #include "DiaCore/Type/TypeDefinition.h"
+
+#include <vector>
 
 namespace Dia
 {
@@ -19,8 +19,8 @@ namespace Dia
 			class TypeInstance
 			{
 			public:
-				typedef Containers::DynamicArrayC<const TypeVariable*, 16> VariablePath;
-				typedef Containers::DynamicArrayC<CRC, 16> VariableCRCPath;
+				typedef std::vector<const TypeVariable*> VariablePath;
+				typedef std::vector<CRC> VariableCRCPath;
 
 				TypeInstance();
 				TypeInstance(const TypeDefinition* typeDefinition, void* pointee);
