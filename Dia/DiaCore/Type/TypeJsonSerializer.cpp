@@ -72,7 +72,7 @@ namespace Dia
 			private:
 				void WriteInstanceDeclaration(const TypeInstance& instance, Json::Value& jsonStructureToSerialize)
 				{
-					unsigned int hashID = instance.GetTypeDescriptor()->GetUniqueCRC().Value();
+					unsigned int hashID = instance.GetTypeDescriptor()->GetUniqueCRC();
 					const char* name = instance.GetTypeDescriptor()->GetName();
 
 					jsonStructureToSerialize[MetaData::GetMetaData(MetaData::EFlagName::ClassName).AsCStr()] = name;
@@ -89,13 +89,19 @@ namespace Dia
 					{
 						const TypeVariable& currentTypeVariable = *currentNode->GetPayloadConst();
 
+						
 						bool isArithmeticType = currentTypeVariable.IsArithmeticType();
 						bool isClassType = currentTypeVariable.IsClassType();
 						bool isPointerType = currentTypeVariable.IsPointerType();
+						bool isCustomSerializer = currentTypeVariable.HasAttribute<TypeVariableAttributesCustomJsonSerializer>();
 
 						DIA_ASSERT(isArithmeticType || isClassType || isPointerType, "Do not recognize type info on %s", currentTypeVariable.GetName());
-
-						if (isArithmeticType)
+	
+						if(isCustomSerializer)
+						{ 
+							currentTypeVariable.GetAttributeConst<TypeVariableAttributesCustomJsonSerializer>()->Serialize(instance, currentTypeVariable, jsonData);
+						}
+						else if (isArithmeticType)
 						{
 							WriteArithmeticType(instance, currentTypeVariable, jsonData);
 						}
@@ -341,7 +347,7 @@ namespace Dia
 					DIA_ASSERT_SUPPORT(Dia::Core::Containers::String64 name(parsedFromString[MetaData::GetMetaData(MetaData::EFlagName::ClassName).AsCStr()].asString().c_str()));
 					DIA_ASSERT_SUPPORT(unsigned int hashID = parsedFromString[MetaData::GetMetaData(MetaData::EFlagName::CRC).AsCStr()].asUInt());
 					DIA_ASSERT(name == instance.GetTypeDescriptor()->GetName(), "An object of [%s] is trying to deserialise into object of [%s]", parsedFromString[MetaData::GetMetaData(MetaData::EFlagName::ClassName).AsCStr()].asString().c_str(), instance.GetTypeDescriptor()->GetName());
-					DIA_ASSERT(hashID == instance.GetTypeDescriptor()->GetUniqueCRC().Value(), "%s crc is not correct", parsedFromString[MetaData::GetMetaData(MetaData::EFlagName::ClassName).AsCStr()].asString().c_str());
+					DIA_ASSERT(hashID == instance.GetTypeDescriptor()->GetUniqueCRC(), "%s crc is not correct", parsedFromString[MetaData::GetMetaData(MetaData::EFlagName::ClassName).AsCStr()].asString().c_str());
 				}
 				
 				//------------------------------------------------------------------------------------
@@ -384,8 +390,13 @@ namespace Dia
 						bool isPointerType = currentTypeVariable.IsPointerType();
 						bool isPointerActingAsArthmethicObject = currentTypeVariable.IsPointerArthmeticType() && currentTypeVariable.HasAttribute<TypeVariableAttributesPointerAsObject>();
 						bool isPointerActingAsClassObject = currentTypeVariable.IsPointerClassType() && currentTypeVariable.HasAttribute<TypeVariableAttributesPointerAsObject>();
-
-						if (isArithmeticType || isPointerActingAsArthmethicObject)
+						bool isCustomDerserializer = currentTypeVariable.HasAttribute<TypeVariableAttributesCustomJsonDeserializer>();
+						
+						if (isCustomDerserializer)
+						{
+							currentTypeVariable.GetAttributeConst<TypeVariableAttributesCustomJsonDeserializer>()->Deserialize(instance, currentTypeVariable, currentJsonValue);
+						}
+						else if (isArithmeticType || isPointerActingAsArthmethicObject)
 						{
 							ReadArithmeticType(instance, currentTypeVariable, currentJsonValue);
 						}
@@ -474,7 +485,7 @@ namespace Dia
 
 						DIA_ASSERT_SUPPORT(Dia::Core::Containers::String64 name(className));
 						DIA_ASSERT(name == newInstance.GetTypeDescriptor()->GetName(), "An object of [%s] is trying to deserialise into object of [%s]", className, newInstance.GetTypeDescriptor()->GetName());
-						DIA_ASSERT(hashID == newInstance.GetTypeDescriptor()->GetUniqueCRC().Value(), "%s crc is not correct", className);
+						DIA_ASSERT(hashID == newInstance.GetTypeDescriptor()->GetUniqueCRC(), "%s crc is not correct", className);
 						
 						if (size > 1)
 						{

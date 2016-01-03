@@ -28,7 +28,7 @@ namespace Dia
 				TypeDefinition();
 				TypeDefinition(const char* name, unsigned int size, bool isPolymorphic, const TypeParameterInput& input);
 
-				const CRC& GetUniqueCRC()const;		
+				const unsigned int GetUniqueCRC()const;		
 				
 				bool IsPolymorphicType()const;
 

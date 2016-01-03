@@ -135,7 +135,7 @@ namespace Dia
 				//------------------------------------------------------------------------------------
 				void WriteInstanceDeclaration(const TypeInstance& instance)
 				{
-					unsigned int hashID = instance.GetTypeDescriptor()->GetUniqueCRC().Value();
+					unsigned int hashID = instance.GetTypeDescriptor()->GetUniqueCRC();
 					const char* name = instance.GetTypeDescriptor()->GetName();
 					
 					Containers::String32 hexHashID;
@@ -532,7 +532,7 @@ namespace Dia
 					DIA_ASSERT_SUPPORT( unsigned int crc = StringConvertToUInt(crcBuffer.AsCStr(), 16) );
 					
 					DIA_ASSERT(nameBuffer == instance.GetTypeDescriptor()->GetName(), "An object of [%s] is trying to deserialise into object of [%s]", nameBuffer.AsCStr(), instance.GetTypeDescriptor()->GetName());
-					DIA_ASSERT(crc == instance.GetTypeDescriptor()->GetUniqueCRC().Value(), "%s crc is not correct", nameBuffer.AsCStr());
+					DIA_ASSERT(crc == instance.GetTypeDescriptor()->GetUniqueCRC(), "%s crc is not correct", nameBuffer.AsCStr());
 				}
 				
 				//------------------------------------------------------------------------------------

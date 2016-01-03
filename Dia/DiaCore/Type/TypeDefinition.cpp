@@ -94,9 +94,9 @@ namespace Dia
 				GetTypeFacade().Registry().Add(this);
 			}
 		
-			const CRC& TypeDefinition::GetUniqueCRC()const 
+			const unsigned int TypeDefinition::GetUniqueCRC()const 
 			{ 
-				return Dia::Core::CRC(mUniqueCRC); 
+				return mUniqueCRC; 
 			}
 
 			bool TypeDefinition::IsPolymorphicType()const

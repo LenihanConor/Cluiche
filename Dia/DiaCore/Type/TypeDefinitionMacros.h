@@ -1,5 +1,4 @@
-#ifndef DIA_TYPE_MACROS_DEFINITION_H
-#define DIA_TYPE_MACROS_H
+#pragma once
 
 #include "DiaCore/Type/TypeDefinition.h"
 #include "DiaCore/Type/TypeVariable.h"
@@ -37,16 +36,6 @@
 		bool succesAddNode = Dia::Core::Types::TypeDefinition::VariableLinkList::AddNodeToList(typeInput.GetVariables(), &newVariableNode);\
 		lastVariable = newVariableNode.GetPayload();\
 	}\
-
-// --------------------------------------------------------------------------------------------------------------------
-#define DIA_TYPE_ADD_CUSTOM_VARIABLE( variableName, variable, serializer, deserialzer )\
-	{\
-		static Dia::Core::Types::TypeVariable newVariable(&foo.variable, variableName, sizeof(foo.variable), (reinterpret_cast<char*>(&foo.variable) - reinterpret_cast<char*>(&foo)), 1);\
-		static Dia::Core::Types::TypeDefinition::VariableLinkListNode newVariableNode(&newVariable);\
-		bool succesAddNode = Dia::Core::Types::TypeDefinition::VariableLinkList::AddNodeToList(typeInput.GetVariables(), &newVariableNode);\
-		lastVariable = newVariableNode.GetPayload();\
-	}\
-
 // --------------------------------------------------------------------------------------------------------------------
 #define DIA_TYPE_ADD_VARIABLE_ARRAY( variableName, variable, numberOfElements )\
 	{\
@@ -65,4 +54,11 @@
 		lastVariable->AddAttribute(&newAttributeNode);\
 	}\
 
-#endif // DIA_TYPE_MACROS_H
+// --------------------------------------------------------------------------------------------------------------------
+#define  DIA_TYPE_ADD_VARIABLE_ATTRIBUTE_PARAM_1( attributeClass, attribParam_1 )\
+	{\
+		static attributeClass newAttribute(attribParam_1);\
+		static Dia::Core::Types::TypeVariable::AttributeLinkListNode newAttributeNode(&newAttribute);\
+		DIA_ASSERT(lastVariable != NULL, "Last Varibale is NULL");\
+		lastVariable->AddAttribute(&newAttributeNode);\
+	}
