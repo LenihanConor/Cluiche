@@ -15,6 +15,7 @@
 #include "DiaCore/Containers/Strings/StringReader.h"
 #include "DiaCore/Core/Log.h"
 #include "DiaMaths/Core/FloatMaths.h"
+#include "DiaCore/Strings/stringutils.h"
 
 namespace UnitTests
 {	
@@ -423,6 +424,25 @@ namespace UnitTests
 			UNIT_TEST_POSITIVE(testDeserialize.mClassArray[1].mInt == 9, "DiaArrayTypeTest");
 
 		UNIT_TEST_BLOCK_END()
+
+		UNIT_TEST_BLOCK_START()
+
+			CustomSerializerTypeTest testSerialize;
+			Dia::Core::StringFormat(testSerialize.mArray, 8, "Test");
+			
+			char bufferMemory[32 * 1024];
+			Dia::Core::Containers::StringWriter bufferSerial(&bufferMemory[0], 32 * 1024);
+
+			Dia::Core::Types::GetTypeFacade().JsonSerializer().Serialize(testSerialize, bufferSerial);
+
+			CustomSerializerTypeTest testDeserialize;
+			Dia::Core::Containers::StringReader bufferDeserial(&bufferMemory[0]);
+			Dia::Core::Types::GetTypeFacade().JsonSerializer().Deserialize(testDeserialize, bufferDeserial);
+
+			UNIT_TEST_POSITIVE(Dia::Core::StringCompare(testDeserialize.mArray, "Test", 8) == 0, "CustomSerializerTypeTest");
+
+		UNIT_TEST_BLOCK_END()
+
 
 		mState = kFinished;
 	}

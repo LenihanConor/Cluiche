@@ -14,6 +14,8 @@
 #include "DiaCore/Core/Log.h"
 #include "DiaCore/Containers/Arrays/ArrayC.h"
 #include "DiaMaths/Core/FloatMaths.h"
+#include "DiaCore/Json/external/json/json.h"
+#include "DiaCore/Strings/stringutils.h"
 
 namespace UnitTests
 {	
@@ -124,6 +126,41 @@ namespace UnitTests
 	DIA_TYPE_DEFINITION(DiaArrayTypeTest)
 		DIA_TYPE_ADD_VARIABLE("mIntArray", mIntArray)
 		DIA_TYPE_ADD_VARIABLE("mClassArray", mClassArray)
+	DIA_TYPE_DEFINITION_END()
+
+	void CustomSerializerTypeTest::Serialize(const Dia::Core::Types::TypeInstance& instance, const Dia::Core::Types::TypeVariable& currentTypeVariable, Json::Value& jsonData)
+	{
+		std::string str;
+		unsigned int size = currentTypeVariable.GetNumberOfElements();
+		for (unsigned int i = 0; i < size; i++)
+		{
+			char temp = currentTypeVariable.GetArithmeticValue<char>(instance, i);
+			str.push_back(temp);
+
+			if (temp == '\0')
+			{
+				break;
+			}
+		}
+		str.shrink_to_fit();
+		jsonData[currentTypeVariable.GetName()] = str;
+	}
+
+	void CustomSerializerTypeTest::Deserialize(Dia::Core::Types::TypeInstance& instance, const Dia::Core::Types::TypeVariable& currentTypeVariable, const Json::Value& jsonData)
+	{
+		std::string str = jsonData.asString();	
+
+		for (unsigned int i = 0; i < str.length(); i++)
+		{
+			char a = str[i];
+			currentTypeVariable.SetArithmeticValue(a, instance, i, false);
+		}
+	}
+
+	DIA_TYPE_DEFINITION(CustomSerializerTypeTest)
+			DIA_TYPE_ADD_VARIABLE_ARRAY("mArray", mArray, 16)
+				DIA_TYPE_ADD_VARIABLE_ATTRIBUTE_PARAM_1(Dia::Core::Types::TypeVariableAttributesCustomJsonSerializer, CustomSerializerTypeTest::Serialize)
+				DIA_TYPE_ADD_VARIABLE_ATTRIBUTE_PARAM_1(Dia::Core::Types::TypeVariableAttributesCustomJsonDeserializer, CustomSerializerTypeTest::Deserialize)
 	DIA_TYPE_DEFINITION_END()
 
 	void UnitTestTypes::DoTest()

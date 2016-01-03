@@ -6,6 +6,11 @@
 #include <DiaCore/Type/TypeDefinitionMacros.h>
 #include <DiaCore/Containers/Arrays/ArrayC.h>
 
+namespace Json { class Value; }
+
+namespace Dia { namespace Core { namespace Types { class TypeVariable; } } }
+namespace Dia { namespace Core { namespace Types { class TypeInstance; } } }
+
 namespace UnitTests
 {
 	class UnitTestTypes: public UnitTestCore
@@ -182,5 +187,18 @@ namespace UnitTests
 
 		Dia::Core::Containers::ArrayC<int, 2> mIntArray;
 		Dia::Core::Containers::ArrayC<StaticArrayClass, 2> mClassArray;
+	};
+
+	//------------------------------------------------------------------------------
+	class CustomSerializerTypeTest
+	{
+	public:
+		DIA_TYPE_DECLARATION;
+
+		char mArray[16];
+
+		static void Serialize(const Dia::Core::Types::TypeInstance& instance, const Dia::Core::Types::TypeVariable& currentTypeVariable, Json::Value& jsonData);
+		static void Deserialize(Dia::Core::Types::TypeInstance& instance, const Dia::Core::Types::TypeVariable& currentTypeVariable, const Json::Value& jsonData);
+
 	};
 }
