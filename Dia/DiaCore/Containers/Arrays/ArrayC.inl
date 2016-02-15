@@ -6,8 +6,20 @@ namespace Dia
 	{
 		namespace Containers
 		{
+			static char* ArrayC_NameBuilder(const Dia::Core::Types::TypeParameterInput& input, unsigned int size, std::string& out)
+			{
+				const Dia::Core::Types::TypeDefinition::VariableLinkListNode* variable = input.GetVariables().HeadConst();
+				
+				DIA_ASSERT(variable, "A variable type must be defined");
+				const Dia::Core::Types::TypeVariable& typeVariable = *variable->GetPayloadConst();
+
+				std::snprintf(const_cast<char*>(out.c_str()), out.capacity(), "ArrayC<%s, %u>", typeVariable.GetTypeAsString(), size);
+
+				return const_cast<char*>(out.c_str());
+			}
+
 			template <class T, unsigned int size> Dia::Core::Types::TypeDefinition* ArrayC<T, size>::sType;
-			template <class T, unsigned int size> Dia::Core::Types::TypeDefinition& ArrayC<T, size>::GetType() { if (sType == nullptr) { sType = DIA_NEW(Dia::Core::Types::TypeDefinition("ArrayC<T, size>", sizeof(ArrayC<T, size>), __is_polymorphic(ArrayC<T, size>), ArrayC<T, size>::TypeCreationalInput())); } return *sType; }\
+			template <class T, unsigned int size> Dia::Core::Types::TypeDefinition& ArrayC<T, size>::GetType() { if (sType == nullptr) { const Dia::Core::Types::TypeParameterInput& input = ArrayC<T, size>::TypeCreationalInput(); std::string name; name.reserve(128);  sType = DIA_NEW(Dia::Core::Types::TypeDefinition(ArrayC_NameBuilder(input, size, name), sizeof(ArrayC<T, size>), __is_polymorphic(ArrayC<T, size>), input)); } return *sType; }\
 			template <class T, unsigned int size> Dia::Core::Types::TypeInstance ArrayC<T, size>::CreateTypeInstance() { return (Dia::Core::Types::TypeInstance(ArrayC<T, size>::GetType(), this)); }\
 			template <class T, unsigned int size> Dia::Core::Types::TypeInstance ArrayC<T, size>::CreateTypeInstanceConst()const { return (Dia::Core::Types::TypeInstance(ArrayC<T, size>::GetType(), this)); }\
 			template <class T, unsigned int size> Dia::Core::Types::TypeParameterInput& ArrayC<T, size>::TypeCreationalInput()\
