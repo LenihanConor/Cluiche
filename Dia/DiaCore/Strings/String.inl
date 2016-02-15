@@ -2,7 +2,6 @@
 #include <stdarg.h>
 
 #include <DiaCore/Core/Assert.h>
-
 namespace Dia
 {
 	namespace Core

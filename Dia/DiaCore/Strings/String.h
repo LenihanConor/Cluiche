@@ -77,6 +77,7 @@ namespace Dia
 				ReverseIterator							End						();														
 				ConstReverseIterator					EndConst				() const;
 
+				static unsigned int		Capacity		()  { return size; }
 				unsigned int			Size			() const;
 				unsigned int			Length			() const;
 				bool					IsNullTerminating()const;
@@ -126,7 +127,7 @@ namespace Dia
 				int						Find			( char s, unsigned int startPos = 0 ) const;
 				int						FindLast		( char s, unsigned int startPos = 0xffffffff ) const;
 
-			private:
+			protected:
 				ArrayC<char, size> mData;
 			};
 		}
