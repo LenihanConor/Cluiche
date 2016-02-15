@@ -191,6 +191,7 @@
     <ClCompile Include="Json\external\json_reader.cpp" />
     <ClCompile Include="Json\external\json_value.cpp" />
     <ClCompile Include="Json\external\json_writer.cpp" />
+    <ClCompile Include="Strings\String8.cpp" />
     <ClCompile Include="Timer\TimeThreadLimiter.cpp" />
     <ClCompile Include="Time\SystemClock.cpp" />
     <ClCompile Include="Time\TimeAbsolute.cpp" />

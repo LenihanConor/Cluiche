@@ -521,6 +521,9 @@
     <ClCompile Include="Type\TypeJsonSerializer.cpp">
       <Filter>Type\Interfaces\Source</Filter>
     </ClCompile>
+    <ClCompile Include="Strings\String8.cpp">
+      <Filter>Strings\Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Type\TypeFacade.inl">
