@@ -37,6 +37,7 @@ namespace Dia
 					kIsArithmeticBool,
 					kIsArithmeticFloat,
 					kIsArithmeticDouble,
+					kNumOfArthmeticTypes
 				};
 
 				template<class T>
@@ -51,7 +52,9 @@ namespace Dia
 				bool IsArithmeticLongLong()const;
 				bool IsArithmeticFloat()const;
 				bool IsArithmeticDouble()const;
-	
+				
+				const char* GetTypeAsString()const;
+
 				ArithmeticType GetArithmeticType()const;
 			private:
 				bool mIsUnsigned;

@@ -114,6 +114,56 @@ namespace Dia
 				return result; 
 			}
 
+			const char* TypeVariableDataArithmetic::GetTypeAsString()const
+			{
+				bool isUnsigned = IsArithmeticUnsigned();
+				bool isBool = IsArithmeticBool();
+				bool isChar = IsArithmeticChar();
+				bool isShort = IsArithmeticShort();
+				bool isInt = IsArithmeticInt();
+				bool isLong = IsArithmeticLong();
+				bool isLongLong = IsArithmeticLongLong();
+				bool isFloat = IsArithmeticFloat();
+				bool isDouble = IsArithmeticDouble();
+
+				const char* result = "unknown";
+				
+				if (isBool)
+				{
+					result = "bool";
+				}
+				else if (isChar)
+				{
+					result = isUnsigned ? "unsigned char" : "char";
+				}
+				else if (isShort)
+				{
+					result = isUnsigned ? "unsigned short" : "short";
+				}
+				else if (isInt)
+				{
+					result = isUnsigned ? "unsigned int" : "int";
+				}
+				else if (isLong)
+				{
+					result = isUnsigned ? "unsigned long" : "long";
+				}
+				else if (isLongLong)
+				{
+					result = isUnsigned ? "unsigned long long" : "long long";
+				}
+				else if (isFloat)
+				{
+					result = "float";
+				}
+				else if (isDouble)
+				{
+					result = "double";
+				}
+
+				return result;
+			}
+
 			//---------------------------------------------------------------------------------------------------------
 			// TypeVariableDataClass
 			//---------------------------------------------------------------------------------------------------------
