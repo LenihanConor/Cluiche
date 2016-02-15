@@ -9,6 +9,7 @@
 #include "DiaCore/Type/TypeParameterInput.h"
 #include "DiaCore/Type/TypeDefinition.h"
 #include "DiaCore/Strings/String64.h"
+#include "DiaCore/Strings/String8.h"
 #include "DiaCore/Type/TypeDefinitionMacros.h"
 #include "DiaCore/Type/TypeFacade.h"
 #include "DiaCore/Containers/Strings/StringWriter.h"
@@ -438,11 +439,27 @@ namespace UnitTests
 			CustomSerializerTypeTest testDeserialize;
 			Dia::Core::Containers::StringReader bufferDeserial(&bufferMemory[0]);
 			Dia::Core::Types::GetTypeFacade().JsonSerializer().Deserialize(testDeserialize, bufferDeserial);
-
+			
 			UNIT_TEST_POSITIVE(Dia::Core::StringCompare(testDeserialize.mArray, "Test", 8) == 0, "CustomSerializerTypeTest");
 
 		UNIT_TEST_BLOCK_END()
 
+		UNIT_TEST_BLOCK_START()
+
+			Dia::Core::Containers::String8 testSerialize("Test");
+			
+			char bufferMemory[32 * 1024];
+			Dia::Core::Containers::StringWriter bufferSerial(&bufferMemory[0], 32 * 1024);
+
+			Dia::Core::Types::GetTypeFacade().JsonSerializer().Serialize(testSerialize, bufferSerial);
+
+			Dia::Core::Containers::String8 testDeserialize;
+			Dia::Core::Containers::StringReader bufferDeserial(&bufferMemory[0]);
+			Dia::Core::Types::GetTypeFacade().JsonSerializer().Deserialize(testDeserialize, bufferDeserial);
+
+			UNIT_TEST_POSITIVE(testDeserialize == "Test", "CustomSerializerTypeTest");
+
+		UNIT_TEST_BLOCK_END()
 
 		mState = kFinished;
 	}
