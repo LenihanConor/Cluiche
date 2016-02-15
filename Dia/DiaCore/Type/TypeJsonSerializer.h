@@ -1,6 +1,8 @@
 #ifndef DIA_TYPE_JSON_SERIALIZER_H
 #define DIA_TYPE_JSON_SERIALIZER_H
 
+#include "DiaCore/Core/EnumClass.h"
+
 namespace Dia
 {
 	namespace Core
@@ -23,6 +25,31 @@ namespace Dia
 			class TypeJsonSerializer
 			{
 			public:
+				//------------------------------------------------------------------------------------
+				//	MetaData
+				//------------------------------------------------------------------------------------
+				class MetaData
+				{
+				public:
+					static const char sMetaDataPrefix = '_';
+
+					CLASSEDENUM(EFlagName, \
+						CE_ITEMVAL(Unknown, -1)\
+						CE_ITEMVAL(ClassName, 0)\
+						CE_ITEM(CRC)\
+						CE_ITEM(NumberElements), \
+						Unknown \
+						);
+
+					static const char* GetMetaData(EFlagName flag)
+					{
+						return sMetaDataArray[flag];
+					}
+
+				private:
+					static const char* sMetaDataArray[EFlagName::NumberOfItems];
+				};
+
 				TypeJsonSerializer();
 				
 				void Initilize(const TypeRegistry* registry);

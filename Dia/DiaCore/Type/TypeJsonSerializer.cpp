@@ -8,7 +8,6 @@
 #include "DiaCore/Strings/String32.h"
 #include "DiaCore/Strings/String64.h"
 #include "DiaCore/Containers/Arrays/DynamicArrayC.h"
-#include "DiaCore/Core/EnumClass.h"
 #include "DiaCore/Core/Log.h"
 #include "DiaCore/Json/external/json/json.h"
 
@@ -18,32 +17,8 @@ namespace Dia
 	{
 		namespace Types
 		{
-			//------------------------------------------------------------------------------------
-			//	MetaData
-			//------------------------------------------------------------------------------------
-			class MetaData
-			{
-			public:
-				static const char sMetaDataPrefix = '_';
 
-				CLASSEDENUM (EFlagName,\
-					CE_ITEMVAL(Unknown, -1)\
-					CE_ITEMVAL(ClassName, 0)\
-					CE_ITEM(CRC)\
-					CE_ITEM(NumberElements),\
-					Unknown \
-					);			
-				
-				static const Containers::String32& GetMetaData(EFlagName flag)
-				{
-					return sMetaDataArray[flag];
-				}
-				
-			private:
-				static const Containers::String32 sMetaDataArray[EFlagName::NumberOfItems];
-			};
-			
-			const Containers::String32 MetaData::sMetaDataArray[] = {"_class_name", "_crc", "_number_element"};
+			const char* TypeJsonSerializer::MetaData::sMetaDataArray[] = { "_class_name", "_crc", "_number_element" };
 
 			//------------------------------------------------------------------------------------
 			//	JsonSerializerInternal
@@ -75,8 +50,8 @@ namespace Dia
 					unsigned int hashID = instance.GetTypeDescriptor()->GetUniqueCRC();
 					const char* name = instance.GetTypeDescriptor()->GetName();
 
-					jsonStructureToSerialize[MetaData::GetMetaData(MetaData::EFlagName::ClassName).AsCStr()] = name;
-					jsonStructureToSerialize[MetaData::GetMetaData(MetaData::EFlagName::CRC).AsCStr()] = hashID;
+					jsonStructureToSerialize[TypeJsonSerializer::MetaData::GetMetaData(TypeJsonSerializer::MetaData::EFlagName::ClassName)] = name;
+					jsonStructureToSerialize[TypeJsonSerializer::MetaData::GetMetaData(TypeJsonSerializer::MetaData::EFlagName::CRC)] = hashID;
 				}
 
 				//------------------------------------------------------------------------------------
@@ -88,8 +63,7 @@ namespace Dia
 					while (currentNode != NULL)
 					{
 						const TypeVariable& currentTypeVariable = *currentNode->GetPayloadConst();
-
-						
+	
 						bool isArithmeticType = currentTypeVariable.IsArithmeticType();
 						bool isClassType = currentTypeVariable.IsClassType();
 						bool isPointerType = currentTypeVariable.IsPointerType();
@@ -269,8 +243,8 @@ namespace Dia
 
 						Json::Value newClassJsonData;
 						
-						newClassJsonData[MetaData::GetMetaData(MetaData::EFlagName::ClassName).AsCStr()] = className;
-						newClassJsonData[MetaData::GetMetaData(MetaData::EFlagName::CRC).AsCStr()] = hashID;
+						newClassJsonData[TypeJsonSerializer::MetaData::GetMetaData(TypeJsonSerializer::MetaData::EFlagName::ClassName)] = className;
+						newClassJsonData[TypeJsonSerializer::MetaData::GetMetaData(TypeJsonSerializer::MetaData::EFlagName::CRC)] = hashID;
 
 						TypeInstance newInstance(currentTypeVariable.GetClassDefinition(), currentTypeVariable.GetClassPointee(instance, i));
 
@@ -344,10 +318,10 @@ namespace Dia
 				//------------------------------------------------------------------------------------
 				void ReadInstanceDeclaration(const TypeInstance& instance, const Json::Value& parsedFromString)
 				{	
-					DIA_ASSERT_SUPPORT(Dia::Core::Containers::String64 name(parsedFromString[MetaData::GetMetaData(MetaData::EFlagName::ClassName).AsCStr()].asString().c_str()));
-					DIA_ASSERT_SUPPORT(unsigned int hashID = parsedFromString[MetaData::GetMetaData(MetaData::EFlagName::CRC).AsCStr()].asUInt());
-					DIA_ASSERT(name == instance.GetTypeDescriptor()->GetName(), "An object of [%s] is trying to deserialise into object of [%s]", parsedFromString[MetaData::GetMetaData(MetaData::EFlagName::ClassName).AsCStr()].asString().c_str(), instance.GetTypeDescriptor()->GetName());
-					DIA_ASSERT(hashID == instance.GetTypeDescriptor()->GetUniqueCRC(), "%s crc is not correct", parsedFromString[MetaData::GetMetaData(MetaData::EFlagName::ClassName).AsCStr()].asString().c_str());
+					DIA_ASSERT_SUPPORT(Dia::Core::Containers::String64 name(parsedFromString[TypeJsonSerializer::MetaData::GetMetaData(TypeJsonSerializer::MetaData::EFlagName::ClassName)].asString().c_str()));
+					DIA_ASSERT_SUPPORT(unsigned int hashID = parsedFromString[TypeJsonSerializer::MetaData::GetMetaData(TypeJsonSerializer::MetaData::EFlagName::CRC)].asUInt());
+					DIA_ASSERT(name == instance.GetTypeDescriptor()->GetName(), "An object of [%s] is trying to deserialise into object of [%s]", parsedFromString[TypeJsonSerializer::MetaData::GetMetaData(TypeJsonSerializer::MetaData::EFlagName::ClassName)].asString().c_str(), instance.GetTypeDescriptor()->GetName());
+					DIA_ASSERT(hashID == instance.GetTypeDescriptor()->GetUniqueCRC(), "%s crc is not correct", parsedFromString[TypeJsonSerializer::MetaData::GetMetaData(TypeJsonSerializer::MetaData::EFlagName::ClassName)].asString().c_str());
 				}
 				
 				//------------------------------------------------------------------------------------
@@ -371,7 +345,7 @@ namespace Dia
 						const char* memberName = it.memberName();
 
 						// If it is meta data then ignore							
-						bool isMetaData = memberName[0] == MetaData::sMetaDataPrefix;
+						bool isMetaData = memberName[0] == TypeJsonSerializer::MetaData::sMetaDataPrefix;
 						if (isMetaData)
 						{
 							continue;
@@ -473,13 +447,13 @@ namespace Dia
 						std::string strTemp;
 						if (size > 1)
 						{
-							strTemp = jsonData[i][MetaData::GetMetaData(MetaData::EFlagName::ClassName).AsCStr()].asString();
-							hashID = jsonData[i][MetaData::GetMetaData(MetaData::EFlagName::CRC).AsCStr()].asUInt();
+							strTemp = jsonData[i][TypeJsonSerializer::MetaData::GetMetaData(TypeJsonSerializer::MetaData::EFlagName::ClassName)].asString();
+							hashID = jsonData[i][TypeJsonSerializer::MetaData::GetMetaData(TypeJsonSerializer::MetaData::EFlagName::CRC)].asUInt();
 						}
 						else
 						{
-							strTemp = jsonData[MetaData::GetMetaData(MetaData::EFlagName::ClassName).AsCStr()].asString();
-							hashID = jsonData[MetaData::GetMetaData(MetaData::EFlagName::CRC).AsCStr()].asUInt();
+							strTemp = jsonData[TypeJsonSerializer::MetaData::GetMetaData(TypeJsonSerializer::MetaData::EFlagName::ClassName)].asString();
+							hashID = jsonData[TypeJsonSerializer::MetaData::GetMetaData(TypeJsonSerializer::MetaData::EFlagName::CRC)].asUInt();
 						}
 						const char* className = strTemp.c_str();
 
