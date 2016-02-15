@@ -35,6 +35,25 @@ namespace Dia
 				return mNumberOfElements;
 			}
 
+
+			const char* TypeVariable::GetTypeAsString()const
+			{
+				const char* result = nullptr;
+				if(IsClassType())
+				{
+					result = GetClassDefinition()->GetName();
+				}
+				else if (IsArithmeticType())
+				{
+					result = static_cast<TypeVariableDataArithmetic*>(mSpecificData)->GetTypeAsString();
+				}
+				else
+				{
+					DIA_ASSERT(0, "Do not recognize type of vvariable, could not convert to string ");
+				}
+
+				return result;
+			}
 			//------------------------------------------------------------------------------------
 			bool TypeVariable::IsArithmeticType()const								
 			{ 

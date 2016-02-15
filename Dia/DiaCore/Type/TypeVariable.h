@@ -36,6 +36,8 @@ namespace Dia
 				unsigned int GetOffsetFromParent(unsigned int element = 0)const;
 				unsigned int GetNumberOfElements()const;
 
+				const char* GetTypeAsString()const; // Returns a string of type. i.e int would renturn "int"
+
 				bool IsArithmeticType()const;				
 				bool IsClassType()const;
 				bool IsPointerType()const;
