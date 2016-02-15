@@ -12,6 +12,8 @@ namespace Dia
 			class String64 : public String<64>
 			{
 			public:
+				DIA_TYPE_DECLARATION;
+
 				String64();													
 				explicit String64 ( ConstIterator& iter ); 
 				explicit String64 ( ConstReverseIterator& iter ); 

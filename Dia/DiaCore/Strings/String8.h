@@ -25,9 +25,6 @@ namespace Dia
 
 				String8(const char* pRawString, ...);
 				String8(const char* pRawString, va_list argList);
-
-				static void Serialize(const Dia::Core::Types::TypeInstance& instance, const Dia::Core::Types::TypeVariable& currentTypeVariable, Json::Value& jsonData);
-				static void Deserialize(Dia::Core::Types::TypeInstance& instance, const Dia::Core::Types::TypeVariable& currentTypeVariable, const Json::Value& jsonData);
 			};
 		}
 	}

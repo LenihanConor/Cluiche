@@ -12,6 +12,8 @@ namespace Dia
 			class String512 : public String<512>
 			{
 			public:
+				DIA_TYPE_DECLARATION;
+
 				String512();													
 				explicit String512 ( ConstIterator& iter ); 
 				explicit String512 ( ConstReverseIterator& iter ); 

@@ -524,6 +524,24 @@
     <ClCompile Include="Strings\String8.cpp">
       <Filter>Strings\Source</Filter>
     </ClCompile>
+    <ClCompile Include="Strings\String32.cpp">
+      <Filter>Strings\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Strings\String64.cpp">
+      <Filter>Strings\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Strings\String128.cpp">
+      <Filter>Strings\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Strings\String256.cpp">
+      <Filter>Strings\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Strings\String512.cpp">
+      <Filter>Strings\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Strings\String1024.cpp">
+      <Filter>Strings\Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Type\TypeFacade.inl">

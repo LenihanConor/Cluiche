@@ -1,4 +1,4 @@
-#include "DiaCore/Strings/String8.h"
+#include "DiaCore/Strings/String512.h"
 
 #include "DiaCore/Strings/StringUtils.h"
 #include "DiaCore/Type/TypeDefinitionMacros.h"
@@ -12,10 +12,10 @@ namespace Dia
 	{
 		namespace Containers
 		{
-			DIA_TYPE_DEFINITION(String8)
+			DIA_TYPE_DEFINITION(String512)
 				DIA_TYPE_ADD_VARIABLE("mData", mData)
-				DIA_TYPE_ADD_VARIABLE_ATTRIBUTE_PARAM_1(Dia::Core::Types::TypeVariableAttributesCustomJsonSerializer, String8::Serialize)
-				DIA_TYPE_ADD_VARIABLE_ATTRIBUTE_PARAM_1(Dia::Core::Types::TypeVariableAttributesCustomJsonDeserializer, String8::Deserialize)
+				DIA_TYPE_ADD_VARIABLE_ATTRIBUTE_PARAM_1(Dia::Core::Types::TypeVariableAttributesCustomJsonSerializer, String512::Serialize)
+				DIA_TYPE_ADD_VARIABLE_ATTRIBUTE_PARAM_1(Dia::Core::Types::TypeVariableAttributesCustomJsonDeserializer, String512::Deserialize)
 			DIA_TYPE_DEFINITION_END()
 		}
 	}

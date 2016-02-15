@@ -20,6 +20,9 @@ namespace Dia
 				typedef	ReverseArrayIterator<char>			ReverseIterator;
 				typedef	ReverseArrayConstIterator<char>		ConstReverseIterator;
 
+				static void Deserialize(Dia::Core::Types::TypeInstance& instance, const Dia::Core::Types::TypeVariable& currentTypeVariable, const Json::Value& jsonData);
+				static void Serialize(const Dia::Core::Types::TypeInstance& instance, const Dia::Core::Types::TypeVariable& currentTypeVariable, Json::Value& jsonData);
+
 				String();																															
 				template<unsigned int _size> explicit String (const String<_size>& rhs);						
 				template<unsigned int _size> explicit String (const String<_size>& rhs, unsigned int startIndex, unsigned int numberElements );  
