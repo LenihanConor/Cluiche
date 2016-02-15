@@ -73,7 +73,7 @@ namespace Dia
 				SortVariableByOffset sortVariableByOffset;
 				mVariables.Sort(sortVariableByOffset);
 
-				// If it has variables  then append it to the crc
+				// If it has variables then append it to the crc
 				const TypeDefinition::VariableLinkListNode* nextVariable = mVariables.Head();
 				while (nextVariable != NULL)
 				{
