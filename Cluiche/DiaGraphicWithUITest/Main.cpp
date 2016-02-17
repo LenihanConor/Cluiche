@@ -5,7 +5,7 @@
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaCore/Timer/TimeThreadLimiter.h>
 #include <DiaCore/Frame/FrameStream.h>
-#include <DiaCore/FilePath/FilePathStore.h>
+#include <DiaCore/FilePath/PathStore.h>
 
 #include <DiaGraphics/Interface/ICanvas.h>
 
@@ -23,6 +23,20 @@
 #include "RenderThreadStruct.h"
 
 #include <DiaUI/IUISystem.h>
+#include <DiaCore/FilePath/PathStoreConfig.h>
+#include <DiaCore/Containers/Strings/StringReader.h>
+#include <DiaCore/Containers/Strings/StringWriter.h>
+#include <DiaCore/Type/TypeFacade.h>
+
+
+
+
+#include <iostream>
+#include <fstream>
+#include <string>
+
+
+
 
 class LaunchUIPage: public Dia::UI::Page
 {
@@ -38,12 +52,71 @@ public:
 	{
 		BindMethod(Dia::UI::BoundMethod("backgroundGrey", Dia::UI::BoundMethod::MethodPtr(this, &LaunchUIPage::DoSomething)));
 	}
-};
+}; 
+
+#include <windows.h>
+#include <string>
+#include <iostream>
+#include <sstream>
+#include "DiaCore/Strings/stringutils.h"
+
+using namespace std;;
+
+std::string ExePath() {
+	char buffer[MAX_PATH];
+	GetModuleFileName(NULL, buffer, MAX_PATH);
+	string::size_type pos = string(buffer).find_last_of("\\/");
+	return string(buffer).substr(0, pos);
+}
 
 int main(int argc, const char* argv[])
 {
+	Dia::Core::PathStoreConfig pathStoreConfig;
+
+	{char bufferMemory[32 * 1024];
+	Dia::Core::Containers::StringWriter bufferSerial(&bufferMemory[0], 32 * 1024);
+
+	Dia::Core::Types::GetTypeFacade().JsonSerializer().Serialize(pathStoreConfig, bufferSerial);
+
+	int x = 0;
+	x++;
+	}
+//	DIA_ASSERT(0, "NEED TO GET DYNAMIC ARRAYS UP AND RUNNING :(");
+//	DIA_ASSERT(0, "NEED TO GET FILE LOAD :(");
+
 	//Setup paths
-	Dia::Core::FilePathStore::RegisterPathRootToStore("root", "file:///C:/Users/Conor/Documents/GitHub/Cluiche/Cluiche/");
+	std::string dir = ExePath();
+	char bufferMemory[32 * 1024];
+	std::string line;
+
+	std::ifstream f(dir + "\\pathStoreConfig.cfg");
+	
+	char getdata[10000];
+	if (f.is_open())
+	{
+		f.read(getdata, sizeof getdata);
+		if (f.eof())
+		{
+			// got the whole file...
+			size_t bytes_really_read = f.gcount();
+
+		}
+		else if (f.fail())
+		{
+			// some other error...
+		}
+		else
+		{
+			// getdata must be full, but the file is larger...
+
+		}
+	}
+	Dia::Core::Containers::StringReader bufferDeserial(&getdata[0]);
+
+	Dia::Core::Types::GetTypeFacade().JsonSerializer().Deserialize(pathStoreConfig, bufferDeserial);
+
+
+//	Dia::Core::PathStore::RegisterPathRootToStore("root", "file:///C:/Users/Conor/Documents/GitHub/Cluiche/Cluiche/");
 
 	// Setup the rendering windoow
 	Dia::SFML::RenderWindowFactory windowFactory;
