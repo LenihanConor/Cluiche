@@ -109,7 +109,9 @@
     <ClInclude Include="Core\System.h" />
     <ClInclude Include="CRC\CRCHashFunctor.h" />
     <ClInclude Include="FilePath\FilePath.h" />
-    <ClInclude Include="FilePath\FilePathStore.h" />
+    <ClInclude Include="FilePath\Path.h" />
+    <ClInclude Include="FilePath\PathStore.h" />
+    <ClInclude Include="FilePath\PathStoreConfig.h" />
     <ClInclude Include="Frame\FrameStream.h" />
     <ClInclude Include="Json\external\json\assertions.h" />
     <ClInclude Include="Json\external\json\autolink.h" />
@@ -187,7 +189,9 @@
     <ClCompile Include="Core\EnumClass.cpp" />
     <ClCompile Include="Core\Log.cpp" />
     <ClCompile Include="FilePath\FilePath.cpp" />
-    <ClCompile Include="FilePath\FilePathStore.cpp" />
+    <ClCompile Include="FilePath\Path.cpp" />
+    <ClCompile Include="FilePath\PathStore.cpp" />
+    <ClCompile Include="FilePath\PathStoreConfig.cpp" />
     <ClCompile Include="Json\external\json_reader.cpp" />
     <ClCompile Include="Json\external\json_value.cpp" />
     <ClCompile Include="Json\external\json_writer.cpp" />

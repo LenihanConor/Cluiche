@@ -1,7 +1,6 @@
 #include "DiaCore/FilePath/FilePath.h"
 
-#include "DiaCore/FilePath/FilePathStore.h"
-
+#include "DiaCore/FilePath/PathStore.h"
 
 namespace Dia
 {	
@@ -10,44 +9,44 @@ namespace Dia
 		FilePath::FilePath()
 		{}
 
-		FilePath::FilePath(const PathAlias & pathAlias, const FileName & filename)
+		FilePath::FilePath(const Path::Alias & pathAlias, const FileName & filename)
 			: mPathAlias(pathAlias)
 			, mFileName(filename)
 		{
-			DIA_ASSERT(FilePathStore::IsPathAliasRegistered(pathAlias), "%s is not a register alias", pathAlias.AsCStr());
+			DIA_ASSERT(PathStore::IsPathAliasRegistered(pathAlias), "%s is not a register alias", pathAlias.AsChar());
 		}
 
-		FilePath::FilePath(const PathAlias & pathAlias, const PathAmendment & pathAmendment, const FileName & filename)
+		FilePath::FilePath(const Path::Alias & pathAlias, const PathAmendment & pathAmendment, const FileName & filename)
 			: mPathAlias(pathAlias)
 			, mPathAmendment(pathAmendment)
 			, mFileName(filename)
 		{
-			DIA_ASSERT(FilePathStore::IsPathAliasRegistered(pathAlias), "%s is not a register alias", pathAlias.AsCStr());
+			DIA_ASSERT(PathStore::IsPathAliasRegistered(pathAlias), "%s is not a register alias", pathAlias.AsChar());
 		}
 
-		void FilePath::Create(const PathAlias& pathAlias, const FileName& filename)
+		void FilePath::Create(const Path::Alias& pathAlias, const FileName& filename)
 		{
 			mPathAlias = pathAlias;
 			mFileName = filename;
 		
-			DIA_ASSERT(FilePathStore::IsPathAliasRegistered(pathAlias), "%s is not a register alias", pathAlias.AsCStr());
+			DIA_ASSERT(PathStore::IsPathAliasRegistered(pathAlias), "%s is not a register alias", pathAlias.AsChar());
 		}
 
-		void FilePath::Create(const PathAlias& pathAlias, const PathAmendment& pathAmendment, const FileName& filename)
+		void FilePath::Create(const Path::Alias& pathAlias, const PathAmendment& pathAmendment, const FileName& filename)
 		{
 			mPathAlias = pathAlias;
 			mPathAmendment = pathAmendment;
 			mFileName = filename;
 			
-			DIA_ASSERT(FilePathStore::IsPathAliasRegistered(pathAlias), "%s is not a register alias", pathAlias.AsCStr());
+			DIA_ASSERT(PathStore::IsPathAliasRegistered(pathAlias), "%s is not a register alias", pathAlias.AsChar());
 		}
 
 		const FilePath::ResoledFilePath& FilePath::Resolve(ResoledFilePath& bufferToResovleInto) const
 		{
-			DIA_ASSERT(mPathAlias.Length() > 0, "Path alias has not been set");
+			DIA_ASSERT(mPathAlias.Value() != 0, "Path alias has not been set");
 			DIA_ASSERT(mFileName.Length() > 0, "File name has not been set");
 
-			bufferToResovleInto.Append(FilePathStore::ResolvePathToString(mPathAlias).AsCStr());
+			bufferToResovleInto.Append(PathStore::ResolvePathToString(mPathAlias).AsCStr());
 			if (mPathAmendment.Length() > 0)
 			{
 				bufferToResovleInto.Append(mPathAmendment.AsCStr());

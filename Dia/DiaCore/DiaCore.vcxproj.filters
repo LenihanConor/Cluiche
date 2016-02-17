@@ -363,9 +363,6 @@
     <ClInclude Include="FilePath\FilePath.h">
       <Filter>FilePath</Filter>
     </ClInclude>
-    <ClInclude Include="FilePath\FilePathStore.h">
-      <Filter>FilePath</Filter>
-    </ClInclude>
     <ClInclude Include="Json\external\json\json.h">
       <Filter>Json\External</Filter>
     </ClInclude>
@@ -401,6 +398,15 @@
     </ClInclude>
     <ClInclude Include="Type\TypeJsonSerializer.h">
       <Filter>Type\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="FilePath\PathStore.h">
+      <Filter>FilePath</Filter>
+    </ClInclude>
+    <ClInclude Include="FilePath\Path.h">
+      <Filter>FilePath</Filter>
+    </ClInclude>
+    <ClInclude Include="FilePath\PathStoreConfig.h">
+      <Filter>FilePath</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -506,9 +512,6 @@
     <ClCompile Include="FilePath\FilePath.cpp">
       <Filter>FilePath</Filter>
     </ClCompile>
-    <ClCompile Include="FilePath\FilePathStore.cpp">
-      <Filter>FilePath</Filter>
-    </ClCompile>
     <ClCompile Include="Json\external\json_writer.cpp">
       <Filter>Json\External\Source</Filter>
     </ClCompile>
@@ -541,6 +544,15 @@
     </ClCompile>
     <ClCompile Include="Strings\String1024.cpp">
       <Filter>Strings\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="FilePath\PathStore.cpp">
+      <Filter>FilePath</Filter>
+    </ClCompile>
+    <ClCompile Include="FilePath\Path.cpp">
+      <Filter>FilePath</Filter>
+    </ClCompile>
+    <ClCompile Include="FilePath\PathStoreConfig.cpp">
+      <Filter>FilePath</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
