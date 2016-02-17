@@ -11,6 +11,7 @@ namespace Dia
 		{
 		public:
 			static const int kStringLength = 64;
+			static const int Capacity() { return kStringLength; }
 
 			StringCRC ();
 			StringCRC (const StringCRC& crc);
