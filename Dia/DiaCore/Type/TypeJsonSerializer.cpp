@@ -126,25 +126,25 @@ namespace Dia
 							switch (type)
 							{
 							case TypeVariableDataArithmetic::kIsArithmeticBool: 
-								if(size > 1)
+								if(jsonData.isArray())
 									jsonData[currentTypeVariable.GetName()][i] = currentTypeVariable.GetArithmeticValue<bool>(instance, i);
 								else
 									jsonData[currentTypeVariable.GetName()] = currentTypeVariable.GetArithmeticValue<bool>(instance, i);
 								break;
 							case TypeVariableDataArithmetic::kIsArithmeticChar: 
-								if (size > 1)
+								if (jsonData.isArray())
 									jsonData[currentTypeVariable.GetName()][i] = currentTypeVariable.GetArithmeticValue<unsigned char>(instance, i);
 								else
 									jsonData[currentTypeVariable.GetName()] = currentTypeVariable.GetArithmeticValue<unsigned char>(instance, i);
 								break;
 							case TypeVariableDataArithmetic::kIsArithmeticShort:
-								if (size > 1)
+								if (jsonData.isArray())
 									jsonData[currentTypeVariable.GetName()][i] = currentTypeVariable.GetArithmeticValue<unsigned short>(instance, i);
 								else
 									jsonData[currentTypeVariable.GetName()] = currentTypeVariable.GetArithmeticValue<unsigned short>(instance, i);
 								break;
 							case TypeVariableDataArithmetic::kIsArithmeticInt: 
-								if (size > 1)
+								if (jsonData.isArray())
 									jsonData[currentTypeVariable.GetName()][i] = currentTypeVariable.GetArithmeticValue<unsigned int>(instance, i);
 								else
 									jsonData[currentTypeVariable.GetName()] = currentTypeVariable.GetArithmeticValue<unsigned int>(instance, i);
@@ -153,7 +153,7 @@ namespace Dia
 								{
 									Containers::String64 valueString;
 									Convert(currentTypeVariable.GetArithmeticValue<unsigned long>(instance, i), valueString);
-									if (size > 1)
+									if (jsonData.isArray())
 										jsonData[currentTypeVariable.GetName()][i] = valueString.AsCStr();
 									else
 										jsonData[currentTypeVariable.GetName()] = valueString.AsCStr();
@@ -163,7 +163,7 @@ namespace Dia
 								{
 									Containers::String64 valueString;
 									Convert(currentTypeVariable.GetArithmeticValue<unsigned long long>(instance, i), valueString);
-									if (size > 1)
+									if (jsonData.isArray())
 										jsonData[currentTypeVariable.GetName()][i] = valueString.AsCStr();
 									else
 										jsonData[currentTypeVariable.GetName()] = valueString.AsCStr();
@@ -177,19 +177,19 @@ namespace Dia
 							switch (type)
 							{
 							case TypeVariableDataArithmetic::kIsArithmeticChar:
-								if (size > 1)
+								if (jsonData.isArray())
 									jsonData[currentTypeVariable.GetName()][i] = currentTypeVariable.GetArithmeticValue<char>(instance, i);
 								else
 									jsonData[currentTypeVariable.GetName()] = currentTypeVariable.GetArithmeticValue<char>(instance, i);
 								break;
 							case TypeVariableDataArithmetic::kIsArithmeticShort:
-								if (size > 1)
+								if (jsonData.isArray())
 									jsonData[currentTypeVariable.GetName()][i] = currentTypeVariable.GetArithmeticValue<short>(instance, i);
 								else
 									jsonData[currentTypeVariable.GetName()] = currentTypeVariable.GetArithmeticValue<short>(instance, i);
 								break;
 							case TypeVariableDataArithmetic::kIsArithmeticInt: 
-								if (size > 1)
+								if (jsonData.isArray())
 									jsonData[currentTypeVariable.GetName()][i] = currentTypeVariable.GetArithmeticValue<int>(instance, i);
 								else
 									jsonData[currentTypeVariable.GetName()] = currentTypeVariable.GetArithmeticValue<int>(instance, i);
@@ -198,7 +198,7 @@ namespace Dia
 								{
 									Containers::String64 valueString;
 									Convert(currentTypeVariable.GetArithmeticValue<long>(instance, i), valueString);
-									if (size > 1)
+									if (jsonData.isArray())
 										jsonData[currentTypeVariable.GetName()][i] = valueString.AsCStr();
 									else
 										jsonData[currentTypeVariable.GetName()] = valueString.AsCStr();
@@ -208,20 +208,20 @@ namespace Dia
 								{
 									Containers::String64 valueString;
 									Convert(currentTypeVariable.GetArithmeticValue<long long>(instance, i), valueString);
-									if (size > 1)
+									if (jsonData.isArray())
 										jsonData[currentTypeVariable.GetName()][i] = valueString.AsCStr();
 									else
 										jsonData[currentTypeVariable.GetName()] = valueString.AsCStr();
 								}
 								break;
 							case TypeVariableDataArithmetic::kIsArithmeticFloat:
-								if (size > 1)
+								if (jsonData.isArray())
 									jsonData[currentTypeVariable.GetName()][i] = currentTypeVariable.GetArithmeticValue<float>(instance, i);
 								else
 									jsonData[currentTypeVariable.GetName()] = currentTypeVariable.GetArithmeticValue<float>(instance, i);
 								break;
 							case TypeVariableDataArithmetic::kIsArithmeticDouble:
-								if (size > 1)
+								if (jsonData.isArray())
 									jsonData[currentTypeVariable.GetName()][i] = currentTypeVariable.GetArithmeticValue < double > (instance, i);
 								else
 									jsonData[currentTypeVariable.GetName()] = currentTypeVariable.GetArithmeticValue<double>(instance, i);
@@ -438,14 +438,21 @@ namespace Dia
 				//------------------------------------------------------------------------------------
 				void ReadClassType( TypeInstance& instance, const TypeVariable& currentTypeVariable, const Json::Value& jsonData)
 				{
-					unsigned int size = currentTypeVariable.GetNumberOfElements();
+					unsigned int size = 1;
+					if (jsonData.isArray())
+					{
+						size = jsonData.size();
+						
+						DIA_ASSERT(currentTypeVariable.GetNumberOfElements() >= jsonData.size(), "Json array is outbounding the c++ array");
+					}
+
 					for (unsigned int i = 0; i < size; i++)
 					{
 						TypeInstance newInstance(currentTypeVariable.GetClassDefinition(), currentTypeVariable.GetClassPointee(instance, i) );
 
 						unsigned int hashID = 0;
 						std::string strTemp;
-						if (size > 1)
+						if (jsonData.isArray())
 						{
 							strTemp = jsonData[i][TypeJsonSerializer::MetaData::GetMetaData(TypeJsonSerializer::MetaData::EFlagName::ClassName)].asString();
 							hashID = jsonData[i][TypeJsonSerializer::MetaData::GetMetaData(TypeJsonSerializer::MetaData::EFlagName::CRC)].asUInt();
@@ -461,7 +468,7 @@ namespace Dia
 						DIA_ASSERT(name == newInstance.GetTypeDescriptor()->GetName(), "An object of [%s] is trying to deserialise into object of [%s]", className, newInstance.GetTypeDescriptor()->GetName());
 						DIA_ASSERT(hashID == newInstance.GetTypeDescriptor()->GetUniqueCRC(), "%s crc is not correct", className);
 						
-						if (size > 1)
+						if (jsonData.isArray())
 						{
 							ReadVariable(newInstance, jsonData[i]);
 						}
@@ -513,7 +520,14 @@ namespace Dia
 				{
 					bool isArthmeticPointer = currentTypeVariable.IsPointerArthmeticType() && currentTypeVariable.HasAttribute<TypeVariableAttributesPointerAsObject>();
 
-					unsigned int size = currentTypeVariable.GetNumberOfElements();
+					unsigned int size = 1;
+					if (val.isArray())
+					{
+						size = val.size();
+
+						DIA_ASSERT(currentTypeVariable.GetNumberOfElements() >= val.size(), "Json array is outbounding the c++ array");
+					}
+
 					for (unsigned int i = 0; i < size; i++)
 					{						
 						bool isBool = currentTypeVariable.IsArithmeticBool();
