@@ -3,6 +3,11 @@
 
 #include "DiaCore/Core/EnumClass.h"
 
+namespace Json
+{
+	class Value;
+}
+
 namespace Dia
 {
 	namespace Core
@@ -36,8 +41,7 @@ namespace Dia
 					CLASSEDENUM(EFlagName, \
 						CE_ITEMVAL(Unknown, -1)\
 						CE_ITEMVAL(ClassName, 0)\
-						CE_ITEM(CRC)\
-						CE_ITEM(NumberElements), \
+						CE_ITEM(CRCArray), \
 						Unknown \
 						);
 
@@ -64,6 +68,8 @@ namespace Dia
 				void Deserialize(TypeInstance& instance, Dia::Core::Containers::StringReader& buffer);
 
 			private:
+				void AddCRCToCRCArray(const char* name, unsigned int hashID, Json::Value& jsonData);
+
 				const TypeRegistry* mRegistry;
 			};
 

@@ -27,20 +27,15 @@ namespace Dia
 			template <unsigned int size> inline
 			void String<size>::Serialize(const Dia::Core::Types::TypeInstance& instance, const Dia::Core::Types::TypeVariable& currentTypeVariable, Json::Value& jsonData)
 			{
-				std::string str;
 				unsigned int size = currentTypeVariable.GetNumberOfElements();
 				for (unsigned int i = 0; i < size; i++)
 				{
+					std::string str;
+
 					// Set the meta data
-					unsigned int hashID = currentTypeVariable.GetClassDefinition()->GetUniqueCRC();
 					const char* name = currentTypeVariable.GetName();
 					const char* className = currentTypeVariable.GetClassDefinition()->GetName();
-
-					Json::Value newClassJsonData;
-
-					newClassJsonData[Dia::Core::Types::TypeJsonSerializer::MetaData::GetMetaData(Dia::Core::Types::TypeJsonSerializer::MetaData::EFlagName::ClassName)] = className;
-					newClassJsonData[Dia::Core::Types::TypeJsonSerializer::MetaData::GetMetaData(Dia::Core::Types::TypeJsonSerializer::MetaData::EFlagName::CRC)] = hashID;
-
+		
 					// Pull out the string
 					DIA_ASSERT(currentTypeVariable.IsClassType(), "The string serializer did not find the expected class definition");
 
@@ -65,12 +60,10 @@ namespace Dia
 
 					//Commit to the jsondata function
 					if (currentTypeVariable.GetNumberOfElements() > 1)
-						jsonData[name][i] = newClassJsonData;
+						jsonData[name][i] = str;
 					else
-						jsonData[name] = newClassJsonData;
+						jsonData[name] = str;
 				}
-
-				jsonData[currentTypeVariable.GetName()] = str;
 			}
 			
 			//-----------------------------------------------------------------------------
