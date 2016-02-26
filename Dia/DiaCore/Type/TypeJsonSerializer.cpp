@@ -484,7 +484,7 @@ namespace Dia
 
 						DIA_ASSERT_SUPPORT(Dia::Core::Containers::String64 name(className));
 						DIA_ASSERT(name == newInstance.GetTypeDescriptor()->GetName(), "An object of [%s] is trying to deserialise into object of [%s]", className, newInstance.GetTypeDescriptor()->GetName());
-						DIA_ASSERT(hashID == newInstance.GetTypeDescriptor()->GetUniqueCRC(), "%s crc is not correct", className);
+						DIA_ASSERT(hashID == newInstance.GetTypeDescriptor()->GetUniqueCRC(), "%s crc is not correct, read in value [%u], program value [%u]", className, hashID, newInstance.GetTypeDescriptor()->GetUniqueCRC());
 						
 						if (jsonData.isArray())
 						{
