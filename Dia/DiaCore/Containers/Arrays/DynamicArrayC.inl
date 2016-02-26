@@ -8,8 +8,20 @@ namespace Dia
 	{
 		namespace Containers
 		{
+			static char* DynamicArrayC_NameBuilder(const Dia::Core::Types::TypeParameterInput& input, unsigned int size, std::string& out)
+			{
+				const Dia::Core::Types::TypeDefinition::VariableLinkListNode* variable = input.GetVariables().HeadConst();
+
+				DIA_ASSERT(variable, "A variable type must be defined");
+				const Dia::Core::Types::TypeVariable& typeVariable = *variable->GetPayloadConst();
+
+				std::snprintf(const_cast<char*>(out.c_str()), out.capacity(), "DynamicArrayC<%s, %u>", typeVariable.GetTypeAsString(), size);
+
+				return const_cast<char*>(out.c_str());
+			}
+
 			template <class T, unsigned int size> Dia::Core::Types::TypeDefinition* DynamicArrayC<T, size>::sType;
-			template <class T, unsigned int size> Dia::Core::Types::TypeDefinition& DynamicArrayC<T, size>::GetType() { if (sType == nullptr) { sType = DIA_NEW(Dia::Core::Types::TypeDefinition("DynamicArrayC<T, size>", sizeof(DynamicArrayC<T, size>), __is_polymorphic(DynamicArrayC<T, size>), DynamicArrayC<T, size>::TypeCreationalInput())); } return *sType; }\
+			template <class T, unsigned int size> Dia::Core::Types::TypeDefinition& DynamicArrayC<T, size>::GetType() { if (sType == nullptr) { const Dia::Core::Types::TypeParameterInput& input = DynamicArrayC<T, size>::TypeCreationalInput(); std::string name; name.reserve(128);  sType = DIA_NEW(Dia::Core::Types::TypeDefinition(DynamicArrayC_NameBuilder(input, size, name), sizeof(DynamicArrayC<T, size>), __is_polymorphic(DynamicArrayC<T, size>), input)); } return *sType; }\
 			template <class T, unsigned int size> Dia::Core::Types::TypeInstance DynamicArrayC<T, size>::CreateTypeInstance() { return (Dia::Core::Types::TypeInstance(DynamicArrayC<T, size>::GetType(), this)); }\
 			template <class T, unsigned int size> Dia::Core::Types::TypeInstance DynamicArrayC<T, size>::CreateTypeInstanceConst()const { return (Dia::Core::Types::TypeInstance(DynamicArrayC<T, size>::GetType(), this)); }\
 			template <class T, unsigned int size> Dia::Core::Types::TypeParameterInput& DynamicArrayC<T, size>::TypeCreationalInput()\
