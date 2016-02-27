@@ -13,7 +13,7 @@ namespace Dia
 			//	Implementation
 			//------------------------------------------------------------------------------------
 			template <unsigned int size> inline
-			void String<size>::Deserialize(Dia::Core::Types::TypeInstance& instance, const Dia::Core::Types::TypeVariable& currentTypeVariable, const Json::Value& jsonData)
+			void String<size>::DeserializeIntenal(Dia::Core::Types::TypeInstance& instance, const Dia::Core::Types::TypeVariable& currentTypeVariable, const Json::Value& jsonData)
 			{
 				std::string str = jsonData.asString();
 
@@ -25,7 +25,7 @@ namespace Dia
 
 			//------------------------------------------------------------------------------------
 			template <unsigned int size> inline
-			void String<size>::Serialize(const Dia::Core::Types::TypeInstance& instance, const Dia::Core::Types::TypeVariable& currentTypeVariable, Json::Value& jsonData)
+			void String<size>::SerializeInternal(const Dia::Core::Types::TypeInstance& instance, const Dia::Core::Types::TypeVariable& currentTypeVariable, Json::Value& jsonData)
 			{
 				unsigned int size = currentTypeVariable.GetNumberOfElements();
 				for (unsigned int i = 0; i < size; i++)

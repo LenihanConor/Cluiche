@@ -14,8 +14,8 @@ namespace Dia
 		{
 			DIA_TYPE_DEFINITION(String8)
 				DIA_TYPE_ADD_VARIABLE("mData", mData)
-				DIA_TYPE_ADD_VARIABLE_ATTRIBUTE_PARAM_1(Dia::Core::Types::TypeVariableAttributesCustomJsonSerializer, String8::Serialize)
-				DIA_TYPE_ADD_VARIABLE_ATTRIBUTE_PARAM_1(Dia::Core::Types::TypeVariableAttributesCustomJsonDeserializer, String8::Deserialize)
+				DIA_TYPE_ADD_VARIABLE_ATTRIBUTE_PARAM_1(Dia::Core::Types::TypeVariableAttributesCustomJsonSerializer, String8::SerializeInternal)
+				DIA_TYPE_ADD_VARIABLE_ATTRIBUTE_PARAM_1(Dia::Core::Types::TypeVariableAttributesCustomJsonDeserializer, String8::DeserializeIntenal)
 			DIA_TYPE_DEFINITION_END()
 		}
 	}
