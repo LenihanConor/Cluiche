@@ -1,6 +1,7 @@
 #include "DiaCore/FilePath/PathStore.h"
 
 #include <tuple>
+#include "DiaCore/FilePath/PathStoreConfig.h"
 
 namespace Dia
 {	
@@ -8,18 +9,49 @@ namespace Dia
 	{
 		PathStore::PathStoreMap PathStore::sPathRootStore;
 
-	/*	void PathStore::RegisterPathRootToStore(const FilePath& filePath)
+		void PathStore::RegisterToStore(const PathStoreConfig& filePathConfig)
 		{
-			DIA_ASSERT(!IsPathAliasRegistered(filePath.GetPathAlias()), "%s rootname is already in the path store");
+			// Register the alias path combinations
+			{
+				const PathStoreConfig::AliasPathTupleArray& aliasPathConfigArray = filePathConfig.GetAliasPathTupleArray();
 
-			sPathRootStore.insert(std::pair<StripStringCRC, FilePath::Path>(StripStringCRC(filePath.GetPathAlias().AsCStr()), filePath.));
+				for (unsigned int i = 0; i < aliasPathConfigArray.Size(); i++)
+				{
+					const AliasPathConfigTuple& tuple = aliasPathConfigArray[i];
+					
+					RegisterToStore(Path::Alias(tuple.GetAlias().AsCStr()), tuple.GetPath());
+				}
+			}
+
+			//Register and build the alias that are built on each other
+			{
+				const PathStoreConfig::AliasAppendPathArray& aliasAppendPathConfigArray = filePathConfig.GetAliasAppendPathTupleArray();
+
+				for (unsigned int i = 0; i < aliasAppendPathConfigArray.Size(); i++)
+				{
+					const AliasAppendPathConfig& tuple = aliasAppendPathConfigArray[i];
+
+					bool isAliasRegistered = IsPathAliasRegistered(Path::Alias(tuple.GetBaseAlias().AsCStr()));
+					DIA_ASSERT(isAliasRegistered, "Could not find alias to build from, %s", tuple.GetBaseAlias());
+					if (isAliasRegistered)
+					{
+						const Path::String& baseString = ResolvePathToString(Path::Alias(tuple.GetBaseAlias().AsCStr()));
+						Path::String appendString;
+						Path::AppendStrings(baseString, tuple.GetPathAppend(), appendString);
+						RegisterToStore(Path::Alias(tuple.GetAlias().AsCStr()), appendString);
+					}
+				}
+			}
 		}
-		*/
-		void PathStore::RegisterPathRootToStore(const Path::Alias& pathalias, const Path::String& path)
+
+		void PathStore::RegisterToStore(const Path::Alias& pathalias, const Path::String& path)
 		{
 			DIA_ASSERT(!IsPathAliasRegistered(pathalias), "%s rootname is already in the path store");
 
-			sPathRootStore.insert(std::pair<Path::Alias, Path::String>(pathalias, path));
+			Path::String temp = path;
+			Path::CleanPathString(temp);
+
+			sPathRootStore.insert(std::pair<Path::Alias, Path::String>(pathalias, temp));
 		}
 
 		bool PathStore::IsPathAliasRegistered(const Path::Alias& pathalias)

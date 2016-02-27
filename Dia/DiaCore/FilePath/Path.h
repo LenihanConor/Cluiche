@@ -13,6 +13,9 @@ namespace Dia
 			typedef StringCRC Alias;
 			typedef Containers::String256 String;
 
+			static void AppendStrings(const String& str1, const String& str2, String& outString);
+			static void CleanPathString(String& outString);
+
 			Path();
 			Path(const Alias& alias, const String& path);
 
@@ -20,6 +23,9 @@ namespace Dia
 			const String GetPath()const;
 
 		private:
+			static void ReplaceAllBackSlashWithForwardSlash(Path::String& outString);
+			static void RemoveEndingForwardSlash(Path::String& outString);
+
 			Alias mAlias;
 			String mPath;
 		}; 

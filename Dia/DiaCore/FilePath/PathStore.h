@@ -8,7 +8,7 @@ namespace Dia
 {
 	namespace Core
 	{
-		class FilePathStoreConfig;
+		class PathStoreConfig;
 
 		// This helper class is used to abstact file path locations.
 		// Specific paths are set at applcation run time that are used as roots
@@ -16,9 +16,8 @@ namespace Dia
 		class PathStore
 		{
 		public:
-			//static void RegisterPathRootToStore(const Path& filePath);
-			//static void RegisterPathRootToStore(const FilePathStoreConfig& filePathConfig);
-			static void RegisterPathRootToStore(const Path::Alias& pathalias, const Path::String& path);
+			static void RegisterToStore(const PathStoreConfig& filePathConfig);
+			static void RegisterToStore(const Path::Alias& pathalias, const Path::String& path);
 
 			static bool IsPathAliasRegistered(const Path::Alias& pathalias);
 

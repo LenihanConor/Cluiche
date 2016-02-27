@@ -73,6 +73,8 @@ int main(int argc, const char* argv[])
 {
 	Dia::Core::PathStoreConfig pathStoreConfig;
 
+//	DIA_ASSERT(0, "NEED TO GET FILE LOAD :(");
+
 	{char bufferMemory[32 * 1024];
 	Dia::Core::Containers::StringWriter bufferSerial(&bufferMemory[0], 32 * 1024);
 
@@ -81,15 +83,11 @@ int main(int argc, const char* argv[])
 	int x = 0;
 	x++;
 	}
-//	DIA_ASSERT(0, "NEED TO GET DYNAMIC ARRAYS UP AND RUNNING :(");
-//	DIA_ASSERT(0, "NEED TO GET FILE LOAD :(");
 
 	//Setup paths
 	std::string dir = ExePath();
-	char bufferMemory[32 * 1024];
-	std::string line;
 
-	std::ifstream f(dir + "\\pathStoreConfig.cfg");
+	std::ifstream f(dir + "\\pathStoreConfig.json");
 	
 	char getdata[10000];
 	if (f.is_open())
@@ -99,6 +97,8 @@ int main(int argc, const char* argv[])
 		{
 			// got the whole file...
 			size_t bytes_really_read = f.gcount();
+			int x = 0;
+			x++;
 
 		}
 		else if (f.fail())
@@ -111,12 +111,12 @@ int main(int argc, const char* argv[])
 
 		}
 	}
+	f.close();
 	Dia::Core::Containers::StringReader bufferDeserial(&getdata[0]);
 
 	Dia::Core::Types::GetTypeFacade().JsonSerializer().Deserialize(pathStoreConfig, bufferDeserial);
 
-
-//	Dia::Core::PathStore::RegisterPathRootToStore("root", "file:///C:/Users/Conor/Documents/GitHub/Cluiche/Cluiche/");
+	Dia::Core::PathStore::RegisterToStore(pathStoreConfig);
 
 	// Setup the rendering windoow
 	Dia::SFML::RenderWindowFactory windowFactory;
