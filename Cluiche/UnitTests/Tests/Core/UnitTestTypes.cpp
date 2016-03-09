@@ -128,7 +128,7 @@ namespace UnitTests
 		DIA_TYPE_ADD_VARIABLE("mClassArray", mClassArray)
 	DIA_TYPE_DEFINITION_END()
 
-	void CustomSerializerTypeTest::Serialize(const Dia::Core::Types::TypeInstance& instance, const Dia::Core::Types::TypeVariable& currentTypeVariable, Json::Value& jsonData)
+	void CustomSerializerTypeTest::Serialize(const Dia::Core::Types::TypeInstance& instance, const Dia::Core::Types::TypeVariable& currentTypeVariable, Json::Value& jsonData, Dia::Core::Types::TypeJsonSerializerExternalSerializeInterface& parent)
 	{
 		std::string str;
 		unsigned int size = currentTypeVariable.GetNumberOfElements();
@@ -146,7 +146,7 @@ namespace UnitTests
 		jsonData[currentTypeVariable.GetName()] = str;
 	}
 
-	void CustomSerializerTypeTest::Deserialize(Dia::Core::Types::TypeInstance& instance, const Dia::Core::Types::TypeVariable& currentTypeVariable, const Json::Value& jsonData)
+	void CustomSerializerTypeTest::Deserialize(Dia::Core::Types::TypeInstance& instance, const Dia::Core::Types::TypeVariable& currentTypeVariable, const Json::Value& jsonData, Dia::Core::Types::TypeJsonSerializerExternalDeserializeInterface& parent)
 	{
 		std::string str = jsonData.asString();	
 

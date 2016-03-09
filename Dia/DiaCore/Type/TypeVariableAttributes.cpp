@@ -36,13 +36,13 @@ namespace Dia
 				mFuncHandler = func;
 			}
 
-			void TypeVariableAttributesCustomJsonSerializer::Serialize(const TypeInstance& instance, const TypeVariable& currentTypeVariable, Json::Value& jsonData)const
+			void TypeVariableAttributesCustomJsonSerializer::Serialize(const TypeInstance& instance, const TypeVariable& currentTypeVariable, Json::Value& jsonData, TypeJsonSerializerExternalSerializeInterface& parent)const
 			{
 				DIA_ASSERT(mFuncHandler != nullptr, "No serialize function was set for TypeVariableAttributesCustomJsonSerializer on %s", instance.GetTypeDescriptor()->GetName());
 
 				if (mFuncHandler)
 				{
-					mFuncHandler(instance,  currentTypeVariable, jsonData);
+					mFuncHandler(instance,  currentTypeVariable, jsonData, parent);
 				}
 			}
 
@@ -58,13 +58,13 @@ namespace Dia
 				mFuncHandler = func;
 			}
 
-			void TypeVariableAttributesCustomJsonDeserializer::Deserialize(TypeInstance& instance, const TypeVariable& currentTypeVariable, const Json::Value& jsonData)const
+			void TypeVariableAttributesCustomJsonDeserializer::Deserialize(TypeInstance& instance, const TypeVariable& currentTypeVariable, const Json::Value& jsonData, TypeJsonSerializerExternalDeserializeInterface& parent)const
 			{
 				DIA_ASSERT(mFuncHandler != nullptr, "No serialize function was set for TypeVariableAttributesCustomJsonSerializer on %s", instance.GetTypeDescriptor()->GetName());
 
 				if (mFuncHandler)
 				{
-					mFuncHandler(instance, currentTypeVariable, jsonData);
+					mFuncHandler(instance, currentTypeVariable, jsonData, parent);
 				}
 			}
 		}

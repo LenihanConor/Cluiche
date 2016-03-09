@@ -1,8 +1,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#include <DiaCore/Core/Assert.h>
-
 namespace Dia
 {
 	namespace Core
@@ -13,7 +11,7 @@ namespace Dia
 			//	Implementation
 			//------------------------------------------------------------------------------------
 			template <unsigned int size> inline
-			void String<size>::DeserializeIntenal(Dia::Core::Types::TypeInstance& instance, const Dia::Core::Types::TypeVariable& currentTypeVariable, const Json::Value& jsonData)
+			void String<size>::DeserializeIntenal(Dia::Core::Types::TypeInstance& instance, const Dia::Core::Types::TypeVariable& currentTypeVariable, const Json::Value& jsonData, Dia::Core::Types::TypeJsonSerializerExternalDeserializeInterface& parent)
 			{
 				std::string str = jsonData.asString();
 
@@ -25,7 +23,7 @@ namespace Dia
 
 			//------------------------------------------------------------------------------------
 			template <unsigned int size> inline
-			void String<size>::SerializeInternal(const Dia::Core::Types::TypeInstance& instance, const Dia::Core::Types::TypeVariable& currentTypeVariable, Json::Value& jsonData)
+			void String<size>::SerializeInternal(const Dia::Core::Types::TypeInstance& instance, const Dia::Core::Types::TypeVariable& currentTypeVariable, Json::Value& jsonData, Dia::Core::Types::TypeJsonSerializerExternalSerializeInterface& parent)
 			{
 				unsigned int size = currentTypeVariable.GetNumberOfElements();
 				for (unsigned int i = 0; i < size; i++)

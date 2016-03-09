@@ -4,10 +4,19 @@
 #include <stdarg.h>
 #include "DiaCore/Type/BasicTypeDefines.h"
 
+namespace Dia { namespace Core { namespace Types { class TypeInstance; } } }
+namespace Dia { namespace Core { namespace Types { class TypeVariable; } } }
+namespace Dia { namespace Core { namespace Types { class TypeJsonSerializerExternalDeserializeInterface; } } }
+namespace Dia { namespace Core { namespace Types { class TypeJsonSerializerExternalSerializeInterface; } } }
+namespace Json { class Value; }
+
 namespace Dia
 {
 	namespace Core
 	{
+		void StringDeserialize(Dia::Core::Types::TypeInstance& instance, const Dia::Core::Types::TypeVariable& currentTypeVariable, const Json::Value& jsonData, Dia::Core::Types::TypeJsonSerializerExternalDeserializeInterface& parent);
+		void StringSerialize(const Dia::Core::Types::TypeInstance& instance, const Dia::Core::Types::TypeVariable& currentTypeVariable, Json::Value& jsonData, Dia::Core::Types::TypeJsonSerializerExternalSerializeInterface& parent);
+
 		char*				StringCopy				(char* dst, const char* src, const int n);
 		char*				StringCopyOverlapping	(char* dst, const char* src, const int n);
 		char*				StringConcat			(char* dst, const char* src, const int n);

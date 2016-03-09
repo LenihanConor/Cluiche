@@ -15,6 +15,8 @@ namespace Dia
 		{
 			class TypeVariable;
 			class TypeInstance;
+			class TypeJsonSerializerExternalSerializeInterface;
+			class TypeJsonSerializerExternalDeserializeInterface;
 
 			//---------------------------------------------------------------------------------------------------------
 			// TypeVariableAttributes
@@ -52,16 +54,16 @@ namespace Dia
 			class TypeVariableAttributesCustomJsonSerializer : public TypeVariableAttributes
 			{
 			public:
-				typedef std::function<void(const TypeInstance& instance, const TypeVariable& currentTypeVariable, Json::Value& jsonData)> CustomSerializer;
+				typedef std::function<void(const TypeInstance& instance, const TypeVariable& currentTypeVariable, Json::Value& jsonData, TypeJsonSerializerExternalSerializeInterface& parent)> CustomSerializer;
 
 				TypeVariableAttributesCustomJsonSerializer(CustomSerializer func);
 
 				static const StripStringCRC mAttributeID;
-				static const StripStringCRC&	GetStaticUniqueID() { return mAttributeID; };
+				static const StripStringCRC& GetStaticUniqueID() { return mAttributeID; };
 				virtual const StripStringCRC& GetUniqueID()const override { return mAttributeID; };
 				virtual void AssignedTo(const TypeVariable& typeVariable)override {};
 
-				void Serialize(const TypeInstance& instance, const TypeVariable& currentTypeVariable, Json::Value& jsonData)const;
+				void Serialize(const TypeInstance& instance, const TypeVariable& currentTypeVariable, Json::Value& jsonData, TypeJsonSerializerExternalSerializeInterface& parent)const;
 
 			private:
 				CustomSerializer mFuncHandler;
@@ -74,7 +76,7 @@ namespace Dia
 			class TypeVariableAttributesCustomJsonDeserializer : public TypeVariableAttributes
 			{
 			public:
-				typedef std::function<void(TypeInstance& instance, const TypeVariable& currentTypeVariable, const Json::Value& jsonData)> CustomDeserializer;
+				typedef std::function<void(TypeInstance& instance, const TypeVariable& currentTypeVariable, const Json::Value& jsonData, TypeJsonSerializerExternalDeserializeInterface& parent)> CustomDeserializer;
 
 				TypeVariableAttributesCustomJsonDeserializer(CustomDeserializer func);
 
@@ -83,7 +85,7 @@ namespace Dia
 				virtual const StripStringCRC& GetUniqueID()const override { return mAttributeID; };
 				virtual void AssignedTo(const TypeVariable& typeVariable)override {};
 
-				void Deserialize(TypeInstance& instance, const TypeVariable& currentTypeVariable, const Json::Value& jsonData)const;
+				void Deserialize(TypeInstance& instance, const TypeVariable& currentTypeVariable, const Json::Value& jsonData, TypeJsonSerializerExternalDeserializeInterface& parent)const;
 
 			private:
 				CustomDeserializer mFuncHandler;

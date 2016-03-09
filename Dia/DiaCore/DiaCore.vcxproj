@@ -202,6 +202,7 @@
     <ClCompile Include="Strings\String512.cpp" />
     <ClCompile Include="Strings\String64.cpp" />
     <ClCompile Include="Strings\String8.cpp" />
+    <ClCompile Include="Strings\StringUtils.cpp" />
     <ClCompile Include="Timer\TimeThreadLimiter.cpp" />
     <ClCompile Include="Time\SystemClock.cpp" />
     <ClCompile Include="Time\TimeAbsolute.cpp" />

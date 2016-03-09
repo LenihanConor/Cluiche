@@ -25,6 +25,26 @@ namespace Dia
 			class TypeRegistry;
 			
 			//------------------------------------------------------------------------------------
+			//	TypeJsonSerializerExternalSerializeInterface
+			//------------------------------------------------------------------------------------
+			class TypeJsonSerializerExternalDeserializeInterface
+			{
+			public:
+				virtual void ReadVariable(TypeInstance& instance, const Json::Value& data) = 0;
+			};
+
+			//------------------------------------------------------------------------------------
+			//	TypeJsonSerializerExternalSerializeInterface
+			//------------------------------------------------------------------------------------
+			class TypeJsonSerializerExternalSerializeInterface
+			{
+			public:
+				virtual void AddCRCToCRCArray(const char* name, unsigned int hashID) = 0;
+
+				virtual void WriteVariables(const TypeInstance& instance, Json::Value& jsonData) = 0;
+			};
+
+			//------------------------------------------------------------------------------------
 			//	TypeJsonSerializer
 			//------------------------------------------------------------------------------------
 			class TypeJsonSerializer
@@ -66,10 +86,8 @@ namespace Dia
 				template<class T> 
 				void Deserialize(T& object, Dia::Core::Containers::StringReader& buffer);
 				void Deserialize(TypeInstance& instance, Dia::Core::Containers::StringReader& buffer);
-
-			private:
-				void AddCRCToCRCArray(const char* name, unsigned int hashID, Json::Value& jsonData);
-
+	
+			private:				
 				const TypeRegistry* mRegistry;
 			};
 

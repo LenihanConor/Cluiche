@@ -22,7 +22,7 @@ namespace Dia
 			//------------------------------------------------------------------------------------
 			//	JsonSerializerInternal
 			//------------------------------------------------------------------------------------
-			class JsonSerializerInternal
+			class JsonSerializerInternal: public TypeJsonSerializerExternalSerializeInterface
 			{
 				DIA_NON_COPYABLE(JsonSerializerInternal);
 
@@ -50,7 +50,7 @@ namespace Dia
 					unsigned int hashID = instance.GetTypeDescriptor()->GetUniqueCRC();
 					const char* name = instance.GetTypeDescriptor()->GetName();
 
-					AddCRCToCRCArray(name, hashID, jsonStructureToSerialize);
+					AddCRCToCRCArray(name, hashID);
 
 					jsonStructureToSerialize[TypeJsonSerializer::MetaData::GetMetaData(TypeJsonSerializer::MetaData::EFlagName::ClassName)] = name;
 				}
@@ -74,7 +74,7 @@ namespace Dia
 	
 						if(isCustomSerializer)
 						{ 
-							currentTypeVariable.GetAttributeConst<TypeVariableAttributesCustomJsonSerializer>()->Serialize(instance, currentTypeVariable, jsonData);
+							currentTypeVariable.GetAttributeConst<TypeVariableAttributesCustomJsonSerializer>()->Serialize(instance, currentTypeVariable, jsonData, *this);
 						}
 						else if (isArithmeticType)
 						{
@@ -244,7 +244,7 @@ namespace Dia
 
 						Json::Value newClassJsonData;
 
-						AddCRCToCRCArray(className, hashID, jsonData);
+						AddCRCToCRCArray(className, hashID);
 						
 						newClassJsonData[TypeJsonSerializer::MetaData::GetMetaData(TypeJsonSerializer::MetaData::EFlagName::ClassName)] = className;
 
@@ -282,7 +282,7 @@ namespace Dia
 				}
 
 				//------------------------------------------------------------------------------------
-				void AddCRCToCRCArray(const char* name, unsigned int hashID, Json::Value& jsonData)
+				void AddCRCToCRCArray(const char* name, unsigned int hashID)
 				{
 					(*mCRCValidationArray)[name] = hashID;
 				}
@@ -293,7 +293,7 @@ namespace Dia
 			//------------------------------------------------------------------------------------
 			//	JsonDeserializerInternal
 			//------------------------------------------------------------------------------------
-			class JsonDeserializerInternal
+			class JsonDeserializerInternal: public TypeJsonSerializerExternalDeserializeInterface
 			{
 				DIA_NON_COPYABLE(JsonDeserializerInternal);
 
@@ -382,7 +382,7 @@ namespace Dia
 						
 						if (isCustomDerserializer)
 						{
-							currentTypeVariable.GetAttributeConst<TypeVariableAttributesCustomJsonDeserializer>()->Deserialize(instance, currentTypeVariable, currentJsonValue);
+							currentTypeVariable.GetAttributeConst<TypeVariableAttributesCustomJsonDeserializer>()->Deserialize(instance, currentTypeVariable, currentJsonValue, *this);
 						}
 						else if (isArithmeticType || isPointerActingAsArthmethicObject)
 						{
@@ -484,7 +484,7 @@ namespace Dia
 
 						DIA_ASSERT_SUPPORT(Dia::Core::Containers::String64 name(className));
 						DIA_ASSERT(name == newInstance.GetTypeDescriptor()->GetName(), "An object of [%s] is trying to deserialise into object of [%s]", className, newInstance.GetTypeDescriptor()->GetName());
-						DIA_ASSERT(hashID == newInstance.GetTypeDescriptor()->GetUniqueCRC(), "%s crc is not correct, read in value [%u], program value [%u]", className, hashID, newInstance.GetTypeDescriptor()->GetUniqueCRC());
+						DIA_ASSERT(hashID == newInstance.GetTypeDescriptor()->GetUniqueCRC(), "%s crc is not correct hash, read in value [%u], program value [%u]", className, hashID, newInstance.GetTypeDescriptor()->GetUniqueCRC());
 						
 						if (jsonData.isArray())
 						{
