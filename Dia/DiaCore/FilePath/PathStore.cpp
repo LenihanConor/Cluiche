@@ -2,6 +2,7 @@
 
 #include <tuple>
 #include "DiaCore/FilePath/PathStoreConfig.h"
+#include <DiaCore/FilePath/SerializedFileLoad.h>
 
 namespace Dia
 {	
@@ -39,6 +40,28 @@ namespace Dia
 						Path::String appendString;
 						Path::AppendStrings(baseString, tuple.GetPathAppend(), appendString);
 						RegisterToStore(Path::Alias(tuple.GetAlias().AsCStr()), appendString);
+					}
+				}
+			}
+
+			//Open other fragments
+			{
+				const PathStoreConfig::PathStoreConfigFragmentArray& fragmentArray = filePathConfig.GetPathStoreConfigFragmentArray();
+
+				for (unsigned int i = 0; i < fragmentArray.Size(); i++)
+				{
+					const PathStoreConfigFragment& fragment = fragmentArray[i];
+					Path::Alias pathAlias = Path::Alias(fragment.GetBaseAlias().AsCStr());
+					FilePath filePath(pathAlias, fragment.GetPathAppend().AsCStr(), fragment.GetFileName());
+
+					FilePath::ResoledFilePath bufferToResovleInto;
+					filePath.Resolve(bufferToResovleInto);
+
+					Dia::Core::PathStoreConfig pathStoreConfig;
+					Dia::Core::SerializedFileLoad fileLoad;
+					if (fileLoad.LoadNow(bufferToResovleInto, pathStoreConfig, 5096) == Dia::Core::IFileLoad::ReturnCode::kSuccess)
+					{
+						Dia::Core::PathStore::RegisterToStore(pathStoreConfig);
 					}
 				}
 			}

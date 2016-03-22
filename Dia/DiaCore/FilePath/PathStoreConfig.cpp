@@ -34,9 +34,22 @@ namespace Dia
 				DIA_TYPE_ADD_VARIABLE_ATTRIBUTE_PARAM_1(Dia::Core::Types::TypeVariableAttributesCustomJsonDeserializer, Dia::Core::StringDeserialize)
 		DIA_TYPE_DEFINITION_END()
 
+		DIA_TYPE_DEFINITION(PathStoreConfigFragment)
+			DIA_TYPE_ADD_VARIABLE("mBaseAlias", mBaseAlias)
+				DIA_TYPE_ADD_VARIABLE_ATTRIBUTE_PARAM_1(Dia::Core::Types::TypeVariableAttributesCustomJsonSerializer, Dia::Core::StringSerialize)
+				DIA_TYPE_ADD_VARIABLE_ATTRIBUTE_PARAM_1(Dia::Core::Types::TypeVariableAttributesCustomJsonDeserializer, Dia::Core::StringDeserialize)
+			DIA_TYPE_ADD_VARIABLE("mFileName", mFileName)
+				DIA_TYPE_ADD_VARIABLE_ATTRIBUTE_PARAM_1(Dia::Core::Types::TypeVariableAttributesCustomJsonSerializer, Dia::Core::StringSerialize)
+				DIA_TYPE_ADD_VARIABLE_ATTRIBUTE_PARAM_1(Dia::Core::Types::TypeVariableAttributesCustomJsonDeserializer, Dia::Core::StringDeserialize)
+			DIA_TYPE_ADD_VARIABLE("mPathAppend", mPathAppend)
+				DIA_TYPE_ADD_VARIABLE_ATTRIBUTE_PARAM_1(Dia::Core::Types::TypeVariableAttributesCustomJsonSerializer, Dia::Core::StringSerialize)
+				DIA_TYPE_ADD_VARIABLE_ATTRIBUTE_PARAM_1(Dia::Core::Types::TypeVariableAttributesCustomJsonDeserializer, Dia::Core::StringDeserialize)
+		DIA_TYPE_DEFINITION_END()
+
 		DIA_TYPE_DEFINITION(PathStoreConfig)
 			DIA_TYPE_ADD_VARIABLE("mAliasPathTupleArray", mAliasPathTupleArray)
 			DIA_TYPE_ADD_VARIABLE("mAliasAppendPathArray", mAliasAppendPathArray)
+			DIA_TYPE_ADD_VARIABLE("mPathStoreConfigFragmentArray", mPathStoreConfigFragmentArray)
 		DIA_TYPE_DEFINITION_END()
 	}
 }

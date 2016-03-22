@@ -1,0 +1,35 @@
+{
+   "_class_name" : "PathStoreConfig",
+   "_crc_validation_array" : {
+      "AliasAppendPathConfig" : 1287419118,
+      "AliasPathConfigTuple" : 2232579404,
+      "DynamicArrayC<AliasAppendPathConfig, 8>" : 2588513698,
+      "DynamicArrayC<AliasPathConfigTuple, 8>" : 2397525776,
+      "PathStoreConfig" : 1613060794,
+      "String256" : 1395550496,
+      "String32" : 3034540979
+   },
+   "mAliasAppendPathArray" : {
+      "_class_name" : "DynamicArrayC<AliasAppendPathConfig, 8>",
+      "mData" : [
+         {
+            "_class_name" : "AliasAppendPathConfig",
+            "mAlias" : "ui_root",
+            "mBaseAlias" : "root",
+            "mPathAppend" : "UI"
+         }
+      ],
+      "mSize" : 1
+   },
+   "mAliasPathTupleArray" : {
+      "_class_name" : "DynamicArrayC<AliasPathConfigTuple, 8>",
+      "mData" : [
+         {
+            "_class_name" : "AliasPathConfigTuple",
+            "mAlias" : "root",
+            "mPath" : "C:\\Users\\Conor\\Documents\\GitHub\\Cluiche\\Cluiche\\Data"
+         }
+      ],
+      "mSize" : 1
+   }
+}
