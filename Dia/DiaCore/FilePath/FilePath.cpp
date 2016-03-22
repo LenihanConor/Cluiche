@@ -47,11 +47,28 @@ namespace Dia
 			DIA_ASSERT(mFileName.Length() > 0, "File name has not been set");
 
 			bufferToResovleInto.Append(PathStore::ResolvePathToString(mPathAlias).AsCStr());
+
+			{
+				char last = bufferToResovleInto[bufferToResovleInto.Length() - 1];
+				if (last != '/')
+				{
+					bufferToResovleInto.Append("/");
+				}
+			}
+
 			if (mPathAmendment.Length() > 0)
 			{
 				bufferToResovleInto.Append(mPathAmendment.AsCStr());
 			}
 			
+			{
+				char last = bufferToResovleInto[bufferToResovleInto.Length() - 1];
+				if (last != '/')
+				{
+					bufferToResovleInto.Append("/");
+				}
+			}
+
 			bufferToResovleInto.Append(mFileName.AsCStr());
 		
 			return bufferToResovleInto;
