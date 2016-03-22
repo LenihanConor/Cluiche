@@ -408,6 +408,15 @@
     <ClInclude Include="FilePath\PathStoreConfig.h">
       <Filter>FilePath</Filter>
     </ClInclude>
+    <ClInclude Include="FilePath\FileLoad.h">
+      <Filter>FilePath</Filter>
+    </ClInclude>
+    <ClInclude Include="FilePath\IFileLoad.h">
+      <Filter>FilePath</Filter>
+    </ClInclude>
+    <ClInclude Include="FilePath\SerializedFileLoad.h">
+      <Filter>FilePath</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\Assert.cpp">
@@ -556,6 +565,9 @@
     </ClCompile>
     <ClCompile Include="Strings\StringUtils.cpp">
       <Filter>Strings\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="FilePath\FileLoad.cpp">
+      <Filter>FilePath</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -108,10 +108,13 @@
     <ClInclude Include="Core\MetaLogic.h" />
     <ClInclude Include="Core\System.h" />
     <ClInclude Include="CRC\CRCHashFunctor.h" />
+    <ClInclude Include="FilePath\FileLoad.h" />
     <ClInclude Include="FilePath\FilePath.h" />
+    <ClInclude Include="FilePath\IFileLoad.h" />
     <ClInclude Include="FilePath\Path.h" />
     <ClInclude Include="FilePath\PathStore.h" />
     <ClInclude Include="FilePath\PathStoreConfig.h" />
+    <ClInclude Include="FilePath\SerializedFileLoad.h" />
     <ClInclude Include="Frame\FrameStream.h" />
     <ClInclude Include="Json\external\json\assertions.h" />
     <ClInclude Include="Json\external\json\autolink.h" />
@@ -188,6 +191,7 @@
     <ClCompile Include="Core\CallStack.cpp" />
     <ClCompile Include="Core\EnumClass.cpp" />
     <ClCompile Include="Core\Log.cpp" />
+    <ClCompile Include="FilePath\FileLoad.cpp" />
     <ClCompile Include="FilePath\FilePath.cpp" />
     <ClCompile Include="FilePath\Path.cpp" />
     <ClCompile Include="FilePath\PathStore.cpp" />

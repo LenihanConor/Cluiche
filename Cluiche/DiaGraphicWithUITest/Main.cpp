@@ -24,19 +24,9 @@
 
 #include <DiaUI/IUISystem.h>
 #include <DiaCore/FilePath/PathStoreConfig.h>
-#include <DiaCore/Containers/Strings/StringReader.h>
 #include <DiaCore/Containers/Strings/StringWriter.h>
 #include <DiaCore/Type/TypeFacade.h>
-
-
-
-
-#include <iostream>
-#include <fstream>
-#include <string>
-
-
-
+#include <DiaCore/FilePath/SerializedFileLoad.h>
 
 class LaunchUIPage: public Dia::UI::Page
 {
@@ -56,24 +46,20 @@ public:
 
 #include <windows.h>
 #include <string>
-#include <iostream>
-#include <sstream>
 #include "DiaCore/Strings/stringutils.h"
 
 using namespace std;;
 
-std::string ExePath() {
-	char buffer[MAX_PATH];
-	GetModuleFileName(NULL, buffer, MAX_PATH);
-	string::size_type pos = string(buffer).find_last_of("\\/");
-	return string(buffer).substr(0, pos);
-}
+	std::string ExePath() {
+		char buffer[MAX_PATH];
+		GetModuleFileName(NULL, buffer, MAX_PATH);
+		string::size_type pos = string(buffer).find_last_of("\\/");
+		return string(buffer).substr(0, pos);
+	}
 
 int main(int argc, const char* argv[])
 {
 	Dia::Core::PathStoreConfig pathStoreConfig;
-
-//	DIA_ASSERT(0, "NEED TO GET FILE LOAD :(");
 
 	{char bufferMemory[32 * 1024];
 	Dia::Core::Containers::StringWriter bufferSerial(&bufferMemory[0], 32 * 1024);
@@ -87,36 +73,14 @@ int main(int argc, const char* argv[])
 	//Setup paths
 	std::string dir = ExePath();
 
-	std::ifstream f(dir + "\\pathStoreConfig.json");
-	
-	char getdata[10000];
-	if (f.is_open())
+	Dia::Core::FilePath::ResoledFilePath pathStroreConfigFile("%s//pathStoreConfig.json", ExePath().c_str());
+
+	Dia::Core::SerializedFileLoad fileLoad;
+	if (fileLoad.LoadNow(pathStroreConfigFile, pathStoreConfig, 5096) == Dia::Core::IFileLoad::ReturnCode::kSuccess)
 	{
-		f.read(getdata, sizeof getdata);
-		if (f.eof())
-		{
-			// got the whole file...
-			size_t bytes_really_read = f.gcount();
-			int x = 0;
-			x++;
-
-		}
-		else if (f.fail())
-		{
-			// some other error...
-		}
-		else
-		{
-			// getdata must be full, but the file is larger...
-
-		}
+		Dia::Core::PathStore::RegisterToStore(pathStoreConfig);
 	}
-	f.close();
-	Dia::Core::Containers::StringReader bufferDeserial(&getdata[0]);
-
-	Dia::Core::Types::GetTypeFacade().JsonSerializer().Deserialize(pathStoreConfig, bufferDeserial);
-
-	Dia::Core::PathStore::RegisterToStore(pathStoreConfig);
+	
 
 	// Setup the rendering windoow
 	Dia::SFML::RenderWindowFactory windowFactory;
