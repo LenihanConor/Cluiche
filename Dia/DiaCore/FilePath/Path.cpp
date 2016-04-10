@@ -1,9 +1,23 @@
 #include "DiaCore/FilePath/Path.h"
 
+#include <windows.h>
+#include <string>
+#include "DiaCore/Strings/stringutils.h"
+
 namespace Dia
 {	
 	namespace Core
 	{
+		void Path::ExePath(std::string& outString)
+		{
+			using namespace std;;
+			
+			char buffer[MAX_PATH];
+			GetModuleFileName(NULL, buffer, MAX_PATH);
+			std::string::size_type pos = string(buffer).find_last_of("\\/");
+			outString = std::string(buffer).substr(0, pos);
+		}
+
 		void Path::AppendStrings(const Path::String& str1, const Path::String& str2, Path::String& outString)
 		{
 			Path::String temp1(str1);

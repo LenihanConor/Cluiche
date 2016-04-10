@@ -170,7 +170,7 @@ namespace Dia
 				uiSprite.setTexture(*mUIOverlayTexture);
 
 				mUIOverlayTexture->update(nextFrame.GetUIData().GetBuffer());	
-				
+
 				mWindowContext->pushGLStates();
 				mWindowContext->draw(uiSprite, mUIShader);
 				mWindowContext->popGLStates();

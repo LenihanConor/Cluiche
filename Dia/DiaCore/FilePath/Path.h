@@ -12,6 +12,8 @@ namespace Dia
 		public:
 			typedef StringCRC Alias;
 			typedef Containers::String256 String;
+			
+			static void ExePath(std::string& outString);
 
 			static void AppendStrings(const String& str1, const String& str2, String& outString);
 			static void CleanPathString(String& outString);

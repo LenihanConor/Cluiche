@@ -27,6 +27,7 @@
 #include <DiaCore/Containers/Strings/StringWriter.h>
 #include <DiaCore/Type/TypeFacade.h>
 #include <DiaCore/FilePath/SerializedFileLoad.h>
+#include <DiaCore/Core/Assert.h>
 
 class LaunchUIPage: public Dia::UI::Page
 {
@@ -44,43 +45,24 @@ public:
 	}
 }; 
 
-#include <windows.h>
-#include <string>
-#include "DiaCore/Strings/stringutils.h"
-
-using namespace std;;
-
-	std::string ExePath() {
-		char buffer[MAX_PATH];
-		GetModuleFileName(NULL, buffer, MAX_PATH);
-		string::size_type pos = string(buffer).find_last_of("\\/");
-		return string(buffer).substr(0, pos);
-	}
-
 int main(int argc, const char* argv[])
 {
+	//Setup paths
 	Dia::Core::PathStoreConfig pathStoreConfig;
 
-	{char bufferMemory[32 * 1024];
-	Dia::Core::Containers::StringWriter bufferSerial(&bufferMemory[0], 32 * 1024);
+	std::string dir;
+	Dia::Core::Path::ExePath(dir);
 
-	Dia::Core::Types::GetTypeFacade().JsonSerializer().Serialize(pathStoreConfig, bufferSerial);
-
-	int x = 0;
-	x++;
-	}
-
-	//Setup paths
-	std::string dir = ExePath();
-
-	Dia::Core::FilePath::ResoledFilePath pathStroreConfigFile("%s//pathStoreConfig.json", ExePath().c_str());
+	Dia::Core::FilePath::ResoledFilePath pathStroreConfigFile("%s//pathStoreConfig.json", dir.c_str());
 
 	Dia::Core::SerializedFileLoad fileLoad;
-	if (fileLoad.LoadNow(pathStroreConfigFile, pathStoreConfig, 5096) == Dia::Core::IFileLoad::ReturnCode::kSuccess)
+	if (fileLoad.LoadNow(pathStroreConfigFile, pathStoreConfig, 5096) != Dia::Core::IFileLoad::ReturnCode::kSuccess)
 	{
-		Dia::Core::PathStore::RegisterToStore(pathStoreConfig);
+		DIA_ASSERT(0, "Could not load pathStoreConfig at %s, ", dir.c_str());
+		return -1;
 	}
 	
+	Dia::Core::PathStore::RegisterToStore(pathStoreConfig);
 
 	// Setup the rendering windoow
 	Dia::SFML::RenderWindowFactory windowFactory;
