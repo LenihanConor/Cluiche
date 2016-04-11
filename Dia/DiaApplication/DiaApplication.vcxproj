@@ -11,10 +11,16 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ApplicationConfig.cpp" />
+    <ClCompile Include="ApplicationModule.cpp" />
+    <ClCompile Include="ApplicationPhase.cpp" />
+    <ClCompile Include="ApplicationProcessingUnit.cpp" />
+    <ClCompile Include="ApplicationStateObject.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ApplicationConfig.h" />
+    <ClInclude Include="ApplicationModule.h" />
+    <ClInclude Include="ApplicationPhase.h" />
+    <ClInclude Include="ApplicationProcessingUnit.h" />
+    <ClInclude Include="ApplicationStateObject.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{DD3D58EF-028B-42CB-B837-0042BA30D96F}</ProjectGuid>
