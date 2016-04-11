@@ -1,8 +1,6 @@
 //////////////////
 #pragma once
 
-
-
 #include <DiaInput/EMouseButton.h>
 
 #include <DiaCore/Strings/String64.h>
