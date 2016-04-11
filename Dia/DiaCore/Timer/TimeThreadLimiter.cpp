@@ -8,6 +8,13 @@ namespace Dia
 	namespace Core
 	{
 		//------------------------------------------------------------------------------
+		TimeThreadLimiter::TimeThreadLimiter()
+			: mFramesPerMillisecond(0)
+			, mStart()
+			, mEnd()
+		{}
+
+		//------------------------------------------------------------------------------
 		TimeThreadLimiter::TimeThreadLimiter(double hz)
 			: mFramesPerMillisecond((1.0 / hz) * 1000)
 			, mStart()
@@ -29,6 +36,12 @@ namespace Dia
 			mEnd = rhs.mEnd;
 
 			return *this;
+		}
+
+		//------------------------------------------------------------------------------
+		void TimeThreadLimiter::Initialize(double hz)
+		{
+			mFramesPerMillisecond = ((1.0 / hz) * 1000);
 		}
 
 		//------------------------------------------------------------------------------
