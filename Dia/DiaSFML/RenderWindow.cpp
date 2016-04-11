@@ -10,6 +10,7 @@
 #include <DiaGraphics/Frame/DebugFrameDataVisitor.h>
 #include <DiaCore/Memory/Memory.h>
 #include <DiaCore/Strings/stringutils.h>
+#include <DiaCore/FilePath/FilePath.h>
 
 #include <SFML/Graphics.hpp>
 #include <SFML/OpenGL.hpp>
@@ -54,7 +55,9 @@ namespace Dia
 			
 			//TODO: Replace with a better file load system
 			//TODO: Move this shader to a centralized place
-			bool isLoadedUIShader = mUIShader->loadFromFile("ui.frag", sf::Shader::Fragment); 
+			Dia::Core::FilePath uiShaderFile("root", "Render_Common/", "ui.frag");
+			Dia::Core::FilePath::ResoledFilePath resolvedUIShaderFile;
+			bool isLoadedUIShader = mUIShader->loadFromFile(uiShaderFile.Resolve(resolvedUIShaderFile).AsCStr(), sf::Shader::Fragment);
 			DIA_ASSERT(isLoadedUIShader, "Could not load ui.frag");
 
 			bool isTextureCreatedCorrectly = mUIOverlayTexture->create(mWindowContext->getSize().x, mWindowContext->getSize().y);
