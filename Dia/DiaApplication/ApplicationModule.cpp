@@ -8,6 +8,8 @@
 #include <DiaCore/Core/Assert.h>
 #include <DiaCore/Type/BasicTypeDefines.h>
 
+#include <DiaApplication/ApplicationProcessingUnit.h>
+
 namespace Dia
 {
 	namespace Application
@@ -22,7 +24,9 @@ namespace Dia
 			, mAssociatedProcessingUnit(associatedProcessingUnit)
 			, mRunningMode(runningMode)
 			, mDependencies(initialDependencyMapSize, initialDependencyMapSize * 2)
-		{}
+		{
+			mAssociatedProcessingUnit->AddModule(this);
+		}
 
 		//-----------------------------------------------------------------------------
 		unsigned int Module::GetNumberOfDependancies()const
