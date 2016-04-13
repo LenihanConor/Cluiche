@@ -9,6 +9,8 @@
 #include <DiaCore/Time/TimeRelative.h>
 #include <DiaCore/Timer/TimerSystem.h>
 
+#include <DiaApplication/ApplicationProcessingUnit.h>
+
 #include <chrono>
 #include <thread>
 
@@ -27,7 +29,9 @@ namespace Dia
 			, mUpdatingModules(maxModules)
 			, mStoppingModuleOrder(maxModules)
 			, mAssociatedModules(maxModules, maxModules * 2)
-		{}
+		{
+			mAssociatedProcessingUnit->AddPhase(this);
+		}
 
 		//---------------------------------------------------------------------------------------------------------
 		void Phase::AddModule(Module* module)
@@ -94,12 +98,6 @@ namespace Dia
 
 						mStoppingModuleOrder.Add(pModule);
 
-						// This will add the modules in order of starting and should make it order dependant
-						if (pModule->RequiresUpdating())
-						{
-							mUpdatingModules.Add(pModule);
-						}
-
 						switch (response)
 						{
 						case StateObject::OpertionResponse::kImmediate:
@@ -132,6 +130,18 @@ namespace Dia
 			}
 
 			AfterModulesStart();
+			
+			// This will add the modules in order of starting and should make it order dependant
+			for (unsigned int i = 0; i < mAssociatedModules.Size(); i++)
+			{
+				Module* pModule = mAssociatedModules.GetItemByIndex(i);
+
+				if (pModule->RequiresUpdating())
+				{
+					mUpdatingModules.Add(pModule);
+				}
+			}
+
 			// TODO: If we want Phase to start async this is what we would have to change, 
 			// i dont think this is a good idea for now. Later we could do this so that we
 			// can start updating the modules already started immediately instead of waiting
