@@ -131,6 +131,8 @@ namespace Dia
 			DIA_ASSERT(mCurrentPhase, "Null current phase %s", GetUniqueId().AsChar());
 			DIA_ASSERT(mAssociatedPhases.ContainsKey(phaseCrc), "Phase %s not associated to Processing Unit %s", phaseCrc.AsChar(), GetUniqueId().AsChar());
 
+			std::lock_guard<std::mutex> lock(mQueuedTransitionMutex);
+
 			mQueuedTransition.Add(phaseCrc);
 		}
 
@@ -209,14 +211,18 @@ namespace Dia
 
 			PostPhaseUpdate();
 
-			// If there are any transitioned phase move to them now
-			if (mQueuedTransition.Size() != 0)
 			{
-				Dia::Core::StringCRC nextTransitionCRC = mQueuedTransition[0];
+				std::lock_guard<std::mutex> lock(mQueuedTransitionMutex);
 
-				mQueuedTransition.RemoveAt(0);
+				// If there are any transitioned phase move to them now
+				if (mQueuedTransition.Size() != 0)
+				{
+					Dia::Core::StringCRC nextTransitionCRC = mQueuedTransition[0];
 
-				TransitionPhase(nextTransitionCRC);
+					mQueuedTransition.RemoveAt(0);
+
+					TransitionPhase(nextTransitionCRC);
+				}
 			}
 		}
 

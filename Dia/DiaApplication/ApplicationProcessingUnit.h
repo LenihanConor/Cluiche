@@ -22,6 +22,8 @@
 #include <DiaCore/CRC/CRCHashFunctor.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
+#include <mutex>
+
 namespace Dia 
 {
 	namespace Application
@@ -51,8 +53,8 @@ namespace Dia
 			void SetInitialPhase(Phase* phase);
 			void AddPhaseTransiton(Phase* startPhase, Phase* endPhase);
 
-			void TransitionPhase(const Dia::Core::StringCRC& phaseCrc);
-			void QueuePhaseTransition(const Dia::Core::StringCRC& crc);
+			void TransitionPhase(const Dia::Core::StringCRC& phaseCrc);		// Transition immediately
+			void QueuePhaseTransition(const Dia::Core::StringCRC& crc);		// Transition after next update (this is thread safe)
 
 			Module* GetModule(const Dia::Core::StringCRC& crc);
 			const Module* GetModule(const Dia::Core::StringCRC& crc)const;
@@ -75,6 +77,7 @@ namespace Dia
 			virtual void DoStop() override final;
 
 			Phase* mCurrentPhase;
+			std::mutex mQueuedTransitionMutex;
 			Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16> mQueuedTransition;	// FIFO List of phase transition
 			Dia::Core::Containers::HashTable<Dia::Core::StringCRC, Module*, Dia::Core::StringCRCHashFunctor> mAssociatedProcessingUnites;
 			Dia::Core::Containers::HashTable<Dia::Core::StringCRC, Phase*, Dia::Core::StringCRCHashFunctor> mAssociatedPhases;
