@@ -1,12 +1,3 @@
-////////////////////////////////////////////////////////////////////////////////
-// Filename: MainProcessingUnit.h
-//
-// This is the main processing unit for Cluiche. All other processing 
-//			units stem from this.
-//
-////////////////////////////////////////////////////////////////////////////////
-
-
 #include <DiaApplication/ApplicationModule.h>
 #include <DiaCore/Timer/TimeThreadLimiter.h>
 #include <DiaCore/Time/TimeServer.h>
@@ -25,12 +16,18 @@ namespace Dia { namespace UI { namespace Awesomium { class UISystem; } } }
 
 namespace Cluiche
 {
-	class KernelModule : public Dia::Application::Module
+	////////////////////////////////////////////////////
+	//
+	// MainKernelModule: Central module for all base 
+	//					systems running on the main thread
+	//
+	////////////////////////////////////////////////////
+	class MainKernelModule : public Dia::Application::Module
 	{
 	public:
 		static const Dia::Core::StringCRC kUniqueId;
 
-		KernelModule(Dia::Application::ProcessingUnit* associatedProcessingUnit);
+		MainKernelModule(Dia::Application::ProcessingUnit* associatedProcessingUnit);
 	
 	private:
 		virtual StateObject::OpertionResponse DoStart() override;

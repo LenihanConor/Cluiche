@@ -1,4 +1,4 @@
-#include "ApplicationFlow/Modules/KernelModule.h"
+#include "ApplicationFlow/Modules/MainKernelModule.h"
 
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaCore/FilePath/PathStore.h>
@@ -38,9 +38,9 @@ public:
 
 namespace Cluiche
 {
-	const Dia::Core::StringCRC KernelModule::kUniqueId("KernelModule");
+	const Dia::Core::StringCRC MainKernelModule::kUniqueId("MainKernelModule");
 
-	KernelModule::KernelModule(Dia::Application::ProcessingUnit* associatedProcessingUnit)
+	MainKernelModule::MainKernelModule(Dia::Application::ProcessingUnit* associatedProcessingUnit)
 		: Dia::Application::Module(associatedProcessingUnit, kUniqueId, Dia::Application::Module::RunningEnum::kUpdate)
 		, mRunning(true)
 		, mThreadLimiter()
@@ -48,7 +48,7 @@ namespace Cluiche
 		, mAwesomiumUISystem(nullptr)
 	{}
 
-	Dia::Application::StateObject::OpertionResponse KernelModule::DoStart()
+	Dia::Application::StateObject::OpertionResponse MainKernelModule::DoStart()
 	{
 		//Setup paths
 		Dia::Core::PathStoreConfig pathStoreConfig;
@@ -104,7 +104,7 @@ namespace Cluiche
 		return StateObject::OpertionResponse::kImmediate;
 	}
 
-	void KernelModule::DoUpdate()
+	void MainKernelModule::DoUpdate()
 	{
 		mThreadLimiter.Start();
 
@@ -161,7 +161,7 @@ namespace Cluiche
 		mThreadLimiter.SleepThread();
 	}
 
-	void KernelModule::DoStop()
+	void MainKernelModule::DoStop()
 	{
 		DIA_DELETE(mAwesomiumUISystem);
 
