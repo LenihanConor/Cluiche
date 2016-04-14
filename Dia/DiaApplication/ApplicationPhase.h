@@ -35,9 +35,6 @@ namespace Dia
 
 			bool ContainsModule(const Dia::Core::StringCRC& crc)const;
 
-			Module* GetModule(const Dia::Core::StringCRC& crc);
-			const Module* GetModule(const Dia::Core::StringCRC& crc)const;
-
 			virtual void BeforeModulesStart(){};
 			virtual void AfterModulesStart(){};
 
@@ -51,12 +48,15 @@ namespace Dia
 			ProcessingUnit* GetAssociatedProcessingUnit();
 			const ProcessingUnit* GetAssociatedProcessingUnit()const;
 
+			Module* GetModule(const Dia::Core::StringCRC& crc);
+			const Module* GetModule(const Dia::Core::StringCRC& crc)const;
+
 		private:
 			typedef Dia::Core::Containers::HashTable<Dia::Core::StringCRC, Module*, Dia::Core::StringCRCHashFunctor> ModuleTable;
 			typedef Dia::Core::Containers::DynamicArray<Module*> ModuleArray;
 
 			// Inherited from StateObject
-			virtual void DoBuildDependancies()override{};
+			virtual void DoBuildDependancies(IBuildDependencyData* buildDependencies)override{};
 			virtual StateObject::OpertionResponse DoStart()override;
 			virtual void DoUpdate()override;
 			virtual void DoStop() override;

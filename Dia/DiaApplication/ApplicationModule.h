@@ -55,7 +55,7 @@ namespace Dia
 
 		protected:
 			// Inherited from StateObject - A specific module may override this as needed
-			virtual void DoBuildDependancies()override{};
+			virtual void DoBuildDependancies(IBuildDependencyData* buildDependencies)override{};
 			virtual StateObject::OpertionResponse DoStart() override { return StateObject::OpertionResponse::kImmediate;  } // We default to immediate unless overriden by derived class
 			virtual void DoUpdate() override {};
 			virtual void DoStop() override {};

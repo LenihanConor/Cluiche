@@ -43,7 +43,7 @@ namespace UnitTests
 			: Dia::Application::Module(associatedProcessingUnit, kUniqueId, Module::RunningEnum::kIdle)
 		{}
 		
-		void DoBuildDependancies()override
+		void DoBuildDependancies(IBuildDependencyData* buildDependencies)override
 		{
 			AddDependancy(GetAssociatedProcessingUnit()->GetModule(MyModuleA::kUniqueId));
 		}
@@ -80,7 +80,7 @@ namespace UnitTests
 			: Dia::Application::Module(associatedProcessingUnit, kUniqueId, Module::RunningEnum::kIdle)
 		{}
 
-		void DoBuildDependancies()override
+		void DoBuildDependancies(IBuildDependencyData* buildDependencies)override
 		{
 			AddDependancy(GetAssociatedProcessingUnit()->GetModule(MyModuleA::kUniqueId));
 		}
@@ -112,7 +112,7 @@ namespace UnitTests
 			: Dia::Application::Phase(associatedProcessingUnit, kUniqueId)
 		{}
 
-		void DoBuildDependancies()override
+		void DoBuildDependancies(IBuildDependencyData* buildDependencies)override
 		{
 			AddModule(GetAssociatedProcessingUnit()->GetModule(MyModuleB::kUniqueId));
 			AddModule(GetAssociatedProcessingUnit()->GetModule(MyModuleC::kUniqueId));
@@ -146,7 +146,7 @@ namespace UnitTests
 			: Dia::Application::Phase(associatedProcessingUnit, kUniqueId)
 		{}
 
-		void DoBuildDependancies()override
+		void DoBuildDependancies(IBuildDependencyData* buildDependencies)override
 		{
 			AddModule(GetAssociatedProcessingUnit()->GetModule(MyModuleA::kUniqueId));
 		}

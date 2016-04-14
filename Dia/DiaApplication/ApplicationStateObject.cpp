@@ -22,11 +22,11 @@ namespace Dia
 		{}
 
 		//-----------------------------------------------------------------------------
-		void StateObject::BuildDependancies()
+		void StateObject::BuildDependancies(IBuildDependencyData* buildDependencies)
 		{
 			DIA_ASSERT(mState == StateEnum::kConstructed, "Starting %s but in wrong state: %s", mUniqueId.AsChar(), mState.AsString() );
 
-			DoBuildDependancies();
+			DoBuildDependancies(buildDependencies);
 
 			mState = StateEnum::kNotRunning;
 		}

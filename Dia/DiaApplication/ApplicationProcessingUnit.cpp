@@ -31,7 +31,11 @@ namespace Dia
 
 			if (GetState() == StateEnum::kConstructed)
 			{ 
-				BuildDependancies();
+				BuildDependencyData buildDependencyData(&mAssociatedProcessingUnites,
+															&mAssociatedPhases,
+															&mPhaseTransitions,
+															&mAssociatedModules);
+				BuildDependancies(&buildDependencyData);
 			}
 		}
 
@@ -158,13 +162,13 @@ namespace Dia
 		// 
 		// Make sure all modules and there dependancies are in the master module/phase list for this PU, as well
 		// as iterating through each phase and module so that it knows its dependencies
-		void ProcessingUnit::DoBuildDependancies()
+		void ProcessingUnit::DoBuildDependancies(IBuildDependencyData* buildDependencies)
 		{
 			for (unsigned int i = 0; i < mAssociatedModules.Size(); i++)
 			{
 				Module* module = mAssociatedModules.GetItemByIndex(i);
 
-				module->BuildDependancies();
+				module->BuildDependancies(buildDependencies);
 
 				const unsigned int numberDependencies = module->GetNumberOfDependancies();
 				for (unsigned int j = 0; j < numberDependencies; j++)
@@ -179,7 +183,7 @@ namespace Dia
 			{
 				Phase* phase = mAssociatedPhases.GetItemByIndex(i);
 				
-				phase->BuildDependancies();
+				phase->BuildDependancies(buildDependencies);
 			}
 		}
 		
@@ -236,6 +240,29 @@ namespace Dia
 			{
 				mCurrentPhase->Stop();
 			}
+		}
+
+		//---------------------------------------------------------------------------------------------------------
+		BuildDependencyData::BuildDependencyData(ProcessingUnit::ProcessingUnitTable* associatedProcessingUnites,
+													ProcessingUnit::PhasesTable* associatedPhases,
+													ProcessingUnit::PhaseTransitionTable* phaseTransitions,
+													ProcessingUnit::ModuleTable* associatedModules)
+			: mAssociatedProcessingUnites(associatedProcessingUnites)
+			, mAssociatedPhases(associatedPhases)
+			, mPhaseTransitions(phaseTransitions)
+			, mAssociatedModules(associatedModules)
+		{}
+
+		//---------------------------------------------------------------------------------------------------------
+		Module* BuildDependencyData::GetModule(const Dia::Core::StringCRC& crc)
+		{
+			return mAssociatedModules->GetItem(crc);
+		}
+
+		//---------------------------------------------------------------------------------------------------------
+		const Module* BuildDependencyData::GetModule(const Dia::Core::StringCRC& crc)const
+		{
+			return mAssociatedModules->GetItemConst(crc);
 		}
 	}
 }

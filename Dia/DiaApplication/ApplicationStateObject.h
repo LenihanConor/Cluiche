@@ -15,7 +15,18 @@ namespace Dia
 	namespace Application
 	{	
 		class StateObject;
+		class Module;
 
+		////////////////////////////////////////////////////////////////////////////////
+		// Class name: IBuildDependencyData
+		////////////////////////////////////////////////////////////////////////////////
+		class IBuildDependencyData
+		{
+		public:
+			virtual Module* GetModule(const Dia::Core::StringCRC& crc) = 0;
+			virtual const Module* GetModule(const Dia::Core::StringCRC& crc)const = 0;
+		};
+		
 		////////////////////////////////////////////////////////////////////////////////
 		// Class name: StateObject
 		////////////////////////////////////////////////////////////////////////////////
@@ -47,7 +58,7 @@ namespace Dia
 
 			StateObject(const Dia::Core::StringCRC& uniqueId);
 
-			void BuildDependancies();
+			void BuildDependancies(IBuildDependencyData* buildDependencies);
 
 			OpertionResponse Start();			
 			void NotifyReadyToStartAsync();
@@ -63,7 +74,7 @@ namespace Dia
 			bool HasStarted()const { return (mState == StateEnum::kRunning); }
 
 		protected:
-			virtual void DoBuildDependancies() = 0;
+			virtual void DoBuildDependancies(IBuildDependencyData* buildDependencies) = 0;
 
 			virtual OpertionResponse DoStart() = 0;
 

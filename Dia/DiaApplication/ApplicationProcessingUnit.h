@@ -42,6 +42,12 @@ namespace Dia
 		class ProcessingUnit: public StateObject
 		{
 		public:
+			typedef Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 8> PhaseTransitionList; // TODO: I am setting this to "8" could be any size to be honest.
+			typedef Dia::Core::Containers::HashTable<Dia::Core::StringCRC, Module*, Dia::Core::StringCRCHashFunctor> ModuleTable;
+			typedef Dia::Core::Containers::HashTable<Dia::Core::StringCRC, Phase*, Dia::Core::StringCRCHashFunctor> PhasesTable;
+			typedef Dia::Core::Containers::HashTable<Dia::Core::StringCRC, PhaseTransitionList, Dia::Core::StringCRCHashFunctor> PhaseTransitionTable;
+			typedef Dia::Core::Containers::HashTable<Dia::Core::StringCRC, ProcessingUnit*, Dia::Core::StringCRCHashFunctor> ProcessingUnitTable;
+
 			ProcessingUnit(const Dia::Core::StringCRC& uniqueId, unsigned int initialModuleMapSize = 8, unsigned int initialPhaseMapSize = 8);
 
 			void Initialize();
@@ -56,9 +62,6 @@ namespace Dia
 			void TransitionPhase(const Dia::Core::StringCRC& phaseCrc);		// Transition immediately
 			void QueuePhaseTransition(const Dia::Core::StringCRC& crc);		// Transition after next update (this is thread safe)
 
-			Module* GetModule(const Dia::Core::StringCRC& crc);
-			const Module* GetModule(const Dia::Core::StringCRC& crc)const;
-
 			Phase* GetCurrentPhase(){ return mCurrentPhase; }
 			const Phase* GetCurrentPhase()const{ return mCurrentPhase; }
 
@@ -67,11 +70,13 @@ namespace Dia
 			virtual void PrePhaseUpdate(){}
 			virtual void PostPhaseUpdate(){}
 
-		private:
-			typedef Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 8> PhaseTransitionList; // TODO: I am setting this to "8" could be any size to be honest.
+		protected:
+			Module* GetModule(const Dia::Core::StringCRC& crc);
+			const Module* GetModule(const Dia::Core::StringCRC& crc)const;
 
+		private:
 			// Inherited from StateObject
-			virtual void DoBuildDependancies()override final;
+			virtual void DoBuildDependancies(IBuildDependencyData* buildDependencies)override final;
 			virtual StateObject::OpertionResponse DoStart() override final;
 			virtual void DoUpdate()override final;
 			virtual void DoStop() override final;
@@ -79,10 +84,31 @@ namespace Dia
 			Phase* mCurrentPhase;
 			std::mutex mQueuedTransitionMutex;
 			Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16> mQueuedTransition;	// FIFO List of phase transition
-			Dia::Core::Containers::HashTable<Dia::Core::StringCRC, Module*, Dia::Core::StringCRCHashFunctor> mAssociatedProcessingUnites;
-			Dia::Core::Containers::HashTable<Dia::Core::StringCRC, Phase*, Dia::Core::StringCRCHashFunctor> mAssociatedPhases;
-			Dia::Core::Containers::HashTable<Dia::Core::StringCRC, PhaseTransitionList, Dia::Core::StringCRCHashFunctor> mPhaseTransitions;
-			Dia::Core::Containers::HashTable<Dia::Core::StringCRC, Module*, Dia::Core::StringCRCHashFunctor> mAssociatedModules;
+			ProcessingUnitTable mAssociatedProcessingUnites;
+			PhasesTable mAssociatedPhases;
+			PhaseTransitionTable mPhaseTransitions;
+			ModuleTable mAssociatedModules;
+		};
+
+		////////////////////////////////////////////////////////////////////////////////
+		// Class name: BuildDependencyData
+		////////////////////////////////////////////////////////////////////////////////
+		class BuildDependencyData: public Dia::Application::IBuildDependencyData
+		{
+		public: 
+			BuildDependencyData(ProcessingUnit::ProcessingUnitTable* associatedProcessingUnites,
+									ProcessingUnit::PhasesTable* associatedPhases,
+									ProcessingUnit::PhaseTransitionTable* phaseTransitions,
+									ProcessingUnit::ModuleTable* associatedModules);
+
+			virtual Module* GetModule(const Dia::Core::StringCRC& crc) override;
+			virtual const Module* GetModule(const Dia::Core::StringCRC& crc)const override;
+
+		private:
+			ProcessingUnit::ProcessingUnitTable* mAssociatedProcessingUnites;
+			ProcessingUnit::PhasesTable* mAssociatedPhases;
+			ProcessingUnit::PhaseTransitionTable* mPhaseTransitions;
+			ProcessingUnit::ModuleTable* mAssociatedModules;
 		};
 	}
 }
