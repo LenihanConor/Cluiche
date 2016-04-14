@@ -1,17 +1,19 @@
 #include <stdio.h>
 
-//#include "Source/ApplicationModel/ProcessingUnits/ApplicationProcessingUnit.h"
+#include "ApplicationFlow/ProcessingUnits/MainProcessingUnit.h"
+
+
 
 int main( int argc, const char* argv[] )
 {
-/*	ApplicationProcessingUnit application;
+	Cluiche::MainProcessingUnit mainPU;
+	
+	mainPU.Start();
 
-	application.Start();
-
-	while (!application.ShouldQuitApplication())
+	while (!mainPU.ShouldQuitApplication())
 	{
-		application.Update();
+		mainPU.Update();
 	}
 	
-	application.Stop();*/
+	mainPU.Stop();
 }
