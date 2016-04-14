@@ -1,3 +1,5 @@
+#pragma once
+
 #include <DiaApplication/ApplicationModule.h>
 #include <DiaCore/Timer/TimeThreadLimiter.h>
 #include <DiaCore/Time/TimeServer.h>
@@ -6,7 +8,6 @@
 #include <DiaCore/Frame/FrameStream.h>
 #include <DiaSFML/RenderWindowFactory.h>
 #include <DiaSFML/RenderWindow.h>
-
 
 #include "SimThreadStruct.h"
 #include "RenderThreadStruct.h"
@@ -29,6 +30,11 @@ namespace Cluiche
 
 		MainKernelModule(Dia::Application::ProcessingUnit* associatedProcessingUnit);
 	
+		bool ShouldQuitApplication()const;
+
+		//TODO this is hack for the moment. The goal is that this will be a seperate module
+		Dia::UI::Awesomium::UISystem* mAwesomiumUISystem;
+
 	private:
 		virtual StateObject::OpertionResponse DoStart() override;
 		virtual void DoUpdate() override;
@@ -37,7 +43,7 @@ namespace Cluiche
 		bool mRunning;
 		Dia::Core::TimeThreadLimiter mThreadLimiter;
 		Dia::Core::TimeServer mTimeServer;
-		Dia::UI::Awesomium::UISystem* mAwesomiumUISystem;
+		
 		Dia::Input::InputSourceManager mInputSourceManager;
 		Dia::Core::FrameStream<Dia::Input::EventData> mInputToSimFrameStream;
 		Dia::Core::FrameStream<Dia::Graphics::FrameData> mSimToRenderFrameStream;

@@ -10,8 +10,6 @@
 #include <DiaUI/Page.h>
 
 #include <thread>
-#include <mutex>
-#include <iostream>
 
 #include <DiaUI/IUISystem.h>
 #include <DiaCore/FilePath/PathStoreConfig.h>
@@ -19,22 +17,6 @@
 #include <DiaCore/Type/TypeFacade.h>
 #include <DiaCore/FilePath/SerializedFileLoad.h>
 #include <DiaCore/Core/Assert.h>
-
-class LaunchUIPage : public Dia::UI::Page
-{
-public:
-	void DoSomething(const Dia::UI::BoundMethodArgs&)
-	{
-		int x = 0;
-		x++;
-	}
-
-	LaunchUIPage()
-		: Dia::UI::Page(Dia::Core::FilePath("root", "DiaGraphicWithUITest/", "bootscreen.html"))
-	{
-		BindMethod(Dia::UI::BoundMethod("backgroundGrey", Dia::UI::BoundMethod::MethodPtr(this, &LaunchUIPage::DoSomething)));
-	}
-};
 
 namespace Cluiche
 {
@@ -47,6 +29,11 @@ namespace Cluiche
 		, mTimeServer(30.0f, Dia::Core::TimeAbsolute::Zero())	// With only one time server everything in the main loop will increment at its frequency
 		, mAwesomiumUISystem(nullptr)
 	{}
+
+	bool MainKernelModule::ShouldQuitApplication()const
+	{
+		return !mRunning;
+	}
 
 	Dia::Application::StateObject::OpertionResponse MainKernelModule::DoStart()
 	{
@@ -78,10 +65,8 @@ namespace Cluiche
 		canvas = renderWindow;			
 
 		// Setup UI
-		LaunchUIPage launchUIPage;
 		mAwesomiumUISystem = DIA_NEW(Dia::UI::Awesomium::UISystem(window));
 		mAwesomiumUISystem->Initialize();
-		mAwesomiumUISystem->LoadPage(launchUIPage);
 
 		// We are using SFML for keyboard and mouse support
 		renderWindow->ListenForInputSources(Dia::Core::BitArray8(Dia::SFML::InputSource::ESources::kSystem | Dia::SFML::InputSource::ESources::kKeyboard | Dia::SFML::InputSource::ESources::kMouse));	// We are getting mouse and keyboard only from SFML
