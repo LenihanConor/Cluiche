@@ -16,6 +16,8 @@ namespace Dia
 	{	
 		class StateObject;
 		class Module;
+		class Phase;
+		class ProcessingUnit;
 
 		////////////////////////////////////////////////////////////////////////////////
 		// Class name: IBuildDependencyData
@@ -25,6 +27,12 @@ namespace Dia
 		public:
 			virtual Module* GetModule(const Dia::Core::StringCRC& crc) = 0;
 			virtual const Module* GetModule(const Dia::Core::StringCRC& crc)const = 0;
+
+			virtual Phase* GetPhase(const Dia::Core::StringCRC& crc) = 0;
+			virtual const Phase* GetPhase(const Dia::Core::StringCRC& crc)const = 0;
+
+			virtual ProcessingUnit* GetProcessingUnit(const Dia::Core::StringCRC& crc) = 0;
+			virtual const ProcessingUnit* GetProcessingUnit(const Dia::Core::StringCRC& crc)const = 0;
 		};
 		
 		////////////////////////////////////////////////////////////////////////////////

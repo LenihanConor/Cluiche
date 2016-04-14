@@ -104,6 +104,11 @@ namespace Dia
 			virtual Module* GetModule(const Dia::Core::StringCRC& crc) override;
 			virtual const Module* GetModule(const Dia::Core::StringCRC& crc)const override;
 
+			virtual Phase* GetPhase(const Dia::Core::StringCRC& crc) override;
+			virtual const Phase* GetPhase(const Dia::Core::StringCRC& crc)const override;
+
+			virtual ProcessingUnit* GetProcessingUnit(const Dia::Core::StringCRC& crc) override;
+			virtual const ProcessingUnit* GetProcessingUnit(const Dia::Core::StringCRC& crc)const override;
 		private:
 			ProcessingUnit::ProcessingUnitTable* mAssociatedProcessingUnites;
 			ProcessingUnit::PhasesTable* mAssociatedPhases;

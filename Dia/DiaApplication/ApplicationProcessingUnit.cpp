@@ -264,5 +264,29 @@ namespace Dia
 		{
 			return mAssociatedModules->GetItemConst(crc);
 		}
+
+		//---------------------------------------------------------------------------------------------------------
+		Phase* BuildDependencyData::GetPhase(const Dia::Core::StringCRC& crc)
+		{
+			return mAssociatedPhases->GetItem(crc);
+		}
+
+		//---------------------------------------------------------------------------------------------------------
+		const Phase* BuildDependencyData::GetPhase(const Dia::Core::StringCRC& crc)const
+		{
+			return mAssociatedPhases->GetItemConst(crc);
+		}
+
+		//---------------------------------------------------------------------------------------------------------
+		ProcessingUnit* BuildDependencyData::GetProcessingUnit(const Dia::Core::StringCRC& crc)
+		{
+			return mAssociatedProcessingUnites->GetItem(crc);
+		}
+
+		//---------------------------------------------------------------------------------------------------------
+		const ProcessingUnit* BuildDependencyData::GetProcessingUnit(const Dia::Core::StringCRC& crc)const
+		{
+			return mAssociatedProcessingUnites->GetItemConst(crc);
+		}
 	}
 }
