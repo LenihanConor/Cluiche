@@ -21,9 +21,8 @@ namespace Dia
 			virtual void Initialize() = 0;
 
 			virtual void LoadPage(Page& newPage) = 0;
-			virtual void OnLoadedPage() = 0;
-			virtual void IsLoadingPage() = 0;
 			virtual void UnloadPage() = 0;
+			virtual bool IsPageLoaded()const = 0;
 
 			virtual void Update() = 0;
 

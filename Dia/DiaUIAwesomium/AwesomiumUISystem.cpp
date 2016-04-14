@@ -467,6 +467,8 @@ namespace Dia
 				{
 					std::this_thread::sleep_for(std::chrono::milliseconds(1));	// Wait for ms before trying again
 				}
+
+				mIsPageLoaded = false;
 			}
 
 			//-------------------------------------------------------------------
@@ -477,6 +479,26 @@ namespace Dia
 				std::lock_guard<std::mutex> lock(mSystemMutex);
 
 				mUISystemImpl->LoadPage(newPage);
+
+				mIsPageLoaded = true;
+			}
+
+			//-------------------------------------------------------------------
+			bool UISystem::IsPageLoaded()const
+			{
+				return mIsPageLoaded;
+			}
+
+			//-------------------------------------------------------------------
+			void UISystem::UnloadPage()
+			{
+				DIA_ASSERT(mUISystemImpl, "mUISystemImpl is NULL");
+
+				std::lock_guard<std::mutex> lock(mSystemMutex);
+
+				mIsPageLoaded = false;
+
+				DIA_ASSERT(0, "Currently cannot unload page");
 			}
 
 			//-------------------------------------------------------------------

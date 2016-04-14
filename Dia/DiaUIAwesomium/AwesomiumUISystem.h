@@ -31,9 +31,8 @@ namespace Dia
 				virtual void Initialize() override;
 
 				virtual void LoadPage(Page& newPage) override;
-				virtual void OnLoadedPage() override {};
-				virtual void IsLoadingPage() override {};
-				virtual void UnloadPage() override {};
+				virtual void UnloadPage() override;
+				virtual bool IsPageLoaded()const override;
 
 				virtual void Update() override;
 
@@ -45,7 +44,9 @@ namespace Dia
 				virtual void InjectMouseUp(Dia::Input::EMouseButton button, int x, int y)override;
 				virtual void InjectMouseClick(Dia::Input::EMouseButton button, int x, int y)override;
 				virtual void InjectMouseWheel(int scroll_vert, int scroll_horz)override;
+
 			private:
+				bool mIsPageLoaded;					// Set true when page is loaded
 				mutable std::mutex mSystemMutex;	// Mutex to the system to allow multithreading
 				UISystemImpl* mUISystemImpl; // Using the impl pattern here to not spread the awesomium includes further afield
 			};

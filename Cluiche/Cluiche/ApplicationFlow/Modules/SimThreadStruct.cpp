@@ -103,9 +103,12 @@ void SimThreadStruct::Run()
 		renderFrameBuffer.RequestDraw(Dia::Graphics::DebugFrameDataLine2D(Dia::Maths::Vector2D(100.0f, 100.0f), dynamicCirclePos));
 
 		// Update 
-		Dia::UI::UIDataBuffer uiBuffer;
-		mUISystem->FetchUIDataBuffer(uiBuffer);
-		renderFrameBuffer.RequestDrawUI(uiBuffer);
+		if (mUISystem->IsPageLoaded())
+		{
+			Dia::UI::UIDataBuffer uiBuffer;
+			mUISystem->FetchUIDataBuffer(uiBuffer);
+			renderFrameBuffer.RequestDrawUI(uiBuffer);
+		}
 
 		mSimToRenderFrameStream->InsertCopyOfDataToStream(renderFrameBuffer, mTimeServer.GetTime());
 
