@@ -20,7 +20,7 @@ namespace Cluiche
 			return false;
 		}
 
-		const Cluiche::MainKernelModule* kernel = static_cast<const Cluiche::MainKernelModule*>(this->GetModule(MainKernelModule::kUniqueId));
+		const Cluiche::MainKernelModule* kernel = this->GetModule<Cluiche::MainKernelModule>();
 
 		return kernel->ShouldQuitApplication();
 	}

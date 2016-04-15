@@ -39,6 +39,7 @@ namespace Cluiche
 	void MainBootStrapPhase::AfterModulesStart()
 	{
 		LaunchUIPage launchUIPage;
-		static_cast<MainKernelModule*>(GetModule(MainKernelModule::kUniqueId))->mAwesomiumUISystem->LoadPage(launchUIPage);
+		const Cluiche::MainKernelModule* kernel = this->GetModule<Cluiche::MainKernelModule>();
+		kernel->mAwesomiumUISystem->LoadPage(launchUIPage); //TODO replace this with a templated version
 	}
 }

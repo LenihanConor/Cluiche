@@ -48,6 +48,12 @@ namespace Dia
 			ProcessingUnit* GetAssociatedProcessingUnit();
 			const ProcessingUnit* GetAssociatedProcessingUnit()const;
 
+			template <class T> inline
+			T*	GetModule() { return static_cast<T*>(GetModule(T::kUniqueId));}
+
+			template <class T> inline
+			const T* GetModule() const{ return static_cast<const T*>(GetModule(T::kUniqueId));}
+
 			Module* GetModule(const Dia::Core::StringCRC& crc);
 			const Module* GetModule(const Dia::Core::StringCRC& crc)const;
 
