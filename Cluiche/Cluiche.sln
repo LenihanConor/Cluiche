@@ -1,9 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.23107.0
+VisualStudioVersion = 14.0.24720.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Library", "Library", "{2291F464-9B87-42F1-AA90-34FE22DD5F9B}"
+	ProjectSection(SolutionItems) = preProject
+		..\Dia\DiaApplication\ApplicationModule.cpp = ..\Dia\DiaApplication\ApplicationModule.cpp
+		..\Dia\DiaApplication\ApplicationModule.h = ..\Dia\DiaApplication\ApplicationModule.h
+		..\Dia\DiaApplication\ApplicationPhase.cpp = ..\Dia\DiaApplication\ApplicationPhase.cpp
+		..\Dia\DiaApplication\ApplicationPhase.h = ..\Dia\DiaApplication\ApplicationPhase.h
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Executables", "Executables", "{86CA7611-D55D-411B-8784-187D12107EE0}"
 EndProject
@@ -31,7 +37,15 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DiaApplication", "..\Dia\Di
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Cluiche", "Cluiche\Cluiche.vcxproj", "{CEC960D4-B8B3-463B-9F68-716C5C3C4315}"
 	ProjectSection(ProjectDependencies) = postProject
+		{A5B2650D-8283-483F-827E-CA29140CFA63} = {A5B2650D-8283-483F-827E-CA29140CFA63}
+		{835CA128-691F-4CEA-A0B3-CE6E41C394E7} = {835CA128-691F-4CEA-A0B3-CE6E41C394E7}
+		{1CF9F92B-666E-4B39-9DDE-B1CFBEF68618} = {1CF9F92B-666E-4B39-9DDE-B1CFBEF68618}
+		{52178C86-628D-4FE4-AE55-D3485FAEC070} = {52178C86-628D-4FE4-AE55-D3485FAEC070}
+		{936FA28F-E171-401F-8185-D2AF48DB4098} = {936FA28F-E171-401F-8185-D2AF48DB4098}
+		{D0101596-9011-46AF-A16A-69A2BB0CCA69} = {D0101596-9011-46AF-A16A-69A2BB0CCA69}
 		{FFFEB7B0-7616-4D75-8E3D-08C7CFD93D71} = {FFFEB7B0-7616-4D75-8E3D-08C7CFD93D71}
+		{2BBA0AD3-D449-4C0E-8C84-ACFA8BCA456B} = {2BBA0AD3-D449-4C0E-8C84-ACFA8BCA456B}
+		{8D41CBE3-C493-428D-95F3-627E56500667} = {8D41CBE3-C493-428D-95F3-627E56500667}
 		{DD3D58EF-028B-42CB-B837-0042BA30D96F} = {DD3D58EF-028B-42CB-B837-0042BA30D96F}
 	EndProjectSection
 EndProject
