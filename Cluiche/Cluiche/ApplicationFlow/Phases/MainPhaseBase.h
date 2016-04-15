@@ -16,6 +16,6 @@ namespace Cluiche
 	public:
 		MainPhaseBase(Dia::Application::ProcessingUnit* associatedProcessingUnit, const Dia::Core::StringCRC& uniqueId, unsigned int maxModules = 16);
 
-		bool ShouldQuitApplication()const;
+		virtual bool FlaggedToStopUpdating()const override final;
 	};
 }

@@ -10,7 +10,7 @@ namespace Cluiche
 		: Dia::Application::Phase(associatedProcessingUnit, uniqueId, maxModules)
 	{}
 
-	bool MainPhaseBase::ShouldQuitApplication()const
+	bool MainPhaseBase::FlaggedToStopUpdating()const
 	{
 		bool containsKernel = this->ContainsModule(MainKernelModule::kUniqueId);
 
@@ -22,6 +22,6 @@ namespace Cluiche
 
 		const Cluiche::MainKernelModule* kernel = this->GetModule<Cluiche::MainKernelModule>();
 
-		return kernel->ShouldQuitApplication();
+		return kernel->FlaggedToStopUpdating();
 	}
 }

@@ -13,8 +13,8 @@ int main( int argc, const char* argv[] )
 			Fix stop
 			Expand PU to do the thread limitation
 			Make a UI module (Main/Sim)
-			static_cast<MainKernelModule*>(GetModule(MainKernelModule::kUniqueId))->mAwesomiumUISystem->LoadPage(launchUIPage); Templatize this
 			build out launch page
+			Dia::SFML::RenderWindow* renderWindow; // TODO CLEAN UP
 	*/
 
 	mainPU.Start();

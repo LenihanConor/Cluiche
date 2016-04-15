@@ -10,10 +10,6 @@ namespace Cluiche
 		, mBootStrapPhase(this)
 		, mKernelModule(this)
 	{
-		// Add Phases
-		AddPhase(&mBootPhase);
-		AddPhase(&mBootStrapPhase);
-
 		// Setup Phase Transitions
 		SetInitialPhase(&mBootPhase);
 		AddPhaseTransiton(&mBootPhase, &mBootStrapPhase);
@@ -26,7 +22,6 @@ namespace Cluiche
 
 	bool MainProcessingUnit::FlaggedToStopUpdating()const
 	{
-		const Cluiche::MainPhaseBase* mainPhase = static_cast<const Cluiche::MainPhaseBase*>(GetCurrentPhase());
-		return mainPhase->ShouldQuitApplication();
+		return GetCurrentPhase()->FlaggedToStopUpdating();
 	}
 }

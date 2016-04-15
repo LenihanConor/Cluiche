@@ -44,6 +44,8 @@ namespace Dia
 			virtual void BeforeModulesStop(){};
 			virtual void AfterModulesStop(){};
 
+			virtual bool FlaggedToStopUpdating()const = 0;
+
 		protected:
 			ProcessingUnit* GetAssociatedProcessingUnit();
 			const ProcessingUnit* GetAssociatedProcessingUnit()const;

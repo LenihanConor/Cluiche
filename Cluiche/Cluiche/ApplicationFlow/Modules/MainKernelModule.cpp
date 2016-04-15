@@ -30,7 +30,7 @@ namespace Cluiche
 		, mAwesomiumUISystem(nullptr)
 	{}
 
-	bool MainKernelModule::ShouldQuitApplication()const
+	bool MainKernelModule::FlaggedToStopUpdating()const
 	{
 		return !mRunning;
 	}

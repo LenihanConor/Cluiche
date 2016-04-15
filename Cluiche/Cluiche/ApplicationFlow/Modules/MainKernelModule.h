@@ -30,7 +30,7 @@ namespace Cluiche
 
 		MainKernelModule(Dia::Application::ProcessingUnit* associatedProcessingUnit);
 	
-		bool ShouldQuitApplication()const;
+		bool FlaggedToStopUpdating()const;
 
 		//TODO this is hack for the moment. The goal is that this will be a seperate module
 		Dia::UI::Awesomium::UISystem* mAwesomiumUISystem;
@@ -57,7 +57,7 @@ namespace Cluiche
 		Dia::Input::ConsoleGamepadManager mGamepadManager;
 		Dia::SFML::RenderWindowFactory mWindowFactory;
 
-		Dia::SFML::RenderWindow* renderWindow;
+		Dia::SFML::RenderWindow* renderWindow; // TODO CLEAN UP
 
 		// Abstract Interfaces
 		Dia::Window::IWindow* window;
