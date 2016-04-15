@@ -6,6 +6,11 @@ namespace Dia { namespace Application { class ProcessingUnit; } }
 
 namespace Cluiche
 {
+	////////////////////////////////////////////////////
+	//
+	// MainBootPhase: Initial phase for the main thread
+	//
+	////////////////////////////////////////////////////
 	class MainBootPhase : public Cluiche::MainPhaseBase
 	{
 	public:
