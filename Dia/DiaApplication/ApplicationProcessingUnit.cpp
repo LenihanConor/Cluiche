@@ -205,27 +205,30 @@ namespace Dia
 		void ProcessingUnit::DoUpdate()
 		{
 			DIA_ASSERT(mCurrentPhase, "For Processing Unit %s Current Phase is NULL, cannot update", GetUniqueId().AsChar());
-
-			PrePhaseUpdate();
-
-			if (mCurrentPhase != nullptr)
+			
+			while (!FlaggedToStopUpdating())
 			{
-				mCurrentPhase->Update();
-			}
+				PrePhaseUpdate();
 
-			PostPhaseUpdate();
-
-			{
-				std::lock_guard<std::mutex> lock(mQueuedTransitionMutex);
-
-				// If there are any transitioned phase move to them now
-				if (mQueuedTransition.Size() != 0)
+				if (mCurrentPhase != nullptr)
 				{
-					Dia::Core::StringCRC nextTransitionCRC = mQueuedTransition[0];
+					mCurrentPhase->Update();
+				}
 
-					mQueuedTransition.RemoveAt(0);
+				PostPhaseUpdate();
 
-					TransitionPhase(nextTransitionCRC);
+				{
+					std::lock_guard<std::mutex> lock(mQueuedTransitionMutex);
+
+					// If there are any transitioned phase move to them now
+					if (mQueuedTransition.Size() != 0)
+					{
+						Dia::Core::StringCRC nextTransitionCRC = mQueuedTransition[0];
+
+						mQueuedTransition.RemoveAt(0);
+
+						TransitionPhase(nextTransitionCRC);
+					}
 				}
 			}
 		}

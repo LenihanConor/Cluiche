@@ -24,7 +24,7 @@ namespace Cluiche
 		Initialize();
 	}
 
-	bool MainProcessingUnit::ShouldQuitApplication()const
+	bool MainProcessingUnit::FlaggedToStopUpdating()const
 	{
 		const Cluiche::MainPhaseBase* mainPhase = static_cast<const Cluiche::MainPhaseBase*>(GetCurrentPhase());
 		return mainPhase->ShouldQuitApplication();

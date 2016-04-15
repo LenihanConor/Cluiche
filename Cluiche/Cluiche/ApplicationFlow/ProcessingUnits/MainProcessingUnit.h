@@ -16,9 +16,9 @@ namespace Cluiche
 
 		MainProcessingUnit();
 
-		bool ShouldQuitApplication()const;
-
 	private:
+		virtual bool FlaggedToStopUpdating()const;
+
 		//Phases
 		Cluiche::MainBootPhase mBootPhase;
 		Cluiche::MainBootStrapPhase mBootStrapPhase;

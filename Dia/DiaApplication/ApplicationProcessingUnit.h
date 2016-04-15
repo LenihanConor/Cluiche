@@ -74,6 +74,7 @@ namespace Dia
 			Module* GetModule(const Dia::Core::StringCRC& crc);
 			const Module* GetModule(const Dia::Core::StringCRC& crc)const;
 
+			virtual bool FlaggedToStopUpdating()const = 0;
 		private:
 			// Inherited from StateObject
 			virtual void DoBuildDependancies(IBuildDependencyData* buildDependencies)override final;
