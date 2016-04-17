@@ -21,6 +21,7 @@
 #include <DiaCore/Containers/HashTables/HashTable.h>
 #include <DiaCore/CRC/CRCHashFunctor.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <DiaCore/Timer/TimeThreadLimiter.h>
 
 #include <mutex>
 
@@ -48,9 +49,12 @@ namespace Dia
 			typedef Dia::Core::Containers::HashTable<Dia::Core::StringCRC, PhaseTransitionList, Dia::Core::StringCRCHashFunctor> PhaseTransitionTable;
 			typedef Dia::Core::Containers::HashTable<Dia::Core::StringCRC, ProcessingUnit*, Dia::Core::StringCRCHashFunctor> ProcessingUnitTable;
 
-			ProcessingUnit(const Dia::Core::StringCRC& uniqueId, unsigned int initialModuleMapSize = 8, unsigned int initialPhaseMapSize = 8);
+			ProcessingUnit(const Dia::Core::StringCRC& uniqueId, float hz = -1.0f, unsigned int initialModuleMapSize = 8, unsigned int initialPhaseMapSize = 8);
 
 			void Initialize();
+			
+			void EnableThreadLimiting(float hz);
+			void DisableThreadLimiting();
 
 			void AddProcessingUnit(ProcessingUnit* pu); 
 			void AddPhase(Phase* phase);
@@ -89,13 +93,21 @@ namespace Dia
 			virtual void DoUpdate()override final;
 			virtual void DoStop() override final;
 
+			// PU frequency variables
+			bool mEnableThreadLimiter;
+			Dia::Core::TimeThreadLimiter mThreadLimiter; // The thread limiter is used if we want to control how often the PU is updated. It will sleep the thread if it finishes 
+
+			// PU associated application phases 
 			Phase* mCurrentPhase;
 			std::mutex mQueuedTransitionMutex;
 			Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16> mQueuedTransition;	// FIFO List of phase transition
-			ProcessingUnitTable mAssociatedProcessingUnites;
 			PhasesTable mAssociatedPhases;
 			PhaseTransitionTable mPhaseTransitions;
+		
+			// List of all modules that are associated to this PU. Phase can choose from these to enable/disable as they see fir
 			ModuleTable mAssociatedModules;
+
+			ProcessingUnitTable mAssociatedProcessingUnites;
 		};
 
 		////////////////////////////////////////////////////////////////////////////////

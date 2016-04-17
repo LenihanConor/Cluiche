@@ -5,7 +5,7 @@ namespace Cluiche
 	const Dia::Core::StringCRC MainProcessingUnit::kUniqueId("MainProcessingUnit");
 
 	MainProcessingUnit::MainProcessingUnit()
-		: Dia::Application::ProcessingUnit(kUniqueId)
+		: Dia::Application::ProcessingUnit(kUniqueId, 30.0f)
 		, mBootPhase(this)
 		, mBootStrapPhase(this)
 		, mKernelModule(this)

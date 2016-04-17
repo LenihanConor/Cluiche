@@ -15,14 +15,22 @@ namespace Dia
 	{
 		//---------------------------------------------------------------------------------------------------------
 		ProcessingUnit::ProcessingUnit(const Dia::Core::StringCRC& uniqueId, 
+										float hz, 
 										unsigned int initialModuleMapSize, 
 										unsigned int initialPhaseMapSize)
 			: StateObject(uniqueId)
+			, mEnableThreadLimiter(false)
+			, mThreadLimiter(0.0f)
 			, mCurrentPhase(NULL)
 			, mAssociatedPhases(initialPhaseMapSize, initialPhaseMapSize * 2)
 			, mAssociatedModules(initialModuleMapSize, initialModuleMapSize * 2)
 			, mPhaseTransitions(initialModuleMapSize, initialModuleMapSize * 2)
-		{}
+		{
+			if (hz != -1.0f)
+			{
+				EnableThreadLimiting(hz);
+			}
+		}
 
 		//---------------------------------------------------------------------------------------------------------
 		void ProcessingUnit::Initialize()
@@ -37,6 +45,19 @@ namespace Dia
 															&mAssociatedModules);
 				BuildDependancies(&buildDependencyData);
 			}
+		}
+
+		//---------------------------------------------------------------------------------------------------------
+		void ProcessingUnit::EnableThreadLimiting(float hz)
+		{
+			mEnableThreadLimiter = true;
+			mThreadLimiter.Initialize(hz);
+		}
+
+		//---------------------------------------------------------------------------------------------------------
+		void ProcessingUnit::DisableThreadLimiting()
+		{
+			mEnableThreadLimiter = false;
 		}
 
 		//---------------------------------------------------------------------------------------------------------
@@ -208,6 +229,9 @@ namespace Dia
 			
 			while (!FlaggedToStopUpdating())
 			{
+				if (mEnableThreadLimiter)
+					mThreadLimiter.Start();
+
 				PrePhaseUpdate();
 
 				if (mCurrentPhase != nullptr)
@@ -230,6 +254,13 @@ namespace Dia
 						TransitionPhase(nextTransitionCRC);
 					}
 				}
+
+				if (mEnableThreadLimiter)
+				{
+					mThreadLimiter.Stop();
+					//	std::cout << "Main: Wait " << threadLimiter.RemainingTime().AsIntInMilliseconds() << " ms\n";
+					mThreadLimiter.SleepThread();
+				}
 			}
 		}
 
@@ -237,7 +268,6 @@ namespace Dia
 		void ProcessingUnit::DoStop()
 		{
 			DIA_ASSERT(mCurrentPhase, "For Processing Unit %s Current Phase is NULL, cannot stop", GetUniqueId().AsChar());
-
 
 			if (mCurrentPhase != nullptr)
 			{

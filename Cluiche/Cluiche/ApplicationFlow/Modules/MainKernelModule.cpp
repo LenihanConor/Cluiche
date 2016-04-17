@@ -25,7 +25,6 @@ namespace Cluiche
 	MainKernelModule::MainKernelModule(Dia::Application::ProcessingUnit* associatedProcessingUnit)
 		: Dia::Application::Module(associatedProcessingUnit, kUniqueId, Dia::Application::Module::RunningEnum::kUpdate)
 		, mRunning(true)
-		, mThreadLimiter()
 		, mTimeServer(30.0f, Dia::Core::TimeAbsolute::Zero())	// With only one time server everything in the main loop will increment at its frequency
 		, mAwesomiumUISystem(nullptr)
 	{}
@@ -83,16 +82,11 @@ namespace Cluiche
 		mRenderThreadStruct.Initialize(&mRunning, &mSimToRenderFrameStream, canvas);
 		mRenderThread = DIA_NEW(std::thread(std::ref(mRenderThreadStruct)));
 
-		// run the main loop
-		mThreadLimiter.Initialize(1.0f / mTimeServer.GetStep().AsFloatInSeconds());
-
 		return StateObject::OpertionResponse::kImmediate;
 	}
 
 	void MainKernelModule::DoUpdate()
 	{
-		mThreadLimiter.Start();
-
 		mAwesomiumUISystem->Update();
 
 		// Input thread :)
@@ -140,10 +134,6 @@ namespace Cluiche
 		}
 
 		mTimeServer.Tick();
-
-		mThreadLimiter.Stop();
-		//	std::cout << "Main: Wait " << threadLimiter.RemainingTime().AsIntInMilliseconds() << " ms\n";
-		mThreadLimiter.SleepThread();
 	}
 
 	void MainKernelModule::DoStop()

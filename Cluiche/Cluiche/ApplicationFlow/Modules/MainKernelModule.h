@@ -1,7 +1,6 @@
 #pragma once
 
 #include <DiaApplication/ApplicationModule.h>
-#include <DiaCore/Timer/TimeThreadLimiter.h>
 #include <DiaCore/Time/TimeServer.h>
 #include <DiaInput/InputSourceManager.h>
 #include <DiaInput/ConsoleGamepadManager.h>
@@ -41,7 +40,7 @@ namespace Cluiche
 		virtual void DoStop() override;
 
 		bool mRunning;
-		Dia::Core::TimeThreadLimiter mThreadLimiter;
+		
 		Dia::Core::TimeServer mTimeServer;
 		
 		Dia::Input::InputSourceManager mInputSourceManager;
