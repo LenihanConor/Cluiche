@@ -6,6 +6,8 @@
 #include "ApplicationFlow/Phases/MainBootPhase.h"
 #include "ApplicationFlow/Phases/MainBootStrapPhase.h"
 
+#include "ApplicationFlow/ProcessingUnits/RenderProcessingUnit.h"
+
 namespace Cluiche
 {
 	/// Main game booting processing unit. this should run on the main thread
@@ -17,10 +19,16 @@ namespace Cluiche
 		MainProcessingUnit();
 
 	private:
-		virtual bool FlaggedToStopUpdating()const;
+		virtual void PostPhaseStart(const IStartData* startData)override final;
+		virtual void PrePhaseStop()override final;
+		virtual bool FlaggedToStopUpdating()const override final;
+
+		//Processing Units
+		std::thread* mRenderThread;
+		Cluiche::RenderProcessingUnit mRenderingPU;
 
 		//Phases
-		Cluiche::MainBootPhase mBootPhase;
+		Cluiche::MainBootPhase mRunningPhase;
 		Cluiche::MainBootStrapPhase mBootStrapPhase;
 
 		//Modules

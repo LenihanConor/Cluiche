@@ -1,231 +1,52 @@
-////////////////////////////////////////////////////////////////////////////////
-// Filename: ProcessingModule.cpp
-////////////////////////////////////////////////////////////////////////////////
-#include "DiaApplication/ApplicationProcessingUnit.h"
+#include "ApplicationFlow/ProcessingUnits/RenderProcessingUnit.h"
 
-#include <DiaCore/Core/Assert.h>
-#include <DiaCore/Type/BasicTypeDefines.h>
+#include <DiaGraphics/Interface/ICanvas.h>
 
-#include "DiaApplication/ApplicationPhase.h"
-#include "DiaApplication/ApplicationModule.h"
-
-namespace Dia
+namespace Cluiche
 {
-	namespace Application
+	const Dia::Core::StringCRC RenderProcessingUnit::kUniqueId("RenderProcessingUnit");
+
+	RenderProcessingUnit::RenderProcessingUnit()
+		: Dia::Application::ProcessingUnit(kUniqueId, 60.0f)
+		, mRunningPhase(this)
 	{
-		//---------------------------------------------------------------------------------------------------------
-		ProcessingUnit::ProcessingUnit(const Dia::Core::StringCRC& uniqueId, 
-										unsigned int initialModuleMapSize, 
-										unsigned int initialPhaseMapSize)
-			: StateObject(uniqueId)
-			, mCurrentPhase(NULL)
-			, mAssociatedPhases(initialPhaseMapSize, initialPhaseMapSize * 2)
-			, mAssociatedModules(initialModuleMapSize, initialModuleMapSize * 2)
-			, mPhaseTransitions(initialModuleMapSize, initialModuleMapSize * 2)
-		{}
+		// Setup Phase Transitions
+		SetInitialPhase(&mRunningPhase);
 
-		//---------------------------------------------------------------------------------------------------------
-		void ProcessingUnit::Initialize()
+		// We call this from here to build all dependancies. We dont need to do this here, intead 
+		// we could of done it in the code below if there was dynamic adding of modules or phases
+		// but for this cas case this is a nicer cleaner solution.
+		Initialize();
+	}
+
+	void RenderProcessingUnit::PostPhaseStart(const Dia::Application::StateObject::IStartData* startData)
+	{
+		DIA_ASSERT(startData != nullptr, "Starting the render PU needs to created with some start data");
+
+		const StartData* renderStartData = static_cast<const StartData*>(startData);
+		mRunning = renderStartData->mRunning;
+		mFrameStream = renderStartData->mFrameStream;
+		mpCanvas = renderStartData->mCanvas;
+	}
+
+	void RenderProcessingUnit::PostPhaseUpdate()
+	{
+		Dia::Core::TimeAbsolute timeStampOfRenderFrameBuffer = Dia::Core::TimeAbsolute::Zero();
+		const Dia::Graphics::FrameData* pRenderFrameBuffer = mFrameStream->FetchLatestData(timeStampOfRenderFrameBuffer);
+
+		if (pRenderFrameBuffer != nullptr)
 		{
-			DIA_ASSERT(GetState() == StateEnum::kConstructed, "Initializing %s but in wrong state: %s", GetUniqueId().AsChar(), GetState().AsString());
+			mpCanvas->StartFrame(*pRenderFrameBuffer);
+			mpCanvas->ProcessFrame(*pRenderFrameBuffer);
+			mpCanvas->EndFrame(*pRenderFrameBuffer);
 
-			if (GetState() == StateEnum::kConstructed)
-			{ 
-				BuildDependancies();
-			}
+			mFrameStream->GarbageCollectAllFramesOlderThan(timeStampOfRenderFrameBuffer);
 		}
+	}
 
-		//---------------------------------------------------------------------------------------------------------
-		void ProcessingUnit::AddPhase(Phase* phase)
-		{
-			DIA_ASSERT(phase != NULL, "Null phase being added for ProcessingUnit %s", GetUniqueId().AsChar());
-
-			if (!mAssociatedPhases.ContainsKey(phase->GetUniqueId()))
-			{
-				mAssociatedPhases.Add(phase->GetUniqueId(), phase);
-			}
-		}
-
-		//---------------------------------------------------------------------------------------------------------
-		void ProcessingUnit::AddModule(Module* module)
-		{
-			DIA_ASSERT(module != NULL, "Null module being added for ProcessingUnit %s", GetUniqueId().AsChar());
-
-			if (!mAssociatedModules.ContainsKey(module->GetUniqueId()))
-			{
-				mAssociatedModules.Add(module->GetUniqueId(), module);
-			}
-		}
-
-		//---------------------------------------------------------------------------------------------------------
-		void ProcessingUnit::SetInitialPhase(Phase* phase)
-		{
-			if (phase == NULL)
-			{
-				DIA_ASSERT(0, "Initial Phase can not be NULL for ProcessingUnit %s", GetUniqueId().AsChar());
-
-				return;
-			}
-
-			if (mCurrentPhase != NULL)
-			{
-				DIA_ASSERT(0, "Current Phase already set for ProcessingUnit %s", GetUniqueId().AsChar());
-
-				return;
-			}
-			
-			if (!mAssociatedPhases.ContainsKey(phase->GetUniqueId()))
-			{
-
-				DIA_ASSERT(0, "Phase %s has not been added to ProcessingUnit %s", phase->GetUniqueId().AsChar(), GetUniqueId().AsChar());
-
-				return;
-			}
-			mCurrentPhase = phase;
-		}
-
-		//---------------------------------------------------------------------------------------------------------
-		void ProcessingUnit::AddPhaseTransiton(Phase* startPhase, Phase* endPhase)
-		{
-			DIA_ASSERT(startPhase, "Null start phase transition being added to %s", GetUniqueId().AsChar());
-			DIA_ASSERT(endPhase, "Null end phase transition being added to %s", GetUniqueId().AsChar());
-			DIA_ASSERT(mAssociatedPhases.ContainsKey(startPhase->GetUniqueId()), "Phase %s not associated to Processing Unit %s", startPhase->GetUniqueId().AsChar(), GetUniqueId().AsChar());
-			DIA_ASSERT(mAssociatedPhases.ContainsKey(endPhase->GetUniqueId()), "Phase %s not associated to Processing Unit %s", endPhase->GetUniqueId().AsChar(), GetUniqueId().AsChar());
-
-			if (mPhaseTransitions.ContainsKey(startPhase->GetUniqueId()))
-			{
-				PhaseTransitionList& list = mPhaseTransitions.GetItem(startPhase->GetUniqueId());
-				list.Add(endPhase->GetUniqueId());	
-			}
-			else
-			{
-				// Need to create the new list of phases
-				PhaseTransitionList newList;
-				newList.Add(endPhase->GetUniqueId());
-
-				mPhaseTransitions.Add(startPhase->GetUniqueId(), newList);
-			}
-			
-		}
-
-		//---------------------------------------------------------------------------------------------------------
-		// A single transition is where we move from the current phase to any phases that is allowed
-		void ProcessingUnit::TransitionPhase(const Dia::Core::StringCRC& phaseCrc)
-		{
-			DIA_ASSERT(mCurrentPhase, "Null current phase %s", GetUniqueId().AsChar());
-			DIA_ASSERT(mAssociatedPhases.ContainsKey(phaseCrc), "Phase %s not associated to Processing Unit %s", phaseCrc.AsChar(), GetUniqueId().AsChar());
-
-			Phase* endPhase = mAssociatedPhases.GetItem(phaseCrc);
-			PhaseTransitionList& list = mPhaseTransitions.GetItem(mCurrentPhase->GetUniqueId());
-
-			DIA_ASSERT(list.FindIndex(phaseCrc) != -1, "Cannot transition from %s to %s in Processing Unit %s", mCurrentPhase->GetUniqueId().AsChar(), phaseCrc.AsChar(), GetUniqueId().AsChar());
-
-			mCurrentPhase->TransitionTo(endPhase);
-
-			mCurrentPhase = endPhase;
-		}
-
-		//---------------------------------------------------------------------------------------------------------
-		// A single transition is where we move from the current phase to any phases that is allowed
-		void ProcessingUnit::QueuePhaseTransition(const Dia::Core::StringCRC& phaseCrc)
-		{
-			DIA_ASSERT(mCurrentPhase, "Null current phase %s", GetUniqueId().AsChar());
-			DIA_ASSERT(mAssociatedPhases.ContainsKey(phaseCrc), "Phase %s not associated to Processing Unit %s", phaseCrc.AsChar(), GetUniqueId().AsChar());
-
-			mQueuedTransition.Add(phaseCrc);
-		}
-
-		//---------------------------------------------------------------------------------------------------------
-		Module* ProcessingUnit::GetModule(const Dia::Core::StringCRC& crc)
-		{
-			return mAssociatedModules.GetItem(crc);
-		}
-
-		//---------------------------------------------------------------------------------------------------------
-		const Module* ProcessingUnit::GetModule(const Dia::Core::StringCRC& crc)const
-		{
-			return mAssociatedModules.GetItemConst(crc);
-		}
-
-		//---------------------------------------------------------------------------------------------------------
-		bool ProcessingUnit::ContainsModule(const Dia::Core::StringCRC& crc)const
-		{
-			return (nullptr != GetModule(crc));
-		}
-
-		//---------------------------------------------------------------------------------------------------------
-		// 
-		// Make sure all modules and there dependancies are in the master module/phase list for this PU, as well
-		// as iterating through each phase and module so that it knows its dependencies
-		void ProcessingUnit::DoBuildDependancies()
-		{
-			for (unsigned int i = 0; i < mAssociatedModules.Size(); i++)
-			{
-				Module* module = mAssociatedModules.GetItemByIndex(i);
-
-				module->BuildDependancies();
-
-				const unsigned int numberDependencies = module->GetNumberOfDependancies();
-				for (unsigned int j = 0; j < numberDependencies; j++)
-				{
-					Module* dependency = module->GetDependencyFromIndex(j);
-
-					AddModule(dependency);
-				}
-			}
-
-			for (unsigned int i = 0; i < mAssociatedPhases.Size(); i++)
-			{
-				Phase* phase = mAssociatedPhases.GetItemByIndex(i);
-				
-				phase->BuildDependancies();
-			}
-		}
-		
-		//---------------------------------------------------------------------------------------------------------
-		StateObject::OpertionResponse ProcessingUnit::DoStart()
-		{
-			DIA_ASSERT(mCurrentPhase, "For Processing Unit %s Current Phase is NULL, cannot start", GetUniqueId().AsChar());
-
-			if (mCurrentPhase != NULL)
-			{
-				mCurrentPhase->Start();
-			}
-
-			// TODO: Currently only support immediate starts
-			return StateObject::OpertionResponse::kImmediate;
-		}
-
-		//---------------------------------------------------------------------------------------------------------
-		void ProcessingUnit::DoUpdate()
-		{
-			PrePhaseUpdate();
-
-			if (mCurrentPhase != nullptr)
-			{
-				mCurrentPhase->Update();
-			}
-
-			PostPhaseUpdate();
-
-			// If there are any transitioned phase move to them now
-			if (mQueuedTransition.Size() != 0)
-			{
-				Dia::Core::StringCRC nextTransitionCRC = mQueuedTransition[0];
-
-				mQueuedTransition.RemoveAt(0);
-
-				TransitionPhase(nextTransitionCRC);
-			}
-		}
-
-		//---------------------------------------------------------------------------------------------------------
-		void ProcessingUnit::DoStop()
-		{
-			if (mCurrentPhase != nullptr)
-			{
-				mCurrentPhase->Stop();
-			}
-		}
+	bool RenderProcessingUnit::FlaggedToStopUpdating()const
+	{
+		bool isFlaggeToStop = !(*mRunning);
+		return isFlaggeToStop;
 	}
 }

@@ -5,9 +5,6 @@
     <ClCompile Include="ApplicationFlow\ProcessingUnits\MainProcessingUnit.cpp">
       <Filter>ApplicationFlow\ProcessingUnits</Filter>
     </ClCompile>
-    <ClCompile Include="ApplicationFlow\Modules\RenderThreadStruct.cpp">
-      <Filter>ApplicationFlow\Modules</Filter>
-    </ClCompile>
     <ClCompile Include="ApplicationFlow\Modules\SimThreadStruct.cpp">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClCompile>
@@ -21,6 +18,12 @@
       <Filter>ApplicationFlow\Phases</Filter>
     </ClCompile>
     <ClCompile Include="ApplicationFlow\Phases\MainPhaseBase.cpp">
+      <Filter>ApplicationFlow\Phases</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\ProcessingUnits\RenderProcessingUnit.cpp">
+      <Filter>ApplicationFlow\ProcessingUnits</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\Phases\RenderRunningPhase.cpp">
       <Filter>ApplicationFlow\Phases</Filter>
     </ClCompile>
   </ItemGroup>
@@ -42,9 +45,6 @@
     <ClInclude Include="ApplicationFlow\ProcessingUnits\MainProcessingUnit.h">
       <Filter>ApplicationFlow\ProcessingUnits</Filter>
     </ClInclude>
-    <ClInclude Include="ApplicationFlow\Modules\RenderThreadStruct.h">
-      <Filter>ApplicationFlow\Modules</Filter>
-    </ClInclude>
     <ClInclude Include="ApplicationFlow\Modules\SimThreadStruct.h">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
@@ -58,6 +58,12 @@
       <Filter>ApplicationFlow\Phases</Filter>
     </ClInclude>
     <ClInclude Include="ApplicationFlow\Phases\MainPhaseBase.h">
+      <Filter>ApplicationFlow\Phases</Filter>
+    </ClInclude>
+    <ClInclude Include="ApplicationFlow\ProcessingUnits\RenderProcessingUnit.h">
+      <Filter>ApplicationFlow\ProcessingUnits</Filter>
+    </ClInclude>
+    <ClInclude Include="ApplicationFlow\Phases\RenderRunningPhase.h">
       <Filter>ApplicationFlow\Phases</Filter>
     </ClInclude>
   </ItemGroup>

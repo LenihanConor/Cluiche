@@ -79,9 +79,6 @@ namespace Cluiche
 		mSimThreadStruct.Initialize(&mRunning, mAwesomiumUISystem, &mInputToSimFrameStream, &mSimToRenderFrameStream);
 		mSimThread = DIA_NEW(std::thread(std::ref(mSimThreadStruct)));
 
-		mRenderThreadStruct.Initialize(&mRunning, &mSimToRenderFrameStream, canvas);
-		mRenderThread = DIA_NEW(std::thread(std::ref(mRenderThreadStruct)));
-
 		return StateObject::OpertionResponse::kImmediate;
 	}
 
@@ -142,9 +139,6 @@ namespace Cluiche
 
 		mSimThread->join();
 		DIA_DELETE(mSimThread);
-
-		mRenderThread->join();
-		DIA_DELETE(mRenderThread);
 
 		mWindowFactory.Destroy(window);
 	}
