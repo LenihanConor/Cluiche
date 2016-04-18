@@ -46,18 +46,15 @@ namespace Dia
 
 			virtual bool FlaggedToStopUpdating()const = 0;
 
-		protected:
-			ProcessingUnit* GetAssociatedProcessingUnit();
-			const ProcessingUnit* GetAssociatedProcessingUnit()const;
-
-			template <class T> inline
-			T*	GetModule() { return static_cast<T*>(GetModule(T::kUniqueId));}
-
-			template <class T> inline
-			const T* GetModule() const{ return static_cast<const T*>(GetModule(T::kUniqueId));}
+			template <class T> inline T* GetModule() { return static_cast<T*>(GetModule(T::kUniqueId)); }
+			template <class T> inline const T* GetModule() const { return static_cast<const T*>(GetModule(T::kUniqueId)); }
 
 			Module* GetModule(const Dia::Core::StringCRC& crc);
 			const Module* GetModule(const Dia::Core::StringCRC& crc)const;
+
+		protected:
+			ProcessingUnit* GetAssociatedProcessingUnit();
+			const ProcessingUnit* GetAssociatedProcessingUnit()const;
 
 		private:
 			typedef Dia::Core::Containers::HashTable<Dia::Core::StringCRC, Module*, Dia::Core::StringCRCHashFunctor> ModuleTable;
@@ -65,7 +62,7 @@ namespace Dia
 
 			// Inherited from StateObject
 			virtual void DoBuildDependancies(IBuildDependencyData* buildDependencies)override{};
-			virtual StateObject::OpertionResponse DoStart()override;
+			virtual StateObject::OpertionResponse DoStart(const IStartData* startData)override;
 			virtual void DoUpdate()override;
 			virtual void DoStop() override;
 

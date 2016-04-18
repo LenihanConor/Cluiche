@@ -34,7 +34,7 @@ namespace Cluiche
 		return !mRunning;
 	}
 
-	Dia::Application::StateObject::OpertionResponse MainKernelModule::DoStart()
+	Dia::Application::StateObject::OpertionResponse MainKernelModule::DoStart(const IStartData* startData)
 	{
 		//Setup paths
 		Dia::Core::PathStoreConfig pathStoreConfig;

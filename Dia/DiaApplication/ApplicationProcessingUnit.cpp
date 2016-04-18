@@ -209,14 +209,18 @@ namespace Dia
 		}
 		
 		//---------------------------------------------------------------------------------------------------------
-		StateObject::OpertionResponse ProcessingUnit::DoStart()
+		StateObject::OpertionResponse ProcessingUnit::DoStart(const IStartData* startData)
 		{
 			DIA_ASSERT(mCurrentPhase, "For Processing Unit %s Current Phase is NULL, cannot start", GetUniqueId().AsChar());
 
+			PrePhaseStart(startData);
+
 			if (mCurrentPhase != NULL)
 			{
-				mCurrentPhase->Start();
+				mCurrentPhase->Start(startData);
 			}
+
+			PostPhaseStart(startData);
 
 			// TODO: Currently only support immediate starts
 			return StateObject::OpertionResponse::kImmediate;
@@ -269,10 +273,14 @@ namespace Dia
 		{
 			DIA_ASSERT(mCurrentPhase, "For Processing Unit %s Current Phase is NULL, cannot stop", GetUniqueId().AsChar());
 
+			PrePhaseStop();
+
 			if (mCurrentPhase != nullptr)
 			{
 				mCurrentPhase->Stop();
 			}
+
+			PostPhaseStop();
 		}
 
 		//---------------------------------------------------------------------------------------------------------

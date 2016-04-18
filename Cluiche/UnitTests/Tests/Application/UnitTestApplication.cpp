@@ -48,7 +48,7 @@ namespace UnitTests
 			AddDependancy(GetAssociatedProcessingUnit()->GetModule(MyModuleA::kUniqueId));
 		}
 
-		StateObject::OpertionResponse DoStart() override
+		StateObject::OpertionResponse DoStart(const IStartData* startData) override
 		{
 		
 			std::future<void> fut = std::async(MyModuleB::ThreadedStartTask, this);

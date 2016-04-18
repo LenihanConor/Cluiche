@@ -64,11 +64,18 @@ namespace Dia
 				, kImmediate \
 				);
 
+			class IStartData
+			{
+			public:
+				IStartData() {};
+				virtual ~IStartData();
+			};
+
 			StateObject(const Dia::Core::StringCRC& uniqueId);
 
 			void BuildDependancies(IBuildDependencyData* buildDependencies);
 
-			OpertionResponse Start();			
+			OpertionResponse Start(const IStartData* startData = nullptr);
 			void NotifyReadyToStartAsync();
 
 			void Update();
@@ -84,7 +91,7 @@ namespace Dia
 		protected:
 			virtual void DoBuildDependancies(IBuildDependencyData* buildDependencies) = 0;
 
-			virtual OpertionResponse DoStart() = 0;
+			virtual OpertionResponse DoStart(const IStartData* startData) = 0;
 
 			virtual void DoUpdate() = 0;
 

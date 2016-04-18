@@ -71,9 +71,6 @@ namespace Dia
 
 			bool ContainsModule(const Dia::Core::StringCRC& crc)const;
 
-			virtual void PrePhaseUpdate(){}
-			virtual void PostPhaseUpdate(){}
-
 		protected:
 			template <class T> inline
 			T*	GetModule() { return static_cast<T*>(GetModule(T::kUniqueId)); }
@@ -89,9 +86,19 @@ namespace Dia
 		private:
 			// Inherited from StateObject
 			virtual void DoBuildDependancies(IBuildDependencyData* buildDependencies)override final;
-			virtual StateObject::OpertionResponse DoStart() override final;
+			virtual StateObject::OpertionResponse DoStart(const IStartData* startData) override final;
 			virtual void DoUpdate()override final;
 			virtual void DoStop() override final;
+
+			// Virtual functions that allow us to hook into different times
+			virtual void PrePhaseStart(const IStartData* startData) {}	// Before the phase and the new modules have started
+			virtual void PostPhaseStart(const IStartData* startData) {} // After the current phase and all the modules have started
+
+			virtual void PrePhaseUpdate() {}
+			virtual void PostPhaseUpdate() {}
+
+			virtual void PrePhaseStop() {}
+			virtual void PostPhaseStop() {}
 
 			// PU frequency variables
 			bool mEnableThreadLimiter;

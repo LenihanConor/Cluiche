@@ -32,20 +32,23 @@ namespace Cluiche
 		bool FlaggedToStopUpdating()const;
 
 		//TODO this is hack for the moment. The goal is that this will be a seperate module
+		bool mRunning;
 		Dia::UI::Awesomium::UISystem* mAwesomiumUISystem;
+		Dia::Graphics::ICanvas* canvas;
+		Dia::Core::FrameStream<Dia::Graphics::FrameData> mSimToRenderFrameStream;
 
 	private:
-		virtual StateObject::OpertionResponse DoStart() override;
+		virtual StateObject::OpertionResponse DoStart(const IStartData* startData) override;
 		virtual void DoUpdate() override;
 		virtual void DoStop() override;
 
-		bool mRunning;
+		
 		
 		Dia::Core::TimeServer mTimeServer;
 		
 		Dia::Input::InputSourceManager mInputSourceManager;
 		Dia::Core::FrameStream<Dia::Input::EventData> mInputToSimFrameStream;
-		Dia::Core::FrameStream<Dia::Graphics::FrameData> mSimToRenderFrameStream;
+		
 
 		SimThreadStruct mSimThreadStruct;
 		RenderThreadStruct mRenderThreadStruct;
@@ -60,6 +63,6 @@ namespace Cluiche
 
 		// Abstract Interfaces
 		Dia::Window::IWindow* window;
-		Dia::Graphics::ICanvas* canvas;
+		
 	};
 }

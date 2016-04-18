@@ -64,7 +64,7 @@ namespace Dia
 		//		- If it gets blocked that it has no modules with no dependancies this should assert and fail to start
 		//		- A module can flag itself as an async start in this case we will not remove it from the start list until it is finished
 		//		- This means we may get stuck waiting for dependencies to end before we can continue
-		StateObject::OpertionResponse Phase::DoStart()
+		StateObject::OpertionResponse Phase::DoStart(const IStartData* startData)
 		{
 			BeforeModulesStart();
 
@@ -94,7 +94,7 @@ namespace Dia
 
 					if (pModule != nullptr && pModule->HasAllDependanciesStarted())
 					{
-						StateObject::OpertionResponse response = pModule->Start();
+						StateObject::OpertionResponse response = pModule->Start(startData);
 
 						mStoppingModuleOrder.Add(pModule);
 
