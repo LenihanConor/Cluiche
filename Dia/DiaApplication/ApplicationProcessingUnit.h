@@ -71,6 +71,8 @@ namespace Dia
 
 			bool ContainsModule(const Dia::Core::StringCRC& crc)const;
 
+			void operator()(); // Used if we are threading
+
 		protected:
 			template <class T> inline
 			T*	GetModule() { return static_cast<T*>(GetModule(T::kUniqueId)); }

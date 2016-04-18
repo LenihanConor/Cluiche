@@ -227,6 +227,12 @@ namespace Dia
 		}
 
 		//---------------------------------------------------------------------------------------------------------
+		void ProcessingUnit::operator()()
+		{
+			Update();
+		}
+	
+		//---------------------------------------------------------------------------------------------------------
 		void ProcessingUnit::DoUpdate()
 		{
 			DIA_ASSERT(mCurrentPhase, "For Processing Unit %s Current Phase is NULL, cannot update", GetUniqueId().AsChar());
