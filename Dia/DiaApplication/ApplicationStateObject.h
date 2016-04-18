@@ -68,7 +68,7 @@ namespace Dia
 			{
 			public:
 				IStartData() {};
-				virtual ~IStartData();
+				virtual ~IStartData() {};
 			};
 
 			StateObject(const Dia::Core::StringCRC& uniqueId);
