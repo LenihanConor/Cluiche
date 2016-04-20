@@ -7,12 +7,12 @@
 #include <DiaCore/Type/TypeFacade.h>
 #include <DiaCore/FilePath/SerializedFileLoad.h>
 #include <DiaCore/Core/Assert.h>
-#include <DiaSFML/RenderWindowFactory.h>
 #include <DiaSFML/RenderWindow.h>
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaCore/FilePath/PathStore.h>
 #include <DiaGraphics/Interface/ICanvas.h>
 #include <DiaInput/IInputSource.h>
+
 
 namespace Cluiche
 {

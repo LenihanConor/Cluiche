@@ -6,9 +6,12 @@
 #include <DiaInput/ConsoleGamepadManager.h>
 #include <DiaCore/Frame/FrameStream.h>
 #include <DiaUIAwesomium/AwesomiumUISystem.h>
+#include <DiaGraphics/Frame/FrameData.h>
+#include <DiaSFML/RenderWindowFactory.h>
 
 namespace Dia { namespace Application { class ProcessingUnit; } }
 namespace Dia { namespace UI { namespace Awesomium { class UISystem; } } }
+namespace Dia { namespace Graphics { class ICanvas; } }
 
 namespace Cluiche
 {
