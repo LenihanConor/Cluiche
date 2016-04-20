@@ -48,10 +48,10 @@ namespace Cluiche
 		Dia::Input::ConsoleGamepadManager mGamepadManager;
 		Dia::SFML::RenderWindowFactory mWindowFactory;
 
-		Dia::SFML::RenderWindow* renderWindow; // TODO CLEAN UP
+		Dia::SFML::RenderWindow* mRenderWindow; // TODO CLEAN UP
 
 		// Abstract Interfaces
-		Dia::Window::IWindow* window;
+		Dia::Window::IWindow* mWindow;
 		
 	};
 }

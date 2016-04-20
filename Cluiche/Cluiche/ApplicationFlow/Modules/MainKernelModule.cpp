@@ -57,19 +57,19 @@ namespace Cluiche
 		Dia::Window::IWindow::Settings windowSetting("GraphicsTestWithUI", Dia::Window::IWindow::Settings::Dimensions(900, 700), Dia::Window::IWindow::Settings::Style());
 		Dia::Graphics::ICanvas::Settings canvasSettings(Dia::Graphics::ICanvas::Settings::VSyncEnum::kEnable, 0, 0, 2, 0);
 
-		renderWindow = static_cast<Dia::SFML::RenderWindow*>(mWindowFactory.Create(windowSetting, canvasSettings));
+		mRenderWindow = static_cast<Dia::SFML::RenderWindow*>(mWindowFactory.Create(windowSetting, canvasSettings));
 
 		// Abstract Interfaces
-		window = renderWindow;
-		canvas = renderWindow;			
+		mWindow = mRenderWindow;
+		canvas = mRenderWindow;			
 
 		// Setup UI
-		mAwesomiumUISystem = DIA_NEW(Dia::UI::Awesomium::UISystem(window));
+		mAwesomiumUISystem = DIA_NEW(Dia::UI::Awesomium::UISystem(mWindow));
 		mAwesomiumUISystem->Initialize();
 
 		// We are using SFML for keyboard and mouse support
-		renderWindow->ListenForInputSources(Dia::Core::BitArray8(Dia::SFML::InputSource::ESources::kSystem | Dia::SFML::InputSource::ESources::kKeyboard | Dia::SFML::InputSource::ESources::kMouse));	// We are getting mouse and keyboard only from SFML
-		mInputSourceManager.AddInputSource(renderWindow);
+		mRenderWindow->ListenForInputSources(Dia::Core::BitArray8(Dia::SFML::InputSource::ESources::kSystem | Dia::SFML::InputSource::ESources::kKeyboard | Dia::SFML::InputSource::ESources::kMouse));	// We are getting mouse and keyboard only from SFML
+		mInputSourceManager.AddInputSource(mRenderWindow);
 
 		// We are using a dia specific source for the gamepad
 		mInputSourceManager.AddInputSource(&mGamepadManager); // Getting gamepads from the DIA	
@@ -134,6 +134,6 @@ namespace Cluiche
 	{
 		DIA_DELETE(mAwesomiumUISystem);
 
-		mWindowFactory.Destroy(window);
+		mWindowFactory.Destroy(mWindow);
 	}
 }
