@@ -5,9 +5,6 @@
     <ClCompile Include="ApplicationFlow\ProcessingUnits\MainProcessingUnit.cpp">
       <Filter>ApplicationFlow\ProcessingUnits</Filter>
     </ClCompile>
-    <ClCompile Include="ApplicationFlow\Modules\SimThreadStruct.cpp">
-      <Filter>ApplicationFlow\Modules</Filter>
-    </ClCompile>
     <ClCompile Include="ApplicationFlow\Modules\MainKernelModule.cpp">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClCompile>
@@ -24,6 +21,15 @@
       <Filter>ApplicationFlow\ProcessingUnits</Filter>
     </ClCompile>
     <ClCompile Include="ApplicationFlow\Phases\RenderRunningPhase.cpp">
+      <Filter>ApplicationFlow\Phases</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\ProcessingUnits\SimProcessingUnit.cpp">
+      <Filter>ApplicationFlow\ProcessingUnits</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\Phases\SimBootPhase.cpp">
+      <Filter>ApplicationFlow\Phases</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\Phases\SimBootStrapPhase.cpp">
       <Filter>ApplicationFlow\Phases</Filter>
     </ClCompile>
   </ItemGroup>
@@ -45,9 +51,6 @@
     <ClInclude Include="ApplicationFlow\ProcessingUnits\MainProcessingUnit.h">
       <Filter>ApplicationFlow\ProcessingUnits</Filter>
     </ClInclude>
-    <ClInclude Include="ApplicationFlow\Modules\SimThreadStruct.h">
-      <Filter>ApplicationFlow\Modules</Filter>
-    </ClInclude>
     <ClInclude Include="ApplicationFlow\Modules\MainKernelModule.h">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
@@ -64,6 +67,15 @@
       <Filter>ApplicationFlow\ProcessingUnits</Filter>
     </ClInclude>
     <ClInclude Include="ApplicationFlow\Phases\RenderRunningPhase.h">
+      <Filter>ApplicationFlow\Phases</Filter>
+    </ClInclude>
+    <ClInclude Include="ApplicationFlow\ProcessingUnits\SimProcessingUnit.h">
+      <Filter>ApplicationFlow\ProcessingUnits</Filter>
+    </ClInclude>
+    <ClInclude Include="ApplicationFlow\Phases\SimBootPhase.h">
+      <Filter>ApplicationFlow\Phases</Filter>
+    </ClInclude>
+    <ClInclude Include="ApplicationFlow\Phases\SimBootStrapPhase.h">
       <Filter>ApplicationFlow\Phases</Filter>
     </ClInclude>
   </ItemGroup>

@@ -76,9 +76,6 @@ namespace Cluiche
 
 		canvas->SetActiveContext(false); // Need to disable active context before starting rendering thread
 
-		mSimThreadStruct.Initialize(&mRunning, mAwesomiumUISystem, &mInputToSimFrameStream, &mSimToRenderFrameStream);
-		mSimThread = DIA_NEW(std::thread(std::ref(mSimThreadStruct)));
-
 		return StateObject::OpertionResponse::kImmediate;
 	}
 
@@ -136,9 +133,6 @@ namespace Cluiche
 	void MainKernelModule::DoStop()
 	{
 		DIA_DELETE(mAwesomiumUISystem);
-
-		mSimThread->join();
-		DIA_DELETE(mSimThread);
 
 		mWindowFactory.Destroy(window);
 	}

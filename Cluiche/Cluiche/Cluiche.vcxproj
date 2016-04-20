@@ -12,24 +12,28 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ApplicationFlow\Modules\MainKernelModule.cpp" />
-    <ClCompile Include="ApplicationFlow\Modules\SimThreadStruct.cpp" />
     <ClCompile Include="ApplicationFlow\Phases\MainBootPhase.cpp" />
     <ClCompile Include="ApplicationFlow\Phases\MainBootStrapPhase.cpp" />
     <ClCompile Include="ApplicationFlow\Phases\MainPhaseBase.cpp" />
     <ClCompile Include="ApplicationFlow\Phases\RenderRunningPhase.cpp" />
+    <ClCompile Include="ApplicationFlow\Phases\SimBootPhase.cpp" />
+    <ClCompile Include="ApplicationFlow\Phases\SimBootStrapPhase.cpp" />
     <ClCompile Include="ApplicationFlow\ProcessingUnits\MainProcessingUnit.cpp" />
     <ClCompile Include="ApplicationFlow\ProcessingUnits\RenderProcessingUnit.cpp" />
+    <ClCompile Include="ApplicationFlow\ProcessingUnits\SimProcessingUnit.cpp" />
     <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApplicationFlow\Modules\MainKernelModule.h" />
-    <ClInclude Include="ApplicationFlow\Modules\SimThreadStruct.h" />
     <ClInclude Include="ApplicationFlow\Phases\MainPhaseBase.h" />
     <ClInclude Include="ApplicationFlow\Phases\MainBootPhase.h" />
     <ClInclude Include="ApplicationFlow\Phases\MainBootStrapPhase.h" />
     <ClInclude Include="ApplicationFlow\Phases\RenderRunningPhase.h" />
+    <ClInclude Include="ApplicationFlow\Phases\SimBootPhase.h" />
+    <ClInclude Include="ApplicationFlow\Phases\SimBootStrapPhase.h" />
     <ClInclude Include="ApplicationFlow\ProcessingUnits\MainProcessingUnit.h" />
     <ClInclude Include="ApplicationFlow\ProcessingUnits\RenderProcessingUnit.h" />
+    <ClInclude Include="ApplicationFlow\ProcessingUnits\SimProcessingUnit.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{CEC960D4-B8B3-463B-9F68-716C5C3C4315}</ProjectGuid>

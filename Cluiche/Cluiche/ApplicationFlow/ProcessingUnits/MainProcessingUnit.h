@@ -7,6 +7,7 @@
 #include "ApplicationFlow/Phases/MainBootStrapPhase.h"
 
 #include "ApplicationFlow/ProcessingUnits/RenderProcessingUnit.h"
+#include "ApplicationFlow/ProcessingUnits/SimProcessingUnit.h"
 
 namespace Cluiche
 {
@@ -27,8 +28,11 @@ namespace Cluiche
 		std::thread* mRenderThread;
 		Cluiche::RenderProcessingUnit mRenderingPU;
 
+		std::thread* mSimThread;
+		Cluiche::SimProcessingUnit mSimPU;
+
 		//Phases
-		Cluiche::MainBootPhase mRunningPhase;
+		Cluiche::MainBootPhase mBootPhase;
 		Cluiche::MainBootStrapPhase mBootStrapPhase;
 
 		//Modules

@@ -29,7 +29,7 @@ namespace Cluiche
 
 	private:
 		virtual void PostPhaseStart(const IStartData* startData) override final;
-		virtual void RenderProcessingUnit::PostPhaseUpdate() override final;
+		virtual void PostPhaseUpdate() override final;
 		virtual bool FlaggedToStopUpdating()const override final;
 		
 		// Shared resources

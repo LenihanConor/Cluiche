@@ -9,8 +9,6 @@
 #include <DiaSFML/RenderWindow.h>
 #include <DiaUIAwesomium/AwesomiumUISystem.h>
 
-#include "SimThreadStruct.h"
-
 namespace Dia { namespace Application { class ProcessingUnit; } }
 namespace Dia { namespace UI { namespace Awesomium { class UISystem; } } }
 
@@ -36,6 +34,7 @@ namespace Cluiche
 		Dia::UI::Awesomium::UISystem* mAwesomiumUISystem;
 		Dia::Graphics::ICanvas* canvas;
 		Dia::Core::FrameStream<Dia::Graphics::FrameData> mSimToRenderFrameStream;
+		Dia::Core::FrameStream<Dia::Input::EventData> mInputToSimFrameStream;
 
 	private:
 		virtual StateObject::OpertionResponse DoStart(const IStartData* startData) override;
@@ -45,11 +44,6 @@ namespace Cluiche
 		Dia::Core::TimeServer mTimeServer;
 		
 		Dia::Input::InputSourceManager mInputSourceManager;
-		Dia::Core::FrameStream<Dia::Input::EventData> mInputToSimFrameStream;
-		
-		SimThreadStruct mSimThreadStruct;
-
-		std::thread* mSimThread;
 
 		Dia::Input::ConsoleGamepadManager mGamepadManager;
 		Dia::SFML::RenderWindowFactory mWindowFactory;

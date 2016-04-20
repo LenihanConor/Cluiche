@@ -1,231 +1,124 @@
-////////////////////////////////////////////////////////////////////////////////
-// Filename: ProcessingModule.cpp
-////////////////////////////////////////////////////////////////////////////////
-#include "DiaApplication/ApplicationProcessingUnit.h"
+#include "ApplicationFlow/ProcessingUnits/SimProcessingUnit.h"
 
-#include <DiaCore/Core/Assert.h>
-#include <DiaCore/Type/BasicTypeDefines.h>
+#include <DiaGraphics/Interface/ICanvas.h>
+#include <DiaUI/IUISystem.h>
 
-#include "DiaApplication/ApplicationPhase.h"
-#include "DiaApplication/ApplicationModule.h"
-
-namespace Dia
+namespace Cluiche
 {
-	namespace Application
+	Dia::Maths::Vector2D dynamicCirclePos(0.0f, 0.0f);
+	Dia::Graphics::RGBA dynamicCircleColour = Dia::Graphics::RGBA::Red;
+
+	const Dia::Core::StringCRC SimProcessingUnit::kUniqueId("SimProcessingUnit");
+
+	SimProcessingUnit::SimProcessingUnit()
+		: Dia::Application::ProcessingUnit(kUniqueId, 30.0f)
+		, mTimeServer(30.0f, Dia::Core::TimeAbsolute::Zero())
+		, mRunning(nullptr)
+		, mUISystem(nullptr)
+		, mInputToSimFrameStream(nullptr)
+		, mSimToRenderFrameStream(nullptr)
+		, mBootPhase(this)
+		, mBootStrapPhase(this)
 	{
-		//---------------------------------------------------------------------------------------------------------
-		ProcessingUnit::ProcessingUnit(const Dia::Core::StringCRC& uniqueId, 
-										unsigned int initialModuleMapSize, 
-										unsigned int initialPhaseMapSize)
-			: StateObject(uniqueId)
-			, mCurrentPhase(NULL)
-			, mAssociatedPhases(initialPhaseMapSize, initialPhaseMapSize * 2)
-			, mAssociatedModules(initialModuleMapSize, initialModuleMapSize * 2)
-			, mPhaseTransitions(initialModuleMapSize, initialModuleMapSize * 2)
-		{}
+		// Setup Phase Transitions
+		SetInitialPhase(&mBootPhase);
+		AddPhaseTransiton(&mBootPhase, &mBootStrapPhase);
 
-		//---------------------------------------------------------------------------------------------------------
-		void ProcessingUnit::Initialize()
+		// We call this from here to build all dependancies. We dont need to do this here, intead 
+		// we could of done it in the code below if there was dynamic adding of modules or phases
+		// but for this cas case this is a nicer cleaner solution.
+		Initialize();
+	}
+
+	void SimProcessingUnit::PostPhaseStart(const Dia::Application::StateObject::IStartData* startData)
+	{
+		DIA_ASSERT(startData != nullptr, "Starting the render PU needs to created with some start data");
+
+		const StartData* simStartData = static_cast<const StartData*>(startData);
+		mRunning = simStartData->mRunning;
+		mSimToRenderFrameStream = simStartData->mFrameStream;
+		mUISystem = simStartData->mUISystem;
+		mInputToSimFrameStream = simStartData->mInputToSimFrameStream;
+	}
+
+	void SimProcessingUnit::PostPhaseUpdate()
+	{
+		// All going to Sim thread
+
+		Dia::Core::Containers::DynamicArrayC<const Dia::Input::EventData*, 32> inputEventPtrBuffer;
+		mInputToSimFrameStream->FetchAllDataUpToTime(mTimeServer.GetTime(), inputEventPtrBuffer);
+
+		for (unsigned int i = 0; i < inputEventPtrBuffer.Size(); i++)
 		{
-			DIA_ASSERT(GetState() == StateEnum::kConstructed, "Initializing %s but in wrong state: %s", GetUniqueId().AsChar(), GetState().AsString());
+			const Dia::Input::EventData* pEventData = inputEventPtrBuffer[i];
 
-			if (GetState() == StateEnum::kConstructed)
-			{ 
-				BuildDependancies();
-			}
-		}
-
-		//---------------------------------------------------------------------------------------------------------
-		void ProcessingUnit::AddPhase(Phase* phase)
-		{
-			DIA_ASSERT(phase != NULL, "Null phase being added for ProcessingUnit %s", GetUniqueId().AsChar());
-
-			if (!mAssociatedPhases.ContainsKey(phase->GetUniqueId()))
+			// This is where an application will handle any user input
+			for (unsigned int j = 0; j < pEventData->Size(); j++)
 			{
-				mAssociatedPhases.Add(phase->GetUniqueId(), phase);
-			}
-		}
-
-		//---------------------------------------------------------------------------------------------------------
-		void ProcessingUnit::AddModule(Module* module)
-		{
-			DIA_ASSERT(module != NULL, "Null module being added for ProcessingUnit %s", GetUniqueId().AsChar());
-
-			if (!mAssociatedModules.ContainsKey(module->GetUniqueId()))
-			{
-				mAssociatedModules.Add(module->GetUniqueId(), module);
-			}
-		}
-
-		//---------------------------------------------------------------------------------------------------------
-		void ProcessingUnit::SetInitialPhase(Phase* phase)
-		{
-			if (phase == NULL)
-			{
-				DIA_ASSERT(0, "Initial Phase can not be NULL for ProcessingUnit %s", GetUniqueId().AsChar());
-
-				return;
-			}
-
-			if (mCurrentPhase != NULL)
-			{
-				DIA_ASSERT(0, "Current Phase already set for ProcessingUnit %s", GetUniqueId().AsChar());
-
-				return;
-			}
-			
-			if (!mAssociatedPhases.ContainsKey(phase->GetUniqueId()))
-			{
-
-				DIA_ASSERT(0, "Phase %s has not been added to ProcessingUnit %s", phase->GetUniqueId().AsChar(), GetUniqueId().AsChar());
-
-				return;
-			}
-			mCurrentPhase = phase;
-		}
-
-		//---------------------------------------------------------------------------------------------------------
-		void ProcessingUnit::AddPhaseTransiton(Phase* startPhase, Phase* endPhase)
-		{
-			DIA_ASSERT(startPhase, "Null start phase transition being added to %s", GetUniqueId().AsChar());
-			DIA_ASSERT(endPhase, "Null end phase transition being added to %s", GetUniqueId().AsChar());
-			DIA_ASSERT(mAssociatedPhases.ContainsKey(startPhase->GetUniqueId()), "Phase %s not associated to Processing Unit %s", startPhase->GetUniqueId().AsChar(), GetUniqueId().AsChar());
-			DIA_ASSERT(mAssociatedPhases.ContainsKey(endPhase->GetUniqueId()), "Phase %s not associated to Processing Unit %s", endPhase->GetUniqueId().AsChar(), GetUniqueId().AsChar());
-
-			if (mPhaseTransitions.ContainsKey(startPhase->GetUniqueId()))
-			{
-				PhaseTransitionList& list = mPhaseTransitions.GetItem(startPhase->GetUniqueId());
-				list.Add(endPhase->GetUniqueId());	
-			}
-			else
-			{
-				// Need to create the new list of phases
-				PhaseTransitionList newList;
-				newList.Add(endPhase->GetUniqueId());
-
-				mPhaseTransitions.Add(startPhase->GetUniqueId(), newList);
-			}
-			
-		}
-
-		//---------------------------------------------------------------------------------------------------------
-		// A single transition is where we move from the current phase to any phases that is allowed
-		void ProcessingUnit::TransitionPhase(const Dia::Core::StringCRC& phaseCrc)
-		{
-			DIA_ASSERT(mCurrentPhase, "Null current phase %s", GetUniqueId().AsChar());
-			DIA_ASSERT(mAssociatedPhases.ContainsKey(phaseCrc), "Phase %s not associated to Processing Unit %s", phaseCrc.AsChar(), GetUniqueId().AsChar());
-
-			Phase* endPhase = mAssociatedPhases.GetItem(phaseCrc);
-			PhaseTransitionList& list = mPhaseTransitions.GetItem(mCurrentPhase->GetUniqueId());
-
-			DIA_ASSERT(list.FindIndex(phaseCrc) != -1, "Cannot transition from %s to %s in Processing Unit %s", mCurrentPhase->GetUniqueId().AsChar(), phaseCrc.AsChar(), GetUniqueId().AsChar());
-
-			mCurrentPhase->TransitionTo(endPhase);
-
-			mCurrentPhase = endPhase;
-		}
-
-		//---------------------------------------------------------------------------------------------------------
-		// A single transition is where we move from the current phase to any phases that is allowed
-		void ProcessingUnit::QueuePhaseTransition(const Dia::Core::StringCRC& phaseCrc)
-		{
-			DIA_ASSERT(mCurrentPhase, "Null current phase %s", GetUniqueId().AsChar());
-			DIA_ASSERT(mAssociatedPhases.ContainsKey(phaseCrc), "Phase %s not associated to Processing Unit %s", phaseCrc.AsChar(), GetUniqueId().AsChar());
-
-			mQueuedTransition.Add(phaseCrc);
-		}
-
-		//---------------------------------------------------------------------------------------------------------
-		Module* ProcessingUnit::GetModule(const Dia::Core::StringCRC& crc)
-		{
-			return mAssociatedModules.GetItem(crc);
-		}
-
-		//---------------------------------------------------------------------------------------------------------
-		const Module* ProcessingUnit::GetModule(const Dia::Core::StringCRC& crc)const
-		{
-			return mAssociatedModules.GetItemConst(crc);
-		}
-
-		//---------------------------------------------------------------------------------------------------------
-		bool ProcessingUnit::ContainsModule(const Dia::Core::StringCRC& crc)const
-		{
-			return (nullptr != GetModule(crc));
-		}
-
-		//---------------------------------------------------------------------------------------------------------
-		// 
-		// Make sure all modules and there dependancies are in the master module/phase list for this PU, as well
-		// as iterating through each phase and module so that it knows its dependencies
-		void ProcessingUnit::DoBuildDependancies()
-		{
-			for (unsigned int i = 0; i < mAssociatedModules.Size(); i++)
-			{
-				Module* module = mAssociatedModules.GetItemByIndex(i);
-
-				module->BuildDependancies();
-
-				const unsigned int numberDependencies = module->GetNumberOfDependancies();
-				for (unsigned int j = 0; j < numberDependencies; j++)
+				Dia::Input::Event event = (*pEventData)[j];
+				switch (event.type)
 				{
-					Module* dependency = module->GetDependencyFromIndex(j);
+				case Dia::Input::Event::EType::kConsoleGamepadAnalogStickMove:
+					dynamicCirclePos += Dia::Maths::Vector2D(event.consoleGamepadMoveEvent.x, event.consoleGamepadMoveEvent.y);
+					break;
+				case Dia::Input::Event::EType::kConsoleGamepadButtonPressed:
+					switch (event.consoleGamepadButtonEvent.button)
+					{
+					case Dia::Input::ConsoleGamepad::EButtonID::A:
+						dynamicCircleColour = Dia::Graphics::RGBA::Green;
+						break;
+					case Dia::Input::ConsoleGamepad::EButtonID::B:
+						dynamicCircleColour = Dia::Graphics::RGBA::Red;
+						break;
+					case Dia::Input::ConsoleGamepad::EButtonID::X:
+						dynamicCircleColour = Dia::Graphics::RGBA::Blue;
+						break;
+					case Dia::Input::ConsoleGamepad::EButtonID::Y:
+						dynamicCircleColour = Dia::Graphics::RGBA::Yellow;
+						break;
+					}
 
-					AddModule(dependency);
+					break;
+				case Dia::Input::Event::EType::kMouseMoved:
+				{
+					//			mUISystem.InjectMouseMove(event.mouseMove.x, event.mouseMove.y);
+				}
+				break;
+				case Dia::Input::Event::EType::kMouseButtonPressed:
+				{
+					//			mUISystem.InjectMouseDown(event.mouseButton.AsMouseButton());
+				}
+				break;
+				default:
+					break;
 				}
 			}
-
-			for (unsigned int i = 0; i < mAssociatedPhases.Size(); i++)
-			{
-				Phase* phase = mAssociatedPhases.GetItemByIndex(i);
-				
-				phase->BuildDependancies();
-			}
 		}
-		
-		//---------------------------------------------------------------------------------------------------------
-		StateObject::OpertionResponse ProcessingUnit::DoStart()
+
+		mInputToSimFrameStream->GarbageCollectAllFramesOlderThan(mTimeServer.GetTime());
+
+		Dia::Graphics::FrameData renderFrameBuffer;
+
+		renderFrameBuffer.RequestDraw(Dia::Graphics::DebugFrameDataCircle2D(Dia::Maths::Vector2D(100.0f, 100.0f), 75.0f));
+		renderFrameBuffer.RequestDraw(Dia::Graphics::DebugFrameDataCircle2D(dynamicCirclePos, 25.0f, dynamicCircleColour));
+		renderFrameBuffer.RequestDraw(Dia::Graphics::DebugFrameDataLine2D(Dia::Maths::Vector2D(100.0f, 100.0f), dynamicCirclePos));
+
+		// Update 
+		if (mUISystem->IsPageLoaded())
 		{
-			DIA_ASSERT(mCurrentPhase, "For Processing Unit %s Current Phase is NULL, cannot start", GetUniqueId().AsChar());
-
-			if (mCurrentPhase != NULL)
-			{
-				mCurrentPhase->Start();
-			}
-
-			// TODO: Currently only support immediate starts
-			return StateObject::OpertionResponse::kImmediate;
+			Dia::UI::UIDataBuffer uiBuffer;
+			mUISystem->FetchUIDataBuffer(uiBuffer);
+			renderFrameBuffer.RequestDrawUI(uiBuffer);
 		}
 
-		//---------------------------------------------------------------------------------------------------------
-		void ProcessingUnit::DoUpdate()
-		{
-			PrePhaseUpdate();
+		mSimToRenderFrameStream->InsertCopyOfDataToStream(renderFrameBuffer, mTimeServer.GetTime());
 
-			if (mCurrentPhase != nullptr)
-			{
-				mCurrentPhase->Update();
-			}
+		mTimeServer.Tick();
+	}
 
-			PostPhaseUpdate();
-
-			// If there are any transitioned phase move to them now
-			if (mQueuedTransition.Size() != 0)
-			{
-				Dia::Core::StringCRC nextTransitionCRC = mQueuedTransition[0];
-
-				mQueuedTransition.RemoveAt(0);
-
-				TransitionPhase(nextTransitionCRC);
-			}
-		}
-
-		//---------------------------------------------------------------------------------------------------------
-		void ProcessingUnit::DoStop()
-		{
-			if (mCurrentPhase != nullptr)
-			{
-				mCurrentPhase->Stop();
-			}
-		}
+	bool SimProcessingUnit::FlaggedToStopUpdating()const
+	{
+		bool isFlaggeToStop = !(*mRunning);
+		return isFlaggeToStop;
 	}
 }
