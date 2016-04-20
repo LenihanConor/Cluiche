@@ -1,22 +1,18 @@
 #include "ApplicationFlow/Modules/MainKernelModule.h"
 
-#include <DiaCore/Time/TimeAbsolute.h>
-#include <DiaCore/FilePath/PathStore.h>
-
-#include <DiaGraphics/Interface/ICanvas.h>
-
-#include <DiaInput/IInputSource.h>
-
-#include <DiaUI/Page.h>
-
 #include <thread>
 
 #include <DiaUI/IUISystem.h>
 #include <DiaCore/FilePath/PathStoreConfig.h>
-#include <DiaCore/Containers/Strings/StringWriter.h>
 #include <DiaCore/Type/TypeFacade.h>
 #include <DiaCore/FilePath/SerializedFileLoad.h>
 #include <DiaCore/Core/Assert.h>
+#include <DiaSFML/RenderWindowFactory.h>
+#include <DiaSFML/RenderWindow.h>
+#include <DiaCore/Time/TimeAbsolute.h>
+#include <DiaCore/FilePath/PathStore.h>
+#include <DiaGraphics/Interface/ICanvas.h>
+#include <DiaInput/IInputSource.h>
 
 namespace Cluiche
 {
@@ -57,19 +53,19 @@ namespace Cluiche
 		Dia::Window::IWindow::Settings windowSetting("GraphicsTestWithUI", Dia::Window::IWindow::Settings::Dimensions(900, 700), Dia::Window::IWindow::Settings::Style());
 		Dia::Graphics::ICanvas::Settings canvasSettings(Dia::Graphics::ICanvas::Settings::VSyncEnum::kEnable, 0, 0, 2, 0);
 
-		mRenderWindow = static_cast<Dia::SFML::RenderWindow*>(mWindowFactory.Create(windowSetting, canvasSettings));
+		Dia::SFML::RenderWindow* renderWindow = static_cast<Dia::SFML::RenderWindow*>(mWindowFactory.Create(windowSetting, canvasSettings));
 
 		// Abstract Interfaces
-		mWindow = mRenderWindow;
-		canvas = mRenderWindow;			
+		mWindow = renderWindow;
+		canvas = renderWindow;
 
 		// Setup UI
 		mAwesomiumUISystem = DIA_NEW(Dia::UI::Awesomium::UISystem(mWindow));
 		mAwesomiumUISystem->Initialize();
 
 		// We are using SFML for keyboard and mouse support
-		mRenderWindow->ListenForInputSources(Dia::Core::BitArray8(Dia::SFML::InputSource::ESources::kSystem | Dia::SFML::InputSource::ESources::kKeyboard | Dia::SFML::InputSource::ESources::kMouse));	// We are getting mouse and keyboard only from SFML
-		mInputSourceManager.AddInputSource(mRenderWindow);
+		renderWindow->ListenForInputSources(Dia::Core::BitArray8(Dia::SFML::InputSource::ESources::kSystem | Dia::SFML::InputSource::ESources::kKeyboard | Dia::SFML::InputSource::ESources::kMouse));	// We are getting mouse and keyboard only from SFML
+		mInputSourceManager.AddInputSource(renderWindow);
 
 		// We are using a dia specific source for the gamepad
 		mInputSourceManager.AddInputSource(&mGamepadManager); // Getting gamepads from the DIA	

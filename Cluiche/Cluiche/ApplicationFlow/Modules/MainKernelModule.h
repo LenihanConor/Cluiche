@@ -5,8 +5,6 @@
 #include <DiaInput/InputSourceManager.h>
 #include <DiaInput/ConsoleGamepadManager.h>
 #include <DiaCore/Frame/FrameStream.h>
-#include <DiaSFML/RenderWindowFactory.h>
-#include <DiaSFML/RenderWindow.h>
 #include <DiaUIAwesomium/AwesomiumUISystem.h>
 
 namespace Dia { namespace Application { class ProcessingUnit; } }
@@ -47,8 +45,6 @@ namespace Cluiche
 
 		Dia::Input::ConsoleGamepadManager mGamepadManager;
 		Dia::SFML::RenderWindowFactory mWindowFactory;
-
-		Dia::SFML::RenderWindow* mRenderWindow; // TODO CLEAN UP
 
 		// Abstract Interfaces
 		Dia::Window::IWindow* mWindow;
