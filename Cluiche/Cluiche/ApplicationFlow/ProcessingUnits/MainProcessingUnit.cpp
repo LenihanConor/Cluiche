@@ -30,8 +30,8 @@ namespace Cluiche
 		{
 			RenderProcessingUnit::StartData data;
 			data.mRunning = &(GetCurrentPhase()->GetModule<MainKernelModule>()->mRunning);
-			data.mFrameStream = &(GetCurrentPhase()->GetModule<MainKernelModule>()->mSimToRenderFrameStream);
-			data.mCanvas = GetCurrentPhase()->GetModule<MainKernelModule>()->canvas;
+			data.mFrameStream = &(GetCurrentPhase()->GetModule<MainKernelModule>()->GetSimToRenderFrameStream());
+			data.mCanvas = GetCurrentPhase()->GetModule<MainKernelModule>()->GetCanvas();
 
 			mRenderingPU.Start(&data);
 			mRenderThread = DIA_NEW(std::thread(std::ref(mRenderingPU)));
@@ -39,9 +39,9 @@ namespace Cluiche
 		{
 			SimProcessingUnit::StartData data;
 			data.mRunning = &(GetCurrentPhase()->GetModule<MainKernelModule>()->mRunning);
-			data.mFrameStream = &(GetCurrentPhase()->GetModule<MainKernelModule>()->mSimToRenderFrameStream);
-			data.mInputToSimFrameStream = &(GetCurrentPhase()->GetModule<MainKernelModule>()->mInputToSimFrameStream);
-			data.mUISystem = GetCurrentPhase()->GetModule<MainKernelModule>()->mAwesomiumUISystem;
+			data.mFrameStream = &(GetCurrentPhase()->GetModule<MainKernelModule>()->GetSimToRenderFrameStream());
+			data.mInputToSimFrameStream = &(GetCurrentPhase()->GetModule<MainKernelModule>()->GetInputToSimFrameStream());
+			data.mUISystem = GetCurrentPhase()->GetModule<MainKernelModule>()->GetUISystem();
 
 			mSimPU.Start(&data);
 			mSimThread = DIA_NEW(std::thread(std::ref(mSimPU)));

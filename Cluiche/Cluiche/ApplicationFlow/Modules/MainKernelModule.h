@@ -29,13 +29,24 @@ namespace Cluiche
 		MainKernelModule(Dia::Application::ProcessingUnit* associatedProcessingUnit);
 	
 		bool FlaggedToStopUpdating()const;
+		
+		Dia::UI::IUISystem* GetUISystem();
+		const Dia::UI::IUISystem* GetUISystem()const;
+		
+		Dia::Core::FrameStream<Dia::Graphics::FrameData>& GetSimToRenderFrameStream();
+		const  Dia::Core::FrameStream<Dia::Graphics::FrameData>& GetSimToRenderFrameStream()const;
 
+		Dia::Core::FrameStream<Dia::Input::EventData>& GetInputToSimFrameStream();
+		const Dia::Core::FrameStream<Dia::Input::EventData>& GetInputToSimFrameStream()const;
+		
+		Dia::Graphics::ICanvas* GetCanvas();
+		const Dia::Graphics::ICanvas* GetCanvas()const;
+		
+		
 		//TODO this is hack for the moment. The goal is that this will be a seperate module
 		bool mRunning;
-		Dia::UI::Awesomium::UISystem* mAwesomiumUISystem;
-		Dia::Graphics::ICanvas* canvas;
-		Dia::Core::FrameStream<Dia::Graphics::FrameData> mSimToRenderFrameStream;
-		Dia::Core::FrameStream<Dia::Input::EventData> mInputToSimFrameStream;
+		
+		
 
 	private:
 		virtual StateObject::OpertionResponse DoStart(const IStartData* startData) override;
@@ -51,6 +62,9 @@ namespace Cluiche
 
 		// Abstract Interfaces
 		Dia::Window::IWindow* mWindow;
-		
+		Dia::UI::Awesomium::UISystem* mAwesomiumUISystem;
+		Dia::Core::FrameStream<Dia::Graphics::FrameData> mSimToRenderFrameStream;
+		Dia::Core::FrameStream<Dia::Input::EventData> mInputToSimFrameStream;
+		Dia::Graphics::ICanvas* mCanvas;
 	};
 }

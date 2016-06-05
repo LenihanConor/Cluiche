@@ -28,6 +28,46 @@ namespace Cluiche
 		return !mRunning;
 	}
 
+	Dia::UI::IUISystem* MainKernelModule::GetUISystem()
+	{
+		return mAwesomiumUISystem;
+	}
+
+	const Dia::UI::IUISystem* MainKernelModule::GetUISystem()const
+	{
+		return mAwesomiumUISystem;
+	}
+
+	Dia::Core::FrameStream<Dia::Graphics::FrameData>& MainKernelModule::GetSimToRenderFrameStream()
+	{
+		return mSimToRenderFrameStream;
+	}
+
+	const  Dia::Core::FrameStream<Dia::Graphics::FrameData>& MainKernelModule::GetSimToRenderFrameStream()const
+	{
+		return mSimToRenderFrameStream;
+	}
+
+	Dia::Core::FrameStream<Dia::Input::EventData>& MainKernelModule::GetInputToSimFrameStream()
+	{
+		return mInputToSimFrameStream;
+	}
+
+	const Dia::Core::FrameStream<Dia::Input::EventData>& MainKernelModule::GetInputToSimFrameStream()const
+	{
+		return mInputToSimFrameStream;
+	}
+
+	Dia::Graphics::ICanvas* MainKernelModule::GetCanvas()
+	{
+		return mCanvas;
+	}
+
+	const Dia::Graphics::ICanvas* MainKernelModule::GetCanvas()const
+	{
+		return mCanvas;
+	}
+
 	Dia::Application::StateObject::OpertionResponse MainKernelModule::DoStart(const IStartData* startData)
 	{
 		//Setup paths
@@ -55,7 +95,7 @@ namespace Cluiche
 
 		// Abstract Interfaces
 		mWindow = renderWindow;
-		canvas = renderWindow;
+		mCanvas = renderWindow;
 
 		// Setup UI
 		mAwesomiumUISystem = DIA_NEW(Dia::UI::Awesomium::UISystem(mWindow));
@@ -68,7 +108,7 @@ namespace Cluiche
 		// We are using a dia specific source for the gamepad
 		mInputSourceManager.AddInputSource(&mGamepadManager); // Getting gamepads from the DIA	
 
-		canvas->SetActiveContext(false); // Need to disable active context before starting rendering thread
+		mCanvas->SetActiveContext(false); // Need to disable active context before starting rendering thread
 
 		return StateObject::OpertionResponse::kImmediate;
 	}
