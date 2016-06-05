@@ -1,7 +1,5 @@
 #include "ApplicationFlow/Modules/MainKernelModule.h"
 
-#include <thread>
-
 #include <DiaUI/IUISystem.h>
 #include <DiaCore/FilePath/PathStoreConfig.h>
 #include <DiaCore/Type/TypeFacade.h>
