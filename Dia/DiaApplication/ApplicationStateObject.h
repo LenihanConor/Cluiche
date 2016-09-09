@@ -83,6 +83,7 @@ namespace Dia
 			void Stop();							// All modules turning off
 			
 			const Dia::Core::StringCRC& GetUniqueId()const{ return mUniqueId; }
+			virtual const char* GetStateObjectType()const = 0;
 
 			StateEnum GetState()const { return mState; }
 

@@ -52,6 +52,8 @@ namespace Dia
 			Module* GetModule(const Dia::Core::StringCRC& crc);
 			const Module* GetModule(const Dia::Core::StringCRC& crc)const;
 
+			virtual const char* GetStateObjectType()const override { return "Phase"; }
+
 		protected:
 			ProcessingUnit* GetAssociatedProcessingUnit();
 			const ProcessingUnit* GetAssociatedProcessingUnit()const;

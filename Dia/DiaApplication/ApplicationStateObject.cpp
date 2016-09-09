@@ -34,7 +34,7 @@ namespace Dia
 		//-----------------------------------------------------------------------------
 		StateObject::OpertionResponse StateObject::Start(const IStartData* startData)
 		{
-			Dia::Core::Log::OutputVaradicLine("Starting %s", GetUniqueId().AsChar());
+			Dia::Core::Log::OutputVaradicLine("Starting %s - %s", GetStateObjectType(), GetUniqueId().AsChar());
 
 			DIA_ASSERT(mState == StateEnum::kNotRunning, "Starting %s but in wrong state: %s", mUniqueId.AsChar(), mState.AsString() );
 

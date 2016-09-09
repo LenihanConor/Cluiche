@@ -53,6 +53,8 @@ namespace Dia
 
 			void RetainThroughTransition(const Phase* startPhase, const Phase* endPhase);
 
+			virtual const char* GetStateObjectType()const override { return "Module"; }
+
 		protected:
 			// Inherited from StateObject - A specific module may override this as needed
 			virtual void DoBuildDependancies(IBuildDependencyData* buildDependencies)override{};

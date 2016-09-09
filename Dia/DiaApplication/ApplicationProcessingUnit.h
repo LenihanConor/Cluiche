@@ -73,6 +73,8 @@ namespace Dia
 
 			void operator()(); // Used if we are threading
 
+			virtual const char* GetStateObjectType()const override { return "Processing Unit"; }
+
 		protected:
 			template <class T> inline
 			T*	GetModule() { return static_cast<T*>(GetModule(T::kUniqueId)); }
