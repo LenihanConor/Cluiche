@@ -1,6 +1,6 @@
 #include "ApplicationFlow/Phases/MainBootPhase.h"
 
-#include "ApplicationFlow/Modules/MainKernelModule.h"
+#include "CluicheKernel/MainKernelModule.h"
 #include "ApplicationFlow/Phases/MainBootStrapPhase.h"
 
 #include <DiaApplication/ApplicationProcessingUnit.h>
@@ -20,6 +20,6 @@ namespace Cluiche
 
 	void MainBootPhase::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
 	{
-		AddModule(buildDependencies->GetModule(MainKernelModule::kUniqueId));
+		AddModule(buildDependencies->GetModule(Kernel::MainKernelModule::kUniqueId));
 	}
 }

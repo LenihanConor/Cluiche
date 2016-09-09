@@ -12,7 +12,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ApplicationFlow\Modules\LevelRegistryModule.cpp" />
-    <ClCompile Include="ApplicationFlow\Modules\MainKernelModule.cpp" />
     <ClCompile Include="ApplicationFlow\Phases\MainBootPhase.cpp" />
     <ClCompile Include="ApplicationFlow\Phases\MainBootStrapPhase.cpp" />
     <ClCompile Include="ApplicationFlow\Phases\MainPhaseBase.cpp" />
@@ -28,7 +27,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApplicationFlow\Modules\LevelRegistryModule.h" />
-    <ClInclude Include="ApplicationFlow\Modules\MainKernelModule.h" />
     <ClInclude Include="ApplicationFlow\Phases\MainPhaseBase.h" />
     <ClInclude Include="ApplicationFlow\Phases\MainBootPhase.h" />
     <ClInclude Include="ApplicationFlow\Phases\MainBootStrapPhase.h" />

@@ -1,6 +1,6 @@
 #include "ApplicationFlow/Phases/MainBootPhase.h"
 
-#include "ApplicationFlow/Modules/MainKernelModule.h"
+#include "CluicheKernel/MainKernelModule.h"
 
 #include <DiaApplication/ApplicationProcessingUnit.h>
 
@@ -12,7 +12,7 @@ namespace Cluiche
 
 	bool MainPhaseBase::FlaggedToStopUpdating()const
 	{
-		bool containsKernel = this->ContainsModule(MainKernelModule::kUniqueId);
+		bool containsKernel = this->ContainsModule(Kernel::MainKernelModule::kUniqueId);
 
 		if (!containsKernel)
 		{
@@ -20,7 +20,7 @@ namespace Cluiche
 			return false;
 		}
 
-		const Cluiche::MainKernelModule* kernel = this->GetModule<Cluiche::MainKernelModule>();
+		const Cluiche::Kernel::MainKernelModule* kernel = this->GetModule<Cluiche::Kernel::MainKernelModule>();
 
 		return kernel->FlaggedToStopUpdating();
 	}

@@ -3,9 +3,23 @@
   <ItemGroup>
     <ClInclude Include="DummyClass.h" />
     <ClInclude Include="DummyProject.h" />
+    <ClInclude Include="ApplicationFlow\Phases\MainLoadPhase.h">
+      <Filter>ApplicationFlow\Phases</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DummyClass.cpp" />
     <ClCompile Include="DummyProject.cpp" />
+    <ClCompile Include="ApplicationFlow\Phases\MainLoadPhase.cpp">
+      <Filter>ApplicationFlow\Phases</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="ApplicationFlow">
+      <UniqueIdentifier>{ad9b0dda-aaf6-44c3-8f31-55b4c3b20a39}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ApplicationFlow\Phases">
+      <UniqueIdentifier>{1732ed99-a414-4e3a-a054-bd49392814e5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>

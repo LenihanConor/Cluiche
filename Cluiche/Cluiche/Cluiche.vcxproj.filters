@@ -5,9 +5,6 @@
     <ClCompile Include="ApplicationFlow\ProcessingUnits\MainProcessingUnit.cpp">
       <Filter>ApplicationFlow\ProcessingUnits</Filter>
     </ClCompile>
-    <ClCompile Include="ApplicationFlow\Modules\MainKernelModule.cpp">
-      <Filter>ApplicationFlow\Modules</Filter>
-    </ClCompile>
     <ClCompile Include="ApplicationFlow\Phases\MainBootStrapPhase.cpp">
       <Filter>ApplicationFlow\Phases</Filter>
     </ClCompile>
@@ -62,9 +59,6 @@
   <ItemGroup>
     <ClInclude Include="ApplicationFlow\ProcessingUnits\MainProcessingUnit.h">
       <Filter>ApplicationFlow\ProcessingUnits</Filter>
-    </ClInclude>
-    <ClInclude Include="ApplicationFlow\Modules\MainKernelModule.h">
-      <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
     <ClInclude Include="ApplicationFlow\Phases\MainBootPhase.h">
       <Filter>ApplicationFlow\Phases</Filter>

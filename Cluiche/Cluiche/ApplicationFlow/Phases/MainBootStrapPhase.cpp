@@ -1,6 +1,6 @@
 #include "ApplicationFlow/Phases/MainBootStrapPhase.h"
 
-#include "ApplicationFlow/Modules/MainKernelModule.h"
+#include "CluicheKernel/MainKernelModule.h"
 #include "ApplicationFlow/Modules/LevelRegistryModule.h"
 #include "Levels/DummyProject/DummyProject.h"
 
@@ -21,7 +21,7 @@ namespace Cluiche
 
 	void MainBootStrapPhase::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
 	{
-		AddModule(buildDependencies->GetModule(MainKernelModule::kUniqueId));
+		AddModule(buildDependencies->GetModule(Kernel::MainKernelModule::kUniqueId));
 		AddModule(buildDependencies->GetModule(LevelRegistryModule::kUniqueId));
 	}
 
@@ -39,7 +39,7 @@ namespace Cluiche
 
 		mLaunchUIPage.InitializePage();
 
-		Cluiche::MainKernelModule* kernel = this->GetModule<Cluiche::MainKernelModule>();
+		Cluiche::Kernel::MainKernelModule* kernel = this->GetModule<Cluiche::Kernel::MainKernelModule>();
 		kernel->GetUISystem()->LoadPage(mLaunchUIPage); //TODO replace this with a templated version
 	}
 
