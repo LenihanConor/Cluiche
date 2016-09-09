@@ -18,6 +18,10 @@ namespace Dia
 				: mUrl(url)
 			{}
 
+			void Initialize(const Dia::Core::FilePath& url)
+			{
+				mUrl = url;
+			}
 			const Dia::Core::FilePath& GetUrl()const { return mUrl; };
 			BoundMethodList& GetBoundMenthods() { return mBoundMethodList; }
 			
