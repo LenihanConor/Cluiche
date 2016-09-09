@@ -3,6 +3,7 @@
 #include <DiaApplication/ApplicationProcessingUnit.h>
 
 #include "ApplicationFlow/Modules/MainKernelModule.h"
+#include "ApplicationFlow/Modules/LevelRegistryModule.h"
 #include "ApplicationFlow/Phases/MainBootPhase.h"
 #include "ApplicationFlow/Phases/MainBootStrapPhase.h"
 
@@ -37,5 +38,6 @@ namespace Cluiche
 
 		//Modules
 		Cluiche::MainKernelModule mKernelModule;
+		Cluiche::LevelRegistryModule mLevelRegistryModule;
 	};
 }

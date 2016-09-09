@@ -13,6 +13,7 @@ namespace Cluiche
 		, mBootPhase(this)
 		, mBootStrapPhase(this)
 		, mKernelModule(this)
+		, mLevelRegistryModule(this)
 	{
 		// Setup Phase Transitions
 		SetInitialPhase(&mBootPhase);
