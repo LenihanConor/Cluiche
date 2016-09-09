@@ -158,13 +158,33 @@ namespace Dia
 
 						for (unsigned int i = 0; i < boundMethodList.Size(); i++)
 						{
-							const Dia::Core::Containers::String32& name = boundMethodList[0].GetName();
+							const Dia::Core::Containers::String32& name = boundMethodList[i].GetName();
 
-							Dia::UI::BoundMethod::MethodPtr func = boundMethodList[0].GetMethodPtr();
+							BoundMethod::ReturnValueFlag returnValueFlag = boundMethodList[i].GetReturnValueFlag();
 
-							mMethodDispatcher.Bind(app_object,
-								::Awesomium::WSLit(name.AsCStr()),
-								JSDelegate(func));
+							switch (returnValueFlag)
+							{
+							case BoundMethod::ReturnValueFlag::kDisabled:
+								{
+									Dia::UI::BoundMethod::MethodPtr func = boundMethodList[i].GetMethodPtr();
+									mMethodDispatcher.Bind(app_object,
+										::Awesomium::WSLit(name.AsCStr()),
+										JSDelegate(func));
+								}
+								break;
+							case BoundMethod::ReturnValueFlag::kEnabled:
+								{
+									Dia::UI::BoundMethod::MethodPtrWithRetVal func = boundMethodList[i].GetMethodReturnPtr();
+									mMethodDispatcher.BindWithRetval(app_object,
+										::Awesomium::WSLit(name.AsCStr()),
+										JSDelegateWithRetval(func));
+								}
+							break;
+							default:
+								break;
+							}
+
+							
 						}
 					}
 
