@@ -1,7 +1,7 @@
 <html>
     <head>
-    <link rel="stylesheet" href="../UI_Common/Webix/2.4.7/webix.css" type="text/css">
-    <script src="../UI_Common/Webix/2.4.7/webix.js" type="text/javascript"></script>  
+    <link rel="stylesheet" href="../UI_Common/Webix/3.4/webix.css" type="text/css">
+    <script src="../UI_Common/Webix/3.4/webix.js" type="text/javascript"></script>  
 	</style>
 
     </head>
@@ -12,8 +12,8 @@
             [
                 {
                     id: 1,
-                    title: "Test Application",
-                    unique_name:"test_application",
+                    title: "Dummy Project",
+                    unique_name:"dummy_project",
                     status:"Complete",
                     details: "Dummy application to allow quick testing of new idea's"
                 },
@@ -49,12 +49,12 @@
 
             // This is what will be passed to the C++
             var launch_unique_name = "";
-            var launch_id = 0;
-
+            
             webix.ui
             (
                 {
-                    view:"window", 
+                    view: "window",
+                    id: "mylist",
                     head:"Select Game To Launch",
                     position: "center",
                     body:
@@ -63,23 +63,31 @@
                         rows:
                         [
                             {
-                                view:"list", 
+                                view: "list",
+
+                                data:launch_menu_data,
+                                
                                 template: "<strong>#title#</strong> <div style='padding-left:18px'> Details: <em>#detail#</em></div>",
                                 
                                 select: true, //enables selection 
                                 scroll:false,
                                 autoheight:true,
                                 autowidth: true,
-                               
-                                data:launch_menu_data,
+                                
                                 on: {
                                     'onAfterSelect': function (id)
                                     {
                                         launch_unique_name = this.getItem(id).unique_name; 
-                                        launch_id = id;
+                                    },
+                                    'onLoadError': function (text, xml, ajax) {
+                                        webix.message("Loading error");
+                                    },
+                                    'onValidationError': function (id) {
+                                        webix.message("Validation error");
                                     }
                                 },
                             }, 
+                            
                             { 
                                 view: "toolbar", elements:
                                 [
@@ -90,7 +98,10 @@
                     }
                 }
             ).show();
-                
+
+
+ 
+
             function getItem(dataArray, id)
             {
                 var arrayLength = dataArray.length;
@@ -102,23 +113,14 @@
                         return data;
                     }
                 }
-                return null;
+                return "";
             }
 
             function launch_level()
             {
-                var foundItem = getItem(launch_menu_data, launch_id);
+                app.Application_LaunchLevel(launch_unique_name);
+            }
 
-                // If we cannot find the correct id then we have a problem
-                if (foundItem == null)
-                {
-                    levelID = -1;
-                   // webix.alert({ type: "alert-error", text: "There has been a problem we could not find the selected item. Talk to an engineer" });
-                    return;
-                }
-
-                app.Application_LaunchLevel(launch_id, launch_unique_name);
-            }            
         </script>
     </body>
 </html>
