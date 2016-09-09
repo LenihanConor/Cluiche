@@ -10,6 +10,8 @@ namespace Dia
 		class StringCRC : public CRC
 		{
 		public:
+			static const StringCRC kZero;
+
 			static const int kStringLength = 64;
 			static const int Capacity() { return kStringLength; }
 
