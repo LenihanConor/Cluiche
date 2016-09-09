@@ -41,7 +41,7 @@ public:
 	LaunchUIPage()
 		: Dia::UI::Page(Dia::Core::FilePath("root", "DiaGraphicWithUITest/", "bootscreen.html")) 
 	{
-		BindMethod(Dia::UI::BoundMethod("backgroundGrey", Dia::UI::BoundMethod::MethodPtr(this, &LaunchUIPage::DoSomething)));
+		BindMethod(Dia::UI::BoundMethod::CreateBoundMethod("backgroundGrey", Dia::UI::BoundMethod::MethodPtr(this, &LaunchUIPage::DoSomething)));
 	}
 }; 
 
