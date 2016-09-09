@@ -40,7 +40,11 @@ namespace Dia
 				}
 				else if (rhs.IsString())
 				{
-					Dia::Core::Containers::String64 str(reinterpret_cast<const char*>(rhs.ToString().data()));
+					const ::Awesomium::WebString& webString = rhs.ToString();
+					
+					Dia::Core::Containers::String64 str;
+
+					int a = webString.ToUTF8(str.AsCStr(), str.Size());
 
 					lhs = BoundMethodValue(str);
 				}
