@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ApplicationFlow\Modules\LevelRegistryModule.cpp" />
     <ClCompile Include="ApplicationFlow\Modules\MainKernelModule.cpp" />
     <ClCompile Include="ApplicationFlow\Phases\MainBootPhase.cpp" />
     <ClCompile Include="ApplicationFlow\Phases\MainBootStrapPhase.cpp" />
@@ -22,8 +23,11 @@
     <ClCompile Include="ApplicationFlow\ProcessingUnits\RenderProcessingUnit.cpp" />
     <ClCompile Include="ApplicationFlow\ProcessingUnits\SimProcessingUnit.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Source\LaunchUIPage.cpp" />
+    <ClCompile Include="Source\LevelRegistry.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ApplicationFlow\Modules\LevelRegistryModule.h" />
     <ClInclude Include="ApplicationFlow\Modules\MainKernelModule.h" />
     <ClInclude Include="ApplicationFlow\Phases\MainPhaseBase.h" />
     <ClInclude Include="ApplicationFlow\Phases\MainBootPhase.h" />
@@ -34,6 +38,8 @@
     <ClInclude Include="ApplicationFlow\ProcessingUnits\MainProcessingUnit.h" />
     <ClInclude Include="ApplicationFlow\ProcessingUnits\RenderProcessingUnit.h" />
     <ClInclude Include="ApplicationFlow\ProcessingUnits\SimProcessingUnit.h" />
+    <ClInclude Include="Source\LaunchUIPage.h" />
+    <ClInclude Include="Source\LevelRegistry.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{CEC960D4-B8B3-463B-9F68-716C5C3C4315}</ProjectGuid>

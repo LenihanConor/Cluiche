@@ -2,6 +2,10 @@
 
 #include "ApplicationFlow/Phases/MainBootPhase.h"
 
+#include "Cluiche/Source/LaunchUIPage.h"
+
+#include <DiaCore/Strings/String64.h>
+
 namespace Dia { namespace Application { class ProcessingUnit; } }
 
 namespace Cluiche
@@ -13,7 +17,7 @@ namespace Cluiche
 	// and laynch straight into a game.
 	//
 	////////////////////////////////////////////////////
-	class MainBootStrapPhase : public MainPhaseBase
+	class MainBootStrapPhase : public MainPhaseBase, LaunchUIPageExternalInterface
 	{
 	public:
 		static const Dia::Core::StringCRC kUniqueId;
@@ -23,5 +27,10 @@ namespace Cluiche
 		void DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)override;
 
 		virtual void AfterModulesStart() override;
+
+		virtual void RequestLaunchLevel(const Dia::Core::Containers::String64& levelName)override;
+
+	private:
+		LaunchUIPage mLaunchUIPage;
 	};
 }
