@@ -11,7 +11,6 @@
 #include <DiaGraphics/Interface/ICanvas.h>
 #include <DiaInput/IInputSource.h>
 
-
 namespace Cluiche
 {
 	namespace Kernel

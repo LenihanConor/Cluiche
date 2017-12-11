@@ -48,8 +48,6 @@ namespace Cluiche
 			//TODO this is hack for the moment. The goal is that this will be a seperate module
 			bool mRunning;
 
-
-
 		private:
 			virtual StateObject::OpertionResponse DoStart(const IStartData* startData) override;
 			virtual void DoUpdate() override;
