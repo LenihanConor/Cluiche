@@ -56,7 +56,6 @@ namespace Dia
 			void EnableThreadLimiting(float hz);
 			void DisableThreadLimiting();
 
-			void AddProcessingUnit(ProcessingUnit* pu); 
 			void AddPhase(Phase* phase);
 			void AddModule(Module* module);
 
