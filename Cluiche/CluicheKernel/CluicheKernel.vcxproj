@@ -19,10 +19,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="MainKernelModule.cpp" />
+    <ClInclude Include="MainKernelModule.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="MainKernelModule.h" />
+    <ClCompile Include="MainKernelModule.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{649D1B1D-C23F-4373-ACA8-8A3A59C0CFA0}</ProjectGuid>
@@ -75,7 +75,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IntDir>..\DiaBin\$(TargetName)\$(Configuration)\</IntDir>
+    <IntDir>$(SolutionDir)bin\intermediate\$(TargetName)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)bin\exe\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
