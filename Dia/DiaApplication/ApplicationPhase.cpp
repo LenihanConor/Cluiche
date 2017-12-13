@@ -136,7 +136,7 @@ namespace Dia
 			{
 				Module* pModule = mAssociatedModules.GetItemByIndex(i);
 
-				if (pModule->RequiresUpdating())
+				if (pModule->RequiresUpdating() && mUpdatingModules.FindIndex(pModule) == -1)
 				{
 					mUpdatingModules.Add(pModule);
 				}
@@ -213,6 +213,17 @@ namespace Dia
 				}
 			}
 
+			// To keep order we tranverse the existing update and stopping order list and add all retaining modules
+			for (unsigned int i = 0; i < mUpdatingModules.Size(); i++)
+			{
+				Module* module = mUpdatingModules[i];
+				if (modulesToRetain.FindIndex(module) != -1)
+				{
+					endPhase->mUpdatingModules.Add(module);
+				}
+			}
+			mUpdatingModules.RemoveAll();
+
 			//	Modules that are only in the start phase need to be stopped
 			const unsigned int numberOfModules = mStoppingModuleOrder.Size();
 			for (unsigned int i = numberOfModules - 1; i >= 0 && i < numberOfModules; --i)
@@ -224,7 +235,15 @@ namespace Dia
 				}
 			}
 
-			mUpdatingModules.RemoveAll();			// As we are moving phase this should be disabled an reneabled on the new phase
+			
+			for (unsigned int i = 0; i < mStoppingModuleOrder.Size(); i++)
+			{
+				Module* module = mStoppingModuleOrder[i];
+				if (modulesToRetain.FindIndex(module) != -1)
+				{
+					endPhase->mStoppingModuleOrder.Add(module);
+				}
+			}
 			mStoppingModuleOrder.RemoveAll();
 
 			//	Modules that are in both should be retained (and notified of this)
@@ -245,7 +264,7 @@ namespace Dia
 
 			return mAssociatedProcessingUnit;
 		}
-
+			
 		//-----------------------------------------------------------------------------
 		const ProcessingUnit* Phase::GetAssociatedProcessingUnit()const
 		{
