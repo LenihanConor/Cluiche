@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="DummyClass.h" />
+    <ClInclude Include="DummyProject.h" />
+    <ClInclude Include="LevelFlow\Phases\MainLoadPhase.h">
+      <Filter>LevelFlow\Phases</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="DummyClass.cpp" />
+    <ClCompile Include="DummyProject.cpp" />
+    <ClCompile Include="LevelFlow\Phases\MainLoadPhase.cpp">
+      <Filter>LevelFlow\Phases</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="LevelFlow">
+      <UniqueIdentifier>{d787b96c-5e15-40c4-8442-6f2edb411a8d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="LevelFlow\Phases">
+      <UniqueIdentifier>{55de9908-bc04-4e83-ae68-ee74b7b89b03}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
