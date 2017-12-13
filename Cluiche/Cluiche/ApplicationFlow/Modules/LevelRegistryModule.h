@@ -2,7 +2,7 @@
 
 #include <DiaApplication/ApplicationModule.h>
 
-#include "Cluiche/Source/LevelRegistry.h"
+#include "CluicheKernel/LevelRegistry.h"
 
 namespace Cluiche
 {
@@ -18,10 +18,10 @@ namespace Cluiche
 
 		LevelRegistryModule(Dia::Application::ProcessingUnit* associatedProcessingUnit);
 
-		LevelRegistry& GetLevelRegistry() { return mLevelRegistery; }
-		const LevelRegistry& GetLevelRegistry()const { return mLevelRegistery; }
+		Kernel::LevelRegistry& GetLevelRegistry() { return mLevelRegistery; }
+		const Kernel::LevelRegistry& GetLevelRegistry()const { return mLevelRegistery; }
 
 	private:
-		LevelRegistry mLevelRegistery;
+		Kernel::LevelRegistry mLevelRegistery;
 	};
 }
