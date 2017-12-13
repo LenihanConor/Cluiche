@@ -746,6 +746,9 @@ namespace Dia
 			template <class T> inline
 				int	DynamicArray<T>::FindIndex(ConstReference value) const
 			{
+				if (Size() <= 0)
+					return -1;
+
 				return FindBetweenIndex(value, 0, Size() - 1);
 			}
 
@@ -753,6 +756,9 @@ namespace Dia
 			template <class T> template<class Comparisson> inline
 				int	DynamicArray<T>::FindIndex(ConstReference value, const Comparisson& functor) const
 			{
+				if (Size() <= 0)
+					return -1;
+
 				return FindBetweenIndex(value, functor, 0, Size() - 1);
 			}
 
