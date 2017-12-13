@@ -37,7 +37,7 @@ namespace Dia
 			private:
 				EdgeVector mEdges;
 				VertexPayload mPayload;
-			}
+			};
 		}
 	}
 }
