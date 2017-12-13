@@ -6,21 +6,16 @@
 
 namespace Cluiche
 {
-	/// This is a registry of all level, Levels are all code that can be flowed into via the phases
+	/// This is a registry of all level
 	class LevelRegistry
 	{
 	public:
-		// This is the hashed data about the game
 		struct Data
 		{
-			Data()
-			{}
+			Data(){}
+			Data(const Dia::Core::StringCRC& entryPhaseUniqueId) : mEntryPhaseUniqueId(entryPhaseUniqueId){}
 
-			Data(const Dia::Core::StringCRC& entryPhase)
-				: mEntryPhase(entryPhase)
-			{}
-
-			Dia::Core::StringCRC mEntryPhase;
+			Dia::Core::StringCRC mEntryPhaseUniqueId;
 		};
 
 		LevelRegistry();
@@ -33,6 +28,6 @@ namespace Cluiche
 		typedef Dia::Core::Containers::HashTable<Dia::Core::StringCRC, Data, Dia::Core::StringCRCHashFunctor> LevelTable;
 		
 		// Essentially this is a hash of name to struct
-		LevelTable mTable;
+		LevelTable mTable; 
 	};
 }

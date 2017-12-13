@@ -25,6 +25,6 @@ namespace Cluiche
 			return Dia::Core::StringCRC::kZero;
 		}
 
-		return pData->mEntryPhase;
+		return pData->mEntryPhaseUniqueId;
 	}
 }
