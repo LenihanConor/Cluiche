@@ -2,6 +2,8 @@
 
 #include <DiaApplication/ApplicationProcessingUnit.h>
 
+#include "ApplicationFlow/Modules/SimUIProxyModule.h"
+
 namespace Cluiche
 {
 	const Dia::Core::StringCRC SimBootStrapPhase::kUniqueId("SimBootStrapPhase");
@@ -12,6 +14,6 @@ namespace Cluiche
 
 	void SimBootStrapPhase::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
 	{
-		//AddModule(buildDependencies->GetModule(MainKernelModule::kUniqueId));
+		AddModule(buildDependencies->GetModule(SimUIProxyModule::kUniqueId));
 	}
 }
