@@ -93,6 +93,7 @@
     <ClInclude Include="Architecture\Components\Interface\IComponent.h" />
     <ClInclude Include="Architecture\Components\Interface\IComponentFactory.h" />
     <ClInclude Include="Architecture\Components\Interface\IComponentObject.h" />
+    <ClInclude Include="Architecture\Observer.h" />
     <ClInclude Include="Architecture\Singleton\Singleton.h" />
     <ClInclude Include="Containers\Graphs\Graph.h" />
     <ClInclude Include="Containers\Graphs\GraphEdge.h" />
@@ -239,6 +240,7 @@
     <None Include="Architecture\Components\Concrete\DynamicComponentFactory.inl" />
     <None Include="Architecture\Components\Concrete\StaticPooledComponentFactory.inl" />
     <None Include="Architecture\Components\Concrete\StaticSizedComponentObject.inl" />
+    <None Include="Architecture\Observer.inl" />
     <None Include="Architecture\Singleton\Singleton.inl" />
     <None Include="Containers\Graphs\Graph.inl" />
     <None Include="Containers\Graphs\GraphEdge.inl" />

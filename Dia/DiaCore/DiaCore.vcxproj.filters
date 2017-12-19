@@ -417,6 +417,9 @@
     <ClInclude Include="FilePath\SerializedFileLoad.h">
       <Filter>FilePath</Filter>
     </ClInclude>
+    <ClInclude Include="Architecture\Observer.h">
+      <Filter>Architecture</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\Assert.cpp">
@@ -684,6 +687,9 @@
     </None>
     <None Include="Json\external\json_valueiterator.inl">
       <Filter>Json\External\Source</Filter>
+    </None>
+    <None Include="Architecture\Observer.inl">
+      <Filter>Architecture</Filter>
     </None>
   </ItemGroup>
 </Project>
