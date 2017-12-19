@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ApplicationFlow/Phases/MainPhaseBase.h"
+#include "CluicheKernel/MainPhaseBase.h"
 
 namespace Dia { namespace Application { class ProcessingUnit; } }
 
@@ -11,7 +11,7 @@ namespace Cluiche
 	// MainBootPhase: Initial phase for the main thread
 	//
 	////////////////////////////////////////////////////
-	class MainBootPhase : public Cluiche::MainPhaseBase
+	class MainBootPhase : public Cluiche::Kernel::MainPhaseBase
 	{
 	public:
 		static const Dia::Core::StringCRC kUniqueId;

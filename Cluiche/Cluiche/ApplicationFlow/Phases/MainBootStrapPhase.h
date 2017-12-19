@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ApplicationFlow/Phases/MainBootPhase.h"
+#include "CluicheKernel/MainPhaseBase.h"
 
 #include "Cluiche/Source/LaunchUIPage.h"
 
@@ -17,7 +17,7 @@ namespace Cluiche
 	// and laynch straight into a game.
 	//
 	////////////////////////////////////////////////////
-	class MainBootStrapPhase : public MainPhaseBase, LaunchUIPageExternalInterface
+	class MainBootStrapPhase : public Kernel::MainPhaseBase, LaunchUIPageExternalInterface
 	{
 	public:
 		static const Dia::Core::StringCRC kUniqueId;
