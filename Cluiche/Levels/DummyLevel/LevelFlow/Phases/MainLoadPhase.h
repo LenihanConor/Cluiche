@@ -1,8 +1,9 @@
 #pragma once
 
 #include <DiaApplication/ApplicationPhase.h>
-
 #include <DiaCore/CRC/StringCRC.h>
+
+#include <CluicheKernel/MainPhaseBase.h>
 
 namespace Dia { namespace Application { class ProcessingUnit; } }
 
@@ -15,7 +16,7 @@ namespace Cluiche
 		// MainLoadPhase: Initial phase for the main thread to load dummy project
 		//
 		////////////////////////////////////////////////////
-		class MainLoadPhase : public Dia::Application::Phase
+		class MainLoadPhase : public Cluiche::Kernel::MainPhaseBase
 		{
 		public:
 			static const Dia::Core::StringCRC kUniqueId;
@@ -25,7 +26,6 @@ namespace Cluiche
 		private:
 			virtual void AfterModulesStart()override;
 			virtual void DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)override;
-			virtual bool FlaggedToStopUpdating()const override;
 		};
 	}
 }
