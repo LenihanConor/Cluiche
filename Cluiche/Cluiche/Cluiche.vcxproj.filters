@@ -11,9 +11,6 @@
     <ClCompile Include="ApplicationFlow\Phases\MainBootPhase.cpp">
       <Filter>ApplicationFlow\Phases</Filter>
     </ClCompile>
-    <ClCompile Include="ApplicationFlow\Phases\MainPhaseBase.cpp">
-      <Filter>ApplicationFlow\Phases</Filter>
-    </ClCompile>
     <ClCompile Include="ApplicationFlow\ProcessingUnits\RenderProcessingUnit.cpp">
       <Filter>ApplicationFlow\ProcessingUnits</Filter>
     </ClCompile>
@@ -35,8 +32,8 @@
     <ClCompile Include="Source\LaunchUIPage.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="Source\LevelRegistry.cpp">
-      <Filter>Source</Filter>
+    <ClCompile Include="ApplicationFlow\Modules\SimUIProxyModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -66,9 +63,6 @@
     <ClInclude Include="ApplicationFlow\Phases\MainBootStrapPhase.h">
       <Filter>ApplicationFlow\Phases</Filter>
     </ClInclude>
-    <ClInclude Include="ApplicationFlow\Phases\MainPhaseBase.h">
-      <Filter>ApplicationFlow\Phases</Filter>
-    </ClInclude>
     <ClInclude Include="ApplicationFlow\ProcessingUnits\RenderProcessingUnit.h">
       <Filter>ApplicationFlow\ProcessingUnits</Filter>
     </ClInclude>
@@ -90,8 +84,8 @@
     <ClInclude Include="Source\LaunchUIPage.h">
       <Filter>Source</Filter>
     </ClInclude>
-    <ClInclude Include="Source\LevelRegistry.h">
-      <Filter>Source</Filter>
+    <ClInclude Include="ApplicationFlow\Modules\SimUIProxyModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
