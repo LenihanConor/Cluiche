@@ -572,6 +572,9 @@
     <ClCompile Include="FilePath\FileLoad.cpp">
       <Filter>FilePath</Filter>
     </ClCompile>
+    <ClCompile Include="Architecture\Observer.cpp">
+      <Filter>Architecture</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Type\TypeFacade.inl">
@@ -687,9 +690,6 @@
     </None>
     <None Include="Json\external\json_valueiterator.inl">
       <Filter>Json\External\Source</Filter>
-    </None>
-    <None Include="Architecture\Observer.inl">
-      <Filter>Architecture</Filter>
     </None>
   </ItemGroup>
 </Project>

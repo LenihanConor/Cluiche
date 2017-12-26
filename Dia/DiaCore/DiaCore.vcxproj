@@ -188,6 +188,7 @@
     <ClCompile Include="Architecture\Components\Interface\IComponent.cpp" />
     <ClCompile Include="Architecture\Components\Interface\IComponentFactory.cpp" />
     <ClCompile Include="Architecture\Components\Interface\IComponentObject.cpp" />
+    <ClCompile Include="Architecture\Observer.cpp" />
     <ClCompile Include="Core\Assert.cpp" />
     <ClCompile Include="Core\CallStack.cpp" />
     <ClCompile Include="Core\EnumClass.cpp" />
@@ -240,7 +241,6 @@
     <None Include="Architecture\Components\Concrete\DynamicComponentFactory.inl" />
     <None Include="Architecture\Components\Concrete\StaticPooledComponentFactory.inl" />
     <None Include="Architecture\Components\Concrete\StaticSizedComponentObject.inl" />
-    <None Include="Architecture\Observer.inl" />
     <None Include="Architecture\Singleton\Singleton.inl" />
     <None Include="Containers\Graphs\Graph.inl" />
     <None Include="Containers\Graphs\GraphEdge.inl" />
