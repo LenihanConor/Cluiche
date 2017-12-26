@@ -1,10 +1,12 @@
 #include "ApplicationFlow/Phases/MainBootStrapPhase.h"
 
-#include "CluicheKernel/MainKernelModule.h"
+#include "CluicheKernel/ApplicationFlow/Modules/MainKernelModule.h"
 #include "ApplicationFlow/Modules/LevelRegistryModule.h"
-#include "Levels/DummyProject/DummyProject.h"
+#include "CluicheKernel/ApplicationFlow/Modules/MainUIModule.h"
+#include "Levels/DummyLevel/DummyLevel.h"
+#include "Levels/DummyLevel/LevelFlow/Phases/MainLoadPhase.h"
 
-#include <Cluiche/Source/LevelRegistry.h>
+#include <CluicheKernel/LevelRegistry.h>
 
 #include <DiaApplication/ApplicationProcessingUnit.h>
 
@@ -23,24 +25,15 @@ namespace Cluiche
 	{
 		AddModule(buildDependencies->GetModule(Kernel::MainKernelModule::kUniqueId));
 		AddModule(buildDependencies->GetModule(LevelRegistryModule::kUniqueId));
+		AddModule(buildDependencies->GetModule(MainUIModule::kUniqueId));
 	}
 
 	void MainBootStrapPhase::AfterModulesStart()
 	{
-		// Initialize all Levels
-		Cluiche::LevelRegistry& levelRegister = GetModule<Cluiche::LevelRegistryModule>()->GetLevelRegistry();
-
-		levelRegister.Register(Cluiche::DummyProject::kLevelUniqueId, Cluiche::LevelRegistry::Data(Cluiche::DummyProject::kLevelUniqueId));
-		
-
-		REGISTER ALL THE FLOWS HERE
-		HOW WILL THIS WORK FOR SIM/RENDER PHASES, DO THEY TRANSITION? RENDER MAY NOT BUT SIM WILL. 
-
-
 		mLaunchUIPage.InitializePage();
 
-		Cluiche::Kernel::MainKernelModule* kernel = this->GetModule<Cluiche::Kernel::MainKernelModule>();
-		kernel->GetUISystem()->LoadPage(mLaunchUIPage); //TODO replace this with a templated version
+		Cluiche::MainUIModule* ui = this->GetModule<Cluiche::MainUIModule>();
+		ui->GetUISystem()->LoadPage(mLaunchUIPage); //TODO replace this with a templated version
 	}
 
 	void MainBootStrapPhase::RequestLaunchLevel(const Dia::Core::Containers::String64& levelName)
@@ -55,18 +48,28 @@ namespace Cluiche
 			return;
 		}
 
-		// Get Cluiche level manager to translate the UI string into an actual registered level
-		// From this level we can get its entry phase and transition to this.
-		const Cluiche::LevelRegistry& levelRegister = GetModule<Cluiche::LevelRegistryModule>()->GetLevelRegistry();
+		// Allocate level
+		Cluiche::Kernel::ILevel* level = nullptr;
+		if (levelName == "dummy_level")
+		{
+			level = DIA_NEW(Cluiche::DummyLevel::Level(this, this->GetAssociatedProcessingUnit(), nullptr, nullptr)); //TODO MEMORY LEAK, a reference should be kept in the level regsitry
+		}
 
-		const Dia::Core::StringCRC& entryPhase = levelRegister.FetchEntryPhase(Dia::Core::StringCRC(levelName.AsCStr()));
-
-		if (entryPhase == Dia::Core::StringCRC::kZero)
+		if (level == nullptr)
+		{
+			DIA_ASSERT(0, "Counld not find level");
+			return;
+		}
+		
+		// Transition to the next phase
+		const Dia::Core::StringCRC& entryPhaseUniqueId = level->GetEntryPhaseUniqueId();
+			
+		if (entryPhaseUniqueId == Dia::Core::StringCRC::kZero)
 		{
 			DIA_ASSERT(0, "Could not find entryPhase for %s", levelName.AsCStr());
 			return;
 		}
 
-		GetAssociatedProcessingUnit()->QueuePhaseTransition(entryPhase);
+		GetAssociatedProcessingUnit()->QueuePhaseTransition(entryPhaseUniqueId);
 	}
 }

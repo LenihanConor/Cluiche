@@ -1,6 +1,6 @@
 #include "ApplicationFlow/Phases/MainBootPhase.h"
 
-#include "CluicheKernel/MainKernelModule.h"
+#include "CluicheKernel/ApplicationFlow/Modules/MainKernelModule.h"
 #include "ApplicationFlow/Phases/MainBootStrapPhase.h"
 
 #include <DiaApplication/ApplicationProcessingUnit.h>

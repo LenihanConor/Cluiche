@@ -35,9 +35,9 @@ namespace Dia
 		//---------------------------------------------------------------------------------------------------------
 		void ProcessingUnit::Initialize()
 		{
-			DIA_ASSERT(GetState() == StateEnum::kConstructed, "Initializing %s but in wrong state: %s", GetUniqueId().AsChar(), GetState().AsString());
+//			DIA_ASSERT(GetState() == StateEnum::kConstructed, "Initializing %s but in wrong state: %s", GetUniqueId().AsChar(), GetState().AsString());
 
-			if (GetState() == StateEnum::kConstructed)
+//			if (GetState() == StateEnum::kConstructed)
 			{ 
 				BuildDependencyData buildDependencyData(&mAssociatedProcessingUnites,
 															&mAssociatedPhases,
@@ -189,14 +189,17 @@ namespace Dia
 			{
 				Module* module = mAssociatedModules.GetItemByIndex(i);
 
-				module->BuildDependancies(buildDependencies);
-
-				const unsigned int numberDependencies = module->GetNumberOfDependancies();
-				for (unsigned int j = 0; j < numberDependencies; j++)
+				if (module->GetState() == StateEnum::kConstructed)
 				{
-					Module* dependency = module->GetDependencyFromIndex(j);
+					module->BuildDependancies(buildDependencies);
 
-					AddModule(dependency);
+					const unsigned int numberDependencies = module->GetNumberOfDependancies();
+					for (unsigned int j = 0; j < numberDependencies; j++)
+					{
+						Module* dependency = module->GetModuleFromIndex(j);
+
+						AddModule(dependency);
+					}
 				}
 			}
 
@@ -204,7 +207,10 @@ namespace Dia
 			{
 				Phase* phase = mAssociatedPhases.GetItemByIndex(i);
 				
-				phase->BuildDependancies(buildDependencies);
+				if (phase->GetState() == StateEnum::kConstructed)
+				{
+					phase->BuildDependancies(buildDependencies);
+				}
 			}
 		}
 		

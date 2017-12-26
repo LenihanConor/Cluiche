@@ -4,14 +4,15 @@
 
 #include "ApplicationFlow/Phases/SimBootStrapPhase.h"
 #include "ApplicationFlow/Phases/SimBootPhase.h"
+#include "CluicheKernel/ApplicationFlow/Modules/SimUIProxyModule.h"
+#include "CluicheKernel/ApplicationFlow/Modules/SimInputFrameStreamModule.h"
+#include "CluicheKernel/ApplicationFlow/Modules/SimTimeServerModule.h"
 
 #include <DiaCore/Frame/FrameStream.h>
 #include <DiaGraphics/Frame/FrameData.h>
-#include <DiaInput/EventData.h>
-#include <DiaCore/Time/TimeServer.h>
 
 namespace Dia { namespace Graphics { class ICanvas; } }
-namespace Dia { namespace UI { class IUISystem; } }
+namespace Cluiche { class MainUIModule; }
 
 namespace Cluiche
 {
@@ -22,7 +23,7 @@ namespace Cluiche
 		{
 		public:
 			const bool* mRunning;
-			Dia::UI::IUISystem* mUISystem;
+			Cluiche::MainUIModule* mMainUIModule;
 			Dia::Core::FrameStream<Dia::Input::EventData>* mInputToSimFrameStream;
 			Dia::Core::FrameStream<Dia::Graphics::FrameData>* mFrameStream;
 		};
@@ -33,19 +34,24 @@ namespace Cluiche
 
 	private:
 		virtual void PostPhaseStart(const IStartData* startData) override final;
+		virtual void PrePhaseUpdate() override final;
 		virtual void PostPhaseUpdate() override final;
 		virtual bool FlaggedToStopUpdating()const override final;
 
-		Dia::Core::TimeServer mTimeServer;
 
+		Dia::Graphics::FrameData mRenderFrameBuffer;
+		
 		// Shared resources
 		const bool* mRunning;
-		Dia::UI::IUISystem* mUISystem;
-		Dia::Core::FrameStream<Dia::Input::EventData>* mInputToSimFrameStream;
 		Dia::Core::FrameStream<Dia::Graphics::FrameData>* mSimToRenderFrameStream;
 
 		//Phases
 		Cluiche::SimBootPhase mBootPhase;
 		Cluiche::SimBootStrapPhase mBootStrapPhase;
+
+		//Modules
+		Cluiche::SimTimeServerModule mSimTimeServerModule;
+		Cluiche::SimUIProxyModule mSimUIProxyModule;
+		Cluiche::SimInputFrameStreamModule mSimInputFrameStreamModule;
 	};
 }

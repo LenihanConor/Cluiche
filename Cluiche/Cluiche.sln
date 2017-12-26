@@ -4,12 +4,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Library", "Library", "{2291F464-9B87-42F1-AA90-34FE22DD5F9B}"
-	ProjectSection(SolutionItems) = preProject
-		..\Dia\DiaApplication\ApplicationModule.cpp = ..\Dia\DiaApplication\ApplicationModule.cpp
-		..\Dia\DiaApplication\ApplicationModule.h = ..\Dia\DiaApplication\ApplicationModule.h
-		..\Dia\DiaApplication\ApplicationPhase.cpp = ..\Dia\DiaApplication\ApplicationPhase.cpp
-		..\Dia\DiaApplication\ApplicationPhase.h = ..\Dia\DiaApplication\ApplicationPhase.h
-	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Executables", "Executables", "{86CA7611-D55D-411B-8784-187D12107EE0}"
 EndProject
@@ -95,7 +89,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Levels", "Levels", "{985EFE
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CluicheKernel", "CluicheKernel\CluicheKernel.vcxproj", "{649D1B1D-C23F-4373-ACA8-8A3A59C0CFA0}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DummyLevel", "Levels\DummyLevel\DummyLevel.vcxproj.vcxproj", "{8A8A5635-62AB-4516-A3F4-978499024724}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DummyLevel", "Levels\DummyLevel\DummyLevel.vcxproj", "{8A8A5635-62AB-4516-A3F4-978499024724}"
 	ProjectSection(ProjectDependencies) = postProject
 		{649D1B1D-C23F-4373-ACA8-8A3A59C0CFA0} = {649D1B1D-C23F-4373-ACA8-8A3A59C0CFA0}
 	EndProjectSection

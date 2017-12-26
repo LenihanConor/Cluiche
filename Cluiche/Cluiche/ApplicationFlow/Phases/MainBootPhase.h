@@ -1,6 +1,6 @@
 #pragma once
 
-#include "CluicheKernel/MainPhaseBase.h"
+#include "CluicheKernel/ApplicationFlow/Phases/MainPhaseBase.h"
 
 namespace Dia { namespace Application { class ProcessingUnit; } }
 

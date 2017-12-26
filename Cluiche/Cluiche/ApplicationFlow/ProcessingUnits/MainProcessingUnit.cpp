@@ -1,5 +1,8 @@
 #include "ApplicationFlow/ProcessingUnits/MainProcessingUnit.h"
 
+#include "DiaApplication/ApplicationPhase.h"
+#include "DiaApplication/ApplicationModule.h"
+
 namespace Cluiche
 {
 	const Dia::Core::StringCRC MainProcessingUnit::kUniqueId("MainProcessingUnit");
@@ -14,6 +17,7 @@ namespace Cluiche
 		, mBootStrapPhase(this)
 		, mKernelModule(this)
 		, mLevelRegistryModule(this)
+		, mUI(this)
 	{
 		// Setup Phase Transitions
 		SetInitialPhase(&mBootPhase);
@@ -30,19 +34,21 @@ namespace Cluiche
 		// Start the render thread
 		{
 			RenderProcessingUnit::StartData data;
-			data.mRunning = &(GetCurrentPhase()->GetModule<MainKernelModule>()->mRunning);
-			data.mFrameStream = &(GetCurrentPhase()->GetModule<MainKernelModule>()->GetSimToRenderFrameStream());
-			data.mCanvas = GetCurrentPhase()->GetModule<MainKernelModule>()->GetCanvas();
+			data.mRunning = &(mKernelModule.mRunning);
+			data.mFrameStream = &(mKernelModule.GetSimToRenderFrameStream());
+			data.mCanvas = mKernelModule.GetCanvas();
 
 			mRenderingPU.Start(&data);
 			mRenderThread = DIA_NEW(std::thread(std::ref(mRenderingPU)));
 		}
+
+		//start the sim thread
 		{
 			SimProcessingUnit::StartData data;
-			data.mRunning = &(GetCurrentPhase()->GetModule<MainKernelModule>()->mRunning);
-			data.mFrameStream = &(GetCurrentPhase()->GetModule<MainKernelModule>()->GetSimToRenderFrameStream());
-			data.mInputToSimFrameStream = &(GetCurrentPhase()->GetModule<MainKernelModule>()->GetInputToSimFrameStream());
-			data.mUISystem = GetCurrentPhase()->GetModule<MainKernelModule>()->GetUISystem();
+			data.mRunning = &(mKernelModule.mRunning);
+			data.mFrameStream = &(mKernelModule.GetSimToRenderFrameStream());
+			data.mInputToSimFrameStream = &(mKernelModule.GetInputToSimFrameStream());
+			data.mMainUIModule = &mUI;
 
 			mSimPU.Start(&data);
 			mSimThread = DIA_NEW(std::thread(std::ref(mSimPU)));

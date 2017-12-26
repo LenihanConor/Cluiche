@@ -1,5 +1,7 @@
 #include "ApplicationFlow/ProcessingUnits/SimProcessingUnit.h"
 
+#include "CluicheKernel/ApplicationFlow/Modules/MainUIModule.h"
+
 #include <DiaGraphics/Interface/ICanvas.h>
 #include <DiaUI/IUISystem.h>
 
@@ -12,13 +14,13 @@ namespace Cluiche
 
 	SimProcessingUnit::SimProcessingUnit()
 		: Dia::Application::ProcessingUnit(kUniqueId, 30.0f)
-		, mTimeServer(30.0f, Dia::Core::TimeAbsolute::Zero())
 		, mRunning(nullptr)
-		, mUISystem(nullptr)
-		, mInputToSimFrameStream(nullptr)
 		, mSimToRenderFrameStream(nullptr)
 		, mBootPhase(this)
 		, mBootStrapPhase(this)
+		, mSimTimeServerModule(this, 30.0f, Dia::Core::TimeAbsolute::Zero())
+		, mSimUIProxyModule(this, &mRenderFrameBuffer)
+		, mSimInputFrameStreamModule(this)
 	{
 		// Setup Phase Transitions
 		SetInitialPhase(&mBootPhase);
@@ -37,83 +39,28 @@ namespace Cluiche
 		const StartData* simStartData = static_cast<const StartData*>(startData);
 		mRunning = simStartData->mRunning;
 		mSimToRenderFrameStream = simStartData->mFrameStream;
-		mUISystem = simStartData->mUISystem;
-		mInputToSimFrameStream = simStartData->mInputToSimFrameStream;
+
+		GetModule<Cluiche::SimUIProxyModule>()->Initialize(simStartData->mMainUIModule);
+		GetModule<Cluiche::SimInputFrameStreamModule>()->Initialize(simStartData->mInputToSimFrameStream);
+	}
+
+	void SimProcessingUnit::PrePhaseUpdate()
+	{
+		mRenderFrameBuffer.Clear();
 	}
 
 	void SimProcessingUnit::PostPhaseUpdate()
 	{
 		// All going to Sim thread
+		mSimInputFrameStreamModule.GetStream()->GarbageCollectAllFramesOlderThan(mSimTimeServerModule.GetTimeServer().GetTime());
 
-		Dia::Core::Containers::DynamicArrayC<const Dia::Input::EventData*, 32> inputEventPtrBuffer;
-		mInputToSimFrameStream->FetchAllDataUpToTime(mTimeServer.GetTime(), inputEventPtrBuffer);
+		mRenderFrameBuffer.RequestDraw(Dia::Graphics::DebugFrameDataCircle2D(Dia::Maths::Vector2D(100.0f, 100.0f), 75.0f));
+		mRenderFrameBuffer.RequestDraw(Dia::Graphics::DebugFrameDataCircle2D(dynamicCirclePos, 25.0f, dynamicCircleColour));
+		mRenderFrameBuffer.RequestDraw(Dia::Graphics::DebugFrameDataLine2D(Dia::Maths::Vector2D(100.0f, 100.0f), dynamicCirclePos));
 
-		for (unsigned int i = 0; i < inputEventPtrBuffer.Size(); i++)
-		{
-			const Dia::Input::EventData* pEventData = inputEventPtrBuffer[i];
+		mSimToRenderFrameStream->InsertCopyOfDataToStream(mRenderFrameBuffer, mSimTimeServerModule.GetTimeServer().GetTime());
 
-			// This is where an application will handle any user input
-			for (unsigned int j = 0; j < pEventData->Size(); j++)
-			{
-				Dia::Input::Event event = (*pEventData)[j];
-				switch (event.type)
-				{
-				case Dia::Input::Event::EType::kConsoleGamepadAnalogStickMove:
-					dynamicCirclePos += Dia::Maths::Vector2D(event.consoleGamepadMoveEvent.x, event.consoleGamepadMoveEvent.y);
-					break;
-				case Dia::Input::Event::EType::kConsoleGamepadButtonPressed:
-					switch (event.consoleGamepadButtonEvent.button)
-					{
-					case Dia::Input::ConsoleGamepad::EButtonID::A:
-						dynamicCircleColour = Dia::Graphics::RGBA::Green;
-						break;
-					case Dia::Input::ConsoleGamepad::EButtonID::B:
-						dynamicCircleColour = Dia::Graphics::RGBA::Red;
-						break;
-					case Dia::Input::ConsoleGamepad::EButtonID::X:
-						dynamicCircleColour = Dia::Graphics::RGBA::Blue;
-						break;
-					case Dia::Input::ConsoleGamepad::EButtonID::Y:
-						dynamicCircleColour = Dia::Graphics::RGBA::Yellow;
-						break;
-					}
-
-					break;
-				case Dia::Input::Event::EType::kMouseMoved:
-				{
-					//			mUISystem.InjectMouseMove(event.mouseMove.x, event.mouseMove.y);
-				}
-				break;
-				case Dia::Input::Event::EType::kMouseButtonPressed:
-				{
-					//			mUISystem.InjectMouseDown(event.mouseButton.AsMouseButton());
-				}
-				break;
-				default:
-					break;
-				}
-			}
-		}
-
-		mInputToSimFrameStream->GarbageCollectAllFramesOlderThan(mTimeServer.GetTime());
-
-		Dia::Graphics::FrameData renderFrameBuffer;
-
-		renderFrameBuffer.RequestDraw(Dia::Graphics::DebugFrameDataCircle2D(Dia::Maths::Vector2D(100.0f, 100.0f), 75.0f));
-		renderFrameBuffer.RequestDraw(Dia::Graphics::DebugFrameDataCircle2D(dynamicCirclePos, 25.0f, dynamicCircleColour));
-		renderFrameBuffer.RequestDraw(Dia::Graphics::DebugFrameDataLine2D(Dia::Maths::Vector2D(100.0f, 100.0f), dynamicCirclePos));
-
-		// Update 
-		if (mUISystem->IsPageLoaded())
-		{
-			Dia::UI::UIDataBuffer uiBuffer;
-			mUISystem->FetchUIDataBuffer(uiBuffer);
-			renderFrameBuffer.RequestDrawUI(uiBuffer);
-		}
-
-		mSimToRenderFrameStream->InsertCopyOfDataToStream(renderFrameBuffer, mTimeServer.GetTime());
-
-		mTimeServer.Tick();
+		mSimTimeServerModule.Tick();
 	}
 
 	bool SimProcessingUnit::FlaggedToStopUpdating()const
