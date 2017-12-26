@@ -6,7 +6,7 @@ namespace Dia { namespace Application { class ProcessingUnit; } }
 
 namespace Cluiche
 {
-	namespace Kernel
+	namespace Main
 	{
 		////////////////////////////////////////////////////
 		//

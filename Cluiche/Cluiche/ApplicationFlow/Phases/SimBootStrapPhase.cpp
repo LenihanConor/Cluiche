@@ -14,6 +14,6 @@ namespace Cluiche
 
 	void SimBootStrapPhase::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
 	{
-		AddModule(buildDependencies->GetModule(SimUIProxyModule::kUniqueId));
+		AddModule(buildDependencies->GetModule(Sim::UIProxyModule::kUniqueId));
 	}
 }

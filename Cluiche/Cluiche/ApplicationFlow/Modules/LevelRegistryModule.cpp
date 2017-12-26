@@ -2,9 +2,12 @@
 
 namespace Cluiche
 {
-	const Dia::Core::StringCRC LevelRegistryModule::kUniqueId("LevelRegistryModule");
+	namespace Main
+	{
+		const Dia::Core::StringCRC LevelRegistryModule::kUniqueId("Main::LevelRegistryModule");
 
-	LevelRegistryModule::LevelRegistryModule(Dia::Application::ProcessingUnit* associatedProcessingUnit)
-		: Dia::Application::Module(associatedProcessingUnit, kUniqueId, Dia::Application::Module::RunningEnum::kIdle)
-	{}
+		LevelRegistryModule::LevelRegistryModule(Dia::Application::ProcessingUnit* associatedProcessingUnit)
+			: Dia::Application::Module(associatedProcessingUnit, kUniqueId, Dia::Application::Module::RunningEnum::kIdle)
+		{}
+	}
 }

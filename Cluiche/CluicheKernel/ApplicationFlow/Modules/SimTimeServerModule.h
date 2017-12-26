@@ -5,23 +5,26 @@
 
 namespace Cluiche
 {
-	////////////////////////////////////////////////////
-	//
-	// SimTimeServerModule: Sim access to its internal clock
-	//
-	////////////////////////////////////////////////////
-	class SimTimeServerModule : public Dia::Application::Module
+	namespace Sim
 	{
-	public:
-		static const Dia::Core::StringCRC kUniqueId;
+		////////////////////////////////////////////////////
+		//
+		// TimeServerModule: Sim access to its internal clock
+		//
+		////////////////////////////////////////////////////
+		class TimeServerModule : public Dia::Application::Module
+		{
+		public:
+			static const Dia::Core::StringCRC kUniqueId;
 
-		SimTimeServerModule(Dia::Application::ProcessingUnit* associatedProcessingUnit, float hz, const Dia::Core::TimeAbsolute& timeNow);
+			TimeServerModule(Dia::Application::ProcessingUnit* associatedProcessingUnit, float hz, const Dia::Core::TimeAbsolute& timeNow);
 
-		const Dia::Core::TimeServer& GetTimeServer()const;
+			const Dia::Core::TimeServer& GetTimeServer()const;
 
-		void Tick();
+			void Tick();
 
-	private:
-		Dia::Core::TimeServer mTimeServer;
-	};
+		private:
+			Dia::Core::TimeServer mTimeServer;
+		};
+	}
 }

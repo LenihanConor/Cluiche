@@ -40,8 +40,8 @@ namespace Cluiche
 		mRunning = simStartData->mRunning;
 		mSimToRenderFrameStream = simStartData->mFrameStream;
 
-		GetModule<Cluiche::SimUIProxyModule>()->Initialize(simStartData->mMainUIModule);
-		GetModule<Cluiche::SimInputFrameStreamModule>()->Initialize(simStartData->mInputToSimFrameStream);
+		GetModule<Cluiche::Sim::UIProxyModule>()->Initialize(simStartData->mMainUIModule);
+		GetModule<Cluiche::Sim::InputFrameStreamModule>()->Initialize(simStartData->mInputToSimFrameStream);
 	}
 
 	void SimProcessingUnit::PrePhaseUpdate()

@@ -12,6 +12,6 @@ namespace Cluiche
 
 	void RenderRunningPhase::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
 	{
-		//AddModule(buildDependencies->GetModule(MainKernelModule::kUniqueId));
+		//AddModule(buildDependencies->GetModule(KernelModule::kUniqueId));
 	}
 }

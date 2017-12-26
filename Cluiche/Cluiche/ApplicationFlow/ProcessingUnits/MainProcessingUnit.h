@@ -38,8 +38,8 @@ namespace Cluiche
 		Cluiche::MainBootStrapPhase mBootStrapPhase;
 
 		//Modules
-		Cluiche::Kernel::MainKernelModule mKernelModule;
-		Cluiche::LevelRegistryModule mLevelRegistryModule;
-		Cluiche::MainUIModule mUI;
+		Cluiche::Main::KernelModule mKernelModule;
+		Cluiche::Main::LevelRegistryModule mLevelRegistryModule;
+		Cluiche::Main::UIModule mUI;
 	};
 }

@@ -12,7 +12,7 @@
 #include <DiaGraphics/Frame/FrameData.h>
 
 namespace Dia { namespace Graphics { class ICanvas; } }
-namespace Cluiche { class MainUIModule; }
+namespace Cluiche { class UIModule; }
 
 namespace Cluiche
 {
@@ -23,7 +23,7 @@ namespace Cluiche
 		{
 		public:
 			const bool* mRunning;
-			Cluiche::MainUIModule* mMainUIModule;
+			Cluiche::Main::UIModule* mMainUIModule;
 			Dia::Core::FrameStream<Dia::Input::EventData>* mInputToSimFrameStream;
 			Dia::Core::FrameStream<Dia::Graphics::FrameData>* mFrameStream;
 		};
@@ -50,8 +50,8 @@ namespace Cluiche
 		Cluiche::SimBootStrapPhase mBootStrapPhase;
 
 		//Modules
-		Cluiche::SimTimeServerModule mSimTimeServerModule;
-		Cluiche::SimUIProxyModule mSimUIProxyModule;
-		Cluiche::SimInputFrameStreamModule mSimInputFrameStreamModule;
+		Cluiche::Sim::TimeServerModule mSimTimeServerModule;
+		Cluiche::Sim::UIProxyModule mSimUIProxyModule;
+		Cluiche::Sim::InputFrameStreamModule mSimInputFrameStreamModule;
 	};
 }

@@ -6,7 +6,7 @@
 
 namespace Cluiche
 {
-	namespace Kernel
+	namespace Main
 	{
 		MainPhaseBase::MainPhaseBase(Dia::Application::ProcessingUnit* associatedProcessingUnit, const Dia::Core::StringCRC& uniqueId, unsigned int maxModules)
 			: Dia::Application::Phase(associatedProcessingUnit, uniqueId, maxModules)
@@ -14,15 +14,15 @@ namespace Cluiche
 
 		bool MainPhaseBase::FlaggedToStopUpdating()const
 		{
-			bool containsKernel = this->ContainsModule(Kernel::MainKernelModule::kUniqueId);
+			bool containsKernel = this->ContainsModule(Main::KernelModule::kUniqueId);
 
 			if (!containsKernel)
 			{
-				DIA_ASSERT(0, "%s Phase does not contain MainKernelModule, which is used to shut down the application", this->GetUniqueId().AsChar());
+				DIA_ASSERT(0, "%s Phase does not contain KernelModule, which is used to shut down the application", this->GetUniqueId().AsChar());
 				return false;
 			}
 
-			const Cluiche::Kernel::MainKernelModule* kernel = this->GetModule<Cluiche::Kernel::MainKernelModule>();
+			const Cluiche::Main::KernelModule* kernel = this->GetModule<Cluiche::Main::KernelModule>();
 
 			return kernel->FlaggedToStopUpdating();
 		}

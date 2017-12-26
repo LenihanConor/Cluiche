@@ -15,20 +15,20 @@ namespace Dia { namespace Graphics { class ICanvas; } }
 
 namespace Cluiche
 {
-	namespace Kernel
+	namespace Main
 	{
 		////////////////////////////////////////////////////
 		//
-		// MainKernelModule: Central module for all base 
+		// KernelModule: Central module for all base 
 		//					systems running on the main thread
 		//
 		////////////////////////////////////////////////////
-		class MainKernelModule : public Dia::Application::Module
+		class KernelModule : public Dia::Application::Module
 		{
 		public:
 			static const Dia::Core::StringCRC kUniqueId;
 
-			MainKernelModule(Dia::Application::ProcessingUnit* associatedProcessingUnit);
+			KernelModule(Dia::Application::ProcessingUnit* associatedProcessingUnit);
 
 			bool FlaggedToStopUpdating()const;
 

@@ -20,6 +20,6 @@ namespace Cluiche
 
 	void MainBootPhase::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
 	{
-		AddModule(buildDependencies->GetModule(Kernel::MainKernelModule::kUniqueId));
+		AddModule(buildDependencies->GetModule(Main::KernelModule::kUniqueId));
 	}
 }

@@ -23,23 +23,23 @@ namespace Cluiche
 
 	void MainBootStrapPhase::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
 	{
-		AddModule(buildDependencies->GetModule(Kernel::MainKernelModule::kUniqueId));
-		AddModule(buildDependencies->GetModule(LevelRegistryModule::kUniqueId));
-		AddModule(buildDependencies->GetModule(MainUIModule::kUniqueId));
+		AddModule(buildDependencies->GetModule(Main::KernelModule::kUniqueId));
+		AddModule(buildDependencies->GetModule(Main::LevelRegistryModule::kUniqueId));
+		AddModule(buildDependencies->GetModule(Main::UIModule::kUniqueId));
 	}
 
 	void MainBootStrapPhase::AfterModulesStart()
 	{
 		mLaunchUIPage.InitializePage();
 
-		Cluiche::MainUIModule* ui = this->GetModule<Cluiche::MainUIModule>();
+		Cluiche::Main::UIModule* ui = this->GetModule<Cluiche::Main::UIModule>();
 		ui->GetUISystem()->LoadPage(mLaunchUIPage); 
 	}
 
 
 	void MainBootStrapPhase::BeforeModulesStop()
 	{
-		Cluiche::MainUIModule* ui = this->GetModule<Cluiche::MainUIModule>();
+		Cluiche:Main::UIModule* ui = this->GetModule<Cluiche::Main::UIModule>();
 		ui->GetUISystem()->UnloadPage(); 
 	}
 
@@ -59,7 +59,7 @@ namespace Cluiche
 		Cluiche::Kernel::ILevel* level = nullptr;
 		if (levelName == "dummy_level")
 		{
-			level = DIA_NEW(Cluiche::DummyLevel::Level(this, this->GetAssociatedProcessingUnit(), nullptr, nullptr)); //TODO MEMORY LEAK,  a reference should be kept in the level regsitry
+			level = DIA_NEW(Cluiche::DummyLevel::Level(this, this->GetAssociatedProcessingUnit(), nullptr, nullptr)); //TODO MEMORY LEAK, a reference should be kept in the level regsitry
 		}
 
 		if (level == nullptr)

@@ -2,25 +2,28 @@
 
 namespace Cluiche
 {
-	const Dia::Core::StringCRC SimInputFrameStreamModule::kUniqueId("SimInputFrameStreamModule");
-
-	SimInputFrameStreamModule::SimInputFrameStreamModule(Dia::Application::ProcessingUnit* associatedProcessingUnit)
-		: Dia::Application::Module(associatedProcessingUnit, kUniqueId, Dia::Application::Module::RunningEnum::kIdle)
-		, mInputToSimFrameStream(nullptr)
-	{}
-
-	void SimInputFrameStreamModule::Initialize(InputFrameStream* stream)
+	namespace Sim
 	{
-		mInputToSimFrameStream = stream;
-	}
+		const Dia::Core::StringCRC InputFrameStreamModule::kUniqueId("Sim::InputFrameStreamModule");
 
-	const SimInputFrameStreamModule::InputFrameStream* SimInputFrameStreamModule::GetStream()const
-	{
-		return mInputToSimFrameStream;
-	}
+		InputFrameStreamModule::InputFrameStreamModule(Dia::Application::ProcessingUnit* associatedProcessingUnit)
+			: Dia::Application::Module(associatedProcessingUnit, kUniqueId, Dia::Application::Module::RunningEnum::kIdle)
+			, mInputToSimFrameStream(nullptr)
+		{}
 
-	SimInputFrameStreamModule::InputFrameStream* SimInputFrameStreamModule::GetStream()
-	{
-		return mInputToSimFrameStream;
+		void InputFrameStreamModule::Initialize(InputFrameStream* stream)
+		{
+			mInputToSimFrameStream = stream;
+		}
+
+		const InputFrameStreamModule::InputFrameStream* InputFrameStreamModule::GetStream()const
+		{
+			return mInputToSimFrameStream;
+		}
+
+		InputFrameStreamModule::InputFrameStream* InputFrameStreamModule::GetStream()
+		{
+			return mInputToSimFrameStream;
+		}
 	}
 }

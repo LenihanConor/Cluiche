@@ -16,7 +16,7 @@ namespace Cluiche
 		// MainLoadPhase: Initial phase for the main thread to load dummy project
 		//
 		////////////////////////////////////////////////////
-		class MainLoadPhase : public Cluiche::Kernel::MainPhaseBase
+		class MainLoadPhase : public Cluiche::Main::MainPhaseBase
 		{
 		public:
 			static const Dia::Core::StringCRC kUniqueId;

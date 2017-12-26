@@ -2,20 +2,23 @@
 
 namespace Cluiche
 {
-	const Dia::Core::StringCRC SimTimeServerModule::kUniqueId("SimTimeServerModule");
-
-	SimTimeServerModule::SimTimeServerModule(Dia::Application::ProcessingUnit* associatedProcessingUnit, float hz, const Dia::Core::TimeAbsolute& timeNow)
-		: Dia::Application::Module(associatedProcessingUnit, kUniqueId, Dia::Application::Module::RunningEnum::kIdle) // idle as we manually update
-		, mTimeServer(hz, timeNow)
-	{}
-
-	const Dia::Core::TimeServer& SimTimeServerModule::GetTimeServer()const
+	namespace Sim
 	{
-		return mTimeServer;
-	}
+		const Dia::Core::StringCRC TimeServerModule::kUniqueId("Sim::TimeServerModule");
 
-	void SimTimeServerModule::Tick()
-	{
-		mTimeServer.Tick();
+		TimeServerModule::TimeServerModule(Dia::Application::ProcessingUnit* associatedProcessingUnit, float hz, const Dia::Core::TimeAbsolute& timeNow)
+			: Dia::Application::Module(associatedProcessingUnit, kUniqueId, Dia::Application::Module::RunningEnum::kIdle) // idle as we manually update
+			, mTimeServer(hz, timeNow)
+		{}
+
+		const Dia::Core::TimeServer& TimeServerModule::GetTimeServer()const
+		{
+			return mTimeServer;
+		}
+
+		void TimeServerModule::Tick()
+		{
+			mTimeServer.Tick();
+		}
 	}
 }

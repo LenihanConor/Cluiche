@@ -17,7 +17,7 @@ namespace Cluiche
 	// and laynch straight into a game.
 	//
 	////////////////////////////////////////////////////
-	class MainBootStrapPhase : public Kernel::MainPhaseBase, LaunchUIPageExternalInterface
+	class MainBootStrapPhase : public Main::MainPhaseBase, LaunchUIPageExternalInterface
 	{
 	public:
 		static const Dia::Core::StringCRC kUniqueId;

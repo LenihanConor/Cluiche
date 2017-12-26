@@ -12,13 +12,13 @@ namespace Cluiche
 		const Dia::Core::StringCRC MainLoadPhase::kUniqueId("DummyProject::MainLoadPhase");
 
 		MainLoadPhase::MainLoadPhase(Dia::Application::ProcessingUnit* associatedProcessingUnit)
-			: Cluiche::Kernel::MainPhaseBase(associatedProcessingUnit, kUniqueId)
+			: Cluiche::Main::MainPhaseBase(associatedProcessingUnit, kUniqueId)
 		{}
 
 		void MainLoadPhase::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
 		{
-			AddModule(buildDependencies->GetModule(Cluiche::Kernel::MainKernelModule::kUniqueId));
-			AddModule(buildDependencies->GetModule(Cluiche::MainUIModule::kUniqueId));
+			AddModule(buildDependencies->GetModule(Cluiche::Main::KernelModule::kUniqueId));
+			AddModule(buildDependencies->GetModule(Cluiche::Main::UIModule::kUniqueId));
 		}
 
 		void MainLoadPhase::AfterModulesStart()

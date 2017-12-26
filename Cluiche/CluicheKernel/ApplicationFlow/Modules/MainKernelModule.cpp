@@ -13,72 +13,72 @@
 
 namespace Cluiche
 {
-	namespace Kernel
+	namespace Main
 	{
-		const Dia::Core::StringCRC MainKernelModule::kUniqueId("MainKernelModule");
+		const Dia::Core::StringCRC KernelModule::kUniqueId("Main::KernelModule");
 
-		MainKernelModule::MainKernelModule(Dia::Application::ProcessingUnit* associatedProcessingUnit)
+		KernelModule::KernelModule(Dia::Application::ProcessingUnit* associatedProcessingUnit)
 			: Dia::Application::Module(associatedProcessingUnit, kUniqueId, Dia::Application::Module::RunningEnum::kUpdate)
 			, mRunning(true)
 			, mTimeServer(30.0f, Dia::Core::TimeAbsolute::Zero())	// With only one time server everything in the main loop will increment at its frequency
 		{}
 
-		bool MainKernelModule::FlaggedToStopUpdating()const
+		bool KernelModule::FlaggedToStopUpdating()const
 		{
 			return !mRunning;
 		}
 
-		Dia::Core::FrameStream<Dia::Graphics::FrameData>& MainKernelModule::GetSimToRenderFrameStream()
+		Dia::Core::FrameStream<Dia::Graphics::FrameData>& KernelModule::GetSimToRenderFrameStream()
 		{
 			return mSimToRenderFrameStream;
 		}
 
-		const  Dia::Core::FrameStream<Dia::Graphics::FrameData>& MainKernelModule::GetSimToRenderFrameStream()const
+		const  Dia::Core::FrameStream<Dia::Graphics::FrameData>& KernelModule::GetSimToRenderFrameStream()const
 		{
 			return mSimToRenderFrameStream;
 		}
 
-		Dia::Core::FrameStream<Dia::Input::EventData>& MainKernelModule::GetInputToSimFrameStream()
+		Dia::Core::FrameStream<Dia::Input::EventData>& KernelModule::GetInputToSimFrameStream()
 		{
 			return mInputToSimFrameStream;
 		}
 
-		const Dia::Core::FrameStream<Dia::Input::EventData>& MainKernelModule::GetInputToSimFrameStream()const
+		const Dia::Core::FrameStream<Dia::Input::EventData>& KernelModule::GetInputToSimFrameStream()const
 		{
 			return mInputToSimFrameStream;
 		}
 
-		Dia::Input::EventData& MainKernelModule::GetInputEventData()
+		Dia::Input::EventData& KernelModule::GetInputEventData()
 		{
 			return mInputEventData;
 		}
 
-		const Dia::Input::EventData& MainKernelModule::GetInputEventData()const
+		const Dia::Input::EventData& KernelModule::GetInputEventData()const
 		{
 			return mInputEventData;
 		}
 
-		Dia::Graphics::ICanvas* MainKernelModule::GetCanvas()
+		Dia::Graphics::ICanvas* KernelModule::GetCanvas()
 		{
 			return mCanvas;
 		}
 
-		const Dia::Graphics::ICanvas* MainKernelModule::GetCanvas()const
+		const Dia::Graphics::ICanvas* KernelModule::GetCanvas()const
 		{
 			return mCanvas;
 		}
 
-		Dia::Window::IWindow* MainKernelModule::GetWindow()
+		Dia::Window::IWindow* KernelModule::GetWindow()
 		{
 			return mWindow;
 		}
 
-		const Dia::Window::IWindow* MainKernelModule::GetWindow()const
+		const Dia::Window::IWindow* KernelModule::GetWindow()const
 		{
 			return mWindow;
 		}
 
-		Dia::Application::StateObject::OpertionResponse MainKernelModule::DoStart(const IStartData* startData)
+		Dia::Application::StateObject::OpertionResponse KernelModule::DoStart(const IStartData* startData)
 		{
 			//Setup paths
 			Dia::Core::PathStoreConfig pathStoreConfig;
@@ -120,7 +120,7 @@ namespace Cluiche
 			return StateObject::OpertionResponse::kImmediate;
 		}
 
-		void MainKernelModule::DoUpdate()
+		void KernelModule::DoUpdate()
 		{
 			// Input thread :)
 			
@@ -158,7 +158,7 @@ namespace Cluiche
 			mTimeServer.Tick();
 		}
 
-		void MainKernelModule::DoStop()
+		void KernelModule::DoStop()
 		{
 			mWindowFactory.Destroy(mWindow);
 		}
