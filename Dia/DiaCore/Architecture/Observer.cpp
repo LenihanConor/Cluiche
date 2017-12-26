@@ -1,3 +1,5 @@
+#include "DiaCore/Architecture/Observer.h"
+
 namespace Dia
 {
 	namespace Core
@@ -39,7 +41,7 @@ namespace Dia
 		}
 
 		//------------------------------------------------
-		void ObserverSubject::NotifyObservers()
+		void ObserverSubject::NotifyObservers(int message)
 		{
 			std::lock_guard<std::mutex> lock(mMutex);
 
@@ -47,12 +49,12 @@ namespace Dia
 
 			for (int i = 0; i < count; i++)
 			{
-				(mObservers[i])->ObserverNotification(this);
+				(mObservers[i])->ObserverNotification(this, message);
 			}
 		}
 
 		//------------------------------------------------
-		void ObserverSubject::NotifyObservers()const
+		void ObserverSubject::NotifyObservers(int message)const
 		{
 			std::lock_guard<std::mutex> lock(mMutex);
 
@@ -60,7 +62,7 @@ namespace Dia
 
 			for (int i = 0; i < count; i++)
 			{
-				(mObservers[i])->ObserverNotification(this);
+				(mObservers[i])->ObserverNotification(this, message);
 			}
 		}
 	}

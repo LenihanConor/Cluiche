@@ -10,17 +10,18 @@ namespace Dia
 {
 	namespace Core
 	{
-		class Subject;
+		class ObserverSubject;
 
+		// the observer is the recieving class
 		class Observer
 		{
 		public:
 			Observer() {};
 			~Observer() {};
-			virtual void ObserverNotification(ObserverSubject* theChangeSubject) = 0;
-			virtual void ObserverNotification(const ObserverSubject* theChangeSubject) = 0;
+			virtual void ObserverNotification(const ObserverSubject* theChangeSubject, int message) = 0;
 		};
 
+		// the observer subject is the class that wants to communicate 
 		class ObserverSubject
 		{
 		public:
@@ -28,8 +29,8 @@ namespace Dia
 			
 			void AttachToObserver(Observer*);
 			void DetachFromObserver(Observer*);
-			void NotifyObservers();
-			void NotifyObservers()const;
+			void NotifyObservers(int message);
+			void NotifyObservers(int message)const;
 		
 		private:
 			mutable std::mutex mMutex;
@@ -37,7 +38,5 @@ namespace Dia
 		};
 	}
 }
-
-#include "DiaCore/Architecture/Observer.inl"
 
 #endif
