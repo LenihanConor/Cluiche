@@ -32,9 +32,6 @@
     <ClCompile Include="Source\LaunchUIPage.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="ApplicationFlow\Modules\SimUIProxyModule.cpp">
-      <Filter>ApplicationFlow\Modules</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="ApplicationFlow">
@@ -83,9 +80,6 @@
     </ClInclude>
     <ClInclude Include="Source\LaunchUIPage.h">
       <Filter>Source</Filter>
-    </ClInclude>
-    <ClInclude Include="ApplicationFlow\Modules\SimUIProxyModule.h">
-      <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

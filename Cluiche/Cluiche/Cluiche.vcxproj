@@ -12,7 +12,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ApplicationFlow\Modules\LevelRegistryModule.cpp" />
-    <ClCompile Include="ApplicationFlow\Modules\SimUIProxyModule.cpp" />
     <ClCompile Include="ApplicationFlow\Phases\MainBootPhase.cpp" />
     <ClCompile Include="ApplicationFlow\Phases\MainBootStrapPhase.cpp" />
     <ClCompile Include="ApplicationFlow\Phases\RenderRunningPhase.cpp" />
@@ -26,7 +25,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApplicationFlow\Modules\LevelRegistryModule.h" />
-    <ClInclude Include="ApplicationFlow\Modules\SimUIProxyModule.h" />
     <ClInclude Include="ApplicationFlow\Phases\MainBootPhase.h" />
     <ClInclude Include="ApplicationFlow\Phases\MainBootStrapPhase.h" />
     <ClInclude Include="ApplicationFlow\Phases\RenderRunningPhase.h" />
