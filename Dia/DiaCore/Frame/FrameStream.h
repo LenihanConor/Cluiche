@@ -26,7 +26,6 @@ namespace Dia
 
 			void GarbageCollectAllFramesOlderThan(const Dia::Core::TimeAbsolute& timeStamp);
 
-			
 		private:
 			class InternalData
 			{
