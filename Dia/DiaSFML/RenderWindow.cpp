@@ -170,10 +170,13 @@ namespace Dia
 			{
 				// Push the ui overlay texture to a sprite for rendering
 				sf::Sprite uiSprite;
-				uiSprite.setTexture(*mUIOverlayTexture);
+				
+				if (nextFrame.GetUIData().GetBufferSize() > 0)
+				{
+					uiSprite.setTexture(*mUIOverlayTexture);
 
-				mUIOverlayTexture->update(nextFrame.GetUIData().GetBuffer());	
-
+					mUIOverlayTexture->update(nextFrame.GetUIData().GetBuffer());
+				}
 				mWindowContext->pushGLStates();
 				mWindowContext->draw(uiSprite, mUIShader);
 				mWindowContext->popGLStates();
