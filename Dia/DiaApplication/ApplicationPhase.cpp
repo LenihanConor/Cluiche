@@ -8,6 +8,7 @@
 #include <DiaCore/Strings/String1024.h>
 #include <DiaCore/Time/TimeRelative.h>
 #include <DiaCore/Timer/TimerSystem.h>
+#include <DiaCore/Core/Log.h>
 
 #include <DiaApplication/ApplicationProcessingUnit.h>
 
@@ -50,7 +51,7 @@ namespace Dia
 				unsigned int numberOfDependencies = module->GetNumberOfDependancies();
 				for(unsigned int i = 0; i < numberOfDependencies; i++)
 				{
-					AddModule(module->GetDependencyFromIndex(i));
+					AddModule(module->GetModuleFromIndex(i));
 				}
 			}
 		}
@@ -195,6 +196,8 @@ namespace Dia
 		//	Modules that are only in the new phase need to be started
 		void Phase::TransitionTo(Phase* endPhase)
 		{
+			Dia::Core::Log::OutputVaradicLine("Transitioning Phase From %s to %s", GetUniqueId().AsChar(), endPhase->GetUniqueId().AsChar());
+
 			// Get list of all the modules we need to sort out
 			Dia::Core::Containers::DynamicArrayC<Module*, 128> modulesToStop;
 			Dia::Core::Containers::DynamicArrayC<Module*, 128> modulesToRetain;
