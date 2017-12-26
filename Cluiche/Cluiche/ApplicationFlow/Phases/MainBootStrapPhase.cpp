@@ -33,7 +33,14 @@ namespace Cluiche
 		mLaunchUIPage.InitializePage();
 
 		Cluiche::MainUIModule* ui = this->GetModule<Cluiche::MainUIModule>();
-		ui->GetUISystem()->LoadPage(mLaunchUIPage); //TODO replace this with a templated version
+		ui->GetUISystem()->LoadPage(mLaunchUIPage); 
+	}
+
+
+	void MainBootStrapPhase::BeforeModulesStop()
+	{
+		Cluiche::MainUIModule* ui = this->GetModule<Cluiche::MainUIModule>();
+		ui->GetUISystem()->UnloadPage(); 
 	}
 
 	void MainBootStrapPhase::RequestLaunchLevel(const Dia::Core::Containers::String64& levelName)
@@ -52,7 +59,7 @@ namespace Cluiche
 		Cluiche::Kernel::ILevel* level = nullptr;
 		if (levelName == "dummy_level")
 		{
-			level = DIA_NEW(Cluiche::DummyLevel::Level(this, this->GetAssociatedProcessingUnit(), nullptr, nullptr)); //TODO MEMORY LEAK, a reference should be kept in the level regsitry
+			level = DIA_NEW(Cluiche::DummyLevel::Level(this, this->GetAssociatedProcessingUnit(), nullptr, nullptr)); //TODO MEMORY LEAK,  a reference should be kept in the level regsitry
 		}
 
 		if (level == nullptr)

@@ -1,7 +1,7 @@
 #include "LevelFlow/Phases/MainLoadPhase.h"
 
 #include "CluicheKernel/ApplicationFlow/Modules/MainKernelModule.h"
-//#include "ApplicationFlow/Phases/MainBootStrapPhase.h"
+#include "CluicheKernel/ApplicationFlow/Modules/MainUIModule.h"
 
 #include <DiaApplication/ApplicationProcessingUnit.h>
 
@@ -18,6 +18,7 @@ namespace Cluiche
 		void MainLoadPhase::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
 		{
 			AddModule(buildDependencies->GetModule(Cluiche::Kernel::MainKernelModule::kUniqueId));
+			AddModule(buildDependencies->GetModule(Cluiche::MainUIModule::kUniqueId));
 		}
 
 		void MainLoadPhase::AfterModulesStart()

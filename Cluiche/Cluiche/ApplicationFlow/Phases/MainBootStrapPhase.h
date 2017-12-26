@@ -27,6 +27,7 @@ namespace Cluiche
 		void DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)override;
 
 		virtual void AfterModulesStart() override;
+		virtual void BeforeModulesStop() override;
 
 		virtual void RequestLaunchLevel(const Dia::Core::Containers::String64& levelName)override;
 

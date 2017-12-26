@@ -227,6 +227,8 @@ namespace Dia
 			}
 			mUpdatingModules.RemoveAll();
 
+			BeforeModulesStop();
+
 			//	Modules that are only in the start phase need to be stopped
 			const unsigned int numberOfModules = mStoppingModuleOrder.Size();
 			for (unsigned int i = numberOfModules - 1; i >= 0 && i < numberOfModules; --i)
@@ -238,7 +240,8 @@ namespace Dia
 				}
 			}
 
-			
+			AfterModulesStop();
+
 			for (unsigned int i = 0; i < mStoppingModuleOrder.Size(); i++)
 			{
 				Module* module = mStoppingModuleOrder[i];

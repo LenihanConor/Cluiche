@@ -517,8 +517,6 @@ namespace Dia
 				std::lock_guard<std::mutex> lock(mSystemMutex);
 
 				mIsPageLoaded = false;
-
-				DIA_ASSERT(0, "Currently cannot unload page");
 			}
 
 			//-------------------------------------------------------------------
