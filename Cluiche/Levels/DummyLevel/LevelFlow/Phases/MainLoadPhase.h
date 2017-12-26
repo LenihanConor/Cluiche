@@ -3,7 +3,7 @@
 #include <DiaApplication/ApplicationPhase.h>
 #include <DiaCore/CRC/StringCRC.h>
 
-#include <CluicheKernel/MainPhaseBase.h>
+#include <CluicheKernel/ApplicationFlow/Phases/MainPhaseBase.h>
 
 namespace Dia { namespace Application { class ProcessingUnit; } }
 
