@@ -35,25 +35,25 @@ namespace Dia
 		}
 
 		//-----------------------------------------------------------------------------
-		Module* Module::GetDependencyFromIndex(unsigned int index)
+		Module* Module::GetModuleFromIndex(unsigned int index)
 		{
 			return mDependencies.GetItemByIndex(index);
 		}
 
 		//-----------------------------------------------------------------------------
-		const Module* Module::GetDependencyFromIndex(unsigned int index)const
+		const Module* Module::GetModuleFromIndex(unsigned int index)const
 		{
 			return mDependencies.GetItemByIndexConst(index);
 		}
 
 		//-----------------------------------------------------------------------------
-		Module* Module::GetDependency(const Dia::Core::StringCRC& uniqueId)
+		Module* Module::GetModule(const Dia::Core::StringCRC& uniqueId)
 		{
 			return mDependencies.GetItem(uniqueId);
 		}
 
 		//-----------------------------------------------------------------------------
-		const Module* Module::GetDependency(const Dia::Core::StringCRC& uniqueId)const
+		const Module* Module::GetModule(const Dia::Core::StringCRC& uniqueId)const
 		{
 			return mDependencies.GetItemConst(uniqueId);
 		}
