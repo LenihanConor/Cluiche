@@ -258,15 +258,25 @@ namespace Dia
 				PostPhaseUpdate();
 
 				{
-					std::lock_guard<std::mutex> lock(mQueuedTransitionMutex);
+					bool transition = false;
+					Dia::Core::StringCRC nextTransitionCRC;
 
-					// If there are any transitioned phase move to them now
-					if (mQueuedTransition.Size() != 0)
 					{
-						Dia::Core::StringCRC nextTransitionCRC = mQueuedTransition[0];
+						std::lock_guard<std::mutex> lock(mQueuedTransitionMutex);
 
-						mQueuedTransition.RemoveAt(0);
+						// If there are any transitioned phase move to them now
+						if (mQueuedTransition.Size() != 0)
+						{
+							nextTransitionCRC = mQueuedTransition[0];
 
+							mQueuedTransition.RemoveAt(0);
+
+							transition = true;
+						}
+					}
+
+					if (transition)
+					{
 						TransitionPhase(nextTransitionCRC);
 					}
 				}
