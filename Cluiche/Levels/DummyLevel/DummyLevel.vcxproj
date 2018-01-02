@@ -123,10 +123,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="DummyLevel.h" />
+    <ClInclude Include="LevelFlow\Phases\MainFEPhase.h" />
     <ClInclude Include="LevelFlow\Phases\MainLoadPhase.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DummyLevel.cpp" />
+    <ClCompile Include="LevelFlow\Phases\MainFEPhase.cpp" />
     <ClCompile Include="LevelFlow\Phases\MainLoadPhase.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

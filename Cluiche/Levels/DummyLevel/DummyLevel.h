@@ -4,6 +4,7 @@
 #include <CluicheKernel/LevelRegistry.h>
 
 #include "LevelFlow\Phases\MainLoadPhase.h"
+#include "LevelFlow\Phases\MainFEPhase.h"
 
 namespace Cluiche
 {
@@ -21,8 +22,8 @@ namespace Cluiche
 
 		private:
 			MainLoadPhase mMainLoadPhase;
+			MainFEPhase mMainFEPhase;
 			Dia::Core::StringCRC mEntryPhaseUniqueId; // This is the id of the phase we should use to enter this mode 	
-
 		};		
 	}
 }

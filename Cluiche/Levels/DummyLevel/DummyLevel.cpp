@@ -16,10 +16,12 @@ namespace Cluiche
 						Dia::Application::ProcessingUnit* mainPU, 
 						Dia::Application::ProcessingUnit* simPU,
 						Dia::Application::ProcessingUnit* renderPU)
-			: mMainLoadPhase(mainPU)
+			: mMainFEPhase(mainPU)
+			, mMainLoadPhase(mainPU)
 		{
 			mEntryPhaseUniqueId = Cluiche::DummyLevel::MainLoadPhase::kUniqueId;
 			mainPU->AddPhaseTransiton(currentPhase, &mMainLoadPhase);
+			mainPU->AddPhaseTransiton(&mMainLoadPhase, &mMainFEPhase);
 
 			mainPU->Initialize();
 		}

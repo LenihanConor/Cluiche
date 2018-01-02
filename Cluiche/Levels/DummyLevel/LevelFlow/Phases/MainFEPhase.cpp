@@ -1,4 +1,3 @@
-#include "LevelFlow/Phases/MainLoadPhase.h"
 #include "LevelFlow/Phases/MainFEPhase.h"
 
 #include "CluicheKernel/ApplicationFlow/Modules/MainKernelModule.h"
@@ -10,21 +9,21 @@ namespace Cluiche
 {
 	namespace DummyLevel
 	{
-		const Dia::Core::StringCRC MainLoadPhase::kUniqueId("DummyProject::MainLoadPhase");
+		const Dia::Core::StringCRC MainFEPhase::kUniqueId("DummyProject::MainFEPhase");
 
-		MainLoadPhase::MainLoadPhase(Dia::Application::ProcessingUnit* associatedProcessingUnit)
+		MainFEPhase::MainFEPhase(Dia::Application::ProcessingUnit* associatedProcessingUnit)
 			: Cluiche::Main::MainPhaseBase(associatedProcessingUnit, kUniqueId)
 		{}
 
-		void MainLoadPhase::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
+		void MainFEPhase::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
 		{
 			AddModule(buildDependencies->GetModule(Cluiche::Main::KernelModule::kUniqueId));
 			AddModule(buildDependencies->GetModule(Cluiche::Main::UIModule::kUniqueId));
 		}
 
-		void MainLoadPhase::AfterModulesStart()
+		void MainFEPhase::AfterModulesStart()
 		{
-			GetAssociatedProcessingUnit()->QueuePhaseTransition(MainFEPhase::kUniqueId);
+	//		GetAssociatedProcessingUnit()->QueuePhaseTransition(MainBootStrapPhase::kUniqueId);
 		}
 	}
 }

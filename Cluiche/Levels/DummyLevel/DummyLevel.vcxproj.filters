@@ -5,12 +5,18 @@
       <Filter>LevelFlow\Phases</Filter>
     </ClInclude>
     <ClInclude Include="DummyLevel.h" />
+    <ClInclude Include="LevelFlow\Phases\MainFEPhase.h">
+      <Filter>LevelFlow\Phases</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="LevelFlow\Phases\MainLoadPhase.cpp">
       <Filter>LevelFlow\Phases</Filter>
     </ClCompile>
     <ClCompile Include="DummyLevel.cpp" />
+    <ClCompile Include="LevelFlow\Phases\MainFEPhase.cpp">
+      <Filter>LevelFlow\Phases</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="LevelFlow">
