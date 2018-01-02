@@ -49,7 +49,17 @@ namespace Dia
 
 					if (IsListeningForEvent(diaEvent.type))
 					{
-						outStream.Add(diaEvent);
+						if (diaEvent.type == sf::Event::MouseMoved &&
+							outStream.Size() > 0 &&
+							outStream[outStream.Size() - 1].type == sf::Event::MouseMoved)
+						{
+							outStream[outStream.Size() - 1].mouseMove.x = diaEvent.mouseMove.x;
+							outStream[outStream.Size() - 1].mouseMove.y = diaEvent.mouseMove.y;
+						}
+						else
+						{
+							outStream.Add(diaEvent);
+						}
 					}
 				}
 			}
