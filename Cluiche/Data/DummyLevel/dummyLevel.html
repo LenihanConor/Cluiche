@@ -1,0 +1,42 @@
+<html>
+    <head>
+    <link rel="stylesheet" href="../UI_Common/Webix/5.2.1/webix.css" type="text/css">
+    <script src="../UI_Common/Webix/5.2.1/webix.js" type="text/javascript"></script>  
+	</style>
+
+    </head>
+    <body>
+        <div id="bootscreen"></div>
+        <script type="text/javascript">
+       
+            webix.ui
+            (
+                {
+                    view: "window",
+                    id: "mylist",
+                    head:"Nothing To Do Here!",
+                    position: "center",
+                    body:
+                    {
+                        type:"line",
+                        rows:
+                        [                            
+                            { 
+                                view: "toolbar", elements:
+                                [
+                                    { view: "button", value: "Exit Level", click: "exit_level" }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            ).show();
+
+            function exit_level()
+            {
+                app.Application_ExitLevel();
+            }
+
+        </script>
+    </body>
+</html>
