@@ -24,11 +24,15 @@ namespace Dia
 		//-----------------------------------------------------------------------------
 		void StateObject::BuildDependancies(IBuildDependencyData* buildDependencies)
 		{
-			DIA_ASSERT(mState == StateEnum::kConstructed, "Starting %s but in wrong state: %s", mUniqueId.AsChar(), mState.AsString() );
+	//		DIA_ASSERT(mState == StateEnum::kConstructed, "Starting %s but in wrong state: %s", mUniqueId.AsChar(), mState.AsString() );
 
 			DoBuildDependancies(buildDependencies);
 
-			mState = StateEnum::kNotRunning;
+			// If the state object is not already running then we can need to set into a ready fro running state
+			if (mState == StateEnum::kConstructed)
+			{
+				mState = StateEnum::kNotRunning;
+			}
 		}
 
 		//-----------------------------------------------------------------------------
@@ -82,11 +86,29 @@ namespace Dia
 		//-----------------------------------------------------------------------------
 		void StateObject::Stop()
 		{
-			Dia::Core::Log::OutputVaradicLine("Stoping %s", GetUniqueId().AsChar());
+			Dia::Core::Log::OutputVaradicLine("Stopping %s - %s", GetStateObjectType(), GetUniqueId().AsChar());
 
 			DIA_ASSERT(mState == StateEnum::kRunning, "Stoping %s but in wrong state: %s", mUniqueId.AsChar(), mState.AsString());
 
 			DoStop();
+
+			mStateMutex.lock();
+
+			mState = StateEnum::kNotRunning;
+
+			mStateMutex.unlock();
+		}
+
+
+		//-----------------------------------------------------------------------
+		// Function for phases transitions called after all modules are stopped
+		void StateObject::AfterPhaseTransition()
+		{
+			mStateMutex.lock();
+
+			mState = StateEnum::kNotRunning;
+
+			mStateMutex.unlock();
 		}
 	}
 }
