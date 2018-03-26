@@ -82,6 +82,8 @@ namespace Dia
 
 			void Stop();							// All modules turning off
 			
+			void AfterPhaseTransition();
+
 			const Dia::Core::StringCRC& GetUniqueId()const{ return mUniqueId; }
 			virtual const char* GetStateObjectType()const = 0;
 

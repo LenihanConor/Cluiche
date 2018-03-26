@@ -259,6 +259,9 @@ namespace Dia
 				moduleToRetain->RetainThroughTransition(this, endPhase);
 			}
 
+			// Set previous phase to Stop
+			this->AfterPhaseTransition();
+
 			//	Modules that are only in the new phase need to be started
 			endPhase->Start();
 		}
