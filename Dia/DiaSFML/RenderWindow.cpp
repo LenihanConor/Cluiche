@@ -176,7 +176,13 @@ namespace Dia
 					uiSprite.setTexture(*mUIOverlayTexture);
 
 					mUIOverlayTexture->update(nextFrame.GetUIData().GetBuffer());
+
+					// TODO This should be part of a debug menu
+					static bool debugUIRendertexture = false;
+					if (debugUIRendertexture)
+						mUIOverlayTexture->copyToImage().saveToFile("debugUIRender.png");
 				}
+
 				mWindowContext->pushGLStates();
 				mWindowContext->draw(uiSprite, mUIShader);
 				mWindowContext->popGLStates();
