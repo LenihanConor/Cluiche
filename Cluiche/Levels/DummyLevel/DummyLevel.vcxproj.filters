@@ -8,6 +8,9 @@
     <ClInclude Include="LevelFlow\Phases\MainFEPhase.h">
       <Filter>LevelFlow\Phases</Filter>
     </ClInclude>
+    <ClInclude Include="UI\DummyUIPage.h">
+      <Filter>UI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="LevelFlow\Phases\MainLoadPhase.cpp">
@@ -17,6 +20,9 @@
     <ClCompile Include="LevelFlow\Phases\MainFEPhase.cpp">
       <Filter>LevelFlow\Phases</Filter>
     </ClCompile>
+    <ClCompile Include="UI\DummyUIPage.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="LevelFlow">
@@ -24,6 +30,9 @@
     </Filter>
     <Filter Include="LevelFlow\Phases">
       <UniqueIdentifier>{55de9908-bc04-4e83-ae68-ee74b7b89b03}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="UI">
+      <UniqueIdentifier>{831c8c1c-64fe-4b31-bc47-70283e4b4c0d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

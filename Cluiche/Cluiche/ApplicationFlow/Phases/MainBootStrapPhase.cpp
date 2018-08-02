@@ -1,10 +1,10 @@
 #include "ApplicationFlow/Phases/MainBootStrapPhase.h"
 
 #include "CluicheKernel/ApplicationFlow/Modules/MainKernelModule.h"
-#include "ApplicationFlow/Modules/LevelRegistryModule.h"
+#include "CluicheKernel/ApplicationFlow/Modules/LevelRegistryModule.h"
 #include "CluicheKernel/ApplicationFlow/Modules/MainUIModule.h"
 #include "Levels/DummyLevel/DummyLevel.h"
-#include "Levels/DummyLevel/LevelFlow/Phases/MainLoadPhase.h"
+#include "Levels/UnitTestLevel/UnitTestLevel.h"
 
 #include <CluicheKernel/LevelRegistry.h>
 
@@ -19,6 +19,8 @@ namespace Cluiche
 	MainBootStrapPhase::MainBootStrapPhase(Dia::Application::ProcessingUnit* associatedProcessingUnit)
 		: MainPhaseBase(associatedProcessingUnit, kUniqueId)
 		, mLaunchUIPage(this)
+		, mDummyLevel(nullptr)
+		, mUnitTestLevel(nullptr)
 	{}
 
 	void MainBootStrapPhase::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
@@ -30,16 +32,28 @@ namespace Cluiche
 
 	void MainBootStrapPhase::AfterModulesStart()
 	{
+		mDummyLevel = DIA_NEW(Cluiche::DummyLevel::Level(this, this->GetAssociatedProcessingUnit(), nullptr, nullptr)); 
+		mUnitTestLevel = DIA_NEW(Cluiche::UnitTestLevel::Level(this, this->GetAssociatedProcessingUnit(), nullptr, nullptr));
+		
 		mLaunchUIPage.InitializePage();
 
 		Cluiche::Main::UIModule* ui = this->GetModule<Cluiche::Main::UIModule>();
 		ui->GetUISystem()->LoadPage(mLaunchUIPage); 
-	}
 
+		Cluiche::Main::LevelRegistryModule* levelRegistry = this->GetModule<Cluiche::Main::LevelRegistryModule>();
+
+		// This is for the re-entrance case
+		if (levelRegistry->GetLevelRegistry().GetCurrentLevel() != nullptr)
+		{
+			levelRegistry->GetLevelRegistry().DeleteLevel();
+		}
+	}
 
 	void MainBootStrapPhase::BeforeModulesStop()
 	{
-		Cluiche:Main::UIModule* ui = this->GetModule<Cluiche::Main::UIModule>();
+		DIA_DELETE(mDummyLevel);
+
+		Cluiche::Main::UIModule* ui = this->GetModule<Cluiche::Main::UIModule>();
 		ui->GetUISystem()->UnloadPage(); 
 	}
 
@@ -59,14 +73,21 @@ namespace Cluiche
 		Cluiche::Kernel::ILevel* level = nullptr;
 		if (levelName == "dummy_level")
 		{
-			level = DIA_NEW(Cluiche::DummyLevel::Level(this, this->GetAssociatedProcessingUnit(), nullptr, nullptr)); //TODO MEMORY LEAK, a reference should be kept in the level regsitry
+			level = mDummyLevel;
 		}
-
+		else if (levelName == "unit_test")
+		{
+			level = mUnitTestLevel;
+		}
 		if (level == nullptr)
 		{
-			DIA_ASSERT(0, "Counld not find level");
+			//webix.alert({ type: "alert-warning", text : "Could not find level." });
+
+			DIA_ASSERT(0, "Could not find level");
 			return;
 		}
+
+		this->GetModule<Cluiche::Main::LevelRegistryModule>()->GetLevelRegistry().SetCurrentLevel(level);
 		
 		// Transition to the next phase
 		const Dia::Core::StringCRC& entryPhaseUniqueId = level->GetEntryPhaseUniqueId();

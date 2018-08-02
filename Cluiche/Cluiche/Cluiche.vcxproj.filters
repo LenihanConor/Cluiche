@@ -26,9 +26,6 @@
     <ClCompile Include="ApplicationFlow\Phases\SimBootStrapPhase.cpp">
       <Filter>ApplicationFlow\Phases</Filter>
     </ClCompile>
-    <ClCompile Include="ApplicationFlow\Modules\LevelRegistryModule.cpp">
-      <Filter>ApplicationFlow\Modules</Filter>
-    </ClCompile>
     <ClCompile Include="Source\LaunchUIPage.cpp">
       <Filter>Source</Filter>
     </ClCompile>
@@ -74,9 +71,6 @@
     </ClInclude>
     <ClInclude Include="ApplicationFlow\Phases\SimBootStrapPhase.h">
       <Filter>ApplicationFlow\Phases</Filter>
-    </ClInclude>
-    <ClInclude Include="ApplicationFlow\Modules\LevelRegistryModule.h">
-      <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
     <ClInclude Include="Source\LaunchUIPage.h">
       <Filter>Source</Filter>

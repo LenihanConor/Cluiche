@@ -12,7 +12,10 @@ namespace Cluiche
 		{
 			DIA_ASSERT(mCurrentLevel == nullptr, "Leaking memory");
 
-			DeleteLevel();
+			if (mCurrentLevel != nullptr)
+			{
+				DeleteLevel();
+			}
 		}
 
 		void LevelRegistry::SetCurrentLevel(ILevel* level)

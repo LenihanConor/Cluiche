@@ -20,6 +20,9 @@
     <ClCompile Include="ApplicationFlow\Modules\SimTimeServerModule.cpp">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClCompile>
+    <ClCompile Include="ApplicationFlow\Modules\LevelRegistryModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="LevelRegistry.h" />
@@ -39,6 +42,9 @@
       <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
     <ClInclude Include="ApplicationFlow\Modules\SimTimeServerModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="ApplicationFlow\Modules\LevelRegistryModule.h">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
   </ItemGroup>

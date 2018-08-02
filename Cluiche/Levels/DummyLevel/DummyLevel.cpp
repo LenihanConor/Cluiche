@@ -10,7 +10,7 @@ namespace Cluiche
 {
 	namespace DummyLevel
 	{
-		const Dia::Core::StringCRC Level::kLevelUniqueId("dummy_level"); //("dummy_project"; // This is registered with the level manager and is used by UI/flow to determine what to boot.
+		const Dia::Core::StringCRC Level::kLevelUniqueId("dummy_level"); // This is registered with the level manager and is used by UI/flow to determine what to boot.
 
 		Level::Level(Dia::Application::Phase* currentPhase, 
 						Dia::Application::ProcessingUnit* mainPU, 
@@ -20,10 +20,18 @@ namespace Cluiche
 			, mMainLoadPhase(mainPU)
 		{
 			mEntryPhaseUniqueId = Cluiche::DummyLevel::MainLoadPhase::kUniqueId;
+			mExitPhaseUniqueId = currentPhase->GetUniqueId();
+
 			mainPU->AddPhaseTransiton(currentPhase, &mMainLoadPhase);
 			mainPU->AddPhaseTransiton(&mMainLoadPhase, &mMainFEPhase);
+			mainPU->AddPhaseTransiton(&mMainFEPhase, currentPhase);
 
 			mainPU->Initialize();
+		}
+
+		Level::~Level()
+		{
+			// NEED TO DEINITITALIZE!!!
 		}
 	}
 }

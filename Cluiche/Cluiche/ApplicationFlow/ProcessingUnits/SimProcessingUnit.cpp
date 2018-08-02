@@ -51,6 +51,7 @@ namespace Cluiche
 
 	void SimProcessingUnit::PostPhaseUpdate()
 	{
+		// TODO MOVE TO THE PHASE
 		// All going to Sim thread
 		mSimInputFrameStreamModule.GetStream()->GarbageCollectAllFramesOlderThan(mSimTimeServerModule.GetTimeServer().GetTime());
 
