@@ -40,6 +40,7 @@ namespace Cluiche
 		public:
 			virtual const Dia::Core::StringCRC& GetUniqueId()const = 0;
 			virtual const Dia::Core::StringCRC& GetEntryPhaseUniqueId()const = 0;
+			virtual const Dia::Core::StringCRC& GetExitPhaseUniqueId()const = 0;
 
 			void AddToMainThreadBundle(Dia::Application::Phase* phase)
 			{
@@ -51,6 +52,7 @@ namespace Cluiche
 			}
 
 			const ApplicationPointerBundle& GetMainThreadApplicationBundle()const {return mMainApplicationBundle;}
+
 		private:
 			ApplicationPointerBundle mMainApplicationBundle;
 		};
@@ -63,6 +65,8 @@ namespace Cluiche
 			~LevelRegistry();
 
 			void SetCurrentLevel(ILevel* level);
+			void DeleteLevel();
+			
 			ILevel* GetCurrentLevel();
 			const ILevel* GetCurrentLevel()const;
 

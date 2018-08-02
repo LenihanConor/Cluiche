@@ -11,6 +11,8 @@ namespace Cluiche
 		LevelRegistry::~LevelRegistry()
 		{
 			DIA_ASSERT(mCurrentLevel == nullptr, "Leaking memory");
+
+			DeleteLevel();
 		}
 
 		void LevelRegistry::SetCurrentLevel(ILevel* level)
@@ -18,6 +20,18 @@ namespace Cluiche
 			DIA_ASSERT(mCurrentLevel == nullptr, "There is already an active current level cannot activate a new one");
 			
 			mCurrentLevel = level;
+		}
+
+		void LevelRegistry::DeleteLevel()
+		{
+			DIA_ASSERT(mCurrentLevel != nullptr, "There is no active current level cannot activate a new one");
+
+			if (mCurrentLevel != nullptr)
+			{
+				DIA_DELETE(mCurrentLevel);
+
+				mCurrentLevel = nullptr;
+			}
 		}
 
 		ILevel* LevelRegistry::GetCurrentLevel()
