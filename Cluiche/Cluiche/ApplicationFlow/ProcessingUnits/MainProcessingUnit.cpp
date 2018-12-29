@@ -29,6 +29,21 @@ namespace Cluiche
 		Initialize();
 	}
 
+	Cluiche::MainProcessingUnit* MainProcessingUnit::GetMainPU()
+	{
+		return this;
+	}
+
+	Cluiche::RenderProcessingUnit* MainProcessingUnit::GetRenderingPU()
+	{ 
+		return &mRenderingPU; 
+	}
+
+	Cluiche::SimProcessingUnit* MainProcessingUnit::GetSimPU() 
+	{ 
+		return &mSimPU; 
+	}
+
 	void MainProcessingUnit::PostPhaseStart(const IStartData* startData)
 	{
 		// Start the render thread

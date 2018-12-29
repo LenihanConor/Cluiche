@@ -21,6 +21,10 @@ namespace Cluiche
 
 		MainProcessingUnit();
 
+		Cluiche::MainProcessingUnit* GetMainPU();
+		Cluiche::RenderProcessingUnit* GetRenderingPU();
+		Cluiche::SimProcessingUnit* GetSimPU();
+
 	private:
 		virtual void PostPhaseStart(const IStartData* startData)override final;
 		virtual void PrePhaseStop()override final;
