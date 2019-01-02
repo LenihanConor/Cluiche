@@ -1,14 +1,14 @@
-#include "CluicheKernel/LevelRegistry.h"
+#include "CluicheKernel/LevelFactory.h"
 
 namespace Cluiche
 {
 	namespace Kernel
 	{
-		LevelRegistry::LevelRegistry()
+		LevelFactory::LevelFactory()
 			: mCurrentLevel(nullptr)
 		{}
 
-		LevelRegistry::~LevelRegistry()
+		LevelFactory::~LevelFactory()
 		{
 			DIA_ASSERT(mCurrentLevel == nullptr, "Leaking memory");
 
@@ -18,14 +18,14 @@ namespace Cluiche
 			}
 		}
 
-		void LevelRegistry::SetCurrentLevel(ILevel* level)
+		void LevelFactory::SetCurrentLevel(ILevel* level)
 		{
 			DIA_ASSERT(mCurrentLevel == nullptr, "There is already an active current level cannot activate a new one");
 			
 			mCurrentLevel = level;
 		}
 
-		void LevelRegistry::DeleteLevel()
+		void LevelFactory::DeleteLevel()
 		{
 			DIA_ASSERT(mCurrentLevel != nullptr, "There is no active current level cannot activate a new one");
 
@@ -37,12 +37,12 @@ namespace Cluiche
 			}
 		}
 
-		ILevel* LevelRegistry::GetCurrentLevel()
+		ILevel* LevelFactory::GetCurrentLevel()
 		{
 			return mCurrentLevel;
 		}
 
-		const ILevel* LevelRegistry::GetCurrentLevel()const
+		const ILevel* LevelFactory::GetCurrentLevel()const
 		{
 			return mCurrentLevel;
 		}

@@ -58,11 +58,11 @@ namespace Cluiche
 		};
 
 		/// This is a registry of all level
-		class LevelRegistry
+		class LevelFactory
 		{
 		public:
-			LevelRegistry();
-			~LevelRegistry();
+			LevelFactory();
+			~LevelFactory();
 
 			void SetCurrentLevel(ILevel* level);
 			void DeleteLevel();

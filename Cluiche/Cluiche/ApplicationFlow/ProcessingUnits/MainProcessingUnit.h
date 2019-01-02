@@ -3,7 +3,7 @@
 #include <DiaApplication/ApplicationProcessingUnit.h>
 
 #include "CluicheKernel/ApplicationFlow/Modules/MainKernelModule.h"
-#include "CluicheKernel/ApplicationFlow/Modules/LevelRegistryModule.h"
+#include "CluicheKernel/ApplicationFlow/Modules/LevelFactoryModule.h"
 #include "CluicheKernel/ApplicationFlow/Modules/MainUIModule.h"
 #include "ApplicationFlow/Phases/MainBootPhase.h"
 #include "ApplicationFlow/Phases/MainBootStrapPhase.h"
@@ -43,7 +43,7 @@ namespace Cluiche
 
 		//Modules
 		Cluiche::Main::KernelModule mKernelModule;
-		Cluiche::Main::LevelRegistryModule mLevelRegistryModule;
+		Cluiche::Main::LevelFactoryModule mLevelRegistryModule;
 		Cluiche::Main::UIModule mUI;
 	};
 }

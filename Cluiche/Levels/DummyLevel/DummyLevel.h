@@ -1,7 +1,7 @@
 #pragma once
 
 #include <DiaCore/CRC/StringCRC.h>
-#include <CluicheKernel/LevelRegistry.h>
+#include <CluicheKernel/LevelFactory.h>
 
 #include "LevelFlow\Phases\MainLoadPhase.h"
 #include "LevelFlow\Phases\MainFEPhase.h"
