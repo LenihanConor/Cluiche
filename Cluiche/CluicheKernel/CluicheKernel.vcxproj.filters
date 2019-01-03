@@ -1,7 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="LevelRegistry.cpp" />
     <ClCompile Include="ApplicationFlow\Phases\MainPhaseBase.cpp">
       <Filter>ApplicationFlow\Phases</Filter>
     </ClCompile>
@@ -20,12 +19,12 @@
     <ClCompile Include="ApplicationFlow\Modules\SimTimeServerModule.cpp">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClCompile>
-    <ClCompile Include="ApplicationFlow\Modules\LevelRegistryModule.cpp">
+    <ClCompile Include="LevelFactory.cpp" />
+    <ClCompile Include="ApplicationFlow\Modules\LevelFactoryModule.cpp">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="LevelRegistry.h" />
     <ClInclude Include="ApplicationFlow\Phases\MainPhaseBase.h">
       <Filter>ApplicationFlow\Phases</Filter>
     </ClInclude>
@@ -44,7 +43,8 @@
     <ClInclude Include="ApplicationFlow\Modules\SimTimeServerModule.h">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
-    <ClInclude Include="ApplicationFlow\Modules\LevelRegistryModule.h">
+    <ClInclude Include="LevelFactory.h" />
+    <ClInclude Include="ApplicationFlow\Modules\LevelFactoryModule.h">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
   </ItemGroup>

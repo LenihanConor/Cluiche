@@ -19,24 +19,24 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ApplicationFlow\Modules\LevelRegistryModule.h" />
+    <ClInclude Include="ApplicationFlow\Modules\LevelFactoryModule.h" />
     <ClInclude Include="ApplicationFlow\Modules\MainKernelModule.h" />
     <ClInclude Include="ApplicationFlow\Modules\MainUIModule.h" />
     <ClInclude Include="ApplicationFlow\Modules\SimInputFrameStreamModule.h" />
     <ClInclude Include="ApplicationFlow\Modules\SimTimeServerModule.h" />
     <ClInclude Include="ApplicationFlow\Modules\SimUIProxyModule.h" />
     <ClInclude Include="ApplicationFlow\Phases\MainPhaseBase.h" />
-    <ClInclude Include="LevelRegistry.h" />
+    <ClInclude Include="LevelFactory.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ApplicationFlow\Modules\LevelRegistryModule.cpp" />
+    <ClCompile Include="ApplicationFlow\Modules\LevelFactoryModule.cpp" />
     <ClCompile Include="ApplicationFlow\Modules\MainKernelModule.cpp" />
     <ClCompile Include="ApplicationFlow\Modules\MainUIModule.cpp" />
     <ClCompile Include="ApplicationFlow\Modules\SimInputFrameStreamModule.cpp" />
     <ClCompile Include="ApplicationFlow\Modules\SimTimeServerModule.cpp" />
     <ClCompile Include="ApplicationFlow\Modules\SimUIProxyModule.cpp" />
     <ClCompile Include="ApplicationFlow\Phases\MainPhaseBase.cpp" />
-    <ClCompile Include="LevelRegistry.cpp" />
+    <ClCompile Include="LevelFactory.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{649D1B1D-C23F-4373-ACA8-8A3A59C0CFA0}</ProjectGuid>

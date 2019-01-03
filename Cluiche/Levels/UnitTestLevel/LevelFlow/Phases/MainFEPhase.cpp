@@ -2,7 +2,7 @@
 
 #include "CluicheKernel/ApplicationFlow/Modules/MainKernelModule.h"
 #include "CluicheKernel/ApplicationFlow/Modules/MainUIModule.h"
-#include "CluicheKernel/ApplicationFlow/Modules/LevelRegistryModule.h"
+#include "CluicheKernel/ApplicationFlow/Modules/LevelFactoryModule.h"
 
 #include <DiaApplication/ApplicationProcessingUnit.h>
 
@@ -20,7 +20,7 @@ namespace Cluiche
 		void MainFEPhase::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
 		{
 			AddModule(buildDependencies->GetModule(Cluiche::Main::KernelModule::kUniqueId));
-			AddModule(buildDependencies->GetModule(Cluiche::Main::LevelRegistryModule::kUniqueId));
+			AddModule(buildDependencies->GetModule(Cluiche::Main::LevelFactoryModule::kUniqueId));
 			AddModule(buildDependencies->GetModule(Cluiche::Main::UIModule::kUniqueId));
 		}
 
@@ -41,14 +41,14 @@ namespace Cluiche
 
 		void MainFEPhase::RequestExitLevel()
 		{
-			const Cluiche::Main::LevelRegistryModule* levelRegistryModule = this->GetModule<Cluiche::Main::LevelRegistryModule>();
+			const Cluiche::Main::LevelFactoryModule* levelRegistryModule = this->GetModule<Cluiche::Main::LevelFactoryModule>();
 
 			if (levelRegistryModule == nullptr)
 			{
 				DIA_ASSERT(nullptr, "Could not find level registry");
 			}
 
-			const Kernel::LevelRegistry& levelRegistry = levelRegistryModule->GetLevelRegistry();
+			const Kernel::LevelFactory& levelRegistry = levelRegistryModule->GetLevelRegistry();
 
 			const Cluiche::Kernel::ILevel* level = levelRegistry.GetCurrentLevel();
 

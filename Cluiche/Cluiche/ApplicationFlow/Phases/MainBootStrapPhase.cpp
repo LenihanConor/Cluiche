@@ -1,12 +1,12 @@
 #include "ApplicationFlow/Phases/MainBootStrapPhase.h"
 
 #include "CluicheKernel/ApplicationFlow/Modules/MainKernelModule.h"
-#include "CluicheKernel/ApplicationFlow/Modules/LevelRegistryModule.h"
+#include "CluicheKernel/ApplicationFlow/Modules/LevelFactoryModule.h"
 #include "CluicheKernel/ApplicationFlow/Modules/MainUIModule.h"
 #include "Levels/DummyLevel/DummyLevel.h"
 #include "Levels/UnitTestLevel/UnitTestLevel.h"
 
-#include <CluicheKernel/LevelRegistry.h>
+#include <CluicheKernel/LevelFactory.h>
 
 #include <DiaApplication/ApplicationProcessingUnit.h>
 
@@ -26,7 +26,7 @@ namespace Cluiche
 	void MainBootStrapPhase::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
 	{
 		AddModule(buildDependencies->GetModule(Main::KernelModule::kUniqueId));
-		AddModule(buildDependencies->GetModule(Main::LevelRegistryModule::kUniqueId));
+		AddModule(buildDependencies->GetModule(Main::LevelFactoryModule::kUniqueId));
 		AddModule(buildDependencies->GetModule(Main::UIModule::kUniqueId));
 	}
 
@@ -40,7 +40,7 @@ namespace Cluiche
 		Cluiche::Main::UIModule* ui = this->GetModule<Cluiche::Main::UIModule>();
 		ui->GetUISystem()->LoadPage(mLaunchUIPage); 
 
-		Cluiche::Main::LevelRegistryModule* levelRegistry = this->GetModule<Cluiche::Main::LevelRegistryModule>();
+		Cluiche::Main::LevelFactoryModule* levelRegistry = this->GetModule<Cluiche::Main::LevelFactoryModule>();
 
 		// This is for the re-entrance case
 		if (levelRegistry->GetLevelRegistry().GetCurrentLevel() != nullptr)
@@ -87,7 +87,7 @@ namespace Cluiche
 			return;
 		}
 
-		this->GetModule<Cluiche::Main::LevelRegistryModule>()->GetLevelRegistry().SetCurrentLevel(level);
+		this->GetModule<Cluiche::Main::LevelFactoryModule>()->GetLevelRegistry().SetCurrentLevel(level);
 		
 		// Transition to the next phase
 		const Dia::Core::StringCRC& entryPhaseUniqueId = level->GetEntryPhaseUniqueId();

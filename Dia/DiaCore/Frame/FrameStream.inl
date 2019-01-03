@@ -131,7 +131,8 @@ namespace Dia
 		
 		template <class T> inline
 		FrameStream<T>::InternalData::InternalData()
-			: mTimeStamp(Dia::Core::TimeAbsolute::Zero())
+			: mFrameIndex(0)
+			, mTimeStamp(Dia::Core::TimeAbsolute::Zero())
 		{}
 
 
