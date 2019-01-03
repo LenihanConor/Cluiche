@@ -3,6 +3,7 @@
 #include <DiaCore/Containers/HashTables/HashTable.h>
 #include <DiaCore/CRC/CRCHashFunctor.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/Containers/Arrays/ArrayC.h>
 
 //TODO MOVE THESE OUT
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
@@ -57,21 +58,46 @@ namespace Cluiche
 			ApplicationPointerBundle mMainApplicationBundle;
 		};
 
+		// This is meta data for each level that is stored at any point but does not allocate the level
+		class LevelMetaData
+		{
+		public:
+			LevelMetaData();
+		
+			bool IsLoaded()const { return mIsLoaded; }
+
+		private:
+			bool mIsLoaded;
+
+			ILevel* mAssociatedLevel;
+		};
+
 		/// This is a registry of all level
 		class LevelRegistry
 		{
 		public:
 			LevelRegistry();
 			~LevelRegistry();
-
-			void SetCurrentLevel(ILevel* level);
-			void DeleteLevel();
 			
+			void AddLevelMetaData(const LevelMetaData& data);
+
+			void CreateLevel(ILevel* level);
+			void DeleteLevel(const Dia::Core::StringCRC& uniqueId);
+			
+			void SetCurrentLevel(ILevel* level);
 			ILevel* GetCurrentLevel();
 			const ILevel* GetCurrentLevel()const;
 
+			ILevel* FindLevel(const Dia::Core::StringCRC& uniqueId);
+			const ILevel* FindLevel(const Dia::Core::StringCRC& uniqueId)const;
+
 		private:
+			static const int kMaxLevels = 32;
+			typedef Dia::Core::Containers::ArrayC<LevelMetaData, kMaxLevels> LevelMetaDataArray;
+
 			ILevel* mCurrentLevel;
+
+			LevelMetaDataArray mLevelArray;
 		};
 	}
 }

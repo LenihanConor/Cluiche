@@ -5,18 +5,26 @@
       "AliasPathConfigTuple" : 2232579404,
       "DynamicArrayC<AliasAppendPathConfig, 8>" : 2588513698,
       "DynamicArrayC<AliasPathConfigTuple, 8>" : 2397525776,
-      "PathStoreConfig" : 1613060794,
+      "DynamicArrayC<PathStoreConfigFragment, 8>" : 2677313880,
+      "PathStoreConfig" : 1610762756,
+      "PathStoreConfigFragment" : 1053053089,
       "String256" : 1395550496,
       "String32" : 3034540979
    },
    "mAliasAppendPathArray" : {
       "_class_name" : "DynamicArrayC<AliasAppendPathConfig, 8>",
       "mData" : [
-         {
+        {
+          "_class_name": "AliasAppendPathConfig",
+          "mAlias": "ui_common",
+          "mBaseAlias": "root",
+          "mPathAppend": "UI_Common"
+        },
+        {
             "_class_name" : "AliasAppendPathConfig",
-            "mAlias" : "ui_root",
+            "mAlias" : "DiaGraphicWithUITest",
             "mBaseAlias" : "root",
-            "mPathAppend" : "UI"
+            "mPathAppend" : "DiaGraphicWithUITest"
          }
       ],
       "mSize" : 1
@@ -27,9 +35,21 @@
          {
             "_class_name" : "AliasPathConfigTuple",
             "mAlias" : "root",
-            "mPath" : "C:\\Users\\Conor\\Documents\\GitHub\\Cluiche\\Cluiche\\Data"
+            "mPath" : "C:/Users/Conor/Documents/GitHub/Cluiche/Cluiche/Data"
          }
       ],
       "mSize" : 1
+   },
+   "mPathStoreConfigFragmentArray" : {
+      "_class_name" : "DynamicArrayC<PathStoreConfigFragment, 8>",
+      "mData" : [
+         {
+            "_class_name" : "PathStoreConfigFragment",
+            "mBaseAlias" : "root",
+            "mFileName" : "pathStoreConfigFragment.json",
+            "mPathAppend" : "DiaGraphicWithUITest"
+         }
+      ],
+      "mSize" : 0
    }
 }
