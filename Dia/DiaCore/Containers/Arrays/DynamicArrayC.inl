@@ -1,6 +1,7 @@
 #include "DiaCore/Memory/Memory.h"
 
 #include "DiaCore/Type/TypeDefinitionMacros.h"
+#include <string>
 
 namespace Dia
 {

@@ -1,4 +1,5 @@
 #include "DiaCore/Type/TypeDefinitionMacros.h"
+#include <string>
 
 namespace Dia
 {

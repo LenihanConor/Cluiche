@@ -76,15 +76,8 @@ namespace Cluiche
 		class LevelFactory
 		{
 		public:
-<<<<<<< HEAD:Cluiche/CluicheKernel/LevelRegistry.h
-			LevelRegistry();
-			~LevelRegistry();
-			
-			void AddLevelMetaData(const LevelMetaData& data);
-=======
 			LevelFactory();
 			~LevelFactory();
->>>>>>> 2389c3d0da7cf6d04520c87a5f4f6a55bbb949e1:Cluiche/CluicheKernel/LevelFactory.h
 
 			void CreateLevel(ILevel* level);
 			void DeleteLevel(const Dia::Core::StringCRC& uniqueId);
