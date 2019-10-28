@@ -36,7 +36,7 @@ namespace Cluiche
 			void LaunchLevel(const Dia::UI::BoundMethodArgs& arg);
 
 		private:
-			MainUIPage() {}
+			MainUIPage(): mPhaseInterface(nullptr) {}
 
 			void RequestExitLevel(const Dia::UI::BoundMethodArgs& arg);
 

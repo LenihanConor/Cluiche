@@ -455,7 +455,7 @@ namespace Dia
 				HWND mSystemHandle;
 				bool mIsInitialized;
 
-				static const int sBuffersize = 7000000;
+				static const int sBuffersize = (16 * 1024 * 1024 );
 				mutable unsigned char mBuffer[sBuffersize];
 			};
 

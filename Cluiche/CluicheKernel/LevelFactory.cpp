@@ -14,7 +14,7 @@ namespace Cluiche
 
 			if (mCurrentLevel != nullptr)
 			{
-				DeleteLevel();
+				DeleteLevel(mCurrentLevel->GetUniqueId());
 			}
 		}
 
@@ -25,16 +25,34 @@ namespace Cluiche
 			mCurrentLevel = level;
 		}
 
-		void LevelFactory::DeleteLevel()
+		void LevelFactory::DeleteLevel(const Dia::Core::StringCRC& uniqueId)
 		{
-			DIA_ASSERT(mCurrentLevel != nullptr, "There is no active current level cannot activate a new one");
+			ILevel* level = FindLevel(uniqueId);
 
-			if (mCurrentLevel != nullptr)
+			DIA_ASSERT(level, "Could not find level: %s", uniqueId.AsChar());
+
+			if (level != nullptr)
 			{
-				DIA_DELETE(mCurrentLevel);
+				DIA_DELETE(level);
 
 				mCurrentLevel = nullptr;
 			}
+		}
+
+		ILevel* LevelFactory::FindLevel(const Dia::Core::StringCRC& uniqueId)
+		{
+		//	for (unsigned int i = 0; i < mLevelArray.Size(); i++)
+		//	{
+		//		if (mLevelArray[i]. == )
+		//	}
+
+			return nullptr;
+		}
+
+		const ILevel* LevelFactory::LevelFactory::FindLevel(const Dia::Core::StringCRC& uniqueId)const
+		{
+
+			return nullptr;
 		}
 
 		ILevel* LevelFactory::GetCurrentLevel()

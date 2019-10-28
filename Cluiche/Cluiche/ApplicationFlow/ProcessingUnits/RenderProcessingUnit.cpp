@@ -9,6 +9,7 @@ namespace Cluiche
 	RenderProcessingUnit::RenderProcessingUnit()
 		: Dia::Application::ProcessingUnit(kUniqueId, 60.0f)
 		, mRunningPhase(this)
+		, mpCanvas(nullptr)
 	{
 		// Setup Phase Transitions
 		SetInitialPhase(&mRunningPhase);

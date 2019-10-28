@@ -62,7 +62,7 @@ namespace Cluiche
 		class LevelMetaData
 		{
 		public:
-			LevelMetaData();
+			LevelMetaData() : mIsLoaded(false), mAssociatedLevel(nullptr){};
 		
 			bool IsLoaded()const { return mIsLoaded; }
 
@@ -79,7 +79,7 @@ namespace Cluiche
 			LevelFactory();
 			~LevelFactory();
 
-			void CreateLevel(ILevel* level);
+			//void CreateLevel(ILevel* level);
 			void DeleteLevel(const Dia::Core::StringCRC& uniqueId);
 			
 			void SetCurrentLevel(ILevel* level);

@@ -76,7 +76,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>../../SFML/Source/SFML-master/include;./../;./;$(ProjectDir)../../DIA/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../SFML/include;./../;./;$(ProjectDir)../../DIA/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>DEBUG;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -94,7 +94,7 @@
       <PreserveSbr>true</PreserveSbr>
     </Bscmake>
     <PreBuildEvent>
-      <Command>xcopy /Y /d "$(SolutionDir)..\SFML\build\lib\debug\*.dll" "$(TargetDir)"  
+      <Command>xcopy /Y /d "$(SolutionDir)..\SFML\bin\*.dll" "$(TargetDir)"  
 </Command>
       <Message>Push dll to the exe directory</Message>
     </PreBuildEvent>

@@ -20,8 +20,8 @@ namespace Cluiche
 
 			LevelFactoryModule(Dia::Application::ProcessingUnit* associatedProcessingUnit);
 
-			Kernel::LevelFactory& GetLevelRegistry() { return mLevelRegistery; }
-			const Kernel::LevelFactory& GetLevelRegistry()const { return mLevelRegistery; }
+			Kernel::LevelFactory& GetLevelFactory() { return mLevelRegistery; }
+			const Kernel::LevelFactory& GetLevelFactory()const { return mLevelRegistery; }
 
 		private:
 			Kernel::LevelFactory mLevelRegistery;

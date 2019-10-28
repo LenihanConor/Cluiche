@@ -98,7 +98,7 @@ namespace Cluiche
 			Dia::Core::PathStore::RegisterToStore(pathStoreConfig);
 
 			// Setup the rendering windoow
-			Dia::Window::IWindow::Settings windowSetting("Cluiche Application", Dia::Window::IWindow::Settings::Dimensions(900, 700), Dia::Window::IWindow::Settings::Style());
+			Dia::Window::IWindow::Settings windowSetting("Cluiche Application", Dia::Window::IWindow::Settings::Dimensions(1800, 1400), Dia::Window::IWindow::Settings::Style());
 			Dia::Graphics::ICanvas::Settings canvasSettings(Dia::Graphics::ICanvas::Settings::VSyncEnum::kEnable, 0, 0, 2, 0);
 
 			Dia::SFML::RenderWindow* renderWindow = static_cast<Dia::SFML::RenderWindow*>(mWindowFactory.Create(windowSetting, canvasSettings));
@@ -106,7 +106,6 @@ namespace Cluiche
 			// Abstract Interfaces
 			mWindow = renderWindow;
 			mCanvas = renderWindow;
-
 			
 			// We are using SFML for keyboard and mouse support
 			renderWindow->ListenForInputSources(Dia::Core::BitArray8(Dia::SFML::InputSource::ESources::kSystem | Dia::SFML::InputSource::ESources::kKeyboard | Dia::SFML::InputSource::ESources::kMouse));	// We are getting mouse and keyboard only from SFML

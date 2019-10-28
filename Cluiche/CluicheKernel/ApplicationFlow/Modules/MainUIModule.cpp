@@ -68,7 +68,7 @@ namespace Cluiche
 					mAwesomiumUISystem->InjectMouseMove(event.mouseMove.x, event.mouseMove.y);
 				}
 				break;
-				case Dia::Input::Event::EType::kMouseButtonPressed:
+				case Dia::Input::Event::EType::kMouseButtonReleased:
 				{
 					mAwesomiumUISystem->InjectMouseClick(event.mouseButton.AsMouseButton(), event.mouseButton.x, event.mouseButton.y);
 				}

@@ -48,7 +48,7 @@ namespace Cluiche
 				DIA_ASSERT(nullptr, "Could not find level registry");
 			}
 
-			const Kernel::LevelFactory& levelRegistry = levelRegistryModule->GetLevelRegistry();
+			const Kernel::LevelFactory& levelRegistry = levelRegistryModule->GetLevelFactory();
 
 			const Cluiche::Kernel::ILevel* level = levelRegistry.GetCurrentLevel();
 

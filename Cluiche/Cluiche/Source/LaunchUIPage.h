@@ -34,7 +34,7 @@ namespace Cluiche
 		void LaunchLevel(const Dia::UI::BoundMethodArgs& arg);
 
 	private:
-		LaunchUIPage() {}
+		LaunchUIPage(): mPhaseInterface(nullptr) {}
 
 		Cluiche::LaunchUIPageExternalInterface* mPhaseInterface;
 	};

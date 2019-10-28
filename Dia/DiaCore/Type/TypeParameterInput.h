@@ -15,7 +15,7 @@ namespace Dia
 			class TypeParameterInput
 			{
 			public:
-				TypeParameterInput(){};
+				TypeParameterInput(): mBaseType(nullptr) {};
 
 				void SetBaseType(const TypeDefinition* baseType);
 				const TypeDefinition* GetBaseType()const { return mBaseType; };

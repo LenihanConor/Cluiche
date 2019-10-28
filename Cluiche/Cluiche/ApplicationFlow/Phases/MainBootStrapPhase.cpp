@@ -43,9 +43,9 @@ namespace Cluiche
 		Cluiche::Main::LevelFactoryModule* levelRegistry = this->GetModule<Cluiche::Main::LevelFactoryModule>();
 
 		// This is for the re-entrance case
-		if (levelRegistry->GetLevelRegistry().GetCurrentLevel() != nullptr)
+		if (levelRegistry->GetLevelFactory().GetCurrentLevel() != nullptr)
 		{
-			levelRegistry->GetLevelRegistry().DeleteLevel();
+			levelRegistry->GetLevelFactory().DeleteLevel(levelRegistry->GetLevelFactory().GetCurrentLevel()->GetUniqueId());
 		}
 	}
 
@@ -87,7 +87,7 @@ namespace Cluiche
 			return;
 		}
 
-		this->GetModule<Cluiche::Main::LevelFactoryModule>()->GetLevelRegistry().SetCurrentLevel(level);
+		this->GetModule<Cluiche::Main::LevelFactoryModule>()->GetLevelFactory().SetCurrentLevel(level);
 		
 		// Transition to the next phase
 		const Dia::Core::StringCRC& entryPhaseUniqueId = level->GetEntryPhaseUniqueId();
