@@ -30,9 +30,6 @@ namespace Dia
 
 			virtual Phase* GetPhase(const Dia::Core::StringCRC& crc) = 0;
 			virtual const Phase* GetPhase(const Dia::Core::StringCRC& crc)const = 0;
-
-			virtual ProcessingUnit* GetProcessingUnit(const Dia::Core::StringCRC& crc) = 0;
-			virtual const ProcessingUnit* GetProcessingUnit(const Dia::Core::StringCRC& crc)const = 0;
 		};
 		
 		////////////////////////////////////////////////////////////////////////////////

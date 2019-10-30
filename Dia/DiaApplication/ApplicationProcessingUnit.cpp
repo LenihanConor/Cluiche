@@ -35,16 +35,10 @@ namespace Dia
 		//---------------------------------------------------------------------------------------------------------
 		void ProcessingUnit::Initialize()
 		{
-//			DIA_ASSERT(GetState() == StateEnum::kConstructed, "Initializing %s but in wrong state: %s", GetUniqueId().AsChar(), GetState().AsString());
-
-//			if (GetState() == StateEnum::kConstructed)
-			{ 
-				BuildDependencyData buildDependencyData(&mAssociatedProcessingUnites,
-															&mAssociatedPhases,
+			BuildDependencyData buildDependencyData( &mAssociatedPhases,
 															&mPhaseTransitions,
 															&mAssociatedModules);
-				BuildDependancies(&buildDependencyData);
-			}
+			BuildDependancies(&buildDependencyData);
 		}
 
 		//---------------------------------------------------------------------------------------------------------
@@ -306,12 +300,10 @@ namespace Dia
 		}
 
 		//---------------------------------------------------------------------------------------------------------
-		BuildDependencyData::BuildDependencyData(ProcessingUnit::ProcessingUnitTable* associatedProcessingUnites,
-													ProcessingUnit::PhasesTable* associatedPhases,
+		BuildDependencyData::BuildDependencyData(ProcessingUnit::PhasesTable* associatedPhases,
 													ProcessingUnit::PhaseTransitionTable* phaseTransitions,
 													ProcessingUnit::ModuleTable* associatedModules)
-			: mAssociatedProcessingUnites(associatedProcessingUnites)
-			, mAssociatedPhases(associatedPhases)
+			:  mAssociatedPhases(associatedPhases)
 			, mPhaseTransitions(phaseTransitions)
 			, mAssociatedModules(associatedModules)
 		{}
@@ -338,18 +330,6 @@ namespace Dia
 		const Phase* BuildDependencyData::GetPhase(const Dia::Core::StringCRC& crc)const
 		{
 			return mAssociatedPhases->GetItemConst(crc);
-		}
-
-		//---------------------------------------------------------------------------------------------------------
-		ProcessingUnit* BuildDependencyData::GetProcessingUnit(const Dia::Core::StringCRC& crc)
-		{
-			return mAssociatedProcessingUnites->GetItem(crc);
-		}
-
-		//---------------------------------------------------------------------------------------------------------
-		const ProcessingUnit* BuildDependencyData::GetProcessingUnit(const Dia::Core::StringCRC& crc)const
-		{
-			return mAssociatedProcessingUnites->GetItemConst(crc);
 		}
 	}
 }

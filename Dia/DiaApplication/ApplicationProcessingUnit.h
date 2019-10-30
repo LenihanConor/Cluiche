@@ -124,8 +124,7 @@ namespace Dia
 		class BuildDependencyData: public Dia::Application::IBuildDependencyData
 		{
 		public: 
-			BuildDependencyData(ProcessingUnit::ProcessingUnitTable* associatedProcessingUnites,
-									ProcessingUnit::PhasesTable* associatedPhases,
+			BuildDependencyData(ProcessingUnit::PhasesTable* associatedPhases,
 									ProcessingUnit::PhaseTransitionTable* phaseTransitions,
 									ProcessingUnit::ModuleTable* associatedModules);
 
@@ -135,10 +134,7 @@ namespace Dia
 			virtual Phase* GetPhase(const Dia::Core::StringCRC& crc) override;
 			virtual const Phase* GetPhase(const Dia::Core::StringCRC& crc)const override;
 
-			virtual ProcessingUnit* GetProcessingUnit(const Dia::Core::StringCRC& crc) override;
-			virtual const ProcessingUnit* GetProcessingUnit(const Dia::Core::StringCRC& crc)const override;
 		private:
-			ProcessingUnit::ProcessingUnitTable* mAssociatedProcessingUnites;
 			ProcessingUnit::PhasesTable* mAssociatedPhases;
 			ProcessingUnit::PhaseTransitionTable* mPhaseTransitions;
 			ProcessingUnit::ModuleTable* mAssociatedModules;
