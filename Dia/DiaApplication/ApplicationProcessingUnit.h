@@ -114,10 +114,8 @@ namespace Dia
 			PhasesTable mAssociatedPhases;
 			PhaseTransitionTable mPhaseTransitions;
 		
-			// List of all modules that are associated to this PU. Phase can choose from these to enable/disable as they see fir
+			// List of all modules that are associated to this PU. Phase can choose from these to enable/disable as they see fit
 			ModuleTable mAssociatedModules;
-
-			ProcessingUnitTable mAssociatedProcessingUnites;
 		};
 
 		////////////////////////////////////////////////////////////////////////////////

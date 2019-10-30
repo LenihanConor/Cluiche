@@ -43,7 +43,6 @@ namespace Dia
 
 			unsigned int GetNumberOfDependancies()const;
 			
-
 			Module* GetModuleFromIndex(unsigned int index);
 			const Module* GetModuleFromIndex(unsigned int index)const;
 
