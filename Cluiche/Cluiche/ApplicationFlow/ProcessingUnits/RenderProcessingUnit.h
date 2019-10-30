@@ -18,6 +18,8 @@ namespace Cluiche
 		class StartData: public Dia::Application::ProcessingUnit::IStartData
 		{
 		public:
+			StartData() : mRunning(nullptr), mFrameStream(nullptr), mCanvas(nullptr) {}
+
 			const bool* mRunning;
 			Dia::Core::FrameStream<Dia::Graphics::FrameData>* mFrameStream;
 			Dia::Graphics::ICanvas* mCanvas;

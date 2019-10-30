@@ -22,6 +22,8 @@ namespace Cluiche
 		class StartData : public Dia::Application::ProcessingUnit::IStartData
 		{
 		public:
+			StartData() : mRunning(nullptr), mMainUIModule(nullptr), mInputToSimFrameStream(nullptr), mFrameStream(nullptr) {}
+
 			const bool* mRunning;
 			Cluiche::Main::UIModule* mMainUIModule;
 			Dia::Core::FrameStream<Dia::Input::EventData>* mInputToSimFrameStream;

@@ -8,6 +8,8 @@ namespace Cluiche
 
 	RenderProcessingUnit::RenderProcessingUnit()
 		: Dia::Application::ProcessingUnit(kUniqueId, 60.0f)
+		, mRunning(nullptr)
+		, mFrameStream(nullptr)
 		, mRunningPhase(this)
 		, mpCanvas(nullptr)
 	{
