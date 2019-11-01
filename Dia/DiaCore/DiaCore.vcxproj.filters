@@ -318,9 +318,6 @@
     <ClInclude Include="Containers\Graphs\GraphEdge.h">
       <Filter>Containers\Graphs</Filter>
     </ClInclude>
-    <ClInclude Include="Containers\Graphs\GraphVertex.h">
-      <Filter>Containers\Graphs</Filter>
-    </ClInclude>
     <ClInclude Include="Architecture\Singleton\Singleton.h">
       <Filter>Architecture\Singleton</Filter>
     </ClInclude>
@@ -419,6 +416,9 @@
     </ClInclude>
     <ClInclude Include="Architecture\Observer.h">
       <Filter>Architecture</Filter>
+    </ClInclude>
+    <ClInclude Include="Containers\Graphs\GraphNode.h">
+      <Filter>Containers\Graphs</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -664,9 +664,6 @@
     <None Include="Containers\Graphs\GraphEdge.inl">
       <Filter>Containers\Graphs</Filter>
     </None>
-    <None Include="Containers\Graphs\GraphVertex.inl">
-      <Filter>Containers\Graphs</Filter>
-    </None>
     <None Include="Architecture\Singleton\Singleton.inl">
       <Filter>Architecture\Singleton</Filter>
     </None>
@@ -690,6 +687,9 @@
     </None>
     <None Include="Json\external\json_valueiterator.inl">
       <Filter>Json\External\Source</Filter>
+    </None>
+    <None Include="Containers\Graphs\GraphNode.inl">
+      <Filter>Containers\Graphs</Filter>
     </None>
   </ItemGroup>
 </Project>

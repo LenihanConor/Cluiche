@@ -97,7 +97,7 @@
     <ClInclude Include="Architecture\Singleton\Singleton.h" />
     <ClInclude Include="Containers\Graphs\Graph.h" />
     <ClInclude Include="Containers\Graphs\GraphEdge.h" />
-    <ClInclude Include="Containers\Graphs\GraphVertex.h" />
+    <ClInclude Include="Containers\Graphs\GraphNode.h" />
     <ClInclude Include="Containers\Misc\CircularBufferC.h" />
     <ClInclude Include="Containers\Misc\CircularBufferIterator.h" />
     <ClInclude Include="Containers\Misc\FastDelegate.h" />
@@ -244,7 +244,7 @@
     <None Include="Architecture\Singleton\Singleton.inl" />
     <None Include="Containers\Graphs\Graph.inl" />
     <None Include="Containers\Graphs\GraphEdge.inl" />
-    <None Include="Containers\Graphs\GraphVertex.inl" />
+    <None Include="Containers\Graphs\GraphNode.inl" />
     <None Include="Containers\Misc\CircularBufferC.inl" />
     <None Include="Containers\Misc\CircularBufferIterator.inl" />
     <None Include="Frame\FrameStream.inl" />
