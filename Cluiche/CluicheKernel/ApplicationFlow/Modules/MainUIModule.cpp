@@ -32,7 +32,6 @@ namespace Cluiche
 			this->AddDependancy(buildDependencies->GetModule(Cluiche::Main::KernelModule::kUniqueId));
 		}
 
-
 		Dia::Application::StateObject::OpertionResponse UIModule::DoStart(const IStartData* startData)
 		{
 			Cluiche::Main::KernelModule* kernel = this->GetModule<Cluiche::Main::KernelModule>();
