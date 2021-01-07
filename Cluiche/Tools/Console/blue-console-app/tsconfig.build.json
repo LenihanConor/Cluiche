@@ -1,0 +1,10 @@
+{
+    "extends": "./tsconfig.json",
+    "rootDir": "./src",
+    "include": ["src/**/*"],
+    "exclude": [
+      "test/**/*",
+      "stories/**/*",
+      "example/**/*",
+    ]
+  }

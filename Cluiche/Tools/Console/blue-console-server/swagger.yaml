@@ -1,0 +1,49 @@
+tags:
+- name: Console Server
+  description: Console Server API
+
+paths:
+  /plugins:
+    get:
+      tags: 
+      - plugins
+      summary: List all plugins
+      responses:
+        200:
+          description: 'OK'
+        500:
+          description: 'Server Error'
+  /api/cli:
+    post:
+      tags: 
+      - cli
+      summary: Execute an arbitrary CLI command
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: ApiRequest
+          schema:
+            $ref: '#/definitions/ApiRequest'
+      responses:
+        200:
+          description: 'OK'
+        400:
+          description: 'Bad Request'
+        500:
+          description: 'Server Error'
+
+schemes:
+ - https
+ - http
+
+definitions:
+  ApiRequest:
+    type: object
+    required:
+      - args
+    properties:
+      args:
+        type: array
+        items: 
+          type: string

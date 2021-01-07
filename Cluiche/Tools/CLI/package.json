@@ -1,0 +1,26 @@
+{
+  "name": "com.ea.mdk.cli",
+  "version": "0.2.4",
+  "description": "mdk Command Line Interface (Core)",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "python tasks.py postinstall",
+    "postuninstall": "python tasks.py postuninstall"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@gitlab.ea.com:projectmdk/mdk-cli.git"
+  },
+  "keywords": [
+    "mdk", 
+    "cli"
+  ],
+  "author": "Project mdk",
+  "email":"PopCap-Projectmdk@ea.com",
+  "url":"https://projectmdk.gitlab.ea.com/project-mdk-documentation/getting-started/blu-cli-quickstart/",
+  "license": "ISC"
+}

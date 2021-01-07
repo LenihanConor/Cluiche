@@ -1,0 +1,33 @@
+default:
+  image: python:3.8-buster
+
+variables:
+  # cloning cli code into directory that mirrows what a game team setup would look like
+  GIT_CLONE_PATH: $CI_BUILDS_DIR/mdk/mdk-cli
+  MDK: mdk/mdk-cli/.venv/bin/mdk
+
+stages:
+  - install
+  - test
+
+cache:
+  paths:
+    - $GIT_CLONE_PATH/.venv
+
+install-cli:
+  stage: install
+  before_script:
+    # manually "install" mdk cli
+    - pip install poetry
+    - poetry install
+    - cd ../..
+
+  script:
+    - 'eval $MDK --help'
+
+test-cli:
+  stage: test
+  before_script:
+    - cd ../..
+  script:
+    - 'eval $MDK setup'
