@@ -1,0 +1,20 @@
+{
+    "folders": [{
+            "name": "cli",
+            "files": [{
+                    "template": "command_decl.j2",
+                    "filename": "${command_name}.py"
+                }
+            ],
+            "folders": []
+        },
+        {
+            "name": "commands",
+            "files": [{
+                "template": "command_impl.j2",
+                "filename": "${command_name}_cmd.py"
+            }],
+            "folders": []
+        }
+    ]
+}

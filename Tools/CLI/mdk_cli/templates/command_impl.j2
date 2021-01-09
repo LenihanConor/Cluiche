@@ -1,0 +1,18 @@
+from loguru import logger
+from utils.mdk_config import Config
+
+
+## @addtogroup {{command_name}}_grp
+#  @{
+
+## @package {{command_name}}_cmd Implementations for `{{command_name}}` commands
+
+
+def execute(mdk_context: Config):
+    """!Implementation of `{{command_name}}` command
+
+    @param [in] mdk_context mdk-specific context, whose value is mdk_config.Config obj
+    """
+    logger.info("Executing {{command_name}}. Come implement me!")
+
+## @}

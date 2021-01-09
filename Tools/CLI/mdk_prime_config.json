@@ -1,0 +1,10 @@
+{
+    "name": "NotImplemented",
+    "roots": {
+        "base": ".",
+        "cli": "mdk_cli"
+    },
+    "paths": {
+        "external": "mdk/external"
+    }
+}
