@@ -60,7 +60,7 @@
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <AdditionalIncludeDirectories>$(ProjectDir)../../DIA/;$(SolutionDIr)../Awesomium SDK/1.7.5.1/include/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)../../DIA/;$(SolutionDIr)../External/Awesomium SDK/1.7.5.1/include/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Lib>
       <AdditionalLibraryDirectories>$(OutDir)DiaMaths.lib;$(OutDir)DiaCore.lib;$(OutDir)DiaGraphics.lib;$(OutDir)DiaUI.lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>

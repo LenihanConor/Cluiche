@@ -177,7 +177,8 @@ namespace Dia
 
 					mUIOverlayTexture->update(nextFrame.GetUIData().GetBuffer());
 
-					// TODO This should be part of a debug menu
+					// TODO This should be part of a debug enu
+					// TODO Hide this behind a real save file
 					static bool debugUIRendertexture = false;
 					if (debugUIRendertexture)
 						mUIOverlayTexture->copyToImage().saveToFile("debugUIRender.png");

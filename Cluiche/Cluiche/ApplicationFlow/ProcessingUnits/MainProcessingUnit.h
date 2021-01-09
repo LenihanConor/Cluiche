@@ -2,6 +2,7 @@
 
 #include <DiaApplication/ApplicationProcessingUnit.h>
 
+#include "DiaCore/Containers/Graphs/Graph.h"
 #include "CluicheKernel/ApplicationFlow/Modules/MainKernelModule.h"
 #include "CluicheKernel/ApplicationFlow/Modules/LevelFactoryModule.h"
 #include "CluicheKernel/ApplicationFlow/Modules/MainUIModule.h"
@@ -25,6 +26,9 @@ namespace Cluiche
 		Cluiche::RenderProcessingUnit* GetRenderingPU();
 		Cluiche::SimProcessingUnit* GetSimPU();
 
+		void GenerateModuleDependecyGraph();
+		void GeneratePhaseDependecyGraph();
+
 	private:
 		virtual void PostPhaseStart(const IStartData* startData)override final;
 		virtual void PrePhaseStop()override final;
@@ -45,5 +49,8 @@ namespace Cluiche
 		Cluiche::Main::KernelModule mKernelModule;
 		Cluiche::Main::LevelFactoryModule mLevelRegistryModule;
 		Cluiche::Main::UIModule mUI;
+
+		//Graphs
+		Dia::Core::Containers::Graph<int, 128, int, 128> mModuleGraph;
 	};
 }
