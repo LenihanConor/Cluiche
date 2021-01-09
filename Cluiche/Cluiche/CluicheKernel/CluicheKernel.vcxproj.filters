@@ -1,0 +1,62 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="ApplicationFlow\Phases\MainPhaseBase.cpp">
+      <Filter>ApplicationFlow\Phases</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\Modules\MainKernelModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\Modules\SimInputFrameStreamModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\Modules\SimUIProxyModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\Modules\MainUIModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\Modules\SimTimeServerModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="LevelFactory.cpp" />
+    <ClCompile Include="ApplicationFlow\Modules\LevelFactoryModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ApplicationFlow\Phases\MainPhaseBase.h">
+      <Filter>ApplicationFlow\Phases</Filter>
+    </ClInclude>
+    <ClInclude Include="ApplicationFlow\Modules\MainKernelModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="ApplicationFlow\Modules\SimInputFrameStreamModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="ApplicationFlow\Modules\SimUIProxyModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="ApplicationFlow\Modules\MainUIModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="ApplicationFlow\Modules\SimTimeServerModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="LevelFactory.h" />
+    <ClInclude Include="ApplicationFlow\Modules\LevelFactoryModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="ApplicationFlow">
+      <UniqueIdentifier>{bff6f2a2-16ff-4e6a-b16e-4d7a1c26bb8c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ApplicationFlow\Modules">
+      <UniqueIdentifier>{cc21f09f-9602-405e-adcb-89bb4706c419}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ApplicationFlow\Phases">
+      <UniqueIdentifier>{bb77c3d9-6730-4438-9a22-8737399d1107}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
