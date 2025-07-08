@@ -68,6 +68,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>$(SolutionDir)bin\exe\$(Configuration)\</OutDir>
     <IntDir>..\DiaBin\$(TargetName)\$(Configuration)\</IntDir>
+    <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
@@ -88,7 +89,7 @@
     <Lib>
       <AdditionalDependencies>
       </AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir)DiaMaths.lib;$(OutDir)DiaCore.lib;$(OutDir)DiaWindow.lib;$(OutDir)DiaGraphics.lib;./../External/SFML/Build/lib;opengl32.lib;glu32.lib;sfml-graphics-d.lib;sfml-window-d.lib;sfml-system-d.lib;sfml-main-d.lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OutDir)DiaMaths.lib;$(OutDir)DiaCore.lib;$(OutDir)DiaWindow.lib;$(OutDir)DiaGraphics.lib;./../External/SFML/lib;opengl32.lib;glu32.lib;sfml-graphics-d.lib;sfml-window-d.lib;sfml-system-d.lib;sfml-main-d.lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
     <Bscmake>
       <PreserveSbr>true</PreserveSbr>
