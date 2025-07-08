@@ -39,29 +39,33 @@ namespace Dia
 		
 			unsigned int style = windowSetting.GetStyle().GetAllBits();
 
-			sf::VideoMode videoMode(windowSetting.GetDimensions().GetWidth(), windowSetting.GetDimensions().GetHeight(), windowSetting.GetDimensions().GetBitsPerPixel());
-			sf::ContextSettings context(canvasSettings.GetDepth(), canvasSettings.GetStencil(), canvasSettings.GetAntialiasing(), canvasSettings.GetOpenGLMajor(), canvasSettings.GetOpenGLMinor());
-
-			mWindowContext = DIA_NEW(sf::RenderWindow(videoMode, sf::String(titleTempWString), style, context));
-			mBackBuffer = DIA_NEW(sf::RenderTexture());
-
-			bool isBackBufferCreated = mBackBuffer->create(windowSetting.GetDimensions().GetWidth(), windowSetting.GetDimensions().GetHeight());
+			sf::VideoMode videoMode({windowSetting.GetDimensions().GetWidth(), windowSetting.GetDimensions().GetHeight()}, windowSetting.GetDimensions().GetBitsPerPixel());
+			sf::ContextSettings context;
 			
-			DIA_ASSERT(isBackBufferCreated, "Rendering backbuffer is not allocated");
+			context.depthBits = canvasSettings.GetDepth();                        //!< Bits of the depth buffer
+			context.stencilBits = canvasSettings.GetStencil();                      //!< Bits of the stencil buffer
+			context.antiAliasingLevel = canvasSettings.GetAntialiasing();                //!< Level of anti-aliasing
+			context.majorVersion = canvasSettings.GetOpenGLMajor();                    //!< Major number of the context version to create
+			context.minorVersion = canvasSettings.GetOpenGLMinor();                    //!< Minor number of the context version to create
+			context.sRgbCapable = false;
+
+			mWindowContext = DIA_NEW(sf::RenderWindow(videoMode, sf::String(titleTempWString), style, sf::State::Windowed, context));
+			mBackBuffer = DIA_NEW(sf::RenderTexture({ windowSetting.GetDimensions().GetWidth(), windowSetting.GetDimensions().GetHeight() }));
+		
+			DIA_ASSERT(mBackBuffer = nullptr, "Rendering backbuffer is not allocated");
 			DIA_ASSERT(sf::Shader::isAvailable(), "Shaders are not available on this platform");
 
 			mUIShader = DIA_NEW(sf::Shader());
-			mUIOverlayTexture = DIA_NEW(sf::Texture());
-			
+			mUIOverlayTexture = DIA_NEW(sf::Texture(sf::Vector2u{ mWindowContext->getSize().x, mWindowContext->getSize().y}));
+			DIA_ASSERT(mUIOverlayTexture = nullptr, "Could not create ui texture");
+
 			//TODO: Replace with a better file load system
 			//TODO: Move this shader to a centralized place
 			Dia::Core::FilePath uiShaderFile("root", "Render_Common/", "ui.frag");
 			Dia::Core::FilePath::ResoledFilePath resolvedUIShaderFile;
-			bool isLoadedUIShader = mUIShader->loadFromFile(uiShaderFile.Resolve(resolvedUIShaderFile).AsCStr(), sf::Shader::Fragment);
+			bool isLoadedUIShader = mUIShader->loadFromFile(uiShaderFile.Resolve(resolvedUIShaderFile).AsCStr(), sf::Shader::Type::Fragment);
 			DIA_ASSERT(isLoadedUIShader, "Could not load ui.frag");
 
-			bool isTextureCreatedCorrectly = mUIOverlayTexture->create(mWindowContext->getSize().x, mWindowContext->getSize().y);
-			DIA_ASSERT(isTextureCreatedCorrectly, "Could not create ui texture");
 
 			mUIShader->setParameter("uiOverlayTex", *mUIOverlayTexture);
 			mUIShader->setParameter("backBufferTex", mBackBuffer->getTexture());
@@ -95,7 +99,9 @@ namespace Dia
 				mWindowContext->setVerticalSyncEnabled(static_cast<bool>(settings.GetEnableVerticalSync()));
 
 				// Make it the active window for OpenGL calls
-				mWindowContext->setActive();
+				bool isActive = mWindowContext->setActive();
+
+				DIA_ASSERT(isActive, "Rednere window activity failed");
 
 				// TODO: Allow this to be set from our settings not hardcoded
 
@@ -131,7 +137,9 @@ namespace Dia
 
 			if (mWindowContext)
 			{
-				mWindowContext->setActive(false);
+				bool isSuccess = mWindowContext->setActive(false);
+
+				DIA_ASSERT(isSuccess, "Rednere window activity failed");
 			}
 		}
 
@@ -169,12 +177,10 @@ namespace Dia
 			if (mWindowContext)
 			{
 				// Push the ui overlay texture to a sprite for rendering
-				sf::Sprite uiSprite;
+				sf::Sprite uiSprite(*mUIOverlayTexture);
 				
 				if (nextFrame.GetUIData().GetBufferSize() > 0)
 				{
-					uiSprite.setTexture(*mUIOverlayTexture);
-
 					mUIOverlayTexture->update(nextFrame.GetUIData().GetBuffer());
 
 					// TODO This should be part of a debug enu
