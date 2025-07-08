@@ -24,7 +24,7 @@ namespace Dia
 
 				x.f = f;
 
-				register int e = (x.i >> 23) & 0x000001ff;
+				int e = (x.i >> 23) & 0x000001ff;
 
 				e = lookupTable[e];
 
@@ -54,7 +54,7 @@ namespace Dia
 
 				x.f = f;
 
-				register int e = (x.i >> 23) & 0x000001ff;
+				int e = (x.i >> 23) & 0x000001ff;
 
 				e = lookupTable[e];
 
