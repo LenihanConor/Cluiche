@@ -67,8 +67,8 @@ namespace Dia
 			DIA_ASSERT(isLoadedUIShader, "Could not load ui.frag");
 
 
-			mUIShader->setParameter("uiOverlayTex", *mUIOverlayTexture);
-			mUIShader->setParameter("backBufferTex", mBackBuffer->getTexture());
+			mUIShader->setUniform("uiOverlayTex", *mUIOverlayTexture);
+			mUIShader->setUniform("backBufferTex", mBackBuffer->getTexture());
 
 			InputSource::SetWindowContext(mWindowContext);
 		}
@@ -187,7 +187,7 @@ namespace Dia
 					// TODO Hide this behind a real save file
 					static bool debugUIRendertexture = false;
 					if (debugUIRendertexture)
-						mUIOverlayTexture->copyToImage().saveToFile("debugUIRender.png");
+						bool isSuccessful = mUIOverlayTexture->copyToImage().saveToFile("debugUIRender.png");
 				}
 
 				mWindowContext->pushGLStates();
@@ -309,7 +309,7 @@ namespace Dia
 
 			if (mWindowContext)
 			{
-				mWindowContext->setIcon(width, height, pixels);
+				mWindowContext->setIcon({ width, height }, pixels);
 			}
 		}
 
@@ -353,7 +353,7 @@ namespace Dia
 		{
 			DIA_ASSERT(mWindowContext, "mWindowContext is NULL");
 
-			return mWindowContext->getSystemHandle();
+			return mWindowContext->getNativeHandle();
 		}
 	}
 }

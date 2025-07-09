@@ -49,14 +49,15 @@ namespace Dia
 			sf::Color sfColour;
 			Convert(sfColour, object.GetColour());
 			
-			sf::Vertex line[] =
-			{
-				sf::Vertex(sf::Vector2f(object.GetPosition1().x, object.GetPosition1().y), sfColour),
-				sf::Vertex(sf::Vector2f(object.GetPosition2().x, object.GetPosition2().y), sfColour)
-			};
-
+			sf::Vertex line[2];
+			
+			line[0].position = sf::Vector2f(object.GetPosition1().x, object.GetPosition1().y);
+			line[0].color = sfColour;
+			line[1].position = sf::Vector2f(object.GetPosition2().x, object.GetPosition2().y);
+			line[1].color = sfColour;
+			
 			// Now draw the circle
-			mRenderTarget->draw(line, 2, sf::Lines);
+			mRenderTarget->draw(line, 2, sf::PrimitiveType::Lines);
 		}
 	}
 }

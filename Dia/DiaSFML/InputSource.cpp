@@ -40,8 +40,7 @@ namespace Dia
 				outStream.RemoveAll();
 
 				// handle events
-				sf::Event sfEvent;
-				while (mWindowContext->pollEvent(sfEvent))
+				while (const std::optional sfEvent = mWindowContext->pollEvent())
 				{
 					Dia::Input::Event diaEvent;
 
@@ -49,9 +48,9 @@ namespace Dia
 
 					if (IsListeningForEvent(diaEvent.type))
 					{
-						if (diaEvent.type == sf::Event::MouseMoved &&
+						if (sfEvent->is<sf::Event::MouseMoved>() &&
 							outStream.Size() > 0 &&
-							outStream[outStream.Size() - 1].type == sf::Event::MouseMoved)
+							outStream[outStream.Size() - 1].type == Dia::Input::Event::EType::kMouseMoved)
 						{
 							outStream[outStream.Size() - 1].mouseMove.x = diaEvent.mouseMove.x;
 							outStream[outStream.Size() - 1].mouseMove.y = diaEvent.mouseMove.y;
@@ -136,21 +135,21 @@ namespace Dia
 			case Dia::Input::Event::EType::kGainedFocus:
 				isListening = mListeningToSource[ESourceIndex::kSystem];
 				break;
-			case sf::Event::KeyPressed:
-			case sf::Event::KeyReleased:
-			case sf::Event::TextEntered:
+			case Dia::Input::Event::EType::kKeyPressed:
+			case Dia::Input::Event::EType::kKeyReleased:
+			case Dia::Input::Event::EType::kTextEntered:
 				isListening = mListeningToSource[ESourceIndex::kKeyboard];
 				break;
-			case sf::Event::MouseMoved:
-			case sf::Event::MouseButtonPressed:
-			case sf::Event::MouseButtonReleased:
+			case Dia::Input::Event::EType::kMouseMoved:
+			case Dia::Input::Event::EType::kMouseButtonPressed:
+			case Dia::Input::Event::EType::kMouseButtonReleased:
 				isListening = mListeningToSource[ESourceIndex::kMouse];
 				break;
-			case sf::Event::JoystickConnected:
-			case sf::Event::JoystickDisconnected:
-			case sf::Event::JoystickMoved:
-			case sf::Event::JoystickButtonPressed:
-			case sf::Event::JoystickButtonReleased:
+			case Dia::Input::Event::EType::kJoystickConnected:
+			case Dia::Input::Event::EType::kJoystickDisconnected:
+			case Dia::Input::Event::EType::kJoystickMoved:
+			case Dia::Input::Event::EType::kJoystickButtonPressed:
+			case Dia::Input::Event::EType::kJoystickButtonReleased:
 				isListening = mListeningToSource[ESourceIndex::kJoystick];
 				break;
 			default:
