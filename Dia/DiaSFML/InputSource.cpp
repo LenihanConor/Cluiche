@@ -11,6 +11,10 @@ namespace Dia
 {
 	namespace SFML
 	{
+		//------------------------------------------------------------------------------
+		// InputSource constructor.
+		// Initializes the window context to nullptr and sets the input source mask
+		// to listen to all input sources by default.
 		InputSource::InputSource()
 			: mWindowContext(nullptr)
 		{
@@ -19,18 +23,25 @@ namespace Dia
 		}
 
 		//------------------------------------------------------
+		// Sets the SFML window context to poll events from.
+		// This must be called before polling for input.
 		void InputSource::SetWindowContext(sf::Window* window)
 		{
 			mWindowContext = window;
 		}
 
 		//------------------------------------------------------
+		// Specifies which input sources to listen for (system, keyboard, mouse, joystick).
+		// Uses a BitArray8 mask to enable/disable sources.
 		void InputSource::ListenForInputSources(Dia::Core::BitArray8 listeningToSource)
 		{
 			mListeningToSource = listeningToSource;
 		}
 
 		//------------------------------------------------------
+		// Polls the SFML window for events, converts them to Dia::Input::Event,
+		// and adds them to the output stream if the event type is enabled.
+		// MouseMoved events are merged if consecutive.
 		void InputSource::Poll(Dia::Input::EventData& outStream)
 		{
 			DIA_ASSERT(mWindowContext, "mWindowContext is NULL");
@@ -39,15 +50,107 @@ namespace Dia
 			{
 				outStream.RemoveAll();
 
-				// handle events
+				// Poll and handle all available SFML events
 				while (const std::optional sfEvent = mWindowContext->pollEvent())
 				{
 					Dia::Input::Event diaEvent;
 
-					Convert(diaEvent, sfEvent);
+					// Convert SFML event to Dia event
+					// Each block handles a specific SFML event type
+					if (sfEvent->is<sf::Event::Resized>())
+					{
+						const auto* sfInput = sfEvent->getIf<sf::Event::Resized>();
 
+						diaEvent.type = Dia::Input::Event::EType::kResized;
+						diaEvent.size.height = sfInput->size.x;
+						diaEvent.size.width = sfInput->size.y;
+					}
+					else if (sfEvent->is<sf::Event::KeyPressed>() && sfEvent->is<sf::Event::KeyReleased>())
+					{
+						const auto* sfInput = sfEvent->getIf<sf::Event::KeyPressed>(); // Same structure for KeyReleased
+
+						if (sfEvent->is<sf::Event::KeyPressed>())
+							diaEvent.type = Dia::Input::Event::EType::kKeyPressed;
+						else
+							diaEvent.type = Dia::Input::Event::EType::kKeyReleased;
+
+						diaEvent.key.code = static_cast<int>(sfInput->code);
+						diaEvent.key.alt = sfInput->alt;
+						diaEvent.key.control = sfInput->control;
+						diaEvent.key.shift = sfInput->shift;
+						diaEvent.key.system = sfInput->system;
+					}
+					else if (sfEvent->is<sf::Event::TextEntered>())
+					{
+						const auto* sfInput = sfEvent->getIf<sf::Event::TextEntered>();
+						
+						diaEvent.type = Dia::Input::Event::EType::kTextEntered;
+						diaEvent.text.unicode = sfInput->unicode;
+					}
+					else if (sfEvent->is<sf::Event::MouseMoved>())
+					{
+						const auto* sfInput = sfEvent->getIf<sf::Event::MouseMoved>();
+
+						diaEvent.type = Dia::Input::Event::EType::kMouseMoved;
+						diaEvent.mouseMove.x = sfInput->position.x;
+						diaEvent.mouseMove.y = sfInput->position.y;
+					}
+					else if (sfEvent->is<sf::Event::MouseButtonPressed>() && sfEvent->is<sf::Event::MouseButtonReleased>())
+					{
+						const auto* sfInput = sfEvent->getIf<sf::Event::MouseButtonPressed>(); // Same structure for MouseButtonReleased
+
+						if (sfEvent->is<sf::Event::MouseButtonPressed>())
+							diaEvent.type = Dia::Input::Event::EType::kMouseButtonPressed;
+						else
+							diaEvent.type = Dia::Input::Event::EType::kMouseButtonReleased;
+					
+						diaEvent.mouseButton.button = static_cast<int>(sfInput->button);
+						diaEvent.mouseButton.x = sfInput->position.x;
+						diaEvent.mouseButton.y = sfInput->position.y;
+					}
+					else if (sfEvent->is<sf::Event::JoystickConnected>() && sfEvent->is<sf::Event::JoystickDisconnected>())
+					{
+						const auto* sfInput = sfEvent->getIf<sf::Event::JoystickConnected>();
+
+						if (sfEvent->is<sf::Event::JoystickConnected>())
+							diaEvent.type = Dia::Input::Event::EType::kJoystickConnected;
+						else
+							diaEvent.type = Dia::Input::Event::EType::kJoystickDisconnected;
+
+						diaEvent.joystickConnect.joystickId = sfInput->joystickId;
+					}
+					else if (sfEvent->is<sf::Event::JoystickMoved>())
+					{
+						const auto* sfInput = sfEvent->getIf<sf::Event::JoystickMoved>();
+
+						diaEvent.type = Dia::Input::Event::EType::kJoystickMoved;
+						diaEvent.joystickMove.joystickId = sfInput->joystickId;
+						diaEvent.joystickMove.axis = static_cast<int>(sfInput->axis);
+						diaEvent.joystickMove.position = sfInput->position;
+					}
+					else if (sfEvent->is<sf::Event::JoystickButtonPressed>() && sfEvent->is<sf::Event::JoystickButtonReleased>())
+					{
+						const auto* sfInput = sfEvent->getIf<sf::Event::JoystickButtonPressed>();
+
+						if (sfEvent->is<sf::Event::JoystickConnected>())
+							diaEvent.type = Dia::Input::Event::EType::kJoystickButtonPressed;
+						else
+							diaEvent.type = Dia::Input::Event::EType::kJoystickButtonReleased;
+
+						diaEvent.joystickButton.joystickId = sfInput->joystickId;
+						diaEvent.joystickButton.button = sfInput->button;
+					}
+					else
+					{
+						// Unhandled event type
+						DIA_ASSERT(nullptr, "Unhandled event type in InputSource::Poll");
+						continue; // Skip unhandled events
+					}
+
+					// Add event to output stream if listening for this type
 					if (IsListeningForEvent(diaEvent.type))
 					{
+						// Merge consecutive MouseMoved events for efficiency
 						if (sfEvent->is<sf::Event::MouseMoved>() &&
 							outStream.Size() > 0 &&
 							outStream[outStream.Size() - 1].type == Dia::Input::Event::EType::kMouseMoved)
@@ -65,64 +168,8 @@ namespace Dia
 		}
 
 		//------------------------------------------------------
-		void InputSource::Convert(Dia::Input::Event& lhs, const sf::Event& rhs)const
-		{
-			bool isInTypeRange = (rhs.type >= 0 && rhs.type < Dia::Input::Event::EType::NumberOfItems);
-
-			if (!isInTypeRange)
-			{
-				DIA_ASSERT(0, "Cannot convert sf event into dia event as it is outside range of types");
-			}
-
-			lhs.type = rhs.type;
-
-			switch (rhs.type)
-			{
-			case sf::Event::Resized:
-				lhs.size.height = rhs.size.height;
-				lhs.size.width = rhs.size.width;
-				break;
-			case sf::Event::KeyPressed:
-			case sf::Event::KeyReleased:
-				lhs.key.code = rhs.key.code;    
-				lhs.key.alt = rhs.key.alt;
-				lhs.key.control = rhs.key.control;
-				lhs.key.shift = rhs.key.shift;
-				lhs.key.system = rhs.key.system;
-				break;
-			case sf::Event::TextEntered:
-				lhs.text.unicode = rhs.text.unicode;
-				break;
-			case sf::Event::MouseMoved:
-				lhs.mouseMove.x = rhs.mouseMove.x;
-				lhs.mouseMove.y = rhs.mouseMove.y;
-				break;
-			case sf::Event::MouseButtonPressed:
-			case sf::Event::MouseButtonReleased:
-				lhs.mouseButton.button = rhs.mouseButton.button;
-				lhs.mouseButton.x = rhs.mouseButton.x;
-				lhs.mouseButton.y = rhs.mouseButton.y;
-				break;
-			case sf::Event::JoystickConnected:
-			case sf::Event::JoystickDisconnected:
-				lhs.joystickConnect.joystickId = rhs.joystickConnect.joystickId;
-				break;
-			case sf::Event::JoystickMoved:
-				lhs.joystickMove.joystickId = rhs.joystickMove.joystickId;
-				lhs.joystickMove.axis = rhs.joystickMove.axis;
-				lhs.joystickMove.position = rhs.joystickMove.position;
-				break;
-			case sf::Event::JoystickButtonPressed:
-			case sf::Event::JoystickButtonReleased:
-				lhs.joystickButton.joystickId = rhs.joystickButton.joystickId;
-				lhs.joystickButton.button = rhs.joystickButton.button;
-				break;
-			default:
-				break;
-			}
-		}
-
-		//------------------------------------------------------
+		// Checks if the current input source is enabled for the given event type.
+		// Returns true if the event type is enabled in the listening mask.
 		bool InputSource::IsListeningForEvent(Dia::Input::Event::EType eventType)const
 		{
 			bool isListening = false;
