@@ -65,7 +65,7 @@ namespace Dia
 						diaEvent.size.height = sfInput->size.x;
 						diaEvent.size.width = sfInput->size.y;
 					}
-					else if (sfEvent->is<sf::Event::KeyPressed>() && sfEvent->is<sf::Event::KeyReleased>())
+					else if (sfEvent->is<sf::Event::KeyPressed>() || sfEvent->is<sf::Event::KeyReleased>())
 					{
 						const auto* sfInput = sfEvent->getIf<sf::Event::KeyPressed>(); // Same structure for KeyReleased
 
@@ -95,7 +95,7 @@ namespace Dia
 						diaEvent.mouseMove.x = sfInput->position.x;
 						diaEvent.mouseMove.y = sfInput->position.y;
 					}
-					else if (sfEvent->is<sf::Event::MouseButtonPressed>() && sfEvent->is<sf::Event::MouseButtonReleased>())
+					else if (sfEvent->is<sf::Event::MouseButtonPressed>() || sfEvent->is<sf::Event::MouseButtonReleased>())
 					{
 						const auto* sfInput = sfEvent->getIf<sf::Event::MouseButtonPressed>(); // Same structure for MouseButtonReleased
 
@@ -108,7 +108,7 @@ namespace Dia
 						diaEvent.mouseButton.x = sfInput->position.x;
 						diaEvent.mouseButton.y = sfInput->position.y;
 					}
-					else if (sfEvent->is<sf::Event::JoystickConnected>() && sfEvent->is<sf::Event::JoystickDisconnected>())
+					else if (sfEvent->is<sf::Event::JoystickConnected>() || sfEvent->is<sf::Event::JoystickDisconnected>())
 					{
 						const auto* sfInput = sfEvent->getIf<sf::Event::JoystickConnected>();
 
@@ -128,7 +128,7 @@ namespace Dia
 						diaEvent.joystickMove.axis = static_cast<int>(sfInput->axis);
 						diaEvent.joystickMove.position = sfInput->position;
 					}
-					else if (sfEvent->is<sf::Event::JoystickButtonPressed>() && sfEvent->is<sf::Event::JoystickButtonReleased>())
+					else if (sfEvent->is<sf::Event::JoystickButtonPressed>() || sfEvent->is<sf::Event::JoystickButtonReleased>())
 					{
 						const auto* sfInput = sfEvent->getIf<sf::Event::JoystickButtonPressed>();
 
