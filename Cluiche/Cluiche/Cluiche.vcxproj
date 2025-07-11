@@ -33,6 +33,38 @@
     <ClInclude Include="ApplicationFlow\ProcessingUnits\SimProcessingUnit.h" />
     <ClInclude Include="Source\LaunchUIPage.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Dia\DiaApplication\DiaApplication.vcxproj">
+      <Project>{dd3d58ef-028b-42cb-b837-0042ba30d96f}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaCore\DiaCore.vcxproj">
+      <Project>{8d41cbe3-c493-428d-95f3-627e56500667}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaGraphics\DiaGraphics.vcxproj">
+      <Project>{1cf9f92b-666e-4b39-9dde-b1cfbef68618}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaInput\DiaInput.vcxproj">
+      <Project>{936fa28f-e171-401f-8185-d2af48db4098}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaMaths\DiaMaths.vcxproj">
+      <Project>{2bba0ad3-d449-4c0e-8c84-acfa8bca456b}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaSFML\DiaSFML.vcxproj">
+      <Project>{d0101596-9011-46af-a16a-69a2bb0cca69}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaUIAwesomium\DiaUIAwesomium.vcxproj">
+      <Project>{a5b2650d-8283-483f-827e-ca29140cfa63}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaUI\DiaUI.vcxproj">
+      <Project>{835ca128-691f-4cea-a0b3-ce6e41c394e7}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaWindow\DiaWindow.vcxproj">
+      <Project>{52178c86-628d-4fe4-ae55-d3485faec070}</Project>
+    </ProjectReference>
+    <ProjectReference Include="CluicheKernel\CluicheKernel.vcxproj">
+      <Project>{649d1b1d-c23f-4373-aca8-8a3a59c0cfa0}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{CEC960D4-B8B3-463B-9F68-716C5C3C4315}</ProjectGuid>
     <RootNamespace>Cluiche</RootNamespace>
