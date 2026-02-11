@@ -31,6 +31,10 @@ namespace Dia
 
 		//-------------------------------------------------------------------------------------
 		RenderWindow::RenderWindow(const Window::IWindow::Settings& windowSetting, const Graphics::ICanvas::Settings& canvasSettings)
+			: mWindowContext(nullptr)
+			, mBackBuffer(nullptr)
+			, mUIShader(nullptr)
+			, mUIOverlayTexture(nullptr)
 		{
 			// Extract the SF settings for the window
 			wchar_t titleBuffer[1024];
@@ -52,19 +56,21 @@ namespace Dia
 			mWindowContext = DIA_NEW(sf::RenderWindow(videoMode, sf::String(titleTempWString), style, sf::State::Windowed, context));
 			mBackBuffer = DIA_NEW(sf::RenderTexture({ windowSetting.GetDimensions().GetWidth(), windowSetting.GetDimensions().GetHeight() }));
 		
-			DIA_ASSERT(mBackBuffer = nullptr, "Rendering backbuffer is not allocated");
+			DIA_ASSERT(mBackBuffer != nullptr, "Rendering backbuffer is not allocated");
 			DIA_ASSERT(sf::Shader::isAvailable(), "Shaders are not available on this platform");
 
 			mUIShader = DIA_NEW(sf::Shader());
 			mUIOverlayTexture = DIA_NEW(sf::Texture(sf::Vector2u{ mWindowContext->getSize().x, mWindowContext->getSize().y}));
-			DIA_ASSERT(mUIOverlayTexture = nullptr, "Could not create ui texture");
+			DIA_ASSERT(mUIOverlayTexture != nullptr, "Could not create ui texture");
 
 			//TODO: Replace with a better file load system
 			//TODO: Move this shader to a centralized place
 			Dia::Core::FilePath uiShaderFile("root", "Render_Common/", "ui.frag");
 			Dia::Core::FilePath::ResoledFilePath resolvedUIShaderFile;
-			bool isLoadedUIShader = mUIShader->loadFromFile(uiShaderFile.Resolve(resolvedUIShaderFile).AsCStr(), sf::Shader::Type::Fragment);
-			DIA_ASSERT(isLoadedUIShader, "Could not load ui.frag");
+
+			uiShaderFile.Resolve(resolvedUIShaderFile);
+			bool isLoadedUIShader = mUIShader->loadFromFile(resolvedUIShaderFile.AsCStr(), sf::Shader::Type::Fragment);
+			DIA_ASSERT(isLoadedUIShader, "Could not load ui.frag from %s", resolvedUIShaderFile.AsCStr());
 
 
 			mUIShader->setUniform("uiOverlayTex", *mUIOverlayTexture);
