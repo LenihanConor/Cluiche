@@ -95,15 +95,21 @@ namespace Dia
 						diaEvent.mouseMove.x = sfInput->position.x;
 						diaEvent.mouseMove.y = sfInput->position.y;
 					}
-					else if (sfEvent->is<sf::Event::MouseButtonPressed>() || sfEvent->is<sf::Event::MouseButtonReleased>())
+					else if (sfEvent->is<sf::Event::MouseButtonPressed>())
 					{
-						const auto* sfInput = sfEvent->getIf<sf::Event::MouseButtonPressed>(); // Same structure for MouseButtonReleased
+						const auto* sfInput = sfEvent->getIf<sf::Event::MouseButtonPressed>(); 
 
-						if (sfEvent->is<sf::Event::MouseButtonPressed>())
-							diaEvent.type = Dia::Input::Event::EType::kMouseButtonPressed;
-						else
-							diaEvent.type = Dia::Input::Event::EType::kMouseButtonReleased;
-					
+	
+						diaEvent.type = Dia::Input::Event::EType::kMouseButtonPressed;					
+						diaEvent.mouseButton.button = static_cast<int>(sfInput->button);
+						diaEvent.mouseButton.x = sfInput->position.x;
+						diaEvent.mouseButton.y = sfInput->position.y;
+					}
+					else if (sfEvent->is<sf::Event::MouseButtonReleased>())
+					{
+						const auto* sfInput = sfEvent->getIf<sf::Event::MouseButtonReleased>();
+
+						diaEvent.type = Dia::Input::Event::EType::kMouseButtonReleased;
 						diaEvent.mouseButton.button = static_cast<int>(sfInput->button);
 						diaEvent.mouseButton.x = sfInput->position.x;
 						diaEvent.mouseButton.y = sfInput->position.y;
@@ -140,10 +146,16 @@ namespace Dia
 						diaEvent.joystickButton.joystickId = sfInput->joystickId;
 						diaEvent.joystickButton.button = sfInput->button;
 					}
+					else if (sfEvent->is<sf::Event::Closed>())
+					{
+						const auto* sfInput = sfEvent->getIf<sf::Event::Closed>();
+
+						diaEvent.type = Dia::Input::Event::EType::kClosed;
+					}
 					else
 					{
 						// Unhandled event type
-						DIA_ASSERT(nullptr, "Unhandled event type in InputSource::Poll");
+					//	DIA_ASSERT(nullptr, "Unhandled event type in InputSource::Poll");
 						continue; // Skip unhandled events
 					}
 
