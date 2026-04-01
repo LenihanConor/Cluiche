@@ -87,13 +87,15 @@
     <ClInclude Include="Vector\VectorUtils.h" />
     <ClInclude Include="Core\Angle.h" />
     <ClInclude Include="Core\CoreMaths.h" />
+    <ClInclude Include="Core\Easing.h" />
     <ClInclude Include="Core\FloatMaths.h" />
     <ClInclude Include="Core\HalfFloat.h" />
+    <ClInclude Include="Core\Interpolation.h" />
     <ClInclude Include="Core\MathsDefines.h" />
+    <ClInclude Include="Core\Random.h" />
     <ClInclude Include="Core\Trigonometry.h" />
     <ClInclude Include="Matrix\Matrix22.h" />
     <ClInclude Include="Matrix\Matrix33.h" />
-    <ClInclude Include="Matrix\Matrix44.h" />
     <ClInclude Include="Shape\2D\AARect2D.h" />
     <ClInclude Include="Shape\2D\Arc2D.h" />
     <ClInclude Include="Shape\2D\Capsule2D.h" />
@@ -101,9 +103,11 @@
     <ClInclude Include="Shape\2D\IntersectionPoint2D.h" />
     <ClInclude Include="Shape\2D\Line2D.h" />
     <ClInclude Include="Shape\2D\OORect2D.h" />
+    <ClInclude Include="Shape\2D\Ray2D.h" />
     <ClInclude Include="Shape\2D\Triangle2D.h" />
     <ClInclude Include="Shape\Common\IntersectionClassify.h" />
     <ClInclude Include="Shape\Common\IntersectionTests.h" />
+    <ClInclude Include="Transform\Transform2D.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Vector\Vector2D.cpp" />
@@ -118,9 +122,9 @@
     <ClCompile Include="Core\CoreMaths.cpp" />
     <ClCompile Include="Core\FloatMaths.cpp" />
     <ClCompile Include="Core\HalfFloat.cpp" />
+    <ClCompile Include="Core\Random.cpp" />
     <ClCompile Include="Matrix\Matrix22.cpp" />
     <ClCompile Include="Matrix\Matrix33.cpp" />
-    <ClCompile Include="Matrix\Matrix44.cpp" />
     <ClCompile Include="Shape\2D\AARect2D.cpp" />
     <ClCompile Include="Shape\2D\Arc2D.cpp" />
     <ClCompile Include="Shape\2D\Capsule2D.cpp" />
@@ -128,17 +132,22 @@
     <ClCompile Include="Shape\2D\IntersectionPoint2D.cpp" />
     <ClCompile Include="Shape\2D\Line2D.cpp" />
     <ClCompile Include="Shape\2D\OORect2D.cpp" />
+    <ClCompile Include="Shape\2D\Ray2D.cpp" />
     <ClCompile Include="Shape\2D\Triangle2D.cpp" />
     <ClCompile Include="Shape\Common\IntersectionClassify.cpp" />
     <ClCompile Include="Shape\Common\IntersectionTests.cpp" />
+    <ClCompile Include="Transform\Transform2D.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Vector\Vector2D.inl" />
     <None Include="Vector\VectorHalf2D.inl" />
     <None Include="Core\Angle.inl" />
     <None Include="Core\CoreMaths.inl" />
+    <None Include="Core\Easing.inl" />
     <None Include="Core\FloatMaths.inl" />
     <None Include="Core\HalfFloat.inl" />
+    <None Include="Core\Interpolation.inl" />
+    <None Include="Core\Random.inl" />
     <None Include="Core\Trigonometry.inl" />
     <None Include="Shape\2D\AARect2D.inl" />
     <None Include="Shape\2D\Arc2D.inl" />
@@ -147,8 +156,12 @@
     <None Include="Shape\2D\IntersectionPoint2D.inl" />
     <None Include="Shape\2D\Line2D.inl" />
     <None Include="Shape\2D\OORect2D.inl" />
+    <None Include="Shape\2D\Ray2D.inl" />
     <None Include="Shape\2D\Triangle2D.inl" />
     <None Include="Shape\Common\IntersectionClassify.inl" />
+    <None Include="Matrix\Matrix33.inl" />
+    <None Include="Transform\Transform2D.inl" />
+    <None Include="Docs\dia.maths.architecture.module.md" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">

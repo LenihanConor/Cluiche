@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd /tmp)",
+      "Bash(g++ C:/GitHub/Cluiche/TEST_RAY_LINE.cpp -o test_ray)",
+      "Bash(./test_ray)",
+      "Bash(C:/GitHub/Cluiche/TEST_THREAD_SAFETY.cpp:*)",
+      "Bash(find Dia/DiaMaths -name *.vcxproj -o -name *.sln)",
+      "Bash(ls:*)",
+      "Bash(find . -maxdepth 3 -name *.sln -o -name *.vcxproj)"
+    ]
+  }
+}
