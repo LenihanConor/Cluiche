@@ -1,0 +1,76 @@
+{
+  "_comment": "Development Configuration - Verbose logging for debugging",
+  "default": {
+    "level": "DEBUG",
+    "channels": "Console|File",
+    "suppressed": false
+  },
+  "namespaces": {
+    "Core": {
+      "level": "TRACE",
+      "channels": "Console|File"
+    },
+    "Physics": {
+      "level": "DEBUG",
+      "channels": "Console|File"
+    },
+    "Physics.Collision": {
+      "level": "TRACE",
+      "channels": "File"
+    },
+    "Physics.Collision.Narrow": {
+      "level": "TRACE",
+      "channels": "File"
+    },
+    "Physics.Dynamics": {
+      "level": "DEBUG",
+      "channels": "Console|File"
+    },
+    "Rendering": {
+      "level": "DEBUG",
+      "channels": "Console|File"
+    },
+    "Rendering.Shadows": {
+      "level": "DEBUG",
+      "channels": "File"
+    },
+    "Rendering.PostProcess": {
+      "level": "INFO",
+      "channels": "Console"
+    },
+    "Audio": {
+      "level": "DEBUG",
+      "channels": "Console"
+    },
+    "Audio.Mixer": {
+      "level": "TRACE",
+      "channels": "File"
+    },
+    "Network": {
+      "level": "DEBUG",
+      "channels": "Console|File"
+    },
+    "Input": {
+      "level": "INFO",
+      "channels": "Console"
+    },
+    "UI": {
+      "level": "DEBUG",
+      "channels": "Console"
+    },
+    "Gameplay": {
+      "level": "DEBUG",
+      "channels": "Console|File"
+    },
+    "AI": {
+      "level": "DEBUG",
+      "channels": "File"
+    },
+    "Animation": {
+      "level": "INFO",
+      "channels": "Console"
+    }
+  },
+  "individual": {
+  }
+}

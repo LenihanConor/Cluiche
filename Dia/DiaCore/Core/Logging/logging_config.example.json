@@ -1,0 +1,49 @@
+{
+  "default": {
+    "level": "INFO",
+    "channels": "Console|File",
+    "suppressed": false
+  },
+  "namespaces": {
+    "Core": {
+      "level": "DEBUG",
+      "channels": "Console|File"
+    },
+    "Physics": {
+      "level": "DEBUG",
+      "channels": "Console|File|Server"
+    },
+    "Physics.Collision": {
+      "level": "TRACE",
+      "channels": "File"
+    },
+    "Rendering": {
+      "level": "INFO",
+      "channels": "Console|File"
+    },
+    "Rendering.Shadows": {
+      "level": "WARNING",
+      "channels": "File"
+    },
+    "Audio": {
+      "level": "INFO",
+      "channels": "Console",
+      "suppressed": false
+    },
+    "Network": {
+      "level": "DEBUG",
+      "channels": "Console|File|Server|Database"
+    },
+    "Debug": {
+      "suppressed": true
+    }
+  },
+  "individual": {
+    "Physics.cpp:142": {
+      "suppressed": true
+    },
+    "Rendering.cpp:256": {
+      "suppressed": true
+    }
+  }
+}

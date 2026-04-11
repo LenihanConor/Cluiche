@@ -1,0 +1,98 @@
+stateDiagram-v2
+    [*] --> Idle: ProcessingUnit Created
+
+    Idle --> Boot: Start() Called
+
+    Boot --> BootStrap: TransitionPhase()
+    BootStrap --> Running: TransitionPhase()
+    Running --> Stopping: Stop Signal
+    Stopping --> [*]: Shutdown Complete
+
+    state Boot {
+        [*] --> BeforeModulesStart
+        BeforeModulesStart --> ModulesStart: Phase Hook
+        ModulesStart --> AfterModulesStart: All Modules Started
+        AfterModulesStart --> BeforeModulesUpdate: Initialization Complete
+
+        BeforeModulesUpdate --> ModulesUpdate: Begin Update Loop
+        ModulesUpdate --> AfterModulesUpdate: Frame Complete
+        AfterModulesUpdate --> BeforeModulesUpdate: Continue Loop
+
+        BeforeModulesUpdate --> BeforeModulesStop: Phase Transition Queued
+        BeforeModulesStop --> ModulesStop: Stop Modules
+        ModulesStop --> AfterModulesStop: All Modules Stopped
+        AfterModulesStop --> [*]: Phase Complete
+
+        note right of ModulesStart
+            Modules started in
+            dependency order
+        end note
+
+        note right of ModulesUpdate
+            Update loop runs until
+            phase transition queued
+        end note
+    }
+
+    state BootStrap {
+        [*] --> BeforeModulesStart
+        BeforeModulesStart --> ModulesStart: Phase Hook
+        ModulesStart --> AfterModulesStart: All Modules Started
+        AfterModulesStart --> BeforeModulesUpdate: Initialization Complete
+
+        BeforeModulesUpdate --> ModulesUpdate: Begin Update Loop
+        ModulesUpdate --> AfterModulesUpdate: Frame Complete
+        AfterModulesUpdate --> BeforeModulesUpdate: Continue Loop
+
+        BeforeModulesUpdate --> BeforeModulesStop: Phase Transition Queued
+        BeforeModulesStop --> ModulesStop: Stop Modules
+        ModulesStop --> AfterModulesStop: All Modules Stopped
+        AfterModulesStop --> [*]: Phase Complete
+
+        note right of BeforeModulesStart
+            Modules can be retained
+            from previous phase
+        end note
+    }
+
+    state Running {
+        [*] --> BeforeModulesStart
+        BeforeModulesStart --> ModulesStart: Phase Hook
+        ModulesStart --> AfterModulesStart: All Modules Started
+        AfterModulesStart --> BeforeModulesUpdate: Initialization Complete
+
+        BeforeModulesUpdate --> ModulesUpdate: Begin Update Loop
+        ModulesUpdate --> AfterModulesUpdate: Frame Complete
+        AfterModulesUpdate --> BeforeModulesUpdate: Continue (Main Loop)
+
+        BeforeModulesUpdate --> BeforeModulesStop: Stop Signal
+        BeforeModulesStop --> ModulesStop: Stop Modules
+        ModulesStop --> AfterModulesStop: All Modules Stopped
+        AfterModulesStop --> [*]: Phase Complete
+
+        note right of ModulesUpdate
+            Main execution phase
+            Runs until stop signal
+        end note
+    }
+
+    note left of Boot
+        Example: MainBootPhase
+        - Register modules
+        - Register levels
+        - Initialize core systems
+    end note
+
+    note left of BootStrap
+        Example: MainBootStrapPhase
+        - Show launch UI
+        - Spawn threads
+        - Wait for user input
+    end note
+
+    note left of Running
+        Example: RenderRunningPhase
+        - Read graphics commands
+        - Render to canvas
+        - Display @ 60 FPS
+    end note

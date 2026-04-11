@@ -94,6 +94,9 @@
     <Filter Include="Architecture\Singleton">
       <UniqueIdentifier>{a2488200-c774-43b8-a466-4e028b1cab04}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Architecture\Events">
+      <UniqueIdentifier>{b3499311-d885-54c9-b577-5f139c2dbc15}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Architecture\Components\Interface">
       <UniqueIdentifier>{f122460b-a74c-4bd8-839e-3314bddecde0}</UniqueIdentifier>
     </Filter>
@@ -127,6 +130,18 @@
     <Filter Include="Json\External\Source">
       <UniqueIdentifier>{0cb1bcc9-388a-45a6-b410-038bf96e521e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{d1e2f3a4-b5c6-7890-abcd-ef1234567890}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Threading">
+      <UniqueIdentifier>{e2f3a4b5-c678-90ab-cdef-1234567890ab}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\Debug">
+      <UniqueIdentifier>{f3a4b5c6-7890-abcd-ef12-34567890abcd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\Logging">
+      <UniqueIdentifier>{a4b5c6d7-8901-bcde-f234-567890abcdef}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Assert.h">
@@ -150,6 +165,39 @@
     <ClInclude Include="Core\System.h">
       <Filter>Core</Filter>
     </ClInclude>
+    <ClInclude Include="Core\Debug\DebugConsole.h">
+      <Filter>Core\Debug</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Debug\DebugDraw.h">
+      <Filter>Core\Debug</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Debug\DebugMemory.h">
+      <Filter>Core\Debug</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Debug\LeakDetector.h">
+      <Filter>Core\Debug</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Debug\StackTrace.h">
+      <Filter>Core\Debug</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Logging\LogLevel.h">
+      <Filter>Core\Logging</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Logging\LogNamespace.h">
+      <Filter>Core\Logging</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Logging\LogChannel.h">
+      <Filter>Core\Logging</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Logging\LogConfig.h">
+      <Filter>Core\Logging</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Logging\Logger.h">
+      <Filter>Core\Logging</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Logging\DiaCoreAssert.h">
+      <Filter>Core\Logging</Filter>
+    </ClInclude>
     <ClInclude Include="Time\SystemClock.h">
       <Filter>Time</Filter>
     </ClInclude>
@@ -165,7 +213,19 @@
     <ClInclude Include="Time\TimeServer.h">
       <Filter>Time</Filter>
     </ClInclude>
+    <ClInclude Include="Memory\IAllocator.h">
+      <Filter>Memory</Filter>
+    </ClInclude>
     <ClInclude Include="Memory\Memory.h">
+      <Filter>Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="Memory\RefPtr.h">
+      <Filter>Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="Memory\UniquePtr.h">
+      <Filter>Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="Memory\WeakPtr.h">
       <Filter>Memory</Filter>
     </ClInclude>
     <ClInclude Include="Timer\Timer.h">
@@ -321,6 +381,18 @@
     <ClInclude Include="Architecture\Singleton\Singleton.h">
       <Filter>Architecture\Singleton</Filter>
     </ClInclude>
+    <ClInclude Include="Architecture\Events\Event.h">
+      <Filter>Architecture\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="Architecture\Events\EventQueue.h">
+      <Filter>Architecture\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="Architecture\Events\Delegate.h">
+      <Filter>Architecture\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="Architecture\Events\EventDispatcher.h">
+      <Filter>Architecture\Events</Filter>
+    </ClInclude>
     <ClInclude Include="Architecture\Components\Interface\ComponentID.h">
       <Filter>Architecture\Components\Interface</Filter>
     </ClInclude>
@@ -414,11 +486,44 @@
     <ClInclude Include="FilePath\SerializedFileLoad.h">
       <Filter>FilePath</Filter>
     </ClInclude>
+    <ClInclude Include="FilePath\AsyncFileLoader.h">
+      <Filter>FilePath</Filter>
+    </ClInclude>
+    <ClInclude Include="FilePath\FileWatcher.h">
+      <Filter>FilePath</Filter>
+    </ClInclude>
+    <ClInclude Include="FilePath\StreamReader.h">
+      <Filter>FilePath</Filter>
+    </ClInclude>
+    <ClInclude Include="FilePath\StreamWriter.h">
+      <Filter>FilePath</Filter>
+    </ClInclude>
+    <ClInclude Include="Architecture\Factory.h">
+      <Filter>Architecture</Filter>
+    </ClInclude>
+    <ClInclude Include="Architecture\Functor.h">
+      <Filter>Architecture</Filter>
+    </ClInclude>
     <ClInclude Include="Architecture\Observer.h">
       <Filter>Architecture</Filter>
     </ClInclude>
     <ClInclude Include="Containers\Graphs\GraphNode.h">
       <Filter>Containers\Graphs</Filter>
+    </ClInclude>
+    <ClInclude Include="Threading\Atomic.h">
+      <Filter>Threading</Filter>
+    </ClInclude>
+    <ClInclude Include="Threading\JobSystem.h">
+      <Filter>Threading</Filter>
+    </ClInclude>
+    <ClInclude Include="Threading\Mutex.h">
+      <Filter>Threading</Filter>
+    </ClInclude>
+    <ClInclude Include="Threading\Thread.h">
+      <Filter>Threading</Filter>
+    </ClInclude>
+    <ClInclude Include="Threading\ThreadPool.h">
+      <Filter>Threading</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -690,6 +795,39 @@
     </None>
     <None Include="Containers\Graphs\GraphNode.inl">
       <Filter>Containers\Graphs</Filter>
+    </None>
+    <None Include="Docs\dia.core.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+    <None Include="Core\Logging\logging_config.example.json">
+      <Filter>Core\Logging</Filter>
+    </None>
+    <None Include="Core\Logging\logging_config_development.json">
+      <Filter>Core\Logging</Filter>
+    </None>
+    <None Include="Core\Logging\logging_config_production.json">
+      <Filter>Core\Logging</Filter>
+    </None>
+    <None Include="Core\Logging\logging_config_liveservice.json">
+      <Filter>Core\Logging</Filter>
+    </None>
+    <None Include="Core\Logging\logging_config_testing.json">
+      <Filter>Core\Logging</Filter>
+    </None>
+    <None Include="Core\Logging\logging_config_silent.json">
+      <Filter>Core\Logging</Filter>
+    </None>
+    <None Include="Core\Logging\logging_config_profiling.json">
+      <Filter>Core\Logging</Filter>
+    </None>
+    <None Include="Core\Logging\CONFIG_FILES_REFERENCE.md">
+      <Filter>Core\Logging</Filter>
+    </None>
+    <None Include="Core\Logging\LOGGING_SYSTEM_USAGE.md">
+      <Filter>Core\Logging</Filter>
+    </None>
+    <None Include="LOGGING_SYSTEM_IMPLEMENTATION.md">
+      <Filter>Docs</Filter>
     </None>
   </ItemGroup>
 </Project>

@@ -1,0 +1,68 @@
+{
+  "_comment": "Testing Configuration - Focused logging for unit/integration tests",
+  "default": {
+    "level": "INFO",
+    "channels": "Console|File",
+    "suppressed": false
+  },
+  "namespaces": {
+    "Core": {
+      "level": "WARNING",
+      "channels": "File"
+    },
+    "Physics": {
+      "level": "INFO",
+      "channels": "Console|File"
+    },
+    "Physics.Collision": {
+      "level": "DEBUG",
+      "channels": "File"
+    },
+    "Rendering": {
+      "level": "WARNING",
+      "channels": "File"
+    },
+    "Audio": {
+      "level": "WARNING",
+      "channels": "File"
+    },
+    "Network": {
+      "level": "INFO",
+      "channels": "Console|File"
+    },
+    "Input": {
+      "level": "INFO",
+      "channels": "Console"
+    },
+    "UI": {
+      "level": "WARNING",
+      "channels": "File"
+    },
+    "Gameplay": {
+      "level": "INFO",
+      "channels": "Console|File"
+    },
+    "AI": {
+      "level": "INFO",
+      "channels": "File"
+    },
+    "Animation": {
+      "level": "WARNING",
+      "channels": "File"
+    },
+    "Test": {
+      "level": "DEBUG",
+      "channels": "Console|File"
+    },
+    "Test.Unit": {
+      "level": "TRACE",
+      "channels": "File"
+    },
+    "Test.Integration": {
+      "level": "DEBUG",
+      "channels": "Console|File"
+    }
+  },
+  "individual": {
+  }
+}

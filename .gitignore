@@ -242,3 +242,7 @@ Cluiche/Cluiche.VC.db
 *.db
 Cluiche/Cluiche.VC.db
 /Cluiche/.vs
+
+# MkDocs build output
+.mkdocs-site/
+venv/

@@ -1,0 +1,74 @@
+graph TB
+    subgraph External["External Dependencies"]
+        SFML["SFML 2.x<br/>Graphics/Audio/Input"]
+        JsonCpp["JsonCpp<br/>Configuration"]
+        Awesomium["Awesomium<br/>Web UI"]
+        Webix["Webix<br/>UI Framework"]
+        VisJS["VisJS<br/>Visualization"]
+    end
+
+    subgraph Dia["Dia Engine (Platform Layer)"]
+        DiaApp["DiaApplication<br/>Module/Phase/PU Framework"]
+        DiaCore["DiaCore<br/>Containers, Type, Time"]
+        DiaGraphics["DiaGraphics<br/>ICanvas Abstraction"]
+        DiaMaths["DiaMaths<br/>Vector, Matrix, Transform"]
+        DiaInput["DiaInput<br/>Input Events"]
+        DiaUI["DiaUI<br/>UI System"]
+        DiaWindow["DiaWindow<br/>Window Management"]
+        DiaSFML["DiaSFML<br/>SFML Backend"]
+        DiaIO["DiaIO<br/>File I/O"]
+        DiaPhysics["DiaPhysics<br/>Physics"]
+        DiaAI["DiaAI<br/>AI Systems"]
+        DiaArch["DiaArchitecture<br/>Component/Observer"]
+        DiaUIAwe["DiaUIAwesomium<br/>Awesomium Backend"]
+    end
+
+    subgraph Cluiche["Cluiche Application"]
+        Main["Main.cpp<br/>Entry Point"]
+        MainPU["MainProcessingUnit<br/>Main Thread"]
+        RenderPU["RenderProcessingUnit<br/>Render Thread"]
+        SimPU["SimProcessingUnit<br/>Sim Thread"]
+        Levels["Level System<br/>DummyLevel, UnitTestLevel"]
+        Modules["Core Modules<br/>Kernel, UI, LevelFactory"]
+    end
+
+    %% Application layer connections
+    Main --> MainPU
+    MainPU --> RenderPU
+    MainPU --> SimPU
+    MainPU --> Modules
+    MainPU --> Levels
+
+    %% Cluiche depends on Dia
+    Cluiche --> DiaApp
+    Cluiche --> DiaCore
+    Cluiche --> DiaGraphics
+    Cluiche --> DiaMaths
+    Cluiche --> DiaInput
+    Cluiche --> DiaUI
+
+    %% Dia internal dependencies
+    DiaApp --> DiaCore
+    DiaGraphics --> DiaSFML
+    DiaGraphics --> DiaCore
+    DiaMaths --> DiaCore
+    DiaInput --> DiaCore
+    DiaUI --> DiaCore
+    DiaWindow --> DiaCore
+    DiaArch --> DiaCore
+    DiaUIAwe --> DiaUI
+
+    %% Dia depends on External
+    DiaSFML --> SFML
+    DiaUIAwe --> Awesomium
+    DiaCore --> JsonCpp
+    DiaUI --> Webix
+
+    %% Styling
+    classDef appLayer fill:#4A90E2,stroke:#2E5C8A,stroke-width:2px,color:#fff
+    classDef engineLayer fill:#7B68EE,stroke:#4B0082,stroke-width:2px,color:#fff
+    classDef externalLayer fill:#50C878,stroke:#2F7D4E,stroke-width:2px,color:#fff
+
+    class Main,MainPU,RenderPU,SimPU,Levels,Modules appLayer
+    class DiaApp,DiaCore,DiaGraphics,DiaMaths,DiaInput,DiaUI,DiaWindow,DiaSFML,DiaIO,DiaPhysics,DiaAI,DiaArch,DiaUIAwe engineLayer
+    class SFML,JsonCpp,Awesomium,Webix,VisJS externalLayer

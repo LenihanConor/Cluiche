@@ -1,0 +1,105 @@
+site_name: Cluiche Game Engine Documentation
+site_description: Documentation for the Cluiche game engine and Dia framework
+site_author: Cluiche Team
+docs_dir: docs
+site_dir: .mkdocs-site
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+plugins:
+  - search
+  - mermaid2
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:mermaid2.fence_mermaid_custom
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - admonition
+  - pymdownx.details
+  - attr_list
+  - def_list
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: README.md
+  - Getting Started:
+    - Quickstart: 00-getting-started/quickstart.md
+  - Architecture:
+    - Overview: 01-architecture/architecture.md
+    - Components: 01-architecture/component-architecture.md
+    - Threading Model: 01-architecture/threading-model.md
+    - Module System: 01-architecture/module-phase-pu.md
+    - RAII: 01-architecture/raii-for-state.md
+    - Decoupling: 01-architecture/decoupling-via-phases.md
+  - Design:
+    - Design Philosophy: 02-design/design.md
+    - Why Dia: 02-design/why-dia.md
+    - Why Module/Phase/PU: 02-design/why-module-phase-pu.md
+    - Patterns Reference: 02-design/patterns-reference.md
+    - Thread Safety Guide: 02-design/thread-safety-guide.md
+  - Requirements:
+    - Overview: 03-requirements/requirements.md
+  - Testing:
+    - Test Strategy: 04-testing/test.md
+  - API Reference:
+    - Overview: 05-api/api-overview.md
+    - Application API: 05-api/application-api.md
+    - Core API: 05-api/core-api.md
+    - Maths API: 05-api/maths-api.md
+    - Graphics API: 05-api/graphics-api.md
+    - Window API: 05-api/window-api.md
+    - Input API: 05-api/input-api.md
+  - AI Guides:
+    - AI Navigation: 06-ai-guides/AI-README.md
+    - Codebase Map: 06-ai-guides/codebase-map.md
+    - Entry Points: 06-ai-guides/entry-points.md
+    - Key Files: 06-ai-guides/key-files.md
+    - Search Patterns: 06-ai-guides/search-patterns.md
+  - Tools:
+    - Tools Overview: 08-tools/tools-overview.md
+  - Development:
+    - Known Issues: 09-development/known-issues.md
+  - Reference:
+    - Module Registry: 10-reference/module-registry.md
+    - Module Metadata Schema: 10-reference/module-metadata-schema.md
+    - Glossary: 10-reference/glossary.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/cluiche

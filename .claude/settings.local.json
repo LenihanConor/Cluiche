@@ -7,7 +7,26 @@
       "Bash(C:/GitHub/Cluiche/TEST_THREAD_SAFETY.cpp:*)",
       "Bash(find Dia/DiaMaths -name *.vcxproj -o -name *.sln)",
       "Bash(ls:*)",
-      "Bash(find . -maxdepth 3 -name *.sln -o -name *.vcxproj)"
+      "Bash(find . -maxdepth 3 -name *.sln -o -name *.vcxproj)",
+      "Bash(check_files.sh:*)",
+      "Bash(chmod +x check_files.sh)",
+      "Bash(./check_files.sh)",
+      "Bash(check_files_fixed.sh:*)",
+      "Bash(chmod +x check_files_fixed.sh)",
+      "Bash(./check_files_fixed.sh)",
+      "Bash(for dir:*)",
+      "Bash(do echo:*)",
+      "Read(//c/GitHub/Cluiche/Dia/DiaCore/$dir/**)",
+      "Bash(done)",
+      "Bash([ -f TEST_THREAD_SAFETY.cpp ])",
+      "Bash(python:*)",
+      "Bash(./venv/Scripts/pip install:*)",
+      "Bash(./venv/Scripts/mkdocs serve:*)",
+      "Bash(curl:*)",
+      "Bash(chmod +x:*)",
+      "Bash(git mv:*)",
+      "Bash(./venv/Scripts/mkdocs build:*)",
+      "Bash(git add:*)"
     ]
   }
 }
