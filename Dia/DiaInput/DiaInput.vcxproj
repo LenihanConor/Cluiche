@@ -11,15 +11,26 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ActionContext.h" />
+    <ClInclude Include="ActionMap.h" />
     <ClInclude Include="ConsoleGamepad.h" />
     <ClInclude Include="ConsoleGamepadManager.h" />
     <ClInclude Include="EJoystick.h" />
     <ClInclude Include="EKey.h" />
     <ClInclude Include="EMouseButton.h" />
     <ClInclude Include="Event.h" />
+    <ClInclude Include="EventData.h" />
     <ClInclude Include="EventStream.h" />
+    <ClInclude Include="Events\GamepadEvents.h" />
+    <ClInclude Include="Events\JoystickEvents.h" />
+    <ClInclude Include="Events\KeyboardEvents.h" />
+    <ClInclude Include="Events\LegacyEventConverter.h" />
+    <ClInclude Include="Events\MouseEvents.h" />
     <ClInclude Include="IInputSource.h" />
+    <ClInclude Include="InputProfile.h" />
+    <ClInclude Include="InputRecorder.h" />
     <ClInclude Include="InputSourceManager.h" />
+    <ClInclude Include="InputState.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">

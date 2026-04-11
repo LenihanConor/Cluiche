@@ -3,6 +3,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "DiaInput/ConsoleGamepad.h"
 
+#include <DiaCore/Core/Logging/Logger.h>
+
 // Link the 'Xinput' library - Important!
 #pragma comment(lib, "Xinput.lib")
 
@@ -34,7 +36,15 @@ namespace Dia
 		// Overloaded constructor
 		void ConsoleGamepad::Initialize(int index)
 		{
-			// Set gamepad index
+			// Validate gamepad index (1-based to 0-based)
+			if (index < 1 || index > XUSER_MAX_COUNT)
+			{
+				DIA_LOG_ERROR("Input", "Invalid gamepad index: %d (valid range: 1-%d)", index, XUSER_MAX_COUNT);
+				mGamepadIndex = 0;
+				return;
+			}
+
+			// Set gamepad index (convert from 1-based to 0-based)
 			mGamepadIndex = index - 1;
 
 			// Iterate through all gamepad buttons
@@ -44,6 +54,8 @@ namespace Dia
 				mButtonStates[i] = false;
 				mGamepadButtonsDown[i] = false;
 			}
+
+			DIA_LOG_DEBUG("Input", "Gamepad initialized at index %d (XInput index: %d)", index, mGamepadIndex);
 		}
 
 		// Return gamepad state
@@ -71,11 +83,12 @@ namespace Dia
 		// Return true if the gamepad is connected
 		bool ConsoleGamepad::IsConnected()const
 		{
-			// Zero memory
-			ZeroMemory((const_cast<XINPUT_STATE*>(&mState)), sizeof(XINPUT_STATE));
+			// Use local temporary state (const-correct)
+			XINPUT_STATE tempState;
+			ZeroMemory(&tempState, sizeof(XINPUT_STATE));
 
 			// Get the state of the gamepad
-			DWORD Result = XInputGetState(mGamepadIndex, (const_cast<XINPUT_STATE*>(&mState)));
+			DWORD Result = XInputGetState(mGamepadIndex, &tempState);
 
 			if (Result == ERROR_SUCCESS)
 			{
@@ -88,7 +101,23 @@ namespace Dia
 		// Update gamepad state
 		void ConsoleGamepad::Update()
 		{
-			mState = GetState(); // Obtain current gamepad state
+			// Obtain current gamepad state
+			XINPUT_STATE newState;
+			ZeroMemory(&newState, sizeof(XINPUT_STATE));
+
+			DWORD result = XInputGetState(mGamepadIndex, &newState);
+			if (result == ERROR_DEVICE_NOT_CONNECTED)
+			{
+				DIA_LOG_TRACE("Input", "Gamepad %d not connected during Update()", mGamepadIndex);
+				return;
+			}
+			else if (result != ERROR_SUCCESS)
+			{
+				DIA_LOG_ERROR("Input", "XInputGetState failed for gamepad %d: error code 0x%08X", mGamepadIndex, result);
+				return;
+			}
+
+			mState = newState;
 
 			// Iterate through all gamepad buttons
 			for (int i = 0; i < kButtonCount; i++)
