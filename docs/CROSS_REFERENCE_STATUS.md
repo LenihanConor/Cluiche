@@ -254,7 +254,7 @@ Referenced from main API overview.
 **Examples:**
 ```markdown
 Good: [→ Threading Model](threading-model.md)
-Good: [→ Module System](../01-architecture/module-system.md)
+Good: [→ Module System](../reference/architecture/module-system.md)
 Good: [→ Vector Operations](maths-api.md#vector-operations)
 
 Bad: [Threading Model](/docs/01-architecture/threading-model.md)  # Absolute path

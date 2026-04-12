@@ -133,7 +133,49 @@ Cluiche/
 ├── Tools/                        # Build and analysis tools
 │   └── dia_modules.py            # Module dependency analyzer
 └── docs/                         # Documentation
+    ├── specs/                    # Spec-driven development (Platform→App→System→Feature)
+    └── reference/                # Reference docs (architecture, API, design, testing)
 ```
+
+## Documentation
+
+The project uses a dual documentation structure:
+
+- **`docs/specs/`** - Spec-driven development workflow for planning and building new features
+  - 4-level hierarchy: **Platform → Application → System → Feature**
+  - Each spec has decision tracking, AI review questions, and traceability
+  - Custom slash commands: `/spec-platform`, `/spec-app`, `/spec-system`, `/spec-feature`, `/spec-review`, `/spec-trace`
+
+- **`docs/reference/`** - Reference documentation for understanding the existing codebase
+  - [Architecture](docs/reference/architecture/) - System architecture and design
+  - [API Documentation](docs/reference/api/) - Public interfaces
+  - [AI Guides](docs/reference/ai-guides/) - AI-optimized navigation
+  - See [docs/README.md](docs/README.md) for full navigation
+
+**Steering docs** (loaded for spec workflow):
+- Tech standards: `.claude/steering/tech.md`
+- Codebase structure: `.claude/steering/structure.md`
+
+### Spec Workflow
+
+When implementing new features using the spec-driven approach:
+
+1. **Spec must exist and be `Approved`** before implementation starts
+2. **Read the full spec chain** - Every feature spec has a Traceability table linking back to System → Application → Platform
+3. **Check binding decisions** - Platform and Application binding decisions must be honored by all child specs
+4. **Implement with spec reference**: Point agents at the feature spec file path
+5. **Delegate tasks to subagents** - Each task in the feature spec should be a separate subagent
+6. **Commit after each task** before continuing
+7. **Update feature spec status** as work progresses (Draft → Approved → In Progress → Done)
+
+### Spec Commands
+
+- `/spec-platform` - Create or update the platform spec
+- `/spec-app` - Create a new application spec
+- `/spec-system` - Create a new system spec  
+- `/spec-feature` - Create a new feature spec (includes interview + AI review)
+- `/spec-review` - Review any spec and populate AI review questions
+- `/spec-trace` - Trace a feature's full lineage up to platform
 
 ## Development Workflow
 
