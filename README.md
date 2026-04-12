@@ -1,40 +1,55 @@
-# Cluiche Game Framework
+# Cluiche Game Development Platform
 
-**Cluiche** is a multi-threaded game application framework built on the **Dia** engine, designed for high-performance game development with clear separation between simulation, rendering, and UI coordination.
+**Cluiche** (Irish for "game") is a game development platform supporting multiple applications built on the **Dia game engine**. The platform enables building games, tools, and test suites with a component-based architecture, multi-threaded execution model, and modular design.
 
 ---
 
 ## What is Cluiche?
 
-Cluiche provides a phase-based, module-driven architecture for building games with explicit threading control. The framework separates concerns across three independent threads (Main, Render, Sim) while providing a pluggable level system for game state management.
+**Cluiche Platform** provides:
+- **Dia Engine Application** - Shared game engine infrastructure (DiaCore, DiaMaths, DiaGraphics, DiaBuildCLI, and 13+ subsystems)
+- **Cluiche Game Application** - Demo game and testbed showcasing the Dia engine with three-thread architecture (Main/Render/Sim)
+- **GoogleTest Application** - Unit testing suite
+- **Future Game Applications** - Your game projects built on Dia
+
+The platform emphasizes explicit design, type safety, and clear separation of concerns across subsystems and threads.
 
 ---
 
 ## Project Structure
 
 ```
-Cluiche/
-├── Cluiche/           Multi-threaded game application framework
+Cluiche/                        [Platform Root]
+│
+├── Dia/                        [Dia Engine Application - Shared Engine Code]
+│   ├── DiaApplication         - Module/Phase/ProcessingUnit framework
+│   ├── DiaCore                - Containers, Type system, Time management
+│   ├── DiaMaths               - Vector, Matrix, Transform, Shape math
+│   ├── DiaGraphics            - Platform-agnostic rendering (ICanvas)
+│   ├── DiaInput               - Input event system
+│   ├── DiaUI                  - UI integration (Awesomium)
+│   ├── DiaBuildCLI            - Plugin-based CLI build tools [NEW]
+│   └── [10+ more subsystems]
+│
+├── Cluiche/                    [Cluiche Game Application]
 │   ├── Main/Render/Sim threads with phase-based execution
 │   ├── Pluggable level system (DummyLevel, UnitTestLevel)
 │   └── Module-based architecture for extensibility
 │
-├── Dia/               Core game engine (13 subsystems)
-│   ├── DiaApplication - Module/Phase/ProcessingUnit framework
-│   ├── DiaCore       - Containers, Type system, Time management
-│   ├── DiaGraphics   - Platform-agnostic rendering (ICanvas)
-│   ├── DiaMaths      - Vector, Matrix, Transform, Shape math
-│   ├── DiaInput      - Input event system
-│   ├── DiaUI         - UI integration (Awesomium)
-│   └── [7 more subsystems]
+├── Tests/                      [GoogleTest Application]
+│   └── Unit testing suite
 │
-├── Tools/             Development utilities
-│   ├── CLI/          - MDK command-line interface (Python)
-│   └── Console/      - Blue Console web-based runtime debugger (TypeScript)
+├── Tools/                      Development utilities
+│   ├── CLI/                   - MDK command-line interface (Python)
+│   └── Console/               - Blue Console web-based runtime debugger (TypeScript)
 │
-└── External/          Third-party dependencies
-    ├── SFML/         - Graphics/Audio/Input backend
-    ├── jsoncpp/      - JSON configuration
+├── docs/                       Documentation
+│   ├── specs/                 - Spec-driven development (Platform→App→System→Feature)
+│   └── reference/             - Reference docs (architecture, API, design, testing)
+│
+└── External/                   Third-party dependencies
+    ├── SFML/                  - Graphics/Audio/Input backend
+    ├── jsoncpp/               - JSON configuration
     └── [3 more libraries]
 ```
 

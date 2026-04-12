@@ -72,12 +72,8 @@ namespace Dia
 			return mResult;
 		}
 
-		//-----------------------------------------------------------------------------
-		inline
-		void IntersectionClassify::SetClassification(Classification classify)
-		{
-			mResult = classify;
-		}
+		// SetClassification is implemented in IntersectionClassify.cpp (non-inline)
+		// to ensure it has a linkable symbol for exception handling contexts
 
 		//-----------------------------------------------------------------------------
 		inline

@@ -11,7 +11,7 @@ Application-specific requirements for the Cluiche game framework.
 This document details requirements specific to the Cluiche application layer (built on top of Dia engine).
 
 **Scope:**
-- `Cluiche/Cluiche/` application code
+- `Cluiche/CluicheTest/` application code
 - Application-level modules and phases
 - Level implementations
 - Application architecture
@@ -57,7 +57,7 @@ Application must use three independent threads: Main, Render, Sim.
 
 **Status:** ✅ Complete
 
-**[→ Threading Model](../reference/architecture/threading-model.md)**
+**[→ Threading Model](../architecture/threading-model.md)**
 
 ---
 
@@ -88,7 +88,7 @@ Each ProcessingUnit must compose modules for specific functionality.
 
 **Status:** ✅ Complete
 
-**[→ Cluiche Architecture](../reference/architecture/cluiche-application.md)**
+**[→ Cluiche Architecture](../architecture/cluichetest-application.md)**
 
 ---
 
@@ -149,7 +149,7 @@ Threads must communicate via FrameStreams for thread-safe data transfer.
 
 **Status:** ✅ Complete
 
-**[→ DiaApplication API](../reference/api/dia/application-api.md)**
+**[→ DiaApplication API](../api/dia/application-api.md)**
 
 ---
 
@@ -212,7 +212,7 @@ Support runtime level creation via factory pattern.
 
 **Status:** ✅ Complete
 
-**[→ Level System](../reference/architecture/level-system.md)**
+**[→ Level System](../architecture/level-system.md)**
 
 ---
 
@@ -332,7 +332,7 @@ Track input state for continuous input (e.g., held keys).
 
 **Status:** 🚧 In Progress (pattern documented, not implemented)
 
-**[→ Input API](../reference/api/dia/input-api.md)**
+**[→ Input API](../api/dia/input-api.md)**
 
 ---
 
@@ -427,7 +427,7 @@ Support web-based UI (HTML/CSS/JS).
 
 **Status:** ⚠️ Blocked (Awesomium deprecated, needs replacement)
 
-**[→ UI API](../reference/api/dia/ui-api.md)**
+**[→ UI API](../api/dia/ui-api.md)**
 
 ---
 
@@ -460,7 +460,7 @@ In-engine test harness for automated testing.
 
 **Status:** ✅ Complete
 
-**[→ Testing Overview](../reference/testing/test.md)**
+**[→ Testing Overview](../testing/test.md)**
 
 ---
 

@@ -6,7 +6,7 @@
 #include "DiaMaths/Core/Trigonometry.h"
 #include "DiaMaths/Core/FloatMaths.h"
 #include "DiaCore/Type/TypeDefinitionMacros.h"
-
+//small 
 namespace Dia
 {
 	namespace Maths

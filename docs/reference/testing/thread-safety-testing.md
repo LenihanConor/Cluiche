@@ -20,7 +20,7 @@ Thread safety testing verifies correct behavior under concurrent execution.
 **Related Documents:**
 - **[→ Testing Strategy](test.md)** - Overall testing approach
 - **[→ Integration Testing](integration-testing.md)** - Cross-component testing
-- **[→ Architecture Threading Model](../reference/architecture/threading-model.md)** - Thread design
+- **[→ Architecture Threading Model](../architecture/threading-model.md)** - Thread design
 
 ---
 
@@ -516,7 +516,7 @@ If parent transform modified on one thread while child reads on another, can rea
 
 **Status:** ⚠️ Blocked (needs architecture change)
 
-**[→ Transform Performance Notes](../reference/subsystems/dia-maths/performance-notes.md)**
+**See [DiaMaths Known Issues](../subsystems/dia-maths/known-issues.md) for performance notes**
 
 ---
 
@@ -556,7 +556,7 @@ void TestRandomThreadSafety()
 
 **Status:** ✅ Fixed
 
-**[→ Thread Safety Notes](../reference/subsystems/dia-maths/thread-safety-notes.md)**
+**[→ Thread Safety Notes](../subsystems/dia-maths/thread-safety-notes.md)**
 
 ---
 
@@ -707,4 +707,4 @@ void StressTestPhaseTransitions()
 
 **[→ Testing Strategy](test.md)**  
 **[→ Integration Testing](integration-testing.md)**  
-**[→ Thread Safety Notes](../reference/subsystems/dia-maths/thread-safety-notes.md)**
+**[→ Thread Safety Notes](../subsystems/dia-maths/thread-safety-notes.md)**

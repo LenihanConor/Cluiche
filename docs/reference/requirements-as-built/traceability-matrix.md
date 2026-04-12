@@ -68,11 +68,11 @@ This matrix maps each requirement ID to its implementation location(s) in the co
 | **NF-008** | 🚧 | P0 | `Dia/DiaApplication/FrameStream.h` (thread-safe)<br>`Dia/DiaMaths/Core/DiaMathsRandom.h` (thread-safe, fixed)<br>Transform2D hierarchy not thread-safe (known issue) |
 | **NF-009** | ✅ | P1 | DIA_ASSERT usage throughout codebase<br>Verified: Assertions fire for invalid input |
 | **NF-010** | ✅ | P1 | `/docs/05-api/` - Comprehensive API documentation |
-| **NF-011** | ✅ | P0 | `/docs/01-architecture/` - Architecture documentation<br>`/docs/02-design/` - Design rationale |
-| **NF-012** | ✅ | P1 | `/docs/09-development/coding-standards.md`<br>Code follows documented standards |
+| **NF-011** | ✅ | P0 | `/docs/reference/architecture/` - Architecture documentation<br>`/docs/reference/design-rationale/` - Design rationale |
+| **NF-012** | ✅ | P1 | `/docs/reference/development/coding-standards.md`<br>Code follows documented standards |
 | **NF-013** | ✅ | P0 | `Cluiche/Cluiche.sln` - Visual Studio solution<br>External dependencies included in repository |
 | **NF-014** | ✅ | P1 | Windows support verified<br>No platform headers in Dia core<br>Backend abstraction in place |
-| **NF-015** | ✅ | P1 | `/docs/01-architecture/external-dependencies.md`<br>SFML, JsonCpp, Awesomium documented |
+| **NF-015** | ✅ | P1 | `/docs/reference/architecture/external-dependencies.md`<br>SFML, JsonCpp, Awesomium documented |
 
 ---
 
@@ -208,4 +208,4 @@ This matrix maps each requirement ID to its implementation location(s) in the co
 
 **[→ Main Requirements](requirements.md)**  
 **[→ Functional Requirements](functional-requirements.md)**  
-**[→ Test Coverage Targets](../reference/testing/test-coverage-targets.md)**
+**[→ Test Coverage Targets](../testing/test-coverage-targets.md)**

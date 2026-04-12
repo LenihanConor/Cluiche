@@ -58,46 +58,105 @@ markdown_extensions:
 nav:
   - Home: README.md
   - Getting Started:
-    - Quickstart: 00-getting-started/quickstart.md
+    - Quickstart: reference/getting-started/quickstart.md
+    - Building the Project: reference/getting-started/building-the-project.md
+    - Common Tasks: reference/getting-started/common-tasks.md
+    - Glossary: reference/getting-started/glossary.md
   - Architecture:
-    - Overview: 01-architecture/architecture.md
-    - Components: 01-architecture/component-architecture.md
-    - Threading Model: 01-architecture/threading-model.md
-    - Module System: 01-architecture/module-phase-pu.md
-    - RAII: 01-architecture/raii-for-state.md
-    - Decoupling: 01-architecture/decoupling-via-phases.md
-  - Design:
-    - Design Philosophy: 02-design/design.md
-    - Why Dia: 02-design/why-dia.md
-    - Why Module/Phase/PU: 02-design/why-module-phase-pu.md
-    - Patterns Reference: 02-design/patterns-reference.md
-    - Thread Safety Guide: 02-design/thread-safety-guide.md
+    - Overview: reference/architecture/architecture.md
+    - Dia Engine: reference/architecture/dia-engine.md
+    - CluicheTest Application: reference/architecture/cluichetest-application.md
+    - Module System: reference/architecture/module-system.md
+    - Level System: reference/architecture/level-system.md
+    - Threading Model: reference/architecture/threading-model.md
+    - External Dependencies: reference/architecture/external-dependencies.md
+    - Diagrams:
+      - System Overview: reference/architecture/diagrams/system-overview.md
+      - Module Dependencies: reference/architecture/diagrams/module-dependencies.md
+      - Phase Execution: reference/architecture/diagrams/phase-execution.md
+      - Level Lifecycle: reference/architecture/diagrams/level-lifecycle.md
+      - Threading Model: reference/architecture/diagrams/threading-model.md
+  - Design Rationale:
+    - Design Philosophy: reference/design-rationale/design.md
+    - Why Dia: reference/design-rationale/why-dia.md
+    - Why Module/Phase/PU: reference/design-rationale/why-module-phase-pu.md
+    - Why Type System: reference/design-rationale/why-type-system.md
+    - Design Patterns: reference/design-rationale/design-patterns.md
+    - Historical Decisions: reference/design-rationale/historical-decisions.md
+    - Future Directions: reference/design-rationale/future-directions.md
   - Requirements:
-    - Overview: 03-requirements/requirements.md
+    - Overview: reference/requirements-as-built/requirements.md
+    - Functional Requirements: reference/requirements-as-built/functional-requirements.md
+    - Non-Functional Requirements: reference/requirements-as-built/non-functional-requirements.md
+    - Dia Requirements: reference/requirements-as-built/dia-requirements.md
+    - Cluiche Requirements: reference/requirements-as-built/cluiche-requirements.md
+    - Traceability Matrix: reference/requirements-as-built/traceability-matrix.md
   - Testing:
-    - Test Strategy: 04-testing/test.md
+    - Test Strategy: reference/testing/test.md
+    - Unit Testing: reference/testing/unit-testing.md
+    - Integration Testing: reference/testing/integration-testing.md
+    - Thread Safety Testing: reference/testing/thread-safety-testing.md
+    - Performance Testing: reference/testing/performance-testing.md
+    - Test Coverage Targets: reference/testing/test-coverage-targets.md
+    - Writing Tests Guide: reference/testing/writing-tests-guide.md
+    - Google Test Migration: reference/testing/google-test-migration.md
   - API Reference:
-    - Overview: 05-api/api-overview.md
-    - Application API: 05-api/application-api.md
-    - Core API: 05-api/core-api.md
-    - Maths API: 05-api/maths-api.md
-    - Graphics API: 05-api/graphics-api.md
-    - Window API: 05-api/window-api.md
-    - Input API: 05-api/input-api.md
+    - Overview: reference/api/api-overview.md
+    - Conventions: reference/api/conventions.md
+    - Dia APIs:
+      - Application API: reference/api/dia/application-api.md
+      - Core API: reference/api/dia/core-api.md
+      - Maths API: reference/api/dia/maths-api.md
+      - Graphics API: reference/api/dia/graphics-api.md
+      - Window API: reference/api/dia/window-api.md
+      - Input API: reference/api/dia/input-api.md
+      - UI API: reference/api/dia/ui-api.md
+      - UI Awesomium API: reference/api/dia/ui-awesomium-api.md
+      - SFML API: reference/api/dia/sfml-api.md
+      - IO API: reference/api/dia/io-api.md
+      - Physics API: reference/api/dia/physics-api.md
+      - AI API: reference/api/dia/ai-api.md
   - AI Guides:
-    - AI Navigation: 06-ai-guides/AI-README.md
-    - Codebase Map: 06-ai-guides/codebase-map.md
-    - Entry Points: 06-ai-guides/entry-points.md
-    - Key Files: 06-ai-guides/key-files.md
-    - Search Patterns: 06-ai-guides/search-patterns.md
-  - Tools:
-    - Tools Overview: 08-tools/tools-overview.md
+    - AI Navigation: reference/ai-guides/AI-README.md
+    - Codebase Map: reference/ai-guides/codebase-map.md
+    - Entry Points: reference/ai-guides/entry-points.md
+    - Dependency Graph: reference/ai-guides/dependency-graph.md
+    - Patterns Reference: reference/ai-guides/patterns-reference.md
+    - Thread Safety Guide: reference/ai-guides/thread-safety-guide.md
+    - System Boundaries: reference/ai-guides/system-boundaries.md
+    - Quick Reference: reference/ai-guides/quick-reference.md
   - Development:
-    - Known Issues: 09-development/known-issues.md
-  - Reference:
-    - Module Registry: 10-reference/module-registry.md
-    - Module Metadata Schema: 10-reference/module-metadata-schema.md
-    - Glossary: 10-reference/glossary.md
+    - Contributing: reference/development/contributing.md
+    - Coding Standards: reference/development/coding-standards.md
+    - Visual Studio Guide: reference/development/visual-studio-guide.md
+    - Debugging Tips: reference/development/debugging-tips.md
+    - Known Issues: reference/development/known-issues.md
+    - Documentation Maintenance: reference/development/documentation-maintenance.md
+    - Documentation Viewer Guide: reference/development/documentation-viewer-guide.md
+    - Changelog: reference/development/changelog.md
+  - Registry:
+    - Module Registry: reference/registry/module-registry.md
+    - Module Metadata Schema: reference/registry/module-metadata-schema.md
+    - File Locations: reference/registry/file-locations.md
+    - External Links: reference/registry/external-links.md
+  - Subsystems:
+    - Dia Maths:
+      - Thread Safety Notes: reference/subsystems/dia-maths/thread-safety-notes.md
+  - Specs:
+    - Overview: specs/README.md
+    - Platform: specs/platform/Cluiche.md
+    - Applications:
+      - Dia (Engine): specs/applications/dia.md
+      - CluicheTest (Game): specs/applications/cluichetest.md
+      - GoogleTests: specs/applications/googletests.md
+      - Example App: specs/applications/example-app.md
+    - Systems:
+      - Dia Systems:
+        - DiaBuildCLI: specs/systems/dia/diabuildcli.md
+      - Cluiche Systems:
+        - Example System: specs/systems/example-app/example-system.md
+    - Features:
+      - Example Feature: specs/features/example-app/example-system/example-feature.md
 
 extra:
   social:

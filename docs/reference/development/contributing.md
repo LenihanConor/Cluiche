@@ -34,7 +34,7 @@ Thank you for considering contributing to Cluiche! This document provides guidel
    ```
 4. Run tests (if available)
 
-**[→ Building the Project](../reference/getting-started/building-the-project.md)**
+**[→ Building the Project](../getting-started/building-the-project.md)**
 
 ---
 
@@ -217,11 +217,11 @@ Closes #<issue-number>
 
 **Where to Document:**
 - `/docs/05-api/` - API documentation
-- `/docs/01-architecture/` - Architecture overview
-- `/docs/02-design/` - Design rationale
+- `/docs/reference/architecture/` - Architecture overview
+- `/docs/reference/design-rationale/` - Design rationale
 - `.architecture.module.md` - Module metadata
 
-**[→ API Documentation Template](../API_DOCUMENTATION_TEMPLATE.md)** (if exists)
+**[→ API Documentation Conventions](../api/conventions.md)** - See existing API docs for patterns
 
 ---
 
@@ -471,5 +471,5 @@ By contributing, you agree that your contributions will be licensed under the sa
 - Respond to feedback
 
 **[→ Coding Standards](coding-standards.md)**  
-**[→ Building the Project](../reference/getting-started/building-the-project.md)**  
-**[→ Common Tasks](../reference/getting-started/common-tasks.md)**
+**[→ Building the Project](../getting-started/building-the-project.md)**  
+**[→ Common Tasks](../getting-started/common-tasks.md)**

@@ -555,5 +555,5 @@ std::lock_guard<std::mutex> lock(mMutex);
 **Verdict:** Excellent foundation for game architecture
 
 **[→ Back to Design Philosophy](design.md)**  
-**[→ Module System Architecture](../reference/architecture/module-system.md)**  
-**[→ Threading Model Architecture](../reference/architecture/threading-model.md)**
+**[→ Module System Architecture](../architecture/module-system.md)**  
+**[→ Threading Model Architecture](../architecture/threading-model.md)**

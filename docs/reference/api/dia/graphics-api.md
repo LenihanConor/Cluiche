@@ -564,7 +564,7 @@ Alpha values affect transparency:
 - Render-to-texture
 - Shader support
 
-**[→ Future Directions](../../02-design/future-directions.md)**
+**[→ Future Directions](../../design-rationale/future-directions.md)**
 
 ---
 

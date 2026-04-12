@@ -572,7 +572,7 @@ vcpkg integrate install
 
 **⚠️ Important:** Review license terms for commercial projects, especially Awesomium and Webix.
 
-**[→ External documentation links](../reference/registry/external-links.md)**
+**[→ External documentation links](../registry/external-links.md)**
 
 ---
 

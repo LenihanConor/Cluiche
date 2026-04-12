@@ -43,18 +43,22 @@ This section documents the public API surface of Cluiche (application) and Dia (
 
 ---
 
-### Cluiche Application APIs
+### CluicheTest Application APIs
+
+*API documentation in progress - see architecture docs for details:*
 
 **Threading Architecture:**
-- [MainProcessingUnit API](cluiche/main-processing-unit.md) - Main thread orchestrator
-- [RenderProcessingUnit API](cluiche/render-processing-unit.md) - Render thread (60 FPS)
-- [SimProcessingUnit API](cluiche/sim-processing-unit.md) - Sim thread (variable rate)
+- MainProcessingUnit - See [CluicheTest Application Architecture](../architecture/cluichetest-application.md)
+- RenderProcessingUnit - See [Threading Model](../architecture/threading-model.md)
+- SimProcessingUnit - See [Threading Model](../architecture/threading-model.md)
 
 **Level System:**
-- [Level API](cluiche/level-api.md) - ILevel interface and factory
+- Level Interface - See [Level System](../architecture/level-system.md)
 
 **Modules:**
-- [Module Catalog](cluiche/module-catalog.md) - All application modules
+- Module Catalog - See [Module System](../architecture/module-system.md)
+
+<!-- TODO: Create dedicated Cluiche API documentation -->
 
 ---
 
@@ -150,7 +154,7 @@ This section documents the public API surface of Cluiche (application) and Dia (
 - Application modules (6 modules)
 - Level system (DummyLevel, UnitTestLevel)
 
-**[→ Cluiche API Details](cluiche/)**
+**[→ Cluiche Architecture Details](../architecture/cluichetest-application.md)**
 
 ---
 
@@ -288,7 +292,7 @@ private:
 };
 ```
 
-**[→ Full Module Pattern](../reference/ai-guides/patterns-reference.md#pattern-1-module)**
+**[→ Full Module Pattern](../ai-guides/patterns-reference.md#pattern-1-module)**
 
 ---
 
@@ -304,7 +308,7 @@ Dia::Core::HashTable<Dia::Core::StringCRC, int> table;
 table.Insert(Dia::Core::StringCRC("key"), 42);
 ```
 
-**[→ Container Patterns](../reference/ai-guides/patterns-reference.md#pattern-11-dynamicarray)**
+**[→ Container Patterns](../ai-guides/patterns-reference.md#pattern-11-dynamicarray)**
 
 ---
 
@@ -338,7 +342,7 @@ while (mFrameStream.Read(data)) {
 }
 ```
 
-**[→ Threading Patterns](../reference/ai-guides/thread-safety-guide.md#pattern-1-producer-consumer-framestream)**
+**[→ Threading Patterns](../ai-guides/thread-safety-guide.md#pattern-1-producer-consumer-framestream)**
 
 ---
 
@@ -405,7 +409,7 @@ while (mFrameStream.Read(data)) {
 | Use Case | API |
 |----------|-----|
 | **Create a module** | [Module](dia/application-api.md#module) |
-| **Add a level** | [ILevel](cluiche/level-api.md) |
+| **Add a level** | [ILevel](../architecture/level-system.md) |
 | **Store data** | [DynamicArray](dia/core-api.md#dynamicarray) |
 | **Fast lookup** | [HashTable](dia/core-api.md#hashtable) |
 | **2D math** | [Vector2D](dia/maths-api.md#vector2d) |
@@ -429,15 +433,15 @@ APIs from third-party libraries (used via abstractions):
 
 **Principle:** External dependencies accessed via Dia abstractions, not directly.
 
-**[→ External Dependencies](../reference/architecture/external-dependencies.md)**
+**[→ External Dependencies](../architecture/external-dependencies.md)**
 
 ---
 
 ## API Examples
 
 Comprehensive examples available:
-- **Code Patterns:** [Patterns Reference](../reference/ai-guides/patterns-reference.md)
-- **Entry Points:** [Common Tasks](../reference/ai-guides/entry-points.md)
+- **Code Patterns:** [Patterns Reference](../ai-guides/patterns-reference.md)
+- **Entry Points:** [Common Tasks](../ai-guides/entry-points.md)
 - **Sample Code:** `Cluiche/Levels/DummyLevel/`
 - **Tests:** `Cluiche/Levels/UnitTestLevel/`
 
@@ -447,7 +451,7 @@ Comprehensive examples available:
 
 **Total APIs Documented:**
 - Dia Engine: 11 subsystems
-- Cluiche Application: 3 processing units + modules + levels
+- CluicheTest Application: 3 processing units + modules + levels
 
 **API Layers:**
 1. Foundation (DiaCore)
@@ -464,6 +468,6 @@ Comprehensive examples available:
 
 **[→ API Conventions](conventions.md)**  
 **[→ Dia APIs](dia/)**  
-**[→ Cluiche APIs](cluiche/)**
+**[→ Cluiche Architecture](../architecture/cluichetest-application.md)**
 
 **[→ Back to Documentation Index](../README.md)**

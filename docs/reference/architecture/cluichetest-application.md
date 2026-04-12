@@ -1,16 +1,16 @@
-# Cluiche Application Architecture
+# CluicheTest Game Application Architecture
 
-**Last Updated:** 2026-03-31
+**Last Updated:** 2026-04-12
 
-Detailed architecture of the Cluiche application layer built on the Dia engine.
+Detailed architecture of the CluicheTest game application, a demo game and testbed built on the Dia engine.
 
 ---
 
 ## Overview
 
-**Cluiche** is a multi-threaded game application framework that demonstrates the Dia engine's Module/Phase/ProcessingUnit pattern. It provides a complete example of how to build a game with three independent threads and a pluggable level system.
+**CluicheTest** (the game application, not the platform) is a multi-threaded demo game that showcases the Dia engine's Module/Phase/ProcessingUnit pattern. It provides a complete example of how to build a game with three independent threads and a pluggable level system. This application serves as both a demonstration of the engine's capabilities and as a testbed for validating engine features.
 
-**Location:** `Cluiche/Cluiche/`
+**Location:** `Cluiche/CluicheTest/`
 
 **Key Features:**
 - Three-thread architecture (Main, Render, Sim)
@@ -25,7 +25,7 @@ Detailed architecture of the Cluiche application layer built on the Dia engine.
 
 ### Main.cpp
 
-**Location:** `Cluiche/Cluiche/Main.cpp`
+**Location:** `Cluiche/CluicheTest/Main.cpp`
 
 **Entry Point:**
 ```cpp
@@ -60,7 +60,7 @@ int main() {
 
 ### MainProcessingUnit
 
-**Location:** `Cluiche/Cluiche/ApplicationFlow/ProcessingUnits/MainProcessingUnit.h`
+**Location:** `Cluiche/CluicheTest/ApplicationFlow/ProcessingUnits/MainProcessingUnit.h`
 
 **Purpose:** Bootstrap application, coordinate UI, spawn worker threads
 
@@ -95,7 +95,7 @@ private:
 
 ### RenderProcessingUnit
 
-**Location:** `Cluiche/Cluiche/ApplicationFlow/ProcessingUnits/RenderProcessingUnit.h`
+**Location:** `Cluiche/CluicheTest/ApplicationFlow/ProcessingUnits/RenderProcessingUnit.h`
 
 **Purpose:** Render graphics at consistent 60 FPS
 
@@ -141,7 +141,7 @@ struct StartData {
 
 ### SimProcessingUnit
 
-**Location:** `Cluiche/Cluiche/ApplicationFlow/ProcessingUnits/SimProcessingUnit.h`
+**Location:** `Cluiche/CluicheTest/ApplicationFlow/ProcessingUnits/SimProcessingUnit.h`
 
 **Purpose:** Run game simulation at variable rate
 
@@ -191,7 +191,7 @@ struct StartData {
 
 ### MainBootPhase
 
-**Location:** `Cluiche/Cluiche/ApplicationFlow/Phases/MainBootPhase.h`
+**Location:** `Cluiche/CluicheTest/ApplicationFlow/Phases/MainBootPhase.h`
 
 **Purpose:** Initialize core systems and register levels
 
@@ -242,7 +242,7 @@ private:
 
 ### MainBootStrapPhase
 
-**Location:** `Cluiche/Cluiche/ApplicationFlow/Phases/MainBootStrapPhase.h`
+**Location:** `Cluiche/CluicheTest/ApplicationFlow/Phases/MainBootStrapPhase.h`
 
 **Purpose:** Show launch UI, spawn threads, coordinate application
 
@@ -326,7 +326,7 @@ private:
 
 ### RenderRunningPhase
 
-**Location:** `Cluiche/Cluiche/ApplicationFlow/Phases/RenderRunningPhase.h`
+**Location:** `Cluiche/CluicheTest/ApplicationFlow/Phases/RenderRunningPhase.h`
 
 **Purpose:** Main rendering loop @ 60 FPS
 
@@ -384,7 +384,7 @@ private:
 
 ### SimBootPhase
 
-**Location:** `Cluiche/Cluiche/ApplicationFlow/Phases/SimBootPhase.h`
+**Location:** `Cluiche/CluicheTest/ApplicationFlow/Phases/SimBootPhase.h`
 
 **Purpose:** Initialize simulation modules
 
@@ -422,7 +422,7 @@ private:
 
 ### SimBootStrapPhase
 
-**Location:** `Cluiche/Cluiche/ApplicationFlow/Phases/SimBootStrapPhase.h`
+**Location:** `Cluiche/CluicheTest/ApplicationFlow/Phases/SimBootStrapPhase.h`
 
 **Purpose:** Main simulation loop
 
@@ -495,7 +495,7 @@ private:
 
 ### MainKernelModule
 
-**Location:** `Cluiche/Cluiche/CluicheKernel/ApplicationFlow/Modules/MainKernelModule.h`
+**Location:** `Cluiche/CluicheTest/CluicheKernel/ApplicationFlow/Modules/MainKernelModule.h`
 
 **Purpose:** Provide core services (time, input, window, canvas)
 
@@ -548,7 +548,7 @@ private:
 
 ### MainUIModule
 
-**Location:** `Cluiche/Cluiche/CluicheKernel/ApplicationFlow/Modules/MainUIModule.h`
+**Location:** `Cluiche/CluicheTest/CluicheKernel/ApplicationFlow/Modules/MainUIModule.h`
 
 **Purpose:** Awesomium UI system (observer subject)
 
@@ -592,7 +592,7 @@ private:
 
 ### LevelFactoryModule
 
-**Location:** `Cluiche/Cluiche/CluicheKernel/ApplicationFlow/Modules/LevelFactoryModule.h`
+**Location:** `Cluiche/CluicheTest/CluicheKernel/ApplicationFlow/Modules/LevelFactoryModule.h`
 
 **Purpose:** Provide access to `LevelFactory` singleton
 
@@ -631,7 +631,7 @@ private:
 
 ### SimTimeServerModule
 
-**Location:** `Cluiche/Cluiche/CluicheKernel/ApplicationFlow/Modules/SimTimeServerModule.h`
+**Location:** `Cluiche/CluicheTest/CluicheKernel/ApplicationFlow/Modules/SimTimeServerModule.h`
 
 **Purpose:** Independent simulation clock
 
@@ -664,7 +664,7 @@ private:
 
 ### SimInputFrameStreamModule
 
-**Location:** `Cluiche/Cluiche/CluicheKernel/ApplicationFlow/Modules/SimInputFrameStreamModule.h`
+**Location:** `Cluiche/CluicheTest/CluicheKernel/ApplicationFlow/Modules/SimInputFrameStreamModule.h`
 
 **Purpose:** Input event consumer
 
@@ -705,7 +705,7 @@ private:
 
 ### SimUIProxyModule
 
-**Location:** `Cluiche/Cluiche/CluicheKernel/ApplicationFlow/Modules/SimUIProxyModule.h`
+**Location:** `Cluiche/CluicheTest/CluicheKernel/ApplicationFlow/Modules/SimUIProxyModule.h`
 
 **Purpose:** Cross-thread UI bridge (observer)
 
@@ -762,7 +762,7 @@ private:
 
 ### LevelFactory
 
-**Location:** `Cluiche/Cluiche/CluicheKernel/LevelFactory.h`
+**Location:** `Cluiche/CluicheTest/CluicheKernel/LevelFactory.h`
 
 **Purpose:** Registry and factory for levels
 
@@ -848,7 +848,7 @@ level->Start();
 ## Directory Structure
 
 ```
-Cluiche/Cluiche/
+Cluiche/CluicheTest/
 ├── Main.cpp                                     # Entry point
 ├── Cluiche.vcxproj                             # Visual Studio project
 ├── Cluiche.vcxproj.filters                     # VS filters

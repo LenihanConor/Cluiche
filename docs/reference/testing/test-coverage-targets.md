@@ -24,7 +24,7 @@ This document defines test coverage goals by subsystem to ensure adequate valida
 - **[→ Testing Strategy](test.md)** - Overall testing approach
 - **[→ Unit Testing](unit-testing.md)** - Component-level testing
 - **[→ Integration Testing](integration-testing.md)** - Cross-component testing
-- **[→ Requirements Traceability](../reference/requirements-as-built/traceability-matrix.md)** - Requirements coverage
+- **[→ Requirements Traceability](../requirements-as-built/traceability-matrix.md)** - Requirements coverage
 
 ---
 
@@ -566,4 +566,4 @@ fi
 
 **[→ Testing Strategy](test.md)**  
 **[→ Unit Testing](unit-testing.md)**  
-**[→ Requirements Traceability](../reference/requirements-as-built/traceability-matrix.md)**
+**[→ Requirements Traceability](../requirements-as-built/traceability-matrix.md)**

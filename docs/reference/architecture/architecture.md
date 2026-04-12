@@ -1,28 +1,36 @@
-# Cluiche Architecture
+# Cluiche Platform Architecture
 
-**Last Updated:** 2026-03-31
+**Last Updated:** 2026-04-12
 
-This document provides a comprehensive architectural overview of the Cluiche game framework and Dia engine.
+This document provides a comprehensive architectural overview of the Cluiche game development platform, the Dia engine, and applications built on the platform.
 
 ---
 
 ## System Overview
 
-Cluiche is a **three-layer system** with clear separation of concerns:
+The **Cluiche platform** supports multiple applications, all built on the **Dia engine**:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  Cluiche Application Layer                              │
-│  - Multi-threaded game framework (Main/Render/Sim)      │
-│  - Phase-based execution model                          │
-│  - Pluggable level system                               │
+│  Cluiche Platform                                        │
+│  - Multi-application game development platform          │
+│  - Spec-driven development workflow                     │
+│  - Shared engine infrastructure                         │
 └─────────────────────────────────────────────────────────┘
-                         ↓ depends on
+                         ↓ contains
 ┌─────────────────────────────────────────────────────────┐
-│  Dia Engine Layer (13 subsystems)                       │
-│  - Application framework (Module/Phase/ProcessingUnit)  │
-│  - Graphics, Input, Math, Physics, UI, etc.             │
-│  - Platform abstraction layer                           │
+│  Applications                                            │
+│  - Dia (Engine) - Shared engine infrastructure          │
+│  - Cluiche (Game) - Demo game and testbed               │
+│  - GoogleTest - Unit testing suite                      │
+│  - Future Games - Your game projects                    │
+└─────────────────────────────────────────────────────────┘
+                         ↓ depend on
+┌─────────────────────────────────────────────────────────┐
+│  Dia Engine (13+ subsystems)                            │
+│  - DiaCore, DiaMaths, DiaGraphics, DiaBuildCLI          │
+│  - DiaApplication (Module/Phase/ProcessingUnit)         │
+│  - Graphics, Input, Physics, UI, Build Tools            │
 └─────────────────────────────────────────────────────────┘
                          ↓ depends on
 ┌─────────────────────────────────────────────────────────┐
@@ -80,11 +88,17 @@ The Cluiche architecture is guided by these core principles:
 
 ## Component Architecture
 
-### Cluiche Application Layer
+### Dia Engine Application
 
-**Purpose:** Multi-threaded game framework built on Dia
+**Purpose:** Shared game engine infrastructure providing all subsystems (DiaCore, DiaMaths, DiaGraphics, DiaBuildCLI, etc.)
 
-**Entry Point:** `Cluiche/Cluiche/Main.cpp`
+**Role:** While organized as an "application" in the spec hierarchy, Dia functionally serves as the shared engine code that all other applications (games, tools, tests) depend on.
+
+### Cluiche Game Application
+
+**Purpose:** Demo game and testbed built on Dia engine
+
+**Entry Point:** `Cluiche/CluicheTest/Main.cpp`
 
 ```cpp
 int main() {
@@ -137,7 +151,7 @@ Pluggable game states via `ILevel` interface:
 **[→ Level system details](level-system.md)**  
 **[→ Level lifecycle diagram](diagrams/level-lifecycle.mmd)**
 
-**[→ Cluiche application architecture details](cluiche-application.md)**
+**[→ Cluiche application architecture details](cluichetest-application.md)**
 
 ---
 
@@ -166,8 +180,8 @@ The foundational threading architecture:
 - Lifecycle management (Start → Update → Stop)
 - Frequency control via `TimeThreadLimiter`
 
-**[→ API Documentation](../reference/api/dia/application-api.md)**  
-**[→ Subsystem Deep Dive](../reference/subsystems/dia-application/overview.md)**
+**[→ API Documentation](../api/dia/application-api.md)**  
+<!-- TODO: Subsystem Deep Dive - see API docs for now -->
 
 ##### 2. DiaCore
 
@@ -191,8 +205,8 @@ Foundation for all other subsystems:
 - Performance tuning (known memory layout)
 - Debugging visibility (custom assertions)
 
-**[→ API Documentation](../reference/api/dia/core-api.md)**  
-**[→ Subsystem Deep Dive](../reference/subsystems/dia-core/overview.md)**
+**[→ API Documentation](../api/dia/core-api.md)**  
+<!-- TODO: Subsystem Deep Dive - see API docs for now -->
 
 ##### 3. DiaGraphics
 
@@ -209,8 +223,8 @@ Rendering abstraction layer:
 
 **Backend:** DiaSFML implements ICanvas via SFML
 
-**[→ API Documentation](../reference/api/dia/graphics-api.md)**  
-**[→ Subsystem Deep Dive](../reference/subsystems/dia-graphics/overview.md)**
+**[→ API Documentation](../api/dia/graphics-api.md)**  
+<!-- TODO: Subsystem Deep Dive - see API docs for now -->
 
 ##### 4. DiaMaths
 
@@ -229,8 +243,8 @@ Comprehensive math library:
 - Transform2D multiple hierarchy traversals (not optimized)
 - Random number generation recently fixed for thread safety
 
-**[→ API Documentation](../reference/api/dia/maths-api.md)**  
-**[→ Known Issues](../reference/subsystems/dia-maths/known-issues.md)**
+**[→ API Documentation](../api/dia/maths-api.md)**  
+**[→ Known Issues](../subsystems/dia-maths/known-issues.md)**
 
 ##### 5. DiaInput
 
@@ -246,7 +260,7 @@ Input abstraction with multiple device support:
 
 **Backend:** DiaSFML provides SFML input source
 
-**[→ API Documentation](../reference/api/dia/input-api.md)**
+**[→ API Documentation](../api/dia/input-api.md)**
 
 ##### 6. DiaUI
 
@@ -261,7 +275,7 @@ UI system with web integration:
 
 **Backend:** DiaUIAwesomium provides Awesomium (web-based UI)
 
-**[→ API Documentation](../reference/api/dia/ui-api.md)**
+**[→ API Documentation](../api/dia/ui-api.md)**
 
 ##### 7. DiaWindow
 
@@ -274,7 +288,7 @@ Platform-agnostic window abstraction:
 
 **Backend:** DiaSFML provides SFML window implementation
 
-**[→ API Documentation](../reference/api/dia/window-api.md)**
+**[→ API Documentation](../api/dia/window-api.md)**
 
 ##### 8. DiaSFML
 
@@ -287,7 +301,7 @@ SFML integration layer:
 - **RenderWindowFactory** - Factory for SFML windows
 - Type conversion utilities (Dia ↔ SFML)
 
-**[→ API Documentation](../reference/api/dia/sfml-api.md)**
+**[→ API Documentation](../api/dia/sfml-api.md)**
 
 ##### 9-13. Additional Subsystems
 
@@ -314,7 +328,7 @@ SFML integration layer:
 | **VisJS** | - | Data visualization | Debugging visualizations |
 
 **[→ External dependencies details](external-dependencies.md)**  
-**[→ External documentation links](../reference/registry/external-links.md)**
+**[→ External documentation links](../registry/external-links.md)**
 
 ---
 
@@ -505,7 +519,7 @@ uiProxy.SendMessage("button_clicked");
 frameData.Accept(renderVisitor);
 ```
 
-**[→ Design patterns details](../reference/design-rationale/design-patterns.md)**
+**[→ Design patterns details](../design-rationale/design-patterns.md)**
 
 ---
 
@@ -532,9 +546,9 @@ public_api:
 ---
 ```
 
-**Complete Registry:** [Module Registry](../reference/registry/module-registry.md) lists all 56 modules
+**Complete Registry:** [Module Registry](../registry/module-registry.md) lists all 56 modules
 
-**Schema Documentation:** [Module Metadata Schema](../reference/registry/module-metadata-schema.md)
+**Schema Documentation:** [Module Metadata Schema](../registry/module-metadata-schema.md)
 
 ---
 
@@ -554,10 +568,10 @@ All diagrams use **Mermaid** format and render in GitHub/markdown viewers.
 
 ## File Organization
 
-### Cluiche Application
+### CluicheTest Application
 
 ```
-Cluiche/Cluiche/
+Cluiche/CluicheTest/
 ├── Main.cpp                           # Entry point
 ├── ApplicationFlow/
 │   ├── ProcessingUnits/               # Thread orchestrators
@@ -580,7 +594,7 @@ Dia/
 │   └── <Subsystem>.vcxproj            # Visual Studio project
 ```
 
-**[→ Complete file locations](../reference/registry/file-locations.md)**
+**[→ Complete file locations](../registry/file-locations.md)**
 
 ---
 
@@ -592,7 +606,7 @@ Dia/
 - **Per-Subsystem Projects:** Each Dia subsystem has `.vcxproj` file
 - **No CMake** - Windows/Visual Studio only currently
 
-**[→ Visual Studio guide](../reference/development/visual-studio-guide.md)**
+**[→ Visual Studio guide](../development/visual-studio-guide.md)**
 
 ---
 
@@ -600,7 +614,7 @@ Dia/
 
 ### Architecture Deep Dives
 
-- [Cluiche Application Architecture](cluiche-application.md) - Application layer details
+- [CluicheTest Application Architecture](cluichetest-application.md) - Application layer details
 - [Dia Engine Architecture](dia-engine.md) - Engine subsystems
 - [Threading Model](threading-model.md) - Multi-threaded design
 - [Module System](module-system.md) - Module/Phase/PU pattern
@@ -609,21 +623,21 @@ Dia/
 
 ### Design Rationale
 
-- [Design Philosophy](../reference/design-rationale/design.md) - Why things are the way they are
-- [Why Dia Engine?](../reference/design-rationale/why-dia.md) - Engine design decisions
-- [Why Module/Phase/PU?](../reference/design-rationale/why-module-phase-pu.md) - Threading rationale
+- [Design Philosophy](../design-rationale/design.md) - Why things are the way they are
+- [Why Dia Engine?](../design-rationale/why-dia.md) - Engine design decisions
+- [Why Module/Phase/PU?](../design-rationale/why-module-phase-pu.md) - Threading rationale
 
 ### API Documentation
 
-- [API Overview](../reference/api/api-overview.md) - Public interface reference
-- [DiaApplication API](../reference/api/dia/application-api.md) - Framework API
-- [DiaCore API](../reference/api/dia/core-api.md) - Core utilities API
+- [API Overview](../api/api-overview.md) - Public interface reference
+- [DiaApplication API](../api/dia/application-api.md) - Framework API
+- [DiaCore API](../api/dia/core-api.md) - Core utilities API
 
 ### For AI Agents
 
-- [AI-README](../reference/ai-guides/AI-README.md) - AI-optimized entry point
-- [Codebase Map](../reference/ai-guides/codebase-map.md) - Structured navigation
-- [Entry Points](../reference/ai-guides/entry-points.md) - Task-based starting points
+- [AI-README](../ai-guides/AI-README.md) - AI-optimized entry point
+- [Codebase Map](../ai-guides/codebase-map.md) - Structured navigation
+- [Entry Points](../ai-guides/entry-points.md) - Task-based starting points
 
 ---
 

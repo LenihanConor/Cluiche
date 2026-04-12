@@ -313,5 +313,5 @@ ImGui::End();
 
 **[→ API Overview](../api-overview.md)**  
 **[→ DiaUI API](ui-api.md)**  
-**[→ Future Directions](../../02-design/future-directions.md)**  
-**[→ External Links](../../10-reference/external-links.md)**
+**[→ Future Directions](../../design-rationale/future-directions.md)**  
+**[→ External Links](../../registry/external-links.md)**

@@ -680,5 +680,5 @@ void DebugDrawCollisions()
 - Strategic logging (errors, state changes)
 
 **[→ Coding Standards](coding-standards.md)**  
-**[→ Common Tasks](../reference/getting-started/common-tasks.md)**  
-**[→ Thread Safety Guide](../reference/ai-guides/thread-safety-guide.md)**
+**[→ Common Tasks](../getting-started/common-tasks.md)**  
+**[→ Thread Safety Guide](../ai-guides/thread-safety-guide.md)**

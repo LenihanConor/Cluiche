@@ -25,7 +25,7 @@ The Level System provides pluggable game states via a factory pattern, enabling 
 
 ### ILevel Interface
 
-**Location:** `Cluiche/Cluiche/CluicheKernel/ILevel.h` (conceptual, may vary)
+**Location:** `Cluiche/CluicheTest/CluicheKernel/ILevel.h` (conceptual, may vary)
 
 **Interface:**
 ```cpp
@@ -52,7 +52,7 @@ public:
 
 ### LevelFactory
 
-**Location:** `Cluiche/Cluiche/CluicheKernel/LevelFactory.h`
+**Location:** `Cluiche/CluicheTest/CluicheKernel/LevelFactory.h`
 
 **Purpose:** Registry and factory for level types
 
@@ -104,7 +104,7 @@ private:
 
 ### LevelFactoryModule
 
-**Location:** `Cluiche/Cluiche/CluicheKernel/ApplicationFlow/Modules/LevelFactoryModule.h`
+**Location:** `Cluiche/CluicheTest/CluicheKernel/ApplicationFlow/Modules/LevelFactoryModule.h`
 
 **Purpose:** Provide module access to LevelFactory
 
@@ -149,7 +149,7 @@ private:
 
 **When:** During `MainBootPhase::AfterModulesStart()`
 
-**Where:** `Cluiche/Cluiche/ApplicationFlow/Phases/MainBootPhase.cpp`
+**Where:** `Cluiche/CluicheTest/ApplicationFlow/Phases/MainBootPhase.cpp`
 
 **Example:**
 ```cpp
@@ -242,7 +242,7 @@ void SimBootStrapPhase::AfterModulesUpdate() {
 
 ### DummyLevel
 
-**Location:** `Cluiche/Cluiche/Levels/DummyLevel/`
+**Location:** `Cluiche/CluicheTest/Levels/DummyLevel/`
 
 **Purpose:** Example level demonstrating basic functionality
 
@@ -344,7 +344,7 @@ void DummyLevel::Stop() {
 
 ### UnitTestLevel
 
-**Location:** `Cluiche/Cluiche/Levels/UnitTestLevel/`
+**Location:** `Cluiche/CluicheTest/Levels/UnitTestLevel/`
 
 **Purpose:** In-engine test harness for running unit tests
 
@@ -456,15 +456,15 @@ private:
 #### 1. Create Level Directory
 
 ```bash
-mkdir Cluiche/Cluiche/Levels/MyLevel
-mkdir Cluiche/Cluiche/Levels/MyLevel/LevelFlow
-mkdir Cluiche/Cluiche/Levels/MyLevel/LevelFlow/Phases
-mkdir Cluiche/Cluiche/Levels/MyLevel/UI
+mkdir Cluiche/CluicheTest/Levels/MyLevel
+mkdir Cluiche/CluicheTest/Levels/MyLevel/LevelFlow
+mkdir Cluiche/CluicheTest/Levels/MyLevel/LevelFlow/Phases
+mkdir Cluiche/CluicheTest/Levels/MyLevel/UI
 ```
 
 #### 2. Create Level Header
 
-**File:** `Cluiche/Cluiche/Levels/MyLevel/MyLevel.h`
+**File:** `Cluiche/CluicheTest/Levels/MyLevel/MyLevel.h`
 
 ```cpp
 #pragma once
@@ -489,7 +489,7 @@ private:
 
 #### 3. Implement Level
 
-**File:** `Cluiche/Cluiche/Levels/MyLevel/MyLevel.cpp`
+**File:** `Cluiche/CluicheTest/Levels/MyLevel/MyLevel.cpp`
 
 ```cpp
 #include "MyLevel.h"
@@ -526,7 +526,7 @@ void MyLevel::Stop() {
 
 #### 4. Register Level
 
-**File:** `Cluiche/Cluiche/ApplicationFlow/Phases/MainBootPhase.cpp`
+**File:** `Cluiche/CluicheTest/ApplicationFlow/Phases/MainBootPhase.cpp`
 
 ```cpp
 void MainBootPhase::AfterModulesStart() {
@@ -545,7 +545,7 @@ void MainBootPhase::AfterModulesStart() {
 
 #### 5. Add to Visual Studio Project
 
-**Update:** `Cluiche/Cluiche/Cluiche.vcxproj`
+**Update:** `Cluiche/CluicheTest/Cluiche.vcxproj`
 
 ```xml
 <ClCompile Include="Levels\MyLevel\MyLevel.cpp" />
@@ -555,7 +555,7 @@ void MainBootPhase::AfterModulesStart() {
 <ClInclude Include="Levels\MyLevel\MyLevel.h" />
 ```
 
-**[→ Visual Studio guide](../reference/development/visual-studio-guide.md)**
+**[→ Visual Studio guide](../development/visual-studio-guide.md)**
 
 #### 6. Build and Run
 

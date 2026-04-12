@@ -4,7 +4,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Cluiche** (Irish for "game") is a modular C++ game engine organized around the **Dia** framework. The codebase follows a component-based architecture with distinct separation of concerns across subsystems.
+**Cluiche** (Irish for "game") is a game development platform built around the **Dia engine**. The platform supports multiple applications including games, tools, and test suites, all built on top of the Dia engine framework.
+
+### Platform Architecture
+
+- **Platform: Cluiche** - The overall game development platform
+- **Application: Dia** - The game engine (DiaCore, DiaMaths, DiaGraphics, DiaBuildCLI, etc.) - organized as an "application" for spec purposes but serves as shared engine code
+- **Application: CluicheTest** - Demo game and engine testbed that showcases Dia capabilities
+- **Application: GoogleTest** - Unit testing suite
+- **Future Applications** - Your actual game projects built on Dia
+
+The Dia engine follows a component-based architecture with distinct separation of concerns across subsystems.
 
 ## Build System
 
@@ -75,6 +85,7 @@ Use `Tools/dia_modules.py` to analyze module dependencies and generate graphs.
 **DiaInput** (`Dia/DiaInput/`) - Input handling
 **DiaUI/DiaUIAwesomium** (`Dia/DiaUI*/`) - UI systems using Awesomium
 **DiaSFML** (`Dia/DiaSFML/`) - SFML integration layer
+**DiaBuildCLI** (`Dia/DiaBuildCLI/`) - Plugin-based CLI framework for build operations and asset pipelines
 
 ### Component System
 
@@ -124,7 +135,7 @@ Cluiche/
 │   └── ...                       # Other subsystems
 ├── Cluiche/                      # Main solution directory
 │   ├── Cluiche.sln               # Visual Studio solution
-│   ├── Cluiche/                  # Main executable project
+│   ├── CluicheTest/              # Main executable project
 │   │   ├── Main.cpp              # Entry point
 │   │   ├── ApplicationFlow/      # Main processing unit
 │   │   └── Levels/               # Game levels (DummyLevel, UnitTestLevel)

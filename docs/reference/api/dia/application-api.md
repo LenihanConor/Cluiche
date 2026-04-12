@@ -754,4 +754,4 @@ void MyPhase::DoUpdate()
 
 **[→ API Overview](../api-overview.md)**  
 **[→ DiaCore API](core-api.md)**  
-**[→ Architecture Details](../../01-architecture/module-system.md)**
+**[→ Architecture Details](../../architecture/module-system.md)**

@@ -10,10 +10,10 @@ Platform → Application → System → Feature
 
 | Level | Location | Purpose | Examples |
 |-------|----------|---------|----------|
-| **Platform** | `platform/PLATFORM.md` | Shared codebase, cross-app decisions, Dia engine modules | Platform-wide architecture principles, binding decisions |
-| **Application** | `applications/*.md` | Per-app purpose, systems list, app-specific architecture | Cluiche game application |
-| **System** | `systems/<app>/*.md` | Bounded domains within an app, public interfaces | ApplicationFlow, Levels, Rendering, Input |
-| **Feature** | `features/<app>/<system>/*.md` | Implementation units, tasks, acceptance criteria | Individual game features, engine capabilities |
+| **Platform** | `platform/Cluiche.md` | Cross-app decisions, platform-wide architecture | Platform-wide architecture principles, binding decisions (PD-xxx) |
+| **Application** | `applications/*.md` | Per-app purpose, systems list, app-specific architecture | Dia (engine), Cluiche (game), GoogleTest |
+| **System** | `systems/<app>/*.md` | Bounded domains within an app, public interfaces | DiaBuildCLI, DiaCore, ApplicationFlow, Levels |
+| **Feature** | `features/<app>/<system>/*.md` | Implementation units, tasks, acceptance criteria | Individual game features, engine capabilities, tool features |
 
 ## 🔗 Traceability
 
@@ -139,13 +139,18 @@ Features cannot move to **Approved** status until:
 ## 🗂️ Current Specs
 
 ### Platform Level
-- [**PLATFORM.md**](platform/PLATFORM.md) - Cluiche platform (Dia engine)
+- [**Cluiche.md**](platform/Cluiche.md) - Cluiche game development platform
 
 ### Application Level
-- [**cluiche.md**](applications/cluiche.md) - Main game application
+- [**dia.md**](applications/dia.md) - Dia game engine (shared engine infrastructure)
+- [**cluichetest.md**](applications/cluichetest.md) - CluicheTest demo game and testbed
+- [**googletests.md**](applications/googletests.md) - GoogleTests unit testing suite
 
 ### System Level
-- Systems to be defined via `/spec-system`
+- [**diabuildcli.md**](systems/dia/diabuildcli.md) - DiaBuildCLI system under Dia application
+- **applicationflow.md** - ApplicationFlow system under Cluiche game (TODO)
+- **levels.md** - Levels system under Cluiche game (TODO)
+- More systems to be defined via `/spec-system`
 
 ### Feature Level
 - Features to be defined via `/spec-feature`

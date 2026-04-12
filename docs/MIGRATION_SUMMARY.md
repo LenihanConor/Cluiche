@@ -104,7 +104,7 @@ docs/
    ```
 
 2. **Initialize spec workflow:**
-   - Fill in `docs/specs/platform/PLATFORM.md`
+   - Fill in `docs/specs/platform/Cluiche.md`
    - Fill in `.claude/steering/tech.md` and `structure.md`
    - Use `/spec-app`, `/spec-system`, `/spec-feature` commands
 

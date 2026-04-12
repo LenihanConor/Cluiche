@@ -482,4 +482,4 @@ Perfect for:
 **Philosophy:** Build what you need, understand what you build
 
 **[→ Back to Design Philosophy](design.md)**  
-**[→ Dia Engine Architecture](../reference/architecture/dia-engine.md)**
+**[→ Dia Engine Architecture](../architecture/dia-engine.md)**

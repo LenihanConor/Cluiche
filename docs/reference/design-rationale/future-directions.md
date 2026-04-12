@@ -43,7 +43,7 @@ Vector2D MoveTowards(const Vector2D& current, const Vector2D& target, float maxD
 
 **Priority:** **P0** (correctness bug)
 
-**[→ Bug details](../../BUG_REPORT.md)**
+**[→ Bug details](../subsystems/dia-maths/known-issues.md)**
 
 ---
 

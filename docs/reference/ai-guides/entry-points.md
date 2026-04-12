@@ -312,7 +312,7 @@ namespace Cluiche
 
 **4. Update Cluiche Project**
 
-Add to `Cluiche/Cluiche/Cluiche.vcxproj`:
+Add to `Cluiche/CluicheTest/Cluiche.vcxproj`:
 
 ```xml
 <ItemGroup>
@@ -523,7 +523,7 @@ dependencies:
 
 **5. Update Cluiche Project**
 
-Add to `Cluiche/Cluiche/Cluiche.vcxproj`:
+Add to `Cluiche/CluicheTest/Cluiche.vcxproj`:
 
 ```xml
 <ItemGroup>

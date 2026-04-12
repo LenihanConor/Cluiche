@@ -6,12 +6,16 @@ Get oriented to the Cluiche codebase in 5 minutes.
 
 ## What is Cluiche?
 
-**Cluiche** is a multi-threaded game framework with three independent threads:
-- **Main Thread** - Bootstraps the app, coordinates UI
-- **Render Thread** - Renders graphics at 60 FPS
-- **Sim Thread** - Runs game simulation and logic
+**Cluiche** is a game development platform with multiple applications:
 
-It's built on the **Dia engine**, which provides 13 subsystems for graphics, input, math, physics, UI, and more.
+- **Platform: Cluiche** - Overall game development platform
+- **Application: Dia** - The game engine (DiaCore, DiaMaths, DiaGraphics, DiaBuildCLI, etc.) providing 13+ subsystems
+- **Application: Cluiche (Game)** - Demo game showcasing the Dia engine with three independent threads:
+  - **Main Thread** - Bootstraps the app, coordinates UI
+  - **Render Thread** - Renders graphics at 60 FPS
+  - **Sim Thread** - Runs game simulation and logic
+- **Application: GoogleTest** - Unit testing suite
+- **Future Applications** - Your game projects built on Dia
 
 ---
 
@@ -68,16 +72,16 @@ C:\GitHub\Cluiche\
 ├── README.md                     ← You are here
 ├── docs/                         ← All documentation
 │
-├── Cluiche/                      ← APPLICATION LAYER
+├── Cluiche/                      ← CLUICHE GAME APPLICATION
 │   ├── Cluiche.sln              ← Visual Studio solution
-│   ├── Cluiche/                 ← Main application project
+│   ├── Cluiche/                 ← Main game application project
 │   │   ├── Main.cpp             ← Entry point (starts MainProcessingUnit)
 │   │   ├── ApplicationFlow/     ← ProcessingUnits and Phases
 │   │   ├── CluicheKernel/       ← Core modules (MainKernelModule, etc.)
 │   │   └── Levels/              ← Level implementations
 │   └── Tests/                   ← Test projects
 │
-├── Dia/                          ← ENGINE LAYER (13 subsystems)
+├── Dia/                          ← DIA ENGINE APPLICATION (13+ subsystems)
 │   ├── DiaApplication/          ← Module/Phase/ProcessingUnit framework
 │   ├── DiaCore/                 ← Containers, Type system, Time
 │   ├── DiaMaths/                ← Vector, Matrix, Transform, Shape
@@ -102,7 +106,7 @@ C:\GitHub\Cluiche\
 
 ## Code Flow (90 seconds)
 
-### Entry Point: `Cluiche/Cluiche/Main.cpp`
+### Entry Point: `Cluiche/CluicheTest/Main.cpp`
 
 ```cpp
 int main() {
@@ -148,19 +152,19 @@ int main() {
 ### Want to understand the architecture?
 
 **Core Entry Points:**
-- `Cluiche/Cluiche/Main.cpp` - Application entry point
-- `Cluiche/Cluiche/ApplicationFlow/ProcessingUnits/MainProcessingUnit.h` - Main thread orchestrator
+- `Cluiche/CluicheTest/Main.cpp` - Application entry point
+- `Cluiche/CluicheTest/ApplicationFlow/ProcessingUnits/MainProcessingUnit.h` - Main thread orchestrator
 - `Dia/DiaApplication/ApplicationProcessingUnit.h` - ProcessingUnit base class
 - `Dia/DiaApplication/ApplicationModule.h` - Module base class
 
 **Core Modules:**
-- `Cluiche/Cluiche/CluicheKernel/ApplicationFlow/Modules/MainKernelModule.h` - Time, input, window, canvas
-- `Cluiche/Cluiche/ApplicationFlow/ProcessingUnits/RenderProcessingUnit.h` - Render thread
-- `Cluiche/Cluiche/ApplicationFlow/ProcessingUnits/SimProcessingUnit.h` - Sim thread
+- `Cluiche/CluicheTest/CluicheKernel/ApplicationFlow/Modules/MainKernelModule.h` - Time, input, window, canvas
+- `Cluiche/CluicheTest/ApplicationFlow/ProcessingUnits/RenderProcessingUnit.h` - Render thread
+- `Cluiche/CluicheTest/ApplicationFlow/ProcessingUnits/SimProcessingUnit.h` - Sim thread
 
 **Level System:**
-- `Cluiche/Cluiche/CluicheKernel/LevelFactory.h` - Level registry and factory
-- `Cluiche/Cluiche/Levels/DummyLevel/DummyLevel.h` - Example level
+- `Cluiche/CluicheTest/CluicheKernel/LevelFactory.h` - Level registry and factory
+- `Cluiche/CluicheTest/Levels/DummyLevel/DummyLevel.h` - Example level
 
 ### Want to understand Dia engine subsystems?
 
@@ -185,7 +189,7 @@ public_api:
 ---
 ```
 
-See [Module Metadata Schema](../reference/registry/module-metadata-schema.md) for details.
+See [Module Metadata Schema](../registry/module-metadata-schema.md) for details.
 
 ---
 
@@ -222,7 +226,7 @@ See [Building the Project](building-the-project.md) for detailed instructions.
 ### Debug threading issues
 - Check `std::mutex` usage around shared state
 - Look for race conditions in observers
-- See [Thread Safety Guide](../reference/ai-guides/thread-safety-guide.md)
+- See [Thread Safety Guide](../ai-guides/thread-safety-guide.md)
 
 See [Common Tasks](common-tasks.md) for step-by-step guides.
 
@@ -231,19 +235,19 @@ See [Common Tasks](common-tasks.md) for step-by-step guides.
 ## Where to Go Next
 
 ### For Humans:
-- **[Architecture Overview](../reference/architecture/architecture.md)** - Understand the full system
-- **[Design Philosophy](../reference/design-rationale/design.md)** - Understand why decisions were made
+- **[Architecture Overview](../architecture/architecture.md)** - Understand the full system
+- **[Design Philosophy](../design-rationale/design.md)** - Understand why decisions were made
 - **[Building the Project](building-the-project.md)** - Detailed build instructions
 
 ### For AI Agents:
-- **[AI-README](../reference/ai-guides/AI-README.md)** - AI-optimized entry point
-- **[Codebase Map](../reference/ai-guides/codebase-map.md)** - Structured navigation
-- **[Entry Points](../reference/ai-guides/entry-points.md)** - Task-based starting points
+- **[AI-README](../ai-guides/AI-README.md)** - AI-optimized entry point
+- **[Codebase Map](../ai-guides/codebase-map.md)** - Structured navigation
+- **[Entry Points](../ai-guides/entry-points.md)** - Task-based starting points
 
 ### Explore:
 - [Full Documentation Index](../README.md) - All documentation
-- [API Documentation](../reference/api/api-overview.md) - Public interface reference
-- [Module Registry](../reference/registry/module-registry.md) - All 56 modules cataloged
+- [API Documentation](../api/api-overview.md) - Public interface reference
+- [Module Registry](../registry/module-registry.md) - All 56 modules cataloged
 
 ---
 

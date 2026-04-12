@@ -1,3 +1,16 @@
 #include "DiaMaths/Shape/Common/IntersectionClassify.h"
 
-// All methods are implemented inline in IntersectionClassify.inl
+namespace Dia
+{
+	namespace Maths
+	{
+		// Provide non-inline implementation for SetClassification
+		// (needed when function is used in exception handling or address is taken)
+		void IntersectionClassify::SetClassification(Classification classify)
+		{
+			mResult = classify;
+		}
+	}
+}
+
+// Other methods are implemented inline in IntersectionClassify.inl

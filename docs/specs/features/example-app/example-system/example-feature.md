@@ -3,7 +3,7 @@
 ## Traceability
 | Level | Name | Link |
 |-------|------|------|
-| Platform | [Platform Name] | @docs/specs/platform/PLATFORM.md |
+| Platform | [Platform Name] | @docs/specs/platform/Cluiche.md |
 | Application | [App Name] | @docs/specs/applications/example-app.md |
 | System | [System Name] | @docs/specs/systems/example-app/example-system.md |
 | Feature | **This file** | — |

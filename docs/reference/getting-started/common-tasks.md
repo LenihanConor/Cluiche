@@ -29,7 +29,7 @@ This document provides step-by-step instructions for common development tasks in
 ### Step 1: Create Module Files
 
 ```cpp
-// File: Cluiche/Cluiche/ApplicationFlow/Modules/SimPhysicsModule.h
+// File: Cluiche/CluicheTest/ApplicationFlow/Modules/SimPhysicsModule.h
 #pragma once
 
 #include "DiaApplication/Module/Module.h"
@@ -58,7 +58,7 @@ namespace Cluiche
 ```
 
 ```cpp
-// File: Cluiche/Cluiche/ApplicationFlow/Modules/SimPhysicsModule.cpp
+// File: Cluiche/CluicheTest/ApplicationFlow/Modules/SimPhysicsModule.cpp
 #include "SimPhysicsModule.h"
 
 namespace Cluiche
@@ -101,7 +101,7 @@ namespace Cluiche
 
 ### Step 2: Add to Visual Studio Project
 
-1. Open `Cluiche/Cluiche/Cluiche.vcxproj` in text editor
+1. Open `Cluiche/CluicheTest/Cluiche.vcxproj` in text editor
 2. Add files to `<ItemGroup>`:
 
 ```xml
@@ -109,7 +109,7 @@ namespace Cluiche
 <ClCompile Include="ApplicationFlow\Modules\SimPhysicsModule.cpp" />
 ```
 
-3. Open `Cluiche/Cluiche/Cluiche.vcxproj.filters`
+3. Open `Cluiche/CluicheTest/Cluiche.vcxproj.filters`
 4. Add files to `<ItemGroup>`:
 
 ```xml
@@ -126,7 +126,7 @@ namespace Cluiche
 ### Step 3: Register Module with ProcessingUnit
 
 ```cpp
-// File: Cluiche/Cluiche/ApplicationFlow/SimProcessingUnit.cpp
+// File: Cluiche/CluicheTest/ApplicationFlow/SimProcessingUnit.cpp
 #include "Modules/SimPhysicsModule.h"
 
 void SimProcessingUnit::OnConstruct()
@@ -172,7 +172,7 @@ Cluiche/bin/exe/Debug/Cluiche.exe
 ### Step 1: Create Level Files
 
 ```cpp
-// File: Cluiche/Cluiche/Levels/TestLevel.h
+// File: Cluiche/CluicheTest/Levels/TestLevel.h
 #pragma once
 
 #include "DiaApplication/Level/ILevel.h"
@@ -199,7 +199,7 @@ namespace Cluiche
 ```
 
 ```cpp
-// File: Cluiche/Cluiche/Levels/TestLevel.cpp
+// File: Cluiche/CluicheTest/Levels/TestLevel.cpp
 #include "TestLevel.h"
 
 namespace Cluiche
@@ -243,7 +243,7 @@ Same process as adding a module (see Task 1, Step 2).
 ### Step 3: Register with LevelFactory
 
 ```cpp
-// File: Cluiche/Cluiche/Main.cpp or appropriate factory registration location
+// File: Cluiche/CluicheTest/Main.cpp or appropriate factory registration location
 #include "Levels/TestLevel.h"
 
 // Register level factory
@@ -432,7 +432,7 @@ void RenderFunction()
 }
 ```
 
-**[→ Thread Safety Guide](../reference/ai-guides/thread-safety-guide.md)**
+**[→ Thread Safety Guide](../ai-guides/thread-safety-guide.md)**
 
 ---
 
@@ -443,7 +443,7 @@ void RenderFunction()
 ### Step 1: Create Phase Files
 
 ```cpp
-// File: Cluiche/Cluiche/ApplicationFlow/Phases/SimPreUpdatePhase.h
+// File: Cluiche/CluicheTest/ApplicationFlow/Phases/SimPreUpdatePhase.h
 #pragma once
 
 #include "DiaApplication/Phase/Phase.h"
@@ -464,7 +464,7 @@ namespace Cluiche
 ```
 
 ```cpp
-// File: Cluiche/Cluiche/ApplicationFlow/Phases/SimPreUpdatePhase.cpp
+// File: Cluiche/CluicheTest/ApplicationFlow/Phases/SimPreUpdatePhase.cpp
 #include "SimPreUpdatePhase.h"
 
 namespace Cluiche
@@ -488,7 +488,7 @@ namespace Cluiche
 ### Step 2: Add Phase to ProcessingUnit
 
 ```cpp
-// File: Cluiche/Cluiche/ApplicationFlow/SimProcessingUnit.cpp
+// File: Cluiche/CluicheTest/ApplicationFlow/SimProcessingUnit.cpp
 void SimProcessingUnit::OnConstruct()
 {
     // Add phases in execution order
@@ -518,7 +518,7 @@ void SimPreUpdatePhase::OnUpdate()
 ### Step 1: Locate Render Module
 
 ```cpp
-// File: Cluiche/Cluiche/ApplicationFlow/Modules/RenderCanvasModule.cpp
+// File: Cluiche/CluicheTest/ApplicationFlow/Modules/RenderCanvasModule.cpp
 void RenderCanvasModule::OnUpdate()
 {
     // Clear
@@ -566,7 +566,7 @@ void RenderCanvasModule::RenderDebugInfo()
 ### Step 1: Locate Input Module
 
 ```cpp
-// File: Cluiche/Cluiche/ApplicationFlow/Modules/MainInputModule.cpp
+// File: Cluiche/CluicheTest/ApplicationFlow/Modules/MainInputModule.cpp
 void MainInputModule::OnUpdate()
 {
     Dia::Input::InputEvent event;
@@ -683,5 +683,5 @@ void RenderUI()
 - Read coding standards for style guidelines
 
 **[→ Glossary](glossary.md)**  
-**[→ Debugging Tips](../reference/development/debugging-tips.md)**  
-**[→ Coding Standards](../reference/development/coding-standards.md)**
+**[→ Debugging Tips](../development/debugging-tips.md)**  
+**[→ Coding Standards](../development/coding-standards.md)**

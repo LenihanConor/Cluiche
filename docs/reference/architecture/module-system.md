@@ -54,7 +54,7 @@ Dependencies (Other Modules)
 - ❌ Boilerplate code (DoStart/DoUpdate/DoStop)
 - ❌ Learning curve for new developers
 
-**[→ Design rationale details](../reference/design-rationale/why-module-phase-pu.md)**
+**[→ Design rationale details](../design-rationale/why-module-phase-pu.md)**
 
 ---
 
@@ -918,16 +918,16 @@ void MyPhase::BeforeModulesUpdate() {
 - [Module Dependencies Diagram](diagrams/module-dependencies.mmd) - Visual module relationships
 
 ### Design
-- [Why Module/Phase/PU?](../reference/design-rationale/why-module-phase-pu.md) - Design rationale
-- [Design Patterns](../reference/design-rationale/design-patterns.md) - Common patterns
+- [Why Module/Phase/PU?](../design-rationale/why-module-phase-pu.md) - Design rationale
+- [Design Patterns](../design-rationale/design-patterns.md) - Common patterns
 
 ### API Documentation
-- [DiaApplication API](../reference/api/dia/application-api.md) - Module/Phase/PU API reference
-- [Module Lifecycle](../reference/subsystems/dia-application/module-lifecycle.md) - Detailed lifecycle
+- [DiaApplication API](../api/dia/application-api.md) - Module/Phase/PU API reference
+- See [Module System](../architecture/module-system.md) for lifecycle details - Detailed lifecycle
 
 ### For AI Agents
-- [Patterns Reference](../reference/ai-guides/patterns-reference.md) - Code patterns with examples
-- [Entry Points](../reference/ai-guides/entry-points.md) - Where to start for common tasks
+- [Patterns Reference](../ai-guides/patterns-reference.md) - Code patterns with examples
+- [Entry Points](../ai-guides/entry-points.md) - Where to start for common tasks
 
 ---
 

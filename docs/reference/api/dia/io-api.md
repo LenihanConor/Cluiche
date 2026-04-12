@@ -619,7 +619,7 @@ std::string windowsPath = "Data\\Textures\\texture.png";
 - Streaming API for large files
 - Detailed error reporting
 
-**[→ Future Directions](../../02-design/future-directions.md)**
+**[→ Future Directions](../../design-rationale/future-directions.md)**
 
 ---
 
@@ -749,4 +749,4 @@ private:
 
 **[→ API Overview](../api-overview.md)**  
 **[→ DiaCore API](core-api.md)**  
-**[→ External Links](../../10-reference/external-links.md)**
+**[→ External Links](../../registry/external-links.md)**

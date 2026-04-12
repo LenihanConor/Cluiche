@@ -10,7 +10,7 @@ Fast lookup tables for AI agents working with Cluiche codebase.
 
 | What | Where |
 |------|-------|
-| **Entry point** | `Cluiche/Cluiche/Main.cpp` |
+| **Entry point** | `Cluiche/CluicheTest/Main.cpp` |
 | **Main thread** | `Cluiche/ApplicationFlow/ProcessingUnits/MainProcessingUnit.h` |
 | **Render thread** | `Cluiche/ApplicationFlow/ProcessingUnits/RenderProcessingUnit.h` |
 | **Sim thread** | `Cluiche/ApplicationFlow/ProcessingUnits/SimProcessingUnit.h` |

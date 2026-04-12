@@ -26,7 +26,7 @@ C:\GitHub\Cluiche\
 - `Cluiche/README.md` - Solution documentation
 
 ### Main Executable
-- `Cluiche/Cluiche/` - Main application project
+- `Cluiche/CluicheTest/` - Main application project
   - `Main.cpp` - **Entry point**
   - `Cluiche.vcxproj` - Project file
   - `Cluiche.vcxproj.filters` - IDE file organization
@@ -264,36 +264,36 @@ C:\GitHub\Cluiche\
   - `quickstart.md` - 5-minute orientation
 
 ### Architecture
-- `docs/01-architecture/`
+- `docs/reference/architecture/`
   - `architecture.md` - PRIMARY architecture doc
   - `threading-model.md`
   - `module-system.md`
   - `level-system.md`
-  - `diagrams/*.mmd` - Mermaid diagrams
+  - `diagrams/*.md` - Mermaid diagram wrappers
 
-### Design
-- `docs/02-design/`
+### Design Rationale
+- `docs/reference/design-rationale/`
   - `design.md` - PRIMARY design doc
   - `why-module-phase-pu.md`
   - `why-dia.md`
   - `historical-decisions.md`
 
-### Requirements
-- `docs/03-requirements/`
+### Requirements (As-Built)
+- `docs/reference/requirements-as-built/`
   - `requirements.md` - PRIMARY requirements doc
 
 ### Testing
-- `docs/04-testing/`
+- `docs/reference/testing/`
   - `test.md` - PRIMARY testing doc
+  - Unit, integration, performance, thread safety testing guides
 
 ### API
-- `docs/05-api/`
+- `docs/reference/api/`
   - `api-overview.md` - API hub
-  - `dia/` - Dia subsystem APIs
-  - `cluiche/` - Cluiche APIs
+  - `dia/` - Dia subsystem APIs (application, core, maths, graphics, etc.)
 
 ### AI Guides
-- `docs/06-ai-guides/`
+- `docs/reference/ai-guides/`
   - `AI-README.md` - AI entry point
   - `codebase-map.md`
   - `entry-points.md`
@@ -304,19 +304,15 @@ C:\GitHub\Cluiche\
   - `quick-reference.md`
 
 ### Subsystems
-- `docs/07-subsystems/`
-  - Deep dives into subsystems
-
-### Tools
-- `docs/08-tools/`
-  - Tool documentation
+- `docs/reference/subsystems/`
+  - `dia-maths/` - DiaMaths deep dives (known-issues, thread-safety-notes)
 
 ### Development
-- `docs/09-development/`
-  - Development guides
+- `docs/reference/development/`
+  - Development guides (contributing, coding-standards, debugging, changelog)
 
-### Reference
-- `docs/10-reference/`
+### Registry
+- `docs/reference/registry/`
   - `module-registry.md` - All 56 modules
   - `module-metadata-schema.md` - Schema docs
   - `file-locations.md` - This file
@@ -330,17 +326,13 @@ C:\GitHub\Cluiche\
 - `README.md` - Repository entry point
 - `CLAUDE.md` - Claude Code instructions
 
-### Working Files (To Be Migrated)
-- `BUG_REPORT.md` - DiaMaths bugs
-- `ADDITIONAL_ISSUES.md` - More issues
-- `FINAL_ISSUES_SUMMARY.md` - Issue summary
-- `FIXES_APPLIED.md` - Fix history
-- `DIACORE_CLEANUP_ANALYSIS.md` - Cleanup notes
-- `THREAD_SAFE_RANDOM.md` - Threading fix notes
-- `VISUAL_STUDIO_PROJECT_UPDATE_GUIDE.md` - VS guide
-- `TEST_THREAD_SAFETY.cpp` - Test file
+### Working Files (Archived)
+- `BUG_REPORT.md` → Migrated to [DiaMaths Known Issues](../subsystems/dia-maths/known-issues.md)
+- `THREAD_SAFE_RANDOM.md` → Migrated to [DiaMaths Thread Safety Notes](../subsystems/dia-maths/thread-safety-notes.md)
+- `DIACORE_CLEANUP_ANALYSIS.md` → Migrated to [DiaCore Cleanup Analysis](../development/DIACORE_CLEANUP_ANALYSIS.md)
+- Other working files → Moved to `archive/`
 
-**Status:** These should be migrated to `docs/09-development/`
+**Status:** Historical files archived, content migrated to reference documentation
 
 ---
 
@@ -370,7 +362,7 @@ C:\GitHub\Cluiche\
 
 **Locations:**
 - `Cluiche/Cluiche.sln` - Main solution
-- `Cluiche/Cluiche/Cluiche.vcxproj` - Main exe
+- `Cluiche/CluicheTest/Cluiche.vcxproj` - Main exe
 - `Dia/DiaCore/DiaCore.vcxproj` - DiaCore lib
 - `Dia/DiaMaths/DiaMaths.vcxproj` - DiaMaths lib
 - (And more for each subsystem)
@@ -398,7 +390,7 @@ C:\GitHub\Cluiche\
 
 | What | Where |
 |------|-------|
-| **Entry point** | `Cluiche/Cluiche/Main.cpp` |
+| **Entry point** | `Cluiche/CluicheTest/Main.cpp` |
 | **Main thread** | `Cluiche/ApplicationFlow/ProcessingUnits/MainProcessingUnit.h` |
 | **DynamicArray** | `Dia/DiaCore/Containers/Arrays/DynamicArray.h` |
 | **Vector2D** | `Dia/DiaMaths/Vector/Vector2D.h` |
@@ -460,7 +452,7 @@ python Tools/dia_modules.py --list dia.core.containers
 - `docs/` - Documentation
 
 **Key Files:**
-- Entry point: `Cluiche/Cluiche/Main.cpp`
+- Entry point: `Cluiche/CluicheTest/Main.cpp`
 - Solution: `Cluiche/Cluiche.sln`
 - Module tool: `Tools/dia_modules.py`
 - Documentation hub: `docs/README.md`

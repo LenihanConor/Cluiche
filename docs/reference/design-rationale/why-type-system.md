@@ -611,5 +611,5 @@ void RegisterType(const TypeDefinition& typeDef) {
 **Verdict:** Excellent foundation for game type system
 
 **[→ Back to Design Philosophy](design.md)**  
-**[→ Type System Architecture](../reference/subsystems/dia-core/type-system.md)**  
-**[→ DiaCore API](../reference/api/dia/core-api.md)**
+**See [Why Type System?](../design-rationale/why-type-system.md)**  
+**[→ DiaCore API](../api/dia/core-api.md)**

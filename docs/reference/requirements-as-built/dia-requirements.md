@@ -64,7 +64,7 @@ Provide STL-alternative containers with explicit memory control.
 
 **Status:** ✅ Complete
 
-**[→ DiaCore API](../reference/api/dia/core-api.md)**
+**[→ DiaCore API](../api/dia/core-api.md)**
 
 ---
 
@@ -95,7 +95,7 @@ Compile-time string hashing for O(1) string comparison without RTTI.
 
 **Status:** ✅ Complete
 
-**[→ Type System Design](../reference/design-rationale/why-type-system.md)**
+**[→ Type System Design](../design-rationale/why-type-system.md)**
 
 ---
 
@@ -250,7 +250,7 @@ High-level execution containers that own modules and phases.
 
 **Status:** ✅ Complete
 
-**[→ DiaApplication API](../reference/api/dia/application-api.md)**
+**[→ DiaApplication API](../api/dia/application-api.md)**
 
 ---
 
@@ -405,7 +405,7 @@ Pluggable level system with factory pattern.
 
 **Status:** ✅ Complete
 
-**[→ DiaMaths API](../reference/api/dia/maths-api.md)**
+**[→ DiaMaths API](../api/dia/maths-api.md)**
 
 ---
 
@@ -472,7 +472,7 @@ Hierarchical transforms for parent/child relationships.
 
 **Status:** ⚠️ Blocked (performance issue, needs optimization)
 
-**[→ Transform Performance Notes](../reference/subsystems/dia-maths/performance-notes.md)**
+**See [DiaMaths Known Issues](../subsystems/dia-maths/known-issues.md) for performance notes**
 
 ---
 
@@ -534,7 +534,7 @@ Thread-safe random number generation.
 
 **Status:** ✅ Complete (fixed 2026-03)
 
-**[→ Thread Safety Notes](../reference/subsystems/dia-maths/thread-safety-notes.md)**
+**[→ Thread Safety Notes](../subsystems/dia-maths/thread-safety-notes.md)**
 
 ---
 
@@ -567,7 +567,7 @@ Platform-agnostic rendering interface.
 
 **Status:** ✅ Complete
 
-**[→ DiaGraphics API](../reference/api/dia/graphics-api.md)**
+**[→ DiaGraphics API](../api/dia/graphics-api.md)**
 
 ---
 
@@ -627,7 +627,7 @@ Platform-agnostic input event system.
 
 **Status:** ✅ Complete
 
-**[→ DiaInput API](../reference/api/dia/input-api.md)**
+**[→ DiaInput API](../api/dia/input-api.md)**
 
 ---
 
@@ -689,7 +689,7 @@ Platform-agnostic UI system for HTML/CSS/JS or native UI.
 
 **Status:** ⚠️ Blocked (Awesomium deprecated, needs replacement)
 
-**[→ DiaUI API](../reference/api/dia/ui-api.md)**
+**[→ DiaUI API](../api/dia/ui-api.md)**
 
 ---
 
@@ -723,7 +723,7 @@ Platform-agnostic window management.
 
 **Status:** ✅ Complete
 
-**[→ DiaWindow API](../reference/api/dia/window-api.md)**
+**[→ DiaWindow API](../api/dia/window-api.md)**
 
 ---
 
@@ -756,7 +756,7 @@ SFML implementation of graphics, window, input, and audio.
 
 **Status:** ✅ Complete
 
-**[→ DiaSFML API](../reference/api/dia/sfml-api.md)**
+**[→ DiaSFML API](../api/dia/sfml-api.md)**
 
 ---
 
@@ -789,7 +789,7 @@ Path alias system for relocatable file paths.
 
 **Status:** ✅ Complete
 
-**[→ IO API](../reference/api/dia/io-api.md)**
+**[→ IO API](../api/dia/io-api.md)**
 
 ---
 
@@ -846,7 +846,7 @@ Physics simulation with collision detection and response.
 
 **Status:** ❌ Not Started (P2 priority)
 
-**[→ Physics API Stub](../reference/api/dia/physics-api.md)**
+**[→ Physics API Stub](../api/dia/physics-api.md)**
 
 ---
 
@@ -871,7 +871,7 @@ AI utilities (pathfinding, steering, FSM, behavior trees).
 
 **Status:** ❌ Not Started (P2 priority)
 
-**[→ AI API Stub](../reference/api/dia/ai-api.md)**
+**[→ AI API Stub](../api/dia/ai-api.md)**
 
 ---
 

@@ -22,7 +22,7 @@
 - [x] `/docs/01-architecture/architecture.md` ⭐ PRIMARY ✅
 - [x] `/docs/01-architecture/threading-model.md` ✅
 - [x] `/docs/01-architecture/module-system.md` ✅
-- [x] `/docs/01-architecture/cluiche-application.md` ✅
+- [x] `/docs/01-architecture/cluichetest-application.md` ✅
 - [x] `/docs/01-architecture/dia-engine.md` ✅
 - [x] `/docs/01-architecture/level-system.md` ✅
 - [x] `/docs/01-architecture/external-dependencies.md` ✅

@@ -1,14 +1,14 @@
 # Dia Engine Architecture
 
-**Last Updated:** 2026-03-31
+**Last Updated:** 2026-04-12
 
-Detailed architecture of the Dia game engine, a platform-agnostic foundation for game development.
+Detailed architecture of the Dia game engine, the shared engine infrastructure for the Cluiche platform.
 
 ---
 
 ## Overview
 
-**Dia** is a modular game engine providing 13 subsystems for graphics, input, math, physics, AI, and more. It emphasizes explicit design, type safety, and platform abstraction.
+**Dia** is the game engine application providing 13+ subsystems for graphics, input, math, physics, AI, build tools, and more. While organized as an "application" in the spec hierarchy, Dia functionally serves as the shared engine code that all other applications (games, tools, tests) depend on. It emphasizes explicit design, type safety, and platform abstraction.
 
 **Location:** `Dia/`
 
@@ -23,7 +23,7 @@ Detailed architecture of the Dia game engine, a platform-agnostic foundation for
 
 ## Subsystem Overview
 
-### 13 Subsystems
+### 13+ Subsystems
 
 | Subsystem | Status | Purpose |
 |-----------|--------|---------|
@@ -37,13 +37,14 @@ Detailed architecture of the Dia game engine, a platform-agnostic foundation for
 | **DiaSFML** | ✅ Stable | SFML backend (graphics/input/window) |
 | **DiaUIAwesomium** | ✅ Stable | Awesomium UI backend |
 | **DiaArchitecture** | ✅ Stable | Component system, Observer, Singleton |
+| **DiaBuildCLI** | 📝 Spec | Plugin-based CLI framework for build tools |
 | **DiaIO** | 🚧 Stub | File I/O |
 | **DiaPhysics** | 🚧 Stub | Physics simulation |
 | **DiaAI** | 🚧 Stub | AI pathfinding |
 
 **Module Documentation:** 56 `.architecture.module.md` files throughout `Dia/` subsystems
 
-**[→ Module Registry](../reference/registry/module-registry.md)** - Complete catalog
+**[→ Module Registry](../registry/module-registry.md)** - Complete catalog
 
 ---
 
@@ -129,8 +130,8 @@ protected:
 - Game engine foundation
 
 **[→ Module system details](module-system.md)**  
-**[→ API Documentation](../reference/api/dia/application-api.md)**  
-**[→ Subsystem Deep Dive](../reference/subsystems/dia-application/overview.md)**
+**[→ API Documentation](../api/dia/application-api.md)**  
+<!-- TODO: Subsystem Deep Dive - see API docs for now -->
 
 ---
 
@@ -209,7 +210,7 @@ class LinkList {
 - Performance tuning (known memory layout)
 - Debugging visibility (custom assertions)
 
-**[→ Containers deep dive](../reference/subsystems/dia-core/containers.md)**
+**See [DiaCore API](../api/dia/core-api.md) for container details**
 
 ---
 
@@ -255,7 +256,7 @@ MyClass* obj = instance.Get<MyClass>();
 - Runtime introspection
 - Networked serialization
 
-**[→ Type system deep dive](../reference/subsystems/dia-core/type-system.md)**
+**See [Why Type System?](../design-rationale/why-type-system.md)**
 
 ---
 
@@ -352,7 +353,7 @@ private:
 - **Assertions:** `DIA_ASSERT`, `DIA_STATIC_ASSERT`
 - **Logging:** `DIA_LOG`, `DIA_LOG_ERROR`
 
-**[→ DiaCore API Documentation](../reference/api/dia/core-api.md)**
+**[→ DiaCore API Documentation](../api/dia/core-api.md)**
 
 ---
 
@@ -394,7 +395,7 @@ Vector2D MoveTowards(const Vector2D& current, const Vector2D& target, float maxD
 ```
 
 **Known Issue:** Template specialization bugs in InverseLerp/MoveTowards for vectors  
-**[→ Details](../reference/subsystems/dia-maths/known-issues.md)**
+**[→ Details](../subsystems/dia-maths/known-issues.md)**
 
 **Random:**
 ```cpp
@@ -507,7 +508,7 @@ private:
 ```
 
 **Known Issue:** `GetWorldMatrix()` traverses hierarchy multiple times (not optimized)  
-**[→ Details](../reference/subsystems/dia-maths/known-issues.md)**
+**[→ Details](../subsystems/dia-maths/known-issues.md)**
 
 ---
 
@@ -549,9 +550,9 @@ bool Raycast(const Vector2D& origin, const Vector2D& direction, const Circle& ci
 ```
 
 **Known Issue:** Dead code in IntersectionTests (unreachable branches)  
-**[→ Details](../reference/subsystems/dia-maths/known-issues.md)**
+**[→ Details](../subsystems/dia-maths/known-issues.md)**
 
-**[→ DiaMaths API Documentation](../reference/api/dia/maths-api.md)**
+**[→ DiaMaths API Documentation](../api/dia/maths-api.md)**
 
 ---
 
@@ -625,7 +626,7 @@ public:
 - Debug visualization (physics shapes, AI paths, etc.)
 - Extensible rendering (add new debug shapes without modifying renderer)
 
-**[→ DiaGraphics API Documentation](../reference/api/dia/graphics-api.md)**
+**[→ DiaGraphics API Documentation](../api/dia/graphics-api.md)**
 
 ---
 
@@ -679,7 +680,7 @@ public:
 
 **Backend:** DiaSFML provides SFML input source
 
-**[→ DiaInput API Documentation](../reference/api/dia/input-api.md)**
+**[→ DiaInput API Documentation](../api/dia/input-api.md)**
 
 ---
 
@@ -744,7 +745,7 @@ private:
 
 **Backend:** DiaUIAwesomium provides Awesomium (web-based UI)
 
-**[→ DiaUI API Documentation](../reference/api/dia/ui-api.md)**
+**[→ DiaUI API Documentation](../api/dia/ui-api.md)**
 
 ---
 
@@ -809,7 +810,7 @@ sf::Color ToSFML(const Color& color);
 Color FromSFML(const sf::Color& color);
 ```
 
-**[→ DiaSFML API Documentation](../reference/api/dia/sfml-api.md)**
+**[→ DiaSFML API Documentation](../api/dia/sfml-api.md)**
 
 ---
 
@@ -980,7 +981,7 @@ DiaCore (Containers, Type, Time)
     └─ DiaWindow → DiaSFML → External/SFML
 ```
 
-**[→ Complete dependency graph](../reference/ai-guides/dependency-graph.md)**
+**[→ Complete dependency graph](../ai-guides/dependency-graph.md)**
 
 ---
 
@@ -1017,8 +1018,8 @@ public_api:
 ---
 ```
 
-**[→ Complete Module Registry](../reference/registry/module-registry.md)**  
-**[→ Module Metadata Schema](../reference/registry/module-metadata-schema.md)**
+**[→ Complete Module Registry](../registry/module-registry.md)**  
+**[→ Module Metadata Schema](../registry/module-metadata-schema.md)**
 
 ---
 

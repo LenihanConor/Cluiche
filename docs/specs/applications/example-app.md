@@ -1,7 +1,7 @@
 # Application Spec: [App Name]
 
 ## Parent Platform
-@docs/specs/platform/PLATFORM.md
+@docs/specs/platform/Cluiche.md
 
 ## Purpose
 <!-- What does this application do? Who is it for? -->
@@ -30,7 +30,7 @@
 
 ## Decisions
 <!-- Decisions specific to this application. Binding decisions cascade to all systems and features within it.
-     AI: Always check parent platform decisions (PLATFORM.md) first — those take precedence.
+     AI: Always check parent platform decisions (Cluiche.md) first — those take precedence.
      Use AD- prefix for application-level decision IDs. -->
 
 | ID | Decision | Rationale | Scope | Status | Binding |

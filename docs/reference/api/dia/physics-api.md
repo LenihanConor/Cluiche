@@ -351,7 +351,7 @@ world->SetCollisionListener(new GameCollisionListener());
 - Constraints (distance, revolute, prismatic)
 - Physics debug rendering
 
-**[→ Requirements](../../03-requirements/requirements.md)**
+**[→ Requirements](../../requirements-as-built/requirements.md)**
 
 ---
 
@@ -421,5 +421,5 @@ if (circleA.Intersects(circleB))
 
 **[→ API Overview](../api-overview.md)**  
 **[→ DiaMaths API](maths-api.md)**  
-**[→ Requirements](../../03-requirements/requirements.md)**  
-**[→ Future Directions](../../02-design/future-directions.md)**
+**[→ Requirements](../../requirements-as-built/requirements.md)**  
+**[→ Future Directions](../../design-rationale/future-directions.md)**

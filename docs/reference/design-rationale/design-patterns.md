@@ -45,7 +45,7 @@ private:
 - ✅ Clear lifecycle
 - ✅ Testable in isolation
 
-**[→ Module System Details](../reference/architecture/module-system.md)**
+**[→ Module System Details](../architecture/module-system.md)**
 
 ---
 
@@ -655,4 +655,4 @@ public:
 **Philosophy:** Use patterns to solve problems, not for their own sake
 
 **[→ Back to Design Philosophy](design.md)**  
-**[→ Module System Architecture](../reference/architecture/module-system.md)**
+**[→ Module System Architecture](../architecture/module-system.md)**

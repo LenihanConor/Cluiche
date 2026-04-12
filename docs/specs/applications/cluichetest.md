@@ -1,21 +1,21 @@
-# Application Spec: Cluiche
+# Application Spec: CluicheTest
 
 ## Parent Platform
-@docs/specs/platform/PLATFORM.md
+@docs/specs/platform/Cluiche.md
 
 ## Purpose
 
-Cluiche is the flagship game application built on the Dia engine platform. It serves as both a demonstration of the engine's capabilities and as a testbed for validating engine features. The application showcases the multi-threaded ProcessingUnit architecture, component-based entity system, and modular design patterns that define the platform.
+CluicheTest is a demo game and engine testbed built on the Dia engine. It serves as both a demonstration of the engine's capabilities and as a testbed for validating engine features. The application showcases the multi-threaded ProcessingUnit architecture, component-based entity system, and modular design patterns. This is one of several applications that can be built on the Cluiche platform using the Dia engine.
 
 ## Systems
 
 | System | Description | Spec |
 |--------|-------------|------|
-| ApplicationFlow | Main processing unit orchestration, level management, core game loop | [applicationflow.md](../systems/cluiche/applicationflow.md) |
-| Levels | Level loading, lifecycle management, and level-specific logic | [levels.md](../systems/cluiche/levels.md) |
-| Rendering | Graphics rendering, canvas management, frame composition | TBD |
-| Input | Input event handling, keyboard/mouse state management | TBD |
-| UI | User interface rendering and interaction | TBD |
+| ApplicationFlow | Main processing unit orchestration, level management, core game loop | TODO |
+| Levels | Level loading, lifecycle management, and level-specific logic | TODO |
+| Rendering | Graphics rendering, canvas management, frame composition | TODO |
+| Input | Input event handling, keyboard/mouse state management | TODO |
+| UI | User interface rendering and interaction | TODO |
 
 ## Application-Specific Architecture
 
@@ -72,7 +72,7 @@ What this application deliberately does NOT do:
 ## Decisions
 
 <!-- Decisions specific to this application. Binding decisions cascade to all systems and features within it.
-     AI: Always check parent platform decisions (PLATFORM.md) first — those take precedence.
+     AI: Always check parent platform decisions (Cluiche.md) first — those take precedence.
      Use AD- prefix for application-level decision IDs. -->
 
 | ID | Decision | Rationale | Scope | Status | Binding |

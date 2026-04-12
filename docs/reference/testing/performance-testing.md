@@ -18,7 +18,7 @@ Performance tests verify that the system meets performance requirements.
 
 **Related Documents:**
 - **[→ Testing Strategy](test.md)** - Overall testing approach
-- **[→ Non-Functional Requirements](../reference/requirements-as-built/non-functional-requirements.md)** - Performance requirements
+- **[→ Non-Functional Requirements](../requirements-as-built/non-functional-requirements.md)** - Performance requirements
 
 ---
 
@@ -406,4 +406,4 @@ private:
 - Regression testing
 
 **[→ Testing Strategy](test.md)**  
-**[→ Non-Functional Requirements](../reference/requirements-as-built/non-functional-requirements.md)**
+**[→ Non-Functional Requirements](../requirements-as-built/non-functional-requirements.md)**

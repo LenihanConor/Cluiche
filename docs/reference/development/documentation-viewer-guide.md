@@ -118,7 +118,7 @@ Edit `mkdocs.yml` to customize:
 ✅ **MkDocs Material 9.7.6** installed
 ✅ **Mermaid plugin** configured
 ✅ **Navigation structure** created for existing docs
-✅ **5 Mermaid diagram wrappers** created in `docs/01-architecture/diagrams/`
+✅ **5 Mermaid diagram wrappers** created in `docs/reference/architecture/diagrams/`
 ✅ **Server running** at http://127.0.0.1:8000
 
 ⚠️ **Warnings**: Some files referenced in nav don't exist yet (expected - docs are 72% complete per DOCUMENTATION_TODO.md). These files will appear in nav once created.

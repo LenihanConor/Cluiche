@@ -11,7 +11,7 @@ Definitions of terms, acronyms, and concepts used throughout the Cluiche codebas
 ### Cluiche
 - **Pronunciation:** KLOO-ha (Irish for "game")
 - **Definition:** The application layer built on top of the Dia engine
-- **Location:** `Cluiche/Cluiche/`
+- **Location:** `Cluiche/CluicheTest/`
 - **Purpose:** Multi-threaded game framework demonstrating Dia engine usage
 
 ---
@@ -33,7 +33,7 @@ Definitions of terms, acronyms, and concepts used throughout the Cluiche codebas
 - **Examples:** MainProcessingUnit, RenderProcessingUnit, SimProcessingUnit
 - **Purpose:** Organizes application execution into logical, potentially parallelizable units
 
-**[→ DiaApplication API](../reference/api/dia/application-api.md)**
+**[→ DiaApplication API](../api/dia/application-api.md)**
 
 ---
 
@@ -323,7 +323,7 @@ if (moduleId == StringCRC("PhysicsModule"))  // O(1) comparison
 
 ### UnitTestLevel
 - **Definition:** In-engine test harness
-- **Location:** `Cluiche/Cluiche/Levels/UnitTestLevel/`
+- **Location:** `Cluiche/CluicheTest/Levels/UnitTestLevel/`
 - **Purpose:** Run unit tests within the application
 
 ---
@@ -341,7 +341,7 @@ if (moduleId == StringCRC("PhysicsModule"))  // O(1) comparison
 ### .vcxproj
 - **Definition:** Visual Studio C++ project file (XML)
 - **Contains:** Source files, include directories, library dependencies, build settings
-- **Example:** `Cluiche/Cluiche/Cluiche.vcxproj`
+- **Example:** `Cluiche/CluicheTest/Cluiche.vcxproj`
 
 ---
 
@@ -488,4 +488,4 @@ if (moduleId == StringCRC("PhysicsModule"))  // O(1) comparison
 
 **[→ Quickstart](quickstart.md)**  
 **[→ Common Tasks](common-tasks.md)**  
-**[→ Architecture](../reference/architecture/architecture.md)**
+**[→ Architecture](../architecture/architecture.md)**

@@ -42,7 +42,7 @@ C:\GitHub\Cluiche\
 
 ### Key Directories
 
-#### `Cluiche/Cluiche/` - Main Executable
+#### `Cluiche/CluicheTest/` - Main Executable
 
 **Files:**
 - `Main.cpp` - **ENTRY POINT** (creates MainProcessingUnit, runs main loop)
@@ -56,7 +56,7 @@ C:\GitHub\Cluiche\
 
 ---
 
-#### `Cluiche/Cluiche/ApplicationFlow/` - Threading
+#### `Cluiche/CluicheTest/ApplicationFlow/` - Threading
 
 **Purpose:** Processing units that run on separate threads
 
@@ -111,7 +111,7 @@ Levels/
 - Creating a new game level
 - Adding unit tests via UnitTestLevel
 
-**[→ Level System Details](../reference/architecture/level-system.md)**
+**[→ Level System Details](../architecture/level-system.md)**
 
 ---
 
@@ -348,7 +348,7 @@ DiaMaths/
 
 **Namespaces:** `Dia::Maths::`
 
-**[→ Known Issues](../reference/subsystems/dia-maths/known-issues.md)**
+**[→ Known Issues](../subsystems/dia-maths/known-issues.md)**
 
 ---
 
@@ -513,7 +513,7 @@ External/
 - Upgrading dependencies
 - Adding new libraries
 
-**[→ External Dependencies Details](../reference/architecture/external-dependencies.md)**
+**[→ External Dependencies Details](../architecture/external-dependencies.md)**
 
 ---
 
@@ -574,8 +574,8 @@ dependencies:
 
 **Count:** 56 module architecture files
 
-**[→ Module Metadata Schema](../reference/registry/module-metadata-schema.md)**  
-**[→ Module Registry](../reference/registry/module-registry.md)**
+**[→ Module Metadata Schema](../registry/module-metadata-schema.md)**  
+**[→ Module Registry](../registry/module-registry.md)**
 
 ---
 
@@ -618,7 +618,7 @@ dependencies:
 
 **Key Files:**
 - `Cluiche/Cluiche.sln` - Main solution
-- `Cluiche/Cluiche/Cluiche.vcxproj` - Main executable project
+- `Cluiche/CluicheTest/Cluiche.vcxproj` - Main executable project
 - `Dia/DiaCore/DiaCore.vcxproj` - DiaCore library project
 - `Dia/DiaMaths/DiaMaths.vcxproj` - DiaMaths library project
 
@@ -627,7 +627,7 @@ dependencies:
 - Changing include paths
 - Updating dependencies
 
-**[→ Visual Studio Guide](../reference/development/visual-studio-guide.md)**
+**[→ Visual Studio Guide](../development/visual-studio-guide.md)**
 
 ---
 
@@ -637,7 +637,7 @@ dependencies:
 
 | Task | Start Here |
 |------|------------|
-| **Understand architecture** | `docs/01-architecture/architecture.md` |
+| **Understand architecture** | `docs/reference/architecture/architecture.md` |
 | **Add a module** | `Dia/Dia<Subsystem>/` + module architecture file |
 | **Add a level** | `Cluiche/Levels/` + register in `LevelFactoryModule` |
 | **Modify threading** | `Cluiche/ApplicationFlow/ProcessingUnits/` |
@@ -647,7 +647,7 @@ dependencies:
 | **Analyze dependencies** | `python Tools/dia_modules.py` |
 
 **Entry Points:**
-- `Cluiche/Cluiche/Main.cpp` - Application entry
+- `Cluiche/CluicheTest/Main.cpp` - Application entry
 - `Cluiche/ApplicationFlow/ProcessingUnits/MainProcessingUnit.h` - Threading orchestrator
 - `Dia/DiaApplication/` - Framework base classes
 - `Dia/DiaCore/` - Foundation library

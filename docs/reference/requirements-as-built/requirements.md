@@ -206,7 +206,7 @@ This document tracks functional and non-functional requirements with status, pri
 - Random generators can be called from multiple threads
 - No race conditions in math operations
 
-**Status:** Partially complete, see [known issues](../../BUG_REPORT.md)
+**Status:** Partially complete, see [known issues](../subsystems/dia-maths/known-issues.md)
 
 ---
 
@@ -344,7 +344,7 @@ This document tracks functional and non-functional requirements with status, pri
 - Transform hierarchy traversal works (correctness)
 - Performance suboptimal (multiple traversals)
 
-**Status:** Known performance issue, see [known issues](../reference/subsystems/dia-maths/known-issues.md)
+**Status:** Known performance issue, see [known issues](../subsystems/dia-maths/known-issues.md)
 
 ---
 
@@ -401,7 +401,7 @@ This document tracks functional and non-functional requirements with status, pri
 - DiaMaths: 70% (current ~40%)
 - DiaApplication: 80% (current <20%)
 
-**[→ Test coverage targets](../reference/testing/test-coverage-targets.md)**
+**[→ Test coverage targets](../testing/test-coverage-targets.md)**
 
 ---
 
@@ -617,6 +617,6 @@ DE-005 (Math) → DiaMaths subsystem
 **[→ Functional Requirements Details](functional-requirements.md)**  
 **[→ Non-Functional Requirements Details](non-functional-requirements.md)**  
 **[→ Requirements Traceability Matrix](traceability-matrix.md)**  
-**[→ Testing Strategy](../reference/testing/test.md)**
+**[→ Testing Strategy](../testing/test.md)**
 
 **[→ Back to Documentation Index](../README.md)**

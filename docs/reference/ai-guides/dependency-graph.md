@@ -154,7 +154,7 @@ Cluiche
 ```mermaid
 graph TD
     %% Application Layer
-    Cluiche[Cluiche Application]
+    Cluiche[CluicheTest Application]
     
     %% Dia Framework
     DiaApp[DiaApplication]
@@ -231,7 +231,7 @@ graph TD
 
 ---
 
-## Module Dependencies (Cluiche Application)
+## Module Dependencies (CluicheTest Application)
 
 ### Main Thread Modules
 

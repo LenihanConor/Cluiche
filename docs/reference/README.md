@@ -39,7 +39,7 @@ This directory contains reference documentation for the **existing Cluiche codeb
 **Public interfaces:**
 - [API Overview](api/api-overview.md) - API documentation hub
 - [Dia Engine APIs](api/dia/) - All engine subsystem APIs
-- [Cluiche Application APIs](api/cluiche/) - Application-level APIs
+<!-- TODO: Cluiche Application APIs - Application-level APIs (see architecture docs in interim) -->
 
 ### Testing
 **How to verify correctness:**
@@ -70,11 +70,13 @@ This directory contains reference documentation for the **existing Cluiche codeb
 - [Known Issues](development/known-issues.md) - Current bugs and workarounds
 
 ### Tools
-**Development tooling:**
-- [Tools Overview](tools/tools-overview.md)
-- [CLI Tool](tools/cli-tool.md)
-- [Console Tool](tools/console-tool.md)
-- [Dia Modules Script](tools/dia-modules-script.md)
+**Development tooling:** (See `Tools/` directory in repository root)
+- CLI Tool - Located in `Tools/CLI/`
+- Console Tool - Located in `Tools/Console/`
+- Dia Modules Script - `Tools/dia_modules.py` - Module dependency analyzer
+- Dirty Test Tracker - `Tools/dirty_test_tracker.py` - Tracks test changes
+
+<!-- TODO: Create detailed tool documentation -->
 
 ### Registry
 **Module catalog and schemas:**

@@ -46,7 +46,7 @@ The threading model separates concerns across three independent threads:
 - ❌ Potential data races if not careful
 - ❌ Increased memory usage (per-thread stacks, buffers)
 
-**[→ Design rationale details](../reference/design-rationale/why-module-phase-pu.md)**
+**[→ Design rationale details](../design-rationale/why-module-phase-pu.md)**
 
 ---
 
@@ -54,7 +54,7 @@ The threading model separates concerns across three independent threads:
 
 ### Main Thread (MainProcessingUnit)
 
-**File:** `Cluiche/Cluiche/ApplicationFlow/ProcessingUnits/MainProcessingUnit.h`
+**File:** `Cluiche/CluicheTest/ApplicationFlow/ProcessingUnits/MainProcessingUnit.h`
 
 **Responsibility:** Bootstrap the application and coordinate UI
 
@@ -107,7 +107,7 @@ simThread.join();
 
 ### Render Thread (RenderProcessingUnit)
 
-**File:** `Cluiche/Cluiche/ApplicationFlow/ProcessingUnits/RenderProcessingUnit.h`
+**File:** `Cluiche/CluicheTest/ApplicationFlow/ProcessingUnits/RenderProcessingUnit.h`
 
 **Responsibility:** Render graphics at consistent 60 FPS
 
@@ -158,7 +158,7 @@ void RenderProcessingUnit::Update() {
 
 ### Sim Thread (SimProcessingUnit)
 
-**File:** `Cluiche/Cluiche/ApplicationFlow/ProcessingUnits/SimProcessingUnit.h`
+**File:** `Cluiche/CluicheTest/ApplicationFlow/ProcessingUnits/SimProcessingUnit.h`
 
 **Responsibility:** Update game simulation and physics at variable rate
 
@@ -385,8 +385,8 @@ int sharedCounter++;  // RACE CONDITION
 // Previously was NOT thread-safe
 ```
 
-**[→ Thread safety guide for AI agents](../reference/ai-guides/thread-safety-guide.md)**  
-**[→ Thread safety testing](../reference/testing/thread-safety-testing.md)**
+**[→ Thread safety guide for AI agents](../ai-guides/thread-safety-guide.md)**  
+**[→ Thread safety testing](../testing/thread-safety-testing.md)**
 
 ---
 
@@ -430,13 +430,13 @@ int sharedCounter++;  // RACE CONDITION
    - **Issue:** `GetWorldTransform()` traverses hierarchy multiple times
    - **Impact:** Not thread-safe if hierarchy modified during traversal
    - **Status:** Known bug, not yet fixed
-   - **[→ Details](../reference/subsystems/dia-maths/known-issues.md)**
+   - **[→ Details](../subsystems/dia-maths/known-issues.md)**
 
 2. **Random Number Generation**
    - **Issue:** Random generators were NOT thread-safe
    - **Impact:** Concurrent calls could corrupt state
    - **Status:** **FIXED (2026-03)** - Now thread-safe
-   - **[→ Details](../../THREAD_SAFE_RANDOM.md)**
+   - **[→ Details](../subsystems/dia-maths/thread-safety-notes.md)**
 
 ### Performance Issues
 
@@ -481,7 +481,7 @@ DIA_ASSERT(std::this_thread::get_id() == mMainThreadId);
 4. **Check frame streams** - Are push/peek/consume calls balanced?
 5. **Profile** - Use Concurrency Visualizer to find contention
 
-**[→ Debugging tips](../reference/development/debugging-tips.md)**
+**[→ Debugging tips](../development/debugging-tips.md)**
 
 ---
 
@@ -504,7 +504,7 @@ DIA_ASSERT(std::this_thread::get_id() == mMainThreadId);
    - Physics, AI, logic on separate jobs
    - Scale with available cores
 
-**[→ Future directions](../reference/design-rationale/future-directions.md)**
+**[→ Future directions](../design-rationale/future-directions.md)**
 
 ---
 

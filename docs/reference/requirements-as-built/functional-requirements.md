@@ -48,7 +48,7 @@ The application must support concurrent execution across three independent threa
 - Concurrent module updates
 - Shutdown under load
 
-**[→ Threading Model](../reference/architecture/threading-model.md)**
+**[→ Threading Model](../architecture/threading-model.md)**
 
 ---
 
@@ -81,7 +81,7 @@ Support runtime-swappable game levels (menus, gameplay, test levels) via factory
 - Level load/unload lifecycle
 - Memory leak detection
 
-**[→ Level System](../reference/architecture/level-system.md)**
+**[→ Level System](../architecture/level-system.md)**
 
 ---
 
@@ -113,7 +113,7 @@ Support composable modules with explicit dependencies and automatic resolution.
 - Circular dependency detection
 - Missing dependency detection
 
-**[→ Module System](../reference/architecture/module-system.md)**
+**[→ Module System](../architecture/module-system.md)**
 
 ---
 
@@ -145,7 +145,7 @@ Support explicit phase transitions for application flow control.
 - Invalid transition rejection
 - Queued transition execution
 
-**[→ Module System](../reference/architecture/module-system.md)**
+**[→ Module System](../architecture/module-system.md)**
 
 ---
 
@@ -207,7 +207,7 @@ Core framework must not depend on platform-specific APIs.
 - Swap backends at compile time
 - Run on multiple platforms
 
-**[→ Dia Engine Architecture](../reference/architecture/dia-engine.md)**
+**[→ Dia Engine Architecture](../architecture/dia-engine.md)**
 
 ---
 
@@ -243,7 +243,7 @@ Provide STL-alternative containers with explicit memory control.
 - Memory allocation tracking
 - Edge cases (empty, single element, large)
 
-**[→ DiaCore API](../reference/api/dia/core-api.md)**
+**[→ DiaCore API](../api/dia/core-api.md)**
 
 ---
 
@@ -275,7 +275,7 @@ Provide compile-time type IDs and runtime type metadata without RTTI.
 - Type lookup by ID
 - JSON serialization
 
-**[→ Type System Design](../reference/design-rationale/why-type-system.md)**
+**[→ Type System Design](../design-rationale/why-type-system.md)**
 
 ---
 
@@ -306,7 +306,7 @@ Provide abstract graphics interface independent of rendering backend.
 - Clear and present
 - Backend swap (compile test)
 
-**[→ DiaGraphics API](../reference/api/dia/graphics-api.md)**
+**[→ DiaGraphics API](../api/dia/graphics-api.md)**
 
 ---
 
@@ -343,7 +343,7 @@ Comprehensive 2D/3D math library for game development.
 - Transform hierarchy (parent/child)
 - Intersection tests (circle-circle, AABB-AABB)
 
-**[→ DiaMaths API](../reference/api/dia/maths-api.md)**
+**[→ DiaMaths API](../api/dia/maths-api.md)**
 
 ---
 
@@ -376,7 +376,7 @@ Ensure math operations safe for multi-threaded use.
 
 **Status:** Partially complete (Random fixed, Transform needs work)
 
-**[→ Thread Safety Notes](../reference/subsystems/dia-maths/thread-safety-notes.md)**
+**[→ Thread Safety Notes](../subsystems/dia-maths/thread-safety-notes.md)**
 
 ---
 
@@ -408,7 +408,7 @@ Platform-agnostic input handling (keyboard, mouse, gamepad).
 - Multiple input sources
 - Backend swap (compile test)
 
-**[→ DiaInput API](../reference/api/dia/input-api.md)**
+**[→ DiaInput API](../api/dia/input-api.md)**
 
 ---
 
@@ -440,7 +440,7 @@ Abstract UI system for HTML/CSS/JS or native UI.
 
 **Status:** Awesomium backend deprecated, needs CEF or ImGui replacement
 
-**[→ DiaUI API](../reference/api/dia/ui-api.md)**
+**[→ DiaUI API](../api/dia/ui-api.md)**
 
 ---
 
@@ -470,7 +470,7 @@ Abstract window management (creation, fullscreen, VSync).
 - VSync enable/disable
 - Frame rate limiting
 
-**[→ DiaWindow API](../reference/api/dia/window-api.md)**
+**[→ DiaWindow API](../api/dia/window-api.md)**
 
 ---
 
@@ -504,7 +504,7 @@ Physics simulation with collision detection and response.
 
 **Status:** Not started (P2 priority)
 
-**[→ Physics API Stub](../reference/api/dia/physics-api.md)**
+**[→ Physics API Stub](../api/dia/physics-api.md)**
 
 ---
 
@@ -536,7 +536,7 @@ AI utilities including pathfinding, steering, FSM, behavior trees.
 
 **Status:** Not started (P2 priority)
 
-**[→ AI API Stub](../reference/api/dia/ai-api.md)**
+**[→ AI API Stub](../api/dia/ai-api.md)**
 
 ---
 

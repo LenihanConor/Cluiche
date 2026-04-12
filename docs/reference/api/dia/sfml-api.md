@@ -678,7 +678,7 @@ For projects needing more control or 3D, consider **SDL2** as an alternative bac
 - More platform support
 - Larger community
 
-**[→ Future Directions](../../02-design/future-directions.md)**
+**[→ Future Directions](../../design-rationale/future-directions.md)**
 
 ---
 
@@ -808,4 +808,4 @@ private:
 **[→ DiaGraphics API](graphics-api.md)**  
 **[→ DiaWindow API](window-api.md)**  
 **[→ DiaInput API](input-api.md)**  
-**[→ External Links](../../10-reference/external-links.md)**
+**[→ External Links](../../registry/external-links.md)**

@@ -860,7 +860,7 @@ transform.SetRotation(90.0f);  // Incorrect!
    - Status: Known issue, optimization planned
    - Workaround: Cache world matrix
 
-**[→ Known Issues](../../07-subsystems/dia-maths/known-issues.md)**
+**[→ Known Issues](../../subsystems/dia-maths/known-issues.md)**
 
 ---
 

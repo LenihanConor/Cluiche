@@ -2,19 +2,23 @@
 
 ## Overview
 
-**Cluiche** (Irish for "game") is a modular C++ game engine platform built around the **Dia framework**. The platform provides a comprehensive set of reusable engine modules (DiaCore, DiaMaths, DiaGraphics, DiaInput, etc.) that enable rapid development of game applications with a component-based architecture, multi-threaded execution model, and strong separation of concerns. The platform serves game developers who need a flexible, performant, and well-architected foundation for building 2D and 3D games on Windows.
+**Cluiche** (Irish for "game") is a game development platform that provides a complete ecosystem for building, testing, and shipping games on Windows. The platform is built around the **Dia engine** (a modular C++ game engine framework) and supports multiple applications including games, tools, and test suites. The architecture enables developers to build games on a solid engine foundation with component-based design, multi-threaded execution, and strong separation of concerns.
 
 ## Applications
 
 | Application | Description | Spec | Status |
 |-------------|-------------|------|--------|
-| Cluiche | Main game application demonstrating the Dia engine capabilities | [cluiche.md](../applications/cluiche.md) | Active |
+| Dia | The game engine (DiaCore, DiaMaths, DiaGraphics, etc.) - shared engine code organized as an application for spec purposes | [dia.md](../applications/dia.md) | Active |
+| CluicheTest | Demo game and engine testbed that showcases Dia engine capabilities | [cluichetest.md](../applications/cluichetest.md) | Active |
+| GoogleTests | Unit testing suite for validating Dia engine modules with intelligent dirty test tracking | [googletests.md](../applications/googletests.md) | Active |
 
 ## Shared Codebase
 
-The platform provides a complete game engine infrastructure through the **Dia framework** - a modular C++ library organized into subsystems.
+The **Dia application** serves as the shared engine code for all other applications on the platform. While organized as an "application" in the spec hierarchy, Dia is functionally the shared game engine infrastructure that other applications consume.
 
-### Shared Libraries / Modules
+### Dia Engine Modules
+
+The Dia engine is a modular C++ framework organized into subsystems:
 
 **Core Infrastructure:**
 - **DiaCore** - Foundation library (containers, type system, serialization, memory management, CRC hashing)
@@ -30,6 +34,9 @@ The platform provides a complete game engine infrastructure through the **Dia fr
 - **DiaInput** - Input handling (keyboard, mouse, events)
 - **DiaUI** / **DiaUIAwesomium** - UI systems using Awesomium HTML framework
 
+**Tools & Build Systems:**
+- **DiaBuildCLI** - Plugin-based CLI framework for build operations and asset pipelines
+
 **Other Subsystems:**
 - **DiaPhysics** - Physics simulation (planned)
 - **DiaAI** - AI systems (planned)
@@ -39,6 +46,8 @@ The platform provides a complete game engine infrastructure through the **Dia fr
 - Each module documented with `dia.*.architecture.module.md` YAML frontmatter
 - Module dependency graph maintained via `Tools/dia_modules.py`
 - 56+ architecture module files defining public APIs, responsibilities, and dependencies
+
+See @docs/specs/applications/dia.md for full Dia engine specification.
 
 ### Shared Infrastructure
 

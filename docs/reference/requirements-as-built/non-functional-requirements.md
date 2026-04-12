@@ -19,7 +19,7 @@ Non-functional requirements define quality attributes and constraints that affec
 **Related Documents:**
 - **[→ Main Requirements](requirements.md)** - Complete requirements list
 - **[→ Functional Requirements](functional-requirements.md)** - Feature requirements
-- **[→ Performance Testing](../reference/testing/performance-testing.md)** - Performance test strategy
+- **[→ Performance Testing](../testing/performance-testing.md)** - Performance test strategy
 
 ---
 
@@ -197,7 +197,7 @@ Custom containers must have comparable performance to STL.
 
 **Status:** ✅ Complete (acceptable performance, some faster than STL)
 
-**[→ Container Performance Notes](../reference/subsystems/dia-core/containers.md)**
+**See [DiaCore API](../api/dia/core-api.md) for container details**
 
 ---
 
@@ -237,7 +237,7 @@ Code coverage ≥ 60% for core systems.
 
 **Status:** ❌ Not Started (no coverage measurement yet)
 
-**[→ Test Coverage Targets](../reference/testing/test-coverage-targets.md)**
+**[→ Test Coverage Targets](../testing/test-coverage-targets.md)**
 
 ---
 
@@ -313,8 +313,8 @@ Multi-threaded code must be free of race conditions and deadlocks.
 
 **Status:** 🚧 In Progress (known issues in Transform2D, Random fixed)
 
-**[→ Thread Safety Guide](../reference/ai-guides/thread-safety-guide.md)**  
-**[→ Thread Safety Testing](../reference/testing/thread-safety-testing.md)**
+**[→ Thread Safety Guide](../ai-guides/thread-safety-guide.md)**  
+**[→ Thread Safety Testing](../testing/thread-safety-testing.md)**
 
 ---
 
@@ -381,7 +381,7 @@ Public APIs must be documented.
 
 **Status:** ✅ Complete (API documentation comprehensive)
 
-**[→ API Documentation](../reference/api/api-overview.md)**
+**[→ API Documentation](../api/api-overview.md)**
 
 ---
 
@@ -407,13 +407,13 @@ System architecture must be documented.
 - Architecture diagrams exist
 
 **Implementation:**
-- Architecture docs in `/docs/01-architecture/`
-- Design rationale in `/docs/02-design/`
+- Architecture docs in `/docs/reference/architecture/`
+- Design rationale in `/docs/reference/design-rationale/`
 - Mermaid diagrams for visualization
 
 **Status:** ✅ Complete (comprehensive architecture documentation)
 
-**[→ Architecture Documentation](../reference/architecture/architecture.md)**
+**[→ Architecture Documentation](../architecture/architecture.md)**
 
 ---
 
@@ -443,7 +443,7 @@ Code must follow consistent style.
 
 **Status:** ✅ Complete (standards documented and followed)
 
-**[→ Coding Standards](../reference/development/coding-standards.md)**
+**[→ Coding Standards](../development/coding-standards.md)**
 
 ---
 
@@ -475,7 +475,7 @@ Project must build reliably.
 
 **Status:** ✅ Complete (builds reliably)
 
-**[→ Building the Project](../reference/getting-started/building-the-project.md)**
+**[→ Building the Project](../getting-started/building-the-project.md)**
 
 ---
 
@@ -535,8 +535,8 @@ Minimize external dependencies, document all.
 
 **Status:** ✅ Complete (dependencies documented)
 
-**[→ External Dependencies](../reference/architecture/external-dependencies.md)**  
-**[→ External Links](../reference/registry/external-links.md)**
+**[→ External Dependencies](../architecture/external-dependencies.md)**  
+**[→ External Links](../registry/external-links.md)**
 
 ---
 
@@ -570,4 +570,4 @@ Minimize external dependencies, document all.
 
 **[→ Main Requirements](requirements.md)**  
 **[→ Functional Requirements](functional-requirements.md)**  
-**[→ Performance Testing](../reference/testing/performance-testing.md)**
+**[→ Performance Testing](../testing/performance-testing.md)**

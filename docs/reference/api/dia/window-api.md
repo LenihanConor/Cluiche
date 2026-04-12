@@ -561,7 +561,7 @@ window->SetFramerateLimit(60);
 - Window decorations control
 - Per-pixel transparency
 
-**[→ Future Directions](../../02-design/future-directions.md)**
+**[→ Future Directions](../../design-rationale/future-directions.md)**
 
 ---
 

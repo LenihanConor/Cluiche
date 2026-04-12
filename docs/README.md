@@ -1,6 +1,13 @@
 # Cluiche Documentation
 
-Welcome to the comprehensive documentation for the Cluiche game framework and Dia engine.
+Welcome to the comprehensive documentation for the **Cluiche game development platform** and **Dia engine**.
+
+**Platform Architecture:**
+- **Cluiche** - Game development platform for building multiple applications
+- **Dia** - Game engine application (DiaCore, DiaMaths, DiaGraphics, DiaBuildCLI, etc.) - shared engine infrastructure
+- **Cluiche Game** - Demo game and testbed application
+- **GoogleTest** - Unit testing application
+- **Future Games** - Your game projects built on Dia
 
 ---
 
@@ -57,7 +64,7 @@ Optimized documentation for AI codebase navigation:
 Understanding how the system is built:
 
 - **[Architecture Overview](reference/architecture/architecture.md)** ⭐ PRIMARY - Complete system architecture
-- [Cluiche Application Architecture](reference/architecture/cluiche-application.md) - Application layer details
+- [CluicheTest Application Architecture](reference/architecture/cluichetest-application.md) - Application layer details
 - [Dia Engine Architecture](reference/architecture/dia-engine.md) - Engine subsystems
 - [Threading Model](reference/architecture/threading-model.md) - Main/Render/Sim thread design
 - [Module System](reference/architecture/module-system.md) - Module/Phase/ProcessingUnit pattern
@@ -120,13 +127,17 @@ Public interface reference:
 - [DiaAI API](reference/api/dia/ai-api.md) - AI systems
 - [DiaSFML API](reference/api/dia/sfml-api.md) - SFML backend
 
-#### Cluiche Application APIs
+#### CluicheTest Application APIs
 
-- [MainProcessingUnit](reference/api/cluiche/main-processing-unit.md) - Main thread API
-- [RenderProcessingUnit](reference/api/cluiche/render-processing-unit.md) - Render thread API
-- [SimProcessingUnit](reference/api/cluiche/sim-processing-unit.md) - Simulation thread API
-- [Level Interface](reference/api/cluiche/level-api.md) - Level system API
-- [Module Catalog](reference/api/cluiche/module-catalog.md) - Available modules
+*Coming soon - see [Architecture Overview](reference/architecture/architecture.md) and [CluicheTest Application Architecture](reference/architecture/cluichetest-application.md) for details*
+
+<!-- TODO: Create CluicheTest application API documentation
+- MainProcessingUnit - Main thread API
+- RenderProcessingUnit - Render thread API
+- SimProcessingUnit - Simulation thread API
+- Level Interface - Level system API
+- Module Catalog - Available modules
+-->
 
 ---
 
@@ -149,37 +160,30 @@ Documentation structured for AI agent comprehension:
 
 Detailed exploration of major subsystems:
 
-### DiaApplication
-- [Overview](reference/subsystems/dia-application/overview.md)
-- [Module Lifecycle](reference/subsystems/dia-application/module-lifecycle.md)
-- [Phase Scheduling](reference/subsystems/dia-application/phase-scheduling.md)
-
-### DiaCore
-- [Overview](reference/subsystems/dia-core/overview.md)
-- [Containers](reference/subsystems/dia-core/containers.md)
-- [Type System](reference/subsystems/dia-core/type-system.md)
-
-### DiaGraphics
-- [Overview](reference/subsystems/dia-graphics/overview.md)
-- [Rendering Pipeline](reference/subsystems/dia-graphics/rendering-pipeline.md)
-
 ### DiaMaths
-- [Overview](reference/subsystems/dia-maths/overview.md)
-- [Known Issues](reference/subsystems/dia-maths/known-issues.md)
-- [Performance Notes](reference/subsystems/dia-maths/performance-notes.md)
+- [Known Issues](reference/subsystems/dia-maths/known-issues.md) - Bug reports and performance issues
+- [Thread Safety Notes](reference/subsystems/dia-maths/thread-safety-notes.md) - Threading considerations
 
-[More subsystems to be documented...]
+### Other Subsystems
+*For detailed information on other subsystems, see:*
+- **DiaApplication** - See [Application API](reference/api/dia/application-api.md) and [Architecture](reference/architecture/architecture.md)
+- **DiaCore** - See [Core API](reference/api/dia/core-api.md) and [Why Type System?](reference/design-rationale/why-type-system.md)
+- **DiaGraphics** - See [Graphics API](reference/api/dia/graphics-api.md)
+
+<!-- TODO: Create detailed subsystem deep dives for DiaApplication, DiaCore, DiaGraphics -->
 
 ---
 
-## External Tools
+## Development Tools
 
-Lightweight references to development tools:
+Tools available in the `Tools/` directory:
 
-- [Tools Overview](reference/tools/tools-overview.md) - Available tooling
-- [CLI Tool](reference/tools/cli-tool.md) - MDK command-line interface
-- [Console Tool](reference/tools/console-tool.md) - Blue Console debugger
-- [Dia Modules Script](reference/tools/dia-modules-script.md) - Module analysis utility
+- **CLI Tool** - Located in `Tools/CLI/` - Command-line interface framework
+- **Console Tool** - Located in `Tools/Console/` - Debugging console
+- **Dia Modules Script** - `Tools/dia_modules.py` - Module dependency analyzer
+- **Dirty Test Tracker** - `Tools/dirty_test_tracker.py` - Tracks test file changes
+
+<!-- TODO: Create detailed tool documentation in reference/tools/ -->
 
 ---
 
@@ -212,9 +216,9 @@ Catalog and reference information:
 Interim documentation tracking:
 
 - [Documentation TODO](DOCUMENTATION_TODO.md) - Implementation progress tracker
-- [Module Audit](MODULE_AUDIT.md) - Module file review status
-- [API Documentation Template](API_DOCUMENTATION_TEMPLATE.md) - Template for API docs
-- [Mermaid Diagram Sources](MERMAID_DIAGRAM_SOURCES.md) - Diagram tracking
+- Module Audit - Not needed (module registry sufficient, see [Module Registry](reference/registry/module-registry.md))
+- API Documentation Template - Not needed (pattern established in existing API docs)
+- Mermaid Diagram Sources - Not needed (diagrams are self-documenting in [Architecture Diagrams](reference/architecture/diagrams/))
 
 ---
 

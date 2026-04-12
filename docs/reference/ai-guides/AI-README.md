@@ -17,7 +17,7 @@ This is a **multi-threaded game framework** with explicit thread boundaries and 
 2. **Dia (Engine)** - 13 subsystems providing platform abstraction
 3. **External** - Third-party libraries (SFML, JsonCpp, Awesomium, etc.)
 
-**Entry Point:** `Cluiche/Cluiche/Main.cpp` → `MainProcessingUnit::Start()` → spawns Render + Sim threads
+**Entry Point:** `Cluiche/CluicheTest/Main.cpp` → `MainProcessingUnit::Start()` → spawns Render + Sim threads
 
 ---
 
@@ -226,10 +226,10 @@ Dia/
 
 **Example:** `Dia/DiaCore/DiaCoreDynamicArray.h` defines `Dia::Core::Containers::DynamicArray<T>`
 
-### Cluiche Application
+### CluicheTest Application
 
 ```
-Cluiche/Cluiche/
+Cluiche/CluicheTest/
 ├── Main.cpp                             # Entry point
 ├── ApplicationFlow/
 │   ├── ProcessingUnits/                 # Thread orchestrators
@@ -334,7 +334,7 @@ dependencies:
 - `responsibilities` - What it does
 - `non_responsibilities` - What it doesn't do
 
-**Complete Module Registry:** See [module-registry.md](../reference/registry/module-registry.md) for all 56 modules.
+**Complete Module Registry:** See [module-registry.md](../registry/module-registry.md) for all 56 modules.
 
 ---
 
@@ -355,12 +355,12 @@ dependencies:
    }}}
    ```
 4. **Update module file** → Add to `Dia/DiaCore/Containers/dia.core.containers.architecture.module.md`
-5. **Add to Visual Studio project** → See [visual-studio-guide.md](../reference/development/visual-studio-guide.md)
+5. **Add to Visual Studio project** → See [visual-studio-guide.md](../development/visual-studio-guide.md)
 
 ### Task: Add a New Cluiche Module
 
 1. **Read patterns** → [patterns-reference.md](patterns-reference.md) → Module pattern
-2. **Check existing** → `Cluiche/Cluiche/CluicheKernel/ApplicationFlow/Modules/MainKernelModule.h`
+2. **Check existing** → `Cluiche/CluicheTest/CluicheKernel/ApplicationFlow/Modules/MainKernelModule.h`
 3. **Implement `Dia::Application::Module`:**
    ```cpp
    class MyModule : public Dia::Application::Module {
@@ -392,14 +392,14 @@ dependencies:
    - Phase transitions: `ProcessingUnit::mQueuedTransitionMutex`
    - Observer notifications: `ObserverSubject` has internal mutex
    - Shared state: Look for `std::mutex` members
-3. **Check known issues** → [known-issues.md](../reference/development/known-issues.md)
+3. **Check known issues** → [known-issues.md](../development/known-issues.md)
    - Transform2D multiple traversals
    - Random number generation (recently fixed)
-4. **Add thread safety test** → See [thread-safety-testing.md](../reference/testing/thread-safety-testing.md)
+4. **Add thread safety test** → See [thread-safety-testing.md](../testing/thread-safety-testing.md)
 
 ### Task: Fix a Bug in DiaMaths
 
-1. **Read known issues** → [known-issues.md](../reference/subsystems/dia-maths/known-issues.md)
+1. **Read known issues** → [known-issues.md](../subsystems/dia-maths/known-issues.md)
    - Template specialization bugs (InverseLerp, MoveTowards)
    - Dead code in IntersectionTests
 2. **Locate source** → `Dia/DiaMaths/Core/` or `Dia/DiaMaths/Shape/`
@@ -407,7 +407,7 @@ dependencies:
    - Missing specializations for Vector2D/Vector3D
    - Incorrect return types in templates
 4. **Add unit test** → `Tests/DiaMaths/<TestFile>.cpp`
-5. **Update documentation** → Add to [changelog.md](../reference/development/changelog.md)
+5. **Update documentation** → Add to [changelog.md](../development/changelog.md)
 
 ---
 
@@ -422,7 +422,7 @@ dependencies:
 ### Documentation
 
 - **Markdown** - Consistent structure with headers, code blocks, tables
-- **Mermaid diagrams** - `.mmd` files in `docs/01-architecture/diagrams/` → parseable as text
+- **Mermaid diagrams** - `.mmd` files in `docs/reference/architecture/diagrams/` → parseable as text
 - **Code examples** - Fenced with language identifiers (\`\`\`cpp)
 
 ### Code
@@ -438,7 +438,7 @@ dependencies:
 ### High-Level Dependencies
 
 ```
-Cluiche Application
+CluicheTest Application
     ↓ depends on
 Dia Engine
     ↓ depends on
@@ -488,7 +488,7 @@ DiaMaths ← (independent, minimal dependencies)
 - `Dia/DiaCore/Deprecated/CollectionShit/` - Unused utility classes (being removed)
 - `Dia/DiaCore/Deprecated/LinkLists/DynamicLinkList` - Unused (being removed)
 
-**Detailed Issues:** See [known-issues.md](../reference/development/known-issues.md)
+**Detailed Issues:** See [known-issues.md](../development/known-issues.md)
 
 ---
 
@@ -507,8 +507,8 @@ DiaMaths ← (independent, minimal dependencies)
 ### For Humans
 
 - [Human documentation index](../README.md)
-- [Architecture overview](../reference/architecture/architecture.md)
-- [Design philosophy](../reference/design-rationale/design.md)
+- [Architecture overview](../architecture/architecture.md)
+- [Design philosophy](../design-rationale/design.md)
 
 ### For AI
 
@@ -519,7 +519,7 @@ DiaMaths ← (independent, minimal dependencies)
 
 ### Module Details
 
-- [Module registry](../reference/registry/module-registry.md) - All 56 modules
+- [Module registry](../registry/module-registry.md) - All 56 modules
 - Module architecture files: `Dia/**/Docs/*.architecture.module.md`
 
 ---
@@ -571,7 +571,7 @@ DIA_FUNCTOR(name)                   # Functor helper
 **Status:** Living document (Phase 1 of 10 complete)  
 **Repository:** C:\GitHub\Cluiche
 
-**Progress Tracking:** See [DOCUMENTATION_TODO.md](../DOCUMENTATION_TODO.md)
+**Progress Tracking:** See [DOCUMENTATION_TODO.md](../../DOCUMENTATION_TODO.md)
 
 ---
 
@@ -582,7 +582,7 @@ After reading this guide:
 1. **Understand the structure** → Read [codebase-map.md](codebase-map.md)
 2. **Learn the patterns** → Read [patterns-reference.md](patterns-reference.md)
 3. **Identify entry points** → Read [entry-points.md](entry-points.md)
-4. **Parse module files** → See [module-registry.md](../reference/registry/module-registry.md)
+4. **Parse module files** → See [module-registry.md](../registry/module-registry.md)
 5. **Start working** → Use entry points for your specific task
 
 **For complex tasks:** Combine codebase map, patterns, and entry points to navigate efficiently.

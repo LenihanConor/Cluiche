@@ -189,7 +189,7 @@ msbuild Dia/DiaCore/DiaCore.vcxproj /p:Configuration=Debug /p:Platform=Win32
 msbuild Dia/DiaMaths/DiaMaths.vcxproj /p:Configuration=Debug /p:Platform=Win32
 msbuild Dia/DiaApplication/DiaApplication.vcxproj /p:Configuration=Debug /p:Platform=Win32
 # ... (other Dia modules)
-msbuild Cluiche/Cluiche/Cluiche.vcxproj /p:Configuration=Debug /p:Platform=Win32
+msbuild Cluiche/CluicheTest/Cluiche.vcxproj /p:Configuration=Debug /p:Platform=Win32
 ```
 
 ---
@@ -406,7 +406,7 @@ python Tools/dia_modules.py --validate
 python Tools/dia_modules.py --graph
 ```
 
-**[→ Tools Overview](../reference/tools/tools-overview.md)**
+See `Tools/` directory in repository root for additional development tools.
 
 ---
 
@@ -418,8 +418,8 @@ python Tools/dia_modules.py --graph
 3. **Read debugging tips:** How to debug effectively
 
 **[→ Common Tasks](common-tasks.md)**  
-**[→ Debugging Tips](../reference/development/debugging-tips.md)**  
-**[→ Visual Studio Guide](../reference/development/visual-studio-guide.md)**
+**[→ Debugging Tips](../development/debugging-tips.md)**  
+**[→ Visual Studio Guide](../development/visual-studio-guide.md)**
 
 ---
 

@@ -320,7 +320,7 @@ private:
 - Lower overhead
 - Better for debug UI and tools
 
-**[→ Future Directions](../../02-design/future-directions.md)**
+**[→ Future Directions](../../design-rationale/future-directions.md)**
 
 ---
 
@@ -504,7 +504,7 @@ uiSystem->LoadUI("http://localhost:8080/ui/index.html");
 - **Multi-view support** - Multiple independent UI panels
 - **Better thread safety** - Built-in proxy/command queue
 
-**[→ Future Directions](../../02-design/future-directions.md)**
+**[→ Future Directions](../../design-rationale/future-directions.md)**
 
 ---
 

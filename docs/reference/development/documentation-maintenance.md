@@ -31,10 +31,10 @@ Documentation requires ongoing maintenance to remain valuable. This document def
 
 **Required Updates:**
 1. Update affected API documentation (`/docs/05-api/`)
-2. Update requirements status if requirement fulfilled (`/docs/03-requirements/`)
+2. Update requirements status if requirement fulfilled (`/docs/reference/requirements-as-built/`)
 3. Add/update test documentation if tests added (`/docs/04-testing/`)
-4. Update architecture diagrams if structure changed (`/docs/01-architecture/diagrams/`)
-5. Update CHANGELOG.md (`/docs/09-development/changelog.md`)
+4. Update architecture diagrams if structure changed (`/docs/reference/architecture/diagrams/`)
+5. Update CHANGELOG.md (`/docs/development/changelog.md`)
 
 **Example: Adding new DiaCore container**
 ```
@@ -42,9 +42,9 @@ Code Change: Added Dia/DiaCore/Containers/Trees/BinaryTree.h
 
 Documentation Updates Required:
 - [ ] /docs/05-api/dia/core-api.md (add BinaryTree section)
-- [ ] /docs/03-requirements/traceability-matrix.md (update DR-001)
+- [ ] /docs/reference/requirements-as-built/traceability-matrix.md (update DR-001)
 - [ ] /docs/04-testing/unit-testing.md (add BinaryTree test examples)
-- [ ] /docs/09-development/changelog.md (record addition)
+- [ ] /docs/development/changelog.md (record addition)
 ```
 
 ---
@@ -54,9 +54,9 @@ Documentation Updates Required:
 **Trigger:** Bug fixed in codebase
 
 **Required Updates:**
-1. Remove/update entry in `/docs/09-development/known-issues.md`
-2. Add entry to `/docs/09-development/changelog.md`
-3. Update subsystem known issues if specific to subsystem (e.g., `/docs/07-subsystems/dia-maths/known-issues.md`)
+1. Remove/update entry in `/docs/development/known-issues.md`
+2. Add entry to `/docs/development/changelog.md`
+3. Update subsystem known issues if specific to subsystem (e.g., `/docs/subsystems/dia-maths/known-issues.md`)
 4. Update thread safety notes if concurrency bug (`/docs/06-ai-guides/thread-safety-guide.md`)
 
 **Example: Transform2D thread safety fixed**
@@ -64,11 +64,11 @@ Documentation Updates Required:
 Bug Fix: Transform2D hierarchy now thread-safe
 
 Documentation Updates Required:
-- [ ] /docs/09-development/known-issues.md (remove Transform2D entry)
-- [ ] /docs/07-subsystems/dia-maths/known-issues.md (mark as fixed)
+- [ ] /docs/development/known-issues.md (remove Transform2D entry)
+- [ ] /docs/subsystems/dia-maths/known-issues.md (mark as fixed)
 - [ ] /docs/06-ai-guides/thread-safety-guide.md (remove workaround)
-- [ ] /docs/03-requirements/traceability-matrix.md (update DR-014 status)
-- [ ] /docs/09-development/changelog.md (record fix)
+- [ ] /docs/reference/requirements-as-built/traceability-matrix.md (update DR-014 status)
+- [ ] /docs/development/changelog.md (record fix)
 ```
 
 ---
@@ -78,9 +78,9 @@ Documentation Updates Required:
 **Trigger:** Major refactoring or architectural change
 
 **Required Updates:**
-1. Update architecture documentation (`/docs/01-architecture/`)
-2. Update design rationale (`/docs/02-design/`)
-3. Update Mermaid diagrams if structure changed (`/docs/01-architecture/diagrams/`)
+1. Update architecture documentation (`/docs/reference/architecture/`)
+2. Update design rationale (`/docs/reference/design-rationale/`)
+3. Update Mermaid diagrams if structure changed (`/docs/reference/architecture/diagrams/`)
 4. Update AI codebase map (`/docs/06-ai-guides/codebase-map.md`)
 5. Update system boundaries (`/docs/06-ai-guides/system-boundaries.md`)
 
@@ -89,12 +89,12 @@ Documentation Updates Required:
 Architecture Change: Added AudioProcessingUnit running on separate thread
 
 Documentation Updates Required:
-- [ ] /docs/01-architecture/threading-model.md (add Audio thread)
-- [ ] /docs/01-architecture/diagrams/threading-model.mmd (add Audio thread)
-- [ ] /docs/01-architecture/diagrams/module-dependencies.mmd (add audio modules)
-- [ ] /docs/02-design/why-module-phase-pu.md (explain audio thread rationale)
+- [ ] /docs/reference/architecture/threading-model.md (add Audio thread)
+- [ ] /docs/reference/architecture/diagrams/threading-model.mmd (add Audio thread)
+- [ ] /docs/reference/architecture/diagrams/module-dependencies.mmd (add audio modules)
+- [ ] /docs/reference/design-rationale/why-module-phase-pu.md (explain audio thread rationale)
 - [ ] /docs/06-ai-guides/codebase-map.md (add audio subsystem)
-- [ ] /docs/09-development/changelog.md (record change)
+- [ ] /docs/development/changelog.md (record change)
 ```
 
 ---
@@ -104,22 +104,22 @@ Documentation Updates Required:
 **Trigger:** External dependency added, updated, or removed
 
 **Required Updates:**
-1. Update external dependencies documentation (`/docs/01-architecture/external-dependencies.md`)
-2. Update external links (`/docs/10-reference/external-links.md`)
+1. Update external dependencies documentation (`/docs/reference/architecture/external-dependencies.md`)
+2. Update external links (`/docs/registry/external-links.md`)
 3. Update build instructions if needed (`/docs/00-getting-started/building-the-project.md`)
-4. Update Visual Studio guide if affects project files (`/docs/09-development/visual-studio-guide.md`)
+4. Update Visual Studio guide if affects project files (`/docs/reference/development/visual-studio-guide.md`)
 
 **Example: Replacing Awesomium with CEF**
 ```
 Dependency Change: Replaced Awesomium with Chromium Embedded Framework (CEF)
 
 Documentation Updates Required:
-- [ ] /docs/01-architecture/external-dependencies.md (update UI backend)
+- [ ] /docs/reference/architecture/external-dependencies.md (update UI backend)
 - [ ] /docs/05-api/dia/ui-api.md (update backend documentation)
-- [ ] /docs/10-reference/external-links.md (update links)
+- [ ] /docs/registry/external-links.md (update links)
 - [ ] /docs/00-getting-started/building-the-project.md (update build steps)
-- [ ] /docs/03-requirements/traceability-matrix.md (update DR-021 status)
-- [ ] /docs/09-development/changelog.md (record change)
+- [ ] /docs/reference/requirements-as-built/traceability-matrix.md (update DR-021 status)
+- [ ] /docs/development/changelog.md (record change)
 ```
 
 ---
@@ -288,15 +288,15 @@ python Tools/check-doc-coverage.py
 
 | Content Type | Location | Example |
 |--------------|----------|---------|
-| **High-level architecture** | `/docs/01-architecture/` | System overview, threading model |
-| **Design rationale** | `/docs/02-design/` | Why decisions were made |
-| **Requirements** | `/docs/03-requirements/` | What system must do |
+| **High-level architecture** | `/docs/reference/architecture/` | System overview, threading model |
+| **Design rationale** | `/docs/reference/design-rationale/` | Why decisions were made |
+| **Requirements** | `/docs/reference/requirements-as-built/` | What system must do |
 | **Testing** | `/docs/04-testing/` | How to verify behavior |
 | **API reference** | `/docs/05-api/` | Function signatures, usage |
 | **AI guidance** | `/docs/06-ai-guides/` | How AI should navigate code |
-| **Deep dives** | `/docs/07-subsystems/` | Detailed subsystem exploration |
-| **Development process** | `/docs/09-development/` | How to build, contribute, debug |
-| **Reference material** | `/docs/10-reference/` | Catalogs, schemas, links |
+| **Deep dives** | `/docs/reference/subsystems/` | Detailed subsystem exploration |
+| **Development process** | `/docs/reference/development/` | How to build, contribute, debug |
+| **Reference material** | `/docs/reference/registry/` | Catalogs, schemas, links |
 
 ### Naming Conventions
 
@@ -321,7 +321,7 @@ Transform2D is not thread-safe (as of 2025-01-01)
 **Better:**
 ```markdown
 ## Known Issues
-See: [→ Known Issues](../reference/development/known-issues.md)
+See: [→ Known Issues](../development/known-issues.md)
 ```
 
 ---
@@ -336,7 +336,7 @@ The system has three threads: Main, Render, Sim...
 **Better:**
 ```markdown
 # Threading Model
-For threading details, see: [→ Threading Model](../reference/architecture/threading-model.md)
+For threading details, see: [→ Threading Model](../architecture/threading-model.md)
 ```
 
 ---
@@ -454,13 +454,13 @@ class OldArray { };
 | Document | Owner | Review Frequency |
 |----------|-------|------------------|
 | `/README.md` | Project Lead | Monthly |
-| `/docs/01-architecture/architecture.md` | Architect | Quarterly |
-| `/docs/02-design/design.md` | Architect | Quarterly |
-| `/docs/03-requirements/requirements.md` | Product/Tech Lead | Monthly |
+| `/docs/reference/architecture/architecture.md` | Architect | Quarterly |
+| `/docs/reference/design-rationale/design.md` | Architect | Quarterly |
+| `/docs/requirements-as-built/requirements.md` | Product/Tech Lead | Monthly |
 | `/docs/04-testing/test.md` | QA Lead | Monthly |
 | `/docs/05-api/` | Subsystem owners | Per change |
 | `/docs/06-ai-guides/` | AI/Automation Lead | Monthly |
-| `/docs/09-development/` | Dev Lead | Quarterly |
+| `/docs/reference/development/` | Dev Lead | Quarterly |
 
 ---
 
@@ -494,4 +494,4 @@ class OldArray { };
 
 **[→ Contributing Guidelines](contributing.md)**  
 **[→ Documentation Viewer Guide](documentation-viewer-guide.md)**  
-**[→ Documentation TODO](../DOCUMENTATION_TODO.md)**
+**[→ Documentation TODO](../../DOCUMENTATION_TODO.md)**

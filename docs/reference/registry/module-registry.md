@@ -21,7 +21,7 @@ This registry catalogs all `.architecture.module.md` files that describe modules
 ### Cluiche Application Layer
 
 #### dia.cluiche (Root)
-- **Path:** `Cluiche/Cluiche/`
+- **Path:** `Cluiche/CluicheTest/`
 - **File:** `dia.cluiche.architecture.module.md`
 - **Children:** dia.cluiche.levels, dia.cluiche.applicationflow, dia.cluiche.kernel
 

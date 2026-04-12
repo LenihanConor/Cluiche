@@ -12,7 +12,7 @@ The spec-driven development system has been initialized with Cluiche-specific in
 ## ✅ Completed Files
 
 ### 1. Platform Spec
-**File:** `docs/specs/platform/PLATFORM.md`
+**File:** `docs/specs/platform/Cluiche.md`
 
 **Filled In:**
 - Platform overview: Cluiche/Dia engine description
@@ -36,7 +36,7 @@ The spec-driven development system has been initialized with Cluiche-specific in
 ---
 
 ### 2. Application Spec
-**File:** `docs/specs/applications/cluiche.md`
+**File:** `docs/specs/applications/cluichetest.md`
 
 **Filled In:**
 - Application purpose and scope
@@ -129,7 +129,7 @@ docs/specs/
 ├── INITIAL_SETUP_COMPLETE.md          ✅ This file
 │
 ├── platform/
-│   └── PLATFORM.md                    ✅ Complete (6 binding decisions)
+│   └── Cluiche.md                    ✅ Complete (6 binding decisions)
 │
 ├── applications/
 │   ├── cluiche.md                     ✅ Complete (5 binding decisions)
@@ -166,7 +166,7 @@ docs/specs/
 1. **Review platform spec** for accuracy
    ```bash
    # Check binding decisions make sense
-   less docs/specs/platform/PLATFORM.md
+   less docs/specs/platform/Cluiche.md
    ```
 
 2. **Delete example files** (or keep as reference temporarily)
@@ -203,7 +203,7 @@ docs/specs/
 
 **To review any spec:**
 ```
-/spec-review docs/specs/platform/PLATFORM.md
+/spec-review docs/specs/platform/Cluiche.md
 ```
 
 **To implement an approved feature:**

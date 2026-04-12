@@ -19,7 +19,7 @@ This document defines clear boundaries between subsystems to help AI agents:
 
 ---
 
-## Cluiche Application Layer
+## CluicheTest Application Layer
 
 ### Cluiche/Main.cpp
 

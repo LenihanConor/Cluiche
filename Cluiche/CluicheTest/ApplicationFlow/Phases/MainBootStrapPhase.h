@@ -2,7 +2,7 @@
 
 #include "CluicheKernel/ApplicationFlow/Phases/MainPhaseBase.h"
 
-#include "Cluiche/Source/LaunchUIPage.h"
+#include "Source/LaunchUIPage.h"
 
 #include <DiaCore/Strings/String64.h>
 
