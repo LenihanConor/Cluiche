@@ -1,0 +1,5 @@
+# Dirty test tracking directory (auto-generated)
+.dirty/
+
+# Run scripts can be customized locally
+run_dirty.local.bat
