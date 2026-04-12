@@ -14,22 +14,25 @@ namespace Dia
 	namespace Application
 	{
 		//---------------------------------------------------------------------------------------------------------
-		ProcessingUnit::ProcessingUnit(const Dia::Core::StringCRC& uniqueId, 
-										float hz, 
-										unsigned int initialModuleMapSize, 
+		ProcessingUnit::ProcessingUnit(const Dia::Core::StringCRC& uniqueId,
+										float hz,
+										unsigned int initialModuleMapSize,
 										unsigned int initialPhaseMapSize)
 			: StateObject(uniqueId)
 			, mEnableThreadLimiter(false)
 			, mThreadLimiter(0.0f)
-			, mCurrentPhase(NULL)
+			, mCurrentPhase(nullptr)
+			, mTransitionInProgress(false)
 			, mAssociatedPhases(initialPhaseMapSize, initialPhaseMapSize * 2)
 			, mAssociatedModules(initialModuleMapSize, initialModuleMapSize * 2)
 			, mPhaseTransitions(initialModuleMapSize, initialModuleMapSize * 2)
+			, mErrorCallback(nullptr)
 		{
 			if (hz != -1.0f)
 			{
 				EnableThreadLimiting(hz);
 			}
+			mErrorHistory.reserve(100);  // Reserve space for last 100 errors
 		}
 
 		//---------------------------------------------------------------------------------------------------------
@@ -77,6 +80,40 @@ namespace Dia
 		}
 
 		//---------------------------------------------------------------------------------------------------------
+		void ProcessingUnit::AddPhaseWithOwnership(Dia::Core::UniquePtr<Phase> phase)
+		{
+			DIA_ASSERT(phase != nullptr, "Null phase being added with ownership for ProcessingUnit %s", GetUniqueId().AsChar());
+
+			Phase* rawPtr = phase.Get();
+
+			// Add to lookup table
+			if (!mAssociatedPhases.ContainsKey(rawPtr->GetUniqueId()))
+			{
+				mAssociatedPhases.Add(rawPtr->GetUniqueId(), rawPtr);
+			}
+
+			// Transfer ownership to owned storage
+			mOwnedPhases.push_back(std::move(phase));
+		}
+
+		//---------------------------------------------------------------------------------------------------------
+		void ProcessingUnit::AddModuleWithOwnership(Dia::Core::UniquePtr<Module> module)
+		{
+			DIA_ASSERT(module != nullptr, "Null module being added with ownership for ProcessingUnit %s", GetUniqueId().AsChar());
+
+			Module* rawPtr = module.Get();
+
+			// Add to lookup table
+			if (!mAssociatedModules.ContainsKey(rawPtr->GetUniqueId()))
+			{
+				mAssociatedModules.Add(rawPtr->GetUniqueId(), rawPtr);
+			}
+
+			// Transfer ownership to owned storage
+			mOwnedModules.push_back(std::move(module));
+		}
+
+		//---------------------------------------------------------------------------------------------------------
 		void ProcessingUnit::SetInitialPhase(Phase* phase)
 		{
 			if (phase == NULL)
@@ -100,7 +137,7 @@ namespace Dia
 
 				return;
 			}
-			mCurrentPhase = phase;
+			mCurrentPhase.store(phase, std::memory_order_release);
 		}
 
 		//---------------------------------------------------------------------------------------------------------
@@ -130,17 +167,18 @@ namespace Dia
 		// A single transition is where we move from the current phase to any phases that is allowed
 		void ProcessingUnit::TransitionPhase(const Dia::Core::StringCRC& phaseCrc)
 		{
-			DIA_ASSERT(mCurrentPhase, "Null current phase %s", GetUniqueId().AsChar());
+			Phase* currentPhase = mCurrentPhase.load(std::memory_order_acquire);
+			DIA_ASSERT(currentPhase, "Null current phase %s", GetUniqueId().AsChar());
 			DIA_ASSERT(mAssociatedPhases.ContainsKey(phaseCrc), "Phase %s not associated to Processing Unit %s", phaseCrc.AsChar(), GetUniqueId().AsChar());
 
 			Phase* endPhase = mAssociatedPhases.GetItem(phaseCrc);
-			PhaseTransitionList& list = mPhaseTransitions.GetItem(mCurrentPhase->GetUniqueId());
+			PhaseTransitionList& list = mPhaseTransitions.GetItem(currentPhase->GetUniqueId());
 
-			DIA_ASSERT(list.FindIndex(phaseCrc) != -1, "Cannot transition from %s to %s in Processing Unit %s", mCurrentPhase->GetUniqueId().AsChar(), phaseCrc.AsChar(), GetUniqueId().AsChar());
+			DIA_ASSERT(list.FindIndex(phaseCrc) != -1, "Cannot transition from %s to %s in Processing Unit %s", currentPhase->GetUniqueId().AsChar(), phaseCrc.AsChar(), GetUniqueId().AsChar());
 
-			mCurrentPhase->TransitionTo(endPhase);
+			currentPhase->TransitionTo(endPhase);
 
-			mCurrentPhase = endPhase;
+			mCurrentPhase.store(endPhase, std::memory_order_release);
 		}
 
 		//---------------------------------------------------------------------------------------------------------
@@ -211,13 +249,14 @@ namespace Dia
 		//---------------------------------------------------------------------------------------------------------
 		StateObject::OpertionResponse ProcessingUnit::DoStart(const IStartData* startData)
 		{
-			DIA_ASSERT(mCurrentPhase, "For Processing Unit %s Current Phase is NULL, cannot start", GetUniqueId().AsChar());
+			Phase* currentPhase = mCurrentPhase.load(std::memory_order_acquire);
+			DIA_ASSERT(currentPhase, "For Processing Unit %s Current Phase is NULL, cannot start", GetUniqueId().AsChar());
 
 			PrePhaseStart(startData);
 
-			if (mCurrentPhase != NULL)
+			if (currentPhase != nullptr)
 			{
-				mCurrentPhase->Start(startData);
+				currentPhase->Start(startData);
 			}
 
 			PostPhaseStart(startData);
@@ -235,18 +274,23 @@ namespace Dia
 		//---------------------------------------------------------------------------------------------------------
 		void ProcessingUnit::DoUpdate()
 		{
-			DIA_ASSERT(mCurrentPhase, "For Processing Unit %s Current Phase is NULL, cannot update", GetUniqueId().AsChar());
-			
+			Phase* currentPhase = mCurrentPhase.load(std::memory_order_acquire);
+			DIA_ASSERT(currentPhase, "For Processing Unit %s Current Phase is NULL, cannot update", GetUniqueId().AsChar());
+
 			while (!FlaggedToStopUpdating())
 			{
 				if (mEnableThreadLimiter)
 					mThreadLimiter.Start();
 
+				// Process message queue before phase update
+				mMessageBus.ProcessQueue();
+
 				PrePhaseUpdate();
 
-				if (mCurrentPhase != nullptr)
+				currentPhase = mCurrentPhase.load(std::memory_order_acquire);
+				if (currentPhase != nullptr)
 				{
-					mCurrentPhase->Update();
+					currentPhase->Update();
 				}
 
 				PostPhaseUpdate();
@@ -271,7 +315,13 @@ namespace Dia
 
 					if (transition)
 					{
-						TransitionPhase(nextTransitionCRC);
+						// Only transition if not already transitioning (prevents multiple simultaneous transitions)
+						bool expected = false;
+						if (mTransitionInProgress.compare_exchange_strong(expected, true))
+						{
+							TransitionPhase(nextTransitionCRC);
+							mTransitionInProgress.store(false);
+						}
 					}
 				}
 
@@ -287,13 +337,14 @@ namespace Dia
 		//---------------------------------------------------------------------------------------------------------
 		void ProcessingUnit::DoStop()
 		{
-			DIA_ASSERT(mCurrentPhase, "For Processing Unit %s Current Phase is NULL, cannot stop", GetUniqueId().AsChar());
+			Phase* currentPhase = mCurrentPhase.load(std::memory_order_acquire);
+			DIA_ASSERT(currentPhase, "For Processing Unit %s Current Phase is NULL, cannot stop", GetUniqueId().AsChar());
 
 			PrePhaseStop();
 
-			if (mCurrentPhase != nullptr)
+			if (currentPhase != nullptr)
 			{
-				mCurrentPhase->Stop();
+				currentPhase->Stop();
 			}
 
 			PostPhaseStop();
@@ -330,6 +381,41 @@ namespace Dia
 		const Phase* BuildDependencyData::GetPhase(const Dia::Core::StringCRC& crc)const
 		{
 			return mAssociatedPhases->GetItemConst(crc);
+		}
+
+		//---------------------------------------------------------------------------------------------------------
+		// Error handling methods
+		//---------------------------------------------------------------------------------------------------------
+		void ProcessingUnit::SetErrorCallback(ErrorCallback callback)
+		{
+			std::lock_guard<std::mutex> lock(mErrorMutex);
+			mErrorCallback = callback;
+		}
+
+		//---------------------------------------------------------------------------------------------------------
+		void ProcessingUnit::ReportError(const ErrorInfo& error)
+		{
+			std::lock_guard<std::mutex> lock(mErrorMutex);
+
+			// Add to history (keep last 100 errors)
+			mErrorHistory.push_back(error);
+			if (mErrorHistory.size() > 100)
+			{
+				mErrorHistory.erase(mErrorHistory.begin());
+			}
+
+			// Call user callback if set
+			if (mErrorCallback != nullptr)
+			{
+				mErrorCallback(error);
+			}
+		}
+
+		//---------------------------------------------------------------------------------------------------------
+		void ProcessingUnit::ClearErrorHistory()
+		{
+			std::lock_guard<std::mutex> lock(mErrorMutex);
+			mErrorHistory.clear();
 		}
 	}
 }

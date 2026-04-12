@@ -27,11 +27,6 @@ namespace Dia
 				unsigned int GetJoystickId() const { return mJoystickId; }
 				unsigned int GetButton() const { return mButton; }
 
-				virtual Core::Events::Event* Clone() const override
-				{
-					return new JoystickButtonPressedEvent(mJoystickId, mButton);
-				}
-
 			private:
 				unsigned int mJoystickId;
 				unsigned int mButton;
@@ -53,11 +48,6 @@ namespace Dia
 
 				unsigned int GetJoystickId() const { return mJoystickId; }
 				unsigned int GetButton() const { return mButton; }
-
-				virtual Core::Events::Event* Clone() const override
-				{
-					return new JoystickButtonReleasedEvent(mJoystickId, mButton);
-				}
 
 			private:
 				unsigned int mJoystickId;
@@ -82,11 +72,6 @@ namespace Dia
 				EJoystickAxis GetAxis() const { return mAxis; }
 				float GetPosition() const { return mPosition; }
 
-				virtual Core::Events::Event* Clone() const override
-				{
-					return new JoystickAxisMovedEvent(mJoystickId, mAxis, mPosition);
-				}
-
 			private:
 				unsigned int mJoystickId;
 				EJoystickAxis mAxis;
@@ -109,11 +94,6 @@ namespace Dia
 
 				unsigned int GetJoystickId() const { return mJoystickId; }
 
-				virtual Core::Events::Event* Clone() const override
-				{
-					return new JoystickConnectedEvent(mJoystickId);
-				}
-
 			private:
 				unsigned int mJoystickId;
 			};
@@ -133,11 +113,6 @@ namespace Dia
 					: mJoystickId(joystickId) {}
 
 				unsigned int GetJoystickId() const { return mJoystickId; }
-
-				virtual Core::Events::Event* Clone() const override
-				{
-					return new JoystickDisconnectedEvent(mJoystickId);
-				}
 
 			private:
 				unsigned int mJoystickId;

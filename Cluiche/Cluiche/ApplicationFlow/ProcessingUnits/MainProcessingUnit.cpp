@@ -64,6 +64,7 @@ namespace Cluiche
 			data.mFrameStream = &(mKernelModule.GetSimToRenderFrameStream());
 			data.mInputToSimFrameStream = &(mKernelModule.GetInputToSimFrameStream());
 			data.mMainUIModule = &mUI;
+			data.mCanvas = mKernelModule.GetCanvas();
 
 			mSimPU.Start(&data);
 			mSimThread = DIA_NEW(std::thread(std::ref(mSimPU)));

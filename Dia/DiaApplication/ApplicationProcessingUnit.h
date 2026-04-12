@@ -14,6 +14,8 @@
 #define _APPLICATIONPROCESSINGUNIT_H_
 
 #include <DiaApplication/ApplicationModule.h>
+#include <DiaApplication/ApplicationError.h>
+#include <DiaApplication/MessageBus.h>
 
 #include "DiaApplication/ApplicationStateObject.h"
 
@@ -22,8 +24,11 @@
 #include <DiaCore/CRC/CRCHashFunctor.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Timer/TimeThreadLimiter.h>
+#include <DiaCore/Memory/UniquePtr.h>
 
+#include <atomic>
 #include <mutex>
+#include <vector>
 
 namespace Dia 
 {
@@ -56,8 +61,35 @@ namespace Dia
 			void EnableThreadLimiting(float hz);
 			void DisableThreadLimiting();
 
+			/**
+			 * @brief Adds a phase to this processing unit.
+			 * @param phase Pointer to phase. Ownership remains with caller.
+			 *              Caller must ensure phase lifetime exceeds ProcessingUnit lifetime.
+			 *              Phase will NOT be automatically deleted.
+			 */
 			void AddPhase(Phase* phase);
+
+			/**
+			 * @brief Adds a module to this processing unit.
+			 * @param module Pointer to module. Ownership remains with caller.
+			 *               Caller must ensure module lifetime exceeds ProcessingUnit lifetime.
+			 *               Module will NOT be automatically deleted.
+			 */
 			void AddModule(Module* module);
+
+			/**
+			 * @brief Adds a phase to this processing unit with ownership transfer.
+			 * @param phase UniquePtr to phase. ProcessingUnit takes ownership.
+			 *              Phase will be automatically deleted when ProcessingUnit is destroyed.
+			 */
+			void AddPhaseWithOwnership(Dia::Core::UniquePtr<Phase> phase);
+
+			/**
+			 * @brief Adds a module to this processing unit with ownership transfer.
+			 * @param module UniquePtr to module. ProcessingUnit takes ownership.
+			 *               Module will be automatically deleted when ProcessingUnit is destroyed.
+			 */
+			void AddModuleWithOwnership(Dia::Core::UniquePtr<Module> module);
 
 			void SetInitialPhase(Phase* phase);
 			void AddPhaseTransiton(Phase* startPhase, Phase* endPhase);
@@ -65,10 +97,20 @@ namespace Dia
 			void TransitionPhase(const Dia::Core::StringCRC& phaseCrc);		// Transition immediately
 			void QueuePhaseTransition(const Dia::Core::StringCRC& crc);		// Transition after next update (this is thread safe)
 
-			Phase* GetCurrentPhase(){ return mCurrentPhase; }
-			const Phase* GetCurrentPhase()const{ return mCurrentPhase; }
+			Phase* GetCurrentPhase(){ return mCurrentPhase.load(std::memory_order_acquire); }
+			const Phase* GetCurrentPhase()const{ return mCurrentPhase.load(std::memory_order_acquire); }
 
 			bool ContainsModule(const Dia::Core::StringCRC& crc)const;
+
+			// Error handling
+			void SetErrorCallback(ErrorCallback callback);
+			void ReportError(const ErrorInfo& error);
+			const std::vector<ErrorInfo>& GetErrorHistory() const { return mErrorHistory; }
+			void ClearErrorHistory();
+
+			// Message bus access
+			MessageBus& GetMessageBus() { return mMessageBus; }
+			const MessageBus& GetMessageBus() const { return mMessageBus; }
 
 			void operator()(); // Used if we are threading
 
@@ -107,8 +149,9 @@ namespace Dia
 			bool mEnableThreadLimiter;
 			Dia::Core::TimeThreadLimiter mThreadLimiter; // The thread limiter is used if we want to control how often the PU is updated. It will sleep the thread if it finishes 
 
-			// PU associated application phases 
-			Phase* mCurrentPhase;
+			// PU associated application phases
+			std::atomic<Phase*> mCurrentPhase;
+			std::atomic<bool> mTransitionInProgress;
 			std::mutex mQueuedTransitionMutex;
 			Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16> mQueuedTransition;	// FIFO List of phase transition
 			PhasesTable mAssociatedPhases;
@@ -116,6 +159,19 @@ namespace Dia
 		
 			// List of all modules that are associated to this PU. Phase can choose from these to enable/disable as they see fit
 			ModuleTable mAssociatedModules;
+
+			// Smart pointer storage for owned modules/phases
+			// These are automatically cleaned up when ProcessingUnit is destroyed
+			std::vector<Dia::Core::UniquePtr<Module>> mOwnedModules;
+			std::vector<Dia::Core::UniquePtr<Phase>> mOwnedPhases;
+
+			// Error tracking
+			ErrorCallback mErrorCallback;
+			mutable std::mutex mErrorMutex;
+			std::vector<ErrorInfo> mErrorHistory;	// Last 100 errors
+
+			// Message bus
+			MessageBus mMessageBus;
 		};
 
 		////////////////////////////////////////////////////////////////////////////////

@@ -28,11 +28,6 @@ namespace Dia
 				int GetX() const { return mX; }
 				int GetY() const { return mY; }
 
-				virtual Core::Events::Event* Clone() const override
-				{
-					return new MouseButtonPressedEvent(mButton, mX, mY);
-				}
-
 			private:
 				EMouseButton mButton;
 				int mX;
@@ -57,11 +52,6 @@ namespace Dia
 				int GetX() const { return mX; }
 				int GetY() const { return mY; }
 
-				virtual Core::Events::Event* Clone() const override
-				{
-					return new MouseButtonReleasedEvent(mButton, mX, mY);
-				}
-
 			private:
 				EMouseButton mButton;
 				int mX;
@@ -84,11 +74,6 @@ namespace Dia
 
 				int GetX() const { return mX; }
 				int GetY() const { return mY; }
-
-				virtual Core::Events::Event* Clone() const override
-				{
-					return new MouseMovedEvent(mX, mY);
-				}
 
 			private:
 				int mX;
@@ -113,11 +98,6 @@ namespace Dia
 				int GetX() const { return mX; }
 				int GetY() const { return mY; }
 
-				virtual Core::Events::Event* Clone() const override
-				{
-					return new MouseWheelMovedEvent(mDelta, mX, mY);
-				}
-
 			private:
 				int mDelta;
 				int mX;
@@ -136,11 +116,6 @@ namespace Dia
 
 			public:
 				MouseEnteredEvent() {}
-
-				virtual Core::Events::Event* Clone() const override
-				{
-					return new MouseEnteredEvent();
-				}
 			};
 
 			//---------------------------------------------------------------------------------------------------------------------------------
@@ -155,11 +130,6 @@ namespace Dia
 
 			public:
 				MouseLeftEvent() {}
-
-				virtual Core::Events::Event* Clone() const override
-				{
-					return new MouseLeftEvent();
-				}
 			};
 		}
 	}

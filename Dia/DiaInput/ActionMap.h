@@ -4,7 +4,7 @@
 #pragma once
 
 #include <DiaCore/CRC/StringCRC.h>
-#include <DiaCore/Containers/HashTable/HashTable.h>
+#include <DiaCore/Containers/HashTables/HashTable.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Architecture/Events/Delegate.h>
 #include "DiaInput/Event.h"
@@ -12,9 +12,6 @@
 #include "DiaInput/EKey.h"
 #include "DiaInput/EMouseButton.h"
 #include "DiaInput/ConsoleGamepad.h"
-
-// Forward declaration
-namespace Dia { namespace Input { class InputProfile; } }
 
 namespace Dia
 {
@@ -88,7 +85,7 @@ namespace Dia
 			/// @param key Key to bind
 			void BindKey(ActionID action, EKey key)
 			{
-				Binding binding(Binding::Type::Key, key.AsInt());
+				Binding binding(Binding::Type::Key, static_cast<int>(key));
 				AddBinding(action, binding);
 			}
 
@@ -98,7 +95,7 @@ namespace Dia
 			/// @param button Mouse button to bind
 			void BindMouseButton(ActionID action, EMouseButton button)
 			{
-				Binding binding(Binding::Type::MouseButton, button.AsInt());
+				Binding binding(Binding::Type::MouseButton, static_cast<int>(button));
 				AddBinding(action, binding);
 			}
 
@@ -109,7 +106,7 @@ namespace Dia
 			/// @param button Gamepad button to bind
 			void BindGamepadButton(ActionID action, unsigned int gamepadIndex, ConsoleGamepad::EButtonID button)
 			{
-				Binding binding(Binding::Type::GamepadButton, button.AsInt(), gamepadIndex);
+				Binding binding(Binding::Type::GamepadButton, static_cast<int>(button), gamepadIndex);
 				AddBinding(action, binding);
 			}
 
@@ -131,7 +128,7 @@ namespace Dia
 			/// @param axis Joystick axis to bind
 			void BindJoystickAxis(ActionID action, unsigned int joystickIndex, EJoystickAxis axis)
 			{
-				Binding binding(Binding::Type::JoystickAxis, axis.AsInt(), joystickIndex);
+				Binding binding(Binding::Type::JoystickAxis, static_cast<int>(axis), joystickIndex);
 				AddBinding(action, binding);
 			}
 
@@ -220,13 +217,13 @@ namespace Dia
 				{
 					const Event& evt = events[i];
 
-					switch (evt.type)
+					switch (evt.type.m_Value)
 					{
 					case Event::EType::kKeyPressed:
 					case Event::EType::kKeyReleased:
 					{
 						EKey key = evt.key.AsKey();
-						float value = (evt.type == Event::EType::kKeyPressed) ? 1.0f : 0.0f;
+						float value = (evt.type.m_Value == Event::EType::kKeyPressed) ? 1.0f : 0.0f;
 						UpdateActionsForKey(key, value);
 						break;
 					}
@@ -235,7 +232,7 @@ namespace Dia
 					case Event::EType::kMouseButtonReleased:
 					{
 						EMouseButton button = evt.mouseButton.AsMouseButton();
-						float value = (evt.type == Event::EType::kMouseButtonPressed) ? 1.0f : 0.0f;
+						float value = (evt.type.m_Value == Event::EType::kMouseButtonPressed) ? 1.0f : 0.0f;
 						UpdateActionsForMouseButton(button, value);
 						break;
 					}
@@ -245,7 +242,7 @@ namespace Dia
 					{
 						unsigned int gamepadIdx = evt.consoleGamepadButtonEvent.gamepadIndex;
 						ConsoleGamepad::EButtonID button = evt.consoleGamepadButtonEvent.AsButtonId();
-						float value = (evt.type == Event::EType::kConsoleGamepadButtonPressed) ? 1.0f : 0.0f;
+						float value = (evt.type.m_Value == Event::EType::kConsoleGamepadButtonPressed) ? 1.0f : 0.0f;
 						UpdateActionsForGamepadButton(gamepadIdx, button, value);
 						break;
 					}
@@ -255,7 +252,7 @@ namespace Dia
 					{
 						unsigned int joystickIdx = evt.joystickButton.joystickId;
 						unsigned int button = evt.joystickButton.button;
-						float value = (evt.type == Event::EType::kJoystickButtonPressed) ? 1.0f : 0.0f;
+						float value = (evt.type.m_Value == Event::EType::kJoystickButtonPressed) ? 1.0f : 0.0f;
 						UpdateActionsForJoystickButton(joystickIdx, button, value);
 						break;
 					}
@@ -314,7 +311,7 @@ namespace Dia
 
 			void UpdateActionsForKey(EKey key, float value)
 			{
-				int keyCode = key.AsInt();
+				int keyCode = static_cast<int>(key);
 
 				for (auto it = mBindings.Begin(); it != mBindings.End(); ++it)
 				{
@@ -335,7 +332,7 @@ namespace Dia
 
 			void UpdateActionsForMouseButton(EMouseButton button, float value)
 			{
-				int buttonCode = button.AsInt();
+				int buttonCode = static_cast<int>(button);
 
 				for (auto it = mBindings.Begin(); it != mBindings.End(); ++it)
 				{
@@ -356,7 +353,7 @@ namespace Dia
 
 			void UpdateActionsForGamepadButton(unsigned int gamepadIndex, ConsoleGamepad::EButtonID button, float value)
 			{
-				int buttonCode = button.AsInt();
+				int buttonCode = static_cast<int>(button);
 
 				for (auto it = mBindings.Begin(); it != mBindings.End(); ++it)
 				{
@@ -398,7 +395,7 @@ namespace Dia
 
 			void UpdateActionsForJoystickAxis(unsigned int joystickIndex, EJoystickAxis axis, float value)
 			{
-				int axisCode = axis.AsInt();
+				int axisCode = static_cast<int>(axis);
 
 				for (auto it = mBindings.Begin(); it != mBindings.End(); ++it)
 				{
@@ -440,20 +437,5 @@ namespace Dia
 			ActionCallback mActionActivatedCallback;
 		};
 
-		// Forward declare implementation (defined in ActionMapProfile.inl or include InputProfile.h)
-		// Note: To use SaveProfile/LoadProfile, include "DiaInput/InputProfile.h" after ActionMap.h
-		inline bool ActionMap::SaveProfile(const char* filePath, const char* profileName) const
-		{
-			// Implementation requires InputProfile.h - forward declaration only here
-			// User must include InputProfile.h to use this method
-			return InputProfile::SaveProfile(*this, filePath, profileName);
-		}
-
-		inline bool ActionMap::LoadProfile(const char* filePath)
-		{
-			// Implementation requires InputProfile.h - forward declaration only here
-			// User must include InputProfile.h to use this method
-			return InputProfile::LoadProfile(*this, filePath);
-		}
 	}
 }

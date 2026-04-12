@@ -4,7 +4,7 @@
 #pragma once
 
 #include <DiaCore/CRC/StringCRC.h>
-#include <DiaCore/Containers/HashTable/HashTable.h>
+#include <DiaCore/Containers/HashTables/HashTable.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include "DiaInput/ActionMap.h"
 
@@ -152,6 +152,19 @@ namespace Dia
 		public:
 			ActionContextManager() {}
 
+			~ActionContextManager()
+			{
+				// Clean up all managed contexts
+				for (auto it = mContexts.Begin(); it != mContexts.End(); ++it)
+				{
+					delete it.Value();
+				}
+			}
+
+			// Delete copy constructor and assignment operator (non-copyable due to owned pointers)
+			ActionContextManager(const ActionContextManager&) = delete;
+			ActionContextManager& operator=(const ActionContextManager&) = delete;
+
 			/// @brief Create a new context (managed by this manager)
 			///
 			/// @param contextId Unique identifier for the context
@@ -159,9 +172,17 @@ namespace Dia
 			/// @return Pointer to created context (owned by manager)
 			ActionContext* CreateContext(ContextID contextId, bool blockLower = false)
 			{
-				ActionContext context(contextId, blockLower);
+				// Check if context already exists
+				if (mContexts.Contains(contextId))
+				{
+					ActionContext** contextPtr = mContexts.TryGetItem(contextId);
+					return contextPtr ? *contextPtr : nullptr;
+				}
+
+				// Create new context on heap
+				ActionContext* context = new ActionContext(contextId, blockLower);
 				mContexts.Insert(contextId, context);
-				return &mContexts[contextId];
+				return context;
 			}
 
 			/// @brief Get a context by ID
@@ -170,9 +191,10 @@ namespace Dia
 			/// @return Pointer to context, or nullptr if not found
 			ActionContext* GetContext(ContextID contextId)
 			{
-				if (mContexts.Contains(contextId))
+				ActionContext** contextPtr = mContexts.TryGetItem(contextId);
+				if (contextPtr)
 				{
-					return &mContexts[contextId];
+					return *contextPtr;
 				}
 				return nullptr;
 			}
@@ -297,7 +319,7 @@ namespace Dia
 			}
 
 		private:
-			Core::Containers::HashTable<ContextID, ActionContext> mContexts;
+			Core::Containers::HashTable<ContextID, ActionContext*> mContexts;
 			Core::Containers::DynamicArrayC<ActionContext*, 8> mContextStack;
 		};
 	}

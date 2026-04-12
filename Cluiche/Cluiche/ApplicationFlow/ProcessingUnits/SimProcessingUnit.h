@@ -22,12 +22,13 @@ namespace Cluiche
 		class StartData : public Dia::Application::ProcessingUnit::IStartData
 		{
 		public:
-			StartData() : mRunning(nullptr), mMainUIModule(nullptr), mInputToSimFrameStream(nullptr), mFrameStream(nullptr) {}
+			StartData() : mRunning(nullptr), mMainUIModule(nullptr), mInputToSimFrameStream(nullptr), mFrameStream(nullptr), mCanvas(nullptr) {}
 
 			const bool* mRunning;
 			Cluiche::Main::UIModule* mMainUIModule;
 			Dia::Core::FrameStream<Dia::Input::EventData>* mInputToSimFrameStream;
 			Dia::Core::FrameStream<Dia::Graphics::FrameData>* mFrameStream;
+			Dia::Graphics::ICanvas* mCanvas; // For loading textures
 		};
 
 		static const Dia::Core::StringCRC kUniqueId;
@@ -42,10 +43,16 @@ namespace Cluiche
 
 
 		Dia::Graphics::FrameData mRenderFrameBuffer;
-		
+
 		// Shared resources
 		const bool* mRunning;
 		Dia::Core::FrameStream<Dia::Graphics::FrameData>* mSimToRenderFrameStream;
+		Dia::Graphics::ICanvas* mCanvas;
+
+		// Test sprite textures
+		unsigned int mTestRedTexture;
+		unsigned int mTestBlueTexture;
+		unsigned int mTestGreenTexture;
 
 		//Phases
 		Cluiche::SimBootPhase mBootPhase;

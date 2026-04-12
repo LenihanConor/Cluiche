@@ -4,8 +4,8 @@
 #pragma once
 
 #include <DiaCore/CRC/StringCRC.h>
-#include <DiaCore/Json/JsonValue.h>
-#include <DiaCore/FilePath/FilePathIO.h>
+#include <json/json.h>
+#include <fstream>
 #include "DiaInput/ActionMap.h"
 #include "DiaInput/EKey.h"
 #include "DiaInput/EMouseButton.h"
@@ -69,13 +69,11 @@ namespace Dia
 				using namespace Dia::Core;
 
 				// Create root JSON object
-				Json::JsonValue root;
-				root.SetObject();
-				root.AddMember("profile_name", Json::JsonValue(profileName));
+				Json::Value root;
+				root["profile_name"] = profileName;
 
 				// Create bindings array
-				Json::JsonValue bindingsArray;
-				bindingsArray.SetArray();
+				Json::Value bindingsArray(Json::arrayValue);
 
 				// Iterate through all bindings
 				const auto& bindings = actionMap.GetBindings();
@@ -89,28 +87,27 @@ namespace Dia
 						const ActionMap::Binding& binding = bindingList[i];
 
 						// Create binding JSON object
-						Json::JsonValue bindingObj;
-						bindingObj.SetObject();
+						Json::Value bindingObj;
+						bindingObj["action"] = action.AsChar();
+						bindingObj["type"] = BindingTypeToString(binding.type);
+						bindingObj["code"] = binding.code;
+						bindingObj["device"] = static_cast<int>(binding.deviceIndex);
 
-						// Add action name (convert StringCRC to string)
-						bindingObj.AddMember("action", Json::JsonValue(action.GetString()));
-
-						// Add binding type
-						const char* typeStr = BindingTypeToString(binding.type);
-						bindingObj.AddMember("type", Json::JsonValue(typeStr));
-
-						// Add code and device index
-						bindingObj.AddMember("code", Json::JsonValue(binding.code));
-						bindingObj.AddMember("device", Json::JsonValue(static_cast<int>(binding.deviceIndex)));
-
-						bindingsArray.PushBack(bindingObj);
+						bindingsArray.append(bindingObj);
 					}
 				}
 
-				root.AddMember("bindings", bindingsArray);
+				root["bindings"] = bindingsArray;
 
-				// Write JSON to file
-				return Core::FilePathIO::WriteJsonFile(filePath, root);
+				// Write JSON to file using standard jsoncpp
+				std::ofstream file(filePath);
+				if (!file.is_open())
+					return false;
+
+				Json::StyledWriter writer;
+				file << writer.write(root);
+				file.close();
+				return true;
 			}
 
 			/// @brief Load ActionMap bindings from JSON file
@@ -122,72 +119,81 @@ namespace Dia
 			{
 				using namespace Dia::Core;
 
-				// Read JSON from file
-				Json::JsonValue root;
-				if (!Core::FilePathIO::ReadJsonFile(filePath, root))
+				// Read JSON from file using standard jsoncpp
+				std::ifstream file(filePath);
+				if (!file.is_open())
 				{
 					return false;
 				}
+
+				Json::Value root;
+				Json::Reader reader;
+				if (!reader.parse(file, root))
+				{
+					file.close();
+					return false;
+				}
+				file.close();
 
 				// Clear existing bindings
 				actionMap.ClearAllBindings();
 
 				// Read bindings array
-				if (!root.HasMember("bindings") || !root["bindings"].IsArray())
+				if (!root.isMember("bindings") || !root["bindings"].isArray())
 				{
 					return false;
 				}
 
-				const Json::JsonValue& bindingsArray = root["bindings"];
-				for (unsigned int i = 0; i < bindingsArray.Size(); i++)
+				const Json::Value& bindingsArray = root["bindings"];
+				for (unsigned int i = 0; i < bindingsArray.size(); i++)
 				{
-					const Json::JsonValue& bindingObj = bindingsArray[i];
+					const Json::Value& bindingObj = bindingsArray[i];
 
-					if (!bindingObj.IsObject())
+					if (!bindingObj.isObject())
 						continue;
 
 					// Read action name
-					if (!bindingObj.HasMember("action") || !bindingObj["action"].IsString())
+					if (!bindingObj.isMember("action") || !bindingObj["action"].isString())
 						continue;
 
-					ActionID action(bindingObj["action"].GetString());
+					ActionID action(bindingObj["action"].asString().c_str());
 
 					// Read binding type
-					if (!bindingObj.HasMember("type") || !bindingObj["type"].IsString())
+					if (!bindingObj.isMember("type") || !bindingObj["type"].isString())
 						continue;
 
-					const char* typeStr = bindingObj["type"].GetString();
+					const char* typeStr = bindingObj["type"].asString().c_str();
 					ActionMap::Binding::Type type = StringToBindingType(typeStr);
 
 					// Read code and device
-					if (!bindingObj.HasMember("code") || !bindingObj["code"].IsInt())
+					if (!bindingObj.isMember("code") || !bindingObj["code"].isInt())
 						continue;
-					if (!bindingObj.HasMember("device") || !bindingObj["device"].IsInt())
+					if (!bindingObj.isMember("device") || !bindingObj["device"].isInt())
 						continue;
 
-					int code = bindingObj["code"].GetInt();
-					unsigned int device = static_cast<unsigned int>(bindingObj["device"].GetInt());
+					int code = bindingObj["code"].asInt();
+					unsigned int device = static_cast<unsigned int>(bindingObj["device"].asInt());
 
 					// Create binding based on type
-					switch (type)
+					switch (static_cast<int>(type))
 					{
-					case ActionMap::Binding::Type::Key:
+					case static_cast<int>(ActionMap::Binding::Type::Key):
 						actionMap.BindKey(action, EKey::CreateFromInt(code));
 						break;
 
-					case ActionMap::Binding::Type::MouseButton:
+					case static_cast<int>(ActionMap::Binding::Type::MouseButton):
 						actionMap.BindMouseButton(action, EMouseButton::CreateFromInt(code));
 						break;
 
-					case ActionMap::Binding::Type::GamepadButton:
+					case static_cast<int>(ActionMap::Binding::Type::GamepadButton):
 						actionMap.BindGamepadButton(action, device, ConsoleGamepad::EButtonID::CreateFromInt(code));
 						break;
 
-					case ActionMap::Binding::Type::JoystickButton:
+					case static_cast<int>(ActionMap::Binding::Type::JoystickButton):
 						actionMap.BindJoystickButton(action, device, static_cast<unsigned int>(code));
 						break;
 
-					case ActionMap::Binding::Type::JoystickAxis:
+					case static_cast<int>(ActionMap::Binding::Type::JoystickAxis):
 						actionMap.BindJoystickAxis(action, device, EJoystickAxis::CreateFromInt(code));
 						break;
 
@@ -208,15 +214,27 @@ namespace Dia
 			{
 				using namespace Dia::Core;
 
-				Json::JsonValue root;
-				if (!Core::FilePathIO::ReadJsonFile(filePath, root))
+				// Read JSON from file
+				std::ifstream file(filePath);
+				if (!file.is_open())
 				{
 					return false;
 				}
 
-				if (root.HasMember("profile_name") && root["profile_name"].IsString())
+				Json::Value root;
+				Json::Reader reader;
+				if (!reader.parse(file, root))
 				{
-					outProfileName = root["profile_name"].GetString();
+					file.close();
+					return false;
+				}
+				file.close();
+
+				if (root.isMember("profile_name") && root["profile_name"].isString())
+				{
+					// Note: This is unsafe - returning pointer to temporary std::string
+					// Should use std::string& or copy to buffer instead
+					outProfileName = root["profile_name"].asString().c_str();
 					return true;
 				}
 

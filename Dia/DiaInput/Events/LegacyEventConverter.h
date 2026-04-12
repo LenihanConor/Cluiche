@@ -44,7 +44,7 @@ namespace Dia
 				/// @note Caller is responsible for deleting returned event
 				static Core::Events::Event* ToModernEvent(const Event& legacyEvent)
 				{
-					switch (legacyEvent.type)
+					switch (static_cast<int>(legacyEvent.type.m_Value))
 					{
 					case Event::EType::kKeyPressed:
 						return new KeyPressedEvent(

@@ -52,18 +52,40 @@ namespace Dia
 			// Convert channel mask to string (for debugging)
 			inline void LogChannelToString(LogChannelMask mask, char* buffer, size_t bufferSize)
 			{
+				if (bufferSize == 0) return;
+
 				if (mask == LogChannel_Nothing)
 				{
-					strncpy(buffer, "Nothing", bufferSize);
+					size_t len = strlen("Nothing");
+					size_t copyLen = (len < bufferSize - 1) ? len : (bufferSize - 1);
+					memcpy(buffer, "Nothing", copyLen);
+					buffer[copyLen] = '\0';
 					return;
 				}
 
 				buffer[0] = '\0';
+				size_t pos = 0;
 				bool first = true;
 
 				auto append = [&](const char* str) {
-					if (!first) strncat(buffer, ", ", bufferSize - strlen(buffer) - 1);
-					strncat(buffer, str, bufferSize - strlen(buffer) - 1);
+					if (pos >= bufferSize - 1) return;
+
+					if (!first)
+					{
+						if (pos + 2 < bufferSize)
+						{
+							buffer[pos++] = ',';
+							buffer[pos++] = ' ';
+						}
+					}
+
+					size_t strLen = strlen(str);
+					size_t remaining = bufferSize - pos - 1;
+					size_t copyLen = (strLen < remaining) ? strLen : remaining;
+
+					memcpy(buffer + pos, str, copyLen);
+					pos += copyLen;
+					buffer[pos] = '\0';
 					first = false;
 				};
 
@@ -139,7 +161,11 @@ namespace Dia
 				FileLogOutput(const char* filePath)
 					: mFile(nullptr)
 				{
-					mFile = fopen(filePath, "a"); // Append mode
+					#ifdef _MSC_VER
+					fopen_s(&mFile, filePath, "a"); // Append mode
+					#else
+					mFile = fopen(filePath, "a");
+					#endif
 				}
 
 				~FileLogOutput()

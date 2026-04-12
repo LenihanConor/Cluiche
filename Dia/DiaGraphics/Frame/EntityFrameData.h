@@ -1,0 +1,68 @@
+////////////////////////////////////////////////////////////////////////////////
+// Filename: EntityFrameData.h
+////////////////////////////////////////////////////////////////////////////////
+#pragma once
+
+#include "DiaGraphics/Frame/SpriteDrawCommand.h"
+#include "DiaGraphics/Misc/Vertex.h"
+#include "DiaGraphics/Misc/PrimitiveType.h"
+#include "DiaGraphics/Misc/RenderStates.h"
+#include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+
+namespace Dia
+{
+	namespace Graphics
+	{
+		class EntityFrameDataVisitor;
+
+		////////////////////////////////////////////////////////////
+		/// \brief Container for entity/sprite rendering commands
+		///
+		/// Stores all sprite draw requests for a single frame.
+		/// Automatically batches sprites by texture for efficient rendering.
+		////////////////////////////////////////////////////////////
+		class EntityFrameData
+		{
+		public:
+			////////////////////////////////////////////////////////////
+			/// \brief Default constructor
+			////////////////////////////////////////////////////////////
+			EntityFrameData();
+
+			////////////////////////////////////////////////////////////
+			/// \brief Request to draw a sprite
+			///
+			/// Sprites with the same texture are automatically batched
+			/// together to minimize draw calls.
+			///
+			/// \param cmd Sprite draw command with all sprite parameters
+			////////////////////////////////////////////////////////////
+			void RequestDrawSprite(const SpriteDrawCommand& cmd);
+
+			////////////////////////////////////////////////////////////
+			/// \brief Clear all draw commands
+			////////////////////////////////////////////////////////////
+			void Clear();
+
+			////////////////////////////////////////////////////////////
+			/// \brief Get all sprite draw commands
+			///
+			/// \return Array of sprite commands
+			////////////////////////////////////////////////////////////
+			const Core::Containers::DynamicArrayC<SpriteDrawCommand, 256>& GetSprites() const;
+
+			////////////////////////////////////////////////////////////
+			/// \brief Accept visitor for processing frame data
+			///
+			/// \param visitor Visitor to process this frame data
+			////////////////////////////////////////////////////////////
+			void AcceptVisitor(const EntityFrameDataVisitor& visitor) const;
+
+		private:
+			////////////////////////////////////////////////////////////
+			// Member data
+			////////////////////////////////////////////////////////////
+			Core::Containers::DynamicArrayC<SpriteDrawCommand, 256> mSprites; ///< All sprite draw commands
+		};
+	}
+}

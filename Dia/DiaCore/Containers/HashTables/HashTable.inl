@@ -377,9 +377,41 @@ namespace Dia
  				}
  
  				const Payload* foundNode = pTableNode->TryFindPayloadConst(key);
- 
+
  				return foundNode;
-			}			
+			}
+
+			//----------------------------------------------------------
+			template< class Key, class Payload, class HashFunctor >
+			typename HashTable<Key, Payload, HashFunctor>::Iterator
+			HashTable<Key, Payload, HashFunctor>::Begin()
+			{
+				return Iterator(this, 0);
+			}
+
+			//----------------------------------------------------------
+			template< class Key, class Payload, class HashFunctor >
+			typename HashTable<Key, Payload, HashFunctor>::Iterator
+			HashTable<Key, Payload, HashFunctor>::End()
+			{
+				return Iterator(this, mPayloadNodes.Size());
+			}
+
+			//----------------------------------------------------------
+			template< class Key, class Payload, class HashFunctor >
+			typename HashTable<Key, Payload, HashFunctor>::ConstIterator
+			HashTable<Key, Payload, HashFunctor>::Begin() const
+			{
+				return ConstIterator(this, 0);
+			}
+
+			//----------------------------------------------------------
+			template< class Key, class Payload, class HashFunctor >
+			typename HashTable<Key, Payload, HashFunctor>::ConstIterator
+			HashTable<Key, Payload, HashFunctor>::End() const
+			{
+				return ConstIterator(this, mPayloadNodes.Size());
+			}
 		}
 	}
 }

@@ -88,11 +88,11 @@ namespace Dia
 			
 			//-----------------------------------------------------------------------------
 			template <class T, unsigned int capacity>
-			DynamicArrayC<T, capacity>::DynamicArrayC ( ConstIterator& iter )
+			DynamicArrayC<T, capacity>::DynamicArrayC ( unsigned int numberElements, ConstIterator& iter )
 			{
 				mSize = 0;
 
-				for (; !iter.IsDone(); iter.Next()) 
+				for (unsigned int i = 0; i < numberElements && !iter.IsDone(); i++, iter.Next())
 				{
 					Add( *iter.Current() );
 				}
@@ -100,10 +100,10 @@ namespace Dia
 
 			//-----------------------------------------------------------------------------
 			template <class T, unsigned int capacity>
-			DynamicArrayC<T, capacity>::DynamicArrayC ( ConstReverseIterator& iter )
+			DynamicArrayC<T, capacity>::DynamicArrayC ( unsigned int numberElements, ConstReverseIterator& iter )
 			{
 				mSize = 0;
-				for (; !iter.IsDone(); iter.Next()) 
+				for (unsigned int i = 0; i < numberElements && !iter.IsDone(); i++, iter.Next())
 				{
 					Add( *iter.Current() );
 				}
@@ -111,10 +111,10 @@ namespace Dia
 			
 			//-----------------------------------------------------------------------------
 			template <class T, unsigned int capacity> template<class Evaluator>
-			DynamicArrayC<T, capacity>::DynamicArrayC ( ConstIterator& iter, const Evaluator& filter )
+			DynamicArrayC<T, capacity>::DynamicArrayC ( unsigned int numberElements, ConstIterator& iter, const Evaluator& filter )
 			{
 				mSize = 0;
-				for (; !iter.IsDone(); iter.Next()) 
+				for (unsigned int i = 0; i < numberElements && !iter.IsDone(); i++, iter.Next())
 				{
 					const T* temp = iter.Current();
 					if (filter.Evaluate(*temp ))
@@ -181,11 +181,11 @@ namespace Dia
 
 			//-----------------------------------------------------------------------------
 			template <class T, unsigned int capacity>
-			DynamicArrayC<T, capacity>& DynamicArrayC<T, capacity>::Assign ( ConstIterator& iter )
+			DynamicArrayC<T, capacity>& DynamicArrayC<T, capacity>::Assign ( unsigned int numberElements, ConstIterator& iter )
 			{
 				mSize = 0;
 
-				for (; !iter.IsDone(); iter.Next()) 
+				for (unsigned int i = 0; i < numberElements && !iter.IsDone(); i++, iter.Next())
 				{
 					Add( *iter.Current() );
 				}
@@ -195,11 +195,11 @@ namespace Dia
 				
 			//-----------------------------------------------------------------------------
 			template <class T, unsigned int capacity>
-			DynamicArrayC<T, capacity>& DynamicArrayC<T, capacity>::Assign ( ConstReverseIterator& iter )
+			DynamicArrayC<T, capacity>& DynamicArrayC<T, capacity>::Assign ( unsigned int numberElements, ConstReverseIterator& iter )
 			{
 				mSize = 0;
 
-				for (; !iter.IsDone(); iter.Next()) 
+				for (unsigned int i = 0; i < numberElements && !iter.IsDone(); i++, iter.Next())
 				{
 					Add( *iter.Current() );
 				}
@@ -209,11 +209,11 @@ namespace Dia
 
 			//-----------------------------------------------------------------------------
 			template <class T, unsigned int capacity> template<class Evaluator>
-			DynamicArrayC<T, capacity>& DynamicArrayC<T, capacity>::Assign ( ConstIterator& iter, const Evaluator& filter )
+			DynamicArrayC<T, capacity>& DynamicArrayC<T, capacity>::Assign ( unsigned int numberElements, ConstIterator& iter, const Evaluator& filter )
 			{
 				mSize = 0;
 
-				for (; !iter.IsDone(); iter.Next()) 
+				for (unsigned int i = 0; i < numberElements && !iter.IsDone(); i++, iter.Next())
 				{
 					const T* temp = iter.Current();
 					if (filter.Evaluate(*temp ))
@@ -451,7 +451,7 @@ namespace Dia
 			
 			//-----------------------------------------------------------------------------
 			template <typename T, unsigned int capacity> inline
-			void DynamicArrayC<T, capacity>::UniqueElements(DynamicArrayC<T, capacity>& unique)const
+			void DynamicArrayC<T, capacity>::UniqueElements(DynamicArrayC<T, capacity>& unique, unsigned int& number)const
 			{
 				for (unsigned int i = 0; i < Size(); i++)
 				{
@@ -461,7 +461,7 @@ namespace Dia
 					{
 						if (possibleUnique == unique[j])
 						{
-							foundInList = true; 
+							foundInList = true;
 							break;
 						}
 					}
@@ -471,11 +471,12 @@ namespace Dia
 						unique.Add( possibleUnique );
 					}
 				}
+				number = unique.Size();
 			}
 
 			//-----------------------------------------------------------------------------
 			template <typename T, unsigned int capacity> inline
-			void DynamicArrayC<T, capacity>::FrequencyUniqueElements(DynamicArrayC<T, capacity>& unique, DynamicArrayC<int, capacity>& uniqueFrequency)const
+			void DynamicArrayC<T, capacity>::FrequencyUniqueElements(DynamicArrayC<T, capacity>& unique, DynamicArrayC<int, capacity>& uniqueFrequency, unsigned int& number)const
 			{
 				for (unsigned int i = 0; i < Size(); i++)
 				{
@@ -485,7 +486,7 @@ namespace Dia
 					{
 						if (possibleUnique == unique[j])
 						{
-							foundInList = true; 
+							foundInList = true;
 							break;
 						}
 					}
@@ -496,6 +497,7 @@ namespace Dia
 						uniqueFrequency.Add( FrequencyOfElement( possibleUnique ) );
 					}
 				}
+				number = unique.Size();
 			}
 
 			//-----------------------------------------------------------------------------

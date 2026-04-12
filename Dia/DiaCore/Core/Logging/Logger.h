@@ -9,6 +9,7 @@
 #include "DiaCore/Time/TimeAbsolute.h"
 #include <cstdio>
 #include <cstdarg>
+#include <ctime>
 #include <memory>
 
 namespace Dia
@@ -254,11 +255,30 @@ namespace Dia
 				void FormatMessage(LogLevel level, const LogNamespace& ns, const char* file, int line, const char* message, char* output, size_t outputSize)
 				{
 					// Get current timestamp
-					TimeAbsolute now;
+					std::time_t now = std::time(nullptr);
 					char timeStr[64];
-					snprintf(timeStr, sizeof(timeStr), "%04d-%02d-%02d %02d:%02d:%02d",
-						now.GetYear(), now.GetMonth(), now.GetDay(),
-						now.GetHour(), now.GetMinute(), now.GetSecond());
+
+					#ifdef _MSC_VER
+					std::tm localTime;
+					if (localtime_s(&localTime, &now) == 0)
+					{
+						snprintf(timeStr, sizeof(timeStr), "%04d-%02d-%02d %02d:%02d:%02d",
+							localTime.tm_year + 1900, localTime.tm_mon + 1, localTime.tm_mday,
+							localTime.tm_hour, localTime.tm_min, localTime.tm_sec);
+					}
+					#else
+					std::tm* localTimePtr = std::localtime(&now);
+					if (localTimePtr)
+					{
+						snprintf(timeStr, sizeof(timeStr), "%04d-%02d-%02d %02d:%02d:%02d",
+							localTimePtr->tm_year + 1900, localTimePtr->tm_mon + 1, localTimePtr->tm_mday,
+							localTimePtr->tm_hour, localTimePtr->tm_min, localTimePtr->tm_sec);
+					}
+					#endif
+					else
+					{
+						snprintf(timeStr, sizeof(timeStr), "0000-00-00 00:00:00");
+					}
 
 					// Format: [TIMESTAMP] [LEVEL] [NAMESPACE] (file:line) message
 					if (file && line > 0)

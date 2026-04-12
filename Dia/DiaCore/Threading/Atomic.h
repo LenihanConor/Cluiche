@@ -118,7 +118,7 @@ namespace Dia
 		class AtomicFlag
 		{
 		public:
-			AtomicFlag() : mFlag(ATOMIC_FLAG_INIT) {}
+			AtomicFlag() = default;
 
 			// Test and set (returns previous value)
 			bool TestAndSet(std::memory_order order = std::memory_order_seq_cst)
@@ -133,6 +133,9 @@ namespace Dia
 			}
 
 		private:
+			AtomicFlag(const AtomicFlag&) = delete;
+			AtomicFlag& operator=(const AtomicFlag&) = delete;
+
 			std::atomic_flag mFlag;
 		};
 

@@ -97,7 +97,8 @@ namespace Dia
 									static const Dia::Core::EnumDescription* GetDescription()\
 									{\
 										static Dia::Core::EnumDescription* sDescription = 0;\
-										static Dia::Core::EnumDescription sDescriptions[NumberOfItems];\
+										static constexpr int kMaxEnumItems = 64;\
+										static Dia::Core::EnumDescription sDescriptions[kMaxEnumItems];\
 										static char names[] = #B;\
 										if (sDescription == 0)\
 										{\

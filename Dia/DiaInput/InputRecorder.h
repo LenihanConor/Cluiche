@@ -4,9 +4,11 @@
 #pragma once
 
 #include <DiaCore/Time/TimeAbsolute.h>
+#include <DiaCore/Time/TimeRelative.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include "DiaInput/Event.h"
 #include "DiaInput/EventData.h"
+#include "DiaInput/IInputSource.h"
 #include <cstdio>
 
 namespace Dia
@@ -26,7 +28,7 @@ namespace Dia
 		/// // Each frame:
 		/// EventData events;
 		/// inputSourceManager.Update(events);
-		/// recorder.RecordEvents(events, TimeAbsolute::Now());
+		/// recorder.RecordEvents(events, TimeAbsolute::GetSystemTime());
 		///
 		/// // Save recording
 		/// recorder.SaveToFile("gameplay.input");
@@ -40,7 +42,7 @@ namespace Dia
 		///
 		/// // Each frame:
 		/// EventData events;
-		/// recorder.UpdatePlayback(TimeAbsolute::Now(), events);
+		/// recorder.UpdatePlayback(TimeAbsolute::GetSystemTime(), events);
 		/// // Process events as normal
 		/// @endcode
 		////////////////////////////////////////////////////////////////////////////////
@@ -50,11 +52,11 @@ namespace Dia
 			/// @brief Frame of recorded input
 			struct RecordedFrame
 			{
-				TimeAbsolute timestamp;
+				Dia::Core::TimeAbsolute timestamp;
 				EventDataT<64> events;
 
-				RecordedFrame() : timestamp(TimeAbsolute::Zero()) {}
-				RecordedFrame(const TimeAbsolute& time, const EventData& evts)
+				RecordedFrame() : timestamp(Dia::Core::TimeAbsolute::Zero()) {}
+				RecordedFrame(const Dia::Core::TimeAbsolute& time, const EventData& evts)
 					: timestamp(time)
 				{
 					for (unsigned int i = 0; i < evts.Size(); i++)
@@ -67,8 +69,8 @@ namespace Dia
 			InputRecorder()
 				: mIsRecording(false)
 				, mIsPlayingBack(false)
-				, mPlaybackStartTime(TimeAbsolute::Zero())
-				, mRecordingStartTime(TimeAbsolute::Zero())
+				, mPlaybackStartTime(Dia::Core::TimeAbsolute::Zero())
+				, mRecordingStartTime(Dia::Core::TimeAbsolute::Zero())
 				, mPlaybackFrameIndex(0)
 			{}
 
@@ -77,7 +79,7 @@ namespace Dia
 			{
 				mRecordedFrames.RemoveAll();
 				mIsRecording = true;
-				mRecordingStartTime = TimeAbsolute::Now();
+				mRecordingStartTime = Dia::Core::TimeAbsolute::GetSystemTime();
 			}
 
 			/// @brief Stop recording input
@@ -93,7 +95,7 @@ namespace Dia
 			///
 			/// @param events EventData containing input events
 			/// @param timestamp Current timestamp
-			void RecordEvents(const EventData& events, const TimeAbsolute& timestamp)
+			void RecordEvents(const EventData& events, const Dia::Core::TimeAbsolute& timestamp)
 			{
 				if (!mIsRecording || events.Size() == 0)
 				{
@@ -101,8 +103,8 @@ namespace Dia
 				}
 
 				// Store relative time from recording start
-				TimeAbsolute relativeTime = timestamp - mRecordingStartTime;
-				RecordedFrame frame(relativeTime, events);
+				Dia::Core::TimeRelative relativeTime = timestamp - mRecordingStartTime;
+				RecordedFrame frame(Dia::Core::TimeAbsolute::Zero() + relativeTime, events);
 				mRecordedFrames.Add(frame);
 			}
 
@@ -132,7 +134,7 @@ namespace Dia
 					const RecordedFrame& frame = mRecordedFrames[i];
 
 					// Write timestamp
-					double timeSeconds = frame.timestamp.GetTimeInSeconds();
+					double timeSeconds = frame.timestamp.AsFloatInSeconds();
 					fwrite(&timeSeconds, sizeof(double), 1, file);
 
 					// Write event count
@@ -184,7 +186,7 @@ namespace Dia
 					// Read timestamp
 					double timeSeconds = 0.0;
 					fread(&timeSeconds, sizeof(double), 1, file);
-					TimeAbsolute timestamp(timeSeconds);
+					Dia::Core::TimeAbsolute timestamp = Dia::Core::TimeAbsolute::CreateFromSeconds(static_cast<float>(timeSeconds));
 
 					// Read event count
 					unsigned int eventCount = 0;
@@ -210,7 +212,7 @@ namespace Dia
 			void StartPlayback()
 			{
 				mIsPlayingBack = true;
-				mPlaybackStartTime = TimeAbsolute::Now();
+				mPlaybackStartTime = Dia::Core::TimeAbsolute::GetSystemTime();
 				mPlaybackFrameIndex = 0;
 			}
 
@@ -231,7 +233,7 @@ namespace Dia
 			///
 			/// Call this each frame during playback. Events matching the current
 			/// playback time will be added to outEvents.
-			void UpdatePlayback(const TimeAbsolute& currentTime, EventData& outEvents)
+			void UpdatePlayback(const Dia::Core::TimeAbsolute& currentTime, EventData& outEvents)
 			{
 				if (!mIsPlayingBack || mPlaybackFrameIndex >= mRecordedFrames.Size())
 				{
@@ -239,7 +241,8 @@ namespace Dia
 				}
 
 				// Calculate playback time relative to start
-				TimeAbsolute playbackTime = currentTime - mPlaybackStartTime;
+				Dia::Core::TimeRelative playbackTimeRel = currentTime - mPlaybackStartTime;
+				Dia::Core::TimeAbsolute playbackTime = Dia::Core::TimeAbsolute::Zero() + playbackTimeRel;
 
 				// Emit all events up to current playback time
 				while (mPlaybackFrameIndex < mRecordedFrames.Size())
@@ -279,7 +282,7 @@ namespace Dia
 					return 0.0;
 				}
 
-				return mRecordedFrames[mRecordedFrames.Size() - 1].timestamp.GetTimeInSeconds();
+				return mRecordedFrames[mRecordedFrames.Size() - 1].timestamp.AsFloatInSeconds();
 			}
 
 			/// @brief Get number of recorded frames
@@ -291,10 +294,10 @@ namespace Dia
 		private:
 			bool mIsRecording;
 			bool mIsPlayingBack;
-			TimeAbsolute mRecordingStartTime;
-			TimeAbsolute mPlaybackStartTime;
+			Dia::Core::TimeAbsolute mRecordingStartTime;
+			Dia::Core::TimeAbsolute mPlaybackStartTime;
 			unsigned int mPlaybackFrameIndex;
-			Core::Containers::DynamicArrayC<RecordedFrame, 1024> mRecordedFrames;
+			Dia::Core::Containers::DynamicArrayC<RecordedFrame, 1024> mRecordedFrames;
 		};
 
 		/// @brief IInputSource implementation for playback
@@ -318,7 +321,7 @@ namespace Dia
 		{
 		public:
 			PlaybackInputSource(InputRecorder* recorder)
-				: IInputSource(Priority::Normal)
+				: IInputSource(IInputSource::Priority::Normal)
 				, mRecorder(recorder)
 			{}
 
@@ -326,7 +329,7 @@ namespace Dia
 			{
 				if (mRecorder)
 				{
-					mRecorder->UpdatePlayback(TimeAbsolute::Now(), outStream);
+					mRecorder->UpdatePlayback(Dia::Core::TimeAbsolute::GetSystemTime(), outStream);
 				}
 			}
 

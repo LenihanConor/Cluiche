@@ -102,7 +102,7 @@ namespace Dia
 			mSystemTimeOfNextTick = Dia::Core::sSystemClock.CurrentTime() + mTimeStep;
 
 			mLastTime = mTime;
-			
+
 			mTime += mTimeStep * mTimeScale;
 			++mTick;
 
@@ -154,7 +154,7 @@ namespace Dia
 		//------------------------------------------------------------------------------
 		float TimeServer::GetTimeScale() const
 		{
-			return mTimeScale;
+			return mQueuedTimeScale;
 		}
 
 		//------------------------------------------------------------------------------

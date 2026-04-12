@@ -30,11 +30,6 @@ namespace Dia
 				bool IsShift() const { return mShift; }
 				bool IsSystem() const { return mSystem; }
 
-				virtual Core::Events::Event* Clone() const override
-				{
-					return new KeyPressedEvent(mKey, mAlt, mControl, mShift, mSystem);
-				}
-
 			private:
 				EKey mKey;
 				bool mAlt;
@@ -63,11 +58,6 @@ namespace Dia
 				bool IsShift() const { return mShift; }
 				bool IsSystem() const { return mSystem; }
 
-				virtual Core::Events::Event* Clone() const override
-				{
-					return new KeyReleasedEvent(mKey, mAlt, mControl, mShift, mSystem);
-				}
-
 			private:
 				EKey mKey;
 				bool mAlt;
@@ -91,11 +81,6 @@ namespace Dia
 					: mUnicode(unicode) {}
 
 				unsigned int GetUnicode() const { return mUnicode; }
-
-				virtual Core::Events::Event* Clone() const override
-				{
-					return new TextEnteredEvent(mUnicode);
-				}
 
 			private:
 				unsigned int mUnicode;

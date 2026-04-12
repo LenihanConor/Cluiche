@@ -2,8 +2,9 @@
 // Filename: TestInputProfile.cpp - Google Test for InputProfile
 ////////////////////////////////////////////////////////////////////////////////
 #include "gtest/gtest.h"
-#include <DiaInput/InputProfile.h>
 #include <DiaInput/ActionMap.h>
+#include <DiaInput/InputProfile.h>
+#include <DiaInput/ActionMapProfile.inl>
 #include <DiaInput/EKey.h>
 #include <DiaInput/EMouseButton.h>
 #include <DiaInput/ConsoleGamepad.h>

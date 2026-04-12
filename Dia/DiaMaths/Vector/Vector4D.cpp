@@ -156,6 +156,18 @@ namespace Dia
 		}
 
 		//-----------------------------------------------------------------------------
+		Vector4D Vector4D::operator +() const
+		{
+			return *this;
+		}
+
+		//-----------------------------------------------------------------------------
+		Vector4D Vector4D::operator -() const
+		{
+			return Vector4D(-x, -y, -z, -w);
+		}
+
+		//-----------------------------------------------------------------------------
 		Vector4D Vector4D::operator + ( const Vector4D& rhs ) const
 		{
 			return Vector4D(*this) += rhs;

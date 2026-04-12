@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Core">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\Architecture">
+      <UniqueIdentifier>{A0B1C2D3-0000-1111-2222-333333333333}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\Containers">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\CRC">
+      <UniqueIdentifier>{E5F6G7H8-5555-6666-7777-888888888888}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\Events">
+      <UniqueIdentifier>{B2C3D4E5-2222-3333-4444-555555555555}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\Memory">
+      <UniqueIdentifier>{C3D4E5F6-3333-4444-5555-666666666666}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\Threading">
+      <UniqueIdentifier>{A1B2C3D4-1111-2222-3333-444444444444}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\Time">
+      <UniqueIdentifier>{D4E5F6G7-4444-5555-6666-777777777777}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\Type">
+      <UniqueIdentifier>{F6G7H8I9-6666-7777-8888-999999999999}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Maths">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Graphics">
+      <UniqueIdentifier>{78EB7BC7-G911-5d19-9C8B-94CC232BBE12}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Input">
+      <UniqueIdentifier>{79FC9DD9-H122-6f3a-AE0D-C6FF656FGH56}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Mocks">
+      <UniqueIdentifier>{89FC8CD8-H022-6e2a-AD9C-A5DD343CCF23}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Fixtures">
+      <UniqueIdentifier>{9A0D9DE9-I133-7f3b-BE0D-B6EE454DDF34}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GoogleTest">
+      <UniqueIdentifier>{AB1E0EFA-J244-8g4c-CF1E-C7FF565EEG45}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Main.cpp" />
+    <!-- Core\Architecture -->
+    <ClCompile Include="Core\Architecture\TestSingleton.cpp">
+      <Filter>Core\Architecture</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Architecture\TestComponent.cpp">
+      <Filter>Core\Architecture</Filter>
+    </ClCompile>
+    <!-- Core\Containers -->
+    <ClCompile Include="Core\Containers\TestArray.cpp">
+      <Filter>Core\Containers</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Containers\TestArrayC.cpp">
+      <Filter>Core\Containers</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Containers\TestBitArray.cpp">
+      <Filter>Core\Containers</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Containers\TestDynamicArray.cpp">
+      <Filter>Core\Containers</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Containers\TestDynamicArrayC.cpp">
+      <Filter>Core\Containers</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Containers\TestStringWriter.cpp">
+      <Filter>Core\Containers</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Containers\TestString.cpp">
+      <Filter>Core\Containers</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Containers\TestCircularBuffer.cpp">
+      <Filter>Core\Containers</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Containers\TestArrayIterators.cpp">
+      <Filter>Core\Containers</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Containers\TestLinkListC.cpp">
+      <Filter>Core\Containers</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Containers\TestHashTable.cpp">
+      <Filter>Core\Containers</Filter>
+    </ClCompile>
+    <!-- Core\CRC -->
+    <ClCompile Include="Core\CRC\TestCRC.cpp">
+      <Filter>Core\CRC</Filter>
+    </ClCompile>
+    <!-- Core\Events -->
+    <ClCompile Include="Core\Events\TestDelegate.cpp">
+      <Filter>Core\Events</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Events\TestEventDispatcher.cpp">
+      <Filter>Core\Events</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Events\TestEventQueue.cpp">
+      <Filter>Core\Events</Filter>
+    </ClCompile>
+    <!-- Core\Memory -->
+    <ClCompile Include="Core\Memory\TestSmartPointers.cpp">
+      <Filter>Core\Memory</Filter>
+    </ClCompile>
+    <!-- Core\Threading -->
+    <ClCompile Include="Core\Threading\TestAtomic.cpp">
+      <Filter>Core\Threading</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Threading\TestJobSystem.cpp">
+      <Filter>Core\Threading</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Threading\TestMutex.cpp">
+      <Filter>Core\Threading</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Threading\TestThreadPool.cpp">
+      <Filter>Core\Threading</Filter>
+    </ClCompile>
+    <!-- Core\Time -->
+    <ClCompile Include="Core\Time\TestTimeAbsolute.cpp">
+      <Filter>Core\Time</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Time\TestTimeRelative.cpp">
+      <Filter>Core\Time</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Time\TestTimeServer.cpp">
+      <Filter>Core\Time</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Time\TestTimer.cpp">
+      <Filter>Core\Time</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Time\TestTimerExpiry.cpp">
+      <Filter>Core\Time</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Time\TestTimerSystem.cpp">
+      <Filter>Core\Time</Filter>
+    </ClCompile>
+    <!-- Core\Type -->
+    <ClCompile Include="Core\Type\TestEnum.cpp">
+      <Filter>Core\Type</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Type\TestMetaLogic.cpp">
+      <Filter>Core\Type</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Type\TestTypeTraits.cpp">
+      <Filter>Core\Type</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Type\TestJsonTypes.cpp">
+      <Filter>Core\Type</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Type\TestTypes.cpp">
+      <Filter>Core\Type</Filter>
+    </ClCompile>
+    <!-- Maths -->
+    <ClCompile Include="Maths\TestAngle.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestCoreMaths.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestFloatMaths.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestMatrix22.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestMatrix33.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestTrigonometry.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestVector2D.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestVector3D.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestVector4D.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestVectorUtils.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestHalfFloat.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestIntersectionClassify.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestCircle2D.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestHalfVector2D.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <!-- Graphics -->
+    <ClCompile Include="Graphics\TestPrimitiveType.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\TestRenderStates.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\TestRGBA.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\TestTransform.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\TestVertex.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <!-- Input -->
+    <ClCompile Include="Input\TestInputState.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\TestActionMap.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\TestActionContext.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\TestInputProfile.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\TestInputRecorder.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\TestLegacyEventConverter.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\TestModernEvents.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <!-- GoogleTest -->
+    <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">
+      <Filter>GoogleTest</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

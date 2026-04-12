@@ -58,7 +58,7 @@ namespace Dia
 			public:
 				Event()
 					: mHandled(false)
-					, mTimestamp()
+					, mTimestamp(TimeAbsolute::Zero())
 				{}
 
 				virtual ~Event() {}
@@ -95,10 +95,11 @@ namespace Dia
 			// Use this in derived event classes to implement type identification
 			//-----------------------------------------------------------------------------
 			#define EVENT_CLASS_TYPE(type) \
-				static EventTypeID GetStaticType() { static StringCRC id(#type); return id; } \
-				virtual EventTypeID GetEventType() const override { return GetStaticType(); } \
+			public: \
+				static Dia::Core::Events::EventTypeID GetStaticType() { static Dia::Core::Events::EventTypeID typeId(#type); return typeId; } \
+				virtual Dia::Core::Events::EventTypeID GetEventType() const override { return GetStaticType(); } \
 				virtual const char* GetName() const override { return #type; } \
-				virtual Event* Clone() const override { return new type(*this); }
+				virtual Dia::Core::Events::Event* Clone() const override { return new type(*this); }
 
 			#define EVENT_CLASS_CATEGORY(category) \
 				virtual int GetCategoryFlags() const override { return category; }

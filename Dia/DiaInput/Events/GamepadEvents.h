@@ -27,11 +27,6 @@ namespace Dia
 				unsigned int GetGamepadIndex() const { return mGamepadIndex; }
 				ConsoleGamepad::EButtonID GetButton() const { return mButton; }
 
-				virtual Core::Events::Event* Clone() const override
-				{
-					return new GamepadButtonPressedEvent(mGamepadIndex, mButton);
-				}
-
 			private:
 				unsigned int mGamepadIndex;
 				ConsoleGamepad::EButtonID mButton;
@@ -53,11 +48,6 @@ namespace Dia
 
 				unsigned int GetGamepadIndex() const { return mGamepadIndex; }
 				ConsoleGamepad::EButtonID GetButton() const { return mButton; }
-
-				virtual Core::Events::Event* Clone() const override
-				{
-					return new GamepadButtonReleasedEvent(mGamepadIndex, mButton);
-				}
 
 			private:
 				unsigned int mGamepadIndex;
@@ -82,11 +72,6 @@ namespace Dia
 				ConsoleGamepad::EButtonID GetStick() const { return mStick; }
 				float GetX() const { return mX; }
 				float GetY() const { return mY; }
-
-				virtual Core::Events::Event* Clone() const override
-				{
-					return new GamepadAnalogStickMoveEvent(mGamepadIndex, mStick, mX, mY);
-				}
 
 			private:
 				unsigned int mGamepadIndex;
@@ -113,11 +98,6 @@ namespace Dia
 				ConsoleGamepad::EButtonID GetTrigger() const { return mTrigger; }
 				float GetValue() const { return mValue; }
 
-				virtual Core::Events::Event* Clone() const override
-				{
-					return new GamepadTriggerEvent(mGamepadIndex, mTrigger, mValue);
-				}
-
 			private:
 				unsigned int mGamepadIndex;
 				ConsoleGamepad::EButtonID mTrigger;
@@ -140,11 +120,6 @@ namespace Dia
 
 				unsigned int GetGamepadIndex() const { return mGamepadIndex; }
 
-				virtual Core::Events::Event* Clone() const override
-				{
-					return new GamepadConnectedEvent(mGamepadIndex);
-				}
-
 			private:
 				unsigned int mGamepadIndex;
 			};
@@ -164,11 +139,6 @@ namespace Dia
 					: mGamepadIndex(gamepadIndex) {}
 
 				unsigned int GetGamepadIndex() const { return mGamepadIndex; }
-
-				virtual Core::Events::Event* Clone() const override
-				{
-					return new GamepadDisconnectedEvent(mGamepadIndex);
-				}
 
 			private:
 				unsigned int mGamepadIndex;

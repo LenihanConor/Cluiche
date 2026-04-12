@@ -45,7 +45,7 @@ namespace Dia
 		{
 		public:
 			/// @brief Default constructor - creates empty event buffer
-			EventDataT() : Dia::Core::Containers::DynamicArrayC<Event, Capacity>(){};
+			EventDataT() = default;
 		};
 
 		/// @brief Default EventData with 64-event capacity

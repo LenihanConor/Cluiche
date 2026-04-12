@@ -162,7 +162,7 @@ namespace Dia
 					Json::Value namespaces;
 					for (const auto& pair : mNamespaceConfigs)
 					{
-						namespaces[pair.first.GetName()] = SerializeConfigEntry(pair.second);
+						namespaces[pair.first.AsChar()] = SerializeConfigEntry(pair.second);
 					}
 					root["namespaces"] = namespaces;
 
@@ -239,7 +239,8 @@ namespace Dia
 					// e.g., "Physics.Collision" → check "Physics"
 					for (const auto& pair : mNamespaceConfigs)
 					{
-						if (ns.StartsWith(pair.first))
+						LogNamespace prefix(pair.first.AsChar());
+						if (ns.StartsWith(prefix))
 						{
 							return pair.second;
 						}

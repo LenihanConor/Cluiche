@@ -5,6 +5,7 @@
 
 #include "DiaSFML/Conversion.h"
 #include "DiaSFML/DebugFrameRendererVisitor.h"
+#include "DiaSFML/EntityFrameRenderer.h"
 
 #include <DiaGraphics/Frame/FrameData.h>
 #include <DiaGraphics/Frame/DebugFrameDataVisitor.h>
@@ -166,10 +167,14 @@ namespace Dia
 			DIA_ASSERT(mBackBuffer, "mBackBuffer is NULL");
 
 			if (mBackBuffer)
-			{			
+			{
+				// Render entities/sprites first (background)
+				EntityFrameRenderer renderEntities(mBackBuffer, &mTextureManager);
+				renderEntities.Visit(nextFrame);
+
+				// Render debug objects on top
 				DebugFrameRendererVisitor renderDebugObjects(mBackBuffer);
-				
-				renderDebugObjects.Visit(nextFrame);	
+				renderDebugObjects.Visit(nextFrame);
 			}
 		}
 
@@ -360,6 +365,18 @@ namespace Dia
 			DIA_ASSERT(mWindowContext, "mWindowContext is NULL");
 
 			return mWindowContext->getNativeHandle();
+		}
+
+		//-------------------------------------------------------------------------------------
+		unsigned int RenderWindow::LoadTexture(const char* path)
+		{
+			return mTextureManager.LoadTexture(path);
+		}
+
+		//-------------------------------------------------------------------------------------
+		const sf::Texture* RenderWindow::GetTexture(unsigned int textureId) const
+		{
+			return mTextureManager.GetTexture(textureId);
 		}
 	}
 }

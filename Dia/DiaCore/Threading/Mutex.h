@@ -2,6 +2,7 @@
 #define DIA_MUTEX_H
 
 #include <mutex>
+#include <shared_mutex>
 
 namespace Dia
 {

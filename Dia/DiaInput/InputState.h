@@ -110,7 +110,7 @@ namespace Dia
 				{
 					const Event& evt = events[i];
 
-					switch (evt.type)
+					switch (evt.type.m_Value)
 					{
 					case Event::EType::kKeyPressed:
 					{
@@ -264,7 +264,7 @@ namespace Dia
 						break;
 					}
 
-					case Event::EType::kJoystickButtonReleased:
+					case static_cast<int>(Event::EType::kJoystickButtonReleased):
 					{
 						unsigned int idx = evt.joystickButton.joystickId;
 						unsigned int button = evt.joystickButton.button;
@@ -275,7 +275,7 @@ namespace Dia
 						break;
 					}
 
-					case Event::EType::kJoystickMoved:
+					case static_cast<int>(Event::EType::kJoystickMoved):
 					{
 						unsigned int idx = evt.joystickMove.joystickId;
 						int axis = evt.joystickMove.axis;
@@ -295,38 +295,38 @@ namespace Dia
 			// Keyboard queries
 			bool IsKeyDown(EKey key) const
 			{
-				int keyCode = key.AsInt();
+				int keyCode = static_cast<int>(key);
 				return (keyCode >= 0 && keyCode < kMaxKeys) ? mKeyDown[keyCode] : false;
 			}
 
 			bool WasKeyPressed(EKey key) const
 			{
-				int keyCode = key.AsInt();
+				int keyCode = static_cast<int>(key);
 				return (keyCode >= 0 && keyCode < kMaxKeys) ? mKeyPressed[keyCode] : false;
 			}
 
 			bool WasKeyReleased(EKey key) const
 			{
-				int keyCode = key.AsInt();
+				int keyCode = static_cast<int>(key);
 				return (keyCode >= 0 && keyCode < kMaxKeys) ? mKeyReleased[keyCode] : false;
 			}
 
 			// Mouse queries
 			bool IsMouseButtonDown(EMouseButton button) const
 			{
-				int buttonCode = button.AsInt();
+				int buttonCode = static_cast<int>(button);
 				return (buttonCode >= 0 && buttonCode < kMaxMouseButtons) ? mMouseButtonDown[buttonCode] : false;
 			}
 
 			bool WasMouseButtonPressed(EMouseButton button) const
 			{
-				int buttonCode = button.AsInt();
+				int buttonCode = static_cast<int>(button);
 				return (buttonCode >= 0 && buttonCode < kMaxMouseButtons) ? mMouseButtonPressed[buttonCode] : false;
 			}
 
 			bool WasMouseButtonReleased(EMouseButton button) const
 			{
-				int buttonCode = button.AsInt();
+				int buttonCode = static_cast<int>(button);
 				return (buttonCode >= 0 && buttonCode < kMaxMouseButtons) ? mMouseButtonReleased[buttonCode] : false;
 			}
 
@@ -349,7 +349,7 @@ namespace Dia
 
 			bool IsGamepadButtonDown(unsigned int index, ConsoleGamepad::EButtonID button) const
 			{
-				int buttonCode = button.AsInt();
+				int buttonCode = static_cast<int>(button);
 				return (index < kMaxGamepads && buttonCode < 16) ? mGamepadButtonDown[index][buttonCode] : false;
 			}
 
@@ -362,13 +362,12 @@ namespace Dia
 					return;
 				}
 
-				int stickCode = stick.AsInt();
-				if (stickCode == ConsoleGamepad::EButtonID::L_Thumbstick)
+				if (stick == ConsoleGamepad::EButtonID::L_Thumbstick)
 				{
 					x = mGamepadAxisValues[index][0];
 					y = mGamepadAxisValues[index][1];
 				}
-				else if (stickCode == ConsoleGamepad::EButtonID::R_Thumbstick)
+				else if (stick == ConsoleGamepad::EButtonID::R_Thumbstick)
 				{
 					x = mGamepadAxisValues[index][2];
 					y = mGamepadAxisValues[index][3];
@@ -393,7 +392,7 @@ namespace Dia
 
 			float GetJoystickAxisValue(unsigned int index, EJoystickAxis axis) const
 			{
-				int axisCode = axis.AsInt();
+				int axisCode = static_cast<int>(axis);
 				return (index < kMaxJoysticks && axisCode >= 0 && axisCode < kMaxJoystickAxes) ? mJoystickAxisValues[index][axisCode] : 0.0f;
 			}
 
@@ -401,8 +400,8 @@ namespace Dia
 			{
 				if (index < kMaxJoysticks)
 				{
-					x = mJoystickAxisValues[index][EJoystickAxis::X];
-					y = mJoystickAxisValues[index][EJoystickAxis::Y];
+					x = mJoystickAxisValues[index][static_cast<int>(EJoystickAxis::X)];
+					y = mJoystickAxisValues[index][static_cast<int>(EJoystickAxis::Y)];
 				}
 				else
 				{

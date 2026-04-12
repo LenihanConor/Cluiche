@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdarg.h>
+#include <ctype.h>
 
 namespace Dia
 {
@@ -338,7 +339,7 @@ namespace Dia
 			template <unsigned int size> inline
 			String<size> String<size>::operator	+ (const char* pRawString)const
 			{
-				String<size> result(pRawString);
+				String<size> result(*this);
 				result.Append(pRawString);
 				return result;
 			}
@@ -383,6 +384,38 @@ namespace Dia
 			}
 
 			//-----------------------------------------------------------------------------
+			template <unsigned int size> inline
+			bool String<size>::operator	<	(const char* pRawString)const
+			{
+				DIA_ASSERT(pRawString, "String Cannot be NULL");
+				return (strcmp(&mData[0], pRawString) < 0);
+			}
+
+			//-----------------------------------------------------------------------------
+			template <unsigned int size> inline
+			bool String<size>::operator	>	(const char* pRawString)const
+			{
+				DIA_ASSERT(pRawString, "String Cannot be NULL");
+				return (strcmp(&mData[0], pRawString) > 0);
+			}
+
+			//-----------------------------------------------------------------------------
+			template <unsigned int size> inline
+			bool String<size>::operator	<=	(const char* pRawString)const
+			{
+				DIA_ASSERT(pRawString, "String Cannot be NULL");
+				return (strcmp(&mData[0], pRawString) <= 0);
+			}
+
+			//-----------------------------------------------------------------------------
+			template <unsigned int size> inline
+			bool String<size>::operator	>=	(const char* pRawString)const
+			{
+				DIA_ASSERT(pRawString, "String Cannot be NULL");
+				return (strcmp(&mData[0], pRawString) >= 0);
+			}
+
+			//-----------------------------------------------------------------------------
 			template <unsigned int size> template<unsigned int _size> inline
 			bool String<size>::operator	== (const String<_size>& str)const
 			{
@@ -394,6 +427,34 @@ namespace Dia
 			bool String<size>::operator	!= (const String<_size>& str)const
 			{
 				return !(*this == str.AsCStr());
+			}
+
+			//-----------------------------------------------------------------------------
+			template <unsigned int size> template<unsigned int _size> inline
+			bool String<size>::operator	< (const String<_size>& str)const
+			{
+				return (*this < str.AsCStr());
+			}
+
+			//-----------------------------------------------------------------------------
+			template <unsigned int size> template<unsigned int _size> inline
+			bool String<size>::operator	> (const String<_size>& str)const
+			{
+				return (*this > str.AsCStr());
+			}
+
+			//-----------------------------------------------------------------------------
+			template <unsigned int size> template<unsigned int _size> inline
+			bool String<size>::operator	<= (const String<_size>& str)const
+			{
+				return (*this <= str.AsCStr());
+			}
+
+			//-----------------------------------------------------------------------------
+			template <unsigned int size> template<unsigned int _size> inline
+			bool String<size>::operator	>= (const String<_size>& str)const
+			{
+				return (*this >= str.AsCStr());
 			}
 
 			//-----------------------------------------------------------------------------
@@ -428,14 +489,16 @@ namespace Dia
 			template <unsigned int size> inline
 			char& String<size>::Back()
 			{
-				return mData[Length()];
+				unsigned int len = Length();
+				return mData[len > 0 ? len - 1 : 0];
 			}
-			
+
 			//-----------------------------------------------------------------------------
 			template <unsigned int size> inline
 			const char& String<size>::Back() const
 			{
-				return mData[Length()];
+				unsigned int len = Length();
+				return mData[len > 0 ? len - 1 : 0];
 			}
 
 			//-----------------------------------------------------------------------------
@@ -613,7 +676,8 @@ namespace Dia
 				va_list args;
 				va_start(args, pFormatString);
 				Format(pFormatString, args);
-				va_end(args);			
+				va_end(args);
+				return *this;
 			}
 
 			//-----------------------------------------------------------------------------
@@ -772,7 +836,7 @@ namespace Dia
 			}
 			
 			//-----------------------------------------------------------------------------
-			template <unsigned int size> 
+			template <unsigned int size>
 			template<unsigned int size1, unsigned int size2> inline
 			void String<size>::Split(const unsigned int charCount, String<size1>& result1, String<size2>& result2)const
 			{
@@ -780,6 +844,46 @@ namespace Dia
 
 				result1 = this->SubString(0, charCount);
 				result2 = this->SubString(charCount, Length()-charCount);
+			}
+
+			//-----------------------------------------------------------------------------
+			template <unsigned int size>
+			template<typename ArrayType> inline
+			void String<size>::Split(char delimiter, ArrayType& outTokens) const
+			{
+				outTokens.RemoveAll();
+
+				if (Length() == 0)
+				{
+					return;
+				}
+
+				unsigned int start = 0;
+				unsigned int i = 0;
+
+				for (i = 0; i < Length(); i++)
+				{
+					if (mData[i] == delimiter)
+					{
+						// Found delimiter - extract token
+						if (i > start)
+						{
+							String<size> token = SubString(start, i - start);
+							// Convert to target type - assume ArrayType element has constructor from const char*
+							typename ArrayType::ValueType targetToken(token.AsCStr());
+							outTokens.Add(targetToken);
+						}
+						start = i + 1;
+					}
+				}
+
+				// Add last token if any
+				if (start < Length())
+				{
+					String<size> token = SubString(start, Length() - start);
+					typename ArrayType::ValueType targetToken(token.AsCStr());
+					outTokens.Add(targetToken);
+				}
 			}
 
 			//-----------------------------------------------------------------------------
@@ -828,6 +932,232 @@ namespace Dia
 				for(int i = startPos; i >= 0; i--)
 				{
 					if (mData[i] == c)
+					{
+						return i;
+					}
+				}
+
+				return -1;
+			}
+
+			//-----------------------------------------------------------------------------
+			template <unsigned int size>
+			String<size>& String<size>::Append( char c )
+			{
+				char temp[2] = {c, '\0'};
+				return Append(temp);
+			}
+
+			//-----------------------------------------------------------------------------
+			template <unsigned int size>
+			void String<size>::Clear()
+			{
+				mData[0] = '\0';
+			}
+
+			//-----------------------------------------------------------------------------
+			template <unsigned int size>
+			bool String<size>::IsEmpty() const
+			{
+				return Length() == 0;
+			}
+
+			//-----------------------------------------------------------------------------
+			template <unsigned int size>
+			String<size>& String<size>::Insert( unsigned int pos, const char* s )
+			{
+				if (!s || pos > Length()) return *this;
+
+				unsigned int sLen = static_cast<unsigned int>(strlen(s));
+				unsigned int currentLen = Length();
+				unsigned int newLen = currentLen + sLen;
+
+				if (newLen >= size) return *this;  // Would overflow
+
+				// Shift existing characters right
+				for (int i = currentLen; i >= static_cast<int>(pos); i--)
+				{
+					mData[i + sLen] = mData[i];
+				}
+
+				// Insert new characters
+				for (unsigned int i = 0; i < sLen; i++)
+				{
+					mData[pos + i] = s[i];
+				}
+
+				return *this;
+			}
+
+			//-----------------------------------------------------------------------------
+			template <unsigned int size>
+			String<size>& String<size>::Remove( unsigned int pos, unsigned int count )
+			{
+				unsigned int currentLen = Length();
+				if (pos >= currentLen) return *this;
+
+				if (pos + count > currentLen)
+				{
+					count = currentLen - pos;
+				}
+
+				// Shift characters left
+				for (unsigned int i = pos; i < currentLen - count; i++)
+				{
+					mData[i] = mData[i + count];
+				}
+				mData[currentLen - count] = '\0';
+
+				return *this;
+			}
+
+			//-----------------------------------------------------------------------------
+			template <unsigned int size>
+			String<size>& String<size>::Replace( const char* oldStr, const char* newStr )
+			{
+				if (!oldStr || !newStr) return *this;
+
+				unsigned int oldLen = static_cast<unsigned int>(strlen(oldStr));
+				unsigned int newLen = static_cast<unsigned int>(strlen(newStr));
+
+				// Replace all occurrences
+				int pos = Find(oldStr);
+				while (pos != -1)
+				{
+					// Remove old string
+					Remove(pos, oldLen);
+
+					// Insert new string
+					Insert(pos, newStr);
+
+					// Find next occurrence, starting after the replacement
+					pos = Find(oldStr, pos + newLen);
+				}
+
+				return *this;
+			}
+
+			//-----------------------------------------------------------------------------
+			template <unsigned int size>
+			String<size>& String<size>::Trim()
+			{
+				TrimLeft();
+				TrimRight();
+				return *this;
+			}
+
+			//-----------------------------------------------------------------------------
+			template <unsigned int size>
+			String<size>& String<size>::TrimLeft()
+			{
+				unsigned int i = 0;
+				while (i < Length() && isspace(static_cast<unsigned char>(mData[i])))
+				{
+					i++;
+				}
+
+				if (i > 0)
+				{
+					Remove(0, i);
+				}
+
+				return *this;
+			}
+
+			//-----------------------------------------------------------------------------
+			template <unsigned int size>
+			String<size>& String<size>::TrimRight()
+			{
+				int i = Length() - 1;
+				while (i >= 0 && isspace(static_cast<unsigned char>(mData[i])))
+				{
+					i--;
+				}
+
+				mData[i + 1] = '\0';
+
+				return *this;
+			}
+
+			//-----------------------------------------------------------------------------
+			template <unsigned int size>
+			bool String<size>::StartsWith( const char* prefix ) const
+			{
+				if (!prefix) return false;
+
+				unsigned int prefixLen = static_cast<unsigned int>(strlen(prefix));
+				if (prefixLen > Length()) return false;
+
+				return strncmp(AsCStr(), prefix, prefixLen) == 0;
+			}
+
+			//-----------------------------------------------------------------------------
+			template <unsigned int size>
+			bool String<size>::EndsWith( const char* suffix ) const
+			{
+				if (!suffix) return false;
+
+				unsigned int suffixLen = static_cast<unsigned int>(strlen(suffix));
+				unsigned int strLen = Length();
+
+				if (suffixLen > strLen) return false;
+
+				return strcmp(AsCStr() + strLen - suffixLen, suffix) == 0;
+			}
+
+			//-----------------------------------------------------------------------------
+			template <unsigned int size>
+			bool String<size>::Contains( const char* substr ) const
+			{
+				return Find(substr) != -1;
+			}
+
+			//-----------------------------------------------------------------------------
+			template <unsigned int size>
+			String<size>& String<size>::Reverse()
+			{
+				unsigned int len = Length();
+				for (unsigned int i = 0; i < len / 2; i++)
+				{
+					char temp = mData[i];
+					mData[i] = mData[len - 1 - i];
+					mData[len - 1 - i] = temp;
+				}
+				return *this;
+			}
+
+			//-----------------------------------------------------------------------------
+			template <unsigned int size>
+			int String<size>::Find( const char* s, unsigned int startPos ) const
+			{
+				if (!s || startPos >= Length()) return -1;
+
+				const char* result = strstr(AsCStr() + startPos, s);
+				if (!result) return -1;
+
+				return static_cast<int>(result - AsCStr());
+			}
+
+			//-----------------------------------------------------------------------------
+			template <unsigned int size>
+			int String<size>::FindLast( const char* s, unsigned int startPos ) const
+			{
+				if (!s) return -1;
+
+				unsigned int sLen = static_cast<unsigned int>(strlen(s));
+				if (sLen == 0) return -1;
+
+				if (startPos == 0xffffffff)
+				{
+					startPos = Length() - 1;
+				}
+
+				if (startPos >= Length()) return -1;
+
+				// Search backwards
+				for (int i = startPos; i >= 0; i--)
+				{
+					if (strncmp(AsCStr() + i, s, sLen) == 0)
 					{
 						return i;
 					}

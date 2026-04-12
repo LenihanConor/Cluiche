@@ -13,16 +13,20 @@
   <ItemGroup>
     <ClCompile Include="Conversion.cpp" />
     <ClCompile Include="DebugFrameRendererVisitor.cpp" />
+    <ClCompile Include="EntityFrameRenderer.cpp" />
     <ClCompile Include="InputSource.cpp" />
     <ClCompile Include="RenderWindow.cpp" />
     <ClCompile Include="RenderWindowFactory.cpp" />
+    <ClCompile Include="TextureManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Conversion.h" />
     <ClInclude Include="DebugFrameRendererVisitor.h" />
+    <ClInclude Include="EntityFrameRenderer.h" />
     <ClInclude Include="InputSource.h" />
     <ClInclude Include="RenderWindow.h" />
     <ClInclude Include="RenderWindowFactory.h" />
+    <ClInclude Include="TextureManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">

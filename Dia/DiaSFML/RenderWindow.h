@@ -4,9 +4,14 @@
 #pragma once
 
 #include <DiaGraphics/Interface/ICanvas.h>
+#include <DiaGraphics/Interface/IDrawable.h>
+#include <DiaGraphics/Misc/RenderStates.h>
+#include <DiaGraphics/Misc/Vertex.h>
+#include <DiaGraphics/Misc/PrimitiveType.h>
 #include <DiaWindow/Interface/IWindow.h>
 
 #include "DiaSFML/InputSource.h"
+#include "DiaSFML/TextureManager.h"
 
 // Forward Declare
 namespace sf
@@ -40,6 +45,10 @@ namespace Dia
 			virtual void ProcessFrame(const Dia::Graphics::FrameData& nextFrame)override;
 			virtual void EndFrame(const Dia::Graphics::FrameData& nextFrame)override;
 
+			// Texture management
+			unsigned int LoadTexture(const char* path);
+			const sf::Texture* GetTexture(unsigned int textureId) const;
+
 			// Inherited from IWindow
 			virtual void Initialize(const Window::IWindow::Settings& settings) override;
 			virtual void Close() override;
@@ -61,10 +70,13 @@ namespace Dia
 
 			sf::RenderWindow* mWindowContext;	// Window context used to render too
 			sf::RenderTexture* mBackBuffer;		// Texture we rednder too that will be used to render to final window context
-			
+
 			// UI Variables
 			sf::Shader* mUIShader;				// Shader used to merge the backbuffer and the UI sprite before pushing to window context
 			sf::Texture* mUIOverlayTexture;		//TODO: Replace this with a DIA texture when i create one
+
+			// Texture management
+			TextureManager mTextureManager;		// Manages texture loading and caching
 		};
 	}
 }
