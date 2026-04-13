@@ -7,6 +7,7 @@
 
 #include <pybind11/pybind11.h>
 #include <pybind11/embed.h>
+#include "ErrorHandling/Error.h"  // For ErrorCode enum
 
 namespace py = pybind11;
 
@@ -38,8 +39,31 @@ namespace Dia
 				py::args* pyArgs = nullptr;  // Pointer to pybind11::args (not owned)
 			};
 
+			// Error handling structures (Phase 4: error-handling)
+			struct ErrorContext
+			{
+				const char* operation = nullptr;   // What operation was being performed
+				const char* scriptPath = nullptr;  // Script file path (if applicable)
+				int lineNumber = 0;                // Line number in script (if applicable)
+			};
+
+			struct LastError
+			{
+				Dia::Python::ErrorCode code;  // Defaults to 0 (Success)
+				std::string errorType;        // Python exception type name
+				std::string message;          // Full error message with traceback
+				std::string context;          // Where the error occurred
+			};
+
+			extern LastError gLastError;
+
+			// Error handling functions (Phase 4: error-handling)
+			Dia::Python::ErrorCode ConvertException(const py::error_already_set& ex, const ErrorContext& context);
+			const char* ExtractTraceback(const py::error_already_set& ex);
+			void ReportError(Dia::Python::ErrorCode code, const char* errorType, const char* message, const ErrorContext& context);
+			const LastError& GetLastError();
+
 			// Additional internal structures will be added in later phases:
-			// - LastError (error-handling)
 			// - ModuleImpl, FunctionRegistration (module-api)
 			// - AsyncTask, OutputRedirection (script-execution)
 		}

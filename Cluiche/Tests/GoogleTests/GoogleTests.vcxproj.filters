@@ -246,6 +246,9 @@
     <ClCompile Include="Python\TestTypeConversion.cpp">
       <Filter>Python</Filter>
     </ClCompile>
+    <ClCompile Include="Python\TestErrorHandling.cpp">
+      <Filter>Python</Filter>
+    </ClCompile>
     <!-- GoogleTest -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">
       <Filter>GoogleTest</Filter>
