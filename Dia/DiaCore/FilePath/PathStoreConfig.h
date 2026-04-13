@@ -10,7 +10,17 @@ namespace Dia
 {
 	namespace Core
 	{
-		// This class is input to the PathStore of alias's and there orresponding path
+		//---------------------------------------------------------------------------------------------------------------------------------
+		// AliasPathConfigTuple
+		//
+		// Represents a direct alias-to-path mapping for PathStore configuration.
+		//
+		// USAGE (via JSON):
+		//   {
+		//     "mAlias": "data",
+		//     "mPath": "C:/Game/Data"
+		//   }
+		//---------------------------------------------------------------------------------------------------------------------------------
 		class AliasPathConfigTuple
 		{
 		public:
@@ -22,11 +32,23 @@ namespace Dia
 			const Path::String& GetPath()const { return mPath; }
 
 		private:
-			Containers::String32 mAlias;
-			Path::String mPath;
+			Containers::String32 mAlias;   // The path alias identifier
+			Path::String mPath;            // The actual file system path
 		};
 
-		// This class is input to the PathStore that will create a new alias that is an appendment to another.
+		//---------------------------------------------------------------------------------------------------------------------------------
+		// AliasAppendPathConfig
+		//
+		// Represents a compound alias built from an existing alias plus a sub-path.
+		//
+		// USAGE (via JSON):
+		//   {
+		//     "mAlias": "data_textures",
+		//     "mBaseAlias": "data",
+		//     "mPathAppend": "Textures"
+		//   }
+		//   Result: "data_textures" = resolve("data") + "/Textures"
+		//---------------------------------------------------------------------------------------------------------------------------------
 		class AliasAppendPathConfig
 		{
 		public:
@@ -39,12 +61,24 @@ namespace Dia
 			const Path::String& GetPathAppend()const { return mPathAppend; }
 
 		private:
-			Containers::String32 mAlias;
-			Containers::String32 mBaseAlias;
-			Path::String mPathAppend;
+			Containers::String32 mAlias;        // The new alias to create
+			Containers::String32 mBaseAlias;    // Existing alias to build from
+			Path::String mPathAppend;           // Sub-path to append
 		};
 
-		// This class is to point the system at other path store files to open/parse and add there contents to the path store
+		//---------------------------------------------------------------------------------------------------------------------------------
+		// PathStoreConfigFragment
+		//
+		// Points to an external PathStoreConfig JSON file to load and merge.
+		// Allows splitting large path configurations across multiple files.
+		//
+		// USAGE (via JSON):
+		//   {
+		//     "mBaseAlias": "config",
+		//     "mPathAppend": "",
+		//     "mFileName": "paths_additional.json"
+		//   }
+		//---------------------------------------------------------------------------------------------------------------------------------
 		class PathStoreConfigFragment
 		{
 		public:
@@ -57,12 +91,31 @@ namespace Dia
 			const Path::String& GetPathAppend()const { return mPathAppend; }
 
 		private:
-			Containers::String32 mBaseAlias;
-			Containers::String32 mFileName;
-			Path::String mPathAppend;
+			Containers::String32 mBaseAlias;  // Base alias to resolve fragment location
+			Containers::String32 mFileName;   // Config file name (JSON)
+			Path::String mPathAppend;         // Optional subdirectory
 		};
 
-		// This class is input to the PathStore, to register paths from the data
+		//---------------------------------------------------------------------------------------------------------------------------------
+		// PathStoreConfig
+		//
+		// Container for path store configuration data, typically loaded from JSON.
+		//
+		// Holds three types of configuration entries:
+		//   1. AliasPathTupleArray - Direct alias->path mappings
+		//   2. AliasAppendPathArray - Compound aliases built from other aliases
+		//   3. PathStoreConfigFragmentArray - External config files to load
+		//
+		// SERIALIZATION:
+		//   Configured via DIA_TYPE_DEFINITION macros for JSON deserialization.
+		//   See PathStoreConfig.cpp for type definition.
+		//
+		// USAGE:
+		//   PathStoreConfig config;
+		//   SerializedFileLoad loader;
+		//   loader.LoadNow("paths.json", config, 4096);
+		//   PathStore::RegisterToStore(config);
+		//---------------------------------------------------------------------------------------------------------------------------------
 		class PathStoreConfig
 		{
 		public:

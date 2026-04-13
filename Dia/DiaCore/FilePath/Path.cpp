@@ -1,3 +1,8 @@
+// ===================================================================
+// Path.cpp
+// Path utility implementation for file system operations
+// ===================================================================
+
 #include "DiaCore/FilePath/Path.h"
 
 #include <windows.h>
@@ -5,50 +10,62 @@
 #include "DiaCore/Strings/stringutils.h"
 
 namespace Dia
-{	
+{
 	namespace Core
 	{
+		// Get the directory containing the currently running executable
+		// Uses Windows-specific GetModuleFileName
 		void Path::ExePath(std::string& outString)
 		{
 			using namespace std;;
-			
+
 			char buffer[MAX_PATH];
 			GetModuleFileName(NULL, buffer, MAX_PATH);
 			std::string::size_type pos = string(buffer).find_last_of("\\/");
 			outString = std::string(buffer).substr(0, pos);
 		}
 
+		// Safely concatenate two path strings
+		// - Normalizes both strings to use forward slashes
+		// - Ensures exactly one separator between the paths
+		// - Result is stored in outString
 		void Path::AppendStrings(const Path::String& str1, const Path::String& str2, Path::String& outString)
 		{
 			Path::String temp1(str1);
 			Path::String temp2(str2);
 
-			// Format the string correctly to be forward slashs
+			// Normalize both paths to use forward slashes
 			ReplaceAllBackSlashWithForwardSlash(temp1);
 			ReplaceAllBackSlashWithForwardSlash(temp2);
-			
+
 			outString.Append(temp1);
 
-			// If the first str does not end with '/' then add them
+			// Ensure separator between paths
 			Path::String::ConstReverseIterator iter(&outString.Back(), &outString.Front(), &outString.Back());
 			char lastChar = *iter.Begin();
 			if (lastChar != '/')
 			{
 				outString.Append("/");
 			}
-			
+
 			outString.Append(temp2);
 		}
 
+		// Normalize a path string to standard format
+		// - Converts all backslashes to forward slashes
+		// - Removes any trailing forward slash
 		void Path::CleanPathString(String& outString)
 		{
 			ReplaceAllBackSlashWithForwardSlash(outString);
 			RemoveEndingForwardSlash(outString);
 		}
 
+		// Default constructor
 		Path::Path()
 		{}
 
+		// Construct with alias and path
+		// Automatically normalizes the path string
 		Path::Path(const Alias& alias, const String& path)
 			: mAlias(alias)
 			, mPath(path)
@@ -59,9 +76,10 @@ namespace Dia
 		const Path::Alias Path::GetAlias()const { return mAlias; }
 		const Path::String Path::GetPath()const { return mPath; }
 
+		// Replace all backslashes with forward slashes
+		// Loops until all backslashes are converted
 		void Path::ReplaceAllBackSlashWithForwardSlash(Path::String& outString)
 		{
-			// Convert all "\\" into "/"
 			while (1)
 			{
 				int pos = outString.Find('\\');
@@ -75,9 +93,10 @@ namespace Dia
 			}
 		}
 
+		// Remove trailing forward slash from path string
+		// Ensures paths don't end with a separator
 		void Path::RemoveEndingForwardSlash(Path::String& outString)
 		{
-			// Remove all '/' at the end of the string
 			Path::String::ConstReverseIterator iter(&outString.Back(), &outString.Front(), &outString.Back());
 			char lastChar = *iter.Begin();
 			if (lastChar == '/')

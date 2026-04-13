@@ -1,3 +1,10 @@
+// ===================================================================
+// PathStoreConfig.cpp
+// Type definitions for PathStore configuration serialization
+//
+// Uses the Dia type system for JSON serialization/deserialization
+// ===================================================================
+
 #include "DiaCore/FilePath/PathStoreConfig.h"
 
 #include "DiaCore/Type/TypeJsonSerializer.h"
@@ -10,9 +17,11 @@
 #include "DiaCore/Strings/stringutils.h"
 
 namespace Dia
-{	
+{
 	namespace Core
 	{
+		// Type definition for AliasPathConfigTuple
+		// Defines how this type is serialized to/from JSON
 		DIA_TYPE_DEFINITION(AliasPathConfigTuple)
 			DIA_TYPE_ADD_VARIABLE("mAlias", mAlias)
 				DIA_TYPE_ADD_VARIABLE_ATTRIBUTE_PARAM_1(Dia::Core::Types::TypeVariableAttributesCustomJsonSerializer, Dia::Core::StringSerialize)
