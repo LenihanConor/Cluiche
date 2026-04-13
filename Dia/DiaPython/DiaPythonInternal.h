@@ -8,6 +8,11 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/embed.h>
 #include "ErrorHandling/Error.h"  // For ErrorCode enum
+#include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <DiaCore/Containers/HashTables/HashTable.h>
+#include <DiaCore/CRC/StringCRC.h>
+#include <string>
+#include <functional>
 
 namespace py = pybind11;
 
@@ -15,6 +20,10 @@ namespace Dia
 {
 	namespace Python
 	{
+		// Forward declarations
+		class PythonObject;
+		class PythonArgs;
+
 		namespace Internal
 		{
 			// Python interpreter state (singleton)
@@ -63,8 +72,35 @@ namespace Dia
 			void ReportError(Dia::Python::ErrorCode code, const char* errorType, const char* message, const ErrorContext& context);
 			const LastError& GetLastError();
 
+			// Module API structures (Phase 5: module-api)
+			using PythonCallback = std::function<Dia::Python::PythonObject(const Dia::Python::PythonArgs&)>;
+
+			// Function registration (for deferred registration)
+			struct FunctionRegistration
+			{
+				std::string name;
+				PythonCallback callback;
+				std::string docstring;
+				std::string signatureHint;  // Empty for non-overloaded functions
+			};
+
+			// Module wrapper (hides pybind11::module_)
+			struct ModuleImpl
+			{
+				std::string name;
+				py::module_* pybindModule = nullptr;     // null if Python not initialized
+				bool isPendingRegistration = false;
+				Dia::Core::Containers::DynamicArrayC<FunctionRegistration, 32> pendingFunctions;
+			};
+
+			// Global module registry
+			extern Dia::Core::Containers::HashTable<Dia::Core::StringCRC, ModuleImpl*> gModules;
+
+			// Module API helper functions
+			bool ValidateModuleName(const char* name);
+			py::object WrapCallback(PythonCallback callback, const char* functionName);
+
 			// Additional internal structures will be added in later phases:
-			// - ModuleImpl, FunctionRegistration (module-api)
 			// - AsyncTask, OutputRedirection (script-execution)
 		}
 	}

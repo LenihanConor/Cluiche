@@ -9,7 +9,7 @@
 #include "TypeConversion/PythonObject.h"
 #include "TypeConversion/Conversion.h"
 #include "ErrorHandling/Error.h"
+#include "Module/Module.h"
 
 // Additional features will be added in later phases:
-// #include "Module/Module.h"
 // #include "ScriptExecution/Script.h"

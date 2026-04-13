@@ -190,6 +190,9 @@ namespace Dia
 		// PythonArgs Implementation
 		//======================================================================
 
+		// Constructor - initialize mImpl to nullptr in header
+		// Note: PythonArgs is typically created via SetImpl() from Module.cpp
+
 		int PythonArgs::GetCount() const
 		{
 			if (!mImpl) return 0;

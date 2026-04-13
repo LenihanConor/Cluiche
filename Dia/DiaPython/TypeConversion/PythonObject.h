@@ -34,6 +34,11 @@ namespace Dia
 			bool IsBool() const;
 			bool IsString() const;
 
+			// Internal access methods (for Module.cpp and WrapCallback)
+			// Note: These are public but should only be used internally
+			void* GetImpl() const { return mImpl; }
+			void SetImpl(void* impl) { mImpl = impl; }
+
 		private:
 			void* mImpl;  // PythonObjectImpl* (opaque)
 
@@ -53,12 +58,19 @@ namespace Dia
 		class PythonArgs
 		{
 		public:
+			// Constructor
+			PythonArgs() : mImpl(nullptr) {}
+
 			// Get number of arguments
 			int GetCount() const;
 
 			// Get argument by index (0-based)
 			// Returns: PythonObject, or None if index out of bounds
 			PythonObject GetArg(int index) const;
+
+			// Internal access methods (for Module.cpp and WrapCallback)
+			// Note: These are public but should only be used internally
+			void SetImpl(void* impl) { mImpl = impl; }
 
 		private:
 			void* mImpl;  // PythonArgsImpl* (opaque)
