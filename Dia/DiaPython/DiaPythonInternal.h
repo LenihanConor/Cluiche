@@ -11,6 +11,7 @@
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Containers/HashTables/HashTable.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/Threading/Mutex.h>
 #include <string>
 #include <functional>
 
@@ -100,8 +101,41 @@ namespace Dia
 			bool ValidateModuleName(const char* name);
 			py::object WrapCallback(PythonCallback callback, const char* functionName);
 
-			// Additional internal structures will be added in later phases:
-			// - AsyncTask, OutputRedirection (script-execution)
+			// Script Execution structures (Phase 6: script-execution)
+			// Forward declarations from Script.h
+			using ScriptCompletionCallback = std::function<void(int, float)>;
+			using OutputCallback = std::function<void(const char*)>;
+
+			// Async execution task
+			struct AsyncTask
+			{
+				int taskId;
+				std::string scriptPath;  // Or "<string>" for code execution
+				std::string code;        // Empty for file execution
+				ScriptCompletionCallback callback;
+				bool isRunning;
+				bool isCancelled;
+			};
+
+			// Output redirection state
+			struct OutputRedirection
+			{
+				OutputCallback stdoutCallback;
+				OutputCallback stderrCallback;
+				bool isRedirected;
+				py::object originalStdout;  // Store original sys.stdout
+				py::object originalStderr;  // Store original sys.stderr
+			};
+
+			// Global script execution state
+			extern Dia::Core::Containers::DynamicArrayC<AsyncTask, 16> gAsyncTasks;
+			extern OutputRedirection gOutputRedirection;
+			extern int gNextTaskId;
+			extern Dia::Core::Mutex gAsyncTaskMutex;  // Protect async task list
+
+			// Script execution helper functions
+			int ExecuteScriptInternal(const char* scriptPath, const char** args, int argCount);
+			int ExecuteStringInternal(const char* pythonCode);
 		}
 	}
 }

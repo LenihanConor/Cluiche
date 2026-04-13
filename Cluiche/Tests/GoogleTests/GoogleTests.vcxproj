@@ -269,6 +269,7 @@
     <ClCompile Include="Python\TestTypeConversion.cpp" />
     <ClCompile Include="Python\TestErrorHandling.cpp" />
     <ClCompile Include="Python\TestModule.cpp" />
+    <ClCompile Include="Python\TestScriptExecution.cpp" />
     <!-- Google Test Source Files - Compiled directly into project -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">
       <AdditionalIncludeDirectories>$(ProjectDir)../../../External/googletest/googletest/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
