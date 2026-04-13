@@ -6,10 +6,10 @@
 
 // Include all DiaPython feature public APIs
 #include "Lifecycle/Lifecycle.h"
+#include "TypeConversion/PythonObject.h"
+#include "TypeConversion/Conversion.h"
 
 // Additional features will be added in later phases:
-// #include "TypeConversion/PythonObject.h"
-// #include "TypeConversion/Conversion.h"
 // #include "Module/Module.h"
 // #include "ErrorHandling/Error.h"
 // #include "ScriptExecution/Script.h"
