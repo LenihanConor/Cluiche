@@ -258,3 +258,4 @@ External/googletest/
 **/full_test_results.txt
 **/threading_tests.txt
 test_event.cpp
+Dia/DiaInput/Events/remove_clone.py
