@@ -91,9 +91,9 @@ DiaCLI <command> --help          # Show command-specific help
 |---------|-------------|------|--------|
 | command-registry | Core command registration and discovery system | @docs/specs/features/dia/diacli/command-registry.md | Approved |
 | cli-parser | Argument parsing (positional, named, flags) | @docs/specs/features/dia/diacli/cli-parser.md | Approved |
-| help-system | Auto-generated help text from registered commands | TBD | Draft |
-| event-system | Lifecycle events for command execution | TBD | Draft |
-| python-bindings | Automatic Python exposure of all registered commands via DiaPython | TBD | Draft |
+| help-system | Auto-generated help text from registered commands | @docs/specs/features/dia/diacli/help-system.md | Approved |
+| event-system | Lifecycle events for command execution | @docs/specs/features/dia/diacli/event-system.md | Approved |
+| python-bindings | Automatic Python exposure of all registered commands via DiaPython | @docs/specs/features/dia/diacli/python-bindings.md | Approved |
 
 ## Platform Primitives Used
 
