@@ -15,8 +15,27 @@ namespace Dia
 	{
 		namespace Internal
 		{
-			// Global module registry
-			Dia::Core::Containers::HashTable<Dia::Core::StringCRC, ModuleImpl*> gModules;
+			// Global module registry accessor (uses std::unordered_map to avoid DiaCore HashTable bugs)
+			std::unordered_map<unsigned int, ModuleImpl*>& GetModuleRegistry()
+			{
+				static std::unordered_map<unsigned int, ModuleImpl*> moduleRegistry;
+				return moduleRegistry;
+			}
+
+			// Clear module registry and free all module implementations
+			void ClearModuleRegistry()
+			{
+				auto& registry = GetModuleRegistry();
+				for (auto& pair : registry)
+				{
+					if (pair.second)
+					{
+						delete pair.second->pybindModule;
+						delete pair.second;
+					}
+				}
+				registry.clear();
+			}
 
 			////////////////////////////////////////////////////////////////////////////////
 			// Validate module name (lowercase_with_underscores or dot.separated)
@@ -58,7 +77,13 @@ namespace Dia
 						// Convert py::args to PythonArgs
 						PythonArgs pythonArgs;
 						PythonArgsImpl* argsImpl = new PythonArgsImpl();
-						argsImpl->pyArgs = new py::args(args);
+
+						// Convert py::args to vector of py::object* (py::args cannot be copied/stored)
+						for (size_t i = 0; i < args.size(); i++)
+						{
+							argsImpl->args.push_back(new py::object(args[i]));
+						}
+
 						pythonArgs.SetImpl(argsImpl);
 
 						// Call user callback
@@ -101,6 +126,7 @@ namespace Dia
 		{
 			using namespace Internal;
 
+
 			// Validate module name
 			if (!ValidateModuleName(name))
 			{
@@ -108,42 +134,65 @@ namespace Dia
 				return nullptr;
 			}
 
+
 			// Check if module already exists
 			Dia::Core::StringCRC nameCRC(name);
-			if (gModules.ContainsKey(nameCRC))
+			auto& registry = GetModuleRegistry();
+			unsigned int currentSize = static_cast<unsigned int>(registry.size());
+
+			// Check if module already exists
+			unsigned int crcValue = nameCRC.Value();
+			auto it = registry.find(crcValue);
+			if (it != registry.end())
 			{
 				DIA_LOG_WARNING("DiaPython", "CreateModule: Module '%s' already exists", name);
 				return nullptr;
 			}
 
+
 			// Check hard limit of 32 modules
-			if (gModules.Size() >= 32)
+			if (currentSize >= 32)
 			{
 				DIA_LOG_ERROR("DiaPython", "CreateModule failed: Maximum 32 modules limit reached");
 				return nullptr;
 			}
 
+
 			// Create module impl
 			ModuleImpl* moduleImpl = new ModuleImpl();
 			moduleImpl->name = name;
 
+
 			// If Python initialized, create pybind11 module immediately
 			if (IsInitialized())
 			{
+
 				try
 				{
-					// Support nested modules via dot notation (e.g., "dia.cli")
-					moduleImpl->pybindModule = new py::module_(py::module_::import("sys").attr("modules"));
 
-					// Create module using pybind11
-					py::module_ mainModule = py::module_::import("__main__");
-					py::module_ newModule = py::module_::create_extension_module(name, nullptr, new py::module_::module_def());
+					// Create a new module using types.ModuleType
+					std::string createModuleCode = "import types; ";
+					createModuleCode += "_new_module = types.ModuleType('";
+					createModuleCode += name;
+					createModuleCode += "')";
+
+					py::exec(createModuleCode.c_str());
+
+
+					// Get the module object from globals
+					py::object newModuleObj = py::globals()["_new_module"];
+
 
 					// Add to sys.modules
-					py::module_::import("sys").attr("modules")[name] = newModule;
+					py::module_::import("sys").attr("modules")[name] = newModuleObj;
 
-					moduleImpl->pybindModule = new py::module_(newModule);
+
+					// Store as py::module_
+					moduleImpl->pybindModule = new py::module_(py::cast<py::module_>(newModuleObj));
 					moduleImpl->isPendingRegistration = false;
+
+
+					DIA_LOG_INFO("DiaPython", "CreateModule: Created module '%s'", name);
 				}
 				catch (const std::exception& ex)
 				{
@@ -160,7 +209,7 @@ namespace Dia
 			}
 
 			// Register in global module registry
-			gModules.Add(nameCRC, moduleImpl);
+			registry[crcValue] = moduleImpl;
 
 			// Return opaque Module pointer (cast ModuleImpl* to Module*)
 			return reinterpret_cast<Module*>(moduleImpl);
@@ -179,11 +228,13 @@ namespace Dia
 			}
 
 			Dia::Core::StringCRC nameCRC(name);
-			ModuleImpl** moduleImplPtr = gModules.TryGetItem(nameCRC);
+			unsigned int crcValue = nameCRC.Value();
+			auto& registry = GetModuleRegistry();
+			auto it = registry.find(crcValue);
 
-			if (moduleImplPtr && *moduleImplPtr)
+			if (it != registry.end() && it->second)
 			{
-				return reinterpret_cast<Module*>(*moduleImplPtr);
+				return reinterpret_cast<Module*>(it->second);
 			}
 
 			return nullptr;
@@ -199,6 +250,7 @@ namespace Dia
 			const char* docstring)
 		{
 			using namespace Internal;
+
 
 			// Validate inputs
 			if (!module)
@@ -219,19 +271,24 @@ namespace Dia
 				return;
 			}
 
+
 			// Cast Module* back to ModuleImpl*
 			ModuleImpl* moduleImpl = reinterpret_cast<ModuleImpl*>(module);
+
 
 			// If module has pybind11 handle, register immediately
 			if (moduleImpl->pybindModule)
 			{
+
 				try
 				{
 					// Wrap callback to catch C++ exceptions
 					py::object wrappedCallback = WrapCallback(callback, functionName);
 
+
 					// Register with pybind11
 					moduleImpl->pybindModule->attr(functionName) = wrappedCallback;
+
 
 					// Set docstring if provided
 					if (docstring && docstring[0] != '\0')

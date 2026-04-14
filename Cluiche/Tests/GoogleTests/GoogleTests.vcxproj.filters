@@ -40,6 +40,9 @@
     <Filter Include="Python">
       <UniqueIdentifier>{PYTHON01-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="CLI">
+      <UniqueIdentifier>{CLI00001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Mocks">
       <UniqueIdentifier>{89FC8CD8-H022-6e2a-AD9C-A5DD343CCF23}</UniqueIdentifier>
     </Filter>
@@ -257,6 +260,22 @@
     </ClCompile>
     <ClCompile Include="Python\TestIntegration.cpp">
       <Filter>Python</Filter>
+    </ClCompile>
+    <!-- CLI -->
+    <ClCompile Include="CLI\TestCommandRegistry.cpp">
+      <Filter>CLI</Filter>
+    </ClCompile>
+    <ClCompile Include="CLI\TestArgumentParser.cpp">
+      <Filter>CLI</Filter>
+    </ClCompile>
+    <ClCompile Include="CLI\TestHelpSystem.cpp">
+      <Filter>CLI</Filter>
+    </ClCompile>
+    <ClCompile Include="CLI\TestEventSystem.cpp">
+      <Filter>CLI</Filter>
+    </ClCompile>
+    <ClCompile Include="CLI\TestPythonBindings.cpp">
+      <Filter>CLI</Filter>
     </ClCompile>
     <!-- GoogleTest -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">

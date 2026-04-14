@@ -9,6 +9,8 @@ DiaPython is a Python embedding framework that provides infrastructure for integ
 
 **Key principle:** DiaPython is agnostic infrastructure - it doesn't know about CLI commands, graphics, or any specific Dia subsystem. It just provides the Python embedding foundation that other systems build upon.
 
+**Design decision:** Script execution is **synchronous only**. Asynchronous execution was removed for simplicity and to avoid GIL (Global Interpreter Lock) threading complexity. This matches DiaCLI's synchronous command model.
+
 ## Responsibilities
 
 - Manage Python interpreter lifecycle (initialize, shutdown, state checking)
@@ -134,11 +136,11 @@ namespace Dia::Python {
 
 | Feature | Description | Spec | Status |
 |---------|-------------|------|--------|
-| interpreter-lifecycle | Python interpreter initialization, shutdown, state management | [interpreter-lifecycle.md](../../features/dia/diapython/interpreter-lifecycle.md) | Approved |
-| script-execution | Execute .py files and Python code strings | [script-execution.md](../../features/dia/diapython/script-execution.md) | Approved |
-| module-api | Clean C++ API for creating Python modules (wraps pybind11) | [module-api.md](../../features/dia/diapython/module-api.md) | Approved |
-| type-conversion | C++ ↔ Python type conversion utilities | [type-conversion.md](../../features/dia/diapython/type-conversion.md) | Approved |
-| error-handling | Python exception handling and propagation | [error-handling.md](../../features/dia/diapython/error-handling.md) | Approved |
+| interpreter-lifecycle | Python interpreter initialization, shutdown, state management | [interpreter-lifecycle.md](../../features/dia/diapython/interpreter-lifecycle.md) | Done |
+| script-execution | Execute .py files and Python code strings (synchronous only) | [script-execution.md](../../features/dia/diapython/script-execution.md) | Done |
+| module-api | Clean C++ API for creating Python modules (wraps pybind11) | [module-api.md](../../features/dia/diapython/module-api.md) | Done |
+| type-conversion | C++ ↔ Python type conversion utilities | [type-conversion.md](../../features/dia/diapython/type-conversion.md) | Done |
+| error-handling | Python exception handling and propagation | [error-handling.md](../../features/dia/diapython/error-handling.md) | Done |
 
 ## Platform Primitives Used
 

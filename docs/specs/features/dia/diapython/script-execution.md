@@ -302,4 +302,6 @@ namespace Dia::Python {
 
 ## Status
 
-`Approved` - Ready for implementation
+**Done** - Implemented and tested. Core functionality working.
+
+**Note:** Async execution (ExecuteScriptAsync, ExecuteStringAsync, CancelTask, CancelAllTasks) was removed for simplicity. Synchronous execution is sufficient for DiaCLI's needs and eliminates GIL threading complexity.

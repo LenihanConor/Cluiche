@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Filename: Script.h
-// Description: Python script execution API (sync/async)
+// Description: Python script execution API (synchronous only)
 // Feature spec: docs/specs/features/dia/diapython/script-execution.md
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
@@ -11,12 +11,6 @@ namespace Dia
 {
 	namespace Python
 	{
-		// Callback signature for async script execution completion
-		// Parameters:
-		//   exitCode - Script exit code (0 = success, non-zero = error)
-		//   duration - Execution time in seconds
-		using ScriptCompletionCallback = std::function<void(int exitCode, float duration)>;
-
 		// Callback signature for output redirection
 		// Parameters:
 		//   text - Output text from Python stdout/stderr
@@ -38,31 +32,6 @@ namespace Dia
 		// Pre-condition: Python is initialized
 		int ExecuteString(const char* pythonCode);
 
-		// Execute Python script file (asynchronous)
-		// Parameters:
-		//   scriptPath - Path to .py file
-		//   args - Optional arguments
-		//   argCount - Number of arguments
-		//   callback - Called when script completes (on main thread)
-		// Returns: immediately with task ID (0 = error starting script)
-		// Pre-condition: Python is initialized
-		int ExecuteScriptAsync(
-			const char* scriptPath,
-			const char** args,
-			int argCount,
-			ScriptCompletionCallback callback
-		);
-
-		// Execute Python code string (asynchronous)
-		// Parameters:
-		//   pythonCode - Python code to execute
-		//   callback - Called when execution completes
-		// Returns: immediately with task ID (0 = error starting execution)
-		int ExecuteStringAsync(
-			const char* pythonCode,
-			ScriptCompletionCallback callback
-		);
-
 		// Redirect Python stdout/stderr to custom callbacks
 		// Parameters:
 		//   stdoutCallback - Called for each line of stdout (nullptr to leave unchanged)
@@ -76,17 +45,7 @@ namespace Dia
 		// Restore Python stdout/stderr to default behavior
 		void RestoreOutput();
 
-		// Cancel a specific async task
-		// Parameters:
-		//   taskId - Task ID returned by ExecuteScriptAsync/ExecuteStringAsync
-		// Returns: true if task was cancelled, false if task not found or already completed
-		bool CancelTask(int taskId);
-
-		// Cancel all running async tasks
-		// Returns: number of tasks cancelled
-		int CancelAllTasks();
-
-		// Events (TODO: Phase 7 - implement with Observer pattern)
+		// Events (TODO: implement with Observer pattern)
 		// void OnScriptExecuting(const char* scriptPath);
 		// void OnScriptExecuted(const char* scriptPath, int exitCode, float duration);
 		// void OnPythonError(const char* errorType, const char* errorMessage);

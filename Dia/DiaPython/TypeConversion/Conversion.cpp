@@ -158,7 +158,9 @@ namespace Dia
 			try
 			{
 				// Python coercion: int("123") = 123, int(42.7) = 42
-				return py::cast<int>(*impl->pyObject);
+				// Use Python's int() constructor for proper coercion
+				py::int_ pyInt(*impl->pyObject);
+				return py::cast<int>(pyInt);
 			}
 			catch (const py::cast_error& ex)
 			{
@@ -196,7 +198,9 @@ namespace Dia
 			try
 			{
 				// Python coercion: float(42) = 42.0, float("3.14") = 3.14
-				return py::cast<float>(*impl->pyObject);
+				// Use Python's float() constructor for proper coercion
+				py::float_ pyFloat(*impl->pyObject);
+				return py::cast<float>(pyFloat);
 			}
 			catch (const py::cast_error& ex)
 			{

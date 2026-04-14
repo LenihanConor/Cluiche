@@ -299,5 +299,6 @@ namespace Dia::Python {
 | FD-005 | ToString() returns const char* to internal cached string | Avoids memory management complexity; valid until PythonObject destroyed | Proposed |
 
 ## Status
+**Done** - Implemented and tested. Core functionality working.
 
 `Approved` - Ready for implementation

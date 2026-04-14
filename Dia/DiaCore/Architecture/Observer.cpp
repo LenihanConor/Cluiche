@@ -22,7 +22,7 @@ namespace Dia
 			int count = mObservers.Size();
 			int i;
 
-			for (i = 0; i < count; i++) 
+			for (i = 0; i < count; i++)
 			{
 				if (mObservers[i] == val)
 				{
@@ -32,7 +32,7 @@ namespace Dia
 
 			if (i < count)
 			{
-				mObservers.RemoveAt(count);
+				mObservers.RemoveAt(i);
 			}
 			else
 			{

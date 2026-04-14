@@ -200,9 +200,7 @@ namespace Dia
 			try
 			{
 				auto* impl = static_cast<Internal::PythonArgsImpl*>(mImpl);
-				if (!impl->pyArgs) return 0;
-
-				return static_cast<int>(impl->pyArgs->size());
+				return static_cast<int>(impl->args.size());
 			}
 			catch (const std::exception& ex)
 			{
@@ -224,28 +222,28 @@ namespace Dia
 			try
 			{
 				auto* impl = static_cast<Internal::PythonArgsImpl*>(mImpl);
-				if (!impl->pyArgs)
-				{
-					DIA_LOG_WARNING("DiaPython", "PythonArgs::GetArg(%d) called on null args", index);
-					return result;
-				}
 
-				if (index < 0 || index >= static_cast<int>(impl->pyArgs->size()))
+				if (index < 0 || index >= static_cast<int>(impl->args.size()))
 				{
 					DIA_LOG_WARNING("DiaPython", "PythonArgs::GetArg(%d) index out of bounds (count=%d)",
-						index, static_cast<int>(impl->pyArgs->size()));
+						index, static_cast<int>(impl->args.size()));
 					return result;
 				}
 
-				// Get the argument and wrap in PythonObject
-				py::object argObj = (*impl->pyArgs)[index];
+				// Get the argument from vector (args is vector<py::object*>)
+				py::object* argObjPtr = impl->args[index];
+				if (!argObjPtr)
+				{
+					DIA_LOG_WARNING("DiaPython", "PythonArgs::GetArg(%d) argument pointer is null", index);
+					return result;
+				}
 
 				auto* resultImpl = static_cast<Internal::PythonObjectImpl*>(result.mImpl);
 				if (resultImpl->pyObject)
 				{
 					delete resultImpl->pyObject;
 				}
-				resultImpl->pyObject = new py::object(argObj);
+				resultImpl->pyObject = new py::object(*argObjPtr);
 
 				return result;
 			}

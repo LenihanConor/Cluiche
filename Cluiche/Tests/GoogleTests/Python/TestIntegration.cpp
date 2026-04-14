@@ -26,7 +26,6 @@ protected:
 	void TearDown() override
 	{
 		RestoreOutput();
-		CancelAllTasks();
 
 		if (IsInitialized())
 		{
@@ -167,6 +166,7 @@ TEST_F(DiaPythonIntegrationTest, TypeConversion_WithErrorHandling_Works)
 // Integration Test 3: Async Execution + Task Management
 ////////////////////////////////////////////////////////////////////////////////
 
+#if 0  // DISABLED: Async functionality removed for simplicity
 TEST_F(DiaPythonIntegrationTest, AsyncExecution_MultipleScripts_Works)
 {
 	int completedCount = 0;
@@ -206,6 +206,8 @@ TEST_F(DiaPythonIntegrationTest, AsyncExecution_MultipleScripts_Works)
 		EXPECT_EQ(code, 0);
 	}
 }
+#endif  // DISABLED: AsyncExecution_MultipleScripts_Works
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Integration Test 4: Output Redirection
@@ -317,6 +319,7 @@ TEST_F(DiaPythonIntegrationTest, PythonException_LoggedAndPropagated)
 // Integration Test 7: Task Cancellation
 ////////////////////////////////////////////////////////////////////////////////
 
+#if 0  // DISABLED: Async functionality removed for simplicity
 TEST_F(DiaPythonIntegrationTest, TaskCancellation_Works)
 {
 	bool callbackInvoked = false;
@@ -342,6 +345,8 @@ TEST_F(DiaPythonIntegrationTest, TaskCancellation_Works)
 	// (timing-dependent, so we just verify no crash)
 	SUCCEED();
 }
+#endif  // DISABLED: TaskCancellation_Works
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Integration Test 8: Complex Module Interaction

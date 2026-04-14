@@ -70,9 +70,10 @@ namespace Dia
 
 				// Register pending modules (Phase 5: module-api)
 				// Iterate through all modules and register those that are pending
-				for (auto it = gModules.Begin(); it != gModules.End(); ++it)
+				auto& moduleRegistry = GetModuleRegistry();
+				for (auto& pair : moduleRegistry)
 				{
-					ModuleImpl* moduleImpl = it.Value();
+					ModuleImpl* moduleImpl = pair.second;
 					if (moduleImpl && moduleImpl->isPendingRegistration)
 					{
 						try
@@ -100,7 +101,13 @@ namespace Dia
 										// Convert py::args to PythonArgs
 										PythonArgs pythonArgs;
 										PythonArgsImpl* argsImpl = new PythonArgsImpl();
-										argsImpl->pyArgs = new py::args(args);
+
+										// Convert py::args to vector of py::object* (py::args cannot be copied/stored)
+										for (size_t i = 0; i < args.size(); i++)
+										{
+											argsImpl->args.push_back(new py::object(args[i]));
+										}
+
 										pythonArgs.SetImpl(argsImpl);
 
 										// Call user callback
@@ -199,6 +206,9 @@ namespace Dia
 			try
 			{
 				// TODO: Fire OnPythonShutdown event (requires Observer pattern integration)
+
+				// Clear module registry before shutting down Python
+				ClearModuleRegistry();
 
 				// Delete Python interpreter (RAII cleanup)
 				if (gState.interpreter)

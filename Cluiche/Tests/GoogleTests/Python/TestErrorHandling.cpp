@@ -39,22 +39,13 @@ protected:
 // Test: SyntaxError → ErrorCode::SyntaxError
 TEST_F(DiaPythonErrorHandlingTest, SyntaxError_ConvertsToCorrectErrorCode)
 {
-	// Execute Python code with syntax error
-	PythonObject result;
-	try
-	{
-		// This will trigger a SyntaxError in Python
-		result = ToPython("def foo(");  // Invalid syntax
+	// Execute Python code with syntax error using ExecuteString
+	int exitCode = ExecuteString("def foo(");  // Invalid syntax
 
-		// Try to execute it (if ToPython doesn't catch it)
-		// For now, we expect the conversion to handle it
-		FAIL() << "Expected exception to be thrown";
-	}
-	catch (...)
-	{
-		// Expected - syntax errors during execution
-		SUCCEED();
-	}
+	// ExecuteString should return non-zero exit code for syntax error
+	EXPECT_NE(exitCode, 0);
+	// Note: Specific error code mapping (ErrorCode::SyntaxError = 4) would require
+	// DiaPython to expose the ErrorCode enum in the public API
 }
 
 // Test: RuntimeError → ErrorCode::RuntimeException

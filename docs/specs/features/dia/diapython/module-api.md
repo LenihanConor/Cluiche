@@ -298,5 +298,6 @@ namespace Dia::Python {
 | FD-005 | Module, PythonObject, PythonArgs are opaque handles | Enforces SD-001; hides pybind11 from users; allows implementation changes | Proposed |
 
 ## Status
+**Done** - Implemented and tested. Core functionality working.
 
 `Approved` - Ready for implementation (depends on type-conversion feature)

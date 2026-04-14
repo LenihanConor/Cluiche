@@ -8,7 +8,7 @@
 | Application | @docs/specs/applications/dia.md | - |
 | System | @docs/specs/systems/dia/diacli.md | **python-bindings** |
 
-**Status:** `Approved`
+**Status:** `Done`
 
 ---
 

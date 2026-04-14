@@ -1,13 +1,12 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Filename: Script.cpp
-// Description: Python script execution implementation (sync/async)
+// Description: Python script execution implementation (synchronous only)
 // Feature spec: docs/specs/features/dia/diapython/script-execution.md
 ////////////////////////////////////////////////////////////////////////////////
 #include "Script.h"
 #include "../DiaPythonInternal.h"
 #include "../Lifecycle/Lifecycle.h"
 #include <DiaCore/Core/Logging/Logger.h>
-#include <thread>
 #include <chrono>
 #include <cstdio>
 
@@ -17,11 +16,8 @@ namespace Dia
 	{
 		namespace Internal
 		{
-			// Global script execution state
-			Dia::Core::Containers::DynamicArrayC<AsyncTask, 16> gAsyncTasks;
+			// Global output redirection state
 			OutputRedirection gOutputRedirection = { nullptr, nullptr, false, py::object(), py::object() };
-			int gNextTaskId = 1;
-			Dia::Core::Mutex gAsyncTaskMutex;
 
 			////////////////////////////////////////////////////////////////////////////////
 			// Execute Python script from file (internal helper)
@@ -201,199 +197,6 @@ namespace Dia
 			return Internal::ExecuteStringInternal(pythonCode);
 		}
 
-		////////////////////////////////////////////////////////////////////////////////
-		// Execute Python script file (asynchronous)
-		////////////////////////////////////////////////////////////////////////////////
-		int ExecuteScriptAsync(
-			const char* scriptPath,
-			const char** args,
-			int argCount,
-			ScriptCompletionCallback callback)
-		{
-			using namespace Internal;
-			using namespace Dia::Core;
-
-			// Validate inputs
-			if (!scriptPath || scriptPath[0] == '\0')
-			{
-				DIA_LOG_ERROR("DiaPython", "ExecuteScriptAsync failed: scriptPath is null or empty");
-				return 0;
-			}
-
-			if (!callback)
-			{
-				DIA_LOG_ERROR("DiaPython", "ExecuteScriptAsync failed: callback is null");
-				return 0;
-			}
-
-			// Check async task limit (16 concurrent)
-			{
-				ScopedLock<Mutex> lock(gAsyncTaskMutex);
-				if (gAsyncTasks.Size() >= 16)
-				{
-					DIA_LOG_ERROR("DiaPython", "ExecuteScriptAsync failed: Maximum 16 concurrent tasks reached");
-					return 0;
-				}
-			}
-
-			// Create async task
-			AsyncTask task;
-			task.taskId = gNextTaskId++;
-			task.scriptPath = scriptPath;
-			task.code = "";  // Empty for file execution
-			task.callback = callback;
-			task.isRunning = true;
-			task.isCancelled = false;
-
-			// Copy args for thread
-			std::vector<std::string> argsCopy;
-			for (int i = 0; i < argCount; i++)
-			{
-				if (args[i])
-				{
-					argsCopy.push_back(args[i]);
-				}
-			}
-
-			int taskId = task.taskId;
-
-			// Add to task list
-			{
-				ScopedLock<Mutex> lock(gAsyncTaskMutex);
-				gAsyncTasks.Add(task);
-			}
-
-			// Launch thread
-			std::thread([taskId, scriptPath = std::string(scriptPath), argsCopy, callback]()
-			{
-				// Execute script (acquires GIL automatically via pybind11)
-				// Create C-style args array
-				std::vector<const char*> argsPtr;
-				for (const auto& arg : argsCopy)
-				{
-					argsPtr.push_back(arg.c_str());
-				}
-
-				int exitCode = Internal::ExecuteScriptInternal(
-					scriptPath.c_str(),
-					argsPtr.empty() ? nullptr : argsPtr.data(),
-					static_cast<int>(argsPtr.size())
-				);
-
-				// Mark task as complete
-				bool wasCancelled = false;
-				{
-					ScopedLock<Mutex> lock(gAsyncTaskMutex);
-					for (unsigned int i = 0; i < gAsyncTasks.Size(); i++)
-					{
-						if (gAsyncTasks[i].taskId == taskId)
-						{
-							wasCancelled = gAsyncTasks[i].isCancelled;
-							gAsyncTasks.RemoveAt(i);
-							break;
-						}
-					}
-				}
-
-				// Invoke callback on main thread
-				// TODO: This needs proper main thread posting mechanism
-				// For now, invoke directly (Phase 7 will integrate with event system)
-				if (!wasCancelled && callback)
-				{
-					// Calculate duration (approximation)
-					callback(exitCode, 0.0f);
-				}
-
-			}).detach();  // Detach thread
-
-			DIA_LOG_INFO("DiaPython", "ExecuteScriptAsync started: %s (taskId=%d)", scriptPath, taskId);
-			return taskId;
-		}
-
-		////////////////////////////////////////////////////////////////////////////////
-		// Execute Python code string (asynchronous)
-		////////////////////////////////////////////////////////////////////////////////
-		int ExecuteStringAsync(
-			const char* pythonCode,
-			ScriptCompletionCallback callback)
-		{
-			using namespace Internal;
-			using namespace Dia::Core;
-
-			// Validate inputs
-			if (!pythonCode || pythonCode[0] == '\0')
-			{
-				DIA_LOG_ERROR("DiaPython", "ExecuteStringAsync failed: pythonCode is null or empty");
-				return 0;
-			}
-
-			if (!callback)
-			{
-				DIA_LOG_ERROR("DiaPython", "ExecuteStringAsync failed: callback is null");
-				return 0;
-			}
-
-			// Check async task limit (16 concurrent)
-			{
-				ScopedLock<Mutex> lock(gAsyncTaskMutex);
-				if (gAsyncTasks.Size() >= 16)
-				{
-					DIA_LOG_ERROR("DiaPython", "ExecuteStringAsync failed: Maximum 16 concurrent tasks reached");
-					return 0;
-				}
-			}
-
-			// Create async task
-			AsyncTask task;
-			task.taskId = gNextTaskId++;
-			task.scriptPath = "<string>";
-			task.code = pythonCode;
-			task.callback = callback;
-			task.isRunning = true;
-			task.isCancelled = false;
-
-			int taskId = task.taskId;
-
-			// Add to task list
-			{
-				ScopedLock<Mutex> lock(gAsyncTaskMutex);
-				gAsyncTasks.Add(task);
-			}
-
-			// Launch thread
-			std::thread([taskId, code = std::string(pythonCode), callback]()
-			{
-				// Execute code (acquires GIL automatically via pybind11)
-				int exitCode = Internal::ExecuteStringInternal(code.c_str());
-
-				// Mark task as complete
-				bool wasCancelled = false;
-				{
-					ScopedLock<Mutex> lock(gAsyncTaskMutex);
-					for (unsigned int i = 0; i < gAsyncTasks.Size(); i++)
-					{
-						if (gAsyncTasks[i].taskId == taskId)
-						{
-							wasCancelled = gAsyncTasks[i].isCancelled;
-							gAsyncTasks.RemoveAt(i);
-							break;
-						}
-					}
-				}
-
-				// Invoke callback on main thread
-				// TODO: This needs proper main thread posting mechanism
-				// For now, invoke directly (Phase 7 will integrate with event system)
-				if (!wasCancelled && callback)
-				{
-					callback(exitCode, 0.0f);
-				}
-
-			}).detach();  // Detach thread
-
-			DIA_LOG_INFO("DiaPython", "ExecuteStringAsync started (taskId=%d)", taskId);
-			return taskId;
-		}
 
 		////////////////////////////////////////////////////////////////////////////////
 		// Redirect Python stdout/stderr to custom callbacks
@@ -523,61 +326,5 @@ namespace Dia
 			}
 		}
 
-		////////////////////////////////////////////////////////////////////////////////
-		// Cancel a specific async task
-		////////////////////////////////////////////////////////////////////////////////
-		bool CancelTask(int taskId)
-		{
-			using namespace Internal;
-			using namespace Dia::Core;
-
-			ScopedLock<Mutex> lock(gAsyncTaskMutex);
-
-			for (unsigned int i = 0; i < gAsyncTasks.Size(); i++)
-			{
-				if (gAsyncTasks[i].taskId == taskId)
-				{
-					if (gAsyncTasks[i].isRunning)
-					{
-						// Mark as cancelled (thread will check this flag)
-						gAsyncTasks[i].isCancelled = true;
-
-						DIA_LOG_INFO("DiaPython", "Cancelled async task %d", taskId);
-						return true;
-					}
-				}
-			}
-
-			return false;
-		}
-
-		////////////////////////////////////////////////////////////////////////////////
-		// Cancel all running async tasks
-		////////////////////////////////////////////////////////////////////////////////
-		int CancelAllTasks()
-		{
-			using namespace Internal;
-			using namespace Dia::Core;
-
-			ScopedLock<Mutex> lock(gAsyncTaskMutex);
-
-			int cancelledCount = 0;
-
-			for (unsigned int i = 0; i < gAsyncTasks.Size(); i++)
-			{
-				if (gAsyncTasks[i].isRunning)
-				{
-					gAsyncTasks[i].isCancelled = true;
-					cancelledCount++;
-				}
-			}
-
-			if (cancelledCount > 0)
-			{
-				DIA_LOG_INFO("DiaPython", "Cancelled %d async tasks", cancelledCount);
-			}
-
-			return cancelledCount;
-		}
 	}
 }

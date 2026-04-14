@@ -9,11 +9,11 @@
 #include <pybind11/embed.h>
 #include "ErrorHandling/Error.h"  // For ErrorCode enum
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
-#include <DiaCore/Containers/HashTables/HashTable.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Threading/Mutex.h>
 #include <string>
 #include <functional>
+#include <unordered_map>
 
 namespace py = pybind11;
 
@@ -46,7 +46,14 @@ namespace Dia
 			// PythonArgs implementation (Phase 3: type-conversion)
 			struct PythonArgsImpl
 			{
-				py::args* pyArgs = nullptr;  // Pointer to pybind11::args (not owned)
+				std::vector<py::object*> args;  // Heap-allocated py::objects
+				~PythonArgsImpl()
+				{
+					for (auto* obj : args)
+					{
+						delete obj;
+					}
+				}
 			};
 
 			// Error handling structures (Phase 4: error-handling)
@@ -94,28 +101,17 @@ namespace Dia
 				Dia::Core::Containers::DynamicArrayC<FunctionRegistration, 32> pendingFunctions;
 			};
 
-			// Global module registry
-			extern Dia::Core::Containers::HashTable<Dia::Core::StringCRC, ModuleImpl*> gModules;
+			// Global module registry accessor (uses std::unordered_map to avoid DiaCore HashTable bugs)
+			std::unordered_map<unsigned int, ModuleImpl*>& GetModuleRegistry();
+			void ClearModuleRegistry();
 
 			// Module API helper functions
 			bool ValidateModuleName(const char* name);
 			py::object WrapCallback(PythonCallback callback, const char* functionName);
 
-			// Script Execution structures (Phase 6: script-execution)
-			// Forward declarations from Script.h
-			using ScriptCompletionCallback = std::function<void(int, float)>;
+			// Script Execution structures (script-execution feature - synchronous only)
+			// Forward declaration from Script.h
 			using OutputCallback = std::function<void(const char*)>;
-
-			// Async execution task
-			struct AsyncTask
-			{
-				int taskId;
-				std::string scriptPath;  // Or "<string>" for code execution
-				std::string code;        // Empty for file execution
-				ScriptCompletionCallback callback;
-				bool isRunning;
-				bool isCancelled;
-			};
 
 			// Output redirection state
 			struct OutputRedirection
@@ -127,11 +123,8 @@ namespace Dia
 				py::object originalStderr;  // Store original sys.stderr
 			};
 
-			// Global script execution state
-			extern Dia::Core::Containers::DynamicArrayC<AsyncTask, 16> gAsyncTasks;
+			// Global output redirection state
 			extern OutputRedirection gOutputRedirection;
-			extern int gNextTaskId;
-			extern Dia::Core::Mutex gAsyncTaskMutex;  // Protect async task list
 
 			// Script execution helper functions
 			int ExecuteScriptInternal(const char* scriptPath, const char** args, int argCount);

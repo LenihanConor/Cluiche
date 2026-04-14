@@ -23,7 +23,7 @@ responsibilities:
   - Initialize and manage the Python interpreter (singleton, single-threaded GIL)
   - Convert between C++ and Python types (int, float, bool, string)
   - Register C++ functions as Python modules
-  - Execute Python scripts and code strings (synchronous and asynchronous)
+  - Execute Python scripts and code strings (synchronous only)
   - Handle Python exceptions and convert to error codes
   - Redirect Python stdout/stderr for output capture
   - Provide opaque handles (PythonObject, Module) that hide pybind11
@@ -59,15 +59,10 @@ public_api:
     - CreateModule
     - GetModule
     - AddFunction
-    - AddFunctionOverload
     - ExecuteScript
     - ExecuteString
-    - ExecuteScriptAsync
-    - ExecuteStringAsync
     - RedirectOutput
     - RestoreOutput
-    - CancelTask
-    - CancelAllTasks
 
 dependencies:
   required:
@@ -112,7 +107,7 @@ Implemented features:
 |----|----------|--------|
 | SD-001 | Wrap pybind11, don't expose it | ✅ Compliant - All public headers use opaque handles (PythonObject, Module, PythonArgs). pybind11 types only in .cpp and DiaPythonInternal.h |
 | SD-002 | Python interpreter is singleton | ✅ Compliant - Single global `InterpreterState gState`. Initialize() is idempotent. |
-| SD-003 | Python interpreter is single-threaded (GIL) | ✅ Compliant - GIL ensures thread safety. Async execution runs on worker threads but GIL serializes Python code. |
+| SD-003 | Python interpreter is single-threaded (GIL) | ✅ Compliant - GIL ensures thread safety. Script execution is synchronous only. |
 | SD-004 | Opaque handle types (Module, PythonObject, PythonArgs) | ✅ Compliant - All handles use void* mImpl or reinterpret_cast. Internal pybind11 types hidden. |
 | SD-005 | Python exceptions converted to exit codes | ✅ Compliant - ConvertException() maps py::error_already_set to ErrorCode enum. No pybind11 exceptions in public API. |
 
@@ -276,30 +271,13 @@ help(my_math.add)  # Shows: "Add two numbers"
 
 ### Script Execution
 
+**Note:** Script execution is **synchronous only**. Asynchronous execution (ExecuteScriptAsync, ExecuteStringAsync, CancelTask, CancelAllTasks) was removed to simplify the implementation and avoid GIL threading complexity. This matches DiaCLI's synchronous command model.
+
 ```cpp
 namespace Dia::Python {
     // Synchronous execution
     int ExecuteScript(const char* scriptPath, const char** args = nullptr, int argCount = 0);
     int ExecuteString(const char* pythonCode);
-    
-    // Asynchronous execution
-    using ScriptCompletionCallback = std::function<void(int exitCode, float duration)>;
-    
-    int ExecuteScriptAsync(
-        const char* scriptPath,
-        const char** args,
-        int argCount,
-        ScriptCompletionCallback callback
-    );
-    
-    int ExecuteStringAsync(
-        const char* pythonCode,
-        ScriptCompletionCallback callback
-    );
-    
-    // Task management
-    bool CancelTask(int taskId);
-    int CancelAllTasks();
     
     // Output redirection
     using OutputCallback = std::function<void(const char* text)>;
@@ -313,7 +291,7 @@ namespace Dia::Python {
 }
 ```
 
-**Example - Synchronous:**
+**Example - Script Execution:**
 ```cpp
 using namespace Dia::Python;
 
@@ -329,26 +307,6 @@ exitCode = ExecuteString("print('Hello from Python')");
 // Execute with arguments
 const char* args[] = { "arg1", "arg2" };
 exitCode = ExecuteScript("scripts/process.py", args, 2);
-```
-
-**Example - Asynchronous:**
-```cpp
-using namespace Dia::Python;
-
-// Execute script asynchronously
-int taskId = ExecuteScriptAsync(
-    "scripts/long_running.py",
-    nullptr,
-    0,
-    [](int exitCode, float duration) {
-        printf("Script completed with exit code %d in %.2f seconds\n", exitCode, duration);
-    }
-);
-
-// Cancel if needed
-if (userCancelled) {
-    CancelTask(taskId);
-}
 ```
 
 **Example - Output Redirection:**
@@ -477,17 +435,7 @@ int main() {
     // 4. Execute script file
     exitCode = ExecuteScript("scripts/my_script.py");
     
-    // 5. Execute asynchronously
-    int taskId = ExecuteScriptAsync(
-        "scripts/async_script.py",
-        nullptr,
-        0,
-        [](int code, float duration) {
-            printf("Async script finished: %d (%.2fs)\n", code, duration);
-        }
-    );
-    
-    // 6. Cleanup
+    // 5. Cleanup
     Shutdown();
     
     return 0;
@@ -499,32 +447,29 @@ int main() {
 ### Thread Safety
 
 - **Python GIL**: All Python code executes with the Global Interpreter Lock, ensuring thread safety
-- **Async execution**: Scripts run on worker threads, but GIL serializes Python operations
-- **Async task list**: Protected by `Dia::Core::Mutex` for thread-safe task management
-- **Module registry**: Not thread-safe - create modules before multi-threaded execution
+- **Single-threaded execution**: Script execution is synchronous (no async threading)
+- **Module registry**: Not thread-safe - create modules before multi-threaded execution (if called from multiple threads)
 
 ### Memory Management
 
 - **PythonObject**: Reference-counted via pybind11. Copy constructor increments refcount.
 - **Modules**: Never destroyed. Created once and live for entire application lifetime.
 - **Strings**: ToString() returns pointer to internal cache. Valid until PythonObject destroyed.
-- **Async tasks**: Removed from task list when complete. Threads are detached.
 
 ### Performance
 
 - **Initialization**: Python interpreter creation takes ~50-100ms
 - **Type conversion**: Minimal overhead (direct pybind11 casts)
-- **Module lookup**: O(1) via StringCRC hash table
+- **Module lookup**: O(1) via std::unordered_map hash table
 - **Script execution**: Performance depends on Python code complexity
-- **Async limit**: 16 concurrent tasks to prevent thread explosion
 
 ### Limitations
 
-- **No timeout**: Scripts can run indefinitely (by design - FD-004)
+- **No async execution**: Removed for simplicity - all scripts execute synchronously
+- **No timeout**: Scripts can run indefinitely (by design)
 - **Single interpreter**: Only one Python interpreter per process (SD-002)
 - **No nested modules**: Module names like "dia.cli" supported, but not true nesting
-- **Basic output redirection**: Current implementation is simplified (may improve in Phase 7)
-- **Callback threading**: Async callbacks currently invoke on worker thread (Phase 7 will add main thread posting)
+- **Basic output redirection**: Current implementation is simplified
 
 ## File Structure
 
