@@ -246,3 +246,15 @@ Cluiche/Cluiche.VC.db
 # MkDocs build output
 .mkdocs-site/
 venv/
+
+# DiaPython - Python runtime files (use via External/Python311-Win32/)
+External/Python311-Win32/
+External/External/
+
+# GoogleTest submodule (should be added as proper submodule)
+External/googletest/
+
+# Test output files
+**/full_test_results.txt
+**/threading_tests.txt
+test_event.cpp
