@@ -12,7 +12,7 @@ Platform → Application → System → Feature
 |-------|----------|---------|----------|
 | **Platform** | `platform/Cluiche.md` | Cross-app decisions, platform-wide architecture | Platform-wide architecture principles, binding decisions (PD-xxx) |
 | **Application** | `applications/*.md` | Per-app purpose, systems list, app-specific architecture | Dia (engine), Cluiche (game), GoogleTest |
-| **System** | `systems/<app>/*.md` | Bounded domains within an app, public interfaces | DiaBuildCLI, DiaCore, ApplicationFlow, Levels |
+| **System** | `systems/<app>/*.md` | Bounded domains within an app, public interfaces | DiaCLI, DiaCore, ApplicationFlow, Levels |
 | **Feature** | `features/<app>/<system>/*.md` | Implementation units, tasks, acceptance criteria | Individual game features, engine capabilities, tool features |
 
 ## 🔗 Traceability
@@ -147,7 +147,8 @@ Features cannot move to **Approved** status until:
 - [**googletests.md**](applications/googletests.md) - GoogleTests unit testing suite
 
 ### System Level
-- [**diabuildcli.md**](systems/dia/diabuildcli.md) - DiaBuildCLI system under Dia application
+- [**diacli.md**](systems/dia/diacli.md) - DiaCLI system under Dia application
+- [**diapython.md**](systems/dia/diapython.md) - DiaPython system under Dia application
 - **applicationflow.md** - ApplicationFlow system under Cluiche game (TODO)
 - **levels.md** - Levels system under Cluiche game (TODO)
 - More systems to be defined via `/spec-system`

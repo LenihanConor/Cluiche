@@ -152,11 +152,19 @@ nav:
       - Example App: specs/applications/example-app.md
     - Systems:
       - Dia Systems:
-        - DiaBuildCLI: specs/systems/dia/diabuildcli.md
+        - DiaCLI: specs/systems/dia/diacli.md
+        - DiaPython: specs/systems/dia/diapython.md
       - Cluiche Systems:
         - Example System: specs/systems/example-app/example-system.md
     - Features:
-      - Example Feature: specs/features/example-app/example-system/example-feature.md
+      - Dia Features:
+        - DiaPython - Interpreter Lifecycle: specs/features/dia/diapython/interpreter-lifecycle.md
+        - DiaPython - Script Execution: specs/features/dia/diapython/script-execution.md
+        - DiaPython - Module API: specs/features/dia/diapython/module-api.md
+        - DiaPython - Type Conversion: specs/features/dia/diapython/type-conversion.md
+        - DiaPython - Error Handling: specs/features/dia/diapython/error-handling.md
+      - Example Features:
+        - Example Feature: specs/features/example-app/example-system/example-feature.md
 
 extra:
   social:

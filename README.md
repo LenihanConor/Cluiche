@@ -7,7 +7,7 @@
 ## What is Cluiche?
 
 **Cluiche Platform** provides:
-- **Dia Engine Application** - Shared game engine infrastructure (DiaCore, DiaMaths, DiaGraphics, DiaBuildCLI, and 13+ subsystems)
+- **Dia Engine Application** - Shared game engine infrastructure (DiaCore, DiaMaths, DiaGraphics, DiaCLI, and 13+ subsystems)
 - **Cluiche Game Application** - Demo game and testbed showcasing the Dia engine with three-thread architecture (Main/Render/Sim)
 - **GoogleTest Application** - Unit testing suite
 - **Future Game Applications** - Your game projects built on Dia
@@ -28,7 +28,7 @@ Cluiche/                        [Platform Root]
 │   ├── DiaGraphics            - Platform-agnostic rendering (ICanvas)
 │   ├── DiaInput               - Input event system
 │   ├── DiaUI                  - UI integration (Awesomium)
-│   ├── DiaBuildCLI            - Plugin-based CLI build tools [NEW]
+│   ├── DiaCLI                 - Plugin-based CLI build tools [NEW]
 │   └── [10+ more subsystems]
 │
 ├── Cluiche/                    [Cluiche Game Application]

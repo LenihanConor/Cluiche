@@ -1,16 +1,16 @@
-# System Spec: DiaBuildCLI
+# System Spec: DiaCLI
 
 ## Parent Application
 @docs/specs/applications/dia.md
 
 ## Purpose
 
-DiaBuildCLI is a plugin-based command-line interface framework that enables extensible build operations, asset pipeline processing, and developer tooling for the Dia engine. It provides a base CLI infrastructure where other Dia modules can register custom commands for building editor tools, compiling assets, processing pipelines, and running headless operations. The system is designed for both interactive use and automation via scripts and CI/CD pipelines.
+DiaCLI is a plugin-based command-line interface framework only - providing command registration, argument parsing, and execution infrastructure. It ships with no built-in commands; other Dia modules register their own commands (build operations, asset pipelines, developer tools) via the framework's public API. The system is designed for both interactive use and automation via scripts and CI/CD pipelines.
 
 ## Responsibilities
 
 - Provide command registration API for other modules to add CLI commands
-- Parse command-line arguments in format: `DiaBuildCLI <cmd> <args>`
+- Parse command-line arguments in format: `DiaCLI <cmd> <args>`
 - Execute registered commands with proper error handling and exit codes
 - Emit lifecycle events (command registration, execution, errors)
 - Generate help text and command discovery
@@ -22,7 +22,7 @@ DiaBuildCLI is a plugin-based command-line interface framework that enables exte
 
 **Command Registration:**
 ```cpp
-namespace Dia::BuildCLI {
+namespace Dia::CLI {
     // Register a new command
     void RegisterCommand(
         const StringCRC& name,
@@ -40,7 +40,7 @@ namespace Dia::BuildCLI {
 
 **Command Execution:**
 ```cpp
-namespace Dia::BuildCLI {
+namespace Dia::CLI {
     // Execute a registered command by name
     int ExecuteCommand(
         const StringCRC& commandName,
@@ -80,9 +80,9 @@ struct CommandArgs {
 
 **CLI Format:**
 ```bash
-DiaBuildCLI <command> [args...]
-DiaBuildCLI --help                    # Show all commands
-DiaBuildCLI <command> --help          # Show command-specific help
+DiaCLI <command> [args...]
+DiaCLI --help                    # Show all commands
+DiaCLI <command> --help          # Show command-specific help
 ```
 
 ## Features
@@ -93,6 +93,7 @@ DiaBuildCLI <command> --help          # Show command-specific help
 | cli-parser | Argument parsing (positional, named, flags) | TBD | Draft |
 | help-system | Auto-generated help text from registered commands | TBD | Draft |
 | event-system | Lifecycle events for command execution | TBD | Draft |
+| python-bindings | Automatic Python exposure of all registered commands via DiaPython | TBD | Draft |
 
 ## Platform Primitives Used
 
@@ -103,8 +104,11 @@ DiaBuildCLI <command> --help          # Show command-specific help
 
 ## Dependencies on Other Systems
 
-- None initially - DiaBuildCLI is a foundational system
-- Future: Other Dia systems will depend on DiaBuildCLI to register commands
+**Required:**
+- **DiaPython** - To expose all registered commands to Python automatically. DiaCLI depends on DiaPython to create Python bindings without requiring pybind11 headers.
+
+**Dependents:**
+- Future: Other Dia systems (DiaEditor, asset tools) will depend on DiaCLI to register commands, which automatically become available in C++, CLI, and Python
 
 ## Out of Scope
 
@@ -112,7 +116,7 @@ DiaBuildCLI <command> --help          # Show command-specific help
 - **Interactive prompts** - Commands are non-interactive for scriptability
 - **Complex argument parsing** - No subcommands, option chains, or advanced parsing (keep simple)
 - **Command aliasing/shortcuts** - Commands use full names only
-- **Configuration files** - Commands receive arguments only (no .diabuildrc)
+- **Configuration files** - Commands receive arguments only (no .diaclirc)
 - **Parallel execution** - Commands run sequentially
 
 ## Decisions
@@ -124,6 +128,7 @@ DiaBuildCLI <command> --help          # Show command-specific help
 | SD-003 | Commands are stateless (no persistent state between invocations) | Simplifies implementation; predictable behavior; easier testing | All features | Accepted | Yes |
 | SD-004 | No interactive prompts (headless by default) | Enables scripting and automation; prevents CI/CD hangs | All features | Accepted | Yes |
 | SD-005 | Registered commands stored in global registry (Singleton) | Simple access pattern; matches engine singleton usage | This system | Accepted | Yes |
+| SD-006 | DiaCLI depends on DiaPython for automatic Python exposure | Commands registered once are available in C++, CLI, and Python; no pybind11 in DiaCLI headers | All features | Accepted | Yes |
 
 **Status values:** `Proposed` · `Accepted` · `Rejected` · `Superseded`
 **Binding:** `Yes` = enforced constraint on all features in this system · `No` = guidance only
@@ -134,21 +139,22 @@ DiaBuildCLI <command> --help          # Show command-specific help
 |----|--------|----------|----------------------------|
 | PD-001 | Platform | Use StringCRC for all entity/component IDs | Command names are StringCRC, not raw strings. Enables compile-time validation and efficient lookup. |
 | PD-004 | Platform | No STL containers in public APIs | Use DynamicArrayC, HashTable instead of std::vector, std::map in CommandArgs and CommandRegistry. |
-| PD-006 | Platform | Visual Studio project files are source of truth | DiaBuildCLI must be a .vcxproj with proper filters. Cannot use CMake or other build systems. |
-| AD-001 | Dia App | Module system with YAML frontmatter documentation | Create dia.buildcli.architecture.module.md with public API, dependencies, responsibilities. |
+| PD-006 | Platform | Visual Studio project files are source of truth | DiaCLI must be a .vcxproj with proper filters. Cannot use CMake or other build systems. |
+| AD-001 | Dia App | Module system with YAML frontmatter documentation | Create dia.cli.architecture.module.md with public API, dependencies, responsibilities. |
 | AD-002 | Dia App | No STL containers in public APIs | Reinforces PD-004 - use Dia containers throughout. |
-| AD-003 | Dia App | Namespace convention: `Dia::<Module>::` | All code in `Dia::BuildCLI::` namespace. |
+| AD-003 | Dia App | Namespace convention: `Dia::<Module>::` | All code in `Dia::CLI::` namespace. |
 
 ## AI Review Questions
 
 | # | Section | Question | Answer |
 |---|---------|----------|--------|
-| 1 | Purpose | Should DiaBuildCLI be an executable or a library? | Library with a thin main.cpp wrapper. Allows other tools to link against it and reuse command registration. |
-| 2 | Public Interfaces | Should commands support subcommands (e.g., `DiaBuildCLI asset compile`)? | No - keep simple. Use distinct command names instead: `compile-asset`, `validate-asset`. Subcommands add complexity. |
-| 3 | Dependencies | Does DiaBuildCLI need DiaApplication's Module system? | No - DiaBuildCLI is a build tool, not a runtime application. It doesn't use ProcessingUnits/Phases. |
+| 1 | Purpose | Should DiaCLI be an executable or a library? | Library with a thin main.cpp wrapper. Allows other tools to link against it and reuse command registration. |
+| 2 | Public Interfaces | Should commands support subcommands (e.g., `DiaCLI asset compile`)? | No - keep simple. Use distinct command names instead: `compile-asset`, `validate-asset`. Subcommands add complexity. |
+| 3 | Dependencies | Does DiaCLI need DiaApplication's Module system? | No - DiaCLI is a build tool, not a runtime application. It doesn't use ProcessingUnits/Phases. |
 | 4 | Events | Should events use Observer pattern or callbacks? | Observer pattern - consistent with DiaCore/Architecture/Observer. Allows multiple listeners. |
-| 5 | Scope | Should asset compilation be in DiaBuildCLI or separate system? | Start in DiaBuildCLI via registered commands. If complexity grows, refactor to DiaAssetPipeline system later. |
+| 5 | Scope | Should asset compilation be in DiaCLI or separate system? | Start in DiaCLI via registered commands. If complexity grows, refactor to DiaAssetPipeline system later. |
 | 6 | Out of Scope | Should we support piping/stdin for CI/CD scenarios? | TBD - defer until concrete use case. Start with argv only. |
+| 7 | Dependencies | How does DiaCLI expose commands to Python? | DiaCLI depends on DiaPython and uses its API (CreateModule, AddFunction) to auto-expose all registered commands. DiaCLI never includes pybind11 headers. |
 
 ## Status
 

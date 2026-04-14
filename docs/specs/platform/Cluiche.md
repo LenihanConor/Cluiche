@@ -35,7 +35,7 @@ The Dia engine is a modular C++ framework organized into subsystems:
 - **DiaUI** / **DiaUIAwesomium** - UI systems using Awesomium HTML framework
 
 **Tools & Build Systems:**
-- **DiaBuildCLI** - Plugin-based CLI framework for build operations and asset pipelines
+- **DiaCLI** - Plugin-based CLI framework for build operations and asset pipelines
 
 **Other Subsystems:**
 - **DiaPhysics** - Physics simulation (planned)

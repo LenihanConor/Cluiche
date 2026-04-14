@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Platform Architecture
 
 - **Platform: Cluiche** - The overall game development platform
-- **Application: Dia** - The game engine (DiaCore, DiaMaths, DiaGraphics, DiaBuildCLI, etc.) - organized as an "application" for spec purposes but serves as shared engine code
+- **Application: Dia** - The game engine (DiaCore, DiaMaths, DiaGraphics, DiaCLI, etc.) - organized as an "application" for spec purposes but serves as shared engine code
 - **Application: CluicheTest** - Demo game and engine testbed that showcases Dia capabilities
 - **Application: GoogleTest** - Unit testing suite
 - **Future Applications** - Your actual game projects built on Dia
@@ -85,7 +85,7 @@ Use `Tools/dia_modules.py` to analyze module dependencies and generate graphs.
 **DiaInput** (`Dia/DiaInput/`) - Input handling
 **DiaUI/DiaUIAwesomium** (`Dia/DiaUI*/`) - UI systems using Awesomium
 **DiaSFML** (`Dia/DiaSFML/`) - SFML integration layer
-**DiaBuildCLI** (`Dia/DiaBuildCLI/`) - Plugin-based CLI framework for build operations and asset pipelines
+**DiaCLI** (`Dia/DiaCLI/`) - Plugin-based CLI framework for build operations and asset pipelines
 
 ### Component System
 

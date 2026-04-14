@@ -28,7 +28,7 @@ The **Cluiche platform** supports multiple applications, all built on the **Dia 
                          ↓ depend on
 ┌─────────────────────────────────────────────────────────┐
 │  Dia Engine (13+ subsystems)                            │
-│  - DiaCore, DiaMaths, DiaGraphics, DiaBuildCLI          │
+│  - DiaCore, DiaMaths, DiaGraphics, DiaCLI          │
 │  - DiaApplication (Module/Phase/ProcessingUnit)         │
 │  - Graphics, Input, Physics, UI, Build Tools            │
 └─────────────────────────────────────────────────────────┘
@@ -90,7 +90,7 @@ The Cluiche architecture is guided by these core principles:
 
 ### Dia Engine Application
 
-**Purpose:** Shared game engine infrastructure providing all subsystems (DiaCore, DiaMaths, DiaGraphics, DiaBuildCLI, etc.)
+**Purpose:** Shared game engine infrastructure providing all subsystems (DiaCore, DiaMaths, DiaGraphics, DiaCLI, etc.)
 
 **Role:** While organized as an "application" in the spec hierarchy, Dia functionally serves as the shared engine code that all other applications (games, tools, tests) depend on.
 
