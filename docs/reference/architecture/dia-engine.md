@@ -37,7 +37,7 @@ Detailed architecture of the Dia game engine, the shared engine infrastructure f
 | **DiaSFML** | ✅ Stable | SFML backend (graphics/input/window) |
 | **DiaUIAwesomium** | ✅ Stable | Awesomium UI backend |
 | **DiaArchitecture** | ✅ Stable | Component system, Observer, Singleton |
-| **DiaCLI** | 📝 Spec | Plugin-based CLI framework for build tools |
+| **DiaAPI** | 📝 Spec | Plugin-based CLI framework for build tools |
 | **DiaIO** | 🚧 Stub | File I/O |
 | **DiaPhysics** | 🚧 Stub | Physics simulation |
 | **DiaAI** | 🚧 Stub | AI pathfinding |

@@ -9,7 +9,7 @@ Get oriented to the Cluiche codebase in 5 minutes.
 **Cluiche** is a game development platform with multiple applications:
 
 - **Platform: Cluiche** - Overall game development platform
-- **Application: Dia** - The game engine (DiaCore, DiaMaths, DiaGraphics, DiaCLI, etc.) providing 13+ subsystems
+- **Application: Dia** - The game engine (DiaCore, DiaMaths, DiaGraphics, DiaAPI, etc.) providing 13+ subsystems
 - **Application: Cluiche (Game)** - Demo game showcasing the Dia engine with three independent threads:
   - **Main Thread** - Bootstraps the app, coordinates UI
   - **Render Thread** - Renders graphics at 60 FPS
