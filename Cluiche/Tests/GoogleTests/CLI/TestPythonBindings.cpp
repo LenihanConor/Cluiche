@@ -1,13 +1,13 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Filename: TestPythonBindings.cpp
-// Description: Unit tests for DiaCLI Python bindings
+// Description: Unit tests for DiaAPI Python bindings
 // Feature spec: docs/specs/features/dia/diacli/python-bindings.md
 ////////////////////////////////////////////////////////////////////////////////
 #include <gtest/gtest.h>
-#include <DiaCLI/DiaCLI.h>
+#include <DiaAPI/DiaAPI.h>
 #include <DiaPython/DiaPython.h>
 
-using namespace Dia::CLI;
+using namespace Dia::API;
 using namespace Dia::Python;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -22,16 +22,16 @@ protected:
 		bool pythonInit = Dia::Python::Initialize("External/Python311/", "External/Python/", false);
 		ASSERT_TRUE(pythonInit) << "Failed to initialize Python";
 
-		// Initialize DiaCLI
-		Dia::CLI::Initialize();
+		// Initialize DiaAPI
+		Dia::API::Initialize();
 	}
 
 	void TearDown() override
 	{
 		// Clean up
-		if (Dia::CLI::IsInitialized())
+		if (Dia::API::IsInitialized())
 		{
-			Dia::CLI::Shutdown();
+			Dia::API::Shutdown();
 		}
 
 		if (Dia::Python::IsInitialized())
@@ -58,22 +58,22 @@ protected:
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-// AC1: Create dia_cli Python module during InitializePythonBindings()
+// AC1: Create dia_api Python module during InitializePythonBindings()
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(PythonBindingsTest, CreateDiaCliModule)
 {
 	// Call InitializePythonBindings
 	InitializePythonBindings();
 
-	// Execute Python: import dia_cli
-	int exitCode = Dia::Python::ExecuteString("import dia_cli");
+	// Execute Python: import dia_api
+	int exitCode = Dia::Python::ExecuteString("import dia_api");
 
 	// Verify no exception
 	EXPECT_EQ(0, exitCode);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// AC2: Register all CLI commands as Python functions in dia_cli module
+// AC2: Register all CLI commands as Python functions in dia_api module
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(PythonBindingsTest, RegisterAllCommands)
 {
@@ -95,9 +95,9 @@ TEST_F(PythonBindingsTest, RegisterAllCommands)
 	InitializePythonBindings();
 
 	// Call all 3 from Python (hyphens converted to underscores)
-	Dia::Python::ExecuteString("import dia_cli\ndia_cli.test_cmd_1()");
-	Dia::Python::ExecuteString("dia_cli.test_cmd_2()");
-	Dia::Python::ExecuteString("dia_cli.test_cmd_3()");
+	Dia::Python::ExecuteString("import dia_api\ndia_api.test_cmd_1()");
+	Dia::Python::ExecuteString("dia_api.test_cmd_2()");
+	Dia::Python::ExecuteString("dia_api.test_cmd_3()");
 
 	// Verify all 3 were called
 	EXPECT_EQ(3, callCount);
@@ -123,7 +123,7 @@ TEST_F(PythonBindingsTest, PositionalArgsConversion)
 	InitializePythonBindings();
 
 	// Call from Python with positional args
-	Dia::Python::ExecuteString("import dia_cli\ndia_cli.test_positional('arg1', 'arg2')");
+	Dia::Python::ExecuteString("import dia_api\ndia_api.test_positional('arg1', 'arg2')");
 
 	// Verify C++ received positional args
 	ASSERT_EQ(2u, receivedArgs.Size());
@@ -155,7 +155,7 @@ TEST_F(PythonBindingsTest, NamedArgsConversion)
 	InitializePythonBindings();
 
 	// Call from Python with argv-style named arg
-	Dia::Python::ExecuteString("import dia_cli\ndia_cli.test_named('--format=gltf')");
+	Dia::Python::ExecuteString("import dia_api\ndia_api.test_named('--format=gltf')");
 
 	// Verify C++ received named arg
 	EXPECT_TRUE(receivedKey);
@@ -183,7 +183,7 @@ TEST_F(PythonBindingsTest, FlagsConversion)
 	InitializePythonBindings();
 
 	// Call from Python with argv-style flag
-	Dia::Python::ExecuteString("import dia_cli\ndia_cli.test_flags('--verbose')");
+	Dia::Python::ExecuteString("import dia_api\ndia_api.test_flags('--verbose')");
 
 	// Verify C++ received flag
 	EXPECT_TRUE(receivedFlag);
@@ -202,8 +202,8 @@ TEST_F(PythonBindingsTest, ReturnExitCode)
 
 	// Call from Python and capture return value
 	Dia::Python::ExecuteString(
-		"import dia_cli\n"
-		"result = dia_cli.test_return()\n"
+		"import dia_api\n"
+		"result = dia_api.test_return()\n"
 		"assert result == 42, f'Expected 42, got {result}'"
 	);
 
@@ -212,12 +212,12 @@ TEST_F(PythonBindingsTest, ReturnExitCode)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// AC7: Never include pybind11 headers in DiaCLI code
+// AC7: Never include pybind11 headers in DiaAPI code
 // This is a compile-time check - if we compile, we pass
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(PythonBindingsTest, NoPybind11InDiaCLI)
+TEST_F(PythonBindingsTest, NoPybind11InDiaAPI)
 {
-	// Compile-time test: DiaCLI should compile without pybind11 headers
+	// Compile-time test: DiaAPI should compile without pybind11 headers
 	// If this test compiles and runs, AC7 is satisfied
 	SUCCEED();
 }
@@ -231,7 +231,7 @@ TEST_F(PythonBindingsTest, PreInitRegistration)
 	// Let's test the opposite: register BEFORE Initialize
 
 	// Shutdown and start fresh
-	Dia::CLI::Shutdown();
+	Dia::API::Shutdown();
 
 	// Register command BEFORE Initialize
 	int callCount = 0;
@@ -240,11 +240,11 @@ TEST_F(PythonBindingsTest, PreInitRegistration)
 	RegisterCommand(cmd);
 
 	// Now initialize
-	Dia::CLI::Initialize();
+	Dia::API::Initialize();
 	InitializePythonBindings();
 
 	// Call from Python
-	Dia::Python::ExecuteString("import dia_cli\ndia_cli.pre_init_cmd()");
+	Dia::Python::ExecuteString("import dia_api\ndia_api.pre_init_cmd()");
 
 	// Verify command was called
 	EXPECT_EQ(1, callCount);

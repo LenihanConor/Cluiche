@@ -1,12 +1,12 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Filename: TestEventSystem.cpp
-// Description: Unit tests for DiaCLI event system
+// Description: Unit tests for DiaAPI event system
 // Feature spec: docs/specs/features/dia/diacli/event-system.md
 ////////////////////////////////////////////////////////////////////////////////
 #include <gtest/gtest.h>
-#include <DiaCLI/DiaCLI.h>
+#include <DiaAPI/DiaAPI.h>
 
-using namespace Dia::CLI;
+using namespace Dia::API;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Global helper variables (accessible from observer classes and test fixture)

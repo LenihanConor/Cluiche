@@ -1,13 +1,13 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Filename: TestCommandRegistry.cpp
-// Description: Unit tests for DiaCLI command registry
+// Description: Unit tests for DiaAPI command registry
 // Feature spec: docs/specs/features/dia/diacli/command-registry.md
 ////////////////////////////////////////////////////////////////////////////////
 #include <gtest/gtest.h>
-#include <DiaCLI/DiaCLI.h>
+#include <DiaAPI/DiaAPI.h>
 #include <DiaCore/Core/Log.h>
 
-using namespace Dia::CLI;
+using namespace Dia::API;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Test fixture

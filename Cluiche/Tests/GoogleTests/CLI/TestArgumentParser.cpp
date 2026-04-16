@@ -1,12 +1,12 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Filename: TestArgumentParser.cpp
-// Description: Unit tests for DiaCLI argument parser
+// Description: Unit tests for DiaAPI argument parser
 // Feature spec: docs/specs/features/dia/diacli/cli-parser.md
 ////////////////////////////////////////////////////////////////////////////////
 #include <gtest/gtest.h>
-#include <DiaCLI/DiaCLI.h>
+#include <DiaAPI/DiaAPI.h>
 
-using namespace Dia::CLI;
+using namespace Dia::API;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -45,7 +45,7 @@ protected:
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(ArgumentParserTest, ParsePositionalArguments)
 {
-	const char* args[] = { "DiaCLI", "build", "foo.txt", "bar.txt" };
+	const char* args[] = { "DiaAPI", "build", "foo.txt", "bar.txt" };
 	int argc;
 	char** argv = MakeArgv(args, argc);
 
@@ -64,7 +64,7 @@ TEST_F(ArgumentParserTest, ParsePositionalArguments)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(ArgumentParserTest, ParseNoArguments)
 {
-	const char* args[] = { "DiaCLI", "build" };
+	const char* args[] = { "DiaAPI", "build" };
 	int argc;
 	char** argv = MakeArgv(args, argc);
 
@@ -83,7 +83,7 @@ TEST_F(ArgumentParserTest, ParseNoArguments)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(ArgumentParserTest, ParseNamedArguments)
 {
-	const char* args[] = { "DiaCLI", "build", "--format=gltf" };
+	const char* args[] = { "DiaAPI", "build", "--format=gltf" };
 	int argc;
 	char** argv = MakeArgv(args, argc);
 
@@ -101,7 +101,7 @@ TEST_F(ArgumentParserTest, ParseNamedArguments)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(ArgumentParserTest, ParseMultipleNamedArguments)
 {
-	const char* args[] = { "DiaCLI", "build", "--key=value", "--other=123" };
+	const char* args[] = { "DiaAPI", "build", "--key=value", "--other=123" };
 	int argc;
 	char** argv = MakeArgv(args, argc);
 
@@ -119,7 +119,7 @@ TEST_F(ArgumentParserTest, ParseMultipleNamedArguments)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(ArgumentParserTest, ParseFlags)
 {
-	const char* args[] = { "DiaCLI", "build", "--verbose" };
+	const char* args[] = { "DiaAPI", "build", "--verbose" };
 	int argc;
 	char** argv = MakeArgv(args, argc);
 
@@ -136,7 +136,7 @@ TEST_F(ArgumentParserTest, ParseFlags)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(ArgumentParserTest, ParseMultipleFlags)
 {
-	const char* args[] = { "DiaCLI", "build", "--flag1", "--flag2" };
+	const char* args[] = { "DiaAPI", "build", "--flag1", "--flag2" };
 	int argc;
 	char** argv = MakeArgv(args, argc);
 
@@ -154,7 +154,7 @@ TEST_F(ArgumentParserTest, ParseMultipleFlags)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(ArgumentParserTest, ParseShortFlags)
 {
-	const char* args[] = { "DiaCLI", "build", "-v" };
+	const char* args[] = { "DiaAPI", "build", "-v" };
 	int argc;
 	char** argv = MakeArgv(args, argc);
 
@@ -170,7 +170,7 @@ TEST_F(ArgumentParserTest, ParseShortFlags)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(ArgumentParserTest, ParseMultipleShortFlags)
 {
-	const char* args[] = { "DiaCLI", "build", "-v", "-h" };
+	const char* args[] = { "DiaAPI", "build", "-v", "-h" };
 	int argc;
 	char** argv = MakeArgv(args, argc);
 
@@ -187,7 +187,7 @@ TEST_F(ArgumentParserTest, ParseMultipleShortFlags)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(ArgumentParserTest, ExtractCommandName)
 {
-	const char* args[] = { "DiaCLI", "build", "--flag" };
+	const char* args[] = { "DiaAPI", "build", "--flag" };
 	int argc;
 	char** argv = MakeArgv(args, argc);
 
@@ -206,7 +206,7 @@ TEST_F(ArgumentParserTest, ExtractCommandName)
 TEST_F(ArgumentParserTest, ParseQuotedArguments)
 {
 	// Simulating shell behavior: quotes removed by shell, we receive unquoted string
-	const char* args[] = { "DiaCLI", "build", "path with spaces" };
+	const char* args[] = { "DiaAPI", "build", "path with spaces" };
 	int argc;
 	char** argv = MakeArgv(args, argc);
 
@@ -225,7 +225,7 @@ TEST_F(ArgumentParserTest, ParseQuotedArguments)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(ArgumentParserTest, KeyWithoutEqualsIsTreatedAsFlag)
 {
-	const char* args[] = { "DiaCLI", "build", "--key" };
+	const char* args[] = { "DiaAPI", "build", "--key" };
 	int argc;
 	char** argv = MakeArgv(args, argc);
 
@@ -241,7 +241,7 @@ TEST_F(ArgumentParserTest, KeyWithoutEqualsIsTreatedAsFlag)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(ArgumentParserTest, ErrorTripleDash)
 {
-	const char* args[] = { "DiaCLI", "build", "---invalid" };
+	const char* args[] = { "DiaAPI", "build", "---invalid" };
 	int argc;
 	char** argv = MakeArgv(args, argc);
 
@@ -257,7 +257,7 @@ TEST_F(ArgumentParserTest, ErrorTripleDash)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(ArgumentParserTest, ErrorUnknownShortFlag)
 {
-	const char* args[] = { "DiaCLI", "build", "-x" };
+	const char* args[] = { "DiaAPI", "build", "-x" };
 	int argc;
 	char** argv = MakeArgv(args, argc);
 
@@ -273,7 +273,7 @@ TEST_F(ArgumentParserTest, ErrorUnknownShortFlag)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(ArgumentParserTest, ErrorNoCommand)
 {
-	const char* args[] = { "DiaCLI" };
+	const char* args[] = { "DiaAPI" };
 	int argc;
 	char** argv = MakeArgv(args, argc);
 
@@ -289,7 +289,7 @@ TEST_F(ArgumentParserTest, ErrorNoCommand)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(ArgumentParserTest, ParseUnknownFlag)
 {
-	const char* args[] = { "DiaCLI", "build", "--unknown-flag" };
+	const char* args[] = { "DiaAPI", "build", "--unknown-flag" };
 	int argc;
 	char** argv = MakeArgv(args, argc);
 
@@ -305,7 +305,7 @@ TEST_F(ArgumentParserTest, ParseUnknownFlag)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(ArgumentParserTest, ParseEndOfFlagsMarker)
 {
-	const char* args[] = { "DiaCLI", "build", "--flag", "--", "--not-a-flag" };
+	const char* args[] = { "DiaAPI", "build", "--flag", "--", "--not-a-flag" };
 	int argc;
 	char** argv = MakeArgv(args, argc);
 
@@ -323,7 +323,7 @@ TEST_F(ArgumentParserTest, ParseEndOfFlagsMarker)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(ArgumentParserTest, ParseEndOfFlagsWithHelp)
 {
-	const char* args[] = { "DiaCLI", "build", "--", "--help" };
+	const char* args[] = { "DiaAPI", "build", "--", "--help" };
 	int argc;
 	char** argv = MakeArgv(args, argc);
 
@@ -341,7 +341,7 @@ TEST_F(ArgumentParserTest, ParseEndOfFlagsWithHelp)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(ArgumentParserTest, ParseEmptyValue)
 {
-	const char* args[] = { "DiaCLI", "build", "--key=" };
+	const char* args[] = { "DiaAPI", "build", "--key=" };
 	int argc;
 	char** argv = MakeArgv(args, argc);
 
@@ -358,7 +358,7 @@ TEST_F(ArgumentParserTest, ParseEmptyValue)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(ArgumentParserTest, ParseMixedArguments)
 {
-	const char* args[] = { "DiaCLI", "build", "file.txt", "--format=gltf", "--verbose" };
+	const char* args[] = { "DiaAPI", "build", "file.txt", "--format=gltf", "--verbose" };
 	int argc;
 	char** argv = MakeArgv(args, argc);
 
@@ -377,7 +377,7 @@ TEST_F(ArgumentParserTest, ParseMixedArguments)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(ArgumentParserTest, ParseHelpNoCommand)
 {
-	const char* args[] = { "DiaCLI", "--help" };
+	const char* args[] = { "DiaAPI", "--help" };
 	int argc;
 	char** argv = MakeArgv(args, argc);
 
@@ -394,7 +394,7 @@ TEST_F(ArgumentParserTest, ParseHelpNoCommand)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(ArgumentParserTest, ErrorCommandNameWithDash)
 {
-	const char* args[] = { "DiaCLI", "-invalid" };
+	const char* args[] = { "DiaAPI", "-invalid" };
 	int argc;
 	char** argv = MakeArgv(args, argc);
 
@@ -413,7 +413,7 @@ TEST_F(ArgumentParserTest, RegisterCustomShortFlag)
 	// Register custom short flag
 	RegisterShortFlag("-f", "force");
 
-	const char* args[] = { "DiaCLI", "build", "-f" };
+	const char* args[] = { "DiaAPI", "build", "-f" };
 	int argc;
 	char** argv = MakeArgv(args, argc);
 

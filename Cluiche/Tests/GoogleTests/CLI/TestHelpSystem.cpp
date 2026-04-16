@@ -1,12 +1,12 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Filename: TestHelpSystem.cpp
-// Description: Unit tests for DiaCLI help system
+// Description: Unit tests for DiaAPI help system
 // Feature spec: docs/specs/features/dia/diacli/help-system.md
 ////////////////////////////////////////////////////////////////////////////////
 #include <gtest/gtest.h>
-#include <DiaCLI/DiaCLI.h>
+#include <DiaAPI/DiaAPI.h>
 
-using namespace Dia::CLI;
+using namespace Dia::API;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Test fixture
@@ -16,7 +16,7 @@ class HelpSystemTest : public ::testing::Test
 protected:
 	void SetUp() override
 	{
-		// Initialize DiaCLI for each test
+		// Initialize DiaAPI for each test
 		if (!IsInitialized())
 		{
 			Initialize();

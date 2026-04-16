@@ -38,7 +38,7 @@ protected:
 // Integration Test 1: Complete Module + Script Workflow
 ////////////////////////////////////////////////////////////////////////////////
 
-// Mock "build system" - simulates DiaCLI registering commands
+// Mock "build system" - simulates DiaAPI registering commands
 namespace MockBuildSystem
 {
 	std::string lastProjectBuilt;
@@ -72,7 +72,7 @@ namespace MockBuildSystem
 
 TEST_F(DiaPythonIntegrationTest, ModuleRegistration_ThenScriptExecution_Works)
 {
-	// Simulate DiaCLI registering commands
+	// Simulate DiaAPI registering commands
 	Module* buildModule = CreateModule("build_system");
 	ASSERT_NE(buildModule, nullptr);
 
