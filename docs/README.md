@@ -4,7 +4,7 @@ Welcome to the comprehensive documentation for the **Cluiche game development pl
 
 **Platform Architecture:**
 - **Cluiche** - Game development platform for building multiple applications
-- **Dia** - Game engine application (DiaCore, DiaMaths, DiaGraphics, DiaCLI, etc.) - shared engine infrastructure
+- **Dia** - Game engine application (DiaCore, DiaMaths, DiaGraphics, DiaAPI, etc.) - shared engine infrastructure
 - **Cluiche Game** - Demo game and testbed application
 - **GoogleTest** - Unit testing application
 - **Future Games** - Your game projects built on Dia

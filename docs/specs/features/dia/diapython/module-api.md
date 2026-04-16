@@ -11,13 +11,13 @@
 
 ## Problem Statement
 
-Provides a clean C++ API for Dia systems (like DiaCLI) to create Python modules and register functions, without exposing pybind11 headers.
+Provides a clean C++ API for Dia systems (like DiaAPI) to create Python modules and register functions, without exposing pybind11 headers.
 
 ## Acceptance Criteria
 
 1. ✅ Can create Python module via `CreateModule(const char* name)`
 2. ✅ Can register C++ function to Python module via `AddFunction(module, name, callback, docstring)`
-3. ✅ Created modules are importable from Python (e.g., `import dia_cli`)
+3. ✅ Created modules are importable from Python (e.g., `import dia_api`)
 4. ✅ Registered functions are callable from Python
 5. ✅ Function callbacks receive `PythonArgs` and return `PythonObject`
 6. ✅ Module names are validated (no invalid characters, not empty)
@@ -78,7 +78,7 @@ namespace Dia::Python {
 namespace Dia::Python {
     // Create a new Python module
     // Parameters:
-    //   name - Module name (e.g., "dia_cli")
+    //   name - Module name (e.g., "dia_api")
     // Returns: Module handle, or nullptr if name invalid or module already exists
     // Note: If Python not initialized, module is cached and registered on Initialize()
     Module* CreateModule(const char* name);
@@ -284,7 +284,7 @@ namespace Dia::Python {
 | 6 | Implementation | Should AddFunction validate callback is not null? | Yes - assert in debug, return error in release (fail-fast on invalid input) |
 | 7 | API Design | Should there be GetModule(name) to retrieve existing module? | Yes - allows other systems to add functions to existing modules (flexible architecture) |
 | 8 | Error Handling | What happens if AddFunction called on null module pointer? | Assert/crash in debug, log error in release (fail-fast on programmer error) |
-| 9 | Testing | Should we test with DiaCLI as integration test (real use case)? | Yes - create integration test with DiaCLI registering commands (validates real-world usage) |
+| 9 | Testing | Should we test with DiaAPI as integration test (real use case)? | Yes - create integration test with DiaAPI registering commands (validates real-world usage) |
 | 10 | Dependencies | Does this feature depend on type-conversion feature for PythonObject conversion? | Yes - module-api depends on type-conversion for PythonObject/PythonArgs to work properly (implement type-conversion first) |
 
 ## Decisions

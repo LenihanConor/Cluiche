@@ -14,13 +14,13 @@
 
 ## Problem Statement
 
-Provide observable lifecycle events for command registration and execution so external systems can log, monitor, debug, and react to CLI operations without coupling to DiaCLI internals.
+Provide observable lifecycle events for command registration and execution so external systems can log, monitor, debug, and react to CLI operations without coupling to DiaAPI internals.
 
 ---
 
 ## Solution Overview
 
-The **event-system** feature implements the Observer pattern using DiaCore's Observer/ObserverSubject infrastructure. It defines 5 event types (OnCommandRegistered, OnCommandExecuting, OnCommandExecuted, OnCommandError, OnHelpRequested) that are fired at key points in the CLI lifecycle. Systems can subscribe to events to implement logging, telemetry, debugging, or custom behavior without modifying DiaCLI code.
+The **event-system** feature implements the Observer pattern using DiaCore's Observer/ObserverSubject infrastructure. It defines 5 event types (OnCommandRegistered, OnCommandExecuting, OnCommandExecuted, OnCommandError, OnHelpRequested) that are fired at key points in the CLI lifecycle. Systems can subscribe to events to implement logging, telemetry, debugging, or custom behavior without modifying DiaAPI code.
 
 ### Key Design Points
 
@@ -52,7 +52,7 @@ The **event-system** feature implements the Observer pattern using DiaCore's Obs
 ### Event Data Structures
 
 ```cpp
-namespace Dia::CLI {
+namespace Dia::API {
 
 // Event: Command registered
 struct CommandRegisteredEvent {
@@ -92,7 +92,7 @@ struct HelpRequestedEvent {
 ### Event Subjects (Observable)
 
 ```cpp
-namespace Dia::CLI {
+namespace Dia::API {
 
 // Get event subjects for subscribing
 Dia::Core::ObserverSubject<CommandRegisteredEvent>& GetCommandRegisteredSubject();
@@ -107,9 +107,9 @@ Dia::Core::ObserverSubject<HelpRequestedEvent>& GetHelpRequestedSubject();
 ### Internal: Fire Events
 
 ```cpp
-namespace Dia::CLI::Internal {
+namespace Dia::API::Internal {
 
-// Fire events (called by other DiaCLI features)
+// Fire events (called by other DiaAPI features)
 void FireCommandRegistered(const Dia::Core::StringCRC& name, const char* description);
 void FireCommandExecuting(const Dia::Core::StringCRC& name, const CommandArgs* args);
 void FireCommandExecuted(const Dia::Core::StringCRC& name, int exitCode, float duration);
@@ -143,7 +143,7 @@ GetCommandExecutedSubject().Attach(&logger);
 ### Internal State
 
 ```cpp
-namespace Dia::CLI::Internal {
+namespace Dia::API::Internal {
 
 struct EventSystemState {
     Dia::Core::ObserverSubject<CommandRegisteredEvent> commandRegisteredSubject;
@@ -166,7 +166,7 @@ extern EventSystemState gEventSystemState;
 **help-system feature:**
 - `ShowGlobalHelp()` and `ShowCommandHelp()` call `FireHelpRequested()`
 
-**DiaCLI main (future ExecuteCommand):**
+**DiaAPI main (future ExecuteCommand):**
 - Before command callback: `FireCommandExecuting()`
 - After command callback: `FireCommandExecuted()` or `FireCommandError()`
 - Measure duration with `std::chrono::high_resolution_clock`
@@ -183,7 +183,7 @@ extern EventSystemState gEventSystemState;
 ### Dependent Features
 - **command-registry** - Fires CommandRegistered
 - **help-system** - Fires HelpRequested
-- **DiaCLI main** - Fires CommandExecuting, CommandExecuted, CommandError
+- **DiaAPI main** - Fires CommandExecuting, CommandExecuted, CommandError
 
 ---
 
@@ -232,11 +232,11 @@ extern EventSystemState gEventSystemState;
 |----------|--------|---------|------------|
 | PD-001 | Platform | Use StringCRC for all entity/component IDs | ✅ **Compliant** - Event structs use StringCRC for command names. |
 | PD-004 | Platform | No STL containers in public APIs | ✅ **Compliant** - Event structs use StringCRC and pointers, no STL. |
-| PD-006 | Platform | Visual Studio project files are source of truth | ✅ **Compliant** - Part of DiaCLI.vcxproj. |
-| AD-001 | Dia App | Module system with YAML frontmatter documentation | ✅ **Compliant** - Part of DiaCLI module documentation. |
+| PD-006 | Platform | Visual Studio project files are source of truth | ✅ **Compliant** - Part of DiaAPI.vcxproj. |
+| AD-001 | Dia App | Module system with YAML frontmatter documentation | ✅ **Compliant** - Part of DiaAPI module documentation. |
 | AD-002 | Dia App | No STL containers in public APIs | ✅ **Compliant** - Reinforces PD-004. |
-| AD-003 | Dia App | Namespace convention: `Dia::<Module>::` | ✅ **Compliant** - All code in `Dia::CLI::` namespace. |
-| SD-004 | DiaCLI System | No interactive prompts (headless by default) | ✅ **Compliant** - Events are fire-and-forget, no blocking. |
+| AD-003 | Dia App | Namespace convention: `Dia::<Module>::` | ✅ **Compliant** - All code in `Dia::API::` namespace. |
+| SD-004 | DiaAPI System | No interactive prompts (headless by default) | ✅ **Compliant** - Events are fire-and-forget, no blocking. |
 
 ---
 
@@ -292,9 +292,9 @@ All resolved:
 ### Example 1: Simple Event Logger
 
 ```cpp
-#include <DiaCLI/Events/EventSystem.h>
+#include <DiaAPI/Events/EventSystem.h>
 
-using namespace Dia::CLI;
+using namespace Dia::API;
 using namespace Dia::Core;
 
 class CommandLogger : public Observer<CommandExecutedEvent> {
@@ -324,9 +324,9 @@ int main() {
 ### Example 2: Multiple Event Observers
 
 ```cpp
-#include <DiaCLI/Events/EventSystem.h>
+#include <DiaAPI/Events/EventSystem.h>
 
-using namespace Dia::CLI;
+using namespace Dia::API;
 using namespace Dia::Core;
 
 class TelemetryTracker : public Observer<CommandExecutingEvent> {
@@ -363,15 +363,15 @@ int main() {
 ### Example 3: Error Monitoring
 
 ```cpp
-#include <DiaCLI/Events/EventSystem.h>
+#include <DiaAPI/Events/EventSystem.h>
 
-using namespace Dia::CLI;
+using namespace Dia::API;
 using namespace Dia::Core;
 
 class ErrorMonitor : public Observer<CommandErrorEvent> {
 public:
     void Notify(const CommandErrorEvent& event) override {
-        DIA_LOG_ERROR("DiaCLI", "Command '%s' failed: %s (code %d)",
+        DIA_LOG_ERROR("DiaAPI", "Command '%s' failed: %s (code %d)",
             event.commandName.GetDebugName(),
             event.errorMessage,
             event.exitCode);

@@ -14,7 +14,7 @@
 
 ## Problem Statement
 
-Enable any system architecturally north of DiaCLI (which is most systems) to register CLI commands into a central registry so they can be discovered, listed, and executed by the CLI framework.
+Enable any system architecturally north of DiaAPI (which is most systems) to register CLI commands into a central registry so they can be discovered, listed, and executed by the CLI framework.
 
 ---
 
@@ -52,7 +52,7 @@ The **command-registry** feature provides a global singleton registry where syst
 ### Data Structures
 
 ```cpp
-namespace Dia::CLI {
+namespace Dia::API {
 
 // Command callback signature
 using CommandCallback = std::function<int(const CommandArgs& args)>;
@@ -87,7 +87,7 @@ class CommandRegistry {
 ### Functions
 
 ```cpp
-namespace Dia::CLI {
+namespace Dia::API {
 
 // Initialize the command registry
 void Initialize();
@@ -116,7 +116,7 @@ Dia::Core::Containers::DynamicArrayC<const CommandInfo*, 64> GetCommandsByCatego
 ### Events
 
 ```cpp
-namespace Dia::CLI {
+namespace Dia::API {
 
 // Fired when a command is registered
 // Parameters: commandName (StringCRC), description (const char*)
@@ -132,7 +132,7 @@ void OnCommandRegistered(const Dia::Core::StringCRC& name, const char* descripti
 ### Internal State
 
 ```cpp
-namespace Dia::CLI::Internal {
+namespace Dia::API::Internal {
 
 struct RegistryState {
     bool isInitialized = false;
@@ -232,13 +232,13 @@ extern RegistryState gRegistryState;
 |----------|--------|---------|------------|
 | PD-001 | Platform | Use StringCRC for all entity/component IDs | ✅ **Compliant** - Command names are StringCRC. Enables compile-time validation and efficient lookup in HashTable. |
 | PD-004 | Platform | No STL containers in public APIs | ✅ **Compliant** - CommandArgs uses DynamicArrayC and HashTable. ListCommands() returns DynamicArrayC, not std::vector. |
-| PD-006 | Platform | Visual Studio project files are source of truth | ✅ **Compliant** - Will create DiaCLI.vcxproj with proper filters. No CMake. |
-| AD-001 | Dia App | Module system with YAML frontmatter documentation | ✅ **Compliant** - Will create dia.cli.architecture.module.md for DiaCLI module. |
+| PD-006 | Platform | Visual Studio project files are source of truth | ✅ **Compliant** - Will create DiaAPI.vcxproj with proper filters. No CMake. |
+| AD-001 | Dia App | Module system with YAML frontmatter documentation | ✅ **Compliant** - Will create dia.cli.architecture.module.md for DiaAPI module. |
 | AD-002 | Dia App | No STL containers in public APIs | ✅ **Compliant** - Reinforces PD-004. All public APIs use Dia containers. |
-| AD-003 | Dia App | Namespace convention: `Dia::<Module>::` | ✅ **Compliant** - All code in `Dia::CLI::` namespace. Internal state in `Dia::CLI::Internal::`. |
-| SD-001 | DiaCLI System | Commands identified by StringCRC | ✅ **Compliant** - CommandInfo.name is StringCRC. HashTable keys are StringCRC. |
-| SD-003 | DiaCLI System | Commands are stateless (no persistent state between invocations) | ✅ **Compliant** - Registry stores CommandInfo but command callbacks are stateless functions. |
-| SD-005 | DiaCLI System | Registered commands stored in global registry (Singleton) | ✅ **Compliant** - Single global `gRegistryState` with Initialize()/Shutdown() lifecycle. |
+| AD-003 | Dia App | Namespace convention: `Dia::<Module>::` | ✅ **Compliant** - All code in `Dia::API::` namespace. Internal state in `Dia::API::Internal::`. |
+| SD-001 | DiaAPI System | Commands identified by StringCRC | ✅ **Compliant** - CommandInfo.name is StringCRC. HashTable keys are StringCRC. |
+| SD-003 | DiaAPI System | Commands are stateless (no persistent state between invocations) | ✅ **Compliant** - Registry stores CommandInfo but command callbacks are stateless functions. |
+| SD-005 | DiaAPI System | Registered commands stored in global registry (Singleton) | ✅ **Compliant** - Single global `gRegistryState` with Initialize()/Shutdown() lifecycle. |
 
 ---
 
@@ -269,7 +269,7 @@ extern RegistryState gRegistryState;
 ## Implementation Plan
 
 ### Phase 1: Core Registry (1-2 days)
-- Create DiaCLI.vcxproj project
+- Create DiaAPI.vcxproj project
 - Implement CommandRegistry.h/cpp with Initialize/Shutdown/IsInitialized
 - Implement RegisterCommand() with duplicate detection
 - Implement GetCommand() lookup
@@ -300,9 +300,9 @@ extern RegistryState gRegistryState;
 ### Example 1: Register a Build Command
 
 ```cpp
-#include <DiaCLI/CommandRegistry/CommandRegistry.h>
+#include <DiaAPI/CommandRegistry/CommandRegistry.h>
 
-using namespace Dia::CLI;
+using namespace Dia::API;
 using namespace Dia::Core;
 
 // Command implementation
@@ -332,9 +332,9 @@ void RegisterBuildCommands() {
 ### Example 2: List All Commands
 
 ```cpp
-#include <DiaCLI/CommandRegistry/CommandRegistry.h>
+#include <DiaAPI/CommandRegistry/CommandRegistry.h>
 
-using namespace Dia::CLI;
+using namespace Dia::API;
 
 void PrintAllCommands() {
     auto commands = ListCommands();
@@ -353,9 +353,9 @@ void PrintAllCommands() {
 ### Example 3: Execute a Command
 
 ```cpp
-#include <DiaCLI/CommandRegistry/CommandRegistry.h>
+#include <DiaAPI/CommandRegistry/CommandRegistry.h>
 
-using namespace Dia::CLI;
+using namespace Dia::API;
 using namespace Dia::Core;
 
 int ExecuteCommandByName(const char* name, const CommandArgs& args) {
@@ -363,7 +363,7 @@ int ExecuteCommandByName(const char* name, const CommandArgs& args) {
     const CommandInfo* cmd = GetCommand(nameCRC);
     
     if (!cmd) {
-        DIA_LOG_ERROR("DiaCLI", "Command not found: %s", name);
+        DIA_LOG_ERROR("DiaAPI", "Command not found: %s", name);
         return 3;  // Command not found
     }
     

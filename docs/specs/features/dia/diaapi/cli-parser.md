@@ -36,11 +36,11 @@ The **cli-parser** feature provides an argument parser that converts `int argc, 
 
 | ID | Criterion | Verification Method |
 |----|-----------|---------------------|
-| AC1 | Parse positional arguments from argv (e.g., `DiaCLI build foo.txt bar.txt` → positionalArgs = ["foo.txt", "bar.txt"]) | Unit test: Parse with positional args, verify CommandArgs.positionalArgs |
+| AC1 | Parse positional arguments from argv (e.g., `DiaAPI build foo.txt bar.txt` → positionalArgs = ["foo.txt", "bar.txt"]) | Unit test: Parse with positional args, verify CommandArgs.positionalArgs |
 | AC2 | Parse named arguments with `--key=value` format (e.g., `--format=gltf` → namedArgs["format"] = "gltf") | Unit test: Parse with named args, verify CommandArgs.namedArgs |
 | AC3 | Parse boolean flags with `--flag` format (e.g., `--verbose` → flags["verbose"] = true) | Unit test: Parse with flags, verify CommandArgs.flags |
 | AC4 | Support short-form flags with single dash (e.g., `-v` equivalent to `--verbose`) | Unit test: Parse `-v`, verify flags["verbose"] = true |
-| AC5 | The first argument after "DiaCLI" is the command name, remaining arguments are parsed into CommandArgs | Unit test: Parse `DiaCLI build --flag`, verify commandName="build" |
+| AC5 | The first argument after "DiaAPI" is the command name, remaining arguments are parsed into CommandArgs | Unit test: Parse `DiaAPI build --flag`, verify commandName="build" |
 | AC6 | Handle quoted arguments with spaces (e.g., `"path with spaces"` is one argument) | Unit test: Parse quoted string, verify single positional arg |
 | AC7 | Return error for malformed arguments (e.g., `--key` without value, `---invalid`) | Unit test: Parse malformed args, verify error code 2 |
 | AC8 | Populate CommandArgs using DiaCore containers (DynamicArrayC, HashTable) | Code review: Verify no STL in implementation |
@@ -55,7 +55,7 @@ The **cli-parser** feature provides an argument parser that converts `int argc, 
 ### Data Structures
 
 ```cpp
-namespace Dia::CLI {
+namespace Dia::API {
 
 // Command arguments (defined in CommandRegistry.h)
 struct CommandArgs {
@@ -78,7 +78,7 @@ struct ParseResult {
 ### Functions
 
 ```cpp
-namespace Dia::CLI {
+namespace Dia::API {
 
 // Parse command-line arguments
 // Returns ParseResult with commandName, args, and error status
@@ -90,7 +90,7 @@ ParseResult ParseArguments(int argc, char* argv[]);
 ### Short Flag Aliases
 
 ```cpp
-namespace Dia::CLI {
+namespace Dia::API {
 
 // Register short flag alias (e.g., -v → --verbose)
 void RegisterShortFlag(const char* shortFlag, const char* longFlag);
@@ -128,7 +128,7 @@ void RegisterShortFlag(const char* shortFlag, const char* longFlag);
 ### Short Flag Alias Map
 
 ```cpp
-namespace Dia::CLI::Internal {
+namespace Dia::API::Internal {
 
 struct ParserState {
     Dia::Core::Containers::HashTable<Dia::Core::StringCRC, Dia::Core::StringCRC> shortFlagAliases;
@@ -171,7 +171,7 @@ extern ParserState gParserState;
 ### Dependent Features
 - **command-registry** - Provides CommandArgs type definition
 - **help-system** - Uses parser to detect `--help` flag
-- **DiaCLI main** - Calls ParseArguments() as entry point
+- **DiaAPI main** - Calls ParseArguments() as entry point
 
 ---
 
@@ -180,38 +180,38 @@ extern ParserState gParserState;
 ### Unit Tests (Cluiche/Tests/GoogleTests/CLI/TestArgumentParser.cpp)
 
 1. **Basic parsing**
-   - Parse `DiaCLI build` → commandName = "build", no args
-   - Parse `DiaCLI build file.txt` → positional = ["file.txt"]
-   - Parse `DiaCLI build file1.txt file2.txt` → positional = ["file1.txt", "file2.txt"]
+   - Parse `DiaAPI build` → commandName = "build", no args
+   - Parse `DiaAPI build file.txt` → positional = ["file.txt"]
+   - Parse `DiaAPI build file1.txt file2.txt` → positional = ["file1.txt", "file2.txt"]
 
 2. **Named arguments**
-   - Parse `DiaCLI build --format=gltf` → namedArgs["format"] = "gltf"
-   - Parse `DiaCLI build --key=value --other=123` → two named args
-   - Parse `DiaCLI build --empty=""` → namedArgs["empty"] = ""
+   - Parse `DiaAPI build --format=gltf` → namedArgs["format"] = "gltf"
+   - Parse `DiaAPI build --key=value --other=123` → two named args
+   - Parse `DiaAPI build --empty=""` → namedArgs["empty"] = ""
 
 3. **Flags**
-   - Parse `DiaCLI build --verbose` → flags["verbose"] = true
-   - Parse `DiaCLI build --flag1 --flag2` → two flags
-   - Parse `DiaCLI build -v` → flags["verbose"] = true (via alias)
+   - Parse `DiaAPI build --verbose` → flags["verbose"] = true
+   - Parse `DiaAPI build --flag1 --flag2` → two flags
+   - Parse `DiaAPI build -v` → flags["verbose"] = true (via alias)
 
 4. **Mixed arguments**
-   - Parse `DiaCLI build file.txt --format=gltf --verbose` → positional + named + flag
-   - Parse `DiaCLI build --verbose file.txt` → flag before positional (order preserved)
+   - Parse `DiaAPI build file.txt --format=gltf --verbose` → positional + named + flag
+   - Parse `DiaAPI build --verbose file.txt` → flag before positional (order preserved)
 
 5. **End-of-flags marker**
-   - Parse `DiaCLI build --flag -- --not-a-flag` → positional = ["--not-a-flag"]
-   - Parse `DiaCLI build -- --help` → positional = ["--help"] (not a flag)
+   - Parse `DiaAPI build --flag -- --not-a-flag` → positional = ["--not-a-flag"]
+   - Parse `DiaAPI build -- --help` → positional = ["--help"] (not a flag)
 
 6. **Error cases**
-   - Parse `DiaCLI` (no command) → error code 2
-   - Parse `DiaCLI build --key` (no value) → error code 2
-   - Parse `DiaCLI build ---invalid` (triple dash) → error code 2
-   - Parse `DiaCLI build -x` (unknown short flag) → error code 2
+   - Parse `DiaAPI` (no command) → error code 2
+   - Parse `DiaAPI build --key` (no value) → error code 2
+   - Parse `DiaAPI build ---invalid` (triple dash) → error code 2
+   - Parse `DiaAPI build -x` (unknown short flag) → error code 2
 
 7. **Short flag aliases**
    - RegisterShortFlag("-h", "help")
-   - Parse `DiaCLI build -h` → flags["help"] = true
-   - Parse `DiaCLI build -v -h` → flags["verbose"] and flags["help"]
+   - Parse `DiaAPI build -h` → flags["help"] = true
+   - Parse `DiaAPI build -v -h` → flags["verbose"] and flags["help"]
 
 8. **String lifetime**
    - Parse arguments, destroy argv, verify CommandArgs still points to original strings (this will fail - documents expectation)
@@ -225,13 +225,13 @@ extern ParserState gParserState;
 |----------|--------|---------|------------|
 | PD-001 | Platform | Use StringCRC for all entity/component IDs | ✅ **Compliant** - Command names are StringCRC. HashTable keys for namedArgs and flags use StringCRC. |
 | PD-004 | Platform | No STL containers in public APIs | ✅ **Compliant** - ParseResult and CommandArgs use DynamicArrayC and HashTable, not std::vector/std::map. |
-| PD-006 | Platform | Visual Studio project files are source of truth | ✅ **Compliant** - Parser code added to DiaCLI.vcxproj. |
-| AD-001 | Dia App | Module system with YAML frontmatter documentation | ✅ **Compliant** - Part of DiaCLI module documentation. |
+| PD-006 | Platform | Visual Studio project files are source of truth | ✅ **Compliant** - Parser code added to DiaAPI.vcxproj. |
+| AD-001 | Dia App | Module system with YAML frontmatter documentation | ✅ **Compliant** - Part of DiaAPI module documentation. |
 | AD-002 | Dia App | No STL containers in public APIs | ✅ **Compliant** - Reinforces PD-004. |
-| AD-003 | Dia App | Namespace convention: `Dia::<Module>::` | ✅ **Compliant** - All code in `Dia::CLI::` namespace. |
-| SD-001 | DiaCLI System | Commands identified by StringCRC | ✅ **Compliant** - Command name extracted from argv[1] and converted to StringCRC. |
-| SD-002 | DiaCLI System | Exit codes follow Unix conventions (0=success) | ✅ **Compliant** - ParseResult.errorCode uses 0 for success, 2 for invalid arguments. |
-| SD-004 | DiaCLI System | No interactive prompts (headless by default) | ✅ **Compliant** - Parser is pure function, no user interaction. |
+| AD-003 | Dia App | Namespace convention: `Dia::<Module>::` | ✅ **Compliant** - All code in `Dia::API::` namespace. |
+| SD-001 | DiaAPI System | Commands identified by StringCRC | ✅ **Compliant** - Command name extracted from argv[1] and converted to StringCRC. |
+| SD-002 | DiaAPI System | Exit codes follow Unix conventions (0=success) | ✅ **Compliant** - ParseResult.errorCode uses 0 for success, 2 for invalid arguments. |
+| SD-004 | DiaAPI System | No interactive prompts (headless by default) | ✅ **Compliant** - Parser is pure function, no user interaction. |
 
 ---
 
@@ -244,7 +244,7 @@ extern ParserState gParserState;
 | 3 | Error Handling | Should malformed args be logged as ERROR or WARNING? | WARNING - syntax errors are user mistakes, not system failures | ✅ WARNING level |
 | 4 | Validation | Should we validate command name format here or in command-registry? | Command-registry - parser just extracts, registry validates | ✅ Parser extracts, registry validates |
 | 5 | Memory | Should we copy argv strings or assume caller keeps them alive? | Assume caller lifetime - simpler, matches standard argc/argv conventions | ✅ Assume caller lifetime |
-| 6 | Edge Cases | What if argv[1] starts with "--" (e.g., `DiaCLI --help`)? | Special case: if argv[1] is "--help", treat as help request with no command | ✅ Special case for --help |
+| 6 | Edge Cases | What if argv[1] starts with "--" (e.g., `DiaAPI --help`)? | Special case: if argv[1] is "--help", treat as help request with no command | ✅ Special case for --help |
 | 7 | Named Args | Should we support both `--key=value` and `--key value` (space-separated)? | Only `--key=value` - simpler parsing, no ambiguity with flags | ✅ Only --key=value format |
 
 ---
@@ -255,7 +255,7 @@ extern ParserState gParserState;
 
 2. ✅ **Command name validation:** Parser validates argv[1]: if "--help" then special case (empty command + help flag), else if starts with "-" then error, else extract as command name.
 
-3. ✅ **Short flag initialization:** Built-in short flags (-h → help, -v → verbose) registered during DiaCLI::Initialize(). Systems can register custom short flags after initialization.
+3. ✅ **Short flag initialization:** Built-in short flags (-h → help, -v → verbose) registered during DiaAPI::Initialize(). Systems can register custom short flags after initialization.
 
 ---
 
@@ -281,7 +281,7 @@ extern ParserState gParserState;
 
 ### Phase 4: Integration (1 day)
 - Integrate with command-registry (use CommandArgs type)
-- Add to DiaCLI main entry point
+- Add to DiaAPI main entry point
 - Integration tests with full flow
 
 **Total Estimate:** 5 days
@@ -293,12 +293,12 @@ extern ParserState gParserState;
 ### Example 1: Basic Argument Parsing
 
 ```cpp
-#include <DiaCLI/Parser/ArgumentParser.h>
+#include <DiaAPI/Parser/ArgumentParser.h>
 
-using namespace Dia::CLI;
+using namespace Dia::API;
 
 int main(int argc, char* argv[]) {
-    // Parse: DiaCLI build model.fbx --format=gltf --verbose
+    // Parse: DiaAPI build model.fbx --format=gltf --verbose
     ParseResult result = ParseArguments(argc, argv);
     
     if (result.errorCode != 0) {
@@ -318,9 +318,9 @@ int main(int argc, char* argv[]) {
 ### Example 2: Register Custom Short Flag
 
 ```cpp
-#include <DiaCLI/Parser/ArgumentParser.h>
+#include <DiaAPI/Parser/ArgumentParser.h>
 
-using namespace Dia::CLI;
+using namespace Dia::API;
 
 void InitializeParser() {
     // Register custom short flags
@@ -329,7 +329,7 @@ void InitializeParser() {
     RegisterShortFlag("-d", "debug");
 }
 
-// Now: DiaCLI build -f → flags["force"] = true
+// Now: DiaAPI build -f → flags["force"] = true
 ```
 
 

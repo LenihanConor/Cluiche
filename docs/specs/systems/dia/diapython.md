@@ -5,11 +5,11 @@
 
 ## Purpose
 
-DiaPython is a Python embedding framework that provides infrastructure for integrating Python scripting into the Dia engine. It wraps pybind11 with a clean C++ API, allowing other Dia systems (like DiaCLI) to expose themselves to Python without direct pybind11 knowledge. The system manages the Python interpreter lifecycle, script execution, and provides type conversion utilities between C++ and Python.
+DiaPython is a Python embedding framework that provides infrastructure for integrating Python scripting into the Dia engine. It wraps pybind11 with a clean C++ API, allowing other Dia systems (like DiaAPI) to expose themselves to Python without direct pybind11 knowledge. The system manages the Python interpreter lifecycle, script execution, and provides type conversion utilities between C++ and Python.
 
 **Key principle:** DiaPython is agnostic infrastructure - it doesn't know about CLI commands, graphics, or any specific Dia subsystem. It just provides the Python embedding foundation that other systems build upon.
 
-**Design decision:** Script execution is **synchronous only**. Asynchronous execution was removed for simplicity and to avoid GIL (Global Interpreter Lock) threading complexity. This matches DiaCLI's synchronous command model.
+**Design decision:** Script execution is **synchronous only**. Asynchronous execution was removed for simplicity and to avoid GIL (Global Interpreter Lock) threading complexity. This matches DiaAPI's synchronous command model.
 
 ## Responsibilities
 
@@ -163,7 +163,7 @@ namespace Dia::Python {
 
 ## Out of Scope
 
-- **Specific bindings** - DiaPython does not expose DiaCLI, DiaGraphics, or any specific system (those systems use DiaPython to expose themselves)
+- **Specific bindings** - DiaPython does not expose DiaAPI, DiaGraphics, or any specific system (those systems use DiaPython to expose themselves)
 - **Python package management** - No pip, virtualenv, or package installation (embedded Python only, modules in External/Python/)
 - **Python debugging** - No integrated debugger (use external Python debuggers)
 - **Async Python** - No asyncio or async/await support (synchronous only)
@@ -203,7 +203,7 @@ namespace Dia::Python {
 | 3 | Dependencies | Which Python version should we target? | Python 3.10+ (newer features, better performance). Embedded runtime bundled with application. |
 | 4 | Out of Scope | Should we support NumPy or other Python libraries? | Not required initially. If external libraries are needed, users can import them from Python side. DiaPython just provides the infrastructure. |
 | 5 | Scope | Should DiaPython provide automatic binding generation (like SWIG)? | No - manual binding via DiaPython API gives more control. Auto-generation adds complexity and build-time dependencies. |
-| 6 | Architecture | How do other systems (like DiaCLI) register their modules? | They call `CreateModule()` and `AddFunction()` during their initialization. DiaPython doesn't manage a registry - each system exposes itself. |
+| 6 | Architecture | How do other systems (like DiaAPI) register their modules? | They call `CreateModule()` and `AddFunction()` during their initialization. DiaPython doesn't manage a registry - each system exposes itself. |
 
 ## Status
 

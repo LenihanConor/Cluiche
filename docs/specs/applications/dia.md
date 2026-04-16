@@ -5,13 +5,13 @@
 
 ## Purpose
 
-Dia is the game engine application that provides all shared engine infrastructure for the Cluiche platform. While organized as an "application" in the spec hierarchy, Dia functionally serves as the shared codebase that all other applications (games, tools, tests) depend on. It provides core systems (DiaCore, DiaMaths, DiaGraphics, DiaInput, etc.), runtime frameworks (DiaApplication), and build tooling (DiaCLI) that enable rapid game development with a component-based architecture, multi-threaded execution model, and modular design.
+Dia is the game engine application that provides all shared engine infrastructure for the Cluiche platform. While organized as an "application" in the spec hierarchy, Dia functionally serves as the shared codebase that all other applications (games, tools, tests) depend on. It provides core systems (DiaCore, DiaMaths, DiaGraphics, DiaInput, etc.), runtime frameworks (DiaApplication), and build tooling (DiaAPI) that enable rapid game development with a component-based architecture, multi-threaded execution model, and modular design.
 
 ## Systems
 
 | System | Description | Spec |
 |--------|-------------|------|
-| DiaCLI | Plugin-based CLI framework for build operations, asset pipelines, and developer tools | [diacli.md](../systems/dia/diacli.md) |
+| DiaAPI | Plugin-based CLI framework for build operations, asset pipelines, and developer tools | [diacli.md](../systems/dia/diacli.md) |
 | DiaPython | Python embedding framework - wraps pybind11 with clean C++ API for scripting integration | [diapython.md](../systems/dia/diapython.md) |
 | DiaCore | Foundation library (containers, type system, memory, logging, CRC) | TBD |
 | DiaMaths | Math library (vectors, matrices, transforms, shapes) | TBD |
@@ -39,7 +39,7 @@ ProcessingUnit/Phase/Module architecture for multi-threaded game execution:
 
 ### Build-Time Tooling
 
-DiaCLI provides extensible command-line tools for asset pipelines and build automation.
+DiaAPI provides extensible command-line tools for asset pipelines and build automation.
 
 ## Platform Dependencies
 
@@ -57,7 +57,7 @@ What the Dia engine deliberately does NOT provide:
 
 - **Game-specific logic** - Dia is an engine, not a game; game logic belongs in game applications
 - **High-level game features** - No built-in inventory, quest, or gameplay systems
-- **Content creation tools** - No level editors, asset authoring tools (yet - DiaCLI is first step)
+- **Content creation tools** - No level editors, asset authoring tools (yet - DiaAPI is first step)
 - **Network/multiplayer** - Not yet implemented
 - **Mobile/console platforms** - Windows-only currently
 
@@ -90,7 +90,7 @@ What the Dia engine deliberately does NOT provide:
 | # | Section | Question | Answer |
 |---|---------|----------|--------|
 | 1 | Architecture | Should each Dia module (DiaCore, DiaMaths, etc.) be a system in this spec? | Yes - each major module should have a system spec defining its public API, responsibilities, and features |
-| 2 | Scope | Are build tools (DiaCLI) part of Dia or separate application? | Part of Dia - they're engine tooling, depend on DiaCore, and extend the engine's capabilities |
+| 2 | Scope | Are build tools (DiaAPI) part of Dia or separate application? | Part of Dia - they're engine tooling, depend on DiaCore, and extend the engine's capabilities |
 | 3 | Dependencies | Should deprecated code (Dia/DiaCore/Deprecated/) be documented? | No - deprecated code is not compiled and should not be referenced |
 | 4 | Decisions | Do Dia decisions (AD-xxx) override platform decisions (PD-xxx)? | No - platform decisions take precedence. Dia decisions add engine-specific constraints within platform rules |
 

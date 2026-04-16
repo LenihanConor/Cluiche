@@ -38,11 +38,11 @@ The **help-system** feature queries the command-registry to enumerate all regist
 |----|-----------|---------------------|
 | AC1 | Detect --help flag in CommandArgs and trigger help display | Unit test: Parse args with --help, verify ShowHelp() called |
 | AC2 | Show global help when no command is provided or --help flag is present | Unit test: ShowGlobalHelp() lists all registered commands |
-| AC3 | Show command-specific help when `DiaCLI <command> --help` is invoked | Unit test: ShowCommandHelp("build") shows only build command details |
+| AC3 | Show command-specific help when `DiaAPI <command> --help` is invoked | Unit test: ShowCommandHelp("build") shows only build command details |
 | AC4 | Group commands by category in global help | Unit test: Register commands in 3 categories, verify grouped output |
 | AC5 | Display command metadata: name, description, category, owner, version, example | Unit test: Verify output contains all fields |
 | AC6 | Return exit code 0 after displaying help (success) | Unit test: ShowHelp() returns 0 |
-| AC7 | Handle unknown command in help request (DiaCLI unknown --help) | Unit test: Return error "Command not found: unknown" |
+| AC7 | Handle unknown command in help request (DiaAPI unknown --help) | Unit test: Return error "Command not found: unknown" |
 | AC8 | Format output as plain text (no ANSI colors, no special characters) | Code review: Verify uses printf/stdout only |
 
 ---
@@ -52,7 +52,7 @@ The **help-system** feature queries the command-registry to enumerate all regist
 ### Functions
 
 ```cpp
-namespace Dia::CLI {
+namespace Dia::API {
 
 // Show global help (all commands, grouped by category)
 int ShowGlobalHelp();
@@ -84,9 +84,9 @@ bool IsHelpRequested(const CommandArgs& args, const StringCRC& commandName) {
 ### Global Help Format
 
 ```
-DiaCLI - Command-line interface for Dia Engine
+DiaAPI - Command-line interface for Dia Engine
 
-Usage: DiaCLI <command> [arguments...]
+Usage: DiaAPI <command> [arguments...]
 
 Available commands (grouped by category):
 
@@ -104,13 +104,13 @@ ASSET:
     Owner: DiaAssets
     Example: list-assets --filter=*.fbx
 
-Use 'DiaCLI <command> --help' for command-specific help.
+Use 'DiaAPI <command> --help' for command-specific help.
 ```
 
 ### Command-Specific Help Format
 
 ```
-DiaCLI compile-asset - Compile an asset to target format
+DiaAPI compile-asset - Compile an asset to target format
 
 Category: build
 Owner:    DiaAssets
@@ -140,7 +140,7 @@ Description:
 - **DiaCore/Core/Logging** - DIA_LOG_WARNING (for unknown commands)
 
 ### Dependent Features
-- **DiaCLI main** - Calls IsHelpRequested() and ShowHelp()
+- **DiaAPI main** - Calls IsHelpRequested() and ShowHelp()
 
 ---
 
@@ -182,12 +182,12 @@ Description:
 |----------|--------|---------|------------|
 | PD-001 | Platform | Use StringCRC for all entity/component IDs | ✅ **Compliant** - Command names are StringCRC in API. |
 | PD-004 | Platform | No STL containers in public APIs | ✅ **Compliant** - Uses command-registry APIs which use DiaCore containers. |
-| PD-006 | Platform | Visual Studio project files are source of truth | ✅ **Compliant** - Part of DiaCLI.vcxproj. |
-| AD-001 | Dia App | Module system with YAML frontmatter documentation | ✅ **Compliant** - Part of DiaCLI module documentation. |
+| PD-006 | Platform | Visual Studio project files are source of truth | ✅ **Compliant** - Part of DiaAPI.vcxproj. |
+| AD-001 | Dia App | Module system with YAML frontmatter documentation | ✅ **Compliant** - Part of DiaAPI module documentation. |
 | AD-002 | Dia App | No STL containers in public APIs | ✅ **Compliant** - Reinforces PD-004. |
-| AD-003 | Dia App | Namespace convention: `Dia::<Module>::` | ✅ **Compliant** - All code in `Dia::CLI::` namespace. |
-| SD-002 | DiaCLI System | Exit codes follow Unix conventions (0=success) | ✅ **Compliant** - ShowHelp() returns 0 (help is success, not error). |
-| SD-004 | DiaCLI System | No interactive prompts (headless by default) | ✅ **Compliant** - Help outputs to stdout, no user interaction. |
+| AD-003 | Dia App | Namespace convention: `Dia::<Module>::` | ✅ **Compliant** - All code in `Dia::API::` namespace. |
+| SD-002 | DiaAPI System | Exit codes follow Unix conventions (0=success) | ✅ **Compliant** - ShowHelp() returns 0 (help is success, not error). |
+| SD-004 | DiaAPI System | No interactive prompts (headless by default) | ✅ **Compliant** - Help outputs to stdout, no user interaction. |
 
 ---
 
@@ -231,7 +231,7 @@ All resolved:
 - Unit tests for flag detection
 
 ### Phase 4: Integration & Polish (0.5 days)
-- Integrate with DiaCLI main
+- Integrate with DiaAPI main
 - Sorting and formatting polish
 - Integration tests
 
@@ -244,12 +244,12 @@ All resolved:
 ### Example 1: Global Help
 
 ```cpp
-#include <DiaCLI/Help/HelpSystem.h>
+#include <DiaAPI/Help/HelpSystem.h>
 
-using namespace Dia::CLI;
+using namespace Dia::API;
 
 int main(int argc, char* argv[]) {
-    // DiaCLI --help or DiaCLI with no args
+    // DiaAPI --help or DiaAPI with no args
     return ShowGlobalHelp();
 }
 ```
@@ -257,13 +257,13 @@ int main(int argc, char* argv[]) {
 ### Example 2: Command-Specific Help
 
 ```cpp
-#include <DiaCLI/Help/HelpSystem.h>
+#include <DiaAPI/Help/HelpSystem.h>
 
-using namespace Dia::CLI;
+using namespace Dia::API;
 using namespace Dia::Core;
 
 int main(int argc, char* argv[]) {
-    // DiaCLI build --help
+    // DiaAPI build --help
     StringCRC commandName("build");
     
     if (IsHelpRequested(args, commandName)) {
@@ -278,10 +278,10 @@ int main(int argc, char* argv[]) {
 ### Example 3: Help Detection in Main Loop
 
 ```cpp
-#include <DiaCLI/Parser/ArgumentParser.h>
-#include <DiaCLI/Help/HelpSystem.h>
+#include <DiaAPI/Parser/ArgumentParser.h>
+#include <DiaAPI/Help/HelpSystem.h>
 
-using namespace Dia::CLI;
+using namespace Dia::API;
 using namespace Dia::Core;
 
 int main(int argc, char* argv[]) {
