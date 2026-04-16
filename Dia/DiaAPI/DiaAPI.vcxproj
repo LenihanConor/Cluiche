@@ -20,7 +20,7 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{9A4BC5D2-8E53-5F8G-C9B2-DEFB6F0A8C4D}</ProjectGuid>
-    <RootNamespace>DiaCLI</RootNamespace>
+    <RootNamespace>DiaAPI</RootNamespace>
     <Keyword>Win32Proj</Keyword>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
@@ -147,7 +147,7 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="DiaCLI.h" />
+    <ClInclude Include="DiaAPI.h" />
     <ClInclude Include="CommandRegistry\CommandRegistry.h" />
     <ClInclude Include="Parser\ArgumentParser.h" />
     <ClInclude Include="Help\HelpSystem.h" />

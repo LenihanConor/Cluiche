@@ -18,7 +18,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DiaCLI.h" />
+    <ClInclude Include="DiaAPI.h" />
     <ClInclude Include="CommandRegistry\CommandRegistry.h">
       <Filter>CommandRegistry</Filter>
     </ClInclude>

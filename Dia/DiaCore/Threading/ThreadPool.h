@@ -140,7 +140,15 @@ namespace Dia
 					// Execute task
 					if (task)
 					{
-						task();
+						try
+						{
+							task();
+						}
+						catch (...)
+						{
+							// Suppress exceptions to prevent thread termination
+							// The task failed, but other tasks should continue
+						}
 
 						{
 							std::unique_lock<std::mutex> lock(mQueueMutex);
