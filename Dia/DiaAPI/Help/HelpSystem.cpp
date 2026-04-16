@@ -30,8 +30,8 @@ namespace Dia
 			// Fire OnHelpRequested event
 			Internal::FireHelpRequested(Dia::Core::StringCRC(""), true);
 
-			printf("DiaAPI - Command-line interface for Dia Engine\n\n");
-			printf("Usage: DiaAPI <command> [arguments...]\n\n");
+			printf("DiaAPI - Command registration and execution API\n\n");
+			printf("Usage: DiaAPI.RegisterCommand(...) or dia_api.command_name()\n\n");
 
 			// Get all registered commands
 			auto commands = ListCommands();
@@ -114,7 +114,7 @@ namespace Dia
 				}
 			}
 
-			printf("Use 'DiaAPI <command> --help' for command-specific help.\n");
+			printf("Use 'dia_api.help(\"<command>\")' for command-specific help.\n");
 
 			return 0;
 		}
