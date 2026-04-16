@@ -14,7 +14,7 @@
 
 namespace Dia
 {
-	namespace CLI
+	namespace API
 	{
 		namespace Internal
 		{
@@ -29,7 +29,7 @@ namespace Dia
 				int argc = 0;
 
 				// Add dummy program name (required by ParseArguments)
-				static char progName[] = "dia_cli";
+				static char progName[] = "dia_api";
 				argv[argc++] = progName;
 
 				// Add dummy command name
@@ -102,13 +102,13 @@ namespace Dia
 				}
 				catch (const std::exception& ex)
 				{
-					Dia::Core::Log::OutputVaradicLine("DiaCLI ERROR: Command '%s' threw exception: %s",
+					Dia::Core::Log::OutputVaradicLine("DiaAPI ERROR: Command '%s' threw exception: %s",
 						cmdInfo->name.AsChar(), ex.what());
 					exitCode = 1;
 				}
 				catch (...)
 				{
-					Dia::Core::Log::OutputVaradicLine("DiaCLI ERROR: Command '%s' threw unknown exception",
+					Dia::Core::Log::OutputVaradicLine("DiaAPI ERROR: Command '%s' threw unknown exception",
 						cmdInfo->name.AsChar());
 					exitCode = 1;
 				}
@@ -126,24 +126,24 @@ namespace Dia
 			// Check if Python is initialized
 			if (!Dia::Python::IsInitialized())
 			{
-				Dia::Core::Log::OutputLine("DiaCLI WARNING: InitializePythonBindings() called but Python is not initialized");
+				Dia::Core::Log::OutputLine("DiaAPI WARNING: InitializePythonBindings() called but Python is not initialized");
 				return;
 			}
 
-			// Create dia_cli module
-			Dia::Python::Module* module = Dia::Python::CreateModule("dia_cli");
+			// Create dia_api module
+			Dia::Python::Module* module = Dia::Python::CreateModule("dia_api");
 			if (!module)
 			{
-				Dia::Core::Log::OutputLine("DiaCLI ERROR: Failed to create 'dia_cli' Python module");
+				Dia::Core::Log::OutputLine("DiaAPI ERROR: Failed to create 'dia_api' Python module");
 				return;
 			}
 
 			// Enumerate all registered commands
 			auto commands = ListCommands();
 
-			Dia::Core::Log::OutputVaradicLine("DiaCLI INFO: Found %d commands", commands.Size());
+			Dia::Core::Log::OutputVaradicLine("DiaAPI INFO: Found %d commands", commands.Size());
 
-			Dia::Core::Log::OutputVaradicLine("DiaCLI INFO: Registering %d commands with Python module 'dia_cli'",
+			Dia::Core::Log::OutputVaradicLine("DiaAPI INFO: Registering %d commands with Python module 'dia_api'",
 				commands.Size());
 
 			// Register each command as a Python function
@@ -184,11 +184,11 @@ namespace Dia
 					cmdInfo->description
 				);
 
-				Dia::Core::Log::OutputVaradicLine("DiaCLI INFO:   Registered Python function: dia_cli.%s()",
+				Dia::Core::Log::OutputVaradicLine("DiaAPI INFO:   Registered Python function: dia_api.%s()",
 					pythonName);
 			}
 
-			Dia::Core::Log::OutputLine("DiaCLI INFO: Python bindings initialized successfully");
+			Dia::Core::Log::OutputLine("DiaAPI INFO: Python bindings initialized successfully");
 		}
 	}
 }

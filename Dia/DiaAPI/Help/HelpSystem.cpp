@@ -11,7 +11,7 @@
 
 namespace Dia
 {
-	namespace CLI
+	namespace API
 	{
 		////////////////////////////////////////////////////////////////////////////////
 		// Check if help was requested
@@ -30,8 +30,8 @@ namespace Dia
 			// Fire OnHelpRequested event
 			Internal::FireHelpRequested(Dia::Core::StringCRC(""), true);
 
-			printf("DiaCLI - Command-line interface for Dia Engine\n\n");
-			printf("Usage: DiaCLI <command> [arguments...]\n\n");
+			printf("DiaAPI - Command-line interface for Dia Engine\n\n");
+			printf("Usage: DiaAPI <command> [arguments...]\n\n");
 
 			// Get all registered commands
 			auto commands = ListCommands();
@@ -114,7 +114,7 @@ namespace Dia
 				}
 			}
 
-			printf("Use 'DiaCLI <command> --help' for command-specific help.\n");
+			printf("Use 'DiaAPI <command> --help' for command-specific help.\n");
 
 			return 0;
 		}
@@ -133,12 +133,12 @@ namespace Dia
 			if (!cmd)
 			{
 				printf("Command not found: %s\n", commandName.AsChar());
-				Dia::Core::Log::OutputVaradicLine("DiaCLI WARNING: Command not found: %s", commandName.AsChar());
+				Dia::Core::Log::OutputVaradicLine("DiaAPI WARNING: Command not found: %s", commandName.AsChar());
 				return 3;
 			}
 
 			// Display command-specific help
-			printf("DiaCLI %s - %s\n\n", cmd->name.AsChar(), cmd->description);
+			printf("DiaAPI %s - %s\n\n", cmd->name.AsChar(), cmd->description);
 
 			printf("Category: %s\n", cmd->category.AsChar());
 

@@ -10,7 +10,7 @@
 
 namespace Dia
 {
-	namespace CLI
+	namespace API
 	{
 		namespace Internal
 		{
@@ -104,7 +104,7 @@ namespace Dia
 					// Malformed: --key without =value
 					result.errorCode = 2;
 					result.errorMessage = "Invalid named argument format (expected --key=value)";
-					Dia::Core::Log::OutputVaradicLine("DiaCLI WARNING: Invalid named argument format: %s (expected --key=value)", arg);
+					Dia::Core::Log::OutputVaradicLine("DiaAPI WARNING: Invalid named argument format: %s (expected --key=value)", arg);
 					return false;
 				}
 
@@ -141,7 +141,7 @@ namespace Dia
 					// Unknown short flag
 					result.errorCode = 2;
 					result.errorMessage = "Unknown short flag";
-					Dia::Core::Log::OutputVaradicLine("DiaCLI WARNING: Unknown short flag: %s", arg);
+					Dia::Core::Log::OutputVaradicLine("DiaAPI WARNING: Unknown short flag: %s", arg);
 					return false;
 				}
 
@@ -151,7 +151,7 @@ namespace Dia
 			}
 
 			////////////////////////////////////////////////////////////////////////////////
-			// Initialize short flag alias map (called during DiaCLI::Initialize)
+			// Initialize short flag alias map (called during DiaAPI::Initialize)
 			////////////////////////////////////////////////////////////////////////////////
 			void InitializeShortFlagAliases()
 			{
@@ -183,7 +183,7 @@ namespace Dia
 			{
 				result.errorCode = 2;
 				result.errorMessage = "No command specified";
-				Dia::Core::Log::OutputLine("DiaCLI WARNING: No command specified");
+				Dia::Core::Log::OutputLine("DiaAPI WARNING: No command specified");
 				return;
 			}
 
@@ -204,7 +204,7 @@ namespace Dia
 			{
 				result.errorCode = 2;
 				result.errorMessage = "Command name cannot start with '-'";
-				Dia::Core::Log::OutputVaradicLine("DiaCLI WARNING: Command name cannot start with '-': %s", commandArg);
+				Dia::Core::Log::OutputVaradicLine("DiaAPI WARNING: Command name cannot start with '-': %s", commandArg);
 				return;
 			}
 
@@ -240,7 +240,7 @@ namespace Dia
 					{
 						result.errorCode = 2;
 						result.errorMessage = "Invalid flag format (too many dashes)";
-						Dia::Core::Log::OutputVaradicLine("DiaCLI WARNING: Invalid flag format: %s (too many dashes)", arg);
+						Dia::Core::Log::OutputVaradicLine("DiaAPI WARNING: Invalid flag format: %s (too many dashes)", arg);
 						return;
 					}
 

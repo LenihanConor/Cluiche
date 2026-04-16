@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Filename: CommandRegistry.cpp
 // Description: Command registration and discovery implementation
-// Feature spec: docs/specs/features/dia/diacli/command-registry.md
+// Feature spec: docs/specs/features/dia/diaapi/command-registry.md
 ////////////////////////////////////////////////////////////////////////////////
 #include "CommandRegistry.h"
 #include "Events/EventSystem.h"
@@ -11,7 +11,7 @@
 
 namespace Dia
 {
-	namespace CLI
+	namespace API
 	{
 		namespace Internal
 		{

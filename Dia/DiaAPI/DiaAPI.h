@@ -1,11 +1,11 @@
 ////////////////////////////////////////////////////////////////////////////////
-// Filename: DiaCLI.h
-// Description: Main public header for DiaCLI - Command-line interface framework
-// System spec: docs/specs/systems/dia/diacli.md
+// Filename: DiaAPI.h
+// Description: Main public header for DiaAPI - Command registration and execution API
+// System spec: docs/specs/systems/dia/diaapi.md
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-// DiaCLI is a plugin-based CLI framework that provides command registration,
+// DiaAPI is a plugin-based command registration framework that provides command registration,
 // argument parsing, help generation, and automatic Python exposure.
 // Other Dia modules register commands via this API.
 

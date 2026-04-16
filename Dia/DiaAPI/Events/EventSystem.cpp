@@ -8,7 +8,7 @@
 
 namespace Dia
 {
-	namespace CLI
+	namespace API
 	{
 		////////////////////////////////////////////////////////////////////////////////
 		// Thread-local storage for event data (safe for multi-threaded event firing)

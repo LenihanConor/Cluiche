@@ -1,16 +1,16 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Filename: HelpSystem.h
-// Description: Auto-generated help system for DiaCLI
+// Description: Auto-generated help system for DiaAPI
 // Feature spec: docs/specs/features/dia/diacli/help-system.md
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include <DiaCLI/CommandRegistry/CommandRegistry.h>
+#include <DiaAPI/CommandRegistry/CommandRegistry.h>
 #include <DiaCore/CRC/StringCRC.h>
 
 namespace Dia
 {
-	namespace CLI
+	namespace API
 	{
 		////////////////////////////////////////////////////////////////////////////////
 		// Show global help (all commands, grouped by category)

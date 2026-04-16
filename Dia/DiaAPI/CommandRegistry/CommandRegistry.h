@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Filename: CommandRegistry.h
-// Description: Command registration and discovery system for DiaCLI
-// Feature spec: docs/specs/features/dia/diacli/command-registry.md
+// Description: Command registration and discovery system for DiaAPI
+// Feature spec: docs/specs/features/dia/diaapi/command-registry.md
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
@@ -12,7 +12,7 @@
 
 namespace Dia
 {
-	namespace CLI
+	namespace API
 	{
 		// Forward declarations
 		struct CommandArgs;
@@ -102,5 +102,5 @@ namespace Dia
 		// Get commands by category
 		// Returns empty array if category not found
 		Dia::Core::Containers::DynamicArrayC<const CommandInfo*, 64> GetCommandsByCategory(const Dia::Core::StringCRC& category);
-	}
-}
+	} // namespace API
+} // namespace Dia

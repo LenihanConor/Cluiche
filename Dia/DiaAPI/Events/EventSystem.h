@@ -1,17 +1,17 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Filename: EventSystem.h
-// Description: Event system for DiaCLI command lifecycle events
+// Description: Event system for DiaAPI command lifecycle events
 // Feature spec: docs/specs/features/dia/diacli/event-system.md
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Architecture/Observer.h>
-#include <DiaCLI/CommandRegistry/CommandRegistry.h>
+#include <DiaAPI/CommandRegistry/CommandRegistry.h>
 
 namespace Dia
 {
-	namespace CLI
+	namespace API
 	{
 		////////////////////////////////////////////////////////////////////////////////
 		// Event Data Structures

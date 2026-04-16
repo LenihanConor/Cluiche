@@ -1,16 +1,16 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Filename: ArgumentParser.h
-// Description: Command-line argument parser for DiaCLI
+// Description: Command-line argument parser for DiaAPI
 // Feature spec: docs/specs/features/dia/diacli/cli-parser.md
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include <DiaCLI/CommandRegistry/CommandRegistry.h>
+#include <DiaAPI/CommandRegistry/CommandRegistry.h>
 #include <DiaCore/CRC/StringCRC.h>
 
 namespace Dia
 {
-	namespace CLI
+	namespace API
 	{
 		////////////////////////////////////////////////////////////////////////////////
 		// Parse result structure
