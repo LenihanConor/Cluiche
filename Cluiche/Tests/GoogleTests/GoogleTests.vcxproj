@@ -96,10 +96,6 @@
   </PropertyGroup>
   <!-- Debug Win32 Compiler Settings -->
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <PreBuildEvent>
-      <Command>python "$(ProjectDir)..\..\..\Tools\dirty_test_tracker.py" --project-dir "$(ProjectDir)." --config $(Configuration)</Command>
-      <Message>Tracking dirty tests...</Message>
-    </PreBuildEvent>
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)../../../Dia/;$(ProjectDir)../../../External/googletest/googletest/include/;$(ProjectDir)../../../External/jsoncpp-master/include/;$(ProjectDir)../../../External/pybind11/include/;$(ProjectDir)../../../External/Python311-Win32/include/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -127,10 +123,6 @@
   </ItemDefinitionGroup>
   <!-- Release Win32 Compiler Settings -->
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <PreBuildEvent>
-      <Command>python "$(ProjectDir)..\..\..\Tools\dirty_test_tracker.py" --project-dir "$(ProjectDir)." --config $(Configuration)</Command>
-      <Message>Tracking dirty tests...</Message>
-    </PreBuildEvent>
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -160,10 +152,6 @@
   </ItemDefinitionGroup>
   <!-- Debug x64 Compiler Settings -->
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <PreBuildEvent>
-      <Command>python "$(ProjectDir)..\..\..\Tools\dirty_test_tracker.py" --project-dir "$(ProjectDir)." --config $(Configuration)</Command>
-      <Message>Tracking dirty tests...</Message>
-    </PreBuildEvent>
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)../../../Dia/;$(ProjectDir)../../../External/googletest/googletest/include/;$(ProjectDir)../../../External/jsoncpp-master/include/;$(ProjectDir)../../../External/pybind11/include/;$(ProjectDir)../../../External/Python311/include/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -189,10 +177,6 @@
   </ItemDefinitionGroup>
   <!-- Release x64 Compiler Settings -->
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <PreBuildEvent>
-      <Command>python "$(ProjectDir)..\..\..\Tools\dirty_test_tracker.py" --project-dir "$(ProjectDir)." --config $(Configuration)</Command>
-      <Message>Tracking dirty tests...</Message>
-    </PreBuildEvent>
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -296,6 +280,13 @@
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">
       <AdditionalIncludeDirectories>$(ProjectDir)../../../External/googletest/googletest/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+  </ItemGroup>
+  <!-- Python Test Scripts -->
+  <ItemGroup>
+    <None Include="Python\test_hello.py" />
+    <None Include="Python\test_args.py" />
+    <None Include="Python\test_error.py" />
+    <None Include="Python\test_syntax_error.py" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

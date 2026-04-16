@@ -45,7 +45,7 @@ protected:
 
 TEST_F(DiaPythonScriptExecutionTest, ExecuteScript_ValidFile_Succeeds)
 {
-	int exitCode = ExecuteScript("../../../../../../Cluiche/Tests/TestScripts/Python/test_hello.py");
+	int exitCode = ExecuteScript("../../../Python/test_hello.py");
 
 	EXPECT_EQ(exitCode, 0);  // Success
 }
@@ -74,14 +74,14 @@ TEST_F(DiaPythonScriptExecutionTest, ExecuteString_SimpleExpression_Succeeds)
 
 TEST_F(DiaPythonScriptExecutionTest, ExecuteScript_Success_ReturnsZero)
 {
-	int exitCode = ExecuteScript("../../../../../../Cluiche/Tests/TestScripts/Python/test_hello.py");
+	int exitCode = ExecuteScript("../../../Python/test_hello.py");
 
 	EXPECT_EQ(exitCode, 0);
 }
 
 TEST_F(DiaPythonScriptExecutionTest, ExecuteScript_Error_ReturnsNonZero)
 {
-	int exitCode = ExecuteScript("../../../../../../Cluiche/Tests/TestScripts/Python/test_error.py");
+	int exitCode = ExecuteScript("../../../Python/test_error.py");
 
 	EXPECT_NE(exitCode, 0);  // Non-zero error code
 }
@@ -95,7 +95,7 @@ TEST_F(DiaPythonScriptExecutionTest, ExecuteScript_NotInitialized_ReturnsErrorCo
 	// Shut down Python
 	Shutdown();
 
-	int exitCode = ExecuteScript("../../../../../../Cluiche/Tests/TestScripts/Python/test_hello.py");
+	int exitCode = ExecuteScript("../../../Python/test_hello.py");
 
 	EXPECT_EQ(exitCode, 3);  // NotInitialized
 }
@@ -141,7 +141,7 @@ TEST_F(DiaPythonScriptExecutionTest, ExecuteScript_EmptyPath_ReturnsErrorCode2)
 
 TEST_F(DiaPythonScriptExecutionTest, ExecuteScript_SyntaxError_ReturnsErrorCode4)
 {
-	int exitCode = ExecuteScript("../../../../../../Cluiche/Tests/TestScripts/Python/test_syntax_error.py");
+	int exitCode = ExecuteScript("../../../Python/test_syntax_error.py");
 
 	EXPECT_EQ(exitCode, 4);  // SyntaxError
 }
@@ -159,7 +159,7 @@ TEST_F(DiaPythonScriptExecutionTest, ExecuteString_SyntaxError_ReturnsErrorCode4
 
 TEST_F(DiaPythonScriptExecutionTest, ExecuteScript_RuntimeException_ReturnsErrorCode5)
 {
-	int exitCode = ExecuteScript("../../../../../../Cluiche/Tests/TestScripts/Python/test_error.py");
+	int exitCode = ExecuteScript("../../../Python/test_error.py");
 
 	EXPECT_EQ(exitCode, 5);  // RuntimeException
 }
@@ -179,7 +179,7 @@ TEST_F(DiaPythonScriptExecutionTest, ExecuteScript_WithArguments_PassedToSysArgv
 {
 	const char* args[] = { "arg1", "arg2", "arg3" };
 
-	int exitCode = ExecuteScript("../../../../../../Cluiche/Tests/TestScripts/Python/test_args.py", args, 3);
+	int exitCode = ExecuteScript("../../../Python/test_args.py", args, 3);
 
 	EXPECT_EQ(exitCode, 0);  // Script should execute successfully
 	// Note: Script prints args to stdout - verify manually or with output redirection
@@ -187,7 +187,7 @@ TEST_F(DiaPythonScriptExecutionTest, ExecuteScript_WithArguments_PassedToSysArgv
 
 TEST_F(DiaPythonScriptExecutionTest, ExecuteScript_WithNoArguments_Works)
 {
-	int exitCode = ExecuteScript("../../../../../../Cluiche/Tests/TestScripts/Python/test_hello.py", nullptr, 0);
+	int exitCode = ExecuteScript("../../../Python/test_hello.py", nullptr, 0);
 
 	EXPECT_EQ(exitCode, 0);
 }
@@ -204,7 +204,7 @@ TEST_F(DiaPythonScriptExecutionTest, ExecuteScriptAsync_ValidFile_CallsCallback)
 	int callbackExitCode = -1;
 
 	int taskId = ExecuteScriptAsync(
-		"../../../../../../Cluiche/Tests/TestScripts/Python/test_hello.py",
+		"../../../Python/test_hello.py",
 		nullptr,
 		0,
 		[&callbackInvoked, &callbackExitCode](int exitCode, float duration)
@@ -307,7 +307,7 @@ TEST_F(DiaPythonScriptExecutionTest, CancelTask_RunningTask_ReturnsTrue)
 {
 	// Start a long-running async task
 	int taskId = ExecuteScriptAsync(
-		"../../../../../../Cluiche/Tests/TestScripts/Python/test_hello.py",
+		"../../../Python/test_hello.py",
 		nullptr,
 		0,
 		[](int exitCode, float duration) { /* Callback */ }
@@ -346,14 +346,14 @@ TEST_F(DiaPythonScriptExecutionTest, CancelAllTasks_CancelsMultipleTasks)
 {
 	// Start multiple async tasks
 	ExecuteScriptAsync(
-		"../../../../../../Cluiche/Tests/TestScripts/Python/test_hello.py",
+		"../../../Python/test_hello.py",
 		nullptr,
 		0,
 		[](int, float) {}
 	);
 
 	ExecuteScriptAsync(
-		"../../../../../../Cluiche/Tests/TestScripts/Python/test_hello.py",
+		"../../../Python/test_hello.py",
 		nullptr,
 		0,
 		[](int, float) {}
@@ -393,7 +393,7 @@ TEST_F(DiaPythonScriptExecutionTest, ExecuteString_NullCode_ReturnsError)
 TEST_F(DiaPythonScriptExecutionTest, ExecuteScriptAsync_NullCallback_ReturnsZero)
 {
 	int taskId = ExecuteScriptAsync(
-		"../../../../../../Cluiche/Tests/TestScripts/Python/test_hello.py",
+		"../../../Python/test_hello.py",
 		nullptr,
 		0,
 		nullptr  // Null callback
@@ -430,7 +430,7 @@ TEST_F(DiaPythonScriptExecutionTest, ExecuteScriptAsync_MaxConcurrentTasks_Retur
 	for (int i = 0; i < 16; i++)
 	{
 		int taskId = ExecuteScriptAsync(
-			"../../../../../../Cluiche/Tests/TestScripts/Python/test_hello.py",
+			"../../../Python/test_hello.py",
 			nullptr,
 			0,
 			[](int, float) {}
@@ -445,7 +445,7 @@ TEST_F(DiaPythonScriptExecutionTest, ExecuteScriptAsync_MaxConcurrentTasks_Retur
 
 	// 17th task should fail
 	int taskId17 = ExecuteScriptAsync(
-		"../../../../../../Cluiche/Tests/TestScripts/Python/test_hello.py",
+		"../../../Python/test_hello.py",
 		nullptr,
 		0,
 		[](int, float) {}
