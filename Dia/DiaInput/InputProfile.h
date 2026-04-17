@@ -156,14 +156,15 @@ namespace Dia
 					if (!bindingObj.isMember("action") || !bindingObj["action"].isString())
 						continue;
 
-					ActionID action(bindingObj["action"].asString().c_str());
+					const std::string actionString = bindingObj["action"].asString();
+					ActionID action(actionString.c_str());
 
 					// Read binding type
 					if (!bindingObj.isMember("type") || !bindingObj["type"].isString())
 						continue;
 
-					const char* typeStr = bindingObj["type"].asString().c_str();
-					ActionMap::Binding::Type type = StringToBindingType(typeStr);
+					const std::string typeString = bindingObj["type"].asString();
+					ActionMap::Binding::Type type = StringToBindingType(typeString.c_str());
 
 					// Read code and device
 					if (!bindingObj.isMember("code") || !bindingObj["code"].isInt())
