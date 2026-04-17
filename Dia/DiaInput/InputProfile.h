@@ -208,9 +208,9 @@ namespace Dia
 			/// @brief Get profile name from JSON file without loading full profile
 			///
 			/// @param filePath File path to read
-			/// @param outProfileName Output string for profile name
+			/// @param outProfileName Output buffer for profile name (must be at least 256 bytes)
 			/// @return true if successful, false on error
-			static bool GetProfileName(const char* filePath, const char*& outProfileName)
+			static bool GetProfileName(const char* filePath, char* outProfileName, size_t bufferSize = 256)
 			{
 				using namespace Dia::Core;
 
@@ -232,10 +232,13 @@ namespace Dia
 
 				if (root.isMember("profile_name") && root["profile_name"].isString())
 				{
-					// Note: This is unsafe - returning pointer to temporary std::string
-					// Should use std::string& or copy to buffer instead
-					outProfileName = root["profile_name"].asString().c_str();
-					return true;
+					const std::string& profileName = root["profile_name"].asString();
+					if (profileName.length() < bufferSize)
+					{
+						strncpy(outProfileName, profileName.c_str(), bufferSize - 1);
+						outProfileName[bufferSize - 1] = '\0';
+						return true;
+					}
 				}
 
 				return false;

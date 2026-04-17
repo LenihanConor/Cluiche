@@ -10,6 +10,7 @@
 #include <DiaInput/ConsoleGamepad.h>
 #include <DiaCore/FilePath/FilePath.h>
 #include <cstdio>
+#include <filesystem>
 
 using namespace Dia::Input;
 
@@ -20,8 +21,7 @@ protected:
 	void SetUp() override
 	{
 		// Create temp directory if it doesn't exist
-		// Note: Directory creation not available in FilePath - assuming temp/ exists or using current directory
-		// Dia::Core::FilePath::MakeDirectory("temp");
+		std::filesystem::create_directories("temp");
 	}
 
 	void TearDown() override
@@ -312,8 +312,8 @@ TEST_F(InputProfileTest, GetProfileName)
 	InputProfile::SaveProfile(actionMap, "temp/test_profile.json", "MyCustomProfile");
 
 	// Retrieve profile name
-	const char* profileName = nullptr;
-	bool success = InputProfile::GetProfileName("temp/test_profile.json", profileName);
+	char profileName[256] = { 0 };
+	bool success = InputProfile::GetProfileName("temp/test_profile.json", profileName, sizeof(profileName));
 
 	EXPECT_TRUE(success);
 	EXPECT_STREQ(profileName, "MyCustomProfile");
@@ -328,8 +328,8 @@ TEST_F(InputProfileTest, DefaultProfileName)
 	InputProfile::SaveProfile(actionMap, "temp/test_profile.json");
 
 	// Retrieve profile name
-	const char* profileName = nullptr;
-	bool success = InputProfile::GetProfileName("temp/test_profile.json", profileName);
+	char profileName[256] = { 0 };
+	bool success = InputProfile::GetProfileName("temp/test_profile.json", profileName, sizeof(profileName));
 
 	EXPECT_TRUE(success);
 	EXPECT_STREQ(profileName, "Default");
@@ -349,8 +349,8 @@ TEST_F(InputProfileTest, LoadFromNonExistentFileReturnsFalse)
 
 TEST_F(InputProfileTest, GetProfileNameFromNonExistentFileReturnsFalse)
 {
-	const char* profileName = nullptr;
-	bool success = InputProfile::GetProfileName("temp/nonexistent_file.json", profileName);
+	char profileName[256] = { 0 };
+	bool success = InputProfile::GetProfileName("temp/nonexistent_file.json", profileName, sizeof(profileName));
 
 	EXPECT_FALSE(success);
 }
