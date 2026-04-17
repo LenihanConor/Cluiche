@@ -17,10 +17,10 @@ namespace Dia
 
 		PythonObject::PythonObject()
 		{
-			// Create None object explicitly using pybind11 reinterpret_borrow
-			// to wrap Python's None singleton (Py_None)
+			// Create None object by leaving pyObject as nullptr
+			// IsNone() will treat nullptr as None
 			auto* impl = new Internal::PythonObjectImpl();
-			impl->pyObject = new py::object(py::reinterpret_borrow<py::object>(py::handle(Py_None)));
+			impl->pyObject = nullptr;
 			mImpl = impl;
 		}
 
@@ -52,7 +52,7 @@ namespace Dia
 				}
 				else
 				{
-					impl->pyObject = new py::object(py::reinterpret_borrow<py::object>(py::handle(Py_None)));
+					impl->pyObject = nullptr;
 				}
 
 				impl->stringCache = otherImpl->stringCache;
@@ -63,7 +63,7 @@ namespace Dia
 				// Other is uninitialized, create None
 				mImpl = nullptr;
 				auto* impl = new Internal::PythonObjectImpl();
-				impl->pyObject = new py::object(py::reinterpret_borrow<py::object>(py::handle(Py_None)));
+				impl->pyObject = nullptr;
 				mImpl = impl;
 			}
 		}
@@ -95,7 +95,7 @@ namespace Dia
 					}
 					else
 					{
-						impl->pyObject = new py::object(py::reinterpret_borrow<py::object>(py::handle(Py_None)));
+						impl->pyObject = nullptr;
 					}
 
 					impl->stringCache = otherImpl->stringCache;
@@ -105,7 +105,7 @@ namespace Dia
 				{
 					// Other is uninitialized
 					auto* impl = new Internal::PythonObjectImpl();
-					impl->pyObject = new py::object(py::reinterpret_borrow<py::object>(py::handle(Py_None)));
+					impl->pyObject = nullptr;
 					mImpl = impl;
 				}
 			}
@@ -119,11 +119,16 @@ namespace Dia
 			auto* impl = static_cast<Internal::PythonObjectImpl*>(mImpl);
 			if (!impl->pyObject) return true;
 
-			// Default-constructed py::object() has ptr() == nullptr
-			// ToPython(nullptr) also returns default-constructed object
-			// So treat nullptr as None
-			PyObject* ptr = impl->pyObject->ptr();
-			return ptr == nullptr || ptr == Py_None;
+			// Use pybind11's built-in is_none() method
+			try
+			{
+				return impl->pyObject->is_none();
+			}
+			catch (...)
+			{
+				// If is_none() throws, treat as None
+				return true;
+			}
 		}
 
 		bool PythonObject::IsValid() const
@@ -133,9 +138,15 @@ namespace Dia
 			auto* impl = static_cast<Internal::PythonObjectImpl*>(mImpl);
 			if (!impl->pyObject) return false;
 
-			// Use Python C API for reliable None check
-			PyObject* ptr = impl->pyObject->ptr();
-			return ptr != nullptr && ptr != Py_None;
+			// Valid means not None
+			try
+			{
+				return !impl->pyObject->is_none();
+			}
+			catch (...)
+			{
+				return false;
+			}
 		}
 
 		bool PythonObject::IsInt() const
