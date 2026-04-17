@@ -77,7 +77,11 @@ namespace Dia
 					: type(t), code(c), deviceIndex(devIdx) {}
 			};
 
-			ActionMap() {}
+			ActionMap()
+			{
+				mBindings.SetSize(32, 32);      // Initialize with reasonable default size
+				mActionValues.SetSize(32, 32);  // Initialize with reasonable default size
+			}
 
 			/// @brief Bind a keyboard key to an action
 			///

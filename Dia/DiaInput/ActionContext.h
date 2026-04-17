@@ -150,7 +150,10 @@ namespace Dia
 		class ActionContextManager
 		{
 		public:
-			ActionContextManager() {}
+			ActionContextManager()
+			{
+				mContexts.SetSize(16, 16);  // Initialize hash table
+			}
 
 			~ActionContextManager()
 			{

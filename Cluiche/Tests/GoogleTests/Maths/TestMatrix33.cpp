@@ -15,7 +15,7 @@ constexpr float kEpsilon = 0.0001f;
 // Construction Tests
 // ==============================================================================
 
-TEST(Matrix33, DefaultConstruction_CreatesZeroMatrix)
+TEST(Matrix33, DefaultConstruction_CreatesIdentityMatrix)
 {
     Matrix33 m;
 
@@ -23,7 +23,8 @@ TEST(Matrix33, DefaultConstruction_CreatesZeroMatrix)
     {
         for (int col = 0; col < 3; ++col)
         {
-            EXPECT_FLOAT_EQ(m(row, col), 0.0f) << "Element at (" << row << "," << col << ") should be 0";
+            float expected = (row == col) ? 1.0f : 0.0f;
+            EXPECT_FLOAT_EQ(m(row, col), expected) << "Element at (" << row << "," << col << ") should be " << expected;
         }
     }
 }
