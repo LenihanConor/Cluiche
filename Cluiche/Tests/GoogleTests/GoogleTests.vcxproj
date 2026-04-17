@@ -276,6 +276,7 @@
     <ClCompile Include="CLI\TestHelpSystem.cpp" />
     <ClCompile Include="CLI\TestEventSystem.cpp" />
     <ClCompile Include="CLI\TestPythonBindings.cpp" />
+    <ClCompile Include="DiaCLI\TestDiaCLI.cpp" />
     <!-- Google Test Source Files - Compiled directly into project -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">
       <AdditionalIncludeDirectories>$(ProjectDir)../../../External/googletest/googletest/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
