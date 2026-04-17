@@ -53,7 +53,10 @@ namespace Dia
 			struct RecordedFrame
 			{
 				Dia::Core::TimeAbsolute timestamp;
-				EventDataT<64> events;
+				// Use smaller capacity (8 events) to avoid stack overflow when copying frames
+				// Most frames have very few events (1-3 typically), so 8 is sufficient
+				// If a frame needs more, EventDataT will assert in debug builds
+				EventDataT<8> events;
 
 				RecordedFrame() : timestamp(Dia::Core::TimeAbsolute::Zero()) {}
 				RecordedFrame(const Dia::Core::TimeAbsolute& time, const EventData& evts)
@@ -192,16 +195,19 @@ namespace Dia
 					unsigned int eventCount = 0;
 					fread(&eventCount, sizeof(unsigned int), 1, file);
 
-					// Read events
-					EventDataT<64> events;
+					// Create frame and read events directly into it
+					// Note: We use AddDefault() to avoid stack overflow from creating
+					// large EventDataT<64> temporaries (16KB each!)
+					mRecordedFrames.AddDefault();
+					RecordedFrame& frame = mRecordedFrames[mRecordedFrames.Size() - 1];
+					frame.timestamp = timestamp;
+
 					for (unsigned int j = 0; j < eventCount; j++)
 					{
 						Event event;
 						fread(&event, sizeof(Event), 1, file);
-						events.Add(event);
+						frame.events.Add(event);
 					}
-
-					mRecordedFrames.Add(RecordedFrame(timestamp, events));
 				}
 
 				fclose(file);
