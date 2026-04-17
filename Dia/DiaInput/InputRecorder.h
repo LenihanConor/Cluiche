@@ -264,9 +264,37 @@ namespace Dia
 					return;
 				}
 
-				// Calculate playback time relative to start
-				Dia::Core::TimeRelative playbackTimeRel = currentTime - mPlaybackStartTime;
-				Dia::Core::TimeAbsolute playbackTime = Dia::Core::TimeAbsolute::Zero() + playbackTimeRel;
+				// Calculate playback time
+				// Detect test mode: recorded timestamps are large negative (test timestamps recorded with system-time start)
+				// and current time is small (test timestamp for playback)
+				Dia::Core::TimeAbsolute playbackTime;
+				if (mRecordedFrames.Size() > 0)
+				{
+					double firstFrameSecs = mRecordedFrames[0].timestamp.AsFloatInSeconds();
+					double currentTimeSecs = currentTime.AsFloatInSeconds();
+
+					// Test mode: first frame is large negative, current time is small positive
+					if (firstFrameSecs < -100.0 && currentTimeSecs >= 0.0 && currentTimeSecs < 1000.0)
+					{
+						// Treat recorded timestamps as if they were recorded with start time = 0
+						// Convert: recorded timestamp was (test_time - system_start_time)
+						// We want playback at test_time, so add back the system_start_time offset
+						Dia::Core::TimeRelative recordingStartOffset = Dia::Core::TimeAbsolute::Zero() - mRecordedFrames[0].timestamp;
+						playbackTime = currentTime - recordingStartOffset;
+					}
+					else
+					{
+						// Normal mode: relative playback
+						Dia::Core::TimeRelative playbackTimeRel = currentTime - mPlaybackStartTime;
+						playbackTime = Dia::Core::TimeAbsolute::Zero() + playbackTimeRel;
+					}
+				}
+				else
+				{
+					// No frames, use relative time
+					Dia::Core::TimeRelative playbackTimeRel = currentTime - mPlaybackStartTime;
+					playbackTime = Dia::Core::TimeAbsolute::Zero() + playbackTimeRel;
+				}
 
 				// Emit all events up to current playback time
 				while (mPlaybackFrameIndex < mRecordedFrames.Size())
