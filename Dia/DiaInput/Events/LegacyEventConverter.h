@@ -192,6 +192,9 @@ namespace Dia
 							dispatcher.QueueEvent(modernEvent);
 						}
 					}
+
+					// Process the queue immediately to trigger callbacks
+					dispatcher.ProcessQueue();
 				}
 			};
 		}

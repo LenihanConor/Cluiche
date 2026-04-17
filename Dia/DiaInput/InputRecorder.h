@@ -80,6 +80,12 @@ namespace Dia
 			/// @brief Start recording input
 			void StartRecording()
 			{
+				// Stop playback if active (mutual exclusion)
+				if (mIsPlayingBack)
+				{
+					StopPlayback();
+				}
+
 				mRecordedFrames.RemoveAll();
 				mIsRecording = true;
 				mRecordingStartTime = Dia::Core::TimeAbsolute::GetSystemTime();
@@ -117,6 +123,12 @@ namespace Dia
 			/// @return true if successful, false on error
 			bool SaveToFile(const char* path) const
 			{
+				// Cannot save while recording
+				if (mIsRecording)
+				{
+					return false;
+				}
+
 				FILE* file = nullptr;
 				fopen_s(&file, path, "wb");
 				if (!file)
@@ -217,6 +229,12 @@ namespace Dia
 			/// @brief Start playback of recorded input
 			void StartPlayback()
 			{
+				// Stop recording if active (mutual exclusion)
+				if (mIsRecording)
+				{
+					StopRecording();
+				}
+
 				mIsPlayingBack = true;
 				mPlaybackStartTime = Dia::Core::TimeAbsolute::GetSystemTime();
 				mPlaybackFrameIndex = 0;
