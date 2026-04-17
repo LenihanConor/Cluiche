@@ -17,10 +17,9 @@ namespace Dia
 
 		PythonObject::PythonObject()
 		{
-			// Create None object by leaving pyObject as nullptr
-			// IsNone() will treat nullptr as None
+			// Create None object using py::none()
 			auto* impl = new Internal::PythonObjectImpl();
-			impl->pyObject = nullptr;
+			impl->pyObject = new py::object(py::none());
 			mImpl = impl;
 		}
 
@@ -119,7 +118,7 @@ namespace Dia
 			auto* impl = static_cast<Internal::PythonObjectImpl*>(mImpl);
 			if (!impl->pyObject) return true;
 
-			// Use pybind11's built-in is_none() method
+			//Use pybind11's is_none() method to check if object is Python's None
 			try
 			{
 				return impl->pyObject->is_none();
