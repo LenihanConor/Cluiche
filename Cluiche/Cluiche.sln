@@ -79,6 +79,31 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GoogleTests", "Tests\Google
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CluicheKernel", "Cluiche\CluicheKernel\CluicheKernel.vcxproj", "{649D1B1D-C23F-4373-ACA8-8A3A59C0CFA0}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DiaCLI", "DiaCLI", "{55DDD841-4CCE-4940-A2A4-AF88A2EC6707}"
+	ProjectSection(SolutionItems) = preProject
+		..\Dia\DiaCLI\dia_cli\cli\api.py = ..\Dia\DiaCLI\dia_cli\cli\api.py
+		..\Dia\DiaCLI\dia_cli\cli_main.py = ..\Dia\DiaCLI\dia_cli\cli_main.py
+		..\Dia\DiaCLI\dia_cli\cli\cli_prefixtest.py = ..\Dia\DiaCLI\dia_cli\cli\cli_prefixtest.py
+		..\Dia\DiaCLI\dia_cli\commands\command\command_cmd.py = ..\Dia\DiaCLI\dia_cli\commands\command\command_cmd.py
+		..\Dia\DiaCLI\dia_cli\templates\command_decl.j2 = ..\Dia\DiaCLI\dia_cli\templates\command_decl.j2
+		..\Dia\DiaCLI\dia_cli\templates\command_impl.j2 = ..\Dia\DiaCLI\dia_cli\templates\command_impl.j2
+		..\Dia\DiaCLI\dia_cli\utils\dia_api_bridge.py = ..\Dia\DiaCLI\dia_cli\utils\dia_api_bridge.py
+		..\Dia\DiaCLI\dia_cli\utils\dia_cli_paths.py = ..\Dia\DiaCLI\dia_cli\utils\dia_cli_paths.py
+		..\Dia\DiaCLI\dia_cli_prime_config.json = ..\Dia\DiaCLI\dia_cli_prime_config.json
+		..\Dia\DiaCLI\dia_cli\utils\invokeshell.py = ..\Dia\DiaCLI\dia_cli\utils\invokeshell.py
+		..\Dia\DiaCLI\poetry.lock = ..\Dia\DiaCLI\poetry.lock
+		..\Dia\DiaCLI\pyproject.toml = ..\Dia\DiaCLI\pyproject.toml
+		..\Dia\DiaCLI\README.md = ..\Dia\DiaCLI\README.md
+		..\Dia\DiaCLI\dia_cli\cli\setup.py = ..\Dia\DiaCLI\dia_cli\cli\setup.py
+		..\Dia\DiaCLI\dia_cli\cli\show.py = ..\Dia\DiaCLI\dia_cli\cli\show.py
+		..\Dia\DiaCLI\dia_cli\cli\test.py = ..\Dia\DiaCLI\dia_cli\cli\test.py
+		..\Dia\DiaCLI\dia_cli\__init__.py = ..\Dia\DiaCLI\dia_cli\__init__.py
+		..\Dia\DiaCLI\dia_cli\cli\__init__.py = ..\Dia\DiaCLI\dia_cli\cli\__init__.py
+		..\Dia\DiaCLI\dia_cli\commands\__init__.py = ..\Dia\DiaCLI\dia_cli\commands\__init__.py
+		..\Dia\DiaCLI\dia_cli\commands\command\__init__.py = ..\Dia\DiaCLI\dia_cli\commands\command\__init__.py
+		..\Dia\DiaCLI\dia_cli\utils\__init__.py = ..\Dia\DiaCLI\dia_cli\utils\__init__.py
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -312,6 +337,7 @@ Global
 		{A5B2650D-8283-483F-827E-CA29140CFA63} = {2291F464-9B87-42F1-AA90-34FE22DD5F9B}
 		{A1B2C3D4-5678-9ABC-DEF0-123456789ABC} = {86CA7611-D55D-411B-8784-187D12107EE0}
 		{649D1B1D-C23F-4373-ACA8-8A3A59C0CFA0} = {2291F464-9B87-42F1-AA90-34FE22DD5F9B}
+		{55DDD841-4CCE-4940-A2A4-AF88A2EC6707} = {2291F464-9B87-42F1-AA90-34FE22DD5F9B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {0D94A1AE-73B4-4642-918D-5014EC3EEA36}
