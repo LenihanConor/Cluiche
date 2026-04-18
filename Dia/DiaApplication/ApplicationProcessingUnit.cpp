@@ -27,6 +27,7 @@ namespace Dia
 			, mAssociatedModules(initialModuleMapSize, initialModuleMapSize * 2)
 			, mPhaseTransitions(initialModuleMapSize, initialModuleMapSize * 2)
 			, mErrorCallback(nullptr)
+			, mHotReloadManager(nullptr)
 		{
 			if (hz != -1.0f)
 			{
@@ -77,6 +78,17 @@ namespace Dia
 			{
 				mAssociatedModules.Add(module->GetUniqueId(), module);
 			}
+		}
+
+		//---------------------------------------------------------------------------------------------------------
+		bool ProcessingUnit::RemoveModule(const Dia::Core::StringCRC& moduleId)
+		{
+			if (mAssociatedModules.ContainsKey(moduleId))
+			{
+				mAssociatedModules.Remove(moduleId);
+				return true;
+			}
+			return false;
 		}
 
 		//---------------------------------------------------------------------------------------------------------
@@ -196,13 +208,18 @@ namespace Dia
 		//---------------------------------------------------------------------------------------------------------
 		Module* ProcessingUnit::GetModule(const Dia::Core::StringCRC& crc)
 		{
-			return mAssociatedModules.GetItem(crc);
+			// COMMON PATTERN: Use TryGetItem() instead of GetItem() to avoid assert when key doesn't exist
+			// TryGetItem() returns pointer to Module*, so need to dereference if found
+			Module** pModule = mAssociatedModules.TryGetItem(crc);
+			return pModule ? *pModule : nullptr;
 		}
 
 		//---------------------------------------------------------------------------------------------------------
 		const Module* ProcessingUnit::GetModule(const Dia::Core::StringCRC& crc)const
 		{
-			return mAssociatedModules.GetItemConst(crc);
+			// COMMON PATTERN: Const version uses TryGetItemConst() returning const Module* const*
+			const Module* const * pModule = mAssociatedModules.TryGetItemConst(crc);
+			return pModule ? *pModule : nullptr;
 		}
 
 		//---------------------------------------------------------------------------------------------------------
@@ -416,6 +433,28 @@ namespace Dia
 		{
 			std::lock_guard<std::mutex> lock(mErrorMutex);
 			mErrorHistory.clear();
+		}
+
+		//---------------------------------------------------------------------------------------------------------
+		// Hot reload manager access (lazy initialization)
+		//---------------------------------------------------------------------------------------------------------
+		HotReloadManager* ProcessingUnit::GetHotReloadManager()
+		{
+			if (mHotReloadManager == nullptr)
+			{
+				mHotReloadManager = new HotReloadManager(this);
+			}
+			return mHotReloadManager;
+		}
+
+		//---------------------------------------------------------------------------------------------------------
+		const HotReloadManager* ProcessingUnit::GetHotReloadManager() const
+		{
+			if (mHotReloadManager == nullptr)
+			{
+				mHotReloadManager = new HotReloadManager(const_cast<ProcessingUnit*>(this));
+			}
+			return mHotReloadManager;
 		}
 	}
 }

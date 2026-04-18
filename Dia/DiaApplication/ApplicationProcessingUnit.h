@@ -16,6 +16,7 @@
 #include <DiaApplication/ApplicationModule.h>
 #include <DiaApplication/ApplicationError.h>
 #include <DiaApplication/MessageBus.h>
+#include <DiaApplication/HotReloadManager.h>
 
 #include "DiaApplication/ApplicationStateObject.h"
 
@@ -47,6 +48,8 @@ namespace Dia
 		////////////////////////////////////////////////////////////////////////////////
 		class ProcessingUnit: public StateObject
 		{
+			friend class HotReloadManager;
+
 		public:
 			typedef Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 8> PhaseTransitionList; // TODO: I am setting this to "8" could be any size to be honest.
 			typedef Dia::Core::Containers::HashTable<Dia::Core::StringCRC, Module*, Dia::Core::StringCRCHashFunctor> ModuleTable;
@@ -76,6 +79,15 @@ namespace Dia
 			 *               Module will NOT be automatically deleted.
 			 */
 			void AddModule(Module* module);
+
+			/**
+			 * @brief Removes a module from this processing unit.
+			 * @param moduleId CRC ID of module to remove
+			 * @return True if module was found and removed, false otherwise
+			 * @note Module is removed from internal tables but NOT deleted.
+			 *       Caller is responsible for deletion if needed.
+			 */
+			bool RemoveModule(const Dia::Core::StringCRC& moduleId);
 
 			/**
 			 * @brief Adds a phase to this processing unit with ownership transfer.
@@ -111,6 +123,10 @@ namespace Dia
 			// Message bus access
 			MessageBus& GetMessageBus() { return mMessageBus; }
 			const MessageBus& GetMessageBus() const { return mMessageBus; }
+
+			// Hot reload manager (created on first access)
+			HotReloadManager* GetHotReloadManager();
+			const HotReloadManager* GetHotReloadManager() const;
 
 			void operator()(); // Used if we are threading
 
@@ -172,6 +188,9 @@ namespace Dia
 
 			// Message bus
 			MessageBus mMessageBus;
+
+			// Hot reload manager (optional, created on demand)
+			mutable HotReloadManager* mHotReloadManager;
 		};
 
 		////////////////////////////////////////////////////////////////////////////////

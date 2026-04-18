@@ -43,6 +43,12 @@
     <Filter Include="CLI">
       <UniqueIdentifier>{CLI00001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaCLI">
+      <UniqueIdentifier>{DIACLI01-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Application">
+      <UniqueIdentifier>{APP00001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GoogleTest">
       <UniqueIdentifier>{AB1E0EFA-J244-8g4c-CF1E-C7FF565EEG45}</UniqueIdentifier>
     </Filter>
@@ -283,6 +289,17 @@
     </ClCompile>
     <ClCompile Include="CLI\TestPythonBindings.cpp">
       <Filter>CLI</Filter>
+    </ClCompile>
+    <!-- DiaCLI -->
+    <ClCompile Include="DiaCLI\TestDiaCLI.cpp">
+      <Filter>DiaCLI</Filter>
+    </ClCompile>
+    <!-- Application -->
+    <ClCompile Include="Application\TestBasicApplication.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\TestHotReload.cpp">
+      <Filter>Application</Filter>
     </ClCompile>
     <!-- GoogleTest -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">

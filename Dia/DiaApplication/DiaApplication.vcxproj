@@ -16,6 +16,7 @@
     <ClCompile Include="ApplicationProcessingUnit.cpp" />
     <ClCompile Include="ApplicationStateObject.cpp" />
     <ClCompile Include="MessageBus.cpp" />
+    <ClCompile Include="HotReloadManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApplicationModule.h" />

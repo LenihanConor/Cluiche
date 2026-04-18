@@ -55,6 +55,41 @@ namespace Dia
 				}
 			}
 		}
+
+		//---------------------------------------------------------------------------------------------------------
+		bool Phase::RemoveModule(const Dia::Core::StringCRC& moduleId)
+		{
+			if (mAssociatedModules.ContainsKey(moduleId))
+			{
+				Module* module = mAssociatedModules[moduleId];
+
+				// Remove from associated modules table
+				mAssociatedModules.Remove(moduleId);
+
+				// Remove from updating modules array if present
+				for (unsigned int i = 0; i < mUpdatingModules.Size(); ++i)
+				{
+					if (mUpdatingModules[i]->GetUniqueId() == moduleId)
+					{
+						mUpdatingModules.RemoveAt(i);
+						break;
+					}
+				}
+
+				// Remove from stopping modules array if present
+				for (unsigned int i = 0; i < mStoppingModuleOrder.Size(); ++i)
+				{
+					if (mStoppingModuleOrder[i]->GetUniqueId() == moduleId)
+					{
+						mStoppingModuleOrder.RemoveAt(i);
+						break;
+					}
+				}
+
+				return true;
+			}
+			return false;
+		}
 				
 		//---------------------------------------------------------------------------------------------------------
 		//

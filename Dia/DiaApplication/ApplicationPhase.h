@@ -28,6 +28,7 @@ namespace Dia
 			Phase(ProcessingUnit* associatedProcessingUnit, const Dia::Core::StringCRC& uniqueId, unsigned int maxModules = 16);
 
             void AddModule(Module* module);
+			bool RemoveModule(const Dia::Core::StringCRC& moduleId);
 
 			void QueuePhaseTransition(const Dia::Core::StringCRC& crc);
 

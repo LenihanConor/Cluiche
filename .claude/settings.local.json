@@ -353,7 +353,17 @@
       "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/MSBuild.exe\" Cluiche/Cluiche.sln /p:Configuration=Debug /p:Platform=Win32 /m /nologo /v:minimal)",
       "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/MSBuild.exe\" Cluiche\\\\\\\\Cluiche.sln //p:Configuration=Debug //p:Platform=Win32 //m //nologo //v:minimal)",
       "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/MSBuild.exe\" \"Cluiche/Tests/GoogleTests/GoogleTests.vcxproj\" /p:Configuration=Debug /p:Platform=Win32 /m /nologo /v:minimal)",
-      "Bash(\"Cluiche/bin/exe/Debug/GoogleTests.exe\" --gtest_list_tests)"
+      "Bash(\"Cluiche/bin/exe/Debug/GoogleTests.exe\" --gtest_list_tests)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Enterprise/MSBuild/Current/Bin/MSBuild.exe\" Cluiche/Cluiche.sln /p:Configuration=Debug /p:Platform=Win32 /t:GoogleTests /nologo /v:minimal)",
+      "Bash(cd C:\\\\\\\\GitHub\\\\\\\\Cluiche\\\\\\\\Cluiche\\\\\\\\Tests\\\\\\\\GoogleTests\\\\\\\\Application)",
+      "Bash(awk '{print $NF}')",
+      "Bash(C:\\\\\\\\GitHub\\\\\\\\Cluiche\\\\\\\\Cluiche\\\\\\\\Tests\\\\\\\\GoogleTests\\\\\\\\bin\\\\\\\\exe\\\\\\\\Debug\\\\\\\\GoogleTests.exe *)",
+      "Bash(/c/GitHub/Cluiche/Cluiche/Tests/GoogleTests/bin/exe/Debug/GoogleTests.exe *)",
+      "Bash(cat \"C:\\\\\\\\Users\\\\\\\\clenihan\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\1\\\\\\\\claude\\\\\\\\C--GitHub-Cluiche\\\\\\\\635d2520-dbbf-41a5-9f17-e3fd0a2dddfd\\\\\\\\tasks\\\\\\\\bnp5kwhtk.output\")",
+      "Bash(\"/c/GitHub/Cluiche/Cluiche/Tests/GoogleTests/bin/exe/Debug/GoogleTests.exe\" --gtest_filter=\"*Application*:HotReload*\" --gtest_color=yes)",
+      "Bash(timeout 5 \"/c/GitHub/Cluiche/Cluiche/Tests/GoogleTests/bin/exe/Debug/GoogleTests.exe\" --gtest_filter=\"HotReload.ModuleNotFoundFails\" --gtest_color=no)",
+      "Bash(timeout 10 \"/c/GitHub/Cluiche/Cluiche/Tests/GoogleTests/bin/exe/Debug/GoogleTests.exe\" --gtest_filter=\"HotReload.ReplaceModuleWithStateTransfer\" --gtest_color=yes)",
+      "Bash(\"/c/GitHub/Cluiche/Cluiche/Tests/GoogleTests/bin/exe/Debug/GoogleTests.exe\" --gtest_filter=\"HotReload.DISABLED_ReplaceModuleWithStateTransfer\" --gtest_break_on_failure)"
     ],
     "defaultMode": "auto"
   }
