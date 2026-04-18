@@ -51,11 +51,13 @@ namespace MockBuildSystem
 			return ToPython("Error: No project name provided");
 		}
 
-		const char* projectName = ToString(args.GetArg(0));
+		// Keep PythonObject alive during ToString() call
+		PythonObject arg = args.GetArg(0);
+		const char* projectName = ToString(arg);
 		lastProjectBuilt = projectName;
 		buildWasSuccessful = true;
 
-		std::string result = std::string("Building project: ") + projectName;
+		std::string result = std::string("Building project: ") + lastProjectBuilt;
 		return ToPython(result.c_str());
 	}
 

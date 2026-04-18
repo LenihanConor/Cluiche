@@ -6,8 +6,23 @@
 #include <DiaPython/DiaPython.h>
 #include <thread>
 #include <chrono>
+#include <string>
+#include <filesystem>
 
 using namespace Dia::Python;
+
+// Helper to get absolute path to test Python scripts
+// Scripts are in the same directory as this test file
+static std::string GetTestScriptPath(const char* scriptName)
+{
+	// __FILE__ gives us the full path to this .cpp file
+	std::filesystem::path testFilePath(__FILE__);
+	// Get the directory containing this test file
+	std::filesystem::path testDir = testFilePath.parent_path();
+	// Construct path to the Python script in the same directory
+	std::filesystem::path scriptPath = testDir / scriptName;
+	return scriptPath.string();
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // DiaPython Script Execution Tests
@@ -45,7 +60,8 @@ protected:
 
 TEST_F(DiaPythonScriptExecutionTest, ExecuteScript_ValidFile_Succeeds)
 {
-	int exitCode = ExecuteScript("../../../Python/test_hello.py");
+	std::string scriptPath = GetTestScriptPath("test_hello.py");
+	int exitCode = ExecuteScript(scriptPath.c_str());
 
 	EXPECT_EQ(exitCode, 0);  // Success
 }
@@ -74,14 +90,16 @@ TEST_F(DiaPythonScriptExecutionTest, ExecuteString_SimpleExpression_Succeeds)
 
 TEST_F(DiaPythonScriptExecutionTest, ExecuteScript_Success_ReturnsZero)
 {
-	int exitCode = ExecuteScript("../../../Python/test_hello.py");
+	std::string scriptPath = GetTestScriptPath("test_hello.py");
+	int exitCode = ExecuteScript(scriptPath.c_str());
 
 	EXPECT_EQ(exitCode, 0);
 }
 
 TEST_F(DiaPythonScriptExecutionTest, ExecuteScript_Error_ReturnsNonZero)
 {
-	int exitCode = ExecuteScript("../../../Python/test_error.py");
+	std::string scriptPath = GetTestScriptPath("test_error.py");
+	int exitCode = ExecuteScript(scriptPath.c_str());
 
 	EXPECT_NE(exitCode, 0);  // Non-zero error code
 }
@@ -95,7 +113,8 @@ TEST_F(DiaPythonScriptExecutionTest, ExecuteScript_NotInitialized_ReturnsErrorCo
 	// Shut down Python
 	Shutdown();
 
-	int exitCode = ExecuteScript("../../../Python/test_hello.py");
+	std::string scriptPath = GetTestScriptPath("test_hello.py");
+	int exitCode = ExecuteScript(scriptPath.c_str());
 
 	EXPECT_EQ(exitCode, 3);  // NotInitialized
 }
@@ -141,7 +160,8 @@ TEST_F(DiaPythonScriptExecutionTest, ExecuteScript_EmptyPath_ReturnsErrorCode2)
 
 TEST_F(DiaPythonScriptExecutionTest, ExecuteScript_SyntaxError_ReturnsErrorCode4)
 {
-	int exitCode = ExecuteScript("../../../Python/test_syntax_error.py");
+	std::string scriptPath = GetTestScriptPath("test_syntax_error.py");
+	int exitCode = ExecuteScript(scriptPath.c_str());
 
 	EXPECT_EQ(exitCode, 4);  // SyntaxError
 }
@@ -159,7 +179,8 @@ TEST_F(DiaPythonScriptExecutionTest, ExecuteString_SyntaxError_ReturnsErrorCode4
 
 TEST_F(DiaPythonScriptExecutionTest, ExecuteScript_RuntimeException_ReturnsErrorCode5)
 {
-	int exitCode = ExecuteScript("../../../Python/test_error.py");
+	std::string scriptPath = GetTestScriptPath("test_error.py");
+	int exitCode = ExecuteScript(scriptPath.c_str());
 
 	EXPECT_EQ(exitCode, 5);  // RuntimeException
 }
@@ -179,7 +200,8 @@ TEST_F(DiaPythonScriptExecutionTest, ExecuteScript_WithArguments_PassedToSysArgv
 {
 	const char* args[] = { "arg1", "arg2", "arg3" };
 
-	int exitCode = ExecuteScript("../../../Python/test_args.py", args, 3);
+	std::string scriptPath = GetTestScriptPath("test_args.py");
+	int exitCode = ExecuteScript(scriptPath.c_str(), args, 3);
 
 	EXPECT_EQ(exitCode, 0);  // Script should execute successfully
 	// Note: Script prints args to stdout - verify manually or with output redirection
@@ -187,7 +209,8 @@ TEST_F(DiaPythonScriptExecutionTest, ExecuteScript_WithArguments_PassedToSysArgv
 
 TEST_F(DiaPythonScriptExecutionTest, ExecuteScript_WithNoArguments_Works)
 {
-	int exitCode = ExecuteScript("../../../Python/test_hello.py", nullptr, 0);
+	std::string scriptPath = GetTestScriptPath("test_hello.py");
+	int exitCode = ExecuteScript(scriptPath.c_str(), nullptr, 0);
 
 	EXPECT_EQ(exitCode, 0);
 }
@@ -463,9 +486,10 @@ TEST_F(DiaPythonScriptExecutionTest, ExecuteScriptAsync_MaxConcurrentTasks_Retur
 TEST_F(DiaPythonScriptExecutionTest, ExecuteScript_MultipleSequential_Works)
 {
 	// Execute multiple scripts sequentially
+	std::string scriptPath = GetTestScriptPath("test_hello.py");
 	for (int i = 0; i < 5; i++)
 	{
-		int exitCode = ExecuteScript("../../../../../../Cluiche/Tests/TestScripts/Python/test_hello.py");
+		int exitCode = ExecuteScript(scriptPath.c_str());
 		EXPECT_EQ(exitCode, 0);
 	}
 }

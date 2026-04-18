@@ -8,6 +8,7 @@
 #include <DiaCore/Threading/Atomic.h>
 #include <thread>
 #include <vector>
+#include <chrono>
 
 using namespace Dia::Core;
 
@@ -324,6 +325,7 @@ TEST_F(JobSystemTest, MultipleChildren_AllComplete)
 TEST_F(JobSystemTest, NestedChildren_ExecuteCorrectly)
 {
     Atomic<int> counter{0};
+    Atomic<bool> completed{false};
 
     Job* grandparent = JobSystem::CreateJob([](Job*) {});
 
@@ -337,7 +339,19 @@ TEST_F(JobSystemTest, NestedChildren_ExecuteCorrectly)
     JobSystem::Run(parent);
     JobSystem::Run(grandparent);
 
-    JobSystem::Wait(grandparent);
+    // Wait with 5-second timeout
+    auto startTime = std::chrono::steady_clock::now();
+    const auto timeout = std::chrono::seconds(5);
+
+    while (!JobSystem::IsComplete(grandparent))
+    {
+        auto elapsed = std::chrono::steady_clock::now() - startTime;
+        if (elapsed > timeout)
+        {
+            FAIL() << "Test timed out after 5 seconds - likely deadlock in nested job hierarchy";
+        }
+        ThisThread::Yield();
+    }
 
     EXPECT_EQ(counter.Load(), 1);
 }

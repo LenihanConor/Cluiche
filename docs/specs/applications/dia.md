@@ -11,11 +11,12 @@ Dia is the game engine application that provides all shared engine infrastructur
 
 | System | Description | Spec |
 |--------|-------------|------|
-| DiaAPI | Plugin-based CLI framework for build operations, asset pipelines, and developer tools | [diacli.md](../systems/dia/diacli.md) |
+| DiaAPI | C++ command registration and execution API framework - provides runtime command infrastructure | [diaapi.md](../systems/dia/diaapi.md) |
+| DiaCLI | Python-based CLI tool for development workflows (build, assets, scaffolding, utilities) | [diacli.md](../systems/dia/diacli.md) |
 | DiaPython | Python embedding framework - wraps pybind11 with clean C++ API for scripting integration | [diapython.md](../systems/dia/diapython.md) |
+| DiaApplication | Application framework (ProcessingUnit/Phase/Module architecture for multi-threaded execution) | [diaapplication.md](../systems/dia/diaapplication.md) |
 | DiaCore | Foundation library (containers, type system, memory, logging, CRC) | TBD |
 | DiaMaths | Math library (vectors, matrices, transforms, shapes) | TBD |
-| DiaApplication | Application framework (ProcessingUnit/Phase/Module architecture) | TBD |
 | DiaGraphics | Graphics abstraction layer (ICanvas, Frame, rendering) | TBD |
 | DiaWindow | Window management | TBD |
 | DiaInput | Input handling (keyboard, mouse, events) | TBD |

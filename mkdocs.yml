@@ -158,11 +158,16 @@ nav:
         - Example System: specs/systems/example-app/example-system.md
     - Features:
       - Dia Features:
-        - DiaPython - Interpreter Lifecycle: specs/features/dia/diapython/interpreter-lifecycle.md
-        - DiaPython - Script Execution: specs/features/dia/diapython/script-execution.md
-        - DiaPython - Module API: specs/features/dia/diapython/module-api.md
-        - DiaPython - Type Conversion: specs/features/dia/diapython/type-conversion.md
-        - DiaPython - Error Handling: specs/features/dia/diapython/error-handling.md
+        - DiaCLI Features:
+          - Plugin Discovery: specs/features/dia/diacli/plugin-discovery.md
+          - Command Scaffolding: specs/features/dia/diacli/command-scaffolding.md
+          - DiaAPI Bridge: specs/features/dia/diacli/diaapi-bridge.md
+        - DiaPython Features:
+          - Interpreter Lifecycle: specs/features/dia/diapython/interpreter-lifecycle.md
+          - Script Execution: specs/features/dia/diapython/script-execution.md
+          - Module API: specs/features/dia/diapython/module-api.md
+          - Type Conversion: specs/features/dia/diapython/type-conversion.md
+          - Error Handling: specs/features/dia/diapython/error-handling.md
       - Example Features:
         - Example Feature: specs/features/example-app/example-system/example-feature.md
 

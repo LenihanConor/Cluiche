@@ -16,6 +16,25 @@ namespace Dia
 	{
 		namespace Internal
 		{
+			// Custom Python writer class for output redirection
+			class CustomWriter
+			{
+			public:
+				OutputCallback callback;
+
+				CustomWriter(OutputCallback cb) : callback(cb) {}
+
+				void write(const std::string& text)
+				{
+					if (callback)
+					{
+						callback(text.c_str());
+					}
+				}
+
+				void flush() {}
+			};
+
 			// Global output redirection state
 			OutputRedirection gOutputRedirection = { nullptr, nullptr, false, py::object(), py::object() };
 
@@ -225,43 +244,42 @@ namespace Dia
 					gOutputRedirection.originalStderr = sys.attr("stderr");
 				}
 
-				// Create custom writer class for stdout
+				// Register CustomWriter class with pybind11
+				// Note: We check if class exists because if Python restarts between tests,
+				// the class needs to be re-registered
+				try
+				{
+					py::object builtins = py::globals()["__builtins__"];
+					if (!py::hasattr(builtins, "CustomWriter"))
+					{
+						py::class_<CustomWriter>(builtins, "CustomWriter")
+							.def(py::init<OutputCallback>())
+							.def("write", &CustomWriter::write)
+							.def("flush", &CustomWriter::flush);
+					}
+				}
+				catch (const std::exception& ex)
+				{
+					// If registration fails, log but try to continue
+					DIA_LOG_WARNING("DiaPython", "CustomWriter class registration failed: %s", ex.what());
+				}
+
+				// Create custom writer for stdout
 				if (stdoutCallback)
 				{
-					py::object writer = py::cpp_function([stdoutCallback](const std::string& text)
-					{
-						if (stdoutCallback)
-						{
-							stdoutCallback(text.c_str());
-						}
-					});
-
-					// Create simple writer object with write method
-					py::module_ io = py::module_::import("io");
-					py::object stringIO = io.attr("StringIO")();
-
-					// Override stdout
-					sys.attr("stdout") = py::cpp_function([stdoutCallback](const std::string& text)
-					{
-						if (stdoutCallback)
-						{
-							stdoutCallback(text.c_str());
-						}
-					});
+					CustomWriter* writer = new CustomWriter(stdoutCallback);
+					py::object writerObj = py::cast(writer);
+					sys.attr("stdout") = writerObj;
 
 					gOutputRedirection.stdoutCallback = stdoutCallback;
 				}
 
-				// Create custom writer class for stderr
+				// Create custom writer for stderr
 				if (stderrCallback)
 				{
-					sys.attr("stderr") = py::cpp_function([stderrCallback](const std::string& text)
-					{
-						if (stderrCallback)
-						{
-							stderrCallback(text.c_str());
-						}
-					});
+					CustomWriter* writer = new CustomWriter(stderrCallback);
+					py::object writerObj = py::cast(writer);
+					sys.attr("stderr") = writerObj;
 
 					gOutputRedirection.stderrCallback = stderrCallback;
 				}

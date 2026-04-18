@@ -89,11 +89,11 @@ DiaAPI <command> --help          # Show command-specific help
 
 | Feature | Description | Spec | Status |
 |---------|-------------|------|--------|
-| command-registry | Core command registration and discovery system | @docs/specs/features/dia/diacli/command-registry.md | Done |
-| cli-parser | Argument parsing (positional, named, flags) | @docs/specs/features/dia/diacli/cli-parser.md | Done |
-| help-system | Auto-generated help text from registered commands | @docs/specs/features/dia/diacli/help-system.md | Done |
-| event-system | Lifecycle events for command execution | @docs/specs/features/dia/diacli/event-system.md | Done |
-| python-bindings | Automatic Python exposure of all registered commands via DiaPython | @docs/specs/features/dia/diacli/python-bindings.md | Done |
+| command-registry | Core command registration and discovery system | [command-registry.md](../../features/dia/diaapi/command-registry.md) | Done |
+| cli-parser | Argument parsing (positional, named, flags) | [cli-parser.md](../../features/dia/diaapi/cli-parser.md) | Done |
+| help-system | Auto-generated help text from registered commands | [help-system.md](../../features/dia/diaapi/help-system.md) | Done |
+| event-system | Lifecycle events for command execution | [event-system.md](../../features/dia/diaapi/event-system.md) | Done |
+| python-bindings | Automatic Python exposure of all registered commands via DiaPython | [python-bindings.md](../../features/dia/diaapi/python-bindings.md) | Done |
 
 ## Platform Primitives Used
 

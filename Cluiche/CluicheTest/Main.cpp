@@ -32,42 +32,10 @@ int main( int argc, const char* argv[] )
 			Get Unit Test Page Working
 	*/
 
-
-
-
-
-
-
-
-/*	struct ApplicationNode
-	{
-		int type;
-		//string name;
-		//int uniqueID
-	};
-	Dia::Core::Containers::Graph<int, 6, char, 3> graph;
-	graph.AddNode(Dia::Core::Containers::Graph<int, 6, char, 3>::Node("N1", 200));
-	graph.AddNode(Dia::Core::Containers::Graph<int, 6, char, 3>::Node("N2", 100));
-	graph.AddEdge(Dia::Core::Containers::Graph<int, 6, char, 3>::Edge("E1", '1', graph.FindNode("N1"), graph.FindNode("N2")));*/
-
 	mainPU.Start();
 
 	// Looping call
 	mainPU.Update();
-
-
-
-
-
-	// Debug Calls
-/*	static bool a = false;
-	if (a)
-	{
-		mainPU.GenerateModuleDependecyGraph();
-		mainPU.GeneratePhaseDependecyGraph();
-	}*/
-
-
 
 
 	mainPU.Stop();

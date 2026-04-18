@@ -165,11 +165,15 @@ namespace Dia
 			void WaitImpl(Job* job)
 			{
 				// Help execute jobs while waiting
-				while (!IsComplete(job))
+				while (job->unfinishedJobs.load(std::memory_order_acquire) > 0)
 				{
 					// Could implement work stealing here
 					ThisThread::Yield();
 				}
+
+				// Job is complete - clean it up
+				// We're safe to delete now because we know unfinishedJobs reached 0
+				DIA_DELETE(job);
 			}
 
 			static void Execute(Job* job)
@@ -187,19 +191,19 @@ namespace Dia
 			static void Finish(Job* job)
 			{
 				// Decrement unfinished count
-				int unfinished = job->unfinishedJobs.fetch_sub(1, std::memory_order_release);
+				const int unfinished = job->unfinishedJobs.fetch_sub(1, std::memory_order_acq_rel);
 
 				if (unfinished == 1)
 				{
-					// Job is complete
+					// Job is complete - notify parent
 					if (job->parent)
 					{
-						// Notify parent
 						Finish(job->parent);
 					}
 
-					// Clean up job
-					DIA_DELETE(job);
+					// Note: Job is NOT deleted here
+					// The caller of Wait() or JobSystem is responsible for cleanup
+					// This avoids use-after-free bugs when Wait() checks IsComplete()
 				}
 			}
 
