@@ -289,20 +289,15 @@ kConstructed → kFlaggedToStart → kRunning → kFlaggedToStop → kNotRunning
 
 ## Features
 
-| Feature | Description | Status |
-|---------|-------------|--------|
-| State Lifecycle | StateObject base class with Constructed → Start → Update → Stop | Implemented |
-| ProcessingUnit | Thread-capable execution container with phase/module management | Implemented |
-| Phase Management | Execution stages with state transitions and module dependencies | Implemented |
-| Module System | Functional units with dependency tracking and lifecycle hooks | Implemented |
-| Thread Limiting | Optional frequency control (Hz) with TimeThreadLimiter | Implemented |
-| Phase Transitions | Immediate and queued (thread-safe) phase switching | Implemented |
-| Module Ownership | Both raw pointers (external) and UniquePtr (internal ownership) | Implemented |
-| Message Bus | Thread-safe inter-module communication with queued dispatch | Implemented |
-| Error Handling | ErrorCallback system with ErrorInfo history (last 100 errors) | Implemented |
-| Hot Reload | Runtime module replacement with state transfer | Implemented |
-| Async Module Start | Modules can start asynchronously with NotifyReadyToStartAsync() | Implemented |
-| Module Retention | Modules can persist across phase transitions | Implemented |
+| Feature | Description | Spec | Status |
+|---------|-------------|------|--------|
+| State Lifecycle | StateObject base class with Constructed → Start → Update → Stop | [state-lifecycle.md](../../features/dia/diaapplication/state-lifecycle.md) | Done |
+| ProcessingUnit | Thread-capable execution container with phase/module management | [processing-unit.md](../../features/dia/diaapplication/processing-unit.md) | Done |
+| Phase Management | Execution stages with state transitions and module dependencies | [phase-management.md](../../features/dia/diaapplication/phase-management.md) | Done |
+| Module System | Functional units with dependency tracking and lifecycle hooks | [module-system.md](../../features/dia/diaapplication/module-system.md) | Done |
+| Message Bus | Thread-safe inter-module communication with queued dispatch | [message-bus.md](../../features/dia/diaapplication/message-bus.md) | Done |
+| Error Handling | ErrorCallback system with ErrorInfo history (last 100 errors) | [error-handling.md](../../features/dia/diaapplication/error-handling.md) | Done |
+| Hot Reload | Runtime module replacement with state transfer | [hot-reload.md](../../features/dia/diaapplication/hot-reload.md) | Done |
 
 ## Platform Primitives Used
 
