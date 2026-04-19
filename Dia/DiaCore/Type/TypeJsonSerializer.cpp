@@ -17,7 +17,7 @@ namespace Dia
 	{
 		namespace Types
 		{
-			const char* TypeJsonSerializer::MetaData::sMetaDataArray[] = { "_class_name", "_crc_validation_array"};
+			const char* TypeJsonSerializer::MetaData::sMetaDataArray[] = { "_class_name", "_crc_validation_array", "_version"};
 
 			//------------------------------------------------------------------------------------
 			//	JsonSerializerInternal
@@ -33,6 +33,8 @@ namespace Dia
 				void Serialize(const TypeInstance& instance, Containers::StringWriter& outBuffer)
 				{
 					Json::Value jsonStructureToSerialize;
+
+					jsonStructureToSerialize[TypeJsonSerializer::MetaData::GetMetaData(TypeJsonSerializer::MetaData::EFlagName::Version)] = TypeJsonSerializer::MetaData::kCurrentVersion;
 
 					this->mCRCValidationArray = &jsonStructureToSerialize[TypeJsonSerializer::MetaData::GetMetaData(TypeJsonSerializer::MetaData::EFlagName::CRCArray)];
 
@@ -314,6 +316,10 @@ namespace Dia
 						return;
 					}
 
+					const Json::Value& versionValue = parsedFromString[TypeJsonSerializer::MetaData::GetMetaData(TypeJsonSerializer::MetaData::EFlagName::Version)];
+					unsigned int version = versionValue.isNull() ? 1 : versionValue.asUInt();
+					DIA_ASSERT(version == TypeJsonSerializer::MetaData::kCurrentVersion, "Serialization version mismatch: file is v%u, expected v%u", version, TypeJsonSerializer::MetaData::kCurrentVersion);
+
 					this->mCRCValidationArray = &parsedFromString[TypeJsonSerializer::MetaData::GetMetaData(TypeJsonSerializer::MetaData::EFlagName::CRCArray)];
 
 					ReadInstanceDeclaration(instance, parsedFromString);
@@ -437,9 +443,9 @@ namespace Dia
 						CRC newCrc( startPtr, numberCharacters);
 						crcPath.Add(newCrc);
 
-						unsigned int addressResult = 0;
+						uintptr_t addressResult = 0;
 						instance.FindPointerAddressFromVariableCRCPath( crcPath, addressResult );
-						
+
 						char* pointeeAsType = reinterpret_cast<char*>(tempStruct.mPointeeAsType);
 						void** pointeeValue = reinterpret_cast<void**>(((tempStruct.mOffsetFromPointee / sizeof (char)) + pointeeAsType));
 

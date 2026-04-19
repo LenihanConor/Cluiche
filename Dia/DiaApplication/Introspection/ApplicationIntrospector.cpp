@@ -32,7 +32,7 @@ namespace Dia
 			// ApplicationIntrospector is a friend of ProcessingUnit so we can access mAssociatedPhases
 			const ProcessingUnit::PhasesTable& phaseTable = mProcessingUnit->mAssociatedPhases;
 
-			for (unsigned int i = 0; i < phaseTable.Size(); ++i)
+			for (size_t i = 0; i < phaseTable.Size(); ++i)
 			{
 				Phase* phase = phaseTable.GetItemByIndexConst(i);
 				phases.Add(phase);
@@ -51,7 +51,7 @@ namespace Dia
 			// Iterate through the ProcessingUnit's module hash table
 			const ProcessingUnit::ModuleTable& moduleTable = mProcessingUnit->mAssociatedModules;
 
-			for (unsigned int i = 0; i < moduleTable.Size(); ++i)
+			for (size_t i = 0; i < moduleTable.Size(); ++i)
 			{
 				Module* module = moduleTable.GetItemByIndexConst(i);
 				modules.Add(module);
@@ -85,7 +85,7 @@ namespace Dia
 				const ProcessingUnit::PhaseTransitionList& toPhases = it.Value();
 
 				// Add each transition from this phase
-				for (unsigned int i = 0; i < toPhases.Size(); ++i)
+				for (size_t i = 0; i < toPhases.Size(); ++i)
 				{
 					PhaseTransitionInfo info(fromPhaseId, toPhases[i]);
 					transitions.Add(info);
@@ -106,7 +106,7 @@ namespace Dia
 			Dia::Core::Containers::DynamicArrayC<Module*, 32> allModules = GetModules();
 
 			// For each module, find which phases contain it
-			for (unsigned int i = 0; i < allModules.Size(); ++i)
+			for (size_t i = 0; i < allModules.Size(); ++i)
 			{
 				Module* module = allModules[i];
 				ModulePlacement placement;
@@ -114,7 +114,7 @@ namespace Dia
 
 				// Iterate through all phases and check if they contain this module
 				const ProcessingUnit::PhasesTable& phaseTable = mProcessingUnit->mAssociatedPhases;
-				for (unsigned int j = 0; j < phaseTable.Size(); ++j)
+				for (size_t j = 0; j < phaseTable.Size(); ++j)
 				{
 					Phase* phase = phaseTable.GetItemByIndexConst(j);
 
@@ -188,7 +188,7 @@ namespace Dia
 			if (topology.isMember("phases") && topology["phases"].isArray())
 			{
 				const Json::Value& phasesArray = topology["phases"];
-				for (unsigned int i = 0; i < phasesArray.size(); ++i)
+				for (size_t i = 0; i < phasesArray.size(); ++i)
 				{
 					const Json::Value& phaseObj = phasesArray[i];
 					if (phaseObj.isMember("id"))
@@ -205,7 +205,7 @@ namespace Dia
 			if (topology.isMember("transitions") && topology["transitions"].isArray())
 			{
 				const Json::Value& transitionsArray = topology["transitions"];
-				for (unsigned int i = 0; i < transitionsArray.size(); ++i)
+				for (size_t i = 0; i < transitionsArray.size(); ++i)
 				{
 					const Json::Value& transitionObj = transitionsArray[i];
 					if (transitionObj.isMember("from") && transitionObj.isMember("to"))
@@ -222,7 +222,7 @@ namespace Dia
 			if (topology.isMember("modules") && topology["modules"].isArray())
 			{
 				const Json::Value& modulesArray = topology["modules"];
-				for (unsigned int i = 0; i < modulesArray.size(); ++i)
+				for (size_t i = 0; i < modulesArray.size(); ++i)
 				{
 					const Json::Value& moduleObj = modulesArray[i];
 					if (moduleObj.isMember("id"))

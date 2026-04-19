@@ -30,7 +30,7 @@ namespace Dia
 			mProcessedFiles.Clear();
 
 			// Compose each file in order, merging into output manifest
-			for (unsigned int i = 0; i < filePaths.Size(); ++i)
+			for (size_t i = 0; i < filePaths.Size(); ++i)
 			{
 				ApplicationManifest tempManifest;
 				ManifestValidationResult result = ResolveImportsRecursive(filePaths[i], tempManifest);
@@ -66,7 +66,7 @@ namespace Dia
 			if (DetectImportCycle(filePath))
 			{
 				Dia::Core::Containers::String512 cyclePath;
-				for (unsigned int i = 0; i < mImportStack.Size(); ++i)
+				for (size_t i = 0; i < mImportStack.Size(); ++i)
 				{
 					if (i > 0)
 					{
@@ -102,7 +102,7 @@ namespace Dia
 			mImportStack.Add(filePath);
 
 			// Recursively resolve imports (depth-first)
-			for (unsigned int i = 0; i < currentManifest.imports.Size(); ++i)
+			for (size_t i = 0; i < currentManifest.imports.Size(); ++i)
 			{
 				const char* importPath = currentManifest.imports[i];
 				ApplicationManifest importedManifest;
@@ -132,7 +132,7 @@ namespace Dia
 		bool ManifestComposer::DetectImportCycle(const char* filePath)
 		{
 			// Check if filePath is already in the import stack
-			for (unsigned int i = 0; i < mImportStack.Size(); ++i)
+			for (size_t i = 0; i < mImportStack.Size(); ++i)
 			{
 				if (strcmp(mImportStack[i], filePath) == 0)
 				{
@@ -151,13 +151,13 @@ namespace Dia
 			}
 
 			// AC12 Rule 1: Processing units merged by instance_id (later overrides earlier)
-			for (unsigned int i = 0; i < source.processingUnits.Size(); ++i)
+			for (size_t i = 0; i < source.processingUnits.Size(); ++i)
 			{
 				const ApplicationManifest::ProcessingUnitEntry& sourcePU = source.processingUnits[i];
 
 				// Find matching processing unit in target
 				bool found = false;
-				for (unsigned int j = 0; j < target.processingUnits.Size(); ++j)
+				for (size_t j = 0; j < target.processingUnits.Size(); ++j)
 				{
 					ApplicationManifest::ProcessingUnitEntry& targetPU = target.processingUnits[j];
 
@@ -187,7 +187,7 @@ namespace Dia
 					}
 
 					// Copy phases
-					for (unsigned int k = 0; k < sourcePU.phases.Size(); ++k)
+					for (size_t k = 0; k < sourcePU.phases.Size(); ++k)
 					{
 						const ApplicationManifest::PhaseEntry& sourcePhase = sourcePU.phases[k];
 						ApplicationManifest::PhaseEntry newPhase;
@@ -201,7 +201,7 @@ namespace Dia
 					}
 
 					// Copy modules
-					for (unsigned int k = 0; k < sourcePU.modules.Size(); ++k)
+					for (size_t k = 0; k < sourcePU.modules.Size(); ++k)
 					{
 						const ApplicationManifest::ModuleEntry& sourceModule = sourcePU.modules[k];
 						ApplicationManifest::ModuleEntry newModule;
@@ -213,13 +213,13 @@ namespace Dia
 						}
 
 						// Copy phase IDs
-						for (unsigned int m = 0; m < sourceModule.phaseIds.Size(); ++m)
+						for (size_t m = 0; m < sourceModule.phaseIds.Size(); ++m)
 						{
 							newModule.phaseIds.Add(sourceModule.phaseIds[m]);
 						}
 
 						// Copy dependencies
-						for (unsigned int m = 0; m < sourceModule.dependencies.Size(); ++m)
+						for (size_t m = 0; m < sourceModule.dependencies.Size(); ++m)
 						{
 							newModule.dependencies.Add(sourceModule.dependencies[m]);
 						}
@@ -228,7 +228,7 @@ namespace Dia
 					}
 
 					// Copy transitions
-					for (unsigned int k = 0; k < sourcePU.transitions.Size(); ++k)
+					for (size_t k = 0; k < sourcePU.transitions.Size(); ++k)
 					{
 						newPU.transitions.Add(sourcePU.transitions[k]);
 					}
@@ -288,13 +288,13 @@ namespace Dia
 			const Dia::Core::Containers::DynamicArrayC<ApplicationManifest::PhaseEntry, 16>& sourcePhases,
 			Dia::Core::Containers::DynamicArrayC<ApplicationManifest::PhaseEntry, 16>& targetPhases)
 		{
-			for (unsigned int i = 0; i < sourcePhases.Size(); ++i)
+			for (size_t i = 0; i < sourcePhases.Size(); ++i)
 			{
 				const ApplicationManifest::PhaseEntry& sourcePhase = sourcePhases[i];
 
 				// Find matching phase in target
 				bool found = false;
-				for (unsigned int j = 0; j < targetPhases.Size(); ++j)
+				for (size_t j = 0; j < targetPhases.Size(); ++j)
 				{
 					ApplicationManifest::PhaseEntry& targetPhase = targetPhases[j];
 
@@ -335,13 +335,13 @@ namespace Dia
 			const Dia::Core::Containers::DynamicArrayC<ApplicationManifest::ModuleEntry, 32>& sourceModules,
 			Dia::Core::Containers::DynamicArrayC<ApplicationManifest::ModuleEntry, 32>& targetModules)
 		{
-			for (unsigned int i = 0; i < sourceModules.Size(); ++i)
+			for (size_t i = 0; i < sourceModules.Size(); ++i)
 			{
 				const ApplicationManifest::ModuleEntry& sourceModule = sourceModules[i];
 
 				// Find matching module in target
 				bool found = false;
-				for (unsigned int j = 0; j < targetModules.Size(); ++j)
+				for (size_t j = 0; j < targetModules.Size(); ++j)
 				{
 					ApplicationManifest::ModuleEntry& targetModule = targetModules[j];
 
@@ -363,13 +363,13 @@ namespace Dia
 						}
 
 						// Merge phase IDs (union)
-						for (unsigned int k = 0; k < sourceModule.phaseIds.Size(); ++k)
+						for (size_t k = 0; k < sourceModule.phaseIds.Size(); ++k)
 						{
 							const Dia::Core::StringCRC& phaseId = sourceModule.phaseIds[k];
 
 							// Check if already present
 							bool phaseFound = false;
-							for (unsigned int m = 0; m < targetModule.phaseIds.Size(); ++m)
+							for (size_t m = 0; m < targetModule.phaseIds.Size(); ++m)
 							{
 								if (targetModule.phaseIds[m] == phaseId)
 								{
@@ -385,13 +385,13 @@ namespace Dia
 						}
 
 						// Merge dependencies (union)
-						for (unsigned int k = 0; k < sourceModule.dependencies.Size(); ++k)
+						for (size_t k = 0; k < sourceModule.dependencies.Size(); ++k)
 						{
 							const Dia::Core::StringCRC& depId = sourceModule.dependencies[k];
 
 							// Check if already present
 							bool depFound = false;
-							for (unsigned int m = 0; m < targetModule.dependencies.Size(); ++m)
+							for (size_t m = 0; m < targetModule.dependencies.Size(); ++m)
 							{
 								if (targetModule.dependencies[m] == depId)
 								{
@@ -423,13 +423,13 @@ namespace Dia
 					}
 
 					// Copy phase IDs
-					for (unsigned int k = 0; k < sourceModule.phaseIds.Size(); ++k)
+					for (size_t k = 0; k < sourceModule.phaseIds.Size(); ++k)
 					{
 						newModule.phaseIds.Add(sourceModule.phaseIds[k]);
 					}
 
 					// Copy dependencies
-					for (unsigned int k = 0; k < sourceModule.dependencies.Size(); ++k)
+					for (size_t k = 0; k < sourceModule.dependencies.Size(); ++k)
 					{
 						newModule.dependencies.Add(sourceModule.dependencies[k]);
 					}
@@ -444,13 +444,13 @@ namespace Dia
 			Dia::Core::Containers::DynamicArrayC<ApplicationManifest::PhaseTransition, 32>& targetTransitions)
 		{
 			// AC12 Rule 4: Union of all transitions (duplicates ignored)
-			for (unsigned int i = 0; i < sourceTransitions.Size(); ++i)
+			for (size_t i = 0; i < sourceTransitions.Size(); ++i)
 			{
 				const ApplicationManifest::PhaseTransition& sourceTrans = sourceTransitions[i];
 
 				// Check if transition already exists
 				bool found = false;
-				for (unsigned int j = 0; j < targetTransitions.Size(); ++j)
+				for (size_t j = 0; j < targetTransitions.Size(); ++j)
 				{
 					const ApplicationManifest::PhaseTransition& targetTrans = targetTransitions[j];
 

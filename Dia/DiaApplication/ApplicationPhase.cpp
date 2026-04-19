@@ -72,7 +72,7 @@ namespace Dia
 				mAssociatedModules.Remove(moduleId);
 
 				// Remove from updating modules array if present
-				for (unsigned int i = 0; i < mUpdatingModules.Size(); ++i)
+				for (size_t i = 0; i < mUpdatingModules.Size(); ++i)
 				{
 					if (mUpdatingModules[i]->GetUniqueId() == moduleId)
 					{
@@ -82,7 +82,7 @@ namespace Dia
 				}
 
 				// Remove from stopping modules array if present
-				for (unsigned int i = 0; i < mStoppingModuleOrder.Size(); ++i)
+				for (size_t i = 0; i < mStoppingModuleOrder.Size(); ++i)
 				{
 					if (mStoppingModuleOrder[i]->GetUniqueId() == moduleId)
 					{
@@ -111,7 +111,7 @@ namespace Dia
 
 			// Creates a list of all modules that need to be started
 			Dia::Core::Containers::DynamicArrayC<Module*, 128> modulesToStart;
-			for (unsigned int i = 0; i < mAssociatedModules.Size(); i++)
+			for (size_t i = 0; i < mAssociatedModules.Size(); i++)
 			{
 				Module* pModule = mAssociatedModules.GetItemByIndex(i);
 
@@ -129,7 +129,7 @@ namespace Dia
 
 				// Finding modules that have no dependancies
 				unsigned int numberOfModulesStarted = 0;
-				for (unsigned int i = 0; i < modulesToStart.Size(); i++)
+				for (size_t i = 0; i < modulesToStart.Size(); i++)
 				{
 					Module* pModule = modulesToStart.At(i);
 
@@ -173,7 +173,7 @@ namespace Dia
 			AfterModulesStart();
 			
 			// This will add the modules in order of starting and should make it order dependant
-			for (unsigned int i = 0; i < mAssociatedModules.Size(); i++)
+			for (size_t i = 0; i < mAssociatedModules.Size(); i++)
 			{
 				Module* pModule = mAssociatedModules.GetItemByIndex(i);
 
@@ -242,7 +242,7 @@ namespace Dia
 			Dia::Core::Containers::DynamicArrayC<Module*, 128> modulesToStop;
 			Dia::Core::Containers::DynamicArrayC<Module*, 128> modulesToRetain;
 
-			for (unsigned int i = 0; i < mAssociatedModules.Size(); i++)
+			for (size_t i = 0; i < mAssociatedModules.Size(); i++)
 			{
 				Module* pStartModule = mAssociatedModules.GetItemByIndex(i);
 
@@ -257,7 +257,7 @@ namespace Dia
 			}
 
 			// To keep order we tranverse the existing update and stopping order list and add all retaining modules
-			for (unsigned int i = 0; i < mUpdatingModules.Size(); i++)
+			for (size_t i = 0; i < mUpdatingModules.Size(); i++)
 			{
 				Module* module = mUpdatingModules[i];
 				if (modulesToRetain.FindIndex(module) != -1)
@@ -282,7 +282,7 @@ namespace Dia
 
 			AfterModulesStop();
 
-			for (unsigned int i = 0; i < mStoppingModuleOrder.Size(); i++)
+			for (size_t i = 0; i < mStoppingModuleOrder.Size(); i++)
 			{
 				Module* module = mStoppingModuleOrder[i];
 				if (modulesToRetain.FindIndex(module) != -1)
@@ -293,7 +293,7 @@ namespace Dia
 			mStoppingModuleOrder.RemoveAll();
 
 			//	Modules that are in both should be retained (and notified of this)
-			for (unsigned int i = 0; i < modulesToRetain.Size(); i++)
+			for (size_t i = 0; i < modulesToRetain.Size(); i++)
 			{
 				Module* moduleToRetain = modulesToRetain.At(i);
 				moduleToRetain->RetainThroughTransition(this, endPhase);
@@ -348,7 +348,7 @@ namespace Dia
 			// No modules with no dependancies this should assert and fail to start
 			unsigned int numberOfModulesFlaggedToStart = 0;
 
-			for (unsigned int i = 0; i < modulesFlaggedToStartAsync.Size(); i++)
+			for (size_t i = 0; i < modulesFlaggedToStartAsync.Size(); i++)
 			{
 				if (modulesFlaggedToStartAsync.At(i) != nullptr)
 				{
@@ -372,7 +372,7 @@ namespace Dia
 						Dia::Core::Containers::String1024 moduleNames;
 
 						moduleNames = "[";
-						for (unsigned int i = 0; i < modulesFlaggedToStartAsync.Size(); i++)
+						for (size_t i = 0; i < modulesFlaggedToStartAsync.Size(); i++)
 						{
 							if (modulesFlaggedToStartAsync.At(i) != nullptr)
 							{
@@ -391,7 +391,7 @@ namespace Dia
 					std::chrono::milliseconds dura(1);
 					std::this_thread::sleep_for(dura);
 
-					for (unsigned int i = 0; i < modulesFlaggedToStartAsync.Size(); i++)
+					for (size_t i = 0; i < modulesFlaggedToStartAsync.Size(); i++)
 					{
 						if (modulesFlaggedToStartAsync.At(i) != nullptr)
 						{

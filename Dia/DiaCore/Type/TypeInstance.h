@@ -4,6 +4,7 @@
 #include "DiaCore/Type/TypeVariable.h"
 #include "DiaCore/Type/TypeDefinition.h"
 
+#include <cstdint>
 #include <vector>
 
 namespace Dia
@@ -33,12 +34,12 @@ namespace Dia
 				unsigned int NumFields()const;
 				const TypeDefinition::VariableLinkList& GetVariables()const;
 
-				void FindVariablePathFromPointerAddress( const unsigned int address, VariablePath& resultPath )const;
-				void FindPointerAddressFromVariableCRCPath( const VariableCRCPath& pathCRC, unsigned int& addressResult )const;
+				void FindVariablePathFromPointerAddress( const uintptr_t address, VariablePath& resultPath )const;
+				void FindPointerAddressFromVariableCRCPath( const VariableCRCPath& pathCRC, uintptr_t& addressResult )const;
 
 			private:
-				bool FindVariablePathFromPointerAddressInternal( const unsigned int address,VariablePath& resultPath, const unsigned int currentClassOffset, const TypeDefinition::VariableLinkList& variables )const;
-				bool FindPointerAddressFromVariableCRCPathInternal( const VariableCRCPath& pathCRC, unsigned int& addressResult, const unsigned int currentPathIndex, const unsigned int currentClassOffset, const TypeDefinition::VariableLinkList& variables )const;
+				bool FindVariablePathFromPointerAddressInternal( const uintptr_t address, VariablePath& resultPath, const uintptr_t currentClassOffset, const TypeDefinition::VariableLinkList& variables )const;
+				bool FindPointerAddressFromVariableCRCPathInternal( const VariableCRCPath& pathCRC, uintptr_t& addressResult, const unsigned int currentPathIndex, const uintptr_t currentClassOffset, const TypeDefinition::VariableLinkList& variables )const;
 
 				const TypeDefinition*	mInstanceDefinition;	// The type of object reflected in this instance
 				void*					mPointee;				// A Pointer to the object reflected in this instance

@@ -479,7 +479,7 @@ namespace Dia
 				int	DynamicArray<T>::FrequencyOfElement( ConstReference value )const
 			{
 				int frequency = 0;
-				for (unsigned int i = 0; i < Size(); i++)
+				for (size_t i = 0; i < Size(); i++)
 				{
 					if (value == At(i))
 					{
@@ -494,11 +494,11 @@ namespace Dia
 			template <typename T> inline
 			void DynamicArray<T>::UniqueElements(DynamicArray<T>& unique)const
 			{
-				for (unsigned int i = 0; i < Size(); i++)
+				for (size_t i = 0; i < Size(); i++)
 				{
 					T possibleUnique = At(i);
 					bool foundInList = false;
-					for (unsigned int j = 0; j < unique.Size(); j++)
+					for (size_t j = 0; j < unique.Size(); j++)
 					{
 						if (possibleUnique == unique[j])
 						{
@@ -518,11 +518,11 @@ namespace Dia
 			template <typename T> inline
 			void DynamicArray<T>::FrequencyUniqueElements(DynamicArray<T>& unique, DynamicArray<int>& uniqueFrequency)const
 			{
-				for (unsigned int i = 0; i < Size(); i++)
+				for (size_t i = 0; i < Size(); i++)
 				{
 					T possibleUnique = At(i);
 					bool foundInList = false;
-					for (unsigned int j = 0; j < unique.Size(); j++)
+					for (size_t j = 0; j < unique.Size(); j++)
 					{
 						if (possibleUnique == unique[j])
 						{

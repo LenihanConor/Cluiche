@@ -92,7 +92,7 @@ namespace Dia
 			int Graph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges>::FindNodeIndex(const StringCRC& name)const
 			{
 				int index = -1;
-				for (unsigned int i = 0; i < mNodeList.Size(); i++)
+				for (size_t i = 0; i < mNodeList.Size(); i++)
 				{
 					if (mNodeList.At(i).GetUniqueID() == name)
 					{
@@ -107,7 +107,7 @@ namespace Dia
 			int Graph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges>::FindEdgeIndex(const StringCRC& name)const
 			{
 				int index = -1;
-				for (unsigned int i = 0; i < mEdgeList.Size(); i++)
+				for (size_t i = 0; i < mEdgeList.Size(); i++)
 				{
 					if (mEdgeList.At(i).GetUniqueID() == name)
 					{

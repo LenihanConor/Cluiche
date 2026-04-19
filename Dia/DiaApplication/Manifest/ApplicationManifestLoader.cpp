@@ -96,7 +96,7 @@ namespace Dia
 
 			// Copy errors from validator
 			const Dia::Core::Containers::DynamicArrayC<ManifestValidationError, 32>& validatorErrors = mValidator.GetErrors();
-			for (unsigned int i = 0; i < validatorErrors.Size(); ++i)
+			for (size_t i = 0; i < validatorErrors.Size(); ++i)
 			{
 				mErrors.Add(validatorErrors[i]);
 			}
@@ -141,7 +141,7 @@ namespace Dia
 			unsigned int phaseCount = entry.phases.Size() > 0 ? entry.phases.Size() : 1;
 			PhaseMap phaseMap(phaseCount, phaseCount);
 
-			for (unsigned int i = 0; i < entry.phases.Size(); ++i)
+			for (size_t i = 0; i < entry.phases.Size(); ++i)
 			{
 				const ApplicationManifest::PhaseEntry& phaseEntry = entry.phases[i];
 
@@ -172,7 +172,7 @@ namespace Dia
 			unsigned int moduleCount = entry.modules.Size() > 0 ? entry.modules.Size() : 1;
 			ModuleMap moduleMap(moduleCount, moduleCount);
 
-			for (unsigned int i = 0; i < entry.modules.Size(); ++i)
+			for (size_t i = 0; i < entry.modules.Size(); ++i)
 			{
 				const ApplicationManifest::ModuleEntry& moduleEntry = entry.modules[i];
 
@@ -198,7 +198,7 @@ namespace Dia
 				pu->AddModuleWithOwnership(Dia::Core::UniquePtr<Module>(module));
 
 				// Add module to all phases it belongs to
-				for (unsigned int j = 0; j < moduleEntry.phaseIds.Size(); ++j)
+				for (size_t j = 0; j < moduleEntry.phaseIds.Size(); ++j)
 				{
 					const Dia::Core::StringCRC& phaseId = moduleEntry.phaseIds[j];
 					Phase** phasePtr = phaseMap.TryGetItem(phaseId);
@@ -215,7 +215,7 @@ namespace Dia
 			}
 
 			// Set up module dependencies
-			for (unsigned int i = 0; i < entry.modules.Size(); ++i)
+			for (size_t i = 0; i < entry.modules.Size(); ++i)
 			{
 				const ApplicationManifest::ModuleEntry& moduleEntry = entry.modules[i];
 				Module** modulePtr = moduleMap.TryGetItem(moduleEntry.instanceId);
@@ -224,7 +224,7 @@ namespace Dia
 
 				Module* module = *modulePtr;
 
-				for (unsigned int j = 0; j < moduleEntry.dependencies.Size(); ++j)
+				for (size_t j = 0; j < moduleEntry.dependencies.Size(); ++j)
 				{
 					const Dia::Core::StringCRC& depId = moduleEntry.dependencies[j];
 					Module** depPtr = moduleMap.TryGetItem(depId);
@@ -241,7 +241,7 @@ namespace Dia
 			}
 
 			// Set up phase transitions
-			for (unsigned int i = 0; i < entry.transitions.Size(); ++i)
+			for (size_t i = 0; i < entry.transitions.Size(); ++i)
 			{
 				const ApplicationManifest::PhaseTransition& transition = entry.transitions[i];
 				Phase** fromPhasePtr = phaseMap.TryGetItem(transition.fromPhase);
@@ -318,12 +318,12 @@ namespace Dia
 			IdSet newModuleIds(modIdCount, modIdCount);
 			IdSet newPhaseIds(phsIdCount, phsIdCount);
 
-			for (unsigned int i = 0; i < newPUEntry.modules.Size(); ++i)
+			for (size_t i = 0; i < newPUEntry.modules.Size(); ++i)
 			{
 				newModuleIds.Add(newPUEntry.modules[i].instanceId, true);
 			}
 
-			for (unsigned int i = 0; i < newPUEntry.phases.Size(); ++i)
+			for (size_t i = 0; i < newPUEntry.phases.Size(); ++i)
 			{
 				newPhaseIds.Add(newPUEntry.phases[i].instanceId, true);
 			}
@@ -341,7 +341,7 @@ namespace Dia
 
 			// 4. Remove modules no longer present
 			// TODO: We should check if modules are in use before removing (safe shutdown)
-			for (unsigned int i = 0; i < modulesToRemove.Size(); ++i)
+			for (size_t i = 0; i < modulesToRemove.Size(); ++i)
 			{
 				const Dia::Core::StringCRC& moduleId = modulesToRemove[i];
 				Module** modulePtr = currentModules.TryGetItem(moduleId);
@@ -363,7 +363,7 @@ namespace Dia
 
 			// 5. Update existing modules with new configuration
 			ApplicationTypeRegistry& registry = ApplicationTypeRegistry::Instance();
-			for (unsigned int i = 0; i < newPUEntry.modules.Size(); ++i)
+			for (size_t i = 0; i < newPUEntry.modules.Size(); ++i)
 			{
 				const ApplicationManifest::ModuleEntry& moduleEntry = newPUEntry.modules[i];
 				Module** existingModulePtr = currentModules.TryGetItem(moduleEntry.instanceId);
@@ -393,7 +393,7 @@ namespace Dia
 			//   - Handle module dependencies correctly
 			//   - Rebuild phase transitions properly
 			//   - Queue phase transition to safe state before changes
-			for (unsigned int i = 0; i < newPUEntry.modules.Size(); ++i)
+			for (size_t i = 0; i < newPUEntry.modules.Size(); ++i)
 			{
 				const ApplicationManifest::ModuleEntry& moduleEntry = newPUEntry.modules[i];
 
@@ -510,7 +510,7 @@ namespace Dia
 				return false;
 			}
 
-			for (unsigned int i = 0; i < processingUnits.size(); ++i)
+			for (size_t i = 0; i < processingUnits.size(); ++i)
 			{
 				ApplicationManifest::ProcessingUnitEntry entry;
 				if (!ParseProcessingUnit(processingUnits[i], entry))
@@ -526,7 +526,7 @@ namespace Dia
 				const Json::Value& imports = root["imports"];
 				if (imports.isArray())
 				{
-					for (unsigned int i = 0; i < imports.size(); ++i)
+					for (size_t i = 0; i < imports.size(); ++i)
 					{
 						if (imports[i].isString())
 						{
@@ -591,7 +591,7 @@ namespace Dia
 				return false;
 			}
 
-			for (unsigned int i = 0; i < phases.size(); ++i)
+			for (size_t i = 0; i < phases.size(); ++i)
 			{
 				ApplicationManifest::PhaseEntry phaseEntry;
 				if (!ParsePhase(phases[i], phaseEntry))
@@ -615,7 +615,7 @@ namespace Dia
 				return false;
 			}
 
-			for (unsigned int i = 0; i < transitions.size(); ++i)
+			for (size_t i = 0; i < transitions.size(); ++i)
 			{
 				ApplicationManifest::PhaseTransition transition;
 				if (!ParsePhaseTransition(transitions[i], transition))
@@ -647,7 +647,7 @@ namespace Dia
 				return false;
 			}
 
-			for (unsigned int i = 0; i < modules.size(); ++i)
+			for (size_t i = 0; i < modules.size(); ++i)
 			{
 				ApplicationManifest::ModuleEntry moduleEntry;
 				if (!ParseModule(modules[i], moduleEntry))
@@ -719,7 +719,7 @@ namespace Dia
 				return false;
 			}
 
-			for (unsigned int i = 0; i < phaseIds.size(); ++i)
+			for (size_t i = 0; i < phaseIds.size(); ++i)
 			{
 				if (phaseIds[i].isString())
 				{
@@ -733,7 +733,7 @@ namespace Dia
 				const Json::Value& dependencies = moduleJson["dependencies"];
 				if (dependencies.isArray())
 				{
-					for (unsigned int i = 0; i < dependencies.size(); ++i)
+					for (size_t i = 0; i < dependencies.size(); ++i)
 					{
 						if (dependencies[i].isString())
 						{

@@ -135,10 +135,10 @@ namespace Dia
 				{
 					ableToConvertVariableIntoArthimetic = true;
 
-					const char* pointeeAsType = reinterpret_cast<const char*>(instance.Pointee());	
-					const unsigned int* ptrAsInt = reinterpret_cast<const unsigned int*>(offset + pointeeAsType);
+					const char* pointeeAsType = reinterpret_cast<const char*>(instance.Pointee());
+					const uintptr_t* ptrAsInt = reinterpret_cast<const uintptr_t*>(offset + pointeeAsType);
 
-					unsigned int address = *ptrAsInt;
+					uintptr_t address = *ptrAsInt;
 					value = *reinterpret_cast<T*>(address);
 				}
 

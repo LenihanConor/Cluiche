@@ -8,6 +8,8 @@
 #include "DiaCore/Containers/BitFlag/BitArray8.h"
 #include "DiaCore/Containers/LinkList/LinkListC.h"
 
+#include <cstdint>
+
 namespace Dia
 {
 	namespace Core
@@ -69,8 +71,8 @@ namespace Dia
 				const char* GetClassPointee(const TypeInstance& instance, unsigned int element)const;
 
 				// Pointer Interface
-				unsigned int GetVariableAddress(TypeInstance& instance, unsigned int element)const;
-				unsigned int GetVariableAddress(const TypeInstance& instance, unsigned int element)const;
+				uintptr_t GetVariableAddress(TypeInstance& instance, unsigned int element)const;
+				uintptr_t GetVariableAddress(const TypeInstance& instance, unsigned int element)const;
 
 				char* GetVariablePointer(TypeInstance& instance, unsigned int element)const;
 				const char* GetVariablePointer(const TypeInstance& instance, unsigned int element)const;

@@ -58,10 +58,13 @@ namespace Dia
 				public:
 					static const char sMetaDataPrefix = '_';
 
+					static const unsigned int kCurrentVersion = 2;
+
 					CLASSEDENUM(EFlagName, \
 						CE_ITEMVAL(Unknown, -1)\
 						CE_ITEMVAL(ClassName, 0)\
-						CE_ITEM(CRCArray), \
+						CE_ITEM(CRCArray)\
+						CE_ITEM(Version), \
 						Unknown \
 						);
 
