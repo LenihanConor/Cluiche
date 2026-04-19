@@ -284,6 +284,7 @@
     <ClCompile Include="Application\TestMessageBus.cpp" />
     <ClCompile Include="Application\TestApplicationLifecycle.cpp" />
     <ClCompile Include="Application\TestApplicationIntrospector.cpp" />
+    <ClCompile Include="Application\TestApplicationLoader.cpp" />
     <!-- Google Test Source Files - Compiled directly into project -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">
       <AdditionalIncludeDirectories>$(ProjectDir)../../../External/googletest/googletest/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

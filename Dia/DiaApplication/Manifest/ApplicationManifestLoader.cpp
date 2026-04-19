@@ -138,7 +138,8 @@ namespace Dia
 
 			// Create all phases and add to PU
 			typedef Dia::Core::Containers::HashTable<Dia::Core::StringCRC, Phase*, Dia::Core::StringCRCHashFunctor> PhaseMap;
-			PhaseMap phaseMap(entry.phases.Size(), entry.phases.Size());
+			unsigned int phaseCount = entry.phases.Size() > 0 ? entry.phases.Size() : 1;
+			PhaseMap phaseMap(phaseCount, phaseCount);
 
 			for (unsigned int i = 0; i < entry.phases.Size(); ++i)
 			{
@@ -168,7 +169,8 @@ namespace Dia
 
 			// Create all modules and add to PU
 			typedef Dia::Core::Containers::HashTable<Dia::Core::StringCRC, Module*, Dia::Core::StringCRCHashFunctor> ModuleMap;
-			ModuleMap moduleMap(entry.modules.Size(), entry.modules.Size());
+			unsigned int moduleCount = entry.modules.Size() > 0 ? entry.modules.Size() : 1;
+			ModuleMap moduleMap(moduleCount, moduleCount);
 
 			for (unsigned int i = 0; i < entry.modules.Size(); ++i)
 			{
@@ -311,8 +313,10 @@ namespace Dia
 			ProcessingUnit::PhasesTable& currentPhases = existingPU->mAssociatedPhases;
 
 			// Build sets of new module/phase IDs
-			IdSet newModuleIds(newPUEntry.modules.Size(), newPUEntry.modules.Size());
-			IdSet newPhaseIds(newPUEntry.phases.Size(), newPUEntry.phases.Size());
+			unsigned int modIdCount = newPUEntry.modules.Size() > 0 ? newPUEntry.modules.Size() : 1;
+			unsigned int phsIdCount = newPUEntry.phases.Size() > 0 ? newPUEntry.phases.Size() : 1;
+			IdSet newModuleIds(modIdCount, modIdCount);
+			IdSet newPhaseIds(phsIdCount, phsIdCount);
 
 			for (unsigned int i = 0; i < newPUEntry.modules.Size(); ++i)
 			{

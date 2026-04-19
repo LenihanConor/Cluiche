@@ -25,27 +25,8 @@ namespace Dia
 
 			if (outResult != ManifestValidationResult::kSuccess)
 			{
-				// Log all errors
 				const auto& errors = loader.GetErrors();
 				Dia::Core::Log::OutputVaradicLine("Failed to load application manifest: %s", manifestPath);
-				for (unsigned int i = 0; i < errors.Size(); ++i)
-				{
-					const ManifestValidationError& error = errors[i];
-					Dia::Core::Log::OutputVaradicLine("  [%s] %s (context: %s)",
-							ManifestValidationError::GetResultString(error.code),
-							error.message,
-							error.context ? error.context : "N/A");
-				}
-				return nullptr;
-			}
-
-			// Validate manifest
-			outResult = loader.Validate(manifest);
-			if (outResult != ManifestValidationResult::kSuccess)
-			{
-				// Log validation errors
-				const auto& errors = loader.GetErrors();
-				Dia::Core::Log::OutputVaradicLine("Manifest validation failed: %s", manifestPath);
 				for (unsigned int i = 0; i < errors.Size(); ++i)
 				{
 					const ManifestValidationError& error = errors[i];
