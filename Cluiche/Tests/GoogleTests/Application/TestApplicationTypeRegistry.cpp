@@ -263,7 +263,7 @@ TEST_F(ApplicationTypeRegistryTest, CreateProcessingUnit_RegisteredType_Success)
 	ProcessingUnit* pu = GetRegistry().CreateProcessingUnit(typeId, instanceId, config);
 
 	ASSERT_NE(pu, nullptr);
-	EXPECT_EQ(pu->GetName(), instanceId);
+	EXPECT_EQ(pu->GetUniqueId(), instanceId);
 
 	delete pu;
 }
@@ -312,7 +312,7 @@ TEST_F(ApplicationTypeRegistryTest, CreatePhase_RegisteredType_Success)
 	Phase* phase = GetRegistry().CreatePhase(typeId, &pu, instanceId, config);
 
 	ASSERT_NE(phase, nullptr);
-	EXPECT_EQ(phase->GetName(), instanceId);
+	EXPECT_EQ(phase->GetUniqueId(), instanceId);
 
 	delete phase;
 }
@@ -343,7 +343,7 @@ TEST_F(ApplicationTypeRegistryTest, CreateModule_RegisteredType_Success)
 	Module* module = GetRegistry().CreateModule(typeId, &pu, instanceId, config);
 
 	ASSERT_NE(module, nullptr);
-	EXPECT_EQ(module->GetName(), instanceId);
+	EXPECT_EQ(module->GetUniqueId(), instanceId);
 
 	delete module;
 }

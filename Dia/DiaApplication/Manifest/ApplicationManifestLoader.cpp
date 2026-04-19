@@ -42,8 +42,8 @@ namespace Dia
 			if (!fileStream.is_open())
 			{
 				Dia::Core::Containers::String256 msg;
-				msg.AppendFormatted("Failed to open file: %s", filePath);
-				AddError(ManifestValidationResult::kImportNotFound, msg.AsChar(), "file");
+				msg.Format("Failed to open file: %s", filePath);
+				AddError(ManifestValidationResult::kImportNotFound, msg.AsCStr(), "file");
 				return ManifestValidationResult::kImportNotFound;
 			}
 
@@ -68,8 +68,8 @@ namespace Dia
 			if (!parsingSuccessful)
 			{
 				Dia::Core::Containers::String256 msg;
-				msg.AppendFormatted("JSON parsing failed: %s", reader.getFormattedErrorMessages().c_str());
-				AddError(ManifestValidationResult::kInvalidJSON, msg.AsChar(), "json");
+				msg.Format("JSON parsing failed: %s", reader.getFormattedErrorMessages().c_str());
+				AddError(ManifestValidationResult::kInvalidJSON, msg.AsCStr(), "json");
 				return ManifestValidationResult::kInvalidJSON;
 			}
 
@@ -117,8 +117,8 @@ namespace Dia
 			if (pu == nullptr)
 			{
 				Dia::Core::Containers::String256 msg;
-				msg.AppendFormatted("Failed to create ProcessingUnit of type '%s'", entry.typeId.AsChar());
-				AddError(ManifestValidationResult::kUnknownType, msg.AsChar(), "instantiate");
+				msg.Format("Failed to create ProcessingUnit of type '%s'", entry.typeId.AsChar());
+				AddError(ManifestValidationResult::kUnknownType, msg.AsCStr(), "instantiate");
 				return nullptr;
 			}
 
@@ -134,7 +134,7 @@ namespace Dia
 
 			// Create all phases and add to PU
 			typedef Dia::Core::Containers::HashTable<Dia::Core::StringCRC, Phase*, Dia::Core::StringCRCHashFunctor> PhaseMap;
-			PhaseMap phaseMap(entry.phases.Size());
+			PhaseMap phaseMap(entry.phases.Size(), entry.phases.Size());
 
 			for (unsigned int i = 0; i < entry.phases.Size(); ++i)
 			{
@@ -150,8 +150,8 @@ namespace Dia
 				if (phase == nullptr)
 				{
 					Dia::Core::Containers::String256 msg;
-					msg.AppendFormatted("Failed to create Phase of type '%s'", phaseEntry.typeId.AsChar());
-					AddError(ManifestValidationResult::kUnknownType, msg.AsChar(), "instantiate");
+					msg.Format("Failed to create Phase of type '%s'", phaseEntry.typeId.AsChar());
+					AddError(ManifestValidationResult::kUnknownType, msg.AsCStr(), "instantiate");
 
 					// Clean up and return (PU will auto-delete all owned phases/modules)
 					delete pu;
@@ -164,7 +164,7 @@ namespace Dia
 
 			// Create all modules and add to PU
 			typedef Dia::Core::Containers::HashTable<Dia::Core::StringCRC, Module*, Dia::Core::StringCRCHashFunctor> ModuleMap;
-			ModuleMap moduleMap(entry.modules.Size());
+			ModuleMap moduleMap(entry.modules.Size(), entry.modules.Size());
 
 			for (unsigned int i = 0; i < entry.modules.Size(); ++i)
 			{
@@ -180,8 +180,8 @@ namespace Dia
 				if (module == nullptr)
 				{
 					Dia::Core::Containers::String256 msg;
-					msg.AppendFormatted("Failed to create Module of type '%s'", moduleEntry.typeId.AsChar());
-					AddError(ManifestValidationResult::kUnknownType, msg.AsChar(), "instantiate");
+					msg.Format("Failed to create Module of type '%s'", moduleEntry.typeId.AsChar());
+					AddError(ManifestValidationResult::kUnknownType, msg.AsCStr(), "instantiate");
 
 					// Clean up and return (PU will auto-delete all owned phases/modules)
 					delete pu;
@@ -195,14 +195,14 @@ namespace Dia
 				for (unsigned int j = 0; j < moduleEntry.phaseIds.Size(); ++j)
 				{
 					const Dia::Core::StringCRC& phaseId = moduleEntry.phaseIds[j];
-					Phase* phase = phaseMap.At(phaseId);
-					if (phase != nullptr)
+					Phase** phasePtr = phaseMap.TryGetItem(phaseId);
+					if (phasePtr != nullptr && *phasePtr != nullptr)
 					{
-						phase->AddModule(module);
+						(*phasePtr)->AddModule(module);
 					}
 					else
 					{
-						DIA_LOG("Warning: Module '%s' references non-existent phase '%s'",
+						Dia::Core::Log::OutputVaradicLine("Warning: Module '%s' references non-existent phase '%s'",
 							moduleEntry.instanceId.AsChar(), phaseId.AsChar());
 					}
 				}
@@ -212,21 +212,23 @@ namespace Dia
 			for (unsigned int i = 0; i < entry.modules.Size(); ++i)
 			{
 				const ApplicationManifest::ModuleEntry& moduleEntry = entry.modules[i];
-				Module* module = moduleMap.At(moduleEntry.instanceId);
-				if (module == nullptr)
+				Module** modulePtr = moduleMap.TryGetItem(moduleEntry.instanceId);
+				if (modulePtr == nullptr || *modulePtr == nullptr)
 					continue;
+
+				Module* module = *modulePtr;
 
 				for (unsigned int j = 0; j < moduleEntry.dependencies.Size(); ++j)
 				{
 					const Dia::Core::StringCRC& depId = moduleEntry.dependencies[j];
-					Module* dependency = moduleMap.At(depId);
-					if (dependency != nullptr)
+					Module** depPtr = moduleMap.TryGetItem(depId);
+					if (depPtr != nullptr && *depPtr != nullptr)
 					{
-						module->AddDependancy(dependency);
+						module->AddDependancy(*depPtr);
 					}
 					else
 					{
-						DIA_LOG("Warning: Module '%s' depends on non-existent module '%s'",
+						Dia::Core::Log::OutputVaradicLine("Warning: Module '%s' depends on non-existent module '%s'",
 							moduleEntry.instanceId.AsChar(), depId.AsChar());
 					}
 				}
@@ -236,29 +238,30 @@ namespace Dia
 			for (unsigned int i = 0; i < entry.transitions.Size(); ++i)
 			{
 				const ApplicationManifest::PhaseTransition& transition = entry.transitions[i];
-				Phase* fromPhase = phaseMap.At(transition.fromPhase);
-				Phase* toPhase = phaseMap.At(transition.toPhase);
+				Phase** fromPhasePtr = phaseMap.TryGetItem(transition.fromPhase);
+				Phase** toPhasePtr = phaseMap.TryGetItem(transition.toPhase);
 
-				if (fromPhase != nullptr && toPhase != nullptr)
+				if (fromPhasePtr != nullptr && *fromPhasePtr != nullptr &&
+					toPhasePtr != nullptr && *toPhasePtr != nullptr)
 				{
-					pu->AddPhaseTransiton(fromPhase, toPhase);
+					pu->AddPhaseTransiton(*fromPhasePtr, *toPhasePtr);
 				}
 				else
 				{
-					DIA_LOG("Warning: Invalid phase transition from '%s' to '%s'",
+					Dia::Core::Log::OutputVaradicLine("Warning: Invalid phase transition from '%s' to '%s'",
 						transition.fromPhase.AsChar(), transition.toPhase.AsChar());
 				}
 			}
 
 			// Set initial phase
-			Phase* initialPhase = phaseMap.At(entry.initialPhase);
-			if (initialPhase != nullptr)
+			Phase** initialPhasePtr = phaseMap.TryGetItem(entry.initialPhase);
+			if (initialPhasePtr != nullptr && *initialPhasePtr != nullptr)
 			{
-				pu->SetInitialPhase(initialPhase);
+				pu->SetInitialPhase(*initialPhasePtr);
 			}
 			else
 			{
-				DIA_LOG("Warning: Invalid initial phase '%s'", entry.initialPhase.AsChar());
+				Dia::Core::Log::OutputVaradicLine("Warning: Invalid initial phase '%s'", entry.initialPhase.AsChar());
 			}
 
 			return pu;
@@ -300,12 +303,12 @@ namespace Dia
 
 			// Get current modules and phases from ProcessingUnit
 			// NOTE: We access private members via friendship (ProcessingUnit is a friend of this loader)
-			const ProcessingUnit::ModuleTable& currentModules = existingPU->mAssociatedModules;
-			const ProcessingUnit::PhasesTable& currentPhases = existingPU->mAssociatedPhases;
+			ProcessingUnit::ModuleTable& currentModules = existingPU->mAssociatedModules;
+			ProcessingUnit::PhasesTable& currentPhases = existingPU->mAssociatedPhases;
 
 			// Build sets of new module/phase IDs
-			IdSet newModuleIds(newPUEntry.modules.Size());
-			IdSet newPhaseIds(newPUEntry.phases.Size());
+			IdSet newModuleIds(newPUEntry.modules.Size(), newPUEntry.modules.Size());
+			IdSet newPhaseIds(newPUEntry.phases.Size(), newPUEntry.phases.Size());
 
 			for (unsigned int i = 0; i < newPUEntry.modules.Size(); ++i)
 			{
@@ -319,9 +322,9 @@ namespace Dia
 
 			// 3. Identify modules to remove (in current but not in new)
 			Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32> modulesToRemove;
-			for (auto it = currentModules.IteratorBegin(); it != currentModules.IteratorEnd(); ++it)
+			for (auto it = currentModules.Begin(); it != currentModules.End(); ++it)
 			{
-				const Dia::Core::StringCRC& moduleId = it.GetKey();
+				const Dia::Core::StringCRC& moduleId = it.Key();
 				if (!newModuleIds.ContainsKey(moduleId))
 				{
 					modulesToRemove.Add(moduleId);
@@ -333,11 +336,12 @@ namespace Dia
 			for (unsigned int i = 0; i < modulesToRemove.Size(); ++i)
 			{
 				const Dia::Core::StringCRC& moduleId = modulesToRemove[i];
-				Module* module = currentModules.At(moduleId);
-				if (module != nullptr)
+				Module** modulePtr = currentModules.TryGetItem(moduleId);
+				if (modulePtr != nullptr && *modulePtr != nullptr)
 				{
+					Module* module = *modulePtr;
 					// Stop module if running
-					if (module->IsStarted())
+					if (module->GetState() == StateObject::StateEnum::kRunning)
 					{
 						module->Stop();
 					}
@@ -345,7 +349,7 @@ namespace Dia
 					// Remove from ProcessingUnit
 					existingPU->RemoveModule(moduleId);
 
-					DIA_LOG("Hot reload: Removed module '%s'", moduleId.AsChar());
+					Dia::Core::Log::OutputVaradicLine("Hot reload: Removed module '%s'", moduleId.AsChar());
 				}
 			}
 
@@ -354,21 +358,22 @@ namespace Dia
 			for (unsigned int i = 0; i < newPUEntry.modules.Size(); ++i)
 			{
 				const ApplicationManifest::ModuleEntry& moduleEntry = newPUEntry.modules[i];
-				Module* existingModule = currentModules.At(moduleEntry.instanceId);
+				Module** existingModulePtr = currentModules.TryGetItem(moduleEntry.instanceId);
 
-				if (existingModule != nullptr)
+				if (existingModulePtr != nullptr && *existingModulePtr != nullptr)
 				{
+					Module* existingModule = *existingModulePtr;
 					// Module already exists, update its configuration
 					if (moduleEntry.config != nullptr)
 					{
 						bool configSuccess = existingModule->DeserializeConfig(*moduleEntry.config);
 						if (!configSuccess)
 						{
-							DIA_LOG("Warning: Failed to update config for module '%s' during hot reload", moduleEntry.instanceId.AsChar());
+							Dia::Core::Log::OutputVaradicLine("Warning: Failed to update config for module '%s' during hot reload", moduleEntry.instanceId.AsChar());
 						}
 						else
 						{
-							DIA_LOG("Hot reload: Updated config for module '%s'", moduleEntry.instanceId.AsChar());
+							Dia::Core::Log::OutputVaradicLine("Hot reload: Updated config for module '%s'", moduleEntry.instanceId.AsChar());
 						}
 					}
 				}
@@ -401,15 +406,15 @@ namespace Dia
 				if (newModule == nullptr)
 				{
 					Dia::Core::Containers::String256 msg;
-					msg.AppendFormatted("Failed to create new module '%s' during hot reload", moduleEntry.instanceId.AsChar());
-					AddError(ManifestValidationResult::kUnknownType, msg.AsChar(), "reload");
+					msg.Format("Failed to create new module '%s' during hot reload", moduleEntry.instanceId.AsChar());
+					AddError(ManifestValidationResult::kUnknownType, msg.AsCStr(), "reload");
 					continue; // Skip this module but continue with others
 				}
 
 				// Add to ProcessingUnit with ownership
 				existingPU->AddModuleWithOwnership(Dia::Core::UniquePtr<Module>(newModule));
 
-				DIA_LOG("Hot reload: Added new module '%s'", moduleEntry.instanceId.AsChar());
+				Dia::Core::Log::OutputVaradicLine("Hot reload: Added new module '%s'", moduleEntry.instanceId.AsChar());
 			}
 
 			// 7. TODO: Handle phases
@@ -420,8 +425,8 @@ namespace Dia
 			// For now, log a warning if phases have changed
 			if (newPUEntry.phases.Size() != currentPhases.Size())
 			{
-				DIA_LOG("Warning: Phase count changed during hot reload, but phase reloading is not yet implemented");
-				DIA_LOG("         Current phases: %u, New phases: %u", currentPhases.Size(), newPUEntry.phases.Size());
+				Dia::Core::Log::OutputVaradicLine("Warning: Phase count changed during hot reload, but phase reloading is not yet implemented");
+				Dia::Core::Log::OutputVaradicLine("         Current phases: %u, New phases: %u", currentPhases.Size(), newPUEntry.phases.Size());
 			}
 
 			// 8. TODO: Rebuild phase transitions
@@ -437,7 +442,7 @@ namespace Dia
 				existingPU->DisableThreadLimiting();
 			}
 
-			DIA_LOG("Hot reload completed successfully from '%s'", filePath);
+			Dia::Core::Log::OutputVaradicLine("Hot reload completed successfully from '%s'", filePath);
 			return ManifestValidationResult::kSuccess;
 		}
 

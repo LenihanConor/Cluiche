@@ -17,7 +17,7 @@ namespace Dia
 		ManifestComposer::ManifestComposer()
 			: mErrors()
 			, mImportStack()
-			, mProcessedFiles(64, Dia::Core::StringCRCHashFunctor())
+			, mProcessedFiles(64, 64)
 		{
 		}
 
@@ -26,7 +26,7 @@ namespace Dia
 			ApplicationManifest& outComposedManifest)
 		{
 			ClearErrors();
-			mImportStack.Clear();
+			mImportStack.RemoveAll();
 			mProcessedFiles.Clear();
 
 			// Compose each file in order, merging into output manifest
@@ -52,7 +52,7 @@ namespace Dia
 			ApplicationManifest& outComposedManifest)
 		{
 			ClearErrors();
-			mImportStack.Clear();
+			mImportStack.RemoveAll();
 			mProcessedFiles.Clear();
 
 			return ResolveImportsRecursive(filePath, outComposedManifest);
@@ -78,8 +78,8 @@ namespace Dia
 				cyclePath.Append(filePath);
 
 				Dia::Core::Containers::String512 msg;
-				msg.AppendFormatted("Import cycle detected: %s", cyclePath.AsChar());
-				AddError(ManifestValidationResult::kImportCycle, msg.AsChar(), filePath);
+				msg.Format("Import cycle detected: %s", cyclePath.AsCStr());
+				AddError(ManifestValidationResult::kImportCycle, msg.AsCStr(), filePath);
 				return ManifestValidationResult::kImportCycle;
 			}
 
@@ -134,7 +134,7 @@ namespace Dia
 			// Check if filePath is already in the import stack
 			for (unsigned int i = 0; i < mImportStack.Size(); ++i)
 			{
-				if (Dia::Core::StrCmp(mImportStack[i], filePath) == 0)
+				if (strcmp(mImportStack[i], filePath) == 0)
 				{
 					return true;
 				}
@@ -512,11 +512,11 @@ namespace Dia
 			// This will be replaced with actual JSON parsing logic.
 
 			Dia::Core::Containers::String256 msg;
-			msg.AppendFormatted("ManifestComposer::LoadManifestFromFile not yet implemented (file: %s)", filePath);
-			AddError(ManifestValidationResult::kImportNotFound, msg.AsChar(), "composer");
+			msg.Format("ManifestComposer::LoadManifestFromFile not yet implemented (file: %s)", filePath);
+			AddError(ManifestValidationResult::kImportNotFound, msg.AsCStr(), "composer");
 
-			DIA_LOG("Warning: %s", msg.AsChar());
-			DIA_LOG("Note: This will be implemented when ApplicationManifestLoader is complete.");
+			Dia::Core::Log::OutputVaradicLine("Warning: %s", msg.AsCStr());
+			Dia::Core::Log::OutputVaradicLine("Note: This will be implemented when ApplicationManifestLoader is complete.");
 
 			return ManifestValidationResult::kImportNotFound;
 		}
@@ -528,7 +528,7 @@ namespace Dia
 
 		void ManifestComposer::ClearErrors()
 		{
-			mErrors.Clear();
+			mErrors.RemoveAll();
 		}
 
 		void ManifestComposer::AddError(ManifestValidationResult code, const char* message, const char* context)

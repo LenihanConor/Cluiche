@@ -27,11 +27,11 @@ namespace Dia
 			{
 				// Log all errors
 				const auto& errors = loader.GetErrors();
-				DIA_LOG("Failed to load application manifest: %s", manifestPath);
+				Dia::Core::Log::OutputVaradicLine("Failed to load application manifest: %s", manifestPath);
 				for (unsigned int i = 0; i < errors.Size(); ++i)
 				{
-					const ManifestValidationError& error = errors.At(i);
-					DIA_LOG("  [%s] %s (context: %s)",
+					const ManifestValidationError& error = errors[i];
+					Dia::Core::Log::OutputVaradicLine("  [%s] %s (context: %s)",
 							ManifestValidationError::GetResultString(error.code),
 							error.message,
 							error.context ? error.context : "N/A");
@@ -45,11 +45,11 @@ namespace Dia
 			{
 				// Log validation errors
 				const auto& errors = loader.GetErrors();
-				DIA_LOG("Manifest validation failed: %s", manifestPath);
+				Dia::Core::Log::OutputVaradicLine("Manifest validation failed: %s", manifestPath);
 				for (unsigned int i = 0; i < errors.Size(); ++i)
 				{
-					const ManifestValidationError& error = errors.At(i);
-					DIA_LOG("  [%s] %s (context: %s)",
+					const ManifestValidationError& error = errors[i];
+					Dia::Core::Log::OutputVaradicLine("  [%s] %s (context: %s)",
 							ManifestValidationError::GetResultString(error.code),
 							error.message,
 							error.context ? error.context : "N/A");
@@ -62,20 +62,20 @@ namespace Dia
 			// Multi-PU support can be added later if needed
 			if (manifest.processingUnits.Size() == 0)
 			{
-				DIA_LOG("Manifest contains no processing units: %s", manifestPath);
+				Dia::Core::Log::OutputVaradicLine("Manifest contains no processing units: %s", manifestPath);
 				outResult = ManifestValidationResult::kMissingRequiredField;
 				return nullptr;
 			}
 
-			ProcessingUnit* pu = loader.Instantiate(manifest.processingUnits.At(0));
+			ProcessingUnit* pu = loader.Instantiate(manifest.processingUnits[0]);
 			if (!pu)
 			{
-				DIA_LOG("Failed to instantiate ProcessingUnit from manifest: %s", manifestPath);
+				Dia::Core::Log::OutputVaradicLine("Failed to instantiate ProcessingUnit from manifest: %s", manifestPath);
 				outResult = ManifestValidationResult::kUnknownType;
 				return nullptr;
 			}
 
-			DIA_LOG("Successfully loaded application from manifest: %s", manifestPath);
+			Dia::Core::Log::OutputVaradicLine("Successfully loaded application from manifest: %s", manifestPath);
 			return pu;
 		}
 
@@ -109,16 +109,16 @@ namespace Dia
 			}
 
 			// Failed to load from manifest - use fallback
-			DIA_LOG("Falling back to code-defined application structure (manifest load failed)");
+			Dia::Core::Log::OutputVaradicLine("Falling back to code-defined application structure (manifest load failed)");
 			pu = fallbackFactory();
 
 			if (!pu)
 			{
-				DIA_LOG("WARNING: Fallback factory returned nullptr!");
+				Dia::Core::Log::OutputVaradicLine("WARNING: Fallback factory returned nullptr!");
 			}
 			else
 			{
-				DIA_LOG("Successfully created fallback application structure");
+				Dia::Core::Log::OutputVaradicLine("Successfully created fallback application structure");
 			}
 
 			return pu;

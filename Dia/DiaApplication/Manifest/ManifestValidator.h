@@ -2,6 +2,7 @@
 
 #include "ApplicationManifest.h"
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <DiaCore/Containers/HashTables/HashTable.h>
 
 namespace Dia
 {

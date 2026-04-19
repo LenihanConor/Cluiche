@@ -1,6 +1,6 @@
 #include "ApplicationManifest.h"
 
-#include <DiaCore/Json/json.h>
+#include <DiaCore/Json/external/json/json.h>
 
 namespace Dia
 {
@@ -65,7 +65,7 @@ namespace Dia
 		ApplicationManifest::~ApplicationManifest()
 		{
 			// Clean up imports (string literals owned elsewhere)
-			imports.Clear();
+			imports.RemoveAll();
 
 			delete metadata;
 		}

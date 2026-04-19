@@ -382,7 +382,21 @@
       "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/MSBuild.exe\" Cluiche.sln /p:Configuration=Debug /p:Platform=Win32 /t:DiaApplication /m:4 /v:minimal)",
       "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/MSBuild.exe\" Cluiche/Cluiche.sln /p:Configuration=Debug /p:Platform=Win32 /t:DiaApplication)",
       "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/MSBuild.exe\" \"Dia\\\\DiaApplication\\\\DiaApplication.vcxproj\" /p:Configuration=Debug /p:Platform=Win32)",
-      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/MSBuild.exe\" Cluiche.sln /p:Configuration=Debug /p:Platform=Win32 /t:DiaApplication /v:m)"
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/MSBuild.exe\" Cluiche.sln /p:Configuration=Debug /p:Platform=Win32 /t:DiaApplication /v:m)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/MSBuild.exe\" \"Tests/GoogleTests/GoogleTests.vcxproj\" /p:Configuration=Debug /p:Platform=Win32)",
+      "Bash(tee test_build.log)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/MSBuild.exe\" \"Tests/GoogleTests/GoogleTests.vcxproj\" /p:Configuration=Debug /p:Platform=Win32 /v:minimal /nologo)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/MSBuild.exe\" GoogleTests.vcxproj /p:Configuration=Debug /p:Platform=Win32 /v:minimal)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/MSBuild.exe\" GoogleTests.vcxproj //p:Configuration=Debug //p:Platform=Win32 //t:ClCompile //p:SelectedFiles=\"Application\\\\TestApplicationTypeRegistry.cpp\")",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/MSBuild.exe\" GoogleTests.vcxproj //p:Configuration=Debug //p:Platform=Win32 //v:minimal)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/MSBuild.exe\" DiaApplication.vcxproj //p:Configuration=Debug //p:Platform=Win32 //v:minimal)",
+      "Bash(xargs -0 sed -i 's/OutputVariadicLine/OutputVaradicLine/g')",
+      "Bash(sed -i 's/\\\\.AsCStr\\(\\)/\\\\.AsChar\\(\\)/g' Manifest/ApplicationManifestLoader.cpp)",
+      "Bash(sed -i 's/\\\\.Clear\\(\\)/\\\\.RemoveAll\\(\\)/g' Manifest/ApplicationManifest.cpp)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/18/Professional/MSBuild/Current/Bin/amd64/MSBuild.exe\" \"C:\\\\GitHub\\\\Cluiche\\\\Dia\\\\DiaApplication\\\\DiaApplication.vcxproj\" //p:Configuration=Debug //p:Platform=Win32 //nologo)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/18/Professional/MSBuild/Current/Bin/amd64/MSBuild.exe\" \"C:\\\\GitHub\\\\Cluiche\\\\Dia\\\\DiaApplication\\\\Manifest\\\\ManifestComposer.cpp\" //t:ClCompile //p:Configuration=Debug //p:Platform=Win32 //nologo)",
+      "Bash(sed -i 's/\\\\.AsCStr\\(\\)/.AsChar\\(\\)/g' Manifest/ManifestValidator.cpp)",
+      "Bash(sed -i 's/mErrors\\\\.Clear\\(\\)/mErrors.RemoveAll\\(\\)/g' Manifest/ManifestValidator.cpp)"
     ],
     "defaultMode": "auto"
   }

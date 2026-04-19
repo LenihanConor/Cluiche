@@ -31,7 +31,7 @@ namespace Dia
 		{
 			static Dia::Core::Containers::String256 buffer;
 			buffer.Clear();
-			buffer.AppendFormatted("[%s] %s: %s", GetResultString(code), context, message);
+			buffer.Format("[%s] %s: %s", GetResultString(code), context, message);
 			return buffer.AsChar();
 		}
 
@@ -83,7 +83,7 @@ namespace Dia
 
 				// Build context string for error messages
 				Dia::Core::Containers::String256 context;
-				context.AppendFormatted("processing_units[%u]", i);
+				context.Format("processing_units[%u]", i);
 
 				// AC3: Unique instance IDs
 				ValidateDuplicateInstanceIds(entry, context.AsChar());
@@ -116,7 +116,7 @@ namespace Dia
 			if (manifest.version != 1)
 			{
 				Dia::Core::Containers::String256 msg;
-				msg.AppendFormatted("Unsupported schema version: %u (only version 1 is supported)", manifest.version);
+				msg.Format("Unsupported schema version: %u (only version 1 is supported)", manifest.version);
 				AddError(ManifestValidationResult::kSchemaVersionUnsupported, msg.AsChar(), "manifest");
 				return false;
 			}
@@ -137,10 +137,10 @@ namespace Dia
 				if (!registry.IsProcessingUnitTypeRegistered(entry.typeId))
 				{
 					Dia::Core::Containers::String256 context;
-					context.AppendFormatted("processing_units[%u].type_id", i);
+					context.Format("processing_units[%u].type_id", i);
 
 					Dia::Core::Containers::String256 msg;
-					msg.AppendFormatted("ProcessingUnit type '%s' is not registered", entry.typeId.AsChar());
+					msg.Format("ProcessingUnit type '%s' is not registered", entry.typeId.AsChar());
 					AddError(ManifestValidationResult::kUnknownType, msg.AsChar(), context.AsChar());
 					allValid = false;
 				}
@@ -152,10 +152,10 @@ namespace Dia
 					if (!registry.IsPhaseTypeRegistered(phase.typeId))
 					{
 						Dia::Core::Containers::String256 context;
-						context.AppendFormatted("processing_units[%u].phases[%u].type_id", i, j);
+						context.Format("processing_units[%u].phases[%u].type_id", i, j);
 
 						Dia::Core::Containers::String256 msg;
-						msg.AppendFormatted("Phase type '%s' is not registered", phase.typeId.AsChar());
+						msg.Format("Phase type '%s' is not registered", phase.typeId.AsChar());
 						AddError(ManifestValidationResult::kUnknownType, msg.AsChar(), context.AsChar());
 						allValid = false;
 					}
@@ -168,10 +168,10 @@ namespace Dia
 					if (!registry.IsModuleTypeRegistered(module.typeId))
 					{
 						Dia::Core::Containers::String256 context;
-						context.AppendFormatted("processing_units[%u].modules[%u].type_id", i, j);
+						context.Format("processing_units[%u].modules[%u].type_id", i, j);
 
 						Dia::Core::Containers::String256 msg;
-						msg.AppendFormatted("Module type '%s' is not registered", module.typeId.AsChar());
+						msg.Format("Module type '%s' is not registered", module.typeId.AsChar());
 						AddError(ManifestValidationResult::kUnknownType, msg.AsChar(), context.AsChar());
 						allValid = false;
 					}
@@ -186,7 +186,7 @@ namespace Dia
 			bool allValid = true;
 
 			// Check for duplicate phase instance IDs
-			Dia::Core::Containers::HashTable<Dia::Core::StringCRC, unsigned int, Dia::Core::StringCRCHashFunctor> phaseIds(32);
+			Dia::Core::Containers::HashTable<Dia::Core::StringCRC, unsigned int, Dia::Core::StringCRCHashFunctor> phaseIds(32, 32);
 
 			for (unsigned int i = 0; i < entry.phases.Size(); ++i)
 			{
@@ -195,10 +195,10 @@ namespace Dia
 				if (phaseIds.ContainsKey(instanceId))
 				{
 					Dia::Core::Containers::String256 errorContext;
-					errorContext.AppendFormatted("%s.phases[%u]", context, i);
+					errorContext.Format("%s.phases[%u]", context, i);
 
 					Dia::Core::Containers::String256 msg;
-					msg.AppendFormatted("Duplicate phase instance ID: '%s'", instanceId.AsChar());
+					msg.Format("Duplicate phase instance ID: '%s'", instanceId.AsChar());
 					AddError(ManifestValidationResult::kDuplicateInstanceId, msg.AsChar(), errorContext.AsChar());
 					allValid = false;
 				}
@@ -218,10 +218,10 @@ namespace Dia
 				if (moduleIds.ContainsKey(instanceId))
 				{
 					Dia::Core::Containers::String256 errorContext;
-					errorContext.AppendFormatted("%s.modules[%u]", context, i);
+					errorContext.Format("%s.modules[%u]", context, i);
 
 					Dia::Core::Containers::String256 msg;
-					msg.AppendFormatted("Duplicate module instance ID: '%s'", instanceId.AsChar());
+					msg.Format("Duplicate module instance ID: '%s'", instanceId.AsChar());
 					AddError(ManifestValidationResult::kDuplicateInstanceId, msg.AsChar(), errorContext.AsChar());
 					allValid = false;
 				}
@@ -278,10 +278,10 @@ namespace Dia
 					if (!moduleIdSet.ContainsKey(depId))
 					{
 						Dia::Core::Containers::String256 errorContext;
-						errorContext.AppendFormatted("%s.modules[%u].dependencies[%u]", context, i, j);
+						errorContext.Format("%s.modules[%u].dependencies[%u]", context, i, j);
 
 						Dia::Core::Containers::String256 msg;
-						msg.AppendFormatted("Module '%s' depends on unknown module '%s'",
+						msg.Format("Module '%s' depends on unknown module '%s'",
 							module.instanceId.AsChar(), depId.AsChar());
 						AddError(ManifestValidationResult::kUnknownType, msg.AsChar(), errorContext.AsChar());
 						allDepsExist = false;
@@ -299,7 +299,8 @@ namespace Dia
 			{
 				const Dia::Core::StringCRC& moduleId = modules[i].instanceId;
 
-				if (!visited.ContainsKey(moduleId) || !visited.At(moduleId))
+				bool* visitedPtr = visited.TryGetItem(moduleId);
+				if (visitedPtr == nullptr || !(*visitedPtr))
 				{
 					cycle.Clear();
 					if (HasCycleDFS(moduleId, adjList, visited, recStack, cycle))
@@ -316,10 +317,10 @@ namespace Dia
 						}
 
 						Dia::Core::Containers::String256 errorContext;
-						errorContext.AppendFormatted("%s.modules", context);
+						errorContext.Format("%s.modules", context);
 
 						Dia::Core::Containers::String256 msg;
-						msg.AppendFormatted("Circular dependency detected: %s", cyclePath.AsChar());
+						msg.Format("Circular dependency detected: %s", cyclePath.AsChar());
 						AddError(ManifestValidationResult::kCircularDependency, msg.AsChar(), errorContext.AsChar());
 						hasCycle = true;
 					}
@@ -341,15 +342,17 @@ namespace Dia
 			cycle.Add(moduleId);
 
 			// Get dependencies
-			const Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32>* deps = adjList.At(moduleId);
-			if (deps != nullptr)
+			const Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32>* depsPtr = adjList.TryGetItem(moduleId);
+			if (depsPtr != nullptr)
 			{
-				for (unsigned int i = 0; i < deps->Size(); ++i)
+				const Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32>& deps = *depsPtr;
+				for (unsigned int i = 0; i < deps.Size(); ++i)
 				{
-					const Dia::Core::StringCRC& depId = (*deps)[i];
+					const Dia::Core::StringCRC& depId = deps[i];
 
 					// If not visited, recurse
-					if (!visited.ContainsKey(depId) || !visited.At(depId))
+					bool* visitedPtr = visited.TryGetItem(depId);
+					if (visitedPtr == nullptr || !(*visitedPtr))
 					{
 						if (HasCycleDFS(depId, adjList, visited, recStack, cycle))
 						{
@@ -357,10 +360,14 @@ namespace Dia
 						}
 					}
 					// If in recursion stack, we found a cycle
-					else if (recStack.ContainsKey(depId) && recStack.At(depId))
+					else
 					{
-						cycle.Add(depId); // Complete the cycle
-						return true;
+						bool* recPtr = recStack.TryGetItem(depId);
+						if (recPtr != nullptr && *recPtr)
+						{
+							cycle.Add(depId); // Complete the cycle
+							return true;
+						}
 					}
 				}
 			}
@@ -376,7 +383,7 @@ namespace Dia
 			bool allValid = true;
 
 			// Build set of valid phase IDs
-			Dia::Core::Containers::HashTable<Dia::Core::StringCRC, bool, Dia::Core::StringCRCHashFunctor> phaseIds(32);
+			Dia::Core::Containers::HashTable<Dia::Core::StringCRC, bool, Dia::Core::StringCRCHashFunctor> phaseIds(32, 32);
 			for (unsigned int i = 0; i < entry.phases.Size(); ++i)
 			{
 				phaseIds.Add(entry.phases[i].instanceId, true);
@@ -388,10 +395,10 @@ namespace Dia
 				if (!phaseIds.ContainsKey(entry.initialPhase))
 				{
 					Dia::Core::Containers::String256 errorContext;
-					errorContext.AppendFormatted("%s.initial_phase", context);
+					errorContext.Format("%s.initial_phase", context);
 
 					Dia::Core::Containers::String256 msg;
-					msg.AppendFormatted("Initial phase '%s' does not exist", entry.initialPhase.AsChar());
+					msg.Format("Initial phase '%s' does not exist", entry.initialPhase.AsChar());
 					AddError(ManifestValidationResult::kInvalidPhaseTransition, msg.AsChar(), errorContext.AsChar());
 					allValid = false;
 				}
@@ -405,10 +412,10 @@ namespace Dia
 				if (!phaseIds.ContainsKey(transition.fromPhase))
 				{
 					Dia::Core::Containers::String256 errorContext;
-					errorContext.AppendFormatted("%s.transitions[%u].from", context, i);
+					errorContext.Format("%s.transitions[%u].from", context, i);
 
 					Dia::Core::Containers::String256 msg;
-					msg.AppendFormatted("Transition 'from' phase '%s' does not exist", transition.fromPhase.AsChar());
+					msg.Format("Transition 'from' phase '%s' does not exist", transition.fromPhase.AsChar());
 					AddError(ManifestValidationResult::kInvalidPhaseTransition, msg.AsChar(), errorContext.AsChar());
 					allValid = false;
 				}
@@ -416,10 +423,10 @@ namespace Dia
 				if (!phaseIds.ContainsKey(transition.toPhase))
 				{
 					Dia::Core::Containers::String256 errorContext;
-					errorContext.AppendFormatted("%s.transitions[%u].to", context, i);
+					errorContext.Format("%s.transitions[%u].to", context, i);
 
 					Dia::Core::Containers::String256 msg;
-					msg.AppendFormatted("Transition 'to' phase '%s' does not exist", transition.toPhase.AsChar());
+					msg.Format("Transition 'to' phase '%s' does not exist", transition.toPhase.AsChar());
 					AddError(ManifestValidationResult::kInvalidPhaseTransition, msg.AsChar(), errorContext.AsChar());
 					allValid = false;
 				}
@@ -433,7 +440,7 @@ namespace Dia
 			bool allValid = true;
 
 			// Build set of valid phase IDs
-			Dia::Core::Containers::HashTable<Dia::Core::StringCRC, bool, Dia::Core::StringCRCHashFunctor> phaseIds(32);
+			Dia::Core::Containers::HashTable<Dia::Core::StringCRC, bool, Dia::Core::StringCRCHashFunctor> phaseIds(32, 32);
 			for (unsigned int i = 0; i < entry.phases.Size(); ++i)
 			{
 				phaseIds.Add(entry.phases[i].instanceId, true);
@@ -451,10 +458,10 @@ namespace Dia
 					if (!phaseIds.ContainsKey(phaseId))
 					{
 						Dia::Core::Containers::String256 errorContext;
-						errorContext.AppendFormatted("%s.modules[%u].phases[%u]", context, i, j);
+						errorContext.Format("%s.modules[%u].phases[%u]", context, i, j);
 
 						Dia::Core::Containers::String256 msg;
-						msg.AppendFormatted("Module '%s' references non-existent phase '%s'",
+						msg.Format("Module '%s' references non-existent phase '%s'",
 							module.instanceId.AsChar(), phaseId.AsChar());
 						AddError(ManifestValidationResult::kModuleMissingFromPhase, msg.AsChar(), errorContext.AsChar());
 						allValid = false;
@@ -474,7 +481,7 @@ namespace Dia
 
 				if (module.phaseIds.Size() == 0)
 				{
-					DIA_LOG("Warning: Module '%s' in %s has no phases (orphaned module)",
+					Dia::Core::Log::OutputVaradicLine("Warning: Module '%s' in %s has no phases (orphaned module)",
 						module.instanceId.AsChar(), context);
 				}
 			}
@@ -489,7 +496,7 @@ namespace Dia
 
 		void ManifestValidator::ClearErrors()
 		{
-			mErrors.Clear();
+			mErrors.RemoveAll();
 		}
 
 		void ManifestValidator::AddError(ManifestValidationResult code, const char* message, const char* context)
