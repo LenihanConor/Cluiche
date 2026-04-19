@@ -303,7 +303,7 @@ namespace Dia
 				JsonDeserializerInternal()
 				{}
 
-				void Deserialize(TypeInstance& instance, Containers::StringReader& buffer)
+				void Deserialize(TypeInstance& instance, Containers::StringReader& buffer, const char* filePath = nullptr)
 				{
 //					mPtrFixupList.RemoveAll();
 
@@ -318,7 +318,7 @@ namespace Dia
 
 					const Json::Value& versionValue = parsedFromString[TypeJsonSerializer::MetaData::GetMetaData(TypeJsonSerializer::MetaData::EFlagName::Version)];
 					unsigned int version = versionValue.isNull() ? 1 : versionValue.asUInt();
-					DIA_ASSERT(version == TypeJsonSerializer::MetaData::kCurrentVersion, "Serialization version mismatch: file is v%u, expected v%u", version, TypeJsonSerializer::MetaData::kCurrentVersion);
+					DIA_ASSERT(version == TypeJsonSerializer::MetaData::kCurrentVersion, "Serialization version mismatch in \"%s\": file is v%u, expected v%u", filePath ? filePath : "<unknown>", version, TypeJsonSerializer::MetaData::kCurrentVersion);
 
 					this->mCRCValidationArray = &parsedFromString[TypeJsonSerializer::MetaData::GetMetaData(TypeJsonSerializer::MetaData::EFlagName::CRCArray)];
 
@@ -689,10 +689,15 @@ namespace Dia
 			}
 
 			//------------------------------------------------------------------------------------
-			void TypeJsonSerializer::Deserialize(TypeInstance& instance, Containers::StringReader& buffer)
+			void TypeJsonSerializer::Deserialize(TypeInstance& instance, Containers::StringReader& buffer, const char* filePath)
 			{
 				JsonDeserializerInternal deserializer;
-				deserializer.Deserialize(instance, buffer);
+				deserializer.Deserialize(instance, buffer, filePath);
+			}
+
+			void TypeJsonSerializer::Deserialize(TypeInstance& instance, Containers::StringReader& buffer)
+			{
+				Deserialize(instance, buffer, nullptr);
 			}
 		}
 	}

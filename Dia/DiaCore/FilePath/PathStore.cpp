@@ -27,7 +27,7 @@ namespace Dia
 			{
 				const PathStoreConfig::AliasPathTupleArray& aliasPathConfigArray = filePathConfig.GetAliasPathTupleArray();
 
-				for (size_t i = 0; i < aliasPathConfigArray.Size(); i++)
+				for (unsigned int i = 0; i < aliasPathConfigArray.Size(); i++)
 				{
 					const AliasPathConfigTuple& tuple = aliasPathConfigArray[i];
 
@@ -40,7 +40,7 @@ namespace Dia
 			{
 				const PathStoreConfig::AliasAppendPathArray& aliasAppendPathConfigArray = filePathConfig.GetAliasAppendPathTupleArray();
 
-				for (size_t i = 0; i < aliasAppendPathConfigArray.Size(); i++)
+				for (unsigned int i = 0; i < aliasAppendPathConfigArray.Size(); i++)
 				{
 					const AliasAppendPathConfig& tuple = aliasAppendPathConfigArray[i];
 
@@ -62,7 +62,7 @@ namespace Dia
 			{
 				const PathStoreConfig::PathStoreConfigFragmentArray& fragmentArray = filePathConfig.GetPathStoreConfigFragmentArray();
 
-				for (size_t i = 0; i < fragmentArray.Size(); i++)
+				for (unsigned int i = 0; i < fragmentArray.Size(); i++)
 				{
 					const PathStoreConfigFragment& fragment = fragmentArray[i];
 					Path::Alias pathAlias = Path::Alias(fragment.GetBaseAlias().AsCStr());

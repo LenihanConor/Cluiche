@@ -119,7 +119,7 @@ namespace Dia
 		unsigned int StaticPooledComponentFactory<T, capacity>::GetNumberOfActiveComponents()const 
 		{
 			unsigned int numberActiveComponents = capacity;
-			for(size_t i = 0; i < mComponentMetaData.Size(); ++i)
+			for(unsigned int i = 0; i < mComponentMetaData.Size(); ++i)
 			{
 				if (mComponentMetaData[i].mIsFree)
 				{

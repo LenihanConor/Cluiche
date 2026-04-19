@@ -47,12 +47,12 @@ namespace Dia
 		void DebugFrameData::AcceptVisitor(const DebugFrameDataVisitor& visitor)const
 		{
 			//Todo: This should be sequentially in order of when they got added or at least in some sort of batch
-			for (size_t i = 0; i < mDebug2DCircleBuffer.Size(); i++)
+			for (unsigned int i = 0; i < mDebug2DCircleBuffer.Size(); i++)
 			{
 				visitor.Visit(mDebug2DCircleBuffer[i]);
 			}
 
-			for (size_t i = 0; i < mDebug2DLineBuffer.Size(); i++)
+			for (unsigned int i = 0; i < mDebug2DLineBuffer.Size(); i++)
 			{
 				visitor.Visit(mDebug2DLineBuffer[i]);
 			}

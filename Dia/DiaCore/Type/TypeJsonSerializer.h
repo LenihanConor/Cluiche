@@ -86,8 +86,9 @@ namespace Dia
 				void Serialize(const TypeInstance& instance, Dia::Core::Containers::StringWriter& buffer);
 				
 			
-				template<class T> 
-				void Deserialize(T& object, Dia::Core::Containers::StringReader& buffer);
+				template<class T>
+				void Deserialize(T& object, Dia::Core::Containers::StringReader& buffer, const char* filePath = nullptr);
+				void Deserialize(TypeInstance& instance, Dia::Core::Containers::StringReader& buffer, const char* filePath = nullptr);
 				void Deserialize(TypeInstance& instance, Dia::Core::Containers::StringReader& buffer);
 	
 			private:				
@@ -102,10 +103,10 @@ namespace Dia
 			}
 
 			//------------------------------------------------------------------------------------
-			template<class T> 
-			inline void TypeJsonSerializer::Deserialize(T& object, Dia::Core::Containers::StringReader& buffer)
+			template<class T>
+			inline void TypeJsonSerializer::Deserialize(T& object, Dia::Core::Containers::StringReader& buffer, const char* filePath)
 			{
-				Deserialize( object.CreateTypeInstance(), buffer );
+				Deserialize( object.CreateTypeInstance(), buffer, filePath );
 			}
 		}
 	}

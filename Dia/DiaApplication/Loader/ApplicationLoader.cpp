@@ -27,7 +27,7 @@ namespace Dia
 			{
 				const auto& errors = loader.GetErrors();
 				Dia::Core::Log::OutputVaradicLine("Failed to load application manifest: %s", manifestPath);
-				for (size_t i = 0; i < errors.Size(); ++i)
+				for (unsigned int i = 0; i < errors.Size(); ++i)
 				{
 					const ManifestValidationError& error = errors[i];
 					Dia::Core::Log::OutputVaradicLine("  [%s] %s (context: %s)",

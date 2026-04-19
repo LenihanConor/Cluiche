@@ -71,7 +71,7 @@ namespace Dia
 			unsigned int HashTableC<Key, Payload, HashFunctor, sizePayload, sizeTable>::DeepestTable() const
 			{
 				unsigned int deepest = 0;
-				for (size_t i = 0; i < mTable.Size(); i++)
+				for (unsigned int i = 0; i < mTable.Size(); i++)
 				{
 					if (mTable[i])
 					{
@@ -94,7 +94,7 @@ namespace Dia
 			unsigned int HashTableC<Key, Payload, HashFunctor, sizePayload, sizeTable>::AssignedTableEntries() const
 			{
 				unsigned int numberAssignedTableEntries = 0;
-				for (size_t i = 0; i < mTable.Size(); i++)
+				for (unsigned int i = 0; i < mTable.Size(); i++)
 				{
 					if (mTable[i])
 					{
@@ -157,7 +157,7 @@ namespace Dia
 			void HashTableC<Key, Payload, HashFunctor, sizePayload, sizeTable>::Remove ( const Key& key )
 			{
 				DIA_ASSERT_SUPPORT(bool found = false);
-				for (size_t i = 0; i < mPayloadNodes.Size(); i++)
+				for (unsigned int i = 0; i < mPayloadNodes.Size(); i++)
 				{
 					if (mPayloadNodes[i].GetKeyConst() == key)
 					{
@@ -200,7 +200,7 @@ namespace Dia
 			void HashTableC<Key, Payload, HashFunctor, sizePayload, sizeTable>::RemoveByPayload ( const Payload& value )
 			{
 				DIA_ASSERT_SUPPORT(bool found = false);
-				for (size_t i = 0; i < mPayloadNodes.Size(); i++)
+				for (unsigned int i = 0; i < mPayloadNodes.Size(); i++)
 				{
 					if (mPayloadNodes[i].GetPayloadConst() == value)
 					{
@@ -217,7 +217,7 @@ namespace Dia
 			void HashTableC<Key, Payload, HashFunctor, sizePayload, sizeTable>::RemoveByPayload( const Payload& payloadValue, const Comparisson& functor )
 			{
 				DIA_ASSERT_SUPPORT(bool found = false);
-				for (size_t i = 0; i < mPayloadNodes.Size(); i++)
+				for (unsigned int i = 0; i < mPayloadNodes.Size(); i++)
 				{
 					if (functor.Equals(mPayloadNodes[i].GetPayloadConst(), value))
 					{
@@ -233,7 +233,7 @@ namespace Dia
 			template< class Key, class Payload, class HashFunctor, unsigned int sizePayload, unsigned int sizeTable > 
 			void HashTableC<Key, Payload, HashFunctor, sizePayload, sizeTable>::RemoveAll()
 			{
-				for(size_t i = 0; i < mTable.Size(); i++)
+				for(unsigned int i = 0; i < mTable.Size(); i++)
 				{
 					mTable[i] = NULL;
 				}
@@ -253,7 +253,7 @@ namespace Dia
 			template< class Key, class Payload, class HashFunctor, unsigned int sizePayload, unsigned int sizeTable > 
 			bool HashTableC<Key, Payload, HashFunctor, sizePayload, sizeTable>::ContainsPayload ( const Payload& value ) const
 			{
-				for (size_t i = 0; i < mPayloadNodes.Size(); i++)
+				for (unsigned int i = 0; i < mPayloadNodes.Size(); i++)
 				{
 					if (mPayloadNodes[i].GetPayloadConst() == value)
 					{
@@ -267,7 +267,7 @@ namespace Dia
 			template< class Key, class Payload, class HashFunctor, unsigned int sizePayload, unsigned int sizeTable > template<class Equal> 
 			bool HashTableC<Key, Payload, HashFunctor, sizePayload, sizeTable>::ContainsPayload	( const Payload& value, const Equal& functor ) const
 			{
-				for (size_t i = 0; i < mPayloadNodes.Size(); i++)
+				for (unsigned int i = 0; i < mPayloadNodes.Size(); i++)
 				{
 					if (functor.Equals(mPayloadNodes[i].GetPayloadConst(), value))
 					{

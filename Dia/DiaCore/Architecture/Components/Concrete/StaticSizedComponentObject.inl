@@ -23,7 +23,7 @@ namespace Dia
 		template<unsigned int capacity>
 		bool StaticSizedComponentObject<capacity>::HasComponent(const ComponentClassID& id)const 
 		{
-			for (size_t i = 0; i < mComponentPtrs.Size(); ++i)
+			for (unsigned int i = 0; i < mComponentPtrs.Size(); ++i)
 			{
 				if(mComponentPtrs[i]->IsType(id))
 				{
@@ -37,7 +37,7 @@ namespace Dia
 		template<unsigned int capacity>
 		IComponent* StaticSizedComponentObject<capacity>::GetComponentPtr(const ComponentClassID& id)
 		{
-			for (size_t i = 0; i < mComponentPtrs.Size(); ++i)
+			for (unsigned int i = 0; i < mComponentPtrs.Size(); ++i)
 			{
 				if(mComponentPtrs[i]->IsType(id))
 				{
@@ -51,7 +51,7 @@ namespace Dia
 		template<unsigned int capacity>
 		const IComponent* StaticSizedComponentObject<capacity>::GetComponentPtr(const ComponentClassID& id)const
 		{
-			for (size_t i = 0; i < mComponentPtrs.Size(); ++i)
+			for (unsigned int i = 0; i < mComponentPtrs.Size(); ++i)
 			{
 				if(mComponentPtrs[i]->IsType(id))
 				{

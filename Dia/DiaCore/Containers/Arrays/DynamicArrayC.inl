@@ -457,7 +457,7 @@ namespace Dia
 				{
 					T possibleUnique = At(i);
 					bool foundInList = false;
-					for (size_t j = 0; j < unique.Size(); j++)
+					for (unsigned int j = 0; j < unique.Size(); j++)
 					{
 						if (possibleUnique == unique[j])
 						{
@@ -482,7 +482,7 @@ namespace Dia
 				{
 					T possibleUnique = At(i);
 					bool foundInList = false;
-					for (size_t j = 0; j < unique.Size(); j++)
+					for (unsigned int j = 0; j < unique.Size(); j++)
 					{
 						if (possibleUnique == unique[j])
 						{

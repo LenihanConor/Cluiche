@@ -54,9 +54,8 @@ namespace Dia
 				// Deserialize JSON into the output object
 				Dia::Core::Containers::StringReader bufferDeserial(&getdata[0]);
 
-				//TODO - Deserialize error message
 				//TODO - Deserialize interface to be passed in
-				Dia::Core::Types::GetTypeFacade().JsonSerializer().Deserialize(outObject, bufferDeserial);
+				Dia::Core::Types::GetTypeFacade().JsonSerializer().Deserialize(outObject, bufferDeserial, filePath.AsCStr());
 
 				return IFileLoad::ReturnCode::kSuccess;
 			}

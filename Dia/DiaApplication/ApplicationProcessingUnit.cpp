@@ -239,7 +239,7 @@ namespace Dia
 		// as iterating through each phase and module so that it knows its dependencies
 		void ProcessingUnit::DoBuildDependancies(IBuildDependencyData* buildDependencies)
 		{
-			for (size_t i = 0; i < mAssociatedModules.Size(); i++)
+			for (unsigned int i = 0; i < mAssociatedModules.Size(); i++)
 			{
 				Module* module = mAssociatedModules.GetItemByIndex(i);
 
@@ -257,7 +257,7 @@ namespace Dia
 				}
 			}
 
-			for (size_t i = 0; i < mAssociatedPhases.Size(); i++)
+			for (unsigned int i = 0; i < mAssociatedPhases.Size(); i++)
 			{
 				Phase* phase = mAssociatedPhases.GetItemByIndex(i);
 				
@@ -480,7 +480,7 @@ namespace Dia
 
 			// Export all phases
 			Json::Value phasesArray(Json::arrayValue);
-			for (size_t i = 0; i < mAssociatedPhases.Size(); i++)
+			for (unsigned int i = 0; i < mAssociatedPhases.Size(); i++)
 			{
 				Phase* phase = mAssociatedPhases.GetItemByIndexConst(i);
 				Json::Value phaseObj;
@@ -492,7 +492,7 @@ namespace Dia
 
 			// Export all modules
 			Json::Value modulesArray(Json::arrayValue);
-			for (size_t i = 0; i < mAssociatedModules.Size(); i++)
+			for (unsigned int i = 0; i < mAssociatedModules.Size(); i++)
 			{
 				Module* module = mAssociatedModules.GetItemByIndexConst(i);
 				Json::Value moduleObj;
@@ -509,7 +509,7 @@ namespace Dia
 				const Dia::Core::StringCRC& fromPhaseId = it.Key();
 				const PhaseTransitionList& transitions = it.Value();
 
-				for (size_t j = 0; j < transitions.Size(); j++)
+				for (unsigned int j = 0; j < transitions.Size(); j++)
 				{
 					Json::Value transitionObj;
 					transitionObj["from"] = fromPhaseId.AsChar();

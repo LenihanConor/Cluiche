@@ -77,7 +77,7 @@ namespace Dia
 			ValidateTypes(manifest);
 
 			// Validate each processing unit
-			for (size_t i = 0; i < manifest.processingUnits.Size(); ++i)
+			for (unsigned int i = 0; i < manifest.processingUnits.Size(); ++i)
 			{
 				const ApplicationManifest::ProcessingUnitEntry& entry = manifest.processingUnits[i];
 
@@ -129,7 +129,7 @@ namespace Dia
 			bool allValid = true;
 			ApplicationTypeRegistry& registry = ApplicationTypeRegistry::Instance();
 
-			for (size_t i = 0; i < manifest.processingUnits.Size(); ++i)
+			for (unsigned int i = 0; i < manifest.processingUnits.Size(); ++i)
 			{
 				const ApplicationManifest::ProcessingUnitEntry& entry = manifest.processingUnits[i];
 
@@ -146,7 +146,7 @@ namespace Dia
 				}
 
 				// Validate Phase types
-				for (size_t j = 0; j < entry.phases.Size(); ++j)
+				for (unsigned int j = 0; j < entry.phases.Size(); ++j)
 				{
 					const ApplicationManifest::PhaseEntry& phase = entry.phases[j];
 					if (!registry.IsPhaseTypeRegistered(phase.typeId))
@@ -162,7 +162,7 @@ namespace Dia
 				}
 
 				// Validate Module types
-				for (size_t j = 0; j < entry.modules.Size(); ++j)
+				for (unsigned int j = 0; j < entry.modules.Size(); ++j)
 				{
 					const ApplicationManifest::ModuleEntry& module = entry.modules[j];
 					if (!registry.IsModuleTypeRegistered(module.typeId))
@@ -188,7 +188,7 @@ namespace Dia
 			// Check for duplicate phase instance IDs
 			Dia::Core::Containers::HashTable<Dia::Core::StringCRC, unsigned int, Dia::Core::StringCRCHashFunctor> phaseIds(32, 32);
 
-			for (size_t i = 0; i < entry.phases.Size(); ++i)
+			for (unsigned int i = 0; i < entry.phases.Size(); ++i)
 			{
 				const Dia::Core::StringCRC& instanceId = entry.phases[i].instanceId;
 
@@ -211,7 +211,7 @@ namespace Dia
 			// Check for duplicate module instance IDs
 			Dia::Core::Containers::HashTable<Dia::Core::StringCRC, unsigned int, Dia::Core::StringCRCHashFunctor> moduleIds(64, 128);
 
-			for (size_t i = 0; i < entry.modules.Size(); ++i)
+			for (unsigned int i = 0; i < entry.modules.Size(); ++i)
 			{
 				const Dia::Core::StringCRC& instanceId = entry.modules[i].instanceId;
 
@@ -253,7 +253,7 @@ namespace Dia
 			// Build module ID set for validation
 			Dia::Core::Containers::HashTable<Dia::Core::StringCRC, bool, Dia::Core::StringCRCHashFunctor> moduleIdSet(64, 128);
 
-			for (size_t i = 0; i < modules.Size(); ++i)
+			for (unsigned int i = 0; i < modules.Size(); ++i)
 			{
 				const ApplicationManifest::ModuleEntry& module = modules[i];
 				if (moduleIdSet.ContainsKey(module.instanceId))
@@ -264,7 +264,7 @@ namespace Dia
 
 				// Initialize adjacency list for this module
 				Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32> deps;
-				for (size_t j = 0; j < module.dependencies.Size(); ++j)
+				for (unsigned int j = 0; j < module.dependencies.Size(); ++j)
 				{
 					deps.Add(module.dependencies[j]);
 				}
@@ -273,10 +273,10 @@ namespace Dia
 
 			// Validate all dependencies exist
 			bool allDepsExist = true;
-			for (size_t i = 0; i < modules.Size(); ++i)
+			for (unsigned int i = 0; i < modules.Size(); ++i)
 			{
 				const ApplicationManifest::ModuleEntry& module = modules[i];
-				for (size_t j = 0; j < module.dependencies.Size(); ++j)
+				for (unsigned int j = 0; j < module.dependencies.Size(); ++j)
 				{
 					const Dia::Core::StringCRC& depId = module.dependencies[j];
 					if (!moduleIdSet.ContainsKey(depId))
@@ -299,7 +299,7 @@ namespace Dia
 			Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32> cycle;
 
 			bool hasCycle = false;
-			for (size_t i = 0; i < modules.Size(); ++i)
+			for (unsigned int i = 0; i < modules.Size(); ++i)
 			{
 				const Dia::Core::StringCRC& moduleId = modules[i].instanceId;
 
@@ -311,7 +311,7 @@ namespace Dia
 					{
 						// Build cycle path string
 						Dia::Core::Containers::String256 cyclePath;
-						for (size_t j = 0; j < cycle.Size(); ++j)
+						for (unsigned int j = 0; j < cycle.Size(); ++j)
 						{
 							if (j > 0)
 							{
@@ -350,7 +350,7 @@ namespace Dia
 			if (depsPtr != nullptr)
 			{
 				const Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32>& deps = *depsPtr;
-				for (size_t i = 0; i < deps.Size(); ++i)
+				for (unsigned int i = 0; i < deps.Size(); ++i)
 				{
 					const Dia::Core::StringCRC& depId = deps[i];
 
@@ -392,7 +392,7 @@ namespace Dia
 
 			// Build set of valid phase IDs
 			Dia::Core::Containers::HashTable<Dia::Core::StringCRC, bool, Dia::Core::StringCRCHashFunctor> phaseIds(32, 32);
-			for (size_t i = 0; i < entry.phases.Size(); ++i)
+			for (unsigned int i = 0; i < entry.phases.Size(); ++i)
 			{
 				if (!phaseIds.ContainsKey(entry.phases[i].instanceId))
 				{
@@ -416,7 +416,7 @@ namespace Dia
 			}
 
 			// Validate all transitions reference valid phases
-			for (size_t i = 0; i < entry.transitions.Size(); ++i)
+			for (unsigned int i = 0; i < entry.transitions.Size(); ++i)
 			{
 				const ApplicationManifest::PhaseTransition& transition = entry.transitions[i];
 
@@ -452,7 +452,7 @@ namespace Dia
 
 			// Build set of valid phase IDs
 			Dia::Core::Containers::HashTable<Dia::Core::StringCRC, bool, Dia::Core::StringCRCHashFunctor> phaseIds(32, 32);
-			for (size_t i = 0; i < entry.phases.Size(); ++i)
+			for (unsigned int i = 0; i < entry.phases.Size(); ++i)
 			{
 				if (!phaseIds.ContainsKey(entry.phases[i].instanceId))
 				{
@@ -461,11 +461,11 @@ namespace Dia
 			}
 
 			// Validate each module's phase references
-			for (size_t i = 0; i < entry.modules.Size(); ++i)
+			for (unsigned int i = 0; i < entry.modules.Size(); ++i)
 			{
 				const ApplicationManifest::ModuleEntry& module = entry.modules[i];
 
-				for (size_t j = 0; j < module.phaseIds.Size(); ++j)
+				for (unsigned int j = 0; j < module.phaseIds.Size(); ++j)
 				{
 					const Dia::Core::StringCRC& phaseId = module.phaseIds[j];
 
@@ -489,7 +489,7 @@ namespace Dia
 		bool ManifestValidator::ValidateOrphanedModules(const ApplicationManifest::ProcessingUnitEntry& entry, const char* context)
 		{
 			// AC5: Warn only, not an error
-			for (size_t i = 0; i < entry.modules.Size(); ++i)
+			for (unsigned int i = 0; i < entry.modules.Size(); ++i)
 			{
 				const ApplicationManifest::ModuleEntry& module = entry.modules[i];
 
