@@ -36,7 +36,7 @@ namespace Dia
 				}
 				else if (rhs.IsDouble())
 				{
-					lhs = BoundMethodValue(rhs.IsDouble());
+					lhs = BoundMethodValue(rhs.ToDouble());
 				}
 				else if (rhs.IsString())
 				{
