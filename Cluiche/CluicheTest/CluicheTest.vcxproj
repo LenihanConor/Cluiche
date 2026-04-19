@@ -124,7 +124,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IntDir>$(SolutionDir)bin\intermediate\$(TargetName)\$(Configuration)\</IntDir>
     <RunCodeAnalysis>true</RunCodeAnalysis>
-    <OutDir>$(SolutionDir)bin\exe\$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)bin\exe\$(Configuration)-x64\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)bin\exe\$(Configuration)-x64\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -163,11 +166,11 @@ xcopy /Y "$(SolutionDir)..\External\SFML\Current\bin\*.dll" "$(TargetDir)"</Comm
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>$(OutDir)UnitTestLevel.lib;$(OutDir)DummyLevel.lib;$(OutDir)DiaCore.lib;$(OutDir)CluicheKernel.lib;$(OutDir)DiaMaths.lib;$(OutDir)DiaGraphics.lib;$(OutDir)DiaSFML.lib;$(OutDir)DiaWindow.lib;$(OutDir)DiaInput.lib;$(OutDir)DiaApplication.lib;$(OutDir)DiaUI.lib;$(OutDir)DiaUIAwesomium.lib;sfml-graphics-d.lib;sfml-window-d.lib;sfml-system-d.lib;awesomium.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\External\Awesomium SDK\1.7.5.1\builds\lib;$(SolutionDir)..\SFML\Current\lib\Debug;$(SolutionDir)..\Dia\DiaBin\CluicheKernel;$(SolutionDir)..\Dia\DiaBin\DiaInput;$(SolutionDir)..\External\SFML\Current\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\External\Awesomium SDK\1.7.5.1\builds\lib;$(SolutionDir)..\SFML\Current-x64\lib\Debug;$(SolutionDir)..\Dia\DiaBin\CluicheKernel;$(SolutionDir)..\Dia\DiaBin\DiaInput;$(SolutionDir)..\External\SFML\Current-x64\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>copy /Y "$(SolutionDir)pathStoreConfig.json" "$(TargetDir)pathStoreConfig.json"
-xcopy /Y "$(SolutionDir)..\External\SFML\Current\bin\*.dll" "$(TargetDir)"</Command>
+xcopy /Y "$(SolutionDir)..\External\SFML\Current-x64\bin\*.dll" "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -208,7 +211,7 @@ xcopy /Y "$(SolutionDir)..\External\SFML\Current\bin\*.dll" "$(TargetDir)"</Comm
     </Link>
     <PostBuildEvent>
       <Command>copy /Y "$(SolutionDir)pathStoreConfig.json" "$(TargetDir)pathStoreConfig.json"
-xcopy /Y "$(SolutionDir)..\External\SFML\Current\bin\*.dll" "$(TargetDir)"</Command>
+xcopy /Y "$(SolutionDir)..\External\SFML\Current-x64\bin\*.dll" "$(TargetDir)"</Command>
     </PostBuildEvent>
     <ProjectReference>
       <UseLibraryDependencyInputs>true</UseLibraryDependencyInputs>

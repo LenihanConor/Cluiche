@@ -1,5 +1,6 @@
 {
    "_class_name" : "PathStoreConfig",
+   "_version" : 2,
    "_crc_validation_array" : {
       "AliasAppendPathConfig" : 1287419118,
       "AliasPathConfigTuple" : 2232579404,
