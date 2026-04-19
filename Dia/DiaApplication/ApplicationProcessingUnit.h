@@ -26,16 +26,18 @@
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Timer/TimeThreadLimiter.h>
 #include <DiaCore/Memory/UniquePtr.h>
+#include <DiaCore/Json/external/json/json.h>
 
 #include <atomic>
 #include <mutex>
 #include <vector>
 
-namespace Dia 
+namespace Dia
 {
 	namespace Application
 	{
 		class Phase;
+		class ApplicationManifestLoader;
 	}
 }
 
@@ -49,8 +51,12 @@ namespace Dia
 		class ProcessingUnit: public StateObject
 		{
 			friend class HotReloadManager;
+			friend class ApplicationManifestLoader;
+			friend class ApplicationIntrospector;
 
 		public:
+			static const Dia::Core::StringCRC kTypeId;
+
 			typedef Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 8> PhaseTransitionList; // TODO: I am setting this to "8" could be any size to be honest.
 			typedef Dia::Core::Containers::HashTable<Dia::Core::StringCRC, Module*, Dia::Core::StringCRCHashFunctor> ModuleTable;
 			typedef Dia::Core::Containers::HashTable<Dia::Core::StringCRC, Phase*, Dia::Core::StringCRCHashFunctor> PhasesTable;
@@ -127,6 +133,10 @@ namespace Dia
 			// Hot reload manager (created on first access)
 			HotReloadManager* GetHotReloadManager();
 			const HotReloadManager* GetHotReloadManager() const;
+
+			// Serialization support - exports current phase/module topology
+			virtual void SerializeTopology(Json::Value& out) const;
+			virtual bool DeserializeTopology(const Json::Value& in);
 
 			void operator()(); // Used if we are threading
 

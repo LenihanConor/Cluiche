@@ -363,7 +363,26 @@
       "Bash(\"/c/GitHub/Cluiche/Cluiche/Tests/GoogleTests/bin/exe/Debug/GoogleTests.exe\" --gtest_filter=\"*Application*:HotReload*\" --gtest_color=yes)",
       "Bash(timeout 5 \"/c/GitHub/Cluiche/Cluiche/Tests/GoogleTests/bin/exe/Debug/GoogleTests.exe\" --gtest_filter=\"HotReload.ModuleNotFoundFails\" --gtest_color=no)",
       "Bash(timeout 10 \"/c/GitHub/Cluiche/Cluiche/Tests/GoogleTests/bin/exe/Debug/GoogleTests.exe\" --gtest_filter=\"HotReload.ReplaceModuleWithStateTransfer\" --gtest_color=yes)",
-      "Bash(\"/c/GitHub/Cluiche/Cluiche/Tests/GoogleTests/bin/exe/Debug/GoogleTests.exe\" --gtest_filter=\"HotReload.DISABLED_ReplaceModuleWithStateTransfer\" --gtest_break_on_failure)"
+      "Bash(\"/c/GitHub/Cluiche/Cluiche/Tests/GoogleTests/bin/exe/Debug/GoogleTests.exe\" --gtest_filter=\"HotReload.DISABLED_ReplaceModuleWithStateTransfer\" --gtest_break_on_failure)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/MSBuild.exe\" Dia/DiaApplication/DiaApplication.vcxproj /p:Configuration=Debug /p:Platform=Win32 /nologo /verbosity:minimal)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/MSBuild.exe\" Dia/DiaApplication/DiaApplication.vcxproj //p:Configuration=Debug //p:Platform=Win32 //nologo //verbosity:minimal)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/MSBuild.exe\" \"Dia\\\\DiaApplication\\\\DiaApplication.vcxproj\" /p:Configuration=Debug /p:Platform=Win32 /t:Build /v:minimal)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/MSBuild.exe\" Cluiche.sln //p:Configuration=Debug //p:Platform=Win32 //nologo //verbosity:minimal)",
+      "Bash(\"C:\\\\Program Files\\\\Microsoft Visual Studio\\\\2022\\\\Professional\\\\MSBuild\\\\Current\\\\Bin\\\\MSBuild.exe\" \"C:\\\\GitHub\\\\Cluiche\\\\Dia\\\\DiaApplication\\\\DiaApplication.vcxproj\" /p:Configuration=Debug /p:Platform=Win32 /t:Build /v:minimal /nologo)",
+      "Bash(\"C:\\\\Program Files\\\\Microsoft Visual Studio\\\\2022\\\\Enterprise\\\\MSBuild\\\\Current\\\\Bin\\\\MSBuild.exe\" \"C:\\\\GitHub\\\\Cluiche\\\\Dia\\\\DiaApplication\\\\DiaApplication.vcxproj\" /p:Configuration=Debug /p:Platform=Win32 /v:minimal /nologo)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/amd64/MSBuild.exe\" \"C:\\\\GitHub\\\\Cluiche\\\\Dia\\\\DiaApplication\\\\DiaApplication.vcxproj\" /p:Configuration=Debug /p:Platform=Win32 /v:minimal /nologo)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/amd64/MSBuild.exe\" Dia/DiaApplication/DiaApplication.vcxproj -p:Configuration=Debug -p:Platform=Win32 -v:minimal -nologo)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/amd64/MSBuild.exe\" Dia/DiaApplication/DiaApplication.vcxproj -p:Configuration=Debug -p:Platform=Win32 -v:minimal -nologo -t:Clean)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/amd64/MSBuild.exe\" Dia/DiaApplication/Manifest/ApplicationManifest.cpp -p:Configuration=Debug -p:Platform=Win32)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/18/Professional/MSBuild/Current/Bin/amd64/MSBuild.exe\" Dia/DiaApplication/DiaApplication.vcxproj /p:Configuration=Debug /p:Platform=Win32 /t:Build /v:minimal)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/18/Professional/MSBuild/Current/Bin/amd64/MSBuild.exe\" Dia\\\\\\\\DiaApplication\\\\\\\\DiaApplication.vcxproj /p:Configuration=Debug /p:Platform=Win32 /t:Build /v:minimal /nologo)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/MSBuild.exe\" Cluiche/Cluiche.sln /p:Configuration=Debug /p:Platform=Win32 /t:GoogleTests /m /v:minimal)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/MSBuild.exe\" \"Cluiche/Tests/GoogleTests/GoogleTests.vcxproj\" /p:Configuration=Debug /p:Platform=Win32 /v:minimal)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/MSBuild.exe\" Cluiche.sln /p:Configuration=Debug /p:Platform=Win32 /t:DiaApplication /m:4 /v:minimal)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/MSBuild.exe\" Cluiche.sln /p:Configuration=Debug /p:Platform=Win32 /t:DiaApplication /m:4 /v:minimal)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/MSBuild.exe\" Cluiche/Cluiche.sln /p:Configuration=Debug /p:Platform=Win32 /t:DiaApplication)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/MSBuild.exe\" \"Dia\\\\DiaApplication\\\\DiaApplication.vcxproj\" /p:Configuration=Debug /p:Platform=Win32)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/MSBuild.exe\" Cluiche.sln /p:Configuration=Debug /p:Platform=Win32 /t:DiaApplication /v:m)"
     ],
     "defaultMode": "auto"
   }

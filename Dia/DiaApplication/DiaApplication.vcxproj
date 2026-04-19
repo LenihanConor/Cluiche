@@ -17,6 +17,13 @@
     <ClCompile Include="ApplicationStateObject.cpp" />
     <ClCompile Include="MessageBus.cpp" />
     <ClCompile Include="HotReloadManager.cpp" />
+    <ClCompile Include="Introspection\ApplicationIntrospector.cpp" />
+    <ClCompile Include="Loader\ApplicationLoader.cpp" />
+    <ClCompile Include="Manifest\ApplicationManifest.cpp" />
+    <ClCompile Include="Manifest\ApplicationManifestLoader.cpp" />
+    <ClCompile Include="Manifest\ManifestComposer.cpp" />
+    <ClCompile Include="Manifest\ManifestValidator.cpp" />
+    <ClCompile Include="TypeRegistry\ApplicationTypeRegistry.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApplicationModule.h" />
@@ -24,6 +31,13 @@
     <ClInclude Include="ApplicationProcessingUnit.h" />
     <ClInclude Include="ApplicationStateObject.h" />
     <ClInclude Include="MessageBus.h" />
+    <ClInclude Include="Introspection\ApplicationIntrospector.h" />
+    <ClInclude Include="Loader\ApplicationLoader.h" />
+    <ClInclude Include="Manifest\ApplicationManifest.h" />
+    <ClInclude Include="Manifest\ApplicationManifestLoader.h" />
+    <ClInclude Include="Manifest\ManifestComposer.h" />
+    <ClInclude Include="Manifest\ManifestValidator.h" />
+    <ClInclude Include="TypeRegistry\ApplicationTypeRegistry.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{DD3D58EF-028B-42CB-B837-0042BA30D96F}</ProjectGuid>

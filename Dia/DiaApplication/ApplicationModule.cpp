@@ -17,7 +17,12 @@ namespace Dia
 		////////////////////////////////////////////////////////////////////////////////
 		// Class name: Module
 		////////////////////////////////////////////////////////////////////////////////
-		
+
+		//---------------------------------------------------------------------------------------------------------
+		// Static member initialization
+		//---------------------------------------------------------------------------------------------------------
+		const Dia::Core::StringCRC Module::kTypeId = Dia::Core::StringCRC("Module");
+
 		//-----------------------------------------------------------------------------
 		Module::Module(ProcessingUnit* associatedProcessingUnit, const Dia::Core::StringCRC& uniqueId, RunningEnum runningMode, unsigned int initialDependencyMapSize)
 			: StateObject(uniqueId)

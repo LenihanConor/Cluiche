@@ -279,6 +279,8 @@
     <ClCompile Include="DiaCLI\TestDiaCLI.cpp" />
     <ClCompile Include="Application\TestBasicApplication.cpp" />
     <ClCompile Include="Application\TestHotReload.cpp" />
+    <ClCompile Include="Application\TestApplicationTypeRegistry.cpp" />
+    <ClCompile Include="Application\TestManifestLoader.cpp" />
     <!-- Google Test Source Files - Compiled directly into project -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">
       <AdditionalIncludeDirectories>$(ProjectDir)../../../External/googletest/googletest/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

@@ -12,6 +12,7 @@
 #include <DiaCore/CRC/CRCHashFunctor.h>
 #include <DiaCore/Containers/Arrays/DynamicArray.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <DiaCore/Json/external/json/json.h>
 
 namespace Dia
 {
@@ -24,7 +25,11 @@ namespace Dia
 		////////////////////////////////////////////////////////////////////////////////
 		class Phase: public StateObject
 		{
+			friend class ApplicationIntrospector;
+
 		public:
+			static const Dia::Core::StringCRC kTypeId;
+
 			Phase(ProcessingUnit* associatedProcessingUnit, const Dia::Core::StringCRC& uniqueId, unsigned int maxModules = 16);
 
             void AddModule(Module* module);
@@ -44,6 +49,10 @@ namespace Dia
 
 			virtual void BeforeModulesStop(){};
 			virtual void AfterModulesStop(){};
+
+			// Configuration serialization (subclasses can override for custom config)
+			virtual void SerializeConfig(Json::Value& out) const {}
+			virtual bool DeserializeConfig(const Json::Value& in) { return true; }
 
 			virtual bool FlaggedToStopUpdating()const = 0;
 

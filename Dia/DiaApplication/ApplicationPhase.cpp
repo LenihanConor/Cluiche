@@ -22,7 +22,12 @@ namespace Dia
 		////////////////////////////////////////////////////////////////////////////////
 		// Class name: ApplicationPhase
 		////////////////////////////////////////////////////////////////////////////////
-		
+
+		//---------------------------------------------------------------------------------------------------------
+		// Static member initialization
+		//---------------------------------------------------------------------------------------------------------
+		const Dia::Core::StringCRC Phase::kTypeId = Dia::Core::StringCRC("Phase");
+
 		//-----------------------------------------------------------------------------
 		Phase::Phase(ProcessingUnit* associatedProcessingUnit, const Dia::Core::StringCRC& uniqueId, unsigned int maxModules)
 			: StateObject (uniqueId)

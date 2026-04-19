@@ -14,6 +14,11 @@ namespace Dia
 	namespace Application
 	{
 		//---------------------------------------------------------------------------------------------------------
+		// Static member initialization
+		//---------------------------------------------------------------------------------------------------------
+		const Dia::Core::StringCRC ProcessingUnit::kTypeId = Dia::Core::StringCRC("ProcessingUnit");
+
+		//---------------------------------------------------------------------------------------------------------
 		ProcessingUnit::ProcessingUnit(const Dia::Core::StringCRC& uniqueId,
 										float hz,
 										unsigned int initialModuleMapSize,
@@ -455,6 +460,74 @@ namespace Dia
 				mHotReloadManager = new HotReloadManager(const_cast<ProcessingUnit*>(this));
 			}
 			return mHotReloadManager;
+		}
+
+		//---------------------------------------------------------------------------------------------------------
+		// Serialization methods
+		//---------------------------------------------------------------------------------------------------------
+		void ProcessingUnit::SerializeTopology(Json::Value& out) const
+		{
+			// Export basic info
+			out["type"] = "ProcessingUnit";
+			out["id"] = GetUniqueId().AsChar();
+
+			// Export current phase
+			Phase* currentPhase = mCurrentPhase.load(std::memory_order_acquire);
+			if (currentPhase != nullptr)
+			{
+				out["currentPhase"] = currentPhase->GetUniqueId().AsChar();
+			}
+
+			// Export all phases
+			Json::Value phasesArray(Json::arrayValue);
+			for (unsigned int i = 0; i < mAssociatedPhases.Size(); i++)
+			{
+				Phase* phase = mAssociatedPhases.GetItemByIndexConst(i);
+				Json::Value phaseObj;
+				phaseObj["id"] = phase->GetUniqueId().AsChar();
+				phaseObj["typeId"] = Phase::kTypeId.AsChar();
+				phasesArray.append(phaseObj);
+			}
+			out["phases"] = phasesArray;
+
+			// Export all modules
+			Json::Value modulesArray(Json::arrayValue);
+			for (unsigned int i = 0; i < mAssociatedModules.Size(); i++)
+			{
+				Module* module = mAssociatedModules.GetItemByIndexConst(i);
+				Json::Value moduleObj;
+				moduleObj["id"] = module->GetUniqueId().AsChar();
+				moduleObj["typeId"] = Module::kTypeId.AsChar();
+				modulesArray.append(moduleObj);
+			}
+			out["modules"] = modulesArray;
+
+			// Export phase transitions using iterator
+			Json::Value transitionsArray(Json::arrayValue);
+			for (auto it = mPhaseTransitions.Begin(); it != mPhaseTransitions.End(); ++it)
+			{
+				const Dia::Core::StringCRC& fromPhaseId = it.Key();
+				const PhaseTransitionList& transitions = it.Value();
+
+				for (unsigned int j = 0; j < transitions.Size(); j++)
+				{
+					Json::Value transitionObj;
+					transitionObj["from"] = fromPhaseId.AsChar();
+					transitionObj["to"] = transitions[j].AsChar();
+					transitionsArray.append(transitionObj);
+				}
+			}
+			out["transitions"] = transitionsArray;
+		}
+
+		//---------------------------------------------------------------------------------------------------------
+		bool ProcessingUnit::DeserializeTopology(const Json::Value& in)
+		{
+			// Base implementation is no-op
+			// Subclasses can override to restore topology from JSON
+			// NOTE: This is intentionally minimal - deserialization is complex and
+			// typically requires factory support to reconstruct objects
+			return true;
 		}
 	}
 }

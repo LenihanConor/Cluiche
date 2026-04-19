@@ -9,6 +9,7 @@
 
 #include <DiaCore/Containers/HashTables/HashTable.h>
 #include <DiaCore/CRC/CRCHashFunctor.h>
+#include <DiaCore/Json/external/json/json.h>
 
 namespace Dia
 {
@@ -23,6 +24,8 @@ namespace Dia
 		class Module: public StateObject
 		{
 		public:
+			static const Dia::Core::StringCRC kTypeId;
+
 			typedef Dia::Core::Containers::HashTable<Dia::Core::StringCRC, Module*, Dia::Core::StringCRCHashFunctor> ModuleHashTable;
 
 			////////////////////////////////////////////////////////////////////////////////
@@ -95,6 +98,10 @@ namespace Dia
 			// PATTERN: Use DoStartWithError() instead of DoStart() for detailed error reporting
 			// Returns ErrorInfo with isFailure flag and optional message string
 			virtual ErrorInfo DoStartWithError(const IStartData* startData) { return ErrorInfo(); }
+
+			// Configuration serialization (subclasses can override for custom config)
+			virtual void SerializeConfig(Json::Value& out) const {}
+			virtual bool DeserializeConfig(const Json::Value& in) { return true; }
 
 			virtual const char* GetStateObjectType()const override { return "Module"; }
 
