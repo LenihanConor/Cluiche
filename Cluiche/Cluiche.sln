@@ -88,6 +88,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GoogleTests", "Tests\Google
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CluicheKernel", "Cluiche\CluicheKernel\CluicheKernel.vcxproj", "{649D1B1D-C23F-4373-ACA8-8A3A59C0CFA0}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DiaWebSocket", "..\Dia\DiaWebSocket\DiaWebSocket.vcxproj", "{458B1E8F-6660-499F-B265-E40DC3257B81}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8D41CBE3-C493-428D-95F3-627E56500667} = {8D41CBE3-C493-428D-95F3-627E56500667}
+	EndProjectSection
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DiaCLI", "DiaCLI", "{55DDD841-4CCE-4940-A2A4-AF88A2EC6707}"
 	ProjectSection(SolutionItems) = preProject
 		..\Dia\DiaCLI\dia_cli\cli\api.py = ..\Dia\DiaCLI\dia_cli\cli\api.py
@@ -339,6 +344,20 @@ Global
 		{649D1B1D-C23F-4373-ACA8-8A3A59C0CFA0}.RelWithDebInfo|Win32.Build.0 = Release|Win32
 		{649D1B1D-C23F-4373-ACA8-8A3A59C0CFA0}.RelWithDebInfo|x64.ActiveCfg = Release|x64
 		{649D1B1D-C23F-4373-ACA8-8A3A59C0CFA0}.RelWithDebInfo|x64.Build.0 = Release|x64
+		{458B1E8F-6660-499F-B265-E40DC3257B81}.Debug|Win32.ActiveCfg = Debug|Win32
+		{458B1E8F-6660-499F-B265-E40DC3257B81}.Debug|Win32.Build.0 = Debug|Win32
+		{458B1E8F-6660-499F-B265-E40DC3257B81}.Debug|x64.ActiveCfg = Debug|Win32
+		{458B1E8F-6660-499F-B265-E40DC3257B81}.MinSizeRel|Win32.ActiveCfg = Release|Win32
+		{458B1E8F-6660-499F-B265-E40DC3257B81}.MinSizeRel|Win32.Build.0 = Release|Win32
+		{458B1E8F-6660-499F-B265-E40DC3257B81}.MinSizeRel|x64.ActiveCfg = Release|Win32
+		{458B1E8F-6660-499F-B265-E40DC3257B81}.MinSizeRel|x64.Build.0 = Release|Win32
+		{458B1E8F-6660-499F-B265-E40DC3257B81}.Release|Win32.ActiveCfg = Release|Win32
+		{458B1E8F-6660-499F-B265-E40DC3257B81}.Release|Win32.Build.0 = Release|Win32
+		{458B1E8F-6660-499F-B265-E40DC3257B81}.Release|x64.ActiveCfg = Release|Win32
+		{458B1E8F-6660-499F-B265-E40DC3257B81}.RelWithDebInfo|Win32.ActiveCfg = Release|Win32
+		{458B1E8F-6660-499F-B265-E40DC3257B81}.RelWithDebInfo|Win32.Build.0 = Release|Win32
+		{458B1E8F-6660-499F-B265-E40DC3257B81}.RelWithDebInfo|x64.ActiveCfg = Release|Win32
+		{458B1E8F-6660-499F-B265-E40DC3257B81}.RelWithDebInfo|x64.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -360,6 +379,7 @@ Global
 		{A1B2C3D4-5678-9ABC-DEF0-123456789ABC} = {86CA7611-D55D-411B-8784-187D12107EE0}
 		{649D1B1D-C23F-4373-ACA8-8A3A59C0CFA0} = {2291F464-9B87-42F1-AA90-34FE22DD5F9B}
 		{55DDD841-4CCE-4940-A2A4-AF88A2EC6707} = {2291F464-9B87-42F1-AA90-34FE22DD5F9B}
+		{458B1E8F-6660-499F-B265-E40DC3257B81} = {2291F464-9B87-42F1-AA90-34FE22DD5F9B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {0D94A1AE-73B4-4642-918D-5014EC3EEA36}

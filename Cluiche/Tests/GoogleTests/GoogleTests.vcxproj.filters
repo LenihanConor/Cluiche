@@ -52,6 +52,9 @@
     <Filter Include="UI">
       <UniqueIdentifier>{UI000001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="WebSocket">
+      <UniqueIdentifier>{WS000001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GoogleTest">
       <UniqueIdentifier>{AB1E0EFA-J244-8g4c-CF1E-C7FF565EEG45}</UniqueIdentifier>
     </Filter>
@@ -331,6 +334,19 @@
     </ClCompile>
     <ClCompile Include="UI\TestPage.cpp">
       <Filter>UI</Filter>
+    </ClCompile>
+    <!-- WebSocket -->
+    <ClCompile Include="WebSocket\TestWebSocketServer.cpp">
+      <Filter>WebSocket</Filter>
+    </ClCompile>
+    <ClCompile Include="WebSocket\TestWebSocketClient.cpp">
+      <Filter>WebSocket</Filter>
+    </ClCompile>
+    <ClCompile Include="WebSocket\TestWebSocketIntegration.cpp">
+      <Filter>WebSocket</Filter>
+    </ClCompile>
+    <ClCompile Include="WebSocket\TestWebSocketError.cpp">
+      <Filter>WebSocket</Filter>
     </ClCompile>
     <!-- GoogleTest -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">
