@@ -32,7 +32,7 @@ namespace Dia
 			static Dia::Core::Containers::String256 buffer;
 			buffer.Clear();
 			buffer.Format("[%s] %s: %s", GetResultString(code), context, message);
-			return buffer.AsChar();
+			return buffer.AsCStr();
 		}
 
 		const char* ManifestValidationError::GetResultString(ManifestValidationResult result)
@@ -86,19 +86,19 @@ namespace Dia
 				context.Format("processing_units[%u]", i);
 
 				// AC3: Unique instance IDs
-				ValidateDuplicateInstanceIds(entry, context.AsChar());
+				ValidateDuplicateInstanceIds(entry, context.AsCStr());
 
 				// AC4: Circular dependency detection
-				ValidateDependencies(entry, context.AsChar());
+				ValidateDependencies(entry, context.AsCStr());
 
 				// AC5: Orphaned modules (warning only)
-				ValidateOrphanedModules(entry, context.AsChar());
+				ValidateOrphanedModules(entry, context.AsCStr());
 
 				// AC6: Phase transitions reference valid phases
-				ValidatePhaseTransitions(entry, context.AsChar());
+				ValidatePhaseTransitions(entry, context.AsCStr());
 
 				// AC7: Module phase references are valid
-				ValidateModulePhaseReferences(entry, context.AsChar());
+				ValidateModulePhaseReferences(entry, context.AsCStr());
 			}
 
 			// Return first error code if any, or success
@@ -117,7 +117,7 @@ namespace Dia
 			{
 				Dia::Core::Containers::String256 msg;
 				msg.Format("Unsupported schema version: %u (only version 1 is supported)", manifest.version);
-				AddError(ManifestValidationResult::kSchemaVersionUnsupported, msg.AsChar(), "manifest");
+				AddError(ManifestValidationResult::kSchemaVersionUnsupported, msg.AsCStr(), "manifest");
 				return false;
 			}
 
@@ -141,7 +141,7 @@ namespace Dia
 
 					Dia::Core::Containers::String256 msg;
 					msg.Format("ProcessingUnit type '%s' is not registered", entry.typeId.AsChar());
-					AddError(ManifestValidationResult::kUnknownType, msg.AsChar(), context.AsChar());
+					AddError(ManifestValidationResult::kUnknownType, msg.AsCStr(), context.AsCStr());
 					allValid = false;
 				}
 
@@ -156,7 +156,7 @@ namespace Dia
 
 						Dia::Core::Containers::String256 msg;
 						msg.Format("Phase type '%s' is not registered", phase.typeId.AsChar());
-						AddError(ManifestValidationResult::kUnknownType, msg.AsChar(), context.AsChar());
+						AddError(ManifestValidationResult::kUnknownType, msg.AsCStr(), context.AsCStr());
 						allValid = false;
 					}
 				}
@@ -172,7 +172,7 @@ namespace Dia
 
 						Dia::Core::Containers::String256 msg;
 						msg.Format("Module type '%s' is not registered", module.typeId.AsChar());
-						AddError(ManifestValidationResult::kUnknownType, msg.AsChar(), context.AsChar());
+						AddError(ManifestValidationResult::kUnknownType, msg.AsCStr(), context.AsCStr());
 						allValid = false;
 					}
 				}
@@ -199,7 +199,7 @@ namespace Dia
 
 					Dia::Core::Containers::String256 msg;
 					msg.Format("Duplicate phase instance ID: '%s'", instanceId.AsChar());
-					AddError(ManifestValidationResult::kDuplicateInstanceId, msg.AsChar(), errorContext.AsChar());
+					AddError(ManifestValidationResult::kDuplicateInstanceId, msg.AsCStr(), errorContext.AsCStr());
 					allValid = false;
 				}
 				else
@@ -209,7 +209,7 @@ namespace Dia
 			}
 
 			// Check for duplicate module instance IDs
-			Dia::Core::Containers::HashTable<Dia::Core::StringCRC, unsigned int, Dia::Core::StringCRCHashFunctor> moduleIds(64);
+			Dia::Core::Containers::HashTable<Dia::Core::StringCRC, unsigned int, Dia::Core::StringCRCHashFunctor> moduleIds(64, 128);
 
 			for (unsigned int i = 0; i < entry.modules.Size(); ++i)
 			{
@@ -222,7 +222,7 @@ namespace Dia
 
 					Dia::Core::Containers::String256 msg;
 					msg.Format("Duplicate module instance ID: '%s'", instanceId.AsChar());
-					AddError(ManifestValidationResult::kDuplicateInstanceId, msg.AsChar(), errorContext.AsChar());
+					AddError(ManifestValidationResult::kDuplicateInstanceId, msg.AsCStr(), errorContext.AsCStr());
 					allValid = false;
 				}
 				else
@@ -248,10 +248,10 @@ namespace Dia
 			Dia::Core::Containers::HashTable<
 				Dia::Core::StringCRC,
 				Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32>,
-				Dia::Core::StringCRCHashFunctor> adjList(64);
+				Dia::Core::StringCRCHashFunctor> adjList(64, 128);
 
 			// Build module ID set for validation
-			Dia::Core::Containers::HashTable<Dia::Core::StringCRC, bool, Dia::Core::StringCRCHashFunctor> moduleIdSet(64);
+			Dia::Core::Containers::HashTable<Dia::Core::StringCRC, bool, Dia::Core::StringCRCHashFunctor> moduleIdSet(64, 128);
 
 			for (unsigned int i = 0; i < modules.Size(); ++i)
 			{
@@ -283,15 +283,15 @@ namespace Dia
 						Dia::Core::Containers::String256 msg;
 						msg.Format("Module '%s' depends on unknown module '%s'",
 							module.instanceId.AsChar(), depId.AsChar());
-						AddError(ManifestValidationResult::kUnknownType, msg.AsChar(), errorContext.AsChar());
+						AddError(ManifestValidationResult::kUnknownType, msg.AsCStr(), errorContext.AsCStr());
 						allDepsExist = false;
 					}
 				}
 			}
 
 			// DFS for cycle detection
-			Dia::Core::Containers::HashTable<Dia::Core::StringCRC, bool, Dia::Core::StringCRCHashFunctor> visited(64);
-			Dia::Core::Containers::HashTable<Dia::Core::StringCRC, bool, Dia::Core::StringCRCHashFunctor> recStack(64);
+			Dia::Core::Containers::HashTable<Dia::Core::StringCRC, bool, Dia::Core::StringCRCHashFunctor> visited(64, 128);
+			Dia::Core::Containers::HashTable<Dia::Core::StringCRC, bool, Dia::Core::StringCRCHashFunctor> recStack(64, 128);
 			Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32> cycle;
 
 			bool hasCycle = false;
@@ -302,7 +302,7 @@ namespace Dia
 				bool* visitedPtr = visited.TryGetItem(moduleId);
 				if (visitedPtr == nullptr || !(*visitedPtr))
 				{
-					cycle.Clear();
+					cycle.RemoveAll();
 					if (HasCycleDFS(moduleId, adjList, visited, recStack, cycle))
 					{
 						// Build cycle path string
@@ -320,8 +320,8 @@ namespace Dia
 						errorContext.Format("%s.modules", context);
 
 						Dia::Core::Containers::String256 msg;
-						msg.Format("Circular dependency detected: %s", cyclePath.AsChar());
-						AddError(ManifestValidationResult::kCircularDependency, msg.AsChar(), errorContext.AsChar());
+						msg.Format("Circular dependency detected: %s", cyclePath.AsCStr());
+						AddError(ManifestValidationResult::kCircularDependency, msg.AsCStr(), errorContext.AsCStr());
 						hasCycle = true;
 					}
 				}
@@ -342,7 +342,7 @@ namespace Dia
 			cycle.Add(moduleId);
 
 			// Get dependencies
-			const Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32>* depsPtr = adjList.TryGetItem(moduleId);
+			const Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32>* depsPtr = adjList.TryGetItemConst(moduleId);
 			if (depsPtr != nullptr)
 			{
 				const Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32>& deps = *depsPtr;
@@ -399,7 +399,7 @@ namespace Dia
 
 					Dia::Core::Containers::String256 msg;
 					msg.Format("Initial phase '%s' does not exist", entry.initialPhase.AsChar());
-					AddError(ManifestValidationResult::kInvalidPhaseTransition, msg.AsChar(), errorContext.AsChar());
+					AddError(ManifestValidationResult::kInvalidPhaseTransition, msg.AsCStr(), errorContext.AsCStr());
 					allValid = false;
 				}
 			}
@@ -416,7 +416,7 @@ namespace Dia
 
 					Dia::Core::Containers::String256 msg;
 					msg.Format("Transition 'from' phase '%s' does not exist", transition.fromPhase.AsChar());
-					AddError(ManifestValidationResult::kInvalidPhaseTransition, msg.AsChar(), errorContext.AsChar());
+					AddError(ManifestValidationResult::kInvalidPhaseTransition, msg.AsCStr(), errorContext.AsCStr());
 					allValid = false;
 				}
 
@@ -427,7 +427,7 @@ namespace Dia
 
 					Dia::Core::Containers::String256 msg;
 					msg.Format("Transition 'to' phase '%s' does not exist", transition.toPhase.AsChar());
-					AddError(ManifestValidationResult::kInvalidPhaseTransition, msg.AsChar(), errorContext.AsChar());
+					AddError(ManifestValidationResult::kInvalidPhaseTransition, msg.AsCStr(), errorContext.AsCStr());
 					allValid = false;
 				}
 			}
@@ -463,7 +463,7 @@ namespace Dia
 						Dia::Core::Containers::String256 msg;
 						msg.Format("Module '%s' references non-existent phase '%s'",
 							module.instanceId.AsChar(), phaseId.AsChar());
-						AddError(ManifestValidationResult::kModuleMissingFromPhase, msg.AsChar(), errorContext.AsChar());
+						AddError(ManifestValidationResult::kModuleMissingFromPhase, msg.AsCStr(), errorContext.AsCStr());
 						allValid = false;
 					}
 				}

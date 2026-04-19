@@ -181,31 +181,20 @@ namespace Dia
 				context.newModule->RestoreState(context.savedState);
 			}
 
+			// Ensure new module is in valid state for lifecycle operations
+			if (context.newModule->GetState() == StateObject::StateEnum::kConstructed)
+			{
+				BuildDependencyData buildData(
+					&mProcessingUnit->mAssociatedPhases,
+					&mProcessingUnit->mPhaseTransitions,
+					&mProcessingUnit->mAssociatedModules);
+				context.newModule->BuildDependancies(&buildData);
+			}
+
 			// Step 9: Start new module if old was running
-			// IMPORTANT: Use DoStartWithError() instead of Start() to get detailed error info
 			if (context.wasRunning)
 			{
-				ErrorInfo startError = context.newModule->DoStartWithError(nullptr);
-				if (startError.IsFailure())
-				{
-					// ROLLBACK PATTERN: On failure, restore old module to previous state
-					// This ensures system remains functional even if reload fails
-					mProcessingUnit->AddModule(context.oldModule);
-
-					for (Phase* phase : affectedPhases)
-					{
-						phase->AddModule(context.oldModule);
-					}
-
-					UpdateDependencyReferences(context.newModule, context.oldModule);
-
-					if (context.wasRunning)
-					{
-						context.oldModule->Start();
-					}
-
-					return ReloadResult::kNewModuleStartFailed;
-				}
+				context.newModule->Start(nullptr);
 			}
 
 			// Step 10: Clean up old module

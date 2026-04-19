@@ -3,6 +3,7 @@
 #include "ApplicationManifest.h"
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Containers/HashTables/HashTable.h>
+#include <DiaCore/CRC/CRCHashFunctor.h>
 
 namespace Dia
 {
@@ -72,9 +73,9 @@ namespace Dia
 
 			bool HasCycleDFS(
 				const Dia::Core::StringCRC& moduleId,
-				const Dia::Core::Containers::HashTable<Dia::Core::StringCRC, Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32>>& adjList,
-				Dia::Core::Containers::HashTable<Dia::Core::StringCRC, bool>& visited,
-				Dia::Core::Containers::HashTable<Dia::Core::StringCRC, bool>& recStack,
+				const Dia::Core::Containers::HashTable<Dia::Core::StringCRC, Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32>, Dia::Core::StringCRCHashFunctor>& adjList,
+				Dia::Core::Containers::HashTable<Dia::Core::StringCRC, bool, Dia::Core::StringCRCHashFunctor>& visited,
+				Dia::Core::Containers::HashTable<Dia::Core::StringCRC, bool, Dia::Core::StringCRCHashFunctor>& recStack,
 				Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32>& cycle);
 		};
 	}

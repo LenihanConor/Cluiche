@@ -14,9 +14,9 @@ namespace Dia
 		}
 
 		ApplicationTypeRegistry::ApplicationTypeRegistry()
-			: mProcessingUnitFactories(32)
-			, mPhaseFactories(64)
-			, mModuleFactories(128)
+			: mProcessingUnitFactories(32, 64)
+			, mPhaseFactories(64, 128)
+			, mModuleFactories(128, 256)
 			, mProcessingUnitTypes()
 			, mPhaseTypes()
 			, mModuleTypes()
@@ -35,7 +35,7 @@ namespace Dia
 
 			if (mProcessingUnitFactories.ContainsKey(typeId))
 			{
-				DIA_LOG("Warning: ProcessingUnit type '%s' already registered, skipping duplicate", typeId.AsChar());
+				Dia::Core::Log::OutputVaradicLine("Warning: ProcessingUnit type '%s' already registered, skipping duplicate", typeId.AsChar());
 				return;
 			}
 
@@ -49,7 +49,7 @@ namespace Dia
 
 			if (mPhaseFactories.ContainsKey(typeId))
 			{
-				DIA_LOG("Warning: Phase type '%s' already registered, skipping duplicate", typeId.AsChar());
+				Dia::Core::Log::OutputVaradicLine("Warning: Phase type '%s' already registered, skipping duplicate", typeId.AsChar());
 				return;
 			}
 
@@ -63,7 +63,7 @@ namespace Dia
 
 			if (mModuleFactories.ContainsKey(typeId))
 			{
-				DIA_LOG("Warning: Module type '%s' already registered, skipping duplicate", typeId.AsChar());
+				Dia::Core::Log::OutputVaradicLine("Warning: Module type '%s' already registered, skipping duplicate", typeId.AsChar());
 				return;
 			}
 
@@ -75,14 +75,14 @@ namespace Dia
 			const Dia::Core::StringCRC& instanceId,
 			const Json::Value& config)
 		{
-			ITypeFactory<ProcessingUnit>* factory = mProcessingUnitFactories.At(typeId);
-			if (factory == nullptr)
+			ITypeFactory<ProcessingUnit>** ppFactory = mProcessingUnitFactories.TryGetItem(typeId);
+			if (ppFactory == nullptr || *ppFactory == nullptr)
 			{
-				DIA_LOG("Error: ProcessingUnit type '%s' not registered", typeId.AsChar());
+				Dia::Core::Log::OutputVaradicLine("Error: ProcessingUnit type '%s' not registered", typeId.AsChar());
 				return nullptr;
 			}
 
-			return factory->Create(instanceId, config);
+			return (*ppFactory)->Create(instanceId, config);
 		}
 
 		Phase* ApplicationTypeRegistry::CreatePhase(const Dia::Core::StringCRC& typeId,
@@ -92,14 +92,14 @@ namespace Dia
 		{
 			DIA_ASSERT(pu != nullptr, "ProcessingUnit cannot be null");
 
-			ITypeFactory<Phase>* factory = mPhaseFactories.At(typeId);
-			if (factory == nullptr)
+			ITypeFactory<Phase>** ppFactory = mPhaseFactories.TryGetItem(typeId);
+			if (ppFactory == nullptr || *ppFactory == nullptr)
 			{
-				DIA_LOG("Error: Phase type '%s' not registered", typeId.AsChar());
+				Dia::Core::Log::OutputVaradicLine("Error: Phase type '%s' not registered", typeId.AsChar());
 				return nullptr;
 			}
 
-			return factory->Create(pu, instanceId, config);
+			return (*ppFactory)->Create(pu, instanceId, config);
 		}
 
 		Module* ApplicationTypeRegistry::CreateModule(const Dia::Core::StringCRC& typeId,
@@ -109,17 +109,17 @@ namespace Dia
 		{
 			DIA_ASSERT(pu != nullptr, "ProcessingUnit cannot be null");
 
-			ITypeFactory<Module>* factory = mModuleFactories.At(typeId);
-			if (factory == nullptr)
+			ITypeFactory<Module>** ppFactory = mModuleFactories.TryGetItem(typeId);
+			if (ppFactory == nullptr || *ppFactory == nullptr)
 			{
-				DIA_LOG("Error: Module type '%s' not registered", typeId.AsChar());
+				Dia::Core::Log::OutputVaradicLine("Error: Module type '%s' not registered", typeId.AsChar());
 				return nullptr;
 			}
 
-			return factory->Create(pu, instanceId, config);
+			return (*ppFactory)->Create(pu, instanceId, config);
 		}
 
-		const Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC>& ApplicationTypeRegistry::GetRegisteredProcessingUnitTypes() const
+		const Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32>& ApplicationTypeRegistry::GetRegisteredProcessingUnitTypes() const
 		{
 			if (mTypeListsDirty)
 			{
@@ -128,7 +128,7 @@ namespace Dia
 			return mProcessingUnitTypes;
 		}
 
-		const Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC>& ApplicationTypeRegistry::GetRegisteredPhaseTypes() const
+		const Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 64>& ApplicationTypeRegistry::GetRegisteredPhaseTypes() const
 		{
 			if (mTypeListsDirty)
 			{
@@ -137,7 +137,7 @@ namespace Dia
 			return mPhaseTypes;
 		}
 
-		const Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC>& ApplicationTypeRegistry::GetRegisteredModuleTypes() const
+		const Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128>& ApplicationTypeRegistry::GetRegisteredModuleTypes() const
 		{
 			if (mTypeListsDirty)
 			{
@@ -163,32 +163,23 @@ namespace Dia
 
 		void ApplicationTypeRegistry::RebuildTypeLists() const
 		{
-			mProcessingUnitTypes.Clear();
-			mPhaseTypes.Clear();
-			mModuleTypes.Clear();
+			mProcessingUnitTypes.RemoveAll();
+			mPhaseTypes.RemoveAll();
+			mModuleTypes.RemoveAll();
 
-			// Build ProcessingUnit type list
-			auto puIter = mProcessingUnitFactories.IteratorAt(0);
-			while (puIter.IsValid())
+			for (auto it = mProcessingUnitFactories.Begin(); it != mProcessingUnitFactories.End(); ++it)
 			{
-				mProcessingUnitTypes.Add(puIter.Current().mKey);
-				puIter.Next();
+				mProcessingUnitTypes.Add(it.Key());
 			}
 
-			// Build Phase type list
-			auto phaseIter = mPhaseFactories.IteratorAt(0);
-			while (phaseIter.IsValid())
+			for (auto it = mPhaseFactories.Begin(); it != mPhaseFactories.End(); ++it)
 			{
-				mPhaseTypes.Add(phaseIter.Current().mKey);
-				phaseIter.Next();
+				mPhaseTypes.Add(it.Key());
 			}
 
-			// Build Module type list
-			auto moduleIter = mModuleFactories.IteratorAt(0);
-			while (moduleIter.IsValid())
+			for (auto it = mModuleFactories.Begin(); it != mModuleFactories.End(); ++it)
 			{
-				mModuleTypes.Add(moduleIter.Current().mKey);
-				moduleIter.Next();
+				mModuleTypes.Add(it.Key());
 			}
 
 			mTypeListsDirty = false;

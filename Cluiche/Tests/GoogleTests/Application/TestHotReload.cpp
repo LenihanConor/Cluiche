@@ -133,7 +133,7 @@ TEST(HotReload, GetHotReloadManagerLazyInit)
     EXPECT_NE(result, HotReloadManager::ReloadResult::kSuccess);
 }
 
-TEST(HotReload, DISABLED_ReplaceModuleWithStateTransfer)
+TEST(HotReload, ReplaceModuleWithStateTransfer)
 {
     std::cout << "Creating ProcessingUnit..." << std::endl;
     TestProcessingUnit pu;
@@ -225,8 +225,7 @@ TEST(HotReload, IncompatibleVersionFails)
     delete newModule;
 }
 
-// TODO: Hangs - needs debugging
-TEST(HotReload, DISABLED_ModuleNotFoundFails)
+TEST(HotReload, ModuleNotFoundFails)
 {
     TestProcessingUnit pu;
     ReloadableModule* oldModule = new ReloadableModule(&pu, "OldModule", 1, 0, 0);
