@@ -298,7 +298,7 @@ kConstructed → kFlaggedToStart → kRunning → kFlaggedToStop → kNotRunning
 | Message Bus | Thread-safe inter-module communication with queued dispatch | [message-bus.md](../../features/dia/diaapplication/message-bus.md) | Done |
 | Error Handling | ErrorCallback system with ErrorInfo history (last 100 errors) | [error-handling.md](../../features/dia/diaapplication/error-handling.md) | Done |
 | Hot Reload | Runtime module replacement with state transfer | [hot-reload.md](../../features/dia/diaapplication/hot-reload.md) | Done |
-| Data-Driven Application System | Type registration, manifest loading, and introspection for editor-driven application topology definition | [data-driven-application-system.md](../../features/dia/diaapplication/data-driven-application-system.md) | Approved |
+| Data-Driven Application System | Type registration, manifest loading, and introspection for editor-driven application topology definition | [data-driven-application-system.md](../../features/dia/diaapplication/data-driven-application-system.md) | Done |
 
 ## Platform Primitives Used
 

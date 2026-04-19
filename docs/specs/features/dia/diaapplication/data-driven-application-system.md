@@ -7,10 +7,11 @@
 | **Feature ID** | F-DiaApp-DataDriven |
 | **Feature Name** | Data-Driven Application System |
 | **Parent System** | @docs/specs/systems/dia/diaapplication.md |
-| **Status** | Approved |
-| **Owner** | TBD |
+| **Status** | Done |
+| **Owner** | Claude Sonnet 4.5 |
 | **Created** | 2026-04-18 |
 | **Updated** | 2026-04-18 |
+| **Implemented** | 2026-04-18 (commit ef39150) |
 
 ## Traceability
 
