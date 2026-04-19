@@ -63,6 +63,13 @@
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaUIAwesomium\DiaUIAwesomium.vcxproj">
       <Project>{a5b2650d-8283-483f-827e-ca29140cfa63}</Project>
+      <ReferenceOutputAssembly Condition="'$(Platform)'=='x64'">false</ReferenceOutputAssembly>
+      <LinkLibraryDependencies Condition="'$(Platform)'=='x64'">false</LinkLibraryDependencies>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaUIUltralight\DiaUIUltralight.vcxproj">
+      <Project>{b7c3d812-4f91-4e2a-9b56-fa38e1d09c74}</Project>
+      <ReferenceOutputAssembly Condition="'$(Platform)'=='Win32'">false</ReferenceOutputAssembly>
+      <LinkLibraryDependencies Condition="'$(Platform)'=='Win32'">false</LinkLibraryDependencies>
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaUI\DiaUI.vcxproj">
       <Project>{835ca128-691f-4cea-a0b3-ce6e41c394e7}</Project>
@@ -165,8 +172,8 @@ xcopy /Y "$(SolutionDir)..\External\SFML\Current\bin\*.dll" "$(TargetDir)"</Comm
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(OutDir)UnitTestLevel.lib;$(OutDir)DummyLevel.lib;$(OutDir)DiaCore.lib;$(OutDir)CluicheKernel.lib;$(OutDir)DiaMaths.lib;$(OutDir)DiaGraphics.lib;$(OutDir)DiaSFML.lib;$(OutDir)DiaWindow.lib;$(OutDir)DiaInput.lib;$(OutDir)DiaApplication.lib;$(OutDir)DiaUI.lib;$(OutDir)DiaUIAwesomium.lib;sfml-graphics-d.lib;sfml-window-d.lib;sfml-system-d.lib;awesomium.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\External\Awesomium SDK\1.7.5.1\builds\lib;$(SolutionDir)..\SFML\Current-x64\lib\Debug;$(SolutionDir)..\Dia\DiaBin\CluicheKernel;$(SolutionDir)..\Dia\DiaBin\DiaInput;$(SolutionDir)..\External\SFML\Current-x64\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(OutDir)UnitTestLevel.lib;$(OutDir)DummyLevel.lib;$(OutDir)DiaCore.lib;$(OutDir)CluicheKernel.lib;$(OutDir)DiaMaths.lib;$(OutDir)DiaGraphics.lib;$(OutDir)DiaSFML.lib;$(OutDir)DiaWindow.lib;$(OutDir)DiaInput.lib;$(OutDir)DiaApplication.lib;$(OutDir)DiaUI.lib;$(OutDir)DiaUIUltralight.lib;sfml-graphics-d.lib;sfml-window-d.lib;sfml-system-d.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\SFML\Current-x64\lib\Debug;$(SolutionDir)..\Dia\DiaBin\CluicheKernel;$(SolutionDir)..\Dia\DiaBin\DiaInput;$(SolutionDir)..\External\SFML\Current-x64\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>copy /Y "$(SolutionDir)pathStoreConfig.json" "$(TargetDir)pathStoreConfig.json"
@@ -207,7 +214,7 @@ xcopy /Y "$(SolutionDir)..\External\SFML\Current\bin\*.dll" "$(TargetDir)"</Comm
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>$(OutDir)UnitTestLevel.lib;$(OutDir)DummyLevel.lib;$(OutDir)DiaCore.lib;$(OutDir)CluicheKernel.lib;$(OutDir)DiaMaths.lib;$(OutDir)DiaGraphics.lib;$(OutDir)DiaSFML.lib;$(OutDir)DiaWindow.lib;$(OutDir)DiaInput.lib;$(OutDir)DiaApplication.lib;$(OutDir)DiaUI.lib;$(OutDir)DiaUIAwesomium.lib;sfml-graphics.lib;sfml-window.lib;sfml-system.lib;awesomium.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)UnitTestLevel.lib;$(OutDir)DummyLevel.lib;$(OutDir)DiaCore.lib;$(OutDir)CluicheKernel.lib;$(OutDir)DiaMaths.lib;$(OutDir)DiaGraphics.lib;$(OutDir)DiaSFML.lib;$(OutDir)DiaWindow.lib;$(OutDir)DiaInput.lib;$(OutDir)DiaApplication.lib;$(OutDir)DiaUI.lib;$(OutDir)DiaUIUltralight.lib;sfml-graphics.lib;sfml-window.lib;sfml-system.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>copy /Y "$(SolutionDir)pathStoreConfig.json" "$(TargetDir)pathStoreConfig.json"

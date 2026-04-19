@@ -4,7 +4,11 @@
 #include <DiaCore/Architecture/Observer.h>
 
 namespace Dia { namespace UI { class IUISystem; } }
+#ifdef _WIN64
+namespace Dia { namespace UI { namespace Ultralight { class UISystem; } } }
+#else
 namespace Dia { namespace UI { namespace Awesomium { class UISystem; } } }
+#endif
 
 namespace Cluiche
 {
@@ -40,7 +44,11 @@ namespace Cluiche
 			virtual void DoUpdate() override;
 			virtual void DoStop() override;
 
-			Dia::UI::Awesomium::UISystem* mAwesomiumUISystem;
+#ifdef _WIN64
+			Dia::UI::Ultralight::UISystem* mUISystem;
+#else
+			Dia::UI::Awesomium::UISystem* mUISystem;
+#endif
 		};
 	}
 }

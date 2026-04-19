@@ -2,7 +2,11 @@
 #include <DiaCore/Core/Log.h>
 #include <DiaUI/IUISystem.h>
 #include <DiaUI/UIDataBuffer.h>
+#ifdef _WIN64
+#include <DiaUIUltralight/UltralightUISystem.h>
+#else
 #include <DiaUIAwesomium/AwesomiumUISystem.h>
+#endif
 #include <CluicheKernel/ApplicationFlow/Modules/MainKernelModule.h>
 #include <DiaCore/Memory/Memory.h>
 
@@ -14,17 +18,17 @@ namespace Cluiche
 
 		UIModule::UIModule(Dia::Application::ProcessingUnit* associatedProcessingUnit)
 			: Dia::Application::Module(associatedProcessingUnit, kUniqueId, Dia::Application::Module::RunningEnum::kUpdate)
-			, mAwesomiumUISystem(nullptr)
+			, mUISystem(nullptr)
 		{}
 
 		Dia::UI::IUISystem* UIModule::GetUISystem()
 		{
-			return mAwesomiumUISystem;
+			return mUISystem;
 		}
 
 		const Dia::UI::IUISystem* UIModule::GetUISystem()const
 		{
-			return mAwesomiumUISystem;
+			return mUISystem;
 		}
 
 		void UIModule::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
@@ -42,8 +46,12 @@ namespace Cluiche
 				return StateObject::OpertionResponse::kImmediate;
 			}
 			// Setup UI
-			mAwesomiumUISystem = DIA_NEW(Dia::UI::Awesomium::UISystem(kernel->GetWindow()));
-			mAwesomiumUISystem->Initialize();
+#ifdef _WIN64
+			mUISystem = DIA_NEW(Dia::UI::Ultralight::UISystem(kernel->GetWindow()));
+#else
+			mUISystem = DIA_NEW(Dia::UI::Awesomium::UISystem(kernel->GetWindow()));
+#endif
+			mUISystem->Initialize();
 
 			this->NotifyObservers(NotificationEnum::kStarted);
 
@@ -64,12 +72,12 @@ namespace Cluiche
 				{
 				case Dia::Input::Event::EType::kMouseMoved:
 				{
-					mAwesomiumUISystem->InjectMouseMove(event.mouseMove.x, event.mouseMove.y);
+					mUISystem->InjectMouseMove(event.mouseMove.x, event.mouseMove.y);
 				}
 				break;
 				case Dia::Input::Event::EType::kMouseButtonReleased:
 				{
-					mAwesomiumUISystem->InjectMouseClick(event.mouseButton.AsMouseButton(), event.mouseButton.x, event.mouseButton.y);
+					mUISystem->InjectMouseClick(event.mouseButton.AsMouseButton(), event.mouseButton.x, event.mouseButton.y);
 				}
 				break;
 				default:
@@ -77,14 +85,14 @@ namespace Cluiche
 				}
 			}
 
-			mAwesomiumUISystem->Update();
+			mUISystem->Update();
 		}
 
 		void UIModule::DoStop()
 		{
 			this->NotifyObservers(NotificationEnum::kStopped);
 
-			DIA_DELETE(mAwesomiumUISystem);
+			DIA_DELETE(mUISystem);
 		}
 	}
 }

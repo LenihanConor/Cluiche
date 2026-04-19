@@ -89,12 +89,12 @@
 
   <!-- x64 output dirs -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(SolutionDir)bin\exe\$(Configuration)_x64\</OutDir>
-    <IntDir>..\DiaBin\$(TargetName)\$(Configuration)_x64\</IntDir>
+    <OutDir>$(SolutionDir)bin\exe\$(Configuration)-x64\</OutDir>
+    <IntDir>..\DiaBin\$(TargetName)\$(Configuration)-x64\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(SolutionDir)Release_x64\</OutDir>
-    <IntDir>Release_x64\</IntDir>
+    <OutDir>$(SolutionDir)$(Configuration)-x64\</OutDir>
+    <IntDir>$(Configuration)-x64\</IntDir>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
 
