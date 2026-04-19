@@ -49,6 +49,9 @@
     <Filter Include="Application">
       <UniqueIdentifier>{APP00001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="UI">
+      <UniqueIdentifier>{UI000001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
     <Filter Include="GoogleTest">
       <UniqueIdentifier>{AB1E0EFA-J244-8g4c-CF1E-C7FF565EEG45}</UniqueIdentifier>
     </Filter>
@@ -318,6 +321,16 @@
     </ClCompile>
     <ClCompile Include="Application\TestApplicationLoader.cpp">
       <Filter>Application</Filter>
+    </ClCompile>
+    <!-- UI -->
+    <ClCompile Include="UI\TestBoundMethod.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="UI\TestUIDataBuffer.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="UI\TestPage.cpp">
+      <Filter>UI</Filter>
     </ClCompile>
     <!-- GoogleTest -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">
