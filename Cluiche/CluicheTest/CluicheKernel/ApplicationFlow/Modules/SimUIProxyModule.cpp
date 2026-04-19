@@ -28,8 +28,8 @@ namespace Cluiche
 
 		void UIProxyModule::Initialize(Main::UIModule* ui)
 		{
-			DIA_ARRAY__(mMainUIModule == nullptr, "mUISystem is allocated already");
-			DIA_ARRAY__(ui != nullptr, "Cannot assign a null pointer ui system");
+			DIA_ASSERT(mMainUIModule == nullptr, "mUISystem is allocated already");
+			DIA_ASSERT(ui != nullptr, "Cannot assign a null pointer ui system");
 
 			mMainUIModule = ui;
 		}
@@ -37,6 +37,9 @@ namespace Cluiche
 		Dia::Application::StateObject::OpertionResponse UIProxyModule::DoStart(const IStartData* startData)
 		{
 			std::lock_guard<std::mutex> lock(mMutex);
+
+			DIA_ASSERT(mMainUIModule != nullptr, "UIProxyModule started before Initialize was called");
+
 			mIsAvailable = mMainUIModule->HasStarted();
 			mMainUIModule->AttachToObserver(this);
 

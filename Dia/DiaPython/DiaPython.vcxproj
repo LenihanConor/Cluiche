@@ -61,19 +61,19 @@
     <_ProjectFileVersion>11.0.51106.1</_ProjectFileVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>$(ProjectDir)..\..\Cluiche\bin\exe\$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)bin\exe\$(Configuration)\</OutDir>
     <IntDir>..\DiaBin\$(TargetName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>$(ProjectDir)..\..\Cluiche\bin\exe\$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)bin\exe\$(Configuration)\</OutDir>
     <IntDir>..\DiaBin\$(TargetName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(ProjectDir)..\..\Cluiche\bin\exe\$(Configuration)-x64\</OutDir>
+    <OutDir>$(SolutionDir)bin\exe\$(Configuration)-x64\</OutDir>
     <IntDir>..\DiaBin\$(TargetName)\$(Configuration)\$(Platform)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(ProjectDir)..\..\Cluiche\bin\exe\$(Configuration)-x64\</OutDir>
+    <OutDir>$(SolutionDir)bin\exe\$(Configuration)-x64\</OutDir>
     <IntDir>..\DiaBin\$(TargetName)\$(Configuration)\$(Platform)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">

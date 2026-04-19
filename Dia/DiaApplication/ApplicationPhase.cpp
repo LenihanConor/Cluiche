@@ -72,7 +72,7 @@ namespace Dia
 				mAssociatedModules.Remove(moduleId);
 
 				// Remove from updating modules array if present
-				for (size_t i = 0; i < mUpdatingModules.Size(); ++i)
+				for (unsigned int i = 0; i < mUpdatingModules.Size(); ++i)
 				{
 					if (mUpdatingModules[i]->GetUniqueId() == moduleId)
 					{
@@ -82,7 +82,7 @@ namespace Dia
 				}
 
 				// Remove from stopping modules array if present
-				for (size_t i = 0; i < mStoppingModuleOrder.Size(); ++i)
+				for (unsigned int i = 0; i < mStoppingModuleOrder.Size(); ++i)
 				{
 					if (mStoppingModuleOrder[i]->GetUniqueId() == moduleId)
 					{
@@ -111,7 +111,7 @@ namespace Dia
 
 			// Creates a list of all modules that need to be started
 			Dia::Core::Containers::DynamicArrayC<Module*, 128> modulesToStart;
-			for (size_t i = 0; i < mAssociatedModules.Size(); i++)
+			for (unsigned int i = 0; i < mAssociatedModules.Size(); i++)
 			{
 				Module* pModule = mAssociatedModules.GetItemByIndex(i);
 
@@ -129,7 +129,7 @@ namespace Dia
 
 				// Finding modules that have no dependancies
 				unsigned int numberOfModulesStarted = 0;
-				for (size_t i = 0; i < modulesToStart.Size(); i++)
+				for (unsigned int i = 0; i < modulesToStart.Size(); i++)
 				{
 					Module* pModule = modulesToStart.At(i);
 
@@ -161,7 +161,7 @@ namespace Dia
 				StartAsyncModules(modulesFlaggedToStartAsync);
 
 				numberOfModuleToStart = 0;
-				for (size_t i = 0; i < modulesToStart.Size(); i++)
+				for (unsigned int i = 0; i < modulesToStart.Size(); i++)
 				{
 					if (modulesToStart[i] != nullptr)
 					{
@@ -173,7 +173,7 @@ namespace Dia
 			AfterModulesStart();
 			
 			// This will add the modules in order of starting and should make it order dependant
-			for (size_t i = 0; i < mAssociatedModules.Size(); i++)
+			for (unsigned int i = 0; i < mAssociatedModules.Size(); i++)
 			{
 				Module* pModule = mAssociatedModules.GetItemByIndex(i);
 
@@ -242,7 +242,7 @@ namespace Dia
 			Dia::Core::Containers::DynamicArrayC<Module*, 128> modulesToStop;
 			Dia::Core::Containers::DynamicArrayC<Module*, 128> modulesToRetain;
 
-			for (size_t i = 0; i < mAssociatedModules.Size(); i++)
+			for (unsigned int i = 0; i < mAssociatedModules.Size(); i++)
 			{
 				Module* pStartModule = mAssociatedModules.GetItemByIndex(i);
 
@@ -256,8 +256,17 @@ namespace Dia
 				}
 			}
 
+			for (unsigned int i = 0; i < modulesToRetain.Size(); i++)
+			{
+				Dia::Core::Log::OutputVaradicLine("  Retaining Module - %s", modulesToRetain.At(i)->GetUniqueId().AsChar());
+			}
+			for (unsigned int i = 0; i < modulesToStop.Size(); i++)
+			{
+				Dia::Core::Log::OutputVaradicLine("  Stopping Module - %s", modulesToStop.At(i)->GetUniqueId().AsChar());
+			}
+
 			// To keep order we tranverse the existing update and stopping order list and add all retaining modules
-			for (size_t i = 0; i < mUpdatingModules.Size(); i++)
+			for (unsigned int i = 0; i < mUpdatingModules.Size(); i++)
 			{
 				Module* module = mUpdatingModules[i];
 				if (modulesToRetain.FindIndex(module) != -1)
@@ -282,7 +291,7 @@ namespace Dia
 
 			AfterModulesStop();
 
-			for (size_t i = 0; i < mStoppingModuleOrder.Size(); i++)
+			for (unsigned int i = 0; i < mStoppingModuleOrder.Size(); i++)
 			{
 				Module* module = mStoppingModuleOrder[i];
 				if (modulesToRetain.FindIndex(module) != -1)
@@ -293,7 +302,7 @@ namespace Dia
 			mStoppingModuleOrder.RemoveAll();
 
 			//	Modules that are in both should be retained (and notified of this)
-			for (size_t i = 0; i < modulesToRetain.Size(); i++)
+			for (unsigned int i = 0; i < modulesToRetain.Size(); i++)
 			{
 				Module* moduleToRetain = modulesToRetain.At(i);
 				moduleToRetain->RetainThroughTransition(this, endPhase);
@@ -348,7 +357,7 @@ namespace Dia
 			// No modules with no dependancies this should assert and fail to start
 			unsigned int numberOfModulesFlaggedToStart = 0;
 
-			for (size_t i = 0; i < modulesFlaggedToStartAsync.Size(); i++)
+			for (unsigned int i = 0; i < modulesFlaggedToStartAsync.Size(); i++)
 			{
 				if (modulesFlaggedToStartAsync.At(i) != nullptr)
 				{
@@ -372,7 +381,7 @@ namespace Dia
 						Dia::Core::Containers::String1024 moduleNames;
 
 						moduleNames = "[";
-						for (size_t i = 0; i < modulesFlaggedToStartAsync.Size(); i++)
+						for (unsigned int i = 0; i < modulesFlaggedToStartAsync.Size(); i++)
 						{
 							if (modulesFlaggedToStartAsync.At(i) != nullptr)
 							{
@@ -391,7 +400,7 @@ namespace Dia
 					std::chrono::milliseconds dura(1);
 					std::this_thread::sleep_for(dura);
 
-					for (size_t i = 0; i < modulesFlaggedToStartAsync.Size(); i++)
+					for (unsigned int i = 0; i < modulesFlaggedToStartAsync.Size(); i++)
 					{
 						if (modulesFlaggedToStartAsync.At(i) != nullptr)
 						{

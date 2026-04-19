@@ -6,6 +6,7 @@
 #include "DiaApplication/ApplicationPhase.h"
 
 #include <DiaCore/Core/Assert.h>
+#include <DiaCore/Core/Log.h>
 #include <DiaCore/Type/BasicTypeDefines.h>
 
 #include <DiaApplication/ApplicationProcessingUnit.h>
@@ -74,6 +75,8 @@ namespace Dia
 		// This gets called when a module stays on active over a pahse Transtion
 		void Module::RetainThroughTransition(const Phase* startPhase, const Phase* endPhase)
 		{
+			Dia::Core::Log::OutputVaradicLine("Retaining Module - %s through phase transition", GetUniqueId().AsChar());
+
 			DoRetainThroughTransition(startPhase, endPhase);
 		}
 

@@ -325,6 +325,9 @@
     <ClCompile Include="Application\TestApplicationLoader.cpp">
       <Filter>Application</Filter>
     </ClCompile>
+    <ClCompile Include="Application\TestPhaseTransition.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
     <!-- UI -->
     <ClCompile Include="UI\TestBoundMethod.cpp">
       <Filter>UI</Filter>
