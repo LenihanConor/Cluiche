@@ -12,8 +12,6 @@
 
 int main( int argc, const char* argv[] )
 {
-	Cluiche::MainProcessingUnit mainPU;
-	
 	/* TODO
 			Save to file
 			Build system to communicate debug to game
@@ -32,11 +30,14 @@ int main( int argc, const char* argv[] )
 			Get Unit Test Page Working
 	*/
 
-	mainPU.Start();
+	Cluiche::MainProcessingUnit* mainPU = new Cluiche::MainProcessingUnit();
+
+	mainPU->Start();
 
 	// Looping call
-	mainPU.Update();
+	mainPU->Update();
 
+	mainPU->Stop();
 
-	mainPU.Stop();
+	delete mainPU;
 }

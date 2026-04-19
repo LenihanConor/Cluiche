@@ -100,7 +100,6 @@
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)../../../Dia/;$(ProjectDir)../../../External/googletest/googletest/include/;$(ProjectDir)../../../External/jsoncpp-master/include/;$(ProjectDir)../../../External/pybind11/include/;$(ProjectDir)../../../External/Python311-Win32/include/;$(ProjectDir)../../../External/websocketpp;$(ProjectDir)../../../External/asio/asio/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>DEBUG;WIN32;_CONSOLE;ASIO_STANDALONE;_WEBSOCKETPP_CPP11_STL_;_WEBSOCKETPP_CPP11_THREAD_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <MinimalRebuild>false</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>

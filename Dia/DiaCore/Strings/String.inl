@@ -19,7 +19,7 @@ namespace Dia
 				DIA_ASSERT(str.length() <= Capacity(), "String being read in will not fit in size of string being allocated");
 
 				char* pointerToDst = reinterpret_cast<char*>(instance.Pointee());
-				Dia::Core::StringCopy(pointerToDst, &str[0], str.length());
+				Dia::Core::StringCopy(pointerToDst, &str[0], static_cast<unsigned int>(str.length()));
 			}
 
 			//------------------------------------------------------------------------------------
@@ -228,7 +228,7 @@ namespace Dia
 			template <unsigned int size> inline
 			String<size>& String<size>::Append( const char* s )
 			{
-				return Append(s, strlen(s));
+				return Append(s, static_cast<unsigned int>(strlen(s)));
 			}
 			
 			//-----------------------------------------------------------------------------
@@ -576,7 +576,7 @@ namespace Dia
 			template <unsigned int size> inline
 			unsigned int String<size>::Length() const
 			{
-				return strlen(&mData[0]);
+				return static_cast<unsigned int>(strlen(&mData[0]));
 			}
 
 			//-----------------------------------------------------------------------------

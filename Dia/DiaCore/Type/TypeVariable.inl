@@ -121,7 +121,7 @@ namespace Dia
 				
 				bool ableToConvertVariableIntoArthimetic = false;
 				
-				char offset = (GetOffsetFromParent(element) / sizeof (char));
+				unsigned int offset = (GetOffsetFromParent(element) / sizeof (char));
 
 				if ( IsArithmeticType() )
 				{

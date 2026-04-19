@@ -31,7 +31,7 @@
 // --------------------------------------------------------------------------------------------------------------------
 #define DIA_TYPE_ADD_VARIABLE( variableName, variable )\
 	{\
-		static Dia::Core::Types::TypeVariable newVariable(&foo.variable, variableName, sizeof(foo.variable), (reinterpret_cast<char*>(&foo.variable) - reinterpret_cast<char*>(&foo)), 1);\
+		static Dia::Core::Types::TypeVariable newVariable(&foo.variable, variableName, (unsigned int)sizeof(foo.variable), (unsigned int)(reinterpret_cast<char*>(&foo.variable) - reinterpret_cast<char*>(&foo)), 1);\
 		static Dia::Core::Types::TypeDefinition::VariableLinkListNode newVariableNode(&newVariable);\
 		bool succesAddNode = Dia::Core::Types::TypeDefinition::VariableLinkList::AddNodeToList(typeInput.GetVariables(), &newVariableNode);\
 		lastVariable = newVariableNode.GetPayload();\
@@ -39,7 +39,7 @@
 // --------------------------------------------------------------------------------------------------------------------
 #define DIA_TYPE_ADD_VARIABLE_ARRAY( variableName, variable, numberOfElements )\
 	{\
-		static Dia::Core::Types::TypeVariable newVariable(foo.variable, variableName, sizeof(foo.variable), (reinterpret_cast<char*>(&foo.variable) - reinterpret_cast<char*>(&foo)), numberOfElements);\
+		static Dia::Core::Types::TypeVariable newVariable(foo.variable, variableName, (unsigned int)sizeof(foo.variable), (unsigned int)(reinterpret_cast<char*>(&foo.variable) - reinterpret_cast<char*>(&foo)), (unsigned int)(numberOfElements));\
 		static Dia::Core::Types::TypeDefinition::VariableLinkListNode newVariableNode(&newVariable);\
 		bool succesAddNode = Dia::Core::Types::TypeDefinition::VariableLinkList::AddNodeToList(typeInput.GetVariables(), &newVariableNode);\
 		lastVariable = newVariableNode.GetPayload();\

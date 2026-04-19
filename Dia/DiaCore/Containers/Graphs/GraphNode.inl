@@ -10,6 +10,7 @@ namespace Dia
 			//------------------------------------------------------------------------------------
 			template <class NodePayload, class EdgePayload>
 			GraphNode<NodePayload, EdgePayload>::GraphNode()
+				: mPayload()
 			{}
 
 			template <class NodePayload, class EdgePayload >

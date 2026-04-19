@@ -1047,7 +1047,10 @@ cleanup:
 			ZeroMemory(&ver, sizeof(OSVERSIONINFO));
 			ver.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
 
+#pragma warning(push)
+#pragma warning(disable: 4996)
 			if (GetVersionEx(&ver) != FALSE)
+#pragma warning(pop)
 			{
 				_snprintf_s(buffer, STACKWALK_MAX_NAMELEN, "OS-Version: %d.%d.%d (%d)\n", 
 					ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber,

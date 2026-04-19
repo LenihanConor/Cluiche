@@ -41,6 +41,7 @@ namespace Dia
 			template <class T, unsigned int capacity>
 			DynamicArrayC<T, capacity>::DynamicArrayC()
 				: mSize(0)
+				, mData{}
 			{}
 		
 			//-----------------------------------------------------------------------------

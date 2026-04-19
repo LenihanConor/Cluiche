@@ -112,7 +112,6 @@
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>C:\GitHub\Cluiche\External\SFML\Current\include;./../;./;$(ProjectDir)../../DIA/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>DEBUG;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
@@ -129,7 +128,7 @@
       <PreserveSbr>true</PreserveSbr>
     </Bscmake>
     <PreBuildEvent>
-      <Command>xcopy /Y /d "$(SolutionDir)..\External\SFML\Current\bin\*.dll" "$(TargetDir)"  
+      <Command>xcopy /Y /d "$(SolutionDir)..\External\SFML\Current\bin\*.dll" "$(TargetDir)"
  </Command>
       <Message>Push dll to the exe directory</Message>
     </PreBuildEvent>
@@ -139,7 +138,6 @@
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>C:\GitHub\Cluiche\External\SFML\Current-x64\include;./../;./;$(ProjectDir)../../DIA/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>DEBUG;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>

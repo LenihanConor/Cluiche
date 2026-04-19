@@ -137,10 +137,12 @@
     <Lib>
       <AdditionalLibraryDirectories>$(SolutionDir)../External/Ultralight/lib/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>Ultralight.lib;UltralightCore.lib;WebCore.lib;AppCore.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalOptions>/IGNORE:4006 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
     <PreBuildEvent>
-      <Command>xcopy /Y /d "$(ProjectDir)Deploy\*" "$(TargetDir)"</Command>
-      <Message>Push Ultralight deploy files to the .exe directory</Message>
+      <Command>xcopy /Y /d "$(ProjectDir)Deploy\*" "$(TargetDir)"
+xcopy /Y /d /i "$(SolutionDir)..\External\Ultralight\resources\*" "$(TargetDir)resources\"</Command>
+      <Message>Push Ultralight deploy files and resources to the .exe directory</Message>
     </PreBuildEvent>
   </ItemDefinitionGroup>
 
@@ -157,10 +159,12 @@
     <Lib>
       <AdditionalLibraryDirectories>$(SolutionDir)../External/Ultralight/lib/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>Ultralight.lib;UltralightCore.lib;WebCore.lib;AppCore.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalOptions>/IGNORE:4006 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
     <PreBuildEvent>
-      <Command>xcopy /Y /d "$(ProjectDir)Deploy\*" "$(TargetDir)"</Command>
-      <Message>Push Ultralight deploy files to the .exe directory</Message>
+      <Command>xcopy /Y /d "$(ProjectDir)Deploy\*" "$(TargetDir)"
+xcopy /Y /d /i "$(SolutionDir)..\External\Ultralight\resources\*" "$(TargetDir)resources\"</Command>
+      <Message>Push Ultralight deploy files and resources to the .exe directory</Message>
     </PreBuildEvent>
   </ItemDefinitionGroup>
 

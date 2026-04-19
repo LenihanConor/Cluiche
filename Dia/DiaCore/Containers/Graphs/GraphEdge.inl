@@ -9,7 +9,8 @@ namespace Dia
 		{
 			template <class EdgePayload, class NodePayload> inline
 			GraphEdge<EdgePayload, NodePayload>::GraphEdge()
-				: mTail(NULL)
+				: mPayload()
+				, mTail(NULL)
 				, mHead(NULL)
 			{}
 
