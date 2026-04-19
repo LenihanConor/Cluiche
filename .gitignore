@@ -254,6 +254,15 @@ External/External/
 # GoogleTest submodule (should be added as proper submodule)
 External/googletest/
 
+# Ultralight SDK binaries (large; download via ultralight-sdk-latest-win-x64.7z)
+External/Ultralight/
+
+# MSBuild intermediate output
+Dia/DiaBin/
+
+# Preprocessor output files
+*.i
+
 # Test output files
 **/full_test_results.txt
 **/threading_tests.txt

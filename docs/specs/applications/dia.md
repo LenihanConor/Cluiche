@@ -15,6 +15,12 @@ Dia is the game engine application that provides all shared engine infrastructur
 | DiaCLI | Python-based CLI tool for development workflows (build, assets, scaffolding, utilities) | [diacli.md](../systems/dia/diacli.md) |
 | DiaPython | Python embedding framework - wraps pybind11 with clean C++ API for scripting integration | [diapython.md](../systems/dia/diapython.md) |
 | DiaApplication | Application framework (ProcessingUnit/Phase/Module architecture for multi-threaded execution) | [diaapplication.md](../systems/dia/diaapplication.md) |
+| DiaApplicationEditor | Editor plugin for editing .diaapp manifests (separate system, uses DiaEditor framework) | [diaapplicationeditor.md](../systems/dia/diaapplicationeditor.md) |
+| DiaDebugServer | WebSocket server for remote debugging - broadcasts game state, forwards DiaAPI commands to editors | [diadebugserver.md](../systems/dia/diadebugserver.md) |
+| DiaEditor | Editor framework system (MVC, plugin system, CEF UI, command integration, live WebSocket connection) | [diaeditor.md](../systems/dia/diaeditor.md) |
+| DiaUICEF | CEF-based UI system implementing IUISystem (replaces deprecated DiaUIAwesomium) | [diauicef.md](../systems/dia/diauicef.md) |
+| DiaUIUltralight | Ultralight-based IUISystem implementation; lightweight drop-in replacement for DiaUIAwesomium | [diauiultralight.md](../systems/dia/diauiultralight.md) |
+| DiaWebSocket | WebSocket server/client abstraction wrapping websocketpp (used by DiaDebugServer, DiaEditor, future networking) | [diawebsocket.md](../systems/dia/diawebsocket.md) |
 | DiaCore | Foundation library (containers, type system, memory, logging, CRC) | TBD |
 | DiaMaths | Math library (vectors, matrices, transforms, shapes) | TBD |
 | DiaGraphics | Graphics abstraction layer (ICanvas, Frame, rendering) | TBD |
