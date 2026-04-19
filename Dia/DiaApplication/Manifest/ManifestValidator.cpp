@@ -256,6 +256,10 @@ namespace Dia
 			for (unsigned int i = 0; i < modules.Size(); ++i)
 			{
 				const ApplicationManifest::ModuleEntry& module = modules[i];
+				if (moduleIdSet.ContainsKey(module.instanceId))
+				{
+					continue;
+				}
 				moduleIdSet.Add(module.instanceId, true);
 
 				// Initialize adjacency list for this module
@@ -372,8 +376,12 @@ namespace Dia
 				}
 			}
 
-			// Remove from recursion stack before backtracking
-			recStack.Add(moduleId, false);
+			// Mark as no longer in recursion stack
+			bool* recStackPtr = recStack.TryGetItem(moduleId);
+			if (recStackPtr != nullptr)
+			{
+				*recStackPtr = false;
+			}
 			cycle.RemoveAt(cycle.Size() - 1);
 			return false;
 		}
@@ -386,7 +394,10 @@ namespace Dia
 			Dia::Core::Containers::HashTable<Dia::Core::StringCRC, bool, Dia::Core::StringCRCHashFunctor> phaseIds(32, 32);
 			for (unsigned int i = 0; i < entry.phases.Size(); ++i)
 			{
-				phaseIds.Add(entry.phases[i].instanceId, true);
+				if (!phaseIds.ContainsKey(entry.phases[i].instanceId))
+				{
+					phaseIds.Add(entry.phases[i].instanceId, true);
+				}
 			}
 
 			// Validate initial phase exists
@@ -443,7 +454,10 @@ namespace Dia
 			Dia::Core::Containers::HashTable<Dia::Core::StringCRC, bool, Dia::Core::StringCRCHashFunctor> phaseIds(32, 32);
 			for (unsigned int i = 0; i < entry.phases.Size(); ++i)
 			{
-				phaseIds.Add(entry.phases[i].instanceId, true);
+				if (!phaseIds.ContainsKey(entry.phases[i].instanceId))
+				{
+					phaseIds.Add(entry.phases[i].instanceId, true);
+				}
 			}
 
 			// Validate each module's phase references

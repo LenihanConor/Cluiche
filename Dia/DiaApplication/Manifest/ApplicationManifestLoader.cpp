@@ -76,6 +76,10 @@ namespace Dia
 			// Parse into manifest structure
 			if (!ParseJSON(root, outManifest))
 			{
+				if (mErrors.Size() > 0)
+				{
+					return mErrors[0].code;
+				}
 				return ManifestValidationResult::kInvalidJSON;
 			}
 

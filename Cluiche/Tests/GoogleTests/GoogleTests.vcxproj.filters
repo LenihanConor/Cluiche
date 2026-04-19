@@ -313,6 +313,9 @@
     <ClCompile Include="Application\TestApplicationLifecycle.cpp">
       <Filter>Application</Filter>
     </ClCompile>
+    <ClCompile Include="Application\TestApplicationIntrospector.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
     <!-- GoogleTest -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">
       <Filter>GoogleTest</Filter>
