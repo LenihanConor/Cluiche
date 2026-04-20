@@ -29,6 +29,7 @@ namespace Dia
 				virtual ~UISystem();
 
 				virtual void Initialize() override;
+				virtual void Shutdown() override;
 
 				virtual void LoadPage(Page& newPage) override;
 				virtual void UnloadPage() override;
@@ -37,6 +38,10 @@ namespace Dia
 				virtual void Update() override;
 
 				virtual void FetchUIDataBuffer(UIDataBuffer& outBuffer) const override;
+
+				virtual IPage* CreatePage(const char* url, int width, int height) override;
+				virtual void DestroyPage(IPage* page) override;
+				virtual int GetPageCount() const override;
 
 				// Input
 				virtual void InjectMouseMove(int x, int y) override;

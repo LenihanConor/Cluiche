@@ -10,6 +10,7 @@
 |-------------|-------------|------|--------|
 | Dia | The game engine (DiaCore, DiaMaths, DiaGraphics, etc.) - shared engine code organized as an application for spec purposes | [dia.md](../applications/dia.md) | Active |
 | CluicheTest | Demo game and engine testbed that showcases Dia engine capabilities | [cluichetest.md](../applications/cluichetest.md) | Active |
+| CluicheEditor | Plugin-based editor application for building and debugging Cluiche games, built on DiaEditor framework | [cluicheeditor.md](../applications/cluicheeditor.md) | Draft |
 | GoogleTests | Unit testing suite for validating Dia engine modules with intelligent dirty test tracking | [googletests.md](../applications/googletests.md) | Active |
 
 ## Shared Codebase

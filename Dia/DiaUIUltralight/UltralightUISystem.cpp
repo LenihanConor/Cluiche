@@ -8,6 +8,7 @@
 #include <DiaCore/Core/Assert.h>
 #include <DiaCore/Memory/Memory.h>
 #include <DiaCore/Core/Log.h>
+#include <DiaUI/IPage.h>
 #include <DiaUI/UIDataBuffer.h>
 #include <DiaUI/Page.h>
 #include <DiaWindow/Interface/IWindow.h>
@@ -435,6 +436,33 @@ namespace Dia
 				std::lock_guard<std::mutex> lock(mSystemMutex);
 				mUISystemImpl->Initialize();
 				mIsPageLoaded = false;
+			}
+
+			//-------------------------------------------------------------------
+			void UISystem::Shutdown()
+			{
+				DIA_ASSERT(mUISystemImpl, "mUISystemImpl is NULL");
+				std::lock_guard<std::mutex> lock(mSystemMutex);
+				mIsPageLoaded = false;
+			}
+
+			//-------------------------------------------------------------------
+			IPage* UISystem::CreatePage(const char* /*url*/, int /*width*/, int /*height*/)
+			{
+				DIA_ASSERT(0, "CreatePage not supported by Ultralight backend");
+				return nullptr;
+			}
+
+			//-------------------------------------------------------------------
+			void UISystem::DestroyPage(IPage* /*page*/)
+			{
+				DIA_ASSERT(0, "DestroyPage not supported by Ultralight backend");
+			}
+
+			//-------------------------------------------------------------------
+			int UISystem::GetPageCount() const
+			{
+				return mIsPageLoaded ? 1 : 0;
 			}
 
 			//-------------------------------------------------------------------

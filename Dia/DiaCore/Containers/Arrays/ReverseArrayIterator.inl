@@ -55,7 +55,7 @@ namespace Dia
 			template <class T> inline	
 			bool ReverseArrayIterator<T>::IsDone() const
 			{
-				return (mIter < mStart || mIter > mEnd);
+				return (mIter < mBegin || mIter > mEnd);
 			}
 
 			//-----------------------------------------------------------------------------

@@ -296,6 +296,10 @@
     <ClCompile Include="WebSocket\TestWebSocketClient.cpp" />
     <ClCompile Include="WebSocket\TestWebSocketIntegration.cpp" />
     <ClCompile Include="WebSocket\TestWebSocketError.cpp" />
+    <ClCompile Include="UICEF\TestCEFMimeTypes.cpp" />
+    <ClCompile Include="UICEF\TestCEFPixelConversion.cpp" />
+    <ClCompile Include="UICEF\TestCEFURLParsing.cpp" />
+    <ClCompile Include="UICEF\TestCEFPageManagement.cpp" />
     <!-- Google Test Source Files - Compiled directly into project -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">
       <AdditionalIncludeDirectories>$(ProjectDir)../../../External/googletest/googletest/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

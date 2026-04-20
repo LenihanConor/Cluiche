@@ -1,4 +1,4 @@
-//////////////////
+////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
 #include <DiaInput/EMouseButton.h>
@@ -11,6 +11,7 @@ namespace Dia
 	{
 		class UIDataBuffer;
 		class Page;
+		class IPage;
 
 		class IUISystem
 		{
@@ -19,6 +20,7 @@ namespace Dia
 			virtual ~IUISystem() {};
 
 			virtual void Initialize() = 0;
+			virtual void Shutdown() = 0;
 
 			virtual void LoadPage(Page& newPage) = 0;
 			virtual void UnloadPage() = 0;
@@ -27,6 +29,10 @@ namespace Dia
 			virtual void Update() = 0;
 
 			virtual void FetchUIDataBuffer(UIDataBuffer& outBuffer)const = 0;
+
+			virtual IPage* CreatePage(const char* url, int width, int height) = 0;
+			virtual void DestroyPage(IPage* page) = 0;
+			virtual int GetPageCount() const = 0;
 
 			//Input
 			virtual void InjectMouseMove(int x, int y) = 0;

@@ -12,6 +12,7 @@
 #include <DiaCore/Strings/String256.h>
 #include <DiaCore/Core/Log.h>
 
+#include <DiaUI/IPage.h>
 #include <DiaUI/UIDataBuffer.h>
 #include <DiaUI/Page.h>
 
@@ -482,13 +483,40 @@ namespace Dia
 				std::lock_guard<std::mutex> lock(mSystemMutex);
 
 				mUISystemImpl->Initialize();
-				
+
 				while (!mUISystemImpl->IsInitialized())
 				{
 					std::this_thread::sleep_for(std::chrono::milliseconds(1));	// Wait for ms before trying again
 				}
 
 				mIsPageLoaded = false;
+			}
+
+			//-------------------------------------------------------------------
+			void UISystem::Shutdown()
+			{
+				DIA_ASSERT(mUISystemImpl, "mUISystemImpl is NULL");
+				std::lock_guard<std::mutex> lock(mSystemMutex);
+				mIsPageLoaded = false;
+			}
+
+			//-------------------------------------------------------------------
+			IPage* UISystem::CreatePage(const char* /*url*/, int /*width*/, int /*height*/)
+			{
+				DIA_ASSERT(0, "CreatePage not supported by Awesomium backend");
+				return nullptr;
+			}
+
+			//-------------------------------------------------------------------
+			void UISystem::DestroyPage(IPage* /*page*/)
+			{
+				DIA_ASSERT(0, "DestroyPage not supported by Awesomium backend");
+			}
+
+			//-------------------------------------------------------------------
+			int UISystem::GetPageCount() const
+			{
+				return mIsPageLoaded ? 1 : 0;
 			}
 
 			//-------------------------------------------------------------------

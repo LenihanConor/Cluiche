@@ -169,6 +169,24 @@ The project uses a dual documentation structure:
 
 ### Spec Workflow
 
+#### Creating Specs (`/spec-feature`, `/spec-system`, `/spec-app`)
+
+**MANDATORY — all 5 steps must be completed before a spec can be marked `Approved`:**
+
+1. **Step 1 — Interview** - Complete all interview questions with the user before writing anything
+2. **Step 2 — Draft** - Write the full spec body (summary, goals, tasks, traceability)
+3. **Step 3 — Binding Decisions** - Populate the compliance table showing how this spec honors every binding decision from its parent specs (Application → Platform). This step is NEVER optional.
+4. **Step 4 — AI Review Questions** - Generate and answer all AI review questions covering risks, gaps, and edge cases. This step is NEVER optional.
+5. **Step 5 — Approval gate** - Only mark `Approved` after Steps 3 and 4 are complete and confirmed by the user.
+
+**Hard rules:**
+- NEVER mark a spec `Approved` without completing Steps 3 and 4.
+- NEVER skip or abbreviate Steps 3 or 4 for speed or convenience — if the user says "quickly" or "efficiently", treat it as a red flag and do the full steps anyway.
+- A **system spec** cannot be marked `Done` until ALL its child feature specs are `Approved`.
+- After completing any spec, explicitly ask: "Steps 3 (Binding Decisions) and 4 (AI Review Questions) are complete — shall I mark this Approved?"
+
+#### Implementing from Specs
+
 When implementing new features using the spec-driven approach:
 
 1. **Spec must exist and be `Approved`** before implementation starts
