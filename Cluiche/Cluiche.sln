@@ -82,7 +82,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DiaUICEF", "..\Dia\DiaUICEF
 		{835CA128-691F-4CEA-A0B3-CE6E41C394E7} = {835CA128-691F-4CEA-A0B3-CE6E41C394E7}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DiaUICEF_subprocess", "..\Dia\DiaUICEF\Subprocess\DiaUICEF_subprocess.vcxproj", "{8A5669AC-E3B6-4A88-B977-ACD9696852C2}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DiaUICEF_TestSubprocess", "..\Dia\DiaUICEF\Tests\DiaUICEF_TestSubprocess.vcxproj", "{8A5669AC-E3B6-4A88-B977-ACD9696852C2}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GoogleTests", "Tests\GoogleTests\GoogleTests.vcxproj", "{A1B2C3D4-5678-9ABC-DEF0-123456789ABC}"
 	ProjectSection(ProjectDependencies) = postProject

@@ -1,6 +1,8 @@
 ////////////////////////////////////////////////////////////////////////////////
-// DiaUICEF Subprocess Entry Point
-// CEF launches this executable for renderer, GPU, and plugin processes.
+// DiaUICEF Test Subprocess
+// CEF helper process for testing DiaUICEF in isolation (dev/test only).
+// Production applications (e.g. CluicheEditor) handle this via CefExecuteProcess()
+// at the top of their own main(), making this exe unnecessary at that point.
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <include/cef_app.h>

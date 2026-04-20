@@ -55,7 +55,7 @@ namespace Dia
 				settings.no_sandbox = true;
 				settings.windowless_rendering_enabled = true;
 				CefString(&settings.cache_path).FromString(mCachePath);
-				CefString(&settings.browser_subprocess_path).FromASCII("DiaUICEF_subprocess.exe");
+				CefString(&settings.browser_subprocess_path).FromASCII("DiaUICEF_TestSubprocess.exe");
 
 #ifdef _DEBUG
 				settings.remote_debugging_port = mRemoteDebuggingPort;

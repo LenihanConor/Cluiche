@@ -11,9 +11,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectName>DiaUICEF_subprocess</ProjectName>
+    <ProjectName>DiaUICEF_TestSubprocess</ProjectName>
     <ProjectGuid>{8A5669AC-E3B6-4A88-B977-ACD9696852C2}</ProjectGuid>
-    <RootNamespace>DiaUICEFSubprocess</RootNamespace>
+    <RootNamespace>DiaUICEFTestSubprocess</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
