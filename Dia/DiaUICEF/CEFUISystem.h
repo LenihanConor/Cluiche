@@ -50,6 +50,8 @@ namespace Dia
 			void SetRemoteDebuggingPort(int port);
 			void SetCachePath(const char* path);
 			void SetAssetBasePath(const char* path);
+			void SetSubprocessPath(const char* path);
+			void SetWindowedRendering(bool windowed);
 
 		private:
 			mutable std::mutex mSystemMutex;

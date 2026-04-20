@@ -43,12 +43,12 @@ namespace Dia::UICEF {
         virtual void InjectMouseButton(DiaUI::MouseButton button, bool down) override;
         virtual void InjectKeyEvent(DiaUI::KeyEvent event) override;
         
-        // CEF-specific configuration
-        void SetCachePath(const char* path);
-        void SetLogPath(const char* path);
-        void SetRemoteDebuggingPort(int port);  // Enable DevTools on port
-        void EnableGPUAcceleration(bool enable);
-        void SetLocale(const char* locale);
+        // CEF-specific configuration (must be called before Initialize())
+        void SetCachePath(const char* path);           // Relative paths resolved via Dia::Core::Path::ExePath()
+        void SetSubprocessPath(const char* path);      // Path to CEF helper exe (default: "DiaUICEF_TestSubprocess.exe")
+        void SetAssetBasePath(const char* path);       // Root for dia:// URL scheme resolution
+        void SetRemoteDebuggingPort(int port);         // Enable DevTools on port (Debug only)
+        void SetWindowedRendering(bool windowed);      // true = windowed child window, false = offscreen texture
         
         // Multi-window support
         int GetActiveWindowCount() const;
@@ -308,13 +308,14 @@ Decisions specific to DiaUICEF. Binding decisions constrain all features within 
 
 | ID | Decision | Rationale | Status | Binding |
 |----|----------|-----------|--------|---------|
-| UCEF-001 | Support both offscreen rendering (for game engines) and windowed rendering (for standalone editors) | Game engines need texture compositing; editors need native OS windows. Configurable at CEFPage creation. | Accepted | Yes |
+| UCEF-001 | Support both offscreen rendering (for game engines) and windowed rendering (for standalone editors) | Game engines need texture compositing; editors need native OS windows. Configured via `SetWindowedRendering(true)` before `Initialize()`. Windowed mode uses `CefWindowInfo::SetAsChild(HWND, CefRect)` — CEF owns a child window inside the native frame. | Accepted | Yes |
 | UCEF-002 | Custom `dia://` URL scheme for local assets | Clean separation of local vs remote; security (no CORS issues); consistent paths | Proposed | Yes |
 | UCEF-003 | Single-process mode for Debug, multi-process for Release | Easier debugging (breakpoints work); Release mode safer (renderer crash doesn't kill game) | Proposed | Yes |
 | UCEF-004 | Message passing via `window.dia` object (not V8 bindings) | Simpler than direct V8 API; less brittle across CEF versions; easier to debug | Proposed | Yes |
 | UCEF-005 | CEF3 LTS (e.g., CEF 109 branch) | Stable with extended support; balance of features vs stability; security patches | Accepted | Yes |
 | UCEF-006 | DevTools enabled in Debug builds only | Useful for debugging UI; disabled in Release for security and performance | Proposed | Yes |
 | UCEF-007 | GPU acceleration enabled by default | Modern UI expectations; performance for animations/transitions | Proposed | No |
+| UCEF-008 | Relative paths for subprocess and cache are resolved to absolute using `Dia::Core::Path::ExePath()` before passing to CEF | CEF rejects non-absolute paths and silently defaults to empty, causing `CefInitialize` to crash. Resolution uses the existing DiaCore utility rather than raw Win32 `GetModuleFileNameA`. | Accepted | Yes |
 
 **Status values:** `Proposed` · `Accepted` · `Rejected` · `Superseded`
 **Binding:** `Yes` = enforced on all features · `No` = guidance only

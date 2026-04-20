@@ -6,6 +6,7 @@
 #include <DiaCore/Core/Assert.h>
 #include <DiaCore/Core/Log.h>
 #include <DiaCore/Memory/Memory.h>
+#include <DiaCore/FilePath/Path.h>
 #include <DiaUI/IPage.h>
 #include <DiaUI/UIDataBuffer.h>
 #include <DiaUI/Page.h>
@@ -33,6 +34,8 @@ namespace Dia
 				, mRemoteDebuggingPort(9222)
 				, mCachePath(".cef_cache")
 				, mAssetBasePath("./UI/")
+				, mSubprocessPath("DiaUICEF_TestSubprocess.exe")
+				, mWindowedRendering(false)
 				, mPrimaryPage(nullptr)
 				, mNextPageId(0)
 			{
@@ -44,6 +47,17 @@ namespace Dia
 					Shutdown();
 			}
 
+			static std::string ResolveToAbsolute(const std::string& path)
+			{
+				if (path.empty())
+					return path;
+				if (path.size() >= 2 && (path[1] == ':' || path[0] == '\\' || path[0] == '/'))
+					return path;
+				std::string exeDir;
+				Dia::Core::Path::ExePath(exeDir);
+				return exeDir + "\\" + path;
+			}
+
 			void Initialize()
 			{
 				if (mIsInitialized)
@@ -53,9 +67,9 @@ namespace Dia
 
 				CefSettings settings;
 				settings.no_sandbox = true;
-				settings.windowless_rendering_enabled = true;
-				CefString(&settings.cache_path).FromString(mCachePath);
-				CefString(&settings.browser_subprocess_path).FromASCII("DiaUICEF_TestSubprocess.exe");
+				settings.windowless_rendering_enabled = mWindowedRendering ? false : true;
+				CefString(&settings.cache_path).FromASCII(ResolveToAbsolute(mCachePath).c_str());
+				CefString(&settings.browser_subprocess_path).FromASCII(ResolveToAbsolute(mSubprocessPath).c_str());
 
 #ifdef _DEBUG
 				settings.remote_debugging_port = mRemoteDebuggingPort;
@@ -162,7 +176,19 @@ namespace Dia
 			UI::IPage* CreatePage(const char* url, int width, int height)
 			{
 				CEFPage* page = new CEFPage(mNextPageId++, url, width, height);
-				if (page->Create())
+
+				bool ok = false;
+				if (mWindowedRendering && mWindowContext)
+				{
+					void* hwnd = mWindowContext->GetSystemHandle();
+					ok = page->CreateWindowed(hwnd);
+				}
+				else
+				{
+					ok = page->Create();
+				}
+
+				if (ok)
 				{
 					mPages.Add(page);
 					return page;
@@ -206,6 +232,8 @@ namespace Dia
 			void SetRemoteDebuggingPort(int port) { mRemoteDebuggingPort = port; }
 			void SetCachePath(const char* path) { mCachePath = path; }
 			void SetAssetBasePath(const char* path) { mAssetBasePath = path; }
+			void SetSubprocessPath(const char* path) { mSubprocessPath = path; }
+			void SetWindowedRendering(bool windowed) { mWindowedRendering = windowed; }
 
 		private:
 			const Window::IWindow* mWindowContext;
@@ -213,6 +241,8 @@ namespace Dia
 			int mRemoteDebuggingPort;
 			std::string mCachePath;
 			std::string mAssetBasePath;
+			std::string mSubprocessPath;
+			bool mWindowedRendering;
 
 			CefRefPtr<CEFProcessHandler> mApp;
 			Dia::Core::Containers::DynamicArrayC<CEFPage*, 16> mPages;
@@ -370,6 +400,20 @@ namespace Dia
 		{
 			DIA_ASSERT(mImpl, "mImpl is NULL");
 			mImpl->SetAssetBasePath(path);
+		}
+
+		//-------------------------------------------------------------------
+		void CEFUISystem::SetSubprocessPath(const char* path)
+		{
+			DIA_ASSERT(mImpl, "mImpl is NULL");
+			mImpl->SetSubprocessPath(path);
+		}
+
+		//-------------------------------------------------------------------
+		void CEFUISystem::SetWindowedRendering(bool windowed)
+		{
+			DIA_ASSERT(mImpl, "mImpl is NULL");
+			mImpl->SetWindowedRendering(windowed);
 		}
 	}
 }

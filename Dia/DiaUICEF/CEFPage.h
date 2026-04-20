@@ -23,7 +23,8 @@ namespace Dia
 			CEFPage(int pageId, const char* url, int width, int height);
 			virtual ~CEFPage();
 
-			bool Create();
+			bool Create();                         // offscreen / windowless
+			bool CreateWindowed(void* parentHwnd); // windowed, CEF owns child window
 			void Close();
 
 			// IPage

@@ -1,6 +1,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Filename: CEFPage.cpp
 ////////////////////////////////////////////////////////////////////////////////
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
 #include "CEFPage.h"
 
 #include "CEFRenderHandler.h"
@@ -39,6 +42,23 @@ namespace Dia
 			CefBrowserSettings browserSettings;
 			browserSettings.windowless_frame_rate = 60;
 			browserSettings.background_color = CefColorSetARGB(0, 0, 0, 0);
+
+			CefString cefUrl(mURL);
+			return CefBrowserHost::CreateBrowser(windowInfo, mClientHandler, cefUrl,
+				browserSettings, nullptr, nullptr);
+		}
+
+		bool CEFPage::CreateWindowed(void* parentHwnd)
+		{
+			// No render handler needed — CEF owns the window content directly
+			mClientHandler = new CEFClientHandler(this, nullptr);
+
+			CefWindowInfo windowInfo;
+			CefRect cefRect(0, 0, mWidth, mHeight);
+			windowInfo.SetAsChild(static_cast<HWND>(parentHwnd), cefRect);
+
+			CefBrowserSettings browserSettings;
+			browserSettings.background_color = CefColorSetARGB(255, 30, 30, 30);
 
 			CefString cefUrl(mURL);
 			return CefBrowserHost::CreateBrowser(windowInfo, mClientHandler, cefUrl,

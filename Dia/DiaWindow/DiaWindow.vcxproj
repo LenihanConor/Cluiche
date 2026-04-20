@@ -24,6 +24,7 @@
     <ClInclude Include="Interface\IWindow.h" />
     <ClInclude Include="Interface\IWindowFactory.h" />
     <ClInclude Include="SystemHandle.h" />
+    <ClInclude Include="Win32Window.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
@@ -38,6 +39,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DummyClass.cpp" />
+    <ClCompile Include="Win32Window.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{52178C86-628D-4FE4-AE55-D3485FAEC070}</ProjectGuid>

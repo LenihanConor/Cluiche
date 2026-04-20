@@ -153,7 +153,7 @@ xcopy /Y /I "$(ProjectDir)..\..\CluicheTest\Data\Manifests\*.diaapp" "$(OutDir)D
       <DisableSpecificWarnings>4267;4244;4127</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>$(OutDir)DiaCore.lib;$(OutDir)DiaMaths.lib;$(OutDir)DiaGraphics.lib;$(OutDir)DiaInput.lib;$(OutDir)DiaPython.lib;$(OutDir)DiaAPI.lib;$(OutDir)DiaUI.lib;$(OutDir)DiaWebSocket.lib;$(OutDir)DiaApplication.lib;$(OutDir)DiaDebugServer.lib;$(ProjectDir)../../../External/Python311/libs/python311.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)DiaCore.lib;$(OutDir)DiaMaths.lib;$(OutDir)DiaGraphics.lib;$(OutDir)DiaInput.lib;$(OutDir)DiaPython.lib;$(OutDir)DiaAPI.lib;$(OutDir)DiaUI.lib;$(OutDir)DiaWebSocket.lib;$(OutDir)DiaApplication.lib;$(OutDir)DiaDebugServer.lib;$(OutDir)DiaEditor.lib;$(ProjectDir)../../../External/Python311/libs/python311.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)../../../External/googletest/lib/x64/Debug/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -180,7 +180,7 @@ xcopy /Y /I "$(ProjectDir)..\..\CluicheTest\Data\Manifests\*.diaapp" "$(OutDir)D
       <DisableSpecificWarnings>4267;4244;4127</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>$(OutDir)DiaCore.lib;$(OutDir)DiaMaths.lib;$(OutDir)DiaGraphics.lib;$(OutDir)DiaInput.lib;$(OutDir)DiaPython.lib;$(OutDir)DiaAPI.lib;$(OutDir)DiaUI.lib;$(OutDir)DiaWebSocket.lib;$(OutDir)DiaApplication.lib;$(OutDir)DiaDebugServer.lib;$(ProjectDir)../../../External/Python311/libs/python311.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)DiaCore.lib;$(OutDir)DiaMaths.lib;$(OutDir)DiaGraphics.lib;$(OutDir)DiaInput.lib;$(OutDir)DiaPython.lib;$(OutDir)DiaAPI.lib;$(OutDir)DiaUI.lib;$(OutDir)DiaWebSocket.lib;$(OutDir)DiaApplication.lib;$(OutDir)DiaDebugServer.lib;$(OutDir)DiaEditor.lib;$(ProjectDir)../../../External/Python311/libs/python311.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)../../../External/googletest/lib/x64/Release/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -294,10 +294,25 @@ xcopy /Y /I "$(ProjectDir)..\..\CluicheTest\Data\Manifests\*.diaapp" "$(OutDir)D
     <ClCompile Include="DebugServer\TestStateSerializer.cpp" />
     <ClCompile Include="Integration\TestInputPipeline.cpp" />
     <ClCompile Include="Integration\TestFrameStreamPipeline.cpp" />
+    <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\StubEditorPlugin.cpp" />
+    <ClCompile Include="Editor\TestEditorPluginRegistry.cpp" />
+    <ClCompile Include="Editor\TestCommandHistory.cpp" />
+    <ClCompile Include="Editor\TestEditorModel.cpp" />
+    <ClCompile Include="Editor\TestGameConnectionManager.cpp" />
+    <ClCompile Include="Editor\TestDockingLayout.cpp" />
+    <ClCompile Include="Editor\TestWebUIBridge.cpp" />
+    <ClCompile Include="Editor\TestEditorApplication.cpp" />
+    <ClCompile Include="Editor\TestEditorApplicationLifecycle.cpp" />
+    <ClCompile Include="Editor\TestGameConnectionManagerIntegration.cpp" />
     <!-- Google Test Source Files - Compiled directly into project -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">
       <AdditionalIncludeDirectories>$(ProjectDir)../../../External/googletest/googletest/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Dia\DiaEditor\DiaEditor.vcxproj">
+      <Project>{f1a2b3c4-d5e6-7890-abcd-ef1234567890}</Project>
+    </ProjectReference>
   </ItemGroup>
   <!-- Python Test Scripts -->
   <ItemGroup>

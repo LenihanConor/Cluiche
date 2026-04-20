@@ -1,0 +1,11 @@
+{
+    "editor": {
+        "enabled": true,
+        "plugins": [
+            {
+                "type": "StubEditorPlugin",
+                "instance_id": "stub_1"
+            }
+        ]
+    }
+}

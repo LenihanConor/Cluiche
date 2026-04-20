@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Data Files">
+      <UniqueIdentifier>{b7c8d9e0-f1a2-3456-1234-567890123456}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ApplicationFlow">
+      <UniqueIdentifier>{a3bf7add-56c7-4a26-91b7-756354ba1356}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ApplicationFlow\ProcessingUnits">
+      <UniqueIdentifier>{a6b7c8d9-e0f1-2345-0123-456789012345}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ApplicationFlow\Phases">
+      <UniqueIdentifier>{a9fdd10b-8e2a-47cb-b752-8ee257cac035}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ApplicationFlow\Modules">
+      <UniqueIdentifier>{0978e770-d4ee-432e-b169-0c53091bbe33}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\Dia\DiaEditor\Plugin\StubEditorPlugin.cpp" />
+    <ClCompile Include="ApplicationFlow\ProcessingUnits\CluicheEditorProcessingUnit.cpp">
+      <Filter>ApplicationFlow\ProcessingUnits</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\Phases\CluicheEditorBootPhase.cpp">
+      <Filter>ApplicationFlow\Phases</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\Phases\CluicheEditorRunningPhase.cpp">
+      <Filter>ApplicationFlow\Phases</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\Phases\CluicheEditorShutdownPhase.cpp">
+      <Filter>ApplicationFlow\Phases</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\Modules\CommandHistoryModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\Modules\EditorModelModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\Modules\EditorViewControllerModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\Modules\EditorViewModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\Modules\GameConnectionModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ApplicationFlow\ProcessingUnits\CluicheEditorProcessingUnit.h">
+      <Filter>ApplicationFlow\ProcessingUnits</Filter>
+    </ClInclude>
+    <ClInclude Include="ApplicationFlow\Phases\CluicheEditorBootPhase.h">
+      <Filter>ApplicationFlow\Phases</Filter>
+    </ClInclude>
+    <ClInclude Include="ApplicationFlow\Phases\CluicheEditorRunningPhase.h">
+      <Filter>ApplicationFlow\Phases</Filter>
+    </ClInclude>
+    <ClInclude Include="ApplicationFlow\Phases\CluicheEditorShutdownPhase.h">
+      <Filter>ApplicationFlow\Phases</Filter>
+    </ClInclude>
+    <ClInclude Include="ApplicationFlow\Modules\CommandHistoryModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="ApplicationFlow\Modules\EditorModelModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="ApplicationFlow\Modules\EditorViewControllerModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="ApplicationFlow\Modules\EditorViewModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="ApplicationFlow\Modules\GameConnectionModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Data\test.cluicheproj">
+      <Filter>Data Files</Filter>
+    </None>
+    <None Include="Data\test-editor-plugins.diaapp">
+      <Filter>Data Files</Filter>
+    </None>
+  </ItemGroup>
+</Project>
