@@ -64,6 +64,9 @@
     <Filter Include="DebugProtocol">
       <UniqueIdentifier>{DBGPRT01-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DebugServer">
+      <UniqueIdentifier>{DBGSRV01-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -373,6 +376,16 @@
     <!-- DebugProtocol -->
     <ClCompile Include="DebugProtocol\TestDebugProtocol.cpp">
       <Filter>DebugProtocol</Filter>
+    </ClCompile>
+    <!-- DebugServer -->
+    <ClCompile Include="DebugServer\TestSubscriptionManager.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugServer\TestCommandDispatcher.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugServer\TestStateSerializer.cpp">
+      <Filter>DebugServer</Filter>
     </ClCompile>
     <!-- GoogleTest -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">

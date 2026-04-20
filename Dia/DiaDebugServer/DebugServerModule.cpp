@@ -41,7 +41,7 @@ namespace Dia
 			}
 		}
 
-		StateObject::OpertionResponse DebugServerModule::DoStart(const IStartData* /*startData*/)
+		Dia::Application::StateObject::OpertionResponse DebugServerModule::DoStart(const IStartData* /*startData*/)
 		{
 			mServer = new Dia::WebSocket::Server(mPort);
 

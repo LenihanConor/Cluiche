@@ -96,7 +96,7 @@
       <DisableSpecificWarnings>4267;4244;4127</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>$(OutDir)DiaCore.lib;$(OutDir)DiaMaths.lib;$(OutDir)DiaGraphics.lib;$(OutDir)DiaInput.lib;$(OutDir)DiaPython.lib;$(OutDir)DiaAPI.lib;$(OutDir)DiaUI.lib;$(OutDir)DiaWebSocket.lib;$(OutDir)DiaApplication.lib;$(ProjectDir)../../../External/Python311-Win32/libs/python311.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)DiaCore.lib;$(OutDir)DiaMaths.lib;$(OutDir)DiaGraphics.lib;$(OutDir)DiaInput.lib;$(OutDir)DiaPython.lib;$(OutDir)DiaAPI.lib;$(OutDir)DiaUI.lib;$(OutDir)DiaWebSocket.lib;$(OutDir)DiaApplication.lib;$(OutDir)DiaDebugServer.lib;$(ProjectDir)../../../External/Python311-Win32/libs/python311.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)../../../External/googletest/lib/Win32/Debug/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -123,7 +123,7 @@
       <DisableSpecificWarnings>4267;4244;4127</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>$(OutDir)DiaCore.lib;$(OutDir)DiaMaths.lib;$(OutDir)DiaGraphics.lib;$(OutDir)DiaInput.lib;$(OutDir)DiaPython.lib;$(OutDir)DiaAPI.lib;$(OutDir)DiaUI.lib;$(OutDir)DiaWebSocket.lib;$(OutDir)DiaApplication.lib;$(ProjectDir)../../../External/Python311/libs/python311.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)DiaCore.lib;$(OutDir)DiaMaths.lib;$(OutDir)DiaGraphics.lib;$(OutDir)DiaInput.lib;$(OutDir)DiaPython.lib;$(OutDir)DiaAPI.lib;$(OutDir)DiaUI.lib;$(OutDir)DiaWebSocket.lib;$(OutDir)DiaApplication.lib;$(OutDir)DiaDebugServer.lib;$(ProjectDir)../../../External/Python311/libs/python311.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)../../../External/googletest/lib/Win32/Release/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -151,7 +151,7 @@
       <DisableSpecificWarnings>4267;4244;4127</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>$(OutDir)DiaCore.lib;$(OutDir)DiaMaths.lib;$(OutDir)DiaGraphics.lib;$(OutDir)DiaInput.lib;$(OutDir)DiaPython.lib;$(OutDir)DiaAPI.lib;$(OutDir)DiaUI.lib;$(OutDir)DiaWebSocket.lib;$(OutDir)DiaApplication.lib;$(ProjectDir)../../../External/Python311/libs/python311.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)DiaCore.lib;$(OutDir)DiaMaths.lib;$(OutDir)DiaGraphics.lib;$(OutDir)DiaInput.lib;$(OutDir)DiaPython.lib;$(OutDir)DiaAPI.lib;$(OutDir)DiaUI.lib;$(OutDir)DiaWebSocket.lib;$(OutDir)DiaApplication.lib;$(OutDir)DiaDebugServer.lib;$(ProjectDir)../../../External/Python311/libs/python311.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)../../../External/googletest/lib/x64/Debug/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -177,7 +177,7 @@
       <DisableSpecificWarnings>4267;4244;4127</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>$(OutDir)DiaCore.lib;$(OutDir)DiaMaths.lib;$(OutDir)DiaGraphics.lib;$(OutDir)DiaInput.lib;$(OutDir)DiaPython.lib;$(OutDir)DiaAPI.lib;$(OutDir)DiaUI.lib;$(OutDir)DiaWebSocket.lib;$(OutDir)DiaApplication.lib;$(ProjectDir)../../../External/Python311/libs/python311.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)DiaCore.lib;$(OutDir)DiaMaths.lib;$(OutDir)DiaGraphics.lib;$(OutDir)DiaInput.lib;$(OutDir)DiaPython.lib;$(OutDir)DiaAPI.lib;$(OutDir)DiaUI.lib;$(OutDir)DiaWebSocket.lib;$(OutDir)DiaApplication.lib;$(OutDir)DiaDebugServer.lib;$(ProjectDir)../../../External/Python311/libs/python311.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)../../../External/googletest/lib/x64/Release/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -284,6 +284,9 @@
     <ClCompile Include="UICEF\TestCEFURLParsing.cpp" />
     <ClCompile Include="UICEF\TestCEFPageManagement.cpp" />
     <ClCompile Include="DebugProtocol\TestDebugProtocol.cpp" />
+    <ClCompile Include="DebugServer\TestSubscriptionManager.cpp" />
+    <ClCompile Include="DebugServer\TestCommandDispatcher.cpp" />
+    <ClCompile Include="DebugServer\TestStateSerializer.cpp" />
     <!-- Google Test Source Files - Compiled directly into project -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">
       <AdditionalIncludeDirectories>$(ProjectDir)../../../External/googletest/googletest/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
