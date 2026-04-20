@@ -61,6 +61,9 @@
     <Filter Include="GoogleTest">
       <UniqueIdentifier>{AB1E0EFA-J244-8g4c-CF1E-C7FF565EEG45}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DebugProtocol">
+      <UniqueIdentifier>{DBGPRT01-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -366,6 +369,10 @@
     </ClCompile>
     <ClCompile Include="UICEF\TestCEFPageManagement.cpp">
       <Filter>UICEF</Filter>
+    </ClCompile>
+    <!-- DebugProtocol -->
+    <ClCompile Include="DebugProtocol\TestDebugProtocol.cpp">
+      <Filter>DebugProtocol</Filter>
     </ClCompile>
     <!-- GoogleTest -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">

@@ -70,5 +70,6 @@
     <ClInclude Include="Introspection\ApplicationIntrospector.h">
       <Filter>Introspection</Filter>
     </ClInclude>
+    <ClInclude Include="DebugDataTypes.h" />
   </ItemGroup>
 </Project>

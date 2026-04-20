@@ -283,6 +283,7 @@
     <ClCompile Include="UICEF\TestCEFPixelConversion.cpp" />
     <ClCompile Include="UICEF\TestCEFURLParsing.cpp" />
     <ClCompile Include="UICEF\TestCEFPageManagement.cpp" />
+    <ClCompile Include="DebugProtocol\TestDebugProtocol.cpp" />
     <!-- Google Test Source Files - Compiled directly into project -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">
       <AdditionalIncludeDirectories>$(ProjectDir)../../../External/googletest/googletest/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
