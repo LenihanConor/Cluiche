@@ -1,0 +1,16 @@
+# CEF runtime DLLs — too large for git, deployed via setup script
+bin/
+
+# CEF resource paks and locales — deployed via setup script
+Resources/
+
+# Un-ignore lib directories (overridden by root .gitignore [Dd]ebug/ and [Rr]elease/ rules)
+!lib/
+!lib/Debug/
+!lib/Release/
+
+# Keep the small import lib (libcef.lib ~68K), exclude the large built wrapper (~150MB)
+!lib/Debug/libcef.lib
+!lib/Release/libcef.lib
+lib/Debug/libcef_dll_wrapper.lib
+lib/Release/libcef_dll_wrapper.lib
