@@ -57,7 +57,7 @@ namespace Dia
 
 		// Default assertion handler
 		// Logs the assertion failure, captures call stack, and breaks into debugger
-		void AssertDefault(char *pExp, char *pFileName, int iLineNumber, const char* pStr, ...)
+		void AssertDefault(const char *pExp, const char *pFileName, int iLineNumber, const char* pStr, ...)
 		{
 			// Format the user's message with printf-style arguments
 			va_list va;
@@ -90,7 +90,7 @@ namespace Dia
 		void BREAKPOINT()
 		{}
 
-		void AssertDefault(char *pExp,  char *pFileName, int iLineNumber, ...)
+		void AssertDefault(const char *pExp, const char *pFileName, int iLineNumber, ...)
 		{}
 #endif
 	}

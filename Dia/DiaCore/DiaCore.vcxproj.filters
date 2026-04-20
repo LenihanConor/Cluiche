@@ -291,6 +291,9 @@
     <ClInclude Include="Strings\String.h">
       <Filter>Strings</Filter>
     </ClInclude>
+    <ClInclude Include="Strings\StringJsonSerializer.h">
+      <Filter>Strings</Filter>
+    </ClInclude>
     <ClInclude Include="Strings\String1024.h">
       <Filter>Strings</Filter>
     </ClInclude>
@@ -672,6 +675,9 @@
       <Filter>FilePath</Filter>
     </ClCompile>
     <ClCompile Include="Strings\StringUtils.cpp">
+      <Filter>Strings\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Strings\StringJsonSerializer.cpp">
       <Filter>Strings\Source</Filter>
     </ClCompile>
     <ClCompile Include="FilePath\FileLoad.cpp">

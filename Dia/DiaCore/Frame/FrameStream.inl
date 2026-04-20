@@ -121,7 +121,7 @@ namespace Dia
 				position++;
 			}
 
-			mFrameList.erase(mFrameList.begin(), mFrameList.begin() + Dia::Maths::Clamp(position, 0, static_cast<int>(mFrameList.size())));
+			mFrameList.erase(mFrameList.begin(), mFrameList.begin() + (std::max)(0, (std::min)(position, static_cast<int>(mFrameList.size()))));
 		}
 
 

@@ -25,7 +25,7 @@ namespace Dia
 			const Dia::Core::FilePath& GetUrl()const { return mUrl; };
 			BoundMethodList& GetBoundMenthods() { return mBoundMethodList; }
 			
-			void BindMethod(BoundMethod& method)
+			void BindMethod(const BoundMethod& method)
 			{
 				mBoundMethodList.Add(method);
 			}

@@ -57,7 +57,7 @@ See @docs/specs/applications/dia.md for full Dia engine specification.
 - **Threading Model**: Multi-threaded ProcessingUnits (Main/Render/Sim threads)
 - **Type System**: Runtime type reflection and serialization
 - **String IDs**: Compile-time CRC hashing via StringCRC for efficient comparisons
-- **Build System**: Visual Studio MSBuild, Win32 primary target
+- **Build System**: Visual Studio MSBuild, x64 primary target (Win32 legacy only)
 
 ### Shared Design Patterns
 
@@ -85,7 +85,7 @@ See @docs/specs/applications/dia.md for full Dia engine specification.
 | Memory Management | Object pooling for frequently allocated types; no raw new/delete in game code |
 | Maintainability | Module dependencies acyclic and validated; public APIs clearly documented |
 | Testability | Unit tests via Google Test; subsystems mockable via interfaces |
-| Platform Support | Primary: Windows 10+ (Win32); Secondary: x64 configurations (limited) |
+| Platform Support | Primary: Windows 10+ (x64); Legacy: Win32 configurations (maintained but not actively developed) |
 
 ## Conventions
 
@@ -119,8 +119,9 @@ Module dependency changes validated via `python Tools/dia_modules.py --validate`
 | PD-002 | ProcessingUnit/Phase/Module architecture for app structure | Enables multi-threaded execution with explicit scheduling; clear lifecycle management | Platform-wide | Accepted | Yes |
 | PD-003 | Component-based entities (IComponent/IComponentObject) | Composition over inheritance; enables flexible runtime entity construction | Platform-wide | Accepted | Yes |
 | PD-004 | No STL containers in public APIs | Dia containers (DynamicArrayC, HashTable, LinkList) ensure consistent memory management and integration with engine | Platform-wide | Accepted | Yes |
-| PD-005 | Win32 as primary build target | Team expertise and tooling optimized for Windows; x64 secondary priority | Platform-wide | Accepted | No |
+| PD-005 | x64 as primary build target | x64 is the primary platform; Win32 retained for legacy reasons only and is not actively developed | Platform-wide | Accepted | Yes |
 | PD-006 | Visual Studio project files are source of truth | MSBuild used for all builds; manual project file maintenance required | Platform-wide | Accepted | Yes |
+| PD-007 | C++20 is the required language standard | All projects must compile under `/std:c++20`; enables concepts, std::span, constexpr improvements, and enforces stricter name lookup that catches latent bugs | Platform-wide | Accepted | Yes |
 
 **Status values:** `Proposed` · `Accepted` · `Rejected` · `Superseded`  
 **Binding:** `Yes` = enforced constraint on all children · `No` = guidance only

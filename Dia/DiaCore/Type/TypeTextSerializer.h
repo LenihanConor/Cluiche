@@ -48,10 +48,11 @@ namespace Dia
 			}
 
 			//------------------------------------------------------------------------------------
-			template<class T> 
+			template<class T>
 			inline void TypeTextSerializer::Deserialize(T& object, Dia::Core::Containers::StringReader& buffer)
 			{
-				Deserialize( object.CreateTypeInstance(), buffer );
+				TypeInstance instance = object.CreateTypeInstance();
+				Deserialize( instance, buffer );
 			}
 		}
 	}

@@ -43,26 +43,26 @@ namespace Dia
 				explicit Array ( ConstReference data, unsigned int numberElements ); 						
 				explicit Array ( const Array<T>& rhs );						
 				explicit Array ( const Array<T>& rhs, unsigned int startIndex, unsigned int numberElements );  
-				explicit Array ( unsigned int size, ConstIterator& iter ); 
-				explicit Array ( unsigned int size, ConstReverseIterator& iter ); 
-				template<class Evaluator> explicit Array (unsigned int size, ConstIterator& iter, const Evaluator& filter );
+				explicit Array ( unsigned int size, const ConstIterator& iter ); 
+				explicit Array ( unsigned int size, const ConstReverseIterator& iter ); 
+				template<class Evaluator> explicit Array (unsigned int size, const ConstIterator& iter, const Evaluator& filter );
 
 				// these are all use memcpy instead of a copy construct
 				Array<T>&								Assign ( ConstPointer pData, unsigned int numberElements);
 				Array<T>&								Assign ( ConstReference data, unsigned int numberElements);
 				Array<T>&								Assign ( const Array<T>& rhs );
 				Array<T>&								Assign ( const Array<T>& rhs, unsigned int startIndex, unsigned int numberElements );
-				Array<T>&								Assign ( ConstIterator& iter );
-				Array<T>&								Assign ( ConstReverseIterator& iter );
-				template<class Evaluator> Array<T>&		Assign ( ConstIterator& iter, const Evaluator& filter );
+				Array<T>&								Assign ( const ConstIterator& iter );
+				Array<T>&								Assign ( const ConstReverseIterator& iter );
+				template<class Evaluator> Array<T>&		Assign ( const ConstIterator& iter, const Evaluator& filter );
 				
 				/*ArrayC<T, size>&								AssignWithCopyConstructors (ConstPointer pData, unsigned int numberElements);
 				ArrayC<T, size>&								AssignWithCopyConstructors (ConstReference data, unsigned int numberElements);
 				template<unsigned int _size>ArrayC<T, size>&	AssignWithCopyConstructors ( const ArrayC<T,_size>& rhs );
 				template<unsigned int _size>ArrayC<T, size>&	AssignWithCopyConstructors ( const ArrayC<T,_size>& rhs, unsigned int startIndex, unsigned int numberElements = _size );
-				ArrayC<T, size>&								AssignWithCopyConstructors ( ConstIterator& iter );
-				ArrayC<T, size>&								AssignWithCopyConstructors ( ConstReverseIterator& iter );
-				template<class Evaluator> ArrayC<T, size>&		AssignWithCopyConstructors ( ConstIterator& iter, const Evaluator& filter );*/
+				ArrayC<T, size>&								AssignWithCopyConstructors ( const ConstIterator& iter );
+				ArrayC<T, size>&								AssignWithCopyConstructors ( const ConstReverseIterator& iter );
+				template<class Evaluator> ArrayC<T, size>&		AssignWithCopyConstructors ( const ConstIterator& iter, const Evaluator& filter );*/
 
 				Array<T>&								operator=		(const Array<T>& other);
 				bool									operator==		(const Array<T>& other) const; 

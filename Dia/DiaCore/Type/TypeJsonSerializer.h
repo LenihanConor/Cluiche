@@ -106,7 +106,8 @@ namespace Dia
 			template<class T>
 			inline void TypeJsonSerializer::Deserialize(T& object, Dia::Core::Containers::StringReader& buffer, const char* filePath)
 			{
-				Deserialize( object.CreateTypeInstance(), buffer, filePath );
+				TypeInstance instance = object.CreateTypeInstance();
+				Deserialize( instance, buffer, filePath );
 			}
 		}
 	}

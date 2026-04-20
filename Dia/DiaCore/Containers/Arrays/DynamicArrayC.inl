@@ -89,7 +89,7 @@ namespace Dia
 			
 			//-----------------------------------------------------------------------------
 			template <class T, unsigned int capacity>
-			DynamicArrayC<T, capacity>::DynamicArrayC ( unsigned int numberElements, ConstIterator& iter )
+			DynamicArrayC<T, capacity>::DynamicArrayC ( unsigned int numberElements, const ConstIterator& iter )
 			{
 				mSize = 0;
 
@@ -101,7 +101,7 @@ namespace Dia
 
 			//-----------------------------------------------------------------------------
 			template <class T, unsigned int capacity>
-			DynamicArrayC<T, capacity>::DynamicArrayC ( unsigned int numberElements, ConstReverseIterator& iter )
+			DynamicArrayC<T, capacity>::DynamicArrayC ( unsigned int numberElements, const ConstReverseIterator& iter )
 			{
 				mSize = 0;
 				for (unsigned int i = 0; i < numberElements && !iter.IsDone(); i++, iter.Next())
@@ -112,7 +112,7 @@ namespace Dia
 			
 			//-----------------------------------------------------------------------------
 			template <class T, unsigned int capacity> template<class Evaluator>
-			DynamicArrayC<T, capacity>::DynamicArrayC ( unsigned int numberElements, ConstIterator& iter, const Evaluator& filter )
+			DynamicArrayC<T, capacity>::DynamicArrayC ( unsigned int numberElements, const ConstIterator& iter, const Evaluator& filter )
 			{
 				mSize = 0;
 				for (unsigned int i = 0; i < numberElements && !iter.IsDone(); i++, iter.Next())
@@ -144,7 +144,7 @@ namespace Dia
 			{
 				DIA_ASSERT(numberElements <= Capacity(), "Will Outbound array");
 
-				MemoryCopy(mData, &data, sizeof(T)*x);
+				MemoryCopy(mData, &data, sizeof(T)*numberElements);
 				mSize = numberElements;
 
 				return *this;
@@ -182,7 +182,7 @@ namespace Dia
 
 			//-----------------------------------------------------------------------------
 			template <class T, unsigned int capacity>
-			DynamicArrayC<T, capacity>& DynamicArrayC<T, capacity>::Assign ( unsigned int numberElements, ConstIterator& iter )
+			DynamicArrayC<T, capacity>& DynamicArrayC<T, capacity>::Assign ( unsigned int numberElements, const ConstIterator& iter )
 			{
 				mSize = 0;
 
@@ -196,7 +196,7 @@ namespace Dia
 				
 			//-----------------------------------------------------------------------------
 			template <class T, unsigned int capacity>
-			DynamicArrayC<T, capacity>& DynamicArrayC<T, capacity>::Assign ( unsigned int numberElements, ConstReverseIterator& iter )
+			DynamicArrayC<T, capacity>& DynamicArrayC<T, capacity>::Assign ( unsigned int numberElements, const ConstReverseIterator& iter )
 			{
 				mSize = 0;
 
@@ -210,7 +210,7 @@ namespace Dia
 
 			//-----------------------------------------------------------------------------
 			template <class T, unsigned int capacity> template<class Evaluator>
-			DynamicArrayC<T, capacity>& DynamicArrayC<T, capacity>::Assign ( unsigned int numberElements, ConstIterator& iter, const Evaluator& filter )
+			DynamicArrayC<T, capacity>& DynamicArrayC<T, capacity>::Assign ( unsigned int numberElements, const ConstIterator& iter, const Evaluator& filter )
 			{
 				mSize = 0;
 

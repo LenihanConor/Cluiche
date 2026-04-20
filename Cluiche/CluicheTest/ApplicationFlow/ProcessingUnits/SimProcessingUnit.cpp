@@ -55,7 +55,7 @@ namespace Cluiche
 		if (mCanvas)
 		{
 			// Cast to access SFML-specific LoadTexture method
-			Dia::SFML::RenderWindow* renderWindow = dynamic_cast<Dia::SFML::RenderWindow*>(mCanvas);
+			Dia::SFML::RenderWindow* renderWindow = static_cast<Dia::SFML::RenderWindow*>(mCanvas);
 			if (renderWindow)
 			{
 				mTestRedTexture = renderWindow->LoadTexture("Assets/Textures/test_red.png");

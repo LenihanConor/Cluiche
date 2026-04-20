@@ -146,7 +146,7 @@
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <BrowseInformation>true</BrowseInformation>
       <EnablePREfast>true</EnablePREfast>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -168,7 +168,7 @@ xcopy /Y "$(SolutionDir)..\External\SFML\Current\bin\*.dll" "$(TargetDir)"</Comm
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <BrowseInformation>true</BrowseInformation>
       <EnablePREfast>true</EnablePREfast>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>

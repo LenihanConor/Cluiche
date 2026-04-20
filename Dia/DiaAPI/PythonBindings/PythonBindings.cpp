@@ -54,22 +54,21 @@ namespace Dia
 					if (arg.IsString())
 					{
 						const char* str = Dia::Python::ToString(arg);
-						strncpy(argBuffers[bufferIndex], str, 255);
-						argBuffers[bufferIndex][255] = '\0';
+						strncpy_s(argBuffers[bufferIndex], 256, str, 255);
 						argv[argc++] = argBuffers[bufferIndex];
 						bufferIndex++;
 					}
 					else if (arg.IsInt())
 					{
 						int value = Dia::Python::ToInt(arg);
-						sprintf(argBuffers[bufferIndex], "%d", value);
+						sprintf_s(argBuffers[bufferIndex], 256, "%d", value);
 						argv[argc++] = argBuffers[bufferIndex];
 						bufferIndex++;
 					}
 					else if (arg.IsFloat())
 					{
 						float value = Dia::Python::ToFloat(arg);
-						sprintf(argBuffers[bufferIndex], "%f", value);
+						sprintf_s(argBuffers[bufferIndex], 256, "%f", value);
 						argv[argc++] = argBuffers[bufferIndex];
 						bufferIndex++;
 					}

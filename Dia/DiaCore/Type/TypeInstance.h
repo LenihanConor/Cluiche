@@ -1,8 +1,9 @@
 #ifndef DIA_TYPE_TEXT_INSTANCE_H
 #define DIA_TYPE_TEXT_INSTANCE_H
 
-#include "DiaCore/Type/TypeVariable.h"
 #include "DiaCore/Type/TypeDefinition.h"
+
+namespace Dia { namespace Core { namespace Types { class TypeVariable; } } }
 
 #include <cstdint>
 #include <vector>

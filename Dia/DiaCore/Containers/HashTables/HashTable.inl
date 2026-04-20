@@ -251,7 +251,7 @@ namespace Dia
 				DIA_ASSERT_SUPPORT(bool found = false);
 				for (unsigned int i = 0; i < mPayloadNodes.Size(); i++)
 				{
-					if (functor.Equals(mPayloadNodes[i].GetPayloadConst(), value))
+					if (functor.Equals(mPayloadNodes[i].GetPayloadConst(), payloadValue))
 					{
 						DIA_ASSERT_SUPPORT(found = true);
 						RemoveByIndex(i);

@@ -30,7 +30,7 @@ namespace Dia
 		//---------------------------------------------------------------------------------------------------------------------------------
 
 		// Function pointer type for custom assert handlers
-		typedef void (*DIA_ASSERT_FUNC)(char *pExp, char *pFileName, int iLineNumber, const char* pStr, ...);
+		typedef void (*DIA_ASSERT_FUNC)(const char *pExp, const char *pFileName, int iLineNumber, const char* pStr, ...);
 
 		// Trigger debugger breakpoint
 		void BREAKPOINT();
@@ -39,7 +39,7 @@ namespace Dia
 		extern DIA_ASSERT_FUNC g_pAssertFunc;
 
 		// Default assert handler: logs failure, shows call stack, breaks into debugger
-		void AssertDefault(char *pExp, char *pFileName, int iLineNumber, const char* pStr, ...);
+		void AssertDefault(const char *pExp, const char *pFileName, int iLineNumber, const char* pStr, ...);
 
 		// Compile-time assertion helper (causes compile error if condition is false)
 		template<int> struct CompileTimeError;

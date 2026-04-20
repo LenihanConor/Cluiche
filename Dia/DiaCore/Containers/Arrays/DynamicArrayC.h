@@ -48,17 +48,17 @@ namespace Dia
 				explicit DynamicArrayC  (ConstReference data, unsigned int numberElements); 						
 				template<unsigned int _size> explicit DynamicArrayC (const DynamicArrayC<T,_size>& rhs);						
 				template<unsigned int _size> explicit DynamicArrayC (const DynamicArrayC<T,_size>& rhs, unsigned int startIndex, unsigned int numberElements = _size );  
-				explicit DynamicArrayC ( unsigned int numberElements, ConstIterator& iter ); 
-				explicit DynamicArrayC ( unsigned int numberElements, ConstReverseIterator& iter ); 
-				template<class Evaluator> explicit DynamicArrayC ( unsigned int numberElements, ConstIterator& iter, const Evaluator& filter);
+				explicit DynamicArrayC ( unsigned int numberElements, const ConstIterator& iter ); 
+				explicit DynamicArrayC ( unsigned int numberElements, const ConstReverseIterator& iter ); 
+				template<class Evaluator> explicit DynamicArrayC ( unsigned int numberElements, const ConstIterator& iter, const Evaluator& filter);
 
 				DynamicArrayC<T, capacity>&								Assign (ConstPointer pData, unsigned int numberElements);
 				DynamicArrayC<T, capacity>&								Assign (ConstReference data, unsigned int numberElements);
 				template<unsigned int _size>DynamicArrayC<T, capacity>&	Assign ( const DynamicArrayC<T,_size>& rhs );
 				template<unsigned int _size>DynamicArrayC<T, capacity>&	Assign ( const DynamicArrayC<T,_size>& rhs, unsigned int startIndex, unsigned int numberElements = _size );
-				DynamicArrayC<T, capacity>&								Assign ( unsigned int numberElements, ConstIterator& iter );
-				DynamicArrayC<T, capacity>&								Assign ( unsigned int numberElements, ConstReverseIterator& iter );
-				template<class Evaluator> DynamicArrayC<T, capacity>&	Assign ( unsigned int numberElements, ConstIterator& iter, const Evaluator& filter );
+				DynamicArrayC<T, capacity>&								Assign ( unsigned int numberElements, const ConstIterator& iter );
+				DynamicArrayC<T, capacity>&								Assign ( unsigned int numberElements, const ConstReverseIterator& iter );
+				template<class Evaluator> DynamicArrayC<T, capacity>&	Assign ( unsigned int numberElements, const ConstIterator& iter, const Evaluator& filter );
 
 				template<unsigned int _size> DynamicArrayC<T, capacity>& 
 														operator=		(const DynamicArrayC<T,_size>& other);

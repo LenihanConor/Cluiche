@@ -97,7 +97,7 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <BrowseInformation>true</BrowseInformation>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Lib>
       <OutputFile>$(OutDir)$(ProjectName).lib</OutputFile>
@@ -123,7 +123,7 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <BrowseInformation>true</BrowseInformation>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Lib>
       <OutputFile>$(OutDir)$(ProjectName).lib</OutputFile>
@@ -256,6 +256,7 @@
     <ClInclude Include="Strings\String64.h" />
     <ClInclude Include="Strings\String8.h" />
     <ClInclude Include="Strings\stringutils.h" />
+    <ClInclude Include="Strings\StringJsonSerializer.h" />
     <ClInclude Include="Containers\LinkList\LinkListC.h" />
     <ClInclude Include="Containers\LinkList\LinkListNode.h" />
     <ClInclude Include="Containers\HashTables\HashTable.h" />
@@ -305,6 +306,7 @@
     <ClCompile Include="Strings\String64.cpp" />
     <ClCompile Include="Strings\String8.cpp" />
     <ClCompile Include="Strings\StringUtils.cpp" />
+    <ClCompile Include="Strings\StringJsonSerializer.cpp" />
     <ClCompile Include="Timer\TimeThreadLimiter.cpp" />
     <ClCompile Include="Time\SystemClock.cpp" />
     <ClCompile Include="Time\TimeAbsolute.cpp" />

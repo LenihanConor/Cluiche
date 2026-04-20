@@ -99,7 +99,7 @@ namespace Dia
 
 			//-----------------------------------------------------------------------------
 			template <class T>
-			DynamicArray<T>::DynamicArray ( unsigned int capacity, ConstIterator& iter )
+			DynamicArray<T>::DynamicArray ( unsigned int capacity, const ConstIterator& iter )
 				: mCapacity(capacity)
 				, mData(NULL)
 				, mSize(0)
@@ -114,7 +114,7 @@ namespace Dia
 
 			//-----------------------------------------------------------------------------
 			template <class T>
-			DynamicArray<T>::DynamicArray ( unsigned int capacity, ConstReverseIterator& iter )
+			DynamicArray<T>::DynamicArray ( unsigned int capacity, const ConstReverseIterator& iter )
 				: mCapacity(capacity)
 				, mData(NULL)
 				, mSize(0)
@@ -129,7 +129,7 @@ namespace Dia
 
 			//-----------------------------------------------------------------------------
 			template <class T> template<class Evaluator>
-			DynamicArray<T>::DynamicArray ( unsigned int capacity, ConstIterator& iter, const Evaluator& filter )
+			DynamicArray<T>::DynamicArray ( unsigned int capacity, const ConstIterator& iter, const Evaluator& filter )
 				: mCapacity(capacity)
 				, mData(NULL)
 				, mSize(0)
@@ -165,7 +165,7 @@ namespace Dia
 			{
 				DIA_ASSERT(numberElements <= Capacity(), "Will Outbound array");
 
-				MemoryCopy(mData, &data, sizeof(T)*x);
+				MemoryCopy(mData, &data, sizeof(T)*numberElements);
 				mSize = numberElements;
 
 				return *this;
@@ -203,7 +203,7 @@ namespace Dia
 
 			//-----------------------------------------------------------------------------
 			template <class T>
-			DynamicArray<T>& DynamicArray<T>::Assign ( ConstIterator& iter )
+			DynamicArray<T>& DynamicArray<T>::Assign ( const ConstIterator& iter )
 			{
 				mSize = 0;
 
@@ -217,7 +217,7 @@ namespace Dia
 
 			//-----------------------------------------------------------------------------
 			template <class T>
-			DynamicArray<T>& DynamicArray<T>::Assign ( ConstReverseIterator& iter )
+			DynamicArray<T>& DynamicArray<T>::Assign ( const ConstReverseIterator& iter )
 			{
 				mSize = 0;
 
@@ -231,7 +231,7 @@ namespace Dia
 
 			//-----------------------------------------------------------------------------
 			template <class T> template<class Evaluator>
-			DynamicArray<T>& DynamicArray<T>::Assign ( ConstIterator& iter, const Evaluator& filter )
+			DynamicArray<T>& DynamicArray<T>::Assign ( const ConstIterator& iter, const Evaluator& filter )
 			{
 				mSize = 0;
 

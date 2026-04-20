@@ -93,7 +93,7 @@ namespace Dia
 			
 			//-----------------------------------------------------------------------------
 			template <class T, unsigned int size>
-			ArrayC<T, size>::ArrayC ( ConstIterator& iter )
+			ArrayC<T, size>::ArrayC ( const ConstIterator& iter )
 			{
 				memset(mData, 0, sizeof(T)*size);
 
@@ -107,7 +107,7 @@ namespace Dia
 
 			//-----------------------------------------------------------------------------
 			template <class T, unsigned int size>
-			ArrayC<T, size>::ArrayC ( ConstReverseIterator& iter )
+			ArrayC<T, size>::ArrayC ( const ConstReverseIterator& iter )
 			{
 				memset(mData, 0, sizeof(T)*size);
 
@@ -121,7 +121,7 @@ namespace Dia
 				
 			//-----------------------------------------------------------------------------
 			template <class T, unsigned int size> 
-			template<class Evaluator> ArrayC<T, size>::ArrayC ( ConstIterator& iter, const Evaluator& filter)
+			template<class Evaluator> ArrayC<T, size>::ArrayC ( const ConstIterator& iter, const Evaluator& filter)
 			{
 				memset(mData, 0, sizeof(T)*size);
 
@@ -196,7 +196,7 @@ namespace Dia
 
 			//-----------------------------------------------------------------------------
 			template <class T, unsigned int size>
-			ArrayC<T, size>& ArrayC<T, size>::Assign ( ConstIterator& iter )
+			ArrayC<T, size>& ArrayC<T, size>::Assign ( const ConstIterator& iter )
 			{
 				memset(mData, 0, sizeof(T)*size);
 
@@ -212,7 +212,7 @@ namespace Dia
 				
 			//-----------------------------------------------------------------------------
 			template <class T, unsigned int size>
-			ArrayC<T, size>& ArrayC<T, size>::Assign ( ConstReverseIterator& iter )
+			ArrayC<T, size>& ArrayC<T, size>::Assign ( const ConstReverseIterator& iter )
 			{
 				memset(mData, 0, sizeof(T)*size);
 
@@ -228,7 +228,7 @@ namespace Dia
 			
 			//-----------------------------------------------------------------------------
 			template <class T, unsigned int size>
-			template<class Evaluator> ArrayC<T, size>& ArrayC<T, size>::Assign ( ConstIterator& iter, const Evaluator& filter )
+			template<class Evaluator> ArrayC<T, size>& ArrayC<T, size>::Assign ( const ConstIterator& iter, const Evaluator& filter )
 			{
 				memset(mData, 0, sizeof(T)*size);
 

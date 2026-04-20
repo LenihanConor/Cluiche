@@ -3,6 +3,7 @@
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
+#include <algorithm>
 #include <deque>
 #include <mutex>
 

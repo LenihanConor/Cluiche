@@ -150,7 +150,7 @@ namespace Dia
 			
 			//-----------------------------------------------------------------------------
 			template <class T> inline	
-			ReverseArrayConstIterator<T>::ReverseArrayConstIterator(ReverseArrayIterator<T>& rhs)
+			ReverseArrayConstIterator<T>::ReverseArrayConstIterator(const ReverseArrayIterator<T>& rhs)
 				: mBegin(rhs.End())
 				, mEnd(rhs.Begin())
 				, mIter(rhs.Current())
@@ -178,14 +178,14 @@ namespace Dia
 
 			//-----------------------------------------------------------------------------
 			template <class T> inline	
-			void ReverseArrayConstIterator<T>::Next()
+			void ReverseArrayConstIterator<T>::Next() const
 			{
 				--mIter;
 			}
 
 			//-----------------------------------------------------------------------------
 			template <class T> inline	
-			void ReverseArrayConstIterator<T>::Previous()
+			void ReverseArrayConstIterator<T>::Previous() const
 			{
 				mIter++;
 			}
