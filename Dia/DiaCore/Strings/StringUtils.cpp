@@ -35,7 +35,7 @@ namespace Dia
 				char* pointeeAsType = reinterpret_cast<char*>(instance.Pointee());
 				char* pointerToDst = reinterpret_cast<char*>(((currentTypeVariable.GetOffsetFromParent(i) / sizeof(char)) + pointeeAsType));
 
-				Dia::Core::StringCopy(pointerToDst, &str[0], str.length());
+				Dia::Core::StringCopy(pointerToDst, &str[0], static_cast<int>(str.length()));
 			}
 		}
 

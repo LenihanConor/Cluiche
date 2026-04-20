@@ -3,6 +3,7 @@
 // Tests RenderStates structure from DiaGraphics
 
 #include <gtest/gtest.h>
+#include <cstdint>
 #include <DiaGraphics/Misc/RenderStates.h>
 #include <DiaGraphics/Misc/Transform.h>
 #include <DiaGraphics/Assets/ITexture.h>
@@ -161,7 +162,7 @@ TEST(RenderStates, ModifyTransform_UpdatesValue)
 TEST(RenderStates, ModifyTexture_UpdatesPointer)
 {
     RenderStates states;
-    const ITexture* dummyTexture = reinterpret_cast<const ITexture*>(0x12345678);
+    const ITexture* dummyTexture = reinterpret_cast<const ITexture*>(static_cast<uintptr_t>(0x12345678));
     states.texture = dummyTexture;
 
     EXPECT_EQ(states.texture, dummyTexture);
@@ -170,7 +171,7 @@ TEST(RenderStates, ModifyTexture_UpdatesPointer)
 TEST(RenderStates, ModifyShader_UpdatesPointer)
 {
     RenderStates states;
-    const IShader* dummyShader = reinterpret_cast<const IShader*>(0x87654321);
+    const IShader* dummyShader = reinterpret_cast<const IShader*>(static_cast<uintptr_t>(0x87654321));
     states.shader = dummyShader;
 
     EXPECT_EQ(states.shader, dummyShader);

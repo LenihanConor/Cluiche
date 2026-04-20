@@ -257,8 +257,6 @@ External/googletest/
 # Ultralight SDK binaries (large; download via ultralight-sdk-latest-win-x64.7z)
 External/Ultralight/
 
-# MSBuild intermediate output
-Dia/DiaBin/
 
 # Preprocessor output files
 *.i
