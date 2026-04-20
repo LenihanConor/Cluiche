@@ -26,6 +26,7 @@ namespace Cluiche
 		static const Dia::Core::StringCRC kTypeId;
 
 		MainBootStrapPhase(Dia::Application::ProcessingUnit* associatedProcessingUnit, const Dia::Core::StringCRC& instanceId = kTypeId);
+		~MainBootStrapPhase();
 
 		void DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)override;
 

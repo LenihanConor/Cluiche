@@ -23,6 +23,12 @@ namespace Cluiche
 		, mUnitTestLevel(nullptr)
 	{}
 
+	MainBootStrapPhase::~MainBootStrapPhase()
+	{
+		DIA_DELETE(mDummyLevel);
+		DIA_DELETE(mUnitTestLevel);
+	}
+
 	void MainBootStrapPhase::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
 	{
 		AddModule(buildDependencies->GetModule(Main::KernelModule::kTypeId));
@@ -51,10 +57,8 @@ namespace Cluiche
 
 	void MainBootStrapPhase::BeforeModulesStop()
 	{
-		DIA_DELETE(mDummyLevel);
-
 		Cluiche::Main::UIModule* ui = this->GetModule<Cluiche::Main::UIModule>();
-		ui->GetUISystem()->UnloadPage(); 
+		ui->GetUISystem()->UnloadPage();
 	}
 
 	void MainBootStrapPhase::RequestLaunchLevel(const Dia::Core::Containers::String64& levelName)
