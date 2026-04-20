@@ -68,8 +68,12 @@ namespace Dia
 				CefSettings settings;
 				settings.no_sandbox = true;
 				settings.windowless_rendering_enabled = mWindowedRendering ? false : true;
-				CefString(&settings.cache_path).FromASCII(ResolveToAbsolute(mCachePath).c_str());
-				CefString(&settings.browser_subprocess_path).FromASCII(ResolveToAbsolute(mSubprocessPath).c_str());
+				std::string resolvedSubprocess = ResolveToAbsolute(mSubprocessPath);
+				std::string resolvedCache = ResolveToAbsolute(mCachePath);
+				Dia::Core::Log::OutputVaradicLine("DiaUICEF: subprocess_path = %s", resolvedSubprocess.c_str());
+				Dia::Core::Log::OutputVaradicLine("DiaUICEF: cache_path = %s", resolvedCache.c_str());
+				CefString(&settings.cache_path).FromASCII(resolvedCache.c_str());
+				CefString(&settings.browser_subprocess_path).FromASCII(resolvedSubprocess.c_str());
 
 #ifdef _DEBUG
 				settings.remote_debugging_port = mRemoteDebuggingPort;

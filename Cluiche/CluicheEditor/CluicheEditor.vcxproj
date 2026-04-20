@@ -111,7 +111,7 @@
     </Link>
     <PostBuildEvent>
       <Command>xcopy /Y /D "$(SolutionDir)../External/CEF/Resources/*.*" "$(TargetDir)"
-xcopy /Y /D "$(SolutionDir)../External/CEF/bin/Debug/*.dll" "$(TargetDir)"
+xcopy /Y /D "$(SolutionDir)../External/CEF/bin/Debug/*.*" "$(TargetDir)"
 xcopy /Y /I "$(ProjectDir)Data\*.*" "$(TargetDir)Data\"
 set PATH=C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Microsoft\VisualStudio\NodeJs;%PATH%
 cd "$(ProjectDir)UI"
@@ -142,7 +142,7 @@ xcopy /Y /E /I "$(ProjectDir)UI\dist\*.*" "$(TargetDir)UI\"</Command>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /Y /D "$(SolutionDir)../External/CEF/Resources/*.*" "$(TargetDir)"
-xcopy /Y /D "$(SolutionDir)../External/CEF/bin/Release/*.dll" "$(TargetDir)"
+xcopy /Y /D "$(SolutionDir)../External/CEF/bin/Release/*.*" "$(TargetDir)"
 xcopy /Y /I "$(ProjectDir)Data\*.*" "$(TargetDir)Data\"
 set PATH=C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Microsoft\VisualStudio\NodeJs;%PATH%
 cd "$(ProjectDir)UI"
