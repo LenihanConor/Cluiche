@@ -67,6 +67,9 @@
     <Filter Include="DebugServer">
       <UniqueIdentifier>{DBGSRV01-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Integration">
+      <UniqueIdentifier>{INTGR001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -386,6 +389,13 @@
     </ClCompile>
     <ClCompile Include="DebugServer\TestStateSerializer.cpp">
       <Filter>DebugServer</Filter>
+    </ClCompile>
+    <!-- Integration -->
+    <ClCompile Include="Integration\TestInputPipeline.cpp">
+      <Filter>Integration</Filter>
+    </ClCompile>
+    <ClCompile Include="Integration\TestFrameStreamPipeline.cpp">
+      <Filter>Integration</Filter>
     </ClCompile>
     <!-- GoogleTest -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">

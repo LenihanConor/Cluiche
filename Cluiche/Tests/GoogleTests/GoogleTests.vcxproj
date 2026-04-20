@@ -287,6 +287,8 @@
     <ClCompile Include="DebugServer\TestSubscriptionManager.cpp" />
     <ClCompile Include="DebugServer\TestCommandDispatcher.cpp" />
     <ClCompile Include="DebugServer\TestStateSerializer.cpp" />
+    <ClCompile Include="Integration\TestInputPipeline.cpp" />
+    <ClCompile Include="Integration\TestFrameStreamPipeline.cpp" />
     <!-- Google Test Source Files - Compiled directly into project -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">
       <AdditionalIncludeDirectories>$(ProjectDir)../../../External/googletest/googletest/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
