@@ -6,14 +6,20 @@
 
 namespace Cluiche
 {
-	const Dia::Core::StringCRC SimBootStrapPhase::kUniqueId("SimBootStrapPhase");
+	const Dia::Core::StringCRC SimBootStrapPhase::kTypeId("SimBootStrapPhase");
 
-	SimBootStrapPhase::SimBootStrapPhase(Dia::Application::ProcessingUnit* associatedProcessingUnit)
-		: Dia::Application::Phase(associatedProcessingUnit, kUniqueId)
+	SimBootStrapPhase::SimBootStrapPhase(Dia::Application::ProcessingUnit* associatedProcessingUnit, const Dia::Core::StringCRC& instanceId)
+		: Dia::Application::Phase(associatedProcessingUnit, instanceId)
 	{}
 
 	void SimBootStrapPhase::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
 	{
-		AddModule(buildDependencies->GetModule(Sim::UIProxyModule::kUniqueId));
+		AddModule(buildDependencies->GetModule(Sim::UIProxyModule::kTypeId));
 	}
+}
+
+#include <DiaApplication/TypeRegistry/RegistrationMacros.h>
+namespace { using _SimBootStrapPhase = Cluiche::SimBootStrapPhase; }
+DIA_REGISTER_PHASE(_SimBootStrapPhase) {
+	return new Cluiche::SimBootStrapPhase(pu, instanceId);
 }

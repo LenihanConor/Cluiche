@@ -4,23 +4,14 @@
 
 namespace Cluiche
 {
-	const Dia::Core::StringCRC RenderProcessingUnit::kUniqueId("RenderProcessingUnit");
+	const Dia::Core::StringCRC RenderProcessingUnit::kTypeId("RenderProcessingUnit");
 
-	RenderProcessingUnit::RenderProcessingUnit()
-		: Dia::Application::ProcessingUnit(kUniqueId, 60.0f)
+	RenderProcessingUnit::RenderProcessingUnit(const Dia::Core::StringCRC& instanceId, float hz)
+		: Dia::Application::ProcessingUnit(instanceId, hz)
 		, mRunning(nullptr)
 		, mFrameStream(nullptr)
-		, mRunningPhase(this)
 		, mpCanvas(nullptr)
-	{
-		// Setup Phase Transitions
-		SetInitialPhase(&mRunningPhase);
-
-		// We call this from here to build all dependancies. We dont need to do this here, intead 
-		// we could of done it in the code below if there was dynamic adding of modules or phases
-		// but for this cas case this is a nicer cleaner solution.
-		Initialize();
-	}
+	{}
 
 	void RenderProcessingUnit::PostPhaseStart(const Dia::Application::StateObject::IStartData* startData)
 	{
@@ -52,4 +43,11 @@ namespace Cluiche
 		bool isFlaggeToStop = !(*mRunning);
 		return isFlaggeToStop;
 	}
+}
+
+#include <DiaApplication/TypeRegistry/RegistrationMacros.h>
+namespace { using _RenderProcessingUnit = Cluiche::RenderProcessingUnit; }
+DIA_REGISTER_PROCESSING_UNIT(_RenderProcessingUnit) {
+	float hz = config.get("frequency_hz", 60.0f).asFloat();
+	return new Cluiche::RenderProcessingUnit(instanceId, hz);
 }

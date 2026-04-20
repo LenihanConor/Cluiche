@@ -19,7 +19,7 @@ namespace Cluiche
 			: mMainFEPhase(mainPU)
 			, mMainLoadPhase(mainPU)
 		{
-			mEntryPhaseUniqueId = Cluiche::DummyLevel::MainLoadPhase::kUniqueId;
+			mEntryPhaseUniqueId = Cluiche::DummyLevel::MainLoadPhase::kTypeId;
 			mExitPhaseUniqueId = currentPhase->GetUniqueId();
 
 			mainPU->AddPhaseTransiton(currentPhase, &mMainLoadPhase);

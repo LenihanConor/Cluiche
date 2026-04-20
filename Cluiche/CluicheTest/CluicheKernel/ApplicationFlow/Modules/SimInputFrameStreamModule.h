@@ -18,9 +18,9 @@ namespace Cluiche
 		public:
 			typedef Dia::Core::FrameStream<Dia::Input::EventData> InputFrameStream;
 
-			static const Dia::Core::StringCRC kUniqueId;
+			static const Dia::Core::StringCRC kTypeId;
 
-			InputFrameStreamModule(Dia::Application::ProcessingUnit* associatedProcessingUnit);
+			InputFrameStreamModule(Dia::Application::ProcessingUnit* associatedProcessingUnit, const Dia::Core::StringCRC& instanceId = kTypeId);
 
 			void Initialize(InputFrameStream* stream);
 

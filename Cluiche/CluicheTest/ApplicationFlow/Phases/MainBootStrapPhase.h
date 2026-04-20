@@ -23,9 +23,9 @@ namespace Cluiche
 	class MainBootStrapPhase : public Main::MainPhaseBase, LaunchUIPageExternalInterface
 	{
 	public:
-		static const Dia::Core::StringCRC kUniqueId;
+		static const Dia::Core::StringCRC kTypeId;
 
-		MainBootStrapPhase(Dia::Application::ProcessingUnit* associatedProcessingUnit);
+		MainBootStrapPhase(Dia::Application::ProcessingUnit* associatedProcessingUnit, const Dia::Core::StringCRC& instanceId = kTypeId);
 
 		void DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)override;
 

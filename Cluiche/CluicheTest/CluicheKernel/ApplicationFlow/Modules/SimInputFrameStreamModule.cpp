@@ -4,10 +4,10 @@ namespace Cluiche
 {
 	namespace Sim
 	{
-		const Dia::Core::StringCRC InputFrameStreamModule::kUniqueId("Sim::InputFrameStreamModule");
+		const Dia::Core::StringCRC InputFrameStreamModule::kTypeId("Sim::InputFrameStreamModule");
 
-		InputFrameStreamModule::InputFrameStreamModule(Dia::Application::ProcessingUnit* associatedProcessingUnit)
-			: Dia::Application::Module(associatedProcessingUnit, kUniqueId, Dia::Application::Module::RunningEnum::kIdle)
+		InputFrameStreamModule::InputFrameStreamModule(Dia::Application::ProcessingUnit* associatedProcessingUnit, const Dia::Core::StringCRC& instanceId)
+			: Dia::Application::Module(associatedProcessingUnit, instanceId, Dia::Application::Module::RunningEnum::kIdle)
 			, mInputToSimFrameStream(nullptr)
 		{}
 
@@ -26,4 +26,10 @@ namespace Cluiche
 			return mInputToSimFrameStream;
 		}
 	}
+}
+
+#include <DiaApplication/TypeRegistry/RegistrationMacros.h>
+namespace { using _InputFrameStreamModule = Cluiche::Sim::InputFrameStreamModule; }
+DIA_REGISTER_MODULE(_InputFrameStreamModule) {
+	return new Cluiche::Sim::InputFrameStreamModule(pu, instanceId);
 }

@@ -19,7 +19,7 @@ namespace Cluiche
 		class MainLoadPhase : public Cluiche::Main::MainPhaseBase
 		{
 		public:
-			static const Dia::Core::StringCRC kUniqueId;
+			static const Dia::Core::StringCRC kTypeId;
 
 			MainLoadPhase(Dia::Application::ProcessingUnit* associatedProcessingUnit);
 		

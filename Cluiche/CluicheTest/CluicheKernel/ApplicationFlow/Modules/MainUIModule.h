@@ -31,9 +31,9 @@ namespace Cluiche
 				, kStarted \
 			);
 
-			static const Dia::Core::StringCRC kUniqueId;
+			static const Dia::Core::StringCRC kTypeId;
 
-			UIModule(Dia::Application::ProcessingUnit* associatedProcessingUnit);
+			UIModule(Dia::Application::ProcessingUnit* associatedProcessingUnit, const Dia::Core::StringCRC& instanceId = kTypeId);
 
 			Dia::UI::IUISystem* GetUISystem();
 			const Dia::UI::IUISystem* GetUISystem()const;

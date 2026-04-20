@@ -2,17 +2,12 @@
 
 #include <DiaApplication/ApplicationProcessingUnit.h>
 
-#include "ApplicationFlow/Phases/SimBootStrapPhase.h"
-#include "ApplicationFlow/Phases/SimBootPhase.h"
-#include "CluicheKernel/ApplicationFlow/Modules/SimUIProxyModule.h"
-#include "CluicheKernel/ApplicationFlow/Modules/SimInputFrameStreamModule.h"
-#include "CluicheKernel/ApplicationFlow/Modules/SimTimeServerModule.h"
-
 #include <DiaCore/Frame/FrameStream.h>
 #include <DiaGraphics/Frame/FrameData.h>
+#include <DiaInput/EventData.h>
 
 namespace Dia { namespace Graphics { class ICanvas; } }
-namespace Cluiche { class UIModule; }
+namespace Cluiche { namespace Main { class UIModule; } }
 
 namespace Cluiche
 {
@@ -28,12 +23,12 @@ namespace Cluiche
 			Cluiche::Main::UIModule* mMainUIModule;
 			Dia::Core::FrameStream<Dia::Input::EventData>* mInputToSimFrameStream;
 			Dia::Core::FrameStream<Dia::Graphics::FrameData>* mFrameStream;
-			Dia::Graphics::ICanvas* mCanvas; // For loading textures
+			Dia::Graphics::ICanvas* mCanvas;
 		};
 
-		static const Dia::Core::StringCRC kUniqueId;
+		static const Dia::Core::StringCRC kTypeId;
 
-		SimProcessingUnit();
+		SimProcessingUnit(const Dia::Core::StringCRC& instanceId, float hz);
 
 	private:
 		virtual void PostPhaseStart(const IStartData* startData) override final;
@@ -41,26 +36,14 @@ namespace Cluiche
 		virtual void PostPhaseUpdate() override final;
 		virtual bool FlaggedToStopUpdating()const override final;
 
-
 		Dia::Graphics::FrameData mRenderFrameBuffer;
 
-		// Shared resources
 		const bool* mRunning;
 		Dia::Core::FrameStream<Dia::Graphics::FrameData>* mSimToRenderFrameStream;
 		Dia::Graphics::ICanvas* mCanvas;
 
-		// Test sprite textures
 		unsigned int mTestRedTexture;
 		unsigned int mTestBlueTexture;
 		unsigned int mTestGreenTexture;
-
-		//Phases
-		Cluiche::SimBootPhase mBootPhase;
-		Cluiche::SimBootStrapPhase mBootStrapPhase;
-
-		//Modules
-		Cluiche::Sim::TimeServerModule mSimTimeServerModule;
-		Cluiche::Sim::UIProxyModule mSimUIProxyModule;
-		Cluiche::Sim::InputFrameStreamModule mSimInputFrameStreamModule;
 	};
 }

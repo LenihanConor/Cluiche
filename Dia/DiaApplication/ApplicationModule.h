@@ -53,8 +53,8 @@ namespace Dia
 			Module* GetModule(const Dia::Core::StringCRC& uniqueId);
 			const Module* GetModule(const Dia::Core::StringCRC& uniqueId)const;
 
-			template <class T> inline T* GetModule() { return static_cast<T*>(GetModule(T::kUniqueId)); }
-			template <class T> inline const T* GetModule() const { return static_cast<const T*>(GetModule(T::kUniqueId)); }
+			template <class T> inline T* GetModule() { return static_cast<T*>(GetModule(T::kTypeId)); }
+			template <class T> inline const T* GetModule() const { return static_cast<const T*>(GetModule(T::kTypeId)); }
 
 			void AddDependancy(Module* dependancy);
 

@@ -1,32 +1,31 @@
 #include "ApplicationFlow/ProcessingUnits/MainProcessingUnit.h"
+#include "ApplicationFlow/ProcessingUnits/RenderProcessingUnit.h"
+#include "ApplicationFlow/ProcessingUnits/SimProcessingUnit.h"
 
-#include "DiaApplication/ApplicationPhase.h"
-#include "DiaApplication/ApplicationModule.h"
+#include "CluicheKernel/ApplicationFlow/Modules/MainKernelModule.h"
+#include "CluicheKernel/ApplicationFlow/Modules/MainUIModule.h"
+
+#include <DiaApplication/ApplicationPhase.h>
+#include <DiaApplication/ApplicationModule.h>
+#include <DiaApplication/Loader/ApplicationLoader.h>
 
 namespace Cluiche
 {
-	const Dia::Core::StringCRC MainProcessingUnit::kUniqueId("MainProcessingUnit");
+	const Dia::Core::StringCRC MainProcessingUnit::kTypeId("MainProcessingUnit");
 
-	MainProcessingUnit::MainProcessingUnit()
-		: Dia::Application::ProcessingUnit(kUniqueId, 30.0f)
+	MainProcessingUnit::MainProcessingUnit(const Dia::Core::StringCRC& instanceId, float hz)
+		: Dia::Application::ProcessingUnit(instanceId, hz)
 		, mRenderThread(nullptr)
-		, mRenderingPU()
+		, mRenderingPU(nullptr)
 		, mSimThread(nullptr)
-		, mSimPU()
-		, mBootPhase(this)
-		, mBootStrapPhase(this)
-		, mKernelModule(this)
-		, mLevelRegistryModule(this)
-		, mUI(this)
+		, mSimPU(nullptr)
 	{
-		// Setup Phase Transitions
-		SetInitialPhase(&mBootPhase);
-		AddPhaseTransiton(&mBootPhase, &mBootStrapPhase);
+	}
 
-		// We call this from here to build all dependancies. We dont need to do this here, intead 
-		// we could of done it in the code below if there was dynamic adding of modules or phases
-		// but for this case this is a nicer cleaner solution.
-		Initialize();
+	MainProcessingUnit::~MainProcessingUnit()
+	{
+		delete mRenderingPU;
+		delete mSimPU;
 	}
 
 	Cluiche::MainProcessingUnit* MainProcessingUnit::GetMainPU()
@@ -35,39 +34,49 @@ namespace Cluiche
 	}
 
 	Cluiche::RenderProcessingUnit* MainProcessingUnit::GetRenderingPU()
-	{ 
-		return &mRenderingPU; 
+	{
+		return mRenderingPU;
 	}
 
-	Cluiche::SimProcessingUnit* MainProcessingUnit::GetSimPU() 
-	{ 
-		return &mSimPU; 
+	Cluiche::SimProcessingUnit* MainProcessingUnit::GetSimPU()
+	{
+		return mSimPU;
 	}
 
 	void MainProcessingUnit::PostPhaseStart(const IStartData* startData)
 	{
-		// Start the render thread
-		{
-			RenderProcessingUnit::StartData data;
-			data.mRunning = &(mKernelModule.mRunning);
-			data.mFrameStream = &(mKernelModule.GetSimToRenderFrameStream());
-			data.mCanvas = mKernelModule.GetCanvas();
+		auto* kernel = GetModule<Cluiche::Main::KernelModule>();
 
-			mRenderingPU.Start(&data);
-			mRenderThread = DIA_NEW(std::thread(std::ref(mRenderingPU)));
+		// Load and start the render processing unit from manifest
+		{
+			mRenderingPU = static_cast<Cluiche::RenderProcessingUnit*>(
+				Dia::Application::ApplicationLoader::LoadApplication("Data/Manifests/cluiche_render.diaapp"));
+
+			RenderProcessingUnit::StartData data;
+			data.mRunning = &(kernel->mRunning);
+			data.mFrameStream = &(kernel->GetSimToRenderFrameStream());
+			data.mCanvas = kernel->GetCanvas();
+
+			mRenderingPU->Start(&data);
+			mRenderThread = DIA_NEW(std::thread(std::ref(*mRenderingPU)));
 		}
 
-		//start the sim thread
+		// Load and start the sim processing unit from manifest
 		{
-			SimProcessingUnit::StartData data;
-			data.mRunning = &(mKernelModule.mRunning);
-			data.mFrameStream = &(mKernelModule.GetSimToRenderFrameStream());
-			data.mInputToSimFrameStream = &(mKernelModule.GetInputToSimFrameStream());
-			data.mMainUIModule = &mUI;
-			data.mCanvas = mKernelModule.GetCanvas();
+			auto* ui = GetModule<Cluiche::Main::UIModule>();
 
-			mSimPU.Start(&data);
-			mSimThread = DIA_NEW(std::thread(std::ref(mSimPU)));
+			mSimPU = static_cast<Cluiche::SimProcessingUnit*>(
+				Dia::Application::ApplicationLoader::LoadApplication("Data/Manifests/cluiche_sim.diaapp"));
+
+			SimProcessingUnit::StartData data;
+			data.mRunning = &(kernel->mRunning);
+			data.mFrameStream = &(kernel->GetSimToRenderFrameStream());
+			data.mInputToSimFrameStream = &(kernel->GetInputToSimFrameStream());
+			data.mMainUIModule = ui;
+			data.mCanvas = kernel->GetCanvas();
+
+			mSimPU->Start(&data);
+			mSimThread = DIA_NEW(std::thread(std::ref(*mSimPU)));
 		}
 	}
 
@@ -87,11 +96,18 @@ namespace Cluiche
 
 	void MainProcessingUnit::GenerateModuleDependecyGraph()
 	{
-		
+
 	}
 
 	void MainProcessingUnit::GeneratePhaseDependecyGraph()
 	{
-		 
+
 	}
+}
+
+#include <DiaApplication/TypeRegistry/RegistrationMacros.h>
+namespace { using _MainProcessingUnit = Cluiche::MainProcessingUnit; }
+DIA_REGISTER_PROCESSING_UNIT(_MainProcessingUnit) {
+	float hz = config.get("frequency_hz", 30.0f).asFloat();
+	return new Cluiche::MainProcessingUnit(instanceId, hz);
 }

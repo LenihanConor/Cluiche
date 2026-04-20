@@ -7,19 +7,25 @@
 
 namespace Cluiche
 {
-	const Dia::Core::StringCRC MainBootPhase::kUniqueId("MainBootPhase");
+	const Dia::Core::StringCRC MainBootPhase::kTypeId("MainBootPhase");
 
-	MainBootPhase::MainBootPhase(Dia::Application::ProcessingUnit* associatedProcessingUnit)
-		: MainPhaseBase(associatedProcessingUnit, kUniqueId)
+	MainBootPhase::MainBootPhase(Dia::Application::ProcessingUnit* associatedProcessingUnit, const Dia::Core::StringCRC& instanceId)
+		: MainPhaseBase(associatedProcessingUnit, instanceId)
 	{}
 
 	void MainBootPhase::AfterModulesStart()
 	{
-		GetAssociatedProcessingUnit()->QueuePhaseTransition(MainBootStrapPhase::kUniqueId);
+		GetAssociatedProcessingUnit()->QueuePhaseTransition(MainBootStrapPhase::kTypeId);
 	}
 
 	void MainBootPhase::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
 	{
-		AddModule(buildDependencies->GetModule(Main::KernelModule::kUniqueId));
+		AddModule(buildDependencies->GetModule(Main::KernelModule::kTypeId));
 	}
+}
+
+#include <DiaApplication/TypeRegistry/RegistrationMacros.h>
+namespace { using _MainBootPhase = Cluiche::MainBootPhase; }
+DIA_REGISTER_PHASE(_MainBootPhase) {
+	return new Cluiche::MainBootPhase(pu, instanceId);
 }

@@ -14,6 +14,7 @@
 #define _APPLICATIONPROCESSINGUNIT_H_
 
 #include <DiaApplication/ApplicationModule.h>
+#include <DiaApplication/ApplicationPhase.h>
 #include <DiaApplication/ApplicationError.h>
 #include <DiaApplication/MessageBus.h>
 #include <DiaApplication/HotReloadManager.h>
@@ -144,10 +145,10 @@ namespace Dia
 
 		protected:
 			template <class T> inline
-			T*	GetModule() { return static_cast<T*>(GetModule(T::kUniqueId)); }
+			T*	GetModule() { return static_cast<T*>(GetModule(T::kTypeId)); }
 
 			template <class T> inline
-			const T* GetModule() const { return static_cast<const T*>(GetModule(T::kUniqueId)); }
+			const T* GetModule() const { return static_cast<const T*>(GetModule(T::kTypeId)); }
 
 			Module* GetModule(const Dia::Core::StringCRC& crc);
 			const Module* GetModule(const Dia::Core::StringCRC& crc)const;

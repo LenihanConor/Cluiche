@@ -11,22 +11,22 @@ namespace Cluiche
 {
 	namespace UnitTestLevel
 	{
-		const Dia::Core::StringCRC MainLoadPhase::kUniqueId("UnitTestLevel::MainLoadPhase");
+		const Dia::Core::StringCRC MainLoadPhase::kTypeId("UnitTestLevel::MainLoadPhase");
 
 		MainLoadPhase::MainLoadPhase(Dia::Application::ProcessingUnit* associatedProcessingUnit)
-			: Cluiche::Main::MainPhaseBase(associatedProcessingUnit, kUniqueId)
+			: Cluiche::Main::MainPhaseBase(associatedProcessingUnit, kTypeId)
 		{}
 
 		void MainLoadPhase::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
 		{
-			AddModule(buildDependencies->GetModule(Cluiche::Main::KernelModule::kUniqueId));
-			AddModule(buildDependencies->GetModule(Cluiche::Main::LevelFactoryModule::kUniqueId));
-			AddModule(buildDependencies->GetModule(Cluiche::Main::UIModule::kUniqueId));
+			AddModule(buildDependencies->GetModule(Cluiche::Main::KernelModule::kTypeId));
+			AddModule(buildDependencies->GetModule(Cluiche::Main::LevelFactoryModule::kTypeId));
+			AddModule(buildDependencies->GetModule(Cluiche::Main::UIModule::kTypeId));
 		}
 
 		void MainLoadPhase::AfterModulesStart()
 		{
-			GetAssociatedProcessingUnit()->QueuePhaseTransition(MainFEPhase::kUniqueId);
+			GetAssociatedProcessingUnit()->QueuePhaseTransition(MainFEPhase::kTypeId);
 		}
 	}
 }

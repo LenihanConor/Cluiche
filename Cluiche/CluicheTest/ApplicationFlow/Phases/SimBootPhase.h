@@ -14,9 +14,9 @@ namespace Cluiche
 	class SimBootPhase : public Dia::Application::Phase
 	{
 	public:
-		static const Dia::Core::StringCRC kUniqueId;
+		static const Dia::Core::StringCRC kTypeId;
 
-		SimBootPhase(Dia::Application::ProcessingUnit* associatedProcessingUnit);
+		SimBootPhase(Dia::Application::ProcessingUnit* associatedProcessingUnit, const Dia::Core::StringCRC& instanceId = kTypeId);
 
 		virtual void AfterModulesStart()override;
 		virtual bool FlaggedToStopUpdating(void)const override { return true; }

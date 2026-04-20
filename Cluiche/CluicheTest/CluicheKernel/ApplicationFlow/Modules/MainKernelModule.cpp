@@ -15,10 +15,10 @@ namespace Cluiche
 {
 	namespace Main
 	{
-		const Dia::Core::StringCRC KernelModule::kUniqueId("Main::KernelModule");
+		const Dia::Core::StringCRC KernelModule::kTypeId("Main::KernelModule");
 
-		KernelModule::KernelModule(Dia::Application::ProcessingUnit* associatedProcessingUnit)
-			: Dia::Application::Module(associatedProcessingUnit, kUniqueId, Dia::Application::Module::RunningEnum::kUpdate)
+		KernelModule::KernelModule(Dia::Application::ProcessingUnit* associatedProcessingUnit, const Dia::Core::StringCRC& instanceId)
+			: Dia::Application::Module(associatedProcessingUnit, instanceId, Dia::Application::Module::RunningEnum::kUpdate)
 			, mRunning(true)
 			, mTimeServer(30.0f, Dia::Core::TimeAbsolute::Zero())	// With only one time server everything in the main loop will increment at its frequency
 		{}
@@ -162,4 +162,10 @@ namespace Cluiche
 			mWindowFactory.Destroy(mWindow);
 		}
 	}
+}
+
+#include <DiaApplication/TypeRegistry/RegistrationMacros.h>
+namespace { using _KernelModule = Cluiche::Main::KernelModule; }
+DIA_REGISTER_MODULE(_KernelModule) {
+	return new Cluiche::Main::KernelModule(pu, instanceId);
 }

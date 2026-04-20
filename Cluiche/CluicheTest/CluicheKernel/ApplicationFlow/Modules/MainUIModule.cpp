@@ -14,10 +14,10 @@ namespace Cluiche
 {
 	namespace Main
 	{
-		const Dia::Core::StringCRC UIModule::kUniqueId("Main::UIModule");
+		const Dia::Core::StringCRC UIModule::kTypeId("Main::UIModule");
 
-		UIModule::UIModule(Dia::Application::ProcessingUnit* associatedProcessingUnit)
-			: Dia::Application::Module(associatedProcessingUnit, kUniqueId, Dia::Application::Module::RunningEnum::kUpdate)
+		UIModule::UIModule(Dia::Application::ProcessingUnit* associatedProcessingUnit, const Dia::Core::StringCRC& instanceId)
+			: Dia::Application::Module(associatedProcessingUnit, instanceId, Dia::Application::Module::RunningEnum::kUpdate)
 			, mUISystem(nullptr)
 		{}
 
@@ -31,9 +31,8 @@ namespace Cluiche
 			return mUISystem;
 		}
 
-		void UIModule::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
+		void UIModule::DoBuildDependancies(Dia::Application::IBuildDependencyData* /*buildDependencies*/)
 		{
-			this->AddDependancy(buildDependencies->GetModule(Cluiche::Main::KernelModule::kUniqueId));
 		}
 
 		Dia::Application::StateObject::OpertionResponse UIModule::DoStart(const IStartData* startData)
@@ -95,4 +94,10 @@ namespace Cluiche
 			DIA_DELETE(mUISystem);
 		}
 	}
+}
+
+#include <DiaApplication/TypeRegistry/RegistrationMacros.h>
+namespace { using _UIModule = Cluiche::Main::UIModule; }
+DIA_REGISTER_MODULE(_UIModule) {
+	return new Cluiche::Main::UIModule(pu, instanceId);
 }

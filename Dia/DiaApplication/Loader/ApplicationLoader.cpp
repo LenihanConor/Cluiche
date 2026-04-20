@@ -56,6 +56,8 @@ namespace Dia
 				return nullptr;
 			}
 
+			pu->Initialize();
+
 			Dia::Core::Log::OutputVaradicLine("Successfully loaded application from manifest: %s", manifestPath);
 			return pu;
 		}

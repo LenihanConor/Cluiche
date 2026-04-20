@@ -14,9 +14,9 @@ namespace Cluiche
 	class MainBootPhase : public Cluiche::Main::MainPhaseBase
 	{
 	public:
-		static const Dia::Core::StringCRC kUniqueId;
+		static const Dia::Core::StringCRC kTypeId;
 
-		MainBootPhase(Dia::Application::ProcessingUnit* associatedProcessingUnit);
+		MainBootPhase(Dia::Application::ProcessingUnit* associatedProcessingUnit, const Dia::Core::StringCRC& instanceId = kTypeId);
 
 		virtual void AfterModulesStart()override;
 

@@ -7,19 +7,19 @@
 
 namespace Cluiche
 {
-	const Dia::Core::StringCRC MainBootPhase::kUniqueId("MainBootPhase");
+	const Dia::Core::StringCRC MainBootPhase::kTypeId("MainBootPhase");
 
 	MainBootPhase::MainBootPhase(Dia::Application::ProcessingUnit* associatedProcessingUnit)
-		: MainPhaseBase(associatedProcessingUnit, kUniqueId)
+		: MainPhaseBase(associatedProcessingUnit, kTypeId)
 	{}
 
 	void MainBootPhase::AfterModulesStart()
 	{
-		GetAssociatedProcessingUnit()->QueuePhaseTransition(MainBootStrapPhase::kUniqueId);
+		GetAssociatedProcessingUnit()->QueuePhaseTransition(MainBootStrapPhase::kTypeId);
 	}
 
 	void MainBootPhase::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
 	{
-		AddModule(buildDependencies->GetModule(MainKernelModule::kUniqueId));
+		AddModule(buildDependencies->GetModule(MainKernelModule::kTypeId));
 	}
 }

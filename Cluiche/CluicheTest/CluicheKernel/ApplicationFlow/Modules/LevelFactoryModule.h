@@ -16,9 +16,9 @@ namespace Cluiche
 		class LevelFactoryModule : public Dia::Application::Module
 		{
 		public:
-			static const Dia::Core::StringCRC kUniqueId;
+			static const Dia::Core::StringCRC kTypeId;
 
-			LevelFactoryModule(Dia::Application::ProcessingUnit* associatedProcessingUnit);
+			LevelFactoryModule(Dia::Application::ProcessingUnit* associatedProcessingUnit, const Dia::Core::StringCRC& instanceId = kTypeId);
 
 			Kernel::LevelFactory& GetLevelFactory() { return mLevelRegistery; }
 			const Kernel::LevelFactory& GetLevelFactory()const { return mLevelRegistery; }

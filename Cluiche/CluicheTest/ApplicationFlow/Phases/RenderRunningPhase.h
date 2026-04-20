@@ -14,9 +14,9 @@ namespace Cluiche
 	class RenderRunningPhase : public Dia::Application::Phase
 	{
 	public:
-		static const Dia::Core::StringCRC kUniqueId;
+		static const Dia::Core::StringCRC kTypeId;
 
-		RenderRunningPhase(Dia::Application::ProcessingUnit* associatedProcessingUnit);
+		RenderRunningPhase(Dia::Application::ProcessingUnit* associatedProcessingUnit, const Dia::Core::StringCRC& instanceId = kTypeId);
 
 		virtual bool FlaggedToStopUpdating(void)const override { return true; }
 		virtual void DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)override;

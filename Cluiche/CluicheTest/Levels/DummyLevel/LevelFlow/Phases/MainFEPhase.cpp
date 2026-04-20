@@ -10,18 +10,18 @@ namespace Cluiche
 {
 	namespace DummyLevel
 	{
-		const Dia::Core::StringCRC MainFEPhase::kUniqueId("DummyProject::MainFEPhase");
+		const Dia::Core::StringCRC MainFEPhase::kTypeId("DummyProject::MainFEPhase");
 
 		MainFEPhase::MainFEPhase(Dia::Application::ProcessingUnit* associatedProcessingUnit)
-			: Cluiche::Main::MainPhaseBase(associatedProcessingUnit, kUniqueId)
+			: Cluiche::Main::MainPhaseBase(associatedProcessingUnit, kTypeId)
 			, mUi(this)
 		{}
 
 		void MainFEPhase::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
 		{
-			AddModule(buildDependencies->GetModule(Cluiche::Main::KernelModule::kUniqueId));
-			AddModule(buildDependencies->GetModule(Cluiche::Main::LevelFactoryModule::kUniqueId));
-			AddModule(buildDependencies->GetModule(Cluiche::Main::UIModule::kUniqueId));
+			AddModule(buildDependencies->GetModule(Cluiche::Main::KernelModule::kTypeId));
+			AddModule(buildDependencies->GetModule(Cluiche::Main::LevelFactoryModule::kTypeId));
+			AddModule(buildDependencies->GetModule(Cluiche::Main::UIModule::kTypeId));
 		}
 
 		void MainFEPhase::AfterModulesStart()

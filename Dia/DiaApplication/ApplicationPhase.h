@@ -56,8 +56,8 @@ namespace Dia
 
 			virtual bool FlaggedToStopUpdating()const = 0;
 
-			template <class T> inline T* GetModule() { return static_cast<T*>(GetModule(T::kUniqueId)); }
-			template <class T> inline const T* GetModule() const { return static_cast<const T*>(GetModule(T::kUniqueId)); }
+			template <class T> inline T* GetModule() { return static_cast<T*>(GetModule(T::kTypeId)); }
+			template <class T> inline const T* GetModule() const { return static_cast<const T*>(GetModule(T::kTypeId)); }
 
 			Module* GetModule(const Dia::Core::StringCRC& crc);
 			const Module* GetModule(const Dia::Core::StringCRC& crc)const;

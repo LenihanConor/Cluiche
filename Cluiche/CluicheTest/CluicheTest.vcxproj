@@ -32,6 +32,17 @@
     <ClCompile Include="Source\LaunchUIPage.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Data\Manifests\cluiche_main.diaapp">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Data\Manifests\cluiche_render.diaapp">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Data\Manifests\cluiche_sim.diaapp">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
     <ClInclude Include="ApplicationFlow\Phases\MainBootPhase.h" />
     <ClInclude Include="ApplicationFlow\Phases\MainBootStrapPhase.h" />
     <ClInclude Include="ApplicationFlow\Phases\RenderRunningPhase.h" />
@@ -142,7 +153,8 @@
     </Link>
     <PostBuildEvent>
       <Command>copy /Y "$(SolutionDir)pathStoreConfig.json" "$(TargetDir)pathStoreConfig.json"
-xcopy /Y "$(SolutionDir)..\External\SFML\Current\bin\*.dll" "$(TargetDir)"</Command>
+xcopy /Y "$(SolutionDir)..\External\SFML\Current\bin\*.dll" "$(TargetDir)"
+xcopy /Y /I "$(ProjectDir)Data\Manifests\*.diaapp" "$(TargetDir)Data\Manifests\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -163,7 +175,8 @@ xcopy /Y "$(SolutionDir)..\External\SFML\Current\bin\*.dll" "$(TargetDir)"</Comm
     </Link>
     <PostBuildEvent>
       <Command>copy /Y "$(SolutionDir)pathStoreConfig.json" "$(TargetDir)pathStoreConfig.json"
-xcopy /Y "$(SolutionDir)..\External\SFML\Current-x64\bin\*.dll" "$(TargetDir)"</Command>
+xcopy /Y "$(SolutionDir)..\External\SFML\Current-x64\bin\*.dll" "$(TargetDir)"
+xcopy /Y /I "$(ProjectDir)Data\Manifests\*.diaapp" "$(TargetDir)Data\Manifests\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -182,7 +195,8 @@ xcopy /Y "$(SolutionDir)..\External\SFML\Current-x64\bin\*.dll" "$(TargetDir)"</
     </Link>
     <PostBuildEvent>
       <Command>copy /Y "$(SolutionDir)pathStoreConfig.json" "$(TargetDir)pathStoreConfig.json"
-xcopy /Y "$(SolutionDir)..\External\SFML\Current\bin\*.dll" "$(TargetDir)"</Command>
+xcopy /Y "$(SolutionDir)..\External\SFML\Current\bin\*.dll" "$(TargetDir)"
+xcopy /Y /I "$(ProjectDir)Data\Manifests\*.diaapp" "$(TargetDir)Data\Manifests\"</Command>
     </PostBuildEvent>
     <ProjectReference>
       <UseLibraryDependencyInputs>true</UseLibraryDependencyInputs>
@@ -204,7 +218,8 @@ xcopy /Y "$(SolutionDir)..\External\SFML\Current\bin\*.dll" "$(TargetDir)"</Comm
     </Link>
     <PostBuildEvent>
       <Command>copy /Y "$(SolutionDir)pathStoreConfig.json" "$(TargetDir)pathStoreConfig.json"
-xcopy /Y "$(SolutionDir)..\External\SFML\Current-x64\bin\*.dll" "$(TargetDir)"</Command>
+xcopy /Y "$(SolutionDir)..\External\SFML\Current-x64\bin\*.dll" "$(TargetDir)"
+xcopy /Y /I "$(ProjectDir)Data\Manifests\*.diaapp" "$(TargetDir)Data\Manifests\"</Command>
     </PostBuildEvent>
     <ProjectReference>
       <UseLibraryDependencyInputs>true</UseLibraryDependencyInputs>

@@ -11,27 +11,27 @@ namespace Cluiche
 {
 	namespace Sim
 	{
-		const Dia::Core::StringCRC UIProxyModule::kUniqueId("Sim::UIProxyModule");
+		const Dia::Core::StringCRC UIProxyModule::kTypeId("Sim::UIProxyModule");
 
-		UIProxyModule::UIProxyModule(Dia::Application::ProcessingUnit* associatedProcessingUnit, Dia::Graphics::FrameData* renderFrameBuffer)
-			: Dia::Application::Module(associatedProcessingUnit, kUniqueId, Dia::Application::Module::RunningEnum::kUpdate)
+		UIProxyModule::UIProxyModule(Dia::Application::ProcessingUnit* associatedProcessingUnit, const Dia::Core::StringCRC& instanceId)
+			: Dia::Application::Module(associatedProcessingUnit, instanceId, Dia::Application::Module::RunningEnum::kUpdate)
 			, mIsAvailable(false)
 			, mMainUIModule(nullptr)
-			, mRenderFrameBuffer(renderFrameBuffer)
+			, mRenderFrameBuffer(nullptr)
 		{}
 
-		void UIProxyModule::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
+		void UIProxyModule::DoBuildDependancies(Dia::Application::IBuildDependencyData* /*buildDependencies*/)
 		{
-			this->AddDependancy(buildDependencies->GetModule(Cluiche::Sim::TimeServerModule::kUniqueId));
-			this->AddDependancy(buildDependencies->GetModule(Cluiche::Sim::InputFrameStreamModule::kUniqueId));
 		}
 
-		void UIProxyModule::Initialize(Main::UIModule* ui)
+		void UIProxyModule::Initialize(Main::UIModule* ui, Dia::Graphics::FrameData* renderFrameBuffer)
 		{
 			DIA_ASSERT(mMainUIModule == nullptr, "mUISystem is allocated already");
 			DIA_ASSERT(ui != nullptr, "Cannot assign a null pointer ui system");
+			DIA_ASSERT(renderFrameBuffer != nullptr, "Cannot assign a null renderFrameBuffer");
 
 			mMainUIModule = ui;
+			mRenderFrameBuffer = renderFrameBuffer;
 		}
 
 		Dia::Application::StateObject::OpertionResponse UIProxyModule::DoStart(const IStartData* startData)
@@ -103,4 +103,10 @@ namespace Cluiche
 			}
 		}
 	}
+}
+
+#include <DiaApplication/TypeRegistry/RegistrationMacros.h>
+namespace { using _UIProxyModule = Cluiche::Sim::UIProxyModule; }
+DIA_REGISTER_MODULE(_UIProxyModule) {
+	return new Cluiche::Sim::UIProxyModule(pu, instanceId);
 }

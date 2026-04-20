@@ -1,23 +1,13 @@
 #include <stdio.h>
 
-#include "ApplicationFlow/ProcessingUnits/MainProcessingUnit.h"
-
-#include "DiaCore/Containers/Graphs/Graph.h"
-
-
-
-
+#include <DiaApplication/Loader/ApplicationLoader.h>
+#include <DiaApplication/ApplicationProcessingUnit.h>
 
 
 
 int main( int argc, const char* argv[] )
 {
 	/* TODO
-			Save to file
-			Build system to communicate debug to game
-			Serialize graph
-			build PU->module graph
-			build PU->phase graph
 			Serialize out module relationships
 			Serialzie out phase timing
 			Move the statestream into a proxy and handle module
@@ -30,13 +20,11 @@ int main( int argc, const char* argv[] )
 			Get Unit Test Page Working
 	*/
 
-	Cluiche::MainProcessingUnit* mainPU = new Cluiche::MainProcessingUnit();
+	Dia::Application::ProcessingUnit* mainPU =
+		Dia::Application::ApplicationLoader::LoadApplication("Data/Manifests/cluiche_main.diaapp");
 
 	mainPU->Start();
-
-	// Looping call
 	mainPU->Update();
-
 	mainPU->Stop();
 
 	delete mainPU;

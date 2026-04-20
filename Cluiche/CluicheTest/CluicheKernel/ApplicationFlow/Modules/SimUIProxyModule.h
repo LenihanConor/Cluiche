@@ -19,11 +19,11 @@ namespace Cluiche
 		class UIProxyModule : public Dia::Application::Module, public Dia::Core::Observer
 		{
 		public:
-			static const Dia::Core::StringCRC kUniqueId;
+			static const Dia::Core::StringCRC kTypeId;
 
-			UIProxyModule(Dia::Application::ProcessingUnit* associatedProcessingUnit, Dia::Graphics::FrameData* renderFrameBuffer);
+			UIProxyModule(Dia::Application::ProcessingUnit* associatedProcessingUnit, const Dia::Core::StringCRC& instanceId = kTypeId);
 
-			void Initialize(Main::UIModule* ui);
+			void Initialize(Main::UIModule* ui, Dia::Graphics::FrameData* renderFrameBuffer);
 
 			bool IsUISystenAvailable()const;
 			const Dia::UI::IUISystem* GetUISystem()const;

@@ -76,4 +76,23 @@
       <Filter>Source</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Data">
+      <UniqueIdentifier>{f1a2b3c4-d5e6-7890-abcd-ef1234567890}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Data\Manifests">
+      <UniqueIdentifier>{a1b2c3d4-e5f6-7890-abcd-ef1234567891}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Data\Manifests\cluiche_main.diaapp">
+      <Filter>Data\Manifests</Filter>
+    </None>
+    <None Include="Data\Manifests\cluiche_render.diaapp">
+      <Filter>Data\Manifests</Filter>
+    </None>
+    <None Include="Data\Manifests\cluiche_sim.diaapp">
+      <Filter>Data\Manifests</Filter>
+    </None>
+  </ItemGroup>
 </Project>

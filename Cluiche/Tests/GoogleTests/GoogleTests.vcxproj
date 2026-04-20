@@ -103,8 +103,9 @@
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y /D "$(ProjectDir)..\..\..\External\Python311-Win32\python311.dll" "$(OutDir)"</Command>
-      <Message>Copying Python DLL to output directory...</Message>
+      <Command>xcopy /Y /D "$(ProjectDir)..\..\..\External\Python311-Win32\python311.dll" "$(OutDir)"
+xcopy /Y /I "$(ProjectDir)..\..\CluicheTest\Data\Manifests\*.diaapp" "$(OutDir)Data\Manifests\"</Command>
+      <Message>Copying Python DLL and manifest files to output directory...</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <!-- Release Win32 Compiler Settings -->
@@ -132,8 +133,9 @@
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y /D "$(ProjectDir)..\..\..\External\Python311\python311.dll" "$(OutDir)"</Command>
-      <Message>Copying Python DLL to output directory...</Message>
+      <Command>xcopy /Y /D "$(ProjectDir)..\..\..\External\Python311\python311.dll" "$(OutDir)"
+xcopy /Y /I "$(ProjectDir)..\..\CluicheTest\Data\Manifests\*.diaapp" "$(OutDir)Data\Manifests\"</Command>
+      <Message>Copying Python DLL and manifest files to output directory...</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <!-- Debug x64 Compiler Settings -->
@@ -157,8 +159,9 @@
       <SubSystem>Console</SubSystem>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y /D "$(ProjectDir)..\..\..\External\Python311\python311.dll" "$(OutDir)"</Command>
-      <Message>Copying Python DLL to output directory...</Message>
+      <Command>xcopy /Y /D "$(ProjectDir)..\..\..\External\Python311\python311.dll" "$(OutDir)"
+xcopy /Y /I "$(ProjectDir)..\..\CluicheTest\Data\Manifests\*.diaapp" "$(OutDir)Data\Manifests\"</Command>
+      <Message>Copying Python DLL and manifest files to output directory...</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <!-- Release x64 Compiler Settings -->
@@ -185,8 +188,9 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y /D "$(ProjectDir)..\..\..\External\Python311\python311.dll" "$(OutDir)"</Command>
-      <Message>Copying Python DLL to output directory...</Message>
+      <Command>xcopy /Y /D "$(ProjectDir)..\..\..\External\Python311\python311.dll" "$(OutDir)"
+xcopy /Y /I "$(ProjectDir)..\..\CluicheTest\Data\Manifests\*.diaapp" "$(OutDir)Data\Manifests\"</Command>
+      <Message>Copying Python DLL and manifest files to output directory...</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <!-- Source Files -->
@@ -272,6 +276,7 @@
     <ClCompile Include="Application\TestApplicationIntrospector.cpp" />
     <ClCompile Include="Application\TestApplicationLoader.cpp" />
     <ClCompile Include="Application\TestPhaseTransition.cpp" />
+    <ClCompile Include="Application\TestCluicheManifests.cpp" />
     <ClCompile Include="UI\TestBoundMethod.cpp" />
     <ClCompile Include="UI\TestUIDataBuffer.cpp" />
     <ClCompile Include="UI\TestPage.cpp" />

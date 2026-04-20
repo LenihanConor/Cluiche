@@ -21,7 +21,7 @@ namespace Cluiche
 		class MainFEPhase : public Cluiche::Main::MainPhaseBase, public MainUIPageExternalInterface
 		{
 		public:
-			static const Dia::Core::StringCRC kUniqueId;
+			static const Dia::Core::StringCRC kTypeId;
 
 			MainFEPhase(Dia::Application::ProcessingUnit* associatedProcessingUnit);
 		

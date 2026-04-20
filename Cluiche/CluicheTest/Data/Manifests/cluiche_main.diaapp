@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "processing_units": [
+    {
+      "type_id": "MainProcessingUnit",
+      "instance_id": "MainProcessingUnit",
+      "frequency_hz": 30.0,
+      "dedicated_thread": false,
+      "config": {},
+      "phases": [
+        { "type_id": "MainBootPhase", "instance_id": "MainBootPhase", "config": {} },
+        { "type_id": "MainBootStrapPhase", "instance_id": "MainBootStrapPhase", "config": {} }
+      ],
+      "transitions": [
+        { "from": "MainBootPhase", "to": "MainBootStrapPhase" }
+      ],
+      "initial_phase": "MainBootPhase",
+      "modules": [
+        {
+          "type_id": "Main::KernelModule",
+          "instance_id": "Main::KernelModule",
+          "phase_ids": ["MainBootPhase", "MainBootStrapPhase"],
+          "dependencies": [],
+          "config": {}
+        },
+        {
+          "type_id": "Main::LevelRegistryModule",
+          "instance_id": "Main::LevelRegistryModule",
+          "phase_ids": ["MainBootStrapPhase"],
+          "dependencies": [],
+          "config": {}
+        },
+        {
+          "type_id": "Main::UIModule",
+          "instance_id": "Main::UIModule",
+          "phase_ids": ["MainBootStrapPhase"],
+          "dependencies": ["Main::KernelModule"],
+          "config": {}
+        }
+      ]
+    }
+  ]
+}

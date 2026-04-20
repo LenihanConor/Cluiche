@@ -26,9 +26,9 @@ namespace Cluiche
 		class KernelModule : public Dia::Application::Module
 		{
 		public:
-			static const Dia::Core::StringCRC kUniqueId;
+			static const Dia::Core::StringCRC kTypeId;
 
-			KernelModule(Dia::Application::ProcessingUnit* associatedProcessingUnit);
+			KernelModule(Dia::Application::ProcessingUnit* associatedProcessingUnit, const Dia::Core::StringCRC& instanceId = kTypeId);
 
 			bool FlaggedToStopUpdating()const;
 

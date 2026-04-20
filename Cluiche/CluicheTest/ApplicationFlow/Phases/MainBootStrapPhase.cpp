@@ -14,10 +14,10 @@
 
 namespace Cluiche
 {
-	const Dia::Core::StringCRC MainBootStrapPhase::kUniqueId("MainBootStrapPhase");
+	const Dia::Core::StringCRC MainBootStrapPhase::kTypeId("MainBootStrapPhase");
 
-	MainBootStrapPhase::MainBootStrapPhase(Dia::Application::ProcessingUnit* associatedProcessingUnit)
-		: MainPhaseBase(associatedProcessingUnit, kUniqueId)
+	MainBootStrapPhase::MainBootStrapPhase(Dia::Application::ProcessingUnit* associatedProcessingUnit, const Dia::Core::StringCRC& instanceId)
+		: MainPhaseBase(associatedProcessingUnit, instanceId)
 		, mLaunchUIPage(this)
 		, mDummyLevel(nullptr)
 		, mUnitTestLevel(nullptr)
@@ -25,9 +25,9 @@ namespace Cluiche
 
 	void MainBootStrapPhase::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
 	{
-		AddModule(buildDependencies->GetModule(Main::KernelModule::kUniqueId));
-		AddModule(buildDependencies->GetModule(Main::LevelFactoryModule::kUniqueId));
-		AddModule(buildDependencies->GetModule(Main::UIModule::kUniqueId));
+		AddModule(buildDependencies->GetModule(Main::KernelModule::kTypeId));
+		AddModule(buildDependencies->GetModule(Main::LevelFactoryModule::kTypeId));
+		AddModule(buildDependencies->GetModule(Main::UIModule::kTypeId));
 	}
 
 	void MainBootStrapPhase::AfterModulesStart()
@@ -100,4 +100,10 @@ namespace Cluiche
 
 		GetAssociatedProcessingUnit()->QueuePhaseTransition(entryPhaseUniqueId);
 	}
+}
+
+#include <DiaApplication/TypeRegistry/RegistrationMacros.h>
+namespace { using _MainBootStrapPhase = Cluiche::MainBootStrapPhase; }
+DIA_REGISTER_PHASE(_MainBootStrapPhase) {
+	return new Cluiche::MainBootStrapPhase(pu, instanceId);
 }

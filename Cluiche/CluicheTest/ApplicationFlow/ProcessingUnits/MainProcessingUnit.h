@@ -2,25 +2,18 @@
 
 #include <DiaApplication/ApplicationProcessingUnit.h>
 
-#include "DiaCore/Containers/Graphs/Graph.h"
-#include "CluicheKernel/ApplicationFlow/Modules/MainKernelModule.h"
-#include "CluicheKernel/ApplicationFlow/Modules/LevelFactoryModule.h"
-#include "CluicheKernel/ApplicationFlow/Modules/MainUIModule.h"
-#include "ApplicationFlow/Phases/MainBootPhase.h"
-#include "ApplicationFlow/Phases/MainBootStrapPhase.h"
-
-#include "ApplicationFlow/ProcessingUnits/RenderProcessingUnit.h"
-#include "ApplicationFlow/ProcessingUnits/SimProcessingUnit.h"
-
 namespace Cluiche
 {
-	/// Main game booting processing unit. this should run on the main thread
+	class RenderProcessingUnit;
+	class SimProcessingUnit;
+
 	class MainProcessingUnit : public Dia::Application::ProcessingUnit
 	{
 	public:
-		static const Dia::Core::StringCRC kUniqueId;
+		static const Dia::Core::StringCRC kTypeId;
 
-		MainProcessingUnit();
+		MainProcessingUnit(const Dia::Core::StringCRC& instanceId, float hz);
+		~MainProcessingUnit();
 
 		Cluiche::MainProcessingUnit* GetMainPU();
 		Cluiche::RenderProcessingUnit* GetRenderingPU();
@@ -34,23 +27,10 @@ namespace Cluiche
 		virtual void PrePhaseStop()override final;
 		virtual bool FlaggedToStopUpdating()const override final;
 
-		//Processing Units
 		std::thread* mRenderThread;
-		Cluiche::RenderProcessingUnit mRenderingPU;
+		Cluiche::RenderProcessingUnit* mRenderingPU;
 
 		std::thread* mSimThread;
-		Cluiche::SimProcessingUnit mSimPU;
-
-		//Phases
-		Cluiche::MainBootPhase mBootPhase;
-		Cluiche::MainBootStrapPhase mBootStrapPhase;
-
-		//Modules
-		Cluiche::Main::KernelModule mKernelModule;
-		Cluiche::Main::LevelFactoryModule mLevelRegistryModule;
-		Cluiche::Main::UIModule mUI;
-
-		//Graphs
-		Dia::Core::Containers::Graph<int, 128, int, 128> mModuleGraph;
+		Cluiche::SimProcessingUnit* mSimPU;
 	};
 }

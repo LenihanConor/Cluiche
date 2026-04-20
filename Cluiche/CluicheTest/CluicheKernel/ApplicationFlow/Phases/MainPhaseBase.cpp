@@ -14,7 +14,7 @@ namespace Cluiche
 
 		bool MainPhaseBase::FlaggedToStopUpdating()const
 		{
-			bool containsKernel = this->ContainsModule(Main::KernelModule::kUniqueId);
+			bool containsKernel = this->ContainsModule(Main::KernelModule::kTypeId);
 
 			if (!containsKernel)
 			{

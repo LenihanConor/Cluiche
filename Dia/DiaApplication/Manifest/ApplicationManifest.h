@@ -20,9 +20,11 @@ namespace Dia
 				Dia::Core::StringCRC instanceId;    // Unique instance ID
 				Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 8> phaseIds;  // Phases this module belongs to
 				Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 8> dependencies; // Other module instance IDs
-				Json::Value* config;                // Configuration (owned by manifest loader)
+				Json::Value* config;                // Configuration (owned by this entry)
 
 				ModuleEntry();
+				ModuleEntry(const ModuleEntry& other);
+				ModuleEntry& operator=(const ModuleEntry& other);
 				~ModuleEntry();
 			};
 
@@ -31,9 +33,11 @@ namespace Dia
 			{
 				Dia::Core::StringCRC typeId;        // Type of phase (e.g., "UpdatePhase")
 				Dia::Core::StringCRC instanceId;    // Unique instance ID
-				Json::Value* config;                // Configuration (owned by manifest loader)
+				Json::Value* config;                // Configuration (owned by this entry)
 
 				PhaseEntry();
+				PhaseEntry(const PhaseEntry& other);
+				PhaseEntry& operator=(const PhaseEntry& other);
 				~PhaseEntry();
 			};
 
@@ -51,7 +55,7 @@ namespace Dia
 				Dia::Core::StringCRC instanceId;    // Unique instance ID
 				float frequencyHz;                  // Update frequency (-1 = unlimited)
 				bool dedicatedThread;               // Run on dedicated thread?
-				Json::Value* config;                // Configuration (owned by manifest loader)
+				Json::Value* config;                // Configuration (owned by this entry)
 
 				Dia::Core::Containers::DynamicArrayC<PhaseEntry, 16> phases;
 				Dia::Core::Containers::DynamicArrayC<PhaseTransition, 32> transitions;
@@ -59,6 +63,8 @@ namespace Dia
 				Dia::Core::Containers::DynamicArrayC<ModuleEntry, 32> modules;
 
 				ProcessingUnitEntry();
+				ProcessingUnitEntry(const ProcessingUnitEntry& other);
+				ProcessingUnitEntry& operator=(const ProcessingUnitEntry& other);
 				~ProcessingUnitEntry();
 			};
 
