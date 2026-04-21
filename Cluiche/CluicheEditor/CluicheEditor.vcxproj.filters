@@ -19,6 +19,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Dia\DiaEditor\Plugin\StubEditorPlugin.cpp" />
+    <ClCompile Include="..\..\Dia\DiaEditor\Plugin\HelloEditorPlugin.cpp" />
+    <ClCompile Include="..\..\Dia\DiaEditor\Plugin\HomeEditorPlugin.cpp" />
     <ClCompile Include="ApplicationFlow\ProcessingUnits\CluicheEditorProcessingUnit.cpp">
       <Filter>ApplicationFlow\ProcessingUnits</Filter>
     </ClCompile>

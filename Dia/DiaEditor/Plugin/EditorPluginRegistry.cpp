@@ -1,6 +1,7 @@
 #include "DiaEditor/Plugin/EditorPluginRegistry.h"
 
 #include <DiaCore/Core/Assert.h>
+#include <DiaCore/Core/Log.h>
 
 namespace Dia
 {
@@ -22,6 +23,8 @@ namespace Dia
 			entry.typeId = typeId;
 			entry.factory = factory;
 			mEntries.Add(entry);
+
+			Dia::Core::Log::OutputVaradicLine("EditorPluginRegistry: Registered plugin (count=%u)", mEntries.Size());
 		}
 
 		IEditorPlugin* EditorPluginRegistry::CreatePlugin(const Dia::Core::StringCRC& typeId)
@@ -30,9 +33,11 @@ namespace Dia
 			{
 				if (mEntries[i].typeId == typeId)
 				{
+					Dia::Core::Log::OutputVaradicLine("EditorPluginRegistry: Created plugin (entry %u of %u)", i, mEntries.Size());
 					return mEntries[i].factory->Create();
 				}
 			}
+			Dia::Core::Log::OutputVaradicLine("EditorPluginRegistry: WARNING - type not found (checked %u entries)", mEntries.Size());
 			return nullptr;
 		}
 

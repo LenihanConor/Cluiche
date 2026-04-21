@@ -8,6 +8,9 @@ namespace Dia
 
 		// Loads a .diaapp manifest and invokes a callback for each plugin entry found.
 		// Pure utility — no DiaApplication dependency.
+		// TODO: [Architecture] .diaapp serves dual purpose (application manifests and
+		// editor plugin config). Whether editor plugins should use a separate format
+		// (e.g., .diaeditor) is a future discussion.
 		class EditorManifestLoader
 		{
 		public:

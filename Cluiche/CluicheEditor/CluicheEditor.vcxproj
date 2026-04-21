@@ -22,6 +22,8 @@
     <ClCompile Include="ApplicationFlow\Phases\CluicheEditorRunningPhase.cpp" />
     <ClCompile Include="ApplicationFlow\Phases\CluicheEditorShutdownPhase.cpp" />
     <ClCompile Include="..\..\Dia\DiaEditor\Plugin\StubEditorPlugin.cpp" />
+    <ClCompile Include="..\..\Dia\DiaEditor\Plugin\HelloEditorPlugin.cpp" />
+    <ClCompile Include="..\..\Dia\DiaEditor\Plugin\HomeEditorPlugin.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApplicationFlow\ProcessingUnits\CluicheEditorProcessingUnit.h" />

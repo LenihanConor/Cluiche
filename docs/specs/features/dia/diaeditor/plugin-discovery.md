@@ -15,14 +15,14 @@ Discovers and loads editor plugins via EditorPluginRegistry, enabling system-spe
 
 ## Acceptance Criteria
 
-- [ ] EditorPluginRegistry with singleton pattern
-- [ ] REGISTER_EDITOR_PLUGIN macro for auto-registration at startup
-- [ ] Create plugin instances by StringCRC type ID
-- [ ] List all registered plugins
-- [ ] IEditorPlugin interface defines plugin contract
-- [ ] Plugin factories stored in registry
-- [ ] Thread-safe registration (static initialization)
-- [ ] Plugins register before EditorApplication::DoStart()
+- [x] EditorPluginRegistry with singleton pattern
+- [x] REGISTER_EDITOR_PLUGIN macro for auto-registration at startup
+- [x] Create plugin instances by StringCRC type ID
+- [x] List all registered plugins
+- [x] IEditorPlugin interface defines plugin contract
+- [x] Plugin factories stored in registry
+- [x] Thread-safe registration (static initialization)
+- [x] Plugins register before EditorApplication::DoStart()
 
 ## Design
 
@@ -231,4 +231,4 @@ void EditorApplication::LoadPluginsFromManifest(const char* manifestPath) {
 
 ## Status
 
-`Approved` - Ready for implementation
+`Done` - All acceptance criteria met. Home panel migrated to IEditorPlugin as proof-of-concept.

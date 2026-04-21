@@ -31,6 +31,8 @@
       <Filter>Plugin</Filter>
     </ClInclude>
     <ClInclude Include="Plugin\StubEditorPlugin.h" />
+    <ClInclude Include="Plugin\HelloEditorPlugin.h" />
+    <ClInclude Include="Plugin\HomeEditorPlugin.h" />
     <ClInclude Include="Command\IEditorCommand.h" />
     <ClInclude Include="Command\CompoundCommand.h" />
     <ClInclude Include="Command\CommandHistory.h" />

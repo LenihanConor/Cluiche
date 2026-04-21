@@ -213,6 +213,8 @@ xcopy /Y /I "$(ProjectDir)..\..\CluicheTest\Data\Manifests\*.diaapp" "$(OutDir)D
     <ClCompile Include="Integration\TestInputPipeline.cpp" />
     <ClCompile Include="Integration\TestFrameStreamPipeline.cpp" />
     <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\StubEditorPlugin.cpp" />
+    <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\HelloEditorPlugin.cpp" />
+    <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\HomeEditorPlugin.cpp" />
     <ClCompile Include="Editor\TestEditorPluginRegistry.cpp" />
     <ClCompile Include="Editor\TestCommandHistory.cpp" />
     <ClCompile Include="Editor\TestEditorModel.cpp" />
@@ -221,6 +223,7 @@ xcopy /Y /I "$(ProjectDir)..\..\CluicheTest\Data\Manifests\*.diaapp" "$(OutDir)D
     <ClCompile Include="Editor\TestWebUIBridge.cpp" />
     <ClCompile Include="Editor\TestEditorApplication.cpp" />
     <ClCompile Include="Editor\TestEditorApplicationLifecycle.cpp" />
+    <ClCompile Include="Editor\TestEditorPluginPipeline.cpp" />
     <ClCompile Include="Editor\TestGameConnectionManagerIntegration.cpp" />
     <ClCompile Include="Editor\TestGameConnectionController.cpp" />
     <!-- Google Test Source Files - Compiled directly into project -->

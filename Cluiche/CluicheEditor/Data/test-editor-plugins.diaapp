@@ -5,6 +5,10 @@
             {
                 "type": "StubEditorPlugin",
                 "instance_id": "stub_1"
+            },
+            {
+                "type": "HelloEditorPlugin",
+                "instance_id": "hello_1"
             }
         ]
     }

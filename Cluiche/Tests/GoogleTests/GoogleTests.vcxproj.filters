@@ -425,6 +425,9 @@
     <ClCompile Include="Editor\TestEditorApplicationLifecycle.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
+    <ClCompile Include="Editor\TestEditorPluginPipeline.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
     <ClCompile Include="Editor\TestGameConnectionManagerIntegration.cpp">
       <Filter>Editor</Filter>
     </ClCompile>

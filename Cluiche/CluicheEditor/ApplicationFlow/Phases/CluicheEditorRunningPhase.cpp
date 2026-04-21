@@ -57,6 +57,8 @@ namespace Cluiche
 				return;
 			}
 
+			pu->LoadPlugin(Dia::Core::StringCRC("HomeEditorPlugin"), Dia::Core::StringCRC("home_builtin"));
+
 			const char* projectPath = pu->GetProjectPath();
 			if (projectPath != nullptr && projectPath[0] != '\0')
 			{
@@ -69,6 +71,8 @@ namespace Cluiche
 					Dia::Editor::EditorModel& model = modelModule->GetModel();
 					model.LoadProject(projectPath);
 
+					// TODO: [Architecture] Plugin loading is hardcoded in AfterModulesStart.
+					// Should be decoupled into a dedicated PluginLoaderModule or lifecycle hook.
 					for (unsigned int i = 0; i < model.GetManifestCount(); ++i)
 						pu->LoadEditorManifest(model.GetManifestPath(i));
 				}

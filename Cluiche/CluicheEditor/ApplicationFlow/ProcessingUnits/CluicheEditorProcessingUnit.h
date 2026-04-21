@@ -26,6 +26,8 @@ namespace Cluiche
 
 			CluicheEditorProcessingUnit();
 
+			~CluicheEditorProcessingUnit();
+
 			bool FlaggedToStopUpdating() const override;
 
 			void LoadPlugin(const Dia::Core::StringCRC& typeId, const Dia::Core::StringCRC& instanceId);
@@ -40,6 +42,8 @@ namespace Cluiche
 			GameConnectionModule& GetGameConnectionModule() { return mGameConnectionModule; }
 
 		private:
+			void PostPhaseUpdate() override;
+
 			EditorModelModule mModelModule;
 			CommandHistoryModule mCommandHistoryModule;
 			EditorViewModule mViewModule;

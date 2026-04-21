@@ -42,7 +42,9 @@ namespace Dia
 			mController = controller;
 
 			mDockingLayout = new DockingLayout();
-			mDockingLayout->RegisterPanel("Home", "dia://editor/home/index.html");
+			// TODO: [Architecture] Output Console and Game Connection should migrate to
+			// IEditorPlugin once plugins can access shared services (WebUIBridge).
+			// Home panel has already been migrated — see HomeEditorPlugin.
 			mDockingLayout->RegisterPanel("Output Console", "dia://editor/outputconsole/index.html");
 			mDockingLayout->RegisterPanel("Game Connection", "dia://editor/gameconnection/index.html");
 
