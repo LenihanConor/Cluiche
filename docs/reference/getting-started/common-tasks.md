@@ -157,7 +157,7 @@ void SimUpdatePhase::OnConstruct()
 
 ```bash
 # Build
-msbuild Cluiche/Cluiche.sln /p:Configuration=Debug /p:Platform=Win32
+msbuild Cluiche/Cluiche.sln /p:Configuration=Debug /p:Platform=x64
 
 # Run
 Cluiche/bin/exe/Debug/Cluiche.exe

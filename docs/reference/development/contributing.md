@@ -30,7 +30,7 @@ Thank you for considering contributing to Cluiche! This document provides guidel
    ```
 3. Build the project:
    ```bash
-   msbuild Cluiche/Cluiche.sln /p:Configuration=Debug /p:Platform=Win32
+   msbuild Cluiche/Cluiche.sln /p:Configuration=Debug /p:Platform=x64
    ```
 4. Run tests (if available)
 
@@ -118,13 +118,13 @@ Closes #42
 **Before Submitting:**
 1. **Build in Debug and Release**:
    ```bash
-   msbuild Cluiche/Cluiche.sln /p:Configuration=Debug /p:Platform=Win32
-   msbuild Cluiche/Cluiche.sln /p:Configuration=Release /p:Platform=Win32
+   msbuild Cluiche/Cluiche.sln /p:Configuration=Debug /p:Platform=x64
+   msbuild Cluiche/Cluiche.sln /p:Configuration=Release /p:Platform=x64
    ```
 
 2. **Run tests** (if available):
    ```bash
-   Cluiche/bin/exe/Debug/UnitTests.exe
+   Cluiche/bin/Debug/x64/UnitTests.exe
    ```
 
 3. **Test manually**:
@@ -294,7 +294,7 @@ What actually happens
 - OS: Windows 10 / Windows 11
 - Visual Studio Version: 2019 / 2022
 - Configuration: Debug / Release
-- Platform: Win32 / x64
+- Platform: x64
 
 ## Additional Context
 - Screenshots
@@ -325,7 +325,7 @@ Crash with access violation
 - OS: Windows 11
 - Visual Studio: 2022
 - Configuration: Debug
-- Platform: Win32
+- Platform: x64
 
 ## Additional Context
 Call stack shows crash in LevelFactory::TransitionTo()

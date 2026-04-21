@@ -19,7 +19,7 @@ class DiaPythonIntegrationTest : public ::testing::Test
 protected:
 	void SetUp() override
 	{
-		bool result = Initialize("External/Python311-Win32/", "External/Python/", false);
+		bool result = Initialize("External/Python311/", "External/Python/", false);
 		ASSERT_TRUE(result) << "Failed to initialize Python for integration test";
 	}
 

@@ -106,7 +106,7 @@ result = execute_api_command("validate-assets", args=["--path", "assets/"])
     },
     "build": {
         "default_config": "Debug",
-        "default_platform": "Win32"
+        "default_platform": "x64"
     }
 }
 ```
@@ -186,7 +186,7 @@ result = execute_api_command("validate-assets", args=["--path", "assets/"])
 
 | ID | Source | Decision | Implication for this system |
 |----|--------|----------|----------------------------|
-| PD-005 | Platform | Win32 as primary build target | DiaCLI build commands target Win32 by default. MSBuild invocations use `/p:Platform=Win32`. |
+| PD-005 | Platform | x64 is the only supported build target | DiaCLI build commands target x64. MSBuild invocations use `/p:Platform=x64`. |
 | PD-006 | Platform | Visual Studio project files are source of truth | DiaCLI build commands must parse and invoke .vcxproj files via MSBuild, not CMake or other systems. |
 | AD-001 | Dia App | Module system with YAML frontmatter documentation | If DiaCLI becomes a C++ module (unlikely), it would need dia.cli.architecture.module.md. For Python tool, document in system spec only. |
 

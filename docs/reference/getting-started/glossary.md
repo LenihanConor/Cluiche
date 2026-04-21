@@ -353,7 +353,7 @@ if (moduleId == StringCRC("PhysicsModule"))  // O(1) comparison
 
 ### MSBuild
 - **Definition:** Microsoft Build Engine (command-line build tool)
-- **Usage:** `msbuild Cluiche.sln /p:Configuration=Debug /p:Platform=Win32`
+- **Usage:** `msbuild Cluiche.sln /p:Configuration=Debug /p:Platform=x64`
 
 ---
 

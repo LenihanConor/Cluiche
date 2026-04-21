@@ -15,7 +15,7 @@ The Cluiche project is migrating from a custom test framework to Google Test (gt
 ### Project Location
 
 - **New Test Project**: `Cluiche/Tests/GoogleTests/`
-- **Test Executable**: `bin/exe/Debug/GoogleTests.exe` (Win32) or `bin/exe/Debug-x64/GoogleTests.exe` (x64)
+- **Test Executable**: `bin/Debug/x64/GoogleTests.exe`
 
 ### Building and Running Tests
 
@@ -26,18 +26,18 @@ The Cluiche project is migrating from a custom test framework to Google Test (gt
 
 **Run from Command Line:**
 ```bash
-# Win32 Debug
+# x64 Debug
 cd Cluiche
-bin/exe/Debug/GoogleTests.exe
+bin/Debug/x64/GoogleTests.exe
 
 # With XML output (for CI/CD)
-bin/exe/Debug/GoogleTests.exe --gtest_output=xml:test-results.xml
+bin/Debug/x64/GoogleTests.exe --gtest_output=xml:test-results.xml
 
 # Run specific tests
-bin/exe/Debug/GoogleTests.exe --gtest_filter=DynamicArray.*
+bin/Debug/x64/GoogleTests.exe --gtest_filter=DynamicArray.*
 
 # List all tests
-bin/exe/Debug/GoogleTests.exe --gtest_list_tests
+bin/Debug/x64/GoogleTests.exe --gtest_list_tests
 ```
 
 **Run in Visual Studio Test Explorer:**

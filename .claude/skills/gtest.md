@@ -70,7 +70,7 @@ When this skill is invoked:
 1. **Parse the arguments** to determine build/run behavior
 2. **Build the project** (unless `--no-build`):
    ```bash
-   msbuild Cluiche/Tests/GoogleTests/GoogleTests.vcxproj /p:Configuration=<config> /p:Platform=Win32 /nologo /v:minimal
+   msbuild Cluiche/Tests/GoogleTests/GoogleTests.vcxproj /p:Configuration=<config> /p:Platform=x64 /nologo /v:minimal
    ```
 3. **Determine test filter**:
    - If `--filter=X`: Use that filter directly with `--gtest_filter=X`
@@ -79,7 +79,7 @@ When this skill is invoked:
    - Otherwise: Run all tests (no filter)
 4. **Run tests** (unless `--build-only`):
    ```bash
-   Cluiche/bin/exe/<config>/GoogleTests.exe [--gtest_filter=<filter>]
+   Cluiche/bin/<config>/x64/GoogleTests.exe [--gtest_filter=<filter>]
    ```
 5. **Parse GoogleTest output**:
    - Extract test results (PASSED/FAILED)

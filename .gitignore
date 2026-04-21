@@ -247,8 +247,8 @@ Cluiche/Cluiche.VC.db
 .mkdocs-site/
 venv/
 
-# DiaPython - Python runtime files (use via External/Python311-Win32/)
-External/Python311-Win32/
+# DiaPython - Python runtime files (use via External/Python311/)
+External/Python311/
 External/External/
 
 # GoogleTest submodule (should be added as proper submodule)

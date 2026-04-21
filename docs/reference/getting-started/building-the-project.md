@@ -50,19 +50,19 @@ start Cluiche/Cluiche.sln
 "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars32.bat"
 
 # Build
-msbuild Cluiche/Cluiche.sln /p:Configuration=Debug /p:Platform=Win32
+msbuild Cluiche/Cluiche.sln /p:Configuration=Debug /p:Platform=x64
 ```
 
 ---
 
 ### 3. Build Configuration
 
-**Default Configuration:** `Debug|Win32`
+**Default Configuration:** `Debug|x64`
 
 **Select Configuration in Visual Studio:**
 1. Open `Cluiche/Cluiche.sln`
 2. Select configuration dropdown (top toolbar)
-3. Choose `Debug` and `Win32`
+3. Choose `Debug` and `x64`
 4. Build → Build Solution (or press Ctrl+Shift+B)
 
 ---
@@ -84,7 +84,7 @@ Cluiche/bin/exe/Debug/Cluiche.exe
 
 ### Debug (Recommended for Development)
 
-**Configuration:** `Debug|Win32`
+**Configuration:** `Debug|x64`
 
 **Settings:**
 - Optimization: Disabled (`/Od`)
@@ -106,7 +106,7 @@ Cluiche/bin/exe/Debug/Cluiche.exe
 
 ### Release (For Distribution)
 
-**Configuration:** `Release|Win32`
+**Configuration:** `Release|x64`
 
 **Settings:**
 - Optimization: Full (`/O2`)
@@ -126,15 +126,9 @@ Cluiche/bin/exe/Debug/Cluiche.exe
 
 ---
 
-### x64 Configurations
+### Configurations
 
-**Status:** Limited support
-
-**Configurations:**
-- `Debug|x64`
-- `Release|x64`
-
-**Note:** 64-bit configurations exist but may have issues. Primary development targets Win32.
+The solution supports two configurations — `Debug|x64` and `Release|x64`. 32-bit Win32 builds are no longer supported.
 
 ---
 
@@ -185,11 +179,11 @@ Visual Studio automatically builds dependencies. Building `Cluiche` will build a
 
 If needed, build manually in this order:
 ```bash
-msbuild Dia/DiaCore/DiaCore.vcxproj /p:Configuration=Debug /p:Platform=Win32
-msbuild Dia/DiaMaths/DiaMaths.vcxproj /p:Configuration=Debug /p:Platform=Win32
-msbuild Dia/DiaApplication/DiaApplication.vcxproj /p:Configuration=Debug /p:Platform=Win32
+msbuild Dia/DiaCore/DiaCore.vcxproj /p:Configuration=Debug /p:Platform=x64
+msbuild Dia/DiaMaths/DiaMaths.vcxproj /p:Configuration=Debug /p:Platform=x64
+msbuild Dia/DiaApplication/DiaApplication.vcxproj /p:Configuration=Debug /p:Platform=x64
 # ... (other Dia modules)
-msbuild Cluiche/CluicheTest/Cluiche.vcxproj /p:Configuration=Debug /p:Platform=Win32
+msbuild Cluiche/CluicheTest/Cluiche.vcxproj /p:Configuration=Debug /p:Platform=x64
 ```
 
 ---
@@ -266,7 +260,7 @@ msbuild Cluiche/CluicheTest/Cluiche.vcxproj /p:Configuration=Debug /p:Platform=W
 **Solution:**
 1. Build DiaCore manually:
    ```bash
-   msbuild Dia/DiaCore/DiaCore.vcxproj /p:Configuration=Debug /p:Platform=Win32
+   msbuild Dia/DiaCore/DiaCore.vcxproj /p:Configuration=Debug /p:Platform=x64
    ```
 2. Check output directory:
    ```bash
@@ -317,8 +311,8 @@ msbuild Cluiche/CluicheTest/Cluiche.vcxproj /p:Configuration=Debug /p:Platform=W
 
 **Command Line:**
 ```bash
-msbuild Cluiche/Cluiche.sln /t:Clean /p:Configuration=Debug /p:Platform=Win32
-msbuild Cluiche/Cluiche.sln /t:Rebuild /p:Configuration=Debug /p:Platform=Win32
+msbuild Cluiche/Cluiche.sln /t:Clean /p:Configuration=Debug /p:Platform=x64
+msbuild Cluiche/Cluiche.sln /t:Rebuild /p:Configuration=Debug /p:Platform=x64
 ```
 
 **Manual Clean:**
@@ -329,7 +323,7 @@ rm -rf Cluiche/bin/lib/Debug/
 rm -rf Cluiche/bin/obj/Debug/
 
 # Rebuild
-msbuild Cluiche/Cluiche.sln /p:Configuration=Debug /p:Platform=Win32
+msbuild Cluiche/Cluiche.sln /p:Configuration=Debug /p:Platform=x64
 ```
 
 ---
@@ -375,7 +369,7 @@ Should launch window and display game.
 
 **Command Line:**
 ```bash
-msbuild Cluiche/Cluiche.sln /m /p:Configuration=Debug /p:Platform=Win32
+msbuild Cluiche/Cluiche.sln /m /p:Configuration=Debug /p:Platform=x64
 ```
 
 `/m` flag enables parallel builds (uses all CPU cores).
@@ -432,15 +426,15 @@ git clone https://github.com/your-org/Cluiche.git
 
 # Build
 cd Cluiche
-msbuild Cluiche/Cluiche.sln /p:Configuration=Debug /p:Platform=Win32
+msbuild Cluiche/Cluiche.sln /p:Configuration=Debug /p:Platform=x64
 
 # Run
 Cluiche/bin/exe/Debug/Cluiche.exe
 ```
 
 **Build Configurations:**
-- Debug|Win32 (development, default)
-- Release|Win32 (distribution)
+- Debug|x64 (development, default)
+- Release|x64 (distribution)
 
 **Common Issues:**
 - Missing SFML → Check External/SFML-2.5.1/

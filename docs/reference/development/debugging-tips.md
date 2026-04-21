@@ -29,7 +29,7 @@ This document provides practical debugging advice for common issues in the Cluic
 - Select "Set as StartUp Project"
 
 **2. Build Configuration:**
-- Select `Debug|Win32` from configuration dropdown
+- Select `Debug|x64` from configuration dropdown
 - Debug builds include symbols and assertions
 
 **3. Start Debugging:**

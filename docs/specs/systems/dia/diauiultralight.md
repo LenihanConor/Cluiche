@@ -89,7 +89,7 @@ app.Application_ExitLevel();
   - License: free for projects under $100K/year revenue
 
 ### Build
-- Visual Studio 2022 (v143 toolset), C++17, Win32, StaticLibrary
+- Visual Studio 2022 (v143 toolset), C++17, x64, StaticLibrary
 - Include path: `$(SolutionDir)../External/Ultralight/include/`
 
 ## Non-Responsibilities
@@ -115,7 +115,7 @@ app.Application_ExitLevel();
 | Source | ID | Decision | Impact on DiaUIUltralight |
 |---|---|---|---|
 | Platform | PD-001 | C++ as primary language | Implementation in C++17; JS accessed only through Ultralight API |
-| Platform | PD-002 | Windows as primary platform | Win32 build; Ultralight x64 SDK used; 32-bit not required for new modules |
+| Platform | PD-002 | Windows as primary platform | x64 build; Ultralight x64 SDK used |
 | Platform | PD-003 | Visual Studio + MSBuild | Built as `.vcxproj` in Cluiche solution |
 | Platform | PD-004 | Spec-driven development | This spec documents completed implementation |
 | Dia | AD-001 | Module YAML frontmatter | `dia.uiultralight.architecture.module.md` created |

@@ -4,27 +4,26 @@
 
 **Language**: C++ (C++11 minimum, C++14 features used where available)  
 **Compiler**: MSVC (Microsoft Visual C++)  
-**Platform**: Windows 10+ (primary: Win32, secondary: x64)  
+**Platform**: Windows 10+ (x64)  
 **Build System**: MSBuild via Visual Studio project files (`.vcxproj`)
 
 ### Build Configurations
 
-- `Debug|Win32` - Primary development configuration with symbols and assertions
-- `Release|Win32` - Optimized release build
-- `Debug|x64`, `Release|x64` - 64-bit configurations (limited support)
+- `Debug|x64` - Primary development configuration with symbols and assertions
+- `Release|x64` - Optimized release build
 
 ### Build Commands
 
 ```bash
 # Build via MSBuild from repository root
-msbuild Cluiche/Cluiche.sln /p:Configuration=Debug /p:Platform=Win32
-msbuild Cluiche/Cluiche.sln /p:Configuration=Release /p:Platform=Win32
+msbuild Cluiche/Cluiche.sln /p:Configuration=Debug /p:Platform=x64
+msbuild Cluiche/Cluiche.sln /p:Configuration=Release /p:Platform=x64
 
 # Build specific project
-msbuild Dia/DiaCore/DiaCore.vcxproj /p:Configuration=Debug /p:Platform=Win32
+msbuild Dia/DiaCore/DiaCore.vcxproj /p:Configuration=Debug /p:Platform=x64
 
 # Run unit tests (after building UnitTests project)
-Cluiche/bin/exe/Debug/UnitTests.exe
+Cluiche/bin/Debug/x64/UnitTests.exe
 ```
 
 ## Frameworks
@@ -44,7 +43,7 @@ Cluiche/bin/exe/Debug/UnitTests.exe
 - **Coverage requirement**: All public APIs should have unit tests; critical paths require integration tests
 - **Pattern**: Test-after (write tests after or alongside implementation)
 - **Thread Safety**: Dedicated thread safety tests for multi-threaded components
-- **Execution**: Run via `Cluiche/bin/exe/Debug/UnitTests.exe`
+- **Execution**: Run via `Cluiche/bin/Debug/x64/UnitTests.exe`
 
 ### Test Organization
 

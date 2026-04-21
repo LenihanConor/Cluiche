@@ -296,7 +296,7 @@ All resolved:
 
 int main(int argc, char* argv[]) {
     // Initialize Python
-    Dia::Python::Initialize("External/Python311-Win32/", "External/Python/", false);
+    Dia::Python::Initialize("External/Python311/", "External/Python/", false);
     
     // Initialize DiaAPI
     Dia::API::Initialize();

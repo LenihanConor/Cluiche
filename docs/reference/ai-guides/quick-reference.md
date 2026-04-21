@@ -324,18 +324,16 @@ subject.Event();
 start Cluiche/Cluiche.sln
 
 # Build via MSBuild
-msbuild Cluiche/Cluiche.sln /p:Configuration=Debug /p:Platform=Win32
-msbuild Cluiche/Cluiche.sln /p:Configuration=Release /p:Platform=Win32
+msbuild Cluiche/Cluiche.sln /p:Configuration=Debug /p:Platform=x64
+msbuild Cluiche/Cluiche.sln /p:Configuration=Release /p:Platform=x64
 ```
 
 ### Configurations
 
 | Configuration | Purpose |
 |---------------|---------|
-| `Debug\|Win32` | Development (primary) |
-| `Release\|Win32` | Optimized build |
-| `Debug\|x64` | 64-bit debug (limited support) |
-| `Release\|x64` | 64-bit release (limited support) |
+| `Debug\|x64` | Development (primary) |
+| `Release\|x64` | Optimized build |
 
 ---
 

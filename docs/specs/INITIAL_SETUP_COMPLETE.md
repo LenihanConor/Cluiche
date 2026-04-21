@@ -26,7 +26,7 @@ The spec-driven development system has been initialized with Cluiche-specific in
   - ProcessingUnit/Phase/Module architecture
   - Component-based entities
   - No STL in public APIs
-  - Win32 primary target
+  - x64 primary target
   - VS project files source of truth
 - Change policy for Dia modules
 - 4 AI review questions populated
@@ -63,7 +63,7 @@ The spec-driven development system has been initialized with Cluiche-specific in
 
 **Filled In:**
 - Language & Runtime: C++11/14, MSVC, Windows
-- Build configurations: Debug|Win32, Release|Win32, x64
+- Build configurations: Debug|x64, Release|x64
 - Build commands: MSBuild examples
 - Frameworks: SFML, Awesomium, jsoncpp, Google Test
 - Testing: Google Test framework, coverage requirements, test locations
@@ -222,7 +222,7 @@ All applications, systems, and features MUST comply:
 2. **PD-002** - ProcessingUnit/Phase/Module architecture
 3. **PD-003** - Component-based entities
 4. **PD-004** - No STL in public APIs
-5. **PD-005** - Win32 primary (non-binding guidance)
+5. **PD-005** - x64 is the only supported build target
 6. **PD-006** - VS project files are source of truth
 
 ### Application Level (AD-xxx)

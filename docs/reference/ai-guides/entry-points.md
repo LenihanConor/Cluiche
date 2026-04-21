@@ -340,7 +340,7 @@ void SimBootPhase::DoStart()
 **6. Build and Test**
 
 ```bash
-msbuild Cluiche/Cluiche.sln /p:Configuration=Debug /p:Platform=Win32
+msbuild Cluiche/Cluiche.sln /p:Configuration=Debug /p:Platform=x64
 ```
 
 ---

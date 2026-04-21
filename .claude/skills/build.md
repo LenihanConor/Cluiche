@@ -37,7 +37,7 @@ Build individual projects or the entire Cluiche solution with proper dependency 
 ## Options
 
 - `--config=<Debug|Release>`: Build configuration (default: Debug)
-- `--platform=<Win32|x64>`: Target platform (default: Win32)
+- `--platform=<x64>`: Target platform (default: x64)
 - `--clean`: Clean before building
 - `--rebuild`: Force full rebuild (clean + build)
 - `--verbose`: Show detailed MSBuild output
@@ -138,7 +138,7 @@ msbuild <path>.vcxproj /t:<target> /p:Configuration=<config> /p:Platform=<platfo
 
 **Success:**
 ```
-✅ Built DiaCore (Debug|Win32) in 3.2s
+✅ Built DiaCore (Debug|x64) in 3.2s
    Output: Cluiche/bin/lib/Debug/DiaCore.lib
 ```
 
@@ -163,7 +163,7 @@ Error in Containers/Arrays/DynamicArray.cpp:45:10
 Suggestion: Add #include <cstddef> or check for missing namespace
 
 Build command:
-  msbuild Dia/DiaCore/DiaCore.vcxproj /p:Configuration=Debug /p:Platform=Win32
+  msbuild Dia/DiaCore/DiaCore.vcxproj /p:Configuration=Debug /p:Platform=x64
 ```
 
 ### Error Handling
@@ -193,7 +193,7 @@ Build command:
 ### Smart Defaults
 
 - Use `/nologo /v:minimal` for clean output (unless --verbose)
-- Default to Debug|Win32 (primary development config)
+- Default to Debug|x64 (primary development config)
 - Auto-enable --deps when building projects with dependencies
 - Show relative paths in errors (from repo root)
 - Estimate build time based on project size

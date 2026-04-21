@@ -27,25 +27,24 @@ This is a Visual Studio C++ project using MSBuild.
 start Cluiche/Cluiche.sln
 
 # Build via MSBuild (from repository root)
-msbuild Cluiche/Cluiche.sln /p:Configuration=Debug /p:Platform=Win32
-msbuild Cluiche/Cluiche.sln /p:Configuration=Release /p:Platform=Win32
+msbuild Cluiche/Cluiche.sln /p:Configuration=Debug /p:Platform=x64
+msbuild Cluiche/Cluiche.sln /p:Configuration=Release /p:Platform=x64
 
 # Build specific project
-msbuild Dia/DiaCore/DiaCore.vcxproj /p:Configuration=Debug /p:Platform=Win32
+msbuild Dia/DiaCore/DiaCore.vcxproj /p:Configuration=Debug /p:Platform=x64
 ```
 
 ### Test Commands
 
 ```bash
 # Run unit tests (after building UnitTests project)
-Cluiche/bin/exe/Debug/UnitTests.exe
+Cluiche/bin/Debug/x64/UnitTests.exe
 ```
 
 ### Configurations
 
-- `Debug|Win32` - Primary development configuration
-- `Release|Win32` - Optimized release build
-- `Debug|x64`, `Release|x64` - 64-bit configurations (limited support)
+- `Debug|x64` - Primary development configuration
+- `Release|x64` - Optimized release build
 
 ## Architecture Overview
 

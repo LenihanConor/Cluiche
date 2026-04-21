@@ -341,8 +341,6 @@ Added comprehensive Google Test coverage for the entire DiaInput module, includi
    - `Input\TestModernEvents.cpp`
 
 2. Added `DiaInput.lib` to link dependencies for all configurations:
-   - Debug|Win32
-   - Release|Win32
    - Debug|x64
    - Release|x64
 
@@ -372,14 +370,14 @@ Added comprehensive Google Test coverage for the entire DiaInput module, includi
 
 ```bash
 # Build GoogleTests project
-msbuild Cluiche/Tests/GoogleTests/GoogleTests.vcxproj /p:Configuration=Debug /p:Platform=Win32
+msbuild Cluiche/Tests/GoogleTests/GoogleTests.vcxproj /p:Configuration=Debug /p:Platform=x64
 ```
 
 ### Run Command
 
 ```bash
 # Run tests
-Cluiche/bin/exe/Debug/GoogleTests.exe
+Cluiche/bin/Debug/x64/GoogleTests.exe
 ```
 
 ### Expected Output
