@@ -44,6 +44,7 @@ namespace Dia
 			mDockingLayout = new DockingLayout();
 			mDockingLayout->RegisterPanel("Home", "dia://editor/home/index.html");
 			mDockingLayout->RegisterPanel("Output Console", "dia://editor/outputconsole/index.html");
+			mDockingLayout->RegisterPanel("Game Connection", "dia://editor/gameconnection/index.html");
 
 			mWebUIBridge = new WebUIBridge(uiSystem);
 			mWebUIBridge->Initialize(controller);

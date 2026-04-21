@@ -2,6 +2,7 @@
 
 #include <DiaApplication/ApplicationModule.h>
 #include <DiaEditor/LiveConnection/GameConnectionManager.h>
+#include <DiaEditor/LiveConnection/GameConnectionController.h>
 
 namespace Cluiche
 {
@@ -15,6 +16,7 @@ namespace Cluiche
 			explicit GameConnectionModule(Dia::Application::ProcessingUnit* pu);
 
 			Dia::Editor::GameConnectionManager& GetManager() { return mManager; }
+			Dia::Editor::GameConnectionController& GetController() { return mController; }
 
 		protected:
 			Dia::Application::StateObject::OpertionResponse DoStart(const Dia::Application::StateObject::IStartData*) override;
@@ -23,6 +25,7 @@ namespace Cluiche
 
 		private:
 			Dia::Editor::GameConnectionManager mManager;
+			Dia::Editor::GameConnectionController mController;
 		};
 	}
 }

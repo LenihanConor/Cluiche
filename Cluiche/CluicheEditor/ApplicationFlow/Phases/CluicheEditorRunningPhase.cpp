@@ -11,6 +11,8 @@
 #include <DiaApplication/ApplicationProcessingUnit.h>
 #include <DiaEditor/MVC/EditorModel.h>
 #include <DiaEditor/MVC/EditorView.h>
+#include <DiaEditor/LiveConnection/GameConnectionController.h>
+#include <DiaEditor/LiveConnection/GameConnectionManager.h>
 #include <string.h>
 
 namespace Cluiche
@@ -71,6 +73,16 @@ namespace Cluiche
 				Dia::Editor::EditorView& view = viewModule->GetView();
 				view.SetLayoutPath("Data/editor-layout.json");
 				view.LoadLayoutFromDisk();
+
+				GameConnectionModule* gcModule =
+					static_cast<GameConnectionModule*>(GetModule(GameConnectionModule::kTypeId));
+				if (gcModule != nullptr && view.GetWebUIBridge() != nullptr)
+				{
+					Dia::Editor::GameConnectionController& controller = gcModule->GetController();
+					controller.SetPersistencePath("Data/editor-connection.json");
+					controller.LoadPersistedUrl();
+					controller.Initialize(view.GetWebUIBridge(), &gcModule->GetManager());
+				}
 			}
 		}
 	}

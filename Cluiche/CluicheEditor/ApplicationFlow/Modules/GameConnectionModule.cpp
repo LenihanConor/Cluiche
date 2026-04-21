@@ -20,10 +20,12 @@ namespace Cluiche
 		void GameConnectionModule::DoUpdate()
 		{
 			mManager.Update(0.016f);
+			mController.Update(0.016f);
 		}
 
 		void GameConnectionModule::DoStop()
 		{
+			mController.Shutdown();
 			mManager.Shutdown();
 		}
 	}

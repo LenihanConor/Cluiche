@@ -44,12 +44,30 @@ function sendRequest<T>(type: string, data?: object): Promise<T> {
   });
 }
 
+// Requests originated inside an iframe need their response routed back to
+// that iframe (CEF only delivers JS calls to the main frame).
+const iframeReqOrigins = new Map<string, Window>();
+
 window.DiaEditor_onResponse = (payload: unknown) => {
   try {
     const env = (typeof payload === "string"
       ? JSON.parse(payload)
       : payload) as { reqId?: string; result?: unknown };
     if (!env || !env.reqId) return;
+
+    const originWindow = iframeReqOrigins.get(env.reqId);
+    if (originWindow) {
+      iframeReqOrigins.delete(env.reqId);
+      try {
+        originWindow.postMessage({
+          __diaResponse: true,
+          reqId: env.reqId,
+          result: env.result,
+        }, "*");
+      } catch { /* iframe may have unloaded */ }
+      return;
+    }
+
     const entry = pending.get(env.reqId);
     if (!entry) return;
     pending.delete(env.reqId);
@@ -58,6 +76,29 @@ window.DiaEditor_onResponse = (payload: unknown) => {
     console.warn("DiaEditor_onResponse parse failed:", err);
   }
 };
+
+// Iframe relay: panels that live as standalone HTML (e.g. OutputConsole,
+// GameConnection) send their requests via window.parent.postMessage rather
+// than directly touching window.dia.callCpp, so all transport flows through
+// the main frame and response routing stays centralized here.
+window.addEventListener("message", (ev: MessageEvent) => {
+  const data = ev.data as { __diaFromFrame?: boolean; payload?: unknown } | null;
+  if (!data || !data.__diaFromFrame || !data.payload) return;
+
+  const p = data.payload as { type?: string; reqId?: string; data?: unknown };
+  if (!p || typeof p.type !== "string") return;
+
+  if (!window.dia || !window.dia.callCpp) {
+    console.warn("dia.callCpp not available; iframe event dropped:", p.type);
+    return;
+  }
+
+  if (p.reqId && ev.source) {
+    iframeReqOrigins.set(p.reqId, ev.source as Window);
+  }
+
+  window.dia.callCpp("DiaEditor_call", JSON.stringify(p));
+});
 
 window.DiaEditor_onDataChanged = (payload: unknown) => {
   try {

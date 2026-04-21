@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Game Connection</title>
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      font-size: 12px;
+    }
+    .wrap {
+      padding: 14px 16px;
+      box-sizing: border-box;
+      height: 100%;
+      overflow: auto;
+    }
+    h1 {
+      font-size: 14px;
+      margin: 0 0 10px 0;
+      color: #569cd6;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .status {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 12px;
+    }
+    .status.disconnected { background: #3a1f1f; color: #f48771; }
+    .status.connecting   { background: #3a3a1f; color: #dcdcaa; }
+    .status.connected    { background: #1f3a22; color: #89d185; }
+    label {
+      display: block;
+      margin-bottom: 4px;
+      color: #9cdcfe;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    input[type="text"] {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 5px 8px;
+      background: #252526;
+      color: #d4d4d4;
+      border: 1px solid #3c3c3c;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 12px;
+      outline: none;
+    }
+    input[type="text"]:focus { border-color: #569cd6; }
+    button {
+      padding: 5px 14px;
+      background: #0e639c;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+    button:hover { background: #1177bb; }
+    button.secondary { background: #3a3d41; }
+    button.secondary:hover { background: #4a4d51; }
+    button:disabled {
+      background: #2a2d2e;
+      color: #666;
+      cursor: not-allowed;
+    }
+    .err {
+      margin-top: 8px;
+      padding: 6px 10px;
+      background: #3a1f1f;
+      border-left: 3px solid #f48771;
+      color: #f48771;
+      font-size: 11px;
+      white-space: pre-wrap;
+    }
+    .info {
+      background: #252526;
+      border: 1px solid #3c3c3c;
+      padding: 10px 12px;
+      margin-top: 10px;
+    }
+    .info dt {
+      color: #9cdcfe;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 8px;
+    }
+    .info dt:first-child { margin-top: 0; }
+    .info dd {
+      margin: 2px 0 0 0;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 12px;
+      color: #d4d4d4;
+    }
+    .heartbeat {
+      margin-top: 10px;
+      font-size: 11px;
+      color: #808080;
+    }
+    .heartbeat .dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #89d185;
+      margin-right: 5px;
+      vertical-align: 1px;
+    }
+    .row { margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Game Connection</h1>
+    <div id="status" class="status disconnected">Disconnected</div>
+
+    <!-- disconnected view -->
+    <div id="view-disconnected">
+      <label for="url">Game URL</label>
+      <input id="url" type="text" value="ws://localhost:9002/" autocomplete="off" />
+      <button id="btn-connect">Connect</button>
+      <div id="err" class="err" style="display:none"></div>
+    </div>
+
+    <!-- connecting view -->
+    <div id="view-connecting" style="display:none">
+      <div class="row">Connecting to <code id="connecting-url"></code>...</div>
+      <button id="btn-cancel" class="secondary">Cancel</button>
+    </div>
+
+    <!-- connected view -->
+    <div id="view-connected" style="display:none">
+      <div class="row">
+        Connected to <code id="connected-url"></code>
+      </div>
+      <dl class="info">
+        <dt>Name</dt><dd id="info-name">-</dd>
+        <dt>Build</dt><dd id="info-build">-</dd>
+        <dt>Processing Units</dt><dd id="info-pu-count">-</dd>
+        <dt>Current Phase</dt><dd id="info-phase">-</dd>
+      </dl>
+      <div class="heartbeat"><span class="dot"></span><span id="heartbeat-text">awaiting heartbeat...</span></div>
+      <button id="btn-disconnect" class="secondary">Disconnect</button>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var nextReqId = 1;
+      var pending = {};
+
+      function callCpp(type, reqId, data) {
+        var payload = { type: type, data: data || {} };
+        if (reqId) payload.reqId = reqId;
+        try {
+          window.parent.postMessage({ __diaFromFrame: true, payload: payload }, "*");
+        } catch (e) { /* ignore */ }
+      }
+
+      // Route request responses back here. Parent frame re-broadcasts topics
+      // via window.postMessage; request responses come via a local bridge the
+      // parent injects in the iframe through postMessage too.
+      window.addEventListener("message", function (e) {
+        var msg = e.data || {};
+        if (msg.__diaResponse && msg.reqId && pending[msg.reqId]) {
+          var cb = pending[msg.reqId];
+          delete pending[msg.reqId];
+          cb(msg.result);
+          return;
+        }
+        if (!msg.__dia) return;
+        if (msg.topic === "game_connection") {
+          apply(msg.data || {});
+        } else if (msg.topic === "game_connection_heartbeat") {
+          applyHeartbeat(msg.data || {});
+        }
+      });
+
+      function request(type, data, onResult) {
+        var reqId = "gc" + (nextReqId++);
+        pending[reqId] = onResult || function () {};
+        callCpp(type, reqId, data);
+      }
+
+      function send(type, data) {
+        callCpp(type, null, data);
+      }
+
+      // UI elements
+      var statusEl   = document.getElementById("status");
+      var viewDis    = document.getElementById("view-disconnected");
+      var viewCon    = document.getElementById("view-connecting");
+      var viewOk     = document.getElementById("view-connected");
+      var urlInput   = document.getElementById("url");
+      var errBox     = document.getElementById("err");
+      var conUrlEl   = document.getElementById("connecting-url");
+      var okUrlEl    = document.getElementById("connected-url");
+      var infoName   = document.getElementById("info-name");
+      var infoBuild  = document.getElementById("info-build");
+      var infoPU     = document.getElementById("info-pu-count");
+      var infoPhase  = document.getElementById("info-phase");
+      var heartbeat  = document.getElementById("heartbeat-text");
+
+      document.getElementById("btn-connect").addEventListener("click", function () {
+        var url = (urlInput.value || "").trim();
+        if (!url) { showError("URL is required"); return; }
+        errBox.style.display = "none";
+        request("game_connection.connect", { url: url }, function (res) {
+          if (res && res.ok === false) showError(res.error || "connect failed");
+        });
+      });
+
+      document.getElementById("btn-disconnect").addEventListener("click", function () {
+        request("game_connection.disconnect", {}, function () {});
+      });
+
+      document.getElementById("btn-cancel").addEventListener("click", function () {
+        request("game_connection.disconnect", {}, function () {});
+      });
+
+      function showError(msg) {
+        errBox.textContent = msg;
+        errBox.style.display = "block";
+      }
+
+      function apply(state) {
+        var s = state.state || "disconnected";
+        statusEl.className = "status " + s;
+        statusEl.textContent = s.charAt(0).toUpperCase() + s.slice(1);
+
+        viewDis.style.display = (s === "disconnected") ? "block" : "none";
+        viewCon.style.display = (s === "connecting")   ? "block" : "none";
+        viewOk.style.display  = (s === "connected")    ? "block" : "none";
+
+        if (state.url) {
+          urlInput.value = state.url;
+          conUrlEl.textContent = state.url;
+          okUrlEl.textContent = state.url;
+        }
+
+        if (s === "disconnected" && state.lastError) {
+          showError(state.lastError);
+        } else if (s === "disconnected") {
+          errBox.style.display = "none";
+        }
+
+        var info = state.info || {};
+        infoName.textContent  = info.name  || "-";
+        infoBuild.textContent = info.build || "-";
+        infoPU.textContent    = (info.processingUnitCount != null) ? info.processingUnitCount : "-";
+        infoPhase.textContent = info.currentPhase || "-";
+
+        if (s !== "connected") {
+          heartbeat.textContent = "awaiting heartbeat...";
+        }
+      }
+
+      function applyHeartbeat(data) {
+        var ms = data.lastPongMs;
+        if (!ms) { heartbeat.textContent = "heartbeat received"; return; }
+        var d = new Date(ms);
+        var hh = String(d.getHours()).padStart(2, "0");
+        var mm = String(d.getMinutes()).padStart(2, "0");
+        var ss = String(d.getSeconds()).padStart(2, "0");
+        heartbeat.textContent = "last heartbeat at " + hh + ":" + mm + ":" + ss;
+      }
+
+      // Ask for current state on load so panels spawned later sync correctly.
+      request("game_connection.get_state", {}, function (res) {
+        if (res) apply(res);
+      });
+    })();
+  </script>
+</body>
+</html>

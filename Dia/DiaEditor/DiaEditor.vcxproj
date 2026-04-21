@@ -85,6 +85,7 @@
     <ClInclude Include="MVC\EditorView.h" />
     <ClInclude Include="MVC\EditorViewController.h" />
     <ClInclude Include="LiveConnection\GameConnectionManager.h" />
+    <ClInclude Include="LiveConnection\GameConnectionController.h" />
     <ClInclude Include="Layout\DockingLayout.h" />
     <ClInclude Include="UI\WebUIBridge.h" />
     <ClInclude Include="EditorManifestLoader.h" />
@@ -97,6 +98,7 @@
     <ClCompile Include="MVC\EditorView.cpp" />
     <ClCompile Include="MVC\EditorViewController.cpp" />
     <ClCompile Include="LiveConnection\GameConnectionManager.cpp" />
+    <ClCompile Include="LiveConnection\GameConnectionController.cpp" />
     <ClCompile Include="Layout\DockingLayout.cpp" />
     <ClCompile Include="UI\WebUIBridge.cpp" />
     <ClCompile Include="EditorManifestLoader.cpp" />

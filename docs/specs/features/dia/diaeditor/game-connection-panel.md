@@ -204,4 +204,23 @@ Implemented in two slices per user preference (option "b"):
 
 ## Status
 
-`Draft` - ready for user approval to proceed with Slice 1 implementation
+`In Progress` - Slice 1 implemented (stub-only). Slice 2 (CluicheTest game server) pending.
+
+### Slice 1 shipped (2026-04-20)
+
+- `Dia/DiaEditor/LiveConnection/GameConnectionController.{h,cpp}` — state machine, request handlers, topic publishes, persistent URL
+- `Dia/DiaEditor/Plugin/Assets/gameconnection/index.html` — self-contained 3-state panel
+- `EditorView::Initialize` registers the built-in `"Game Connection"` panel
+- `Cluiche/CluicheEditor/ApplicationFlow/Modules/GameConnectionModule` owns the controller alongside the manager; pumps `controller.Update()` every frame
+- `CluicheEditorRunningPhase::AfterModulesStart` wires the controller to the `WebUIBridge` and sets the persistence path to `Data/editor-connection.json`
+- `EditorBridge.ts` relays iframe-originated `postMessage` requests into `window.dia.callCpp` and routes responses back to the originating iframe with `__diaResponse`
+
+**Stub mode:** `GameConnectionController::BeginConnectStub` fakes a ~350ms "connecting" delay, then transitions to `connected` with a canned `game_info` payload (`CluicheEditor Stub Game` / `stub-0.1`). No WebSocket is opened. The real `GameConnectionManager` is still plumbed through for Slice 2 but not touched yet.
+
+**What's NOT in Slice 1:**
+- Actual socket I/O — `mUseStub` is hard-true, `BeginConnectReal` is a no-op
+- `game_info` / `ping` / `pong` wire types in DiaDebugProtocol
+- CluicheTest's `DiaDebugServer` responding to `connect` — the whole game-server half of Decision 8
+- Handshake timeout (Q15) — stub always succeeds, so no handshake can time out yet
+
+Slice 2 will flip `mUseStub` to false, parse `ws://host:port` from the URL, and drive `GameConnectionManager::Connect`.
