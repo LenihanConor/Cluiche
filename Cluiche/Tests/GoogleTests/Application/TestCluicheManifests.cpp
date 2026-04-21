@@ -164,11 +164,11 @@ TEST_F(CluicheManifestTest, MainManifest_HasOneTransition)
 	EXPECT_EQ(transitions[0].toPhase, StringCRC("MainBootStrapPhase"));
 }
 
-TEST_F(CluicheManifestTest, MainManifest_HasThreeModules)
+TEST_F(CluicheManifestTest, MainManifest_HasFourModules)
 {
 	ApplicationManifest manifest;
 	LoadManifest("Data/Manifests/cluiche_main.diaapp", manifest);
-	EXPECT_EQ(manifest.processingUnits[0].modules.Size(), 3u);
+	EXPECT_EQ(manifest.processingUnits[0].modules.Size(), 4u);
 }
 
 TEST_F(CluicheManifestTest, MainManifest_ModuleTypes)
@@ -180,6 +180,7 @@ TEST_F(CluicheManifestTest, MainManifest_ModuleTypes)
 	EXPECT_EQ(modules[0].typeId, StringCRC("Main::KernelModule"));
 	EXPECT_EQ(modules[1].typeId, StringCRC("Main::LevelRegistryModule"));
 	EXPECT_EQ(modules[2].typeId, StringCRC("Main::UIModule"));
+	EXPECT_EQ(modules[3].typeId, StringCRC("DebugServerModule"));
 }
 
 TEST_F(CluicheManifestTest, MainManifest_KernelModuleInBothPhases)

@@ -304,6 +304,7 @@ xcopy /Y /I "$(ProjectDir)..\..\CluicheTest\Data\Manifests\*.diaapp" "$(OutDir)D
     <ClCompile Include="Editor\TestEditorApplication.cpp" />
     <ClCompile Include="Editor\TestEditorApplicationLifecycle.cpp" />
     <ClCompile Include="Editor\TestGameConnectionManagerIntegration.cpp" />
+    <ClCompile Include="Editor\TestGameConnectionController.cpp" />
     <!-- Google Test Source Files - Compiled directly into project -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">
       <AdditionalIncludeDirectories>$(ProjectDir)../../../External/googletest/googletest/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
