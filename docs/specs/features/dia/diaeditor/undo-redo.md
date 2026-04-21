@@ -291,4 +291,4 @@ Commands are heap-allocated and owned by CommandHistory. When commands fall off 
 
 ## Status
 
-`Approved` - Ready for implementation
+`Done` - Implemented and tested

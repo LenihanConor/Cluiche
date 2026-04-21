@@ -40,8 +40,18 @@ namespace Dia
 			void Disconnect();
 			bool IsConnected() const;
 
+			void SetAutoReconnect(bool enable);
+			void SetAutoReconnectDelay(float seconds);
+			void SetAutoReconnectMaxAttempts(int maxAttempts);
+			bool GetAutoReconnect() const { return mAutoReconnect; }
+
 			void Subscribe(const Dia::Core::StringCRC& topic, DataCallback callback);
+			void Unsubscribe(const Dia::Core::StringCRC& topic);
 			void Publish(const Dia::Core::StringCRC& topic, const Json::Value& data);
+
+			using CommandResponseCallback = std::function<void(bool success, const Json::Value& result)>;
+			void SendCommand(const char* command, const Json::Value& args);
+			void SendCommandWithResponse(const char* command, const Json::Value& args, CommandResponseCallback callback);
 
 			void SetConnectionCallback(ConnectionCallback callback);
 
@@ -65,6 +75,17 @@ namespace Dia
 			static const unsigned int kMaxSubscriptions = 32;
 			Dia::Core::Containers::DynamicArrayC<Subscription, kMaxSubscriptions> mSubscriptions;
 
+			struct PendingCommand
+			{
+				Dia::Core::StringCRC command;
+				CommandResponseCallback callback;
+			};
+
+			static const unsigned int kMaxPendingCommands = 8;
+			Dia::Core::Containers::DynamicArrayC<PendingCommand, kMaxPendingCommands> mPendingCommands;
+
+			void ProcessCommandResponse(const Json::Value& json);
+
 			Dia::WebSocket::Client* mClient;
 			ConnectionCallback mConnectionCallback;
 			RawMessageCallback mRawMessageCallback;
@@ -74,6 +95,8 @@ namespace Dia
 
 			static const unsigned int kMaxErrorLength = 256;
 			char mLastError[kMaxErrorLength];
+
+			bool mAutoReconnect;
 
 			static const float kInitialReconnectDelay;
 			static const float kMaxReconnectDelay;

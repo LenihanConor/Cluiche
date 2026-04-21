@@ -18,6 +18,7 @@ namespace Dia
 		GameConnectionManager::GameConnectionManager()
 			: mClient(nullptr)
 			, mPort(0)
+			, mAutoReconnect(false)
 		{
 			mHost[0] = '\0';
 			mLastError[0] = '\0';
@@ -32,7 +33,7 @@ namespace Dia
 		{
 			Dia::Core::Log::OutputVaradicLine("GameConnectionManager: Initialize");
 			mClient = new Dia::WebSocket::Client();
-			mClient->SetReconnectOnDisconnect(false);
+			mClient->SetReconnectOnDisconnect(mAutoReconnect);
 
 			mClient->SetMessageCallback([this](const Dia::WebSocket::Message& msg) {
 				if (msg.type == Dia::WebSocket::MessageType::kText)
@@ -62,6 +63,25 @@ namespace Dia
 		{
 			if (mClient != nullptr)
 				mClient->Update();
+		}
+
+		void GameConnectionManager::SetAutoReconnect(bool enable)
+		{
+			mAutoReconnect = enable;
+			if (mClient != nullptr)
+				mClient->SetReconnectOnDisconnect(enable);
+		}
+
+		void GameConnectionManager::SetAutoReconnectDelay(float seconds)
+		{
+			if (mClient != nullptr)
+				mClient->SetReconnectDelay(seconds);
+		}
+
+		void GameConnectionManager::SetAutoReconnectMaxAttempts(int maxAttempts)
+		{
+			if (mClient != nullptr)
+				mClient->SetReconnectMaxAttempts(maxAttempts);
 		}
 
 		void GameConnectionManager::Connect(const char* host, int port)
@@ -97,6 +117,18 @@ namespace Dia
 			mSubscriptions.Add(sub);
 		}
 
+		void GameConnectionManager::Unsubscribe(const Dia::Core::StringCRC& topic)
+		{
+			for (unsigned int i = 0; i < mSubscriptions.Size(); ++i)
+			{
+				if (mSubscriptions[i].topic == topic)
+				{
+					mSubscriptions.RemoveAt(i);
+					return;
+				}
+			}
+		}
+
 		void GameConnectionManager::Publish(const Dia::Core::StringCRC& topic, const Json::Value& data)
 		{
 			if (!IsConnected())
@@ -109,6 +141,52 @@ namespace Dia
 			Json::StreamWriterBuilder writer;
 			std::string text = Json::writeString(writer, envelope);
 			mClient->SendText(text.c_str());
+		}
+
+		void GameConnectionManager::SendCommand(const char* command, const Json::Value& args)
+		{
+			if (!IsConnected())
+				return;
+
+			Json::Value envelope;
+			envelope["type"] = "command";
+			envelope["command"] = command;
+			envelope["payload"] = args;
+
+			Json::StreamWriterBuilder writer;
+			writer["indentation"] = "";
+			std::string text = Json::writeString(writer, envelope);
+			mClient->SendText(text.c_str());
+		}
+
+		void GameConnectionManager::SendCommandWithResponse(const char* command, const Json::Value& args, CommandResponseCallback callback)
+		{
+			SendCommand(command, args);
+
+			DIA_ASSERT(!mPendingCommands.IsFull(), "GameConnectionManager: max pending command capacity reached");
+			PendingCommand pending;
+			pending.command = Dia::Core::StringCRC(command);
+			pending.callback = callback;
+			mPendingCommands.Add(pending);
+		}
+
+		void GameConnectionManager::ProcessCommandResponse(const Json::Value& json)
+		{
+			if (!json.isMember("command") || !json["command"].isString())
+				return;
+
+			Dia::Core::StringCRC command(json["command"].asCString());
+			bool success = json.get("success", false).asBool();
+
+			for (unsigned int i = 0; i < mPendingCommands.Size(); ++i)
+			{
+				if (mPendingCommands[i].command == command)
+				{
+					mPendingCommands[i].callback(success, json);
+					mPendingCommands.RemoveAt(i);
+					return;
+				}
+			}
 		}
 
 		void GameConnectionManager::SetConnectionCallback(ConnectionCallback callback)
@@ -147,6 +225,13 @@ namespace Dia
 			// Raw channel sees every message regardless of envelope shape.
 			if (mRawMessageCallback)
 				mRawMessageCallback(envelope);
+
+			// Command-response routing.
+			if (envelope.isMember("type") && envelope["type"].isString()
+				&& envelope["type"].asString() == "command_response")
+			{
+				ProcessCommandResponse(envelope);
+			}
 
 			// Topic-based routing is only possible for messages that carry a topic.
 			if (envelope.isMember("topic") && envelope["topic"].isString())

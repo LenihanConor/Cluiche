@@ -15,16 +15,16 @@ Connects editor to running game's DiaDebugServer via WebSocket for live data str
 
 ## Acceptance Criteria
 
-- [ ] GameConnectionManager module manages WebSocket connection
-- [ ] ConnectRemote(address, port) initiates connection
-- [ ] Disconnect() closes connection cleanly
-- [ ] IsConnected() returns connection state
-- [ ] Subscribe to data types (processing_unit_state, phase_transition)
-- [ ] Send commands to game (hot_reload, etc.)
-- [ ] Handle connection/disconnection callbacks
-- [ ] Parse incoming JSON messages and route to subscribers
-- [ ] Uses DiaWebSocket::Client internally
-- [ ] Auto-reconnect on disconnect (configurable)
+- [x] GameConnectionManager module manages WebSocket connection
+- [x] ConnectRemote(address, port) initiates connection — implemented as Connect(host, port)
+- [x] Disconnect() closes connection cleanly
+- [x] IsConnected() returns connection state
+- [x] Subscribe to data types (processing_unit_state, phase_transition) — Subscribe/Unsubscribe
+- [x] Send commands to game (hot_reload, etc.) — SendCommand/SendCommandWithResponse
+- [x] Handle connection/disconnection callbacks — SetConnectionCallback, SetRawMessageCallback
+- [x] Parse incoming JSON messages and route to subscribers — HandleMessage with topic + command_response routing
+- [x] Uses DiaWebSocket::Client internally
+- [x] Auto-reconnect on disconnect (configurable) — SetAutoReconnect/SetAutoReconnectDelay/SetAutoReconnectMaxAttempts
 
 ## Design
 
@@ -276,4 +276,4 @@ void GameConnectionManager::ProcessCommandResponse(const Json::Value& json) {
 
 ## Status
 
-`Approved` - Ready for implementation
+`Done` - Implemented and tested
