@@ -15,6 +15,7 @@ namespace Cluiche
 		EditorViewModule::EditorViewModule(Dia::Application::ProcessingUnit* pu)
 			: Dia::Application::Module(pu, kTypeId, RunningEnum::kUpdate)
 			, mModel(nullptr)
+			, mController(nullptr)
 			, mWindow(nullptr)
 			, mUISystem(nullptr)
 		{
@@ -50,7 +51,7 @@ namespace Cluiche
 			mUISystem->CreatePage("dia://ui/index.html",
 				static_cast<int>(size.X()), static_cast<int>(size.Y()));
 
-			mView.Initialize(mUISystem);
+			mView.Initialize(mUISystem, mController);
 
 			return Dia::Application::StateObject::OpertionResponse::kImmediate;
 		}

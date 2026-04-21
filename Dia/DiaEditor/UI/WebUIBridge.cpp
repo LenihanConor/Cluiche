@@ -1,26 +1,19 @@
 #include "DiaEditor/UI/WebUIBridge.h"
 
 #include <DiaCore/Core/Assert.h>
+#include <DiaUI/IUISystem.h>
 #include "DiaEditor/MVC/EditorViewController.h"
 
 #include <sstream>
-
-// CEFJavaScriptBridge is used via an opaque pointer here — DiaEditor does not link CEF
-// directly. The full CEF header inclusion happens in CluicheEditor (which links DiaUICEF).
-// The Initialize() call below is the handshake point where the bridge is wired up.
-
-struct CefBridgeAccessor
-{
-	static void RegisterFunction(void* bridge, const char* name,
-		std::function<std::string(const std::string&)> cb);
-};
 
 namespace Dia
 {
 	namespace Editor
 	{
-		WebUIBridge::WebUIBridge(Dia::UICEF::CEFJavaScriptBridge* cefBridge)
-			: mCEFBridge(cefBridge)
+		static const char* kEditorCallName = "DiaEditor_call";
+
+		WebUIBridge::WebUIBridge(Dia::UI::IUISystem* uiSystem)
+			: mUISystem(uiSystem)
 			, mController(nullptr)
 		{
 		}
@@ -29,7 +22,12 @@ namespace Dia
 		{
 			DIA_ASSERT(controller != nullptr, "WebUIBridge: controller must not be null");
 			mController = controller;
-			// CEF function registration deferred to Phase 7 when browser is available
+
+			if (mUISystem)
+			{
+				mUISystem->RegisterJSHandler(kEditorCallName,
+					[this](const std::string& argsJson) { return HandleEditorCall(argsJson); });
+			}
 		}
 
 		void WebUIBridge::RegisterEventHandler(const Dia::Core::StringCRC& eventType, EventHandler handler)
@@ -41,9 +39,15 @@ namespace Dia
 			mHandlers.Add(entry);
 		}
 
-		void WebUIBridge::NotifyUIDataChanged(const Dia::Core::StringCRC& dataPath, const Json::Value& data)
+		void WebUIBridge::NotifyUIDataChanged(const Dia::Core::StringCRC& /*dataPath*/, const Json::Value& data)
 		{
-			// Deferred to Phase 7: requires live CefBrowser reference from EditorView
+			if (!mUISystem)
+				return;
+
+			Json::StreamWriterBuilder writer;
+			writer["indentation"] = "";
+			std::string json = Json::writeString(writer, data);
+			mUISystem->CallJSFunction("DiaEditor_onDataChanged", json.c_str());
 		}
 
 		std::string WebUIBridge::HandleEditorCall(const std::string& argsJson)

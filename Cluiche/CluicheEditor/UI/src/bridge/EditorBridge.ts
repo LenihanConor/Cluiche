@@ -1,48 +1,45 @@
-type CefQueryCallback = (response: string) => void;
-
-interface CefQueryRequest {
-  request: string;
-  onSuccess: CefQueryCallback;
-  onFailure: (errorCode: number, errorMessage: string) => void;
-}
-
 declare global {
   interface Window {
-    cefQuery?: (req: CefQueryRequest) => void;
+    dia?: {
+      callCpp: (name: string, argsJson: string) => void;
+      version?: string;
+    };
     CluicheEditor: typeof EditorBridge;
+    DiaEditor_onDataChanged?: (json: string) => void;
   }
 }
 
-function sendRequest(request: object): Promise<unknown> {
-  return new Promise((resolve, reject) => {
-    if (!window.cefQuery) {
-      reject(new Error("cefQuery not available"));
-      return;
-    }
-    window.cefQuery({
-      request: JSON.stringify(request),
-      onSuccess: (response) => resolve(JSON.parse(response)),
-      onFailure: (_code, msg) => reject(new Error(msg)),
-    });
-  });
+function sendEvent(type: string, data?: object): void {
+  if (!window.dia || !window.dia.callCpp) {
+    console.warn("dia.callCpp not available; event dropped:", type);
+    return;
+  }
+  const payload = JSON.stringify({ type, data: data ?? {} });
+  window.dia.callCpp("DiaEditor_call", payload);
 }
 
 export const EditorBridge = {
   executeCommand: (commandId: string, args?: object) =>
-    sendRequest({ type: "DiaEditor_execute_command", commandId, args }),
+    sendEvent("execute_command", { commandId, args }),
 
-  undo: () => sendRequest({ type: "DiaEditor_undo" }),
+  undo: () => sendEvent("undo"),
 
-  redo: () => sendRequest({ type: "DiaEditor_redo" }),
+  redo: () => sendEvent("redo"),
 
+  // Query paths (get_panels, load_layout, save_layout) are TODO: the current
+  // bridge is one-way (JS -> C++). Returning values to JS requires either a
+  // callback id + async JS push via CallJSFunction, or a sync CefMessageRouter.
+  // Stub these so the React code can call them without crashing.
   getPanels: () =>
-    sendRequest({ type: "DiaEditor_get_panels" }) as Promise<{ panels: string[] }>,
+    Promise.resolve({ panels: [] as string[] }),
 
   loadLayout: () =>
-    sendRequest({ type: "DiaEditor_load_layout" }) as Promise<object>,
+    Promise.resolve({}),
 
-  saveLayout: (layout: object) =>
-    sendRequest({ type: "DiaEditor_save_layout", layout }),
+  saveLayout: (layout: object) => {
+    sendEvent("save_layout", { layout });
+    return Promise.resolve({});
+  },
 };
 
 window.CluicheEditor = EditorBridge;

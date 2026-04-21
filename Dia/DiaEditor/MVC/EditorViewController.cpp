@@ -2,6 +2,7 @@
 
 #include "DiaEditor/Command/CommandHistory.h"
 #include "DiaEditor/MVC/EditorModel.h"
+#include <DiaCore/Core/Log.h>
 
 namespace Dia
 {
@@ -18,12 +19,18 @@ namespace Dia
 		{
 		}
 
-		void EditorViewController::OnUIEvent(const Dia::Core::StringCRC& eventType, const Json::Value& data)
+		void EditorViewController::OnUIEvent(const Dia::Core::StringCRC& eventType, const Json::Value& /*data*/)
 		{
 			if (eventType == kEventUndo && mCommandHistory != nullptr)
+			{
+				Dia::Core::Log::OutputVaradicLine("EditorViewController: undo event received");
 				mCommandHistory->Undo();
+			}
 			else if (eventType == kEventRedo && mCommandHistory != nullptr)
+			{
+				Dia::Core::Log::OutputVaradicLine("EditorViewController: redo event received");
 				mCommandHistory->Redo();
+			}
 		}
 
 		void EditorViewController::SetCommandHistory(CommandHistory* history)

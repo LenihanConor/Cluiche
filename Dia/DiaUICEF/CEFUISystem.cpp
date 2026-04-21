@@ -15,10 +15,12 @@
 #include "CEFPage.h"
 #include "CEFClientHandler.h"
 #include "CEFProcessHandler.h"
+#include "CEFJavaScriptBridge.h"
 
 #include <include/cef_app.h>
 
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <memory>
 #include <string>
 #include <thread>
 
@@ -39,7 +41,27 @@ namespace Dia
 				, mWindowedRendering(false)
 				, mPrimaryPage(nullptr)
 				, mNextPageId(0)
+				, mJSBridge(new CEFJavaScriptBridge())
 			{
+			}
+
+			CEFJavaScriptBridge* GetJSBridge() { return mJSBridge.get(); }
+			CEFPage* GetPrimaryPage() { return mPrimaryPage; }
+
+			void RegisterJSHandler(const char* name, UI::IUISystem::JSHandler handler)
+			{
+				if (!name || !handler)
+					return;
+				mJSBridge->RegisterFunction(name, handler);
+			}
+
+			void CallJSFunction(const char* functionName, const char* argsJson)
+			{
+				if (!mPrimaryPage)
+					return;
+				CefRefPtr<CefBrowser> browser = mPrimaryPage->GetBrowser();
+				if (browser)
+					mJSBridge->CallJavaScript(browser, functionName, argsJson);
 			}
 
 			~CEFUISystemImpl()
@@ -197,6 +219,7 @@ namespace Dia
 			UI::IPage* CreatePage(const char* url, int width, int height)
 			{
 				CEFPage* page = new CEFPage(mNextPageId++, url, width, height);
+				page->SetJSBridge(mJSBridge.get());
 
 				bool ok = false;
 				if (mWindowedRendering && mWindowContext)
@@ -212,6 +235,8 @@ namespace Dia
 				if (ok)
 				{
 					mPages.Add(page);
+					if (mPrimaryPage == nullptr)
+						mPrimaryPage = page;
 					return page;
 				}
 
@@ -269,6 +294,7 @@ namespace Dia
 			Dia::Core::Containers::DynamicArrayC<CEFPage*, 16> mPages;
 			CEFPage* mPrimaryPage;
 			int mNextPageId;
+			std::unique_ptr<CEFJavaScriptBridge> mJSBridge;
 		};
 
 		//-------------------------------------------------------------------
@@ -435,6 +461,22 @@ namespace Dia
 		{
 			DIA_ASSERT(mImpl, "mImpl is NULL");
 			mImpl->SetWindowedRendering(windowed);
+		}
+
+		//-------------------------------------------------------------------
+		void CEFUISystem::RegisterJSHandler(const char* name, JSHandler handler)
+		{
+			DIA_ASSERT(mImpl, "mImpl is NULL");
+			std::lock_guard<std::mutex> lock(mSystemMutex);
+			mImpl->RegisterJSHandler(name, handler);
+		}
+
+		//-------------------------------------------------------------------
+		void CEFUISystem::CallJSFunction(const char* functionName, const char* argsJson)
+		{
+			DIA_ASSERT(mImpl, "mImpl is NULL");
+			std::lock_guard<std::mutex> lock(mSystemMutex);
+			mImpl->CallJSFunction(functionName, argsJson);
 		}
 	}
 }

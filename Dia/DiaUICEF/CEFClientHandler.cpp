@@ -5,6 +5,7 @@
 
 #include "CEFPage.h"
 #include "CEFRenderHandler.h"
+#include "CEFJavaScriptBridge.h"
 
 #include <DiaCore/Core/Assert.h>
 #include <DiaCore/Core/Log.h>
@@ -58,6 +59,28 @@ namespace Dia
 			Dia::Core::Log::OutputVaradicLine("DiaUICEF Log - Source: %s, Line: %d, Message: %s",
 				src.c_str(), line, msg.c_str());
 			return false;
+		}
+
+		bool CEFClientHandler::OnProcessMessageReceived(CefRefPtr<CefBrowser> /*browser*/,
+			CefRefPtr<CefFrame> /*frame*/, CefProcessId /*source_process*/,
+			CefRefPtr<CefProcessMessage> message)
+		{
+			if (!mJSBridge)
+				return false;
+
+			const std::string name = message->GetName().ToString();
+			if (name != "dia_callCpp")
+				return false;
+
+			CefRefPtr<CefListValue> args = message->GetArgumentList();
+			if (!args || args->GetSize() < 2)
+				return false;
+
+			std::string functionName = args->GetString(0).ToString();
+			std::string argsJson = args->GetString(1).ToString();
+
+			mJSBridge->HandleCall(functionName, argsJson);
+			return true;
 		}
 	}
 }

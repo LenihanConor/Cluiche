@@ -8,6 +8,7 @@ namespace Dia
 {
 	namespace Window { class IWindow; }
 	namespace UI { class IUISystem; }
+	namespace Editor { class EditorViewController; }
 }
 
 namespace Cluiche
@@ -23,6 +24,7 @@ namespace Cluiche
 			~EditorViewModule();
 
 			void SetModel(Dia::Editor::EditorModel* model) { mModel = model; }
+			void SetController(Dia::Editor::EditorViewController* controller) { mController = controller; }
 
 			Dia::Editor::EditorView& GetView() { return mView; }
 
@@ -34,6 +36,7 @@ namespace Cluiche
 		private:
 			Dia::Editor::EditorView mView;
 			Dia::Editor::EditorModel* mModel;
+			Dia::Editor::EditorViewController* mController;
 			Dia::Window::IWindow* mWindow;
 			Dia::UI::IUISystem* mUISystem;
 		};

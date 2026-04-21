@@ -14,6 +14,7 @@ namespace Dia
 	{
 		class CEFPage;
 		class CEFRenderHandler;
+		class CEFJavaScriptBridge;
 
 		class CEFClientHandler
 			: public CefClient
@@ -25,6 +26,13 @@ namespace Dia
 			CEFClientHandler(CEFPage* page, CefRefPtr<CEFRenderHandler> renderHandler);
 
 			void DetachPage() { mPage = nullptr; }
+			void SetJSBridge(CEFJavaScriptBridge* bridge) { mJSBridge = bridge; }
+
+			// CefClient IPC receiver (from render process)
+			bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
+				CefRefPtr<CefFrame> frame,
+				CefProcessId source_process,
+				CefRefPtr<CefProcessMessage> message) override;
 
 			// CefClient
 			CefRefPtr<CefRenderHandler> GetRenderHandler() override;
@@ -47,6 +55,7 @@ namespace Dia
 		private:
 			CEFPage* mPage;
 			CefRefPtr<CEFRenderHandler> mRenderHandler;
+			CEFJavaScriptBridge* mJSBridge = nullptr;
 
 			IMPLEMENT_REFCOUNTING(CEFClientHandler);
 		};

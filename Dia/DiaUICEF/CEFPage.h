@@ -16,12 +16,17 @@ namespace Dia
 	{
 		class CEFRenderHandler;
 		class CEFClientHandler;
+		class CEFJavaScriptBridge;
 
 		class CEFPage : public UI::IPage
 		{
 		public:
 			CEFPage(int pageId, const char* url, int width, int height);
 			virtual ~CEFPage();
+
+			// Must be called before Create() / CreateWindowed() so the client handler
+			// can route IPC messages from the render process to the bridge.
+			void SetJSBridge(CEFJavaScriptBridge* bridge) { mJSBridge = bridge; }
 
 			bool Create();                         // offscreen / windowless
 			bool CreateWindowed(void* parentHwnd); // windowed, CEF owns child window
@@ -60,6 +65,7 @@ namespace Dia
 			CefRefPtr<CefBrowser> mBrowser;
 			CefRefPtr<CEFRenderHandler> mRenderHandler;
 			CefRefPtr<CEFClientHandler> mClientHandler;
+			CEFJavaScriptBridge* mJSBridge = nullptr;
 		};
 	}
 }

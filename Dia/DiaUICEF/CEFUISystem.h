@@ -46,6 +46,10 @@ namespace Dia
 			virtual void InjectMouseClick(Dia::Input::EMouseButton button, int x, int y) override;
 			virtual void InjectMouseWheel(int scroll_vert, int scroll_horz) override;
 
+			// JS bridge
+			virtual void RegisterJSHandler(const char* name, JSHandler handler) override;
+			virtual void CallJSFunction(const char* functionName, const char* argsJson) override;
+
 			// CEF-specific configuration (call before Initialize)
 			void SetRemoteDebuggingPort(int port);
 			void SetCachePath(const char* path);

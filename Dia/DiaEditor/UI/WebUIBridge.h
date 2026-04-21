@@ -10,9 +10,9 @@
 
 namespace Dia
 {
-	namespace UICEF
+	namespace UI
 	{
-		class CEFJavaScriptBridge;
+		class IUISystem;
 	}
 
 	namespace Editor
@@ -24,7 +24,7 @@ namespace Dia
 		public:
 			using EventHandler = std::function<void(const Json::Value& data)>;
 
-			explicit WebUIBridge(Dia::UICEF::CEFJavaScriptBridge* cefBridge);
+			explicit WebUIBridge(Dia::UI::IUISystem* uiSystem);
 
 			void Initialize(EditorViewController* controller);
 
@@ -34,7 +34,7 @@ namespace Dia
 		private:
 			std::string HandleEditorCall(const std::string& argsJson);
 
-			Dia::UICEF::CEFJavaScriptBridge* mCEFBridge;
+			Dia::UI::IUISystem* mUISystem;
 			EditorViewController* mController;
 
 			struct HandlerEntry

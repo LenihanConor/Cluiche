@@ -35,6 +35,7 @@ namespace Dia
 		{
 			mRenderHandler = new CEFRenderHandler(mWidth, mHeight);
 			mClientHandler = new CEFClientHandler(this, mRenderHandler);
+			mClientHandler->SetJSBridge(mJSBridge);
 
 			CefWindowInfo windowInfo;
 			windowInfo.SetAsWindowless(nullptr);
@@ -52,6 +53,7 @@ namespace Dia
 		{
 			// No render handler needed — CEF owns the window content directly
 			mClientHandler = new CEFClientHandler(this, nullptr);
+			mClientHandler->SetJSBridge(mJSBridge);
 
 			CefWindowInfo windowInfo;
 			CefRect cefRect(0, 0, mWidth, mHeight);

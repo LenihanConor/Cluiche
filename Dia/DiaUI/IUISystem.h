@@ -5,6 +5,9 @@
 
 #include <DiaCore/Strings/String64.h>
 
+#include <functional>
+#include <string>
+
 namespace Dia
 {
 	namespace UI
@@ -16,6 +19,8 @@ namespace Dia
 		class IUISystem
 		{
 		public:
+			using JSHandler = std::function<std::string(const std::string& argsJson)>;
+
 			IUISystem() {};
 			virtual ~IUISystem() {};
 
@@ -40,6 +45,12 @@ namespace Dia
 			virtual void InjectMouseUp(Dia::Input::EMouseButton button, int x, int y) = 0;
 			virtual void InjectMouseClick(Dia::Input::EMouseButton button, int x, int y) = 0;
 			virtual void InjectMouseWheel(int scroll_vert, int scroll_horz) = 0;
+
+			// JavaScript <-> C++ bridge (optional; default no-op for UI systems without JS).
+			// RegisterJSHandler binds a name that JS can invoke as window.dia.callCpp(name, argsJson).
+			// CallJSFunction pushes a notification to JS: dia.<functionName>(argsJson).
+			virtual void RegisterJSHandler(const char* /*name*/, JSHandler /*handler*/) {}
+			virtual void CallJSFunction(const char* /*functionName*/, const char* /*argsJson*/) {}
 		};
 	}
 }

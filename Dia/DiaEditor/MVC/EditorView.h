@@ -14,6 +14,8 @@ namespace Dia
 		class WebUIBridge;
 		class DockingLayout;
 
+		class EditorViewController;
+
 		class EditorView
 		{
 		public:
@@ -22,7 +24,7 @@ namespace Dia
 			EditorView();
 			~EditorView();
 
-			void Initialize(Dia::UI::IUISystem* uiSystem);
+			void Initialize(Dia::UI::IUISystem* uiSystem, EditorViewController* controller);
 			void Shutdown();
 
 			void RegisterComponent(const char* name, const char* uiPath);
