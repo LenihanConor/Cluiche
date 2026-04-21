@@ -195,6 +195,7 @@ xcopy /Y /I "$(ProjectDir)..\..\CluicheTest\Data\Manifests\*.diaapp" "$(OutDir)D
     <ClCompile Include="Application\TestApplicationLoader.cpp" />
     <ClCompile Include="Application\TestPhaseTransition.cpp" />
     <ClCompile Include="Application\TestCluicheManifests.cpp" />
+    <ClCompile Include="Application\TestMetricsCollector.cpp" />
     <ClCompile Include="UI\TestBoundMethod.cpp" />
     <ClCompile Include="UI\TestUIDataBuffer.cpp" />
     <ClCompile Include="UI\TestPage.cpp" />

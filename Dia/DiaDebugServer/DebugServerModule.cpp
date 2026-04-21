@@ -3,6 +3,7 @@
 #include <DiaApplication/ApplicationProcessingUnit.h>
 #include <DiaApplication/ApplicationPhase.h>
 #include <DiaApplication/DebugDataTypes.h>
+#include <DiaApplication/Metrics/MetricsCollectorModule.h>
 #include <DiaWebSocket/Server.h>
 #include <DiaDebugProtocol/DiaDebugProtocol.h>
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
@@ -350,16 +351,33 @@ namespace Dia
 			uint64_t serializeStart = Dia::DebugProtocol::GetTimestampNow();
 
 			Dia::DebugProtocol::CoreMetricsPayload metrics;
-			metrics.fps = 0.0f;
-			metrics.frameTimeMs = 0.0f;
-			metrics.memoryUsedMb = 0.0f;
-			metrics.memoryAvailableMb = 0.0f;
+			memset(&metrics, 0, sizeof(metrics));
+
+			Dia::Application::MetricsCollectorModule* collector = GetAssociatedProcessingUnit()->GetMetricsCollector();
+			if (collector != nullptr)
+			{
+				const Dia::Application::MetricsSnapshot& snap = collector->GetSnapshot();
+				metrics.fps = (snap.puCount > 0) ? snap.puMetrics[0].fps : 0.0f;
+				metrics.frameTimeMs = (snap.puCount > 0) ? snap.puMetrics[0].frameTimeMs : 0.0f;
+				metrics.memoryUsedMb = snap.memoryUsedMB;
+				metrics.uptimeSeconds = snap.uptimeSeconds;
+				metrics.puCount = snap.puCount;
+				for (unsigned int i = 0; i < snap.puCount && i < Dia::DebugProtocol::CoreMetricsPayload::kMaxProcessingUnits; ++i)
+				{
+					strncpy_s(metrics.puMetrics[i].name, sizeof(metrics.puMetrics[i].name), snap.puMetrics[i].name, _TRUNCATE);
+					metrics.puMetrics[i].fps = snap.puMetrics[i].fps;
+					metrics.puMetrics[i].frameTimeMs = snap.puMetrics[i].frameTimeMs;
+				}
+			}
 
 #ifdef _WIN32
-			PROCESS_MEMORY_COUNTERS pmc;
-			if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc)))
+			if (collector == nullptr)
 			{
-				metrics.memoryUsedMb = static_cast<float>(pmc.WorkingSetSize) / (1024.0f * 1024.0f);
+				PROCESS_MEMORY_COUNTERS pmc;
+				if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc)))
+				{
+					metrics.memoryUsedMb = static_cast<float>(pmc.WorkingSetSize) / (1024.0f * 1024.0f);
+				}
 			}
 
 			MEMORYSTATUSEX memStatus;

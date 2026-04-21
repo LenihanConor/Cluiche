@@ -23,12 +23,24 @@ namespace Dia
 			Json::Value filter;
 		};
 
+		struct PUMetricsPayload
+		{
+			char name[64];
+			float fps;
+			float frameTimeMs;
+		};
+
 		struct CoreMetricsPayload
 		{
 			float fps;
 			float frameTimeMs;
 			float memoryUsedMb;
 			float memoryAvailableMb;
+			float uptimeSeconds;
+
+			static const unsigned int kMaxProcessingUnits = 8;
+			PUMetricsPayload puMetrics[kMaxProcessingUnits];
+			unsigned int puCount;
 		};
 
 		struct DataUpdateMessage

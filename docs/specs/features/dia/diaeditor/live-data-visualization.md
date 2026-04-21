@@ -11,649 +11,264 @@
 
 ## Problem Statement
 
-Developers need real-time visibility into running game state including ProcessingUnit hierarchies, performance metrics, and memory usage. Without live visualization, debugging complex multi-threaded applications is difficult. The system must efficiently render updates without impacting editor performance, support pluggable visualizations for extensibility, and filter data by ProcessingUnit to focus on specific subsystems.
+Developers need real-time visibility into running game performance — FPS per ProcessingUnit and memory consumption — directly in the Game Connection panel. Currently `DebugServerModule::BroadcastCoreMetrics()` sends FPS and frameTimeMs as 0.0f because ProcessingUnit doesn't expose frame timing and there's no metrics collection system. A lightweight metrics display in the existing Game Connection panel gives a quick "is the game healthy?" glance without needing a dedicated performance editor.
+
+## Solution Overview
+
+Two layers:
+
+**Game side (DiaApplication):** A `MetricsCollectorModule` that lives in the main ProcessingUnit. Sub-PUs receive a pointer to it via `ProcessingUnit::SetMetricsCollector()` and call `ReportFrame()` at the end of each update tick. The module also queries process memory. `DebugServerModule` reads the latest snapshot and broadcasts it in the existing `core_metrics` message.
+
+**Editor side:** The Game Connection panel UI (already exists) gains a summary bar, an FPS line chart (one line per PU), and a memory line chart. Data arrives via the existing `GameConnectionManager` raw message channel. No new panels, plugins, or C++ visualization framework needed.
+
+---
 
 ## Acceptance Criteria
 
-- [ ] Hybrid rendering: VisJS for hierarchies, recharts for time-series (Decision 38)
-- [ ] 10 FPS update throttle (redraw every 100ms) (Decision 39)
-- [ ] Read-only visualizations (no inline editing) (Decision 40)
-- [ ] Filter by ProcessingUnit dropdown (Decision 41)
-- [ ] Pluggable visualization framework with IVisualization interface (Decision 42)
-- [ ] Core monitoring base set: ProcessingUnit tree, FPS chart, Memory chart, Frame Time chart (Decision 42)
-- [ ] WebSocket subscription to game data via GameConnectionManager
-- [ ] Color coding: Running (green), Stopped (gray), Error (red)
-- [ ] Toggle individual visualizations on/off
-- [ ] Persist visualization layout preferences
+- [ ] `MetricsCollectorModule` collects per-PU FPS and frame time via injected `ReportFrame()` calls
+- [ ] `MetricsCollectorModule` queries process memory usage (Windows API)
+- [ ] `MetricsCollectorModule` tracks uptime from first update
+- [ ] `ProcessingUnit::SetMetricsCollector()` / `GetMetricsCollector()` for injection
+- [ ] Each PU calls `ReportFrame(puId, puName, deltaTimeMs)` at end of its update tick
+- [ ] `CoreMetricsPayload` extended with per-PU metrics array
+- [ ] `DebugServerModule::BroadcastCoreMetrics()` reads from MetricsCollectorModule instead of hardcoded zeros
+- [ ] Game Connection panel shows summary bar: FPS (main PU), Memory (MB), Uptime
+- [ ] Game Connection panel shows FPS line chart with one line per PU, ~60 sample window
+- [ ] Game Connection panel shows Memory line chart, single line, ~60 sample window
+- [ ] Charts render from `core_metrics` messages received via GameConnectionManager
+
+---
 
 ## Design
 
-### LiveDataPanel React Component
-
-**UI Component:**
-```typescript
-// Cluiche/CluicheEditor/UI/src/components/LiveDataPanel.tsx
-import React, { useState, useEffect, useRef } from 'react';
-import { Network } from 'vis-network';  // VisJS for hierarchy (Decision 38)
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';  // recharts for time-series (Decision 38)
-
-export interface IVisualization {
-    id: string;
-    name: string;
-    type: 'hierarchy' | 'timeseries' | 'custom';
-    
-    // Lifecycle
-    initialize(container: HTMLElement): void;
-    update(data: any): void;
-    destroy(): void;
-}
-
-export const LiveDataPanel: React.FC = () => {
-    const [visualizations, setVisualizations] = useState<IVisualization[]>([]);
-    const [activeVisualizations, setActiveVisualizations] = useState<Set<string>>(new Set());
-    const [selectedProcessingUnit, setSelectedProcessingUnit] = useState<string>('all');
-    const [processingUnits, setProcessingUnits] = useState<string[]>([]);
-    
-    // Decision 39: 10 FPS throttle (100ms redraw)
-    const lastUpdateTime = useRef<number>(0);
-    const updateThrottleMs = 100;
-    
-    useEffect(() => {
-        // Load registered visualizations from C++ (Decision 42: pluggable framework)
-        window.CluicheEditor.getVisualizations().then((vizList: IVisualization[]) => {
-            setVisualizations(vizList);
-            
-            // Enable core visualizations by default
-            const coreVizIds = vizList
-                .filter(viz => ['ProcessingUnitTree', 'FPSChart', 'MemoryChart', 'FrameTimeChart'].includes(viz.id))
-                .map(viz => viz.id);
-            setActiveVisualizations(new Set(coreVizIds));
-        });
-        
-        // Subscribe to game data via WebSocket
-        window.CluicheEditor.subscribeToGameData((data: any) => {
-            // Decision 39: Throttle updates to 10 FPS
-            const now = Date.now();
-            if (now - lastUpdateTime.current >= updateThrottleMs) {
-                lastUpdateTime.current = now;
-                updateVisualizations(data);
-            }
-        });
-        
-        // Load ProcessingUnit list for filter dropdown (Decision 41)
-        window.CluicheEditor.getProcessingUnits().then((puList: string[]) => {
-            setProcessingUnits(['all', ...puList]);
-        });
-    }, []);
-    
-    const updateVisualizations = (data: any) => {
-        // Decision 41: Filter by ProcessingUnit
-        const filteredData = selectedProcessingUnit === 'all' 
-            ? data 
-            : filterDataByProcessingUnit(data, selectedProcessingUnit);
-        
-        // Update each active visualization
-        activeVisualizations.forEach(vizId => {
-            const viz = visualizations.find(v => v.id === vizId);
-            if (viz) {
-                viz.update(filteredData);
-            }
-        });
-    };
-    
-    const filterDataByProcessingUnit = (data: any, puId: string): any => {
-        // Filter data to only include selected ProcessingUnit and its children
-        if (data.processingUnits) {
-            return {
-                ...data,
-                processingUnits: data.processingUnits.filter((pu: any) => 
-                    pu.id === puId || pu.parentId === puId
-                )
-            };
-        }
-        return data;
-    };
-    
-    const toggleVisualization = (vizId: string) => {
-        setActiveVisualizations(prev => {
-            const newSet = new Set(prev);
-            if (newSet.has(vizId)) {
-                newSet.delete(vizId);
-            } else {
-                newSet.add(vizId);
-            }
-            return newSet;
-        });
-    };
-    
-    return (
-        <div className="live-data-panel">
-            {/* Filter bar (Decision 41: ProcessingUnit filter) */}
-            <div className="filter-bar">
-                <label>
-                    Filter by ProcessingUnit:
-                    <select 
-                        value={selectedProcessingUnit}
-                        onChange={(e) => setSelectedProcessingUnit(e.target.value)}
-                    >
-                        {processingUnits.map(pu => (
-                            <option key={pu} value={pu}>{pu}</option>
-                        ))}
-                    </select>
-                </label>
-                
-                {/* Toggle visualizations */}
-                <div className="viz-toggles">
-                    {visualizations.map(viz => (
-                        <label key={viz.id}>
-                            <input 
-                                type="checkbox"
-                                checked={activeVisualizations.has(viz.id)}
-                                onChange={() => toggleVisualization(viz.id)}
-                            />
-                            {viz.name}
-                        </label>
-                    ))}
-                </div>
-            </div>
-            
-            {/* Visualization grid */}
-            <div className="visualization-grid">
-                {visualizations.map(viz => (
-                    activeVisualizations.has(viz.id) && (
-                        <div key={viz.id} className="visualization-container">
-                            <h3>{viz.name}</h3>
-                            {viz.type === 'hierarchy' && <ProcessingUnitTree vizId={viz.id} />}
-                            {viz.type === 'timeseries' && <TimeSeriesChart vizId={viz.id} />}
-                            {viz.type === 'custom' && <CustomVisualization vizId={viz.id} />}
-                        </div>
-                    )
-                ))}
-            </div>
-        </div>
-    );
-};
-```
-
-### Core Visualizations
-
-**ProcessingUnit Tree (VisJS):**
-```typescript
-// Decision 42: Core monitoring - ProcessingUnit hierarchy
-// Decision 38: VisJS for hierarchy visualization
-export const ProcessingUnitTree: React.FC<{ vizId: string }> = ({ vizId }) => {
-    const containerRef = useRef<HTMLDivElement>(null);
-    const networkRef = useRef<Network | null>(null);
-    
-    useEffect(() => {
-        if (!containerRef.current) return;
-        
-        // Initialize VisJS network
-        const options = {
-            layout: {
-                hierarchical: {
-                    direction: 'UD',  // Top-down
-                    sortMethod: 'directed'
-                }
-            },
-            nodes: {
-                shape: 'box',
-                font: { color: '#ffffff' }
-            },
-            edges: {
-                arrows: 'to'
-            }
-        };
-        
-        networkRef.current = new Network(containerRef.current, { nodes: [], edges: [] }, options);
-        
-        // Subscribe to updates
-        window.CluicheEditor.subscribeVisualization(vizId, (data: any) => {
-            updateTree(data);
-        });
-        
-        return () => {
-            networkRef.current?.destroy();
-        };
-    }, [vizId]);
-    
-    const updateTree = (data: any) => {
-        if (!networkRef.current || !data.processingUnits) return;
-        
-        // Decision 40: Read-only (no inline editing)
-        const nodes = data.processingUnits.map((pu: any) => ({
-            id: pu.id,
-            label: pu.name,
-            color: getStateColor(pu.state)  // Running=green, Stopped=gray, Error=red
-        }));
-        
-        const edges = data.processingUnits
-            .filter((pu: any) => pu.parentId)
-            .map((pu: any) => ({
-                from: pu.parentId,
-                to: pu.id
-            }));
-        
-        networkRef.current.setData({ nodes, edges });
-    };
-    
-    const getStateColor = (state: string): string => {
-        switch (state) {
-            case 'Running': return '#44ff44';
-            case 'Stopped': return '#888888';
-            case 'Error': return '#ff4444';
-            default: return '#ffffff';
-        }
-    };
-    
-    return <div ref={containerRef} style={{ width: '100%', height: '400px' }} />;
-};
-```
-
-**FPS Chart (recharts):**
-```typescript
-// Decision 42: Core monitoring - FPS over time
-// Decision 38: recharts for time-series
-export const FPSChart: React.FC<{ vizId: string }> = ({ vizId }) => {
-    const [fpsData, setFpsData] = useState<{ time: number; fps: number }[]>([]);
-    const maxDataPoints = 100;  // Last 100 samples
-    
-    useEffect(() => {
-        window.CluicheEditor.subscribeVisualization(vizId, (data: any) => {
-            if (data.fps !== undefined) {
-                setFpsData(prev => {
-                    const newData = [...prev, { time: Date.now(), fps: data.fps }];
-                    // Keep last 100 points
-                    if (newData.length > maxDataPoints) {
-                        return newData.slice(newData.length - maxDataPoints);
-                    }
-                    return newData;
-                });
-            }
-        });
-    }, [vizId]);
-    
-    return (
-        <LineChart width={600} height={300} data={fpsData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="time" hide />
-            <YAxis domain={[0, 120]} />
-            <Tooltip />
-            <Legend />
-            <Line type="monotone" dataKey="fps" stroke="#44ff44" dot={false} />
-        </LineChart>
-    );
-};
-```
-
-**Memory Chart (recharts):**
-```typescript
-// Decision 42: Core monitoring - Memory usage over time
-export const MemoryChart: React.FC<{ vizId: string }> = ({ vizId }) => {
-    const [memoryData, setMemoryData] = useState<{ time: number; usedMB: number }[]>([]);
-    const maxDataPoints = 100;
-    
-    useEffect(() => {
-        window.CluicheEditor.subscribeVisualization(vizId, (data: any) => {
-            if (data.memoryUsedBytes !== undefined) {
-                const usedMB = data.memoryUsedBytes / (1024 * 1024);
-                setMemoryData(prev => {
-                    const newData = [...prev, { time: Date.now(), usedMB }];
-                    if (newData.length > maxDataPoints) {
-                        return newData.slice(newData.length - maxDataPoints);
-                    }
-                    return newData;
-                });
-            }
-        });
-    }, [vizId]);
-    
-    return (
-        <LineChart width={600} height={300} data={memoryData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="time" hide />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            <Line type="monotone" dataKey="usedMB" stroke="#ffcc00" dot={false} />
-        </LineChart>
-    );
-};
-```
-
-**Frame Time Chart (recharts):**
-```typescript
-// Decision 42: Core monitoring - Frame time over time
-export const FrameTimeChart: React.FC<{ vizId: string }> = ({ vizId }) => {
-    const [frameTimeData, setFrameTimeData] = useState<{ time: number; frameMs: number }[]>([]);
-    const maxDataPoints = 100;
-    
-    useEffect(() => {
-        window.CluicheEditor.subscribeVisualization(vizId, (data: any) => {
-            if (data.frameTimeMs !== undefined) {
-                setFrameTimeData(prev => {
-                    const newData = [...prev, { time: Date.now(), frameMs: data.frameTimeMs }];
-                    if (newData.length > maxDataPoints) {
-                        return newData.slice(newData.length - maxDataPoints);
-                    }
-                    return newData;
-                });
-            }
-        });
-    }, [vizId]);
-    
-    return (
-        <LineChart width={600} height={300} data={frameTimeData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="time" hide />
-            <YAxis domain={[0, 33]} />  {/* 33ms = 30 FPS */}
-            <Tooltip />
-            <Legend />
-            <Line type="monotone" dataKey="frameMs" stroke="#4499ff" dot={false} />
-            {/* 16ms reference line (60 FPS) */}
-            <Line type="monotone" dataKey={() => 16} stroke="#888888" strokeDasharray="5 5" dot={false} />
-        </LineChart>
-    );
-};
-```
-
-### C++ Visualization Framework
-
-**IVisualization Interface:**
-```cpp
-// Dia/DiaEditor/Visualization/IVisualization.h
-namespace Dia::Editor {
-    enum class VisualizationType {
-        kHierarchy,    // VisJS network graphs
-        kTimeSeries,   // recharts line/bar charts
-        kCustom        // Custom rendering
-    };
-    
-    class IVisualization {
-    public:
-        virtual ~IVisualization() = default;
-        
-        // Metadata
-        virtual const char* GetId() const = 0;
-        virtual const char* GetName() const = 0;
-        virtual VisualizationType GetType() const = 0;
-        
-        // Data subscription (Decision 42: pluggable framework)
-        virtual const char* GetDataSubscription() const = 0;  // e.g., "processingUnits", "performance"
-        
-        // Data transformation (game data → UI-friendly format)
-        virtual Json::Value TransformData(const Json::Value& gameData) const = 0;
-    };
-    
-    class IVisualizationFactory {
-    public:
-        virtual ~IVisualizationFactory() = default;
-        virtual IVisualization* Create() = 0;
-    };
-}
-```
-
-**VisualizationRegistry:**
-```cpp
-// Dia/DiaEditor/Visualization/VisualizationRegistry.h
-namespace Dia::Editor {
-    class VisualizationRegistry {
-    public:
-        static VisualizationRegistry& Instance();
-        
-        void RegisterVisualization(const StringCRC& typeId, IVisualizationFactory* factory);
-        IVisualization* CreateVisualization(const StringCRC& typeId);
-        void UnregisterVisualization(const StringCRC& typeId);
-        
-        const DynamicArrayC<StringCRC, 32>& GetRegisteredVisualizations() const;
-        bool HasVisualization(const StringCRC& typeId) const;
-        
-        // Get all visualizations as JSON (for UI)
-        Json::Value GetAllVisualizationsMetadata() const;
-    };
-}
-```
-
-**Registration Macro:**
-```cpp
-// Mirrors EditorPlugin registration pattern
-#define REGISTER_VISUALIZATION(ClassName, TypeName) \
-    namespace { \
-        struct ClassName##Factory : public IVisualizationFactory { \
-            IVisualization* Create() override { return new ClassName(); } \
-        }; \
-        static ClassName##Factory g_##ClassName##Factory; \
-        struct ClassName##Registrar { \
-            ClassName##Registrar() { \
-                VisualizationRegistry::Instance().RegisterVisualization( \
-                    Dia::Core::StringCRC(TypeName), &g_##ClassName##Factory); \
-            } \
-        }; \
-        static ClassName##Registrar g_##ClassName##Registrar; \
-    }
-
-// Usage example:
-// REGISTER_VISUALIZATION(ProcessingUnitTreeVisualization, "ProcessingUnitTree")
-```
-
-**Core Visualization Implementations:**
-```cpp
-// Dia/DiaEditor/Visualization/ProcessingUnitTreeVisualization.h
-namespace Dia::Editor {
-    class ProcessingUnitTreeVisualization : public IVisualization {
-    public:
-        const char* GetId() const override { return "ProcessingUnitTree"; }
-        const char* GetName() const override { return "ProcessingUnit Tree"; }
-        VisualizationType GetType() const override { return VisualizationType::kHierarchy; }
-        
-        const char* GetDataSubscription() const override { return "processingUnits"; }
-        
-        Json::Value TransformData(const Json::Value& gameData) const override {
-            // Transform game data to VisJS format
-            Json::Value result;
-            result["processingUnits"] = Json::arrayValue;
-            
-            // Assume gameData contains ProcessingUnit hierarchy
-            for (const auto& pu : gameData["processingUnits"]) {
-                Json::Value node;
-                node["id"] = pu["id"];
-                node["name"] = pu["name"];
-                node["state"] = pu["state"];  // "Running", "Stopped", "Error"
-                node["parentId"] = pu.get("parentId", "");
-                result["processingUnits"].append(node);
-            }
-            
-            return result;
-        }
-    };
-    
-    REGISTER_VISUALIZATION(ProcessingUnitTreeVisualization, "ProcessingUnitTree")
-}
-```
+### MetricsCollectorModule (Game Side)
 
 ```cpp
-// Dia/DiaEditor/Visualization/FPSChartVisualization.h
-namespace Dia::Editor {
-    class FPSChartVisualization : public IVisualization {
-    public:
-        const char* GetId() const override { return "FPSChart"; }
-        const char* GetName() const override { return "FPS Chart"; }
-        VisualizationType GetType() const override { return VisualizationType::kTimeSeries; }
-        
-        const char* GetDataSubscription() const override { return "performance"; }
-        
-        Json::Value TransformData(const Json::Value& gameData) const override {
-            Json::Value result;
-            result["fps"] = gameData.get("fps", 0.0);
-            return result;
-        }
+// Dia/DiaApplication/Metrics/MetricsCollectorModule.h
+namespace Dia::Application
+{
+    struct PUMetrics
+    {
+        Dia::Core::StringCRC id;
+        char name[64];
+        float fps;
+        float frameTimeMs;
     };
-    
-    REGISTER_VISUALIZATION(FPSChartVisualization, "FPSChart")
-}
-```
 
-```cpp
-// Dia/DiaEditor/Visualization/MemoryChartVisualization.h
-namespace Dia::Editor {
-    class MemoryChartVisualization : public IVisualization {
-    public:
-        const char* GetId() const override { return "MemoryChart"; }
-        const char* GetName() const override { return "Memory Chart"; }
-        VisualizationType GetType() const override { return VisualizationType::kTimeSeries; }
-        
-        const char* GetDataSubscription() const override { return "memory"; }
-        
-        Json::Value TransformData(const Json::Value& gameData) const override {
-            Json::Value result;
-            result["memoryUsedBytes"] = gameData.get("usedBytes", 0);
-            return result;
-        }
+    struct MetricsSnapshot
+    {
+        static const unsigned int kMaxProcessingUnits = 8;
+        PUMetrics puMetrics[kMaxProcessingUnits];
+        unsigned int puCount;
+        float memoryUsedMB;
+        float uptimeSeconds;
     };
-    
-    REGISTER_VISUALIZATION(MemoryChartVisualization, "MemoryChart")
-}
-```
 
-```cpp
-// Dia/DiaEditor/Visualization/FrameTimeChartVisualization.h
-namespace Dia::Editor {
-    class FrameTimeChartVisualization : public IVisualization {
+    class MetricsCollectorModule : public Module
+    {
     public:
-        const char* GetId() const override { return "FrameTimeChart"; }
-        const char* GetName() const override { return "Frame Time Chart"; }
-        VisualizationType GetType() const override { return VisualizationType::kTimeSeries; }
-        
-        const char* GetDataSubscription() const override { return "performance"; }
-        
-        Json::Value TransformData(const Json::Value& gameData) const override {
-            Json::Value result;
-            result["frameTimeMs"] = gameData.get("frameTimeMs", 0.0);
-            return result;
-        }
-    };
-    
-    REGISTER_VISUALIZATION(FrameTimeChartVisualization, "FrameTimeChart")
-}
-```
+        static const Dia::Core::StringCRC kUniqueId;
 
-### Update Throttling
+        MetricsCollectorModule(ProcessingUnit* pu);
 
-**C++ Side (Decision 39: 10 FPS throttle):**
-```cpp
-// Dia/DiaEditor/Visualization/VisualizationManager.h
-namespace Dia::Editor {
-    class VisualizationManager : public Dia::Application::Module {
-    public:
-        VisualizationManager(ProcessingUnit* pu);
-        
-        // Subscribe to game data updates
-        void SubscribeToGameData();
-        
-        // Receive updates from GameConnectionManager
-        void OnGameDataReceived(const Json::Value& data);
-        
-        // Send updates to UI (with throttling)
-        void SendToUI(const StringCRC& visualizationId, const Json::Value& data);
-        
+        // Called by each PU at end of its update tick.
+        void ReportFrame(const Dia::Core::StringCRC& puId,
+                         const char* puName,
+                         float deltaTimeMs);
+
+        const MetricsSnapshot& GetSnapshot() const;
+
     protected:
-        void DoUpdate(float deltaTime) override;
-        
+        StateObject::OpertionResponse DoStart(const IStartData*) override;
+        void DoUpdate() override;
+        void DoStop() override;
+
     private:
-        // Decision 39: 10 FPS update throttle (100ms between updates)
-        static constexpr float kUpdateThrottleSeconds = 0.1f;
-        float mTimeSinceLastUpdate;
-        
-        GameConnectionManager* mGameConnection;
-        
-        struct ActiveVisualization {
-            StringCRC id;
-            IVisualization* visualization;
-        };
-        DynamicArrayC<ActiveVisualization, 16> mActiveVisualizations;
-        Json::Value mPendingData;
+        void QueryMemory();
+
+        MetricsSnapshot mSnapshot;
+        float mUptimeAccumulator;
     };
 }
 ```
 
-**Implementation:**
+**DoUpdate:**
+- Queries process memory via `GetProcessMemoryInfo` (Windows) / stub on other platforms
+- Increments uptime
+- The per-PU data is already populated by `ReportFrame()` calls earlier in the frame
+
+**ReportFrame:**
+- Finds existing entry by puId, or adds new one if space
+- Name string comes from `puId.AsChar()` (StringCRC stores original string)
+- FPS smoothed via exponential moving average: `fps = alpha * instantFps + (1 - alpha) * prevFps` where alpha ~0.1
+- `frameTimeMs = deltaTimeMs` (raw, not smoothed)
+
+### ProcessingUnit Injection
+
 ```cpp
-void VisualizationManager::DoUpdate(float deltaTime) {
-    mTimeSinceLastUpdate += deltaTime;
-    
-    // Decision 39: Throttle to 10 FPS (100ms)
-    if (mTimeSinceLastUpdate >= kUpdateThrottleSeconds) {
-        mTimeSinceLastUpdate = 0.0f;
-        
-        // Process pending data and send to UI
-        if (!mPendingData.empty()) {
-            for (int i = 0; i < mActiveVisualizations.Size(); ++i) {
-                Json::Value transformedData = mActiveVisualizations[i].visualization->TransformData(mPendingData);
-                SendToUI(mActiveVisualizations[i].id, transformedData);
-            }
-            
-            mPendingData.clear();
-        }
+// Added to Dia/DiaApplication/ApplicationProcessingUnit.h
+void SetMetricsCollector(MetricsCollectorModule* collector);
+MetricsCollectorModule* GetMetricsCollector() const;
+```
+
+The PU stores a raw pointer. At the end of its internal update tick, if the pointer is non-null, it calls `mMetricsCollector->ReportFrame(GetUniqueId(), GetName(), frameDeltaMs)`. This requires exposing frame delta — either via a new member or by computing it at the call site.
+
+### Extended CoreMetricsPayload
+
+```cpp
+// Dia/DiaDebugProtocol/MessageStructs.h — extended
+struct PUMetricsPayload
+{
+    char name[64];
+    float fps;
+    float frameTimeMs;
+};
+
+struct CoreMetricsPayload
+{
+    float fps;              // Main PU FPS (convenience)
+    float frameTimeMs;      // Main PU frame time (convenience)
+    float memoryUsedMb;
+    float memoryAvailableMb;
+    float uptimeSeconds;
+
+    static const unsigned int kMaxProcessingUnits = 8;
+    PUMetricsPayload puMetrics[kMaxProcessingUnits];
+    unsigned int puCount;
+};
+```
+
+### DebugServerModule Integration
+
+`DebugServerModule::BroadcastCoreMetrics()` changes from hardcoded zeros to:
+
+```cpp
+MetricsCollectorModule* metrics = /* obtained via PU */;
+if (metrics)
+{
+    const MetricsSnapshot& snap = metrics->GetSnapshot();
+    payload.fps = snap.puCount > 0 ? snap.puMetrics[0].fps : 0.0f;
+    payload.frameTimeMs = snap.puCount > 0 ? snap.puMetrics[0].frameTimeMs : 0.0f;
+    payload.memoryUsedMb = snap.memoryUsedMB;
+    payload.uptimeSeconds = snap.uptimeSeconds;
+    payload.puCount = snap.puCount;
+    for (unsigned int i = 0; i < snap.puCount; ++i)
+    {
+        strncpy_s(payload.puMetrics[i].name, 64, snap.puMetrics[i].name, _TRUNCATE);
+        payload.puMetrics[i].fps = snap.puMetrics[i].fps;
+        payload.puMetrics[i].frameTimeMs = snap.puMetrics[i].frameTimeMs;
     }
 }
 ```
+
+### Serialization (Wire Format)
+
+```json
+{
+    "type": "core_metrics",
+    "timestamp": 1234567890,
+    "payload": {
+        "fps": 60.0,
+        "frame_time_ms": 16.6,
+        "memory_used_mb": 128.5,
+        "memory_available_mb": 7800.0,
+        "uptime_seconds": 342.5,
+        "processing_units": [
+            { "name": "MainPU", "fps": 60.0, "frame_time_ms": 16.6 },
+            { "name": "RenderPU", "fps": 60.0, "frame_time_ms": 14.2 },
+            { "name": "SimPU", "fps": 30.0, "frame_time_ms": 33.1 }
+        ]
+    }
+}
+```
+
+### Game Connection Panel UI (Editor Side)
+
+The existing Game Connection panel gains a metrics section shown when connected. No new panel or plugin — this extends `GameConnectionEditorPlugin`'s UI.
+
+**Summary Bar:**
+| FPS (Main) | Memory | Uptime |
+|---|---|---|
+| 60 | 128.5 MB | 05:42 |
+
+- FPS: main PU only (first entry in processing_units array)
+- Memory: `memory_used_mb` formatted
+- Uptime: `uptime_seconds` formatted as mm:ss
+
+**FPS Chart:**
+- Line chart, one line per ProcessingUnit, legend labels them by name
+- ~60 sample ring buffer (client-side), appended on each `core_metrics` message
+- Y axis: FPS, X axis: sample index (no timestamp labels needed)
+
+**Memory Chart:**
+- Single line chart, total `memory_used_mb`
+- Same ~60 sample window
+- Y axis: MB
+
+Both charts use plain vanilla JS with HTML5 canvas — the Game Connection panel is a self-contained HTML file with no React/build pipeline. Keep it lightweight and consistent with the existing panel code.
+
+---
 
 ## Implementation Files
 
-- `Dia/DiaEditor/Visualization/IVisualization.h` - Visualization interface
-- `Dia/DiaEditor/Visualization/VisualizationRegistry.h/cpp` - Registration system
-- `Dia/DiaEditor/Visualization/VisualizationManager.h/cpp` - Update throttling and data management
-- `Dia/DiaEditor/Visualization/ProcessingUnitTreeVisualization.h` - Core: PU tree
-- `Dia/DiaEditor/Visualization/FPSChartVisualization.h` - Core: FPS chart
-- `Dia/DiaEditor/Visualization/MemoryChartVisualization.h` - Core: Memory chart
-- `Dia/DiaEditor/Visualization/FrameTimeChartVisualization.h` - Core: Frame time chart
-- `Cluiche/CluicheEditor/UI/src/components/LiveDataPanel.tsx` - React UI component
-- `Cluiche/CluicheEditor/UI/src/components/ProcessingUnitTree.tsx` - VisJS tree visualization
-- `Cluiche/CluicheEditor/UI/src/components/FPSChart.tsx` - recharts FPS visualization
-- `Cluiche/CluicheEditor/UI/src/components/MemoryChart.tsx` - recharts memory visualization
-- `Cluiche/CluicheEditor/UI/src/components/FrameTimeChart.tsx` - recharts frame time visualization
-- `Cluiche/CluicheEditor/UI/package.json` - Add `vis-network`, `recharts` dependencies
+**New files:**
+- `Dia/DiaApplication/Metrics/MetricsCollectorModule.h`
+- `Dia/DiaApplication/Metrics/MetricsCollectorModule.cpp`
+- `Cluiche/Tests/GoogleTests/Application/TestMetricsCollector.cpp`
+
+**Modified files:**
+- `Dia/DiaApplication/ApplicationProcessingUnit.h` — `SetMetricsCollector` / `GetMetricsCollector`
+- `Dia/DiaApplication/ApplicationProcessingUnit.cpp` — member init, ReportFrame call site
+- `Dia/DiaDebugProtocol/MessageStructs.h` — extended `CoreMetricsPayload`
+- `Dia/DiaDebugProtocol/Serialization.h` — serialize per-PU array
+- `Dia/DiaDebugServer/DebugServerModule.cpp` — read from MetricsCollectorModule
+- `Dia/DiaApplication/DiaApplication.vcxproj` + `.filters` — new Metrics files
+- `Cluiche/Tests/GoogleTests/GoogleTests.vcxproj` — new test file
+- Game Connection panel HTML/JS — summary bar + charts
+
+---
 
 ## Binding Decisions Compliance
 
 | Source | ID | Decision Summary | Compliance |
 |--------|----|--------------------|------------|
-| Platform | PD-001 | Use StringCRC for IDs | **Compliant** — visualization IDs and data subscriptions use StringCRC |
-| Platform | PD-002 | PU/Phase/Module architecture | **Compliant** — VisualizationManager extends Module with DoUpdate |
-| Platform | PD-004 | No STL in public APIs | **Compliant** — IVisualization uses `const char*`, Json::Value; VisualizationManager uses DynamicArrayC not std::map |
-| Platform | PD-006 | VS project files are source of truth | **Compliant** — built within DiaEditor .vcxproj |
-| Dia | AD-002 | No STL in public APIs | **Compliant** — reinforces PD-004; ActiveVisualization uses StringCRC not std::string |
-| Dia | AD-003 | Namespace convention `Dia::<Module>::` | **Compliant** — all types in `Dia::Editor::` |
-| Dia | AD-004 | PU/Phase/Module for apps | **Compliant** — VisualizationManager participates in PU update loop |
-| DiaEditor | SED-001 | Plugin interface minimal and stable | **Compliant** — IVisualization has 5 methods |
-| DiaEditor | SED-002 | Plugins register via macro | **Compliant** — REGISTER_VISUALIZATION macro mirrors REGISTER_EDITOR_PLUGIN |
-| DiaEditor | SED-005 | CEF replaces Awesomium | **Compliant** — React visualizations render in CEF |
-| DiaEditor | SED-010 | Use DiaDebugProtocol for wire types | **Compliant** — game data arrives via GameConnectionManager using protocol types |
+| Platform | PD-001 | Use StringCRC for IDs | **Compliant** — PU IDs are StringCRC, module has kUniqueId |
+| Platform | PD-002 | PU/Phase/Module architecture | **Compliant** — MetricsCollectorModule is a Module in the main PU |
+| Platform | PD-004 | No STL in public APIs | **Compliant** — MetricsSnapshot uses fixed arrays, `const char*` |
+| Platform | PD-006 | VS project files are source of truth | **Compliant** — new files added to vcxproj |
+| Dia | AD-002 | No STL in public APIs | **Compliant** — reinforces PD-004 |
+| Dia | AD-003 | Namespace convention `Dia::<Module>::` | **Compliant** — `Dia::Application::` for metrics module |
+| Dia | AD-004 | PU/Phase/Module for apps | **Compliant** — MetricsCollectorModule participates in PU lifecycle |
+| DiaEditor | SED-004 | WebSocket protocol uses JSON | **Compliant** — metrics travel as JSON in core_metrics message |
+| DiaEditor | SED-010 | Use DiaDebugProtocol for wire types | **Compliant** — extends existing CoreMetricsPayload |
 
 **All binding decisions: COMPLIANT**
+
+---
 
 ## Open Questions
 
 **Resolved:**
-- **Decision 38:** Hybrid rendering: VisJS for hierarchies (ProcessingUnit tree), recharts for time-series charts (FPS, Memory, Frame Time)
-- **Decision 39:** 10 FPS update throttle (redraw every 100ms) to avoid editor performance impact
-- **Decision 40:** Read-only visualizations (no inline editing of game state)
-- **Decision 41:** Filter by ProcessingUnit dropdown to focus on specific subsystems
-- **Decision 42:** Pluggable framework with IVisualization interface + core monitoring base set (Tree, FPS, Memory, Frame Time)
+- ~~Separate panel vs. Game Connection panel?~~ Game Connection panel — keeps it concise
+- ~~PU tree hierarchy?~~ Deferred to a dedicated PU editor
+- ~~Singleton vs. injection for MetricsCollector?~~ Injection via `SetMetricsCollector()`
+- ~~IVisualization framework?~~ Not needed — direct HTML/JS in Game Connection panel
+- ~~Frame time chart?~~ Dropped — FPS line per PU + summary bar frame time covers it
+
+---
 
 ## AI Review Questions
 
 | # | Section | Question | Suggested Default | Answer |
 |---|---------|----------|-------------------|--------|
-| 1 | Rendering | Which libraries for visualization? | VisJS (hierarchy) + recharts (time-series) | ✅ Hybrid (Decision 38) |
-| 2 | Performance | Update throttle rate? | 10 FPS (100ms) | ✅ 10 FPS (Decision 39) |
-| 3 | Interaction | Inline editing support? | No, read-only | ✅ Read-only (Decision 40) |
-| 4 | Filtering | Filter by ProcessingUnit? | Yes, dropdown filter | ✅ Dropdown (Decision 41) |
-| 5 | Extensibility | Pluggable visualization system? | Yes, IVisualization interface | ✅ Pluggable (Decision 42) |
-| 6 | Core Set | Which visualizations by default? | Tree, FPS, Memory, Frame Time | ✅ Core set (Decision 42) |
-| 7 | Data Source | WebSocket subscription? | Yes, via GameConnectionManager | ✅ Implemented |
-| 8 | Color Coding | State colors? | Running=green, Stopped=gray, Error=red | ✅ Implemented |
+| 1 | Smoothing | Should FPS be smoothed or instantaneous? | Exponential moving average | EMA — smoothed for readability |
+| 2 | Broadcast rate | Keep 500ms broadcast interval or change? | 500ms is fine for ~60 sample / 30s window | Keep 500ms |
+| 3 | Memory | Process working set or private bytes? | Working set (matches current impl) | Working set — already implemented via GetProcessMemoryInfo |
+| 4 | PU naming | Where does PU name string come from? | Need to add a name accessor to ProcessingUnit if missing | Use `GetUniqueId().AsChar()` — StringCRC stores the original string. No new accessor needed. |
+| 5 | Chart library | Use recharts or plain canvas? | Depends on existing bundle — plain canvas if no React | Plain canvas/vanilla JS — Game Connection panel is plain HTML, no React pipeline |
+
+---
 
 ## Status
 
-`Approved` - Ready for implementation
+`Done` - Implemented and tested

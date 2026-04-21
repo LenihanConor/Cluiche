@@ -118,6 +118,65 @@
       vertical-align: 1px;
     }
     .row { margin-top: 8px; }
+    .metrics { margin-top: 14px; }
+    .summary-bar {
+      display: flex;
+      gap: 16px;
+      background: #252526;
+      border: 1px solid #3c3c3c;
+      padding: 8px 12px;
+      margin-bottom: 10px;
+    }
+    .summary-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 70px;
+    }
+    .summary-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #9cdcfe;
+      margin-bottom: 2px;
+    }
+    .summary-value {
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 14px;
+      color: #d4d4d4;
+    }
+    .chart-section {
+      margin-top: 8px;
+    }
+    .chart-title {
+      font-size: 11px;
+      color: #9cdcfe;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+    .chart-canvas {
+      width: 100%;
+      height: 100px;
+      background: #1a1a1a;
+      border: 1px solid #3c3c3c;
+      display: block;
+    }
+    .chart-legend {
+      font-size: 10px;
+      color: #808080;
+      margin-top: 3px;
+    }
+    .chart-legend span {
+      margin-right: 10px;
+    }
+    .chart-legend .swatch {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      margin-right: 3px;
+      vertical-align: 1px;
+    }
   </style>
 </head>
 <body>
@@ -151,7 +210,25 @@
         <dt>Current Phase</dt><dd id="info-phase">-</dd>
       </dl>
       <div class="heartbeat"><span class="dot"></span><span id="heartbeat-text">awaiting heartbeat...</span></div>
-      <button id="btn-disconnect" class="secondary">Disconnect</button>
+
+      <div class="metrics" id="metrics-section">
+        <div class="summary-bar">
+          <div class="summary-item"><span class="summary-label">FPS</span><span class="summary-value" id="sum-fps">-</span></div>
+          <div class="summary-item"><span class="summary-label">Memory</span><span class="summary-value" id="sum-mem">-</span></div>
+          <div class="summary-item"><span class="summary-label">Uptime</span><span class="summary-value" id="sum-uptime">-</span></div>
+        </div>
+        <div class="chart-section">
+          <div class="chart-title">FPS (per Processing Unit)</div>
+          <canvas id="fps-chart" class="chart-canvas"></canvas>
+          <div class="chart-legend" id="fps-legend"></div>
+        </div>
+        <div class="chart-section">
+          <div class="chart-title">Memory (MB)</div>
+          <canvas id="mem-chart" class="chart-canvas"></canvas>
+        </div>
+      </div>
+
+      <button id="btn-disconnect" class="secondary" style="margin-top:10px">Disconnect</button>
     </div>
   </div>
 
@@ -279,6 +356,148 @@
         var ss = String(d.getSeconds()).padStart(2, "0");
         heartbeat.textContent = "last heartbeat at " + hh + ":" + mm + ":" + ss;
       }
+
+      // --- Metrics ---
+      var MAX_SAMPLES = 60;
+      var PU_COLORS = ["#569cd6", "#89d185", "#dcdcaa", "#f48771", "#c586c0", "#4ec9b0", "#ce9178", "#d7ba7d"];
+      var MEM_COLOR = "#dcdcaa";
+      var fpsData = {};   // { puName: [float] }
+      var memData = [];   // [float]
+      var puOrder = [];   // [puName] in discovery order
+
+      var sumFps    = document.getElementById("sum-fps");
+      var sumMem    = document.getElementById("sum-mem");
+      var sumUptime = document.getElementById("sum-uptime");
+      var fpsCanvas = document.getElementById("fps-chart");
+      var memCanvas = document.getElementById("mem-chart");
+      var fpsLegend = document.getElementById("fps-legend");
+
+      function formatUptime(secs) {
+        var m = Math.floor(secs / 60);
+        var s = Math.floor(secs % 60);
+        return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+      }
+
+      function applyMetrics(payload) {
+        if (!payload) return;
+
+        var pus = payload.processing_units || [];
+        if (pus.length > 0) {
+          sumFps.textContent = Math.round(pus[0].fps);
+        }
+        sumMem.textContent = (payload.memory_used_mb != null)
+          ? payload.memory_used_mb.toFixed(1) + " MB" : "-";
+        sumUptime.textContent = (payload.uptime_seconds != null)
+          ? formatUptime(payload.uptime_seconds) : "-";
+
+        for (var i = 0; i < pus.length; i++) {
+          var name = pus[i].name || ("PU" + i);
+          if (!fpsData[name]) {
+            fpsData[name] = [];
+            puOrder.push(name);
+          }
+          var arr = fpsData[name];
+          arr.push(pus[i].fps || 0);
+          if (arr.length > MAX_SAMPLES) arr.shift();
+        }
+
+        var mem = payload.memory_used_mb || 0;
+        memData.push(mem);
+        if (memData.length > MAX_SAMPLES) memData.shift();
+
+        drawFpsChart();
+        drawMemChart();
+        updateFpsLegend();
+      }
+
+      function drawLineChart(canvas, datasets, colors, yMin, yMax) {
+        var rect = canvas.getBoundingClientRect();
+        var w = Math.floor(rect.width);
+        var h = Math.floor(rect.height);
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w;
+          canvas.height = h;
+        }
+        var ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, w, h);
+
+        var pad = { top: 4, bottom: 14, left: 36, right: 4 };
+        var cw = w - pad.left - pad.right;
+        var ch = h - pad.top - pad.bottom;
+        if (cw <= 0 || ch <= 0) return;
+
+        var range = yMax - yMin;
+        if (range <= 0) range = 1;
+
+        ctx.strokeStyle = "#333";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(pad.left, h - pad.bottom);
+        ctx.lineTo(pad.left + cw, h - pad.bottom);
+        ctx.stroke();
+
+        ctx.font = "9px Consolas, monospace";
+        ctx.fillStyle = "#666";
+        ctx.textAlign = "right";
+        ctx.fillText(Math.round(yMax), pad.left - 4, pad.top + 8);
+        ctx.fillText(Math.round(yMin), pad.left - 4, h - pad.bottom);
+
+        for (var d = 0; d < datasets.length; d++) {
+          var data = datasets[d];
+          if (data.length < 2) continue;
+          ctx.strokeStyle = colors[d % colors.length];
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          for (var i = 0; i < data.length; i++) {
+            var x = pad.left + (i / (MAX_SAMPLES - 1)) * cw;
+            var y = pad.top + ch - ((data[i] - yMin) / range) * ch;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+        }
+      }
+
+      function drawFpsChart() {
+        var datasets = [];
+        var colors = [];
+        var maxFps = 120;
+        for (var i = 0; i < puOrder.length; i++) {
+          var arr = fpsData[puOrder[i]];
+          datasets.push(arr);
+          colors.push(PU_COLORS[i % PU_COLORS.length]);
+          for (var j = 0; j < arr.length; j++) {
+            if (arr[j] > maxFps) maxFps = arr[j] * 1.1;
+          }
+        }
+        drawLineChart(fpsCanvas, datasets, colors, 0, maxFps);
+      }
+
+      function drawMemChart() {
+        var maxMem = 256;
+        for (var i = 0; i < memData.length; i++) {
+          if (memData[i] > maxMem) maxMem = memData[i] * 1.1;
+        }
+        drawLineChart(memCanvas, [memData], [MEM_COLOR], 0, maxMem);
+      }
+
+      function updateFpsLegend() {
+        var html = "";
+        for (var i = 0; i < puOrder.length; i++) {
+          var color = PU_COLORS[i % PU_COLORS.length];
+          html += '<span><span class="swatch" style="background:' + color + '"></span>' + puOrder[i] + '</span>';
+        }
+        fpsLegend.innerHTML = html;
+      }
+
+      // Listen for core_metrics topic
+      window.addEventListener("message", function (e) {
+        var msg = e.data || {};
+        if (!msg.__dia) return;
+        if (msg.topic === "core_metrics") {
+          applyMetrics(msg.data || {});
+        }
+      });
 
       console.log("[GameConnection] Panel loaded, requesting initial state");
       request("game_connection.get_state", {}, function (res) {

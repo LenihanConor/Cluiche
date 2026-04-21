@@ -21,6 +21,8 @@
 
 #include "DiaApplication/ApplicationStateObject.h"
 
+#include <chrono>
+
 #include <DiaCore/Core/EnumClass.h>
 #include <DiaCore/Containers/HashTables/HashTable.h>
 #include <DiaCore/CRC/CRCHashFunctor.h>
@@ -39,6 +41,7 @@ namespace Dia
 	{
 		class Phase;
 		class ApplicationManifestLoader;
+		class MetricsCollectorModule;
 	}
 }
 
@@ -131,6 +134,10 @@ namespace Dia
 			MessageBus& GetMessageBus() { return mMessageBus; }
 			const MessageBus& GetMessageBus() const { return mMessageBus; }
 
+			// Metrics collector injection
+			void SetMetricsCollector(MetricsCollectorModule* collector);
+			MetricsCollectorModule* GetMetricsCollector() const;
+
 			// Hot reload manager (created on first access)
 			HotReloadManager* GetHotReloadManager();
 			const HotReloadManager* GetHotReloadManager() const;
@@ -199,6 +206,11 @@ namespace Dia
 
 			// Message bus
 			MessageBus mMessageBus;
+
+			// Metrics collector (optional, injected)
+			MetricsCollectorModule* mMetricsCollector;
+			std::chrono::time_point<std::chrono::high_resolution_clock> mFrameStartTime;
+			bool mFrameTimingActive;
 
 			// Hot reload manager (optional, created on demand)
 			mutable HotReloadManager* mHotReloadManager;

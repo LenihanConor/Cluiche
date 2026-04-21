@@ -25,6 +25,7 @@
     <ClCompile Include="Manifest\ManifestComposer.cpp" />
     <ClCompile Include="Manifest\ManifestValidator.cpp" />
     <ClCompile Include="TypeRegistry\ApplicationTypeRegistry.cpp" />
+    <ClCompile Include="Metrics\MetricsCollectorModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApplicationModule.h" />
@@ -40,6 +41,7 @@
     <ClInclude Include="Manifest\ManifestValidator.h" />
     <ClInclude Include="TypeRegistry\ApplicationTypeRegistry.h" />
     <ClInclude Include="DebugDataTypes.h" />
+    <ClInclude Include="Metrics\MetricsCollectorModule.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{DD3D58EF-028B-42CB-B837-0042BA30D96F}</ProjectGuid>

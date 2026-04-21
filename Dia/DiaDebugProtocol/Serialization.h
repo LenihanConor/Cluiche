@@ -77,6 +77,18 @@ namespace Dia
 			payload["frame_time_ms"] = metrics.frameTimeMs;
 			payload["memory_used_mb"] = metrics.memoryUsedMb;
 			payload["memory_available_mb"] = metrics.memoryAvailableMb;
+			payload["uptime_seconds"] = metrics.uptimeSeconds;
+
+			Json::Value puArray(Json::arrayValue);
+			for (unsigned int i = 0; i < metrics.puCount && i < CoreMetricsPayload::kMaxProcessingUnits; ++i)
+			{
+				Json::Value pu;
+				pu["name"] = metrics.puMetrics[i].name;
+				pu["fps"] = metrics.puMetrics[i].fps;
+				pu["frame_time_ms"] = metrics.puMetrics[i].frameTimeMs;
+				puArray.append(pu);
+			}
+			payload["processing_units"] = puArray;
 
 			MessageHeader header;
 			header.type = MessageType::kCoreMetrics;

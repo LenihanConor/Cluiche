@@ -8,6 +8,7 @@
 
 #include "DiaApplication/ApplicationPhase.h"
 #include "DiaApplication/ApplicationModule.h"
+#include "DiaApplication/Metrics/MetricsCollectorModule.h"
 
 namespace Dia
 {
@@ -32,6 +33,8 @@ namespace Dia
 			, mAssociatedModules(initialModuleMapSize, initialModuleMapSize * 2)
 			, mPhaseTransitions(initialModuleMapSize, initialModuleMapSize * 2)
 			, mErrorCallback(nullptr)
+			, mMetricsCollector(nullptr)
+			, mFrameTimingActive(false)
 			, mHotReloadManager(nullptr)
 		{
 			if (hz != -1.0f)
@@ -307,6 +310,8 @@ namespace Dia
 				// Process message queue before phase update
 				mMessageBus.ProcessQueue();
 
+				auto frameStart = std::chrono::high_resolution_clock::now();
+
 				PrePhaseUpdate();
 
 				currentPhase = mCurrentPhase.load(std::memory_order_acquire);
@@ -316,6 +321,13 @@ namespace Dia
 				}
 
 				PostPhaseUpdate();
+
+				if (mMetricsCollector != nullptr)
+				{
+					auto frameEnd = std::chrono::high_resolution_clock::now();
+					float deltaMs = std::chrono::duration<float, std::milli>(frameEnd - frameStart).count();
+					mMetricsCollector->ReportFrame(GetUniqueId(), GetUniqueId().AsChar(), deltaMs);
+				}
 
 				{
 					bool transition = false;
@@ -438,6 +450,19 @@ namespace Dia
 		{
 			std::lock_guard<std::mutex> lock(mErrorMutex);
 			mErrorHistory.clear();
+		}
+
+		//---------------------------------------------------------------------------------------------------------
+		// Metrics collector injection
+		//---------------------------------------------------------------------------------------------------------
+		void ProcessingUnit::SetMetricsCollector(MetricsCollectorModule* collector)
+		{
+			mMetricsCollector = collector;
+		}
+
+		MetricsCollectorModule* ProcessingUnit::GetMetricsCollector() const
+		{
+			return mMetricsCollector;
 		}
 
 		//---------------------------------------------------------------------------------------------------------

@@ -27,6 +27,7 @@ namespace Dia
 
 		static const char* kTopicState = "game_connection";
 		static const char* kTopicHeartbeat = "game_connection_heartbeat";
+		static const char* kTopicCoreMetrics = "core_metrics";
 
 		static const char* kStateToString(GameConnectionController::State state)
 		{
@@ -374,6 +375,13 @@ namespace Dia
 				mLastPongReceivedTs = envelope.get("ts", 0).asUInt64();
 				mHeartbeatLastPongMs = static_cast<float>(mLastPongReceivedTs);
 				PublishHeartbeat();
+			}
+			else if (type == "core_metrics")
+			{
+				if (mBridge != nullptr && envelope.isMember("payload"))
+				{
+					mBridge->NotifyUIDataChanged(kTopicCoreMetrics, envelope["payload"]);
+				}
 			}
 		}
 
