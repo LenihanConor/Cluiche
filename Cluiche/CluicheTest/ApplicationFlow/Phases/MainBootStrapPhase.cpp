@@ -40,20 +40,21 @@ namespace Cluiche
 
 	void MainBootStrapPhase::AfterModulesStart()
 	{
-		mDummyLevel = DIA_NEW(Cluiche::DummyLevel::Level(this, this->GetAssociatedProcessingUnit(), nullptr, nullptr)); 
-		mUnitTestLevel = DIA_NEW(Cluiche::UnitTestLevel::Level(this, this->GetAssociatedProcessingUnit(), nullptr, nullptr));
-		
+		if (mDummyLevel == nullptr)
+			mDummyLevel = DIA_NEW(Cluiche::DummyLevel::Level(this, this->GetAssociatedProcessingUnit(), nullptr, nullptr));
+		if (mUnitTestLevel == nullptr)
+			mUnitTestLevel = DIA_NEW(Cluiche::UnitTestLevel::Level(this, this->GetAssociatedProcessingUnit(), nullptr, nullptr));
+
 		mLaunchUIPage.InitializePage();
 
 		Cluiche::Main::UIModule* ui = this->GetModule<Cluiche::Main::UIModule>();
-		ui->GetUISystem()->LoadPage(mLaunchUIPage); 
+		ui->GetUISystem()->LoadPage(mLaunchUIPage);
 
 		Cluiche::Main::LevelFactoryModule* levelRegistry = this->GetModule<Cluiche::Main::LevelFactoryModule>();
 
-		// This is for the re-entrance case
 		if (levelRegistry->GetLevelFactory().GetCurrentLevel() != nullptr)
 		{
-			levelRegistry->GetLevelFactory().DeleteLevel(levelRegistry->GetLevelFactory().GetCurrentLevel()->GetUniqueId());
+			levelRegistry->GetLevelFactory().ClearCurrentLevel();
 		}
 	}
 

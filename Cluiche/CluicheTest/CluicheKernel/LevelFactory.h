@@ -83,6 +83,7 @@ namespace Cluiche
 			void DeleteLevel(const Dia::Core::StringCRC& uniqueId);
 			
 			void SetCurrentLevel(ILevel* level);
+			void ClearCurrentLevel();
 			ILevel* GetCurrentLevel();
 			const ILevel* GetCurrentLevel()const;
 

@@ -21,8 +21,13 @@ namespace Cluiche
 		void LevelFactory::SetCurrentLevel(ILevel* level)
 		{
 			DIA_ASSERT(mCurrentLevel == nullptr, "There is already an active current level cannot activate a new one");
-			
+
 			mCurrentLevel = level;
+		}
+
+		void LevelFactory::ClearCurrentLevel()
+		{
+			mCurrentLevel = nullptr;
 		}
 
 		void LevelFactory::DeleteLevel(const Dia::Core::StringCRC& uniqueId)
