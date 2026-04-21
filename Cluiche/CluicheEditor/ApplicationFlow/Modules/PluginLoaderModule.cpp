@@ -112,6 +112,7 @@ namespace Cluiche
 		void PluginLoaderModule::RegisterView(Dia::Editor::EditorView* view)
 		{
 			mView = view;
+			mContext.mView = view;
 
 			for (unsigned int i = 0; i < mLoadedPlugins.Size(); ++i)
 			{

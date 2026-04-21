@@ -1,6 +1,7 @@
 #include "DiaEditor/LiveConnection/GameConnectionController.h"
 
 #include "DiaEditor/LiveConnection/GameConnectionManager.h"
+#include "DiaEditor/MVC/EditorView.h"
 #include "DiaEditor/UI/WebUIBridge.h"
 
 #include <DiaCore/Core/Log.h>
@@ -44,6 +45,7 @@ namespace Dia
 			: mBridge(nullptr)
 			, mManager(nullptr)
 			, mState(State::kDisconnected)
+			, mEditorView(nullptr)
 			, mUseStub(false)
 			, mConnectingPending(false)
 			, mConnectingElapsed(0.0f)
@@ -70,11 +72,12 @@ namespace Dia
 			Shutdown();
 		}
 
-		void GameConnectionController::Initialize(WebUIBridge* bridge, GameConnectionManager* manager)
+		void GameConnectionController::Initialize(WebUIBridge* bridge, GameConnectionManager* manager, EditorView* editorView)
 		{
 			Dia::Core::Log::OutputVaradicLine("GameConnectionController: Initialize bridge=%p manager=%p", bridge, manager);
 			mBridge = bridge;
 			mManager = manager;
+			mEditorView = editorView;
 
 			if (mManager != nullptr)
 			{
@@ -339,6 +342,7 @@ namespace Dia
 				Dia::Core::Log::OutputVaradicLine("GameConnectionController: Socket dropped while in state %s", kStateToString(mState));
 				if (mLastError[0] == '\0')
 					SetLastError("Connection lost");
+				PushGameConsoleEntry("error", "Connection lost");
 				TransitionTo(State::kDisconnected);
 			}
 		}
@@ -367,6 +371,11 @@ namespace Dia
 					mSinceLastPong = 0.0f;
 					TransitionTo(State::kConnected);
 					SavePersistedUrl();
+
+					char msg[256];
+					snprintf(msg, sizeof(msg), "Connected to %s (build %s)",
+						mGameInfo["name"].asCString(), mGameInfo["build"].asCString());
+					PushGameConsoleEntry("info", msg);
 				}
 			}
 			else if (type == "pong")
@@ -375,6 +384,12 @@ namespace Dia
 				mLastPongReceivedTs = envelope.get("ts", 0).asUInt64();
 				mHeartbeatLastPongMs = static_cast<float>(mLastPongReceivedTs);
 				PublishHeartbeat();
+			}
+			else if (type == "log")
+			{
+				const char* level = envelope.get("level", "info").asCString();
+				const char* logMessage = envelope.get("message", "").asCString();
+				PushGameConsoleEntry(level, logMessage);
 			}
 			else if (type == "core_metrics")
 			{
@@ -444,6 +459,7 @@ namespace Dia
 				strcmp(reason, "user requested") != 0)
 			{
 				SetLastError(reason);
+				PushGameConsoleEntry("warning", reason);
 			}
 
 			TransitionTo(State::kDisconnected);
@@ -506,6 +522,12 @@ namespace Dia
 			Json::Value payload;
 			payload["lastPongMs"] = nowMs;
 			mBridge->NotifyUIDataChanged(kTopicHeartbeat, payload);
+		}
+
+		void GameConnectionController::PushGameConsoleEntry(const char* level, const char* message)
+		{
+			if (mEditorView != nullptr)
+				mEditorView->PushConsoleEntry(level, message, "game");
 		}
 
 		void GameConnectionController::SetLastError(const char* msg)

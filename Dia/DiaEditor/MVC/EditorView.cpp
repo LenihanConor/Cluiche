@@ -114,7 +114,7 @@ namespace Dia
 			mDockingLayout->SaveToDisk(mLayoutPath);
 		}
 
-		void EditorView::PushConsoleEntry(const char* level, const char* message)
+		void EditorView::PushConsoleEntry(const char* level, const char* message, const char* source)
 		{
 			if (mWebUIBridge == nullptr || level == nullptr || message == nullptr)
 				return;
@@ -131,6 +131,7 @@ namespace Dia
 			entry["level"] = level;
 			entry["message"] = message;
 			entry["timestamp"] = timestamp;
+			entry["source"] = (source != nullptr) ? source : "editor";
 
 			mWebUIBridge->NotifyUIDataChanged(kTopicConsoleEntries, entry);
 		}

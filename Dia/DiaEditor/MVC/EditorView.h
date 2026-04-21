@@ -49,7 +49,7 @@ namespace Dia
 			void LoadLayoutFromDisk();
 			void SaveLayoutToDisk() const;
 
-			void PushConsoleEntry(const char* level, const char* message);
+			void PushConsoleEntry(const char* level, const char* message, const char* source = "editor");
 
 			Dia::UI::IUISystem* GetUISystem();
 			WebUIBridge* GetWebUIBridge();

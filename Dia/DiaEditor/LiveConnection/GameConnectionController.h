@@ -11,6 +11,7 @@ namespace Dia
 	{
 		class WebUIBridge;
 		class GameConnectionManager;
+		class EditorView;
 
 		// Drives the Game Connection panel: owns the editor-side UI state
 		// machine (disconnected / connecting / connected), registers the
@@ -33,7 +34,7 @@ namespace Dia
 			GameConnectionController();
 			~GameConnectionController();
 
-			void Initialize(WebUIBridge* bridge, GameConnectionManager* manager);
+			void Initialize(WebUIBridge* bridge, GameConnectionManager* manager, EditorView* editorView = nullptr);
 			void Shutdown();
 
 			// Pumped by the owning module each frame.
@@ -79,8 +80,11 @@ namespace Dia
 			void SetLastError(const char* msg);
 			void SetUrl(const char* url);
 
+			void PushGameConsoleEntry(const char* level, const char* message);
+
 			WebUIBridge* mBridge;
 			GameConnectionManager* mManager;
+			EditorView* mEditorView;
 
 			State mState;
 

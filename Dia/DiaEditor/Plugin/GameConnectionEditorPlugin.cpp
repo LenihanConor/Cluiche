@@ -14,7 +14,7 @@ namespace Dia
 			mManager.Initialize();
 			mController.SetPersistencePath("Data/editor-connection.json");
 			mController.LoadPersistedUrl();
-			mController.Initialize(context.mBridge, &mManager);
+			mController.Initialize(context.mBridge, &mManager, context.mView);
 			Dia::Core::Log::OutputVaradicLine("GameConnectionEditorPlugin: Initialized manager and controller");
 		}
 

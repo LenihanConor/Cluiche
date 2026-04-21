@@ -10,13 +10,78 @@
       background: #1e1e1e;
       color: #d4d4d4;
       font-family: Consolas, "Courier New", monospace;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
+
+    #toolbar {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding: 3px 6px;
+      background: #252526;
+      border-bottom: 1px solid #3c3c3c;
+      flex-shrink: 0;
+      user-select: none;
+    }
+
+    .tab {
+      padding: 3px 10px;
+      font-size: 11px;
+      cursor: pointer;
+      color: #999;
+      border: 1px solid transparent;
+      border-radius: 3px;
+      background: none;
+    }
+    .tab:hover { color: #ccc; }
+    .tab.active {
+      color: #d4d4d4;
+      background: #37373d;
+      border-color: #3c3c3c;
+    }
+
+    .separator {
+      width: 1px;
+      height: 16px;
+      background: #3c3c3c;
+      margin: 0 4px;
+    }
+
+    .filter-btn {
+      padding: 2px 6px;
+      font-size: 10px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      border-radius: 3px;
+      background: none;
+    }
+    .filter-btn:hover { opacity: 0.8; }
+    .filter-btn.active { border-color: currentColor; }
+    .filter-btn.f-info { color: #d4d4d4; }
+    .filter-btn.f-warning { color: #dcdcaa; }
+    .filter-btn.f-error { color: #f44747; }
+
+    .toolbar-spacer { flex: 1; }
+
+    .action-btn {
+      padding: 2px 8px;
+      font-size: 10px;
+      cursor: pointer;
+      color: #999;
+      border: 1px solid transparent;
+      border-radius: 3px;
+      background: none;
+    }
+    .action-btn:hover { color: #ccc; background: #37373d; }
+
     #log {
-      height: 100%;
+      flex: 1;
       overflow: auto;
-      padding: 6px 10px;
-      box-sizing: border-box;
+      padding: 4px 10px;
     }
+
     .entry {
       font-size: 12px;
       line-height: 1.5;
@@ -26,6 +91,8 @@
     .warning { color: #dcdcaa; }
     .error { color: #f44747; }
     .ts { opacity: 0.5; margin-right: 6px; }
+    .src { opacity: 0.4; margin-right: 6px; font-size: 10px; }
+
     .empty {
       color: #666;
       font-size: 12px;
@@ -34,16 +101,70 @@
   </style>
 </head>
 <body>
+  <div id="toolbar">
+    <button class="tab active" data-tab="editor">Editor</button>
+    <button class="tab" data-tab="game">Game</button>
+
+    <div class="separator"></div>
+
+    <button class="filter-btn f-info active" data-level="info">Info</button>
+    <button class="filter-btn f-warning active" data-level="warning">Warn</button>
+    <button class="filter-btn f-error active" data-level="error">Error</button>
+
+    <div class="toolbar-spacer"></div>
+
+    <button class="action-btn" id="btnCopy">Copy</button>
+    <button class="action-btn" id="btnClear">Clear</button>
+  </div>
   <div id="log"><div class="empty">No output yet.</div></div>
+
   <script>
     (function () {
       var root = document.getElementById("log");
-      var empty = root.firstChild;
-      var maxEntries = 1000;
+      var emptyEl = root.firstChild;
+      var maxEntries = 5000;
 
-      function append(entry) {
-        if (empty && empty.parentNode === root) root.removeChild(empty);
+      var entries = [];
+      var activeTab = "editor";
+      var levelFilters = { info: true, warning: true, error: true };
 
+      var tabs = document.querySelectorAll(".tab");
+      var filterBtns = document.querySelectorAll(".filter-btn");
+
+      function setActiveTab(tab) {
+        activeTab = tab;
+        for (var i = 0; i < tabs.length; i++) {
+          tabs[i].classList.toggle("active", tabs[i].getAttribute("data-tab") === tab);
+        }
+        rebuildLog();
+      }
+
+      function toggleLevel(level) {
+        levelFilters[level] = !levelFilters[level];
+        for (var i = 0; i < filterBtns.length; i++) {
+          var btn = filterBtns[i];
+          if (btn.getAttribute("data-level") === level) {
+            btn.classList.toggle("active", levelFilters[level]);
+          }
+        }
+        rebuildLog();
+      }
+
+      for (var i = 0; i < tabs.length; i++) {
+        tabs[i].addEventListener("click", function () { setActiveTab(this.getAttribute("data-tab")); });
+      }
+
+      for (var i = 0; i < filterBtns.length; i++) {
+        filterBtns[i].addEventListener("click", function () { toggleLevel(this.getAttribute("data-level")); });
+      }
+
+      function shouldShow(entry) {
+        if (entry.source !== activeTab) return false;
+        var lvl = entry.level || "info";
+        return !!levelFilters[lvl];
+      }
+
+      function createEntryEl(entry) {
         var div = document.createElement("div");
         div.className = "entry " + (entry.level || "info");
         var ts = document.createElement("span");
@@ -51,13 +172,65 @@
         ts.textContent = "[" + (entry.timestamp || "") + "]";
         div.appendChild(ts);
         div.appendChild(document.createTextNode(entry.message || ""));
-        root.appendChild(div);
+        return div;
+      }
 
-        while (root.childElementCount > maxEntries) {
-          root.removeChild(root.firstChild);
+      function rebuildLog() {
+        root.innerHTML = "";
+        var shown = 0;
+        for (var i = 0; i < entries.length; i++) {
+          if (shouldShow(entries[i])) {
+            root.appendChild(createEntryEl(entries[i]));
+            shown++;
+          }
+        }
+        if (shown === 0) {
+          var empty = document.createElement("div");
+          empty.className = "empty";
+          empty.textContent = "No output yet.";
+          root.appendChild(empty);
         }
         root.scrollTop = root.scrollHeight;
       }
+
+      function append(entry) {
+        if (!entry.source) entry.source = "editor";
+        entries.push(entry);
+
+        while (entries.length > maxEntries) {
+          entries.shift();
+        }
+
+        if (emptyEl && emptyEl.parentNode === root) {
+          root.removeChild(emptyEl);
+          emptyEl = null;
+        }
+
+        if (shouldShow(entry)) {
+          root.appendChild(createEntryEl(entry));
+
+          while (root.childElementCount > maxEntries) {
+            root.removeChild(root.firstChild);
+          }
+          root.scrollTop = root.scrollHeight;
+        }
+      }
+
+      document.getElementById("btnCopy").addEventListener("click", function () {
+        var lines = [];
+        var visible = root.querySelectorAll(".entry");
+        for (var i = 0; i < visible.length; i++) {
+          lines.push(visible[i].textContent);
+        }
+        if (lines.length > 0 && navigator.clipboard) {
+          navigator.clipboard.writeText(lines.join("\n"));
+        }
+      });
+
+      document.getElementById("btnClear").addEventListener("click", function () {
+        entries = entries.filter(function (e) { return e.source !== activeTab; });
+        rebuildLog();
+      });
 
       window.addEventListener("message", function (e) {
         var msg = e.data;
