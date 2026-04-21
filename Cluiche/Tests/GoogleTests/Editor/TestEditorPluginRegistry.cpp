@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 #include <DiaEditor/Plugin/EditorPluginRegistry.h>
 #include <DiaEditor/Plugin/IEditorPlugin.h>
-#include <DiaEditor/MVC/EditorModel.h>
 
 using namespace Dia::Editor;
 using namespace Dia::Core;
@@ -16,7 +15,7 @@ namespace
         const char* GetDescription() const override { return "Test"; }
         const char* GetUIPath() const override { return "dia://test"; }
         LayoutMode GetLayoutMode() const override { return LayoutMode::kDockable; }
-        void OnLoad(EditorModel*) override {}
+        void OnLoad(const EditorPluginContext&) override {}
         void OnUnload() override {}
         void OnUpdate(float) override {}
     };

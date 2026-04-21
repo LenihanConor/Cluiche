@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
 #include <DiaEditor/EditorManifestLoader.h>
 #include <DiaEditor/Plugin/EditorPluginRegistry.h>
+#include <DiaEditor/Plugin/EditorPluginContext.h>
 #include <DiaEditor/Plugin/StubEditorPlugin.h>
+#include <DiaEditor/MVC/EditorModel.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <fstream>
 
@@ -60,4 +62,53 @@ TEST(EditorPluginRegistry, CreateStubPlugin)
     ASSERT_NE(plugin, nullptr);
     EXPECT_STREQ(plugin->GetName(), "StubEditorPlugin");
     delete plugin;
+}
+
+TEST(EditorPluginRegistry, OutputConsolePluginRegistered)
+{
+    EXPECT_TRUE(EditorPluginRegistry::Instance().IsPluginRegistered(StringCRC("OutputConsoleEditorPlugin")));
+}
+
+TEST(EditorPluginRegistry, CreateOutputConsolePlugin)
+{
+    IEditorPlugin* plugin = EditorPluginRegistry::Instance().CreatePlugin(StringCRC("OutputConsoleEditorPlugin"));
+    ASSERT_NE(plugin, nullptr);
+    EXPECT_STREQ(plugin->GetName(), "Output Console");
+    EXPECT_STREQ(plugin->GetUIPath(), "dia://editor/outputconsole/index.html");
+    delete plugin;
+}
+
+TEST(EditorPluginRegistry, GameConnectionPluginRegistered)
+{
+    EXPECT_TRUE(EditorPluginRegistry::Instance().IsPluginRegistered(StringCRC("GameConnectionEditorPlugin")));
+}
+
+TEST(EditorPluginRegistry, CreateGameConnectionPlugin)
+{
+    IEditorPlugin* plugin = EditorPluginRegistry::Instance().CreatePlugin(StringCRC("GameConnectionEditorPlugin"));
+    ASSERT_NE(plugin, nullptr);
+    EXPECT_STREQ(plugin->GetName(), "Game Connection");
+    EXPECT_STREQ(plugin->GetUIPath(), "dia://editor/gameconnection/index.html");
+    delete plugin;
+}
+
+TEST(EditorPluginContext, OnLoadReceivesModelPointer)
+{
+    EditorModel model;
+    EditorPluginContext context;
+    context.mModel = &model;
+    context.mBridge = nullptr;
+
+    IEditorPlugin* plugin = EditorPluginRegistry::Instance().CreatePlugin(StringCRC("StubEditorPlugin"));
+    ASSERT_NE(plugin, nullptr);
+    plugin->OnLoad(context);
+    plugin->OnUnload();
+    delete plugin;
+}
+
+TEST(EditorPluginContext, DefaultConstructorNullsPointers)
+{
+    EditorPluginContext context;
+    EXPECT_EQ(context.mModel, nullptr);
+    EXPECT_EQ(context.mBridge, nullptr);
 }

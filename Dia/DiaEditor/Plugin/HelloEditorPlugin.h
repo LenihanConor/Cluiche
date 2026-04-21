@@ -17,7 +17,7 @@ namespace Dia
 			const char* GetUIPath() const override { return "dia://editor/hello/index.html"; }
 			LayoutMode GetLayoutMode() const override { return LayoutMode::kDockable; }
 
-			void OnLoad(EditorModel* model) override;
+			void OnLoad(const EditorPluginContext& context) override;
 			void OnUnload() override;
 			void OnUpdate(float deltaTime) override;
 

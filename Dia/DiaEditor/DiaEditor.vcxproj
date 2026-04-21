@@ -80,6 +80,9 @@
     <ClInclude Include="Plugin\StubEditorPlugin.h" />
     <ClInclude Include="Plugin\HelloEditorPlugin.h" />
     <ClInclude Include="Plugin\HomeEditorPlugin.h" />
+    <ClInclude Include="Plugin\EditorPluginContext.h" />
+    <ClInclude Include="Plugin\OutputConsoleEditorPlugin.h" />
+    <ClInclude Include="Plugin\GameConnectionEditorPlugin.h" />
     <ClInclude Include="Command\IEditorCommand.h" />
     <ClInclude Include="Command\CompoundCommand.h" />
     <ClInclude Include="Command\CommandHistory.h" />

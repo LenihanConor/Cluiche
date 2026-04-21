@@ -15,7 +15,6 @@ namespace Cluiche
 			, mCommandHistoryModule(this)
 			, mViewModule(this)
 			, mViewControllerModule(this)
-			, mGameConnectionModule(this)
 			, mPluginLoaderModule(this, &mModelModule.GetModel())
 			, mBootPhase(this)
 			, mRunningPhase(this)
@@ -25,7 +24,6 @@ namespace Cluiche
 			AddModule(&mCommandHistoryModule);
 			AddModule(&mViewModule);
 			AddModule(&mViewControllerModule);
-			AddModule(&mGameConnectionModule);
 			AddModule(&mPluginLoaderModule);
 
 			AddPhase(&mBootPhase);

@@ -33,6 +33,15 @@
     <ClInclude Include="Plugin\StubEditorPlugin.h" />
     <ClInclude Include="Plugin\HelloEditorPlugin.h" />
     <ClInclude Include="Plugin\HomeEditorPlugin.h" />
+    <ClInclude Include="Plugin\EditorPluginContext.h">
+      <Filter>Plugin</Filter>
+    </ClInclude>
+    <ClInclude Include="Plugin\OutputConsoleEditorPlugin.h">
+      <Filter>Plugin</Filter>
+    </ClInclude>
+    <ClInclude Include="Plugin\GameConnectionEditorPlugin.h">
+      <Filter>Plugin</Filter>
+    </ClInclude>
     <ClInclude Include="Command\IEditorCommand.h" />
     <ClInclude Include="Command\CompoundCommand.h" />
     <ClInclude Include="Command\CommandHistory.h" />

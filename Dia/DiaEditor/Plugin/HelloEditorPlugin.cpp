@@ -11,7 +11,7 @@ namespace Dia
 			: mLoaded(false)
 		{}
 
-		void HelloEditorPlugin::OnLoad(EditorModel* /*model*/)
+		void HelloEditorPlugin::OnLoad(const EditorPluginContext& /*context*/)
 		{
 			mLoaded = true;
 			Dia::Core::Log::OutputVaradicLine("HelloEditorPlugin: OnLoad");

@@ -15,9 +15,14 @@ namespace Cluiche
 
 		PluginLoaderModule::PluginLoaderModule(Dia::Application::ProcessingUnit* pu, Dia::Editor::EditorModel* model)
 			: Dia::Application::Module(pu, kTypeId, RunningEnum::kUpdate)
-			, mModel(model)
 			, mView(nullptr)
 		{
+			mContext.mModel = model;
+		}
+
+		void PluginLoaderModule::SetBridge(Dia::Editor::WebUIBridge* bridge)
+		{
+			mContext.mBridge = bridge;
 		}
 
 		Dia::Application::StateObject::OpertionResponse PluginLoaderModule::DoStart(const Dia::Application::StateObject::IStartData*)
@@ -51,6 +56,8 @@ namespace Cluiche
 		{
 			Dia::Core::Log::OutputVaradicLine("PluginLoaderModule: Loading built-in plugins");
 			LoadPlugin(Dia::Core::StringCRC("HomeEditorPlugin"), Dia::Core::StringCRC("home_builtin"));
+			LoadPlugin(Dia::Core::StringCRC("OutputConsoleEditorPlugin"), Dia::Core::StringCRC("outputconsole_builtin"));
+			LoadPlugin(Dia::Core::StringCRC("GameConnectionEditorPlugin"), Dia::Core::StringCRC("gameconnection_builtin"));
 		}
 
 		void PluginLoaderModule::LoadManifest(const char* manifestPath)
@@ -90,7 +97,7 @@ namespace Cluiche
 			}
 
 			Dia::Core::Log::OutputVaradicLine("PluginLoaderModule::LoadPlugin: Created '%s'", plugin->GetName());
-			plugin->OnLoad(mModel);
+			plugin->OnLoad(mContext);
 			Dia::Core::Log::OutputVaradicLine("PluginLoaderModule::LoadPlugin: OnLoad complete for '%s'", plugin->GetName());
 
 			if (mView != nullptr)

@@ -5,15 +5,12 @@
 #include "../Modules/CommandHistoryModule.h"
 #include "../Modules/EditorViewModule.h"
 #include "../Modules/EditorViewControllerModule.h"
-#include "../Modules/GameConnectionModule.h"
 #include "../Modules/PluginLoaderModule.h"
 #include "../ProcessingUnits/CluicheEditorProcessingUnit.h"
 
 #include <DiaApplication/ApplicationProcessingUnit.h>
 #include <DiaEditor/MVC/EditorModel.h>
 #include <DiaEditor/MVC/EditorView.h>
-#include <DiaEditor/LiveConnection/GameConnectionController.h>
-#include <DiaEditor/LiveConnection/GameConnectionManager.h>
 #include <DiaCore/Core/Log.h>
 #include <string.h>
 
@@ -43,13 +40,24 @@ namespace Cluiche
 			AddModule(buildDependencies->GetModule(CommandHistoryModule::kTypeId));
 			AddModule(buildDependencies->GetModule(EditorViewModule::kTypeId));
 			AddModule(buildDependencies->GetModule(EditorViewControllerModule::kTypeId));
-			AddModule(buildDependencies->GetModule(GameConnectionModule::kTypeId));
 			AddModule(buildDependencies->GetModule(PluginLoaderModule::kTypeId));
 		}
 
 		void CluicheEditorRunningPhase::AfterModulesStart()
 		{
 			Dia::Core::Log::OutputVaradicLine("CluicheEditorRunningPhase: AfterModulesStart");
+
+			EditorViewModule* viewModule =
+				static_cast<EditorViewModule*>(GetModule(EditorViewModule::kTypeId));
+			if (viewModule == nullptr)
+			{
+				Dia::Core::Log::OutputVaradicLine("CluicheEditorRunningPhase: WARNING - EditorViewModule not found");
+				return;
+			}
+
+			Dia::Editor::EditorView& view = viewModule->GetView();
+			view.SetLayoutPath("Data/editor-layout.json");
+			view.LoadLayoutFromDisk();
 
 			PluginLoaderModule* pluginLoader =
 				static_cast<PluginLoaderModule*>(GetModule(PluginLoaderModule::kTypeId));
@@ -59,6 +67,8 @@ namespace Cluiche
 				return;
 			}
 
+			pluginLoader->SetBridge(view.GetWebUIBridge());
+			pluginLoader->RegisterView(&view);
 			pluginLoader->LoadBuiltInPlugins();
 
 			CluicheEditorProcessingUnit* pu =
@@ -87,40 +97,6 @@ namespace Cluiche
 			else
 			{
 				Dia::Core::Log::OutputVaradicLine("CluicheEditorRunningPhase: No project path set, skipping project load");
-			}
-
-			EditorViewModule* viewModule =
-				static_cast<EditorViewModule*>(GetModule(EditorViewModule::kTypeId));
-			if (viewModule != nullptr)
-			{
-				Dia::Editor::EditorView& view = viewModule->GetView();
-				view.SetLayoutPath("Data/editor-layout.json");
-				view.LoadLayoutFromDisk();
-
-				pluginLoader->RegisterView(&view);
-
-				GameConnectionModule* gcModule =
-					static_cast<GameConnectionModule*>(GetModule(GameConnectionModule::kTypeId));
-				Dia::Core::Log::OutputVaradicLine("CluicheEditorRunningPhase: GameConnectionModule=%p WebUIBridge=%p",
-					gcModule, view.GetWebUIBridge());
-
-				if (gcModule != nullptr && view.GetWebUIBridge() != nullptr)
-				{
-					Dia::Editor::GameConnectionController& controller = gcModule->GetController();
-					controller.SetPersistencePath("Data/editor-connection.json");
-					controller.LoadPersistedUrl();
-					controller.Initialize(view.GetWebUIBridge(), &gcModule->GetManager());
-					Dia::Core::Log::OutputVaradicLine("CluicheEditorRunningPhase: GameConnectionController initialized");
-				}
-				else
-				{
-					Dia::Core::Log::OutputVaradicLine("CluicheEditorRunningPhase: WARNING - GameConnection not wired (gcModule=%p bridge=%p)",
-						gcModule, view.GetWebUIBridge());
-				}
-			}
-			else
-			{
-				Dia::Core::Log::OutputVaradicLine("CluicheEditorRunningPhase: WARNING - EditorViewModule not found");
 			}
 		}
 	}

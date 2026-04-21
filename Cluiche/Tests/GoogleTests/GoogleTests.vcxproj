@@ -215,6 +215,8 @@ xcopy /Y /I "$(ProjectDir)..\..\CluicheTest\Data\Manifests\*.diaapp" "$(OutDir)D
     <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\StubEditorPlugin.cpp" />
     <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\HelloEditorPlugin.cpp" />
     <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\HomeEditorPlugin.cpp" />
+    <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\OutputConsoleEditorPlugin.cpp" />
+    <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\GameConnectionEditorPlugin.cpp" />
     <ClCompile Include="Editor\TestEditorPluginRegistry.cpp" />
     <ClCompile Include="Editor\TestCommandHistory.cpp" />
     <ClCompile Include="Editor\TestEditorModel.cpp" />

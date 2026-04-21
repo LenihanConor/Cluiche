@@ -21,6 +21,8 @@
     <ClCompile Include="..\..\Dia\DiaEditor\Plugin\StubEditorPlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaEditor\Plugin\HelloEditorPlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaEditor\Plugin\HomeEditorPlugin.cpp" />
+    <ClCompile Include="..\..\Dia\DiaEditor\Plugin\OutputConsoleEditorPlugin.cpp" />
+    <ClCompile Include="..\..\Dia\DiaEditor\Plugin\GameConnectionEditorPlugin.cpp" />
     <ClCompile Include="ApplicationFlow\ProcessingUnits\CluicheEditorProcessingUnit.cpp">
       <Filter>ApplicationFlow\ProcessingUnits</Filter>
     </ClCompile>
@@ -43,9 +45,6 @@
       <Filter>ApplicationFlow\Modules</Filter>
     </ClCompile>
     <ClCompile Include="ApplicationFlow\Modules\EditorViewModule.cpp">
-      <Filter>ApplicationFlow\Modules</Filter>
-    </ClCompile>
-    <ClCompile Include="ApplicationFlow\Modules\GameConnectionModule.cpp">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClCompile>
     <ClCompile Include="ApplicationFlow\Modules\PluginLoaderModule.cpp">
@@ -75,9 +74,6 @@
       <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
     <ClInclude Include="ApplicationFlow\Modules\EditorViewModule.h">
-      <Filter>ApplicationFlow\Modules</Filter>
-    </ClInclude>
-    <ClInclude Include="ApplicationFlow\Modules\GameConnectionModule.h">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
     <ClInclude Include="ApplicationFlow\Modules\PluginLoaderModule.h">

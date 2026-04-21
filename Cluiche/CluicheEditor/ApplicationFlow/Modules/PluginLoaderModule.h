@@ -2,8 +2,9 @@
 
 #include <DiaApplication/ApplicationModule.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <DiaEditor/Plugin/EditorPluginContext.h>
 
-namespace Dia { namespace Editor { class IEditorPlugin; class EditorModel; class EditorView; } }
+namespace Dia { namespace Editor { class IEditorPlugin; class EditorView; class WebUIBridge; } }
 
 namespace Cluiche
 {
@@ -16,6 +17,7 @@ namespace Cluiche
 
 			PluginLoaderModule(Dia::Application::ProcessingUnit* pu, Dia::Editor::EditorModel* model);
 
+			void SetBridge(Dia::Editor::WebUIBridge* bridge);
 			void LoadBuiltInPlugins();
 			void LoadManifest(const char* manifestPath);
 			void LoadPlugin(const Dia::Core::StringCRC& typeId, const Dia::Core::StringCRC& instanceId);
@@ -27,7 +29,7 @@ namespace Cluiche
 			void DoStop() override;
 
 		private:
-			Dia::Editor::EditorModel* mModel;
+			Dia::Editor::EditorPluginContext mContext;
 			Dia::Editor::EditorView* mView;
 
 			static const unsigned int kMaxPlugins = 16;

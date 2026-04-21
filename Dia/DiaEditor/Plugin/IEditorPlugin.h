@@ -1,13 +1,12 @@
 #pragma once
 
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaEditor/Plugin/EditorPluginContext.h>
 
 namespace Dia
 {
 	namespace Editor
 	{
-		class EditorModel;
-
 		enum class LayoutMode
 		{
 			kFullScreen,
@@ -25,7 +24,7 @@ namespace Dia
 			virtual const char* GetUIPath() const = 0;
 			virtual LayoutMode GetLayoutMode() const = 0;
 
-			virtual void OnLoad(EditorModel* model) = 0;
+			virtual void OnLoad(const EditorPluginContext& context) = 0;
 			virtual void OnUnload() = 0;
 			virtual void OnUpdate(float deltaTime) = 0;
 		};

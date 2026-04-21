@@ -7,7 +7,6 @@
 #include "../Modules/CommandHistoryModule.h"
 #include "../Modules/EditorViewModule.h"
 #include "../Modules/EditorViewControllerModule.h"
-#include "../Modules/GameConnectionModule.h"
 #include "../Modules/PluginLoaderModule.h"
 #include "../Phases/CluicheEditorBootPhase.h"
 #include "../Phases/CluicheEditorRunningPhase.h"
@@ -32,7 +31,6 @@ namespace Cluiche
 			EditorModelModule& GetModelModule() { return mModelModule; }
 			CommandHistoryModule& GetCommandHistoryModule() { return mCommandHistoryModule; }
 			EditorViewModule& GetViewModule() { return mViewModule; }
-			GameConnectionModule& GetGameConnectionModule() { return mGameConnectionModule; }
 			PluginLoaderModule& GetPluginLoaderModule() { return mPluginLoaderModule; }
 
 		private:
@@ -40,7 +38,6 @@ namespace Cluiche
 			CommandHistoryModule mCommandHistoryModule;
 			EditorViewModule mViewModule;
 			EditorViewControllerModule mViewControllerModule;
-			GameConnectionModule mGameConnectionModule;
 			PluginLoaderModule mPluginLoaderModule;
 
 			CluicheEditorBootPhase mBootPhase;

@@ -50,7 +50,9 @@ TEST(EditorPluginPipeline, FullPipeline_ManifestToOnLoad)
 	EXPECT_STREQ(result.plugins[0]->GetName(), "HelloEditorPlugin");
 
 	EditorModel model;
-	result.plugins[0]->OnLoad(&model);
+	EditorPluginContext context;
+	context.mModel = &model;
+	result.plugins[0]->OnLoad(context);
 
 	HelloEditorPlugin* hello = static_cast<HelloEditorPlugin*>(result.plugins[0]);
 	EXPECT_TRUE(hello->IsLoaded());
