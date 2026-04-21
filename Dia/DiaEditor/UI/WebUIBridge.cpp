@@ -48,14 +48,18 @@ namespace Dia
 			mRequestHandlers.Add(entry);
 		}
 
-		void WebUIBridge::NotifyUIDataChanged(const Dia::Core::StringCRC& /*dataPath*/, const Json::Value& data)
+		void WebUIBridge::NotifyUIDataChanged(const char* topic, const Json::Value& data)
 		{
-			if (!mUISystem)
+			if (!mUISystem || topic == nullptr)
 				return;
+
+			Json::Value envelope;
+			envelope["topic"] = topic;
+			envelope["data"] = data;
 
 			Json::StreamWriterBuilder writer;
 			writer["indentation"] = "";
-			std::string json = Json::writeString(writer, data);
+			std::string json = Json::writeString(writer, envelope);
 			mUISystem->CallJSFunction("DiaEditor_onDataChanged", json.c_str());
 		}
 

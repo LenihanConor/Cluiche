@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Mosaic, MosaicWindow, MosaicNode } from "react-mosaic-component";
 import "react-mosaic-component/react-mosaic-component.css";
 import { EditorBridge, PanelInfo } from "../bridge/EditorBridge";
-import { OutputConsole } from "../components/OutputConsole";
 
 type PanelId = string;
 
@@ -72,15 +71,11 @@ export function DockingManager() {
         title={id}
         createNode={() => panels[0]?.name ?? id}
       >
-        {id === "Output Console" ? (
-          <OutputConsole />
-        ) : (
-          <iframe
-            src={src}
-            style={{ width: "100%", height: "100%", border: "none" }}
-            title={id}
-          />
-        )}
+        <iframe
+          src={src}
+          style={{ width: "100%", height: "100%", border: "none" }}
+          title={id}
+        />
       </MosaicWindow>
     );
   }

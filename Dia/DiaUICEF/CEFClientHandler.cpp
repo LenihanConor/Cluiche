@@ -82,5 +82,31 @@ namespace Dia
 			mJSBridge->HandleCall(functionName, argsJson);
 			return true;
 		}
+
+		bool CEFClientHandler::OnPreKeyEvent(CefRefPtr<CefBrowser> /*browser*/,
+			const CefKeyEvent& event, CefEventHandle /*os_event*/,
+			bool* is_keyboard_shortcut)
+		{
+			if (event.type != KEYEVENT_RAWKEYDOWN)
+				return false;
+
+			const bool ctrl = (event.modifiers & EVENTFLAG_CONTROL_DOWN) != 0;
+			const bool shift = (event.modifiers & EVENTFLAG_SHIFT_DOWN) != 0;
+			const bool alt = (event.modifiers & EVENTFLAG_ALT_DOWN) != 0;
+
+			// Tell Chromium these aren't browser shortcuts so its built-in
+			// handlers (Ctrl+P print) don't fire. The event still propagates
+			// to JS where the app decides what to do.
+			const bool ctrlP    = ( ctrl && !shift && !alt && event.windows_key_code == 'P');
+			const bool ctrlShP  = ( ctrl &&  shift && !alt && event.windows_key_code == 'P');
+
+			if (ctrlP || ctrlShP)
+			{
+				if (is_keyboard_shortcut != nullptr)
+					*is_keyboard_shortcut = false;
+			}
+
+			return false;
+		}
 	}
 }

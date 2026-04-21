@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Output Console</title>
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      font-family: Consolas, "Courier New", monospace;
+    }
+    #log {
+      height: 100%;
+      overflow: auto;
+      padding: 6px 10px;
+      box-sizing: border-box;
+    }
+    .entry {
+      font-size: 12px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+    .info { color: #d4d4d4; }
+    .warning { color: #dcdcaa; }
+    .error { color: #f44747; }
+    .ts { opacity: 0.5; margin-right: 6px; }
+    .empty {
+      color: #666;
+      font-size: 12px;
+      padding: 8px 4px;
+    }
+  </style>
+</head>
+<body>
+  <div id="log"><div class="empty">No output yet.</div></div>
+  <script>
+    (function () {
+      var root = document.getElementById("log");
+      var empty = root.firstChild;
+      var maxEntries = 1000;
+
+      function append(entry) {
+        if (empty && empty.parentNode === root) root.removeChild(empty);
+
+        var div = document.createElement("div");
+        div.className = "entry " + (entry.level || "info");
+        var ts = document.createElement("span");
+        ts.className = "ts";
+        ts.textContent = "[" + (entry.timestamp || "") + "]";
+        div.appendChild(ts);
+        div.appendChild(document.createTextNode(entry.message || ""));
+        root.appendChild(div);
+
+        while (root.childElementCount > maxEntries) {
+          root.removeChild(root.firstChild);
+        }
+        root.scrollTop = root.scrollHeight;
+      }
+
+      window.addEventListener("message", function (e) {
+        var msg = e.data;
+        if (!msg || msg.__dia !== true) return;
+        if (msg.topic !== "console_entries") return;
+        append(msg.data || {});
+      });
+    })();
+  </script>
+</body>
+</html>

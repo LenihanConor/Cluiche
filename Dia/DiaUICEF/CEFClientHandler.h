@@ -7,6 +7,7 @@
 #include <include/cef_life_span_handler.h>
 #include <include/cef_load_handler.h>
 #include <include/cef_display_handler.h>
+#include <include/cef_keyboard_handler.h>
 
 namespace Dia
 {
@@ -21,6 +22,7 @@ namespace Dia
 			, public CefLifeSpanHandler
 			, public CefLoadHandler
 			, public CefDisplayHandler
+			, public CefKeyboardHandler
 		{
 		public:
 			CEFClientHandler(CEFPage* page, CefRefPtr<CEFRenderHandler> renderHandler);
@@ -39,6 +41,7 @@ namespace Dia
 			CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override { return this; }
 			CefRefPtr<CefLoadHandler> GetLoadHandler() override { return this; }
 			CefRefPtr<CefDisplayHandler> GetDisplayHandler() override { return this; }
+			CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() override { return this; }
 
 			// CefLifeSpanHandler
 			void OnAfterCreated(CefRefPtr<CefBrowser> browser) override;
@@ -51,6 +54,10 @@ namespace Dia
 			// CefDisplayHandler
 			bool OnConsoleMessage(CefRefPtr<CefBrowser> browser, cef_log_severity_t level,
 				const CefString& message, const CefString& source, int line) override;
+
+			// CefKeyboardHandler - suppress Chromium's built-in shortcuts (F1 help, Ctrl+Shift+P print, etc.)
+			bool OnPreKeyEvent(CefRefPtr<CefBrowser> browser, const CefKeyEvent& event,
+				CefEventHandle os_event, bool* is_keyboard_shortcut) override;
 
 		private:
 			CEFPage* mPage;

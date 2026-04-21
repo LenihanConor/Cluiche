@@ -1,6 +1,7 @@
 #pragma once
 
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
 namespace Dia
 {
@@ -19,6 +20,18 @@ namespace Dia
 		class EditorView
 		{
 		public:
+			struct CommandInfo
+			{
+				char id[64];
+				char label[96];
+
+				CommandInfo()
+				{
+					id[0] = '\0';
+					label[0] = '\0';
+				}
+			};
+
 			static const Dia::Core::StringCRC kUniqueId;
 
 			EditorView();
@@ -28,6 +41,7 @@ namespace Dia
 			void Shutdown();
 
 			void RegisterComponent(const char* name, const char* uiPath);
+			void RegisterCommand(const char* id, const char* label);
 
 			void SetLayoutPath(const char* path);
 			const char* GetLayoutPath() const;
@@ -35,19 +49,28 @@ namespace Dia
 			void LoadLayoutFromDisk();
 			void SaveLayoutToDisk() const;
 
+			void PushConsoleEntry(const char* level, const char* message);
+
 			Dia::UI::IUISystem* GetUISystem();
 			WebUIBridge* GetWebUIBridge();
 			DockingLayout* GetDockingLayout();
 
 		private:
 			void RegisterBuiltInRequestHandlers();
+			void RegisterBuiltInCommands();
 
 			Dia::UI::IUISystem* mUISystem;
 			WebUIBridge* mWebUIBridge;
 			DockingLayout* mDockingLayout;
+			EditorViewController* mController;
 
 			static const unsigned int kMaxLayoutPathLength = 260;
 			char mLayoutPath[kMaxLayoutPathLength];
+
+			static const unsigned int kMaxCommands = 64;
+			Dia::Core::Containers::DynamicArrayC<CommandInfo, kMaxCommands> mCommands;
+
+			unsigned int mNextConsoleEntryId;
 		};
 	}
 }

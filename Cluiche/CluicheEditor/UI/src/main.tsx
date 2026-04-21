@@ -10,7 +10,7 @@ function App() {
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "F1" || (e.ctrlKey && e.shiftKey && e.key === "P")) {
+      if (e.ctrlKey && e.shiftKey && (e.key === "p" || e.key === "P")) {
         e.preventDefault();
         setPaletteOpen(true);
         return;

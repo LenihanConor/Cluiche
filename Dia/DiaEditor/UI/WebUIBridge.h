@@ -36,8 +36,8 @@ namespace Dia
 			void RegisterEventHandler(const Dia::Core::StringCRC& eventType, EventHandler handler);
 			void RegisterRequestHandler(const Dia::Core::StringCRC& eventType, RequestHandler handler);
 
-			// Push a data update to JS. JS receives via window.DiaEditor_onDataChanged({ path, data }).
-			void NotifyUIDataChanged(const Dia::Core::StringCRC& dataPath, const Json::Value& data);
+			// Push a data update to JS. JS receives via window.DiaEditor_onDataChanged({ topic, data }).
+			void NotifyUIDataChanged(const char* topic, const Json::Value& data);
 
 		private:
 			std::string HandleEditorCall(const std::string& argsJson);
