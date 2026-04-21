@@ -27,6 +27,7 @@ namespace Dia
 
 			using DataCallback = std::function<void(const Json::Value&)>;
 			using ConnectionCallback = std::function<void(bool connected)>;
+			using RawMessageCallback = std::function<void(const Json::Value&)>;
 
 			GameConnectionManager();
 			~GameConnectionManager();
@@ -44,6 +45,13 @@ namespace Dia
 
 			void SetConnectionCallback(ConnectionCallback callback);
 
+			// Raw message channel: delivers every inbound JSON message the client
+			// receives, regardless of envelope shape. Used by consumers that speak
+			// a non-topic protocol (e.g. DiaDebugProtocol's {type, ...} frames).
+			void SetRawMessageCallback(RawMessageCallback callback);
+			void SendRaw(const Json::Value& message);
+			const char* GetLastError() const { return mLastError; }
+
 		private:
 			void HandleMessage(const std::string& text);
 			void HandleConnection(bool connected);
@@ -59,9 +67,13 @@ namespace Dia
 
 			Dia::WebSocket::Client* mClient;
 			ConnectionCallback mConnectionCallback;
+			RawMessageCallback mRawMessageCallback;
 
 			char mHost[128];
 			int mPort;
+
+			static const unsigned int kMaxErrorLength = 256;
+			char mLastError[kMaxErrorLength];
 
 			static const float kInitialReconnectDelay;
 			static const float kMaxReconnectDelay;

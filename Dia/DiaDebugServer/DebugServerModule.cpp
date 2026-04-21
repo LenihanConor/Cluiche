@@ -19,6 +19,7 @@ namespace Dia
 	namespace DebugServer
 	{
 		const Dia::Core::StringCRC DebugServerModule::kUniqueId("DebugServerModule");
+		const Dia::Core::StringCRC& DebugServerModule::kTypeId = DebugServerModule::kUniqueId;
 
 		DebugServerModule::DebugServerModule(Dia::Application::ProcessingUnit* pu)
 			: Module(pu, kUniqueId, RunningEnum::kUpdate)
@@ -29,6 +30,16 @@ namespace Dia
 			, mMetricsTimer(0.0f)
 			, mStartTimestamp(0)
 		{
+			mGameName[0] = '\0';
+			mGameBuild[0] = '\0';
+		}
+
+		void DebugServerModule::SetGameInfo(const char* name, const char* build)
+		{
+			if (name) strncpy_s(mGameName, sizeof(mGameName), name, _TRUNCATE);
+			else mGameName[0] = '\0';
+			if (build) strncpy_s(mGameBuild, sizeof(mGameBuild), build, _TRUNCATE);
+			else mGameBuild[0] = '\0';
 		}
 
 		DebugServerModule::~DebugServerModule()
@@ -166,11 +177,39 @@ namespace Dia
 					"1.0.0"
 				);
 				SendJsonToConnection(connId, welcome);
+
+				SendGameInfo(connId);
 			}
 			else
 			{
 				mSubscriptionManager.UnsubscribeAll(connId);
 			}
+		}
+
+		void DebugServerModule::SendGameInfo(int connId)
+		{
+			const char* name = mGameName[0] ? mGameName : "DiaDebugServer";
+			const char* build = mGameBuild[0] ? mGameBuild : "unknown";
+			Json::Value info = Dia::DebugProtocol::SerializeGameInfo(
+				name, build, GetProcessingUnitCount(), GetCurrentPhaseName());
+			SendJsonToConnection(connId, info);
+		}
+
+		const char* DebugServerModule::GetCurrentPhaseName() const
+		{
+			const Dia::Application::ProcessingUnit* pu = GetAssociatedProcessingUnit();
+			if (pu == nullptr) return "";
+			const Dia::Application::Phase* phase = pu->GetCurrentPhase();
+			if (phase == nullptr) return "";
+			return phase->GetUniqueId().AsChar();
+		}
+
+		int DebugServerModule::GetProcessingUnitCount() const
+		{
+			// DiaDebugServer runs inside a single ProcessingUnit and has no global view
+			// of the application's PU graph; report 1 (self) until the application
+			// wires a PU-count provider through SetGameInfo.
+			return 1;
 		}
 
 		void DebugServerModule::HandleMessage(int connId, const Dia::WebSocket::Message& msg)
@@ -203,6 +242,9 @@ namespace Dia
 				break;
 			case Dia::DebugProtocol::MessageType::kHandshake:
 				HandleHandshake(connId, json);
+				break;
+			case Dia::DebugProtocol::MessageType::kPing:
+				HandlePing(connId, json);
 				break;
 			default:
 			{
@@ -276,6 +318,19 @@ namespace Dia
 				"1.0.0"
 			);
 			SendJsonToConnection(connId, response);
+		}
+
+		void DebugServerModule::HandlePing(int connId, const Json::Value& json)
+		{
+			Dia::DebugProtocol::PingMessage ping;
+			if (!Dia::DebugProtocol::ParsePing(json, ping))
+			{
+				Json::Value errorJson = Dia::DebugProtocol::SerializeError("invalid_ping", "Missing ts");
+				SendJsonToConnection(connId, errorJson);
+				return;
+			}
+			Json::Value pong = Dia::DebugProtocol::SerializePong(ping.ts);
+			SendJsonToConnection(connId, pong);
 		}
 
 		void DebugServerModule::BroadcastCoreMetrics()
@@ -435,3 +490,27 @@ namespace Dia
 		}
 	}
 }
+
+#include <DiaApplication/TypeRegistry/RegistrationMacros.h>
+
+// windows.h (included above) defines SetPort as a macro that expands to
+// SetPortA / SetPortW. Drop the macro so we can call the real method.
+#ifdef SetPort
+#undef SetPort
+#endif
+
+namespace { using _DebugServerModule = Dia::DebugServer::DebugServerModule; }
+DIA_REGISTER_MODULE(_DebugServerModule) {
+	Dia::DebugServer::DebugServerModule* mod = new Dia::DebugServer::DebugServerModule(pu);
+	if (config.isMember("port") && config["port"].isInt())
+		mod->SetPort(static_cast<uint16_t>(config["port"].asInt()));
+	if (config.isMember("auto_start") && config["auto_start"].isBool())
+		mod->EnableAutoStart(config["auto_start"].asBool());
+	const char* gameName = config.isMember("game_name") && config["game_name"].isString()
+		? config["game_name"].asCString() : "";
+	const char* gameBuild = config.isMember("game_build") && config["game_build"].isString()
+		? config["game_build"].asCString() : "";
+	mod->SetGameInfo(gameName, gameBuild);
+	return mod;
+}
+

@@ -87,6 +87,28 @@ namespace Dia
 			const char* errorCode;
 			const char* message;
 		};
+
+		// Game identity payload sent by the server to the editor on connect.
+		// const char* pointers reference jsoncpp's internal buffer
+		// and are valid only within the parse callback scope.
+		struct GameInfoMessage
+		{
+			const char* name;
+			const char* build;
+			int processingUnitCount;
+			const char* currentPhase;
+		};
+
+		// Heartbeat: editor sends ping, server echoes the timestamp back as pong.
+		struct PingMessage
+		{
+			uint64_t ts;
+		};
+
+		struct PongMessage
+		{
+			uint64_t ts;
+		};
 	}
 }
 

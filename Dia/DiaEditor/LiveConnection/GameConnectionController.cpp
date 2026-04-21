@@ -16,6 +16,8 @@ namespace Dia
 	{
 		const float GameConnectionController::kStubConnectDelaySeconds = 0.35f;
 		const float GameConnectionController::kHeartbeatIntervalSeconds = 10.0f;
+		const float GameConnectionController::kHandshakeTimeoutSeconds = 5.0f;
+		const float GameConnectionController::kPongTimeoutSeconds = 20.0f;
 
 		static const Dia::Core::StringCRC kReqConnect("game_connection.connect");
 		static const Dia::Core::StringCRC kReqDisconnect("game_connection.disconnect");
@@ -39,11 +41,16 @@ namespace Dia
 			: mBridge(nullptr)
 			, mManager(nullptr)
 			, mState(State::kDisconnected)
-			, mUseStub(true)
+			, mUseStub(false)
 			, mConnectingPending(false)
 			, mConnectingElapsed(0.0f)
 			, mHeartbeatElapsed(0.0f)
 			, mHeartbeatLastPongMs(0.0f)
+			, mGameInfoReceived(false)
+			, mHandshakeElapsed(0.0f)
+			, mLastPingSentTs(0)
+			, mLastPongReceivedTs(0)
+			, mSinceLastPong(0.0f)
 		{
 			mUrl[0] = '\0';
 			mLastError[0] = '\0';
@@ -65,6 +72,12 @@ namespace Dia
 			mBridge = bridge;
 			mManager = manager;
 
+			if (mManager != nullptr)
+			{
+				mManager->SetConnectionCallback([this](bool connected) { OnManagerConnection(connected); });
+				mManager->SetRawMessageCallback([this](const Json::Value& envelope) { OnManagerRawMessage(envelope); });
+			}
+
 			RegisterHandlers();
 		}
 
@@ -76,23 +89,56 @@ namespace Dia
 
 		void GameConnectionController::Update(float deltaTime)
 		{
-			if (mState == State::kConnecting && mConnectingPending && mUseStub)
+			if (mState == State::kConnecting)
 			{
-				mConnectingElapsed += deltaTime;
-				if (mConnectingElapsed >= kStubConnectDelaySeconds)
+				if (mUseStub && mConnectingPending)
 				{
-					mConnectingPending = false;
-					CompleteConnectStub();
+					mConnectingElapsed += deltaTime;
+					if (mConnectingElapsed >= kStubConnectDelaySeconds)
+					{
+						mConnectingPending = false;
+						CompleteConnectStub();
+					}
+				}
+				else if (!mUseStub)
+				{
+					mHandshakeElapsed += deltaTime;
+					// Q15: if game_info doesn't arrive within the timeout
+					// budget, tear the connection down with a clear error.
+					if (!mGameInfoReceived && mHandshakeElapsed >= kHandshakeTimeoutSeconds)
+					{
+						DisconnectInternal("Handshake timeout");
+					}
 				}
 			}
 			else if (mState == State::kConnected)
 			{
 				mHeartbeatElapsed += deltaTime;
+				mSinceLastPong += deltaTime;
+
 				if (mHeartbeatElapsed >= kHeartbeatIntervalSeconds)
 				{
 					mHeartbeatElapsed = 0.0f;
-					mHeartbeatLastPongMs = 0.0f;
-					PublishHeartbeat();
+					if (mUseStub)
+					{
+						mHeartbeatLastPongMs = 0.0f;
+						PublishHeartbeat();
+					}
+					else if (mManager != nullptr)
+					{
+						time_t now = time(nullptr);
+						mLastPingSentTs = static_cast<uint64_t>(now) * 1000ULL;
+						Json::Value ping;
+						ping["type"] = "ping";
+						ping["ts"] = static_cast<Json::UInt64>(mLastPingSentTs);
+						mManager->SendRaw(ping);
+					}
+				}
+
+				// Heartbeat timeout: no pong within 2x the interval → drop.
+				if (!mUseStub && mSinceLastPong >= kPongTimeoutSeconds)
+				{
+					DisconnectInternal("Heartbeat timeout");
 				}
 			}
 		}
@@ -236,16 +282,125 @@ namespace Dia
 
 		void GameConnectionController::BeginConnectReal()
 		{
-			// Slice 2 will wire this to GameConnectionManager::Connect with
-			// a host/port parsed from mUrl. For Slice 1 this path is never
-			// taken because mUseStub is always true.
 			if (mManager == nullptr)
 			{
 				SetLastError("GameConnectionManager not available");
 				TransitionTo(State::kDisconnected);
 				return;
 			}
+
+			char host[128];
+			int port = 0;
+			if (!ParseWebSocketUrl(mUrl, host, sizeof(host), port))
+			{
+				SetLastError("Invalid WebSocket URL (expected ws://host:port)");
+				TransitionTo(State::kDisconnected);
+				return;
+			}
+
+			mGameInfoReceived = false;
+			mHandshakeElapsed = 0.0f;
+			mSinceLastPong = 0.0f;
+			mGameInfo = Json::Value(Json::nullValue);
+
 			TransitionTo(State::kConnecting);
+			mManager->Connect(host, port);
+		}
+
+		void GameConnectionController::OnManagerConnection(bool connected)
+		{
+			if (connected)
+			{
+				// Socket opened, but not "connected" from the UI's perspective
+				// until game_info arrives. Stay in kConnecting and let the
+				// handshake timer decide whether to give up.
+				return;
+			}
+
+			// Socket dropped. If we were connected or connecting, surface that
+			// as an unsolicited disconnect and fall back to kDisconnected.
+			if (mState != State::kDisconnected)
+			{
+				if (mLastError[0] == '\0')
+					SetLastError("Connection lost");
+				TransitionTo(State::kDisconnected);
+			}
+		}
+
+		void GameConnectionController::OnManagerRawMessage(const Json::Value& envelope)
+		{
+			if (!envelope.isObject() || !envelope.isMember("type") || !envelope["type"].isString())
+				return;
+
+			const std::string type = envelope["type"].asString();
+			if (type == "game_info")
+			{
+				mGameInfo["name"] = envelope.get("name", "");
+				mGameInfo["build"] = envelope.get("build", "");
+				mGameInfo["processingUnitCount"] = envelope.get("processingUnitCount", 0);
+				mGameInfo["currentPhase"] = envelope.get("currentPhase", "");
+				mGameInfoReceived = true;
+
+				if (mState == State::kConnecting)
+				{
+					mHeartbeatElapsed = 0.0f;
+					mSinceLastPong = 0.0f;
+					TransitionTo(State::kConnected);
+					SavePersistedUrl();
+				}
+			}
+			else if (type == "pong")
+			{
+				mSinceLastPong = 0.0f;
+				mLastPongReceivedTs = envelope.get("ts", 0).asUInt64();
+				mHeartbeatLastPongMs = static_cast<float>(mLastPongReceivedTs);
+				PublishHeartbeat();
+			}
+		}
+
+		bool GameConnectionController::ParseWebSocketUrl(const char* url, char* outHost, unsigned int hostLen, int& outPort)
+		{
+			if (url == nullptr || outHost == nullptr || hostLen == 0)
+				return false;
+
+			const char* p = url;
+			if (strncmp(p, "ws://", 5) == 0)
+				p += 5;
+			else if (strncmp(p, "wss://", 6) == 0)
+				p += 6;
+
+			// host is everything up to ':' or '/'; port follows ':'.
+			const char* hostStart = p;
+			const char* hostEnd = p;
+			while (*hostEnd != '\0' && *hostEnd != ':' && *hostEnd != '/')
+				++hostEnd;
+
+			size_t hlen = static_cast<size_t>(hostEnd - hostStart);
+			if (hlen == 0 || hlen >= hostLen)
+				return false;
+
+			memcpy(outHost, hostStart, hlen);
+			outHost[hlen] = '\0';
+
+			if (*hostEnd == ':')
+			{
+				const char* portStart = hostEnd + 1;
+				char portBuf[16];
+				unsigned int i = 0;
+				while (portStart[i] != '\0' && portStart[i] != '/' && i < sizeof(portBuf) - 1)
+				{
+					portBuf[i] = portStart[i];
+					++i;
+				}
+				portBuf[i] = '\0';
+				outPort = atoi(portBuf);
+			}
+			else
+			{
+				outPort = 80;
+			}
+
+			return outPort > 0;
 		}
 
 		void GameConnectionController::DisconnectInternal(const char* reason)
@@ -279,7 +434,7 @@ namespace Dia
 			out["lastError"] = mLastError;
 			if (mState == State::kConnected)
 			{
-				out["info"] = mStubGameInfo;
+				out["info"] = mUseStub ? mStubGameInfo : mGameInfo;
 			}
 			else
 			{
@@ -302,9 +457,18 @@ namespace Dia
 			if (mBridge == nullptr)
 				return;
 
-			// In stub mode the "pong" is synthetic — timestamp of the emit.
-			time_t now = time(nullptr);
-			double nowMs = static_cast<double>(now) * 1000.0;
+			// Stub mode emits a synthetic timestamp on a timer; the real path
+			// emits the server-supplied pong timestamp.
+			double nowMs = 0.0;
+			if (mUseStub)
+			{
+				time_t now = time(nullptr);
+				nowMs = static_cast<double>(now) * 1000.0;
+			}
+			else
+			{
+				nowMs = static_cast<double>(mLastPongReceivedTs);
+			}
 
 			Json::Value payload;
 			payload["lastPongMs"] = nowMs;

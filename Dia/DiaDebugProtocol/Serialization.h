@@ -138,6 +138,34 @@ namespace Dia
 			return msg;
 		}
 
+		inline Json::Value SerializeGameInfo(const char* name, const char* build, int processingUnitCount, const char* currentPhase)
+		{
+			Json::Value msg;
+			msg["type"] = MessageTypeToString(MessageType::kGameInfo);
+			msg["name"] = name ? name : "";
+			msg["build"] = build ? build : "";
+			msg["processingUnitCount"] = processingUnitCount;
+			msg["currentPhase"] = currentPhase ? currentPhase : "";
+			msg["timestamp"] = static_cast<Json::UInt64>(GetTimestampNow());
+			return msg;
+		}
+
+		inline Json::Value SerializePing(uint64_t ts)
+		{
+			Json::Value msg;
+			msg["type"] = MessageTypeToString(MessageType::kPing);
+			msg["ts"] = static_cast<Json::UInt64>(ts);
+			return msg;
+		}
+
+		inline Json::Value SerializePong(uint64_t ts)
+		{
+			Json::Value msg;
+			msg["type"] = MessageTypeToString(MessageType::kPong);
+			msg["ts"] = static_cast<Json::UInt64>(ts);
+			return msg;
+		}
+
 		//----------------------------------------------------------------------
 		// Deserialize (for receiving)
 		//----------------------------------------------------------------------
@@ -250,6 +278,29 @@ namespace Dia
 		{
 			out.errorCode = message.isMember("error_code") ? message["error_code"].asCString() : "";
 			out.message = message.isMember("message") ? message["message"].asCString() : "";
+			return true;
+		}
+
+		inline bool ParseGameInfo(const Json::Value& message, GameInfoMessage& out)
+		{
+			out.name = message.isMember("name") ? message["name"].asCString() : "";
+			out.build = message.isMember("build") ? message["build"].asCString() : "";
+			out.processingUnitCount = message.get("processingUnitCount", 0).asInt();
+			out.currentPhase = message.isMember("currentPhase") ? message["currentPhase"].asCString() : "";
+			return true;
+		}
+
+		inline bool ParsePing(const Json::Value& message, PingMessage& out)
+		{
+			if (!message.isMember("ts")) return false;
+			out.ts = message["ts"].asUInt64();
+			return true;
+		}
+
+		inline bool ParsePong(const Json::Value& message, PongMessage& out)
+		{
+			if (!message.isMember("ts")) return false;
+			out.ts = message["ts"].asUInt64();
 			return true;
 		}
 

@@ -3,6 +3,8 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
 
+#include <cstdint>
+
 namespace Dia
 {
 	namespace Editor
@@ -15,9 +17,9 @@ namespace Dia
 		// game_connection.* WebUIBridge handlers, publishes topic pushes,
 		// and persists the last-used URL.
 		//
-		// Slice 1 is stub-only: Connect() fakes a successful handshake and
-		// emits a canned game_info payload instead of opening a socket. The
-		// real GameConnectionManager path is left in place for Slice 2.
+		// Default transport opens a real WebSocket via GameConnectionManager
+		// and speaks the DiaDebugProtocol game_info / ping / pong envelopes.
+		// A stub path is kept (mUseStub) for tests that do not want a socket.
 		class GameConnectionController
 		{
 		public:
@@ -54,11 +56,19 @@ namespace Dia
 			void PublishState();
 			void PublishHeartbeat();
 
-			// Stub/real dispatch (Slice 1 always uses stub).
+			// Stub/real dispatch. The real path drives GameConnectionManager;
+			// stub mode is kept for tests that do not want to open a socket.
 			void BeginConnectStub();
 			void CompleteConnectStub();
 			void BeginConnectReal();
 			void DisconnectInternal(const char* reason);
+
+			// Real-transport callbacks wired through GameConnectionManager.
+			void OnManagerConnection(bool connected);
+			void OnManagerRawMessage(const Json::Value& envelope);
+
+			// Parse ws://host:port[/...] into host+port. Returns false on error.
+			static bool ParseWebSocketUrl(const char* url, char* outHost, unsigned int hostLen, int& outPort);
 
 			// Request handlers (invoked via WebUIBridge).
 			Json::Value HandleConnectRequest(const Json::Value& data);
@@ -91,8 +101,18 @@ namespace Dia
 			float mHeartbeatLastPongMs;
 			Json::Value mStubGameInfo;
 
+			// Real transport bookkeeping.
+			Json::Value mGameInfo;
+			bool mGameInfoReceived;
+			float mHandshakeElapsed;
+			uint64_t mLastPingSentTs;
+			uint64_t mLastPongReceivedTs;
+			float mSinceLastPong;
+
 			static const float kStubConnectDelaySeconds;
 			static const float kHeartbeatIntervalSeconds;
+			static const float kHandshakeTimeoutSeconds;
+			static const float kPongTimeoutSeconds;
 		};
 	}
 }

@@ -204,7 +204,7 @@ Implemented in two slices per user preference (option "b"):
 
 ## Status
 
-`In Progress` - Slice 1 implemented (stub-only). Slice 2 (CluicheTest game server) pending.
+`Shipped` - Slice 1 (stub) and Slice 2 (real transport into CluicheTest) both implemented.
 
 ### Slice 1 shipped (2026-04-20)
 
@@ -224,3 +224,30 @@ Implemented in two slices per user preference (option "b"):
 - Handshake timeout (Q15) — stub always succeeds, so no handshake can time out yet
 
 Slice 2 will flip `mUseStub` to false, parse `ws://host:port` from the URL, and drive `GameConnectionManager::Connect`.
+
+### Slice 2 shipped (2026-04-20)
+
+**Wire types (DiaDebugProtocol):**
+- `MessageType::kGameInfo`, `kPing`, `kPong` added to `MessageTypes.h`
+- `GameInfoMessage`, `PingMessage`, `PongMessage` structs in `MessageStructs.h`
+- `SerializeGameInfo(name, build, puCount, phase)`, `SerializePing(ts)`, `SerializePong(ts)` plus matching `Parse*` helpers in `Serialization.h`
+
+**Game-side (DiaDebugServer):**
+- `DebugServerModule::SetGameInfo(name, build)` lets the manifest supply identity
+- `DIA_REGISTER_MODULE(DebugServerModule)` now parses `port`, `auto_start`, `game_name`, `game_build` config keys
+- `HandleConnection` sends `game_info` immediately after the handshake response
+- New `HandlePing` dispatch returns `pong` with the ping's `ts` echoed back
+- `DebugServerModule::kTypeId` alias added to satisfy `DIA_REGISTER_MODULE`
+- `#undef SetPort` guards against the `windows.h` macro collision on the setter
+- `Cluiche/CluicheTest/Data/Manifests/cluiche_main.diaapp` wires `DebugServerModule` onto `MainBootPhase`/`MainBootStrapPhase` with `port: 9002`, `game_name: "CluicheTest"`, `game_build: "dev-0.1"`
+- `CluicheTest.vcxproj` gains ProjectReferences + link deps for `DiaDebugServer.lib`, `DiaWebSocket.lib`, `ws2_32.lib`; `DiaDebugProtocol` is referenced for build order only (the project is now `Utility`-typed since it is header-only)
+
+**Editor-side (DiaEditor):**
+- `GameConnectionManager` grows a raw channel (`SetRawMessageCallback`, `SendRaw`) so the controller can ride on DiaDebugProtocol's flat `{type, ...}` frames without going through the existing `{topic, data}` envelope
+- `GameConnectionController::mUseStub` defaults to `false`; stub path kept for tests that don't want a socket
+- `BeginConnectReal` parses `ws://host:port[/...]`, resets handshake bookkeeping, transitions to `kConnecting`, and calls `mManager->Connect(host, port)`
+- `OnManagerRawMessage` promotes `kConnecting → kConnected` only after `game_info` arrives; persists the URL on success
+- `Update()` runs the handshake timeout (5s, Q15) and the heartbeat/pong loop — every 10s the controller emits `{type:"ping", ts}` via `SendRaw`, and drops with `"Heartbeat timeout"` if no `pong` arrives within 20s
+- `PublishHeartbeat` surfaces the server-supplied pong `ts` instead of a synthetic timestamp when in real mode
+
+**Verification:** full `Cluiche.sln` Debug|x64 build is clean (CluicheTest.exe, CluicheEditor.exe, GoogleTests.exe all link). Existing `GameConnectionManager*` / `DebugProtocol*` gtests pass. Manual smoke test (launch CluicheTest + CluicheEditor, connect to `ws://localhost:9002/`) remains the last verification step.

@@ -19,6 +19,7 @@ namespace Dia
 			, mPort(0)
 		{
 			mHost[0] = '\0';
+			mLastError[0] = '\0';
 		}
 
 		GameConnectionManager::~GameConnectionManager()
@@ -107,6 +108,21 @@ namespace Dia
 			mConnectionCallback = callback;
 		}
 
+		void GameConnectionManager::SetRawMessageCallback(RawMessageCallback callback)
+		{
+			mRawMessageCallback = callback;
+		}
+
+		void GameConnectionManager::SendRaw(const Json::Value& message)
+		{
+			if (!IsConnected())
+				return;
+			Json::StreamWriterBuilder writer;
+			writer["indentation"] = "";
+			std::string text = Json::writeString(writer, message);
+			mClient->SendText(text.c_str());
+		}
+
 		void GameConnectionManager::HandleMessage(const std::string& text)
 		{
 			Json::Value envelope;
@@ -116,19 +132,29 @@ namespace Dia
 			if (!Json::parseFromStream(builder, stream, &envelope, &errors))
 				return;
 
-			std::string topicStr = envelope["topic"].asString();
-			Dia::Core::StringCRC topic(topicStr.c_str());
-			const Json::Value& data = envelope["data"];
+			// Raw channel sees every message regardless of envelope shape.
+			if (mRawMessageCallback)
+				mRawMessageCallback(envelope);
 
-			for (unsigned int i = 0; i < mSubscriptions.Size(); ++i)
+			// Topic-based routing is only possible for messages that carry a topic.
+			if (envelope.isMember("topic") && envelope["topic"].isString())
 			{
-				if (mSubscriptions[i].topic == topic)
-					mSubscriptions[i].callback(data);
+				std::string topicStr = envelope["topic"].asString();
+				Dia::Core::StringCRC topic(topicStr.c_str());
+				const Json::Value& data = envelope["data"];
+
+				for (unsigned int i = 0; i < mSubscriptions.Size(); ++i)
+				{
+					if (mSubscriptions[i].topic == topic)
+						mSubscriptions[i].callback(data);
+				}
 			}
 		}
 
 		void GameConnectionManager::HandleConnection(bool connected)
 		{
+			if (connected)
+				mLastError[0] = '\0';
 			if (mConnectionCallback)
 				mConnectionCallback(connected);
 		}

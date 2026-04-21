@@ -57,6 +57,7 @@ namespace Dia
 		{
 		public:
 			static const Dia::Core::StringCRC kUniqueId;
+			static const Dia::Core::StringCRC& kTypeId;
 
 			DebugServerModule(Dia::Application::ProcessingUnit* pu);
 			virtual ~DebugServerModule();
@@ -67,6 +68,10 @@ namespace Dia
 
 			void SetPort(uint16_t port) { mPort = port; }
 			void EnableAutoStart(bool enable) { mAutoStart = enable; }
+
+			// Sets the game identity published to newly connected clients as a game_info payload.
+			// processingUnitCountProvider lets the server refresh the count at publish time.
+			void SetGameInfo(const char* name, const char* build);
 
 			int GetConnectionCount() const;
 			const ServerStats& GetStats() const { return mStats; }
@@ -89,6 +94,11 @@ namespace Dia
 			void HandleUnsubscribe(int connId, const Json::Value& json);
 			void HandleCommand(int connId, const Json::Value& json);
 			void HandleHandshake(int connId, const Json::Value& json);
+			void HandlePing(int connId, const Json::Value& json);
+
+			void SendGameInfo(int connId);
+			const char* GetCurrentPhaseName() const;
+			int GetProcessingUnitCount() const;
 
 			void BroadcastCoreMetrics();
 			void NotifySubscribers(const Dia::Core::StringCRC& dataType, const Json::Value& payload);
@@ -100,6 +110,10 @@ namespace Dia
 			Dia::WebSocket::Server* mServer;
 			uint16_t mPort;
 			bool mAutoStart;
+
+			static const unsigned int kMaxGameFieldLength = 128;
+			char mGameName[kMaxGameFieldLength];
+			char mGameBuild[kMaxGameFieldLength];
 
 			float mMetricsBroadcastInterval;
 			float mMetricsTimer;

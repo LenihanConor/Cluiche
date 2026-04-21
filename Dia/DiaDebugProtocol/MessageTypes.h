@@ -19,7 +19,10 @@ namespace Dia
 			kEvent,
 			kCommandRequest,
 			kCommandResponse,
-			kError
+			kError,
+			kGameInfo,
+			kPing,
+			kPong
 		};
 
 		inline const char* MessageTypeToString(MessageType type)
@@ -35,6 +38,9 @@ namespace Dia
 			case MessageType::kCommandRequest:	return "command";
 			case MessageType::kCommandResponse:	return "command_response";
 			case MessageType::kError:			return "error";
+			case MessageType::kGameInfo:		return "game_info";
+			case MessageType::kPing:			return "ping";
+			case MessageType::kPong:			return "pong";
 			default:							return "unknown";
 			}
 		}
@@ -52,6 +58,9 @@ namespace Dia
 			if (strcmp(str, "command_response") == 0)	return MessageType::kCommandResponse;
 			if (strcmp(str, "command") == 0)				return MessageType::kCommandRequest;
 			if (strcmp(str, "error") == 0)				return MessageType::kError;
+			if (strcmp(str, "game_info") == 0)			return MessageType::kGameInfo;
+			if (strcmp(str, "ping") == 0)				return MessageType::kPing;
+			if (strcmp(str, "pong") == 0)				return MessageType::kPong;
 
 			return MessageType::kError;
 		}
