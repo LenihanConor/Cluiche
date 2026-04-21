@@ -62,12 +62,15 @@ class ApplicationLoaderTest : public ::testing::Test
 protected:
 	void SetUp() override
 	{
-		static bool registered = false;
-		if (!registered)
-		{
-			RegisterTestTypes();
-			registered = true;
-		}
+		mRegistry = new ApplicationTypeRegistry();
+		mRegistry->DrainPendingRegistrations();
+		RegisterTestTypes();
+	}
+
+	void TearDown() override
+	{
+		delete mRegistry;
+		mRegistry = nullptr;
 	}
 
 	void RegisterTestTypes()
@@ -104,10 +107,12 @@ protected:
 		static TestPhaseFactory phaseFactory;
 		static TestModuleFactory moduleFactory;
 
-		ApplicationTypeRegistry::Instance().RegisterProcessingUnitType(LoaderTestPU::kTypeId, &puFactory);
-		ApplicationTypeRegistry::Instance().RegisterPhaseType(LoaderTestPhase::kTypeId, &phaseFactory);
-		ApplicationTypeRegistry::Instance().RegisterModuleType(LoaderTestModule::kTypeId, &moduleFactory);
+		mRegistry->RegisterProcessingUnitType(LoaderTestPU::kTypeId, &puFactory);
+		mRegistry->RegisterPhaseType(LoaderTestPhase::kTypeId, &phaseFactory);
+		mRegistry->RegisterModuleType(LoaderTestModule::kTypeId, &moduleFactory);
 	}
+
+	ApplicationTypeRegistry* mRegistry = nullptr;
 
 	const char* WriteManifestFile(const char* json)
 	{
@@ -149,7 +154,7 @@ TEST_F(ApplicationLoaderTest, LoadApplication_ValidFile_ReturnsProcessingUnit)
 
 	const char* path = WriteManifestFile(json);
 	ManifestValidationResult result;
-	ProcessingUnit* pu = ApplicationLoader::LoadApplication(path, result);
+	ProcessingUnit* pu = ApplicationLoader::LoadApplication(*mRegistry, path, result);
 
 	EXPECT_EQ(result, ManifestValidationResult::kSuccess);
 	EXPECT_NE(pu, nullptr);
@@ -161,7 +166,7 @@ TEST_F(ApplicationLoaderTest, LoadApplication_ValidFile_ReturnsProcessingUnit)
 TEST_F(ApplicationLoaderTest, LoadApplication_NonexistentFile_ReturnsNull)
 {
 	ManifestValidationResult result;
-	ProcessingUnit* pu = ApplicationLoader::LoadApplication("nonexistent_file.diaapp", result);
+	ProcessingUnit* pu = ApplicationLoader::LoadApplication(*mRegistry, "nonexistent_file.diaapp", result);
 
 	EXPECT_EQ(pu, nullptr);
 	EXPECT_NE(result, ManifestValidationResult::kSuccess);
@@ -171,7 +176,7 @@ TEST_F(ApplicationLoaderTest, LoadApplication_InvalidJson_ReturnsNull)
 {
 	const char* path = WriteManifestFile("{ not valid json }");
 	ManifestValidationResult result;
-	ProcessingUnit* pu = ApplicationLoader::LoadApplication(path, result);
+	ProcessingUnit* pu = ApplicationLoader::LoadApplication(*mRegistry, path, result);
 
 	EXPECT_EQ(pu, nullptr);
 	EXPECT_EQ(result, ManifestValidationResult::kInvalidJSON);
@@ -181,14 +186,14 @@ TEST_F(ApplicationLoaderTest, LoadApplication_InvalidJson_ReturnsNull)
 
 TEST_F(ApplicationLoaderTest, LoadApplication_ConvenienceOverload_ReturnsNull)
 {
-	ProcessingUnit* pu = ApplicationLoader::LoadApplication("nonexistent_file.diaapp");
+	ProcessingUnit* pu = ApplicationLoader::LoadApplication(*mRegistry, "nonexistent_file.diaapp");
 	EXPECT_EQ(pu, nullptr);
 }
 
 TEST_F(ApplicationLoaderTest, LoadApplicationWithFallback_ManifestFails_UsesFallback)
 {
 	ProcessingUnit* pu = ApplicationLoader::LoadApplicationWithFallback(
-		"nonexistent_file.diaapp", FallbackFactory);
+		*mRegistry, "nonexistent_file.diaapp", FallbackFactory);
 
 	EXPECT_NE(pu, nullptr);
 	delete pu;
@@ -213,7 +218,7 @@ TEST_F(ApplicationLoaderTest, LoadApplicationWithFallback_ManifestSucceeds_Skips
 	})";
 
 	const char* path = WriteManifestFile(json);
-	ProcessingUnit* pu = ApplicationLoader::LoadApplicationWithFallback(path, FallbackFactory);
+	ProcessingUnit* pu = ApplicationLoader::LoadApplicationWithFallback(*mRegistry, path, FallbackFactory);
 
 	EXPECT_NE(pu, nullptr);
 
@@ -224,7 +229,7 @@ TEST_F(ApplicationLoaderTest, LoadApplicationWithFallback_ManifestSucceeds_Skips
 TEST_F(ApplicationLoaderTest, LoadApplicationWithFallback_NullFactory_ReturnsNull)
 {
 	ProcessingUnit* pu = ApplicationLoader::LoadApplicationWithFallback(
-		"nonexistent_file.diaapp", NullFallbackFactory);
+		*mRegistry, "nonexistent_file.diaapp", NullFallbackFactory);
 
 	EXPECT_EQ(pu, nullptr);
 }
@@ -238,7 +243,7 @@ TEST_F(ApplicationLoaderTest, LoadApplication_EmptyProcessingUnits_ReturnsNull)
 
 	const char* path = WriteManifestFile(json);
 	ManifestValidationResult result;
-	ProcessingUnit* pu = ApplicationLoader::LoadApplication(path, result);
+	ProcessingUnit* pu = ApplicationLoader::LoadApplication(*mRegistry, path, result);
 
 	EXPECT_EQ(pu, nullptr);
 

@@ -527,28 +527,6 @@ TEST(EventDispatcher, ConcurrentQueueAndProcess_ThreadSafe)
 }
 
 // ==============================================================================
-// GlobalEventDispatcher Singleton Tests
-// ==============================================================================
-
-TEST(GlobalEventDispatcher, GetReturnsValidInstance)
-{
-    EventDispatcher& dispatcher = GlobalEventDispatcher::Get();
-
-    // Should not crash
-    EXPECT_NO_THROW({
-        dispatcher.Subscribe<TestEvent>([](TestEvent* e) {});
-    });
-}
-
-TEST(GlobalEventDispatcher, GetReturnsSameInstance)
-{
-    EventDispatcher& dispatcher1 = GlobalEventDispatcher::Get();
-    EventDispatcher& dispatcher2 = GlobalEventDispatcher::Get();
-
-    EXPECT_EQ(&dispatcher1, &dispatcher2);
-}
-
-// ==============================================================================
 // Edge Case Tests
 // ==============================================================================
 

@@ -9,13 +9,14 @@ namespace Dia
 	namespace Application
 	{
 		class ProcessingUnit;
+		class ApplicationTypeRegistry;
 
 		// ApplicationManifestLoader
 		// Loads and parses .diaapp manifest files, validates them, and instantiates ProcessingUnits
 		class ApplicationManifestLoader
 		{
 		public:
-			ApplicationManifestLoader();
+			explicit ApplicationManifestLoader(ApplicationTypeRegistry& registry);
 			~ApplicationManifestLoader();
 
 			// Load manifest from file path
@@ -65,6 +66,7 @@ namespace Dia
 			void ClearErrors();
 
 		private:
+			ApplicationTypeRegistry& mRegistry;
 			Dia::Core::Containers::DynamicArrayC<ManifestValidationError, 32> mErrors;
 			ManifestValidator mValidator;
 

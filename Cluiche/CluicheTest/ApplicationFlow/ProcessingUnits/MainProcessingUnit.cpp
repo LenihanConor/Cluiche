@@ -8,6 +8,8 @@
 #include <DiaApplication/ApplicationPhase.h>
 #include <DiaApplication/ApplicationModule.h>
 #include <DiaApplication/Loader/ApplicationLoader.h>
+#include <DiaApplication/TypeRegistry/ApplicationTypeRegistry.h>
+#include <DiaApplication/Metrics/MetricsCollectorModule.h>
 
 namespace Cluiche
 {
@@ -50,7 +52,7 @@ namespace Cluiche
 		// Load and start the render processing unit from manifest
 		{
 			mRenderingPU = static_cast<Cluiche::RenderProcessingUnit*>(
-				Dia::Application::ApplicationLoader::LoadApplication("Data/Manifests/cluiche_render.diaapp"));
+				Dia::Application::ApplicationLoader::LoadApplication(*GetTypeRegistry(), "Data/Manifests/cluiche_render.diaapp"));
 
 			RenderProcessingUnit::StartData data;
 			data.mRunning = &(kernel->mRunning);
@@ -58,6 +60,8 @@ namespace Cluiche
 			data.mCanvas = kernel->GetCanvas();
 
 			mRenderingPU->Start(&data);
+			if (GetMetricsCollector())
+				mRenderingPU->SetMetricsCollector(GetMetricsCollector());
 			mRenderThread = DIA_NEW(std::thread(std::ref(*mRenderingPU)));
 		}
 
@@ -66,7 +70,7 @@ namespace Cluiche
 			auto* ui = GetModule<Cluiche::Main::UIModule>();
 
 			mSimPU = static_cast<Cluiche::SimProcessingUnit*>(
-				Dia::Application::ApplicationLoader::LoadApplication("Data/Manifests/cluiche_sim.diaapp"));
+				Dia::Application::ApplicationLoader::LoadApplication(*GetTypeRegistry(), "Data/Manifests/cluiche_sim.diaapp"));
 
 			SimProcessingUnit::StartData data;
 			data.mRunning = &(kernel->mRunning);
@@ -76,6 +80,8 @@ namespace Cluiche
 			data.mCanvas = kernel->GetCanvas();
 
 			mSimPU->Start(&data);
+			if (GetMetricsCollector())
+				mSimPU->SetMetricsCollector(GetMetricsCollector());
 			mSimThread = DIA_NEW(std::thread(std::ref(*mSimPU)));
 		}
 	}

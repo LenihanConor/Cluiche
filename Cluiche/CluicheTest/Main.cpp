@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include <DiaApplication/Loader/ApplicationLoader.h>
+#include <DiaApplication/TypeRegistry/ApplicationTypeRegistry.h>
 #include <DiaApplication/ApplicationProcessingUnit.h>
 
 
@@ -20,8 +21,11 @@ int main( int argc, const char* argv[] )
 			Get Unit Test Page Working
 	*/
 
+	Dia::Application::ApplicationTypeRegistry registry;
+	registry.DrainPendingRegistrations();
+
 	Dia::Application::ProcessingUnit* mainPU =
-		Dia::Application::ApplicationLoader::LoadApplication("Data/Manifests/cluiche_main.diaapp");
+		Dia::Application::ApplicationLoader::LoadApplication(registry, "Data/Manifests/cluiche_main.diaapp");
 
 	mainPU->Start();
 	mainPU->Update();

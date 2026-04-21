@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include <DiaApplication/Manifest/ApplicationManifestLoader.h>
 #include <DiaApplication/Manifest/ApplicationManifest.h>
+#include <DiaApplication/TypeRegistry/ApplicationTypeRegistry.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <json/json.h>
 
@@ -13,7 +13,19 @@ using namespace Dia::Core;
 class CluicheManifestTest : public ::testing::Test
 {
 protected:
-	ApplicationManifestLoader mLoader;
+	void SetUp() override
+	{
+		mRegistry = new ApplicationTypeRegistry();
+		mRegistry->DrainPendingRegistrations();
+	}
+
+	void TearDown() override
+	{
+		delete mRegistry;
+		mRegistry = nullptr;
+	}
+
+	ApplicationTypeRegistry* mRegistry = nullptr;
 
 	bool LoadManifest(const char* path, ApplicationManifest& outManifest)
 	{

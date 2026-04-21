@@ -24,8 +24,10 @@ namespace Dia
 		// ApplicationManifestLoader
 		//-----------------------------------------------------------------------------
 
-		ApplicationManifestLoader::ApplicationManifestLoader()
-			: mErrors()
+		ApplicationManifestLoader::ApplicationManifestLoader(ApplicationTypeRegistry& registry)
+			: mRegistry(registry)
+			, mErrors()
+			, mValidator(registry)
 		{
 		}
 
@@ -108,7 +110,7 @@ namespace Dia
 		{
 			ClearErrors();
 
-			ApplicationTypeRegistry& registry = ApplicationTypeRegistry::Instance();
+			ApplicationTypeRegistry& registry = mRegistry;
 
 			// Create ProcessingUnit via registry
 			Json::Value emptyConfig;
@@ -125,6 +127,8 @@ namespace Dia
 				AddError(ManifestValidationResult::kUnknownType, msg.AsCStr(), "instantiate");
 				return nullptr;
 			}
+
+			pu->mTypeRegistry = &mRegistry;
 
 			// Set frequency and thread limiting
 			if (entry.frequencyHz > 0.0f)
@@ -362,7 +366,7 @@ namespace Dia
 			}
 
 			// 5. Update existing modules with new configuration
-			ApplicationTypeRegistry& registry = ApplicationTypeRegistry::Instance();
+			ApplicationTypeRegistry& registry = mRegistry;
 			for (unsigned int i = 0; i < newPUEntry.modules.Size(); ++i)
 			{
 				const ApplicationManifest::ModuleEntry& moduleEntry = newPUEntry.modules[i];

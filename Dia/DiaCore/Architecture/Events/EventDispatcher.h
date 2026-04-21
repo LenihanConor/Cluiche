@@ -219,21 +219,6 @@ namespace Dia
 				mutable Mutex mMutex;
 			};
 
-			//-----------------------------------------------------------------------------
-			// Global Event Dispatcher (singleton)
-			//-----------------------------------------------------------------------------
-			class GlobalEventDispatcher
-			{
-			public:
-				static EventDispatcher& Get()
-				{
-					static EventDispatcher instance;
-					return instance;
-				}
-
-			private:
-				GlobalEventDispatcher() = delete;
-			};
 		}
 	}
 }

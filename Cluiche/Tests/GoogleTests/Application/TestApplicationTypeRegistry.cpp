@@ -113,19 +113,22 @@ class ApplicationTypeRegistryTest : public ::testing::Test
 protected:
 	void SetUp() override
 	{
-		// Note: We can't easily clear the registry between tests since it's a singleton
-		// and may have statically registered types. Tests are designed to be independent.
+		mRegistry = new ApplicationTypeRegistry();
+		mRegistry->DrainPendingRegistrations();
 	}
 
 	void TearDown() override
 	{
-		// Cleanup any created objects
+		delete mRegistry;
+		mRegistry = nullptr;
 	}
 
 	ApplicationTypeRegistry& GetRegistry()
 	{
-		return ApplicationTypeRegistry::Instance();
+		return *mRegistry;
 	}
+
+	ApplicationTypeRegistry* mRegistry = nullptr;
 };
 
 // ==============================================================================

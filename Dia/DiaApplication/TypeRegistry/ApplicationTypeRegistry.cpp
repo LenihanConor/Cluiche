@@ -7,10 +7,33 @@ namespace Dia
 {
 	namespace Application
 	{
-		ApplicationTypeRegistry& ApplicationTypeRegistry::Instance()
+		PendingRegistrationQueue& GetPendingRegistrationQueue()
 		{
-			static ApplicationTypeRegistry instance;
-			return instance;
+			// POD struct with no constructor — safe at static-init time
+			static PendingRegistrationQueue queue = {};
+			return queue;
+		}
+
+		void ApplicationTypeRegistry::DrainPendingRegistrations()
+		{
+			PendingRegistrationQueue& queue = GetPendingRegistrationQueue();
+			for (unsigned int i = 0; i < queue.count; ++i)
+			{
+				const PendingRegistration& entry = queue.entries[i];
+				switch (entry.kind)
+				{
+				case PendingRegistrationKind::ProcessingUnit:
+					RegisterProcessingUnitType(entry.typeId, static_cast<ITypeFactory<ProcessingUnit>*>(entry.factory));
+					break;
+				case PendingRegistrationKind::Phase:
+					RegisterPhaseType(entry.typeId, static_cast<ITypeFactory<Phase>*>(entry.factory));
+					break;
+				case PendingRegistrationKind::Module:
+					RegisterModuleType(entry.typeId, static_cast<ITypeFactory<Module>*>(entry.factory));
+					break;
+				}
+			}
+			queue.count = 0;
 		}
 
 		ApplicationTypeRegistry::ApplicationTypeRegistry()

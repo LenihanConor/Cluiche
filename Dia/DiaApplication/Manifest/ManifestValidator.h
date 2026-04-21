@@ -9,6 +9,7 @@ namespace Dia
 {
 	namespace Application
 	{
+		class ApplicationTypeRegistry;
 		// Validation result codes
 		enum class ManifestValidationResult
 		{
@@ -43,7 +44,7 @@ namespace Dia
 		class ManifestValidator
 		{
 		public:
-			ManifestValidator();
+			explicit ManifestValidator(ApplicationTypeRegistry& registry);
 
 			// Validate entire manifest
 			ManifestValidationResult Validate(const ApplicationManifest& manifest);
@@ -62,6 +63,7 @@ namespace Dia
 			void ClearErrors();
 
 		private:
+			ApplicationTypeRegistry& mRegistry;
 			Dia::Core::Containers::DynamicArrayC<ManifestValidationError, 32> mErrors;
 
 			void AddError(ManifestValidationResult code, const char* message, const char* context);

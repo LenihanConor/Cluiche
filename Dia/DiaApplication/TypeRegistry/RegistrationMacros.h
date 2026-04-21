@@ -6,11 +6,11 @@
 #include <DiaApplication/ApplicationModule.h>
 
 // Registration macros for ProcessingUnit/Phase/Module types
-// These use static initialization to automatically register types before main()
 //
-// The function body provided by the user becomes the definition of a static
-// CreateInstance function inside an anonymous namespace. The factory, registrar,
-// and CreateInstance all live in the same anonymous namespace.
+// These run at static-init time (before main()). Rather than writing directly
+// into a singleton registry, they enqueue into a POD pending-registration list.
+// Call ApplicationTypeRegistry::DrainPendingRegistrations() on your registry
+// instance at startup to transfer all enqueued entries.
 //
 // Usage pattern:
 //   DIA_REGISTER_PROCESSING_UNIT(ClassName) {
@@ -30,8 +30,10 @@
 		struct ClassName##_Registrar { \
 			ClassName##_Registrar() { \
 				static ClassName##_Factory factory; \
-				Dia::Application::ApplicationTypeRegistry::Instance().RegisterProcessingUnitType( \
-					ClassName::kTypeId, &factory); \
+				Dia::Application::PendingRegistrationQueue& q = Dia::Application::GetPendingRegistrationQueue(); \
+				if (q.count < Dia::Application::kMaxPendingRegistrations) { \
+					q.entries[q.count++] = { Dia::Application::PendingRegistrationKind::ProcessingUnit, ClassName::kTypeId, &factory }; \
+				} \
 			} \
 		}; \
 		static ClassName##_Registrar g_##ClassName##_registrar; \
@@ -51,8 +53,10 @@
 		struct ClassName##_Registrar { \
 			ClassName##_Registrar() { \
 				static ClassName##_Factory factory; \
-				Dia::Application::ApplicationTypeRegistry::Instance().RegisterPhaseType( \
-					ClassName::kTypeId, &factory); \
+				Dia::Application::PendingRegistrationQueue& q = Dia::Application::GetPendingRegistrationQueue(); \
+				if (q.count < Dia::Application::kMaxPendingRegistrations) { \
+					q.entries[q.count++] = { Dia::Application::PendingRegistrationKind::Phase, ClassName::kTypeId, &factory }; \
+				} \
 			} \
 		}; \
 		static ClassName##_Registrar g_##ClassName##_registrar; \
@@ -72,8 +76,10 @@
 		struct ClassName##_Registrar { \
 			ClassName##_Registrar() { \
 				static ClassName##_Factory factory; \
-				Dia::Application::ApplicationTypeRegistry::Instance().RegisterModuleType( \
-					ClassName::kTypeId, &factory); \
+				Dia::Application::PendingRegistrationQueue& q = Dia::Application::GetPendingRegistrationQueue(); \
+				if (q.count < Dia::Application::kMaxPendingRegistrations) { \
+					q.entries[q.count++] = { Dia::Application::PendingRegistrationKind::Module, ClassName::kTypeId, &factory }; \
+				} \
 			} \
 		}; \
 		static ClassName##_Registrar g_##ClassName##_registrar; \

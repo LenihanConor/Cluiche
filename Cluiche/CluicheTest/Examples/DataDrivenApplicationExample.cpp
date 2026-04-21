@@ -13,6 +13,7 @@
 #include <DiaApplication/ApplicationProcessingUnit.h>
 #include <DiaApplication/ApplicationPhase.h>
 #include <DiaApplication/ApplicationModule.h>
+#include <DiaApplication/TypeRegistry/ApplicationTypeRegistry.h>
 #include <DiaApplication/TypeRegistry/RegistrationMacros.h>
 #include <DiaApplication/Loader/ApplicationLoader.h>
 #include <DiaApplication/Introspection/ApplicationIntrospector.h>
@@ -118,13 +119,12 @@ DIA_REGISTER_MODULE(ExampleModule)
 // Example Usage Functions
 ////////////////////////////////////////////////////////////////////////////////
 
-void Example1_LoadFromManifest()
+void Example1_LoadFromManifest(ApplicationTypeRegistry& registry)
 {
 	DIA_LOG("=== Example 1: Load Application from Manifest ===");
 
-	// Simple loading with automatic error logging
 	ProcessingUnit* app = ApplicationLoader::LoadApplication(
-		"Cluiche/CluicheTest/ApplicationFlow/example_app.diaapp"
+		registry, "Cluiche/CluicheTest/ApplicationFlow/example_app.diaapp"
 	);
 
 	if (app)
@@ -150,27 +150,21 @@ void Example1_LoadFromManifest()
 	}
 }
 
-void Example2_LoadWithFallback()
+void Example2_LoadWithFallback(ApplicationTypeRegistry& registry)
 {
 	DIA_LOG("=== Example 2: Load with Fallback ===");
 
-	// Fallback factory (creates code-defined structure)
 	auto fallbackFactory = []() -> ProcessingUnit* {
 		DIA_LOG("Using fallback factory (manifest load failed)");
 		auto* pu = new ExampleProcessingUnit(StringCRC("FallbackPU"), 60.0f);
-
-		// Add phases manually
 		auto* phase = new ExamplePhase(pu, StringCRC("DefaultPhase"));
 		pu->AddPhaseWithOwnership(Dia::Core::UniquePtr<Phase>(phase));
 		pu->SetInitialPhase(phase);
-
 		return pu;
 	};
 
-	// Try loading manifest, fall back to code if it fails
 	ProcessingUnit* app = ApplicationLoader::LoadApplicationWithFallback(
-		"non_existent.diaapp",  // Will fail
-		fallbackFactory
+		registry, "non_existent.diaapp", fallbackFactory
 	);
 
 	DIA_LOG("Application created: %s", app->GetUniqueId().AsChar());
@@ -178,12 +172,12 @@ void Example2_LoadWithFallback()
 	delete app;
 }
 
-void Example3_Introspection()
+void Example3_Introspection(ApplicationTypeRegistry& registry)
 {
 	DIA_LOG("=== Example 3: Introspection API ===");
 
 	ProcessingUnit* app = ApplicationLoader::LoadApplication(
-		"Cluiche/CluicheTest/ApplicationFlow/example_app.diaapp"
+		registry, "Cluiche/CluicheTest/ApplicationFlow/example_app.diaapp"
 	);
 
 	if (app)
@@ -224,12 +218,12 @@ void Example3_Introspection()
 	}
 }
 
-void Example4_HotReload()
+void Example4_HotReload(ApplicationTypeRegistry& registry)
 {
 	DIA_LOG("=== Example 4: Hot Reload ===");
 
 	ProcessingUnit* app = ApplicationLoader::LoadApplication(
-		"Cluiche/CluicheTest/ApplicationFlow/example_app.diaapp"
+		registry, "Cluiche/CluicheTest/ApplicationFlow/example_app.diaapp"
 	);
 
 	if (app)
@@ -240,11 +234,9 @@ void Example4_HotReload()
 		ApplicationIntrospector inspector(app);
 		DIA_LOG("  Modules: %d", inspector.GetModules().Size());
 
-		// Modify manifest file (in real editor, user would edit the file)
-		// For this example, we'll just reload the same manifest
 		DIA_LOG("Reloading manifest...");
 
-		ApplicationManifestLoader loader;
+		ApplicationManifestLoader loader(registry);
 		ManifestValidationResult result = loader.ReloadManifest(
 			"Cluiche/CluicheTest/ApplicationFlow/example_app.diaapp",
 			app
@@ -268,11 +260,9 @@ void Example4_HotReload()
 	}
 }
 
-void Example5_QueryRegisteredTypes()
+void Example5_QueryRegisteredTypes(ApplicationTypeRegistry& registry)
 {
 	DIA_LOG("=== Example 5: Query Registered Types ===");
-
-	auto& registry = ApplicationTypeRegistry::Instance();
 
 	// Query registered ProcessingUnit types
 	const auto& puTypes = registry.GetRegisteredProcessingUnitTypes();
@@ -314,11 +304,14 @@ int main()
 	DIA_LOG("Data-Driven Application System Examples");
 	DIA_LOG("========================================");
 
-	Example1_LoadFromManifest();
-	Example2_LoadWithFallback();
-	Example3_Introspection();
-	Example4_HotReload();
-	Example5_QueryRegisteredTypes();
+	ApplicationTypeRegistry registry;
+	registry.DrainPendingRegistrations();
+
+	Example1_LoadFromManifest(registry);
+	Example2_LoadWithFallback(registry);
+	Example3_Introspection(registry);
+	Example4_HotReload(registry);
+	Example5_QueryRegisteredTypes(registry);
 
 	DIA_LOG("All examples completed!");
 	return 0;

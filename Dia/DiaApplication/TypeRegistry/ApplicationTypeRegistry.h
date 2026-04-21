@@ -41,13 +41,50 @@ namespace Dia
 			virtual Module* Create(ProcessingUnit* pu, const Dia::Core::StringCRC& instanceId, const Json::Value& config) = 0;
 		};
 
+		// ---------------------------------------------------------------------------
+		// Pending registration queue
+		//
+		// DIA_REGISTER_* macros run at static-init time, before any ApplicationTypeRegistry
+		// instance exists. They enqueue here instead of writing to a singleton.
+		// Call ApplicationTypeRegistry::DrainPendingRegistrations() on a live instance
+		// at application startup to transfer all queued entries.
+		// ---------------------------------------------------------------------------
+		enum class PendingRegistrationKind { ProcessingUnit, Phase, Module };
+
+		struct PendingRegistration
+		{
+			PendingRegistrationKind         kind;
+			Dia::Core::StringCRC            typeId;
+			void*                           factory; // ITypeFactory<ProcessingUnit/Phase/Module>*
+		};
+
+		static const unsigned int kMaxPendingRegistrations = 256;
+
+		// Plain POD struct — no constructor, safe to use at static-init time
+		struct PendingRegistrationQueue
+		{
+			PendingRegistration entries[kMaxPendingRegistrations];
+			unsigned int        count;
+		};
+
+		PendingRegistrationQueue& GetPendingRegistrationQueue();
+
 		// Central registry for all ProcessingUnit/Phase/Module types
 		class ApplicationTypeRegistry
 		{
 		public:
-			static ApplicationTypeRegistry& Instance();
+			ApplicationTypeRegistry();
+			~ApplicationTypeRegistry();
 
-			// Registration (called by macros)
+			// Non-copyable
+			ApplicationTypeRegistry(const ApplicationTypeRegistry&) = delete;
+			ApplicationTypeRegistry& operator=(const ApplicationTypeRegistry&) = delete;
+
+			// Drain all pending static-init registrations into this instance.
+			// Call once at application startup after constructing the registry.
+			void DrainPendingRegistrations();
+
+			// Registration (called directly or via DrainPendingRegistrations)
 			void RegisterProcessingUnitType(const Dia::Core::StringCRC& typeId, ITypeFactory<ProcessingUnit>* factory);
 			void RegisterPhaseType(const Dia::Core::StringCRC& typeId, ITypeFactory<Phase>* factory);
 			void RegisterModuleType(const Dia::Core::StringCRC& typeId, ITypeFactory<Module>* factory);
@@ -77,13 +114,6 @@ namespace Dia
 			bool IsModuleTypeRegistered(const Dia::Core::StringCRC& typeId) const;
 
 		private:
-			ApplicationTypeRegistry();
-			~ApplicationTypeRegistry();
-
-			// Non-copyable
-			ApplicationTypeRegistry(const ApplicationTypeRegistry&) = delete;
-			ApplicationTypeRegistry& operator=(const ApplicationTypeRegistry&) = delete;
-
 			Dia::Core::Containers::HashTable<Dia::Core::StringCRC, ITypeFactory<ProcessingUnit>*> mProcessingUnitFactories;
 			Dia::Core::Containers::HashTable<Dia::Core::StringCRC, ITypeFactory<Phase>*> mPhaseFactories;
 			Dia::Core::Containers::HashTable<Dia::Core::StringCRC, ITypeFactory<Module>*> mModuleFactories;

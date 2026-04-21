@@ -63,23 +63,19 @@ class ManifestLoaderTest : public ::testing::Test
 protected:
 	void SetUp() override
 	{
-		// Register test types
-		static bool registered = false;
-		if (!registered)
-		{
-			RegisterTestTypes();
-			registered = true;
-		}
+		mRegistry = new ApplicationTypeRegistry();
+		mRegistry->DrainPendingRegistrations();
+		RegisterTestTypes();
 	}
 
 	void TearDown() override
 	{
-		// Cleanup
+		delete mRegistry;
+		mRegistry = nullptr;
 	}
 
 	void RegisterTestTypes()
 	{
-		// Register factories for test types
 		class TestPUFactory : public ITypeFactory<ProcessingUnit>
 		{
 		public:
@@ -112,10 +108,12 @@ protected:
 		static TestPhaseFactory phaseFactory;
 		static TestModuleFactory moduleFactory;
 
-		ApplicationTypeRegistry::Instance().RegisterProcessingUnitType(ManifestTestProcessingUnit::kTypeId, &puFactory);
-		ApplicationTypeRegistry::Instance().RegisterPhaseType(ManifestTestPhase::kTypeId, &phaseFactory);
-		ApplicationTypeRegistry::Instance().RegisterModuleType(ManifestTestModule::kTypeId, &moduleFactory);
+		mRegistry->RegisterProcessingUnitType(ManifestTestProcessingUnit::kTypeId, &puFactory);
+		mRegistry->RegisterPhaseType(ManifestTestPhase::kTypeId, &phaseFactory);
+		mRegistry->RegisterModuleType(ManifestTestModule::kTypeId, &moduleFactory);
 	}
+
+	ApplicationTypeRegistry* mRegistry = nullptr;
 };
 
 // ==============================================================================
@@ -161,7 +159,7 @@ TEST_F(ManifestLoaderTest, LoadFromString_ValidManifest_Success)
 		]
 	})";
 
-	ApplicationManifestLoader loader;
+	ApplicationManifestLoader loader(*mRegistry);
 	ApplicationManifest manifest;
 
 	ManifestValidationResult result = loader.LoadFromString(validJson, manifest);
@@ -192,7 +190,7 @@ TEST_F(ManifestLoaderTest, LoadFromString_MinimalManifest_Success)
 		]
 	})";
 
-	ApplicationManifestLoader loader;
+	ApplicationManifestLoader loader(*mRegistry);
 	ApplicationManifest manifest;
 
 	ManifestValidationResult result = loader.LoadFromString(minimalJson, manifest);
@@ -210,7 +208,7 @@ TEST_F(ManifestLoaderTest, LoadFromString_InvalidJSON_ReturnsError)
 {
 	const char* invalidJson = "{ this is not valid json }";
 
-	ApplicationManifestLoader loader;
+	ApplicationManifestLoader loader(*mRegistry);
 	ApplicationManifest manifest;
 
 	ManifestValidationResult result = loader.LoadFromString(invalidJson, manifest);
@@ -223,7 +221,7 @@ TEST_F(ManifestLoaderTest, LoadFromString_EmptyString_ReturnsError)
 {
 	const char* emptyJson = "";
 
-	ApplicationManifestLoader loader;
+	ApplicationManifestLoader loader(*mRegistry);
 	ApplicationManifest manifest;
 
 	ManifestValidationResult result = loader.LoadFromString(emptyJson, manifest);
@@ -241,7 +239,7 @@ TEST_F(ManifestLoaderTest, LoadFromString_MissingVersion_ReturnsError)
 		"processing_units": []
 	})";
 
-	ApplicationManifestLoader loader;
+	ApplicationManifestLoader loader(*mRegistry);
 	ApplicationManifest manifest;
 
 	ManifestValidationResult result = loader.LoadFromString(noVersion, manifest);
@@ -256,7 +254,7 @@ TEST_F(ManifestLoaderTest, LoadFromString_MissingProcessingUnits_ReturnsError)
 		"version": 1
 	})";
 
-	ApplicationManifestLoader loader;
+	ApplicationManifestLoader loader(*mRegistry);
 	ApplicationManifest manifest;
 
 	ManifestValidationResult result = loader.LoadFromString(noPUs, manifest);
@@ -277,7 +275,7 @@ TEST_F(ManifestLoaderTest, LoadFromString_MissingProcessingUnitType_ReturnsError
 		]
 	})";
 
-	ApplicationManifestLoader loader;
+	ApplicationManifestLoader loader(*mRegistry);
 	ApplicationManifest manifest;
 
 	ManifestValidationResult result = loader.LoadFromString(noType, manifest);
@@ -298,7 +296,7 @@ TEST_F(ManifestLoaderTest, LoadFromString_MissingProcessingUnitInstanceId_Return
 		]
 	})";
 
-	ApplicationManifestLoader loader;
+	ApplicationManifestLoader loader(*mRegistry);
 	ApplicationManifest manifest;
 
 	ManifestValidationResult result = loader.LoadFromString(noInstanceId, manifest);
@@ -328,7 +326,7 @@ TEST_F(ManifestLoaderTest, Validate_UnknownProcessingUnitType_ReturnsError)
 		]
 	})";
 
-	ApplicationManifestLoader loader;
+	ApplicationManifestLoader loader(*mRegistry);
 	ApplicationManifest manifest;
 
 	ManifestValidationResult result = loader.LoadFromString(unknownType, manifest);
@@ -360,7 +358,7 @@ TEST_F(ManifestLoaderTest, Validate_UnknownPhaseType_ReturnsError)
 		]
 	})";
 
-	ApplicationManifestLoader loader;
+	ApplicationManifestLoader loader(*mRegistry);
 	ApplicationManifest manifest;
 
 	ManifestValidationResult result = loader.LoadFromString(unknownPhase, manifest);
@@ -398,7 +396,7 @@ TEST_F(ManifestLoaderTest, Validate_UnknownModuleType_ReturnsError)
 		]
 	})";
 
-	ApplicationManifestLoader loader;
+	ApplicationManifestLoader loader(*mRegistry);
 	ApplicationManifest manifest;
 
 	ManifestValidationResult result = loader.LoadFromString(unknownModule, manifest);
@@ -417,7 +415,7 @@ TEST_F(ManifestLoaderTest, Validate_UnsupportedSchemaVersion_ReturnsError)
 		"processing_units": []
 	})";
 
-	ApplicationManifestLoader loader;
+	ApplicationManifestLoader loader(*mRegistry);
 	ApplicationManifest manifest;
 
 	ManifestValidationResult result = loader.LoadFromString(wrongVersion, manifest);
@@ -433,7 +431,7 @@ TEST_F(ManifestLoaderTest, Validate_Version1_Success)
 		"processing_units": []
 	})";
 
-	ApplicationManifestLoader loader;
+	ApplicationManifestLoader loader(*mRegistry);
 	ApplicationManifest manifest;
 
 	ManifestValidationResult result = loader.LoadFromString(version1, manifest);
@@ -487,7 +485,7 @@ TEST_F(ManifestLoaderTest, DISABLED_Validate_CircularDependency_ReturnsError)
 		]
 	})";
 
-	ApplicationManifestLoader loader;
+	ApplicationManifestLoader loader(*mRegistry);
 	ApplicationManifest manifest;
 
 	ManifestValidationResult result = loader.LoadFromString(circularDeps, manifest);
@@ -526,7 +524,7 @@ TEST_F(ManifestLoaderTest, DISABLED_Validate_SelfDependency_ReturnsError)
 		]
 	})";
 
-	ApplicationManifestLoader loader;
+	ApplicationManifestLoader loader(*mRegistry);
 	ApplicationManifest manifest;
 
 	ManifestValidationResult result = loader.LoadFromString(selfDep, manifest);
@@ -566,7 +564,7 @@ TEST_F(ManifestLoaderTest, Validate_TransitionToNonExistentPhase_ReturnsError)
 		]
 	})";
 
-	ApplicationManifestLoader loader;
+	ApplicationManifestLoader loader(*mRegistry);
 	ApplicationManifest manifest;
 
 	ManifestValidationResult result = loader.LoadFromString(badTransition, manifest);
@@ -603,7 +601,7 @@ TEST_F(ManifestLoaderTest, Validate_TransitionFromNonExistentPhase_ReturnsError)
 		]
 	})";
 
-	ApplicationManifestLoader loader;
+	ApplicationManifestLoader loader(*mRegistry);
 	ApplicationManifest manifest;
 
 	ManifestValidationResult result = loader.LoadFromString(badFromTransition, manifest);
@@ -642,7 +640,7 @@ TEST_F(ManifestLoaderTest, Validate_DuplicatePhaseInstanceId_ReturnsError)
 		]
 	})";
 
-	ApplicationManifestLoader loader;
+	ApplicationManifestLoader loader(*mRegistry);
 	ApplicationManifest manifest;
 
 	ManifestValidationResult result = loader.LoadFromString(duplicatePhase, manifest);
@@ -687,7 +685,7 @@ TEST_F(ManifestLoaderTest, Validate_DuplicateModuleInstanceId_ReturnsError)
 		]
 	})";
 
-	ApplicationManifestLoader loader;
+	ApplicationManifestLoader loader(*mRegistry);
 	ApplicationManifest manifest;
 
 	ManifestValidationResult result = loader.LoadFromString(duplicateModule, manifest);
@@ -729,7 +727,7 @@ TEST_F(ManifestLoaderTest, Validate_ModuleReferencesNonExistentPhase_ReturnsErro
 		]
 	})";
 
-	ApplicationManifestLoader loader;
+	ApplicationManifestLoader loader(*mRegistry);
 	ApplicationManifest manifest;
 
 	ManifestValidationResult result = loader.LoadFromString(badPhaseRef, manifest);
@@ -772,7 +770,7 @@ TEST_F(ManifestLoaderTest, Validate_ModuleReferencesValidPhases_Success)
 		]
 	})";
 
-	ApplicationManifestLoader loader;
+	ApplicationManifestLoader loader(*mRegistry);
 	ApplicationManifest manifest;
 
 	ManifestValidationResult result = loader.LoadFromString(goodPhaseRef, manifest);
@@ -791,7 +789,7 @@ TEST_F(ManifestLoaderTest, GetErrors_AfterValidationFailure_ReturnsErrors)
 		"processing_units": []
 	})";
 
-	ApplicationManifestLoader loader;
+	ApplicationManifestLoader loader(*mRegistry);
 	ApplicationManifest manifest;
 
 	loader.LoadFromString(badManifest, manifest);
@@ -809,7 +807,7 @@ TEST_F(ManifestLoaderTest, ClearErrors_RemovesAllErrors)
 		"processing_units": []
 	})";
 
-	ApplicationManifestLoader loader;
+	ApplicationManifestLoader loader(*mRegistry);
 	ApplicationManifest manifest;
 
 	loader.LoadFromString(badManifest, manifest);
@@ -837,7 +835,7 @@ TEST_F(ManifestLoaderTest, GetErrors_ContainsContextInformation)
 		]
 	})";
 
-	ApplicationManifestLoader loader;
+	ApplicationManifestLoader loader(*mRegistry);
 	ApplicationManifest manifest;
 
 	loader.LoadFromString(badManifest, manifest);

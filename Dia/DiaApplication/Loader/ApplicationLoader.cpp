@@ -1,6 +1,7 @@
 #include "ApplicationLoader.h"
 
 #include <DiaApplication/Manifest/ApplicationManifestLoader.h>
+#include <DiaApplication/TypeRegistry/ApplicationTypeRegistry.h>
 #include <DiaApplication/ApplicationProcessingUnit.h>
 #include <DiaCore/Core/Log.h>
 
@@ -11,13 +12,13 @@ namespace Dia
 		// -----------------------------------------------------------------------------
 		// LoadApplication (with validation result output)
 		// -----------------------------------------------------------------------------
-		ProcessingUnit* ApplicationLoader::LoadApplication(const char* manifestPath,
+		ProcessingUnit* ApplicationLoader::LoadApplication(ApplicationTypeRegistry& registry,
+														   const char* manifestPath,
 														   ManifestValidationResult& outResult)
 		{
 			DIA_ASSERT(manifestPath != nullptr, "Manifest path cannot be null");
 
-			// Create manifest loader
-			ApplicationManifestLoader loader;
+			ApplicationManifestLoader loader(registry);
 
 			// Load and parse manifest
 			ApplicationManifest manifest;
@@ -65,25 +66,26 @@ namespace Dia
 		// -----------------------------------------------------------------------------
 		// LoadApplication (convenience overload)
 		// -----------------------------------------------------------------------------
-		ProcessingUnit* ApplicationLoader::LoadApplication(const char* manifestPath)
+		ProcessingUnit* ApplicationLoader::LoadApplication(ApplicationTypeRegistry& registry,
+														   const char* manifestPath)
 		{
 			ManifestValidationResult result;
-			return LoadApplication(manifestPath, result);
+			return LoadApplication(registry, manifestPath, result);
 		}
 
 		// -----------------------------------------------------------------------------
 		// LoadApplicationWithFallback (AC9)
 		// -----------------------------------------------------------------------------
 		ProcessingUnit* ApplicationLoader::LoadApplicationWithFallback(
+			ApplicationTypeRegistry& registry,
 			const char* manifestPath,
 			ProcessingUnit* (*fallbackFactory)())
 		{
 			DIA_ASSERT(manifestPath != nullptr, "Manifest path cannot be null");
 			DIA_ASSERT(fallbackFactory != nullptr, "Fallback factory cannot be null");
 
-			// Try to load from manifest
 			ManifestValidationResult result;
-			ProcessingUnit* pu = LoadApplication(manifestPath, result);
+			ProcessingUnit* pu = LoadApplication(registry, manifestPath, result);
 
 			if (pu)
 			{

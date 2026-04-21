@@ -58,8 +58,9 @@ namespace Dia
 		// ManifestValidator
 		//-----------------------------------------------------------------------------
 
-		ManifestValidator::ManifestValidator()
-			: mErrors()
+		ManifestValidator::ManifestValidator(ApplicationTypeRegistry& registry)
+			: mRegistry(registry)
+			, mErrors()
 		{
 		}
 
@@ -127,7 +128,7 @@ namespace Dia
 		bool ManifestValidator::ValidateTypes(const ApplicationManifest& manifest)
 		{
 			bool allValid = true;
-			ApplicationTypeRegistry& registry = ApplicationTypeRegistry::Instance();
+			ApplicationTypeRegistry& registry = mRegistry;
 
 			for (unsigned int i = 0; i < manifest.processingUnits.Size(); ++i)
 			{

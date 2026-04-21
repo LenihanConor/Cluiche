@@ -41,6 +41,7 @@ namespace Dia
 	{
 		class Phase;
 		class ApplicationManifestLoader;
+		class ApplicationTypeRegistry;
 		class MetricsCollectorModule;
 	}
 }
@@ -134,6 +135,10 @@ namespace Dia
 			MessageBus& GetMessageBus() { return mMessageBus; }
 			const MessageBus& GetMessageBus() const { return mMessageBus; }
 
+			// Registry access — set by ApplicationManifestLoader after construction
+			ApplicationTypeRegistry* GetTypeRegistry() { return mTypeRegistry; }
+			const ApplicationTypeRegistry* GetTypeRegistry() const { return mTypeRegistry; }
+
 			// Metrics collector injection
 			void SetMetricsCollector(MetricsCollectorModule* collector);
 			MetricsCollectorModule* GetMetricsCollector() const;
@@ -214,6 +219,9 @@ namespace Dia
 
 			// Hot reload manager (optional, created on demand)
 			mutable HotReloadManager* mHotReloadManager;
+
+			// Set by ApplicationManifestLoader after construction via friend access
+			ApplicationTypeRegistry* mTypeRegistry = nullptr;
 		};
 
 		////////////////////////////////////////////////////////////////////////////////

@@ -26,13 +26,13 @@ This document catalogues every significant singleton and static complex object i
 |--------|------|---------|------|---------------------|
 | `Logger` | `Dia/DiaCore/Core/Logging/Logger.h:58` | Meyer's static | **High** | Medium |
 | `g_pAssertFunc` | `Dia/DiaCore/Core/Assert.cpp:47` | Global function pointer | Medium | Low |
-| `GlobalEventDispatcher` | `Dia/DiaCore/Architecture/Events/EventDispatcher.h:228` | Meyer's static | **High** | High |
+| ~~`GlobalEventDispatcher`~~ | ~~`Dia/DiaCore/Architecture/Events/EventDispatcher.h:228`~~ | ~~Meyer's static~~ | ~~**High**~~ | ~~High~~ | **Removed** |
 | `TypeFacade` | `Dia/DiaCore/Type/TypeFacade.h:38` | Free function static | Medium | Medium |
 | `ApplicationTypeRegistry` | `Dia/DiaApplication/TypeRegistry/ApplicationTypeRegistry.cpp:12` | Meyer's static | Medium | Low |
 | `EditorPluginRegistry` | `Dia/DiaEditor/Plugin/EditorPluginRegistry.h:15` | Meyer's static | Low | Low |
 | `AsyncFileLoader` | `Dia/DiaCore/FilePath/AsyncFileLoader.h:128` | Meyer's static | Medium | Medium |
 | `JobSystem` | `Dia/DiaCore/Threading/JobSystem.h:115` | Meyer's static | Medium | Medium |
-| `PathStore::sPathRootStore` | `Dia/DiaCore/FilePath/PathStore.h:60` | Static data member | Medium | Low |
+| `PathStore::sPathRootStore` | `Dia/DiaCore/FilePath/PathStore.h:60` | Static data member | ~~Medium~~ Low | Low | **RWLock + Lock() added** |
 | `Win32Window::sLastCreated` | `Dia/DiaWindow/Win32Window.h:48` | Static instance pointer | Low | Low |
 
 ---
