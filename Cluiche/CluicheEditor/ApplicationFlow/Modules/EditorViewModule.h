@@ -6,8 +6,8 @@
 
 namespace Dia
 {
-	namespace Window { class IWindow; class Win32Window; }
-	namespace UICEF  { class CEFUISystem; }
+	namespace Window { class IWindow; }
+	namespace UI { class IUISystem; }
 }
 
 namespace Cluiche
@@ -34,8 +34,8 @@ namespace Cluiche
 		private:
 			Dia::Editor::EditorView mView;
 			Dia::Editor::EditorModel* mModel;
-			Dia::Window::Win32Window* mWindow;
-			Dia::UICEF::CEFUISystem* mCEFSystem;
+			Dia::Window::IWindow* mWindow;
+			Dia::UI::IUISystem* mUISystem;
 		};
 	}
 }

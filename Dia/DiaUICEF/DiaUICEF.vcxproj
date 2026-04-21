@@ -104,9 +104,11 @@
     <ClInclude Include="CEFSchemeHandler.h" />
     <ClInclude Include="CEFJavaScriptBridge.h" />
     <ClInclude Include="CEFUtils.h" />
+    <ClInclude Include="EditorUISystemFactory.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CEFUISystem.cpp" />
+    <ClCompile Include="EditorUISystemFactory.cpp" />
     <ClCompile Include="CEFProcessHandler.cpp" />
     <ClCompile Include="CEFPage.cpp" />
     <ClCompile Include="CEFRenderHandler.cpp" />

@@ -23,6 +23,7 @@
     <ClInclude Include="DummyClass.h" />
     <ClInclude Include="Interface\IWindow.h" />
     <ClInclude Include="Interface\IWindowFactory.h" />
+    <ClInclude Include="NativeWindow.h" />
     <ClInclude Include="SystemHandle.h" />
     <ClInclude Include="Win32Window.h" />
   </ItemGroup>
@@ -39,6 +40,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DummyClass.cpp" />
+    <ClCompile Include="NativeWindow.cpp" />
     <ClCompile Include="Win32Window.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
