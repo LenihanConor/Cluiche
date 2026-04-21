@@ -567,6 +567,48 @@ void CefErrorHandler::OnLoadError(const char* errorMessage) {
 | 7 | Colors | Color coding by level? | Yes: white/yellow/red | ✅ Implemented |
 | 8 | Auto-scroll | Auto-scroll behavior? | Yes, with toggle | ✅ Implemented |
 
+## Implementation Status
+
+**v0 Shipped** (as of 2026-04-20):
+
+| Area | What's implemented | Notes |
+|------|--------------------|-------|
+| Panel hosting | Standalone iframe HTML at `dia://editor/outputconsole/index.html` | Served from `Dia/DiaEditor/Plugin/Assets/outputconsole/index.html`, registered as a built-in panel by `EditorView::Initialize` |
+| C++ → UI push | `EditorView::PushConsoleEntry(level, message)` → `WebUIBridge::NotifyUIDataChanged("console_entries", {...})` | Envelope: `{id, level, message, timestamp}` |
+| UI transport | Main frame calls `DiaEditor_onDataChanged({topic, data})` then `postMessage({__dia:true, topic, data}, "*")` to all iframes | OutputConsole iframe listens for `message` events filtered on `topic === "console_entries"` |
+| Line rendering | Timestamp + level + message, scrolls with append | Single pane (no tabs) |
+| Color coding | Info (white), Warning (yellow), Error (red) | Via inline styles in the iframe HTML |
+
+**Deferred to future iterations:**
+
+- **Multiple tabs** (Decision 33 — All/Commands/Game/Editor) — currently single buffer; source tag not propagated
+- **Buffer cap** (Decision 34 — 5000 lines FIFO) — iframe just appends; no eviction
+- **Level & text filters** (Decision 35) — no filter UI yet
+- **Disk persistence + rotation** (Decision 36) — no `~/.cluiche/logs/editor-YYYY-MM-DD.log` writer
+- **Auto-scroll toggle**, **Clear**, **Copy** buttons — not implemented
+- **`LogManager` C++ module** — the in-tree design uses a plain `EditorView::PushConsoleEntry(level, message)` + the WebUIBridge topic push instead; no Module class, no ring buffer, no file I/O
+- **Integration with CommandDispatcher / GameConnectionManager / CEF errors** — callers simply use `PushConsoleEntry` when they want to emit; there is no routing layer
+
+**Revised transport shape (what's actually in the tree):**
+
+```cpp
+// C++ side
+view.PushConsoleEntry("info", "Editor started");
+
+// Travels as:
+// DiaEditor_onDataChanged({ topic: "console_entries", data: {id, level, message, timestamp} })
+// then window.postMessage({__dia:true, topic, data}, "*") to every iframe
+
+// OutputConsole iframe JS
+window.addEventListener("message", (e) => {
+    if (!e.data || e.data.__dia !== true) return;
+    if (e.data.topic !== "console_entries") return;
+    append(e.data.data);
+});
+```
+
+When the editor grows a real command/execution surface, the spec's fuller `LogManager` (tabs, file rotation, ring buffer) becomes the target.
+
 ## Status
 
-`Approved` - Ready for implementation
+`Approved` - v0 implemented; deferred features tracked above

@@ -363,6 +363,60 @@ void CEFUISystem::Shutdown() {
 | 4 | URL Scheme | Support dia:// custom scheme? | Yes, for clean asset loading | ✅ Custom scheme (Decision 21) |
 | 5 | Multi-Window | Separate browsers or single + iframes? | Single for Phase 5 simplicity | ✅ Single + iframes (Decision 22) |
 
+## Implementation Status
+
+**v0 Shipped** (as of 2026-04-20):
+
+| Area | What's implemented | Notes |
+|------|--------------------|-------|
+| IUISystem impl | `CEFUISystem` in `Dia/DiaUICEF/CEFUISystem.{h,cpp}` | Extended with `SetSubprocessPath(const char*)` and `SetWindowedRendering(bool)` setters per spec |
+| Subprocess | CluicheEditor.exe handles both main & helper via `CefExecuteProcess` guard in `Main.cpp` | Decision 20 |
+| Windowed rendering | `windowless_rendering_enabled = false` routed via `SetWindowedRendering(true)` | Decision 18 |
+| `dia://` scheme | `CEFSchemeHandlerFactory` + asset base path `"editor"` → `<exe>/editor/...` | Decision 21 |
+| JS ↔ C++ bridge | `CEFJavaScriptBridge` + `dia_callCpp` IPC message, NOT `CefMessageRouter` as originally specified | See "Diverged" below |
+| Keyboard handler | `CEFClientHandler` now implements `CefKeyboardHandler::OnPreKeyEvent` to suppress Chromium's Ctrl+P and Ctrl+Shift+P accelerators so they don't launch the system print dialog | Added after shipping Command Palette — see `Dia/DiaUICEF/CEFClientHandler.cpp:86` |
+
+**Diverged from spec:**
+
+- **JS ↔ C++ transport** — uses CEF's raw `CefProcessMessage` IPC rather than `CefMessageRouter` / `cefQuery`. Messages cross with name `"dia_callCpp"` and args `[functionName, argsJson]`; `CEFClientHandler::OnProcessMessageReceived` dispatches to `CEFJavaScriptBridge::HandleCall`. Return path is `IUISystem::CallJSFunction("DiaEditor_onResponse", json)` via `ExecuteJavaScript` on the main frame. Rationale: simpler, avoids the extra router abstraction for the single-browser topology.
+- **Message envelope** — bridge is request/response with `reqId` + async push topics, not the one-shot `cefQuery` pattern shown in the spec. See `docs/specs/systems/dia/diaeditor.md` UI Bridge section for the current shape.
+
+**Critical threading fix (post-ship):**
+
+The CEF message pump runs on the same thread as the Dia update loop. When JS calls into C++ and the handler writes back with `CallJSFunction` (via `ExecuteJavaScript`), the bridge re-enters `CEFUISystemImpl` while `Update()` is still holding its internal mutex. Using `std::mutex` caused a hard deadlock.
+
+**Fix:** `CEFUISystem` now uses `std::recursive_mutex` (was `std::mutex`). All `std::lock_guard<std::mutex>` sites in `CEFUISystem.cpp` were updated. File references:
+- `Dia/DiaUICEF/CEFUISystem.h` — `std::recursive_mutex mSystemMutex;`
+- `Dia/DiaUICEF/CEFUISystem.cpp` — 15 `lock_guard<std::recursive_mutex>` sites
+
+This is load-bearing: any future edit that adds a new lock site must also use the recursive type. A non-recursive mutex here *will* deadlock the editor on the very first JS → C++ → JS round trip (which includes the initial `get_panels` call, so the editor hangs at boot).
+
+**Chromium browser-accelerator interception:**
+
+CEF's default `CefKeyboardHandler` lets Chromium apply its browser accelerators before the event reaches JS — meaning Ctrl+P launches the OS print dialog even though the web UI wants Ctrl+P for its own purposes. Override pattern:
+
+```cpp
+bool CEFClientHandler::OnPreKeyEvent(CefRefPtr<CefBrowser>,
+    const CefKeyEvent& event, CefEventHandle, bool* is_keyboard_shortcut) {
+    if (event.type != KEYEVENT_RAWKEYDOWN) return false;
+    const bool ctrl  = (event.modifiers & EVENTFLAG_CONTROL_DOWN) != 0;
+    const bool shift = (event.modifiers & EVENTFLAG_SHIFT_DOWN)   != 0;
+    const bool alt   = (event.modifiers & EVENTFLAG_ALT_DOWN)     != 0;
+    const bool ctrlP   = (ctrl && !shift && !alt && event.windows_key_code == 'P');
+    const bool ctrlShP = (ctrl &&  shift && !alt && event.windows_key_code == 'P');
+    if (ctrlP || ctrlShP) {
+        if (is_keyboard_shortcut != nullptr) *is_keyboard_shortcut = false;
+    }
+    return false;  // let event propagate to JS
+}
+```
+
+Setting `*is_keyboard_shortcut = false` tells CEF *"this isn't a browser shortcut, don't run your built-in handler"* — the event still flows to JS where the editor's own keymap decides what to do. Additional combos that need suppression (e.g. Ctrl+S for "save page") should be added here, not re-debugged from scratch.
+
+**F1 caveat (known limitation):**
+
+Windows 11 intercepts F1 at the OS level (Snipping Tool / "Get Help") *before* CEF ever sees the event, so there is no way to use F1 as an editor shortcut from this codebase. The command-palette key was moved to Ctrl+Shift+P only.
+
 ## Status
 
-`Approved` - Ready for implementation
+`Approved` - v0 implemented; diverged transport + post-ship fixes documented above

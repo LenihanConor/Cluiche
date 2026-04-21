@@ -405,6 +405,45 @@ void EditorApplication::ResetLayout() {
 | 4 | Plugin Mounting | Automatic or explicit registration? | Automatic via GetUIPath() | ✅ Automatic (Decision 26) |
 | 5 | Versioning | Handle missing panels? | Ignore gracefully with warning | ✅ Ignore (Decision 27) |
 
+## Implementation Status
+
+**v0 Shipped** (as of 2026-04-20):
+
+| Area | What's implemented | Notes |
+|------|--------------------|-------|
+| Docking library | `react-mosaic-component` v6.x | Wired in `Cluiche/CluicheEditor/UI/package.json`, styles imported in `main.tsx` |
+| DockingManager | `Cluiche/CluicheEditor/UI/src/layout/DockingManager.tsx` — fetches panels via `EditorBridge.getPanels()`, builds Mosaic tree via `buildTree()` | All panels rendered as iframes to their `dia://` URL |
+| Built-in panels | `Home` (`dia://editor/home/index.html`) and `Output Console` (`dia://editor/outputconsole/index.html`) | Registered in `EditorView::Initialize` so the docking area is never empty, even with no project loaded |
+| Plugin panels | `EditorView::RegisterComponent(name, uiPath)` called by `EditorApplication::LoadPlugin` | Mirrors Decision 26 — automatic mounting via `IEditorPlugin::GetUIPath()` |
+| Persistence path | `Data/editor-layout.json` (alongside the exe / project data) | **Not** `~/.cluiche/editor-layout.json` as originally specified — see below |
+| Load on startup | `EditorView::LoadLayoutFromDisk()` called in `CluicheEditorRunningPhase::AfterModulesStart` after project is loaded | |
+| Save on shutdown | `EditorView::SaveLayoutToDisk()` called in `CluicheEditorShutdownPhase::BeforeModulesStop` | |
+| Save on change | `EditorBridge.saveLayout()` fires on every Mosaic `onChange` | Fires the `save_layout` event handler |
+| Missing-panel tolerance | Mosaic render falls back to empty tile if panel id not in registered set | Decision 27 satisfied; panels registered after layout load still work |
+
+**Deferred / diverged from spec:**
+
+- **Layout path** — shipped at `Data/editor-layout.json` (project-adjacent) rather than `~/.cluiche/editor-layout.json` (user-home). Decision 24 explicitly flagged "need better data management strategy" — that strategy still isn't built. Revisit when a global editor-preferences story exists.
+- **`DockingLayout` C++ utility class** — not shipped as a standalone class; its responsibilities live inside `EditorView` (`SetLayoutPath`, `LoadLayoutFromDisk`, `SaveLayoutToDisk`, the `load_layout`/`save_layout` WebUIBridge handlers). Revisit if the editor grows multiple layouts per project or per user.
+- **Reset-to-default layout command** — no UI affordance; the layout file can be deleted manually to reset
+- **Panel "closable" flag** — every panel renders with default toolbar controls; no per-panel closable override yet
+
+**Revised call graph (what's actually in the tree):**
+
+```cpp
+// C++ boot
+view.SetLayoutPath("Data/editor-layout.json");
+view.LoadLayoutFromDisk();     // pulls JSON, stashed for "load_layout" request
+
+// C++ shutdown
+view.SaveLayoutToDisk();       // writes current layout blob to disk
+
+// WebUIBridge request/event handlers
+"get_panels"   -> JSON array of {id, title, url}
+"load_layout"  -> cached JSON from disk
+"save_layout"  -> overwrite in-memory blob (persisted on shutdown + on change)
+```
+
 ## Status
 
-`Approved` - Ready for implementation
+`Approved` - v0 implemented; deferred features tracked above

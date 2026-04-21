@@ -402,6 +402,41 @@ void CommandDispatcher::LoadHistory() {
 | 4 | Arguments | How to prompt for args? | Inline sequential input | ✅ Inline (Decision 31) |
 | 5 | History | Persist across sessions? | Yes, to ~/.cluiche/command-history.json | ✅ Persist (Decision 32) |
 
+## Implementation Status
+
+**v0 Shipped** (as of 2026-04-20):
+
+| Area | What's implemented | Notes |
+|------|--------------------|-------|
+| Keyboard shortcut | Ctrl+Shift+P opens palette | Handled in `main.tsx`; also suppressed in CEF via `CEFClientHandler::OnPreKeyEvent` so Chromium's browser "print" accelerator doesn't fire |
+| Command registration | `EditorView::RegisterCommand(const char* id, const char* label)` — manual registration | No DiaAPI CommandRegistry auto-discovery yet |
+| Built-in commands | `undo`, `redo`, `log.test` | Registered in `EditorView::Initialize`; more commands added as plugins register them |
+| Command fetch | `get_commands` request handler in `WebUIBridge` returns `[{id, label}, ...]` | Via `EditorBridge.getCommands()` |
+| Fuzzy search | fuse.js over `label` + `id` | Matches VS Code-style ranking |
+| Execute | `execute_command` event handler on C++ side | Routes by `id` StringCRC |
+| UI | `CommandPalette.tsx` — input + filtered list, arrow keys, Enter, Esc | Renders id next to label |
+
+**Deferred to future iterations:**
+
+- **DiaAPI CommandRegistry auto-discovery** — currently commands are registered manually via `RegisterCommand`; the spec's `CommandDispatcher` module that wraps `DiaAPI::CommandRegistry` has not been built
+- **Inline argument prompts** (Decision 31) — current commands are all zero-arg; no sequential arg-prompt UI
+- **Persistent history** (Decision 32) — no `~/.cluiche/command-history.json`; palette always starts fresh
+- **Recent-commands-at-top ordering** — no history means no "recent" bucket
+- **Metadata override** (category, icon, description) — only `id` and `label` for now
+- **`CommandDispatcher` C++ module** — simpler design replaces it: commands live as `EditorView::CommandInfo` entries plus a WebUIBridge event handler that dispatches on id
+
+**Revised C++ surface (what's actually in the tree):**
+
+```cpp
+// Dia/DiaEditor/MVC/EditorView.h
+struct CommandInfo { char id[64]; char label[96]; };
+void EditorView::RegisterCommand(const char* id, const char* label);
+// Plus WebUIBridge request handler: "get_commands" → JSON array
+// Plus WebUIBridge event handler:   "execute_command" → dispatches by id
+```
+
+The richer `CommandDispatcher` module (history persistence, metadata, CommandRegistry bridge) remains the aspirational target when a real command surface beyond undo/redo/log is needed.
+
 ## Status
 
-`Approved` - Ready for implementation
+`Approved` - v0 implemented; deferred features tracked above

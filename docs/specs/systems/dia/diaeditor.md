@@ -411,40 +411,66 @@ Message types, serialization helpers, and data type constants are defined in the
 
 ### UI Bridge
 
-WebUIBridge is the editor-level communication API. It wraps DiaUICEF's `CEFMessageBridge` (`window.dia.sendMessage()`), adding editor-specific routing: dispatching events to the correct plugin, serializing Observer notifications, and handling command dispatch. One communication channel, two abstraction levels.
+WebUIBridge is the editor-level communication API. It sits on top of DiaUI's `IUISystem`, adding editor-specific routing: three message shapes (fire-and-forget events, request/response RPC, and topic pushes), dispatching events to the correct handler, and serializing data updates.
 
 ```
-JS side:  window.dia.sendMessage()          ← DiaUICEF (transport)
+JS side:  window.dia.callCpp(name, argsJson)   ← DiaUI (transport, IPC to browser process)
               ↑
-          window.DiaEditor.executeCommand()  ← thin JS wrapper (routes via dia.sendMessage)
+          window.CluicheEditor.{undo,redo,...}  ← EditorBridge.ts (routes via dia.callCpp)
               ↑
-          React components                   ← plugin UI
+          React components                       ← plugin UI
 ```
+
+**Message shapes (all carried over a single `DiaEditor_call` transport):**
+
+| Shape | JS → C++ payload | Response path |
+|-------|-------------------|---------------|
+| Event (fire-and-forget) | `{ type, data }` | none |
+| Request/response | `{ type, reqId, data }` | C++ calls `DiaEditor_onResponse({reqId, result})` on the main frame |
+| Topic push (C++ → JS) | n/a | C++ calls `DiaEditor_onDataChanged({topic, data})` on the main frame |
+
+The shell re-broadcasts every topic push to iframes via `postMessage({__dia:true, topic, data})` so dockable panels can subscribe regardless of which frame they live in.
 
 **WebUIBridge:**
 ```cpp
 namespace Dia::Editor {
     class WebUIBridge {
     public:
-        WebUIBridge(Dia::UICEF::CEFMessageBridge* messageBridge);
-        
-        // C++ → JavaScript (delegates to CEFMessageBridge internally)
-        void CallJavaScript(const char* functionName, const Json::Value& args);
-        void NotifyUIDataChanged(const StringCRC& dataPath, const Json::Value& data);
-        
-        // JavaScript → C++ (handlers registered by EditorViewController)
-        using UIEventHandler = Dia::Core::Functor<void(const Json::Value&)>;
-        void RegisterEventHandler(const StringCRC& eventType, UIEventHandler handler);
-        void UnregisterEventHandler(const StringCRC& eventType);
-        
+        using EventHandler = std::function<void(const Json::Value& data)>;
+        using RequestHandler = std::function<Json::Value(const Json::Value& data)>;
+
+        explicit WebUIBridge(Dia::UI::IUISystem* uiSystem);
+
+        void Initialize(EditorViewController* controller);
+
+        // JavaScript → C++
+        void RegisterEventHandler(const StringCRC& eventType, EventHandler handler);
+        void RegisterRequestHandler(const StringCRC& eventType, RequestHandler handler);
+
+        // C++ → JavaScript (topic-based push). Topic is passed as a string so
+        // the JS side can dispatch on it without needing a CRC lookup.
+        void NotifyUIDataChanged(const char* topic, const Json::Value& data);
+
     private:
-        Dia::UICEF::CEFMessageBridge* mMessageBridge;
-        
-        // Registered as handler on CEFMessageBridge; routes to editor event handlers
-        void OnMessageFromJS(const Json::Value& data);
+        // Single transport handler registered with IUISystem. Parses {type,
+        // reqId?, data}, dispatches to request or event handler, and sends
+        // the response envelope for reqId-bearing calls.
+        std::string HandleEditorCall(const std::string& argsJson);
+        void SendResponse(const std::string& reqId, const Json::Value& result);
+
+        Dia::UI::IUISystem* mUISystem;
+        EditorViewController* mController;
+        // ... handler tables (DynamicArrayC<EventEntry, 32>, RequestEntry)
     };
 }
 ```
+
+**Built-in request/event handlers** registered by `EditorView::Initialize`:
+- `get_panels` (request) — returns the registered dockable panel list
+- `get_commands` (request) — returns the registered command list
+- `load_layout` (request) — returns the serialized DockingLayout
+- `save_layout` (event) — persists a layout tree sent from JS
+- `execute_command` (event) — routes to EditorViewController and emits a console entry
 
 ### Docking Layout
 
@@ -563,6 +589,8 @@ Features within the DiaEditor system (create with `/spec-feature`):
 | Output Console | Display command output, game logs, error messages | @docs/specs/features/dia/diaeditor/output-console.md | Approved |
 | Live Data Visualization | Subscribe to game state, render updates, read-only monitoring | @docs/specs/features/dia/diaeditor/live-data-visualization.md | Approved |
 | Undo/Redo | IEditorCommand + CommandHistory module, save-point tracking, compound commands | @docs/specs/features/dia/diaeditor/undo-redo.md | Approved |
+| Home Panel | Built-in landing panel so the docking area is never empty | @docs/specs/features/dia/diaeditor/home-panel.md | Approved |
+| Game Connection Panel | UI for the editor's WebSocket connection to a running game | @docs/specs/features/dia/diaeditor/game-connection-panel.md | Draft |
 
 ## AI Review Questions
 
