@@ -6,8 +6,11 @@
 #include "../Modules/EditorViewModule.h"
 #include "../Modules/EditorViewControllerModule.h"
 #include "../Modules/GameConnectionModule.h"
+#include "../ProcessingUnits/CluicheEditorProcessingUnit.h"
 
 #include <DiaApplication/ApplicationProcessingUnit.h>
+#include <DiaEditor/MVC/EditorModel.h>
+#include <string.h>
 
 namespace Cluiche
 {
@@ -40,6 +43,25 @@ namespace Cluiche
 
 		void CluicheEditorRunningPhase::AfterModulesStart()
 		{
+			CluicheEditorProcessingUnit* pu =
+				static_cast<CluicheEditorProcessingUnit*>(GetAssociatedProcessingUnit());
+			if (pu == nullptr)
+				return;
+
+			const char* projectPath = pu->GetProjectPath();
+			if (projectPath == nullptr || projectPath[0] == '\0')
+				return;
+
+			EditorModelModule* modelModule =
+				static_cast<EditorModelModule*>(GetModule(EditorModelModule::kTypeId));
+			if (modelModule == nullptr)
+				return;
+
+			Dia::Editor::EditorModel& model = modelModule->GetModel();
+			model.LoadProject(projectPath);
+
+			for (unsigned int i = 0; i < model.GetManifestCount(); ++i)
+				pu->LoadEditorManifest(model.GetManifestPath(i));
 		}
 	}
 }

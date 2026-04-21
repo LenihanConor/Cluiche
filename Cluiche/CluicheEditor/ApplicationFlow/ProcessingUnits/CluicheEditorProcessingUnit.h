@@ -31,6 +31,9 @@ namespace Cluiche
 			void LoadPlugin(const Dia::Core::StringCRC& typeId, const Dia::Core::StringCRC& instanceId);
 			void LoadEditorManifest(const char* manifestPath);
 
+			void SetProjectPath(const char* path);
+			const char* GetProjectPath() const { return mProjectPath; }
+
 			EditorModelModule& GetModelModule() { return mModelModule; }
 			CommandHistoryModule& GetCommandHistoryModule() { return mCommandHistoryModule; }
 			EditorViewModule& GetViewModule() { return mViewModule; }
@@ -49,6 +52,9 @@ namespace Cluiche
 
 			static const unsigned int kMaxPlugins = 16;
 			Dia::Core::Containers::DynamicArrayC<Dia::Editor::IEditorPlugin*, kMaxPlugins> mLoadedPlugins;
+
+			static const unsigned int kMaxPathLength = 260;
+			char mProjectPath[kMaxPathLength];
 		};
 	}
 }

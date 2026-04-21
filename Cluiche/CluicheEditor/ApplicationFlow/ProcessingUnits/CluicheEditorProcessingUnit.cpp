@@ -4,6 +4,7 @@
 #include <DiaEditor/Plugin/IEditorPlugin.h>
 #include <DiaEditor/EditorManifestLoader.h>
 #include <DiaCore/Core/Assert.h>
+#include <string.h>
 
 namespace Cluiche
 {
@@ -39,8 +40,21 @@ namespace Cluiche
 			mViewControllerModule.GetController().SetCommandHistory(&mCommandHistoryModule.GetHistory());
 			mViewControllerModule.GetController().SetModel(&mModelModule.GetModel());
 			mViewModule.SetModel(&mModelModule.GetModel());
+			mViewModule.SetController(&mViewControllerModule.GetController());
+
+			mProjectPath[0] = '\0';
 
 			Initialize();
+		}
+
+		void CluicheEditorProcessingUnit::SetProjectPath(const char* path)
+		{
+			if (path == nullptr)
+			{
+				mProjectPath[0] = '\0';
+				return;
+			}
+			strncpy_s(mProjectPath, kMaxPathLength, path, _TRUNCATE);
 		}
 
 		bool CluicheEditorProcessingUnit::FlaggedToStopUpdating() const
