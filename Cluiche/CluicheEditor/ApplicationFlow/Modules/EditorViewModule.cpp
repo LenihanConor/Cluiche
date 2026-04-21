@@ -1,5 +1,8 @@
 #include "EditorViewModule.h"
 
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
 #include <DiaWindow/NativeWindow.h>
 #include <DiaUICEF/EditorUISystemFactory.h>
 #include <DiaUI/IUISystem.h>
@@ -52,6 +55,14 @@ namespace Cluiche
 				static_cast<int>(size.X()), static_cast<int>(size.Y()));
 
 			mView.Initialize(mUISystem, mController);
+
+			Dia::Window::IWindow* win = mWindow;
+			Dia::Window::SetNativeResizeCallback(mWindow, [win](int w, int h) {
+				HWND parent = static_cast<HWND>(win->GetSystemHandle());
+				HWND child = FindWindowExW(parent, nullptr, nullptr, nullptr);
+				if (child)
+					MoveWindow(child, 0, 0, w, h, TRUE);
+			});
 
 			return Dia::Application::StateObject::OpertionResponse::kImmediate;
 		}

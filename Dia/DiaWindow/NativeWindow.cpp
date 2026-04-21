@@ -18,6 +18,12 @@ namespace Dia
 			return window;
 		}
 
+		void SetNativeResizeCallback(IWindow* window, WindowResizeCallback onResize)
+		{
+			if (Win32Window* w = static_cast<Win32Window*>(window))
+				w->SetResizeCallback(onResize);
+		}
+
 		void DestroyNativeWindow(IWindow* window)
 		{
 			delete window;

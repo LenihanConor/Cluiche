@@ -109,3 +109,11 @@ namespace Dia
 		}
 	}
 }
+
+#include <DiaApplication/TypeRegistry/RegistrationMacros.h>
+namespace { using _MetricsCollectorModule = Dia::Application::MetricsCollectorModule; }
+DIA_REGISTER_MODULE(_MetricsCollectorModule) {
+	Dia::Application::MetricsCollectorModule* mod = new Dia::Application::MetricsCollectorModule(pu);
+	pu->SetMetricsCollector(mod);
+	return mod;
+}

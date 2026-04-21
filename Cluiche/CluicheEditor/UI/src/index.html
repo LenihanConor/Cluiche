@@ -6,8 +6,22 @@
     <title>Cluiche Editor</title>
     <style>
       * { box-sizing: border-box; margin: 0; padding: 0; }
-      body { width: 100vw; height: 100vh; overflow: hidden; background: #1e1e1e; color: #d4d4d4; font-family: Consolas, monospace; }
+      body { width: 100vw; height: 100vh; overflow: hidden; background: #272822; color: #f8f8f2; font-family: Consolas, monospace; }
       #root { width: 100%; height: 100%; }
+
+      .mosaic.mosaic-blueprint-theme.bp4-dark { background: #1e1e1e; }
+      .mosaic.mosaic-blueprint-theme.bp4-dark .mosaic-window,
+      .mosaic.mosaic-blueprint-theme.bp4-dark .mosaic-preview { box-shadow: 0 0 0 1px #333; border-radius: 0; }
+      .mosaic.mosaic-blueprint-theme.bp4-dark .mosaic-window-toolbar { background: #272822; box-shadow: none; border-bottom: 1px solid #3c3c3c; height: 26px; }
+      .mosaic.mosaic-blueprint-theme.bp4-dark .mosaic-window-additional-actions-bar { display: none; }
+      .mosaic.mosaic-blueprint-theme.bp4-dark .mosaic-window .mosaic-window-title,
+      .mosaic.mosaic-blueprint-theme.bp4-dark .mosaic-preview .mosaic-window-title { color: #a6e22e; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; padding-left: 10px; font-family: Consolas, monospace; }
+      .mosaic.mosaic-blueprint-theme.bp4-dark .mosaic-window .mosaic-window-body,
+      .mosaic.mosaic-blueprint-theme.bp4-dark .mosaic-preview .mosaic-window-body { background: #1e1e1e; }
+      .mosaic.mosaic-blueprint-theme.bp4-dark .mosaic-split:hover .mosaic-split-line { box-shadow: 0 0 0 1px #75715e; }
+      .mosaic.mosaic-blueprint-theme.bp4-dark .mosaic-window .mosaic-window-toolbar.draggable:hover { background: #333; }
+      .mosaic.mosaic-blueprint-theme.bp4-dark .mosaic-window .mosaic-window-toolbar.draggable:hover .mosaic-window-title { color: #f8f8f2; }
+      .mosaic.mosaic-blueprint-theme.bp4-dark .mosaic-window .mosaic-window-controls .separator { border-color: #3c3c3c; }
     </style>
   </head>
   <body>

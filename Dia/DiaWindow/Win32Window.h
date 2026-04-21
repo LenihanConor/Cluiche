@@ -11,6 +11,7 @@ namespace Dia
 	namespace Window
 	{
 		using CloseCallback = std::function<void()>;
+		using ResizeCallback = std::function<void(int, int)>;
 
 		class Win32Window : public IWindow
 		{
@@ -19,6 +20,7 @@ namespace Dia
 			~Win32Window();
 
 			void SetCloseCallback(CloseCallback cb);
+			void SetResizeCallback(ResizeCallback cb);
 
 			void Initialize(const Settings& settings) override;
 			void Close() override;
@@ -44,6 +46,7 @@ namespace Dia
 			SystemHandle mHwnd;
 			bool mIsOpen;
 			CloseCallback mCloseCallback;
+			ResizeCallback mResizeCallback;
 
 			static Win32Window* sLastCreated;
 		};

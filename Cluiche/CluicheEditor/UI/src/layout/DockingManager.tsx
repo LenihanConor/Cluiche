@@ -96,5 +96,5 @@ export function DockingManager() {
     );
   }
 
-  return <Mosaic<PanelId> renderTile={renderTile} value={layout} onChange={handleChange} />;
+  return <Mosaic<PanelId> className="mosaic-blueprint-theme bp4-dark" renderTile={renderTile} value={layout} onChange={handleChange} />;
 }

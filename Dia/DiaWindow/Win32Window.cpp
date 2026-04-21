@@ -1,6 +1,8 @@
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
+#include <dwmapi.h>
+#pragma comment(lib, "dwmapi.lib")
 
 #include "Win32Window.h"
 
@@ -25,7 +27,7 @@ namespace Dia
 			wc.lpfnWndProc = reinterpret_cast<WNDPROC>(Win32Window::WndProc);
 			wc.hInstance = hInstance;
 			wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
-			wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+			wc.hbrBackground = CreateSolidBrush(RGB(30, 30, 30));
 			wc.lpszClassName = kWin32WindowClass;
 			RegisterClassExW(&wc);
 			sClassRegistered = true;
@@ -46,6 +48,11 @@ namespace Dia
 		void Win32Window::SetCloseCallback(CloseCallback cb)
 		{
 			mCloseCallback = cb;
+		}
+
+		void Win32Window::SetResizeCallback(ResizeCallback cb)
+		{
+			mResizeCallback = cb;
 		}
 
 		void Win32Window::Initialize(const Settings& settings)
@@ -74,6 +81,10 @@ namespace Dia
 				return;
 
 			mIsOpen = true;
+
+			BOOL useDarkMode = TRUE;
+			DwmSetWindowAttribute(static_cast<HWND>(mHwnd), 20, &useDarkMode, sizeof(useDarkMode));
+
 			ShowWindow(static_cast<HWND>(mHwnd), SW_SHOW);
 			UpdateWindow(static_cast<HWND>(mHwnd));
 		}
@@ -157,6 +168,14 @@ namespace Dia
 				if (sLastCreated)
 					sLastCreated->mIsOpen = false;
 				PostQuitMessage(0);
+				return 0;
+			case WM_SIZE:
+				if (sLastCreated && sLastCreated->mResizeCallback && wParam != SIZE_MINIMIZED)
+				{
+					int w = static_cast<int>(LOWORD(static_cast<DWORD>(lParam)));
+					int h = static_cast<int>(HIWORD(static_cast<DWORD>(lParam)));
+					sLastCreated->mResizeCallback(w, h);
+				}
 				return 0;
 			}
 			return static_cast<long>(DefWindowProcW(

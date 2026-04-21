@@ -302,6 +302,8 @@ namespace Dia
 			Phase* currentPhase = mCurrentPhase.load(std::memory_order_acquire);
 			DIA_ASSERT(currentPhase, "For Processing Unit %s Current Phase is NULL, cannot update", GetUniqueId().AsChar());
 
+			auto lastFrameStart = std::chrono::high_resolution_clock::now();
+
 			while (!FlaggedToStopUpdating())
 			{
 				if (mEnableThreadLimiter)
@@ -324,10 +326,11 @@ namespace Dia
 
 				if (mMetricsCollector != nullptr)
 				{
-					auto frameEnd = std::chrono::high_resolution_clock::now();
-					float deltaMs = std::chrono::duration<float, std::milli>(frameEnd - frameStart).count();
-					mMetricsCollector->ReportFrame(GetUniqueId(), GetUniqueId().AsChar(), deltaMs);
+					float deltaMs = std::chrono::duration<float, std::milli>(frameStart - lastFrameStart).count();
+					if (deltaMs > 0.001f)
+						mMetricsCollector->ReportFrame(GetUniqueId(), GetUniqueId().AsChar(), deltaMs);
 				}
+				lastFrameStart = frameStart;
 
 				{
 					bool transition = false;

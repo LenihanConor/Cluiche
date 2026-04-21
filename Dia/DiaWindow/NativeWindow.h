@@ -14,9 +14,12 @@ namespace Dia
 	namespace Window
 	{
 		using WindowCloseCallback = std::function<void()>;
+		using WindowResizeCallback = std::function<void(int, int)>;
 
 		IWindow* CreateNativeWindow(const IWindow::Settings& settings,
 			WindowCloseCallback onClose = WindowCloseCallback());
+
+		void SetNativeResizeCallback(IWindow* window, WindowResizeCallback onResize);
 
 		void DestroyNativeWindow(IWindow* window);
 

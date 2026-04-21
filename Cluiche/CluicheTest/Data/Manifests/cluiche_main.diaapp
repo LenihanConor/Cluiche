@@ -38,10 +38,17 @@
           "config": {}
         },
         {
+          "type_id": "MetricsCollectorModule",
+          "instance_id": "MetricsCollectorModule",
+          "phase_ids": ["MainBootPhase", "MainBootStrapPhase"],
+          "dependencies": [],
+          "config": {}
+        },
+        {
           "type_id": "DebugServerModule",
           "instance_id": "DebugServerModule",
           "phase_ids": ["MainBootPhase", "MainBootStrapPhase"],
-          "dependencies": [],
+          "dependencies": ["MetricsCollectorModule"],
           "config": {
             "port": 9002,
             "auto_start": true,
