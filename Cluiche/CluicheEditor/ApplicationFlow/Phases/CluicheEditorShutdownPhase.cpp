@@ -2,6 +2,7 @@
 
 #include "../Modules/EditorModelModule.h"
 #include "../Modules/EditorViewModule.h"
+#include "../Modules/PluginLoaderModule.h"
 
 #include <DiaEditor/MVC/EditorView.h>
 
@@ -20,6 +21,7 @@ namespace Cluiche
 		{
 			AddModule(buildDependencies->GetModule(EditorModelModule::kTypeId));
 			AddModule(buildDependencies->GetModule(EditorViewModule::kTypeId));
+			AddModule(buildDependencies->GetModule(PluginLoaderModule::kTypeId));
 		}
 
 		void CluicheEditorShutdownPhase::BeforeModulesStop()

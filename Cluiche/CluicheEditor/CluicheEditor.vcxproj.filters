@@ -48,6 +48,9 @@
     <ClCompile Include="ApplicationFlow\Modules\GameConnectionModule.cpp">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClCompile>
+    <ClCompile Include="ApplicationFlow\Modules\PluginLoaderModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApplicationFlow\ProcessingUnits\CluicheEditorProcessingUnit.h">
@@ -75,6 +78,9 @@
       <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
     <ClInclude Include="ApplicationFlow\Modules\GameConnectionModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="ApplicationFlow\Modules\PluginLoaderModule.h">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
   </ItemGroup>

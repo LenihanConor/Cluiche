@@ -6,6 +6,7 @@
 #include "../Modules/EditorViewModule.h"
 #include "../Modules/EditorViewControllerModule.h"
 #include "../Modules/GameConnectionModule.h"
+#include "../Modules/PluginLoaderModule.h"
 #include "../ProcessingUnits/CluicheEditorProcessingUnit.h"
 
 #include <DiaApplication/ApplicationProcessingUnit.h>
@@ -43,23 +44,27 @@ namespace Cluiche
 			AddModule(buildDependencies->GetModule(EditorViewModule::kTypeId));
 			AddModule(buildDependencies->GetModule(EditorViewControllerModule::kTypeId));
 			AddModule(buildDependencies->GetModule(GameConnectionModule::kTypeId));
+			AddModule(buildDependencies->GetModule(PluginLoaderModule::kTypeId));
 		}
 
 		void CluicheEditorRunningPhase::AfterModulesStart()
 		{
 			Dia::Core::Log::OutputVaradicLine("CluicheEditorRunningPhase: AfterModulesStart");
 
-			CluicheEditorProcessingUnit* pu =
-				static_cast<CluicheEditorProcessingUnit*>(GetAssociatedProcessingUnit());
-			if (pu == nullptr)
+			PluginLoaderModule* pluginLoader =
+				static_cast<PluginLoaderModule*>(GetModule(PluginLoaderModule::kTypeId));
+			if (pluginLoader == nullptr)
 			{
-				Dia::Core::Log::OutputVaradicLine("CluicheEditorRunningPhase: WARNING - processing unit is null");
+				Dia::Core::Log::OutputVaradicLine("CluicheEditorRunningPhase: WARNING - PluginLoaderModule not found");
 				return;
 			}
 
-			pu->LoadPlugin(Dia::Core::StringCRC("HomeEditorPlugin"), Dia::Core::StringCRC("home_builtin"));
+			pluginLoader->LoadBuiltInPlugins();
 
-			const char* projectPath = pu->GetProjectPath();
+			CluicheEditorProcessingUnit* pu =
+				static_cast<CluicheEditorProcessingUnit*>(GetAssociatedProcessingUnit());
+			const char* projectPath = (pu != nullptr) ? pu->GetProjectPath() : nullptr;
+
 			if (projectPath != nullptr && projectPath[0] != '\0')
 			{
 				Dia::Core::Log::OutputVaradicLine("CluicheEditorRunningPhase: Loading project '%s'", projectPath);
@@ -71,10 +76,8 @@ namespace Cluiche
 					Dia::Editor::EditorModel& model = modelModule->GetModel();
 					model.LoadProject(projectPath);
 
-					// TODO: [Architecture] Plugin loading is hardcoded in AfterModulesStart.
-					// Should be decoupled into a dedicated PluginLoaderModule or lifecycle hook.
 					for (unsigned int i = 0; i < model.GetManifestCount(); ++i)
-						pu->LoadEditorManifest(model.GetManifestPath(i));
+						pluginLoader->LoadManifest(model.GetManifestPath(i));
 				}
 				else
 				{
@@ -93,6 +96,8 @@ namespace Cluiche
 				Dia::Editor::EditorView& view = viewModule->GetView();
 				view.SetLayoutPath("Data/editor-layout.json");
 				view.LoadLayoutFromDisk();
+
+				pluginLoader->RegisterView(&view);
 
 				GameConnectionModule* gcModule =
 					static_cast<GameConnectionModule*>(GetModule(GameConnectionModule::kTypeId));
