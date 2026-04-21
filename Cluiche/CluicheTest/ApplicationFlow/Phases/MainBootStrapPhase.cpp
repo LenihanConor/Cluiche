@@ -9,6 +9,7 @@
 #include <CluicheKernel/LevelFactory.h>
 
 #include <DiaApplication/ApplicationProcessingUnit.h>
+#include <DiaDebugServer/DebugServerModule.h>
 
 #include <DiaCore/Strings/stringutils.h>
 
@@ -34,6 +35,7 @@ namespace Cluiche
 		AddModule(buildDependencies->GetModule(Main::KernelModule::kTypeId));
 		AddModule(buildDependencies->GetModule(Main::LevelFactoryModule::kTypeId));
 		AddModule(buildDependencies->GetModule(Main::UIModule::kTypeId));
+		AddModule(buildDependencies->GetModule(Dia::DebugServer::DebugServerModule::kTypeId));
 	}
 
 	void MainBootStrapPhase::AfterModulesStart()

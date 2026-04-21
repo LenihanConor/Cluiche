@@ -163,23 +163,25 @@
       function callCpp(type, reqId, data) {
         var payload = { type: type, data: data || {} };
         if (reqId) payload.reqId = reqId;
+        console.log("[GameConnection] callCpp type=" + type + " reqId=" + (reqId || "(none)"));
         try {
           window.parent.postMessage({ __diaFromFrame: true, payload: payload }, "*");
-        } catch (e) { /* ignore */ }
+        } catch (e) {
+          console.warn("[GameConnection] postMessage failed:", e);
+        }
       }
 
-      // Route request responses back here. Parent frame re-broadcasts topics
-      // via window.postMessage; request responses come via a local bridge the
-      // parent injects in the iframe through postMessage too.
       window.addEventListener("message", function (e) {
         var msg = e.data || {};
         if (msg.__diaResponse && msg.reqId && pending[msg.reqId]) {
+          console.log("[GameConnection] Response received reqId=" + msg.reqId);
           var cb = pending[msg.reqId];
           delete pending[msg.reqId];
           cb(msg.result);
           return;
         }
         if (!msg.__dia) return;
+        console.log("[GameConnection] Topic received: " + msg.topic);
         if (msg.topic === "game_connection") {
           apply(msg.data || {});
         } else if (msg.topic === "game_connection_heartbeat") {
@@ -214,9 +216,11 @@
 
       document.getElementById("btn-connect").addEventListener("click", function () {
         var url = (urlInput.value || "").trim();
+        console.log("[GameConnection] Connect clicked, url=" + url);
         if (!url) { showError("URL is required"); return; }
         errBox.style.display = "none";
         request("game_connection.connect", { url: url }, function (res) {
+          console.log("[GameConnection] Connect response:", JSON.stringify(res));
           if (res && res.ok === false) showError(res.error || "connect failed");
         });
       });
@@ -276,8 +280,9 @@
         heartbeat.textContent = "last heartbeat at " + hh + ":" + mm + ":" + ss;
       }
 
-      // Ask for current state on load so panels spawned later sync correctly.
+      console.log("[GameConnection] Panel loaded, requesting initial state");
       request("game_connection.get_state", {}, function (res) {
+        console.log("[GameConnection] Initial state response:", JSON.stringify(res));
         if (res) apply(res);
       });
     })();

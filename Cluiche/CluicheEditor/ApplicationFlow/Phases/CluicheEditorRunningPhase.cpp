@@ -13,6 +13,7 @@
 #include <DiaEditor/MVC/EditorView.h>
 #include <DiaEditor/LiveConnection/GameConnectionController.h>
 #include <DiaEditor/LiveConnection/GameConnectionManager.h>
+#include <DiaCore/Core/Log.h>
 #include <string.h>
 
 namespace Cluiche
@@ -46,25 +47,40 @@ namespace Cluiche
 
 		void CluicheEditorRunningPhase::AfterModulesStart()
 		{
+			Dia::Core::Log::OutputVaradicLine("CluicheEditorRunningPhase: AfterModulesStart");
+
 			CluicheEditorProcessingUnit* pu =
 				static_cast<CluicheEditorProcessingUnit*>(GetAssociatedProcessingUnit());
 			if (pu == nullptr)
+			{
+				Dia::Core::Log::OutputVaradicLine("CluicheEditorRunningPhase: WARNING - processing unit is null");
 				return;
+			}
 
 			const char* projectPath = pu->GetProjectPath();
-			if (projectPath == nullptr || projectPath[0] == '\0')
-				return;
+			if (projectPath != nullptr && projectPath[0] != '\0')
+			{
+				Dia::Core::Log::OutputVaradicLine("CluicheEditorRunningPhase: Loading project '%s'", projectPath);
 
-			EditorModelModule* modelModule =
-				static_cast<EditorModelModule*>(GetModule(EditorModelModule::kTypeId));
-			if (modelModule == nullptr)
-				return;
+				EditorModelModule* modelModule =
+					static_cast<EditorModelModule*>(GetModule(EditorModelModule::kTypeId));
+				if (modelModule != nullptr)
+				{
+					Dia::Editor::EditorModel& model = modelModule->GetModel();
+					model.LoadProject(projectPath);
 
-			Dia::Editor::EditorModel& model = modelModule->GetModel();
-			model.LoadProject(projectPath);
-
-			for (unsigned int i = 0; i < model.GetManifestCount(); ++i)
-				pu->LoadEditorManifest(model.GetManifestPath(i));
+					for (unsigned int i = 0; i < model.GetManifestCount(); ++i)
+						pu->LoadEditorManifest(model.GetManifestPath(i));
+				}
+				else
+				{
+					Dia::Core::Log::OutputVaradicLine("CluicheEditorRunningPhase: WARNING - EditorModelModule not found");
+				}
+			}
+			else
+			{
+				Dia::Core::Log::OutputVaradicLine("CluicheEditorRunningPhase: No project path set, skipping project load");
+			}
 
 			EditorViewModule* viewModule =
 				static_cast<EditorViewModule*>(GetModule(EditorViewModule::kTypeId));
@@ -76,13 +92,26 @@ namespace Cluiche
 
 				GameConnectionModule* gcModule =
 					static_cast<GameConnectionModule*>(GetModule(GameConnectionModule::kTypeId));
+				Dia::Core::Log::OutputVaradicLine("CluicheEditorRunningPhase: GameConnectionModule=%p WebUIBridge=%p",
+					gcModule, view.GetWebUIBridge());
+
 				if (gcModule != nullptr && view.GetWebUIBridge() != nullptr)
 				{
 					Dia::Editor::GameConnectionController& controller = gcModule->GetController();
 					controller.SetPersistencePath("Data/editor-connection.json");
 					controller.LoadPersistedUrl();
 					controller.Initialize(view.GetWebUIBridge(), &gcModule->GetManager());
+					Dia::Core::Log::OutputVaradicLine("CluicheEditorRunningPhase: GameConnectionController initialized");
 				}
+				else
+				{
+					Dia::Core::Log::OutputVaradicLine("CluicheEditorRunningPhase: WARNING - GameConnection not wired (gcModule=%p bridge=%p)",
+						gcModule, view.GetWebUIBridge());
+				}
+			}
+			else
+			{
+				Dia::Core::Log::OutputVaradicLine("CluicheEditorRunningPhase: WARNING - EditorViewModule not found");
 			}
 		}
 	}

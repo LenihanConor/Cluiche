@@ -3,6 +3,8 @@
 #include "DiaEditor/LiveConnection/GameConnectionManager.h"
 #include "DiaEditor/UI/WebUIBridge.h"
 
+#include <DiaCore/Core/Log.h>
+
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -69,6 +71,7 @@ namespace Dia
 
 		void GameConnectionController::Initialize(WebUIBridge* bridge, GameConnectionManager* manager)
 		{
+			Dia::Core::Log::OutputVaradicLine("GameConnectionController: Initialize bridge=%p manager=%p", bridge, manager);
 			mBridge = bridge;
 			mManager = manager;
 
@@ -194,8 +197,12 @@ namespace Dia
 		void GameConnectionController::RegisterHandlers()
 		{
 			if (mBridge == nullptr)
+			{
+				Dia::Core::Log::OutputVaradicLine("GameConnectionController: RegisterHandlers skipped, bridge is null");
 				return;
+			}
 
+			Dia::Core::Log::OutputVaradicLine("GameConnectionController: Registering request handlers (connect, disconnect, get_state)");
 			mBridge->RegisterRequestHandler(kReqConnect,
 				[this](const Json::Value& data) -> Json::Value
 				{
@@ -217,10 +224,12 @@ namespace Dia
 
 		Json::Value GameConnectionController::HandleConnectRequest(const Json::Value& data)
 		{
+			Dia::Core::Log::OutputVaradicLine("GameConnectionController: HandleConnectRequest received");
 			Json::Value response;
 
 			if (mState != State::kDisconnected)
 			{
+				Dia::Core::Log::OutputVaradicLine("GameConnectionController: Connect rejected, already in state %s", kStateToString(mState));
 				response["ok"] = false;
 				response["error"] = "Already connected or connecting";
 				return response;
@@ -229,11 +238,13 @@ namespace Dia
 			std::string url = data.get("url", "").asString();
 			if (url.empty())
 			{
+				Dia::Core::Log::OutputVaradicLine("GameConnectionController: Connect rejected, url is empty");
 				response["ok"] = false;
 				response["error"] = "url is required";
 				return response;
 			}
 
+			Dia::Core::Log::OutputVaradicLine("GameConnectionController: Connecting to %s (stub=%d)", url.c_str(), mUseStub ? 1 : 0);
 			SetUrl(url.c_str());
 			SetLastError("");
 
@@ -252,6 +263,7 @@ namespace Dia
 
 		Json::Value GameConnectionController::HandleDisconnectRequest(const Json::Value& /*data*/)
 		{
+			Dia::Core::Log::OutputVaradicLine("GameConnectionController: HandleDisconnectRequest");
 			Json::Value response;
 			DisconnectInternal("user requested");
 			response["ok"] = true;
@@ -260,6 +272,7 @@ namespace Dia
 
 		Json::Value GameConnectionController::HandleGetStateRequest(const Json::Value& /*data*/)
 		{
+			Dia::Core::Log::OutputVaradicLine("GameConnectionController: HandleGetStateRequest state=%s", kStateToString(mState));
 			Json::Value response;
 			BuildStatePayload(response);
 			return response;
@@ -284,6 +297,7 @@ namespace Dia
 		{
 			if (mManager == nullptr)
 			{
+				Dia::Core::Log::OutputVaradicLine("GameConnectionController: BeginConnectReal failed, manager is null");
 				SetLastError("GameConnectionManager not available");
 				TransitionTo(State::kDisconnected);
 				return;
@@ -293,10 +307,13 @@ namespace Dia
 			int port = 0;
 			if (!ParseWebSocketUrl(mUrl, host, sizeof(host), port))
 			{
+				Dia::Core::Log::OutputVaradicLine("GameConnectionController: BeginConnectReal failed, invalid URL '%s'", mUrl);
 				SetLastError("Invalid WebSocket URL (expected ws://host:port)");
 				TransitionTo(State::kDisconnected);
 				return;
 			}
+
+			Dia::Core::Log::OutputVaradicLine("GameConnectionController: BeginConnectReal host=%s port=%d", host, port);
 
 			mGameInfoReceived = false;
 			mHandshakeElapsed = 0.0f;
@@ -309,18 +326,16 @@ namespace Dia
 
 		void GameConnectionController::OnManagerConnection(bool connected)
 		{
+			Dia::Core::Log::OutputVaradicLine("GameConnectionController: OnManagerConnection connected=%d currentState=%s", connected ? 1 : 0, kStateToString(mState));
+
 			if (connected)
 			{
-				// Socket opened, but not "connected" from the UI's perspective
-				// until game_info arrives. Stay in kConnecting and let the
-				// handshake timer decide whether to give up.
 				return;
 			}
 
-			// Socket dropped. If we were connected or connecting, surface that
-			// as an unsolicited disconnect and fall back to kDisconnected.
 			if (mState != State::kDisconnected)
 			{
+				Dia::Core::Log::OutputVaradicLine("GameConnectionController: Socket dropped while in state %s", kStateToString(mState));
 				if (mLastError[0] == '\0')
 					SetLastError("Connection lost");
 				TransitionTo(State::kDisconnected);
@@ -330,9 +345,13 @@ namespace Dia
 		void GameConnectionController::OnManagerRawMessage(const Json::Value& envelope)
 		{
 			if (!envelope.isObject() || !envelope.isMember("type") || !envelope["type"].isString())
+			{
+				Dia::Core::Log::OutputVaradicLine("GameConnectionController: OnManagerRawMessage ignored (missing or non-string 'type')");
 				return;
+			}
 
 			const std::string type = envelope["type"].asString();
+			Dia::Core::Log::OutputVaradicLine("GameConnectionController: OnManagerRawMessage type=%s", type.c_str());
 			if (type == "game_info")
 			{
 				mGameInfo["name"] = envelope.get("name", "");
@@ -405,6 +424,7 @@ namespace Dia
 
 		void GameConnectionController::DisconnectInternal(const char* reason)
 		{
+			Dia::Core::Log::OutputVaradicLine("GameConnectionController: DisconnectInternal reason='%s'", reason ? reason : "(null)");
 			mConnectingPending = false;
 			mConnectingElapsed = 0.0f;
 			mHeartbeatElapsed = 0.0f;
@@ -423,6 +443,7 @@ namespace Dia
 
 		void GameConnectionController::TransitionTo(State newState)
 		{
+			Dia::Core::Log::OutputVaradicLine("GameConnectionController: State %s -> %s", kStateToString(mState), kStateToString(newState));
 			mState = newState;
 			PublishState();
 		}
@@ -445,10 +466,14 @@ namespace Dia
 		void GameConnectionController::PublishState()
 		{
 			if (mBridge == nullptr)
+			{
+				Dia::Core::Log::OutputVaradicLine("GameConnectionController: PublishState skipped, bridge is null");
 				return;
+			}
 
 			Json::Value payload;
 			BuildStatePayload(payload);
+			Dia::Core::Log::OutputVaradicLine("GameConnectionController: PublishState topic='%s' state=%s", kTopicState, kStateToString(mState));
 			mBridge->NotifyUIDataChanged(kTopicState, payload);
 		}
 

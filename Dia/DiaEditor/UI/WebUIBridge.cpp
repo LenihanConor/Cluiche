@@ -1,6 +1,7 @@
 #include "DiaEditor/UI/WebUIBridge.h"
 
 #include <DiaCore/Core/Assert.h>
+#include <DiaCore/Core/Log.h>
 #include <DiaUI/IUISystem.h>
 #include "DiaEditor/MVC/EditorViewController.h"
 
@@ -23,16 +24,23 @@ namespace Dia
 			DIA_ASSERT(controller != nullptr, "WebUIBridge: controller must not be null");
 			mController = controller;
 
+			Dia::Core::Log::OutputVaradicLine("WebUIBridge: Initialize uiSystem=%p controller=%p", mUISystem, controller);
 			if (mUISystem)
 			{
 				mUISystem->RegisterJSHandler(kEditorCallName,
 					[this](const std::string& argsJson) { return HandleEditorCall(argsJson); });
+				Dia::Core::Log::OutputVaradicLine("WebUIBridge: Registered JS handler '%s'", kEditorCallName);
+			}
+			else
+			{
+				Dia::Core::Log::OutputVaradicLine("WebUIBridge: WARNING - uiSystem is null, JS handler not registered");
 			}
 		}
 
 		void WebUIBridge::RegisterEventHandler(const Dia::Core::StringCRC& eventType, EventHandler handler)
 		{
 			DIA_ASSERT(!mEventHandlers.IsFull(), "WebUIBridge: max event handler capacity reached");
+			Dia::Core::Log::OutputVaradicLine("WebUIBridge: RegisterEventHandler '%s' (count=%u)", eventType.AsChar(), mEventHandlers.Size() + 1);
 			EventEntry entry;
 			entry.eventType = eventType;
 			entry.handler = handler;
@@ -42,6 +50,7 @@ namespace Dia
 		void WebUIBridge::RegisterRequestHandler(const Dia::Core::StringCRC& eventType, RequestHandler handler)
 		{
 			DIA_ASSERT(!mRequestHandlers.IsFull(), "WebUIBridge: max request handler capacity reached");
+			Dia::Core::Log::OutputVaradicLine("WebUIBridge: RegisterRequestHandler '%s' (count=%u)", eventType.AsChar(), mRequestHandlers.Size() + 1);
 			RequestEntry entry;
 			entry.eventType = eventType;
 			entry.handler = handler;
@@ -51,7 +60,10 @@ namespace Dia
 		void WebUIBridge::NotifyUIDataChanged(const char* topic, const Json::Value& data)
 		{
 			if (!mUISystem || topic == nullptr)
+			{
+				Dia::Core::Log::OutputVaradicLine("WebUIBridge: NotifyUIDataChanged skipped (uiSystem=%p topic=%s)", mUISystem, topic ? topic : "(null)");
 				return;
+			}
 
 			Json::Value envelope;
 			envelope["topic"] = topic;
@@ -60,13 +72,17 @@ namespace Dia
 			Json::StreamWriterBuilder writer;
 			writer["indentation"] = "";
 			std::string json = Json::writeString(writer, envelope);
+			Dia::Core::Log::OutputVaradicLine("WebUIBridge: NotifyUIDataChanged topic='%s' payload=%u bytes", topic, static_cast<unsigned>(json.size()));
 			mUISystem->CallJSFunction("DiaEditor_onDataChanged", json.c_str());
 		}
 
 		void WebUIBridge::SendResponse(const std::string& reqId, const Json::Value& result)
 		{
 			if (!mUISystem)
+			{
+				Dia::Core::Log::OutputVaradicLine("WebUIBridge: SendResponse skipped (uiSystem is null) reqId='%s'", reqId.c_str());
 				return;
+			}
 
 			Json::Value envelope;
 			envelope["reqId"] = reqId;
@@ -75,6 +91,7 @@ namespace Dia
 			Json::StreamWriterBuilder writer;
 			writer["indentation"] = "";
 			std::string json = Json::writeString(writer, envelope);
+			Dia::Core::Log::OutputVaradicLine("WebUIBridge: SendResponse reqId='%s' payload=%u bytes", reqId.c_str(), static_cast<unsigned>(json.size()));
 			mUISystem->CallJSFunction("DiaEditor_onResponse", json.c_str());
 		}
 
@@ -85,12 +102,17 @@ namespace Dia
 			std::string errors;
 			std::istringstream stream(argsJson);
 			if (!Json::parseFromStream(builder, stream, &args, &errors))
+			{
+				Dia::Core::Log::OutputVaradicLine("WebUIBridge: HandleEditorCall failed to parse JSON: %s", errors.c_str());
 				return "{\"error\":\"invalid json\"}";
+			}
 
 			const std::string& eventTypeStr = args.get("type", "").asString();
 			Dia::Core::StringCRC eventType(eventTypeStr.c_str());
 			const Json::Value& data = args["data"];
 			const std::string reqId = args.get("reqId", "").asString();
+
+			Dia::Core::Log::OutputVaradicLine("WebUIBridge: HandleEditorCall type='%s' reqId='%s'", eventTypeStr.c_str(), reqId.c_str());
 
 			if (!reqId.empty())
 			{
@@ -98,11 +120,13 @@ namespace Dia
 				{
 					if (mRequestHandlers[i].eventType == eventType)
 					{
+						Dia::Core::Log::OutputVaradicLine("WebUIBridge: Matched request handler for '%s'", eventTypeStr.c_str());
 						Json::Value result = mRequestHandlers[i].handler(data);
 						SendResponse(reqId, result);
 						return "{}";
 					}
 				}
+				Dia::Core::Log::OutputVaradicLine("WebUIBridge: No request handler found for '%s', sending empty response", eventTypeStr.c_str());
 				Json::Value empty;
 				SendResponse(reqId, empty);
 				return "{}";
@@ -111,11 +135,17 @@ namespace Dia
 			if (mController != nullptr)
 				mController->OnUIEvent(eventType, data);
 
+			bool handled = false;
 			for (unsigned int i = 0; i < mEventHandlers.Size(); ++i)
 			{
 				if (mEventHandlers[i].eventType == eventType)
+				{
 					mEventHandlers[i].handler(data);
+					handled = true;
+				}
 			}
+			if (!handled)
+				Dia::Core::Log::OutputVaradicLine("WebUIBridge: No event handler found for '%s'", eventTypeStr.c_str());
 
 			return "{}";
 		}

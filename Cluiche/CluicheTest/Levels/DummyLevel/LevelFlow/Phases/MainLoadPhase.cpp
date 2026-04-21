@@ -6,6 +6,7 @@
 #include "CluicheKernel/ApplicationFlow/Modules/LevelFactoryModule.h"
 
 #include <DiaApplication/ApplicationProcessingUnit.h>
+#include <DiaDebugServer/DebugServerModule.h>
 
 namespace Cluiche
 {
@@ -22,6 +23,7 @@ namespace Cluiche
 			AddModule(buildDependencies->GetModule(Cluiche::Main::KernelModule::kTypeId));
 			AddModule(buildDependencies->GetModule(Cluiche::Main::LevelFactoryModule::kTypeId));
 			AddModule(buildDependencies->GetModule(Cluiche::Main::UIModule::kTypeId));
+			AddModule(buildDependencies->GetModule(Dia::DebugServer::DebugServerModule::kTypeId));
 		}
 
 		void MainLoadPhase::AfterModulesStart()

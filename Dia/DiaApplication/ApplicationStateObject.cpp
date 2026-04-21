@@ -24,7 +24,7 @@ namespace Dia
 		//-----------------------------------------------------------------------------
 		void StateObject::BuildDependancies(IBuildDependencyData* buildDependencies)
 		{
-	//		DIA_ASSERT(mState == StateEnum::kConstructed, "Starting %s but in wrong state: %s", mUniqueId.AsChar(), mState.AsString() );
+			DIA_ASSERT(mState == StateEnum::kConstructed || mState == StateEnum::kRunning, "BuildDependancies on %s but in wrong state: %s", mUniqueId.AsChar(), mState.AsString() );
 
 			DoBuildDependancies(buildDependencies);
 

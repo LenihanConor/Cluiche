@@ -1,5 +1,7 @@
 #include "GameConnectionModule.h"
 
+#include <DiaCore/Core/Log.h>
+
 namespace Cluiche
 {
 	namespace Editor
@@ -13,6 +15,7 @@ namespace Cluiche
 
 		Dia::Application::StateObject::OpertionResponse GameConnectionModule::DoStart(const Dia::Application::StateObject::IStartData*)
 		{
+			Dia::Core::Log::OutputVaradicLine("GameConnectionModule: DoStart - initializing manager");
 			mManager.Initialize();
 			return Dia::Application::StateObject::OpertionResponse::kImmediate;
 		}
@@ -25,6 +28,7 @@ namespace Cluiche
 
 		void GameConnectionModule::DoStop()
 		{
+			Dia::Core::Log::OutputVaradicLine("GameConnectionModule: DoStop");
 			mController.Shutdown();
 			mManager.Shutdown();
 		}

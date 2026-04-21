@@ -2,6 +2,7 @@
 
 #include <DiaWebSocket/Client.h>
 #include <DiaCore/Core/Assert.h>
+#include <DiaCore/Core/Log.h>
 
 #include <string.h>
 #include <sstream>
@@ -29,12 +30,16 @@ namespace Dia
 
 		void GameConnectionManager::Initialize()
 		{
+			Dia::Core::Log::OutputVaradicLine("GameConnectionManager: Initialize");
 			mClient = new Dia::WebSocket::Client();
 			mClient->SetReconnectOnDisconnect(false);
 
 			mClient->SetMessageCallback([this](const Dia::WebSocket::Message& msg) {
 				if (msg.type == Dia::WebSocket::MessageType::kText)
+				{
+					Dia::Core::Log::OutputVaradicLine("GameConnectionManager: Received text message (%u bytes)", static_cast<unsigned>(msg.length));
 					HandleMessage(std::string(static_cast<const char*>(msg.data), msg.length));
+				}
 			});
 
 			mClient->SetConnectionCallback([this](bool connected) {
@@ -44,6 +49,7 @@ namespace Dia
 
 		void GameConnectionManager::Shutdown()
 		{
+			Dia::Core::Log::OutputVaradicLine("GameConnectionManager: Shutdown");
 			if (mClient != nullptr)
 			{
 				mClient->Disconnect();
@@ -66,11 +72,13 @@ namespace Dia
 
 			std::ostringstream url;
 			url << "ws://" << host << ":" << port;
+			Dia::Core::Log::OutputVaradicLine("GameConnectionManager: Connect to %s", url.str().c_str());
 			mClient->Connect(url.str().c_str());
 		}
 
 		void GameConnectionManager::Disconnect()
 		{
+			Dia::Core::Log::OutputVaradicLine("GameConnectionManager: Disconnect requested");
 			if (mClient != nullptr)
 				mClient->Disconnect();
 		}
@@ -116,10 +124,14 @@ namespace Dia
 		void GameConnectionManager::SendRaw(const Json::Value& message)
 		{
 			if (!IsConnected())
+			{
+				Dia::Core::Log::OutputVaradicLine("GameConnectionManager: SendRaw skipped, not connected");
 				return;
+			}
 			Json::StreamWriterBuilder writer;
 			writer["indentation"] = "";
 			std::string text = Json::writeString(writer, message);
+			Dia::Core::Log::OutputVaradicLine("GameConnectionManager: SendRaw %u bytes", static_cast<unsigned>(text.size()));
 			mClient->SendText(text.c_str());
 		}
 
@@ -153,6 +165,7 @@ namespace Dia
 
 		void GameConnectionManager::HandleConnection(bool connected)
 		{
+			Dia::Core::Log::OutputVaradicLine("GameConnectionManager: HandleConnection connected=%d", connected ? 1 : 0);
 			if (connected)
 				mLastError[0] = '\0';
 			if (mConnectionCallback)
