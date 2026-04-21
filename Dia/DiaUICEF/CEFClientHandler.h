@@ -24,6 +24,8 @@ namespace Dia
 		public:
 			CEFClientHandler(CEFPage* page, CefRefPtr<CEFRenderHandler> renderHandler);
 
+			void DetachPage() { mPage = nullptr; }
+
 			// CefClient
 			CefRefPtr<CefRenderHandler> GetRenderHandler() override;
 			CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override { return this; }

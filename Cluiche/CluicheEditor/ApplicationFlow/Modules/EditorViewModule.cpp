@@ -46,12 +46,13 @@ namespace Cluiche
 			mCEFSystem = new Dia::UICEF::CEFUISystem(mWindow);
 			mCEFSystem->SetSubprocessPath("CluicheEditor.exe");
 			mCEFSystem->SetWindowedRendering(true);
-			mCEFSystem->SetAssetBasePath("UI/");
+			mCEFSystem->SetAssetBasePath("");
 			mCEFSystem->Initialize();
 
-			// Load main React shell
+			// Load main React shell. URL host "ui" maps to the UI/ folder
+			// deployed next to the exe (Windows fopen is case-insensitive).
 			Dia::Maths::Vector2D size = mWindow->GetSize();
-			mCEFSystem->CreatePage("dia://editor/index.html",
+			mCEFSystem->CreatePage("dia://ui/index.html",
 				static_cast<int>(size.X()), static_cast<int>(size.Y()));
 
 			mView.Initialize(mCEFSystem);

@@ -4,14 +4,18 @@
 #include <windows.h>
 #include <include/cef_app.h>
 
+#include <DiaUICEF/CEFProcessHandler.h>
+
 #include "ApplicationFlow/ProcessingUnits/CluicheEditorProcessingUnit.h"
 
 int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPWSTR /*lpCmdLine*/, int /*nCmdShow*/)
 {
 	// CEF subprocess guard: must come before ANY Dia initialization.
-	// If this is a CEF helper process (renderer, GPU, etc.) CefExecuteProcess returns >= 0.
+	// Pass a CEFProcessHandler so renderer/helper processes register the
+	// dia:// custom scheme (OnRegisterCustomSchemes runs in all processes).
 	CefMainArgs mainArgs(hInstance);
-	int exitCode = CefExecuteProcess(mainArgs, nullptr, nullptr);
+	CefRefPtr<Dia::UICEF::CEFProcessHandler> app = new Dia::UICEF::CEFProcessHandler("");
+	int exitCode = CefExecuteProcess(mainArgs, app.get(), nullptr);
 	if (exitCode >= 0)
 		return exitCode;
 

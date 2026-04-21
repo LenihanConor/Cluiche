@@ -50,6 +50,8 @@ namespace Dia
 			CefRefPtr<CefBrowser> GetBrowser() { return mBrowser; }
 			void SetBrowser(CefRefPtr<CefBrowser> browser) { mBrowser = browser; }
 
+			CefRefPtr<CEFClientHandler> GetClientHandler() { return mClientHandler; }
+
 		private:
 			int mPageId;
 			int mWidth;

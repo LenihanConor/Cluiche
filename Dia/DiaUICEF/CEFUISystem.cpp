@@ -11,8 +11,9 @@
 #include <DiaUI/UIDataBuffer.h>
 #include <DiaUI/Page.h>
 #include <DiaWindow/Interface/IWindow.h>
-
+ 
 #include "CEFPage.h"
+#include "CEFClientHandler.h"
 #include "CEFProcessHandler.h"
 
 #include <include/cef_app.h>
@@ -49,12 +50,12 @@ namespace Dia
 
 			static std::string ResolveToAbsolute(const std::string& path)
 			{
-				if (path.empty())
-					return path;
 				if (path.size() >= 2 && (path[1] == ':' || path[0] == '\\' || path[0] == '/'))
 					return path;
 				std::string exeDir;
 				Dia::Core::Path::ExePath(exeDir);
+				if (path.empty())
+					return exeDir + "\\";
 				return exeDir + "\\" + path;
 			}
 
@@ -82,7 +83,8 @@ namespace Dia
 				settings.remote_debugging_port = 0;
 #endif
 
-				mApp = new CEFProcessHandler(mAssetBasePath);
+				std::string resolvedAssetBase = ResolveToAbsolute(mAssetBasePath);
+				mApp = new CEFProcessHandler(resolvedAssetBase);
 
 				bool result = CefInitialize(main_args, settings, mApp.get(), nullptr);
 				DIA_ASSERT(result, "CefInitialize failed");
@@ -97,11 +99,26 @@ namespace Dia
 				if (!mIsInitialized)
 					return;
 
+				// Request browser close and let CEF deliver OnBeforeClose before we destroy the page.
+				for (unsigned int i = 0; i < mPages.Size(); ++i)
+				{
+					if (mPages[i])
+						mPages[i]->Close();
+				}
+
+				// Pump the CEF message loop until all browsers have been destroyed.
+				// OnBeforeClose will clear each page's mBrowser via SetBrowser(nullptr).
+				for (int i = 0; i < 50; ++i)
+					CefDoMessageLoopWork();
+
+				// Detach pages from client handlers so any late callbacks are safe,
+				// then delete.
 				for (unsigned int i = 0; i < mPages.Size(); ++i)
 				{
 					if (mPages[i])
 					{
-						mPages[i]->Close();
+						if (CefRefPtr<CEFClientHandler> ch = mPages[i]->GetClientHandler())
+							ch->DetachPage();
 						delete mPages[i];
 					}
 				}

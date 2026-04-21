@@ -40,14 +40,13 @@ namespace Dia
 			CefRefPtr<CefFrame> frame, ErrorCode errorCode,
 			const CefString& errorText, const CefString& failedUrl)
 		{
-			if (!frame->IsMain())
-				return;
-
 			std::string url = failedUrl.ToString();
 			std::string error = errorText.ToString();
-			Dia::Core::Log::OutputVaradicLine("DiaUICEF: Failed to load %s. Error %d: %s",
-				url.c_str(), static_cast<int>(errorCode), error.c_str());
-			DIA_ASSERT(false, "DiaUICEF page load failure");
+			Dia::Core::Log::OutputVaradicLine("DiaUICEF: Failed to load %s. Error %d: %s (main=%d)",
+				url.c_str(), static_cast<int>(errorCode), error.c_str(), frame->IsMain() ? 1 : 0);
+
+			if (frame->IsMain())
+				DIA_ASSERT(false, "DiaUICEF page load failure");
 		}
 
 		bool CEFClientHandler::OnConsoleMessage(CefRefPtr<CefBrowser> /*browser*/,
