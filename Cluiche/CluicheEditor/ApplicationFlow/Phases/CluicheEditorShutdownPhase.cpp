@@ -3,6 +3,8 @@
 #include "../Modules/EditorModelModule.h"
 #include "../Modules/EditorViewModule.h"
 
+#include <DiaEditor/MVC/EditorView.h>
+
 namespace Cluiche
 {
 	namespace Editor
@@ -18,6 +20,17 @@ namespace Cluiche
 		{
 			AddModule(buildDependencies->GetModule(EditorModelModule::kTypeId));
 			AddModule(buildDependencies->GetModule(EditorViewModule::kTypeId));
+		}
+
+		void CluicheEditorShutdownPhase::BeforeModulesStop()
+		{
+			EditorViewModule* viewModule =
+				static_cast<EditorViewModule*>(GetModule(EditorViewModule::kTypeId));
+			if (viewModule == nullptr)
+				return;
+
+			Dia::Editor::EditorView& view = viewModule->GetView();
+			view.SaveLayoutToDisk();
 		}
 	}
 }

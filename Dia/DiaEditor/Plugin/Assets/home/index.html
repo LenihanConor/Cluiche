@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Home</title>
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: #1e1e1e;
+      color: #d4d4d4;
+    }
+    .wrap {
+      padding: 20px;
+      max-width: 640px;
+    }
+    h1 {
+      font-size: 18px;
+      margin: 0 0 12px 0;
+      color: #569cd6;
+    }
+    h2 {
+      font-size: 13px;
+      margin: 16px 0 6px 0;
+      color: #9cdcfe;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    p, li {
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    code {
+      background: #2d2d30;
+      padding: 1px 4px;
+      border-radius: 2px;
+      font-size: 11px;
+    }
+    ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+    .hint {
+      margin-top: 20px;
+      padding: 10px 12px;
+      background: #252526;
+      border-left: 3px solid #569cd6;
+      font-size: 11px;
+      color: #b0b0b0;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Cluiche Editor</h1>
+    <p>No project is loaded. Editor panels registered by plugins will appear here
+    once a project is opened.</p>
+
+    <h2>Open a project</h2>
+    <p>Launch with a project path on the command line:</p>
+    <p><code>CluicheEditor.exe Data/test.cluicheproj</code></p>
+
+    <h2>Shortcuts</h2>
+    <ul>
+      <li><code>Ctrl+Z</code> — Undo</li>
+      <li><code>Ctrl+Y</code> / <code>Ctrl+Shift+Z</code> — Redo</li>
+      <li><code>F1</code> / <code>Ctrl+Shift+P</code> — Command Palette</li>
+    </ul>
+
+    <div class="hint">
+      This panel is always registered by <code>EditorView</code> so the docking
+      layout is never empty.
+    </div>
+  </div>
+</body>
+</html>

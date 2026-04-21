@@ -10,6 +10,7 @@
 
 #include <DiaApplication/ApplicationProcessingUnit.h>
 #include <DiaEditor/MVC/EditorModel.h>
+#include <DiaEditor/MVC/EditorView.h>
 #include <string.h>
 
 namespace Cluiche
@@ -62,6 +63,15 @@ namespace Cluiche
 
 			for (unsigned int i = 0; i < model.GetManifestCount(); ++i)
 				pu->LoadEditorManifest(model.GetManifestPath(i));
+
+			EditorViewModule* viewModule =
+				static_cast<EditorViewModule*>(GetModule(EditorViewModule::kTypeId));
+			if (viewModule != nullptr)
+			{
+				Dia::Editor::EditorView& view = viewModule->GetView();
+				view.SetLayoutPath("Data/editor-layout.json");
+				view.LoadLayoutFromDisk();
+			}
 		}
 	}
 }

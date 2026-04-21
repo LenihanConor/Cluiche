@@ -316,7 +316,7 @@ namespace Dia
 		void CEFUISystem::Initialize()
 		{
 			DIA_ASSERT(mImpl, "mImpl is NULL");
-			std::lock_guard<std::mutex> lock(mSystemMutex);
+			std::lock_guard<std::recursive_mutex> lock(mSystemMutex);
 			mImpl->Initialize();
 		}
 
@@ -324,7 +324,7 @@ namespace Dia
 		void CEFUISystem::Shutdown()
 		{
 			DIA_ASSERT(mImpl, "mImpl is NULL");
-			std::lock_guard<std::mutex> lock(mSystemMutex);
+			std::lock_guard<std::recursive_mutex> lock(mSystemMutex);
 			mImpl->Shutdown();
 		}
 
@@ -332,7 +332,7 @@ namespace Dia
 		void CEFUISystem::LoadPage(UI::Page& newPage)
 		{
 			DIA_ASSERT(mImpl, "mImpl is NULL");
-			std::lock_guard<std::mutex> lock(mSystemMutex);
+			std::lock_guard<std::recursive_mutex> lock(mSystemMutex);
 			mImpl->LoadPage(newPage);
 		}
 
@@ -340,7 +340,7 @@ namespace Dia
 		void CEFUISystem::UnloadPage()
 		{
 			DIA_ASSERT(mImpl, "mImpl is NULL");
-			std::lock_guard<std::mutex> lock(mSystemMutex);
+			std::lock_guard<std::recursive_mutex> lock(mSystemMutex);
 			mImpl->UnloadPage();
 		}
 
@@ -354,7 +354,7 @@ namespace Dia
 		void CEFUISystem::Update()
 		{
 			DIA_ASSERT(mImpl, "mImpl is NULL");
-			std::lock_guard<std::mutex> lock(mSystemMutex);
+			std::lock_guard<std::recursive_mutex> lock(mSystemMutex);
 			mImpl->Update();
 		}
 
@@ -362,7 +362,7 @@ namespace Dia
 		void CEFUISystem::FetchUIDataBuffer(UI::UIDataBuffer& outBuffer) const
 		{
 			DIA_ASSERT(mImpl, "mImpl is NULL");
-			std::lock_guard<std::mutex> lock(mSystemMutex);
+			std::lock_guard<std::recursive_mutex> lock(mSystemMutex);
 			mImpl->FetchUIDataBuffer(outBuffer);
 		}
 
@@ -370,7 +370,7 @@ namespace Dia
 		UI::IPage* CEFUISystem::CreatePage(const char* url, int width, int height)
 		{
 			DIA_ASSERT(mImpl, "mImpl is NULL");
-			std::lock_guard<std::mutex> lock(mSystemMutex);
+			std::lock_guard<std::recursive_mutex> lock(mSystemMutex);
 			return mImpl->CreatePage(url, width, height);
 		}
 
@@ -378,7 +378,7 @@ namespace Dia
 		void CEFUISystem::DestroyPage(UI::IPage* page)
 		{
 			DIA_ASSERT(mImpl, "mImpl is NULL");
-			std::lock_guard<std::mutex> lock(mSystemMutex);
+			std::lock_guard<std::recursive_mutex> lock(mSystemMutex);
 			mImpl->DestroyPage(page);
 		}
 
@@ -392,7 +392,7 @@ namespace Dia
 		void CEFUISystem::InjectMouseMove(int x, int y)
 		{
 			DIA_ASSERT(mImpl, "mImpl is NULL");
-			std::lock_guard<std::mutex> lock(mSystemMutex);
+			std::lock_guard<std::recursive_mutex> lock(mSystemMutex);
 			mImpl->InjectMouseMove(x, y);
 		}
 
@@ -400,7 +400,7 @@ namespace Dia
 		void CEFUISystem::InjectMouseDown(Dia::Input::EMouseButton button, int x, int y)
 		{
 			DIA_ASSERT(mImpl, "mImpl is NULL");
-			std::lock_guard<std::mutex> lock(mSystemMutex);
+			std::lock_guard<std::recursive_mutex> lock(mSystemMutex);
 			mImpl->InjectMouseDown(button, x, y);
 		}
 
@@ -408,7 +408,7 @@ namespace Dia
 		void CEFUISystem::InjectMouseUp(Dia::Input::EMouseButton button, int x, int y)
 		{
 			DIA_ASSERT(mImpl, "mImpl is NULL");
-			std::lock_guard<std::mutex> lock(mSystemMutex);
+			std::lock_guard<std::recursive_mutex> lock(mSystemMutex);
 			mImpl->InjectMouseUp(button, x, y);
 		}
 
@@ -416,7 +416,7 @@ namespace Dia
 		void CEFUISystem::InjectMouseClick(Dia::Input::EMouseButton button, int x, int y)
 		{
 			DIA_ASSERT(mImpl, "mImpl is NULL");
-			std::lock_guard<std::mutex> lock(mSystemMutex);
+			std::lock_guard<std::recursive_mutex> lock(mSystemMutex);
 			mImpl->InjectMouseClick(button, x, y);
 		}
 
@@ -424,7 +424,7 @@ namespace Dia
 		void CEFUISystem::InjectMouseWheel(int scroll_vert, int scroll_horz)
 		{
 			DIA_ASSERT(mImpl, "mImpl is NULL");
-			std::lock_guard<std::mutex> lock(mSystemMutex);
+			std::lock_guard<std::recursive_mutex> lock(mSystemMutex);
 			mImpl->InjectMouseWheel(scroll_vert, scroll_horz);
 		}
 
@@ -467,7 +467,7 @@ namespace Dia
 		void CEFUISystem::RegisterJSHandler(const char* name, JSHandler handler)
 		{
 			DIA_ASSERT(mImpl, "mImpl is NULL");
-			std::lock_guard<std::mutex> lock(mSystemMutex);
+			std::lock_guard<std::recursive_mutex> lock(mSystemMutex);
 			mImpl->RegisterJSHandler(name, handler);
 		}
 
@@ -475,7 +475,7 @@ namespace Dia
 		void CEFUISystem::CallJSFunction(const char* functionName, const char* argsJson)
 		{
 			DIA_ASSERT(mImpl, "mImpl is NULL");
-			std::lock_guard<std::mutex> lock(mSystemMutex);
+			std::lock_guard<std::recursive_mutex> lock(mSystemMutex);
 			mImpl->CallJSFunction(functionName, argsJson);
 		}
 	}

@@ -117,7 +117,8 @@ xcopy /Y /I "$(ProjectDir)Data\*.*" "$(TargetDir)Data\"
 set PATH=C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Microsoft\VisualStudio\NodeJs;%PATH%
 cd "$(ProjectDir)UI"
 node node_modules/vite/bin/vite.js build
-xcopy /Y /E /I "$(ProjectDir)UI\dist\*.*" "$(TargetDir)UI\"</Command>
+xcopy /Y /E /I "$(ProjectDir)UI\dist\*.*" "$(TargetDir)UI\"
+xcopy /Y /E /I "$(ProjectDir)../../Dia/DiaEditor/Plugin/Assets\*.*" "$(TargetDir)editor\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <!-- Release|x64 -->
@@ -149,7 +150,8 @@ xcopy /Y /I "$(ProjectDir)Data\*.*" "$(TargetDir)Data\"
 set PATH=C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Microsoft\VisualStudio\NodeJs;%PATH%
 cd "$(ProjectDir)UI"
 node node_modules/vite/bin/vite.js build
-xcopy /Y /E /I "$(ProjectDir)UI\dist\*.*" "$(TargetDir)UI\"</Command>
+xcopy /Y /E /I "$(ProjectDir)UI\dist\*.*" "$(TargetDir)UI\"
+xcopy /Y /E /I "$(ProjectDir)../../Dia/DiaEditor/Plugin/Assets\*.*" "$(TargetDir)editor\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

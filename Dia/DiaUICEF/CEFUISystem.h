@@ -58,7 +58,7 @@ namespace Dia
 			void SetWindowedRendering(bool windowed);
 
 		private:
-			mutable std::mutex mSystemMutex;
+			mutable std::recursive_mutex mSystemMutex;
 			CEFUISystemImpl* mImpl;
 		};
 	}

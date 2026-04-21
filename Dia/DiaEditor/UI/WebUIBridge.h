@@ -22,29 +22,45 @@ namespace Dia
 		class WebUIBridge
 		{
 		public:
+			// Fire-and-forget: JS sent an event, no response expected.
 			using EventHandler = std::function<void(const Json::Value& data)>;
+
+			// Request-response: JS sent a request with a reqId, a JSON result is returned
+			// to JS via CallJSFunction("DiaEditor_onResponse", { reqId, result }).
+			using RequestHandler = std::function<Json::Value(const Json::Value& data)>;
 
 			explicit WebUIBridge(Dia::UI::IUISystem* uiSystem);
 
 			void Initialize(EditorViewController* controller);
 
 			void RegisterEventHandler(const Dia::Core::StringCRC& eventType, EventHandler handler);
+			void RegisterRequestHandler(const Dia::Core::StringCRC& eventType, RequestHandler handler);
+
+			// Push a data update to JS. JS receives via window.DiaEditor_onDataChanged({ path, data }).
 			void NotifyUIDataChanged(const Dia::Core::StringCRC& dataPath, const Json::Value& data);
 
 		private:
 			std::string HandleEditorCall(const std::string& argsJson);
+			void SendResponse(const std::string& reqId, const Json::Value& result);
 
 			Dia::UI::IUISystem* mUISystem;
 			EditorViewController* mController;
 
-			struct HandlerEntry
+			struct EventEntry
 			{
 				Dia::Core::StringCRC eventType;
 				EventHandler handler;
 			};
 
+			struct RequestEntry
+			{
+				Dia::Core::StringCRC eventType;
+				RequestHandler handler;
+			};
+
 			static const unsigned int kMaxHandlers = 32;
-			Dia::Core::Containers::DynamicArrayC<HandlerEntry, kMaxHandlers> mHandlers;
+			Dia::Core::Containers::DynamicArrayC<EventEntry, kMaxHandlers> mEventHandlers;
+			Dia::Core::Containers::DynamicArrayC<RequestEntry, kMaxHandlers> mRequestHandlers;
 		};
 	}
 }

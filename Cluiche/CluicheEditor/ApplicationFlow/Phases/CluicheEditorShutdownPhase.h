@@ -17,6 +17,7 @@ namespace Cluiche
 
 		protected:
 			void DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies) override;
+			void BeforeModulesStop() override;
 		};
 	}
 }
