@@ -35,6 +35,7 @@ namespace Dia
 			{
 				DIA_LOG_WARNING("Editor", "WebUIBridge: uiSystem is null, JS handler not registered");
 			}
+
 		}
 
 		void WebUIBridge::RegisterEventHandler(const Dia::Core::StringCRC& eventType, EventHandler handler)
