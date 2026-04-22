@@ -43,6 +43,7 @@ namespace Dia
 			void SetPersistencePath(const char* path);
 			void LoadPersistedUrl();
 			void SavePersistedUrl() const;
+			void AutoConnect(const char* url);
 
 			// Exposed for tests and direct callers.
 			State GetState() const { return mState; }

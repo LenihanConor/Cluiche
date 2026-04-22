@@ -161,6 +161,16 @@ namespace Dia
 			strncpy_s(mPersistencePath, kMaxPathLength, path, _TRUNCATE);
 		}
 
+		void GameConnectionController::AutoConnect(const char* url)
+		{
+			if (mState != State::kDisconnected || url == nullptr || url[0] == '\0')
+				return;
+			DIA_LOG_INFO("Editor", "GameConnectionController: AutoConnect to '%s'", url);
+			SetUrl(url);
+			SetLastError("");
+			BeginConnectReal();
+		}
+
 		void GameConnectionController::LoadPersistedUrl()
 		{
 			if (mPersistencePath[0] == '\0')
@@ -397,7 +407,22 @@ namespace Dia
 			{
 				const char* level = envelope.get("level", "info").asCString();
 				const char* logMessage = envelope.get("message", "").asCString();
+				DIA_LOG_INFO("Editor", "GameConnectionController: Received game log [%s] %s", level, logMessage);
 				PushGameConsoleEntry(level, logMessage);
+			}
+			else if (type == "log_batch")
+			{
+				if (envelope.isMember("entries") && envelope["entries"].isArray())
+				{
+					const Json::Value& entries = envelope["entries"];
+					for (Json::ArrayIndex i = 0; i < entries.size(); ++i)
+					{
+						const Json::Value& e = entries[i];
+						const char* level = e.get("level", "info").asCString();
+						const char* logMessage = e.get("message", "").asCString();
+						PushGameConsoleEntry(level, logMessage);
+					}
+				}
 			}
 			else if (type == "core_metrics")
 			{
