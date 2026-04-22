@@ -131,7 +131,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>$(OutDir)UnitTestLevel.lib;$(OutDir)DummyLevel.lib;$(OutDir)DiaCore.lib;$(OutDir)CluicheKernel.lib;$(OutDir)DiaMaths.lib;$(OutDir)DiaGraphics.lib;$(OutDir)DiaSFML.lib;$(OutDir)DiaWindow.lib;$(OutDir)DiaInput.lib;$(OutDir)DiaApplication.lib;$(OutDir)DiaUI.lib;$(OutDir)DiaUIUltralight.lib;$(OutDir)DiaDebugServer.lib;$(OutDir)DiaWebSocket.lib;$(OutDir)DiaAPI.lib;sfml-graphics-d.lib;sfml-window-d.lib;sfml-system-d.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)..\SFML\Current-x64\lib\Debug;$(SolutionDir)..\Dia\DiaBin\CluicheKernel;$(SolutionDir)..\Dia\DiaBin\DiaInput;$(SolutionDir)..\External\SFML\Current-x64\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalOptions>/WHOLEARCHIVE:DiaDebugServer.lib %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/WHOLEARCHIVE:DiaDebugServer.lib /WHOLEARCHIVE:CluicheKernel.lib %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
       <Command>copy /Y "$(SolutionDir)pathStoreConfig.json" "$(TargetDir)pathStoreConfig.json"

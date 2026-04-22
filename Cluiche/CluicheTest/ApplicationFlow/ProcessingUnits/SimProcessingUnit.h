@@ -38,6 +38,7 @@ namespace Cluiche
 
 		Dia::Graphics::FrameData mRenderFrameBuffer;
 
+		bool mThreadBufferRegistered;
 		const bool* mRunning;
 		Dia::Core::FrameStream<Dia::Graphics::FrameData>* mSimToRenderFrameStream;
 		Dia::Graphics::ICanvas* mCanvas;

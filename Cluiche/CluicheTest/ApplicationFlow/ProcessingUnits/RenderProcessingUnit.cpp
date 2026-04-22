@@ -1,6 +1,8 @@
 #include "ApplicationFlow/ProcessingUnits/RenderProcessingUnit.h"
 
 #include <DiaGraphics/Interface/ICanvas.h>
+#include <DiaLogger/Logger.h>
+#include <DiaLogger/DiaLog.h>
 
 namespace Cluiche
 {
@@ -8,6 +10,7 @@ namespace Cluiche
 
 	RenderProcessingUnit::RenderProcessingUnit(const Dia::Core::StringCRC& instanceId, float hz)
 		: Dia::Application::ProcessingUnit(instanceId, hz)
+		, mThreadBufferRegistered(false)
 		, mRunning(nullptr)
 		, mFrameStream(nullptr)
 		, mpCanvas(nullptr)
@@ -21,6 +24,16 @@ namespace Cluiche
 		mRunning = renderStartData->mRunning;
 		mFrameStream = renderStartData->mFrameStream;
 		mpCanvas = renderStartData->mCanvas;
+	}
+
+	void RenderProcessingUnit::PrePhaseUpdate()
+	{
+		if (!mThreadBufferRegistered)
+		{
+			Dia::Logger::Logger::Instance().RegisterThreadBuffer();
+			DIA_LOG_INFO("Application", "Render thread registered for logging");
+			mThreadBufferRegistered = true;
+		}
 	}
 
 	void RenderProcessingUnit::PostPhaseUpdate()
@@ -40,8 +53,13 @@ namespace Cluiche
 
 	bool RenderProcessingUnit::FlaggedToStopUpdating()const
 	{
-		bool isFlaggeToStop = !(*mRunning);
-		return isFlaggeToStop;
+		bool isFlaggedToStop = !(*mRunning);
+		if (isFlaggedToStop && mThreadBufferRegistered)
+		{
+			Dia::Logger::Logger::Instance().UnregisterThreadBuffer();
+			const_cast<RenderProcessingUnit*>(this)->mThreadBufferRegistered = false;
+		}
+		return isFlaggedToStop;
 	}
 }
 

@@ -3,6 +3,7 @@
 #include "DiaCore/Threading/Thread.h"
 #include "DiaCore/Threading/Mutex.h"
 #include <DiaLogger/DiaLog.h>
+#include <DiaLogger/Logger.h>
 
 #include <map>
 #include <cstring>
@@ -241,6 +242,9 @@ namespace Dia
 
 			void WorkerThreadMain()
 			{
+				Dia::Logger::Logger::Instance().RegisterThreadBuffer();
+				DIA_LOG_INFO("WebSocket", "Server worker thread registered for logging");
+
 				while (mIsRunning)
 				{
 					try
@@ -259,6 +263,8 @@ namespace Dia
 
 					Dia::Core::ThisThread::SleepMs(1);
 				}
+
+				Dia::Logger::Logger::Instance().UnregisterThreadBuffer();
 			}
 		};
 

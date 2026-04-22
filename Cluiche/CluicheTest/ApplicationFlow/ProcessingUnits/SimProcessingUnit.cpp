@@ -9,6 +9,8 @@
 #include <DiaGraphics/Frame/SpriteDrawCommand.h>
 #include <DiaSFML/RenderWindow.h>
 #include <DiaUI/IUISystem.h>
+#include <DiaLogger/Logger.h>
+#include <DiaLogger/DiaLog.h>
 
 namespace Cluiche
 {
@@ -19,6 +21,7 @@ namespace Cluiche
 
 	SimProcessingUnit::SimProcessingUnit(const Dia::Core::StringCRC& instanceId, float hz)
 		: Dia::Application::ProcessingUnit(instanceId, hz)
+		, mThreadBufferRegistered(false)
 		, mRunning(nullptr)
 		, mSimToRenderFrameStream(nullptr)
 		, mCanvas(nullptr)
@@ -56,6 +59,13 @@ namespace Cluiche
 
 	void SimProcessingUnit::PrePhaseUpdate()
 	{
+		if (!mThreadBufferRegistered)
+		{
+			Dia::Logger::Logger::Instance().RegisterThreadBuffer();
+			DIA_LOG_INFO("Application", "Sim thread registered for logging");
+			mThreadBufferRegistered = true;
+		}
+
 		mRenderFrameBuffer.Clear();
 	}
 
@@ -101,8 +111,13 @@ namespace Cluiche
 
 	bool SimProcessingUnit::FlaggedToStopUpdating()const
 	{
-		bool isFlaggeToStop = !(*mRunning);
-		return isFlaggeToStop;
+		bool isFlaggedToStop = !(*mRunning);
+		if (isFlaggedToStop && mThreadBufferRegistered)
+		{
+			Dia::Logger::Logger::Instance().UnregisterThreadBuffer();
+			const_cast<SimProcessingUnit*>(this)->mThreadBufferRegistered = false;
+		}
+		return isFlaggedToStop;
 	}
 }
 

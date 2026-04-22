@@ -28,9 +28,11 @@ namespace Cluiche
 
 	private:
 		virtual void PostPhaseStart(const IStartData* startData) override final;
+		virtual void PrePhaseUpdate() override final;
 		virtual void PostPhaseUpdate() override final;
 		virtual bool FlaggedToStopUpdating()const override final;
 
+		bool mThreadBufferRegistered;
 		const bool* mRunning;
 		Dia::Core::FrameStream<Dia::Graphics::FrameData>* mFrameStream;
 		Dia::Graphics::ICanvas* mpCanvas;
