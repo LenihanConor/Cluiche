@@ -13,6 +13,14 @@ namespace Dia
 			kDockable
 		};
 
+		struct EditorPluginInfo
+		{
+			char name[64];
+			char version[16];
+			char description[256];
+			LayoutMode layoutMode;
+		};
+
 		class IEditorPlugin
 		{
 		public:
@@ -34,6 +42,7 @@ namespace Dia
 		public:
 			virtual ~IEditorPluginFactory() = default;
 			virtual IEditorPlugin* Create() = 0;
+			virtual EditorPluginInfo GetPluginInfo() { return EditorPluginInfo{}; }
 		};
 	}
 }

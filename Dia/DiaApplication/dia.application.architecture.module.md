@@ -33,12 +33,14 @@ public_api:
     - Dia/DiaApplication/ApplicationPhase.h
     - Dia/DiaApplication/ApplicationProcessingUnit.h
     - Dia/DiaApplication/ApplicationStateObject.h
+    - Dia/DiaApplication/ModuleRef.h
   namespaces: []
   entry_points:
     - BuildDependencyData
     - IBuildDependencyData
     - IStartData
     - Module
+    - ModuleRef
     - Phase
     - ProcessingUnit
     - StateObject

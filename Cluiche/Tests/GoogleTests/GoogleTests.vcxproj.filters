@@ -346,6 +346,9 @@
     <ClCompile Include="Application\TestPhaseTransition.cpp">
       <Filter>Application</Filter>
     </ClCompile>
+    <ClCompile Include="Application\TestModuleRef.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
     <ClCompile Include="Application\TestMetricsCollector.cpp">
       <Filter>Application</Filter>
     </ClCompile>

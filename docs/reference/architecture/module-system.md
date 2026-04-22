@@ -416,7 +416,7 @@ public:
 
 ### Accessing Dependencies
 
-**Via GetDependency<T>():**
+**Via GetDependency<T>() (hard dependency):**
 ```cpp
 void MyModule::DoUpdate() {
     // Access dependency (assumes already declared)
@@ -443,6 +443,29 @@ private:
     TimeServerModule* mTimeServer;
 };
 ```
+
+**Via ModuleRef<T> (soft, lifecycle-safe reference):**
+```cpp
+class MyModule : public Dia::Application::Module {
+public:
+    MyModule(ProcessingUnit* pu)
+        : Module(pu, kTypeId, RunningEnum::kUpdate)
+        , mViewRef(this)
+    {}
+    
+private:
+    void DoUpdate() override {
+        // Returns pointer only when target is running, nullptr otherwise
+        if (auto* view = mViewRef.Get()) {
+            view->DoSomething();
+        }
+    }
+    
+    ModuleRef<ViewModule> mViewRef;
+};
+```
+
+Use `ModuleRef<T>` when the target module may not always be running, or when you want to avoid Observer+raw pointer boilerplate. See [Pattern 4: ModuleRef](#pattern-4-moduleref-lifecycle-safe-reference) for details.
 
 ### Dependency Resolution Algorithm
 
@@ -708,6 +731,52 @@ private:
 };
 ```
 
+### Pattern 4: ModuleRef (Lifecycle-Safe Reference)
+
+**Purpose:** Safely reference another module within the same ProcessingUnit without manual pointer management or Observer boilerplate.
+
+**File:** `Dia/DiaApplication/ModuleRef.h`
+
+**Problem:** When Module A needs to access Module B, a raw pointer requires manual nulling when B shuts down — typically via Observer inheritance, `ObserverNotification()` overrides, and explicit disconnect logic. This is fragile boilerplate that every cross-module reference would need to duplicate.
+
+**Solution:** `ModuleRef<T>` is a lightweight handle that returns the target module only when it is in `kRunning` state. No Observer wiring, no manual cleanup — the state check IS the safety.
+
+**How it works:**
+1. Fast path: if the cached pointer is valid and `HasStarted()` → return it (one enum comparison per frame)
+2. Slow path: `ProcessingUnit::FindModule(T::kTypeId)` hash lookup, cache if running
+3. Target not found or not running → clear cache, return `nullptr`
+
+**Structure:**
+```cpp
+class MyModule : public Module {
+public:
+    MyModule(ProcessingUnit* pu)
+        : Module(pu, kTypeId, RunningEnum::kUpdate)
+        , mOtherRef(this)  // Pass owning module
+    {}
+
+private:
+    void DoUpdate() override {
+        if (auto* other = mOtherRef.Get()) {
+            // other is guaranteed to be in kRunning state
+            other->DoSomething();
+        }
+        // If other has stopped or hasn't started, Get() returns nullptr
+    }
+
+    ModuleRef<OtherModule> mOtherRef;
+};
+```
+
+**When to use:**
+- Module A needs to access Module B during DoUpdate, but B may not always be running
+- Replacing Observer+raw pointer patterns for same-PU cross-module references
+- Soft optional dependencies (module works with or without the target)
+
+**When NOT to use:**
+- Cross-ProcessingUnit references (different threads — use Proxy pattern instead)
+- Hard startup ordering dependencies (use `AddDependancy()` instead)
+
 ---
 
 ## Examples
@@ -859,6 +928,13 @@ void MyPhase::BeforeModulesUpdate() {
        // All modules started, safe to interact
        RegisterLevels();
    }
+   ```
+
+6. **Use ModuleRef<T> for soft cross-module references** (same ProcessingUnit)
+   ```cpp
+   ModuleRef<OtherModule> mRef;
+   // Initialize in constructor: mRef(this)
+   // Access in DoUpdate: if (auto* m = mRef.Get()) { ... }
    ```
 
 ### ❌ Don't:
