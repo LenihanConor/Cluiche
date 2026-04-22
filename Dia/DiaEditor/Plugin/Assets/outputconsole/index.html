@@ -59,6 +59,7 @@
     }
     .filter-btn:hover { opacity: 0.8; }
     .filter-btn.active { border-color: currentColor; }
+    .filter-btn.f-debug { color: #9cdcfe; }
     .filter-btn.f-info { color: #d4d4d4; }
     .filter-btn.f-warning { color: #dcdcaa; }
     .filter-btn.f-error { color: #f44747; }
@@ -87,6 +88,7 @@
       line-height: 1.5;
       white-space: pre-wrap;
     }
+    .debug { color: #9cdcfe; }
     .info { color: #d4d4d4; }
     .warning { color: #dcdcaa; }
     .error { color: #f44747; }
@@ -107,6 +109,7 @@
 
     <div class="separator"></div>
 
+    <button class="filter-btn f-debug" data-level="debug">Debug</button>
     <button class="filter-btn f-info active" data-level="info">Info</button>
     <button class="filter-btn f-warning active" data-level="warning">Warn</button>
     <button class="filter-btn f-error active" data-level="error">Error</button>
@@ -126,7 +129,7 @@
 
       var entries = [];
       var activeTab = "editor";
-      var levelFilters = { info: true, warning: true, error: true };
+      var levelFilters = { debug: false, info: true, warning: true, error: true };
 
       var tabs = document.querySelectorAll(".tab");
       var filterBtns = document.querySelectorAll(".filter-btn");

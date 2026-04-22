@@ -258,8 +258,8 @@
           return;
         }
         if (!msg.__dia) return;
-        console.log("[GameConnection] Topic received: " + msg.topic);
         if (msg.topic === "game_connection") {
+          console.log("[GameConnection] Topic received: " + msg.topic);
           apply(msg.data || {});
         } else if (msg.topic === "game_connection_heartbeat") {
           applyHeartbeat(msg.data || {});

@@ -72,7 +72,7 @@ namespace Dia
 			Json::StreamWriterBuilder writer;
 			writer["indentation"] = "";
 			std::string json = Json::writeString(writer, envelope);
-			DIA_LOG_DEBUG("Editor", "WebUIBridge: NotifyUIDataChanged topic='%s' payload=%u bytes", topic, static_cast<unsigned>(json.size()));
+			DIA_LOG_TRACE("Editor", "WebUIBridge: NotifyUIDataChanged topic='%s' payload=%u bytes", topic, static_cast<unsigned>(json.size()));
 			mUISystem->CallJSFunction("DiaEditor_onDataChanged", json.c_str());
 		}
 

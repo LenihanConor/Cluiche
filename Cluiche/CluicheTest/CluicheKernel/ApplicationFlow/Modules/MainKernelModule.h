@@ -5,7 +5,6 @@
 #include <DiaInput/InputSourceManager.h>
 #include <DiaInput/ConsoleGamepadManager.h>
 #include <DiaCore/Frame/FrameStream.h>
-#include <DiaUIAwesomium/AwesomiumUISystem.h>
 #include <DiaGraphics/Frame/FrameData.h>
 #include <DiaSFML/RenderWindowFactory.h>
 
