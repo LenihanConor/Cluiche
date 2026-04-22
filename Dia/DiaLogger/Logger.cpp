@@ -13,6 +13,7 @@ namespace Dia
 	namespace Logger
 	{
 		static thread_local ThreadLogBuffer* tLocalBuffer = nullptr;
+		static thread_local bool tFlushing = false;
 
 		Logger& Logger::Instance()
 		{
@@ -99,6 +100,10 @@ namespace Dia
 
 		void Logger::FlushBuffers()
 		{
+			if (tFlushing)
+				return;
+
+			tFlushing = true;
 			std::lock_guard<std::mutex> lock(mRegistryMutex);
 
 			LogEntry entry;
@@ -108,8 +113,11 @@ namespace Dia
 				if (buffer == nullptr)
 					continue;
 
-				while (buffer->Pop(entry))
+				unsigned int drainLimit = buffer->PendingCount();
+				unsigned int drained = 0;
+				while (drained < drainLimit && buffer->Pop(entry))
 				{
+					++drained;
 					for (unsigned int s = 0; s < mSinkCount; ++s)
 					{
 						if (mSinks[s] != nullptr && mSinks[s]->AcceptsEntry(entry))
@@ -119,6 +127,8 @@ namespace Dia
 					}
 				}
 			}
+
+			tFlushing = false;
 		}
 
 		void Logger::Log(LogLevel level, const Dia::Core::StringCRC& channel,

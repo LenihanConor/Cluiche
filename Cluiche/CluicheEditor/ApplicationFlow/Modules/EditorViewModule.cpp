@@ -48,8 +48,6 @@ namespace Cluiche
 			uiConfig.windowedRendering = true;
 			mUISystem = Dia::UICEF::CreateEditorUISystem(mWindow, uiConfig);
 
-			// Load main React shell. URL host "ui" maps to the UI/ folder
-			// deployed next to the exe (Windows fopen is case-insensitive).
 			Dia::Maths::Vector2D size = mWindow->GetSize();
 			mUISystem->CreatePage("dia://ui/index.html",
 				static_cast<int>(size.X()), static_cast<int>(size.Y()));
@@ -78,6 +76,8 @@ namespace Cluiche
 
 		void EditorViewModule::DoStop()
 		{
+			NotifyObservers(kShuttingDown);
+
 			mView.Shutdown();
 
 			if (mUISystem)

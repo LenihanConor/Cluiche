@@ -2,6 +2,8 @@
 
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <DiaCore/Strings/String64.h>
+#include <DiaCore/Strings/String128.h>
 
 namespace Dia
 {
@@ -22,14 +24,8 @@ namespace Dia
 		public:
 			struct CommandInfo
 			{
-				char id[64];
-				char label[96];
-
-				CommandInfo()
-				{
-					id[0] = '\0';
-					label[0] = '\0';
-				}
+				Dia::Core::Containers::String64 id;
+				Dia::Core::Containers::String128 label;
 			};
 
 			static const Dia::Core::StringCRC kUniqueId;
@@ -63,6 +59,7 @@ namespace Dia
 			WebUIBridge* mWebUIBridge;
 			DockingLayout* mDockingLayout;
 			EditorViewController* mController;
+			bool mInitialized;
 
 			static const unsigned int kMaxLayoutPathLength = 260;
 			char mLayoutPath[kMaxLayoutPathLength];

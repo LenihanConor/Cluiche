@@ -1,8 +1,10 @@
 #include "LoggerModule.h"
+#include "EditorViewModule.h"
 
 #include <DiaLogger/Logger.h>
 #include <DiaLogger/ISink.h>
 #include <DiaLogger/LogLevel.h>
+#include <DiaEditor/UI/WebUIBridge.h>
 #include <DiaCore/Json/external/json/json.h>
 
 #include <string.h>
@@ -16,21 +18,13 @@ namespace Cluiche
 
 		LoggerModule::LoggerModule(Dia::Application::ProcessingUnit* pu)
 			: Dia::Application::Module(pu, kTypeId, RunningEnum::kUpdate)
-			, mOwnedSinkCount(0)
+			, mViewModule(nullptr)
+			, mConsoleSinkBridgeConnected(false)
 		{
-			memset(mOwnedSinks, 0, sizeof(mOwnedSinks));
 		}
 
 		LoggerModule::~LoggerModule()
 		{
-		}
-
-		void LoggerModule::AddSink(Dia::Logger::ISink* sink)
-		{
-			if (sink == nullptr || mOwnedSinkCount >= kMaxSinks)
-				return;
-
-			mOwnedSinks[mOwnedSinkCount++] = sink;
 		}
 
 		void LoggerModule::ApplyConfig(const char* configPath)
@@ -48,37 +42,36 @@ namespace Cluiche
 			if (root.isMember("default_level") && root["default_level"].isString())
 				defaultLevel = Dia::Logger::LogLevelFromString(root["default_level"].asCString());
 
-			for (unsigned int i = 0; i < mOwnedSinkCount; ++i)
-			{
-				if (mOwnedSinks[i] != nullptr)
-					mOwnedSinks[i]->SetLevelThreshold(defaultLevel);
-			}
+			Dia::Logger::ISink* sinks[] = { &mDebugOutputSink, &mConsoleSink };
+			const unsigned int sinkCount = 2;
 
 			if (root.isMember("sinks") && root["sinks"].isArray())
 			{
-				const Json::Value& sinks = root["sinks"];
-				for (Json::ArrayIndex i = 0; i < sinks.size(); ++i)
+				const Json::Value& sinksConfig = root["sinks"];
+				for (Json::ArrayIndex i = 0; i < sinksConfig.size(); ++i)
 				{
-					const Json::Value& sinkConfig = sinks[i];
+					const Json::Value& sinkConfig = sinksConfig[i];
 					if (!sinkConfig.isMember("name") || !sinkConfig["name"].isString())
 						continue;
 
 					const char* sinkName = sinkConfig["name"].asCString();
-					for (unsigned int s = 0; s < mOwnedSinkCount; ++s)
+					for (unsigned int s = 0; s < sinkCount; ++s)
 					{
-						if (mOwnedSinks[s] != nullptr && strcmp(mOwnedSinks[s]->GetName(), sinkName) == 0)
+						if (strcmp(sinks[s]->GetName(), sinkName) == 0)
 						{
 							if (sinkConfig.isMember("level_threshold") && sinkConfig["level_threshold"].isString())
-								mOwnedSinks[s]->SetLevelThreshold(Dia::Logger::LogLevelFromString(sinkConfig["level_threshold"].asCString(), defaultLevel));
+								sinks[s]->SetLevelThreshold(Dia::Logger::LogLevelFromString(sinkConfig["level_threshold"].asCString(), defaultLevel));
+							else
+								sinks[s]->SetLevelThreshold(defaultLevel);
 
 							if (sinkConfig.isMember("channels") && sinkConfig["channels"].isArray())
 							{
-								mOwnedSinks[s]->ClearChannelFilter();
+								sinks[s]->ClearChannelFilter();
 								const Json::Value& channels = sinkConfig["channels"];
 								for (Json::ArrayIndex c = 0; c < channels.size(); ++c)
 								{
 									if (channels[c].isString())
-										mOwnedSinks[s]->SetChannelFilter(Dia::Core::StringCRC(channels[c].asCString()), true);
+										sinks[s]->SetChannelFilter(Dia::Core::StringCRC(channels[c].asCString()), true);
 								}
 							}
 							break;
@@ -86,15 +79,31 @@ namespace Cluiche
 					}
 				}
 			}
+			else
+			{
+				for (unsigned int i = 0; i < sinkCount; ++i)
+					sinks[i]->SetLevelThreshold(defaultLevel);
+			}
+		}
+
+		void LoggerModule::DisconnectConsoleSinkBridge()
+		{
+			mConsoleSink.SetBridge(nullptr);
+			mConsoleSinkBridgeConnected = false;
+			mViewModule = nullptr;
+		}
+
+		void LoggerModule::ObserverNotification(const Dia::Core::ObserverSubject* /*subject*/, int /*message*/)
+		{
+			DisconnectConsoleSinkBridge();
 		}
 
 		Dia::Application::StateObject::OpertionResponse LoggerModule::DoStart(const Dia::Application::StateObject::IStartData*)
 		{
 			Dia::Logger::Logger& logger = Dia::Logger::Logger::Instance();
 			logger.RegisterThreadBuffer();
-
-			for (unsigned int i = 0; i < mOwnedSinkCount; ++i)
-				logger.RegisterSink(mOwnedSinks[i]);
+			logger.RegisterSink(&mDebugOutputSink);
+			logger.RegisterSink(&mConsoleSink);
 
 			return Dia::Application::StateObject::OpertionResponse::kImmediate;
 		}
@@ -102,23 +111,34 @@ namespace Cluiche
 		void LoggerModule::DoUpdate()
 		{
 			Dia::Logger::Logger::Instance().FlushBuffers();
+
+			if (!mConsoleSinkBridgeConnected && mViewModule != nullptr && mViewModule->HasStarted())
+			{
+				Dia::Editor::WebUIBridge* bridge =
+					mViewModule->GetView().GetWebUIBridge();
+				if (bridge != nullptr)
+				{
+					mConsoleSink.SetBridge(bridge);
+					mConsoleSinkBridgeConnected = true;
+					mViewModule->AttachToObserver(this);
+
+					bridge->RegisterEventHandler(Dia::Core::StringCRC("console_ready"),
+						[this](const Json::Value& /*data*/)
+						{
+							mConsoleSink.NotifyConsoleReady();
+						});
+				}
+			}
 		}
 
 		void LoggerModule::DoStop()
 		{
+			DisconnectConsoleSinkBridge();
+
 			Dia::Logger::Logger& logger = Dia::Logger::Logger::Instance();
-
-			for (unsigned int i = 0; i < mOwnedSinkCount; ++i)
-				logger.UnregisterSink(mOwnedSinks[i]);
-
+			logger.UnregisterSink(&mDebugOutputSink);
+			logger.UnregisterSink(&mConsoleSink);
 			logger.UnregisterThreadBuffer();
-
-			for (unsigned int i = 0; i < mOwnedSinkCount; ++i)
-			{
-				delete mOwnedSinks[i];
-				mOwnedSinks[i] = nullptr;
-			}
-			mOwnedSinkCount = 0;
 		}
 	}
 }

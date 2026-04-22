@@ -241,6 +241,10 @@
         if (msg.topic !== "console_entries") return;
         append(msg.data || {});
       });
+
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ __diaFromFrame: true, payload: { type: "console_ready" } }, "*");
+      }
     })();
   </script>
 </body>

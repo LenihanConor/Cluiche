@@ -26,6 +26,7 @@ namespace Dia
 			, mWebUIBridge(nullptr)
 			, mDockingLayout(nullptr)
 			, mController(nullptr)
+			, mInitialized(false)
 			, mNextConsoleEntryId(1)
 		{
 			mLayoutPath[0] = '\0';
@@ -48,10 +49,14 @@ namespace Dia
 
 			RegisterBuiltInRequestHandlers();
 			RegisterBuiltInCommands();
+
+			mInitialized = true;
 		}
 
 		void EditorView::Shutdown()
 		{
+			mInitialized = false;
+
 			if (mWebUIBridge)
 			{
 				delete mWebUIBridge;
@@ -80,8 +85,8 @@ namespace Dia
 				return;
 
 			CommandInfo info;
-			strncpy_s(info.id, sizeof(info.id), id, _TRUNCATE);
-			strncpy_s(info.label, sizeof(info.label), label, _TRUNCATE);
+			info.id = id;
+			info.label = label;
 			mCommands.Add(info);
 		}
 
@@ -116,7 +121,7 @@ namespace Dia
 
 		void EditorView::PushConsoleEntry(const char* level, const char* message, const char* source)
 		{
-			if (mWebUIBridge == nullptr || level == nullptr || message == nullptr)
+			if (!mInitialized || level == nullptr || message == nullptr)
 				return;
 
 			time_t now = time(nullptr);
@@ -181,8 +186,8 @@ namespace Dia
 					for (unsigned int i = 0; i < mCommands.Size(); ++i)
 					{
 						Json::Value cmd;
-						cmd["id"] = mCommands[i].id;
-						cmd["label"] = mCommands[i].label;
+						cmd["id"] = mCommands[i].id.AsCStr();
+						cmd["label"] = mCommands[i].label.AsCStr();
 						result["commands"].append(cmd);
 					}
 					return result;
