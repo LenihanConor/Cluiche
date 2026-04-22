@@ -53,6 +53,7 @@ namespace Dia
 			void SetFocus(bool focused);
 
 			CefRefPtr<CefBrowser> GetBrowser() { return mBrowser; }
+			CefRefPtr<CefBrowser> GetBrowser() const { return mBrowser; }
 			void SetBrowser(CefRefPtr<CefBrowser> browser) { mBrowser = browser; }
 
 			CefRefPtr<CEFClientHandler> GetClientHandler() { return mClientHandler; }
