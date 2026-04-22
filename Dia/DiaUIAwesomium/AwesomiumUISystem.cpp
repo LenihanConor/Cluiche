@@ -10,7 +10,7 @@
 #include <DiaCore/Core/Assert.h>
 #include <DiaCore/Memory/Memory.h>
 #include <DiaCore/Strings/String256.h>
-#include <DiaCore/Core/Log.h>
+#include <DiaLogger/DiaLog.h>
 
 #include <DiaUI/IPage.h>
 #include <DiaUI/UIDataBuffer.h>
@@ -359,7 +359,7 @@ namespace Dia
 					int line_number,
 					const ::Awesomium::WebString& source)override
 				{
-					Dia::Core::Log::OutputVaradicLine("DiaAwesomiumUI Log - Source: %s, Line: %d, Message: %s", source.data(), line_number, message.data());
+					DIA_LOG_DEBUG("UI", "DiaAwesomiumUI Log - Source: %s, Line: %d, Message: %s", source.data(), line_number, message.data());
 				}
 
 				//-------------------------------------------------------------------

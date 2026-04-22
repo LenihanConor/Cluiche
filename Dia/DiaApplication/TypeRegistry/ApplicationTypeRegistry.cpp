@@ -1,7 +1,7 @@
 #include "ApplicationTypeRegistry.h"
 
 #include <DiaCore/Core/Assert.h>
-#include <DiaCore/Core/Log.h>
+#include <DiaLogger/DiaLog.h>
 
 namespace Dia
 {
@@ -58,7 +58,7 @@ namespace Dia
 
 			if (mProcessingUnitFactories.ContainsKey(typeId))
 			{
-				Dia::Core::Log::OutputVaradicLine("Warning: ProcessingUnit type '%s' already registered, skipping duplicate", typeId.AsChar());
+				DIA_LOG_WARNING("Application", "ProcessingUnit type '%s' already registered, skipping duplicate", typeId.AsChar());
 				return;
 			}
 
@@ -72,7 +72,7 @@ namespace Dia
 
 			if (mPhaseFactories.ContainsKey(typeId))
 			{
-				Dia::Core::Log::OutputVaradicLine("Warning: Phase type '%s' already registered, skipping duplicate", typeId.AsChar());
+				DIA_LOG_WARNING("Application", "Phase type '%s' already registered, skipping duplicate", typeId.AsChar());
 				return;
 			}
 
@@ -86,7 +86,7 @@ namespace Dia
 
 			if (mModuleFactories.ContainsKey(typeId))
 			{
-				Dia::Core::Log::OutputVaradicLine("Warning: Module type '%s' already registered, skipping duplicate", typeId.AsChar());
+				DIA_LOG_WARNING("Application", "Module type '%s' already registered, skipping duplicate", typeId.AsChar());
 				return;
 			}
 
@@ -101,7 +101,7 @@ namespace Dia
 			ITypeFactory<ProcessingUnit>** ppFactory = mProcessingUnitFactories.TryGetItem(typeId);
 			if (ppFactory == nullptr || *ppFactory == nullptr)
 			{
-				Dia::Core::Log::OutputVaradicLine("Error: ProcessingUnit type '%s' not registered", typeId.AsChar());
+				DIA_LOG_ERROR("Application", "ProcessingUnit type '%s' not registered", typeId.AsChar());
 				return nullptr;
 			}
 
@@ -118,7 +118,7 @@ namespace Dia
 			ITypeFactory<Phase>** ppFactory = mPhaseFactories.TryGetItem(typeId);
 			if (ppFactory == nullptr || *ppFactory == nullptr)
 			{
-				Dia::Core::Log::OutputVaradicLine("Error: Phase type '%s' not registered", typeId.AsChar());
+				DIA_LOG_ERROR("Application", "Phase type '%s' not registered", typeId.AsChar());
 				return nullptr;
 			}
 
@@ -135,7 +135,7 @@ namespace Dia
 			ITypeFactory<Module>** ppFactory = mModuleFactories.TryGetItem(typeId);
 			if (ppFactory == nullptr || *ppFactory == nullptr)
 			{
-				Dia::Core::Log::OutputVaradicLine("Error: Module type '%s' not registered", typeId.AsChar());
+				DIA_LOG_ERROR("Application", "Module type '%s' not registered", typeId.AsChar());
 				return nullptr;
 			}
 

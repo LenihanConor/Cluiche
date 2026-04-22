@@ -4,7 +4,7 @@
 #include "DiaEditor/MVC/EditorView.h"
 #include "DiaEditor/UI/WebUIBridge.h"
 
-#include <DiaCore/Core/Log.h>
+#include <DiaLogger/DiaLog.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -74,7 +74,7 @@ namespace Dia
 
 		void GameConnectionController::Initialize(WebUIBridge* bridge, GameConnectionManager* manager, EditorView* editorView)
 		{
-			Dia::Core::Log::OutputVaradicLine("GameConnectionController: Initialize bridge=%p manager=%p", bridge, manager);
+			DIA_LOG_INFO("Editor", "GameConnectionController: Initialize bridge=%p manager=%p", bridge, manager);
 			mBridge = bridge;
 			mManager = manager;
 			mEditorView = editorView;
@@ -90,6 +90,7 @@ namespace Dia
 
 		void GameConnectionController::Shutdown()
 		{
+			DIA_LOG_INFO("Editor", "GameConnectionController: Shutdown");
 			mBridge = nullptr;
 			mManager = nullptr;
 		}
@@ -167,7 +168,10 @@ namespace Dia
 
 			std::ifstream stream(mPersistencePath);
 			if (!stream.is_open())
+			{
+				DIA_LOG_INFO("Editor", "GameConnectionController: No persisted URL found at '%s'", mPersistencePath);
 				return;
+			}
 
 			Json::Value root;
 			Json::CharReaderBuilder builder;
@@ -177,7 +181,10 @@ namespace Dia
 
 			const Json::Value& urlVal = root["url"];
 			if (urlVal.isString())
+			{
 				SetUrl(urlVal.asCString());
+				DIA_LOG_INFO("Editor", "GameConnectionController: Loaded persisted URL '%s'", mUrl);
+			}
 		}
 
 		void GameConnectionController::SavePersistedUrl() const
@@ -202,11 +209,11 @@ namespace Dia
 		{
 			if (mBridge == nullptr)
 			{
-				Dia::Core::Log::OutputVaradicLine("GameConnectionController: RegisterHandlers skipped, bridge is null");
+				DIA_LOG_WARNING("Editor", "GameConnectionController: RegisterHandlers skipped, bridge is null");
 				return;
 			}
 
-			Dia::Core::Log::OutputVaradicLine("GameConnectionController: Registering request handlers (connect, disconnect, get_state)");
+			DIA_LOG_INFO("Editor", "GameConnectionController: Registering request handlers (connect, disconnect, get_state)");
 			mBridge->RegisterRequestHandler(kReqConnect,
 				[this](const Json::Value& data) -> Json::Value
 				{
@@ -228,12 +235,12 @@ namespace Dia
 
 		Json::Value GameConnectionController::HandleConnectRequest(const Json::Value& data)
 		{
-			Dia::Core::Log::OutputVaradicLine("GameConnectionController: HandleConnectRequest received");
+			DIA_LOG_INFO("Editor", "GameConnectionController: HandleConnectRequest received");
 			Json::Value response;
 
 			if (mState != State::kDisconnected)
 			{
-				Dia::Core::Log::OutputVaradicLine("GameConnectionController: Connect rejected, already in state %s", kStateToString(mState));
+				DIA_LOG_WARNING("Editor", "GameConnectionController: Connect rejected, already in state %s", kStateToString(mState));
 				response["ok"] = false;
 				response["error"] = "Already connected or connecting";
 				return response;
@@ -242,13 +249,13 @@ namespace Dia
 			std::string url = data.get("url", "").asString();
 			if (url.empty())
 			{
-				Dia::Core::Log::OutputVaradicLine("GameConnectionController: Connect rejected, url is empty");
+				DIA_LOG_WARNING("Editor", "GameConnectionController: Connect rejected, url is empty");
 				response["ok"] = false;
 				response["error"] = "url is required";
 				return response;
 			}
 
-			Dia::Core::Log::OutputVaradicLine("GameConnectionController: Connecting to %s (stub=%d)", url.c_str(), mUseStub ? 1 : 0);
+			DIA_LOG_INFO("Editor", "GameConnectionController: Connecting to %s (stub=%d)", url.c_str(), mUseStub ? 1 : 0);
 			SetUrl(url.c_str());
 			SetLastError("");
 
@@ -267,7 +274,7 @@ namespace Dia
 
 		Json::Value GameConnectionController::HandleDisconnectRequest(const Json::Value& /*data*/)
 		{
-			Dia::Core::Log::OutputVaradicLine("GameConnectionController: HandleDisconnectRequest");
+			DIA_LOG_INFO("Editor", "GameConnectionController: HandleDisconnectRequest");
 			Json::Value response;
 			DisconnectInternal("user requested");
 			response["ok"] = true;
@@ -276,7 +283,7 @@ namespace Dia
 
 		Json::Value GameConnectionController::HandleGetStateRequest(const Json::Value& /*data*/)
 		{
-			Dia::Core::Log::OutputVaradicLine("GameConnectionController: HandleGetStateRequest state=%s", kStateToString(mState));
+			DIA_LOG_DEBUG("Editor", "GameConnectionController: HandleGetStateRequest state=%s", kStateToString(mState));
 			Json::Value response;
 			BuildStatePayload(response);
 			return response;
@@ -301,7 +308,7 @@ namespace Dia
 		{
 			if (mManager == nullptr)
 			{
-				Dia::Core::Log::OutputVaradicLine("GameConnectionController: BeginConnectReal failed, manager is null");
+				DIA_LOG_ERROR("Editor", "GameConnectionController: BeginConnectReal failed, manager is null");
 				SetLastError("GameConnectionManager not available");
 				TransitionTo(State::kDisconnected);
 				return;
@@ -311,13 +318,13 @@ namespace Dia
 			int port = 0;
 			if (!ParseWebSocketUrl(mUrl, host, sizeof(host), port))
 			{
-				Dia::Core::Log::OutputVaradicLine("GameConnectionController: BeginConnectReal failed, invalid URL '%s'", mUrl);
+				DIA_LOG_ERROR("Editor", "GameConnectionController: BeginConnectReal failed, invalid URL '%s'", mUrl);
 				SetLastError("Invalid WebSocket URL (expected ws://host:port)");
 				TransitionTo(State::kDisconnected);
 				return;
 			}
 
-			Dia::Core::Log::OutputVaradicLine("GameConnectionController: BeginConnectReal host=%s port=%d", host, port);
+			DIA_LOG_INFO("Editor", "GameConnectionController: BeginConnectReal host=%s port=%d", host, port);
 
 			mGameInfoReceived = false;
 			mHandshakeElapsed = 0.0f;
@@ -330,7 +337,7 @@ namespace Dia
 
 		void GameConnectionController::OnManagerConnection(bool connected)
 		{
-			Dia::Core::Log::OutputVaradicLine("GameConnectionController: OnManagerConnection connected=%d currentState=%s", connected ? 1 : 0, kStateToString(mState));
+			DIA_LOG_INFO("Editor", "GameConnectionController: OnManagerConnection connected=%d currentState=%s", connected ? 1 : 0, kStateToString(mState));
 
 			if (connected)
 			{
@@ -339,7 +346,7 @@ namespace Dia
 
 			if (mState != State::kDisconnected)
 			{
-				Dia::Core::Log::OutputVaradicLine("GameConnectionController: Socket dropped while in state %s", kStateToString(mState));
+				DIA_LOG_WARNING("Editor", "GameConnectionController: Socket dropped while in state %s", kStateToString(mState));
 				if (mLastError[0] == '\0')
 					SetLastError("Connection lost");
 				PushGameConsoleEntry("error", "Connection lost");
@@ -351,12 +358,10 @@ namespace Dia
 		{
 			if (!envelope.isObject() || !envelope.isMember("type") || !envelope["type"].isString())
 			{
-				Dia::Core::Log::OutputVaradicLine("GameConnectionController: OnManagerRawMessage ignored (missing or non-string 'type')");
 				return;
 			}
 
 			const std::string type = envelope["type"].asString();
-			Dia::Core::Log::OutputVaradicLine("GameConnectionController: OnManagerRawMessage type=%s", type.c_str());
 			if (type == "game_info")
 			{
 				mGameInfo["name"] = envelope.get("name", "");
@@ -371,6 +376,9 @@ namespace Dia
 					mSinceLastPong = 0.0f;
 					TransitionTo(State::kConnected);
 					SavePersistedUrl();
+
+					DIA_LOG_INFO("Editor", "GameConnectionController: Handshake complete, connected to %s (build %s)",
+						mGameInfo["name"].asCString(), mGameInfo["build"].asCString());
 
 					char msg[256];
 					snprintf(msg, sizeof(msg), "Connected to %s (build %s)",
@@ -447,7 +455,7 @@ namespace Dia
 
 		void GameConnectionController::DisconnectInternal(const char* reason)
 		{
-			Dia::Core::Log::OutputVaradicLine("GameConnectionController: DisconnectInternal reason='%s'", reason ? reason : "(null)");
+			DIA_LOG_INFO("Editor", "GameConnectionController: DisconnectInternal reason='%s'", reason ? reason : "(null)");
 			mConnectingPending = false;
 			mConnectingElapsed = 0.0f;
 			mHeartbeatElapsed = 0.0f;
@@ -467,7 +475,7 @@ namespace Dia
 
 		void GameConnectionController::TransitionTo(State newState)
 		{
-			Dia::Core::Log::OutputVaradicLine("GameConnectionController: State %s -> %s", kStateToString(mState), kStateToString(newState));
+			DIA_LOG_INFO("Editor", "GameConnectionController: State %s -> %s", kStateToString(mState), kStateToString(newState));
 			mState = newState;
 			PublishState();
 		}
@@ -491,13 +499,13 @@ namespace Dia
 		{
 			if (mBridge == nullptr)
 			{
-				Dia::Core::Log::OutputVaradicLine("GameConnectionController: PublishState skipped, bridge is null");
+				DIA_LOG_WARNING("Editor", "GameConnectionController: PublishState skipped, bridge is null");
 				return;
 			}
 
 			Json::Value payload;
 			BuildStatePayload(payload);
-			Dia::Core::Log::OutputVaradicLine("GameConnectionController: PublishState topic='%s' state=%s", kTopicState, kStateToString(mState));
+			DIA_LOG_INFO("Editor", "GameConnectionController: PublishState topic='%s' state=%s", kTopicState, kStateToString(mState));
 			mBridge->NotifyUIDataChanged(kTopicState, payload);
 		}
 

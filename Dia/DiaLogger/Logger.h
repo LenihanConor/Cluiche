@@ -1,6 +1,7 @@
 #pragma once
 
 #include <DiaLogger/LogLevel.h>
+#include <DiaLogger/LogEntry.h>
 #include <DiaCore/CRC/StringCRC.h>
 
 #include <mutex>
@@ -27,6 +28,8 @@ namespace Dia
 
 			void Log(LogLevel level, const Dia::Core::StringCRC& channel,
 				const char* fmt, ...);
+
+			void DispatchImmediate(const LogEntry& entry);
 
 		private:
 			Logger();

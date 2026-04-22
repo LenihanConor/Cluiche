@@ -2,7 +2,7 @@
 #include "DiaWebSocket/Internal/WebSocketppWrapper.h"
 #include "DiaCore/Threading/Thread.h"
 #include "DiaCore/Threading/Mutex.h"
-#include "DiaCore/Core/Log.h"
+#include <DiaLogger/DiaLog.h>
 
 #include <map>
 #include <cstring>
@@ -130,7 +130,7 @@ namespace Dia
 
 				if (mIncomingQueue.IsFull())
 				{
-					Dia::Core::Log::OutputLine("DiaWebSocket: Incoming queue full - dropping message");
+					DIA_LOG_WARNING("WebSocket", "Server: Incoming queue full - dropping message");
 					return;
 				}
 
@@ -212,7 +212,7 @@ namespace Dia
 							}
 							catch (const std::exception& e)
 							{
-								Dia::Core::Log::OutputVaradicLine("DiaWebSocket: Send failed: %s", e.what());
+								DIA_LOG_ERROR("WebSocket", "Server: Send failed: %s", e.what());
 							}
 						}
 					}
@@ -230,7 +230,7 @@ namespace Dia
 							}
 							catch (const std::exception& e)
 							{
-								Dia::Core::Log::OutputVaradicLine("DiaWebSocket: Send failed: %s", e.what());
+								DIA_LOG_ERROR("WebSocket", "Server: Send failed: %s", e.what());
 							}
 						}
 					}
@@ -250,11 +250,11 @@ namespace Dia
 					}
 					catch (const std::exception& e)
 					{
-						Dia::Core::Log::OutputVaradicLine("DiaWebSocket Server: Worker error: %s", e.what());
+						DIA_LOG_ERROR("WebSocket", "Server: Worker error: %s", e.what());
 					}
 					catch (...)
 					{
-						Dia::Core::Log::OutputLine("DiaWebSocket Server: Worker unknown error");
+						DIA_LOG_ERROR("WebSocket", "Server: Worker unknown error");
 					}
 
 					Dia::Core::ThisThread::SleepMs(1);
@@ -307,7 +307,7 @@ namespace Dia
 			}
 			catch (const std::exception& e)
 			{
-				Dia::Core::Log::OutputVaradicLine("DiaWebSocket Server: Failed to start: %s", e.what());
+				DIA_LOG_ERROR("WebSocket", "Server: Failed to start on port %d: %s", static_cast<int>(mImpl->mPort), e.what());
 				return false;
 			}
 
@@ -425,7 +425,7 @@ namespace Dia
 		{
 			if (length > mImpl->mMaxMessageSize)
 			{
-				Dia::Core::Log::OutputLine("DiaWebSocket: Broadcast message too large");
+				DIA_LOG_WARNING("WebSocket", "Server: Broadcast message too large");
 				return;
 			}
 
@@ -449,7 +449,7 @@ namespace Dia
 
 			if (mImpl->mOutgoingQueue.IsFull())
 			{
-				Dia::Core::Log::OutputLine("DiaWebSocket: Outgoing queue full - dropping message");
+				DIA_LOG_WARNING("WebSocket", "Server: Outgoing queue full - dropping message");
 				return;
 			}
 
@@ -460,7 +460,7 @@ namespace Dia
 		{
 			if (length > mImpl->mMaxMessageSize)
 			{
-				Dia::Core::Log::OutputLine("DiaWebSocket: Send message too large");
+				DIA_LOG_WARNING("WebSocket", "Server: Send message too large");
 				return;
 			}
 
@@ -484,7 +484,7 @@ namespace Dia
 
 			if (mImpl->mOutgoingQueue.IsFull())
 			{
-				Dia::Core::Log::OutputLine("DiaWebSocket: Outgoing queue full - dropping message");
+				DIA_LOG_WARNING("WebSocket", "Server: Outgoing queue full - dropping message");
 				return;
 			}
 
@@ -547,7 +547,7 @@ namespace Dia
 				}
 				catch (const std::exception& e)
 				{
-					Dia::Core::Log::OutputVaradicLine("DiaWebSocket: CloseConnection failed: %s", e.what());
+					DIA_LOG_ERROR("WebSocket", "Server: CloseConnection failed: %s", e.what());
 				}
 			}
 		}

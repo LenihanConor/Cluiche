@@ -12,7 +12,7 @@
 #include <DiaApplication/ApplicationProcessingUnit.h>
 #include <DiaEditor/MVC/EditorModel.h>
 #include <DiaEditor/MVC/EditorView.h>
-#include <DiaCore/Core/Log.h>
+#include <DiaLogger/DiaLog.h>
 #include <string.h>
 
 namespace Cluiche
@@ -47,13 +47,13 @@ namespace Cluiche
 
 		void CluicheEditorRunningPhase::AfterModulesStart()
 		{
-			Dia::Core::Log::OutputVaradicLine("CluicheEditorRunningPhase: AfterModulesStart");
+			DIA_LOG_INFO("Application", "CluicheEditorRunningPhase: AfterModulesStart");
 
 			EditorViewModule* viewModule =
 				static_cast<EditorViewModule*>(GetModule(EditorViewModule::kTypeId));
 			if (viewModule == nullptr)
 			{
-				Dia::Core::Log::OutputVaradicLine("CluicheEditorRunningPhase: WARNING - EditorViewModule not found");
+				DIA_LOG_WARNING("Application", "CluicheEditorRunningPhase: EditorViewModule not found");
 				return;
 			}
 
@@ -65,7 +65,7 @@ namespace Cluiche
 				static_cast<PluginLoaderModule*>(GetModule(PluginLoaderModule::kTypeId));
 			if (pluginLoader == nullptr)
 			{
-				Dia::Core::Log::OutputVaradicLine("CluicheEditorRunningPhase: WARNING - PluginLoaderModule not found");
+				DIA_LOG_WARNING("Application", "CluicheEditorRunningPhase: PluginLoaderModule not found");
 				return;
 			}
 
@@ -79,7 +79,7 @@ namespace Cluiche
 
 			if (projectPath != nullptr && projectPath[0] != '\0')
 			{
-				Dia::Core::Log::OutputVaradicLine("CluicheEditorRunningPhase: Loading project '%s'", projectPath);
+				DIA_LOG_INFO("Application", "CluicheEditorRunningPhase: Loading project '%s'", projectPath);
 
 				EditorModelModule* modelModule =
 					static_cast<EditorModelModule*>(GetModule(EditorModelModule::kTypeId));
@@ -93,12 +93,12 @@ namespace Cluiche
 				}
 				else
 				{
-					Dia::Core::Log::OutputVaradicLine("CluicheEditorRunningPhase: WARNING - EditorModelModule not found");
+					DIA_LOG_WARNING("Application", "CluicheEditorRunningPhase: EditorModelModule not found");
 				}
 			}
 			else
 			{
-				Dia::Core::Log::OutputVaradicLine("CluicheEditorRunningPhase: No project path set, skipping project load");
+				DIA_LOG_INFO("Application", "CluicheEditorRunningPhase: No project path set, skipping project load");
 			}
 		}
 	}

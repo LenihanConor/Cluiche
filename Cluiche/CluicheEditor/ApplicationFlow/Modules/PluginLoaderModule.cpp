@@ -5,7 +5,7 @@
 #include <DiaEditor/EditorManifestLoader.h>
 #include <DiaEditor/MVC/EditorView.h>
 #include <DiaCore/Core/Assert.h>
-#include <DiaCore/Core/Log.h>
+#include <DiaLogger/DiaLog.h>
 
 namespace Cluiche
 {
@@ -27,7 +27,7 @@ namespace Cluiche
 
 		Dia::Application::StateObject::OpertionResponse PluginLoaderModule::DoStart(const Dia::Application::StateObject::IStartData*)
 		{
-			Dia::Core::Log::OutputVaradicLine("PluginLoaderModule: DoStart");
+			DIA_LOG_INFO("Application", "PluginLoaderModule: DoStart");
 			return Dia::Application::StateObject::OpertionResponse::kImmediate;
 		}
 
@@ -42,10 +42,10 @@ namespace Cluiche
 
 		void PluginLoaderModule::DoStop()
 		{
-			Dia::Core::Log::OutputVaradicLine("PluginLoaderModule: DoStop - unloading %u plugins", mLoadedPlugins.Size());
+			DIA_LOG_INFO("Application", "PluginLoaderModule: DoStop - unloading %u plugins", mLoadedPlugins.Size());
 			for (unsigned int i = 0; i < mLoadedPlugins.Size(); ++i)
 			{
-				Dia::Core::Log::OutputVaradicLine("PluginLoaderModule: OnUnload '%s'", mLoadedPlugins[i]->GetName());
+				DIA_LOG_INFO("Application", "PluginLoaderModule: OnUnload '%s'", mLoadedPlugins[i]->GetName());
 				mLoadedPlugins[i]->OnUnload();
 				delete mLoadedPlugins[i];
 			}
@@ -54,7 +54,7 @@ namespace Cluiche
 
 		void PluginLoaderModule::LoadBuiltInPlugins()
 		{
-			Dia::Core::Log::OutputVaradicLine("PluginLoaderModule: Loading built-in plugins");
+			DIA_LOG_INFO("Application", "PluginLoaderModule: Loading built-in plugins");
 			LoadPlugin(Dia::Core::StringCRC("HomeEditorPlugin"), Dia::Core::StringCRC("home_builtin"));
 			LoadPlugin(Dia::Core::StringCRC("OutputConsoleEditorPlugin"), Dia::Core::StringCRC("outputconsole_builtin"));
 			LoadPlugin(Dia::Core::StringCRC("GameConnectionEditorPlugin"), Dia::Core::StringCRC("gameconnection_builtin"));
@@ -63,7 +63,7 @@ namespace Cluiche
 		void PluginLoaderModule::LoadManifest(const char* manifestPath)
 		{
 			DIA_ASSERT(manifestPath != nullptr, "PluginLoaderModule: manifest path must not be null");
-			Dia::Core::Log::OutputVaradicLine("PluginLoaderModule: Loading manifest '%s'", manifestPath);
+			DIA_LOG_INFO("Application", "PluginLoaderModule: Loading manifest '%s'", manifestPath);
 
 			struct LoadCtx { PluginLoaderModule* module; };
 			LoadCtx ctx{ this };
@@ -81,7 +81,7 @@ namespace Cluiche
 
 		void PluginLoaderModule::LoadPlugin(const Dia::Core::StringCRC& typeId, const Dia::Core::StringCRC& instanceId)
 		{
-			Dia::Core::Log::OutputVaradicLine("PluginLoaderModule::LoadPlugin: Creating plugin");
+			DIA_LOG_INFO("Application", "PluginLoaderModule::LoadPlugin: Creating plugin");
 
 			if (mLoadedPlugins.IsFull())
 			{
@@ -96,14 +96,14 @@ namespace Cluiche
 				return;
 			}
 
-			Dia::Core::Log::OutputVaradicLine("PluginLoaderModule::LoadPlugin: Created '%s'", plugin->GetName());
+			DIA_LOG_INFO("Application", "PluginLoaderModule::LoadPlugin: Created '%s'", plugin->GetName());
 			plugin->OnLoad(mContext);
-			Dia::Core::Log::OutputVaradicLine("PluginLoaderModule::LoadPlugin: OnLoad complete for '%s'", plugin->GetName());
+			DIA_LOG_INFO("Application", "PluginLoaderModule::LoadPlugin: OnLoad complete for '%s'", plugin->GetName());
 
 			if (mView != nullptr)
 			{
 				mView->RegisterComponent(plugin->GetName(), plugin->GetUIPath());
-				Dia::Core::Log::OutputVaradicLine("PluginLoaderModule::LoadPlugin: Registered '%s' at '%s'", plugin->GetName(), plugin->GetUIPath());
+				DIA_LOG_INFO("Application", "PluginLoaderModule::LoadPlugin: Registered '%s' at '%s'", plugin->GetName(), plugin->GetUIPath());
 			}
 
 			mLoadedPlugins.Add(plugin);
@@ -117,7 +117,7 @@ namespace Cluiche
 			for (unsigned int i = 0; i < mLoadedPlugins.Size(); ++i)
 			{
 				mView->RegisterComponent(mLoadedPlugins[i]->GetName(), mLoadedPlugins[i]->GetUIPath());
-				Dia::Core::Log::OutputVaradicLine("PluginLoaderModule: Retroactively registered '%s'", mLoadedPlugins[i]->GetName());
+				DIA_LOG_INFO("Application", "PluginLoaderModule: Retroactively registered '%s'", mLoadedPlugins[i]->GetName());
 			}
 		}
 	}

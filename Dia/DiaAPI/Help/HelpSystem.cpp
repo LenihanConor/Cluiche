@@ -5,7 +5,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "HelpSystem.h"
 #include "Events/EventSystem.h"
-#include <DiaCore/Core/Log.h>
+#include <DiaLogger/DiaLog.h>
 #include <cstdio>
 #include <cstring>
 
@@ -133,7 +133,7 @@ namespace Dia
 			if (!cmd)
 			{
 				printf("Command not found: %s\n", commandName.AsChar());
-				Dia::Core::Log::OutputVaradicLine("DiaAPI WARNING: Command not found: %s", commandName.AsChar());
+				DIA_LOG_WARNING("API", "Command not found: %s", commandName.AsChar());
 				return 3;
 			}
 

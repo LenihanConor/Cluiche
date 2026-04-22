@@ -16,6 +16,7 @@
     <ClCompile Include="Logger.cpp" />
     <ClCompile Include="ISink.cpp" />
     <ClCompile Include="DebugOutputSink.cpp" />
+    <ClCompile Include="AssertSinkBridge.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="LogLevel.h" />
@@ -25,6 +26,7 @@
     <ClInclude Include="ISink.h" />
     <ClInclude Include="DebugOutputSink.h" />
     <ClInclude Include="DiaLog.h" />
+    <ClInclude Include="AssertSinkBridge.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7A8B9C0D-E1F2-3456-7890-ABCDEF012345}</ProjectGuid>

@@ -1,7 +1,7 @@
 #include "DiaEditor/Plugin/HelloEditorPlugin.h"
 #include "DiaEditor/Plugin/EditorPluginRegistrationMacros.h"
 
-#include <DiaCore/Core/Log.h>
+#include <DiaLogger/DiaLog.h>
 
 namespace Dia
 {
@@ -14,13 +14,13 @@ namespace Dia
 		void HelloEditorPlugin::OnLoad(const EditorPluginContext& /*context*/)
 		{
 			mLoaded = true;
-			Dia::Core::Log::OutputVaradicLine("HelloEditorPlugin: OnLoad");
+			DIA_LOG_INFO("Editor", "HelloEditorPlugin: OnLoad");
 		}
 
 		void HelloEditorPlugin::OnUnload()
 		{
 			mLoaded = false;
-			Dia::Core::Log::OutputVaradicLine("HelloEditorPlugin: OnUnload");
+			DIA_LOG_INFO("Editor", "HelloEditorPlugin: OnUnload");
 		}
 
 		void HelloEditorPlugin::OnUpdate(float /*deltaTime*/)

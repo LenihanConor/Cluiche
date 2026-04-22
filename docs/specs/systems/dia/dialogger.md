@@ -195,6 +195,25 @@ None — DiaLogger is a passive system. Sinks receive entries during `FlushBuffe
 | Core Logger | Singleton, DIA_LOG macro, LogEntry, LogLevel, thread-local ring buffers, RegisterThreadBuffer/UnregisterThreadBuffer, FlushBuffers | [core-logger.md](../../features/dia/dialogger/core-logger.md) | Done |
 | Sink System | ISink interface with level threshold and channel filtering, DebugOutputSink built-in sink | [sink-system.md](../../features/dia/dialogger/sink-system.md) | Done |
 
+## Log Level Taxonomy
+
+See [Log Level Taxonomy](../../../reference/architecture/log-level-taxonomy.md) for the authoritative guide on choosing log levels, channel naming conventions, and anti-patterns. All modules using `DIA_LOG_*` must follow that document.
+
+## Channel Registry
+
+All `Dia::Core::Log::OutputVaradicLine` calls outside DiaCore have been migrated to `DIA_LOG_*`. The current channel assignments are:
+
+| Channel | Modules | Typical Content |
+|---------|---------|-----------------|
+| `Application` | DiaApplication, CluicheEditor phases/modules | Phase transitions, module lifecycle, manifest loading, type registry |
+| `Editor` | DiaEditor (plugins, MVC, WebUIBridge, LiveConnection) | Editor framework, plugin lifecycle, game connection, UI bridge |
+| `DebugServer` | DiaDebugServer | Debug server lifecycle, protocol handling, client connections |
+| `WebSocket` | DiaWebSocket | Client/server transport errors, queue drops, connection lifecycle |
+| `API` | DiaAPI | Command registry, argument parsing, Python bindings |
+| `UI` | DiaUICEF, DiaUIUltralight, DiaUIAwesomium | CEF initialization, scheme handling, console messages |
+
+DiaCore cannot use `DIA_LOG_*` (circular dependency) and continues to use `Dia::Core::Log::OutputLine`.
+
 ## Platform Primitives Used
 
 - **DiaCore/CRC** — `StringCRC` for channel identifiers
@@ -211,9 +230,13 @@ None — DiaLogger is a passive system. Sinks receive entries during `FlushBuffe
 - None
 
 **Dependents:**
-- **DiaApplication** — can call `DIA_LOG` from modules/phases; does not manage logger lifecycle
-- **DiaEditor** — provides `EditorConsoleSink` (concrete sink at app level)
-- **CluicheEditor** — owns `LoggerModule` that manages lifecycle, registers `EditorConsoleSink`
+- **DiaApplication** — calls `DIA_LOG` from modules/phases; does not manage logger lifecycle
+- **DiaAPI** — calls `DIA_LOG` from command registry, argument parser, Python bindings
+- **DiaWebSocket** — calls `DIA_LOG` from client/server transport
+- **DiaUICEF / DiaUIUltralight / DiaUIAwesomium** — call `DIA_LOG` from UI system implementations
+- **DiaEditor** — calls `DIA_LOG` from editor framework; provides `EditorConsoleSink` (concrete sink at app level)
+- **DiaDebugServer** — calls `DIA_LOG` from debug server module
+- **CluicheEditor** — owns `LoggerModule` that manages lifecycle, registers `EditorConsoleSink` + `DebugOutputSink`
 - **CluicheTest** — owns `LoggerModule` that manages lifecycle, registers `DebugOutputSink`
 - All future Dia-based applications
 

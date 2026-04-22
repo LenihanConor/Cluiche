@@ -38,6 +38,9 @@
     <ProjectReference Include="..\DiaDebugProtocol\DiaDebugProtocol.vcxproj">
       <Project>{E9E22143-02A3-4D92-894D-079E8ABD8BCA}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\DiaLogger\DiaLogger.vcxproj">
+      <Project>{7a8b9c0d-e1f2-3456-7890-abcdef012345}</Project>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{6AAFCCCB-71D0-4D8D-A6BE-081F5E02093D}</ProjectGuid>

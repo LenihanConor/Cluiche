@@ -46,6 +46,48 @@ namespace Dia
 		// Global assert function pointer (can be overridden for custom behavior)
 		DIA_ASSERT_FUNC g_pAssertFunc = AssertDefault;
 
+		static AssertOutputCallback sAssertOutputCallbacks[kMaxAssertOutputCallbacks] = {};
+		static unsigned int sAssertOutputCallbackCount = 0;
+
+		void RegisterAssertOutputCallback(AssertOutputCallback callback)
+		{
+			if (callback == nullptr || sAssertOutputCallbackCount >= kMaxAssertOutputCallbacks)
+				return;
+
+			for (unsigned int i = 0; i < sAssertOutputCallbackCount; ++i)
+			{
+				if (sAssertOutputCallbacks[i] == callback)
+					return;
+			}
+
+			sAssertOutputCallbacks[sAssertOutputCallbackCount++] = callback;
+		}
+
+		void UnregisterAssertOutputCallback(AssertOutputCallback callback)
+		{
+			for (unsigned int i = 0; i < sAssertOutputCallbackCount; ++i)
+			{
+				if (sAssertOutputCallbacks[i] == callback)
+				{
+					sAssertOutputCallbacks[i] = sAssertOutputCallbacks[sAssertOutputCallbackCount - 1];
+					sAssertOutputCallbacks[sAssertOutputCallbackCount - 1] = nullptr;
+					--sAssertOutputCallbackCount;
+					return;
+				}
+			}
+		}
+
+		static void DispatchToAssertOutputCallbacks(const char* formattedMessage)
+		{
+			for (unsigned int i = 0; i < sAssertOutputCallbackCount; ++i)
+			{
+				if (sAssertOutputCallbacks[i] != nullptr)
+				{
+					sAssertOutputCallbacks[i](formattedMessage);
+				}
+			}
+		}
+
 #ifdef DEBUG
 
 		// Trigger a debugger breakpoint
@@ -76,6 +118,8 @@ namespace Dia
 			char str[1024];
 			sprintf_s(str, "\nDIA_ASSERTION FAULT: %s\n%s\n%s(%d)", pExp, newsStr.AsCStr(), pFileName, iLineNumber);
 			Dia::Core::Log::OutputLine(str);
+
+			DispatchToAssertOutputCallbacks(str);
 
 			// Capture and display the call stack
 			Dia::Core::Log::OutputLine("\nCALLSTACK:\n");

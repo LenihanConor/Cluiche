@@ -5,7 +5,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "CommandRegistry.h"
 #include "Events/EventSystem.h"
-#include <DiaCore/Core/Log.h>
+#include <DiaLogger/DiaLog.h>
 #include <cctype>
 #include <cstring>
 
@@ -58,7 +58,7 @@ namespace Dia
 				// Validate command name format
 				if (!ValidateCommandName(info.name.AsChar()))
 				{
-					Dia::Core::Log::OutputVaradicLine("DiaAPI ERROR: Invalid command name format: '%s' (must be lowercase + hyphens only)",
+					DIA_LOG_ERROR("API", "Invalid command name format: '%s' (must be lowercase + hyphens only)",
 						info.name.AsChar());
 					return false;
 				}
@@ -66,7 +66,7 @@ namespace Dia
 				// Validate description
 				if (!info.description || info.description[0] == '\0')
 				{
-					Dia::Core::Log::OutputVaradicLine("DiaAPI ERROR: Command '%s' has null or empty description", info.name.AsChar());
+					DIA_LOG_ERROR("API", "Command '%s' has null or empty description", info.name.AsChar());
 					return false;
 				}
 
@@ -76,7 +76,7 @@ namespace Dia
 				// Validate owner
 				if (!info.owner || info.owner[0] == '\0')
 				{
-					Dia::Core::Log::OutputVaradicLine("DiaAPI ERROR: Command '%s' has null or empty owner", info.name.AsChar());
+					DIA_LOG_ERROR("API", "Command '%s' has null or empty owner", info.name.AsChar());
 					return false;
 				}
 
@@ -95,7 +95,7 @@ namespace Dia
 
 			if (gRegistryState.isInitialized)
 			{
-				Dia::Core::Log::OutputLine("DiaAPI WARNING: Initialize() called but DiaAPI is already initialized");
+				DIA_LOG_WARNING("API", "Initialize() called but DiaAPI is already initialized");
 				return;  // Idempotent
 			}
 
@@ -114,7 +114,7 @@ namespace Dia
 
 			gRegistryState.isInitialized = true;
 
-			Dia::Core::Log::OutputLine("DiaAPI INFO: DiaAPI command registry initialized");
+			DIA_LOG_INFO("API", "DiaAPI command registry initialized");
 		}
 
 		////////////////////////////////////////////////////////////////////////////////
@@ -126,7 +126,7 @@ namespace Dia
 
 			if (!gRegistryState.isInitialized)
 			{
-				Dia::Core::Log::OutputLine("DiaAPI WARNING: Shutdown() called but DiaAPI is not initialized");
+				DIA_LOG_WARNING("API", "Shutdown() called but DiaAPI is not initialized");
 				return;
 			}
 
@@ -137,7 +137,7 @@ namespace Dia
 
 			gRegistryState.isInitialized = false;
 
-			Dia::Core::Log::OutputLine("DiaAPI INFO: DiaAPI command registry shutdown");
+			DIA_LOG_INFO("API", "DiaAPI command registry shutdown");
 		}
 
 		////////////////////////////////////////////////////////////////////////////////
@@ -164,14 +164,14 @@ namespace Dia
 			// Validate callback is not null
 			if (!info.callback)
 			{
-				Dia::Core::Log::OutputVaradicLine("DiaAPI ERROR: Command '%s' has null callback", info.name.AsChar());
+				DIA_LOG_ERROR("API", "Command '%s' has null callback", info.name.AsChar());
 				return false;
 			}
 
 			// Check for duplicate
 			if (gRegistryState.commands.find(info.name.Value()) != gRegistryState.commands.end())
 			{
-				Dia::Core::Log::OutputVaradicLine("DiaAPI ERROR: Command '%s' is already registered (duplicate)", info.name.AsChar());
+				DIA_LOG_ERROR("API", "Command '%s' is already registered (duplicate)", info.name.AsChar());
 				return false;
 			}
 
@@ -180,7 +180,7 @@ namespace Dia
 			{
 				if (gRegistryState.pendingRegistrations[i]->name == info.name)
 				{
-					Dia::Core::Log::OutputVaradicLine("DiaAPI ERROR: Command '%s' is already in pending registrations (duplicate)", info.name.AsChar());
+					DIA_LOG_ERROR("API", "Command '%s' is already in pending registrations (duplicate)", info.name.AsChar());
 					return false;
 				}
 			}

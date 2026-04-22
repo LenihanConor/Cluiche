@@ -138,5 +138,18 @@ namespace Dia
 
 			tLocalBuffer->Push(entry);
 		}
+
+		void Logger::DispatchImmediate(const LogEntry& entry)
+		{
+			std::lock_guard<std::mutex> lock(mRegistryMutex);
+
+			for (unsigned int s = 0; s < mSinkCount; ++s)
+			{
+				if (mSinks[s] != nullptr && mSinks[s]->AcceptsEntry(entry))
+				{
+					mSinks[s]->OnLogEntry(entry);
+				}
+			}
+		}
 	}
 }

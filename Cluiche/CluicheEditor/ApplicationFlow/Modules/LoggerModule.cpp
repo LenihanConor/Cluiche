@@ -2,8 +2,11 @@
 
 #include <DiaLogger/Logger.h>
 #include <DiaLogger/ISink.h>
+#include <DiaLogger/LogLevel.h>
+#include <DiaCore/Json/external/json/json.h>
 
 #include <string.h>
+#include <fstream>
 
 namespace Cluiche
 {
@@ -28,6 +31,61 @@ namespace Cluiche
 				return;
 
 			mOwnedSinks[mOwnedSinkCount++] = sink;
+		}
+
+		void LoggerModule::ApplyConfig(const char* configPath)
+		{
+			if (configPath == nullptr) return;
+
+			std::ifstream file(configPath);
+			if (!file.is_open()) return;
+
+			Json::Value root;
+			Json::Reader reader;
+			if (!reader.parse(file, root)) return;
+
+			Dia::Logger::LogLevel defaultLevel = Dia::Logger::LogLevel::kInfo;
+			if (root.isMember("default_level") && root["default_level"].isString())
+				defaultLevel = Dia::Logger::LogLevelFromString(root["default_level"].asCString());
+
+			for (unsigned int i = 0; i < mOwnedSinkCount; ++i)
+			{
+				if (mOwnedSinks[i] != nullptr)
+					mOwnedSinks[i]->SetLevelThreshold(defaultLevel);
+			}
+
+			if (root.isMember("sinks") && root["sinks"].isArray())
+			{
+				const Json::Value& sinks = root["sinks"];
+				for (Json::ArrayIndex i = 0; i < sinks.size(); ++i)
+				{
+					const Json::Value& sinkConfig = sinks[i];
+					if (!sinkConfig.isMember("name") || !sinkConfig["name"].isString())
+						continue;
+
+					const char* sinkName = sinkConfig["name"].asCString();
+					for (unsigned int s = 0; s < mOwnedSinkCount; ++s)
+					{
+						if (mOwnedSinks[s] != nullptr && strcmp(mOwnedSinks[s]->GetName(), sinkName) == 0)
+						{
+							if (sinkConfig.isMember("level_threshold") && sinkConfig["level_threshold"].isString())
+								mOwnedSinks[s]->SetLevelThreshold(Dia::Logger::LogLevelFromString(sinkConfig["level_threshold"].asCString(), defaultLevel));
+
+							if (sinkConfig.isMember("channels") && sinkConfig["channels"].isArray())
+							{
+								mOwnedSinks[s]->ClearChannelFilter();
+								const Json::Value& channels = sinkConfig["channels"];
+								for (Json::ArrayIndex c = 0; c < channels.size(); ++c)
+								{
+									if (channels[c].isString())
+										mOwnedSinks[s]->SetChannelFilter(Dia::Core::StringCRC(channels[c].asCString()), true);
+								}
+							}
+							break;
+						}
+					}
+				}
+			}
 		}
 
 		Dia::Application::StateObject::OpertionResponse LoggerModule::DoStart(const Dia::Application::StateObject::IStartData*)

@@ -6,7 +6,7 @@
 #include <DiaApplication/ApplicationModule.h>
 
 #include <DiaCore/Json/external/json/json.h>
-#include <DiaCore/Core/Log.h>
+#include <DiaLogger/DiaLog.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaCore/Strings/String256.h>
 #include <DiaCore/Containers/HashTables/HashTable.h>
@@ -212,7 +212,7 @@ namespace Dia
 					}
 					else
 					{
-						Dia::Core::Log::OutputVaradicLine("Warning: Module '%s' references non-existent phase '%s'",
+						DIA_LOG_WARNING("Application", "Module '%s' references non-existent phase '%s'",
 							moduleEntry.instanceId.AsChar(), phaseId.AsChar());
 					}
 				}
@@ -238,7 +238,7 @@ namespace Dia
 					}
 					else
 					{
-						Dia::Core::Log::OutputVaradicLine("Warning: Module '%s' depends on non-existent module '%s'",
+						DIA_LOG_WARNING("Application", "Module '%s' depends on non-existent module '%s'",
 							moduleEntry.instanceId.AsChar(), depId.AsChar());
 					}
 				}
@@ -258,7 +258,7 @@ namespace Dia
 				}
 				else
 				{
-					Dia::Core::Log::OutputVaradicLine("Warning: Invalid phase transition from '%s' to '%s'",
+					DIA_LOG_WARNING("Application", "Invalid phase transition from '%s' to '%s'",
 						transition.fromPhase.AsChar(), transition.toPhase.AsChar());
 				}
 			}
@@ -271,7 +271,7 @@ namespace Dia
 			}
 			else
 			{
-				Dia::Core::Log::OutputVaradicLine("Warning: Invalid initial phase '%s'", entry.initialPhase.AsChar());
+				DIA_LOG_WARNING("Application", "Invalid initial phase '%s'", entry.initialPhase.AsChar());
 			}
 
 			return pu;
@@ -361,7 +361,7 @@ namespace Dia
 					// Remove from ProcessingUnit
 					existingPU->RemoveModule(moduleId);
 
-					Dia::Core::Log::OutputVaradicLine("Hot reload: Removed module '%s'", moduleId.AsChar());
+					DIA_LOG_INFO("Application", "Hot reload: Removed module '%s'", moduleId.AsChar());
 				}
 			}
 
@@ -381,11 +381,11 @@ namespace Dia
 						bool configSuccess = existingModule->DeserializeConfig(*moduleEntry.config);
 						if (!configSuccess)
 						{
-							Dia::Core::Log::OutputVaradicLine("Warning: Failed to update config for module '%s' during hot reload", moduleEntry.instanceId.AsChar());
+							DIA_LOG_WARNING("Application", "Failed to update config for module '%s' during hot reload", moduleEntry.instanceId.AsChar());
 						}
 						else
 						{
-							Dia::Core::Log::OutputVaradicLine("Hot reload: Updated config for module '%s'", moduleEntry.instanceId.AsChar());
+							DIA_LOG_INFO("Application", "Hot reload: Updated config for module '%s'", moduleEntry.instanceId.AsChar());
 						}
 					}
 				}
@@ -426,7 +426,7 @@ namespace Dia
 				// Add to ProcessingUnit with ownership
 				existingPU->AddModuleWithOwnership(Dia::Core::UniquePtr<Module>(newModule));
 
-				Dia::Core::Log::OutputVaradicLine("Hot reload: Added new module '%s'", moduleEntry.instanceId.AsChar());
+				DIA_LOG_INFO("Application", "Hot reload: Added new module '%s'", moduleEntry.instanceId.AsChar());
 			}
 
 			// 7. TODO: Handle phases
@@ -437,8 +437,8 @@ namespace Dia
 			// For now, log a warning if phases have changed
 			if (newPUEntry.phases.Size() != currentPhases.Size())
 			{
-				Dia::Core::Log::OutputVaradicLine("Warning: Phase count changed during hot reload, but phase reloading is not yet implemented");
-				Dia::Core::Log::OutputVaradicLine("         Current phases: %u, New phases: %u", currentPhases.Size(), newPUEntry.phases.Size());
+				DIA_LOG_WARNING("Application", "Phase count changed during hot reload, but phase reloading is not yet implemented");
+				DIA_LOG_WARNING("Application", "Current phases: %u, New phases: %u", currentPhases.Size(), newPUEntry.phases.Size());
 			}
 
 			// 8. TODO: Rebuild phase transitions
@@ -454,7 +454,7 @@ namespace Dia
 				existingPU->DisableThreadLimiting();
 			}
 
-			Dia::Core::Log::OutputVaradicLine("Hot reload completed successfully from '%s'", filePath);
+			DIA_LOG_INFO("Application", "Hot reload completed successfully from '%s'", filePath);
 			return ManifestValidationResult::kSuccess;
 		}
 

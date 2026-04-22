@@ -1,7 +1,7 @@
 #include "ManifestValidator.h"
 
 #include <DiaApplication/TypeRegistry/ApplicationTypeRegistry.h>
-#include <DiaCore/Core/Log.h>
+#include <DiaLogger/DiaLog.h>
 #include <DiaCore/CRC/CRCHashFunctor.h>
 #include <DiaCore/Strings/String256.h>
 
@@ -496,7 +496,7 @@ namespace Dia
 
 				if (module.phaseIds.Size() == 0)
 				{
-					Dia::Core::Log::OutputVaradicLine("Warning: Module '%s' in %s has no phases (orphaned module)",
+					DIA_LOG_WARNING("Application", "Module '%s' in %s has no phases (orphaned module)",
 						module.instanceId.AsChar(), context);
 				}
 			}

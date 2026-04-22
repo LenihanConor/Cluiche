@@ -2,7 +2,7 @@
 
 #include "DiaEditor/Command/CommandHistory.h"
 #include "DiaEditor/MVC/EditorModel.h"
-#include <DiaCore/Core/Log.h>
+#include <DiaLogger/DiaLog.h>
 
 namespace Dia
 {
@@ -23,12 +23,12 @@ namespace Dia
 		{
 			if (eventType == kEventUndo && mCommandHistory != nullptr)
 			{
-				Dia::Core::Log::OutputVaradicLine("EditorViewController: undo event received");
+				DIA_LOG_INFO("Editor", "EditorViewController: undo event received");
 				mCommandHistory->Undo();
 			}
 			else if (eventType == kEventRedo && mCommandHistory != nullptr)
 			{
-				Dia::Core::Log::OutputVaradicLine("EditorViewController: redo event received");
+				DIA_LOG_INFO("Editor", "EditorViewController: redo event received");
 				mCommandHistory->Redo();
 			}
 		}

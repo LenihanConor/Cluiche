@@ -234,6 +234,7 @@ xcopy /Y /I "$(ProjectDir)..\..\CluicheTest\Data\Manifests\*.diaapp" "$(OutDir)D
     <ClCompile Include="DiaLogger\TestThreadLogBuffer.cpp" />
     <ClCompile Include="DiaLogger\TestISink.cpp" />
     <ClCompile Include="DiaLogger\TestLogger.cpp" />
+    <ClCompile Include="DiaLogger\TestAssertSinkBridge.cpp" />
     <!-- Google Test Source Files - Compiled directly into project -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">
       <AdditionalIncludeDirectories>$(ProjectDir)../../../External/googletest/googletest/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

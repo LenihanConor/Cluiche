@@ -1,6 +1,6 @@
 #include "DiaApplication/Metrics/MetricsCollectorModule.h"
 
-#include <DiaCore/Core/Log.h>
+#include <DiaLogger/DiaLog.h>
 
 #include <string.h>
 
@@ -36,7 +36,7 @@ namespace Dia
 		{
 			mUptimeAccumulator = 0.0f;
 			mSnapshot = MetricsSnapshot();
-			Dia::Core::Log::OutputVaradicLine("MetricsCollectorModule: Started");
+			DIA_LOG_INFO("Application", "MetricsCollectorModule: Started");
 			return StateObject::OpertionResponse::kImmediate;
 		}
 
@@ -47,7 +47,7 @@ namespace Dia
 
 		void MetricsCollectorModule::DoStop()
 		{
-			Dia::Core::Log::OutputVaradicLine("MetricsCollectorModule: Stopped");
+			DIA_LOG_INFO("Application", "MetricsCollectorModule: Stopped");
 		}
 
 		void MetricsCollectorModule::ReportFrame(const Dia::Core::StringCRC& puId,

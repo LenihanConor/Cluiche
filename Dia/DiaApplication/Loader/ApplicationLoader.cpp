@@ -3,7 +3,7 @@
 #include <DiaApplication/Manifest/ApplicationManifestLoader.h>
 #include <DiaApplication/TypeRegistry/ApplicationTypeRegistry.h>
 #include <DiaApplication/ApplicationProcessingUnit.h>
-#include <DiaCore/Core/Log.h>
+#include <DiaLogger/DiaLog.h>
 
 namespace Dia
 {
@@ -27,11 +27,11 @@ namespace Dia
 			if (outResult != ManifestValidationResult::kSuccess)
 			{
 				const auto& errors = loader.GetErrors();
-				Dia::Core::Log::OutputVaradicLine("Failed to load application manifest: %s", manifestPath);
+				DIA_LOG_ERROR("Application", "Failed to load application manifest: %s", manifestPath);
 				for (unsigned int i = 0; i < errors.Size(); ++i)
 				{
 					const ManifestValidationError& error = errors[i];
-					Dia::Core::Log::OutputVaradicLine("  [%s] %s (context: %s)",
+					DIA_LOG_ERROR("Application", "  [%s] %s (context: %s)",
 							ManifestValidationError::GetResultString(error.code),
 							error.message,
 							error.context ? error.context : "N/A");
@@ -44,7 +44,7 @@ namespace Dia
 			// Multi-PU support can be added later if needed
 			if (manifest.processingUnits.Size() == 0)
 			{
-				Dia::Core::Log::OutputVaradicLine("Manifest contains no processing units: %s", manifestPath);
+				DIA_LOG_ERROR("Application", "Manifest contains no processing units: %s", manifestPath);
 				outResult = ManifestValidationResult::kMissingRequiredField;
 				return nullptr;
 			}
@@ -52,14 +52,14 @@ namespace Dia
 			ProcessingUnit* pu = loader.Instantiate(manifest.processingUnits[0]);
 			if (!pu)
 			{
-				Dia::Core::Log::OutputVaradicLine("Failed to instantiate ProcessingUnit from manifest: %s", manifestPath);
+				DIA_LOG_ERROR("Application", "Failed to instantiate ProcessingUnit from manifest: %s", manifestPath);
 				outResult = ManifestValidationResult::kUnknownType;
 				return nullptr;
 			}
 
 			pu->Initialize();
 
-			Dia::Core::Log::OutputVaradicLine("Successfully loaded application from manifest: %s", manifestPath);
+			DIA_LOG_INFO("Application", "Successfully loaded application from manifest: %s", manifestPath);
 			return pu;
 		}
 
@@ -94,16 +94,16 @@ namespace Dia
 			}
 
 			// Failed to load from manifest - use fallback
-			Dia::Core::Log::OutputVaradicLine("Falling back to code-defined application structure (manifest load failed)");
+			DIA_LOG_WARNING("Application", "Falling back to code-defined application structure (manifest load failed)");
 			pu = fallbackFactory();
 
 			if (!pu)
 			{
-				Dia::Core::Log::OutputVaradicLine("WARNING: Fallback factory returned nullptr!");
+				DIA_LOG_ERROR("Application", "Fallback factory returned nullptr!");
 			}
 			else
 			{
-				Dia::Core::Log::OutputVaradicLine("Successfully created fallback application structure");
+				DIA_LOG_INFO("Application", "Successfully created fallback application structure");
 			}
 
 			return pu;

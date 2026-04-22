@@ -4,7 +4,7 @@
 #include "CEFSchemeHandler.h"
 #include "CEFUtils.h"
 
-#include <DiaCore/Core/Log.h>
+#include <DiaLogger/DiaLog.h>
 
 #include <include/cef_scheme.h>
 
@@ -32,7 +32,7 @@ namespace Dia
 
 			if (Utils::IsPathTraversal(path))
 			{
-				Dia::Core::Log::OutputVaradicLine("DiaUICEF: Path traversal rejected: %s", path.c_str());
+				DIA_LOG_ERROR("UI", "DiaUICEF: Path traversal rejected: %s", path.c_str());
 				return nullptr;
 			}
 
@@ -106,7 +106,7 @@ namespace Dia
 			fopen_s(&f, mFilePath.c_str(), "rb");
 			if (!f)
 			{
-				Dia::Core::Log::OutputVaradicLine("DiaUICEF: File not found: %s", mFilePath.c_str());
+				DIA_LOG_ERROR("UI", "DiaUICEF: File not found: %s", mFilePath.c_str());
 				return false;
 			}
 

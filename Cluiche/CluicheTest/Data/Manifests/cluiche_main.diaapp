@@ -17,10 +17,25 @@
       "initial_phase": "MainBootPhase",
       "modules": [
         {
+          "type_id": "LoggerModule",
+          "instance_id": "LoggerModule",
+          "phase_ids": ["MainBootPhase", "MainBootStrapPhase"],
+          "dependencies": [],
+          "config": {
+            "default_level": "info",
+            "sinks": [
+              {
+                "type": "DebugOutput",
+                "level_threshold": "trace"
+              }
+            ]
+          }
+        },
+        {
           "type_id": "Main::KernelModule",
           "instance_id": "Main::KernelModule",
           "phase_ids": ["MainBootPhase", "MainBootStrapPhase"],
-          "dependencies": [],
+          "dependencies": ["LoggerModule"],
           "config": {}
         },
         {

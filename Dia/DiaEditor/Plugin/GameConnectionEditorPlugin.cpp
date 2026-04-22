@@ -2,7 +2,7 @@
 #include "DiaEditor/Plugin/EditorPluginRegistrationMacros.h"
 #include "DiaEditor/Plugin/EditorPluginContext.h"
 
-#include <DiaCore/Core/Log.h>
+#include <DiaLogger/DiaLog.h>
 
 namespace Dia
 {
@@ -10,17 +10,17 @@ namespace Dia
 	{
 		void GameConnectionEditorPlugin::OnLoad(const EditorPluginContext& context)
 		{
-			Dia::Core::Log::OutputVaradicLine("GameConnectionEditorPlugin: OnLoad");
+			DIA_LOG_INFO("Editor", "GameConnectionEditorPlugin: OnLoad");
 			mManager.Initialize();
 			mController.SetPersistencePath("Data/editor-connection.json");
 			mController.LoadPersistedUrl();
 			mController.Initialize(context.mBridge, &mManager, context.mView);
-			Dia::Core::Log::OutputVaradicLine("GameConnectionEditorPlugin: Initialized manager and controller");
+			DIA_LOG_INFO("Editor", "GameConnectionEditorPlugin: Initialized manager and controller");
 		}
 
 		void GameConnectionEditorPlugin::OnUnload()
 		{
-			Dia::Core::Log::OutputVaradicLine("GameConnectionEditorPlugin: OnUnload");
+			DIA_LOG_INFO("Editor", "GameConnectionEditorPlugin: OnUnload");
 			mController.Shutdown();
 			mManager.Shutdown();
 		}

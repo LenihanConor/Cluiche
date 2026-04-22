@@ -4,7 +4,7 @@
 #include "DiaApplication/MessageBus.h"
 
 #include <DiaCore/Core/Assert.h>
-#include <DiaCore/Core/Log.h>
+#include <DiaLogger/DiaLog.h>
 
 namespace Dia
 {
@@ -180,7 +180,7 @@ namespace Dia
 					catch (...)
 					{
 						// Catch exceptions from handlers to prevent one bad handler from breaking others
-						Dia::Core::Log::OutputVaradicLine("WARNING: MessageBus handler threw exception for message type %s from sender %s",
+						DIA_LOG_WARNING("Application", "MessageBus handler threw exception for message type %s from sender %s",
 						                                 message.type.AsChar(),
 						                                 message.senderId.AsChar());
 					}

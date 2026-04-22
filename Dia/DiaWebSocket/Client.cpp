@@ -2,7 +2,7 @@
 #include "DiaWebSocket/Internal/WebSocketppWrapper.h"
 #include "DiaCore/Threading/Thread.h"
 #include "DiaCore/Threading/Mutex.h"
-#include "DiaCore/Core/Log.h"
+#include <DiaLogger/DiaLog.h>
 
 #include <cstring>
 #include <string>
@@ -86,7 +86,7 @@ namespace Dia
 
 				if (mIncomingQueue.IsFull())
 				{
-					Dia::Core::Log::OutputLine("DiaWebSocket Client: Incoming queue full - dropping message");
+					DIA_LOG_WARNING("WebSocket", "Client: Incoming queue full - dropping message");
 					return;
 				}
 
@@ -175,7 +175,7 @@ namespace Dia
 					}
 					catch (const std::exception& e)
 					{
-						Dia::Core::Log::OutputVaradicLine("DiaWebSocket Client: Send failed: %s", e.what());
+						DIA_LOG_ERROR("WebSocket", "Client: Send failed: %s", e.what());
 					}
 				}
 
@@ -186,7 +186,7 @@ namespace Dia
 			{
 				if (mReconnectAttemptCount >= mReconnectMaxAttempts)
 				{
-					Dia::Core::Log::OutputLine("DiaWebSocket Client: Max reconnect attempts reached");
+					DIA_LOG_WARNING("WebSocket", "Client: Max reconnect attempts reached");
 					QueueError(Internal::MakeError(ErrorCode::kReconnectExhausted, ErrorSeverity::kError, -1, "Max reconnect attempts reached"));
 					return;
 				}
@@ -220,7 +220,7 @@ namespace Dia
 				}
 				catch (const std::exception& e)
 				{
-					Dia::Core::Log::OutputVaradicLine("DiaWebSocket Client: Reconnect exception: %s", e.what());
+					DIA_LOG_ERROR("WebSocket", "Client: Reconnect exception: %s", e.what());
 					Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mStateMutex);
 					mState = ConnectionState::kError;
 				}
@@ -237,11 +237,11 @@ namespace Dia
 					}
 					catch (const std::exception& e)
 					{
-						Dia::Core::Log::OutputVaradicLine("DiaWebSocket Client: Worker error: %s", e.what());
+						DIA_LOG_ERROR("WebSocket", "Client: Worker error: %s", e.what());
 					}
 					catch (...)
 					{
-						Dia::Core::Log::OutputLine("DiaWebSocket Client: Worker unknown error");
+						DIA_LOG_ERROR("WebSocket", "Client: Worker unknown error");
 					}
 
 					Dia::Core::ThisThread::SleepMs(1);
@@ -303,7 +303,7 @@ namespace Dia
 
 				if (ec)
 				{
-					Dia::Core::Log::OutputVaradicLine("DiaWebSocket Client: Connection failed: %s", ec.message().c_str());
+					DIA_LOG_ERROR("WebSocket", "Client: Connection failed: %s", ec.message().c_str());
 					mImpl->mState = ConnectionState::kError;
 					return false;
 				}
@@ -312,7 +312,7 @@ namespace Dia
 			}
 			catch (const std::exception& e)
 			{
-				Dia::Core::Log::OutputVaradicLine("DiaWebSocket Client: Connection exception: %s", e.what());
+				DIA_LOG_ERROR("WebSocket", "Client: Connection exception: %s", e.what());
 				mImpl->mState = ConnectionState::kError;
 				return false;
 			}
@@ -340,7 +340,7 @@ namespace Dia
 			}
 			else
 			{
-				Dia::Core::Log::OutputVaradicLine("DiaWebSocket Client: Connection timeout after %.1fs", elapsed);
+				DIA_LOG_WARNING("WebSocket", "Client: Connection timeout after %.1fs", elapsed);
 				{
 					Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mImpl->mStateMutex);
 					if (mImpl->mState == ConnectionState::kConnecting)
@@ -369,7 +369,7 @@ namespace Dia
 				}
 				catch (const std::exception& e)
 				{
-					Dia::Core::Log::OutputVaradicLine("DiaWebSocket Client: Disconnect error: %s", e.what());
+					DIA_LOG_ERROR("WebSocket", "Client: Disconnect error: %s", e.what());
 				}
 			}
 
@@ -468,7 +468,7 @@ namespace Dia
 		{
 			if (length > mImpl->mMaxMessageSize)
 			{
-				Dia::Core::Log::OutputLine("DiaWebSocket Client: Send message too large");
+				DIA_LOG_WARNING("WebSocket", "Client: Send message too large");
 				return;
 			}
 
@@ -492,7 +492,7 @@ namespace Dia
 
 			if (mImpl->mOutgoingQueue.IsFull())
 			{
-				Dia::Core::Log::OutputLine("DiaWebSocket Client: Outgoing queue full - dropping message");
+				DIA_LOG_WARNING("WebSocket", "Client: Outgoing queue full - dropping message");
 				return;
 			}
 

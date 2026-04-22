@@ -8,7 +8,7 @@
 #include <DiaDebugProtocol/DiaDebugProtocol.h>
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
 #include <DiaCore/Time/TimeAbsolute.h>
-#include <DiaCore/Core/Log.h>
+#include <DiaLogger/DiaLog.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -56,7 +56,7 @@ namespace Dia
 
 		Dia::Application::StateObject::OpertionResponse DebugServerModule::DoStart(const IStartData* /*startData*/)
 		{
-			Dia::Core::Log::OutputVaradicLine("DebugServerModule: DoStart port=%d autoStart=%d", static_cast<int>(mPort), mAutoStart ? 1 : 0);
+			DIA_LOG_INFO("DebugServer", "DebugServerModule: DoStart port=%d autoStart=%d", static_cast<int>(mPort), mAutoStart ? 1 : 0);
 			mServer = new Dia::WebSocket::Server(mPort);
 
 			mServer->SetConnectionCallback([this](int connId, bool connected) {
@@ -135,7 +135,7 @@ namespace Dia
 
 		void DebugServerModule::DoStop()
 		{
-			Dia::Core::Log::OutputVaradicLine("DebugServerModule: DoStop");
+			DIA_LOG_INFO("DebugServer", "DebugServerModule: DoStop");
 			if (mServer)
 			{
 				mServer->Stop();
@@ -149,7 +149,7 @@ namespace Dia
 			if (!mServer) return false;
 			if (mServer->IsRunning()) return true;
 			bool ok = mServer->Start();
-			Dia::Core::Log::OutputVaradicLine("DebugServerModule: StartServer on port %d result=%d", static_cast<int>(mPort), ok ? 1 : 0);
+			DIA_LOG_INFO("DebugServer", "DebugServerModule: StartServer on port %d result=%d", static_cast<int>(mPort), ok ? 1 : 0);
 			return ok;
 		}
 
@@ -174,7 +174,7 @@ namespace Dia
 
 		void DebugServerModule::HandleConnection(int connId, bool connected)
 		{
-			Dia::Core::Log::OutputVaradicLine("DebugServerModule: HandleConnection connId=%d connected=%d totalConnections=%d", connId, connected ? 1 : 0, mServer ? mServer->GetConnectionCount() : -1);
+			DIA_LOG_INFO("DebugServer", "DebugServerModule: HandleConnection connId=%d connected=%d totalConnections=%d", connId, connected ? 1 : 0, mServer ? mServer->GetConnectionCount() : -1);
 			if (connected)
 			{
 				Json::Value welcome = Dia::DebugProtocol::SerializeHandshakeResponse(
@@ -185,12 +185,12 @@ namespace Dia
 				);
 				SendJsonToConnection(connId, welcome);
 
-				Dia::Core::Log::OutputVaradicLine("DebugServerModule: Sending game_info to connId=%d", connId);
+				DIA_LOG_INFO("DebugServer", "DebugServerModule: Sending game_info to connId=%d", connId);
 				SendGameInfo(connId);
 			}
 			else
 			{
-				Dia::Core::Log::OutputVaradicLine("DebugServerModule: Client disconnected connId=%d", connId);
+				DIA_LOG_INFO("DebugServer", "DebugServerModule: Client disconnected connId=%d", connId);
 				mSubscriptionManager.UnsubscribeAll(connId);
 			}
 		}
@@ -231,14 +231,14 @@ namespace Dia
 			Json::Reader reader;
 			if (!reader.parse(msg.AsText(), msg.AsText() + msg.length, json))
 			{
-				Dia::Core::Log::OutputVaradicLine("DebugServerModule: HandleMessage connId=%d JSON parse error", connId);
+				DIA_LOG_ERROR("DebugServer", "DebugServerModule: HandleMessage connId=%d JSON parse error", connId);
 				Json::Value errorJson = Dia::DebugProtocol::SerializeError("parse_error", "Invalid JSON");
 				SendJsonToConnection(connId, errorJson);
 				return;
 			}
 
 			Dia::DebugProtocol::MessageType type = Dia::DebugProtocol::GetMessageType(json);
-			Dia::Core::Log::OutputVaradicLine("DebugServerModule: HandleMessage connId=%d type=%d", connId, static_cast<int>(type));
+			DIA_LOG_DEBUG("DebugServer", "DebugServerModule: HandleMessage connId=%d type=%d", connId, static_cast<int>(type));
 
 			switch (type)
 			{
@@ -336,12 +336,12 @@ namespace Dia
 			Dia::DebugProtocol::PingMessage ping;
 			if (!Dia::DebugProtocol::ParsePing(json, ping))
 			{
-				Dia::Core::Log::OutputVaradicLine("DebugServerModule: HandlePing connId=%d invalid ping", connId);
+				DIA_LOG_WARNING("DebugServer", "DebugServerModule: HandlePing connId=%d invalid ping", connId);
 				Json::Value errorJson = Dia::DebugProtocol::SerializeError("invalid_ping", "Missing ts");
 				SendJsonToConnection(connId, errorJson);
 				return;
 			}
-			Dia::Core::Log::OutputVaradicLine("DebugServerModule: HandlePing connId=%d ts=%llu, sending pong", connId, static_cast<unsigned long long>(ping.ts));
+			DIA_LOG_DEBUG("DebugServer", "DebugServerModule: HandlePing connId=%d ts=%llu, sending pong", connId, static_cast<unsigned long long>(ping.ts));
 			Json::Value pong = Dia::DebugProtocol::SerializePong(ping.ts);
 			SendJsonToConnection(connId, pong);
 		}

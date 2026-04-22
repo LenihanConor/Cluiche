@@ -5,7 +5,7 @@
 
 #include <DiaCore/Core/Assert.h>
 #include <DiaCore/Type/BasicTypeDefines.h>
-#include <DiaCore/Core/Log.h>
+#include <DiaLogger/DiaLog.h>
 
 namespace Dia
 {
@@ -38,7 +38,7 @@ namespace Dia
 		//-----------------------------------------------------------------------------
 		StateObject::OpertionResponse StateObject::Start(const IStartData* startData)
 		{
-			Dia::Core::Log::OutputVaradicLine("Starting %s - %s", GetStateObjectType(), GetUniqueId().AsChar());
+			DIA_LOG_INFO("Application", "Starting %s - %s", GetStateObjectType(), GetUniqueId().AsChar());
 
 			DIA_ASSERT(mState == StateEnum::kNotRunning, "Starting %s but in wrong state: %s", mUniqueId.AsChar(), mState.AsString() );
 
@@ -86,7 +86,7 @@ namespace Dia
 		//-----------------------------------------------------------------------------
 		void StateObject::Stop()
 		{
-			Dia::Core::Log::OutputVaradicLine("Stopping %s - %s", GetStateObjectType(), GetUniqueId().AsChar());
+			DIA_LOG_INFO("Application", "Stopping %s - %s", GetStateObjectType(), GetUniqueId().AsChar());
 
 			DIA_ASSERT(mState == StateEnum::kRunning, "Stoping %s but in wrong state: %s", mUniqueId.AsChar(), mState.AsString());
 

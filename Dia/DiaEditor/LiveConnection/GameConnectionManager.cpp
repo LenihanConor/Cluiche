@@ -2,7 +2,7 @@
 
 #include <DiaWebSocket/Client.h>
 #include <DiaCore/Core/Assert.h>
-#include <DiaCore/Core/Log.h>
+#include <DiaLogger/DiaLog.h>
 
 #include <string.h>
 #include <sstream>
@@ -31,14 +31,13 @@ namespace Dia
 
 		void GameConnectionManager::Initialize()
 		{
-			Dia::Core::Log::OutputVaradicLine("GameConnectionManager: Initialize");
+			DIA_LOG_INFO("Editor", "GameConnectionManager: Initialize");
 			mClient = new Dia::WebSocket::Client();
 			mClient->SetReconnectOnDisconnect(mAutoReconnect);
 
 			mClient->SetMessageCallback([this](const Dia::WebSocket::Message& msg) {
 				if (msg.type == Dia::WebSocket::MessageType::kText)
 				{
-					Dia::Core::Log::OutputVaradicLine("GameConnectionManager: Received text message (%u bytes)", static_cast<unsigned>(msg.length));
 					HandleMessage(std::string(static_cast<const char*>(msg.data), msg.length));
 				}
 			});
@@ -50,7 +49,7 @@ namespace Dia
 
 		void GameConnectionManager::Shutdown()
 		{
-			Dia::Core::Log::OutputVaradicLine("GameConnectionManager: Shutdown");
+			DIA_LOG_INFO("Editor", "GameConnectionManager: Shutdown");
 			if (mClient != nullptr)
 			{
 				mClient->Disconnect();
@@ -92,13 +91,13 @@ namespace Dia
 
 			std::ostringstream url;
 			url << "ws://" << host << ":" << port;
-			Dia::Core::Log::OutputVaradicLine("GameConnectionManager: Connect to %s", url.str().c_str());
+			DIA_LOG_INFO("Editor", "GameConnectionManager: Connect to %s", url.str().c_str());
 			mClient->Connect(url.str().c_str());
 		}
 
 		void GameConnectionManager::Disconnect()
 		{
-			Dia::Core::Log::OutputVaradicLine("GameConnectionManager: Disconnect requested");
+			DIA_LOG_INFO("Editor", "GameConnectionManager: Disconnect requested");
 			if (mClient != nullptr)
 				mClient->Disconnect();
 		}
@@ -111,6 +110,7 @@ namespace Dia
 		void GameConnectionManager::Subscribe(const Dia::Core::StringCRC& topic, DataCallback callback)
 		{
 			DIA_ASSERT(!mSubscriptions.IsFull(), "GameConnectionManager: max subscription capacity reached");
+			DIA_LOG_INFO("Editor", "GameConnectionManager: Subscribe topic='%s'", topic.AsChar());
 			Subscription sub;
 			sub.topic = topic;
 			sub.callback = callback;
@@ -119,6 +119,7 @@ namespace Dia
 
 		void GameConnectionManager::Unsubscribe(const Dia::Core::StringCRC& topic)
 		{
+			DIA_LOG_INFO("Editor", "GameConnectionManager: Unsubscribe topic='%s'", topic.AsChar());
 			for (unsigned int i = 0; i < mSubscriptions.Size(); ++i)
 			{
 				if (mSubscriptions[i].topic == topic)
@@ -203,13 +204,13 @@ namespace Dia
 		{
 			if (!IsConnected())
 			{
-				Dia::Core::Log::OutputVaradicLine("GameConnectionManager: SendRaw skipped, not connected");
+				DIA_LOG_WARNING("Editor", "GameConnectionManager: SendRaw skipped, not connected");
 				return;
 			}
 			Json::StreamWriterBuilder writer;
 			writer["indentation"] = "";
 			std::string text = Json::writeString(writer, message);
-			Dia::Core::Log::OutputVaradicLine("GameConnectionManager: SendRaw %u bytes", static_cast<unsigned>(text.size()));
+			DIA_LOG_DEBUG("Editor", "GameConnectionManager: SendRaw %u bytes", static_cast<unsigned>(text.size()));
 			mClient->SendText(text.c_str());
 		}
 
@@ -250,7 +251,7 @@ namespace Dia
 
 		void GameConnectionManager::HandleConnection(bool connected)
 		{
-			Dia::Core::Log::OutputVaradicLine("GameConnectionManager: HandleConnection connected=%d", connected ? 1 : 0);
+			DIA_LOG_INFO("Editor", "GameConnectionManager: HandleConnection connected=%d", connected ? 1 : 0);
 			if (connected)
 				mLastError[0] = '\0';
 			if (mConnectionCallback)

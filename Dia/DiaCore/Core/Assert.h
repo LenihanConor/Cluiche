@@ -32,6 +32,9 @@ namespace Dia
 		// Function pointer type for custom assert handlers
 		typedef void (*DIA_ASSERT_FUNC)(const char *pExp, const char *pFileName, int iLineNumber, const char* pStr, ...);
 
+		// Callback type for receiving formatted assert output (e.g. to route to logger sinks)
+		typedef void (*AssertOutputCallback)(const char* formattedMessage);
+
 		// Trigger debugger breakpoint
 		void BREAKPOINT();
 
@@ -40,6 +43,13 @@ namespace Dia
 
 		// Default assert handler: logs failure, shows call stack, breaks into debugger
 		void AssertDefault(const char *pExp, const char *pFileName, int iLineNumber, const char* pStr, ...);
+
+		// Register/unregister callbacks that receive the formatted assert message.
+		// Higher-level systems (e.g. DiaLogger) use this to route asserts to their sinks
+		// without introducing a reverse dependency from DiaCore.
+		static const unsigned int kMaxAssertOutputCallbacks = 8;
+		void RegisterAssertOutputCallback(AssertOutputCallback callback);
+		void UnregisterAssertOutputCallback(AssertOutputCallback callback);
 
 		// Compile-time assertion helper (causes compile error if condition is false)
 		template<int> struct CompileTimeError;

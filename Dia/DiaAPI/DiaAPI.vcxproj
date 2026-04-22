@@ -78,6 +78,11 @@
     <ClCompile Include="Events\EventSystem.cpp" />
     <ClCompile Include="PythonBindings\PythonBindings.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DiaLogger\DiaLogger.vcxproj">
+      <Project>{7a8b9c0d-e1f2-3456-7890-abcdef012345}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

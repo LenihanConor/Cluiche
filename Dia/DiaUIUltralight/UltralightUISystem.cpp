@@ -7,7 +7,7 @@
 // (Ultralight pulls in <windows.h> which redefines symbols like GetSystemHandle)
 #include <DiaCore/Core/Assert.h>
 #include <DiaCore/Memory/Memory.h>
-#include <DiaCore/Core/Log.h>
+#include <DiaLogger/DiaLog.h>
 #include <DiaUI/IPage.h>
 #include <DiaUI/UIDataBuffer.h>
 #include <DiaUI/Page.h>
@@ -95,7 +95,7 @@ namespace Dia
 			public:
 				virtual void LogMessage(::ultralight::LogLevel level, const ::ultralight::String& message) override
 				{
-					Dia::Core::Log::OutputVaradicLine("DiaUltralightUI: %s", message.utf8().data());
+					DIA_LOG_DEBUG("UI", "DiaUltralightUI: %s", message.utf8().data());
 				}
 			};
 
@@ -383,7 +383,7 @@ namespace Dia
 					const ::ultralight::String& message, uint32_t line_number,
 					uint32_t /*column_number*/, const ::ultralight::String& source_id) override
 				{
-					Dia::Core::Log::OutputVaradicLine("DiaUltralightUI Log - Source: %s, Line: %d, Message: %s",
+					DIA_LOG_DEBUG("UI", "DiaUltralightUI Log - Source: %s, Line: %d, Message: %s",
 						source_id.utf8().data(), line_number, message.utf8().data());
 				}
 

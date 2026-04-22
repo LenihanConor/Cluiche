@@ -1,6 +1,5 @@
 #include "CluicheEditorProcessingUnit.h"
 
-#include <DiaCore/Core/Log.h>
 #include <DiaLogger/DebugOutputSink.h>
 #include <DiaEditor/Sinks/EditorConsoleSink.h>
 #include <string.h>
@@ -25,6 +24,7 @@ namespace Cluiche
 		{
 			mLoggerModule.AddSink(new Dia::Logger::DebugOutputSink());
 			mLoggerModule.AddSink(new Dia::Editor::EditorConsoleSink(&mViewModule.GetView()));
+			mLoggerModule.ApplyConfig("Data/editor-logger.json");
 
 			AddModule(&mLoggerModule);
 			AddModule(&mModelModule);

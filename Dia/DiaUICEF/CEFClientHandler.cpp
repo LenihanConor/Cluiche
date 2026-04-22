@@ -8,7 +8,7 @@
 #include "CEFJavaScriptBridge.h"
 
 #include <DiaCore/Core/Assert.h>
-#include <DiaCore/Core/Log.h>
+#include <DiaLogger/DiaLog.h>
 
 namespace Dia
 {
@@ -43,7 +43,7 @@ namespace Dia
 		{
 			std::string url = failedUrl.ToString();
 			std::string error = errorText.ToString();
-			Dia::Core::Log::OutputVaradicLine("DiaUICEF: Failed to load %s. Error %d: %s (main=%d)",
+			DIA_LOG_ERROR("UI", "DiaUICEF: Failed to load %s. Error %d: %s (main=%d)",
 				url.c_str(), static_cast<int>(errorCode), error.c_str(), frame->IsMain() ? 1 : 0);
 
 			if (frame->IsMain())
@@ -56,7 +56,7 @@ namespace Dia
 		{
 			std::string msg = message.ToString();
 			std::string src = source.ToString();
-			Dia::Core::Log::OutputVaradicLine("DiaUICEF Log - Source: %s, Line: %d, Message: %s",
+			DIA_LOG_DEBUG("UI", "DiaUICEF Log - Source: %s, Line: %d, Message: %s",
 				src.c_str(), line, msg.c_str());
 			return false;
 		}

@@ -4,7 +4,7 @@
 #include "CEFUISystem.h"
 
 #include <DiaCore/Core/Assert.h>
-#include <DiaCore/Core/Log.h>
+#include <DiaLogger/DiaLog.h>
 #include <DiaCore/Memory/Memory.h>
 #include <DiaCore/FilePath/Path.h>
 #include <DiaUI/IPage.h>
@@ -93,14 +93,14 @@ namespace Dia
 				settings.windowless_rendering_enabled = mWindowedRendering ? false : true;
 				std::string resolvedSubprocess = ResolveToAbsolute(mSubprocessPath);
 				std::string resolvedCache = ResolveToAbsolute(mCachePath);
-				Dia::Core::Log::OutputVaradicLine("DiaUICEF: subprocess_path = %s", resolvedSubprocess.c_str());
-				Dia::Core::Log::OutputVaradicLine("DiaUICEF: cache_path = %s", resolvedCache.c_str());
+				DIA_LOG_INFO("UI", "DiaUICEF: subprocess_path = %s", resolvedSubprocess.c_str());
+				DIA_LOG_INFO("UI", "DiaUICEF: cache_path = %s", resolvedCache.c_str());
 				CefString(&settings.cache_path).FromASCII(resolvedCache.c_str());
 				CefString(&settings.browser_subprocess_path).FromASCII(resolvedSubprocess.c_str());
 
 #ifdef _DEBUG
 				settings.remote_debugging_port = mRemoteDebuggingPort;
-				Dia::Core::Log::OutputVaradicLine("DiaUICEF: Remote debugging at http://localhost:%d", mRemoteDebuggingPort);
+				DIA_LOG_INFO("UI", "DiaUICEF: Remote debugging at http://localhost:%d", mRemoteDebuggingPort);
 #else
 				settings.remote_debugging_port = 0;
 #endif
@@ -113,7 +113,7 @@ namespace Dia
 
 				mIsInitialized = result;
 				if (mIsInitialized)
-					Dia::Core::Log::OutputVaradicLine("DiaUICEF: Initialized successfully");
+					DIA_LOG_INFO("UI", "DiaUICEF: Initialized successfully");
 			}
 
 			void Shutdown()
@@ -149,7 +149,7 @@ namespace Dia
 
 				CefShutdown();
 				mIsInitialized = false;
-				Dia::Core::Log::OutputVaradicLine("DiaUICEF: Shutdown complete");
+				DIA_LOG_INFO("UI", "DiaUICEF: Shutdown complete");
 			}
 
 			void Update()

@@ -8,7 +8,7 @@
 #include <DiaCore/Strings/String1024.h>
 #include <DiaCore/Time/TimeRelative.h>
 #include <DiaCore/Timer/TimerSystem.h>
-#include <DiaCore/Core/Log.h>
+#include <DiaLogger/DiaLog.h>
 
 #include <DiaApplication/ApplicationProcessingUnit.h>
 
@@ -236,7 +236,7 @@ namespace Dia
 		//	Modules that are only in the new phase need to be started
 		void Phase::TransitionTo(Phase* endPhase)
 		{
-			Dia::Core::Log::OutputVaradicLine("Transitioning Phase From %s to %s", GetUniqueId().AsChar(), endPhase->GetUniqueId().AsChar());
+			DIA_LOG_INFO("Application", "Transitioning Phase From %s to %s", GetUniqueId().AsChar(), endPhase->GetUniqueId().AsChar());
 
 			// Get list of all the modules we need to sort out
 			Dia::Core::Containers::DynamicArrayC<Module*, 128> modulesToStop;
@@ -258,11 +258,11 @@ namespace Dia
 
 			for (unsigned int i = 0; i < modulesToRetain.Size(); i++)
 			{
-				Dia::Core::Log::OutputVaradicLine("  Retaining Module - %s", modulesToRetain.At(i)->GetUniqueId().AsChar());
+				DIA_LOG_INFO("Application", "  Retaining Module - %s", modulesToRetain.At(i)->GetUniqueId().AsChar());
 			}
 			for (unsigned int i = 0; i < modulesToStop.Size(); i++)
 			{
-				Dia::Core::Log::OutputVaradicLine("  Stopping Module - %s", modulesToStop.At(i)->GetUniqueId().AsChar());
+				DIA_LOG_INFO("Application", "  Stopping Module - %s", modulesToStop.At(i)->GetUniqueId().AsChar());
 			}
 
 			// To keep order we tranverse the existing update and stopping order list and add all retaining modules

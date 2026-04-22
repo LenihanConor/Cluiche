@@ -17,6 +17,7 @@ namespace Cluiche
 			~LoggerModule();
 
 			void AddSink(Dia::Logger::ISink* sink);
+			void ApplyConfig(const char* configPath);
 
 		protected:
 			Dia::Application::StateObject::OpertionResponse DoStart(const Dia::Application::StateObject::IStartData*) override;

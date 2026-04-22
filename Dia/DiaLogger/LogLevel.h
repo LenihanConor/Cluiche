@@ -14,5 +14,6 @@ namespace Dia
 		};
 
 		const char* LogLevelToString(LogLevel level);
+		LogLevel LogLevelFromString(const char* str, LogLevel defaultLevel = LogLevel::kInfo);
 	}
 }

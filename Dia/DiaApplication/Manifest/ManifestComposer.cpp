@@ -1,6 +1,6 @@
 #include "ManifestComposer.h"
 
-#include <DiaCore/Core/Log.h>
+#include <DiaLogger/DiaLog.h>
 #include <DiaCore/Strings/String256.h>
 #include <DiaCore/Strings/String512.h>
 #include <DiaCore/Strings/stringutils.h>
@@ -515,8 +515,8 @@ namespace Dia
 			msg.Format("ManifestComposer::LoadManifestFromFile not yet implemented (file: %s)", filePath);
 			AddError(ManifestValidationResult::kImportNotFound, msg.AsCStr(), "composer");
 
-			Dia::Core::Log::OutputVaradicLine("Warning: %s", msg.AsCStr());
-			Dia::Core::Log::OutputVaradicLine("Note: This will be implemented when ApplicationManifestLoader is complete.");
+			DIA_LOG_WARNING("Application", "%s", msg.AsCStr());
+			DIA_LOG_WARNING("Application", "This will be implemented when ApplicationManifestLoader is complete.");
 
 			return ManifestValidationResult::kImportNotFound;
 		}

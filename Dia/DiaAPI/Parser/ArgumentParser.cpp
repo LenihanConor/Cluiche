@@ -4,7 +4,7 @@
 // Feature spec: docs/specs/features/dia/diacli/cli-parser.md
 ////////////////////////////////////////////////////////////////////////////////
 #include "ArgumentParser.h"
-#include <DiaCore/Core/Log.h>
+#include <DiaLogger/DiaLog.h>
 #include <cstring>
 #include <cstdio>
 
@@ -104,7 +104,7 @@ namespace Dia
 					// Malformed: --key without =value
 					result.errorCode = 2;
 					result.errorMessage = "Invalid named argument format (expected --key=value)";
-					Dia::Core::Log::OutputVaradicLine("DiaAPI WARNING: Invalid named argument format: %s (expected --key=value)", arg);
+					DIA_LOG_ERROR("API", "Invalid named argument format: %s (expected --key=value)", arg);
 					return false;
 				}
 
@@ -141,7 +141,7 @@ namespace Dia
 					// Unknown short flag
 					result.errorCode = 2;
 					result.errorMessage = "Unknown short flag";
-					Dia::Core::Log::OutputVaradicLine("DiaAPI WARNING: Unknown short flag: %s", arg);
+					DIA_LOG_ERROR("API", "Unknown short flag: %s", arg);
 					return false;
 				}
 
@@ -183,7 +183,7 @@ namespace Dia
 			{
 				result.errorCode = 2;
 				result.errorMessage = "No command specified";
-				Dia::Core::Log::OutputLine("DiaAPI WARNING: No command specified");
+				DIA_LOG_ERROR("API", "No command specified");
 				return;
 			}
 
@@ -204,7 +204,7 @@ namespace Dia
 			{
 				result.errorCode = 2;
 				result.errorMessage = "Command name cannot start with '-'";
-				Dia::Core::Log::OutputVaradicLine("DiaAPI WARNING: Command name cannot start with '-': %s", commandArg);
+				DIA_LOG_ERROR("API", "Command name cannot start with '-': %s", commandArg);
 				return;
 			}
 
@@ -240,7 +240,7 @@ namespace Dia
 					{
 						result.errorCode = 2;
 						result.errorMessage = "Invalid flag format (too many dashes)";
-						Dia::Core::Log::OutputVaradicLine("DiaAPI WARNING: Invalid flag format: %s (too many dashes)", arg);
+						DIA_LOG_ERROR("API", "Invalid flag format: %s (too many dashes)", arg);
 						return;
 					}
 
