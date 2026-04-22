@@ -18,6 +18,7 @@
     <ClInclude Include="ApplicationFlow\Modules\SimTimeServerModule.h" />
     <ClInclude Include="ApplicationFlow\Modules\SimUIProxyModule.h" />
     <ClInclude Include="ApplicationFlow\Phases\MainPhaseBase.h" />
+    <ClInclude Include="ApplicationFlow\Modules\LoggerModule.h" />
     <ClInclude Include="LevelFactory.h" />
   </ItemGroup>
   <ItemGroup>
@@ -28,6 +29,7 @@
     <ClCompile Include="ApplicationFlow\Modules\SimTimeServerModule.cpp" />
     <ClCompile Include="ApplicationFlow\Modules\SimUIProxyModule.cpp" />
     <ClCompile Include="ApplicationFlow\Phases\MainPhaseBase.cpp" />
+    <ClCompile Include="ApplicationFlow\Modules\LoggerModule.cpp" />
     <ClCompile Include="LevelFactory.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

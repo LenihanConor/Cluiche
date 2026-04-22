@@ -1,6 +1,8 @@
 #include "CluicheEditorProcessingUnit.h"
 
 #include <DiaCore/Core/Log.h>
+#include <DiaLogger/DebugOutputSink.h>
+#include <DiaEditor/Sinks/EditorConsoleSink.h>
 #include <string.h>
 
 namespace Cluiche
@@ -16,10 +18,15 @@ namespace Cluiche
 			, mViewModule(this)
 			, mViewControllerModule(this)
 			, mPluginLoaderModule(this, &mModelModule.GetModel())
+			, mLoggerModule(this)
 			, mBootPhase(this)
 			, mRunningPhase(this)
 			, mShutdownPhase(this)
 		{
+			mLoggerModule.AddSink(new Dia::Logger::DebugOutputSink());
+			mLoggerModule.AddSink(new Dia::Editor::EditorConsoleSink(&mViewModule.GetView()));
+
+			AddModule(&mLoggerModule);
 			AddModule(&mModelModule);
 			AddModule(&mCommandHistoryModule);
 			AddModule(&mViewModule);

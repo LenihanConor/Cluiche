@@ -50,6 +50,9 @@
     <ClCompile Include="ApplicationFlow\Modules\PluginLoaderModule.cpp">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClCompile>
+    <ClCompile Include="ApplicationFlow\Modules\LoggerModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApplicationFlow\ProcessingUnits\CluicheEditorProcessingUnit.h">
@@ -77,6 +80,9 @@
       <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
     <ClInclude Include="ApplicationFlow\Modules\PluginLoaderModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="ApplicationFlow\Modules\LoggerModule.h">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
   </ItemGroup>

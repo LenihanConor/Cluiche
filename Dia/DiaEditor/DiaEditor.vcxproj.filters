@@ -19,6 +19,9 @@
     <Filter Include="Layout">
       <UniqueIdentifier>{A6666666-6666-6666-6666-666666666666}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Sinks">
+      <UniqueIdentifier>{A7777777-7777-7777-7777-777777777777}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Plugin\IEditorPlugin.h">
@@ -53,6 +56,9 @@
     <ClInclude Include="Layout\DockingLayout.h" />
     <ClInclude Include="UI\WebUIBridge.h" />
     <ClInclude Include="EditorManifestLoader.h" />
+    <ClInclude Include="Sinks\EditorConsoleSink.h">
+      <Filter>Sinks</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Plugin\EditorPluginRegistry.cpp">
@@ -68,5 +74,8 @@
     <ClCompile Include="Layout\DockingLayout.cpp" />
     <ClCompile Include="UI\WebUIBridge.cpp" />
     <ClCompile Include="EditorManifestLoader.cpp" />
+    <ClCompile Include="Sinks\EditorConsoleSink.cpp">
+      <Filter>Sinks</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

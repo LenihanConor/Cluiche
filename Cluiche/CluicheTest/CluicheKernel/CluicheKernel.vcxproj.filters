@@ -23,6 +23,9 @@
     <ClCompile Include="ApplicationFlow\Modules\LevelFactoryModule.cpp">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClCompile>
+    <ClCompile Include="ApplicationFlow\Modules\LoggerModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApplicationFlow\Phases\MainPhaseBase.h">
@@ -45,6 +48,9 @@
     </ClInclude>
     <ClInclude Include="LevelFactory.h" />
     <ClInclude Include="ApplicationFlow\Modules\LevelFactoryModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="ApplicationFlow\Modules\LoggerModule.h">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
   </ItemGroup>

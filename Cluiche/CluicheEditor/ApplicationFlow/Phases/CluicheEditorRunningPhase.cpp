@@ -6,6 +6,7 @@
 #include "../Modules/EditorViewModule.h"
 #include "../Modules/EditorViewControllerModule.h"
 #include "../Modules/PluginLoaderModule.h"
+#include "../Modules/LoggerModule.h"
 #include "../ProcessingUnits/CluicheEditorProcessingUnit.h"
 
 #include <DiaApplication/ApplicationProcessingUnit.h>
@@ -36,6 +37,7 @@ namespace Cluiche
 
 		void CluicheEditorRunningPhase::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
 		{
+			AddModule(buildDependencies->GetModule(LoggerModule::kTypeId));
 			AddModule(buildDependencies->GetModule(EditorModelModule::kTypeId));
 			AddModule(buildDependencies->GetModule(CommandHistoryModule::kTypeId));
 			AddModule(buildDependencies->GetModule(EditorViewModule::kTypeId));

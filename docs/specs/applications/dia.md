@@ -22,6 +22,7 @@ Dia is the game engine application that provides all shared engine infrastructur
 | DiaUICEF | CEF-based UI system implementing IUISystem (replaces deprecated DiaUIAwesomium) | [diauicef.md](../systems/dia/diauicef.md) |
 | DiaUIUltralight | Ultralight-based IUISystem implementation; lightweight drop-in replacement for DiaUIAwesomium | [diauiultralight.md](../systems/dia/diauiultralight.md) |
 | DiaWebSocket | WebSocket server/client abstraction wrapping websocketpp (used by DiaDebugServer, DiaEditor, future networking) | [diawebsocket.md](../systems/dia/diawebsocket.md) |
+| DiaLogger | Engine-wide logging system (levels, channels, thread-local buffers, pluggable sinks via ISink) | [dialogger.md](../systems/dia/dialogger.md) |
 | DiaCore | Foundation library (containers, type system, memory, logging, CRC) | TBD |
 | DiaMaths | Math library (vectors, matrices, transforms, shapes) | TBD |
 | DiaGraphics | Graphics abstraction layer (ICanvas, Frame, rendering) | TBD |

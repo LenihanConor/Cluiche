@@ -73,6 +73,9 @@
     <Filter Include="Editor">
       <UniqueIdentifier>{EDTR0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaLogger">
+      <UniqueIdentifier>{DLGR0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -436,6 +439,19 @@
     </ClCompile>
     <ClCompile Include="Editor\TestGameConnectionController.cpp">
       <Filter>Editor</Filter>
+    </ClCompile>
+    <!-- DiaLogger -->
+    <ClCompile Include="DiaLogger\TestLogLevel.cpp">
+      <Filter>DiaLogger</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaLogger\TestThreadLogBuffer.cpp">
+      <Filter>DiaLogger</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaLogger\TestISink.cpp">
+      <Filter>DiaLogger</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaLogger\TestLogger.cpp">
+      <Filter>DiaLogger</Filter>
     </ClCompile>
     <!-- GoogleTest -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">

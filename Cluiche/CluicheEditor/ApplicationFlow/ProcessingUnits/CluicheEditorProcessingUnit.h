@@ -8,6 +8,7 @@
 #include "../Modules/EditorViewModule.h"
 #include "../Modules/EditorViewControllerModule.h"
 #include "../Modules/PluginLoaderModule.h"
+#include "../Modules/LoggerModule.h"
 #include "../Phases/CluicheEditorBootPhase.h"
 #include "../Phases/CluicheEditorRunningPhase.h"
 #include "../Phases/CluicheEditorShutdownPhase.h"
@@ -39,6 +40,7 @@ namespace Cluiche
 			EditorViewModule mViewModule;
 			EditorViewControllerModule mViewControllerModule;
 			PluginLoaderModule mPluginLoaderModule;
+			LoggerModule mLoggerModule;
 
 			CluicheEditorBootPhase mBootPhase;
 			CluicheEditorRunningPhase mRunningPhase;
