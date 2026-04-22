@@ -5,6 +5,8 @@
 #include "DiaEditor/UI/WebUIBridge.h"
 
 #include <DiaLogger/DiaLog.h>
+#include <DiaCore/Strings/String32.h>
+#include <DiaCore/Strings/String1024.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -405,10 +407,10 @@ namespace Dia
 			}
 			else if (type == "log")
 			{
-				std::string level = envelope.get("level", "info").asString();
-				std::string logMessage = envelope.get("message", "").asString();
-				DIA_LOG_INFO("Editor", "GameConnectionController: Received game log [%s] %s", level.c_str(), logMessage.c_str());
-				PushGameConsoleEntry(level.c_str(), logMessage.c_str());
+				Dia::Core::Containers::String32 level(envelope.get("level", "info").asCString());
+				Dia::Core::Containers::String1024 logMessage(envelope.get("message", "").asCString());
+				DIA_LOG_INFO("Editor", "GameConnectionController: Received game log [%s] %s", level.AsCStr(), logMessage.AsCStr());
+				PushGameConsoleEntry(level.AsCStr(), logMessage.AsCStr());
 			}
 			else if (type == "log_batch")
 			{
@@ -418,9 +420,9 @@ namespace Dia
 					for (Json::ArrayIndex i = 0; i < entries.size(); ++i)
 					{
 						const Json::Value& e = entries[i];
-						std::string level = e.get("level", "info").asString();
-						std::string logMessage = e.get("message", "").asString();
-						PushGameConsoleEntry(level.c_str(), logMessage.c_str());
+						Dia::Core::Containers::String32 level(e.get("level", "info").asCString());
+						Dia::Core::Containers::String1024 logMessage(e.get("message", "").asCString());
+						PushGameConsoleEntry(level.AsCStr(), logMessage.AsCStr());
 					}
 				}
 			}
