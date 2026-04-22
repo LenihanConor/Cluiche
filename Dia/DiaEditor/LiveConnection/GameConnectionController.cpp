@@ -405,10 +405,10 @@ namespace Dia
 			}
 			else if (type == "log")
 			{
-				const char* level = envelope.get("level", "info").asCString();
-				const char* logMessage = envelope.get("message", "").asCString();
-				DIA_LOG_INFO("Editor", "GameConnectionController: Received game log [%s] %s", level, logMessage);
-				PushGameConsoleEntry(level, logMessage);
+				std::string level = envelope.get("level", "info").asString();
+				std::string logMessage = envelope.get("message", "").asString();
+				DIA_LOG_INFO("Editor", "GameConnectionController: Received game log [%s] %s", level.c_str(), logMessage.c_str());
+				PushGameConsoleEntry(level.c_str(), logMessage.c_str());
 			}
 			else if (type == "log_batch")
 			{
@@ -418,9 +418,9 @@ namespace Dia
 					for (Json::ArrayIndex i = 0; i < entries.size(); ++i)
 					{
 						const Json::Value& e = entries[i];
-						const char* level = e.get("level", "info").asCString();
-						const char* logMessage = e.get("message", "").asCString();
-						PushGameConsoleEntry(level, logMessage);
+						std::string level = e.get("level", "info").asString();
+						std::string logMessage = e.get("message", "").asString();
+						PushGameConsoleEntry(level.c_str(), logMessage.c_str());
 					}
 				}
 			}
