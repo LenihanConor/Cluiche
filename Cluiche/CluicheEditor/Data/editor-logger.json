@@ -3,11 +3,11 @@
   "sinks": [
     {
       "name": "DebugOutput",
-      "level_threshold": "trace"
+      "level_threshold": "info"
     },
     {
       "name": "EditorConsole",
-      "level_threshold": "info"
+      "level_threshold": "debug"
     }
   ]
 }
