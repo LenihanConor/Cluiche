@@ -261,4 +261,4 @@ The toolbar's right zone subscribes to the existing `"game_connection"` topic:
 
 ## Status
 
-`Approved`
+`Done`
