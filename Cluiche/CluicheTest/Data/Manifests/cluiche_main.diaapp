@@ -26,7 +26,7 @@
             "sinks": [
               {
                 "type": "DebugOutput",
-                "level_threshold": "trace"
+                "level_threshold": "info"
               }
             ]
           }
