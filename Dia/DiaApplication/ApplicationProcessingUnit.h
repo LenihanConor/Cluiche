@@ -125,6 +125,9 @@ namespace Dia
 
 			bool ContainsModule(const Dia::Core::StringCRC& crc)const;
 
+			Module* FindModule(const Dia::Core::StringCRC& crc);
+			const Module* FindModule(const Dia::Core::StringCRC& crc) const;
+
 			// Error handling
 			void SetErrorCallback(ErrorCallback callback);
 			void ReportError(const ErrorInfo& error);

@@ -53,6 +53,7 @@
     <ClInclude Include="ApplicationProcessingUnit.h" />
     <ClInclude Include="ApplicationStateObject.h" />
     <ClInclude Include="ApplicationModule.h" />
+    <ClInclude Include="ModuleRef.h" />
     <ClInclude Include="ApplicationPhase.h" />
     <ClInclude Include="MessageBus.h" />
     <ClInclude Include="Loader\ApplicationLoader.h">

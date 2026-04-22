@@ -119,6 +119,8 @@ namespace Dia
 			const ProcessingUnit* GetAssociatedProcessingUnit()const;
 
 		private:
+			template<class T> friend class ModuleRef;
+
 			ProcessingUnit* mAssociatedProcessingUnit;
 
 			RunningEnum mRunningMode;

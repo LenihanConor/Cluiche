@@ -231,6 +231,18 @@ namespace Dia
 		}
 
 		//---------------------------------------------------------------------------------------------------------
+		Module* ProcessingUnit::FindModule(const Dia::Core::StringCRC& crc)
+		{
+			return GetModule(crc);
+		}
+
+		//---------------------------------------------------------------------------------------------------------
+		const Module* ProcessingUnit::FindModule(const Dia::Core::StringCRC& crc) const
+		{
+			return GetModule(crc);
+		}
+
+		//---------------------------------------------------------------------------------------------------------
 		bool ProcessingUnit::ContainsModule(const Dia::Core::StringCRC& crc)const
 		{
 			return (nullptr != GetModule(crc));

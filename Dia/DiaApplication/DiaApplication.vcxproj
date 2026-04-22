@@ -29,6 +29,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApplicationModule.h" />
+    <ClInclude Include="ModuleRef.h" />
     <ClInclude Include="ApplicationPhase.h" />
     <ClInclude Include="ApplicationProcessingUnit.h" />
     <ClInclude Include="ApplicationStateObject.h" />

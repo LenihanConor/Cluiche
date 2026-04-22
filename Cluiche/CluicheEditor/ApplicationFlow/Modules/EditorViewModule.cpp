@@ -76,8 +76,6 @@ namespace Cluiche
 
 		void EditorViewModule::DoStop()
 		{
-			NotifyObservers(kShuttingDown);
-
 			mView.Shutdown();
 
 			if (mUISystem)

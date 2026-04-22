@@ -18,7 +18,7 @@ namespace Cluiche
 
 		LoggerModule::LoggerModule(Dia::Application::ProcessingUnit* pu)
 			: Dia::Application::Module(pu, kTypeId, RunningEnum::kUpdate)
-			, mViewModule(nullptr)
+			, mViewRef(this)
 			, mConsoleSinkBridgeConnected(false)
 		{
 		}
@@ -86,18 +86,6 @@ namespace Cluiche
 			}
 		}
 
-		void LoggerModule::DisconnectConsoleSinkBridge()
-		{
-			mConsoleSink.SetBridge(nullptr);
-			mConsoleSinkBridgeConnected = false;
-			mViewModule = nullptr;
-		}
-
-		void LoggerModule::ObserverNotification(const Dia::Core::ObserverSubject* /*subject*/, int /*message*/)
-		{
-			DisconnectConsoleSinkBridge();
-		}
-
 		Dia::Application::StateObject::OpertionResponse LoggerModule::DoStart(const Dia::Application::StateObject::IStartData*)
 		{
 			Dia::Logger::Logger& logger = Dia::Logger::Logger::Instance();
@@ -112,15 +100,16 @@ namespace Cluiche
 		{
 			Dia::Logger::Logger::Instance().FlushBuffers();
 
-			if (!mConsoleSinkBridgeConnected && mViewModule != nullptr && mViewModule->HasStarted())
+			EditorViewModule* viewModule = mViewRef.Get();
+
+			if (!mConsoleSinkBridgeConnected && viewModule != nullptr)
 			{
 				Dia::Editor::WebUIBridge* bridge =
-					mViewModule->GetView().GetWebUIBridge();
+					viewModule->GetView().GetWebUIBridge();
 				if (bridge != nullptr)
 				{
 					mConsoleSink.SetBridge(bridge);
 					mConsoleSinkBridgeConnected = true;
-					mViewModule->AttachToObserver(this);
 
 					bridge->RegisterEventHandler(Dia::Core::StringCRC("console_ready"),
 						[this](const Json::Value& /*data*/)
@@ -129,11 +118,17 @@ namespace Cluiche
 						});
 				}
 			}
+			else if (mConsoleSinkBridgeConnected && viewModule == nullptr)
+			{
+				mConsoleSink.SetBridge(nullptr);
+				mConsoleSinkBridgeConnected = false;
+			}
 		}
 
 		void LoggerModule::DoStop()
 		{
-			DisconnectConsoleSinkBridge();
+			mConsoleSink.SetBridge(nullptr);
+			mConsoleSinkBridgeConnected = false;
 
 			Dia::Logger::Logger& logger = Dia::Logger::Logger::Instance();
 			logger.UnregisterSink(&mDebugOutputSink);

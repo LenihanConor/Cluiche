@@ -1,7 +1,6 @@
 #pragma once
 
 #include <DiaApplication/ApplicationModule.h>
-#include <DiaCore/Architecture/Observer.h>
 #include <DiaEditor/MVC/EditorView.h>
 #include <DiaEditor/MVC/EditorModel.h>
 
@@ -16,12 +15,10 @@ namespace Cluiche
 {
 	namespace Editor
 	{
-		class EditorViewModule : public Dia::Application::Module, public Dia::Core::ObserverSubject
+		class EditorViewModule : public Dia::Application::Module
 		{
 		public:
 			static const Dia::Core::StringCRC kTypeId;
-
-			enum { kShuttingDown = 1 };
 
 			explicit EditorViewModule(Dia::Application::ProcessingUnit* pu);
 			~EditorViewModule();
