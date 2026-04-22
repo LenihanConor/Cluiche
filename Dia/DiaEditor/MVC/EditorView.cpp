@@ -19,7 +19,9 @@ namespace Dia
 		static const Dia::Core::StringCRC kReqLoadLayout("load_layout");
 		static const Dia::Core::StringCRC kEventSaveLayout("save_layout");
 		static const Dia::Core::StringCRC kEventExecuteCommand("execute_command");
+		static const Dia::Core::StringCRC kEventTogglePanelVisibility("toggle_panel_visibility");
 		static const char* kTopicConsoleEntries = "console_entries";
+		static const char* kTopicPanelsChanged = "panels_changed";
 
 		EditorView::EditorView()
 			: mUISystem(nullptr)
@@ -75,6 +77,37 @@ namespace Dia
 		{
 			if (mDockingLayout)
 				mDockingLayout->RegisterPanel(name, uiPath);
+		}
+
+		void EditorView::UnregisterComponent(const char* name)
+		{
+			if (mDockingLayout)
+				mDockingLayout->RemovePanel(name);
+		}
+
+		void EditorView::SetComponentVisible(const char* name, bool visible)
+		{
+			if (mDockingLayout)
+				mDockingLayout->SetPanelVisible(name, visible);
+		}
+
+		void EditorView::NotifyPanelsChanged()
+		{
+			if (!mInitialized || !mWebUIBridge || !mDockingLayout)
+				return;
+
+			Json::Value result;
+			result["panels"] = Json::arrayValue;
+			for (unsigned int i = 0; i < mDockingLayout->GetPanelCount(); ++i)
+			{
+				const DockingLayout::PanelInfo& info = mDockingLayout->GetPanel(i);
+				Json::Value panel;
+				panel["name"] = info.name;
+				panel["uiPath"] = info.uiPath;
+				panel["visible"] = info.visible;
+				result["panels"].append(panel);
+			}
+			mWebUIBridge->NotifyUIDataChanged(kTopicPanelsChanged, result);
 		}
 
 		void EditorView::RegisterCommand(const char* id, const char* label)
@@ -209,6 +242,17 @@ namespace Dia
 					mDockingLayout->ValidateLayout(copy);
 					mDockingLayout->Deserialize(copy);
 					SaveLayoutToDisk();
+				});
+
+			mWebUIBridge->RegisterEventHandler(kEventTogglePanelVisibility,
+				[this](const Json::Value& data)
+				{
+					const std::string panelName = data.get("name", "").asString();
+					if (panelName.empty() || !mDockingLayout)
+						return;
+					bool currentlyVisible = mDockingLayout->IsPanelVisible(panelName.c_str());
+					mDockingLayout->SetPanelVisible(panelName.c_str(), !currentlyVisible);
+					NotifyPanelsChanged();
 				});
 
 			mWebUIBridge->RegisterEventHandler(kEventExecuteCommand,

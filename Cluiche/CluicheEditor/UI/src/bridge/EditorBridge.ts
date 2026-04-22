@@ -151,6 +151,9 @@ export const EditorBridge = {
     return Promise.resolve({});
   },
 
+  togglePanelVisibility: (name: string) =>
+    sendEvent("toggle_panel_visibility", { name }),
+
   subscribe: (topic: string, listener: TopicListener) => {
     let set = topicListeners.get(topic);
     if (!set) {

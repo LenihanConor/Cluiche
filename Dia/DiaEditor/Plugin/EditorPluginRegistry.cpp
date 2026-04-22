@@ -63,5 +63,11 @@ namespace Dia
 			DIA_ASSERT(index < mEntries.Size(), "EditorPluginRegistry: index out of range");
 			return mEntries[index].typeId;
 		}
+
+		IEditorPluginFactory* EditorPluginRegistry::GetFactory(unsigned int index) const
+		{
+			DIA_ASSERT(index < mEntries.Size(), "EditorPluginRegistry: index out of range");
+			return mEntries[index].factory;
+		}
 	}
 }

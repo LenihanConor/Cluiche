@@ -37,6 +37,9 @@ namespace Dia
 			void Shutdown();
 
 			void RegisterComponent(const char* name, const char* uiPath);
+			void UnregisterComponent(const char* name);
+			void SetComponentVisible(const char* name, bool visible);
+			void NotifyPanelsChanged();
 			void RegisterCommand(const char* id, const char* label);
 
 			void SetLayoutPath(const char* path);

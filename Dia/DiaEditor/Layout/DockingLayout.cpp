@@ -26,12 +26,48 @@ namespace Dia
 			mPanels.Add(info);
 		}
 
+		void DockingLayout::RemovePanel(const char* name)
+		{
+			DIA_ASSERT(name != nullptr, "DockingLayout: panel name must not be null");
+			for (unsigned int i = 0; i < mPanels.Size(); ++i)
+			{
+				if (strcmp(mPanels[i].name, name) == 0)
+				{
+					mPanels.RemoveAt(i);
+					return;
+				}
+			}
+		}
+
 		bool DockingLayout::IsPanelRegistered(const char* name) const
 		{
 			for (unsigned int i = 0; i < mPanels.Size(); ++i)
 			{
 				if (strcmp(mPanels[i].name, name) == 0)
 					return true;
+			}
+			return false;
+		}
+
+		void DockingLayout::SetPanelVisible(const char* name, bool visible)
+		{
+			DIA_ASSERT(name != nullptr, "DockingLayout: panel name must not be null");
+			for (unsigned int i = 0; i < mPanels.Size(); ++i)
+			{
+				if (strcmp(mPanels[i].name, name) == 0)
+				{
+					mPanels[i].visible = visible;
+					return;
+				}
+			}
+		}
+
+		bool DockingLayout::IsPanelVisible(const char* name) const
+		{
+			for (unsigned int i = 0; i < mPanels.Size(); ++i)
+			{
+				if (strcmp(mPanels[i].name, name) == 0)
+					return mPanels[i].visible;
 			}
 			return false;
 		}

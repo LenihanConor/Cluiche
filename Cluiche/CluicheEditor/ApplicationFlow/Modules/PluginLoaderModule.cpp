@@ -18,6 +18,7 @@ namespace Cluiche
 			, mView(nullptr)
 		{
 			mContext.mModel = model;
+			mContext.mPluginLoader = this;
 		}
 
 		void PluginLoaderModule::SetBridge(Dia::Editor::WebUIBridge* bridge)
@@ -36,7 +37,7 @@ namespace Cluiche
 			static const float kFixedDeltaTime = 1.0f / 60.0f;
 			for (unsigned int i = 0; i < mLoadedPlugins.Size(); ++i)
 			{
-				mLoadedPlugins[i]->OnUpdate(kFixedDeltaTime);
+				mLoadedPlugins[i].plugin->OnUpdate(kFixedDeltaTime);
 			}
 		}
 
@@ -45,9 +46,9 @@ namespace Cluiche
 			DIA_LOG_INFO("Application", "PluginLoaderModule: DoStop - unloading %u plugins", mLoadedPlugins.Size());
 			for (unsigned int i = 0; i < mLoadedPlugins.Size(); ++i)
 			{
-				DIA_LOG_INFO("Application", "PluginLoaderModule: OnUnload '%s'", mLoadedPlugins[i]->GetName());
-				mLoadedPlugins[i]->OnUnload();
-				delete mLoadedPlugins[i];
+				DIA_LOG_INFO("Application", "PluginLoaderModule: OnUnload '%s'", mLoadedPlugins[i].plugin->GetName());
+				mLoadedPlugins[i].plugin->OnUnload();
+				delete mLoadedPlugins[i].plugin;
 			}
 			mLoadedPlugins.RemoveAll();
 		}
@@ -58,6 +59,7 @@ namespace Cluiche
 			LoadPlugin(Dia::Core::StringCRC("HomeEditorPlugin"), Dia::Core::StringCRC("home_builtin"));
 			LoadPlugin(Dia::Core::StringCRC("OutputConsoleEditorPlugin"), Dia::Core::StringCRC("outputconsole_builtin"));
 			LoadPlugin(Dia::Core::StringCRC("GameConnectionEditorPlugin"), Dia::Core::StringCRC("gameconnection_builtin"));
+			LoadPlugin(Dia::Core::StringCRC("PluginBrowserEditorPlugin"), Dia::Core::StringCRC("pluginbrowser_builtin"));
 		}
 
 		void PluginLoaderModule::LoadManifest(const char* manifestPath)
@@ -106,7 +108,74 @@ namespace Cluiche
 				DIA_LOG_INFO("Application", "PluginLoaderModule::LoadPlugin: Registered '%s' at '%s'", plugin->GetName(), plugin->GetUIPath());
 			}
 
-			mLoadedPlugins.Add(plugin);
+			LoadedPluginEntry entry;
+			entry.typeId = typeId;
+			entry.plugin = plugin;
+			mLoadedPlugins.Add(entry);
+
+			if (mView != nullptr)
+			{
+				mView->NotifyPanelsChanged();
+			}
+		}
+
+		bool PluginLoaderModule::UnloadPlugin(const Dia::Core::StringCRC& typeId)
+		{
+			if (IsPluginPinned(typeId))
+			{
+				DIA_LOG_WARNING("Application", "PluginLoaderModule: cannot unload pinned plugin");
+				return false;
+			}
+
+			for (unsigned int i = 0; i < mLoadedPlugins.Size(); ++i)
+			{
+				if (mLoadedPlugins[i].typeId == typeId)
+				{
+					DIA_LOG_INFO("Application", "PluginLoaderModule: Unloading '%s'", mLoadedPlugins[i].plugin->GetName());
+
+					if (mView != nullptr)
+					{
+						mView->UnregisterComponent(mLoadedPlugins[i].plugin->GetName());
+					}
+
+					mLoadedPlugins[i].plugin->OnUnload();
+					delete mLoadedPlugins[i].plugin;
+					mLoadedPlugins.RemoveAt(i);
+
+					if (mView != nullptr)
+					{
+						mView->NotifyPanelsChanged();
+					}
+
+					return true;
+				}
+			}
+			return false;
+		}
+
+		bool PluginLoaderModule::IsPluginTypeLoaded(const Dia::Core::StringCRC& typeId) const
+		{
+			for (unsigned int i = 0; i < mLoadedPlugins.Size(); ++i)
+			{
+				if (mLoadedPlugins[i].typeId == typeId)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
+		bool PluginLoaderModule::IsPluginPinned(const Dia::Core::StringCRC& typeId) const
+		{
+			for (unsigned int i = 0; i < mLoadedPlugins.Size(); ++i)
+			{
+				if (mLoadedPlugins[i].typeId == typeId)
+				{
+					Dia::Editor::EditorToolbarItem toolbar = mLoadedPlugins[i].plugin->GetToolbarItem();
+					return toolbar.pinned;
+				}
+			}
+			return false;
 		}
 
 		void PluginLoaderModule::RegisterView(Dia::Editor::EditorView* view)
@@ -116,8 +185,8 @@ namespace Cluiche
 
 			for (unsigned int i = 0; i < mLoadedPlugins.Size(); ++i)
 			{
-				mView->RegisterComponent(mLoadedPlugins[i]->GetName(), mLoadedPlugins[i]->GetUIPath());
-				DIA_LOG_INFO("Application", "PluginLoaderModule: Retroactively registered '%s'", mLoadedPlugins[i]->GetName());
+				mView->RegisterComponent(mLoadedPlugins[i].plugin->GetName(), mLoadedPlugins[i].plugin->GetUIPath());
+				DIA_LOG_INFO("Application", "PluginLoaderModule: Retroactively registered '%s'", mLoadedPlugins[i].plugin->GetName());
 			}
 		}
 	}

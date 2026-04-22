@@ -26,6 +26,7 @@
     <ClCompile Include="..\..\Dia\DiaEditor\Plugin\HomeEditorPlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaEditor\Plugin\OutputConsoleEditorPlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaEditor\Plugin\GameConnectionEditorPlugin.cpp" />
+    <ClCompile Include="..\..\Dia\DiaEditor\Plugin\PluginBrowserEditorPlugin.cpp" />
     <ClCompile Include="ApplicationFlow\Modules\LoggerModule.cpp" />
   </ItemGroup>
   <ItemGroup>

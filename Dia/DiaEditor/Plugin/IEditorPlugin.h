@@ -2,6 +2,7 @@
 
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaEditor/Plugin/EditorPluginContext.h>
+#include <cstring>
 
 namespace Dia
 {
@@ -21,6 +22,19 @@ namespace Dia
 			LayoutMode layoutMode;
 		};
 
+		struct EditorToolbarItem
+		{
+			char label[32];
+			char iconChar[4];
+			bool pinned;
+
+			EditorToolbarItem() : pinned(false)
+			{
+				label[0] = '\0';
+				iconChar[0] = '\0';
+			}
+		};
+
 		class IEditorPlugin
 		{
 		public:
@@ -35,6 +49,20 @@ namespace Dia
 			virtual void OnLoad(const EditorPluginContext& context) = 0;
 			virtual void OnUnload() = 0;
 			virtual void OnUpdate(float deltaTime) = 0;
+
+			virtual EditorToolbarItem GetToolbarItem() const
+			{
+				EditorToolbarItem item;
+				const char* name = GetName();
+				if (name != nullptr && name[0] != '\0')
+				{
+					item.iconChar[0] = name[0];
+					item.iconChar[1] = '\0';
+					strncpy_s(item.label, sizeof(item.label), name, _TRUNCATE);
+				}
+				item.pinned = false;
+				return item;
+			}
 		};
 
 		class IEditorPluginFactory

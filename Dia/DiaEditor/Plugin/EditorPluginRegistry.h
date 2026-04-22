@@ -20,6 +20,7 @@ namespace Dia
 
 			unsigned int GetRegisteredCount() const;
 			const Dia::Core::StringCRC& GetRegisteredTypeId(unsigned int index) const;
+			IEditorPluginFactory* GetFactory(unsigned int index) const;
 
 		private:
 			EditorPluginRegistry() = default;

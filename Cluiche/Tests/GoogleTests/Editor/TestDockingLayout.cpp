@@ -75,3 +75,71 @@ TEST(DockingLayout, SaveAndLoadDisk)
 
     std::remove(path);
 }
+
+TEST(DockingLayout, RemovePanel)
+{
+    DockingLayout layout;
+    layout.RegisterPanel("Alpha", "dia://alpha");
+    layout.RegisterPanel("Beta", "dia://beta");
+    layout.RegisterPanel("Gamma", "dia://gamma");
+    EXPECT_EQ(layout.GetPanelCount(), 3u);
+
+    layout.RemovePanel("Beta");
+    EXPECT_EQ(layout.GetPanelCount(), 2u);
+    EXPECT_TRUE(layout.IsPanelRegistered("Alpha"));
+    EXPECT_FALSE(layout.IsPanelRegistered("Beta"));
+    EXPECT_TRUE(layout.IsPanelRegistered("Gamma"));
+}
+
+TEST(DockingLayout, RemovePanel_NonExistent)
+{
+    DockingLayout layout;
+    layout.RegisterPanel("Only", "dia://only");
+    EXPECT_EQ(layout.GetPanelCount(), 1u);
+
+    layout.RemovePanel("DoesNotExist");
+    EXPECT_EQ(layout.GetPanelCount(), 1u);
+    EXPECT_TRUE(layout.IsPanelRegistered("Only"));
+}
+
+TEST(DockingLayout, RemovePanel_Empty)
+{
+    DockingLayout layout;
+    EXPECT_EQ(layout.GetPanelCount(), 0u);
+
+    layout.RemovePanel("Anything");
+    EXPECT_EQ(layout.GetPanelCount(), 0u);
+}
+
+TEST(DockingLayout, SetPanelVisible)
+{
+    DockingLayout layout;
+    layout.RegisterPanel("Panel1", "dia://p1");
+    layout.RegisterPanel("Panel2", "dia://p2");
+
+    EXPECT_TRUE(layout.IsPanelVisible("Panel1"));
+    EXPECT_TRUE(layout.IsPanelVisible("Panel2"));
+
+    layout.SetPanelVisible("Panel1", false);
+    EXPECT_FALSE(layout.IsPanelVisible("Panel1"));
+    EXPECT_TRUE(layout.IsPanelVisible("Panel2"));
+
+    layout.SetPanelVisible("Panel1", true);
+    EXPECT_TRUE(layout.IsPanelVisible("Panel1"));
+}
+
+TEST(DockingLayout, IsPanelVisible_NonExistent)
+{
+    DockingLayout layout;
+    EXPECT_FALSE(layout.IsPanelVisible("Ghost"));
+}
+
+TEST(DockingLayout, SetPanelVisible_NonExistent)
+{
+    DockingLayout layout;
+    layout.RegisterPanel("Real", "dia://real");
+
+    layout.SetPanelVisible("Fake", false);
+    EXPECT_EQ(layout.GetPanelCount(), 1u);
+    EXPECT_TRUE(layout.IsPanelVisible("Real"));
+}

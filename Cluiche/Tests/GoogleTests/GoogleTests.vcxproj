@@ -230,6 +230,8 @@ xcopy /Y /I "$(ProjectDir)..\..\CluicheTest\Data\Manifests\*.diaapp" "$(OutDir)D
     <ClCompile Include="Editor\TestEditorPluginPipeline.cpp" />
     <ClCompile Include="Editor\TestGameConnectionManagerIntegration.cpp" />
     <ClCompile Include="Editor\TestGameConnectionController.cpp" />
+    <ClCompile Include="Editor\TestEditorToolbarItem.cpp" />
+    <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\PluginBrowserEditorPlugin.cpp" />
     <!-- DiaLogger -->
     <ClCompile Include="DiaLogger\TestLogLevel.cpp" />
     <ClCompile Include="DiaLogger\TestThreadLogBuffer.cpp" />

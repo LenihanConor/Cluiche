@@ -26,7 +26,10 @@ namespace Dia
 			DockingLayout();
 
 			void RegisterPanel(const char* name, const char* uiPath);
+			void RemovePanel(const char* name);
 			bool IsPanelRegistered(const char* name) const;
+			void SetPanelVisible(const char* name, bool visible);
+			bool IsPanelVisible(const char* name) const;
 
 			unsigned int GetPanelCount() const;
 			const PanelInfo& GetPanel(unsigned int index) const;

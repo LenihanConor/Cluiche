@@ -443,6 +443,12 @@
     <ClCompile Include="Editor\TestGameConnectionController.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
+    <ClCompile Include="Editor\TestEditorToolbarItem.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\PluginBrowserEditorPlugin.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
     <!-- DiaLogger -->
     <ClCompile Include="DiaLogger\TestLogLevel.cpp">
       <Filter>DiaLogger</Filter>
