@@ -5,7 +5,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "Error.h"
 #include "../DiaPythonInternal.h"
-#include <DiaCore/Core/Logging/Logger.h>
+
+#include <DiaLogger/DiaLog.h>
 #include <sstream>
 
 namespace Dia

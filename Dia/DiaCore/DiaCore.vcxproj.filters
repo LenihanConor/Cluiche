@@ -139,9 +139,6 @@
     <Filter Include="Core\Debug">
       <UniqueIdentifier>{f3a4b5c6-7890-abcd-ef12-34567890abcd}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Core\Logging">
-      <UniqueIdentifier>{a4b5c6d7-8901-bcde-f234-567890abcdef}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Assert.h">
@@ -179,24 +176,6 @@
     </ClInclude>
     <ClInclude Include="Core\Debug\StackTrace.h">
       <Filter>Core\Debug</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Logging\LogLevel.h">
-      <Filter>Core\Logging</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Logging\LogNamespace.h">
-      <Filter>Core\Logging</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Logging\LogChannel.h">
-      <Filter>Core\Logging</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Logging\LogConfig.h">
-      <Filter>Core\Logging</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Logging\Logger.h">
-      <Filter>Core\Logging</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Logging\DiaCoreAssert.h">
-      <Filter>Core\Logging</Filter>
     </ClInclude>
     <ClInclude Include="Time\SystemClock.h">
       <Filter>Time</Filter>
@@ -804,33 +783,6 @@
     </None>
     <None Include="Docs\dia.core.architecture.module.md">
       <Filter>Docs</Filter>
-    </None>
-    <None Include="Core\Logging\logging_config.example.json">
-      <Filter>Core\Logging</Filter>
-    </None>
-    <None Include="Core\Logging\logging_config_development.json">
-      <Filter>Core\Logging</Filter>
-    </None>
-    <None Include="Core\Logging\logging_config_production.json">
-      <Filter>Core\Logging</Filter>
-    </None>
-    <None Include="Core\Logging\logging_config_liveservice.json">
-      <Filter>Core\Logging</Filter>
-    </None>
-    <None Include="Core\Logging\logging_config_testing.json">
-      <Filter>Core\Logging</Filter>
-    </None>
-    <None Include="Core\Logging\logging_config_silent.json">
-      <Filter>Core\Logging</Filter>
-    </None>
-    <None Include="Core\Logging\logging_config_profiling.json">
-      <Filter>Core\Logging</Filter>
-    </None>
-    <None Include="Core\Logging\CONFIG_FILES_REFERENCE.md">
-      <Filter>Core\Logging</Filter>
-    </None>
-    <None Include="Core\Logging\LOGGING_SYSTEM_USAGE.md">
-      <Filter>Core\Logging</Filter>
     </None>
     <None Include="LOGGING_SYSTEM_IMPLEMENTATION.md">
       <Filter>Docs</Filter>

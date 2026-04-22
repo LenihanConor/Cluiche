@@ -1,7 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
-  
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
       <Platform>x64</Platform>
@@ -96,12 +95,6 @@
     <ClInclude Include="Core\Debug\DebugMemory.h" />
     <ClInclude Include="Core\Debug\LeakDetector.h" />
     <ClInclude Include="Core\Debug\StackTrace.h" />
-    <ClInclude Include="Core\Logging\LogLevel.h" />
-    <ClInclude Include="Core\Logging\LogNamespace.h" />
-    <ClInclude Include="Core\Logging\LogChannel.h" />
-    <ClInclude Include="Core\Logging\LogConfig.h" />
-    <ClInclude Include="Core\Logging\Logger.h" />
-    <ClInclude Include="Core\Logging\DiaCoreAssert.h" />
     <ClInclude Include="Core\EnumClass.h" />
     <ClInclude Include="Core\Functor.h" />
     <ClInclude Include="Core\Log.h" />
@@ -290,15 +283,6 @@
     <None Include="Containers\BitFlag\BitArray32.inl" />
     <None Include="Containers\BitFlag\BitArray64.inl" />
     <None Include="Containers\BitFlag\BitArray8.inl" />
-    <None Include="Core\Logging\logging_config.example.json" />
-    <None Include="Core\Logging\logging_config_development.json" />
-    <None Include="Core\Logging\logging_config_production.json" />
-    <None Include="Core\Logging\logging_config_liveservice.json" />
-    <None Include="Core\Logging\logging_config_testing.json" />
-    <None Include="Core\Logging\logging_config_silent.json" />
-    <None Include="Core\Logging\logging_config_profiling.json" />
-    <None Include="Core\Logging\CONFIG_FILES_REFERENCE.md" />
-    <None Include="Core\Logging\LOGGING_SYSTEM_USAGE.md" />
     <None Include="Docs\dia.core.architecture.module.md" />
     <None Include="LOGGING_SYSTEM_IMPLEMENTATION.md" />
   </ItemGroup>

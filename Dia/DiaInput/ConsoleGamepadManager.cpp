@@ -4,7 +4,7 @@
 #include "DiaInput/ConsoleGamepadManager.h"
 
 #include <DiaCore/Core/Assert.h>
-#include <DiaCore/Core/Logging/Logger.h>
+#include <DiaLogger/DiaLog.h>
 
 namespace Dia
 {

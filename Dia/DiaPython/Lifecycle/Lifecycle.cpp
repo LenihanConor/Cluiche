@@ -7,7 +7,7 @@
 #include "../TypeConversion/PythonObject.h"
 #include "../Module/Module.h"
 
-#include <DiaCore/Core/Logging/Logger.h>
+#include <DiaLogger/DiaLog.h>
 
 namespace Dia
 {

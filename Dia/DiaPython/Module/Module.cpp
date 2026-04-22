@@ -6,7 +6,7 @@
 #include "Module.h"
 #include "../DiaPythonInternal.h"
 #include "../Lifecycle/Lifecycle.h"
-#include <DiaCore/Core/Logging/Logger.h>
+#include <DiaLogger/DiaLog.h>
 #include <cctype>
 
 namespace Dia

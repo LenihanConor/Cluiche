@@ -3,8 +3,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "DiaInput/InputSourceManager.h"
 
-#include <DiaCore/Core/Logging/Logger.h>
 #include <DiaCore/Architecture/Events/EventDispatcher.h>
+#include <DiaLogger/DiaLog.h>
 #include "DiaInput/Events/LegacyEventConverter.h"
 
 namespace Dia
