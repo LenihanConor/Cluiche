@@ -9,6 +9,8 @@
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaLogger/DiaLog.h>
+#include <DiaLogger/Logger.h>
+#include <DiaLogger/LogLevel.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -97,6 +99,9 @@ namespace Dia
 				StartServer();
 			}
 
+			mLogSink.SetServer(mServer);
+			Dia::Logger::Logger::Instance().RegisterSink(&mLogSink);
+
 			mStartTimestamp = Dia::DebugProtocol::GetTimestampNow();
 
 			return StateObject::OpertionResponse::kImmediate;
@@ -108,6 +113,7 @@ namespace Dia
 
 			uint64_t frameStart = Dia::DebugProtocol::GetTimestampNow();
 
+			mLogSink.FlushToServer();
 			mServer->Update();
 
 			mMetricsTimer += 0.016f; // ~60fps approximation; real delta time not available on Module
@@ -135,6 +141,9 @@ namespace Dia
 
 		void DebugServerModule::DoStop()
 		{
+			Dia::Logger::Logger::Instance().UnregisterSink(&mLogSink);
+			mLogSink.SetServer(nullptr);
+
 			DIA_LOG_INFO("DebugServer", "DebugServerModule: DoStop");
 			if (mServer)
 			{
@@ -541,6 +550,8 @@ DIA_REGISTER_MODULE(_DebugServerModule) {
 	const char* gameBuild = config.isMember("game_build") && config["game_build"].isString()
 		? config["game_build"].asCString() : "";
 	mod->SetGameInfo(gameName, gameBuild);
+	if (config.isMember("log_level") && config["log_level"].isString())
+		mod->SetLogSinkLevel(Dia::Logger::LogLevelFromString(config["log_level"].asCString()));
 	return mod;
 }
 

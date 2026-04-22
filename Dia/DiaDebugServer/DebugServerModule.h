@@ -7,6 +7,8 @@
 #include "DiaDebugServer/SubscriptionManager.h"
 #include "DiaDebugServer/CommandDispatcher.h"
 #include "DiaDebugServer/StateSerializer.h"
+#include "DiaDebugServer/DebugServerLogSink.h"
+#include <DiaLogger/LogLevel.h>
 
 #include <cstdint>
 
@@ -72,6 +74,7 @@ namespace Dia
 			// Sets the game identity published to newly connected clients as a game_info payload.
 			// processingUnitCountProvider lets the server refresh the count at publish time.
 			void SetGameInfo(const char* name, const char* build);
+			void SetLogSinkLevel(Dia::Logger::LogLevel level) { mLogSink.SetLevelThreshold(level); }
 
 			int GetConnectionCount() const;
 			const ServerStats& GetStats() const { return mStats; }
@@ -121,6 +124,7 @@ namespace Dia
 			ServerStats mStats;
 			SubscriptionManager mSubscriptionManager;
 			CommandDispatcher mCommandDispatcher;
+			DebugServerLogSink mLogSink;
 
 			uint64_t mStartTimestamp;
 		};
