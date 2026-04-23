@@ -134,7 +134,7 @@ namespace Dia
 		void BREAKPOINT()
 		{}
 
-		void AssertDefault(const char *pExp, const char *pFileName, int iLineNumber, ...)
+		void AssertDefault(const char *pExp, const char *pFileName, int iLineNumber, const char* pStr, ...)
 		{}
 #endif
 	}

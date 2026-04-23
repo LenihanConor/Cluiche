@@ -19,8 +19,9 @@ namespace Dia
 		{
 			using namespace std;;
 
-			char buffer[MAX_PATH];
-			GetModuleFileName(NULL, buffer, MAX_PATH);
+			wchar_t wbuffer[MAX_PATH];
+			GetModuleFileNameW(NULL, wbuffer, MAX_PATH);
+			std::string buffer(wbuffer, wbuffer + wcslen(wbuffer));
 			std::string::size_type pos = string(buffer).find_last_of("\\/");
 			outString = std::string(buffer).substr(0, pos);
 		}
