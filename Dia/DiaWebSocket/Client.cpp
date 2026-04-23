@@ -14,7 +14,7 @@ namespace Dia
 	{
 		struct Client::Impl
 		{
-			Internal::WsppClient mClient;
+			Internal::WsppClient* mClient = nullptr;
 			Dia::Core::Thread* mWorkerThread = nullptr;
 
 			ConnectionState mState = ConnectionState::kDisconnected;
@@ -28,7 +28,6 @@ namespace Dia
 			size_t mMaxMessageSize = Internal::kDefaultMaxMessageSize;
 
 			bool mIsRunning = false;
-			bool mAsioInitialized = false;
 			Internal::WsppClient::connection_ptr mConnection;
 			Dia::Core::Mutex mStateMutex;
 
@@ -123,6 +122,7 @@ namespace Dia
 				}
 
 				QueueError(Internal::MakeError(ErrorCode::kConnectionFailed, ErrorSeverity::kError, -1, "Connection failed"));
+				QueueConnectionEvent(false);
 
 				if (shouldReconnect)
 				{
@@ -170,7 +170,7 @@ namespace Dia
 
 					try
 					{
-						mClient.send(mConnection,
+						mClient->send(mConnection,
 							&msg.dataBuffer.At(0),
 							msg.dataLength,
 							opcode);
@@ -208,8 +208,20 @@ namespace Dia
 
 				try
 				{
+					// Replace the client endpoint — ASIO io_service cannot restart
+					// after stop(), so we allocate a fresh instance each attempt.
+					delete mClient;
+					mClient = new Internal::WsppClient();
+					mClient->clear_access_channels(websocketpp::log::alevel::all);
+					mClient->clear_error_channels(websocketpp::log::elevel::all);
+					mClient->init_asio();
+					mClient->set_open_handler([this](Internal::ConnectionHdl hdl) { OnOpen(hdl); });
+					mClient->set_close_handler([this](Internal::ConnectionHdl hdl) { OnClose(hdl); });
+					mClient->set_message_handler([this](Internal::ConnectionHdl hdl, Internal::WsppClient::message_ptr msg) { OnMessage(hdl, msg); });
+					mClient->set_fail_handler([this](Internal::ConnectionHdl hdl) { OnFail(hdl); });
+
 					websocketpp::lib::error_code ec;
-					mConnection = mClient.get_connection(mUrl, ec);
+					mConnection = mClient->get_connection(mUrl, ec);
 
 					if (ec)
 					{
@@ -218,7 +230,7 @@ namespace Dia
 						return;
 					}
 
-					mClient.connect(mConnection);
+					mClient->connect(mConnection);
 				}
 				catch (const std::exception& e)
 				{
@@ -237,7 +249,7 @@ namespace Dia
 				{
 					try
 					{
-						mClient.poll();
+						mClient->poll();
 						ProcessOutgoing();
 					}
 					catch (const std::exception& e)
@@ -267,6 +279,7 @@ namespace Dia
 			{
 				Disconnect();
 			}
+			delete mImpl->mClient;
 			delete mImpl;
 		}
 
@@ -285,50 +298,53 @@ namespace Dia
 			mImpl->mUrl = url;
 			mImpl->mReconnectAttemptCount = 0;
 
+			// Create a fresh client endpoint — websocketpp's io_service cannot be
+			// restarted after stop(), so we allocate a new one for each connection.
+			delete mImpl->mClient;
+			mImpl->mClient = new Internal::WsppClient();
+
 			try
 			{
-				mImpl->mClient.clear_access_channels(websocketpp::log::alevel::all);
-				mImpl->mClient.clear_error_channels(websocketpp::log::elevel::all);
+				mImpl->mClient->clear_access_channels(websocketpp::log::alevel::all);
+				mImpl->mClient->clear_error_channels(websocketpp::log::elevel::all);
 
-				if (!mImpl->mAsioInitialized)
-				{
-					mImpl->mClient.init_asio();
-					mImpl->mAsioInitialized = true;
-				}
-				else
-				{
-					mImpl->mClient.get_io_service().restart();
-				}
+				mImpl->mClient->init_asio();
 
-				mImpl->mClient.set_open_handler([this](Internal::ConnectionHdl hdl) {
+				mImpl->mClient->set_open_handler([this](Internal::ConnectionHdl hdl) {
 					mImpl->OnOpen(hdl);
 				});
-				mImpl->mClient.set_close_handler([this](Internal::ConnectionHdl hdl) {
+				mImpl->mClient->set_close_handler([this](Internal::ConnectionHdl hdl) {
 					mImpl->OnClose(hdl);
 				});
-				mImpl->mClient.set_message_handler([this](Internal::ConnectionHdl hdl, Internal::WsppClient::message_ptr msg) {
+				mImpl->mClient->set_message_handler([this](Internal::ConnectionHdl hdl, Internal::WsppClient::message_ptr msg) {
 					mImpl->OnMessage(hdl, msg);
 				});
-				mImpl->mClient.set_fail_handler([this](Internal::ConnectionHdl hdl) {
+				mImpl->mClient->set_fail_handler([this](Internal::ConnectionHdl hdl) {
 					mImpl->OnFail(hdl);
 				});
 
 				websocketpp::lib::error_code ec;
-				mImpl->mConnection = mImpl->mClient.get_connection(url, ec);
+				mImpl->mConnection = mImpl->mClient->get_connection(url, ec);
 
 				if (ec)
 				{
 					DIA_LOG_ERROR("WebSocket", "Client: Connection failed: %s", ec.message().c_str());
-					mImpl->mState = ConnectionState::kError;
+					mImpl->mConnection.reset();
+					delete mImpl->mClient;
+					mImpl->mClient = nullptr;
+					mImpl->mState = ConnectionState::kDisconnected;
 					return false;
 				}
 
-				mImpl->mClient.connect(mImpl->mConnection);
+				mImpl->mClient->connect(mImpl->mConnection);
 			}
 			catch (const std::exception& e)
 			{
 				DIA_LOG_ERROR("WebSocket", "Client: Connection exception: %s", e.what());
-				mImpl->mState = ConnectionState::kError;
+				mImpl->mConnection.reset();
+				delete mImpl->mClient;
+				mImpl->mClient = nullptr;
+				mImpl->mState = ConnectionState::kDisconnected;
 				return false;
 			}
 
@@ -356,12 +372,26 @@ namespace Dia
 			else
 			{
 				DIA_LOG_WARNING("WebSocket", "Client: Connection timeout after %.1fs", elapsed);
+
+				// Clean up: stop worker so next Connect() gets a clean slate.
+				mImpl->mIsRunning = false;
+				if (mImpl->mClient)
+				{
+					try { mImpl->mClient->stop(); } catch (...) {}
+				}
+				if (mImpl->mWorkerThread)
+				{
+					mImpl->mWorkerThread->Join();
+					delete mImpl->mWorkerThread;
+					mImpl->mWorkerThread = nullptr;
+				}
+				mImpl->mConnection.reset();
+				delete mImpl->mClient;
+				mImpl->mClient = nullptr;
+
 				{
 					Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mImpl->mStateMutex);
-					if (mImpl->mState == ConnectionState::kConnecting)
-					{
-						mImpl->mState = ConnectionState::kError;
-					}
+					mImpl->mState = ConnectionState::kDisconnected;
 				}
 				return false;
 			}
@@ -374,11 +404,11 @@ namespace Dia
 			bool wasAutoReconnect = mImpl->mReconnectOnDisconnect;
 			mImpl->mReconnectOnDisconnect = false;
 
-			if (mImpl->mConnection)
+			if (mImpl->mClient && mImpl->mConnection)
 			{
 				try
 				{
-					mImpl->mClient.close(mImpl->mConnection,
+					mImpl->mClient->close(mImpl->mConnection,
 						websocketpp::close::status::normal,
 						"Client disconnecting");
 				}
@@ -390,12 +420,15 @@ namespace Dia
 
 			mImpl->mIsRunning = false;
 
-			try
+			if (mImpl->mClient)
 			{
-				mImpl->mClient.stop();
-			}
-			catch (...)
-			{
+				try
+				{
+					mImpl->mClient->stop();
+				}
+				catch (...)
+				{
+				}
 			}
 
 			if (mImpl->mWorkerThread)
@@ -405,6 +438,12 @@ namespace Dia
 				mImpl->mWorkerThread = nullptr;
 			}
 
+			// Reset connection before deleting client to avoid use-after-free when
+			// the shared_ptr destructor tries to notify the endpoint.
+			mImpl->mConnection.reset();
+			delete mImpl->mClient;
+			mImpl->mClient = nullptr;
+
 			{
 				Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mImpl->mStateMutex);
 				mImpl->mState = ConnectionState::kDisconnected;
@@ -412,10 +451,11 @@ namespace Dia
 
 			mImpl->mReconnectOnDisconnect = wasAutoReconnect;
 
-			{
-				Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mImpl->mIncomingMutex);
-				mImpl->mIncomingQueue.RemoveAll();
-			}
+			// Guarantee a kDisconnected event is present so the next Update()
+			// fires the connection callback. OnClose may not have queued one if
+			// stop() interrupted the close handshake.
+			mImpl->QueueConnectionEvent(false);
+
 			{
 				Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mImpl->mOutgoingMutex);
 				mImpl->mOutgoingQueue.RemoveAll();
@@ -435,8 +475,6 @@ namespace Dia
 
 		void Client::Update()
 		{
-			if (!mImpl->mIsRunning) return;
-
 			Dia::Core::ScopedLock<Dia::Core::Mutex> lock(mImpl->mIncomingMutex);
 
 			for (unsigned int i = 0; i < mImpl->mIncomingQueue.Size(); ++i)

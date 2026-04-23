@@ -329,8 +329,6 @@ namespace Dia
 		{
 			if (!mImpl->mIsRunning) return;
 
-			mImpl->mIsRunning = false;
-
 			try
 			{
 				mImpl->mServer.stop_listening();
@@ -353,11 +351,18 @@ namespace Dia
 					mImpl->mConnectionIdByPtr.clear();
 				}
 
+				// Give the worker thread a chance to poll the close frames before
+				// we terminate the io_service.
+				Dia::Core::ThisThread::SleepMs(50);
+
+				mImpl->mIsRunning = false;
 				mImpl->mServer.stop();
 			}
 			catch (...)
 			{
 			}
+
+			mImpl->mIsRunning = false;
 
 			if (mImpl->mWorkerThread)
 			{

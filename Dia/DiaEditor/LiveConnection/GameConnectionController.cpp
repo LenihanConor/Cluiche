@@ -148,6 +148,10 @@ namespace Dia
 						char pingBuffer[256];
 						if (Dia::Proto::ToJson(pingMsg, pingBuffer, sizeof(pingBuffer)))
 							mManager->SendRawText(pingBuffer);
+
+						// Reset the pong timer on send so the 20s timeout is
+						// measured from the last ping, not from connection start.
+						mSinceLastPong = 0.0f;
 					}
 				}
 

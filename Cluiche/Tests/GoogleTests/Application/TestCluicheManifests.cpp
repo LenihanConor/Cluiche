@@ -180,7 +180,7 @@ TEST_F(CluicheManifestTest, MainManifest_HasFiveModules)
 {
 	ApplicationManifest manifest;
 	LoadManifest("Data/Manifests/cluiche_main.diaapp", manifest);
-	EXPECT_EQ(manifest.processingUnits[0].modules.Size(), 5u);
+	EXPECT_EQ(manifest.processingUnits[0].modules.Size(), 6u);
 }
 
 TEST_F(CluicheManifestTest, MainManifest_ModuleTypes)
@@ -189,18 +189,19 @@ TEST_F(CluicheManifestTest, MainManifest_ModuleTypes)
 	LoadManifest("Data/Manifests/cluiche_main.diaapp", manifest);
 	const auto& modules = manifest.processingUnits[0].modules;
 
-	EXPECT_EQ(modules[0].typeId, StringCRC("Main::KernelModule"));
-	EXPECT_EQ(modules[1].typeId, StringCRC("Main::LevelRegistryModule"));
-	EXPECT_EQ(modules[2].typeId, StringCRC("Main::UIModule"));
-	EXPECT_EQ(modules[3].typeId, StringCRC("MetricsCollectorModule"));
-	EXPECT_EQ(modules[4].typeId, StringCRC("DebugServerModule"));
+	EXPECT_EQ(modules[0].typeId, StringCRC("LoggerModule"));
+	EXPECT_EQ(modules[1].typeId, StringCRC("Main::KernelModule"));
+	EXPECT_EQ(modules[2].typeId, StringCRC("Main::LevelRegistryModule"));
+	EXPECT_EQ(modules[3].typeId, StringCRC("Main::UIModule"));
+	EXPECT_EQ(modules[4].typeId, StringCRC("MetricsCollectorModule"));
+	EXPECT_EQ(modules[5].typeId, StringCRC("DebugServerModule"));
 }
 
 TEST_F(CluicheManifestTest, MainManifest_KernelModuleInBothPhases)
 {
 	ApplicationManifest manifest;
 	LoadManifest("Data/Manifests/cluiche_main.diaapp", manifest);
-	const auto& kernelModule = manifest.processingUnits[0].modules[0];
+	const auto& kernelModule = manifest.processingUnits[0].modules[1];
 
 	ASSERT_EQ(kernelModule.phaseIds.Size(), 2u);
 	EXPECT_EQ(kernelModule.phaseIds[0], StringCRC("MainBootPhase"));
@@ -211,7 +212,7 @@ TEST_F(CluicheManifestTest, MainManifest_UIModuleDependsOnKernel)
 {
 	ApplicationManifest manifest;
 	LoadManifest("Data/Manifests/cluiche_main.diaapp", manifest);
-	const auto& uiModule = manifest.processingUnits[0].modules[2];
+	const auto& uiModule = manifest.processingUnits[0].modules[3];
 
 	ASSERT_EQ(uiModule.dependencies.Size(), 1u);
 	EXPECT_EQ(uiModule.dependencies[0], StringCRC("Main::KernelModule"));
