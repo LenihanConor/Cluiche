@@ -93,24 +93,6 @@ namespace Dia
 			strncpy_s(mHost, sizeof(mHost), host, _TRUNCATE);
 			mPort = port;
 
-			// websocketpp's asio transport cannot be re-initialized after a
-			// failed connection (init_asio is one-shot).  Recreate the client
-			// so every Connect() starts from a clean state.
-			delete mClient;
-			mClient = new Dia::WebSocket::Client();
-			mClient->SetReconnectOnDisconnect(mAutoReconnect);
-
-			mClient->SetMessageCallback([this](const Dia::WebSocket::Message& msg) {
-				if (msg.type == Dia::WebSocket::MessageType::kText)
-				{
-					HandleMessage(static_cast<const char*>(msg.data), static_cast<unsigned int>(msg.length));
-				}
-			});
-
-			mClient->SetConnectionCallback([this](bool connected) {
-				HandleConnection(connected);
-			});
-
 			char url[256];
 			snprintf(url, sizeof(url), "ws://%s:%d", host, port);
 			DIA_LOG_INFO("Editor", "GameConnectionManager: Connect to %s", url);

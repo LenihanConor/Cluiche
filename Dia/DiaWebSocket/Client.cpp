@@ -28,6 +28,7 @@ namespace Dia
 			size_t mMaxMessageSize = Internal::kDefaultMaxMessageSize;
 
 			bool mIsRunning = false;
+			bool mAsioInitialized = false;
 			Internal::WsppClient::connection_ptr mConnection;
 			Dia::Core::Mutex mStateMutex;
 
@@ -289,7 +290,15 @@ namespace Dia
 				mImpl->mClient.clear_access_channels(websocketpp::log::alevel::all);
 				mImpl->mClient.clear_error_channels(websocketpp::log::elevel::all);
 
-				mImpl->mClient.init_asio();
+				if (!mImpl->mAsioInitialized)
+				{
+					mImpl->mClient.init_asio();
+					mImpl->mAsioInitialized = true;
+				}
+				else
+				{
+					mImpl->mClient.get_io_service().restart();
+				}
 
 				mImpl->mClient.set_open_handler([this](Internal::ConnectionHdl hdl) {
 					mImpl->OnOpen(hdl);
