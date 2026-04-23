@@ -21,7 +21,7 @@ namespace Cluiche
 		const Dia::Core::StringCRC EditorViewModule::kTypeId("EditorViewModule");
 
 		EditorViewModule::EditorViewModule(Dia::Application::ProcessingUnit* pu)
-			: Dia::Application::Module(pu, kTypeId, RunningEnum::kUpdate)
+			: Dia::Application::Module(pu, kTypeId, RunningEnum::kUpdate, 3)
 			, mWindow(nullptr)
 			, mUISystem(nullptr)
 		{

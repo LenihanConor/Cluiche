@@ -5,7 +5,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include "TypeConversion/PythonObject.h"
+#include "../TypeConversion/PythonObject.h"
 #include <functional>
 
 namespace Dia
