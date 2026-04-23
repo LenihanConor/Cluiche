@@ -1,0 +1,561 @@
+﻿MSBuild version 17.14.40+3e7442088 for .NET Framework
+Build started 4/23/2026 9:57:57 AM.
+
+Project "C:\GitHub\Cluiche\Cluiche\Cluiche.sln" on node 1 (default targets).
+ValidateSolutionConfiguration:
+  Building solution configuration "Release|x64".
+Project "C:\GitHub\Cluiche\Cluiche\Cluiche.sln" (1) is building "C:\GitHub\Cluiche\Dia\DiaCore\DiaCore.vcxproj" (2) on node 1 (default targets).
+PrepareForBuild:
+  Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+InitializeBuildStatus:
+  Creating "C:\GitHub\Cluiche\Cluiche\bin\log\DiaCore\Release\x64\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaCore\Release\x64\unsuccessfulbuild".
+ClCompile:
+  All outputs are up-to-date.
+Lib:
+  All outputs are up-to-date.
+  DiaCore.vcxproj -> C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaCore.lib
+FinalizeBuildStatus:
+  Deleting file "C:\GitHub\Cluiche\Cluiche\bin\log\DiaCore\Release\x64\unsuccessfulbuild".
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaCore\Release\x64\DiaCore.lastbuildstate".
+Done Building Project "C:\GitHub\Cluiche\Dia\DiaCore\DiaCore.vcxproj" (default targets).
+Project "C:\GitHub\Cluiche\Cluiche\Cluiche.sln" (1) is building "C:\GitHub\Cluiche\Dia\DiaMaths\DiaMaths.vcxproj" (3) on node 1 (default targets).
+PrepareForBuild:
+  Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+InitializeBuildStatus:
+  Creating "C:\GitHub\Cluiche\Cluiche\bin\log\DiaMaths\Release\x64\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaMaths\Release\x64\unsuccessfulbuild".
+ClCompile:
+  All outputs are up-to-date.
+Lib:
+  All outputs are up-to-date.
+  DiaMaths.vcxproj -> C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaMaths.lib
+FinalizeBuildStatus:
+  Deleting file "C:\GitHub\Cluiche\Cluiche\bin\log\DiaMaths\Release\x64\unsuccessfulbuild".
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaMaths\Release\x64\DiaMaths.lastbuildstate".
+Done Building Project "C:\GitHub\Cluiche\Dia\DiaMaths\DiaMaths.vcxproj" (default targets).
+Project "C:\GitHub\Cluiche\Cluiche\Cluiche.sln" (1) is building "C:\GitHub\Cluiche\Dia\DiaPython\DiaPython.vcxproj.metaproj" (4) on node 1 (default targets).
+Project "C:\GitHub\Cluiche\Dia\DiaPython\DiaPython.vcxproj.metaproj" (4) is building "C:\GitHub\Cluiche\Dia\DiaPython\DiaPython.vcxproj" (5) on node 1 (default targets).
+PrepareForBuild:
+  Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+InitializeBuildStatus:
+  Creating "C:\GitHub\Cluiche\Cluiche\bin\log\DiaPython\Release\x64\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaPython\Release\x64\unsuccessfulbuild".
+ClCompile:
+  All outputs are up-to-date.
+Lib:
+  All outputs are up-to-date.
+  DiaPython.vcxproj -> C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaPython.lib
+FinalizeBuildStatus:
+  Deleting file "C:\GitHub\Cluiche\Cluiche\bin\log\DiaPython\Release\x64\unsuccessfulbuild".
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaPython\Release\x64\DiaPython.lastbuildstate".
+Done Building Project "C:\GitHub\Cluiche\Dia\DiaPython\DiaPython.vcxproj" (default targets).
+Done Building Project "C:\GitHub\Cluiche\Dia\DiaPython\DiaPython.vcxproj.metaproj" (default targets).
+Project "C:\GitHub\Cluiche\Cluiche\Cluiche.sln" (1) is building "C:\GitHub\Cluiche\Dia\DiaAPI\DiaAPI.vcxproj.metaproj" (6) on node 1 (default targets).
+Project "C:\GitHub\Cluiche\Dia\DiaAPI\DiaAPI.vcxproj.metaproj" (6) is building "C:\GitHub\Cluiche\Dia\DiaAPI\DiaAPI.vcxproj" (7) on node 1 (default targets).
+Project "C:\GitHub\Cluiche\Dia\DiaAPI\DiaAPI.vcxproj" (7) is building "C:\GitHub\Cluiche\Dia\DiaLogger\DiaLogger.vcxproj" (8) on node 1 (default targets).
+PrepareForBuild:
+  Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+InitializeBuildStatus:
+  Creating "C:\GitHub\Cluiche\Cluiche\bin\log\DiaLogger\Release\x64\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaLogger\Release\x64\unsuccessfulbuild".
+ClCompile:
+  All outputs are up-to-date.
+Lib:
+  All outputs are up-to-date.
+  DiaLogger.vcxproj -> C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaLogger.lib
+FinalizeBuildStatus:
+  Deleting file "C:\GitHub\Cluiche\Cluiche\bin\log\DiaLogger\Release\x64\unsuccessfulbuild".
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaLogger\Release\x64\DiaLogger.lastbuildstate".
+Done Building Project "C:\GitHub\Cluiche\Dia\DiaLogger\DiaLogger.vcxproj" (default targets).
+PrepareForBuild:
+  Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+InitializeBuildStatus:
+  Creating "C:\GitHub\Cluiche\Cluiche\bin\log\DiaAPI\Release\x64\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaAPI\Release\x64\unsuccessfulbuild".
+ClCompile:
+  All outputs are up-to-date.
+Lib:
+  All outputs are up-to-date.
+  DiaAPI.vcxproj -> C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaAPI.lib
+FinalizeBuildStatus:
+  Deleting file "C:\GitHub\Cluiche\Cluiche\bin\log\DiaAPI\Release\x64\unsuccessfulbuild".
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaAPI\Release\x64\DiaAPI.lastbuildstate".
+Done Building Project "C:\GitHub\Cluiche\Dia\DiaAPI\DiaAPI.vcxproj" (default targets).
+Done Building Project "C:\GitHub\Cluiche\Dia\DiaAPI\DiaAPI.vcxproj.metaproj" (default targets).
+Project "C:\GitHub\Cluiche\Cluiche\Cluiche.sln" (1) is building "C:\GitHub\Cluiche\Dia\DiaGraphics\DiaGraphics.vcxproj.metaproj" (9) on node 1 (default targets).
+Project "C:\GitHub\Cluiche\Dia\DiaGraphics\DiaGraphics.vcxproj.metaproj" (9) is building "C:\GitHub\Cluiche\Dia\DiaUI\DiaUI.vcxproj.metaproj" (10) on node 1 (default targets).
+Project "C:\GitHub\Cluiche\Dia\DiaUI\DiaUI.vcxproj.metaproj" (10) is building "C:\GitHub\Cluiche\Dia\DiaInput\DiaInput.vcxproj" (11) on node 1 (default targets).
+PrepareForBuild:
+  Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+InitializeBuildStatus:
+  Creating "C:\GitHub\Cluiche\Cluiche\bin\log\DiaInput\Release\x64\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaInput\Release\x64\unsuccessfulbuild".
+ClCompile:
+  All outputs are up-to-date.
+Lib:
+  All outputs are up-to-date.
+  DiaInput.vcxproj -> C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaInput.lib
+FinalizeBuildStatus:
+  Deleting file "C:\GitHub\Cluiche\Cluiche\bin\log\DiaInput\Release\x64\unsuccessfulbuild".
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaInput\Release\x64\DiaInput.lastbuildstate".
+Done Building Project "C:\GitHub\Cluiche\Dia\DiaInput\DiaInput.vcxproj" (default targets).
+Project "C:\GitHub\Cluiche\Dia\DiaUI\DiaUI.vcxproj.metaproj" (10) is building "C:\GitHub\Cluiche\Dia\DiaUI\DiaUI.vcxproj" (12) on node 1 (default targets).
+PrepareForBuild:
+  Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+InitializeBuildStatus:
+  Creating "C:\GitHub\Cluiche\Cluiche\bin\log\DiaUI\Release\x64\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaUI\Release\x64\unsuccessfulbuild".
+ClCompile:
+  All outputs are up-to-date.
+Lib:
+  All outputs are up-to-date.
+  DiaUI.vcxproj -> C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaUI.lib
+FinalizeBuildStatus:
+  Deleting file "C:\GitHub\Cluiche\Cluiche\bin\log\DiaUI\Release\x64\unsuccessfulbuild".
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaUI\Release\x64\DiaUI.lastbuildstate".
+Done Building Project "C:\GitHub\Cluiche\Dia\DiaUI\DiaUI.vcxproj" (default targets).
+Done Building Project "C:\GitHub\Cluiche\Dia\DiaUI\DiaUI.vcxproj.metaproj" (default targets).
+Project "C:\GitHub\Cluiche\Dia\DiaGraphics\DiaGraphics.vcxproj.metaproj" (9) is building "C:\GitHub\Cluiche\Dia\DiaGraphics\DiaGraphics.vcxproj" (13) on node 1 (default targets).
+PrepareForBuild:
+  Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+InitializeBuildStatus:
+  Creating "C:\GitHub\Cluiche\Cluiche\bin\log\DiaGraphics\Release\x64\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaGraphics\Release\x64\unsuccessfulbuild".
+ClCompile:
+  All outputs are up-to-date.
+Lib:
+  All outputs are up-to-date.
+  DiaGraphics.vcxproj -> C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaGraphics.lib
+FinalizeBuildStatus:
+  Deleting file "C:\GitHub\Cluiche\Cluiche\bin\log\DiaGraphics\Release\x64\unsuccessfulbuild".
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaGraphics\Release\x64\DiaGraphics.lastbuildstate".
+Done Building Project "C:\GitHub\Cluiche\Dia\DiaGraphics\DiaGraphics.vcxproj" (default targets).
+Done Building Project "C:\GitHub\Cluiche\Dia\DiaGraphics\DiaGraphics.vcxproj.metaproj" (default targets).
+Project "C:\GitHub\Cluiche\Cluiche\Cluiche.sln" (1) is building "C:\GitHub\Cluiche\Dia\DiaApplication\DiaApplication.vcxproj" (15) on node 1 (default targets).
+PrepareForBuild:
+  Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+InitializeBuildStatus:
+  Creating "C:\GitHub\Cluiche\Cluiche\bin\log\DiaApplication\Release\x64\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaApplication\Release\x64\unsuccessfulbuild".
+ClCompile:
+  All outputs are up-to-date.
+Lib:
+  All outputs are up-to-date.
+  DiaApplication.vcxproj -> C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaApplication.lib
+FinalizeBuildStatus:
+  Deleting file "C:\GitHub\Cluiche\Cluiche\bin\log\DiaApplication\Release\x64\unsuccessfulbuild".
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaApplication\Release\x64\DiaApplication.lastbuildstate".
+Done Building Project "C:\GitHub\Cluiche\Dia\DiaApplication\DiaApplication.vcxproj" (default targets).
+Project "C:\GitHub\Cluiche\Cluiche\Cluiche.sln" (1) is building "C:\GitHub\Cluiche\Cluiche\CluicheTest\CluicheTest.vcxproj.metaproj" (16) on node 1 (default targets).
+Project "C:\GitHub\Cluiche\Cluiche\CluicheTest\CluicheTest.vcxproj.metaproj" (16) is building "C:\GitHub\Cluiche\Dia\DiaWindow\DiaWindow.vcxproj.metaproj" (17) on node 1 (default targets).
+Project "C:\GitHub\Cluiche\Dia\DiaWindow\DiaWindow.vcxproj.metaproj" (17) is building "C:\GitHub\Cluiche\Dia\DiaWindow\DiaWindow.vcxproj" (18) on node 1 (default targets).
+PrepareForBuild:
+  Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+InitializeBuildStatus:
+  Creating "C:\GitHub\Cluiche\Cluiche\bin\log\DiaWindow\Release\x64\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaWindow\Release\x64\unsuccessfulbuild".
+ClCompile:
+  All outputs are up-to-date.
+Lib:
+  All outputs are up-to-date.
+  DiaWindow.vcxproj -> C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaWindow.lib
+FinalizeBuildStatus:
+  Deleting file "C:\GitHub\Cluiche\Cluiche\bin\log\DiaWindow\Release\x64\unsuccessfulbuild".
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaWindow\Release\x64\DiaWindow.lastbuildstate".
+Done Building Project "C:\GitHub\Cluiche\Dia\DiaWindow\DiaWindow.vcxproj" (default targets).
+Done Building Project "C:\GitHub\Cluiche\Dia\DiaWindow\DiaWindow.vcxproj.metaproj" (default targets).
+Project "C:\GitHub\Cluiche\Cluiche\CluicheTest\CluicheTest.vcxproj.metaproj" (16) is building "C:\GitHub\Cluiche\Cluiche\CluicheTest\CluicheKernel\CluicheKernel.vcxproj.metaproj" (19) on node 1 (default targets).
+Project "C:\GitHub\Cluiche\Cluiche\CluicheTest\CluicheKernel\CluicheKernel.vcxproj.metaproj" (19) is building "C:\GitHub\Cluiche\Cluiche\CluicheTest\CluicheKernel\CluicheKernel.vcxproj" (20) on node 1 (default targets).
+PrepareForBuild:
+  Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+InitializeBuildStatus:
+  Creating "C:\GitHub\Cluiche\Cluiche\bin\log\CluicheKernel\Release\x64\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\CluicheKernel\Release\x64\unsuccessfulbuild".
+ClCompile:
+  All outputs are up-to-date.
+Lib:
+  All outputs are up-to-date.
+  CluicheKernel.vcxproj -> C:\GitHub\Cluiche\Cluiche\bin\Release\x64\CluicheKernel.lib
+FinalizeBuildStatus:
+  Deleting file "C:\GitHub\Cluiche\Cluiche\bin\log\CluicheKernel\Release\x64\unsuccessfulbuild".
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\CluicheKernel\Release\x64\CluicheKernel.lastbuildstate".
+Done Building Project "C:\GitHub\Cluiche\Cluiche\CluicheTest\CluicheKernel\CluicheKernel.vcxproj" (default targets).
+Done Building Project "C:\GitHub\Cluiche\Cluiche\CluicheTest\CluicheKernel\CluicheKernel.vcxproj.metaproj" (default targets).
+Project "C:\GitHub\Cluiche\Cluiche\CluicheTest\CluicheTest.vcxproj.metaproj" (16) is building "C:\GitHub\Cluiche\Cluiche\CluicheTest\Levels\DummyLevel\DummyLevel.vcxproj" (21) on node 1 (default targets).
+PrepareForBuild:
+  Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+InitializeBuildStatus:
+  Creating "C:\GitHub\Cluiche\Cluiche\bin\log\DummyLevel\Release\x64\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DummyLevel\Release\x64\unsuccessfulbuild".
+ClCompile:
+  All outputs are up-to-date.
+Lib:
+  All outputs are up-to-date.
+  DummyLevel.vcxproj -> C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DummyLevel.lib
+FinalizeBuildStatus:
+  Deleting file "C:\GitHub\Cluiche\Cluiche\bin\log\DummyLevel\Release\x64\unsuccessfulbuild".
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DummyLevel\Release\x64\DummyLevel.lastbuildstate".
+Done Building Project "C:\GitHub\Cluiche\Cluiche\CluicheTest\Levels\DummyLevel\DummyLevel.vcxproj" (default targets).
+Project "C:\GitHub\Cluiche\Cluiche\CluicheTest\CluicheTest.vcxproj.metaproj" (16) is building "C:\GitHub\Cluiche\Cluiche\CluicheTest\Levels\UnitTestLevel\UnitTestLevel.vcxproj" (22) on node 1 (default targets).
+PrepareForBuild:
+  Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+InitializeBuildStatus:
+  Creating "C:\GitHub\Cluiche\Cluiche\bin\log\UnitTestLevel\Release\x64\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\UnitTestLevel\Release\x64\unsuccessfulbuild".
+ClCompile:
+  All outputs are up-to-date.
+Lib:
+  All outputs are up-to-date.
+  UnitTestLevel.vcxproj -> C:\GitHub\Cluiche\Cluiche\bin\Release\x64\UnitTestLevel.lib
+FinalizeBuildStatus:
+  Deleting file "C:\GitHub\Cluiche\Cluiche\bin\log\UnitTestLevel\Release\x64\unsuccessfulbuild".
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\UnitTestLevel\Release\x64\UnitTestLevel.lastbuildstate".
+Done Building Project "C:\GitHub\Cluiche\Cluiche\CluicheTest\Levels\UnitTestLevel\UnitTestLevel.vcxproj" (default targets).
+Project "C:\GitHub\Cluiche\Cluiche\CluicheTest\CluicheTest.vcxproj.metaproj" (16) is building "C:\GitHub\Cluiche\Dia\DiaSFML\DiaSFML.vcxproj.metaproj" (23) on node 1 (default targets).
+Project "C:\GitHub\Cluiche\Dia\DiaSFML\DiaSFML.vcxproj.metaproj" (23) is building "C:\GitHub\Cluiche\Dia\DiaSFML\DiaSFML.vcxproj" (24) on node 1 (default targets).
+PrepareForBuild:
+  Creating directory "C:\GitHub\Cluiche\Cluiche\bin\intermediate\DiaSFML\Release\x64\".
+  Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+InitializeBuildStatus:
+  Creating "C:\GitHub\Cluiche\Cluiche\bin\log\DiaSFML\Release\x64\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaSFML\Release\x64\unsuccessfulbuild".
+ClCompile:
+  C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Tools\MSVC\14.44.35207\bin\HostX86\x64\CL.exe /c /I"../../External/SFML/Current-x64/include" /I./../ /I./ /Zi /nologo /W3 /WX- /diagnostics:column /O2 /Oi /GL /D WIN32 /D SFML_STATIC /D _MBCS /D _MBCS /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /std:c++20 /Fo"C:\GitHub\Cluiche\Cluiche\bin\intermediate\DiaSFML\Release\x64\\" /Fd"C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaSFML.pdb" /external:W3 /Gd /TP /wd4275 /FC /errorReport:queue Conversion.cpp DebugFrameRendererVisitor.cpp EntityFrameRenderer.cpp InputSource.cpp RenderWindow.cpp RenderWindowFactory.cpp TextureManager.cpp
+  Conversion.cpp
+  DebugFrameRendererVisitor.cpp
+  EntityFrameRenderer.cpp
+  InputSource.cpp
+  RenderWindow.cpp
+  RenderWindowFactory.cpp
+  TextureManager.cpp
+Lib:
+  C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Tools\MSVC\14.44.35207\bin\HostX86\x64\Lib.exe /OUT:"C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaSFML.lib" "sfml-main-s.lib" "sfml-graphics-s.lib" "sfml-window-s.lib" "sfml-system-s.lib" /LIBPATH:"C:\GitHub\Cluiche\External\SFML\Current-x64\lib" /NOLOGO /MACHINE:X64 /LTCG C:\GitHub\Cluiche\Cluiche\bin\intermediate\DiaSFML\Release\x64\Conversion.obj
+  C:\GitHub\Cluiche\Cluiche\bin\intermediate\DiaSFML\Release\x64\DebugFrameRendererVisitor.obj
+  C:\GitHub\Cluiche\Cluiche\bin\intermediate\DiaSFML\Release\x64\EntityFrameRenderer.obj
+  C:\GitHub\Cluiche\Cluiche\bin\intermediate\DiaSFML\Release\x64\InputSource.obj
+  C:\GitHub\Cluiche\Cluiche\bin\intermediate\DiaSFML\Release\x64\RenderWindow.obj
+  C:\GitHub\Cluiche\Cluiche\bin\intermediate\DiaSFML\Release\x64\RenderWindowFactory.obj
+  C:\GitHub\Cluiche\Cluiche\bin\intermediate\DiaSFML\Release\x64\TextureManager.obj
+  C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaCore.lib
+  C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaMaths.lib
+  C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaInput.lib
+  C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaUI.lib
+  C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaGraphics.lib
+  DiaSFML.vcxproj -> C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaSFML.lib
+FinalizeBuildStatus:
+  Deleting file "C:\GitHub\Cluiche\Cluiche\bin\log\DiaSFML\Release\x64\unsuccessfulbuild".
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaSFML\Release\x64\DiaSFML.lastbuildstate".
+Done Building Project "C:\GitHub\Cluiche\Dia\DiaSFML\DiaSFML.vcxproj" (default targets).
+Done Building Project "C:\GitHub\Cluiche\Dia\DiaSFML\DiaSFML.vcxproj.metaproj" (default targets).
+Project "C:\GitHub\Cluiche\Cluiche\CluicheTest\CluicheTest.vcxproj.metaproj" (16) is building "C:\GitHub\Cluiche\Cluiche\CluicheTest\CluicheTest.vcxproj" (25) on node 1 (default targets).
+Project "C:\GitHub\Cluiche\Cluiche\CluicheTest\CluicheTest.vcxproj" (25) is building "C:\GitHub\Cluiche\Dia\DiaUIUltralight\DiaUIUltralight.vcxproj" (26) on node 1 (default targets).
+PrepareForBuild:
+  Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+InitializeBuildStatus:
+  Creating "C:\GitHub\Cluiche\Cluiche\bin\log\DiaUIUltralight\Release\x64\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaUIUltralight\Release\x64\unsuccessfulbuild".
+PreBuildEvent:
+  Push Ultralight deploy files and resources to the .exe directory
+  xcopy /Y /d "C:\GitHub\Cluiche\Dia\DiaUIUltralight\Deploy\*" "C:\GitHub\Cluiche\Cluiche\bin\Release\x64\"
+  xcopy /Y /d /i "C:\GitHub\Cluiche\Cluiche\..\External\Ultralight\resources\*" "C:\GitHub\Cluiche\Cluiche\bin\Release\x64\resources\"
+  :VCEnd
+  0 File(s) copied
+  0 File(s) copied
+ClCompile:
+  All outputs are up-to-date.
+Lib:
+  All outputs are up-to-date.
+  DiaUIUltralight.vcxproj -> C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaUIUltralight.lib
+FinalizeBuildStatus:
+  Deleting file "C:\GitHub\Cluiche\Cluiche\bin\log\DiaUIUltralight\Release\x64\unsuccessfulbuild".
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaUIUltralight\Release\x64\DiaUIUltralight.lastbuildstate".
+Done Building Project "C:\GitHub\Cluiche\Dia\DiaUIUltralight\DiaUIUltralight.vcxproj" (default targets).
+Project "C:\GitHub\Cluiche\Cluiche\CluicheTest\CluicheTest.vcxproj" (25) is building "C:\GitHub\Cluiche\Dia\DiaDebugServer\DiaDebugServer.vcxproj" (27) on node 1 (default targets).
+Project "C:\GitHub\Cluiche\Dia\DiaDebugServer\DiaDebugServer.vcxproj" (27) is building "C:\GitHub\Cluiche\Dia\DiaWebSocket\DiaWebSocket.vcxproj" (28) on node 1 (default targets).
+PrepareForBuild:
+  Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+InitializeBuildStatus:
+  Creating "C:\GitHub\Cluiche\Cluiche\bin\log\DiaWebSocket\Release\x64\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaWebSocket\Release\x64\unsuccessfulbuild".
+ClCompile:
+  All outputs are up-to-date.
+Lib:
+  All outputs are up-to-date.
+  DiaWebSocket.vcxproj -> C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaWebSocket.lib
+FinalizeBuildStatus:
+  Deleting file "C:\GitHub\Cluiche\Cluiche\bin\log\DiaWebSocket\Release\x64\unsuccessfulbuild".
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaWebSocket\Release\x64\DiaWebSocket.lastbuildstate".
+Done Building Project "C:\GitHub\Cluiche\Dia\DiaWebSocket\DiaWebSocket.vcxproj" (default targets).
+Project "C:\GitHub\Cluiche\Dia\DiaDebugServer\DiaDebugServer.vcxproj" (27) is building "C:\GitHub\Cluiche\Dia\DiaDebugProtocol\DiaDebugProtocol.vcxproj" (29) on node 1 (default targets).
+Project "C:\GitHub\Cluiche\Dia\DiaDebugProtocol\DiaDebugProtocol.vcxproj" (29) is building "C:\GitHub\Cluiche\Dia\DiaProtobuf\DiaProtobuf.vcxproj" (30) on node 1 (default targets).
+PrepareForBuild:
+  Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+InitializeBuildStatus:
+  Creating "C:\GitHub\Cluiche\Cluiche\bin\log\DiaProtobuf\Release\x64\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaProtobuf\Release\x64\unsuccessfulbuild".
+ClCompile:
+  All outputs are up-to-date.
+Lib:
+  All outputs are up-to-date.
+  DiaProtobuf.vcxproj -> C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaProtobuf.lib
+FinalizeBuildStatus:
+  Deleting file "C:\GitHub\Cluiche\Cluiche\bin\log\DiaProtobuf\Release\x64\unsuccessfulbuild".
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaProtobuf\Release\x64\DiaProtobuf.lastbuildstate".
+Done Building Project "C:\GitHub\Cluiche\Dia\DiaProtobuf\DiaProtobuf.vcxproj" (default targets).
+PrepareForBuild:
+  Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+InitializeBuildStatus:
+  Creating "C:\GitHub\Cluiche\Cluiche\bin\log\DiaDebugProtocol\Release\x64\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaDebugProtocol\Release\x64\unsuccessfulbuild".
+CompileProtoFiles:
+Skipping target "CompileProtoFiles" because all output files are up-to-date with respect to the input files.
+ClCompile:
+  All outputs are up-to-date.
+Lib:
+  All outputs are up-to-date.
+  DiaDebugProtocol.vcxproj -> C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaDebugProtocol.lib
+FinalizeBuildStatus:
+  Deleting file "C:\GitHub\Cluiche\Cluiche\bin\log\DiaDebugProtocol\Release\x64\unsuccessfulbuild".
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaDebugProtocol\Release\x64\DiaDebugProtocol.lastbuildstate".
+Done Building Project "C:\GitHub\Cluiche\Dia\DiaDebugProtocol\DiaDebugProtocol.vcxproj" (default targets).
+PrepareForBuild:
+  Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+InitializeBuildStatus:
+  Creating "C:\GitHub\Cluiche\Cluiche\bin\log\DiaDebugServer\Release\x64\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaDebugServer\Release\x64\unsuccessfulbuild".
+ClCompile:
+  All outputs are up-to-date.
+Lib:
+  All outputs are up-to-date.
+  DiaDebugServer.vcxproj -> C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaDebugServer.lib
+FinalizeBuildStatus:
+  Deleting file "C:\GitHub\Cluiche\Cluiche\bin\log\DiaDebugServer\Release\x64\unsuccessfulbuild".
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaDebugServer\Release\x64\DiaDebugServer.lastbuildstate".
+Done Building Project "C:\GitHub\Cluiche\Dia\DiaDebugServer\DiaDebugServer.vcxproj" (default targets).
+C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(2189,5): warning MSB9008: The referenced project ..\..\Dia\DiaUIAwesomium\DiaUIAwesomium.vcxproj does not exist. [C:\GitHub\Cluiche\Cluiche\CluicheTest\CluicheTest.vcxproj]
+PrepareForBuild:
+  Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+InitializeBuildStatus:
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\CluicheTest\Release\x64\unsuccessfulbuild".
+ClCompile:
+  All outputs are up-to-date.
+Link:
+  C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Tools\MSVC\14.44.35207\bin\HostX86\x64\link.exe /ERRORREPORT:QUEUE /OUT:"C:\GitHub\Cluiche\Cluiche\bin\Release\x64\CluicheTest.exe" /NOLOGO /LIBPATH:"C:\GitHub\Cluiche\Cluiche\..\External\SFML\Current-x64\lib\\" /LIBPATH:"C:\GitHub\Cluiche\Cluiche\CluicheTest\..\..\External\protobuf\Current-x64\lib\Release" C:\GitHub\Cluiche\Cluiche\bin\Release\x64\UnitTestLevel.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DummyLevel.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaCore.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\CluicheKernel.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaMaths.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaGraphics.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaSFML.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaWindow.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaInput.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaApplication.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaUI.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaUIUltralight.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaDebugServer.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaDebugProtocol.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaProtobuf.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaWebSocket.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaAPI.lib "sfml-graphics.lib" "sfml-window.lib" "sfml-system.lib" glu32.lib opengl32.lib XINPUT9_1_0.lib ws2_32.lib winmm.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\GitHub\Cluiche\Cluiche\bin\Release\x64\CluicheTest.pdb" /OPT:REF /OPT:ICF /LTCG:incremental /LTCGOUT:"C:\GitHub\Cluiche\Cluiche\bin\intermediate\CluicheTest\Release\x64\CluicheTest.iobj" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\GitHub\Cluiche\Cluiche\bin\Release\x64\CluicheTest.lib" /MACHINE:X64 C:\GitHub\Cluiche\Cluiche\bin\intermediate\CluicheTest\Release\x64\MainBootPhase.obj
+  C:\GitHub\Cluiche\Cluiche\bin\intermediate\CluicheTest\Release\x64\MainBootStrapPhase.obj
+  C:\GitHub\Cluiche\Cluiche\bin\intermediate\CluicheTest\Release\x64\RenderRunningPhase.obj
+  C:\GitHub\Cluiche\Cluiche\bin\intermediate\CluicheTest\Release\x64\SimBootPhase.obj
+  C:\GitHub\Cluiche\Cluiche\bin\intermediate\CluicheTest\Release\x64\SimBootStrapPhase.obj
+  C:\GitHub\Cluiche\Cluiche\bin\intermediate\CluicheTest\Release\x64\MainProcessingUnit.obj
+  C:\GitHub\Cluiche\Cluiche\bin\intermediate\CluicheTest\Release\x64\RenderProcessingUnit.obj
+  C:\GitHub\Cluiche\Cluiche\bin\intermediate\CluicheTest\Release\x64\SimProcessingUnit.obj
+  C:\GitHub\Cluiche\Cluiche\bin\intermediate\CluicheTest\Release\x64\Main.obj
+  C:\GitHub\Cluiche\Cluiche\bin\intermediate\CluicheTest\Release\x64\LaunchUIPage.obj
+  C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaCore.lib
+  C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaLogger.lib
+  C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaApplication.lib
+  C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaMaths.lib
+  C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaInput.lib
+  C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaUI.lib
+  C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaGraphics.lib
+  C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaWindow.lib
+  C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaSFML.lib
+  C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaUIUltralight.lib
+  C:\GitHub\Cluiche\Cluiche\bin\Release\x64\CluicheKernel.lib
+  C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaWebSocket.lib
+  C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaAPI.lib
+  C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaProtobuf.lib
+  C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaDebugProtocol.lib
+  C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaDebugServer.lib
+  Generating code
+  Previous IPDB not found, fall back to full compilation.
+C:\GitHub\Cluiche\Dia\DiaCore\Timer\TimeThreadLimiter.cpp(19): warning C4723: potential divide by 0 [C:\GitHub\Cluiche\Cluiche\CluicheTest\CluicheTest.vcxproj]
+  All 12306 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Finished generating code
+  CluicheTest.vcxproj -> C:\GitHub\Cluiche\Cluiche\bin\Release\x64\CluicheTest.exe
+PostBuildEvent:
+  copy /Y "C:\GitHub\Cluiche\Cluiche\pathStoreConfig.json" "C:\GitHub\Cluiche\Cluiche\bin\Release\x64\pathStoreConfig.json"
+  xcopy /Y "C:\GitHub\Cluiche\Cluiche\..\External\SFML\Current-x64\bin\*.dll" "C:\GitHub\Cluiche\Cluiche\bin\Release\x64\"
+  xcopy /Y /I "C:\GitHub\Cluiche\Cluiche\CluicheTest\Data\Manifests\*.diaapp" "C:\GitHub\Cluiche\Cluiche\bin\Release\x64\Data\Manifests\"
+  :VCEnd
+          1 file(s) copied.
+  C:\GitHub\Cluiche\Cluiche\..\External\SFML\Current-x64\bin\sfml-audio-3.dll
+  C:\GitHub\Cluiche\Cluiche\..\External\SFML\Current-x64\bin\sfml-audio-d-3.dll
+  C:\GitHub\Cluiche\Cluiche\..\External\SFML\Current-x64\bin\sfml-graphics-3.dll
+  C:\GitHub\Cluiche\Cluiche\..\External\SFML\Current-x64\bin\sfml-graphics-d-3.dll
+  C:\GitHub\Cluiche\Cluiche\..\External\SFML\Current-x64\bin\sfml-network-3.dll
+  C:\GitHub\Cluiche\Cluiche\..\External\SFML\Current-x64\bin\sfml-network-d-3.dll
+  C:\GitHub\Cluiche\Cluiche\..\External\SFML\Current-x64\bin\sfml-system-3.dll
+  C:\GitHub\Cluiche\Cluiche\..\External\SFML\Current-x64\bin\sfml-system-d-3.dll
+  C:\GitHub\Cluiche\Cluiche\..\External\SFML\Current-x64\bin\sfml-window-3.dll
+  C:\GitHub\Cluiche\Cluiche\..\External\SFML\Current-x64\bin\sfml-window-d-3.dll
+  10 File(s) copied
+  C:\GitHub\Cluiche\Cluiche\CluicheTest\Data\Manifests\cluiche_main.diaapp
+  C:\GitHub\Cluiche\Cluiche\CluicheTest\Data\Manifests\cluiche_render.diaapp
+  C:\GitHub\Cluiche\Cluiche\CluicheTest\Data\Manifests\cluiche_sim.diaapp
+  3 File(s) copied
+FinalizeBuildStatus:
+  Deleting file "C:\GitHub\Cluiche\Cluiche\bin\log\CluicheTest\Release\x64\unsuccessfulbuild".
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\CluicheTest\Release\x64\CluicheTest.lastbuildstate".
+Done Building Project "C:\GitHub\Cluiche\Cluiche\CluicheTest\CluicheTest.vcxproj" (default targets).
+Done Building Project "C:\GitHub\Cluiche\Cluiche\CluicheTest\CluicheTest.vcxproj.metaproj" (default targets).
+Project "C:\GitHub\Cluiche\Cluiche\Cluiche.sln" (1) is building "C:\GitHub\Cluiche\Dia\DiaUICEF\DiaUICEF.vcxproj.metaproj" (32) on node 1 (default targets).
+Project "C:\GitHub\Cluiche\Dia\DiaUICEF\DiaUICEF.vcxproj.metaproj" (32) is building "C:\GitHub\Cluiche\Dia\DiaUICEF\DiaUICEF.vcxproj" (33) on node 1 (default targets).
+PrepareForBuild:
+  Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+InitializeBuildStatus:
+  Creating "C:\GitHub\Cluiche\Cluiche\bin\log\DiaUICEF\Release\x64\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaUICEF\Release\x64\unsuccessfulbuild".
+PreBuildEvent:
+  Checking CEF wrapper lib exists
+  if not exist "C:\GitHub\Cluiche\Cluiche\../External/CEF/lib/Release/libcef_dll_wrapper.lib" (
+    echo WARNING: libcef_dll_wrapper.lib not found. Run External\CEF\setup_cef.bat to build it. 1>&2
+    exit /b 1
+  )
+  :VCEnd
+ClCompile:
+  All outputs are up-to-date.
+Lib:
+  All outputs are up-to-date.
+  DiaUICEF.vcxproj -> C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaUICEF.lib
+FinalizeBuildStatus:
+  Deleting file "C:\GitHub\Cluiche\Cluiche\bin\log\DiaUICEF\Release\x64\unsuccessfulbuild".
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaUICEF\Release\x64\DiaUICEF.lastbuildstate".
+Done Building Project "C:\GitHub\Cluiche\Dia\DiaUICEF\DiaUICEF.vcxproj" (default targets).
+Done Building Project "C:\GitHub\Cluiche\Dia\DiaUICEF\DiaUICEF.vcxproj.metaproj" (default targets).
+Project "C:\GitHub\Cluiche\Cluiche\Cluiche.sln" (1) is building "C:\GitHub\Cluiche\Dia\DiaUICEF\Tests\DiaUICEF_TestSubprocess.vcxproj" (34) on node 1 (default targets).
+PrepareForBuild:
+  Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+InitializeBuildStatus:
+  Creating "C:\GitHub\Cluiche\Cluiche\bin\log\DiaUICEF_TestSubprocess\Release\x64\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaUICEF_TestSubprocess\Release\x64\unsuccessfulbuild".
+ClCompile:
+  All outputs are up-to-date.
+Link:
+  All outputs are up-to-date.
+  DiaUICEF_TestSubprocess.vcxproj -> C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaUICEF_TestSubprocess.exe
+FinalizeBuildStatus:
+  Deleting file "C:\GitHub\Cluiche\Cluiche\bin\log\DiaUICEF_TestSubprocess\Release\x64\unsuccessfulbuild".
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaUICEF_TestSubprocess\Release\x64\DiaUICEF_TestSubprocess.lastbuildstate".
+Done Building Project "C:\GitHub\Cluiche\Dia\DiaUICEF\Tests\DiaUICEF_TestSubprocess.vcxproj" (default targets).
+Project "C:\GitHub\Cluiche\Cluiche\Cluiche.sln" (1) is building "C:\GitHub\Cluiche\Cluiche\Tests\GoogleTests\GoogleTests.vcxproj.metaproj" (35) on node 1 (default targets).
+Project "C:\GitHub\Cluiche\Cluiche\Tests\GoogleTests\GoogleTests.vcxproj.metaproj" (35) is building "C:\GitHub\Cluiche\Cluiche\Tests\GoogleTests\GoogleTests.vcxproj" (39) on node 1 (default targets).
+Project "C:\GitHub\Cluiche\Cluiche\Tests\GoogleTests\GoogleTests.vcxproj" (39) is building "C:\GitHub\Cluiche\Dia\DiaEditor\DiaEditor.vcxproj" (40) on node 1 (default targets).
+PrepareForBuild:
+  Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+InitializeBuildStatus:
+  Creating "C:\GitHub\Cluiche\Cluiche\bin\log\DiaEditor\Release\x64\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaEditor\Release\x64\unsuccessfulbuild".
+ClCompile:
+  All outputs are up-to-date.
+Lib:
+  All outputs are up-to-date.
+  DiaEditor.vcxproj -> C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaEditor.lib
+FinalizeBuildStatus:
+  Deleting file "C:\GitHub\Cluiche\Cluiche\bin\log\DiaEditor\Release\x64\unsuccessfulbuild".
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaEditor\Release\x64\DiaEditor.lastbuildstate".
+Done Building Project "C:\GitHub\Cluiche\Dia\DiaEditor\DiaEditor.vcxproj" (default targets).
+PrepareForBuild:
+  Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+InitializeBuildStatus:
+  Creating "C:\GitHub\Cluiche\Cluiche\bin\log\GoogleTests\Release\x64\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\GoogleTests\Release\x64\unsuccessfulbuild".
+ClCompile:
+  All outputs are up-to-date.
+  All outputs are up-to-date.
+Link:
+  All outputs are up-to-date.
+  GoogleTests.vcxproj -> C:\GitHub\Cluiche\Cluiche\bin\Release\x64\GoogleTests.exe
+PostBuildEvent:
+  Copying Python DLL and manifest files to output directory...
+  xcopy /Y /D "C:\GitHub\Cluiche\Cluiche\Tests\GoogleTests\..\..\..\External\Python311\python311.dll" "C:\GitHub\Cluiche\Cluiche\bin\Release\x64\"
+  xcopy /Y /I "C:\GitHub\Cluiche\Cluiche\Tests\GoogleTests\..\..\CluicheTest\Data\Manifests\*.diaapp" "C:\GitHub\Cluiche\Cluiche\bin\Release\x64\Data\Manifests\"
+  :VCEnd
+  0 File(s) copied
+  C:\GitHub\Cluiche\Cluiche\Tests\GoogleTests\..\..\CluicheTest\Data\Manifests\cluiche_main.diaapp
+  C:\GitHub\Cluiche\Cluiche\Tests\GoogleTests\..\..\CluicheTest\Data\Manifests\cluiche_render.diaapp
+  C:\GitHub\Cluiche\Cluiche\Tests\GoogleTests\..\..\CluicheTest\Data\Manifests\cluiche_sim.diaapp
+  3 File(s) copied
+FinalizeBuildStatus:
+  Deleting file "C:\GitHub\Cluiche\Cluiche\bin\log\GoogleTests\Release\x64\unsuccessfulbuild".
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\GoogleTests\Release\x64\GoogleTests.lastbuildstate".
+Done Building Project "C:\GitHub\Cluiche\Cluiche\Tests\GoogleTests\GoogleTests.vcxproj" (default targets).
+Done Building Project "C:\GitHub\Cluiche\Cluiche\Tests\GoogleTests\GoogleTests.vcxproj.metaproj" (default targets).
+Project "C:\GitHub\Cluiche\Cluiche\Cluiche.sln" (1) is building "C:\GitHub\Cluiche\Cluiche\CluicheEditor\CluicheEditor.vcxproj.metaproj" (42) on node 1 (default targets).
+Project "C:\GitHub\Cluiche\Cluiche\CluicheEditor\CluicheEditor.vcxproj.metaproj" (42) is building "C:\GitHub\Cluiche\Cluiche\CluicheEditor\CluicheEditor.vcxproj" (43) on node 1 (default targets).
+PrepareForBuild:
+  Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
+InitializeBuildStatus:
+  Creating "C:\GitHub\Cluiche\Cluiche\bin\log\CluicheEditor\Release\x64\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\CluicheEditor\Release\x64\unsuccessfulbuild".
+ClCompile:
+  All outputs are up-to-date.
+Link:
+  All outputs are up-to-date.
+  CluicheEditor.vcxproj -> C:\GitHub\Cluiche\Cluiche\bin\Release\x64\CluicheEditor.exe
+PostBuildEvent:
+  xcopy /Y /D "C:\GitHub\Cluiche\Cluiche\../External/CEF/Resources/*.*" "C:\GitHub\Cluiche\Cluiche\bin\Release\x64\"
+  xcopy /Y /E /I /D "C:\GitHub\Cluiche\Cluiche\../External/CEF/Resources/locales" "C:\GitHub\Cluiche\Cluiche\bin\Release\x64\locales\"
+  xcopy /Y /D "C:\GitHub\Cluiche\Cluiche\../External/CEF/bin/Release/*.*" "C:\GitHub\Cluiche\Cluiche\bin\Release\x64\"
+  xcopy /Y /I "C:\GitHub\Cluiche\Cluiche\CluicheEditor\Data\*.*" "C:\GitHub\Cluiche\Cluiche\bin\Release\x64\Data\"
+  set PATH=C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Microsoft\VisualStudio\NodeJs;%PATH%
+  cd "C:\GitHub\Cluiche\Cluiche\CluicheEditor\UI"
+  node node_modules/vite/bin/vite.js build
+  xcopy /Y /E /I "C:\GitHub\Cluiche\Cluiche\CluicheEditor\UI\dist\*.*" "C:\GitHub\Cluiche\Cluiche\bin\Release\x64\UI\"
+  xcopy /Y /E /I "C:\GitHub\Cluiche\Cluiche\CluicheEditor\../../Dia/DiaEditor/Plugin/Assets\*.*" "C:\GitHub\Cluiche\Cluiche\bin\Release\x64\editor\"
+  :VCEnd
+  0 File(s) copied
+  0 File(s) copied
+  0 File(s) copied
+  C:\GitHub\Cluiche\Cluiche\CluicheEditor\Data\editor-connection.json
+  C:\GitHub\Cluiche\Cluiche\CluicheEditor\Data\editor-layout.json
+  C:\GitHub\Cluiche\Cluiche\CluicheEditor\Data\editor-logger.json
+  C:\GitHub\Cluiche\Cluiche\CluicheEditor\Data\test-editor-plugins.diaapp
+  C:\GitHub\Cluiche\Cluiche\CluicheEditor\Data\test.cluicheproj
+  5 File(s) copied
+  [36mvite v4.5.14 [32mbuilding for production...[36m[39m
+  transforming...
+  [32mΓ£ô[39m 680 modules transformed.
+  rendering chunks...
+  computing gzip size...
+  [2m../dist/[22m[32mindex.html                 [39m[1m[2m  2.18 kB[22m[1m[22m[2m Γöé gzip:   0.74 kB[22m
+  [2m../dist/[22m[35massets/index-1edd0671.css  [39m[1m[2m 12.98 kB[22m[1m[22m[2m Γöé gzip:   2.20 kB[22m
+  [2m../dist/[22m[36massets/index-30926772.js   [39m[1m[2m334.16 kB[22m[1m[22m[2m Γöé gzip: 104.57 kB[22m
+  [32mΓ£ô built in 1.98s[39m
+  C:\GitHub\Cluiche\Cluiche\CluicheEditor\UI\dist\index.html
+  C:\GitHub\Cluiche\Cluiche\CluicheEditor\UI\dist\assets\index-1edd0671.css
+  C:\GitHub\Cluiche\Cluiche\CluicheEditor\UI\dist\assets\index-30926772.js
+  3 File(s) copied
+  C:\GitHub\Cluiche\Cluiche\CluicheEditor\../../Dia/DiaEditor/Plugin/Assets\gameconnection\index.html
+  C:\GitHub\Cluiche\Cluiche\CluicheEditor\../../Dia/DiaEditor/Plugin/Assets\hello\index.html
+  C:\GitHub\Cluiche\Cluiche\CluicheEditor\../../Dia/DiaEditor/Plugin/Assets\home\index.html
+  C:\GitHub\Cluiche\Cluiche\CluicheEditor\../../Dia/DiaEditor/Plugin/Assets\outputconsole\index.html
+  C:\GitHub\Cluiche\Cluiche\CluicheEditor\../../Dia/DiaEditor/Plugin/Assets\pluginbrowser\index.html
+  C:\GitHub\Cluiche\Cluiche\CluicheEditor\../../Dia/DiaEditor/Plugin/Assets\stub\index.html
+  6 File(s) copied
+FinalizeBuildStatus:
+  Deleting file "C:\GitHub\Cluiche\Cluiche\bin\log\CluicheEditor\Release\x64\unsuccessfulbuild".
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\CluicheEditor\Release\x64\CluicheEditor.lastbuildstate".
+Done Building Project "C:\GitHub\Cluiche\Cluiche\CluicheEditor\CluicheEditor.vcxproj" (default targets).
+Done Building Project "C:\GitHub\Cluiche\Cluiche\CluicheEditor\CluicheEditor.vcxproj.metaproj" (default targets).
+Done Building Project "C:\GitHub\Cluiche\Cluiche\Cluiche.sln" (default targets).
+
+Build succeeded.
+
+"C:\GitHub\Cluiche\Cluiche\Cluiche.sln" (default target) (1) ->
+"C:\GitHub\Cluiche\Cluiche\CluicheTest\CluicheTest.vcxproj.metaproj" (default target) (16) ->
+"C:\GitHub\Cluiche\Cluiche\CluicheTest\CluicheTest.vcxproj" (default target) (25) ->
+(ResolveProjectReferences target) -> 
+  C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(2189,5): warning MSB9008: The referenced project ..\..\Dia\DiaUIAwesomium\DiaUIAwesomium.vcxproj does not exist. [C:\GitHub\Cluiche\Cluiche\CluicheTest\CluicheTest.vcxproj]
+
+
+"C:\GitHub\Cluiche\Cluiche\Cluiche.sln" (default target) (1) ->
+"C:\GitHub\Cluiche\Cluiche\CluicheTest\CluicheTest.vcxproj.metaproj" (default target) (16) ->
+"C:\GitHub\Cluiche\Cluiche\CluicheTest\CluicheTest.vcxproj" (default target) (25) ->
+(Link target) -> 
+  C:\GitHub\Cluiche\Dia\DiaCore\Timer\TimeThreadLimiter.cpp(19): warning C4723: potential divide by 0 [C:\GitHub\Cluiche\Cluiche\CluicheTest\CluicheTest.vcxproj]
+
+    2 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:23.18

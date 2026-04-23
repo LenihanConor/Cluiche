@@ -174,8 +174,7 @@ namespace Dia
 			}
 			else
 			{
-				mask ^= mask;
-				mBits &= mask;
+				mBits &= ~mask;
 			}
 		}
 
