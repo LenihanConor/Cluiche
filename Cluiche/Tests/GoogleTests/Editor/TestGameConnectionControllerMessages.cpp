@@ -3,6 +3,7 @@
 #include <DiaEditor/LiveConnection/GameConnectionManager.h>
 #include <DiaEditor/UI/WebUIBridge.h>
 #include <DiaDebugProtocol/DiaDebugProtocol.h>
+#include <DiaProtobuf/ProtoStructConverter.h>
 #include <DiaCore/Json/external/json/json.h>
 
 #include <string>
@@ -231,7 +232,9 @@ TEST(GameConnectionControllerMessages, ProtoCommandResponse_ParsesCorrectly)
 	cr->set_command("reload_shaders");
 	cr->set_success(true);
 	cr->set_message("14 shaders recompiled");
-	cr->set_payload_json("{\"count\":14}");
+	Json::Value crPayload;
+	crPayload["count"] = 14;
+	Dia::Proto::JsonValueToProtoStruct(crPayload, cr->mutable_payload());
 
 	char json[4096];
 	ASSERT_TRUE(Dia::Proto::ToJson(outMsg, json, sizeof(json)));
@@ -246,7 +249,9 @@ TEST(GameConnectionControllerMessages, ProtoCommandResponse_ParsesCorrectly)
 	EXPECT_EQ(resp.command(), "reload_shaders");
 	EXPECT_TRUE(resp.success());
 	EXPECT_EQ(resp.message(), "14 shaders recompiled");
-	EXPECT_EQ(resp.payload_json(), "{\"count\":14}");
+	ASSERT_TRUE(resp.has_payload());
+	Json::Value recoveredCr = Dia::Proto::ProtoStructToJsonValue(resp.payload());
+	EXPECT_EQ(recoveredCr["count"].asInt(), 14);
 }
 
 // ---- Event ----
@@ -257,7 +262,10 @@ TEST(GameConnectionControllerMessages, ProtoEvent_ParsesCorrectly)
 	outMsg.set_type(dia::debug::MESSAGE_TYPE_EVENT);
 	auto* ev = outMsg.mutable_event();
 	ev->set_event_type("entity_spawned");
-	ev->set_payload_json("{\"entity_id\":99,\"type\":\"NPC\"}");
+	Json::Value evPayload;
+	evPayload["entity_id"] = 99;
+	evPayload["type"] = "NPC";
+	Dia::Proto::JsonValueToProtoStruct(evPayload, ev->mutable_payload());
 
 	char json[4096];
 	ASSERT_TRUE(Dia::Proto::ToJson(outMsg, json, sizeof(json)));
@@ -270,7 +278,10 @@ TEST(GameConnectionControllerMessages, ProtoEvent_ParsesCorrectly)
 
 	const auto& e = inMsg.event();
 	EXPECT_EQ(e.event_type(), "entity_spawned");
-	EXPECT_EQ(e.payload_json(), "{\"entity_id\":99,\"type\":\"NPC\"}");
+	ASSERT_TRUE(e.has_payload());
+	Json::Value recoveredEv = Dia::Proto::ProtoStructToJsonValue(e.payload());
+	EXPECT_EQ(recoveredEv["entity_id"].asInt(), 99);
+	EXPECT_EQ(recoveredEv["type"].asString(), "NPC");
 }
 
 // ---- Error ----

@@ -1,6 +1,7 @@
 #include "DiaEditor/LiveConnection/GameConnectionManager.h"
 
 #include <DiaDebugProtocol/DiaDebugProtocol.h>
+#include <DiaProtobuf/ProtoStructConverter.h>
 
 #include <DiaWebSocket/Client.h>
 #include <DiaCore/Core/Assert.h>
@@ -174,7 +175,7 @@ namespace Dia
 			msg.set_type(dia::debug::MESSAGE_TYPE_COMMAND_REQUEST);
 			auto* cmd = msg.mutable_command_request();
 			cmd->set_command(command);
-			cmd->set_payload_json(Json::FastWriter().write(args));
+			Dia::Proto::JsonValueToProtoStruct(args, cmd->mutable_payload());
 
 			char buffer[4096];
 			if (Dia::Proto::ToJson(msg, buffer, sizeof(buffer)))
@@ -266,13 +267,8 @@ namespace Dia
 					responseJson["command"] = resp.command();
 					responseJson["success"] = resp.success();
 					responseJson["message"] = resp.message();
-					if (!resp.payload_json().empty())
-					{
-						Json::Reader reader;
-						Json::Value payload;
-						reader.parse(resp.payload_json(), payload);
-						responseJson["payload"] = payload;
-					}
+					if (resp.has_payload())
+						responseJson["payload"] = Dia::Proto::ProtoStructToJsonValue(resp.payload());
 					ProcessCommandResponse(responseJson);
 				}
 			}

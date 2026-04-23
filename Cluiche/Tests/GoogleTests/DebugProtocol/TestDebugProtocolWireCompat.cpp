@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "DiaDebugProtocol/DiaDebugProtocol.h"
+#include <DiaProtobuf/ProtoStructConverter.h>
 #include <DiaCore/Json/external/json/json.h>
 
 #include <cstring>
@@ -263,7 +264,9 @@ TEST(DebugProtocolWireCompat, ToJson_ThenJsoncppParse_ThenFromJson_CommandRespon
 	resp->set_command("hot_reload");
 	resp->set_success(true);
 	resp->set_message("Reload completed successfully");
-	resp->set_payload_json("{\"modules_reloaded\":3}");
+	Json::Value respPayload;
+	respPayload["modules_reloaded"] = 3;
+	Dia::Proto::JsonValueToProtoStruct(respPayload, resp->mutable_payload());
 
 	char protoJson[4096];
 	ASSERT_TRUE(Dia::Proto::ToJson(original, protoJson, sizeof(protoJson)));
@@ -282,7 +285,9 @@ TEST(DebugProtocolWireCompat, ToJson_ThenJsoncppParse_ThenFromJson_CommandRespon
 	EXPECT_EQ(result.command_response().command(), "hot_reload");
 	EXPECT_TRUE(result.command_response().success());
 	EXPECT_EQ(result.command_response().message(), "Reload completed successfully");
-	EXPECT_EQ(result.command_response().payload_json(), "{\"modules_reloaded\":3}");
+	ASSERT_TRUE(result.command_response().has_payload());
+	Json::Value recoveredPayload = Dia::Proto::ProtoStructToJsonValue(result.command_response().payload());
+	EXPECT_EQ(recoveredPayload["modules_reloaded"].asInt(), 3);
 }
 
 TEST(DebugProtocolWireCompat, ToJson_ThenJsoncppParse_ThenFromJson_Event)
@@ -292,7 +297,10 @@ TEST(DebugProtocolWireCompat, ToJson_ThenJsoncppParse_ThenFromJson_Event)
 	original.set_timestamp(5500ULL);
 	auto* evt = original.mutable_event();
 	evt->set_event_type("phase_transition");
-	evt->set_payload_json("{\"from\":\"Init\",\"to\":\"Update\"}");
+	Json::Value evtPayload;
+	evtPayload["from"] = "Init";
+	evtPayload["to"] = "Update";
+	Dia::Proto::JsonValueToProtoStruct(evtPayload, evt->mutable_payload());
 
 	char protoJson[4096];
 	ASSERT_TRUE(Dia::Proto::ToJson(original, protoJson, sizeof(protoJson)));
@@ -309,7 +317,10 @@ TEST(DebugProtocolWireCompat, ToJson_ThenJsoncppParse_ThenFromJson_Event)
 	EXPECT_EQ(result.type(), dia::debug::MESSAGE_TYPE_EVENT);
 	EXPECT_EQ(result.payload_case(), dia::debug::DebugMessage::kEvent);
 	EXPECT_EQ(result.event().event_type(), "phase_transition");
-	EXPECT_EQ(result.event().payload_json(), "{\"from\":\"Init\",\"to\":\"Update\"}");
+	ASSERT_TRUE(result.event().has_payload());
+	Json::Value recoveredEvtPayload = Dia::Proto::ProtoStructToJsonValue(result.event().payload());
+	EXPECT_EQ(recoveredEvtPayload["from"].asString(), "Init");
+	EXPECT_EQ(recoveredEvtPayload["to"].asString(), "Update");
 }
 
 TEST(DebugProtocolWireCompat, ToJson_ThenJsoncppParse_ThenFromJson_DataUpdate)
@@ -319,7 +330,10 @@ TEST(DebugProtocolWireCompat, ToJson_ThenJsoncppParse_ThenFromJson_DataUpdate)
 	original.set_timestamp(6000ULL);
 	auto* update = original.mutable_data_update();
 	update->set_data_type("processing_unit_state");
-	update->set_payload_json("{\"pu_id\":\"MainPU\",\"phase\":\"Update\"}");
+	Json::Value updatePayload;
+	updatePayload["pu_id"] = "MainPU";
+	updatePayload["phase"] = "Update";
+	Dia::Proto::JsonValueToProtoStruct(updatePayload, update->mutable_payload());
 
 	char protoJson[4096];
 	ASSERT_TRUE(Dia::Proto::ToJson(original, protoJson, sizeof(protoJson)));
@@ -336,7 +350,10 @@ TEST(DebugProtocolWireCompat, ToJson_ThenJsoncppParse_ThenFromJson_DataUpdate)
 	EXPECT_EQ(result.type(), dia::debug::MESSAGE_TYPE_DATA_UPDATE);
 	EXPECT_EQ(result.payload_case(), dia::debug::DebugMessage::kDataUpdate);
 	EXPECT_EQ(result.data_update().data_type(), "processing_unit_state");
-	EXPECT_EQ(result.data_update().payload_json(), "{\"pu_id\":\"MainPU\",\"phase\":\"Update\"}");
+	ASSERT_TRUE(result.data_update().has_payload());
+	Json::Value recoveredUpdatePayload = Dia::Proto::ProtoStructToJsonValue(result.data_update().payload());
+	EXPECT_EQ(recoveredUpdatePayload["pu_id"].asString(), "MainPU");
+	EXPECT_EQ(recoveredUpdatePayload["phase"].asString(), "Update");
 }
 
 // ============================================================================

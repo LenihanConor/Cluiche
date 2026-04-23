@@ -12,12 +12,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DebugServerModule.h" />
+    <ClInclude Include="DebugServerLogSink.h" />
     <ClInclude Include="SubscriptionManager.h" />
     <ClInclude Include="StateSerializer.h" />
     <ClInclude Include="CommandDispatcher.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugServerModule.cpp" />
+    <ClCompile Include="DebugServerLogSink.cpp" />
     <ClCompile Include="SubscriptionManager.cpp" />
     <ClCompile Include="StateSerializer.cpp" />
     <ClCompile Include="CommandDispatcher.cpp" />
@@ -37,6 +39,9 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaDebugProtocol\DiaDebugProtocol.vcxproj">
       <Project>{E9E22143-02A3-4D92-894D-079E8ABD8BCA}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaProtobuf\DiaProtobuf.vcxproj">
+      <Project>{87758331-BA9E-4055-B3F0-A62671738D42}</Project>
     </ProjectReference>
     <ProjectReference Include="..\DiaLogger\DiaLogger.vcxproj">
       <Project>{7a8b9c0d-e1f2-3456-7890-abcdef012345}</Project>
@@ -66,7 +71,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>./;./../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)..\..\External\protobuf\Current-x64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>DEBUG;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -79,7 +84,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
-      <AdditionalIncludeDirectories>./;./../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)..\..\External\protobuf\Current-x64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>

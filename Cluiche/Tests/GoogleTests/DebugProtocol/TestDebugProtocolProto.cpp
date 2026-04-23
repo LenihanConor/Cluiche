@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 
 #include "DiaDebugProtocol/DiaDebugProtocol.h"
+#include <DiaProtobuf/ProtoStructConverter.h>
+#include <DiaCore/Json/external/json/json.h>
 
 #include <cstring>
 
@@ -132,7 +134,9 @@ TEST(DebugProtocolProto, CommandRequestRoundTrip)
 	msg.set_type(dia::debug::MESSAGE_TYPE_COMMAND_REQUEST);
 	auto* cmd = msg.mutable_command_request();
 	cmd->set_command("hot_reload");
-	cmd->set_payload_json("{\"path\":\"manifest.diaapp\"}");
+	Json::Value cmdPayload;
+	cmdPayload["path"] = "manifest.diaapp";
+	Dia::Proto::JsonValueToProtoStruct(cmdPayload, cmd->mutable_payload());
 
 	char json[4096];
 	ASSERT_TRUE(Dia::Proto::ToJson(msg, json, sizeof(json)));
@@ -141,7 +145,9 @@ TEST(DebugProtocolProto, CommandRequestRoundTrip)
 	EXPECT_TRUE(Dia::Proto::FromJson(json, &parsed));
 	EXPECT_EQ(parsed.payload_case(), dia::debug::DebugMessage::kCommandRequest);
 	EXPECT_EQ(parsed.command_request().command(), "hot_reload");
-	EXPECT_EQ(parsed.command_request().payload_json(), "{\"path\":\"manifest.diaapp\"}");
+	ASSERT_TRUE(parsed.command_request().has_payload());
+	Json::Value recoveredPayload = Dia::Proto::ProtoStructToJsonValue(parsed.command_request().payload());
+	EXPECT_EQ(recoveredPayload["path"].asString(), "manifest.diaapp");
 }
 
 TEST(DebugProtocolProto, CommandResponseRoundTrip)
@@ -234,7 +240,9 @@ TEST(DebugProtocolProto, DataUpdateRoundTrip)
 	msg.set_type(dia::debug::MESSAGE_TYPE_DATA_UPDATE);
 	auto* update = msg.mutable_data_update();
 	update->set_data_type("processing_unit_state");
-	update->set_payload_json("{\"pu_id\":\"MainPU\"}");
+	Json::Value updatePayload;
+	updatePayload["pu_id"] = "MainPU";
+	Dia::Proto::JsonValueToProtoStruct(updatePayload, update->mutable_payload());
 
 	char json[4096];
 	ASSERT_TRUE(Dia::Proto::ToJson(msg, json, sizeof(json)));
@@ -251,7 +259,10 @@ TEST(DebugProtocolProto, EventRoundTrip)
 	msg.set_type(dia::debug::MESSAGE_TYPE_EVENT);
 	auto* evt = msg.mutable_event();
 	evt->set_event_type("phase_transition");
-	evt->set_payload_json("{\"from\":\"Init\",\"to\":\"Update\"}");
+	Json::Value evtPayload;
+	evtPayload["from"] = "Init";
+	evtPayload["to"] = "Update";
+	Dia::Proto::JsonValueToProtoStruct(evtPayload, evt->mutable_payload());
 
 	char json[4096];
 	ASSERT_TRUE(Dia::Proto::ToJson(msg, json, sizeof(json)));

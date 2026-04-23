@@ -1,5 +1,6 @@
 #include "DiaDebugServer/DebugServerModule.h"
 
+#include <DiaProtobuf/ProtoStructConverter.h>
 #include <DiaApplication/ApplicationProcessingUnit.h>
 #include <DiaApplication/ApplicationPhase.h>
 #include <DiaApplication/DebugDataTypes.h>
@@ -87,7 +88,7 @@ namespace Dia
 					eventMsg.set_timestamp(Dia::DebugProtocol::GetTimestampNow());
 					auto* evt = eventMsg.mutable_event();
 					evt->set_event_type(Dia::Application::DebugDataType::kPhaseTransition.AsChar());
-					evt->set_payload_json(Json::FastWriter().write(eventPayload));
+					Dia::Proto::JsonValueToProtoStruct(eventPayload, evt->mutable_payload());
 
 					char jsonBuffer[4096];
 					if (Dia::Proto::ToJson(eventMsg, jsonBuffer, sizeof(jsonBuffer)))
@@ -316,11 +317,8 @@ namespace Dia
 
 			Dia::Core::StringCRC dataType(sub.data_type().c_str());
 			Json::Value filter;
-			if (!sub.filter().empty())
-			{
-				Json::Reader reader;
-				reader.parse(sub.filter(), filter);
-			}
+			if (sub.has_filter())
+				filter = Dia::Proto::ProtoStructToJsonValue(sub.filter());
 			mSubscriptionManager.Subscribe(connId, dataType, filter);
 		}
 
@@ -350,11 +348,8 @@ namespace Dia
 
 			Dia::Core::StringCRC commandName(cmd.command().c_str());
 			Json::Value payload;
-			if (!cmd.payload_json().empty())
-			{
-				Json::Reader reader;
-				reader.parse(cmd.payload_json(), payload);
-			}
+			if (cmd.has_payload())
+				payload = Dia::Proto::ProtoStructToJsonValue(cmd.payload());
 
 			dia::debug::DebugMessage response;
 			response.set_type(dia::debug::MESSAGE_TYPE_COMMAND_RESPONSE);
@@ -469,7 +464,7 @@ namespace Dia
 			msg.set_timestamp(Dia::DebugProtocol::GetTimestampNow());
 			auto* update = msg.mutable_data_update();
 			update->set_data_type(dataType.AsChar());
-			update->set_payload_json(Json::FastWriter().write(payload));
+			Dia::Proto::JsonValueToProtoStruct(payload, update->mutable_payload());
 
 			char jsonBuffer[4096];
 			if (Dia::Proto::ToJson(msg, jsonBuffer, sizeof(jsonBuffer)))
@@ -500,7 +495,7 @@ namespace Dia
 							statePayload["current_phase"] = StateSerializer::SerializePhaseState(currentPhase);
 						}
 					}
-					responseOut->set_payload_json(Json::FastWriter().write(statePayload));
+					Dia::Proto::JsonValueToProtoStruct(statePayload, responseOut->mutable_payload());
 				}
 			);
 
@@ -525,7 +520,7 @@ namespace Dia
 					}
 					commandsPayload["api_commands"] = apiCmds;
 
-					responseOut->set_payload_json(Json::FastWriter().write(commandsPayload));
+					Dia::Proto::JsonValueToProtoStruct(commandsPayload, responseOut->mutable_payload());
 				}
 			);
 
@@ -551,7 +546,7 @@ namespace Dia
 					statsPayload["server"]["messages_received_total"] = mStats.messagesReceivedTotal;
 					statsPayload["server"]["uptime_seconds"] = mStats.uptimeSeconds;
 
-					responseOut->set_payload_json(Json::FastWriter().write(statsPayload));
+					Dia::Proto::JsonValueToProtoStruct(statsPayload, responseOut->mutable_payload());
 				}
 			);
 		}

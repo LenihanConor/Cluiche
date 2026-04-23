@@ -12,6 +12,8 @@
 
 #include <cstdint>
 
+namespace dia { namespace debug { class DebugMessage; } }
+
 namespace Dia
 {
 	namespace WebSocket
@@ -93,11 +95,11 @@ namespace Dia
 			void HandleConnection(int connId, bool connected);
 			void HandleMessage(int connId, const Dia::WebSocket::Message& msg);
 
-			void HandleSubscribe(int connId, const Json::Value& json);
-			void HandleUnsubscribe(int connId, const Json::Value& json);
-			void HandleCommand(int connId, const Json::Value& json);
-			void HandleHandshake(int connId, const Json::Value& json);
-			void HandlePing(int connId, const Json::Value& json);
+			void HandleSubscribe(int connId, const dia::debug::DebugMessage& msg);
+			void HandleUnsubscribe(int connId, const dia::debug::DebugMessage& msg);
+			void HandleCommand(int connId, const dia::debug::DebugMessage& msg);
+			void HandleHandshake(int connId, const dia::debug::DebugMessage& msg);
+			void HandlePing(int connId, const dia::debug::DebugMessage& msg);
 
 			void SendGameInfo(int connId);
 			const char* GetCurrentPhaseName() const;
@@ -107,6 +109,8 @@ namespace Dia
 			void NotifySubscribers(const Dia::Core::StringCRC& dataType, const Json::Value& payload);
 
 			void RegisterProtocolCommands();
+			void SendProtoMessage(int connId, const dia::debug::DebugMessage& msg);
+			void BroadcastProtoMessage(const dia::debug::DebugMessage& msg);
 			void SendJsonToConnection(int connId, const Json::Value& json);
 			void BroadcastJson(const Json::Value& json);
 

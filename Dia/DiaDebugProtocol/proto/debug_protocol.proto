@@ -1,5 +1,6 @@
 syntax = "proto3";
 package dia.debug;
+import "google/protobuf/struct.proto";
 
 enum MessageType {
   MESSAGE_TYPE_UNKNOWN = 0;
@@ -57,7 +58,7 @@ message HandshakeResponse {
 
 message SubscribeRequest {
   string data_type = 1;
-  string filter = 2;
+  google.protobuf.Struct filter = 2;
 }
 
 message UnsubscribeRequest {
@@ -81,24 +82,24 @@ message CoreMetrics {
 
 message DataUpdate {
   string data_type = 1;
-  string payload_json = 2;
+  google.protobuf.Struct payload = 2;
 }
 
 message Event {
   string event_type = 1;
-  string payload_json = 2;
+  google.protobuf.Struct payload = 2;
 }
 
 message CommandRequest {
   string command = 1;
-  string payload_json = 2;
+  google.protobuf.Struct payload = 2;
 }
 
 message CommandResponse {
   string command = 1;
   bool success = 2;
   string message = 3;
-  string payload_json = 4;
+  google.protobuf.Struct payload = 4;
 }
 
 message Error {

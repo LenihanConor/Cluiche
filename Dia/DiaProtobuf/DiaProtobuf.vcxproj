@@ -12,9 +12,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ProtoJsonCodec.h" />
+    <ClInclude Include="ProtoStructConverter.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ProtoJsonCodec.cpp" />
+    <ClCompile Include="ProtoStructConverter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="DiaProtobuf.targets" />

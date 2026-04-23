@@ -214,6 +214,7 @@ xcopy /Y /I "$(ProjectDir)..\..\CluicheTest\Data\Manifests\*.diaapp" "$(OutDir)D
     <ClCompile Include="DebugProtocol\TestDebugProtocolWireCompat.cpp" />
     <ClCompile Include="DebugServer\TestSubscriptionManager.cpp" />
     <ClCompile Include="DebugServer\TestCommandDispatcher.cpp" />
+    <ClCompile Include="Dia\TestProtoStructConverter.cpp" />
     <ClCompile Include="DebugServer\TestStateSerializer.cpp" />
     <ClCompile Include="DebugServer\TestDebugServerProtocol.cpp" />
     <ClCompile Include="Integration\TestInputPipeline.cpp" />

@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "DiaDebugProtocol/DiaDebugProtocol.h"
+#include <DiaProtobuf/ProtoStructConverter.h>
 #include <DiaCore/Json/external/json/json.h>
 
 #include <string>
@@ -39,13 +40,8 @@ static Json::Value ReconstructCommandResponse(const dia::debug::CommandResponse&
     responseJson["command"] = resp.command();
     responseJson["success"] = resp.success();
     responseJson["message"] = resp.message();
-    if (!resp.payload_json().empty())
-    {
-        Json::Reader reader;
-        Json::Value payload;
-        reader.parse(resp.payload_json(), payload);
-        responseJson["payload"] = payload;
-    }
+    if (resp.has_payload())
+        responseJson["payload"] = Dia::Proto::ProtoStructToJsonValue(resp.payload());
     return responseJson;
 }
 
@@ -214,7 +210,9 @@ TEST(DebugProtocolEndToEnd, EditorSubscribe_ToServerParse)
     subMsg.set_type(dia::debug::MESSAGE_TYPE_SUBSCRIBE);
     auto* sub = subMsg.mutable_subscribe();
     sub->set_data_type("core_metrics");
-    sub->set_filter("{\"interval\":500}");
+    Json::Value filterVal;
+    filterVal["interval"] = 500;
+    Dia::Proto::JsonValueToProtoStruct(filterVal, sub->mutable_filter());
 
     char subJson[4096];
     ASSERT_TRUE(Dia::Proto::ToJson(subMsg, subJson, sizeof(subJson)));
@@ -224,7 +222,9 @@ TEST(DebugProtocolEndToEnd, EditorSubscribe_ToServerParse)
     ASSERT_TRUE(Dia::Proto::FromJson(subJson, &serverReceived));
     EXPECT_EQ(serverReceived.payload_case(), dia::debug::DebugMessage::kSubscribe);
     EXPECT_EQ(serverReceived.subscribe().data_type(), "core_metrics");
-    EXPECT_EQ(serverReceived.subscribe().filter(), "{\"interval\":500}");
+    ASSERT_TRUE(serverReceived.subscribe().has_filter());
+    Json::Value recoveredFilter = Dia::Proto::ProtoStructToJsonValue(serverReceived.subscribe().filter());
+    EXPECT_EQ(recoveredFilter["interval"].asInt(), 500);
 }
 
 //-----------------------------------------------------------------------------
@@ -247,7 +247,9 @@ TEST(DebugProtocolEndToEnd, EditorCommand_ToServerResponse_ToEditorProcessing)
     cmdMsg.set_type(dia::debug::MESSAGE_TYPE_COMMAND_REQUEST);
     auto* cmd = cmdMsg.mutable_command_request();
     cmd->set_command("get_state");
-    cmd->set_payload_json("{\"verbose\":true}");
+    Json::Value cmdArgs;
+    cmdArgs["verbose"] = true;
+    Dia::Proto::JsonValueToProtoStruct(cmdArgs, cmd->mutable_payload());
 
     char cmdJson[4096];
     ASSERT_TRUE(Dia::Proto::ToJson(cmdMsg, cmdJson, sizeof(cmdJson)));
@@ -257,7 +259,9 @@ TEST(DebugProtocolEndToEnd, EditorCommand_ToServerResponse_ToEditorProcessing)
     ASSERT_TRUE(Dia::Proto::FromJson(cmdJson, &serverReceived));
     EXPECT_EQ(serverReceived.payload_case(), dia::debug::DebugMessage::kCommandRequest);
     EXPECT_EQ(serverReceived.command_request().command(), "get_state");
-    EXPECT_EQ(serverReceived.command_request().payload_json(), "{\"verbose\":true}");
+    ASSERT_TRUE(serverReceived.command_request().has_payload());
+    Json::Value serverPayload = Dia::Proto::ProtoStructToJsonValue(serverReceived.command_request().payload());
+    EXPECT_TRUE(serverPayload["verbose"].asBool());
 
     // (c) Server builds CommandResponse exactly as DebugServerModule::HandleCommand
     dia::debug::DebugMessage response;
@@ -267,7 +271,9 @@ TEST(DebugProtocolEndToEnd, EditorCommand_ToServerResponse_ToEditorProcessing)
     resp->set_command(serverReceived.command_request().command());
     resp->set_success(true);
     resp->set_message("ok");
-    resp->set_payload_json("{\"state\":\"running\"}");
+    Json::Value statePayload;
+    statePayload["state"] = "running";
+    Dia::Proto::JsonValueToProtoStruct(statePayload, resp->mutable_payload());
 
     char respJson[4096];
     ASSERT_TRUE(Dia::Proto::ToJson(response, respJson, sizeof(respJson)));
@@ -485,14 +491,15 @@ TEST(DebugProtocolEndToEnd, ServerGameInfo_ToEditorJsonReconstruction)
 //-----------------------------------------------------------------------------
 TEST(DebugProtocolEndToEnd, ServerEvent_PayloadJsonPreservedExactly)
 {
-    const std::string originalPayload = "{\"from\":\"Init\",\"to\":\"Update\"}";
-
     dia::debug::DebugMessage eventMsg;
     eventMsg.set_type(dia::debug::MESSAGE_TYPE_EVENT);
     eventMsg.set_timestamp(9000000ULL);
     auto* evt = eventMsg.mutable_event();
     evt->set_event_type("phase_transition");
-    evt->set_payload_json(originalPayload);
+    Json::Value evtPayload;
+    evtPayload["from"] = "Init";
+    evtPayload["to"] = "Update";
+    Dia::Proto::JsonValueToProtoStruct(evtPayload, evt->mutable_payload());
 
     char eventJson[4096];
     ASSERT_TRUE(Dia::Proto::ToJson(eventMsg, eventJson, sizeof(eventJson)));
@@ -502,9 +509,10 @@ TEST(DebugProtocolEndToEnd, ServerEvent_PayloadJsonPreservedExactly)
     ASSERT_TRUE(Dia::Proto::FromJson(eventJson, &editorReceived));
     EXPECT_EQ(editorReceived.payload_case(), dia::debug::DebugMessage::kEvent);
     EXPECT_EQ(editorReceived.event().event_type(), "phase_transition");
-
-    // Byte-identical verification
-    EXPECT_EQ(editorReceived.event().payload_json(), originalPayload);
+    ASSERT_TRUE(editorReceived.event().has_payload());
+    Json::Value recoveredEvt = Dia::Proto::ProtoStructToJsonValue(editorReceived.event().payload());
+    EXPECT_EQ(recoveredEvt["from"].asString(), "Init");
+    EXPECT_EQ(recoveredEvt["to"].asString(), "Update");
 }
 
 //-----------------------------------------------------------------------------
@@ -515,16 +523,28 @@ TEST(DebugProtocolEndToEnd, ServerEvent_PayloadJsonPreservedExactly)
 //-----------------------------------------------------------------------------
 TEST(DebugProtocolEndToEnd, ServerDataUpdate_PayloadJsonPreservedExactly)
 {
-    const std::string complexPayload =
-        "{\"modules\":[{\"name\":\"Render\",\"active\":true},{\"name\":\"Physics\",\"active\":false}],"
-        "\"stats\":{\"fps\":60,\"memory\":{\"used\":512,\"free\":1024}}}";
-
     dia::debug::DebugMessage dataMsg;
     dataMsg.set_type(dia::debug::MESSAGE_TYPE_DATA_UPDATE);
     dataMsg.set_timestamp(10000000ULL);
     auto* update = dataMsg.mutable_data_update();
     update->set_data_type("application_state");
-    update->set_payload_json(complexPayload);
+
+    // Build a complex nested payload
+    Json::Value module1, module2;
+    module1["name"] = "Render"; module1["active"] = true;
+    module2["name"] = "Physics"; module2["active"] = false;
+    Json::Value modules(Json::arrayValue);
+    modules.append(module1); modules.append(module2);
+
+    Json::Value memory;
+    memory["used"] = 512; memory["free"] = 1024;
+    Json::Value stats;
+    stats["fps"] = 60; stats["memory"] = memory;
+
+    Json::Value complexPayload;
+    complexPayload["modules"] = modules;
+    complexPayload["stats"] = stats;
+    Dia::Proto::JsonValueToProtoStruct(complexPayload, update->mutable_payload());
 
     char dataJson[4096];
     ASSERT_TRUE(Dia::Proto::ToJson(dataMsg, dataJson, sizeof(dataJson)));
@@ -534,9 +554,18 @@ TEST(DebugProtocolEndToEnd, ServerDataUpdate_PayloadJsonPreservedExactly)
     ASSERT_TRUE(Dia::Proto::FromJson(dataJson, &editorReceived));
     EXPECT_EQ(editorReceived.payload_case(), dia::debug::DebugMessage::kDataUpdate);
     EXPECT_EQ(editorReceived.data_update().data_type(), "application_state");
+    ASSERT_TRUE(editorReceived.data_update().has_payload());
 
-    // Byte-identical verification -- no whitespace normalization, no key reordering
-    EXPECT_EQ(editorReceived.data_update().payload_json(), complexPayload);
+    Json::Value recovered = Dia::Proto::ProtoStructToJsonValue(editorReceived.data_update().payload());
+    ASSERT_TRUE(recovered["modules"].isArray());
+    ASSERT_EQ(recovered["modules"].size(), 2u);
+    EXPECT_EQ(recovered["modules"][0]["name"].asString(), "Render");
+    EXPECT_TRUE(recovered["modules"][0]["active"].asBool());
+    EXPECT_EQ(recovered["modules"][1]["name"].asString(), "Physics");
+    EXPECT_FALSE(recovered["modules"][1]["active"].asBool());
+    EXPECT_EQ(recovered["stats"]["fps"].asInt(), 60);
+    EXPECT_EQ(recovered["stats"]["memory"]["used"].asInt(), 512);
+    EXPECT_EQ(recovered["stats"]["memory"]["free"].asInt(), 1024);
 }
 
 //-----------------------------------------------------------------------------
@@ -600,34 +629,25 @@ TEST(DebugProtocolEndToEnd, MultipleMessagesInSequence)
 }
 
 //-----------------------------------------------------------------------------
-// Test 12: CommandResponse_PayloadJson_NestedInFastWriter
+// Test 12: CommandResponse_StructPayload_NestedObjectRoundTrip
 //
-// Server's HandleCommand does:
-//   resp->set_payload_json(Json::FastWriter().write(result["payload"]));
-// This means payload_json contains FastWriter output (with trailing \n).
-// Build this exact scenario: create a Json::Value payload, FastWriter().write()
-// it into payload_json, build response proto, ToJson, FromJson, parse the
-// payload_json back with jsoncpp. Verify the nested JSON round-trips correctly
-// despite the embedded newline.
+// Server's HandleCommand builds a Json::Value payload and writes it into the
+// CommandResponse::payload Struct field. Editor receives, calls
+// ProtoStructToJsonValue, and accesses nested fields.
+// This covers the main command response payload path end-to-end.
 //-----------------------------------------------------------------------------
-TEST(DebugProtocolEndToEnd, CommandResponse_PayloadJson_NestedInFastWriter)
+TEST(DebugProtocolEndToEnd, CommandResponse_StructPayload_NestedObjectRoundTrip)
 {
     // Build a payload as the server's command handler would
     Json::Value resultPayload;
     resultPayload["processing_unit"] = "MainPU";
     resultPayload["phase"] = "Update";
-    resultPayload["modules"] = Json::Value(Json::arrayValue);
-    resultPayload["modules"].append("Render");
-    resultPayload["modules"].append("Physics");
+    Json::Value modules(Json::arrayValue);
+    modules.append("Render");
+    modules.append("Physics");
+    resultPayload["modules"] = modules;
 
-    // FastWriter().write() -- this is exactly what DebugServerModule::HandleCommand does
-    std::string fastWriterOutput = Json::FastWriter().write(resultPayload);
-
-    // FastWriter appends trailing \n
-    ASSERT_FALSE(fastWriterOutput.empty());
-    EXPECT_EQ(fastWriterOutput.back(), '\n');
-
-    // Server builds response with FastWriter output as payload_json
+    // Server builds response
     dia::debug::DebugMessage response;
     response.set_type(dia::debug::MESSAGE_TYPE_COMMAND_RESPONSE);
     response.set_timestamp(12000000ULL);
@@ -635,7 +655,7 @@ TEST(DebugProtocolEndToEnd, CommandResponse_PayloadJson_NestedInFastWriter)
     respPayload->set_command("get_state");
     respPayload->set_success(true);
     respPayload->set_message("ok");
-    respPayload->set_payload_json(fastWriterOutput);
+    Dia::Proto::JsonValueToProtoStruct(resultPayload, respPayload->mutable_payload());
 
     char respJson[8192];
     ASSERT_TRUE(Dia::Proto::ToJson(response, respJson, sizeof(respJson)));
@@ -645,20 +665,17 @@ TEST(DebugProtocolEndToEnd, CommandResponse_PayloadJson_NestedInFastWriter)
     ASSERT_TRUE(Dia::Proto::FromJson(respJson, &editorReceived));
 
     // Reconstruct exactly as GameConnectionManager::HandleMessage does
-    const auto& cmdResp = editorReceived.command_response();
-    ASSERT_FALSE(cmdResp.payload_json().empty());
+    Json::Value responseJson = ReconstructCommandResponse(editorReceived.command_response());
 
-    Json::Reader reader;
-    Json::Value parsedPayload;
-    ASSERT_TRUE(reader.parse(cmdResp.payload_json(), parsedPayload));
-
-    // Verify the nested JSON round-tripped correctly despite embedded newline
-    EXPECT_EQ(parsedPayload["processing_unit"].asString(), "MainPU");
-    EXPECT_EQ(parsedPayload["phase"].asString(), "Update");
-    ASSERT_TRUE(parsedPayload["modules"].isArray());
-    ASSERT_EQ(parsedPayload["modules"].size(), 2u);
-    EXPECT_EQ(parsedPayload["modules"][0].asString(), "Render");
-    EXPECT_EQ(parsedPayload["modules"][1].asString(), "Physics");
+    EXPECT_EQ(responseJson["command"].asString(), "get_state");
+    EXPECT_TRUE(responseJson["success"].asBool());
+    EXPECT_EQ(responseJson["message"].asString(), "ok");
+    EXPECT_EQ(responseJson["payload"]["processing_unit"].asString(), "MainPU");
+    EXPECT_EQ(responseJson["payload"]["phase"].asString(), "Update");
+    ASSERT_TRUE(responseJson["payload"]["modules"].isArray());
+    ASSERT_EQ(responseJson["payload"]["modules"].size(), 2u);
+    EXPECT_EQ(responseJson["payload"]["modules"][0].asString(), "Render");
+    EXPECT_EQ(responseJson["payload"]["modules"][1].asString(), "Physics");
 }
 
 //-----------------------------------------------------------------------------
@@ -716,7 +733,7 @@ TEST(DebugProtocolEndToEnd, EmptyGameName_DefaultsCorrectly)
 //-----------------------------------------------------------------------------
 TEST(DebugProtocolEndToEnd, LargePayloadJson_Survives)
 {
-    // Build a large JSON payload (>10KB)
+    // Build a large structured payload (200 items)
     Json::Value largePayload;
     Json::Value items(Json::arrayValue);
     for (int i = 0; i < 200; ++i)
@@ -733,10 +750,7 @@ TEST(DebugProtocolEndToEnd, LargePayloadJson_Survives)
     largePayload["items"] = items;
     largePayload["total_count"] = 200;
 
-    std::string payloadStr = Json::FastWriter().write(largePayload);
-    ASSERT_GT(payloadStr.size(), 10000u);  // Verify it's actually >10KB
-
-    // Build response with large payload
+    // Build response with large Struct payload
     dia::debug::DebugMessage response;
     response.set_type(dia::debug::MESSAGE_TYPE_COMMAND_RESPONSE);
     response.set_timestamp(14000000ULL);
@@ -744,24 +758,19 @@ TEST(DebugProtocolEndToEnd, LargePayloadJson_Survives)
     resp->set_command("get_large_data");
     resp->set_success(true);
     resp->set_message("ok");
-    resp->set_payload_json(payloadStr);
+    Dia::Proto::JsonValueToProtoStruct(largePayload, resp->mutable_payload());
 
-    // Use a larger buffer for this test since the payload is >10KB
-    char respJson[65536];
+    // Use a larger buffer for this test since the payload is large
+    char respJson[262144];
     ASSERT_TRUE(Dia::Proto::ToJson(response, respJson, sizeof(respJson)));
 
     // Round-trip
     dia::debug::DebugMessage editorReceived;
     ASSERT_TRUE(Dia::Proto::FromJson(respJson, &editorReceived));
 
-    // Verify no truncation -- payload_json should be identical in length
-    EXPECT_EQ(editorReceived.command_response().payload_json().size(), payloadStr.size());
-    EXPECT_EQ(editorReceived.command_response().payload_json(), payloadStr);
-
-    // Verify the nested JSON is still parseable and has all 200 items
-    Json::Reader reader;
-    Json::Value parsedPayload;
-    ASSERT_TRUE(reader.parse(editorReceived.command_response().payload_json(), parsedPayload));
+    // Verify all 200 items round-tripped
+    ASSERT_TRUE(editorReceived.command_response().has_payload());
+    Json::Value parsedPayload = Dia::Proto::ProtoStructToJsonValue(editorReceived.command_response().payload());
     ASSERT_TRUE(parsedPayload["items"].isArray());
     EXPECT_EQ(parsedPayload["items"].size(), 200u);
     EXPECT_EQ(parsedPayload["total_count"].asInt(), 200);

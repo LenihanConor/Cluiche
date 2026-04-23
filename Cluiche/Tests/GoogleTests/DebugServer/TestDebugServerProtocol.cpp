@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "DiaDebugProtocol/DiaDebugProtocol.h"
+#include <DiaProtobuf/ProtoStructConverter.h>
 #include <DiaCore/Json/external/json/json.h>
 
 #include <cstring>
@@ -182,7 +183,9 @@ TEST(DebugServerProtocol, CommandResponse_Construction)
 	resp->set_command("get_state");
 	resp->set_success(true);
 	resp->set_message("State retrieved");
-	resp->set_payload_json("{\"processing_unit\":\"MainPU\"}");
+	Json::Value crPayload;
+	crPayload["processing_unit"] = "MainPU";
+	Dia::Proto::JsonValueToProtoStruct(crPayload, resp->mutable_payload());
 
 	char json[4096];
 	ASSERT_TRUE(Dia::Proto::ToJson(response, json, sizeof(json)));
@@ -199,7 +202,9 @@ TEST(DebugServerProtocol, CommandResponse_Construction)
 	EXPECT_EQ(cr.command(), "get_state");
 	EXPECT_TRUE(cr.success());
 	EXPECT_EQ(cr.message(), "State retrieved");
-	EXPECT_EQ(cr.payload_json(), "{\"processing_unit\":\"MainPU\"}");
+	ASSERT_TRUE(cr.has_payload());
+	Json::Value recoveredCrPayload = Dia::Proto::ProtoStructToJsonValue(cr.payload());
+	EXPECT_EQ(recoveredCrPayload["processing_unit"].asString(), "MainPU");
 }
 
 // 7. Error_Construction
@@ -236,7 +241,9 @@ TEST(DebugServerProtocol, Event_Construction)
 	eventMsg.set_timestamp(12345);
 	auto* evt = eventMsg.mutable_event();
 	evt->set_event_type("phase_transition");
-	evt->set_payload_json("{\"pu_id\":\"MainPU\"}");
+	Json::Value evtPayload;
+	evtPayload["pu_id"] = "MainPU";
+	Dia::Proto::JsonValueToProtoStruct(evtPayload, evt->mutable_payload());
 
 	char json[4096];
 	ASSERT_TRUE(Dia::Proto::ToJson(eventMsg, json, sizeof(json)));
@@ -251,7 +258,9 @@ TEST(DebugServerProtocol, Event_Construction)
 
 	const auto& e = parsed.event();
 	EXPECT_EQ(e.event_type(), "phase_transition");
-	EXPECT_EQ(e.payload_json(), "{\"pu_id\":\"MainPU\"}");
+	ASSERT_TRUE(e.has_payload());
+	Json::Value recoveredEvtPayload = Dia::Proto::ProtoStructToJsonValue(e.payload());
+	EXPECT_EQ(recoveredEvtPayload["pu_id"].asString(), "MainPU");
 }
 
 // 9. DataUpdate_Construction
@@ -262,7 +271,12 @@ TEST(DebugServerProtocol, DataUpdate_Construction)
 	msg.set_timestamp(12345);
 	auto* update = msg.mutable_data_update();
 	update->set_data_type("processing_unit_state");
-	update->set_payload_json("{\"modules\":[\"RenderModule\",\"PhysicsModule\"]}");
+	Json::Value duPayload;
+	Json::Value modules(Json::arrayValue);
+	modules.append("RenderModule");
+	modules.append("PhysicsModule");
+	duPayload["modules"] = modules;
+	Dia::Proto::JsonValueToProtoStruct(duPayload, update->mutable_payload());
 
 	char json[4096];
 	ASSERT_TRUE(Dia::Proto::ToJson(msg, json, sizeof(json)));
@@ -277,7 +291,11 @@ TEST(DebugServerProtocol, DataUpdate_Construction)
 
 	const auto& du = parsed.data_update();
 	EXPECT_EQ(du.data_type(), "processing_unit_state");
-	EXPECT_EQ(du.payload_json(), "{\"modules\":[\"RenderModule\",\"PhysicsModule\"]}");
+	ASSERT_TRUE(du.has_payload());
+	Json::Value recoveredDuPayload = Dia::Proto::ProtoStructToJsonValue(du.payload());
+	ASSERT_TRUE(recoveredDuPayload["modules"].isArray());
+	EXPECT_EQ(recoveredDuPayload["modules"][0].asString(), "RenderModule");
+	EXPECT_EQ(recoveredDuPayload["modules"][1].asString(), "PhysicsModule");
 }
 
 // 10. Subscribe_ParseFromClient
@@ -288,7 +306,9 @@ TEST(DebugServerProtocol, Subscribe_ParseFromClient)
 	msg.set_timestamp(12345);
 	auto* sub = msg.mutable_subscribe();
 	sub->set_data_type("phase_transition");
-	sub->set_filter("{\"pu_id\":\"MainPU\"}");
+	Json::Value filterVal;
+	filterVal["pu_id"] = "MainPU";
+	Dia::Proto::JsonValueToProtoStruct(filterVal, sub->mutable_filter());
 
 	char json[4096];
 	ASSERT_TRUE(Dia::Proto::ToJson(msg, json, sizeof(json)));
@@ -300,7 +320,9 @@ TEST(DebugServerProtocol, Subscribe_ParseFromClient)
 	EXPECT_EQ(parsed.type(), dia::debug::MESSAGE_TYPE_SUBSCRIBE);
 	EXPECT_EQ(parsed.payload_case(), dia::debug::DebugMessage::kSubscribe);
 	EXPECT_EQ(parsed.subscribe().data_type(), "phase_transition");
-	EXPECT_EQ(parsed.subscribe().filter(), "{\"pu_id\":\"MainPU\"}");
+	ASSERT_TRUE(parsed.subscribe().has_filter());
+	Json::Value recoveredFilter = Dia::Proto::ProtoStructToJsonValue(parsed.subscribe().filter());
+	EXPECT_EQ(recoveredFilter["pu_id"].asString(), "MainPU");
 }
 
 // 11. Unsubscribe_ParseFromClient
@@ -332,7 +354,9 @@ TEST(DebugServerProtocol, CommandRequest_ParseFromClient)
 	msg.set_timestamp(12345);
 	auto* cmd = msg.mutable_command_request();
 	cmd->set_command("get_state");
-	cmd->set_payload_json("{\"verbose\":true}");
+	Json::Value cmdPayload;
+	cmdPayload["verbose"] = true;
+	Dia::Proto::JsonValueToProtoStruct(cmdPayload, cmd->mutable_payload());
 
 	char json[4096];
 	ASSERT_TRUE(Dia::Proto::ToJson(msg, json, sizeof(json)));
@@ -344,7 +368,9 @@ TEST(DebugServerProtocol, CommandRequest_ParseFromClient)
 	EXPECT_EQ(parsed.type(), dia::debug::MESSAGE_TYPE_COMMAND_REQUEST);
 	EXPECT_EQ(parsed.payload_case(), dia::debug::DebugMessage::kCommandRequest);
 	EXPECT_EQ(parsed.command_request().command(), "get_state");
-	EXPECT_EQ(parsed.command_request().payload_json(), "{\"verbose\":true}");
+	ASSERT_TRUE(parsed.command_request().has_payload());
+	Json::Value recoveredCmdPayload = Dia::Proto::ProtoStructToJsonValue(parsed.command_request().payload());
+	EXPECT_TRUE(recoveredCmdPayload["verbose"].asBool());
 }
 
 // 13. Ping_ParseFromClient
@@ -499,7 +525,7 @@ TEST(DebugServerProtocol, CommandResponse_EmptyPayloadJson)
 	resp->set_command("do_something");
 	resp->set_success(true);
 	resp->set_message("Done");
-	resp->set_payload_json("");
+	// No payload set — verify has_payload() returns false after round-trip
 
 	char json[4096];
 	ASSERT_TRUE(Dia::Proto::ToJson(response, json, sizeof(json)));
@@ -509,16 +535,13 @@ TEST(DebugServerProtocol, CommandResponse_EmptyPayloadJson)
 	ASSERT_TRUE(Dia::Proto::FromJson(json, &parsed));
 
 	EXPECT_EQ(parsed.payload_case(), dia::debug::DebugMessage::kCommandResponse);
-	// In proto3 JSON, empty strings are omitted by default, so after
-	// round-tripping the field should return the default empty string.
-	EXPECT_TRUE(parsed.command_response().payload_json().empty());
+	// Unset Struct field: has_payload() returns false
+	EXPECT_FALSE(parsed.command_response().has_payload());
 }
 
 // 19. CommandResponse_WithPayloadJson
 TEST(DebugServerProtocol, CommandResponse_WithPayloadJson)
 {
-	const std::string payloadContent = "{\"modules\":[\"Render\",\"Physics\"],\"count\":2}";
-
 	dia::debug::DebugMessage response;
 	response.set_type(dia::debug::MESSAGE_TYPE_COMMAND_RESPONSE);
 	response.set_timestamp(12345);
@@ -526,7 +549,13 @@ TEST(DebugServerProtocol, CommandResponse_WithPayloadJson)
 	resp->set_command("get_state");
 	resp->set_success(true);
 	resp->set_message("State retrieved");
-	resp->set_payload_json(payloadContent);
+	Json::Value crPayload;
+	Json::Value modules(Json::arrayValue);
+	modules.append("Render");
+	modules.append("Physics");
+	crPayload["modules"] = modules;
+	crPayload["count"] = 2;
+	Dia::Proto::JsonValueToProtoStruct(crPayload, resp->mutable_payload());
 
 	char json[4096];
 	ASSERT_TRUE(Dia::Proto::ToJson(response, json, sizeof(json)));
@@ -538,5 +567,10 @@ TEST(DebugServerProtocol, CommandResponse_WithPayloadJson)
 	EXPECT_EQ(parsed.payload_case(), dia::debug::DebugMessage::kCommandResponse);
 	EXPECT_EQ(parsed.command_response().command(), "get_state");
 	EXPECT_TRUE(parsed.command_response().success());
-	EXPECT_EQ(parsed.command_response().payload_json(), payloadContent);
+	ASSERT_TRUE(parsed.command_response().has_payload());
+	Json::Value recovered = Dia::Proto::ProtoStructToJsonValue(parsed.command_response().payload());
+	ASSERT_TRUE(recovered["modules"].isArray());
+	EXPECT_EQ(recovered["modules"][0].asString(), "Render");
+	EXPECT_EQ(recovered["modules"][1].asString(), "Physics");
+	EXPECT_EQ(recovered["count"].asInt(), 2);
 }
