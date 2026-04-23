@@ -50,7 +50,7 @@ namespace Cluiche
 		const Dia::Core::StringCRC SplashScreenModule::kTypeId("SplashScreenModule");
 
 		SplashScreenModule::SplashScreenModule(Dia::Application::ProcessingUnit* pu)
-			: Dia::Application::Module(pu, kTypeId, RunningEnum::kNone)
+			: Dia::Application::Module(pu, kTypeId, RunningEnum::kIdle)
 			, mHwnd(nullptr)
 		{
 		}
