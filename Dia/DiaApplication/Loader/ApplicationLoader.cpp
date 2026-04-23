@@ -33,8 +33,8 @@ namespace Dia
 					const ManifestValidationError& error = errors[i];
 					DIA_LOG_ERROR("Application", "  [%s] %s (context: %s)",
 							ManifestValidationError::GetResultString(error.code),
-							error.message,
-							error.context ? error.context : "N/A");
+							error.message.AsCStr(),
+							error.context.IsEmpty() ? "N/A" : error.context.AsCStr());
 				}
 				return nullptr;
 			}

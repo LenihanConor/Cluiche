@@ -31,7 +31,7 @@ namespace Dia
 		{
 			static Dia::Core::Containers::String256 buffer;
 			buffer.Clear();
-			buffer.Format("[%s] %s: %s", GetResultString(code), context, message);
+			buffer.Format("[%s] %s: %s", GetResultString(code), context.AsCStr(), message.AsCStr());
 			return buffer.AsCStr();
 		}
 
