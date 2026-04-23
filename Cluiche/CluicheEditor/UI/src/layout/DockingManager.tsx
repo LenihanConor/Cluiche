@@ -62,6 +62,7 @@ interface DockingManagerProps {
 export function DockingManager({ onReady }: DockingManagerProps) {
   const [panels, setPanels] = useState<PanelInfo[]>([]);
   const [layout, setLayout] = useState<MosaicNode<PanelId> | null>(null);
+  const [savedLayout, setSavedLayout] = useState<MosaicNode<PanelId> | null>(null);
   const [initialized, setInitialized] = useState(false);
   const [fullscreenPanel, setFullscreenPanel] = useState<PanelId | null>(null);
 
@@ -149,9 +150,20 @@ export function DockingManager({ onReady }: DockingManagerProps) {
 
   const handleFullscreen = useCallback(
     (id: PanelId) => {
-      setFullscreenPanel((prev) => (prev === id ? null : id));
+      setFullscreenPanel((prev) => {
+        if (prev === id) {
+          // Exit fullscreen: restore saved layout
+          setLayout(savedLayout);
+          setSavedLayout(null);
+          return null;
+        } else {
+          // Enter fullscreen: save current layout and collapse to single panel
+          setLayout((current) => { setSavedLayout(current); return id; });
+          return id;
+        }
+      });
     },
-    []
+    [savedLayout]
   );
 
   function renderTile(id: PanelId, path: any) {
@@ -201,6 +213,7 @@ export function DockingManager({ onReady }: DockingManagerProps) {
         ]}
       >
         <iframe
+          key={id}
           src={src}
           style={{ width: "100%", height: "100%", border: "none" }}
           title={id}
@@ -217,41 +230,10 @@ export function DockingManager({ onReady }: DockingManagerProps) {
     );
   }
 
-  const fullscreenInfo = fullscreenPanel ? panelMap.get(fullscreenPanel) : null;
-  const fullscreenSrc = fullscreenInfo?.uiPath
-    ?? (fullscreenPanel ? `dia://editor/${fullscreenPanel.toLowerCase().replace(/\s+/g, "-")}/index.html` : "");
-
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ flex: 1, position: "relative" }}>
-        {fullscreenPanel ? (
-          <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#1e1e1e" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px", background: "#252526", borderBottom: "1px solid #3a3a3a" }}>
-              <span style={{ color: "#ccc", fontFamily: "monospace", fontSize: 13 }}>{fullscreenPanel}</span>
-              <div style={{ display: "flex", gap: 4 }}>
-                <button
-                  onClick={() => setFullscreenPanel(null)}
-                  title="Exit fullscreen"
-                  style={{ background: "transparent", border: "none", cursor: "pointer", color: "#999", fontSize: 12, lineHeight: 1, padding: "0 4px" }}
-                >
-                  ⊡
-                </button>
-                <button
-                  onClick={() => handlePanelClose(fullscreenPanel)}
-                  title="Hide panel"
-                  style={{ background: "transparent", border: "none", cursor: "pointer", color: "#999", fontSize: 14, lineHeight: 1, padding: "0 4px" }}
-                >
-                  ×
-                </button>
-              </div>
-            </div>
-            <iframe
-              src={fullscreenSrc}
-              style={{ flex: 1, width: "100%", border: "none" }}
-              title={fullscreenPanel}
-            />
-          </div>
-        ) : layout ? (
+        {layout ? (
           <Mosaic<PanelId>
             className="mosaic-blueprint-theme bp4-dark"
             renderTile={renderTile}
