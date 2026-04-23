@@ -3,9 +3,9 @@
 // Description: Python interpreter lifecycle management implementation
 ////////////////////////////////////////////////////////////////////////////////
 #include "Lifecycle.h"
-#include "../DiaPythonInternal.h"
-#include "../TypeConversion/PythonObject.h"
-#include "../Module/Module.h"
+#include "DiaPython/DiaPythonInternal.h"
+#include "DiaPython/TypeConversion/PythonObject.h"
+#include "DiaPython/Module/Module.h"
 
 #include <DiaLogger/DiaLog.h>
 

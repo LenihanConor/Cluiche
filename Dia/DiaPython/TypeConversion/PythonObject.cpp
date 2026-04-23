@@ -3,7 +3,7 @@
 // Description: PythonObject and PythonArgs implementation
 ////////////////////////////////////////////////////////////////////////////////
 #include "PythonObject.h"
-#include "../DiaPythonInternal.h"
+#include "DiaPython/DiaPythonInternal.h"
 
 #include <DiaLogger/DiaLog.h>
 

@@ -3,8 +3,8 @@
 // Description: Python bindings implementation
 ////////////////////////////////////////////////////////////////////////////////
 #include "PythonBindings.h"
-#include "../CommandRegistry/CommandRegistry.h"
-#include "../Parser/ArgumentParser.h"
+#include "DiaAPI/CommandRegistry/CommandRegistry.h"
+#include "DiaAPI/Parser/ArgumentParser.h"
 #include <DiaPython/DiaPython.h>
 #include <DiaLogger/DiaLog.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>

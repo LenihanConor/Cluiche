@@ -4,7 +4,7 @@
 // Feature spec: docs/specs/features/dia/diapython/error-handling.md
 ////////////////////////////////////////////////////////////////////////////////
 #include "Error.h"
-#include "../DiaPythonInternal.h"
+#include "DiaPython/DiaPythonInternal.h"
 
 #include <DiaLogger/DiaLog.h>
 #include <sstream>

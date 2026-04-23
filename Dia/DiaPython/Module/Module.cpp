@@ -4,8 +4,8 @@
 // Feature spec: docs/specs/features/dia/diapython/module-api.md
 ////////////////////////////////////////////////////////////////////////////////
 #include "Module.h"
-#include "../DiaPythonInternal.h"
-#include "../Lifecycle/Lifecycle.h"
+#include "DiaPython/DiaPythonInternal.h"
+#include "DiaPython/Lifecycle/Lifecycle.h"
 #include <DiaLogger/DiaLog.h>
 #include <cctype>
 

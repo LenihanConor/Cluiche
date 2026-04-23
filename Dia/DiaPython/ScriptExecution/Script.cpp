@@ -4,8 +4,8 @@
 // Feature spec: docs/specs/features/dia/diapython/script-execution.md
 ////////////////////////////////////////////////////////////////////////////////
 #include "Script.h"
-#include "../DiaPythonInternal.h"
-#include "../Lifecycle/Lifecycle.h"
+#include "DiaPython/DiaPythonInternal.h"
+#include "DiaPython/Lifecycle/Lifecycle.h"
 #include <DiaLogger/DiaLog.h>
 #include <chrono>
 #include <cstdio>

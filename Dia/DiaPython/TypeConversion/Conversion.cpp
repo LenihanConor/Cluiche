@@ -3,8 +3,8 @@
 // Description: Type conversion implementation
 ////////////////////////////////////////////////////////////////////////////////
 #include "Conversion.h"
-#include "../DiaPythonInternal.h"
-#include "../Lifecycle/Lifecycle.h"
+#include "DiaPython/DiaPythonInternal.h"
+#include "DiaPython/Lifecycle/Lifecycle.h"
 
 #include <DiaLogger/DiaLog.h>
 
