@@ -14,7 +14,7 @@ namespace Cluiche
 			, mCommandHistoryModule(this)
 			, mViewModule(this)
 			, mViewControllerModule(this)
-			, mPluginLoaderModule(this, &mModelModule.GetModel())
+			, mPluginLoaderModule(this)
 			, mLoggerModule(this)
 			, mBootPhase(this)
 			, mRunningPhase(this)
@@ -36,11 +36,6 @@ namespace Cluiche
 			SetInitialPhase(&mBootPhase);
 			AddPhaseTransiton(&mBootPhase, &mRunningPhase);
 			AddPhaseTransiton(&mRunningPhase, &mShutdownPhase);
-
-			mViewControllerModule.GetController().SetCommandHistory(&mCommandHistoryModule.GetHistory());
-			mViewControllerModule.GetController().SetModel(&mModelModule.GetModel());
-			mViewModule.SetModel(&mModelModule.GetModel());
-			mViewModule.SetController(&mViewControllerModule.GetController());
 
 			mProjectPath[0] = '\0';
 

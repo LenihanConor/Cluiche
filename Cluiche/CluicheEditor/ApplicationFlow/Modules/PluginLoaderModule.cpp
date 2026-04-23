@@ -1,4 +1,5 @@
 #include "PluginLoaderModule.h"
+#include "EditorModelModule.h"
 
 #include <DiaEditor/Plugin/EditorPluginRegistry.h>
 #include <DiaEditor/Plugin/IEditorPlugin.h>
@@ -13,12 +14,16 @@ namespace Cluiche
 	{
 		const Dia::Core::StringCRC PluginLoaderModule::kTypeId("PluginLoaderModule");
 
-		PluginLoaderModule::PluginLoaderModule(Dia::Application::ProcessingUnit* pu, Dia::Editor::EditorModel* model)
+		PluginLoaderModule::PluginLoaderModule(Dia::Application::ProcessingUnit* pu)
 			: Dia::Application::Module(pu, kTypeId, RunningEnum::kUpdate)
 			, mView(nullptr)
 		{
-			mContext.mModel = model;
 			mContext.mPluginLoader = this;
+		}
+
+		void PluginLoaderModule::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
+		{
+			AddDependancy(buildDependencies->GetModule(EditorModelModule::kTypeId));
 		}
 
 		void PluginLoaderModule::SetBridge(Dia::Editor::WebUIBridge* bridge)
@@ -28,6 +33,10 @@ namespace Cluiche
 
 		Dia::Application::StateObject::OpertionResponse PluginLoaderModule::DoStart(const Dia::Application::StateObject::IStartData*)
 		{
+			EditorModelModule* modelModule = GetModule<EditorModelModule>();
+			DIA_ASSERT(modelModule != nullptr, "PluginLoaderModule requires EditorModelModule");
+			mContext.mModel = &modelModule->GetModel();
+
 			DIA_LOG_INFO("Application", "PluginLoaderModule: DoStart");
 			return Dia::Application::StateObject::OpertionResponse::kImmediate;
 		}

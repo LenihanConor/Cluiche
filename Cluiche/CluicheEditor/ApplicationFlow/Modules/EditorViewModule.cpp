@@ -1,4 +1,6 @@
 #include "EditorViewModule.h"
+#include "EditorModelModule.h"
+#include "EditorViewControllerModule.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -17,8 +19,6 @@ namespace Cluiche
 
 		EditorViewModule::EditorViewModule(Dia::Application::ProcessingUnit* pu)
 			: Dia::Application::Module(pu, kTypeId, RunningEnum::kUpdate)
-			, mModel(nullptr)
-			, mController(nullptr)
 			, mWindow(nullptr)
 			, mUISystem(nullptr)
 		{
@@ -28,18 +28,26 @@ namespace Cluiche
 		{
 		}
 
+		void EditorViewModule::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
+		{
+			AddDependancy(buildDependencies->GetModule(EditorModelModule::kTypeId));
+			AddDependancy(buildDependencies->GetModule(EditorViewControllerModule::kTypeId));
+		}
+
 		Dia::Application::StateObject::OpertionResponse EditorViewModule::DoStart(const Dia::Application::StateObject::IStartData*)
 		{
+			EditorModelModule* modelModule = GetModule<EditorModelModule>();
+			EditorViewControllerModule* controllerModule = GetModule<EditorViewControllerModule>();
+
+			Dia::Editor::EditorModel* model = &modelModule->GetModel();
+			Dia::Editor::EditorViewController* controller = &controllerModule->GetController();
+
 			Dia::Window::IWindow::Settings::Dimensions dims(1280, 720);
 			Dia::Window::IWindow::Settings::Style style;
 			Dia::Core::Containers::String64 title("Cluiche Editor");
 			Dia::Window::IWindow::Settings settings(title, dims, style);
 
-			Dia::Editor::EditorModel* model = mModel;
-			Dia::Window::WindowCloseCallback onClose;
-			if (model)
-				onClose = [model]() { model->RequestClose(); };
-
+			Dia::Window::WindowCloseCallback onClose = [model]() { model->RequestClose(); };
 			mWindow = Dia::Window::CreateNativeWindow(settings, onClose);
 
 			Dia::UICEF::EditorUISystemConfig uiConfig;
@@ -52,7 +60,7 @@ namespace Cluiche
 			mUISystem->CreatePage("dia://ui/index.html",
 				static_cast<int>(size.X()), static_cast<int>(size.Y()));
 
-			mView.Initialize(mUISystem, mController);
+			mView.Initialize(mUISystem, controller);
 
 			Dia::Window::IWindow* win = mWindow;
 			Dia::Window::SetNativeResizeCallback(mWindow, [win](int w, int h) {

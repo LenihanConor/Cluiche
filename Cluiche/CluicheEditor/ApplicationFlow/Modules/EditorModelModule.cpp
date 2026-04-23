@@ -7,7 +7,7 @@ namespace Cluiche
 		const Dia::Core::StringCRC EditorModelModule::kTypeId("EditorModelModule");
 
 		EditorModelModule::EditorModelModule(Dia::Application::ProcessingUnit* pu)
-			: Dia::Application::Module(pu, kTypeId, RunningEnum::kUpdate)
+			: Dia::Application::Module(pu, kTypeId, RunningEnum::kIdle)
 		{
 		}
 

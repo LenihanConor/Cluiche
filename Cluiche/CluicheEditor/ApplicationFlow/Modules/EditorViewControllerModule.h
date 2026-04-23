@@ -16,6 +16,10 @@ namespace Cluiche
 
 			Dia::Editor::EditorViewController& GetController() { return mController; }
 
+		protected:
+			void DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies) override;
+			Dia::Application::StateObject::OpertionResponse DoStart(const Dia::Application::StateObject::IStartData*) override;
+
 		private:
 			Dia::Editor::EditorViewController mController;
 		};

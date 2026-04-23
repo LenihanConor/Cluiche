@@ -74,7 +74,7 @@ namespace Dia
 			GetAssociatedProcessingUnit()->GetMessageBus().Subscribe(
 				Dia::Application::DebugDataType::kPhaseTransition,
 				kUniqueId,
-				[this](const Dia::Application::Message& msg) {
+				[this](const Dia::Application::Message& /*busMsg*/) {
 					auto subscribers = mSubscriptionManager.GetSubscribers(
 						Dia::Application::DebugDataType::kPhaseTransition);
 					if (subscribers.Size() == 0) return;
@@ -82,10 +82,14 @@ namespace Dia
 					Json::Value eventPayload;
 					eventPayload["pu_id"] = GetAssociatedProcessingUnit()->GetUniqueId().AsChar();
 
-					Json::Value eventJson = Dia::DebugProtocol::SerializeEvent(
-						Dia::Application::DebugDataType::kPhaseTransition, eventPayload);
+					dia::debug::DebugMessage eventMsg;
+					eventMsg.set_type(dia::debug::MESSAGE_TYPE_EVENT);
+					eventMsg.set_timestamp(Dia::DebugProtocol::GetTimestampNow());
+					auto* evt = eventMsg.mutable_event();
+					evt->set_event_type(Dia::Application::DebugDataType::kPhaseTransition.AsChar());
+					evt->set_payload_json(Json::FastWriter().write(eventPayload));
 
-					std::string jsonStr = Json::FastWriter().write(eventJson);
+					std::string jsonStr = Dia::Proto::ToJson(eventMsg);
 					for (unsigned int i = 0; i < subscribers.Size(); ++i)
 					{
 						mServer->SendText(subscribers[i], jsonStr.c_str());
@@ -186,13 +190,15 @@ namespace Dia
 			DIA_LOG_INFO("DebugServer", "DebugServerModule: HandleConnection connId=%d connected=%d totalConnections=%d", connId, connected ? 1 : 0, mServer ? mServer->GetConnectionCount() : -1);
 			if (connected)
 			{
-				Json::Value welcome = Dia::DebugProtocol::SerializeHandshakeResponse(
-					Dia::DebugProtocol::kProtocolVersion,
-					true,
-					"DiaDebugServer",
-					"1.0.0"
-				);
-				SendJsonToConnection(connId, welcome);
+				dia::debug::DebugMessage welcome;
+				welcome.set_type(dia::debug::MESSAGE_TYPE_HANDSHAKE_RESPONSE);
+				welcome.set_timestamp(Dia::DebugProtocol::GetTimestampNow());
+				auto* resp = welcome.mutable_handshake_response();
+				resp->set_protocol_version(Dia::DebugProtocol::kProtocolVersion);
+				resp->set_accepted(true);
+				resp->set_server_name("DiaDebugServer");
+				resp->set_server_version("1.0.0");
+				SendProtoMessage(connId, welcome);
 
 				DIA_LOG_INFO("DebugServer", "DebugServerModule: Sending game_info to connId=%d", connId);
 				SendGameInfo(connId);
@@ -208,9 +214,16 @@ namespace Dia
 		{
 			const char* name = mGameName[0] ? mGameName : "DiaDebugServer";
 			const char* build = mGameBuild[0] ? mGameBuild : "unknown";
-			Json::Value info = Dia::DebugProtocol::SerializeGameInfo(
-				name, build, GetProcessingUnitCount(), GetCurrentPhaseName());
-			SendJsonToConnection(connId, info);
+
+			dia::debug::DebugMessage msg;
+			msg.set_type(dia::debug::MESSAGE_TYPE_GAME_INFO);
+			msg.set_timestamp(Dia::DebugProtocol::GetTimestampNow());
+			auto* info = msg.mutable_game_info();
+			info->set_name(name);
+			info->set_build(build);
+			info->set_processing_unit_count(GetProcessingUnitCount());
+			info->set_current_phase(GetCurrentPhaseName());
+			SendProtoMessage(connId, msg);
 		}
 
 		const char* DebugServerModule::GetCurrentPhaseName() const
@@ -236,146 +249,177 @@ namespace Dia
 
 			mStats.messagesReceivedTotal++;
 
-			Json::Value json;
-			Json::Reader reader;
-			if (!reader.parse(msg.AsText(), msg.AsText() + msg.length, json))
+			std::string text(msg.AsText(), msg.length);
+			dia::debug::DebugMessage protoMsg;
+			if (!Dia::Proto::FromJson(text, &protoMsg))
 			{
 				DIA_LOG_ERROR("DebugServer", "DebugServerModule: HandleMessage connId=%d JSON parse error", connId);
-				Json::Value errorJson = Dia::DebugProtocol::SerializeError("parse_error", "Invalid JSON");
-				SendJsonToConnection(connId, errorJson);
+				dia::debug::DebugMessage errorMsg;
+				errorMsg.set_type(dia::debug::MESSAGE_TYPE_ERROR);
+				errorMsg.set_timestamp(Dia::DebugProtocol::GetTimestampNow());
+				auto* err = errorMsg.mutable_error();
+				err->set_error_code("parse_error");
+				err->set_message("Invalid JSON");
+				SendProtoMessage(connId, errorMsg);
 				return;
 			}
 
-			Dia::DebugProtocol::MessageType type = Dia::DebugProtocol::GetMessageType(json);
-			DIA_LOG_DEBUG("DebugServer", "DebugServerModule: HandleMessage connId=%d type=%d", connId, static_cast<int>(type));
+			DIA_LOG_DEBUG("DebugServer", "DebugServerModule: HandleMessage connId=%d type=%d", connId, static_cast<int>(protoMsg.type()));
 
-			switch (type)
+			switch (protoMsg.payload_case())
 			{
-			case Dia::DebugProtocol::MessageType::kSubscribe:
-				HandleSubscribe(connId, json);
+			case dia::debug::DebugMessage::kSubscribe:
+				HandleSubscribe(connId, protoMsg);
 				break;
-			case Dia::DebugProtocol::MessageType::kUnsubscribe:
-				HandleUnsubscribe(connId, json);
+			case dia::debug::DebugMessage::kUnsubscribe:
+				HandleUnsubscribe(connId, protoMsg);
 				break;
-			case Dia::DebugProtocol::MessageType::kCommandRequest:
-				HandleCommand(connId, json);
+			case dia::debug::DebugMessage::kCommandRequest:
+				HandleCommand(connId, protoMsg);
 				break;
-			case Dia::DebugProtocol::MessageType::kHandshake:
-				HandleHandshake(connId, json);
+			case dia::debug::DebugMessage::kHandshakeRequest:
+				HandleHandshake(connId, protoMsg);
 				break;
-			case Dia::DebugProtocol::MessageType::kPing:
-				HandlePing(connId, json);
+			case dia::debug::DebugMessage::kPing:
+				HandlePing(connId, protoMsg);
 				break;
 			default:
 			{
-				Json::Value errorJson = Dia::DebugProtocol::SerializeError("unknown_type", "Unknown message type");
-				SendJsonToConnection(connId, errorJson);
+				dia::debug::DebugMessage errorMsg;
+				errorMsg.set_type(dia::debug::MESSAGE_TYPE_ERROR);
+				errorMsg.set_timestamp(Dia::DebugProtocol::GetTimestampNow());
+				auto* err = errorMsg.mutable_error();
+				err->set_error_code("unknown_type");
+				err->set_message("Unknown message type");
+				SendProtoMessage(connId, errorMsg);
 				break;
 			}
 			}
 		}
 
-		void DebugServerModule::HandleSubscribe(int connId, const Json::Value& json)
+		void DebugServerModule::HandleSubscribe(int connId, const dia::debug::DebugMessage& msg)
 		{
-			Dia::DebugProtocol::SubscribeMessage subMsg;
-			if (!Dia::DebugProtocol::ParseSubscribe(json, subMsg))
+			const auto& sub = msg.subscribe();
+			if (sub.data_type().empty())
 			{
-				Json::Value errorJson = Dia::DebugProtocol::SerializeError("invalid_subscribe", "Missing data_type");
-				SendJsonToConnection(connId, errorJson);
+				dia::debug::DebugMessage errorMsg;
+				errorMsg.set_type(dia::debug::MESSAGE_TYPE_ERROR);
+				errorMsg.set_timestamp(Dia::DebugProtocol::GetTimestampNow());
+				auto* err = errorMsg.mutable_error();
+				err->set_error_code("invalid_subscribe");
+				err->set_message("Missing data_type");
+				SendProtoMessage(connId, errorMsg);
 				return;
 			}
 
-			mSubscriptionManager.Subscribe(connId, subMsg.dataType, subMsg.filter);
+			Dia::Core::StringCRC dataType(sub.data_type().c_str());
+			Json::Value filter;
+			if (!sub.filter().empty())
+			{
+				Json::Reader reader;
+				reader.parse(sub.filter(), filter);
+			}
+			mSubscriptionManager.Subscribe(connId, dataType, filter);
 		}
 
-		void DebugServerModule::HandleUnsubscribe(int connId, const Json::Value& json)
+		void DebugServerModule::HandleUnsubscribe(int connId, const dia::debug::DebugMessage& msg)
 		{
-			if (!json.isMember("data_type") || !json["data_type"].isString()) return;
+			const auto& unsub = msg.unsubscribe();
+			if (unsub.data_type().empty()) return;
 
-			Dia::Core::StringCRC dataType(json["data_type"].asCString());
+			Dia::Core::StringCRC dataType(unsub.data_type().c_str());
 			mSubscriptionManager.Unsubscribe(connId, dataType);
 		}
 
-		void DebugServerModule::HandleCommand(int connId, const Json::Value& json)
+		void DebugServerModule::HandleCommand(int connId, const dia::debug::DebugMessage& msg)
 		{
-			Dia::DebugProtocol::CommandRequestMessage cmdMsg;
-			if (!Dia::DebugProtocol::ParseCommandRequest(json, cmdMsg))
+			const auto& cmd = msg.command_request();
+			if (cmd.command().empty())
 			{
-				Json::Value errorJson = Dia::DebugProtocol::SerializeError("invalid_command", "Missing command field");
-				SendJsonToConnection(connId, errorJson);
+				dia::debug::DebugMessage errorMsg;
+				errorMsg.set_type(dia::debug::MESSAGE_TYPE_ERROR);
+				errorMsg.set_timestamp(Dia::DebugProtocol::GetTimestampNow());
+				auto* err = errorMsg.mutable_error();
+				err->set_error_code("invalid_command");
+				err->set_message("Missing command field");
+				SendProtoMessage(connId, errorMsg);
 				return;
 			}
 
-			if (mCommandDispatcher.IsProtocolCommand(cmdMsg.command))
+			Dia::Core::StringCRC commandName(cmd.command().c_str());
+			Json::Value payload;
+			if (!cmd.payload_json().empty())
+			{
+				Json::Reader reader;
+				reader.parse(cmd.payload_json(), payload);
+			}
+
+			if (mCommandDispatcher.IsProtocolCommand(commandName))
 			{
 				Json::Value response = mCommandDispatcher.ExecuteProtocolCommand(
-					cmdMsg.command, cmdMsg.payload, this);
+					commandName, payload, this);
 				SendJsonToConnection(connId, response);
 			}
 			else
 			{
 				Json::Value response = mCommandDispatcher.ExecuteDiaAPICommand(
-					cmdMsg.command, cmdMsg.payload);
+					commandName, payload);
 				SendJsonToConnection(connId, response);
 			}
 		}
 
-		void DebugServerModule::HandleHandshake(int connId, const Json::Value& json)
+		void DebugServerModule::HandleHandshake(int connId, const dia::debug::DebugMessage& msg)
 		{
-			Dia::DebugProtocol::HandshakeRequest request;
-			if (!Dia::DebugProtocol::ParseHandshakeRequest(json, request))
-			{
-				Json::Value errorJson = Dia::DebugProtocol::SerializeError("invalid_handshake", "Invalid handshake");
-				SendJsonToConnection(connId, errorJson);
-				return;
-			}
+			const auto& request = msg.handshake_request();
 
-			bool accepted = (request.protocolVersion == Dia::DebugProtocol::kProtocolVersion);
-			Json::Value response = Dia::DebugProtocol::SerializeHandshakeResponse(
-				Dia::DebugProtocol::kProtocolVersion,
-				accepted,
-				"DiaDebugServer",
-				"1.0.0"
-			);
-			SendJsonToConnection(connId, response);
+			bool accepted = (request.protocol_version() == Dia::DebugProtocol::kProtocolVersion);
+
+			dia::debug::DebugMessage response;
+			response.set_type(dia::debug::MESSAGE_TYPE_HANDSHAKE_RESPONSE);
+			response.set_timestamp(Dia::DebugProtocol::GetTimestampNow());
+			auto* resp = response.mutable_handshake_response();
+			resp->set_protocol_version(Dia::DebugProtocol::kProtocolVersion);
+			resp->set_accepted(accepted);
+			resp->set_server_name("DiaDebugServer");
+			resp->set_server_version("1.0.0");
+			SendProtoMessage(connId, response);
 		}
 
-		void DebugServerModule::HandlePing(int connId, const Json::Value& json)
+		void DebugServerModule::HandlePing(int connId, const dia::debug::DebugMessage& msg)
 		{
-			Dia::DebugProtocol::PingMessage ping;
-			if (!Dia::DebugProtocol::ParsePing(json, ping))
-			{
-				DIA_LOG_WARNING("DebugServer", "DebugServerModule: HandlePing connId=%d invalid ping", connId);
-				Json::Value errorJson = Dia::DebugProtocol::SerializeError("invalid_ping", "Missing ts");
-				SendJsonToConnection(connId, errorJson);
-				return;
-			}
-			DIA_LOG_DEBUG("DebugServer", "DebugServerModule: HandlePing connId=%d ts=%llu, sending pong", connId, static_cast<unsigned long long>(ping.ts));
-			Json::Value pong = Dia::DebugProtocol::SerializePong(ping.ts);
-			SendJsonToConnection(connId, pong);
+			const auto& ping = msg.ping();
+			DIA_LOG_DEBUG("DebugServer", "DebugServerModule: HandlePing connId=%d ts=%llu, sending pong", connId, static_cast<unsigned long long>(ping.ts()));
+
+			dia::debug::DebugMessage pongMsg;
+			pongMsg.set_type(dia::debug::MESSAGE_TYPE_PONG);
+			pongMsg.set_timestamp(Dia::DebugProtocol::GetTimestampNow());
+			pongMsg.mutable_pong()->set_ts(ping.ts());
+			SendProtoMessage(connId, pongMsg);
 		}
 
 		void DebugServerModule::BroadcastCoreMetrics()
 		{
 			uint64_t serializeStart = Dia::DebugProtocol::GetTimestampNow();
 
-			Dia::DebugProtocol::CoreMetricsPayload metrics;
-			memset(&metrics, 0, sizeof(metrics));
+			dia::debug::DebugMessage msg;
+			msg.set_type(dia::debug::MESSAGE_TYPE_CORE_METRICS);
+			msg.set_timestamp(Dia::DebugProtocol::GetTimestampNow());
+			auto* cm = msg.mutable_core_metrics();
 
 			Dia::Application::MetricsCollectorModule* collector = GetAssociatedProcessingUnit()->GetMetricsCollector();
 			if (collector != nullptr)
 			{
 				const Dia::Application::MetricsSnapshot& snap = collector->GetSnapshot();
-				metrics.fps = (snap.puCount > 0) ? snap.puMetrics[0].fps : 0.0f;
-				metrics.frameTimeMs = (snap.puCount > 0) ? snap.puMetrics[0].frameTimeMs : 0.0f;
-				metrics.memoryUsedMb = snap.memoryUsedMB;
-				metrics.uptimeSeconds = snap.uptimeSeconds;
-				metrics.puCount = snap.puCount;
-				for (unsigned int i = 0; i < snap.puCount && i < Dia::DebugProtocol::CoreMetricsPayload::kMaxProcessingUnits; ++i)
+				cm->set_fps((snap.puCount > 0) ? snap.puMetrics[0].fps : 0.0f);
+				cm->set_frame_time_ms((snap.puCount > 0) ? snap.puMetrics[0].frameTimeMs : 0.0f);
+				cm->set_memory_used_mb(snap.memoryUsedMB);
+				cm->set_uptime_seconds(snap.uptimeSeconds);
+				for (unsigned int i = 0; i < snap.puCount && i < 8; ++i)
 				{
-					strncpy_s(metrics.puMetrics[i].name, sizeof(metrics.puMetrics[i].name), snap.puMetrics[i].name, _TRUNCATE);
-					metrics.puMetrics[i].fps = snap.puMetrics[i].fps;
-					metrics.puMetrics[i].frameTimeMs = snap.puMetrics[i].frameTimeMs;
+					auto* pu = cm->add_processing_units();
+					pu->set_name(snap.puMetrics[i].name);
+					pu->set_fps(snap.puMetrics[i].fps);
+					pu->set_frame_time_ms(snap.puMetrics[i].frameTimeMs);
 				}
 			}
 
@@ -385,7 +429,7 @@ namespace Dia
 				PROCESS_MEMORY_COUNTERS pmc;
 				if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc)))
 				{
-					metrics.memoryUsedMb = static_cast<float>(pmc.WorkingSetSize) / (1024.0f * 1024.0f);
+					cm->set_memory_used_mb(static_cast<float>(pmc.WorkingSetSize) / (1024.0f * 1024.0f));
 				}
 			}
 
@@ -393,19 +437,16 @@ namespace Dia
 			memStatus.dwLength = sizeof(memStatus);
 			if (GlobalMemoryStatusEx(&memStatus))
 			{
-				metrics.memoryAvailableMb = static_cast<float>(memStatus.ullAvailPhys) / (1024.0f * 1024.0f);
+				cm->set_memory_available_mb(static_cast<float>(memStatus.ullAvailPhys) / (1024.0f * 1024.0f));
 			}
 #endif
-
-			Json::Value json = Dia::DebugProtocol::SerializeCoreMetrics(metrics);
-			json["payload"]["debug_server_overhead_ms"] = mStats.debugServerOverheadMs;
 
 			uint64_t serializeEnd = Dia::DebugProtocol::GetTimestampNow();
 			mStats.serializationTimeMs = static_cast<float>(serializeEnd - serializeStart) / 1000.0f;
 
 			uint64_t broadcastStart = Dia::DebugProtocol::GetTimestampNow();
 
-			std::string jsonStr = Json::FastWriter().write(json);
+			std::string jsonStr = Dia::Proto::ToJson(msg);
 			mServer->BroadcastText(jsonStr.c_str());
 
 			uint64_t broadcastEnd = Dia::DebugProtocol::GetTimestampNow();
@@ -424,9 +465,14 @@ namespace Dia
 			auto subscribers = mSubscriptionManager.GetSubscribers(dataType);
 			if (subscribers.Size() == 0) return;
 
-			Json::Value json = Dia::DebugProtocol::SerializeDataUpdate(dataType, payload);
-			std::string jsonStr = Json::FastWriter().write(json);
+			dia::debug::DebugMessage msg;
+			msg.set_type(dia::debug::MESSAGE_TYPE_DATA_UPDATE);
+			msg.set_timestamp(Dia::DebugProtocol::GetTimestampNow());
+			auto* update = msg.mutable_data_update();
+			update->set_data_type(dataType.AsChar());
+			update->set_payload_json(Json::FastWriter().write(payload));
 
+			std::string jsonStr = Dia::Proto::ToJson(msg);
 			for (unsigned int i = 0; i < subscribers.Size(); ++i)
 			{
 				mServer->SendText(subscribers[i], jsonStr.c_str());

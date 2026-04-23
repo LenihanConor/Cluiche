@@ -2,13 +2,11 @@
 
 #include <DiaApplication/ApplicationModule.h>
 #include <DiaEditor/MVC/EditorView.h>
-#include <DiaEditor/MVC/EditorModel.h>
 
 namespace Dia
 {
 	namespace Window { class IWindow; }
 	namespace UI { class IUISystem; }
-	namespace Editor { class EditorViewController; }
 }
 
 namespace Cluiche
@@ -23,20 +21,16 @@ namespace Cluiche
 			explicit EditorViewModule(Dia::Application::ProcessingUnit* pu);
 			~EditorViewModule();
 
-			void SetModel(Dia::Editor::EditorModel* model) { mModel = model; }
-			void SetController(Dia::Editor::EditorViewController* controller) { mController = controller; }
-
 			Dia::Editor::EditorView& GetView() { return mView; }
 
 		protected:
+			void DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies) override;
 			Dia::Application::StateObject::OpertionResponse DoStart(const Dia::Application::StateObject::IStartData*) override;
 			void DoUpdate() override;
 			void DoStop() override;
 
 		private:
 			Dia::Editor::EditorView mView;
-			Dia::Editor::EditorModel* mModel;
-			Dia::Editor::EditorViewController* mController;
 			Dia::Window::IWindow* mWindow;
 			Dia::UI::IUISystem* mUISystem;
 		};

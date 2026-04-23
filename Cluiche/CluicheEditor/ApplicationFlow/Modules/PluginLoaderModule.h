@@ -16,7 +16,7 @@ namespace Cluiche
 		public:
 			static const Dia::Core::StringCRC kTypeId;
 
-			PluginLoaderModule(Dia::Application::ProcessingUnit* pu, Dia::Editor::EditorModel* model);
+			PluginLoaderModule(Dia::Application::ProcessingUnit* pu);
 
 			void SetBridge(Dia::Editor::WebUIBridge* bridge);
 			void LoadBuiltInPlugins();
@@ -28,6 +28,7 @@ namespace Cluiche
 			void RegisterView(Dia::Editor::EditorView* view);
 
 		protected:
+			void DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies) override;
 			Dia::Application::StateObject::OpertionResponse DoStart(const Dia::Application::StateObject::IStartData*) override;
 			void DoUpdate() override;
 			void DoStop() override;
