@@ -25,8 +25,8 @@ namespace Cluiche
 		private:
 			HWND mHwnd;
 
-			static const int kWidth  = 560;
-			static const int kHeight = 323;
+			static const int kWidth  = 700;
+			static const int kHeight = 404;
 		};
 	}
 }

@@ -15,7 +15,7 @@ namespace Cluiche
 
 				HBITMAP hbmp = (HBITMAP)LoadImageW(nullptr,
 					L"Assets\\CluicheEditor\\splash-logo.bmp",
-					IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+					IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_CREATEDIBSECTION);
 
 				if (hbmp)
 				{
@@ -27,6 +27,8 @@ namespace Cluiche
 
 					HDC memDC = CreateCompatibleDC(hdc);
 					HGDIOBJ old = SelectObject(memDC, hbmp);
+					SetStretchBltMode(hdc, HALFTONE);
+					SetBrushOrgEx(hdc, 0, 0, nullptr);
 					StretchBlt(hdc, 0, 0, rc.right, rc.bottom, memDC, 0, 0, bm.bmWidth, bm.bmHeight, SRCCOPY);
 					SelectObject(memDC, old);
 					DeleteDC(memDC);
