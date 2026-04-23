@@ -17,13 +17,11 @@ namespace Dia
 		// Uses Windows-specific GetModuleFileName
 		void Path::ExePath(std::string& outString)
 		{
-			using namespace std;;
-
-			wchar_t wbuffer[MAX_PATH];
-			GetModuleFileNameW(NULL, wbuffer, MAX_PATH);
-			std::string buffer(wbuffer, wbuffer + wcslen(wbuffer));
-			std::string::size_type pos = string(buffer).find_last_of("\\/");
-			outString = std::string(buffer).substr(0, pos);
+			char buffer[MAX_PATH];
+			GetModuleFileNameA(NULL, buffer, MAX_PATH);
+			std::string str(buffer);
+			std::string::size_type pos = str.find_last_of("\\/");
+			outString = str.substr(0, pos);
 		}
 
 		// Safely concatenate two path strings

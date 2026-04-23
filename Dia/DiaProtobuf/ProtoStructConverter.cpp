@@ -1,7 +1,11 @@
 #include "DiaProtobuf/ProtoStructConverter.h"
 
 #include <DiaCore/Json/external/json/json.h>
+
+#pragma warning(push)
+#pragma warning(disable: 4018)
 #include <google/protobuf/struct.pb.h>
+#pragma warning(pop)
 
 namespace Dia
 {
