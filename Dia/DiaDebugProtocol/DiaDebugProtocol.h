@@ -1,7 +1,10 @@
 #ifndef DIA_DEBUG_PROTOCOL_H
 #define DIA_DEBUG_PROTOCOL_H
 
+#pragma warning(push)
+#pragma warning(disable: 4244 4267)
 #include "DiaDebugProtocol/generated/debug_protocol.pb.h"
+#pragma warning(pop)
 #include "DiaProtobuf/ProtoJsonCodec.h"
 #include "DiaCore/Time/TimeAbsolute.h"
 #include "DiaApplication/Metrics/MetricsCollectorModule.h"
