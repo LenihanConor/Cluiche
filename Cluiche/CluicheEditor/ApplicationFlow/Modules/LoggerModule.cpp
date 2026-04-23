@@ -1,10 +1,8 @@
 #include "LoggerModule.h"
-#include "EditorViewModule.h"
 
 #include <DiaLogger/Logger.h>
 #include <DiaLogger/ISink.h>
 #include <DiaLogger/LogLevel.h>
-#include <DiaEditor/UI/WebUIBridge.h>
 #include <DiaCore/Json/external/json/json.h>
 
 #include <string.h>
@@ -18,12 +16,6 @@ namespace Cluiche
 
 		LoggerModule::LoggerModule(Dia::Application::ProcessingUnit* pu)
 			: Dia::Application::Module(pu, kTypeId, RunningEnum::kUpdate)
-			, mViewRef(this)
-			, mConsoleSinkBridgeConnected(false)
-		{
-		}
-
-		LoggerModule::~LoggerModule()
 		{
 		}
 
@@ -42,8 +34,8 @@ namespace Cluiche
 			if (root.isMember("default_level") && root["default_level"].isString())
 				defaultLevel = Dia::Logger::LogLevelFromString(root["default_level"].asCString());
 
-			Dia::Logger::ISink* sinks[] = { &mDebugOutputSink, &mConsoleSink };
-			const unsigned int sinkCount = 2;
+			Dia::Logger::ISink* sinks[] = { &mDebugOutputSink };
+			const unsigned int sinkCount = 1;
 
 			if (root.isMember("sinks") && root["sinks"].isArray())
 			{
@@ -91,7 +83,6 @@ namespace Cluiche
 			Dia::Logger::Logger& logger = Dia::Logger::Logger::Instance();
 			logger.RegisterThreadBuffer();
 			logger.RegisterSink(&mDebugOutputSink);
-			logger.RegisterSink(&mConsoleSink);
 
 			return Dia::Application::StateObject::OpertionResponse::kImmediate;
 		}
@@ -99,40 +90,12 @@ namespace Cluiche
 		void LoggerModule::DoUpdate()
 		{
 			Dia::Logger::Logger::Instance().FlushBuffers();
-
-			EditorViewModule* viewModule = mViewRef.Get();
-
-			if (!mConsoleSinkBridgeConnected && viewModule != nullptr)
-			{
-				Dia::Editor::WebUIBridge* bridge =
-					viewModule->GetView().GetWebUIBridge();
-				if (bridge != nullptr)
-				{
-					mConsoleSink.SetBridge(bridge);
-					mConsoleSinkBridgeConnected = true;
-
-					bridge->RegisterEventHandler(Dia::Core::StringCRC("console_ready"),
-						[this](const Json::Value& /*data*/)
-						{
-							mConsoleSink.NotifyConsoleReady();
-						});
-				}
-			}
-			else if (mConsoleSinkBridgeConnected && viewModule == nullptr)
-			{
-				mConsoleSink.SetBridge(nullptr);
-				mConsoleSinkBridgeConnected = false;
-			}
 		}
 
 		void LoggerModule::DoStop()
 		{
-			mConsoleSink.SetBridge(nullptr);
-			mConsoleSinkBridgeConnected = false;
-
 			Dia::Logger::Logger& logger = Dia::Logger::Logger::Instance();
 			logger.UnregisterSink(&mDebugOutputSink);
-			logger.UnregisterSink(&mConsoleSink);
 			logger.UnregisterThreadBuffer();
 		}
 	}

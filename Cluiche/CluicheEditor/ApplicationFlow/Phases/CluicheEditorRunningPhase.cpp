@@ -7,6 +7,7 @@
 #include "../Modules/EditorViewControllerModule.h"
 #include "../Modules/PluginLoaderModule.h"
 #include "../Modules/LoggerModule.h"
+#include "../Modules/EditorConsoleSinkModule.h"
 #include "../ProcessingUnits/CluicheEditorProcessingUnit.h"
 
 #include <DiaApplication/ApplicationProcessingUnit.h>
@@ -43,6 +44,7 @@ namespace Cluiche
 			AddModule(buildDependencies->GetModule(EditorViewModule::kTypeId));
 			AddModule(buildDependencies->GetModule(EditorViewControllerModule::kTypeId));
 			AddModule(buildDependencies->GetModule(PluginLoaderModule::kTypeId));
+			AddModule(buildDependencies->GetModule(EditorConsoleSinkModule::kTypeId));
 		}
 
 		void CluicheEditorRunningPhase::AfterModulesStart()

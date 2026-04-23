@@ -16,6 +16,7 @@ namespace Cluiche
 			, mViewControllerModule(this)
 			, mPluginLoaderModule(this)
 			, mLoggerModule(this)
+			, mConsoleSinkModule(this)
 			, mBootPhase(this)
 			, mRunningPhase(this)
 			, mShutdownPhase(this)
@@ -23,6 +24,7 @@ namespace Cluiche
 			mLoggerModule.ApplyConfig("Data/editor-logger.json");
 
 			AddModule(&mLoggerModule);
+			AddModule(&mConsoleSinkModule);
 			AddModule(&mModelModule);
 			AddModule(&mCommandHistoryModule);
 			AddModule(&mViewModule);
