@@ -394,6 +394,7 @@ void EditorApplication::ResetLayout() {
 - **Decision 25:** Default IDE-style layout (sidebar 20% + main 70% + console 30%)
 - **Decision 26:** Automatic plugin mounting via IEditorPlugin::GetUIPath()
 - **Decision 27:** Ignore missing panels gracefully (log warning, skip panel, render rest)
+- **Decision 28:** Fullscreen collapses the Mosaic layout to a single leaf node rather than swapping to a separate render tree (SED-018). Entering fullscreen saves the current layout tree and sets `layout` to the panel id string; exiting restores it. The Mosaic component stays mounted throughout, so no iframe is destroyed and no panel loses its in-page state.
 
 ## AI Review Questions
 
@@ -420,6 +421,9 @@ void EditorApplication::ResetLayout() {
 | Save on shutdown | `EditorView::SaveLayoutToDisk()` called in `CluicheEditorShutdownPhase::BeforeModulesStop` | |
 | Save on change | `EditorBridge.saveLayout()` fires on every Mosaic `onChange` | Fires the `save_layout` event handler |
 | Missing-panel tolerance | Mosaic render falls back to empty tile if panel id not in registered set | Decision 27 satisfied; panels registered after layout load still work |
+
+**Fullscreen (fixed 2026-04-23):**
+Fullscreen previously swapped to a separate `<div>` + `<iframe>` render tree, destroying the Mosaic instance and every panel's iframe on each toggle. Fixed by implementing Decision 28 (SED-018): fullscreen now saves the layout tree, collapses it to the single panel id, and restores on exit. The Mosaic component stays mounted throughout. `key={id}` also added to the tile iframe to prevent remounting on drag/resize.
 
 **Deferred / diverged from spec:**
 

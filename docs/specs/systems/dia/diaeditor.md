@@ -556,7 +556,7 @@ Decisions specific to DiaEditor system. Binding decisions constrain all features
 |----|----------|-----------|--------|---------|
 | SED-001 | Plugin interface (`IEditorPlugin`) is minimal and stable | Minimize breaking changes; plugins are maintained by different teams | Proposed | Yes |
 | SED-002 | Plugins register via macro, not manual registration | Follows ApplicationTypeRegistry pattern; zero-config auto-discovery | Proposed | Yes |
-| SED-003 | Each system owns its editor as `<System>/Editor/` subdirectory | Locality of code; clear ownership; system developers maintain their editors | Proposed | Yes |
+| SED-003 | Each editor plugin lives at `Dia/Dia<System>Editor/` (top-level peer, not a subdirectory of the system) | Standalone location; easier to build/link as independent DLL; avoids embedding a large plugin (UI assets, React components) inside the system it edits | Accepted | Yes |
 | SED-004 | WebSocket protocol uses JSON (not binary) | Human-readable for debugging; flexible schema; standard tooling support | Proposed | Yes |
 | SED-005 | CEF replaces Awesomium for web UI | Awesomium deprecated/abandoned; CEF actively maintained, modern Chromium | Proposed | Yes |
 | SED-006 | Docking managed by react-mosaic (JavaScript), not C++ | Web-native React solution; serializable; modern library; reduces C++ complexity | Proposed | Yes |
@@ -571,6 +571,7 @@ Decisions specific to DiaEditor system. Binding decisions constrain all features
 | SED-015 | DiaEditor is a pure C++ library — no DiaApplication dependency (no Module/Phase/ProcessingUnit subclasses) | Independently testable without the application framework; reusable in future editor executables; consumer (CluicheEditor) owns all application flow via thin Module/Phase wrappers that call into DiaEditor library classes | Accepted | Yes |
 | SED-016 | GameConnectionManager boots clean with no game; Connect() is explicit and user-triggered | Tool must be usable without a running game; non-blocking boot; avoids startup failure or hang when no game is present | Accepted | Yes |
 | SED-017 | EditorManifestLoader is a static utility (not a class instance) that parses .diaapp and invokes a callback per plugin | Decouples manifest parsing from plugin lifecycle; consumer decides how to instantiate plugins; callback + void* avoids std::function in the public API | Accepted | Yes |
+| SED-018 | Fullscreen is implemented by collapsing the Mosaic layout to a single leaf node; the Mosaic component stays mounted | Swapping render trees (separate div + iframe) destroys the iframe and loses all in-page state (console history, editor content). Keeping Mosaic alive preserves every panel's iframe across fullscreen and drag/move. Exiting fullscreen restores the saved layout tree. | Accepted | Yes |
 
 **Status values:** `Proposed` · `Accepted` · `Rejected` · `Superseded`
 **Binding:** `Yes` = enforced on all features · `No` = guidance only
