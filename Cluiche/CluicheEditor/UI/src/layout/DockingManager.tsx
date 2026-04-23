@@ -63,6 +63,7 @@ export function DockingManager({ onReady }: DockingManagerProps) {
   const [panels, setPanels] = useState<PanelInfo[]>([]);
   const [layout, setLayout] = useState<MosaicNode<PanelId> | null>(null);
   const [initialized, setInitialized] = useState(false);
+  const [fullscreenPanel, setFullscreenPanel] = useState<PanelId | null>(null);
 
   const panelMap = useMemo(() => {
     const m = new Map<PanelId, PanelInfo>();
@@ -139,8 +140,16 @@ export function DockingManager({ onReady }: DockingManagerProps) {
 
   const handlePanelClose = useCallback(
     (id: PanelId) => {
+      if (fullscreenPanel === id) setFullscreenPanel(null);
       EditorBridge.togglePanelVisibility(id);
       setLayout((prev) => removeFromLayout(prev, id));
+    },
+    [fullscreenPanel]
+  );
+
+  const handleFullscreen = useCallback(
+    (id: PanelId) => {
+      setFullscreenPanel((prev) => (prev === id ? null : id));
     },
     []
   );
@@ -148,12 +157,30 @@ export function DockingManager({ onReady }: DockingManagerProps) {
   function renderTile(id: PanelId, path: any) {
     const info = panelMap.get(id);
     const src = info?.uiPath ?? `dia://editor/${id.toLowerCase().replace(/\s+/g, "-")}/index.html`;
+    const isFullscreen = fullscreenPanel === id;
     return (
       <MosaicWindow<PanelId>
         path={path}
         title={id}
         createNode={() => panels[0]?.name ?? id}
         toolbarControls={[
+          <button
+            key="fullscreen"
+            onClick={() => handleFullscreen(id)}
+            title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+            className="mosaic-default-control bp4-button bp4-minimal"
+            style={{
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              color: "#999",
+              fontSize: 12,
+              lineHeight: 1,
+              padding: "0 4px",
+            }}
+          >
+            {isFullscreen ? "⊡" : "⊞"}
+          </button>,
           <button
             key="close"
             onClick={() => handlePanelClose(id)}
@@ -190,10 +217,41 @@ export function DockingManager({ onReady }: DockingManagerProps) {
     );
   }
 
+  const fullscreenInfo = fullscreenPanel ? panelMap.get(fullscreenPanel) : null;
+  const fullscreenSrc = fullscreenInfo?.uiPath
+    ?? (fullscreenPanel ? `dia://editor/${fullscreenPanel.toLowerCase().replace(/\s+/g, "-")}/index.html` : "");
+
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ flex: 1, position: "relative" }}>
-        {layout ? (
+        {fullscreenPanel ? (
+          <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#1e1e1e" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px", background: "#252526", borderBottom: "1px solid #3a3a3a" }}>
+              <span style={{ color: "#ccc", fontFamily: "monospace", fontSize: 13 }}>{fullscreenPanel}</span>
+              <div style={{ display: "flex", gap: 4 }}>
+                <button
+                  onClick={() => setFullscreenPanel(null)}
+                  title="Exit fullscreen"
+                  style={{ background: "transparent", border: "none", cursor: "pointer", color: "#999", fontSize: 12, lineHeight: 1, padding: "0 4px" }}
+                >
+                  ⊡
+                </button>
+                <button
+                  onClick={() => handlePanelClose(fullscreenPanel)}
+                  title="Hide panel"
+                  style={{ background: "transparent", border: "none", cursor: "pointer", color: "#999", fontSize: 14, lineHeight: 1, padding: "0 4px" }}
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+            <iframe
+              src={fullscreenSrc}
+              style={{ flex: 1, width: "100%", border: "none" }}
+              title={fullscreenPanel}
+            />
+          </div>
+        ) : layout ? (
           <Mosaic<PanelId>
             className="mosaic-blueprint-theme bp4-dark"
             renderTile={renderTile}
