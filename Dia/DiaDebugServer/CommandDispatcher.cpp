@@ -2,6 +2,7 @@
 #include "DiaDebugServer/DebugServerModule.h"
 
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
+#include <DiaDebugProtocol/generated/debug_protocol.pb.h>
 
 namespace Dia
 {
@@ -52,22 +53,20 @@ namespace Dia
 			return response;
 		}
 
-		Json::Value CommandDispatcher::ExecuteProtocolCommand(const Dia::Core::StringCRC& commandName,
-		                                                      const Json::Value& payload,
-		                                                      DebugServerModule* server)
+		void CommandDispatcher::ExecuteProtocolCommand(const Dia::Core::StringCRC& commandName,
+		                                               const Json::Value& payload,
+		                                               DebugServerModule* server,
+		                                               dia::debug::CommandResponse* responseOut)
 		{
-			Json::Value response;
-
 			auto it = mProtocolHandlers.find(commandName);
 			if (it != mProtocolHandlers.end())
 			{
-				it->second(payload, response);
-				return response;
+				it->second(payload, responseOut);
+				return;
 			}
 
-			response["success"] = false;
-			response["message"] = "Unknown protocol command";
-			return response;
+			responseOut->set_success(false);
+			responseOut->set_message("Unknown protocol command");
 		}
 
 		void CommandDispatcher::RegisterProtocolCommand(const Dia::Core::StringCRC& commandName,

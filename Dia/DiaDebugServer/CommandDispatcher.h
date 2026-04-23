@@ -7,13 +7,15 @@
 #include <functional>
 #include <unordered_map>
 
+namespace dia { namespace debug { class CommandResponse; } }
+
 namespace Dia
 {
 	namespace DebugServer
 	{
 		class DebugServerModule;
 
-		using ProtocolCommandHandler = std::function<void(const Json::Value& payload, Json::Value& responseOut)>;
+		using ProtocolCommandHandler = std::function<void(const Json::Value& payload, dia::debug::CommandResponse* responseOut)>;
 
 		class CommandDispatcher
 		{
@@ -23,9 +25,10 @@ namespace Dia
 			Json::Value ExecuteDiaAPICommand(const Dia::Core::StringCRC& commandName,
 			                                 const Json::Value& argsJson);
 
-			Json::Value ExecuteProtocolCommand(const Dia::Core::StringCRC& commandName,
-			                                   const Json::Value& payload,
-			                                   DebugServerModule* server);
+			void ExecuteProtocolCommand(const Dia::Core::StringCRC& commandName,
+			                            const Json::Value& payload,
+			                            DebugServerModule* server,
+			                            dia::debug::CommandResponse* responseOut);
 
 			void RegisterProtocolCommand(const Dia::Core::StringCRC& commandName,
 			                             ProtocolCommandHandler handler);

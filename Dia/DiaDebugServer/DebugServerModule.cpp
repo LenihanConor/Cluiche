@@ -89,10 +89,13 @@ namespace Dia
 					evt->set_event_type(Dia::Application::DebugDataType::kPhaseTransition.AsChar());
 					evt->set_payload_json(Json::FastWriter().write(eventPayload));
 
-					std::string jsonStr = Dia::Proto::ToJson(eventMsg);
-					for (unsigned int i = 0; i < subscribers.Size(); ++i)
+					char jsonBuffer[4096];
+					if (Dia::Proto::ToJson(eventMsg, jsonBuffer, sizeof(jsonBuffer)))
 					{
-						mServer->SendText(subscribers[i], jsonStr.c_str());
+						for (unsigned int i = 0; i < subscribers.Size(); ++i)
+						{
+							mServer->SendText(subscribers[i], jsonBuffer);
+						}
 					}
 					mStats.messagesSentTotal += static_cast<int>(subscribers.Size());
 				}
@@ -249,9 +252,8 @@ namespace Dia
 
 			mStats.messagesReceivedTotal++;
 
-			std::string text(msg.AsText(), msg.length);
 			dia::debug::DebugMessage protoMsg;
-			if (!Dia::Proto::FromJson(text, &protoMsg))
+			if (!Dia::Proto::FromJson(msg.AsText(), &protoMsg))
 			{
 				DIA_LOG_ERROR("DebugServer", "DebugServerModule: HandleMessage connId=%d JSON parse error", connId);
 				dia::debug::DebugMessage errorMsg;
@@ -354,18 +356,24 @@ namespace Dia
 				reader.parse(cmd.payload_json(), payload);
 			}
 
+			dia::debug::DebugMessage response;
+			response.set_type(dia::debug::MESSAGE_TYPE_COMMAND_RESPONSE);
+			response.set_timestamp(Dia::DebugProtocol::GetTimestampNow());
+			auto* resp = response.mutable_command_response();
+			resp->set_command(cmd.command());
+
 			if (mCommandDispatcher.IsProtocolCommand(commandName))
 			{
-				Json::Value response = mCommandDispatcher.ExecuteProtocolCommand(
-					commandName, payload, this);
-				SendJsonToConnection(connId, response);
+				mCommandDispatcher.ExecuteProtocolCommand(commandName, payload, this, resp);
 			}
 			else
 			{
-				Json::Value response = mCommandDispatcher.ExecuteDiaAPICommand(
-					commandName, payload);
-				SendJsonToConnection(connId, response);
+				Json::Value result = mCommandDispatcher.ExecuteDiaAPICommand(commandName, payload);
+				resp->set_success(result.get("success", false).asBool());
+				resp->set_message(result.get("message", "").asString());
 			}
+
+			SendProtoMessage(connId, response);
 		}
 
 		void DebugServerModule::HandleHandshake(int connId, const dia::debug::DebugMessage& msg)
@@ -409,18 +417,7 @@ namespace Dia
 			Dia::Application::MetricsCollectorModule* collector = GetAssociatedProcessingUnit()->GetMetricsCollector();
 			if (collector != nullptr)
 			{
-				const Dia::Application::MetricsSnapshot& snap = collector->GetSnapshot();
-				cm->set_fps((snap.puCount > 0) ? snap.puMetrics[0].fps : 0.0f);
-				cm->set_frame_time_ms((snap.puCount > 0) ? snap.puMetrics[0].frameTimeMs : 0.0f);
-				cm->set_memory_used_mb(snap.memoryUsedMB);
-				cm->set_uptime_seconds(snap.uptimeSeconds);
-				for (unsigned int i = 0; i < snap.puCount && i < 8; ++i)
-				{
-					auto* pu = cm->add_processing_units();
-					pu->set_name(snap.puMetrics[i].name);
-					pu->set_fps(snap.puMetrics[i].fps);
-					pu->set_frame_time_ms(snap.puMetrics[i].frameTimeMs);
-				}
+				Dia::DebugProtocol::PopulateCoreMetrics(cm, collector->GetSnapshot());
 			}
 
 #ifdef _WIN32
@@ -446,17 +443,19 @@ namespace Dia
 
 			uint64_t broadcastStart = Dia::DebugProtocol::GetTimestampNow();
 
-			std::string jsonStr = Dia::Proto::ToJson(msg);
-			mServer->BroadcastText(jsonStr.c_str());
+			char jsonBuffer[4096];
+			unsigned int jsonLength = 0;
+			if (Dia::Proto::ToJson(msg, jsonBuffer, sizeof(jsonBuffer), &jsonLength))
+				mServer->BroadcastText(jsonBuffer);
 
 			uint64_t broadcastEnd = Dia::DebugProtocol::GetTimestampNow();
 			mStats.broadcastTimeMs = static_cast<float>(broadcastEnd - broadcastStart) / 1000.0f;
 
 			mStats.messagesSentTotal++;
-			mStats.averageMessageSizeBytes = static_cast<int>(jsonStr.size());
+			mStats.averageMessageSizeBytes = static_cast<int>(jsonLength);
 			if (mMetricsBroadcastInterval > 0.0f)
 			{
-				mStats.bytesSentPerSec = static_cast<float>(jsonStr.size()) / mMetricsBroadcastInterval;
+				mStats.bytesSentPerSec = static_cast<float>(jsonLength) / mMetricsBroadcastInterval;
 			}
 		}
 
@@ -472,10 +471,13 @@ namespace Dia
 			update->set_data_type(dataType.AsChar());
 			update->set_payload_json(Json::FastWriter().write(payload));
 
-			std::string jsonStr = Dia::Proto::ToJson(msg);
-			for (unsigned int i = 0; i < subscribers.Size(); ++i)
+			char jsonBuffer[4096];
+			if (Dia::Proto::ToJson(msg, jsonBuffer, sizeof(jsonBuffer)))
 			{
-				mServer->SendText(subscribers[i], jsonStr.c_str());
+				for (unsigned int i = 0; i < subscribers.Size(); ++i)
+				{
+					mServer->SendText(subscribers[i], jsonBuffer);
+				}
 			}
 			mStats.messagesSentTotal += static_cast<int>(subscribers.Size());
 		}
@@ -484,11 +486,9 @@ namespace Dia
 		{
 			mCommandDispatcher.RegisterProtocolCommand(
 				Dia::Core::StringCRC("get_state"),
-				[this](const Json::Value& payload, Json::Value& responseOut) {
+				[this](const Json::Value& /*payload*/, dia::debug::CommandResponse* responseOut) {
 					const Dia::Application::ProcessingUnit* pu = GetAssociatedProcessingUnit();
-					responseOut["type"] = Dia::DebugProtocol::MessageTypeToString(Dia::DebugProtocol::MessageType::kCommandResponse);
-					responseOut["command"] = "get_state";
-					responseOut["success"] = true;
+					responseOut->set_success(true);
 
 					Json::Value statePayload;
 					if (pu)
@@ -500,16 +500,14 @@ namespace Dia
 							statePayload["current_phase"] = StateSerializer::SerializePhaseState(currentPhase);
 						}
 					}
-					responseOut["payload"] = statePayload;
+					responseOut->set_payload_json(Json::FastWriter().write(statePayload));
 				}
 			);
 
 			mCommandDispatcher.RegisterProtocolCommand(
 				Dia::Core::StringCRC("list_commands"),
-				[this](const Json::Value& /*payload*/, Json::Value& responseOut) {
-					responseOut["type"] = Dia::DebugProtocol::MessageTypeToString(Dia::DebugProtocol::MessageType::kCommandResponse);
-					responseOut["command"] = "list_commands";
-					responseOut["success"] = true;
+				[this](const Json::Value& /*payload*/, dia::debug::CommandResponse* responseOut) {
+					responseOut->set_success(true);
 
 					Json::Value commandsPayload;
 
@@ -527,16 +525,14 @@ namespace Dia
 					}
 					commandsPayload["api_commands"] = apiCmds;
 
-					responseOut["payload"] = commandsPayload;
+					responseOut->set_payload_json(Json::FastWriter().write(commandsPayload));
 				}
 			);
 
 			mCommandDispatcher.RegisterProtocolCommand(
 				Dia::Core::StringCRC("get_server_stats"),
-				[this](const Json::Value& /*payload*/, Json::Value& responseOut) {
-					responseOut["type"] = Dia::DebugProtocol::MessageTypeToString(Dia::DebugProtocol::MessageType::kCommandResponse);
-					responseOut["command"] = "get_server_stats";
-					responseOut["success"] = true;
+				[this](const Json::Value& /*payload*/, dia::debug::CommandResponse* responseOut) {
+					responseOut->set_success(true);
 
 					Json::Value statsPayload;
 
@@ -555,9 +551,25 @@ namespace Dia
 					statsPayload["server"]["messages_received_total"] = mStats.messagesReceivedTotal;
 					statsPayload["server"]["uptime_seconds"] = mStats.uptimeSeconds;
 
-					responseOut["payload"] = statsPayload;
+					responseOut->set_payload_json(Json::FastWriter().write(statsPayload));
 				}
 			);
+		}
+
+		void DebugServerModule::SendProtoMessage(int connId, const dia::debug::DebugMessage& msg)
+		{
+			char buffer[4096];
+			if (Dia::Proto::ToJson(msg, buffer, sizeof(buffer)))
+				mServer->SendText(connId, buffer);
+			mStats.messagesSentTotal++;
+		}
+
+		void DebugServerModule::BroadcastProtoMessage(const dia::debug::DebugMessage& msg)
+		{
+			char buffer[4096];
+			if (Dia::Proto::ToJson(msg, buffer, sizeof(buffer)))
+				mServer->BroadcastText(buffer);
+			mStats.messagesSentTotal++;
 		}
 
 		void DebugServerModule::SendJsonToConnection(int connId, const Json::Value& json)
