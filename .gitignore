@@ -251,6 +251,9 @@ venv/
 External/Python311/
 External/External/
 
+# Protobuf build tree (large binaries; use pre-built External/protobuf/Current-x64/ instead)
+External/protobuf/protobuf-25.6/
+
 # GoogleTest submodule (should be added as proper submodule)
 External/googletest/
 
