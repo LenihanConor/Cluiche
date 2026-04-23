@@ -16,6 +16,7 @@
     <ClCompile Include="ApplicationFlow\Modules\EditorModelModule.cpp" />
     <ClCompile Include="ApplicationFlow\Modules\CommandHistoryModule.cpp" />
     <ClCompile Include="ApplicationFlow\Modules\EditorViewModule.cpp" />
+    <ClCompile Include="ApplicationFlow\Modules\SplashScreenModule.cpp" />
     <ClCompile Include="ApplicationFlow\Modules\EditorViewControllerModule.cpp" />
     <ClCompile Include="ApplicationFlow\Modules\PluginLoaderModule.cpp" />
     <ClCompile Include="ApplicationFlow\Phases\CluicheEditorBootPhase.cpp" />
@@ -35,6 +36,7 @@
     <ClInclude Include="ApplicationFlow\Modules\EditorModelModule.h" />
     <ClInclude Include="ApplicationFlow\Modules\CommandHistoryModule.h" />
     <ClInclude Include="ApplicationFlow\Modules\EditorViewModule.h" />
+    <ClInclude Include="ApplicationFlow\Modules\SplashScreenModule.h" />
     <ClInclude Include="ApplicationFlow\Modules\EditorViewControllerModule.h" />
     <ClInclude Include="ApplicationFlow\Modules\PluginLoaderModule.h" />
     <ClInclude Include="ApplicationFlow\Phases\CluicheEditorBootPhase.h" />
@@ -130,7 +132,8 @@ set PATH=C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Micr
 cd "$(ProjectDir)UI"
 node node_modules/vite/bin/vite.js build
 xcopy /Y /E /I "$(ProjectDir)UI\dist\*.*" "$(TargetDir)UI\"
-xcopy /Y /E /I "$(ProjectDir)../../Dia/DiaEditor/Plugin/Assets\*.*" "$(TargetDir)editor\"</Command>
+xcopy /Y /E /I "$(ProjectDir)../../Dia/DiaEditor/Plugin/Assets\*.*" "$(TargetDir)editor\"
+xcopy /Y /E /I /D "$(SolutionDir)Assets\CluicheEditor\*.*" "$(TargetDir)Assets\CluicheEditor\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <!-- Release|x64 -->
@@ -164,7 +167,8 @@ set PATH=C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Micr
 cd "$(ProjectDir)UI"
 node node_modules/vite/bin/vite.js build
 xcopy /Y /E /I "$(ProjectDir)UI\dist\*.*" "$(TargetDir)UI\"
-xcopy /Y /E /I "$(ProjectDir)../../Dia/DiaEditor/Plugin/Assets\*.*" "$(TargetDir)editor\"</Command>
+xcopy /Y /E /I "$(ProjectDir)../../Dia/DiaEditor/Plugin/Assets\*.*" "$(TargetDir)editor\"
+xcopy /Y /E /I /D "$(SolutionDir)Assets\CluicheEditor\*.*" "$(TargetDir)Assets\CluicheEditor\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -12,6 +12,7 @@ namespace Cluiche
 			: Dia::Application::ProcessingUnit(kTypeId, 60.0f)
 			, mModelModule(this)
 			, mCommandHistoryModule(this)
+			, mSplashScreenModule(this)
 			, mViewModule(this)
 			, mViewControllerModule(this)
 			, mPluginLoaderModule(this)
@@ -27,6 +28,7 @@ namespace Cluiche
 			AddModule(&mConsoleSinkModule);
 			AddModule(&mModelModule);
 			AddModule(&mCommandHistoryModule);
+			AddModule(&mSplashScreenModule);
 			AddModule(&mViewModule);
 			AddModule(&mViewControllerModule);
 			AddModule(&mPluginLoaderModule);

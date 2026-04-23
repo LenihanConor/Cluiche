@@ -5,6 +5,7 @@
 #include "../Modules/CommandHistoryModule.h"
 #include "../Modules/EditorViewModule.h"
 #include "../Modules/EditorViewControllerModule.h"
+#include "../Modules/SplashScreenModule.h"
 #include "../Modules/PluginLoaderModule.h"
 #include "../Modules/LoggerModule.h"
 #include "../Modules/EditorConsoleSinkModule.h"
@@ -41,6 +42,7 @@ namespace Cluiche
 			AddModule(buildDependencies->GetModule(LoggerModule::kTypeId));
 			AddModule(buildDependencies->GetModule(EditorModelModule::kTypeId));
 			AddModule(buildDependencies->GetModule(CommandHistoryModule::kTypeId));
+			AddModule(buildDependencies->GetModule(SplashScreenModule::kTypeId));
 			AddModule(buildDependencies->GetModule(EditorViewModule::kTypeId));
 			AddModule(buildDependencies->GetModule(EditorViewControllerModule::kTypeId));
 			AddModule(buildDependencies->GetModule(PluginLoaderModule::kTypeId));

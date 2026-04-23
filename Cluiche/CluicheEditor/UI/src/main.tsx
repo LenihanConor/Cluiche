@@ -1,12 +1,21 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { DockingManager } from "./layout/DockingManager";
 import { CommandPalette } from "./components/CommandPalette";
+import { SplashScreen } from "./components/SplashScreen";
 import { EditorBridge } from "./bridge/EditorBridge";
 
 function App() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [lastAction, setLastAction] = useState<string>("");
+  const [splashVisible, setSplashVisible] = useState(true);
+  const handleReady = useCallback(() => setSplashVisible(false), []);
+
+  // Signal C++ that the React shell is painted — dismisses the native splash
+  // window and reveals the editor window.
+  useEffect(() => {
+    EditorBridge.shellReady();
+  }, []);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -38,7 +47,8 @@ function App() {
 
   return (
     <>
-      <DockingManager />
+      <SplashScreen visible={splashVisible} />
+      <DockingManager onReady={handleReady} />
       {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
       {lastAction && (
         <div style={{

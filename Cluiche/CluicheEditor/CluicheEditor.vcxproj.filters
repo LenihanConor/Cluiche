@@ -48,6 +48,9 @@
     <ClCompile Include="ApplicationFlow\Modules\EditorViewModule.cpp">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClCompile>
+    <ClCompile Include="ApplicationFlow\Modules\SplashScreenModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
     <ClCompile Include="ApplicationFlow\Modules\PluginLoaderModule.cpp">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClCompile>
@@ -78,6 +81,9 @@
       <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
     <ClInclude Include="ApplicationFlow\Modules\EditorViewModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="ApplicationFlow\Modules\SplashScreenModule.h">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
     <ClInclude Include="ApplicationFlow\Modules\PluginLoaderModule.h">

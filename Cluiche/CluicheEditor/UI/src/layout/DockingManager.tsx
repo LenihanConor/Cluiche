@@ -55,7 +55,11 @@ function addToLayout(
   };
 }
 
-export function DockingManager() {
+interface DockingManagerProps {
+  onReady?: () => void;
+}
+
+export function DockingManager({ onReady }: DockingManagerProps) {
   const [panels, setPanels] = useState<PanelInfo[]>([]);
   const [layout, setLayout] = useState<MosaicNode<PanelId> | null>(null);
   const [initialized, setInitialized] = useState(false);
@@ -86,11 +90,12 @@ export function DockingManager() {
             const visible = list.filter((p) => p.visible).map((p) => p.name);
             setLayout(buildTree(visible));
           })
-          .finally(() => setInitialized(true));
+          .finally(() => { setInitialized(true); onReady?.(); });
       })
       .catch(() => {
         setLayout(null);
         setInitialized(true);
+        onReady?.();
       });
   }, []);
 

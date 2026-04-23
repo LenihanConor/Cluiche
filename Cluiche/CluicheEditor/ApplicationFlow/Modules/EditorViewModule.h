@@ -31,8 +31,8 @@ namespace Cluiche
 
 		private:
 			Dia::Editor::EditorView mView;
-			Dia::Window::IWindow* mWindow;
-			Dia::UI::IUISystem* mUISystem;
+			Dia::Window::IWindow*   mWindow;
+			Dia::UI::IUISystem*     mUISystem;
 		};
 	}
 }

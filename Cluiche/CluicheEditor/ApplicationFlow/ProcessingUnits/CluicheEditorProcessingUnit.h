@@ -7,6 +7,7 @@
 #include "../Modules/CommandHistoryModule.h"
 #include "../Modules/EditorViewModule.h"
 #include "../Modules/EditorViewControllerModule.h"
+#include "../Modules/SplashScreenModule.h"
 #include "../Modules/PluginLoaderModule.h"
 #include "../Modules/LoggerModule.h"
 #include "../Modules/EditorConsoleSinkModule.h"
@@ -38,6 +39,7 @@ namespace Cluiche
 		private:
 			EditorModelModule mModelModule;
 			CommandHistoryModule mCommandHistoryModule;
+			SplashScreenModule mSplashScreenModule;
 			EditorViewModule mViewModule;
 			EditorViewControllerModule mViewControllerModule;
 			PluginLoaderModule mPluginLoaderModule;
