@@ -28,6 +28,7 @@
     <ClCompile Include="..\..\Dia\DiaEditor\Plugin\GameConnectionEditorPlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaEditor\Plugin\PluginBrowserEditorPlugin.cpp" />
     <ClCompile Include="ApplicationFlow\Modules\LoggerModule.cpp" />
+    <ClCompile Include="ApplicationFlow\Modules\EditorConsoleSinkModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApplicationFlow\ProcessingUnits\CluicheEditorProcessingUnit.h" />
@@ -40,6 +41,7 @@
     <ClInclude Include="ApplicationFlow\Phases\CluicheEditorRunningPhase.h" />
     <ClInclude Include="ApplicationFlow\Phases\CluicheEditorShutdownPhase.h" />
     <ClInclude Include="ApplicationFlow\Modules\LoggerModule.h" />
+    <ClInclude Include="ApplicationFlow\Modules\EditorConsoleSinkModule.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Data\test.cluicheproj">
