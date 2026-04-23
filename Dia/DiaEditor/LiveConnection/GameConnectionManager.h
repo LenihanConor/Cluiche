@@ -5,7 +5,6 @@
 #include <DiaCore/Json/external/json/json.h>
 
 #include <functional>
-#include <string>
 
 namespace Dia
 {
@@ -27,7 +26,7 @@ namespace Dia
 
 			using DataCallback = std::function<void(const Json::Value&)>;
 			using ConnectionCallback = std::function<void(bool connected)>;
-			using RawMessageCallback = std::function<void(const Json::Value&)>;
+			using RawMessageCallback = std::function<void(const char* rawText, unsigned int rawLength, const Json::Value&)>;
 
 			GameConnectionManager();
 			~GameConnectionManager();
@@ -60,10 +59,11 @@ namespace Dia
 			// a non-topic protocol (e.g. DiaDebugProtocol's {type, ...} frames).
 			void SetRawMessageCallback(RawMessageCallback callback);
 			void SendRaw(const Json::Value& message);
+			void SendRawText(const char* text);
 			const char* GetLastError() const { return mLastError; }
 
 		private:
-			void HandleMessage(const std::string& text);
+			void HandleMessage(const char* text, unsigned int length);
 			void HandleConnection(bool connected);
 
 			struct Subscription

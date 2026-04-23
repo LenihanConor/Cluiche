@@ -15,8 +15,6 @@ namespace Dia
 		                                                    const Json::Value& argsJson)
 		{
 			Json::Value response;
-			response["type"] = "command_response";
-			response["command"] = commandName.AsChar();
 
 			const Dia::API::CommandInfo* cmdInfo = Dia::API::GetCommand(commandName);
 			if (!cmdInfo)

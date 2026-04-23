@@ -375,6 +375,12 @@
     <ClCompile Include="WebSocket\TestWebSocketError.cpp">
       <Filter>WebSocket</Filter>
     </ClCompile>
+    <ClCompile Include="WebSocket\TestWebSocketTransport.cpp">
+      <Filter>WebSocket</Filter>
+    </ClCompile>
+    <ClCompile Include="WebSocket\TestWebSocketClientState.cpp">
+      <Filter>WebSocket</Filter>
+    </ClCompile>
     <!-- UICEF -->
     <ClCompile Include="UICEF\TestCEFMimeTypes.cpp">
       <Filter>UICEF</Filter>
@@ -389,7 +395,10 @@
       <Filter>UICEF</Filter>
     </ClCompile>
     <!-- DebugProtocol -->
-    <ClCompile Include="DebugProtocol\TestDebugProtocol.cpp">
+    <ClCompile Include="DebugProtocol\TestDebugProtocolProto.cpp">
+      <Filter>DebugProtocol</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugProtocol\TestDebugProtocolWireCompat.cpp">
       <Filter>DebugProtocol</Filter>
     </ClCompile>
     <!-- DebugServer -->
@@ -402,11 +411,17 @@
     <ClCompile Include="DebugServer\TestStateSerializer.cpp">
       <Filter>DebugServer</Filter>
     </ClCompile>
+    <ClCompile Include="DebugServer\TestDebugServerProtocol.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
     <!-- Integration -->
     <ClCompile Include="Integration\TestInputPipeline.cpp">
       <Filter>Integration</Filter>
     </ClCompile>
     <ClCompile Include="Integration\TestFrameStreamPipeline.cpp">
+      <Filter>Integration</Filter>
+    </ClCompile>
+    <ClCompile Include="Integration\TestDebugProtocolEndToEnd.cpp">
       <Filter>Integration</Filter>
     </ClCompile>
     <!-- Editor -->
@@ -441,6 +456,12 @@
       <Filter>Editor</Filter>
     </ClCompile>
     <ClCompile Include="Editor\TestGameConnectionController.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TestGameConnectionControllerMessages.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TestGameConnectionLifecycle.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
     <ClCompile Include="Editor\TestEditorToolbarItem.cpp">

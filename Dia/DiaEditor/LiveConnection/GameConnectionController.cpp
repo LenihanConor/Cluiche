@@ -1,5 +1,7 @@
 #include "DiaEditor/LiveConnection/GameConnectionController.h"
 
+#include <DiaDebugProtocol/DiaDebugProtocol.h>
+
 #include "DiaEditor/LiveConnection/GameConnectionManager.h"
 #include "DiaEditor/MVC/EditorView.h"
 #include "DiaEditor/UI/WebUIBridge.h"
@@ -84,7 +86,7 @@ namespace Dia
 			if (mManager != nullptr)
 			{
 				mManager->SetConnectionCallback([this](bool connected) { OnManagerConnection(connected); });
-				mManager->SetRawMessageCallback([this](const Json::Value& envelope) { OnManagerRawMessage(envelope); });
+				mManager->SetRawMessageCallback([this](const char* rawText, unsigned int /*rawLength*/, const Json::Value& envelope) { OnManagerRawMessage(rawText, envelope); });
 			}
 
 			RegisterHandlers();
@@ -138,10 +140,14 @@ namespace Dia
 					{
 						time_t now = time(nullptr);
 						mLastPingSentTs = static_cast<uint64_t>(now) * 1000ULL;
-						Json::Value ping;
-						ping["type"] = "ping";
-						ping["ts"] = static_cast<Json::UInt64>(mLastPingSentTs);
-						mManager->SendRaw(ping);
+
+						dia::debug::DebugMessage pingMsg;
+						pingMsg.set_type(dia::debug::MESSAGE_TYPE_PING);
+						pingMsg.mutable_ping()->set_ts(mLastPingSentTs);
+
+						char pingBuffer[256];
+						if (Dia::Proto::ToJson(pingMsg, pingBuffer, sizeof(pingBuffer)))
+							mManager->SendRawText(pingBuffer);
 					}
 				}
 
@@ -366,20 +372,24 @@ namespace Dia
 			}
 		}
 
-		void GameConnectionController::OnManagerRawMessage(const Json::Value& envelope)
+		void GameConnectionController::OnManagerRawMessage(const char* rawText, const Json::Value& /*envelope*/)
 		{
-			if (!envelope.isObject() || !envelope.isMember("type") || !envelope["type"].isString())
+			dia::debug::DebugMessage msg;
+			if (!Dia::Proto::FromJson(rawText, &msg))
 			{
+				DIA_LOG_WARNING("Editor", "GameConnectionController: OnManagerRawMessage proto parse failed");
 				return;
 			}
 
-			const std::string type = envelope["type"].asString();
-			if (type == "game_info")
+			switch (msg.payload_case())
 			{
-				mGameInfo["name"] = envelope.get("name", "");
-				mGameInfo["build"] = envelope.get("build", "");
-				mGameInfo["processingUnitCount"] = envelope.get("processingUnitCount", 0);
-				mGameInfo["currentPhase"] = envelope.get("currentPhase", "");
+			case dia::debug::DebugMessage::kGameInfo:
+			{
+				const auto& info = msg.game_info();
+				mGameInfo["name"] = info.name();
+				mGameInfo["build"] = info.build();
+				mGameInfo["processingUnitCount"] = info.processing_unit_count();
+				mGameInfo["currentPhase"] = info.current_phase();
 				mGameInfoReceived = true;
 
 				if (mState == State::kConnecting)
@@ -390,48 +400,70 @@ namespace Dia
 					SavePersistedUrl();
 
 					DIA_LOG_INFO("Editor", "GameConnectionController: Handshake complete, connected to %s (build %s)",
-						mGameInfo["name"].asCString(), mGameInfo["build"].asCString());
+						info.name().c_str(), info.build().c_str());
 
-					char msg[256];
-					snprintf(msg, sizeof(msg), "Connected to %s (build %s)",
-						mGameInfo["name"].asCString(), mGameInfo["build"].asCString());
-					PushGameConsoleEntry("info", msg);
+					char logMsg[256];
+					snprintf(logMsg, sizeof(logMsg), "Connected to %s (build %s)",
+						info.name().c_str(), info.build().c_str());
+					PushGameConsoleEntry("info", logMsg);
 				}
+				break;
 			}
-			else if (type == "pong")
+			case dia::debug::DebugMessage::kPong:
 			{
+				const auto& pong = msg.pong();
 				mSinceLastPong = 0.0f;
-				mLastPongReceivedTs = envelope.get("ts", 0).asUInt64();
-				mHeartbeatLastPongMs = static_cast<float>(mLastPongReceivedTs);
+				mLastPongReceivedTs = pong.ts();
+				mHeartbeatLastPongMs = static_cast<float>(pong.ts());
 				PublishHeartbeat();
+				break;
 			}
-			else if (type == "log")
+			case dia::debug::DebugMessage::kLog:
 			{
-				Dia::Core::Containers::String32 level(envelope.get("level", "info").asCString());
-				Dia::Core::Containers::String1024 logMessage(envelope.get("message", "").asCString());
-				DIA_LOG_INFO("Editor", "GameConnectionController: Received game log [%s] %s", level.AsCStr(), logMessage.AsCStr());
-				PushGameConsoleEntry(level.AsCStr(), logMessage.AsCStr());
+				const auto& log = msg.log();
+				DIA_LOG_INFO("Editor", "GameConnectionController: Received game log [%s] %s", log.level().c_str(), log.message().c_str());
+				PushGameConsoleEntry(log.level().c_str(), log.message().c_str());
+				break;
 			}
-			else if (type == "log_batch")
+			case dia::debug::DebugMessage::kLogBatch:
 			{
-				if (envelope.isMember("entries") && envelope["entries"].isArray())
+				const auto& batch = msg.log_batch();
+				for (int i = 0; i < batch.entries_size(); ++i)
 				{
-					const Json::Value& entries = envelope["entries"];
-					for (Json::ArrayIndex i = 0; i < entries.size(); ++i)
+					const auto& e = batch.entries(i);
+					PushGameConsoleEntry(e.level().c_str(), e.message().c_str());
+				}
+				break;
+			}
+			case dia::debug::DebugMessage::kCoreMetrics:
+			{
+				if (mBridge != nullptr)
+				{
+					Json::Value metricsPayload;
+					const auto& cm = msg.core_metrics();
+					metricsPayload["fps"] = cm.fps();
+					metricsPayload["frame_time_ms"] = cm.frame_time_ms();
+					metricsPayload["memory_used_mb"] = cm.memory_used_mb();
+					metricsPayload["memory_available_mb"] = cm.memory_available_mb();
+					metricsPayload["uptime_seconds"] = cm.uptime_seconds();
+
+					Json::Value puArray(Json::arrayValue);
+					for (int i = 0; i < cm.processing_units_size(); ++i)
 					{
-						const Json::Value& e = entries[i];
-						Dia::Core::Containers::String32 level(e.get("level", "info").asCString());
-						Dia::Core::Containers::String1024 logMessage(e.get("message", "").asCString());
-						PushGameConsoleEntry(level.AsCStr(), logMessage.AsCStr());
+						Json::Value pu;
+						pu["name"] = cm.processing_units(i).name();
+						pu["fps"] = cm.processing_units(i).fps();
+						pu["frame_time_ms"] = cm.processing_units(i).frame_time_ms();
+						puArray.append(pu);
 					}
+					metricsPayload["processing_units"] = puArray;
+
+					mBridge->NotifyUIDataChanged(kTopicCoreMetrics, metricsPayload);
 				}
+				break;
 			}
-			else if (type == "core_metrics")
-			{
-				if (mBridge != nullptr && envelope.isMember("payload"))
-				{
-					mBridge->NotifyUIDataChanged(kTopicCoreMetrics, envelope["payload"]);
-				}
+			default:
+				break;
 			}
 		}
 

@@ -1,11 +1,14 @@
 #include "DiaEditor/LiveConnection/GameConnectionManager.h"
 
+#include <DiaDebugProtocol/DiaDebugProtocol.h>
+
 #include <DiaWebSocket/Client.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaLogger/DiaLog.h>
 
 #include <string.h>
-#include <sstream>
+#include <stdio.h>
+#include <string>
 
 namespace Dia
 {
@@ -38,7 +41,7 @@ namespace Dia
 			mClient->SetMessageCallback([this](const Dia::WebSocket::Message& msg) {
 				if (msg.type == Dia::WebSocket::MessageType::kText)
 				{
-					HandleMessage(std::string(static_cast<const char*>(msg.data), msg.length));
+					HandleMessage(static_cast<const char*>(msg.data), static_cast<unsigned int>(msg.length));
 				}
 			});
 
@@ -89,10 +92,28 @@ namespace Dia
 			strncpy_s(mHost, sizeof(mHost), host, _TRUNCATE);
 			mPort = port;
 
-			std::ostringstream url;
-			url << "ws://" << host << ":" << port;
-			DIA_LOG_INFO("Editor", "GameConnectionManager: Connect to %s", url.str().c_str());
-			mClient->Connect(url.str().c_str());
+			// websocketpp's asio transport cannot be re-initialized after a
+			// failed connection (init_asio is one-shot).  Recreate the client
+			// so every Connect() starts from a clean state.
+			delete mClient;
+			mClient = new Dia::WebSocket::Client();
+			mClient->SetReconnectOnDisconnect(mAutoReconnect);
+
+			mClient->SetMessageCallback([this](const Dia::WebSocket::Message& msg) {
+				if (msg.type == Dia::WebSocket::MessageType::kText)
+				{
+					HandleMessage(static_cast<const char*>(msg.data), static_cast<unsigned int>(msg.length));
+				}
+			});
+
+			mClient->SetConnectionCallback([this](bool connected) {
+				HandleConnection(connected);
+			});
+
+			char url[256];
+			snprintf(url, sizeof(url), "ws://%s:%d", host, port);
+			DIA_LOG_INFO("Editor", "GameConnectionManager: Connect to %s", url);
+			mClient->Connect(url);
 		}
 
 		void GameConnectionManager::Disconnect()
@@ -149,15 +170,15 @@ namespace Dia
 			if (!IsConnected())
 				return;
 
-			Json::Value envelope;
-			envelope["type"] = "command";
-			envelope["command"] = command;
-			envelope["payload"] = args;
+			dia::debug::DebugMessage msg;
+			msg.set_type(dia::debug::MESSAGE_TYPE_COMMAND_REQUEST);
+			auto* cmd = msg.mutable_command_request();
+			cmd->set_command(command);
+			cmd->set_payload_json(Json::FastWriter().write(args));
 
-			Json::StreamWriterBuilder writer;
-			writer["indentation"] = "";
-			std::string text = Json::writeString(writer, envelope);
-			mClient->SendText(text.c_str());
+			char buffer[4096];
+			if (Dia::Proto::ToJson(msg, buffer, sizeof(buffer)))
+				mClient->SendText(buffer);
 		}
 
 		void GameConnectionManager::SendCommandWithResponse(const char* command, const Json::Value& args, CommandResponseCallback callback)
@@ -214,31 +235,51 @@ namespace Dia
 			mClient->SendText(text.c_str());
 		}
 
-		void GameConnectionManager::HandleMessage(const std::string& text)
+		void GameConnectionManager::SendRawText(const char* text)
+		{
+			if (!IsConnected())
+			{
+				DIA_LOG_WARNING("Editor", "GameConnectionManager: SendRawText skipped, not connected");
+				return;
+			}
+			DIA_LOG_DEBUG("Editor", "GameConnectionManager: SendRawText");
+			mClient->SendText(text);
+		}
+
+		void GameConnectionManager::HandleMessage(const char* text, unsigned int length)
 		{
 			Json::Value envelope;
-			Json::CharReaderBuilder builder;
-			std::string errors;
-			std::istringstream stream(text);
-			if (!Json::parseFromStream(builder, stream, &envelope, &errors))
+			Json::Reader reader;
+			if (!reader.parse(text, text + length, envelope))
 				return;
 
-			// Raw channel sees every message regardless of envelope shape.
 			if (mRawMessageCallback)
-				mRawMessageCallback(envelope);
+				mRawMessageCallback(text, length, envelope);
 
-			// Command-response routing.
-			if (envelope.isMember("type") && envelope["type"].isString()
-				&& envelope["type"].asString() == "command_response")
+			dia::debug::DebugMessage protoMsg;
+			if (Dia::Proto::FromJson(text, &protoMsg))
 			{
-				ProcessCommandResponse(envelope);
+				if (protoMsg.payload_case() == dia::debug::DebugMessage::kCommandResponse)
+				{
+					const auto& resp = protoMsg.command_response();
+					Json::Value responseJson;
+					responseJson["command"] = resp.command();
+					responseJson["success"] = resp.success();
+					responseJson["message"] = resp.message();
+					if (!resp.payload_json().empty())
+					{
+						Json::Reader reader;
+						Json::Value payload;
+						reader.parse(resp.payload_json(), payload);
+						responseJson["payload"] = payload;
+					}
+					ProcessCommandResponse(responseJson);
+				}
 			}
 
-			// Topic-based routing is only possible for messages that carry a topic.
 			if (envelope.isMember("topic") && envelope["topic"].isString())
 			{
-				std::string topicStr = envelope["topic"].asString();
-				Dia::Core::StringCRC topic(topicStr.c_str());
+				Dia::Core::StringCRC topic(envelope["topic"].asCString());
 				const Json::Value& data = envelope["data"];
 
 				for (unsigned int i = 0; i < mSubscriptions.Size(); ++i)

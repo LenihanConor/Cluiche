@@ -67,7 +67,7 @@ namespace Dia
 
 			// Real-transport callbacks wired through GameConnectionManager.
 			void OnManagerConnection(bool connected);
-			void OnManagerRawMessage(const Json::Value& envelope);
+			void OnManagerRawMessage(const char* rawText, const Json::Value& envelope);
 
 			// Parse ws://host:port[/...] into host+port. Returns false on error.
 			static bool ParseWebSocketUrl(const char* url, char* outHost, unsigned int hostLen, int& outPort);

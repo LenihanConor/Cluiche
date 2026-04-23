@@ -1,0 +1,127 @@
+syntax = "proto3";
+package dia.debug;
+
+enum MessageType {
+  MESSAGE_TYPE_UNKNOWN = 0;
+  MESSAGE_TYPE_HANDSHAKE_REQUEST = 1;
+  MESSAGE_TYPE_HANDSHAKE_RESPONSE = 2;
+  MESSAGE_TYPE_SUBSCRIBE = 3;
+  MESSAGE_TYPE_UNSUBSCRIBE = 4;
+  MESSAGE_TYPE_CORE_METRICS = 5;
+  MESSAGE_TYPE_DATA_UPDATE = 6;
+  MESSAGE_TYPE_EVENT = 7;
+  MESSAGE_TYPE_COMMAND_REQUEST = 8;
+  MESSAGE_TYPE_COMMAND_RESPONSE = 9;
+  MESSAGE_TYPE_ERROR = 10;
+  MESSAGE_TYPE_GAME_INFO = 11;
+  MESSAGE_TYPE_PING = 12;
+  MESSAGE_TYPE_PONG = 13;
+  MESSAGE_TYPE_LOG = 14;
+  MESSAGE_TYPE_LOG_BATCH = 15;
+}
+
+message DebugMessage {
+  MessageType type = 1;
+  uint64 timestamp = 2;
+  oneof payload {
+    HandshakeRequest handshake_request = 10;
+    HandshakeResponse handshake_response = 11;
+    SubscribeRequest subscribe = 12;
+    UnsubscribeRequest unsubscribe = 13;
+    CoreMetrics core_metrics = 14;
+    DataUpdate data_update = 15;
+    Event event = 16;
+    CommandRequest command_request = 17;
+    CommandResponse command_response = 18;
+    Error error = 19;
+    GameInfo game_info = 20;
+    Ping ping = 21;
+    Pong pong = 22;
+    LogEntry log = 23;
+    LogBatch log_batch = 24;
+  }
+}
+
+message HandshakeRequest {
+  int32 protocol_version = 1;
+  string client_name = 2;
+  string client_version = 3;
+}
+
+message HandshakeResponse {
+  int32 protocol_version = 1;
+  bool accepted = 2;
+  string server_name = 3;
+  string server_version = 4;
+}
+
+message SubscribeRequest {
+  string data_type = 1;
+  string filter = 2;
+}
+
+message UnsubscribeRequest {
+  string data_type = 1;
+}
+
+message PUMetrics {
+  string name = 1;
+  float fps = 2;
+  float frame_time_ms = 3;
+}
+
+message CoreMetrics {
+  float fps = 1;
+  float frame_time_ms = 2;
+  float memory_used_mb = 3;
+  float memory_available_mb = 4;
+  float uptime_seconds = 5;
+  repeated PUMetrics processing_units = 6;
+}
+
+message DataUpdate {
+  string data_type = 1;
+  string payload_json = 2;
+}
+
+message Event {
+  string event_type = 1;
+  string payload_json = 2;
+}
+
+message CommandRequest {
+  string command = 1;
+  string payload_json = 2;
+}
+
+message CommandResponse {
+  string command = 1;
+  bool success = 2;
+  string message = 3;
+  string payload_json = 4;
+}
+
+message Error {
+  string error_code = 1;
+  string message = 2;
+}
+
+message GameInfo {
+  string name = 1;
+  string build = 2;
+  int32 processing_unit_count = 3 [json_name = "processingUnitCount"];
+  string current_phase = 4 [json_name = "currentPhase"];
+}
+
+message Ping { uint64 ts = 1; }
+message Pong { uint64 ts = 1; }
+
+message LogEntry {
+  string level = 1;
+  string channel = 2;
+  string message = 3;
+}
+
+message LogBatch {
+  repeated LogEntry entries = 1;
+}

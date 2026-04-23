@@ -131,7 +131,7 @@ TEST(GameConnectionManager, RawMessageCallback)
 {
     GameConnectionManager manager;
     bool callbackSet = false;
-    manager.SetRawMessageCallback([&](const Json::Value&) { callbackSet = true; });
+    manager.SetRawMessageCallback([&](const char*, unsigned int, const Json::Value&) { callbackSet = true; });
     EXPECT_FALSE(callbackSet);
 }
 

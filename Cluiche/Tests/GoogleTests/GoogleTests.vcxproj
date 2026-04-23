@@ -60,7 +60,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)../../../Dia/;$(ProjectDir)../../../External/googletest/googletest/include/;$(ProjectDir)../../../External/jsoncpp-master/include/;$(ProjectDir)../../../External/pybind11/include/;$(ProjectDir)../../../External/Python311/include/;$(ProjectDir)../../../External/websocketpp;$(ProjectDir)../../../External/asio/asio/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)../../../Dia/;$(ProjectDir)../../../External/googletest/googletest/include/;$(ProjectDir)../../../External/jsoncpp-master/include/;$(ProjectDir)../../../External/pybind11/include/;$(ProjectDir)../../../External/Python311/include/;$(ProjectDir)../../../External/websocketpp;$(ProjectDir)../../../External/asio/asio/include;$(ProjectDir)../../../External/protobuf/Current-x64/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>DEBUG;WIN64;_CONSOLE;ASIO_STANDALONE;_WEBSOCKETPP_CPP11_STL_;_WEBSOCKETPP_CPP11_THREAD_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -87,7 +87,7 @@ xcopy /Y /I "$(ProjectDir)..\..\CluicheTest\Data\Manifests\*.diaapp" "$(OutDir)D
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)../../../Dia/;$(ProjectDir)../../../External/googletest/googletest/include/;$(ProjectDir)../../../External/jsoncpp-master/include/;$(ProjectDir)../../../External/pybind11/include/;$(ProjectDir)../../../External/Python311/include/;$(ProjectDir)../../../External/websocketpp;$(ProjectDir)../../../External/asio/asio/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)../../../Dia/;$(ProjectDir)../../../External/googletest/googletest/include/;$(ProjectDir)../../../External/jsoncpp-master/include/;$(ProjectDir)../../../External/pybind11/include/;$(ProjectDir)../../../External/Python311/include/;$(ProjectDir)../../../External/websocketpp;$(ProjectDir)../../../External/asio/asio/include;$(ProjectDir)../../../External/protobuf/Current-x64/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NDEBUG;WIN64;_CONSOLE;ASIO_STANDALONE;_WEBSOCKETPP_CPP11_STL_;_WEBSOCKETPP_CPP11_THREAD_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -204,16 +204,21 @@ xcopy /Y /I "$(ProjectDir)..\..\CluicheTest\Data\Manifests\*.diaapp" "$(OutDir)D
     <ClCompile Include="WebSocket\TestWebSocketClient.cpp" />
     <ClCompile Include="WebSocket\TestWebSocketIntegration.cpp" />
     <ClCompile Include="WebSocket\TestWebSocketError.cpp" />
+    <ClCompile Include="WebSocket\TestWebSocketTransport.cpp" />
+    <ClCompile Include="WebSocket\TestWebSocketClientState.cpp" />
     <ClCompile Include="UICEF\TestCEFMimeTypes.cpp" />
     <ClCompile Include="UICEF\TestCEFPixelConversion.cpp" />
     <ClCompile Include="UICEF\TestCEFURLParsing.cpp" />
     <ClCompile Include="UICEF\TestCEFPageManagement.cpp" />
-    <ClCompile Include="DebugProtocol\TestDebugProtocol.cpp" />
+    <ClCompile Include="DebugProtocol\TestDebugProtocolProto.cpp" />
+    <ClCompile Include="DebugProtocol\TestDebugProtocolWireCompat.cpp" />
     <ClCompile Include="DebugServer\TestSubscriptionManager.cpp" />
     <ClCompile Include="DebugServer\TestCommandDispatcher.cpp" />
     <ClCompile Include="DebugServer\TestStateSerializer.cpp" />
+    <ClCompile Include="DebugServer\TestDebugServerProtocol.cpp" />
     <ClCompile Include="Integration\TestInputPipeline.cpp" />
     <ClCompile Include="Integration\TestFrameStreamPipeline.cpp" />
+    <ClCompile Include="Integration\TestDebugProtocolEndToEnd.cpp" />
     <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\StubEditorPlugin.cpp" />
     <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\HelloEditorPlugin.cpp" />
     <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\HomeEditorPlugin.cpp" />
@@ -230,6 +235,8 @@ xcopy /Y /I "$(ProjectDir)..\..\CluicheTest\Data\Manifests\*.diaapp" "$(OutDir)D
     <ClCompile Include="Editor\TestEditorPluginPipeline.cpp" />
     <ClCompile Include="Editor\TestGameConnectionManagerIntegration.cpp" />
     <ClCompile Include="Editor\TestGameConnectionController.cpp" />
+    <ClCompile Include="Editor\TestGameConnectionControllerMessages.cpp" />
+    <ClCompile Include="Editor\TestGameConnectionLifecycle.cpp" />
     <ClCompile Include="Editor\TestEditorToolbarItem.cpp" />
     <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\PluginBrowserEditorPlugin.cpp" />
     <!-- DiaLogger -->
@@ -249,6 +256,12 @@ xcopy /Y /I "$(ProjectDir)..\..\CluicheTest\Data\Manifests\*.diaapp" "$(OutDir)D
     </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaLogger\DiaLogger.vcxproj">
       <Project>{7a8b9c0d-e1f2-3456-7890-abcdef012345}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaProtobuf\DiaProtobuf.vcxproj">
+      <Project>{87758331-BA9E-4055-B3F0-A62671738D42}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaDebugProtocol\DiaDebugProtocol.vcxproj">
+      <Project>{E9E22143-02A3-4D92-894D-079E8ABD8BCA}</Project>
     </ProjectReference>
   </ItemGroup>
   <!-- Python Test Scripts -->
