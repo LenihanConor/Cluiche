@@ -38,3 +38,9 @@ Step 5 — Approval:
 Once all Binding Decisions are marked Compliant, all AI Review Questions have answers,
 and all Open Questions are resolved, ask:
 "All decisions compliant and questions resolved. Shall I mark this spec Approved?"
+
+Plan format (when creating the plan at implementation start):
+The plan file must include an ## Implementation Patterns section placed before the task
+table. For each phase or major task, document the specific code patterns, classes, and
+conventions intended — so they can be validated against the actual implementation before
+the task is marked Done.

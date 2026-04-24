@@ -12,3 +12,9 @@ Then:
 - Register the system in the parent application spec's systems table
 - Read parent Platform and App specs and populate the Inherited Binding Decisions table
   with every Binding=Yes decision that applies to this system
+
+Plan format (when creating the plan at implementation start):
+The plan file must include an ## Implementation Patterns section placed before the task
+table. For each phase or major task, document the specific code patterns, classes, and
+conventions intended — so they can be validated against the actual implementation before
+the task is marked Done.
