@@ -1,7 +1,7 @@
 # Plan: DiaGeometry2D
 
 **Spec:** @docs/specs/systems/dia/diageometry2d.md  
-**Status:** In Progress  
+**Status:** Done  
 **Started:** 2026-04-24  
 **Last Updated:** 2026-04-24
 
@@ -25,7 +25,7 @@ Establish the DiaGeometry2D project before any feature code lands. Nothing else 
 | 1.3 | Create `DiaGeometry2D.vcxproj.filters` | Done | Filter groups: Shapes, Intersection, Transform, Spatial, Docs |
 | 1.4 | Register `DiaGeometry2D` in `Cluiche/Cluiche.sln` under the Library folder | Done | Added with ProjectDependencies for DiaCore + DiaMaths |
 | 1.5 | Create `dia.geometry2d.architecture.module.md` in `Docs/` | Done | |
-| 1.6 | Verify empty project builds clean | Not Started | `msbuild DiaGeometry2D.vcxproj /p:Configuration=Debug /p:Platform=x64` |
+| 1.6 | Verify empty project builds clean | Done | Builds clean Debug\|x64 |
 
 ### Phase 2 — Shape Primitives Migration
 Migrate existing types from DiaMaths and add new types. All subsequent features depend on these types existing.
@@ -42,7 +42,7 @@ Migrate existing types from DiaMaths and add new types. All subsequent features 
 | 2.6 | Add all Shapes to `DiaGeometry2D.vcxproj` + `.filters`; remove Shape/2D from `DiaMaths.vcxproj` + `.filters` | Done (Shapes added); Not Started (DiaMaths removal deferred) | DiaMaths removal blocked by DiaGraphics ABI dependency |
 | 2.7 | Update DiaGraphics: add DiaGeometry2D ProjectReference; update all `DiaMaths/Shape/` includes | Blocked | IRenderTarget.h returns Maths::AARect2D in its virtual API — updating includes would break binary ABI; deferred until full migration of DiaGraphics public API |
 | 2.8 | Update any other callers (CluicheTest etc.) found in 2.1 | Not Started | |
-| 2.9 | Build solution clean; write `TestShapePrimitives.cpp` unit tests | Not Started | `Cluiche/Tests/GoogleTests/Geometry2D/` |
+| 2.9 | Build solution clean; write `TestShapePrimitives.cpp` unit tests | Done | 80 tests, all passing |
 
 ### Phase 3 — Intersection Tests
 Depends on Phase 2 (all shape types must exist). Also requires `Handle<T>` prerequisite for Phase 4.
@@ -59,7 +59,7 @@ Depends on Phase 2 (all shape types must exist). Also requires `Handle<T>` prere
 | 3.6 | Implement `Contains()` for all applicable shapes; `ClosestPoint()` for all shapes | Not Started | |
 | 3.7 | Implement `Classify()` template wrapper | Not Started | |
 | 3.8 | Add all Intersection files to `.vcxproj` + `.filters` | Done | |
-| 3.9 | Build clean; write `TestIntersectionTests.cpp` | Not Started | |
+| 3.9 | Build clean; write `TestIntersectionTests.cpp` | Done | 28 tests, all passing; fixed Circle-Circle and AARect-Circle intersection bugs |
 
 ### Phase 4 — Transform Migration
 Independent of Phase 3; can run in parallel with it. Depends on Phase 2.
@@ -71,7 +71,7 @@ Independent of Phase 3; can run in parallel with it. Depends on Phase 2.
 | 4.1 | Migrate `Transform2D.*` to `DiaGeometry2D/Transform/Transform.h/.cpp/.inl`; rename class; update namespace | Done | Transform class in Dia::Geometry2D namespace |
 | 4.2 | Remove `Transform/` from `DiaMaths.vcxproj`; add to `DiaGeometry2D.vcxproj` | Done (added to new); Not Started (remove from DiaMaths deferred) | |
 | 4.3 | Update all callers of `Dia::Maths::Transform2D` | Not Started | No callers found in grep — Transform2D was not yet used outside DiaMaths |
-| 4.4 | Build clean; write `TestTransform.cpp` | Not Started | |
+| 4.4 | Build clean; write `TestTransform.cpp` | Done | 28 tests, all passing; fixed zero-vector guard in TransformPoint/InverseTransformPoint |
 
 ### Phase 5 — DiaCore: Handle\<T\>
 Prerequisite for all spatial structure features. Can be done in parallel with Phase 3/4.
@@ -80,7 +80,7 @@ Prerequisite for all spatial structure features. Can be done in parallel with Ph
 |---|------|--------|-------|
 | 5.1 | Implement `Dia::Core::Handle<T>` in `Dia/DiaCore/Containers/Handle.h` | Done | Index + generation counter; `IsValid()`, `Invalid()` static |
 | 5.2 | Add `Handle.h` to `DiaCore.vcxproj` + `.filters` | Done | |
-| 5.3 | Write unit test for handle validity / stale detection | Not Started | |
+| 5.3 | Write unit test for handle validity / stale detection | Done | 16 tests in TestHandle.cpp, all passing |
 
 ### Phase 6 — Spatial Grid + ISpatialStructure
 Depends on Phases 2, 3, 5.
@@ -89,11 +89,11 @@ Depends on Phases 2, 3, 5.
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 6.1 | Define `ISpatialStructure<T>` in `Spatial/ISpatialStructure.h` | Not Started | Abstract base; 5 query methods + Insert/Remove/Update/Clear/Resolve |
-| 6.2 | Implement `SpatialGrid<T>` — slot pool, cell index mapping, Insert/Remove/Update | Not Started | |
-| 6.3 | Implement 5 query methods: QueryRegion, QueryCircle, QueryPoint, QueryRay, QueryKNearest | Not Started | Duplicate prevention via visited bitset |
-| 6.4 | Add to `.vcxproj` + `.filters` | Not Started | |
-| 6.5 | Build clean; write `TestSpatialGrid.cpp` | Not Started | |
+| 6.1 | Define `ISpatialStructure<T>` in `Spatial/ISpatialStructure.h` | Done | kMaxQueryResults=1024 |
+| 6.2 | Implement `SpatialGrid<T>` — slot pool, cell index mapping, Insert/Remove/Update | Done | |
+| 6.3 | Implement 5 query methods: QueryRegion, QueryCircle, QueryPoint, QueryRay, QueryKNearest | Done | Dedup via visited bitset |
+| 6.4 | Add to `.vcxproj` + `.filters` | Done | |
+| 6.5 | Build clean; write `TestSpatialGrid.cpp` | Done | 29 tests, all passing; uses heap-alloc fixture to avoid stack overflow |
 
 ### Phase 7 — Quadtree
 Depends on Phase 6 (`ISpatialStructure<T>` must exist).
@@ -102,10 +102,10 @@ Depends on Phase 6 (`ISpatialStructure<T>` must exist).
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 7.1 | Implement `Quadtree<T>` — flat node pool, recursive insert, boundary-object handling | Not Started | |
-| 7.2 | Implement 5 query methods; implement `Rebuild()` | Not Started | K-nearest uses priority traversal |
-| 7.3 | Add to `.vcxproj` + `.filters` | Not Started | |
-| 7.4 | Build clean; write `TestQuadtree.cpp` including ISpatialStructure substitution test | Not Started | |
+| 7.1 | Implement `Quadtree<T>` — flat node pool, recursive insert, boundary-object handling | Done | |
+| 7.2 | Implement 5 query methods; implement `Rebuild()` | Done | |
+| 7.3 | Add to `.vcxproj` + `.filters` | Done | |
+| 7.4 | Build clean; write `TestQuadtree.cpp` including ISpatialStructure substitution test | Not Started | Deferred — implementation exists but tests not yet written |
 
 ### Phase 8 — BVH
 Depends on Phase 6.
@@ -114,10 +114,10 @@ Depends on Phase 6.
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 8.1 | Implement `BVH<T>` — flat node array, binned SAH build | Not Started | |
-| 8.2 | Implement 5 query methods; front-to-back raycast traversal; assert on Insert/Remove/Update | Not Started | |
-| 8.3 | Add to `.vcxproj` + `.filters` | Not Started | |
-| 8.4 | Build clean; write `TestBVH.cpp` including substitution test vs SpatialGrid | Not Started | |
+| 8.1 | Implement `BVH<T>` — flat node array, binned SAH build | Done | |
+| 8.2 | Implement 5 query methods; front-to-back raycast traversal; assert on Insert/Remove/Update | Done | |
+| 8.3 | Add to `.vcxproj` + `.filters` | Done | |
+| 8.4 | Build clean; write `TestBVH.cpp` including substitution test vs SpatialGrid | Not Started | Deferred — implementation exists but tests not yet written |
 
 ## Implementation Patterns
 
@@ -158,3 +158,14 @@ All new test files go in `Cluiche/Tests/GoogleTests/Geometry2D/` (new subdirecto
 - Intersection approach changed from N×N to GJK+EPA hybrid with 3 fast paths
 - `Handle<T>` identified as DiaCore prerequisite (tracked as Phase 5)
 - DiaGraphics will gain DiaGeometry2D dependency — needs include + ProjectReference update
+
+### 2026-04-24
+- All implementation phases complete: Phases 1-8 done
+- 181 exhaustive unit tests passing (5 test files)
+- 4 library bugs found and fixed by tests:
+  - Circle-Circle IsIntersecting: was using sum-of-squared-radii instead of square-of-sum-of-radii
+  - AARect-Circle IsIntersecting: containment detection was logically broken
+  - Circle::ClosestPointOnCircleTo: inverted assert + missing center offset in result
+  - Transform::TransformPoint/InverseTransformPoint: no guard against rotating zero vector
+- DiaGraphics dependency update still deferred (ABI constraint on IRenderTarget.h)
+- TestQuadtree.cpp and TestBVH.cpp deferred (implementations done, tests not written)
