@@ -23,8 +23,11 @@ Dia is the game engine application that provides all shared engine infrastructur
 | DiaUIUltralight | Ultralight-based IUISystem implementation; lightweight drop-in replacement for DiaUIAwesomium | [diauiultralight.md](../systems/dia/diauiultralight.md) |
 | DiaWebSocket | WebSocket server/client abstraction wrapping websocketpp (used by DiaDebugServer, DiaEditor, future networking) | [diawebsocket.md](../systems/dia/diawebsocket.md) |
 | DiaLogger | Engine-wide logging system (levels, channels, thread-local buffers, pluggable sinks via ISink) | [dialogger.md](../systems/dia/dialogger.md) |
+| DiaGeometry2D | 2D geometry system: shape primitives, intersection tests, Transform, spatial structures (Grid, Quadtree, BVH) | [diageometry2d.md](../systems/dia/diageometry2d.md) |
+| DiaRigidBody2D | 2D rigid body physics: velocity/force integration, collision detection + response, constraints/joints, sleeping, collision layers, Physics-channel logging, visual debugger | [diarigidbody2d.md](../systems/dia/diarigidbody2d.md) |
+| DiaSoftBody2D | 2D soft body simulation: PBD ropes, cloth, particle-geometry collision, rigid body coupling, Physics-channel logging, visual debugger | [diasoftbody2d.md](../systems/dia/diasoftbody2d.md) |
 | DiaCore | Foundation library (containers, type system, memory, logging, CRC) | TBD |
-| DiaMaths | Math library (vectors, matrices, transforms, shapes) | TBD |
+| DiaMaths | Math library (vectors, matrices, core math utilities — pure linear algebra only after DiaGeometry2D migration) | TBD |
 | DiaGraphics | Graphics abstraction layer (ICanvas, Frame, rendering) | TBD |
 | DiaWindow | Window management | TBD |
 | DiaInput | Input handling (keyboard, mouse, events) | TBD |
