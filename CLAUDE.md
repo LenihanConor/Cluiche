@@ -137,7 +137,7 @@ Cluiche/
 │   ├── CluicheTest/              # Main executable project
 │   │   ├── Main.cpp              # Entry point
 │   │   ├── ApplicationFlow/      # Main processing unit
-│   │   └── Levels/               # Game levels (DummyLevel, UnitTestLevel)
+│   │   └── Levels/               # Game levels (DummyLevel)
 │   └── Tests/UnitTests/          # Unit test project
 ├── External/                     # Third-party dependencies
 ├── Tools/                        # Build and analysis tools
@@ -189,12 +189,51 @@ The project uses a dual documentation structure:
 When implementing new features using the spec-driven approach:
 
 1. **Spec must exist and be `Approved`** before implementation starts
-2. **Read the full spec chain** - Every feature spec has a Traceability table linking back to System → Application → Platform
-3. **Check binding decisions** - Platform and Application binding decisions must be honored by all child specs
-4. **Implement with spec reference**: Point agents at the feature spec file path
-5. **Delegate tasks to subagents** - Each task in the feature spec should be a separate subagent
-6. **Commit after each task** before continuing
-7. **Update feature spec status** as work progresses (Draft → Approved → In Progress → Done)
+2. **Create a plan** - Before writing any code, create a `*.plan.md` alongside the spec (see Plan Workflow below)
+3. **Read the full spec chain** - Every feature spec has a Traceability table linking back to System → Application → Platform
+4. **Check binding decisions** - Platform and Application binding decisions must be honored by all child specs
+5. **Implement with spec reference**: Point agents at the feature spec file path and its plan
+6. **Delegate tasks to subagents** - Each task in the plan should be a separate subagent
+7. **Update the plan** after each task (mark Done/Blocked, add notes)
+8. **Commit after each task** before continuing
+9. **Update feature spec status** as work progresses (Draft → Approved → In Progress → Done)
+
+### Plan Workflow
+
+Plans are living implementation documents. They are separate from specs (which are frozen design contracts) and track task ordering, progress, and blockers.
+
+#### Plan File Format
+
+Plans live alongside their spec as `<spec-name>.plan.md`. For system-level plans, create `<system-spec-name>.plan.md` alongside the system spec.
+
+```markdown
+# Plan: <Spec Title>
+
+**Spec:** @path/to/spec.md  
+**Status:** Not Started | In Progress | Done | Blocked  
+**Started:** YYYY-MM-DD  
+**Last Updated:** YYYY-MM-DD
+
+## Tasks
+
+| # | Task | Status | Notes |
+|---|------|--------|-------|
+| 1 | Description of task | Not Started / In Progress / Done / Blocked | Any blockers or notes |
+
+## Session Notes
+
+### YYYY-MM-DD
+- What was done, what was decided, what changed
+```
+
+#### Plan Rules
+
+- **Create when** implementation starts (not when the spec is approved)
+- **Feature plans** — one plan per feature spec; tasks map to the feature spec's task list
+- **System plans** — one plan per system spec; tasks are the feature specs themselves (track which features are done)
+- **Spec is the contract, plan is the tracker** — never move design decisions into the plan; put them in the spec
+- **Update the plan in the same commit** as the code it tracks
+- **Link back** — the spec's Status section should reference its plan file once one exists
 
 ### Spec Commands
 

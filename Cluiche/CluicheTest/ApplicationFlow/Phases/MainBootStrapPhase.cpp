@@ -4,7 +4,6 @@
 #include "CluicheKernel/ApplicationFlow/Modules/LevelFactoryModule.h"
 #include "CluicheKernel/ApplicationFlow/Modules/MainUIModule.h"
 #include "Levels/DummyLevel/DummyLevel.h"
-#include "Levels/UnitTestLevel/UnitTestLevel.h"
 
 #include <CluicheKernel/LevelFactory.h>
 
@@ -21,13 +20,11 @@ namespace Cluiche
 		: MainPhaseBase(associatedProcessingUnit, instanceId)
 		, mLaunchUIPage(this)
 		, mDummyLevel(nullptr)
-		, mUnitTestLevel(nullptr)
 	{}
 
 	MainBootStrapPhase::~MainBootStrapPhase()
 	{
 		DIA_DELETE(mDummyLevel);
-		DIA_DELETE(mUnitTestLevel);
 	}
 
 	void MainBootStrapPhase::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
@@ -42,8 +39,6 @@ namespace Cluiche
 	{
 		if (mDummyLevel == nullptr)
 			mDummyLevel = DIA_NEW(Cluiche::DummyLevel::Level(this, this->GetAssociatedProcessingUnit(), nullptr, nullptr));
-		if (mUnitTestLevel == nullptr)
-			mUnitTestLevel = DIA_NEW(Cluiche::UnitTestLevel::Level(this, this->GetAssociatedProcessingUnit(), nullptr, nullptr));
 
 		mLaunchUIPage.InitializePage();
 
@@ -81,10 +76,6 @@ namespace Cluiche
 		if (levelName == "dummy_level")
 		{
 			level = mDummyLevel;
-		}
-		else if (levelName == "unit_test")
-		{
-			level = mUnitTestLevel;
 		}
 		if (level == nullptr)
 		{
