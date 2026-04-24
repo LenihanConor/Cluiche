@@ -76,6 +76,9 @@
     <Filter Include="DiaLogger">
       <UniqueIdentifier>{DLGR0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaApplicationEditor">
+      <UniqueIdentifier>{DAPPEDTR-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -352,6 +355,9 @@
     <ClCompile Include="Application\TestMetricsCollector.cpp">
       <Filter>Application</Filter>
     </ClCompile>
+    <ClCompile Include="Application\TestCluicheManifests.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
     <!-- UI -->
     <ClCompile Include="UI\TestBoundMethod.cpp">
       <Filter>UI</Filter>
@@ -423,6 +429,19 @@
     </ClCompile>
     <ClCompile Include="Integration\TestDebugProtocolEndToEnd.cpp">
       <Filter>Integration</Filter>
+    </ClCompile>
+    <ClCompile Include="Integration\TestManifestRoundTrip.cpp">
+      <Filter>Integration</Filter>
+    </ClCompile>
+    <ClCompile Include="Integration\TestWebUIBridgeDispatch.cpp">
+      <Filter>Integration</Filter>
+    </ClCompile>
+    <ClCompile Include="Integration\TestTypeRegistrySeeding.cpp">
+      <Filter>Integration</Filter>
+    </ClCompile>
+    <!-- DiaApplicationEditor -->
+    <ClCompile Include="DiaApplicationEditor\TestManifestSerializer.cpp">
+      <Filter>DiaApplicationEditor</Filter>
     </ClCompile>
     <!-- Editor -->
     <ClCompile Include="Editor\TestEditorPluginRegistry.cpp">
