@@ -26,6 +26,7 @@ interface ManifestState {
 
     currentView: ViewMode;
     toggleView: () => void;
+    setView: (v: ViewMode) => void;
 
     validationResult: ValidationResult | null;
     setValidationResult: (result: ValidationResult) => void;
@@ -50,6 +51,7 @@ export const useManifestStore = create<ManifestState>((set) => ({
         saveViewPref(next);
         return { currentView: next };
     }),
+    setView: (v) => set(() => { saveViewPref(v); return { currentView: v }; }),
 
     validationResult: null,
     setValidationResult: (result) => set({ validationResult: result }),
