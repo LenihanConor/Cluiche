@@ -178,6 +178,7 @@
     <ClInclude Include="Containers\Arrays\DynamicArray.h" />
     <ClInclude Include="Containers\Arrays\DynamicArrayC.h" />
     <ClInclude Include="Containers\Arrays\ReverseArrayIterator.h" />
+    <ClInclude Include="Containers\Handle.h" />
     <ClInclude Include="Containers\BitFlag\BitArray16.h" />
     <ClInclude Include="Containers\BitFlag\BitArray32.h" />
     <ClInclude Include="Containers\BitFlag\BitArray64.h" />

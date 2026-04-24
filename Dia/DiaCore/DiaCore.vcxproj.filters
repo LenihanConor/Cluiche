@@ -333,6 +333,9 @@
     <ClInclude Include="Containers\Arrays\ReverseArrayIterator.h">
       <Filter>Containers\Arrays</Filter>
     </ClInclude>
+    <ClInclude Include="Containers\Handle.h">
+      <Filter>Containers</Filter>
+    </ClInclude>
     <ClInclude Include="Containers\BitFlag\BitArray16.h">
       <Filter>Containers\BitFlag</Filter>
     </ClInclude>

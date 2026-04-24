@@ -79,6 +79,9 @@
     <Filter Include="DiaApplicationEditor">
       <UniqueIdentifier>{DAPPEDTR-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Geometry2D">
+      <UniqueIdentifier>{GEO2D001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -488,6 +491,22 @@
     </ClCompile>
     <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\PluginBrowserEditorPlugin.cpp">
       <Filter>Editor</Filter>
+    </ClCompile>
+    <!-- Geometry2D -->
+    <ClCompile Include="Geometry2D\TestShapePrimitives.cpp">
+      <Filter>Geometry2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry2D\TestIntersectionTests.cpp">
+      <Filter>Geometry2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry2D\TestGeometry2DTransform.cpp">
+      <Filter>Geometry2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry2D\TestSpatialGrid.cpp">
+      <Filter>Geometry2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry2D\TestHandle.cpp">
+      <Filter>Geometry2D</Filter>
     </ClCompile>
     <!-- DiaLogger -->
     <ClCompile Include="DiaLogger\TestLogLevel.cpp">

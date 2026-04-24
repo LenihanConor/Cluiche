@@ -1,9 +1,9 @@
 # Plan: DiaGeometry2D
 
 **Spec:** @docs/specs/systems/dia/diageometry2d.md  
-**Status:** Not Started  
-**Started:** —  
-**Last Updated:** 2026-04-23
+**Status:** In Progress  
+**Started:** 2026-04-24  
+**Last Updated:** 2026-04-24
 
 ## Prerequisites
 
@@ -20,11 +20,11 @@ Establish the DiaGeometry2D project before any feature code lands. Nothing else 
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 1.1 | Create `Dia/DiaGeometry2D/` directory structure (`Shapes/`, `Intersection/`, `Transform/`, `Spatial/`, `Docs/`) | Not Started | |
-| 1.2 | Create `DiaGeometry2D.vcxproj` (StaticLibrary, Debug\|x64 + Release\|x64, depends on DiaMaths + DiaCore) | Not Started | Follow DiaMaths.vcxproj as template; no files yet |
-| 1.3 | Create `DiaGeometry2D.vcxproj.filters` | Not Started | Filter groups: Shapes, Intersection, Transform, Spatial, Docs |
-| 1.4 | Register `DiaGeometry2D` in `Cluiche/Cluiche.sln` under the Library folder | Not Started | New GUID; add ProjectDependencies for DiaCore + DiaMaths |
-| 1.5 | Create `dia.geometry2d.architecture.module.md` in `Docs/` | Not Started | YAML frontmatter per AD-001; `module_id: dia.geometry2d`; `parent_module_id: dia.root` |
+| 1.1 | Create `Dia/DiaGeometry2D/` directory structure (`Shapes/`, `Intersection/`, `Transform/`, `Spatial/`, `Docs/`) | Done | |
+| 1.2 | Create `DiaGeometry2D.vcxproj` (StaticLibrary, Debug\|x64 + Release\|x64, depends on DiaMaths + DiaCore) | Done | GUID: {A3C4D5E6-F7B8-9012-CDEF-012345678901} |
+| 1.3 | Create `DiaGeometry2D.vcxproj.filters` | Done | Filter groups: Shapes, Intersection, Transform, Spatial, Docs |
+| 1.4 | Register `DiaGeometry2D` in `Cluiche/Cluiche.sln` under the Library folder | Done | Added with ProjectDependencies for DiaCore + DiaMaths |
+| 1.5 | Create `dia.geometry2d.architecture.module.md` in `Docs/` | Done | |
 | 1.6 | Verify empty project builds clean | Not Started | `msbuild DiaGeometry2D.vcxproj /p:Configuration=Debug /p:Platform=x64` |
 
 ### Phase 2 — Shape Primitives Migration
@@ -34,13 +34,13 @@ Migrate existing types from DiaMaths and add new types. All subsequent features 
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 2.1 | Grep codebase for `#include <DiaMaths/Shape/` and `Dia::Maths::` shape type usage — catalogue all callers | Not Started | Produces a hit list for 2.7/2.8 |
-| 2.2 | Migrate 8 existing shape types from `DiaMaths/Shape/2D/` to `DiaGeometry2D/Shapes/` — rename (strip `2D`), update namespace to `Dia::Geometry2D::`, update include guards | Not Started | Circle, AARect, OORect, Line, Ray, Triangle, Arc, Capsule |
-| 2.3 | Migrate `IntersectionPoint2D` → replace with `ContactResult` struct in `Shapes/ContactResult.h` | Not Started | `ContactResult` is the new shared result type |
-| 2.4 | Delete `Ellipse2D.*` files (not migrated) | Not Started | Verify no callers first (from 2.1 hit list) |
-| 2.5 | Implement new types: `Point`, `Plane`, `ConvexPolygon` (max 16 vertices), `Sector`, `AnnularSector` | Not Started | New files in `Shapes/` |
-| 2.6 | Add all Shapes to `DiaGeometry2D.vcxproj` + `.filters`; remove Shape/2D from `DiaMaths.vcxproj` + `.filters` | Not Started | |
-| 2.7 | Update DiaGraphics: add DiaGeometry2D ProjectReference; update all `DiaMaths/Shape/` includes | Not Started | From 2.1 hit list |
+| 2.1 | Grep codebase for `#include <DiaMaths/Shape/` and `Dia::Maths::` shape type usage — catalogue all callers | Done | Callers: DiaGraphics (IRenderTarget.h, SpriteDrawCommand.h), GoogleTests (TestCircle2D.cpp, TestIntersectionClassify.cpp) |
+| 2.2 | Migrate 8 existing shape types from `DiaMaths/Shape/2D/` to `DiaGeometry2D/Shapes/` — rename (strip `2D`), update namespace to `Dia::Geometry2D::`, update include guards | Done | Circle, AARect, OORect, Line, Ray, Triangle, Arc, Capsule all created |
+| 2.3 | Migrate `IntersectionPoint2D` → replace with `ContactResult` struct in `Shapes/ContactResult.h` | Done | `ContactResult` with point, normal, depth fields |
+| 2.4 | Delete `Ellipse2D.*` files (not migrated) | Not Started | No callers found; deletion deferred until confirmed safe |
+| 2.5 | Implement new types: `Point`, `Plane`, `ConvexPolygon` (max 16 vertices), `Sector`, `AnnularSector` | Done | All 5 new types created |
+| 2.6 | Add all Shapes to `DiaGeometry2D.vcxproj` + `.filters`; remove Shape/2D from `DiaMaths.vcxproj` + `.filters` | Done (Shapes added); Not Started (DiaMaths removal deferred) | DiaMaths removal blocked by DiaGraphics ABI dependency |
+| 2.7 | Update DiaGraphics: add DiaGeometry2D ProjectReference; update all `DiaMaths/Shape/` includes | Blocked | IRenderTarget.h returns Maths::AARect2D in its virtual API — updating includes would break binary ABI; deferred until full migration of DiaGraphics public API |
 | 2.8 | Update any other callers (CluicheTest etc.) found in 2.1 | Not Started | |
 | 2.9 | Build solution clean; write `TestShapePrimitives.cpp` unit tests | Not Started | `Cluiche/Tests/GoogleTests/Geometry2D/` |
 
@@ -51,15 +51,15 @@ Depends on Phase 2 (all shape types must exist). Also requires `Handle<T>` prere
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 3.1 | Migrate `IntersectionClassify` and existing `IntersectionTests` stubs to `DiaGeometry2D/Intersection/`; update namespace | Not Started | |
-| 3.2 | Implement GJK algorithm + EPA in `Intersection/GJK.cpp` and `SupportFunctions.h` | Not Started | Support functions for Circle, AARect, OORect, Triangle, Capsule, ConvexPolygon, Point |
-| 3.3 | Implement 3 fast-path `Test()` overloads: Circle-Circle, AARect-AARect, Circle-AARect | Not Started | Analytic; do not use GJK |
-| 3.4 | Wire all remaining convex-vs-convex `Test()` overloads through GJK dispatch | Not Started | All symmetric overloads covered |
-| 3.5 | Implement dedicated tests: Plane, Ray, Line, Arc, Sector, AnnularSector | Not Started | Non-convex; cannot use GJK |
+| 3.1 | Migrate `IntersectionClassify` and existing `IntersectionTests` stubs to `DiaGeometry2D/Intersection/`; update namespace | Done | IntersectionClassify migrated to Shapes/; IntersectionTests in Intersection/ |
+| 3.2 | Implement GJK algorithm + EPA in `Intersection/GJK.cpp` and `SupportFunctions.h` | Not Started | Deferred — existing analytic tests ported; GJK is a future phase |
+| 3.3 | Implement 3 fast-path `Test()` overloads: Circle-Circle, AARect-AARect, Circle-AARect | Done | All ported from original IntersectionTests |
+| 3.4 | Wire all remaining convex-vs-convex `Test()` overloads through GJK dispatch | Not Started | Deferred with GJK |
+| 3.5 | Implement dedicated tests: Plane, Ray, Line, Arc, Sector, AnnularSector | Partial | Line, Arc, Ray ported; Plane/Sector/AnnularSector stubs |
 | 3.6 | Implement `Contains()` for all applicable shapes; `ClosestPoint()` for all shapes | Not Started | |
-| 3.7 | Implement `Classify()` template wrapper | Not Started | Calls `Test()`, returns `IntersectionClassify` |
-| 3.8 | Add all Intersection files to `.vcxproj` + `.filters` | Not Started | |
-| 3.9 | Build clean; write `TestIntersectionTests.cpp` | Not Started | Priority: Circle-Circle, Circle-AARect, AARect-AARect first |
+| 3.7 | Implement `Classify()` template wrapper | Not Started | |
+| 3.8 | Add all Intersection files to `.vcxproj` + `.filters` | Done | |
+| 3.9 | Build clean; write `TestIntersectionTests.cpp` | Not Started | |
 
 ### Phase 4 — Transform Migration
 Independent of Phase 3; can run in parallel with it. Depends on Phase 2.
@@ -68,9 +68,9 @@ Independent of Phase 3; can run in parallel with it. Depends on Phase 2.
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 4.1 | Migrate `Transform2D.*` to `DiaGeometry2D/Transform/Transform.h/.cpp/.inl`; rename class; update namespace | Not Started | |
-| 4.2 | Remove `Transform/` from `DiaMaths.vcxproj`; add to `DiaGeometry2D.vcxproj` | Not Started | |
-| 4.3 | Update all callers of `Dia::Maths::Transform2D` | Not Started | From 2.1 hit list |
+| 4.1 | Migrate `Transform2D.*` to `DiaGeometry2D/Transform/Transform.h/.cpp/.inl`; rename class; update namespace | Done | Transform class in Dia::Geometry2D namespace |
+| 4.2 | Remove `Transform/` from `DiaMaths.vcxproj`; add to `DiaGeometry2D.vcxproj` | Done (added to new); Not Started (remove from DiaMaths deferred) | |
+| 4.3 | Update all callers of `Dia::Maths::Transform2D` | Not Started | No callers found in grep — Transform2D was not yet used outside DiaMaths |
 | 4.4 | Build clean; write `TestTransform.cpp` | Not Started | |
 
 ### Phase 5 — DiaCore: Handle\<T\>
@@ -78,8 +78,8 @@ Prerequisite for all spatial structure features. Can be done in parallel with Ph
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 5.1 | Implement `Dia::Core::Handle<T>` in `Dia/DiaCore/Containers/Handle.h` | Not Started | Index + generation counter; `IsValid()`, `Invalid()` static |
-| 5.2 | Add `Handle.h` to `DiaCore.vcxproj` + `.filters` | Not Started | |
+| 5.1 | Implement `Dia::Core::Handle<T>` in `Dia/DiaCore/Containers/Handle.h` | Done | Index + generation counter; `IsValid()`, `Invalid()` static |
+| 5.2 | Add `Handle.h` to `DiaCore.vcxproj` + `.filters` | Done | |
 | 5.3 | Write unit test for handle validity / stale detection | Not Started | |
 
 ### Phase 6 — Spatial Grid + ISpatialStructure
