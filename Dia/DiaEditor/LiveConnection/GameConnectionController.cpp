@@ -95,7 +95,13 @@ namespace Dia
 		void GameConnectionController::Shutdown()
 		{
 			DIA_LOG_INFO("Editor", "GameConnectionController: Shutdown");
-			mBridge = nullptr;
+			if (mBridge != nullptr)
+			{
+				mBridge->UnregisterRequestHandler(kReqConnect);
+				mBridge->UnregisterRequestHandler(kReqDisconnect);
+				mBridge->UnregisterRequestHandler(kReqGetState);
+				mBridge = nullptr;
+			}
 			mManager = nullptr;
 		}
 

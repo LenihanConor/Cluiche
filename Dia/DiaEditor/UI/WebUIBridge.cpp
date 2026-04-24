@@ -58,6 +58,32 @@ namespace Dia
 			mRequestHandlers.Add(entry);
 		}
 
+		void WebUIBridge::UnregisterEventHandler(const Dia::Core::StringCRC& eventType)
+		{
+			for (unsigned int i = 0; i < mEventHandlers.Size(); ++i)
+			{
+				if (mEventHandlers[i].eventType == eventType)
+				{
+					DIA_LOG_INFO("Editor", "WebUIBridge: UnregisterEventHandler '%s'", eventType.AsChar());
+					mEventHandlers.RemoveAt(i);
+					return;
+				}
+			}
+		}
+
+		void WebUIBridge::UnregisterRequestHandler(const Dia::Core::StringCRC& eventType)
+		{
+			for (unsigned int i = 0; i < mRequestHandlers.Size(); ++i)
+			{
+				if (mRequestHandlers[i].eventType == eventType)
+				{
+					DIA_LOG_INFO("Editor", "WebUIBridge: UnregisterRequestHandler '%s'", eventType.AsChar());
+					mRequestHandlers.RemoveAt(i);
+					return;
+				}
+			}
+		}
+
 		void WebUIBridge::NotifyUIDataChanged(const char* topic, const Json::Value& data)
 		{
 			if (!mUISystem || topic == nullptr)

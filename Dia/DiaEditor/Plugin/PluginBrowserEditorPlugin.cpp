@@ -146,6 +146,13 @@ namespace Dia
 		void PluginBrowserEditorPlugin::OnUnload()
 		{
 			DIA_LOG_INFO("Editor", "PluginBrowserEditorPlugin: OnUnload");
+			if (mBridge != nullptr)
+			{
+				mBridge->UnregisterRequestHandler(kReqGetAvailable);
+				mBridge->UnregisterRequestHandler(kReqLoadPlugin);
+				mBridge->UnregisterRequestHandler(kReqUnloadPlugin);
+				mBridge = nullptr;
+			}
 		}
 
 		void PluginBrowserEditorPlugin::OnUpdate(float /*deltaTime*/)
