@@ -89,6 +89,12 @@ namespace Dia
 			void RegisterPhaseType(const Dia::Core::StringCRC& typeId, ITypeFactory<Phase>* factory);
 			void RegisterModuleType(const Dia::Core::StringCRC& typeId, ITypeFactory<Module>* factory);
 
+			// Editor-only stub registration — marks a type as known without providing a factory.
+			// IsXxxTypeRegistered() returns true; Create() will return nullptr for stub types.
+			void RegisterKnownProcessingUnitType(const Dia::Core::StringCRC& typeId);
+			void RegisterKnownPhaseType(const Dia::Core::StringCRC& typeId);
+			void RegisterKnownModuleType(const Dia::Core::StringCRC& typeId);
+
 			// Instantiation
 			ProcessingUnit* CreateProcessingUnit(const Dia::Core::StringCRC& typeId,
 				const Dia::Core::StringCRC& instanceId,

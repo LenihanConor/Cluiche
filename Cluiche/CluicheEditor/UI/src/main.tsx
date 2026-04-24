@@ -17,6 +17,18 @@ function App() {
     EditorBridge.shellReady();
   }, []);
 
+  // Prevent CEF from navigating the main frame when a file is dropped outside
+  // of a panel iframe (e.g. on the toolbar or window chrome).
+  useEffect(() => {
+    const stop = (e: DragEvent) => e.preventDefault();
+    document.addEventListener("dragover", stop);
+    document.addEventListener("drop", stop);
+    return () => {
+      document.removeEventListener("dragover", stop);
+      document.removeEventListener("drop", stop);
+    };
+  }, []);
+
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (e.ctrlKey && e.shiftKey && (e.key === "p" || e.key === "P")) {

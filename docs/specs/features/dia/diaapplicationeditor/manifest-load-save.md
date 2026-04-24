@@ -28,6 +28,25 @@ Provides reliable loading and saving of .diaapp manifest files in the DiaApplica
 - [x] Handle file I/O errors gracefully with user-friendly messages
 - [x] Prompt user on window close if unsaved changes exist
 - [x] Clear dirty flag after successful save
+- [x] Open button in DiaApplicationEditor toolbar triggers native Win32 file dialog (GetOpenFileName) when no path supplied
+- [x] Empty state is a drag-and-drop zone — drop a .diaapp file to open it (CEF File.path used for full system path)
+- [x] Document-level `dragover`/`drop` prevention stops CEF navigating the iframe when a file is dropped outside the drop zone (e.g. on toolbar or after manifest is already open)
+- [ ] DiaDataExplorerEditor (future) can open by sending `open_manifest { path }` directly — no dialog needed
+
+## Manifest Source Model
+
+A manifest can come from two distinct sources, tracked as a typed concept:
+
+```typescript
+type ManifestSource =
+    | { type: 'file'; path: string }
+    | { type: 'live' }          // Phase 3 — connected game
+    | null;
+```
+
+**File source** (Phase 2): Open button (native dialog) or drag-and-drop. Save/SaveAs available. DiaDataExplorerEditor sends path directly via bridge.
+
+**Live source** (Phase 3): Loaded from connected game via WebSocket. Save is replaced by "Push to Game". A source indicator is always visible when a manifest is loaded (`● LIVE` vs `◌ FILE: foo.diaapp`). If both are loaded simultaneously, a toggle switches between them — they are two independent snapshots.
 
 ## Design
 

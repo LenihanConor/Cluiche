@@ -334,6 +334,7 @@ const ManifestEditor: React.FC = () => {
 | Source | ID | Decision Summary | Compliance |
 |--------|----|--------------------|------------|
 | DiaApplicationEditor | DAED-010 | Warn on risky runtime changes | ✅ **Compliant** - Warns before hot reload |
+| DiaApplicationEditor | DAED-013 | All inter-process comms use Protobuf | ✅ **Compliant** - No direct comms in this feature; delegates to hot-reload-trigger (3.4) and runtime-config-push (3.5) which both comply |
 
 **Decision 60 Compliance:**
 - **Warning on hot reload only, show change summary** - ✅ Implemented: warning appears when user clicks Hot Reload button; displays categorized change list

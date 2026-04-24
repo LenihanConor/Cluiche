@@ -4,6 +4,7 @@
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Containers/HashTables/HashTable.h>
 #include <DiaCore/CRC/CRCHashFunctor.h>
+#include <DiaCore/Strings/String256.h>
 
 namespace Dia
 {
@@ -30,8 +31,8 @@ namespace Dia
 		struct ManifestValidationError
 		{
 			ManifestValidationResult code;
-			const char* message;   // Detailed error message
-			const char* context;   // JSON path (e.g., "processing_units[0].modules[2]")
+			Dia::Core::Containers::String256 message;
+			Dia::Core::Containers::String256 context;
 
 			ManifestValidationError();
 			ManifestValidationError(ManifestValidationResult code, const char* message, const char* context);

@@ -285,6 +285,7 @@ Json::Value DiaDebugServer::SerializeApplicationTypes() {
 |--------|----|--------------------|------------|
 | Platform | PD-001 | Use StringCRC for IDs | ✅ **Compliant** - Type IDs use StringCRC |
 | DiaApplicationEditor | DAED-004 | Query ApplicationTypeRegistry for available types | ✅ **Compliant** - Primary strategy |
+| DiaApplicationEditor | DAED-013 | All inter-process comms use Protobuf | ✅ **Compliant** - Live registry query/response uses DiaDebugProtocol Protobuf messages (Phase 3 path only; static fallback has no IPC) |
 
 **Decision 50 Compliance:**
 - **Hybrid registry query + static fallback** - ✅ Implemented: try game registry first, fallback to bundled known_types.json

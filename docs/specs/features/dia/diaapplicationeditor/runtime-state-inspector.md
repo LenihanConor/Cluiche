@@ -258,6 +258,7 @@ export const LiveDebuggerLayout: React.FC = () => {
 | Source | ID | Decision Summary | Compliance |
 |--------|----|--------------------|------------|
 | Platform | PD-001 | Use StringCRC for IDs | ✅ **Compliant** - Module IDs use StringCRC |
+| DiaApplicationEditor | DAED-013 | All inter-process comms use Protobuf | ✅ **Compliant** - State query/response messages use DiaDebugProtocol Protobuf definitions |
 
 **Decision 57 Compliance:**
 - **Dual pane: Flow View + Inspector** - ✅ Implemented with LiveDebuggerLayout split layout

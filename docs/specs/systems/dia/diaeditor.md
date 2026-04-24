@@ -572,6 +572,7 @@ Decisions specific to DiaEditor system. Binding decisions constrain all features
 | SED-016 | GameConnectionManager boots clean with no game; Connect() is explicit and user-triggered | Tool must be usable without a running game; non-blocking boot; avoids startup failure or hang when no game is present | Accepted | Yes |
 | SED-017 | EditorManifestLoader is a static utility (not a class instance) that parses .diaapp and invokes a callback per plugin | Decouples manifest parsing from plugin lifecycle; consumer decides how to instantiate plugins; callback + void* avoids std::function in the public API | Accepted | Yes |
 | SED-018 | Fullscreen is implemented by collapsing the Mosaic layout to a single leaf node; the Mosaic component stays mounted | Swapping render trees (separate div + iframe) destroys the iframe and loses all in-page state (console history, editor content). Keeping Mosaic alive preserves every panel's iframe across fullscreen and drag/move. Exiting fullscreen restores the saved layout tree. | Accepted | Yes |
+| SED-019 | The CluicheEditor shell frame must register document-level `dragover`/`drop` listeners that call `preventDefault()` | Without this, files dropped on the shell (toolbar, window border, gaps between panels) trigger CEF's default navigate-frame behaviour, blanking the entire editor window | Accepted | Yes |
 
 **Status values:** `Proposed` · `Accepted` · `Rejected` · `Superseded`
 **Binding:** `Yes` = enforced on all features · `No` = guidance only

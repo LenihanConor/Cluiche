@@ -452,7 +452,7 @@ These decisions from parent platform and application specs are binding constrain
 | Dia | AD-003 | Namespace convention: `Dia::<Module>::` | Classes in `Dia::Application::Editor::` namespace |
 | DiaEditor | SED-001 | Plugin interface minimal and stable | Implement only IEditorPlugin; avoid custom extensions |
 | DiaEditor | SED-002 | Plugins register via macro | Use `REGISTER_EDITOR_PLUGIN(DiaApplicationEditor, "DiaApplicationEditor")` |
-| DiaEditor | SED-003 | Systems own editors as `<System>/Editor/` | Lives in `Dia/DiaApplication/Editor/` |
+| DiaEditor | SED-003 | Each editor plugin lives at `Dia/Dia<System>Editor/` | Lives in `Dia/DiaApplicationEditor/` ✅ |
 | DiaEditor | SED-008 | EditorModel uses Observer pattern | Subscribe to model changes; don't poll |
 
 ## System-Specific Decisions
@@ -472,6 +472,8 @@ Decisions specific to DiaApplicationEditor. Binding decisions constrain all feat
 | DAED-009 | Detect file conflicts, show diff, let user resolve | Prevents silent data loss; educates user about external changes | Proposed | Yes |
 | DAED-010 | Warn on risky runtime changes (add module, change transition) | Educate user; allow proceed with confirmation | Proposed | Yes |
 | DAED-011 | Hot reload sends path only, game loads from disk | Simpler protocol; guarantees game sees saved file | Proposed | Yes |
+| DAED-012 | Document-level `dragover`/`drop` prevention required in the plugin iframe | CEF executes its default behaviour (navigate the frame to the dropped file URL) when no `preventDefault()` is called, turning the panel white; must block at `document` level not just in the drop zone element | Accepted | Yes |
+| DAED-013 | All inter-process (editor ↔ game) communication must use Protobuf | Type-safe, versioned wire format; consistent with DiaDebugProtocol; no ad-hoc JSON over the WebSocket connection | Accepted | Yes |
 
 **Status values:** `Proposed` · `Accepted` · `Rejected` · `Superseded`
 **Binding:** `Yes` = enforced on all features · `No` = guidance only
@@ -521,6 +523,8 @@ Features within the DiaApplicationEditor system (create with `/spec-feature`):
 ## Status
 
 `Approved` - All 15 features complete with comprehensive design (Decisions 43-60), ready for implementation
+
+**Plan:** @docs/specs/systems/dia/diaapplicationeditor.plan.md
 
 ## Notes
 

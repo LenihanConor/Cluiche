@@ -257,6 +257,7 @@ export const NotificationPanel: React.FC = () => {
 | Source | ID | Decision Summary | Compliance |
 |--------|----|--------------------|------------|
 | DiaApplicationEditor | DAED-011 | Hot reload sends path only, game loads from disk | ✅ **Compliant** - Only manifest path sent |
+| DiaApplicationEditor | DAED-013 | All inter-process comms use Protobuf | ✅ **Compliant** - Hot reload command (path + request ID) sent as Protobuf; response received as Protobuf |
 
 **Decision 58 Compliance:**
 - **No confirmation dialog, immediate reload** - ✅ Implemented: button triggers reload directly (no confirm dialog)

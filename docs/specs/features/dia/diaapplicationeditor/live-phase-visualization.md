@@ -308,6 +308,7 @@ export const LiveDebuggerControls: React.FC<LiveDebuggerControlsProps> = ({
 | Source | ID | Decision Summary | Compliance |
 |--------|----|--------------------|------------|
 | Platform | PD-001 | Use StringCRC for IDs | ✅ **Compliant** - Phase IDs use StringCRC |
+| DiaApplicationEditor | DAED-013 | All inter-process comms use Protobuf | ✅ **Compliant** - Phase state updates received as DiaDebugProtocol Protobuf messages |
 
 **Decision 56 Compliance:**
 - **Phase + edge animation in Flow View** - ✅ Implemented with orange border pulse on node, orange glow on edge during transition

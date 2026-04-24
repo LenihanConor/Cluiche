@@ -94,6 +94,33 @@ namespace Dia
 			mTypeListsDirty = true;
 		}
 
+		void ApplicationTypeRegistry::RegisterKnownProcessingUnitType(const Dia::Core::StringCRC& typeId)
+		{
+			if (!mProcessingUnitFactories.ContainsKey(typeId))
+			{
+				mProcessingUnitFactories.Add(typeId, nullptr);
+				mTypeListsDirty = true;
+			}
+		}
+
+		void ApplicationTypeRegistry::RegisterKnownPhaseType(const Dia::Core::StringCRC& typeId)
+		{
+			if (!mPhaseFactories.ContainsKey(typeId))
+			{
+				mPhaseFactories.Add(typeId, nullptr);
+				mTypeListsDirty = true;
+			}
+		}
+
+		void ApplicationTypeRegistry::RegisterKnownModuleType(const Dia::Core::StringCRC& typeId)
+		{
+			if (!mModuleFactories.ContainsKey(typeId))
+			{
+				mModuleFactories.Add(typeId, nullptr);
+				mTypeListsDirty = true;
+			}
+		}
+
 		ProcessingUnit* ApplicationTypeRegistry::CreateProcessingUnit(const Dia::Core::StringCRC& typeId,
 			const Dia::Core::StringCRC& instanceId,
 			const Json::Value& config)

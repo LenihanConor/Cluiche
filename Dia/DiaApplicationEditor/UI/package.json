@@ -1,0 +1,29 @@
+{
+  "name": "dia-application-editor-ui",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@codemirror/lang-json": "^6.0.1",
+    "@codemirror/lint": "^6.8.4",
+    "@dagrejs/dagre": "^1.0.4",
+    "@uiw/react-codemirror": "^4.23.7",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-arborist": "^3.4.0",
+    "reactflow": "^11.11.4",
+    "zustand": "^4.5.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@vitejs/plugin-react": "^4.0.0",
+    "typescript": "^5.0.0",
+    "vite": "^4.4.0"
+  }
+}

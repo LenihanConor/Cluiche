@@ -273,6 +273,7 @@ public:
 |--------|----|--------------------|------------|
 | DiaApplicationEditor | DAED-006 | Runtime config changes debounced (500ms) | ✅ **Compliant** - Debounced with react hook |
 | DiaApplicationEditor | DAED-007 | Hybrid hot-update: modules opt-in | ✅ **Compliant** - CanHotUpdateConfig() opt-in |
+| DiaApplicationEditor | DAED-013 | All inter-process comms use Protobuf | ✅ **Compliant** - Config push payload (module ID + serialized config) sent as Protobuf; ack received as Protobuf |
 
 **Decision 59 Compliance:**
 - **Config values only; structural changes require hot reload** - ✅ Implemented: only pushes JSON config; modules validate and reject unsafe changes

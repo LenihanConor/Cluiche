@@ -51,8 +51,8 @@ namespace Dia::Editor {
         void Subscribe(const StringCRC& eventType, IConnectionObserver* observer);
         void Unsubscribe(const StringCRC& eventType, IConnectionObserver* observer);
         
-        // Send commands
-        void SendCommand(const Json::Value& command);
+        // Send commands — all inter-process messages use Protobuf (DAED-013)
+        void SendCommand(const google::protobuf::MessageLite& message);
         
         // Connection info
         const char* GetAddress() const;
@@ -75,9 +75,9 @@ namespace Dia::Editor {
         };
         DynamicArrayC<Subscription, 32> mSubscriptions;
         
-        // Message handler
+        // Message handler — deserialises incoming Protobuf frame, routes by message type
         void HandleMessage(const Dia::WebSocket::Message& msg);
-        void NotifyObservers(const StringCRC& eventType, const Json::Value& data);
+        void NotifyObservers(const StringCRC& eventType, const google::protobuf::MessageLite& data);
     };
     
     class IConnectionObserver {
@@ -296,12 +296,21 @@ void GameConnectionManager::Update() {
 - `Dia/DiaApplicationEditor/DiaApplicationEditor.cpp` - Plugin subscription and event handling
 - `Dia/DiaApplicationEditor/UI/ConnectionStatus.tsx` - Connection status UI component
 
+## Wire Format
+
+All messages exchanged between editor and game over the WebSocket connection use **Protobuf** (DAED-013), consistent with `DiaDebugProtocol`. No ad-hoc JSON is sent over the wire.
+
+- Outbound (editor → game): serialise a `google::protobuf::MessageLite` to binary, send as a WebSocket binary frame.
+- Inbound (game → editor): receive binary frame, deserialise using the `DiaDebugProtocol` message envelope to determine type, dispatch to registered observers.
+- The `DiaDebugProtocol` project owns all `.proto` definitions shared between editor and game.
+
 ## Binding Decisions Compliance
 
 | Source | ID | Decision Summary | Compliance |
 |--------|----|--------------------|------------|
 | Platform | PD-001 | Use StringCRC for IDs | ✅ **Compliant** - Event types use StringCRC |
 | DiaEditor | SED-008 | EditorModel uses Observer pattern | ✅ **Compliant** - Plugins observe GameConnectionManager events |
+| DiaApplicationEditor | DAED-013 | All inter-process comms use Protobuf | ✅ **Compliant** - SendCommand takes `MessageLite`; inbound deserialized via DiaDebugProtocol envelope |
 
 **Decision 55 Compliance:**
 - **Auto-connect via shared GameConnectionManager** - ✅ Implemented as EditorApplication singleton, all plugins share connection

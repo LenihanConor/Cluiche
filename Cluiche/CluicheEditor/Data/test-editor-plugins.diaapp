@@ -9,6 +9,10 @@
             {
                 "type": "HelloEditorPlugin",
                 "instance_id": "hello_1"
+            },
+            {
+                "type": "DiaApplicationEditor",
+                "instance_id": "diaapp_editor_1"
             }
         ]
     }
