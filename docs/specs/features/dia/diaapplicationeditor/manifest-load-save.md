@@ -202,6 +202,8 @@ void DiaApplicationEditor::SaveManifestAs(const char* newPath) {
 
 ### Validation
 
+**Offline validation mode (current behaviour):** The editor runs with an empty `ApplicationTypeRegistry`, so every type referenced in a manifest (`MainProcessingUnit`, `InitPhase`, etc.) would produce a `kUnknownType` error even for a perfectly valid manifest. To avoid flooding the panel with false positives, `kUnknownType` errors are suppressed from both the `isValid` flag and the UI error list in offline mode. All other error codes (duplicate IDs, malformed transitions, missing required fields) are still reported as structural errors and block save. Live type validation is deferred to Phase 3 when a game connection is available. This filtering may be revisited — e.g. to show `kUnknownType` as warnings rather than suppressing them entirely.
+
 **DiaApplicationEditor::ValidateManifest:**
 ```cpp
 bool DiaApplicationEditor::ValidateManifest() {
