@@ -160,4 +160,105 @@ describe("EditorBridge – subscribe / topic listeners", () => {
       window.DiaEditor_onDataChanged!({ data: "no-topic" });
     }).not.toThrow();
   });
+
+  it("listener error is swallowed and other listeners still fire", async () => {
+    const { EditorBridge } = await import("./EditorBridge");
+    const bad = vi.fn().mockImplementation(() => { throw new Error("boom"); });
+    const good = vi.fn();
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    EditorBridge.subscribe("err_topic", bad);
+    EditorBridge.subscribe("err_topic", good);
+
+    window.DiaEditor_onDataChanged!({ topic: "err_topic", data: {} });
+
+    expect(good).toHaveBeenCalledTimes(1);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("topic listener failed"),
+      "err_topic",
+      expect.any(Error)
+    );
+  });
+
+  it("broadcasts data-changed events to all iframes", async () => {
+    await import("./EditorBridge");
+
+    const iframe = document.createElement("iframe");
+    document.body.appendChild(iframe);
+
+    const postSpy = vi.spyOn(iframe.contentWindow!, "postMessage");
+
+    window.DiaEditor_onDataChanged!({ topic: "broadcast_topic", data: { x: 1 } });
+
+    expect(postSpy).toHaveBeenCalledWith(
+      { __dia: true, topic: "broadcast_topic", data: { x: 1 } },
+      "*"
+    );
+
+    document.body.removeChild(iframe);
+  });
+});
+
+describe("EditorBridge – iframe relay", () => {
+  it("routes a frame request through dia.callCpp", async () => {
+    await import("./EditorBridge");
+
+    window.dispatchEvent(new MessageEvent("message", {
+      data: { __diaFromFrame: true, payload: { type: "get_panels", reqId: "frame-r1" } },
+      source: window,
+    }));
+
+    expect((window as any).dia.callCpp).toHaveBeenCalledWith(
+      "DiaEditor_call",
+      expect.stringContaining('"type":"get_panels"')
+    );
+  });
+
+  it("drops iframe message when dia.callCpp is unavailable", async () => {
+    delete (window as any).dia;
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    await import("./EditorBridge");
+
+    window.dispatchEvent(new MessageEvent("message", {
+      data: { __diaFromFrame: true, payload: { type: "get_panels" } },
+      source: window,
+    }));
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("dia.callCpp not available"),
+      expect.anything()
+    );
+  });
+
+  it("routes response back to the iframe window that sent the request", async () => {
+    await import("./EditorBridge");
+
+    const postSpy = vi.spyOn(window, "postMessage");
+
+    // Simulate an iframe posting a request with a reqId
+    window.dispatchEvent(new MessageEvent("message", {
+      data: { __diaFromFrame: true, payload: { type: "get_panels", reqId: "frame-r42" } },
+      source: window,
+    }));
+
+    // Simulate C++ responding to that reqId
+    window.DiaEditor_onResponse!({ reqId: "frame-r42", result: { panels: [] } });
+
+    expect(postSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ __diaResponse: true, reqId: "frame-r42" }),
+      "*"
+    );
+  });
+
+  it("ignores messages without __diaFromFrame flag", async () => {
+    await import("./EditorBridge");
+    const callSpy = (window as any).dia.callCpp as ReturnType<typeof vi.fn>;
+    callSpy.mockClear();
+
+    window.dispatchEvent(new MessageEvent("message", {
+      data: { payload: { type: "get_panels" } },
+      source: window,
+    }));
+
+    expect(callSpy).not.toHaveBeenCalled();
+  });
 });

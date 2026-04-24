@@ -62,3 +62,36 @@ describe("SplashScreen – visibility", () => {
     expect(container.firstElementChild).not.toBeNull();
   });
 });
+
+describe("SplashScreen – rapid toggle", () => {
+  it("re-showing before 400ms cancels the unmount timeout", () => {
+    const { container, rerender } = render(<SplashScreen visible={true} />);
+
+    // Hide it — starts the 400ms countdown
+    rerender(<SplashScreen visible={false} />);
+    act(() => { vi.advanceTimersByTime(200); });
+
+    // Show it again before the timeout fires
+    rerender(<SplashScreen visible={true} />);
+    act(() => { vi.advanceTimersByTime(400); });
+
+    // Should still be mounted because visible=true (no pending unmount)
+    expect(container.firstElementChild).not.toBeNull();
+  });
+
+  it("hiding again after re-show restarts the 400ms timer", () => {
+    const { container, rerender } = render(<SplashScreen visible={true} />);
+
+    rerender(<SplashScreen visible={false} />);
+    act(() => { vi.advanceTimersByTime(200); });
+
+    rerender(<SplashScreen visible={true} />);
+    // Hide it a second time — fresh 400ms countdown
+    rerender(<SplashScreen visible={false} />);
+    act(() => { vi.advanceTimersByTime(399); });
+    expect(container.firstElementChild).not.toBeNull();
+
+    act(() => { vi.advanceTimersByTime(1); });
+    expect(container.firstElementChild).toBeNull();
+  });
+});

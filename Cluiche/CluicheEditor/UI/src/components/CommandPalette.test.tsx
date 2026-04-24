@@ -144,3 +144,34 @@ describe("CommandPalette – command execution", () => {
     expect(onClose).toHaveBeenCalled();
   });
 });
+
+describe("CommandPalette – boundary clamping", () => {
+  it("ArrowDown at the last item stays at the last item", async () => {
+    render(<CommandPalette onClose={vi.fn()} />);
+    await waitFor(() => screen.getByText("Save File"));
+
+    // Press down past all 4 items — should clamp at index 3
+    await userEvent.keyboard("{ArrowDown}{ArrowDown}{ArrowDown}{ArrowDown}{ArrowDown}");
+
+    // Enter should execute the last command, not crash
+    const onClose = vi.fn();
+    render(<CommandPalette onClose={onClose} />);
+    await waitFor(() => screen.getByText("Save File"));
+    await userEvent.keyboard("{ArrowDown}{ArrowDown}{ArrowDown}{ArrowDown}");
+    await userEvent.keyboard("{Enter}");
+    expect(mockBridge.executeCommand).toHaveBeenCalledWith("view.toggle");
+  });
+
+  it("Enter with no matching results does nothing", async () => {
+    const onClose = vi.fn();
+    render(<CommandPalette onClose={onClose} />);
+    await waitFor(() => screen.getByText("Save File"));
+
+    // Type something that matches nothing
+    await userEvent.type(screen.getByRole("textbox"), "zzzzzzzz");
+    await userEvent.keyboard("{Enter}");
+
+    expect(mockBridge.executeCommand).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+});
