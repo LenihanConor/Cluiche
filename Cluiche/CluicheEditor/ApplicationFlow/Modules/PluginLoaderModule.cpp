@@ -1,5 +1,6 @@
 #include "PluginLoaderModule.h"
 #include "EditorModelModule.h"
+#include "EditorViewModule.h"
 
 #include <DiaEditor/Plugin/EditorPluginRegistry.h>
 #include <DiaEditor/Plugin/IEditorPlugin.h>
@@ -24,6 +25,7 @@ namespace Cluiche
 		void PluginLoaderModule::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
 		{
 			AddDependancy(buildDependencies->GetModule(EditorModelModule::kTypeId));
+			AddDependancy(buildDependencies->GetModule(EditorViewModule::kTypeId));
 		}
 
 		void PluginLoaderModule::SetBridge(Dia::Editor::WebUIBridge* bridge)
