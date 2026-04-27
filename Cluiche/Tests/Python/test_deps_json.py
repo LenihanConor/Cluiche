@@ -1,12 +1,13 @@
 """
 deps.json schema and content validation tests.
-Run from repo root: python -m pytest tests/test_deps_json.py -v
+Run from repo root: python -m pytest Cluiche/Tests/Python/test_deps_json.py -v
 """
 import json
 import os
+from pathlib import Path
 import pytest
 
-REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+REPO_ROOT = str(Path(__file__).resolve().parents[3])
 DEPS_PATH = os.path.join(REPO_ROOT, "deps.json")
 
 REQUIRED_FIELDS_ZIP = {"id", "version", "url", "sha256", "install_type", "unzip_to"}

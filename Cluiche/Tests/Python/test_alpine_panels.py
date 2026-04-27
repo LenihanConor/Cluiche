@@ -9,7 +9,7 @@ verify:
   4. Alpine, Tailwind, and DaisyUI vendor scripts are loaded
   5. No CDN URLs (cdn.jsdelivr.net, unpkg.com, cdn.tailwindcss.com) remain
 
-Run from repo root: python -m pytest tests/test_alpine_panels.py -v
+Run from repo root: python -m pytest Cluiche/Tests/Python/test_alpine_panels.py -v
 """
 import os
 import re
@@ -18,7 +18,7 @@ from html.parser import HTMLParser
 
 import pytest
 
-REPO_ROOT = Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+REPO_ROOT = Path(__file__).resolve().parents[3]
 PANELS_DIR = REPO_ROOT / "Cluiche" / "CluicheTest" / "AlpinePanels"
 
 CDN_PATTERNS = [
