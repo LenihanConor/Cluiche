@@ -9,7 +9,7 @@ Concurrency patterns and thread safety guidelines for AI agents working with Clu
 ## Overview
 
 Cluiche uses a **three-thread architecture**:
-- **Main Thread:** UI, input capture, orchestration (Awesomium requires main thread)
+- **Main Thread:** UI, input capture, orchestration (UI requires main thread)
 - **Render Thread:** Graphics rendering at 60 FPS
 - **Sim Thread:** Game logic at variable rate
 
@@ -34,7 +34,7 @@ Main Thread:
     MainProcessingUnit::Start()
         → Spawn Render thread
         → Spawn Sim thread
-        → Initialize UI (Awesomium)
+        → Initialize UI
     
     while (running):
         MainProcessingUnit::Update()
@@ -456,7 +456,7 @@ Matrix33 worldMatrix = transform->GetWorldMatrix();  // RACE CONDITION
 
 ---
 
-### Pitfall 5: Calling Awesomium from Non-Main Thread
+### Pitfall 5: Calling UI System from Non-Main Thread
 
 **❌ Forbidden:**
 
@@ -464,7 +464,7 @@ Matrix33 worldMatrix = transform->GetWorldMatrix();  // RACE CONDITION
 // Sim thread
 void SimThread::Update()
 {
-    mUISystem->LoadPage("page.html");  // CRASH! Awesomium requires main thread
+    mUISystem->LoadPage("page.html");  // CRASH! UI requires main thread
 }
 ```
 
@@ -741,7 +741,7 @@ void ProcessData(const Data* data)
 - Deadlock from wrong lock ordering
 - Observer called from wrong thread
 - Transform2D hierarchy access
-- Awesomium from non-main thread
+- UI system called from non-main thread
 
 **Best Practices:**
 - Minimize shared state

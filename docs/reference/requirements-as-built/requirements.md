@@ -230,14 +230,10 @@ This document tracks functional and non-functional requirements with status, pri
 
 → Implementation:
 - `Dia/DiaUI/DiaUIIUISystem.h`
-- `Dia/DiaUIAwesomium/UISystem.h` (Awesomium backend)
 
 **Verification:**
 - Can load HTML/CSS/JavaScript pages
 - Can bind C++ methods to JavaScript
-- UI runs on main thread (Awesomium requirement)
-
-**Note:** Awesomium deprecated, needs replacement
 
 ---
 
@@ -473,7 +469,6 @@ This document tracks functional and non-functional requirements with status, pri
 
 **Blockers:**
 - No CMake build system
-- Awesomium not available on Linux
 - Not tested
 
 **Status:** Designed for portability, not yet implemented
@@ -488,7 +483,6 @@ This document tracks functional and non-functional requirements with status, pri
 
 **Blockers:**
 - No CMake build system
-- Awesomium not available on macOS
 - Not tested
 
 **Status:** Designed for portability, not yet implemented
@@ -606,7 +600,7 @@ DE-005 (Math) → DiaMaths subsystem
 
 **Medium Priority (P2):**
 5. Linux support (NF-011)
-6. Replace Awesomium (DE-008 improvement)
+6. Choose UI backend replacement (DE-008 improvement)
 
 **Low Priority (P3):**
 7. macOS support (NF-012)

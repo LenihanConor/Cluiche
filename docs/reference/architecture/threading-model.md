@@ -27,17 +27,17 @@ The threading model separates concerns across three independent threads:
 **Problem:** Single-threaded game loops must balance:
 - Consistent render rate (60 FPS for smooth visuals)
 - Variable simulation rate (depends on complexity)
-- Non-blocking UI (Awesomium requires main thread)
+- Non-blocking UI (UI system runs on main thread)
 
 **Solution:** Three independent threads with clear responsibilities:
 
-1. **Main Thread** - Handles UI (Awesomium must run on main thread), bootstraps app, spawns worker threads
+1. **Main Thread** - Handles UI (must run on main thread), bootstraps app, spawns worker threads
 2. **Render Thread** - Dedicated rendering at consistent 60 FPS, independent of sim complexity
 3. **Sim Thread** - Game logic and physics at variable rate, doesn't block rendering
 
 **Benefits:**
 - ✅ Consistent frame rate even when simulation is slow
-- ✅ Non-blocking UI (main thread available for Awesomium events)
+- ✅ Non-blocking UI (main thread available for UI events)
 - ✅ Clear separation of concerns (rendering vs simulation)
 - ✅ Independent thread profiling and optimization
 
@@ -64,7 +64,7 @@ The threading model separates concerns across three independent threads:
 
 **Key Modules:**
 - `MainKernelModule` - Time server @ 30Hz, input source manager, SFML window, canvas
-- `MainUIModule` - Awesomium UI system (observer subject)
+- `MainUIModule` - UI system (observer subject)
 - `LevelFactoryModule` - Level registry and factory access
 
 **Update Loop:**
@@ -77,7 +77,7 @@ void MainProcessingUnit::Update() {
         // Write input to Sim thread
         inputToSimFrameStream->PushFrame(inputEvents);
         
-        // Update UI system (Awesomium)
+        // Update UI system
         uiSystem->Update();
         
         // Update time server @ 30Hz

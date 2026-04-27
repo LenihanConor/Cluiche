@@ -296,7 +296,7 @@ if (moduleId == StringCRC("PhysicsModule"))  // O(1) comparison
 ### IUISystem
 - **Definition:** Abstract UI interface
 - **Methods:** Initialize, Update, LoadUI, ExecuteJavaScript, BindCallback
-- **Implementation:** UISystem (Awesomium - deprecated)
+- **Implementation:** See DiaUICEF or DiaUIUltralight for backends
 - **Thread:** Main thread only
 
 ---
@@ -308,14 +308,6 @@ if (moduleId == StringCRC("PhysicsModule"))  // O(1) comparison
 - **Purpose:** Graphics, window, input, audio backend
 - **Location:** `External/SFML-2.5.1/`
 - **Wrapper:** DiaSFML
-
----
-
-### Awesomium
-- **Status:** ⚠️ DEPRECATED (no longer maintained)
-- **Purpose:** Web-based UI (HTML/CSS/JS)
-- **Location:** `External/Awesomium SDK/`
-- **Replacement:** CEF (Chromium Embedded Framework) or ImGui
 
 ---
 

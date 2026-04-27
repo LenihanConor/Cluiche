@@ -37,7 +37,6 @@ The **Cluiche platform** supports multiple applications, all built on the **Dia 
 │  External Dependencies                                   │
 │  - SFML (Graphics/Audio/Input)                          │
 │  - JsonCpp (Configuration)                              │
-│  - Awesomium (Web UI)                                   │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -131,7 +130,7 @@ Modules provide functionality to phases:
 | Module | Thread | Purpose |
 |--------|--------|---------|
 | **MainKernelModule** | Main | Time server, input system, SFML window, canvas |
-| **MainUIModule** | Main | Awesomium UI system initialization |
+| **MainUIModule** | Main | UI system initialization |
 | **LevelFactoryModule** | Main | Level registry and factory |
 | **SimTimeServerModule** | Sim | Simulation clock (independent from Main) |
 | **SimInputFrameStreamModule** | Sim | Input event consumer (reads from Main) |
@@ -273,8 +272,6 @@ UI system with web integration:
 - **BoundMethod** - Method binding for UI callbacks
 - **UIDataBuffer** - Data exchange with UI
 
-**Backend:** DiaUIAwesomium provides Awesomium (web-based UI)
-
 **[→ API Documentation](../api/dia/ui-api.md)**
 
 ##### 7. DiaWindow
@@ -309,7 +306,6 @@ SFML integration layer:
 - **DiaPhysics** - Physics simulation (stub)
 - **DiaAI** - AI pathfinding (stub)
 - **DiaArchitecture** - Architectural patterns (Component system, Observer, Singleton)
-- **DiaUIAwesomium** - Awesomium UI integration
 
 **[→ Dia engine architecture details](dia-engine.md)**
 
@@ -323,7 +319,6 @@ SFML integration layer:
 |---------|---------|---------|-------|
 | **SFML** | 2.x | Graphics, audio, input, windowing | DiaSFML backend, primary rendering |
 | **JsonCpp** | master | JSON parsing and serialization | Configuration files, save/load |
-| **Awesomium SDK** | - | Web-based UI framework | DiaUIAwesomium, UI rendering |
 | **Webix** | Multiple | JavaScript UI framework | UI pages, web console |
 | **VisJS** | - | Data visualization | Debugging visualizations |
 
@@ -339,7 +334,7 @@ Cluiche uses **three independent threads** for clear separation of concerns:
 ```
 Main Thread
     ├─ Bootstrap application
-    ├─ Coordinate UI (Awesomium on main thread)
+    ├─ Coordinate UI
     ├─ Collect input events → InputToSimFrameStream
     ├─ Spawn RenderProcessingUnit thread
     └─ Spawn SimProcessingUnit thread

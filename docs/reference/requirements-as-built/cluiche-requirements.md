@@ -417,7 +417,6 @@ Support web-based UI (HTML/CSS/JS).
 
 **Implementation:**
 - `MainUIModule` - UI management
-- `DiaUIAwesomium::UISystem` - Awesomium backend (deprecated)
 
 **Test Cases:**
 - Load UI
@@ -425,7 +424,7 @@ Support web-based UI (HTML/CSS/JS).
 - Bind callbacks
 - UI updates
 
-**Status:** ⚠️ Blocked (Awesomium deprecated, needs replacement)
+**Status:** ⚠️ Needs UI backend implementation
 
 **[→ UI API](../api/dia/ui-api.md)**
 
@@ -549,11 +548,11 @@ Maintain 60 FPS in typical gameplay scenarios.
 - CR-005: Thread-safe UI updates (needs expansion)
 - CR-010: Input state tracking (pattern only)
 - CR-012: Debug rendering (FPS only)
-- CR-013: Web UI (Awesomium deprecated)
+- CR-013: Web UI (needs backend implementation)
 - CR-015: Module dependency graph (partial)
 
 **Next Steps:**
-1. Replace Awesomium with CEF or ImGui (CR-013)
+1. Implement UI backend with CEF or ImGui (CR-013)
 2. Expand debug rendering (CR-012)
 3. Complete module dependency graph (CR-015)
 4. Implement input state tracking (CR-010)

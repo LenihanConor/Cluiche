@@ -109,9 +109,9 @@ Documentation Updates Required:
 3. Update build instructions if needed (`/docs/00-getting-started/building-the-project.md`)
 4. Update Visual Studio guide if affects project files (`/docs/reference/development/visual-studio-guide.md`)
 
-**Example: Replacing Awesomium with CEF**
+**Example: Adding a new UI backend (CEF)**
 ```
-Dependency Change: Replaced Awesomium with Chromium Embedded Framework (CEF)
+Dependency Change: Added Chromium Embedded Framework (CEF) as UI backend
 
 Documentation Updates Required:
 - [ ] /docs/reference/architecture/external-dependencies.md (update UI backend)

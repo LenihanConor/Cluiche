@@ -418,7 +418,7 @@ Platform-agnostic input handling (keyboard, mouse, gamepad).
 Abstract UI system for HTML/CSS/JS or native UI.
 
 **Rationale:**
-- UI can use web tech (Awesomium/CEF) or native (ImGui)
+- UI can use web tech (CEF) or native (ImGui)
 - Core logic independent of UI backend
 - Support for modding (custom UIs)
 
@@ -430,7 +430,6 @@ Abstract UI system for HTML/CSS/JS or native UI.
 
 **Implementation:**
 - `DiaUI::IUISystem` - Abstract interface
-- `DiaUIAwesomium::UISystem` - Awesomium backend (deprecated)
 
 **Test Cases:**
 - Load UI
@@ -438,7 +437,7 @@ Abstract UI system for HTML/CSS/JS or native UI.
 - Bind C++ callbacks
 - Backend swap (compile test)
 
-**Status:** Awesomium backend deprecated, needs CEF or ImGui replacement
+**Status:** Needs UI backend implementation (CEF or ImGui)
 
 **[→ DiaUI API](../api/dia/ui-api.md)**
 

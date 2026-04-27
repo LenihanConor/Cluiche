@@ -47,12 +47,11 @@ Vector2D MoveTowards(const Vector2D& current, const Vector2D& target, float maxD
 
 ---
 
-### 2. Replace Awesomium
+### 2. Implement UI Backend
 
-**Current Issue:**
-- Awesomium deprecated (no longer maintained)
-- Security concerns (no updates)
-- Large SDK (50+ MB)
+**Current Status:**
+- UI system abstraction exists (DiaUI/IUISystem)
+- No active UI backend (Awesomium has been removed)
 
 **Options:**
 
@@ -60,7 +59,7 @@ Vector2D MoveTowards(const Vector2D& current, const Vector2D& target, float maxD
 - ✅ Modern Chromium
 - ✅ Actively maintained
 - ✅ Supports latest web standards
-- ❌ Large (similar to Awesomium)
+- ❌ Large binary size
 - ❌ Complex integration
 
 **Option B: WebView2 (Windows only)**
@@ -86,7 +85,7 @@ Vector2D MoveTowards(const Vector2D& current, const Vector2D& target, float maxD
 
 **Effort:** Medium-High (few weeks)
 
-**Priority:** **P1** (tech debt, security)
+**Priority:** **P1** (required for UI functionality)
 
 ---
 
@@ -300,7 +299,7 @@ void SimProcessingUnit::Update() {
 - ✅ Wider audience
 
 **Challenges:**
-- ❌ Awesomium not cross-platform (must replace first)
+- ❌ UI backend not cross-platform (depends on implementation choice)
 - ❌ Testing on multiple platforms
 - ❌ Additional maintenance
 
@@ -503,7 +502,7 @@ struct Entities {
 - Optimize Transform2D (P1)
 
 **2026 Q3-Q4:**
-- Replace Awesomium with CEF or ImGui (P1)
+- Implement UI backend: CEF or ImGui (P1)
 - Research ECS (P2)
 
 **2027:**
@@ -571,7 +570,7 @@ struct Entities {
 
 **High Priority (Should Do):**
 - ✅ Fix DiaMaths bugs (P0)
-- ✅ Replace Awesomium (P1)
+- ✅ Implement UI backend (P1)
 - ✅ Optimize Transform2D (P1)
 
 **Medium Priority (Nice to Have):**
@@ -587,7 +586,7 @@ struct Entities {
 
 **Philosophy:**
 - Fix bugs first (correctness)
-- Address tech debt (Awesomium)
+- Address tech debt (UI backend)
 - Optimize where proven beneficial (profile first)
 - Don't fix what isn't broken
 - Incremental evolution, not revolution
@@ -595,7 +594,7 @@ struct Entities {
 **Next Steps:**
 1. Fix DiaMaths template bugs
 2. Profile Transform2D performance
-3. Evaluate Awesomium replacements
+3. Evaluate UI backend options (CEF vs ImGui)
 4. Research ECS benefits
 
 **[→ Back to Design Philosophy](design.md)**  

@@ -30,7 +30,7 @@ Get oriented to the Cluiche codebase in 5 minutes.
 - Example: `BootPhase` → `BootStrapPhase` → `RunningPhase`
 
 **Module** = A reusable component with dependencies
-- Example: `MainKernelModule` (time, input, window), `MainUIModule` (Awesomium UI)
+- Example: `MainKernelModule` (time, input, window), `MainUIModule` (UI system)
 
 ```
 ProcessingUnit runs Phases
@@ -94,7 +94,6 @@ C:\GitHub\Cluiche\
 ├── External/                     ← THIRD-PARTY LIBRARIES
 │   ├── SFML/                    ← Graphics/Audio/Input library
 │   ├── jsoncpp-master/          ← JSON configuration
-│   ├── Awesomium SDK/           ← Web-based UI
 │   └── [2 more libraries]
 │
 └── Tools/                        ← DEVELOPMENT TOOLS

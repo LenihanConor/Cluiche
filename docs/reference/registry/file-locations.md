@@ -189,10 +189,6 @@ C:\GitHub\Cluiche\
   - `DiaSFMLInputSource.h` - SFML input
   - `DiaSFMLSoundManager.h` - SFML audio
 
-### Awesomium UI Backend (Deprecated)
-- `Dia/DiaUIAwesomium/`
-  - `UISystem.h` - Awesomium implementation
-
 ### File I/O
 - `Dia/DiaIO/`
   - File I/O utilities
@@ -219,11 +215,6 @@ C:\GitHub\Cluiche\
 - `External/jsoncpp-master/`
   - `include/` - JSON headers
   - `src/` - JSON source
-
-### Awesomium (Deprecated)
-- `External/Awesomium SDK/`
-  - Large UI framework (~50+ MB)
-  - No longer maintained
 
 ### Web UI Components
 - `External/Webix/` - Web UI library

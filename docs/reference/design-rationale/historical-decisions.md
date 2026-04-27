@@ -34,7 +34,7 @@ int main() {
 **Why We Moved On:**
 - Needed consistent 60 FPS
 - Wanted to utilize multi-core CPUs
-- UI (Awesomium) required main thread
+- UI system required main thread
 
 ---
 
@@ -184,7 +184,7 @@ int main() {
 **Chose:** Three threads
 
 **Rationale:**
-- Awesomium requires main thread (UI)
+- UI required main thread
 - Wanted 60 FPS rendering independent of sim
 - Job system too complex initially
 - Three threads sufficient for current needs
@@ -203,33 +203,22 @@ int main() {
 
 ---
 
-### Decision 4: Awesomium vs ImGui
+### Decision 4: UI Framework Selection
 
 **When:** UI framework selection
 
 **Considered:**
-1. **Awesomium** (web-based UI)
+1. **Web-based UI** (Awesomium, then removed)
 2. **ImGui** (immediate-mode GUI)
 3. **Custom UI** (SFML primitives)
 
-**Chose:** Awesomium
+**History:** Awesomium was initially chosen for web-based UI but has since been removed from the project.
 
-**Rationale:**
-- HTML/CSS/JavaScript familiar
-- Web-based tools (easier for designers)
-- Flexible layouts
+**Current Status:** No active UI backend. CEF or ImGui are the recommended options.
 
-**Trade-Off:**
-- ✅ Powerful, flexible
-- ❌ Deprecated (no longer maintained)
-- ❌ Heavy (50+ MB SDK)
-
-**Would We Change?**
-- Yes. Awesomium deprecated
-- Should migrate to CEF or WebView2
-- ImGui good alternative for tools
-
-**Note:** This is tech debt to address
+**Recommendation:**
+- CEF for main UI (web standards, actively maintained)
+- ImGui for dev tools (lightweight, immediate-mode)
 
 ---
 
@@ -377,23 +366,18 @@ float InverseLerp(const Vector2D& a, const Vector2D& b, const Vector2D& value);
 
 ---
 
-### 2. Awesomium Dependency
+### 2. UI Dependency
 
 **What We Did:**
-- Used Awesomium for UI
-- Heavy dependency (50+ MB)
-- Now deprecated
+- Used Awesomium for UI (now removed)
+- Lesson: anticipate library deprecation
 
 **What We'd Do Different:**
 - Use CEF (Chromium Embedded Framework)
 - Or ImGui for tools
 - Or native UI
 
-**Why We Didn't:**
-- Awesomium seemed good at the time
-- Didn't anticipate deprecation
-
-**Future:** Migrate to CEF or ImGui
+**Future:** Implement CEF or ImGui backend
 
 ---
 
@@ -428,7 +412,7 @@ float InverseLerp(const Vector2D& a, const Vector2D& b, const Vector2D& value);
 - StringCRC type system
 
 **❌ What Didn't:**
-- Awesomium choice (deprecated)
+- UI library choice (Awesomium - removed, was deprecated)
 - No ECS from start
 - Not enough automation
 
@@ -444,14 +428,14 @@ float InverseLerp(const Vector2D& a, const Vector2D& b, const Vector2D& value);
 **❌ What Didn't:**
 - Let dead code accumulate (CollectionShit)
 - Didn't test threading early enough (Random bug)
-- Didn't plan for deprecation (Awesomium)
+- Didn't plan for deprecation risk in library choices
 
 ---
 
 ### Technical Debt
 
 **Current Debt:**
-1. Awesomium (deprecated) → Migrate to CEF/ImGui
+1. No UI backend → Implement CEF or ImGui
 2. No ECS → Evolve component system
 3. Manual builds → Add automation
 4. DiaMaths template bugs → Fix templates
@@ -459,7 +443,7 @@ float InverseLerp(const Vector2D& a, const Vector2D& b, const Vector2D& value);
 
 **Prioritization:**
 - High: DiaMaths bugs (correctness)
-- Medium: Awesomium migration (deprecated)
+- Medium: UI backend implementation
 - Low: ECS, automation (nice-to-have)
 
 ---
@@ -558,7 +542,7 @@ class GameObject {
 - Custom containers (worth it)
 - StringCRC types (worth it)
 - Three threads (good enough)
-- Awesomium (regret, deprecated)
+- Web UI library choice (regret, was deprecated)
 - Visual Studio only (works, but limits portability)
 
 **Lessons:**
@@ -570,7 +554,7 @@ class GameObject {
 - ❌ Automate early
 
 **Tech Debt:**
-- Awesomium → CEF/ImGui
+- No UI backend → Implement CEF or ImGui
 - No ECS → Evolve system
 - DiaMaths bugs → Fix templates
 

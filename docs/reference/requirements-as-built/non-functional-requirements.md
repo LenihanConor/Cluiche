@@ -531,7 +531,7 @@ Minimize external dependencies, document all.
 
 **Implementation:**
 - External dependencies documented
-- SFML (zlib license), JsonCpp (MIT), Awesomium (proprietary, deprecated)
+- SFML (zlib license), JsonCpp (MIT)
 
 **Status:** ✅ Complete (dependencies documented)
 

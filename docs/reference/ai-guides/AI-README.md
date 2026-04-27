@@ -15,7 +15,7 @@ This is a **multi-threaded game framework** with explicit thread boundaries and 
 
 1. **Cluiche (Application)** - Game framework using Dia (Main/Render/Sim threads)
 2. **Dia (Engine)** - 13 subsystems providing platform abstraction
-3. **External** - Third-party libraries (SFML, JsonCpp, Awesomium, etc.)
+3. **External** - Third-party libraries (SFML, JsonCpp, etc.)
 
 **Entry Point:** `Cluiche/CluicheTest/Main.cpp` → `MainProcessingUnit::Start()` → spawns Render + Sim threads
 
@@ -264,7 +264,6 @@ Cluiche/CluicheTest/
 External/
 ├── SFML/                                # Graphics/Audio/Input library
 ├── jsoncpp-master/                      # JSON configuration
-├── Awesomium SDK/                       # Web-based UI framework
 ├── Webix/                               # UI framework (multiple versions)
 └── VisJS/                               # Visualization library
 ```

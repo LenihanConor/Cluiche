@@ -150,7 +150,6 @@ Cluiche.sln
 │   ├── DiaWindow (window management)
 │   ├── DiaInput (input handling)
 │   ├── DiaUI (UI abstraction)
-│   ├── DiaUIAwesomium (UI backend - deprecated)
 │   └── DiaSFML (SFML backend)
 └── Tests
     └── UnitTests (unit test project)
@@ -213,16 +212,6 @@ msbuild Cluiche/CluicheTest/Cluiche.vcxproj /p:Configuration=Debug /p:Platform=x
 **Usage:** Wrapped by `DiaCore/Json/`
 
 **Pre-built:** Included in repository
-
----
-
-### Awesomium SDK
-
-**Location:** `External/Awesomium SDK/`
-
-**Status:** ⚠️ DEPRECATED
-
-**Note:** Required for `DiaUIAwesomium` (deprecated). Can be removed if not using Awesomium UI.
 
 ---
 

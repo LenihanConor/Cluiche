@@ -16,10 +16,10 @@ User interface abstraction API providing platform-agnostic UI integration.
 
 **Key Concepts:**
 - **IUISystem** - Abstract UI interface
-- **Platform-agnostic** - Backend implementation (Awesomium, future: CEF/ImGui)
+- **Platform-agnostic** - Backend implementation (CEF or ImGui)
 - **Thread ownership** - UI typically runs on Main thread
 
-**Implementation:** `Dia::UIAwesomium::UISystem` (Awesomium backend - deprecated)
+**Implementation:** No active backend. See DiaUICEF or DiaUIUltralight for available implementations.
 
 ---
 
@@ -264,51 +264,10 @@ private:
 
 ## Backend Implementation
 
-### Awesomium Implementation (Deprecated)
-
-**Class:** `Dia::UIAwesomium::UISystem`
-
-**Header:** `Dia/DiaUIAwesomium/UISystem.h`
-
-**Status:** ⚠️ **DEPRECATED** - Awesomium is no longer maintained
-
-```cpp
-class UISystem : public Dia::UI::IUISystem
-{
-public:
-    UISystem(int width, int height);
-    
-    // IUISystem implementation
-    void Initialize() override;
-    void Update() override;
-    void Shutdown() override;
-    
-    void LoadUI(const char* url) override;
-    void UnloadUI() override;
-    
-    void ExecuteJavaScript(const char* script) override;
-    void BindCallback(const char* name, void (*callback)(void)) override;
-    
-    bool IsLoaded() const override;
-    bool IsVisible() const override;
-    
-    void Show() override;
-    void Hide() override;
-    
-private:
-    Awesomium::WebCore* mWebCore;
-    Awesomium::WebView* mWebView;
-};
-```
-
-**[→ UIAwesomium API Details](ui-awesomium-api.md)**
-
----
-
-### Future Backend Options
+### Backend Options
 
 **CEF (Chromium Embedded Framework):**
-- Modern replacement for Awesomium
+- Recommended web-based UI backend
 - Actively maintained
 - Better performance
 - Full Chrome rendering
@@ -330,9 +289,6 @@ private:
 - None (self-contained interface)
 
 **Implementation:**
-- `Dia/DiaUIAwesomium/` - Awesomium backend (deprecated)
-
-**Future:**
 - CEF backend (planned)
 - ImGui backend (planned)
 
@@ -493,9 +449,7 @@ uiSystem->LoadUI("http://localhost:8080/ui/index.html");
 
 1. **Single UI view** - Only one UI can be loaded at a time
 2. **No multi-window support** - Can't have multiple independent UI windows
-3. **Backend deprecated** - Awesomium no longer maintained
-4. **No GPU acceleration** - Software rendering only (Awesomium limitation)
-5. **No WebGL** - Limited to HTML5 Canvas 2D (Awesomium limitation)
+3. **No active backend** - UI backend not yet implemented
 
 ### Future Improvements
 
@@ -510,27 +464,20 @@ uiSystem->LoadUI("http://localhost:8080/ui/index.html");
 
 ## Migration Path
 
-### From Awesomium to CEF
+### Implementing a CEF Backend
 
-**Current (Awesomium):**
-```cpp
-Dia::UIAwesomium::UISystem* ui = new Dia::UIAwesomium::UISystem(1920, 1080);
-ui->Initialize();
-ui->LoadUI("file:///ui/game.html");
-```
-
-**Future (CEF):**
+**With CEF:**
 ```cpp
 Dia::UICEF::UISystem* ui = new Dia::UICEF::UISystem(1920, 1080);
 ui->Initialize();
 ui->LoadUI("http://localhost:8080/ui/game.html");
 ```
 
-**Key Differences:**
-- CEF requires HTTP server (not file://)
-- Better performance (GPU accelerated)
+**Key Notes:**
+- CEF requires HTTP server
+- GPU accelerated
 - Modern web standards (ES6, WebGL)
-- Ongoing maintenance
+- Actively maintained
 
 ---
 
@@ -574,7 +521,7 @@ public:
     
     void OnConstruct() override
     {
-        mUISystem = new Dia::UIAwesomium::UISystem(1920, 1080);
+        mUISystem = /* new Dia::UICEF::UISystem(1920, 1080) */ nullptr; // Set appropriate backend
     }
     
     void OnStart() override
@@ -686,9 +633,9 @@ private:
 - `Show()/Hide()` - Control visibility
 
 **Backend:**
-- Awesomium (deprecated, software rendering)
-- Future: CEF (hardware accelerated, modern web)
-- Future: ImGui (immediate-mode, C++ only)
+- No active backend (Awesomium removed)
+- Option: CEF (hardware accelerated, modern web)
+- Option: ImGui (immediate-mode, C++ only)
 
 **Thread Safety:**
 - ❌ All methods Main thread only
@@ -702,9 +649,7 @@ private:
 
 **Limitations:**
 - Single UI view
-- Deprecated backend
-- No GPU acceleration (Awesomium)
+- No active backend implemented
 
 **[→ API Overview](../api-overview.md)**  
-**[→ UIAwesomium API](ui-awesomium-api.md)**  
 **[→ DiaApplication API](application-api.md)**

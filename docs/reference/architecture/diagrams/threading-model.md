@@ -23,7 +23,7 @@ sequenceDiagram
     Main->>Main: Register Levels (Dummy, UnitTest)
 
     Note over Main: Phase: MainBootStrapPhase
-    Main->>Main: Initialize MainUIModule (Awesomium)
+    Main->>Main: Initialize MainUIModule
     Main->>Main: Show launch UI
 
     Note over Main: Spawn Threads

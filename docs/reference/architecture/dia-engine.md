@@ -35,7 +35,6 @@ Detailed architecture of the Dia game engine, the shared engine infrastructure f
 | **DiaUI** | ✅ Stable | UI integration (abstract) |
 | **DiaWindow** | ✅ Stable | Window management (abstract) |
 | **DiaSFML** | ✅ Stable | SFML backend (graphics/input/window) |
-| **DiaUIAwesomium** | ✅ Stable | Awesomium UI backend |
 | **DiaArchitecture** | ✅ Stable | Component system, Observer, Singleton |
 | **DiaAPI** | 📝 Spec | Plugin-based CLI framework for build tools |
 | **DiaIO** | 🚧 Stub | File I/O |
@@ -743,8 +742,6 @@ private:
 };
 ```
 
-**Backend:** DiaUIAwesomium provides Awesomium (web-based UI)
-
 **[→ DiaUI API Documentation](../api/dia/ui-api.md)**
 
 ---
@@ -811,38 +808,6 @@ Color FromSFML(const sf::Color& color);
 ```
 
 **[→ DiaSFML API Documentation](../api/dia/sfml-api.md)**
-
----
-
-### DiaUIAwesomium
-
-**Location:** `Dia/DiaUIAwesomium/`
-
-**Purpose:** Awesomium backend for web-based UI
-
-**Key Classes:**
-
-#### UISystem
-```cpp
-class UISystem : public IUISystem {
-public:
-    void Initialize() override;
-    void Update() override;
-    void Shutdown() override;
-    
-    void LoadPage(const char* url) override;
-    void SendMessage(const char* msg) override;
-
-private:
-    Awesomium::WebCore* mWebCore;
-    Awesomium::WebView* mWebView;
-};
-```
-
-**Use Cases:**
-- HTML/CSS/JavaScript UI
-- Web-based tools and editors
-- Cross-platform UI (HTML is portable)
 
 ---
 
@@ -977,7 +942,6 @@ DiaCore (Containers, Type, Time)
     ├─ DiaGraphics → DiaSFML → External/SFML
     ├─ DiaMaths (independent, minimal DiaCore deps)
     ├─ DiaInput → DiaSFML → External/SFML
-    ├─ DiaUI → DiaUIAwesomium → External/Awesomium
     └─ DiaWindow → DiaSFML → External/SFML
 ```
 
@@ -1064,7 +1028,6 @@ Dia is a **modular game engine** with 13 subsystems providing:
 
 **Backends:**
 - ✅ DiaSFML - SFML backend (primary)
-- ✅ DiaUIAwesomium - Awesomium UI
 
 **Architecture:**
 - ✅ DiaArchitecture - Component system, Observer, Singleton

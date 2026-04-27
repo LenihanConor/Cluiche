@@ -742,7 +742,7 @@ Add button:
 
 ```javascript
 function handleMyButtonClick() {
-    // Call C++ via Awesomium binding
+    // Call C++ via UI binding
     CluicheAPI.OnMyButtonClicked();
 }
 ```

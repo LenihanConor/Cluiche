@@ -668,7 +668,7 @@ Manage multiple input sources (keyboard, mouse, gamepad).
 Platform-agnostic UI system for HTML/CSS/JS or native UI.
 
 **Rationale:**
-- UI backend can be swapped (Awesomium, CEF, ImGui)
+- UI backend can be swapped (CEF, ImGui)
 - Core logic independent of UI
 - Support for modding
 
@@ -687,7 +687,7 @@ Platform-agnostic UI system for HTML/CSS/JS or native UI.
 - Callback binding
 - Backend swap (compile test)
 
-**Status:** ⚠️ Blocked (Awesomium deprecated, needs replacement)
+**Status:** ⚠️ Needs UI backend implementation
 
 **[→ DiaUI API](../api/dia/ui-api.md)**
 
@@ -892,13 +892,13 @@ AI utilities (pathfinding, steering, FSM, behavior trees).
 
 **Key Gaps:**
 - DR-014: Transform hierarchies (performance issue)
-- DR-021: UI system (Awesomium deprecated)
+- DR-021: UI system (needs backend implementation)
 - DR-026: Physics engine (not started)
 - DR-027: AI/Pathfinding (not started)
 
 **Next Steps:**
 1. Fix Transform2D performance (DR-014)
-2. Replace Awesomium UI backend (DR-021)
+2. Implement UI backend (DR-021)
 3. Plan physics integration (DR-026)
 4. Plan AI integration (DR-027)
 

@@ -91,10 +91,6 @@ DiaSFML
 ├── DiaInput (translates to InputEvent)
 └── External: SFML
 
-DiaUIAwesomium
-├── DiaCore
-├── DiaUI (implements IUISystem)
-└── External: Awesomium SDK
 ```
 
 ---
@@ -140,11 +136,9 @@ Cluiche
 │   └── InputEvent
 ├── DiaUI
 │   └── IUISystem
-├── DiaSFML
-│   ├── DiaSFMLRenderWindow
-│   └── DiaSFMLInputSource
-└── DiaUIAwesomium
-    └── UISystem
+└── DiaSFML
+    ├── DiaSFMLRenderWindow
+    └── DiaSFMLInputSource
 ```
 
 ---
@@ -172,7 +166,6 @@ graph TD
     
     %% Dia Backend
     DiaSFML[DiaSFML]
-    DiaUIAwe[DiaUIAwesomium]
     
     %% Dia Specialized (Stubs)
     DiaPhysics[DiaPhysics<br/><i>stub</i>]
@@ -180,7 +173,6 @@ graph TD
     
     %% External
     SFML[SFML<br/><i>external</i>]
-    Awesomium[Awesomium<br/><i>external, deprecated</i>]
     JsonCpp[jsoncpp<br/><i>external</i>]
     
     %% Application dependencies
@@ -192,7 +184,6 @@ graph TD
     Cluiche --> DiaInput
     Cluiche --> DiaUI
     Cluiche --> DiaSFML
-    Cluiche --> DiaUIAwe
     
     %% Framework dependencies
     DiaApp --> DiaCore
@@ -213,10 +204,6 @@ graph TD
     DiaSFML --> DiaGraphics
     DiaSFML --> DiaWindow
     DiaSFML --> DiaInput
-    
-    DiaUIAwe --> Awesomium
-    DiaUIAwe --> DiaCore
-    DiaUIAwe --> DiaUI
     
     %% Specialized dependencies
     DiaPhysics --> DiaCore
@@ -240,7 +227,6 @@ MainKernelModule
 └── No module dependencies
 
 MainUIModule (ObserverSubject)
-├── DiaUIAwesomium::UISystem
 └── No module dependencies
 
 LevelFactoryModule
@@ -347,7 +333,6 @@ Random::RandomFloat()
 
 **❌ Cluiche cannot depend on:**
 - SFML directly (must use DiaSFML)
-- Awesomium directly (must use DiaUIAwesomium)
 
 **❌ DiaSFML cannot depend on:**
 - Cluiche (backend doesn't know application)
@@ -506,7 +491,6 @@ void ICanvas::DrawLine(Vector2D start, Vector2D end);
 - Dia subsystems → DiaCore
 - DiaGraphics → DiaMaths
 - DiaSFML → DiaGraphics, DiaWindow, DiaInput, DiaMaths, DiaCore
-- DiaUIAwesomium → DiaUI, DiaCore
 - DiaPhysics/DiaAI → DiaMaths, DiaCore
 
 **Forbidden:**

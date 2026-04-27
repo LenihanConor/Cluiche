@@ -285,7 +285,7 @@ Render();   // 16ms
 **Problem 2: UI Blocks Everything**
 ```cpp
 while (running) {
-    ProcessUIEvents();  // Awesomium requires main thread
+    ProcessUIEvents();  // UI requires main thread
     Update();           // Blocked until UI finishes
     Render();           // Blocked until Update finishes
 }
@@ -297,7 +297,7 @@ while (running) {
 
 **Main Thread:**
 - Bootstrap application
-- Coordinate UI (Awesomium **requires** main thread)
+- Coordinate UI (must run on main thread)
 - Collect input @ 30Hz
 - Spawn worker threads
 
@@ -315,7 +315,7 @@ while (running) {
 
 **Benefits:**
 - ✅ **Consistent visuals** (Render at 60 FPS even if Sim slow)
-- ✅ **Responsive UI** (Main thread available for Awesomium)
+- ✅ **Responsive UI** (Main thread available for UI events)
 - ✅ **CPU utilization** (3 threads on multi-core)
 - ✅ **Decoupled concerns** (simulation independent of rendering)
 
@@ -332,7 +332,7 @@ while (running) {
 
 **Cons:**
 - ❌ Variable frame rate (sim blocks rendering)
-- ❌ UI blocks game loop (Awesomium requirement)
+- ❌ UI blocks game loop (requires main thread)
 - ❌ Wastes CPU (single core utilized)
 
 **Verdict:** Not suitable for modern games

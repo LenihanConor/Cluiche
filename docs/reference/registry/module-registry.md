@@ -311,14 +311,6 @@ This registry catalogs all `.architecture.module.md` files that describe modules
 
 ---
 
-### dia.ui.awesomium
-- **Path:** `Dia/DiaUIAwesomium/`
-- **File:** `dia.ui.awesomium.architecture.module.md`
-- **Key Classes:** `UISystem`
-- **Status:** **DEPRECATED**
-
----
-
 ### dia.io
 - **Path:** `Dia/DiaIO/`
 - **File:** `dia.io.architecture.module.md`
@@ -353,7 +345,6 @@ This registry catalogs all `.architecture.module.md` files that describe modules
 | **DiaInput** | 1 | Input events |
 | **DiaUI** | 1 | UI interface |
 | **DiaSFML** | 1 | SFML backend |
-| **DiaUIAwesomium** | 1 | Awesomium backend |
 | **DiaIO** | 1 | File I/O |
 | **DiaPhysics** | 1 | Physics (stub) |
 | **DiaAI** | 1 | AI (stub) |
@@ -393,7 +384,7 @@ python Tools/dia_modules.py --validate
 | Status | Count | Modules |
 |--------|-------|---------|
 | **active** | ~50 | Most modules |
-| **deprecated** | 1 | dia.ui.awesomium |
+| **deprecated** | 0 | |
 | **stub** | 2 | dia.physics, dia.ai |
 
 ### By Maturity
@@ -444,7 +435,7 @@ python Tools/dia_modules.py --validate
 - All container implementations (arrays, hashtables, etc.)
 - All math types (vector, matrix, transform, shape)
 - Application modules (MainKernelModule, etc.)
-- Backend implementations (DiaSFML, DiaUIAwesomium)
+- Backend implementations (DiaSFML)
 
 ---
 

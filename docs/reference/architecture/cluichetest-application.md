@@ -17,7 +17,7 @@ Detailed architecture of the CluicheTest game application, a demo game and testb
 - Phase-based execution model
 - Pluggable level system via factory pattern
 - Cross-thread communication via FrameStreams
-- Awesomium-based web UI
+- Web-based UI system
 
 ---
 
@@ -251,7 +251,7 @@ private:
 - `LevelFactoryModule` (from MainBootPhase)
 
 **Modules (New):**
-- `MainUIModule` - Awesomium UI system
+- `MainUIModule` - UI system
 
 **Lifecycle:**
 ```cpp
@@ -550,7 +550,7 @@ private:
 
 **Location:** `Cluiche/CluicheTest/CluicheKernel/ApplicationFlow/Modules/MainUIModule.h`
 
-**Purpose:** Awesomium UI system (observer subject)
+**Purpose:** UI system (observer subject)
 
 **Implementation:**
 ```cpp
@@ -562,7 +562,7 @@ public:
 
 private:
     void DoStart() override {
-        // Initialize Awesomium
+        // Initialize UI system
         mUISystem = new Dia::UI::Awesomium::UISystem();
         mUISystem->Initialize();
         
@@ -574,7 +574,7 @@ private:
     }
 
     void DoUpdate() override {
-        // Update Awesomium (process events)
+        // Update UI system (process events)
         mUISystem->Update();
     }
 
@@ -834,7 +834,7 @@ level->Start();
 ### UI Flow (Main ↔ Sim)
 
 ```
-1. Main thread: MainUIModule initializes Awesomium
+1. Main thread: MainUIModule initializes UI system
 2. Main thread: Notify observers (SimUIProxyModule)
 3. Sim thread: SimUIProxyModule receives notification (mutex)
 4. Sim thread: SendMessage to UI via proxy (mutex-protected)

@@ -43,7 +43,6 @@ Fast lookup tables for AI agents working with Cluiche codebase.
 | `Dia::Input` | Input abstraction | `Dia::Input::InputEvent` |
 | `Dia::UI` | UI abstraction | `Dia::UI::IUISystem` |
 | `Dia::SFML` | SFML backend | `Dia::SFML::DiaSFMLRenderWindow` |
-| `Dia::UIAwesomium` | Awesomium backend | `Dia::UIAwesomium::UISystem` |
 | `Dia::IO` | File I/O | `Dia::IO::FilePath` |
 
 ---
@@ -194,7 +193,7 @@ static const StringCRC kSimUIProxyModuleId = StringCRC("SimUIProxyModule");
 
 | What | Thread | Notes |
 |------|--------|-------|
-| **UI** | Main | Awesomium requires main thread |
+| **UI** | Main | UI system runs on main thread |
 | **Input capture** | Main | SFML input events |
 | **Rendering** | Render | 60 FPS |
 | **Game logic** | Sim | Variable rate |
@@ -363,7 +362,6 @@ python Tools/dia_modules.py --list dia.core.containers
 |---------|---------|---------|
 | **SFML** | 2.5.1 | Graphics, audio, input |
 | **JsonCpp** | Master | JSON parsing |
-| **Awesomium** | SDK | Web UI (deprecated) |
 | **Webix** | - | Web UI components |
 | **VisJS** | - | Graph visualization |
 

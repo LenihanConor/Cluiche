@@ -11,7 +11,6 @@ graph TB
     subgraph External["External Dependencies"]
         SFML["SFML 2.x<br/>Graphics/Audio/Input"]
         JsonCpp["JsonCpp<br/>Configuration"]
-        Awesomium["Awesomium<br/>Web UI"]
         Webix["Webix<br/>UI Framework"]
         VisJS["VisJS<br/>Visualization"]
     end
@@ -29,7 +28,6 @@ graph TB
         DiaPhysics["DiaPhysics<br/>Physics"]
         DiaAI["DiaAI<br/>AI Systems"]
         DiaArch["DiaArchitecture<br/>Component/Observer"]
-        DiaUIAwe["DiaUIAwesomium<br/>Awesomium Backend"]
     end
 
     subgraph Cluiche["Cluiche Application"]
@@ -65,11 +63,9 @@ graph TB
     DiaUI --> DiaCore
     DiaWindow --> DiaCore
     DiaArch --> DiaCore
-    DiaUIAwe --> DiaUI
 
     %% Dia depends on External
     DiaSFML --> SFML
-    DiaUIAwe --> Awesomium
     DiaCore --> JsonCpp
     DiaUI --> Webix
 
@@ -79,8 +75,8 @@ graph TB
     classDef externalLayer fill:#50C878,stroke:#2F7D4E,stroke-width:2px,color:#fff
 
     class Main,MainPU,RenderPU,SimPU,Levels,Modules appLayer
-    class DiaApp,DiaCore,DiaGraphics,DiaMaths,DiaInput,DiaUI,DiaWindow,DiaSFML,DiaIO,DiaPhysics,DiaAI,DiaArch,DiaUIAwe engineLayer
-    class SFML,JsonCpp,Awesomium,Webix,VisJS externalLayer
+    class DiaApp,DiaCore,DiaGraphics,DiaMaths,DiaInput,DiaUI,DiaWindow,DiaSFML,DiaIO,DiaPhysics,DiaAI,DiaArch engineLayer
+    class SFML,JsonCpp,Webix,VisJS externalLayer
 ```
 
 [← Back to Architecture Overview](../architecture.md)

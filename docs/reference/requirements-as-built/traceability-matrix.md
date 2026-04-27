@@ -47,7 +47,7 @@ This matrix maps each requirement ID to its implementation location(s) in the co
 | **DE-005** | ✅ | P1 | `Dia/DiaMaths/Vector/DiaMathsVector2D.h`<br>`Dia/DiaMaths/Vector/DiaMathsVector3D.h`<br>`Dia/DiaMaths/Matrix/DiaMathsMatrix33.h`<br>`Dia/DiaMaths/Matrix/DiaMathsMatrix44.h`<br>`Dia/DiaMaths/Transform/DiaMathsTransform2D.h`<br>`Dia/DiaMaths/Shape/Circle.h`<br>`Dia/DiaMaths/Shape/AABB.h` |
 | **DE-006** | ⚠️ | P1 | `Dia/DiaMaths/Core/DiaMathsRandom.h` (fixed, thread-safe)<br>`Dia/DiaMaths/Transform/DiaMathsTransform2D.h` (⚠️ not thread-safe) |
 | **DE-007** | ✅ | P1 | `Dia/DiaInput/DiaInputEvent.h`<br>`Dia/DiaInput/DiaInputInputSourceManager.h`<br>`Dia/DiaInput/IInputSource.h`<br>`Dia/DiaSFML/DiaSFMLInputSource.h` (SFML backend) |
-| **DE-008** | ✅ | P1 | `Dia/DiaUI/Interface/IUISystem.h`<br>`Dia/DiaUIAwesomium/UISystem.h` (Awesomium backend, deprecated) |
+| **DE-008** | ✅ | P1 | `Dia/DiaUI/Interface/IUISystem.h` |
 | **DE-009** | ✅ | P1 | `Dia/DiaWindow/Interface/IWindow.h`<br>`Dia/DiaSFML/DiaSFMLRenderWindow.h` (SFML backend) |
 | **DE-010** | ❌ | P2 | Not implemented (stub in `/docs/05-api/dia/physics-api.md`) |
 | **DE-011** | ❌ | P2 | Not implemented (stub in `/docs/05-api/dia/ai-api.md`) |
@@ -72,7 +72,7 @@ This matrix maps each requirement ID to its implementation location(s) in the co
 | **NF-012** | ✅ | P1 | `/docs/reference/development/coding-standards.md`<br>Code follows documented standards |
 | **NF-013** | ✅ | P0 | `Cluiche/Cluiche.sln` - Visual Studio solution<br>External dependencies included in repository |
 | **NF-014** | ✅ | P1 | Windows support verified<br>No platform headers in Dia core<br>Backend abstraction in place |
-| **NF-015** | ✅ | P1 | `/docs/reference/architecture/external-dependencies.md`<br>SFML, JsonCpp, Awesomium documented |
+| **NF-015** | ✅ | P1 | `/docs/reference/architecture/external-dependencies.md`<br>SFML, JsonCpp documented |
 
 ---
 
@@ -92,7 +92,7 @@ This matrix maps each requirement ID to its implementation location(s) in the co
 | **CR-010** | 🚧 | P2 | Pattern documented in `/docs/05-api/dia/input-api.md`<br>Not yet implemented in codebase |
 | **CR-011** | ✅ | P0 | `Cluiche/ApplicationFlow/ProcessingUnits/RenderProcessingUnit.cpp`<br>`Cluiche/CluicheKernel/ApplicationFlow/Modules/RenderCanvasModule.cpp` |
 | **CR-012** | 🚧 | P2 | FPS counter exists, needs expansion for bounding boxes, etc. |
-| **CR-013** | ⚠️ | P1 | `Cluiche/CluicheKernel/ApplicationFlow/Modules/MainUIModule.h`<br>`Dia/DiaUIAwesomium/UISystem.h` (deprecated, blocked) |
+| **CR-013** | ⚠️ | P1 | `Cluiche/CluicheKernel/ApplicationFlow/Modules/MainUIModule.h` |
 | **CR-014** | ✅ | P1 | `Cluiche/Levels/UnitTestLevel/UnitTestLevel.cpp` |
 | **CR-015** | ❌ | P2 | `Cluiche/ApplicationFlow/ProcessingUnits/MainProcessingUnit.cpp:GenerateModuleDependecyGraph()` (partial) |
 | **CR-016** | ✅ | P0 | Verified: 60 FPS maintained in typical scenarios |
@@ -123,7 +123,7 @@ This matrix maps each requirement ID to its implementation location(s) in the co
 | **DR-018** | ✅ | P1 | `Dia/DiaGraphics/Interface/Frame.h` |
 | **DR-019** | ✅ | P0 | `Dia/DiaInput/DiaInputEvent.h`<br>`Dia/DiaInput/DiaInputKeyCode.h`<br>`Dia/DiaInput/DiaInputMouseButton.h` |
 | **DR-020** | ✅ | P1 | `Dia/DiaInput/DiaInputInputSourceManager.h`<br>`Dia/DiaInput/IInputSource.h` |
-| **DR-021** | ⚠️ | P1 | `Dia/DiaUI/Interface/IUISystem.h`<br>`Dia/DiaUIAwesomium/UISystem.h` (deprecated, blocked) |
+| **DR-021** | ⚠️ | P1 | `Dia/DiaUI/Interface/IUISystem.h` |
 | **DR-022** | ✅ | P0 | `Dia/DiaWindow/Interface/IWindow.h` |
 | **DR-023** | ✅ | P0 | `Dia/DiaSFML/DiaSFMLRenderWindow.h`<br>`Dia/DiaSFML/DiaSFMLInputSource.h`<br>`Dia/DiaSFML/DiaSFMLSoundManager.h` |
 | **DR-024** | ✅ | P1 | `Dia/DiaCore/FilePath/Path.h`<br>`Dia/DiaCore/FilePath/FilePath.h` |
@@ -166,7 +166,7 @@ This matrix maps each requirement ID to its implementation location(s) in the co
 - **DE-006**: Math thread safety (Transform2D issue, ⚠️ blocked)
 - **DR-014**: Transform hierarchies (performance issue, ⚠️ blocked)
 - **NF-006**: Test coverage (no measurement, ❌ not started)
-- **DE-008, DR-021, CR-013**: UI system (Awesomium deprecated, ⚠️ blocked)
+- **DE-008, DR-021, CR-013**: UI system (⚠️ needs replacement backend)
 
 ### Medium Priority Gaps (P2)
 - **DE-010, DR-026**: Physics API (not started)
@@ -180,7 +180,7 @@ This matrix maps each requirement ID to its implementation location(s) in the co
 **Immediate Actions:**
 1. Fix Transform2D thread safety (DR-014, DE-006, NF-008)
 2. Profile Sim thread performance (NF-002)
-3. Replace Awesomium UI backend (DE-008, DR-021, CR-013)
+3. Replace UI backend (DE-008, DR-021, CR-013)
 4. Set up code coverage measurement (NF-006)
 
 **Planned Actions:**

@@ -217,10 +217,10 @@ This document defines test coverage goals by subsystem to ensure adequate valida
 
 | Component | Target | Current | Priority | Status |
 |-----------|--------|---------|----------|--------|
-| **Interface/IUISystem** | 40% | TBD | P2 | ⚠️ Blocked (Awesomium) |
+| **Interface/IUISystem** | 40% | TBD | P2 | ⚠️ Needs UI backend |
 | **UI Lifecycle** | 30% | TBD | P2 | ⚠️ Blocked |
 
-**Status:** ⚠️ Blocked - Awesomium deprecated, no replacement yet
+**Status:** ⚠️ Blocked - No UI backend implemented yet
 
 **Priority Test Areas:**
 1. IUISystem interface (when replacement chosen)
@@ -377,7 +377,7 @@ add_custom_target(coverage
 3. Module dependency resolution (edge cases)
 
 **Blocked:**
-1. DiaUI/Awesomium (deprecated, awaiting replacement)
+1. DiaUI (awaiting UI backend implementation)
 2. DiaMaths/Transform2D (thread safety issue)
 
 ---

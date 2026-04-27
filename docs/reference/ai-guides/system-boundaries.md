@@ -42,7 +42,7 @@ This document defines clear boundaries between subsystems to help AI agents:
 **✅ Owns:**
 - Main thread orchestration
 - Spawning Render and Sim threads
-- UI thread management (Awesomium requires main thread)
+- UI thread management
 - Phase transitions for Main thread
 
 **❌ Doesn't Own:**
@@ -113,7 +113,7 @@ This document defines clear boundaries between subsystems to help AI agents:
 #### MainUIModule
 
 **✅ Owns:**
-- UI system initialization (Awesomium)
+- UI system initialization
 - Loading HTML pages
 - Binding C++ methods to JavaScript
 - Notifying observers when UI ready
@@ -121,7 +121,6 @@ This document defines clear boundaries between subsystems to help AI agents:
 **❌ Doesn't Own:**
 - HTML/CSS/JavaScript content (External/Webix/)
 - Cross-thread UI communication (SimUIProxyModule)
-- UI rendering (Awesomium handles that)
 
 ---
 
@@ -172,7 +171,6 @@ This document defines clear boundaries between subsystems to help AI agents:
 
 **❌ Doesn't Own:**
 - UI implementation (MainUIModule)
-- UI rendering (Awesomium)
 
 ---
 
@@ -306,9 +304,7 @@ This document defines clear boundaries between subsystems to help AI agents:
 - Platform-agnostic UI interface (IUISystem)
 
 **❌ Doesn't Own:**
-- UI implementation (DiaUIAwesomium)
 - HTML/CSS/JavaScript content (External)
-- UI rendering (Awesomium)
 
 **Dependencies:**
 - DiaCore
@@ -338,25 +334,6 @@ This document defines clear boundaries between subsystems to help AI agents:
 
 ---
 
-### DiaUIAwesomium
-
-**✅ Owns:**
-- Awesomium integration
-- IUISystem implementation
-- C++ ↔ JavaScript binding
-- Web page rendering
-
-**❌ Doesn't Own:**
-- HTML/CSS/JavaScript content (External/Webix/)
-- Application logic (Cluiche)
-- Cross-thread communication (SimUIProxyModule)
-
-**Dependencies:**
-- Awesomium SDK (external, **DEPRECATED**)
-- DiaUI (implements IUISystem)
-- DiaCore
-
-**Status:** **DEPRECATED** - Should be replaced with CEF or ImGui
 
 ---
 
@@ -449,24 +426,6 @@ This document defines clear boundaries between subsystems to help AI agents:
 
 ---
 
-### Awesomium
-
-**✅ Owns:**
-- HTML rendering
-- CSS layout
-- JavaScript execution
-- C++ ↔ JavaScript binding
-
-**❌ Doesn't Own:**
-- Application logic (Cluiche)
-- HTML/CSS/JavaScript content (External/Webix/)
-
-**Used By:** DiaUIAwesomium
-
-**Status:** **DEPRECATED** - No longer maintained
-
----
-
 ### Webix
 
 **✅ Owns:**
@@ -475,10 +434,9 @@ This document defines clear boundaries between subsystems to help AI agents:
 - Data grids, charts, etc.
 
 **❌ Doesn't Own:**
-- C++ integration (Awesomium)
 - Application logic (Cluiche)
 
-**Used By:** MainUIModule (loads Webix pages via Awesomium)
+**Used By:** MainUIModule
 
 ---
 
@@ -489,7 +447,6 @@ This document defines clear boundaries between subsystems to help AI agents:
 - Network diagrams
 
 **❌ Doesn't Own:**
-- C++ integration (Awesomium)
 - Dependency analysis logic (Tools/dia_modules.py)
 
 **Used By:** Blue Console (Tools/Console/)
@@ -551,7 +508,6 @@ Cluiche → Dia (any subsystem)
 Dia subsystems → DiaCore
 Dia subsystems → DiaMaths
 DiaSFML → DiaGraphics, DiaWindow, DiaInput
-DiaUIAwesomium → DiaUI
 DiaApplication → DiaCore
 ```
 
@@ -580,7 +536,6 @@ DiaApplication → DiaCore
 | **DiaInput** | Input abstraction |
 | **DiaUI** | UI abstraction |
 | **DiaSFML** | SFML backend implementation |
-| **DiaUIAwesomium** | Awesomium UI implementation |
 | **DiaIO** | File I/O |
 | **DiaPhysics** | Physics simulation (stub) |
 | **DiaAI** | AI systems (stub) |
@@ -650,26 +605,6 @@ Dia::Graphics::ICanvas* canvas = GetCanvas();
 ```
 
 **Why:** Use abstraction layer (DiaGraphics), not SFML directly.
-
----
-
-### Mistake 4: Awesomium on Non-Main Thread
-
-**❌ Wrong:**
-```cpp
-// SimProcessingUnit.cpp
-mUISystem->LoadPage("page.html");  // NO! Awesomium requires main thread
-```
-
-**✅ Correct:**
-```cpp
-// MainUIModule.cpp (Main thread)
-mUISystem->LoadPage("page.html");  // YES!
-
-// Or use SimUIProxyModule to send messages from Sim → Main
-```
-
-**Why:** Awesomium requires main thread, cannot be used from Sim/Render threads.
 
 ---
 

@@ -123,7 +123,7 @@ Levels/
 ```
 Modules/
 ├── MainKernelModule.h                 # Main thread kernel
-├── MainUIModule.h                     # UI initialization (Awesomium)
+├── MainUIModule.h                     # UI initialization
 ├── LevelFactoryModule.h               # Level factory setup
 ├── SimTimeServerModule.h              # Sim thread time management
 ├── SimInputFrameStreamModule.h        # Input forwarding to Sim
@@ -132,7 +132,7 @@ Modules/
 
 **Key Modules:**
 - `MainKernelModule` - Entry point for Main thread phases
-- `MainUIModule` - Initializes web-based UI (Awesomium)
+- `MainUIModule` - Initializes web-based UI
 - `LevelFactoryModule` - Registers all levels
 - `SimTimeServerModule` - Time source for simulation
 - `SimInputFrameStreamModule` - Forwards input from Main to Sim
@@ -179,7 +179,6 @@ Tests/
 | **DiaInput** | Input handling | `DiaInputEvent.h` |
 | **DiaUI** | UI abstraction | `DiaUIIUISystem.h` |
 | **DiaSFML** | SFML backend | `DiaSFMLRenderWindow.h` |
-| **DiaUIAwesomium** | Awesomium UI | `UISystem.h` |
 | **DiaArchitecture** | Patterns | (deprecated, merged into DiaCore) |
 | **DiaIO** | File I/O | `FilePath.h` |
 | **DiaPhysics** | Physics (stub) | Minimal implementation |
@@ -425,8 +424,6 @@ DiaUI/
 **Key Classes:**
 - `IUISystem` - Abstract UI interface
 
-**Implementation:** `DiaUIAwesomium/UISystem.h`
-
 **Namespaces:** `Dia::UI::`
 
 ---
@@ -458,32 +455,6 @@ DiaSFML/
 
 ---
 
-### DiaUIAwesomium/ - Awesomium UI Backend
-
-**Location:** `Dia/DiaUIAwesomium/`
-
-**Purpose:** Web-based UI using Awesomium (deprecated)
-
-**Structure:**
-```
-DiaUIAwesomium/
-├── UISystem.h                         # Awesomium UI implementation
-└── dia.ui.awesomium.architecture.module.md
-```
-
-**Key Classes:**
-- `UISystem` - Implements `IUISystem` using Awesomium
-
-**Status:** **DEPRECATED** (Awesomium no longer maintained)
-
-**When to Use:**
-- Currently used by MainUIModule
-- Should be replaced with CEF or ImGui
-
-**Namespaces:** `Dia::UIAwesomium::`
-
----
-
 ### Other Subsystems (Stubs)
 
 **DiaWindow/** - Window management interface
@@ -504,7 +475,6 @@ DiaUIAwesomium/
 External/
 ├── SFML-2.5.1/                        # SFML graphics library
 ├── jsoncpp-master/                    # JSON parsing
-├── Awesomium SDK/                     # Web UI framework (deprecated)
 ├── Webix/                             # Web UI components
 └── VisJS/                             # Visualization library
 ```

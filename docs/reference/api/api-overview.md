@@ -35,7 +35,6 @@ This section documents the public API surface of Cluiche (application) and Dia (
 
 **Backend Implementations:**
 - [DiaSFML API](dia/sfml-api.md) - SFML backend
-- [DiaUIAwesomium API](dia/ui-awesomium-api.md) - Awesomium backend (deprecated)
 
 **Specialized (Stubs):**
 - [DiaPhysics API](dia/physics-api.md) - Physics simulation (stub)
@@ -135,13 +134,6 @@ This section documents the public API surface of Cluiche (application) and Dia (
 - `DiaSFMLSoundManager` - Audio
 
 **[→ DiaSFML API Details](dia/sfml-api.md)**
-
-**DiaUIAwesomium - UI Integration (Deprecated)**
-- `UISystem` - Awesomium implementation
-
-**Status:** **DEPRECATED** - Replace with CEF or ImGui
-
-**[→ DiaUIAwesomium API Details](dia/ui-awesomium-api.md)**
 
 ---
 
@@ -269,7 +261,6 @@ void ThreadSafeOperation() {
 
 | API | Status | Replacement |
 |-----|--------|-------------|
-| `DiaUIAwesomium` | ❌ Deprecated | CEF or ImGui |
 | `CollectionShit` (removed) | ❌ Removed | DiaCore/Architecture |
 | `DynamicLinkList` (removed) | ❌ Removed | LinkList<T> |
 
@@ -429,7 +420,6 @@ APIs from third-party libraries (used via abstractions):
 |---------|---------|--------------|
 | **SFML** | Graphics/Audio/Input | Via DiaSFML only |
 | **JsonCpp** | JSON parsing | Via DiaCore/Json only |
-| **Awesomium** | UI (deprecated) | Via DiaUIAwesomium only |
 
 **Principle:** External dependencies accessed via Dia abstractions, not directly.
 
@@ -456,7 +446,7 @@ Comprehensive examples available:
 **API Layers:**
 1. Foundation (DiaCore)
 2. Framework (DiaApplication) + Platform (DiaMaths, DiaGraphics, etc.)
-3. Backend (DiaSFML, DiaUIAwesomium)
+3. Backend (DiaSFML)
 4. Application (Cluiche)
 
 **Design Principles:**

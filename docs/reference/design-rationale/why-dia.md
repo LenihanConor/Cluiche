@@ -320,7 +320,7 @@ objects.Reserve(100);  // Explicit allocation
 
 - ✅ 2D graphics (SFML sufficient)
 - ✅ Input handling (keyboard, mouse, gamepad)
-- ✅ Basic UI (Awesomium web-based)
+- ✅ Basic UI (web-based)
 - ✅ Game loop with consistent frame rate
 - ✅ Pluggable levels
 - ❌ 3D rendering (not needed)

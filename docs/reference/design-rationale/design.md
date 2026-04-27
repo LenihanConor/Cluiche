@@ -299,13 +299,13 @@ while (running) {
 
 **Issues:**
 - Slow simulation blocks rendering (choppy visuals)
-- Awesomium requires main thread (UI blocks game loop)
+- UI system must run on main thread (UI blocks game loop)
 - Can't utilize multi-core CPUs effectively
 
 ### Solution: Three Independent Threads
 
 **Main Thread:** Bootstrap, UI coordination
-- Awesomium **must** run on main thread (web engine requirement)
+- UI system must run on main thread
 - Collects input, spawns worker threads
 - Update rate: As needed (~30 Hz)
 
@@ -321,7 +321,7 @@ while (running) {
 
 **Benefits:**
 - ✅ Consistent frame rate (Render independent of Sim)
-- ✅ Non-blocking UI (Main thread available for Awesomium)
+- ✅ Non-blocking UI (Main thread available for UI events)
 - ✅ Multi-core utilization (3 threads on 3+ cores)
 - ✅ Clear separation of concerns
 

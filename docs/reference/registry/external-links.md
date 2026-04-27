@@ -49,27 +49,6 @@ Documentation links for external dependencies and tools.
 
 ---
 
-### Awesomium (DEPRECATED)
-
-**Version:** SDK (exact version unknown)
-
-**Purpose:** HTML/CSS/JavaScript UI rendering
-
-**Status:** **DEPRECATED** - No longer maintained
-
-**Links:**
-- Archive: http://web.archive.org/web/20180101000000*/awesomium.com
-- (Official site no longer available)
-
-**Replacement Options:**
-- CEF (Chromium Embedded Framework): https://bitbucket.org/chromiumembedded/cef
-- ImGui: https://github.com/ocornut/imgui
-- WebView2 (Windows): https://developer.microsoft.com/en-us/microsoft-edge/webview2/
-
-**Used By:** `Dia/DiaUIAwesomium/` (should be replaced)
-
----
-
 ### Webix
 
 **Purpose:** JavaScript UI components
@@ -79,7 +58,7 @@ Documentation links for external dependencies and tools.
 - Documentation: https://docs.webix.com/
 - Demos: https://webix.com/demos/
 
-**Used By:** `External/Webix/` (loaded via Awesomium)
+**Used By:** `External/Webix/`
 
 ---
 
@@ -357,32 +336,6 @@ dot -Tpng output.dot -o graph.png
 
 ---
 
-## Deprecated Technologies
-
-### Awesomium (No Longer Maintained)
-
-**Last Active:** ~2016
-
-**Migration Path:**
-- **Option 1:** CEF (Chromium Embedded Framework)
-  - https://bitbucket.org/chromiumembedded/cef
-  - Most similar to Awesomium
-  - Full Chromium browser
-  
-- **Option 2:** ImGui (Immediate Mode GUI)
-  - https://github.com/ocornut/imgui
-  - Lightweight, code-driven
-  - Great for tools/debug UI
-  
-- **Option 3:** WebView2 (Windows only)
-  - https://developer.microsoft.com/en-us/microsoft-edge/webview2/
-  - Native Windows integration
-  - Uses system Chromium
-
-**Decision:** Migrate to CEF for main UI, ImGui for dev tools
-
----
-
 ## Standards and Specifications
 
 ### C++ Standards
@@ -413,7 +366,6 @@ dot -Tpng output.dot -o graph.png
 **Third-Party Libraries:**
 - SFML (graphics/audio/input) - https://www.sfml-dev.org/
 - JsonCpp (JSON parsing) - https://github.com/open-source-parsers/jsoncpp
-- Awesomium (DEPRECATED) - Replace with CEF or ImGui
 
 **Development Tools:**
 - Visual Studio (IDE) - https://visualstudio.microsoft.com/

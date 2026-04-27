@@ -8,13 +8,12 @@ Overview of third-party libraries used by Cluiche and the Dia engine.
 
 ## Overview
 
-Cluiche uses **5 external dependencies** for graphics, audio, input, JSON, and UI:
+Cluiche uses **4 external dependencies** for graphics, audio, input, JSON, and UI:
 
 | Library | Version | Purpose | Used By |
 |---------|---------|---------|---------|
 | **SFML** | 2.x | Graphics, audio, input, windowing | DiaSFML (primary backend) |
 | **JsonCpp** | master | JSON parsing and serialization | DiaCore (configuration) |
-| **Awesomium SDK** | - | Web-based UI framework | DiaUIAwesomium (UI backend) |
 | **Webix** | Multiple | JavaScript UI framework | UI pages, console |
 | **VisJS** | - | Data visualization library | Debugging visualizations |
 
@@ -206,94 +205,6 @@ JsonCpp could be replaced with:
 
 ## UI Dependencies
 
-### Awesomium SDK
-
-**Location:** `External/Awesomium SDK/`
-
-**Version:** (check installed version)
-
-**Purpose:** Web-based UI using HTML/CSS/JavaScript
-
-**Website:** http://www.awesomium.com/ (deprecated)
-
-#### What Dia Uses
-
-**Web Rendering:**
-```cpp
-// Initialize web core
-Awesomium::WebCore* webCore = Awesomium::WebCore::Initialize();
-
-// Create web view
-Awesomium::WebView* webView = webCore->CreateWebView(800, 600);
-
-// Load page
-webView->LoadURL(Awesomium::WebURL("file:///path/to/page.html"));
-
-// Update (render frame)
-webCore->Update();
-```
-
-**JavaScript Integration:**
-```cpp
-// Bind C++ method to JavaScript
-webView->set_js_method_handler(this);
-
-// Call JavaScript from C++
-webView->ExecuteJavascript("updateScore(42);");
-
-// Called from JavaScript
-void OnMethodCall(const JSArray& args) {
-    // Handle JavaScript → C++ call
-}
-```
-
-#### Integration
-
-**DiaUIAwesomium wraps Awesomium:**
-```cpp
-// Dia/DiaUIAwesomium/UISystem.h
-class UISystem : public IUISystem {
-public:
-    void Initialize() override;
-    void Update() override;
-    void LoadPage(const char* url) override;
-    void SendMessage(const char* msg) override;
-    
-private:
-    Awesomium::WebCore* mWebCore;
-    Awesomium::WebView* mWebView;
-};
-```
-
-**Use Cases:**
-- Launch UI (level selection)
-- In-game HUD
-- Menus and dialogs
-- Developer tools
-
-#### Status
-
-**⚠️ Note:** Awesomium is **deprecated** (no longer maintained)
-
-**Implications:**
-- No security updates
-- No new features
-- May not support modern web standards
-
-**Alternatives (Future):**
-- **CEF (Chromium Embedded Framework)** - Modern, actively developed
-- **WebView2** (Windows only) - Native Chromium integration
-- **ImGui** - Immediate-mode GUI (C++)
-- **Custom UI** - Native rendering (no web)
-
-#### Licensing
-
-**License:** Commercial (check Awesomium license terms)
-
-**Commercial Use:** Check license agreement
-
----
-
 ### Webix
 
 **Location:** `External/Webix/` (multiple versions)
@@ -333,9 +244,8 @@ private:
 
 #### Integration
 
-**Loaded by Awesomium:**
+**Loaded as HTML pages:**
 - Webix is included in HTML pages
-- Rendered by Awesomium web view
 - No direct C++ integration
 
 #### Licensing
@@ -383,9 +293,8 @@ private:
 
 #### Integration
 
-**Loaded by Awesomium:**
+**Loaded as HTML pages:**
 - VisJS is included in HTML pages
-- Rendered by Awesomium web view
 - Used for developer tools and debugging
 
 #### Licensing
@@ -457,29 +366,6 @@ cmake --build . --config Release
 
 ---
 
-### Linking Awesomium
-
-**Visual Studio:**
-```xml
-<AdditionalIncludeDirectories>
-    $(SolutionDir)..\External\Awesomium SDK\include;
-</AdditionalIncludeDirectories>
-
-<AdditionalLibraryDirectories>
-    $(SolutionDir)..\External\Awesomium SDK\lib;
-</AdditionalLibraryDirectories>
-
-<AdditionalDependencies>
-    awesomium.lib;
-</AdditionalDependencies>
-```
-
-**Runtime:**
-- Awesomium DLL and support files must be copied to output directory
-- Large SDK size (~50+ MB)
-
----
-
 ## Dependency Management
 
 ### Current Approach
@@ -526,7 +412,6 @@ vcpkg integrate install
 **Dependencies:**
 - SFML: Pre-built binaries for Visual Studio
 - JsonCpp: Build from source or use pre-built
-- Awesomium: Windows SDK available
 
 ---
 
@@ -537,11 +422,9 @@ vcpkg integrate install
 **Dependencies:**
 - SFML: Available via package managers (`apt install libsfml-dev`)
 - JsonCpp: Available via package managers (`apt install libjsoncpp-dev`)
-- Awesomium: Linux SDK deprecated (would need alternative)
 
 **Blockers:**
 - No Linux build system (needs CMake or Makefiles)
-- Awesomium deprecated (needs CEF or WebView alternative)
 
 ---
 
@@ -552,11 +435,9 @@ vcpkg integrate install
 **Dependencies:**
 - SFML: Available via Homebrew (`brew install sfml`)
 - JsonCpp: Available via Homebrew (`brew install jsoncpp`)
-- Awesomium: macOS SDK deprecated (would need alternative)
 
 **Blockers:**
 - No macOS build system (needs Xcode or CMake)
-- Awesomium deprecated (needs CEF or WebView alternative)
 
 ---
 
@@ -566,11 +447,10 @@ vcpkg integrate install
 |---------|---------|----------------|----------------------|
 | **SFML** | zlib/png | ✅ Yes | ❌ No |
 | **JsonCpp** | MIT / Public Domain | ✅ Yes | ⚠️ Recommended |
-| **Awesomium** | Commercial | ⚠️ Check license | ⚠️ Check license |
 | **Webix** | GPL v3 / Commercial | ⚠️ Requires commercial license | ✅ Yes (GPL) |
 | **VisJS** | Apache 2.0 / MIT | ✅ Yes | ✅ Yes (Apache) |
 
-**⚠️ Important:** Review license terms for commercial projects, especially Awesomium and Webix.
+**⚠️ Important:** Review license terms for commercial projects, especially Webix.
 
 **[→ External documentation links](../registry/external-links.md)**
 
@@ -578,19 +458,17 @@ vcpkg integrate install
 
 ## Summary
 
-Cluiche uses **5 external dependencies**:
+Cluiche uses **4 external dependencies**:
 
 **Core:**
 - ✅ SFML (graphics/audio/input) - Primary backend, permissive license
 - ✅ JsonCpp (JSON parsing) - Simple, permissive license
 
 **UI:**
-- ⚠️ Awesomium (web UI) - Deprecated, needs replacement
 - ⚠️ Webix (UI framework) - GPL or commercial license
 - ✅ VisJS (visualization) - Permissive license
 
 **Future:**
-- Replace Awesomium with CEF or WebView2
 - Consider package manager (vcpkg, Conan)
 - Evaluate Webix license for commercial use
 

@@ -448,29 +448,28 @@ dependencies:
 ```yaml
 ---
 schema: dia.module.v1
-module_id: dia.ui.awesomium
-name: DiaUIAwesomium
+module_id: dia.example.deprecated
+name: ExampleDeprecated
 layer: backend
 status: deprecated  # Being phased out
 maturity: legacy
 
-path: Dia/DiaUIAwesomium
+path: Dia/DiaExampleDeprecated
 language: cpp
 
 summary: >
-  Awesomium UI backend (DEPRECATED - use CEF or ImGui).
+  Example deprecated module (DEPRECATED - use replacement).
 
 dependencies:
   required:
     - dia.core
-    - dia.ui
 ---
 
 # Migration
 
-**Deprecated:** Awesomium is no longer maintained.
+**Deprecated:** This module is no longer maintained.
 
-**Replacement:** Migrate to CEF (Chromium Embedded Framework) or ImGui.
+**Replacement:** Migrate to the replacement module.
 ```
 
 ---
