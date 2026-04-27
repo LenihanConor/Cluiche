@@ -20,9 +20,9 @@ def test_plugin_discovery_finds_commands():
 def test_filename_becomes_command_name():
     """AC2: File names become command names (e.g., cli/test.py → dia test)"""
     runner = CliRunner()
-    result = runner.invoke(cli, ['test'])
+    result = runner.invoke(cli, ['test', '--help'])
     assert result.exit_code == 0
-    assert 'Plugin discovery is working!' in result.output
+    assert 'Run Dia test suites' in result.output
 
 
 def test_cli_prefix_stripped():
@@ -62,5 +62,5 @@ def test_help_lists_all_commands():
     assert result.exit_code == 0
     assert 'Commands:' in result.output
     # Verify descriptions appear
-    assert 'Test command' in result.output
+    assert 'Run Dia test suites' in result.output
     assert 'Prefix test' in result.output

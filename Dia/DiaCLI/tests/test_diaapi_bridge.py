@@ -19,32 +19,26 @@ def test_bridge_detects_availability():
         assert not bridge.is_available()
 
 
-@patch('dia_cli.utils.diaapi_bridge.sys.modules')
-def test_bridge_with_mock_diaapi(mock_modules):
+def test_bridge_with_mock_diaapi():
     """AC1-AC3: Bridge can invoke C++ DiaAPI when available"""
-    # Create mock dia_api module
     mock_dia_api = Mock()
     mock_dia_api.list_commands.return_value = ['validate-assets', 'compile-shaders']
     mock_dia_api.execute_command.return_value = 0
     mock_dia_api.get_command_help.return_value = "Help text for command"
 
-    with patch('builtins.__import__', return_value=mock_dia_api):
+    with patch.dict('sys.modules', {'dia_api': mock_dia_api}):
         bridge = DiaAPIBridge()
 
-        # Should be available
         assert bridge.is_available()
 
-        # AC2: List commands
         commands = bridge.list_commands()
         assert 'validate-assets' in commands
         assert 'compile-shaders' in commands
 
-        # AC3: Execute command
         exit_code = bridge.execute('validate-assets', ['--path', 'Assets/'])
         assert exit_code == 0
         mock_dia_api.execute_command.assert_called_once_with('validate-assets', ['--path', 'Assets/'])
 
-        # Test get help
         help_text = bridge.get_command_help('validate-assets')
         assert help_text == "Help text for command"
 

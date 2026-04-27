@@ -269,3 +269,6 @@ External/Ultralight/
 **/threading_tests.txt
 test_event.cpp
 Dia/DiaInput/Events/remove_clone.py
+
+# Generated non-binary output (PD-009)
+Cluiche/out/

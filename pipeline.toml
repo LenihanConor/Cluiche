@@ -1,0 +1,41 @@
+[global]
+default_config = "Debug"
+default_platform = "x64"
+default_target = "googletest"
+
+[proto]
+proto_dir = "Dia/DiaDebugProtocol/proto"
+output_dir = "Dia/DiaDebugProtocol/proto/generated"
+language = "cpp"
+
+[targets.googletest]
+project = "Cluiche/Tests/GoogleTests/GoogleTests.vcxproj"
+stages = ["proto-compile", "compile-code", "asset-build", "package"]
+
+[targets.googletest.package]
+files = [
+  { src = "External/Python311/python311.dll", dest = "$(OutDir)" },
+  { src = "Cluiche/CluicheTest/Data/Manifests/*.diaapp", dest = "$(OutDir)Data/Manifests/" }
+]
+
+[targets.cluichetest]
+project = "Cluiche/CluicheTest/CluicheTest.vcxproj"
+stages = ["proto-compile", "compile-code", "asset-build", "package"]
+
+[targets.cluichetest.package]
+files = [
+  { src = "Cluiche/pathStoreConfig.json", dest = "$(OutDir)" },
+  { src = "External/SFML/Current-x64/bin/*.dll", dest = "$(OutDir)" },
+  { src = "Cluiche/CluicheTest/Data/Manifests/*.diaapp", dest = "$(OutDir)Data/Manifests/" }
+]
+
+[targets.cluicheeditor]
+project = "Cluiche/CluicheEditor/CluicheEditor.vcxproj"
+stages = ["proto-compile", "compile-code", "asset-build", "package"]
+
+[targets.cluicheeditor.package]
+files = [
+  { src = "External/CEF/Resources/*", dest = "$(OutDir)" },
+  { src = "External/CEF/Resources/locales/**", dest = "$(OutDir)locales/" },
+  { src = "External/CEF/bin/$(Configuration)/*", dest = "$(OutDir)" }
+]

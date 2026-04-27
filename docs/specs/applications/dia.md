@@ -19,19 +19,22 @@ Dia is the game engine application that provides all shared engine infrastructur
 | DiaDebugProtocol | Shared header-only protocol types for editor-game communication (used by DiaEditor and DiaDebugServer) | [diadebugprotocol.md](../systems/dia/diadebugprotocol.md) |
 | DiaDebugServer | WebSocket server for remote debugging - broadcasts game state, forwards DiaAPI commands to editors | [diadebugserver.md](../systems/dia/diadebugserver.md) |
 | DiaEditor | Editor framework system (MVC, plugin system, CEF UI, command integration, live WebSocket connection) | [diaeditor.md](../systems/dia/diaeditor.md) |
-| DiaUICEF | CEF-based UI system implementing IUISystem (replaces deprecated DiaUIAwesomium) | [diauicef.md](../systems/dia/diauicef.md) |
-| DiaUIUltralight | Ultralight-based IUISystem implementation; lightweight drop-in replacement for DiaUIAwesomium | [diauiultralight.md](../systems/dia/diauiultralight.md) |
+| DiaUICEF | CEF-based UI system implementing IUISystem | [diauicef.md](../systems/dia/diauicef.md) |
+| DiaUIUltralight | Ultralight-based IUISystem implementation | [diauiultralight.md](../systems/dia/diauiultralight.md) |
 | DiaWebSocket | WebSocket server/client abstraction wrapping websocketpp (used by DiaDebugServer, DiaEditor, future networking) | [diawebsocket.md](../systems/dia/diawebsocket.md) |
 | DiaLogger | Engine-wide logging system (levels, channels, thread-local buffers, pluggable sinks via ISink) | [dialogger.md](../systems/dia/dialogger.md) |
 | DiaGeometry2D | 2D geometry system: shape primitives, intersection tests, Transform, spatial structures (Grid, Quadtree, BVH) | [diageometry2d.md](../systems/dia/diageometry2d.md) |
 | DiaRigidBody2D | 2D rigid body physics: velocity/force integration, collision detection + response, constraints/joints, sleeping, collision layers, Physics-channel logging, visual debugger | [diarigidbody2d.md](../systems/dia/diarigidbody2d.md) |
 | DiaSoftBody2D | 2D soft body simulation: PBD ropes, cloth, particle-geometry collision, rigid body coupling, Physics-channel logging, visual debugger | [diasoftbody2d.md](../systems/dia/diasoftbody2d.md) |
+| DiaEnv | Portable development environment system — SDK manifest, toolchain manifest, `dia env setup/verify`, MSBuild auto-restore, git submodule migration, AI context hardening | [diaenv.md](../systems/dia/diaenv.md) |
+| DiaTest | Test execution system — `dia test cli` (pytest for DiaCLI), `dia test env-integration` (agentic env→pipeline→test loop), future `dia test googletest` and `dia test ui` | [diatest.md](../systems/dia/diatest.md) |
+| DiaPipeline | Multi-stage build pipeline — `dia pipeline` command surface; proto-compile, compile-code, asset-build, package stages; `pipeline.toml` config; host or Docker execution | [diapipeline.md](../systems/dia/diapipeline.md) |
 | DiaCore | Foundation library (containers, type system, memory, logging, CRC) | TBD |
 | DiaMaths | Math library (vectors, matrices, core math utilities — pure linear algebra only after DiaGeometry2D migration) | TBD |
 | DiaGraphics | Graphics abstraction layer (ICanvas, Frame, rendering) | TBD |
 | DiaWindow | Window management | TBD |
 | DiaInput | Input handling (keyboard, mouse, events) | TBD |
-| DiaUI | UI systems (Awesomium integration) | TBD |
+| DiaUI | UI system abstraction | TBD |
 
 ## Application-Specific Architecture
 
@@ -58,7 +61,6 @@ DiaAPI provides extensible command-line tools for asset pipelines and build auto
 Dia is the engine - it provides dependencies for other applications rather than consuming them. External dependencies:
 
 - **SFML** (External/SFML) - Graphics, window, multimedia
-- **Awesomium SDK** (External/Awesomium) - HTML UI framework
 - **jsoncpp** (External/jsoncpp-master) - JSON parsing
 - **Webix / VisJS** (External/) - Web UI for debugging/visualization
 - **GoogleTest** (External/googletest) - Unit testing framework

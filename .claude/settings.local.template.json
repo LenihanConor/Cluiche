@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git:*)",
+      "Bash(msbuild:*)",
+      "Bash(python:*)",
+      "Bash(poetry:*)",
+      "Bash(npm:*)",
+      "Bash(node:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(cat)",
+      "Bash(powershell:*)",
+      "Bash(pwsh:*)"
+    ],
+    "defaultMode": "auto"
+  }
+}

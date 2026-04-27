@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <Target Name="RestoreExternals" BeforeTargets="Build">
+    <PropertyGroup>
+      <_DepsJson>$(MSBuildThisFileDirectory)deps.json</_DepsJson>
+      <_DiaCLIDir>$(MSBuildThisFileDirectory)Dia\DiaCLI</_DiaCLIDir>
+      <_SentinelDir>$(MSBuildThisFileDirectory).diaenv\deps</_SentinelDir>
+    </PropertyGroup>
+
+    <Warning
+      Condition="!Exists('$(_DepsJson)')"
+      Text="DiaEnv: deps.json not found at $(MSBuildThisFileDirectory)deps.json — skipping RestoreExternals. Run `dia env deps` to initialise." />
+
+    <Exec
+      Condition="Exists('$(_DepsJson)')"
+      Command=".venv\Scripts\python.exe -m dia_cli env deps --quiet"
+      ConsoleToMSBuild="true"
+      WorkingDirectory="$(_DiaCLIDir)"
+      IgnoreExitCode="true" />
+  </Target>
+
+</Project>

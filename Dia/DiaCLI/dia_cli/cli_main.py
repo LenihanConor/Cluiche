@@ -7,6 +7,7 @@ from loguru import logger
 from pathlib import Path
 import sys
 from dia_cli.utils.dia_cli_config import Config
+from dia_cli.utils.dia_output import OutputContext
 
 
 ## @defgroup cli_main_grp cli_main
@@ -188,9 +189,44 @@ def _load_module_as_command(name: str, module_path: Path):
     return mod
 
 
+_LOG_DIR = _root_path / "Cluiche" / "out" / "DiaCLI" / "logs"
+
+
+class DiaCLIWithOutput(DiaCLI):
+    """Extends DiaCLI with global --no-color, --quiet, --log-json flags and OutputContext."""
+
+    def __init__(self, *args, **kwargs):
+        params = [
+            click.Option(["--no-color"], is_flag=True, default=False, help="Disable ANSI colour output."),
+            click.Option(["--quiet"], is_flag=True, default=False, help="Suppress terminal output; still writes JSON log."),
+            click.Option(["--log-json"], default=None, metavar="PATH", help="Override NDJSON log file path."),
+        ]
+        kwargs.setdefault("params", [])
+        kwargs["params"] = params + kwargs["params"]
+        super().__init__(*args, **kwargs)
+
+    def make_context(self, info_name, args, **kwargs):
+        # Extract our global flags before passing args to Click
+        no_color = "--no-color" in args
+        quiet = "--quiet" in args
+        log_json = None
+        if "--log-json" in args:
+            idx = args.index("--log-json")
+            if idx + 1 < len(args):
+                log_json = args[idx + 1]
+
+        ctx = super().make_context(info_name, args, **kwargs)
+
+        log_override = Path(log_json) if log_json else None
+        output = OutputContext(log_dir=_LOG_DIR, no_color=no_color, quiet=quiet, log_json_override=log_override)
+        if ctx.obj is not None:
+            ctx.obj.output = output
+        return ctx
+
+
 ## A reference to our custom Click multi-command. Invoked by `main()`.
 if _prime_config_present:
-    cli = DiaCLI(name='dia', help="Dia CLI - Development tools for Dia engine")
+    cli = DiaCLIWithOutput(name='dia', help="Dia CLI - Development tools for Dia engine")
 else:
     cli = OnlySetupCli(name='dia', help="Dia CLI - Development tools for Dia engine")
 

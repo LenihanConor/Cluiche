@@ -118,8 +118,9 @@ result = execute_api_command("validate-assets", args=["--path", "assets/"])
 | plugin-discovery | Automatic command discovery from filesystem | Scan `cli/**/*.py`, lazy loading, zero-config extensibility | [plugin-discovery.md](../../features/dia/diacli/plugin-discovery.md) | 5 days | Done |
 | command-scaffolding | Generate new DiaCLI command boilerplate | Template-based generation, two-file pattern, auto-wired, includes examples | [command-scaffolding.md](../../features/dia/diacli/command-scaffolding.md) | 3 days | Done |
 | diaapi-bridge | Python bridge to C++ DiaAPI commands | Load C++ library, discover commands, execute via Python, graceful fallback | [diaapi-bridge.md](../../features/dia/diacli/diaapi-bridge.md) | 4 days | Done |
+| cli-output | Shared output + observability layer — rich terminal + NDJSON event log | `OutputContext`, streaming terminal format, NDJSON `last-run.ndjson`, `--no-color`, `--quiet`, `--log-json` | [cli-output.md](../../features/dia/diacli/cli-output.md) | 3 days | Approved |
 
-**Total Effort Estimate:** 12 days
+**Total Effort Estimate:** 15 days
 
 **Recommended Implementation Order:**
 1. plugin-discovery (5d) - Core CLI infrastructure for command discovery

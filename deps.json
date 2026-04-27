@@ -1,0 +1,85 @@
+{
+  "schema": "diaenv.deps.v1",
+  "deps": [
+    {
+      "id": "sfml",
+      "version": "2.6.1",
+      "url": "https://github.com/SFML/SFML/releases/download/2.6.1/SFML-2.6.1-windows-vc17-64-bit.zip",
+      "mirrors": [],
+      "sha256": "PLACEHOLDER_COMPUTE_AT_RUNTIME",
+      "install_type": "zip",
+      "unzip_to": "External/SFML",
+      "strip_root": true
+    },
+    {
+      "id": "ultralight",
+      "version": "1.3.0",
+      "url": null,
+      "mirrors": [],
+      "sha256": "PLACEHOLDER_COMPUTE_AT_RUNTIME",
+      "install_type": "zip",
+      "unzip_to": "External/Ultralight",
+      "strip_root": true
+    },
+    {
+      "id": "cef",
+      "version": "latest",
+      "url": null,
+      "mirrors": [],
+      "sha256": "PLACEHOLDER_COMPUTE_AT_RUNTIME",
+      "install_type": "zip",
+      "unzip_to": "External/CEF",
+      "strip_root": true
+    },
+    {
+      "id": "python311",
+      "version": "3.11.9",
+      "url": "https://www.python.org/ftp/python/3.11.9/python-3.11.9-embed-amd64.zip",
+      "mirrors": [],
+      "sha256": "PLACEHOLDER_COMPUTE_AT_RUNTIME",
+      "install_type": "zip",
+      "unzip_to": "External/Python311",
+      "strip_root": false
+    },
+    {
+      "id": "visjs",
+      "version": "latest",
+      "url": null,
+      "mirrors": [],
+      "sha256": "PLACEHOLDER_COMPUTE_AT_RUNTIME",
+      "install_type": "zip",
+      "unzip_to": "External/VisJS",
+      "strip_root": false
+    },
+    {
+      "id": "webix-5.2.1",
+      "version": "5.2.1",
+      "url": "https://cdn.webix.com/packages/webix-gpl-5.2.1.zip",
+      "mirrors": [],
+      "sha256": "PLACEHOLDER_COMPUTE_AT_RUNTIME",
+      "install_type": "zip",
+      "unzip_to": "External/Webix/5.2.1",
+      "strip_root": true
+    },
+    {
+      "id": "webix-2.4.7",
+      "version": "2.4.7",
+      "url": "https://cdn.webix.com/packages/webix-gpl-2.4.7.zip",
+      "mirrors": [],
+      "sha256": "PLACEHOLDER_COMPUTE_AT_RUNTIME",
+      "install_type": "zip",
+      "unzip_to": "External/Webix/2.4.7",
+      "strip_root": true
+    },
+    {
+      "id": "protobuf",
+      "version": "25.6",
+      "url": "https://github.com/protocolbuffers/protobuf/releases/download/v25.6/protobuf-25.6.zip",
+      "mirrors": [],
+      "sha256": "PLACEHOLDER_COMPUTE_AT_RUNTIME",
+      "install_type": "zip",
+      "unzip_to": "External/protobuf/protobuf-25.6",
+      "strip_root": false
+    }
+  ]
+}
