@@ -29,6 +29,7 @@ Dia is the game engine application that provides all shared engine infrastructur
 | DiaEnv | Portable development environment system — SDK manifest, toolchain manifest, `dia env setup/verify`, MSBuild auto-restore, git submodule migration, AI context hardening | [diaenv.md](../systems/dia/diaenv.md) |
 | DiaTest | Test execution system — `dia test cli` (pytest for DiaCLI), `dia test env-integration` (agentic env→pipeline→test loop), future `dia test googletest` and `dia test ui` | [diatest.md](../systems/dia/diatest.md) |
 | DiaPipeline | Multi-stage build pipeline — `dia pipeline` command surface; proto-compile, compile-code, asset-build, package stages; `pipeline.toml` config; host or Docker execution | [diapipeline.md](../systems/dia/diapipeline.md) |
+| DiaPipelineEditor | Live pipeline viewer + trigger panel inside CluicheEditor — tails NDJSON log, stage timeline with drill-down, build triggering, last 10 run history | [diapipelineeditor.md](../systems/dia/diapipelineeditor.md) |
 | DiaCore | Foundation library (containers, type system, memory, logging, CRC) | TBD |
 | DiaMaths | Math library (vectors, matrices, core math utilities — pure linear algebra only after DiaGeometry2D migration) | TBD |
 | DiaGraphics | Graphics abstraction layer (ICanvas, Frame, rendering) | TBD |
