@@ -70,13 +70,8 @@ This directory contains reference documentation for the **existing Cluiche codeb
 - [Known Issues](development/known-issues.md) - Current bugs and workarounds
 
 ### Tools
-**Development tooling:** (See `Tools/` directory in repository root)
-- CLI Tool - Located in `Tools/CLI/`
-- Console Tool - Located in `Tools/Console/`
-- Dia Modules Script - `Tools/dia_modules.py` - Module dependency analyzer
-- Dirty Test Tracker - `Tools/dirty_test_tracker.py` - Tracks test changes
-
-<!-- TODO: Create detailed tool documentation -->
+**Development tooling:**
+- [DiaCLI Reference](tools/diacli.md) - CLI for environment, build pipeline, and test execution
 
 ### Registry
 **Module catalog and schemas:**
