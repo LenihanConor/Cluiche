@@ -35,7 +35,7 @@ The NDJSON log is overwritten on each run, so previous run data is lost. Develop
 |---|-----------|
 | AC1 | When a run completes (`OnRunCompleted`/`OnRunFailed`) or is detected as interrupted, its `RunSummary` is appended to `history.json` |
 | AC2 | `history.json` contains at most 10 entries; oldest entry is evicted when an 11th arrives |
-| AC3 | `history.json` is written to `Cluiche/out/CluicheEditor/DiaPipelineEditor/pipeline-history/history.json` per SED-020 |
+| AC3 | `history.json` is written to the path defined in Data Model below, per SED-020 |
 | AC4 | History is loaded from disk on plugin startup — survives editor restart |
 | AC5 | HistoryDrawer UI component shows a list of past runs with: target, config, pass/fail, total time, timestamp |
 | AC6 | Clicking a history entry shows its RunSummary details in the panel (replaces the current run view temporarily) |
@@ -159,18 +159,12 @@ Dia/DiaPipelineEditor/
 
 ## Binding Decisions Compliance
 
+All inherited decisions per system spec. Feature-specific compliance:
+
 | ID | Source | Decision | Compliance |
 |----|--------|----------|------------|
-| PD-001 | Platform | Use StringCRC for IDs | Compliant — target/config stored as StringCRC in RunSummary |
-| PD-004 | Platform | No STL in public APIs | Compliant — `DynamicArrayC<RunSummary, 10>`, `const char*` |
-| PD-005 | Platform | x64 Windows only | Compliant |
-| PD-006 | Platform | VS project files | Compliant — same .vcxproj |
-| PD-007 | Platform | C++20 | Compliant |
-| PD-009 | Platform | Generated output under `Cluiche/out/` | Compliant — writes to `Cluiche/out/CluicheEditor/DiaPipelineEditor/pipeline-history/` |
-| AD-003 | Dia App | Namespace `Dia::<Module>::` | Compliant — `Dia::PipelineEditor::RunHistoryStore` |
-| SED-015 | DiaEditor | Pure C++ library | Compliant — no Module/Phase subclasses |
-| SED-020 | DiaEditor | Plugin output under `Cluiche/out/CluicheEditor/<PluginName>/` | Compliant — `Cluiche/out/CluicheEditor/DiaPipelineEditor/pipeline-history/history.json` |
-| SPE-002 | DiaPipelineEditor | Run history capped at 10 | Compliant — `DynamicArrayC<RunSummary, 10>`, eviction on overflow |
+| SED-020 | DiaEditor | Plugin output under `Cluiche/out/CluicheEditor/<PluginName>/` | Writes to `Cluiche/out/CluicheEditor/DiaPipelineEditor/pipeline-history/` |
+| SPE-002 | DiaPipelineEditor | Run history capped at 10 | `DynamicArrayC<RunSummary, 10>`, eviction on overflow |
 
 ## AI Review Questions
 

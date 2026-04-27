@@ -12,7 +12,7 @@ DiaPipelineEditor is an editor plugin system that provides a live build pipeline
 - **NDJSON Log Tailing** — C++ Module that monitors `Cluiche/out/DiaCLI/logs/pipeline/last-run.ndjson`, detects new/overwritten runs, and parses events line-by-line
 - **Event Model** — Maintain an in-memory model of the current run (stages, steps, durations, pass/fail) plus the last 10 completed runs
 - **Live UI Panel** — React/TypeScript dockable panel that renders a stage timeline with colour-coded status, expandable drill-down into log lines, and elapsed time per stage
-- **Build Triggering** — Invoke `dia pipeline` from the editor via DiaAPI command dispatch (e.g. `start-pipeline --config Debug --target googletest`), with the panel auto-attaching to the resulting NDJSON log
+- **Build Triggering** — Invoke `dia pipeline` from the editor via DiaAPI command dispatch (e.g. `pipeline-start --config Debug --target googletest`), with the panel auto-attaching to the resulting NDJSON log
 - **Run History** — Store summary data (target, config, stages, pass/fail counts, total duration, timestamp) for the last 10 runs; selectable in the UI to review past results
 - **Interrupted Run Detection** — Detect unmatched `OnStageStarted` events (no corresponding `Completed`/`Failed`) and show them as "interrupted" in the UI
 
@@ -59,10 +59,6 @@ namespace Dia::PipelineEditor {
         bool IsRunInProgress() const;
         const RunSummary& GetCurrentRunSummary() const;
 
-        // History (last 10)
-        int GetHistoryCount() const;
-        const RunSummary& GetHistorySummary(int index) const;
-
         // Observer — notified when new events arrive
         void RegisterObserver(Dia::Core::Observer* observer);
         void UnregisterObserver(Dia::Core::Observer* observer);
@@ -81,6 +77,7 @@ Exposed via the DiaEditor command dispatcher so the UI can trigger builds:
 |---------|-----------|-------------|
 | `pipeline-start` | `--config`, `--target`, `--stage`, `--force` | Invoke `dia pipeline` as a subprocess; auto-attach the tailer to the resulting log |
 | `pipeline-cancel` | (none) | Kill the running pipeline subprocess |
+| `pipeline-get-targets` | (none) | Return JSON array of target names from `pipeline.toml` |
 | `pipeline-history` | `--count N` | Return JSON array of the last N run summaries |
 
 ### JS/React Panel
@@ -97,16 +94,7 @@ The panel is a dockable IEditorPlugin (`LayoutMode::kDockable`) that renders via
 | `RunSummary` | Header bar showing current run: target, config, pass/fail counts, total time |
 | `HistoryDrawer` | Sidebar or dropdown listing last 10 runs; clicking one loads its summary into the panel |
 
-**Data flow:**
-
-```
-NDJSON file  →  PipelineLogTailer (C++, polls file)
-             →  CEF message push (PipelineEvent JSON)
-             →  React state (useReducer)
-             →  StageTimeline / StageDetail render
-```
-
-The tailer pushes events via `WebUIBridge::NotifyUIDataChanged("pipeline.event", eventJson)`. The JS side subscribes to the `pipeline.event` topic via the existing `DiaEditor_onDataChanged` mechanism.
+**Data flow:** `NDJSON file → PipelineLogTailer (C++ poll) → WebUIBridge push → React useReducer → render`. See pipeline-panel-ui feature spec for detailed flow and state shape.
 
 ## Dependencies
 
@@ -200,7 +188,7 @@ Features within the DiaPipelineEditor system (create with `/spec-feature`):
 | # | Section | Question | Suggested Default | Answer |
 |---|---------|----------|-------------------|--------|
 | 1 | Tailing | What polling interval for the NDJSON file? | Every frame (~16ms); seek to last read position, read new lines | Every frame (~16ms). Cheap seek+read, matches display rate. |
-| 2 | History | Where should run history JSON live? | `Cluiche/out/CluicheEditor/DiaPipelineEditor/pipeline-history/history.json` per SED-020 | `Cluiche/out/CluicheEditor/DiaPipelineEditor/pipeline-history/history.json`. Per SED-020, each editor plugin owns its subdirectory under `Cluiche/out/CluicheEditor/<PluginName>/`. |
+| 2 | History | Where should run history JSON live? | `Cluiche/out/CluicheEditor/DiaPipelineEditor/pipeline-history/history.json` per SED-020 | Per SED-020. See run-history feature spec for full schema. |
 | 3 | Triggering | Should `pipeline-start` block the editor or run async? | Async — subprocess launched in background; tailer observes output; UI stays responsive | Async. Subprocess in background, tailer observes output, UI stays responsive. Build button becomes Cancel while running. |
 | 4 | Schema versioning | How should the panel handle unknown `dia.output.v2+` events? | Ignore unknown event types gracefully; show "unsupported event" in log drill-down; check `schema` field on `OnRunStarted` | Ignore unknown events gracefully. Check `schema` field on `OnRunStarted`; show warning banner if `v2+`; render known event types normally; unknown types show as "unsupported event" in drill-down. |
 | 5 | Panel registration | What `GetUIPath()` should this plugin return? | `"Dia/DiaPipelineEditor/UI/dist/"` — matches DiaApplicationEditor pattern | `"Dia/DiaPipelineEditor/UI/dist/"` — follows DiaApplicationEditor convention. React app builds into `UI/dist/`, CEF loads from there. |

@@ -187,22 +187,12 @@ The plugin's `OnUpdate` calls `PipelineLogTailer::Poll()`. When the tailer's obs
 
 ## Binding Decisions Compliance
 
+All inherited decisions per system spec. Feature-specific compliance:
+
 | ID | Source | Decision | Compliance |
 |----|--------|----------|------------|
-| PD-001 | Platform | Use StringCRC for all entity/component IDs | Compliant — plugin type ID uses StringCRC; JS side receives string names (CRC is C++ only) |
-| PD-002 | Platform | PU/Phase/Module architecture | Compliant — plugin is a plain class per SED-015 |
-| PD-003 | Platform | Component-based entities | Compliant — registers via IEditorPlugin/EditorPluginRegistry |
-| PD-004 | Platform | No STL containers in public APIs | Compliant — C++ plugin interface uses `const char*`, StringCRC; JS side is not constrained by PD-004 |
-| PD-005 | Platform | x64 Windows only | Compliant |
-| PD-006 | Platform | VS project files are source of truth | Compliant — DiaPipelineEditor.vcxproj |
-| PD-007 | Platform | C++20 required | Compliant |
-| PD-009 | Platform | Generated output under `Cluiche/out/<AppName>/` | Compliant — UI build output is in `UI/dist/`, not `Cluiche/out/` |
-| AD-003 | Dia App | Namespace `Dia::<Module>::` | Compliant — `Dia::PipelineEditor::PipelineEditorPlugin` |
-| SED-002 | DiaEditor | Macro-based plugin registration | Compliant — `REGISTER_EDITOR_PLUGIN(PipelineEditorPlugin, "DiaPipelineEditor")` |
-| SED-003 | DiaEditor | Plugin at `Dia/Dia<System>Editor/` | Compliant — `Dia/DiaPipelineEditor/` |
-| SED-015 | DiaEditor | Pure C++ library | Compliant — no Module/Phase/PU subclasses |
-| SED-020 | DiaEditor | Plugin output under `Cluiche/out/CluicheEditor/<PluginName>/` | N/A — this feature doesn't write output; run-history feature will |
-| SPE-003 | DiaPipelineEditor | CEF message passing, not WebSocket | Compliant — uses WebUIBridge::NotifyUIDataChanged |
+| SED-002 | DiaEditor | Macro-based plugin registration | `REGISTER_EDITOR_PLUGIN(PipelineEditorPlugin, "DiaPipelineEditor")` |
+| SPE-003 | DiaPipelineEditor | CEF message passing, not WebSocket | Uses `WebUIBridge::NotifyUIDataChanged` |
 
 ## AI Review Questions
 

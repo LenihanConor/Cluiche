@@ -146,16 +146,12 @@ Dia/DiaPipelineEditor/
 
 ## Binding Decisions Compliance
 
+All inherited decisions per system spec. Feature-specific compliance:
+
 | ID | Source | Decision | Compliance |
 |----|--------|----------|------------|
-| PD-001 | Platform | Use StringCRC for IDs | Compliant — command names registered as StringCRC |
-| PD-004 | Platform | No STL in public APIs | Compliant — `const char*` parameters, no std::string |
-| PD-005 | Platform | x64 Windows only | Compliant — Win32 `CreateProcess`/`TerminateProcess` |
-| PD-006 | Platform | VS project files | Compliant — same .vcxproj as DiaPipelineEditor |
-| PD-007 | Platform | C++20 | Compliant |
-| AD-003 | Dia App | Namespace `Dia::<Module>::` | Compliant — `Dia::PipelineEditor::PipelineBuildManager` |
-| SED-015 | DiaEditor | Pure C++ library | Compliant — no Module/Phase subclasses |
-| SPE-004 | DiaPipelineEditor | Build via DiaAPI command dispatch, not direct JS subprocess | Compliant — JS sends command request, C++ launches subprocess |
+| PD-005 | Platform | x64 Windows only | Win32 `CreateProcess`/`TerminateProcess` for subprocess management |
+| SPE-004 | DiaPipelineEditor | Build via DiaAPI command dispatch, not direct JS subprocess | JS sends command request, C++ launches subprocess |
 
 ## AI Review Questions
 

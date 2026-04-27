@@ -47,37 +47,9 @@ The editor has no way to observe DiaCLI pipeline progress in real time. The NDJS
 
 ## Data Models
 
-All structs defined in the system spec (`Dia::PipelineEditor::` namespace):
+`PipelineEvent` and `RunSummary` structs are defined in the system spec. This feature adds the following implementation details.
 
-### PipelineEvent
-
-```cpp
-struct PipelineEvent {
-    Dia::Core::StringCRC eventType;   // "OnStageStarted", "OnRunCompleted", etc.
-    Dia::Core::StringCRC system;      // "pipeline"
-    Dia::Core::StringCRC stage;       // "compile-code" (empty for run-level events)
-    Dia::Core::StringCRC step;        // "msbuild" (empty for stage/run-level events)
-    float timestampSec;               // Unix timestamp (seconds, fractional)
-    int durationMs;                   // -1 if not a Completed/Failed event
-    const char* error;                // nullptr if not a Failed event
-    const char* detail;               // extra info (step detail, log message)
-    const char* level;                // "info"/"warn"/"error"/"debug" for OnLogLine; nullptr otherwise
-};
-```
-
-### RunSummary
-
-```cpp
-struct RunSummary {
-    Dia::Core::StringCRC target;      // "googletest"
-    Dia::Core::StringCRC config;      // "Debug"
-    int passCount;
-    int failCount;
-    int totalDurationMs;
-    float startTimestamp;
-    bool interrupted;                 // true if process crashed mid-run
-};
-```
+### String ownership (see below)
 
 ### PipelineLogTailer
 
@@ -198,29 +170,19 @@ The 5-second threshold is a compile-time constant (`kInterruptedTimeoutSec`) tha
 
 ## Binding Decisions Compliance
 
+All inherited platform (PD-*), application (AD-*), and editor (SED-*) decisions per system spec. Feature-specific compliance:
+
 | ID | Source | Decision | Compliance |
 |----|--------|----------|------------|
-| PD-001 | Platform | Use StringCRC for all entity/component IDs | Compliant — `PipelineEvent.eventType`, `.system`, `.stage`, `.step` all use StringCRC |
-| PD-002 | Platform | PU/Phase/Module architecture for app structure | Compliant — PipelineLogTailer is a plain class, not a Module; driven by the consumer's update loop per SED-015 |
-| PD-003 | Platform | Component-based entities | N/A — no entities in this feature |
-| PD-004 | Platform | No STL containers in public APIs | Compliant — uses `DynamicArrayC`, `const char*`, StringCRC; `std::streampos` is internal only |
-| PD-005 | Platform | x64 Windows only | Compliant — Windows file I/O |
-| PD-006 | Platform | VS project files are source of truth | Compliant — new `.vcxproj` for DiaPipelineEditor |
-| PD-007 | Platform | C++20 required | Compliant |
-| PD-008 | Platform | `Directory.Build.props` owns OutDir/IntDir | Compliant — reads from `Cluiche/out/`, does not modify build paths |
-| PD-009 | Platform | All generated non-binary output under `Cluiche/out/<AppName>/` | Compliant — reads from `Cluiche/out/DiaCLI/logs/pipeline/` |
-| AD-001 | Dia App | Module system with YAML frontmatter | Compliant — will have `dia.dia.diapipelineeditor.architecture.module.md` |
-| AD-002 | Dia App | No STL in public APIs | Compliant — reinforces PD-004 |
-| AD-003 | Dia App | Namespace `Dia::<Module>::` | Compliant — all types in `Dia::PipelineEditor::` |
-| SPE-001 | DiaPipelineEditor | File polling, not filesystem events | Compliant — `Poll()` called each frame, no `ReadDirectoryChangesW` |
-| SPE-005 | DiaPipelineEditor | Interrupted detection via unmatched Started events | Compliant — idle timeout after 5 seconds of no new events with unmatched Started count > 0 |
-| SED-015 | DiaEditor | Pure C++ library, no DiaApplication dependency | Compliant — PipelineLogTailer is a plain class |
+| PD-004 | Platform | No STL in public APIs | `std::streampos` is internal only; public API uses `DynamicArrayC`, `const char*`, StringCRC |
+| SPE-001 | DiaPipelineEditor | File polling, not filesystem events | `Poll()` called each frame, no `ReadDirectoryChangesW` |
+| SPE-005 | DiaPipelineEditor | Interrupted detection via unmatched Started events | Idle timeout after 5 seconds with unmatched Started count > 0 |
 
 ## AI Review Questions
 
 | # | Section | Question | Suggested Default | Answer |
 |---|---------|----------|-------------------|--------|
-| 1 | String ownership | Should PipelineEvent own its strings or point into a pool? | String pool owned by PipelineLogTailer; cleared on new run; consumers copy if needed across frames | Hybrid (Option C): StringCRC for identifiers (`eventType`, `system`, `stage`, `step`), string pool for display text (`error`, `detail`, `level`/`message`). Pool cleared on new run; consumers copy if holding across frames. |
+| 1 | String ownership | Should PipelineEvent own its strings or point into a pool? | String pool owned by PipelineLogTailer; cleared on new run; consumers copy if needed across frames | Hybrid (Option C). See String Ownership section above. |
 | 2 | Max events | Should there be a cap on mEvents size (memory bound)? | 256 initial capacity; grow if needed; cap at 10,000 events per run (log warning if exceeded) | 256 initial capacity, grow if needed, hard cap at 10,000. Log warning if exceeded. |
 | 3 | File open strategy | Keep file handle open or open/close each Poll()? | Open/close each Poll() — avoids holding a file lock that could block DiaCLI from writing | Open/close each Poll(). Avoids file lock conflicts with DiaCLI; overhead negligible with OS file caching. |
 | 4 | Thread safety | Does Poll() need to be thread-safe? | No — called from the editor's main thread update loop only; no locking needed | No. Main thread only; no locking. |
