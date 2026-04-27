@@ -286,7 +286,7 @@ namespace Dia
 		//----------------------------------------------------------------------------------------------------
 		void Circle::ClosestPointOnCircleTo(const Circle& circle, Dia::Maths::Vector2D& result)const
 		{
-			result = ((circle.GetCenter() - mCenter).AsNormal() * mRadius);
+			result = mCenter + ((circle.GetCenter() - mCenter).AsNormal() * mRadius);
 		}
 
 		//----------------------------------------------------------------------------------------------------
@@ -295,7 +295,7 @@ namespace Dia
 			Dia::Maths::Vector2D posOnLine;
 			line.ClosestPointOnLineTo(*this, posOnLine);
 
-			result = ((posOnLine - mCenter).AsNormal() * mRadius);
+			result = mCenter + ((posOnLine - mCenter).AsNormal() * mRadius);
 		}
 
 		//----------------------------------------------------------------------------------------------------
@@ -398,12 +398,12 @@ namespace Dia
 		void Circle::CalculateAxisPointToPoint(const Dia::Maths::Vector2D& pointOutsideCircle, Dia::Maths::Vector2D& closestPt, Dia::Maths::Vector2D& furthestPt) const
 		{
 			DIA_ASSERT(!IsIntersecting(pointOutsideCircle).IsIntersecting(), "Point inside circle");
-			DIA_ASSERT(pointOutsideCircle == mCenter, "Point equal to circle");
+			DIA_ASSERT(!(pointOutsideCircle == mCenter), "Point equal to circle center");
 
 			Dia::Maths::Vector2D vec = (pointOutsideCircle - mCenter).AsNormal();
 
-			closestPt = (vec * mRadius);
-			furthestPt = (vec.AsInverse() * mRadius);
+			closestPt = mCenter + (vec * mRadius);
+			furthestPt = mCenter + (vec.AsInverse() * mRadius);
 		}
 
 		//----------------------------------------------------------------------------------------------------
