@@ -82,6 +82,9 @@
     <Filter Include="Geometry2D">
       <UniqueIdentifier>{GEO2D001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="RigidBody2D">
+      <UniqueIdentifier>{RB2D0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -507,6 +510,49 @@
     </ClCompile>
     <ClCompile Include="Geometry2D\TestHandle.cpp">
       <Filter>Geometry2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry2D\TestEdgeCases.cpp">
+      <Filter>Geometry2D</Filter>
+    </ClCompile>
+    <!-- RigidBody2D -->
+    <ClCompile Include="RigidBody2D\TestPhysicsBody.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestForceAndIntegration.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestPhysicsWorld.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestCollisionDetection.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestCollisionResponse.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestCollisionEvents.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestSpatialQueries.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestBodySleeping.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestCollisionLayers.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestConstraints.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestRobustness.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestPhysicsIntegration.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestTriggerVolumes.cpp">
+      <Filter>RigidBody2D</Filter>
     </ClCompile>
     <!-- DiaLogger -->
     <ClCompile Include="DiaLogger\TestLogLevel.cpp">

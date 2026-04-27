@@ -71,7 +71,7 @@
       <DisableSpecificWarnings>4267;4244;4127</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>$(OutDir)DiaCore.lib;$(OutDir)DiaMaths.lib;$(OutDir)DiaGeometry2D.lib;$(OutDir)DiaGraphics.lib;$(OutDir)DiaInput.lib;$(OutDir)DiaPython.lib;$(OutDir)DiaAPI.lib;$(OutDir)DiaUI.lib;$(OutDir)DiaWebSocket.lib;$(OutDir)DiaApplication.lib;$(OutDir)DiaDebugServer.lib;$(OutDir)DiaEditor.lib;$(OutDir)DiaLogger.lib;$(OutDir)DiaApplicationEditor.lib;$(ProjectDir)../../../External/Python311/libs/python311.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)DiaCore.lib;$(OutDir)DiaMaths.lib;$(OutDir)DiaGeometry2D.lib;$(OutDir)DiaRigidBody2D.lib;$(OutDir)DiaGraphics.lib;$(OutDir)DiaInput.lib;$(OutDir)DiaPython.lib;$(OutDir)DiaAPI.lib;$(OutDir)DiaUI.lib;$(OutDir)DiaWebSocket.lib;$(OutDir)DiaApplication.lib;$(OutDir)DiaDebugServer.lib;$(OutDir)DiaEditor.lib;$(OutDir)DiaLogger.lib;$(OutDir)DiaApplicationEditor.lib;$(ProjectDir)../../../External/Python311/libs/python311.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)../../../External/googletest/lib/x64/Debug/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -98,7 +98,7 @@ xcopy /Y /I "$(ProjectDir)..\..\CluicheTest\Data\Manifests\*.diaapp" "$(OutDir)D
       <DisableSpecificWarnings>4267;4244;4127</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>$(OutDir)DiaCore.lib;$(OutDir)DiaMaths.lib;$(OutDir)DiaGeometry2D.lib;$(OutDir)DiaGraphics.lib;$(OutDir)DiaInput.lib;$(OutDir)DiaPython.lib;$(OutDir)DiaAPI.lib;$(OutDir)DiaUI.lib;$(OutDir)DiaWebSocket.lib;$(OutDir)DiaApplication.lib;$(OutDir)DiaDebugServer.lib;$(OutDir)DiaEditor.lib;$(OutDir)DiaLogger.lib;$(OutDir)DiaApplicationEditor.lib;$(ProjectDir)../../../External/Python311/libs/python311.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)DiaCore.lib;$(OutDir)DiaMaths.lib;$(OutDir)DiaGeometry2D.lib;$(OutDir)DiaRigidBody2D.lib;$(OutDir)DiaGraphics.lib;$(OutDir)DiaInput.lib;$(OutDir)DiaPython.lib;$(OutDir)DiaAPI.lib;$(OutDir)DiaUI.lib;$(OutDir)DiaWebSocket.lib;$(OutDir)DiaApplication.lib;$(OutDir)DiaDebugServer.lib;$(OutDir)DiaEditor.lib;$(OutDir)DiaLogger.lib;$(OutDir)DiaApplicationEditor.lib;$(ProjectDir)../../../External/Python311/libs/python311.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)../../../External/googletest/lib/x64/Release/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -246,10 +246,26 @@ xcopy /Y /I "$(ProjectDir)..\..\CluicheTest\Data\Manifests\*.diaapp" "$(OutDir)D
     <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\PluginBrowserEditorPlugin.cpp" />
     <!-- Geometry2D -->
     <ClCompile Include="Geometry2D\TestShapePrimitives.cpp" />
+
     <ClCompile Include="Geometry2D\TestIntersectionTests.cpp" />
     <ClCompile Include="Geometry2D\TestGeometry2DTransform.cpp" />
     <ClCompile Include="Geometry2D\TestSpatialGrid.cpp" />
     <ClCompile Include="Geometry2D\TestHandle.cpp" />
+    <ClCompile Include="Geometry2D\TestEdgeCases.cpp" />
+    <!-- RigidBody2D -->
+    <ClCompile Include="RigidBody2D\TestPhysicsBody.cpp" />
+    <ClCompile Include="RigidBody2D\TestForceAndIntegration.cpp" />
+    <ClCompile Include="RigidBody2D\TestPhysicsWorld.cpp" />
+    <ClCompile Include="RigidBody2D\TestCollisionDetection.cpp" />
+    <ClCompile Include="RigidBody2D\TestCollisionResponse.cpp" />
+    <ClCompile Include="RigidBody2D\TestCollisionEvents.cpp" />
+    <ClCompile Include="RigidBody2D\TestSpatialQueries.cpp" />
+    <ClCompile Include="RigidBody2D\TestBodySleeping.cpp" />
+    <ClCompile Include="RigidBody2D\TestCollisionLayers.cpp" />
+    <ClCompile Include="RigidBody2D\TestConstraints.cpp" />
+    <ClCompile Include="RigidBody2D\TestRobustness.cpp" />
+    <ClCompile Include="RigidBody2D\TestPhysicsIntegration.cpp" />
+    <ClCompile Include="RigidBody2D\TestTriggerVolumes.cpp" />
     <!-- DiaLogger -->
     <ClCompile Include="DiaLogger\TestLogLevel.cpp" />
     <ClCompile Include="DiaLogger\TestThreadLogBuffer.cpp" />
@@ -264,6 +280,10 @@ xcopy /Y /I "$(ProjectDir)..\..\CluicheTest\Data\Manifests\*.diaapp" "$(OutDir)D
   <ItemGroup>
     <ProjectReference Include="..\..\..\Dia\DiaGeometry2D\DiaGeometry2D.vcxproj">
       <Project>{A3C4D5E6-F7B8-9012-CDEF-012345678901}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaRigidBody2D\DiaRigidBody2D.vcxproj">
+      <Project>{C1D2E3F4-A5B6-7890-CDEF-012345678902}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaApplicationEditor\DiaApplicationEditor.vcxproj">
