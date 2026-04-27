@@ -272,6 +272,8 @@ xcopy /Y /I "$(ProjectDir)..\..\CluicheTest\Data\Manifests\*.diaapp" "$(OutDir)D
     <ClCompile Include="DiaLogger\TestISink.cpp" />
     <ClCompile Include="DiaLogger\TestLogger.cpp" />
     <ClCompile Include="DiaLogger\TestAssertSinkBridge.cpp" />
+    <!-- PipelineEditor -->
+    <ClCompile Include="PipelineEditor\TestPipelineLogTailer.cpp" />
     <!-- Google Test Source Files - Compiled directly into project -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">
       <AdditionalIncludeDirectories>$(ProjectDir)../../../External/googletest/googletest/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -288,6 +290,9 @@ xcopy /Y /I "$(ProjectDir)..\..\CluicheTest\Data\Manifests\*.diaapp" "$(OutDir)D
     </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaApplicationEditor\DiaApplicationEditor.vcxproj">
       <Project>{B1C2D3E4-F5A6-7890-BCDE-F01234567890}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaPipelineEditor\DiaPipelineEditor.vcxproj">
+      <Project>{C2D3E4F5-A6B7-8901-CDEF-012345678901}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaEditor\DiaEditor.vcxproj">
       <Project>{f1a2b3c4-d5e6-7890-abcd-ef1234567890}</Project>

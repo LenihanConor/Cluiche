@@ -4,7 +4,7 @@
 @docs/specs/systems/dia/diapipelineeditor.md
 
 ## Status
-`Approved`
+`Done`
 
 ## Summary
 

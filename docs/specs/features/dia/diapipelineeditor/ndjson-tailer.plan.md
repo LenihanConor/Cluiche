@@ -1,7 +1,7 @@
 # Plan: ndjson-tailer
 
 **Spec:** @docs/specs/features/dia/diapipelineeditor/ndjson-tailer.md  
-**Status:** In Progress  
+**Status:** Done  
 **Started:** 2026-04-27  
 **Last Updated:** 2026-04-27
 
@@ -80,8 +80,8 @@
 | 3 | NdjsonLineParser.h: header-only single-line JSON → PipelineEvent parser | Done | Internal/ subfolder, jsoncpp |
 | 4 | PipelineLogTailer.h/.cpp: Poll(), Initialize(), Shutdown(), string pool, state management | Done | Polling, truncation detection, RunSummary updates, interrupted detection |
 | 5 | PipelineEditorPlugin.h/.cpp: IEditorPlugin shell wiring tailer to update loop | Done | Thin wrapper; registers with REGISTER_EDITOR_PLUGIN macro |
-| 6 | Unit tests: AC1–AC9 coverage | Not Started | GoogleTests/PipelineEditor/ |
-| 7 | Build + test: verify all 9 ACs pass | Not Started | |
+| 6 | Unit tests: AC1–AC9 coverage | Done | 13 tests, all passing |
+| 7 | Build + test: verify all 9 ACs pass | Done | 13/13 passed (21ms) |
 
 ## Session Notes
 
@@ -92,4 +92,5 @@
 - Tasks 1-5 implemented: project scaffolding, structs, parser, tailer, plugin shell
 - Build succeeds clean (DiaPipelineEditor.lib) — zero errors, zero warnings
 - EditorPluginContext member is mBridge not bridge (found during compile)
-- Next: unit tests (Task 6)
+- Tasks 6-7 done: 13 unit tests covering AC1-AC9, all passing
+- AC6 (interrupted timeout) tested for state correctness; real-time timeout not unit-testable without injectable clock

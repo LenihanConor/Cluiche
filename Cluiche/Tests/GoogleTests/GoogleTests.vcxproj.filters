@@ -76,6 +76,9 @@
     <Filter Include="DiaLogger">
       <UniqueIdentifier>{DLGR0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="PipelineEditor">
+      <UniqueIdentifier>{PIPE0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
     <Filter Include="DiaApplicationEditor">
       <UniqueIdentifier>{DAPPEDTR-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
@@ -569,6 +572,10 @@
     </ClCompile>
     <ClCompile Include="DiaLogger\TestAssertSinkBridge.cpp">
       <Filter>DiaLogger</Filter>
+    </ClCompile>
+    <!-- PipelineEditor -->
+    <ClCompile Include="PipelineEditor\TestPipelineLogTailer.cpp">
+      <Filter>PipelineEditor</Filter>
     </ClCompile>
     <!-- GoogleTest -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">
