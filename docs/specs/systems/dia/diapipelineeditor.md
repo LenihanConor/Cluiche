@@ -182,10 +182,10 @@ Features within the DiaPipelineEditor system (create with `/spec-feature`):
 
 | Feature | Description | Spec | Effort | Status |
 |---------|-------------|------|--------|--------|
-| ndjson-tailer | C++ file tailer that polls and parses the NDJSON pipeline log into PipelineEvent structs | TBD | 3 days | Not Started |
-| pipeline-panel-ui | React/TypeScript dockable panel — stage timeline, log drill-down, run summary | TBD | 5 days | Not Started |
-| build-trigger | DiaAPI commands to start/cancel pipeline from editor; auto-attach tailer to new run | TBD | 2 days | Not Started |
-| run-history | Store and browse last 10 pipeline runs with summary data | TBD | 2 days | Not Started |
+| ndjson-tailer | C++ file tailer that polls and parses the NDJSON pipeline log into PipelineEvent structs | [ndjson-tailer.md](../../features/dia/diapipelineeditor/ndjson-tailer.md) | 3 days | Approved |
+| pipeline-panel-ui | React/TypeScript dockable panel — stage timeline, log drill-down, run summary | [pipeline-panel-ui.md](../../features/dia/diapipelineeditor/pipeline-panel-ui.md) | 5 days | Approved |
+| build-trigger | DiaAPI commands to start/cancel pipeline from editor; auto-attach tailer to new run | [build-trigger.md](../../features/dia/diapipelineeditor/build-trigger.md) | 2 days | Approved |
+| run-history | Store and browse last 10 pipeline runs with summary data | [run-history.md](../../features/dia/diapipelineeditor/run-history.md) | 2 days | Approved |
 
 **Total Effort Estimate:** 12 days
 

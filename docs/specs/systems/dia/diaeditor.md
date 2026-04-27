@@ -616,4 +616,4 @@ Features within the DiaEditor system (create with `/spec-feature`):
 
 ## Status
 
-`Approved` - Ready for implementation
+`Done` - System implemented and operational at `Dia/DiaEditor/`
