@@ -46,8 +46,8 @@ dia pipeline --target cluichetest
 dia pipeline --target cluicheeditor
 
 # Select specific stages
-dia pipeline --stage proto-compile
-dia pipeline --stage compile-code,package
+dia pipeline --stage compile-code
+dia pipeline --stage compile-code,deploy
 
 # Force re-run even if stage sentinel present
 dia pipeline --force
@@ -74,19 +74,31 @@ class ProtoConfig:
     language: str             # "cpp" only
 
 @dataclass
-class PackageFile:
+class DeployFile:
     src: str
     dest: str
 
 @dataclass
-class PackageConfig:
-    files: list[PackageFile]
+class DeployUiBuild:
+    cwd: str
+    cmd: str
+
+@dataclass
+class DeployConfig:
+    files: list[DeployFile]
+    ui_builds: list[DeployUiBuild]
+
+@dataclass
+class BuildDepsConfig:
+    protobuf: bool = False      # run protoc to generate C++ headers before MSBuild
+    cef_wrapper: bool = False   # build libcef_dll_wrapper.lib before MSBuild
 
 @dataclass
 class TargetConfig:
     project: str
-    stages: list[str]
-    package: PackageConfig
+    stages: list[str]           # valid: "compile-code", "build-assets", "deploy"
+    deploy: DeployConfig
+    build_deps: BuildDepsConfig = BuildDepsConfig()
 
 @dataclass
 class PipelineConfig:
@@ -131,7 +143,7 @@ Dia/DiaCLI/
 ### `pipeline_config.py` responsibilities
 
 - `load_pipeline_config(repo_root: Path) -> PipelineConfig` — reads `pipeline.toml`, raises `PipelineConfigError` (exit 2) if missing or malformed
-- Validates that all stage names in `targets[*].stages` are in `{"proto-compile", "compile-code", "asset-build", "package"}`
+- Validates that all stage names in `targets[*].stages` are in `{"compile-code", "build-assets", "deploy"}`
 
 ### `pipeline_runner.py` responsibilities
 
@@ -162,7 +174,7 @@ Dia/DiaCLI/
 3. `dia pipeline --target unknown` exits 2 with "unknown target: unknown"
 4. `dia pipeline --stage unknown-stage` exits 2 with "unknown stage: unknown-stage"
 5. Missing `pipeline.toml` exits 2 with "pipeline.toml not found at <path>"
-6. `$(OutDir)` in a package file rule resolves to `Cluiche/bin/Debug/x64/` for `--config Debug`
+6. `$(OutDir)` in a deploy file rule resolves to `Cluiche/bin/Debug/x64/` for `--config Debug`
 7. `$(OutDir)` resolves to `Cluiche/bin/Release/x64/` for `--config Release`
 8. `--config Both` triggers two pipeline runs (Debug then Release) sequentially
 9. `OnPipelineCompleted` is logged with pass/fail counts and duration
@@ -193,7 +205,7 @@ Dia/DiaCLI/
 | SD-CLI-006 | DiaCLI | Click framework | Compliant — Click group and decorators |
 | SD-CLI-008 | DiaCLI | Exit codes follow Unix conventions | Compliant — 0 all-pass, 1 stage failure, 2 invalid args/missing config |
 | SD-PIPE-001 | DiaPipeline | `pipeline.toml` is single source of truth | Compliant — this feature implements `pipeline.toml` parsing |
-| SD-PIPE-002 | DiaPipeline | Stage ordering fixed | Compliant — `pipeline_runner.py` enforces proto-compile → compile-code → asset-build → package |
+| SD-PIPE-002 | DiaPipeline | Stage ordering fixed | Compliant — `pipeline_runner.py` enforces compile-code → build-assets → deploy |
 | SD-PIPE-003 | DiaPipeline | `$(OutDir)` / `$(Configuration)` resolved at runtime | Compliant — `path_resolver.py` implements this |
 | SD-ENV-010 | DiaEnv | Python 3.11 | Compliant |
 

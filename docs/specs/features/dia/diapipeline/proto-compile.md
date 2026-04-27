@@ -4,7 +4,7 @@
 @docs/specs/systems/dia/diapipeline.md
 
 ## Status
-`Done`
+`Superseded` — protobuf codegen is now a `build_deps.protobuf` sub-step within `compile-code`. See [compile-code.md](compile-code.md). This spec is retained for historical reference.
 
 ## Summary
 

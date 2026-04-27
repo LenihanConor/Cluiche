@@ -4,11 +4,11 @@
 @docs/specs/systems/dia/diapipeline.md
 
 ## Status
-`Done`
+`Done` — Stage renamed from `package` to `deploy` as part of pipeline consolidation. The implementation is unchanged; only the stage name in `pipeline.toml` and the CLI surface changed.
 
 ## Summary
 
-Implement `dia pipeline --stage package` — copies runtime dependencies (DLLs, data files, manifests) alongside each built executable. File copy rules are defined per-target in `pipeline.toml`; `$(OutDir)` and `$(Configuration)` variables are resolved at runtime. This stage is the eventual replacement for `xcopy` post-build events scattered across `.vcxproj` files, but coexists with them until an explicit migration sprint (SD-PIPE-006).
+Implement `dia pipeline --stage deploy` (formerly `package`) — copies runtime dependencies (DLLs, data files, manifests) alongside each built executable. File copy rules are defined per-target in `pipeline.toml`; `$(OutDir)` and `$(Configuration)` variables are resolved at runtime. This stage is the eventual replacement for `xcopy` post-build events scattered across `.vcxproj` files, but coexists with them until an explicit migration sprint (SD-PIPE-006).
 
 ## Problem
 

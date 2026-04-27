@@ -5,7 +5,7 @@
 
 ## Purpose
 
-DiaPipeline owns the `dia pipeline` command surface — a multi-stage build pipeline that compiles the Cluiche solution, generates protobuf headers, processes assets, and stages runtime dependencies for each executable. It runs on either the host machine or inside the Docker container (via `--docker`), and is driven by a two-level config file (`pipeline.toml`) that defines global defaults and per-target overrides.
+DiaPipeline owns the `dia pipeline` command surface — a 3-stage build pipeline that compiles the Cluiche solution (with pre-requisite build dependencies), processes assets, and deploys runtime dependencies for each executable. It runs on either the host machine or inside the Docker container (via `--docker`), and is driven by a two-level config file (`pipeline.toml`) that defines global defaults and per-target overrides.
 
 The core problem DiaPipeline solves: building and staging Cluiche for any executable (GoogleTests, CluicheTest, CluicheEditor) requires knowing exactly which stages to run, which configuration to use, and which runtime files to copy alongside the binary. Currently this is scattered across `xcopy` commands hardcoded in `.vcxproj` post-build events. DiaPipeline centralises this into a single, config-driven command.
 
@@ -14,10 +14,9 @@ DiaPipeline lives entirely in `Dia/DiaCLI/` as a set of `dia pipeline` sub-comma
 ## Responsibilities
 
 - **Pipeline Config** — Own `pipeline.toml` at the repo root: global defaults (configuration, platform, target) and per-target stage overrides
-- **Proto-Compile Stage** — Run `protoc` on `.proto` files in `Dia/DiaDebugProtocol/proto/`; generate C++ headers into `proto/generated/`
-- **Compile-Code Stage** — Run `msbuild` on the solution or a named target; support `Debug|x64` and `Release|x64`
-- **Asset-Build Stage** — Run the asset pipeline for a named target (stub for now; no-op until asset system is specced)
-- **Package Stage** — Copy runtime dependencies (DLLs, data files, manifests) alongside the built executable; reads per-target copy rules from `pipeline.toml`; eventual replacement for `xcopy` post-build events in `.vcxproj` files
+- **Compile-Code Stage** — Build pre-requisites (protobuf codegen, CEF wrapper) via per-target `build_deps`, then run `msbuild` on the solution or named target; support `Debug|x64` and `Release|x64`
+- **Build-Assets Stage** — Run the asset pipeline for a named target (stub for now; no-op until asset system is specced)
+- **Deploy Stage** — Copy runtime dependencies (DLLs, data files, manifests) alongside the built executable; reads per-target copy rules from `pipeline.toml`; eventual replacement for `xcopy` post-build events in `.vcxproj` files
 - **Execution Context** — Run on host machine or inside Docker container (`--docker`)
 
 ## Non-Responsibilities
@@ -25,7 +24,7 @@ DiaPipeline lives entirely in `Dia/DiaCLI/` as a set of `dia pipeline` sub-comma
 - **Test execution** — owned by DiaTest (`dia test`)
 - **Environment provisioning** — owned by DiaEnv (`dia env`)
 - **Asset authoring or conversion tools** — asset-build stage calls the asset pipeline but does not own it
-- **Deployment to remote targets** — package stage stages files locally only
+- **Deployment to remote targets** — deploy stage stages files locally only
 - **CI/CD pipeline configuration** — local-only for now
 - **Removing post-build xcopy from `.vcxproj` files** — this is a future cleanup task; DiaPipeline and `.vcxproj` post-build events will coexist until explicitly migrated
 
@@ -51,23 +50,21 @@ dia pipeline --target cluichetest
 dia pipeline --target cluicheeditor
 
 # Run specific stages only
-dia pipeline --stage proto-compile
 dia pipeline --stage compile-code
-dia pipeline --stage compile-code,package
+dia pipeline --stage compile-code,deploy
 dia pipeline --stage compile-code --config Release --target googletest
 
 # Force re-run of a stage even if already complete
-dia pipeline --stage proto-compile --force
+dia pipeline --stage compile-code --force
 ```
 
 ### Stage Definitions
 
 | # | Stage | What it does | Default enabled | Skippable |
 |---|-------|-------------|----------------|-----------|
-| 1 | `proto-compile` | Run `protoc` on `*.proto` files; generate C++ headers | Yes | Yes — sentinel-based |
-| 2 | `compile-code` | `msbuild` solution or named target; Debug and/or Release | Yes | No |
-| 3 | `asset-build` | Run asset pipeline for target (no-op stub until specced) | Yes | Yes |
-| 4 | `package` | Copy runtime DLLs/data/manifests to `OutDir` per target | Yes | Yes — skips if already staged |
+| 1 | `compile-code` | Run per-target `build_deps` (protobuf codegen, CEF wrapper) then `msbuild` | Yes | No |
+| 2 | `build-assets` | Run asset pipeline for target (no-op stub until specced) | Yes | Yes |
+| 3 | `deploy` | Copy runtime DLLs/data/manifests/UI to `OutDir` per target | Yes | Yes — skips if already staged |
 
 ### `pipeline.toml` Schema
 
@@ -86,8 +83,12 @@ language = "cpp"               # cpp only for now
 
 [targets.googletest]
 project = "Cluiche/Tests/GoogleTests/GoogleTests.vcxproj"
-stages = ["proto-compile", "compile-code", "asset-build", "package"]
-[targets.googletest.package]
+stages = ["compile-code", "build-assets", "deploy"]
+
+[targets.googletest.build_deps]
+protobuf = true
+
+[targets.googletest.deploy]
 files = [
   { src = "External/Python311/python311.dll", dest = "$(OutDir)" },
   { src = "Cluiche/CluicheTest/Data/Manifests/*.diaapp", dest = "$(OutDir)Data/Manifests/" }
@@ -95,8 +96,12 @@ files = [
 
 [targets.cluichetest]
 project = "Cluiche/CluicheTest/CluicheTest.vcxproj"
-stages = ["proto-compile", "compile-code", "asset-build", "package"]
-[targets.cluichetest.package]
+stages = ["compile-code", "build-assets", "deploy"]
+
+[targets.cluichetest.build_deps]
+protobuf = true
+
+[targets.cluichetest.deploy]
 files = [
   { src = "Cluiche/pathStoreConfig.json", dest = "$(OutDir)" },
   { src = "External/SFML/Current-x64/bin/*.dll", dest = "$(OutDir)" },
@@ -105,8 +110,13 @@ files = [
 
 [targets.cluicheeditor]
 project = "Cluiche/CluicheEditor/CluicheEditor.vcxproj"
-stages = ["proto-compile", "compile-code", "asset-build", "package"]
-[targets.cluicheeditor.package]
+stages = ["compile-code", "build-assets", "deploy"]
+
+[targets.cluicheeditor.build_deps]
+protobuf = true
+cef_wrapper = true
+
+[targets.cluicheeditor.deploy]
 files = [
   { src = "External/CEF/Resources/*", dest = "$(OutDir)" },
   { src = "External/CEF/Resources/locales/**", dest = "$(OutDir)locales/" },
@@ -136,22 +146,20 @@ files = [
 
 | Feature | Description | Key Capabilities | Spec | Effort | Status |
 |---------|-------------|------------------|------|--------|--------|
-| pipeline-config | `pipeline.toml` schema + CLI parsing | Two-level config, target definitions, stage enable/disable, `$(OutDir)` resolution | [pipeline-config.md](../../features/dia/diapipeline/pipeline-config.md) | 2 days | Done |
-| proto-compile | `dia pipeline --stage proto-compile` | `protoc` invocation, sentinel guard, C++ header output | [proto-compile.md](../../features/dia/diapipeline/proto-compile.md) | 2 days | Done |
-| compile-code | `dia pipeline --stage compile-code` | `msbuild` invocation, Debug/Release/Both, per-target project | [compile-code.md](../../features/dia/diapipeline/compile-code.md) | 3 days | Done |
-| asset-build | `dia pipeline --stage asset-build` | No-op stub; logs "asset-build: skipped (not yet implemented)" | [asset-build.md](../../features/dia/diapipeline/asset-build.md) | 1 day | Done |
-| package | `dia pipeline --stage package` | File copy rules from `pipeline.toml`, glob support, `$(OutDir)`/`$(Configuration)` resolution, skip-if-staged guard | [package.md](../../features/dia/diapipeline/package.md) | 3 days | Done |
+| pipeline-config | `pipeline.toml` schema + CLI parsing | Two-level config, target definitions, stage enable/disable, `$(OutDir)` resolution, `build_deps` per-target | [pipeline-config.md](../../features/dia/diapipeline/pipeline-config.md) | 2 days | Done |
+| compile-code | `dia pipeline --stage compile-code` | `build_deps` pre-steps (protobuf codegen, CEF wrapper), `msbuild` invocation, Debug/Release/Both, per-target project | [compile-code.md](../../features/dia/diapipeline/compile-code.md) | 3 days | Done |
+| build-assets | `dia pipeline --stage build-assets` | No-op stub; logs "build-assets: skipped (not yet implemented)" | [asset-build.md](../../features/dia/diapipeline/asset-build.md) | 1 day | Done |
+| deploy | `dia pipeline --stage deploy` | File copy rules from `pipeline.toml`, UI builds, glob support, `$(OutDir)`/`$(Configuration)` resolution, skip-if-staged guard | [package.md](../../features/dia/diapipeline/package.md) | 3 days | Done |
 | docker-execution | `dia pipeline --docker` | Run all stages inside Docker container via `docker run` with volume-mounted repo | [docker-execution.md](../../features/dia/diapipeline/docker-execution.md) | 2 days | Done |
 
-**Total Effort Estimate:** ~13 days
+**Total Effort Estimate:** ~11 days
 
 **Recommended Implementation Order:**
 1. `pipeline-config` (2d) — foundational; all other features read it
-2. `compile-code` (3d) — highest value; unblocks `dia test env-integration`
-3. `proto-compile` (2d) — required before compile-code on a clean machine
-4. `package` (3d) — required for executables to run after build
-5. `asset-build` (1d) — stub; low effort, completes the stage surface
-6. `docker-execution` (2d) — wraps all stages in container; required for `dia test env-integration`
+2. `compile-code` (3d) — highest value; includes protobuf and CEF build_deps
+3. `deploy` (3d) — required for executables to run after build
+4. `build-assets` (1d) — stub; low effort, completes the stage surface
+5. `docker-execution` (2d) — wraps all stages in container; required for `dia test env-integration`
 
 ## Platform Primitives Used
 
@@ -159,12 +167,13 @@ files = [
 - **click** — CLI argument parsing (existing DiaCLI dependency)
 - **toml** — `pipeline.toml` parsing (existing DiaCLI dependency)
 - **loguru** — internal/debug logging (existing DiaCLI dependency)
-- **glob** / **shutil** (stdlib) — file copy rules in package stage
+- **glob** / **shutil** (stdlib) — file copy rules in deploy stage
 - **OutputContext** (`dia_cli/utils/dia_output.py`) — structured terminal output and NDJSON event log; all `OnStageStarted`/`OnStageCompleted`/`OnStageFailed`/`OnRunCompleted` events emitted via this layer (see `cli-output` feature)
 
 **System Tools:**
 - **msbuild** — C++ compilation (`compile-code` stage)
-- **protoc** — protobuf compiler (`proto-compile` stage); lives in `External/protobuf/`
+- **protoc** — protobuf compiler (`compile-code` build_dep); lives in `External/protobuf/`
+- **cmake** — CEF wrapper build (`compile-code` build_dep); bundled with VS 2022
 - **docker** — container execution (`--docker` flag)
 
 ## Dependencies on Other Systems
@@ -188,11 +197,12 @@ files = [
 | ID | Decision | Rationale | Scope | Status | Binding |
 |----|----------|-----------|-------|--------|---------|
 | SD-PIPE-001 | `pipeline.toml` is the single source of truth for pipeline configuration | Replaces scattered `xcopy` commands; enables any target to be built with one command; version-controlled | All features | Accepted | Yes |
-| SD-PIPE-002 | Stage ordering is fixed: proto-compile → compile-code → asset-build → package | proto must precede compile (generated headers needed); assets follow compile; package is always last | All features | Accepted | Yes |
-| SD-PIPE-003 | `$(OutDir)` and `$(Configuration)` resolved from `Directory.Build.props` conventions at runtime | Keeps path resolution consistent with MSBuild; no duplicate path logic | package, compile-code | Accepted | Yes |
+| SD-PIPE-002 | Stage ordering is fixed: compile-code → build-assets → deploy | Build deps (protobuf, CEF) run as sub-steps within compile-code; assets follow compile; deploy is always last | All features | Accepted | Yes |
+| SD-PIPE-003 | `$(OutDir)` and `$(Configuration)` resolved from `Directory.Build.props` conventions at runtime | Keeps path resolution consistent with MSBuild; no duplicate path logic | deploy, compile-code | Accepted | Yes |
 | SD-PIPE-004 | `--docker` runs all stages inside the container via `docker run` with volume-mounted repo | Consistent with SD-TEST-001; clean environment guarantee | docker-execution | Accepted | Yes |
-| SD-PIPE-005 | asset-build stage is a no-op stub until the asset pipeline system is specced | Reserves the stage surface; prevents future breaking change to stage ordering | asset-build | Accepted | Yes |
-| SD-PIPE-006 | Package stage coexists with `.vcxproj` post-build xcopy events until explicit migration | Avoids blocking pipeline implementation on a separate cleanup task | package | Accepted | Yes |
+| SD-PIPE-005 | build-assets stage is a no-op stub until the asset pipeline system is specced | Reserves the stage surface; prevents future breaking change to stage ordering | build-assets | Accepted | Yes |
+| SD-PIPE-006 | Deploy stage coexists with `.vcxproj` post-build xcopy events until explicit migration | Avoids blocking pipeline implementation on a separate cleanup task | deploy | Accepted | Yes |
+| SD-PIPE-007 | Pre-requisites (protobuf, CEF wrapper) are `build_deps` sub-steps of compile-code, not separate stages | Simplifies the top-level API to 3 stages; build_deps are per-target config in pipeline.toml | compile-code | Accepted | Yes |
 
 ## Inherited Binding Decisions
 
@@ -226,4 +236,4 @@ files = [
 
 ## Status
 
-`Done` - All 6 features implemented and proven via `dia test env-integration --skip-env --no-fix` on live machine state.
+`Done` - All 5 features implemented. Pipeline consolidated to 3 stages (compile-code, build-assets, deploy) with protobuf and CEF wrapper as build_deps sub-steps of compile-code.

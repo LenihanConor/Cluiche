@@ -7,7 +7,7 @@ from typing import Optional
 
 import toml
 
-VALID_STAGES = {"proto-compile", "compile-code", "asset-build", "package"}
+VALID_STAGES = {"compile-code", "build-assets", "deploy"}
 TOML_FILENAME = "pipeline.toml"
 
 
@@ -50,10 +50,17 @@ class DeployConfig:
 
 
 @dataclass
+class BuildDepsConfig:
+    protobuf: bool = False
+    cef_wrapper: bool = False
+
+
+@dataclass
 class TargetConfig:
     project: str
     stages: list[str] = field(default_factory=list)
     deploy: DeployConfig = field(default_factory=DeployConfig)
+    build_deps: BuildDepsConfig = field(default_factory=BuildDepsConfig)
 
 
 @dataclass
@@ -100,10 +107,16 @@ def load_pipeline_config(repo_root: Path) -> PipelineConfig:
         dep_raw = traw.get("deploy", {})
         dep_files = [DeployFile(src=f["src"], dest=f["dest"]) for f in dep_raw.get("files", [])]
         dep_ui_builds = [DeployUiBuild(cwd=b["cwd"], cmd=b["cmd"]) for b in dep_raw.get("ui_builds", [])]
+        bd_raw = traw.get("build_deps", {})
+        build_deps = BuildDepsConfig(
+            protobuf=bd_raw.get("protobuf", False),
+            cef_wrapper=bd_raw.get("cef_wrapper", False),
+        )
         targets[name] = TargetConfig(
             project=traw["project"],
             stages=stages,
             deploy=DeployConfig(files=dep_files, ui_builds=dep_ui_builds),
+            build_deps=build_deps,
         )
 
     return PipelineConfig(global_cfg=global_cfg, proto=proto, targets=targets)

@@ -4,11 +4,11 @@
 @docs/specs/systems/dia/diapipeline.md
 
 ## Status
-`Done`
+`Done` — Stage renamed from `asset-build` to `build-assets` as part of pipeline consolidation. The implementation is unchanged (no-op stub); only the stage name in `pipeline.toml` and the CLI surface changed.
 
 ## Summary
 
-Implement `dia pipeline --stage asset-build` as a no-op stub. The stage reserves its position in the fixed stage order (proto-compile → compile-code → **asset-build** → package) and logs "asset-build: skipped (not yet implemented)". It exists so that: the stage surface is complete, the stage name can appear in `pipeline.toml` target configs, and no breaking change to stage ordering is required when the real asset pipeline is specced.
+Implement `dia pipeline --stage build-assets` (formerly `asset-build`) as a no-op stub. The stage reserves its position in the fixed stage order (compile-code → **build-assets** → deploy) and logs "build-assets: skipped (not yet implemented)". It exists so that: the stage surface is complete, the stage name can appear in `pipeline.toml` target configs, and no breaking change to stage ordering is required when the real asset pipeline is specced.
 
 ## Problem
 

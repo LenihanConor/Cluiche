@@ -43,7 +43,7 @@ def run(
     if not (out_dir / _PYTHON_DLL).exists():
         print(
             f"ERROR: Runtime dependencies not staged in {out_dir}\n"
-            f"Run: dia pipeline --stage package --target googletest --config {config}"
+            f"Run: dia pipeline --stage deploy --target googletest --config {config}"
         )
         return 2
 

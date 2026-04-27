@@ -199,17 +199,12 @@ class TestPipelineIntegration:
         assert result.returncode == 0
         assert "pipeline" in result.stdout.lower()
 
-    def test_proto_compile_runs(self):
-        result = _run_dia("pipeline", "--stage", "proto-compile", timeout=60)
-        assert result.returncode == 0, \
-            f"proto-compile failed (exit {result.returncode}):\n{result.stdout}\n{result.stderr}"
-
-    def test_compile_code_builds_diacore(self):
-        """Compile DiaCore via the pipeline — validates MSBuild resolution and Directory.Build.targets."""
+    def test_compile_code_builds_googletest(self):
+        """Compile GoogleTests via the pipeline — validates protobuf build_dep, MSBuild resolution, and Directory.Build.targets."""
         result = _run_dia(
             "pipeline", "--stage", "compile-code",
             "--target", "googletest", "--config", "Debug",
-            timeout=120,
+            timeout=180,
         )
         assert result.returncode == 0, \
             f"compile-code failed (exit {result.returncode}):\n{result.stdout[-2000:]}\n{result.stderr[-500:]}"

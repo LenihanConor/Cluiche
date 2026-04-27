@@ -1,4 +1,4 @@
-"""package/deploy stage: runs ui_builds then copies runtime files per pipeline.toml rules."""
+"""deploy stage: runs ui_builds then copies runtime files per pipeline.toml rules."""
 import glob
 import shutil
 import subprocess

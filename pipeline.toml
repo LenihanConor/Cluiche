@@ -10,7 +10,10 @@ language = "cpp"
 
 [targets.googletest]
 project = "Cluiche/Tests/GoogleTests/GoogleTests.vcxproj"
-stages = ["proto-compile", "compile-code", "asset-build", "package"]
+stages = ["compile-code", "build-assets", "deploy"]
+
+[targets.googletest.build_deps]
+protobuf = true
 
 [targets.googletest.deploy]
 files = [
@@ -20,7 +23,10 @@ files = [
 
 [targets.cluichetest]
 project = "Cluiche/CluicheTest/CluicheTest.vcxproj"
-stages = ["proto-compile", "compile-code", "asset-build", "package"]
+stages = ["compile-code", "build-assets", "deploy"]
+
+[targets.cluichetest.build_deps]
+protobuf = true
 
 [targets.cluichetest.deploy]
 files = [
@@ -31,7 +37,11 @@ files = [
 
 [targets.cluicheeditor]
 project = "Cluiche/CluicheEditor/CluicheEditor.vcxproj"
-stages = ["proto-compile", "compile-code", "asset-build", "package"]
+stages = ["compile-code", "build-assets", "deploy"]
+
+[targets.cluicheeditor.build_deps]
+protobuf = true
+cef_wrapper = true
 
 [targets.cluicheeditor.deploy]
 ui_builds = [
