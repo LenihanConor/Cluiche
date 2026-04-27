@@ -52,24 +52,31 @@
       "strip_root": false
     },
     {
-      "id": "webix-5.2.1",
-      "version": "5.2.1",
-      "url": "https://cdn.webix.com/packages/webix-gpl-5.2.1.zip",
+      "id": "alpinejs",
+      "version": "3.14.9",
+      "url": "https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js",
       "mirrors": [],
       "sha256": "PLACEHOLDER_COMPUTE_AT_RUNTIME",
-      "install_type": "zip",
-      "unzip_to": "External/Webix/5.2.1",
-      "strip_root": true
+      "install_type": "single_file",
+      "install_to": "External/Alpine/alpine.min.js"
     },
     {
-      "id": "webix-2.4.7",
-      "version": "2.4.7",
-      "url": "https://cdn.webix.com/packages/webix-gpl-2.4.7.zip",
+      "id": "tailwindcss",
+      "version": "4.2.4",
+      "url": "https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.2.4/dist/index.global.js",
       "mirrors": [],
       "sha256": "PLACEHOLDER_COMPUTE_AT_RUNTIME",
-      "install_type": "zip",
-      "unzip_to": "External/Webix/2.4.7",
-      "strip_root": true
+      "install_type": "single_file",
+      "install_to": "External/Tailwind/tailwind.min.js"
+    },
+    {
+      "id": "daisyui",
+      "version": "5.5.19",
+      "url": "https://cdn.jsdelivr.net/npm/daisyui@5.5.19/daisyui.css",
+      "mirrors": [],
+      "sha256": "PLACEHOLDER_COMPUTE_AT_RUNTIME",
+      "install_type": "single_file",
+      "install_to": "External/DaisyUI/daisyui.min.css"
     },
     {
       "id": "protobuf",

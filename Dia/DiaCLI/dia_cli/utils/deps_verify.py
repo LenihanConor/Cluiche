@@ -17,7 +17,12 @@ def check_deps(repo_root: Path) -> list:
         dep_id = dep["id"]
         sentinel = get_sentinel_path(repo_root, dep_id)
         unzip_to = dep.get("unzip_to")
-        dir_exists = (repo_root / unzip_to).exists() if unzip_to else False
+        install_to = dep.get("install_to")
+        artifact_exists = (
+            (repo_root / unzip_to).exists() if unzip_to
+            else (repo_root / install_to).exists() if install_to
+            else False
+        )
 
         if sentinel.exists():
             try:
@@ -32,9 +37,9 @@ def check_deps(repo_root: Path) -> list:
                 results.append(CheckResult(dep_id, "deps", "warn",
                                            "sentinel unreadable",
                                            f"dia env deps --dep {dep_id} --force"))
-        elif dir_exists:
+        elif artifact_exists:
             results.append(CheckResult(dep_id, "deps", "warn",
-                                       "directory exists but no sentinel (manually placed)",
+                                       "artifact exists but no sentinel (manually placed)",
                                        f"dia env deps --dep {dep_id} --force"))
         else:
             results.append(CheckResult(dep_id, "deps", "fail",

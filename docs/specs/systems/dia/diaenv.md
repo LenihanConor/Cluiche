@@ -113,6 +113,7 @@ Follows DiaCLI conventions (SD-CLI-008):
 | env-verify-cmd | `dia env verify` health checker | vswhere.exe integration, manifest cross-check, coloured checklist, JSON output mode | [env-verify-cmd.md](../../features/dia/diaenv/env-verify-cmd.md) | 4 days | Done |
 | msbuild-restore | MSBuild `RestoreExternals` target | `Directory.Build.targets` inline PowerShell, sentinel-file guard, reads deps.json | [msbuild-restore.md](../../features/dia/diaenv/msbuild-restore.md) | 3 days | Done |
 | claude-context | `.claude/` AI context portability hardening | `settings.local.template.json`, memory dir symlink, `dia env claude-setup` command | [claude-context.md](../../features/dia/diaenv/claude-context.md) | 2 days | Done |
+| deps-single-file | `single_file` install type in `deps.json` + `dia env setup` | Download a single file (JS, CSS, binary) to a specified path; no unzip; used for Alpine.js, Tailwind, DaisyUI | [deps-single-file.md](../../features/dia/diaenv/deps-single-file.md) | 1 day | Done |
 | env-export | `dia env export` / `dia env import` transfer zip | Deferred — `deps.json` + `file://` mirrors + git submodules covers the new-machine case | — | — | Deferred |
 | docker-build-env | Docker Windows Container for headless build + test | `build-env/Dockerfile` + `docker-compose.yml`; both `Debug\|x64` and `Release\|x64`; invocable via `dia env docker`; no GPU/GUI required | [docker-build-env.md](../../features/dia/diaenv/docker-build-env.md) | 5 days | Done |
 

@@ -366,6 +366,222 @@ class TestInstallZip:
         assert (dest / "file.txt").exists()
 
 
+# ===========================================================================
+# Feature: deps-single-file — _install_single_file + restore_dep single_file branch
+# ===========================================================================
+
+class TestInstallSingleFile:
+    def test_copies_file_to_destination(self, tmp_path):
+        from dia_cli.utils.deps_restore import _install_single_file
+        src = tmp_path / "downloaded.js"
+        src.write_bytes(b"alert(1)")
+        dest = tmp_path / "External" / "Alpine" / "alpine.min.js"
+        _install_single_file(src, dest, tmp_path)
+        assert dest.exists()
+        assert dest.read_bytes() == b"alert(1)"
+
+    def test_creates_intermediate_directories(self, tmp_path):
+        from dia_cli.utils.deps_restore import _install_single_file
+        src = tmp_path / "file.css"
+        src.write_bytes(b"body{}")
+        dest = tmp_path / "a" / "b" / "c" / "style.css"
+        _install_single_file(src, dest, tmp_path)
+        assert dest.exists()
+
+    def test_path_traversal_blocked(self, tmp_path):
+        from dia_cli.utils.deps_restore import _install_single_file, DepsManifestError
+        src = tmp_path / "bad.js"
+        src.write_bytes(b"x")
+        outside = tmp_path.parent / "escape.js"
+        with pytest.raises(DepsManifestError, match="path traversal blocked"):
+            _install_single_file(src, outside, tmp_path)
+
+
+class TestRestoreDepSingleFile:
+    def _make_single_file_dep(self, dep_id="alpinejs", version="3.14.9",
+                              url="https://example.com/alpine.min.js",
+                              install_to="External/Alpine/alpine.min.js"):
+        return {
+            "id": dep_id,
+            "version": version,
+            "url": url,
+            "mirrors": [],
+            "sha256": "PLACEHOLDER_COMPUTE_AT_RUNTIME",
+            "install_type": "single_file",
+            "install_to": install_to,
+        }
+
+    def test_single_file_writes_file(self, tmp_path):
+        from dia_cli.utils.deps_restore import restore_dep
+        dep = self._make_single_file_dep()
+        content = b"/* alpine */"
+
+        def fake_dl(urls, tmp_path_arg):
+            tmp_path_arg.write_bytes(content)
+            return True
+
+        with patch("dia_cli.utils.deps_restore._download_from_sources", side_effect=fake_dl):
+            code = restore_dep(dep, tmp_path)
+
+        assert code == 0
+        assert (tmp_path / "External" / "Alpine" / "alpine.min.js").read_bytes() == content
+
+    def test_single_file_sentinel_written(self, tmp_path):
+        from dia_cli.utils.deps_restore import restore_dep, get_sentinel_path
+        dep = self._make_single_file_dep()
+
+        def fake_dl(urls, tmp_path_arg):
+            tmp_path_arg.write_bytes(b"data")
+            return True
+
+        with patch("dia_cli.utils.deps_restore._download_from_sources", side_effect=fake_dl):
+            code = restore_dep(dep, tmp_path)
+
+        assert code == 0
+        sentinel = get_sentinel_path(tmp_path, "alpinejs")
+        assert sentinel.exists()
+        data = json.loads(sentinel.read_text())
+        assert data["version"] == "3.14.9"
+
+    def test_single_file_missing_install_to_returns_1(self, tmp_path, capsys):
+        from dia_cli.utils.deps_restore import restore_dep
+        dep = {
+            "id": "badfile",
+            "version": "1.0",
+            "url": "https://example.com/file.js",
+            "mirrors": [],
+            "sha256": "PLACEHOLDER_COMPUTE_AT_RUNTIME",
+            "install_type": "single_file",
+            # install_to intentionally absent
+        }
+
+        def fake_dl(urls, tmp_path_arg):
+            tmp_path_arg.write_bytes(b"data")
+            return True
+
+        with patch("dia_cli.utils.deps_restore._download_from_sources", side_effect=fake_dl):
+            code = restore_dep(dep, tmp_path)
+
+        assert code == 1
+        assert "install_to" in capsys.readouterr().out
+
+    def test_single_file_skip_if_already_restored(self, tmp_path, capsys):
+        from dia_cli.utils.deps_restore import restore_dep
+        dep = self._make_single_file_dep()
+        _write_sentinel(tmp_path, "alpinejs", "3.14.9")
+        code = restore_dep(dep, tmp_path, force=False)
+        assert code == 0
+        assert "already restored" in capsys.readouterr().out
+
+    def test_single_file_force_redownloads(self, tmp_path):
+        from dia_cli.utils.deps_restore import restore_dep
+        dep = self._make_single_file_dep()
+        _write_sentinel(tmp_path, "alpinejs", "3.14.9")
+
+        def fake_dl(urls, tmp_path_arg):
+            tmp_path_arg.write_bytes(b"new content")
+            return True
+
+        with patch("dia_cli.utils.deps_restore._download_from_sources", side_effect=fake_dl):
+            code = restore_dep(dep, tmp_path, force=True)
+
+        assert code == 0
+        assert (tmp_path / "External" / "Alpine" / "alpine.min.js").read_bytes() == b"new content"
+
+    def test_single_file_sha256_verified(self, tmp_path, capsys):
+        from dia_cli.utils.deps_restore import restore_dep, _sha256_file
+        content = b"exact content"
+        dep = self._make_single_file_dep()
+        dep["sha256"] = "badhash0000000000000000000000000000000000000000000000000000000000"
+
+        def fake_dl(urls, tmp_path_arg):
+            tmp_path_arg.write_bytes(content)
+            return True
+
+        with patch("dia_cli.utils.deps_restore._download_from_sources", side_effect=fake_dl):
+            code = restore_dep(dep, tmp_path)
+
+        assert code == 1
+        assert "SHA-256 mismatch" in capsys.readouterr().out
+
+    def test_single_file_quiet_mode(self, tmp_path, capsys):
+        from dia_cli.utils.deps_restore import restore_dep
+        dep = self._make_single_file_dep()
+
+        def fake_dl(urls, tmp_path_arg):
+            tmp_path_arg.write_bytes(b"data")
+            return True
+
+        with patch("dia_cli.utils.deps_restore._download_from_sources", side_effect=fake_dl):
+            code = restore_dep(dep, tmp_path, quiet=True)
+
+        assert code == 0
+        out = capsys.readouterr().out
+        assert out.strip() == ""
+
+
+class TestCheckDepsSingleFile:
+    def test_single_file_dep_pass_with_sentinel(self, tmp_path):
+        from dia_cli.utils.deps_verify import check_deps
+        dep = {
+            "id": "alpinejs",
+            "version": "3.14.9",
+            "url": "https://example.com/alpine.min.js",
+            "mirrors": [],
+            "sha256": "PLACEHOLDER_COMPUTE_AT_RUNTIME",
+            "install_type": "single_file",
+            "install_to": "External/Alpine/alpine.min.js",
+        }
+        (tmp_path / "deps.json").write_text(
+            json.dumps({"schema": "diaenv.deps.v1", "deps": [dep]}), encoding="utf-8"
+        )
+        _write_sentinel(tmp_path, "alpinejs", "3.14.9")
+        results = check_deps(tmp_path)
+        assert len(results) == 1
+        assert results[0].status == "pass"
+
+    def test_single_file_dep_warn_file_exists_no_sentinel(self, tmp_path):
+        from dia_cli.utils.deps_verify import check_deps
+        dep = {
+            "id": "alpinejs",
+            "version": "3.14.9",
+            "url": "https://example.com/alpine.min.js",
+            "mirrors": [],
+            "sha256": "PLACEHOLDER_COMPUTE_AT_RUNTIME",
+            "install_type": "single_file",
+            "install_to": "External/Alpine/alpine.min.js",
+        }
+        (tmp_path / "deps.json").write_text(
+            json.dumps({"schema": "diaenv.deps.v1", "deps": [dep]}), encoding="utf-8"
+        )
+        # File exists but no sentinel
+        install_path = tmp_path / "External" / "Alpine" / "alpine.min.js"
+        install_path.parent.mkdir(parents=True)
+        install_path.write_bytes(b"data")
+        results = check_deps(tmp_path)
+        assert len(results) == 1
+        assert results[0].status == "warn"
+        assert "manually placed" in results[0].detail
+
+    def test_single_file_dep_fail_missing(self, tmp_path):
+        from dia_cli.utils.deps_verify import check_deps
+        dep = {
+            "id": "alpinejs",
+            "version": "3.14.9",
+            "url": "https://example.com/alpine.min.js",
+            "mirrors": [],
+            "sha256": "PLACEHOLDER_COMPUTE_AT_RUNTIME",
+            "install_type": "single_file",
+            "install_to": "External/Alpine/alpine.min.js",
+        }
+        (tmp_path / "deps.json").write_text(
+            json.dumps({"schema": "diaenv.deps.v1", "deps": [dep]}), encoding="utf-8"
+        )
+        results = check_deps(tmp_path)
+        assert len(results) == 1
+        assert results[0].status == "fail"
+
+
 class TestRestoreAll:
     def test_restore_all_success(self, tmp_path):
         from dia_cli.utils.deps_restore import restore_all

@@ -137,6 +137,15 @@ def _install_zip(archive: Path, unzip_to: Path, strip_root: bool) -> None:
                     shutil.copyfileobj(src, dst)
 
 
+def _install_single_file(downloaded: Path, install_to: Path, repo_root: Path) -> None:
+    if not install_to.resolve().is_relative_to(repo_root.resolve()):
+        raise DepsManifestError(
+            f"install_to '{install_to}' resolves outside repo root (path traversal blocked)"
+        )
+    install_to.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(downloaded, install_to)
+
+
 def _install_exe(archive: Path, dep: dict, repo_root: Path) -> int:
     import subprocess
     exe_args = dep.get("exe_args", ["/quiet", "/norestart"])
@@ -196,6 +205,12 @@ def restore_dep(dep: dict, repo_root: Path, force: bool = False, quiet: bool = F
 
     if install_type == "zip" and unzip_to:
         _install_zip(tmp_path, unzip_to, dep.get("strip_root", False))
+    elif install_type == "single_file":
+        if "install_to" not in dep:
+            print(f"ERROR: {dep_id} install_type is 'single_file' but 'install_to' is missing")
+            tmp_path.unlink()
+            return 1
+        _install_single_file(tmp_path, repo_root / dep["install_to"], repo_root)
     elif install_type == "exe":
         code = _install_exe(tmp_path, dep, repo_root)
         if code != 0:
