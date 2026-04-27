@@ -70,8 +70,8 @@ namespace DiaCLI
 		// Should succeed
 		EXPECT_EQ(0, exitCode) << "Output: " << output;
 
-		// Should output expected message
-		EXPECT_NE(output.find("Plugin discovery is working"), std::string::npos);
+		// dia test is a group — running it bare shows its help listing its subcommands
+		EXPECT_NE(output.find("ui"), std::string::npos) << "Expected 'ui' subcommand in test group help: " << output;
 	}
 
 	// Test: Prefix Stripping - cli_ prefix is stripped

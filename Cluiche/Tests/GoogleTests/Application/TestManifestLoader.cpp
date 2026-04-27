@@ -844,5 +844,5 @@ TEST_F(ManifestLoaderTest, GetErrors_ContainsContextInformation)
 
 	ASSERT_GT(errors.Size(), 0u);
 	// Error should have context path
-	EXPECT_NE(errors[0].context, nullptr);
+	EXPECT_FALSE(errors[0].context.IsEmpty());
 }
