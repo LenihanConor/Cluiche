@@ -11,7 +11,7 @@ path: Dia
 language: cpp
 
 summary: >
-  Groups Dia submodules: AI, Application, Architecture, Core, Graphics, Input, IO, Maths, Physics, SFML, UI, UIAwesomium, Window.
+  Groups Dia submodules: AI, Application, Architecture, Core, Graphics, Input, IO, Maths, Physics, SFML, UI, Window.
 
 intent: >
   Provide a clear module boundary and navigation surface for the Dia area.
@@ -34,10 +34,10 @@ dependent_modules:
   - dia.input
   - dia.io
   - dia.maths
+  - dia.pipelineeditor
   - dia.physics
   - dia.sfml
   - dia.ui
-  - dia.uiawesomium
   - dia.window
 
 public_api:

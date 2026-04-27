@@ -1,7 +1,7 @@
 # Plan: ndjson-tailer
 
 **Spec:** @docs/specs/features/dia/diapipelineeditor/ndjson-tailer.md  
-**Status:** Not Started  
+**Status:** In Progress  
 **Started:** 2026-04-27  
 **Last Updated:** 2026-04-27
 
@@ -75,11 +75,11 @@
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 1 | Project scaffolding: create DiaPipelineEditor.vcxproj, .vcxproj.filters, add to solution, add to root module doc | Not Started | Reference DiaApplicationEditor.vcxproj for template |
-| 2 | PipelineEvent.h: PipelineEvent + RunSummary structs | Not Started | Per system spec definitions |
-| 3 | NdjsonLineParser.h: header-only single-line JSON → PipelineEvent parser | Not Started | Internal/ subfolder, jsoncpp |
-| 4 | PipelineLogTailer.h/.cpp: Poll(), Initialize(), Shutdown(), string pool, state management | Not Started | Largest task — polling, truncation detection, RunSummary updates, interrupted detection |
-| 5 | PipelineEditorPlugin.h/.cpp: IEditorPlugin shell wiring tailer to update loop | Not Started | Thin wrapper; registers with REGISTER_EDITOR_PLUGIN macro |
+| 1 | Project scaffolding: create DiaPipelineEditor.vcxproj, .vcxproj.filters, add to solution, add to root module doc | Done | Builds clean: DiaPipelineEditor.lib |
+| 2 | PipelineEvent.h: PipelineEvent + RunSummary structs | Done | Per system spec definitions |
+| 3 | NdjsonLineParser.h: header-only single-line JSON → PipelineEvent parser | Done | Internal/ subfolder, jsoncpp |
+| 4 | PipelineLogTailer.h/.cpp: Poll(), Initialize(), Shutdown(), string pool, state management | Done | Polling, truncation detection, RunSummary updates, interrupted detection |
+| 5 | PipelineEditorPlugin.h/.cpp: IEditorPlugin shell wiring tailer to update loop | Done | Thin wrapper; registers with REGISTER_EDITOR_PLUGIN macro |
 | 6 | Unit tests: AC1–AC9 coverage | Not Started | GoogleTests/PipelineEditor/ |
 | 7 | Build + test: verify all 9 ACs pass | Not Started | |
 
@@ -89,4 +89,7 @@
 - Created plan from approved spec
 - Confirmed DiaApplicationEditor as reference plugin pattern
 - Key patterns documented: Win32 file I/O (not FilePath aliases), jsoncpp for JSON, ObserverSubject for notifications
-- NdjsonLineParser field mapping needs to match dia.output.v1 schema — check cli-output spec for exact JSON field names before implementing task 3
+- Tasks 1-5 implemented: project scaffolding, structs, parser, tailer, plugin shell
+- Build succeeds clean (DiaPipelineEditor.lib) — zero errors, zero warnings
+- EditorPluginContext member is mBridge not bridge (found during compile)
+- Next: unit tests (Task 6)
