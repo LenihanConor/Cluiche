@@ -145,7 +145,7 @@ dia pipeline [OPTIONS]
 | `--force` | Re-run stages even if sentinels say up-to-date |
 | `--docker` | Run all stages inside Docker container |
 
-**Valid stages:** `proto-compile`, `compile-code`, `asset-build`, `package`
+**Valid stages:** `compile-code`, `build-assets`, `deploy`
 
 **Examples:**
 ```bash
@@ -155,8 +155,8 @@ dia pipeline
 # Debug build of googletest target only
 dia pipeline --config Debug --target googletest
 
-# Run only the proto-compile stage, forcing recompile
-dia pipeline --stage proto-compile --force
+# Run only compile-code, forcing protobuf rebuild
+dia pipeline --stage compile-code --force
 
 # Build both Debug and Release
 dia pipeline --config Both
@@ -166,10 +166,9 @@ dia pipeline --config Both
 
 | Stage | What it does |
 |-------|-------------|
-| `proto-compile` | Compile `.proto` files via `protoc` |
-| `compile-code` | Build C++ via MSBuild |
-| `asset-build` | Build game assets (placeholder, exits 0) |
-| `package` | Copy runtime files (DLLs, assets) to `$(OutDir)` |
+| `compile-code` | Build pre-requisites (protobuf, CEF wrapper) then C++ via MSBuild |
+| `build-assets` | Build game assets (placeholder, exits 0) |
+| `deploy` | Copy runtime files (DLLs, assets) to `$(OutDir)` |
 
 ---
 

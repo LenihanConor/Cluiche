@@ -37,15 +37,15 @@ describe('PipelinePanel', () => {
             runInProgress: true,
             target: 'test',
             stages: [
-                { name: 'proto-compile', status: 'passed', durationMs: 800, startTimestamp: 0, logLines: [], expanded: false },
-                { name: 'compile-code', status: 'running', durationMs: 0, startTimestamp: Date.now() / 1000, logLines: [], expanded: false },
-                { name: 'asset-build', status: 'not-started', durationMs: 0, startTimestamp: 0, logLines: [], expanded: false },
+                { name: 'compile-code', status: 'passed', durationMs: 800, startTimestamp: 0, logLines: [], expanded: false },
+                { name: 'build-assets', status: 'running', durationMs: 0, startTimestamp: Date.now() / 1000, logLines: [], expanded: false },
+                { name: 'deploy', status: 'not-started', durationMs: 0, startTimestamp: 0, logLines: [], expanded: false },
             ],
         };
         render(<PipelinePanel state={state} dispatch={vi.fn()} />);
-        expect(screen.getByText('proto-compile')).toBeInTheDocument();
         expect(screen.getByText('compile-code')).toBeInTheDocument();
-        expect(screen.getByText('asset-build')).toBeInTheDocument();
+        expect(screen.getByText('build-assets')).toBeInTheDocument();
+        expect(screen.getByText('deploy')).toBeInTheDocument();
     });
 
     // AC5: clicking a stage row expands it
