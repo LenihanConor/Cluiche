@@ -29,7 +29,6 @@ Cluiche/bin/Debug/x64/UnitTests.exe
 ## Frameworks
 
 **Graphics & Multimedia**: SFML (Simple and Fast Multimedia Library)  
-**UI Framework**: Awesomium SDK (HTML-based UI)  
 **JSON Parsing**: jsoncpp (wrapped in `DiaCore/Json/`)  
 **Web UI/Visualization**: Webix, VisJS (for debugging/visualization tools)
 

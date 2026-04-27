@@ -12,7 +12,6 @@ C:\GitHub\Cluiche\
 │   ├── DiaInput/                 # Input handling
 │   ├── DiaApplication/           # Application framework
 │   ├── DiaUI/                    # UI base
-│   ├── DiaUIAwesomium/           # Awesomium UI implementation
 │   ├── DiaSFML/                  # SFML integration layer
 │   └── ...                       # Other subsystems
 │
@@ -28,7 +27,6 @@ C:\GitHub\Cluiche\
 │
 ├── External/                     # Third-party dependencies
 │   ├── SFML/                     # Graphics/window/multimedia
-│   ├── Awesomium SDK/            # HTML UI framework
 │   ├── jsoncpp-master/           # JSON parsing
 │   ├── Webix/                    # Web UI framework
 │   └── VisJS/                    # Visualization framework
