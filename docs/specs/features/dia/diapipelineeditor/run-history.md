@@ -46,6 +46,33 @@ The NDJSON log is overwritten on each run, so previous run data is lost. Develop
 
 ## Data Model
 
+### On-disk layout (per SED-020 + SED-021)
+
+```
+Cluiche/out/CluicheEditor/DiaPipelineEditor/
+├── .context.json                              # current session metadata
+├── pipeline-history/
+│   └── history.json                           # current session's run history
+└── .sessions/
+    ├── s-20260426-0900/                       # archived previous session
+    │   ├── .context.json
+    │   └── pipeline-history/history.json
+    └── s-20260425-1400/
+        └── ...
+```
+
+### .context.json schema
+
+```json
+{
+  "sessionId": "s-20260427-1030",
+  "started": "2026-04-27T10:30:00Z",
+  "branch": "Development"
+}
+```
+
+Extensible — future fields (e.g. `"persona"`) can be added without path changes.
+
 ### history.json schema
 
 ```json
@@ -74,7 +101,8 @@ namespace Dia::PipelineEditor {
 
     class RunHistoryStore {
     public:
-        void Initialize(const char* historyFilePath);
+        // pluginRootPath = Cluiche/out/CluicheEditor/DiaPipelineEditor/
+        void Initialize(const char* pluginRootPath, const char* sessionId);
         void Shutdown();
 
         // Append a completed/interrupted run — evicts oldest if at cap
@@ -89,8 +117,12 @@ namespace Dia::PipelineEditor {
         void SaveToDisk();
 
     private:
-        Dia::Core::FilePath mFilePath;
+        Dia::Core::FilePath mPluginRoot;
         DynamicArrayC<RunSummary, 10> mRuns;
+
+        void ArchiveStaleSession();
+        void PruneSessions();
+        void WriteContext(const char* sessionId);
     };
 }
 ```
@@ -118,7 +150,11 @@ Dia/DiaPipelineEditor/
 
 ### Integration flow
 
-1. `PipelineEditorPlugin::OnLoad` creates `RunHistoryStore`, calls `LoadFromDisk()`
+1. `PipelineEditorPlugin::OnLoad` creates `RunHistoryStore`, calls `Initialize()` which:
+   - Reads `.context.json` — if it references a stale session, archives current data to `.sessions/<old-id>/`
+   - Writes new `.context.json` with the current session ID
+   - Calls `LoadFromDisk()` to load current history (or start fresh after archive)
+   - Prunes `.sessions/` entries beyond retention limit
 2. Plugin registers as observer on `PipelineLogTailer`
 3. When tailer emits `OnRunCompleted`/`OnRunFailed` or detects interrupted: plugin calls `RunHistoryStore::RecordRun()` then `SaveToDisk()`
 4. Plugin pushes updated history to JS via `WebUIBridge::NotifyUIDataChanged("pipeline.history", historyJson)`
@@ -164,6 +200,7 @@ All inherited decisions per system spec. Feature-specific compliance:
 | ID | Source | Decision | Compliance |
 |----|--------|----------|------------|
 | SED-020 | DiaEditor | Plugin output under `Cluiche/out/CluicheEditor/<PluginName>/` | Writes to `Cluiche/out/CluicheEditor/DiaPipelineEditor/pipeline-history/` |
+| SED-021 | DiaEditor | Per-plugin session context via `.context.json` and `.sessions/` archive | On Initialize(), archives stale session data, writes new `.context.json`, prunes old sessions |
 | SPE-002 | DiaPipelineEditor | Run history capped at 10 | `DynamicArrayC<RunSummary, 10>`, eviction on overflow |
 
 ## AI Review Questions

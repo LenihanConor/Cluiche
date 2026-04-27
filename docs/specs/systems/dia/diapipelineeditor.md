@@ -153,6 +153,7 @@ These decisions from parent platform and application specs are binding constrain
 | DiaEditor | SED-003 | Plugin lives at `Dia/Dia<System>Editor/` | Located at `Dia/DiaPipelineEditor/` (top-level peer) |
 | DiaEditor | SED-015 | Pure C++ library, no DiaApplication dependency | No Module/Phase/ProcessingUnit subclasses |
 | DiaEditor | SED-020 | Each editor plugin writes persistent output to `Cluiche/out/CluicheEditor/<PluginName>/` | Run history at `Cluiche/out/CluicheEditor/DiaPipelineEditor/pipeline-history/history.json`; any future logs under same root |
+| DiaEditor | SED-021 | Per-plugin session context via `.context.json` sidecar and `.sessions/` archive | On Initialize(), RunHistoryStore checks `.context.json` for stale session, archives previous data to `.sessions/<id>/`, writes new context. Past sessions queryable under `.sessions/`. |
 
 ## System-Specific Decisions
 
