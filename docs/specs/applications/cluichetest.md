@@ -47,7 +47,7 @@ Which shared platform modules does this app use?
 - [x] DiaGraphics (ICanvas, Frame, rendering abstraction)
 - [x] DiaWindow (Window management)
 - [x] DiaInput (Input event handling)
-- [x] DiaUI / DiaUIAwesomium (UI framework)
+- [x] DiaUI (UI framework)
 - [x] DiaSFML (SFML backend integration)
 - [ ] DiaPhysics (planned, not yet implemented)
 - [ ] DiaAI (planned, not yet implemented)

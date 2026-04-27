@@ -33,7 +33,7 @@ The Dia engine is a modular C++ framework organized into subsystems:
 
 **Input & UI:**
 - **DiaInput** - Input handling (keyboard, mouse, events)
-- **DiaUI** / **DiaUIAwesomium** - UI systems using Awesomium HTML framework
+- **DiaUI** - UI system abstraction
 
 **Tools & Build Systems:**
 - **DiaAPI** - Plugin-based CLI framework for build operations and asset pipelines
@@ -123,6 +123,7 @@ Module dependency changes validated via `python Tools/dia_modules.py --validate`
 | PD-006 | Visual Studio project files are source of truth | MSBuild used for all builds; manual project file maintenance required; `Directory.Build.props` at repo root is the authority for shared build settings above the per-project level | Platform-wide | Accepted | Yes |
 | PD-007 | C++20 is the required language standard | All projects must compile under `/std:c++20`; enables concepts, std::span, constexpr improvements, and enforces stricter name lookup that catches latent bugs | Platform-wide | Accepted | Yes |
 | PD-008 | `Directory.Build.props` owns OutDir, IntDir, PlatformToolset, WindowsTargetPlatformVersion, and LanguageStandard | Centralises all build output paths and toolchain settings; prevents scatter across per-project files and ensures all 20 projects land in `Cluiche/bin/`; no `.vcxproj` may override these properties | Platform-wide | Accepted | Yes |
+| PD-009 | All generated non-binary output lives under `Cluiche/out/<AppName>/` | Keeps the repo root clean; parallel to `Cluiche/bin/` for binaries; each application owns its subdirectory; fully gitignored | Platform-wide | Accepted | Yes |
 
 **Status values:** `Proposed` · `Accepted` · `Rejected` · `Superseded`  
 **Binding:** `Yes` = enforced constraint on all children · `No` = guidance only

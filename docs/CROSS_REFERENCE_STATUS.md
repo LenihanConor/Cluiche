@@ -97,7 +97,7 @@ docs/01-architecture/diagrams/level-lifecycle.mmd ✅
 **External Dependencies:**
 - SFML 2.5.1 documentation links valid
 - JsonCpp documentation links valid
-- Awesomium marked as deprecated
+- Awesomium removed from project
 
 ---
 

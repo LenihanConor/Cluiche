@@ -149,9 +149,9 @@ Comprehensive plan for completing the Cluiche documentation.
     - **Effort:** Medium (2 hours)
 
 16. `/docs/05-api/dia/ui-awesomium-api.md`
-    - **Content:** UISystem (Awesomium) - DEPRECATED
-    - **Estimated Lines:** ~250 lines
-    - **Effort:** Low (1 hour)
+    - **Content:** Awesomium removed — stub file
+    - **Estimated Lines:** ~1 line
+    - **Effort:** Done (stubbed out)
 
 17. `/docs/05-api/dia/physics-api.md`
     - **Content:** Physics API (stub)
@@ -377,7 +377,7 @@ Comprehensive plan for completing the Cluiche documentation.
 
 **Order:**
 1. Dia platform APIs (Input, UI, Window, IO, SFML) - 5 files
-2. Dia stubs (Physics, AI, UI-Awesomium) - 3 files
+2. Dia stubs (Physics, AI) - 2 files
 3. Cluiche APIs (3 ProcessingUnits, Level, Modules) - 5 files
 4. API template - 1 file
 

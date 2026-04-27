@@ -112,7 +112,7 @@
 - [x] `/docs/05-api/dia/physics-api.md` ✅ (stub)
 - [x] `/docs/05-api/dia/ai-api.md` ✅ (stub)
 - [x] `/docs/05-api/dia/sfml-api.md` ✅
-- [x] `/docs/05-api/dia/ui-awesomium-api.md` ✅ (deprecated)
+- [x] `/docs/05-api/dia/ui-awesomium-api.md` ✅ (stubbed — Awesomium removed from project)
 
 ### Cluiche Application APIs - ⏳ NOT STARTED
 - [ ] `/docs/05-api/cluiche/main-processing-unit.md`
@@ -207,7 +207,7 @@
   - ✅ Test coverage targets
 - ✅ Phase 7: API Documentation - **Dia COMPLETE** (14/19 files, 74%)
   - ✅ API overview, conventions
-  - ✅ All 12 Dia subsystem APIs (Application, Core, Maths, Graphics, Input, UI, Window, IO, SFML, UI-Awesomium, Physics, AI)
+  - ✅ All Dia subsystem APIs (Application, Core, Maths, Graphics, Input, UI, Window, IO, SFML, Physics, AI)
   - ⏳ 5 Cluiche APIs remaining (ProcessingUnits, Level, Modules)
 - ⏳ Phase 8: Subsystem Deep Dives - **NOT STARTED** (0/11 files, 0%)
 - ✅ Phase 9: Getting Started - **COMPLETE** (6/6 files, 100%)

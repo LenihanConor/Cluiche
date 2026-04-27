@@ -18,7 +18,7 @@ The spec-driven development system has been initialized with Cluiche-specific in
 - Platform overview: Cluiche/Dia engine description
 - Applications table: Cluiche main application listed
 - Shared codebase: All 11 Dia modules documented
-  - DiaCore, DiaMaths, DiaApplication, DiaGraphics, DiaWindow, DiaInput, DiaUI, DiaUIAwesomium, DiaSFML, DiaPhysics, DiaAI
+  - DiaCore, DiaMaths, DiaApplication, DiaGraphics, DiaWindow, DiaInput, DiaUI, DiaSFML, DiaPhysics, DiaAI
 - Architecture principles: 6 core principles defined
 - Non-functional requirements: Performance, thread safety, memory, maintainability, testability, platform support
 - **6 binding decisions defined** (PD-001 through PD-006):
@@ -65,7 +65,7 @@ The spec-driven development system has been initialized with Cluiche-specific in
 - Language & Runtime: C++11/14, MSVC, Windows
 - Build configurations: Debug|x64, Release|x64
 - Build commands: MSBuild examples
-- Frameworks: SFML, Awesomium, jsoncpp, Google Test
+- Frameworks: SFML, jsoncpp, Google Test
 - Testing: Google Test framework, coverage requirements, test locations
 - Code style: Formatting, linting, line length, braces
 - **Complete naming conventions table**: Files, namespaces, classes, interfaces, members, functions, constants, statics, templates
@@ -187,7 +187,7 @@ docs/specs/
    - Levels (DummyLevel, UnitTestLevel, level lifecycle)
    - Rendering (Graphics, canvas, frame composition)
    - Input (Event handling, keyboard/mouse state)
-   - UI (Awesomium integration, interface rendering)
+   - UI (interface rendering)
 
 4. **Create feature specs** for specific implementations
    ```

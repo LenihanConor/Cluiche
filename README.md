@@ -27,7 +27,7 @@ Cluiche/                        [Platform Root]
 │   ├── DiaMaths               - Vector, Matrix, Transform, Shape math
 │   ├── DiaGraphics            - Platform-agnostic rendering (ICanvas)
 │   ├── DiaInput               - Input event system
-│   ├── DiaUI                  - UI integration (Awesomium)
+│   ├── DiaUI                  - UI system abstraction
 │   ├── DiaAPI                 - Plugin-based CLI build tools [NEW]
 │   └── [10+ more subsystems]
 │

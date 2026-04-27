@@ -56,8 +56,6 @@ The engine is organized into **Dia** modules, each documented with a `dia.*.arch
 - Responsibilities and non-responsibilities
 - Parent/child module relationships
 
-Use `Tools/dia_modules.py` to analyze module dependencies and generate graphs.
-
 ### Key Modules
 
 **DiaCore** (`Dia/DiaCore/`) - Foundation library containing:
@@ -82,7 +80,7 @@ Use `Tools/dia_modules.py` to analyze module dependencies and generate graphs.
 **DiaGraphics** (`Dia/DiaGraphics/`) - Graphics abstraction layer
 **DiaWindow** (`Dia/DiaWindow/`) - Window management
 **DiaInput** (`Dia/DiaInput/`) - Input handling
-**DiaUI/DiaUIAwesomium** (`Dia/DiaUI*/`) - UI systems using Awesomium
+**DiaUI** (`Dia/DiaUI/`) - UI system abstraction
 **DiaSFML** (`Dia/DiaSFML/`) - SFML integration layer
 **DiaAPI** (`Dia/DiaAPI/`) - Plugin-based CLI framework for build operations and asset pipelines
 
@@ -116,7 +114,6 @@ The codebase extensively uses `StringCRC` for efficient string comparison via co
 
 Located in `External/`:
 - **SFML** - Graphics, window, and multimedia library
-- **Awesomium SDK** - HTML UI framework
 - **jsoncpp-master** - JSON parsing (used via `DiaCore/Json/`)
 - **Webix** & **VisJS** - Web UI frameworks for debugging/visualization
 
@@ -140,8 +137,6 @@ Cluiche/
 │   │   └── Levels/               # Game levels (DummyLevel)
 │   └── Tests/UnitTests/          # Unit test project
 ├── External/                     # Third-party dependencies
-├── Tools/                        # Build and analysis tools
-│   └── dia_modules.py            # Module dependency analyzer
 └── docs/                         # Documentation
     ├── specs/                    # Spec-driven development (Platform→App→System→Feature)
     └── reference/                # Reference docs (architecture, API, design, testing)
@@ -252,7 +247,7 @@ Plans live alongside their spec as `<spec-name>.plan.md`. For system-level plans
 2. Create `dia.[parent].[module].architecture.module.md` with YAML frontmatter
 3. Add module to parent's `.vcxproj` and `.vcxproj.filters`
 4. Update parent module's `dependent_modules` list
-5. Verify with: `python Tools/dia_modules.py --validate`
+5. Verify module dependencies are correct
 
 ### Naming Conventions
 
