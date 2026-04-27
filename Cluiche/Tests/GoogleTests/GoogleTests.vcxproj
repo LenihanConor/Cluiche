@@ -77,7 +77,7 @@
       <SubSystem>Console</SubSystem>
     </Link>
     <PostBuildEvent>
-      <Command>"$(ProjectDir)..\..\..\External\Python311\python.exe" -m dia_cli pipeline deploy googletest --config $(Configuration) --out-dir "$(OutDir)"</Command>
+      <Command>cd "$(SolutionDir)..\Dia\DiaCLI" &amp;&amp; ".venv\Scripts\python.exe" -m dia_cli pipeline deploy googletest --config $(Configuration) --out-dir "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <!-- Release x64 Compiler Settings -->
@@ -104,7 +104,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
     </Link>
     <PostBuildEvent>
-      <Command>"$(ProjectDir)..\..\..\External\Python311\python.exe" -m dia_cli pipeline deploy googletest --config $(Configuration) --out-dir "$(OutDir)"</Command>
+      <Command>cd "$(SolutionDir)..\Dia\DiaCLI" &amp;&amp; ".venv\Scripts\python.exe" -m dia_cli pipeline deploy googletest --config $(Configuration) --out-dir "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <!-- Source Files -->

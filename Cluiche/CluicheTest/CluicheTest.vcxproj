@@ -134,9 +134,7 @@
       <AdditionalOptions>/WHOLEARCHIVE:DiaDebugServer.lib /WHOLEARCHIVE:CluicheKernel.lib %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
-      <Command>copy /Y "$(SolutionDir)pathStoreConfig.json" "$(TargetDir)pathStoreConfig.json"
-xcopy /Y "$(SolutionDir)..\External\SFML\Current-x64\bin\*.dll" "$(TargetDir)"
-xcopy /Y /I "$(ProjectDir)Data\Manifests\*.diaapp" "$(TargetDir)Data\Manifests\"</Command>
+      <Command>cd "$(SolutionDir)..\Dia\DiaCLI" &amp;&amp; ".venv\Scripts\python.exe" -m dia_cli pipeline deploy cluichetest --config $(Configuration) --out-dir "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -157,9 +155,7 @@ xcopy /Y /I "$(ProjectDir)Data\Manifests\*.diaapp" "$(TargetDir)Data\Manifests\"
       <AdditionalLibraryDirectories>$(SolutionDir)..\External\SFML\Current-x64\lib\;$(ProjectDir)..\..\External\protobuf\Current-x64\lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>copy /Y "$(SolutionDir)pathStoreConfig.json" "$(TargetDir)pathStoreConfig.json"
-xcopy /Y "$(SolutionDir)..\External\SFML\Current-x64\bin\*.dll" "$(TargetDir)"
-xcopy /Y /I "$(ProjectDir)Data\Manifests\*.diaapp" "$(TargetDir)Data\Manifests\"</Command>
+      <Command>cd "$(SolutionDir)..\Dia\DiaCLI" &amp;&amp; ".venv\Scripts\python.exe" -m dia_cli pipeline deploy cluichetest --config $(Configuration) --out-dir "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

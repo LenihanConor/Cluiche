@@ -12,7 +12,7 @@ language = "cpp"
 project = "Cluiche/Tests/GoogleTests/GoogleTests.vcxproj"
 stages = ["proto-compile", "compile-code", "asset-build", "package"]
 
-[targets.googletest.package]
+[targets.googletest.deploy]
 files = [
   { src = "External/Python311/python311.dll", dest = "$(OutDir)" },
   { src = "Cluiche/CluicheTest/Data/Manifests/*.diaapp", dest = "$(OutDir)Data/Manifests/" }
@@ -22,7 +22,7 @@ files = [
 project = "Cluiche/CluicheTest/CluicheTest.vcxproj"
 stages = ["proto-compile", "compile-code", "asset-build", "package"]
 
-[targets.cluichetest.package]
+[targets.cluichetest.deploy]
 files = [
   { src = "Cluiche/pathStoreConfig.json", dest = "$(OutDir)" },
   { src = "External/SFML/Current-x64/bin/*.dll", dest = "$(OutDir)" },
@@ -33,9 +33,38 @@ files = [
 project = "Cluiche/CluicheEditor/CluicheEditor.vcxproj"
 stages = ["proto-compile", "compile-code", "asset-build", "package"]
 
-[targets.cluicheeditor.package]
+[targets.cluicheeditor.deploy]
+ui_builds = [
+  { cwd = "Cluiche/CluicheEditor/UI", cmd = "node node_modules/vite/bin/vite.js build" },
+  { cwd = "Dia/DiaApplicationEditor/UI", cmd = "node node_modules/vite/bin/vite.js build" }
+]
 files = [
-  { src = "External/CEF/Resources/*", dest = "$(OutDir)" },
-  { src = "External/CEF/Resources/locales/**", dest = "$(OutDir)locales/" },
-  { src = "External/CEF/bin/$(Configuration)/*", dest = "$(OutDir)" }
+  { src = "External/CEF/Resources/*",                     dest = "$(OutDir)" },
+  { src = "External/CEF/Resources/locales/**",            dest = "$(OutDir)locales/" },
+  { src = "External/CEF/bin/$(Configuration)/*",          dest = "$(OutDir)" },
+  { src = "Cluiche/CluicheEditor/Data/*",                 dest = "$(OutDir)Data/" },
+  { src = "Cluiche/CluicheEditor/UI/dist/*",              dest = "$(OutDir)UI/" },
+  { src = "Dia/DiaEditor/Plugin/Assets/*",                dest = "$(OutDir)editor/" },
+  { src = "Dia/DiaApplicationEditor/UI/dist/*",           dest = "$(OutDir)diaapplicationeditor/" },
+  { src = "Dia/DiaApplicationEditor/Assets/*",            dest = "$(OutDir)diaapplicationeditor/" },
+  { src = "Cluiche/Assets/CluicheEditor/*",               dest = "$(OutDir)Assets/CluicheEditor/" }
+]
+
+[targets.diasfml]
+project = "Dia/DiaSFML/DiaSFML.vcxproj"
+stages = ["compile-code"]
+
+[targets.diasfml.deploy]
+files = [
+  { src = "External/SFML/Current-x64/bin/*.dll", dest = "$(OutDir)" }
+]
+
+[targets.diauiultralight]
+project = "Dia/DiaUIUltralight/DiaUIUltralight.vcxproj"
+stages = ["compile-code"]
+
+[targets.diauiultralight.deploy]
+files = [
+  { src = "Dia/DiaUIUltralight/Deploy/*",          dest = "$(OutDir)" },
+  { src = "External/Ultralight/resources/*",        dest = "$(OutDir)resources/" }
 ]

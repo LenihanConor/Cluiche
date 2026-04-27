@@ -134,19 +134,7 @@
       <AdditionalLibraryDirectories>$(SolutionDir)../External/CEF/lib/Debug/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y /D "$(SolutionDir)../External/CEF/Resources/*.*" "$(TargetDir)"
-xcopy /Y /E /I /D "$(SolutionDir)../External/CEF/Resources/locales" "$(TargetDir)locales\"
-xcopy /Y /D "$(SolutionDir)../External/CEF/bin/Debug/*.*" "$(TargetDir)"
-xcopy /Y /I "$(ProjectDir)Data\*.*" "$(TargetDir)Data\"
-set PATH=C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Microsoft\VisualStudio\NodeJs;%PATH%
-cd "$(ProjectDir)UI"
-node node_modules/vite/bin/vite.js build
-xcopy /Y /E /I "$(ProjectDir)UI\dist\*.*" "$(TargetDir)UI\"
-xcopy /Y /E /I "$(ProjectDir)../../Dia/DiaEditor/Plugin/Assets\*.*" "$(TargetDir)editor\"
-cd "$(ProjectDir)../../Dia/DiaApplicationEditor/UI" &amp;&amp; node node_modules/vite/bin/vite.js build
-xcopy /Y /E /I "$(ProjectDir)../../Dia/DiaApplicationEditor/UI/dist\*.*" "$(TargetDir)diaapplicationeditor\"
-xcopy /Y /E /I "$(ProjectDir)../../Dia/DiaApplicationEditor/Assets\*.*" "$(TargetDir)diaapplicationeditor\"
-xcopy /Y /E /I /D "$(SolutionDir)Assets\CluicheEditor\*.*" "$(TargetDir)Assets\CluicheEditor\"</Command>
+      <Command>cd "$(SolutionDir)..\Dia\DiaCLI" &amp;&amp; ".venv\Scripts\python.exe" -m dia_cli pipeline deploy cluicheeditor --config $(Configuration) --out-dir "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <!-- Release|x64 -->
@@ -172,19 +160,7 @@ xcopy /Y /E /I /D "$(SolutionDir)Assets\CluicheEditor\*.*" "$(TargetDir)Assets\C
       <IgnoreSpecificDefaultLibraries>LIBCMT;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y /D "$(SolutionDir)../External/CEF/Resources/*.*" "$(TargetDir)"
-xcopy /Y /E /I /D "$(SolutionDir)../External/CEF/Resources/locales" "$(TargetDir)locales\"
-xcopy /Y /D "$(SolutionDir)../External/CEF/bin/Release/*.*" "$(TargetDir)"
-xcopy /Y /I "$(ProjectDir)Data\*.*" "$(TargetDir)Data\"
-set PATH=C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Microsoft\VisualStudio\NodeJs;%PATH%
-cd "$(ProjectDir)UI"
-node node_modules/vite/bin/vite.js build
-xcopy /Y /E /I "$(ProjectDir)UI\dist\*.*" "$(TargetDir)UI\"
-xcopy /Y /E /I "$(ProjectDir)../../Dia/DiaEditor/Plugin/Assets\*.*" "$(TargetDir)editor\"
-cd "$(ProjectDir)../../Dia/DiaApplicationEditor/UI" &amp;&amp; node node_modules/vite/bin/vite.js build
-xcopy /Y /E /I "$(ProjectDir)../../Dia/DiaApplicationEditor/UI/dist\*.*" "$(TargetDir)diaapplicationeditor\"
-xcopy /Y /E /I "$(ProjectDir)../../Dia/DiaApplicationEditor/Assets\*.*" "$(TargetDir)diaapplicationeditor\"
-xcopy /Y /E /I /D "$(SolutionDir)Assets\CluicheEditor\*.*" "$(TargetDir)Assets\CluicheEditor\"</Command>
+      <Command>cd "$(SolutionDir)..\Dia\DiaCLI" &amp;&amp; ".venv\Scripts\python.exe" -m dia_cli pipeline deploy cluicheeditor --config $(Configuration) --out-dir "$(TargetDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -32,21 +32,28 @@ class ProtoConfig:
 
 
 @dataclass
-class PackageFile:
+class DeployFile:
     src: str
     dest: str
 
 
 @dataclass
-class PackageConfig:
-    files: list[PackageFile] = field(default_factory=list)
+class DeployUiBuild:
+    cwd: str
+    cmd: str
+
+
+@dataclass
+class DeployConfig:
+    files: list[DeployFile] = field(default_factory=list)
+    ui_builds: list[DeployUiBuild] = field(default_factory=list)
 
 
 @dataclass
 class TargetConfig:
     project: str
     stages: list[str] = field(default_factory=list)
-    package: PackageConfig = field(default_factory=PackageConfig)
+    deploy: DeployConfig = field(default_factory=DeployConfig)
 
 
 @dataclass
@@ -90,12 +97,13 @@ def load_pipeline_config(repo_root: Path) -> PipelineConfig:
             raise PipelineConfigError(
                 f"pipeline.toml: target '{name}' has unknown stage(s): {', '.join(invalid)}"
             )
-        pkg_raw = traw.get("package", {})
-        pkg_files = [PackageFile(src=f["src"], dest=f["dest"]) for f in pkg_raw.get("files", [])]
+        dep_raw = traw.get("deploy", {})
+        dep_files = [DeployFile(src=f["src"], dest=f["dest"]) for f in dep_raw.get("files", [])]
+        dep_ui_builds = [DeployUiBuild(cwd=b["cwd"], cmd=b["cmd"]) for b in dep_raw.get("ui_builds", [])]
         targets[name] = TargetConfig(
             project=traw["project"],
             stages=stages,
-            package=PackageConfig(files=pkg_files),
+            deploy=DeployConfig(files=dep_files, ui_builds=dep_ui_builds),
         )
 
     return PipelineConfig(global_cfg=global_cfg, proto=proto, targets=targets)
