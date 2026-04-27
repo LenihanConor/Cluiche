@@ -1,10 +1,13 @@
-import type { PipelineState, PipelineEventData, StageState, LogLine } from './types';
+import type { PipelineState, PipelineEventData, StageState, LogLine, HistoryRun } from './types';
 import { initialPipelineState } from './types';
 
 export type PipelineAction =
     | { type: 'PROCESS_EVENTS'; events: PipelineEventData[] }
     | { type: 'UPDATE_SUMMARY'; summary: { target: string; config: string; passCount: number; failCount: number; totalDurationMs: number; interrupted: boolean; runInProgress: boolean } }
-    | { type: 'TOGGLE_STAGE'; stageName: string };
+    | { type: 'TOGGLE_STAGE'; stageName: string }
+    | { type: 'SET_HISTORY'; runs: HistoryRun[] }
+    | { type: 'VIEW_HISTORY'; index: number }
+    | { type: 'CLEAR_HISTORY_VIEW' };
 
 function findOrCreateStage(stages: StageState[], name: string): StageState[] {
     if (stages.some(s => s.name === name)) return stages;
@@ -27,6 +30,8 @@ function processEvent(state: PipelineState, evt: PipelineEventData): PipelineSta
         case 'OnRunStarted':
             return {
                 ...initialPipelineState,
+                historyRuns: state.historyRuns,
+                viewingHistoryIndex: null,
                 runInProgress: true,
                 target: evt.detail ?? '',
                 config: '',
@@ -141,6 +146,24 @@ export function pipelineReducer(state: PipelineState, action: PipelineAction): P
                 stages: state.stages.map(s =>
                     s.name === action.stageName ? { ...s, expanded: !s.expanded } : s
                 ),
+            };
+
+        case 'SET_HISTORY':
+            return {
+                ...state,
+                historyRuns: action.runs,
+            };
+
+        case 'VIEW_HISTORY':
+            return {
+                ...state,
+                viewingHistoryIndex: action.index,
+            };
+
+        case 'CLEAR_HISTORY_VIEW':
+            return {
+                ...state,
+                viewingHistoryIndex: null,
             };
 
         default:

@@ -4,7 +4,8 @@
 @docs/specs/systems/dia/diapipelineeditor.md
 
 ## Status
-`Approved`
+`Done`  
+**Plan:** @docs/specs/features/dia/diapipelineeditor/build-trigger.plan.md
 
 ## Summary
 

@@ -1,7 +1,7 @@
 # Plan: build-trigger
 
 **Spec:** @docs/specs/features/dia/diapipelineeditor/build-trigger.md  
-**Status:** In Progress  
+**Status:** Done  
 **Started:** 2026-04-27  
 **Last Updated:** 2026-04-27
 
@@ -53,14 +53,14 @@ This matches the WebUIBridge RequestHandler pattern. The `useBridgeRequest` hook
 
 | # | Task | Status | Notes |
 |---|------|--------|-------|
-| 1 | Create PipelineBuildManager.h/.cpp | Not Started | Win32 CreateProcess, TerminateProcess, GetExitCodeProcess |
-| 2 | Add pipeline.toml target parser | Not Started | Simple [targets.X] line scanning |
-| 3 | Wire DiaAPI commands in PipelineEditorPlugin | Not Started | Register request handlers for start/cancel/get-targets |
-| 4 | Create PipelineToolbar.tsx React component | Not Started | Target/config dropdowns, force checkbox, Build/Cancel button |
-| 5 | Create useBridgeRequest hook for request-response | Not Started | reqId generation, response listener |
-| 6 | Update PipelinePanel to include toolbar | Not Started | Add toolbar above stage timeline |
-| 7 | Update vcxproj files | Not Started | Add new .cpp/.h files to DiaPipelineEditor project |
-| 8 | Build + test | Not Started | MSBuild + vitest + manual verification |
+| 1 | Create PipelineBuildManager.h/.cpp | Done | Win32 CreateProcess, TerminateProcess, GetExitCodeProcess |
+| 2 | Add pipeline.toml target parser | Done | Internal/PipelineTargetParser.h — header-only line scanner |
+| 3 | Wire DiaAPI commands in PipelineEditorPlugin | Done | 3 request handlers: pipeline.start, pipeline.cancel, pipeline.get-targets |
+| 4 | Create PipelineToolbar.tsx React component | Done | Target/config dropdowns, force checkbox, Build/Cancel button |
+| 5 | Create useBridgeRequest hook for request-response | Done | reqId generation, Promise-based, 10s timeout |
+| 6 | Update PipelinePanel to include toolbar | Done | Toolbar always visible above content area |
+| 7 | Update vcxproj files | Done | PipelineBuildManager + PipelineTargetParser added |
+| 8 | Build + test | Done | C++ 27/27 pass, JS 62/62 pass, vite build OK |
 
 ## Session Notes
 

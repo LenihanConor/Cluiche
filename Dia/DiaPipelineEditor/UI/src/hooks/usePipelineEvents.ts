@@ -1,7 +1,8 @@
 import { useReducer, useEffect } from 'react';
 import { pipelineReducer } from '../state/pipelineReducer';
 import { initialPipelineState } from '../state/types';
-import type { PipelinePayload } from '../state/types';
+import type { PipelinePayload, HistoryRun } from '../state/types';
+import { useBridgeRequest } from './useBridgeRequest';
 
 interface BridgeMessage {
     __dia?: boolean;
@@ -11,6 +12,7 @@ interface BridgeMessage {
 
 export function usePipelineEvents() {
     const [state, dispatch] = useReducer(pipelineReducer, initialPipelineState);
+    const { request } = useBridgeRequest();
 
     useEffect(() => {
         const handler = (event: MessageEvent<BridgeMessage>) => {
@@ -26,10 +28,26 @@ export function usePipelineEvents() {
                     dispatch({ type: 'UPDATE_SUMMARY', summary: payload.summary });
                 }
             }
+
+            if (topic === 'pipeline.history') {
+                const payload = data as { runs: HistoryRun[] };
+                if (payload.runs) {
+                    dispatch({ type: 'SET_HISTORY', runs: payload.runs });
+                }
+            }
         };
         window.addEventListener('message', handler);
         return () => window.removeEventListener('message', handler);
     }, []);
+
+    useEffect(() => {
+        request('pipeline.history').then((result) => {
+            const data = result as { runs: HistoryRun[] } | null;
+            if (data?.runs) {
+                dispatch({ type: 'SET_HISTORY', runs: data.runs });
+            }
+        });
+    }, [request]);
 
     return { state, dispatch };
 }

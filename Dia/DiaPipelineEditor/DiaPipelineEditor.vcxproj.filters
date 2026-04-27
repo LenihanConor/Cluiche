@@ -10,6 +10,7 @@
     <ClInclude Include="PipelineLogTailer.h" />
     <ClInclude Include="PipelineEditorPlugin.h" />
     <ClInclude Include="PipelineBuildManager.h" />
+    <ClInclude Include="RunHistoryStore.h" />
     <ClInclude Include="Internal\NdjsonLineParser.h">
       <Filter>Internal</Filter>
     </ClInclude>
@@ -21,5 +22,6 @@
     <ClCompile Include="PipelineLogTailer.cpp" />
     <ClCompile Include="PipelineEditorPlugin.cpp" />
     <ClCompile Include="PipelineBuildManager.cpp" />
+    <ClCompile Include="RunHistoryStore.cpp" />
   </ItemGroup>
 </Project>

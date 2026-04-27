@@ -1,6 +1,7 @@
 #include "DiaPipelineEditor/PipelineEditorPlugin.h"
 #include "DiaPipelineEditor/PipelineLogTailer.h"
 #include "DiaPipelineEditor/PipelineBuildManager.h"
+#include "DiaPipelineEditor/RunHistoryStore.h"
 #include "DiaPipelineEditor/Internal/PipelineTargetParser.h"
 #include <DiaEditor/Plugin/EditorPluginRegistrationMacros.h>
 #include <DiaEditor/UI/WebUIBridge.h>
@@ -15,14 +16,17 @@ using namespace Dia::PipelineEditor;
 static const Dia::Core::StringCRC kCmdPipelineStart("pipeline.start");
 static const Dia::Core::StringCRC kCmdPipelineCancel("pipeline.cancel");
 static const Dia::Core::StringCRC kCmdPipelineGetTargets("pipeline.get-targets");
+static const Dia::Core::StringCRC kCmdPipelineHistory("pipeline.history");
 
 PipelineEditorPlugin::PipelineEditorPlugin()
 	: mTailer(nullptr)
 	, mBuildManager(nullptr)
+	, mHistoryStore(nullptr)
 	, mBridge(nullptr)
 	, mLastPushedEventIndex(0)
 {
 	mRepoRoot[0] = '\0';
+	mPluginOutputRoot[0] = '\0';
 }
 
 PipelineEditorPlugin::~PipelineEditorPlugin()
@@ -45,12 +49,30 @@ void PipelineEditorPlugin::OnLoad(const Dia::Editor::EditorPluginContext& contex
 	mBuildManager = new PipelineBuildManager();
 	mBuildManager->Initialize(mTailer, mRepoRoot);
 
+	snprintf(mPluginOutputRoot, sizeof(mPluginOutputRoot), "%s/Cluiche/out/CluicheEditor/DiaPipelineEditor", mRepoRoot);
+
+	SYSTEMTIME st;
+	GetLocalTime(&st);
+	char sessionId[64];
+	snprintf(sessionId, sizeof(sessionId), "s-%04d%02d%02d-%02d%02d",
+		st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute);
+
+	mHistoryStore = new RunHistoryStore();
+	mHistoryStore->Initialize(mPluginOutputRoot, sessionId);
+
 	RegisterCommands();
 }
 
 void PipelineEditorPlugin::OnUnload()
 {
 	UnregisterCommands();
+
+	if (mHistoryStore)
+	{
+		mHistoryStore->Shutdown();
+		delete mHistoryStore;
+		mHistoryStore = nullptr;
+	}
 
 	if (mBuildManager)
 	{
@@ -95,6 +117,20 @@ void PipelineEditorPlugin::ObserverNotification(const Dia::Core::ObserverSubject
 	if (message == PipelineLogTailer::kRunStarted)
 	{
 		mLastPushedEventIndex = 0;
+	}
+
+	if (message == PipelineLogTailer::kRunCompleted || message == PipelineLogTailer::kRunInterrupted)
+	{
+		if (mHistoryStore && mTailer)
+		{
+			mHistoryStore->RecordRun(mTailer->GetCurrentRunSummary());
+			if (mBridge)
+			{
+				Json::Value historyPayload;
+				historyPayload["runs"] = mHistoryStore->ToJson();
+				mBridge->NotifyUIDataChanged("pipeline.history", historyPayload);
+			}
+		}
 	}
 
 	PushEventsToUI();
@@ -188,6 +224,14 @@ void PipelineEditorPlugin::RegisterCommands()
 			result["targets"] = Internal::ParsePipelineTargets(tomlPath);
 			return result;
 		});
+
+	mBridge->RegisterRequestHandler(kCmdPipelineHistory,
+		[this](const Json::Value&) -> Json::Value
+		{
+			Json::Value result;
+			result["runs"] = mHistoryStore->ToJson();
+			return result;
+		});
 }
 
 void PipelineEditorPlugin::UnregisterCommands()
@@ -198,6 +242,7 @@ void PipelineEditorPlugin::UnregisterCommands()
 	mBridge->UnregisterRequestHandler(kCmdPipelineStart);
 	mBridge->UnregisterRequestHandler(kCmdPipelineCancel);
 	mBridge->UnregisterRequestHandler(kCmdPipelineGetTargets);
+	mBridge->UnregisterRequestHandler(kCmdPipelineHistory);
 }
 
 REGISTER_EDITOR_PLUGIN(PipelineEditorPlugin, "DiaPipelineEditor")

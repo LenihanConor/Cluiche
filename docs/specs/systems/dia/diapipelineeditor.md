@@ -173,8 +173,8 @@ Features within the DiaPipelineEditor system (create with `/spec-feature`):
 |---------|-------------|------|--------|--------|
 | ndjson-tailer | C++ file tailer that polls and parses the NDJSON pipeline log into PipelineEvent structs | [ndjson-tailer.md](../../features/dia/diapipelineeditor/ndjson-tailer.md) | 3 days | Done |
 | pipeline-panel-ui | React/TypeScript dockable panel — stage timeline, log drill-down, run summary | [pipeline-panel-ui.md](../../features/dia/diapipelineeditor/pipeline-panel-ui.md) | 5 days | Done |
-| build-trigger | DiaAPI commands to start/cancel pipeline from editor; auto-attach tailer to new run | [build-trigger.md](../../features/dia/diapipelineeditor/build-trigger.md) | 2 days | Approved |
-| run-history | Store and browse last 10 pipeline runs with summary data | [run-history.md](../../features/dia/diapipelineeditor/run-history.md) | 2 days | Approved |
+| build-trigger | DiaAPI commands to start/cancel pipeline from editor; auto-attach tailer to new run | [build-trigger.md](../../features/dia/diapipelineeditor/build-trigger.md) | 2 days | Done |
+| run-history | Store and browse last 10 pipeline runs with summary data | [run-history.md](../../features/dia/diapipelineeditor/run-history.md) | 2 days | Done |
 
 **Total Effort Estimate:** 12 days
 
@@ -199,4 +199,5 @@ Features within the DiaPipelineEditor system (create with `/spec-feature`):
 
 ## Status
 
-`Approved` — All binding decisions compliant, all AI review questions answered
+`Done` — All 4 features implemented and tested  
+**Plan:** @docs/specs/systems/dia/diapipelineeditor.plan.md

@@ -22,6 +22,8 @@ export interface PipelineState {
     totalDurationMs: number;
     interrupted: boolean;
     stages: StageState[];
+    historyRuns: HistoryRun[];
+    viewingHistoryIndex: number | null;
 }
 
 export interface PipelineEventData {
@@ -52,6 +54,16 @@ export interface PipelinePayload {
     summary: PipelineSummaryData;
 }
 
+export interface HistoryRun {
+    target: string;
+    config: string;
+    passCount: number;
+    failCount: number;
+    totalDurationMs: number;
+    startTimestamp: number;
+    interrupted: boolean;
+}
+
 export const initialPipelineState: PipelineState = {
     runInProgress: false,
     target: '',
@@ -61,4 +73,6 @@ export const initialPipelineState: PipelineState = {
     totalDurationMs: 0,
     interrupted: false,
     stages: [],
+    historyRuns: [],
+    viewingHistoryIndex: null,
 };

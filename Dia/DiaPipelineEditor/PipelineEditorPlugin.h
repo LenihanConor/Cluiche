@@ -9,6 +9,7 @@ namespace Dia
 	{
 		class PipelineLogTailer;
 		class PipelineBuildManager;
+		class RunHistoryStore;
 
 		class PipelineEditorPlugin : public Dia::Editor::IEditorPlugin, public Dia::Core::Observer
 		{
@@ -35,9 +36,11 @@ namespace Dia
 
 			PipelineLogTailer* mTailer;
 			PipelineBuildManager* mBuildManager;
+			RunHistoryStore* mHistoryStore;
 			Dia::Editor::WebUIBridge* mBridge;
 			int mLastPushedEventIndex;
 			char mRepoRoot[512];
+			char mPluginOutputRoot[512];
 		};
 	}
 }
