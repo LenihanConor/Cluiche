@@ -577,6 +577,12 @@
     <ClCompile Include="PipelineEditor\TestPipelineLogTailer.cpp">
       <Filter>PipelineEditor</Filter>
     </ClCompile>
+    <ClCompile Include="PipelineEditor\TestPipelineEditorPluginBridge.cpp">
+      <Filter>PipelineEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="PipelineEditor\TestBuildTrigger.cpp">
+      <Filter>PipelineEditor</Filter>
+    </ClCompile>
     <!-- GoogleTest -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">
       <Filter>GoogleTest</Filter>

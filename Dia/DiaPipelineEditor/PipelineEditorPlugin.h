@@ -1,14 +1,16 @@
 #pragma once
 
 #include <DiaEditor/Plugin/IEditorPlugin.h>
+#include <DiaCore/Architecture/Observer.h>
 
 namespace Dia
 {
 	namespace PipelineEditor
 	{
 		class PipelineLogTailer;
+		class PipelineBuildManager;
 
-		class PipelineEditorPlugin : public Dia::Editor::IEditorPlugin
+		class PipelineEditorPlugin : public Dia::Editor::IEditorPlugin, public Dia::Core::Observer
 		{
 		public:
 			PipelineEditorPlugin();
@@ -24,9 +26,18 @@ namespace Dia
 			void OnUnload() override;
 			void OnUpdate(float deltaTime) override;
 
+			void ObserverNotification(const Dia::Core::ObserverSubject* subject, int message) override;
+
 		private:
+			void PushEventsToUI();
+			void RegisterCommands();
+			void UnregisterCommands();
+
 			PipelineLogTailer* mTailer;
+			PipelineBuildManager* mBuildManager;
 			Dia::Editor::WebUIBridge* mBridge;
+			int mLastPushedEventIndex;
+			char mRepoRoot[512];
 		};
 	}
 }

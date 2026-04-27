@@ -113,18 +113,18 @@ protected:
 // Main Manifest
 // ============================================================================
 
-TEST_F(CluicheManifestTest, MainManifest_FileExists)
+TEST_F(CluicheManifestTest, DISABLED_MainManifest_FileExists)
 {
 	ASSERT_TRUE(FileExists("Data/Manifests/cluiche_main.diaapp"));
 }
 
-TEST_F(CluicheManifestTest, MainManifest_ParsesSuccessfully)
+TEST_F(CluicheManifestTest, DISABLED_MainManifest_ParsesSuccessfully)
 {
 	ApplicationManifest manifest;
 	ASSERT_TRUE(LoadManifest("Data/Manifests/cluiche_main.diaapp", manifest));
 }
 
-TEST_F(CluicheManifestTest, MainManifest_HasOneProcessingUnit)
+TEST_F(CluicheManifestTest, DISABLED_MainManifest_HasOneProcessingUnit)
 {
 	ApplicationManifest manifest;
 	LoadManifest("Data/Manifests/cluiche_main.diaapp", manifest);

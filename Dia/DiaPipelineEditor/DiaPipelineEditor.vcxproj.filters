@@ -9,12 +9,17 @@
     <ClInclude Include="PipelineEvent.h" />
     <ClInclude Include="PipelineLogTailer.h" />
     <ClInclude Include="PipelineEditorPlugin.h" />
+    <ClInclude Include="PipelineBuildManager.h" />
     <ClInclude Include="Internal\NdjsonLineParser.h">
+      <Filter>Internal</Filter>
+    </ClInclude>
+    <ClInclude Include="Internal\PipelineTargetParser.h">
       <Filter>Internal</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PipelineLogTailer.cpp" />
     <ClCompile Include="PipelineEditorPlugin.cpp" />
+    <ClCompile Include="PipelineBuildManager.cpp" />
   </ItemGroup>
 </Project>
