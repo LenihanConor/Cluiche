@@ -15,21 +15,21 @@
       "id": "ultralight",
       "version": "1.3.0",
       "url": null,
-      "mirrors": [],
+      "mirrors": ["file:///C:/deps-cache/ultralight-1.3.0.zip"],
       "sha256": "PLACEHOLDER_COMPUTE_AT_RUNTIME",
       "install_type": "zip",
       "unzip_to": "External/Ultralight",
-      "strip_root": true
+      "strip_root": false
     },
     {
       "id": "cef",
       "version": "latest",
       "url": null,
-      "mirrors": [],
+      "mirrors": ["file:///C:/deps-cache/cef-latest.zip"],
       "sha256": "PLACEHOLDER_COMPUTE_AT_RUNTIME",
       "install_type": "zip",
       "unzip_to": "External/CEF",
-      "strip_root": true
+      "strip_root": false
     },
     {
       "id": "python311",
@@ -45,7 +45,7 @@
       "id": "visjs",
       "version": "latest",
       "url": null,
-      "mirrors": [],
+      "mirrors": ["file:///C:/deps-cache/visjs-latest.zip"],
       "sha256": "PLACEHOLDER_COMPUTE_AT_RUNTIME",
       "install_type": "zip",
       "unzip_to": "External/VisJS",
