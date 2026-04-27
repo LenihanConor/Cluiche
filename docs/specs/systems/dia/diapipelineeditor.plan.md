@@ -12,7 +12,7 @@ Features are implemented in dependency order per the system spec:
 | # | Feature | Spec | Plan | Status |
 |---|---------|------|------|--------|
 | 1 | ndjson-tailer | @docs/specs/features/dia/diapipelineeditor/ndjson-tailer.md | @docs/specs/features/dia/diapipelineeditor/ndjson-tailer.plan.md | Done |
-| 2 | pipeline-panel-ui | @docs/specs/features/dia/diapipelineeditor/pipeline-panel-ui.md | TBD | Not Started |
+| 2 | pipeline-panel-ui | @docs/specs/features/dia/diapipelineeditor/pipeline-panel-ui.md | @docs/specs/features/dia/diapipelineeditor/pipeline-panel-ui.plan.md | Done |
 | 3 | build-trigger | @docs/specs/features/dia/diapipelineeditor/build-trigger.md | TBD | Not Started |
 | 4 | run-history | @docs/specs/features/dia/diapipelineeditor/run-history.md | TBD | Not Started |
 

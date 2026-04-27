@@ -326,6 +326,10 @@ Features within the DiaUICEF system (create with `/spec-feature`):
 
 | Feature | Description | Spec | Status |
 |---------|-------------|------|--------|
+| Editor UI Framework Convention | Decision record locking React 18 + TypeScript + Vite as the canonical, fixed framework for all CluicheEditor UI | [editor-ui-framework-convention.md](../../features/dia/diauicef/editor-ui-framework-convention.md) | Approved |
+
+| Feature | Description | Spec | Status |
+|---------|-------------|------|--------|
 | CEF Process Management | Initialize, update, shutdown CEF; manage subprocesses | [cef-process-management.md](../../features/dia/diauicef/cef-process-management.md) | Approved |
 | Offscreen Rendering | Render to RGBA texture buffer for game engine compositing | [offscreen-rendering.md](../../features/dia/diauicef/offscreen-rendering.md) | Approved |
 | Custom URL Scheme | Handle `dia://` URLs for loading local HTML/CSS/JS assets | [custom-url-scheme.md](../../features/dia/diauicef/custom-url-scheme.md) | Approved |

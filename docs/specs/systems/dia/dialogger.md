@@ -211,6 +211,7 @@ All `Dia::Core::Log::OutputVaradicLine` calls outside DiaCore have been migrated
 | `WebSocket` | DiaWebSocket | Client/server transport errors, queue drops, connection lifecycle |
 | `API` | DiaAPI | Command registry, argument parsing, Python bindings |
 | `UI` | DiaUICEF, DiaUIUltralight, DiaUIAwesomium | CEF initialization, scheme handling, console messages |
+| `Physics` | DiaRigidBody2D, DiaSoftBody2D | Simulation warnings: maxSubSteps hit, velocity safety threshold exceeded, constraint drift, sleep state changes, torn constraints. Debug builds only. |
 
 DiaCore cannot use `DIA_LOG_*` (circular dependency) and continues to use `Dia::Core::Log::OutputLine`.
 

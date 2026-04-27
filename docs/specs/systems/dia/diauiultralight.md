@@ -5,9 +5,9 @@
 
 ## Purpose
 
-DiaUIUltralight is a lightweight HTML/CSS/JS UI renderer for Cluiche applications, implementing the `IUISystem` interface using the [Ultralight SDK](https://ultralig.ht). It is the direct, drop-in replacement for the deprecated DiaUIAwesomium module (Awesomium SDK EOL ~2017). Ultralight is a WebKit-based CPU renderer designed specifically for embedding in games and native applications — significantly smaller than CEF (~15 MB vs ~300 MB) while retaining full HTML5/CSS3/JavaScript support.
+DiaUIUltralight is a lightweight HTML/CSS/JS UI renderer for Cluiche applications, implementing the `IUISystem` interface using the [Ultralight SDK](https://ultralig.ht). Ultralight is a WebKit-based CPU renderer designed specifically for embedding in games and native applications — significantly smaller than CEF (~15 MB vs ~300 MB) while retaining full HTML5/CSS3/JavaScript support.
 
-DiaUIUltralight keeps the same `IUISystem` contract, meaning consuming code (`MainUIModule`, `LaunchUIPage`, `DummyUIPage`) requires zero changes to switch from Awesomium to Ultralight.
+DiaUIUltralight implements the `IUISystem` contract, meaning consuming code (`MainUIModule`, `LaunchUIPage`, `DummyUIPage`) requires no changes to integrate.
 
 ## Responsibilities
 
@@ -106,9 +106,9 @@ app.Application_ExitLevel();
 | System | Relationship |
 |---|---|
 | DiaUI | Interface provider (`IUISystem`, `Page`, `BoundMethod`) |
-| DiaUIAwesomium | Predecessor; same `IUISystem` interface; kept in parallel |
+| DiaUICEF | Alternative implementation (heavier, editor-focused) |
 | DiaUICEF | Alternative future implementation (heavier, editor-focused) |
-| CluicheTest | Primary consumer (Step 2: swap Awesomium → Ultralight in `MainUIModule`) |
+| CluicheTest | Primary consumer (`MainUIModule`) |
 
 ## Inherited Binding Decisions
 
@@ -127,12 +127,12 @@ app.Application_ExitLevel();
 | ID | Decision | Rationale | Status | Binding |
 |---|---|---|---|---|
 | UL-001 | CPU renderer only (`is_accelerated = false`) | No `GPUDriver` needed; pixel buffer maps directly to existing `UIDataBuffer` pattern | Accepted | Yes |
-| UL-002 | Single `View` per `UISystem` | Matches Awesomium's one-view model; `MainUIModule` only ever uses one page at a time | Accepted | Yes |
-| UL-003 | `OnDOMReady` for JS binding | Bindings registered after DOM is ready, matching Awesomium's `CreateGlobalJavascriptObject` pattern | Accepted | Yes |
-| UL-004 | `file://` URL scheme for local assets | Consistent with how Awesomium loaded pages; `DiaFileSystem` maps paths to disk | Accepted | Yes |
-| UL-005 | 16 MB staging buffer for pixel readback | Matches Awesomium's `sBuffersize`; sufficient for all current window sizes | Accepted | Yes |
+| UL-002 | Single `View` per `UISystem` | `MainUIModule` only ever uses one page at a time | Accepted | Yes |
+| UL-003 | `OnDOMReady` for JS binding | Bindings registered after DOM is ready | Accepted | Yes |
+| UL-004 | `file://` URL scheme for local assets | `DiaFileSystem` maps paths to disk | Accepted | Yes |
+| UL-005 | 16 MB staging buffer for pixel readback | Sufficient for all current window sizes | Accepted | Yes |
 | UL-006 | `GetPlatformFontLoader()` (AppCore) | Avoids implementing a custom font loader; relies on Ultralight's Windows system font integration | Accepted | Yes |
-| UL-007 | Transparent background by default (`is_transparent = true`) | Matches Awesomium `SetTransparent(true)` — UI composited over game scene | Accepted | Yes |
+| UL-007 | Transparent background by default (`is_transparent = true`) | UI composited over game scene; matches existing IUISystem compositing contract | Accepted | Yes |
 
 **Status values:** `Proposed` · `Accepted` · `Rejected` · `Superseded`
 **Binding:** `Yes` = enforced on all features · `No` = guidance only
@@ -146,6 +146,7 @@ app.Application_ExitLevel();
 | JavaScript Binding | Bind BoundMethod entries to `app` JS object via OnDOMReady; convert args bidirectionally | [javascript-binding.md](../../features/dia/diauiultralight/javascript-binding.md) | Approved |
 | Pixel Buffer Readback | Lock BitmapSurface, copy to staging buffer, expose via UIDataBuffer each frame | [pixel-buffer-readback.md](../../features/dia/diauiultralight/pixel-buffer-readback.md) | Approved |
 | Input Injection | Map EMouseButton + coordinates to Ultralight MouseEvent and ScrollEvent | [input-injection.md](../../features/dia/diauiultralight/input-injection.md) | Approved |
+| Game UI Framework Convention | Tiered JS framework convention (Alpine + React) for game panels; removes Webix; bridge contract tests | [game-ui-framework-convention.md](../../features/dia/diauiultralight/game-ui-framework-convention.md) | Approved |
 
 ## AI Review Questions
 
@@ -154,13 +155,13 @@ app.Application_ExitLevel();
 | 1 | Replacement | Why Ultralight over CEF? | Ultralight is ~15 MB vs CEF ~300 MB; free under $100K revenue; simpler init (no subprocess); sufficient for in-game UI |
 | 2 | Rendering | Why CPU renderer? | Matches existing UIDataBuffer pixel copy pattern; no GPUDriver complexity; GPU mode would require DiaGraphics integration |
 | 3 | JS Binding | Why `OnDOMReady` vs `OnWindowObjectReady`? | DOM must be ready for `app` object assignment; `OnWindowObjectReady` fires before DOM elements exist |
-| 4 | Threading | Is UISystem thread-safe? | Yes — outer `UISystem` uses `std::mutex` on all public methods, identical to Awesomium pattern |
+| 4 | Threading | Is UISystem thread-safe? | Yes — outer `UISystem` uses `std::mutex` on all public methods |
 | 5 | File Loading | How does `DiaFileSystem` resolve paths? | Calls `FilePath::Resolve()` to get absolute path, converts `\` to `/` for URL, then `fopen_s` for file reads |
 | 6 | Font Loading | Why `GetPlatformFontLoader()`? | Windows has system fonts; avoids embedding font files; AppCore provides this for free |
-| 7 | Staging buffer | Why a fixed 16 MB staging buffer? | Avoids heap allocation per frame; consistent with Awesomium's approach; 16 MB covers 2048×2048 BGRA |
-| 8 | DLL deployment | Why xcopy in pre-build? | Ensures DLLs are next to the exe before the linker runs; same pattern as DiaUIAwesomium |
-| 9 | Migration | What changes to CluicheTest for Step 2? | Only `MainUIModule.h`: change include and instantiation from `Awesomium::UISystem` to `Ultralight::UISystem` |
-| 10 | Backwards compat | Can both Awesomium and Ultralight coexist? | Yes — separate namespaces and projects; CluicheTest can switch at any time |
+| 7 | Staging buffer | Why a fixed 16 MB staging buffer? | Avoids heap allocation per frame; 16 MB covers 2048×2048 BGRA; consistent with the UIDataBuffer pixel copy pattern |
+| 8 | DLL deployment | Why xcopy in pre-build? | Ensures DLLs are next to the exe before the linker runs |
+| 9 | Migration | What changes to CluicheTest for Step 2? | Only `MainUIModule.h`: change include and instantiation to `Ultralight::UISystem` |
+| 10 | Backwards compat | Can multiple UI backends coexist? | Yes — separate namespaces and projects; CluicheTest can switch at any time |
 
 ## Status
 
