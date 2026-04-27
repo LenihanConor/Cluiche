@@ -8,7 +8,7 @@ def cli():
     pass
 
 
-@cli.command()
+@cli.command("editor-ui")
 @click.option("--filter", "filter_pattern", default=None, metavar="PATTERN",
               help="Run only tests whose name matches PATTERN (passed to vitest -t).")
 @click.option("--watch", is_flag=True, default=False,
@@ -16,10 +16,39 @@ def cli():
 @click.option("--docker", is_flag=True, default=False,
               help="Re-invoke inside Docker container.")
 @click.pass_context
-def ui(ctx, filter_pattern, watch, docker):
-    """Run the DiaApplicationEditor UI Vitest suite."""
+def editor_ui(ctx, filter_pattern, watch, docker):
+    """Run the DiaApplicationEditor (CEF) UI Vitest suite."""
     from commands.test.ui_runner import run
-    exit_code = run(repo_root=None, filter_pattern=filter_pattern, watch=watch, docker=docker)
+    exit_code = run(
+        repo_root=None,
+        ui_subpath="Dia/DiaApplicationEditor/UI",
+        docker_subcmd="editor-ui",
+        filter_pattern=filter_pattern,
+        watch=watch,
+        docker=docker,
+    )
+    ctx.exit(exit_code)
+
+
+@cli.command("game-ui")
+@click.option("--filter", "filter_pattern", default=None, metavar="PATTERN",
+              help="Run only tests whose name matches PATTERN (passed to vitest -t).")
+@click.option("--watch", is_flag=True, default=False,
+              help="Run in watch mode (re-runs on file change).")
+@click.option("--docker", is_flag=True, default=False,
+              help="Re-invoke inside Docker container.")
+@click.pass_context
+def game_ui(ctx, filter_pattern, watch, docker):
+    """Run the CluicheTest game UI Vitest suite."""
+    from commands.test.ui_runner import run
+    exit_code = run(
+        repo_root=None,
+        ui_subpath="Cluiche/CluicheTest/UI",
+        docker_subcmd="game-ui",
+        filter_pattern=filter_pattern,
+        watch=watch,
+        docker=docker,
+    )
     ctx.exit(exit_code)
 
 

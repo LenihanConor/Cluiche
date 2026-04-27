@@ -19,8 +19,8 @@ The core problem DiaTest solves: tests for the Cluiche platform are spread acros
 ## Non-Responsibilities
 
 - **Test authoring** — each feature spec defines its own tests; DiaTest only runs them
-- **C++ GoogleTest execution** — owned by `dia test googletest` (future feature); DiaTest defines the interface
-- **React/Vitest execution** — owned by `dia test ui` (future feature)
+- **C++ GoogleTest execution** — owned by `dia test googletest`; DiaTest defines the interface
+- **React/Vitest execution** — owned by `dia test editor-ui` and `dia test game-ui`
 - **Fixing pre-existing compiler bugs** — the integration loop fixes environment/infrastructure issues only; C++ logic bugs are out of scope
 - **Hosted CI configuration** — DiaTest is local-only; CI pipeline is a future concern
 
@@ -37,7 +37,8 @@ dia test env-integration
 
 # Future
 dia test googletest         # Run C++ GoogleTests
-dia test ui                 # Run React/Vitest tests
+dia test editor-ui          # Run DiaApplicationEditor (CEF) React/Vitest tests
+dia test game-ui            # Run CluicheTest (Ultralight) React/Vitest tests
 dia test all                # Run all registered test categories
 ```
 
@@ -58,7 +59,8 @@ dia test all                # Run all registered test categories
 | cli-unit-tests | `dia test cli` — run pytest for all DiaCLI modules inside Docker | pytest, mocking, coverage report, runs in container | [cli-unit-tests.md](../../features/dia/diatest/cli-unit-tests.md) | 3 days | Done |
 | env-integration | `dia test env-integration` — agentic loop: env→pipeline→test, AI fixes env failures | Docker, loop with prompt, AI fix scope limited to env issues | [env-integration.md](../../features/dia/diatest/env-integration.md) | 5 days | Done |
 | googletest | `dia test googletest` — run built GoogleTests.exe binary; --filter, --config, --docker | Binary location, gtest_filter passthrough, pre-run dep check, docker re-invoke | [googletest.md](../../features/dia/diatest/googletest.md) | 2 days | Done |
-| ui | `dia test ui` — run Vitest suite for DiaApplicationEditor UI; --filter, --watch, --docker | npm/vitest invocation, node_modules check, docker re-invoke | [ui.md](../../features/dia/diatest/ui.md) | 2 days | Done |
+| editor-ui | `dia test editor-ui` — run Vitest suite for DiaApplicationEditor (CEF) UI; --filter, --watch, --docker | npm/vitest invocation, node_modules check, docker re-invoke | [ui.md](../../features/dia/diatest/ui.md) | 2 days | Done |
+| game-ui | `dia test game-ui` — run Vitest suite for CluicheTest (Ultralight) UI; --filter, --watch, --docker | shared ui_runner.py, game-specific subpath + docker subcmd | [game-ui.md](../../features/dia/diatest/game-ui.md) | 0.5 days | Done |
 
 **Total Effort Estimate:** ~12 days
 

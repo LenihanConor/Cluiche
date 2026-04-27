@@ -1,4 +1,4 @@
-"""Unit tests for dia test editor-ui (AC1–AC7 from diatest/ui.md spec)."""
+"""Unit tests for dia test game-ui (mirrors editor-ui AC1–AC7, game-specific paths)."""
 import subprocess
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -7,10 +7,10 @@ import pytest
 from click.testing import CliRunner
 
 from dia_cli.cli_main import cli
-from dia_cli.commands.test.ui_runner import check_node_modules, run
+from dia_cli.commands.test.ui_runner import run
 
-_SUBPATH = "Dia/DiaApplicationEditor/UI"
-_DOCKER_SUBCMD = "editor-ui"
+_SUBPATH = "Cluiche/CluicheTest/UI"
+_DOCKER_SUBCMD = "game-ui"
 
 
 # ---------------------------------------------------------------------------
@@ -18,14 +18,14 @@ _DOCKER_SUBCMD = "editor-ui"
 # ---------------------------------------------------------------------------
 
 def _fake_root(tmp_path: Path) -> Path:
-    ui = tmp_path / "Dia" / "DiaApplicationEditor" / "UI"
+    ui = tmp_path / "Cluiche" / "CluicheTest" / "UI"
     ui.mkdir(parents=True)
     return tmp_path
 
 
 def _fake_root_with_modules(tmp_path: Path) -> Path:
     root = _fake_root(tmp_path)
-    (root / "Dia" / "DiaApplicationEditor" / "UI" / "node_modules").mkdir()
+    (root / "Cluiche" / "CluicheTest" / "UI" / "node_modules").mkdir()
     return root
 
 
@@ -44,38 +44,18 @@ def _run(repo_root, filter_pattern=None, watch=False, docker=False):
 # CLI discovery
 # ---------------------------------------------------------------------------
 
-def test_test_group_discovered():
-    runner = CliRunner()
-    result = runner.invoke(cli, ["--help"])
-    assert result.exit_code == 0
-    assert "test" in result.output
-
-
-def test_editor_ui_subcommand_discovered():
+def test_game_ui_subcommand_discovered():
     runner = CliRunner()
     result = runner.invoke(cli, ["test", "--help"])
     assert result.exit_code == 0
-    assert "editor-ui" in result.output
+    assert "game-ui" in result.output
 
 
-def test_editor_ui_help():
+def test_game_ui_help():
     runner = CliRunner()
-    result = runner.invoke(cli, ["test", "editor-ui", "--help"])
+    result = runner.invoke(cli, ["test", "game-ui", "--help"])
     assert result.exit_code == 0
     assert "Vitest" in result.output or "vitest" in result.output.lower()
-
-
-# ---------------------------------------------------------------------------
-# check_node_modules
-# ---------------------------------------------------------------------------
-
-def test_check_node_modules_true(tmp_path):
-    (tmp_path / "node_modules").mkdir()
-    assert check_node_modules(tmp_path) is True
-
-
-def test_check_node_modules_false(tmp_path):
-    assert check_node_modules(tmp_path) is False
 
 
 # ---------------------------------------------------------------------------
@@ -115,16 +95,16 @@ def test_run_propagates_nonzero_exit(mock_run, tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# AC2: cwd is set to editor UI directory
+# AC2: cwd is set to CluicheTest UI directory
 # ---------------------------------------------------------------------------
 
 @patch("dia_cli.commands.test.ui_runner.subprocess.run")
-def test_run_uses_editor_ui_dir_as_cwd(mock_run, tmp_path):
+def test_run_uses_game_ui_dir_as_cwd(mock_run, tmp_path):
     root = _fake_root_with_modules(tmp_path)
     mock_run.return_value = MagicMock(returncode=0)
     _run(repo_root=root)
     cwd = mock_run.call_args[1]["cwd"]
-    assert cwd == str(root / "Dia" / "DiaApplicationEditor" / "UI")
+    assert cwd == str(root / "Cluiche" / "CluicheTest" / "UI")
 
 
 # ---------------------------------------------------------------------------
@@ -135,10 +115,10 @@ def test_run_uses_editor_ui_dir_as_cwd(mock_run, tmp_path):
 def test_run_filter_passes_t_flag(mock_run, tmp_path):
     root = _fake_root_with_modules(tmp_path)
     mock_run.return_value = MagicMock(returncode=0)
-    _run(repo_root=root, filter_pattern="ManifestStore")
+    _run(repo_root=root, filter_pattern="ExamplePanel")
     args = mock_run.call_args[0][0]
     assert "-t" in args
-    assert "ManifestStore" in args
+    assert "ExamplePanel" in args
     assert args.index("-t") == len(args) - 2
 
 
@@ -156,7 +136,7 @@ def test_run_watch_uses_test_watch_script(mock_run, tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# AC6: --docker re-invokes in container with "editor-ui" subcommand
+# AC6: --docker re-invokes in container with "game-ui" subcommand
 # ---------------------------------------------------------------------------
 
 @patch("dia_cli.commands.test.ui_runner.subprocess.run")
@@ -176,7 +156,7 @@ def test_run_docker_invokes_docker_run(mock_run, tmp_path):
 
 
 @patch("dia_cli.commands.test.ui_runner.subprocess.run")
-def test_run_docker_uses_editor_ui_subcmd(mock_run, tmp_path):
+def test_run_docker_uses_game_ui_subcmd(mock_run, tmp_path):
     root = _fake_root_with_modules(tmp_path)
     mock_run.side_effect = [
         MagicMock(returncode=0),
@@ -185,7 +165,7 @@ def test_run_docker_uses_editor_ui_subcmd(mock_run, tmp_path):
     _run(repo_root=root, docker=True)
     docker_cmd = mock_run.call_args_list[1][0][0]
     joined = " ".join(docker_cmd)
-    assert "editor-ui" in joined
+    assert "game-ui" in joined
 
 
 @patch("dia_cli.commands.test.ui_runner.subprocess.run")
@@ -195,11 +175,11 @@ def test_run_docker_filter_forwarded(mock_run, tmp_path):
         MagicMock(returncode=0),
         MagicMock(returncode=0),
     ]
-    _run(repo_root=root, filter_pattern="FlowView", docker=True)
+    _run(repo_root=root, filter_pattern="GameBridge", docker=True)
     docker_cmd = mock_run.call_args_list[1][0][0]
     joined = " ".join(docker_cmd)
     assert "--filter" in joined
-    assert "FlowView" in joined
+    assert "GameBridge" in joined
 
 
 # ---------------------------------------------------------------------------
@@ -209,7 +189,7 @@ def test_run_docker_filter_forwarded(mock_run, tmp_path):
 @patch("dia_cli.commands.test.ui_runner.subprocess.run")
 def test_run_docker_missing_image_exits_3(mock_run, tmp_path, capsys):
     root = _fake_root_with_modules(tmp_path)
-    mock_run.return_value = MagicMock(returncode=1)  # image not found
+    mock_run.return_value = MagicMock(returncode=1)
     code = _run(repo_root=root, docker=True)
     assert code == 3
     captured = capsys.readouterr()

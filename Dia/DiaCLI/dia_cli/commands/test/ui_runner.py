@@ -1,4 +1,4 @@
-"""Implementation for dia test ui command."""
+"""Shared Vitest runner — used by both editor-ui and game-ui commands."""
 import os
 import subprocess
 from pathlib import Path
@@ -7,7 +7,6 @@ from typing import Optional
 from utils.repo_root import find_repo_root
 
 _DOCKER_IMAGE = "cluiche-build-env"
-_UI_SUBPATH = "Dia/DiaApplicationEditor/UI"
 
 # Node.js shipped with Visual Studio — guaranteed present without a separate install.
 _VS_NODE_DIR = Path(
@@ -34,6 +33,8 @@ def check_node_modules(ui_dir: Path) -> bool:
 
 def run(
     repo_root: Optional[Path],
+    ui_subpath: str,
+    docker_subcmd: str,
     filter_pattern: Optional[str],
     watch: bool,
     docker: bool,
@@ -41,15 +42,21 @@ def run(
     # config.root_path() points at Dia/DiaCLI/, not the repo root — use _REPO_ROOT by default.
     # repo_root override is accepted for testing.
     root = repo_root if repo_root is not None else _REPO_ROOT
-    ui_dir = root / _UI_SUBPATH
+    ui_dir = root / ui_subpath
 
     if docker:
-        return _run_docker(repo_root=root, filter_pattern=filter_pattern, watch=watch)
+        return _run_docker(
+            repo_root=root,
+            ui_subpath=ui_subpath,
+            docker_subcmd=docker_subcmd,
+            filter_pattern=filter_pattern,
+            watch=watch,
+        )
 
     if not check_node_modules(ui_dir):
         print(
             f"ERROR: node_modules not found at {ui_dir / 'node_modules'}\n"
-            f"Run: cd Dia/DiaApplicationEditor/UI && npm install"
+            f"Run: cd {ui_subpath} && npm install"
         )
         return 2
 
@@ -68,7 +75,13 @@ def run(
         return 1
 
 
-def _run_docker(repo_root: Path, filter_pattern: Optional[str], watch: bool) -> int:
+def _run_docker(
+    repo_root: Path,
+    ui_subpath: str,
+    docker_subcmd: str,
+    filter_pattern: Optional[str],
+    watch: bool,
+) -> int:
     check = subprocess.run(
         ["docker", "image", "inspect", _DOCKER_IMAGE],
         capture_output=True,
@@ -80,7 +93,7 @@ def _run_docker(repo_root: Path, filter_pattern: Optional[str], watch: bool) -> 
         )
         return 3
 
-    forwarded = ["test", "ui"]
+    forwarded = ["test", docker_subcmd]
     if filter_pattern:
         forwarded += ["--filter", filter_pattern]
     if watch:

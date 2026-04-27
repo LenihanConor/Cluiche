@@ -1,4 +1,4 @@
-# Feature Spec: ui
+# Feature Spec: editor-ui
 
 ## Parent System
 @docs/specs/systems/dia/diatest.md
@@ -8,11 +8,13 @@
 
 ## Summary
 
-Implement `dia test ui` — runs the Vitest suite for `Dia/DiaApplicationEditor/UI/` using the Node.js available in the current execution context (host or Docker container). Vitest and all testing dependencies are already configured in `package.json`. Supports `--filter` (maps to Vitest's `-t` flag), `--watch` mode, and `--docker` (re-invokes inside the container). Runs wherever the command is invoked from — no environment assumption baked in.
+Implement `dia test editor-ui` — runs the Vitest suite for `Dia/DiaApplicationEditor/UI/` (the CEF/React editor UI) using the Node.js available in the current execution context (host or Docker container). Vitest and all testing dependencies are already configured in `package.json`. Supports `--filter` (maps to Vitest's `-t` flag), `--watch` mode, and `--docker` (re-invokes inside the container). Runs wherever the command is invoked from — no environment assumption baked in.
+
+> **Note:** This spec was originally named `ui`. It was renamed to `editor-ui` when `dia test game-ui` was added to cover `Cluiche/CluicheTest/UI/`. The underlying runner (`ui_runner.py`) is shared; only the `ui_subpath` and `docker_subcmd` arguments differ.
 
 ## Problem
 
-Vitest is already set up and 10 test files exist in `Dia/DiaApplicationEditor/UI/src/`, but there is no `dia test` entry point that runs them consistently. Running them requires knowing the project directory, having Node.js/npm available, and knowing the `vitest run` invocation. `dia test ui` provides the single consistent entry point that fits into the `dia test` command surface.
+Vitest is already set up and 10 test files exist in `Dia/DiaApplicationEditor/UI/src/`, but there is no `dia test` entry point that runs them consistently. Running them requires knowing the project directory, having Node.js/npm available, and knowing the `vitest run` invocation. `dia test editor-ui` provides the single consistent entry point that fits into the `dia test` command surface.
 
 ## Goals
 
@@ -35,20 +37,20 @@ Vitest is already set up and 10 test files exist in `Dia/DiaApplicationEditor/UI
 
 ```bash
 # Run all UI tests (host Node.js)
-dia test ui
+dia test editor-ui
 
 # Filter to tests matching a pattern
-dia test ui --filter "ManifestStore"
-dia test ui --filter "renders the flow view"
+dia test editor-ui --filter "ManifestStore"
+dia test editor-ui --filter "renders the flow view"
 
 # Watch mode (re-runs on file change)
-dia test ui --watch
+dia test editor-ui --watch
 
 # Run inside Docker container
-dia test ui --docker
+dia test editor-ui --docker
 
 # Combined
-dia test ui --docker --filter "FlowView"
+dia test editor-ui --docker --filter "FlowView"
 ```
 
 ## Vitest Invocation
@@ -81,7 +83,7 @@ return result.returncode
 Follows the same pattern as `dia pipeline --docker` and `dia test googletest --docker`:
 
 1. Check Docker image exists; exit 3 if not
-2. Re-invoke `dia test ui` inside the container with all flags forwarded (minus `--docker`)
+2. Re-invoke `dia test editor-ui` inside the container with all flags forwarded (minus `--docker`)
 3. Volume-mount the repo root at `C:/repo`
 4. Stream container stdout/stderr to the host terminal in real time
 
@@ -106,17 +108,16 @@ Node.js and npm must be available inside the Docker image (dependency on `docker
 Dia/DiaCLI/
 └── dia_cli/
     ├── cli/
-    │   └── test/
-    │       └── ui_cmd.py              # Click command: dia test ui
+    │   └── test.py                    # Click group: dia test editor-ui (and game-ui)
     └── commands/
         └── test/
-            └── ui_runner.py          # node_modules check, vitest invocation, docker re-invoke
+            └── ui_runner.py          # shared runner: node_modules check, vitest invocation, docker re-invoke
 ```
 
 ### `ui_runner.py` responsibilities
 
 - `check_node_modules(ui_dir)` — return `True` if `node_modules/` exists
-- `run(repo_root, filter_pattern, watch, docker, image_name)` — orchestrate check + invocation or docker re-invoke
+- `run(repo_root, ui_subpath, docker_subcmd, filter_pattern, watch, docker)` — orchestrate check + invocation or docker re-invoke; shared by both `editor-ui` and `game-ui`
 
 ## Dependencies
 
@@ -129,7 +130,7 @@ Dia/DiaCLI/
 
 ## Acceptance Criteria
 
-1. `dia test ui` runs `vitest run` in `Dia/DiaApplicationEditor/UI/` and exits with Vitest's exit code
+1. `dia test editor-ui` runs `vitest run` in `Dia/DiaApplicationEditor/UI/` and exits with Vitest's exit code
 2. All Vitest output streams to the terminal in real time
 3. `--filter "ManifestStore"` passes `-t ManifestStore` to Vitest; only matching tests run
 4. `--watch` runs Vitest in watch mode (does not exit on completion)
@@ -172,7 +173,7 @@ Dia/DiaCLI/
 
 | # | Section | Question | Answer |
 |---|---------|----------|--------|
-| 1 | Node.js in Docker | Does the `docker-build-env` Dockerfile include Node.js? | Node.js LTS is listed in `winget-manifest` as a required tool. The `docker-build-env` spec must install it in the container image. This is a dependency: `dia test ui --docker` will fail if the container image was built without Node.js. The `docker-build-env` spec should be updated to ensure Node.js is included. |
+| 1 | Node.js in Docker | Does the `docker-build-env` Dockerfile include Node.js? | Node.js LTS is listed in `winget-manifest` as a required tool. The `docker-build-env` spec must install it in the container image. This is a dependency: `dia test editor-ui --docker` will fail if the container image was built without Node.js. The `docker-build-env` spec should be updated to ensure Node.js is included. |
 | 2 | `npm run test` vs `npx vitest` | Should the invocation use `npm run test` or call `npx vitest run` directly? | `npm run test` — it uses the script already defined in `package.json` and is resilient to future script changes (e.g. if the team adds `--reporter=verbose` to the npm script). Calling `npx vitest` directly would bypass the script. |
 | 3 | `--filter` passthrough | Does `npm run test -- -t <pattern>` correctly pass `-t` through to Vitest? | Yes — `npm run <script> -- <args>` passes `<args>` to the underlying command. `vitest run -t <pattern>` filters by test name. |
 | 4 | `node_modules` in Docker | When volume-mounting the repo, `node_modules/` from the host is included. Does this cause issues inside the container? | Always run `npm install --prefer-offline` inside the container before Vitest when `--docker` is active. Host `node_modules` may contain Windows-native binaries (e.g. esbuild) that won't run in the container. `--prefer-offline` uses the npm cache so it is fast when packages are already present. The `ui_runner.py` docker path runs `npm install --prefer-offline` as a pre-step before invoking `vitest run`. |
