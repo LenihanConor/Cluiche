@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<!-- Alpine widget: sparkline — rolling SVG line graphs of numeric time-series from C++ -->
+<html lang="en" data-theme="cluichetest">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sparkline</title>
+  <link rel="stylesheet" href="../../../External/DaisyUI/daisyui.min.css" />
+  <script src="../../../External/Tailwind/tailwind.min.js"></script>
+  <link rel="stylesheet" href="themes/cluichetest.css" />
+  <script defer src="../../../External/Alpine/alpine.min.js"></script>
+</head>
+<body class="bg-base-100 text-base-content p-4">
+
+  <div x-data="{
+    series: [],
+    maxPoints: 60,
+    w: 200,
+    h: 48,
+
+    init() {
+      window.GameBridge_dispatch = (topic, dataJson) => {
+        if (topic !== 'sparkline') return;
+        try {
+          const d = JSON.parse(dataJson);
+          let s = this.series.find(s => s.label === d.label);
+          if (!s) {
+            s = { label: d.label, color: d.color ?? '#60a5fa', points: [] };
+            this.series.push(s);
+          }
+          s.points.push(d.value);
+          if (s.points.length > this.maxPoints) s.points.shift();
+        } catch (e) { console.warn('sparkline: parse error', e); }
+      };
+    },
+
+    polyline(points) {
+      if (points.length < 2) return '';
+      const min = Math.min(...points);
+      const max = Math.max(...points) || 1;
+      const range = max - min || 1;
+      const step = this.w / (points.length - 1);
+      return points.map((v, i) => {
+        const x = i * step;
+        const y = this.h - ((v - min) / range) * (this.h - 4) - 2;
+        return x + ',' + y;
+      }).join(' ');
+    },
+
+    lastValue(points) {
+      return points.length ? points[points.length - 1].toFixed(1) : '—';
+    }
+  }">
+
+    <h2 class="text-sm font-bold uppercase tracking-widest opacity-60 mb-3">Sparklines</h2>
+
+    <template x-if="series.length === 0">
+      <p class="text-xs opacity-40">Waiting for data…</p>
+    </template>
+
+    <div class="flex flex-col gap-4">
+      <template x-for="s in series" :key="s.label">
+        <div>
+          <div class="flex justify-between text-xs mb-1">
+            <span x-text="s.label"></span>
+            <span class="font-mono" :style="'color:' + s.color" x-text="lastValue(s.points)"></span>
+          </div>
+          <svg :width="w" :height="h" class="bg-base-300 rounded">
+            <polyline
+              :points="polyline(s.points)"
+              fill="none"
+              :stroke="s.color"
+              stroke-width="1.5"
+              stroke-linejoin="round"
+              stroke-linecap="round"
+            />
+          </svg>
+        </div>
+      </template>
+    </div>
+
+  </div>
+</body>
+</html>

@@ -1,7 +1,7 @@
 # Feature Spec: deps-single-file
 
 ## Status
-`Done`
+`Done` — `single_file` install branch implemented in `deps_restore.py` (lines 140–147, 208–213). 10 pytest unit tests in `test_dia_env.py`. `deps.json` entries for Alpine, Tailwind, and DaisyUI use this install type.
 
 ## Traceability
 

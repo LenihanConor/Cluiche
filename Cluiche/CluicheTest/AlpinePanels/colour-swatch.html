@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<!-- Alpine widget: colour swatch — displays named colour palette entries from C++ -->
+<html lang="en" data-theme="cluichetest">
+<head>
+  <meta charset="UTF-8" />
+  <title>Colour Swatch</title>
+  <link rel="stylesheet" href="../../../External/DaisyUI/daisyui.min.css" />
+  <script src="../../../External/Tailwind/tailwind.min.js"></script>
+  <link rel="stylesheet" href="themes/cluichetest.css" />
+  <script defer src="../../../External/Alpine/alpine.min.js"></script>
+</head>
+<body class="bg-base-100 text-base-content p-4">
+
+  <div x-data="{
+    swatches: [],
+    copied: null,
+
+    init() {
+      window.GameBridge_dispatch = (topic, dataJson) => {
+        if (topic !== 'colour_swatches') return;
+        try { this.swatches = JSON.parse(dataJson); }
+        catch (e) { console.warn('colour-swatch: parse error', e); }
+      };
+    },
+
+    copy(hex) {
+      this.copied = hex;
+      if (window.app && typeof window.app.onColourCopied === 'function') {
+        window.app.onColourCopied(JSON.stringify({ hex }));
+      }
+      setTimeout(() => { this.copied = null; }, 1200);
+    }
+  }">
+
+    <h2 class="text-sm font-bold uppercase tracking-widest opacity-60 mb-3">Colour Palette</h2>
+
+    <template x-if="swatches.length === 0">
+      <p class="text-xs opacity-40">Waiting for data…</p>
+    </template>
+
+    <div class="flex flex-wrap gap-3">
+      <template x-for="s in swatches" :key="s.name">
+        <div
+          class="flex flex-col items-center cursor-pointer group"
+          @click="copy(s.hex)"
+          :title="s.hex"
+        >
+          <div
+            class="w-10 h-10 rounded shadow ring-2 ring-transparent group-hover:ring-primary transition-all"
+            :style="'background:' + s.hex"
+          ></div>
+          <span class="text-xs mt-1 opacity-70" x-text="s.name"></span>
+          <span
+            class="text-xs opacity-50 font-mono"
+            x-text="copied === s.hex ? 'copied' : s.hex"
+          ></span>
+        </div>
+      </template>
+    </div>
+
+  </div>
+</body>
+</html>

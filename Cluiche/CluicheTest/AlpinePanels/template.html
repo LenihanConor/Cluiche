@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<!--
+  Alpine Panel Starter Template
+  ==============================
+  Tier:       Alpine (self-contained panels only — no cross-panel state)
+  Boundary:   If this panel needs to react to state owned by another panel, use React instead.
+  Bridge:     window.app.<methodName>(argsJson)  →  C++ (send to C++)
+              window.GameBridge_dispatch(topic, dataJson)  →  JS (receive from C++)
+  Theme:      Set data-theme on <html> to apply per-game DaisyUI theme.
+  Deploy:     Copy .html file to Cluiche/bin/{Config}/x64/ui/alpine/
+  Vendor:     JS/CSS loaded from External/ — run `dia env setup` to download.
+-->
+<html lang="en" data-theme="cluichetest">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel</title>
+
+  <!-- DaisyUI (vendored via DiaEnv → External/DaisyUI/daisyui.min.css) -->
+  <link rel="stylesheet" href="../../External/DaisyUI/daisyui.min.css" />
+
+  <!-- Tailwind CDN play script (vendored via DiaEnv → External/Tailwind/tailwind.min.js) -->
+  <script src="../../External/Tailwind/tailwind.min.js"></script>
+
+  <!-- Per-game theme override -->
+  <link rel="stylesheet" href="themes/cluichetest.css" />
+
+  <!-- Alpine.js (vendored via DiaEnv → External/Alpine/alpine.min.js) -->
+  <!-- defer ensures Alpine initialises after DOM is ready -->
+  <script defer src="../../External/Alpine/alpine.min.js"></script>
+</head>
+<body class="bg-base-100 text-base-content p-4">
+
+  <!--
+    Panel root — replace x-data content with your panel's state.
+    Keep state self-contained here. If you need cross-panel state, use React.
+  -->
+  <div x-data="{
+    value: 0,
+    label: 'Waiting...',
+
+    init() {
+      // Register this panel's data receiver.
+      // C++ calls: window.GameBridge_dispatch('my_topic', jsonString)
+      window.GameBridge_dispatch = (topic, dataJson) => {
+        if (topic !== 'my_topic') return;
+        try {
+          const data = JSON.parse(dataJson);
+          this.value = data.value ?? 0;
+          this.label = data.label ?? '';
+        } catch (e) {
+          console.warn('Panel: parse error', e);
+        }
+      };
+    },
+
+    sendTocpp(eventName, payload) {
+      // Send data to C++.
+      // C++ registers: page->SetCallback('myEvent', &myBoundMethod)
+      if (window.app && typeof window.app[eventName] === 'function') {
+        window.app[eventName](JSON.stringify(payload));
+      } else {
+        console.warn('GameBridge: window.app.' + eventName + ' not available');
+      }
+    }
+  }">
+
+    <!-- Example: stat display -->
+    <div class="stats shadow mb-4">
+      <div class="stat">
+        <div class="stat-title" x-text="label"></div>
+        <div class="stat-value" x-text="value"></div>
+      </div>
+    </div>
+
+    <!-- Example: button sending data to C++ -->
+    <button
+      class="btn btn-primary btn-sm"
+      @click="sendTocp('onButtonClick', { source: 'template' })"
+    >
+      Send to C++
+    </button>
+
+  </div>
+
+</body>
+</html>

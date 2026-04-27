@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<!-- Alpine widget: minimap — 2D canvas minimap rendering entity positions from C++ -->
+<html lang="en" data-theme="cluichetest">
+<head>
+  <meta charset="UTF-8" />
+  <title>Minimap</title>
+  <link rel="stylesheet" href="../../../External/DaisyUI/daisyui.min.css" />
+  <script src="../../../External/Tailwind/tailwind.min.js"></script>
+  <link rel="stylesheet" href="themes/cluichetest.css" />
+  <script defer src="../../../External/Alpine/alpine.min.js"></script>
+</head>
+<body class="bg-base-100 text-base-content p-4">
+
+  <div x-data="{
+    entities: [],
+    worldW: 1000,
+    worldH: 1000,
+    size: 160,
+
+    init() {
+      window.GameBridge_dispatch = (topic, dataJson) => {
+        if (topic !== 'minimap_entities') return;
+        try {
+          const d = JSON.parse(dataJson);
+          this.worldW = d.worldW ?? 1000;
+          this.worldH = d.worldH ?? 1000;
+          this.entities = d.entities ?? [];
+          this.draw();
+        } catch (e) { console.warn('minimap: parse error', e); }
+      };
+      this.draw();
+    },
+
+    draw() {
+      const canvas = this.$refs.canvas;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const s = this.size;
+      ctx.clearRect(0, 0, s, s);
+
+      ctx.fillStyle = '#1a1f2e';
+      ctx.fillRect(0, 0, s, s);
+      ctx.strokeStyle = '#2a3040';
+      ctx.strokeRect(0, 0, s, s);
+
+      for (const e of this.entities) {
+        const x = (e.x / this.worldW) * s;
+        const y = (e.y / this.worldH) * s;
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = e.color ?? '#60a5fa';
+        ctx.fill();
+      }
+    }
+  }">
+
+    <h2 class="text-sm font-bold uppercase tracking-widest opacity-60 mb-2">Minimap</h2>
+
+    <canvas
+      x-ref="canvas"
+      :width="size"
+      :height="size"
+      class="rounded border border-base-300"
+    ></canvas>
+
+    <p class="text-xs opacity-40 mt-1" x-text="entities.length + ' entities'"></p>
+
+  </div>
+</body>
+</html>
