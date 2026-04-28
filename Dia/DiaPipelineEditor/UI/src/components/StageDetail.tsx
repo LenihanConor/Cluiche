@@ -1,5 +1,6 @@
 import type { FC } from 'react';
-import type { LogLine } from '../state/types';
+import type { LogLine, StepState } from '../state/types';
+import { StepRow } from './StepRow';
 
 const levelColors: Record<string, string> = {
     info: '#ccc',
@@ -9,11 +10,14 @@ const levelColors: Record<string, string> = {
 };
 
 interface StageDetailProps {
+    steps: StepState[];
     logLines: LogLine[];
 }
 
-export const StageDetail: FC<StageDetailProps> = ({ logLines }) => {
-    if (logLines.length === 0) {
+export const StageDetail: FC<StageDetailProps> = ({ steps, logLines }) => {
+    const hasContent = steps.length > 0 || logLines.length > 0;
+
+    if (!hasContent) {
         return (
             <div style={{ padding: '2px 0 2px 28px', color: '#555', fontSize: 12 }}>
                 No log output
@@ -23,6 +27,9 @@ export const StageDetail: FC<StageDetailProps> = ({ logLines }) => {
 
     return (
         <div style={{ padding: '0 0 4px 16px' }}>
+            {steps.map(step => (
+                <StepRow key={step.name} step={step} />
+            ))}
             {logLines.map((line, i) => (
                 <div
                     key={i}

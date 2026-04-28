@@ -18,7 +18,12 @@ def _copy_files(
     out_dir: Optional[Path],
     force: bool,
     repo_root: Path,
+    output=None,
+    system: str = "pipeline",
+    stage: str = "deploy",
 ) -> int:
+    if output:
+        output.step_started(system=system, stage=stage, step="copy-files")
     try:
         for rule in rules:
             src_pat = resolve_variables(rule.src, build_config, platform, repo_root)
@@ -45,19 +50,34 @@ def _copy_files(
                 else:
                     logger.debug(f"  skip (up to date) {src_path.name}")
     except OSError as e:
-        logger.error(f"deploy: copy failed: {e}")
+        err = f"copy failed: {e}"
+        logger.error(f"deploy: {err}")
+        if output:
+            output.step_failed(system=system, stage=stage, step="copy-files", error=err)
         return 1
+    if output:
+        output.log(system=system, level="info", message=f"copied {len(rules)} deploy rules", stage=stage)
+        output.step_completed(system=system, stage=stage, step="copy-files")
     return 0
 
 
-def _run_ui_builds(ui_builds, repo_root: Path) -> int:
+def _run_ui_builds(ui_builds, repo_root: Path, output=None, system: str = "pipeline", stage: str = "deploy") -> int:
+    if output:
+        output.step_started(system=system, stage=stage, step="ui-builds")
     for entry in ui_builds:
         cwd = repo_root / entry.cwd
         logger.info(f"deploy: ui_build in {entry.cwd}: {entry.cmd}")
+        if output:
+            output.log(system=system, level="info", message=f"ui_build: {entry.cwd}", stage=stage)
         result = subprocess.run(entry.cmd, cwd=str(cwd), shell=True)
         if result.returncode != 0:
-            logger.error(f"deploy: ui_build failed (exit {result.returncode}): {entry.cmd}")
+            err = f"ui_build failed (exit {result.returncode}): {entry.cmd}"
+            logger.error(f"deploy: {err}")
+            if output:
+                output.step_failed(system=system, stage=stage, step="ui-builds", error=err)
             return result.returncode
+    if output:
+        output.step_completed(system=system, stage=stage, step="ui-builds")
     return 0
 
 
@@ -81,13 +101,14 @@ def _is_staged(rules, build_config: str, platform: str, out_dir: Optional[Path],
     return True
 
 
-def run(config: PipelineConfig, target: str, build_config: str, force: bool, repo_root: Path) -> int:
+def run(config: PipelineConfig, target: str, build_config: str, force: bool, repo_root: Path, output=None, system: str = "pipeline") -> int:
     """Called by the pipeline runner (uses path_resolver for $(OutDir))."""
+    stage = "deploy"
     deploy = config.targets[target].deploy
     platform = config.global_cfg.default_platform
 
     if deploy.ui_builds:
-        rc = _run_ui_builds(deploy.ui_builds, repo_root)
+        rc = _run_ui_builds(deploy.ui_builds, repo_root, output=output, system=system, stage=stage)
         if rc != 0:
             return rc
 
@@ -95,7 +116,7 @@ def run(config: PipelineConfig, target: str, build_config: str, force: bool, rep
         logger.info("deploy: already staged (use --force to re-copy)")
         return 0
 
-    return _copy_files(deploy.files, build_config, platform, None, force, repo_root)
+    return _copy_files(deploy.files, build_config, platform, None, force, repo_root, output=output, system=system, stage=stage)
 
 
 def run_deploy(
@@ -107,6 +128,7 @@ def run_deploy(
     repo_root: Path,
 ) -> int:
     """Called by `dia pipeline deploy <target>` — out_dir supplied by MSBuild $(TargetDir)."""
+    stage = "deploy"
     deploy = config.targets[target].deploy
     platform = config.global_cfg.default_platform
 

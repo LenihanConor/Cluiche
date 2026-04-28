@@ -17,7 +17,7 @@ namespace Dia
 			PipelineEditorPlugin();
 			~PipelineEditorPlugin();
 
-			const char* GetName() const override { return "DiaPipelineEditor"; }
+			const char* GetName() const override { return "Pipeline Editor"; }
 			const char* GetVersion() const override { return "1.0.0"; }
 			const char* GetDescription() const override { return "Live pipeline viewer and build trigger"; }
 			const char* GetUIPath() const override { return "dia://diapipelineeditor/index.html"; }
@@ -39,6 +39,8 @@ namespace Dia
 			RunHistoryStore* mHistoryStore;
 			Dia::Editor::WebUIBridge* mBridge;
 			int mLastPushedEventIndex;
+			bool mLastBuildRunning;
+			int mLastExitCode;
 			char mRepoRoot[512];
 			char mPluginOutputRoot[512];
 		};

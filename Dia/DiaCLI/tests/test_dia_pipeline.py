@@ -503,3 +503,183 @@ def test_runner_emits_run_started(tmp_path):
          patch(f"{_RUNNER_PREFIX}.package_stage.run", return_value=0):
         run_pipeline(cfg, "googletest", ["compile-code"], "Debug", False, out, tmp_path)
     out.run_started.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# compile_code_stage: step events
+# ---------------------------------------------------------------------------
+
+@patch("dia_cli.commands.pipeline.stages.compile_code_stage._find_msbuild")
+@patch("dia_cli.commands.pipeline.stages.compile_code_stage.subprocess.run")
+def test_compile_emits_msbuild_step_on_success(mock_run, mock_find, tmp_path):
+    fake_msbuild = tmp_path / "msbuild.exe"
+    fake_msbuild.write_text("dummy")
+    mock_find.return_value = fake_msbuild
+    mock_run.return_value = MagicMock(returncode=0)
+    cfg = _make_compile_config(tmp_path)
+    out = _mock_output()
+    code = compile_code_stage.run(cfg, "googletest", "Debug", False, tmp_path, output=out, system="pipeline")
+    assert code == 0
+    step_started_steps = [c[1]["step"] for c in out.step_started.call_args_list]
+    assert "msbuild" in step_started_steps
+    out.step_completed.assert_any_call(system="pipeline", stage="compile-code", step="msbuild")
+
+
+@patch("dia_cli.commands.pipeline.stages.compile_code_stage._find_msbuild")
+@patch("dia_cli.commands.pipeline.stages.compile_code_stage.subprocess.run")
+def test_compile_emits_msbuild_step_on_failure(mock_run, mock_find, tmp_path):
+    fake_msbuild = tmp_path / "msbuild.exe"
+    fake_msbuild.write_text("dummy")
+    mock_find.return_value = fake_msbuild
+    mock_run.return_value = MagicMock(returncode=1)
+    cfg = _make_compile_config(tmp_path)
+    out = _mock_output()
+    code = compile_code_stage.run(cfg, "googletest", "Debug", False, tmp_path, output=out, system="pipeline")
+    assert code == 1
+    out.step_failed.assert_any_call(system="pipeline", stage="compile-code", step="msbuild", error="msbuild exited 1")
+
+
+@patch("dia_cli.commands.pipeline.stages.compile_code_stage._find_msbuild")
+@patch("dia_cli.commands.pipeline.stages.compile_code_stage.subprocess.run")
+def test_compile_forwards_msbuild_stdout_as_log_lines(mock_run, mock_find, tmp_path):
+    fake_msbuild = tmp_path / "msbuild.exe"
+    fake_msbuild.write_text("dummy")
+    mock_find.return_value = fake_msbuild
+    mock_run.return_value = MagicMock(returncode=0, stdout="  Building Proj.vcxproj\n  Linking...\n", stderr="")
+    cfg = _make_compile_config(tmp_path)
+    out = _mock_output()
+    code = compile_code_stage.run(cfg, "googletest", "Debug", False, tmp_path, output=out, system="pipeline")
+    assert code == 0
+    log_messages = [c[1]["message"] for c in out.log.call_args_list]
+    assert "Building Proj.vcxproj" in log_messages
+    assert "Linking..." in log_messages
+
+
+@patch("dia_cli.commands.pipeline.stages.compile_code_stage._find_msbuild")
+@patch("dia_cli.commands.pipeline.stages.compile_code_stage.subprocess.run")
+def test_compile_forwards_msbuild_stderr_as_error_log_on_failure(mock_run, mock_find, tmp_path):
+    fake_msbuild = tmp_path / "msbuild.exe"
+    fake_msbuild.write_text("dummy")
+    mock_find.return_value = fake_msbuild
+    mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="  error C2065: undeclared identifier\n")
+    cfg = _make_compile_config(tmp_path)
+    out = _mock_output()
+    code = compile_code_stage.run(cfg, "googletest", "Debug", False, tmp_path, output=out, system="pipeline")
+    assert code == 1
+    error_calls = [c for c in out.log.call_args_list if c[1].get("level") == "error"]
+    error_msgs = [c[1]["message"] for c in error_calls]
+    assert "error C2065: undeclared identifier" in error_msgs
+
+
+@patch("dia_cli.commands.pipeline.stages.compile_code_stage.subprocess.run")
+def test_protobuf_emits_step_on_success(mock_run, tmp_path):
+    mock_run.return_value = MagicMock(returncode=0)
+    cfg = _make_proto_config(tmp_path)
+    protoc = tmp_path / compile_code_stage._DEFAULT_PROTOC
+    protoc.parent.mkdir(parents=True, exist_ok=True)
+    protoc.write_text("dummy")
+    (tmp_path / "proto").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "proto/debug_protocol.proto").write_text("")
+    out = _mock_output()
+    code = compile_code_stage._build_protobuf(cfg, force=True, repo_root=tmp_path, output=out, system="pipeline", stage="compile-code")
+    assert code == 0
+    out.step_started.assert_called_once_with(system="pipeline", stage="compile-code", step="protobuf")
+    out.step_completed.assert_called_once_with(system="pipeline", stage="compile-code", step="protobuf")
+
+
+def test_protobuf_emits_step_failed_when_protoc_missing(tmp_path):
+    cfg = _make_proto_config(tmp_path)
+    out = _mock_output()
+    code = compile_code_stage._build_protobuf(cfg, force=True, repo_root=tmp_path, output=out, system="pipeline", stage="compile-code")
+    assert code == 1
+    out.step_started.assert_called_once_with(system="pipeline", stage="compile-code", step="protobuf")
+    out.step_failed.assert_called_once()
+    assert out.step_failed.call_args[1]["step"] == "protobuf"
+
+
+# ---------------------------------------------------------------------------
+# package_stage: step events
+# ---------------------------------------------------------------------------
+
+def test_deploy_emits_copy_files_step_on_success(tmp_path):
+    src_file = tmp_path / "External" / "Python311" / "python311.dll"
+    src_file.parent.mkdir(parents=True, exist_ok=True)
+    src_file.write_bytes(b"fake dll")
+    cfg = _make_deploy_config(tmp_path, [{"src": "External/Python311/python311.dll", "dest": "$(OutDir)"}])
+    out = _mock_output()
+    code = package_stage.run(cfg, "googletest", "Debug", force=True, repo_root=tmp_path, output=out, system="pipeline")
+    assert code == 0
+    out.step_started.assert_any_call(system="pipeline", stage="deploy", step="copy-files")
+    out.step_completed.assert_any_call(system="pipeline", stage="deploy", step="copy-files")
+
+
+def test_deploy_emits_copy_files_step_failed_on_oserror(tmp_path, monkeypatch):
+    cfg = _make_deploy_config(tmp_path, [{"src": "External/Python311/python311.dll", "dest": "$(OutDir)"}])
+    src_file = tmp_path / "External" / "Python311" / "python311.dll"
+    src_file.parent.mkdir(parents=True, exist_ok=True)
+    src_file.write_bytes(b"data")
+
+    import shutil as _shutil
+    original_copy2 = _shutil.copy2
+    def raise_oserror(src, dst):
+        raise OSError("disk full")
+    monkeypatch.setattr("dia_cli.commands.pipeline.stages.package_stage.shutil.copy2", raise_oserror)
+
+    out = _mock_output()
+    code = package_stage.run(cfg, "googletest", "Debug", force=True, repo_root=tmp_path, output=out, system="pipeline")
+    assert code == 1
+    out.step_started.assert_any_call(system="pipeline", stage="deploy", step="copy-files")
+    out.step_failed.assert_any_call(system="pipeline", stage="deploy", step="copy-files", error="copy failed: disk full")
+
+
+@patch("dia_cli.commands.pipeline.stages.package_stage.subprocess.run")
+def test_deploy_emits_ui_builds_step_on_success(mock_run, tmp_path):
+    mock_run.return_value = MagicMock(returncode=0)
+    from dia_cli.commands.pipeline.pipeline_config import (
+        PipelineConfig, GlobalConfig, ProtoConfig, TargetConfig, DeployConfig, DeployUiBuild,
+    )
+    ui_build = DeployUiBuild(cwd=".", cmd="node build.js")
+    cfg = PipelineConfig(
+        global_cfg=GlobalConfig(),
+        proto=ProtoConfig(),
+        targets={"googletest": TargetConfig(project="", stages=[], deploy=DeployConfig(ui_builds=[ui_build]))},
+    )
+    out = _mock_output()
+    code = package_stage.run(cfg, "googletest", "Debug", force=True, repo_root=tmp_path, output=out, system="pipeline")
+    assert code == 0
+    out.step_started.assert_any_call(system="pipeline", stage="deploy", step="ui-builds")
+    out.step_completed.assert_any_call(system="pipeline", stage="deploy", step="ui-builds")
+
+
+@patch("dia_cli.commands.pipeline.stages.package_stage.subprocess.run")
+def test_deploy_emits_ui_builds_step_failed(mock_run, tmp_path):
+    mock_run.return_value = MagicMock(returncode=1)
+    from dia_cli.commands.pipeline.pipeline_config import (
+        PipelineConfig, GlobalConfig, ProtoConfig, TargetConfig, DeployConfig, DeployUiBuild,
+    )
+    ui_build = DeployUiBuild(cwd=".", cmd="node build.js")
+    cfg = PipelineConfig(
+        global_cfg=GlobalConfig(),
+        proto=ProtoConfig(),
+        targets={"googletest": TargetConfig(project="", stages=[], deploy=DeployConfig(ui_builds=[ui_build]))},
+    )
+    out = _mock_output()
+    code = package_stage.run(cfg, "googletest", "Debug", force=True, repo_root=tmp_path, output=out, system="pipeline")
+    assert code == 1
+    out.step_failed.assert_any_call(system="pipeline", stage="deploy", step="ui-builds", error="ui_build failed (exit 1): node build.js")
+
+
+# ---------------------------------------------------------------------------
+# pipeline_runner: output and system forwarded to handlers
+# ---------------------------------------------------------------------------
+
+def test_runner_passes_output_and_system_to_handlers(tmp_path):
+    cfg = _make_full_config(tmp_path)
+    out = _mock_output()
+    with patch(f"{_RUNNER_PREFIX}.compile_code_stage.run", return_value=0) as m_compile, \
+         patch(f"{_RUNNER_PREFIX}.asset_build_stage.run", return_value=0), \
+         patch(f"{_RUNNER_PREFIX}.package_stage.run", return_value=0):
+        run_pipeline(cfg, "googletest", ["compile-code"], "Debug", False, out, tmp_path)
+    _, kwargs = m_compile.call_args
+    assert kwargs.get("output") is out
+    assert kwargs.get("system") == "pipeline"

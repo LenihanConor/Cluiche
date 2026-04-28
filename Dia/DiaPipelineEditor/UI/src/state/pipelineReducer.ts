@@ -1,4 +1,4 @@
-import type { PipelineState, PipelineEventData, StageState, LogLine, HistoryRun } from './types';
+import type { PipelineState, PipelineEventData, StageState, StepState, LogLine, HistoryRun } from './types';
 import { initialPipelineState } from './types';
 
 export type PipelineAction =
@@ -17,12 +17,22 @@ function findOrCreateStage(stages: StageState[], name: string): StageState[] {
         durationMs: 0,
         startTimestamp: 0,
         logLines: [],
+        steps: [],
         expanded: false,
     }];
 }
 
 function updateStage(stages: StageState[], name: string, updater: (s: StageState) => StageState): StageState[] {
     return stages.map(s => s.name === name ? updater(s) : s);
+}
+
+function findOrCreateStep(steps: StepState[], name: string): StepState[] {
+    if (steps.some(s => s.name === name)) return steps;
+    return [...steps, { name, status: 'not-started', durationMs: 0, startTimestamp: 0 }];
+}
+
+function updateStep(steps: StepState[], name: string, updater: (s: StepState) => StepState): StepState[] {
+    return steps.map(s => s.name === name ? updater(s) : s);
 }
 
 function processEvent(state: PipelineState, evt: PipelineEventData): PipelineState {
@@ -46,6 +56,7 @@ function processEvent(state: PipelineState, evt: PipelineEventData): PipelineSta
                     ...s,
                     status: 'running',
                     startTimestamp: evt.ts,
+                    expanded: true,
                 })),
             };
         }
@@ -58,6 +69,7 @@ function processEvent(state: PipelineState, evt: PipelineEventData): PipelineSta
                     ...s,
                     status: 'passed',
                     durationMs: evt.durationMs >= 0 ? evt.durationMs : s.durationMs,
+                    expanded: false,
                 })),
             };
         }
@@ -70,6 +82,51 @@ function processEvent(state: PipelineState, evt: PipelineEventData): PipelineSta
                     ...s,
                     status: 'failed',
                     durationMs: evt.durationMs >= 0 ? evt.durationMs : s.durationMs,
+                })),
+            };
+        }
+
+        case 'OnStepStarted': {
+            const stages = findOrCreateStage(state.stages, evt.stage);
+            return {
+                ...state,
+                stages: updateStage(stages, evt.stage, s => ({
+                    ...s,
+                    steps: updateStep(findOrCreateStep(s.steps, evt.step), evt.step, st => ({
+                        ...st,
+                        status: 'running',
+                        startTimestamp: evt.ts,
+                    })),
+                })),
+            };
+        }
+
+        case 'OnStepCompleted': {
+            const stages = findOrCreateStage(state.stages, evt.stage);
+            return {
+                ...state,
+                stages: updateStage(stages, evt.stage, s => ({
+                    ...s,
+                    steps: updateStep(findOrCreateStep(s.steps, evt.step), evt.step, st => ({
+                        ...st,
+                        status: 'passed',
+                        durationMs: evt.durationMs >= 0 ? evt.durationMs : st.durationMs,
+                    })),
+                })),
+            };
+        }
+
+        case 'OnStepFailed': {
+            const stages = findOrCreateStage(state.stages, evt.stage);
+            return {
+                ...state,
+                stages: updateStage(stages, evt.stage, s => ({
+                    ...s,
+                    steps: updateStep(findOrCreateStep(s.steps, evt.step), evt.step, st => ({
+                        ...st,
+                        status: 'failed',
+                        durationMs: evt.durationMs >= 0 ? evt.durationMs : st.durationMs,
+                    })),
                 })),
             };
         }
@@ -124,7 +181,15 @@ export function pipelineReducer(state: PipelineState, action: PipelineAction): P
             let stages = state.stages;
             if (s.interrupted) {
                 stages = stages.map(st =>
-                    st.status === 'running' ? { ...st, status: 'interrupted' as const } : st
+                    st.status === 'running'
+                        ? {
+                            ...st,
+                            status: 'interrupted' as const,
+                            steps: st.steps.map(sp =>
+                                sp.status === 'running' ? { ...sp, status: 'interrupted' as const } : sp
+                            ),
+                        }
+                        : st
                 );
             }
             return {

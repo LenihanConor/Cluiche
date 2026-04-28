@@ -11,10 +11,11 @@ DiaPipelineEditor is an editor plugin system that provides a live build pipeline
 
 - **NDJSON Log Tailing** — C++ Module that monitors `Cluiche/out/DiaCLI/logs/pipeline/last-run.ndjson`, detects new/overwritten runs, and parses events line-by-line
 - **Event Model** — Maintain an in-memory model of the current run (stages, steps, durations, pass/fail) plus the last 10 completed runs
-- **Live UI Panel** — React/TypeScript dockable panel that renders a stage timeline with colour-coded status, expandable drill-down into log lines, and elapsed time per stage
+- **Live UI Panel** — React/TypeScript dockable panel that renders a stage timeline with colour-coded status, expandable drill-down into steps and log lines, and elapsed time per stage/step
 - **Build Triggering** — Invoke `dia pipeline` from the editor via DiaAPI command dispatch (e.g. `pipeline-start --config Debug --target googletest`), with the panel auto-attaching to the resulting NDJSON log
 - **Run History** — Store summary data (target, config, stages, pass/fail counts, total duration, timestamp) for the last 10 runs; selectable in the UI to review past results
-- **Interrupted Run Detection** — Detect unmatched `OnStageStarted` events (no corresponding `Completed`/`Failed`) and show them as "interrupted" in the UI
+- **Sub-Step Visibility** — Emit, parse, and render `OnStepStarted`/`OnStepCompleted`/`OnStepFailed` events per stage handler (protobuf, cef-wrapper, msbuild, ui-builds, copy-files); steps shown in StageDetail above log lines
+- **Interrupted Run Detection** — Detect unmatched `OnStageStarted` events (no corresponding `Completed`/`Failed`) and show them as "interrupted" in the UI; running steps within an interrupted stage also marked interrupted
 
 ## Public Interfaces
 
@@ -90,11 +91,12 @@ The panel is a dockable IEditorPlugin (`LayoutMode::kDockable`) that renders via
 |-----------|-------------|
 | `PipelineToolbar` | Target/config dropdowns, "Build" button, force checkbox |
 | `StageTimeline` | Vertical list of stages with status icons (▶ running, ✓ pass, ✗ fail, ○ skipped), elapsed time, expandable |
-| `StageDetail` | Expanded view showing log lines (`OnLogLine` events) for a given stage, with level-based colouring |
+| `StepRow` | Row inside StageDetail showing a sub-step name, status icon, and duration |
+| `StageDetail` | Expanded view showing sub-steps (`OnStep*` events) followed by log lines (`OnLogLine` events), with level-based colouring on log lines |
 | `RunSummary` | Header bar showing current run: target, config, pass/fail counts, total time |
 | `HistoryDrawer` | Sidebar or dropdown listing last 10 runs; clicking one loads its summary into the panel |
 
-**Data flow:** `NDJSON file → PipelineLogTailer (C++ poll) → WebUIBridge push → React useReducer → render`. See pipeline-panel-ui feature spec for detailed flow and state shape.
+**Data flow:** `NDJSON file → PipelineLogTailer (C++ poll) → WebUIBridge push → React useReducer → render`. Stage detail expands to show sub-steps (`StepRow`) then log lines. See pipeline-panel-ui feature spec for detailed flow and state shape.
 
 ## Dependencies
 
@@ -175,8 +177,9 @@ Features within the DiaPipelineEditor system (create with `/spec-feature`):
 | pipeline-panel-ui | React/TypeScript dockable panel — stage timeline, log drill-down, run summary | [pipeline-panel-ui.md](../../features/dia/diapipelineeditor/pipeline-panel-ui.md) | 5 days | Done |
 | build-trigger | DiaAPI commands to start/cancel pipeline from editor; auto-attach tailer to new run | [build-trigger.md](../../features/dia/diapipelineeditor/build-trigger.md) | 2 days | Done |
 | run-history | Store and browse last 10 pipeline runs with summary data | [run-history.md](../../features/dia/diapipelineeditor/run-history.md) | 2 days | Done |
+| sub-step-visibility | Emit OnStep* events from DiaCLI stage handlers; parse and render in C++ tailer and React UI | [sub-step-visibility.md](../../features/dia/diapipelineeditor/sub-step-visibility.md) | 1 day | Done |
 
-**Total Effort Estimate:** 12 days
+**Total Effort Estimate:** 13 days
 
 **Recommended Implementation Order:**
 1. ndjson-tailer (3d) — Core data layer; everything depends on parsed events
@@ -199,5 +202,5 @@ Features within the DiaPipelineEditor system (create with `/spec-feature`):
 
 ## Status
 
-`Done` — All 4 features implemented and tested  
+`Done` — All 5 features implemented and tested (added sub-step-visibility 2026-04-27)  
 **Plan:** @docs/specs/systems/dia/diapipelineeditor.plan.md

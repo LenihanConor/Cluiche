@@ -46,7 +46,8 @@ cef_wrapper = true
 [targets.cluicheeditor.deploy]
 ui_builds = [
   { cwd = "Cluiche/CluicheEditor/UI", cmd = "node node_modules/vite/bin/vite.js build" },
-  { cwd = "Dia/DiaApplicationEditor/UI", cmd = "node node_modules/vite/bin/vite.js build" }
+  { cwd = "Dia/DiaApplicationEditor/UI", cmd = "node node_modules/vite/bin/vite.js build" },
+  { cwd = "Dia/DiaPipelineEditor/UI", cmd = "node node_modules/vite/bin/vite.js build" }
 ]
 files = [
   { src = "External/CEF/Resources/*",                     dest = "$(OutDir)" },
@@ -54,15 +55,20 @@ files = [
   { src = "External/CEF/bin/$(Configuration)/*",          dest = "$(OutDir)" },
   { src = "Cluiche/CluicheEditor/Data/*",                 dest = "$(OutDir)Data/" },
   { src = "Cluiche/CluicheEditor/UI/dist/*",              dest = "$(OutDir)UI/" },
+  { src = "Cluiche/CluicheEditor/UI/dist/assets/*",       dest = "$(OutDir)UI/assets/" },
   { src = "Dia/DiaEditor/Plugin/Assets/*",                dest = "$(OutDir)editor/" },
   { src = "Dia/DiaApplicationEditor/UI/dist/*",           dest = "$(OutDir)diaapplicationeditor/" },
+  { src = "Dia/DiaApplicationEditor/UI/dist/assets/*",    dest = "$(OutDir)diaapplicationeditor/assets/" },
   { src = "Dia/DiaApplicationEditor/Assets/*",            dest = "$(OutDir)diaapplicationeditor/" },
+  { src = "Dia/DiaPipelineEditor/UI/dist/*",              dest = "$(OutDir)diapipelineeditor/" },
+  { src = "Dia/DiaPipelineEditor/UI/dist/assets/*",       dest = "$(OutDir)diapipelineeditor/assets/" },
   { src = "Cluiche/Assets/CluicheEditor/*",               dest = "$(OutDir)Assets/CluicheEditor/" }
 ]
 
 [targets.diasfml]
 project = "Dia/DiaSFML/DiaSFML.vcxproj"
 stages = ["compile-code"]
+hidden = true
 
 [targets.diasfml.deploy]
 files = [
@@ -72,6 +78,7 @@ files = [
 [targets.diauiultralight]
 project = "Dia/DiaUIUltralight/DiaUIUltralight.vcxproj"
 stages = ["compile-code"]
+hidden = true
 
 [targets.diauiultralight.deploy]
 files = [

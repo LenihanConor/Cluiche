@@ -3,7 +3,7 @@
 **Spec:** @docs/specs/systems/dia/diapipelineeditor.md  
 **Status:** Done  
 **Started:** 2026-04-27  
-**Last Updated:** 2026-04-27
+**Last Updated:** 2026-04-27 (sub-step-visibility added)
 
 ## Implementation Order
 
@@ -15,6 +15,7 @@ Features are implemented in dependency order per the system spec:
 | 2 | pipeline-panel-ui | @docs/specs/features/dia/diapipelineeditor/pipeline-panel-ui.md | @docs/specs/features/dia/diapipelineeditor/pipeline-panel-ui.plan.md | Done |
 | 3 | build-trigger | @docs/specs/features/dia/diapipelineeditor/build-trigger.md | @docs/specs/features/dia/diapipelineeditor/build-trigger.plan.md | Done |
 | 4 | run-history | @docs/specs/features/dia/diapipelineeditor/run-history.md | @docs/specs/features/dia/diapipelineeditor/run-history.plan.md | Done |
+| 5 | sub-step-visibility | @docs/specs/features/dia/diapipelineeditor/sub-step-visibility.md | — | Done |
 
 ## Shared Setup (prerequisite for feature 1)
 

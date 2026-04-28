@@ -18,6 +18,9 @@ namespace Dia
 		static const Dia::Core::StringCRC kEventOnStageStarted("OnStageStarted");
 		static const Dia::Core::StringCRC kEventOnStageCompleted("OnStageCompleted");
 		static const Dia::Core::StringCRC kEventOnStageFailed("OnStageFailed");
+		static const Dia::Core::StringCRC kEventOnStepStarted("OnStepStarted");
+		static const Dia::Core::StringCRC kEventOnStepCompleted("OnStepCompleted");
+		static const Dia::Core::StringCRC kEventOnStepFailed("OnStepFailed");
 		static const Dia::Core::StringCRC kEventOnLogLine("OnLogLine");
 
 		PipelineLogTailer::PipelineLogTailer()
@@ -56,25 +59,36 @@ namespace Dia
 			if (mLogPath[0] == '\0')
 				return;
 
-			WIN32_FILE_ATTRIBUTE_DATA fileInfo;
-			if (!GetFileAttributesExA(mLogPath, GetFileExInfoStandard, &fileInfo))
+			// Use CreateFileA with FILE_SHARE_READ|WRITE so we can read
+			// while the Python subprocess holds the file open for writing.
+			HANDLE hFile = CreateFileA(
+				mLogPath,
+				GENERIC_READ,
+				FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+				NULL,
+				OPEN_EXISTING,
+				FILE_ATTRIBUTE_NORMAL,
+				NULL);
+
+			if (hFile == INVALID_HANDLE_VALUE)
+				return;
+
+			LARGE_INTEGER liSize;
+			if (!GetFileSizeEx(hFile, &liSize))
 			{
-				// File doesn't exist yet — poll until it appears (AC7)
+				CloseHandle(hFile);
 				return;
 			}
+			long long fileSize = liSize.QuadPart;
 
-			uint64_t fileSize = (static_cast<uint64_t>(fileInfo.nFileSizeHigh) << 32)
-				| fileInfo.nFileSizeLow;
-
-			if (static_cast<long long>(fileSize) < mLastReadPos)
+			if (fileSize < mLastReadPos)
 			{
-				// File truncated — new run (AC3)
 				ResetRunState();
 			}
 
-			if (fileSize == static_cast<uint64_t>(mLastReadPos))
+			if (fileSize == mLastReadPos)
 			{
-				// No new data — check for interrupted (AC6)
+				CloseHandle(hFile);
 				LARGE_INTEGER freq, now;
 				QueryPerformanceFrequency(&freq);
 				QueryPerformanceCounter(&now);
@@ -83,13 +97,11 @@ namespace Dia
 				return;
 			}
 
-			FILE* file = nullptr;
-			if (fopen_s(&file, mLogPath, "rb") != 0 || file == nullptr)
-				return;
+			LARGE_INTEGER liSeek;
+			liSeek.QuadPart = mLastReadPos;
+			SetFilePointerEx(hFile, liSeek, NULL, FILE_BEGIN);
 
-			_fseeki64(file, mLastReadPos, SEEK_SET);
-
-			long long bytesToRead = static_cast<long long>(fileSize) - mLastReadPos;
+			long long bytesToRead = fileSize - mLastReadPos;
 			bool hasNewEvents = false;
 
 			while (bytesToRead > 0)
@@ -102,12 +114,12 @@ namespace Dia
 					break;
 				}
 
-				size_t toRead = (static_cast<size_t>(bytesToRead) < spaceInBuffer)
-					? static_cast<size_t>(bytesToRead)
-					: spaceInBuffer;
+				DWORD toRead = (static_cast<DWORD>(bytesToRead) < static_cast<DWORD>(spaceInBuffer))
+					? static_cast<DWORD>(bytesToRead)
+					: static_cast<DWORD>(spaceInBuffer);
 
-				size_t bytesRead = fread(mLineBuffer + mLineBufferLen, 1, toRead, file);
-				if (bytesRead == 0)
+				DWORD bytesRead = 0;
+				if (!ReadFile(hFile, mLineBuffer + mLineBufferLen, toRead, &bytesRead, NULL) || bytesRead == 0)
 					break;
 
 				mLineBufferLen += bytesRead;
@@ -138,8 +150,8 @@ namespace Dia
 				mLineBufferLen = remaining;
 			}
 
-			mLastReadPos = static_cast<long long>(fileSize);
-			fclose(file);
+			mLastReadPos = fileSize;
+			CloseHandle(hFile);
 
 			if (hasNewEvents)
 			{
@@ -301,6 +313,10 @@ namespace Dia
 					mUnmatchedStartedCount--;
 				mCurrentRun.failCount++;
 			}
+			// Step events: appended to mEvents and forwarded to observers, but do NOT
+			// touch mUnmatchedStartedCount — interrupt detection remains stage-based.
+			// (No else-if needed; fall through to the mEvents.Add below.)
+
 			else if (evt.eventType == kEventOnRunCompleted || evt.eventType == kEventOnRunFailed)
 			{
 				mRunInProgress = false;

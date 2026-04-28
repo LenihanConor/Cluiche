@@ -23,20 +23,20 @@ describe('PipelineToolbar', () => {
         vi.restoreAllMocks();
     });
 
-    // AC6: toolbar has target dropdown, config dropdown, force checkbox, Build button
-    it('renders target dropdown, config dropdown, force checkbox, and Build button', () => {
+    // AC6: toolbar has target dropdown, config dropdown, force checkbox, Run button
+    it('renders target dropdown, config dropdown, force checkbox, and Run button', () => {
         render(<PipelineToolbar buildRunning={false} />);
         expect(screen.getByText('Target:')).toBeInTheDocument();
         expect(screen.getByText('Config:')).toBeInTheDocument();
         expect(screen.getByText('Force')).toBeInTheDocument();
-        expect(screen.getByText('Build')).toBeInTheDocument();
+        expect(screen.getByText('Run')).toBeInTheDocument();
     });
 
     // AC8: shows Cancel when build running
     it('shows Cancel button when build is running', () => {
         render(<PipelineToolbar buildRunning={true} />);
         expect(screen.getByText('Cancel')).toBeInTheDocument();
-        expect(screen.queryByText('Build')).not.toBeInTheDocument();
+        expect(screen.queryByText('Run')).not.toBeInTheDocument();
     });
 
     // AC8: dropdowns disabled when running
@@ -65,10 +65,10 @@ describe('PipelineToolbar', () => {
         expect(checkbox).toBeChecked();
     });
 
-    // AC6: Build button is disabled when no targets are loaded
-    it('Build button is disabled when no targets loaded', () => {
+    // AC6: Run button is disabled when no targets are loaded
+    it('Run button is disabled when no targets loaded', () => {
         render(<PipelineToolbar buildRunning={false} />);
-        const button = screen.getByText('Build');
+        const button = screen.getByText('Run');
         expect(button).toBeDisabled();
     });
 

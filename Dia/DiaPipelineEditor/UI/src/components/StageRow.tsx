@@ -66,7 +66,7 @@ export const StageRow: FC<StageRowProps> = ({ stage, onToggle }) => {
                     {displayDuration}
                 </span>
             </div>
-            {stage.expanded && <StageDetail logLines={stage.logLines} />}
+            {stage.expanded && <StageDetail steps={stage.steps} logLines={stage.logLines} />}
         </div>
     );
 };

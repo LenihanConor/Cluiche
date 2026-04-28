@@ -55,6 +55,8 @@ def run_pipeline(
                 build_config=build_config,
                 force=force,
                 repo_root=repo_root,
+                output=output,
+                system=system,
             )
         except Exception as e:
             output.stage_failed(system=system, stage=stage_name, error=str(e))

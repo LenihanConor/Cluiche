@@ -68,7 +68,7 @@ namespace Dia
 			PROCESS_INFORMATION pi = {};
 
 			char workingDir[512];
-			strncpy_s(workingDir, sizeof(workingDir), mRepoRoot, _TRUNCATE);
+			snprintf(workingDir, sizeof(workingDir), "%s/Dia/DiaCLI", mRepoRoot);
 
 			BOOL ok = CreateProcessA(
 				NULL,

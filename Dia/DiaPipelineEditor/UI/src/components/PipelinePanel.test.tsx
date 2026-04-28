@@ -21,7 +21,7 @@ describe('PipelinePanel', () => {
             passCount: 2,
             failCount: 1,
             stages: [
-                { name: 'compile-code', status: 'passed', durationMs: 1500, startTimestamp: 0, logLines: [], expanded: false },
+                { name: 'compile-code', status: 'passed', durationMs: 1500, startTimestamp: 0, logLines: [], steps: [], expanded: false },
             ],
         };
         render(<PipelinePanel state={state} dispatch={vi.fn()} />);
@@ -37,9 +37,9 @@ describe('PipelinePanel', () => {
             runInProgress: true,
             target: 'test',
             stages: [
-                { name: 'compile-code', status: 'passed', durationMs: 800, startTimestamp: 0, logLines: [], expanded: false },
-                { name: 'build-assets', status: 'running', durationMs: 0, startTimestamp: Date.now() / 1000, logLines: [], expanded: false },
-                { name: 'deploy', status: 'not-started', durationMs: 0, startTimestamp: 0, logLines: [], expanded: false },
+                { name: 'compile-code', status: 'passed', durationMs: 800, startTimestamp: 0, logLines: [], steps: [], expanded: false },
+                { name: 'build-assets', status: 'running', durationMs: 0, startTimestamp: Date.now() / 1000, logLines: [], steps: [], expanded: false },
+                { name: 'deploy', status: 'not-started', durationMs: 0, startTimestamp: 0, logLines: [], steps: [], expanded: false },
             ],
         };
         render(<PipelinePanel state={state} dispatch={vi.fn()} />);
@@ -55,7 +55,7 @@ describe('PipelinePanel', () => {
             ...initialPipelineState,
             target: 'test',
             stages: [
-                { name: 'compile-code', status: 'passed', durationMs: 1500, startTimestamp: 0, logLines: [], expanded: false },
+                { name: 'compile-code', status: 'passed', durationMs: 1500, startTimestamp: 0, logLines: [], steps: [], expanded: false },
             ],
         };
         render(<PipelinePanel state={state} dispatch={dispatch} />);
@@ -78,6 +78,7 @@ describe('PipelinePanel', () => {
                     { level: 'error', message: 'C2065: undeclared identifier', timestamp: 1001 },
                     { level: 'warn', message: 'unused variable', timestamp: 1002 },
                 ],
+                steps: [],
                 expanded: true,
             }],
         };
@@ -94,7 +95,7 @@ describe('PipelinePanel', () => {
             target: 'test',
             interrupted: true,
             stages: [
-                { name: 'compile-code', status: 'interrupted', durationMs: 0, startTimestamp: 0, logLines: [], expanded: false },
+                { name: 'compile-code', status: 'interrupted', durationMs: 0, startTimestamp: 0, logLines: [], steps: [], expanded: false },
             ],
         };
         render(<PipelinePanel state={state} dispatch={vi.fn()} />);
@@ -107,7 +108,7 @@ describe('PipelinePanel', () => {
             ...initialPipelineState,
             target: 'test',
             stages: [
-                { name: 'compile-code', status: 'passed', durationMs: 1500, startTimestamp: 0, logLines: [], expanded: false },
+                { name: 'compile-code', status: 'passed', durationMs: 1500, startTimestamp: 0, logLines: [], steps: [], expanded: false },
             ],
         };
         render(<PipelinePanel state={state} dispatch={vi.fn()} />);

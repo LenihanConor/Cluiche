@@ -24,6 +24,8 @@ PipelineEditorPlugin::PipelineEditorPlugin()
 	, mHistoryStore(nullptr)
 	, mBridge(nullptr)
 	, mLastPushedEventIndex(0)
+	, mLastBuildRunning(false)
+	, mLastExitCode(0)
 {
 	mRepoRoot[0] = '\0';
 	mPluginOutputRoot[0] = '\0';
@@ -37,8 +39,26 @@ void PipelineEditorPlugin::OnLoad(const Dia::Editor::EditorPluginContext& contex
 {
 	mBridge = context.mBridge;
 
-	// Resolve repo root from current working directory
-	GetCurrentDirectoryA(sizeof(mRepoRoot), mRepoRoot);
+	// Walk up from exe path to find the repo root (contains pipeline.toml)
+	{
+		char exePath[512];
+		GetModuleFileNameA(NULL, exePath, sizeof(exePath));
+		char* sep = strrchr(exePath, '\\');
+		if (sep) *sep = '\0';
+		strncpy_s(mRepoRoot, sizeof(mRepoRoot), exePath, _TRUNCATE);
+
+		for (int i = 0; i < 8; ++i)
+		{
+			char probe[512 + 16];
+			snprintf(probe, sizeof(probe), "%s\\pipeline.toml", mRepoRoot);
+			DWORD attr = GetFileAttributesA(probe);
+			if (attr != INVALID_FILE_ATTRIBUTES)
+				break;
+			char* up = strrchr(mRepoRoot, '\\');
+			if (up == nullptr) break;
+			*up = '\0';
+		}
+	}
 
 	mTailer = new PipelineLogTailer();
 	char logPath[1024];
@@ -102,13 +122,20 @@ void PipelineEditorPlugin::OnUpdate(float /*deltaTime*/)
 		mTailer->Poll();
 	}
 
-	// Push build running state to UI
+	// Push build running state to UI only when it changes
 	if (mBridge && mBuildManager)
 	{
-		Json::Value status;
-		status["buildRunning"] = mBuildManager->IsBuildRunning();
-		status["lastExitCode"] = mBuildManager->GetLastExitCode();
-		mBridge->NotifyUIDataChanged("pipeline.build-status", status);
+		bool running = mBuildManager->IsBuildRunning();
+		int exitCode = mBuildManager->GetLastExitCode();
+		if (running != mLastBuildRunning || exitCode != mLastExitCode)
+		{
+			mLastBuildRunning = running;
+			mLastExitCode = exitCode;
+			Json::Value status;
+			status["buildRunning"] = running;
+			status["lastExitCode"] = exitCode;
+			mBridge->NotifyUIDataChanged("pipeline.build-status", status);
+		}
 	}
 }
 

@@ -106,7 +106,7 @@ describe('pipelineReducer edge cases', () => {
         const state: PipelineState = {
             ...initialPipelineState,
             runInProgress: true,
-            stages: [{ name: 'compile', status: 'running', durationMs: 0, startTimestamp: 1000, logLines: [], expanded: false }],
+            stages: [{ name: 'compile', status: 'running', durationMs: 0, startTimestamp: 1000, logLines: [], steps: [], expanded: false }],
         };
 
         const result = pipelineReducer(state, {
@@ -121,7 +121,7 @@ describe('pipelineReducer edge cases', () => {
         const state: PipelineState = {
             ...initialPipelineState,
             runInProgress: true,
-            stages: [{ name: 'compile', status: 'running', durationMs: 0, startTimestamp: 1000, logLines: [], expanded: false }],
+            stages: [{ name: 'compile', status: 'running', durationMs: 0, startTimestamp: 1000, logLines: [], steps: [], expanded: false }],
         };
 
         const result = pipelineReducer(state, {
@@ -136,7 +136,7 @@ describe('pipelineReducer edge cases', () => {
         const state: PipelineState = {
             ...initialPipelineState,
             runInProgress: true,
-            stages: [{ name: 'compile', status: 'running', durationMs: 999, startTimestamp: 1000, logLines: [], expanded: false }],
+            stages: [{ name: 'compile', status: 'running', durationMs: 999, startTimestamp: 1000, logLines: [], steps: [], expanded: false }],
         };
 
         const result = pipelineReducer(state, {
@@ -151,7 +151,7 @@ describe('pipelineReducer edge cases', () => {
         const state: PipelineState = {
             ...initialPipelineState,
             target: 'unchanged',
-            stages: [{ name: 'x', status: 'passed', durationMs: 100, startTimestamp: 0, logLines: [], expanded: false }],
+            stages: [{ name: 'x', status: 'passed', durationMs: 100, startTimestamp: 0, logLines: [], steps: [], expanded: false }],
         };
 
         const result = pipelineReducer(state, { type: 'PROCESS_EVENTS', events: [] });

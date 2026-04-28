@@ -189,7 +189,8 @@ def _load_module_as_command(name: str, module_path: Path):
     return mod
 
 
-_LOG_DIR = _root_path / "Cluiche" / "out" / "DiaCLI" / "logs"
+from utils.repo_root import find_repo_root as _find_repo_root
+_LOG_DIR = _find_repo_root(__file__) / "Cluiche" / "out" / "DiaCLI" / "logs"
 
 
 class DiaCLIWithOutput(DiaCLI):

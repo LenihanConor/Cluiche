@@ -19,8 +19,8 @@ export function useBridgeRequest() {
     useEffect(() => {
         const handler = (event: MessageEvent) => {
             const data = event.data;
-            if (!data?.__dia) return;
-            if (data.topic !== 'response' && !data.reqId) return;
+            if (!data?.__dia && !data?.__diaResponse) return;
+            if (!data.reqId) return;
 
             const reqId = data.reqId as string;
             const callback = pendingRef.current.get(reqId);

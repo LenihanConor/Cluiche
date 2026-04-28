@@ -273,6 +273,7 @@
     <ClCompile Include="PipelineEditor\TestPipelineEditorPluginBridge.cpp" />
     <ClCompile Include="PipelineEditor\TestBuildTrigger.cpp" />
     <ClCompile Include="PipelineEditor\TestRunHistoryStore.cpp" />
+    <ClCompile Include="PipelineEditor\TestPipelineTargetParser.cpp" />
     <!-- Google Test Source Files - Compiled directly into project -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">
       <AdditionalIncludeDirectories>$(ProjectDir)../../../External/googletest/googletest/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

@@ -136,7 +136,7 @@ export const PipelineToolbar: FC<PipelineToolbarProps> = ({ buildRunning }) => {
                         opacity: targets.length === 0 ? 0.5 : 1,
                     }}
                 >
-                    Build
+                    Run
                 </button>
             )}
         </div>

@@ -388,6 +388,176 @@ TEST(PipelineLogTailer, AC9_MalformedBetweenValidPreservesState)
 	tailer.Shutdown();
 }
 
+// ---------------------------------------------------------------------------
+// Step event tests
+// ---------------------------------------------------------------------------
+
+// Step events are appended to mEvents; mUnmatchedStartedCount is not touched
+TEST(PipelineLogTailer, StepEvents_AppendedWithoutAffectingInterruptDetection)
+{
+	TempFile tmp;
+	PipelineLogTailer tailer;
+	tailer.Initialize(tmp.Path());
+
+	const char* stepStarted =
+		"{\"event\":\"OnStepStarted\",\"system\":\"pipeline\",\"stage\":\"compile-code\","
+		"\"step\":\"msbuild\",\"ts\":1714123457.0}\n";
+	const char* stepCompleted =
+		"{\"event\":\"OnStepCompleted\",\"system\":\"pipeline\",\"stage\":\"compile-code\","
+		"\"step\":\"msbuild\",\"durationMs\":3000,\"ts\":1714123460.0}\n";
+
+	tmp.Write(kRunStarted);
+	tmp.Write(kStageStarted);
+	tmp.Write(stepStarted);
+	tmp.Write(stepCompleted);
+	tmp.Write(kStageCompleted);
+	tmp.Write(kRunCompleted);
+	tailer.Poll();
+
+	// All 6 events stored
+	EXPECT_EQ(tailer.GetEventCount(), 6);
+
+	// Step event fields parsed correctly
+	const PipelineEvent& stepEvt = tailer.GetEvent(2);
+	EXPECT_EQ(stepEvt.eventType, Dia::Core::StringCRC("OnStepStarted"));
+	EXPECT_EQ(stepEvt.stage, Dia::Core::StringCRC("compile-code"));
+	EXPECT_EQ(stepEvt.step, Dia::Core::StringCRC("msbuild"));
+
+	const PipelineEvent& stepDoneEvt = tailer.GetEvent(3);
+	EXPECT_EQ(stepDoneEvt.eventType, Dia::Core::StringCRC("OnStepCompleted"));
+	EXPECT_EQ(stepDoneEvt.durationMs, 3000);
+
+	// Run summary unaffected by step events
+	const RunSummary& summary = tailer.GetCurrentRunSummary();
+	EXPECT_EQ(summary.passCount, 1);
+	EXPECT_EQ(summary.failCount, 0);
+	EXPECT_FALSE(tailer.IsRunInProgress());
+
+	tailer.Shutdown();
+}
+
+// Step events do NOT count toward mUnmatchedStartedCount — a stageStarted with only
+// step events between it and its completed should not corrupt interrupt detection.
+TEST(PipelineLogTailer, StepEvents_DoNotCorruptInterruptDetection)
+{
+	TempFile tmp;
+	PipelineLogTailer tailer;
+	tailer.Initialize(tmp.Path());
+
+	const char* stepStarted =
+		"{\"event\":\"OnStepStarted\",\"system\":\"pipeline\",\"stage\":\"compile-code\","
+		"\"step\":\"protobuf\",\"ts\":1714123456.5}\n";
+	const char* stepCompleted =
+		"{\"event\":\"OnStepCompleted\",\"system\":\"pipeline\",\"stage\":\"compile-code\","
+		"\"step\":\"protobuf\",\"durationMs\":500,\"ts\":1714123457.0}\n";
+
+	tmp.Write(kRunStarted);
+	tmp.Write(kStageStarted);     // mUnmatchedStartedCount = 1
+	tmp.Write(stepStarted);       // must NOT increment mUnmatchedStartedCount
+	tmp.Write(stepCompleted);     // must NOT decrement mUnmatchedStartedCount
+	tmp.Write(kStageCompleted);   // mUnmatchedStartedCount = 0
+	tmp.Write(kRunCompleted);
+	tailer.Poll();
+
+	EXPECT_FALSE(tailer.IsRunInProgress());
+	EXPECT_EQ(tailer.GetCurrentRunSummary().passCount, 1);
+	EXPECT_FALSE(tailer.GetCurrentRunSummary().interrupted);
+
+	tailer.Shutdown();
+}
+
+// OnStepFailed is stored but does NOT affect stage pass/fail counts
+TEST(PipelineLogTailer, StepEvents_StepFailedStoredButDoesNotIncrementFailCount)
+{
+	TempFile tmp;
+	PipelineLogTailer tailer;
+	tailer.Initialize(tmp.Path());
+
+	const char* stepStarted =
+		"{\"event\":\"OnStepStarted\",\"system\":\"pipeline\",\"stage\":\"compile-code\","
+		"\"step\":\"msbuild\",\"ts\":1714123457.0}\n";
+	const char* stepFailed =
+		"{\"event\":\"OnStepFailed\",\"system\":\"pipeline\",\"stage\":\"compile-code\","
+		"\"step\":\"msbuild\",\"error\":\"msbuild exited 1\",\"durationMs\":2000,\"ts\":1714123459.0}\n";
+
+	tmp.Write(kRunStarted);
+	tmp.Write(kStageStarted);
+	tmp.Write(stepStarted);
+	tmp.Write(stepFailed);
+	tmp.Write(kStageFailed);  // Stage itself fails
+	tmp.Write(kRunFailed);
+	tailer.Poll();
+
+	EXPECT_EQ(tailer.GetEventCount(), 6);
+
+	const PipelineEvent& stepFailEvt = tailer.GetEvent(3);
+	EXPECT_EQ(stepFailEvt.eventType, Dia::Core::StringCRC("OnStepFailed"));
+	ASSERT_NE(stepFailEvt.error, nullptr);
+	EXPECT_STREQ(stepFailEvt.error, "msbuild exited 1");
+	EXPECT_EQ(stepFailEvt.durationMs, 2000);
+
+	// Stage-level counts: step failure doesn't add to failCount — only stage failure does
+	const RunSummary& summary = tailer.GetCurrentRunSummary();
+	EXPECT_EQ(summary.passCount, 0);
+	EXPECT_EQ(summary.failCount, 1);
+
+	tailer.Shutdown();
+}
+
+// Multiple steps across multiple stages all stored correctly
+TEST(PipelineLogTailer, StepEvents_MultipleStagesMultipleSteps)
+{
+	TempFile tmp;
+	PipelineLogTailer tailer;
+	tailer.Initialize(tmp.Path());
+
+	const char* stage2Started =
+		"{\"event\":\"OnStageStarted\",\"system\":\"pipeline\",\"stage\":\"deploy\",\"ts\":1714123462.0}\n";
+	const char* step1Started =
+		"{\"event\":\"OnStepStarted\",\"system\":\"pipeline\",\"stage\":\"compile-code\","
+		"\"step\":\"msbuild\",\"ts\":1714123456.5}\n";
+	const char* step1Completed =
+		"{\"event\":\"OnStepCompleted\",\"system\":\"pipeline\",\"stage\":\"compile-code\","
+		"\"step\":\"msbuild\",\"durationMs\":4000,\"ts\":1714123460.5}\n";
+	const char* step2Started =
+		"{\"event\":\"OnStepStarted\",\"system\":\"pipeline\",\"stage\":\"deploy\","
+		"\"step\":\"copy-files\",\"ts\":1714123462.1}\n";
+	const char* step2Completed =
+		"{\"event\":\"OnStepCompleted\",\"system\":\"pipeline\",\"stage\":\"deploy\","
+		"\"step\":\"copy-files\",\"durationMs\":200,\"ts\":1714123462.3}\n";
+	const char* stage2Completed =
+		"{\"event\":\"OnStageCompleted\",\"system\":\"pipeline\",\"stage\":\"deploy\","
+		"\"durationMs\":400,\"ts\":1714123462.4}\n";
+
+	tmp.Write(kRunStarted);
+	tmp.Write(kStageStarted);
+	tmp.Write(step1Started);
+	tmp.Write(step1Completed);
+	tmp.Write(kStageCompleted);
+	tmp.Write(stage2Started);
+	tmp.Write(step2Started);
+	tmp.Write(step2Completed);
+	tmp.Write(stage2Completed);
+	tmp.Write(kRunCompleted);
+	tailer.Poll();
+
+	EXPECT_EQ(tailer.GetEventCount(), 10);
+	EXPECT_EQ(tailer.GetCurrentRunSummary().passCount, 2);
+	EXPECT_EQ(tailer.GetCurrentRunSummary().failCount, 0);
+	EXPECT_FALSE(tailer.IsRunInProgress());
+
+	// Verify step stages are tagged correctly
+	const PipelineEvent& s1 = tailer.GetEvent(2);
+	EXPECT_EQ(s1.stage, Dia::Core::StringCRC("compile-code"));
+	EXPECT_EQ(s1.step, Dia::Core::StringCRC("msbuild"));
+
+	const PipelineEvent& s2 = tailer.GetEvent(6);
+	EXPECT_EQ(s2.stage, Dia::Core::StringCRC("deploy"));
+	EXPECT_EQ(s2.step, Dia::Core::StringCRC("copy-files"));
+
+	tailer.Shutdown();
+}
+
 // Full pipeline run end-to-end
 TEST(PipelineLogTailer, FullRunEndToEnd)
 {

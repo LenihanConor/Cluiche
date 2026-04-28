@@ -11,6 +11,23 @@
 
 using namespace Dia::PipelineEditor;
 
+static void CreateDirectoryRecursive(const char* path)
+{
+	char buf[512];
+	strncpy_s(buf, sizeof(buf), path, _TRUNCATE);
+	for (char* p = buf + 1; *p; ++p)
+	{
+		if (*p == '/' || *p == '\\')
+		{
+			char saved = *p;
+			*p = '\0';
+			CreateDirectoryA(buf, nullptr);
+			*p = saved;
+		}
+	}
+	CreateDirectoryA(buf, nullptr);
+}
+
 static void CopyFileToPath(const char* src, const char* dst)
 {
 	FILE* fIn = nullptr;
@@ -60,7 +77,7 @@ void RunHistoryStore::Initialize(const char* pluginRootPath, const char* session
 	snprintf(mSessionsDir, sizeof(mSessionsDir), "%s/.sessions", pluginRootPath);
 	mRunCount = 0;
 
-	CreateDirectoryA(pluginRootPath, nullptr);
+	CreateDirectoryRecursive(pluginRootPath);
 	ArchiveStaleSession();
 	WriteContext();
 	EnsureDirectoryExists();
@@ -268,7 +285,7 @@ void RunHistoryStore::ArchiveStaleSession()
 
 void RunHistoryStore::WriteContext()
 {
-	CreateDirectoryA(mPluginRoot, nullptr);
+	CreateDirectoryRecursive(mPluginRoot);
 
 	Json::Value root;
 	root["sessionId"] = mSessionId;
@@ -369,7 +386,7 @@ void RunHistoryStore::PruneSessions()
 
 void RunHistoryStore::EnsureDirectoryExists()
 {
-	CreateDirectoryA(mHistoryDir, nullptr);
+	CreateDirectoryRecursive(mHistoryDir);
 }
 
 Json::Value RunHistoryStore::SerializeRun(const RunSummary& run)

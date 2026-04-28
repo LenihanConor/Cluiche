@@ -26,7 +26,7 @@ describe('pipelineReducer', () => {
         const stateWithStages: PipelineState = {
             ...initialPipelineState,
             target: 'old-target',
-            stages: [{ name: 'old-stage', status: 'passed', durationMs: 100, startTimestamp: 0, logLines: [], expanded: false }],
+            stages: [{ name: 'old-stage', status: 'passed', durationMs: 100, startTimestamp: 0, logLines: [], steps: [], expanded: false }],
         };
 
         const result = pipelineReducer(stateWithStages, {
@@ -52,11 +52,50 @@ describe('pipelineReducer', () => {
         expect(result.stages[0].startTimestamp).toBe(1001);
     });
 
+    it('auto-expands stage on OnStageStarted', () => {
+        const result = pipelineReducer(
+            { ...initialPipelineState, runInProgress: true },
+            { type: 'PROCESS_EVENTS', events: [mkEvent({ event: 'OnStageStarted', stage: 'compile-code', ts: 1001 })] }
+        );
+
+        expect(result.stages[0].expanded).toBe(true);
+    });
+
+    it('auto-collapses stage on OnStageCompleted', () => {
+        const withExpanded: PipelineState = {
+            ...initialPipelineState,
+            runInProgress: true,
+            stages: [{ name: 'compile-code', status: 'running', durationMs: 0, startTimestamp: 1000, logLines: [], steps: [], expanded: true }],
+        };
+
+        const result = pipelineReducer(withExpanded, {
+            type: 'PROCESS_EVENTS',
+            events: [mkEvent({ event: 'OnStageCompleted', stage: 'compile-code', durationMs: 1500 })],
+        });
+
+        expect(result.stages[0].expanded).toBe(false);
+    });
+
+    it('keeps stage expanded on OnStageFailed', () => {
+        const withExpanded: PipelineState = {
+            ...initialPipelineState,
+            runInProgress: true,
+            stages: [{ name: 'compile-code', status: 'running', durationMs: 0, startTimestamp: 1000, logLines: [], steps: [], expanded: true }],
+        };
+
+        const result = pipelineReducer(withExpanded, {
+            type: 'PROCESS_EVENTS',
+            events: [mkEvent({ event: 'OnStageFailed', stage: 'compile-code', durationMs: 800 })],
+        });
+
+        expect(result.stages[0].expanded).toBe(true);
+    });
+
     it('sets stage to passed on OnStageCompleted', () => {
         const withRunning: PipelineState = {
             ...initialPipelineState,
             runInProgress: true,
-            stages: [{ name: 'compile-code', status: 'running', durationMs: 0, startTimestamp: 1000, logLines: [], expanded: false }],
+            stages: [{ name: 'compile-code', status: 'running', durationMs: 0, startTimestamp: 1000, logLines: [], steps: [], expanded: false }],
         };
 
         const result = pipelineReducer(withRunning, {
@@ -72,7 +111,7 @@ describe('pipelineReducer', () => {
         const withRunning: PipelineState = {
             ...initialPipelineState,
             runInProgress: true,
-            stages: [{ name: 'compile-code', status: 'running', durationMs: 0, startTimestamp: 1000, logLines: [], expanded: false }],
+            stages: [{ name: 'compile-code', status: 'running', durationMs: 0, startTimestamp: 1000, logLines: [], steps: [], expanded: false }],
         };
 
         const result = pipelineReducer(withRunning, {
@@ -89,7 +128,7 @@ describe('pipelineReducer', () => {
         const withStage: PipelineState = {
             ...initialPipelineState,
             runInProgress: true,
-            stages: [{ name: 'compile-code', status: 'running', durationMs: 0, startTimestamp: 1000, logLines: [], expanded: false }],
+            stages: [{ name: 'compile-code', status: 'running', durationMs: 0, startTimestamp: 1000, logLines: [], steps: [], expanded: false }],
         };
 
         const result = pipelineReducer(withStage, {
@@ -144,8 +183,8 @@ describe('pipelineReducer', () => {
             ...initialPipelineState,
             runInProgress: true,
             stages: [
-                { name: 'compile-code', status: 'running', durationMs: 0, startTimestamp: 1000, logLines: [], expanded: false },
-                { name: 'proto-compile', status: 'passed', durationMs: 500, startTimestamp: 990, logLines: [], expanded: false },
+                { name: 'compile-code', status: 'running', durationMs: 0, startTimestamp: 1000, logLines: [], steps: [], expanded: false },
+                { name: 'proto-compile', status: 'passed', durationMs: 500, startTimestamp: 990, logLines: [], steps: [], expanded: false },
             ],
         };
 
@@ -163,7 +202,7 @@ describe('pipelineReducer', () => {
     it('toggles stage expanded state', () => {
         const withStage: PipelineState = {
             ...initialPipelineState,
-            stages: [{ name: 'compile-code', status: 'passed', durationMs: 100, startTimestamp: 0, logLines: [], expanded: false }],
+            stages: [{ name: 'compile-code', status: 'passed', durationMs: 100, startTimestamp: 0, logLines: [], steps: [], expanded: false }],
         };
 
         const result = pipelineReducer(withStage, { type: 'TOGGLE_STAGE', stageName: 'compile-code' });

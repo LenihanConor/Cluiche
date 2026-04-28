@@ -4,12 +4,20 @@ export interface LogLine {
     timestamp: number;
 }
 
+export interface StepState {
+    name: string;
+    status: 'not-started' | 'running' | 'passed' | 'failed' | 'interrupted';
+    durationMs: number;
+    startTimestamp: number;
+}
+
 export interface StageState {
     name: string;
     status: 'not-started' | 'running' | 'passed' | 'failed' | 'interrupted';
     durationMs: number;
     startTimestamp: number;
     logLines: LogLine[];
+    steps: StepState[];
     expanded: boolean;
 }
 
