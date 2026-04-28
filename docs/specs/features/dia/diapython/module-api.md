@@ -300,4 +300,4 @@ namespace Dia::Python {
 ## Status
 **Done** - Implemented and tested. Core functionality working.
 
-`Approved` - Ready for implementation (depends on type-conversion feature)
+`Done` - Implemented

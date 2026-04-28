@@ -389,4 +389,4 @@ Usage: `dia build Release`
 
 ## Status
 
-`Draft` - Feature spec created, awaiting review
+`Done` - Implemented

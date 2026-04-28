@@ -58,4 +58,4 @@ Expose C++ `BoundMethod` callbacks to JavaScript pages via an `app` global objec
 
 ## Status
 
-`Approved`
+`Done` - Implemented

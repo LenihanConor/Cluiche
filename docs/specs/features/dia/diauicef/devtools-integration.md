@@ -204,4 +204,4 @@ CluicheEditor.exe --remote-debugging-port=9223
 
 ## Status
 
-`Approved` - Ready for implementation
+`Done` - Implemented

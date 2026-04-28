@@ -71,4 +71,4 @@ dia command create tools/benchmark
 
 ## Status
 
-`Draft` - Feature spec created, awaiting review
+`Done` - Implemented

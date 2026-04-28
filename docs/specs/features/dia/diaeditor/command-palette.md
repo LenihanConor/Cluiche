@@ -439,4 +439,4 @@ The richer `CommandDispatcher` module (history persistence, metadata, CommandReg
 
 ## Status
 
-`Approved` - v0 implemented; deferred features tracked above
+`Done` - Implemented

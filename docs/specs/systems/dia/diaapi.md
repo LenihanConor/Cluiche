@@ -158,4 +158,4 @@ DiaAPI <command> --help          # Show command-specific help
 
 ## Status
 
-`Draft` - System spec approved, implementation not started
+`Done` - All features implemented

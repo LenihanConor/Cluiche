@@ -250,7 +250,7 @@ while accum >= fixedTimestep and steps < maxSubSteps:
 | Body Sleeping | Automatic deactivation of idle bodies below velocity/angular-velocity thresholds. Wake on impulse, constraint, or explicit call. Per-body opt-out. | [body-sleeping.md](../../features/dia/diarigidbody2d/body-sleeping.md) | Approved |
 | Collision Layers & Masks | Per-body layer + mask bitmask pair. Bilateral filtering in narrow-phase. Default collides-with-all. | [collision-layers.md](../../features/dia/diarigidbody2d/collision-layers.md) | Approved |
 | Physics Logging | Structured `Physics` channel DiaLogger warnings: maxSubSteps hit, velocity safety threshold exceeded, constraint drift, sleep state changes. Debug builds only. | [physics-logging.md](../../features/dia/diarigidbody2d/physics-logging.md) | Approved |
-| Visual Debugger | `DiaRigidBodyVisualDebugger`: takes `PhysicsWorld&` + `FrameData&`. Draws collision shapes, velocity arrows, contact normals, sleep state, constraint lines. On/off toggle. Separate `DiaRigidBody2DVisualDebugger` project — no graphics dependency in core physics library. | [visual-debugger.md](../../features/dia/diarigidbody2d/visual-debugger.md) | Approved |
+| ~~Visual Debugger~~ | Promoted to its own system: [DiaRigidBody2DVisualDebugger](diarigidbody2dvisualdebugger.md). Separate `.vcxproj` with DiaGraphics dependency — not a feature of this system. | — | Moved |
 
 ## Dependencies on Other Systems
 
@@ -328,4 +328,4 @@ while accum >= fixedTimestep and steps < maxSubSteps:
 
 ## Status
 
-`Approved` — Plan: @docs/specs/systems/dia/diarigidbody2d.plan.md
+`Done` — Implementation complete. Plan: @docs/specs/systems/dia/diarigidbody2d.plan.md

@@ -81,4 +81,4 @@ if bridge.is_available():
 
 ## Status
 
-`Draft` - Feature spec created, awaiting review
+`Done` - Implemented

@@ -298,4 +298,4 @@ DiaCore cannot use `DIA_LOG_*` (circular dependency) and continues to use `Dia::
 
 ## Status
 
-`Approved` — Spec approved 2026-04-21.
+`Done` — Implementation complete.

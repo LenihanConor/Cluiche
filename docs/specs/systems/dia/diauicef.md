@@ -355,7 +355,7 @@ Features within the DiaUICEF system (create with `/spec-feature`):
 
 ## Status
 
-`Approved` - All features complete, ready for implementation
+`Done` - All 8 features implemented
 
 ## Notes
 

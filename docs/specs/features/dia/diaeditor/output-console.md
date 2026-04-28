@@ -611,4 +611,4 @@ When the editor grows a real command/execution surface, the spec's fuller `LogMa
 
 ## Status
 
-`Approved` - v0 implemented; deferred features tracked above
+`Done` - Implemented

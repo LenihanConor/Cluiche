@@ -258,4 +258,4 @@ namespace Dia::Geometry2D {
 
 ## Status
 
-`Approved` — Plan: @docs/specs/systems/dia/diageometry2d.plan.md
+`Done` — Implementation complete. Plan: @docs/specs/systems/dia/diageometry2d.plan.md

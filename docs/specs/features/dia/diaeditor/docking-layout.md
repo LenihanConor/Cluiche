@@ -450,4 +450,4 @@ view.SaveLayoutToDisk();       // writes current layout blob to disk
 
 ## Status
 
-`Approved` - v0 implemented; deferred features tracked above
+`Done` - Implemented

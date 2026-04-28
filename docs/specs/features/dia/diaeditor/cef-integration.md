@@ -419,4 +419,4 @@ Windows 11 intercepts F1 at the OS level (Snipping Tool / "Get Help") *before* C
 
 ## Status
 
-`Approved` - v0 implemented; diverged transport + post-ship fixes documented above
+`Done` - Implemented

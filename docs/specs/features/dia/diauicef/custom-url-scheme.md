@@ -443,4 +443,4 @@ All binding decisions from parent specs must be honored:
 
 ## Status
 
-`Approved` - Ready for implementation
+`Done` - Implemented

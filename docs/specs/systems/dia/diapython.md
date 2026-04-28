@@ -207,4 +207,4 @@ namespace Dia::Python {
 
 ## Status
 
-`Draft` - System spec defined, implementation not started
+`Done` - All features implemented

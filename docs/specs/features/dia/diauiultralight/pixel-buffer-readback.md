@@ -56,4 +56,4 @@ Ultralight CPU renderer produces **premultiplied BGRA 32-bit** (4 bytes per pixe
 
 ## Status
 
-`Approved`
+`Done` - Implemented

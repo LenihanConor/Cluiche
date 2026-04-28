@@ -359,4 +359,4 @@ bridge->CallJavaScript("onGameStateChanged", "{\"state\": \"playing\"}");
 
 ## Status
 
-`Approved` - Ready for implementation
+`Done` - Implemented

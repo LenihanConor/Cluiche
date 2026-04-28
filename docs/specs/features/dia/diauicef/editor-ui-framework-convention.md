@@ -1,7 +1,7 @@
 # Feature Spec: Editor UI Framework Convention
 
 ## Status
-`Approved`
+`Done` - Implemented
 
 ## Traceability
 

@@ -108,4 +108,4 @@ Keeping it static means it can't break the boot path: even if the bridge is misc
 
 ## Status
 
-`Approved` - v0 implemented
+`Done` - Implemented

@@ -15,16 +15,16 @@ CluicheEditor's React shell has a multi-step async initialization sequence (pane
 
 ## Acceptance Criteria
 
-- [ ] A borderless native splash window appears immediately when the editor process starts, before CEF initialises
-- [ ] The native splash displays `splash-logo.bmp` centered and scaled to fit the window
-- [ ] The native splash is destroyed and the editor window is shown only after React signals it is ready (`shell_ready`)
-- [ ] A full-viewport React splash overlay appears in the editor window as the first rendered frame
-- [ ] The React splash displays a PNG logo (`splash-logo.png`) centered on screen
-- [ ] The React splash displays an animated CSS spinner beneath the logo
-- [ ] The React overlay fades out (CSS opacity transition, 400 ms) once `DockingManager` finishes initialising (panels fetched + layout loaded or error recovered)
-- [ ] After the fade completes the overlay is removed from the DOM (no layout impact)
-- [ ] The splash does not block keyboard shortcuts (Ctrl+Z / Ctrl+Y / Ctrl+Shift+P) registered in `App`
-- [ ] The logo PNG canonical source is `Cluiche/Assets/CluicheEditor/splash-logo.png`; a BMP copy `splash-logo.bmp` lives alongside it for Win32 GDI; a PNG copy lives at `Cluiche/CluicheEditor/UI/src/assets/splash-logo.png` for Vite import
+- [x] A borderless native splash window appears immediately when the editor process starts, before CEF initialises
+- [x] The native splash displays `splash-logo.bmp` centered and scaled to fit the window
+- [x] The native splash is destroyed and the editor window is shown only after React signals it is ready (`shell_ready`)
+- [x] A full-viewport React splash overlay appears in the editor window as the first rendered frame
+- [x] The React splash displays a PNG logo (`splash-logo.png`) centered on screen
+- [x] The React splash displays an animated CSS spinner beneath the logo
+- [x] The React overlay fades out (CSS opacity transition, 400 ms) once `DockingManager` finishes initialising (panels fetched + layout loaded or error recovered)
+- [x] After the fade completes the overlay is removed from the DOM (no layout impact)
+- [x] The splash does not block keyboard shortcuts (Ctrl+Z / Ctrl+Y / Ctrl+Shift+P) registered in `App`
+- [x] The logo PNG canonical source is `Cluiche/Assets/CluicheEditor/splash-logo.png`; a BMP copy `splash-logo.bmp` lives alongside it for Win32 GDI; a PNG copy lives at `Cluiche/CluicheEditor/UI/src/assets/splash-logo.png` for Vite import
 
 ## Design
 
@@ -158,4 +158,4 @@ App (main.tsx)
 
 ## Status
 
-`In Progress`
+`Done` - Implemented and complete.
