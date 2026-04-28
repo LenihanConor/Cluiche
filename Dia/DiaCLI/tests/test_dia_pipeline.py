@@ -139,9 +139,30 @@ def test_resolve_out_dir_release(tmp_path):
     assert result == tmp_path / "Cluiche" / "bin" / "Release" / "x64"
 
 
+def test_resolve_out_dir_per_app_debug(tmp_path):
+    result = resolve_out_dir(tmp_path, "Debug", "x64", app_name="CluicheEditor")
+    assert result == tmp_path / "Cluiche" / "bin" / "CluicheEditor" / "Debug" / "x64"
+
+
+def test_resolve_out_dir_per_app_release(tmp_path):
+    result = resolve_out_dir(tmp_path, "Release", "x64", app_name="GoogleTests")
+    assert result == tmp_path / "Cluiche" / "bin" / "GoogleTests" / "Release" / "x64"
+
+
+def test_resolve_out_dir_no_app_name_uses_shared_pool(tmp_path):
+    result = resolve_out_dir(tmp_path, "Debug", "x64", app_name=None)
+    assert result == tmp_path / "Cluiche" / "bin" / "Debug" / "x64"
+
+
 def test_resolve_variables_out_dir(tmp_path):
     result = resolve_variables("$(OutDir)file.dll", "Debug", "x64", tmp_path)
     assert "Cluiche/bin/Debug/x64" in result
+    assert result.endswith("file.dll")
+
+
+def test_resolve_variables_out_dir_per_app(tmp_path):
+    result = resolve_variables("$(OutDir)file.dll", "Debug", "x64", tmp_path, app_name="CluicheTest")
+    assert "Cluiche/bin/CluicheTest/Debug/x64" in result
     assert result.endswith("file.dll")
 
 

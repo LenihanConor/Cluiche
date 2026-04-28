@@ -11,6 +11,11 @@ from ..pipeline_config import PipelineConfig, DeployFile
 from ..path_resolver import resolve_variables
 
 
+def _app_name_for_target(config: PipelineConfig, target: str) -> str:
+    """Derive the MSBuild project name from the target's vcxproj filename."""
+    return Path(config.targets[target].project).stem
+
+
 def _copy_files(
     rules: list[DeployFile],
     build_config: str,
@@ -18,6 +23,7 @@ def _copy_files(
     out_dir: Optional[Path],
     force: bool,
     repo_root: Path,
+    app_name: Optional[str] = None,
     output=None,
     system: str = "pipeline",
     stage: str = "deploy",
@@ -32,7 +38,7 @@ def _copy_files(
                     rule.dest.replace("$(OutDir)", ""), build_config, platform, repo_root
                 ).lstrip("/\\"))
             else:
-                dest_pat = resolve_variables(rule.dest, build_config, platform, repo_root)
+                dest_pat = resolve_variables(rule.dest, build_config, platform, repo_root, app_name)
             matched = glob.glob(str(repo_root / src_pat), recursive=True)
             if not matched:
                 logger.warning(f"deploy: no files matched {src_pat}")
@@ -56,7 +62,6 @@ def _copy_files(
             output.step_failed(system=system, stage=stage, step="copy-files", error=err)
         return 1
     if output:
-        output.log(system=system, level="info", message=f"copied {len(rules)} deploy rules", stage=stage)
         output.step_completed(system=system, stage=stage, step="copy-files")
     return 0
 
@@ -67,8 +72,6 @@ def _run_ui_builds(ui_builds, repo_root: Path, output=None, system: str = "pipel
     for entry in ui_builds:
         cwd = repo_root / entry.cwd
         logger.info(f"deploy: ui_build in {entry.cwd}: {entry.cmd}")
-        if output:
-            output.log(system=system, level="info", message=f"ui_build: {entry.cwd}", stage=stage)
         result = subprocess.run(entry.cmd, cwd=str(cwd), shell=True)
         if result.returncode != 0:
             err = f"ui_build failed (exit {result.returncode}): {entry.cmd}"
@@ -81,7 +84,7 @@ def _run_ui_builds(ui_builds, repo_root: Path, output=None, system: str = "pipel
     return 0
 
 
-def _is_staged(rules, build_config: str, platform: str, out_dir: Optional[Path], repo_root: Path) -> bool:
+def _is_staged(rules, build_config: str, platform: str, out_dir: Optional[Path], repo_root: Path, app_name: Optional[str] = None) -> bool:
     for rule in rules:
         src_pat = resolve_variables(rule.src, build_config, platform, repo_root)
         if out_dir is not None:
@@ -89,7 +92,7 @@ def _is_staged(rules, build_config: str, platform: str, out_dir: Optional[Path],
                 rule.dest.replace("$(OutDir)", ""), build_config, platform, repo_root
             ).lstrip("/\\"))
         else:
-            dest_pat = resolve_variables(rule.dest, build_config, platform, repo_root)
+            dest_pat = resolve_variables(rule.dest, build_config, platform, repo_root, app_name)
         matched = glob.glob(str(repo_root / src_pat), recursive=True)
         for src_file in matched:
             src_path = Path(src_file)
@@ -106,17 +109,18 @@ def run(config: PipelineConfig, target: str, build_config: str, force: bool, rep
     stage = "deploy"
     deploy = config.targets[target].deploy
     platform = config.global_cfg.default_platform
+    app_name = _app_name_for_target(config, target)
 
     if deploy.ui_builds:
         rc = _run_ui_builds(deploy.ui_builds, repo_root, output=output, system=system, stage=stage)
         if rc != 0:
             return rc
 
-    if not force and _is_staged(deploy.files, build_config, platform, None, repo_root):
+    if not force and _is_staged(deploy.files, build_config, platform, None, repo_root, app_name):
         logger.info("deploy: already staged (use --force to re-copy)")
         return 0
 
-    return _copy_files(deploy.files, build_config, platform, None, force, repo_root, output=output, system=system, stage=stage)
+    return _copy_files(deploy.files, build_config, platform, None, force, repo_root, app_name, output=output, system=system, stage=stage)
 
 
 def run_deploy(

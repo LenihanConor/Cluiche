@@ -62,7 +62,9 @@ files = [
   { src = "Dia/DiaApplicationEditor/Assets/*",            dest = "$(OutDir)diaapplicationeditor/" },
   { src = "Dia/DiaPipelineEditor/UI/dist/*",              dest = "$(OutDir)diapipelineeditor/" },
   { src = "Dia/DiaPipelineEditor/UI/dist/assets/*",       dest = "$(OutDir)diapipelineeditor/assets/" },
-  { src = "Cluiche/Assets/CluicheEditor/*",               dest = "$(OutDir)Assets/CluicheEditor/" }
+  { src = "Cluiche/Assets/CluicheEditor/*",               dest = "$(OutDir)Assets/CluicheEditor/" },
+  { src = "Cluiche/bin/DiaUICEF_TestSubprocess/$(Configuration)/x64/DiaUICEF_TestSubprocess.exe", dest = "$(OutDir)" },
+  { src = "Cluiche/bin/DiaUICEF_TestSubprocess/$(Configuration)/x64/DiaUICEF_TestSubprocess.pdb", dest = "$(OutDir)" }
 ]
 
 [targets.diasfml]

@@ -151,6 +151,7 @@ files = [
 | build-assets | `dia pipeline --stage build-assets` | No-op stub; logs "build-assets: skipped (not yet implemented)" | [asset-build.md](../../features/dia/diapipeline/asset-build.md) | 1 day | Done |
 | deploy | `dia pipeline --stage deploy` | File copy rules from `pipeline.toml`, UI builds, glob support, `$(OutDir)`/`$(Configuration)` resolution, skip-if-staged guard | [package.md](../../features/dia/diapipeline/package.md) | 3 days | Done |
 | docker-execution | `dia pipeline --docker` | Run all stages inside Docker container via `docker run` with volume-mounted repo | [docker-execution.md](../../features/dia/diapipeline/docker-execution.md) | 2 days | Done |
+| per-app-bin-layout | Per-app bin directory layout | Branch `OutDir` in `Directory.Build.props` by `ConfigurationType`; update `path_resolver.py` for per-app deploy paths | [per-app-bin-layout.md](../../features/dia/diapipeline/per-app-bin-layout.md) | 1 day | Approved |
 
 **Total Effort Estimate:** ~11 days
 
