@@ -244,3 +244,7 @@ Dia/DiaSoftBody2D/
 | SD-004 | System | Tearing via `maxStretch` ratio (0 = disabled) | `maxStretch = 0.0f` skips tearing; per-constraint `active` flag tracks removal |
 | SD-008 | System | No STL in public API | No STL in `RopeDef`, `Rope`, or internal `DistanceConstraint` |
 | SD-009 | System | Rope first, cloth second | This feature establishes the particle + distance-constraint pattern that cloth extends |
+
+## Status
+
+`Approved`

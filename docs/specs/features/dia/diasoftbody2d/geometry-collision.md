@@ -167,3 +167,7 @@ Dia/DiaSoftBody2D/
 | SD-006 | System | No spatial structure for static shapes; flat iteration | Three typed `DynamicArrayC` lists; O(particles × shapes) flat iteration |
 | SD-007 | System | Velocity derived from position delta | `prevPosition` adjusted to cancel velocity into surface; no separate velocity field |
 | SD-008 | System | No STL in public API | No STL in shape registration API or internal storage |
+
+## Status
+
+`Approved`

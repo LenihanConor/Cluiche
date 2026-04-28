@@ -230,3 +230,7 @@ Dia/DiaSoftBody2D/
 | SD-002 | System | SoftBodyWorld is a separate peer world | `SoftBodyWorld` is standalone; `PhysicsWorld*` is optional and injected |
 | SD-005 | System | Fixed timestep with accumulator pattern | Accumulator loop with `maxSubSteps` cap |
 | SD-008 | System | No STL in public API | No STL in `WorldDef`, `SoftBodyWorld`, or body management API |
+
+## Status
+
+`Approved`

@@ -110,3 +110,7 @@ inline Dia::Maths::Vector2D DeriveVelocity(const Particle& p, float dt)
 | AD-003 | Dia App | Namespace `Dia::<Module>::` | `Dia::SoftBody2D::` throughout |
 | SD-007 | System | Velocity derived from position delta: `v = (pos - prevPos) / dt` | `DeriveVelocity` free function implements this exactly; no stored velocity field |
 | SD-008 | System | No STL in public API | No STL in struct or free function |
+
+## Status
+
+`Approved`

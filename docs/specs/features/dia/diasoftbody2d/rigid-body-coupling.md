@@ -219,3 +219,7 @@ Dia/DiaSoftBody2D/
 | SD-003 | System | Two-way rigid body coupling | Full two-way coupling implemented: anchor position drive (rigid → soft) and back-impulse (soft → rigid); particle-vs-body collision with back-impulse |
 | SD-007 | System | Velocity derived from position delta | Back-impulse derived from `(pos - prevPos) / dt * mass`; `prevPosition` adjusted for velocity cancellation |
 | SD-008 | System | No STL in public API | No STL in any coupling path |
+
+## Status
+
+`Approved`

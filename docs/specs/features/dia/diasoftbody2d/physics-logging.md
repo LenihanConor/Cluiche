@@ -188,3 +188,7 @@ All tests capture log entries by registering a test-only `ISink` implementation 
 | 8 | Acceptance Criteria (AC7) | Is 120 frames sufficient to guarantee a stable rope simulation produces zero warnings? | Depends on rope configuration. Test spec should document the exact rope definition (stiffness, iterations, pinned top) to eliminate false negatives from oscillating configurations. |
 | 9 | Implementation Notes (Insertion Point 1) | Does `steps >= mDef.maxSubSteps` reliably distinguish early exit from normal loop completion? | Safe only if the loop guard is strictly `steps < mDef.maxSubSteps`. The accumulator loop pseudocode in soft-body-world.md confirms this structure. |
 | 10 | Implementation Notes (Insertion Point 2) | Should the threshold check use `>` or `>=`? | `>` is correct — 500.0 m/s is a hard ceiling, not an inclusive boundary. Code comment added: `// > not >= : 500 m/s is the ceiling, not inclusive boundary` |
+
+## Status
+
+`Approved`

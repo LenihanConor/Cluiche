@@ -277,3 +277,7 @@ Tests use a lightweight stub `FrameData` that records all received draw calls in
 | 8 | Acceptance Criteria (AC11) | Beyond an empty body list, are there other null-pointer risks in Draw? | Anchor null checks are already explicit in DrawAnchorLinks. Main risk is out-of-range `GetParticle()` calls; mitigated by internal bounds-checking on `SoftBody`. |
 | 9 | DrawConstraints | Should torn constraints be briefly highlighted (e.g., red flash) to aid tearing debugging? | Out of scope for v1. Developers should enable the `Physics` channel (physics-logging spec) to observe torn-constraint messages in the log. Defer to a future feature spec. |
 | 10 | DrawConstraints | Could multi-body constraint sharing cause double-drawing? | Not applicable — soft-soft coupling is explicitly out of scope for v1. Each constraint is owned by exactly one body. |
+
+## Status
+
+`Approved`

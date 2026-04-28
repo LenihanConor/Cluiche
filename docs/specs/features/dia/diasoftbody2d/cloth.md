@@ -263,3 +263,7 @@ Dia/DiaSoftBody2D/
 | SD-001 | System | PBD solver | XPBD distance constraints across structural, shear, and bend layers |
 | SD-004 | System | Tearing via `maxStretch` ratio (0 = disabled) | Per-constraint `active` flag; `mIsTorn` set permanently on first removal |
 | SD-008 | System | No STL in public API | No STL in `ClothDef`, `Cloth`, or accessors |
+
+## Status
+
+`Approved`
