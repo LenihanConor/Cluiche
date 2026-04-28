@@ -56,15 +56,15 @@
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <AdditionalIncludeDirectories>$(ProjectDir)../../Dia/;$(SolutionDir)../External/CEF/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)../../Dia/;$(RepoRoot)External/CEF/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:strictStrings- /Zc:twoPhase- %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Lib>
-      <AdditionalLibraryDirectories>$(SolutionDir)../External/CEF/lib/Debug/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(RepoRoot)External/CEF/lib/Debug/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>libcef.lib;libcef_dll_wrapper.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
     <PreBuildEvent>
-      <Command>if not exist "$(SolutionDir)../External/CEF/lib/Debug/libcef_dll_wrapper.lib" (
+      <Command>if not exist "$(RepoRoot)External/CEF/lib/Debug/libcef_dll_wrapper.lib" (
   echo WARNING: libcef_dll_wrapper.lib not found. Run External\CEF\setup_cef.bat to build it. 1>&amp;2
   exit /b 1
 )</Command>
@@ -79,15 +79,15 @@
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <AdditionalIncludeDirectories>$(ProjectDir)../../Dia/;$(SolutionDir)../External/CEF/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)../../Dia/;$(RepoRoot)External/CEF/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:strictStrings- /Zc:twoPhase- %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Lib>
-      <AdditionalLibraryDirectories>$(SolutionDir)../External/CEF/lib/Release/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(RepoRoot)External/CEF/lib/Release/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>libcef.lib;libcef_dll_wrapper.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
     <PreBuildEvent>
-      <Command>if not exist "$(SolutionDir)../External/CEF/lib/Release/libcef_dll_wrapper.lib" (
+      <Command>if not exist "$(RepoRoot)External/CEF/lib/Release/libcef_dll_wrapper.lib" (
   echo WARNING: libcef_dll_wrapper.lib not found. Run External\CEF\setup_cef.bat to build it. 1>&amp;2
   exit /b 1
 )</Command>
