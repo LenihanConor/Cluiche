@@ -8,7 +8,7 @@
 | Application | @docs/specs/applications/dia.md | - |
 | System | @docs/specs/systems/dia/diasoftbody2d.md | **rigid-body-coupling** |
 
-**Status:** `Approved`
+**Status:** `Done`
 
 ---
 
@@ -222,4 +222,4 @@ Dia/DiaSoftBody2D/
 
 ## Status
 
-`Approved`
+`Done`

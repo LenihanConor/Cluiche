@@ -179,14 +179,14 @@ while accumulator >= fixedTimestep and steps < maxSubSteps:
 
 | Feature | Description | Spec | Status |
 |---------|-------------|------|--------|
-| Particle | Core particle data type: position, prevPosition, invMass, radius. Velocity derived from PBD position delta. | [particle.md](../../features/dia/diasoftbody2d/particle.md) | Draft |
-| SoftBodyWorld | Simulation container: fixed-timestep accumulator, gravity, PBD step loop, body management. | [soft-body-world.md](../../features/dia/diasoftbody2d/soft-body-world.md) | Draft |
-| Rope | 1D particle chain with distance constraints. Tearable. Optional rigid body pin anchors at endpoints. | [rope.md](../../features/dia/diasoftbody2d/rope.md) | Draft |
-| Cloth | 2D particle grid with structural, shear, and bend constraints. Tearable. Pin rows/individual particles. | [cloth.md](../../features/dia/diasoftbody2d/cloth.md) | Draft |
-| Geometry Collision | Particle vs registered static DiaGeometry2D shapes (AARect, Circle, Line). Positional correction. | [geometry-collision.md](../../features/dia/diasoftbody2d/geometry-collision.md) | Draft |
-| Rigid Body Coupling | Two-way: pin particles to PhysicsBody anchors; particle collisions apply back-impulses to rigid bodies. | [rigid-body-coupling.md](../../features/dia/diasoftbody2d/rigid-body-coupling.md) | Draft |
-| Physics Logging | Structured `Physics` channel DiaLogger warnings: maxSubSteps hit, particle velocity safety threshold, torn constraints detected. Debug builds only. | [physics-logging.md](../../features/dia/diasoftbody2d/physics-logging.md) | Approved |
-| Visual Debugger | `DiaSoftBodyVisualDebugger`: takes `SoftBodyWorld&` + `FrameData&`. Draws particles, constraints (colour-coded by type), torn constraints, pinned particles, rigid body anchor links. On/off toggle. | [visual-debugger.md](../../features/dia/diasoftbody2d/visual-debugger.md) | Approved |
+| Particle | Core particle data type: position, prevPosition, invMass, radius. Velocity derived from PBD position delta. | [particle.md](../../features/dia/diasoftbody2d/particle.md) | Done |
+| SoftBodyWorld | Simulation container: fixed-timestep accumulator, gravity, PBD step loop, body management. | [soft-body-world.md](../../features/dia/diasoftbody2d/soft-body-world.md) | Done |
+| Rope | 1D particle chain with distance constraints. Tearable. Optional rigid body pin anchors at endpoints. | [rope.md](../../features/dia/diasoftbody2d/rope.md) | Done |
+| Cloth | 2D particle grid with structural, shear, and bend constraints. Tearable. Pin rows/individual particles. | [cloth.md](../../features/dia/diasoftbody2d/cloth.md) | Done |
+| Geometry Collision | Particle vs registered static DiaGeometry2D shapes (AARect, Circle, Line). Positional correction. | [geometry-collision.md](../../features/dia/diasoftbody2d/geometry-collision.md) | Done |
+| Rigid Body Coupling | Two-way: pin particles to PhysicsBody anchors; particle collisions apply back-impulses to rigid bodies. | [rigid-body-coupling.md](../../features/dia/diasoftbody2d/rigid-body-coupling.md) | Done |
+| Physics Logging | Structured `Physics` channel DiaLogger warnings: maxSubSteps hit, particle velocity safety threshold, torn constraints detected. Debug builds only. | [physics-logging.md](../../features/dia/diasoftbody2d/physics-logging.md) | Done |
+| Visual Debugger | `DiaSoftBodyVisualDebugger`: takes `SoftBodyWorld&` + `FrameData&`. Draws particles, constraints (colour-coded by type), torn constraints, pinned particles, rigid body anchor links. On/off toggle. | [visual-debugger.md](../../features/dia/diasoftbody2d/visual-debugger.md) | Deferred |
 
 ## Dependencies on Other Systems
 
@@ -264,4 +264,8 @@ while accumulator >= fixedTimestep and steps < maxSubSteps:
 
 ## Status
 
-`Approved`
+`Done`
+
+**Plan:** [diasoftbody2d.plan.md](diasoftbody2d.plan.md)
+
+All 7 core features are Done. Visual Debugger deferred to separate spec. 117 tests (10 suites) passing in Debug + Release x64: unit, integration, stress/boundary, and regression.

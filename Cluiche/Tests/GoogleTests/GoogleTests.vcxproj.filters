@@ -88,6 +88,9 @@
     <Filter Include="RigidBody2D">
       <UniqueIdentifier>{RB2D0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="SoftBody2D">
+      <UniqueIdentifier>{SB2D0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -588,6 +591,37 @@
     </ClCompile>
     <ClCompile Include="PipelineEditor\TestPipelineTargetParser.cpp">
       <Filter>PipelineEditor</Filter>
+    </ClCompile>
+    <!-- SoftBody2D -->
+    <ClCompile Include="SoftBody2D\TestParticle.cpp">
+      <Filter>SoftBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="SoftBody2D\TestRope.cpp">
+      <Filter>SoftBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="SoftBody2D\TestCloth.cpp">
+      <Filter>SoftBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="SoftBody2D\TestSoftBodyWorld.cpp">
+      <Filter>SoftBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="SoftBody2D\TestGeometryCollision.cpp">
+      <Filter>SoftBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="SoftBody2D\TestRigidBodyCoupling.cpp">
+      <Filter>SoftBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="SoftBody2D\TestSoftBodyLogging.cpp">
+      <Filter>SoftBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="SoftBody2D\TestSoftBodyIntegration.cpp">
+      <Filter>SoftBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="SoftBody2D\TestSoftBodyStress.cpp">
+      <Filter>SoftBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="SoftBody2D\TestSoftBodyRegression.cpp">
+      <Filter>SoftBody2D</Filter>
     </ClCompile>
     <!-- GoogleTest -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">

@@ -8,7 +8,7 @@
 | Application | @docs/specs/applications/dia.md | - |
 | System | @docs/specs/systems/dia/diasoftbody2d.md | **visual-debugger** |
 
-**Status:** `Approved`
+**Status:** `Deferred` — moved to separate spec: [DiaSoftBody2DVisualDebugger](../../../systems/dia/diarigidbody2dvisualdebugger.md)
 
 ---
 
@@ -280,4 +280,4 @@ Tests use a lightweight stub `FrameData` that records all received draw calls in
 
 ## Status
 
-`Approved`
+`Deferred` — moved to separate spec: DiaSoftBody2DVisualDebugger. DiaGraphics dependency makes it a distinct deliverable.

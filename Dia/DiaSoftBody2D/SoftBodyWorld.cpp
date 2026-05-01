@@ -9,13 +9,23 @@
 #include "DiaGeometry2D/Shapes/Circle.h"
 #include "DiaGeometry2D/Shapes/Line.h"
 
+#include <DiaLogger/DiaLog.h>
+
 #include <cmath>
+
+#ifndef NDEBUG
+static constexpr float kMaxSafeParticleVelocity = 500.0f;
+#endif
 
 namespace Dia::SoftBody2D {
 
 SoftBodyWorld::SoftBodyWorld(const WorldDef& def)
     : mDef(def)
     , mAccumulator(0.0f)
+    , mBodies(16)
+    , mStaticRects(8)
+    , mStaticCircles(8)
+    , mStaticLines(8)
 {
 }
 
@@ -118,6 +128,11 @@ void SoftBodyWorld::Update(float deltaTime)
     if (steps >= mDef.maxSubSteps)
     {
         mAccumulator = 0.0f;
+#ifndef NDEBUG
+        DIA_LOG_WARNING("Physics",
+            "SoftBodyWorld: maxSubSteps (%d) reached — simulation time lost. deltaTime=%.4f",
+            mDef.maxSubSteps, deltaTime);
+#endif
     }
 }
 
@@ -622,9 +637,52 @@ void SoftBodyWorld::ResolveRigidBodyCollision()
 
 void SoftBodyWorld::FinalizeVelocities()
 {
-    // PBD: velocity is derived from (position - prevPosition) / dt.
-    // prevPosition was set in ApplyExternalForces. No explicit update needed.
-    // This phase exists for optional damping — no damping in v1.
+#ifndef NDEBUG
+    float dt = mDef.fixedTimestep;
+
+    for (unsigned int b = 0; b < mBodies.Size(); ++b)
+    {
+        SoftBody* body = mBodies[b];
+
+        if (body->GetBodyType() == BodyType::kRope)
+        {
+            Rope* rope = static_cast<Rope*>(body);
+            for (int i = 0; i < rope->GetParticleCount(); ++i)
+            {
+                const Particle& p = rope->GetParticle(i);
+                Dia::Maths::Vector2D derivedVelocity = DeriveVelocity(p, dt);
+                float speed = derivedVelocity.Magnitude();
+                if (speed > kMaxSafeParticleVelocity)
+                {
+                    DIA_LOG_WARNING("Physics",
+                        "SoftBody '%s' particle [%d]: derived velocity %.1f exceeds safety threshold",
+                        body->GetId().AsChar(), i, speed);
+                }
+            }
+        }
+        else if (body->GetBodyType() == BodyType::kCloth)
+        {
+            Cloth* cloth = static_cast<Cloth*>(body);
+            int idx = 0;
+            for (int y = 0; y < cloth->GetResY(); ++y)
+            {
+                for (int x = 0; x < cloth->GetResX(); ++x)
+                {
+                    const Particle& p = cloth->GetParticle(x, y);
+                    Dia::Maths::Vector2D derivedVelocity = DeriveVelocity(p, dt);
+                    float speed = derivedVelocity.Magnitude();
+                    if (speed > kMaxSafeParticleVelocity)
+                    {
+                        DIA_LOG_WARNING("Physics",
+                            "SoftBody '%s' particle [%d]: derived velocity %.1f exceeds safety threshold",
+                            body->GetId().AsChar(), idx, speed);
+                    }
+                    ++idx;
+                }
+            }
+        }
+    }
+#endif
 }
 
 void SoftBodyWorld::CheckTearing()

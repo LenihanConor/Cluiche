@@ -1,6 +1,7 @@
 #include "DiaSoftBody2D/Cloth.h"
 
 #include "DiaCore/Core/Assert.h"
+#include <DiaLogger/DiaLog.h>
 
 #include <cmath>
 
@@ -26,6 +27,13 @@ Cloth::Cloth(const ClothDef& def)
 
     mParticles.Reserve(static_cast<unsigned int>(totalParticles));
     mOriginalInvMass.Reserve(static_cast<unsigned int>(totalParticles));
+
+    int structuralH = def.resY * (def.resX - 1);
+    int structuralV = (def.resY - 1) * def.resX;
+    int shear = 2 * (def.resY - 1) * (def.resX - 1);
+    int bendH = (def.resX >= 3) ? def.resY * (def.resX - 2) : 0;
+    int bendV = (def.resY >= 3) ? (def.resY - 2) * def.resX : 0;
+    mConstraints.Reserve(static_cast<unsigned int>(structuralH + structuralV + shear + bendH + bendV));
 
     for (int y = 0; y < def.resY; ++y)
     {
@@ -181,6 +189,12 @@ void Cloth::CheckTearing()
 
         if (c.restLength > 0.0f && dist > c.restLength * (1.0f + mMaxStretch))
         {
+#ifndef NDEBUG
+            float stretchRatio = dist / c.restLength;
+            DIA_LOG_DEBUG("Physics",
+                "Cloth '%s': constraint [%d] torn at stretch ratio %.2f",
+                mId.AsChar(), i, stretchRatio);
+#endif
             c.active = false;
             mIsTorn = true;
         }

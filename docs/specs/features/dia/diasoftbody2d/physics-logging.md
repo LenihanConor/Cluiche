@@ -8,7 +8,7 @@
 | Application | @docs/specs/applications/dia.md | - |
 | System | @docs/specs/systems/dia/diasoftbody2d.md | **physics-logging** |
 
-**Status:** `Approved`
+**Status:** `Done`
 
 ---
 
@@ -191,4 +191,4 @@ All tests capture log entries by registering a test-only `ISink` implementation 
 
 ## Status
 
-`Approved`
+`Done`

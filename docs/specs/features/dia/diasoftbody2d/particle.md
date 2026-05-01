@@ -8,7 +8,7 @@
 | Application | @docs/specs/applications/dia.md | - |
 | System | @docs/specs/systems/dia/diasoftbody2d.md | **particle** |
 
-**Status:** `Approved`
+**Status:** `Done`
 
 ---
 
@@ -113,4 +113,4 @@ inline Dia::Maths::Vector2D DeriveVelocity(const Particle& p, float dt)
 
 ## Status
 
-`Approved`
+`Done`

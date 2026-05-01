@@ -8,7 +8,7 @@
 | Application | @docs/specs/applications/dia.md | - |
 | System | @docs/specs/systems/dia/diasoftbody2d.md | **soft-body-world** |
 
-**Status:** `Approved`
+**Status:** `Done`
 
 ---
 
@@ -233,4 +233,4 @@ Dia/DiaSoftBody2D/
 
 ## Status
 
-`Approved`
+`Done`

@@ -283,6 +283,8 @@
     <ClCompile Include="SoftBody2D\TestRigidBodyCoupling.cpp" />
     <ClCompile Include="SoftBody2D\TestSoftBodyLogging.cpp" />
     <ClCompile Include="SoftBody2D\TestSoftBodyIntegration.cpp" />
+    <ClCompile Include="SoftBody2D\TestSoftBodyStress.cpp" />
+    <ClCompile Include="SoftBody2D\TestSoftBodyRegression.cpp" />
     <!-- Google Test Source Files - Compiled directly into project -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">
       <AdditionalIncludeDirectories>$(ProjectDir)../../../External/googletest/googletest/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

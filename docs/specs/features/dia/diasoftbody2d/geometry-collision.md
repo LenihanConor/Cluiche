@@ -8,7 +8,7 @@
 | Application | @docs/specs/applications/dia.md | - |
 | System | @docs/specs/systems/dia/diasoftbody2d.md | **geometry-collision** |
 
-**Status:** `Approved`
+**Status:** `Done`
 
 ---
 
@@ -170,4 +170,4 @@ Dia/DiaSoftBody2D/
 
 ## Status
 
-`Approved`
+`Done`

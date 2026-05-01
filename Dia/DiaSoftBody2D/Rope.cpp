@@ -1,6 +1,7 @@
 #include "DiaSoftBody2D/Rope.h"
 
 #include "DiaCore/Core/Assert.h"
+#include <DiaLogger/DiaLog.h>
 
 namespace Dia::SoftBody2D {
 
@@ -145,6 +146,12 @@ void Rope::CheckTearing()
 
         if (c.restLength > 0.0f && dist > c.restLength * (1.0f + mMaxStretch))
         {
+#ifndef NDEBUG
+            float stretchRatio = dist / c.restLength;
+            DIA_LOG_DEBUG("Physics",
+                "Rope '%s': constraint [%d] torn at stretch ratio %.2f",
+                mId.AsChar(), i, stretchRatio);
+#endif
             c.active = false;
             mIsTorn = true;
         }
