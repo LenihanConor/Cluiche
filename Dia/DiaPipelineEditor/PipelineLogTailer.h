@@ -41,7 +41,7 @@ namespace Dia
 
 		private:
 			static constexpr float kInterruptedTimeoutSec = 5.0f;
-			static constexpr int kMaxEvents = 10000;
+			static constexpr int kMaxEvents = 1024;
 			static constexpr size_t kStringPoolSize = 64 * 1024;
 
 			char mLogPath[512];
@@ -52,7 +52,7 @@ namespace Dia
 			bool mInterruptedFired;
 
 			RunSummary mCurrentRun;
-			Dia::Core::Containers::DynamicArrayC<PipelineEvent, 256> mEvents;
+			Dia::Core::Containers::DynamicArrayC<PipelineEvent, kMaxEvents> mEvents;
 			int mUnmatchedStartedCount;
 			Dia::Core::ObserverSubject mObserverSubject;
 
