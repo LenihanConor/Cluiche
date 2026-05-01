@@ -94,6 +94,9 @@
     <Filter Include="Architecture\Singleton">
       <UniqueIdentifier>{a2488200-c774-43b8-a466-4e028b1cab04}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Architecture\Events">
+      <UniqueIdentifier>{b3499311-d885-54c9-b577-5f139c2dbc15}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Architecture\Components\Interface">
       <UniqueIdentifier>{f122460b-a74c-4bd8-839e-3314bddecde0}</UniqueIdentifier>
     </Filter>
@@ -114,6 +117,27 @@
     </Filter>
     <Filter Include="Frame">
       <UniqueIdentifier>{0f1abddd-5815-43db-8cd3-6324be46c66f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="FilePath">
+      <UniqueIdentifier>{aacdf484-6764-43dd-9fa4-5a26854fd233}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Json">
+      <UniqueIdentifier>{cdb42dc0-fedf-4724-9e84-449d3348f884}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Json\External">
+      <UniqueIdentifier>{eeadd68e-5cad-418e-99bc-bac6d7d4f9dc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Json\External\Source">
+      <UniqueIdentifier>{0cb1bcc9-388a-45a6-b410-038bf96e521e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{d1e2f3a4-b5c6-7890-abcd-ef1234567890}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Threading">
+      <UniqueIdentifier>{e2f3a4b5-c678-90ab-cdef-1234567890ab}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\Debug">
+      <UniqueIdentifier>{f3a4b5c6-7890-abcd-ef12-34567890abcd}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -138,6 +162,21 @@
     <ClInclude Include="Core\System.h">
       <Filter>Core</Filter>
     </ClInclude>
+    <ClInclude Include="Core\Debug\DebugConsole.h">
+      <Filter>Core\Debug</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Debug\DebugDraw.h">
+      <Filter>Core\Debug</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Debug\DebugMemory.h">
+      <Filter>Core\Debug</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Debug\LeakDetector.h">
+      <Filter>Core\Debug</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Debug\StackTrace.h">
+      <Filter>Core\Debug</Filter>
+    </ClInclude>
     <ClInclude Include="Time\SystemClock.h">
       <Filter>Time</Filter>
     </ClInclude>
@@ -153,7 +192,19 @@
     <ClInclude Include="Time\TimeServer.h">
       <Filter>Time</Filter>
     </ClInclude>
+    <ClInclude Include="Memory\IAllocator.h">
+      <Filter>Memory</Filter>
+    </ClInclude>
     <ClInclude Include="Memory\Memory.h">
+      <Filter>Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="Memory\RefPtr.h">
+      <Filter>Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="Memory\UniquePtr.h">
+      <Filter>Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="Memory\WeakPtr.h">
       <Filter>Memory</Filter>
     </ClInclude>
     <ClInclude Include="Timer\Timer.h">
@@ -219,6 +270,9 @@
     <ClInclude Include="Strings\String.h">
       <Filter>Strings</Filter>
     </ClInclude>
+    <ClInclude Include="Strings\StringJsonSerializer.h">
+      <Filter>Strings</Filter>
+    </ClInclude>
     <ClInclude Include="Strings\String1024.h">
       <Filter>Strings</Filter>
     </ClInclude>
@@ -279,6 +333,9 @@
     <ClInclude Include="Containers\Arrays\ReverseArrayIterator.h">
       <Filter>Containers\Arrays</Filter>
     </ClInclude>
+    <ClInclude Include="Containers\Handle.h">
+      <Filter>Containers</Filter>
+    </ClInclude>
     <ClInclude Include="Containers\BitFlag\BitArray16.h">
       <Filter>Containers\BitFlag</Filter>
     </ClInclude>
@@ -306,11 +363,20 @@
     <ClInclude Include="Containers\Graphs\GraphEdge.h">
       <Filter>Containers\Graphs</Filter>
     </ClInclude>
-    <ClInclude Include="Containers\Graphs\GraphVertex.h">
-      <Filter>Containers\Graphs</Filter>
-    </ClInclude>
     <ClInclude Include="Architecture\Singleton\Singleton.h">
       <Filter>Architecture\Singleton</Filter>
+    </ClInclude>
+    <ClInclude Include="Architecture\Events\Event.h">
+      <Filter>Architecture\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="Architecture\Events\EventQueue.h">
+      <Filter>Architecture\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="Architecture\Events\Delegate.h">
+      <Filter>Architecture\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="Architecture\Events\EventDispatcher.h">
+      <Filter>Architecture\Events</Filter>
     </ClInclude>
     <ClInclude Include="Architecture\Components\Interface\ComponentID.h">
       <Filter>Architecture\Components\Interface</Filter>
@@ -347,6 +413,102 @@
     </ClInclude>
     <ClInclude Include="Containers\Misc\FastDelegate.h">
       <Filter>Containers\Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="FilePath\FilePath.h">
+      <Filter>FilePath</Filter>
+    </ClInclude>
+    <ClInclude Include="Json\external\json\json.h">
+      <Filter>Json\External</Filter>
+    </ClInclude>
+    <ClInclude Include="Json\external\json\reader.h">
+      <Filter>Json\External</Filter>
+    </ClInclude>
+    <ClInclude Include="Json\external\json\value.h">
+      <Filter>Json\External</Filter>
+    </ClInclude>
+    <ClInclude Include="Json\external\json\version.h">
+      <Filter>Json\External</Filter>
+    </ClInclude>
+    <ClInclude Include="Json\external\json\writer.h">
+      <Filter>Json\External</Filter>
+    </ClInclude>
+    <ClInclude Include="Json\external\json\assertions.h">
+      <Filter>Json\External</Filter>
+    </ClInclude>
+    <ClInclude Include="Json\external\json\autolink.h">
+      <Filter>Json\External</Filter>
+    </ClInclude>
+    <ClInclude Include="Json\external\json\config.h">
+      <Filter>Json\External</Filter>
+    </ClInclude>
+    <ClInclude Include="Json\external\json\features.h">
+      <Filter>Json\External</Filter>
+    </ClInclude>
+    <ClInclude Include="Json\external\json\forwards.h">
+      <Filter>Json\External</Filter>
+    </ClInclude>
+    <ClInclude Include="Json\external\json_tool.h">
+      <Filter>Json\External\Source</Filter>
+    </ClInclude>
+    <ClInclude Include="Type\TypeJsonSerializer.h">
+      <Filter>Type\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="FilePath\PathStore.h">
+      <Filter>FilePath</Filter>
+    </ClInclude>
+    <ClInclude Include="FilePath\Path.h">
+      <Filter>FilePath</Filter>
+    </ClInclude>
+    <ClInclude Include="FilePath\PathStoreConfig.h">
+      <Filter>FilePath</Filter>
+    </ClInclude>
+    <ClInclude Include="FilePath\FileLoad.h">
+      <Filter>FilePath</Filter>
+    </ClInclude>
+    <ClInclude Include="FilePath\IFileLoad.h">
+      <Filter>FilePath</Filter>
+    </ClInclude>
+    <ClInclude Include="FilePath\SerializedFileLoad.h">
+      <Filter>FilePath</Filter>
+    </ClInclude>
+    <ClInclude Include="FilePath\AsyncFileLoader.h">
+      <Filter>FilePath</Filter>
+    </ClInclude>
+    <ClInclude Include="FilePath\FileWatcher.h">
+      <Filter>FilePath</Filter>
+    </ClInclude>
+    <ClInclude Include="FilePath\StreamReader.h">
+      <Filter>FilePath</Filter>
+    </ClInclude>
+    <ClInclude Include="FilePath\StreamWriter.h">
+      <Filter>FilePath</Filter>
+    </ClInclude>
+    <ClInclude Include="Architecture\Factory.h">
+      <Filter>Architecture</Filter>
+    </ClInclude>
+    <ClInclude Include="Architecture\Functor.h">
+      <Filter>Architecture</Filter>
+    </ClInclude>
+    <ClInclude Include="Architecture\Observer.h">
+      <Filter>Architecture</Filter>
+    </ClInclude>
+    <ClInclude Include="Containers\Graphs\GraphNode.h">
+      <Filter>Containers\Graphs</Filter>
+    </ClInclude>
+    <ClInclude Include="Threading\Atomic.h">
+      <Filter>Threading</Filter>
+    </ClInclude>
+    <ClInclude Include="Threading\JobSystem.h">
+      <Filter>Threading</Filter>
+    </ClInclude>
+    <ClInclude Include="Threading\Mutex.h">
+      <Filter>Threading</Filter>
+    </ClInclude>
+    <ClInclude Include="Threading\Thread.h">
+      <Filter>Threading</Filter>
+    </ClInclude>
+    <ClInclude Include="Threading\ThreadPool.h">
+      <Filter>Threading</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -449,6 +611,63 @@
     <ClCompile Include="Timer\TimeThreadLimiter.cpp">
       <Filter>Timer\Source</Filter>
     </ClCompile>
+    <ClCompile Include="FilePath\FilePath.cpp">
+      <Filter>FilePath</Filter>
+    </ClCompile>
+    <ClCompile Include="Json\external\json_writer.cpp">
+      <Filter>Json\External\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Json\external\json_reader.cpp">
+      <Filter>Json\External\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Json\external\json_value.cpp">
+      <Filter>Json\External\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Type\TypeJsonSerializer.cpp">
+      <Filter>Type\Interfaces\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Strings\String8.cpp">
+      <Filter>Strings\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Strings\String32.cpp">
+      <Filter>Strings\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Strings\String64.cpp">
+      <Filter>Strings\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Strings\String128.cpp">
+      <Filter>Strings\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Strings\String256.cpp">
+      <Filter>Strings\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Strings\String512.cpp">
+      <Filter>Strings\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Strings\String1024.cpp">
+      <Filter>Strings\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="FilePath\PathStore.cpp">
+      <Filter>FilePath</Filter>
+    </ClCompile>
+    <ClCompile Include="FilePath\Path.cpp">
+      <Filter>FilePath</Filter>
+    </ClCompile>
+    <ClCompile Include="FilePath\PathStoreConfig.cpp">
+      <Filter>FilePath</Filter>
+    </ClCompile>
+    <ClCompile Include="Strings\StringUtils.cpp">
+      <Filter>Strings\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Strings\StringJsonSerializer.cpp">
+      <Filter>Strings\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="FilePath\FileLoad.cpp">
+      <Filter>FilePath</Filter>
+    </ClCompile>
+    <ClCompile Include="Architecture\Observer.cpp">
+      <Filter>Architecture</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Type\TypeFacade.inl">
@@ -538,9 +757,6 @@
     <None Include="Containers\Graphs\GraphEdge.inl">
       <Filter>Containers\Graphs</Filter>
     </None>
-    <None Include="Containers\Graphs\GraphVertex.inl">
-      <Filter>Containers\Graphs</Filter>
-    </None>
     <None Include="Architecture\Singleton\Singleton.inl">
       <Filter>Architecture\Singleton</Filter>
     </None>
@@ -561,6 +777,18 @@
     </None>
     <None Include="Frame\FrameStream.inl">
       <Filter>Frame</Filter>
+    </None>
+    <None Include="Json\external\json_valueiterator.inl">
+      <Filter>Json\External\Source</Filter>
+    </None>
+    <None Include="Containers\Graphs\GraphNode.inl">
+      <Filter>Containers\Graphs</Filter>
+    </None>
+    <None Include="Docs\dia.core.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+    <None Include="LOGGING_SYSTEM_IMPLEMENTATION.md">
+      <Filter>Docs</Filter>
     </None>
   </ItemGroup>
 </Project>

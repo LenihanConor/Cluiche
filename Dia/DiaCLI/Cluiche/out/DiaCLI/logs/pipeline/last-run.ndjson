@@ -1,0 +1,7 @@
+{"event":"OnRunStarted","schema":"dia.output.v1","system":"pipeline","target":"googletest","config":"Debug","stages":["compile-code"],"ts":1777267810.3664954}
+{"event":"OnStageSkipped","system":"pipeline","stage":"proto-compile","reason":"not in active stage list","ts":1777267810.3674965}
+{"event":"OnStageStarted","system":"pipeline","stage":"compile-code","ts":1777267810.368699}
+{"event":"OnStageCompleted","system":"pipeline","stage":"compile-code","durationMs":4409,"ts":1777267814.7778616}
+{"event":"OnStageSkipped","system":"pipeline","stage":"asset-build","reason":"not in active stage list","ts":1777267814.7788618}
+{"event":"OnStageSkipped","system":"pipeline","stage":"package","reason":"not in active stage list","ts":1777267814.7798626}
+{"event":"OnRunCompleted","system":"pipeline","passCount":1,"failCount":0,"durationMs":4413,"totalDurationMs":4413,"ts":1777267814.7798626}

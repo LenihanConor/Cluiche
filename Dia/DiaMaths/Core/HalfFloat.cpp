@@ -140,9 +140,9 @@ namespace Dia
 		//-------------------------------------------------------------------
 		short HalfFloat::Convert( int i )
 		{
-			register int s =  (i >> 16) & 0x00008000;
-			register int e = ((i >> 23) & 0x000000ff) - (127 - 15);
-			register int m =   i        & 0x007fffff;
+			int s =  (i >> 16) & 0x00008000;
+			int e = ((i >> 23) & 0x000000ff) - (127 - 15);
+			int m =   i        & 0x007fffff;
 
 			if (e <= 0)
 			{

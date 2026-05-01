@@ -37,6 +37,7 @@ static int CalculateIntercepts(const Circle2D& circleA, const Circle2D& circleB,
 
 			// AARect Intersection Test
 static IntersectionClassify IsIntersecting(const Vector2D& point, const AARect2D& rect);
+static IntersectionClassify IsIntersecting(const AARect2D& rect1, const AARect2D& rect2);
 		/*	static IntersectionClassify2D IsIntersecting(const AARect2D& rect1, const AARect2D& rec2t);
 			static IntersectionClassify2D IsIntersecting(const Arc2D& arc, const AARect2D& rect);
 			static IntersectionClassify2D IsIntersecting(const Capsule2D& capsule, const AARect2D& rect);
@@ -68,12 +69,8 @@ static IntersectionClassify IsIntersecting(const Vector2D& point, const Arc2D& a
 			*/
 			// Line Intersection Test
 static IntersectionClassify IsIntersecting(const Vector2D& point, const Line2D& line);
-			//static IntersectionClassify2D IsIntersecting(const AARect2D& rect, const Line2D& line);
-			//static IntersectionClassify2D IsIntersecting(const Arc2D& arc, const Line2D& line);
-			//static IntersectionClassify2D IsIntersecting(const Capsule2D& capsule, const Line2D& line);
-			//static IntersectionClassify2D IsIntersecting(const Line2D& line1, const Line2D& line2);
-			//	static IntersectionClassify2D IsIntersecting(const OORect2D& point, const Line2D& line);
-			//	static IntersectionClassify2D IsIntersecting(const Triangle2D& point, const Line2D& line);
+static IntersectionClassify IsIntersecting(const Line2D& line1, const Line2D& line2);
+static IntersectionClassify IsIntersecting(const Line2D& line, const AARect2D& rect);
 			
 		};
 	}

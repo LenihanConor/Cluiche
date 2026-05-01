@@ -49,26 +49,26 @@ namespace Dia
 				explicit DynamicArray ( ConstReference data, unsigned int numberElements ); 						
 				explicit DynamicArray ( const DynamicArray<T>& rhs );		
 				explicit DynamicArray ( const DynamicArray<T>& rhs, unsigned int startIndex, unsigned int numberElements );  
-				explicit DynamicArray ( unsigned int capacity, ConstIterator& iter ); 
-				explicit DynamicArray ( unsigned int capacity, ConstReverseIterator& iter ); 
-				template<class Evaluator> explicit DynamicArray (unsigned int capacity, ConstIterator& iter, const Evaluator& filter );
+				explicit DynamicArray ( unsigned int capacity, const ConstIterator& iter ); 
+				explicit DynamicArray ( unsigned int capacity, const ConstReverseIterator& iter ); 
+				template<class Evaluator> explicit DynamicArray (unsigned int capacity, const ConstIterator& iter, const Evaluator& filter );
 
 				// these are all use memcpy instead of a copy construct
 				DynamicArray<T>&								Assign ( ConstPointer pData, unsigned int numberElements);
 				DynamicArray<T>&								Assign ( ConstReference data, unsigned int numberElements);
 				DynamicArray<T>&								Assign ( const DynamicArray<T>& rhs );
 				DynamicArray<T>&								Assign ( const DynamicArray<T>& rhs, unsigned int startIndex, unsigned int numberElements = _size );
-				DynamicArray<T>&								Assign ( ConstIterator& iter );
-				DynamicArray<T>&								Assign ( ConstReverseIterator& iter );
-				template<class Evaluator> DynamicArray<T>&		Assign ( ConstIterator& iter, const Evaluator& filter );
+				DynamicArray<T>&								Assign ( const ConstIterator& iter );
+				DynamicArray<T>&								Assign ( const ConstReverseIterator& iter );
+				template<class Evaluator> DynamicArray<T>&		Assign ( const ConstIterator& iter, const Evaluator& filter );
 
 				/*DynamicArray<T, size>&								AssignWithCopyConstructors (ConstPointer pData, unsigned int numberElements);
 				DynamicArray<T, size>&									AssignWithCopyConstructors (ConstReference data, unsigned int numberElements);
 				template<unsigned int _size>DynamicArray<T, size>&		AssignWithCopyConstructors ( const DynamicArray<T,_size>& rhs );
 				template<unsigned int _size>DynamicArray<T, size>&		AssignWithCopyConstructors ( const DynamicArray<T,_size>& rhs, unsigned int startIndex, unsigned int numberElements = _size );
-				DynamicArray<T, size>&									AssignWithCopyConstructors ( ConstIterator& iter );
-				DynamicArray<T, size>&									AssignWithCopyConstructors ( ConstReverseIterator& iter );
-				template<class Evaluator> DynamicArray<T, size>&		AssignWithCopyConstructors ( ConstIterator& iter, const Evaluator& filter );*/
+				DynamicArray<T, size>&									AssignWithCopyConstructors ( const ConstIterator& iter );
+				DynamicArray<T, size>&									AssignWithCopyConstructors ( const ConstReverseIterator& iter );
+				template<class Evaluator> DynamicArray<T, size>&		AssignWithCopyConstructors ( const ConstIterator& iter, const Evaluator& filter );*/
 
 				DynamicArray<T>&						operator=		(const DynamicArray<T>& other);
 				bool									operator==		(const DynamicArray<T>& other) const; 

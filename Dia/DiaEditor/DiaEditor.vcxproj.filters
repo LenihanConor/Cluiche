@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Plugin">
+      <UniqueIdentifier>{A1111111-1111-1111-1111-111111111111}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="MVC">
+      <UniqueIdentifier>{A2222222-2222-2222-2222-222222222222}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Command">
+      <UniqueIdentifier>{A3333333-3333-3333-3333-333333333333}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="LiveConnection">
+      <UniqueIdentifier>{A4444444-4444-4444-4444-444444444444}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="UI">
+      <UniqueIdentifier>{A5555555-5555-5555-5555-555555555555}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Layout">
+      <UniqueIdentifier>{A6666666-6666-6666-6666-666666666666}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sinks">
+      <UniqueIdentifier>{A7777777-7777-7777-7777-777777777777}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Plugin\IEditorPlugin.h">
+      <Filter>Plugin</Filter>
+    </ClInclude>
+    <ClInclude Include="Plugin\EditorPluginRegistry.h">
+      <Filter>Plugin</Filter>
+    </ClInclude>
+    <ClInclude Include="Plugin\EditorPluginRegistrationMacros.h">
+      <Filter>Plugin</Filter>
+    </ClInclude>
+    <ClInclude Include="Plugin\StubEditorPlugin.h" />
+    <ClInclude Include="Plugin\HelloEditorPlugin.h" />
+    <ClInclude Include="Plugin\HomeEditorPlugin.h" />
+    <ClInclude Include="Plugin\EditorPluginContext.h">
+      <Filter>Plugin</Filter>
+    </ClInclude>
+    <ClInclude Include="Plugin\OutputConsoleEditorPlugin.h">
+      <Filter>Plugin</Filter>
+    </ClInclude>
+    <ClInclude Include="Plugin\GameConnectionEditorPlugin.h">
+      <Filter>Plugin</Filter>
+    </ClInclude>
+    <ClInclude Include="Plugin\PluginBrowserEditorPlugin.h">
+      <Filter>Plugin</Filter>
+    </ClInclude>
+    <ClInclude Include="Plugin\IPluginLoader.h">
+      <Filter>Plugin</Filter>
+    </ClInclude>
+    <ClInclude Include="Command\IEditorCommand.h" />
+    <ClInclude Include="Command\CompoundCommand.h" />
+    <ClInclude Include="Command\CommandHistory.h" />
+    <ClInclude Include="MVC\EditorModel.h" />
+    <ClInclude Include="MVC\EditorView.h" />
+    <ClInclude Include="MVC\EditorViewController.h" />
+    <ClInclude Include="LiveConnection\GameConnectionManager.h" />
+    <ClInclude Include="LiveConnection\GameConnectionController.h" />
+    <ClInclude Include="Layout\DockingLayout.h" />
+    <ClInclude Include="UI\WebUIBridge.h" />
+    <ClInclude Include="EditorManifestLoader.h" />
+    <ClInclude Include="Sinks\EditorConsoleSink.h">
+      <Filter>Sinks</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Plugin\EditorPluginRegistry.cpp">
+      <Filter>Plugin</Filter>
+    </ClCompile>
+    <ClCompile Include="Command\CompoundCommand.cpp" />
+    <ClCompile Include="Command\CommandHistory.cpp" />
+    <ClCompile Include="MVC\EditorModel.cpp" />
+    <ClCompile Include="MVC\EditorView.cpp" />
+    <ClCompile Include="MVC\EditorViewController.cpp" />
+    <ClCompile Include="LiveConnection\GameConnectionManager.cpp" />
+    <ClCompile Include="LiveConnection\GameConnectionController.cpp" />
+    <ClCompile Include="Layout\DockingLayout.cpp" />
+    <ClCompile Include="UI\WebUIBridge.cpp" />
+    <ClCompile Include="EditorManifestLoader.cpp" />
+    <ClCompile Include="Sinks\EditorConsoleSink.cpp">
+      <Filter>Sinks</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,10 @@
+{
+    "name": "DiaCLI",
+    "roots": {
+        "base": ".",
+        "cli": "dia_cli"
+    },
+    "paths": {
+        "external": "External"
+    }
+}

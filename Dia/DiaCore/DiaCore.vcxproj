@@ -1,62 +1,44 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="Debug|Win32">
+    <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
-      <Platform>Win32</Platform>
+      <Platform>x64</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="Release|Win32">
+    <ProjectConfiguration Include="Release|x64">
       <Configuration>Release</Configuration>
-      <Platform>Win32</Platform>
+      <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{8D41CBE3-C493-428D-95F3-627E56500667}</ProjectGuid>
     <RootNamespace>DiaCore</RootNamespace>
-    <Keyword>ManagedCProj</Keyword>
+    <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
-    <CLRSupport>true</CLRSupport>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <PlatformToolset>v140</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
-    <CLRSupport>false</CLRSupport>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <_ProjectFileVersion>11.0.51106.1</_ProjectFileVersion>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
-    <IntDir>..\DiaBin\$(TargetName)\$(Configuration)\</IntDir>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
-    <IntDir>..\DiaBin\$(TargetName)\$(Configuration)\</IntDir>
-  </PropertyGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <BuildLog>
       <Path>$(IntDir)BuildLog.htm</Path>
     </BuildLog>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>./;./../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)\Json\external\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>DEBUG;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
@@ -75,9 +57,9 @@
       <PreserveSbr>true</PreserveSbr>
     </Bscmake>
   </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>./;./../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)\Json\external\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
@@ -92,29 +74,67 @@
     <ClInclude Include="Architecture\Components\Interface\IComponent.h" />
     <ClInclude Include="Architecture\Components\Interface\IComponentFactory.h" />
     <ClInclude Include="Architecture\Components\Interface\IComponentObject.h" />
+    <ClInclude Include="Architecture\Factory.h" />
+    <ClInclude Include="Architecture\Functor.h" />
+    <ClInclude Include="Architecture\Observer.h" />
     <ClInclude Include="Architecture\Singleton\Singleton.h" />
+    <ClInclude Include="Architecture\Events\Event.h" />
+    <ClInclude Include="Architecture\Events\EventQueue.h" />
+    <ClInclude Include="Architecture\Events\Delegate.h" />
+    <ClInclude Include="Architecture\Events\EventDispatcher.h" />
     <ClInclude Include="Containers\Graphs\Graph.h" />
     <ClInclude Include="Containers\Graphs\GraphEdge.h" />
-    <ClInclude Include="Containers\Graphs\GraphVertex.h" />
+    <ClInclude Include="Containers\Graphs\GraphNode.h" />
     <ClInclude Include="Containers\Misc\CircularBufferC.h" />
     <ClInclude Include="Containers\Misc\CircularBufferIterator.h" />
     <ClInclude Include="Containers\Misc\FastDelegate.h" />
     <ClInclude Include="Core\Assert.h" />
     <ClInclude Include="Core\CallStack.h" />
+    <ClInclude Include="Core\Debug\DebugConsole.h" />
+    <ClInclude Include="Core\Debug\DebugDraw.h" />
+    <ClInclude Include="Core\Debug\DebugMemory.h" />
+    <ClInclude Include="Core\Debug\LeakDetector.h" />
+    <ClInclude Include="Core\Debug\StackTrace.h" />
     <ClInclude Include="Core\EnumClass.h" />
     <ClInclude Include="Core\Functor.h" />
     <ClInclude Include="Core\Log.h" />
     <ClInclude Include="Core\MetaLogic.h" />
     <ClInclude Include="Core\System.h" />
     <ClInclude Include="CRC\CRCHashFunctor.h" />
+    <ClInclude Include="FilePath\AsyncFileLoader.h" />
+    <ClInclude Include="FilePath\FileLoad.h" />
+    <ClInclude Include="FilePath\FilePath.h" />
+    <ClInclude Include="FilePath\FileWatcher.h" />
+    <ClInclude Include="FilePath\IFileLoad.h" />
+    <ClInclude Include="FilePath\Path.h" />
+    <ClInclude Include="FilePath\PathStore.h" />
+    <ClInclude Include="FilePath\PathStoreConfig.h" />
+    <ClInclude Include="FilePath\SerializedFileLoad.h" />
+    <ClInclude Include="FilePath\StreamReader.h" />
+    <ClInclude Include="FilePath\StreamWriter.h" />
     <ClInclude Include="Frame\FrameStream.h" />
+    <ClInclude Include="Json\external\json\assertions.h" />
+    <ClInclude Include="Json\external\json\autolink.h" />
+    <ClInclude Include="Json\external\json\config.h" />
+    <ClInclude Include="Json\external\json\features.h" />
+    <ClInclude Include="Json\external\json\forwards.h" />
+    <ClInclude Include="Json\external\json\json.h" />
+    <ClInclude Include="Json\external\json\reader.h" />
+    <ClInclude Include="Json\external\json\value.h" />
+    <ClInclude Include="Json\external\json\version.h" />
+    <ClInclude Include="Json\external\json\writer.h" />
+    <ClInclude Include="Json\external\json_tool.h" />
     <ClInclude Include="Timer\TimeThreadLimiter.h" />
     <ClInclude Include="Time\SystemClock.h" />
     <ClInclude Include="Time\TimeAbsolute.h" />
     <ClInclude Include="Time\TimeAbstract.h" />
     <ClInclude Include="Time\TimeRelative.h" />
     <ClInclude Include="Time\TimeServer.h" />
+    <ClInclude Include="Memory\IAllocator.h" />
     <ClInclude Include="Memory\Memory.h" />
+    <ClInclude Include="Memory\RefPtr.h" />
+    <ClInclude Include="Memory\UniquePtr.h" />
+    <ClInclude Include="Memory\WeakPtr.h" />
     <ClInclude Include="Timer\Timer.h" />
     <ClInclude Include="Timer\TimerExpiry.h" />
     <ClInclude Include="Timer\TimerSystem.h" />
@@ -125,6 +145,7 @@
     <ClInclude Include="Type\TypeDeclarationMacros.h" />
     <ClInclude Include="Type\TypeDefinitionMacros.h" />
     <ClInclude Include="Type\TypeFacade.h" />
+    <ClInclude Include="Type\TypeJsonSerializer.h" />
     <ClInclude Include="Type\TypeRegistry.h" />
     <ClInclude Include="Type\TypeTextSerializer.h" />
     <ClInclude Include="Type\TypeTraits.h" />
@@ -144,6 +165,7 @@
     <ClInclude Include="Strings\String64.h" />
     <ClInclude Include="Strings\String8.h" />
     <ClInclude Include="Strings\stringutils.h" />
+    <ClInclude Include="Strings\StringJsonSerializer.h" />
     <ClInclude Include="Containers\LinkList\LinkListC.h" />
     <ClInclude Include="Containers\LinkList\LinkListNode.h" />
     <ClInclude Include="Containers\HashTables\HashTable.h" />
@@ -156,21 +178,45 @@
     <ClInclude Include="Containers\Arrays\DynamicArray.h" />
     <ClInclude Include="Containers\Arrays\DynamicArrayC.h" />
     <ClInclude Include="Containers\Arrays\ReverseArrayIterator.h" />
+    <ClInclude Include="Containers\Handle.h" />
     <ClInclude Include="Containers\BitFlag\BitArray16.h" />
     <ClInclude Include="Containers\BitFlag\BitArray32.h" />
     <ClInclude Include="Containers\BitFlag\BitArray64.h" />
     <ClInclude Include="Containers\BitFlag\BitArray8.h" />
     <ClInclude Include="Containers\Strings\StringReader.h" />
     <ClInclude Include="Containers\Strings\StringWriter.h" />
+    <ClInclude Include="Threading\Atomic.h" />
+    <ClInclude Include="Threading\JobSystem.h" />
+    <ClInclude Include="Threading\Mutex.h" />
+    <ClInclude Include="Threading\Thread.h" />
+    <ClInclude Include="Threading\ThreadPool.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Architecture\Components\Interface\IComponent.cpp" />
     <ClCompile Include="Architecture\Components\Interface\IComponentFactory.cpp" />
     <ClCompile Include="Architecture\Components\Interface\IComponentObject.cpp" />
+    <ClCompile Include="Architecture\Observer.cpp" />
     <ClCompile Include="Core\Assert.cpp" />
     <ClCompile Include="Core\CallStack.cpp" />
     <ClCompile Include="Core\EnumClass.cpp" />
     <ClCompile Include="Core\Log.cpp" />
+    <ClCompile Include="FilePath\FileLoad.cpp" />
+    <ClCompile Include="FilePath\FilePath.cpp" />
+    <ClCompile Include="FilePath\Path.cpp" />
+    <ClCompile Include="FilePath\PathStore.cpp" />
+    <ClCompile Include="FilePath\PathStoreConfig.cpp" />
+    <ClCompile Include="Json\external\json_reader.cpp" />
+    <ClCompile Include="Json\external\json_value.cpp" />
+    <ClCompile Include="Json\external\json_writer.cpp" />
+    <ClCompile Include="Strings\String1024.cpp" />
+    <ClCompile Include="Strings\String128.cpp" />
+    <ClCompile Include="Strings\String256.cpp" />
+    <ClCompile Include="Strings\String32.cpp" />
+    <ClCompile Include="Strings\String512.cpp" />
+    <ClCompile Include="Strings\String64.cpp" />
+    <ClCompile Include="Strings\String8.cpp" />
+    <ClCompile Include="Strings\StringUtils.cpp" />
+    <ClCompile Include="Strings\StringJsonSerializer.cpp" />
     <ClCompile Include="Timer\TimeThreadLimiter.cpp" />
     <ClCompile Include="Time\SystemClock.cpp" />
     <ClCompile Include="Time\TimeAbsolute.cpp" />
@@ -185,6 +231,7 @@
     <ClCompile Include="CRC\StringCRC.cpp" />
     <ClCompile Include="CRC\StripStringCRC.cpp" />
     <ClCompile Include="Type\TypeFacade.cpp" />
+    <ClCompile Include="Type\TypeJsonSerializer.cpp" />
     <ClCompile Include="Type\TypeRegistry.cpp" />
     <ClCompile Include="Type\TypeTextSerializer.cpp" />
     <ClCompile Include="Type\TypeDefinition.cpp" />
@@ -205,10 +252,11 @@
     <None Include="Architecture\Singleton\Singleton.inl" />
     <None Include="Containers\Graphs\Graph.inl" />
     <None Include="Containers\Graphs\GraphEdge.inl" />
-    <None Include="Containers\Graphs\GraphVertex.inl" />
+    <None Include="Containers\Graphs\GraphNode.inl" />
     <None Include="Containers\Misc\CircularBufferC.inl" />
     <None Include="Containers\Misc\CircularBufferIterator.inl" />
     <None Include="Frame\FrameStream.inl" />
+    <None Include="Json\external\json_valueiterator.inl" />
     <None Include="Type\TypeFacade.inl" />
     <None Include="Type\TypeVariable.inl" />
     <None Include="Type\TypeVariableData.inl" />
@@ -236,6 +284,8 @@
     <None Include="Containers\BitFlag\BitArray32.inl" />
     <None Include="Containers\BitFlag\BitArray64.inl" />
     <None Include="Containers\BitFlag\BitArray8.inl" />
+    <None Include="Docs\dia.core.architecture.module.md" />
+    <None Include="LOGGING_SYSTEM_IMPLEMENTATION.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Hello Plugin</title>
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: #1e1e1e;
+      color: #d4d4d4;
+    }
+    .wrap {
+      padding: 20px;
+      max-width: 640px;
+    }
+    h1 {
+      font-size: 18px;
+      margin: 0 0 12px 0;
+      color: #569cd6;
+    }
+    p {
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    code {
+      background: #2d2d30;
+      padding: 1px 4px;
+      border-radius: 2px;
+      font-size: 11px;
+    }
+    .status {
+      margin-top: 16px;
+      padding: 10px 12px;
+      background: #252526;
+      border-left: 3px solid #4ec9b0;
+      font-size: 11px;
+      color: #b0b0b0;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Hello Editor Plugin</h1>
+    <p>This panel was loaded through the full plugin discovery pipeline:</p>
+    <p><code>REGISTER_EDITOR_PLUGIN</code> &rarr; <code>EditorPluginRegistry</code>
+       &rarr; <code>EditorManifestLoader</code> &rarr; <code>OnLoad</code>
+       &rarr; <code>RegisterComponent</code></p>
+
+    <div class="status">
+      If you can see this panel, plugin discovery is working end-to-end.
+    </div>
+  </div>
+</body>
+</html>

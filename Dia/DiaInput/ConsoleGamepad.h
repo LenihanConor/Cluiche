@@ -12,6 +12,45 @@ namespace Dia
 {
 	namespace Input
 	{
+		/// @brief Xbox controller wrapper using Windows XInput API
+		///
+		/// ConsoleGamepad provides access to Xbox 360/One controllers through
+		/// the XInput API. Supports up to 4 controllers with buttons, analog sticks,
+		/// triggers, and rumble/vibration.
+		///
+		/// **Button Mapping:**
+		/// - A, B, X, Y - Face buttons
+		/// - DPad_Up/Down/Left/Right - Directional pad
+		/// - L_Shoulder, R_Shoulder - Shoulder buttons
+		/// - L_Thumbstick, R_Thumbstick - Stick press
+		/// - Start, Back - Menu buttons
+		/// - L_Trigger, R_Trigger - Analog triggers (0.0-1.0)
+		///
+		/// **Analog Sticks:**
+		/// - Left/Right stick X/Y axes return values in range [-1.0, 1.0]
+		/// - Deadzone detection built-in (XInput thresholds)
+		///
+		/// **Usage:**
+		/// @code
+		/// ConsoleGamepad gamepad;
+		/// gamepad.Initialize(1);  // 1-based index (1-4)
+		///
+		/// if (gamepad.IsConnected())
+		/// {
+		///     gamepad.Update();  // Poll current state
+		///
+		///     if (gamepad.IsButtonPressed(ConsoleGamepad::EButtonID::A))
+		///         player.Jump();
+		///
+		///     float x = gamepad.GetLeftStickX();
+		///     player.Move(x);
+		///
+		///     gamepad.RefreshState();  // Prepare for next frame
+		/// }
+		/// @endcode
+		///
+		/// @note Call Update() each frame, then RefreshState() at frame end for button edge detection.
+		////////////////////////////////////////////////////////////////////////////////
 		class ConsoleGamepad
 		{
 		public:

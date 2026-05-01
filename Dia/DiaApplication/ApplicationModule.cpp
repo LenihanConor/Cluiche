@@ -6,7 +6,10 @@
 #include "DiaApplication/ApplicationPhase.h"
 
 #include <DiaCore/Core/Assert.h>
+#include <DiaLogger/DiaLog.h>
 #include <DiaCore/Type/BasicTypeDefines.h>
+
+#include <DiaApplication/ApplicationProcessingUnit.h>
 
 namespace Dia
 {
@@ -15,14 +18,21 @@ namespace Dia
 		////////////////////////////////////////////////////////////////////////////////
 		// Class name: Module
 		////////////////////////////////////////////////////////////////////////////////
-		
+
+		//---------------------------------------------------------------------------------------------------------
+		// Static member initialization
+		//---------------------------------------------------------------------------------------------------------
+		const Dia::Core::StringCRC Module::kTypeId = Dia::Core::StringCRC("Module");
+
 		//-----------------------------------------------------------------------------
 		Module::Module(ProcessingUnit* associatedProcessingUnit, const Dia::Core::StringCRC& uniqueId, RunningEnum runningMode, unsigned int initialDependencyMapSize)
 			: StateObject(uniqueId)
 			, mAssociatedProcessingUnit(associatedProcessingUnit)
 			, mRunningMode(runningMode)
 			, mDependencies(initialDependencyMapSize, initialDependencyMapSize * 2)
-		{}
+		{
+			mAssociatedProcessingUnit->AddModule(this);
+		}
 
 		//-----------------------------------------------------------------------------
 		unsigned int Module::GetNumberOfDependancies()const
@@ -31,25 +41,25 @@ namespace Dia
 		}
 
 		//-----------------------------------------------------------------------------
-		Module* Module::GetDependencyFromIndex(unsigned int index)
+		Module* Module::GetModuleFromIndex(unsigned int index)
 		{
 			return mDependencies.GetItemByIndex(index);
 		}
 
 		//-----------------------------------------------------------------------------
-		const Module* Module::GetDependencyFromIndex(unsigned int index)const
+		const Module* Module::GetModuleFromIndex(unsigned int index)const
 		{
 			return mDependencies.GetItemByIndexConst(index);
 		}
 
 		//-----------------------------------------------------------------------------
-		Module* Module::GetDependency(const Dia::Core::StringCRC& uniqueId)
+		Module* Module::GetModule(const Dia::Core::StringCRC& uniqueId)
 		{
 			return mDependencies.GetItem(uniqueId);
 		}
 
 		//-----------------------------------------------------------------------------
-		const Module* Module::GetDependency(const Dia::Core::StringCRC& uniqueId)const
+		const Module* Module::GetModule(const Dia::Core::StringCRC& uniqueId)const
 		{
 			return mDependencies.GetItemConst(uniqueId);
 		}
@@ -65,6 +75,8 @@ namespace Dia
 		// This gets called when a module stays on active over a pahse Transtion
 		void Module::RetainThroughTransition(const Phase* startPhase, const Phase* endPhase)
 		{
+			DIA_LOG_INFO("Application", "Retaining Module - %s through phase transition", GetUniqueId().AsChar());
+
 			DoRetainThroughTransition(startPhase, endPhase);
 		}
 

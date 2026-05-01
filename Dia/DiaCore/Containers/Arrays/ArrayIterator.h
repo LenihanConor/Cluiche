@@ -47,30 +47,30 @@ namespace Dia
 			{
 			public:
 				ArrayConstIterator(const T* start, const T* begin, const T* end);
-				ArrayConstIterator(ArrayIterator<T>& rhs);
+				ArrayConstIterator(const ArrayIterator<T>& rhs);
 
 				const T*	Begin()const;
 				const T*	End()const;
 		
-				void		Next();
-				void		Previous();
-				
+				void		Next() const;
+				void		Previous() const;
+
 				bool		IsDone() const;
 				const T*	Current() const;
-					
-				bool		operator==		(const ArrayConstIterator<T>& other) const; 
+
+				bool		operator==		(const ArrayConstIterator<T>& other) const;
 				bool		operator!=		(const ArrayConstIterator<T>& other) const;
 
-				bool		operator<		(const ArrayConstIterator<T>& other) const; 
+				bool		operator<		(const ArrayConstIterator<T>& other) const;
 				bool		operator<=		(const ArrayConstIterator<T>& other) const;
-				
-				bool		operator>		(const ArrayConstIterator<T>& other) const; 
+
+				bool		operator>		(const ArrayConstIterator<T>& other) const;
 				bool		operator>=		(const ArrayConstIterator<T>& other) const;
 
 			private:
-				const T*	mBegin;
-				const T*	mEnd;
-				const T*	mIter;
+				const T*		mBegin;
+				const T*		mEnd;
+				mutable const T*	mIter;
 			};
 		}
 	}

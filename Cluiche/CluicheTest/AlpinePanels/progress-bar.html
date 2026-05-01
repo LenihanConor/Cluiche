@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<!-- Alpine widget: progress bar — multiple labelled progress bars with colour thresholds -->
+<html lang="en" data-theme="cluichetest">
+<head>
+  <meta charset="UTF-8" />
+  <title>Progress Bar</title>
+  <link rel="stylesheet" href="../../../External/DaisyUI/daisyui.min.css" />
+  <script src="../../../External/Tailwind/tailwind.min.js"></script>
+  <link rel="stylesheet" href="themes/cluichetest.css" />
+  <script defer src="../../../External/Alpine/alpine.min.js"></script>
+</head>
+<body class="bg-base-100 text-base-content p-4">
+
+  <div x-data="{
+    bars: [],
+
+    init() {
+      window.GameBridge_dispatch = (topic, dataJson) => {
+        if (topic !== 'progress_bars') return;
+        try { this.bars = JSON.parse(dataJson); }
+        catch (e) { console.warn('progress-bar: parse error', e); }
+      };
+    },
+
+    barClass(pct) {
+      if (pct >= 90) return 'progress-error';
+      if (pct >= 70) return 'progress-warning';
+      return 'progress-success';
+    }
+  }">
+
+    <h2 class="text-sm font-bold uppercase tracking-widest opacity-60 mb-3">Resources</h2>
+
+    <template x-if="bars.length === 0">
+      <p class="text-xs opacity-40">Waiting for data…</p>
+    </template>
+
+    <div class="flex flex-col gap-3 w-64">
+      <template x-for="b in bars" :key="b.label">
+        <div>
+          <div class="flex justify-between text-xs mb-1">
+            <span x-text="b.label"></span>
+            <span x-text="b.value + ' / ' + b.max"></span>
+          </div>
+          <progress
+            class="progress w-full"
+            :class="barClass(Math.round(b.value / b.max * 100))"
+            :value="b.value"
+            :max="b.max"
+          ></progress>
+        </div>
+      </template>
+    </div>
+
+  </div>
+</body>
+</html>

@@ -17,6 +17,7 @@ namespace Dia
 		float Cos(float radians);
 		float Tan(float radians);
 		float ATan(float radians);
+		float ATan2(float y, float x);  // Two-argument arctangent (returns angle in correct quadrant)
 		float ACos(float radians);
 		float ASin(float radians);
 

@@ -13,6 +13,8 @@ namespace Dia
 			class String32 : public String<32>
 			{
 			public:
+				DIA_TYPE_DECLARATION;
+
 				String32();													
 				explicit String32 ( ConstIterator& iter ); 
 				explicit String32 ( ConstReverseIterator& iter ); 

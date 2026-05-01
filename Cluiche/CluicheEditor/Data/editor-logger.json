@@ -1,0 +1,13 @@
+{
+  "default_level": "info",
+  "sinks": [
+    {
+      "name": "DebugOutput",
+      "level_threshold": "info"
+    },
+    {
+      "name": "EditorConsole",
+      "level_threshold": "debug"
+    }
+  ]
+}

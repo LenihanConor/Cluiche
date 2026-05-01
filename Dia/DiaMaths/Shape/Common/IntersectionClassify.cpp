@@ -4,21 +4,13 @@ namespace Dia
 {
 	namespace Maths
 	{
+		// Provide non-inline implementation for SetClassification
+		// (needed when function is used in exception handling or address is taken)
 		void IntersectionClassify::SetClassification(Classification classify)
 		{
 			mResult = classify;
 		}
-
-		IntersectionClassify& IntersectionClassify::ReInterpretAandBObject()
-		{
-			switch (mResult)
-			{
-			case kAContainsB: mResult = kBContainsA; break;
-			case kBContainsA: mResult = kAContainsB; break;
-			default: break;
-			}
-
-			return *this;
-		}
 	}
 }
+
+// Other methods are implemented inline in IntersectionClassify.inl

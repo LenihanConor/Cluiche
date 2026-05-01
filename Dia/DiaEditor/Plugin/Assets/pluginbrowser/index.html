@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Plugin Browser</title>
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      font-size: 12px;
+    }
+    .wrap {
+      padding: 14px 16px;
+      box-sizing: border-box;
+      height: 100%;
+      overflow: auto;
+    }
+    h1 {
+      font-size: 14px;
+      margin: 0 0 10px 0;
+      color: #569cd6;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .plugin-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .plugin-card {
+      background: #252526;
+      border: 1px solid #3c3c3c;
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .plugin-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .plugin-name {
+      font-size: 13px;
+      color: #d4d4d4;
+      font-weight: 600;
+    }
+    .plugin-version {
+      font-size: 10px;
+      color: #808080;
+      margin-left: 6px;
+    }
+    .plugin-desc {
+      font-size: 11px;
+      color: #9cdcfe;
+      margin-top: 3px;
+    }
+    .plugin-actions {
+      flex-shrink: 0;
+      margin-left: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .badge.loaded { background: #1f3a22; color: #89d185; }
+    .badge.available { background: #2a2d2e; color: #808080; }
+    .badge.pinned { background: #2a2a3a; color: #9cdcfe; }
+    button {
+      padding: 4px 12px;
+      background: #0e639c;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-size: 11px;
+    }
+    button:hover { background: #1177bb; }
+    button.unload-btn { background: #6c1e1e; }
+    button.unload-btn:hover { background: #8b2e2e; }
+    button:disabled {
+      background: #2a2d2e;
+      color: #666;
+      cursor: not-allowed;
+    }
+    .err {
+      margin-top: 8px;
+      padding: 6px 10px;
+      background: #3a1f1f;
+      border-left: 3px solid #f48771;
+      color: #f48771;
+      font-size: 11px;
+      white-space: pre-wrap;
+    }
+    .empty {
+      color: #808080;
+      font-style: italic;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Plugin Browser</h1>
+    <div id="plugin-list" class="plugin-list"></div>
+    <div id="err" class="err" style="display:none"></div>
+  </div>
+
+  <script>
+    (function () {
+      var nextReqId = 1;
+      var pending = {};
+
+      function callCpp(type, reqId, data) {
+        var payload = { type: type, data: data || {} };
+        if (reqId) payload.reqId = reqId;
+        try {
+          window.parent.postMessage({ __diaFromFrame: true, payload: payload }, "*");
+        } catch (e) {
+          console.warn("[PluginBrowser] postMessage failed:", e);
+        }
+      }
+
+      window.addEventListener("message", function (e) {
+        var msg = e.data || {};
+        if (msg.__diaResponse && msg.reqId && pending[msg.reqId]) {
+          var cb = pending[msg.reqId];
+          delete pending[msg.reqId];
+          cb(msg.result);
+        }
+        if (msg.__dia && msg.topic === "panels_changed") {
+          fetchPlugins();
+        }
+      });
+
+      function request(type, data, onResult) {
+        var reqId = "pb" + (nextReqId++);
+        pending[reqId] = onResult || function () {};
+        callCpp(type, reqId, data);
+      }
+
+      var listEl = document.getElementById("plugin-list");
+      var errEl = document.getElementById("err");
+
+      function showError(msg) {
+        errEl.textContent = msg;
+        errEl.style.display = "block";
+      }
+
+      function clearError() {
+        errEl.style.display = "none";
+      }
+
+      function renderPlugins(result) {
+        listEl.innerHTML = "";
+        clearError();
+
+        var plugins = (result && result.plugins) || [];
+        if (plugins.length === 0) {
+          listEl.innerHTML = '<div class="empty">No plugins registered</div>';
+          return;
+        }
+
+        for (var i = 0; i < plugins.length; i++) {
+          var p = plugins[i];
+
+          var card = document.createElement("div");
+          card.className = "plugin-card";
+
+          var info = document.createElement("div");
+          info.className = "plugin-info";
+
+          var nameRow = document.createElement("div");
+          var nameSpan = document.createElement("span");
+          nameSpan.className = "plugin-name";
+          nameSpan.textContent = p.name || p.typeId;
+          nameRow.appendChild(nameSpan);
+
+          if (p.version) {
+            var verSpan = document.createElement("span");
+            verSpan.className = "plugin-version";
+            verSpan.textContent = "v" + p.version;
+            nameRow.appendChild(verSpan);
+          }
+          info.appendChild(nameRow);
+
+          if (p.description) {
+            var descEl = document.createElement("div");
+            descEl.className = "plugin-desc";
+            descEl.textContent = p.description;
+            info.appendChild(descEl);
+          }
+
+          card.appendChild(info);
+
+          var actions = document.createElement("div");
+          actions.className = "plugin-actions";
+
+          if (p.pinned) {
+            var pinnedBadge = document.createElement("span");
+            pinnedBadge.className = "badge pinned";
+            pinnedBadge.textContent = "Pinned";
+            actions.appendChild(pinnedBadge);
+          }
+
+          var statusEl = document.createElement("span");
+          statusEl.className = "badge " + (p.loaded ? "loaded" : "available");
+          statusEl.textContent = p.loaded ? "Loaded" : "Available";
+          actions.appendChild(statusEl);
+
+          if (p.loaded && !p.pinned) {
+            var unloadBtn = document.createElement("button");
+            unloadBtn.className = "unload-btn";
+            unloadBtn.textContent = "Unload";
+            unloadBtn.setAttribute("data-typeid", p.typeId);
+            unloadBtn.addEventListener("click", function () {
+              var typeId = this.getAttribute("data-typeid");
+              this.disabled = true;
+              this.textContent = "Unloading...";
+              clearError();
+              request("plugin_browser.unload", { typeId: typeId }, function (res) {
+                if (res && res.ok) {
+                  fetchPlugins();
+                } else {
+                  showError((res && res.error) || "Failed to unload plugin");
+                  fetchPlugins();
+                }
+              });
+            });
+            actions.appendChild(unloadBtn);
+          }
+
+          if (!p.loaded) {
+            var loadBtn = document.createElement("button");
+            loadBtn.textContent = "Load";
+            loadBtn.setAttribute("data-typeid", p.typeId);
+            loadBtn.addEventListener("click", function () {
+              var typeId = this.getAttribute("data-typeid");
+              this.disabled = true;
+              this.textContent = "Loading...";
+              clearError();
+              request("plugin_browser.load", { typeId: typeId }, function (res) {
+                if (res && res.ok) {
+                  fetchPlugins();
+                } else {
+                  showError((res && res.error) || "Failed to load plugin");
+                  fetchPlugins();
+                }
+              });
+            });
+            actions.appendChild(loadBtn);
+          }
+
+          card.appendChild(actions);
+          listEl.appendChild(card);
+        }
+      }
+
+      function fetchPlugins() {
+        request("plugin_browser.get_available", {}, renderPlugins);
+      }
+
+      fetchPlugins();
+    })();
+  </script>
+</body>
+</html>

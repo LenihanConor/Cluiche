@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+  build-env:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cluiche-build-env
+    volumes:
+      - ..:C:/repo
+    working_dir: C:/repo
+    isolation: process

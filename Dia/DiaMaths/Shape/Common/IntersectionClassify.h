@@ -20,8 +20,8 @@ namespace Dia
 			IntersectionClassify(Classification classify);
 
 			IntersectionClassify&	operator = (const IntersectionClassify& rhs);
-			bool					operator == (const IntersectionClassify& rhs);
-			bool					operator != (const IntersectionClassify& rhs);
+			bool					operator == (const IntersectionClassify& rhs) const;
+			bool					operator != (const IntersectionClassify& rhs) const;
 
 			bool			IsIntersecting()const;
 			bool			IsNotIntersecting()const;

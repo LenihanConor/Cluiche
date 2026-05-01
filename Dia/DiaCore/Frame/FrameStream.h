@@ -3,6 +3,7 @@
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
+#include <algorithm>
 #include <deque>
 #include <mutex>
 
@@ -26,7 +27,6 @@ namespace Dia
 
 			void GarbageCollectAllFramesOlderThan(const Dia::Core::TimeAbsolute& timeStamp);
 
-			
 		private:
 			class InternalData
 			{

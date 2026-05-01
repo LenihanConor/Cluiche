@@ -26,15 +26,18 @@ namespace Dia
 			//	HeaderStrings
 			//------------------------------------------------------------------------------------
 
+			static const unsigned int kTextSerializerVersion = 2;
+
 			class HeaderStrings
 			{
 			public:
-				
+
 				CLASSEDENUM (EFlagName,\
 					CE_ITEMVAL(Unknown, -1)\
 					CE_ITEMVAL(ClassName, 0)\
 					CE_ITEM(CRC)\
-					CE_ITEM(NumberElements),\
+					CE_ITEM(NumberElements)\
+					CE_ITEM(Version),\
 					Unknown \
 					);
 
@@ -103,7 +106,7 @@ namespace Dia
 				Dia::Core::Containers::DynamicArrayC< HeaderStringParse, EFlagName::NumberOfItems > mList;
 			};
 			
-			const Containers::String32 HeaderStrings::msFlagArray[] = {"class_name", "crc", "number_element"};
+			const Containers::String32 HeaderStrings::msFlagArray[] = {"class_name", "crc", "number_element", "version"};
 
 			//------------------------------------------------------------------------------------
 			//	TextSerializerInternal
@@ -121,10 +124,14 @@ namespace Dia
 					
 				void Serialize(const TypeInstance& instance)
 				{
+					Containers::String32 versionStr;
+					StringConvertFromUInt(versionStr.AsCStr(), kTextSerializerVersion);
+					mBuffer << "@" << HeaderStrings::GetFlag(HeaderStrings::EFlagName::Version).AsCStr() << ":" << versionStr.AsCStr() << "@\n";
+
 					WriteInstanceDeclaration(instance);
 
 					WriteOpenScope();		// Initial Instance Scope
-					
+
 					WriteVariables(instance);
 
 					WriteCloseScope();		// Initial Instance Scope
@@ -135,7 +142,7 @@ namespace Dia
 				//------------------------------------------------------------------------------------
 				void WriteInstanceDeclaration(const TypeInstance& instance)
 				{
-					unsigned int hashID = instance.GetTypeDescriptor()->GetUniqueCRC().Value();
+					unsigned int hashID = instance.GetTypeDescriptor()->GetUniqueCRC();
 					const char* name = instance.GetTypeDescriptor()->GetName();
 					
 					Containers::String32 hexHashID;
@@ -251,7 +258,7 @@ namespace Dia
 				{
 					for (unsigned int i = 0; i < currentTypeVariable.GetNumberOfElements(); i++)
 					{
-						unsigned int address = currentTypeVariable.GetVariableAddress(instance, i);
+						uintptr_t address = currentTypeVariable.GetVariableAddress(instance, i);
 
 						TypeInstance::VariablePath variablePath;
 						instance.FindVariablePathFromPointerAddress(address, variablePath);
@@ -263,7 +270,7 @@ namespace Dia
 
 						mBuffer << tabs.AsCStr() << name << " = " << instance.GetTypeDescriptor()->GetName();
 						
-						for (unsigned int i = 0; i < variablePath.Size(); i++)
+						for (unsigned int i = 0; i < variablePath.size(); i++)
 						{
 							mBuffer << "." << variablePath[i]->GetName();
 						}
@@ -496,6 +503,19 @@ namespace Dia
 				{
 					mPtrFixupList.RemoveAll();
 
+					ConsumeWhiteSpace();
+					if (mBuffer.GetCurrent() == '@')
+					{
+						HeaderStrings versionHeader;
+						ConsumeHeaderStrings(versionHeader);
+						int versionIndex = versionHeader.FindIndexToFlag(HeaderStrings::EFlagName::Version);
+						if (versionIndex != -1)
+						{
+							unsigned int version = StringConvertToUInt(versionHeader.GetString(HeaderStrings::EFlagName::Version).AsCStr());
+							DIA_ASSERT(version == kTextSerializerVersion, "Serialization version mismatch: file is v%u, expected v%u", version, kTextSerializerVersion);
+						}
+					}
+
 					ConsumeSpecialCharacter();
 
 					ReadInstanceDeclaration(instance);
@@ -532,7 +552,7 @@ namespace Dia
 					DIA_ASSERT_SUPPORT( unsigned int crc = StringConvertToUInt(crcBuffer.AsCStr(), 16) );
 					
 					DIA_ASSERT(nameBuffer == instance.GetTypeDescriptor()->GetName(), "An object of [%s] is trying to deserialise into object of [%s]", nameBuffer.AsCStr(), instance.GetTypeDescriptor()->GetName());
-					DIA_ASSERT(crc == instance.GetTypeDescriptor()->GetUniqueCRC().Value(), "%s crc is not correct", nameBuffer.AsCStr());
+					DIA_ASSERT(crc == instance.GetTypeDescriptor()->GetUniqueCRC(), "%s crc is not correct", nameBuffer.AsCStr());
 				}
 				
 				//------------------------------------------------------------------------------------
@@ -590,7 +610,7 @@ namespace Dia
 						PtrFixupStruct tempStruct = mPtrFixupList[i];
 
 						Containers::StringReader reader( tempStruct.mPath );
-						
+
 						TypeInstance::VariableCRCPath crcPath;
 
 						const char* startPtr = tempStruct.mPath;
@@ -609,19 +629,19 @@ namespace Dia
 							{
 								lastCharWasFullStop = true;
 								CRC newCrc( startPtr, numberCharacters );
-								crcPath.Add(newCrc);
+								crcPath.push_back(newCrc);
 							}
 
 							numberCharacters++;
 							reader.Advance();
-						}					
+						}
 
 						CRC newCrc( startPtr, numberCharacters);
-						crcPath.Add(newCrc);
+						crcPath.push_back(newCrc);
 
-						unsigned int addressResult = 0;
+						uintptr_t addressResult = 0;
 						instance.FindPointerAddressFromVariableCRCPath( crcPath, addressResult );
-						
+
 						char* pointeeAsType = reinterpret_cast<char*>(tempStruct.mPointeeAsType);
 						void** pointeeValue = reinterpret_cast<void**>(((tempStruct.mOffsetFromPointee / sizeof (char)) + pointeeAsType));
 

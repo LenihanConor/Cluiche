@@ -54,7 +54,7 @@ namespace Dia
 
 			ICanvas(){}
 			virtual ~ICanvas(){};
-			
+
 			virtual void Initialize(const Settings& settings) = 0;
 			virtual void SetCanvasSize(const Dia::Maths::Vector2D& size) = 0;
 			virtual void SetActiveContext(bool active)=0;
@@ -62,6 +62,22 @@ namespace Dia
 			virtual void StartFrame(const FrameData& nextFrame) = 0;
 			virtual void ProcessFrame(const FrameData& nextFrame) = 0;
 			virtual void EndFrame(const FrameData& nextFrame) = 0;
+
+			////////////////////////////////////////////////////////////
+			/// \brief Render a complete frame (combines Start/Process/End)
+			///
+			/// Convenience method that performs all three rendering phases
+			/// in a single call. Equivalent to calling StartFrame(),
+			/// ProcessFrame(), and EndFrame() sequentially.
+			///
+			/// \param frame Frame data to render
+			////////////////////////////////////////////////////////////
+			virtual void RenderFrame(const FrameData& frame)
+			{
+				StartFrame(frame);
+				ProcessFrame(frame);
+				EndFrame(frame);
+			}
 		};
 	}
 }

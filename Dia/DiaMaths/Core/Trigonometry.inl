@@ -71,6 +71,16 @@ namespace Dia
 		}
 
 		//-----------------------------------------------------------------------------
+		// Two-argument arctangent
+		// Returns the angle (in radians) whose tangent is y/x, using the signs of both
+		// arguments to determine the correct quadrant.
+		// Returns value in range [-π, π]
+		inline float ATan2(float y, float x)
+		{
+			return atan2f(y, x);
+		}
+
+		//-----------------------------------------------------------------------------
 		inline float Sin(const Angle& angle)
 		{
 			return Sin(angle.AsRadians());

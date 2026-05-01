@@ -1,0 +1,16 @@
+[submodule "External/pybind11"]
+	path = External/pybind11
+	url = https://github.com/pybind/pybind11.git
+[submodule "External/asio"]
+	path = External/asio
+	url = https://github.com/chriskohlhoff/asio.git
+[submodule "External/websocketpp"]
+	path = External/websocketpp
+	url = https://github.com/zaphoyd/websocketpp.git
+[submodule "External/googletest"]
+	path = External/googletest
+	url = https://github.com/google/googletest.git
+# NOTE: jsoncpp (External/jsoncpp-master) needs manual conversion:
+#   git rm -r External/jsoncpp-master
+#   git submodule add https://github.com/open-source-parsers/jsoncpp.git External/jsoncpp
+#   (the plain-file copy must be removed before it can be re-added as a submodule)

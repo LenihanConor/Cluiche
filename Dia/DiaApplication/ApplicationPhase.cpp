@@ -8,6 +8,9 @@
 #include <DiaCore/Strings/String1024.h>
 #include <DiaCore/Time/TimeRelative.h>
 #include <DiaCore/Timer/TimerSystem.h>
+#include <DiaLogger/DiaLog.h>
+
+#include <DiaApplication/ApplicationProcessingUnit.h>
 
 #include <chrono>
 #include <thread>
@@ -19,7 +22,12 @@ namespace Dia
 		////////////////////////////////////////////////////////////////////////////////
 		// Class name: ApplicationPhase
 		////////////////////////////////////////////////////////////////////////////////
-		
+
+		//---------------------------------------------------------------------------------------------------------
+		// Static member initialization
+		//---------------------------------------------------------------------------------------------------------
+		const Dia::Core::StringCRC Phase::kTypeId = Dia::Core::StringCRC("Phase");
+
 		//-----------------------------------------------------------------------------
 		Phase::Phase(ProcessingUnit* associatedProcessingUnit, const Dia::Core::StringCRC& uniqueId, unsigned int maxModules)
 			: StateObject (uniqueId)
@@ -27,7 +35,9 @@ namespace Dia
 			, mUpdatingModules(maxModules)
 			, mStoppingModuleOrder(maxModules)
 			, mAssociatedModules(maxModules, maxModules * 2)
-		{}
+		{
+			mAssociatedProcessingUnit->AddPhase(this);
+		}
 
 		//---------------------------------------------------------------------------------------------------------
 		void Phase::AddModule(Module* module)
@@ -46,9 +56,44 @@ namespace Dia
 				unsigned int numberOfDependencies = module->GetNumberOfDependancies();
 				for(unsigned int i = 0; i < numberOfDependencies; i++)
 				{
-					AddModule(module->GetDependencyFromIndex(i));
+					AddModule(module->GetModuleFromIndex(i));
 				}
 			}
+		}
+
+		//---------------------------------------------------------------------------------------------------------
+		bool Phase::RemoveModule(const Dia::Core::StringCRC& moduleId)
+		{
+			if (mAssociatedModules.ContainsKey(moduleId))
+			{
+				Module* module = mAssociatedModules[moduleId];
+
+				// Remove from associated modules table
+				mAssociatedModules.Remove(moduleId);
+
+				// Remove from updating modules array if present
+				for (unsigned int i = 0; i < mUpdatingModules.Size(); ++i)
+				{
+					if (mUpdatingModules[i]->GetUniqueId() == moduleId)
+					{
+						mUpdatingModules.RemoveAt(i);
+						break;
+					}
+				}
+
+				// Remove from stopping modules array if present
+				for (unsigned int i = 0; i < mStoppingModuleOrder.Size(); ++i)
+				{
+					if (mStoppingModuleOrder[i]->GetUniqueId() == moduleId)
+					{
+						mStoppingModuleOrder.RemoveAt(i);
+						break;
+					}
+				}
+
+				return true;
+			}
+			return false;
 		}
 				
 		//---------------------------------------------------------------------------------------------------------
@@ -60,9 +105,9 @@ namespace Dia
 		//		- If it gets blocked that it has no modules with no dependancies this should assert and fail to start
 		//		- A module can flag itself as an async start in this case we will not remove it from the start list until it is finished
 		//		- This means we may get stuck waiting for dependencies to end before we can continue
-		StateObject::OpertionResponse Phase::DoStart()
+		StateObject::OpertionResponse Phase::DoStart(const IStartData* startData)
 		{
-			PreStart();
+			BeforeModulesStart();
 
 			// Creates a list of all modules that need to be started
 			Dia::Core::Containers::DynamicArrayC<Module*, 128> modulesToStart;
@@ -90,15 +135,9 @@ namespace Dia
 
 					if (pModule != nullptr && pModule->HasAllDependanciesStarted())
 					{
-						StateObject::OpertionResponse response = pModule->Start();
+						StateObject::OpertionResponse response = pModule->Start(startData);
 
 						mStoppingModuleOrder.Add(pModule);
-
-						// This will add the modules in order of starting and should make it order dependant
-						if (pModule->RequiresUpdating())
-						{
-							mUpdatingModules.Add(pModule);
-						}
 
 						switch (response)
 						{
@@ -122,7 +161,7 @@ namespace Dia
 				StartAsyncModules(modulesFlaggedToStartAsync);
 
 				numberOfModuleToStart = 0;
-				for (size_t i = 0; i < modulesToStart.Size(); i++)
+				for (unsigned int i = 0; i < modulesToStart.Size(); i++)
 				{
 					if (modulesToStart[i] != nullptr)
 					{
@@ -131,7 +170,19 @@ namespace Dia
 				}
 			}
 
-			PostStart();
+			AfterModulesStart();
+			
+			// This will add the modules in order of starting and should make it order dependant
+			for (unsigned int i = 0; i < mAssociatedModules.Size(); i++)
+			{
+				Module* pModule = mAssociatedModules.GetItemByIndex(i);
+
+				if (pModule->RequiresUpdating() && mUpdatingModules.FindIndex(pModule) == -1)
+				{
+					mUpdatingModules.Add(pModule);
+				}
+			}
+
 			// TODO: If we want Phase to start async this is what we would have to change, 
 			// i dont think this is a good idea for now. Later we could do this so that we
 			// can start updating the modules already started immediately instead of waiting
@@ -142,7 +193,7 @@ namespace Dia
 		//---------------------------------------------------------------------------------------------------------
 		void Phase::DoUpdate()
 		{
-			PreUpdate();
+			BeforeModulesUpdate();
 
 			unsigned int numberOfModules = mUpdatingModules.Size();
 			for(unsigned int i = 0; i < numberOfModules; i++)
@@ -150,13 +201,13 @@ namespace Dia
 				mUpdatingModules[i]->Update();
 			}
 
-			PostUpdate();
+			AfterModulesUpdate();
 		}
 		
 		//---------------------------------------------------------------------------------------------------------
 		void Phase::DoStop()
 		{
-			PreStop();
+			BeforeModulesStop();
 
 			unsigned int numberOfModules = mStoppingModuleOrder.Size();
 			for (unsigned int i = numberOfModules - 1; i >= 0 && i < numberOfModules; i--)
@@ -167,7 +218,7 @@ namespace Dia
 			mUpdatingModules.RemoveAll();
 			mStoppingModuleOrder.RemoveAll();
 
-			PostStop();
+			AfterModulesStop();
 		}
 
 		//-----------------------------------------------------------------------------
@@ -185,6 +236,8 @@ namespace Dia
 		//	Modules that are only in the new phase need to be started
 		void Phase::TransitionTo(Phase* endPhase)
 		{
+			DIA_LOG_INFO("Application", "Transitioning Phase From %s to %s", GetUniqueId().AsChar(), endPhase->GetUniqueId().AsChar());
+
 			// Get list of all the modules we need to sort out
 			Dia::Core::Containers::DynamicArrayC<Module*, 128> modulesToStop;
 			Dia::Core::Containers::DynamicArrayC<Module*, 128> modulesToRetain;
@@ -203,6 +256,28 @@ namespace Dia
 				}
 			}
 
+			for (unsigned int i = 0; i < modulesToRetain.Size(); i++)
+			{
+				DIA_LOG_INFO("Application", "  Retaining Module - %s", modulesToRetain.At(i)->GetUniqueId().AsChar());
+			}
+			for (unsigned int i = 0; i < modulesToStop.Size(); i++)
+			{
+				DIA_LOG_INFO("Application", "  Stopping Module - %s", modulesToStop.At(i)->GetUniqueId().AsChar());
+			}
+
+			// To keep order we tranverse the existing update and stopping order list and add all retaining modules
+			for (unsigned int i = 0; i < mUpdatingModules.Size(); i++)
+			{
+				Module* module = mUpdatingModules[i];
+				if (modulesToRetain.FindIndex(module) != -1)
+				{
+					endPhase->mUpdatingModules.Add(module);
+				}
+			}
+			mUpdatingModules.RemoveAll();
+
+			BeforeModulesStop();
+
 			//	Modules that are only in the start phase need to be stopped
 			const unsigned int numberOfModules = mStoppingModuleOrder.Size();
 			for (unsigned int i = numberOfModules - 1; i >= 0 && i < numberOfModules; --i)
@@ -214,7 +289,16 @@ namespace Dia
 				}
 			}
 
-			mUpdatingModules.RemoveAll();			// As we are moving phase this should be disabled an reneabled on the new phase
+			AfterModulesStop();
+
+			for (unsigned int i = 0; i < mStoppingModuleOrder.Size(); i++)
+			{
+				Module* module = mStoppingModuleOrder[i];
+				if (modulesToRetain.FindIndex(module) != -1)
+				{
+					endPhase->mStoppingModuleOrder.Add(module);
+				}
+			}
 			mStoppingModuleOrder.RemoveAll();
 
 			//	Modules that are in both should be retained (and notified of this)
@@ -223,6 +307,9 @@ namespace Dia
 				Module* moduleToRetain = modulesToRetain.At(i);
 				moduleToRetain->RetainThroughTransition(this, endPhase);
 			}
+
+			// Set previous phase to Stop
+			this->AfterPhaseTransition();
 
 			//	Modules that are only in the new phase need to be started
 			endPhase->Start();
@@ -235,7 +322,7 @@ namespace Dia
 
 			return mAssociatedProcessingUnit;
 		}
-
+			
 		//-----------------------------------------------------------------------------
 		const ProcessingUnit* Phase::GetAssociatedProcessingUnit()const
 		{

@@ -66,11 +66,11 @@ namespace Dia
 		{} 
 		
 		//-----------------------------------------------------------------------------
-		Vector4D::Vector4D(float number) 
+		Vector4D::Vector4D(float number)
 			: x(number)
 			, y(number)
 			, z(number)
-			, w(0.0f)
+			, w(number)
 		{}
 		
 		//-----------------------------------------------------------------------------
@@ -93,12 +93,12 @@ namespace Dia
 		}
 		
 		//-----------------------------------------------------------------------------
-		Vector4D& Vector4D::operator+= (const Vector4D& v)			
+		Vector4D& Vector4D::operator+= (const Vector4D& v)
 		{
 			x += v.x;
 			y += v.y;
 			z += v.z;
-			w = v.w;
+			w += v.w;
 
 			return *this;
 		}
@@ -109,7 +109,7 @@ namespace Dia
 			x -= v.x;
 			y -= v.y;
 			z -= v.z;
-			w = v.w;
+			w -= v.w;
 
 			return *this;
 		}
@@ -120,7 +120,7 @@ namespace Dia
 			x *= rhs.x;
 			y *= rhs.y;
 			z *= rhs.z;
-			w = rhs.w;
+			w *= rhs.w;
 
 			return *this;
 		}
@@ -131,7 +131,7 @@ namespace Dia
 			x /= rhs.x;
 			y /= rhs.y;
 			z /= rhs.z;
-			w = rhs.w;
+			w /= rhs.w;
 
 			return *this;
 		}
@@ -142,6 +142,7 @@ namespace Dia
 			x *= value;
 			y *= value;
 			z *= value;
+			w *= value;
 
 			return *this;
 		}
@@ -152,7 +153,20 @@ namespace Dia
 			x /= value;
 			y /= value;
 			z /= value;
+			w /= value;
 			return *this;
+		}
+
+		//-----------------------------------------------------------------------------
+		Vector4D Vector4D::operator +() const
+		{
+			return *this;
+		}
+
+		//-----------------------------------------------------------------------------
+		Vector4D Vector4D::operator -() const
+		{
+			return Vector4D(-x, -y, -z, -w);
 		}
 
 		//-----------------------------------------------------------------------------
@@ -371,13 +385,14 @@ namespace Dia
 			x = Maths::Float::FAbs(x);
 			y = Maths::Float::FAbs(y);
 			z = Maths::Float::FAbs(z);
+			w = Maths::Float::FAbs(w);
 			return *this;
 		}
 
 		//-----------------------------------------------------------------------------
 		float Vector4D::Dot( const Vector4D& vVector) const
 		{
-			return (x*vVector.x + y*vVector.y + z*vVector.z);
+			return (x*vVector.x + y*vVector.y + z*vVector.z + w*vVector.w);
 		}
 
 		//-----------------------------------------------------------------------------
@@ -413,7 +428,7 @@ namespace Dia
 		// -----------------------------------------------------------------------------
 		Vector4D Vector4D::ProjectOn( const Vector4D& rhs ) const
 		{
-			return (*this) * (this->Dot(rhs) / rhs.Dot(rhs));
+			return rhs * (this->Dot(rhs) / rhs.Dot(rhs));
 		}
 		
 		// -----------------------------------------------------------------------------	

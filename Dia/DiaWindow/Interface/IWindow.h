@@ -64,6 +64,7 @@ namespace Dia
 						: Core::BitArray8()
 					{
 						SetBit(EStyle::kTitlebar, true);
+						SetBit(EStyle::kResize, true);
 						SetBit(EStyle::kClose, true);
 					}
 

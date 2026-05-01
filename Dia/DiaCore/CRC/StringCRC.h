@@ -1,7 +1,8 @@
 #ifndef DIA_STRING_CRC_H
 #define DIA_STRING_CRC_H
 
-#include "DiaCore/crc/CRC.h"
+#include "DiaCore/CRC/CRC.h"
+#include <functional>
 
 namespace Dia
 {
@@ -10,7 +11,10 @@ namespace Dia
 		class StringCRC : public CRC
 		{
 		public:
+			static const StringCRC kZero;
+
 			static const int kStringLength = 64;
+			static const int Capacity() { return kStringLength; }
 
 			StringCRC ();
 			StringCRC (const StringCRC& crc);
@@ -32,6 +36,19 @@ namespace Dia
 		}; // CRC
 
 	}
+}
+
+// std::hash specialization for StringCRC (needed for std::unordered_map)
+namespace std
+{
+	template<>
+	struct hash<Dia::Core::StringCRC>
+	{
+		size_t operator()(const Dia::Core::StringCRC& crc) const noexcept
+		{
+			return static_cast<size_t>(crc.Value());
+		}
+	};
 }
 
 #endif // DIA_ASSERT

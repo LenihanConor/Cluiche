@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Internal">
+      <UniqueIdentifier>{7a3b4c5d-1234-5678-9abc-def012345678}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Error.h" />
+    <ClInclude Include="Message.h" />
+    <ClInclude Include="Server.h" />
+    <ClInclude Include="Client.h" />
+    <ClInclude Include="Internal\WebSocketppWrapper.h">
+      <Filter>Internal</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Server.cpp" />
+    <ClCompile Include="Client.cpp" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,177 @@
+site_name: Cluiche Game Engine Documentation
+site_description: Documentation for the Cluiche game engine and Dia framework
+site_author: Cluiche Team
+docs_dir: docs
+site_dir: .mkdocs-site
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+plugins:
+  - search
+  - mermaid2
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:mermaid2.fence_mermaid_custom
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - admonition
+  - pymdownx.details
+  - attr_list
+  - def_list
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: README.md
+  - Getting Started:
+    - Quickstart: reference/getting-started/quickstart.md
+    - Building the Project: reference/getting-started/building-the-project.md
+    - Common Tasks: reference/getting-started/common-tasks.md
+    - Glossary: reference/getting-started/glossary.md
+  - Architecture:
+    - Overview: reference/architecture/architecture.md
+    - Dia Engine: reference/architecture/dia-engine.md
+    - CluicheTest Application: reference/architecture/cluichetest-application.md
+    - Module System: reference/architecture/module-system.md
+    - Level System: reference/architecture/level-system.md
+    - Threading Model: reference/architecture/threading-model.md
+    - External Dependencies: reference/architecture/external-dependencies.md
+    - Diagrams:
+      - System Overview: reference/architecture/diagrams/system-overview.md
+      - Module Dependencies: reference/architecture/diagrams/module-dependencies.md
+      - Phase Execution: reference/architecture/diagrams/phase-execution.md
+      - Level Lifecycle: reference/architecture/diagrams/level-lifecycle.md
+      - Threading Model: reference/architecture/diagrams/threading-model.md
+  - Design Rationale:
+    - Design Philosophy: reference/design-rationale/design.md
+    - Why Dia: reference/design-rationale/why-dia.md
+    - Why Module/Phase/PU: reference/design-rationale/why-module-phase-pu.md
+    - Why Type System: reference/design-rationale/why-type-system.md
+    - Design Patterns: reference/design-rationale/design-patterns.md
+    - Historical Decisions: reference/design-rationale/historical-decisions.md
+    - Future Directions: reference/design-rationale/future-directions.md
+  - Requirements:
+    - Overview: reference/requirements-as-built/requirements.md
+    - Functional Requirements: reference/requirements-as-built/functional-requirements.md
+    - Non-Functional Requirements: reference/requirements-as-built/non-functional-requirements.md
+    - Dia Requirements: reference/requirements-as-built/dia-requirements.md
+    - Cluiche Requirements: reference/requirements-as-built/cluiche-requirements.md
+    - Traceability Matrix: reference/requirements-as-built/traceability-matrix.md
+  - Testing:
+    - Test Strategy: reference/testing/test.md
+    - Unit Testing: reference/testing/unit-testing.md
+    - Integration Testing: reference/testing/integration-testing.md
+    - Thread Safety Testing: reference/testing/thread-safety-testing.md
+    - Performance Testing: reference/testing/performance-testing.md
+    - Test Coverage Targets: reference/testing/test-coverage-targets.md
+    - Writing Tests Guide: reference/testing/writing-tests-guide.md
+    - Google Test Migration: reference/testing/google-test-migration.md
+  - API Reference:
+    - Overview: reference/api/api-overview.md
+    - Conventions: reference/api/conventions.md
+    - Dia APIs:
+      - Application API: reference/api/dia/application-api.md
+      - Core API: reference/api/dia/core-api.md
+      - Maths API: reference/api/dia/maths-api.md
+      - Graphics API: reference/api/dia/graphics-api.md
+      - Window API: reference/api/dia/window-api.md
+      - Input API: reference/api/dia/input-api.md
+      - UI API: reference/api/dia/ui-api.md
+      - UI Awesomium API: reference/api/dia/ui-awesomium-api.md
+      - SFML API: reference/api/dia/sfml-api.md
+      - IO API: reference/api/dia/io-api.md
+      - Physics API: reference/api/dia/physics-api.md
+      - AI API: reference/api/dia/ai-api.md
+  - AI Guides:
+    - AI Navigation: reference/ai-guides/AI-README.md
+    - Codebase Map: reference/ai-guides/codebase-map.md
+    - Entry Points: reference/ai-guides/entry-points.md
+    - Dependency Graph: reference/ai-guides/dependency-graph.md
+    - Patterns Reference: reference/ai-guides/patterns-reference.md
+    - Thread Safety Guide: reference/ai-guides/thread-safety-guide.md
+    - System Boundaries: reference/ai-guides/system-boundaries.md
+    - Quick Reference: reference/ai-guides/quick-reference.md
+  - Development:
+    - Contributing: reference/development/contributing.md
+    - Coding Standards: reference/development/coding-standards.md
+    - Visual Studio Guide: reference/development/visual-studio-guide.md
+    - Debugging Tips: reference/development/debugging-tips.md
+    - Known Issues: reference/development/known-issues.md
+    - Documentation Maintenance: reference/development/documentation-maintenance.md
+    - Documentation Viewer Guide: reference/development/documentation-viewer-guide.md
+    - Changelog: reference/development/changelog.md
+  - Registry:
+    - Module Registry: reference/registry/module-registry.md
+    - Module Metadata Schema: reference/registry/module-metadata-schema.md
+    - File Locations: reference/registry/file-locations.md
+    - External Links: reference/registry/external-links.md
+  - Subsystems:
+    - Dia Maths:
+      - Thread Safety Notes: reference/subsystems/dia-maths/thread-safety-notes.md
+  - Specs:
+    - Overview: specs/README.md
+    - Platform: specs/platform/Cluiche.md
+    - Applications:
+      - Dia (Engine): specs/applications/dia.md
+      - CluicheTest (Game): specs/applications/cluichetest.md
+      - GoogleTests: specs/applications/googletests.md
+      - Example App: specs/applications/example-app.md
+    - Systems:
+      - Dia Systems:
+        - DiaCLI: specs/systems/dia/diacli.md
+        - DiaPython: specs/systems/dia/diapython.md
+      - Cluiche Systems:
+        - Example System: specs/systems/example-app/example-system.md
+    - Features:
+      - Dia Features:
+        - DiaCLI Features:
+          - Plugin Discovery: specs/features/dia/diacli/plugin-discovery.md
+          - Command Scaffolding: specs/features/dia/diacli/command-scaffolding.md
+          - DiaAPI Bridge: specs/features/dia/diacli/diaapi-bridge.md
+        - DiaPython Features:
+          - Interpreter Lifecycle: specs/features/dia/diapython/interpreter-lifecycle.md
+          - Script Execution: specs/features/dia/diapython/script-execution.md
+          - Module API: specs/features/dia/diapython/module-api.md
+          - Type Conversion: specs/features/dia/diapython/type-conversion.md
+          - Error Handling: specs/features/dia/diapython/error-handling.md
+      - Example Features:
+        - Example Feature: specs/features/example-app/example-system/example-feature.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/cluiche

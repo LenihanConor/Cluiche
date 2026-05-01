@@ -1,0 +1,164 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+  
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ApplicationFlow\Phases\MainBootPhase.cpp" />
+    <ClCompile Include="ApplicationFlow\Phases\MainBootStrapPhase.cpp" />
+    <ClCompile Include="ApplicationFlow\Phases\RenderRunningPhase.cpp" />
+    <ClCompile Include="ApplicationFlow\Phases\SimBootPhase.cpp" />
+    <ClCompile Include="ApplicationFlow\Phases\SimBootStrapPhase.cpp" />
+    <ClCompile Include="ApplicationFlow\ProcessingUnits\MainProcessingUnit.cpp" />
+    <ClCompile Include="ApplicationFlow\ProcessingUnits\RenderProcessingUnit.cpp" />
+    <ClCompile Include="ApplicationFlow\ProcessingUnits\SimProcessingUnit.cpp" />
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Source\LaunchUIPage.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Data\Manifests\cluiche_main.diaapp">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Data\Manifests\cluiche_render.diaapp">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Data\Manifests\cluiche_sim.diaapp">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ApplicationFlow\Phases\MainBootPhase.h" />
+    <ClInclude Include="ApplicationFlow\Phases\MainBootStrapPhase.h" />
+    <ClInclude Include="ApplicationFlow\Phases\RenderRunningPhase.h" />
+    <ClInclude Include="ApplicationFlow\Phases\SimBootPhase.h" />
+    <ClInclude Include="ApplicationFlow\Phases\SimBootStrapPhase.h" />
+    <ClInclude Include="ApplicationFlow\ProcessingUnits\MainProcessingUnit.h" />
+    <ClInclude Include="ApplicationFlow\ProcessingUnits\RenderProcessingUnit.h" />
+    <ClInclude Include="ApplicationFlow\ProcessingUnits\SimProcessingUnit.h" />
+    <ClInclude Include="Source\LaunchUIPage.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Dia\DiaApplication\DiaApplication.vcxproj">
+      <Project>{dd3d58ef-028b-42cb-b837-0042ba30d96f}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaCore\DiaCore.vcxproj">
+      <Project>{8d41cbe3-c493-428d-95f3-627e56500667}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaGraphics\DiaGraphics.vcxproj">
+      <Project>{1cf9f92b-666e-4b39-9dde-b1cfbef68618}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaInput\DiaInput.vcxproj">
+      <Project>{936fa28f-e171-401f-8185-d2af48db4098}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaMaths\DiaMaths.vcxproj">
+      <Project>{2bba0ad3-d449-4c0e-8c84-acfa8bca456b}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaSFML\DiaSFML.vcxproj">
+      <Project>{d0101596-9011-46af-a16a-69a2bb0cca69}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaUIAwesomium\DiaUIAwesomium.vcxproj">
+      <Project>{a5b2650d-8283-483f-827e-ca29140cfa63}</Project>
+      <ReferenceOutputAssembly Condition="'$(Platform)'=='x64'">false</ReferenceOutputAssembly>
+      <LinkLibraryDependencies Condition="'$(Platform)'=='x64'">false</LinkLibraryDependencies>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaUIUltralight\DiaUIUltralight.vcxproj">
+      <Project>{b7c3d812-4f91-4e2a-9b56-fa38e1d09c74}</Project>
+      <ReferenceOutputAssembly Condition="'$(Platform)'=='Win32'">false</ReferenceOutputAssembly>
+      <LinkLibraryDependencies Condition="'$(Platform)'=='Win32'">false</LinkLibraryDependencies>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaUI\DiaUI.vcxproj">
+      <Project>{835ca128-691f-4cea-a0b3-ce6e41c394e7}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaWindow\DiaWindow.vcxproj">
+      <Project>{52178c86-628d-4fe4-ae55-d3485faec070}</Project>
+    </ProjectReference>
+    <ProjectReference Include="CluicheKernel\CluicheKernel.vcxproj">
+      <Project>{649d1b1d-c23f-4373-aca8-8a3a59c0cfa0}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaDebugServer\DiaDebugServer.vcxproj">
+      <Project>{6aafcccb-71d0-4d8d-a6be-081f5e02093d}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaDebugProtocol\DiaDebugProtocol.vcxproj">
+      <Project>{e9e22143-02a3-4d92-894d-079e8abd8bca}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaWebSocket\DiaWebSocket.vcxproj">
+      <Project>{458b1e8f-6660-499f-b265-e40dc3257b81}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{CEC960D4-B8B3-463B-9F68-716C5C3C4315}</ProjectGuid>
+    <RootNamespace>CluicheTest</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <RunCodeAnalysis>true</RunCodeAnalysis>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>false</SDLCheck>
+      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)../../DIA/;$(ProjectDir)../../External/protobuf/Current-x64/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>DEBUG;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <BrowseInformation>true</BrowseInformation>
+      <EnablePREfast>true</EnablePREfast>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>$(LibOutDir)DummyLevel.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)CluicheKernel.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaSFML.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaApplication.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaAPI.lib;sfml-graphics-d.lib;sfml-window-d.lib;sfml-system-d.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(RepoRoot)SFML\Current-x64\lib\Debug;$(RepoRoot)Dia\DiaBin\CluicheKernel;$(RepoRoot)Dia\DiaBin\DiaInput;$(RepoRoot)External\SFML\Current-x64\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>/WHOLEARCHIVE:DiaDebugServer.lib /WHOLEARCHIVE:CluicheKernel.lib %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+    <PostBuildEvent>
+      <Command>cd "$(RepoRoot)Dia\DiaCLI" &amp;&amp; ".venv\Scripts\python.exe" -m dia_cli pipeline deploy cluichetest --config $(Configuration) --out-dir "$(BinRoot)$(MSBuildProjectName)\$(Configuration)\$(Platform)\"</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)../../DIA/;$(ProjectDir)../../External/protobuf/Current-x64/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>$(LibOutDir)DummyLevel.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)CluicheKernel.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaSFML.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaApplication.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaDebugProtocol.lib;$(LibOutDir)DiaProtobuf.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaAPI.lib;sfml-graphics.lib;sfml-window.lib;sfml-system.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;ws2_32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(RepoRoot)External\SFML\Current-x64\lib\;$(ProjectDir)..\..\External\protobuf\Current-x64\lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+    <PostBuildEvent>
+      <Command>cd "$(RepoRoot)Dia\DiaCLI" &amp;&amp; ".venv\Scripts\python.exe" -m dia_cli pipeline deploy cluichetest --config $(Configuration) --out-dir "$(BinRoot)$(MSBuildProjectName)\$(Configuration)\$(Platform)\"</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<!-- Alpine widget: toast notifications — auto-dismissing status messages from C++ -->
+<html lang="en" data-theme="cluichetest">
+<head>
+  <meta charset="UTF-8" />
+  <title>Toast</title>
+  <link rel="stylesheet" href="../../../External/DaisyUI/daisyui.min.css" />
+  <script src="../../../External/Tailwind/tailwind.min.js"></script>
+  <link rel="stylesheet" href="themes/cluichetest.css" />
+  <script defer src="../../../External/Alpine/alpine.min.js"></script>
+</head>
+<body class="bg-base-100 text-base-content p-4">
+
+  <div x-data="{
+    toasts: [],
+    nextId: 0,
+
+    init() {
+      window.GameBridge_dispatch = (topic, dataJson) => {
+        if (topic !== 'toast') return;
+        try {
+          const t = JSON.parse(dataJson);
+          this.push(t.message, t.type ?? 'info', t.duration ?? 3000);
+        } catch (e) { console.warn('toast: parse error', e); }
+      };
+    },
+
+    push(message, type, duration) {
+      const id = this.nextId++;
+      this.toasts.push({ id, message, type });
+      setTimeout(() => {
+        this.toasts = this.toasts.filter(t => t.id !== id);
+      }, duration);
+    },
+
+    alertClass(type) {
+      if (type === 'success') return 'alert-success';
+      if (type === 'warning') return 'alert-warning';
+      if (type === 'error')   return 'alert-error';
+      return 'alert-info';
+    }
+  }">
+
+    <!-- Demo button — remove in production -->
+    <div class="mb-4 flex gap-2">
+      <button class="btn btn-xs btn-info"    @click="push('Info message',    'info',    3000)">Info</button>
+      <button class="btn btn-xs btn-success" @click="push('Success!',        'success', 3000)">Success</button>
+      <button class="btn btn-xs btn-warning" @click="push('Watch out',       'warning', 3000)">Warning</button>
+      <button class="btn btn-xs btn-error"   @click="push('Error occurred',  'error',   4000)">Error</button>
+    </div>
+
+    <div class="toast toast-top toast-end z-50">
+      <template x-for="t in toasts" :key="t.id">
+        <div class="alert alert-sm" :class="alertClass(t.type)">
+          <span class="text-sm" x-text="t.message"></span>
+        </div>
+      </template>
+    </div>
+
+  </div>
+</body>
+</html>

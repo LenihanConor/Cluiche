@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectName>DiaUICEF</ProjectName>
+    <ProjectGuid>{85588905-F339-454D-BF30-8FBBEE4F93C6}</ProjectGuid>
+    <RootNamespace>DiaUICEF</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <CLRSupport>false</CLRSupport>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>14.0.22823.1</_ProjectFileVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+
+  <!-- x64 Debug compile + link -->
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;DEBUG;DIA_UI_CEF;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalIncludeDirectories>$(ProjectDir)../../Dia/;$(RepoRoot)External/CEF/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/Zc:strictStrings- /Zc:twoPhase- %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Lib>
+      <AdditionalLibraryDirectories>$(RepoRoot)External/CEF/lib/Debug/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libcef.lib;libcef_dll_wrapper.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
+    <PreBuildEvent>
+      <Command>if not exist "$(RepoRoot)External/CEF/lib/Debug/libcef_dll_wrapper.lib" (
+  echo WARNING: libcef_dll_wrapper.lib not found. Run External\CEF\setup_cef.bat to build it. 1>&amp;2
+  exit /b 1
+)</Command>
+      <Message>Checking CEF wrapper lib exists</Message>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+
+  <!-- x64 Release compile + link -->
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <PreprocessorDefinitions>WIN32;NDEBUG;DIA_UI_CEF;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalIncludeDirectories>$(ProjectDir)../../Dia/;$(RepoRoot)External/CEF/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/Zc:strictStrings- /Zc:twoPhase- %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Lib>
+      <AdditionalLibraryDirectories>$(RepoRoot)External/CEF/lib/Release/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libcef.lib;libcef_dll_wrapper.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
+    <PreBuildEvent>
+      <Command>if not exist "$(RepoRoot)External/CEF/lib/Release/libcef_dll_wrapper.lib" (
+  echo WARNING: libcef_dll_wrapper.lib not found. Run External\CEF\setup_cef.bat to build it. 1>&amp;2
+  exit /b 1
+)</Command>
+      <Message>Checking CEF wrapper lib exists</Message>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+
+  <ItemGroup>
+    <ClInclude Include="CEFUISystem.h" />
+    <ClInclude Include="CEFProcessHandler.h" />
+    <ClInclude Include="CEFPage.h" />
+    <ClInclude Include="CEFRenderHandler.h" />
+    <ClInclude Include="CEFClientHandler.h" />
+    <ClInclude Include="CEFSchemeHandler.h" />
+    <ClInclude Include="CEFJavaScriptBridge.h" />
+    <ClInclude Include="CEFUtils.h" />
+    <ClInclude Include="EditorUISystemFactory.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="CEFUISystem.cpp" />
+    <ClCompile Include="EditorUISystemFactory.cpp" />
+    <ClCompile Include="CEFProcessHandler.cpp" />
+    <ClCompile Include="CEFPage.cpp" />
+    <ClCompile Include="CEFRenderHandler.cpp" />
+    <ClCompile Include="CEFClientHandler.cpp" />
+    <ClCompile Include="CEFSchemeHandler.cpp" />
+    <ClCompile Include="CEFJavaScriptBridge.cpp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DiaLogger\DiaLogger.vcxproj">
+      <Project>{7a8b9c0d-e1f2-3456-7890-abcdef012345}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

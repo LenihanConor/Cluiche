@@ -52,7 +52,7 @@ namespace Dia
 			unsigned int StringWriter::Capacity() const
 			{
 				DIA_ASSERT(mStartBufferPtr != NULL, "Not been assigned buffer");
-				return (mEndBufferPtr - mStartBufferPtr);
+				return static_cast<unsigned int>(mEndBufferPtr - mStartBufferPtr);
 			}
 
 			unsigned int StringWriter::CurrentLength() const

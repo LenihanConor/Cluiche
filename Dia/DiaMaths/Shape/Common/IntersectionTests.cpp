@@ -495,5 +495,212 @@ namespace Dia
 
 			return IntersectionClassify::kNoIntersection;
 		}
+
+		//----------------------------------------------------------------------------------------------------
+		// AARect vs AARect (AABB collision test)
+		//
+		// Classic Axis-Aligned Bounding Box (AABB) intersection test
+		// One of the fastest collision tests in 2D game development!
+		//
+		// ALGORITHM:
+		//   Two AABBs overlap if they overlap on ALL axes
+		//   They DON'T overlap if separated on ANY axis (Separating Axis Theorem)
+		//
+		// TEST:
+		//   X-axis: rect1.max.x >= rect2.min.x AND rect1.min.x <= rect2.max.x
+		//   Y-axis: rect1.max.y >= rect2.min.y AND rect1.min.y <= rect2.max.y
+		//   If both true: rectangles overlap
+		//----------------------------------------------------------------------------------------------------
+		IntersectionClassify IntersectionTests::IsIntersecting(const AARect2D& rect1, const AARect2D& rect2)
+		{
+			const Vector2D& min1 = rect1.GetBottomLeft();
+			const Vector2D& max1 = rect1.GetTopRight();
+			const Vector2D& min2 = rect2.GetBottomLeft();
+			const Vector2D& max2 = rect2.GetTopRight();
+
+			// Check if rectangles overlap on each axis
+			// If they DON'T overlap on either axis, they don't intersect at all
+			bool overlapX = (min1.x <= max2.x) && (max1.x >= min2.x);
+			bool overlapY = (min1.y <= max2.y) && (max1.y >= min2.y);
+
+			if (!overlapX || !overlapY)
+			{
+				return IntersectionClassify::kNoIntersection;
+			}
+
+			// Rectangles overlap! Determine relationship:
+			// - One completely contains the other? (full containment)
+			// - Or they partially overlap? (penetrating)
+
+			// Check if rect1 completely contains rect2
+			// (rect2's bounds are entirely within rect1's bounds)
+			bool rect1ContainsRect2 = (min1.x <= min2.x && max1.x >= max2.x &&
+			                           min1.y <= min2.y && max1.y >= max2.y);
+
+			// Check if rect2 completely contains rect1
+			bool rect2ContainsRect1 = (min2.x <= min1.x && max2.x >= max1.x &&
+			                           min2.y <= min1.y && max2.y >= max1.y);
+
+			if (rect1ContainsRect2)
+			{
+				return IntersectionClassify::kAContainsB;
+			}
+			else if (rect2ContainsRect1)
+			{
+				return IntersectionClassify::kBContainsA;
+			}
+
+			// Rectangles overlap but neither fully contains the other
+			// This means they're partially intersecting (penetrating)
+			return IntersectionClassify::kPenatrating;
+		}
+
+		//----------------------------------------------------------------------------------------------------
+		// Line vs Line segment intersection test
+		//
+		// ALGORITHM: Parametric line equation solving
+		//   Line1: P = p1 + dir1 * t1  (t1 in [0,1] for segment)
+		//   Line2: P = p3 + dir2 * t2  (t2 in [0,1] for segment)
+		//
+		// Solve for t1 and t2 where lines intersect:
+		//   If both t1 and t2 are in [0,1], segments intersect
+		//   If either is outside [0,1], lines would intersect but segments don't
+		//
+		// MATH:
+		//   p1 + dir1*t1 = p3 + dir2*t2
+		//   Rearrange: dir1*t1 - dir2*t2 = p3 - p1
+		//   Solve 2x2 system using cross products
+		//
+		// SPECIAL CASES:
+		//   - Parallel lines: denominator = 0 (no intersection)
+		//   - Coincident lines: parallel AND overlap (not handled here - returns no intersection)
+		//   - Endpoint touching: t=0 or t=1 (still considered intersection)
+		//----------------------------------------------------------------------------------------------------
+		IntersectionClassify IntersectionTests::IsIntersecting(const Line2D& line1, const Line2D& line2)
+		{
+			const Vector2D& p1 = line1.GetPt1();
+			const Vector2D& p2 = line1.GetPt2();
+			const Vector2D& p3 = line2.GetPt1();
+			const Vector2D& p4 = line2.GetPt2();
+
+			Vector2D dir1 = p2 - p1;
+			Vector2D dir2 = p4 - p3;
+
+			// Calculate denominator (2D cross product of directions)
+			// This is zero if lines are parallel
+			float denominator = dir1.x * dir2.y - dir1.y * dir2.x;
+
+			// Check if lines are parallel (denominator near zero)
+			if (Dia::Maths::Float::FAbs(denominator) < FLOAT_EPSILON)
+			{
+				// Lines are parallel or coincident
+				// Could test for coincident overlap, but that's complex
+				// For now, return no intersection (parallel lines don't intersect)
+				return IntersectionClassify::kNoIntersection;
+			}
+
+			Vector2D p1ToP3 = p3 - p1;
+
+			// Solve for t parameters using Cramer's rule
+			// t1 = (p1ToP3 × dir2) / (dir1 × dir2)
+			// t2 = (p1ToP3 × dir1) / (dir1 × dir2)
+			float t1 = (p1ToP3.x * dir2.y - p1ToP3.y * dir2.x) / denominator;
+			float t2 = (p1ToP3.x * dir1.y - p1ToP3.y * dir1.x) / denominator;
+
+			// Check if intersection point is on both line segments
+			// t in [0,1] means point is within the segment
+			// t < 0 means before start, t > 1 means after end
+			if (t1 >= 0.0f && t1 <= 1.0f && t2 >= 0.0f && t2 <= 1.0f)
+			{
+				// Intersection point is on both segments!
+				// The actual point would be: p1 + dir1*t1 (or equivalently p3 + dir2*t2)
+
+				// Note: Could distinguish between endpoint touches vs midpoint crossings
+				// by checking if t1 or t2 is exactly 0 or 1, but for now we treat
+				// all intersections the same way
+				return IntersectionClassify::kPenatrating;
+			}
+
+			// Lines would intersect if extended, but segments don't reach intersection point
+			return IntersectionClassify::kNoIntersection;
+		}
+
+		//----------------------------------------------------------------------------------------------------
+		// Line vs AARect intersection test (optimized to avoid object creation)
+		//
+		// ALGORITHM:
+		//   1. Quick check: If both endpoints inside rect, line is contained
+		//   2. Otherwise, test line against all 4 edges of rectangle
+		//   3. If line intersects any edge, they're intersecting
+		//
+		// CASES:
+		//   - Both endpoints inside: Rectangle contains line
+		//   - Line crosses any edge: Penetrating intersection
+		//   - No edge intersections: No intersection
+		//
+		// OPTIMIZATION: Tests edges directly without creating Line2D objects
+		//----------------------------------------------------------------------------------------------------
+		IntersectionClassify IntersectionTests::IsIntersecting(const Line2D& line, const AARect2D& rect)
+		{
+			const Vector2D& p1 = line.GetPt1();
+			const Vector2D& p2 = line.GetPt2();
+			const Vector2D& min = rect.GetBottomLeft();
+			const Vector2D& max = rect.GetTopRight();
+
+			// Quick containment test: Are both endpoints inside rectangle?
+			IntersectionClassify p1Inside = IsIntersecting(p1, rect);
+			IntersectionClassify p2Inside = IsIntersecting(p2, rect);
+
+			if (p1Inside.IsIntersecting() && p2Inside.IsIntersecting())
+			{
+				// Both endpoints are inside - entire line is contained by rectangle
+				return IntersectionClassify::kBContainsA;
+			}
+
+			// Test line segment against each edge of the rectangle
+			// We inline the edge tests to avoid creating Line2D objects
+			// Rectangle edges: bottom, right, top, left
+
+			// Define edge points (we'll test them directly)
+			Vector2D edgePoints[8] = {
+				Vector2D(min.x, min.y), Vector2D(max.x, min.y), // Bottom edge
+				Vector2D(max.x, min.y), Vector2D(max.x, max.y), // Right edge
+				Vector2D(max.x, max.y), Vector2D(min.x, max.y), // Top edge
+				Vector2D(min.x, max.y), Vector2D(min.x, min.y)  // Left edge
+			};
+
+			// Test against each of the 4 edges
+			for (int i = 0; i < 4; ++i)
+			{
+				const Vector2D& e1 = edgePoints[i * 2];
+				const Vector2D& e2 = edgePoints[i * 2 + 1];
+
+				// Inline line-line intersection test to avoid function call overhead
+				Vector2D dir1 = p2 - p1;
+				Vector2D dir2 = e2 - e1;
+
+				float denominator = dir1.x * dir2.y - dir1.y * dir2.x;
+
+				// Skip if parallel
+				if (Dia::Maths::Float::FAbs(denominator) > FLOAT_EPSILON)
+				{
+					Vector2D p1ToE1 = e1 - p1;
+
+					float t1 = (p1ToE1.x * dir2.y - p1ToE1.y * dir2.x) / denominator;
+					float t2 = (p1ToE1.x * dir1.y - p1ToE1.y * dir1.x) / denominator;
+
+					// Check if intersection is on both segments
+					if (t1 >= 0.0f && t1 <= 1.0f && t2 >= 0.0f && t2 <= 1.0f)
+					{
+						// Line crosses this edge - they intersect!
+						return IntersectionClassify::kPenatrating;
+					}
+				}
+			}
+
+			// Line doesn't cross any edges and isn't contained
+			// This means line is completely outside rectangle
+			return IntersectionClassify::kNoIntersection;
+		}
 	}
 }

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<!-- Alpine widget: log stream — scrolling log of C++ messages with level colouring -->
+<html lang="en" data-theme="cluichetest">
+<head>
+  <meta charset="UTF-8" />
+  <title>Log Stream</title>
+  <link rel="stylesheet" href="../../../External/DaisyUI/daisyui.min.css" />
+  <script src="../../../External/Tailwind/tailwind.min.js"></script>
+  <link rel="stylesheet" href="themes/cluichetest.css" />
+  <script defer src="../../../External/Alpine/alpine.min.js"></script>
+</head>
+<body class="bg-base-100 text-base-content p-4">
+
+  <div x-data="{
+    lines: [],
+    maxLines: 200,
+    paused: false,
+    filter: '',
+
+    init() {
+      window.GameBridge_dispatch = (topic, dataJson) => {
+        if (topic !== 'log') return;
+        if (this.paused) return;
+        try {
+          const entry = JSON.parse(dataJson);
+          this.lines.push(entry);
+          if (this.lines.length > this.maxLines) this.lines.shift();
+          this.$nextTick(() => {
+            const el = this.$refs.scroll;
+            if (el) el.scrollTop = el.scrollHeight;
+          });
+        } catch (e) { console.warn('log-stream: parse error', e); }
+      };
+    },
+
+    levelClass(level) {
+      if (level === 'error') return 'text-error';
+      if (level === 'warn')  return 'text-warning';
+      if (level === 'info')  return 'text-info';
+      return 'opacity-70';
+    },
+
+    get filtered() {
+      if (!this.filter) return this.lines;
+      const q = this.filter.toLowerCase();
+      return this.lines.filter(l => l.msg.toLowerCase().includes(q));
+    }
+  }">
+
+    <div class="flex items-center gap-2 mb-2">
+      <h2 class="text-sm font-bold uppercase tracking-widest opacity-60">Log</h2>
+      <input
+        x-model="filter"
+        class="input input-xs input-bordered flex-1"
+        placeholder="filter…"
+      />
+      <button
+        class="btn btn-xs"
+        :class="paused ? 'btn-warning' : 'btn-ghost'"
+        @click="paused = !paused"
+        x-text="paused ? 'Resume' : 'Pause'"
+      ></button>
+      <button class="btn btn-xs btn-ghost" @click="lines = []">Clear</button>
+    </div>
+
+    <div
+      x-ref="scroll"
+      class="bg-base-300 rounded font-mono text-xs p-2 h-48 overflow-y-auto space-y-0.5"
+    >
+      <template x-if="filtered.length === 0">
+        <p class="opacity-40">No entries</p>
+      </template>
+      <template x-for="(l, i) in filtered" :key="i">
+        <div class="flex gap-2" :class="levelClass(l.level)">
+          <span class="opacity-50 shrink-0" x-text="l.time ?? ''"></span>
+          <span class="uppercase w-10 shrink-0" x-text="l.level ?? 'dbg'"></span>
+          <span x-text="l.msg"></span>
+        </div>
+      </template>
+    </div>
+
+  </div>
+</body>
+</html>

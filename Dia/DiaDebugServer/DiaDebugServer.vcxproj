@@ -1,0 +1,100 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="DebugServerModule.h" />
+    <ClInclude Include="DebugServerLogSink.h" />
+    <ClInclude Include="SubscriptionManager.h" />
+    <ClInclude Include="StateSerializer.h" />
+    <ClInclude Include="CommandDispatcher.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="DebugServerModule.cpp" />
+    <ClCompile Include="DebugServerLogSink.cpp" />
+    <ClCompile Include="SubscriptionManager.cpp" />
+    <ClCompile Include="StateSerializer.cpp" />
+    <ClCompile Include="CommandDispatcher.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
+      <Project>{8D41CBE3-C493-428D-95F3-627E56500667}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaApplication\DiaApplication.vcxproj">
+      <Project>{DD3D58EF-028B-42CB-B837-0042BA30D96F}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaWebSocket\DiaWebSocket.vcxproj">
+      <Project>{458B1E8F-6660-499F-B265-E40DC3257B81}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaAPI\DiaAPI.vcxproj">
+      <Project>{1E7F6E13-50CF-411C-B34C-66D70121DD03}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaDebugProtocol\DiaDebugProtocol.vcxproj">
+      <Project>{E9E22143-02A3-4D92-894D-079E8ABD8BCA}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaProtobuf\DiaProtobuf.vcxproj">
+      <Project>{87758331-BA9E-4055-B3F0-A62671738D42}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaLogger\DiaLogger.vcxproj">
+      <Project>{7a8b9c0d-e1f2-3456-7890-abcdef012345}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{6AAFCCCB-71D0-4D8D-A6BE-081F5E02093D}</ProjectGuid>
+    <RootNamespace>DiaDebugServer</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>11.0.51106.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)..\..\External\protobuf\Current-x64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>DEBUG;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <BrowseInformation>true</BrowseInformation>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)..\..\External\protobuf\Current-x64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

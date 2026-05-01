@@ -20,7 +20,7 @@ namespace Dia
 				typedef	ReverseArrayIterator<char>			ReverseIterator;
 				typedef	ReverseArrayConstIterator<char>		ConstReverseIterator;
 
-				String();																															
+String();																															
 				template<unsigned int _size> explicit String (const String<_size>& rhs);						
 				template<unsigned int _size> explicit String (const String<_size>& rhs, unsigned int startIndex, unsigned int numberElements );  
 				explicit String ( ConstIterator& iter ); 
@@ -34,9 +34,10 @@ namespace Dia
 				template<unsigned int _size> String<size>&			Append					( const String<_size>& str, unsigned int pos, unsigned int n );
 				template<unsigned int _size> String<size>&			AppendAsMuchAsCan		( const String<_size>& str );
 				template<unsigned int _size> String<size>&			AppendAsMuchAsCan		( const String<_size>& str, unsigned int pos, unsigned int n );
-		
+
 				String<size>&			Append					( const char* s, unsigned int n );
 				String<size>&			Append					( const char* s );
+				String<size>&			Append					( char c );
 				String<size>&			AppendAsMuchAsCan		( const char* s, unsigned int n );
  				String<size>&			AppendAsMuchAsCan		( const char* s );
 	 		
@@ -51,9 +52,17 @@ namespace Dia
 				
 				bool					operator	==	(const char* pRawString)const;
 				bool					operator	!=	(const char* pRawString)const;
-				
+				bool					operator	<	(const char* pRawString)const;
+				bool					operator	>	(const char* pRawString)const;
+				bool					operator	<=	(const char* pRawString)const;
+				bool					operator	>=	(const char* pRawString)const;
+
 				template<unsigned int _size> bool	operator	==	(const String<_size>& str)const;
 				template<unsigned int _size> bool	operator	!=	(const String<_size>& str)const;
+				template<unsigned int _size> bool	operator	<	(const String<_size>& str)const;
+				template<unsigned int _size> bool	operator	>	(const String<_size>& str)const;
+				template<unsigned int _size> bool	operator	<=	(const String<_size>& str)const;
+				template<unsigned int _size> bool	operator	>=	(const String<_size>& str)const;
 
 				char&									operator[]		(int index);										
 				const char&								operator[]		(int index) const;	
@@ -77,6 +86,7 @@ namespace Dia
 				ReverseIterator							End						();														
 				ConstReverseIterator					EndConst				() const;
 
+				static unsigned int		Capacity		()  { return size; }
 				unsigned int			Size			() const;
 				unsigned int			Length			() const;
 				bool					IsNullTerminating()const;
@@ -117,16 +127,40 @@ namespace Dia
 				String<size>			LeftSubString	(const unsigned int charCount)const;
 				String<size>			RightSubString	(const unsigned int charCount)const;		
 				
-				template<unsigned int size1, unsigned int size2> 
+				template<unsigned int size1, unsigned int size2>
 				void					Split			(const unsigned int charCount, String<size1>& result1, String<size2>& result2)const;
+
+				template<typename ArrayType>
+				void					Split			(char delimiter, ArrayType& outTokens) const;
 
 				bool					CompareNoCase	(const String<size>& str) const;
 				bool					CompareNoCase	(const char* pRawString)const;
 
-				int						Find			( char s, unsigned int startPos = 0 ) const;
-				int						FindLast		( char s, unsigned int startPos = 0xffffffff ) const;
+				// Additional string methods
+				void					Clear			();
+				bool					IsEmpty			() const;
+				String<size>&			Insert			( unsigned int pos, const char* s );
+				String<size>&			Remove			( unsigned int pos, unsigned int count );
+				String<size>&			Replace			( const char* oldStr, const char* newStr );
+				String<size>&			Trim			();  // Trim both ends
+				String<size>&			TrimLeft		();
+				String<size>&			TrimRight		();
+				bool					StartsWith		( const char* prefix ) const;
+				bool					EndsWith		( const char* suffix ) const;
+				bool					Contains		( const char* substr ) const;
+				String<size>&			Reverse			();
 
-			private:
+				// Renamed for consistency with tests
+				String<size>&			ToLower			() { return ToLowerCase(); }
+				String<size>&			ToUpper			() { return ToUpperCase(); }
+				String<size>			Substring		( unsigned int pos, unsigned int count ) const { return SubString(pos, count); }
+
+				int						Find			( char s, unsigned int startPos = 0 ) const;
+				int						Find			( const char* s, unsigned int startPos = 0 ) const;
+				int						FindLast		( char s, unsigned int startPos = 0xffffffff ) const;
+				int						FindLast		( const char* s, unsigned int startPos = 0xffffffff ) const;
+
+			protected:
 				ArrayC<char, size> mData;
 			};
 		}

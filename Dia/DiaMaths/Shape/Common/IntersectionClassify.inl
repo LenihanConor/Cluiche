@@ -25,14 +25,14 @@ namespace Dia
 
 		//-----------------------------------------------------------------------------
 		inline
-		bool IntersectionClassify::operator == (const IntersectionClassify& rhs)
+		bool IntersectionClassify::operator == (const IntersectionClassify& rhs) const
 		{
 			return (mResult == rhs.mResult);
 		}
 
 		//-----------------------------------------------------------------------------
 		inline
-		bool IntersectionClassify::operator != (const IntersectionClassify& rhs)
+		bool IntersectionClassify::operator != (const IntersectionClassify& rhs) const
 		{
 			return !(*this == rhs);
 		}
@@ -70,6 +70,24 @@ namespace Dia
 		IntersectionClassify::Classification IntersectionClassify::GetClassification()const
 		{
 			return mResult;
+		}
+
+		// SetClassification is implemented in IntersectionClassify.cpp (non-inline)
+		// to ensure it has a linkable symbol for exception handling contexts
+
+		//-----------------------------------------------------------------------------
+		inline
+		IntersectionClassify& IntersectionClassify::ReInterpretAandBObject()
+		{
+			if (mResult == kAContainsB)
+			{
+				mResult = kBContainsA;
+			}
+			else if (mResult == kBContainsA)
+			{
+				mResult = kAContainsB;
+			}
+			return *this;
 		}
 	}
 }

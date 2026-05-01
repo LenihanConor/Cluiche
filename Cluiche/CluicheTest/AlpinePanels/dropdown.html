@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<!-- Alpine widget: dropdown — labelled select that sends chosen value to C++ -->
+<html lang="en" data-theme="cluichetest">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dropdown</title>
+  <link rel="stylesheet" href="../../../External/DaisyUI/daisyui.min.css" />
+  <script src="../../../External/Tailwind/tailwind.min.js"></script>
+  <link rel="stylesheet" href="themes/cluichetest.css" />
+  <script defer src="../../../External/Alpine/alpine.min.js"></script>
+</head>
+<body class="bg-base-100 text-base-content p-4">
+
+  <div x-data="{
+    groups: [],
+    open: null,
+
+    init() {
+      window.GameBridge_dispatch = (topic, dataJson) => {
+        if (topic !== 'dropdowns') return;
+        try { this.groups = JSON.parse(dataJson); }
+        catch (e) { console.warn('dropdown: parse error', e); }
+      };
+    },
+
+    select(groupId, optionValue) {
+      const g = this.groups.find(g => g.id === groupId);
+      if (g) g.selected = optionValue;
+      this.open = null;
+      if (window.app && typeof window.app.onDropdownChanged === 'function') {
+        window.app.onDropdownChanged(JSON.stringify({ id: groupId, value: optionValue }));
+      }
+    }
+  }">
+
+    <h2 class="text-sm font-bold uppercase tracking-widest opacity-60 mb-3">Settings</h2>
+
+    <template x-if="groups.length === 0">
+      <p class="text-xs opacity-40">Waiting for data…</p>
+    </template>
+
+    <div class="flex flex-col gap-3">
+      <template x-for="g in groups" :key="g.id">
+        <div>
+          <label class="text-xs opacity-60 mb-1 block" x-text="g.label"></label>
+          <div class="dropdown w-full">
+            <div
+              tabindex="0"
+              class="btn btn-sm btn-ghost btn-block justify-between border border-base-300"
+              @click="open = open === g.id ? null : g.id"
+            >
+              <span x-text="g.selected ?? 'Choose…'"></span>
+              <span>▾</span>
+            </div>
+            <ul
+              tabindex="0"
+              class="dropdown-content menu menu-sm bg-base-200 rounded shadow z-10 w-full mt-1"
+              x-show="open === g.id"
+              @click.outside="open = null"
+            >
+              <template x-for="opt in g.options" :key="opt.value">
+                <li>
+                  <a
+                    @click.prevent="select(g.id, opt.value)"
+                    :class="g.selected === opt.value ? 'active' : ''"
+                    x-text="opt.label"
+                  ></a>
+                </li>
+              </template>
+            </ul>
+          </div>
+        </div>
+      </template>
+    </div>
+
+  </div>
+</body>
+</html>

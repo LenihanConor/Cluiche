@@ -3,6 +3,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
+#include <optional>
+
 #include <DiaInput\IInputSource.h>
 #include <DiaCore/Containers/BitFlag/BitArray8.h>
 
@@ -58,8 +60,6 @@ namespace Dia
 			virtual void Poll(Dia::Input::EventData& outStream)override;
 
 		private:
-			void Convert(Dia::Input::Event& lhs, const sf::Event& rhs)const;
-			
 			bool IsListeningForEvent(Dia::Input::Event::EType eventType)const;
 
 			sf::Window* mWindowContext;

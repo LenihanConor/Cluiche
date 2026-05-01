@@ -1,0 +1,4 @@
+// CluicheEditor resources
+#include <windows.h>
+
+IDI_APP_ICON ICON "icon.ico"

@@ -236,7 +236,7 @@ namespace Dia
 			template <class T, unsigned int capacity>
 			bool DynamicArrayC<T, capacity>::operator==( const DynamicArrayC<T, capacity>& rhs) const
 			{
-				for(unsigned int i = 0; i < Size(); i++)
+				for(size_t i = 0; i < Size(); i++)
 				{
 					if (rhs[i] != mData[i])
 					{
@@ -429,7 +429,7 @@ namespace Dia
 			int	DynamicArrayC<T, capacity>::FrequencyOfElement( ConstReference value )const
 			{
 				int frequency = 0;
-				for (unsigned int i = 0; i < Size(); i++)
+				for (size_t i = 0; i < Size(); i++)
 				{
 					if (value == At(i))
 					{
@@ -444,7 +444,7 @@ namespace Dia
 			template <typename T, unsigned int capacity> inline
 			void DynamicArrayC<T, capacity>::UniqueElements(DynamicArrayC<T, capacity>& unique)const
 			{
-				for (unsigned int i = 0; i < Size(); i++)
+				for (size_t i = 0; i < Size(); i++)
 				{
 					T possibleUnique = At(i);
 					bool foundInList = false;
@@ -468,7 +468,7 @@ namespace Dia
 			template <typename T, unsigned int capacity> inline
 			void DynamicArrayC<T, capacity>::FrequencyUniqueElements(DynamicArrayC<T, capacity>& unique, DynamicArrayC<int, capacity>& uniqueFrequency)const
 			{
-				for (unsigned int i = 0; i < Size(); i++)
+				for (size_t i = 0; i < Size(); i++)
 				{
 					T possibleUnique = At(i);
 					bool foundInList = false;
@@ -644,7 +644,7 @@ namespace Dia
 			template <class T, unsigned int capacity> inline
 			bool DynamicArrayC<T, capacity>::IsSorted()const
 			{
-				for(unsigned int i = 0; i < Size() - 1; i++)
+				for(size_t i = 0; i < Size() - 1; i++)
 				{
 					if (At(i) > At(i+1))
 					{
@@ -658,7 +658,7 @@ namespace Dia
 			template <class T, unsigned int capacity> template<class Equality> inline
 			bool DynamicArrayC<T, capacity>::IsSorted(const Equality& functor)const
 			{
-				for(unsigned int i = 0; i < Size() - 1; i++)
+				for(size_t i = 0; i < Size() - 1; i++)
 				{
 					if (functor.GreaterThen(At(i), At(i+1)))
 					{
@@ -897,7 +897,7 @@ namespace Dia
 				int index = 0;
 				float currentHighest = functor.Evaluate(At(0));
 
-				for (unsigned int i = 1; i < Size(); i++)
+				for (size_t i = 1; i < Size(); i++)
 				{
 					float temp = functor.Evaluate(At(i));
 					if (temp > currentHighest)

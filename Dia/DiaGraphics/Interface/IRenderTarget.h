@@ -4,6 +4,9 @@
 #pragma once
 
 #include "DiaGraphics/Misc/RGBA.h"
+#include "DiaGraphics/Misc/RenderStates.h"
+#include "DiaGraphics/Misc/Vertex.h"
+#include "DiaGraphics/Misc/PrimitiveType.h"
 
 #include <DiaMaths/Vector/Vector2D.h>
 #include <DiaMaths/Shape/2D/AARect2D.h>
@@ -69,8 +72,7 @@ namespace Dia
 			/// \param states   Render states to use for drawing
 			///
 			////////////////////////////////////////////////////////////
-//			TODO: Need to implement this
-//			void Draw(const IDrawable& drawable, const RenderStates& states = RenderStates::Default);
+			virtual void Draw(const IDrawable& drawable, const RenderStates& states = RenderStates::Default) = 0;
 
 			////////////////////////////////////////////////////////////
 			/// \brief Draw primitives defined by an array of vertices
@@ -81,10 +83,8 @@ namespace Dia
 			/// \param states      Render states to use for drawing
 			///
 			////////////////////////////////////////////////////////////
-/*			TODO: Need to implement this
-			void Draw(const Vertex* vertices, unsigned int vertexCount,
-				PrimitiveType type, const RenderStates& states = RenderStates::Default);
-				*/
+			virtual void Draw(const Vertex* vertices, unsigned int vertexCount,
+				PrimitiveType type, const RenderStates& states = RenderStates::Default) = 0;
 
 			////////////////////////////////////////////////////////////
 			/// \brief Return the size of the rendering region of the target

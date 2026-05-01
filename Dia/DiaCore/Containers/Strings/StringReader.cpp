@@ -49,7 +49,7 @@ namespace Dia
 			unsigned int StringReader::Length() const
 			{
 				DIA_ASSERT(mStartBufferPtr != NULL, "Not been assigned buffer");
-				return (mEndBufferPtr - mStartBufferPtr);
+				return static_cast<unsigned int>(mEndBufferPtr - mStartBufferPtr);
 			}
 
 			unsigned int StringReader::CurrentLength() const

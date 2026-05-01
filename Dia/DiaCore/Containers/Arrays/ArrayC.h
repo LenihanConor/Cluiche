@@ -5,6 +5,7 @@
 #include "DiaCore/Core/Assert.h"
 #include "DiaCore/Containers/Arrays/ArrayIterator.h"
 #include "DiaCore/Containers/Arrays/ReverseArrayIterator.h"
+#include "DiaCore/Type/TypeDeclarationMacros.h"
 
 //------------------------------------------------------------------------------------
 //			
@@ -30,6 +31,8 @@ namespace Dia
 			class ArrayC
 			{
 			public:
+				DIA_TYPE_DECLARATION;
+				
 				typedef	T			ValueType;
 				typedef	T*			Pointer;
 				typedef	T&			Reference;
@@ -47,26 +50,26 @@ namespace Dia
 				explicit ArrayC  (ConstReference data, unsigned int numberElements); 						
 				template<unsigned int _size> explicit ArrayC (const ArrayC<T,_size>& rhs);						
 				template<unsigned int _size> explicit ArrayC (const ArrayC<T,_size>& rhs, unsigned int startIndex, unsigned int numberElements = _size );  
-				explicit ArrayC ( ConstIterator& iter ); 
-				explicit ArrayC ( ConstReverseIterator& iter ); 
-				template<class Evaluator> explicit ArrayC ( ConstIterator& iter, const Evaluator& filter);
+				explicit ArrayC ( const ConstIterator& iter ); 
+				explicit ArrayC ( const ConstReverseIterator& iter ); 
+				template<class Evaluator> explicit ArrayC ( const ConstIterator& iter, const Evaluator& filter);
 
 				// these are all use memcpy instead of a copy construct
 				ArrayC<T, size>&								Assign ( ConstPointer pData, unsigned int numberElements);
 				ArrayC<T, size>&								Assign ( ConstReference data, unsigned int numberElements);
 				template<unsigned int _size>ArrayC<T, size>&	Assign ( const ArrayC<T,_size>& rhs );
 				template<unsigned int _size>ArrayC<T, size>&	Assign ( const ArrayC<T,_size>& rhs, unsigned int startIndex, unsigned int numberElements = _size );
-				ArrayC<T, size>&								Assign ( ConstIterator& iter );
-				ArrayC<T, size>&								Assign ( ConstReverseIterator& iter );
-				template<class Evaluator> ArrayC<T, size>&		Assign ( ConstIterator& iter, const Evaluator& filter );
+				ArrayC<T, size>&								Assign ( const ConstIterator& iter );
+				ArrayC<T, size>&								Assign ( const ConstReverseIterator& iter );
+				template<class Evaluator> ArrayC<T, size>&		Assign ( const ConstIterator& iter, const Evaluator& filter );
 				
 				/*ArrayC<T, size>&								AssignWithCopyConstructors (ConstPointer pData, unsigned int numberElements);
 				ArrayC<T, size>&								AssignWithCopyConstructors (ConstReference data, unsigned int numberElements);
 				template<unsigned int _size>ArrayC<T, size>&	AssignWithCopyConstructors ( const ArrayC<T,_size>& rhs );
 				template<unsigned int _size>ArrayC<T, size>&	AssignWithCopyConstructors ( const ArrayC<T,_size>& rhs, unsigned int startIndex, unsigned int numberElements = _size );
-				ArrayC<T, size>&								AssignWithCopyConstructors ( ConstIterator& iter );
-				ArrayC<T, size>&								AssignWithCopyConstructors ( ConstReverseIterator& iter );
-				template<class Evaluator> ArrayC<T, size>&		AssignWithCopyConstructors ( ConstIterator& iter, const Evaluator& filter );*/
+				ArrayC<T, size>&								AssignWithCopyConstructors ( const ConstIterator& iter );
+				ArrayC<T, size>&								AssignWithCopyConstructors ( const ConstReverseIterator& iter );
+				template<class Evaluator> ArrayC<T, size>&		AssignWithCopyConstructors ( const ConstIterator& iter, const Evaluator& filter );*/
 
 				template<unsigned int _size> ArrayC<T, size>& 
 														operator=		(const ArrayC<T,_size>& other);

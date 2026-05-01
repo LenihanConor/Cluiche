@@ -1,0 +1,23 @@
+{
+    "editor": {
+        "enabled": true,
+        "plugins": [
+            {
+                "type": "StubEditorPlugin",
+                "instance_id": "stub_1"
+            },
+            {
+                "type": "HelloEditorPlugin",
+                "instance_id": "hello_1"
+            },
+            {
+                "type": "DiaApplicationEditor",
+                "instance_id": "diaapp_editor_1"
+            },
+            {
+                "type": "DiaPipelineEditor",
+                "instance_id": "pipeline_editor_1"
+            }
+        ]
+    }
+}

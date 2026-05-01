@@ -12,8 +12,36 @@ namespace Dia
 {
 	namespace Input
 	{
-		////////////////////////////////////////////////////////////////////////////////
-		// Enum name: IPoll
+		/// @brief Single input event with union-based payload
+		///
+		/// Event represents a discrete input action (key press, mouse move, gamepad button, etc.)
+		/// using a tagged union pattern. The `type` field determines which union member is valid.
+		///
+		/// **Event Types:**
+		/// - **Window:** kClosed, kResized, kLostFocus, kGainedFocus
+		/// - **Keyboard:** kKeyPressed, kKeyReleased, kTextEntered
+		/// - **Mouse:** kMouseButtonPressed, kMouseButtonReleased, kMouseMoved, kMouseWheelMoved, kMouseEntered, kMouseLeft
+		/// - **Joystick:** kJoystickButtonPressed, kJoystickButtonReleased, kJoystickMoved, kJoystickConnected, kJoystickDisconnected
+		/// - **Gamepad:** kConsoleGamepadButtonPressed, kConsoleGamepadButtonReleased, kConsoleGamepadAnalogStickMove, kConsoleGamepadAnalogTriggers, kConsoleGamepadConnected, kConsoleGamepadDisconnected
+		///
+		/// **Usage:**
+		/// @code
+		/// Event event = ...;
+		/// switch (event.type)
+		/// {
+		///     case Event::EType::kKeyPressed:
+		///         EKey key = event.key.AsKey();
+		///         bool isShift = event.key.shift;
+		///         break;
+		///
+		///     case Event::EType::kMouseMoved:
+		///         int x = event.mouseMove.x;
+		///         int y = event.mouseMove.y;
+		///         break;
+		/// }
+		/// @endcode
+		///
+		/// @note Always check `type` before accessing union members to ensure type safety.
 		////////////////////////////////////////////////////////////////////////////////
 		class Event
 		{

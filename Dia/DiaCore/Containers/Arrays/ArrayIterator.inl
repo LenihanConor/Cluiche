@@ -150,7 +150,7 @@ namespace Dia
 			
 			//-----------------------------------------------------------------------------
 			template <class T> inline	
-			ArrayConstIterator<T>::ArrayConstIterator(ArrayIterator<T>& rhs)
+			ArrayConstIterator<T>::ArrayConstIterator(const ArrayIterator<T>& rhs)
 				: mBegin(rhs.Begin())
 				, mEnd(rhs.End())
 				, mIter(rhs.Current())
@@ -178,14 +178,14 @@ namespace Dia
 
 			//-----------------------------------------------------------------------------
 			template <class T> inline	
-			void ArrayConstIterator<T>::Next()
+			void ArrayConstIterator<T>::Next() const
 			{
 				mIter++;
 			}
 
 			//-----------------------------------------------------------------------------
 			template <class T> inline	
-			void ArrayConstIterator<T>::Previous()
+			void ArrayConstIterator<T>::Previous() const
 			{
 				--mIter;
 			}
