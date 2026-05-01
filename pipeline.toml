@@ -50,21 +50,21 @@ ui_builds = [
   { cwd = "Dia/DiaPipelineEditor/UI", cmd = "node node_modules/vite/bin/vite.js build" }
 ]
 files = [
-  { src = "External/CEF/Resources/*",                     dest = "$(OutDir)" },
-  { src = "External/CEF/Resources/locales/**",            dest = "$(OutDir)locales/" },
+  { src = "External/CEF/Resources/*",                     dest = "$(OutDir)cef/" },
+  { src = "External/CEF/Resources/locales/**",            dest = "$(OutDir)cef/locales/" },
   { src = "External/CEF/bin/$(Configuration)/*",          dest = "$(OutDir)" },
-  { src = "Cluiche/CluicheEditor/Data/*",                 dest = "$(OutDir)Data/" },
-  { src = "Cluiche/CluicheEditor/UI/dist/*",              dest = "$(OutDir)UI/" },
-  { src = "Cluiche/CluicheEditor/UI/dist/assets/*",       dest = "$(OutDir)UI/assets/" },
-  { src = "Dia/DiaEditor/Plugin/Assets/*",                dest = "$(OutDir)editor/" },
-  { src = "Dia/DiaApplicationEditor/UI/dist/*",           dest = "$(OutDir)diaapplicationeditor/" },
-  { src = "Dia/DiaApplicationEditor/UI/dist/assets/*",    dest = "$(OutDir)diaapplicationeditor/assets/" },
-  { src = "Dia/DiaApplicationEditor/Assets/*",            dest = "$(OutDir)diaapplicationeditor/" },
-  { src = "Dia/DiaPipelineEditor/UI/dist/*",              dest = "$(OutDir)diapipelineeditor/" },
-  { src = "Dia/DiaPipelineEditor/UI/dist/assets/*",       dest = "$(OutDir)diapipelineeditor/assets/" },
-  { src = "Cluiche/Assets/CluicheEditor/*",               dest = "$(OutDir)Assets/CluicheEditor/" },
-  { src = "Cluiche/bin/DiaUICEF_TestSubprocess/$(Configuration)/x64/DiaUICEF_TestSubprocess.exe", dest = "$(OutDir)" },
-  { src = "Cluiche/bin/DiaUICEF_TestSubprocess/$(Configuration)/x64/DiaUICEF_TestSubprocess.pdb", dest = "$(OutDir)" }
+  { src = "Cluiche/CluicheEditor/Data/*",                 dest = "$(OutDir)assets/configs/" },
+  { src = "Cluiche/CluicheEditor/UI/dist/*",              dest = "$(OutDir)assets/ui/" },
+  { src = "Cluiche/CluicheEditor/UI/dist/assets/*",       dest = "$(OutDir)assets/ui/assets/" },
+  { src = "Dia/DiaEditor/Plugin/Assets/**/*",             dest = "$(OutDir)plugins/" },
+  { src = "Dia/DiaApplicationEditor/UI/dist/*",           dest = "$(OutDir)plugins/diaapplicationeditor/" },
+  { src = "Dia/DiaApplicationEditor/UI/dist/assets/*",    dest = "$(OutDir)plugins/diaapplicationeditor/assets/" },
+  { src = "Dia/DiaApplicationEditor/Assets/*",            dest = "$(OutDir)plugins/diaapplicationeditor/" },
+  { src = "Dia/DiaPipelineEditor/UI/dist/*",              dest = "$(OutDir)plugins/diapipelineeditor/" },
+  { src = "Dia/DiaPipelineEditor/UI/dist/assets/*",       dest = "$(OutDir)plugins/diapipelineeditor/assets/" },
+  { src = "Cluiche/Assets/CluicheEditor/*",               dest = "$(OutDir)assets/icons/" },
+  { src = "Cluiche/bin/DiaUICEF_TestSubprocess/$(Configuration)/x64/DiaUICEF_TestSubprocess.exe", dest = "$(OutDir)cef/" },
+  { src = "Cluiche/bin/DiaUICEF_TestSubprocess/$(Configuration)/x64/DiaUICEF_TestSubprocess.pdb", dest = "$(OutDir)cef/" }
 ]
 
 [targets.diasfml]

@@ -57,7 +57,7 @@ See @docs/specs/applications/dia.md for full Dia engine specification.
 - **Threading Model**: Multi-threaded ProcessingUnits (Main/Render/Sim threads)
 - **Type System**: Runtime type reflection and serialization
 - **String IDs**: Compile-time CRC hashing via StringCRC for efficient comparisons
-- **Build System**: Visual Studio MSBuild, x64 only; unified output under `Cluiche/bin/{Config}/{Platform}/`, intermediates under `Cluiche/bin/intermediate/{ProjectName}/{Config}/{Platform}/`; shared build settings centralized in `Directory.Build.props` at repo root
+- **Build System**: Visual Studio MSBuild, x64 only; Application projects output to `Cluiche/bin/<ProjectName>/<Config>/<Platform>/`, libraries to `Cluiche/bin/sharedlibs/<Config>/<Platform>/`, intermediates to `Cluiche/bin/intermediate/<ProjectName>/<Config>/<Platform>/`; all paths owned by `Directory.Build.props` at repo root — no per-project overrides permitted
 
 ### Shared Design Patterns
 
@@ -122,7 +122,7 @@ Module dependency changes validated via `python Tools/dia_modules.py --validate`
 | PD-005 | x64 is the only supported build target | 32-bit Win32 configurations were removed; x64 is the sole platform for all projects | Platform-wide | Accepted | Yes |
 | PD-006 | Visual Studio project files are source of truth | MSBuild used for all builds; manual project file maintenance required; `Directory.Build.props` at repo root is the authority for shared build settings above the per-project level | Platform-wide | Accepted | Yes |
 | PD-007 | C++20 is the required language standard | All projects must compile under `/std:c++20`; enables concepts, std::span, constexpr improvements, and enforces stricter name lookup that catches latent bugs | Platform-wide | Accepted | Yes |
-| PD-008 | `Directory.Build.props` owns OutDir, IntDir, PlatformToolset, WindowsTargetPlatformVersion, and LanguageStandard | Centralises all build output paths and toolchain settings; prevents scatter across per-project files and ensures all 20 projects land in `Cluiche/bin/`; no `.vcxproj` may override these properties | Platform-wide | Accepted | Yes |
+| PD-008 | `Directory.Build.props` owns OutDir, IntDir, PlatformToolset, WindowsTargetPlatformVersion, and LanguageStandard | Centralises all build output paths and toolchain settings; prevents scatter across per-project files; `Application` projects automatically get `bin/<ProjectName>/<Config>/<Platform>/`, all other types get `bin/sharedlibs/<Config>/<Platform>/` via a `$(ConfigurationType)` conditional — no `.vcxproj` may override these properties | Platform-wide | Accepted | Yes |
 | PD-009 | All generated non-binary output lives under `Cluiche/out/<AppName>/` | Keeps the repo root clean; parallel to `Cluiche/bin/` for binaries; each application owns its subdirectory; fully gitignored | Platform-wide | Accepted | Yes |
 
 **Status values:** `Proposed` · `Accepted` · `Rejected` · `Superseded`  

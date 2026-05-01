@@ -22,7 +22,7 @@ namespace Cluiche
 			, mRunningPhase(this)
 			, mShutdownPhase(this)
 		{
-			mLoggerModule.ApplyConfig("Data/editor-logger.json");
+			mLoggerModule.ApplyConfig("assets/configs/editor-logger.json");
 
 			AddModule(&mLoggerModule);
 			AddModule(&mConsoleSinkModule);

@@ -45,11 +45,26 @@ def _copy_files(
                 continue
             dest_dir = Path(dest_pat)
             dest_dir.mkdir(parents=True, exist_ok=True)
+            # For ** patterns, preserve relative paths from the glob base directory.
+            # For * patterns, copy flat (file name only) into dest_dir.
+            preserve_rel = "**" in src_pat
+            if preserve_rel:
+                src_pat_str = str(repo_root / src_pat)
+                wildcard_pos = next((i for i, c in enumerate(src_pat_str) if c in "*?"), len(src_pat_str))
+                glob_base = Path(src_pat_str[:wildcard_pos].rstrip("/\\"))
             for src_file in matched:
                 src_path = Path(src_file)
                 if src_path.is_dir():
                     continue
-                dest_file = dest_dir / src_path.name
+                if preserve_rel:
+                    try:
+                        rel = src_path.relative_to(glob_base)
+                        dest_file = dest_dir / rel
+                    except ValueError:
+                        dest_file = dest_dir / src_path.name
+                else:
+                    dest_file = dest_dir / src_path.name
+                dest_file.parent.mkdir(parents=True, exist_ok=True)
                 if force or not dest_file.exists() or src_path.stat().st_mtime > dest_file.stat().st_mtime:
                     shutil.copy2(src_path, dest_file)
                     logger.info(f"  copied {src_path.name} -> {dest_file}")

@@ -14,7 +14,7 @@ namespace Dia
 			const char* GetName() const override { return "HelloEditorPlugin"; }
 			const char* GetVersion() const override { return "1.0"; }
 			const char* GetDescription() const override { return "Demonstrates full plugin discovery pipeline"; }
-			const char* GetUIPath() const override { return "dia://editor/hello/index.html"; }
+			const char* GetUIPath() const override { return "dia://plugins/hello/index.html"; }
 			LayoutMode GetLayoutMode() const override { return LayoutMode::kDockable; }
 
 			void OnLoad(const EditorPluginContext& context) override;

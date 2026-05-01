@@ -74,7 +74,7 @@ TEST(EditorPluginRegistry, CreateOutputConsolePlugin)
     IEditorPlugin* plugin = EditorPluginRegistry::Instance().CreatePlugin(StringCRC("OutputConsoleEditorPlugin"));
     ASSERT_NE(plugin, nullptr);
     EXPECT_STREQ(plugin->GetName(), "Output Console");
-    EXPECT_STREQ(plugin->GetUIPath(), "dia://editor/outputconsole/index.html");
+    EXPECT_STREQ(plugin->GetUIPath(), "dia://plugins/outputconsole/index.html");
     delete plugin;
 }
 
@@ -88,7 +88,7 @@ TEST(EditorPluginRegistry, CreateGameConnectionPlugin)
     IEditorPlugin* plugin = EditorPluginRegistry::Instance().CreatePlugin(StringCRC("GameConnectionEditorPlugin"));
     ASSERT_NE(plugin, nullptr);
     EXPECT_STREQ(plugin->GetName(), "Game Connection");
-    EXPECT_STREQ(plugin->GetUIPath(), "dia://editor/gameconnection/index.html");
+    EXPECT_STREQ(plugin->GetUIPath(), "dia://plugins/gameconnection/index.html");
     delete plugin;
 }
 

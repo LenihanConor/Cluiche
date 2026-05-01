@@ -59,13 +59,13 @@ namespace Cluiche
 			ShowWindow(static_cast<HWND>(mWindow->GetSystemHandle()), SW_HIDE);
 
 			Dia::UICEF::EditorUISystemConfig uiConfig;
-			uiConfig.subprocessPath = "CluicheEditor.exe";
+			uiConfig.subprocessPath = "cef/DiaUICEF_TestSubprocess.exe";
 			uiConfig.assetBasePath = "";
 			uiConfig.windowedRendering = true;
 			mUISystem = Dia::UICEF::CreateEditorUISystem(mWindow, uiConfig);
 
 			Dia::Maths::Vector2D size = mWindow->GetSize();
-			mUISystem->CreatePage("dia://ui/index.html",
+			mUISystem->CreatePage("dia://assets/ui/index.html",
 				static_cast<int>(size.X()), static_cast<int>(size.Y()));
 
 			mView.Initialize(mUISystem, controller);

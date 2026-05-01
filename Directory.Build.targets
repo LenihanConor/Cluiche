@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
+  <!-- ConfigurationType is set by this point; route Application exes to per-app folders -->
+  <PropertyGroup Condition="'$(ConfigurationType)'=='Application'">
+    <OutDir>$(BinRoot)$(MSBuildProjectName)\$(Configuration)\$(Platform)\</OutDir>
+  </PropertyGroup>
+
   <Target Name="RestoreExternals" BeforeTargets="Build">
     <PropertyGroup>
       <_DepsJson>$(MSBuildThisFileDirectory)deps.json</_DepsJson>

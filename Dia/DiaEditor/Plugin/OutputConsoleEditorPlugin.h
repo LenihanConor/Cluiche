@@ -12,7 +12,7 @@ namespace Dia
 			const char* GetName() const override { return "Output Console"; }
 			const char* GetVersion() const override { return "1.0"; }
 			const char* GetDescription() const override { return "Built-in output console panel"; }
-			const char* GetUIPath() const override { return "dia://editor/outputconsole/index.html"; }
+			const char* GetUIPath() const override { return "dia://plugins/outputconsole/index.html"; }
 			LayoutMode GetLayoutMode() const override { return LayoutMode::kDockable; }
 
 			EditorToolbarItem GetToolbarItem() const override

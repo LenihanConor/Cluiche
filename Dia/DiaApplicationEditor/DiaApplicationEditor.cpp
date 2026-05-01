@@ -413,7 +413,7 @@ void DiaApplicationEditor::LoadStaticTypeList()
 {
 	mData->typeCache.Clear();
 
-	std::ifstream file("diaapplicationeditor/known_types.json");
+	std::ifstream file("plugins/diaapplicationeditor/known_types.json");
 	if (!file.is_open())
 	{
 		NotifyUI("type_discovery_error", "Could not open known_types.json");

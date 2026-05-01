@@ -62,7 +62,7 @@ namespace Cluiche
 			}
 
 			Dia::Editor::EditorView& view = viewModule->GetView();
-			view.SetLayoutPath("Data/editor-layout.json");
+			view.SetLayoutPath("assets/configs/editor-layout.json");
 			view.LoadLayoutFromDisk();
 
 			PluginLoaderModule* pluginLoader =

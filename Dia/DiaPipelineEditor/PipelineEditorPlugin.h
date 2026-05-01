@@ -20,7 +20,7 @@ namespace Dia
 			const char* GetName() const override { return "Pipeline Editor"; }
 			const char* GetVersion() const override { return "1.0.0"; }
 			const char* GetDescription() const override { return "Live pipeline viewer and build trigger"; }
-			const char* GetUIPath() const override { return "dia://diapipelineeditor/index.html"; }
+			const char* GetUIPath() const override { return "dia://plugins/diapipelineeditor/index.html"; }
 			Dia::Editor::LayoutMode GetLayoutMode() const override { return Dia::Editor::LayoutMode::kDockable; }
 
 			void OnLoad(const Dia::Editor::EditorPluginContext& context) override;

@@ -7,8 +7,8 @@ using namespace Dia::Editor;
 TEST(DockingLayout, RegisterAndQuery)
 {
     DockingLayout layout;
-    layout.RegisterPanel("Properties", "dia://editor/properties/index.html");
-    layout.RegisterPanel("Console", "dia://editor/console/index.html");
+    layout.RegisterPanel("Properties", "dia://plugins/properties/index.html");
+    layout.RegisterPanel("Console", "dia://plugins/console/index.html");
 
     EXPECT_TRUE(layout.IsPanelRegistered("Properties"));
     EXPECT_TRUE(layout.IsPanelRegistered("Console"));

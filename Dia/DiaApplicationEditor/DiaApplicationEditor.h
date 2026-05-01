@@ -22,7 +22,7 @@ namespace Dia
 				const char* GetName() const override { return "DiaApplicationEditor"; }
 				const char* GetVersion() const override { return "1.0.0"; }
 				const char* GetDescription() const override { return "Visual editor for .diaapp manifest files"; }
-				const char* GetUIPath() const override { return "dia://diaapplicationeditor/index.html"; }
+				const char* GetUIPath() const override { return "dia://plugins/diaapplicationeditor/index.html"; }
 				Dia::Editor::LayoutMode GetLayoutMode() const override { return Dia::Editor::LayoutMode::kDockable; }
 
 				void OnLoad(const Dia::Editor::EditorPluginContext& context) override;

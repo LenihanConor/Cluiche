@@ -12,7 +12,7 @@ namespace Dia
 		{
 			DIA_LOG_INFO("Editor", "GameConnectionEditorPlugin: OnLoad");
 			mManager.Initialize();
-			mController.SetPersistencePath("Data/editor-connection.json");
+			mController.SetPersistencePath("assets/configs/editor-connection.json");
 			mController.LoadPersistedUrl();
 			mController.Initialize(context.mBridge, &mManager, context.mView);
 			mController.AutoConnect("ws://localhost:9002");
