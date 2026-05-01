@@ -97,8 +97,6 @@ namespace Dia
 				DIA_LOG_INFO("UI", "DiaUICEF: cache_path = %s", resolvedCache.c_str());
 				CefString(&settings.cache_path).FromASCII(resolvedCache.c_str());
 				CefString(&settings.browser_subprocess_path).FromASCII(resolvedSubprocess.c_str());
-				CefString(&settings.resources_dir_path).FromASCII(ResolveToAbsolute("cef").c_str());
-				CefString(&settings.locales_dir_path).FromASCII(ResolveToAbsolute("cef/locales").c_str());
 
 #ifdef _DEBUG
 				settings.remote_debugging_port = mRemoteDebuggingPort;

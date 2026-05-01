@@ -131,12 +131,12 @@ def test_load_config_invalid_stage_name(tmp_path):
 
 def test_resolve_out_dir_debug(tmp_path):
     result = resolve_out_dir(tmp_path, "Debug", "x64")
-    assert result == tmp_path / "Cluiche" / "bin" / "Debug" / "x64"
+    assert result == tmp_path / "Cluiche" / "bin" / "sharedlibs" / "Debug" / "x64"
 
 
 def test_resolve_out_dir_release(tmp_path):
     result = resolve_out_dir(tmp_path, "Release", "x64")
-    assert result == tmp_path / "Cluiche" / "bin" / "Release" / "x64"
+    assert result == tmp_path / "Cluiche" / "bin" / "sharedlibs" / "Release" / "x64"
 
 
 def test_resolve_out_dir_per_app_debug(tmp_path):
@@ -151,12 +151,12 @@ def test_resolve_out_dir_per_app_release(tmp_path):
 
 def test_resolve_out_dir_no_app_name_uses_shared_pool(tmp_path):
     result = resolve_out_dir(tmp_path, "Debug", "x64", app_name=None)
-    assert result == tmp_path / "Cluiche" / "bin" / "Debug" / "x64"
+    assert result == tmp_path / "Cluiche" / "bin" / "sharedlibs" / "Debug" / "x64"
 
 
 def test_resolve_variables_out_dir(tmp_path):
     result = resolve_variables("$(OutDir)file.dll", "Debug", "x64", tmp_path)
-    assert "Cluiche/bin/Debug/x64" in result
+    assert "Cluiche/bin/sharedlibs/Debug/x64" in result
     assert result.endswith("file.dll")
 
 
@@ -395,7 +395,7 @@ def test_deploy_copies_file(tmp_path):
     ])
     code = package_stage.run(cfg, "googletest", "Debug", force=True, repo_root=tmp_path)
     assert code == 0
-    dest = tmp_path / "Cluiche" / "bin" / "Debug" / "x64" / "python311.dll"
+    dest = tmp_path / "Cluiche" / "bin" / "sharedlibs" / "Debug" / "x64" / "python311.dll"
     assert dest.exists()
 
 
@@ -404,7 +404,7 @@ def test_deploy_skips_when_staged(tmp_path):
     src_file.parent.mkdir(parents=True, exist_ok=True)
     src_file.write_bytes(b"data")
 
-    dest_dir = tmp_path / "Cluiche" / "bin" / "Debug" / "x64"
+    dest_dir = tmp_path / "Cluiche" / "bin" / "sharedlibs" / "Debug" / "x64"
     dest_dir.mkdir(parents=True, exist_ok=True)
     dest_file = dest_dir / "file.dll"
     dest_file.write_bytes(b"data")
@@ -423,7 +423,7 @@ def test_deploy_force_recopies(tmp_path):
     src_file.parent.mkdir(parents=True, exist_ok=True)
     src_file.write_bytes(b"new data")
 
-    dest_dir = tmp_path / "Cluiche" / "bin" / "Debug" / "x64"
+    dest_dir = tmp_path / "Cluiche" / "bin" / "sharedlibs" / "Debug" / "x64"
     dest_dir.mkdir(parents=True, exist_ok=True)
     dest_file = dest_dir / "file.dll"
     dest_file.write_bytes(b"old data")
@@ -457,9 +457,45 @@ def test_deploy_glob_expands(tmp_path):
     ])
     code = package_stage.run(cfg, "googletest", "Debug", force=True, repo_root=tmp_path)
     assert code == 0
-    out = tmp_path / "Cluiche" / "bin" / "Debug" / "x64"
+    out = tmp_path / "Cluiche" / "bin" / "sharedlibs" / "Debug" / "x64"
     assert (out / "a.dll").exists()
     assert (out / "b.dll").exists()
+
+
+def test_deploy_recursive_glob_preserves_subdirs(tmp_path):
+    """** pattern must preserve the relative directory structure under the base dir."""
+    src_base = tmp_path / "Plugins"
+    (src_base / "home").mkdir(parents=True)
+    (src_base / "home" / "index.html").write_bytes(b"home")
+    (src_base / "outputconsole").mkdir()
+    (src_base / "outputconsole" / "index.html").write_bytes(b"console")
+
+    cfg = _make_deploy_config(tmp_path, [
+        {"src": "Plugins/**/*", "dest": "$(OutDir)plugins/"},
+    ])
+    code = package_stage.run(cfg, "googletest", "Debug", force=True, repo_root=tmp_path)
+    assert code == 0
+    out = tmp_path / "Cluiche" / "bin" / "sharedlibs" / "Debug" / "x64" / "plugins"
+    assert (out / "home" / "index.html").exists()
+    assert (out / "outputconsole" / "index.html").exists()
+
+
+def test_deploy_star_glob_stays_flat(tmp_path):
+    """* pattern must copy files flat (no subdirectory nesting) into dest_dir."""
+    src_dir = tmp_path / "Resources"
+    src_dir.mkdir()
+    (src_dir / "chrome.pak").write_bytes(b"pak1")
+    (src_dir / "resources.pak").write_bytes(b"pak2")
+
+    cfg = _make_deploy_config(tmp_path, [
+        {"src": "Resources/*", "dest": "$(OutDir)cef/"},
+    ])
+    code = package_stage.run(cfg, "googletest", "Debug", force=True, repo_root=tmp_path)
+    assert code == 0
+    out = tmp_path / "Cluiche" / "bin" / "sharedlibs" / "Debug" / "x64" / "cef"
+    assert (out / "chrome.pak").exists()
+    assert (out / "resources.pak").exists()
+    assert not (out / "Resources").exists()
 
 
 # ---------------------------------------------------------------------------

@@ -50,12 +50,12 @@ ui_builds = [
   { cwd = "Dia/DiaPipelineEditor/UI", cmd = "node node_modules/vite/bin/vite.js build" }
 ]
 files = [
-  { src = "External/CEF/Resources/*",                     dest = "$(OutDir)cef/" },
-  { src = "External/CEF/Resources/locales/**",            dest = "$(OutDir)cef/locales/" },
+  { src = "External/CEF/Resources/*",                     dest = "$(OutDir)" },
+  { src = "External/CEF/Resources/locales/**",            dest = "$(OutDir)locales/" },
   { src = "External/CEF/bin/$(Configuration)/*",          dest = "$(OutDir)" },
   { src = "Cluiche/CluicheEditor/Data/*",                 dest = "$(OutDir)assets/configs/" },
-  { src = "Cluiche/CluicheEditor/UI/dist/*",              dest = "$(OutDir)assets/ui/" },
-  { src = "Cluiche/CluicheEditor/UI/dist/assets/*",       dest = "$(OutDir)assets/ui/assets/" },
+  { src = "Cluiche/CluicheEditor/UI/dist/*",              dest = "$(OutDir)ui/" },
+  { src = "Cluiche/CluicheEditor/UI/dist/assets/*",       dest = "$(OutDir)ui/assets/" },
   { src = "Dia/DiaEditor/Plugin/Assets/**/*",             dest = "$(OutDir)plugins/" },
   { src = "Dia/DiaApplicationEditor/UI/dist/*",           dest = "$(OutDir)plugins/diaapplicationeditor/" },
   { src = "Dia/DiaApplicationEditor/UI/dist/assets/*",    dest = "$(OutDir)plugins/diaapplicationeditor/assets/" },
