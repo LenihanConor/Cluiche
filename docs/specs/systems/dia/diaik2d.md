@@ -3,7 +3,7 @@
 ## Parent Application
 @docs/specs/applications/dia.md
 
-**Status:** `Approved`
+**Status:** `Done`
 
 ---
 
@@ -263,6 +263,6 @@ namespace Dia::IK2D {
 
 ## Status
 
-`Approved` — System spec approved 2026-05-01. All 6 feature specs approved 2026-05-01. Ready for implementation.
+`Done` — Implemented 2026-05-02. All 6 features complete. 33/33 unit tests pass (Debug + Release x64).
 
 **Plan:** [diaik2d.plan.md](diaik2d.plan.md)

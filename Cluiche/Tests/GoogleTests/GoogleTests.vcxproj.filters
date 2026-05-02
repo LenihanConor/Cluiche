@@ -100,6 +100,9 @@
     <Filter Include="Rig2D">
       <UniqueIdentifier>{RIG20001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="IK2D">
+      <UniqueIdentifier>{IK2D0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -723,6 +726,46 @@
     </ClCompile>
     <ClCompile Include="Rig2D\TestRig2DIntegration.cpp">
       <Filter>Rig2D</Filter>
+    </ClCompile>
+    <!-- IK2D -->
+    <ClCompile Include="IK\TestIKChainDef.cpp">
+      <Filter>IK2D</Filter>
+    </ClCompile>
+    <ClCompile Include="IK\TestIKSolverRegistration.cpp">
+      <Filter>IK2D</Filter>
+    </ClCompile>
+    <ClCompile Include="IK\TestTwoBoneSolver.cpp">
+      <Filter>IK2D</Filter>
+    </ClCompile>
+    <ClCompile Include="IK\TestFABRIKSolver.cpp">
+      <Filter>IK2D</Filter>
+    </ClCompile>
+    <ClCompile Include="IK\TestLookAtConstraint.cpp">
+      <Filter>IK2D</Filter>
+    </ClCompile>
+    <ClCompile Include="IK\TestIKChainedSolves.cpp">
+      <Filter>IK2D</Filter>
+    </ClCompile>
+    <ClCompile Include="IK\TestIKLogging.cpp">
+      <Filter>IK2D</Filter>
+    </ClCompile>
+    <ClCompile Include="IK\TestIKGolden.cpp">
+      <Filter>IK2D</Filter>
+    </ClCompile>
+    <ClCompile Include="IK\TestIKInvariant.cpp">
+      <Filter>IK2D</Filter>
+    </ClCompile>
+    <ClCompile Include="IK\TestIKStress.cpp">
+      <Filter>IK2D</Filter>
+    </ClCompile>
+    <ClCompile Include="IK\TestIKBoundary.cpp">
+      <Filter>IK2D</Filter>
+    </ClCompile>
+    <ClCompile Include="IK\TestIKDeterminism.cpp">
+      <Filter>IK2D</Filter>
+    </ClCompile>
+    <ClCompile Include="IK\TestIKIntegration.cpp">
+      <Filter>IK2D</Filter>
     </ClCompile>
     <!-- StateMachine -->
     <ClCompile Include="StateMachine\TestFlatStateMachine.cpp">

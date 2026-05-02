@@ -20,7 +20,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 |--------|------|----------|------------|
 | DiaApplicationEditor | [diaapplicationeditor.md](specs/systems/dia/diaapplicationeditor.md) | 15 features, all Approved — **not yet implemented** | DiaEditor ✅, DiaWebSocket ✅, DiaUICEF ✅ |
 | DiaData | [diadata.md](specs/systems/dia/diadata.md) | 3 features, all Approved — json-definition-loader, asset-type-framework, identity-relationship-backbone | DiaCore ✅ |
-| DiaIK | [diaik.md](specs/systems/dia/diaik.md) | 6 features, all Approved — **not yet implemented. Blocked on DiaRig** | DiaRig ✅, DiaMaths ✅, DiaCore ✅, DiaLogger ✅ |
+| ~~DiaIK~~ | [diaik2d.md](specs/systems/dia/diaik2d.md) | ✅ Done 2026-05-02 — 6 features, 33 tests | — |
 
 ### Standalone Features (system Done, feature Approved)
 

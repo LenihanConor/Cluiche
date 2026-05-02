@@ -323,6 +323,20 @@
     <ClCompile Include="Rig2D\TestRig2DDeterminism.cpp" />
     <ClCompile Include="Rig2D\TestRig2DBoundary.cpp" />
     <ClCompile Include="Rig2D\TestRig2DIntegration.cpp" />
+    <!-- IK2D -->
+    <ClCompile Include="IK\TestIKChainDef.cpp" />
+    <ClCompile Include="IK\TestIKSolverRegistration.cpp" />
+    <ClCompile Include="IK\TestTwoBoneSolver.cpp" />
+    <ClCompile Include="IK\TestFABRIKSolver.cpp" />
+    <ClCompile Include="IK\TestLookAtConstraint.cpp" />
+    <ClCompile Include="IK\TestIKChainedSolves.cpp" />
+    <ClCompile Include="IK\TestIKLogging.cpp" />
+    <ClCompile Include="IK\TestIKGolden.cpp" />
+    <ClCompile Include="IK\TestIKInvariant.cpp" />
+    <ClCompile Include="IK\TestIKStress.cpp" />
+    <ClCompile Include="IK\TestIKBoundary.cpp" />
+    <ClCompile Include="IK\TestIKDeterminism.cpp" />
+    <ClCompile Include="IK\TestIKIntegration.cpp" />
     <!-- StateMachine -->
     <ClCompile Include="StateMachine\TestFlatStateMachine.cpp" />
     <ClCompile Include="StateMachine\TestHierarchicalStateMachine.cpp" />
@@ -351,6 +365,10 @@
     </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaRig2D\DiaRig2D.vcxproj">
       <Project>{E4F5A6B7-C8D9-0123-ABCD-456789ABCDE0}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaIK2D\DiaIK2D.vcxproj">
+      <Project>{F4A5B6C7-D8E9-0123-FABC-445566778899}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaApplicationEditor\DiaApplicationEditor.vcxproj">

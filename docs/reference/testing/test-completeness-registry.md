@@ -1,6 +1,6 @@
 # Test Completeness Registry
 
-**Last Updated:** 2026-05-02 (DiaRig2D exhaustive tests added)
+**Last Updated:** 2026-05-02 (DiaRig2D exhaustive tests added; DiaIK2D section added)
 
 Single source of truth for test coverage across all Dia modules. Updated alongside test commits.
 
@@ -16,10 +16,10 @@ Single source of truth for test coverage across all Dia modules. Updated alongsi
 
 | Metric | Count |
 |--------|-------|
-| Test files | 177 |
-| Total tests (TEST + TEST_F + TEST_P) | 2,946 |
-| Death tests (EXPECT_DEATH / ASSERT_DEATH) | 133 |
-| Float assertions (EXPECT_NEAR / EXPECT_FLOAT_EQ) | 1,240+ |
+| Test files | 190 |
+| Total tests (TEST + TEST_F + TEST_P) | 3,019 |
+| Death tests (EXPECT_DEATH / ASSERT_DEATH) | 149 |
+| Float assertions (EXPECT_NEAR / EXPECT_FLOAT_EQ) | 1,340+ |
 | Fixtures (TEST_F) | ~504 |
 | Parameterized (TEST_P / TYPED_TEST) | 0 |
 
@@ -186,6 +186,28 @@ Gap markers: **ZERO** = no tests, **LOW** = under-tested relative to API surface
 | Integration | 4 | Rig2D/TestRig2DIntegration.cpp | 0 | 0 | 0 | 0 | 0 | 4 | GOOD — JSON→FK parity, full pipeline, modify-reset cycle |
 
 **Rig2D totals: 12 files, 82 tests** | GOOD — all test types covered; no conservation law tests (N/A for FK/blend)
+
+---
+
+## DiaIK2D
+
+| Component | Tests | Files | Unit | Stress/Boundary | Golden/Regression | Invariant | Determinism | Integration | Notes |
+|-----------|-------|-------|------|-----------------|-------------------|-----------|-------------|-------------|-------|
+| IKChainDef / structs | 4 | IK/TestIKChainDef.cpp | 4 | 0 | 0 | 0 | 0 | 0 | GOOD |
+| IKSolver registration | 5 | IK/TestIKSolverRegistration.cpp | 5 | 0 | 0 | 0 | 0 | 0 | GOOD |
+| Two-Bone Solver | 6 | IK/TestTwoBoneSolver.cpp | 6 | 0 | 0 | 0 | 0 | 0 | GOOD |
+| FABRIK Solver | 5 | IK/TestFABRIKSolver.cpp | 5 | 0 | 0 | 0 | 0 | 0 | GOOD |
+| Look-At Constraint | 8 | IK/TestLookAtConstraint.cpp | 8 | 0 | 0 | 0 | 0 | 0 | GOOD |
+| Chained Solves | 2 | IK/TestIKChainedSolves.cpp | 2 | 0 | 0 | 0 | 0 | 0 | GOOD |
+| Logging | 3 | IK/TestIKLogging.cpp | 3 | 0 | 0 | 0 | 0 | 0 | GOOD |
+| Golden-value | 9 | IK/TestIKGolden.cpp | 0 | 0 | 9 | 0 | 0 | 0 | GOOD — law of cosines, reach weight blend, look-at directions |
+| Invariant/Property | 7 | IK/TestIKInvariant.cpp | 0 | 0 | 0 | 7 | 0 | 0 | GOOD — weight=0/1 identity, idempotent FABRIK, 500-iter random |
+| Stress | 6 | IK/TestIKStress.cpp | 0 | 6 | 0 | 0 | 0 | 0 | GOOD — 32 chains, 128-bone, 1000 solve loops, extreme targets |
+| Boundary | 11 | IK/TestIKBoundary.cpp | 0 | 11 | 0 | 0 | 0 | 0 | GOOD — DIA_ASSERT death tests, inverted limits, exact reach limit |
+| Determinism | 3 | IK/TestIKDeterminism.cpp | 0 | 0 | 0 | 0 | 3 | 0 | GOOD — bit-identical across two runs for all three solvers |
+| Integration | 4 | IK/TestIKIntegration.cpp | 0 | 0 | 0 | 0 | 0 | 4 | GOOD — FK→IK→FK pipeline, translated root, sequential solves, blend interop |
+
+**IK2D totals: 13 files, 73 tests** | GOOD — all test types covered; no conservation law tests (N/A for IK math)
 
 ---
 
@@ -469,11 +491,11 @@ Gap markers: **ZERO** = no tests, **LOW** = under-tested relative to API surface
 | Type | Present? | Where | Gaps |
 |------|----------|-------|------|
 | Unit | Yes (2,700+) | All modules | Graph, Observer, FilePath, Allocator, Easing, Interpolation, FrameData, BVH, Quadtree, StateObject, ProtoJsonCodec |
-| Boundary (EXPECT_DEATH) | Yes (128) | Core/Containers (88), Maths (32), Time (4), Architecture (4) | Missing in physics, geometry, application |
-| Stress | Partial | SoftBody2D (10), RigidBody2D Robustness (12) | Missing for containers at scale, threading, RigidBody2D 100+ bodies |
-| Golden-value | No | — | Needed for maths (matrices, easing), geometry intersections, physics traces |
-| Determinism | No | — | Needed for RigidBody2D, SoftBody2D |
+| Boundary (EXPECT_DEATH) | Yes (149) | Core/Containers (88), Maths (32), Time (4), Architecture (4), IK2D (11), Rig2D (10) | Missing in physics (RigidBody2D), geometry, application |
+| Stress | Partial | SoftBody2D (10), RigidBody2D Robustness (12), Rig2D (7), IK2D (6) | Missing for containers at scale, threading, RigidBody2D 100+ bodies |
+| Golden-value | Partial | Rig2D (8), IK2D (9) | Needed for maths (matrices, easing), geometry intersections, physics traces |
+| Determinism | Partial | Rig2D (3), IK2D (3) | Needed for RigidBody2D, SoftBody2D |
 | Conservation law | No | — | Needed for physics (momentum, energy) |
-| Property/invariant | No | — | Needed for maths (commutativity, normalization), containers (size invariants) |
+| Property/invariant | Partial | Rig2D (6), IK2D (7) | Needed for maths (commutativity, normalization), containers (size invariants) |
 | Parameterized (TYPED_TEST) | No | — | BitArray (4 types), containers, protocol messages |
-| Integration | Partial (86) | Integration/ directory | Missing Physics-Geometry, Module lifecycle, Input-Application |
+| Integration | Partial (90+) | Integration/ directory, Rig2D (4), IK2D (4) | Missing Physics-Geometry, Module lifecycle, Input-Application |

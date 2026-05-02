@@ -1,9 +1,9 @@
 # Plan: DiaIK2D
 
 **Spec:** @docs/specs/systems/dia/diaik2d.md  
-**Status:** Not Started  
-**Started:** —  
-**Last Updated:** 2026-05-01
+**Status:** Done  
+**Started:** 2026-05-02  
+**Last Updated:** 2026-05-02
 
 ---
 
@@ -137,16 +137,16 @@ Test files in `Cluiche/Tests/GoogleTests/IK/`:
 
 | # | Task | Spec | Status | Notes |
 |---|------|------|--------|-------|
-| 0 | **Pre-check** — Verify DiaRig2D is implemented: `Dia::Rig2D::Skeleton`, `Pose`, `BoneTransform`, `Pose::ComputeWorldTransforms()` all exist and build. | — | Not Started | DiaRig2D must be Done before Task 1. |
-| 1 | **Project scaffolding** — Create `Dia/DiaIK2D/` directory, `DiaIK2D.vcxproj` (static lib, x64, refs DiaCore/DiaMaths/DiaLogger/DiaRig2D), `.vcxproj.filters`, register in `Cluiche.sln` under Library folder, create `Docs/dia.ik2d.architecture.module.md` | System | Not Started | Generate new GUID. Follow DiaSoftBody2D vcxproj as template. |
-| 2 | **IK Chain Definition** — `IKChainDef.h`: `JointLimitDef`, `IKChainDef`, `PoleVector` structs. Header-only. | [ik-chain-definition.md](../../features/dia/diaik2d/ik-chain-definition.md) | Not Started | No `.cpp` needed. |
-| 3 | **IKSolver scaffold** — `IKSolver.h` / `IKSolver.cpp`: constructor (pre-alloc all arrays), `SetRootTransform` (run full FK into `mWorldTransforms`), `RegisterChain` / `UnregisterChain` / `HasChain`, `GetSkeleton` / `GetPose`. No solver logic yet. | [ik-solver.md](../../features/dia/diaik2d/ik-solver.md) | Not Started | All three solve methods stub-return `false`. |
-| 4 | **Two-bone solver** — `SolveTwoBone()`: law of cosines, pole vector, joint limits clamp, reach weight (ShortestArcLerp), FK cache refresh. | [two-bone-solver.md](../../features/dia/diaik2d/two-bone-solver.md) | Not Started | Inline `ShortestArcLerp` helper in IKSolver.cpp. |
-| 5 | **FABRIK solver** — `SolveFABRIK()`: iterative backward/forward passes on `mWorkingPositions`, joint limit projection per iteration, convergence check, non-convergence warning, reach weight, FK cache refresh. | [fabrik-solver.md](../../features/dia/diaik2d/fabrik-solver.md) | Not Started | Uses `mWorkingPositions` pre-allocated in Task 3. |
-| 6 | **Look-at constraint** — `SolveLookAt(int)` + `SolveLookAt(StringCRC)`: atan2 world angle, axis offset, parent world rotation, reach weight, coincident guard, FK cache refresh. | [look-at-constraint.md](../../features/dia/diaik2d/look-at-constraint.md) | Not Started | StringCRC overload resolves and calls int overload. |
-| 7 | **Test utilities** — `Testing/IKTestHelpers.h`, `Testing/IKAssertions.h`: `BuildLimbSkeleton`, `BuildTestIKSolver`, `AssertBoneRotation`, `AssertEndEffectorPosition`, `AssertBoneUnchanged`. Header-only, not compiled into `DiaIK2D.vcxproj`. | [test-utilities.md](../../features/dia/diaik2d/test-utilities.md) | Not Started | |
-| 8 | **Unit tests** — Create `Cluiche/Tests/GoogleTests/IK/` with 7 test files. Register in GoogleTests.vcxproj + filters. Add `DiaIK2D.lib` + `DiaRig2D.lib` to linker deps. | All features | Not Started | Include `DiaIK2D/Testing/` via include paths. |
-| 9 | **Build verification** — Build Debug + Release x64. Run all IK tests. Fix compile/link errors. Verify all source files listed in vcxproj/filters. | All features | Not Started | |
+| 0 | **Pre-check** — Verify DiaRig2D is implemented: `Dia::Rig2D::Skeleton`, `Pose`, `BoneTransform`, `Pose::ComputeWorldTransforms()` all exist and build. | — | Done | DiaRig2D confirmed Done (2026-05-01). |
+| 1 | **Project scaffolding** — Create `Dia/DiaIK2D/` directory, `DiaIK2D.vcxproj` (static lib, x64, refs DiaCore/DiaMaths/DiaLogger/DiaRig2D), `.vcxproj.filters`, register in `Cluiche.sln` under Library folder, create `Docs/dia.ik2d.architecture.module.md` | System | Done | GUID: {F4A5B6C7-D8E9-0123-FABC-445566778899}. |
+| 2 | **IK Chain Definition** — `IKChainDef.h`: `JointLimitDef`, `IKChainDef`, `PoleVector` structs. Header-only. | [ik-chain-definition.md](../../features/dia/diaik2d/ik-chain-definition.md) | Done | |
+| 3 | **IKSolver scaffold** — `IKSolver.h` / `IKSolver.cpp`: constructor (pre-alloc all arrays), `SetRootTransform` (run full FK into `mWorldTransforms`), `RegisterChain` / `UnregisterChain` / `HasChain`, `GetSkeleton` / `GetPose`. No solver logic yet. | [ik-solver.md](../../features/dia/diaik2d/ik-solver.md) | Done | Added `GetParentWorldRot()` private helper for bone rest angle math. |
+| 4 | **Two-bone solver** — `SolveTwoBone()`: law of cosines, pole vector, joint limits clamp, reach weight (ShortestArcLerp), FK cache refresh. | [two-bone-solver.md](../../features/dia/diaik2d/two-bone-solver.md) | Done | `BoneWorldRotFromDir(dirAngle, boneRestAngle)` helper used throughout. |
+| 5 | **FABRIK solver** — `SolveFABRIK()`: iterative backward/forward passes on `mWorkingPositions`, joint limit projection per iteration, convergence check, non-convergence warning, reach weight, FK cache refresh. | [fabrik-solver.md](../../features/dia/diaik2d/fabrik-solver.md) | Done | |
+| 6 | **Look-at constraint** — `SolveLookAt(int)` + `SolveLookAt(StringCRC)`: atan2 world angle, axis offset, parent world rotation, reach weight, coincident guard, FK cache refresh. | [look-at-constraint.md](../../features/dia/diaik2d/look-at-constraint.md) | Done | |
+| 7 | **Test utilities** — `Testing/IKTestHelpers.h`, `Testing/IKAssertions.h`: `BuildLimbSkeleton`, `BuildTestIKSolver`, `AssertBoneRotation`, `AssertEndEffectorPosition`, `AssertBoneUnchanged`. Header-only, not compiled into `DiaIK2D.vcxproj`. | [test-utilities.md](../../features/dia/diaik2d/test-utilities.md) | Done | |
+| 8 | **Unit tests** — Create `Cluiche/Tests/GoogleTests/IK/` with 7 test files. Register in GoogleTests.vcxproj + filters. Add `DiaIK2D.lib` to linker deps. | All features | Done | 33/33 tests pass. |
+| 9 | **Build verification** — Build Debug + Release x64. Run all IK tests. Fix compile/link errors. Verify all source files listed in vcxproj/filters. | All features | Done | Debug + Release build clean. All 33 tests green. |
 
 ---
 
@@ -185,3 +185,9 @@ Cluiche/Tests/GoogleTests/IK/
 - `ShortestArcLerp` inline helper needed: `a + t * atan2f(sinf(b-a), cosf(b-a))`. Check DiaMaths for existing utility before implementing inline.
 - All three solvers live in a single `IKSolver.h` / `IKSolver.cpp` — no separate translation units per solver.
 - Note: DiaRig2D (dependency) is also Not Started. Implement DiaRig2D first.
+
+### 2026-05-02
+- All tasks 0–9 complete. 33/33 tests green. Debug + Release build clean.
+- Key implementation note: bone rotation in `ComputeWorldTransforms` uses full affine matrix decomposition (not just angle add). `worldRot = BoneWorldRotFromDir(dirAngle, boneRestAngle)` where `boneRestAngle = atan2(localPos.y, localPos.x)` is the critical helper for back-converting FABRIK world positions to local rotations.
+- `Skeleton::ComputeBoneLengths()` sets `length = localPosition.Magnitude()` if `length == 0.0f`; bone[0] (root) always gets `length = 0.0f`. The FABRIK solver uses `GetBone(i).length` for segments starting at i.
+- Two-bone bend direction: `elbowDirAngle = alpha - startOffset` for CCW, `alpha + startOffset` for CW. Pole vector picks whichever option has higher dot product with pole direction.
