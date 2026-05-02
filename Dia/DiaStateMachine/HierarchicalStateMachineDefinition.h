@@ -1,0 +1,63 @@
+#pragma once
+
+#include "DiaCore/CRC/StringCRC.h"
+#include "DiaCore/Containers/Arrays/DynamicArrayC.h"
+
+namespace Dia
+{
+	namespace StateMachine
+	{
+		struct HierarchicalStateDef
+		{
+			Dia::Core::StringCRC id;
+			Dia::Core::StringCRC parentId;
+			Dia::Core::StringCRC initialChildId;
+			bool hasHistory = false;
+			void(*onEnter)(void*) = nullptr;
+			void(*onExit)(void*) = nullptr;
+			void(*onUpdate)(void*, float) = nullptr;
+		};
+
+		struct HierarchicalTransitionDef
+		{
+			Dia::Core::StringCRC sourceStateId;
+			Dia::Core::StringCRC targetStateId;
+			Dia::Core::StringCRC triggerId;
+			bool(*guard)(const void*) = nullptr;
+			Dia::Core::StringCRC guardName;
+		};
+
+		class HierarchicalStateMachineBuilder;
+
+		class HierarchicalStateMachineDefinition
+		{
+		public:
+			static const unsigned int kMaxStates = 64;
+			static const unsigned int kMaxTransitions = 128;
+
+			HierarchicalStateMachineDefinition();
+			HierarchicalStateMachineDefinition(HierarchicalStateMachineDefinition&& other);
+			HierarchicalStateMachineDefinition& operator=(HierarchicalStateMachineDefinition&& other);
+
+			HierarchicalStateMachineDefinition(const HierarchicalStateMachineDefinition&) = delete;
+			HierarchicalStateMachineDefinition& operator=(const HierarchicalStateMachineDefinition&) = delete;
+
+			HierarchicalStateMachineDefinition Clone() const;
+
+			const Dia::Core::Containers::DynamicArrayC<HierarchicalStateDef, kMaxStates>& GetStates() const;
+			const Dia::Core::Containers::DynamicArrayC<HierarchicalTransitionDef, kMaxTransitions>& GetTransitions() const;
+			Dia::Core::StringCRC GetInitialStateId() const;
+
+			bool Validate(Dia::Core::Containers::DynamicArrayC<const char*, 16>& outErrors) const;
+			bool IsValid() const;
+
+		private:
+			friend class HierarchicalStateMachineBuilder;
+
+			Dia::Core::Containers::DynamicArrayC<HierarchicalStateDef, kMaxStates> mStates;
+			Dia::Core::Containers::DynamicArrayC<HierarchicalTransitionDef, kMaxTransitions> mTransitions;
+			Dia::Core::StringCRC mInitialStateId;
+			bool mIsValid = false;
+		};
+	}
+}

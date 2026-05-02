@@ -91,6 +91,9 @@
     <Filter Include="SoftBody2D">
       <UniqueIdentifier>{SB2D0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="StateMachine">
+      <UniqueIdentifier>{SMCH0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -560,6 +563,9 @@
     <ClCompile Include="RigidBody2D\TestTriggerVolumes.cpp">
       <Filter>RigidBody2D</Filter>
     </ClCompile>
+    <ClCompile Include="RigidBody2D\TestRigidBodyGolden.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
     <!-- DiaLogger -->
     <ClCompile Include="DiaLogger\TestLogLevel.cpp">
       <Filter>DiaLogger</Filter>
@@ -622,6 +628,19 @@
     </ClCompile>
     <ClCompile Include="SoftBody2D\TestSoftBodyRegression.cpp">
       <Filter>SoftBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="SoftBody2D\TestSoftBodyGolden.cpp">
+      <Filter>SoftBody2D</Filter>
+    </ClCompile>
+    <!-- StateMachine -->
+    <ClCompile Include="StateMachine\TestFlatStateMachine.cpp">
+      <Filter>StateMachine</Filter>
+    </ClCompile>
+    <ClCompile Include="StateMachine\TestHierarchicalStateMachine.cpp">
+      <Filter>StateMachine</Filter>
+    </ClCompile>
+    <ClCompile Include="StateMachine\TestPushdownAutomaton.cpp">
+      <Filter>StateMachine</Filter>
     </ClCompile>
     <!-- GoogleTest -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">
