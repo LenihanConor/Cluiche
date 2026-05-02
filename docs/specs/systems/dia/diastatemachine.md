@@ -422,15 +422,15 @@ namespace Dia::StateMachine {
 
 | Feature | Description | Spec | Status |
 |---------|-------------|------|--------|
-| Inspection Interface | `IStateMachineInspectable` shared interface for querying state, transitions, topology, and history from any machine type. Foundation for all tooling. | [inspection-interface.md](../../features/dia/diastatemachine/inspection-interface.md) | Approved |
-| Flat State Machine | `FlatStateMachine<TContext>` — lightweight FSM with states, event-triggered transitions, guard predicates, entry/exit/update actions. Cache-friendly for high-volume use. | [flat-state-machine.md](../../features/dia/diastatemachine/flat-state-machine.md) | Approved |
-| Hierarchical State Machine | `HierarchicalStateMachine<TContext>` — nested states with inherited transitions, entry/exit propagation through hierarchy, shallow history. | [hierarchical-state-machine.md](../../features/dia/diastatemachine/hierarchical-state-machine.md) | Approved |
-| Pushdown Automaton | `PushdownAutomaton<TContext>` — stack-based push/pop state machine for interrupt-and-resume patterns. Bounded stack depth. | [pushdown-automaton.md](../../features/dia/diastatemachine/pushdown-automaton.md) | Approved |
-| State Machine Builder | `StateMachineBuilder`, `HierarchicalStateMachineBuilder`, and `PushdownAutomatonBuilder` — fluent APIs for constructing machine definitions in code. Produces `*Definition` objects. | [state-machine-builder.md](../../features/dia/diastatemachine/state-machine-builder.md) | Approved |
-| Data-Driven Definitions | Load `StateMachineDefinition` and `HierarchicalStateMachineDefinition` from JSON files. Validation (reachability, orphan states, duplicate IDs). Enables designer iteration without recompilation. | [data-driven-definitions.md](../../features/dia/diastatemachine/data-driven-definitions.md) | Approved |
-| State Machine Component | `StateMachineComponent` (`IComponent`) wrapper for entity integration via `ComponentFactoryRegistry`. Component owns the attached machine. | [state-machine-component.md](../../features/dia/diastatemachine/state-machine-component.md) | Approved |
-| Transition Logging & Tracing | Dedicated `StateMachine` DiaLogger channel. `StateMachineTracer` wrapper with configurable verbosity (`kTransitionsOnly` / `kTransitionsAndGuards` / `kFull`), rate limiting. NDJSON output for post-hoc analysis. | [transition-logging.md](../../features/dia/diastatemachine/transition-logging.md) | Approved |
-| Test Utilities | `DiaStateMachine/Testing/` — `AssertInState`, `FireAndExpect`, `AssertTransitionSequence`, mock context helpers. Ships with library; consumer opt-in via include. | [test-utilities.md](../../features/dia/diastatemachine/test-utilities.md) | Approved |
+| Inspection Interface | `IStateMachineInspectable` shared interface for querying state, transitions, topology, and history from any machine type. Foundation for all tooling. | [inspection-interface.md](../../features/dia/diastatemachine/inspection-interface.md) | Done |
+| Flat State Machine | `FlatStateMachine<TContext>` — lightweight FSM with states, event-triggered transitions, guard predicates, entry/exit/update actions. Cache-friendly for high-volume use. | [flat-state-machine.md](../../features/dia/diastatemachine/flat-state-machine.md) | Done |
+| Hierarchical State Machine | `HierarchicalStateMachine<TContext>` — nested states with inherited transitions, entry/exit propagation through hierarchy, shallow history. | [hierarchical-state-machine.md](../../features/dia/diastatemachine/hierarchical-state-machine.md) | Done |
+| Pushdown Automaton | `PushdownAutomaton<TContext>` — stack-based push/pop state machine for interrupt-and-resume patterns. Bounded stack depth. | [pushdown-automaton.md](../../features/dia/diastatemachine/pushdown-automaton.md) | Done |
+| State Machine Builder | `StateMachineBuilder`, `HierarchicalStateMachineBuilder`, and `PushdownAutomatonBuilder` — fluent APIs for constructing machine definitions in code. Produces `*Definition` objects. | [state-machine-builder.md](../../features/dia/diastatemachine/state-machine-builder.md) | Done |
+| Data-Driven Definitions | Load `StateMachineDefinition` and `HierarchicalStateMachineDefinition` from JSON files. Validation (reachability, orphan states, duplicate IDs). Enables designer iteration without recompilation. | [data-driven-definitions.md](../../features/dia/diastatemachine/data-driven-definitions.md) | Done |
+| State Machine Component | `StateMachineComponent` (`IComponent`) wrapper for entity integration via `ComponentFactoryRegistry`. Component owns the attached machine. | [state-machine-component.md](../../features/dia/diastatemachine/state-machine-component.md) | Done |
+| Transition Logging & Tracing | Dedicated `StateMachine` DiaLogger channel. `StateMachineTracer` wrapper with configurable verbosity (`kTransitionsOnly` / `kTransitionsAndGuards` / `kFull`), rate limiting. NDJSON output for post-hoc analysis. | [transition-logging.md](../../features/dia/diastatemachine/transition-logging.md) | Done |
+| Test Utilities | `DiaStateMachine/Testing/` — `AssertInState`, `FireAndExpect`, `AssertTransitionSequence`, mock context helpers. Ships with library; consumer opt-in via include. | [test-utilities.md](../../features/dia/diastatemachine/test-utilities.md) | Done |
 
 ## Dependencies on Other Systems
 
@@ -532,4 +532,4 @@ namespace Dia::StateMachine {
 
 ## Status
 
-`Approved` — System spec approved 2026-05-01. All 9 feature specs approved 2026-05-01. Ready for implementation.
+`Done` — All 9 features implemented and done 2026-05-01. 29 tests passing (12 flat + 9 HSM + 8 PDA). JSON data-driven loading removed; CallbackRegistry ships, consumers own JSON parsing.\n\n**Plan:** [diastatemachine.plan.md](diastatemachine.plan.md)

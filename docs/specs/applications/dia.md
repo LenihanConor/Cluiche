@@ -36,7 +36,9 @@ Dia is the game engine application that provides all shared engine infrastructur
 | DiaStageLoader | Runtime asset loading — Stage-based loading, Bundle resolution, typed asset access from built output | TBD |
 | DiaAssetBrowserEditor | Editor UI for asset browsing, inspection, relationship graph navigation, validation status display | TBD |
 | DiaStateMachine | Generic state machine library — dual flat FSM + hierarchical state machine, pushdown automaton, component wrapper, transition logging/tracing, shared inspection interface | [diastatemachine.md](../systems/dia/diastatemachine.md) |
-| DiaRig | 2D skeletal rig system — bone hierarchy, forward kinematics, pose representation/blending, JSON skeleton definitions, skeleton component, debug renderer | [diarig.md](../systems/dia/diarig.md) |
+| DiaRig2D | 2D skeletal rig system — bone hierarchy, forward kinematics, pose representation/blending, JSON skeleton definitions, skeleton component, debug renderer | [diarig2d.md](../systems/dia/diarig2d.md) |
+| DiaIK2D | Inverse kinematics — analytic two-bone solver, FABRIK N-joint solver, look-at constraint; post-process pass on DiaRig2D skeletons | [diaik2d.md](../systems/dia/diaik2d.md) |
+| DiaAnimation2D | Animation playback and blending — damped spring chains, keyframe clip player, pose blend stack, procedural locomotion oscillator (deferred) | [diaanimation2d.md](../systems/dia/diaanimation2d.md) |
 | DiaCore | Foundation library (containers, type system, memory, logging, CRC) | TBD |
 | DiaMaths | Math library (vectors, matrices, core math utilities — pure linear algebra only after DiaGeometry2D migration) | TBD |
 | DiaGraphics | Graphics abstraction layer (ICanvas, Frame, rendering) | TBD |

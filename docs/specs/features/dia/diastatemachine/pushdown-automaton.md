@@ -8,7 +8,7 @@
 | Application | @docs/specs/applications/dia.md | - |
 | System | @docs/specs/systems/dia/diastatemachine.md | **pushdown-automaton** |
 
-**Status:** `Approved`
+**Status:** `Done`
 
 ---
 

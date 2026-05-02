@@ -8,7 +8,7 @@
 | Application | @docs/specs/applications/dia.md | - |
 | System | @docs/specs/systems/dia/diastatemachine.md | **state-machine-builder** |
 
-**Status:** `Approved`
+**Status:** `Done`
 
 ---
 

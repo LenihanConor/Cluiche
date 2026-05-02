@@ -239,6 +239,14 @@ Plans live alongside their spec as `<spec-name>.plan.md`. For system-level plans
 - `/spec-review` - Review any spec and populate AI review questions
 - `/spec-trace` - Trace a feature's full lineage up to platform
 
+### Test Commands
+
+- `/gen-tests <target>` - Generate comprehensive tests for a Dia module or component
+  - Reads public API headers, checks test-completeness-registry, proposes all applicable test types (unit, stress, golden-value, invariant, determinism, conservation, integration)
+  - Creates test files, updates vcxproj, builds, runs, and updates the registry
+  - Options: `--type=<type>` to limit test types, `--dry-run` to preview, `--update-registry` to refresh counts only
+- `/gtest [options]` - Build and run GoogleTest suite with filtering and failure analysis
+
 ## Development Workflow
 
 ### Adding a New Module
