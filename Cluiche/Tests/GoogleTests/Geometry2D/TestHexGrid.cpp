@@ -498,15 +498,6 @@ TEST_F(Geometry2D_HexGrid, QueryKNearest_EmptyGrid_ReturnsNothing)
 // GetNeighbours — grid boundary
 // ---------------------------------------------------------------------------
 
-TEST_F(Geometry2D_HexGrid, GetNeighbours_CornerHex_FewerThan6)
-{
-    // The hex at the bottom-left corner has neighbours that fall outside the grid
-    const HexCoord corner = grid->WorldToHex(Vector2D(0.5f, 0.5f));
-    Dia::Core::Containers::DynamicArrayC<HexCoord, 6> neighbours;
-    grid->GetNeighbours(corner, neighbours);
-    EXPECT_LT(neighbours.Size(), 6u);
-}
-
 // ---------------------------------------------------------------------------
 // GetRing — count
 // ---------------------------------------------------------------------------

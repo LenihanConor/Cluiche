@@ -42,15 +42,48 @@ HexGrid<T, MaxObjects>::HexGrid(const Def& def)
     mHexWidth  = 1.7320508075688772f * def.hexRadius; // sqrt(3) * R
     mHexHeight = 2.0f * def.hexRadius;
 
-    // Column spacing = mHexWidth, row spacing = 0.75 * mHexHeight
-    const float colSpacing = mHexWidth;
-    const float rowSpacing = 0.75f * mHexHeight;
+    // Helper: raw axial coord from a local (lx, ly) offset from bottom-left
+    auto rawAxial = [&](float lx, float ly, int& q, int& r)
+    {
+        const float fq = (lx * 1.7320508075688772f / 3.0f - ly / 3.0f) / def.hexRadius;
+        const float fr = ly * 2.0f / (3.0f * def.hexRadius);
+        float fs = -fq - fr;
+        int qi = static_cast<int>(std::round(fq));
+        int ri = static_cast<int>(std::round(fr));
+        int si = static_cast<int>(std::round(fs));
+        const float dq = std::abs(static_cast<float>(qi) - fq);
+        const float dr = std::abs(static_cast<float>(ri) - fr);
+        const float ds = std::abs(static_cast<float>(si) - fs);
+        if (dq > dr && dq > ds)     qi = -ri - si;
+        else if (dr > ds)           ri = -qi - si;
+        q = qi; r = ri;
+    };
 
-    const float worldWidth  = def.worldBounds.GetTopRight().x - def.worldBounds.GetBottomLeft().x;
-    const float worldHeight = def.worldBounds.GetTopRight().y - def.worldBounds.GetBottomLeft().y;
+    const float blX = def.worldBounds.GetBottomLeft().x;
+    const float blY = def.worldBounds.GetBottomLeft().y;
+    const float trX = def.worldBounds.GetTopRight().x;
+    const float trY = def.worldBounds.GetTopRight().y;
 
-    mColCount = (worldWidth  > 0.0f) ? static_cast<int>(std::ceil(worldWidth  / colSpacing)) + 1 : 1;
-    mRowCount = (worldHeight > 0.0f) ? static_cast<int>(std::ceil(worldHeight / rowSpacing)) + 1 : 1;
+    // Sample all four corners to find the true axial extent
+    int q0, r0, q1, r1, q2, r2, q3, r3;
+    rawAxial(0.0f,           0.0f,           q0, r0); // bottom-left
+    rawAxial(trX - blX,      0.0f,           q1, r1); // bottom-right
+    rawAxial(0.0f,           trY - blY,      q2, r2); // top-left
+    rawAxial(trX - blX,      trY - blY,      q3, r3); // top-right
+
+    const int minQ = q0 < q1 ? (q0 < q2 ? (q0 < q3 ? q0 : q3) : (q2 < q3 ? q2 : q3))
+                              : (q1 < q2 ? (q1 < q3 ? q1 : q3) : (q2 < q3 ? q2 : q3));
+    const int maxQ = q0 > q1 ? (q0 > q2 ? (q0 > q3 ? q0 : q3) : (q2 > q3 ? q2 : q3))
+                              : (q1 > q2 ? (q1 > q3 ? q1 : q3) : (q2 > q3 ? q2 : q3));
+    const int minR = r0 < r1 ? (r0 < r2 ? (r0 < r3 ? r0 : r3) : (r2 < r3 ? r2 : r3))
+                              : (r1 < r2 ? (r1 < r3 ? r1 : r3) : (r2 < r3 ? r2 : r3));
+    const int maxR = r0 > r1 ? (r0 > r2 ? (r0 > r3 ? r0 : r3) : (r2 > r3 ? r2 : r3))
+                              : (r1 > r2 ? (r1 > r3 ? r1 : r3) : (r2 > r3 ? r2 : r3));
+
+    mMinQ     = minQ - 1; // one-cell margin so boundary hexes are valid
+    mMinR     = minR - 1;
+    mColCount = maxQ - minQ + 3;
+    mRowCount = maxR - minR + 3;
     if (mColCount < 1) mColCount = 1;
     if (mRowCount < 1) mRowCount = 1;
 
@@ -511,21 +544,19 @@ HexCoord HexGrid<T, MaxObjects>::WorldToHex(const Dia::Maths::Vector2D& worldPos
     if (dq > dr && dq > ds)      q = -r - s;
     else if (dr > ds)            r = -q - s;
 
-    return { q + mMinQ, r + mMinR };
+    return { q, r };
 }
 
 template<typename T, unsigned int MaxObjects>
 Dia::Maths::Vector2D HexGrid<T, MaxObjects>::HexToWorld(HexCoord hex) const
 {
+    // Standard axial-to-Cartesian: raw (q,r)=(0,0) maps to the world bottom-left.
     const float blX = mWorldBounds.GetBottomLeft().x;
     const float blY = mWorldBounds.GetBottomLeft().y;
 
-    const int lq = hex.q - mMinQ;
-    const int lr = hex.r - mMinR;
-
-    const float x = blX + mHexRadius * (1.7320508075688772f * static_cast<float>(lq)
-                                       + 1.7320508075688772f / 2.0f * static_cast<float>(lr));
-    const float y = blY + mHexRadius * (1.5f * static_cast<float>(lr));
+    const float x = blX + mHexRadius * (1.7320508075688772f * static_cast<float>(hex.q)
+                                       + 1.7320508075688772f / 2.0f * static_cast<float>(hex.r));
+    const float y = blY + mHexRadius * (1.5f * static_cast<float>(hex.r));
     return Dia::Maths::Vector2D(x, y);
 }
 
