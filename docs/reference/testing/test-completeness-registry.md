@@ -1,6 +1,6 @@
 # Test Completeness Registry
 
-**Last Updated:** 2026-05-01 (DiaStateMachine added)
+**Last Updated:** 2026-05-01 (DiaStateMachine gaps filled)
 
 Single source of truth for test coverage across all Dia modules. Updated alongside test commits.
 
@@ -16,8 +16,8 @@ Single source of truth for test coverage across all Dia modules. Updated alongsi
 
 | Metric | Count |
 |--------|-------|
-| Test files | 170 |
-| Total tests (TEST + TEST_F + TEST_P) | 2,891 |
+| Test files | 171 |
+| Total tests (TEST + TEST_F + TEST_P) | 2,908 |
 | Death tests (EXPECT_DEATH / ASSERT_DEATH) | 128 |
 | Float assertions (EXPECT_NEAR / EXPECT_FLOAT_EQ) | 1,178 |
 | Fixtures (TEST_F) | ~504 |
@@ -172,15 +172,17 @@ Gap markers: **ZERO** = no tests, **LOW** = under-tested relative to API surface
 
 | Component | Tests | Files | Unit | Stress/Boundary | Golden/Regression | Notes |
 |-----------|-------|-------|------|-----------------|-------------------|-------|
-| FlatStateMachine | 20 | TestFlatStateMachine.cpp, TestStateMachineExtended.cpp | 18 | 2 (stress) | 0 | GOOD — self-transition, guards, listener, wildcard |
-| HierarchicalStateMachine | 14 | TestHierarchicalStateMachine.cpp, TestStateMachineExtended.cpp | 14 | 0 | 0 | GOOD — LCA, history, enter/exit order, inheritance |
+| FlatStateMachine | 21 | TestFlatStateMachine.cpp, TestStateMachineExtended.cpp, TestStateMachineGaps.cpp | 19 | 2 (stress) | 0 | GOOD — self-transition, guards, listener, wildcard, per-frame counter reset |
+| HierarchicalStateMachine | 16 | TestHierarchicalStateMachine.cpp, TestStateMachineExtended.cpp, TestStateMachineGaps.cpp | 16 | 0 | 0 | GOOD — LCA, history, enter/exit order, 3-level cross-branch, active path |
 | PushdownAutomaton | 15 | TestPushdownAutomaton.cpp, TestStateMachineExtended.cpp | 15 | 0 | 0 | GOOD — push/pop, pause/resume, listener, stack inspection |
 | CallbackRegistry | 10 | TestCallbackRegistry.cpp | 10 | 0 | 0 | GOOD — register/find/has for all 3 types |
 | StateMachineComponent | 5 | TestCallbackRegistry.cpp | 5 | 0 | 0 | GOOD — component ID, attach/get, typed cast |
-| StateMachineTracer | 7 | TestStateMachineTracer.cpp | 5 | 2 (rate-limiter boundary) | 0 | GOOD — verbosity, enable/disable, rate limit, reset |
+| StateMachineTracer | 8 | TestStateMachineTracer.cpp, TestStateMachineGaps.cpp | 6 | 2 (rate-limiter boundary) | 0 | GOOD — verbosity, enable/disable, rate limit, reset, kFull no-crash |
+| StateMachineDefinition | 3 | TestStateMachineGaps.cpp | 3 | 0 | 0 | GOOD — Clone independent copy, IsValid |
+| TransitionRecorder | 10 | TestStateMachineGaps.cpp | 10 | 0 | 0 | GOOD — all 5 callback types, sequence order, clear, FSM integration |
 | IStateMachineInspectable | covered via above | — | — | — | — | Interface tested through all concrete machines |
 
-**StateMachine totals: 6 files, 71 tests** | JSON data-driven loading intentionally excluded (consumers own parsing)
+**StateMachine totals: 7 files, 88 tests** | JSON data-driven loading intentionally excluded (consumers own parsing)
 
 ---
 

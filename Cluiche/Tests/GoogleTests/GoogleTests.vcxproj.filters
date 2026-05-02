@@ -651,6 +651,9 @@
     <ClCompile Include="StateMachine\TestStateMachineTracer.cpp">
       <Filter>StateMachine</Filter>
     </ClCompile>
+    <ClCompile Include="StateMachine\TestStateMachineGaps.cpp">
+      <Filter>StateMachine</Filter>
+    </ClCompile>
     <!-- GoogleTest -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">
       <Filter>GoogleTest</Filter>
