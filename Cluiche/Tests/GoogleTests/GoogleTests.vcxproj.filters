@@ -569,6 +569,12 @@
     <ClCompile Include="Geometry2D\TestEdgeCases.cpp">
       <Filter>Geometry2D</Filter>
     </ClCompile>
+    <ClCompile Include="Geometry2D\TestBVH.cpp">
+      <Filter>Geometry2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry2D\TestQuadtree.cpp">
+      <Filter>Geometry2D</Filter>
+    </ClCompile>
     <!-- RigidBody2D -->
     <ClCompile Include="RigidBody2D\TestPhysicsBody.cpp">
       <Filter>RigidBody2D</Filter>
@@ -688,6 +694,9 @@
       <Filter>SoftBody2D</Filter>
     </ClCompile>
     <ClCompile Include="SoftBody2D\TestSoftBodyConservation.cpp">
+      <Filter>SoftBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="SoftBody2D\TestSoftBodyDeterminism.cpp">
       <Filter>SoftBody2D</Filter>
     </ClCompile>
     <!-- StateMachine -->

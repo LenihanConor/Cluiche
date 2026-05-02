@@ -263,6 +263,8 @@
     <ClCompile Include="Geometry2D\TestSpatialGrid.cpp" />
     <ClCompile Include="Geometry2D\TestHandle.cpp" />
     <ClCompile Include="Geometry2D\TestEdgeCases.cpp" />
+    <ClCompile Include="Geometry2D\TestBVH.cpp" />
+    <ClCompile Include="Geometry2D\TestQuadtree.cpp" />
     <!-- RigidBody2D -->
     <ClCompile Include="RigidBody2D\TestPhysicsBody.cpp" />
     <ClCompile Include="RigidBody2D\TestForceAndIntegration.cpp" />
@@ -306,6 +308,7 @@
     <ClCompile Include="SoftBody2D\TestSoftBodyRegression.cpp" />
     <ClCompile Include="SoftBody2D\TestSoftBodyGolden.cpp" />
     <ClCompile Include="SoftBody2D\TestSoftBodyConservation.cpp" />
+    <ClCompile Include="SoftBody2D\TestSoftBodyDeterminism.cpp" />
     <!-- StateMachine -->
     <ClCompile Include="StateMachine\TestFlatStateMachine.cpp" />
     <ClCompile Include="StateMachine\TestHierarchicalStateMachine.cpp" />
