@@ -20,6 +20,8 @@ public:
     bool InvolvesBody(const RigidBody2D* body) const override;
     RigidBody2D* GetBodyA() const override { return mBodyA; }
     RigidBody2D* GetBodyB() const override { return mBodyB; }
+    Dia::Maths::Vector2D GetWorldAnchorA() const override;
+    Dia::Maths::Vector2D GetWorldAnchorB() const override;
 
 private:
     RigidBody2D*         mBodyA;

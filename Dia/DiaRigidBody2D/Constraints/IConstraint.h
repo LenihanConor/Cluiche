@@ -1,5 +1,7 @@
 #pragma once
 
+#include "DiaMaths/Vector/Vector2D.h"
+
 namespace Dia::RigidBody2D {
 
 class RigidBody2D;
@@ -13,6 +15,9 @@ public:
     virtual bool InvolvesBody(const RigidBody2D* body) const = 0;
     virtual RigidBody2D* GetBodyA() const = 0;
     virtual RigidBody2D* GetBodyB() const = 0;
+
+    virtual Dia::Maths::Vector2D GetWorldAnchorA() const = 0;
+    virtual Dia::Maths::Vector2D GetWorldAnchorB() const = 0;
 };
 
 } // namespace Dia::RigidBody2D

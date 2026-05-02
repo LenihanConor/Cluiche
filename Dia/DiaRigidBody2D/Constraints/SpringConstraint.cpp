@@ -120,4 +120,18 @@ bool SpringConstraint::InvolvesBody(const RigidBody2D* body) const
     return body == mBodyA || body == mBodyB;
 }
 
+Dia::Maths::Vector2D SpringConstraint::GetWorldAnchorA() const
+{
+    if (!mBodyA->GetTransform()) return mLocalAnchorA;
+    const float rot = mBodyA->GetTransform()->GetLocalRotation().AsRadians();
+    return mBodyA->GetTransform()->GetWorldPosition() + RotateVec(mLocalAnchorA, rot);
+}
+
+Dia::Maths::Vector2D SpringConstraint::GetWorldAnchorB() const
+{
+    if (!mBodyB->GetTransform()) return mLocalAnchorB;
+    const float rot = mBodyB->GetTransform()->GetLocalRotation().AsRadians();
+    return mBodyB->GetTransform()->GetWorldPosition() + RotateVec(mLocalAnchorB, rot);
+}
+
 } // namespace Dia::RigidBody2D

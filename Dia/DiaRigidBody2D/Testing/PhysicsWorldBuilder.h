@@ -3,6 +3,7 @@
 #define DIA_RIGIDBODY2D_TESTING_PHYSICSWORLDBUILDER_H
 
 #include <DiaRigidBody2D/World/PhysicsWorld.h>
+#include <cstdio>
 #include <DiaRigidBody2D/Bodies/PointBody2D.h>
 #include <DiaRigidBody2D/Bodies/RigidBody2D.h>
 #include <DiaGeometry2D/Spatial/ISpatialStructure.h>
@@ -83,7 +84,8 @@ public:
     PointBody2D* MakePoint(float x, float y, float mass = 1.0f, bool allowSleep = false)
     {
         PointBodyDef def;
-        def.id            = Dia::Core::StringCRC(mNext + 1000u);
+        char idBuf[16]; std::snprintf(idBuf, sizeof(idBuf), "pt%d", mNext);
+        def.id            = Dia::Core::StringCRC(idBuf);
         def.type          = BodyType::kDynamic;
         def.mass          = mass;
         def.allowSleeping = allowSleep;
@@ -115,7 +117,8 @@ private:
         s.transform.SetLocalPosition(Maths::Vector2D(x, y));
 
         RigidBodyDef def;
-        def.id            = Dia::Core::StringCRC(mNext + 2000u);
+        char idBuf[16]; std::snprintf(idBuf, sizeof(idBuf), "rb%d", mNext);
+        def.id            = Dia::Core::StringCRC(idBuf);
         def.type          = type;
         def.mass          = mass;
         def.allowSleeping = false;
