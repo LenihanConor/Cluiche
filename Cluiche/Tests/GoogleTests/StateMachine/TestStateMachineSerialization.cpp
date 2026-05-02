@@ -6,7 +6,6 @@
 #include <DiaStateMachine/HierarchicalStateMachineBuilder.h>
 #include <DiaStateMachine/PushdownAutomatonDefinition.h>
 #include <DiaStateMachine/PushdownAutomatonBuilder.h>
-#include <DiaStateMachine/StateMachineMetadata.h>
 #include <DiaStateMachine/IStateMachineSerializer.h>
 #include <DiaStateMachine/JsonStateMachineSerializer.h>
 #include <DiaStateMachine/CallbackRegistry.h>
@@ -35,6 +34,7 @@ static CallbackRegistry MakeRegistry()
 	reg.RegisterGuard(Dia::Core::StringCRC("GuardAB"),    GuardAB);
 	reg.RegisterAction(Dia::Core::StringCRC("OnPauseA"),  OnPauseA);
 	reg.RegisterAction(Dia::Core::StringCRC("OnResumeA"), OnResumeA);
+	reg.Finalize();
 	return reg;
 }
 
@@ -198,6 +198,7 @@ TEST(JsonStateMachineSerializer, FlatVersionMismatchReturnsFalse)
 	StateMachineDefinition def;
 	JsonStateMachineSerializer serializer;
 	EXPECT_FALSE(serializer.Load(def, reg, badJson));
+
 }
 
 TEST(JsonStateMachineSerializer, FlatTypeMismatchReturnsFalse)
@@ -320,6 +321,7 @@ TEST(JsonStateMachineSerializer, MetadataAllTypesRoundTrip)
 	ASSERT_TRUE(serializer.Save(original, buffer, sizeof(buffer)));
 
 	CallbackRegistry reg;
+	reg.Finalize();
 	StateMachineDefinition loaded;
 	ASSERT_TRUE(serializer.Load(loaded, reg, buffer));
 
@@ -361,6 +363,7 @@ TEST(JsonStateMachineSerializer, AnyStateSourceRoundTrip)
 	ASSERT_TRUE(serializer.Save(original, buffer, sizeof(buffer)));
 
 	CallbackRegistry reg;
+	reg.Finalize();
 	StateMachineDefinition loaded;
 	ASSERT_TRUE(serializer.Load(loaded, reg, buffer));
 
@@ -490,6 +493,7 @@ TEST(JsonStateMachineSerializer, MalformedJsonReturnsFalse)
 {
 	const char* garbage = "not json at all }{{{";
 	CallbackRegistry reg;
+	reg.Finalize();
 	StateMachineDefinition def;
 	JsonStateMachineSerializer serializer;
 	EXPECT_FALSE(serializer.Load(def, reg, garbage));
@@ -514,6 +518,7 @@ TEST(JsonStateMachineSerializer, TopologyOnlyNoCallbacksLoadsClean)
 	ASSERT_TRUE(serializer.Save(original, buffer, sizeof(buffer)));
 
 	CallbackRegistry reg;  // empty — no callbacks registered
+	reg.Finalize();
 	StateMachineDefinition loaded;
 	ASSERT_TRUE(serializer.Load(loaded, reg, buffer));
 

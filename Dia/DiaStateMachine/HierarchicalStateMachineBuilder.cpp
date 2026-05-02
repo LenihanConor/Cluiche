@@ -1,5 +1,4 @@
 #include "DiaStateMachine/HierarchicalStateMachineBuilder.h"
-#include "DiaStateMachine/StateMachineMetadata.h"
 #include "DiaCore/Core/Assert.h"
 
 namespace Dia
@@ -80,14 +79,14 @@ namespace Dia
 			Dia::Core::StringCRC key, const MetadataValue& value)
 		{
 			DIA_ASSERT(mCurrentStateIndex >= 0, "No current state");
-			Dia::StateMachine::SetMetadata(mDefinition.mStates[mCurrentStateIndex].metadata, key, value);
+			Dia::Serializer::SetMetadata(mDefinition.mStates[mCurrentStateIndex].metadata, key, value);
 			return *this;
 		}
 
 		HierarchicalStateMachineBuilder& HierarchicalStateMachineBuilder::MachineMetadata(
 			Dia::Core::StringCRC key, const MetadataValue& value)
 		{
-			Dia::StateMachine::SetMetadata(mDefinition.mMetadata, key, value);
+			Dia::Serializer::SetMetadata(mDefinition.mMetadata, key, value);
 			return *this;
 		}
 

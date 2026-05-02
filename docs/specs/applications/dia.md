@@ -35,6 +35,7 @@ Dia is the game engine application that provides all shared engine infrastructur
 | DiaAssetPipeline | Build-time asset pipeline — discover, validate, transform, deploy raw assets to built output; NDJSON logging; DiaAPI commands | TBD |
 | DiaStageLoader | Runtime asset loading — Stage-based loading, Bundle resolution, typed asset access from built output | TBD |
 | DiaAssetBrowserEditor | Editor UI for asset browsing, inspection, relationship graph navigation, validation status display | TBD |
+| DiaSerializer | Shared serialization primitives — `MetadataValue`/`MetadataArray`, `SerializeResult`, `ISerializer` interface (version, migration query, file I/O helpers), `JsonMetadataHelpers`. Foundation for all domain serializers. | [diaserializer.md](../systems/dia/diaserializer.md) |
 | DiaStateMachine | Generic state machine library — dual flat FSM + hierarchical state machine, pushdown automaton, component wrapper, transition logging/tracing, shared inspection interface | [diastatemachine.md](../systems/dia/diastatemachine.md) |
 | DiaRig2D | 2D skeletal rig system — bone hierarchy, forward kinematics, pose representation/blending, JSON skeleton definitions, skeleton component, debug renderer | [diarig2d.md](../systems/dia/diarig2d.md) |
 | DiaIK2D | Inverse kinematics — analytic two-bone solver, FABRIK N-joint solver, look-at constraint; post-process pass on DiaRig2D skeletons | [diaik2d.md](../systems/dia/diaik2d.md) |

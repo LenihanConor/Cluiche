@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include <DiaRig2D/SkeletonJson.h>
+#include <DiaRig2D/SkeletonJsonSerializer.h>
 
 using namespace Dia::Rig2D;
 
@@ -55,7 +55,7 @@ static const char* kMalformedJson = R"({ not valid json at all)";
 
 TEST(Rig2D_SkeletonJson, Load_ValidChain)
 {
-	JsonSkeletonLoader loader;
+	JsonSkeletonSerializer loader;
 	SkeletonDef def;
 	ASSERT_TRUE(loader.Load(kValidChain3, def));
 
@@ -68,7 +68,7 @@ TEST(Rig2D_SkeletonJson, Load_ValidChain)
 
 TEST(Rig2D_SkeletonJson, Load_NameParentResolution)
 {
-	JsonSkeletonLoader loader;
+	JsonSkeletonSerializer loader;
 	SkeletonDef def;
 	ASSERT_TRUE(loader.Load(kValidChain3, def));
 
@@ -78,7 +78,7 @@ TEST(Rig2D_SkeletonJson, Load_NameParentResolution)
 
 TEST(Rig2D_SkeletonJson, Load_DefaultRotationAndScale)
 {
-	JsonSkeletonLoader loader;
+	JsonSkeletonSerializer loader;
 	SkeletonDef def;
 	ASSERT_TRUE(loader.Load(kValidWithDefaults, def));
 
@@ -89,7 +89,7 @@ TEST(Rig2D_SkeletonJson, Load_DefaultRotationAndScale)
 
 TEST(Rig2D_SkeletonJson, Load_WithMetadata)
 {
-	JsonSkeletonLoader loader;
+	JsonSkeletonSerializer loader;
 	SkeletonDef def;
 	ASSERT_TRUE(loader.Load(kValidWithMetadata, def));
 
@@ -109,28 +109,28 @@ TEST(Rig2D_SkeletonJson, Load_WithMetadata)
 
 TEST(Rig2D_SkeletonJson, Load_InvalidParent_ReturnsFalse)
 {
-	JsonSkeletonLoader loader;
+	JsonSkeletonSerializer loader;
 	SkeletonDef def;
 	EXPECT_FALSE(loader.Load(kInvalidParent, def));
 }
 
 TEST(Rig2D_SkeletonJson, Load_MissingPosition_ReturnsFalse)
 {
-	JsonSkeletonLoader loader;
+	JsonSkeletonSerializer loader;
 	SkeletonDef def;
 	EXPECT_FALSE(loader.Load(kMissingPosition, def));
 }
 
 TEST(Rig2D_SkeletonJson, Load_MalformedJson_ReturnsFalse)
 {
-	JsonSkeletonLoader loader;
+	JsonSkeletonSerializer loader;
 	SkeletonDef def;
 	EXPECT_FALSE(loader.Load(kMalformedJson, def));
 }
 
 TEST(Rig2D_SkeletonJson, SaveAndRoundTrip)
 {
-	JsonSkeletonLoader loader;
+	JsonSkeletonSerializer loader;
 	SkeletonDef def;
 	ASSERT_TRUE(loader.Load(kValidChain3, def));
 
@@ -154,7 +154,7 @@ TEST(Rig2D_SkeletonJson, SaveAndRoundTrip)
 
 TEST(Rig2D_SkeletonJson, Save_MetadataRoundTrip)
 {
-	JsonSkeletonLoader loader;
+	JsonSkeletonSerializer loader;
 	SkeletonDef def;
 	ASSERT_TRUE(loader.Load(kValidWithMetadata, def));
 
@@ -171,7 +171,7 @@ TEST(Rig2D_SkeletonJson, Save_MetadataRoundTrip)
 
 TEST(Rig2D_SkeletonJson, Save_ParentSerializedAsName)
 {
-	JsonSkeletonLoader loader;
+	JsonSkeletonSerializer loader;
 	SkeletonDef def;
 	ASSERT_TRUE(loader.Load(kValidChain3, def));
 

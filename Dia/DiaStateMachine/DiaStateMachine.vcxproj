@@ -62,7 +62,6 @@
     <ClInclude Include="JsonStateMachineSerializer.h" />
     <ClInclude Include="StateMachineDefinition.h" />
     <ClInclude Include="StateMachineBuilder.h" />
-    <ClInclude Include="StateMachineMetadata.h" />
     <ClInclude Include="FlatStateMachine.h" />
     <ClInclude Include="HierarchicalStateMachineDefinition.h" />
     <ClInclude Include="HierarchicalStateMachineBuilder.h" />
@@ -98,6 +97,10 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaLogger\DiaLogger.vcxproj">
       <Project>{7a8b9c0d-e1f2-3456-7890-abcdef012345}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaSerializer\DiaSerializer.vcxproj">
+      <Project>{b0c1d2e3-f4a5-6789-bcde-f01234567891}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

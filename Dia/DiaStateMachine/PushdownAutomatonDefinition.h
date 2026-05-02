@@ -2,12 +2,16 @@
 
 #include "DiaCore/CRC/StringCRC.h"
 #include "DiaCore/Containers/Arrays/DynamicArrayC.h"
-#include "DiaStateMachine/StateMachineMetadata.h"
+#include <DiaSerializer/MetadataValue.h>
 
 namespace Dia
 {
 	namespace StateMachine
 	{
+		using MetadataArray = Dia::Serializer::MetadataArray;
+		using MetadataValue = Dia::Serializer::MetadataValue;
+		using MetadataEntry = Dia::Serializer::MetadataEntry;
+
 		struct PushdownStateDef
 		{
 			Dia::Core::StringCRC id;
@@ -48,13 +52,15 @@ namespace Dia
 
 			bool Validate(Dia::Core::Containers::DynamicArrayC<const char*, 16>& outErrors) const;
 			bool IsValid() const;
-			void MarkValid();
 
 			MetadataArray& GetMetadata();
 			const MetadataArray& GetMetadata() const;
 
 		private:
 			friend class PushdownAutomatonBuilder;
+			friend class JsonStateMachineSerializer;
+
+			void MarkValid();
 
 			Dia::Core::Containers::DynamicArrayC<PushdownStateDef, kMaxStates> mStates;
 			Dia::Core::StringCRC mInitialStateId;

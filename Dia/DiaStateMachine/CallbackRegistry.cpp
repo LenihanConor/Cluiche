@@ -7,20 +7,34 @@ namespace Dia
 	{
 		void CallbackRegistry::RegisterAction(Dia::Core::StringCRC name, ActionFn fn)
 		{
+			DIA_ASSERT(!mIsFinalized, "Cannot register callbacks after Finalize()");
 			DIA_ASSERT(fn != nullptr, "Cannot register null action");
 			mActions.Add(name, fn);
 		}
 
 		void CallbackRegistry::RegisterGuard(Dia::Core::StringCRC name, GuardFn fn)
 		{
+			DIA_ASSERT(!mIsFinalized, "Cannot register callbacks after Finalize()");
 			DIA_ASSERT(fn != nullptr, "Cannot register null guard");
 			mGuards.Add(name, fn);
 		}
 
 		void CallbackRegistry::RegisterUpdate(Dia::Core::StringCRC name, UpdateFn fn)
 		{
+			DIA_ASSERT(!mIsFinalized, "Cannot register callbacks after Finalize()");
 			DIA_ASSERT(fn != nullptr, "Cannot register null update");
 			mUpdates.Add(name, fn);
+		}
+
+		void CallbackRegistry::Finalize()
+		{
+			DIA_ASSERT(!mIsFinalized, "CallbackRegistry::Finalize() called more than once");
+			mIsFinalized = true;
+		}
+
+		bool CallbackRegistry::IsFinalized() const
+		{
+			return mIsFinalized;
 		}
 
 		CallbackRegistry::ActionFn CallbackRegistry::FindAction(Dia::Core::StringCRC name) const

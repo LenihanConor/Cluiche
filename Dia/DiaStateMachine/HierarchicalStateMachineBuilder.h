@@ -1,7 +1,6 @@
 #pragma once
 
 #include "DiaStateMachine/HierarchicalStateMachineDefinition.h"
-#include "DiaStateMachine/StateMachineMetadata.h"
 
 namespace Dia
 {

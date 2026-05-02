@@ -14,7 +14,6 @@
     <ClInclude Include="JsonStateMachineSerializer.h" />
     <ClInclude Include="StateMachineDefinition.h" />
     <ClInclude Include="StateMachineBuilder.h" />
-    <ClInclude Include="StateMachineMetadata.h" />
     <ClInclude Include="FlatStateMachine.h" />
     <ClInclude Include="HierarchicalStateMachineDefinition.h" />
     <ClInclude Include="HierarchicalStateMachineBuilder.h" />

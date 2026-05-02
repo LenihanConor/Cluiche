@@ -1,5 +1,4 @@
 #include "DiaStateMachine/HierarchicalStateMachineDefinition.h"
-#include "DiaStateMachine/StateMachineMetadata.h"
 #include "DiaCore/Core/Assert.h"
 
 namespace Dia

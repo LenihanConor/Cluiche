@@ -4,7 +4,7 @@
 #include <DiaRig2D/Pose.h>
 #include <DiaRig2D/BoneTransform.h>
 #include <DiaRig2D/BlendPoses.h>
-#include <DiaRig2D/SkeletonJson.h>
+#include <DiaRig2D/SkeletonJsonSerializer.h>
 #include <DiaRig2D/SkeletonComponent.h>
 #include <DiaRig2D/Testing/SkeletonBuilders.h>
 #include <DiaRig2D/Testing/PoseComparison.h>
@@ -22,7 +22,7 @@ TEST(DiaRig2D_Integration, JsonRoundTrip_FKMatchesOriginal)
 {
     SkeletonDef original = Testing::MakeSimpleChain(6);
 
-    JsonSkeletonLoader loader;
+    JsonSkeletonSerializer loader;
     char buffer[4096];
     ASSERT_TRUE(loader.Save(original, buffer, sizeof(buffer)));
 
@@ -67,7 +67,7 @@ TEST(DiaRig2D_Integration, FullPipeline_JsonToBlend_NoNaN)
         ]
     })";
 
-    JsonSkeletonLoader loader;
+    JsonSkeletonSerializer loader;
     SkeletonDef def;
     ASSERT_TRUE(loader.Load(json, def));
 
@@ -105,7 +105,7 @@ TEST(DiaRig2D_Integration, SkeletonComponent_FKViaAccessor)
         ]
     })";
 
-    JsonSkeletonLoader loader;
+    JsonSkeletonSerializer loader;
     SkeletonDef def;
     ASSERT_TRUE(loader.Load(json, def));
 

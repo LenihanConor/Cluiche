@@ -2,10 +2,11 @@
 
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <DiaCore/Core/Assert.h>
 
 namespace Dia
 {
-	namespace StateMachine
+	namespace Serializer
 	{
 		static const unsigned int kMaxMetadataEntries = 16;
 
@@ -30,10 +31,10 @@ namespace Dia
 
 			Dia::Core::StringCRC stringVal;
 
-			static MetadataValue FromBool(bool v)			{ MetadataValue m; m.type = kBool;   m.boolVal  = v;                          return m; }
-			static MetadataValue FromInt(int v)				{ MetadataValue m; m.type = kInt;    m.intVal   = v;                          return m; }
-			static MetadataValue FromFloat(float v)			{ MetadataValue m; m.type = kFloat;  m.floatVal = v;                          return m; }
-			static MetadataValue FromString(const char* v)	{ MetadataValue m; m.type = kString; m.stringVal = Dia::Core::StringCRC(v);   return m; }
+			static MetadataValue FromBool(bool v)			{ MetadataValue m; m.type = kBool;   m.boolVal  = v;                        return m; }
+			static MetadataValue FromInt(int v)				{ MetadataValue m; m.type = kInt;    m.intVal   = v;                        return m; }
+			static MetadataValue FromFloat(float v)			{ MetadataValue m; m.type = kFloat;  m.floatVal = v;                        return m; }
+			static MetadataValue FromString(const char* v)	{ MetadataValue m; m.type = kString; m.stringVal = Dia::Core::StringCRC(v); return m; }
 		};
 
 		struct MetadataEntry
@@ -54,6 +55,7 @@ namespace Dia
 					return;
 				}
 			}
+			DIA_ASSERT(!arr.IsFull(), "MetadataArray is full — cannot add new entry");
 			MetadataEntry entry;
 			entry.key = key;
 			entry.value = value;

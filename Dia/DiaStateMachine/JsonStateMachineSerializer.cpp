@@ -2,8 +2,8 @@
 #include "DiaStateMachine/StateMachineDefinition.h"
 #include "DiaStateMachine/HierarchicalStateMachineDefinition.h"
 #include "DiaStateMachine/PushdownAutomatonDefinition.h"
-#include "DiaStateMachine/StateMachineMetadata.h"
 #include "DiaStateMachine/CallbackRegistry.h"
+#include <DiaSerializer/JsonMetadataHelpers.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaLogger/DiaLog.h>
@@ -16,71 +16,24 @@ namespace Dia
 	{
 		const char* JsonStateMachineSerializer::kSchemaVersion = "1.0";
 
+		const char* JsonStateMachineSerializer::GetVersion() const
+		{
+			return kSchemaVersion;
+		}
+
 		// ---------------------------------------------------------------------------
 		// Shared helpers
 		// ---------------------------------------------------------------------------
 
-		static void SaveMetadataToJson(const MetadataArray& arr, Json::Value& outJson)
-		{
-			if (arr.Size() == 0)
-				return;
-
-			Json::Value meta;
-			for (unsigned int i = 0; i < arr.Size(); ++i)
-			{
-				const MetadataEntry& entry = arr[i];
-				const char* key = entry.key.AsChar();
-				switch (entry.value.type)
-				{
-				case MetadataValue::kBool:   meta[key] = entry.value.boolVal;              break;
-				case MetadataValue::kInt:    meta[key] = entry.value.intVal;               break;
-				case MetadataValue::kFloat:  meta[key] = entry.value.floatVal;             break;
-				case MetadataValue::kString: meta[key] = entry.value.stringVal.AsChar();   break;
-				}
-			}
-			outJson["metadata"] = meta;
-		}
-
-		static bool LoadMetadataFromJson(const Json::Value& stateJson, MetadataArray& outArr)
-		{
-			if (!stateJson.isMember("metadata") || !stateJson["metadata"].isObject())
-				return true;
-
-			const Json::Value& meta = stateJson["metadata"];
-			auto members = meta.getMemberNames();
-			for (unsigned int m = 0; m < static_cast<unsigned int>(members.size()); ++m)
-			{
-				const std::string& key = members[m];
-				const Json::Value& val = meta[key];
-
-				MetadataEntry entry;
-				entry.key = Dia::Core::StringCRC(key.c_str());
-
-				if (val.isBool())
-					entry.value = MetadataValue::FromBool(val.asBool());
-				else if (val.isInt())
-					entry.value = MetadataValue::FromInt(val.asInt());
-				else if (val.isDouble())
-					entry.value = MetadataValue::FromFloat(val.asFloat());
-				else if (val.isString())
-					entry.value = MetadataValue::FromString(val.asCString());
-				else
-					continue;
-
-				outArr.Add(entry);
-			}
-			return true;
-		}
-
-		static bool WriteOutput(const Json::Value& root, char* outBuffer, unsigned int bufferSize)
+		static Dia::Serializer::SerializeResult WriteOutput(const Json::Value& root, char* outBuffer, unsigned int bufferSize)
 		{
 			Json::StyledWriter writer;
 			std::string output = writer.write(root);
 			DIA_ASSERT(output.size() + 1 <= bufferSize, "JsonStateMachineSerializer: output buffer too small");
 			if (output.size() + 1 > bufferSize)
-				return false;
+				return Dia::Serializer::SerializeResult::Failure("output buffer too small");
 			memcpy(outBuffer, output.c_str(), output.size() + 1);
-			return true;
+			return Dia::Serializer::SerializeResult::Success();
 		}
 
 		static bool ParseRoot(const char* data, Json::Value& outRoot, const char* expectedType)
@@ -125,7 +78,7 @@ namespace Dia
 		// FlatStateMachine
 		// ---------------------------------------------------------------------------
 
-		bool JsonStateMachineSerializer::Save(const StateMachineDefinition& def,
+		Dia::Serializer::SerializeResult JsonStateMachineSerializer::Save(const StateMachineDefinition& def,
 			char* outBuffer, unsigned int bufferSize) const
 		{
 			Json::Value root;
@@ -133,7 +86,7 @@ namespace Dia
 			root["type"] = "FlatStateMachine";
 			root["initialState"] = def.GetInitialStateId().AsChar();
 
-			SaveMetadataToJson(def.GetMetadata(), root);
+			Dia::Serializer::WriteMetadataToJson(def.GetMetadata(), root);
 
 			Json::Value statesArray(Json::arrayValue);
 			const auto& states = def.GetStates();
@@ -148,7 +101,7 @@ namespace Dia
 					stateJson["onExit"] = s.onExitName.AsChar();
 				if (s.onUpdateName != Dia::Core::StringCRC())
 					stateJson["onUpdate"] = s.onUpdateName.AsChar();
-				SaveMetadataToJson(s.metadata, stateJson);
+				Dia::Serializer::WriteMetadataToJson(s.metadata, stateJson);
 				statesArray.append(stateJson);
 			}
 			root["states"] = statesArray;
@@ -171,26 +124,28 @@ namespace Dia
 			return WriteOutput(root, outBuffer, bufferSize);
 		}
 
-		bool JsonStateMachineSerializer::Load(StateMachineDefinition& outDef,
+		Dia::Serializer::SerializeResult JsonStateMachineSerializer::Load(StateMachineDefinition& outDef,
 			const CallbackRegistry& registry, const char* data) const
 		{
+			DIA_ASSERT(registry.IsFinalized(), "CallbackRegistry must be Finalized() before Load()");
+
 			Json::Value root;
 			if (!ParseRoot(data, root, "FlatStateMachine"))
-				return false;
+				return Dia::Serializer::SerializeResult::Failure("parse error");
 
 			if (!root.isMember("initialState") || !root["initialState"].isString())
 			{
 				DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: missing 'initialState'");
-				return false;
+				return Dia::Serializer::SerializeResult::Failure("missing initialState");
 			}
 
 			if (!root.isMember("states") || !root["states"].isArray())
 			{
 				DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: missing 'states' array");
-				return false;
+				return Dia::Serializer::SerializeResult::Failure("missing states array");
 			}
 
-			LoadMetadataFromJson(root, outDef.GetMetadata());
+			Dia::Serializer::ReadMetadataFromJson(root, outDef.GetMetadata());
 
 			const Json::Value& statesArray = root["states"];
 			for (unsigned int i = 0; i < statesArray.size(); ++i)
@@ -199,7 +154,7 @@ namespace Dia
 				if (!sj.isMember("id") || !sj["id"].isString())
 				{
 					DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: state %u missing 'id'", i);
-					return false;
+					return Dia::Serializer::SerializeResult::Failure("state missing id");
 				}
 
 				StateDef state;
@@ -209,22 +164,22 @@ namespace Dia
 				{
 					state.onEnterName = Dia::Core::StringCRC(sj["onEnter"].asCString());
 					state.onEnter = registry.FindAction(state.onEnterName);
-					if (!state.onEnter) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: onEnter '%s' not found in registry", sj["onEnter"].asCString()); return false; }
+					if (!state.onEnter) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: onEnter '%s' not found in registry", sj["onEnter"].asCString()); return Dia::Serializer::SerializeResult::Failure("onEnter not found"); }
 				}
 				if (sj.isMember("onExit") && sj["onExit"].isString())
 				{
 					state.onExitName = Dia::Core::StringCRC(sj["onExit"].asCString());
 					state.onExit = registry.FindAction(state.onExitName);
-					if (!state.onExit) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: onExit '%s' not found in registry", sj["onExit"].asCString()); return false; }
+					if (!state.onExit) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: onExit '%s' not found in registry", sj["onExit"].asCString()); return Dia::Serializer::SerializeResult::Failure("onExit not found"); }
 				}
 				if (sj.isMember("onUpdate") && sj["onUpdate"].isString())
 				{
 					state.onUpdateName = Dia::Core::StringCRC(sj["onUpdate"].asCString());
 					state.onUpdate = registry.FindUpdate(state.onUpdateName);
-					if (!state.onUpdate) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: onUpdate '%s' not found in registry", sj["onUpdate"].asCString()); return false; }
+					if (!state.onUpdate) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: onUpdate '%s' not found in registry", sj["onUpdate"].asCString()); return Dia::Serializer::SerializeResult::Failure("onUpdate not found"); }
 				}
 
-				LoadMetadataFromJson(sj, state.metadata);
+				Dia::Serializer::ReadMetadataFromJson(sj, state.metadata);
 				outDef.GetStates().Add(state);
 			}
 
@@ -237,7 +192,7 @@ namespace Dia
 					if (!tj.isMember("source") || !tj.isMember("target") || !tj.isMember("trigger"))
 					{
 						DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: transition %u missing required fields", i);
-						return false;
+						return Dia::Serializer::SerializeResult::Failure("transition missing fields");
 					}
 
 					TransitionDef trans;
@@ -249,7 +204,7 @@ namespace Dia
 					{
 						trans.guardName = Dia::Core::StringCRC(tj["guard"].asCString());
 						trans.guard = registry.FindGuard(trans.guardName);
-						if (!trans.guard) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: guard '%s' not found in registry", tj["guard"].asCString()); return false; }
+						if (!trans.guard) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: guard '%s' not found in registry", tj["guard"].asCString()); return Dia::Serializer::SerializeResult::Failure("guard not found"); }
 					}
 
 					outDef.GetTransitions().Add(trans);
@@ -259,17 +214,20 @@ namespace Dia
 			outDef.SetInitialStateId(Dia::Core::StringCRC(root["initialState"].asCString()));
 
 			Dia::Core::Containers::DynamicArrayC<const char*, 16> errors;
-			bool valid = outDef.Validate(errors);
-			if (!valid) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: loaded FlatStateMachine definition failed validation"); return false; }
+			if (!outDef.Validate(errors))
+			{
+				DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: loaded FlatStateMachine definition failed validation");
+				return Dia::Serializer::SerializeResult::Failure("validation failed");
+			}
 			outDef.MarkValid();
-			return true;
+			return Dia::Serializer::SerializeResult::Success();
 		}
 
 		// ---------------------------------------------------------------------------
 		// HierarchicalStateMachine
 		// ---------------------------------------------------------------------------
 
-		bool JsonStateMachineSerializer::Save(const HierarchicalStateMachineDefinition& def,
+		Dia::Serializer::SerializeResult JsonStateMachineSerializer::Save(const HierarchicalStateMachineDefinition& def,
 			char* outBuffer, unsigned int bufferSize) const
 		{
 			Json::Value root;
@@ -277,7 +235,7 @@ namespace Dia
 			root["type"] = "HierarchicalStateMachine";
 			root["initialState"] = def.GetInitialStateId().AsChar();
 
-			SaveMetadataToJson(def.GetMetadata(), root);
+			Dia::Serializer::WriteMetadataToJson(def.GetMetadata(), root);
 
 			Json::Value statesArray(Json::arrayValue);
 			const auto& states = def.GetStates();
@@ -297,7 +255,7 @@ namespace Dia
 					sj["onExit"] = s.onExitName.AsChar();
 				if (s.onUpdateName != Dia::Core::StringCRC())
 					sj["onUpdate"] = s.onUpdateName.AsChar();
-				SaveMetadataToJson(s.metadata, sj);
+				Dia::Serializer::WriteMetadataToJson(s.metadata, sj);
 				statesArray.append(sj);
 			}
 			root["states"] = statesArray;
@@ -320,26 +278,28 @@ namespace Dia
 			return WriteOutput(root, outBuffer, bufferSize);
 		}
 
-		bool JsonStateMachineSerializer::Load(HierarchicalStateMachineDefinition& outDef,
+		Dia::Serializer::SerializeResult JsonStateMachineSerializer::Load(HierarchicalStateMachineDefinition& outDef,
 			const CallbackRegistry& registry, const char* data) const
 		{
+			DIA_ASSERT(registry.IsFinalized(), "CallbackRegistry must be Finalized() before Load()");
+
 			Json::Value root;
 			if (!ParseRoot(data, root, "HierarchicalStateMachine"))
-				return false;
+				return Dia::Serializer::SerializeResult::Failure("parse error");
 
 			if (!root.isMember("initialState") || !root["initialState"].isString())
 			{
 				DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: missing 'initialState'");
-				return false;
+				return Dia::Serializer::SerializeResult::Failure("missing initialState");
 			}
 
 			if (!root.isMember("states") || !root["states"].isArray())
 			{
 				DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: missing 'states' array");
-				return false;
+				return Dia::Serializer::SerializeResult::Failure("missing states array");
 			}
 
-			LoadMetadataFromJson(root, outDef.GetMetadata());
+			Dia::Serializer::ReadMetadataFromJson(root, outDef.GetMetadata());
 
 			const Json::Value& statesArray = root["states"];
 			for (unsigned int i = 0; i < statesArray.size(); ++i)
@@ -348,7 +308,7 @@ namespace Dia
 				if (!sj.isMember("id") || !sj["id"].isString())
 				{
 					DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: state %u missing 'id'", i);
-					return false;
+					return Dia::Serializer::SerializeResult::Failure("state missing id");
 				}
 
 				HierarchicalStateDef state;
@@ -365,22 +325,22 @@ namespace Dia
 				{
 					state.onEnterName = Dia::Core::StringCRC(sj["onEnter"].asCString());
 					state.onEnter = registry.FindAction(state.onEnterName);
-					if (!state.onEnter) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: onEnter '%s' not found in registry", sj["onEnter"].asCString()); return false; }
+					if (!state.onEnter) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: onEnter '%s' not found in registry", sj["onEnter"].asCString()); return Dia::Serializer::SerializeResult::Failure("onEnter not found"); }
 				}
 				if (sj.isMember("onExit") && sj["onExit"].isString())
 				{
 					state.onExitName = Dia::Core::StringCRC(sj["onExit"].asCString());
 					state.onExit = registry.FindAction(state.onExitName);
-					if (!state.onExit) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: onExit '%s' not found in registry", sj["onExit"].asCString()); return false; }
+					if (!state.onExit) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: onExit '%s' not found in registry", sj["onExit"].asCString()); return Dia::Serializer::SerializeResult::Failure("onExit not found"); }
 				}
 				if (sj.isMember("onUpdate") && sj["onUpdate"].isString())
 				{
 					state.onUpdateName = Dia::Core::StringCRC(sj["onUpdate"].asCString());
 					state.onUpdate = registry.FindUpdate(state.onUpdateName);
-					if (!state.onUpdate) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: onUpdate '%s' not found in registry", sj["onUpdate"].asCString()); return false; }
+					if (!state.onUpdate) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: onUpdate '%s' not found in registry", sj["onUpdate"].asCString()); return Dia::Serializer::SerializeResult::Failure("onUpdate not found"); }
 				}
 
-				LoadMetadataFromJson(sj, state.metadata);
+				Dia::Serializer::ReadMetadataFromJson(sj, state.metadata);
 				outDef.GetStates().Add(state);
 			}
 
@@ -393,7 +353,7 @@ namespace Dia
 					if (!tj.isMember("source") || !tj.isMember("target") || !tj.isMember("trigger"))
 					{
 						DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: transition %u missing required fields", i);
-						return false;
+						return Dia::Serializer::SerializeResult::Failure("transition missing fields");
 					}
 
 					HierarchicalTransitionDef trans;
@@ -405,7 +365,7 @@ namespace Dia
 					{
 						trans.guardName = Dia::Core::StringCRC(tj["guard"].asCString());
 						trans.guard = registry.FindGuard(trans.guardName);
-						if (!trans.guard) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: guard '%s' not found in registry", tj["guard"].asCString()); return false; }
+						if (!trans.guard) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: guard '%s' not found in registry", tj["guard"].asCString()); return Dia::Serializer::SerializeResult::Failure("guard not found"); }
 					}
 
 					outDef.GetTransitions().Add(trans);
@@ -415,16 +375,20 @@ namespace Dia
 			outDef.SetInitialStateId(Dia::Core::StringCRC(root["initialState"].asCString()));
 
 			Dia::Core::Containers::DynamicArrayC<const char*, 16> errors;
-			bool valid = outDef.Validate(errors);
-			if (!valid) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: loaded HierarchicalStateMachine definition failed validation"); }
-			return valid;
+			if (!outDef.Validate(errors))
+			{
+				DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: loaded HierarchicalStateMachine definition failed validation");
+				return Dia::Serializer::SerializeResult::Failure("validation failed");
+			}
+			outDef.MarkValid();
+			return Dia::Serializer::SerializeResult::Success();
 		}
 
 		// ---------------------------------------------------------------------------
 		// PushdownAutomaton
 		// ---------------------------------------------------------------------------
 
-		bool JsonStateMachineSerializer::Save(const PushdownAutomatonDefinition& def,
+		Dia::Serializer::SerializeResult JsonStateMachineSerializer::Save(const PushdownAutomatonDefinition& def,
 			char* outBuffer, unsigned int bufferSize) const
 		{
 			Json::Value root;
@@ -432,7 +396,7 @@ namespace Dia
 			root["type"] = "PushdownAutomaton";
 			root["initialState"] = def.GetInitialStateId().AsChar();
 
-			SaveMetadataToJson(def.GetMetadata(), root);
+			Dia::Serializer::WriteMetadataToJson(def.GetMetadata(), root);
 
 			Json::Value statesArray(Json::arrayValue);
 			const auto& states = def.GetStates();
@@ -446,7 +410,7 @@ namespace Dia
 				if (s.onUpdateName != Dia::Core::StringCRC()) sj["onUpdate"] = s.onUpdateName.AsChar();
 				if (s.onPauseName  != Dia::Core::StringCRC()) sj["onPause"]  = s.onPauseName.AsChar();
 				if (s.onResumeName != Dia::Core::StringCRC()) sj["onResume"] = s.onResumeName.AsChar();
-				SaveMetadataToJson(s.metadata, sj);
+				Dia::Serializer::WriteMetadataToJson(s.metadata, sj);
 				statesArray.append(sj);
 			}
 			root["states"] = statesArray;
@@ -454,26 +418,28 @@ namespace Dia
 			return WriteOutput(root, outBuffer, bufferSize);
 		}
 
-		bool JsonStateMachineSerializer::Load(PushdownAutomatonDefinition& outDef,
+		Dia::Serializer::SerializeResult JsonStateMachineSerializer::Load(PushdownAutomatonDefinition& outDef,
 			const CallbackRegistry& registry, const char* data) const
 		{
+			DIA_ASSERT(registry.IsFinalized(), "CallbackRegistry must be Finalized() before Load()");
+
 			Json::Value root;
 			if (!ParseRoot(data, root, "PushdownAutomaton"))
-				return false;
+				return Dia::Serializer::SerializeResult::Failure("parse error");
 
 			if (!root.isMember("initialState") || !root["initialState"].isString())
 			{
 				DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: missing 'initialState'");
-				return false;
+				return Dia::Serializer::SerializeResult::Failure("missing initialState");
 			}
 
 			if (!root.isMember("states") || !root["states"].isArray())
 			{
 				DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: missing 'states' array");
-				return false;
+				return Dia::Serializer::SerializeResult::Failure("missing states array");
 			}
 
-			LoadMetadataFromJson(root, outDef.GetMetadata());
+			Dia::Serializer::ReadMetadataFromJson(root, outDef.GetMetadata());
 
 			const Json::Value& statesArray = root["states"];
 			for (unsigned int i = 0; i < statesArray.size(); ++i)
@@ -482,7 +448,7 @@ namespace Dia
 				if (!sj.isMember("id") || !sj["id"].isString())
 				{
 					DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: state %u missing 'id'", i);
-					return false;
+					return Dia::Serializer::SerializeResult::Failure("state missing id");
 				}
 
 				PushdownStateDef state;
@@ -492,43 +458,111 @@ namespace Dia
 				{
 					state.onEnterName = Dia::Core::StringCRC(sj["onEnter"].asCString());
 					state.onEnter = registry.FindAction(state.onEnterName);
-					if (!state.onEnter) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: onEnter '%s' not found in registry", sj["onEnter"].asCString()); return false; }
+					if (!state.onEnter) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: onEnter '%s' not found in registry", sj["onEnter"].asCString()); return Dia::Serializer::SerializeResult::Failure("onEnter not found"); }
 				}
 				if (sj.isMember("onExit") && sj["onExit"].isString())
 				{
 					state.onExitName = Dia::Core::StringCRC(sj["onExit"].asCString());
 					state.onExit = registry.FindAction(state.onExitName);
-					if (!state.onExit) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: onExit '%s' not found in registry", sj["onExit"].asCString()); return false; }
+					if (!state.onExit) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: onExit '%s' not found in registry", sj["onExit"].asCString()); return Dia::Serializer::SerializeResult::Failure("onExit not found"); }
 				}
 				if (sj.isMember("onUpdate") && sj["onUpdate"].isString())
 				{
 					state.onUpdateName = Dia::Core::StringCRC(sj["onUpdate"].asCString());
 					state.onUpdate = registry.FindUpdate(state.onUpdateName);
-					if (!state.onUpdate) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: onUpdate '%s' not found in registry", sj["onUpdate"].asCString()); return false; }
+					if (!state.onUpdate) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: onUpdate '%s' not found in registry", sj["onUpdate"].asCString()); return Dia::Serializer::SerializeResult::Failure("onUpdate not found"); }
 				}
 				if (sj.isMember("onPause") && sj["onPause"].isString())
 				{
 					state.onPauseName = Dia::Core::StringCRC(sj["onPause"].asCString());
 					state.onPause = registry.FindAction(state.onPauseName);
-					if (!state.onPause) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: onPause '%s' not found in registry", sj["onPause"].asCString()); return false; }
+					if (!state.onPause) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: onPause '%s' not found in registry", sj["onPause"].asCString()); return Dia::Serializer::SerializeResult::Failure("onPause not found"); }
 				}
 				if (sj.isMember("onResume") && sj["onResume"].isString())
 				{
 					state.onResumeName = Dia::Core::StringCRC(sj["onResume"].asCString());
 					state.onResume = registry.FindAction(state.onResumeName);
-					if (!state.onResume) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: onResume '%s' not found in registry", sj["onResume"].asCString()); return false; }
+					if (!state.onResume) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: onResume '%s' not found in registry", sj["onResume"].asCString()); return Dia::Serializer::SerializeResult::Failure("onResume not found"); }
 				}
 
-				LoadMetadataFromJson(sj, state.metadata);
+				Dia::Serializer::ReadMetadataFromJson(sj, state.metadata);
 				outDef.GetStates().Add(state);
 			}
 
 			outDef.SetInitialStateId(Dia::Core::StringCRC(root["initialState"].asCString()));
 
 			Dia::Core::Containers::DynamicArrayC<const char*, 16> errors;
-			bool valid = outDef.Validate(errors);
-			if (!valid) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: loaded PushdownAutomaton definition failed validation"); }
-			return valid;
+			if (!outDef.Validate(errors))
+			{
+				DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: loaded PushdownAutomaton definition failed validation");
+				return Dia::Serializer::SerializeResult::Failure("validation failed");
+			}
+			outDef.MarkValid();
+			return Dia::Serializer::SerializeResult::Success();
+		}
+
+		// ---------------------------------------------------------------------------
+		// IStateMachineSerializer LoadFromFile / SaveToFile
+		// ---------------------------------------------------------------------------
+
+		Dia::Serializer::SerializeResult IStateMachineSerializer::LoadFromFile(
+			const char* path, StateMachineDefinition& outDef, const CallbackRegistry& registry) const
+		{
+			char buffer[65536];
+			if (!ReadFileToBuffer(path, buffer, sizeof(buffer)))
+				return Dia::Serializer::SerializeResult::Failure("file read error");
+			return Load(outDef, registry, buffer);
+		}
+
+		Dia::Serializer::SerializeResult IStateMachineSerializer::LoadFromFile(
+			const char* path, HierarchicalStateMachineDefinition& outDef, const CallbackRegistry& registry) const
+		{
+			char buffer[65536];
+			if (!ReadFileToBuffer(path, buffer, sizeof(buffer)))
+				return Dia::Serializer::SerializeResult::Failure("file read error");
+			return Load(outDef, registry, buffer);
+		}
+
+		Dia::Serializer::SerializeResult IStateMachineSerializer::LoadFromFile(
+			const char* path, PushdownAutomatonDefinition& outDef, const CallbackRegistry& registry) const
+		{
+			char buffer[65536];
+			if (!ReadFileToBuffer(path, buffer, sizeof(buffer)))
+				return Dia::Serializer::SerializeResult::Failure("file read error");
+			return Load(outDef, registry, buffer);
+		}
+
+		Dia::Serializer::SerializeResult IStateMachineSerializer::SaveToFile(
+			const char* path, const StateMachineDefinition& def) const
+		{
+			char buffer[65536];
+			auto result = Save(def, buffer, sizeof(buffer));
+			if (!result) return result;
+			if (!WriteBufferToFile(path, buffer, static_cast<unsigned int>(strlen(buffer))))
+				return Dia::Serializer::SerializeResult::Failure("file write error");
+			return Dia::Serializer::SerializeResult::Success();
+		}
+
+		Dia::Serializer::SerializeResult IStateMachineSerializer::SaveToFile(
+			const char* path, const HierarchicalStateMachineDefinition& def) const
+		{
+			char buffer[65536];
+			auto result = Save(def, buffer, sizeof(buffer));
+			if (!result) return result;
+			if (!WriteBufferToFile(path, buffer, static_cast<unsigned int>(strlen(buffer))))
+				return Dia::Serializer::SerializeResult::Failure("file write error");
+			return Dia::Serializer::SerializeResult::Success();
+		}
+
+		Dia::Serializer::SerializeResult IStateMachineSerializer::SaveToFile(
+			const char* path, const PushdownAutomatonDefinition& def) const
+		{
+			char buffer[65536];
+			auto result = Save(def, buffer, sizeof(buffer));
+			if (!result) return result;
+			if (!WriteBufferToFile(path, buffer, static_cast<unsigned int>(strlen(buffer))))
+				return Dia::Serializer::SerializeResult::Failure("file write error");
+			return Dia::Serializer::SerializeResult::Success();
 		}
 	}
 }

@@ -22,6 +22,9 @@ namespace Dia
 			void RegisterGuard(Dia::Core::StringCRC name, GuardFn fn);
 			void RegisterUpdate(Dia::Core::StringCRC name, UpdateFn fn);
 
+			void Finalize();
+			bool IsFinalized() const;
+
 			ActionFn FindAction(Dia::Core::StringCRC name) const;
 			GuardFn FindGuard(Dia::Core::StringCRC name) const;
 			UpdateFn FindUpdate(Dia::Core::StringCRC name) const;
@@ -44,6 +47,7 @@ namespace Dia
 			ActionTable mActions;
 			GuardTable mGuards;
 			UpdateTable mUpdates;
+			bool mIsFinalized = false;
 		};
 	}
 }

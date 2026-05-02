@@ -14,8 +14,8 @@
     <ClInclude Include="Skeleton.h" />
     <ClInclude Include="Pose.h" />
     <ClInclude Include="BlendPoses.h" />
-    <ClInclude Include="ISkeletonLoader.h" />
-    <ClInclude Include="SkeletonJson.h" />
+    <ClInclude Include="ISkeletonSerializer.h" />
+    <ClInclude Include="SkeletonJsonSerializer.h" />
     <ClInclude Include="SkeletonComponent.h" />
     <ClInclude Include="Testing\SkeletonBuilders.h">
       <Filter>Testing</Filter>
@@ -29,7 +29,7 @@
     <ClCompile Include="Skeleton.cpp" />
     <ClCompile Include="Pose.cpp" />
     <ClCompile Include="BlendPoses.cpp" />
-    <ClCompile Include="SkeletonJson.cpp" />
+    <ClCompile Include="SkeletonJsonSerializer.cpp" />
     <ClCompile Include="SkeletonComponent.cpp" />
     <ClCompile Include="Testing\SkeletonBuilders.cpp">
       <Filter>Testing</Filter>

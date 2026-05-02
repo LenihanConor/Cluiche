@@ -18,6 +18,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 | System | Spec | Features | Depends On |
 |--------|------|----------|------------|
+| DiaSerializer | [diaserializer.md](specs/systems/dia/diaserializer.md) | 4 features, all Approved — metadata-primitives, serializer-contract, diarig2d-migration, diastatemachine-migration | DiaCore ✅ |
 | DiaApplicationEditor | [diaapplicationeditor.md](specs/systems/dia/diaapplicationeditor.md) | 15 features, all Approved — **not yet implemented** | DiaEditor ✅, DiaWebSocket ✅, DiaUICEF ✅ |
 | DiaData | [diadata.md](specs/systems/dia/diadata.md) | 3 features, all Approved — json-definition-loader, asset-type-framework, identity-relationship-backbone | DiaCore ✅ |
 | ~~DiaIK~~ | [diaik2d.md](specs/systems/dia/diaik2d.md) | ✅ Done 2026-05-02 — 6 features, 33 tests | — |

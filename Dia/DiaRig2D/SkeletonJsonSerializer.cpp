@@ -1,6 +1,8 @@
-#include "SkeletonJson.h"
+#include "SkeletonJsonSerializer.h"
+#include "ISkeletonSerializer.h"
 
 #include <DiaCore/Json/external/json/json.h>
+#include <DiaSerializer/JsonMetadataHelpers.h>
 #include <DiaLogger/DiaLog.h>
 #include <cstring>
 
@@ -8,29 +10,36 @@ namespace Dia
 {
 	namespace Rig2D
 	{
-		bool JsonSkeletonLoader::Load(const char* data, SkeletonDef& outDef) const
+		static const char* kSchemaVersion = "1.0";
+
+		const char* JsonSkeletonSerializer::GetVersion() const
+		{
+			return kSchemaVersion;
+		}
+
+		Dia::Serializer::SerializeResult JsonSkeletonSerializer::Load(const char* data, SkeletonDef& outDef) const
 		{
 			Json::Value root;
 			Json::Reader reader;
 
 			if (!reader.parse(data, root))
 			{
-				DIA_LOG_WARNING("Rig2D", "JsonSkeletonLoader: failed to parse JSON");
-				return false;
+				DIA_LOG_WARNING("Rig2D", "JsonSkeletonSerializer: failed to parse JSON");
+				return Dia::Serializer::SerializeResult::Failure("json parse error");
 			}
 
 			if (!root.isMember("id") || !root["id"].isString())
 			{
-				DIA_LOG_WARNING("Rig2D", "JsonSkeletonLoader: missing or invalid 'id' field");
-				return false;
+				DIA_LOG_WARNING("Rig2D", "JsonSkeletonSerializer: missing or invalid 'id' field");
+				return Dia::Serializer::SerializeResult::Failure("missing id field");
 			}
 
 			outDef.id = Dia::Core::StringCRC(root["id"].asCString());
 
 			if (!root.isMember("bones") || !root["bones"].isArray())
 			{
-				DIA_LOG_WARNING("Rig2D", "JsonSkeletonLoader: missing or invalid 'bones' array");
-				return false;
+				DIA_LOG_WARNING("Rig2D", "JsonSkeletonSerializer: missing or invalid 'bones' array");
+				return Dia::Serializer::SerializeResult::Failure("missing bones array");
 			}
 
 			const Json::Value& bonesArray = root["bones"];
@@ -41,15 +50,15 @@ namespace Dia
 
 				if (!boneJson.isMember("name") || !boneJson["name"].isString())
 				{
-					DIA_LOG_WARNING("Rig2D", "JsonSkeletonLoader: bone %u missing 'name'", i);
-					return false;
+					DIA_LOG_WARNING("Rig2D", "JsonSkeletonSerializer: bone %u missing 'name'", i);
+					return Dia::Serializer::SerializeResult::Failure("bone missing name");
 				}
 
 				if (!boneJson.isMember("position") || !boneJson["position"].isArray() || boneJson["position"].size() != 2)
 				{
-					DIA_LOG_WARNING("Rig2D", "JsonSkeletonLoader: bone %u ('%s') missing or invalid 'position'",
+					DIA_LOG_WARNING("Rig2D", "JsonSkeletonSerializer: bone %u ('%s') missing or invalid 'position'",
 						i, boneJson["name"].asCString());
-					return false;
+					return Dia::Serializer::SerializeResult::Failure("bone missing position");
 				}
 
 				Bone bone;
@@ -73,9 +82,9 @@ namespace Dia
 
 				if (!boneJson.isMember("parent"))
 				{
-					DIA_LOG_WARNING("Rig2D", "JsonSkeletonLoader: bone %u ('%s') missing 'parent'",
+					DIA_LOG_WARNING("Rig2D", "JsonSkeletonSerializer: bone %u ('%s') missing 'parent'",
 						i, boneJson["name"].asCString());
-					return false;
+					return Dia::Serializer::SerializeResult::Failure("bone missing parent");
 				}
 
 				const Json::Value& parentVal = boneJson["parent"];
@@ -99,9 +108,9 @@ namespace Dia
 
 					if (bone.parentIndex == -1)
 					{
-						DIA_LOG_WARNING("Rig2D", "JsonSkeletonLoader: bone %u ('%s') references unknown parent '%s'",
+						DIA_LOG_WARNING("Rig2D", "JsonSkeletonSerializer: bone %u ('%s') references unknown parent '%s'",
 							i, boneJson["name"].asCString(), parentName);
-						return false;
+						return Dia::Serializer::SerializeResult::Failure("bone references unknown parent");
 					}
 				}
 				else if (parentVal.isNull())
@@ -110,58 +119,20 @@ namespace Dia
 				}
 				else
 				{
-					DIA_LOG_WARNING("Rig2D", "JsonSkeletonLoader: bone %u ('%s') has invalid 'parent' type",
+					DIA_LOG_WARNING("Rig2D", "JsonSkeletonSerializer: bone %u ('%s') has invalid 'parent' type",
 						i, boneJson["name"].asCString());
-					return false;
+					return Dia::Serializer::SerializeResult::Failure("bone invalid parent type");
 				}
 
-				if (boneJson.isMember("metadata") && boneJson["metadata"].isObject())
-				{
-					const Json::Value& meta = boneJson["metadata"];
-					auto members = meta.getMemberNames();
-
-					for (unsigned int m = 0; m < members.size(); ++m)
-					{
-						const std::string& key = members[m];
-						const Json::Value& val = meta[key];
-
-						MetadataEntry entry;
-						entry.key = Dia::Core::StringCRC(key.c_str());
-
-						if (val.isBool())
-						{
-							entry.value = MetadataValue::FromBool(val.asBool());
-						}
-						else if (val.isInt())
-						{
-							entry.value = MetadataValue::FromInt(val.asInt());
-						}
-						else if (val.isDouble())
-						{
-							entry.value = MetadataValue::FromFloat(val.asFloat());
-						}
-						else if (val.isString())
-						{
-							entry.value = MetadataValue::FromString(val.asCString());
-						}
-						else
-						{
-							DIA_LOG_DEBUG("Rig2D", "JsonSkeletonLoader: bone '%s' metadata key '%s' has unsupported type, skipping",
-								boneJson["name"].asCString(), key.c_str());
-							continue;
-						}
-
-						bone.metadata.Add(entry);
-					}
-				}
+				Dia::Serializer::ReadMetadataFromJson(boneJson, bone.metadata);
 
 				outDef.bones.Add(bone);
 			}
 
-			return true;
+			return Dia::Serializer::SerializeResult::Success();
 		}
 
-		bool JsonSkeletonLoader::Save(const SkeletonDef& def, char* outBuffer, unsigned int bufferSize) const
+		Dia::Serializer::SerializeResult JsonSkeletonSerializer::Save(const SkeletonDef& def, char* outBuffer, unsigned int bufferSize) const
 		{
 			Json::Value root;
 			root["id"] = def.id.AsChar();
@@ -176,13 +147,9 @@ namespace Dia
 				boneJson["name"] = bone.name.AsChar();
 
 				if (bone.parentIndex == -1)
-				{
 					boneJson["parent"] = -1;
-				}
 				else
-				{
 					boneJson["parent"] = def.bones[bone.parentIndex].name.AsChar();
-				}
 
 				Json::Value pos(Json::arrayValue);
 				pos.append(bone.localPosition.X());
@@ -196,32 +163,7 @@ namespace Dia
 				scale.append(bone.localScale.Y());
 				boneJson["scale"] = scale;
 
-				if (bone.metadata.Size() > 0)
-				{
-					Json::Value metaJson;
-					for (unsigned int m = 0; m < bone.metadata.Size(); ++m)
-					{
-						const MetadataEntry& entry = bone.metadata[m];
-						const char* key = entry.key.AsChar();
-
-						switch (entry.value.type)
-						{
-						case MetadataValue::kBool:
-							metaJson[key] = entry.value.boolVal;
-							break;
-						case MetadataValue::kInt:
-							metaJson[key] = entry.value.intVal;
-							break;
-						case MetadataValue::kFloat:
-							metaJson[key] = entry.value.floatVal;
-							break;
-						case MetadataValue::kString:
-							metaJson[key] = entry.value.stringVal.AsChar();
-							break;
-						}
-					}
-					boneJson["metadata"] = metaJson;
-				}
+				Dia::Serializer::WriteMetadataToJson(bone.metadata, boneJson);
 
 				bonesArray.append(boneJson);
 			}
@@ -233,13 +175,37 @@ namespace Dia
 
 			if (output.size() + 1 > bufferSize)
 			{
-				DIA_LOG_WARNING("Rig2D", "JsonSkeletonLoader: output buffer too small (%u bytes needed, %u available)",
+				DIA_LOG_WARNING("Rig2D", "JsonSkeletonSerializer: output buffer too small (%u bytes needed, %u available)",
 					static_cast<unsigned int>(output.size() + 1), bufferSize);
-				return false;
+				return Dia::Serializer::SerializeResult::Failure("output buffer too small");
 			}
 
 			memcpy(outBuffer, output.c_str(), output.size() + 1);
-			return true;
+			return Dia::Serializer::SerializeResult::Success();
+		}
+
+		// ---------------------------------------------------------------------------
+		// ISkeletonSerializer LoadFromFile / SaveToFile
+		// ---------------------------------------------------------------------------
+
+		Dia::Serializer::SerializeResult ISkeletonSerializer::LoadFromFile(const char* path, SkeletonDef& outDef) const
+		{
+			char buffer[65536];
+			if (!ReadFileToBuffer(path, buffer, sizeof(buffer)))
+				return Dia::Serializer::SerializeResult::Failure("file read error");
+			return Load(buffer, outDef);
+		}
+
+		Dia::Serializer::SerializeResult ISkeletonSerializer::SaveToFile(const char* path, const SkeletonDef& def) const
+		{
+			char buffer[65536];
+			auto result = Save(def, buffer, sizeof(buffer));
+			if (!result)
+				return result;
+			unsigned int len = static_cast<unsigned int>(strlen(buffer));
+			if (!WriteBufferToFile(path, buffer, len))
+				return Dia::Serializer::SerializeResult::Failure("file write error");
+			return Dia::Serializer::SerializeResult::Success();
 		}
 	}
 }

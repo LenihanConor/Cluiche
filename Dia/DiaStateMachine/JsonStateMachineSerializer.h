@@ -11,14 +11,16 @@ namespace Dia
 		public:
 			static const char* kSchemaVersion;
 
-			bool Save(const StateMachineDefinition& def, char* outBuffer, unsigned int bufferSize) const override;
-			bool Load(StateMachineDefinition& outDef, const CallbackRegistry& registry, const char* data) const override;
+			const char* GetVersion() const override;
 
-			bool Save(const HierarchicalStateMachineDefinition& def, char* outBuffer, unsigned int bufferSize) const override;
-			bool Load(HierarchicalStateMachineDefinition& outDef, const CallbackRegistry& registry, const char* data) const override;
+			Dia::Serializer::SerializeResult Save(const StateMachineDefinition& def, char* outBuffer, unsigned int bufferSize) const override;
+			Dia::Serializer::SerializeResult Load(StateMachineDefinition& outDef, const CallbackRegistry& registry, const char* data) const override;
 
-			bool Save(const PushdownAutomatonDefinition& def, char* outBuffer, unsigned int bufferSize) const override;
-			bool Load(PushdownAutomatonDefinition& outDef, const CallbackRegistry& registry, const char* data) const override;
+			Dia::Serializer::SerializeResult Save(const HierarchicalStateMachineDefinition& def, char* outBuffer, unsigned int bufferSize) const override;
+			Dia::Serializer::SerializeResult Load(HierarchicalStateMachineDefinition& outDef, const CallbackRegistry& registry, const char* data) const override;
+
+			Dia::Serializer::SerializeResult Save(const PushdownAutomatonDefinition& def, char* outBuffer, unsigned int bufferSize) const override;
+			Dia::Serializer::SerializeResult Load(PushdownAutomatonDefinition& outDef, const CallbackRegistry& registry, const char* data) const override;
 		};
 	}
 }

@@ -1,5 +1,4 @@
 #include "DiaStateMachine/PushdownAutomatonDefinition.h"
-#include "DiaStateMachine/StateMachineMetadata.h"
 
 namespace Dia
 {
