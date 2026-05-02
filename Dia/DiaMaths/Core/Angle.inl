@@ -259,20 +259,16 @@ namespace Dia
 		// If the angle is smaller than -PI, it adds 2*PI until it is within the range.
 		inline void Angle::Normalize()
 		{
-		   	// Calculate the normalized angle value using the modulo operator
-		    mRadian = fmod(mRadian, Dia::Maths::PI_2);
+			while( mRadian > Dia::Maths::PI )
+			{
+				mRadian -= Dia::Maths::PI_2;
+			}
+			while( mRadian < -Dia::Maths::PI )
+			{
+				mRadian += Dia::Maths::PI_2;
+			}
 
-		    // Adjust the angle value if it falls outside the range [-PI, PI]
-		    if (mRadian > Dia::Maths::PI)
-		    {
-		        mRadian -= Dia::Maths::PI_2;
-		    }
-		    else if (mRadian < -Dia::Maths::PI)
-		    {
-		        mRadian += Dia::Maths::PI_2;
-		    }
-
-		    DIA_ASSERT(mRadian >= -Dia::Maths::PI && mRadian <= Dia::Maths::PI, "Radians outside range [-PI, PI]");
+			DIA_ASSERT(mRadian >= -Dia::Maths::PI && mRadian <= Dia::Maths::PI, "Radians outside range [-PI, PI]");
 		}
 
 		// -----------------------------------------------------------------------------
