@@ -10,8 +10,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="IStateMachineInspectable.h" />
+    <ClInclude Include="IStateMachineSerializer.h" />
+    <ClInclude Include="JsonStateMachineSerializer.h" />
     <ClInclude Include="StateMachineDefinition.h" />
     <ClInclude Include="StateMachineBuilder.h" />
+    <ClInclude Include="StateMachineMetadata.h" />
     <ClInclude Include="FlatStateMachine.h" />
     <ClInclude Include="HierarchicalStateMachineDefinition.h" />
     <ClInclude Include="HierarchicalStateMachineBuilder.h" />
@@ -30,6 +33,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="JsonStateMachineSerializer.cpp" />
     <ClCompile Include="StateMachineDefinition.cpp" />
     <ClCompile Include="StateMachineBuilder.cpp" />
     <ClCompile Include="HierarchicalStateMachineDefinition.cpp" />

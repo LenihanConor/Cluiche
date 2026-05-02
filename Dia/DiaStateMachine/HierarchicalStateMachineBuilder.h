@@ -1,6 +1,7 @@
 #pragma once
 
 #include "DiaStateMachine/HierarchicalStateMachineDefinition.h"
+#include "DiaStateMachine/StateMachineMetadata.h"
 
 namespace Dia
 {
@@ -15,13 +16,18 @@ namespace Dia
 			HierarchicalStateMachineBuilder& InitialState(Dia::Core::StringCRC stateId);
 			HierarchicalStateMachineBuilder& InitialChild(Dia::Core::StringCRC childId);
 			HierarchicalStateMachineBuilder& EnableHistory();
-			HierarchicalStateMachineBuilder& OnEnter(void(*action)(void*));
-			HierarchicalStateMachineBuilder& OnExit(void(*action)(void*));
-			HierarchicalStateMachineBuilder& OnUpdate(void(*action)(void*, float));
+			HierarchicalStateMachineBuilder& OnEnter(void(*action)(void*),
+				Dia::Core::StringCRC name = Dia::Core::StringCRC());
+			HierarchicalStateMachineBuilder& OnExit(void(*action)(void*),
+				Dia::Core::StringCRC name = Dia::Core::StringCRC());
+			HierarchicalStateMachineBuilder& OnUpdate(void(*action)(void*, float),
+				Dia::Core::StringCRC name = Dia::Core::StringCRC());
 			HierarchicalStateMachineBuilder& Transition(Dia::Core::StringCRC targetStateId,
 				Dia::Core::StringCRC triggerId);
 			HierarchicalStateMachineBuilder& Guard(bool(*predicate)(const void*),
 				Dia::Core::StringCRC guardName = Dia::Core::StringCRC());
+			HierarchicalStateMachineBuilder& StateMetadata(Dia::Core::StringCRC key, const MetadataValue& value);
+			HierarchicalStateMachineBuilder& MachineMetadata(Dia::Core::StringCRC key, const MetadataValue& value);
 
 			HierarchicalStateMachineDefinition Build() const;
 

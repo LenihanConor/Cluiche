@@ -10,6 +10,13 @@
 
 **Status:** `Done`
 
+**Plan:** @docs/specs/features/dia/diastatemachine/data-driven-definitions.plan.md _(implemented 2026-05-02)_
+
+> **Implementation note:** The original spec described `LoadFromJson()` static methods on the definition classes. The actual implementation uses `IStateMachineSerializer` / `JsonStateMachineSerializer` (matching the pattern from `ISkeletonLoader` / `JsonSkeletonLoader` in DiaRig2D), which decouples format from definitions and allows XML/binary alternatives. Additionally, this implementation adds:
+> - **Callback name fields** (`onEnterName`, `onExitName`, `onUpdateName`, `onPauseName`, `onResumeName`) on all `*Def` structs — symmetric with the existing `guardName` on `TransitionDef`
+> - **Per-state and machine-level metadata** (`MetadataArray` of `MetadataValue` — bool/int/float/string, 16 entries, same pattern as `DiaRig2D::Bone`)
+> - All load failures emit `DIA_LOG_WARNING` and return false — no asserts on data errors
+
 ---
 
 ## Problem Statement
@@ -20,11 +27,11 @@ Code-defined state machines require recompilation for any structural change — 
 
 ## Solution Overview
 
-`StateMachineDefinition` and `HierarchicalStateMachineDefinition` gain `LoadFromJson()` and `LoadFromFile()` static factory methods. JSON defines the machine topology (states, transitions, triggers, guard/action names). C++ code provides the actual function pointers via a `CallbackRegistry` — an explicitly constructed, non-singleton object passed by reference to the load methods.
+`IStateMachineSerializer` defines a format-agnostic interface for save/load across all three definition types. `JsonStateMachineSerializer` implements it using jsoncpp. JSON defines the machine topology (states, transitions, triggers, guard/action names) plus optional per-state and machine-level metadata. C++ code provides the actual function pointers via a `CallbackRegistry` — an explicitly constructed, non-singleton object passed by reference to `Load()`.
 
-At load time, the JSON-declared callback names are resolved against the registry. Missing callbacks are a validation error caught immediately, not at runtime when a transition fires.
+At load time, the JSON-declared callback names are resolved against the registry. Missing callbacks log a warning and return false immediately.
 
-Definitions loaded from JSON are identical to definitions produced by the builder — the runtime machine doesn't know or care where its definition came from.
+Definitions loaded via the serializer are identical in behavior to definitions produced by the builder — the runtime machine doesn't know or care where its definition came from.
 
 Definitions are immutable after load (SD-005). When a JSON file changes, the next machine constructed from that file gets the new version — no live patching of active machines (SD-016).
 

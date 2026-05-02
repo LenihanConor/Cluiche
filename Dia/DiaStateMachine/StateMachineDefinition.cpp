@@ -1,4 +1,5 @@
 #include "DiaStateMachine/StateMachineDefinition.h"
+#include "DiaStateMachine/StateMachineMetadata.h"
 #include "DiaCore/Core/Assert.h"
 
 namespace Dia
@@ -15,11 +16,13 @@ namespace Dia
 			: mStates(other.mStates)
 			, mTransitions(other.mTransitions)
 			, mInitialStateId(other.mInitialStateId)
+			, mMetadata(other.mMetadata)
 			, mIsValid(other.mIsValid)
 		{
 			other.mStates.RemoveAll();
 			other.mTransitions.RemoveAll();
 			other.mInitialStateId = Dia::Core::StringCRC();
+			other.mMetadata.RemoveAll();
 			other.mIsValid = false;
 		}
 
@@ -30,11 +33,13 @@ namespace Dia
 				mStates = other.mStates;
 				mTransitions = other.mTransitions;
 				mInitialStateId = other.mInitialStateId;
+				mMetadata = other.mMetadata;
 				mIsValid = other.mIsValid;
 
 				other.mStates.RemoveAll();
 				other.mTransitions.RemoveAll();
 				other.mInitialStateId = Dia::Core::StringCRC();
+				other.mMetadata.RemoveAll();
 				other.mIsValid = false;
 			}
 			return *this;
@@ -46,14 +51,27 @@ namespace Dia
 			clone.mStates = mStates;
 			clone.mTransitions = mTransitions;
 			clone.mInitialStateId = mInitialStateId;
+			clone.mMetadata = mMetadata;
 			clone.mIsValid = mIsValid;
 			return clone;
+		}
+
+		Dia::Core::Containers::DynamicArrayC<StateDef, StateMachineDefinition::kMaxStates>&
+			StateMachineDefinition::GetStates()
+		{
+			return mStates;
 		}
 
 		const Dia::Core::Containers::DynamicArrayC<StateDef, StateMachineDefinition::kMaxStates>&
 			StateMachineDefinition::GetStates() const
 		{
 			return mStates;
+		}
+
+		Dia::Core::Containers::DynamicArrayC<TransitionDef, StateMachineDefinition::kMaxTransitions>&
+			StateMachineDefinition::GetTransitions()
+		{
+			return mTransitions;
 		}
 
 		const Dia::Core::Containers::DynamicArrayC<TransitionDef, StateMachineDefinition::kMaxTransitions>&
@@ -67,9 +85,24 @@ namespace Dia
 			return mInitialStateId;
 		}
 
+		void StateMachineDefinition::SetInitialStateId(Dia::Core::StringCRC id)
+		{
+			mInitialStateId = id;
+		}
+
 		bool StateMachineDefinition::IsValid() const
 		{
 			return mIsValid;
+		}
+
+		MetadataArray& StateMachineDefinition::GetMetadata()
+		{
+			return mMetadata;
+		}
+
+		const MetadataArray& StateMachineDefinition::GetMetadata() const
+		{
+			return mMetadata;
 		}
 
 		bool StateMachineDefinition::Validate(

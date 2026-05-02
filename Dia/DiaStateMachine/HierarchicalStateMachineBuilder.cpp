@@ -1,4 +1,5 @@
 #include "DiaStateMachine/HierarchicalStateMachineBuilder.h"
+#include "DiaStateMachine/StateMachineMetadata.h"
 #include "DiaCore/Core/Assert.h"
 
 namespace Dia
@@ -49,26 +50,44 @@ namespace Dia
 		}
 
 		HierarchicalStateMachineBuilder& HierarchicalStateMachineBuilder::OnEnter(
-			void(*action)(void*))
+			void(*action)(void*), Dia::Core::StringCRC name)
 		{
 			DIA_ASSERT(mCurrentStateIndex >= 0, "No current state");
 			mDefinition.mStates[mCurrentStateIndex].onEnter = action;
+			mDefinition.mStates[mCurrentStateIndex].onEnterName = name;
 			return *this;
 		}
 
 		HierarchicalStateMachineBuilder& HierarchicalStateMachineBuilder::OnExit(
-			void(*action)(void*))
+			void(*action)(void*), Dia::Core::StringCRC name)
 		{
 			DIA_ASSERT(mCurrentStateIndex >= 0, "No current state");
 			mDefinition.mStates[mCurrentStateIndex].onExit = action;
+			mDefinition.mStates[mCurrentStateIndex].onExitName = name;
 			return *this;
 		}
 
 		HierarchicalStateMachineBuilder& HierarchicalStateMachineBuilder::OnUpdate(
-			void(*action)(void*, float))
+			void(*action)(void*, float), Dia::Core::StringCRC name)
 		{
 			DIA_ASSERT(mCurrentStateIndex >= 0, "No current state");
 			mDefinition.mStates[mCurrentStateIndex].onUpdate = action;
+			mDefinition.mStates[mCurrentStateIndex].onUpdateName = name;
+			return *this;
+		}
+
+		HierarchicalStateMachineBuilder& HierarchicalStateMachineBuilder::StateMetadata(
+			Dia::Core::StringCRC key, const MetadataValue& value)
+		{
+			DIA_ASSERT(mCurrentStateIndex >= 0, "No current state");
+			Dia::StateMachine::SetMetadata(mDefinition.mStates[mCurrentStateIndex].metadata, key, value);
+			return *this;
+		}
+
+		HierarchicalStateMachineBuilder& HierarchicalStateMachineBuilder::MachineMetadata(
+			Dia::Core::StringCRC key, const MetadataValue& value)
+		{
+			Dia::StateMachine::SetMetadata(mDefinition.mMetadata, key, value);
 			return *this;
 		}
 

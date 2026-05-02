@@ -1,6 +1,7 @@
 #pragma once
 
 #include "DiaStateMachine/PushdownAutomatonDefinition.h"
+#include "DiaStateMachine/StateMachineMetadata.h"
 
 namespace Dia
 {
@@ -11,11 +12,18 @@ namespace Dia
 		public:
 			PushdownAutomatonBuilder& State(Dia::Core::StringCRC stateId);
 			PushdownAutomatonBuilder& InitialState(Dia::Core::StringCRC stateId);
-			PushdownAutomatonBuilder& OnEnter(void(*action)(void*));
-			PushdownAutomatonBuilder& OnExit(void(*action)(void*));
-			PushdownAutomatonBuilder& OnUpdate(void(*action)(void*, float));
-			PushdownAutomatonBuilder& OnPause(void(*action)(void*));
-			PushdownAutomatonBuilder& OnResume(void(*action)(void*));
+			PushdownAutomatonBuilder& OnEnter(void(*action)(void*),
+				Dia::Core::StringCRC name = Dia::Core::StringCRC());
+			PushdownAutomatonBuilder& OnExit(void(*action)(void*),
+				Dia::Core::StringCRC name = Dia::Core::StringCRC());
+			PushdownAutomatonBuilder& OnUpdate(void(*action)(void*, float),
+				Dia::Core::StringCRC name = Dia::Core::StringCRC());
+			PushdownAutomatonBuilder& OnPause(void(*action)(void*),
+				Dia::Core::StringCRC name = Dia::Core::StringCRC());
+			PushdownAutomatonBuilder& OnResume(void(*action)(void*),
+				Dia::Core::StringCRC name = Dia::Core::StringCRC());
+			PushdownAutomatonBuilder& StateMetadata(Dia::Core::StringCRC key, const MetadataValue& value);
+			PushdownAutomatonBuilder& MachineMetadata(Dia::Core::StringCRC key, const MetadataValue& value);
 
 			PushdownAutomatonDefinition Build() const;
 

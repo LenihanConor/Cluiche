@@ -1,4 +1,5 @@
 #include "DiaStateMachine/PushdownAutomatonDefinition.h"
+#include "DiaStateMachine/StateMachineMetadata.h"
 
 namespace Dia
 {
@@ -12,10 +13,12 @@ namespace Dia
 			PushdownAutomatonDefinition&& other)
 			: mStates(other.mStates)
 			, mInitialStateId(other.mInitialStateId)
+			, mMetadata(other.mMetadata)
 			, mIsValid(other.mIsValid)
 		{
 			other.mStates.RemoveAll();
 			other.mInitialStateId = Dia::Core::StringCRC();
+			other.mMetadata.RemoveAll();
 			other.mIsValid = false;
 		}
 
@@ -26,10 +29,12 @@ namespace Dia
 			{
 				mStates = other.mStates;
 				mInitialStateId = other.mInitialStateId;
+				mMetadata = other.mMetadata;
 				mIsValid = other.mIsValid;
 
 				other.mStates.RemoveAll();
 				other.mInitialStateId = Dia::Core::StringCRC();
+				other.mMetadata.RemoveAll();
 				other.mIsValid = false;
 			}
 			return *this;
@@ -40,8 +45,15 @@ namespace Dia
 			PushdownAutomatonDefinition clone;
 			clone.mStates = mStates;
 			clone.mInitialStateId = mInitialStateId;
+			clone.mMetadata = mMetadata;
 			clone.mIsValid = mIsValid;
 			return clone;
+		}
+
+		Dia::Core::Containers::DynamicArrayC<PushdownStateDef, PushdownAutomatonDefinition::kMaxStates>&
+			PushdownAutomatonDefinition::GetStates()
+		{
+			return mStates;
 		}
 
 		const Dia::Core::Containers::DynamicArrayC<PushdownStateDef, PushdownAutomatonDefinition::kMaxStates>&
@@ -55,9 +67,24 @@ namespace Dia
 			return mInitialStateId;
 		}
 
+		void PushdownAutomatonDefinition::SetInitialStateId(Dia::Core::StringCRC id)
+		{
+			mInitialStateId = id;
+		}
+
 		bool PushdownAutomatonDefinition::IsValid() const
 		{
 			return mIsValid;
+		}
+
+		MetadataArray& PushdownAutomatonDefinition::GetMetadata()
+		{
+			return mMetadata;
+		}
+
+		const MetadataArray& PushdownAutomatonDefinition::GetMetadata() const
+		{
+			return mMetadata;
 		}
 
 		bool PushdownAutomatonDefinition::Validate(

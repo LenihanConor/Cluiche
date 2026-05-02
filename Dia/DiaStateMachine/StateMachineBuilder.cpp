@@ -1,4 +1,5 @@
 #include "DiaStateMachine/StateMachineBuilder.h"
+#include "DiaStateMachine/StateMachineMetadata.h"
 #include "DiaCore/Core/Assert.h"
 
 namespace Dia
@@ -20,24 +21,40 @@ namespace Dia
 			return *this;
 		}
 
-		StateMachineBuilder& StateMachineBuilder::OnEnter(void(*action)(void*))
+		StateMachineBuilder& StateMachineBuilder::OnEnter(void(*action)(void*), Dia::Core::StringCRC name)
 		{
 			DIA_ASSERT(mCurrentStateIndex >= 0, "No current state — call State() first");
 			mDefinition.mStates[mCurrentStateIndex].onEnter = action;
+			mDefinition.mStates[mCurrentStateIndex].onEnterName = name;
 			return *this;
 		}
 
-		StateMachineBuilder& StateMachineBuilder::OnExit(void(*action)(void*))
+		StateMachineBuilder& StateMachineBuilder::OnExit(void(*action)(void*), Dia::Core::StringCRC name)
 		{
 			DIA_ASSERT(mCurrentStateIndex >= 0, "No current state — call State() first");
 			mDefinition.mStates[mCurrentStateIndex].onExit = action;
+			mDefinition.mStates[mCurrentStateIndex].onExitName = name;
 			return *this;
 		}
 
-		StateMachineBuilder& StateMachineBuilder::OnUpdate(void(*action)(void*, float))
+		StateMachineBuilder& StateMachineBuilder::OnUpdate(void(*action)(void*, float), Dia::Core::StringCRC name)
 		{
 			DIA_ASSERT(mCurrentStateIndex >= 0, "No current state — call State() first");
 			mDefinition.mStates[mCurrentStateIndex].onUpdate = action;
+			mDefinition.mStates[mCurrentStateIndex].onUpdateName = name;
+			return *this;
+		}
+
+		StateMachineBuilder& StateMachineBuilder::StateMetadata(Dia::Core::StringCRC key, const MetadataValue& value)
+		{
+			DIA_ASSERT(mCurrentStateIndex >= 0, "No current state — call State() first");
+			Dia::StateMachine::SetMetadata(mDefinition.mStates[mCurrentStateIndex].metadata, key, value);
+			return *this;
+		}
+
+		StateMachineBuilder& StateMachineBuilder::MachineMetadata(Dia::Core::StringCRC key, const MetadataValue& value)
+		{
+			Dia::StateMachine::SetMetadata(mDefinition.mMetadata, key, value);
 			return *this;
 		}
 

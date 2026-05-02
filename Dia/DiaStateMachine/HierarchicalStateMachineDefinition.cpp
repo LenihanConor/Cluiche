@@ -1,4 +1,5 @@
 #include "DiaStateMachine/HierarchicalStateMachineDefinition.h"
+#include "DiaStateMachine/StateMachineMetadata.h"
 #include "DiaCore/Core/Assert.h"
 
 namespace Dia
@@ -14,11 +15,13 @@ namespace Dia
 			: mStates(other.mStates)
 			, mTransitions(other.mTransitions)
 			, mInitialStateId(other.mInitialStateId)
+			, mMetadata(other.mMetadata)
 			, mIsValid(other.mIsValid)
 		{
 			other.mStates.RemoveAll();
 			other.mTransitions.RemoveAll();
 			other.mInitialStateId = Dia::Core::StringCRC();
+			other.mMetadata.RemoveAll();
 			other.mIsValid = false;
 		}
 
@@ -30,11 +33,13 @@ namespace Dia
 				mStates = other.mStates;
 				mTransitions = other.mTransitions;
 				mInitialStateId = other.mInitialStateId;
+				mMetadata = other.mMetadata;
 				mIsValid = other.mIsValid;
 
 				other.mStates.RemoveAll();
 				other.mTransitions.RemoveAll();
 				other.mInitialStateId = Dia::Core::StringCRC();
+				other.mMetadata.RemoveAll();
 				other.mIsValid = false;
 			}
 			return *this;
@@ -46,14 +51,27 @@ namespace Dia
 			clone.mStates = mStates;
 			clone.mTransitions = mTransitions;
 			clone.mInitialStateId = mInitialStateId;
+			clone.mMetadata = mMetadata;
 			clone.mIsValid = mIsValid;
 			return clone;
+		}
+
+		Dia::Core::Containers::DynamicArrayC<HierarchicalStateDef, HierarchicalStateMachineDefinition::kMaxStates>&
+			HierarchicalStateMachineDefinition::GetStates()
+		{
+			return mStates;
 		}
 
 		const Dia::Core::Containers::DynamicArrayC<HierarchicalStateDef, HierarchicalStateMachineDefinition::kMaxStates>&
 			HierarchicalStateMachineDefinition::GetStates() const
 		{
 			return mStates;
+		}
+
+		Dia::Core::Containers::DynamicArrayC<HierarchicalTransitionDef, HierarchicalStateMachineDefinition::kMaxTransitions>&
+			HierarchicalStateMachineDefinition::GetTransitions()
+		{
+			return mTransitions;
 		}
 
 		const Dia::Core::Containers::DynamicArrayC<HierarchicalTransitionDef, HierarchicalStateMachineDefinition::kMaxTransitions>&
@@ -67,9 +85,24 @@ namespace Dia
 			return mInitialStateId;
 		}
 
+		void HierarchicalStateMachineDefinition::SetInitialStateId(Dia::Core::StringCRC id)
+		{
+			mInitialStateId = id;
+		}
+
 		bool HierarchicalStateMachineDefinition::IsValid() const
 		{
 			return mIsValid;
+		}
+
+		MetadataArray& HierarchicalStateMachineDefinition::GetMetadata()
+		{
+			return mMetadata;
+		}
+
+		const MetadataArray& HierarchicalStateMachineDefinition::GetMetadata() const
+		{
+			return mMetadata;
 		}
 
 		bool HierarchicalStateMachineDefinition::Validate(
