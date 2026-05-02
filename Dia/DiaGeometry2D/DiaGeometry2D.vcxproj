@@ -80,6 +80,9 @@
     <ClInclude Include="Spatial\Quadtree.h" />
     <ClInclude Include="Spatial\BVH.h" />
     <ClInclude Include="Spatial\HexGrid.h" />
+    <ClInclude Include="Spatial\SpatialGridDef.h" />
+    <ClInclude Include="Spatial\ISpatialGridSerializer.h" />
+    <ClInclude Include="Spatial\JsonSpatialGridSerializer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Shapes\IntersectionClassify.cpp" />
@@ -103,6 +106,7 @@
     <ClCompile Include="Spatial\Quadtree.cpp" />
     <ClCompile Include="Spatial\BVH.cpp" />
     <ClCompile Include="Spatial\HexGrid.cpp" />
+    <ClCompile Include="Spatial\JsonSpatialGridSerializer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Shapes\IntersectionClassify.inl" />
@@ -132,6 +136,10 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaMaths\DiaMaths.vcxproj">
       <Project>{2BBA0AD3-D449-4C0E-8C84-ACFA8BCA456B}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaSerializer\DiaSerializer.vcxproj">
+      <Project>{B0C1D2E3-F4A5-6789-BCDE-F01234567891}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

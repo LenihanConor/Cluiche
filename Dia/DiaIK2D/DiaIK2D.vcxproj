@@ -59,9 +59,12 @@
   <ItemGroup>
     <ClInclude Include="IKChainDef.h" />
     <ClInclude Include="IKSolver.h" />
+    <ClInclude Include="IIKChainSerializer.h" />
+    <ClInclude Include="JsonIKChainSerializer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="IKSolver.cpp" />
+    <ClCompile Include="JsonIKChainSerializer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.ik2d.architecture.module.md" />
@@ -85,6 +88,10 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaRig2D\DiaRig2D.vcxproj">
       <Project>{E4F5A6B7-C8D9-0123-ABCD-456789ABCDE0}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaSerializer\DiaSerializer.vcxproj">
+      <Project>{B0C1D2E3-F4A5-6789-BCDE-F01234567891}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

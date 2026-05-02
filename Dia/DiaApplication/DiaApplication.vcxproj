@@ -24,6 +24,7 @@
     <ClCompile Include="Manifest\ApplicationManifestLoader.cpp" />
     <ClCompile Include="Manifest\ManifestComposer.cpp" />
     <ClCompile Include="Manifest\ManifestValidator.cpp" />
+    <ClCompile Include="Manifest\JsonApplicationManifestSerializer.cpp" />
     <ClCompile Include="TypeRegistry\ApplicationTypeRegistry.cpp" />
     <ClCompile Include="Metrics\MetricsCollectorModule.cpp" />
   </ItemGroup>
@@ -40,6 +41,7 @@
     <ClInclude Include="Manifest\ApplicationManifestLoader.h" />
     <ClInclude Include="Manifest\ManifestComposer.h" />
     <ClInclude Include="Manifest\ManifestValidator.h" />
+    <ClInclude Include="Manifest\JsonApplicationManifestSerializer.h" />
     <ClInclude Include="TypeRegistry\ApplicationTypeRegistry.h" />
     <ClInclude Include="DebugDataTypes.h" />
     <ClInclude Include="Metrics\MetricsCollectorModule.h" />
@@ -105,6 +107,10 @@
   <ItemGroup>
     <ProjectReference Include="..\DiaLogger\DiaLogger.vcxproj">
       <Project>{7a8b9c0d-e1f2-3456-7890-abcdef012345}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaSerializer\DiaSerializer.vcxproj">
+      <Project>{B0C1D2E3-F4A5-6789-BCDE-F01234567891}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

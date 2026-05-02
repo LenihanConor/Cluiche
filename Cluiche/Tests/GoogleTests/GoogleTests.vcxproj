@@ -193,6 +193,7 @@
     <ClCompile Include="CLI\TestEventSystem.cpp" />
     <ClCompile Include="CLI\TestPythonBindings.cpp" />
     <ClCompile Include="DiaCLI\TestDiaCLI.cpp" />
+    <ClCompile Include="Application\TestApplicationManifestSerializer.cpp" />
     <ClCompile Include="Application\TestBasicApplication.cpp" />
     <ClCompile Include="Application\TestHotReload.cpp" />
     <ClCompile Include="Application\TestApplicationTypeRegistry.cpp" />
@@ -255,6 +256,7 @@
     <ClCompile Include="Editor\TestEditorToolbarItem.cpp" />
     <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\PluginBrowserEditorPlugin.cpp" />
     <!-- Geometry2D -->
+    <ClCompile Include="Geometry2D\TestSpatialGridSerializer.cpp" />
     <ClCompile Include="Geometry2D\TestShapePrimitives.cpp" />
 
     <ClCompile Include="Geometry2D\TestIntersectionTests.cpp" />
@@ -325,6 +327,7 @@
     <ClCompile Include="Rig2D\TestRig2DBoundary.cpp" />
     <ClCompile Include="Rig2D\TestRig2DIntegration.cpp" />
     <!-- IK2D -->
+    <ClCompile Include="IK\TestIKChainSerializer.cpp" />
     <ClCompile Include="IK\TestIKChainDef.cpp" />
     <ClCompile Include="IK\TestIKSolverRegistration.cpp" />
     <ClCompile Include="IK\TestTwoBoneSolver.cpp" />
