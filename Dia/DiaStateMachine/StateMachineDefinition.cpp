@@ -95,6 +95,11 @@ namespace Dia
 			return mIsValid;
 		}
 
+		void StateMachineDefinition::MarkValid()
+		{
+			mIsValid = true;
+		}
+
 		MetadataArray& StateMachineDefinition::GetMetadata()
 		{
 			return mMetadata;

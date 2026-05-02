@@ -95,6 +95,11 @@ namespace Dia
 			return mIsValid;
 		}
 
+		void HierarchicalStateMachineDefinition::MarkValid()
+		{
+			mIsValid = true;
+		}
+
 		MetadataArray& HierarchicalStateMachineDefinition::GetMetadata()
 		{
 			return mMetadata;

@@ -334,3 +334,196 @@ TEST(JsonStateMachineSerializer, MetadataAllTypesRoundTrip)
 	ASSERT_NE(f, nullptr); EXPECT_EQ(f->type, MetadataValue::kFloat);  EXPECT_FLOAT_EQ(f->floatVal, 3.14f);
 	ASSERT_NE(s, nullptr); EXPECT_EQ(s->type, MetadataValue::kString); EXPECT_STREQ(s->stringVal.AsChar(), "hello");
 }
+
+// ---------------------------------------------------------------------------
+// 1. kAnyState round-trip
+// ---------------------------------------------------------------------------
+
+TEST(JsonStateMachineSerializer, AnyStateSourceRoundTrip)
+{
+	StateMachineDefinition original = StateMachineBuilder()
+		.InitialState(Dia::Core::StringCRC("A"))
+		.State(Dia::Core::StringCRC("A"))
+		.State(Dia::Core::StringCRC("B"))
+		.State(Dia::Core::StringCRC("C"))
+			.Transition(Dia::Core::StringCRC("B"), Dia::Core::StringCRC("goB"))  // normal
+		.Build();
+
+	// Manually inject a wildcard transition via the definition's mutable getter
+	TransitionDef wildcard;
+	wildcard.sourceStateId = kAnyState;
+	wildcard.targetStateId = Dia::Core::StringCRC("C");
+	wildcard.triggerId     = Dia::Core::StringCRC("escape");
+	original.GetTransitions().Add(wildcard);
+
+	char buffer[4096] = {};
+	JsonStateMachineSerializer serializer;
+	ASSERT_TRUE(serializer.Save(original, buffer, sizeof(buffer)));
+
+	CallbackRegistry reg;
+	StateMachineDefinition loaded;
+	ASSERT_TRUE(serializer.Load(loaded, reg, buffer));
+
+	bool foundWildcard = false;
+	const auto& transitions = loaded.GetTransitions();
+	for (unsigned int i = 0; i < transitions.Size(); ++i)
+	{
+		if (transitions[i].sourceStateId == kAnyState)
+		{
+			foundWildcard = true;
+			EXPECT_EQ(transitions[i].targetStateId, Dia::Core::StringCRC("C"));
+			EXPECT_EQ(transitions[i].triggerId, Dia::Core::StringCRC("escape"));
+		}
+	}
+	EXPECT_TRUE(foundWildcard);
+}
+
+// ---------------------------------------------------------------------------
+// 2. Clone() preserves metadata and callback names
+// ---------------------------------------------------------------------------
+
+TEST(StateMachineDefinition, ClonePreservesMetadataAndCallbackNames)
+{
+	StateMachineDefinition original = StateMachineBuilder()
+		.InitialState(Dia::Core::StringCRC("A"))
+		.State(Dia::Core::StringCRC("A"))
+			.OnEnter(OnEnterA, Dia::Core::StringCRC("OnEnterA"))
+			.StateMetadata(Dia::Core::StringCRC("clip"), MetadataValue::FromString("idle"))
+		.MachineMetadata(Dia::Core::StringCRC("layer"), MetadataValue::FromInt(3))
+		.State(Dia::Core::StringCRC("B"))
+		.Build();
+
+	StateMachineDefinition clone = original.Clone();
+
+	EXPECT_EQ(clone.GetStates()[0].onEnterName, Dia::Core::StringCRC("OnEnterA"));
+
+	const MetadataValue* clip = FindMetadata(clone.GetStates()[0].metadata, Dia::Core::StringCRC("clip"));
+	ASSERT_NE(clip, nullptr);
+	EXPECT_STREQ(clip->stringVal.AsChar(), "idle");
+
+	const MetadataValue* layer = FindMetadata(clone.GetMetadata(), Dia::Core::StringCRC("layer"));
+	ASSERT_NE(layer, nullptr);
+	EXPECT_EQ(layer->intVal, 3);
+}
+
+TEST(HierarchicalStateMachineDefinition, ClonePreservesMetadata)
+{
+	HierarchicalStateMachineDefinition original = HierarchicalStateMachineBuilder()
+		.InitialState(Dia::Core::StringCRC("Root"))
+		.State(Dia::Core::StringCRC("Root"))
+			.StateMetadata(Dia::Core::StringCRC("weight"), MetadataValue::FromFloat(0.8f))
+		.MachineMetadata(Dia::Core::StringCRC("blend"), MetadataValue::FromBool(true))
+		.Build();
+
+	HierarchicalStateMachineDefinition clone = original.Clone();
+
+	const MetadataValue* weight = FindMetadata(clone.GetStates()[0].metadata, Dia::Core::StringCRC("weight"));
+	ASSERT_NE(weight, nullptr);
+	EXPECT_FLOAT_EQ(weight->floatVal, 0.8f);
+
+	const MetadataValue* blend = FindMetadata(clone.GetMetadata(), Dia::Core::StringCRC("blend"));
+	ASSERT_NE(blend, nullptr);
+	EXPECT_TRUE(blend->boolVal);
+}
+
+TEST(PushdownAutomatonDefinition, ClonePreservesMetadata)
+{
+	PushdownAutomatonDefinition original = PushdownAutomatonBuilder()
+		.InitialState(Dia::Core::StringCRC("Menu"))
+		.State(Dia::Core::StringCRC("Menu"))
+			.OnPause(OnPauseA, Dia::Core::StringCRC("OnPauseA"))
+			.StateMetadata(Dia::Core::StringCRC("depth"), MetadataValue::FromInt(1))
+		.Build();
+
+	PushdownAutomatonDefinition clone = original.Clone();
+
+	EXPECT_EQ(clone.GetStates()[0].onPauseName, Dia::Core::StringCRC("OnPauseA"));
+
+	const MetadataValue* depth = FindMetadata(clone.GetStates()[0].metadata, Dia::Core::StringCRC("depth"));
+	ASSERT_NE(depth, nullptr);
+	EXPECT_EQ(depth->intVal, 1);
+}
+
+// ---------------------------------------------------------------------------
+// 3. HSM and PDA builder callback names (direct unit tests)
+// ---------------------------------------------------------------------------
+
+TEST(HierarchicalStateMachineBuilder, CallbackNamesStoredInDef)
+{
+	HierarchicalStateMachineDefinition def = HierarchicalStateMachineBuilder()
+		.InitialState(Dia::Core::StringCRC("Root"))
+		.State(Dia::Core::StringCRC("Root"))
+			.OnEnter(OnEnterA,   Dia::Core::StringCRC("OnEnterA"))
+			.OnExit(OnExitA,     Dia::Core::StringCRC("OnExitA"))
+			.OnUpdate(OnUpdateA, Dia::Core::StringCRC("OnUpdateA"))
+		.Build();
+
+	EXPECT_EQ(def.GetStates()[0].onEnterName,  Dia::Core::StringCRC("OnEnterA"));
+	EXPECT_EQ(def.GetStates()[0].onExitName,   Dia::Core::StringCRC("OnExitA"));
+	EXPECT_EQ(def.GetStates()[0].onUpdateName, Dia::Core::StringCRC("OnUpdateA"));
+}
+
+TEST(PushdownAutomatonBuilder, CallbackNamesStoredInDef)
+{
+	PushdownAutomatonDefinition def = PushdownAutomatonBuilder()
+		.InitialState(Dia::Core::StringCRC("A"))
+		.State(Dia::Core::StringCRC("A"))
+			.OnEnter(OnEnterA,   Dia::Core::StringCRC("OnEnterA"))
+			.OnExit(OnExitA,     Dia::Core::StringCRC("OnExitA"))
+			.OnUpdate(OnUpdateA, Dia::Core::StringCRC("OnUpdateA"))
+			.OnPause(OnPauseA,   Dia::Core::StringCRC("OnPauseA"))
+			.OnResume(OnResumeA, Dia::Core::StringCRC("OnResumeA"))
+		.Build();
+
+	EXPECT_EQ(def.GetStates()[0].onEnterName,  Dia::Core::StringCRC("OnEnterA"));
+	EXPECT_EQ(def.GetStates()[0].onExitName,   Dia::Core::StringCRC("OnExitA"));
+	EXPECT_EQ(def.GetStates()[0].onUpdateName, Dia::Core::StringCRC("OnUpdateA"));
+	EXPECT_EQ(def.GetStates()[0].onPauseName,  Dia::Core::StringCRC("OnPauseA"));
+	EXPECT_EQ(def.GetStates()[0].onResumeName, Dia::Core::StringCRC("OnResumeA"));
+}
+
+// ---------------------------------------------------------------------------
+// 4. Malformed JSON input
+// ---------------------------------------------------------------------------
+
+TEST(JsonStateMachineSerializer, MalformedJsonReturnsFalse)
+{
+	const char* garbage = "not json at all }{{{";
+	CallbackRegistry reg;
+	StateMachineDefinition def;
+	JsonStateMachineSerializer serializer;
+	EXPECT_FALSE(serializer.Load(def, reg, garbage));
+}
+
+// ---------------------------------------------------------------------------
+// 5. Topology-only machine (no callbacks) loads and validates cleanly
+// ---------------------------------------------------------------------------
+
+TEST(JsonStateMachineSerializer, TopologyOnlyNoCallbacksLoadsClean)
+{
+	StateMachineDefinition original = StateMachineBuilder()
+		.InitialState(Dia::Core::StringCRC("Idle"))
+		.State(Dia::Core::StringCRC("Idle"))
+			.Transition(Dia::Core::StringCRC("Running"), Dia::Core::StringCRC("start"))
+		.State(Dia::Core::StringCRC("Running"))
+			.Transition(Dia::Core::StringCRC("Idle"), Dia::Core::StringCRC("stop"))
+		.Build();
+
+	char buffer[4096] = {};
+	JsonStateMachineSerializer serializer;
+	ASSERT_TRUE(serializer.Save(original, buffer, sizeof(buffer)));
+
+	CallbackRegistry reg;  // empty — no callbacks registered
+	StateMachineDefinition loaded;
+	ASSERT_TRUE(serializer.Load(loaded, reg, buffer));
+
+	ASSERT_EQ(loaded.GetStates().Size(), 2u);
+	ASSERT_EQ(loaded.GetTransitions().Size(), 2u);
+	EXPECT_EQ(loaded.GetInitialStateId(), Dia::Core::StringCRC("Idle"));
+
+	// All function pointers must be null — no callbacks were in the JSON
+	EXPECT_EQ(loaded.GetStates()[0].onEnter,  nullptr);
+	EXPECT_EQ(loaded.GetStates()[0].onExit,   nullptr);
+	EXPECT_EQ(loaded.GetStates()[0].onUpdate, nullptr);
+	EXPECT_TRUE(loaded.IsValid());
+}

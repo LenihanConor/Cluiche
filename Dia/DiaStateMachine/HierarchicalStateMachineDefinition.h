@@ -59,6 +59,7 @@ namespace Dia
 
 			bool Validate(Dia::Core::Containers::DynamicArrayC<const char*, 16>& outErrors) const;
 			bool IsValid() const;
+			void MarkValid();
 
 			MetadataArray& GetMetadata();
 			const MetadataArray& GetMetadata() const;

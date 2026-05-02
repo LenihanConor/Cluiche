@@ -77,6 +77,11 @@ namespace Dia
 			return mIsValid;
 		}
 
+		void PushdownAutomatonDefinition::MarkValid()
+		{
+			mIsValid = true;
+		}
+
 		MetadataArray& PushdownAutomatonDefinition::GetMetadata()
 		{
 			return mMetadata;

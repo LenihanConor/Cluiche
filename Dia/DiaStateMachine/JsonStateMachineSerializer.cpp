@@ -260,8 +260,9 @@ namespace Dia
 
 			Dia::Core::Containers::DynamicArrayC<const char*, 16> errors;
 			bool valid = outDef.Validate(errors);
-			if (!valid) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: loaded FlatStateMachine definition failed validation"); }
-			return valid;
+			if (!valid) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: loaded FlatStateMachine definition failed validation"); return false; }
+			outDef.MarkValid();
+			return true;
 		}
 
 		// ---------------------------------------------------------------------------
