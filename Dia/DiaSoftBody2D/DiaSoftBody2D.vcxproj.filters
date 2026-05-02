@@ -10,6 +10,9 @@
     <Filter Include="Docs">
       <UniqueIdentifier>{SB2D0003-C3D4-E5F6-A7B8-901234567890}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{SB2D0004-D4E5-F6A7-B8C9-012345678901}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Particle.h" />
@@ -30,5 +33,10 @@
     <None Include="Docs\dia.softbody2d.architecture.module.md">
       <Filter>Docs</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Testing\SoftBodyWorldBuilder.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

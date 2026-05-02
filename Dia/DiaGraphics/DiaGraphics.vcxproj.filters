@@ -113,5 +113,13 @@
     <Filter Include="Misc">
       <UniqueIdentifier>{71a9b7ee-c0d2-4041-b9ca-02c4f519b545}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{B7C8D9E0-F1A2-3456-7890-123456A01234}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Testing\MockVisitors.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

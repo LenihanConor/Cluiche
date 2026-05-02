@@ -109,6 +109,9 @@
     <None Include="Docs\dia.rigidbody2d.architecture.module.md" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Testing\PhysicsWorldBuilder.h" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
       <Project>{8d41cbe3-c493-428d-95f3-627e56500667}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>

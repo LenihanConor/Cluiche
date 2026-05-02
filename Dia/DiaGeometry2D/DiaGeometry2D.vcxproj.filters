@@ -16,6 +16,9 @@
     <Filter Include="Docs">
       <UniqueIdentifier>{F5A6B7C8-D9E0-1234-5678-901234EF0123}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{A6B7C8D9-E0F1-2345-6789-012345F01234}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Shapes\IntersectionClassify.h">
@@ -190,5 +193,10 @@
     <None Include="Docs\dia.geometry2d.architecture.module.md">
       <Filter>Docs</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Testing\ShapeFactory.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

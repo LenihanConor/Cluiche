@@ -31,6 +31,9 @@
     <Filter Include="Triggers">
       <UniqueIdentifier>{D0E1F2A3-B4C5-6789-0123-456789345678}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{E1F2A3B4-C5D6-7890-1234-567890456789}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Bodies\BodyType.h">
@@ -172,5 +175,10 @@
     <None Include="Docs\dia.rigidbody2d.architecture.module.md">
       <Filter>Docs</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Testing\PhysicsWorldBuilder.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
