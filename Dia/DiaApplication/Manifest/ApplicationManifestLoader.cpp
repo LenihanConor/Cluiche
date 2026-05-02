@@ -1,20 +1,17 @@
 #include "ApplicationManifestLoader.h"
+#include "JsonApplicationManifestSerializer.h"
 
 #include <DiaApplication/TypeRegistry/ApplicationTypeRegistry.h>
 #include <DiaApplication/ApplicationProcessingUnit.h>
 #include <DiaApplication/ApplicationPhase.h>
 #include <DiaApplication/ApplicationModule.h>
 
-#include <DiaCore/Json/external/json/json.h>
 #include <DiaLogger/DiaLog.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaCore/Strings/String256.h>
 #include <DiaCore/Containers/HashTables/HashTable.h>
 #include <DiaCore/CRC/CRCHashFunctor.h>
 #include <DiaCore/Memory/UniquePtr.h>
-
-#include <fstream>
-#include <sstream>
 
 namespace Dia
 {
@@ -38,54 +35,26 @@ namespace Dia
 		ManifestValidationResult ApplicationManifestLoader::LoadFromFile(const char* filePath, ApplicationManifest& outManifest)
 		{
 			ClearErrors();
-
-			// Read file contents
-			std::ifstream fileStream(filePath, std::ios::in | std::ios::binary);
-			if (!fileStream.is_open())
+			JsonApplicationManifestSerializer serializer;
+			auto result = serializer.LoadFromFile(filePath, outManifest);
+			if (!result)
 			{
-				Dia::Core::Containers::String256 msg;
-				msg.Format("Failed to open file: %s", filePath);
-				AddError(ManifestValidationResult::kImportNotFound, msg.AsCStr(), "file");
+				AddError(ManifestValidationResult::kImportNotFound, result.error ? result.error : "file read error", "file");
 				return ManifestValidationResult::kImportNotFound;
 			}
-
-			// Read entire file into string
-			std::stringstream buffer;
-			buffer << fileStream.rdbuf();
-			fileStream.close();
-
-			// Parse JSON
-			return LoadFromString(buffer.str().c_str(), outManifest);
+			return Validate(outManifest);
 		}
 
 		ManifestValidationResult ApplicationManifestLoader::LoadFromString(const char* jsonString, ApplicationManifest& outManifest)
 		{
 			ClearErrors();
-
-			// Parse JSON string
-			Json::Value root;
-			Json::Reader reader;
-			bool parsingSuccessful = reader.parse(jsonString, root, false);
-
-			if (!parsingSuccessful)
+			JsonApplicationManifestSerializer serializer;
+			auto result = serializer.Load(jsonString, outManifest);
+			if (!result)
 			{
-				Dia::Core::Containers::String256 msg;
-				msg.Format("JSON parsing failed: %s", reader.getFormattedErrorMessages().c_str());
-				AddError(ManifestValidationResult::kInvalidJSON, msg.AsCStr(), "json");
+				AddError(ManifestValidationResult::kInvalidJSON, result.error ? result.error : "parse error", "json");
 				return ManifestValidationResult::kInvalidJSON;
 			}
-
-			// Parse into manifest structure
-			if (!ParseJSON(root, outManifest))
-			{
-				if (mErrors.Size() > 0)
-				{
-					return mErrors[0].code;
-				}
-				return ManifestValidationResult::kInvalidJSON;
-			}
-
-			// Validate the manifest
 			return Validate(outManifest);
 		}
 
@@ -486,296 +455,6 @@ namespace Dia
 			mValidator.ClearErrors();
 		}
 
-		//-----------------------------------------------------------------------------
-		// Private Helper Methods
-		//-----------------------------------------------------------------------------
-
-		bool ApplicationManifestLoader::ParseJSON(const Json::Value& root, ApplicationManifest& outManifest)
-		{
-			// Parse version (required)
-			if (!root.isMember("version"))
-			{
-				AddError(ManifestValidationResult::kMissingRequiredField, "Missing 'version' field", "manifest");
-				return false;
-			}
-			outManifest.version = root["version"].asUInt();
-
-			// Parse processing_units (required)
-			if (!root.isMember("processing_units"))
-			{
-				AddError(ManifestValidationResult::kMissingRequiredField, "Missing 'processing_units' field", "manifest");
-				return false;
-			}
-
-			const Json::Value& processingUnits = root["processing_units"];
-			if (!processingUnits.isArray())
-			{
-				AddError(ManifestValidationResult::kInvalidJSON, "'processing_units' must be an array", "manifest");
-				return false;
-			}
-
-			for (unsigned int i = 0; i < processingUnits.size(); ++i)
-			{
-				ApplicationManifest::ProcessingUnitEntry entry;
-				if (!ParseProcessingUnit(processingUnits[i], entry))
-				{
-					return false;
-				}
-				outManifest.processingUnits.Add(entry);
-			}
-
-			// Parse imports (optional)
-			if (root.isMember("imports"))
-			{
-				const Json::Value& imports = root["imports"];
-				if (imports.isArray())
-				{
-					for (unsigned int i = 0; i < imports.size(); ++i)
-					{
-						if (imports[i].isString())
-						{
-							// Note: String is copied here, need to manage memory
-							const char* importPath = imports[i].asCString();
-							outManifest.imports.Add(importPath);
-						}
-					}
-				}
-			}
-
-			// Parse metadata (optional)
-			if (root.isMember("metadata"))
-			{
-				outManifest.metadata = new Json::Value(root["metadata"]);
-			}
-
-			return true;
-		}
-
-		bool ApplicationManifestLoader::ParseProcessingUnit(const Json::Value& puJson, ApplicationManifest::ProcessingUnitEntry& outEntry)
-		{
-			// Parse type_id (required)
-			if (!puJson.isMember("type_id"))
-			{
-				AddError(ManifestValidationResult::kMissingRequiredField, "Missing 'type_id' in processing_unit", "processing_unit");
-				return false;
-			}
-			outEntry.typeId = Dia::Core::StringCRC(puJson["type_id"].asCString());
-
-			// Parse instance_id (required)
-			if (!puJson.isMember("instance_id"))
-			{
-				AddError(ManifestValidationResult::kMissingRequiredField, "Missing 'instance_id' in processing_unit", "processing_unit");
-				return false;
-			}
-			outEntry.instanceId = Dia::Core::StringCRC(puJson["instance_id"].asCString());
-
-			// Parse frequency_hz (optional, default -1 = unlimited)
-			outEntry.frequencyHz = puJson.get("frequency_hz", -1.0f).asFloat();
-
-			// Parse dedicated_thread (optional, default false)
-			outEntry.dedicatedThread = puJson.get("dedicated_thread", false).asBool();
-
-			// Parse config (optional)
-			if (puJson.isMember("config"))
-			{
-				outEntry.config = new Json::Value(puJson["config"]);
-			}
-
-			// Parse phases (required)
-			if (!puJson.isMember("phases"))
-			{
-				AddError(ManifestValidationResult::kMissingRequiredField, "Missing 'phases' in processing_unit", "processing_unit");
-				return false;
-			}
-
-			const Json::Value& phases = puJson["phases"];
-			if (!phases.isArray())
-			{
-				AddError(ManifestValidationResult::kInvalidJSON, "'phases' must be an array", "processing_unit");
-				return false;
-			}
-
-			for (unsigned int i = 0; i < phases.size(); ++i)
-			{
-				ApplicationManifest::PhaseEntry phaseEntry;
-				if (!ParsePhase(phases[i], phaseEntry))
-				{
-					return false;
-				}
-				outEntry.phases.Add(phaseEntry);
-			}
-
-			// Parse transitions (required)
-			if (!puJson.isMember("transitions"))
-			{
-				AddError(ManifestValidationResult::kMissingRequiredField, "Missing 'transitions' in processing_unit", "processing_unit");
-				return false;
-			}
-
-			const Json::Value& transitions = puJson["transitions"];
-			if (!transitions.isArray())
-			{
-				AddError(ManifestValidationResult::kInvalidJSON, "'transitions' must be an array", "processing_unit");
-				return false;
-			}
-
-			for (unsigned int i = 0; i < transitions.size(); ++i)
-			{
-				ApplicationManifest::PhaseTransition transition;
-				if (!ParsePhaseTransition(transitions[i], transition))
-				{
-					return false;
-				}
-				outEntry.transitions.Add(transition);
-			}
-
-			// Parse initial_phase (required)
-			if (!puJson.isMember("initial_phase"))
-			{
-				AddError(ManifestValidationResult::kMissingRequiredField, "Missing 'initial_phase' in processing_unit", "processing_unit");
-				return false;
-			}
-			outEntry.initialPhase = Dia::Core::StringCRC(puJson["initial_phase"].asCString());
-
-			// Parse modules (required)
-			if (!puJson.isMember("modules"))
-			{
-				AddError(ManifestValidationResult::kMissingRequiredField, "Missing 'modules' in processing_unit", "processing_unit");
-				return false;
-			}
-
-			const Json::Value& modules = puJson["modules"];
-			if (!modules.isArray())
-			{
-				AddError(ManifestValidationResult::kInvalidJSON, "'modules' must be an array", "processing_unit");
-				return false;
-			}
-
-			for (unsigned int i = 0; i < modules.size(); ++i)
-			{
-				ApplicationManifest::ModuleEntry moduleEntry;
-				if (!ParseModule(modules[i], moduleEntry))
-				{
-					return false;
-				}
-				outEntry.modules.Add(moduleEntry);
-			}
-
-			return true;
-		}
-
-		bool ApplicationManifestLoader::ParsePhase(const Json::Value& phaseJson, ApplicationManifest::PhaseEntry& outEntry)
-		{
-			// Parse type_id (required)
-			if (!phaseJson.isMember("type_id"))
-			{
-				AddError(ManifestValidationResult::kMissingRequiredField, "Missing 'type_id' in phase", "phase");
-				return false;
-			}
-			outEntry.typeId = Dia::Core::StringCRC(phaseJson["type_id"].asCString());
-
-			// Parse instance_id (required)
-			if (!phaseJson.isMember("instance_id"))
-			{
-				AddError(ManifestValidationResult::kMissingRequiredField, "Missing 'instance_id' in phase", "phase");
-				return false;
-			}
-			outEntry.instanceId = Dia::Core::StringCRC(phaseJson["instance_id"].asCString());
-
-			// Parse config (optional)
-			if (phaseJson.isMember("config"))
-			{
-				outEntry.config = new Json::Value(phaseJson["config"]);
-			}
-
-			return true;
-		}
-
-		bool ApplicationManifestLoader::ParseModule(const Json::Value& moduleJson, ApplicationManifest::ModuleEntry& outEntry)
-		{
-			// Parse type_id (required)
-			if (!moduleJson.isMember("type_id"))
-			{
-				AddError(ManifestValidationResult::kMissingRequiredField, "Missing 'type_id' in module", "module");
-				return false;
-			}
-			outEntry.typeId = Dia::Core::StringCRC(moduleJson["type_id"].asCString());
-
-			// Parse instance_id (required)
-			if (!moduleJson.isMember("instance_id"))
-			{
-				AddError(ManifestValidationResult::kMissingRequiredField, "Missing 'instance_id' in module", "module");
-				return false;
-			}
-			outEntry.instanceId = Dia::Core::StringCRC(moduleJson["instance_id"].asCString());
-
-			// Parse phase_ids (required)
-			if (!moduleJson.isMember("phase_ids"))
-			{
-				AddError(ManifestValidationResult::kMissingRequiredField, "Missing 'phase_ids' in module", "module");
-				return false;
-			}
-
-			const Json::Value& phaseIds = moduleJson["phase_ids"];
-			if (!phaseIds.isArray())
-			{
-				AddError(ManifestValidationResult::kInvalidJSON, "'phase_ids' must be an array", "module");
-				return false;
-			}
-
-			for (unsigned int i = 0; i < phaseIds.size(); ++i)
-			{
-				if (phaseIds[i].isString())
-				{
-					outEntry.phaseIds.Add(Dia::Core::StringCRC(phaseIds[i].asCString()));
-				}
-			}
-
-			// Parse dependencies (optional)
-			if (moduleJson.isMember("dependencies"))
-			{
-				const Json::Value& dependencies = moduleJson["dependencies"];
-				if (dependencies.isArray())
-				{
-					for (unsigned int i = 0; i < dependencies.size(); ++i)
-					{
-						if (dependencies[i].isString())
-						{
-							outEntry.dependencies.Add(Dia::Core::StringCRC(dependencies[i].asCString()));
-						}
-					}
-				}
-			}
-
-			// Parse config (optional)
-			if (moduleJson.isMember("config"))
-			{
-				outEntry.config = new Json::Value(moduleJson["config"]);
-			}
-
-			return true;
-		}
-
-		bool ApplicationManifestLoader::ParsePhaseTransition(const Json::Value& transitionJson, ApplicationManifest::PhaseTransition& outTransition)
-		{
-			// Parse from (required)
-			if (!transitionJson.isMember("from"))
-			{
-				AddError(ManifestValidationResult::kMissingRequiredField, "Missing 'from' in transition", "transition");
-				return false;
-			}
-			outTransition.fromPhase = Dia::Core::StringCRC(transitionJson["from"].asCString());
-
-			// Parse to (required)
-			if (!transitionJson.isMember("to"))
-			{
-				AddError(ManifestValidationResult::kMissingRequiredField, "Missing 'to' in transition", "transition");
-				return false;
-			}
-			outTransition.toPhase = Dia::Core::StringCRC(transitionJson["to"].asCString());
-
-			return true;
-		}
 
 		void ApplicationManifestLoader::AddError(ManifestValidationResult code, const char* message, const char* context)
 		{

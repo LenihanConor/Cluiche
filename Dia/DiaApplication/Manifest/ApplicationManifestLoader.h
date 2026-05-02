@@ -70,16 +70,7 @@ namespace Dia
 			Dia::Core::Containers::DynamicArrayC<ManifestValidationError, 32> mErrors;
 			ManifestValidator mValidator;
 
-			// Parse JSON into manifest structure
-			bool ParseJSON(const Json::Value& root, ApplicationManifest& outManifest);
-
-			// Helper methods for parsing each section
-			bool ParseProcessingUnit(const Json::Value& puJson, ApplicationManifest::ProcessingUnitEntry& outEntry);
-			bool ParsePhase(const Json::Value& phaseJson, ApplicationManifest::PhaseEntry& outEntry);
-			bool ParseModule(const Json::Value& moduleJson, ApplicationManifest::ModuleEntry& outEntry);
-			bool ParsePhaseTransition(const Json::Value& transitionJson, ApplicationManifest::PhaseTransition& outTransition);
-
-			// Helper to add errors
+				// Helper to add errors
 			void AddError(ManifestValidationResult code, const char* message, const char* context);
 		};
 	}

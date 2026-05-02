@@ -228,3 +228,62 @@ TEST(SpatialGridSerializer, GetVersion_NotEmpty)
     ASSERT_NE(v, nullptr);
     EXPECT_GT(strlen(v), 0u);
 }
+
+TEST(SpatialGridSerializer, SaveSpatialGrid_BufferTooSmall_Fails)
+{
+    JsonSpatialGridSerializer s;
+    SpatialGridConfig cfg;
+    ASSERT_TRUE(s.LoadSpatialGrid(kValidSpatialGrid, cfg));
+
+    char tiny[1];
+    auto result = s.SaveSpatialGrid(cfg, tiny, sizeof(tiny));
+    EXPECT_FALSE(result);
+    EXPECT_NE(result.error, nullptr);
+}
+
+TEST(SpatialGridSerializer, SaveHexGrid_BufferTooSmall_Fails)
+{
+    JsonSpatialGridSerializer s;
+    HexGridConfig cfg;
+    ASSERT_TRUE(s.LoadHexGrid(kValidHexGrid, cfg));
+
+    char tiny[1];
+    auto result = s.SaveHexGrid(cfg, tiny, sizeof(tiny));
+    EXPECT_FALSE(result);
+    EXPECT_NE(result.error, nullptr);
+}
+
+TEST(SpatialGridSerializer, Load_SpatialGrid_InvertedBounds_Fails)
+{
+    JsonSpatialGridSerializer s;
+    SpatialGridConfig cfg;
+
+    // bottom_left x > top_right x — spatially inverted
+    static const char* kInverted = R"({
+        "world_bounds": {
+            "bottom_left": [100, 100],
+            "top_right":   [-100, -100]
+        },
+        "cell_size": 5.0
+    })";
+
+    // AARect itself doesn't enforce ordering, but the grid can't have
+    // a valid non-empty extent — we treat this as an error
+    EXPECT_FALSE(s.LoadSpatialGrid(kInverted, cfg));
+}
+
+TEST(SpatialGridSerializer, Load_HexGrid_InvertedBounds_Fails)
+{
+    JsonSpatialGridSerializer s;
+    HexGridConfig cfg;
+
+    static const char* kInverted = R"({
+        "world_bounds": {
+            "bottom_left": [50, 50],
+            "top_right":   [0, 0]
+        },
+        "hex_radius": 2.0
+    })";
+
+    EXPECT_FALSE(s.LoadHexGrid(kInverted, cfg));
+}

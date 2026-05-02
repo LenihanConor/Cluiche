@@ -4,6 +4,7 @@
 #include <DiaSerializer/SerializeResult.h>
 #include <DiaMaths/Core/MathsDefines.h>
 #include <cstdio>
+#include <string>
 
 using namespace Dia::IK2D;
 
@@ -158,4 +159,52 @@ TEST(IKChainSerializer, GetVersion_NotEmpty)
     const char* v = s.GetVersion();
     ASSERT_NE(v, nullptr);
     EXPECT_GT(strlen(v), 0u);
+}
+
+TEST(IKChainSerializer, Save_BufferTooSmall_Fails)
+{
+    JsonIKChainSerializer s;
+    IKChainDef def;
+    ASSERT_TRUE(s.Load(kValidChain, def));
+
+    char tiny[1];
+    auto result = s.Save(def, tiny, sizeof(tiny));
+    EXPECT_FALSE(result);
+    EXPECT_NE(result.error, nullptr);
+}
+
+TEST(IKChainSerializer, Load_JointLimitsAtCapacity)
+{
+    JsonIKChainSerializer s;
+
+    // Build a JSON with exactly kMaxJointLimits entries
+    std::string json = R"({"id":"cap","start_bone":"a","end_bone":"b","joint_limits":[)";
+    for (unsigned int i = 0; i < Dia::IK2D::kMaxJointLimits; ++i)
+    {
+        if (i > 0) json += ",";
+        json += R"({"min_angle":-1.0,"max_angle":1.0,"enabled":true})";
+    }
+    json += "]}";
+
+    IKChainDef def;
+    ASSERT_TRUE(s.Load(json.c_str(), def));
+    EXPECT_EQ(def.jointLimits.Size(), Dia::IK2D::kMaxJointLimits);
+}
+
+TEST(IKChainSerializer, Load_JointLimitsBeyondCapacity_Truncates)
+{
+    JsonIKChainSerializer s;
+
+    // Build a JSON with more than kMaxJointLimits entries
+    std::string json = R"({"id":"cap","start_bone":"a","end_bone":"b","joint_limits":[)";
+    for (unsigned int i = 0; i < Dia::IK2D::kMaxJointLimits + 5; ++i)
+    {
+        if (i > 0) json += ",";
+        json += R"({"min_angle":-1.0,"max_angle":1.0,"enabled":false})";
+    }
+    json += "]}";
+
+    IKChainDef def;
+    ASSERT_TRUE(s.Load(json.c_str(), def));
+    EXPECT_EQ(def.jointLimits.Size(), Dia::IK2D::kMaxJointLimits);
 }

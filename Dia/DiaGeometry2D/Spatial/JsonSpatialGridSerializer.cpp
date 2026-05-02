@@ -107,6 +107,13 @@ namespace Dia
 				return Dia::Serializer::SerializeResult::Failure("cell_size must be > 0");
 			}
 
+			if (outCfg.worldBounds.GetBottomLeft().X() >= outCfg.worldBounds.GetTopRight().X() ||
+				outCfg.worldBounds.GetBottomLeft().Y() >= outCfg.worldBounds.GetTopRight().Y())
+			{
+				DIA_LOG_WARNING("Geometry2D", "JsonSpatialGridSerializer: world_bounds are inverted or zero-area");
+				return Dia::Serializer::SerializeResult::Failure("world_bounds inverted or zero-area");
+			}
+
 			return Dia::Serializer::SerializeResult::Success();
 		}
 
@@ -148,6 +155,13 @@ namespace Dia
 			{
 				DIA_LOG_WARNING("Geometry2D", "JsonSpatialGridSerializer: hex_radius must be > 0");
 				return Dia::Serializer::SerializeResult::Failure("hex_radius must be > 0");
+			}
+
+			if (outCfg.worldBounds.GetBottomLeft().X() >= outCfg.worldBounds.GetTopRight().X() ||
+				outCfg.worldBounds.GetBottomLeft().Y() >= outCfg.worldBounds.GetTopRight().Y())
+			{
+				DIA_LOG_WARNING("Geometry2D", "JsonSpatialGridSerializer: world_bounds are inverted or zero-area");
+				return Dia::Serializer::SerializeResult::Failure("world_bounds inverted or zero-area");
 			}
 
 			return Dia::Serializer::SerializeResult::Success();

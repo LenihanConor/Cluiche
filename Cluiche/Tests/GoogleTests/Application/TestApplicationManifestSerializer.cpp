@@ -206,3 +206,25 @@ TEST(ApplicationManifestSerializer, GetVersion_NotEmpty)
     ASSERT_NE(v, nullptr);
     EXPECT_GT(strlen(v), 0u);
 }
+
+TEST(ApplicationManifestSerializer, Save_BufferTooSmall_Fails)
+{
+    JsonApplicationManifestSerializer s;
+    ApplicationManifest manifest;
+    ASSERT_TRUE(s.Load(kValidManifest, manifest));
+
+    char tiny[1];
+    auto result = s.Save(manifest, tiny, sizeof(tiny));
+    EXPECT_FALSE(result);
+    EXPECT_NE(result.error, nullptr);
+}
+
+TEST(ApplicationManifestSerializer, Load_EmptyProcessingUnits_Succeeds)
+{
+    JsonApplicationManifestSerializer s;
+    ApplicationManifest manifest;
+
+    static const char* kEmpty = R"({"version":1,"processing_units":[]})";
+    ASSERT_TRUE(s.Load(kEmpty, manifest));
+    EXPECT_EQ(manifest.processingUnits.Size(), 0u);
+}
