@@ -1,3 +1,5 @@
+#pragma once
+
 namespace Dia
 {
     namespace Maths
@@ -112,3 +114,5 @@ namespace Dia
         };
     }
 }
+
+#include "DiaMaths/Core/Angle.inl"
