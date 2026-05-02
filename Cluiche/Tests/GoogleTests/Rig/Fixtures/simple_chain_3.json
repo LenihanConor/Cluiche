@@ -1,0 +1,8 @@
+{
+	"id": "simple_chain_3",
+	"bones": [
+		{ "name": "root",  "parent": -1,     "position": [0, 0] },
+		{ "name": "mid",   "parent": "root",  "position": [0, 1] },
+		{ "name": "tip",   "parent": "mid",   "position": [0, 1] }
+	]
+}

@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
-
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
       <Platform>x64</Platform>
@@ -12,8 +11,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{A3C4D5E6-F7B8-9012-CDEF-012345678901}</ProjectGuid>
-    <RootNamespace>DiaGeometry2D</RootNamespace>
+    <ProjectGuid>{E4F5A6B7-C8D9-0123-ABCD-456789ABCDE0}</ProjectGuid>
+    <RootNamespace>DiaRig2D</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -58,72 +57,29 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Shapes\IntersectionClassify.h" />
-    <ClInclude Include="Shapes\ContactResult.h" />
-    <ClInclude Include="Shapes\AARect.h" />
-    <ClInclude Include="Shapes\Arc.h" />
-    <ClInclude Include="Shapes\Capsule.h" />
-    <ClInclude Include="Shapes\Circle.h" />
-    <ClInclude Include="Shapes\Line.h" />
-    <ClInclude Include="Shapes\OORect.h" />
-    <ClInclude Include="Shapes\Ray.h" />
-    <ClInclude Include="Shapes\Triangle.h" />
-    <ClInclude Include="Shapes\Point.h" />
-    <ClInclude Include="Shapes\Plane.h" />
-    <ClInclude Include="Shapes\ConvexPolygon.h" />
-    <ClInclude Include="Shapes\Sector.h" />
-    <ClInclude Include="Shapes\AnnularSector.h" />
-    <ClInclude Include="Intersection\IntersectionTests.h" />
-    <ClInclude Include="Transform\Transform.h" />
-    <ClInclude Include="Spatial\ISpatialStructure.h" />
-    <ClInclude Include="Spatial\SpatialGrid.h" />
-    <ClInclude Include="Spatial\Quadtree.h" />
-    <ClInclude Include="Spatial\BVH.h" />
-    <ClInclude Include="Spatial\HexGrid.h" />
+    <ClInclude Include="Bone.h" />
+    <ClInclude Include="BoneTransform.h" />
+    <ClInclude Include="Skeleton.h" />
+    <ClInclude Include="Pose.h" />
+    <ClInclude Include="BlendPoses.h" />
+    <ClInclude Include="ISkeletonLoader.h" />
+    <ClInclude Include="SkeletonJson.h" />
+    <ClInclude Include="SkeletonComponent.h" />
+    <ClInclude Include="Testing\SkeletonBuilders.h" />
+    <ClInclude Include="Testing\PoseComparison.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Shapes\IntersectionClassify.cpp" />
-    <ClCompile Include="Shapes\ContactResult.cpp" />
-    <ClCompile Include="Shapes\AARect.cpp" />
-    <ClCompile Include="Shapes\Arc.cpp" />
-    <ClCompile Include="Shapes\Capsule.cpp" />
-    <ClCompile Include="Shapes\Circle.cpp" />
-    <ClCompile Include="Shapes\Line.cpp" />
-    <ClCompile Include="Shapes\OORect.cpp" />
-    <ClCompile Include="Shapes\Ray.cpp" />
-    <ClCompile Include="Shapes\Triangle.cpp" />
-    <ClCompile Include="Shapes\Point.cpp" />
-    <ClCompile Include="Shapes\Plane.cpp" />
-    <ClCompile Include="Shapes\ConvexPolygon.cpp" />
-    <ClCompile Include="Shapes\Sector.cpp" />
-    <ClCompile Include="Shapes\AnnularSector.cpp" />
-    <ClCompile Include="Intersection\IntersectionTests.cpp" />
-    <ClCompile Include="Transform\Transform.cpp" />
-    <ClCompile Include="Spatial\SpatialGrid.cpp" />
-    <ClCompile Include="Spatial\Quadtree.cpp" />
-    <ClCompile Include="Spatial\BVH.cpp" />
-    <ClCompile Include="Spatial\HexGrid.cpp" />
+    <ClCompile Include="Bone.cpp" />
+    <ClCompile Include="Skeleton.cpp" />
+    <ClCompile Include="Pose.cpp" />
+    <ClCompile Include="BlendPoses.cpp" />
+    <ClCompile Include="SkeletonJson.cpp" />
+    <ClCompile Include="SkeletonComponent.cpp" />
+    <ClCompile Include="Testing\SkeletonBuilders.cpp" />
+    <ClCompile Include="Testing\PoseComparison.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Shapes\IntersectionClassify.inl" />
-    <None Include="Shapes\AARect.inl" />
-    <None Include="Shapes\Arc.inl" />
-    <None Include="Shapes\Capsule.inl" />
-    <None Include="Shapes\Circle.inl" />
-    <None Include="Shapes\Line.inl" />
-    <None Include="Shapes\OORect.inl" />
-    <None Include="Shapes\Ray.inl" />
-    <None Include="Shapes\Triangle.inl" />
-    <None Include="Shapes\ConvexPolygon.inl" />
-    <None Include="Transform\Transform.inl" />
-    <None Include="Spatial\SpatialGrid.inl" />
-    <None Include="Spatial\Quadtree.inl" />
-    <None Include="Spatial\BVH.inl" />
-    <None Include="Spatial\HexGrid.inl" />
-    <None Include="Docs\dia.geometry2d.architecture.module.md" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="Testing\ShapeFactory.h" />
+    <None Include="Docs\dia.rig2d.architecture.module.md" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
@@ -134,8 +90,12 @@
       <Project>{2BBA0AD3-D449-4C0E-8C84-ACFA8BCA456B}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
+    <ProjectReference Include="..\DiaLogger\DiaLogger.vcxproj">
+      <Project>{7a8b9c0d-e1f2-3456-7890-abcdef012345}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets">
+  <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
 </Project>

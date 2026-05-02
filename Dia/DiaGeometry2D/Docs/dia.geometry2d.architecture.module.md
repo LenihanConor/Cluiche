@@ -26,7 +26,7 @@ responsibilities:
   - Provide ContactResult struct for normals, depth, and contact point
   - Provide closest-point queries between shapes
   - Own 2D transform with local/world space and parent-child hierarchy
-  - Provide ISpatialStructure<T> interface and three implementations: SpatialGrid, Quadtree, BVH
+  - Provide ISpatialStructure<T> interface and four implementations: SpatialGrid, Quadtree, BVH, HexGrid
 
 non_responsibilities:
   - Pure math (vectors, matrices, angles, trig) — DiaMaths
@@ -83,6 +83,7 @@ public_api:
     - SpatialGrid
     - Quadtree
     - BVH
+    - HexGrid
 
 dependencies:
   required:

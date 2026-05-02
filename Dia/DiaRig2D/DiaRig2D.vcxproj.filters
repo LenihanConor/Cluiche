@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{R2D00001-A1B2-C3D4-E5F6-789012345678}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{R2D00002-B2C3-D4E5-F6A7-890123456789}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Bone.h" />
+    <ClInclude Include="BoneTransform.h" />
+    <ClInclude Include="Skeleton.h" />
+    <ClInclude Include="Pose.h" />
+    <ClInclude Include="BlendPoses.h" />
+    <ClInclude Include="ISkeletonLoader.h" />
+    <ClInclude Include="SkeletonJson.h" />
+    <ClInclude Include="SkeletonComponent.h" />
+    <ClInclude Include="Testing\SkeletonBuilders.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\PoseComparison.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Bone.cpp" />
+    <ClCompile Include="Skeleton.cpp" />
+    <ClCompile Include="Pose.cpp" />
+    <ClCompile Include="BlendPoses.cpp" />
+    <ClCompile Include="SkeletonJson.cpp" />
+    <ClCompile Include="SkeletonComponent.cpp" />
+    <ClCompile Include="Testing\SkeletonBuilders.cpp">
+      <Filter>Testing</Filter>
+    </ClCompile>
+    <ClCompile Include="Testing\PoseComparison.cpp">
+      <Filter>Testing</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\dia.rig2d.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+</Project>

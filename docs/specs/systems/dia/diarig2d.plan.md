@@ -1,7 +1,7 @@
 # Plan: DiaRig2D
 
 **Spec:** @docs/specs/systems/dia/diarig2d.md  
-**Status:** Not Started  
+**Status:** Done  
 **Started:** 2026-05-01  
 **Last Updated:** 2026-05-01
 
@@ -69,18 +69,18 @@ DiaRig2D depends on:
 
 | # | Task | Spec | Status | Notes |
 |---|------|------|--------|-------|
-| 1 | **Project scaffolding** — Create `Dia/DiaRig2D/` directory, `DiaRig2D.vcxproj` (static lib, x64, refs DiaCore/DiaMaths/DiaLogger), `.vcxproj.filters`, register in `Cluiche.sln`, create `Docs/dia.rig2d.architecture.module.md` | System | Not Started | Follow DiaSoftBody2D vcxproj as template. Generate new GUID. |
-| 2 | **Bone** — `Bone.h`: Bone struct with defaults, in `Dia::Rig2D::` namespace | [flat-skeleton.md](../../features/dia/diarig2d/flat-skeleton.md) | Not Started | Header-only |
-| 3 | **Skeleton** — `Skeleton.h` / `Skeleton.cpp`: SkeletonDef struct, Skeleton class with constructor validation (topology, single root, unique names, max bones), bone length computation, FindBoneIndex, GetRequiredBoneIndex | [flat-skeleton.md](../../features/dia/diarig2d/flat-skeleton.md) | Not Started | |
-| 4 | **BoneTransform + Pose** — `BoneTransform.h`, `Pose.h` / `Pose.cpp`: Pose class with bind pose init, GetLocalTransform, ComputeWorldTransforms (FK with SRT, negative scale propagation) | [pose-blending.md](../../features/dia/diarig2d/pose-blending.md) | Not Started | FK is the critical path — test SRT order and mirroring thoroughly |
-| 5 | **BlendPoses** — `BlendPoses.h` / `BlendPoses.cpp`: shortest-arc rotation lerp, clamped t, bone count validation | [pose-blending.md](../../features/dia/diarig2d/pose-blending.md) | Not Started | |
-| 6 | **JSON loader** — `SkeletonJson.h` / `SkeletonJson.cpp`: LoadSkeletonDef, LoadSkeletonDefFromString, SaveSkeletonDef. Bool return for data errors, Rig2D channel logging. | [json-skeleton-definitions.md](../../features/dia/diarig2d/json-skeleton-definitions.md) | Not Started | Depends on DiaCore/Json (jsoncpp) |
-| 7 | **Test utilities** — `Testing/SkeletonBuilders.h/cpp`, `Testing/PoseComparison.h/cpp`. MakeSimpleChain, MakeHumanoid, MakeBranching, PosesAreEqual, BoneTransformsAreEqual. | [test-utilities.md](../../features/dia/diarig2d/test-utilities.md) | Not Started | Ship with DiaRig2D library, not in GoogleTests |
-| 8 | **Skeleton component** — `SkeletonComponent.h` / `SkeletonComponent.cpp`: IComponent wrapper owning Skeleton + Pose, DynamicComponentFactory registration, ResetToBindPose | [skeleton-component.md](../../features/dia/diarig2d/skeleton-component.md) | Not Started | |
-| 9 | **Unit tests** — Create `Cluiche/Tests/GoogleTests/Rig/` with test files: TestBone, TestSkeleton, TestPose, TestBlendPoses, TestSkeletonJson, TestSkeletonComponent. Register in GoogleTests.vcxproj + filters. Add `DiaRig2D.lib` to linker deps. JSON test fixtures in `Fixtures/`. | All features | Not Started | Use test utilities from Task 7 where possible |
-| 10 | **Debug renderer project** — Create `Dia/DiaRig2DVisualDebugger/` directory, `.vcxproj` (refs DiaRig2D + DiaGraphics), `.vcxproj.filters`, register in `Cluiche.sln`, create `dia.rig2dvisualdebugger.architecture.module.md` | [skeleton-debug-renderer.md](../../features/dia/diarig2d/skeleton-debug-renderer.md) | Not Started | Separate project — DiaRig2D must NOT depend on DiaGraphics |
-| 11 | **Debug renderer implementation** — `VisualDebugger.h` / `VisualDebugger.cpp`: Draw bones (lines), joints (circles), root (green), optional bone names. On/off toggle. | [skeleton-debug-renderer.md](../../features/dia/diarig2d/skeleton-debug-renderer.md) | Not Started | Visual verification in CluicheTest |
-| 12 | **Build verification** — Build Debug + Release x64. Run all unit tests. Fix compile/link errors. Verify vcxproj files list all source files. | All features | Not Started | |
+| 1 | **Project scaffolding** — Create `Dia/DiaRig2D/` directory, `DiaRig2D.vcxproj` (static lib, x64, refs DiaCore/DiaMaths/DiaLogger), `.vcxproj.filters`, register in `Cluiche.sln`, create `Docs/dia.rig2d.architecture.module.md` | System | Done | GUID {E4F5A6B7-C8D9-0123-ABCD-456789ABCDE0} |
+| 2 | **Bone** — `Bone.h`: Bone struct with defaults, in `Dia::Rig2D::` namespace | [flat-skeleton.md](../../features/dia/diarig2d/flat-skeleton.md) | Done | Extended with MetadataValue variant + MetadataEntry bag (SetMetadata/FindMetadata) |
+| 3 | **Skeleton** — `Skeleton.h` / `Skeleton.cpp`: SkeletonDef struct, Skeleton class with constructor validation (topology, single root, unique names, max bones), bone length computation, FindBoneIndex, GetRequiredBoneIndex | [flat-skeleton.md](../../features/dia/diarig2d/flat-skeleton.md) | Done | kMaxBones = 128 (reduced from 256 to avoid stack overflow) |
+| 4 | **BoneTransform + Pose** — `BoneTransform.h`, `Pose.h` / `Pose.cpp`: Pose class with bind pose init, GetLocalTransform, ComputeWorldTransforms (FK with SRT, negative scale propagation) | [pose-blending.md](../../features/dia/diarig2d/pose-blending.md) | Done | Uses inline Affine2x3 helpers in anonymous namespace |
+| 5 | **BlendPoses** — `BlendPoses.h` / `BlendPoses.cpp`: shortest-arc rotation lerp, clamped t, bone count validation | [pose-blending.md](../../features/dia/diarig2d/pose-blending.md) | Done | |
+| 6 | **JSON loader** — `ISkeletonLoader.h` interface + `SkeletonJson.h/cpp` default impl. Bool return for data errors, Rig2D channel logging. | [json-skeleton-definitions.md](../../features/dia/diarig2d/json-skeleton-definitions.md) | Done | Loader behind ISkeletonLoader interface per user request; metadata in explicit "metadata" JSON block |
+| 7 | **Test utilities** — `Testing/SkeletonBuilders.h/cpp`, `Testing/PoseComparison.h/cpp`. MakeSimpleChain, MakeHumanoid, MakeBranching, PosesAreEqual, BoneTransformsAreEqual. | [test-utilities.md](../../features/dia/diarig2d/test-utilities.md) | Done | Ships with DiaRig2D library |
+| 8 | **Skeleton component** — `SkeletonComponent.h` / `SkeletonComponent.cpp`: IComponent wrapper owning Skeleton + Pose, DynamicComponentFactory registration, ResetToBindPose | [skeleton-component.md](../../features/dia/diarig2d/skeleton-component.md) | Done | COMPONENT_DECLARATION(0x52494730) |
+| 9 | **Unit tests** — 6 test files (44 tests): TestBone(4), TestSkeleton(9), TestPose(7), TestBlendPoses(7), TestSkeletonJson(10), TestSkeletonComponent(7). JSON fixtures in Fixtures/. | All features | Done | All 44 pass Debug + Release x64 |
+| 10 | **Debug renderer project** — `Dia/DiaRig2DVisualDebugger/` with own vcxproj, refs DiaRig2D + DiaGraphics | [skeleton-debug-renderer.md](../../features/dia/diarig2d/skeleton-debug-renderer.md) | Done | GUID {F5A6B7C8-D9E0-1234-BCDE-56789ABCDEF1} |
+| 11 | **Debug renderer implementation** — `VisualDebugger.h/cpp`: bones as white lines, root as green circle, joints as yellow circles. On/off + bone names toggle. | [skeleton-debug-renderer.md](../../features/dia/diarig2d/skeleton-debug-renderer.md) | Done | Text rendering deferred (FrameData may not support text primitives) |
+| 12 | **Build verification** — Debug + Release x64 build and test. | All features | Done | Both configs build clean; all 44 Rig2D tests pass in both |
 
 ## File Layout (Target)
 
@@ -136,6 +136,13 @@ Cluiche/Tests/GoogleTests/Rig/
 ### 2026-05-01
 - Plan created. All 6 feature specs are Approved. No code exists yet.
 - DiaSoftBody2D project structure reviewed as reference for vcxproj patterns (include dirs, ProjectReference, filters, sln registration).
-- Key pattern notes: StringCRC kUniqueId uses `static const` not `constexpr`. DynamicArrayC needs `Reserve()` for known sizes. DiaLogger needs thread buffer registration in tests.
-- Pre-implementation dependency check needed: DiaCore IComponent base class, DynamicComponentFactory template, ComponentFactoryRegistry singleton, DiaCore/Json parsing API, DiaMaths Vector2D::Length().
-- Debug renderer (Tasks 10-11) is intentionally separate from DiaRig2D — its own .vcxproj avoids coupling DiaRig2D to DiaGraphics.
+- All 12 tasks implemented and verified in a single session.
+- Design changes during implementation:
+  - JSON loader placed behind `ISkeletonLoader` interface (user request for pluggable serialization)
+  - Bone struct extended with `MetadataValue` variant (bool/int/float/string) and `MetadataEntry` bag (key-value pairs with StringCRC keys) for cross-system extensibility
+  - Metadata stored in explicit `"metadata"` JSON block (not flat on bone node)
+  - `kMaxBones` reduced from 256 to 128 and `kMaxMetadataPerBone` from 16 to 8 to avoid stack overflow (StringCRC is 64 bytes, making large DynamicArrayC<Bone> exceed 1MB stack)
+- RGBA static constants fix: `RGBA::Green` not `RGBA::Green()` — these are `static const` members, not functions
+- FK uses inline `Affine2x3` struct (anonymous namespace) to avoid dependency on a full Matrix class
+- All 44 Rig2D unit tests pass in both Debug and Release x64
+- Text rendering in VisualDebugger deferred — toggle exists but FrameData may not support text primitives

@@ -71,7 +71,7 @@
       <DisableSpecificWarnings>4267;4244;4127</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGeometry2D.lib;$(LibOutDir)DiaRigidBody2D.lib;$(LibOutDir)DiaSoftBody2D.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaPython.lib;$(LibOutDir)DiaAPI.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaApplication.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaEditor.lib;$(LibOutDir)DiaLogger.lib;$(LibOutDir)DiaStateMachine.lib;$(LibOutDir)DiaApplicationEditor.lib;$(ProjectDir)../../../External/Python311/libs/python311.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGeometry2D.lib;$(LibOutDir)DiaRigidBody2D.lib;$(LibOutDir)DiaSoftBody2D.lib;$(LibOutDir)DiaRig2D.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaPython.lib;$(LibOutDir)DiaAPI.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaApplication.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaEditor.lib;$(LibOutDir)DiaLogger.lib;$(LibOutDir)DiaStateMachine.lib;$(LibOutDir)DiaApplicationEditor.lib;$(ProjectDir)../../../External/Python311/libs/python311.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)../../../External/googletest/lib/x64/Debug/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -96,7 +96,7 @@
       <DisableSpecificWarnings>4267;4244;4127</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGeometry2D.lib;$(LibOutDir)DiaRigidBody2D.lib;$(LibOutDir)DiaSoftBody2D.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaPython.lib;$(LibOutDir)DiaAPI.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaApplication.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaEditor.lib;$(LibOutDir)DiaLogger.lib;$(LibOutDir)DiaStateMachine.lib;$(LibOutDir)DiaApplicationEditor.lib;$(ProjectDir)../../../External/Python311/libs/python311.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGeometry2D.lib;$(LibOutDir)DiaRigidBody2D.lib;$(LibOutDir)DiaSoftBody2D.lib;$(LibOutDir)DiaRig2D.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaPython.lib;$(LibOutDir)DiaAPI.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaApplication.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaEditor.lib;$(LibOutDir)DiaLogger.lib;$(LibOutDir)DiaStateMachine.lib;$(LibOutDir)DiaApplicationEditor.lib;$(ProjectDir)../../../External/Python311/libs/python311.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)../../../External/googletest/lib/x64/Release/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -265,6 +265,7 @@
     <ClCompile Include="Geometry2D\TestEdgeCases.cpp" />
     <ClCompile Include="Geometry2D\TestBVH.cpp" />
     <ClCompile Include="Geometry2D\TestQuadtree.cpp" />
+    <ClCompile Include="Geometry2D\TestHexGrid.cpp" />
     <!-- RigidBody2D -->
     <ClCompile Include="RigidBody2D\TestPhysicsBody.cpp" />
     <ClCompile Include="RigidBody2D\TestForceAndIntegration.cpp" />
@@ -309,6 +310,13 @@
     <ClCompile Include="SoftBody2D\TestSoftBodyGolden.cpp" />
     <ClCompile Include="SoftBody2D\TestSoftBodyConservation.cpp" />
     <ClCompile Include="SoftBody2D\TestSoftBodyDeterminism.cpp" />
+    <!-- Rig2D -->
+    <ClCompile Include="Rig\TestBone.cpp" />
+    <ClCompile Include="Rig\TestSkeleton.cpp" />
+    <ClCompile Include="Rig\TestPose.cpp" />
+    <ClCompile Include="Rig\TestBlendPoses.cpp" />
+    <ClCompile Include="Rig\TestSkeletonJson.cpp" />
+    <ClCompile Include="Rig\TestSkeletonComponent.cpp" />
     <!-- StateMachine -->
     <ClCompile Include="StateMachine\TestFlatStateMachine.cpp" />
     <ClCompile Include="StateMachine\TestHierarchicalStateMachine.cpp" />
@@ -333,6 +341,10 @@
     </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaSoftBody2D\DiaSoftBody2D.vcxproj">
       <Project>{D2E3F4A5-B6C7-8901-DEFC-112233445566}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaRig2D\DiaRig2D.vcxproj">
+      <Project>{E4F5A6B7-C8D9-0123-ABCD-456789ABCDE0}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaApplicationEditor\DiaApplicationEditor.vcxproj">

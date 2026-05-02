@@ -84,6 +84,9 @@
     <ClInclude Include="Spatial\BVH.h">
       <Filter>Spatial</Filter>
     </ClInclude>
+    <ClInclude Include="Spatial\HexGrid.h">
+      <Filter>Spatial</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Shapes\IntersectionClassify.cpp">
@@ -146,6 +149,9 @@
     <ClCompile Include="Spatial\BVH.cpp">
       <Filter>Spatial</Filter>
     </ClCompile>
+    <ClCompile Include="Spatial\HexGrid.cpp">
+      <Filter>Spatial</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shapes\IntersectionClassify.inl">
@@ -188,6 +194,9 @@
       <Filter>Spatial</Filter>
     </None>
     <None Include="Spatial\BVH.inl">
+      <Filter>Spatial</Filter>
+    </None>
+    <None Include="Spatial\HexGrid.inl">
       <Filter>Spatial</Filter>
     </None>
     <None Include="Docs\dia.geometry2d.architecture.module.md">

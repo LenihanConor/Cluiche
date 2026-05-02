@@ -575,6 +575,9 @@
     <ClCompile Include="Geometry2D\TestQuadtree.cpp">
       <Filter>Geometry2D</Filter>
     </ClCompile>
+    <ClCompile Include="Geometry2D\TestHexGrid.cpp">
+      <Filter>Geometry2D</Filter>
+    </ClCompile>
     <!-- RigidBody2D -->
     <ClCompile Include="RigidBody2D\TestPhysicsBody.cpp">
       <Filter>RigidBody2D</Filter>

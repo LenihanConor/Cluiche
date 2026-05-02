@@ -1,0 +1,18 @@
+{
+	"id": "humanoid",
+	"bones": [
+		{ "name": "root",        "parent": -1,           "position": [0, 0] },
+		{ "name": "hips",        "parent": "root",        "position": [0, 1] },
+		{ "name": "spine",       "parent": "hips",        "position": [0, 1] },
+		{ "name": "chest",       "parent": "spine",       "position": [0, 1] },
+		{ "name": "head",        "parent": "chest",       "position": [0, 0.5] },
+		{ "name": "upper_arm_l", "parent": "chest",       "position": [-0.5, 0] },
+		{ "name": "lower_arm_l", "parent": "upper_arm_l", "position": [-0.5, 0] },
+		{ "name": "upper_arm_r", "parent": "chest",       "position": [0.5, 0] },
+		{ "name": "lower_arm_r", "parent": "upper_arm_r", "position": [0.5, 0] },
+		{ "name": "upper_leg_l", "parent": "hips",        "position": [-0.3, -1] },
+		{ "name": "lower_leg_l", "parent": "upper_leg_l", "position": [0, -1] },
+		{ "name": "upper_leg_r", "parent": "hips",        "position": [0.3, -1] },
+		{ "name": "lower_leg_r", "parent": "upper_leg_r", "position": [0, -1] }
+	]
+}
