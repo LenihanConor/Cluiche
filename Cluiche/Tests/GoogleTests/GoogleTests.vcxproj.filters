@@ -97,6 +97,9 @@
     <Filter Include="StateMachine">
       <UniqueIdentifier>{SMCH0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Rig2D">
+      <UniqueIdentifier>{RIG20001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -701,6 +704,25 @@
     </ClCompile>
     <ClCompile Include="SoftBody2D\TestSoftBodyDeterminism.cpp">
       <Filter>SoftBody2D</Filter>
+    </ClCompile>
+    <!-- Rig2D -->
+    <ClCompile Include="Rig2D\TestRig2DGolden.cpp">
+      <Filter>Rig2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Rig2D\TestRig2DInvariant.cpp">
+      <Filter>Rig2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Rig2D\TestRig2DStress.cpp">
+      <Filter>Rig2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Rig2D\TestRig2DDeterminism.cpp">
+      <Filter>Rig2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Rig2D\TestRig2DBoundary.cpp">
+      <Filter>Rig2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Rig2D\TestRig2DIntegration.cpp">
+      <Filter>Rig2D</Filter>
     </ClCompile>
     <!-- StateMachine -->
     <ClCompile Include="StateMachine\TestFlatStateMachine.cpp">

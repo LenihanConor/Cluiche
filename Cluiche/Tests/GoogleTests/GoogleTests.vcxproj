@@ -317,6 +317,12 @@
     <ClCompile Include="Rig\TestBlendPoses.cpp" />
     <ClCompile Include="Rig\TestSkeletonJson.cpp" />
     <ClCompile Include="Rig\TestSkeletonComponent.cpp" />
+    <ClCompile Include="Rig2D\TestRig2DGolden.cpp" />
+    <ClCompile Include="Rig2D\TestRig2DInvariant.cpp" />
+    <ClCompile Include="Rig2D\TestRig2DStress.cpp" />
+    <ClCompile Include="Rig2D\TestRig2DDeterminism.cpp" />
+    <ClCompile Include="Rig2D\TestRig2DBoundary.cpp" />
+    <ClCompile Include="Rig2D\TestRig2DIntegration.cpp" />
     <!-- StateMachine -->
     <ClCompile Include="StateMachine\TestFlatStateMachine.cpp" />
     <ClCompile Include="StateMachine\TestHierarchicalStateMachine.cpp" />

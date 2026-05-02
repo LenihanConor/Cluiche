@@ -48,7 +48,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 | Item | Notes |
 |------|-------|
-| DiaRig2D — Exhaustive tests (golden, invariant, boundary, stress, determinism, integration) | Golden-value: hand-calc FK for known skeletons. Invariant: blend identity/endpoint, random-input properties. Boundary: zero/single bone, extreme rotation, NaN, negative scale, max metadata. Stress: 128-bone rapid FK+blend. Determinism: bit-identical FK+blend across runs. Integration: JSON→Skeleton→Pose→FK→Blend→VisualDebugger pipeline. Use `/gen-tests DiaRig2D` |
+| ~~DiaRig2D — Exhaustive tests~~ | Done 2026-05-02: 38 new tests (golden, invariant, stress, boundary, determinism, integration) in `Cluiche/Tests/GoogleTests/Rig2D/` |
 | DiaApplication — Feature 6: Compile-Time Dependency Validation | Deferred by user ("let's come back and talk about 6") |
 | HotReloadManager — `CollectDependentModules()` / `UpdateDependencyReferences()` | Placeholder stubs; needs real implementation |
 | `Dia::Core::Blackboard` — general-purpose key-value store | Identified during DiaStateMachine research; useful for AI, animation, gameplay. Needs `/spec-feature` under DiaCore. |

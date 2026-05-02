@@ -1,6 +1,6 @@
 # Test Completeness Registry
 
-**Last Updated:** 2026-05-01 (DiaStateMachine gaps filled)
+**Last Updated:** 2026-05-02 (DiaRig2D exhaustive tests added)
 
 Single source of truth for test coverage across all Dia modules. Updated alongside test commits.
 
@@ -16,10 +16,10 @@ Single source of truth for test coverage across all Dia modules. Updated alongsi
 
 | Metric | Count |
 |--------|-------|
-| Test files | 171 |
-| Total tests (TEST + TEST_F + TEST_P) | 2,908 |
-| Death tests (EXPECT_DEATH / ASSERT_DEATH) | 128 |
-| Float assertions (EXPECT_NEAR / EXPECT_FLOAT_EQ) | 1,178 |
+| Test files | 177 |
+| Total tests (TEST + TEST_F + TEST_P) | 2,946 |
+| Death tests (EXPECT_DEATH / ASSERT_DEATH) | 133 |
+| Float assertions (EXPECT_NEAR / EXPECT_FLOAT_EQ) | 1,240+ |
 | Fixtures (TEST_F) | ~504 |
 | Parameterized (TEST_P / TYPED_TEST) | 0 |
 
@@ -165,6 +165,27 @@ Gap markers: **ZERO** = no tests, **LOW** = under-tested relative to API surface
 | Stress | 10 | TestSoftBodyStress.cpp | 0 | 10 | 0 | GOOD (stress) |
 
 **SoftBody2D totals: 10 files, 117 tests** | Gaps: Golden simulation traces, determinism, conservation laws
+
+---
+
+## DiaRig2D
+
+| Component | Tests | Files | Unit | Stress/Boundary | Golden/Regression | Invariant | Determinism | Integration | Notes |
+|-----------|-------|-------|------|-----------------|-------------------|-----------|-------------|-------------|-------|
+| Bone | 4 | Rig/TestBone.cpp | 4 | 0 | 0 | 0 | 0 | 0 | GOOD |
+| Skeleton | 9 | Rig/TestSkeleton.cpp | 9 | 0 | 0 | 0 | 0 | 0 | GOOD |
+| Pose / FK | 7 | Rig/TestPose.cpp | 7 | 0 | 0 | 0 | 0 | 0 | GOOD |
+| BlendPoses | 7 | Rig/TestBlendPoses.cpp | 7 | 0 | 0 | 0 | 0 | 0 | GOOD |
+| SkeletonJson | 10 | Rig/TestSkeletonJson.cpp | 10 | 0 | 0 | 0 | 0 | 0 | GOOD |
+| SkeletonComponent | 7 | Rig/TestSkeletonComponent.cpp | 7 | 0 | 0 | 0 | 0 | 0 | GOOD |
+| Golden/FK math | 8 | Rig2D/TestRig2DGolden.cpp | 0 | 0 | 8 | 0 | 0 | 0 | GOOD — hand-calc FK, scale, angle wrap |
+| Invariant/Property | 6 | Rig2D/TestRig2DInvariant.cpp | 0 | 0 | 0 | 6 | 0 | 0 | GOOD — t=0/1 identity, 500-iter random |
+| Stress | 7 | Rig2D/TestRig2DStress.cpp | 0 | 7 | 0 | 0 | 0 | 0 | GOOD — 128 bones, 1000 iters, extreme values |
+| Boundary | 10 | Rig2D/TestRig2DBoundary.cpp | 0 | 10 | 0 | 0 | 0 | 0 | GOOD — death tests, near-zero scale, max metadata, GetRequiredBoneIndex |
+| Determinism | 3 | Rig2D/TestRig2DDeterminism.cpp | 0 | 0 | 0 | 0 | 3 | 0 | GOOD — bit-identical FK+blend across runs |
+| Integration | 4 | Rig2D/TestRig2DIntegration.cpp | 0 | 0 | 0 | 0 | 0 | 4 | GOOD — JSON→FK parity, full pipeline, modify-reset cycle |
+
+**Rig2D totals: 12 files, 82 tests** | GOOD — all test types covered; no conservation law tests (N/A for FK/blend)
 
 ---
 
