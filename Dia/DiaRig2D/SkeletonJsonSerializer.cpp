@@ -190,7 +190,7 @@ namespace Dia
 
 		Dia::Serializer::SerializeResult ISkeletonSerializer::LoadFromFile(const char* path, SkeletonDef& outDef) const
 		{
-			char buffer[65536];
+			char buffer[32768];
 			if (!ReadFileToBuffer(path, buffer, sizeof(buffer)))
 				return Dia::Serializer::SerializeResult::Failure("file read error");
 			return Load(buffer, outDef);
@@ -198,7 +198,7 @@ namespace Dia
 
 		Dia::Serializer::SerializeResult ISkeletonSerializer::SaveToFile(const char* path, const SkeletonDef& def) const
 		{
-			char buffer[65536];
+			char buffer[32768];
 			auto result = Save(def, buffer, sizeof(buffer));
 			if (!result)
 				return result;

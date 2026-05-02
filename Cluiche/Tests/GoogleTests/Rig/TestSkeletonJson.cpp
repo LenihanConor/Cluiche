@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 
 #include <DiaRig2D/SkeletonJsonSerializer.h>
+#include <DiaSerializer/SerializeResult.h>
+#include <cstdio>
 
 using namespace Dia::Rig2D;
 
@@ -181,4 +183,82 @@ TEST(Rig2D_SkeletonJson, Save_ParentSerializedAsName)
 	// Parent field should contain bone names, not indices (except root which is -1)
 	std::string output(buffer);
 	EXPECT_NE(output.find("\"root\""), std::string::npos);
+}
+
+// ---------------------------------------------------------------------------
+// SerializeResult error strings
+// ---------------------------------------------------------------------------
+
+TEST(Rig2D_SkeletonJson, FailureResultCarriesErrorString)
+{
+	JsonSkeletonSerializer loader;
+	SkeletonDef def;
+	auto result = loader.Load(kMalformedJson, def);
+	EXPECT_FALSE(result);
+	EXPECT_NE(result.error, nullptr);
+	EXPECT_GT(strlen(result.error), 0u);
+}
+
+TEST(Rig2D_SkeletonJson, SuccessResultHasNullError)
+{
+	JsonSkeletonSerializer loader;
+	SkeletonDef def;
+	auto result = loader.Load(kValidChain3, def);
+	EXPECT_TRUE(result);
+	EXPECT_EQ(result.error, nullptr);
+}
+
+// ---------------------------------------------------------------------------
+// LoadFromFile / SaveToFile
+// ---------------------------------------------------------------------------
+
+static const char* kTmpSkeletonPath = "C:\\Temp\\dia_test_skeleton.json";
+
+TEST(Rig2D_SkeletonJson, SaveToFileAndLoadFromFile)
+{
+	JsonSkeletonSerializer loader;
+	SkeletonDef def;
+	ASSERT_TRUE(loader.Load(kValidChain3, def));
+
+	ASSERT_TRUE(loader.SaveToFile(kTmpSkeletonPath, def));
+
+	SkeletonDef loaded;
+	ASSERT_TRUE(loader.LoadFromFile(kTmpSkeletonPath, loaded));
+
+	EXPECT_EQ(loaded.bones.Size(), def.bones.Size());
+	EXPECT_EQ(loaded.id, def.id);
+	for (unsigned int i = 0; i < def.bones.Size(); ++i)
+	{
+		EXPECT_EQ(loaded.bones[i].name, def.bones[i].name);
+		EXPECT_EQ(loaded.bones[i].parentIndex, def.bones[i].parentIndex);
+	}
+
+	remove(kTmpSkeletonPath);
+}
+
+TEST(Rig2D_SkeletonJson, SaveToFileAndLoadFromFile_MetadataPreserved)
+{
+	JsonSkeletonSerializer loader;
+	SkeletonDef def;
+	ASSERT_TRUE(loader.Load(kValidWithMetadata, def));
+
+	ASSERT_TRUE(loader.SaveToFile(kTmpSkeletonPath, def));
+
+	SkeletonDef loaded;
+	ASSERT_TRUE(loader.LoadFromFile(kTmpSkeletonPath, loaded));
+
+	const MetadataValue* ikEnd = loaded.bones[1].FindMetadata(Dia::Core::StringCRC("ik_end_effector"));
+	ASSERT_NE(ikEnd, nullptr);
+	EXPECT_TRUE(ikEnd->boolVal);
+
+	remove(kTmpSkeletonPath);
+}
+
+TEST(Rig2D_SkeletonJson, LoadFromFile_MissingFile_ReturnsFalse)
+{
+	JsonSkeletonSerializer loader;
+	SkeletonDef def;
+	auto result = loader.LoadFromFile("C:\\Temp\\nonexistent_dia_skeleton.json", def);
+	EXPECT_FALSE(result);
+	EXPECT_NE(result.error, nullptr);
 }

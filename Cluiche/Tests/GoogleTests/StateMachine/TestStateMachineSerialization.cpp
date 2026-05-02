@@ -9,8 +9,12 @@
 #include <DiaStateMachine/IStateMachineSerializer.h>
 #include <DiaStateMachine/JsonStateMachineSerializer.h>
 #include <DiaStateMachine/CallbackRegistry.h>
+#include <DiaSerializer/SerializeResult.h>
+#include <cstdio>
 
 using namespace Dia::StateMachine;
+using Dia::Serializer::SetMetadata;
+using Dia::Serializer::FindMetadata;
 
 // ---------------------------------------------------------------------------
 // Test callbacks
@@ -531,4 +535,178 @@ TEST(JsonStateMachineSerializer, TopologyOnlyNoCallbacksLoadsClean)
 	EXPECT_EQ(loaded.GetStates()[0].onExit,   nullptr);
 	EXPECT_EQ(loaded.GetStates()[0].onUpdate, nullptr);
 	EXPECT_TRUE(loaded.IsValid());
+}
+
+// ---------------------------------------------------------------------------
+// 6. SerializeResult error strings
+// ---------------------------------------------------------------------------
+
+TEST(JsonStateMachineSerializer, FailureResultCarriesErrorString)
+{
+	const char* garbage = "not json at all }{{{";
+	CallbackRegistry reg;
+	reg.Finalize();
+	StateMachineDefinition def;
+	JsonStateMachineSerializer serializer;
+	auto result = serializer.Load(def, reg, garbage);
+	EXPECT_FALSE(result);
+	EXPECT_NE(result.error, nullptr);
+	EXPECT_GT(strlen(result.error), 0u);
+}
+
+TEST(JsonStateMachineSerializer, VersionMismatchResultCarriesErrorString)
+{
+	const char* badJson = R"({"version":"99.0","type":"FlatStateMachine","initialState":"A","states":[],"transitions":[]})";
+	CallbackRegistry reg = MakeRegistry();
+	StateMachineDefinition def;
+	JsonStateMachineSerializer serializer;
+	auto result = serializer.Load(def, reg, badJson);
+	EXPECT_FALSE(result);
+	EXPECT_NE(result.error, nullptr);
+}
+
+TEST(JsonStateMachineSerializer, SuccessResultHasNullError)
+{
+	StateMachineDefinition original = StateMachineBuilder()
+		.InitialState(Dia::Core::StringCRC("A"))
+		.State(Dia::Core::StringCRC("A"))
+		.Build();
+
+	char buffer[4096] = {};
+	JsonStateMachineSerializer serializer;
+	auto saveResult = serializer.Save(original, buffer, sizeof(buffer));
+	EXPECT_TRUE(saveResult);
+	EXPECT_EQ(saveResult.error, nullptr);
+
+	CallbackRegistry reg;
+	reg.Finalize();
+	StateMachineDefinition loaded;
+	auto loadResult = serializer.Load(loaded, reg, buffer);
+	EXPECT_TRUE(loadResult);
+	EXPECT_EQ(loadResult.error, nullptr);
+}
+
+// ---------------------------------------------------------------------------
+// 7. LoadFromFile / SaveToFile — all three definition types
+// ---------------------------------------------------------------------------
+
+static const char* kTmpFlat  = "C:\\Temp\\dia_test_flat.json";
+static const char* kTmpHsm   = "C:\\Temp\\dia_test_hsm.json";
+static const char* kTmpPda   = "C:\\Temp\\dia_test_pda.json";
+
+TEST(JsonStateMachineSerializer, SaveToFileAndLoadFromFile_Flat)
+{
+	StateMachineDefinition original = StateMachineBuilder()
+		.InitialState(Dia::Core::StringCRC("Idle"))
+		.State(Dia::Core::StringCRC("Idle"))
+			.OnEnter(OnEnterA, Dia::Core::StringCRC("OnEnterA"))
+			.StateMetadata(Dia::Core::StringCRC("clip"), MetadataValue::FromString("idle"))
+			.Transition(Dia::Core::StringCRC("Run"), Dia::Core::StringCRC("start"))
+		.State(Dia::Core::StringCRC("Run"))
+		.Build();
+
+	JsonStateMachineSerializer serializer;
+	ASSERT_TRUE(serializer.SaveToFile(kTmpFlat, original));
+
+	CallbackRegistry reg = MakeRegistry();
+	StateMachineDefinition loaded;
+	ASSERT_TRUE(serializer.LoadFromFile(kTmpFlat, loaded, reg));
+
+	EXPECT_EQ(loaded.GetStates().Size(), 2u);
+	EXPECT_EQ(loaded.GetInitialStateId(), Dia::Core::StringCRC("Idle"));
+	EXPECT_EQ(loaded.GetStates()[0].onEnterName, Dia::Core::StringCRC("OnEnterA"));
+	EXPECT_EQ(loaded.GetStates()[0].onEnter, OnEnterA);
+
+	const MetadataValue* clip = FindMetadata(loaded.GetStates()[0].metadata, Dia::Core::StringCRC("clip"));
+	ASSERT_NE(clip, nullptr);
+	EXPECT_STREQ(clip->stringVal.AsChar(), "idle");
+
+	remove(kTmpFlat);
+}
+
+TEST(JsonStateMachineSerializer, SaveToFileAndLoadFromFile_Hsm)
+{
+	HierarchicalStateMachineDefinition original = HierarchicalStateMachineBuilder()
+		.InitialState(Dia::Core::StringCRC("Root"))
+		.State(Dia::Core::StringCRC("Root"))
+			.InitialChild(Dia::Core::StringCRC("A"))
+		.ChildState(Dia::Core::StringCRC("A"), Dia::Core::StringCRC("Root"))
+			.OnEnter(OnEnterA, Dia::Core::StringCRC("OnEnterA"))
+		.ChildState(Dia::Core::StringCRC("B"), Dia::Core::StringCRC("Root"))
+		.Build();
+
+	JsonStateMachineSerializer serializer;
+	ASSERT_TRUE(serializer.SaveToFile(kTmpHsm, original));
+
+	CallbackRegistry reg = MakeRegistry();
+	HierarchicalStateMachineDefinition loaded;
+	ASSERT_TRUE(serializer.LoadFromFile(kTmpHsm, loaded, reg));
+
+	EXPECT_EQ(loaded.GetStates().Size(), 3u);
+	EXPECT_EQ(loaded.GetInitialStateId(), Dia::Core::StringCRC("Root"));
+
+	remove(kTmpHsm);
+}
+
+TEST(JsonStateMachineSerializer, SaveToFileAndLoadFromFile_Pda)
+{
+	PushdownAutomatonDefinition original = PushdownAutomatonBuilder()
+		.InitialState(Dia::Core::StringCRC("Menu"))
+		.State(Dia::Core::StringCRC("Menu"))
+			.OnPause(OnPauseA, Dia::Core::StringCRC("OnPauseA"))
+		.Build();
+
+	JsonStateMachineSerializer serializer;
+	ASSERT_TRUE(serializer.SaveToFile(kTmpPda, original));
+
+	CallbackRegistry reg = MakeRegistry();
+	PushdownAutomatonDefinition loaded;
+	ASSERT_TRUE(serializer.LoadFromFile(kTmpPda, loaded, reg));
+
+	EXPECT_EQ(loaded.GetStates().Size(), 1u);
+	EXPECT_EQ(loaded.GetStates()[0].onPause, OnPauseA);
+
+	remove(kTmpPda);
+}
+
+TEST(JsonStateMachineSerializer, LoadFromFile_MissingFile_ReturnsFalse)
+{
+	JsonStateMachineSerializer serializer;
+	CallbackRegistry reg;
+	reg.Finalize();
+	StateMachineDefinition def;
+	auto result = serializer.LoadFromFile("C:\\Temp\\nonexistent_dia_test.json", def, reg);
+	EXPECT_FALSE(result);
+	EXPECT_NE(result.error, nullptr);
+}
+
+// ---------------------------------------------------------------------------
+// 8. LoadBeforeFinalize asserts
+// ---------------------------------------------------------------------------
+
+TEST(JsonStateMachineSerializer, LoadWithUnfinalizedRegistryAsserts_Flat)
+{
+	const char* json = R"({"version":"1.0","type":"FlatStateMachine","initialState":"A","states":[],"transitions":[]})";
+	CallbackRegistry reg;  // not finalized
+	StateMachineDefinition def;
+	JsonStateMachineSerializer serializer;
+	EXPECT_DEATH(serializer.Load(def, reg, json), "");
+}
+
+TEST(JsonStateMachineSerializer, LoadWithUnfinalizedRegistryAsserts_Hsm)
+{
+	const char* json = R"({"version":"1.0","type":"HierarchicalStateMachine","initialState":"A","states":[],"transitions":[]})";
+	CallbackRegistry reg;
+	HierarchicalStateMachineDefinition def;
+	JsonStateMachineSerializer serializer;
+	EXPECT_DEATH(serializer.Load(def, reg, json), "");
+}
+
+TEST(JsonStateMachineSerializer, LoadWithUnfinalizedRegistryAsserts_Pda)
+{
+	const char* json = R"({"version":"1.0","type":"PushdownAutomaton","initialState":"A","states":[]})";
+	CallbackRegistry reg;
+	PushdownAutomatonDefinition def;
+	JsonStateMachineSerializer serializer;
+	EXPECT_DEATH(serializer.Load(def, reg, json), "");
 }

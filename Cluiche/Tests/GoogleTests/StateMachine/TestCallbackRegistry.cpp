@@ -176,3 +176,54 @@ TEST(StateMachineComponent, AttachNullClearsState)
     EXPECT_EQ(comp.GetMachineType(), MachineType::kNone);
     EXPECT_EQ(comp.GetInspectable(), nullptr);
 }
+
+// ---------------------------------------------------------------------------
+// CallbackRegistry::Finalize() tests
+// ---------------------------------------------------------------------------
+
+TEST(CallbackRegistry, FinalizeSetsFinalizedFlag)
+{
+    CallbackRegistry reg;
+    EXPECT_FALSE(reg.IsFinalized());
+    reg.Finalize();
+    EXPECT_TRUE(reg.IsFinalized());
+}
+
+TEST(CallbackRegistry, FinalizeAllowsQueryAfterwards)
+{
+    CallbackRegistry reg;
+    reg.RegisterAction(Dia::Core::StringCRC("run"), SomeAction);
+    reg.Finalize();
+
+    EXPECT_TRUE(reg.IsFinalized());
+    EXPECT_EQ(reg.FindAction(Dia::Core::StringCRC("run")), SomeAction);
+    EXPECT_TRUE(reg.HasAction(Dia::Core::StringCRC("run")));
+}
+
+TEST(CallbackRegistry, DoubleFinalizeAsserts)
+{
+    CallbackRegistry reg;
+    reg.Finalize();
+    EXPECT_DEATH(reg.Finalize(), "");
+}
+
+TEST(CallbackRegistry, RegisterActionAfterFinalizeAsserts)
+{
+    CallbackRegistry reg;
+    reg.Finalize();
+    EXPECT_DEATH(reg.RegisterAction(Dia::Core::StringCRC("run"), SomeAction), "");
+}
+
+TEST(CallbackRegistry, RegisterGuardAfterFinalizeAsserts)
+{
+    CallbackRegistry reg;
+    reg.Finalize();
+    EXPECT_DEATH(reg.RegisterGuard(Dia::Core::StringCRC("check"), SomeGuard), "");
+}
+
+TEST(CallbackRegistry, RegisterUpdateAfterFinalizeAsserts)
+{
+    CallbackRegistry reg;
+    reg.Finalize();
+    EXPECT_DEATH(reg.RegisterUpdate(Dia::Core::StringCRC("tick"), SomeUpdate), "");
+}

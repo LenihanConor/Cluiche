@@ -508,7 +508,7 @@ namespace Dia
 		Dia::Serializer::SerializeResult IStateMachineSerializer::LoadFromFile(
 			const char* path, StateMachineDefinition& outDef, const CallbackRegistry& registry) const
 		{
-			char buffer[65536];
+			char buffer[32768];
 			if (!ReadFileToBuffer(path, buffer, sizeof(buffer)))
 				return Dia::Serializer::SerializeResult::Failure("file read error");
 			return Load(outDef, registry, buffer);
@@ -517,7 +517,7 @@ namespace Dia
 		Dia::Serializer::SerializeResult IStateMachineSerializer::LoadFromFile(
 			const char* path, HierarchicalStateMachineDefinition& outDef, const CallbackRegistry& registry) const
 		{
-			char buffer[65536];
+			char buffer[32768];
 			if (!ReadFileToBuffer(path, buffer, sizeof(buffer)))
 				return Dia::Serializer::SerializeResult::Failure("file read error");
 			return Load(outDef, registry, buffer);
@@ -526,7 +526,7 @@ namespace Dia
 		Dia::Serializer::SerializeResult IStateMachineSerializer::LoadFromFile(
 			const char* path, PushdownAutomatonDefinition& outDef, const CallbackRegistry& registry) const
 		{
-			char buffer[65536];
+			char buffer[32768];
 			if (!ReadFileToBuffer(path, buffer, sizeof(buffer)))
 				return Dia::Serializer::SerializeResult::Failure("file read error");
 			return Load(outDef, registry, buffer);
@@ -535,7 +535,7 @@ namespace Dia
 		Dia::Serializer::SerializeResult IStateMachineSerializer::SaveToFile(
 			const char* path, const StateMachineDefinition& def) const
 		{
-			char buffer[65536];
+			char buffer[32768];
 			auto result = Save(def, buffer, sizeof(buffer));
 			if (!result) return result;
 			if (!WriteBufferToFile(path, buffer, static_cast<unsigned int>(strlen(buffer))))
@@ -546,7 +546,7 @@ namespace Dia
 		Dia::Serializer::SerializeResult IStateMachineSerializer::SaveToFile(
 			const char* path, const HierarchicalStateMachineDefinition& def) const
 		{
-			char buffer[65536];
+			char buffer[32768];
 			auto result = Save(def, buffer, sizeof(buffer));
 			if (!result) return result;
 			if (!WriteBufferToFile(path, buffer, static_cast<unsigned int>(strlen(buffer))))
@@ -557,7 +557,7 @@ namespace Dia
 		Dia::Serializer::SerializeResult IStateMachineSerializer::SaveToFile(
 			const char* path, const PushdownAutomatonDefinition& def) const
 		{
-			char buffer[65536];
+			char buffer[32768];
 			auto result = Save(def, buffer, sizeof(buffer));
 			if (!result) return result;
 			if (!WriteBufferToFile(path, buffer, static_cast<unsigned int>(strlen(buffer))))

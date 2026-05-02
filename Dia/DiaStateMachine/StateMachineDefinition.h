@@ -11,8 +11,6 @@ namespace Dia
 		using MetadataArray = Dia::Serializer::MetadataArray;
 		using MetadataValue = Dia::Serializer::MetadataValue;
 		using MetadataEntry = Dia::Serializer::MetadataEntry;
-		using Dia::Serializer::SetMetadata;
-		using Dia::Serializer::FindMetadata;
 
 		struct StateDef
 		{
