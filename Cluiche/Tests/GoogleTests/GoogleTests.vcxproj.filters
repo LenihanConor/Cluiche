@@ -150,6 +150,9 @@
     <ClCompile Include="Core\Containers\TestContainerStress.cpp">
       <Filter>Core\Containers</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Containers\TestContainerInvariants.cpp">
+      <Filter>Core\Containers</Filter>
+    </ClCompile>
     <!-- Core\CRC -->
     <ClCompile Include="Core\CRC\TestCRC.cpp">
       <Filter>Core\CRC</Filter>
@@ -242,6 +245,9 @@
     <ClCompile Include="Maths\TestInterpolation.cpp">
       <Filter>Maths</Filter>
     </ClCompile>
+    <ClCompile Include="Maths\TestMathsInvariants.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
     <ClCompile Include="Maths\TestMatrix22.cpp">
       <Filter>Maths</Filter>
     </ClCompile>
@@ -289,6 +295,9 @@
       <Filter>Graphics</Filter>
     </ClCompile>
     <ClCompile Include="Graphics\TestVertex.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\TestFrameData.cpp">
       <Filter>Graphics</Filter>
     </ClCompile>
     <!-- Input -->
@@ -485,6 +494,9 @@
     <ClCompile Include="Integration\TestTypeRegistrySeeding.cpp">
       <Filter>Integration</Filter>
     </ClCompile>
+    <ClCompile Include="Integration\TestPhysicsGeometryIntegration.cpp">
+      <Filter>Integration</Filter>
+    </ClCompile>
     <!-- DiaApplicationEditor -->
     <ClCompile Include="DiaApplicationEditor\TestManifestSerializer.cpp">
       <Filter>DiaApplicationEditor</Filter>
@@ -540,6 +552,9 @@
       <Filter>Geometry2D</Filter>
     </ClCompile>
     <ClCompile Include="Geometry2D\TestIntersectionTests.cpp">
+      <Filter>Geometry2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry2D\TestIntersectionInvariants.cpp">
       <Filter>Geometry2D</Filter>
     </ClCompile>
     <ClCompile Include="Geometry2D\TestGeometry2DTransform.cpp">
@@ -598,6 +613,12 @@
       <Filter>RigidBody2D</Filter>
     </ClCompile>
     <ClCompile Include="RigidBody2D\TestRigidBodyStress.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestRigidBodyDeterminism.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestConservationLaws.cpp">
       <Filter>RigidBody2D</Filter>
     </ClCompile>
     <!-- DiaLogger -->
@@ -664,6 +685,9 @@
       <Filter>SoftBody2D</Filter>
     </ClCompile>
     <ClCompile Include="SoftBody2D\TestSoftBodyGolden.cpp">
+      <Filter>SoftBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="SoftBody2D\TestSoftBodyConservation.cpp">
       <Filter>SoftBody2D</Filter>
     </ClCompile>
     <!-- StateMachine -->

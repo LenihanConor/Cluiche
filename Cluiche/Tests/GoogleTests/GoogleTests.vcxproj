@@ -127,6 +127,7 @@
     <ClCompile Include="Core\Containers\TestHashTable.cpp" />
     <ClCompile Include="Core\Containers\TestGraph.cpp" />
     <ClCompile Include="Core\Containers\TestContainerStress.cpp" />
+    <ClCompile Include="Core\Containers\TestContainerInvariants.cpp" />
     <ClCompile Include="Core\Events\TestDelegate.cpp" />
     <ClCompile Include="Core\Events\TestEventQueue.cpp" />
     <ClCompile Include="Core\Events\TestEventDispatcher.cpp" />
@@ -159,6 +160,7 @@
     <ClCompile Include="Maths\TestFloatMathsBoundary.cpp" />
     <ClCompile Include="Maths\TestEasing.cpp" />
     <ClCompile Include="Maths\TestInterpolation.cpp" />
+    <ClCompile Include="Maths\TestMathsInvariants.cpp" />
     <ClCompile Include="Maths\TestTrigonometry.cpp" />
     <ClCompile Include="Maths\TestMatrix22.cpp" />
     <ClCompile Include="Maths\TestVector2D.cpp" />
@@ -171,6 +173,7 @@
     <ClCompile Include="Graphics\TestRGBA.cpp" />
     <ClCompile Include="Graphics\TestTransform.cpp" />
     <ClCompile Include="Graphics\TestVertex.cpp" />
+    <ClCompile Include="Graphics\TestFrameData.cpp" />
     <ClCompile Include="Input\TestInputState.cpp" />
     <ClCompile Include="Input\TestActionMap.cpp" />
     <ClCompile Include="Input\TestActionContext.cpp" />
@@ -229,6 +232,7 @@
     <ClCompile Include="Integration\TestManifestRoundTrip.cpp" />
     <ClCompile Include="Integration\TestWebUIBridgeDispatch.cpp" />
     <ClCompile Include="Integration\TestTypeRegistrySeeding.cpp" />
+    <ClCompile Include="Integration\TestPhysicsGeometryIntegration.cpp" />
     <ClCompile Include="DiaApplicationEditor\TestManifestSerializer.cpp" />
     <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\StubEditorPlugin.cpp" />
     <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\HelloEditorPlugin.cpp" />
@@ -254,6 +258,7 @@
     <ClCompile Include="Geometry2D\TestShapePrimitives.cpp" />
 
     <ClCompile Include="Geometry2D\TestIntersectionTests.cpp" />
+    <ClCompile Include="Geometry2D\TestIntersectionInvariants.cpp" />
     <ClCompile Include="Geometry2D\TestGeometry2DTransform.cpp" />
     <ClCompile Include="Geometry2D\TestSpatialGrid.cpp" />
     <ClCompile Include="Geometry2D\TestHandle.cpp" />
@@ -274,6 +279,8 @@
     <ClCompile Include="RigidBody2D\TestTriggerVolumes.cpp" />
     <ClCompile Include="RigidBody2D\TestRigidBodyGolden.cpp" />
     <ClCompile Include="RigidBody2D\TestRigidBodyStress.cpp" />
+    <ClCompile Include="RigidBody2D\TestRigidBodyDeterminism.cpp" />
+    <ClCompile Include="RigidBody2D\TestConservationLaws.cpp" />
     <!-- DiaLogger -->
     <ClCompile Include="DiaLogger\TestLogLevel.cpp" />
     <ClCompile Include="DiaLogger\TestThreadLogBuffer.cpp" />
@@ -298,6 +305,7 @@
     <ClCompile Include="SoftBody2D\TestSoftBodyStress.cpp" />
     <ClCompile Include="SoftBody2D\TestSoftBodyRegression.cpp" />
     <ClCompile Include="SoftBody2D\TestSoftBodyGolden.cpp" />
+    <ClCompile Include="SoftBody2D\TestSoftBodyConservation.cpp" />
     <!-- StateMachine -->
     <ClCompile Include="StateMachine\TestFlatStateMachine.cpp" />
     <ClCompile Include="StateMachine\TestHierarchicalStateMachine.cpp" />

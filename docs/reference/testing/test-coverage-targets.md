@@ -1,8 +1,12 @@
 # Test Coverage Targets
 
-**Last Updated:** 2026-04-01
+**Last Updated:** 2026-05-01
 
 Test coverage goals and current status for Cluiche and Dia engine.
+
+> **Live test counts have moved to [test-completeness-registry.md](test-completeness-registry.md).**
+> The per-module tables below are from April 2026 and are **stale** — many "No tests" entries now have tests.
+> Refer to the registry for current counts per module, per test type.
 
 ---
 
@@ -21,6 +25,7 @@ This document defines test coverage goals by subsystem to ensure adequate valida
 - Medium-priority subsystems (P2): 40%+ line coverage
 
 **Related Documents:**
+- **[→ Test Completeness Registry](test-completeness-registry.md)** - Live test counts by module and type
 - **[→ Testing Strategy](test.md)** - Overall testing approach
 - **[→ Unit Testing](unit-testing.md)** - Component-level testing
 - **[→ Integration Testing](integration-testing.md)** - Cross-component testing
@@ -30,12 +35,11 @@ This document defines test coverage goals by subsystem to ensure adequate valida
 
 ## Current Status
 
-**Overall Coverage:** ❌ Not Yet Measured
+**Overall Coverage:** ❌ Not Yet Measured (line coverage tooling not configured)
 
-**Infrastructure:**
-- In-engine tests exist (UnitTestLevel)
-- No code coverage tooling configured
-- Manual test tracking in source comments
+**Test Infrastructure (as of 2026-05-01):**
+- GoogleTest framework: 164 files, ~2,833 tests
+- See [test-completeness-registry.md](test-completeness-registry.md) for full breakdown
 
 **Next Steps:**
 1. Integrate coverage tool (Visual Studio Code Coverage or gcov)
