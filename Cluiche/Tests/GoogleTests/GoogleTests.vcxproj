@@ -112,6 +112,7 @@
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Core\Architecture\TestSingleton.cpp" />
     <ClCompile Include="Core\Architecture\TestComponent.cpp" />
+    <ClCompile Include="Core\Architecture\TestObserver.cpp" />
     <ClCompile Include="Core\Containers\TestArray.cpp" />
     <ClCompile Include="Core\Containers\TestArrayC.cpp" />
     <ClCompile Include="Core\Containers\TestDynamicArray.cpp" />
@@ -122,11 +123,16 @@
     <ClCompile Include="Core\Containers\TestCircularBuffer.cpp" />
     <ClCompile Include="Core\Containers\TestArrayIterators.cpp" />
     <ClCompile Include="Core\Containers\TestLinkListC.cpp" />
+
     <ClCompile Include="Core\Containers\TestHashTable.cpp" />
+    <ClCompile Include="Core\Containers\TestGraph.cpp" />
+    <ClCompile Include="Core\Containers\TestContainerStress.cpp" />
     <ClCompile Include="Core\Events\TestDelegate.cpp" />
     <ClCompile Include="Core\Events\TestEventQueue.cpp" />
     <ClCompile Include="Core\Events\TestEventDispatcher.cpp" />
     <ClCompile Include="Core\Memory\TestSmartPointers.cpp" />
+    <ClCompile Include="Core\Memory\TestAllocator.cpp" />
+    <ClCompile Include="Core\FilePath\TestFilePath.cpp" />
     <ClCompile Include="Core\Time\TestTimer.cpp" />
     <ClCompile Include="Core\Time\TestTimeAbsolute.cpp" />
     <ClCompile Include="Core\Time\TestTimeRelative.cpp" />
@@ -151,6 +157,8 @@
     <ClCompile Include="Maths\TestCoreMaths.cpp" />
     <ClCompile Include="Maths\TestFloatMaths.cpp" />
     <ClCompile Include="Maths\TestFloatMathsBoundary.cpp" />
+    <ClCompile Include="Maths\TestEasing.cpp" />
+    <ClCompile Include="Maths\TestInterpolation.cpp" />
     <ClCompile Include="Maths\TestTrigonometry.cpp" />
     <ClCompile Include="Maths\TestMatrix22.cpp" />
     <ClCompile Include="Maths\TestVector2D.cpp" />
@@ -194,6 +202,7 @@
     <ClCompile Include="Application\TestModuleRef.cpp" />
     <ClCompile Include="Application\TestCluicheManifests.cpp" />
     <ClCompile Include="Application\TestMetricsCollector.cpp" />
+    <ClCompile Include="Application\TestStateObject.cpp" />
     <ClCompile Include="UI\TestBoundMethod.cpp" />
     <ClCompile Include="UI\TestUIDataBuffer.cpp" />
     <ClCompile Include="UI\TestPage.cpp" />
@@ -264,6 +273,7 @@
     <ClCompile Include="RigidBody2D\TestPhysicsIntegration.cpp" />
     <ClCompile Include="RigidBody2D\TestTriggerVolumes.cpp" />
     <ClCompile Include="RigidBody2D\TestRigidBodyGolden.cpp" />
+    <ClCompile Include="RigidBody2D\TestRigidBodyStress.cpp" />
     <!-- DiaLogger -->
     <ClCompile Include="DiaLogger\TestLogLevel.cpp" />
     <ClCompile Include="DiaLogger\TestThreadLogBuffer.cpp" />

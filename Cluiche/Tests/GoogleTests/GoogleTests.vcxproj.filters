@@ -19,6 +19,9 @@
     <Filter Include="Core\Memory">
       <UniqueIdentifier>{C3D4E5F6-3333-4444-5555-666666666666}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Core\FilePath">
+      <UniqueIdentifier>{FILEPATH1-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Core\Threading">
       <UniqueIdentifier>{A1B2C3D4-1111-2222-3333-444444444444}</UniqueIdentifier>
     </Filter>
@@ -104,6 +107,9 @@
     <ClCompile Include="Core\Architecture\TestComponent.cpp">
       <Filter>Core\Architecture</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Architecture\TestObserver.cpp">
+      <Filter>Core\Architecture</Filter>
+    </ClCompile>
     <!-- Core\Containers -->
     <ClCompile Include="Core\Containers\TestArray.cpp">
       <Filter>Core\Containers</Filter>
@@ -138,6 +144,12 @@
     <ClCompile Include="Core\Containers\TestHashTable.cpp">
       <Filter>Core\Containers</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Containers\TestGraph.cpp">
+      <Filter>Core\Containers</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Containers\TestContainerStress.cpp">
+      <Filter>Core\Containers</Filter>
+    </ClCompile>
     <!-- Core\CRC -->
     <ClCompile Include="Core\CRC\TestCRC.cpp">
       <Filter>Core\CRC</Filter>
@@ -155,6 +167,13 @@
     <!-- Core\Memory -->
     <ClCompile Include="Core\Memory\TestSmartPointers.cpp">
       <Filter>Core\Memory</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Memory\TestAllocator.cpp">
+      <Filter>Core\Memory</Filter>
+    </ClCompile>
+    <!-- Core\FilePath -->
+    <ClCompile Include="Core\FilePath\TestFilePath.cpp">
+      <Filter>Core\FilePath</Filter>
     </ClCompile>
     <!-- Core\Threading -->
     <ClCompile Include="Core\Threading\TestAtomic.cpp">
@@ -212,6 +231,15 @@
       <Filter>Maths</Filter>
     </ClCompile>
     <ClCompile Include="Maths\TestFloatMaths.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestFloatMathsBoundary.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestEasing.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestInterpolation.cpp">
       <Filter>Maths</Filter>
     </ClCompile>
     <ClCompile Include="Maths\TestMatrix22.cpp">
@@ -368,6 +396,9 @@
       <Filter>Application</Filter>
     </ClCompile>
     <ClCompile Include="Application\TestMetricsCollector.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\TestStateObject.cpp">
       <Filter>Application</Filter>
     </ClCompile>
     <ClCompile Include="Application\TestCluicheManifests.cpp">
@@ -564,6 +595,9 @@
       <Filter>RigidBody2D</Filter>
     </ClCompile>
     <ClCompile Include="RigidBody2D\TestRigidBodyGolden.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestRigidBodyStress.cpp">
       <Filter>RigidBody2D</Filter>
     </ClCompile>
     <!-- DiaLogger -->
