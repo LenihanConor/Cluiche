@@ -642,6 +642,15 @@
     <ClCompile Include="StateMachine\TestPushdownAutomaton.cpp">
       <Filter>StateMachine</Filter>
     </ClCompile>
+    <ClCompile Include="StateMachine\TestStateMachineExtended.cpp">
+      <Filter>StateMachine</Filter>
+    </ClCompile>
+    <ClCompile Include="StateMachine\TestCallbackRegistry.cpp">
+      <Filter>StateMachine</Filter>
+    </ClCompile>
+    <ClCompile Include="StateMachine\TestStateMachineTracer.cpp">
+      <Filter>StateMachine</Filter>
+    </ClCompile>
     <!-- GoogleTest -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">
       <Filter>GoogleTest</Filter>

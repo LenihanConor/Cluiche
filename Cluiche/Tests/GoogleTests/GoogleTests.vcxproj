@@ -292,6 +292,9 @@
     <ClCompile Include="StateMachine\TestFlatStateMachine.cpp" />
     <ClCompile Include="StateMachine\TestHierarchicalStateMachine.cpp" />
     <ClCompile Include="StateMachine\TestPushdownAutomaton.cpp" />
+    <ClCompile Include="StateMachine\TestStateMachineExtended.cpp" />
+    <ClCompile Include="StateMachine\TestCallbackRegistry.cpp" />
+    <ClCompile Include="StateMachine\TestStateMachineTracer.cpp" />
     <!-- Google Test Source Files - Compiled directly into project -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">
       <AdditionalIncludeDirectories>$(ProjectDir)../../../External/googletest/googletest/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
