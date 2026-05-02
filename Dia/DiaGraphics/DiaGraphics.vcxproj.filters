@@ -19,12 +19,6 @@
     <ClCompile Include="Frame\DebugFrameData.cpp">
       <Filter>Frame</Filter>
     </ClCompile>
-    <ClCompile Include="Frame\DebugFrameDataCircle2D.cpp">
-      <Filter>Frame</Filter>
-    </ClCompile>
-    <ClCompile Include="Frame\DebugFrameDataLine2D.cpp">
-      <Filter>Frame</Filter>
-    </ClCompile>
     <ClCompile Include="Frame\UIFrameData.cpp">
       <Filter>Frame</Filter>
     </ClCompile>
@@ -75,16 +69,10 @@
     <ClInclude Include="Frame\DebugFrameData.h">
       <Filter>Frame</Filter>
     </ClInclude>
+    <ClInclude Include="Frame\DebugPrimitive.h">
+      <Filter>Frame</Filter>
+    </ClInclude>
     <ClInclude Include="Frame\DebugFrameDataVisitor.h">
-      <Filter>Frame</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\DebugFrameDataBase.h">
-      <Filter>Frame</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\DebugFrameDataCircle2D.h">
-      <Filter>Frame</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\DebugFrameDataLine2D.h">
       <Filter>Frame</Filter>
     </ClInclude>
     <ClInclude Include="Frame\UIFrameData.h">

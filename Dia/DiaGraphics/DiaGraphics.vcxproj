@@ -13,8 +13,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Frame\DebugFrameData.cpp" />
-    <ClCompile Include="Frame\DebugFrameDataCircle2D.cpp" />
-    <ClCompile Include="Frame\DebugFrameDataLine2D.cpp" />
     <ClCompile Include="Frame\EntityFrameData.cpp" />
     <ClCompile Include="Frame\FrameData.cpp" />
     <ClCompile Include="Frame\SpriteDrawCommand.cpp" />
@@ -28,9 +26,7 @@
     <ClInclude Include="Assets\IShader.h" />
     <ClInclude Include="Assets\ITexture.h" />
     <ClInclude Include="Frame\DebugFrameData.h" />
-    <ClInclude Include="Frame\DebugFrameDataBase.h" />
-    <ClInclude Include="Frame\DebugFrameDataCircle2D.h" />
-    <ClInclude Include="Frame\DebugFrameDataLine2D.h" />
+    <ClInclude Include="Frame\DebugPrimitive.h" />
     <ClInclude Include="Frame\DebugFrameDataVisitor.h" />
     <ClInclude Include="Frame\EntityFrameData.h" />
     <ClInclude Include="Frame\EntityFrameDataVisitor.h" />

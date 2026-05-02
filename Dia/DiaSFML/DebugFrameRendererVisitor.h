@@ -1,11 +1,12 @@
 ////////////////////////////////////////////////////////////////////////////////
-// Filename: DebugRenderer.h
+// Filename: DebugFrameRendererVisitor.h
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
 #include <DiaGraphics/Frame/DebugFrameDataVisitor.h>
+#include <DiaGraphics/Frame/DebugPrimitive.h>
 
-// Forward Declare
+// Forward declare
 namespace sf
 {
 	class RenderTarget;
@@ -16,25 +17,32 @@ namespace Dia
 	namespace Graphics
 	{
 		class DebugFrameData;
-		class DebugFrameDataCircle2D;
-		class DebugFrameDataLine2D;
-	};
+	}
 
 	namespace SFML
 	{
 		////////////////////////////////////////////////////////////////////////////////
-		// Class name: DebugFrameRendererVisitor - How to render debug objects through SFML from the frame data
+		// DebugFrameRendererVisitor — renders debug primitives via SFML
 		////////////////////////////////////////////////////////////////////////////////
 		class DebugFrameRendererVisitor : public Dia::Graphics::DebugFrameDataVisitor
 		{
 		public:
-			DebugFrameRendererVisitor(sf::RenderTarget* renderTarget) : mRenderTarget(renderTarget){}
+			explicit DebugFrameRendererVisitor(sf::RenderTarget* renderTarget)
+				: mRenderTarget(renderTarget) {}
 
-			virtual void Visit(const Dia::Graphics::DebugFrameData& object)const override;
+			virtual void Visit(const Dia::Graphics::DebugFrameData& frameData) const override;
+			virtual void Visit(const Dia::Graphics::DebugPrimitive& primitive) const override;
 
 		private:
-			virtual void Visit(const Dia::Graphics::DebugFrameDataCircle2D& object)const override;
-			virtual void Visit(const Dia::Graphics::DebugFrameDataLine2D& object)const override;
+			void DrawCircle2D  (const Dia::Graphics::DebugPrimitiveCircle2D&   p) const;
+			void DrawLine2D    (const Dia::Graphics::DebugPrimitiveLine2D&     p) const;
+			void DrawPoint2D   (const Dia::Graphics::DebugPrimitivePoint2D&    p) const;
+			void DrawRect2D    (const Dia::Graphics::DebugPrimitiveRect2D&     p) const;
+			void DrawArc2D     (const Dia::Graphics::DebugPrimitiveArc2D&      p) const;
+			void DrawRay2D     (const Dia::Graphics::DebugPrimitiveRay2D&      p) const;
+			void DrawTriangle2D(const Dia::Graphics::DebugPrimitiveTriangle2D& p) const;
+
+			static int ArcSegmentCount(float startDeg, float endDeg);
 
 			sf::RenderTarget* mRenderTarget;
 		};
