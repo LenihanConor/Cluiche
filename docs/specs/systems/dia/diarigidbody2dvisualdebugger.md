@@ -155,4 +155,4 @@ const Dia::Core::Containers::DynamicArrayC<Contact, kMaxContacts>& GetLastContac
 
 ## Status
 
-`Approved`
+`Superseded` — superseded by [diavisualdebugger.md](diavisualdebugger.md) (`rigidbody2d-visual-debugger-stack` feature). Decisions SD-VD-001 through SD-VD-004 are folded into DiaVisualDebugger.

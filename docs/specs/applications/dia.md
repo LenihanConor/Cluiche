@@ -25,7 +25,7 @@ Dia is the game engine application that provides all shared engine infrastructur
 | DiaLogger | Engine-wide logging system (levels, channels, thread-local buffers, pluggable sinks via ISink) | [dialogger.md](../systems/dia/dialogger.md) |
 | DiaGeometry2D | 2D geometry system: shape primitives, intersection tests, Transform, spatial structures (Grid, Quadtree, BVH) | [diageometry2d.md](../systems/dia/diageometry2d.md) |
 | DiaRigidBody2D | 2D rigid body physics: velocity/force integration, collision detection + response, constraints/joints, sleeping, collision layers, Physics-channel logging | [diarigidbody2d.md](../systems/dia/diarigidbody2d.md) |
-| DiaRigidBody2DVisualDebugger | Read-only debug visualization of rigid body physics state — shapes, velocity arrows, contacts, constraints, sleep colour. Separate .vcxproj bridging DiaRigidBody2D + DiaGraphics | [diarigidbody2dvisualdebugger.md](../systems/dia/diarigidbody2dvisualdebugger.md) |
+| DiaRigidBody2DVisualDebugger | Read-only debug visualization of rigid body physics state — superseded by DiaVisualDebugger system | [diarigidbody2dvisualdebugger.md](../systems/dia/diarigidbody2dvisualdebugger.md) (Superseded) |
 | DiaSoftBody2D | 2D soft body simulation: PBD ropes, cloth, particle-geometry collision, rigid body coupling, Physics-channel logging, visual debugger | [diasoftbody2d.md](../systems/dia/diasoftbody2d.md) |
 | DiaEnv | Portable development environment system — SDK manifest, toolchain manifest, `dia env setup/verify`, MSBuild auto-restore, git submodule migration, AI context hardening | [diaenv.md](../systems/dia/diaenv.md) |
 | DiaTest | Test execution system — `dia test cli` (pytest for DiaCLI), `dia test env-integration` (agentic env→pipeline→test loop), future `dia test googletest` and `dia test ui` | [diatest.md](../systems/dia/diatest.md) |
@@ -40,6 +40,7 @@ Dia is the game engine application that provides all shared engine infrastructur
 | DiaRig2D | 2D skeletal rig system — bone hierarchy, forward kinematics, pose representation/blending, JSON skeleton definitions, skeleton component, debug renderer | [diarig2d.md](../systems/dia/diarig2d.md) |
 | DiaIK2D | Inverse kinematics — analytic two-bone solver, FABRIK N-joint solver, look-at constraint; post-process pass on DiaRig2D skeletons | [diaik2d.md](../systems/dia/diaik2d.md) |
 | DiaAnimation2D | Animation playback and blending — damped spring chains, keyframe clip player, pose blend stack, procedural locomotion oscillator (deferred) | [diaanimation2d.md](../systems/dia/diaanimation2d.md) |
+| DiaVisualDebugger | Visual debug rendering system — `DebugLayerManager`, stack of focused draw classes, `DebugColourPalette`, `DiaVisualDebuggerConsole` (ImGui), editor layer panel, extensions to DiaGraphics (budget, TextPrimitive) | [diavisualdebugger.md](../systems/dia/diavisualdebugger.md) |
 | DiaCore | Foundation library (containers, type system, memory, logging, CRC) | TBD |
 | DiaMaths | Math library (vectors, matrices, core math utilities — pure linear algebra only after DiaGeometry2D migration) | TBD |
 | DiaGraphics | Graphics abstraction layer (ICanvas, FrameData, DebugPrimitive, rendering contracts) | [diagraphics.md](../systems/dia/diagraphics.md) |

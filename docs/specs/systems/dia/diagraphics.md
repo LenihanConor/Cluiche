@@ -47,7 +47,7 @@ DiaSFML / future renderer (DebugFrameRendererVisitor, SpriteRenderer)
 - Input handling — DiaInput
 - UI system logic — DiaUI
 - Physics or simulation state — DiaRigidBody2D / DiaSoftBody2D
-- Persistent debug overlays across multiple frames — future DiaDebugDraw system
+- Persistent debug overlays across multiple frames — future DiaVisualDebuggerDraw system
 
 ---
 
