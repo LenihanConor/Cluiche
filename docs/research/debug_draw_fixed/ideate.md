@@ -1,117 +1,119 @@
 # Research: Ideate — Debug Draw for Fixed/Registered Objects
 
-**Input:** docs/research/debug_draw_fixed/explore.md
+**Input:** docs/research/debug_draw_fixed/explore.md  
+**Revised:** 2026-05-03 (original 9 candidates collapsed after design discussion)
+
+---
+
+## Key insight from discussion
+
+The original candidates split along the wrong axis (caching strategy). The real axis is:
+
+> **Does the large primitive set ever enter FrameData?**
+
+If yes — the design has a fundamental overflow problem for large structures (grids, quadtrees). The correct answer is: fixed topology never touches FrameData. The render thread owns the buffer permanently. FrameData is reserved for small, fast-changing overlays only.
+
+This collapses the original 9 candidates into 3 composable pieces.
 
 ---
 
 ## Candidates
 
-### Candidate 1: IFixedDebugDrawObject — Register-once with per-frame re-emit
-**Home module/system:** DiaVisualDebugger (new `IFixedDebugDrawObject` interface alongside `IVisualDebugger`)  
-**Size:** S  
-**Description:** Introduce a second interface `IFixedDebugDrawObject` that sits alongside `IVisualDebugger`. Callers implement it by overriding `Draw(FrameData&)` as before, but also override `IsStaticTopology() const → true` which signals to `DebugLayerManager` that the output is safe to cache. `DebugLayerManager` runs `Draw()` once, stores the resulting primitives in a small per-entry buffer, and blits that buffer into `FrameData` on subsequent frames without calling `Draw()` again. An explicit `Invalidate(StringCRC layerName)` on the manager forces a re-bake.
-
-The renderer side is unchanged from `IVisualDebugger` — draw logic is still baked into the class. The caller supplies one concrete class per structure type (one for `SpatialGrid`, one for `Quadtree`, etc.) and the manager handles the caching transparently.
-
-**Primary value:** Zero per-frame CPU cost for topology-fixed structures with no API change for the caller beyond flagging `IsStaticTopology()`.
-
----
-
-### Candidate 2: IRegisteredDrawObject + IObjectRenderer — Full register/renderer split
-**Home module/system:** DiaVisualDebugger (new `IRegisteredDrawObject` and `IObjectRenderer` interfaces)  
+### Candidate A: Render-Thread Fixed Buffer (core architecture)
+**Home module/system:** DiaVisualDebugger — new `FixedDrawLayer` alongside `IVisualDebugger`  
 **Size:** M  
-**Description:** Split the two concerns completely. `IRegisteredDrawObject` owns the source data reference and exposes a `RebuildPrimitives(IDrawTarget&)` method. `IObjectRenderer` is a strategy object that implements `Render(const IRegisteredDrawObject&, IDrawTarget&)` — it describes *how* to interpret the object's data as primitives. `DebugLayerManager` gains a `RegisterObject(IRegisteredDrawObject*, IObjectRenderer*, int priority)` overload. The manager caches the output of `RebuildPrimitives` and re-runs it only when `IsStale()` returns true or `Invalidate()` is called.
+**Description:** A separate registration path for fixed-topology objects. At registration time the sim thread calls a supplied renderer function once, which builds a primitive buffer. That buffer is handed to the render thread which owns it permanently. Every subsequent frame the render thread draws directly from that buffer — no FrameData involved, no sim thread involved, no source object referenced.
 
-Multiple `IObjectRenderer` instances can be registered against the same object under different layer names (e.g. `"grid.default"` and `"grid.selected"`), enabling simultaneous or switchable visual modes without touching the source object at all.
+`Invalidate()` is the only per-object operation after registration. It triggers one rebuild on the sim thread, sends a new buffer to the render thread, and the old buffer is freed. Called only when the topology genuinely changes (grid resized, quadtree rebuilt). Not called on selection change, frame toggle, or anything dynamic.
 
-**Primary value:** Callers can swap or compose renderers at runtime without changing the source structure or re-registering — the grid doesn't know about the renderer, and the renderer doesn't own the grid.
+The layer toggle (`EnableLayer` / `DisableLayer`) is the only per-frame signal from anywhere. No token stream, no dirty flag.
+
+```
+REGISTRATION (sim thread, once):
+  object + renderer → builds primitive buffer → ownership transferred to render thread
+
+EVERY FRAME (render thread):
+  if enabled: draw from owned buffer → screen       // no FrameData, no sim work
+
+INVALIDATE (sim thread, rare):
+  rebuild buffer → send new buffer to render thread → free old buffer
+```
+
+**Scales to:** Any fixed-topology object type (grid, hexgrid, quadtree, BVH, navmesh, static collision, rest-pose skeleton). Each just needs a renderer function written once.
+
+**Primary value:** Zero per-frame CPU and zero FrameData budget cost for large static structures, regardless of size.
 
 ---
 
-### Candidate 3: DebugDrawRegistrar — Dedicated fixed-object registry separate from DebugLayerManager
-**Home module/system:** DiaVisualDebugger (new `DebugDrawRegistrar` class; `DebugLayerManager` remains unchanged)  
-**Size:** M  
-**Description:** Add a standalone `DebugDrawRegistrar` that manages registered fixed objects independently of `DebugLayerManager`. Game code creates a registrar, registers objects with `Register(StringCRC name, IRegisteredDrawObject*, IObjectRenderer*)`, and calls `registrar.Draw(FrameData&)` each frame. The registrar handles caching, invalidation, and renderer dispatch internally. `DebugLayerManager` is not touched — the registrar is itself registered as a single `IVisualDebugger` layer named `"fixed_objects"` (or omitted from the manager entirely).
-
-The separation keeps `DebugLayerManager` simple and makes the fixed-object system independently testable. The cost is an extra object at the call site and a slightly different API from the existing layer stack.
-
-**Primary value:** Keeps `DebugLayerManager` unchanged and its 64-slot capacity dedicated to dynamic draw classes; fixed objects don't compete for those slots.
-
----
-
-### Candidate 4: Per-object primitive cache on IVisualDebugger — Mixin/CRTP cache tier
-**Home module/system:** DiaVisualDebugger (new `CachedVisualDebugger<T>` CRTP base)  
+### Candidate B: IObjectRenderer — Renderer strategy at registration
+**Home module/system:** DiaVisualDebugger — interface passed into Candidate A's registration  
 **Size:** S  
-**Description:** A CRTP mixin `CachedVisualDebugger<Derived, kCapacity>` wraps an `IVisualDebugger`. It internally owns a `DynamicArrayC<DebugPrimitive, kCapacity>` buffer. The first call to `Draw()` populates the buffer by calling `Derived::RebuildPrimitives(buffer)`. Subsequent calls blit the buffer to `FrameData` without calling `RebuildPrimitives` again. `Invalidate()` clears the buffer and forces a rebuild on the next frame. `DebugLayerManager` is unmodified — it just calls `Draw()` as usual on any registered `IVisualDebugger`.
+**Description:** A single-method interface: `BuildPrimitives(const void* sourceObject, IFixedPrimitiveBuffer& out)`. Passed at registration alongside the object. Determines how the buffer is built. Multiple renderer implementations can exist for the same object type — `DefaultGridRenderer`, `SelectedGridRenderer`, `HeatmapGridRenderer`.
 
-Custom renderers are handled by the derived class — the CRTP base is only a caching layer. A caller wanting two visual modes creates two derived classes (one default, one custom) and registers both, each with a distinct layer name.
+Two renderers can be registered against the same object under different layer names, giving simultaneous or independently-toggled visual modes:
 
-**Primary value:** Caching is additive and opt-in; existing draw classes are unaffected; no new interfaces for `DebugLayerManager` to understand.
+```cpp
+manager.RegisterFixed("nav_grid.topology", &myGrid, &defaultRenderer);
+manager.RegisterFixed("nav_grid.selection", &myGrid, &selectedRenderer);
+// two independent layers, same source object, two separate buffers
+```
+
+The source object is only accessed during `BuildPrimitives()` — which runs at registration and at `Invalidate()`. After that, the render thread never touches it.
+
+**Note on the dynamic overlay case:** Selection highlighting (selected cell = red, neighbours = orange) is NOT a fixed renderer. It is a small dynamic overlay — 7 primitives per frame — submitted normally via FrameData. It changes every frame as selection changes. Don't put it in the fixed buffer.
+
+**Primary value:** Draw logic is decoupled from the source object. New visual modes require a new renderer, not a new source class.
 
 ---
 
-### Candidate 5: FixedDrawSlot — Named renderer slots per registered object
-**Home module/system:** DiaVisualDebugger (extends `DebugLayerManager` with a `RegisterFixed()` overload)  
-**Size:** M  
-**Description:** `DebugLayerManager` gains a `RegisterFixed(StringCRC instanceName, const T& object, int priority)` overload (template). The object is stored by reference. A default renderer for `T` is looked up from a `RendererRegistry<T>` (a small static table mapping type IDs to render functions). The caller can optionally call `SetRenderer(StringCRC instanceName, IObjectRenderer*)` to override the default.
-
-Each registered fixed object occupies one slot in the manager (counts against `kMaxLayers = 64`). The manager auto-invalidates the cache if `IsStale()` on the registered object returns true (objects implement a lightweight version-counter interface `IVersioned`). No explicit `Invalidate()` required for objects that already track mutation via a version counter.
-
-**Primary value:** Minimal call-site boilerplate — `manager.RegisterFixed("my.grid", myGrid)` just works with the default renderer; custom renderers are opt-in.
-
----
-
-### Candidate 6: IObjectRenderer only — Renderer-strategy injected into existing draw classes
-**Home module/system:** DiaGeometry2DVisualDebugger (modify existing planned draw classes)  
+### Candidate C: DebugDrawGroup — Multi-instance naming
+**Home module/system:** DiaVisualDebugger — lightweight aggregate over Candidate A  
 **Size:** S  
-**Description:** Don't add a registration system at all. Instead, modify the planned `SpatialGridDrawer<T>`, `QuadtreeDrawer<T>` etc. in `DiaGeometry2DVisualDebugger` to accept an optional `IObjectRenderer*` constructor argument. If non-null, the renderer is called instead of the default draw logic. Caching is handled by the draw class itself using a dirty flag exposed by the spatial structure (or a `bool mCacheDirty` that the caller flips via `Invalidate()`).
+**Description:** Registers multiple fixed buffers under a single parent layer name. `manager.RegisterFixedGroup("nav_grids", renderers)` gives one toggle that controls all grid instances simultaneously, while individual instances can still be toggled by index or child name.
 
-This is the smallest possible change — it adds custom renderers without a new registration architecture. It's also the least general: each draw class must be modified individually, and the pattern doesn't compose with future non-debug use.
+Solves the practical problem of two `SpatialGrid` instances both wanting the name `"geometry.spatial_grid"` — SD-DBG-006 would assert. The group holds child names (`"geometry.spatial_grid.0"`, `"geometry.spatial_grid.1"`) and the parent name is the toggle surface.
 
-**Primary value:** Very low implementation cost; immediately enables custom renderer injection for grid/quadtree/BVH draw classes with minimal new infrastructure.
-
----
-
-### Candidate 7: Command-stream model — Sim pushes draw-or-skip tokens, render thread owns buffer
-**Home module/system:** DiaVisualDebugger + DiaApplication thread boundary  
-**Size:** L  
-**Description:** Sim thread registers a fixed object once and thereafter pushes a lightweight "draw token" (enabled/disabled flag + optional renderer selector) into the thread-safe frame queue. The render thread holds a persistent `PerObjectPrimitiveBuffer` per registered object. On the first frame (or after invalidation), the render thread calls `RebuildPrimitives()`. On subsequent frames, if the token says "draw", the buffer is blitted to `FrameData`. The sim thread never calls draw logic again.
-
-This is architecturally the cleanest for threading — the sim thread has zero per-frame draw cost after initial registration, and the render thread owns all draw state. The cost is significant: a new message type in the frame queue, per-object buffers on the render side, and a more complex registration handshake. It also partially duplicates the existing `FrameData` producer/consumer pattern.
-
-**Primary value:** True zero sim-thread cost per frame for fixed draws; explicit thread ownership of draw data; extends naturally to non-debug use later.
+**Primary value:** Multiple instances of the same type don't require the caller to invent unique names manually.
 
 ---
 
-### Candidate 8: DebugDrawGroup — Batch multiple instances under one layer name
-**Home module/system:** DiaVisualDebugger (new `DebugDrawGroup` aggregate IVisualDebugger)  
-**Size:** S  
-**Description:** A `DebugDrawGroup` implements `IVisualDebugger` and holds an array of `IVisualDebugger*` children. Registering a group with `DebugLayerManager` registers a single named layer that dispatches `Draw()` to all children. Each child can have its own primitive cache. This solves the "multiple instances of the same structure type need unique names" problem: game code creates one group named `"geometry.grids"` and adds all `SpatialGridDrawer` instances into it. Toggling the group layer enables/disables all grid draws simultaneously.
+## What was ruled out and why
 
-Individual children can still be toggled via `DebugDrawGroup::EnableChild(StringCRC childName)`. The group itself doesn't need unique per-instance layer names in `DebugLayerManager` — only the group's name must be unique.
-
-**Primary value:** Solves the multiple-instance naming problem elegantly; one layer toggle controls all instances of a type while per-instance control is still possible.
+| Original Candidate | Ruling |
+|-------------------|--------|
+| 1. IFixedDebugDrawObject flag | Primitives still flow through FrameData — overflow problem not solved |
+| 2. IRegisteredDrawObject + IObjectRenderer (original) | Cache blits into FrameData each frame — same overflow problem; render thread still holds sim-side reference |
+| 3. DebugDrawRegistrar | Parallel system fighting the existing layer stack; absorbed by Candidate A |
+| 4. CachedVisualDebugger CRTP | Good for recomputation cost but primitives still in FrameData; useful as internal impl detail of Candidate A, not standalone |
+| 5. FixedDrawSlot + IVersioned | IVersioned couples source objects to debug system in wrong direction; absorbed by Candidate A + explicit Invalidate() |
+| 6. IObjectRenderer injection | Absorbed — this is how Candidate B's default renderers are implemented |
+| 7. Full command-stream | Simplified away — layer toggle IS the stream; no per-frame token needed |
+| 8. DebugDrawGroup | Kept as Candidate C |
+| 9. Full system (original) | Too many moving parts; Candidates A+B+C achieve same goals with less |
 
 ---
 
-### Candidate 9: Full system — IRegisteredDrawObject + renderer slots + DebugDrawGroup + cache
-**Home module/system:** DiaVisualDebugger (new `FixedDebugDraw` subsystem — multiple new classes)  
-**Size:** L  
-**Description:** Combines Candidates 2, 4, and 8 into a coherent subsystem. `IRegisteredDrawObject` is the source abstraction; `IObjectRenderer` is the strategy; `CachedVisualDebugger` provides the primitive cache; `DebugDrawGroup` handles multiple instances. The render side additionally gains a `RendererSlot` concept: each registered object has a named set of renderers (default, selected, custom...) and callers activate a slot by name. `DebugLayerManager` itself is not changed — the subsystem plugs into it as one or more `IVisualDebugger` instances.
+## How the three candidates compose
 
-This is the most complete design and maps most directly to the user's stated goals (register once, stream says draw/no-draw, custom renderers). It also provides the cleanest promotion path to non-debug use since `IRegisteredDrawObject` and `IObjectRenderer` have no `#ifdef` in their core interfaces.
+```
+Candidate A  ← the core mechanism (render-thread owns buffer, register once)
+  + Candidate B  ← plugged in at registration (how the buffer is built)
+  + Candidate C  ← optional, additive (multi-instance naming)
+```
 
-**Primary value:** Covers all stated requirements — register once, zero-cost re-draw, default + custom renderers, multiple instances — in a single coherent API.
+Candidate A alone gives you register-once + toggle. Add B for custom renderers. Add C if you have multiple instances of the same type. Each is independently useful — you don't need all three to ship V1.
 
 ---
 
 ## Coverage Map
 
-The nine candidates span the full design space from explore.md:
-
-- **Cache strategy:** Candidates 1, 4 (transparent caching), 7 (render-thread-owned buffer), 3/2/9 (explicit cache in registrar)
-- **Renderer flexibility:** Candidates 6 (inject into existing classes), 2/5/9 (strategy pattern), 1/4 (baked into subclass)
-- **DebugLayerManager impact:** Candidates 4, 6, 8 (zero change), 1 (minor — new flag), 5 (new overload), 3/7/9 (new subsystem)
-- **Size range:** S (1, 4, 6, 8), M (2, 3, 5), L (7, 9)
-- **Future promotion readiness:** Candidates 2, 7, 9 have clean non-debug promotion paths; others are more tightly coupled to the debug system
-- **Complexity at call site:** Candidates 5 and 6 are lowest ceremony; Candidate 7 is highest
+| Design axis (from explore.md) | How it's handled |
+|-------------------------------|-----------------|
+| Cache lifetime | Permanent until `Invalidate()` — never per-frame |
+| Primitive ownership | Render thread owns buffer — never FrameData |
+| Renderer binding | Candidate B — strategy passed at registration |
+| Source object lifetime | Sim can destroy after registration — render thread holds no reference |
+| Thread boundary | Buffer transferred at registration; `Invalidate()` sends new buffer |
+| Change signalling | Explicit `Invalidate()` — caller-controlled, no coupling to source object |
+| Renderer selection | Two registrations under two names — independent toggle |
+| Future promotion | Same pattern (buffer + renderer) applies directly to non-debug static geometry |
