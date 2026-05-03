@@ -103,6 +103,9 @@
     <Filter Include="IK2D">
       <UniqueIdentifier>{IK2D0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Animation2D">
+      <UniqueIdentifier>{AN2D0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -788,6 +791,34 @@
     </ClCompile>
     <ClCompile Include="StateMachine\TestStateMachineGaps.cpp">
       <Filter>StateMachine</Filter>
+    </ClCompile>
+    <!-- Animation2D -->
+    <ClCompile Include="Animation2D\SpringParamUtilsTests.cpp">
+      <Filter>Animation2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation2D\SpringChainTests.cpp">
+      <Filter>Animation2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation2D\AnimClipTests.cpp">
+      <Filter>Animation2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation2D\AnimClipPlayerTests.cpp">
+      <Filter>Animation2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation2D\AnimClipLoaderTests.cpp">
+      <Filter>Animation2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation2D\PoseBlendStackTests.cpp">
+      <Filter>Animation2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation2D\AnimationEvaluatorTests.cpp">
+      <Filter>Animation2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation2D\TestUtilitiesTests.cpp">
+      <Filter>Animation2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation2D\IntegrationTests.cpp">
+      <Filter>Animation2D</Filter>
     </ClCompile>
     <!-- GoogleTest -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">

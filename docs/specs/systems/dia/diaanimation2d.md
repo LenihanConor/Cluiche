@@ -3,7 +3,7 @@
 ## Parent Application
 @docs/specs/applications/dia.md
 
-**Status:** `Approved`
+**Status:** `Done`
 
 ---
 
@@ -452,4 +452,4 @@ Keyframe fields are optional — omitted fields use the skeleton's bind pose val
 
 ## Status
 
-`Approved`
+`Done` — Implemented 2026-05-02. 107 tests passing. Plan: `diaanimation2d.plan.md`
