@@ -500,6 +500,119 @@ TEST(AnimClip, Sample_NonUniformTrackLengths)
     EXPECT_NEAR(pose.GetLocalTransform(1).rotation, 1.0f, 1e-5f);
 }
 
+TEST(AnimClip, Sample_AllChannels_RotationPositionScale)
+{
+    Dia::Rig2D::SkeletonDef skelDef = MakeTestSkelDef();
+    Dia::Rig2D::Skeleton skeleton(skelDef);
+
+    // Keyframe with distinct values in all three channels
+    Dia::Animation2D::Keyframe kf0;
+    kf0.time = 0.0f;
+    kf0.rotation = 0.0f;
+    kf0.position = Dia::Maths::Vector2D(0.0f, 0.0f);
+    kf0.scale    = Dia::Maths::Vector2D(1.0f, 1.0f);
+
+    Dia::Animation2D::Keyframe kf1;
+    kf1.time = 1.0f;
+    kf1.rotation = 0.8f;
+    kf1.position = Dia::Maths::Vector2D(3.0f, 5.0f);
+    kf1.scale    = Dia::Maths::Vector2D(2.0f, 0.5f);
+
+    Dia::Animation2D::KeyframeTrack track;
+    track.boneId = Dia::Core::StringCRC("bone0");
+    track.keyframes.Add(kf0);
+    track.keyframes.Add(kf1);
+
+    Dia::Animation2D::AnimClipDef def;
+    def.id       = Dia::Core::StringCRC("all_channels");
+    def.duration = 1.0f;
+    def.tracks.Add(track);
+
+    Dia::Animation2D::AnimClip clip(def, skeleton);
+    Dia::Rig2D::Pose pose(skeleton);
+    pose.SetToBindPose(skeleton);
+
+    clip.Sample(0.5f, skeleton, pose);
+
+    EXPECT_NEAR(pose.GetLocalTransform(0).rotation,     0.4f, 1e-4f);
+    EXPECT_NEAR(pose.GetLocalTransform(0).position.X(), 1.5f, 1e-4f);
+    EXPECT_NEAR(pose.GetLocalTransform(0).position.Y(), 2.5f, 1e-4f);
+    EXPECT_NEAR(pose.GetLocalTransform(0).scale.X(),    1.5f, 1e-4f);
+    EXPECT_NEAR(pose.GetLocalTransform(0).scale.Y(),    0.75f, 1e-4f);
+}
+
+TEST(AnimClip, Sample_ScaleInterpolation_CorrectAtMidpoint)
+{
+    Dia::Rig2D::SkeletonDef skelDef = MakeTestSkelDef();
+    Dia::Rig2D::Skeleton skeleton(skelDef);
+
+    Dia::Animation2D::Keyframe kf0;
+    kf0.time = 0.0f; kf0.rotation = 0.0f;
+    kf0.position = Dia::Maths::Vector2D(0.0f, 0.0f);
+    kf0.scale    = Dia::Maths::Vector2D(1.0f, 1.0f);
+
+    Dia::Animation2D::Keyframe kf1;
+    kf1.time = 1.0f; kf1.rotation = 0.0f;
+    kf1.position = Dia::Maths::Vector2D(0.0f, 0.0f);
+    kf1.scale    = Dia::Maths::Vector2D(3.0f, 5.0f);
+
+    Dia::Animation2D::KeyframeTrack track;
+    track.boneId = Dia::Core::StringCRC("bone0");
+    track.keyframes.Add(kf0);
+    track.keyframes.Add(kf1);
+
+    Dia::Animation2D::AnimClipDef def;
+    def.id       = Dia::Core::StringCRC("scale_lerp");
+    def.duration = 1.0f;
+    def.tracks.Add(track);
+
+    Dia::Animation2D::AnimClip clip(def, skeleton);
+    Dia::Rig2D::Pose pose(skeleton);
+    pose.SetToBindPose(skeleton);
+
+    clip.Sample(0.5f, skeleton, pose);
+
+    EXPECT_NEAR(pose.GetLocalTransform(0).scale.X(), 2.0f, 1e-4f);
+    EXPECT_NEAR(pose.GetLocalTransform(0).scale.Y(), 3.0f, 1e-4f);
+}
+
+TEST(AnimClip, Sample_RotationOnly_DoesNotTouchPositionOrScale)
+{
+    Dia::Rig2D::SkeletonDef skelDef = MakeTestSkelDef();
+    Dia::Rig2D::Skeleton skeleton(skelDef);
+
+    Dia::Animation2D::Keyframe kf;
+    kf.time = 0.0f; kf.rotation = 1.2f;
+    kf.position = Dia::Maths::Vector2D(99.0f, 99.0f); // ignored when rotationOnly
+    kf.scale    = Dia::Maths::Vector2D(99.0f, 99.0f);
+
+    Dia::Animation2D::KeyframeTrack track;
+    track.boneId       = Dia::Core::StringCRC("bone0");
+    track.rotationOnly = true;
+    track.keyframes.Add(kf);
+
+    Dia::Animation2D::AnimClipDef def;
+    def.id       = Dia::Core::StringCRC("rot_only");
+    def.duration = 1.0f;
+    def.tracks.Add(track);
+
+    Dia::Animation2D::AnimClip clip(def, skeleton);
+    Dia::Rig2D::Pose pose(skeleton);
+    pose.SetToBindPose(skeleton);
+    const float bindPosX = pose.GetLocalTransform(0).position.X();
+    const float bindPosY = pose.GetLocalTransform(0).position.Y();
+    const float bindScaX = pose.GetLocalTransform(0).scale.X();
+    const float bindScaY = pose.GetLocalTransform(0).scale.Y();
+
+    clip.Sample(0.0f, skeleton, pose);
+
+    EXPECT_NEAR(pose.GetLocalTransform(0).rotation,     1.2f,     1e-4f);
+    EXPECT_NEAR(pose.GetLocalTransform(0).position.X(), bindPosX, 1e-5f);
+    EXPECT_NEAR(pose.GetLocalTransform(0).position.Y(), bindPosY, 1e-5f);
+    EXPECT_NEAR(pose.GetLocalTransform(0).scale.X(),    bindScaX, 1e-5f);
+    EXPECT_NEAR(pose.GetLocalTransform(0).scale.Y(),    bindScaY, 1e-5f);
+}
+
 TEST(AnimClip, Sample_IsPureWrite_NotReadModify)
 {
     Dia::Rig2D::SkeletonDef skelDef = MakeTestSkelDef();

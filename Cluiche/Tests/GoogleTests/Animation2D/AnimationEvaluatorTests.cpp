@@ -272,6 +272,84 @@ TEST(AnimationEvaluator, GetBlendStack_ReturnsStack)
     EXPECT_EQ(evaluator.GetBlendStack().GetLayerCount(), 3);
 }
 
+TEST(AnimationEvaluator, UnregisterNonexistent_SilentNoOp)
+{
+    Dia::Rig2D::SkeletonDef skelDef = MakeTestSkelDef();
+    Dia::Rig2D::Skeleton skeleton(skelDef);
+
+    Dia::Animation2D::AnimationEvaluator evaluator(skeleton);
+    evaluator.RegisterClipPlayer(Dia::Core::StringCRC("exists"));
+
+    // Unregistering a nonexistent ID should be a no-op
+    evaluator.UnregisterSource(Dia::Core::StringCRC("does_not_exist"));
+    EXPECT_EQ(evaluator.GetBlendStack().GetLayerCount(), 1);
+}
+
+TEST(AnimationEvaluator, UnregisterThenReregister_SameId_Works)
+{
+    Dia::Rig2D::SkeletonDef skelDef = MakeTestSkelDef();
+    Dia::Rig2D::Skeleton skeleton(skelDef);
+
+    Dia::Animation2D::AnimationEvaluator evaluator(skeleton);
+    evaluator.RegisterClipPlayer(Dia::Core::StringCRC("reuse_id"));
+    evaluator.UnregisterSource(Dia::Core::StringCRC("reuse_id"));
+    // Should be able to re-register same ID after unregistering
+    Dia::Animation2D::AnimClipPlayer* player =
+        evaluator.RegisterClipPlayer(Dia::Core::StringCRC("reuse_id"));
+    EXPECT_NE(player, nullptr);
+    EXPECT_EQ(evaluator.GetBlendStack().GetLayerCount(), 1);
+}
+
+TEST(AnimationEvaluator, UnregisterMiddle_BlendStackRemainsValid)
+{
+    Dia::Rig2D::SkeletonDef skelDef = MakeTestSkelDef();
+    Dia::Rig2D::Skeleton skeleton(skelDef);
+
+    Dia::Animation2D::AnimClip clip = MakeSimpleClip(skeleton);
+
+    Dia::Animation2D::AnimationEvaluator evaluator(skeleton);
+    auto* p0 = evaluator.RegisterClipPlayer(Dia::Core::StringCRC("s0"));
+    evaluator.RegisterClipPlayer(Dia::Core::StringCRC("s1"));
+    evaluator.RegisterClipPlayer(Dia::Core::StringCRC("s2"));
+
+    p0->SetLooping(true);
+    p0->Play(&clip);
+
+    // Remove the middle source
+    evaluator.UnregisterSource(Dia::Core::StringCRC("s1"));
+    EXPECT_EQ(evaluator.GetBlendStack().GetLayerCount(), 2);
+
+    // Evaluate should not crash (s0 and s2 remain valid)
+    Dia::Rig2D::Pose pose(skeleton);
+    pose.SetToBindPose(skeleton);
+    Dia::Rig2D::BoneTransform root;
+    evaluator.Evaluate(1.0f / 60.0f, root, skeleton, pose);
+    SUCCEED();
+}
+
+TEST(AnimationEvaluator, SpringChain_AutoBoneMask_OnlyAffectsChainBones)
+{
+    Dia::Rig2D::SkeletonDef skelDef = MakeTestSkelDef();
+    Dia::Rig2D::Skeleton skeleton(skelDef);
+
+    Dia::Animation2D::AnimationEvaluator evaluator(skeleton);
+    Dia::Animation2D::SpringChainDef chainDef = MakeTestChainDef(); // bones 1,2,3
+    evaluator.RegisterSpringChain(Dia::Core::StringCRC("spring"), chainDef);
+
+    Dia::Rig2D::Pose pose(skeleton);
+    pose.SetToBindPose(skeleton);
+    Dia::Rig2D::BoneTransform root;
+
+    // Run enough frames to let spring displace
+    for (int i = 0; i < 30; ++i)
+        evaluator.Evaluate(1.0f / 60.0f, root, skeleton, pose);
+
+    // bone0 is not in the spring chain — should stay at bind pose rotation
+    EXPECT_NEAR(pose.GetLocalTransform(0).rotation, 0.0f, 1e-4f);
+    // bone4 is not in the spring chain — should stay at bind pose rotation
+    EXPECT_NEAR(pose.GetLocalTransform(4).rotation, 0.0f, 1e-4f);
+}
+
 TEST(AnimationEvaluator, FullPipeline_ClipAndSpring_BothContribute)
 {
     Dia::Rig2D::SkeletonDef skelDef = MakeTestSkelDef();

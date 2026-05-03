@@ -17,9 +17,10 @@ namespace Dia { namespace Animation2D {
         void Update(float dt);
         void Sample(const Dia::Rig2D::Skeleton& skeleton, Dia::Rig2D::Pose& outPose) const;
 
-        bool  IsPlaying() const;
-        float GetCurrentTime() const;
-        float GetNormalizedTime() const;
+        bool  IsPlaying()  const;
+        bool  IsLooping()  const;
+        float GetCurrentTime()     const;
+        float GetNormalizedTime()  const;
         const AnimClip* GetCurrentClip() const;
 
     private:

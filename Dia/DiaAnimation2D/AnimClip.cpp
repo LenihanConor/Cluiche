@@ -7,8 +7,9 @@
 
 namespace Dia { namespace Animation2D {
 
+static constexpr float kPi = 3.14159265358979f;
+
 static float ShortestArcLerp(float a, float b, float t) {
-    const float kPi = 3.14159265358979f;
     float diff = b - a;
     while (diff > kPi)  diff -= 2.0f * kPi;
     while (diff < -kPi) diff += 2.0f * kPi;

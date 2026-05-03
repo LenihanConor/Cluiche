@@ -81,20 +81,18 @@ SpringChain* AnimationEvaluator::RegisterSpringChain(
     entry.springChain = AllocateSpringChain(def, mSkeleton);
     entry.ownedPose   = AllocatePose(mSkeleton);
 
-    // If no explicit bone mask is provided, auto-build one from the chain's boneIds
-    // so the spring layer only overwrites the bones it controls, not the whole pose.
-    bool useAutoMask = (boneMask == nullptr);
-    if (useAutoMask) {
-        for (unsigned int k = 0; k < def.boneIds.Size(); ++k)
-            entry.autoMask.boneIds.Add(def.boneIds[k]);
-    }
-
     mSources.Add(entry);
 
-    // Use the auto mask stored in the newly-added element (pointer must be stable)
+    // If no explicit bone mask is provided, auto-build one from the chain's boneIds
+    // so the spring layer only overwrites the bones it controls, not the whole pose.
+    // The mask is copied into PoseBlendStack, so a local is fine here.
+    BoneMask autoMask;
     const BoneMask* effectiveMask = boneMask;
-    if (useAutoMask)
-        effectiveMask = &mSources[mSources.Size()-1].autoMask;
+    if (boneMask == nullptr) {
+        for (unsigned int k = 0; k < def.boneIds.Size(); ++k)
+            autoMask.boneIds.Add(def.boneIds[k]);
+        effectiveMask = &autoMask;
+    }
 
     mBlendStack.AddLayer(sourceId,
                           mSources[mSources.Size()-1].ownedPose,

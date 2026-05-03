@@ -453,6 +453,131 @@ TEST(PoseBlendStack, ThreeLayers_CascadingLerp)
     EXPECT_NEAR(output.GetLocalTransform(0).rotation, 0.25f, 1e-4f);
 }
 
+TEST(PoseBlendStack, BoneMask_CopiedAtAddLayer_ExternalChangeIgnored)
+{
+    // Verifies the lazy-copy fix: mutating a BoneMask after AddLayer should not
+    // affect the blend result (the stack owns a snapshot, not the pointer).
+    Dia::Rig2D::SkeletonDef skelDef = MakeTestSkelDef();
+    Dia::Rig2D::Skeleton skeleton(skelDef);
+
+    Dia::Rig2D::Pose base    = MakePoseWithRotation(skeleton, 0.0f);
+    Dia::Rig2D::Pose overlay = MakePoseWithRotation(skeleton, 1.0f);
+    Dia::Rig2D::Pose output(skeleton);
+    output.SetToBindPose(skeleton);
+
+    Dia::Animation2D::BoneMask mask;
+    mask.Add(Dia::Core::StringCRC("bone0")); // only bone0
+
+    Dia::Animation2D::PoseBlendStack stack;
+    stack.AddLayer(Dia::Core::StringCRC("base"),    &base,    1.0f, 0);
+    stack.AddLayer(Dia::Core::StringCRC("overlay"), &overlay, 1.0f, 1, &mask);
+
+    // Mutate the original mask after AddLayer
+    mask.Add(Dia::Core::StringCRC("bone1"));
+    mask.Add(Dia::Core::StringCRC("bone2"));
+
+    stack.Evaluate(skeleton, output);
+
+    // The stack should have used the snapshot (only bone0 masked)
+    EXPECT_NEAR(output.GetLocalTransform(0).rotation, 1.0f, 1e-4f); // masked → overlay
+    EXPECT_NEAR(output.GetLocalTransform(1).rotation, 0.0f, 1e-4f); // NOT in snapshot → base
+}
+
+#ifdef _DEBUG
+TEST(PoseBlendStack, MaxLayers_33rd_Asserts)
+{
+    Dia::Rig2D::SkeletonDef skelDef = MakeTestSkelDef();
+    Dia::Rig2D::Skeleton skeleton(skelDef);
+
+    Dia::Rig2D::Pose p(skeleton);
+    p.SetToBindPose(skeleton);
+
+    Dia::Animation2D::PoseBlendStack stack;
+    for (int i = 0; i < 32; ++i)
+    {
+        char buf[16];
+        snprintf(buf, sizeof(buf), "l%d", i);
+        stack.AddLayer(Dia::Core::StringCRC(buf), &p, 1.0f, i);
+    }
+
+    EXPECT_DEATH(stack.AddLayer(Dia::Core::StringCRC("overflow"), &p, 1.0f, 32), "");
+}
+#endif // _DEBUG
+
+TEST(PoseBlendStack, Position_BlendedCorrectly)
+{
+    Dia::Rig2D::SkeletonDef skelDef = MakeTestSkelDef();
+    Dia::Rig2D::Skeleton skeleton(skelDef);
+
+    Dia::Rig2D::Pose base(skeleton);
+    base.SetToBindPose(skeleton);
+    for (int i = 0; i < skeleton.GetBoneCount(); ++i)
+        base.GetLocalTransform(i).position = Dia::Maths::Vector2D(0.0f, 0.0f);
+
+    Dia::Rig2D::Pose overlay(skeleton);
+    overlay.SetToBindPose(skeleton);
+    for (int i = 0; i < skeleton.GetBoneCount(); ++i)
+        overlay.GetLocalTransform(i).position = Dia::Maths::Vector2D(4.0f, 6.0f);
+
+    Dia::Rig2D::Pose output(skeleton);
+    output.SetToBindPose(skeleton);
+
+    Dia::Animation2D::PoseBlendStack stack;
+    stack.AddLayer(Dia::Core::StringCRC("base"),    &base,    1.0f, 0);
+    stack.AddLayer(Dia::Core::StringCRC("overlay"), &overlay, 0.5f, 1);
+    stack.Evaluate(skeleton, output);
+
+    for (int i = 0; i < skeleton.GetBoneCount(); ++i)
+    {
+        EXPECT_NEAR(output.GetLocalTransform(i).position.X(), 2.0f, 1e-4f) << "bone " << i;
+        EXPECT_NEAR(output.GetLocalTransform(i).position.Y(), 3.0f, 1e-4f) << "bone " << i;
+    }
+}
+
+TEST(PoseBlendStack, Scale_BlendedCorrectly)
+{
+    Dia::Rig2D::SkeletonDef skelDef = MakeTestSkelDef();
+    Dia::Rig2D::Skeleton skeleton(skelDef);
+
+    Dia::Rig2D::Pose base(skeleton);
+    base.SetToBindPose(skeleton);
+    for (int i = 0; i < skeleton.GetBoneCount(); ++i)
+        base.GetLocalTransform(i).scale = Dia::Maths::Vector2D(1.0f, 1.0f);
+
+    Dia::Rig2D::Pose overlay(skeleton);
+    overlay.SetToBindPose(skeleton);
+    for (int i = 0; i < skeleton.GetBoneCount(); ++i)
+        overlay.GetLocalTransform(i).scale = Dia::Maths::Vector2D(3.0f, 5.0f);
+
+    Dia::Rig2D::Pose output(skeleton);
+    output.SetToBindPose(skeleton);
+
+    Dia::Animation2D::PoseBlendStack stack;
+    stack.AddLayer(Dia::Core::StringCRC("base"),    &base,    1.0f, 0);
+    stack.AddLayer(Dia::Core::StringCRC("overlay"), &overlay, 0.5f, 1);
+    stack.Evaluate(skeleton, output);
+
+    for (int i = 0; i < skeleton.GetBoneCount(); ++i)
+    {
+        EXPECT_NEAR(output.GetLocalTransform(i).scale.X(), 2.0f, 1e-4f) << "bone " << i;
+        EXPECT_NEAR(output.GetLocalTransform(i).scale.Y(), 3.0f, 1e-4f) << "bone " << i;
+    }
+}
+
+TEST(PoseBlendStack, RemoveNonexistentLayer_SilentNoOp)
+{
+    Dia::Rig2D::SkeletonDef skelDef = MakeTestSkelDef();
+    Dia::Rig2D::Skeleton skeleton(skelDef);
+
+    Dia::Rig2D::Pose p(skeleton);
+    p.SetToBindPose(skeleton);
+
+    Dia::Animation2D::PoseBlendStack stack;
+    stack.AddLayer(Dia::Core::StringCRC("present"), &p, 1.0f, 0);
+    stack.RemoveLayer(Dia::Core::StringCRC("absent")); // should not crash
+    EXPECT_EQ(stack.GetLayerCount(), 1);
+}
+
 TEST(PoseBlendStack, BoneMask_PartialSkeleton)
 {
     Dia::Rig2D::SkeletonDef skelDef = MakeTestSkelDef();

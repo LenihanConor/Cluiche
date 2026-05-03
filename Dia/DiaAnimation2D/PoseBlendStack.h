@@ -30,12 +30,20 @@ namespace Dia { namespace Animation2D {
         void  Clear();
 
     private:
+        // Compact bone mask stored per layer — smaller capacity than the public BoneMask
+        // to keep InternalLayer size manageable inside the fixed DynamicArrayC<kMaxLayers>.
+        static constexpr unsigned int kMaxBonesPerLayerMask = 32;
+        struct LayerBoneMask {
+            Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, kMaxBonesPerLayerMask> boneIds;
+        };
+
         struct InternalLayer {
             Dia::Core::StringCRC id;
             const Dia::Rig2D::Pose* pose = nullptr;
             float weight = 1.0f;
             int priority = 0;
-            const BoneMask* boneMask = nullptr;
+            LayerBoneMask boneMask;  // owned copy — resolved lazily to indices at Evaluate time
+            bool          hasBoneMask = false;
         };
 
         static const unsigned int kMaxLayers = 32;
@@ -45,7 +53,7 @@ namespace Dia { namespace Animation2D {
         void SortByPriority();
 
         // Resolve bone mask to indices at evaluate time
-        static void ResolveBoneMask(const BoneMask* boneMask,
+        static void ResolveBoneMask(const LayerBoneMask& boneMask,
                                     const Dia::Rig2D::Skeleton& skeleton,
                                     Dia::Core::Containers::DynamicArrayC<int, 128>& outIndices);
     };

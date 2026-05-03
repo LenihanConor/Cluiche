@@ -453,6 +453,133 @@ TEST(SpringChain, SingleNodeChain_Works)
     SUCCEED();
 }
 
+TEST(SpringChain, VeryLargeDt_Stable_NoInfiniteLoop)
+{
+    Dia::Rig2D::SkeletonDef skelDef = MakeTestSkelDef();
+    Dia::Rig2D::Skeleton skeleton(skelDef);
+    Dia::Animation2D::SpringChainDef chainDef = MakeTestChainDef();
+
+    Dia::Rig2D::Pose pose(skeleton);
+    pose.SetToBindPose(skeleton);
+    pose.GetLocalTransform(1).rotation = 0.3f;
+
+    Dia::Animation2D::SpringChain chain(chainDef, skeleton);
+
+    // 10 seconds — 1200 sub-steps; must complete in finite time and not diverge
+    chain.Update(10.0f, skeleton, pose);
+
+    // After full convergence, rotation should be near rest (0)
+    const float rot = pose.GetLocalTransform(1).rotation;
+    EXPECT_LT(std::abs(rot), 0.5f); // should have settled considerably
+}
+
+TEST(SpringChain, LargeDt_NoDivergence_RotationBounded)
+{
+    Dia::Rig2D::SkeletonDef skelDef = MakeTestSkelDef();
+    Dia::Rig2D::Skeleton skeleton(skelDef);
+    Dia::Animation2D::SpringChainDef chainDef = MakeTestChainDef();
+
+    Dia::Rig2D::Pose pose(skeleton);
+    pose.SetToBindPose(skeleton);
+    pose.GetLocalTransform(1).rotation = 1.0f;
+
+    Dia::Animation2D::SpringChain chain(chainDef, skeleton);
+    chain.Update(1.0f, skeleton, pose); // 120 substeps
+
+    // Rotation must not blow up past some sane bound
+    for (int i = 0; i < skeleton.GetBoneCount(); ++i)
+        EXPECT_LT(std::abs(pose.GetLocalTransform(i).rotation), 100.0f) << "bone " << i;
+}
+
+TEST(SpringChain, SingleNode_GravityAndExternalTorque_Combined)
+{
+    Dia::Rig2D::SkeletonDef skelDef = MakeTestSkelDef();
+    Dia::Rig2D::Skeleton skeleton(skelDef);
+
+    Dia::Animation2D::SpringChainDef chainDef;
+    chainDef.id         = Dia::Core::StringCRC("combo_chain");
+    chainDef.rootBoneId = Dia::Core::StringCRC("bone0");
+    chainDef.boneIds.Add(Dia::Core::StringCRC("bone1"));
+    chainDef.defaultNode.stiffness          = 10.0f;
+    chainDef.defaultNode.damping            = 1.0f;
+    chainDef.defaultNode.maxAngularVelocity = 20.0f;
+
+    // Baseline: just gravity
+    Dia::Rig2D::Pose poseGravOnly(skeleton);
+    poseGravOnly.SetToBindPose(skeleton);
+    Dia::Animation2D::SpringChain chainGrav(chainDef, skeleton);
+    chainGrav.SetGravity(Dia::Maths::Vector2D(0.0f, -5.0f));
+    const float dt = 1.0f / 60.0f;
+    for (int i = 0; i < 10; ++i)
+        chainGrav.Update(dt, skeleton, poseGravOnly);
+
+    // With gravity + external torque
+    Dia::Rig2D::Pose poseCombo(skeleton);
+    poseCombo.SetToBindPose(skeleton);
+    Dia::Animation2D::SpringChain chainCombo(chainDef, skeleton);
+    chainCombo.SetGravity(Dia::Maths::Vector2D(0.0f, -5.0f));
+    chainCombo.ApplyExternalTorque(0, 10.0f);
+    for (int i = 0; i < 10; ++i)
+        chainCombo.Update(dt, skeleton, poseCombo);
+
+    // Combined effect should differ from gravity alone
+    EXPECT_NE(poseGravOnly.GetLocalTransform(1).rotation,
+              poseCombo.GetLocalTransform(1).rotation);
+}
+
+TEST(SpringChain, Reset_ThenEvaluate_ReturnsToBindPose)
+{
+    Dia::Rig2D::SkeletonDef skelDef = MakeTestSkelDef();
+    Dia::Rig2D::Skeleton skeleton(skelDef);
+    Dia::Animation2D::SpringChainDef chainDef = MakeTestChainDef();
+
+    Dia::Rig2D::Pose pose(skeleton);
+    pose.SetToBindPose(skeleton);
+    pose.GetLocalTransform(1).rotation = 0.8f;
+
+    Dia::Animation2D::SpringChain chain(chainDef, skeleton);
+
+    // Build up velocity
+    for (int i = 0; i < 20; ++i)
+        chain.Update(1.0f / 60.0f, skeleton, pose);
+
+    // Full reset — zeros velocity and resets rotations to 0
+    chain.Reset(skeleton, pose);
+
+    EXPECT_NEAR(pose.GetLocalTransform(1).rotation, 0.0f, 1e-5f);
+    EXPECT_NEAR(pose.GetLocalTransform(2).rotation, 0.0f, 1e-5f);
+    EXPECT_NEAR(pose.GetLocalTransform(3).rotation, 0.0f, 1e-5f);
+
+    // Single step after reset: with zero rotation and zero velocity, spring is at rest
+    // — should remain near 0 (gravity-free chain)
+    chain.Update(1.0f / 60.0f, skeleton, pose);
+    EXPECT_NEAR(pose.GetLocalTransform(1).rotation, 0.0f, 0.05f);
+}
+
+TEST(SpringChain, SetGravity_ZeroDirection_MultipleTimes_DoesNotCrash)
+{
+    Dia::Rig2D::SkeletonDef skelDef = MakeTestSkelDef();
+    Dia::Rig2D::Skeleton skeleton(skelDef);
+    Dia::Animation2D::SpringChainDef chainDef = MakeTestChainDef();
+
+    Dia::Animation2D::SpringChain chain(chainDef, skeleton);
+
+    // Calling SetGravity with zero vector multiple times should not crash
+    chain.SetGravity(Dia::Maths::Vector2D(0.0f, 0.0f));
+    chain.SetGravity(Dia::Maths::Vector2D(0.0f, 0.0f));
+    chain.SetGravity(Dia::Maths::Vector2D(0.0f, 0.0f));
+
+    Dia::Rig2D::Pose pose(skeleton);
+    pose.SetToBindPose(skeleton);
+    pose.GetLocalTransform(1).rotation = 0.3f;
+
+    // No gravity — should converge (spring stiffness still acts)
+    for (int i = 0; i < 60; ++i)
+        chain.Update(1.0f / 60.0f, skeleton, pose);
+
+    EXPECT_LT(std::abs(pose.GetLocalTransform(1).rotation), 0.1f);
+}
+
 TEST(SpringChain, Determinism_IdenticalInputs_IdenticalOutput)
 {
     Dia::Rig2D::SkeletonDef skelDef = MakeTestSkelDef();

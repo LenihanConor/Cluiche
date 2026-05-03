@@ -62,7 +62,8 @@ void AnimClipPlayer::Sample(const Dia::Rig2D::Skeleton& skeleton, Dia::Rig2D::Po
     mClip->Sample(mCurrentTime, skeleton, outPose);
 }
 
-bool  AnimClipPlayer::IsPlaying() const { return mIsPlaying; }
+bool  AnimClipPlayer::IsPlaying()  const { return mIsPlaying; }
+bool  AnimClipPlayer::IsLooping()  const { return mMode == PlaybackMode::kLooping; }
 float AnimClipPlayer::GetCurrentTime() const { return mCurrentTime; }
 float AnimClipPlayer::GetNormalizedTime() const {
     if (!mClip || mClip->GetDuration() <= 0.0f) return 0.0f;

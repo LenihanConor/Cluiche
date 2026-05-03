@@ -287,3 +287,82 @@ TEST(AnimClipLoader, LoadFromSpine_InvalidName_Asserts)
     EXPECT_DEATH(Dia::Animation2D::LoadAnimClipDefFromSpine(root, "nonexistent"), "");
 }
 #endif // _DEBUG
+
+TEST(AnimClipLoader, LoadFromSpine_EmptyAnimationBody_ZeroTracks)
+{
+    // Animation entry exists but has no bone or slot timelines
+    const char* spineEmpty = R"({
+        "animations": {
+            "empty_anim": {}
+        }
+    })";
+
+    Json::Value root = ParseJson(spineEmpty);
+    Dia::Animation2D::AnimClipDef def =
+        Dia::Animation2D::LoadAnimClipDefFromSpine(root, "empty_anim");
+
+    EXPECT_EQ(def.tracks.Size(), 0u);
+    EXPECT_NEAR(def.duration, 0.0f, 1e-5f);
+}
+
+TEST(AnimClipLoader, LoadFromSpine_BoneWithNoTimelines_Skipped)
+{
+    // Bone entry exists but no rotate/translate/scale keys
+    const char* spineEmptyBone = R"({
+        "animations": {
+            "test": {
+                "bones": {
+                    "spine": {}
+                }
+            }
+        }
+    })";
+
+    Json::Value root = ParseJson(spineEmptyBone);
+    Dia::Animation2D::AnimClipDef def =
+        Dia::Animation2D::LoadAnimClipDefFromSpine(root, "test");
+
+    // No keyframe times collected → bone should be skipped
+    EXPECT_EQ(def.tracks.Size(), 0u);
+}
+
+TEST(AnimClipLoader, LoadFromSpine_MultipleBones_AllLoaded)
+{
+    const char* spineMultiBone = R"({
+        "animations": {
+            "walk": {
+                "bones": {
+                    "spine": {"rotate": [{"time": 0.0, "angle": 45.0}]},
+                    "arm":   {"rotate": [{"time": 0.0, "angle": 90.0}]}
+                }
+            }
+        }
+    })";
+
+    Json::Value root = ParseJson(spineMultiBone);
+    Dia::Animation2D::AnimClipDef def =
+        Dia::Animation2D::LoadAnimClipDefFromSpine(root, "walk");
+
+    EXPECT_EQ(def.tracks.Size(), 2u);
+}
+
+TEST(AnimClipLoader, LoadFromJson_ScaleKeyframes_Loaded)
+{
+    const char* json = R"({
+        "id": "scale_clip", "duration": 1.0,
+        "tracks": [{"bone": "spine", "keyframes": [
+            {"time": 0.0, "scale": [2.0, 3.0]},
+            {"time": 1.0, "scale": [4.0, 6.0]}
+        ]}]
+    })";
+
+    Json::Value root = ParseJson(json);
+    Dia::Animation2D::AnimClipDef def = Dia::Animation2D::LoadAnimClipDefFromJson(root);
+
+    ASSERT_EQ(def.tracks.Size(), 1u);
+    ASSERT_EQ(def.tracks[0].keyframes.Size(), 2u);
+    EXPECT_NEAR(def.tracks[0].keyframes[0].scale.X(), 2.0f, 1e-5f);
+    EXPECT_NEAR(def.tracks[0].keyframes[0].scale.Y(), 3.0f, 1e-5f);
+    EXPECT_NEAR(def.tracks[0].keyframes[1].scale.X(), 4.0f, 1e-5f);
+    EXPECT_NEAR(def.tracks[0].keyframes[1].scale.Y(), 6.0f, 1e-5f);
+}

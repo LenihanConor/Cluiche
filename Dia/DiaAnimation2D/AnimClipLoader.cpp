@@ -8,6 +8,10 @@
 
 namespace Dia { namespace Animation2D {
 
+static constexpr float kPi          = 3.14159265358979f;
+static constexpr float kDegToRad    = kPi / 180.0f;
+static constexpr float kTimeEpsilon = 1e-6f; // tolerance for Spine keyframe time lookup
+
 AnimClipDef LoadAnimClipDefFromJson(const Json::Value& root) {
     DIA_ASSERT(root.isMember("id"), "AnimClip JSON missing 'id'");
     DIA_ASSERT(root.isMember("duration"), "AnimClip JSON missing 'duration'");
@@ -75,7 +79,6 @@ AnimClipDef LoadAnimClipDefFromSpine(const Json::Value& spineRoot, const Dia::Co
     if (!animNode->isMember("bones")) return def;
 
     const Json::Value& bones = (*animNode)["bones"];
-    const float kDegToRad = 3.14159265358979f / 180.0f;
 
     for (const auto& boneName : bones.getMemberNames()) {
         const Json::Value& boneTimelines = bones[boneName];
@@ -111,7 +114,7 @@ AnimClipDef LoadAnimClipDefFromSpine(const Json::Value& spineRoot, const Dia::Co
             if (boneTimelines.isMember("rotate")) {
                 const Json::Value& rtl = boneTimelines["rotate"];
                 for (const auto& entry : rtl) {
-                    if (entry["time"].asFloat() <= t + 1e-6f)
+                    if (entry["time"].asFloat() <= t + kTimeEpsilon)
                         rotDeg = entry["angle"].asFloat();
                     else break;
                 }
@@ -122,7 +125,7 @@ AnimClipDef LoadAnimClipDefFromSpine(const Json::Value& spineRoot, const Dia::Co
             if (boneTimelines.isMember("translate")) {
                 const Json::Value& ttl = boneTimelines["translate"];
                 for (const auto& entry : ttl) {
-                    if (entry["time"].asFloat() <= t + 1e-6f) {
+                    if (entry["time"].asFloat() <= t + kTimeEpsilon) {
                         tx = entry.isMember("x") ? entry["x"].asFloat() : 0.0f;
                         ty = entry.isMember("y") ? entry["y"].asFloat() : 0.0f;
                     } else break;
@@ -134,7 +137,7 @@ AnimClipDef LoadAnimClipDefFromSpine(const Json::Value& spineRoot, const Dia::Co
             if (boneTimelines.isMember("scale")) {
                 const Json::Value& stl = boneTimelines["scale"];
                 for (const auto& entry : stl) {
-                    if (entry["time"].asFloat() <= t + 1e-6f) {
+                    if (entry["time"].asFloat() <= t + kTimeEpsilon) {
                         sx = entry.isMember("x") ? entry["x"].asFloat() : 1.0f;
                         sy = entry.isMember("y") ? entry["y"].asFloat() : 1.0f;
                     } else break;

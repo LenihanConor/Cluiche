@@ -16,12 +16,17 @@ namespace Dia { namespace Animation2D {
         explicit AnimationEvaluator(Dia::Rig2D::Skeleton& skeleton);
         ~AnimationEvaluator();
 
-        // Register a new AnimClipPlayer — returns a pointer to the owned player
+        AnimationEvaluator(const AnimationEvaluator&)            = delete;
+        AnimationEvaluator& operator=(const AnimationEvaluator&) = delete;
+
+        // Register a new AnimClipPlayer. Returns a NON-OWNING pointer; lifetime is
+        // managed by this evaluator and the pointer is invalidated by UnregisterSource.
         AnimClipPlayer* RegisterClipPlayer(Dia::Core::StringCRC sourceId,
                                            int blendPriority = 0,
                                            const BoneMask* boneMask = nullptr);
 
-        // Register a new SpringChain built from def — returns a pointer to the owned chain
+        // Register a new SpringChain built from def. Returns a NON-OWNING pointer;
+        // lifetime is managed by this evaluator and the pointer is invalidated by UnregisterSource.
         SpringChain* RegisterSpringChain(Dia::Core::StringCRC sourceId,
                                           const SpringChainDef& def,
                                           int blendPriority = 0,
@@ -46,10 +51,10 @@ namespace Dia { namespace Animation2D {
         struct SourceEntry {
             Dia::Core::StringCRC id;
             SourceType type = SourceType::kClipPlayer;
-            AnimClipPlayer* clipPlayer  = nullptr; // heap-allocated, owned
-            SpringChain*    springChain = nullptr; // heap-allocated, owned
-            Dia::Rig2D::Pose* ownedPose = nullptr; // heap-allocated, owned
-            BoneMask        autoMask;              // auto-built for spring chains
+            AnimClipPlayer*   clipPlayer  = nullptr; // heap-allocated, owned
+            SpringChain*      springChain = nullptr; // heap-allocated, owned
+            Dia::Rig2D::Pose* ownedPose   = nullptr; // heap-allocated, owned
+            // autoMask removed — BoneMask is now copied into PoseBlendStack at registration
         };
 
         int FindSource(Dia::Core::StringCRC id) const;

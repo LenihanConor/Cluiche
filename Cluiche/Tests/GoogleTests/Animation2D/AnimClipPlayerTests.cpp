@@ -240,3 +240,55 @@ TEST(AnimClipPlayer, Speed_DoublesAdvance)
 
     EXPECT_NEAR(player.GetCurrentTime(), 0.5f, 1e-4f);
 }
+
+TEST(AnimClipPlayer, IsLooping_ReflectsSetLooping)
+{
+    Dia::Animation2D::AnimClipPlayer player;
+    player.SetLooping(true);
+    EXPECT_TRUE(player.IsLooping());
+    player.SetLooping(false);
+    EXPECT_FALSE(player.IsLooping());
+}
+
+TEST(AnimClipPlayer, PlayWithMode_Looping_SetsIsLooping)
+{
+    Dia::Rig2D::SkeletonDef skelDef = MakeTestSkelDef();
+    Dia::Rig2D::Skeleton skeleton(skelDef);
+    Dia::Animation2D::AnimClip clip = MakeSimpleClip(skeleton);
+
+    Dia::Animation2D::AnimClipPlayer player;
+    player.Play(clip, Dia::Animation2D::PlaybackMode::kLooping);
+    EXPECT_TRUE(player.IsLooping());
+}
+
+TEST(AnimClipPlayer, PlayWithMode_OneShot_ClearsIsLooping)
+{
+    Dia::Rig2D::SkeletonDef skelDef = MakeTestSkelDef();
+    Dia::Rig2D::Skeleton skeleton(skelDef);
+    Dia::Animation2D::AnimClip clip = MakeSimpleClip(skeleton);
+
+    Dia::Animation2D::AnimClipPlayer player;
+    player.SetLooping(true); // prime as looping
+    player.Play(clip, Dia::Animation2D::PlaybackMode::kOneShot);
+    EXPECT_FALSE(player.IsLooping());
+}
+
+TEST(AnimClipPlayer, Play_NullPtr_WhenStopped_IsNoOp)
+{
+    Dia::Animation2D::AnimClipPlayer player; // default: not playing
+    player.Play(nullptr);
+    EXPECT_FALSE(player.IsPlaying());
+    EXPECT_EQ(player.GetCurrentClip(), nullptr);
+}
+
+TEST(AnimClipPlayer, PlayPointerOverload_PreservesLoopingMode)
+{
+    Dia::Rig2D::SkeletonDef skelDef = MakeTestSkelDef();
+    Dia::Rig2D::Skeleton skeleton(skelDef);
+    Dia::Animation2D::AnimClip clip = MakeSimpleClip(skeleton);
+
+    Dia::Animation2D::AnimClipPlayer player;
+    player.SetLooping(true);
+    player.Play(&clip); // pointer overload — should preserve looping
+    EXPECT_TRUE(player.IsLooping());
+}

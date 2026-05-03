@@ -8,6 +8,9 @@
 
 namespace Dia { namespace Animation2D {
 
+static constexpr float kMaxSubstepDt   = 1.0f / 120.0f; // substep cap for numerical stability
+static constexpr float kGravityEpsilon = 1e-6f;          // minimum gravity direction magnitude
+
 SpringChain::SpringChain(const SpringChainDef& def, const Dia::Rig2D::Skeleton& skeleton)
     : mId(def.id)
     , mGravityDirection(def.gravityDirection)
@@ -35,7 +38,7 @@ SpringChain::SpringChain(const SpringChainDef& def, const Dia::Rig2D::Skeleton& 
     }
 
     float len = std::sqrt(mGravityDirection.x * mGravityDirection.x + mGravityDirection.y * mGravityDirection.y);
-    if (len > 1e-6f)
+    if (len > kGravityEpsilon)
         mGravityDirection = Dia::Maths::Vector2D(mGravityDirection.x / len, mGravityDirection.y / len);
     else if (mGravityStrength > 0.0f)
         mGravityStrength = 0.0f;
@@ -48,7 +51,7 @@ void SpringChain::Update(float dt,
     DIA_ASSERT(dt >= 0.0f, "dt must be non-negative");
     if (dt == 0.0f) return;
 
-    const float kMaxStep = 1.0f / 120.0f;
+    const float kMaxStep = kMaxSubstepDt;
     float remaining = dt;
     bool firstSubstep = true;
 
@@ -148,7 +151,7 @@ void SpringChain::SetGravity(const Dia::Maths::Vector2D& direction, float streng
     mGravityStrength = strength;
     mGravityDirection = direction;
     float len = std::sqrt(direction.x * direction.x + direction.y * direction.y);
-    if (len > 1e-6f)
+    if (len > kGravityEpsilon)
         mGravityDirection = Dia::Maths::Vector2D(direction.x / len, direction.y / len);
     else if (strength > 0.0f)
         mGravityStrength = 0.0f;

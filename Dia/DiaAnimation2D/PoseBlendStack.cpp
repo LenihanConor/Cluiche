@@ -7,8 +7,9 @@
 
 namespace Dia { namespace Animation2D {
 
+static constexpr float kPi = 3.14159265358979f;
+
 static float ShortestArcLerp(float a, float b, float t) {
-    const float kPi = 3.14159265358979f;
     float diff = b - a;
     while (diff > kPi)  diff -= 2.0f * kPi;
     while (diff < -kPi) diff += 2.0f * kPi;
@@ -25,11 +26,18 @@ void PoseBlendStack::AddLayer(Dia::Core::StringCRC id,
     DIA_ASSERT(pose != nullptr, "PoseLayer pose must not be null");
 
     InternalLayer il;
-    il.id       = id;
-    il.pose     = pose;
-    il.weight   = weight;
-    il.priority = priority;
-    il.boneMask = boneMask;
+    il.id          = id;
+    il.pose        = pose;
+    il.weight      = weight;
+    il.priority    = priority;
+    il.hasBoneMask = (boneMask != nullptr);
+    if (boneMask) {
+        // Copy IDs into the compact internal mask (capped at kMaxBonesPerLayerMask)
+        unsigned int count = boneMask->boneIds.Size();
+        if (count > kMaxBonesPerLayerMask) count = kMaxBonesPerLayerMask;
+        for (unsigned int k = 0; k < count; ++k)
+            il.boneMask.boneIds.Add(boneMask->boneIds[k]);
+    }
 
     mLayers.Add(il);
     SortByPriority();
@@ -60,17 +68,26 @@ void PoseBlendStack::SetLayerPriority(Dia::Core::StringCRC layerId, int priority
 
 void PoseBlendStack::SetLayerBoneMask(Dia::Core::StringCRC layerId, const BoneMask* boneMask) {
     int idx = FindLayerIndex(layerId);
-    if (idx != -1) mLayers[idx].boneMask = boneMask;
+    if (idx == -1) return;
+    if (boneMask) {
+        mLayers[idx].boneMask.boneIds.RemoveAll();
+        unsigned int count = boneMask->boneIds.Size();
+        if (count > kMaxBonesPerLayerMask) count = kMaxBonesPerLayerMask;
+        for (unsigned int k = 0; k < count; ++k)
+            mLayers[idx].boneMask.boneIds.Add(boneMask->boneIds[k]);
+        mLayers[idx].hasBoneMask = true;
+    } else {
+        mLayers[idx].hasBoneMask = false;
+    }
 }
 
-void PoseBlendStack::ResolveBoneMask(const BoneMask* boneMask,
+void PoseBlendStack::ResolveBoneMask(const LayerBoneMask& boneMask,
                                       const Dia::Rig2D::Skeleton& skeleton,
                                       Dia::Core::Containers::DynamicArrayC<int, 128>& outIndices)
 {
     outIndices.RemoveAll();
-    if (boneMask == nullptr) return;
-    for (unsigned int i = 0; i < boneMask->boneIds.Size(); ++i) {
-        int idx = skeleton.FindBoneIndex(boneMask->boneIds[i]);
+    for (unsigned int i = 0; i < boneMask.boneIds.Size(); ++i) {
+        int idx = skeleton.FindBoneIndex(boneMask.boneIds[i]);
         if (idx == -1) continue;
         outIndices.Add(idx);
     }
@@ -95,7 +112,7 @@ void PoseBlendStack::Evaluate(const Dia::Rig2D::Skeleton& skeleton, Dia::Rig2D::
 
         float w = layer.weight;
 
-        if (layer.boneMask == nullptr) {
+        if (!layer.hasBoneMask) {
             // Affects all bones
             for (int b = 0; b < boneCount; ++b) {
                 Dia::Rig2D::BoneTransform& out = outPose.GetLocalTransform(b);
