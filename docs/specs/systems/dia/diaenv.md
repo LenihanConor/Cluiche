@@ -143,6 +143,10 @@ Follows DiaCLI conventions (SD-CLI-008):
 - **winget** — Windows Package Manager (ships with Windows 11)
 - **vswhere.exe** — VS workload detection (ships with VS 2022 installer, also available standalone)
 - **git** — submodule management
+- **gh (GitHub CLI)** — GitHub operations (PR management, issue tracking, release automation)
+
+**Binary SDKs (External/):**
+- **imgui 1.90.9** — immediate-mode GUI library; restored to `External/imgui/` via `deps.json` (see `debug-console` feature spec)
 
 **MSBuild:**
 - `Directory.Build.targets` — inline PowerShell task for `RestoreExternals`

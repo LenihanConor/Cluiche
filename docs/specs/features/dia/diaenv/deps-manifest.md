@@ -47,6 +47,7 @@ There is currently no machine-readable record of which binary SDKs belong in `Ex
 | `webix-5.2.1` | `External/Webix/5.2.1` | zip | Webix CDN | `file://` local path |
 | `webix-2.4.7` | `External/Webix/2.4.7` | zip | Webix CDN | `file://` local path |
 | `protobuf` | `External/protobuf/protobuf-25.6` | zip | GitHub releases | `file://` local path |
+| `imgui` | `External/imgui` | zip | GitHub releases (ocornut/imgui) | `file://` local path |
 
 **Excluded:** `External/Python` (unreferenced by any `.vcxproj`), `External/Webix/3.1.2` (unreferenced), `External/Cluiche/Tests` (test data, not a dep), `External/External/googletest` (duplicate — covered by submodule-migration).
 

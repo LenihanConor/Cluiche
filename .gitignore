@@ -263,6 +263,9 @@ External/Ultralight/
 # SFML binaries (restored via DiaEnv deps)
 External/SFML/
 
+# ImGui source (restored via DiaEnv deps)
+External/imgui/
+
 
 # Preprocessor output files
 *.i

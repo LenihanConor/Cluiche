@@ -87,6 +87,16 @@
       "install_type": "zip",
       "unzip_to": "External/protobuf/protobuf-25.6",
       "strip_root": false
+    },
+    {
+      "id": "imgui",
+      "version": "1.90.9",
+      "url": "https://github.com/ocornut/imgui/archive/refs/tags/v1.90.9.zip",
+      "mirrors": [],
+      "sha256": "4fa247c7abbb00fc255631479004de549b86a41f49fddd7d44cd2cf8d647c5a7",
+      "install_type": "zip",
+      "unzip_to": "External/imgui",
+      "strip_root": true
     }
   ]
 }

@@ -7,6 +7,7 @@
         { "PackageIdentifier": "Microsoft.VisualStudio.2022.Community" },
         { "PackageIdentifier": "Python.Python.3.11" },
         { "PackageIdentifier": "Git.Git" },
+        { "PackageIdentifier": "GitHub.cli" },
         { "PackageIdentifier": "OpenJS.NodeJS.LTS" },
         { "PackageIdentifier": "Docker.DockerDesktop" }
       ],
