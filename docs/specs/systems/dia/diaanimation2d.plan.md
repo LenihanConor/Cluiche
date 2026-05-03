@@ -3,7 +3,7 @@
 **Spec:** @docs/specs/systems/dia/diaanimation2d.md  
 **Status:** Done  
 **Started:** 2026-05-02  
-**Last Updated:** 2026-05-02
+**Last Updated:** 2026-05-02 (rev 2)
 
 ---
 
@@ -28,23 +28,23 @@ DiaAnimation2D is a pure C++ static library sitting above DiaRig2D and below gam
 | 6 | Tests: `Animation2D/SpringParamUtilsTests.cpp` — 8 test cases (see test plan) | Spring Param Utils | Done | |
 | 7 | Create data structs: `SpringNodeDef.h`, `SpringChainDef.h` | Spring Chain | Done | |
 | 8 | Implement `SpringChain.h` / `SpringChain.cpp` | Spring Chain | Done | |
-| 9 | Tests: `Animation2D/SpringChainTests.cpp` — 18 test cases | Spring Chain | Done | |
+| 9 | Tests: `Animation2D/SpringChainTests.cpp` — 23 test cases | Spring Chain | Done | +5 added: large-dt stability, single-node combo, reset cycle, zero-gravity |
 | 10 | Create data structs: `Keyframe.h`, `KeyframeTrack.h`, `AnimClipDef.h` | Keyframe Clip Player | Done | |
 | 11 | Implement `AnimClip.h` / `AnimClip.cpp` | Keyframe Clip Player | Done | |
 | 12 | Implement `AnimClipPlayer.h` / `AnimClipPlayer.cpp` | Keyframe Clip Player | Done | |
-| 13 | Tests: `Animation2D/AnimClipTests.cpp` — 16 test cases | Keyframe Clip Player | Done | |
-| 14 | Tests: `Animation2D/AnimClipPlayerTests.cpp` — 12 test cases | Keyframe Clip Player | Done | |
+| 13 | Tests: `Animation2D/AnimClipTests.cpp` — 19 test cases | Keyframe Clip Player | Done | +3 added: all-channels, scale lerp, rotation-only isolation |
+| 14 | Tests: `Animation2D/AnimClipPlayerTests.cpp` — 17 test cases | Keyframe Clip Player | Done | +5 added: IsLooping, PlayWithMode, null-ptr play, pointer-overload mode |
 | 15 | Implement `AnimClipLoader.h` / `AnimClipLoader.cpp` | Clip Loader | Done | `LoadAnimClipDefFromJson` / `LoadAnimClipDefFromSpine` |
-| 16 | Tests: `Animation2D/AnimClipLoaderTests.cpp` — 14 test cases | Clip Loader | Done | |
+| 16 | Tests: `Animation2D/AnimClipLoaderTests.cpp` — 18 test cases | Clip Loader | Done | +4 added: empty anim body, empty bone, multi-bone, scale keyframes |
 | 17 | Create data structs: `BoneMask.h`, `PoseLayer.h` | Pose Blend Stack | Done | |
 | 18 | Implement `PoseBlendStack.h` / `PoseBlendStack.cpp` | Pose Blend Stack | Done | |
-| 19 | Tests: `Animation2D/PoseBlendStackTests.cpp` — 21 test cases | Pose Blend Stack | Done | |
+| 19 | Tests: `Animation2D/PoseBlendStackTests.cpp` — 26 test cases | Pose Blend Stack | Done | +5 added: bone-mask copy-at-add, max-layers death test, position blend, scale blend, remove-nonexistent |
 | 20 | Implement `AnimationEvaluator.h` / `AnimationEvaluator.cpp` | Animation Evaluator | Done | |
-| 21 | Tests: `Animation2D/AnimationEvaluatorTests.cpp` — 13 test cases | Animation Evaluator | Done | |
+| 21 | Tests: `Animation2D/AnimationEvaluatorTests.cpp` — 17 test cases | Animation Evaluator | Done | +4 added: unregister-nonexistent, re-register, middle unregister, spring auto-mask |
 | 22 | Create `Dia/DiaAnimation2D/Testing/` directory with header-only helpers | Test Utilities | Done | |
 | 23 | Tests: `Animation2D/TestUtilitiesTests.cpp` — 8 test cases | Test Utilities | Done | |
 | 24 | Integration tests: `Animation2D/IntegrationTests.cpp` — 5 full-pipeline tests | Integration | Done | |
-| 25 | Build all configurations (Debug + Release x64), run tests, confirm all pass | Verification | Done | 107/107 passing |
+| 25 | Build all configurations (Debug + Release x64), run tests, confirm all pass | Verification | Done | 120/120 passing (rev 2) |
 | 26 | Update `docs/BACKLOG.md` — move DiaAnimation2D from Ready to Build → Done | Docs | Done | |
 | 27 | Update `docs/specs/systems/dia/diaanimation2d.md` status to Done | Docs | Done | |
 
@@ -248,6 +248,11 @@ All tests live in `Cluiche/Tests/GoogleTests/Animation2D/`. Test fixture skeleto
 ---
 
 ## Session Notes
+
+### 2026-05-02 (rev 2)
+- Architectural review identified: pointer stability bug (BoneMask pointer inside PoseBlendStack dangled after UnregisterSource shifted SourceEntry slots), missing IsLooping() accessor, magic number constants.
+- Fixed: PoseBlendStack now owns a compact LayerBoneMask (32-bone cap) by value — no pointer lifetime dependency. autoMask removed from SourceEntry. AnimationEvaluator is non-copyable. Named constants replace magic numbers (kMaxSubstepDt, kGravityEpsilon, kTimeEpsilon, kPi, kDegToRad). IsLooping() added to AnimClipPlayer.
+- Added 13 tests (107 → 120): position/scale channel blending, rotation-only isolation, large-dt spring stability, gravity+torque combo, reset cycle, re-register after unregister, middle-source unregister, spring auto-mask bone isolation, bone mask copy-at-add, max-layers death test, Spine loader edge cases.
 
 ### 2026-05-02
 - Plan created from 7 approved feature specs + system spec. All specs Approved, no spec work needed before implementation starts.

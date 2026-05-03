@@ -228,31 +228,38 @@ namespace Dia::Animation2D {
 namespace Dia::Animation2D {
     class AnimationEvaluator {
     public:
-        explicit AnimationEvaluator(Dia::Rig2D::Skeleton& skeleton, Dia::Rig2D::Pose& pose);
+        explicit AnimationEvaluator(Dia::Rig2D::Skeleton& skeleton);
 
-        // Source registration — evaluator allocates and owns intermediate Poses.
-        // Returns a non-owning pointer to the evaluator-owned Pose for the source.
-        Dia::Rig2D::Pose* RegisterClipPlayer(Dia::Core::StringCRC sourceId,
-                                              AnimClipPlayer& player,
-                                              int blendPriority,
-                                              const BoneMask* boneMask = nullptr);
+        AnimationEvaluator(const AnimationEvaluator&)            = delete;
+        AnimationEvaluator& operator=(const AnimationEvaluator&) = delete;
 
-        Dia::Rig2D::Pose* RegisterSpringChain(Dia::Core::StringCRC sourceId,
-                                               SpringChain& chain,
-                                               int blendPriority,
-                                               const BoneMask* boneMask = nullptr);
+        // Source registration — evaluator allocates and owns the AnimClipPlayer/SpringChain
+        // and an intermediate Pose for each source. Returned pointers are NON-OWNING;
+        // their lifetime is managed by the evaluator and they are invalidated by UnregisterSource.
+        AnimClipPlayer* RegisterClipPlayer(Dia::Core::StringCRC sourceId,
+                                           int blendPriority = 0,
+                                           const BoneMask* boneMask = nullptr);
+
+        SpringChain* RegisterSpringChain(Dia::Core::StringCRC sourceId,
+                                         const SpringChainDef& def,
+                                         int blendPriority = 0,
+                                         const BoneMask* boneMask = nullptr);
 
         void UnregisterSource(Dia::Core::StringCRC sourceId);
         void SetSourceWeight(Dia::Core::StringCRC sourceId, float weight);
         void SetSourcePriority(Dia::Core::StringCRC sourceId, int priority);
+        void SetSourceBoneMask(Dia::Core::StringCRC sourceId, const BoneMask* boneMask);
 
         // Run the full animation pipeline for this frame:
         //   1. FK (compute world transforms from current pose + root transform)
         //   2. Each clip player: Update(dt), Sample into evaluator-owned pose
         //   3. Each spring chain: Update(dt, evaluator-owned pose, world transforms)
-        //   4. PoseBlendStack: Evaluate all sources into the target pose
+        //   4. PoseBlendStack: Evaluate all sources into outPose
         // Caller runs DiaIK2D post-process and final FK after this returns.
-        void Evaluate(float dt, const Dia::Rig2D::BoneTransform& rootTransform);
+        void Evaluate(float dt,
+                      const Dia::Rig2D::BoneTransform& rootTransform,
+                      const Dia::Rig2D::Skeleton& skeleton,
+                      Dia::Rig2D::Pose& outPose);
 
         // Direct access for advanced use cases.
         PoseBlendStack&       GetBlendStack();
@@ -295,14 +302,14 @@ Keyframe fields are optional — omitted fields use the skeleton's bind pose val
 
 | Feature | Description | Spec | Status |
 |---------|-------------|------|--------|
-| Damped Spring Chain | `SpringChainDef`, `SpringNodeDef`, `SpringChain` class. Angular spring-damper integration, external torque, gravity, reset, runtime parameter tuning. Internal sub-stepping. Writes Pose local rotations. | [damped-spring-chain.md](../../features/dia/diaanimation2d/damped-spring-chain.md) | Approved |
-| Keyframe Clip Player | `AnimClipDef`, `KeyframeTrack`, `Keyframe`, `AnimClip`, `AnimClipPlayer`. Clip sampling with linear interpolation, one-shot/looping playback, speed control. Clip validation at construction. | [keyframe-clip-player.md](../../features/dia/diaanimation2d/keyframe-clip-player.md) | Approved |
-| Animation Clip Loader | JSON loader for animation clip data — custom format and Spine2D v4 animation sections. Uses DiaCore/Json. Spine2D coordinate/unit conversion at load time. | [animation-clip-loader.md](../../features/dia/diaanimation2d/animation-clip-loader.md) | Approved |
-| Pose Blend Stack | `PoseLayer`, `BoneMask`, `PoseBlendStack`. Priority-ordered stack with per-bone masking, cascading lerp evaluation. Zero-weight skip. Output alias protection. | [pose-blend-stack.md](../../features/dia/diaanimation2d/pose-blend-stack.md) | Approved |
-| Animation Evaluator | `AnimationEvaluator` orchestrator. Owns intermediate poses. Registers clip players and spring chains. Runs full pipeline (FK → clip → spring → blend) in correct order via single `Evaluate(dt)` call. | [animation-evaluator.md](../../features/dia/diaanimation2d/animation-evaluator.md) | Approved |
-| Spring Parameter Utilities | `SpringParamsFromFrequency()`: convert artist-friendly frequency(Hz)/damping-ratio to internal k/d values. | [spring-parameter-utilities.md](../../features/dia/diaanimation2d/spring-parameter-utilities.md) | Approved |
+| Damped Spring Chain | `SpringChainDef`, `SpringNodeDef`, `SpringChain` class. Angular spring-damper integration, external torque, gravity, reset, runtime parameter tuning. Internal sub-stepping. Writes Pose local rotations. | [damped-spring-chain.md](../../features/dia/diaanimation2d/damped-spring-chain.md) | Done |
+| Keyframe Clip Player | `AnimClipDef`, `KeyframeTrack`, `Keyframe`, `AnimClip`, `AnimClipPlayer`. Clip sampling with linear interpolation, one-shot/looping playback, speed control. Clip validation at construction. | [keyframe-clip-player.md](../../features/dia/diaanimation2d/keyframe-clip-player.md) | Done |
+| Animation Clip Loader | JSON loader for animation clip data — custom format and Spine2D v4 animation sections. Uses DiaCore/Json. Spine2D coordinate/unit conversion at load time. | [animation-clip-loader.md](../../features/dia/diaanimation2d/animation-clip-loader.md) | Done |
+| Pose Blend Stack | `PoseLayer`, `BoneMask`, `PoseBlendStack`. Priority-ordered stack with per-bone masking, cascading lerp evaluation. Zero-weight skip. Output alias protection. BoneMask copied by value into each layer (no pointer lifetime dependency). | [pose-blend-stack.md](../../features/dia/diaanimation2d/pose-blend-stack.md) | Done |
+| Animation Evaluator | `AnimationEvaluator` orchestrator. Owns `AnimClipPlayer`, `SpringChain`, and intermediate poses. Non-copyable. Registers sources, runs full pipeline (FK → clip → spring → blend). | [animation-evaluator.md](../../features/dia/diaanimation2d/animation-evaluator.md) | Done |
+| Spring Parameter Utilities | `SpringParamsFromFrequency()`: convert artist-friendly frequency(Hz)/damping-ratio to internal k/d values. | [spring-parameter-utilities.md](../../features/dia/diaanimation2d/spring-parameter-utilities.md) | Done |
 | Procedural Locomotion Oscillator | Sine-based gait oscillator driving IK targets for limb locomotion. Data-driven per-limb phase/frequency/amplitude. | TBD | Deferred |
-| Test Utilities | `DiaAnimation2D/Testing/`: clip builders, spring chain helpers, pose comparison utilities. Ships with library; consumer opt-in via include. | [test-utilities.md](../../features/dia/diaanimation2d/test-utilities.md) | Approved |
+| Test Utilities | `DiaAnimation2D/Testing/`: clip builders, spring chain helpers, pose comparison utilities. Ships with library; consumer opt-in via include. | [test-utilities.md](../../features/dia/diaanimation2d/test-utilities.md) | Done |
 
 ---
 
@@ -361,7 +368,7 @@ Keyframe fields are optional — omitted fields use the skeleton's bind pose val
 | AND-006 | AnimClipPlayer does not own the AnimClip | Non-owning pointer — caller manages clip lifetime. Multiple players can reference the same clip. Consistent with `IKSolver` non-owning `Skeleton&` pattern (SD-008). | Keyframe Clip Player | Accepted | Yes |
 | AND-007 | Animation clips loaded from JSON via DiaCore/Json (jsoncpp) | No new parser dependency. Supports both a minimal custom format and Spine2D v4 animation sections. Consistent with DiaRig2D's JSON skeleton loader. | Animation Clip Loader | Accepted | Yes |
 | AND-008 | Procedural Locomotion Oscillator deferred to Wave 3 | Gait feel requires iteration that is hard to pre-specify. Needs its own research session against a working skeleton + IK. Do not spec until Wave 2 is stable. | Procedural Locomotion Oscillator | Accepted | Yes |
-| AND-009 | Per-bone BoneMask uses StringCRC bone IDs, resolved to indices at AddLayer time | Same pattern as IKChainDef bone resolution (SD-009). Avoid per-frame string lookup in the evaluate hot path. | Pose Blend Stack | Accepted | Yes |
+| AND-009 | Per-bone BoneMask uses StringCRC bone IDs, resolved to indices lazily at Evaluate time | Skeleton is not required at AddLayer time. Resolution is deferred to each Evaluate call using a scratch buffer, avoiding a skeleton dependency at construction. BoneMask IDs are copied by value into a compact internal LayerBoneMask at AddLayer to eliminate pointer lifetime issues. | Pose Blend Stack | Accepted | Yes |
 | AND-010 | No STL in public APIs | Consistent with PD-004 / AD-002. | All features | Accepted | Yes |
 | AND-011 | Test utilities ship inside `DiaAnimation2D/Testing/` | Platform-wide pattern (DiaRig2D, DiaIK2D, DiaStateMachine, DiaSoftBody2D). Consumer opt-in via include. | Test Utilities | Accepted | Yes |
 | AND-012 | Spring chain integration uses semi-implicit Euler | Explicit Euler is unstable at high stiffness; full implicit Euler is overkill for visual-only secondary motion. Semi-implicit (update velocity then position) is stable, simple, and deterministic. | Damped Spring Chain | Accepted | Yes |
@@ -452,4 +459,4 @@ Keyframe fields are optional — omitted fields use the skeleton's bind pose val
 
 ## Status
 
-`Done` — Implemented 2026-05-02. 107 tests passing. Plan: `diaanimation2d.plan.md`
+`Done` — Implemented 2026-05-02. 120 tests passing. Architectural fixes applied 2026-05-02 (pointer stability, const, named constants). Plan: `diaanimation2d.plan.md`
