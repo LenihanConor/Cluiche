@@ -23,6 +23,9 @@ namespace Dia
 		class DebugFrameData
 		{
 		public:
+			// Compile-time budget knob — increase here if primitives are dropped (SD-DBG).
+			static constexpr uint32_t kCapacity = 1024u;
+
 			DebugFrameData();
 			~DebugFrameData();
 
@@ -74,10 +77,50 @@ namespace Dia
 				RequestDraw(p1, p2, p3, outlineColour, RGBA(0, 0, 0, 0));
 			}
 
+			// Text2D — world-space text label.
+			// position: world-space top-left origin.
+			// text:     null-terminated ASCII; strings > 63 chars are silently truncated.
+			// fontSize: pixel size (SFML setCharacterSize); 0 or negative is a no-op.
+			// colour:   RGBA text colour.
+			void RequestDrawText(const Maths::Vector2D& position,
+				const char* text,
+				float fontSize,
+				RGBA colour);
+
+			// ----------------------------------------------------------------
+			// Budget tracking (debug-budget)
+			// ----------------------------------------------------------------
+
+			/// Number of RequestDraw* calls dropped this frame because the buffer was full.
+			uint32_t DroppedCount()   const { return mDroppedCount; }
+			/// True if any primitives were dropped this frame.
+			bool     IsOverCapacity() const { return mDroppedCount > 0; }
+
+			// ----------------------------------------------------------------
+			// Test / inspection accessors
+			// ----------------------------------------------------------------
+
+			/// Total number of primitives currently stored.
+			uint32_t              GetDebugPrimitiveCount()          const { return mDebugPrimitiveBuffer.Size(); }
+			/// Access a stored primitive by index (0-based).
+			const DebugPrimitive& GetDebugPrimitive(uint32_t index) const { return mDebugPrimitiveBuffer[index]; }
+
 			void AcceptVisitor(const DebugFrameDataVisitor& visitor) const;
 
 		private:
-			Core::Containers::DynamicArrayC<DebugPrimitive, kDebugPrimitiveCapacity> mDebugPrimitiveBuffer;
+			/// Returns true if space remains; increments mDroppedCount and returns false when full.
+			bool CanAdd()
+			{
+				if (mDebugPrimitiveBuffer.Size() >= kCapacity)
+				{
+					++mDroppedCount;
+					return false;
+				}
+				return true;
+			}
+
+			Core::Containers::DynamicArrayC<DebugPrimitive, kCapacity> mDebugPrimitiveBuffer;
+			uint32_t mDroppedCount = 0;
 		};
 	}
 }

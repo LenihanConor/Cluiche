@@ -27,7 +27,8 @@ struct RecordingEntityVisitor : public EntityFrameDataVisitor
 
 struct RecordingDebugVisitor : public DebugFrameDataVisitor
 {
-	mutable int primitiveCount[7] = {};  // indexed by DebugPrimitiveType
+	// 8 entries: Circle2D=0 through Text2D=7
+	mutable int primitiveCount[8] = {};  // indexed by DebugPrimitiveType
 	mutable int frameCount = 0;
 
 	void Visit(const DebugPrimitive& p) const override
@@ -44,17 +45,18 @@ struct RecordingDebugVisitor : public DebugFrameDataVisitor
 	int ArcCount()      const { return primitiveCount[static_cast<int>(DebugPrimitiveType::Arc2D)];      }
 	int RayCount()      const { return primitiveCount[static_cast<int>(DebugPrimitiveType::Ray2D)];      }
 	int TriangleCount() const { return primitiveCount[static_cast<int>(DebugPrimitiveType::Triangle2D)]; }
+	int TextCount()     const { return primitiveCount[static_cast<int>(DebugPrimitiveType::Text2D)];     }
 
 	int TotalCount() const
 	{
 		int total = 0;
-		for (int i = 0; i < 7; ++i) total += primitiveCount[i];
+		for (int i = 0; i < 8; ++i) total += primitiveCount[i];
 		return total;
 	}
 
 	void Reset()
 	{
-		for (int i = 0; i < 7; ++i) primitiveCount[i] = 0;
+		for (int i = 0; i < 8; ++i) primitiveCount[i] = 0;
 		frameCount = 0;
 	}
 };

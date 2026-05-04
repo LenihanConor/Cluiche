@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Debug Layers</title>
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      font-size: 12px;
+    }
+    .wrap {
+      padding: 14px 16px;
+      box-sizing: border-box;
+      height: 100%;
+      overflow: auto;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    h1 {
+      font-size: 14px;
+      margin: 0;
+      color: #569cd6;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      flex: 1;
+    }
+    .badge {
+      display: none;
+      background: #c0392b;
+      color: #fff;
+      font-size: 10px;
+      font-weight: bold;
+      padding: 2px 6px;
+      border-radius: 10px;
+      margin-left: 8px;
+    }
+    .badge.visible {
+      display: inline-block;
+    }
+    .empty-msg {
+      color: #808080;
+      font-size: 11px;
+      font-style: italic;
+    }
+    .layer-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .layer-item {
+      display: flex;
+      align-items: center;
+      padding: 5px 0;
+      border-bottom: 1px solid #2d2d2d;
+    }
+    .layer-item:last-child {
+      border-bottom: none;
+    }
+    .layer-item input[type="checkbox"] {
+      margin-right: 8px;
+      accent-color: #569cd6;
+      cursor: pointer;
+    }
+    .layer-name {
+      flex: 1;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 12px;
+      color: #d4d4d4;
+    }
+    .layer-name.disabled {
+      color: #666;
+    }
+    .layer-priority {
+      font-size: 10px;
+      color: #9cdcfe;
+      text-align: right;
+      min-width: 28px;
+    }
+    .overflow-banner {
+      display: none;
+      margin-bottom: 10px;
+      padding: 6px 10px;
+      background: #3a1f1f;
+      border-left: 3px solid #f48771;
+      color: #f48771;
+      font-size: 11px;
+    }
+    .overflow-banner.visible {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <h1>Debug Layers</h1>
+      <span class="badge" id="drop-badge">0 dropped</span>
+    </div>
+
+    <div class="overflow-banner" id="overflow-banner">
+      Primitive budget exceeded — some draw calls were dropped this frame.
+    </div>
+
+    <div id="layer-container">
+      <p class="empty-msg" id="empty-msg">No layers registered.</p>
+      <ul class="layer-list" id="layer-list" style="display:none"></ul>
+    </div>
+  </div>
+
+  <script src="debug-layers.js"></script>
+</body>
+</html>

@@ -71,6 +71,12 @@ extern CoreMetricsDefaultTypeInternal _CoreMetrics_default_instance_;
 class DataUpdate;
 struct DataUpdateDefaultTypeInternal;
 extern DataUpdateDefaultTypeInternal _DataUpdate_default_instance_;
+class DebugLayerEntry;
+struct DebugLayerEntryDefaultTypeInternal;
+extern DebugLayerEntryDefaultTypeInternal _DebugLayerEntry_default_instance_;
+class DebugLayerState;
+struct DebugLayerStateDefaultTypeInternal;
+extern DebugLayerStateDefaultTypeInternal _DebugLayerState_default_instance_;
 class DebugMessage;
 struct DebugMessageDefaultTypeInternal;
 extern DebugMessageDefaultTypeInternal _DebugMessage_default_instance_;
@@ -136,6 +142,7 @@ enum MessageType : int {
   MESSAGE_TYPE_PONG = 13,
   MESSAGE_TYPE_LOG = 14,
   MESSAGE_TYPE_LOG_BATCH = 15,
+  MESSAGE_TYPE_DEBUG_LAYER_STATE = 16,
   MessageType_INT_MIN_SENTINEL_DO_NOT_USE_ =
       std::numeric_limits<::int32_t>::min(),
   MessageType_INT_MAX_SENTINEL_DO_NOT_USE_ =
@@ -145,8 +152,8 @@ enum MessageType : int {
 bool MessageType_IsValid(int value);
 extern const uint32_t MessageType_internal_data_[];
 constexpr MessageType MessageType_MIN = static_cast<MessageType>(0);
-constexpr MessageType MessageType_MAX = static_cast<MessageType>(15);
-constexpr int MessageType_ARRAYSIZE = 15 + 1;
+constexpr MessageType MessageType_MAX = static_cast<MessageType>(16);
+constexpr int MessageType_ARRAYSIZE = 16 + 1;
 const ::google::protobuf::EnumDescriptor*
 MessageType_descriptor();
 template <typename T>
@@ -159,7 +166,7 @@ const std::string& MessageType_Name(T value) {
 template <>
 inline const std::string& MessageType_Name(MessageType value) {
   return ::google::protobuf::internal::NameOfDenseEnum<MessageType_descriptor,
-                                                 0, 15>(
+                                                 0, 16>(
       static_cast<int>(value));
 }
 inline bool MessageType_Parse(absl::string_view name, MessageType* value) {
@@ -1987,6 +1994,211 @@ class Error final :
   friend struct ::TableStruct_debug_5fprotocol_2eproto;
 };// -------------------------------------------------------------------
 
+class DebugLayerEntry final :
+    public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:dia.debug.DebugLayerEntry) */ {
+ public:
+  inline DebugLayerEntry() : DebugLayerEntry(nullptr) {}
+  ~DebugLayerEntry() override;
+  template<typename = void>
+  explicit PROTOBUF_CONSTEXPR DebugLayerEntry(::google::protobuf::internal::ConstantInitialized);
+
+  inline DebugLayerEntry(const DebugLayerEntry& from)
+      : DebugLayerEntry(nullptr, from) {}
+  DebugLayerEntry(DebugLayerEntry&& from) noexcept
+    : DebugLayerEntry() {
+    *this = ::std::move(from);
+  }
+
+  inline DebugLayerEntry& operator=(const DebugLayerEntry& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline DebugLayerEntry& operator=(DebugLayerEntry&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetArena() == from.GetArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance);
+  }
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields()
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return _internal_metadata_.mutable_unknown_fields<::google::protobuf::UnknownFieldSet>();
+  }
+
+  static const ::google::protobuf::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::google::protobuf::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::google::protobuf::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const DebugLayerEntry& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const DebugLayerEntry* internal_default_instance() {
+    return reinterpret_cast<const DebugLayerEntry*>(
+               &_DebugLayerEntry_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    17;
+
+  friend void swap(DebugLayerEntry& a, DebugLayerEntry& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(DebugLayerEntry* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetArena() != nullptr &&
+        GetArena() == other->GetArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetArena() == other->GetArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::google::protobuf::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(DebugLayerEntry* other) {
+    if (other == this) return;
+    ABSL_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  DebugLayerEntry* New(::google::protobuf::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<DebugLayerEntry>(arena);
+  }
+  using ::google::protobuf::Message::CopyFrom;
+  void CopyFrom(const DebugLayerEntry& from);
+  using ::google::protobuf::Message::MergeFrom;
+  void MergeFrom( const DebugLayerEntry& from) {
+    DebugLayerEntry::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::google::protobuf::Message& to_msg, const ::google::protobuf::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  ::size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::google::protobuf::internal::ParseContext* ctx) final;
+  ::uint8_t* _InternalSerialize(
+      ::uint8_t* target, ::google::protobuf::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const { return _impl_._cached_size_.Get(); }
+
+  private:
+  ::google::protobuf::internal::CachedSize* AccessCachedSize() const final;
+  void SharedCtor(::google::protobuf::Arena* arena);
+  void SharedDtor();
+  void InternalSwap(DebugLayerEntry* other);
+
+  private:
+  friend class ::google::protobuf::internal::AnyMetadata;
+  static ::absl::string_view FullMessageName() {
+    return "dia.debug.DebugLayerEntry";
+  }
+  protected:
+  explicit DebugLayerEntry(::google::protobuf::Arena* arena);
+  DebugLayerEntry(::google::protobuf::Arena* arena, const DebugLayerEntry& from);
+  public:
+
+  static const ClassData _class_data_;
+  const ::google::protobuf::Message::ClassData*GetClassData() const final;
+
+  ::google::protobuf::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kNameFieldNumber = 1,
+    kEnabledFieldNumber = 2,
+    kPriorityFieldNumber = 3,
+  };
+  // string name = 1;
+  void clear_name() ;
+  const std::string& name() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_name(Arg_&& arg, Args_... args);
+  std::string* mutable_name();
+  PROTOBUF_NODISCARD std::string* release_name();
+  void set_allocated_name(std::string* value);
+
+  private:
+  const std::string& _internal_name() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_name(
+      const std::string& value);
+  std::string* _internal_mutable_name();
+
+  public:
+  // bool enabled = 2;
+  void clear_enabled() ;
+  bool enabled() const;
+  void set_enabled(bool value);
+
+  private:
+  bool _internal_enabled() const;
+  void _internal_set_enabled(bool value);
+
+  public:
+  // int32 priority = 3;
+  void clear_priority() ;
+  ::int32_t priority() const;
+  void set_priority(::int32_t value);
+
+  private:
+  ::int32_t _internal_priority() const;
+  void _internal_set_priority(::int32_t value);
+
+  public:
+  // @@protoc_insertion_point(class_scope:dia.debug.DebugLayerEntry)
+ private:
+  class _Internal;
+
+  friend class ::google::protobuf::internal::TcParser;
+  static const ::google::protobuf::internal::TcParseTable<
+      2, 3, 0,
+      38, 2>
+      _table_;
+  friend class ::google::protobuf::MessageLite;
+  friend class ::google::protobuf::Arena;
+  template <typename T>
+  friend class ::google::protobuf::Arena::InternalHelper;
+  using InternalArenaConstructable_ = void;
+  using DestructorSkippable_ = void;
+  struct Impl_ {
+
+        inline explicit constexpr Impl_(
+            ::google::protobuf::internal::ConstantInitialized) noexcept;
+        inline explicit Impl_(::google::protobuf::internal::InternalVisibility visibility,
+                              ::google::protobuf::Arena* arena);
+        inline explicit Impl_(::google::protobuf::internal::InternalVisibility visibility,
+                              ::google::protobuf::Arena* arena, const Impl_& from);
+    ::google::protobuf::internal::ArenaStringPtr name_;
+    bool enabled_;
+    ::int32_t priority_;
+    mutable ::google::protobuf::internal::CachedSize _cached_size_;
+    PROTOBUF_TSAN_DECLARE_MEMBER
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_debug_5fprotocol_2eproto;
+};// -------------------------------------------------------------------
+
 class SubscribeRequest final :
     public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:dia.debug.SubscribeRequest) */ {
  public:
@@ -2562,6 +2774,201 @@ class Event final :
     mutable ::google::protobuf::internal::CachedSize _cached_size_;
     ::google::protobuf::internal::ArenaStringPtr event_type_;
     ::google::protobuf::Struct* payload_;
+    PROTOBUF_TSAN_DECLARE_MEMBER
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_debug_5fprotocol_2eproto;
+};// -------------------------------------------------------------------
+
+class DebugLayerState final :
+    public ::google::protobuf::Message /* @@protoc_insertion_point(class_definition:dia.debug.DebugLayerState) */ {
+ public:
+  inline DebugLayerState() : DebugLayerState(nullptr) {}
+  ~DebugLayerState() override;
+  template<typename = void>
+  explicit PROTOBUF_CONSTEXPR DebugLayerState(::google::protobuf::internal::ConstantInitialized);
+
+  inline DebugLayerState(const DebugLayerState& from)
+      : DebugLayerState(nullptr, from) {}
+  DebugLayerState(DebugLayerState&& from) noexcept
+    : DebugLayerState() {
+    *this = ::std::move(from);
+  }
+
+  inline DebugLayerState& operator=(const DebugLayerState& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline DebugLayerState& operator=(DebugLayerState&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetArena() == from.GetArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance);
+  }
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields()
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return _internal_metadata_.mutable_unknown_fields<::google::protobuf::UnknownFieldSet>();
+  }
+
+  static const ::google::protobuf::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::google::protobuf::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::google::protobuf::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const DebugLayerState& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const DebugLayerState* internal_default_instance() {
+    return reinterpret_cast<const DebugLayerState*>(
+               &_DebugLayerState_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    18;
+
+  friend void swap(DebugLayerState& a, DebugLayerState& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(DebugLayerState* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetArena() != nullptr &&
+        GetArena() == other->GetArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetArena() == other->GetArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::google::protobuf::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(DebugLayerState* other) {
+    if (other == this) return;
+    ABSL_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  DebugLayerState* New(::google::protobuf::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<DebugLayerState>(arena);
+  }
+  using ::google::protobuf::Message::CopyFrom;
+  void CopyFrom(const DebugLayerState& from);
+  using ::google::protobuf::Message::MergeFrom;
+  void MergeFrom( const DebugLayerState& from) {
+    DebugLayerState::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::google::protobuf::Message& to_msg, const ::google::protobuf::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  ::size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::google::protobuf::internal::ParseContext* ctx) final;
+  ::uint8_t* _InternalSerialize(
+      ::uint8_t* target, ::google::protobuf::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const { return _impl_._cached_size_.Get(); }
+
+  private:
+  ::google::protobuf::internal::CachedSize* AccessCachedSize() const final;
+  void SharedCtor(::google::protobuf::Arena* arena);
+  void SharedDtor();
+  void InternalSwap(DebugLayerState* other);
+
+  private:
+  friend class ::google::protobuf::internal::AnyMetadata;
+  static ::absl::string_view FullMessageName() {
+    return "dia.debug.DebugLayerState";
+  }
+  protected:
+  explicit DebugLayerState(::google::protobuf::Arena* arena);
+  DebugLayerState(::google::protobuf::Arena* arena, const DebugLayerState& from);
+  public:
+
+  static const ClassData _class_data_;
+  const ::google::protobuf::Message::ClassData*GetClassData() const final;
+
+  ::google::protobuf::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kLayersFieldNumber = 1,
+    kDroppedCountFieldNumber = 2,
+  };
+  // repeated .dia.debug.DebugLayerEntry layers = 1;
+  int layers_size() const;
+  private:
+  int _internal_layers_size() const;
+
+  public:
+  void clear_layers() ;
+  ::dia::debug::DebugLayerEntry* mutable_layers(int index);
+  ::google::protobuf::RepeatedPtrField< ::dia::debug::DebugLayerEntry >*
+      mutable_layers();
+  private:
+  const ::google::protobuf::RepeatedPtrField<::dia::debug::DebugLayerEntry>& _internal_layers() const;
+  ::google::protobuf::RepeatedPtrField<::dia::debug::DebugLayerEntry>* _internal_mutable_layers();
+  public:
+  const ::dia::debug::DebugLayerEntry& layers(int index) const;
+  ::dia::debug::DebugLayerEntry* add_layers();
+  const ::google::protobuf::RepeatedPtrField< ::dia::debug::DebugLayerEntry >&
+      layers() const;
+  // uint32 dropped_count = 2;
+  void clear_dropped_count() ;
+  ::uint32_t dropped_count() const;
+  void set_dropped_count(::uint32_t value);
+
+  private:
+  ::uint32_t _internal_dropped_count() const;
+  void _internal_set_dropped_count(::uint32_t value);
+
+  public:
+  // @@protoc_insertion_point(class_scope:dia.debug.DebugLayerState)
+ private:
+  class _Internal;
+
+  friend class ::google::protobuf::internal::TcParser;
+  static const ::google::protobuf::internal::TcParseTable<
+      1, 2, 1,
+      0, 2>
+      _table_;
+  friend class ::google::protobuf::MessageLite;
+  friend class ::google::protobuf::Arena;
+  template <typename T>
+  friend class ::google::protobuf::Arena::InternalHelper;
+  using InternalArenaConstructable_ = void;
+  using DestructorSkippable_ = void;
+  struct Impl_ {
+
+        inline explicit constexpr Impl_(
+            ::google::protobuf::internal::ConstantInitialized) noexcept;
+        inline explicit Impl_(::google::protobuf::internal::InternalVisibility visibility,
+                              ::google::protobuf::Arena* arena);
+        inline explicit Impl_(::google::protobuf::internal::InternalVisibility visibility,
+                              ::google::protobuf::Arena* arena, const Impl_& from);
+    ::google::protobuf::RepeatedPtrField< ::dia::debug::DebugLayerEntry > layers_;
+    ::uint32_t dropped_count_;
+    mutable ::google::protobuf::internal::CachedSize _cached_size_;
     PROTOBUF_TSAN_DECLARE_MEMBER
   };
   union { Impl_ _impl_; };
@@ -3508,6 +3915,7 @@ class DebugMessage final :
     kPong = 22,
     kLog = 23,
     kLogBatch = 24,
+    kDebugLayerState = 25,
     PAYLOAD_NOT_SET = 0,
   };
 
@@ -3606,6 +4014,7 @@ class DebugMessage final :
     kPongFieldNumber = 22,
     kLogFieldNumber = 23,
     kLogBatchFieldNumber = 24,
+    kDebugLayerStateFieldNumber = 25,
   };
   // uint64 timestamp = 2;
   void clear_timestamp() ;
@@ -3912,6 +4321,25 @@ class DebugMessage final :
   ::dia::debug::LogBatch* _internal_mutable_log_batch();
 
   public:
+  // .dia.debug.DebugLayerState debug_layer_state = 25;
+  bool has_debug_layer_state() const;
+  private:
+  bool _internal_has_debug_layer_state() const;
+
+  public:
+  void clear_debug_layer_state() ;
+  const ::dia::debug::DebugLayerState& debug_layer_state() const;
+  PROTOBUF_NODISCARD ::dia::debug::DebugLayerState* release_debug_layer_state();
+  ::dia::debug::DebugLayerState* mutable_debug_layer_state();
+  void set_allocated_debug_layer_state(::dia::debug::DebugLayerState* value);
+  void unsafe_arena_set_allocated_debug_layer_state(::dia::debug::DebugLayerState* value);
+  ::dia::debug::DebugLayerState* unsafe_arena_release_debug_layer_state();
+
+  private:
+  const ::dia::debug::DebugLayerState& _internal_debug_layer_state() const;
+  ::dia::debug::DebugLayerState* _internal_mutable_debug_layer_state();
+
+  public:
   void clear_payload();
   PayloadCase payload_case() const;
   // @@protoc_insertion_point(class_scope:dia.debug.DebugMessage)
@@ -3932,13 +4360,14 @@ class DebugMessage final :
   void set_has_pong();
   void set_has_log();
   void set_has_log_batch();
+  void set_has_debug_layer_state();
 
   inline bool has_payload() const;
   inline void clear_has_payload();
 
   friend class ::google::protobuf::internal::TcParser;
   static const ::google::protobuf::internal::TcParseTable<
-      1, 17, 15,
+      1, 18, 16,
       0, 2>
       _table_;
   friend class ::google::protobuf::MessageLite;
@@ -3975,6 +4404,7 @@ class DebugMessage final :
       ::dia::debug::Pong* pong_;
       ::dia::debug::LogEntry* log_;
       ::dia::debug::LogBatch* log_batch_;
+      ::dia::debug::DebugLayerState* debug_layer_state_;
     } payload_;
     mutable ::google::protobuf::internal::CachedSize _cached_size_;
     ::uint32_t _oneof_case_[1];
@@ -5184,6 +5614,82 @@ inline ::dia::debug::LogBatch* DebugMessage::_internal_mutable_log_batch() {
 inline ::dia::debug::LogBatch* DebugMessage::mutable_log_batch() ABSL_ATTRIBUTE_LIFETIME_BOUND {
   ::dia::debug::LogBatch* _msg = _internal_mutable_log_batch();
   // @@protoc_insertion_point(field_mutable:dia.debug.DebugMessage.log_batch)
+  return _msg;
+}
+
+// .dia.debug.DebugLayerState debug_layer_state = 25;
+inline bool DebugMessage::has_debug_layer_state() const {
+  return payload_case() == kDebugLayerState;
+}
+inline bool DebugMessage::_internal_has_debug_layer_state() const {
+  return payload_case() == kDebugLayerState;
+}
+inline void DebugMessage::set_has_debug_layer_state() {
+  _impl_._oneof_case_[0] = kDebugLayerState;
+}
+inline void DebugMessage::clear_debug_layer_state() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  if (payload_case() == kDebugLayerState) {
+    if (GetArena() == nullptr) {
+      delete _impl_.payload_.debug_layer_state_;
+    }
+    clear_has_payload();
+  }
+}
+inline ::dia::debug::DebugLayerState* DebugMessage::release_debug_layer_state() {
+  // @@protoc_insertion_point(field_release:dia.debug.DebugMessage.debug_layer_state)
+  if (payload_case() == kDebugLayerState) {
+    clear_has_payload();
+    auto* temp = _impl_.payload_.debug_layer_state_;
+    if (GetArena() != nullptr) {
+      temp = ::google::protobuf::internal::DuplicateIfNonNull(temp);
+    }
+    _impl_.payload_.debug_layer_state_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline const ::dia::debug::DebugLayerState& DebugMessage::_internal_debug_layer_state() const {
+  return payload_case() == kDebugLayerState ? *_impl_.payload_.debug_layer_state_ : reinterpret_cast<::dia::debug::DebugLayerState&>(::dia::debug::_DebugLayerState_default_instance_);
+}
+inline const ::dia::debug::DebugLayerState& DebugMessage::debug_layer_state() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:dia.debug.DebugMessage.debug_layer_state)
+  return _internal_debug_layer_state();
+}
+inline ::dia::debug::DebugLayerState* DebugMessage::unsafe_arena_release_debug_layer_state() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:dia.debug.DebugMessage.debug_layer_state)
+  if (payload_case() == kDebugLayerState) {
+    clear_has_payload();
+    auto* temp = _impl_.payload_.debug_layer_state_;
+    _impl_.payload_.debug_layer_state_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline void DebugMessage::unsafe_arena_set_allocated_debug_layer_state(::dia::debug::DebugLayerState* value) {
+  // We rely on the oneof clear method to free the earlier contents
+  // of this oneof. We can directly use the pointer we're given to
+  // set the new value.
+  clear_payload();
+  if (value) {
+    set_has_debug_layer_state();
+    _impl_.payload_.debug_layer_state_ = value;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:dia.debug.DebugMessage.debug_layer_state)
+}
+inline ::dia::debug::DebugLayerState* DebugMessage::_internal_mutable_debug_layer_state() {
+  if (payload_case() != kDebugLayerState) {
+    clear_payload();
+    set_has_debug_layer_state();
+    _impl_.payload_.debug_layer_state_ = CreateMaybeMessage<::dia::debug::DebugLayerState>(GetArena());
+  }
+  return _impl_.payload_.debug_layer_state_;
+}
+inline ::dia::debug::DebugLayerState* DebugMessage::mutable_debug_layer_state() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  ::dia::debug::DebugLayerState* _msg = _internal_mutable_debug_layer_state();
+  // @@protoc_insertion_point(field_mutable:dia.debug.DebugMessage.debug_layer_state)
   return _msg;
 }
 
@@ -7193,6 +7699,185 @@ inline ::google::protobuf::RepeatedPtrField<::dia::debug::LogEntry>*
 LogBatch::_internal_mutable_entries() {
   PROTOBUF_TSAN_READ(&_impl_._tsan_detect_race);
   return &_impl_.entries_;
+}
+
+// -------------------------------------------------------------------
+
+// DebugLayerEntry
+
+// string name = 1;
+inline void DebugLayerEntry::clear_name() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  _impl_.name_.ClearToEmpty();
+}
+inline const std::string& DebugLayerEntry::name() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:dia.debug.DebugLayerEntry.name)
+  return _internal_name();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void DebugLayerEntry::set_name(Arg_&& arg,
+                                                     Args_... args) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  _impl_.name_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:dia.debug.DebugLayerEntry.name)
+}
+inline std::string* DebugLayerEntry::mutable_name() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  std::string* _s = _internal_mutable_name();
+  // @@protoc_insertion_point(field_mutable:dia.debug.DebugLayerEntry.name)
+  return _s;
+}
+inline const std::string& DebugLayerEntry::_internal_name() const {
+  PROTOBUF_TSAN_READ(&_impl_._tsan_detect_race);
+  return _impl_.name_.Get();
+}
+inline void DebugLayerEntry::_internal_set_name(const std::string& value) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  _impl_.name_.Set(value, GetArena());
+}
+inline std::string* DebugLayerEntry::_internal_mutable_name() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  return _impl_.name_.Mutable( GetArena());
+}
+inline std::string* DebugLayerEntry::release_name() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  // @@protoc_insertion_point(field_release:dia.debug.DebugLayerEntry.name)
+  return _impl_.name_.Release();
+}
+inline void DebugLayerEntry::set_allocated_name(std::string* value) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  _impl_.name_.SetAllocated(value, GetArena());
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        if (_impl_.name_.IsDefault()) {
+          _impl_.name_.Set("", GetArena());
+        }
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:dia.debug.DebugLayerEntry.name)
+}
+
+// bool enabled = 2;
+inline void DebugLayerEntry::clear_enabled() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  _impl_.enabled_ = false;
+}
+inline bool DebugLayerEntry::enabled() const {
+  // @@protoc_insertion_point(field_get:dia.debug.DebugLayerEntry.enabled)
+  return _internal_enabled();
+}
+inline void DebugLayerEntry::set_enabled(bool value) {
+  _internal_set_enabled(value);
+  // @@protoc_insertion_point(field_set:dia.debug.DebugLayerEntry.enabled)
+}
+inline bool DebugLayerEntry::_internal_enabled() const {
+  PROTOBUF_TSAN_READ(&_impl_._tsan_detect_race);
+  return _impl_.enabled_;
+}
+inline void DebugLayerEntry::_internal_set_enabled(bool value) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  _impl_.enabled_ = value;
+}
+
+// int32 priority = 3;
+inline void DebugLayerEntry::clear_priority() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  _impl_.priority_ = 0;
+}
+inline ::int32_t DebugLayerEntry::priority() const {
+  // @@protoc_insertion_point(field_get:dia.debug.DebugLayerEntry.priority)
+  return _internal_priority();
+}
+inline void DebugLayerEntry::set_priority(::int32_t value) {
+  _internal_set_priority(value);
+  // @@protoc_insertion_point(field_set:dia.debug.DebugLayerEntry.priority)
+}
+inline ::int32_t DebugLayerEntry::_internal_priority() const {
+  PROTOBUF_TSAN_READ(&_impl_._tsan_detect_race);
+  return _impl_.priority_;
+}
+inline void DebugLayerEntry::_internal_set_priority(::int32_t value) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  _impl_.priority_ = value;
+}
+
+// -------------------------------------------------------------------
+
+// DebugLayerState
+
+// repeated .dia.debug.DebugLayerEntry layers = 1;
+inline int DebugLayerState::_internal_layers_size() const {
+  return _internal_layers().size();
+}
+inline int DebugLayerState::layers_size() const {
+  return _internal_layers_size();
+}
+inline void DebugLayerState::clear_layers() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  _impl_.layers_.Clear();
+}
+inline ::dia::debug::DebugLayerEntry* DebugLayerState::mutable_layers(int index)
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_mutable:dia.debug.DebugLayerState.layers)
+  return _internal_mutable_layers()->Mutable(index);
+}
+inline ::google::protobuf::RepeatedPtrField<::dia::debug::DebugLayerEntry>* DebugLayerState::mutable_layers()
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_mutable_list:dia.debug.DebugLayerState.layers)
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  return _internal_mutable_layers();
+}
+inline const ::dia::debug::DebugLayerEntry& DebugLayerState::layers(int index) const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:dia.debug.DebugLayerState.layers)
+  return _internal_layers().Get(index);
+}
+inline ::dia::debug::DebugLayerEntry* DebugLayerState::add_layers() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ::dia::debug::DebugLayerEntry* _add = _internal_mutable_layers()->Add();
+  // @@protoc_insertion_point(field_add:dia.debug.DebugLayerState.layers)
+  return _add;
+}
+inline const ::google::protobuf::RepeatedPtrField<::dia::debug::DebugLayerEntry>& DebugLayerState::layers() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_list:dia.debug.DebugLayerState.layers)
+  return _internal_layers();
+}
+inline const ::google::protobuf::RepeatedPtrField<::dia::debug::DebugLayerEntry>&
+DebugLayerState::_internal_layers() const {
+  PROTOBUF_TSAN_READ(&_impl_._tsan_detect_race);
+  return _impl_.layers_;
+}
+inline ::google::protobuf::RepeatedPtrField<::dia::debug::DebugLayerEntry>*
+DebugLayerState::_internal_mutable_layers() {
+  PROTOBUF_TSAN_READ(&_impl_._tsan_detect_race);
+  return &_impl_.layers_;
+}
+
+// uint32 dropped_count = 2;
+inline void DebugLayerState::clear_dropped_count() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  _impl_.dropped_count_ = 0u;
+}
+inline ::uint32_t DebugLayerState::dropped_count() const {
+  // @@protoc_insertion_point(field_get:dia.debug.DebugLayerState.dropped_count)
+  return _internal_dropped_count();
+}
+inline void DebugLayerState::set_dropped_count(::uint32_t value) {
+  _internal_set_dropped_count(value);
+  // @@protoc_insertion_point(field_set:dia.debug.DebugLayerState.dropped_count)
+}
+inline ::uint32_t DebugLayerState::_internal_dropped_count() const {
+  PROTOBUF_TSAN_READ(&_impl_._tsan_detect_race);
+  return _impl_.dropped_count_;
+}
+inline void DebugLayerState::_internal_set_dropped_count(::uint32_t value) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  _impl_.dropped_count_ = value;
 }
 
 #ifdef __GNUC__

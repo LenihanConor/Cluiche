@@ -13,6 +13,10 @@
 #include "DiaSFML/InputSource.h"
 #include "DiaSFML/TextureManager.h"
 
+#ifdef DIA_DEBUG
+#include "DiaSFML/SFMLImGuiBackend.h"
+#endif
+
 // Forward Declare
 namespace sf
 {
@@ -64,6 +68,10 @@ namespace Dia
 			virtual void SetMouseCursorVisible(bool visible) override;
 			virtual Window::SystemHandle GetSystemHandle() const override;
 
+		protected:
+			// Override to forward raw SFML events to the ImGui backend
+			virtual void OnRawSFMLEvent(const sf::Event& event) override;
+
 		private:
 			RenderWindow();
 			RenderWindow(const Window::IWindow::Settings& windowSetting, const Graphics::ICanvas::Settings& canvasSettings);
@@ -77,6 +85,11 @@ namespace Dia
 
 			// Texture management
 			TextureManager mTextureManager;		// Manages texture loading and caching
+
+#ifdef DIA_DEBUG
+			// ImGui backend -- initialised in constructor, registered with DiaImGuiManager
+			SFMLImGuiBackend mImGuiBackend;
+#endif
 		};
 	}
 }

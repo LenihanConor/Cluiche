@@ -9,6 +9,9 @@
 #include <DiaCore/Core/Assert.h>
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
 #include <DiaGraphics/Frame/FrameData.h>
+#include <DiaDebugServer/DebugServerModule.h>
+#include <DiaDebugProtocol/DiaDebugProtocol.h>
+#include <DiaProtobuf/ProtoJsonCodec.h>
 #include <cstdlib>  // std::atof
 
 namespace Dia
@@ -29,7 +32,8 @@ namespace Dia
             entry.debugger = debugger;
             entry.priority = priority;
             mLayers.Add(entry);
-            mSortDirty = true;
+            mSortDirty  = true;
+            mLayersDirty = true;
         }
 
         void DebugLayerManager::Unregister(Dia::Core::StringCRC layerName)
@@ -41,7 +45,8 @@ namespace Dia
             // Remove by index (swap-with-last pattern; order re-sorted on next Draw)
             unsigned int ui = static_cast<unsigned int>(index);
             mLayers.RemoveAt(ui);
-            mSortDirty = true;
+            mSortDirty  = true;
+            mLayersDirty = true;
         }
 
         // --------------------------------------------------------------------
@@ -54,6 +59,7 @@ namespace Dia
             if (index < 0)
                 return;
             mLayers[static_cast<unsigned int>(index)].debugger->SetEnabled(true);
+            mLayersDirty = true;
         }
 
         void DebugLayerManager::DisableLayer(Dia::Core::StringCRC layerName)
@@ -62,6 +68,7 @@ namespace Dia
             if (index < 0)
                 return;
             mLayers[static_cast<unsigned int>(index)].debugger->SetEnabled(false);
+            mLayersDirty = true;
         }
 
         bool DebugLayerManager::IsLayerEnabled(Dia::Core::StringCRC layerName) const
@@ -114,6 +121,14 @@ namespace Dia
                 IVisualDebugger* d = mLayers[i].debugger;
                 if (d->IsEnabled())
                     d->Draw(frameData);
+            }
+
+            // Cache dropped count — FrameData inherits from DebugFrameData
+            const uint32_t droppedNow = frameData.DroppedCount();
+            if (droppedNow != mLastDroppedCount)
+            {
+                mLastDroppedCount = droppedNow;
+                mLayersDirty = true;
             }
         }
 
@@ -193,17 +208,33 @@ namespace Dia
 
         // --------------------------------------------------------------------
         // BroadcastLayerState
-        // Stub for now — full JSON + DebugServerModule implementation deferred
-        // to feature debug-editor-panel (feature 10).
+        // Serialises the current layer list + dropped count to a DATA_UPDATE
+        // envelope and broadcasts to all subscribers of "debug.layer.state".
+        // Only broadcasts when mLayersDirty is true; clears the flag after send.
         // --------------------------------------------------------------------
 
         void DebugLayerManager::BroadcastLayerState(
             Dia::DebugServer::DebugServerModule* debugServer)
         {
             if (debugServer == nullptr) return;
+            if (!mLayersDirty) return;
 
-            // TODO (feature debug-editor-panel): serialize mLayers to Json::Value and call
-            // debugServer->NotifySubscribers(Dia::Core::StringCRC("debug.layer.state"), payload);
+            Json::Value payload;
+            payload["droppedCount"] = mLastDroppedCount;
+
+            Json::Value layers(Json::arrayValue);
+            for (unsigned int i = 0; i < mLayers.Size(); ++i)
+            {
+                Json::Value entry;
+                entry["name"]     = mLayers[i].debugger->GetLayerName().AsChar();
+                entry["enabled"]  = mLayers[i].debugger->IsEnabled();
+                entry["priority"] = mLayers[i].priority;
+                layers.append(entry);
+            }
+            payload["layers"] = layers;
+
+            debugServer->NotifySubscribers(Dia::Core::StringCRC("debug.layer.state"), payload);
+            mLayersDirty = false;
         }
 
         // --------------------------------------------------------------------

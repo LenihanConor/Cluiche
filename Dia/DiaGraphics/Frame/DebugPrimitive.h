@@ -20,7 +20,8 @@ namespace Dia
 			Rect2D     = 3,
 			Arc2D      = 4,
 			Ray2D      = 5,
-			Triangle2D = 6
+			Triangle2D = 6,
+			Text2D     = 7
 		};
 
 		struct DebugPrimitiveCircle2D
@@ -78,9 +79,22 @@ namespace Dia
 			RGBA            fillColour;   // alpha == 0 means no fill
 		};
 
+		// Text2D primitive — world-space text label
+		// fontSize is in pixels (SFML setCharacterSize units); 0 or negative = no draw.
+		// text[64] is null-terminated; strings longer than 63 chars are silently truncated.
+		// Top-left origin: text reads left-to-right from the labelled world position.
+		struct DebugPrimitiveText2D
+		{
+			Maths::Vector2D position;
+			char            text[64];   // null-terminated; truncated silently if source > 63 chars
+			float           fontSize;
+			RGBA            colour;
+		};
+
 		struct DebugPrimitive
 		{
 			DebugPrimitiveType type;
+			uint32_t           entityId = 0;  // picking seam — 0 = untagged (SD-DBG-007)
 
 			union
 			{
@@ -91,14 +105,16 @@ namespace Dia
 				DebugPrimitiveArc2D      arc2D;
 				DebugPrimitiveRay2D      ray2D;
 				DebugPrimitiveTriangle2D triangle2D;
+				DebugPrimitiveText2D     text2D;
 			};
 
 			// Union members with non-trivial types require explicit constructor/destructor
-			DebugPrimitive() : type(DebugPrimitiveType::Circle2D), circle2D() {}
+			DebugPrimitive() : type(DebugPrimitiveType::Circle2D), entityId(0), circle2D() {}
 			DebugPrimitive(const DebugPrimitive& rhs) { *this = rhs; }
 			DebugPrimitive& operator=(const DebugPrimitive& rhs)
 			{
-				type = rhs.type;
+				type     = rhs.type;
+				entityId = rhs.entityId;
 				switch (type)
 				{
 					case DebugPrimitiveType::Circle2D:   circle2D   = rhs.circle2D;   break;
@@ -108,12 +124,11 @@ namespace Dia
 					case DebugPrimitiveType::Arc2D:      arc2D      = rhs.arc2D;      break;
 					case DebugPrimitiveType::Ray2D:      ray2D      = rhs.ray2D;      break;
 					case DebugPrimitiveType::Triangle2D: triangle2D = rhs.triangle2D; break;
+					case DebugPrimitiveType::Text2D:     text2D     = rhs.text2D;     break;
 				}
 				return *this;
 			}
 		};
-
-		static constexpr unsigned int kDebugPrimitiveCapacity = 1024;
 
 	} // namespace Graphics
 } // namespace Dia

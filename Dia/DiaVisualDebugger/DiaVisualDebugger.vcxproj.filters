@@ -26,12 +26,18 @@
     <ClInclude Include="DebugLayerNames.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="DebugLayerPanelPlugin.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugLayerManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="DebugColourPalette.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugLayerPanelPlugin.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -19,6 +19,14 @@
     <ClCompile Include="RenderWindow.cpp" />
     <ClCompile Include="RenderWindowFactory.cpp" />
     <ClCompile Include="TextureManager.cpp" />
+    <ClCompile Include="SFMLImGuiBackend.cpp" />
+    <!-- ImGui core sources compiled into DiaSFML -->
+    <ClCompile Include="$(ProjectDir)..\..\External\imgui\imgui.cpp" />
+    <ClCompile Include="$(ProjectDir)..\..\External\imgui\imgui_draw.cpp" />
+    <ClCompile Include="$(ProjectDir)..\..\External\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="$(ProjectDir)..\..\External\imgui\imgui_tables.cpp" />
+    <ClCompile Include="$(ProjectDir)..\..\External\imgui\imgui_demo.cpp" />
+    <ClCompile Include="$(ProjectDir)..\..\External\imgui\backends\imgui_impl_opengl2.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Conversion.h" />
@@ -28,6 +36,7 @@
     <ClInclude Include="RenderWindow.h" />
     <ClInclude Include="RenderWindowFactory.h" />
     <ClInclude Include="TextureManager.h" />
+    <ClInclude Include="SFMLImGuiBackend.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
@@ -38,6 +47,10 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaMaths\DiaMaths.vcxproj">
       <Project>{2bba0ad3-d449-4c0e-8c84-acfa8bca456b}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaImGui\DiaImGui.vcxproj">
+      <Project>{F6A7B8C9-D0E1-2345-ABCD-567890ABCDE1}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -64,8 +77,8 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>C:\GitHub\Cluiche\External\SFML\Current-x64\include;./../;./;$(ProjectDir)../../DIA/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>DEBUG;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\GitHub\Cluiche\External\SFML\Current-x64\include;$(ProjectDir)../../External/imgui/;$(ProjectDir)../../External/imgui/backends/;./../;./;$(ProjectDir)../../DIA/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>DEBUG;WIN32;_DEBUG;DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
@@ -94,7 +107,7 @@
       <WarningLevel>Level3</WarningLevel>
       <DisableSpecificWarnings>4275</DisableSpecificWarnings>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <AdditionalIncludeDirectories>../../External/SFML/Current-x64/include;./../;./;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../External/SFML/Current-x64/include;$(ProjectDir)../../External/imgui/;$(ProjectDir)../../External/imgui/backends/;./../;./;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;SFML_STATIC;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>

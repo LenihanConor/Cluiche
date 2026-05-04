@@ -84,6 +84,10 @@ namespace Dia
 			SubscriptionManager& GetSubscriptionManager() { return mSubscriptionManager; }
 			CommandDispatcher& GetCommandDispatcher() { return mCommandDispatcher; }
 
+			// Send a data-update to all subscribers of the given topic.
+			// Uses MESSAGE_TYPE_DATA_UPDATE envelope; payload is arbitrary JSON.
+			void NotifySubscribers(const Dia::Core::StringCRC& dataType, const Json::Value& payload);
+
 			virtual const char* GetStateObjectType() const override { return "DebugServerModule"; }
 
 		protected:
@@ -106,7 +110,6 @@ namespace Dia
 			int GetProcessingUnitCount() const;
 
 			void BroadcastCoreMetrics();
-			void NotifySubscribers(const Dia::Core::StringCRC& dataType, const Json::Value& payload);
 
 			void RegisterProtocolCommands();
 			void SendProtoMessage(int connId, const dia::debug::DebugMessage& msg);

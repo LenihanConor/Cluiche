@@ -19,6 +19,7 @@ enum MessageType {
   MESSAGE_TYPE_PONG = 13;
   MESSAGE_TYPE_LOG = 14;
   MESSAGE_TYPE_LOG_BATCH = 15;
+  MESSAGE_TYPE_DEBUG_LAYER_STATE = 16;
 }
 
 message DebugMessage {
@@ -40,8 +41,10 @@ message DebugMessage {
     Pong pong = 22;
     LogEntry log = 23;
     LogBatch log_batch = 24;
+    DebugLayerState debug_layer_state = 25;
   }
 }
+
 
 message HandshakeRequest {
   int32 protocol_version = 1;
@@ -125,4 +128,15 @@ message LogEntry {
 
 message LogBatch {
   repeated LogEntry entries = 1;
+}
+
+message DebugLayerEntry {
+  string name     = 1;
+  bool   enabled  = 2;
+  int32  priority = 3;
+}
+
+message DebugLayerState {
+  repeated DebugLayerEntry layers        = 1;
+  uint32                   dropped_count = 2;
 }

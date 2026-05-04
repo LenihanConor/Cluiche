@@ -1,7 +1,7 @@
 # Plan: DiaVisualDebugger
 
 **Spec:** @docs/specs/systems/dia/diavisualdebugger.md  
-**Status:** In Progress  
+**Status:** Done  
 **Started:** 2026-05-04  
 **Last Updated:** 2026-05-04
 
@@ -44,8 +44,8 @@ Features 4–11 all require features 1–3. Features 4–11 have no dependencies
 | 6 | **softbody2d-visual-debugger-stack** | Done | sonnet | 20 tests passing. Cloth uses flat-to-2D index conversion. `PrimitiveCapture` helper used in tests to avoid MSVC stack issues. |
 | 7 | **ik2d-visual-debugger-stack** | Done | sonnet | 19 tests passing. 6 IKSolver accessors added. `DIA_ASSERT(mRootTransformSet)` in `GetWorldTransforms()`. |
 | 8 | **geometry2d-visual-debugger-stack** | Done | sonnet | 16 tests passing. 4 concrete spatial drawers (template .inl pattern). Added traversal accessors to SpatialGrid, Quadtree, BVH, HexGrid. |
-| 9 | **debug-console** | Not Started | opus | 12 tasks — new DiaImGui.vcxproj + DiaVisualDebuggerConsole.vcxproj; SFML imgui backend; ImGui overlay; external imgui source; requires #1–3 |
-| 10 | **debug-editor-panel** | Not Started | sonnet | 9 tasks — DebugLayerPanelPlugin + proto extension + CEF UI; requires #3 |
+| 9 | **debug-console** | Done | opus | 10 tests passing. DiaImGui + DiaVisualDebuggerConsole vcxprojs. SFMLImGuiBackend implements full SFML3 OpenGL2 rendering — no imgui-sfml lib needed. |
+| 10 | **debug-editor-panel** | Done | sonnet | 16 tests passing. BroadcastLayerState dirty-flag implemented. Proto extended. DebugLayerPanelPlugin + CEF UI. Fixed malformed GUID in DiaVisualDebuggerConsole.vcxproj. |
 | 11 | **animation2d-visual-debugger-stack** | Done | sonnet | 22 tests passing. 11 accessors added across AnimationEvaluator, PoseBlendStack, SpringChain. boneId field added to NodeState. |
 
 ### Model rationale

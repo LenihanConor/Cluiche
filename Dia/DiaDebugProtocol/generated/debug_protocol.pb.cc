@@ -235,6 +235,29 @@ struct ErrorDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ErrorDefaultTypeInternal _Error_default_instance_;
 
+inline constexpr DebugLayerEntry::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : name_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        enabled_{false},
+        priority_{0},
+        _cached_size_{0} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR DebugLayerEntry::DebugLayerEntry(::_pbi::ConstantInitialized)
+    : _impl_(::_pbi::ConstantInitialized()) {}
+struct DebugLayerEntryDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR DebugLayerEntryDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~DebugLayerEntryDefaultTypeInternal() {}
+  union {
+    DebugLayerEntry _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 DebugLayerEntryDefaultTypeInternal _DebugLayerEntry_default_instance_;
+
 inline constexpr SubscribeRequest::Impl_::Impl_(
     ::_pbi::ConstantInitialized) noexcept
       : _cached_size_{0},
@@ -297,6 +320,26 @@ struct EventDefaultTypeInternal {
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 EventDefaultTypeInternal _Event_default_instance_;
+
+inline constexpr DebugLayerState::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : layers_{},
+        dropped_count_{0u},
+        _cached_size_{0} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR DebugLayerState::DebugLayerState(::_pbi::ConstantInitialized)
+    : _impl_(::_pbi::ConstantInitialized()) {}
+struct DebugLayerStateDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR DebugLayerStateDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~DebugLayerStateDefaultTypeInternal() {}
+  union {
+    DebugLayerState _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 DebugLayerStateDefaultTypeInternal _DebugLayerState_default_instance_;
 
 inline constexpr DataUpdate::Impl_::Impl_(
     ::_pbi::ConstantInitialized) noexcept
@@ -415,7 +458,7 @@ PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 DebugMessageDefaultTypeInternal _DebugMessage_default_instance_;
 }  // namespace debug
 }  // namespace dia
-static ::_pb::Metadata file_level_metadata_debug_5fprotocol_2eproto[17];
+static ::_pb::Metadata file_level_metadata_debug_5fprotocol_2eproto[19];
 static const ::_pb::EnumDescriptor* file_level_enum_descriptors_debug_5fprotocol_2eproto[1];
 static constexpr const ::_pb::ServiceDescriptor**
     file_level_service_descriptors_debug_5fprotocol_2eproto = nullptr;
@@ -431,6 +474,7 @@ const ::uint32_t TableStruct_debug_5fprotocol_2eproto::offsets[] PROTOBUF_SECTIO
     ~0u,  // no sizeof(Split)
     PROTOBUF_FIELD_OFFSET(::dia::debug::DebugMessage, _impl_.type_),
     PROTOBUF_FIELD_OFFSET(::dia::debug::DebugMessage, _impl_.timestamp_),
+    ::_pbi::kInvalidFieldOffsetTag,
     ::_pbi::kInvalidFieldOffsetTag,
     ::_pbi::kInvalidFieldOffsetTag,
     ::_pbi::kInvalidFieldOffsetTag,
@@ -628,27 +672,50 @@ const ::uint32_t TableStruct_debug_5fprotocol_2eproto::offsets[] PROTOBUF_SECTIO
     ~0u,  // no _split_
     ~0u,  // no sizeof(Split)
     PROTOBUF_FIELD_OFFSET(::dia::debug::LogBatch, _impl_.entries_),
+    ~0u,  // no _has_bits_
+    PROTOBUF_FIELD_OFFSET(::dia::debug::DebugLayerEntry, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::dia::debug::DebugLayerEntry, _impl_.name_),
+    PROTOBUF_FIELD_OFFSET(::dia::debug::DebugLayerEntry, _impl_.enabled_),
+    PROTOBUF_FIELD_OFFSET(::dia::debug::DebugLayerEntry, _impl_.priority_),
+    ~0u,  // no _has_bits_
+    PROTOBUF_FIELD_OFFSET(::dia::debug::DebugLayerState, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::dia::debug::DebugLayerState, _impl_.layers_),
+    PROTOBUF_FIELD_OFFSET(::dia::debug::DebugLayerState, _impl_.dropped_count_),
 };
 
 static const ::_pbi::MigrationSchema
     schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
         {0, -1, -1, sizeof(::dia::debug::DebugMessage)},
-        {26, -1, -1, sizeof(::dia::debug::HandshakeRequest)},
-        {37, -1, -1, sizeof(::dia::debug::HandshakeResponse)},
-        {49, 59, -1, sizeof(::dia::debug::SubscribeRequest)},
-        {61, -1, -1, sizeof(::dia::debug::UnsubscribeRequest)},
-        {70, -1, -1, sizeof(::dia::debug::PUMetrics)},
-        {81, -1, -1, sizeof(::dia::debug::CoreMetrics)},
-        {95, 105, -1, sizeof(::dia::debug::DataUpdate)},
-        {107, 117, -1, sizeof(::dia::debug::Event)},
-        {119, 129, -1, sizeof(::dia::debug::CommandRequest)},
-        {131, 143, -1, sizeof(::dia::debug::CommandResponse)},
-        {147, -1, -1, sizeof(::dia::debug::Error)},
-        {157, -1, -1, sizeof(::dia::debug::GameInfo)},
-        {169, -1, -1, sizeof(::dia::debug::Ping)},
-        {178, -1, -1, sizeof(::dia::debug::Pong)},
-        {187, -1, -1, sizeof(::dia::debug::LogEntry)},
-        {198, -1, -1, sizeof(::dia::debug::LogBatch)},
+        {27, -1, -1, sizeof(::dia::debug::HandshakeRequest)},
+        {38, -1, -1, sizeof(::dia::debug::HandshakeResponse)},
+        {50, 60, -1, sizeof(::dia::debug::SubscribeRequest)},
+        {62, -1, -1, sizeof(::dia::debug::UnsubscribeRequest)},
+        {71, -1, -1, sizeof(::dia::debug::PUMetrics)},
+        {82, -1, -1, sizeof(::dia::debug::CoreMetrics)},
+        {96, 106, -1, sizeof(::dia::debug::DataUpdate)},
+        {108, 118, -1, sizeof(::dia::debug::Event)},
+        {120, 130, -1, sizeof(::dia::debug::CommandRequest)},
+        {132, 144, -1, sizeof(::dia::debug::CommandResponse)},
+        {148, -1, -1, sizeof(::dia::debug::Error)},
+        {158, -1, -1, sizeof(::dia::debug::GameInfo)},
+        {170, -1, -1, sizeof(::dia::debug::Ping)},
+        {179, -1, -1, sizeof(::dia::debug::Pong)},
+        {188, -1, -1, sizeof(::dia::debug::LogEntry)},
+        {199, -1, -1, sizeof(::dia::debug::LogBatch)},
+        {208, -1, -1, sizeof(::dia::debug::DebugLayerEntry)},
+        {219, -1, -1, sizeof(::dia::debug::DebugLayerState)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -669,10 +736,12 @@ static const ::_pb::Message* const file_default_instances[] = {
     &::dia::debug::_Pong_default_instance_._instance,
     &::dia::debug::_LogEntry_default_instance_._instance,
     &::dia::debug::_LogBatch_default_instance_._instance,
+    &::dia::debug::_DebugLayerEntry_default_instance_._instance,
+    &::dia::debug::_DebugLayerState_default_instance_._instance,
 };
 const char descriptor_table_protodef_debug_5fprotocol_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
     "\n\024debug_protocol.proto\022\tdia.debug\032\034googl"
-    "e/protobuf/struct.proto\"\374\005\n\014DebugMessage"
+    "e/protobuf/struct.proto\"\265\006\n\014DebugMessage"
     "\022$\n\004type\030\001 \001(\0162\026.dia.debug.MessageType\022\021"
     "\n\ttimestamp\030\002 \001(\004\0228\n\021handshake_request\030\n"
     " \001(\0132\033.dia.debug.HandshakeRequestH\000\022:\n\022h"
@@ -691,50 +760,56 @@ const char descriptor_table_protodef_debug_5fprotocol_2eproto[] PROTOBUF_SECTION
     "ing\030\025 \001(\0132\017.dia.debug.PingH\000\022\037\n\004pong\030\026 \001"
     "(\0132\017.dia.debug.PongH\000\022\"\n\003log\030\027 \001(\0132\023.dia"
     ".debug.LogEntryH\000\022(\n\tlog_batch\030\030 \001(\0132\023.d"
-    "ia.debug.LogBatchH\000B\t\n\007payload\"Y\n\020Handsh"
-    "akeRequest\022\030\n\020protocol_version\030\001 \001(\005\022\023\n\013"
-    "client_name\030\002 \001(\t\022\026\n\016client_version\030\003 \001("
-    "\t\"l\n\021HandshakeResponse\022\030\n\020protocol_versi"
-    "on\030\001 \001(\005\022\020\n\010accepted\030\002 \001(\010\022\023\n\013server_nam"
-    "e\030\003 \001(\t\022\026\n\016server_version\030\004 \001(\t\"N\n\020Subsc"
-    "ribeRequest\022\021\n\tdata_type\030\001 \001(\t\022\'\n\006filter"
-    "\030\002 \001(\0132\027.google.protobuf.Struct\"\'\n\022Unsub"
-    "scribeRequest\022\021\n\tdata_type\030\001 \001(\t\"=\n\tPUMe"
-    "trics\022\014\n\004name\030\001 \001(\t\022\013\n\003fps\030\002 \001(\002\022\025\n\rfram"
-    "e_time_ms\030\003 \001(\002\"\256\001\n\013CoreMetrics\022\013\n\003fps\030\001"
-    " \001(\002\022\025\n\rframe_time_ms\030\002 \001(\002\022\026\n\016memory_us"
-    "ed_mb\030\003 \001(\002\022\033\n\023memory_available_mb\030\004 \001(\002"
-    "\022\026\n\016uptime_seconds\030\005 \001(\002\022.\n\020processing_u"
-    "nits\030\006 \003(\0132\024.dia.debug.PUMetrics\"I\n\nData"
-    "Update\022\021\n\tdata_type\030\001 \001(\t\022(\n\007payload\030\002 \001"
-    "(\0132\027.google.protobuf.Struct\"E\n\005Event\022\022\n\n"
-    "event_type\030\001 \001(\t\022(\n\007payload\030\002 \001(\0132\027.goog"
-    "le.protobuf.Struct\"K\n\016CommandRequest\022\017\n\007"
-    "command\030\001 \001(\t\022(\n\007payload\030\002 \001(\0132\027.google."
-    "protobuf.Struct\"n\n\017CommandResponse\022\017\n\007co"
-    "mmand\030\001 \001(\t\022\017\n\007success\030\002 \001(\010\022\017\n\007message\030"
-    "\003 \001(\t\022(\n\007payload\030\004 \001(\0132\027.google.protobuf"
-    ".Struct\",\n\005Error\022\022\n\nerror_code\030\001 \001(\t\022\017\n\007"
-    "message\030\002 \001(\t\"\200\001\n\010GameInfo\022\014\n\004name\030\001 \001(\t"
-    "\022\r\n\005build\030\002 \001(\t\0222\n\025processing_unit_count"
-    "\030\003 \001(\005R\023processingUnitCount\022#\n\rcurrent_p"
-    "hase\030\004 \001(\tR\014currentPhase\"\022\n\004Ping\022\n\n\002ts\030\001"
-    " \001(\004\"\022\n\004Pong\022\n\n\002ts\030\001 \001(\004\";\n\010LogEntry\022\r\n\005"
-    "level\030\001 \001(\t\022\017\n\007channel\030\002 \001(\t\022\017\n\007message\030"
-    "\003 \001(\t\"0\n\010LogBatch\022$\n\007entries\030\001 \003(\0132\023.dia"
-    ".debug.LogEntry*\330\003\n\013MessageType\022\030\n\024MESSA"
-    "GE_TYPE_UNKNOWN\020\000\022\"\n\036MESSAGE_TYPE_HANDSH"
-    "AKE_REQUEST\020\001\022#\n\037MESSAGE_TYPE_HANDSHAKE_"
-    "RESPONSE\020\002\022\032\n\026MESSAGE_TYPE_SUBSCRIBE\020\003\022\034"
-    "\n\030MESSAGE_TYPE_UNSUBSCRIBE\020\004\022\035\n\031MESSAGE_"
-    "TYPE_CORE_METRICS\020\005\022\034\n\030MESSAGE_TYPE_DATA"
-    "_UPDATE\020\006\022\026\n\022MESSAGE_TYPE_EVENT\020\007\022 \n\034MES"
-    "SAGE_TYPE_COMMAND_REQUEST\020\010\022!\n\035MESSAGE_T"
-    "YPE_COMMAND_RESPONSE\020\t\022\026\n\022MESSAGE_TYPE_E"
-    "RROR\020\n\022\032\n\026MESSAGE_TYPE_GAME_INFO\020\013\022\025\n\021ME"
-    "SSAGE_TYPE_PING\020\014\022\025\n\021MESSAGE_TYPE_PONG\020\r"
-    "\022\024\n\020MESSAGE_TYPE_LOG\020\016\022\032\n\026MESSAGE_TYPE_L"
-    "OG_BATCH\020\017b\006proto3"
+    "ia.debug.LogBatchH\000\0227\n\021debug_layer_state"
+    "\030\031 \001(\0132\032.dia.debug.DebugLayerStateH\000B\t\n\007"
+    "payload\"Y\n\020HandshakeRequest\022\030\n\020protocol_"
+    "version\030\001 \001(\005\022\023\n\013client_name\030\002 \001(\t\022\026\n\016cl"
+    "ient_version\030\003 \001(\t\"l\n\021HandshakeResponse\022"
+    "\030\n\020protocol_version\030\001 \001(\005\022\020\n\010accepted\030\002 "
+    "\001(\010\022\023\n\013server_name\030\003 \001(\t\022\026\n\016server_versi"
+    "on\030\004 \001(\t\"N\n\020SubscribeRequest\022\021\n\tdata_typ"
+    "e\030\001 \001(\t\022\'\n\006filter\030\002 \001(\0132\027.google.protobu"
+    "f.Struct\"\'\n\022UnsubscribeRequest\022\021\n\tdata_t"
+    "ype\030\001 \001(\t\"=\n\tPUMetrics\022\014\n\004name\030\001 \001(\t\022\013\n\003"
+    "fps\030\002 \001(\002\022\025\n\rframe_time_ms\030\003 \001(\002\"\256\001\n\013Cor"
+    "eMetrics\022\013\n\003fps\030\001 \001(\002\022\025\n\rframe_time_ms\030\002"
+    " \001(\002\022\026\n\016memory_used_mb\030\003 \001(\002\022\033\n\023memory_a"
+    "vailable_mb\030\004 \001(\002\022\026\n\016uptime_seconds\030\005 \001("
+    "\002\022.\n\020processing_units\030\006 \003(\0132\024.dia.debug."
+    "PUMetrics\"I\n\nDataUpdate\022\021\n\tdata_type\030\001 \001"
+    "(\t\022(\n\007payload\030\002 \001(\0132\027.google.protobuf.St"
+    "ruct\"E\n\005Event\022\022\n\nevent_type\030\001 \001(\t\022(\n\007pay"
+    "load\030\002 \001(\0132\027.google.protobuf.Struct\"K\n\016C"
+    "ommandRequest\022\017\n\007command\030\001 \001(\t\022(\n\007payloa"
+    "d\030\002 \001(\0132\027.google.protobuf.Struct\"n\n\017Comm"
+    "andResponse\022\017\n\007command\030\001 \001(\t\022\017\n\007success\030"
+    "\002 \001(\010\022\017\n\007message\030\003 \001(\t\022(\n\007payload\030\004 \001(\0132"
+    "\027.google.protobuf.Struct\",\n\005Error\022\022\n\nerr"
+    "or_code\030\001 \001(\t\022\017\n\007message\030\002 \001(\t\"\200\001\n\010GameI"
+    "nfo\022\014\n\004name\030\001 \001(\t\022\r\n\005build\030\002 \001(\t\0222\n\025proc"
+    "essing_unit_count\030\003 \001(\005R\023processingUnitC"
+    "ount\022#\n\rcurrent_phase\030\004 \001(\tR\014currentPhas"
+    "e\"\022\n\004Ping\022\n\n\002ts\030\001 \001(\004\"\022\n\004Pong\022\n\n\002ts\030\001 \001("
+    "\004\";\n\010LogEntry\022\r\n\005level\030\001 \001(\t\022\017\n\007channel\030"
+    "\002 \001(\t\022\017\n\007message\030\003 \001(\t\"0\n\010LogBatch\022$\n\007en"
+    "tries\030\001 \003(\0132\023.dia.debug.LogEntry\"B\n\017Debu"
+    "gLayerEntry\022\014\n\004name\030\001 \001(\t\022\017\n\007enabled\030\002 \001"
+    "(\010\022\020\n\010priority\030\003 \001(\005\"T\n\017DebugLayerState\022"
+    "*\n\006layers\030\001 \003(\0132\032.dia.debug.DebugLayerEn"
+    "try\022\025\n\rdropped_count\030\002 \001(\r*\374\003\n\013MessageTy"
+    "pe\022\030\n\024MESSAGE_TYPE_UNKNOWN\020\000\022\"\n\036MESSAGE_"
+    "TYPE_HANDSHAKE_REQUEST\020\001\022#\n\037MESSAGE_TYPE"
+    "_HANDSHAKE_RESPONSE\020\002\022\032\n\026MESSAGE_TYPE_SU"
+    "BSCRIBE\020\003\022\034\n\030MESSAGE_TYPE_UNSUBSCRIBE\020\004\022"
+    "\035\n\031MESSAGE_TYPE_CORE_METRICS\020\005\022\034\n\030MESSAG"
+    "E_TYPE_DATA_UPDATE\020\006\022\026\n\022MESSAGE_TYPE_EVE"
+    "NT\020\007\022 \n\034MESSAGE_TYPE_COMMAND_REQUEST\020\010\022!"
+    "\n\035MESSAGE_TYPE_COMMAND_RESPONSE\020\t\022\026\n\022MES"
+    "SAGE_TYPE_ERROR\020\n\022\032\n\026MESSAGE_TYPE_GAME_I"
+    "NFO\020\013\022\025\n\021MESSAGE_TYPE_PING\020\014\022\025\n\021MESSAGE_"
+    "TYPE_PONG\020\r\022\024\n\020MESSAGE_TYPE_LOG\020\016\022\032\n\026MES"
+    "SAGE_TYPE_LOG_BATCH\020\017\022\"\n\036MESSAGE_TYPE_DE"
+    "BUG_LAYER_STATE\020\020b\006proto3"
 };
 static const ::_pbi::DescriptorTable* const descriptor_table_debug_5fprotocol_2eproto_deps[1] =
     {
@@ -744,13 +819,13 @@ static ::absl::once_flag descriptor_table_debug_5fprotocol_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_debug_5fprotocol_2eproto = {
     false,
     false,
-    2538,
+    2785,
     descriptor_table_protodef_debug_5fprotocol_2eproto,
     "debug_protocol.proto",
     &descriptor_table_debug_5fprotocol_2eproto_once,
     descriptor_table_debug_5fprotocol_2eproto_deps,
     1,
-    17,
+    19,
     schemas,
     file_default_instances,
     TableStruct_debug_5fprotocol_2eproto::offsets,
@@ -783,9 +858,9 @@ const ::google::protobuf::EnumDescriptor* MessageType_descriptor() {
   return file_level_enum_descriptors_debug_5fprotocol_2eproto[0];
 }
 PROTOBUF_CONSTINIT const uint32_t MessageType_internal_data_[] = {
-    1048576u, 0u, };
+    1114112u, 0u, };
 bool MessageType_IsValid(int value) {
-  return 0 <= value && value <= 15;
+  return 0 <= value && value <= 16;
 }
 // ===================================================================
 
@@ -808,6 +883,7 @@ class DebugMessage::_Internal {
   static const ::dia::debug::Pong& pong(const DebugMessage* msg);
   static const ::dia::debug::LogEntry& log(const DebugMessage* msg);
   static const ::dia::debug::LogBatch& log_batch(const DebugMessage* msg);
+  static const ::dia::debug::DebugLayerState& debug_layer_state(const DebugMessage* msg);
 };
 
 const ::dia::debug::HandshakeRequest& DebugMessage::_Internal::handshake_request(const DebugMessage* msg) {
@@ -854,6 +930,9 @@ const ::dia::debug::LogEntry& DebugMessage::_Internal::log(const DebugMessage* m
 }
 const ::dia::debug::LogBatch& DebugMessage::_Internal::log_batch(const DebugMessage* msg) {
   return *msg->_impl_.payload_.log_batch_;
+}
+const ::dia::debug::DebugLayerState& DebugMessage::_Internal::debug_layer_state(const DebugMessage* msg) {
+  return *msg->_impl_.payload_.debug_layer_state_;
 }
 void DebugMessage::set_allocated_handshake_request(::dia::debug::HandshakeRequest* handshake_request) {
   ::google::protobuf::Arena* message_arena = GetArena();
@@ -1050,6 +1129,19 @@ void DebugMessage::set_allocated_log_batch(::dia::debug::LogBatch* log_batch) {
   }
   // @@protoc_insertion_point(field_set_allocated:dia.debug.DebugMessage.log_batch)
 }
+void DebugMessage::set_allocated_debug_layer_state(::dia::debug::DebugLayerState* debug_layer_state) {
+  ::google::protobuf::Arena* message_arena = GetArena();
+  clear_payload();
+  if (debug_layer_state) {
+    ::google::protobuf::Arena* submessage_arena = debug_layer_state->GetArena();
+    if (message_arena != submessage_arena) {
+      debug_layer_state = ::google::protobuf::internal::GetOwnedMessage(message_arena, debug_layer_state, submessage_arena);
+    }
+    set_has_debug_layer_state();
+    _impl_.payload_.debug_layer_state_ = debug_layer_state;
+  }
+  // @@protoc_insertion_point(field_set_allocated:dia.debug.DebugMessage.debug_layer_state)
+}
 DebugMessage::DebugMessage(::google::protobuf::Arena* arena)
     : ::google::protobuf::Message(arena) {
   SharedCtor(arena);
@@ -1125,6 +1217,9 @@ DebugMessage::DebugMessage(
         break;
       case kLogBatch:
         _impl_.payload_.log_batch_ = CreateMaybeMessage<::dia::debug::LogBatch>(arena, *from._impl_.payload_.log_batch_);
+        break;
+      case kDebugLayerState:
+        _impl_.payload_.debug_layer_state_ = CreateMaybeMessage<::dia::debug::DebugLayerState>(arena, *from._impl_.payload_.debug_layer_state_);
         break;
   }
 
@@ -1253,6 +1348,12 @@ void DebugMessage::clear_payload() {
       }
       break;
     }
+    case kDebugLayerState: {
+      if (GetArena() == nullptr) {
+        delete _impl_.payload_.debug_layer_state_;
+      }
+      break;
+    }
     case PAYLOAD_NOT_SET: {
       break;
     }
@@ -1283,16 +1384,16 @@ const char* DebugMessage::_InternalParse(
 
 
 PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::_pbi::TcParseTable<1, 17, 15, 0, 2> DebugMessage::_table_ = {
+const ::_pbi::TcParseTable<1, 18, 16, 0, 2> DebugMessage::_table_ = {
   {
     0,  // no _has_bits_
     0, // no _extensions_
-    24, 8,  // max_field_number, fast_idx_mask
+    25, 8,  // max_field_number, fast_idx_mask
     offsetof(decltype(_table_), field_lookup_table),
-    4278190588,  // skipmap
+    4261413372,  // skipmap
     offsetof(decltype(_table_), field_entries),
-    17,  // num_field_entries
-    15,  // num_aux_entries
+    18,  // num_field_entries
+    16,  // num_aux_entries
     offsetof(decltype(_table_), aux_entries),
     &_DebugMessage_default_instance_._instance,
     ::_pbi::TcParser::GenericFallback,  // fallback
@@ -1357,6 +1458,9 @@ const ::_pbi::TcParseTable<1, 17, 15, 0, 2> DebugMessage::_table_ = {
     // .dia.debug.LogBatch log_batch = 24;
     {PROTOBUF_FIELD_OFFSET(DebugMessage, _impl_.payload_.log_batch_), _Internal::kOneofCaseOffset + 0, 14,
     (0 | ::_fl::kFcOneof | ::_fl::kMessage | ::_fl::kTvTable)},
+    // .dia.debug.DebugLayerState debug_layer_state = 25;
+    {PROTOBUF_FIELD_OFFSET(DebugMessage, _impl_.payload_.debug_layer_state_), _Internal::kOneofCaseOffset + 0, 15,
+    (0 | ::_fl::kFcOneof | ::_fl::kMessage | ::_fl::kTvTable)},
   }}, {{
     {::_pbi::TcParser::GetTable<::dia::debug::HandshakeRequest>()},
     {::_pbi::TcParser::GetTable<::dia::debug::HandshakeResponse>()},
@@ -1373,6 +1477,7 @@ const ::_pbi::TcParseTable<1, 17, 15, 0, 2> DebugMessage::_table_ = {
     {::_pbi::TcParser::GetTable<::dia::debug::Pong>()},
     {::_pbi::TcParser::GetTable<::dia::debug::LogEntry>()},
     {::_pbi::TcParser::GetTable<::dia::debug::LogBatch>()},
+    {::_pbi::TcParser::GetTable<::dia::debug::DebugLayerState>()},
   }}, {{
   }},
 };
@@ -1487,6 +1592,12 @@ const ::_pbi::TcParseTable<1, 17, 15, 0, 2> DebugMessage::_table_ = {
       target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
           24, _Internal::log_batch(this),
           _Internal::log_batch(this).GetCachedSize(), target, stream);
+      break;
+    }
+    case kDebugLayerState: {
+      target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+          25, _Internal::debug_layer_state(this),
+          _Internal::debug_layer_state(this).GetCachedSize(), target, stream);
       break;
     }
     default:
@@ -1612,6 +1723,12 @@ const ::_pbi::TcParseTable<1, 17, 15, 0, 2> DebugMessage::_table_ = {
           2 + ::google::protobuf::internal::WireFormatLite::MessageSize(*_impl_.payload_.log_batch_);
       break;
     }
+    // .dia.debug.DebugLayerState debug_layer_state = 25;
+    case kDebugLayerState: {
+      total_size +=
+          2 + ::google::protobuf::internal::WireFormatLite::MessageSize(*_impl_.payload_.debug_layer_state_);
+      break;
+    }
     case PAYLOAD_NOT_SET: {
       break;
     }
@@ -1715,6 +1832,11 @@ void DebugMessage::MergeImpl(::google::protobuf::Message& to_msg, const ::google
     case kLogBatch: {
       _this->_internal_mutable_log_batch()->::dia::debug::LogBatch::MergeFrom(
           from._internal_log_batch());
+      break;
+    }
+    case kDebugLayerState: {
+      _this->_internal_mutable_debug_layer_state()->::dia::debug::DebugLayerState::MergeFrom(
+          from._internal_debug_layer_state());
       break;
     }
     case PAYLOAD_NOT_SET: {
@@ -5699,6 +5821,471 @@ void LogBatch::InternalSwap(LogBatch* PROTOBUF_RESTRICT other) {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_debug_5fprotocol_2eproto_getter, &descriptor_table_debug_5fprotocol_2eproto_once,
       file_level_metadata_debug_5fprotocol_2eproto[16]);
+}
+// ===================================================================
+
+class DebugLayerEntry::_Internal {
+ public:
+};
+
+DebugLayerEntry::DebugLayerEntry(::google::protobuf::Arena* arena)
+    : ::google::protobuf::Message(arena) {
+  SharedCtor(arena);
+  // @@protoc_insertion_point(arena_constructor:dia.debug.DebugLayerEntry)
+}
+inline PROTOBUF_NDEBUG_INLINE DebugLayerEntry::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from)
+      : name_(arena, from.name_),
+        _cached_size_{0} {}
+
+DebugLayerEntry::DebugLayerEntry(
+    ::google::protobuf::Arena* arena,
+    const DebugLayerEntry& from)
+    : ::google::protobuf::Message(arena) {
+  DebugLayerEntry* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_);
+  ::memcpy(reinterpret_cast<char *>(&_impl_) +
+               offsetof(Impl_, enabled_),
+           reinterpret_cast<const char *>(&from._impl_) +
+               offsetof(Impl_, enabled_),
+           offsetof(Impl_, priority_) -
+               offsetof(Impl_, enabled_) +
+               sizeof(Impl_::priority_));
+
+  // @@protoc_insertion_point(copy_constructor:dia.debug.DebugLayerEntry)
+}
+inline PROTOBUF_NDEBUG_INLINE DebugLayerEntry::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* arena)
+      : name_(arena),
+        _cached_size_{0} {}
+
+inline void DebugLayerEntry::SharedCtor(::_pb::Arena* arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  ::memset(reinterpret_cast<char *>(&_impl_) +
+               offsetof(Impl_, enabled_),
+           0,
+           offsetof(Impl_, priority_) -
+               offsetof(Impl_, enabled_) +
+               sizeof(Impl_::priority_));
+}
+DebugLayerEntry::~DebugLayerEntry() {
+  // @@protoc_insertion_point(destructor:dia.debug.DebugLayerEntry)
+  _internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
+  SharedDtor();
+}
+inline void DebugLayerEntry::SharedDtor() {
+  ABSL_DCHECK(GetArena() == nullptr);
+  _impl_.name_.Destroy();
+  _impl_.~Impl_();
+}
+
+PROTOBUF_NOINLINE void DebugLayerEntry::Clear() {
+// @@protoc_insertion_point(message_clear_start:dia.debug.DebugLayerEntry)
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.name_.ClearToEmpty();
+  ::memset(&_impl_.enabled_, 0, static_cast<::size_t>(
+      reinterpret_cast<char*>(&_impl_.priority_) -
+      reinterpret_cast<char*>(&_impl_.enabled_)) + sizeof(_impl_.priority_));
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
+}
+
+const char* DebugLayerEntry::_InternalParse(
+    const char* ptr, ::_pbi::ParseContext* ctx) {
+  ptr = ::_pbi::TcParser::ParseLoop(this, ptr, ctx, &_table_.header);
+  return ptr;
+}
+
+
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<2, 3, 0, 38, 2> DebugLayerEntry::_table_ = {
+  {
+    0,  // no _has_bits_
+    0, // no _extensions_
+    3, 24,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967288,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    3,  // num_field_entries
+    0,  // num_aux_entries
+    offsetof(decltype(_table_), field_names),  // no aux_entries
+    &_DebugLayerEntry_default_instance_._instance,
+    ::_pbi::TcParser::GenericFallback,  // fallback
+  }, {{
+    {::_pbi::TcParser::MiniParse, {}},
+    // string name = 1;
+    {::_pbi::TcParser::FastUS1,
+     {10, 63, 0, PROTOBUF_FIELD_OFFSET(DebugLayerEntry, _impl_.name_)}},
+    // bool enabled = 2;
+    {::_pbi::TcParser::SingularVarintNoZag1<bool, offsetof(DebugLayerEntry, _impl_.enabled_), 63>(),
+     {16, 63, 0, PROTOBUF_FIELD_OFFSET(DebugLayerEntry, _impl_.enabled_)}},
+    // int32 priority = 3;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(DebugLayerEntry, _impl_.priority_), 63>(),
+     {24, 63, 0, PROTOBUF_FIELD_OFFSET(DebugLayerEntry, _impl_.priority_)}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // string name = 1;
+    {PROTOBUF_FIELD_OFFSET(DebugLayerEntry, _impl_.name_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // bool enabled = 2;
+    {PROTOBUF_FIELD_OFFSET(DebugLayerEntry, _impl_.enabled_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kBool)},
+    // int32 priority = 3;
+    {PROTOBUF_FIELD_OFFSET(DebugLayerEntry, _impl_.priority_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kInt32)},
+  }},
+  // no aux_entries
+  {{
+    "\31\4\0\0\0\0\0\0"
+    "dia.debug.DebugLayerEntry"
+    "name"
+  }},
+};
+
+::uint8_t* DebugLayerEntry::_InternalSerialize(
+    ::uint8_t* target,
+    ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:dia.debug.DebugLayerEntry)
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
+
+  // string name = 1;
+  if (!this->_internal_name().empty()) {
+    const std::string& _s = this->_internal_name();
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+        _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "dia.debug.DebugLayerEntry.name");
+    target = stream->WriteStringMaybeAliased(1, _s, target);
+  }
+
+  // bool enabled = 2;
+  if (this->_internal_enabled() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteBoolToArray(
+        2, this->_internal_enabled(), target);
+  }
+
+  // int32 priority = 3;
+  if (this->_internal_priority() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::
+        WriteInt32ToArrayWithField<3>(
+            stream, this->_internal_priority(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:dia.debug.DebugLayerEntry)
+  return target;
+}
+
+::size_t DebugLayerEntry::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:dia.debug.DebugLayerEntry)
+  ::size_t total_size = 0;
+
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // string name = 1;
+  if (!this->_internal_name().empty()) {
+    total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                    this->_internal_name());
+  }
+
+  // bool enabled = 2;
+  if (this->_internal_enabled() != 0) {
+    total_size += 2;
+  }
+
+  // int32 priority = 3;
+  if (this->_internal_priority() != 0) {
+    total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(
+        this->_internal_priority());
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::google::protobuf::Message::ClassData DebugLayerEntry::_class_data_ = {
+    DebugLayerEntry::MergeImpl,
+    nullptr,  // OnDemandRegisterArenaDtor
+};
+const ::google::protobuf::Message::ClassData* DebugLayerEntry::GetClassData() const {
+  return &_class_data_;
+}
+
+void DebugLayerEntry::MergeImpl(::google::protobuf::Message& to_msg, const ::google::protobuf::Message& from_msg) {
+  auto* const _this = static_cast<DebugLayerEntry*>(&to_msg);
+  auto& from = static_cast<const DebugLayerEntry&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:dia.debug.DebugLayerEntry)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (!from._internal_name().empty()) {
+    _this->_internal_set_name(from._internal_name());
+  }
+  if (from._internal_enabled() != 0) {
+    _this->_internal_set_enabled(from._internal_enabled());
+  }
+  if (from._internal_priority() != 0) {
+    _this->_internal_set_priority(from._internal_priority());
+  }
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void DebugLayerEntry::CopyFrom(const DebugLayerEntry& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:dia.debug.DebugLayerEntry)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+PROTOBUF_NOINLINE bool DebugLayerEntry::IsInitialized() const {
+  return true;
+}
+
+::_pbi::CachedSize* DebugLayerEntry::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
+void DebugLayerEntry::InternalSwap(DebugLayerEntry* PROTOBUF_RESTRICT other) {
+  using std::swap;
+  auto* arena = GetArena();
+  ABSL_DCHECK_EQ(arena, other->GetArena());
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.name_, &other->_impl_.name_, arena);
+  ::google::protobuf::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(DebugLayerEntry, _impl_.priority_)
+      + sizeof(DebugLayerEntry::_impl_.priority_)
+      - PROTOBUF_FIELD_OFFSET(DebugLayerEntry, _impl_.enabled_)>(
+          reinterpret_cast<char*>(&_impl_.enabled_),
+          reinterpret_cast<char*>(&other->_impl_.enabled_));
+}
+
+::google::protobuf::Metadata DebugLayerEntry::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_debug_5fprotocol_2eproto_getter, &descriptor_table_debug_5fprotocol_2eproto_once,
+      file_level_metadata_debug_5fprotocol_2eproto[17]);
+}
+// ===================================================================
+
+class DebugLayerState::_Internal {
+ public:
+};
+
+DebugLayerState::DebugLayerState(::google::protobuf::Arena* arena)
+    : ::google::protobuf::Message(arena) {
+  SharedCtor(arena);
+  // @@protoc_insertion_point(arena_constructor:dia.debug.DebugLayerState)
+}
+inline PROTOBUF_NDEBUG_INLINE DebugLayerState::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from)
+      : layers_{visibility, arena, from.layers_},
+        _cached_size_{0} {}
+
+DebugLayerState::DebugLayerState(
+    ::google::protobuf::Arena* arena,
+    const DebugLayerState& from)
+    : ::google::protobuf::Message(arena) {
+  DebugLayerState* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_);
+  _impl_.dropped_count_ = from._impl_.dropped_count_;
+
+  // @@protoc_insertion_point(copy_constructor:dia.debug.DebugLayerState)
+}
+inline PROTOBUF_NDEBUG_INLINE DebugLayerState::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* arena)
+      : layers_{visibility, arena},
+        _cached_size_{0} {}
+
+inline void DebugLayerState::SharedCtor(::_pb::Arena* arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  _impl_.dropped_count_ = {};
+}
+DebugLayerState::~DebugLayerState() {
+  // @@protoc_insertion_point(destructor:dia.debug.DebugLayerState)
+  _internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
+  SharedDtor();
+}
+inline void DebugLayerState::SharedDtor() {
+  ABSL_DCHECK(GetArena() == nullptr);
+  _impl_.~Impl_();
+}
+
+PROTOBUF_NOINLINE void DebugLayerState::Clear() {
+// @@protoc_insertion_point(message_clear_start:dia.debug.DebugLayerState)
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.layers_.Clear();
+  _impl_.dropped_count_ = 0u;
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
+}
+
+const char* DebugLayerState::_InternalParse(
+    const char* ptr, ::_pbi::ParseContext* ctx) {
+  ptr = ::_pbi::TcParser::ParseLoop(this, ptr, ctx, &_table_.header);
+  return ptr;
+}
+
+
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<1, 2, 1, 0, 2> DebugLayerState::_table_ = {
+  {
+    0,  // no _has_bits_
+    0, // no _extensions_
+    2, 8,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967292,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    2,  // num_field_entries
+    1,  // num_aux_entries
+    offsetof(decltype(_table_), aux_entries),
+    &_DebugLayerState_default_instance_._instance,
+    ::_pbi::TcParser::GenericFallback,  // fallback
+  }, {{
+    // uint32 dropped_count = 2;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(DebugLayerState, _impl_.dropped_count_), 63>(),
+     {16, 63, 0, PROTOBUF_FIELD_OFFSET(DebugLayerState, _impl_.dropped_count_)}},
+    // repeated .dia.debug.DebugLayerEntry layers = 1;
+    {::_pbi::TcParser::FastMtR1,
+     {10, 63, 0, PROTOBUF_FIELD_OFFSET(DebugLayerState, _impl_.layers_)}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // repeated .dia.debug.DebugLayerEntry layers = 1;
+    {PROTOBUF_FIELD_OFFSET(DebugLayerState, _impl_.layers_), 0, 0,
+    (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
+    // uint32 dropped_count = 2;
+    {PROTOBUF_FIELD_OFFSET(DebugLayerState, _impl_.dropped_count_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUInt32)},
+  }}, {{
+    {::_pbi::TcParser::GetTable<::dia::debug::DebugLayerEntry>()},
+  }}, {{
+  }},
+};
+
+::uint8_t* DebugLayerState::_InternalSerialize(
+    ::uint8_t* target,
+    ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:dia.debug.DebugLayerState)
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
+
+  // repeated .dia.debug.DebugLayerEntry layers = 1;
+  for (unsigned i = 0,
+      n = static_cast<unsigned>(this->_internal_layers_size()); i < n; i++) {
+    const auto& repfield = this->_internal_layers().Get(i);
+    target = ::google::protobuf::internal::WireFormatLite::
+        InternalWriteMessage(1, repfield, repfield.GetCachedSize(), target, stream);
+  }
+
+  // uint32 dropped_count = 2;
+  if (this->_internal_dropped_count() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(
+        2, this->_internal_dropped_count(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:dia.debug.DebugLayerState)
+  return target;
+}
+
+::size_t DebugLayerState::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:dia.debug.DebugLayerState)
+  ::size_t total_size = 0;
+
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // repeated .dia.debug.DebugLayerEntry layers = 1;
+  total_size += 1UL * this->_internal_layers_size();
+  for (const auto& msg : this->_internal_layers()) {
+    total_size +=
+      ::google::protobuf::internal::WireFormatLite::MessageSize(msg);
+  }
+  // uint32 dropped_count = 2;
+  if (this->_internal_dropped_count() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(
+        this->_internal_dropped_count());
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::google::protobuf::Message::ClassData DebugLayerState::_class_data_ = {
+    DebugLayerState::MergeImpl,
+    nullptr,  // OnDemandRegisterArenaDtor
+};
+const ::google::protobuf::Message::ClassData* DebugLayerState::GetClassData() const {
+  return &_class_data_;
+}
+
+void DebugLayerState::MergeImpl(::google::protobuf::Message& to_msg, const ::google::protobuf::Message& from_msg) {
+  auto* const _this = static_cast<DebugLayerState*>(&to_msg);
+  auto& from = static_cast<const DebugLayerState&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:dia.debug.DebugLayerState)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  _this->_internal_mutable_layers()->MergeFrom(
+      from._internal_layers());
+  if (from._internal_dropped_count() != 0) {
+    _this->_internal_set_dropped_count(from._internal_dropped_count());
+  }
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void DebugLayerState::CopyFrom(const DebugLayerState& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:dia.debug.DebugLayerState)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+PROTOBUF_NOINLINE bool DebugLayerState::IsInitialized() const {
+  return true;
+}
+
+::_pbi::CachedSize* DebugLayerState::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
+void DebugLayerState::InternalSwap(DebugLayerState* PROTOBUF_RESTRICT other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  _impl_.layers_.InternalSwap(&other->_impl_.layers_);
+        swap(_impl_.dropped_count_, other->_impl_.dropped_count_);
+}
+
+::google::protobuf::Metadata DebugLayerState::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_debug_5fprotocol_2eproto_getter, &descriptor_table_debug_5fprotocol_2eproto_once,
+      file_level_metadata_debug_5fprotocol_2eproto[18]);
 }
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace debug

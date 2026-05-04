@@ -297,4 +297,6 @@ Test setup: an `AnimationEvaluator` with a 3-bone skeleton, one `AnimClipPlayer`
 
 ## Status
 
-`Approved`
+`Done`
+
+**Plan:** @docs/specs/features/dia/diavisualdebugger/animation2d-visual-debugger-stack.plan.md

@@ -16,6 +16,10 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/OpenGL.hpp>
 
+#ifdef DIA_DEBUG
+#include <DiaImGui/DiaImGuiManager.h>
+#endif
+
 #pragma warning( disable : 4800 )
 
 namespace Dia
@@ -78,12 +82,23 @@ namespace Dia
 			mUIShader->setUniform("backBufferTex", mBackBuffer->getTexture());
 
 			InputSource::SetWindowContext(mWindowContext);
+
+#ifdef DIA_DEBUG
+			// Initialise ImGui backend and register with global manager
+			mImGuiBackend.SetWindow(mWindowContext);
+			mImGuiBackend.Init();
+			Dia::ImGui::SetBackend(&mImGuiBackend);
+#endif
 		}
 
 		//-------------------------------------------------------------------------------------
 		RenderWindow::~RenderWindow()
 		{
-			DIA_ASSERT(mWindowContext, "Window is NULL");	
+#ifdef DIA_DEBUG
+			mImGuiBackend.Shutdown();
+#endif
+
+			DIA_ASSERT(mWindowContext, "Window is NULL");
 			DIA_DELETE(mWindowContext);
 
 			DIA_ASSERT(mBackBuffer, "mBackBuffer is NULL");
@@ -94,6 +109,14 @@ namespace Dia
 
 			DIA_ASSERT(mUIOverlayTexture, "mUIOverlayTexture is NULL");
 			DIA_DELETE(mUIOverlayTexture);
+		}
+
+		//-------------------------------------------------------------------------------------
+		void RenderWindow::OnRawSFMLEvent(const sf::Event& event)
+		{
+#ifdef DIA_DEBUG
+			mImGuiBackend.ProcessEvent(event);
+#endif
 		}
 
 		//-------------------------------------------------------------------------------------
@@ -158,6 +181,11 @@ namespace Dia
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 			mWindowContext->clear();
+
+#ifdef DIA_DEBUG
+			// Begin ImGui frame -- console and other ImGui consumers submit widgets after this
+			Dia::ImGui::NewFrame(1.0f / 60.0f);  // TODO: use actual delta time
+#endif
 		}
 
 		//-------------------------------------------------------------------------------------
@@ -206,6 +234,11 @@ namespace Dia
 				mWindowContext->popGLStates();
 
 				mBackBuffer->clear();
+
+#ifdef DIA_DEBUG
+				// Finalize ImGui rendering before presenting the frame
+				Dia::ImGui::Render();
+#endif
 
 				// end the current frame (internally swaps the front and back buffers)
 				mWindowContext->display();

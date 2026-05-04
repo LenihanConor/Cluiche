@@ -103,7 +103,8 @@ namespace Dia
 
             // Broadcast current layer state to DiaDebugServer subscribers.
             // No-op if debugServer is nullptr (DiaDebugServer is an optional dependency).
-            // Full implementation deferred to feature debug-editor-panel (feature 10).
+            // Only broadcasts when mLayersDirty is true (set on Register/Enable/Disable/Unregister).
+            // Clears mLayersDirty after broadcast.
             void BroadcastLayerState(Dia::DebugServer::DebugServerModule* debugServer);
 
             // ----------------------------------------------------------------
@@ -129,6 +130,10 @@ namespace Dia
             float    mDebugScale       = 1.0f;
             uint32_t mSelectedEntityId = 0;
             bool     mSortDirty        = false;
+
+            // Broadcast state tracking (debug-editor-panel)
+            uint32_t mLastDroppedCount = 0;  // cached from FrameData at end of Draw()
+            bool     mLayersDirty      = false;  // set on Register/Unregister/Enable/Disable
 
             // Insertion sort — stable, O(N²) acceptable for kMaxLayers = 64
             void SortByPriority();

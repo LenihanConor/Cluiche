@@ -59,6 +59,11 @@ namespace Dia
 
 			virtual void Poll(Dia::Input::EventData& outStream)override;
 
+		protected:
+			// Called for each SFML event during Poll(). Override to forward events
+			// to subsystems (e.g. ImGui). Default implementation is a no-op.
+			virtual void OnRawSFMLEvent(const sf::Event& /*event*/) {}
+
 		private:
 			bool IsListeningForEvent(Dia::Input::Event::EType eventType)const;
 

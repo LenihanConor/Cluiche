@@ -53,6 +53,9 @@ namespace Dia
 				// Poll and handle all available SFML events
 				while (const std::optional sfEvent = mWindowContext->pollEvent())
 				{
+					// Forward raw event to subsystems (e.g. ImGui backend)
+					OnRawSFMLEvent(*sfEvent);
+
 					Dia::Input::Event diaEvent;
 
 					// Convert SFML event to Dia event

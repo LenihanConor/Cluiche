@@ -106,6 +106,9 @@
     <Filter Include="Animation2D">
       <UniqueIdentifier>{AN2D0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaVisualDebugger">
+      <UniqueIdentifier>{DVDBG001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -825,6 +828,19 @@
     </ClCompile>
     <ClCompile Include="Animation2D\IntegrationTests.cpp">
       <Filter>Animation2D</Filter>
+    </ClCompile>
+    <!-- DiaVisualDebugger -->
+    <ClCompile Include="..\..\..\Dia\DiaVisualDebugger\DebugLayerPanelPlugin.cpp">
+      <Filter>DiaVisualDebugger</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\TestDebugLayerManager.cpp">
+      <Filter>DiaVisualDebugger</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\TestDebugLayerPanelPlugin.cpp">
+      <Filter>DiaVisualDebugger</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\TestDiaVisualDebuggerConsole.cpp">
+      <Filter>DiaVisualDebugger</Filter>
     </ClCompile>
     <!-- GoogleTest -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">

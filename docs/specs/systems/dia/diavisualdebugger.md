@@ -239,8 +239,8 @@ struct DebugPrimitiveText2D {
 
 | Feature | Description | Spec | Status |
 |---------|-------------|------|--------|
-| debug-budget | `DroppedCount()` / `IsOverCapacity()` on `DebugFrameData` + `entityId` picking seam on `DebugPrimitive` — extends DiaGraphics | [debug-budget.md](../../features/dia/diavisualdebugger/debug-budget.md) | Approved |
-| debug-text-primitive | `Text2D` variant in `DebugPrimitive` + `RequestDrawText()` + DiaSFML visitor `DrawText2D()` — extends DiaGraphics + DiaSFML | [debug-text-primitive.md](../../features/dia/diavisualdebugger/debug-text-primitive.md) | Approved |
+| debug-budget | `DroppedCount()` / `IsOverCapacity()` on `DebugFrameData` + `entityId` picking seam on `DebugPrimitive` — extends DiaGraphics | [debug-budget.md](../../features/dia/diavisualdebugger/debug-budget.md) | Done |
+| debug-text-primitive | `Text2D` variant in `DebugPrimitive` + `RequestDrawText()` + DiaSFML visitor `DrawText2D()` — extends DiaGraphics + DiaSFML | [debug-text-primitive.md](../../features/dia/diavisualdebugger/debug-text-primitive.md) | Done |
 | debug-layer-manager | `DebugLayerManager`, `IVisualDebugger`, `DebugColourPalette`, `DebugLayerNames` — new DiaVisualDebugger module | [debug-layer-manager.md](../../features/dia/diavisualdebugger/debug-layer-manager.md) | Approved |
 | rig2d-visual-debugger-stack | Decompose `DiaRig2DVisualDebugger` into stack of focused draw classes | [rig2d-visual-debugger-stack.md](../../features/dia/diavisualdebugger/rig2d-visual-debugger-stack.md) | Approved |
 | rigidbody2d-visual-debugger-stack | Decompose `DiaRigidBody2DVisualDebugger` into stack of focused draw classes | [rigidbody2d-visual-debugger-stack.md](../../features/dia/diavisualdebugger/rigidbody2d-visual-debugger-stack.md) | Approved |
@@ -249,7 +249,7 @@ struct DebugPrimitiveText2D {
 | geometry2d-visual-debugger-stack | New `DiaGeometry2DVisualDebugger` as stack of focused draw classes | [geometry2d-visual-debugger-stack.md](../../features/dia/diavisualdebugger/geometry2d-visual-debugger-stack.md) | Approved |
 | debug-console | `DiaVisualDebuggerConsole` — ImGui in-game debug console (layer toggles, metrics, DiaAPI input, log tail) | [debug-console.md](../../features/dia/diavisualdebugger/debug-console.md) | Approved |
 | debug-editor-panel | CluicheEditor `DebugLayerPanel` plugin — checkbox tree, overflow badge, sub-layer toggles | [debug-editor-panel.md](../../features/dia/diavisualdebugger/debug-editor-panel.md) | Approved |
-| animation2d-visual-debugger-stack | New `DiaAnimation2DVisualDebugger` stack — clip cursors, blend weights, spring state | [animation2d-visual-debugger-stack.md](../../features/dia/diavisualdebugger/animation2d-visual-debugger-stack.md) | Approved |
+| animation2d-visual-debugger-stack | New `DiaAnimation2DVisualDebugger` stack — clip cursors, blend weights, spring state | [animation2d-visual-debugger-stack.md](../../features/dia/diavisualdebugger/animation2d-visual-debugger-stack.md) | Done |
 | fixed-draw-layer | `FixedDrawRegistry`, `IObjectRenderer`, `IFixedPrimitiveBuffer` — render-thread-owned primitive buffers for fixed-topology objects; default renderers for `SpatialGrid`, `Quadtree`, `BVH`, `HexGrid` | [fixed-draw-layer.md](../../features/dia/diavisualdebugger/fixed-draw-layer.md) | Approved |
 
 **Natural build order:** debug-budget → debug-text-primitive → debug-layer-manager → rig2d-visual-debugger-stack → rigidbody2d-visual-debugger-stack → softbody2d-visual-debugger-stack → ik2d-visual-debugger-stack → geometry2d-visual-debugger-stack → debug-console → debug-editor-panel → animation2d-visual-debugger-stack (when unblocked) → fixed-draw-layer (depends on debug-layer-manager)

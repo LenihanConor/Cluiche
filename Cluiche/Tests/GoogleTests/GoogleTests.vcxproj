@@ -60,8 +60,8 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)../../../Dia/;$(ProjectDir)../../../External/googletest/googletest/include/;$(ProjectDir)../../../External/jsoncpp-master/include/;$(ProjectDir)../../../External/pybind11/include/;$(ProjectDir)../../../External/Python311/include/;$(ProjectDir)../../../External/websocketpp;$(ProjectDir)../../../External/asio/asio/include;$(ProjectDir)../../../External/protobuf/Current-x64/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>DEBUG;WIN64;_CONSOLE;ASIO_STANDALONE;_WEBSOCKETPP_CPP11_STL_;_WEBSOCKETPP_CPP11_THREAD_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)../../../Dia/;$(ProjectDir)../../../External/googletest/googletest/include/;$(ProjectDir)../../../External/jsoncpp-master/include/;$(ProjectDir)../../../External/pybind11/include/;$(ProjectDir)../../../External/Python311/include/;$(ProjectDir)../../../External/websocketpp;$(ProjectDir)../../../External/asio/asio/include;$(ProjectDir)../../../External/protobuf/Current-x64/include;$(ProjectDir)../../../External/imgui/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>DEBUG;WIN64;_CONSOLE;DIA_DEBUG;ASIO_STANDALONE;_WEBSOCKETPP_CPP11_STL_;_WEBSOCKETPP_CPP11_THREAD_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
@@ -71,7 +71,7 @@
       <DisableSpecificWarnings>4267;4244;4127</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGeometry2D.lib;$(LibOutDir)DiaGeometry2DVisualDebugger.lib;$(LibOutDir)DiaRigidBody2D.lib;$(LibOutDir)DiaRigidBody2DVisualDebugger.lib;$(LibOutDir)DiaSoftBody2D.lib;$(LibOutDir)DiaSoftBody2DVisualDebugger.lib;$(LibOutDir)DiaRig2D.lib;$(LibOutDir)DiaRig2DVisualDebugger.lib;$(LibOutDir)DiaIK2D.lib;$(LibOutDir)DiaIK2DVisualDebugger.lib;$(LibOutDir)DiaAnimation2D.lib;$(LibOutDir)DiaAnimation2DVisualDebugger.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaPython.lib;$(LibOutDir)DiaAPI.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaApplication.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaEditor.lib;$(LibOutDir)DiaLogger.lib;$(LibOutDir)DiaStateMachine.lib;$(LibOutDir)DiaSerializer.lib;$(LibOutDir)DiaApplicationEditor.lib;$(LibOutDir)DiaVisualDebugger.lib;$(ProjectDir)../../../External/Python311/libs/python311.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGeometry2D.lib;$(LibOutDir)DiaGeometry2DVisualDebugger.lib;$(LibOutDir)DiaRigidBody2D.lib;$(LibOutDir)DiaRigidBody2DVisualDebugger.lib;$(LibOutDir)DiaSoftBody2D.lib;$(LibOutDir)DiaSoftBody2DVisualDebugger.lib;$(LibOutDir)DiaRig2D.lib;$(LibOutDir)DiaRig2DVisualDebugger.lib;$(LibOutDir)DiaIK2D.lib;$(LibOutDir)DiaIK2DVisualDebugger.lib;$(LibOutDir)DiaAnimation2D.lib;$(LibOutDir)DiaAnimation2DVisualDebugger.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaPython.lib;$(LibOutDir)DiaAPI.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaApplication.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaEditor.lib;$(LibOutDir)DiaLogger.lib;$(LibOutDir)DiaStateMachine.lib;$(LibOutDir)DiaSerializer.lib;$(LibOutDir)DiaApplicationEditor.lib;$(LibOutDir)DiaVisualDebugger.lib;$(LibOutDir)DiaImGui.lib;$(LibOutDir)DiaVisualDebuggerConsole.lib;$(ProjectDir)../../../External/Python311/libs/python311.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)../../../External/googletest/lib/x64/Debug/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -96,7 +96,7 @@
       <DisableSpecificWarnings>4267;4244;4127</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGeometry2D.lib;$(LibOutDir)DiaGeometry2DVisualDebugger.lib;$(LibOutDir)DiaRigidBody2D.lib;$(LibOutDir)DiaRigidBody2DVisualDebugger.lib;$(LibOutDir)DiaSoftBody2D.lib;$(LibOutDir)DiaSoftBody2DVisualDebugger.lib;$(LibOutDir)DiaRig2D.lib;$(LibOutDir)DiaRig2DVisualDebugger.lib;$(LibOutDir)DiaIK2D.lib;$(LibOutDir)DiaIK2DVisualDebugger.lib;$(LibOutDir)DiaAnimation2D.lib;$(LibOutDir)DiaAnimation2DVisualDebugger.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaPython.lib;$(LibOutDir)DiaAPI.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaApplication.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaEditor.lib;$(LibOutDir)DiaLogger.lib;$(LibOutDir)DiaStateMachine.lib;$(LibOutDir)DiaSerializer.lib;$(LibOutDir)DiaApplicationEditor.lib;$(LibOutDir)DiaVisualDebugger.lib;$(ProjectDir)../../../External/Python311/libs/python311.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGeometry2D.lib;$(LibOutDir)DiaGeometry2DVisualDebugger.lib;$(LibOutDir)DiaRigidBody2D.lib;$(LibOutDir)DiaRigidBody2DVisualDebugger.lib;$(LibOutDir)DiaSoftBody2D.lib;$(LibOutDir)DiaSoftBody2DVisualDebugger.lib;$(LibOutDir)DiaRig2D.lib;$(LibOutDir)DiaRig2DVisualDebugger.lib;$(LibOutDir)DiaIK2D.lib;$(LibOutDir)DiaIK2DVisualDebugger.lib;$(LibOutDir)DiaAnimation2D.lib;$(LibOutDir)DiaAnimation2DVisualDebugger.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaPython.lib;$(LibOutDir)DiaAPI.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaApplication.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaEditor.lib;$(LibOutDir)DiaLogger.lib;$(LibOutDir)DiaStateMachine.lib;$(LibOutDir)DiaSerializer.lib;$(LibOutDir)DiaApplicationEditor.lib;$(LibOutDir)DiaVisualDebugger.lib;$(LibOutDir)DiaImGui.lib;$(LibOutDir)DiaVisualDebuggerConsole.lib;$(ProjectDir)../../../External/Python311/libs/python311.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)../../../External/googletest/lib/x64/Release/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -257,6 +257,16 @@
     <ClCompile Include="Editor\TestGameConnectionLifecycle.cpp" />
     <ClCompile Include="Editor\TestEditorToolbarItem.cpp" />
     <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\PluginBrowserEditorPlugin.cpp" />
+    <ClCompile Include="..\..\..\Dia\DiaVisualDebugger\DebugLayerPanelPlugin.cpp">
+      <PreprocessorDefinitions>DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <!-- DiaVisualDebugger -->
+    <ClCompile Include="DiaVisualDebugger\TestDebugLayerManager.cpp">
+      <PreprocessorDefinitions>DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\TestDebugLayerPanelPlugin.cpp">
+      <PreprocessorDefinitions>DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
     <!-- Geometry2D -->
     <ClCompile Include="Geometry2D\TestGeometry2DVisualDebuggerStack.cpp" />
     <ClCompile Include="Geometry2D\TestSpatialGridSerializer.cpp" />
@@ -365,6 +375,21 @@
     <ClCompile Include="Animation2D\TestUtilitiesTests.cpp" />
     <ClCompile Include="Animation2D\IntegrationTests.cpp" />
     <ClCompile Include="Animation2D\TestAnimation2DVisualDebuggerStack.cpp" />
+    <!-- DiaVisualDebuggerConsole + DiaImGui -->
+    <ClCompile Include="DiaVisualDebugger\TestDiaVisualDebuggerConsole.cpp" />
+    <!-- ImGui sources (required by DiaVisualDebuggerConsole.lib) -->
+    <ClCompile Include="$(ProjectDir)../../../External/imgui/imgui.cpp">
+      <AdditionalIncludeDirectories>$(ProjectDir)../../../External/imgui/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)../../../External/imgui/imgui_draw.cpp">
+      <AdditionalIncludeDirectories>$(ProjectDir)../../../External/imgui/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)../../../External/imgui/imgui_tables.cpp">
+      <AdditionalIncludeDirectories>$(ProjectDir)../../../External/imgui/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)../../../External/imgui/imgui_widgets.cpp">
+      <AdditionalIncludeDirectories>$(ProjectDir)../../../External/imgui/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
     <!-- Google Test Source Files - Compiled directly into project -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">
       <AdditionalIncludeDirectories>$(ProjectDir)../../../External/googletest/googletest/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -447,6 +472,14 @@
     </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaGeometry2DVisualDebugger\DiaGeometry2DVisualDebugger.vcxproj">
       <Project>{D4E5F6A7-B8C9-0123-DEF0-234567890123}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaImGui\DiaImGui.vcxproj">
+      <Project>{F6A7B8C9-D0E1-2345-ABCD-567890ABCDE1}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaVisualDebuggerConsole\DiaVisualDebuggerConsole.vcxproj">
+      <Project>{07B8C9D0-E1F2-3456-BCDE-678901ABCDE2}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>
