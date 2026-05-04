@@ -55,8 +55,8 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | ~~DiaRig2D — Exhaustive tests~~ | Done 2026-05-02: 38 new tests (golden, invariant, stress, boundary, determinism, integration) in `Cluiche/Tests/GoogleTests/Rig2D/` |
 | DiaApplication — Feature 6: Compile-Time Dependency Validation | Deferred by user ("let's come back and talk about 6") |
 | ~~DiaVisualDebugger — implement fixed-draw-layer (feature 12)~~ | Done 2026-05-04. `FixedDrawRegistry`, `IObjectRenderer`, `TypedObjectRenderer<T>`, `IFixedPrimitiveBuffer`, `FixedPrimitiveBuffer`; default renderers Spatial/Quadtree/BVH/Hex; 24 tests |
-| DiaVisualDebugger — migrate Rig2D rest pose to fixed-draw-layer | Create `DiaRig2DVisualDebugger/RigRestPoseRenderer` (TypedObjectRenderer<Skeleton>). Keep `RestPoseDrawer` for dynamic callers. |
-| DiaVisualDebugger — migrate Geometry2D spatial structures to fixed-draw-layer | Create `DiaGeometry2DVisualDebugger/Renderers/` (SpatialGridRenderer, QuadtreeRenderer, BVHRenderer, HexGridRenderer). Keep existing Drawers for dynamic callers. |
+| ~~DiaVisualDebugger — migrate Rig2D rest pose to fixed-draw-layer~~ | Done 2026-05-04. `RigRestPoseRenderer` in `DiaRig2DVisualDebugger/`; 4 tests. RestPoseDrawer kept for dynamic callers. |
+| ~~DiaVisualDebugger — migrate Geometry2D spatial structures to fixed-draw-layer~~ | Done 2026-05-04. Re-export headers in `DiaGeometry2DVisualDebugger/Renderers/`; canonical renderers in `DiaVisualDebugger/Renderers/`. |
 | HotReloadManager — `CollectDependentModules()` / `UpdateDependencyReferences()` | Placeholder stubs; needs real implementation |
 | `Dia::Core::Blackboard` — general-purpose key-value store | Identified during DiaStateMachine research; useful for AI, animation, gameplay. Needs `/spec-feature` under DiaCore. |
 | DiaStateMachine — `MarkValid()` exposed on definitions | Added to support serializer load path; could be misused to bypass `Validate()`. Consider making package-internal if access control becomes a concern. |
