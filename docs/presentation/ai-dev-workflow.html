@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI-Powered Game Engine Development — Supercharging Your Workflow</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #21262d;
+    --accent: #58a6ff;
+    --accent2: #3fb950;
+    --accent3: #f78166;
+    --accent4: #d2a8ff;
+    --accent5: #ffa657;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --border: #30363d;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* ─── Slide container ─── */
+  #deck {
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 80px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+  .slide.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  /* ─── Nav ─── */
+  #nav {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    z-index: 100;
+    background: rgba(22,27,34,0.85);
+    backdrop-filter: blur(8px);
+    padding: 10px 20px;
+    border-radius: 32px;
+    border: 1px solid var(--border);
+  }
+  #nav button {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 7px 18px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+  }
+  #nav button:hover { background: var(--accent); color: #000; }
+  #counter { color: var(--muted); font-size: 13px; min-width: 60px; text-align: center; }
+
+  /* ─── Progress bar ─── */
+  #progress {
+    position: fixed;
+    top: 0; left: 0;
+    height: 3px;
+    background: var(--accent);
+    transition: width 0.4s ease;
+    z-index: 200;
+  }
+
+  /* ─── Typography ─── */
+  h1 { font-size: clamp(2rem, 4vw, 3.2rem); font-weight: 700; line-height: 1.15; }
+  h2 { font-size: clamp(1.5rem, 2.5vw, 2.2rem); font-weight: 600; margin-bottom: 28px; }
+  h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 10px; color: var(--accent); }
+  p  { font-size: 1.05rem; line-height: 1.7; color: var(--muted); max-width: 800px; }
+
+  .tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: var(--accent);
+    color: #000;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-bottom: 16px;
+  }
+  .tag.green  { background: var(--accent2); }
+  .tag.red    { background: var(--accent3); }
+  .tag.purple { background: var(--accent4); color: #000; }
+  .tag.orange { background: var(--accent5); color: #000; }
+
+  /* ─── Layout helpers ─── */
+  .center { text-align: center; }
+  .left   { align-items: flex-start; width: 100%; max-width: 1000px; }
+  .cols   { display: grid; gap: 24px; width: 100%; max-width: 1100px; }
+  .cols-2 { grid-template-columns: 1fr 1fr; }
+  .cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+  /* ─── Cards ─── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 28px;
+  }
+  .card p { font-size: 0.95rem; margin-top: 6px; }
+  .card.accent-blue  { border-top: 3px solid var(--accent); }
+  .card.accent-green { border-top: 3px solid var(--accent2); }
+  .card.accent-red   { border-top: 3px solid var(--accent3); }
+  .card.accent-purple{ border-top: 3px solid var(--accent4); }
+  .card.accent-orange{ border-top: 3px solid var(--accent5); }
+
+  /* ─── Lists ─── */
+  ul.bullets { list-style: none; margin-top: 12px; }
+  ul.bullets li {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.95rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    color: var(--muted);
+  }
+  ul.bullets li:last-child { border-bottom: none; }
+  ul.bullets li::before { content: "▸"; color: var(--accent); flex-shrink: 0; margin-top: 1px; }
+  ul.bullets li strong { color: var(--text); }
+
+  /* ─── Code blocks ─── */
+  pre {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    overflow-x: auto;
+    color: #c9d1d9;
+    margin-top: 12px;
+  }
+  .kw   { color: #ff7b72; }
+  .str  { color: #a5d6ff; }
+  .cmt  { color: #8b949e; font-style: italic; }
+  .fn   { color: #d2a8ff; }
+  .num  { color: #79c0ff; }
+
+  /* ─── Pipeline diagram ─── */
+  .pipeline {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    width: 100%;
+    max-width: 960px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 12px;
+  }
+  .pipe-step {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 18px;
+    text-align: center;
+    font-size: 0.85rem;
+    font-weight: 600;
+    min-width: 110px;
+  }
+  .pipe-step small { display: block; font-weight: 400; color: var(--muted); font-size: 0.72rem; margin-top: 3px; }
+  .pipe-arrow { color: var(--muted); font-size: 1.2rem; padding: 0 6px; }
+
+  /* ─── Hierarchy tree ─── */
+  .tree {
+    font-family: 'Cascadia Code', monospace;
+    font-size: 0.88rem;
+    line-height: 2;
+    color: var(--muted);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 24px;
+    margin-top: 12px;
+  }
+  .tree .hl { color: var(--accent); }
+  .tree .hl2 { color: var(--accent2); }
+  .tree .hl3 { color: var(--accent4); }
+  .tree .hl4 { color: var(--accent5); }
+
+  /* ─── Stats ─── */
+  .stat-row { display: flex; gap: 20px; margin-top: 20px; flex-wrap: wrap; }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 24px;
+    text-align: center;
+    min-width: 130px;
+  }
+  .stat .num { font-size: 2rem; font-weight: 700; color: var(--accent); display: block; }
+  .stat .lbl { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+
+  /* ─── Quote ─── */
+  blockquote {
+    border-left: 3px solid var(--accent);
+    padding: 14px 24px;
+    background: var(--surface);
+    border-radius: 0 8px 8px 0;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: var(--text);
+    max-width: 820px;
+    margin-top: 16px;
+  }
+
+  /* ─── Hero gradient ─── */
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 70% 60% at 50% 40%, rgba(88,166,255,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* ─── Slide-specific overrides ─── */
+  #slide-1 h1 { text-align: center; max-width: 780px; }
+  #slide-1 .sub { font-size: 1.1rem; color: var(--muted); margin-top: 18px; text-align: center; }
+  #slide-1 .by  { font-size: 0.9rem; color: var(--muted); margin-top: 32px; text-align: center; }
+
+  .divider {
+    width: 60px; height: 3px;
+    background: var(--accent);
+    border-radius: 2px;
+    margin: 16px 0 24px;
+  }
+
+  /* keyboard hint */
+  #hint {
+    position: fixed;
+    bottom: 80px;
+    right: 32px;
+    font-size: 0.7rem;
+    color: var(--muted);
+    opacity: 0.5;
+  }
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+
+<div id="deck">
+
+  <!-- ─────────────── SLIDE 1: Title ─────────────── -->
+  <div class="slide active center" id="slide-1">
+    <div class="hero-bg"></div>
+    <div class="tag">2026 Dev Workflow</div>
+    <h1>Supercharging Game Engine Development<br>with AI</h1>
+    <p class="sub">A spec-driven, AI-assisted workflow for writing, testing,<br>and shipping production-quality C++ game engine code — fast.</p>
+    <p class="by">Conor Lenihan · Cluiche / Dia Engine</p>
+  </div>
+
+  <!-- ─────────────── SLIDE 2: The Problem ─────────────── -->
+  <div class="slide center" id="slide-2">
+    <div class="tag red">The Problem</div>
+    <h2>Game engine development is expensive</h2>
+    <div class="cols cols-3" style="margin-top:8px;">
+      <div class="card accent-red">
+        <h3>Complexity</h3>
+        <p>Physics, rendering, animation, IK, serialization — each system has dozens of interdependent edge cases.</p>
+      </div>
+      <div class="card accent-red">
+        <h3>Consistency</h3>
+        <p>Without enforced standards, architecture drifts. Naming, patterns, and module contracts diverge over time.</p>
+      </div>
+      <div class="card accent-red">
+        <h3>Velocity</h3>
+        <p>Writing tests, boilerplate, and documentation for every feature is slow — often skipped under pressure.</p>
+      </div>
+    </div>
+    <blockquote style="margin-top:28px;">
+      The bottleneck isn't ideas. It's the cost of translating ideas into tested, documented, shippable code.
+    </blockquote>
+  </div>
+
+  <!-- ─────────────── SLIDE 3: The Solution ─────────────── -->
+  <div class="slide center" id="slide-3">
+    <div class="tag green">The Solution</div>
+    <h2>Treat AI as a senior engineer on the team</h2>
+    <div class="cols cols-2" style="margin-top:8px; max-width:900px;">
+      <div class="card accent-blue">
+        <h3>Spec-driven design</h3>
+        <p>Every feature starts with a structured spec — problem, solution, acceptance criteria, traceability — before a line of code is written.</p>
+      </div>
+      <div class="card accent-green">
+        <h3>AI-assisted implementation</h3>
+        <p>Claude reads the spec, the parent contracts, and the codebase — then generates code that respects every binding decision.</p>
+      </div>
+      <div class="card accent-purple">
+        <h3>Research first</h3>
+        <p>Ambiguous problems get a structured research funnel: explore → ideate → evaluate → choose — producing a defensible decision record.</p>
+      </div>
+      <div class="card accent-orange">
+        <h3>Test generation</h3>
+        <p>Comprehensive tests (unit, stress, golden, invariant, determinism, integration) generated automatically from the public API.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 4: The Spec Hierarchy ─────────────── -->
+  <div class="slide left" id="slide-4">
+    <div class="tag purple">Architecture</div>
+    <h2>A 4-level spec hierarchy — everything traces up</h2>
+    <p>Every piece of work lives at one of four levels. Each level inherits binding decisions from its parent. Nothing ships without a complete lineage.</p>
+    <div class="tree" style="margin-top:20px;">
+      <span class="hl">Platform</span>   — Cluiche (platform-wide constraints, tech decisions)<br>
+      &nbsp;&nbsp;└─ <span class="hl2">Application</span> — Dia Engine (engine-wide contracts)<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─ <span class="hl3">System</span>     — DiaVisualDebugger, DiaIK2D, DiaAnimation2D …<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─ <span class="hl4">Feature</span>  — fabrik-solver, bone-lines-drawer, fixed-draw-layer …
+    </div>
+    <div class="cols cols-3" style="margin-top:24px;">
+      <div class="card">
+        <h3>Traceability table</h3>
+        <p>Every feature spec has a table linking it back through System → Application → Platform.</p>
+      </div>
+      <div class="card">
+        <h3>Binding decisions</h3>
+        <p>Platform decisions (e.g. "no heap alloc in hot path") are enforced in every child spec's compliance section.</p>
+      </div>
+      <div class="card">
+        <h3>Status gates</h3>
+        <p>Draft → Approved → In Progress → Done. A system is only Done when all child feature specs are Approved.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 5: Spec Structure ─────────────── -->
+  <div class="slide left" id="slide-5">
+    <div class="tag">Spec Anatomy</div>
+    <h2>What a feature spec contains</h2>
+    <div class="cols cols-2" style="margin-top:8px;">
+      <div>
+        <ul class="bullets">
+          <li><strong>Problem Statement</strong> — why this feature exists</li>
+          <li><strong>Solution Overview</strong> — numbered algorithm / design</li>
+          <li><strong>Acceptance Criteria</strong> — testable pass/fail conditions</li>
+          <li><strong>Binding Decisions Compliance</strong> — table showing every Platform/Application constraint is respected</li>
+          <li><strong>AI Review Questions</strong> — generated risks, edge cases, integration gaps</li>
+          <li><strong>Traceability</strong> — links up to System → App → Platform</li>
+          <li><strong>Status</strong> — and link to its plan file</li>
+        </ul>
+      </div>
+      <pre><span class="cmt"># Feature Spec: FABRIK Solver</span>
+
+<span class="cmt">## Traceability</span>
+Platform  → Cluiche
+App       → Dia
+System    → DiaIK2D
+Feature   → <span class="hl">fabrik-solver</span>
+Status:     `Approved`
+
+<span class="cmt">## Acceptance Criteria</span>
+1. SolveFABRIK() returns true always
+2. Converges within maxIterations
+3. Root bone position is pinned
+4. Joint limits clamped per iteration
+5. No heap alloc during solve</pre>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 6: Mandatory 5 Steps ─────────────── -->
+  <div class="slide center" id="slide-6">
+    <div class="tag orange">Spec Process</div>
+    <h2>5 mandatory steps before Approval</h2>
+    <div class="pipeline" style="flex-direction:column; align-items:flex-start; gap:0; max-width:700px; margin-top:8px;">
+      <div style="display:flex; align-items:center; gap:16px; padding: 14px 0; border-bottom:1px solid var(--border); width:100%;">
+        <span style="color:var(--accent); font-size:1.4rem; font-weight:700; min-width:32px;">1</span>
+        <div><strong>Interview</strong> — AI asks structured questions before writing anything. No spec from thin air.</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:16px; padding: 14px 0; border-bottom:1px solid var(--border); width:100%;">
+        <span style="color:var(--accent2); font-size:1.4rem; font-weight:700; min-width:32px;">2</span>
+        <div><strong>Draft</strong> — Full spec body: summary, goals, solution overview, tasks, traceability.</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:16px; padding: 14px 0; border-bottom:1px solid var(--border); width:100%;">
+        <span style="color:var(--accent4); font-size:1.4rem; font-weight:700; min-width:32px;">3</span>
+        <div><strong>Binding Decisions</strong> — Compliance table against every parent constraint. Never optional.</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:16px; padding: 14px 0; border-bottom:1px solid var(--border); width:100%;">
+        <span style="color:var(--accent5); font-size:1.4rem; font-weight:700; min-width:32px;">4</span>
+        <div><strong>AI Review Questions</strong> — Generated risks, gaps, and edge cases — all answered. Never optional.</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:16px; padding: 14px 0; width:100%;">
+        <span style="color:var(--accent3); font-size:1.4rem; font-weight:700; min-width:32px;">5</span>
+        <div><strong>Approval Gate</strong> — Explicit confirmation. Only now can implementation start.</div>
+      </div>
+    </div>
+    <p style="margin-top:20px; font-size:0.9rem;">Hard rule: if the user says "quickly" or "just get it done" — treat it as a red flag and do all 5 steps anyway.</p>
+  </div>
+
+  <!-- ─────────────── SLIDE 7: Research Funnel ─────────────── -->
+  <div class="slide center" id="slide-7">
+    <div class="tag blue">Research</div>
+    <h2>Ambiguity gets a structured research funnel</h2>
+    <p>When the answer isn't obvious, run the full funnel — producing a permanent, queryable decision record in <code>docs/research/</code>.</p>
+    <div class="pipeline" style="margin-top:28px; justify-content:center;">
+      <div class="pipe-step" style="border-top:3px solid var(--accent);">
+        Explore
+        <small>What's the problem space? What constraints exist?</small>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step" style="border-top:3px solid var(--accent2);">
+        Ideate
+        <small>Generate N candidates without filtering</small>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step" style="border-top:3px solid var(--accent4);">
+        Evaluate
+        <small>Score each candidate on defined criteria</small>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step" style="border-top:3px solid var(--accent5);">
+        Choose
+        <small>Pick the winner, document why</small>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step" style="border-top:3px solid var(--accent3);">
+        Summary
+        <small>One-liner answer + full reasoning archived</small>
+      </div>
+    </div>
+    <div class="card" style="margin-top:28px; max-width:760px; text-align:left;">
+      <h3>Example — DiaEnv portable build setup</h3>
+      <p>Problem: fresh clone → unbuildable. 9 candidates generated (deps.json, winget manifest, MSBuild RestoreExternals, git submodules, …). deps.json scored highest as foundation. Full DiaEnv system chosen — clone → build works → AI engagement continues. All reasoning archived at <code>docs/research/portabl_build_setup/</code>.</p>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 8: Implementation Workflow ─────────────── -->
+  <div class="slide left" id="slide-8">
+    <div class="tag green">Implementation</div>
+    <h2>From approved spec to merged code</h2>
+    <div class="cols cols-2" style="margin-top:8px;">
+      <div>
+        <ul class="bullets">
+          <li><strong>Spec exists + Approved</strong> — implementation gate; no approved spec = no code</li>
+          <li><strong>Create a plan</strong> — <code>*.plan.md</code> alongside the spec; task table with status, model, notes</li>
+          <li><strong>Read the full chain</strong> — AI reads Platform → App → System → Feature before touching code</li>
+          <li><strong>Delegate to subagents</strong> — each plan task = one subagent; parallel where independent</li>
+          <li><strong>Commit after each task</strong> — atomic commits, plan updated in the same commit</li>
+          <li><strong>Spec status updated</strong> — In Progress during work, Done after all tasks pass</li>
+        </ul>
+      </div>
+      <div>
+        <pre><span class="cmt"># Plan: DiaIK2D</span>
+
+<span class="kw">| #  | Task            | Status | Model  |</span>
+| 1  | IKChainDef      | Done   | sonnet |
+| 2  | two-bone-solver | Done   | sonnet |
+| 3  | FABRIK solver   | Done   | opus   |
+| 4  | look-at         | Done   | sonnet |
+| 5  | test-utilities  | Done   | sonnet |
+| 6  | 33 GoogleTests  | Done   | opus   |
+
+<span class="cmt">## Session Notes</span>
+<span class="cmt">### 2026-05-02</span>
+- All 6 tasks complete
+- 33 tests passing
+- Spec → Done</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 9: Testing Strategy ─────────────── -->
+  <div class="slide center" id="slide-9">
+    <div class="tag purple">Testing</div>
+    <h2>Comprehensive tests generated from the public API</h2>
+    <p>The <code>/gen-tests</code> command reads public API headers, checks coverage registry, and proposes all applicable test types.</p>
+    <div class="cols cols-3" style="margin-top:20px;">
+      <div class="card accent-blue">
+        <h3>Unit</h3>
+        <p>Each public method tested in isolation. Named <code>ComponentName_Method_Scenario_Expected</code>.</p>
+      </div>
+      <div class="card accent-green">
+        <h3>Golden Value</h3>
+        <p>Known inputs → known outputs. Catches regressions when algorithms change.</p>
+      </div>
+      <div class="card accent-purple">
+        <h3>Invariant</h3>
+        <p>Properties that must always hold: root bone pinned, chain length conserved, etc.</p>
+      </div>
+      <div class="card accent-orange">
+        <h3>Stress / Boundary</h3>
+        <p>Max capacity, zero-length inputs, degenerate geometry — wherever the code might break.</p>
+      </div>
+      <div class="card accent-red">
+        <h3>Determinism</h3>
+        <p>Same input → same output on every run. Critical for physics and animation.</p>
+      </div>
+      <div class="card">
+        <h3>Integration</h3>
+        <p>End-to-end: IK solver updates skeleton FK; visual debugger draws correct primitives.</p>
+      </div>
+    </div>
+    <div class="stat-row" style="justify-content:center; margin-top:24px;">
+      <div class="stat"><span class="num">114</span><span class="lbl">DiaVisualDebugger C++ tests</span></div>
+      <div class="stat"><span class="num">33</span><span class="lbl">DiaIK2D tests</span></div>
+      <div class="stat"><span class="num">38</span><span class="lbl">DiaRig2D exhaustive tests</span></div>
+      <div class="stat"><span class="num">43</span><span class="lbl">DiaSerializer Phase 3 tests</span></div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 10: Test utilities live with libraries ─────────────── -->
+  <div class="slide left" id="slide-10">
+    <div class="tag green">Testing Pattern</div>
+    <h2>Test helpers ship with the library, not the test suite</h2>
+    <p>A key architectural decision: test utilities live in <code>&lt;Module&gt;/Testing/</code> alongside production code — not buried in GoogleTests.</p>
+    <div class="cols cols-2" style="margin-top:20px;">
+      <div>
+        <ul class="bullets">
+          <li><strong>Discoverable</strong> — any consumer of the module can use the test builders</li>
+          <li><strong>Reusable</strong> — integration tests across modules use the same helpers</li>
+          <li><strong>Maintained together</strong> — when the API changes, the test utilities change alongside it</li>
+          <li><strong>No test-only binaries</strong> — helpers compile into the library; no runtime cost when not used</li>
+        </ul>
+      </div>
+      <div class="tree">
+        Dia/DiaIK2D/<br>
+        &nbsp;&nbsp;<span class="hl">IKSolver.h</span>           <span class="cmt"># production API</span><br>
+        &nbsp;&nbsp;<span class="hl">IKSolver.cpp</span><br>
+        &nbsp;&nbsp;<span class="hl2">Testing/</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="hl2">IKTestFixtures.h</span>   <span class="cmt"># ships with lib</span><br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="hl2">IKChainBuilder.h</span><br>
+        <br>
+        Cluiche/Tests/GoogleTests/<br>
+        &nbsp;&nbsp;<span class="hl3">IK2D/IK2DTests.cpp</span>   <span class="cmt"># uses fixtures above</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 11: Visual Debugging ─────────────── -->
+  <div class="slide left" id="slide-11">
+    <div class="tag orange">Debugging</div>
+    <h2>Visual debugging as a first-class system</h2>
+    <p>DiaVisualDebugger provides a layer-managed, priority-sorted debug render pipeline. Toggled via in-game console or editor panel — same DiaAPI command regardless of surface.</p>
+    <div class="cols cols-2" style="margin-top:16px;">
+      <div>
+        <ul class="bullets">
+          <li><strong>DebugLayerManager</strong> — registry of named draw layers with priority</li>
+          <li><strong>IVisualDebugger</strong> — pure interface: reads const sim state, writes primitives</li>
+          <li><strong>DebugColourPalette</strong> — canonical RGBA constants with semantic names</li>
+          <li><strong>FixedDrawLayer</strong> — register objects once; renderer auto-draws every frame</li>
+          <li><strong>ImGui console</strong> — in-game toggle panel + DiaAPI command input + log tail</li>
+          <li><strong><code>#ifdef DIA_DEBUG</code></strong> — zero overhead in Release builds</li>
+        </ul>
+      </div>
+      <div>
+        <pre><span class="cmt">// Register a draw layer once</span>
+<span class="fn">debugManager</span>.<span class="fn">RegisterLayer</span>(
+  <span class="fn">BoneLinesDrawer</span>{skeleton},
+  <span class="num">priority</span>: <span class="num">10</span>
+);
+
+<span class="cmt">// Or fixed-draw: register an object</span>
+<span class="cmt">// → rendered automatically each frame</span>
+<span class="fn">fixedRegistry</span>.<span class="fn">Register</span>(
+  &amp;physicsWorld,
+  <span class="fn">PhysicsWorldRenderer</span>{}
+);
+
+<span class="cmt">// Toggle via DiaAPI (console or editor)</span>
+<span class="str">"debug.layer.toggle bone-lines"</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 12: Memory & Context Persistence ─────────────── -->
+  <div class="slide center" id="slide-12">
+    <div class="tag blue">AI Context</div>
+    <h2>AI context is a first-class engineering asset</h2>
+    <p>The <code>.claude/</code> directory travels with the repo. Every convention, decision, and preference is captured — so AI picks up exactly where the last session left off.</p>
+    <div class="cols cols-3" style="margin-top:24px;">
+      <div class="card accent-blue">
+        <h3>CLAUDE.md</h3>
+        <p>Project overview, architecture, build commands, naming conventions, code patterns — the AI's "onboarding doc".</p>
+      </div>
+      <div class="card accent-green">
+        <h3>Steering docs</h3>
+        <p><code>.claude/steering/tech.md</code> — language, testing, git workflow, code style — loaded on every session.</p>
+      </div>
+      <div class="card accent-purple">
+        <h3>Memory system</h3>
+        <p>Persistent cross-session memory: user preferences, project state, feedback corrections, reference pointers — all queryable.</p>
+      </div>
+    </div>
+    <blockquote style="margin-top:28px;">
+      The goal: <code>git clone</code> → AI context fully loaded → productive pair programming within seconds.
+    </blockquote>
+  </div>
+
+  <!-- ─────────────── SLIDE 13: The Backlog ─────────────── -->
+  <div class="slide left" id="slide-13">
+    <div class="tag orange">Backlog</div>
+    <h2>A living backlog derived from spec status</h2>
+    <p>The backlog isn't a separate ticket system — it's a direct reflection of spec statuses across <code>docs/specs/</code>. No drift between "what we planned" and "what we built".</p>
+    <div class="cols cols-3" style="margin-top:20px;">
+      <div class="card accent-green">
+        <h3>Done systems (sample)</h3>
+        <ul class="bullets" style="margin-top:0;">
+          <li>DiaVisualDebugger — 12 features, 114 tests</li>
+          <li>DiaIK2D — 6 features, 33 tests</li>
+          <li>DiaSerializer — Phase 2 + 3, 43 tests</li>
+          <li>DiaAnimation2D — 7 features</li>
+          <li>DiaEnv — 9 features</li>
+        </ul>
+      </div>
+      <div class="card accent-blue">
+        <h3>Ready to build</h3>
+        <ul class="bullets" style="margin-top:0;">
+          <li>DiaAssetCatalogue — 3 features Approved</li>
+          <li>DiaApplicationEditor — 15 features Approved</li>
+          <li>per-app-bin-layout (standalone)</li>
+        </ul>
+      </div>
+      <div class="card accent-orange">
+        <h3>Spec work needed</h3>
+        <ul class="bullets" style="margin-top:0;">
+          <li>DiaAssetPipeline — needs feature specs</li>
+          <li>DiaAssetRuntime — needs /spec-system</li>
+          <li>DiaStateMachineEditor — needs /spec-system</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 14: Slash Commands ─────────────── -->
+  <div class="slide left" id="slide-14">
+    <div class="tag purple">Tooling</div>
+    <h2>Custom slash commands — workflows as first-class tools</h2>
+    <p>Every repeatable workflow is a slash command. Typed in the chat; executes a structured multi-step process with mandatory gates.</p>
+    <div class="cols cols-2" style="margin-top:16px;">
+      <div>
+        <ul class="bullets">
+          <li><code>/spec-feature</code> — interview + 5-step spec process + approval gate</li>
+          <li><code>/spec-system</code> — system spec with feature inventory</li>
+          <li><code>/spec-review</code> — populate AI review questions on an existing spec</li>
+          <li><code>/spec-trace</code> — trace a feature's full lineage to platform</li>
+          <li><code>/gen-tests &lt;target&gt;</code> — generate all test types from public API</li>
+          <li><code>/research</code> — structured explore→ideate→evaluate→choose funnel</li>
+          <li><code>/refactor</code> — audit → plan → execute → review → prove loop</li>
+          <li><code>/security-review</code> — review pending changes for vulnerabilities</li>
+        </ul>
+      </div>
+      <div class="card" style="align-self:flex-start;">
+        <h3>Why commands matter</h3>
+        <p>Commands encode the process, not just the output. You can't skip step 3 of a spec — the command won't let you. The workflow is enforced, not suggested.</p>
+        <p style="margin-top:10px;">New team members run the same commands and get the same quality output, regardless of experience level.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 15: Real Velocity Numbers ─────────────── -->
+  <div class="slide center" id="slide-15">
+    <div class="tag green">Results</div>
+    <h2>What this workflow actually produces</h2>
+    <p>Real systems shipped on the Dia engine in recent sessions — each spec-driven, each with full test coverage.</p>
+    <div class="stat-row" style="justify-content:center; margin-top:24px; flex-wrap:wrap; gap:16px;">
+      <div class="stat"><span class="num">20+</span><span class="lbl">Systems fully specced &amp; implemented</span></div>
+      <div class="stat"><span class="num">80+</span><span class="lbl">Feature specs Approved or Done</span></div>
+      <div class="stat"><span class="num">200+</span><span class="lbl">GoogleTests across all modules</span></div>
+      <div class="stat"><span class="num">4-level</span><span class="lbl">Full traceability on every feature</span></div>
+    </div>
+    <div class="cols cols-2" style="margin-top:28px; max-width:900px;">
+      <div class="card accent-green">
+        <h3>DiaVisualDebugger — complete example</h3>
+        <p>12 feature specs. DebugLayerManager, 5 visual debugger stacks, ImGui console, editor panel, FixedDrawLayer, budget system. 114 C++ tests + 13 Vitest tests. Spec → Done in a handful of sessions.</p>
+      </div>
+      <div class="card accent-blue">
+        <h3>DiaEnv — complete example</h3>
+        <p>9 features. deps.json manifest, winget toolchain, MSBuild auto-restore, git submodule migration, AI context hardening. clone → build works. Entire research → spec → implementation cycle run in one sitting.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 16: The Superpower ─────────────── -->
+  <div class="slide center" id="slide-16">
+    <div class="tag orange">The Takeaway</div>
+    <h2>What makes this a superpower</h2>
+    <div class="cols cols-2" style="margin-top:16px; max-width:900px;">
+      <div class="card accent-blue">
+        <h3>AI enforces your standards</h3>
+        <p>CLAUDE.md, steering docs, and binding decisions mean the AI doesn't drift. It writes code that matches your patterns — even patterns you set months ago.</p>
+      </div>
+      <div class="card accent-green">
+        <h3>Specs prevent rework</h3>
+        <p>The interview + compliance step catches architectural misalignments before any code is written. Rework cost drops to near zero.</p>
+      </div>
+      <div class="card accent-purple">
+        <h3>Tests are not optional</h3>
+        <p><code>/gen-tests</code> generates comprehensive coverage automatically. Tests aren't a tax on velocity — they're part of the same command.</p>
+      </div>
+      <div class="card accent-orange">
+        <h3>Context survives sessions</h3>
+        <p>Memory, CLAUDE.md, and the spec hierarchy mean a new AI session picks up the project with full context. No re-explaining.</p>
+      </div>
+    </div>
+    <blockquote style="margin-top:28px;">
+      You set the architecture once. The AI carries it forward consistently at 10× the speed.
+    </blockquote>
+  </div>
+
+  <!-- ─────────────── SLIDE 17: How to Adopt ─────────────── -->
+  <div class="slide left" id="slide-17">
+    <div class="tag red">Getting Started</div>
+    <h2>How to adopt this in your project</h2>
+    <div class="cols cols-2" style="margin-top:8px;">
+      <div>
+        <ul class="bullets">
+          <li><strong>Step 1:</strong> Write a <code>CLAUDE.md</code> — architecture overview, naming conventions, build commands, code patterns. This is the AI's onboarding doc.</li>
+          <li><strong>Step 2:</strong> Create a <code>docs/specs/</code> hierarchy with a Platform spec and one Application spec. Run <code>/spec-system</code> for your first system.</li>
+          <li><strong>Step 3:</strong> Add <code>.claude/steering/tech.md</code> — language, testing standards, git workflow.</li>
+          <li><strong>Step 4:</strong> Use <code>/spec-feature</code> for every new feature. No exceptions.</li>
+          <li><strong>Step 5:</strong> Use <code>/gen-tests</code> after each implementation. Add it to your definition of Done.</li>
+          <li><strong>Step 6:</strong> Use <code>/research</code> whenever a decision isn't clear. Archive the output.</li>
+        </ul>
+      </div>
+      <div class="card" style="align-self:flex-start;">
+        <h3>Minimum viable start</h3>
+        <p>You don't need the full system on day one. Start with just:</p>
+        <ul class="bullets" style="margin-top:8px;">
+          <li>A <code>CLAUDE.md</code></li>
+          <li>One platform spec</li>
+          <li>Mandatory spec-before-code rule</li>
+        </ul>
+        <p style="margin-top:12px;">The rest of the structure emerges as you need it. The key is the spec habit — everything else follows.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 18: Summary ─────────────── -->
+  <div class="slide center" id="slide-18">
+    <div class="hero-bg"></div>
+    <div class="tag green">Summary</div>
+    <h2>The workflow in one picture</h2>
+    <div class="pipeline" style="margin-top:24px; flex-wrap:wrap; row-gap:16px; justify-content:center;">
+      <div class="pipe-step" style="border-top:3px solid var(--accent);">
+        Research
+        <small>explore → choose → archive</small>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step" style="border-top:3px solid var(--accent4);">
+        Spec
+        <small>5 steps → Approved</small>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step" style="border-top:3px solid var(--accent2);">
+        Plan
+        <small>tasks + model assignments</small>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step" style="border-top:3px solid var(--accent5);">
+        Implement
+        <small>subagents per task</small>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step" style="border-top:3px solid var(--accent3);">
+        Test
+        <small>/gen-tests → 6 types</small>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step" style="border-top:3px solid var(--accent);">
+        Done
+        <small>spec updated, committed</small>
+      </div>
+    </div>
+    <div class="cols cols-3" style="margin-top:32px; max-width:900px;">
+      <div style="text-align:center;">
+        <div style="font-size:2rem; font-weight:700; color:var(--accent);">Spec-driven</div>
+        <div style="color:var(--muted); font-size:0.85rem;">No code without an approved spec</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:2rem; font-weight:700; color:var(--accent2);">AI-enforced</div>
+        <div style="color:var(--muted); font-size:0.85rem;">Standards in CLAUDE.md flow into every output</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:2rem; font-weight:700; color:var(--accent4);">Fully traceable</div>
+        <div style="color:var(--muted); font-size:0.85rem;">Every feature links back to platform decisions</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /deck -->
+
+<div id="nav">
+  <button id="btn-prev">← Prev</button>
+  <span id="counter">1 / 18</span>
+  <button id="btn-next">Next →</button>
+</div>
+<div id="hint">← → arrow keys to navigate</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let current = 0;
+
+  const counter = document.getElementById('counter');
+  const progress = document.getElementById('progress');
+
+  function go(n) {
+    slides[current].classList.remove('active');
+    current = Math.max(0, Math.min(total - 1, n));
+    slides[current].classList.add('active');
+    counter.textContent = `${current + 1} / ${total}`;
+    progress.style.width = `${((current + 1) / total) * 100}%`;
+  }
+
+  document.getElementById('btn-next').addEventListener('click', () => go(current + 1));
+  document.getElementById('btn-prev').addEventListener('click', () => go(current - 1));
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') go(current + 1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')                      go(current - 1);
+  });
+
+  go(0);
+</script>
+</body>
+</html>
