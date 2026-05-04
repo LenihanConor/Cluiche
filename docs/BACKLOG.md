@@ -22,13 +22,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | DiaApplicationEditor | [diaapplicationeditor.md](specs/systems/dia/diaapplicationeditor.md) | 15 features, all Approved — **not yet implemented** | DiaEditor ✅, DiaWebSocket ✅, DiaUICEF ✅ |
 | DiaAssetCatalogue | [diaassetcatalogue.md](specs/systems/dia/diaassetcatalogue.md) | 3 features, all Approved — json-definition-loader, asset-type-framework, identity-relationship-backbone | DiaCore ✅ |
 | ~~DiaIK~~ | [diaik2d.md](specs/systems/dia/diaik2d.md) | ✅ Done 2026-05-02 — 6 features, 33 tests | — |
-| ~~DiaVisualDebugger~~ | [diavisualdebugger.md](specs/systems/dia/diavisualdebugger.md) | ✅ Done 2026-05-04 — all 11 features; 90 C++ tests + 13 Vitest/jsdom tests | DiaGraphics ✅, DiaSFML ✅, DiaAPI ✅, DiaCore ✅ |
-
-### DiaVisualDebugger — feature 12 remaining
-
-| # | Feature | Spec | Notes |
-|---|---------|------|-------|
-| 12 | fixed-draw-layer | [fixed-draw-layer.md](specs/features/dia/diavisualdebugger/fixed-draw-layer.md) | `FixedDrawRegistry`, `IObjectRenderer`, `TypedObjectRenderer<T>`, `IFixedPrimitiveBuffer`; default renderers for SpatialGrid/Quadtree/BVH/HexGrid; `Draw()` gains `ICanvas&` — audit call sites first; can build any time after feature 3 |
+| ~~DiaVisualDebugger~~ | [diavisualdebugger.md](specs/systems/dia/diavisualdebugger.md) | ✅ Done 2026-05-04 — all 12 features; 114 C++ tests + 13 Vitest/jsdom tests | DiaGraphics ✅, DiaSFML ✅, DiaAPI ✅, DiaCore ✅ |
 
 ---
 
@@ -60,9 +54,9 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 |------|-------|
 | ~~DiaRig2D — Exhaustive tests~~ | Done 2026-05-02: 38 new tests (golden, invariant, stress, boundary, determinism, integration) in `Cluiche/Tests/GoogleTests/Rig2D/` |
 | DiaApplication — Feature 6: Compile-Time Dependency Validation | Deferred by user ("let's come back and talk about 6") |
-| DiaVisualDebugger — implement fixed-draw-layer (feature 12) | Approved spec at [fixed-draw-layer.md](specs/features/dia/diavisualdebugger/fixed-draw-layer.md). Unblocks the two items below. |
-| DiaVisualDebugger — migrate Rig2D rest pose to fixed-draw-layer | **Blocked on feature 12.** `RigRestPoseDrawer` topology never changes — ideal candidate. |
-| DiaVisualDebugger — migrate Geometry2D spatial structures to fixed-draw-layer | **Blocked on feature 12.** Covers `SpatialGridDrawer`, `QuadtreeDrawer`, `BVHDrawer`, `HexGridDrawer`. |
+| ~~DiaVisualDebugger — implement fixed-draw-layer (feature 12)~~ | Done 2026-05-04. `FixedDrawRegistry`, `IObjectRenderer`, `TypedObjectRenderer<T>`, `IFixedPrimitiveBuffer`, `FixedPrimitiveBuffer`; default renderers Spatial/Quadtree/BVH/Hex; 24 tests |
+| DiaVisualDebugger — migrate Rig2D rest pose to fixed-draw-layer | Create `DiaRig2DVisualDebugger/RigRestPoseRenderer` (TypedObjectRenderer<Skeleton>). Keep `RestPoseDrawer` for dynamic callers. |
+| DiaVisualDebugger — migrate Geometry2D spatial structures to fixed-draw-layer | Create `DiaGeometry2DVisualDebugger/Renderers/` (SpatialGridRenderer, QuadtreeRenderer, BVHRenderer, HexGridRenderer). Keep existing Drawers for dynamic callers. |
 | HotReloadManager — `CollectDependentModules()` / `UpdateDependencyReferences()` | Placeholder stubs; needs real implementation |
 | `Dia::Core::Blackboard` — general-purpose key-value store | Identified during DiaStateMachine research; useful for AI, animation, gameplay. Needs `/spec-feature` under DiaCore. |
 | DiaStateMachine — `MarkValid()` exposed on definitions | Added to support serializer load path; could be misused to bypass `Validate()`. Consider making package-internal if access control becomes a concern. |
