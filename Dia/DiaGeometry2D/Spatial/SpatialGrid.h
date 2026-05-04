@@ -58,6 +58,12 @@ public:
     int GetCellCount() const;
     int GetObjectCount() const;
 
+    // Accessors for debug/visualization (used by DiaGeometry2DVisualDebugger)
+    int             GetCellCountX()  const { return mCellCountX;  }
+    int             GetCellCountY()  const { return mCellCountY;  }
+    float           GetCellSize()    const { return mCellSize;     }
+    const AARect&   GetWorldBounds() const { return mWorldBounds;  }
+
 private:
     struct Slot
     {

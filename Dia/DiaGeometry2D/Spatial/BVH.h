@@ -71,6 +71,15 @@ public:
     int GetObjectCount() const;
     int GetDepth()       const;
 
+    // Traversal for debug/visualization (used by DiaGeometry2DVisualDebugger).
+    // Visits every allocated node; callback receives (bounds, depth).
+    template<typename Callback>
+    void VisitNodes(Callback&& cb) const
+    {
+        if (!mIsBuilt || mNodeCount == 0) return;
+        VisitNodeRecursive(0, 0, cb);
+    }
+
 private:
     static constexpr int kMaxNodes = 4096;
 
@@ -104,6 +113,17 @@ private:
     AARect ComputeBounds(const int* sortedSlots, int count) const;
     void   InsertionSortByAxis(int* sortedSlots, int count, int axis) const;
     float  ComputeSAHSplit(const int* sortedSlots, int count, int axis, int& outSplitIdx) const;
+
+    // Traversal helper (called by VisitNodes)
+    template<typename Callback>
+    void VisitNodeRecursive(int nodeIdx, int depth, Callback&& cb) const
+    {
+        if (nodeIdx < 0 || nodeIdx >= mNodeCount) return;
+        const BVHNode& node = mNodes[nodeIdx];
+        cb(node.bounds, depth);
+        if (node.leftChild  >= 0) VisitNodeRecursive(node.leftChild,  depth + 1, cb);
+        if (node.rightChild >= 0) VisitNodeRecursive(node.rightChild, depth + 1, cb);
+    }
 
     // Query helpers
     void QueryRegionNode  (int nodeIdx, const AARect& region,              Dia::Core::Containers::DynamicArrayC<Dia::Core::Handle<T>, kMaxQueryResults>& out) const;

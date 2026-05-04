@@ -55,6 +55,22 @@ namespace Dia
 			const Dia::Rig2D::Skeleton& GetSkeleton() const;
 			const Dia::Rig2D::Pose&     GetPose() const;
 
+			// ── Debugger-facing read-only accessors ──────────────────────────
+			// Number of registered IK chains.
+			int GetChainCount() const;
+
+			// Chain identity and span — index is 0-based up to GetChainCount()-1.
+			Dia::Core::StringCRC GetChainId(int chainIndex) const;
+			int GetChainStartBoneIndex(int chainIndex) const;
+			int GetChainEndBoneIndex(int chainIndex) const;
+			int GetChainJointCount(int chainIndex) const;
+
+			// Cached world-space transforms — refreshed by SetRootTransform() each frame.
+			// Size matches skeleton.GetBoneCount().
+			// PRECONDITION: SetRootTransform() must be called before this accessor.
+			const Dia::Core::Containers::DynamicArrayC<Dia::Rig2D::BoneTransform, Dia::Rig2D::kMaxBones>&
+			    GetWorldTransforms() const;
+
 		private:
 			struct ResolvedChain
 			{

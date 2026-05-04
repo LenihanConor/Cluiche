@@ -1,0 +1,264 @@
+////////////////////////////////////////////////////////////////////////////////
+// Filename: DebugLayerManager.cpp
+// Description: Implementation of DebugLayerManager
+////////////////////////////////////////////////////////////////////////////////
+#include "DebugLayerManager.h"
+
+#ifdef DIA_DEBUG
+
+#include <DiaCore/Core/Assert.h>
+#include <DiaAPI/CommandRegistry/CommandRegistry.h>
+#include <DiaGraphics/Frame/FrameData.h>
+#include <cstdlib>  // std::atof
+
+namespace Dia
+{
+    namespace Debug
+    {
+        // --------------------------------------------------------------------
+        // Registration
+        // --------------------------------------------------------------------
+
+        void DebugLayerManager::Register(IVisualDebugger* debugger, int priority)
+        {
+            DIA_ASSERT(debugger != nullptr, "DebugLayerManager::Register — debugger must not be null");
+            DIA_ASSERT(FindLayerIndex(debugger->GetLayerName()) < 0,
+                       "DebugLayerManager::Register — layer name already registered");
+
+            LayerEntry entry;
+            entry.debugger = debugger;
+            entry.priority = priority;
+            mLayers.Add(entry);
+            mSortDirty = true;
+        }
+
+        void DebugLayerManager::Unregister(Dia::Core::StringCRC layerName)
+        {
+            int index = FindLayerIndex(layerName);
+            if (index < 0)
+                return;
+
+            // Remove by index (swap-with-last pattern; order re-sorted on next Draw)
+            unsigned int ui = static_cast<unsigned int>(index);
+            mLayers.RemoveAt(ui);
+            mSortDirty = true;
+        }
+
+        // --------------------------------------------------------------------
+        // Layer toggle
+        // --------------------------------------------------------------------
+
+        void DebugLayerManager::EnableLayer(Dia::Core::StringCRC layerName)
+        {
+            int index = FindLayerIndex(layerName);
+            if (index < 0)
+                return;
+            mLayers[static_cast<unsigned int>(index)].debugger->SetEnabled(true);
+        }
+
+        void DebugLayerManager::DisableLayer(Dia::Core::StringCRC layerName)
+        {
+            int index = FindLayerIndex(layerName);
+            if (index < 0)
+                return;
+            mLayers[static_cast<unsigned int>(index)].debugger->SetEnabled(false);
+        }
+
+        bool DebugLayerManager::IsLayerEnabled(Dia::Core::StringCRC layerName) const
+        {
+            int index = FindLayerIndex(layerName);
+            if (index < 0)
+                return false;
+            return mLayers[static_cast<unsigned int>(index)].debugger->IsEnabled();
+        }
+
+        // --------------------------------------------------------------------
+        // Global debug scale
+        // --------------------------------------------------------------------
+
+        void DebugLayerManager::SetDebugScale(float scale)
+        {
+            mDebugScale = scale;
+        }
+
+        float DebugLayerManager::GetDebugScale() const
+        {
+            return mDebugScale;
+        }
+
+        // --------------------------------------------------------------------
+        // Picking seam stubs
+        // --------------------------------------------------------------------
+
+        void DebugLayerManager::SetSelectedEntityId(uint32_t id)
+        {
+            mSelectedEntityId = id;
+        }
+
+        uint32_t DebugLayerManager::GetSelectedEntityId() const
+        {
+            return mSelectedEntityId;
+        }
+
+        // --------------------------------------------------------------------
+        // Draw
+        // --------------------------------------------------------------------
+
+        void DebugLayerManager::Draw(Dia::Graphics::FrameData& frameData)
+        {
+            if (mSortDirty)
+                SortByPriority();
+
+            for (unsigned int i = 0; i < mLayers.Size(); ++i)
+            {
+                IVisualDebugger* d = mLayers[i].debugger;
+                if (d->IsEnabled())
+                    d->Draw(frameData);
+            }
+        }
+
+        // --------------------------------------------------------------------
+        // DiaAPI command registration
+        // LIFETIME: manager must outlive the application (lambdas capture this).
+        // --------------------------------------------------------------------
+
+        void DebugLayerManager::RegisterDiaAPICommands()
+        {
+            // debug.layer.enable <layer-name>
+            Dia::API::RegisterCommand({
+                Dia::Core::StringCRC("debug.layer.enable"),
+                "Enable a named debug layer",
+                Dia::Core::StringCRC("debug"),
+                "DiaVisualDebugger", "1.0.0",
+                "debug.layer.enable physics.shapes",
+                [this](const Dia::API::CommandArgs& args) -> int {
+                    if (args.positionalArgs.Size() < 1) return 2;
+                    EnableLayer(Dia::Core::StringCRC(args.positionalArgs[0]));
+                    return 0;
+                }
+            });
+
+            // debug.layer.disable <layer-name>
+            Dia::API::RegisterCommand({
+                Dia::Core::StringCRC("debug.layer.disable"),
+                "Disable a named debug layer",
+                Dia::Core::StringCRC("debug"),
+                "DiaVisualDebugger", "1.0.0",
+                "debug.layer.disable physics.shapes",
+                [this](const Dia::API::CommandArgs& args) -> int {
+                    if (args.positionalArgs.Size() < 1) return 2;
+                    DisableLayer(Dia::Core::StringCRC(args.positionalArgs[0]));
+                    return 0;
+                }
+            });
+
+            // debug.layer.list — returns 0; used by editor to trigger BroadcastLayerState
+            Dia::API::RegisterCommand({
+                Dia::Core::StringCRC("debug.layer.list"),
+                "List all registered debug layers and their enabled state",
+                Dia::Core::StringCRC("debug"),
+                "DiaVisualDebugger", "1.0.0",
+                "debug.layer.list",
+                [this](const Dia::API::CommandArgs&) -> int {
+                    (void)this;
+                    return 0;
+                }
+            });
+
+            // debug.scale <float>
+            // std::atof used internally — acceptable per AI review Q3 (not in public API)
+            Dia::API::RegisterCommand({
+                Dia::Core::StringCRC("debug.scale"),
+                "Set global debug draw scale factor",
+                Dia::Core::StringCRC("debug"),
+                "DiaVisualDebugger", "1.0.0",
+                "debug.scale 2.0",
+                [this](const Dia::API::CommandArgs& args) -> int {
+                    if (args.positionalArgs.Size() < 1) return 2;
+                    SetDebugScale(static_cast<float>(std::atof(args.positionalArgs[0])));
+                    return 0;
+                }
+            });
+
+            // debug.pick — no-op stub; picking seam for scene editor (SD-DBG-008)
+            Dia::API::RegisterCommand({
+                Dia::Core::StringCRC("debug.pick"),
+                "Pick entity at screen coordinates (scene editor seam — not yet implemented)",
+                Dia::Core::StringCRC("debug"),
+                "DiaVisualDebugger", "1.0.0",
+                "debug.pick 320 240",
+                [](const Dia::API::CommandArgs&) -> int { return 0; }
+            });
+        }
+
+        // --------------------------------------------------------------------
+        // BroadcastLayerState
+        // Stub for now — full JSON + DebugServerModule implementation deferred
+        // to feature debug-editor-panel (feature 10).
+        // --------------------------------------------------------------------
+
+        void DebugLayerManager::BroadcastLayerState(
+            Dia::DebugServer::DebugServerModule* debugServer)
+        {
+            if (debugServer == nullptr) return;
+
+            // TODO (feature debug-editor-panel): serialize mLayers to Json::Value and call
+            // debugServer->NotifySubscribers(Dia::Core::StringCRC("debug.layer.state"), payload);
+        }
+
+        // --------------------------------------------------------------------
+        // Query
+        // --------------------------------------------------------------------
+
+        int DebugLayerManager::GetLayerCount() const
+        {
+            return static_cast<int>(mLayers.Size());
+        }
+
+        bool DebugLayerManager::HasLayer(Dia::Core::StringCRC layerName) const
+        {
+            return FindLayerIndex(layerName) >= 0;
+        }
+
+        Dia::Core::StringCRC DebugLayerManager::GetLayerName(int index) const
+        {
+            if (index < 0 || static_cast<unsigned int>(index) >= mLayers.Size())
+                return Dia::Core::StringCRC::kZero;
+            return mLayers[static_cast<unsigned int>(index)].debugger->GetLayerName();
+        }
+
+        // --------------------------------------------------------------------
+        // Private helpers
+        // --------------------------------------------------------------------
+
+        void DebugLayerManager::SortByPriority()
+        {
+            // Insertion sort — stable, O(N²) acceptable for kMaxLayers = 64
+            for (unsigned int i = 1; i < mLayers.Size(); ++i)
+            {
+                LayerEntry key = mLayers[i];
+                int j = static_cast<int>(i) - 1;
+                while (j >= 0 && mLayers[static_cast<unsigned int>(j)].priority > key.priority)
+                {
+                    mLayers[static_cast<unsigned int>(j + 1)] = mLayers[static_cast<unsigned int>(j)];
+                    --j;
+                }
+                mLayers[static_cast<unsigned int>(j + 1)] = key;
+            }
+            mSortDirty = false;
+        }
+
+        int DebugLayerManager::FindLayerIndex(Dia::Core::StringCRC layerName) const
+        {
+            for (unsigned int i = 0; i < mLayers.Size(); ++i)
+            {
+                if (mLayers[i].debugger->GetLayerName() == layerName)
+                    return static_cast<int>(i);
+            }
+            return -1;
+        }
+
+    } // namespace Debug
+} // namespace Dia
+
+#endif // DIA_DEBUG

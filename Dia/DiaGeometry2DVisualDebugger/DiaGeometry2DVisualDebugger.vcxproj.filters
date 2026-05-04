@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{GEO2DVD01-A1B2-C3D4-E5F6-789012345678}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ShapeDrawer.h" />
+    <ClInclude Include="SpatialGridDrawer.h" />
+    <ClInclude Include="QuadtreeDrawer.h" />
+    <ClInclude Include="BVHDrawer.h" />
+    <ClInclude Include="HexGridDrawer.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ShapeDrawer.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\dia.geometry2dvisualdebugger.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+</Project>

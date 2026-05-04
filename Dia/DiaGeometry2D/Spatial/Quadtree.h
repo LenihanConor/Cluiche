@@ -61,6 +61,15 @@ public:
     int  GetObjectCount() const;
     int  GetDepth()       const;
 
+    // Traversal for debug/visualization (used by DiaGeometry2DVisualDebugger).
+    // Visits every allocated node; callback receives (bounds, isLeaf).
+    template<typename Callback>
+    void VisitNodes(Callback&& cb) const
+    {
+        for (int i = 0; i < mNodeCount; ++i)
+            cb(mNodes[i].bounds, mNodes[i].isLeaf);
+    }
+
 private:
     static constexpr int kMaxNodes        = 4096;
     static constexpr int kMaxSlotsPerNode = 64;

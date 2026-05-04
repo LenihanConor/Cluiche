@@ -90,6 +90,13 @@ public:
     int GetCellCount() const;
     int GetObjectCount() const;
 
+    // Accessors for debug/visualization (used by DiaGeometry2DVisualDebugger)
+    float GetHexRadius() const { return mHexRadius; }
+    int   GetMinQ()      const { return mMinQ;      }
+    int   GetMinR()      const { return mMinR;      }
+    int   GetColCount()  const { return mColCount;  }
+    int   GetRowCount()  const { return mRowCount;  }
+
 private:
     struct Slot
     {

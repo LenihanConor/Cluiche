@@ -87,6 +87,47 @@ namespace Dia
 		const Dia::Rig2D::Skeleton& IKSolver::GetSkeleton() const { return mSkeleton; }
 		const Dia::Rig2D::Pose&     IKSolver::GetPose()     const { return mPose; }
 
+		int IKSolver::GetChainCount() const
+		{
+			return static_cast<int>(mChains.Size());
+		}
+
+		Dia::Core::StringCRC IKSolver::GetChainId(int chainIndex) const
+		{
+			DIA_ASSERT(chainIndex >= 0 && chainIndex < static_cast<int>(mChains.Size()),
+			           "IKSolver::GetChainId — chainIndex out of range");
+			return mChains[chainIndex].def.id;
+		}
+
+		int IKSolver::GetChainStartBoneIndex(int chainIndex) const
+		{
+			DIA_ASSERT(chainIndex >= 0 && chainIndex < static_cast<int>(mChains.Size()),
+			           "IKSolver::GetChainStartBoneIndex — chainIndex out of range");
+			return mChains[chainIndex].startIndex;
+		}
+
+		int IKSolver::GetChainEndBoneIndex(int chainIndex) const
+		{
+			DIA_ASSERT(chainIndex >= 0 && chainIndex < static_cast<int>(mChains.Size()),
+			           "IKSolver::GetChainEndBoneIndex — chainIndex out of range");
+			return mChains[chainIndex].endIndex;
+		}
+
+		int IKSolver::GetChainJointCount(int chainIndex) const
+		{
+			DIA_ASSERT(chainIndex >= 0 && chainIndex < static_cast<int>(mChains.Size()),
+			           "IKSolver::GetChainJointCount — chainIndex out of range");
+			return mChains[chainIndex].jointCount;
+		}
+
+		const Dia::Core::Containers::DynamicArrayC<Dia::Rig2D::BoneTransform, Dia::Rig2D::kMaxBones>&
+		    IKSolver::GetWorldTransforms() const
+		{
+			DIA_ASSERT(mRootTransformSet,
+			           "IKSolver::GetWorldTransforms — SetRootTransform() must be called before drawing");
+			return mWorldTransforms;
+		}
+
 		int IKSolver::FindChainIndex(Dia::Core::StringCRC chainId) const
 		{
 			for (unsigned int i = 0; i < mChains.Size(); ++i)

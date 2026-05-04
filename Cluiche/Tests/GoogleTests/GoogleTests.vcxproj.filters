@@ -557,6 +557,9 @@
       <Filter>Editor</Filter>
     </ClCompile>
     <!-- Geometry2D -->
+    <ClCompile Include="Geometry2D\TestGeometry2DVisualDebuggerStack.cpp">
+      <Filter>Geometry2D</Filter>
+    </ClCompile>
     <ClCompile Include="Geometry2D\TestShapePrimitives.cpp">
       <Filter>Geometry2D</Filter>
     </ClCompile>
@@ -768,6 +771,9 @@
       <Filter>IK2D</Filter>
     </ClCompile>
     <ClCompile Include="IK\TestIKIntegration.cpp">
+      <Filter>IK2D</Filter>
+    </ClCompile>
+    <ClCompile Include="IK\TestIK2DVisualDebuggerStack.cpp">
       <Filter>IK2D</Filter>
     </ClCompile>
     <!-- StateMachine -->
