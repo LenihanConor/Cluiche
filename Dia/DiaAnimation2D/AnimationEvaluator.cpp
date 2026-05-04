@@ -160,6 +160,29 @@ void AnimationEvaluator::Evaluate(float dt,
 PoseBlendStack&       AnimationEvaluator::GetBlendStack()       { return mBlendStack; }
 const PoseBlendStack& AnimationEvaluator::GetBlendStack() const { return mBlendStack; }
 
+int AnimationEvaluator::GetSourceCount() const {
+    return (int)mSources.Size();
+}
+
+Dia::Core::StringCRC AnimationEvaluator::GetSourceId(int index) const {
+    DIA_ASSERT(index >= 0 && index < (int)mSources.Size(), "GetSourceId: index out of range");
+    return mSources[index].id;
+}
+
+const AnimClipPlayer* AnimationEvaluator::GetClipPlayer(Dia::Core::StringCRC sourceId) const {
+    int idx = FindSource(sourceId);
+    if (idx == -1) return nullptr;
+    if (mSources[idx].type != SourceType::kClipPlayer) return nullptr;
+    return mSources[idx].clipPlayer;
+}
+
+const SpringChain* AnimationEvaluator::GetSpringChain(Dia::Core::StringCRC sourceId) const {
+    int idx = FindSource(sourceId);
+    if (idx == -1) return nullptr;
+    if (mSources[idx].type != SourceType::kSpringChain) return nullptr;
+    return mSources[idx].springChain;
+}
+
 int AnimationEvaluator::FindSource(Dia::Core::StringCRC id) const {
     for (int i = 0; i < (int)mSources.Size(); ++i)
         if (mSources[i].id == id) return i;

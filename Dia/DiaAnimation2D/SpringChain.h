@@ -31,11 +31,24 @@ namespace Dia { namespace Animation2D {
         const Dia::Core::StringCRC& GetId() const;
         int GetNodeCount() const;
 
+        // Per-node bone identity — node index matches boneIds order in SpringChainDef
+        Dia::Core::StringCRC GetNodeBoneId(int nodeIndex) const;
+
+        // Per-node physics state — read-only; updated each Update() call
+        float GetNodeAngularVelocity(int nodeIndex) const;
+        float GetNodeStiffness(int nodeIndex) const;
+        float GetNodeDamping(int nodeIndex) const;
+
+        // Chain-level gravity
+        Dia::Maths::Vector2D GetGravityDirection() const;
+        float                GetGravityStrength() const;
+
     private:
         struct NodeState {
             float angularVelocity = 0.0f;
             float externalTorque  = 0.0f;
             int   boneIndex       = -1;
+            Dia::Core::StringCRC boneId;
             SpringNodeDef params;
         };
 

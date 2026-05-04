@@ -147,6 +147,11 @@ int  PoseBlendStack::GetLayerCount() const { return (int)mLayers.Size(); }
 bool PoseBlendStack::HasLayer(Dia::Core::StringCRC layerId) const { return FindLayerIndex(layerId) != -1; }
 void PoseBlendStack::Clear() { mLayers.RemoveAll(); }
 
+Dia::Core::StringCRC PoseBlendStack::GetLayerId(int index) const {
+    DIA_ASSERT(index >= 0 && index < (int)mLayers.Size(), "GetLayerId: index out of range");
+    return mLayers[index].id;
+}
+
 float PoseBlendStack::GetLayerWeight(Dia::Core::StringCRC layerId) const {
     int idx = FindLayerIndex(layerId);
     return (idx != -1) ? mLayers[idx].weight : 0.0f;

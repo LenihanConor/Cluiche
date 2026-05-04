@@ -46,7 +46,7 @@ Features 4–11 all require features 1–3. Features 4–11 have no dependencies
 | 8 | **geometry2d-visual-debugger-stack** | Done | sonnet | 16 tests passing. 4 concrete spatial drawers (template .inl pattern). Added traversal accessors to SpatialGrid, Quadtree, BVH, HexGrid. |
 | 9 | **debug-console** | Not Started | opus | 12 tasks — new DiaImGui.vcxproj + DiaVisualDebuggerConsole.vcxproj; SFML imgui backend; ImGui overlay; external imgui source; requires #1–3 |
 | 10 | **debug-editor-panel** | Not Started | sonnet | 9 tasks — DebugLayerPanelPlugin + proto extension + CEF UI; requires #3 |
-| 11 | **animation2d-visual-debugger-stack** | Not Started | sonnet | 11 tasks — new DiaAnimation2DVisualDebugger.vcxproj; 3 draw classes + 11 DiaAnimation2D accessors; requires #1–3 |
+| 11 | **animation2d-visual-debugger-stack** | Done | sonnet | 22 tests passing. 11 accessors added across AnimationEvaluator, PoseBlendStack, SpringChain. boneId field added to NodeState. |
 
 ### Model rationale
 

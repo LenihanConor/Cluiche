@@ -45,6 +45,14 @@ namespace Dia { namespace Animation2D {
         PoseBlendStack&       GetBlendStack();
         const PoseBlendStack& GetBlendStack() const;
 
+        // Source iteration — index 0-based, up to GetSourceCount()-1
+        int GetSourceCount() const;
+        Dia::Core::StringCRC GetSourceId(int index) const;
+
+        // Typed source access — returns nullptr if source at that ID is not the requested type
+        const AnimClipPlayer* GetClipPlayer(Dia::Core::StringCRC sourceId) const;
+        const SpringChain*    GetSpringChain(Dia::Core::StringCRC sourceId) const;
+
     private:
         enum class SourceType { kClipPlayer, kSpringChain };
 

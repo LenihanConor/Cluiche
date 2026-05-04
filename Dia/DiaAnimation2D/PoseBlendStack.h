@@ -27,6 +27,9 @@ namespace Dia { namespace Animation2D {
         bool  HasLayer(Dia::Core::StringCRC layerId) const;
         float GetLayerWeight(Dia::Core::StringCRC layerId) const;
         int   GetLayerPriority(Dia::Core::StringCRC layerId) const;
+        // Index-based layer ID access — enables iteration without knowing IDs in advance.
+        // Combined with GetLayerCount(), GetLayerWeight(id), GetLayerPriority(id) for full iteration.
+        Dia::Core::StringCRC GetLayerId(int index) const;
         void  Clear();
 
     private:

@@ -31,6 +31,7 @@ SpringChain::SpringChain(const SpringChainDef& def, const Dia::Rig2D::Skeleton& 
 
         NodeState node;
         node.boneIndex = idx;
+        node.boneId = def.boneIds[i];
         node.params = (def.nodeOverrides.Size() > 0) ? def.nodeOverrides[i] : def.defaultNode;
         node.angularVelocity = 0.0f;
         node.externalTorque = 0.0f;
@@ -159,5 +160,33 @@ void SpringChain::SetGravity(const Dia::Maths::Vector2D& direction, float streng
 
 const Dia::Core::StringCRC& SpringChain::GetId() const { return mId; }
 int SpringChain::GetNodeCount() const { return (int)mNodes.Size(); }
+
+Dia::Core::StringCRC SpringChain::GetNodeBoneId(int nodeIndex) const {
+    DIA_ASSERT(nodeIndex >= 0 && nodeIndex < (int)mNodes.Size(), "GetNodeBoneId: nodeIndex out of range");
+    return mNodes[nodeIndex].boneId;
+}
+
+float SpringChain::GetNodeAngularVelocity(int nodeIndex) const {
+    DIA_ASSERT(nodeIndex >= 0 && nodeIndex < (int)mNodes.Size(), "GetNodeAngularVelocity: nodeIndex out of range");
+    return mNodes[nodeIndex].angularVelocity;
+}
+
+float SpringChain::GetNodeStiffness(int nodeIndex) const {
+    DIA_ASSERT(nodeIndex >= 0 && nodeIndex < (int)mNodes.Size(), "GetNodeStiffness: nodeIndex out of range");
+    return mNodes[nodeIndex].params.stiffness;
+}
+
+float SpringChain::GetNodeDamping(int nodeIndex) const {
+    DIA_ASSERT(nodeIndex >= 0 && nodeIndex < (int)mNodes.Size(), "GetNodeDamping: nodeIndex out of range");
+    return mNodes[nodeIndex].params.damping;
+}
+
+Dia::Maths::Vector2D SpringChain::GetGravityDirection() const {
+    return mGravityDirection;
+}
+
+float SpringChain::GetGravityStrength() const {
+    return mGravityStrength;
+}
 
 } }
