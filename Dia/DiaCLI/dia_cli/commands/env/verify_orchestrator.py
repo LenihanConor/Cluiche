@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from utils.repo_root import find_repo_root
+from dia_cli.utils.repo_root import find_repo_root
 
 _REPO_ROOT = find_repo_root(__file__)
 
@@ -36,14 +36,14 @@ def run(
     checks = []
 
     if run_all or toolchain or docker_only:
-        from utils.toolchain_verify import check_all_toolchain, check_docker
+        from dia_cli.utils.toolchain_verify import check_all_toolchain, check_docker
         if docker_only and not toolchain:
             checks.extend(check_docker())
         else:
             checks.extend(check_all_toolchain())
 
     if run_all or deps_only:
-        from utils.deps_verify import check_deps
+        from dia_cli.utils.deps_verify import check_deps
         dep_results = check_deps(root)
         # Exit 3 if deps.json missing entirely
         if len(dep_results) == 1 and dep_results[0].name == "deps.json" and dep_results[0].status == "fail":
@@ -52,7 +52,7 @@ def run(
         checks.extend(dep_results)
 
     if run_all or submodules:
-        from utils.submodule_verify import check_submodules
+        from dia_cli.utils.submodule_verify import check_submodules
         checks.extend(check_submodules(root))
 
     if run_all or claude:
@@ -116,7 +116,7 @@ def run(
 
 
 def _check_claude(repo_root: Path) -> list:
-    from utils.check_result import CheckResult
+    from dia_cli.utils.check_result import CheckResult
     results = []
     settings = repo_root / ".claude" / "settings.local.json"
     template = repo_root / ".claude" / "settings.local.template.json"

@@ -2,11 +2,11 @@
 import json
 from pathlib import Path
 
-from utils.check_result import CheckResult
+from dia_cli.utils.check_result import CheckResult
 
 
 def check_deps(repo_root: Path) -> list:
-    from utils.deps_restore import load_deps, get_sentinel_path, DepsManifestError
+    from dia_cli.utils.deps_restore import load_deps, get_sentinel_path, DepsManifestError
     try:
         deps = load_deps(repo_root)
     except DepsManifestError as e:

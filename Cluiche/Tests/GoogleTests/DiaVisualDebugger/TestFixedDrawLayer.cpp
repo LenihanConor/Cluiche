@@ -15,9 +15,21 @@
 #include <DiaVisualDebugger/IObjectRenderer.h>
 #include <DiaVisualDebugger/IFixedPrimitiveBuffer.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
+#include <DiaVisualDebugger/DebugColourPalette.h>
+#include <DiaVisualDebugger/Renderers/SpatialGridRenderer.h>
+#include <DiaVisualDebugger/Renderers/QuadtreeRenderer.h>
+#include <DiaVisualDebugger/Renderers/BVHRenderer.h>
+#include <DiaVisualDebugger/Renderers/HexGridRenderer.h>
+#include <DiaGeometry2D/Spatial/SpatialGrid.h>
+#include <DiaGeometry2D/Spatial/Quadtree.h>
+#include <DiaGeometry2D/Spatial/BVH.h>
+#include <DiaGeometry2D/Spatial/HexGrid.h>
+#include <DiaGeometry2D/Shapes/AARect.h>
 #include <DiaGraphics/Frame/DebugFrameDataVisitor.h>
 #include <DiaGraphics/Frame/DebugPrimitive.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <memory>
+#include <vector>
 
 // =====================================================================
 // Test helpers
@@ -414,6 +426,399 @@ TEST(FixedDrawLayer_CrossType, FixedDuplicateOfDynamic_Asserts)
     EXPECT_DEATH(
         manager.RegisterFixed(Dia::Core::StringCRC("clash.dyn"), &source, &renderer, 8, 0),
         "");
+}
+
+// =====================================================================
+// Suite: BufferVariants
+// =====================================================================
+
+TEST(FixedDrawLayer_BufferVariants, RequestDrawRect_EmitsRect2D)
+{
+    Dia::Debug::FixedPrimitiveBuffer buf(4);
+    buf.RequestDrawRect(
+        Dia::Maths::Vector2D(0.0f, 0.0f),
+        Dia::Maths::Vector2D(10.0f, 5.0f),
+        Dia::Graphics::RGBA(128, 128, 128, 255));
+
+    EXPECT_EQ(buf.GetCount(), 1u);
+
+    // Verify the stored primitive is Rect2D via a collecting visitor
+    class TypeCheckVisitor : public Dia::Graphics::DebugFrameDataVisitor
+    {
+    public:
+        mutable Dia::Graphics::DebugPrimitiveType lastType = Dia::Graphics::DebugPrimitiveType::Circle2D;
+        void Visit(const Dia::Graphics::DebugPrimitive& p) const override { lastType = p.type; }
+        void Visit(const Dia::Graphics::DebugFrameData&) const override {}
+    };
+
+    TypeCheckVisitor v;
+    buf.AcceptVisitor(v);
+    EXPECT_EQ(v.lastType, Dia::Graphics::DebugPrimitiveType::Rect2D);
+}
+
+TEST(FixedDrawLayer_BufferVariants, RequestDrawCircle_EmitsCircle2D)
+{
+    Dia::Debug::FixedPrimitiveBuffer buf(4);
+    buf.RequestDrawCircle(
+        Dia::Maths::Vector2D(3.0f, 3.0f),
+        2.5f,
+        Dia::Graphics::RGBA(0, 255, 0, 255));
+
+    EXPECT_EQ(buf.GetCount(), 1u);
+
+    class TypeCheckVisitor : public Dia::Graphics::DebugFrameDataVisitor
+    {
+    public:
+        mutable Dia::Graphics::DebugPrimitiveType lastType = Dia::Graphics::DebugPrimitiveType::Line2D;
+        void Visit(const Dia::Graphics::DebugPrimitive& p) const override { lastType = p.type; }
+        void Visit(const Dia::Graphics::DebugFrameData&) const override {}
+    };
+
+    TypeCheckVisitor v;
+    buf.AcceptVisitor(v);
+    EXPECT_EQ(v.lastType, Dia::Graphics::DebugPrimitiveType::Circle2D);
+}
+
+TEST(FixedDrawLayer_BufferVariants, MixedPrimitives_AllStoredInOrder)
+{
+    Dia::Debug::FixedPrimitiveBuffer buf(4);
+    buf.RequestDraw(
+        Dia::Maths::Vector2D(0, 0), Dia::Maths::Vector2D(1, 0),
+        Dia::Graphics::RGBA(255, 255, 255, 255));
+    buf.RequestDrawRect(
+        Dia::Maths::Vector2D(0, 0), Dia::Maths::Vector2D(1, 1),
+        Dia::Graphics::RGBA(128, 128, 128, 255));
+    buf.RequestDrawCircle(
+        Dia::Maths::Vector2D(0, 0), 1.0f,
+        Dia::Graphics::RGBA(0, 255, 0, 255));
+
+    EXPECT_EQ(buf.GetCount(), 3u);
+
+    class OrderedVisitor : public Dia::Graphics::DebugFrameDataVisitor
+    {
+    public:
+        mutable std::vector<Dia::Graphics::DebugPrimitiveType> types;
+        void Visit(const Dia::Graphics::DebugPrimitive& p) const override { types.push_back(p.type); }
+        void Visit(const Dia::Graphics::DebugFrameData&) const override {}
+    };
+
+    OrderedVisitor v;
+    buf.AcceptVisitor(v);
+    ASSERT_EQ(v.types.size(), 3u);
+    EXPECT_EQ(v.types[0], Dia::Graphics::DebugPrimitiveType::Line2D);
+    EXPECT_EQ(v.types[1], Dia::Graphics::DebugPrimitiveType::Rect2D);
+    EXPECT_EQ(v.types[2], Dia::Graphics::DebugPrimitiveType::Circle2D);
+}
+
+// =====================================================================
+// Suite: PriorityOrder (draw order verification)
+// =====================================================================
+
+namespace
+{
+    // Records the first primitive from each DrawFixed visit round as a sentinel.
+    // Two layers: low-priority emits 1 Line2D (colour R=1), high-priority emits 1 Line2D (colour R=2).
+    class PriorityOrderVisitor : public Dia::Graphics::DebugFrameDataVisitor
+    {
+    public:
+        mutable std::vector<unsigned char> visitedR;  // collect colour.r in visit order
+        void Visit(const Dia::Graphics::DebugPrimitive& p) const override
+        {
+            if (p.type == Dia::Graphics::DebugPrimitiveType::Line2D)
+                visitedR.push_back(p.line2D.colour.R());
+        }
+        void Visit(const Dia::Graphics::DebugFrameData&) const override {}
+    };
+
+    class TaggedLineRenderer : public Dia::Debug::TypedObjectRenderer<int>
+    {
+    public:
+        explicit TaggedLineRenderer(unsigned char tag) : mTag(tag) {}
+    protected:
+        void DoBuild(const int& /*src*/, Dia::Debug::IFixedPrimitiveBuffer& out) const override
+        {
+            out.RequestDraw(
+                Dia::Maths::Vector2D(0, 0),
+                Dia::Maths::Vector2D(1, 0),
+                Dia::Graphics::RGBA(mTag, 0, 0, 255));
+        }
+    private:
+        unsigned char mTag;
+    };
+}
+
+TEST(FixedDrawLayer_PriorityOrder, LowerPriority_VisitedFirst)
+{
+    Dia::Debug::FixedDrawRegistry registry;
+    TaggedLineRenderer rendererLow(1);
+    TaggedLineRenderer rendererHigh(2);
+    int sourceA = 0, sourceB = 0;
+
+    // priority 1 = low, priority 10 = high
+    registry.Register(Dia::Core::StringCRC("prio.high2"), &sourceA, &rendererHigh, 8, 10);
+    registry.Register(Dia::Core::StringCRC("prio.low2"),  &sourceB, &rendererLow,  8, 1);
+
+    PriorityOrderVisitor visitor;
+    registry.DrawFixed(visitor);
+
+    ASSERT_EQ(visitor.visitedR.size(), 2u);
+    EXPECT_EQ(visitor.visitedR[0], 1u);  // low-priority (tag=1) visited first
+    EXPECT_EQ(visitor.visitedR[1], 2u);  // high-priority (tag=2) visited second
+}
+
+TEST(FixedDrawLayer_PriorityOrder, EqualPriority_BothVisited)
+{
+    Dia::Debug::FixedDrawRegistry registry;
+    TaggedLineRenderer rendererA(10), rendererB(20);
+    int sourceA = 0, sourceB = 0;
+
+    registry.Register(Dia::Core::StringCRC("prio.eq.a"), &sourceA, &rendererA, 8, 5);
+    registry.Register(Dia::Core::StringCRC("prio.eq.b"), &sourceB, &rendererB, 8, 5);
+
+    PriorityOrderVisitor visitor;
+    registry.DrawFixed(visitor);
+
+    EXPECT_EQ(visitor.visitedR.size(), 2u);
+}
+
+// =====================================================================
+// Suite: Renderers (default spatial structure renderers)
+// =====================================================================
+
+TEST(FixedDrawLayer_Renderers, SpatialGrid_EmitsCellCountRects)
+{
+    // 2x3 grid over [0,20]x[0,30], cellSize=10
+    Dia::Geometry2D::SpatialGrid<int>::Def def;
+    def.worldBounds = Dia::Geometry2D::AARect(
+        Dia::Maths::Vector2D(0.0f,  0.0f),
+        Dia::Maths::Vector2D(20.0f, 30.0f));
+    def.cellSize = 10.0f;
+    auto grid = std::make_unique<Dia::Geometry2D::SpatialGrid<int>>(def);
+
+    Dia::Debug::SpatialGridRenderer<int> renderer;
+    Dia::Debug::FixedPrimitiveBuffer buf(64);
+    renderer.BuildPrimitives(grid.get(), buf);
+
+    const int expectedCells = grid->GetCellCountX() * grid->GetCellCountY();
+    EXPECT_EQ(static_cast<int>(buf.GetCount()), expectedCells);
+}
+
+TEST(FixedDrawLayer_Renderers, SpatialGrid_EmitsRect2D_InInactiveColour)
+{
+    Dia::Geometry2D::SpatialGrid<int>::Def def;
+    def.worldBounds = Dia::Geometry2D::AARect(
+        Dia::Maths::Vector2D(0.0f, 0.0f),
+        Dia::Maths::Vector2D(10.0f, 10.0f));
+    def.cellSize = 5.0f;
+    auto grid = std::make_unique<Dia::Geometry2D::SpatialGrid<int>>(def);
+
+    Dia::Debug::SpatialGridRenderer<int> renderer;
+    Dia::Debug::FixedPrimitiveBuffer buf(16);
+    renderer.BuildPrimitives(grid.get(), buf);
+
+    ASSERT_GT(buf.GetCount(), 0u);
+
+    class RectColourVisitor : public Dia::Graphics::DebugFrameDataVisitor
+    {
+    public:
+        mutable Dia::Graphics::RGBA firstColour = Dia::Graphics::RGBA(0,0,0,0);
+        mutable Dia::Graphics::DebugPrimitiveType firstType = Dia::Graphics::DebugPrimitiveType::Line2D;
+        mutable bool captured = false;
+        void Visit(const Dia::Graphics::DebugPrimitive& p) const override
+        {
+            if (!captured) {
+                firstType   = p.type;
+                firstColour = p.rect2D.outlineColour;
+                captured    = true;
+            }
+        }
+        void Visit(const Dia::Graphics::DebugFrameData&) const override {}
+    };
+
+    RectColourVisitor v;
+    buf.AcceptVisitor(v);
+    EXPECT_EQ(v.firstType,   Dia::Graphics::DebugPrimitiveType::Rect2D);
+    EXPECT_EQ(v.firstColour, Dia::Debug::DebugColourPalette::kInactive);
+}
+
+TEST(FixedDrawLayer_Renderers, Quadtree_EmitsNodeRects_LeafVsInternal)
+{
+    // Single-node quadtree (no splits): root is a leaf → 1 Rect2D at kActive
+    Dia::Geometry2D::Quadtree<int>::Def def;
+    def.worldBounds     = Dia::Geometry2D::AARect(
+        Dia::Maths::Vector2D(-50.0f, -50.0f),
+        Dia::Maths::Vector2D( 50.0f,  50.0f));
+    def.splitThreshold  = 16;
+    def.maxDepth        = 8;
+    auto tree = std::make_unique<Dia::Geometry2D::Quadtree<int>>(def);
+
+    Dia::Debug::QuadtreeRenderer<int> renderer;
+    Dia::Debug::FixedPrimitiveBuffer buf(128);
+    renderer.BuildPrimitives(tree.get(), buf);
+
+    // An empty tree has exactly 1 node (the root, which is a leaf).
+    EXPECT_EQ(buf.GetCount(), 1u);
+
+    class FirstRectVisitor : public Dia::Graphics::DebugFrameDataVisitor
+    {
+    public:
+        mutable Dia::Graphics::RGBA colour = Dia::Graphics::RGBA(0,0,0,0);
+        mutable bool captured = false;
+        void Visit(const Dia::Graphics::DebugPrimitive& p) const override
+        {
+            if (!captured && p.type == Dia::Graphics::DebugPrimitiveType::Rect2D) {
+                colour   = p.rect2D.outlineColour;
+                captured = true;
+            }
+        }
+        void Visit(const Dia::Graphics::DebugFrameData&) const override {}
+    };
+
+    FirstRectVisitor v;
+    buf.AcceptVisitor(v);
+    EXPECT_TRUE(v.captured);
+    EXPECT_EQ(v.colour, Dia::Debug::DebugColourPalette::kActive);  // root is leaf → kActive
+}
+
+TEST(FixedDrawLayer_Renderers, BVH_Unbuilt_EmitsZeroPrimitives)
+{
+    Dia::Geometry2D::BVH<int, 64>::Def def;
+    def.maxLeafObjects = 4;
+    Dia::Geometry2D::BVH<int, 64> bvh(def);
+
+    EXPECT_FALSE(bvh.IsBuilt());
+
+    Dia::Debug::BVHRenderer<int, 64> renderer;
+    Dia::Debug::FixedPrimitiveBuffer buf(64);
+    renderer.BuildPrimitives(&bvh, buf);
+
+    EXPECT_EQ(buf.GetCount(), 0u);
+}
+
+TEST(FixedDrawLayer_Renderers, BVH_Built_EmitsNodeRects)
+{
+    Dia::Geometry2D::BVH<int, 64>::Def def;
+    def.maxLeafObjects = 1;  // force splits: each leaf holds 1 object
+    Dia::Geometry2D::BVH<int, 64> bvh(def);
+
+    // Build with 4 objects so the tree has internal nodes
+    Dia::Core::Containers::DynamicArrayC<Dia::Geometry2D::BVH<int, 64>::BuildEntry, 64> entries;
+    for (int i = 0; i < 4; ++i)
+    {
+        Dia::Geometry2D::BVH<int, 64>::BuildEntry e;
+        e.object = i;
+        const float x = static_cast<float>(i) * 10.0f;
+        e.bounds = Dia::Geometry2D::AARect(
+            Dia::Maths::Vector2D(x,        0.0f),
+            Dia::Maths::Vector2D(x + 5.0f, 5.0f));
+        entries.Add(e);
+    }
+    bvh.Build(entries);
+    EXPECT_TRUE(bvh.IsBuilt());
+    EXPECT_GT(bvh.GetNodeCount(), 0);
+
+    Dia::Debug::BVHRenderer<int, 64> renderer;
+    Dia::Debug::FixedPrimitiveBuffer buf(128);
+    renderer.BuildPrimitives(&bvh, buf);
+
+    EXPECT_EQ(buf.GetCount(), static_cast<unsigned int>(bvh.GetNodeCount()));
+}
+
+TEST(FixedDrawLayer_Renderers, HexGrid_EmitsSixLinesPerValidHex)
+{
+    // Small hex grid: radius=10, bounds [0,0]→[40,40] → a handful of valid hexes
+    Dia::Geometry2D::HexGrid<int>::Def def;
+    def.worldBounds = Dia::Geometry2D::AARect(
+        Dia::Maths::Vector2D( 0.0f,  0.0f),
+        Dia::Maths::Vector2D(40.0f, 40.0f));
+    def.hexRadius = 10.0f;
+    auto grid = std::make_unique<Dia::Geometry2D::HexGrid<int>>(def);
+
+    // Count valid hexes manually using the grid API
+    int validHexCount = 0;
+    const int minQ = grid->GetMinQ();
+    const int minR = grid->GetMinR();
+    const int colCount = grid->GetColCount();
+    const int rowCount = grid->GetRowCount();
+    for (int r = 0; r < rowCount; ++r)
+        for (int q = 0; q < colCount; ++q)
+            if (grid->IsValidHex({ minQ + q, minR + r }))
+                ++validHexCount;
+
+    Dia::Debug::HexGridRenderer<int> renderer;
+    Dia::Debug::FixedPrimitiveBuffer buf(1024);
+    renderer.BuildPrimitives(grid.get(), buf);
+
+    EXPECT_EQ(buf.GetCount(), static_cast<unsigned int>(validHexCount * 6));
+}
+
+TEST(FixedDrawLayer_Renderers, HexGrid_EmitsLine2D_InInactiveColour)
+{
+    Dia::Geometry2D::HexGrid<int>::Def def;
+    def.worldBounds = Dia::Geometry2D::AARect(
+        Dia::Maths::Vector2D(0.0f,  0.0f),
+        Dia::Maths::Vector2D(20.0f, 20.0f));
+    def.hexRadius = 8.0f;
+    auto grid = std::make_unique<Dia::Geometry2D::HexGrid<int>>(def);
+
+    Dia::Debug::HexGridRenderer<int> renderer;
+    Dia::Debug::FixedPrimitiveBuffer buf(256);
+    renderer.BuildPrimitives(grid.get(), buf);
+
+    ASSERT_GT(buf.GetCount(), 0u);
+
+    class FirstLineVisitor : public Dia::Graphics::DebugFrameDataVisitor
+    {
+    public:
+        mutable Dia::Graphics::RGBA colour = Dia::Graphics::RGBA(0,0,0,0);
+        mutable bool captured = false;
+        void Visit(const Dia::Graphics::DebugPrimitive& p) const override
+        {
+            if (!captured && p.type == Dia::Graphics::DebugPrimitiveType::Line2D) {
+                colour   = p.line2D.colour;
+                captured = true;
+            }
+        }
+        void Visit(const Dia::Graphics::DebugFrameData&) const override {}
+    };
+
+    FirstLineVisitor v;
+    buf.AcceptVisitor(v);
+    EXPECT_TRUE(v.captured);
+    EXPECT_EQ(v.colour, Dia::Debug::DebugColourPalette::kInactive);
+}
+
+// =====================================================================
+// Suite: GetLayerNameGap
+// =====================================================================
+
+TEST(FixedDrawLayer_GetLayerNameGap, IndexBeyondDynamic_ReturnsKZero)
+{
+    // GetLayerName(i) only indexes the dynamic registry.
+    // If a fixed layer is present, GetLayerCount() > dynamic count, but
+    // GetLayerName(dynamicCount) returns kZero (not the fixed layer name).
+    Dia::Debug::DebugLayerManager manager;
+    LineRenderer renderer(1);
+    int source = 0;
+
+    StubDynLayer dyn("dyn.only");
+    manager.Register(&dyn, 0);
+    manager.RegisterFixed(Dia::Core::StringCRC("fix.only"), &source, &renderer, 8, 0);
+
+    // GetLayerCount() == 2 (1 dynamic + 1 fixed)
+    EXPECT_EQ(manager.GetLayerCount(), 2);
+
+    // GetLayerName(0) returns the dynamic layer
+    EXPECT_EQ(manager.GetLayerName(0), Dia::Core::StringCRC("dyn.only"));
+
+    // GetLayerName(1) is beyond the dynamic registry — returns kZero
+    EXPECT_EQ(manager.GetLayerName(1), Dia::Core::StringCRC::kZero);
+}
+
+TEST(FixedDrawLayer_GetLayerNameGap, EmptyManager_IndexZero_ReturnsKZero)
+{
+    Dia::Debug::DebugLayerManager manager;
+    EXPECT_EQ(manager.GetLayerName(0), Dia::Core::StringCRC::kZero);
 }
 
 #endif // DIA_DEBUG

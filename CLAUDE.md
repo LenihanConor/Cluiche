@@ -20,7 +20,35 @@ The Dia engine follows a component-based architecture with distinct separation o
 
 This is a Visual Studio C++ project using MSBuild.
 
-### Build Commands
+### DiaCLI Commands (preferred)
+
+```bash
+# Build + deploy + run GoogleTests
+dia run googletest
+dia run googletest --filter="FixedDrawLayer*"
+dia run googletest --config Release
+
+# Build + deploy + launch CluicheTest game
+dia run cluichetest
+
+# Build + deploy + launch CluicheEditor
+dia run cluicheeditor
+
+# Just launch (skip build — exe must already exist)
+dia launch googletest --filter="SomeSuite*"
+dia launch cluichetest
+
+# Build pipeline only (no launch)
+dia pipeline --target googletest
+dia pipeline --target cluichetest --config Release
+
+# Other dia commands
+dia env setup          # Set up environment (toolchain, deps, PATH, DIA_CLI_CONFIG)
+dia env verify         # Check environment health
+dia test cli           # Run DiaCLI pytest suite
+```
+
+### Raw MSBuild (fallback)
 
 ```bash
 # Open solution in Visual Studio
@@ -32,13 +60,6 @@ msbuild Cluiche/Cluiche.sln /p:Configuration=Release /p:Platform=x64
 
 # Build specific project
 msbuild Dia/DiaCore/DiaCore.vcxproj /p:Configuration=Debug /p:Platform=x64
-```
-
-### Test Commands
-
-```bash
-# Run unit tests (after building UnitTests project)
-Cluiche/bin/Debug/x64/UnitTests.exe
 ```
 
 ### Configurations

@@ -8,6 +8,6 @@ import click
 @click.pass_context
 def cli(ctx, watch, coverage):
     """Run the CluicheEditor UI test suite (Vitest)."""
-    from commands.editor_ui_test_cmd import execute
+    from dia_cli.commands.editor_ui_test_cmd import execute
     exit_code = execute(watch=watch, coverage=coverage)
     ctx.exit(exit_code)

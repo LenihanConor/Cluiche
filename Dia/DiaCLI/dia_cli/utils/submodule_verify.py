@@ -4,7 +4,7 @@ import subprocess
 from pathlib import Path
 from typing import Optional
 
-from utils.check_result import CheckResult
+from dia_cli.utils.check_result import CheckResult
 
 
 def _parse_gitmodules(repo_root: Path) -> dict:

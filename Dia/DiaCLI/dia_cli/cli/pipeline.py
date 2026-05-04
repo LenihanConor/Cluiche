@@ -4,7 +4,7 @@ import click
 from loguru import logger
 from pathlib import Path
 
-from utils.repo_root import find_repo_root
+from dia_cli.utils.repo_root import find_repo_root
 
 _VALID_CONFIGS = {"Debug", "Release", "Both"}
 
@@ -26,8 +26,8 @@ def cli(ctx, config, target, stage, force, docker):
     if ctx.invoked_subcommand is not None:
         return
 
-    from commands.pipeline.pipeline_config import load_pipeline_config, PipelineConfigError, VALID_STAGES
-    from commands.pipeline.pipeline_runner import run_pipeline
+    from dia_cli.commands.pipeline.pipeline_config import load_pipeline_config, PipelineConfigError, VALID_STAGES
+    from dia_cli.commands.pipeline.pipeline_runner import run_pipeline
 
     repo_root = find_repo_root(__file__)
 
@@ -121,5 +121,5 @@ def _run_docker(repo_root: Path, config: str, target: str, stage, force: bool, c
 
 
 # Register subcommand groups
-from commands.pipeline.deploy_runner import deploy_group
+from dia_cli.commands.pipeline.deploy_runner import deploy_group
 cli.add_command(deploy_group, name="deploy")

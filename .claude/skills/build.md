@@ -19,6 +19,9 @@ Build individual projects or the entire Cluiche solution with proper dependency 
 ## Targets
 
 - **No target**: Build entire solution (Cluiche.sln)
+- **googletest**: GoogleTests C++ test suite
+- **cluichetest**: Demo game and engine testbed
+- **cluicheeditor**: Editor application
 - **DiaCore**: Foundation library (must build first, no dependencies)
 - **DiaMaths**: Math library (depends on DiaCore)
 - **DiaGraphics**: Graphics layer (depends on DiaCore, DiaMaths, DiaUI)
@@ -26,13 +29,8 @@ Build individual projects or the entire Cluiche solution with proper dependency 
 - **DiaWindow**: Window management (depends on DiaGraphics)
 - **DiaInput**: Input handling
 - **DiaUI**: Base UI system (depends on DiaCore, DiaInput)
-- **DiaUIAwesomium**: Awesomium UI layer (depends on DiaUI)
 - **DiaSFML**: SFML integration (depends on DiaCore, DiaMaths, DiaGraphics, DiaWindow)
-- **DiaPython**: Python bindings (depends on DiaCore)
 - **DiaAPI**: Plugin-based CLI (depends on DiaCore)
-- **CluicheKernel**: Core game kernel
-- **CluicheTest**: Main executable (depends on most Dia modules)
-- **GoogleTests**: Test suite (depends on DiaCore, DiaMaths, DiaGraphics)
 
 ## Options
 
@@ -46,23 +44,20 @@ Build individual projects or the entire Cluiche solution with proper dependency 
 ## Examples
 
 ```bash
-# Build entire solution
-/build
+# Build and run GoogleTests
+/build googletest
 
-# Build DiaCore only
-/build DiaCore
-
-# Rebuild CluicheTest (will rebuild dependencies if needed)
-/build CluicheTest --rebuild
+# Build CluicheTest
+/build cluichetest
 
 # Build in Release mode
 /build --config=Release
 
-# Clean build of GoogleTests
-/build GoogleTests --clean
+# Build DiaCore only (raw vcxproj)
+/build DiaCore
 
-# Build with verbose output to diagnose issues
-/build DiaGraphics --verbose
+# Full solution rebuild
+/build --rebuild
 ```
 
 ## Instructions for Claude
@@ -73,57 +68,43 @@ When this skill is invoked:
 
 Extract target project and options. Normalize project names (case-insensitive).
 
-### 2. Determine Dependency Chain
+### 2. Choose Build Strategy
 
-**Foundation (no dependencies):**
-- DiaCore
-- DiaApplication
-- CluicheKernel
+**For pipeline targets (googletest, cluichetest, cluicheeditor):**
 
-**Single-level dependencies:**
-- DiaMaths → DiaCore
-- DiaPython → DiaCore
-- DiaAPI → DiaCore
-- DiaInput → (none for library, but conceptually part of UI stack)
-
-**Multi-level dependencies:**
-- DiaUI → DiaCore, DiaInput
-- DiaGraphics → DiaCore, DiaMaths, DiaUI
-- DiaUIAwesomium → DiaUI
-- DiaWindow → DiaGraphics
-- DiaSFML → DiaCore, DiaMaths, DiaGraphics, DiaWindow
-- CluicheTest → Most modules (DiaCore, DiaMaths, DiaGraphics, DiaWindow, DiaSFML, DiaInput, DiaUI, DiaUIAwesomium, DiaApplication, CluicheKernel)
-- GoogleTests → DiaCore, DiaMaths, DiaGraphics
-
-### 3. Build Strategy
-
-**If building entire solution:**
+Use DiaCLI — this handles MSBuild discovery, dependency building, and deploy:
 ```bash
-msbuild Cluiche/Cluiche.sln /p:Configuration=<config> /p:Platform=<platform> /nologo /v:minimal
+cd Dia/DiaCLI && DIA_CLI_CONFIG="C:/GitHub/Cluiche/Dia/DiaCLI/dia_cli_prime_config.json" .venv/Scripts/python.exe -m dia_cli run <target> --build-only --config <config>
 ```
 
-**If building specific project:**
-
-a) **Determine project path:**
-   - Dia modules: `Dia/<ModuleName>/<ModuleName>.vcxproj`
-   - CluicheTest: `Cluiche/CluicheTest/CluicheTest.vcxproj`
-   - GoogleTests: `Cluiche/Tests/GoogleTests/GoogleTests.vcxproj`
-   - CluicheKernel: `Cluiche/Cluiche/CluicheKernel/CluicheKernel.vcxproj`
-
-b) **If --deps flag or target has dependencies:**
-   - Build dependencies first in correct order
-   - Stop if any dependency fails
-   - Show which dependency failed
-
-c) **Handle clean/rebuild:**
-   - `--clean`: `/t:Clean;Build`
-   - `--rebuild`: `/t:Rebuild`
-   - Normal: `/t:Build`
-
-d) **Build the project:**
+Or if `dia` is on PATH:
 ```bash
-msbuild <path>.vcxproj /t:<target> /p:Configuration=<config> /p:Platform=<platform> /nologo /v:minimal
+dia run <target> --build-only --config <config>
 ```
+
+With `--force` to force rebuild:
+```bash
+dia run <target> --build-only --force --config <config>
+```
+
+**For individual modules or full solution (not a pipeline target):**
+
+Fall back to MSBuild:
+```bash
+msbuild <path>.vcxproj /p:Configuration=<config> /p:Platform=x64 /nologo /v:minimal
+```
+
+Or for full solution:
+```bash
+msbuild Cluiche/Cluiche.sln /p:Configuration=<config> /p:Platform=x64 /nologo /v:minimal
+```
+
+### 3. Project Paths (for raw MSBuild fallback)
+
+- Dia modules: `Dia/<ModuleName>/<ModuleName>.vcxproj`
+- CluicheTest: `Cluiche/CluicheTest/CluicheTest.vcxproj`
+- GoogleTests: `Cluiche/Tests/GoogleTests/GoogleTests.vcxproj`
+- CluicheEditor: `Cluiche/CluicheEditor/CluicheEditor.vcxproj`
 
 ### 4. Parse Build Output
 
@@ -132,121 +113,57 @@ msbuild <path>.vcxproj /t:<target> /p:Configuration=<config> /p:Platform=<platfo
   - Compilation errors (file:line:column)
   - Linker errors (unresolved symbols, missing libs)
   - Missing include paths
-  - Missing dependencies
 
 ### 5. Output Format
 
 **Success:**
 ```
-✅ Built DiaCore (Debug|x64) in 3.2s
-   Output: Cluiche/bin/lib/Debug/DiaCore.lib
-```
-
-**Success with dependencies:**
-```
-Building DiaGraphics and dependencies...
-  ✅ DiaCore (1.2s)
-  ✅ DiaMaths (0.8s)
-  ✅ DiaUI (1.5s)
-  ✅ DiaGraphics (2.1s)
-
-Total build time: 5.6s
+Built googletest (Debug|x64) in 4.5s
+   Output: Cluiche/bin/GoogleTests/Debug/x64/GoogleTests.exe
 ```
 
 **Failure:**
 ```
-❌ Build failed: DiaCore
+Build failed: DiaCore
 
 Error in Containers/Arrays/DynamicArray.cpp:45:10
   'size_t' was not declared in this scope
-  
-Suggestion: Add #include <cstddef> or check for missing namespace
 
-Build command:
-  msbuild Dia/DiaCore/DiaCore.vcxproj /p:Configuration=Debug /p:Platform=x64
+Suggestion: Add #include <cstddef> or check for missing namespace
 ```
 
 ### Error Handling
 
-**Common issues:**
+1. **MSBuild not found**: DiaCLI handles this via vswhere.exe. If using raw MSBuild, suggest `dia run` instead.
+2. **Dependency failed**: Show which dependency failed and why
+3. **Linker errors**: Likely means dependency wasn't built or is out of date — suggest `--force`
 
-1. **MSBuild not found**
-   - Check if running in Developer Command Prompt
-   - Suggest: `start Cluiche/Cluiche.sln` to build in Visual Studio
+### DiaCLI Commands Reference
 
-2. **Dependency failed**
-   - Show which dependency failed and why
-   - Suggest rebuilding dependencies: `/build <dep> --rebuild`
+```bash
+# Pipeline targets (compile + deploy):
+dia run googletest --build-only        # Build GoogleTests
+dia run cluichetest --build-only       # Build CluicheTest
+dia run cluicheeditor --build-only     # Build CluicheEditor
 
-3. **Missing include paths**
-   - Check .vcxproj configuration
-   - Suggest verifying External/ dependencies (SFML, Awesomium)
+# Full pipeline + launch:
+dia run googletest                     # Build + run tests
+dia run cluichetest                    # Build + launch game
+dia run cluicheeditor                  # Build + launch editor
 
-4. **Linker errors (unresolved externals)**
-   - Likely means dependency wasn't built or is out of date
-   - Suggest: `/build <project> --deps --rebuild`
+# Just launch (already built):
+dia launch googletest
+dia launch cluichetest
+dia launch cluicheeditor
 
-5. **Out of date dependencies**
-   - If incremental build fails mysteriously, suggest `--rebuild`
-   - DiaCore changes often require rebuilding dependents
+# Pipeline with stage control:
+dia pipeline --target googletest --stage compile-code
+dia pipeline --target cluichetest --config Release
+```
 
 ### Smart Defaults
 
-- Use `/nologo /v:minimal` for clean output (unless --verbose)
 - Default to Debug|x64 (primary development config)
-- Auto-enable --deps when building projects with dependencies
+- Use DiaCLI for pipeline targets — it handles MSBuild discovery automatically
 - Show relative paths in errors (from repo root)
-- Estimate build time based on project size
-
-### Build Optimization Tips
-
-**When to rebuild:**
-- Header changes in DiaCore → rebuild all dependents
-- New source files added → rebuild that project only
-- Linker errors → rebuild with --deps
-- Strange behavior → full solution rebuild
-
-**Incremental workflow:**
-- Working on single module → `/build <module>`
-- Testing changes → `/build <module> --no-deps` (skip deps if unchanged)
-- Before commit → `/build` (full solution)
-- After merge → `/build --rebuild` (clean slate)
-
-### Verbosity Levels
-
-**Minimal (default):**
-- Only show project name, result, time
-- Hide compiler/linker command lines
-- Show errors only
-
-**Verbose (--verbose):**
-- Show full MSBuild output with `/v:normal`
-- Useful for diagnosing include path issues
-- Show all warnings
-
-### Special Cases
-
-**DiaCLI (Python-only):**
-DiaCLI is a Python project (not a C++ vcxproj), so it doesn't need building via MSBuild. If user tries to build it, explain:
-```
-ℹ️  DiaCLI is a Python project (Poetry-based)
-   No MSBuild compilation needed
-   To set up: cd Dia/DiaCLI && poetry install
-```
-
-**External dependencies:**
-If build fails with missing external headers/libs:
-- Check `External/SFML/` exists
-- Check `External/Awesomium/` exists
-- Suggest user verify External/ directory setup
-
-### Build Time Estimates
-
-Provide rough estimates to set expectations:
-- DiaCore: ~2-4s incremental, ~10-15s clean
-- DiaMaths: ~1-2s incremental, ~3-5s clean
-- DiaGraphics: ~2-3s incremental, ~8-10s clean
-- CluicheTest: ~5-8s incremental, ~20-30s clean
-- Full solution: ~30-60s clean build
-
-These vary by machine but give users an idea of whether build is hung.
+- For build errors, check if DiaCore or other dependencies need rebuilding

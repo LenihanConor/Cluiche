@@ -5,7 +5,7 @@ import requests
 from requests_toolbelt import exceptions
 from requests_toolbelt.downloadutils import stream
 import shutil
-from utils.dia_cli_compression import unzip_file_all
+from dia_cli.utils.dia_cli_compression import unzip_file_all
 
 
 ## @addtogroup utils_grp

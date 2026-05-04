@@ -5,7 +5,7 @@ import subprocess
 from pathlib import Path
 from typing import Optional
 
-from utils.check_result import CheckResult
+from dia_cli.utils.check_result import CheckResult
 
 
 _VSWHERE = Path("C:/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe")

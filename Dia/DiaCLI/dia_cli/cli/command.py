@@ -1,5 +1,5 @@
 import click
-from commands.command import command_cmd
+from dia_cli.commands.command import command_cmd
 from dia_cli.utils.dia_cli_config import Config
 from dia_cli.utils.dia_cli_paths import DiaCLIPaths
 

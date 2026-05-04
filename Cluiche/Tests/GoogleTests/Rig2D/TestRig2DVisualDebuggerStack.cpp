@@ -586,3 +586,18 @@ TEST(RigRestPoseRenderer, RegisterFixed_ThroughManager_DrawsLines)
     r.manager.DrawFixed(v);
     EXPECT_EQ(v.lineCount, 2);
 }
+
+TEST(RigRestPoseRenderer, RootOnlySkeleton_ZeroLines)
+{
+    // A single-bone skeleton (root only) has no non-root bones,
+    // so rest pose should emit zero line primitives.
+    SkeletonDef def = MakeSimpleChain(1);
+    Skeleton skeleton(def);
+
+    Dia::Rig2D::RigRestPoseRenderer renderer;
+    Dia::Debug::FixedPrimitiveBuffer buf(32);
+
+    renderer.BuildPrimitives(&skeleton, buf);
+
+    EXPECT_EQ(buf.GetCount(), 0u);
+}

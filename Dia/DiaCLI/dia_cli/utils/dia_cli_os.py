@@ -129,7 +129,7 @@ def can_use_symlinks():
     This can happen on Windows if the workstation does not have Developer mode enabled.
     https://blogs.windows.com/windowsdeveloper/2016/12/02/symlinks-windows-10/
     """
-    from utils.dia_cli_platform import is_windows
+    from dia_cli.utils.dia_cli_platform import is_windows
     if is_windows():
         if sys.getwindowsversion()[:2] >= (6, 0):
             tmp_folder = pathlib.Path(tempfile.mkdtemp())

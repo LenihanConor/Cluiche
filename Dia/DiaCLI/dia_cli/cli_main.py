@@ -47,20 +47,30 @@ def _remove_cli_cmd_prefix(cmd_name: str) -> str:
     return cmd_name
 
 
-# FIXME When we are distributing as a package, we should always distribute with a dia_cli_prime_config.json.
-# At that time we can get rid of any handling of it being absent.
-# See https://jaas.ea.com/browse/PBLU-298
 _prime_config_present = False
 _root_path = Path.cwd()
-_cwd_and_ancestors = [Path.cwd()]
-_cwd_and_ancestors.extend(Path.cwd().parents)
-for parent in _cwd_and_ancestors:
-    if any(parent.glob(Config.prime_config_filename)):
+
+# Priority 1: DIA_CLI_CONFIG env var (set by DiaEnv or user profile)
+_env_config_path = os.environ.get("DIA_CLI_CONFIG")
+if _env_config_path:
+    _env_path = Path(_env_config_path)
+    if _env_path.is_file():
         _prime_config_present = True
-        _prime_config_file_path = parent.joinpath(Config.prime_config_filename)
-        _root_path = parent
+        _prime_config_file_path = _env_path
+        _root_path = _env_path.parent
         _prime_config = Config.read_json(_prime_config_file_path)
-        break
+
+# Priority 2: Walk CWD ancestors (original behaviour)
+if not _prime_config_present:
+    _cwd_and_ancestors = [Path.cwd()]
+    _cwd_and_ancestors.extend(Path.cwd().parents)
+    for parent in _cwd_and_ancestors:
+        if any(parent.glob(Config.prime_config_filename)):
+            _prime_config_present = True
+            _prime_config_file_path = parent.joinpath(Config.prime_config_filename)
+            _root_path = parent
+            _prime_config = Config.read_json(_prime_config_file_path)
+            break
 
 
 if _prime_config_present:
@@ -84,7 +94,7 @@ class DiaCLI(click.MultiCommand):
         # a dict mapping module names (i.e. top-level commands) to their paths
         self._module_paths = {}
         # Need to import here to avoid the isinstance from returning false from within the click code
-        from utils.dia_cli_config import Config
+        from dia_cli.utils.dia_cli_config import Config
         self.context_settings['obj'] = Config(value=_prime_config, root_path=_root_path, cwd=Path.cwd())
 
     def list_commands(self, ctx):
@@ -189,7 +199,7 @@ def _load_module_as_command(name: str, module_path: Path):
     return mod
 
 
-from utils.repo_root import find_repo_root as _find_repo_root
+from dia_cli.utils.repo_root import find_repo_root as _find_repo_root
 _LOG_DIR = _find_repo_root(__file__) / "Cluiche" / "out" / "DiaCLI" / "logs"
 
 

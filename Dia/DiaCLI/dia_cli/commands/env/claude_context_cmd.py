@@ -5,7 +5,7 @@ import shutil
 from pathlib import Path
 from typing import Optional
 
-from utils.repo_root import find_repo_root
+from dia_cli.utils.repo_root import find_repo_root
 
 _REPO_ROOT = find_repo_root(__file__)
 

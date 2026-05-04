@@ -17,9 +17,9 @@ def _make_deploy_cmd(target_name: str):
     @click.option("--force", is_flag=True, default=False,
                   help="Re-copy files even if already up to date.")
     def _deploy(config, out_dir, force):
-        from utils.repo_root import find_repo_root
-        from commands.pipeline.pipeline_config import load_pipeline_config, PipelineConfigError
-        from commands.pipeline.stages.package_stage import run_deploy
+        from dia_cli.utils.repo_root import find_repo_root
+        from dia_cli.commands.pipeline.pipeline_config import load_pipeline_config, PipelineConfigError
+        from dia_cli.commands.pipeline.stages.package_stage import run_deploy
 
         # MSBuild $(TargetDir) ends with \, which escapes the closing " on Windows,
         # arriving as `C:\path\to\dir\"` — strip stray trailing quotes and slashes.

@@ -15,7 +15,7 @@ def cli():
 @click.pass_context
 def deps(ctx, dep_id, force, quiet):
     """Restore binary SDK dependencies from deps.json."""
-    from commands.env.deps_restore_cmd import run
+    from dia_cli.commands.env.deps_restore_cmd import run
     exit_code = run(repo_root=None, dep_id=dep_id, force=force, quiet=quiet)
     ctx.exit(exit_code)
 
@@ -32,7 +32,7 @@ def deps(ctx, dep_id, force, quiet):
 @click.pass_context
 def setup(ctx, toolchain, deps_only, dep_id, submodules, claude, force, fail_fast, quiet):
     """Provision a fresh developer machine end-to-end."""
-    from commands.env.setup_orchestrator import run
+    from dia_cli.commands.env.setup_orchestrator import run
     exit_code = run(repo_root=None, toolchain=toolchain, deps_only=deps_only,
                     dep_id=dep_id, submodules=submodules, claude=claude,
                     force=force, fail_fast=fail_fast, quiet=quiet)
@@ -50,7 +50,7 @@ def setup(ctx, toolchain, deps_only, dep_id, submodules, claude, force, fail_fas
 @click.pass_context
 def verify(ctx, toolchain, deps_only, submodules, docker_only, claude, output_json, quiet):
     """Check environment health (read-only, CI-safe)."""
-    from commands.env.verify_orchestrator import run
+    from dia_cli.commands.env.verify_orchestrator import run
     exit_code = run(repo_root=None, toolchain=toolchain, deps_only=deps_only,
                     submodules=submodules, docker_only=docker_only, claude=claude,
                     output_json=output_json, quiet=quiet)
@@ -62,7 +62,7 @@ def verify(ctx, toolchain, deps_only, submodules, docker_only, claude, output_js
 @click.pass_context
 def claude_setup(ctx, force):
     """Generate .claude/settings.local.json and wire memory symlink."""
-    from commands.env.claude_context_cmd import run
+    from dia_cli.commands.env.claude_context_cmd import run
     exit_code = run(repo_root=None, force=force)
     ctx.exit(exit_code)
 
@@ -78,7 +78,7 @@ def docker():
 @click.pass_context
 def docker_image(ctx, force):
     """Build or pull the Docker image (MSVC + Windows SDK)."""
-    from commands.env.docker.image_cmd import run
+    from dia_cli.commands.env.docker.image_cmd import run
     exit_code = run(repo_root=None, force=force)
     ctx.exit(exit_code)
 
@@ -88,7 +88,7 @@ def docker_image(ctx, force):
 @click.pass_context
 def docker_deps(ctx, force):
     """Restore External/ deps inside the container via deps.json."""
-    from commands.env.docker.deps_cmd import run
+    from dia_cli.commands.env.docker.deps_cmd import run
     exit_code = run(repo_root=None, force=force)
     ctx.exit(exit_code)
 
@@ -98,6 +98,6 @@ def docker_deps(ctx, force):
 @click.pass_context
 def docker_paths(ctx, force):
     """Verify/configure PATH inside the container."""
-    from commands.env.docker.paths_cmd import run
+    from dia_cli.commands.env.docker.paths_cmd import run
     exit_code = run(repo_root=None, force=force)
     ctx.exit(exit_code)

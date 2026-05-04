@@ -18,7 +18,7 @@ def cli():
 @click.pass_context
 def editor_ui(ctx, filter_pattern, watch, docker):
     """Run the DiaApplicationEditor (CEF) UI Vitest suite."""
-    from commands.test.ui_runner import run
+    from dia_cli.commands.test.ui_runner import run
     exit_code = run(
         repo_root=None,
         ui_subpath="Dia/DiaApplicationEditor/UI",
@@ -40,7 +40,7 @@ def editor_ui(ctx, filter_pattern, watch, docker):
 @click.pass_context
 def game_ui(ctx, filter_pattern, watch, docker):
     """Run the CluicheTest game UI Vitest suite."""
-    from commands.test.ui_runner import run
+    from dia_cli.commands.test.ui_runner import run
     exit_code = run(
         repo_root=None,
         ui_subpath="Cluiche/CluicheTest/UI",
@@ -64,7 +64,7 @@ def game_ui(ctx, filter_pattern, watch, docker):
 @click.pass_context
 def googletest(ctx, filter_pattern, config, verbose, docker):
     """Run the GoogleTests C++ test suite."""
-    from commands.test.googletest_runner import run
+    from dia_cli.commands.test.googletest_runner import run
     exit_code = run(repo_root=None, config=config, filter_pattern=filter_pattern,
                     verbose=verbose, docker=docker)
     ctx.exit(exit_code)
@@ -82,7 +82,7 @@ def googletest(ctx, filter_pattern, config, verbose, docker):
 @click.pass_context
 def cli_tests(ctx, filter_pattern, parallel, coverage_out, docker):
     """Run the DiaCLI pytest suite."""
-    from commands.test.cli_runner import run
+    from dia_cli.commands.test.cli_runner import run
     exit_code = run(repo_root=None, filter_pattern=filter_pattern,
                     parallel=parallel, coverage_out=coverage_out, docker=docker)
     ctx.exit(exit_code)
@@ -102,7 +102,7 @@ def cli_tests(ctx, filter_pattern, parallel, coverage_out, docker):
 @click.pass_context
 def env_integration(ctx, skip_env, max_auto_fixes, no_fix, docker, inject_fault):
     """Run the full env -> pipeline -> test validation loop inside Docker."""
-    from commands.test.env_integration_runner import run
+    from dia_cli.commands.test.env_integration_runner import run
     exit_code = run(repo_root=None, skip_env=skip_env, max_auto_fixes=max_auto_fixes,
                     no_fix=no_fix, inject_fault=inject_fault, docker=docker)
     ctx.exit(exit_code)

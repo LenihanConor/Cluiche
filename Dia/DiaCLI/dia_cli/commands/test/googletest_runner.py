@@ -3,10 +3,10 @@ import subprocess
 from pathlib import Path
 from typing import Optional
 
-from utils.repo_root import find_repo_root
+from dia_cli.utils.repo_root import find_repo_root
 
 _DOCKER_IMAGE = "cluiche-build-env"
-_BINARY_SUBPATH = "Cluiche/bin/{config}/x64/GoogleTests.exe"
+_BINARY_SUBPATH = "Cluiche/bin/GoogleTests/{config}/x64/GoogleTests.exe"
 _PYTHON_DLL = "python311.dll"
 
 _REPO_ROOT = find_repo_root(__file__)
