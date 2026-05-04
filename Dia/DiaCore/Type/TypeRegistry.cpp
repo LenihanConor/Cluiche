@@ -37,6 +37,11 @@ namespace Dia
  				mIDToTypeMap.Add(type->GetUniqueCRC(), type );
 			}
 
+			bool TypeRegistry::ContainsType(const CRC& typeCRC) const
+			{
+				return mIDToTypeMap.ContainsKey(typeCRC);
+			}
+
 			void TypeRegistry::ClearAll()
 			{
 				mIDToTypeMap.RemoveAll();

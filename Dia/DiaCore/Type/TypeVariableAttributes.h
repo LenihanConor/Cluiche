@@ -2,6 +2,7 @@
 #define DIA_TYPE_VARIABLE_ATTRIBUTES_H
 
 #include "DiaCore/CRC/StripStringCRC.h"
+#include "DiaCore/CRC/StringCRC.h"
 
 #include <functional>
 
@@ -67,6 +68,43 @@ namespace Dia
 
 			private:
 				CustomSerializer mFuncHandler;
+			};
+
+			//---------------------------------------------------------------------------------------------------------
+			// TypeVariableAttributeRequired
+			//---------------------------------------------------------------------------------------------------------
+			// Marks a field as required — deserializers that support validation will fail if this field is missing
+			class TypeVariableAttributeRequired : public TypeVariableAttributes
+			{
+			public:
+				TypeVariableAttributeRequired();
+
+				static const StripStringCRC mAttributeID;
+				static const StripStringCRC& GetStaticUniqueID() { return mAttributeID; };
+				virtual const StripStringCRC& GetUniqueID()const override { return mAttributeID; };
+				virtual void AssignedTo(const TypeVariable& typeVariable) override {};
+			};
+
+			//---------------------------------------------------------------------------------------------------------
+			// TypeVariableAttributeAssetReference
+			//---------------------------------------------------------------------------------------------------------
+			// Marks a field as referencing another asset by its StringCRC type+name ID.
+			// The target type ID identifies which asset type the field points at.
+			// Any field type may carry this attribute — no assertion is raised in AssignedTo.
+			class TypeVariableAttributeAssetReference : public TypeVariableAttributes
+			{
+			public:
+				explicit TypeVariableAttributeAssetReference(const Dia::Core::StringCRC& targetTypeId);
+
+				const Dia::Core::StringCRC& GetTargetTypeId() const;
+
+				static const StripStringCRC mAttributeID;
+				static const StripStringCRC& GetStaticUniqueID() { return mAttributeID; }
+				virtual const StripStringCRC& GetUniqueID() const override { return mAttributeID; }
+				virtual void AssignedTo(const TypeVariable& typeVariable) override {} // any field can reference an asset
+
+			private:
+				Dia::Core::StringCRC mTargetTypeId;
 			};
 
 			//---------------------------------------------------------------------------------------------------------

@@ -25,6 +25,32 @@ namespace Dia
 			}
 
 			//---------------------------------------------------------------------------------------------------------
+			// TypeVariableAttributeAssetReference
+			//---------------------------------------------------------------------------------------------------------
+
+			const StripStringCRC TypeVariableAttributeAssetReference::mAttributeID("TypeVariableAttributeAssetReference");
+
+			TypeVariableAttributeAssetReference::TypeVariableAttributeAssetReference(const Dia::Core::StringCRC& targetTypeId)
+				: TypeVariableAttributes()
+				, mTargetTypeId(targetTypeId)
+			{}
+
+			const Dia::Core::StringCRC& TypeVariableAttributeAssetReference::GetTargetTypeId() const
+			{
+				return mTargetTypeId;
+			}
+
+			//---------------------------------------------------------------------------------------------------------
+			// TypeVariableAttributeRequired
+			//---------------------------------------------------------------------------------------------------------
+
+			const StripStringCRC TypeVariableAttributeRequired::mAttributeID("TypeVariableAttributeRequired");
+
+			TypeVariableAttributeRequired::TypeVariableAttributeRequired()
+				: TypeVariableAttributes()
+			{}
+
+			//---------------------------------------------------------------------------------------------------------
 			// TypeVariableAttributesCustomJsonSerializer
 			//---------------------------------------------------------------------------------------------------------
 

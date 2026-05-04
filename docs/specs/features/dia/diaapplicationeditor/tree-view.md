@@ -27,6 +27,9 @@ Provides a hierarchical tree view of .diaapp manifests using react-arborist, dis
 - [x] Icons for each node type (PU, Phase, Module)
 - [x] Show module count badge on phase nodes
 - [x] Read-only view of transitions (not editable here - use Flow View)
+- [ ] **[Requires DiaApplication Phase B]** PU nodes reflect parent-child tree — child PUs nested under their parent PU in the tree, not as flat peers
+- [ ] **[Requires DiaApplication Phase A]** Each node shows a `sourceManifestPath` badge indicating which .diaapp file it came from
+- [ ] **[Requires DiaApplication Phase C]** Stage-contributed phases show a stage name label (derived from `sourceManifestPath` + `metadata.type == "stage"`)
 
 ## Design
 

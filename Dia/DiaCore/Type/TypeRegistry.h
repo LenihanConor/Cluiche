@@ -20,8 +20,10 @@ namespace Dia
 			public:
 				TypeRegistry();
 
-				void Add(TypeDefinition* type);	
-	
+				void Add(TypeDefinition* type);
+
+				bool ContainsType(const CRC& typeCRC) const;
+
 				void ClearAll();
 
 			private:

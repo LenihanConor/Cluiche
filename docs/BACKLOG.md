@@ -20,7 +20,12 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 |--------|------|----------|------------|
 | ~~DiaSerializer~~ | [diaserializer.md](specs/systems/dia/diaserializer.md) | ✅ Done 2026-05-02 — Phase 2 + Phase 3a/b/c complete; 43 Phase 3 tests | DiaCore ✅ |
 | DiaApplicationEditor | [diaapplicationeditor.md](specs/systems/dia/diaapplicationeditor.md) | 15 features, all Approved — **not yet implemented** | DiaEditor ✅, DiaWebSocket ✅, DiaUICEF ✅ |
-| DiaAssetCatalogue | [diaassetcatalogue.md](specs/systems/dia/diaassetcatalogue.md) | 3 features, all Approved — json-definition-loader, asset-type-framework, identity-relationship-backbone | DiaCore ✅ |
+| DiaAssetCatalogue | [diaassetcatalogue.md](specs/systems/dia/diaassetcatalogue.md) | 4 features, all Approved — json-definition-loader, asset-type-framework, identity-relationship-backbone, catalogue-automation. [Plan](specs/systems/dia/diaassetcatalogue.plan.md) | DiaCore ✅ |
+| DiaAssetPipeline | [diaassetpipeline.md](specs/systems/dia/diaassetpipeline.md) | 4 features, all Approved — handler-registry-build-runner, deploy-layout-engine, built-in-type-handlers, cli-command-surface. Build order: 1→3→2→4. | DiaAssetCatalogue (catalogue manifest as fixture for e2e tests) |
+| DiaAssetCatalogueEditor | [diaassetcatalogueeditor.md](specs/systems/dia/diaassetcatalogueeditor.md) | 8 features, all Approved — manifest load/save, CRUD, file discoverer, relationship editor, graph view, validation, routing, rules UI. [Plan](specs/systems/dia/diaassetcatalogueeditor.plan.md) | DiaAssetCatalogue (build first) |
+| DiaAssetRuntime | [diaassetruntime.md](specs/systems/dia/diaassetruntime.md) | 6 features, all Approved — manifest-load-path-resolution, asset-state-machine, stage-lifecycle-ref-counting, event-notification, debug-query-api, diaapi-debug-commands. Build order: 1→2→3→4→5→6. | DiaCore ✅, DiaAssetPipeline (for assets.runtime.json fixture) |
+| DiaAssetRuntimeEditor | [diaassetruntimeeditor.md](specs/systems/dia/diaassetruntimeeditor.md) | 4 features, all Approved — asset-state-table, stage-asset-tree-view, ref-count-inspector, state-transition-log. HTML mockup exists. Build order: 1→2→3→4. | DiaAssetRuntime Feature 6 (DiaAPI debug commands) must be built first |
+| DiaApplication — Flow Tree | [diaapplication.md](specs/systems/dia/diaapplication.md) | 3 features, all Approved — manifest-imports (A), pu-parent-child-tree (B), stage-manifests (C). Build order: A→B→C. Phase D (editor graph view) unlocks inside DiaApplicationEditor after A/B/C ship. | DiaCore ✅ |
 | ~~DiaIK~~ | [diaik2d.md](specs/systems/dia/diaik2d.md) | ✅ Done 2026-05-02 — 6 features, 33 tests | — |
 | ~~DiaVisualDebugger~~ | [diavisualdebugger.md](specs/systems/dia/diavisualdebugger.md) | ✅ Done 2026-05-04 — all 12 features; 114 C++ tests + 13 Vitest/jsdom tests | DiaGraphics ✅, DiaSFML ✅, DiaAPI ✅, DiaCore ✅ |
 
@@ -39,9 +44,10 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | Item | Spec | What's needed |
 |------|------|---------------|
 | ~~DiaApplication — data-driven-application-system~~ | [data-driven-application-system.md](specs/features/dia/diaapplication/data-driven-application-system.md) | Done 2026-05-02 — JsonApplicationManifestSerializer + 12 tests |
-| DiaAssetPipeline system | [diaassetpipeline.md](specs/systems/dia/diaassetpipeline.md) | Approved — 4 features identified, needs `/spec-feature` for each before building. See [asset-system-overview.md](specs/systems/dia/asset-system-overview.md). |
-| DiaAssetRuntime system | TBD | Needs `/spec-system` — runtime Stage→Bundle→Asset resolution, additive over DiaCore FilePath. See [asset-system-overview.md](specs/systems/dia/asset-system-overview.md). Depends on DiaAssetCatalogue |
-| DiaAssetCatalogueEditor system | TBD | Needs `/spec-system` — editor UI only, calls DiaAssetCatalogue query API. See [asset-system-overview.md](specs/systems/dia/asset-system-overview.md). Depends on DiaAssetCatalogue, DiaEditor |
+| ~~DiaAssetPipeline system~~ | [diaassetpipeline.md](specs/systems/dia/diaassetpipeline.md) | Approved — all 4 feature specs Approved. Moved to Ready to Build above. |
+| ~~DiaAssetRuntime system~~ | [diaassetruntime.md](specs/systems/dia/diaassetruntime.md) | Approved — all 6 feature specs Approved. Moved to Ready to Build above. |
+| ~~DiaAssetCatalogueEditor system~~ | [diaassetcatalogueeditor.md](specs/systems/dia/diaassetcatalogueeditor.md) | Approved — 8 features, all Approved. Moved to Ready to Build above. |
+| ~~DiaApplication — Flow Tree (Phases A/B/C)~~ | [diaapplication.md](specs/systems/dia/diaapplication.md) | All Approved. Moved to Ready to Build above. |
 | DiaStateMachineEditor system | TBD | Needs `/spec-system` — editor plugin for state machine visual debugging + design-time editing. Depends on DiaStateMachine ✅, DiaEditor |
 | ~~DiaRigidBody2D — Visual Debugger~~ | [diarigidbody2dvisualdebugger.md](specs/systems/dia/diarigidbody2dvisualdebugger.md) | Superseded by DiaVisualDebugger / rigidbody2d-visual-debugger-stack |
 | ~~DiaSoftBody2D — Visual Debugger~~ | [visual-debugger.md](specs/features/dia/diasoftbody2d/visual-debugger.md) | Superseded by DiaVisualDebugger / softbody2d-visual-debugger-stack |
