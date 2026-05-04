@@ -6,6 +6,7 @@
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaMaths/Vector/Vector2D.h>
+#include <DiaLogger/DiaLog.h>
 
 #include "DiaGraphics/Frame/DebugPrimitive.h"
 
@@ -109,10 +110,16 @@ namespace Dia
 
 		private:
 			/// Returns true if space remains; increments mDroppedCount and returns false when full.
+			/// Logs a warning once when the budget is first exceeded, and once again when it recovers.
 			bool CanAdd()
 			{
 				if (mDebugPrimitiveBuffer.Size() >= kCapacity)
 				{
+					if (!mOverCapacityLogged)
+					{
+						DIA_LOG_WARNING("graphics", "DebugFrameData: primitive budget exceeded (%u). Draw calls will be dropped.", kCapacity);
+						mOverCapacityLogged = true;
+					}
 					++mDroppedCount;
 					return false;
 				}
@@ -120,7 +127,8 @@ namespace Dia
 			}
 
 			Core::Containers::DynamicArrayC<DebugPrimitive, kCapacity> mDebugPrimitiveBuffer;
-			uint32_t mDroppedCount = 0;
+			uint32_t mDroppedCount         = 0;
+			bool     mOverCapacityLogged   = false;
 		};
 	}
 }

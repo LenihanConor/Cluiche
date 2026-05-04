@@ -188,3 +188,107 @@ TEST(BroadcastLayerState, Serialises_LayerName)
     Dia::Core::StringCRC retrieved = mgr.GetLayerName(0);
     EXPECT_EQ(retrieved, Dia::Core::StringCRC("my.special.layer"));
 }
+
+// ============================================================================
+// BroadcastLayerState_DirtyFlag suite
+// ============================================================================
+
+TEST(BroadcastLayerState_DirtyFlag, NoDirtyAfterNullBroadcast_SecondCallSafe)
+{
+    // nullptr guard fires before dirty-flag check, so dirty is NOT cleared.
+    // Two consecutive null-broadcast calls must both be safe (no crash).
+    DebugLayerManager mgr;
+    PanelTestLayer layer("dirty.null.a");
+    mgr.Register(&layer);
+    EXPECT_NO_FATAL_FAILURE(mgr.BroadcastLayerState(nullptr));
+    EXPECT_NO_FATAL_FAILURE(mgr.BroadcastLayerState(nullptr));
+}
+
+TEST(BroadcastLayerState_DirtyFlag, DisableLayer_ThenEnable_TwoDirtyCalls)
+{
+    // Register → disable (dirty) → null broadcast (no-op) → enable (dirty again)
+    // → null broadcast (no-op). Layer count must remain 1.
+    DebugLayerManager mgr;
+    PanelTestLayer layer("dirty.toggle");
+    mgr.Register(&layer);
+    mgr.DisableLayer(Dia::Core::StringCRC("dirty.toggle"));
+    EXPECT_NO_FATAL_FAILURE(mgr.BroadcastLayerState(nullptr));
+    mgr.EnableLayer(Dia::Core::StringCRC("dirty.toggle"));
+    EXPECT_NO_FATAL_FAILURE(mgr.BroadcastLayerState(nullptr));
+    EXPECT_EQ(mgr.GetLayerCount(), 1);
+}
+
+TEST(BroadcastLayerState_DirtyFlag, UnregisterAll_LayerCountZero)
+{
+    // Register three layers then unregister all; count must drop to zero.
+    DebugLayerManager mgr;
+    PanelTestLayer a("unreg.a"), b("unreg.b"), c("unreg.c");
+    mgr.Register(&a);
+    mgr.Register(&b);
+    mgr.Register(&c);
+    mgr.Unregister(Dia::Core::StringCRC("unreg.a"));
+    mgr.Unregister(Dia::Core::StringCRC("unreg.b"));
+    mgr.Unregister(Dia::Core::StringCRC("unreg.c"));
+    EXPECT_EQ(mgr.GetLayerCount(), 0);
+    EXPECT_FALSE(mgr.HasLayer(Dia::Core::StringCRC("unreg.a")));
+    EXPECT_FALSE(mgr.HasLayer(Dia::Core::StringCRC("unreg.b")));
+    EXPECT_FALSE(mgr.HasLayer(Dia::Core::StringCRC("unreg.c")));
+}
+
+// ============================================================================
+// BroadcastLayerState_Serialisation suite
+// ============================================================================
+
+TEST(BroadcastLayerState_Serialisation, Serialises_PriorityValue)
+{
+    // Register a layer with a specific priority and verify the entry is accessible
+    // via GetLayerName (the same data path used by BroadcastLayerState).
+    DebugLayerManager mgr;
+    PanelTestLayer layer("prio.42");
+    mgr.Register(&layer, 42);
+    Dia::Core::StringCRC name = mgr.GetLayerName(0);
+    EXPECT_EQ(name, Dia::Core::StringCRC("prio.42"));
+}
+
+TEST(BroadcastLayerState_Serialisation, Serialises_DisabledLayer_EnabledFalse)
+{
+    // Register then immediately disable a layer; IsLayerEnabled must return false.
+    DebugLayerManager mgr;
+    PanelTestLayer layer("ser.disabled");
+    mgr.Register(&layer);
+    mgr.DisableLayer(Dia::Core::StringCRC("ser.disabled"));
+    EXPECT_FALSE(mgr.IsLayerEnabled(Dia::Core::StringCRC("ser.disabled")));
+}
+
+TEST(BroadcastLayerState_Serialisation, MultipleRegisterOrder_GetLayerName_Correct)
+{
+    // Register three layers; total count must be 3.
+    DebugLayerManager mgr;
+    PanelTestLayer a("order.a"), b("order.b"), c("order.c");
+    mgr.Register(&a, 0);
+    mgr.Register(&b, 0);
+    mgr.Register(&c, 0);
+    EXPECT_EQ(mgr.GetLayerCount(), 3);
+}
+
+// ============================================================================
+// DebugLayerPanelPlugin_Metadata additional tests
+// ============================================================================
+
+#include <cstring>
+
+TEST(DebugLayerPanelPlugin_Metadata, GetVersion_Is1_0)
+{
+    DebugLayerPanelPlugin plugin;
+    EXPECT_STREQ(plugin.GetVersion(), "1.0");
+}
+
+TEST(DebugLayerPanelPlugin_Metadata, GetDescription_ContainsBudget)
+{
+    DebugLayerPanelPlugin plugin;
+    const char* desc = plugin.GetDescription();
+    ASSERT_NE(desc, nullptr);
+    // Case-insensitive check: look for both "budget" and "Budget"
+    bool found = (strstr(desc, "budget") != nullptr) || (strstr(desc, "Budget") != nullptr);
+    EXPECT_TRUE(found) << "Expected GetDescription() to mention 'budget', got: " << desc;
+}

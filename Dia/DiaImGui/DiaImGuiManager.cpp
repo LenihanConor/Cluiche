@@ -4,6 +4,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "DiaImGui/DiaImGuiManager.h"
 #include "DiaImGui/IImGuiBackend.h"
+#include <DiaCore/Core/Assert.h>
 
 namespace Dia
 {
@@ -25,26 +26,26 @@ namespace Dia
 
         void DiaImGuiManager::Init()
         {
-            if (mBackend)
-                mBackend->Init();
+            DIA_ASSERT(mBackend != nullptr, "DiaImGuiManager::Init called with no backend set");
+            mBackend->Init();
         }
 
         void DiaImGuiManager::Shutdown()
         {
-            if (mBackend)
-                mBackend->Shutdown();
+            DIA_ASSERT(mBackend != nullptr, "DiaImGuiManager::Shutdown called with no backend set");
+            mBackend->Shutdown();
         }
 
         void DiaImGuiManager::NewFrame(float dt)
         {
-            if (mBackend)
-                mBackend->NewFrame(dt);
+            DIA_ASSERT(mBackend != nullptr, "DiaImGuiManager::NewFrame called with no backend set");
+            mBackend->NewFrame(dt);
         }
 
         void DiaImGuiManager::Render()
         {
-            if (mBackend)
-                mBackend->Render();
+            DIA_ASSERT(mBackend != nullptr, "DiaImGuiManager::Render called with no backend set");
+            mBackend->Render();
         }
 
         // -----------------------------------------------------------------

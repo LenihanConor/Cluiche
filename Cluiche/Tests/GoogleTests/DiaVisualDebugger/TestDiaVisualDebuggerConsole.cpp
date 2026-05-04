@@ -71,14 +71,17 @@ TEST(DiaImGuiManager, SetBackend_GetBackend_RoundTrip)
     EXPECT_EQ(manager.GetBackend(), &backend);
 }
 
-TEST(DiaImGuiManager, NewFrame_NullBackend_NoAssert)
+TEST(DiaImGuiManager, NullBackend_AssertsOnInit)
 {
     Dia::ImGui::DiaImGuiManager manager;
-    // Should no-op gracefully without crashing
-    manager.NewFrame(1.0f / 60.0f);
-    manager.Render();
-    manager.Init();
-    manager.Shutdown();
+    // Calling Init/NewFrame/Render/Shutdown without a backend must fire DIA_ASSERT → death
+    EXPECT_DEATH({ manager.Init(); }, "");
+}
+
+TEST(DiaImGuiManager, NullBackend_AssertsOnNewFrame)
+{
+    Dia::ImGui::DiaImGuiManager manager;
+    EXPECT_DEATH({ manager.NewFrame(0.016f); }, "");
 }
 
 TEST(DiaImGuiManager, ForwardsToBackend)
@@ -244,6 +247,203 @@ TEST(DebugLayerManagerAccessors, GetLayerName_OutOfRange_ReturnsZero)
     Dia::Debug::DebugLayerManager manager;
     Dia::Core::StringCRC name = manager.GetLayerName(99);
     EXPECT_EQ(name, Dia::Core::StringCRC::kZero);
+}
+
+// =====================================================================
+// Suite: VisualDebuggerConsole_Visibility (additional)
+// =====================================================================
+
+TEST(VisualDebuggerConsole_Visibility, Toggle_ThirdToggle_ShowsAgain)
+{
+    Dia::Debug::DiaVisualDebuggerConsole console;
+    console.Toggle();  // show
+    console.Toggle();  // hide
+    console.Toggle();  // show again
+    EXPECT_TRUE(console.IsVisible());
+}
+
+TEST(VisualDebuggerConsole_Visibility, GetLogCount_DefaultIsZero)
+{
+    Dia::Debug::DiaVisualDebuggerConsole console;
+    EXPECT_EQ(console.GetLogCount(), 0);
+}
+
+// =====================================================================
+// Suite: VisualDebuggerConsole_LogTail (additional)
+// =====================================================================
+
+TEST(VisualDebuggerConsole_LogTail, LogBelowThreshold_NotAppended)
+{
+    Dia::Debug::DiaVisualDebuggerConsole console;
+    Dia::Logger::Logger& logger = Dia::Logger::Logger::Instance();
+    logger.RegisterThreadBuffer();
+
+    console.Attach(logger);
+
+    // kInfo is below the kWarning threshold — should not appear in the tail
+    Dia::Logger::LogEntry entry;
+    entry.level = Dia::Logger::LogLevel::kInfo;
+    entry.channel = Dia::Core::StringCRC("test");
+    strncpy_s(entry.message, sizeof(entry.message), "Info message", sizeof(entry.message));
+    logger.DispatchImmediate(entry);
+
+    EXPECT_EQ(console.GetLogCount(), 0);
+
+    console.Detach();
+    logger.UnregisterThreadBuffer();
+}
+
+TEST(VisualDebuggerConsole_LogTail, LogAtThreshold_Warning_Appended)
+{
+    Dia::Debug::DiaVisualDebuggerConsole console;
+    Dia::Logger::Logger& logger = Dia::Logger::Logger::Instance();
+    logger.RegisterThreadBuffer();
+
+    console.Attach(logger);
+
+    Dia::Logger::LogEntry entry;
+    entry.level = Dia::Logger::LogLevel::kWarning;
+    entry.channel = Dia::Core::StringCRC("test");
+    strncpy_s(entry.message, sizeof(entry.message), "Warning message", sizeof(entry.message));
+    logger.DispatchImmediate(entry);
+
+    EXPECT_EQ(console.GetLogCount(), 1);
+
+    console.Detach();
+    logger.UnregisterThreadBuffer();
+}
+
+TEST(VisualDebuggerConsole_LogTail, LogAtError_Appended)
+{
+    Dia::Debug::DiaVisualDebuggerConsole console;
+    Dia::Logger::Logger& logger = Dia::Logger::Logger::Instance();
+    logger.RegisterThreadBuffer();
+
+    console.Attach(logger);
+
+    Dia::Logger::LogEntry entry;
+    entry.level = Dia::Logger::LogLevel::kError;
+    entry.channel = Dia::Core::StringCRC("test");
+    strncpy_s(entry.message, sizeof(entry.message), "Error message", sizeof(entry.message));
+    logger.DispatchImmediate(entry);
+
+    EXPECT_EQ(console.GetLogCount(), 1);
+
+    console.Detach();
+    logger.UnregisterThreadBuffer();
+}
+
+TEST(VisualDebuggerConsole_LogTail, DoubleAttach_SecondAttach_NoAssert)
+{
+    Dia::Debug::DiaVisualDebuggerConsole console;
+    Dia::Logger::Logger& logger = Dia::Logger::Logger::Instance();
+    logger.RegisterThreadBuffer();
+
+    // Double attach should not crash (idempotent or safe)
+    console.Attach(logger);
+    console.Attach(logger);
+
+    Dia::Logger::LogEntry entry;
+    entry.level = Dia::Logger::LogLevel::kWarning;
+    entry.channel = Dia::Core::StringCRC("test");
+    strncpy_s(entry.message, sizeof(entry.message), "Double attach message", sizeof(entry.message));
+    logger.DispatchImmediate(entry);
+
+    // At minimum one message should be present and there should be no crash
+    EXPECT_GE(console.GetLogCount(), 1);
+
+    console.Detach();
+    logger.UnregisterThreadBuffer();
+}
+
+// =====================================================================
+// Suite: VisualDebuggerConsole_LogCapacity
+// =====================================================================
+
+TEST(VisualDebuggerConsole_LogCapacity, LogLine_FirstEntry_HasCorrectContent)
+{
+    Dia::Debug::DiaVisualDebuggerConsole console;
+    Dia::Logger::Logger& logger = Dia::Logger::Logger::Instance();
+    logger.RegisterThreadBuffer();
+
+    console.Attach(logger);
+
+    Dia::Logger::LogEntry entry;
+    entry.level = Dia::Logger::LogLevel::kWarning;
+    entry.channel = Dia::Core::StringCRC("test");
+    strncpy_s(entry.message, sizeof(entry.message), "hello world", sizeof(entry.message));
+    logger.DispatchImmediate(entry);
+
+    EXPECT_EQ(console.GetLogCount(), 1);
+    EXPECT_STREQ(console.GetLogLine(0), "hello world");
+
+    console.Detach();
+    logger.UnregisterThreadBuffer();
+}
+
+TEST(VisualDebuggerConsole_LogCapacity, LogLine_RingBuffer_IndexAfterWrap)
+{
+    Dia::Debug::DiaVisualDebuggerConsole console;
+    Dia::Logger::Logger& logger = Dia::Logger::Logger::Instance();
+    logger.RegisterThreadBuffer();
+
+    console.Attach(logger);
+
+    // Write kLogTailCapacity + 3 messages (indices 0 .. kLogTailCapacity+2)
+    const int totalMessages = Dia::Debug::DiaVisualDebuggerConsole::kLogTailCapacity + 3;
+    for (int i = 0; i < totalMessages; ++i)
+    {
+        Dia::Logger::LogEntry entry;
+        entry.level = Dia::Logger::LogLevel::kError;
+        entry.channel = Dia::Core::StringCRC("test");
+        snprintf(entry.message, sizeof(entry.message), "Message %d", i);
+        logger.DispatchImmediate(entry);
+    }
+
+    // Buffer should be full
+    EXPECT_EQ(console.GetLogCount(), Dia::Debug::DiaVisualDebuggerConsole::kLogTailCapacity);
+
+    // Last entry should match the final message written
+    char expectedLast[128];
+    snprintf(expectedLast, sizeof(expectedLast), "Message %d", totalMessages - 1);
+    EXPECT_STREQ(console.GetLogLine(console.GetLogCount() - 1), expectedLast);
+
+    // Oldest surviving entry should be "Message 3" (the first 3 were overwritten by the wrap)
+    EXPECT_STREQ(console.GetLogLine(0), "Message 3");
+
+    console.Detach();
+    logger.UnregisterThreadBuffer();
+}
+
+// =====================================================================
+// Suite: DiaImGuiManager (additional)
+// =====================================================================
+
+TEST(DiaImGuiManager, MultipleSetBackend_LastWins)
+{
+    Dia::ImGui::DiaImGuiManager manager;
+    StubImGuiBackend backendA;
+    StubImGuiBackend backendB;
+
+    manager.SetBackend(&backendA);
+    manager.SetBackend(&backendB);
+
+    EXPECT_EQ(manager.GetBackend(), &backendB);
+}
+
+TEST(DiaImGuiManager, Init_Shutdown_Idempotent)
+{
+    Dia::ImGui::DiaImGuiManager manager;
+    StubImGuiBackend backend;
+    manager.SetBackend(&backend);
+
+    manager.Init();
+    manager.Init();
+    EXPECT_EQ(backend.initCount, 2);
+
+    manager.Shutdown();
+    manager.Shutdown();
+    EXPECT_EQ(backend.shutdownCount, 2);
 }
 
 #endif // DIA_DEBUG

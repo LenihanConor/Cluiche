@@ -4,6 +4,7 @@
 #include "DiaGraphics/Frame/DebugFrameData.h"
 
 #include "DiaGraphics/Frame/DebugFrameDataVisitor.h"
+#include <DiaLogger/DiaLog.h>
 
 namespace Dia
 {
@@ -21,6 +22,11 @@ namespace Dia
 		//------------------------------------------------------------------------------
 		void DebugFrameData::ClearDebugBuffer()
 		{
+			if (mOverCapacityLogged)
+			{
+				DIA_LOG_WARNING("graphics", "DebugFrameData: primitive budget recovered — no drops this frame.");
+				mOverCapacityLogged = false;
+			}
 			mDebugPrimitiveBuffer.RemoveAll();
 			mDroppedCount = 0;
 		}

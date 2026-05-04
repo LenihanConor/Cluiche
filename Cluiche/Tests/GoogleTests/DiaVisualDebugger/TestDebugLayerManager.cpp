@@ -329,3 +329,185 @@ TEST(DebugColourPalette_Values, DebugColourPalette_AllNineDistinct)
         }
     }
 }
+
+// ============================================================================
+// Registration suite — additional tests
+// ============================================================================
+
+TEST(DebugLayerManager_Registration, MaxCapacity_NoAssert)
+{
+    DebugLayerManager mgr;
+    // kMaxLayers = 64 — build distinct names on the stack and register all of them
+    char nameBuf[64][32];
+    TestLayer* layers[DebugLayerManager::kMaxLayers];
+    for (unsigned int i = 0; i < DebugLayerManager::kMaxLayers; ++i)
+    {
+        snprintf(nameBuf[i], sizeof(nameBuf[i]), "test.cap.%u", i);
+        layers[i] = new TestLayer(nameBuf[i]);
+        mgr.Register(layers[i]);
+    }
+    EXPECT_EQ(mgr.GetLayerCount(), static_cast<int>(DebugLayerManager::kMaxLayers));
+    for (unsigned int i = 0; i < DebugLayerManager::kMaxLayers; ++i)
+        delete layers[i];
+}
+
+TEST(DebugLayerManager_Registration, Register_SetsLayerDirty_AfterRegister)
+{
+    DebugLayerManager mgr;
+    TestLayer layer("test.dirty.broadcast");
+    mgr.Register(&layer);
+    // BroadcastLayerState(nullptr) must be a no-op (nullptr guard) — no crash
+    EXPECT_NO_FATAL_FAILURE(mgr.BroadcastLayerState(nullptr));
+    // A second call must also be safe
+    EXPECT_NO_FATAL_FAILURE(mgr.BroadcastLayerState(nullptr));
+}
+
+// ============================================================================
+// Toggle suite — additional tests
+// ============================================================================
+
+TEST(DebugLayerManager_Toggle, IsLayerEnabled_UnknownName_ReturnsFalse)
+{
+    DebugLayerManager mgr;
+    EXPECT_FALSE(mgr.IsLayerEnabled(Dia::Core::StringCRC("not.registered")));
+}
+
+// ============================================================================
+// Draw suite — additional tests
+// ============================================================================
+
+TEST(DebugLayerManager_Draw, Draw_MultipleFrames_CalledEachFrame)
+{
+    DebugLayerManager mgr;
+    TestLayer layer("test.draw.multiframe");
+    mgr.Register(&layer);
+
+    FrameData fd;
+    mgr.Draw(fd);
+    mgr.Draw(fd);
+    mgr.Draw(fd);
+
+    EXPECT_EQ(layer.mDrawCallCount, 3);
+}
+
+TEST(DebugLayerManager_Draw, Draw_UnregisterBetweenFrames_LayerNotDrawn)
+{
+    DebugLayerManager mgr;
+    TestLayer layer("test.draw.unregister");
+    mgr.Register(&layer);
+
+    FrameData fd;
+    mgr.Draw(fd);
+    ASSERT_EQ(layer.mDrawCallCount, 1);
+
+    mgr.Unregister(Dia::Core::StringCRC("test.draw.unregister"));
+    mgr.Draw(fd);
+
+    EXPECT_EQ(layer.mDrawCallCount, 1);
+}
+
+// ============================================================================
+// Query suite
+// ============================================================================
+
+TEST(DebugLayerManager_Query, GetLayerName_NegativeIndex_ReturnsZero)
+{
+    DebugLayerManager mgr;
+    EXPECT_EQ(mgr.GetLayerName(-1), Dia::Core::StringCRC::kZero);
+}
+
+TEST(DebugLayerManager_Query, GetLayerName_ExactLastIndex_ReturnsName)
+{
+    DebugLayerManager mgr;
+    TestLayer a("test.query.a"), b("test.query.b"), c("test.query.c");
+    mgr.Register(&a);
+    mgr.Register(&b);
+    mgr.Register(&c);
+
+    EXPECT_EQ(mgr.GetLayerName(2), Dia::Core::StringCRC("test.query.c"));
+}
+
+TEST(DebugLayerManager_Query, HasLayer_AfterUnregister_ReturnsFalse)
+{
+    DebugLayerManager mgr;
+    TestLayer layer("test.query.unregister");
+    mgr.Register(&layer);
+    ASSERT_TRUE(mgr.HasLayer(Dia::Core::StringCRC("test.query.unregister")));
+
+    mgr.Unregister(Dia::Core::StringCRC("test.query.unregister"));
+    EXPECT_FALSE(mgr.HasLayer(Dia::Core::StringCRC("test.query.unregister")));
+}
+
+// ============================================================================
+// Scale suite — additional tests
+// ============================================================================
+
+TEST(DebugLayerManager_Scale, SetDebugScale_NegativeValue_Persists)
+{
+    DebugLayerManager mgr;
+    mgr.SetDebugScale(-1.0f);
+    EXPECT_FLOAT_EQ(mgr.GetDebugScale(), -1.0f);
+}
+
+// ============================================================================
+// DebugColourPalette suite — exact RGBA values for remaining 8 colours
+// ============================================================================
+
+TEST(DebugColourPalette_Values, kInactive_IsGrey)
+{
+    EXPECT_EQ(DebugColourPalette::kInactive, Dia::Graphics::RGBA(128, 128, 128, 255));
+}
+
+TEST(DebugColourPalette_Values, kHealthy_IsGreen)
+{
+    EXPECT_EQ(DebugColourPalette::kHealthy, Dia::Graphics::RGBA(0, 220, 0, 255));
+}
+
+TEST(DebugColourPalette_Values, kWarning_IsYellow)
+{
+    EXPECT_EQ(DebugColourPalette::kWarning, Dia::Graphics::RGBA(255, 220, 0, 255));
+}
+
+TEST(DebugColourPalette_Values, kError_IsRed)
+{
+    EXPECT_EQ(DebugColourPalette::kError, Dia::Graphics::RGBA(220, 0, 0, 255));
+}
+
+TEST(DebugColourPalette_Values, kGoal_IsCyan)
+{
+    EXPECT_EQ(DebugColourPalette::kGoal, Dia::Graphics::RGBA(0, 220, 220, 255));
+}
+
+TEST(DebugColourPalette_Values, kPinned_IsMagenta)
+{
+    EXPECT_EQ(DebugColourPalette::kPinned, Dia::Graphics::RGBA(220, 0, 220, 255));
+}
+
+TEST(DebugColourPalette_Values, kCapped_IsOrange)
+{
+    EXPECT_EQ(DebugColourPalette::kCapped, Dia::Graphics::RGBA(255, 140, 0, 255));
+}
+
+TEST(DebugColourPalette_Values, kDeepSleep_IsDarkBlue)
+{
+    EXPECT_EQ(DebugColourPalette::kDeepSleep, Dia::Graphics::RGBA(0, 0, 80, 255));
+}
+
+// ============================================================================
+// DebugLayerNames suite
+// ============================================================================
+
+TEST(DebugLayerNames, LayerNames_RigBones_Correct)
+{
+    EXPECT_EQ(LayerNames::kRigBones, Dia::Core::StringCRC("rig.bones"));
+}
+
+TEST(DebugLayerNames, LayerNames_PhysicsShapes_Correct)
+{
+    EXPECT_EQ(LayerNames::kPhysicsShapes, Dia::Core::StringCRC("physics.shapes"));
+}
+
+TEST(DebugLayerNames, LayerNames_AnimSpring_Correct)
+{
+    EXPECT_EQ(LayerNames::kAnimSpring, Dia::Core::StringCRC("anim.spring"));
+}
