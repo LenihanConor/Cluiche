@@ -342,6 +342,9 @@
     <ClCompile Include="Rig2D\TestRig2DDeterminism.cpp" />
     <ClCompile Include="Rig2D\TestRig2DBoundary.cpp" />
     <ClCompile Include="Rig2D\TestRig2DIntegration.cpp" />
+    <ClCompile Include="Rig2D\TestRig2DVisualDebuggerStack.cpp">
+      <PreprocessorDefinitions>DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
     <!-- IK2D -->
     <ClCompile Include="IK\TestIKChainSerializer.cpp" />
     <ClCompile Include="IK\TestIKChainDef.cpp" />

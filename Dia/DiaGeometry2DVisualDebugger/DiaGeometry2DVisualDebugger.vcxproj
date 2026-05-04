@@ -62,6 +62,10 @@
     <ClInclude Include="QuadtreeDrawer.h" />
     <ClInclude Include="BVHDrawer.h" />
     <ClInclude Include="HexGridDrawer.h" />
+    <ClInclude Include="Renderers\SpatialGridRenderer.h" />
+    <ClInclude Include="Renderers\QuadtreeRenderer.h" />
+    <ClInclude Include="Renderers\BVHRenderer.h" />
+    <ClInclude Include="Renderers\HexGridRenderer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ShapeDrawer.cpp" />

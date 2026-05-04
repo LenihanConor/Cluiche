@@ -36,7 +36,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>./;./../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>DEBUG;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DEBUG;WIN32;_DEBUG;DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <WarningLevel>Level3</WarningLevel>
@@ -58,9 +58,20 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="VisualDebugger.h" />
+    <ClInclude Include="BoneLinesDrawer.h" />
+    <ClInclude Include="JointCirclesDrawer.h" />
+    <ClInclude Include="DirectionArrowsDrawer.h" />
+    <ClInclude Include="RestPoseDrawer.h" />
+    <ClInclude Include="BoneLabelsDrawer.h" />
+    <ClInclude Include="RigRestPoseRenderer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="VisualDebugger.cpp" />
+    <ClCompile Include="BoneLinesDrawer.cpp" />
+    <ClCompile Include="JointCirclesDrawer.cpp" />
+    <ClCompile Include="DirectionArrowsDrawer.cpp" />
+    <ClCompile Include="RestPoseDrawer.cpp" />
+    <ClCompile Include="BoneLabelsDrawer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.rig2dvisualdebugger.architecture.module.md" />
@@ -80,6 +91,10 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaGraphics\DiaGraphics.vcxproj">
       <Project>{1CF9F92B-666E-4B39-9DDE-B1CFBEF68618}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaVisualDebugger\DiaVisualDebugger.vcxproj">
+      <Project>{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

@@ -13,10 +13,13 @@
 #include <DiaRig2DVisualDebugger/DirectionArrowsDrawer.h>
 #include <DiaRig2DVisualDebugger/RestPoseDrawer.h>
 #include <DiaRig2DVisualDebugger/BoneLabelsDrawer.h>
+#include <DiaRig2DVisualDebugger/RigRestPoseRenderer.h>
 
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaVisualDebugger/DebugColourPalette.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
+#include <DiaVisualDebugger/FixedPrimitiveBuffer.h>
+#include <DiaGraphics/Frame/DebugFrameDataVisitor.h>
 
 #include <DiaRig2D/Skeleton.h>
 #include <DiaRig2D/Pose.h>
@@ -510,4 +513,76 @@ TEST(Rig2DVisualDebugger_Migration, OldVisualDebugger_RemovedFromBuild)
     // compiled, the project configuration test would fail to build.
     // Since we reached this point in the test binary, it is confirmed gone.
     SUCCEED();
+}
+
+// ============================================================================
+// RigRestPoseRenderer (fixed-layer) — 4 tests
+// ============================================================================
+
+namespace
+{
+    class CountingVisitor : public Dia::Graphics::DebugFrameDataVisitor
+    {
+    public:
+        mutable int lineCount = 0;
+        void Visit(const Dia::Graphics::DebugPrimitive& p) const override
+        {
+            if (p.type == Dia::Graphics::DebugPrimitiveType::Line2D) ++lineCount;
+        }
+        void Visit(const Dia::Graphics::DebugFrameData&) const override {}
+    };
+}
+
+TEST(RigRestPoseRenderer, Build_ProducesTwoLines_For3BoneSkeleton)
+{
+    Rig3Bone r;
+    Dia::Rig2D::RigRestPoseRenderer renderer;
+    Dia::Debug::FixedPrimitiveBuffer buf(32);
+
+    renderer.BuildPrimitives(&r.skeleton, buf);
+
+    // 3 bones → 2 non-root → 2 line primitives
+    EXPECT_EQ(buf.GetCount(), 2u);
+}
+
+TEST(RigRestPoseRenderer, Build_LinesAreInactiveColour)
+{
+    Rig3Bone r;
+    Dia::Rig2D::RigRestPoseRenderer renderer;
+    Dia::Debug::FixedPrimitiveBuffer buf(32);
+
+    renderer.BuildPrimitives(&r.skeleton, buf);
+
+    CountingVisitor v;
+    buf.AcceptVisitor(v);
+    EXPECT_EQ(v.lineCount, 2);
+}
+
+TEST(RigRestPoseRenderer, BuildTwice_SameCount)
+{
+    Rig3Bone r;
+    Dia::Rig2D::RigRestPoseRenderer renderer;
+    Dia::Debug::FixedPrimitiveBuffer buf(32);
+
+    renderer.BuildPrimitives(&r.skeleton, buf);
+    buf.Clear();
+    renderer.BuildPrimitives(&r.skeleton, buf);
+
+    EXPECT_EQ(buf.GetCount(), 2u);
+}
+
+TEST(RigRestPoseRenderer, RegisterFixed_ThroughManager_DrawsLines)
+{
+    Rig3Bone r;
+    Dia::Rig2D::RigRestPoseRenderer renderer;
+    r.manager.RegisterFixed(
+        Dia::Debug::LayerNames::kRigRestPose,
+        &r.skeleton,
+        &renderer,
+        64,
+        10);
+
+    CountingVisitor v;
+    r.manager.DrawFixed(v);
+    EXPECT_EQ(v.lineCount, 2);
 }
