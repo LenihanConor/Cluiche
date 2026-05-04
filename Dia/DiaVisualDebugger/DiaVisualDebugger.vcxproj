@@ -62,11 +62,21 @@
     <ClInclude Include="DebugColourPalette.h" />
     <ClInclude Include="DebugLayerNames.h" />
     <ClInclude Include="DebugLayerPanelPlugin.h" />
+    <ClInclude Include="IObjectRenderer.h" />
+    <ClInclude Include="IFixedPrimitiveBuffer.h" />
+    <ClInclude Include="FixedPrimitiveBuffer.h" />
+    <ClInclude Include="FixedDrawRegistry.h" />
+    <ClInclude Include="Renderers\SpatialGridRenderer.h" />
+    <ClInclude Include="Renderers\QuadtreeRenderer.h" />
+    <ClInclude Include="Renderers\BVHRenderer.h" />
+    <ClInclude Include="Renderers\HexGridRenderer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugLayerManager.cpp" />
     <ClCompile Include="DebugColourPalette.cpp" />
     <ClCompile Include="DebugLayerPanelPlugin.cpp" />
+    <ClCompile Include="FixedPrimitiveBuffer.cpp" />
+    <ClCompile Include="FixedDrawRegistry.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.debug.architecture.module.md" />

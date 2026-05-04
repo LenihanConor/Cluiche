@@ -13,12 +13,15 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include "IVisualDebugger.h"
+#include "IObjectRenderer.h"
+#include "FixedDrawRegistry.h"
 
 namespace Dia
 {
     namespace Graphics
     {
         class FrameData;
+        class DebugFrameDataVisitor;
     }
 
     namespace DebugServer
@@ -48,11 +51,11 @@ namespace Dia
             static const unsigned int kMaxLayers = 64;
 
             // ----------------------------------------------------------------
-            // Registration
+            // Registration (dynamic layers)
             // ----------------------------------------------------------------
 
             // Register a draw class. DIA_ASSERT fires if debugger is null or if the
-            // layer name is already registered (SD-DBG-006).
+            // layer name is already registered in either registry (SD-DBG-006).
             // priority: lower value drawn first (underneath); higher value drawn last (on top).
             void Register(IVisualDebugger* debugger, int priority = 0);
 
@@ -60,9 +63,33 @@ namespace Dia
             void Unregister(Dia::Core::StringCRC layerName);
 
             // ----------------------------------------------------------------
+            // Registration (fixed layers)
+            // ----------------------------------------------------------------
+
+            // Lock registration — after this call, RegisterFixed() will DIA_ASSERT.
+            // Call once during application startup, after all fixed layers are registered.
+            void LockRegistration();
+
+            // Register a fixed-topology object. DIA_ASSERT if locked, or if name already
+            // registered in either registry (SD-DBG-006).
+            // capacity: max primitives for this object's buffer.
+            // priority: lower value drawn first.
+            void RegisterFixed(Dia::Core::StringCRC name,
+                               const void*          sourceObject,
+                               IObjectRenderer*     renderer,
+                               unsigned int         capacity,
+                               int                  priority = 0);
+
+            void UnregisterFixed(Dia::Core::StringCRC name);
+
+            // Mark a fixed layer dirty — next DrawFixed() will rebuild its buffer.
+            void InvalidateFixed(Dia::Core::StringCRC name);
+
+            // ----------------------------------------------------------------
             // Layer toggle
             // ----------------------------------------------------------------
 
+            // Routes through both dynamic and fixed registries.
             void EnableLayer (Dia::Core::StringCRC layerName);
             void DisableLayer(Dia::Core::StringCRC layerName);
             bool IsLayerEnabled(Dia::Core::StringCRC layerName) const;
@@ -88,6 +115,10 @@ namespace Dia
             // Lazily sorts by priority if dirty, then calls Draw() on each enabled layer.
             void Draw(Dia::Graphics::FrameData& frameData);
 
+            // Renders all enabled fixed layers into visitor.
+            // Call from render loop after Draw().
+            void DrawFixed(const Dia::Graphics::DebugFrameDataVisitor& visitor);
+
             // ----------------------------------------------------------------
             // DiaAPI commands (call once during application startup)
             // ----------------------------------------------------------------
@@ -111,7 +142,9 @@ namespace Dia
             // Query
             // ----------------------------------------------------------------
 
+            // Returns dynamic count + fixed count.
             int  GetLayerCount() const;
+            // Returns true if name is registered in either dynamic or fixed registry.
             bool HasLayer(Dia::Core::StringCRC layerName) const;
 
             // Returns the layer name at position index (0-based).
@@ -127,9 +160,11 @@ namespace Dia
             };
 
             Dia::Core::Containers::DynamicArrayC<LayerEntry, kMaxLayers> mLayers;
-            float    mDebugScale       = 1.0f;
-            uint32_t mSelectedEntityId = 0;
-            bool     mSortDirty        = false;
+            FixedDrawRegistry mFixedRegistry;
+            float    mDebugScale          = 1.0f;
+            uint32_t mSelectedEntityId    = 0;
+            bool     mSortDirty           = false;
+            bool     mRegistrationLocked  = false;
 
             // Broadcast state tracking (debug-editor-panel)
             uint32_t mLastDroppedCount = 0;  // cached from FrameData at end of Draw()

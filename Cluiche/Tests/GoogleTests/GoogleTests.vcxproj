@@ -267,6 +267,9 @@
     <ClCompile Include="DiaVisualDebugger\TestDebugLayerPanelPlugin.cpp">
       <PreprocessorDefinitions>DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\TestFixedDrawLayer.cpp">
+      <PreprocessorDefinitions>DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
     <!-- Geometry2D -->
     <ClCompile Include="Geometry2D\TestGeometry2DVisualDebuggerStack.cpp" />
     <ClCompile Include="Geometry2D\TestSpatialGridSerializer.cpp" />

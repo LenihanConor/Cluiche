@@ -9,6 +9,7 @@
 #include <DiaCore/Core/Assert.h>
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
 #include <DiaGraphics/Frame/FrameData.h>
+#include <DiaGraphics/Frame/DebugFrameDataVisitor.h>
 #include <DiaDebugServer/DebugServerModule.h>
 #include <DiaDebugProtocol/DiaDebugProtocol.h>
 #include <DiaProtobuf/ProtoJsonCodec.h>
@@ -26,7 +27,9 @@ namespace Dia
         {
             DIA_ASSERT(debugger != nullptr, "DebugLayerManager::Register — debugger must not be null");
             DIA_ASSERT(FindLayerIndex(debugger->GetLayerName()) < 0,
-                       "DebugLayerManager::Register — layer name already registered");
+                       "DebugLayerManager::Register — layer name already registered in dynamic registry");
+            DIA_ASSERT(!mFixedRegistry.HasLayer(debugger->GetLayerName()),
+                       "DebugLayerManager::Register — layer name already registered in fixed registry");
 
             LayerEntry entry;
             entry.debugger = debugger;
@@ -56,27 +59,41 @@ namespace Dia
         void DebugLayerManager::EnableLayer(Dia::Core::StringCRC layerName)
         {
             int index = FindLayerIndex(layerName);
-            if (index < 0)
+            if (index >= 0)
+            {
+                mLayers[static_cast<unsigned int>(index)].debugger->SetEnabled(true);
+                mLayersDirty = true;
                 return;
-            mLayers[static_cast<unsigned int>(index)].debugger->SetEnabled(true);
-            mLayersDirty = true;
+            }
+            if (mFixedRegistry.HasLayer(layerName))
+            {
+                mFixedRegistry.EnableLayer(layerName);
+                mLayersDirty = true;
+            }
         }
 
         void DebugLayerManager::DisableLayer(Dia::Core::StringCRC layerName)
         {
             int index = FindLayerIndex(layerName);
-            if (index < 0)
+            if (index >= 0)
+            {
+                mLayers[static_cast<unsigned int>(index)].debugger->SetEnabled(false);
+                mLayersDirty = true;
                 return;
-            mLayers[static_cast<unsigned int>(index)].debugger->SetEnabled(false);
-            mLayersDirty = true;
+            }
+            if (mFixedRegistry.HasLayer(layerName))
+            {
+                mFixedRegistry.DisableLayer(layerName);
+                mLayersDirty = true;
+            }
         }
 
         bool DebugLayerManager::IsLayerEnabled(Dia::Core::StringCRC layerName) const
         {
             int index = FindLayerIndex(layerName);
-            if (index < 0)
-                return false;
-            return mLayers[static_cast<unsigned int>(index)].debugger->IsEnabled();
+            if (index >= 0)
+                return mLayers[static_cast<unsigned int>(index)].debugger->IsEnabled();
+            return mFixedRegistry.IsLayerEnabled(layerName);
         }
 
         // --------------------------------------------------------------------
@@ -238,17 +255,55 @@ namespace Dia
         }
 
         // --------------------------------------------------------------------
+        // Fixed-layer registration
+        // --------------------------------------------------------------------
+
+        void DebugLayerManager::LockRegistration()
+        {
+            mRegistrationLocked = true;
+        }
+
+        void DebugLayerManager::RegisterFixed(
+            Dia::Core::StringCRC name,
+            const void*          sourceObject,
+            IObjectRenderer*     renderer,
+            unsigned int         capacity,
+            int                  priority)
+        {
+            DIA_ASSERT(!mRegistrationLocked,
+                       "DebugLayerManager::RegisterFixed — called after LockRegistration");
+            DIA_ASSERT(FindLayerIndex(name) < 0,
+                       "DebugLayerManager::RegisterFixed — name already registered in dynamic registry");
+            mFixedRegistry.Register(name, sourceObject, renderer, capacity, priority);
+        }
+
+        void DebugLayerManager::UnregisterFixed(Dia::Core::StringCRC name)
+        {
+            mFixedRegistry.Unregister(name);
+        }
+
+        void DebugLayerManager::InvalidateFixed(Dia::Core::StringCRC name)
+        {
+            mFixedRegistry.Invalidate(name);
+        }
+
+        void DebugLayerManager::DrawFixed(const Dia::Graphics::DebugFrameDataVisitor& visitor)
+        {
+            mFixedRegistry.DrawFixed(visitor);
+        }
+
+        // --------------------------------------------------------------------
         // Query
         // --------------------------------------------------------------------
 
         int DebugLayerManager::GetLayerCount() const
         {
-            return static_cast<int>(mLayers.Size());
+            return static_cast<int>(mLayers.Size()) + mFixedRegistry.GetCount();
         }
 
         bool DebugLayerManager::HasLayer(Dia::Core::StringCRC layerName) const
         {
-            return FindLayerIndex(layerName) >= 0;
+            return FindLayerIndex(layerName) >= 0 || mFixedRegistry.HasLayer(layerName);
         }
 
         Dia::Core::StringCRC DebugLayerManager::GetLayerName(int index) const
