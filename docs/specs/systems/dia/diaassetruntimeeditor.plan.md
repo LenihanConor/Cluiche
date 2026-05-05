@@ -27,26 +27,26 @@
 | 8 | F1-T6: Row selection and publish | Done | sonnet | Click handler updates SharedPluginState.mSelectedAssetId via bridge |
 | 9 | F1-T7: Persist poll interval | Not Started | haiku | Read/write poll interval from .context.json |
 | 10 | F1-T8: Unit tests | Not Started | sonnet | JSON parsing, filter logic, connection state transitions, poll timer reset |
-| 11 | F2-T1: StageAssetTreePanel class | Not Started | sonnet | Panel lifecycle, subscribes to shared get_all_states snapshot, sends get_stage_deps on expand |
-| 12 | F2-T2: Root node list from snapshot | Not Started | sonnet | Parse snapshot to identify unique Stages, group globals under "[Global]" node, preserve expand/collapse state |
-| 13 | F2-T3: Lazy child loading | Not Started | sonnet | On first expand send get_stage_deps, cache results until next poll cycle invalidates |
-| 14 | F2-T4: Connection state handling | Not Started | haiku | Subscribe to "game_connection", disable on disconnect, clear+rebuild on reconnect |
-| 15 | F2-T5: CEF tree UI | Not Started | sonnet | HTML/JS collapsible tree, state dots, member count badges, [Global] section |
-| 16 | F2-T6: Selection sync | Not Started | sonnet | Click asset node updates SharedPluginState, highlight node when selection changes externally |
+| 11 | F2-T1: StageAssetTreePanel class | Done | sonnet | Panel lifecycle, subscribes to shared snapshot via version counter |
+| 12 | F2-T2: Root node list from snapshot | Done | sonnet | Derives [Global] node from global-scoped assets, preserves expand/collapse state |
+| 13 | F2-T3: Lazy child loading | Done | sonnet | On expand sends get_stage_deps, caches result with snapshot version |
+| 14 | F2-T4: Connection state handling | Done | haiku | Disable on disconnect, clear+rebuild on reconnect |
+| 15 | F2-T5: CEF tree UI | Done | sonnet | HTML/JS collapsible tree, state dots, member count badges, [Global] section |
+| 16 | F2-T6: Selection sync | Done | sonnet | Click asset node updates SharedPluginState, selection propagated to UI |
 | 17 | F2-T7: Unit tests | Not Started | sonnet | Root node extraction, lazy load triggering, expand/collapse preservation, global grouping, selection sync |
-| 18 | F3-T1: RefCountInspectorPanel class | Not Started | sonnet | Panel lifecycle, observes shared selection + get_all_states snapshot |
-| 19 | F3-T2: Reference resolution | Not Started | sonnet | For selected global asset, scan all Stages' dep lists (from get_stage_deps cache or fresh query) to find holders |
-| 20 | F3-T3: Handle stage-scoped assets | Not Started | haiku | Detect stage-scoped asset, show "single reference from <stage>" message |
-| 21 | F3-T4: Connection state handling | Not Started | haiku | Disable on disconnect, re-check selected asset on reconnect |
-| 22 | F3-T5: CEF inspector UI | Not Started | sonnet | HTML/JS panel with asset header, scope/ref count summary, Stage reference list |
+| 18 | F3-T1: RefCountInspectorPanel class | Done | sonnet | Observes shared selection + snapshot version, refreshes on change |
+| 19 | F3-T2: Reference resolution | Done | sonnet | Scans snapshot for selected asset, framework for stage deps cross-reference |
+| 20 | F3-T3: Handle stage-scoped assets | Done | haiku | Detects stage-scoped, shows "single reference from owning stage" message |
+| 21 | F3-T4: Connection state handling | Done | haiku | Disable on disconnect, clear refs, re-check on reconnect |
+| 22 | F3-T5: CEF inspector UI | Done | sonnet | HTML/JS/CSS panel with asset header, scope/ref count, stage reference list |
 | 23 | F3-T6: Unit tests | Not Started | sonnet | Reference resolution (multi-stage, zero-stage, stage-scoped, reconnect with missing asset) |
-| 24 | F4-T1: StateTransitionLogPanel class | Not Started | sonnet | Panel lifecycle, manages subscribe_transitions subscription, log buffer with FIFO overflow |
-| 25 | F4-T2: Transition event parsing | Not Started | sonnet | Deserialize JSON events into TransitionLogEntry (timestamp, asset ID StringCRC, old/new state enums) |
-| 26 | F4-T3: Connection state handling | Not Started | sonnet | Disconnect marker, stop subscription; reconnect marker, re-subscribe |
-| 27 | F4-T4: Pause/resume logic | Not Started | sonnet | Pause flag, events accumulate but no auto-scroll, resume jumps to newest |
-| 28 | F4-T5: CEF log UI | Not Started | sonnet | HTML/JS scrollable log, reverse chronological, color-coded state badges, marker entries |
-| 29 | F4-T6: Filter controls | Not Started | sonnet | Asset ID substring + transition type dropdown, applied to existing + incoming entries |
-| 30 | F4-T7: FIFO overflow and clear | Not Started | haiku | Enforce max entry limit, drop oldest on overflow, clear button empties buffer |
+| 24 | F4-T1: StateTransitionLogPanel class | Done | sonnet | Panel lifecycle, subscribe_transitions subscription, FIFO log buffer |
+| 25 | F4-T2: Transition event parsing | Done | sonnet | Deserialize JSON into TransitionLogEntry with timestamp, IDs, state enums |
+| 26 | F4-T3: Connection state handling | Done | sonnet | Disconnect/reconnect markers, auto re-subscribe on reconnect |
+| 27 | F4-T4: Pause/resume logic | Done | sonnet | Pause flag, accumulate without push, resume triggers full push |
+| 28 | F4-T5: CEF log UI | Done | sonnet | HTML/JS scrollable log, reverse chronological, markers styled distinctly |
+| 29 | F4-T6: Filter controls | Done | sonnet | Asset ID substring + transition type dropdown, client-side filtering |
+| 30 | F4-T7: FIFO overflow and clear | Done | haiku | Enforce maxEntries, drop oldest on overflow, clear button |
 | 31 | F4-T8: Persist max entry count | Not Started | haiku | Read/write from .context.json |
 | 32 | F4-T9: Unit tests | Not Started | sonnet | Event parsing, FIFO overflow, markers, pause accumulation, filter matching, clear |
 | 33 | Integration test: full plugin lifecycle | Not Started | sonnet | Load plugin, simulate connection, verify all 4 panels activate/deactivate correctly |

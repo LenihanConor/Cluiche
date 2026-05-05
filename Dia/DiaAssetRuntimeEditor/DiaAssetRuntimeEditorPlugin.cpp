@@ -28,6 +28,9 @@ namespace Dia
 					[this](bool connected) { HandleConnectionStateChange(connected); });
 
 				mAssetStateTable.Activate(mBridge, &mManager, mState);
+				mStageAssetTree.Activate(mBridge, &mManager, mState, &mAssetStateTable);
+				mRefCountInspector.Activate(mBridge, &mManager, mState, &mAssetStateTable);
+				mTransitionLog.Activate(mBridge, &mManager, mState);
 
 				RegisterRequestHandlers();
 
@@ -38,6 +41,9 @@ namespace Dia
 			{
 				DIA_LOG_INFO("Editor", "DiaAssetRuntimeEditorPlugin: OnUnload");
 
+				mTransitionLog.Deactivate();
+				mRefCountInspector.Deactivate();
+				mStageAssetTree.Deactivate();
 				mAssetStateTable.Deactivate();
 				mManager.Shutdown();
 
@@ -53,6 +59,9 @@ namespace Dia
 			{
 				mManager.Update(deltaTime);
 				mAssetStateTable.Update(deltaTime);
+				mStageAssetTree.Update(deltaTime);
+				mRefCountInspector.Update(deltaTime);
+				mTransitionLog.Update(deltaTime);
 			}
 
 			SharedPluginState* DiaAssetRuntimeEditorPlugin::GetPluginData()
@@ -100,6 +109,9 @@ namespace Dia
 					mState->mConnected = connected;
 
 				mAssetStateTable.OnConnectionStateChanged(connected);
+				mStageAssetTree.OnConnectionStateChanged(connected);
+				mRefCountInspector.OnConnectionStateChanged(connected);
+				mTransitionLog.OnConnectionStateChanged(connected);
 
 				if (mBridge)
 				{

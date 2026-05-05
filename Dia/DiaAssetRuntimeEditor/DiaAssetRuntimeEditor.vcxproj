@@ -78,16 +78,32 @@
     <ClInclude Include="SharedPluginState.h" />
     <ClInclude Include="Panels\AssetStateRow.h" />
     <ClInclude Include="Panels\AssetStateTablePanel.h" />
+    <ClInclude Include="Panels\StageAssetTreePanel.h" />
+    <ClInclude Include="Panels\RefCountInspectorPanel.h" />
+    <ClInclude Include="Panels\TransitionLogEntry.h" />
+    <ClInclude Include="Panels\StateTransitionLogPanel.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaAssetRuntimeEditorPlugin.cpp" />
     <ClCompile Include="Panels\AssetStateTablePanel.cpp" />
+    <ClCompile Include="Panels\StageAssetTreePanel.cpp" />
+    <ClCompile Include="Panels\RefCountInspectorPanel.cpp" />
+    <ClCompile Include="Panels\StateTransitionLogPanel.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.assetruntimeeditor.architecture.module.md" />
     <None Include="UI\asset-state-table.html" />
     <None Include="UI\asset-state-table.css" />
     <None Include="UI\asset-state-table.js" />
+    <None Include="UI\stage-asset-tree.html" />
+    <None Include="UI\stage-asset-tree.css" />
+    <None Include="UI\stage-asset-tree.js" />
+    <None Include="UI\ref-count-inspector.html" />
+    <None Include="UI\ref-count-inspector.css" />
+    <None Include="UI\ref-count-inspector.js" />
+    <None Include="UI\state-transition-log.html" />
+    <None Include="UI\state-transition-log.css" />
+    <None Include="UI\state-transition-log.js" />
   </ItemGroup>
 
   <ItemGroup>

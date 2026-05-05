@@ -17,10 +17,31 @@
     <ClInclude Include="Panels\AssetStateTablePanel.h">
       <Filter>Panels</Filter>
     </ClInclude>
+    <ClInclude Include="Panels\StageAssetTreePanel.h">
+      <Filter>Panels</Filter>
+    </ClInclude>
+    <ClInclude Include="Panels\RefCountInspectorPanel.h">
+      <Filter>Panels</Filter>
+    </ClInclude>
+    <ClInclude Include="Panels\TransitionLogEntry.h">
+      <Filter>Panels</Filter>
+    </ClInclude>
+    <ClInclude Include="Panels\StateTransitionLogPanel.h">
+      <Filter>Panels</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaAssetRuntimeEditorPlugin.cpp" />
     <ClCompile Include="Panels\AssetStateTablePanel.cpp">
+      <Filter>Panels</Filter>
+    </ClCompile>
+    <ClCompile Include="Panels\StageAssetTreePanel.cpp">
+      <Filter>Panels</Filter>
+    </ClCompile>
+    <ClCompile Include="Panels\RefCountInspectorPanel.cpp">
+      <Filter>Panels</Filter>
+    </ClCompile>
+    <ClCompile Include="Panels\StateTransitionLogPanel.cpp">
       <Filter>Panels</Filter>
     </ClCompile>
   </ItemGroup>
@@ -33,6 +54,15 @@
       <Filter>UI</Filter>
     </None>
     <None Include="UI\asset-state-table.js">
+      <Filter>UI</Filter>
+    </None>
+    <None Include="UI\stage-asset-tree.html">
+      <Filter>UI</Filter>
+    </None>
+    <None Include="UI\stage-asset-tree.css">
+      <Filter>UI</Filter>
+    </None>
+    <None Include="UI\stage-asset-tree.js">
       <Filter>UI</Filter>
     </None>
   </ItemGroup>

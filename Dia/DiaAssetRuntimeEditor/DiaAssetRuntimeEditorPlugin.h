@@ -5,6 +5,9 @@
 #include <DiaCore/Json/external/json/json.h>
 
 #include "DiaAssetRuntimeEditor/Panels/AssetStateTablePanel.h"
+#include "DiaAssetRuntimeEditor/Panels/StageAssetTreePanel.h"
+#include "DiaAssetRuntimeEditor/Panels/RefCountInspectorPanel.h"
+#include "DiaAssetRuntimeEditor/Panels/StateTransitionLogPanel.h"
 
 namespace Dia
 {
@@ -48,6 +51,9 @@ namespace Dia
 				SharedPluginState* mState = nullptr;
 
 				AssetStateTablePanel mAssetStateTable;
+				StageAssetTreePanel mStageAssetTree;
+				RefCountInspectorPanel mRefCountInspector;
+				StateTransitionLogPanel mTransitionLog;
 			};
 		}
 	}
