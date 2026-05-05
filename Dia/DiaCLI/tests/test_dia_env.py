@@ -1070,7 +1070,8 @@ class TestVerifyOrchestrator:
         with patch("dia_cli.utils.toolchain_verify.check_all_toolchain", return_value=self._toolchain_pass_results()), \
              patch("dia_cli.utils.deps_verify.check_deps", return_value=self._deps_pass_results()), \
              patch("dia_cli.utils.submodule_verify.check_submodules", return_value=self._submodules_pass_results()), \
-             patch.object(_vo_full, "_check_claude", return_value=[]):
+             patch.object(_vo_full, "_check_claude", return_value=[]), \
+             patch.object(_vo_full, "_check_local_llm", return_value=[]):
             code = run(repo_root=tmp_path, toolchain=False, deps_only=False,
                        submodules=False, docker_only=False, claude=False,
                        output_json=True, quiet=False)
@@ -1086,7 +1087,8 @@ class TestVerifyOrchestrator:
         with patch("dia_cli.utils.toolchain_verify.check_all_toolchain", return_value=self._toolchain_pass_results()), \
              patch("dia_cli.utils.deps_verify.check_deps", return_value=self._deps_pass_results()), \
              patch("dia_cli.utils.submodule_verify.check_submodules", return_value=self._submodules_pass_results()), \
-             patch.object(_vo_full, "_check_claude", return_value=[]):
+             patch.object(_vo_full, "_check_claude", return_value=[]), \
+             patch.object(_vo_full, "_check_local_llm", return_value=[]):
             run(repo_root=tmp_path, toolchain=False, deps_only=False,
                 submodules=False, docker_only=False, claude=False,
                 output_json=True, quiet=False)
@@ -1130,7 +1132,8 @@ class TestVerifyOrchestrator:
         with patch("dia_cli.utils.toolchain_verify.check_all_toolchain", return_value=warn_checks), \
              patch("dia_cli.utils.deps_verify.check_deps", return_value=[]), \
              patch("dia_cli.utils.submodule_verify.check_submodules", return_value=[]), \
-             patch.object(_vo_full, "_check_claude", return_value=[]):
+             patch.object(_vo_full, "_check_claude", return_value=[]), \
+             patch.object(_vo_full, "_check_local_llm", return_value=[]):
             code = run(repo_root=tmp_path, toolchain=False, deps_only=False,
                        submodules=False, docker_only=False, claude=False,
                        output_json=False, quiet=True)
@@ -1210,6 +1213,7 @@ class TestSetupOrchestrator:
              patch.object(_so_full, "_run_submodules", return_value=0), \
              patch.object(_so_full, "_run_toolchain", return_value=0), \
              patch.object(_so_full, "_set_cli_config_env", return_value=0), \
+             patch.object(_so_full, "_setup_local_llm", return_value=0), \
              patch("dia_cli.commands.env.deps_restore_cmd.run", return_value=0), \
              patch("dia_cli.commands.env.claude_context_cmd.run", return_value=0):
             code = run(repo_root=tmp_path, toolchain=False, deps_only=False,

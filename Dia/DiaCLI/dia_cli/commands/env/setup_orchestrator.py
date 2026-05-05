@@ -26,6 +26,7 @@ def run(
     force: bool,
     fail_fast: bool,
     quiet: bool,
+    local_llm: bool = False,
 ) -> int:
     root = repo_root if repo_root is not None else _REPO_ROOT
 
@@ -35,7 +36,7 @@ def run(
         return 2
 
     # Determine which steps to run
-    run_all = not any([toolchain, deps_only, dep_id, submodules, claude])
+    run_all = not any([toolchain, deps_only, dep_id, submodules, claude, local_llm])
     steps = []
     if run_all or toolchain:
         steps.append("toolchain")
@@ -45,6 +46,8 @@ def run(
         steps.append("submodules")
     if run_all or claude:
         steps.append("claude")
+    if run_all or local_llm:
+        steps.append("local-llm")
     if run_all:
         steps.append("cli-env")
 
@@ -88,6 +91,11 @@ def run(
                 print(f"{label} wiring AI context...")
             from dia_cli.commands.env.claude_context_cmd import run as claude_run
             code = claude_run(repo_root=root, force=force)
+
+        elif step == "local-llm":
+            if not quiet:
+                print(f"{label} setting up local LLM tools...")
+            code = _setup_local_llm(force, quiet)
 
         elif step == "cli-env":
             if not quiet:
@@ -232,4 +240,77 @@ def _set_cli_config_env(repo_root: Path, force: bool, quiet: bool) -> int:
         print(f"         DIA_CLI_CONFIG={config_value}")
         if not path_ok:
             print(f"         Added to user PATH: {scripts_dir}")
+    return 0
+
+
+def _setup_local_llm(force: bool, quiet: bool) -> int:
+    """Install aider-chat and add its Scripts dir to PATH. Print Ollama instructions."""
+    import shutil
+    import sys
+    import winreg
+
+    python_scripts = Path(sys.executable).parent / "Scripts"
+    aider_exe = python_scripts / "aider.exe"
+
+    # Install aider-chat if missing or forced
+    if not aider_exe.exists() or force:
+        if not quiet:
+            print(f"         Installing aider-chat via pip...")
+        try:
+            result = subprocess.run(
+                [sys.executable, "-m", "pip", "install", "aider-chat"],
+                capture_output=True, text=True, timeout=300,
+            )
+            if result.returncode != 0:
+                print(f"ERROR: pip install aider-chat failed:\n{result.stderr.strip()}")
+                return 1
+            if not quiet:
+                print(f"         aider-chat installed")
+        except subprocess.TimeoutExpired:
+            print("ERROR: pip install aider-chat timed out")
+            return 1
+    elif not quiet:
+        print(f"         aider-chat already installed")
+
+    # Add python Scripts dir to user PATH if not present
+    scripts_str = str(python_scripts.resolve())
+    if sys.platform == "win32":
+        try:
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Environment", 0,
+                                winreg.KEY_READ | winreg.KEY_WRITE) as key:
+                try:
+                    user_path, _ = winreg.QueryValueEx(key, "Path")
+                except FileNotFoundError:
+                    user_path = ""
+                if scripts_str.lower() not in user_path.lower():
+                    new_path = f"{user_path};{scripts_str}" if user_path else scripts_str
+                    winreg.SetValueEx(key, "Path", 0, winreg.REG_EXPAND_SZ, new_path)
+                    if not quiet:
+                        print(f"         Added to user PATH: {scripts_str}")
+                elif not quiet:
+                    print(f"         PATH already contains: {scripts_str}")
+        except OSError as e:
+            print(f"ERROR: failed to update user PATH in registry: {e}")
+            return 1
+
+    # Ollama must be installed manually — print instructions
+    if shutil.which("ollama") is None:
+        print("         Ollama not found. Install manually:")
+        print("           1. Download from https://ollama.com/download/windows")
+        print("           2. Run the installer")
+        print("           3. Then run: ollama pull qwen2.5-coder:14b")
+        return 2  # warn — partial setup
+
+    # Check if default model is pulled
+    try:
+        result = subprocess.run(["ollama", "list"], capture_output=True, text=True, timeout=10)
+        if "qwen2.5-coder:14b" not in result.stdout:
+            print("         Ollama installed but qwen2.5-coder:14b not pulled.")
+            print("           Run: ollama pull qwen2.5-coder:14b")
+            return 2  # warn
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        pass
+
+    if not quiet:
+        print("         local-llm setup complete")
     return 0

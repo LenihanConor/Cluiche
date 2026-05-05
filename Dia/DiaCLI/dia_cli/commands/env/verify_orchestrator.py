@@ -1,5 +1,7 @@
 """Orchestration for dia env verify command."""
 import json
+import shutil
+import subprocess as _sp
 import sys
 from pathlib import Path
 from typing import Optional
@@ -28,11 +30,12 @@ def run(
     claude: bool,
     output_json: bool,
     quiet: bool,
+    local_llm: bool = False,
 ) -> int:
     root = repo_root if repo_root is not None else _REPO_ROOT
     use_color = sys.stdout.isatty() and not output_json
 
-    run_all = not any([toolchain, deps_only, submodules, docker_only, claude])
+    run_all = not any([toolchain, deps_only, submodules, docker_only, claude, local_llm])
     checks = []
 
     if run_all or toolchain or docker_only:
@@ -57,6 +60,9 @@ def run(
 
     if run_all or claude:
         checks.extend(_check_claude(root))
+
+    if run_all or local_llm:
+        checks.extend(_check_local_llm())
 
     pass_count = sum(1 for c in checks if c.status == "pass")
     warn_count = sum(1 for c in checks if c.status == "warn")
@@ -164,4 +170,44 @@ def _check_claude(repo_root: Path) -> list:
         results.append(CheckResult("memory symlink", "claude", "fail",
                                    "not configured",
                                    "dia env claude-setup"))
+    return results
+
+
+def _check_local_llm() -> list:
+    from dia_cli.utils.check_result import CheckResult
+
+    results = []
+
+    # aider
+    if shutil.which("aider"):
+        results.append(CheckResult("aider", "local-llm", "pass"))
+    else:
+        results.append(CheckResult("aider", "local-llm", "fail",
+                                   "not found on PATH",
+                                   "dia env setup --local-llm"))
+
+    # ollama
+    if shutil.which("ollama"):
+        results.append(CheckResult("ollama", "local-llm", "pass"))
+
+        # qwen2.5-coder:14b pulled?
+        try:
+            r = _sp.run(["ollama", "list"], capture_output=True, text=True, timeout=10)
+            if "qwen2.5-coder:14b" in r.stdout:
+                results.append(CheckResult("qwen2.5-coder:14b", "local-llm", "pass"))
+            else:
+                results.append(CheckResult("qwen2.5-coder:14b", "local-llm", "fail",
+                                           "model not pulled",
+                                           "ollama pull qwen2.5-coder:14b"))
+        except (FileNotFoundError, _sp.TimeoutExpired):
+            results.append(CheckResult("qwen2.5-coder:14b", "local-llm", "warn",
+                                       "could not query ollama list"))
+    else:
+        results.append(CheckResult("ollama", "local-llm", "fail",
+                                   "not installed",
+                                   "https://ollama.com/download/windows"))
+        results.append(CheckResult("qwen2.5-coder:14b", "local-llm", "fail",
+                                   "ollama not installed",
+                                   "install ollama first"))
+
     return results

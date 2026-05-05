@@ -26,15 +26,16 @@ def deps(ctx, dep_id, force, quiet):
 @click.option("--dep", "dep_id", default=None, metavar="ID", help="Restore a single named dep.")
 @click.option("--submodules", is_flag=True, default=False, help="Run submodule init step only.")
 @click.option("--claude", is_flag=True, default=False, help="Run AI context wiring step only.")
+@click.option("--local-llm", "local_llm", is_flag=True, default=False, help="Install aider + local LLM tooling only.")
 @click.option("--force", is_flag=True, default=False, help="Re-run all steps even if sentinels present.")
 @click.option("--fail-fast", "fail_fast", is_flag=True, default=False, help="Abort on first step failure.")
 @click.option("--quiet", is_flag=True, default=False, help="Suppress progress output.")
 @click.pass_context
-def setup(ctx, toolchain, deps_only, dep_id, submodules, claude, force, fail_fast, quiet):
+def setup(ctx, toolchain, deps_only, dep_id, submodules, claude, local_llm, force, fail_fast, quiet):
     """Provision a fresh developer machine end-to-end."""
     from dia_cli.commands.env.setup_orchestrator import run
     exit_code = run(repo_root=None, toolchain=toolchain, deps_only=deps_only,
-                    dep_id=dep_id, submodules=submodules, claude=claude,
+                    dep_id=dep_id, submodules=submodules, claude=claude, local_llm=local_llm,
                     force=force, fail_fast=fail_fast, quiet=quiet)
     ctx.exit(exit_code)
 
@@ -45,15 +46,16 @@ def setup(ctx, toolchain, deps_only, dep_id, submodules, claude, force, fail_fas
 @click.option("--submodules", is_flag=True, default=False)
 @click.option("--docker", "docker_only", is_flag=True, default=False)
 @click.option("--claude", is_flag=True, default=False)
+@click.option("--local-llm", "local_llm", is_flag=True, default=False, help="Check aider + ollama + model.")
 @click.option("--json", "output_json", is_flag=True, default=False, help="Machine-readable JSON output.")
 @click.option("--quiet", is_flag=True, default=False, help="Print only WARNs and FAILs.")
 @click.pass_context
-def verify(ctx, toolchain, deps_only, submodules, docker_only, claude, output_json, quiet):
+def verify(ctx, toolchain, deps_only, submodules, docker_only, claude, local_llm, output_json, quiet):
     """Check environment health (read-only, CI-safe)."""
     from dia_cli.commands.env.verify_orchestrator import run
     exit_code = run(repo_root=None, toolchain=toolchain, deps_only=deps_only,
                     submodules=submodules, docker_only=docker_only, claude=claude,
-                    output_json=output_json, quiet=quiet)
+                    local_llm=local_llm, output_json=output_json, quiet=quiet)
     ctx.exit(exit_code)
 
 
