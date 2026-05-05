@@ -5,6 +5,12 @@
 #include "DiaAssetCatalogueEditor/Handlers/FileDiscoverer.h"
 #include "DiaAssetCatalogueEditor/Commands/AddRelationshipCommand.h"
 #include "DiaAssetCatalogueEditor/Commands/RemoveRelationshipCommand.h"
+#include "DiaAssetCatalogueEditor/Handlers/AssetTypeEditorRegistry.h"
+#include <DiaEditor/Plugin/IPluginLoader.h>
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <shellapi.h>
 #include <DiaEditor/Plugin/EditorPluginRegistrationMacros.h>
 #include <DiaEditor/Plugin/EditorPluginContext.h>
 #include <DiaEditor/MVC/EditorView.h>
@@ -29,8 +35,9 @@ namespace Dia
 			{
 				DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: OnLoad");
 
-				mBridge = context.mBridge;
-				mView   = context.mView;
+				mBridge       = context.mBridge;
+				mView         = context.mView;
+				mPluginLoader = context.mPluginLoader;
 
 				strncpy_s(mOutputDir, kOutputDirLength, kDefaultOutputDir, _TRUNCATE);
 				mCurrentPath[0] = '\0';
@@ -68,9 +75,13 @@ namespace Dia
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.validate"));
 				}
 
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.open_asset"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.register_type_editor"));
+
 				mSessionContext.Save(mOutputDir);
-				mBridge = nullptr;
-				mView   = nullptr;
+				mBridge       = nullptr;
+				mView         = nullptr;
+				mPluginLoader = nullptr;
 			}
 
 			void DiaAssetCatalogueEditorPlugin::OnUpdate(float /*deltaTime*/)
@@ -86,6 +97,7 @@ namespace Dia
 				RegisterDiscovererHandlers();
 				RegisterRelationshipHandlers();
 				RegisterValidationHandlers();
+				RegisterAssetTypeEditorHandlers();
 
 				mBridge->RegisterRequestHandler(
 					Dia::Core::StringCRC("asset_catalogue.load_manifest"),
@@ -433,6 +445,89 @@ namespace Dia
 
 						result["success"] = true;
 						result["files"]   = files;
+						return result;
+					});
+			}
+
+			// asset type editor routing handlers
+			void DiaAssetCatalogueEditorPlugin::RegisterAssetTypeEditorHandlers()
+			{
+				if (!mBridge)
+					return;
+
+				// register_type_editor — allows other plugins to bind a type to an editor
+				mBridge->RegisterRequestHandler(
+					Dia::Core::StringCRC("asset_catalogue.register_type_editor"),
+					[this](const Json::Value& data) -> Json::Value
+					{
+						Json::Value result;
+						if (!data.isMember("assetType") || !data.isMember("editorPluginType"))
+						{
+							result["success"] = false;
+							result["error"]   = "missing assetType or editorPluginType";
+							return result;
+						}
+						Dia::Core::StringCRC assetType(data["assetType"].asCString());
+						Dia::Core::StringCRC editorType(data["editorPluginType"].asCString());
+						mTypeEditorRegistry.RegisterTypeEditor(assetType, editorType);
+						result["success"] = true;
+						return result;
+					});
+
+				// open_asset — open in registered editor, or fall back to ShellExecuteExW
+				mBridge->RegisterRequestHandler(
+					Dia::Core::StringCRC("asset_catalogue.open_asset"),
+					[this](const Json::Value& data) -> Json::Value
+					{
+						Json::Value result;
+						if (!data.isMember("id") || !data["id"].isString())
+						{
+							result["success"] = false;
+							result["error"]   = "missing id";
+							return result;
+						}
+						Dia::Core::StringCRC assetId(data["id"].asCString());
+						const Dia::AssetCatalogue::AssetRecord* rec = mRegistry.FindById(assetId);
+						if (!rec)
+						{
+							result["success"] = false;
+							result["error"]   = "record not found";
+							return result;
+						}
+
+						// Check for a registered editor plugin
+						Dia::Core::StringCRC editorPluginType = mTypeEditorRegistry.FindEditorForType(rec->mAssetTypeId);
+						if (editorPluginType != Dia::Core::StringCRC() && mPluginLoader)
+						{
+							mPluginLoader->LoadPlugin(editorPluginType, assetId);
+							result["success"] = true;
+							result["method"]  = "plugin";
+							return result;
+						}
+
+						// Fall back to OS shell open
+						if (!rec->mSourcePath.IsEmpty())
+						{
+							wchar_t wPath[512] = {};
+							MultiByteToWideChar(CP_UTF8, 0, rec->mSourcePath.AsCStr(), -1, wPath, 512);
+
+							SHELLEXECUTEINFOW sei = {};
+							sei.cbSize = sizeof(sei);
+							sei.fMask  = SEE_MASK_DEFAULT;
+							sei.lpVerb = L"open";
+							sei.lpFile = wPath;
+							sei.nShow  = SW_SHOWNORMAL;
+							ShellExecuteExW(&sei);
+
+							result["success"] = true;
+							result["method"]  = "shell";
+						}
+						else
+						{
+							DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: open_asset — no source path and no editor registered for type");
+							result["success"] = false;
+							result["error"]   = "no source path and no registered editor for this type";
+						}
 						return result;
 					});
 			}

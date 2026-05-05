@@ -10,6 +10,7 @@
 #include "DiaAssetCatalogueEditor/ManifestLoadHandler.h"
 #include "DiaAssetCatalogueEditor/SessionContext.h"
 #include "DiaAssetCatalogueEditor/Handlers/FileDiscoverer.h"
+#include "DiaAssetCatalogueEditor/Handlers/AssetTypeEditorRegistry.h"
 #include <DiaAssetCatalogue/ContentHasher.h>
 
 namespace Dia
@@ -18,6 +19,7 @@ namespace Dia
 	{
 		class WebUIBridge;
 		class EditorView;
+		class IPluginLoader;
 	}
 
 	namespace AssetCatalogue
@@ -43,6 +45,7 @@ namespace Dia
 				void RegisterDiscovererHandlers();
 				void RegisterRelationshipHandlers();
 				void RegisterValidationHandlers();
+				void RegisterAssetTypeEditorHandlers();
 				void PushDirtyState();
 				void PushRegistryState();
 
@@ -65,8 +68,11 @@ namespace Dia
 				Dia::AssetCatalogue::ContentHasher             mContentHasher;
 				FileDiscoverer                                 mFileDiscoverer;
 
-				Dia::Editor::WebUIBridge*                      mBridge = nullptr;
-				Dia::Editor::EditorView*                       mView   = nullptr;
+				AssetTypeEditorRegistry                        mTypeEditorRegistry;
+
+				Dia::Editor::WebUIBridge*                      mBridge       = nullptr;
+				Dia::Editor::EditorView*                       mView         = nullptr;
+				Dia::Editor::IPluginLoader*                    mPluginLoader = nullptr;
 			};
 		}
 	}

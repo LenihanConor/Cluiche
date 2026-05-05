@@ -20,7 +20,7 @@ DiaAssetCatalogue must be Done before this plan can start.
 | 3 | Feature 3 — File Discoverer | Done | sonnet | Depends on Task 2 |
 | 4 | Feature 4 — Relationship Editor | Done | sonnet | Depends on Task 2 |
 | 5 | Feature 6 — Validation Panel | Done | sonnet | Depends on Task 2 |
-| 6 | Feature 7 — Asset Type Editor Routing | Not Started | sonnet | Depends on Task 2 |
+| 6 | Feature 7 — Asset Type Editor Routing | Done | sonnet | Depends on Task 2 |
 | 7 | Feature 8 — Catalogue Rules UI | Not Started | sonnet | Depends on Task 4 |
 | 8 | Feature 5 — Relationship Graph View | Not Started | sonnet | Depends on Task 4 (reuses get_forward/reverse_refs) |
 

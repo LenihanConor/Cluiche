@@ -339,6 +339,7 @@
         <div class="panel-actions" style="margin-top:12px;">
           <button class="btn-primary" onclick="onSaveRecord()">Save Changes</button>
           <button onclick="onDiscardRecord()">Discard</button>
+          <button onclick="onOpenAsset(selectedId)" id="btn-open-asset" disabled>Open</button>
         </div>
 
         <!-- Relationship section -->
@@ -618,7 +619,7 @@
 
     tbody.innerHTML = filtered.map(function(r) {
       var sel = r.id === selectedId ? ' selected' : '';
-      return '<tr class="' + sel + '" onclick="selectRecord(\'' + escHtml(r.id) + '\')">' +
+      return '<tr class="' + sel + '" onclick="selectRecord(\'' + escHtml(r.id) + '\')" ondblclick="onOpenAsset(\'' + escHtml(r.id) + '\')">' +
         '<td>' + escHtml(r.id) + '</td>' +
         '<td>' + escHtml(r.type) + '</td>' +
         '<td><span class="status-badge status-' + escHtml(r.status) + '">' + escHtml(r.status) + '</span></td>' +
@@ -630,6 +631,7 @@
   function selectRecord(id) {
     selectedId = id;
     document.getElementById('btn-delete').disabled = false;
+    document.getElementById('btn-open-asset').disabled = false;
     renderAssetList();
 
     var rec = allRecords.find(function(r) { return r.id === id; });
@@ -718,6 +720,13 @@
 
   function onDiscardRecord() {
     if (selectedId) selectRecord(selectedId);
+  }
+
+  function onOpenAsset(id) {
+    if (!id) return;
+    diaRequest('asset_catalogue.open_asset', { id: id }).then(function(r) {
+      if (!r.success) console.warn('open_asset failed:', r.error);
+    });
   }
 
   /* ── Relationships ───────────────────────────────── */
