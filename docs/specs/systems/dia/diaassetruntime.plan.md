@@ -21,11 +21,11 @@ Build order is strictly sequential: F1 → F2 → F3 → F4 → F5 → F6. Each 
 | 4 | Implement AssetRuntime::LoadManifest + ResolveAssetPath | F1 | Done | sonnet | `AssetRuntime.h/.cpp` — calls RuntimeManifestLoader, stores tables, resolves asset ID → String512*. Returns String512* not FilePath* (see Task 2 note). |
 | 5 | Implement path alias registration in DiaCore PathStore | F1 | Done | sonnet | After manifest load, iterate asset table and register each ID as a path alias. Overwrites existing with warning. |
 | 6 | GoogleTest: Feature 1 | F1 | Done | sonnet | 12 tests, all passing: successful load, path resolution, duplicate ID rejection, missing file, malformed JSON, folder trailing slash, scope parsing, stage table, alias registration. |
-| 7 | Implement AssetState enum + per-asset state storage | F2 | Not Started | haiku | `AssetState.h` — enum. Parallel `HashTableC<StringCRC, AssetState, 512>` in AssetRuntime, initialized to Registered after LoadManifest. |
-| 8 | Implement state transition validation logic | F2 | Not Started | sonnet | Internal `TryTransition(assetId, targetState)` — validates allowed transitions, DiaLogger warns on invalid |
-| 9 | Implement AcknowledgeAssetLoaded + AcknowledgeAssetUnloaded | F2 | Not Started | haiku | Public API methods that call TryTransition(Staged→Loaded) and (Unloading→Registered) |
-| 10 | Implement GetAssetState + IsAssetReady | F2 | Not Started | haiku | Lookup by StringCRC. Return sentinel/false for unknown IDs + DiaLogger warning. |
-| 11 | GoogleTest: Feature 2 | F2 | Not Started | sonnet | All valid transitions, all invalid transitions, acknowledge from wrong state, unknown ID queries, IsAssetReady, state init after manifest load |
+| 7 | Implement AssetState enum + per-asset state storage | F2 | Done | haiku | `AssetState.h` — enum. Parallel `HashTableC<StringCRC, AssetState, 512>` in AssetRuntime, initialized to Registered after LoadManifest. |
+| 8 | Implement state transition validation logic | F2 | Done | sonnet | Internal `TryTransition(assetId, targetState)` — validates allowed transitions, DiaLogger warns on invalid |
+| 9 | Implement AcknowledgeAssetLoaded + AcknowledgeAssetUnloaded | F2 | Done | haiku | Public API methods that call TryTransition(Staged→Loaded) and (Unloading→Registered) |
+| 10 | Implement GetAssetState + IsAssetReady | F2 | Done | haiku | Lookup by StringCRC. Return sentinel/false for unknown IDs + DiaLogger warning. |
+| 11 | GoogleTest: Feature 2 | F2 | Done | sonnet | 9 tests all passing. Fixed: PathStore::RegisterToStore asserts on duplicate — RegisterPathAliases now skips (not overwrites) already-registered aliases. |
 | 12 | Implement per-asset ref count storage + GetAssetRefCount | F3 | Not Started | haiku | `HashTableC<StringCRC, unsigned int, 512>`, initialized to 0. Public query method. |
 | 13 | Implement RequestStageLoad | F3 | Not Started | sonnet | Lookup RuntimeStageEntry, iterate member assets, increment ref count, transition Registered→Staged for 0→1 assets |
 | 14 | Implement RequestStageUnload + edge cases | F3 | Not Started | sonnet | Decrement ref counts (clamp at 0), transition to Unloading when reaching 0. Handle unknown stage, double unload (warning). |
@@ -79,7 +79,7 @@ GoogleTests/Tests/
 - **Acknowledgement model** (SD-ARUN-009): 1:1 asset-to-consumer. One AcknowledgeAssetLoaded call per asset advances state.
 - **Late-join pattern**: Late-registering listeners self-serve via GetStagedAssets() — no event replay.
 - **Staged→Unloading shortcut**: If RequestStageUnload fires before consumer acknowledges, asset goes directly Staged→Unloading. Consumer must abort and ack unloaded.
-- **PathStore integration**: Asset IDs become first-class path aliases. Overwrites existing aliases with a warning.
+- **PathStore integration**: Asset IDs become first-class path aliases. Skips (does not overwrite) already-registered aliases with a warning — `PathStore::RegisterToStore` asserts on duplicate keys.
 
 ## Session Notes
 
@@ -92,3 +92,7 @@ GoogleTests/Tests/
   - PathStore alias registration uses the asset ID StringCRC as the alias and the full absolute deploy path as the path value.
   - `Json::Reader::parse()` is the correct JSON parse pattern (not CharReaderBuilder — that's the v2 API not used in this codebase).
   - `GetTempPathA` requires `<windows.h>` on MSVC — added to test file.
+- Feature 2 complete (tasks 7–11): 9 tests passing. DiaAssetRuntime.lib builds clean.
+  - `PathStore::RegisterToStore` has a `DIA_ASSERT` on duplicate keys — `RegisterPathAliases` must skip, not overwrite. Fixed during F2 test run.
+  - TryTransition allows Staged→Unloading (cancellation path, documented in Key Design Notes).
+  - F2 tests use unique PathStore alias (`test_arun_f2`) to avoid collision with F1 alias.
