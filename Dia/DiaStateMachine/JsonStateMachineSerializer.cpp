@@ -101,7 +101,7 @@ namespace Dia
 					stateJson["onExit"] = s.onExitName.AsChar();
 				if (s.onUpdateName != Dia::Core::StringCRC())
 					stateJson["onUpdate"] = s.onUpdateName.AsChar();
-				Dia::Serializer::WriteMetadataToJson(s.metadata, stateJson);
+				Dia::Serializer::WriteMetadataToJson(def.GetStateMetadata(i), stateJson);
 				statesArray.append(stateJson);
 			}
 			root["states"] = statesArray;
@@ -179,8 +179,10 @@ namespace Dia
 					if (!state.onUpdate) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: onUpdate '%s' not found in registry", sj["onUpdate"].asCString()); return Dia::Serializer::SerializeResult::Failure("onUpdate not found"); }
 				}
 
-				Dia::Serializer::ReadMetadataFromJson(sj, state.metadata);
 				outDef.GetStates().Add(state);
+				MetadataArray stateMeta;
+				Dia::Serializer::ReadMetadataFromJson(sj, stateMeta);
+				outDef.mStateMetadata.Add(stateMeta);
 			}
 
 			if (root.isMember("transitions") && root["transitions"].isArray())
@@ -255,7 +257,7 @@ namespace Dia
 					sj["onExit"] = s.onExitName.AsChar();
 				if (s.onUpdateName != Dia::Core::StringCRC())
 					sj["onUpdate"] = s.onUpdateName.AsChar();
-				Dia::Serializer::WriteMetadataToJson(s.metadata, sj);
+				Dia::Serializer::WriteMetadataToJson(def.GetStateMetadata(i), sj);
 				statesArray.append(sj);
 			}
 			root["states"] = statesArray;
@@ -340,8 +342,10 @@ namespace Dia
 					if (!state.onUpdate) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: onUpdate '%s' not found in registry", sj["onUpdate"].asCString()); return Dia::Serializer::SerializeResult::Failure("onUpdate not found"); }
 				}
 
-				Dia::Serializer::ReadMetadataFromJson(sj, state.metadata);
 				outDef.GetStates().Add(state);
+				MetadataArray stateMeta;
+				Dia::Serializer::ReadMetadataFromJson(sj, stateMeta);
+				outDef.mStateMetadata.Add(stateMeta);
 			}
 
 			if (root.isMember("transitions") && root["transitions"].isArray())
@@ -410,7 +414,7 @@ namespace Dia
 				if (s.onUpdateName != Dia::Core::StringCRC()) sj["onUpdate"] = s.onUpdateName.AsChar();
 				if (s.onPauseName  != Dia::Core::StringCRC()) sj["onPause"]  = s.onPauseName.AsChar();
 				if (s.onResumeName != Dia::Core::StringCRC()) sj["onResume"] = s.onResumeName.AsChar();
-				Dia::Serializer::WriteMetadataToJson(s.metadata, sj);
+				Dia::Serializer::WriteMetadataToJson(def.GetStateMetadata(i), sj);
 				statesArray.append(sj);
 			}
 			root["states"] = statesArray;
@@ -485,8 +489,10 @@ namespace Dia
 					if (!state.onResume) { DIA_LOG_WARNING("StateMachine", "JsonStateMachineSerializer: onResume '%s' not found in registry", sj["onResume"].asCString()); return Dia::Serializer::SerializeResult::Failure("onResume not found"); }
 				}
 
-				Dia::Serializer::ReadMetadataFromJson(sj, state.metadata);
 				outDef.GetStates().Add(state);
+				MetadataArray stateMeta;
+				Dia::Serializer::ReadMetadataFromJson(sj, stateMeta);
+				outDef.mStateMetadata.Add(stateMeta);
 			}
 
 			outDef.SetInitialStateId(Dia::Core::StringCRC(root["initialState"].asCString()));

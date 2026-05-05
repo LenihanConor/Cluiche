@@ -16,12 +16,14 @@ namespace Dia
 			, mTransitions(other.mTransitions)
 			, mInitialStateId(other.mInitialStateId)
 			, mMetadata(other.mMetadata)
+			, mStateMetadata(other.mStateMetadata)
 			, mIsValid(other.mIsValid)
 		{
 			other.mStates.RemoveAll();
 			other.mTransitions.RemoveAll();
 			other.mInitialStateId = Dia::Core::StringCRC();
 			other.mMetadata.RemoveAll();
+			other.mStateMetadata.RemoveAll();
 			other.mIsValid = false;
 		}
 
@@ -33,12 +35,14 @@ namespace Dia
 				mTransitions = other.mTransitions;
 				mInitialStateId = other.mInitialStateId;
 				mMetadata = other.mMetadata;
+				mStateMetadata = other.mStateMetadata;
 				mIsValid = other.mIsValid;
 
 				other.mStates.RemoveAll();
 				other.mTransitions.RemoveAll();
 				other.mInitialStateId = Dia::Core::StringCRC();
 				other.mMetadata.RemoveAll();
+				other.mStateMetadata.RemoveAll();
 				other.mIsValid = false;
 			}
 			return *this;
@@ -51,6 +55,7 @@ namespace Dia
 			clone.mTransitions = mTransitions;
 			clone.mInitialStateId = mInitialStateId;
 			clone.mMetadata = mMetadata;
+			clone.mStateMetadata = mStateMetadata;
 			clone.mIsValid = mIsValid;
 			return clone;
 		}
@@ -107,6 +112,18 @@ namespace Dia
 		const MetadataArray& StateMachineDefinition::GetMetadata() const
 		{
 			return mMetadata;
+		}
+
+		MetadataArray& StateMachineDefinition::GetStateMetadata(unsigned int stateIndex)
+		{
+			DIA_ASSERT(stateIndex < mStateMetadata.Size(), "GetStateMetadata: index out of range");
+			return mStateMetadata[stateIndex];
+		}
+
+		const MetadataArray& StateMachineDefinition::GetStateMetadata(unsigned int stateIndex) const
+		{
+			DIA_ASSERT(stateIndex < mStateMetadata.Size(), "GetStateMetadata: index out of range");
+			return mStateMetadata[stateIndex];
 		}
 
 		bool StateMachineDefinition::Validate(

@@ -13,11 +13,13 @@ namespace Dia
 			: mStates(other.mStates)
 			, mInitialStateId(other.mInitialStateId)
 			, mMetadata(other.mMetadata)
+			, mStateMetadata(other.mStateMetadata)
 			, mIsValid(other.mIsValid)
 		{
 			other.mStates.RemoveAll();
 			other.mInitialStateId = Dia::Core::StringCRC();
 			other.mMetadata.RemoveAll();
+			other.mStateMetadata.RemoveAll();
 			other.mIsValid = false;
 		}
 
@@ -29,11 +31,13 @@ namespace Dia
 				mStates = other.mStates;
 				mInitialStateId = other.mInitialStateId;
 				mMetadata = other.mMetadata;
+				mStateMetadata = other.mStateMetadata;
 				mIsValid = other.mIsValid;
 
 				other.mStates.RemoveAll();
 				other.mInitialStateId = Dia::Core::StringCRC();
 				other.mMetadata.RemoveAll();
+				other.mStateMetadata.RemoveAll();
 				other.mIsValid = false;
 			}
 			return *this;
@@ -45,6 +49,7 @@ namespace Dia
 			clone.mStates = mStates;
 			clone.mInitialStateId = mInitialStateId;
 			clone.mMetadata = mMetadata;
+			clone.mStateMetadata = mStateMetadata;
 			clone.mIsValid = mIsValid;
 			return clone;
 		}
@@ -89,6 +94,18 @@ namespace Dia
 		const MetadataArray& PushdownAutomatonDefinition::GetMetadata() const
 		{
 			return mMetadata;
+		}
+
+		MetadataArray& PushdownAutomatonDefinition::GetStateMetadata(unsigned int stateIndex)
+		{
+			DIA_ASSERT(stateIndex < mStateMetadata.Size(), "GetStateMetadata: index out of range");
+			return mStateMetadata[stateIndex];
+		}
+
+		const MetadataArray& PushdownAutomatonDefinition::GetStateMetadata(unsigned int stateIndex) const
+		{
+			DIA_ASSERT(stateIndex < mStateMetadata.Size(), "GetStateMetadata: index out of range");
+			return mStateMetadata[stateIndex];
 		}
 
 		bool PushdownAutomatonDefinition::Validate(

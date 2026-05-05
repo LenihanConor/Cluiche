@@ -25,8 +25,6 @@ namespace Dia
 			Dia::Core::StringCRC onPauseName;
 			void(*onResume)(void*) = nullptr;
 			Dia::Core::StringCRC onResumeName;
-
-			MetadataArray metadata;
 		};
 
 		class PushdownAutomatonBuilder;
@@ -56,6 +54,9 @@ namespace Dia
 			MetadataArray& GetMetadata();
 			const MetadataArray& GetMetadata() const;
 
+			MetadataArray& GetStateMetadata(unsigned int stateIndex);
+			const MetadataArray& GetStateMetadata(unsigned int stateIndex) const;
+
 		private:
 			friend class PushdownAutomatonBuilder;
 			friend class JsonStateMachineSerializer;
@@ -65,6 +66,7 @@ namespace Dia
 			Dia::Core::Containers::DynamicArrayC<PushdownStateDef, kMaxStates> mStates;
 			Dia::Core::StringCRC mInitialStateId;
 			MetadataArray mMetadata;
+			Dia::Core::Containers::DynamicArrayC<MetadataArray, kMaxStates> mStateMetadata;
 			bool mIsValid = false;
 		};
 	}

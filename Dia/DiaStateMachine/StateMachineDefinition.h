@@ -21,8 +21,6 @@ namespace Dia
 			Dia::Core::StringCRC onExitName;
 			void(*onUpdate)(void*, float) = nullptr;
 			Dia::Core::StringCRC onUpdateName;
-
-			MetadataArray metadata;
 		};
 
 		struct TransitionDef
@@ -65,6 +63,9 @@ namespace Dia
 			MetadataArray& GetMetadata();
 			const MetadataArray& GetMetadata() const;
 
+			MetadataArray& GetStateMetadata(unsigned int stateIndex);
+			const MetadataArray& GetStateMetadata(unsigned int stateIndex) const;
+
 		private:
 			friend class StateMachineBuilder;
 			friend class JsonStateMachineSerializer;
@@ -75,6 +76,7 @@ namespace Dia
 			Dia::Core::Containers::DynamicArrayC<TransitionDef, kMaxTransitions> mTransitions;
 			Dia::Core::StringCRC mInitialStateId;
 			MetadataArray mMetadata;
+			Dia::Core::Containers::DynamicArrayC<MetadataArray, kMaxStates> mStateMetadata;
 			bool mIsValid = false;
 		};
 	}

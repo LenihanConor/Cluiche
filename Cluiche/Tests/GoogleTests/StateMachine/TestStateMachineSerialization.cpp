@@ -133,8 +133,7 @@ TEST(StateMachineBuilder, StateAndMachineMetadata)
 		.State(Dia::Core::StringCRC("B"))
 		.Build();
 
-	const auto& states = def.GetStates();
-	const MetadataValue* clip = FindMetadata(states[0].metadata, Dia::Core::StringCRC("clip"));
+	const MetadataValue* clip = FindMetadata(def.GetStateMetadata(0), Dia::Core::StringCRC("clip"));
 	ASSERT_NE(clip, nullptr);
 	EXPECT_STREQ(clip->stringVal.AsChar(), "idle");
 
@@ -186,7 +185,7 @@ TEST(JsonStateMachineSerializer, FlatRoundTrip)
 	EXPECT_EQ(loaded.GetTransitions()[0].guardName,     Dia::Core::StringCRC("GuardAB"));
 	EXPECT_EQ(loaded.GetTransitions()[0].guard, GuardAB);
 
-	const MetadataValue* clip = FindMetadata(loaded.GetStates()[0].metadata, Dia::Core::StringCRC("clip"));
+	const MetadataValue* clip = FindMetadata(loaded.GetStateMetadata(0), Dia::Core::StringCRC("clip"));
 	ASSERT_NE(clip, nullptr);
 	EXPECT_STREQ(clip->stringVal.AsChar(), "idle");
 
@@ -259,7 +258,7 @@ TEST(JsonStateMachineSerializer, HsmRoundTrip)
 	EXPECT_EQ(states[aIdx].onEnterName, Dia::Core::StringCRC("OnEnterA"));
 	EXPECT_EQ(states[aIdx].onEnter, OnEnterA);
 
-	const MetadataValue* priority = FindMetadata(states[aIdx].metadata, Dia::Core::StringCRC("priority"));
+	const MetadataValue* priority = FindMetadata(loaded.GetStateMetadata(static_cast<unsigned int>(aIdx)), Dia::Core::StringCRC("priority"));
 	ASSERT_NE(priority, nullptr);
 	EXPECT_EQ(priority->intVal, 1);
 }
@@ -300,7 +299,7 @@ TEST(JsonStateMachineSerializer, PdaRoundTrip)
 	EXPECT_EQ(s.onResumeName, Dia::Core::StringCRC("OnResumeA"));
 	EXPECT_EQ(s.onResume, OnResumeA);
 
-	const MetadataValue* depth = FindMetadata(s.metadata, Dia::Core::StringCRC("depth"));
+	const MetadataValue* depth = FindMetadata(loaded.GetStateMetadata(0), Dia::Core::StringCRC("depth"));
 	ASSERT_NE(depth, nullptr);
 	EXPECT_FLOAT_EQ(depth->floatVal, 0.5f);
 
@@ -329,7 +328,7 @@ TEST(JsonStateMachineSerializer, MetadataAllTypesRoundTrip)
 	StateMachineDefinition loaded;
 	ASSERT_TRUE(serializer.Load(loaded, reg, buffer));
 
-	const auto& meta = loaded.GetStates()[0].metadata;
+	const MetadataArray& meta = loaded.GetStateMetadata(0);
 	const MetadataValue* b = FindMetadata(meta, Dia::Core::StringCRC("b"));
 	const MetadataValue* i = FindMetadata(meta, Dia::Core::StringCRC("i"));
 	const MetadataValue* f = FindMetadata(meta, Dia::Core::StringCRC("f"));
@@ -404,7 +403,7 @@ TEST(StateMachineDefinition, ClonePreservesMetadataAndCallbackNames)
 
 	EXPECT_EQ(clone.GetStates()[0].onEnterName, Dia::Core::StringCRC("OnEnterA"));
 
-	const MetadataValue* clip = FindMetadata(clone.GetStates()[0].metadata, Dia::Core::StringCRC("clip"));
+	const MetadataValue* clip = FindMetadata(clone.GetStateMetadata(0), Dia::Core::StringCRC("clip"));
 	ASSERT_NE(clip, nullptr);
 	EXPECT_STREQ(clip->stringVal.AsChar(), "idle");
 
@@ -424,7 +423,7 @@ TEST(HierarchicalStateMachineDefinition, ClonePreservesMetadata)
 
 	HierarchicalStateMachineDefinition clone = original.Clone();
 
-	const MetadataValue* weight = FindMetadata(clone.GetStates()[0].metadata, Dia::Core::StringCRC("weight"));
+	const MetadataValue* weight = FindMetadata(clone.GetStateMetadata(0), Dia::Core::StringCRC("weight"));
 	ASSERT_NE(weight, nullptr);
 	EXPECT_FLOAT_EQ(weight->floatVal, 0.8f);
 
@@ -446,7 +445,7 @@ TEST(PushdownAutomatonDefinition, ClonePreservesMetadata)
 
 	EXPECT_EQ(clone.GetStates()[0].onPauseName, Dia::Core::StringCRC("OnPauseA"));
 
-	const MetadataValue* depth = FindMetadata(clone.GetStates()[0].metadata, Dia::Core::StringCRC("depth"));
+	const MetadataValue* depth = FindMetadata(clone.GetStateMetadata(0), Dia::Core::StringCRC("depth"));
 	ASSERT_NE(depth, nullptr);
 	EXPECT_EQ(depth->intVal, 1);
 }
@@ -617,7 +616,7 @@ TEST(JsonStateMachineSerializer, SaveToFileAndLoadFromFile_Flat)
 	EXPECT_EQ(loaded.GetStates()[0].onEnterName, Dia::Core::StringCRC("OnEnterA"));
 	EXPECT_EQ(loaded.GetStates()[0].onEnter, OnEnterA);
 
-	const MetadataValue* clip = FindMetadata(loaded.GetStates()[0].metadata, Dia::Core::StringCRC("clip"));
+	const MetadataValue* clip = FindMetadata(loaded.GetStateMetadata(0), Dia::Core::StringCRC("clip"));
 	ASSERT_NE(clip, nullptr);
 	EXPECT_STREQ(clip->stringVal.AsChar(), "idle");
 

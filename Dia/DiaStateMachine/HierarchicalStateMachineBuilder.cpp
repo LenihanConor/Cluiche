@@ -11,6 +11,7 @@ namespace Dia
 			HierarchicalStateDef state;
 			state.id = stateId;
 			mDefinition.mStates.Add(state);
+			mDefinition.mStateMetadata.Add(MetadataArray());
 			mCurrentStateIndex = static_cast<int>(mDefinition.mStates.Size()) - 1;
 			return *this;
 		}
@@ -22,6 +23,7 @@ namespace Dia
 			state.id = stateId;
 			state.parentId = parentId;
 			mDefinition.mStates.Add(state);
+			mDefinition.mStateMetadata.Add(MetadataArray());
 			mCurrentStateIndex = static_cast<int>(mDefinition.mStates.Size()) - 1;
 			return *this;
 		}
@@ -79,7 +81,7 @@ namespace Dia
 			Dia::Core::StringCRC key, const MetadataValue& value)
 		{
 			DIA_ASSERT(mCurrentStateIndex >= 0, "No current state");
-			Dia::Serializer::SetMetadata(mDefinition.mStates[mCurrentStateIndex].metadata, key, value);
+			Dia::Serializer::SetMetadata(mDefinition.mStateMetadata[mCurrentStateIndex], key, value);
 			return *this;
 		}
 

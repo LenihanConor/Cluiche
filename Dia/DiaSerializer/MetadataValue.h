@@ -8,7 +8,7 @@ namespace Dia
 {
 	namespace Serializer
 	{
-		static const unsigned int kMaxMetadataEntries = 16;
+		static const unsigned int kMaxMetadataEntries = 8;
 
 		struct MetadataValue
 		{
