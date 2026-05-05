@@ -16,10 +16,14 @@ namespace Dia
 			class ApplyRulesCommand : public Dia::Editor::IEditorCommand
 			{
 			public:
+				static const unsigned int kMaxExcluded = 32;
+
 				ApplyRulesCommand(
 					Dia::AssetCatalogue::AssetRegistry& registry,
 					Dia::AssetCatalogue::RelationshipIndex& relationships,
 					const Dia::AssetCatalogue::CatalogueRulesEngine& engine);
+
+				void AddExcludedId(const Dia::Core::StringCRC& id);
 
 				void Execute() override;
 				void Undo()    override;
@@ -28,13 +32,15 @@ namespace Dia
 				const Dia::AssetCatalogue::RuleChangeset& GetChangeset() const { return mChangeset; }
 
 			private:
+				bool IsExcluded(const Dia::Core::StringCRC& id) const;
+
 				Dia::AssetCatalogue::AssetRegistry&             mRegistry;
 				Dia::AssetCatalogue::RelationshipIndex&         mRelationships;
 				const Dia::AssetCatalogue::CatalogueRulesEngine& mEngine;
 
+				Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, kMaxExcluded> mExcludedIds;
 				Dia::AssetCatalogue::RuleChangeset mChangeset;
 
-				// Snapshot of every affected record before apply
 				static const unsigned int kMaxSnapshots = 128;
 				Dia::Core::Containers::DynamicArrayC<Dia::AssetCatalogue::AssetRecord, kMaxSnapshots> mPreApplySnapshot;
 				bool mExecuted;

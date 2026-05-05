@@ -28,12 +28,14 @@ namespace Dia
 			}
 
 			//----------------------------------------------------------
-			template< class Key, class Payload, class HashFunctor > 
+			template< class Key, class Payload, class HashFunctor >
 			HashTable<Key, Payload, HashFunctor>::HashTable(const HashTable<Key, Payload, HashFunctor >& copy)
 				: mHasFunctorData(copy.mTable.Size())
-				, mTable(copy.mTable)
+				, mTable(copy.mTable.Size())
 				, mPayloadNodes(copy.mPayloadNodes)
-			{}
+			{
+				RebuildTable();
+			}
 
 			//----------------------------------------------------------
 			template< class Key, class Payload, class HashFunctor > 
@@ -56,16 +58,16 @@ namespace Dia
 			}
 
 			//----------------------------------------------------------
-			template< class Key, class Payload, class HashFunctor > 
+			template< class Key, class Payload, class HashFunctor >
 			HashTable<Key, Payload, HashFunctor >& HashTable<Key, Payload, HashFunctor >::operator=(const HashTable<Key, Payload, HashFunctor >& rhs)
 			{
 				mHasFunctorData.Populate(rhs.TableSize());
-				
+
 				mTable.Reserve(rhs.mTable.Size());
 				mPayloadNodes.Reserve(rhs.mPayloadNodes.Capacity());
 
-				mTable = rhs.mTable;
 				mPayloadNodes = rhs.mPayloadNodes;
+				RebuildTable();
 
 				return *this;
 			}
@@ -205,26 +207,39 @@ namespace Dia
 			template< class Key, class Payload, class HashFunctor>
 			void HashTable<Key, Payload, HashFunctor >::RemoveByIndex( const unsigned int index )
 			{
-				const Key& key = mPayloadNodes[index].GetKeyConst();
-
-				unsigned int keyIndex = mHashFunctor.GetHashIndex(key, &mHasFunctorData);
-
-				PayloadTableNode* pTableNode = mTable[keyIndex];
-
-				DIA_ASSERT(pTableNode, "There must be at least one node");
-
-				// If your removing the first node
-				if (pTableNode->GetKeyConst() == key)
-				{
-					mTable[keyIndex] = NULL;
-				}
-				else
-				{
-					bool foundDetach = pTableNode->Detach(key);
-					DIA_ASSERT(foundDetach, "Cound not find int hash table");
-				}
-
 				mPayloadNodes.RemoveAt(index);
+				RebuildTable();
+			}
+
+			//----------------------------------------------------------
+			template< class Key, class Payload, class HashFunctor>
+			void HashTable<Key, Payload, HashFunctor >::RebuildTable()
+			{
+				for (unsigned int i = 0; i < mTable.Size(); i++)
+				{
+					mTable[i] = NULL;
+				}
+
+				for (unsigned int i = 0; i < mPayloadNodes.Size(); i++)
+				{
+					mPayloadNodes[i].ResetNext();
+				}
+
+				for (unsigned int i = 0; i < mPayloadNodes.Size(); i++)
+				{
+					const Key& key = mPayloadNodes[i].GetKeyConst();
+					unsigned int keyIndex = mHashFunctor.GetHashIndex(key, &mHasFunctorData);
+
+					PayloadTableNode* pTableNode = mTable[keyIndex];
+					if (pTableNode == NULL)
+					{
+						mTable[keyIndex] = &mPayloadNodes[i];
+					}
+					else
+					{
+						pTableNode->Attach(&mPayloadNodes[i]);
+					}
+				}
 			}
 
 			//----------------------------------------------------------

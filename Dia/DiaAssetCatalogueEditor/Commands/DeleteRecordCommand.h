@@ -29,11 +29,18 @@ namespace Dia
 				const char* GetDescription() const override;
 
 			private:
+				struct InboundEdge
+				{
+					Dia::Core::StringCRC mSourceRecordId;
+					Dia::AssetCatalogue::RelationshipEdge mEdge;
+				};
+
 				Dia::AssetCatalogue::AssetRegistry&    mRegistry;
 				Dia::AssetCatalogue::RelationshipIndex& mRelationships;
 				Dia::Core::StringCRC                   mRecordId;
 				Dia::AssetCatalogue::AssetRecord        mDeletedRecord;
 				Dia::Core::Containers::DynamicArrayC<Dia::AssetCatalogue::RelationshipEdge, 16> mDeletedEdges;
+				Dia::Core::Containers::DynamicArrayC<InboundEdge, 16> mInboundEdges;
 				bool mExecuted = false;
 			};
 		}

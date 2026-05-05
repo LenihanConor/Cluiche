@@ -288,9 +288,7 @@ TEST_F(DeleteRecordCommandTest, ExecuteRemovesDanglingEdges)
     auto* cmd = new DeleteRecordCommand(registry, registry.GetRelationshipIndex(), StringCRC("texture.player"));
     history.ExecuteCommand(cmd);
 
-    // entity.hero should no longer reference texture.player
-    // Use index-based lookup since HashTableC pointer table may be stale after Remove
-    const AssetRecord* hero = FindByIdViaIndex(registry, StringCRC("entity.hero"));
+    const AssetRecord* hero = registry.FindById(StringCRC("entity.hero"));
     ASSERT_NE(hero, nullptr);
     EXPECT_EQ(hero->mReferences.Size(), 0u);
 }
@@ -305,8 +303,10 @@ TEST_F(DeleteRecordCommandTest, UndoRestoresRecordAndEdges)
     const AssetRecord* player = registry.FindById(StringCRC("texture.player"));
     ASSERT_NE(player, nullptr);
 
-    // entity.hero's edge is NOT restored by this command's undo (DeleteRecordCommand restores the
-    // deleted record itself but cannot easily restore edges from OTHER records). This is a known limitation.
+    const AssetRecord* hero = registry.FindById(StringCRC("entity.hero"));
+    ASSERT_NE(hero, nullptr);
+    EXPECT_EQ(hero->mReferences.Size(), 1u);
+    EXPECT_EQ(hero->mReferences[0].mTargetAssetId, StringCRC("texture.player"));
 }
 
 TEST_F(DeleteRecordCommandTest, DeleteLeafDoesNotAffectOthers)
@@ -896,49 +896,30 @@ TEST_F(IntegrationCommandChainTest, FullWorkflowRoundTrip)
     // Add relationship
     auto* r1 = new AddRelationshipCommand(registry, StringCRC("entity.hero"), StringCRC("uses"), StringCRC("texture.player"));
     history.ExecuteCommand(r1);
-    const AssetRecord* heroAfterAdd = FindByIdViaIndex(registry, StringCRC("entity.hero"));
-    ASSERT_NE(heroAfterAdd, nullptr);
-    EXPECT_EQ(heroAfterAdd->mReferences.Size(), 1u);
-
-    // Undo relationship — edge removed
-    history.Undo();
-    const AssetRecord* heroAfterUndoRel = FindByIdViaIndex(registry, StringCRC("entity.hero"));
-    ASSERT_NE(heroAfterUndoRel, nullptr);
-    EXPECT_EQ(heroAfterUndoRel->mReferences.Size(), 0u);
-
-    // Undo create entity — record removed
-    history.Undo();
-    EXPECT_EQ(registry.GetCount(), 1u);
-    EXPECT_EQ(FindByIdViaIndex(registry, StringCRC("entity.hero")), nullptr);
-
-    // Undo create texture — registry empty
-    history.Undo();
-    EXPECT_EQ(registry.GetCount(), 0u);
-    EXPECT_EQ(FindByIdViaIndex(registry, StringCRC("texture.player")), nullptr);
-}
-
-TEST_F(IntegrationCommandChainTest, DeleteCleansUpDanglingEdgesThenUndoRestores)
-{
-    auto* c1 = new CreateRecordCommand(registry, MakeRecord("texture.player", "texture", "a.png"));
-    auto* c2 = new CreateRecordCommand(registry, MakeRecord("entity.hero", "entity"));
-    history.ExecuteCommand(c1);
-    history.ExecuteCommand(c2);
-
-    auto* r1 = new AddRelationshipCommand(registry, StringCRC("entity.hero"), StringCRC("uses"), StringCRC("texture.player"));
-    history.ExecuteCommand(r1);
+    EXPECT_EQ(registry.FindById(StringCRC("entity.hero"))->mReferences.Size(), 1u);
 
     // Delete the texture — should remove the edge from entity.hero
     auto* d1 = new DeleteRecordCommand(registry, registry.GetRelationshipIndex(), StringCRC("texture.player"));
     history.ExecuteCommand(d1);
     EXPECT_EQ(registry.GetCount(), 1u);
-    const AssetRecord* heroAfterDel = FindByIdViaIndex(registry, StringCRC("entity.hero"));
-    ASSERT_NE(heroAfterDel, nullptr);
-    EXPECT_EQ(heroAfterDel->mReferences.Size(), 0u);
+    EXPECT_EQ(registry.FindById(StringCRC("entity.hero"))->mReferences.Size(), 0u);
 
     // Undo delete — record restored
     history.Undo();
     EXPECT_EQ(registry.GetCount(), 2u);
-    ASSERT_NE(FindByIdViaIndex(registry, StringCRC("texture.player")), nullptr);
+    ASSERT_NE(registry.FindById(StringCRC("texture.player")), nullptr);
+
+    // Undo relationship
+    history.Undo();
+    EXPECT_EQ(registry.FindById(StringCRC("entity.hero"))->mReferences.Size(), 0u);
+
+    // Undo create entity
+    history.Undo();
+    EXPECT_EQ(registry.GetCount(), 1u);
+
+    // Undo create texture
+    history.Undo();
+    EXPECT_EQ(registry.GetCount(), 0u);
 }
 
 TEST_F(IntegrationCommandChainTest, SavePointTracksThroughOperations)

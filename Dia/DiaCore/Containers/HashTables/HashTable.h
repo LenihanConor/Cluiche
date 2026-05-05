@@ -215,10 +215,12 @@ namespace Dia
 				};
 
 			private:
-				HashTableHashFunctionData						mHasFunctorData;	
+				void				RebuildTable			();
+
+				HashTableHashFunctionData						mHasFunctorData;
 				HashFunctor										mHashFunctor;
 				Array<PayloadTableNode*> 						mTable;
-				DynamicArray<PayloadTableNode>					mPayloadNodes; 
+				DynamicArray<PayloadTableNode>					mPayloadNodes;
 			};
 		}
 	}

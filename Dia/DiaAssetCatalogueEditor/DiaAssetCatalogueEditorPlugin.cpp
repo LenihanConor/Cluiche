@@ -82,6 +82,7 @@ namespace Dia
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.load_rules"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.dry_run_rules"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.apply_rules"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.query_asset_ids"));
 
 				mSessionContext.Save(mOutputDir);
 				mBridge       = nullptr;
@@ -520,17 +521,60 @@ namespace Dia
 				// apply_rules
 				mBridge->RegisterRequestHandler(
 					Dia::Core::StringCRC("asset_catalogue.apply_rules"),
-					[this](const Json::Value& /*data*/) -> Json::Value
+					[this](const Json::Value& data) -> Json::Value
 					{
 						Json::Value result;
 						auto* cmd = new Dia::AssetCatalogue::Editor::ApplyRulesCommand(
 							mRegistry, mRegistry.GetRelationshipIndex(), mRulesEngine);
+
+						if (data.isMember("excluded") && data["excluded"].isArray())
+						{
+							for (unsigned int i = 0; i < data["excluded"].size(); ++i)
+							{
+								if (data["excluded"][i].isString())
+									cmd->AddExcludedId(Dia::Core::StringCRC(data["excluded"][i].asCString()));
+							}
+						}
+
 						mHistory.ExecuteCommand(cmd);
 
 						const Dia::AssetCatalogue::RuleChangeset& cs = cmd->GetChangeset();
 						result["success"]       = true;
 						result["applied_count"] = static_cast<int>(cs.mChanges.Size());
 						PushRegistryState();
+						return result;
+					});
+
+				// query_asset_ids — returns filtered list of registry IDs for autocomplete
+				mBridge->RegisterRequestHandler(
+					Dia::Core::StringCRC("asset_catalogue.query_asset_ids"),
+					[this](const Json::Value& data) -> Json::Value
+					{
+						Json::Value result;
+						std::string prefix;
+						if (data.isMember("prefix") && data["prefix"].isString())
+							prefix = data["prefix"].asString();
+
+						Dia::Core::StringCRC filterType;
+						if (data.isMember("typeId") && data["typeId"].isString())
+							filterType = Dia::Core::StringCRC(data["typeId"].asCString());
+
+						Json::Value ids(Json::arrayValue);
+						for (unsigned int i = 0; i < mRegistry.GetCount(); ++i)
+						{
+							const Dia::AssetCatalogue::AssetRecord& rec = mRegistry.GetRecordByIndex(i);
+
+							if (filterType != Dia::Core::StringCRC() && rec.mAssetTypeId != filterType)
+								continue;
+
+							const char* idStr = rec.mId.AsChar();
+							if (!prefix.empty() && strncmp(idStr, prefix.c_str(), prefix.size()) != 0)
+								continue;
+
+							ids.append(idStr);
+						}
+						result["success"] = true;
+						result["ids"]     = ids;
 						return result;
 					});
 			}

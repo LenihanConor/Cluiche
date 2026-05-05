@@ -19,12 +19,13 @@ namespace Dia
 			}
 
 			//----------------------------------------------------------
-			template< class Key, class Payload, class HashFunctor, unsigned int sizePayload, unsigned int sizeTable > 
+			template< class Key, class Payload, class HashFunctor, unsigned int sizePayload, unsigned int sizeTable >
 			HashTableC<Key, Payload, HashFunctor, sizePayload, sizeTable>::HashTableC(const HashTableC<Key, Payload, HashFunctor, sizePayload, sizeTable>& copy)
 				: mHasFunctorData(sizeTable)
-				 , mTable(copy.mTable)
 				, mPayloadNodes(copy.mPayloadNodes)
-			{}
+			{
+				RebuildTable();
+			}
 
 			//----------------------------------------------------------
 			template< class Key, class Payload, class HashFunctor, unsigned int sizePayload, unsigned int sizeTable > 
@@ -35,12 +36,12 @@ namespace Dia
 			}
 
 			//----------------------------------------------------------
-			template< class Key, class Payload, class HashFunctor, unsigned int sizePayload, unsigned int sizeTable > 
+			template< class Key, class Payload, class HashFunctor, unsigned int sizePayload, unsigned int sizeTable >
 			HashTableC<Key, Payload, HashFunctor, sizePayload, sizeTable>& HashTableC<Key, Payload, HashFunctor, sizePayload, sizeTable>::operator=(const HashTableC<Key, Payload, HashFunctor, sizePayload, sizeTable>& rhs)
 			{
 				mHasFunctorData.Populate(rhs.TableSize());
-				mTable = rhs.mTable;
 				mPayloadNodes = rhs.mPayloadNodes;
+				RebuildTable();
 
 				return *this;
 			}
@@ -173,26 +174,39 @@ namespace Dia
 			template< class Key, class Payload, class HashFunctor, unsigned int sizePayload, unsigned int sizeTable >
 			void HashTableC<Key, Payload, HashFunctor, sizePayload, sizeTable>::RemoveByIndex( const unsigned int index )
 			{
-				const Key& key = mPayloadNodes[index].GetKeyConst();
-
-				unsigned int keyIndex = mHashFunctor.GetHashIndex(key, &mHasFunctorData);
-
-				PayloadTableNode* pTableNode = mTable[keyIndex];
-
-				DIA_ASSERT(pTableNode, "There must be at least one node");
-
-				// If your removing the first node
-				if (pTableNode->GetKeyConst() == key)
-				{
-					mTable[keyIndex] = NULL;
-				}
-				else
-				{
-					bool foundDetach = pTableNode->Detach(key);
-					DIA_ASSERT(foundDetach, "Cound not find int hash table");
-				}
-
 				mPayloadNodes.RemoveAt(index);
+				RebuildTable();
+			}
+
+			//----------------------------------------------------------
+			template< class Key, class Payload, class HashFunctor, unsigned int sizePayload, unsigned int sizeTable >
+			void HashTableC<Key, Payload, HashFunctor, sizePayload, sizeTable>::RebuildTable()
+			{
+				for (unsigned int i = 0; i < mTable.Size(); i++)
+				{
+					mTable[i] = NULL;
+				}
+
+				for (unsigned int i = 0; i < mPayloadNodes.Size(); i++)
+				{
+					mPayloadNodes[i].ResetNext();
+				}
+
+				for (unsigned int i = 0; i < mPayloadNodes.Size(); i++)
+				{
+					const Key& key = mPayloadNodes[i].GetKeyConst();
+					unsigned int keyIndex = mHashFunctor.GetHashIndex(key, &mHasFunctorData);
+
+					PayloadTableNode* pTableNode = mTable[keyIndex];
+					if (pTableNode == NULL)
+					{
+						mTable[keyIndex] = &mPayloadNodes[i];
+					}
+					else
+					{
+						pTableNode->Attach(&mPayloadNodes[i]);
+					}
+				}
 			}
 
 			//----------------------------------------------------------

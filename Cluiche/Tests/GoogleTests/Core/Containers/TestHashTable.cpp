@@ -250,8 +250,8 @@ TEST(HashTableC, RemoveOperations_WorkCorrectly)
 	EXPECT_FALSE(hashMap3.IsFull());
 	EXPECT_EQ(hashMap3.Size(), 6);
 	EXPECT_EQ(hashMap3.DeepestTable(), 1);
-	EXPECT_EQ(hashMap3.AssignedTableEntries(), 5);
-	EXPECT_EQ(hashMap3.UnAssignedTableEntries(), 5);
+	EXPECT_EQ(hashMap3.AssignedTableEntries(), 6);
+	EXPECT_EQ(hashMap3.UnAssignedTableEntries(), 4);
 
 	EXPECT_EQ(hashMap3.GetItemByIndex(0), 'b');
 	EXPECT_EQ(hashMap3.GetItemByIndex(1), 'c');
@@ -266,8 +266,8 @@ TEST(HashTableC, RemoveOperations_WorkCorrectly)
 	EXPECT_FALSE(hashMap3.IsFull());
 	EXPECT_EQ(hashMap3.Size(), 5);
 	EXPECT_EQ(hashMap3.DeepestTable(), 1);
-	EXPECT_EQ(hashMap3.AssignedTableEntries(), 4);
-	EXPECT_EQ(hashMap3.UnAssignedTableEntries(), 6);
+	EXPECT_EQ(hashMap3.AssignedTableEntries(), 5);
+	EXPECT_EQ(hashMap3.UnAssignedTableEntries(), 5);
 
 	EXPECT_EQ(hashMap3.GetItemByIndex(0), 'c');
 	EXPECT_EQ(hashMap3.GetItemByIndex(1), 'e');
@@ -283,8 +283,8 @@ TEST(HashTableC, RemoveOperations_WorkCorrectly)
 	EXPECT_FALSE(hashMap4.IsFull());
 	EXPECT_EQ(hashMap4.Size(), 6);
 	EXPECT_EQ(hashMap4.DeepestTable(), 1);
-	EXPECT_EQ(hashMap4.AssignedTableEntries(), 5);
-	EXPECT_EQ(hashMap4.UnAssignedTableEntries(), 5);
+	EXPECT_EQ(hashMap4.AssignedTableEntries(), 6);
+	EXPECT_EQ(hashMap4.UnAssignedTableEntries(), 4);
 
 	EXPECT_FALSE(hashMap4.ContainsPayload('a'));
 	EXPECT_TRUE(hashMap4.ContainsPayload('b'));
@@ -525,8 +525,8 @@ TEST(HashTable, RemoveOperations_WorkCorrectly)
 	EXPECT_FALSE(hashMap3.IsFull());
 	EXPECT_EQ(hashMap3.Size(), 6);
 	EXPECT_EQ(hashMap3.DeepestTable(), 1);
-	EXPECT_EQ(hashMap3.AssignedTableEntries(), 5);
-	EXPECT_EQ(hashMap3.UnAssignedTableEntries(), 10);
+	EXPECT_EQ(hashMap3.AssignedTableEntries(), 6);
+	EXPECT_EQ(hashMap3.UnAssignedTableEntries(), 9);
 
 	EXPECT_EQ(hashMap3.GetItemByIndex(0), 'b');
 	EXPECT_EQ(hashMap3.GetItemByIndex(1), 'c');
@@ -541,8 +541,8 @@ TEST(HashTable, RemoveOperations_WorkCorrectly)
 	EXPECT_FALSE(hashMap3.IsFull());
 	EXPECT_EQ(hashMap3.Size(), 5);
 	EXPECT_EQ(hashMap3.DeepestTable(), 1);
-	EXPECT_EQ(hashMap3.AssignedTableEntries(), 4);
-	EXPECT_EQ(hashMap3.UnAssignedTableEntries(), 11);
+	EXPECT_EQ(hashMap3.AssignedTableEntries(), 5);
+	EXPECT_EQ(hashMap3.UnAssignedTableEntries(), 10);
 
 	EXPECT_EQ(hashMap3.GetItemByIndex(0), 'c');
 	EXPECT_EQ(hashMap3.GetItemByIndex(1), 'e');
@@ -558,8 +558,8 @@ TEST(HashTable, RemoveOperations_WorkCorrectly)
 	EXPECT_FALSE(hashMap4.IsFull());
 	EXPECT_EQ(hashMap4.Size(), 6);
 	EXPECT_EQ(hashMap4.DeepestTable(), 1);
-	EXPECT_EQ(hashMap4.AssignedTableEntries(), 5);
-	EXPECT_EQ(hashMap4.UnAssignedTableEntries(), 10);
+	EXPECT_EQ(hashMap4.AssignedTableEntries(), 6);
+	EXPECT_EQ(hashMap4.UnAssignedTableEntries(), 9);
 
 	EXPECT_FALSE(hashMap4.ContainsPayload('a'));
 	EXPECT_TRUE(hashMap4.ContainsPayload('b'));

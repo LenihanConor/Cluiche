@@ -31,7 +31,8 @@ namespace Dia
 
 			void DeleteRecordCommand::Execute()
 			{
-				// Remove all forward-ref edges from other records that point to this record
+				mInboundEdges.RemoveAll();
+
 				for (unsigned int i = 0; i < mRegistry.GetCount(); ++i)
 				{
 					AssetRecord& other = const_cast<AssetRecord&>(mRegistry.GetRecordByIndex(i));
@@ -40,9 +41,18 @@ namespace Dia
 					for (unsigned int j = 0; j < other.mReferences.Size(); )
 					{
 						if (other.mReferences[j].mTargetAssetId == mRecordId)
+						{
+							InboundEdge snapshot;
+							snapshot.mSourceRecordId = other.mId;
+							snapshot.mEdge = other.mReferences[j];
+							if (!mInboundEdges.IsFull())
+								mInboundEdges.Add(snapshot);
 							other.mReferences.RemoveAt(j);
+						}
 						else
+						{
 							++j;
+						}
 					}
 				}
 
@@ -56,11 +66,14 @@ namespace Dia
 				if (!mExecuted)
 					return;
 
-				// Restore the record
 				mRegistry.Register(mDeletedRecord);
 
-				// Restore forward refs that were in the deleted record's mReferences
-				// (they are already in the snapshot, Register restores the record as-is)
+				for (unsigned int i = 0; i < mInboundEdges.Size(); ++i)
+				{
+					AssetRecord* source = mRegistry.FindById(mInboundEdges[i].mSourceRecordId);
+					if (source && !source->mReferences.IsFull())
+						source->mReferences.Add(mInboundEdges[i].mEdge);
+				}
 
 				mRelationships.InvalidateReverseCache();
 				mExecuted = false;

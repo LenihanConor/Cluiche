@@ -32,6 +32,8 @@ namespace Dia
 
 				const Key& GetKeyConst()const;
 
+				void ResetNext() { mNext = NULL; }
+
 			private:
 				Payload							mPayload;
 				Key								mKey;
