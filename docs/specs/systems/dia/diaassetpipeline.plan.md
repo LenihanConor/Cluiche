@@ -19,10 +19,10 @@ Pure Python implementation inside `Dia/DiaCLI/dia_cli/commands/asset/`. No C++ c
 | 4 | `BuildRunner` three-phase loop + NDJSON events | F1 | Done | sonnet | `runner.py` — validate→transform→deploy per asset, collect all errors (SD-APIPE-002), emit 5 event types |
 | 5 | Stage filtering logic | F1 | Done | sonnet | `_should_include_asset`: build reverse map from RelationshipIndex contains edges; global-scoped always included; orphaned = warning + include |
 | 6 | Tests for Feature 1 | F1 | Done | sonnet | `tests/test_asset_handler_registry.py`, `tests/test_build_runner.py` — 34 tests, all passing |
-| 7 | `resolve_deploy_path` + `resolve_category` | F3 | Not Started | sonnet | `layout.py` — scope→global/stages/<name>, tag→category (ordered match, fallback misc) |
-| 8 | `copy_asset` + `copy_asset_directory` + `create_deploy_directories` | F3 | Not Started | sonnet | `layout.py` — shutil.copy2 for files, shutil.copytree for folders (SD-CAT-013), mkdir parents |
-| 9 | `RuntimeManifestGenerator` | F3 | Not Started | opus | `manifest_generator.py` — add_asset, build_stages (RelationshipIndex contains edges), generate → assets.runtime.json |
-| 10 | Tests for Feature 3 | F3 | Not Started | sonnet | `tests/test_deploy_layout.py`, `tests/test_manifest_generator.py` — path resolution (each scope/category/untagged), folder trailing slash, manifest assets+stages arrays, global assets in stage lists |
+| 7 | `resolve_deploy_path` + `resolve_category` | F3 | Done | sonnet | `layout.py` — scope→global/stages/<name>, tag→category (ordered match, fallback misc) |
+| 8 | `copy_asset` + `copy_asset_directory` + `create_deploy_directories` | F3 | Done | sonnet | `layout.py` — shutil.copy2 for files, shutil.copytree for folders (SD-CAT-013), mkdir parents |
+| 9 | `RuntimeManifestGenerator` | F3 | Done | sonnet | `manifest_generator.py` — add_asset(is_folder), build_stages, generate → assets.runtime.json |
+| 10 | Tests for Feature 3 | F3 | Done | sonnet | `tests/test_deploy_layout.py`, `tests/test_manifest_generator.py` — 31 tests passing |
 | 11 | `DefaultAssetHandler` + 6 standard type handlers | F2 | Not Started | sonnet | `handlers/default.py` + texture/sprite/audio/config/entity/ui — thin subclasses with type_id and file_pattern; pattern mismatch = warning not error |
 | 12 | `FolderHandler` | F2 | Not Started | haiku | `handlers/folder.py` — validate checks is_dir, transform no-op, deploy shutil.copytree (SD-CAT-013) |
 | 13 | `StageHandler` | F2 | Not Started | haiku | `handlers/stage.py` — extends DefaultAssetHandler, validates name field is non-empty string; does NOT validate member assets (SD-CAT-012) |
@@ -90,3 +90,6 @@ Dia/DiaCLI/tests/
   - Added `OutputContext.emit()` public method to `dia_output.py` for custom NDJSON events.
   - Stage filtering reads `contains` edges directly from catalogue asset records (stage-type assets only).
   - DiaCLI uses the `toml` package (not tomllib); config_loader (task 16) should follow the same pattern.
+- Feature 3 complete (tasks 7–10): layout.py, manifest_generator.py created; 31 tests passing.
+  - Windows Path strips trailing slashes — folder trailing slash lives in manifest deploy_path string only.
+  - add_asset() takes is_folder=True to append trailing slash to the manifest string (not the Path).
