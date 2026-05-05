@@ -2,6 +2,7 @@
 
 #include "DiaAssetCatalogue/AssetRecord.h"
 
+#include "DiaCore/CRC/CRC.h"
 #include "DiaCore/CRC/StringCRC.h"
 #include "DiaCore/Containers/Arrays/DynamicArrayC.h"
 #include "DiaCore/Containers/Graphs/DirectedGraph.h"
@@ -21,9 +22,10 @@ namespace Dia
 		// Reverse refs are served from a DirectedGraph<GraphPolicy::ReverseEdgeCache> that is rebuilt
 		// lazily on the first reverse query after any registry mutation.
 		//
-		// The RelationshipGraph is heap-allocated: it is ~255 KB (128 nodes × StringCRC payloads,
-		// 1024 edges × RelationshipEdge payloads) which is too large to embed on the stack,
-		// given that AssetRegistry is itself stack-allocated in several places.
+		// The graph uses Dia::Core::CRC (4 bytes) as its IDType rather than StringCRC (68 bytes),
+		// and stores compact 4-byte CRC values as node/edge payloads. This keeps the graph
+		// stack-allocated at ~47 KB (vs 255 KB with StringCRC payloads).
+		// Public API still returns StringCRC / RelationshipEdge by CRC-based lookup into the registry.
 		//
 		// The cache is invalidated by AssetRegistry whenever records are added or removed.
 		// Call InvalidateReverseCache() to mark the cache dirty; the next reverse query rebuilds it.
@@ -32,7 +34,6 @@ namespace Dia
 		{
 		public:
 			RelationshipIndex();
-			~RelationshipIndex();
 
 			// Copy leaves the graph dirty so it is rebuilt lazily on first reverse query.
 			// Copying a live DirectedGraph would produce dangling Edge* pointers.
@@ -65,25 +66,49 @@ namespace Dia
 		private:
 			void RebuildGraph(const AssetRegistry& registry);
 
+			// ------------------------------------------------------------------
+			// Internal graph types — compact CRC-keyed storage
+			// ------------------------------------------------------------------
+
+			// Node payload: the asset CRC (for reverse-ref reconstruction via GetFrom()).
+			struct AssetNodePayload
+			{
+				Dia::Core::CRC mAssetCRC;
+				AssetNodePayload() {}
+				explicit AssetNodePayload(const Dia::Core::CRC& c) : mAssetCRC(c) {}
+			};
+
+			// Edge payload: relationship type CRC + target asset CRC (8 bytes total).
+			struct RelEdgePayload
+			{
+				Dia::Core::CRC mRelTypeCRC;
+				Dia::Core::CRC mTargetCRC;
+				RelEdgePayload() {}
+				RelEdgePayload(const Dia::Core::CRC& rel, const Dia::Core::CRC& tgt)
+					: mRelTypeCRC(rel), mTargetCRC(tgt) {}
+			};
+
 			// kMaxAssets must match AssetRegistry::kMaxRecords.
 			// kMaxRelationships = kMaxAssets * 8 (max 8 forward refs per AssetRecord).
 			static const unsigned int kMaxAssets        = 128;
 			static const unsigned int kMaxRelationships = 1024;
 
-			// ReverseEdgeCache policy: GetInEdges() is O(1) after the first lazy rebuild,
-			// which is exactly the "rarely mutated, frequently queried" access pattern of
-			// the asset registry.
-			// kMaxOutEdgesPerNode=8: each asset has at most 8 forward references.
+			// Stack size with CRC IDType (4 bytes) and compact payloads:
+			//   Node  = CRC(4) + AssetNodePayload(4) + OutEdgeList(8×8+8 = 72) = ~80 B × 128 = 10 KB
+			//   Edge  = CRC(4) + RelEdgePayload(8)   + Node*(8) + Node*(8)     = ~28 B × 1024 = 28 KB
+			//   Cache = DynamicArrayC<Edge*,8>(72 B) × 128                                   =  9 KB
+			//   Total ≈ 47 KB — safe to embed in AssetRegistry on the stack.
 			typedef Dia::Core::Containers::DirectedGraph<
-				Dia::Core::StringCRC,
+				AssetNodePayload,
 				kMaxAssets,
-				RelationshipEdge,
+				RelEdgePayload,
 				kMaxRelationships,
 				Dia::Core::Containers::GraphPolicy::ReverseEdgeCache,
-				8> RelationshipGraph;
+				8,
+				Dia::Core::CRC> RelationshipGraph;
 
-			bool               mGraphDirty;
-			RelationshipGraph* mGraph;     // heap-allocated; ~255 KB per instance
+			bool              mGraphDirty;
+			RelationshipGraph mGraph;
 		};
 
 	} // namespace AssetCatalogue

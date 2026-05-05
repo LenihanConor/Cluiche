@@ -8,32 +8,33 @@ namespace Dia
 	{
 		namespace Containers
 		{
-			template <class NodePayload, class EdgePayload, unsigned int kMaxOutEdges>
+			template <class NodePayload, class EdgePayload, unsigned int kMaxOutEdges, class IDType>
 			class DirectedGraphNode;
 
 			// -----------------------------------------------------------------------
 			// DirectedGraphEdge
 			//
 			// A directed edge from one node (From) to another (To).
-			// Stores a StringCRC ID, an EdgePayload, and typed pointers to the
-			// source (From) and destination (To) nodes.
+			// Stores an IDType ID (default: StringCRC), an EdgePayload, and typed
+			// pointers to the source (From) and destination (To) nodes.
 			//
+			// IDType defaults to StringCRC; use Dia::Core::CRC for compact storage.
 			// Naming convention: From = tail, To = head (direction of the arrow).
 			// -----------------------------------------------------------------------
-			template <class EdgePayload, class NodePayload, unsigned int kMaxOutEdges>
+			template <class EdgePayload, class NodePayload, unsigned int kMaxOutEdges, class IDType = Dia::Core::StringCRC>
 			class DirectedGraphEdge
 			{
 			public:
-				typedef DirectedGraphNode<NodePayload, EdgePayload, kMaxOutEdges> Node;
+				typedef DirectedGraphNode<NodePayload, EdgePayload, kMaxOutEdges, IDType> Node;
 
 				DirectedGraphEdge();
-				DirectedGraphEdge(const Dia::Core::StringCRC& uniqueId,
+				DirectedGraphEdge(const IDType& uniqueId,
 				                  const EdgePayload& payload,
 				                  Node* from,
 				                  Node* to);
 				~DirectedGraphEdge();
 
-				const Dia::Core::StringCRC& GetUniqueID() const { return mUniqueId; }
+				const IDType& GetUniqueID() const { return mUniqueId; }
 
 				Node*       GetFrom()       { return mFrom; }
 				const Node* GetFrom() const { return mFrom; }
@@ -45,10 +46,10 @@ namespace Dia
 				const EdgePayload& GetPayloadConst() const { return mPayload; }
 
 			private:
-				Dia::Core::StringCRC mUniqueId;
-				EdgePayload          mPayload;
-				Node*                mFrom;
-				Node*                mTo;
+				IDType      mUniqueId;
+				EdgePayload mPayload;
+				Node*       mFrom;
+				Node*       mTo;
 			};
 		}
 	}

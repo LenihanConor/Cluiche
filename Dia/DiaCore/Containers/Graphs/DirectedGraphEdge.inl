@@ -8,16 +8,16 @@ namespace Dia
 	{
 		namespace Containers
 		{
-			template <class EdgePayload, class NodePayload, unsigned int kMaxOutEdges>
-			DirectedGraphEdge<EdgePayload, NodePayload, kMaxOutEdges>::DirectedGraphEdge()
+			template <class EdgePayload, class NodePayload, unsigned int kMaxOutEdges, class IDType>
+			DirectedGraphEdge<EdgePayload, NodePayload, kMaxOutEdges, IDType>::DirectedGraphEdge()
 				: mPayload()
 				, mFrom(nullptr)
 				, mTo(nullptr)
 			{}
 
-			template <class EdgePayload, class NodePayload, unsigned int kMaxOutEdges>
-			DirectedGraphEdge<EdgePayload, NodePayload, kMaxOutEdges>::DirectedGraphEdge(
-				const Dia::Core::StringCRC& uniqueId,
+			template <class EdgePayload, class NodePayload, unsigned int kMaxOutEdges, class IDType>
+			DirectedGraphEdge<EdgePayload, NodePayload, kMaxOutEdges, IDType>::DirectedGraphEdge(
+				const IDType& uniqueId,
 				const EdgePayload& payload,
 				Node* from,
 				Node* to)
@@ -30,8 +30,8 @@ namespace Dia
 				DIA_ASSERT(mTo   != nullptr, "DirectedGraphEdge: To node is null");
 			}
 
-			template <class EdgePayload, class NodePayload, unsigned int kMaxOutEdges>
-			DirectedGraphEdge<EdgePayload, NodePayload, kMaxOutEdges>::~DirectedGraphEdge()
+			template <class EdgePayload, class NodePayload, unsigned int kMaxOutEdges, class IDType>
+			DirectedGraphEdge<EdgePayload, NodePayload, kMaxOutEdges, IDType>::~DirectedGraphEdge()
 			{
 				mFrom = nullptr;
 				mTo   = nullptr;

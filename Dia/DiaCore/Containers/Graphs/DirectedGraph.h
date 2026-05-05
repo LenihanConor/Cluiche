@@ -22,6 +22,16 @@ namespace Dia
 			//
 			// Policy controls optional behaviour — see DirectedGraphPolicy.h.
 			// Default is GraphPolicy::None (pure container, no extras).
+			//
+			// kMaxOutEdgesPerNode caps the out-edge (and in-edge cache) list per node.
+			// Set it to the real per-node fan-out to avoid over-allocating when kMaxEdges
+			// is large. Defaults to kMaxEdges (star topology worst case).
+			//
+			// IDType is the type used for node and edge identifiers.
+			// Default is StringCRC (68 bytes — stores a 64-char debug string + 4-byte CRC).
+			// Use Dia::Core::CRC for compact 4-byte IDs when debug strings are not
+			// needed (e.g. large internal caches). IDType must support operator==,
+			// Value(), and default construction.
 			// -----------------------------------------------------------------------
 			template <
 				class        NodePayload,
@@ -29,15 +39,14 @@ namespace Dia
 				class        EdgePayload,
 				unsigned int kMaxEdges,
 				class        Policy              = GraphPolicy::None,
-				unsigned int kMaxOutEdgesPerNode = kMaxEdges  // per-node out-edge cap; defaults to kMaxEdges (star topology worst case)
+				unsigned int kMaxOutEdgesPerNode = kMaxEdges,
+				class        IDType              = Dia::Core::StringCRC
 			>
 			class DirectedGraph
 			{
 			public:
-				// kMaxOutEdgesPerNode caps the out-edge list per node.
-				// Set it to the real per-node fan-out to avoid over-allocating when kMaxEdges is large.
-				typedef DirectedGraphNode<NodePayload, EdgePayload, kMaxOutEdgesPerNode> Node;
-				typedef DirectedGraphEdge<EdgePayload, NodePayload, kMaxOutEdgesPerNode> Edge;
+				typedef DirectedGraphNode<NodePayload, EdgePayload, kMaxOutEdgesPerNode, IDType> Node;
+				typedef DirectedGraphEdge<EdgePayload, NodePayload, kMaxOutEdgesPerNode, IDType> Edge;
 
 				typedef Dia::Core::Containers::DynamicArrayC<Node*, kMaxNodes> NodeResults;
 				typedef Dia::Core::Containers::DynamicArrayC<Edge*, kMaxEdges> EdgeResults;
@@ -53,7 +62,7 @@ namespace Dia
 
 				// Add a node. Returns false (and asserts) if ID already exists or
 				// capacity is full.
-				bool AddNode(const Dia::Core::StringCRC& id, const NodePayload& payload);
+				bool AddNode(const IDType& id, const NodePayload& payload);
 
 				// Add a directed edge from → to. Returns false (and asserts) if:
 				//   - the edge ID already exists
@@ -61,31 +70,31 @@ namespace Dia
 				//   - edge capacity is full
 				//   - (AcyclicEnforced only) the edge would create a cycle
 				// Invalidates the ReverseEdgeCache if that policy is active.
-				bool AddEdge(const Dia::Core::StringCRC& id,
-				             const Dia::Core::StringCRC& fromNodeId,
-				             const Dia::Core::StringCRC& toNodeId,
+				bool AddEdge(const IDType& id,
+				             const IDType& fromNodeId,
+				             const IDType& toNodeId,
 				             const EdgePayload& payload);
 
 				// ------------------------------------------------------------------
 				// Query
 				// ------------------------------------------------------------------
 
-				Node*       FindNode(const Dia::Core::StringCRC& id);
-				const Node* FindNode(const Dia::Core::StringCRC& id) const;
+				Node*       FindNode(const IDType& id);
+				const Node* FindNode(const IDType& id) const;
 
-				Edge*       FindEdge(const Dia::Core::StringCRC& id);
-				const Edge* FindEdge(const Dia::Core::StringCRC& id) const;
+				Edge*       FindEdge(const IDType& id);
+				const Edge* FindEdge(const IDType& id) const;
 
 				unsigned int GetNumberOfNodes() const;
 				unsigned int GetNumberOfEdges() const;
 
 				// Fill results with all edges leaving nodeId (out-edges).
-				void GetOutEdges(const Dia::Core::StringCRC& nodeId, EdgeResults& results) const;
+				void GetOutEdges(const IDType& nodeId, EdgeResults& results) const;
 
 				// Fill results with all edges entering nodeId (in-edges).
-				// GraphPolicy::None        — linear scan over all edges.
+				// GraphPolicy::None            — linear scan over all edges.
 				// GraphPolicy::ReverseEdgeCache — uses lazy cache (rebuilds if dirty).
-				void GetInEdges(const Dia::Core::StringCRC& nodeId, EdgeResults& results) const;
+				void GetInEdges(const IDType& nodeId, EdgeResults& results) const;
 
 				// ------------------------------------------------------------------
 				// Traversal
@@ -94,14 +103,14 @@ namespace Dia
 				// BFS from startNodeId. Visits each reachable node once in BFS order.
 				// visitedBuffer: caller-provided scratch, capacity >= kMaxNodes recommended.
 				template <class Visitor>
-				void BFS(const Dia::Core::StringCRC& startNodeId,
+				void BFS(const IDType& startNodeId,
 				         const Visitor& visitor,
 				         DynamicArrayC<const Node*, kMaxNodes>& visitedBuffer) const;
 
 				// DFS from startNodeId. Visits each reachable node once in DFS order.
 				// visitedBuffer: caller-provided scratch, capacity >= kMaxNodes recommended.
 				template <class Visitor>
-				void DFS(const Dia::Core::StringCRC& startNodeId,
+				void DFS(const IDType& startNodeId,
 				         const Visitor& visitor,
 				         DynamicArrayC<const Node*, kMaxNodes>& visitedBuffer) const;
 
@@ -122,12 +131,12 @@ namespace Dia
 				// Internal helpers
 				// ------------------------------------------------------------------
 
-				int FindNodeIndex(const Dia::Core::StringCRC& id) const;
-				int FindEdgeIndex(const Dia::Core::StringCRC& id) const;
+				int FindNodeIndex(const IDType& id) const;
+				int FindEdgeIndex(const IDType& id) const;
 
 				// DFS reachability: can we reach 'target' starting from 'start'?
 				// Used by AcyclicEnforced to test whether an edge would create a cycle.
-				bool CanReachNode(const Node* start, const Dia::Core::StringCRC& targetId) const;
+				bool CanReachNode(const Node* start, const IDType& targetId) const;
 
 				// ------------------------------------------------------------------
 				// Policy-specific helpers (compiled in only when Policy matches)
@@ -150,19 +159,12 @@ namespace Dia
 				EdgeList mEdgeList;
 
 				// ReverseEdgeCache policy: per-node lists of in-edge pointers + dirty flag.
-				// These members are only meaningful when Policy == GraphPolicy::ReverseEdgeCache.
-				// They are present in all instantiations but consume no space when the compiler
-				// eliminates dead code on kMaxNodes/kMaxEdges == 0 — and on MSVC with /O2.
-				// For a zero-overhead guarantee, see the static_assert in DirectedGraph.inl.
-				//
-				// In-edge cache entry uses kMaxOutEdgesPerNode as the per-node capacity for
-				// both in- and out-edges.  Set kMaxOutEdgesPerNode to the real per-node
-				// fan-out/fan-in to avoid over-allocating stack space.
+				// kMaxOutEdgesPerNode bounds both out- and in-edge capacity per node.
 				typedef Dia::Core::Containers::DynamicArrayC<Edge*, kMaxOutEdgesPerNode> InEdgeCacheEntry;
 				typedef Dia::Core::Containers::DynamicArrayC<InEdgeCacheEntry, kMaxNodes> InEdgeCache;
 
-				mutable InEdgeCache mInEdgeCache;   // only used by ReverseEdgeCache policy
-				mutable bool        mCacheDirty;    // only used by ReverseEdgeCache policy
+				mutable InEdgeCache mInEdgeCache;
+				mutable bool        mCacheDirty;
 			};
 		}
 	}

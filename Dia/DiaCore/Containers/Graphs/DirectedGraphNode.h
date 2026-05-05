@@ -9,31 +9,31 @@ namespace Dia
 	{
 		namespace Containers
 		{
-			template <class EdgePayload, class NodePayload, unsigned int kMaxOutEdges>
+			template <class EdgePayload, class NodePayload, unsigned int kMaxOutEdges, class IDType>
 			class DirectedGraphEdge;
 
 			// -----------------------------------------------------------------------
 			// DirectedGraphNode
 			//
-			// A node in a DirectedGraph. Stores a StringCRC ID, a NodePayload, and
-			// a fixed-capacity list of pointers to outgoing edges.
+			// A node in a DirectedGraph. Stores an IDType ID (default: StringCRC),
+			// a NodePayload, and a fixed-capacity list of pointers to outgoing edges.
 			//
-			// kMaxOutEdges caps how many out-edges a single node may have. It must
-			// be >= the kMaxEdges of the owning DirectedGraph in the worst case
-			// (a star topology), but callers can tune it lower for memory savings.
+			// kMaxOutEdges caps how many out-edges a single node may have.
+			// IDType defaults to StringCRC; use Dia::Core::CRC for a compact 4-byte key
+			// when debug string storage is not needed (e.g., large internal graphs).
 			// -----------------------------------------------------------------------
-			template <class NodePayload, class EdgePayload, unsigned int kMaxOutEdges>
+			template <class NodePayload, class EdgePayload, unsigned int kMaxOutEdges, class IDType = Dia::Core::StringCRC>
 			class DirectedGraphNode
 			{
 			public:
-				typedef DirectedGraphEdge<EdgePayload, NodePayload, kMaxOutEdges> Edge;
+				typedef DirectedGraphEdge<EdgePayload, NodePayload, kMaxOutEdges, IDType> Edge;
 				typedef Dia::Core::Containers::DynamicArrayC<Edge*, kMaxOutEdges> OutEdgeList;
 
 				DirectedGraphNode();
-				DirectedGraphNode(const Dia::Core::StringCRC& uniqueId, const NodePayload& payload);
+				DirectedGraphNode(const IDType& uniqueId, const NodePayload& payload);
 				~DirectedGraphNode();
 
-				const Dia::Core::StringCRC& GetUniqueID() const { return mUniqueId; }
+				const IDType& GetUniqueID() const { return mUniqueId; }
 
 				NodePayload&       GetPayload()             { return mPayload; }
 				const NodePayload& GetPayloadConst() const  { return mPayload; }
@@ -44,9 +44,9 @@ namespace Dia
 				OutEdgeList&       GetOutEdgeList()       { return mOutEdges; }
 
 			private:
-				Dia::Core::StringCRC mUniqueId;
-				NodePayload          mPayload;
-				OutEdgeList          mOutEdges;
+				IDType      mUniqueId;
+				NodePayload mPayload;
+				OutEdgeList mOutEdges;
 			};
 		}
 	}
