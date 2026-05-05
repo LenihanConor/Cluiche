@@ -84,6 +84,7 @@
     <ClInclude Include="Commands\AddRelationshipCommand.h" />
     <ClInclude Include="Commands\RemoveRelationshipCommand.h" />
     <ClInclude Include="Handlers\AssetTypeEditorRegistry.h" />
+    <ClInclude Include="Commands\ApplyRulesCommand.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaAssetCatalogueEditorPlugin.cpp" />
@@ -96,6 +97,7 @@
     <ClCompile Include="Commands\AddRelationshipCommand.cpp" />
     <ClCompile Include="Commands\RemoveRelationshipCommand.cpp" />
     <ClCompile Include="Handlers\AssetTypeEditorRegistry.cpp" />
+    <ClCompile Include="Commands\ApplyRulesCommand.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.assetcatalogueeditor.architecture.module.md" />

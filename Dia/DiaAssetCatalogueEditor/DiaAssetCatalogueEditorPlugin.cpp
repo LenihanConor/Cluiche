@@ -6,6 +6,7 @@
 #include "DiaAssetCatalogueEditor/Commands/AddRelationshipCommand.h"
 #include "DiaAssetCatalogueEditor/Commands/RemoveRelationshipCommand.h"
 #include "DiaAssetCatalogueEditor/Handlers/AssetTypeEditorRegistry.h"
+#include "DiaAssetCatalogueEditor/Commands/ApplyRulesCommand.h"
 #include <DiaEditor/Plugin/IPluginLoader.h>
 
 #define WIN32_LEAN_AND_MEAN
@@ -77,6 +78,9 @@ namespace Dia
 
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.open_asset"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.register_type_editor"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.load_rules"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.dry_run_rules"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.apply_rules"));
 
 				mSessionContext.Save(mOutputDir);
 				mBridge       = nullptr;
@@ -98,6 +102,7 @@ namespace Dia
 				RegisterRelationshipHandlers();
 				RegisterValidationHandlers();
 				RegisterAssetTypeEditorHandlers();
+				RegisterRulesHandlers();
 
 				mBridge->RegisterRequestHandler(
 					Dia::Core::StringCRC("asset_catalogue.load_manifest"),
@@ -445,6 +450,86 @@ namespace Dia
 
 						result["success"] = true;
 						result["files"]   = files;
+						return result;
+					});
+			}
+
+			// rules handlers
+			void DiaAssetCatalogueEditorPlugin::RegisterRulesHandlers()
+			{
+				if (!mBridge)
+					return;
+
+				// load_rules
+				mBridge->RegisterRequestHandler(
+					Dia::Core::StringCRC("asset_catalogue.load_rules"),
+					[this](const Json::Value& data) -> Json::Value
+					{
+						Json::Value result;
+						if (!data.isMember("path") || !data["path"].isString())
+						{
+							result["success"] = false;
+							result["error"]   = "missing path";
+							return result;
+						}
+						std::string path = data["path"].asString();
+						Dia::AssetCatalogue::LoadResult<void> lr = mRulesEngine.LoadRules(path.c_str(), mTypeRegistry);
+						if (!lr.mSuccess)
+						{
+							result["success"] = false;
+							result["error"]   = lr.HasErrors() ? lr.GetFirstError().mMessage.AsCStr() : "load failed";
+						}
+						else
+						{
+							result["success"]    = true;
+							result["rule_count"] = static_cast<int>(mRulesEngine.GetRuleCount());
+						}
+						return result;
+					});
+
+				// dry_run_rules
+				mBridge->RegisterRequestHandler(
+					Dia::Core::StringCRC("asset_catalogue.dry_run_rules"),
+					[this](const Json::Value& /*data*/) -> Json::Value
+					{
+						Json::Value result;
+						Dia::AssetCatalogue::RuleChangeset changeset =
+							mRulesEngine.EvaluateDryRun(mRegistry, mRegistry.GetRelationshipIndex());
+
+						Json::Value changes(Json::arrayValue);
+						for (unsigned int i = 0; i < changeset.mChanges.Size(); ++i)
+						{
+							const Dia::AssetCatalogue::RuleChange& c = changeset.mChanges[i];
+							Json::Value item;
+							item["recordId"]  = c.mRecordId.AsChar();
+							item["field"]     = c.mField.AsCStr();
+							item["oldValue"]  = c.mOldValue.AsCStr();
+							item["newValue"]  = c.mNewValue.AsCStr();
+							item["ruleName"]  = c.mRuleName.AsCStr();
+							item["conflict"]  = c.mIsConflict;
+							changes.append(item);
+						}
+						result["success"]       = true;
+						result["changes"]       = changes;
+						result["conflict_count"] = static_cast<int>(changeset.mConflictCount);
+						result["truncated"]     = changeset.mTruncated;
+						return result;
+					});
+
+				// apply_rules
+				mBridge->RegisterRequestHandler(
+					Dia::Core::StringCRC("asset_catalogue.apply_rules"),
+					[this](const Json::Value& /*data*/) -> Json::Value
+					{
+						Json::Value result;
+						auto* cmd = new Dia::AssetCatalogue::Editor::ApplyRulesCommand(
+							mRegistry, mRegistry.GetRelationshipIndex(), mRulesEngine);
+						mHistory.ExecuteCommand(cmd);
+
+						const Dia::AssetCatalogue::RuleChangeset& cs = cmd->GetChangeset();
+						result["success"]       = true;
+						result["applied_count"] = static_cast<int>(cs.mChanges.Size());
+						PushRegistryState();
 						return result;
 					});
 			}

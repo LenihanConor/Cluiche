@@ -6,6 +6,7 @@
 #include <DiaAssetCatalogue/CatalogueManifestSerializer.h>
 #include <DiaAssetCatalogue/AssetTypeRegistry.h>
 #include <DiaAssetCatalogue/RelationshipIndex.h>
+#include <DiaAssetCatalogue/CatalogueRulesEngine.h>
 
 #include "DiaAssetCatalogueEditor/ManifestLoadHandler.h"
 #include "DiaAssetCatalogueEditor/SessionContext.h"
@@ -46,6 +47,7 @@ namespace Dia
 				void RegisterRelationshipHandlers();
 				void RegisterValidationHandlers();
 				void RegisterAssetTypeEditorHandlers();
+				void RegisterRulesHandlers();
 				void PushDirtyState();
 				void PushRegistryState();
 
@@ -69,6 +71,7 @@ namespace Dia
 				FileDiscoverer                                 mFileDiscoverer;
 
 				AssetTypeEditorRegistry                        mTypeEditorRegistry;
+				Dia::AssetCatalogue::CatalogueRulesEngine      mRulesEngine;
 
 				Dia::Editor::WebUIBridge*                      mBridge       = nullptr;
 				Dia::Editor::EditorView*                       mView         = nullptr;

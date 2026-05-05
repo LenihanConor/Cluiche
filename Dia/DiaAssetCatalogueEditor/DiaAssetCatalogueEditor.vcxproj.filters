@@ -36,6 +36,9 @@
     <ClInclude Include="Handlers\AssetTypeEditorRegistry.h">
       <Filter>Handlers</Filter>
     </ClInclude>
+    <ClInclude Include="Commands\ApplyRulesCommand.h">
+      <Filter>Commands</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaAssetCatalogueEditorPlugin.cpp" />
@@ -61,6 +64,9 @@
     </ClCompile>
     <ClCompile Include="Handlers\AssetTypeEditorRegistry.cpp">
       <Filter>Handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="Commands\ApplyRulesCommand.cpp">
+      <Filter>Commands</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
