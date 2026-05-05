@@ -239,12 +239,17 @@ namespace Dia
                     if (obj.isMember("assets") && obj["assets"].isArray())
                     {
                         const Json::Value& assetIds = obj["assets"];
+                        if (assetIds.size() > stageEntry.mAssetIds.Capacity())
+                        {
+                            DIA_LOG_ERROR("AssetRuntime",
+                                "RuntimeManifestLoader: stage '%s' has %u assets, exceeds capacity %u",
+                                stageIdStr, assetIds.size(), stageEntry.mAssetIds.Capacity());
+                            return false;
+                        }
                         for (unsigned int a = 0; a < assetIds.size(); ++a)
                         {
-                            if (assetIds[a].isString() && !stageEntry.mAssetIds.IsFull())
-                            {
+                            if (assetIds[a].isString())
                                 stageEntry.mAssetIds.Add(Dia::Core::StringCRC(assetIds[a].asCString()));
-                            }
                         }
                     }
 

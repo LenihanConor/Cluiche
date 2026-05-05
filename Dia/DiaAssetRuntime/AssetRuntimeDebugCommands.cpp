@@ -222,42 +222,27 @@ namespace Dia
                 cmd.example     = "asset-runtime-get-all-states";
                 cmd.callback    = [&runtime](const Dia::API::CommandArgs&) -> int
                 {
-                    // Collect all assets via GetLoadedAssets + GetStagedAssets is insufficient
-                    // (misses Registered/Unloading). Use GetStageDependencies per stage would
-                    // also miss globals. Iterate the snapshot by querying all IDs from the
-                    // loaded/staged/registered pool via the query API.
-                    // We collect all staged + loaded, then enumerate remaining via ref count 0.
-                    // The cleanest approach: iterate loaded + staged + query known asset IDs.
-                    // Since we don't have GetAllAssets, use GetStageDependencies on all stages.
-                    // For completeness we use the F5 queries for what they cover, and log total.
-
-                    Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128> staged;
-                    Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128> loaded;
-                    runtime.GetStagedAssets(staged);
-                    runtime.GetLoadedAssets(loaded);
+                    Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128> all;
+                    unsigned int total = runtime.GetAllAssets(all);
 
                     Json::Value root;
                     Json::Value& assets = root["assets"];
                     assets = Json::Value(Json::arrayValue);
 
-                    // Helper lambda to add an asset entry
-                    auto addEntry = [&](const Dia::Core::StringCRC& id, const char* stateStr)
+                    for (unsigned int i = 0; i < all.Size(); ++i)
                     {
+                        const Dia::Core::StringCRC& id = all[i];
+                        AssetState state = runtime.GetAssetState(id);
                         Json::Value entry;
-                        entry["assetId"]   = id.AsChar();
-                        entry["state"]     = stateStr;
-                        entry["refCount"]  = runtime.GetAssetRefCount(id);
+                        entry["assetId"]    = id.AsChar();
+                        entry["state"]      = StateToString(state);
+                        entry["refCount"]   = runtime.GetAssetRefCount(id);
                         const Dia::Core::Containers::String512* path = runtime.ResolveAssetPath(id);
                         entry["deployPath"] = path ? path->AsCStr() : "";
                         assets.append(entry);
-                    };
+                    }
 
-                    for (unsigned int i = 0; i < staged.Size(); ++i)
-                        addEntry(staged[i], "Staged");
-                    for (unsigned int i = 0; i < loaded.Size(); ++i)
-                        addEntry(loaded[i], "Loaded");
-
-                    root["total"] = static_cast<int>(staged.Size() + loaded.Size());
+                    root["total"] = total;
 
                     Json::FastWriter writer;
                     DIA_LOG_INFO("AssetRuntimeDebugCommands", "%s", writer.write(root).c_str());

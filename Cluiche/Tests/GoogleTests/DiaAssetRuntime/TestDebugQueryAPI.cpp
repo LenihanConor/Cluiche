@@ -226,11 +226,11 @@ TEST_F(DebugQueryAPITest, GetStageDependencies_UnknownStage_ReturnsZero)
 
 TEST_F(DebugQueryAPITest, GetStageDependencies_MaxStageCapacity)
 {
-    // RuntimeStageEntry holds up to 64 asset IDs (DynamicArrayC<StringCRC, 64>).
-    // Build a manifest that fills a stage to capacity and verify all 64 are returned.
-    static const unsigned int kStageCapacity = 64;
+    // RuntimeStageEntry holds up to 128 asset IDs (DynamicArrayC<StringCRC, 128>).
+    // Build a manifest that fills a stage to capacity and verify all 128 are returned.
+    static const unsigned int kStageCapacity = 128;
 
-    char json[16384];
+    char json[65536];
     int pos = 0;
     pos += snprintf(json + pos, sizeof(json) - pos, "{\"assets\":[");
     for (unsigned int i = 0; i < kStageCapacity; ++i)
@@ -253,11 +253,12 @@ TEST_F(DebugQueryAPITest, GetStageDependencies_MaxStageCapacity)
     Dia::AssetRuntime::AssetRuntime runtime;
     ASSERT_TRUE(runtime.LoadManifest(MakeF5FilePath("f5_overflow.json")));
 
+    // GetStageDependencies returns total count even when results array is smaller.
     QueryResults results;
     unsigned int total = runtime.GetStageDependencies(Dia::Core::StringCRC("stage.big"), results);
 
-    EXPECT_EQ(total, kStageCapacity);     // all 64 returned
-    EXPECT_EQ(results.Size(), kStageCapacity); // fits within 128-entry result array
+    EXPECT_EQ(total, kStageCapacity);      // 128 assets in stage — total count correct
+    EXPECT_EQ(results.Size(), 128u);       // result array exactly matches capacity
 }
 
 // ---------------------------------------------------------------------------

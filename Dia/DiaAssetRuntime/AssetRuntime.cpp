@@ -7,6 +7,7 @@
 #include <DiaLogger/DiaLog.h>
 
 #include <math.h>
+#include <thread>
 
 namespace Dia
 {
@@ -29,10 +30,12 @@ namespace Dia
         //------------------------------------------------------------------------------------
         AssetRuntime::AssetRuntime()
             : mIsDispatching(false)
+            , mOwnerThreadId(std::this_thread::get_id())
         {}
 
         bool AssetRuntime::LoadManifest(const Dia::Core::FilePath& manifestPath)
         {
+            AssertOwnerThread();
             RuntimeManifestLoader loader;
             if (!loader.Load(manifestPath, mAssetTable, mStageTable))
                 return false;
@@ -45,6 +48,7 @@ namespace Dia
 
         const Dia::Core::Containers::String512* AssetRuntime::ResolveAssetPath(const Dia::Core::StringCRC& assetId) const
         {
+            AssertOwnerThread();
             const RuntimeAssetEntry* entry = mAssetTable.TryGetItemConst(assetId);
             if (!entry)
             {
@@ -56,6 +60,7 @@ namespace Dia
 
         AssetState AssetRuntime::GetAssetState(const Dia::Core::StringCRC& assetId) const
         {
+            AssertOwnerThread();
             const AssetState* state = mStateTable.TryGetItemConst(assetId);
             if (!state)
             {
@@ -67,6 +72,7 @@ namespace Dia
 
         bool AssetRuntime::IsAssetReady(const Dia::Core::StringCRC& assetId) const
         {
+            AssertOwnerThread();
             const AssetState* state = mStateTable.TryGetItemConst(assetId);
             if (!state)
             {
@@ -78,22 +84,39 @@ namespace Dia
 
         void AssetRuntime::AcknowledgeAssetLoaded(const Dia::Core::StringCRC& assetId)
         {
+            AssertOwnerThread();
             TryTransition(assetId, AssetState::Loaded);
         }
 
         void AssetRuntime::AcknowledgeAssetUnloaded(const Dia::Core::StringCRC& assetId)
         {
+            AssertOwnerThread();
             TryTransition(assetId, AssetState::Registered);
         }
 
         void AssetRuntime::AcknowledgeAssetLoadFailed(const Dia::Core::StringCRC& assetId)
         {
+            AssertOwnerThread();
             TryTransition(assetId, AssetState::Registered);
+        }
+
+        unsigned int AssetRuntime::GetAllAssets(
+            Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128>& results) const
+        {
+            AssertOwnerThread();
+            unsigned int total = mAssetTable.Size();
+            for (unsigned int i = 0; i < total; ++i)
+            {
+                if (!results.IsFull())
+                    results.Add(mAssetTable.GetItemByIndexConst(i).mId);
+            }
+            return total;
         }
 
         unsigned int AssetRuntime::GetLoadedAssets(
             Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128>& results) const
         {
+            AssertOwnerThread();
             unsigned int total = 0;
             unsigned int count = mAssetTable.Size();
             for (unsigned int i = 0; i < count; ++i)
@@ -113,6 +136,7 @@ namespace Dia
         unsigned int AssetRuntime::GetStagedAssets(
             Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128>& results) const
         {
+            AssertOwnerThread();
             unsigned int total = 0;
             unsigned int count = mAssetTable.Size();
             for (unsigned int i = 0; i < count; ++i)
@@ -133,6 +157,7 @@ namespace Dia
             const Dia::Core::StringCRC& stageId,
             Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128>& results) const
         {
+            AssertOwnerThread();
             const RuntimeStageEntry* stage = mStageTable.TryGetItemConst(stageId);
             if (!stage)
             {
@@ -149,8 +174,35 @@ namespace Dia
             return total;
         }
 
+        void AssetRuntime::Reset()
+        {
+            AssertOwnerThread();
+
+            unsigned int count = mAssetTable.Size();
+            for (unsigned int i = 0; i < count; ++i)
+            {
+                const RuntimeAssetEntry& entry = mAssetTable.GetItemByIndexConst(i);
+                AssetState* state = mStateTable.TryGetItem(entry.mId);
+                if (!state) continue;
+
+                if (*state != AssetState::Registered)
+                    DispatchAssetUnloading(entry.mId);
+            }
+
+            for (unsigned int i = 0; i < count; ++i)
+            {
+                const RuntimeAssetEntry& entry = mAssetTable.GetItemByIndexConst(i);
+                AssetState* state = mStateTable.TryGetItem(entry.mId);
+                if (state) *state = AssetState::Registered;
+
+                unsigned int* refCount = mRefCountTable.TryGetItem(entry.mId);
+                if (refCount) *refCount = 0u;
+            }
+        }
+
         void AssetRuntime::RegisterListener(IAssetStateListener* listener)
         {
+            AssertOwnerThread();
             if (!listener)
                 return;
 
@@ -175,6 +227,7 @@ namespace Dia
 
         void AssetRuntime::UnregisterListener(IAssetStateListener* listener)
         {
+            AssertOwnerThread();
             if (!listener)
                 return;
 
@@ -200,6 +253,7 @@ namespace Dia
 
         void AssetRuntime::RequestStageLoad(const Dia::Core::StringCRC& stageId)
         {
+            AssertOwnerThread();
             const RuntimeStageEntry* stage = mStageTable.TryGetItemConst(stageId);
             if (!stage)
             {
@@ -232,6 +286,7 @@ namespace Dia
 
         void AssetRuntime::RequestStageUnload(const Dia::Core::StringCRC& stageId)
         {
+            AssertOwnerThread();
             const RuntimeStageEntry* stage = mStageTable.TryGetItemConst(stageId);
             if (!stage)
             {
@@ -271,6 +326,7 @@ namespace Dia
 
         unsigned int AssetRuntime::GetAssetRefCount(const Dia::Core::StringCRC& assetId) const
         {
+            AssertOwnerThread();
             const unsigned int* refCount = mRefCountTable.TryGetItemConst(assetId);
             if (!refCount)
             {
@@ -378,6 +434,12 @@ namespace Dia
                 }
             }
             mDeferredRemovals.RemoveAll();
+        }
+
+        void AssetRuntime::AssertOwnerThread() const
+        {
+            DIA_ASSERT(std::this_thread::get_id() == mOwnerThreadId,
+                "AssetRuntime accessed from wrong thread — single-threaded use only");
         }
 
         bool AssetRuntime::TryTransition(const Dia::Core::StringCRC& assetId, AssetState target)

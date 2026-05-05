@@ -112,6 +112,9 @@
     <Filter Include="DiaAssetCatalogueEditor">
       <UniqueIdentifier>{DACTE001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaAssetRuntime">
+      <UniqueIdentifier>{DARU0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -834,6 +837,31 @@
     </ClCompile>
     <ClCompile Include="Animation2D\IntegrationTests.cpp">
       <Filter>Animation2D</Filter>
+    </ClCompile>
+    <!-- DiaAssetRuntime -->
+    <ClCompile Include="DiaAssetRuntime\TestManifestLoadPathResolution.cpp">
+      <Filter>DiaAssetRuntime</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAssetRuntime\TestAssetStateMachine.cpp">
+      <Filter>DiaAssetRuntime</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAssetRuntime\TestStageLifecycle.cpp">
+      <Filter>DiaAssetRuntime</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAssetRuntime\TestEventNotification.cpp">
+      <Filter>DiaAssetRuntime</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAssetRuntime\TestDebugQueryAPI.cpp">
+      <Filter>DiaAssetRuntime</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAssetRuntime\TestDebugCommands.cpp">
+      <Filter>DiaAssetRuntime</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAssetRuntime\TestGetAllAssets.cpp">
+      <Filter>DiaAssetRuntime</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAssetRuntime\TestReset.cpp">
+      <Filter>DiaAssetRuntime</Filter>
     </ClCompile>
     <!-- DiaAssetCatalogueEditor -->
     <ClCompile Include="DiaAssetCatalogueEditor\TestDiaAssetCatalogueEditorExhaustive.cpp">

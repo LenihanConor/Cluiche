@@ -10,7 +10,7 @@ namespace Dia
         struct RuntimeStageEntry
         {
             Dia::Core::StringCRC                                            mId;
-            Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 64> mAssetIds;
+            Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128> mAssetIds;
 
             RuntimeStageEntry() {}
         };

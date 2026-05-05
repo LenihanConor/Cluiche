@@ -10,6 +10,8 @@
 #include "DiaCore/Containers/HashTables/HashTableHashFunctionData.h"
 #include "DiaCore/Containers/Arrays/DynamicArrayC.h"
 
+#include <thread>
+
 namespace Dia
 {
     namespace AssetRuntime
@@ -44,7 +46,12 @@ namespace Dia
             void RegisterListener(IAssetStateListener* listener);
             void UnregisterListener(IAssetStateListener* listener);
 
+            // Teardown — fire OnAssetUnloading for all non-Registered assets, reset all state/ref-counts
+            void Reset();
+
             // Debug queries (const, read-only)
+            unsigned int GetAllAssets(
+                Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128>& results) const;
             unsigned int GetLoadedAssets(
                 Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128>& results) const;
             unsigned int GetStagedAssets(
@@ -89,6 +96,7 @@ namespace Dia
             void DispatchAssetUnloading(const Dia::Core::StringCRC& assetId);
             void DispatchAssetLoadFailed(const Dia::Core::StringCRC& assetId);
             void FlushDeferredRemovals();
+            void AssertOwnerThread() const;
 
             static const unsigned int kMaxListeners = 16;
 
@@ -100,6 +108,7 @@ namespace Dia
             Dia::Core::Containers::DynamicArrayC<IAssetStateListener*, kMaxListeners> mListeners;
             Dia::Core::Containers::DynamicArrayC<IAssetStateListener*, kMaxListeners> mDeferredRemovals;
             bool                              mIsDispatching;
+            std::thread::id                   mOwnerThreadId;
         };
     }
 }
