@@ -9,6 +9,7 @@
 
 #include "DiaAssetCatalogueEditor/ManifestLoadHandler.h"
 #include "DiaAssetCatalogueEditor/SessionContext.h"
+#include <DiaAssetCatalogue/ContentHasher.h>
 
 namespace Dia
 {
@@ -37,7 +38,12 @@ namespace Dia
 
 			private:
 				void RegisterRequestHandlers();
+				void RegisterCRUDHandlers();
 				void PushDirtyState();
+				void PushRegistryState();
+
+				static Dia::AssetCatalogue::AssetRecord RecordFromJson(const Json::Value& data);
+				static Json::Value RecordToJson(const Dia::AssetCatalogue::AssetRecord& rec);
 
 				static const unsigned int kOutputDirLength = 512;
 				char mOutputDir[kOutputDirLength];
@@ -52,6 +58,7 @@ namespace Dia
 				Dia::Editor::CommandHistory                    mHistory;
 				ManifestLoadHandler                            mLoadHandler;
 				SessionContext                                 mSessionContext;
+				Dia::AssetCatalogue::ContentHasher             mContentHasher;
 
 				Dia::Editor::WebUIBridge*                      mBridge = nullptr;
 				Dia::Editor::EditorView*                       mView   = nullptr;

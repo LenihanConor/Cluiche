@@ -16,7 +16,7 @@ DiaAssetCatalogue must be Done before this plan can start.
 |---|------|--------|-------|-------|
 | 0 | Project Scaffolding | Done | haiku + sonnet | See sub-tasks below |
 | 1 | Feature 1 — Manifest Load/Save | Done | sonnet | Depends on Task 0 |
-| 2 | Feature 2 — Asset Record CRUD | Not Started | sonnet | Depends on Task 1 |
+| 2 | Feature 2 — Asset Record CRUD | Done | sonnet | Depends on Task 1 |
 | 3 | Feature 3 — File Discoverer | Not Started | sonnet | Depends on Task 2 |
 | 4 | Feature 4 — Relationship Editor | Not Started | sonnet | Depends on Task 2 |
 | 5 | Feature 6 — Validation Panel | Not Started | sonnet | Depends on Task 2 |

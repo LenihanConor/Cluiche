@@ -15,11 +15,29 @@
     <ClInclude Include="DiaAssetCatalogueEditorPlugin.h" />
     <ClInclude Include="ManifestLoadHandler.h" />
     <ClInclude Include="SessionContext.h" />
+    <ClInclude Include="Commands\CreateRecordCommand.h">
+      <Filter>Commands</Filter>
+    </ClInclude>
+    <ClInclude Include="Commands\UpdateRecordCommand.h">
+      <Filter>Commands</Filter>
+    </ClInclude>
+    <ClInclude Include="Commands\DeleteRecordCommand.h">
+      <Filter>Commands</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaAssetCatalogueEditorPlugin.cpp" />
     <ClCompile Include="ManifestLoadHandler.cpp" />
     <ClCompile Include="SessionContext.cpp" />
+    <ClCompile Include="Commands\CreateRecordCommand.cpp">
+      <Filter>Commands</Filter>
+    </ClCompile>
+    <ClCompile Include="Commands\UpdateRecordCommand.cpp">
+      <Filter>Commands</Filter>
+    </ClCompile>
+    <ClCompile Include="Commands\DeleteRecordCommand.cpp">
+      <Filter>Commands</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.assetcatalogueeditor.architecture.module.md" />
