@@ -389,8 +389,14 @@
       <div class="tab"        onclick="showRightTab('rules',this)">Rules</div>
       <div class="tab"        onclick="showRightTab('graph',this)">Graph</div>
     </div>
-    <div class="tab-content active" id="tab-right-validation">
-      <div class="empty-state">Run validation to see results</div>
+    <div class="tab-content active" id="tab-right-validation" style="flex-direction:column;">
+      <div style="flex-shrink:0;margin-bottom:8px;">
+        <button onclick="onValidate()" style="background:#3c3c3c;color:#d4d4d4;border:1px solid #555;padding:4px 14px;font-size:12px;cursor:pointer;border-radius:3px;">Validate</button>
+      </div>
+      <div id="val-summary" style="display:none;flex-shrink:0;margin-bottom:8px;font-size:11px;"></div>
+      <div id="val-list" style="flex:1;overflow:auto;font-size:11px;">
+        <div class="empty-state">Click Validate to check the catalogue</div>
+      </div>
     </div>
     <div class="tab-content" id="tab-right-rules">
       <div class="empty-state">Catalogue rules not yet implemented</div>
@@ -887,6 +893,43 @@
       }
     });
     closeModal('modal-delete');
+  }
+
+  /* ── Validation ─────────────────────────────────── */
+  function onValidate() {
+    diaRequest('asset_catalogue.validate', {}).then(function(r) {
+      var sumEl  = document.getElementById('val-summary');
+      var listEl = document.getElementById('val-list');
+      if (!r.success) {
+        listEl.innerHTML = '<div style="color:#f48771;font-size:11px;">' + escHtml(r.error || 'Validation failed') + '</div>';
+        sumEl.style.display = 'none';
+        return;
+      }
+
+      var errors   = (r.errors || []).filter(function(e){ return e.severity === 'error'; });
+      var warnings = (r.errors || []).filter(function(e){ return e.severity === 'warning'; });
+
+      sumEl.style.display = '';
+      if (errors.length === 0 && warnings.length === 0) {
+        sumEl.innerHTML = '<span style="color:#4ec9a0;">✓ All clear — no issues found</span>';
+        listEl.innerHTML = '';
+        return;
+      }
+
+      sumEl.innerHTML =
+        (errors.length   > 0 ? '<span style="color:#f48771;margin-right:10px;">⛔ ' + errors.length   + ' error'   + (errors.length   > 1 ? 's' : '') + '</span>' : '') +
+        (warnings.length > 0 ? '<span style="color:#dcdcaa;">⚠ '  + warnings.length + ' warning' + (warnings.length > 1 ? 's' : '') + '</span>' : '');
+
+      listEl.innerHTML = (r.errors || []).map(function(e) {
+        var icon  = e.severity === 'error' ? '⛔' : '⚠';
+        var color = e.severity === 'error' ? '#f48771' : '#dcdcaa';
+        return '<div style="border-bottom:1px solid #2d2d2d;padding:5px 4px;cursor:pointer;" onclick="selectRecord(\'' + escHtml(e.assetId) + '\')">' +
+          '<span style="color:' + color + ';margin-right:6px;">' + icon + '</span>' +
+          '<span style="color:#9cdcfe;margin-right:6px;">' + escHtml(e.assetId) + '</span>' +
+          '<span style="color:#9d9d9d;">' + escHtml(e.message) + '</span>' +
+          '</div>';
+      }).join('');
+    });
   }
 
   /* ── File Discoverer ─────────────────────────────── */

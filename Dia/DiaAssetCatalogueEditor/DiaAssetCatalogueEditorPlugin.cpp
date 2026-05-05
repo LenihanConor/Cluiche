@@ -65,6 +65,7 @@ namespace Dia
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.remove_relationship"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.get_forward_refs"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.get_reverse_refs"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.validate"));
 				}
 
 				mSessionContext.Save(mOutputDir);
@@ -84,6 +85,7 @@ namespace Dia
 				RegisterCRUDHandlers();
 				RegisterDiscovererHandlers();
 				RegisterRelationshipHandlers();
+				RegisterValidationHandlers();
 
 				mBridge->RegisterRequestHandler(
 					Dia::Core::StringCRC("asset_catalogue.load_manifest"),
@@ -431,6 +433,83 @@ namespace Dia
 
 						result["success"] = true;
 						result["files"]   = files;
+						return result;
+					});
+			}
+
+			// validate handler
+			void DiaAssetCatalogueEditorPlugin::RegisterValidationHandlers()
+			{
+				if (!mBridge)
+					return;
+
+				mBridge->RegisterRequestHandler(
+					Dia::Core::StringCRC("asset_catalogue.validate"),
+					[this](const Json::Value& /*data*/) -> Json::Value
+					{
+						Json::Value errors(Json::arrayValue);
+
+						for (unsigned int i = 0; i < mRegistry.GetCount(); ++i)
+						{
+							const Dia::AssetCatalogue::AssetRecord& rec = mRegistry.GetRecordByIndex(i);
+							const char* id = rec.mId.AsChar();
+
+							// Missing source path for non-draft assets
+							if (rec.mStatus != Dia::AssetCatalogue::AssetStatus::Draft &&
+							    rec.mSourcePath.IsEmpty())
+							{
+								Json::Value e;
+								e["assetId"]  = id;
+								e["severity"] = "error";
+								e["type"]     = "missing_source_path";
+								e["message"]  = "Non-draft asset has no source path";
+								errors.append(e);
+							}
+
+							// Stage-scoped asset missing stage name
+							if (rec.mScope == Dia::AssetCatalogue::AssetScope::kStage &&
+							    rec.mScopeStageName == Dia::Core::StringCRC())
+							{
+								Json::Value e;
+								e["assetId"]  = id;
+								e["severity"] = "error";
+								e["type"]     = "missing_stage_name";
+								e["message"]  = "Stage-scoped asset has no stage name";
+								errors.append(e);
+							}
+
+							// Dangling references (target not in registry)
+							for (unsigned int r = 0; r < rec.mReferences.Size(); ++r)
+							{
+								const Dia::Core::StringCRC& targetId = rec.mReferences[r].mTargetAssetId;
+								if (!mRegistry.FindById(targetId))
+								{
+									Json::Value e;
+									e["assetId"]  = id;
+									e["severity"] = "error";
+									e["type"]     = "dangling_reference";
+									std::string msg = "References unknown asset: ";
+									msg += targetId.AsChar();
+									e["message"]  = msg.c_str();
+									errors.append(e);
+								}
+							}
+
+							// Warn on zero content hash (not yet computed)
+							if (rec.mContentHash == 0 && !rec.mSourcePath.IsEmpty())
+							{
+								Json::Value e;
+								e["assetId"]  = id;
+								e["severity"] = "warning";
+								e["type"]     = "missing_content_hash";
+								e["message"]  = "Content hash not computed";
+								errors.append(e);
+							}
+						}
+
+						Json::Value result;
+						result["success"] = true;
+						result["errors"]  = errors;
 						return result;
 					});
 			}
