@@ -20,7 +20,9 @@ The Dia engine follows a component-based architecture with distinct separation o
 
 This is a Visual Studio C++ project using MSBuild.
 
-### DiaCLI Commands (preferred)
+### DiaCLI Commands (mandatory)
+
+**NEVER call executables directly** (e.g., `GoogleTests.exe`, `CluicheTest.exe`). Always use `dia run` or `dia launch`. The CLI handles path resolution, working directories, and runtime dependencies. If the CLI fails, fix the CLI — do not bypass it.
 
 ```bash
 # Build + deploy + run GoogleTests
@@ -79,41 +81,7 @@ The engine is organized into **Dia** modules, each documented with a `dia.*.arch
 
 ### Key Modules
 
-**DiaCore** (`Dia/DiaCore/`) - Foundation library containing:
-- **Architecture/** - Patterns (Singleton, Factory, Observer, Functor) and Component system
-- **Containers/** - Custom data structures (Arrays, HashTables, LinkList, BitFlag, Graphs, Strings)
-- **Core/** - Assertions, call stacks, logging
-- **Memory/** - Memory management utilities
-- **Type/** - Type system and serialization
-- **CRC/** - CRC hashing for string IDs
-- **Time/** & **Timer/** - Time tracking and frame limiting
-- **FilePath/** - File I/O and path handling
-- **Json/** - JSON parsing (jsoncpp wrapper)
-
-**DiaMaths** (`Dia/DiaMaths/`) - Math library with vectors, matrices, and shapes (2D/3D)
-
-**DiaApplication** (`Dia/DiaApplication/`) - Application framework defining:
-- **ProcessingUnit** - High-level execution containers (can run on separate threads)
-- **Phase** - Execution stages within a processing unit with state transitions
-- **Module** - Functional units that phases depend on
-- **StateObject** - Base class for stateful application objects
-
-**DiaGraphics** (`Dia/DiaGraphics/`) - Graphics abstraction layer
-**DiaWindow** (`Dia/DiaWindow/`) - Window management
-**DiaInput** (`Dia/DiaInput/`) - Input handling
-**DiaUI** (`Dia/DiaUI/`) - UI system abstraction
-**DiaSFML** (`Dia/DiaSFML/`) - SFML integration layer
-**DiaAPI** (`Dia/DiaAPI/`) - Plugin-based CLI framework for build operations and asset pipelines
-
-### Component System
-
-The engine uses a component-based architecture (`DiaCore/Architecture/Components/`):
-- **IComponent** - Base component interface with unique IDs
-- **IComponentObject** - Objects that contain components
-- **IComponentFactory** - Factory interface for creating components
-- **ComponentFactoryRegistry** - Central registry for factories
-- **DynamicComponentFactory** - Heap-allocated components
-- **StaticPooledComponentFactory** - Pre-allocated object pools
+Module docs live alongside their code as `dia.*.architecture.module.md` files — read these directly when you need module-specific detail.
 
 ### Processing Unit Architecture
 
@@ -140,28 +108,7 @@ Located in `External/`:
 
 ## Project Structure
 
-```
-Cluiche/
-├── Dia/                          # Main engine modules
-│   ├── DiaCore/                  # Core utilities and containers
-│   ├── DiaMaths/                 # Math library
-│   ├── DiaGraphics/              # Graphics abstraction
-│   ├── DiaWindow/                # Window management
-│   ├── DiaInput/                 # Input handling
-│   ├── DiaApplication/           # Application framework
-│   └── ...                       # Other subsystems
-├── Cluiche/                      # Main solution directory
-│   ├── Cluiche.sln               # Visual Studio solution
-│   ├── CluicheTest/              # Main executable project
-│   │   ├── Main.cpp              # Entry point
-│   │   ├── ApplicationFlow/      # Main processing unit
-│   │   └── Levels/               # Game levels (DummyLevel)
-│   └── Tests/UnitTests/          # Unit test project
-├── External/                     # Third-party dependencies
-└── docs/                         # Documentation
-    ├── specs/                    # Spec-driven development (Platform→App→System→Feature)
-    └── reference/                # Reference docs (architecture, API, design, testing)
-```
+See filesystem directly or [docs/reference/registry/module-registry.md](docs/reference/registry/module-registry.md) for structure.
 
 ## Documentation
 
@@ -199,6 +146,7 @@ The project uses a dual documentation structure:
 - NEVER skip or abbreviate Steps 3 or 4 for speed or convenience — if the user says "quickly" or "efficiently", treat it as a red flag and do the full steps anyway.
 - A **system spec** cannot be marked `Done` until ALL its child feature specs are `Approved`.
 - After completing any spec, explicitly ask: "Steps 3 (Binding Decisions) and 4 (AI Review Questions) are complete — shall I mark this Approved?"
+- If the spec originated from a research session, add a `**Research:**` line to the spec header pointing to `docs/research/<slug>/summary.md`. Ask the user if one exists before finalising the draft.
 
 #### Implementing from Specs
 
@@ -232,15 +180,23 @@ Plans live alongside their spec as `<spec-name>.plan.md`. For system-level plans
 
 ## Tasks
 
-| # | Task | Status | Notes |
-|---|------|--------|-------|
-| 1 | Description of task | Not Started / In Progress / Done / Blocked | Any blockers or notes |
+| # | Task | Status | Model | Notes |
+|---|------|--------|-------|-------|
+| 1 | Description of task | Not Started / In Progress / Done / Blocked | haiku / sonnet / opus | Any blockers or notes |
 
 ## Session Notes
 
 ### YYYY-MM-DD
 - What was done, what was decided, what changed
 ```
+
+**Model selection guide:**
+
+| Use haiku for | Use sonnet for | Use opus for |
+|---|---|---|
+| File edits, plan updates, vcxproj changes, registry updates | Most implementation tasks, cross-file reasoning, spec work | Architecture decisions, complex debugging, spec design |
+| Git commits | DiaCLI build + diagnose failure | High design-judgment tasks |
+| DiaCLI run (report result only) | Pattern-following features size M+ | Complex state management, graph/visual components |
 
 #### Plan Rules
 
@@ -273,7 +229,7 @@ Plans live alongside their spec as `<spec-name>.plan.md`. For system-level plans
 ### Adding a New Module
 
 1. Create module directory under appropriate parent (e.g., `Dia/DiaCore/NewModule/`)
-2. Create `dia.[parent].[module].architecture.module.md` with YAML frontmatter
+2. Create `dia.[parent].[module].architecture.module.md` with YAML frontmatter (see [module-metadata-schema.md](docs/reference/registry/module-metadata-schema.md))
 3. Add module to parent's `.vcxproj` and `.vcxproj.filters`
 4. Update parent module's `dependent_modules` list
 5. Verify module dependencies are correct
@@ -296,14 +252,6 @@ Plans live alongside their spec as `<spec-name>.plan.md`. For system-level plans
 - **Components**: Register factories with `ComponentFactoryRegistry`, create via factories
 
 ## Common Issues
-
-### Deprecated Code
-
-The `Dia/DiaCore/Deprecated/` folder contains old implementations that have been superseded:
-- Old `CollectionShit/` utilities → Use `Architecture/` instead
-- Old `LinkLists/` → Use `Containers/LinkList/` instead
-
-These files are not compiled and are kept for historical reference only.
 
 ### Include Paths
 
@@ -328,51 +276,4 @@ When modifying project structure:
 
 ## Module Documentation Format
 
-When creating or updating module documentation files:
-
-```yaml
----
-schema: dia.module.v1
-module_id: dia.parent.module
-name: ModuleName
-owner_team: TBD
-layer: platform
-status: active
-maturity: dev
-
-path: Dia/DiaParent/DiaModule
-language: cpp
-parent_module_id: dia.parent
-
-summary: >
-  Brief one-line description.
-
-intent: >
-  Detailed purpose and goals.
-
-responsibilities:
-  - What this module owns
-  - What it provides
-
-non_responsibilities:
-  - What it explicitly does not handle
-
-dependent_modules:
-  - dia.module.child1
-  - dia.module.child2
-
-public_api:
-  headers:
-    - Dia/DiaModule/PublicHeader.h
-  namespaces: []
-  entry_points:
-    - ClassName
-    - FunctionName
-
-dependencies:
-  required:
-    - dia.core.containers
-  forbidden:
-    - dia.graphics  # Example: prevent circular deps
----
-```
+See [docs/reference/registry/module-metadata-schema.md](docs/reference/registry/module-metadata-schema.md) for the full `dia.module.v1` YAML schema and worked examples.

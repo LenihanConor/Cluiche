@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell.exe *)",
+      "Bash(powershell *)",
+      "Bash(cmd.exe *)",
+      "Bash(dia run *)",
+      "Bash(dia pipeline *)",
+      "Bash(dia launch *)",
+      "Bash(dia env verify)",
+      "Bash(dia env setup)",
+      "Bash(dia test *)",
+      "mcp__pallas__pallas_docs_get",
+      "mcp__pallas__pallas_docs_list",
+      "mcp__pallas__pallas_docs_search",
+      "mcp__pallas__pallas_get_config",
+      "mcp__pallas__pallas_get_project_config",
+      "mcp__pallas__pallas_list_projects",
+      "mcp__pallas__pallas_help",
+      "mcp__pallas__pallas_list_hooks",
+      "mcp__pallas__pallas_list_ides",
+      "mcp__pallas__pallas_security_report",
+      "mcp__pallas__pallas_check_diff"
+    ]
+  }
+}
