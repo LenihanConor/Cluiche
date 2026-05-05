@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Commands">
+      <UniqueIdentifier>{B1111111-1111-1111-1111-111111111111}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Handlers">
+      <UniqueIdentifier>{B2222222-2222-2222-2222-222222222222}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="UI">
+      <UniqueIdentifier>{B3333333-3333-3333-3333-333333333333}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="DiaAssetCatalogueEditorPlugin.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="DiaAssetCatalogueEditorPlugin.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="dia.assetcatalogueeditor.architecture.module.md" />
+    <None Include="UI\index.html">
+      <Filter>UI</Filter>
+    </None>
+  </ItemGroup>
+</Project>

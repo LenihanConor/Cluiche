@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Asset Catalogue Editor</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      background: #2d2d2d;
+      border-bottom: 1px solid #3c3c3c;
+      flex-shrink: 0;
+    }
+
+    .toolbar button {
+      background: #3c3c3c;
+      color: #d4d4d4;
+      border: 1px solid #555;
+      padding: 4px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      border-radius: 3px;
+    }
+    .toolbar button:hover { background: #4c4c4c; }
+
+    .toolbar .manifest-path {
+      flex: 1;
+      font-size: 11px;
+      color: #9cdcfe;
+      margin-left: 8px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .toolbar .dirty-indicator {
+      color: #f48771;
+      font-size: 14px;
+      font-weight: bold;
+      visibility: hidden;
+    }
+    .toolbar .dirty-indicator.dirty { visibility: visible; }
+
+    .layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .panel {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid #3c3c3c;
+      overflow: hidden;
+    }
+
+    .panel-title {
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #9cdcfe;
+      background: #252526;
+      border-bottom: 1px solid #3c3c3c;
+      flex-shrink: 0;
+    }
+
+    .panel-body {
+      flex: 1;
+      overflow: auto;
+      padding: 12px;
+    }
+
+    .placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #555;
+      font-size: 12px;
+      font-style: italic;
+    }
+
+    #panel-asset-list { width: 280px; min-width: 200px; }
+    #panel-record-editor { flex: 1; }
+    #panel-right { width: 320px; min-width: 240px; border-right: none; }
+
+    .tabs {
+      display: flex;
+      background: #252526;
+      border-bottom: 1px solid #3c3c3c;
+      flex-shrink: 0;
+    }
+    .tab {
+      padding: 6px 14px;
+      font-size: 11px;
+      cursor: pointer;
+      color: #9d9d9d;
+      border-right: 1px solid #3c3c3c;
+    }
+    .tab.active { color: #d4d4d4; border-bottom: 2px solid #007acc; }
+    .tab:hover { color: #d4d4d4; }
+  </style>
+</head>
+<body>
+
+<div class="toolbar">
+  <button onclick="onNew()">New</button>
+  <button onclick="onOpen()">Open</button>
+  <button onclick="onSave()">Save</button>
+  <span class="manifest-path" id="manifest-path">No manifest loaded</span>
+  <span class="dirty-indicator" id="dirty-indicator">*</span>
+</div>
+
+<div class="layout">
+
+  <div class="panel" id="panel-asset-list">
+    <div class="panel-title">Asset List</div>
+    <div class="panel-body">
+      <div class="placeholder">Load a manifest to see assets</div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-record-editor">
+    <div class="tabs">
+      <div class="tab active" onclick="showTab('records')">Asset Records</div>
+      <div class="tab" onclick="showTab('relationships')">Relationships</div>
+      <div class="tab" onclick="showTab('discoverer')">File Discoverer</div>
+    </div>
+    <div class="panel-body">
+      <div class="placeholder">Select an asset to edit</div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-right">
+    <div class="tabs">
+      <div class="tab active" onclick="showRightTab('validation')">Validation</div>
+      <div class="tab" onclick="showRightTab('rules')">Rules</div>
+      <div class="tab" onclick="showRightTab('graph')">Graph</div>
+    </div>
+    <div class="panel-body">
+      <div class="placeholder">Run validation to see results</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function onNew() {
+    if (window.DiaEditor) {
+      DiaEditor.request('asset_catalogue.new_manifest', {});
+    }
+  }
+
+  function onOpen() {
+    if (window.DiaEditor) {
+      DiaEditor.request('asset_catalogue.open_manifest_dialog', {});
+    }
+  }
+
+  function onSave() {
+    if (window.DiaEditor) {
+      DiaEditor.request('asset_catalogue.save_manifest', {});
+    }
+  }
+
+  function showTab(name) {
+    console.log('Tab:', name);
+  }
+
+  function showRightTab(name) {
+    console.log('Right tab:', name);
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      e.preventDefault();
+      onSave();
+    }
+  });
+</script>
+
+</body>
+</html>
