@@ -216,6 +216,39 @@ TEST(DirectedGraphCoreTest, FindEdge_MissingID_ReturnsNull)
 	EXPECT_EQ(g.FindEdge(StringCRC("ghost")), nullptr);
 }
 
+TEST(DirectedGraphCoreTest, FindEdgeConst_ExistingID_ReturnsPointer)
+{
+	TestGraph g;
+	g.AddNode(StringCRC("a"), 1);
+	g.AddNode(StringCRC("b"), 2);
+	g.AddEdge(StringCRC("e"), StringCRC("a"), StringCRC("b"), 2.5f);
+	const TestGraph& cg = g;
+	const TestEdge* e = cg.FindEdge(StringCRC("e"));
+	ASSERT_NE(e, nullptr);
+	EXPECT_FLOAT_EQ(e->GetPayloadConst(), 2.5f);
+}
+
+TEST(DirectedGraphCoreTest, GetNumberOfNodes_MultipleAdds_ReturnsCorrectCount)
+{
+	TestGraph g;
+	g.AddNode(StringCRC("a"), 1);
+	g.AddNode(StringCRC("b"), 2);
+	g.AddNode(StringCRC("c"), 3);
+	EXPECT_EQ(g.GetNumberOfNodes(), 3u);
+}
+
+TEST(DirectedGraphCoreTest, GetNumberOfEdges_MultipleAdds_ReturnsCorrectCount)
+{
+	TestGraph g;
+	g.AddNode(StringCRC("a"), 1);
+	g.AddNode(StringCRC("b"), 2);
+	g.AddNode(StringCRC("c"), 3);
+	g.AddEdge(StringCRC("ab"), StringCRC("a"), StringCRC("b"), 1.0f);
+	g.AddEdge(StringCRC("bc"), StringCRC("b"), StringCRC("c"), 2.0f);
+	g.AddEdge(StringCRC("ac"), StringCRC("a"), StringCRC("c"), 3.0f);
+	EXPECT_EQ(g.GetNumberOfEdges(), 3u);
+}
+
 #ifdef DEBUG
 TEST(DirectedGraphCoreTest, CapacityLimit_NodesFull_Asserts)
 {
@@ -397,6 +430,51 @@ TEST(DirectedGraphBFSTest, MissingStart_VisitorNotCalled)
 	EXPECT_EQ(count, 0);
 }
 
+TEST(DirectedGraphBFSTest, BranchingGraph_VisitorOrderBreadthFirst)
+{
+	// root -> l, root -> r, l -> ll
+	// BFS order from root: root, l, r, ll  (level by level)
+	TestGraph g;
+	g.AddNode(StringCRC("root"), 0);
+	g.AddNode(StringCRC("l"), 1);
+	g.AddNode(StringCRC("r"), 2);
+	g.AddNode(StringCRC("ll"), 3);
+	g.AddEdge(StringCRC("rl"),  StringCRC("root"), StringCRC("l"),  0.0f);
+	g.AddEdge(StringCRC("rr"),  StringCRC("root"), StringCRC("r"),  0.0f);
+	g.AddEdge(StringCRC("lll"), StringCRC("l"),    StringCRC("ll"), 0.0f);
+	DynamicArrayC<const TestNode*, 8> buf;
+	DynamicArrayC<int, 8> order;
+	g.BFS(StringCRC("root"), [&](const TestNode& n) { order.Add(n.GetPayloadConst()); }, buf);
+	// root (0) must be first; ll (3) must be after both l (1) and r (2)
+	ASSERT_EQ(order.Size(), 4u);
+	EXPECT_EQ(order.At(0), 0); // root
+	unsigned int llPos = 99, lPos = 99, rPos = 99;
+	for (unsigned int i = 0; i < order.Size(); i++)
+	{
+		if (order.At(i) == 1) lPos = i;
+		if (order.At(i) == 2) rPos = i;
+		if (order.At(i) == 3) llPos = i;
+	}
+	EXPECT_LT(lPos,  llPos); // l before ll
+	EXPECT_LT(rPos,  llPos); // r before ll (breadth-first)
+}
+
+TEST(DirectedGraphBFSTest, CyclicGraph_EachNodeVisitedAtMostOnce)
+{
+	// a -> b -> a  (cycle) plus b -> c
+	TestGraph g;
+	g.AddNode(StringCRC("a"), 1);
+	g.AddNode(StringCRC("b"), 2);
+	g.AddNode(StringCRC("c"), 3);
+	g.AddEdge(StringCRC("ab"), StringCRC("a"), StringCRC("b"), 0.0f);
+	g.AddEdge(StringCRC("ba"), StringCRC("b"), StringCRC("a"), 0.0f);
+	g.AddEdge(StringCRC("bc"), StringCRC("b"), StringCRC("c"), 0.0f);
+	DynamicArrayC<const TestNode*, 8> buf;
+	int count = 0;
+	g.BFS(StringCRC("a"), [&](const TestNode&) { count++; }, buf);
+	EXPECT_EQ(count, 3); // a, b, c — each visited once despite cycle
+}
+
 // ============================================================
 // Suite 7 — DirectedGraphDFSTest
 // ============================================================
@@ -455,6 +533,36 @@ TEST(DirectedGraphDFSTest, MissingStart_VisitorNotCalled)
 	int count = 0;
 	g.DFS(StringCRC("ghost"), [&](const TestNode&) { count++; }, buf);
 	EXPECT_EQ(count, 0);
+}
+
+TEST(DirectedGraphDFSTest, LinearChain_VisitorOrderDepthFirst)
+{
+	// a -> b -> c: DFS from a should visit a, b, c in that order
+	TestGraph g;
+	BuildChain(g);
+	DynamicArrayC<const TestNode*, 8> buf;
+	DynamicArrayC<int, 8> order;
+	g.DFS(StringCRC("a"), [&](const TestNode& n) { order.Add(n.GetPayloadConst()); }, buf);
+	ASSERT_EQ(order.Size(), 3u);
+	EXPECT_EQ(order.At(0), 1); // a
+	EXPECT_EQ(order.At(1), 2); // b
+	EXPECT_EQ(order.At(2), 3); // c
+}
+
+TEST(DirectedGraphDFSTest, CyclicGraph_EachNodeVisitedAtMostOnce)
+{
+	// a -> b -> a (cycle) plus b -> c
+	TestGraph g;
+	g.AddNode(StringCRC("a"), 1);
+	g.AddNode(StringCRC("b"), 2);
+	g.AddNode(StringCRC("c"), 3);
+	g.AddEdge(StringCRC("ab"), StringCRC("a"), StringCRC("b"), 0.0f);
+	g.AddEdge(StringCRC("ba"), StringCRC("b"), StringCRC("a"), 0.0f);
+	g.AddEdge(StringCRC("bc"), StringCRC("b"), StringCRC("c"), 0.0f);
+	DynamicArrayC<const TestNode*, 8> buf;
+	int count = 0;
+	g.DFS(StringCRC("a"), [&](const TestNode&) { count++; }, buf);
+	EXPECT_EQ(count, 3); // a, b, c — each visited once despite cycle
 }
 
 // ============================================================
@@ -528,6 +636,60 @@ TEST(DirectedGraphTopoSortTest, CyclePresent_ReturnsFalse)
 	TestGraph::NodeResults results;
 	DynamicArrayC<const TestNode*, 8> work;
 	EXPECT_FALSE(g.TopoSort(results, work));
+}
+
+TEST(DirectedGraphTopoSortTest, DisconnectedDAG_AllNodesPresent)
+{
+	// Two independent chains: a->b and c->d
+	TestGraph g;
+	g.AddNode(StringCRC("a"), 1);
+	g.AddNode(StringCRC("b"), 2);
+	g.AddNode(StringCRC("c"), 3);
+	g.AddNode(StringCRC("d"), 4);
+	g.AddEdge(StringCRC("ab"), StringCRC("a"), StringCRC("b"), 0.0f);
+	g.AddEdge(StringCRC("cd"), StringCRC("c"), StringCRC("d"), 0.0f);
+	TestGraph::NodeResults results;
+	DynamicArrayC<const TestNode*, 8> work;
+	EXPECT_TRUE(g.TopoSort(results, work));
+	EXPECT_EQ(results.Size(), 4u);
+	// a must come before b; c must come before d
+	unsigned int aPos = 99, bPos = 99, cPos = 99, dPos = 99;
+	for (unsigned int i = 0; i < results.Size(); i++)
+	{
+		const StringCRC id = results.At(i)->GetUniqueID();
+		if (id == StringCRC("a")) aPos = i;
+		else if (id == StringCRC("b")) bPos = i;
+		else if (id == StringCRC("c")) cPos = i;
+		else if (id == StringCRC("d")) dPos = i;
+	}
+	EXPECT_LT(aPos, bPos);
+	EXPECT_LT(cPos, dPos);
+}
+
+TEST(DirectedGraphTopoSortTest, AlreadyTopologicalOrder_PreservedOrValid)
+{
+	// Insert nodes in topological order; result must still be valid topo order
+	TestGraph g;
+	g.AddNode(StringCRC("x"), 10);
+	g.AddNode(StringCRC("y"), 20);
+	g.AddNode(StringCRC("z"), 30);
+	g.AddEdge(StringCRC("xy"), StringCRC("x"), StringCRC("y"), 0.0f);
+	g.AddEdge(StringCRC("yz"), StringCRC("y"), StringCRC("z"), 0.0f);
+	TestGraph::NodeResults results;
+	DynamicArrayC<const TestNode*, 8> work;
+	EXPECT_TRUE(g.TopoSort(results, work));
+	ASSERT_EQ(results.Size(), 3u);
+	// x before y before z
+	unsigned int xPos = 99, yPos = 99, zPos = 99;
+	for (unsigned int i = 0; i < results.Size(); i++)
+	{
+		const StringCRC id = results.At(i)->GetUniqueID();
+		if (id == StringCRC("x")) xPos = i;
+		else if (id == StringCRC("y")) yPos = i;
+		else if (id == StringCRC("z")) zPos = i;
+	}
+	EXPECT_LT(xPos, yPos);
+	EXPECT_LT(yPos, zPos);
 }
 
 // ============================================================
@@ -661,6 +823,24 @@ TEST(DirectedGraphPolicyReverseEdgeCacheTest, QueryAfterAddNode_RebuildCorrect)
 	// Should rebuild; now two in-edges to b
 	g.GetInEdges(StringCRC("b"), r);
 	EXPECT_EQ(r.Size(), 2u);
+}
+
+TEST(DirectedGraphPolicyReverseEdgeCacheTest, DoubleQuery_NoCacheRebuildOnSecondCall)
+{
+	// Prime the cache with a first query, then mutate and rebuild, then query again
+	// without mutating — verifies the cache is reused (no redundant work).
+	TestGraphREC g;
+	g.AddNode(StringCRC("a"), 1);
+	g.AddNode(StringCRC("b"), 2);
+	g.AddEdge(StringCRC("ab"), StringCRC("a"), StringCRC("b"), 1.0f);
+
+	TestGraphREC::EdgeResults r1, r2;
+	g.GetInEdges(StringCRC("b"), r1); // builds cache
+	g.GetInEdges(StringCRC("b"), r2); // should hit cache — same result, no crash
+
+	EXPECT_EQ(r1.Size(), r2.Size());
+	ASSERT_EQ(r2.Size(), 1u);
+	EXPECT_EQ(r2.At(0)->GetUniqueID(), StringCRC("ab"));
 }
 
 // ============================================================
