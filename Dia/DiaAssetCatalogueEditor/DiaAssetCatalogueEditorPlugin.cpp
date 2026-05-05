@@ -2,6 +2,7 @@
 #include "DiaAssetCatalogueEditor/Commands/CreateRecordCommand.h"
 #include "DiaAssetCatalogueEditor/Commands/UpdateRecordCommand.h"
 #include "DiaAssetCatalogueEditor/Commands/DeleteRecordCommand.h"
+#include "DiaAssetCatalogueEditor/Handlers/FileDiscoverer.h"
 #include <DiaEditor/Plugin/EditorPluginRegistrationMacros.h>
 #include <DiaEditor/Plugin/EditorPluginContext.h>
 #include <DiaEditor/MVC/EditorView.h>
@@ -57,6 +58,7 @@ namespace Dia
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.load_manifest"));
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.save_manifest"));
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.new_manifest"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.discover_files"));
 				}
 
 				mSessionContext.Save(mOutputDir);
@@ -74,6 +76,7 @@ namespace Dia
 					return;
 
 				RegisterCRUDHandlers();
+				RegisterDiscovererHandlers();
 
 				mBridge->RegisterRequestHandler(
 					Dia::Core::StringCRC("asset_catalogue.load_manifest"),
@@ -259,6 +262,46 @@ namespace Dia
 				}
 				d["references"] = refs;
 				return d;
+			}
+
+			// discover_files handler
+			void DiaAssetCatalogueEditorPlugin::RegisterDiscovererHandlers()
+			{
+				if (!mBridge)
+					return;
+
+				mBridge->RegisterRequestHandler(
+					Dia::Core::StringCRC("asset_catalogue.discover_files"),
+					[this](const Json::Value& data) -> Json::Value
+					{
+						Json::Value result;
+						if (!data.isMember("root_path") || !data["root_path"].isString())
+						{
+							result["success"] = false;
+							result["error"]   = "missing root_path";
+							return result;
+						}
+
+						std::string rootPath = data["root_path"].asString();
+
+						Dia::Core::Containers::DynamicArrayC<DiscoveredFile, kMaxDiscoveredFiles> discovered;
+						mFileDiscoverer.Discover(rootPath.c_str(), mTypeRegistry, mRegistry, discovered);
+
+						Json::Value files(Json::arrayValue);
+						for (unsigned int i = 0; i < discovered.Size(); ++i)
+						{
+							const DiscoveredFile& df = discovered[i];
+							Json::Value entry;
+							entry["path"]         = df.mFullPath;
+							entry["suggested_type"] = df.mSuggestedType;
+							entry["suggested_id"]   = df.mSuggestedId;
+							files.append(entry);
+						}
+
+						result["success"] = true;
+						result["files"]   = files;
+						return result;
+					});
 			}
 
 			// CRUD request handlers — appended to RegisterRequestHandlers

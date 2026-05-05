@@ -38,6 +38,10 @@ namespace Dia
 			// Returns the first matching descriptor, or nullptr if none matches.
 			const AssetTypeDescriptor* FindByFilePath(const Dia::Core::FilePath& path) const;
 
+			// Lookup by raw filename string — same suffix matching as FindByFilePath but
+			// without requiring a registered PathAlias. Used by runtime file scanners.
+			const AssetTypeDescriptor* FindByFileName(const char* filename) const;
+
 			// Number of registered types.
 			unsigned int GetCount() const;
 

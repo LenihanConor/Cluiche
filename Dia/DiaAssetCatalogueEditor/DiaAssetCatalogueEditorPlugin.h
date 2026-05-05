@@ -9,6 +9,7 @@
 
 #include "DiaAssetCatalogueEditor/ManifestLoadHandler.h"
 #include "DiaAssetCatalogueEditor/SessionContext.h"
+#include "DiaAssetCatalogueEditor/Handlers/FileDiscoverer.h"
 #include <DiaAssetCatalogue/ContentHasher.h>
 
 namespace Dia
@@ -39,6 +40,7 @@ namespace Dia
 			private:
 				void RegisterRequestHandlers();
 				void RegisterCRUDHandlers();
+				void RegisterDiscovererHandlers();
 				void PushDirtyState();
 				void PushRegistryState();
 
@@ -59,6 +61,7 @@ namespace Dia
 				ManifestLoadHandler                            mLoadHandler;
 				SessionContext                                 mSessionContext;
 				Dia::AssetCatalogue::ContentHasher             mContentHasher;
+				FileDiscoverer                                 mFileDiscoverer;
 
 				Dia::Editor::WebUIBridge*                      mBridge = nullptr;
 				Dia::Editor::EditorView*                       mView   = nullptr;

@@ -80,6 +80,7 @@
     <ClInclude Include="Commands\CreateRecordCommand.h" />
     <ClInclude Include="Commands\UpdateRecordCommand.h" />
     <ClInclude Include="Commands\DeleteRecordCommand.h" />
+    <ClInclude Include="Handlers\FileDiscoverer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaAssetCatalogueEditorPlugin.cpp" />
@@ -88,6 +89,7 @@
     <ClCompile Include="Commands\CreateRecordCommand.cpp" />
     <ClCompile Include="Commands\UpdateRecordCommand.cpp" />
     <ClCompile Include="Commands\DeleteRecordCommand.cpp" />
+    <ClCompile Include="Handlers\FileDiscoverer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.assetcatalogueeditor.architecture.module.md" />

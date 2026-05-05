@@ -13,228 +13,914 @@
       height: 100vh;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
 
+    /* ── Toolbar ─────────────────────────────────────── */
     .toolbar {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 6px 12px;
+      gap: 6px;
+      padding: 5px 10px;
       background: #2d2d2d;
       border-bottom: 1px solid #3c3c3c;
       flex-shrink: 0;
     }
-
     .toolbar button {
-      background: #3c3c3c;
-      color: #d4d4d4;
-      border: 1px solid #555;
-      padding: 4px 10px;
-      font-size: 12px;
-      cursor: pointer;
-      border-radius: 3px;
+      background: #3c3c3c; color: #d4d4d4;
+      border: 1px solid #555; padding: 3px 10px;
+      font-size: 12px; cursor: pointer; border-radius: 3px;
     }
     .toolbar button:hover { background: #4c4c4c; }
-
+    .toolbar .separator { width: 1px; height: 16px; background: #555; margin: 0 4px; }
     .toolbar .manifest-path {
-      flex: 1;
-      font-size: 11px;
-      color: #9cdcfe;
-      margin-left: 8px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      flex: 1; font-size: 11px; color: #9cdcfe;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-
-    .toolbar .dirty-indicator {
-      color: #f48771;
-      font-size: 14px;
-      font-weight: bold;
-      visibility: hidden;
-    }
+    .toolbar .dirty-indicator { color: #f48771; font-size: 14px; font-weight: bold; visibility: hidden; }
     .toolbar .dirty-indicator.dirty { visibility: visible; }
 
-    .layout {
-      display: flex;
-      flex: 1;
-      overflow: hidden;
-    }
+    /* ── Layout ──────────────────────────────────────── */
+    .layout { display: flex; flex: 1; overflow: hidden; }
 
     .panel {
-      display: flex;
-      flex-direction: column;
-      border-right: 1px solid #3c3c3c;
-      overflow: hidden;
+      display: flex; flex-direction: column;
+      border-right: 1px solid #3c3c3c; overflow: hidden;
     }
-
     .panel-title {
-      padding: 6px 10px;
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #9cdcfe;
-      background: #252526;
-      border-bottom: 1px solid #3c3c3c;
-      flex-shrink: 0;
+      padding: 5px 10px; font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      color: #9cdcfe; background: #252526;
+      border-bottom: 1px solid #3c3c3c; flex-shrink: 0;
     }
+    .panel-body { flex: 1; overflow: auto; padding: 10px; }
 
-    .panel-body {
-      flex: 1;
-      overflow: auto;
-      padding: 12px;
-    }
+    #panel-asset-list  { width: 300px; min-width: 200px; }
+    #panel-center      { flex: 1; }
+    #panel-right       { width: 320px; min-width: 240px; border-right: none; }
 
-    .placeholder {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      color: #555;
-      font-size: 12px;
-      font-style: italic;
-    }
-
-    #panel-asset-list { width: 280px; min-width: 200px; }
-    #panel-record-editor { flex: 1; }
-    #panel-right { width: 320px; min-width: 240px; border-right: none; }
-
+    /* ── Tabs ─────────────────────────────────────────── */
     .tabs {
-      display: flex;
-      background: #252526;
-      border-bottom: 1px solid #3c3c3c;
-      flex-shrink: 0;
+      display: flex; background: #252526;
+      border-bottom: 1px solid #3c3c3c; flex-shrink: 0;
     }
     .tab {
-      padding: 6px 14px;
-      font-size: 11px;
-      cursor: pointer;
-      color: #9d9d9d;
-      border-right: 1px solid #3c3c3c;
+      padding: 5px 14px; font-size: 11px; cursor: pointer;
+      color: #9d9d9d; border-right: 1px solid #3c3c3c; user-select: none;
     }
     .tab.active { color: #d4d4d4; border-bottom: 2px solid #007acc; }
     .tab:hover { color: #d4d4d4; }
+
+    .tab-content { display: none; flex: 1; overflow: auto; padding: 10px; flex-direction: column; }
+    .tab-content.active { display: flex; }
+
+    /* ── Filter bar ──────────────────────────────────── */
+    .filter-bar {
+      display: flex; gap: 6px; margin-bottom: 8px; flex-shrink: 0;
+    }
+    .filter-bar input, .filter-bar select {
+      background: #2d2d2d; color: #d4d4d4; border: 1px solid #555;
+      padding: 3px 6px; font-size: 11px; border-radius: 3px; flex: 1;
+    }
+    .filter-bar select { flex: 0 0 120px; }
+
+    /* ── Asset table ─────────────────────────────────── */
+    .asset-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .asset-table th {
+      background: #2d2d2d; color: #9cdcfe; text-align: left;
+      padding: 4px 8px; border-bottom: 1px solid #3c3c3c; position: sticky; top: 0;
+    }
+    .asset-table td { padding: 4px 8px; border-bottom: 1px solid #2d2d2d; cursor: pointer; }
+    .asset-table tr:hover td { background: #2a2d2e; }
+    .asset-table tr.selected td { background: #04395e; }
+    .status-badge {
+      display: inline-block; padding: 1px 6px; border-radius: 2px; font-size: 10px; font-weight: 600;
+    }
+    .status-Active     { background: #0e4a2f; color: #4ec9a0; }
+    .status-Draft      { background: #3a2e00; color: #dcdcaa; }
+    .status-Deprecated { background: #4a1e1e; color: #ce9178; }
+
+    /* ── Panel actions bar ───────────────────────────── */
+    .panel-actions {
+      display: flex; gap: 6px; margin-bottom: 8px; flex-shrink: 0;
+    }
+    .panel-actions button {
+      background: #3c3c3c; color: #d4d4d4; border: 1px solid #555;
+      padding: 3px 10px; font-size: 11px; cursor: pointer; border-radius: 3px;
+    }
+    .panel-actions button:hover { background: #4c4c4c; }
+    .panel-actions button.btn-primary { background: #0078d4; border-color: #0078d4; color: #fff; }
+    .panel-actions button.btn-primary:hover { background: #1081d8; }
+    .panel-actions button.btn-danger  { background: #5c1a1a; border-color: #8b2020; color: #f48771; }
+    .panel-actions button.btn-danger:hover { background: #6c2a2a; }
+
+    /* ── Record editor form ──────────────────────────── */
+    .form-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 10px; flex-shrink: 0; }
+    .form-row label { width: 110px; font-size: 11px; color: #9d9d9d; padding-top: 4px; flex-shrink: 0; }
+    .form-row .form-value { flex: 1; }
+    .form-row input[type=text], .form-row select, .form-row .source-row input {
+      background: #2d2d2d; color: #d4d4d4; border: 1px solid #555;
+      padding: 4px 6px; font-size: 12px; border-radius: 3px; width: 100%;
+    }
+    .form-row input[readonly] { color: #6a9955; }
+    .source-row { display: flex; gap: 4px; }
+    .source-row input { flex: 1; }
+    .source-row button { background: #3c3c3c; color: #d4d4d4; border: 1px solid #555; padding: 3px 8px; font-size: 11px; cursor: pointer; border-radius: 3px; white-space: nowrap; }
+    .source-row button:hover { background: #4c4c4c; }
+
+    .chip-list { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+    .chip {
+      background: #264f78; color: #9cdcfe; border-radius: 10px;
+      padding: 1px 8px; font-size: 11px; display: flex; align-items: center; gap: 4px;
+    }
+    .chip .remove { cursor: pointer; color: #9d9d9d; font-size: 10px; }
+    .chip .remove:hover { color: #f48771; }
+    .chip-input { background: transparent; border: none; color: #d4d4d4; font-size: 11px; width: 80px; outline: none; }
+
+    .form-hint { font-size: 10px; color: #6a6a6a; margin-top: 2px; }
+
+    .stage-row { display: none; }
+    .stage-row.visible { display: flex; }
+
+    /* ── Empty / placeholder states ─────────────────── */
+    .empty-state {
+      display: flex; align-items: center; justify-content: center;
+      flex: 1; color: #555; font-size: 12px; font-style: italic;
+    }
+
+    /* ── File Discoverer panel ───────────────────────── */
+    .discoverer-toolbar {
+      display: flex; gap: 6px; margin-bottom: 8px; flex-shrink: 0; align-items: center;
+    }
+    .discoverer-toolbar input {
+      flex: 1; background: #2d2d2d; color: #d4d4d4; border: 1px solid #555;
+      padding: 3px 6px; font-size: 11px; border-radius: 3px;
+    }
+    .discoverer-toolbar button {
+      background: #3c3c3c; color: #d4d4d4; border: 1px solid #555;
+      padding: 3px 10px; font-size: 11px; cursor: pointer; border-radius: 3px; white-space: nowrap;
+    }
+    .discoverer-toolbar button.btn-primary { background: #0078d4; border-color: #0078d4; color: #fff; }
+    .discoverer-toolbar button:hover { background: #4c4c4c; }
+    .discoverer-toolbar button.btn-primary:hover { background: #1081d8; }
+
+    .discoverer-results { flex: 1; overflow: auto; }
+    .discoverer-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .discoverer-table th {
+      background: #2d2d2d; color: #9cdcfe; text-align: left;
+      padding: 4px 8px; border-bottom: 1px solid #3c3c3c; position: sticky; top: 0;
+    }
+    .discoverer-table td { padding: 3px 6px; border-bottom: 1px solid #2d2d2d; }
+    .discoverer-table input[type=text] {
+      background: #2d2d2d; color: #d4d4d4; border: 1px solid #3c3c3c;
+      padding: 2px 4px; font-size: 11px; border-radius: 2px; width: 100%;
+    }
+    .discoverer-actions {
+      display: flex; gap: 6px; margin-top: 8px; flex-shrink: 0; align-items: center;
+    }
+    .discoverer-actions button {
+      background: #0078d4; color: #fff; border: 1px solid #0078d4;
+      padding: 4px 14px; font-size: 12px; cursor: pointer; border-radius: 3px;
+    }
+    .discoverer-actions button:hover { background: #1081d8; }
+    .discoverer-actions .sel-count { font-size: 11px; color: #9d9d9d; }
+
+    /* ── Modal dialogs ───────────────────────────────── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6); z-index: 100;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #252526; border: 1px solid #3c3c3c; border-radius: 4px;
+      padding: 20px; min-width: 400px; max-width: 560px; width: 90%;
+    }
+    .modal h2 { font-size: 14px; color: #d4d4d4; margin-bottom: 14px; }
+    .modal .modal-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+    .modal .modal-row label { width: 120px; font-size: 11px; color: #9d9d9d; flex-shrink: 0; }
+    .modal .modal-row input, .modal .modal-row select {
+      flex: 1; background: #2d2d2d; color: #d4d4d4; border: 1px solid #555;
+      padding: 4px 6px; font-size: 12px; border-radius: 3px;
+    }
+    .modal .modal-error { color: #f48771; font-size: 11px; margin-bottom: 8px; min-height: 16px; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+    .modal-footer button {
+      background: #3c3c3c; color: #d4d4d4; border: 1px solid #555;
+      padding: 5px 16px; font-size: 12px; cursor: pointer; border-radius: 3px;
+    }
+    .modal-footer button.btn-primary { background: #0078d4; border-color: #0078d4; color: #fff; }
+    .modal-footer button.btn-danger  { background: #5c1a1a; border-color: #8b2020; color: #f48771; }
+    .modal-footer button:hover { background: #4c4c4c; }
+    .modal-footer button.btn-primary:hover { background: #1081d8; }
+    .modal-footer button.btn-danger:hover  { background: #6c2a2a; }
+
+    .confirm-list {
+      max-height: 160px; overflow: auto;
+      background: #1e1e1e; border: 1px solid #3c3c3c;
+      padding: 6px 8px; font-size: 11px; color: #9d9d9d;
+      border-radius: 3px; margin-bottom: 10px; line-height: 1.6;
+    }
+
+    .validation-note { font-size: 10px; margin-top: 2px; }
+    .valid   { color: #4ec9a0; }
+    .invalid { color: #f48771; }
   </style>
 </head>
 <body>
 
+<!-- ── Toolbar ───────────────────────────────────── -->
 <div class="toolbar">
   <button onclick="onNew()">New</button>
   <button onclick="onOpen()">Open</button>
   <button onclick="onSave()">Save</button>
+  <div class="separator"></div>
   <span class="manifest-path" id="manifest-path">No manifest loaded</span>
   <span class="dirty-indicator" id="dirty-indicator">*</span>
 </div>
 
+<!-- ── Main layout ───────────────────────────────── -->
 <div class="layout">
 
+  <!-- Left: Asset List -->
   <div class="panel" id="panel-asset-list">
     <div class="panel-title">Asset List</div>
-    <div class="panel-body">
-      <div class="placeholder">Load a manifest to see assets</div>
+    <div class="panel-body" style="display:flex;flex-direction:column;">
+      <div class="panel-actions">
+        <button class="btn-primary" onclick="openCreateDialog()">+ New</button>
+        <button class="btn-danger"  onclick="onDeleteSelected()" id="btn-delete" disabled>Delete</button>
+      </div>
+      <div class="filter-bar">
+        <input  id="filter-text"   type="text" placeholder="Filter…" oninput="applyFilters()" />
+        <select id="filter-type"   onchange="applyFilters()"><option value="">All Types</option></select>
+        <input  id="filter-tag"    type="text" placeholder="Tag…"    oninput="applyFilters()" style="flex:0 0 80px" />
+      </div>
+      <div style="flex:1;overflow:auto;">
+        <table class="asset-table" id="asset-table">
+          <thead>
+            <tr>
+              <th>ID</th><th>Type</th><th>Status</th><th>Scope</th>
+            </tr>
+          </thead>
+          <tbody id="asset-tbody"></tbody>
+        </table>
+        <div class="empty-state" id="asset-empty">Load a manifest to see assets</div>
+      </div>
     </div>
   </div>
 
-  <div class="panel" id="panel-record-editor">
+  <!-- Center: tabs -->
+  <div class="panel" id="panel-center" style="display:flex;flex-direction:column;">
     <div class="tabs">
-      <div class="tab active" onclick="showTab('records')">Asset Records</div>
-      <div class="tab" onclick="showTab('relationships')">Relationships</div>
-      <div class="tab" onclick="showTab('discoverer')">File Discoverer</div>
+      <div class="tab active" onclick="showCenterTab('records',this)">Record Editor</div>
+      <div class="tab"        onclick="showCenterTab('discoverer',this)">File Discoverer</div>
     </div>
-    <div class="panel-body">
-      <div class="placeholder">Select an asset to edit</div>
+
+    <!-- Tab: Record Editor -->
+    <div class="tab-content active" id="tab-records" style="overflow:auto;">
+      <div class="empty-state" id="record-empty">Select an asset to edit</div>
+      <div id="record-form" style="display:none;">
+        <div class="form-row">
+          <label>ID</label>
+          <div class="form-value">
+            <input type="text" id="rec-id" readonly />
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Type</label>
+          <div class="form-value">
+            <input type="text" id="rec-type" readonly />
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Source Path</label>
+          <div class="form-value">
+            <div class="source-row">
+              <input type="text" id="rec-source-path" placeholder="relative/path/to/file" />
+              <button onclick="browseSourcePath()">Browse…</button>
+            </div>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Status</label>
+          <div class="form-value">
+            <select id="rec-status">
+              <option value="Active">Active</option>
+              <option value="Draft">Draft</option>
+              <option value="Deprecated">Deprecated</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Scope</label>
+          <div class="form-value">
+            <select id="rec-scope" onchange="onScopeChange()">
+              <option value="global">Global</option>
+              <option value="stage">Stage</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row stage-row" id="stage-row">
+          <label>Stage Name</label>
+          <div class="form-value">
+            <input type="text" id="rec-stage" placeholder="stage_name" />
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Tags</label>
+          <div class="form-value">
+            <div class="chip-list" id="tags-chip-list">
+              <input type="text" class="chip-input" id="tag-input"
+                     placeholder="add tag…"
+                     onkeydown="onTagKeyDown(event)" />
+            </div>
+          </div>
+        </div>
+        <div class="panel-actions" style="margin-top:12px;">
+          <button class="btn-primary" onclick="onSaveRecord()">Save Changes</button>
+          <button onclick="onDiscardRecord()">Discard</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: File Discoverer -->
+    <div class="tab-content" id="tab-discoverer" style="flex-direction:column;">
+      <div class="discoverer-toolbar">
+        <input type="text" id="disc-root-path" placeholder="Root path to scan…" />
+        <button onclick="onDiscoverBrowse()">Browse…</button>
+        <button class="btn-primary" onclick="onDiscover()">Scan</button>
+      </div>
+      <div class="discoverer-results" id="disc-results">
+        <div class="empty-state">Enter a root path and click Scan</div>
+      </div>
+      <div class="discoverer-actions" id="disc-actions" style="display:none;">
+        <button onclick="onAddSelected()">Add Selected</button>
+        <span class="sel-count" id="disc-sel-count">0 selected</span>
+        <button onclick="onSelectAllDisc()" style="background:#3c3c3c;color:#d4d4d4;border:1px solid #555;padding:3px 8px;font-size:11px;cursor:pointer;border-radius:3px;">Select All</button>
+      </div>
     </div>
   </div>
 
-  <div class="panel" id="panel-right">
+  <!-- Right: Validation / Rules / Graph -->
+  <div class="panel" id="panel-right" style="display:flex;flex-direction:column;">
     <div class="tabs">
-      <div class="tab active" onclick="showRightTab('validation')">Validation</div>
-      <div class="tab" onclick="showRightTab('rules')">Rules</div>
-      <div class="tab" onclick="showRightTab('graph')">Graph</div>
+      <div class="tab active" onclick="showRightTab('validation',this)">Validation</div>
+      <div class="tab"        onclick="showRightTab('rules',this)">Rules</div>
+      <div class="tab"        onclick="showRightTab('graph',this)">Graph</div>
     </div>
-    <div class="panel-body">
-      <div class="placeholder">Run validation to see results</div>
+    <div class="tab-content active" id="tab-right-validation">
+      <div class="empty-state">Run validation to see results</div>
+    </div>
+    <div class="tab-content" id="tab-right-rules">
+      <div class="empty-state">Catalogue rules not yet implemented</div>
+    </div>
+    <div class="tab-content" id="tab-right-graph">
+      <div class="empty-state">Select an asset to view its relationship graph</div>
     </div>
   </div>
 
 </div>
 
+<!-- ── Create Record Dialog ───────────────────────── -->
+<div class="modal-overlay" id="modal-create">
+  <div class="modal">
+    <h2>New Asset Record</h2>
+    <div class="modal-row">
+      <label>ID <span style="color:#9d9d9d;font-size:10px;">(type.name)</span></label>
+      <div style="flex:1">
+        <input type="text" id="create-id" placeholder="texture.player_ship" oninput="validateCreateId()" />
+        <div class="validation-note" id="create-id-note"></div>
+      </div>
+    </div>
+    <div class="modal-row">
+      <label>Type</label>
+      <select id="create-type"></select>
+    </div>
+    <div class="modal-row">
+      <label>Source Path</label>
+      <input type="text" id="create-source-path" placeholder="assets/textures/player.png" />
+    </div>
+    <div class="modal-row">
+      <label>Tags</label>
+      <input type="text" id="create-tags" placeholder="tag1, tag2" />
+    </div>
+    <div class="modal-row">
+      <label>Scope</label>
+      <select id="create-scope" onchange="onCreateScopeChange()">
+        <option value="global">Global</option>
+        <option value="stage">Stage</option>
+      </select>
+    </div>
+    <div class="modal-row" id="create-stage-row" style="display:none;">
+      <label>Stage Name</label>
+      <input type="text" id="create-stage" placeholder="stage_name" />
+    </div>
+    <div class="modal-error" id="create-error"></div>
+    <div class="modal-footer">
+      <button onclick="closeModal('modal-create')">Cancel</button>
+      <button class="btn-primary" onclick="onCreateRecord()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Delete Confirmation Dialog ────────────────── -->
+<div class="modal-overlay" id="modal-delete">
+  <div class="modal">
+    <h2>Delete Asset Record?</h2>
+    <p style="font-size:12px;color:#9d9d9d;margin-bottom:10px;">
+      This will permanently remove the record and all edges attached to it.
+    </p>
+    <div class="confirm-list" id="delete-info"></div>
+    <div class="modal-footer">
+      <button onclick="closeModal('modal-delete')">Cancel</button>
+      <button class="btn-danger" onclick="onConfirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Bulk-Add Confirmation Dialog ──────────────── -->
+<div class="modal-overlay" id="modal-bulk">
+  <div class="modal">
+    <h2>Add Selected Files?</h2>
+    <p style="font-size:12px;color:#9d9d9d;margin-bottom:8px;">
+      The following records will be created:
+    </p>
+    <div class="confirm-list" id="bulk-list"></div>
+    <div class="modal-footer">
+      <button onclick="closeModal('modal-bulk')">Cancel</button>
+      <button class="btn-primary" onclick="onConfirmBulkAdd()">Add</button>
+    </div>
+  </div>
+</div>
+
 <script>
+  /* ── State ────────────────────────────────────────── */
+  var allRecords = [];
+  var selectedId = null;
+  var editingTags = [];
+  var discResults = [];
+  var pendingBulkItems = [];
+  var pendingDeleteId = null;
+
+  /* ── Bridge ──────────────────────────────────────── */
   function diaRequest(command, params) {
     return new Promise(function(resolve) {
       if (window.DiaEditor && window.DiaEditor.request) {
-        window.DiaEditor.request(command, params).then(resolve).catch(function(e) {
-          console.error(command, e);
-          resolve({ success: false, error: String(e) });
-        });
+        window.DiaEditor.request(command, params)
+          .then(resolve)
+          .catch(function(e) { resolve({ success: false, error: String(e) }); });
       } else {
-        console.warn('DiaEditor not available');
-        resolve({ success: false, error: 'DiaEditor not available' });
+        resolve({ success: false, error: 'DiaEditor bridge not available' });
       }
     });
   }
 
-  function setManifestPath(path) {
-    var el = document.getElementById('manifest-path');
-    if (el) el.textContent = path || 'No manifest loaded';
-  }
-
-  function setDirty(dirty) {
-    var el = document.getElementById('dirty-indicator');
-    if (el) {
-      if (dirty) el.classList.add('dirty');
-      else el.classList.remove('dirty');
-    }
-  }
-
-  // C++ pushes state changes here
+  /* ── C++ push ─────────────────────────────────────── */
   window.DiaEditor_onDataChanged = function(msg) {
     if (msg.topic === 'assetcatalogue.state') {
       setManifestPath(msg.data.path);
       setDirty(msg.data.dirty);
+    } else if (msg.topic === 'assetcatalogue.records') {
+      allRecords = Array.isArray(msg.data) ? msg.data : [];
+      renderAssetList();
     } else if (msg.topic === 'assetcatalogue.lastManifestPath') {
-      // Offer re-open on startup
       if (msg.data.lastManifestPath) {
         var reopen = confirm('Re-open last manifest?\n' + msg.data.lastManifestPath);
-        if (reopen) onOpen(msg.data.lastManifestPath);
+        if (reopen) loadManifest(msg.data.lastManifestPath);
       }
     }
   };
 
+  /* ── Toolbar ─────────────────────────────────────── */
+  function setManifestPath(path) {
+    document.getElementById('manifest-path').textContent = path || 'No manifest loaded';
+  }
+  function setDirty(dirty) {
+    var el = document.getElementById('dirty-indicator');
+    dirty ? el.classList.add('dirty') : el.classList.remove('dirty');
+  }
+
   function onNew() {
+    if (!confirmUnsaved()) return;
     diaRequest('asset_catalogue.new_manifest', {}).then(function(r) {
       if (!r.success) alert('Failed: ' + r.error);
     });
   }
-
-  function onOpen(prefilledPath) {
-    var path = prefilledPath || prompt('Manifest path (assets.catalogue.json):');
+  function onOpen(prefilled) {
+    if (!confirmUnsaved()) return;
+    var path = prefilled || prompt('Manifest path (assets.catalogue.json):');
     if (!path) return;
+    loadManifest(path);
+  }
+  function loadManifest(path) {
     diaRequest('asset_catalogue.load_manifest', { path: path }).then(function(r) {
       if (!r.success) alert('Load failed: ' + r.error);
     });
   }
-
   function onSave() {
     diaRequest('asset_catalogue.save_manifest', {}).then(function(r) {
       if (!r.success) alert('Save failed: ' + r.error);
     });
   }
-
-  function showTab(name) {
-    console.log('Tab:', name);
-  }
-
-  function showRightTab(name) {
-    console.log('Right tab:', name);
+  function confirmUnsaved() {
+    var ind = document.getElementById('dirty-indicator');
+    if (!ind.classList.contains('dirty')) return true;
+    var choice = confirm('Unsaved changes. Discard?');
+    return choice;
   }
 
   document.addEventListener('keydown', function(e) {
-    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-      e.preventDefault();
-      onSave();
-    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); onSave(); }
   });
+
+  /* ── Tabs ─────────────────────────────────────────── */
+  function showCenterTab(name, el) {
+    document.querySelectorAll('#panel-center .tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('#panel-center .tab-content').forEach(function(t) { t.classList.remove('active'); });
+    if (el) el.classList.add('active');
+    var content = document.getElementById('tab-' + name);
+    if (content) content.classList.add('active');
+  }
+  function showRightTab(name, el) {
+    document.querySelectorAll('#panel-right .tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('#panel-right .tab-content').forEach(function(t) { t.classList.remove('active'); });
+    if (el) el.classList.add('active');
+    var content = document.getElementById('tab-right-' + name);
+    if (content) content.classList.add('active');
+  }
+
+  /* ── Asset List ──────────────────────────────────── */
+  function applyFilters() {
+    var text  = document.getElementById('filter-text').value.toLowerCase();
+    var type  = document.getElementById('filter-type').value;
+    var tag   = document.getElementById('filter-tag').value.toLowerCase();
+
+    return allRecords.filter(function(r) {
+      if (type && r.type !== type) return false;
+      if (tag  && !(r.tags || []).some(function(t){ return t.toLowerCase().indexOf(tag) >= 0; })) return false;
+      if (text && r.id.toLowerCase().indexOf(text) < 0) return false;
+      return true;
+    });
+  }
+
+  function renderAssetList() {
+    var filtered = applyFilters();
+    var tbody = document.getElementById('asset-tbody');
+    var empty  = document.getElementById('asset-empty');
+
+    // Rebuild type filter
+    var typeSet = {};
+    allRecords.forEach(function(r) { typeSet[r.type] = 1; });
+    var sel = document.getElementById('filter-type');
+    var prev = sel.value;
+    sel.innerHTML = '<option value="">All Types</option>';
+    Object.keys(typeSet).sort().forEach(function(t) {
+      var o = document.createElement('option');
+      o.value = t; o.textContent = t;
+      if (t === prev) o.selected = true;
+      sel.appendChild(o);
+    });
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = '';
+      empty.style.display = '';
+      return;
+    }
+    empty.style.display = 'none';
+
+    tbody.innerHTML = filtered.map(function(r) {
+      var sel = r.id === selectedId ? ' selected' : '';
+      return '<tr class="' + sel + '" onclick="selectRecord(\'' + escHtml(r.id) + '\')">' +
+        '<td>' + escHtml(r.id) + '</td>' +
+        '<td>' + escHtml(r.type) + '</td>' +
+        '<td><span class="status-badge status-' + escHtml(r.status) + '">' + escHtml(r.status) + '</span></td>' +
+        '<td>' + escHtml(r.scope || 'global') + '</td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  function selectRecord(id) {
+    selectedId = id;
+    document.getElementById('btn-delete').disabled = false;
+    renderAssetList();
+
+    var rec = allRecords.find(function(r) { return r.id === id; });
+    if (!rec) return;
+
+    document.getElementById('record-empty').style.display = 'none';
+    document.getElementById('record-form').style.display = '';
+
+    document.getElementById('rec-id').value          = rec.id;
+    document.getElementById('rec-type').value        = rec.type;
+    document.getElementById('rec-source-path').value = rec.source_path || '';
+    document.getElementById('rec-status').value      = rec.status || 'Active';
+    document.getElementById('rec-scope').value       = rec.scope  || 'global';
+    document.getElementById('rec-stage').value       = rec.stage  || '';
+
+    var stageRow = document.getElementById('stage-row');
+    if (rec.scope === 'stage') stageRow.classList.add('visible');
+    else stageRow.classList.remove('visible');
+
+    editingTags = (rec.tags || []).slice();
+    renderTags();
+  }
+
+  /* ── Record Editor ───────────────────────────────── */
+  function onScopeChange() {
+    var v = document.getElementById('rec-scope').value;
+    var row = document.getElementById('stage-row');
+    if (v === 'stage') row.classList.add('visible');
+    else row.classList.remove('visible');
+  }
+
+  function renderTags() {
+    var list = document.getElementById('tags-chip-list');
+    var inputEl = document.getElementById('tag-input');
+    list.innerHTML = '';
+    editingTags.forEach(function(tag, i) {
+      var chip = document.createElement('div');
+      chip.className = 'chip';
+      chip.innerHTML = escHtml(tag) + ' <span class="remove" onclick="removeTag(' + i + ')">✕</span>';
+      list.appendChild(chip);
+    });
+    list.appendChild(inputEl);
+    inputEl.value = '';
+  }
+
+  function removeTag(i) {
+    editingTags.splice(i, 1);
+    renderTags();
+  }
+
+  function onTagKeyDown(e) {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      var v = e.target.value.trim().replace(/,/g, '');
+      if (v && editingTags.indexOf(v) < 0) {
+        editingTags.push(v);
+        renderTags();
+      } else {
+        e.target.value = '';
+      }
+    }
+  }
+
+  function browseSourcePath() {
+    var path = prompt('Source path:');
+    if (path) document.getElementById('rec-source-path').value = path;
+  }
+
+  function onSaveRecord() {
+    var id = document.getElementById('rec-id').value;
+    var scope = document.getElementById('rec-scope').value;
+    var payload = {
+      id: id,
+      source_path: document.getElementById('rec-source-path').value,
+      status: document.getElementById('rec-status').value,
+      scope: scope,
+      tags: editingTags.slice()
+    };
+    if (scope === 'stage') payload.stage = document.getElementById('rec-stage').value;
+
+    diaRequest('asset_catalogue.update_record', payload).then(function(r) {
+      if (!r.success) alert('Update failed: ' + r.error);
+    });
+  }
+
+  function onDiscardRecord() {
+    if (selectedId) selectRecord(selectedId);
+  }
+
+  /* ── Create Dialog ───────────────────────────────── */
+  function openCreateDialog() {
+    // Populate type selector
+    var sel = document.getElementById('create-type');
+    sel.innerHTML = '';
+    var typeSet = {};
+    allRecords.forEach(function(r) { typeSet[r.type] = 1; });
+    Object.keys(typeSet).sort().forEach(function(t) {
+      var o = document.createElement('option');
+      o.value = t; o.textContent = t;
+      sel.appendChild(o);
+    });
+
+    document.getElementById('create-id').value = '';
+    document.getElementById('create-source-path').value = '';
+    document.getElementById('create-tags').value = '';
+    document.getElementById('create-scope').value = 'global';
+    document.getElementById('create-stage-row').style.display = 'none';
+    document.getElementById('create-stage').value = '';
+    document.getElementById('create-error').textContent = '';
+    document.getElementById('create-id-note').textContent = '';
+    openModal('modal-create');
+  }
+
+  function onCreateScopeChange() {
+    var v = document.getElementById('create-scope').value;
+    document.getElementById('create-stage-row').style.display = (v === 'stage') ? 'flex' : 'none';
+  }
+
+  function validateCreateId() {
+    var id = document.getElementById('create-id').value;
+    var note = document.getElementById('create-id-note');
+    var re = /^[a-z0-9_-]+\.[a-z0-9_-]+$/;
+    if (!id) { note.textContent = ''; return false; }
+    if (!re.test(id)) {
+      note.className = 'validation-note invalid';
+      note.textContent = 'Format: type.name (lowercase, alphanumeric, _ or -)';
+      return false;
+    }
+    var dup = allRecords.some(function(r) { return r.id === id; });
+    if (dup) {
+      note.className = 'validation-note invalid';
+      note.textContent = 'ID already exists';
+      return false;
+    }
+    note.className = 'validation-note valid';
+    note.textContent = '✓';
+    return true;
+  }
+
+  function onCreateRecord() {
+    if (!validateCreateId()) {
+      document.getElementById('create-error').textContent = 'Fix ID validation errors first.';
+      return;
+    }
+    var id    = document.getElementById('create-id').value;
+    var type  = document.getElementById('create-type').value;
+    var scope = document.getElementById('create-scope').value;
+    var tags  = document.getElementById('create-tags').value
+      .split(',').map(function(t){ return t.trim(); }).filter(Boolean);
+
+    if (!type) {
+      // If no types in registry yet, use the first part of the ID
+      type = id.split('.')[0];
+    }
+
+    var payload = {
+      id: id,
+      type: type,
+      source_path: document.getElementById('create-source-path').value,
+      status: 'Active',
+      scope: scope,
+      tags: tags
+    };
+    if (scope === 'stage') payload.stage = document.getElementById('create-stage').value;
+
+    diaRequest('asset_catalogue.create_record', payload).then(function(r) {
+      if (!r.success) {
+        document.getElementById('create-error').textContent = r.error || 'Create failed';
+      } else {
+        closeModal('modal-create');
+        selectedId = id;
+      }
+    });
+  }
+
+  /* ── Delete ──────────────────────────────────────── */
+  function onDeleteSelected() {
+    if (!selectedId) return;
+    var rec = allRecords.find(function(r) { return r.id === selectedId; });
+    if (!rec) return;
+    var edgeCount = (rec.references || []).length;
+    var info = document.getElementById('delete-info');
+    info.innerHTML =
+      '<strong>' + escHtml(rec.id) + '</strong><br/>' +
+      'Type: ' + escHtml(rec.type) + '<br/>' +
+      'Edges attached: ' + edgeCount;
+    pendingDeleteId = selectedId;
+    openModal('modal-delete');
+  }
+
+  function onConfirmDelete() {
+    if (!pendingDeleteId) return;
+    diaRequest('asset_catalogue.delete_record', { id: pendingDeleteId }).then(function(r) {
+      if (!r.success) alert('Delete failed: ' + r.error);
+      else {
+        selectedId = null;
+        pendingDeleteId = null;
+        document.getElementById('btn-delete').disabled = true;
+        document.getElementById('record-empty').style.display = '';
+        document.getElementById('record-form').style.display = 'none';
+      }
+    });
+    closeModal('modal-delete');
+  }
+
+  /* ── File Discoverer ─────────────────────────────── */
+  function onDiscoverBrowse() {
+    var path = prompt('Root path to scan:');
+    if (path) document.getElementById('disc-root-path').value = path;
+  }
+
+  function onDiscover() {
+    var root = document.getElementById('disc-root-path').value.trim();
+    if (!root) { alert('Enter a root path first.'); return; }
+
+    diaRequest('asset_catalogue.discover_files', { root_path: root }).then(function(r) {
+      var resultsEl = document.getElementById('disc-results');
+      var actionsEl = document.getElementById('disc-actions');
+
+      if (!r.success) {
+        resultsEl.innerHTML = '<div class="empty-state" style="color:#f48771;">' + escHtml(r.error || 'Scan failed') + '</div>';
+        actionsEl.style.display = 'none';
+        discResults = [];
+        return;
+      }
+
+      discResults = r.files || [];
+      if (discResults.length === 0) {
+        resultsEl.innerHTML = '<div class="empty-state">No unregistered files found</div>';
+        actionsEl.style.display = 'none';
+        return;
+      }
+
+      resultsEl.innerHTML = buildDiscovererTable(discResults);
+      actionsEl.style.display = 'flex';
+      updateDiscSelCount();
+    });
+  }
+
+  function buildDiscovererTable(files) {
+    var rows = files.map(function(f, i) {
+      return '<tr>' +
+        '<td><input type="checkbox" class="disc-check" data-i="' + i + '" onchange="updateDiscSelCount()" /></td>' +
+        '<td>' + escHtml(f.path) + '</td>' +
+        '<td><input type="text" value="' + escAttr(f.suggested_type) + '" id="disc-type-' + i + '" /></td>' +
+        '<td><input type="text" value="' + escAttr(f.suggested_id) + '"   id="disc-id-' + i + '" /></td>' +
+        '</tr>';
+    }).join('');
+
+    return '<table class="discoverer-table"><thead><tr>' +
+      '<th style="width:28px;"></th>' +
+      '<th>Path</th><th style="width:120px;">Type</th><th style="width:200px;">Suggested ID</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+
+  function updateDiscSelCount() {
+    var checked = document.querySelectorAll('.disc-check:checked').length;
+    document.getElementById('disc-sel-count').textContent = checked + ' selected';
+  }
+
+  function onSelectAllDisc() {
+    document.querySelectorAll('.disc-check').forEach(function(cb) { cb.checked = true; });
+    updateDiscSelCount();
+  }
+
+  function onAddSelected() {
+    var selected = [];
+    document.querySelectorAll('.disc-check:checked').forEach(function(cb) {
+      var i = parseInt(cb.getAttribute('data-i'), 10);
+      selected.push({
+        path: discResults[i].path,
+        type: document.getElementById('disc-type-' + i).value,
+        id:   document.getElementById('disc-id-'   + i).value
+      });
+    });
+    if (selected.length === 0) { alert('Select at least one file.'); return; }
+
+    // Show bulk-add confirmation
+    pendingBulkItems = selected;
+    var listEl = document.getElementById('bulk-list');
+    listEl.innerHTML = selected.map(function(s) {
+      return escHtml(s.id) + ' (' + escHtml(s.type) + ')<br/>';
+    }).join('');
+    openModal('modal-bulk');
+  }
+
+  function onConfirmBulkAdd() {
+    closeModal('modal-bulk');
+    if (pendingBulkItems.length === 0) return;
+
+    var items = pendingBulkItems.slice();
+    pendingBulkItems = [];
+
+    // Execute all creates sequentially; batch is wrapped as compound on C++ side (each create is a separate command here)
+    var chain = Promise.resolve();
+    items.forEach(function(item) {
+      chain = chain.then(function() {
+        return diaRequest('asset_catalogue.create_record', {
+          id: item.id, type: item.type, source_path: item.path, status: 'Active', scope: 'global', tags: []
+        });
+      });
+    });
+    chain.then(function() {
+      // Refresh done via PushRegistryState from each create
+    });
+  }
+
+  /* ── Modal helpers ───────────────────────────────── */
+  function openModal(id)  { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+  /* ── Escape helpers ──────────────────────────────── */
+  function escHtml(s) {
+    if (!s) return '';
+    return String(s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  function escAttr(s) { return escHtml(s); }
 </script>
 
 </body>

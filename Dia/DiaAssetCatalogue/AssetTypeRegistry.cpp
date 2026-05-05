@@ -93,6 +93,36 @@ namespace Dia
 			return nullptr;
 		}
 
+		const AssetTypeDescriptor* AssetTypeRegistry::FindByFileName(const char* filename) const
+		{
+			if (!filename || filename[0] == '\0')
+				return nullptr;
+
+			size_t filenameLen = strlen(filename);
+
+			for (unsigned int i = 0; i < mCount; ++i)
+			{
+				const AssetTypeDescriptor& desc = mTypeMap.GetItemByIndexConst(i);
+				const char* pattern = desc.mFilePattern.AsCStr();
+
+				if (!pattern || pattern[0] == '\0')
+					continue;
+
+				const char* suffix = (pattern[0] == '*') ? pattern + 1 : pattern;
+				if (suffix[0] == '\0')
+					continue;
+
+				size_t suffixLen = strlen(suffix);
+				if (filenameLen >= suffixLen)
+				{
+					const char* filenameSuffix = filename + (filenameLen - suffixLen);
+					if (strcmp(filenameSuffix, suffix) == 0)
+						return &desc;
+				}
+			}
+			return nullptr;
+		}
+
 		unsigned int AssetTypeRegistry::GetCount() const
 		{
 			return mCount;

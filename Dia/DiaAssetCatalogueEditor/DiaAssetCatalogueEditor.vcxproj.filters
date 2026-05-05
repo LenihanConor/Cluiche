@@ -24,6 +24,9 @@
     <ClInclude Include="Commands\DeleteRecordCommand.h">
       <Filter>Commands</Filter>
     </ClInclude>
+    <ClInclude Include="Handlers\FileDiscoverer.h">
+      <Filter>Handlers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaAssetCatalogueEditorPlugin.cpp" />
@@ -37,6 +40,9 @@
     </ClCompile>
     <ClCompile Include="Commands\DeleteRecordCommand.cpp">
       <Filter>Commands</Filter>
+    </ClCompile>
+    <ClCompile Include="Handlers\FileDiscoverer.cpp">
+      <Filter>Handlers</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

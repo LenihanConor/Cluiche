@@ -17,7 +17,7 @@ DiaAssetCatalogue must be Done before this plan can start.
 | 0 | Project Scaffolding | Done | haiku + sonnet | See sub-tasks below |
 | 1 | Feature 1 — Manifest Load/Save | Done | sonnet | Depends on Task 0 |
 | 2 | Feature 2 — Asset Record CRUD | Done | sonnet | Depends on Task 1 |
-| 3 | Feature 3 — File Discoverer | Not Started | sonnet | Depends on Task 2 |
+| 3 | Feature 3 — File Discoverer | Done | sonnet | Depends on Task 2 |
 | 4 | Feature 4 — Relationship Editor | Not Started | sonnet | Depends on Task 2 |
 | 5 | Feature 6 — Validation Panel | Not Started | sonnet | Depends on Task 2 |
 | 6 | Feature 7 — Asset Type Editor Routing | Not Started | sonnet | Depends on Task 2 |
@@ -185,3 +185,4 @@ DiaAssetCatalogue must be Done before this plan can start.
 - Model assignments: haiku for file edits/commits/verification; sonnet for all implementation.
 - Each task ends with an acceptance gate comparing against the HTML mockup.
 - Task 0 complete: DiaAssetCatalogueEditor.vcxproj created (GUID {D1E2F3A4-B5C6-7890-DEFA-012345678901}), added to Cluiche.sln (Editors folder), wired into CluicheEditor.vcxproj. Plugin skeleton compiles. Deploy step fails on node (pre-existing env issue, not code). UI shell at UI/index.html.
+- Tasks 1–3 complete: ManifestLoadHandler, SessionContext, CRUD commands (Create/Update/Delete), FileDiscoverer (Win32 scan + GenerateDefaultId), discover_files handler, full Asset List + Record Editor + File Discoverer UI panels. Added FindByFileName() to AssetTypeRegistry to avoid FilePath PathAlias assert during scanning.
