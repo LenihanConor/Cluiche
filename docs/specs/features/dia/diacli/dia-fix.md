@@ -4,7 +4,7 @@
 @docs/specs/systems/dia/diacli.md
 
 ## Status
-`Approved` — [Plan](dia-fix.plan.md)
+`Done` — [Plan](dia-fix.plan.md)
 
 ## Summary
 

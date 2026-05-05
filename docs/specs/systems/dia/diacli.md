@@ -119,7 +119,7 @@ result = execute_api_command("validate-assets", args=["--path", "assets/"])
 | command-scaffolding | Generate new DiaCLI command boilerplate | Template-based generation, two-file pattern, auto-wired, includes examples | [command-scaffolding.md](../../features/dia/diacli/command-scaffolding.md) | 3 days | Done |
 | diaapi-bridge | Python bridge to C++ DiaAPI commands | Load C++ library, discover commands, execute via Python, graceful fallback | [diaapi-bridge.md](../../features/dia/diacli/diaapi-bridge.md) | 4 days | Done |
 | cli-output | Shared output + observability layer — rich terminal + NDJSON event log | `OutputContext`, streaming terminal format, NDJSON `last-run.ndjson`, `--no-color`, `--quiet`, `--log-json` | [cli-output.md](../../features/dia/diacli/cli-output.md) | 3 days | Done |
-| dia-fix | Automated test-fix loop via aider + local LLM | `dia fix <target>`, Ollama default, `--model` for cloud, `--filter` passthrough, env verify/setup checks | [dia-fix.md](../../features/dia/diacli/dia-fix.md) | 3 days | Approved |
+| dia-fix | Automated test-fix loop via aider + local LLM | `dia fix <target>`, Ollama default, `--model` for cloud, `--filter` passthrough, `--max-iterations`, `--dry-run`, env verify/setup checks | [dia-fix.md](../../features/dia/diacli/dia-fix.md) | 3 days | Done |
 
 **Total Effort Estimate:** 15 days
 

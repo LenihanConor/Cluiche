@@ -1,6 +1,6 @@
 # DiaCLI Reference
 
-DiaCLI is the Python-based development CLI for the Cluiche platform. It provides environment provisioning, build pipeline execution, and test orchestration.
+DiaCLI is the Python-based development CLI for the Cluiche platform. It provides environment provisioning, build pipeline execution, test orchestration, and automated test-fix loops via local LLMs.
 
 **Location:** `Dia/DiaCLI/`
 **Entry point:** `python -m dia_cli` (from `Dia/DiaCLI/`)
@@ -53,6 +53,7 @@ dia env verify [OPTIONS]
 | `--submodules` | Check git submodules only |
 | `--docker` | Check Docker only |
 | `--claude` | Check Claude context only |
+| `--local-llm` | Check aider, ollama, and `qwen2.5-coder:14b` model |
 | `--json` | Machine-readable JSON output |
 | `--quiet` | Print only WARNs and FAILs |
 
@@ -89,6 +90,7 @@ dia env setup [OPTIONS]
 | `--dep ID` | Restore a single named dependency |
 | `--submodules` | Run submodule init step only |
 | `--claude` | Run AI context wiring step only |
+| `--local-llm` | Install aider via pip and add to PATH; print ollama install instructions |
 | `--force` | Re-run all steps even if sentinels are present |
 | `--fail-fast` | Abort on first step failure |
 | `--quiet` | Suppress progress output |
@@ -254,6 +256,57 @@ Failures are classified as `env` (environment) or `logic` (code bug). Environmen
 
 ---
 
+### `dia fix` -- Automated Test-Fix Loop
+
+Runs an aider test-fix loop against any valid `dia run` target. Uses a local Ollama model by default — zero cloud API cost per iteration.
+
+```
+dia fix <target> [OPTIONS]
+```
+
+| Flag | Description |
+|------|-------------|
+| `--filter PATTERN` | Scope tests — passed to `dia run <target> --filter=PATTERN` |
+| `--model MODEL` | Override LLM (default: `ollama/qwen2.5-coder:14b`) |
+| `--config CONFIG` | Build configuration passed to `dia run` (default: `Debug`) |
+| `--max-iterations N` | Cap the fix loop at N iterations (default: 10) |
+| `--dry-run` | Print the aider command without executing it |
+
+**How it works:**
+
+1. Runs `dia run <target>` as the aider test command
+2. Feeds failures to the LLM (Qwen locally, or any cloud model via `--model`)
+3. LLM edits source files
+4. Re-runs tests — repeats until passing or `--max-iterations` reached
+5. Prints a summary line on completion
+
+**Examples:**
+```bash
+# Fix googletest failures using local Qwen (default)
+dia fix googletest
+
+# Scope to a specific suite
+dia fix googletest --filter="SomeModule*"
+
+# Preview what would run without executing
+dia fix googletest --dry-run
+
+# Use a cloud model instead
+dia fix googletest --model claude-sonnet-4-6
+
+# Limit to 3 iterations
+dia fix googletest --max-iterations 3
+```
+
+**Exit codes:** 0 = all tests pass, non-zero = failures remain or error.
+
+**Prerequisites:** Requires `aider` and `ollama` on PATH, and `qwen2.5-coder:14b` pulled.
+Check with `dia env verify --local-llm`. Install with `dia env setup --local-llm`.
+
+**Known limitation:** `dia fix` is only as good as `dia run`'s ability to surface failures. Silent failures not propagated to the exit code will not be caught.
+
+---
+
 ## Configuration Files
 
 | File | Location | Purpose |
@@ -281,13 +334,14 @@ The DiaCLI test suite lives in `Dia/DiaCLI/tests/`:
 
 | File | What it tests | Count |
 |------|--------------|-------|
-| `test_dia_env.py` | DiaEnv system (deps, verify, setup, docker) | ~110 |
+| `test_dia_env.py` | DiaEnv system (deps, verify, setup, docker, local-llm) | ~136 |
 | `test_dia_pipeline.py` | DiaPipeline (config, stages, runner) | ~30 |
 | `test_dia_test_cli.py` | `dia test cli` runner | ~11 |
 | `test_dia_test_googletest.py` | `dia test googletest` runner | ~14 |
 | `test_dia_test_ui.py` | `dia test ui` runner | ~14 |
 | `test_dia_test_env_integration.py` | Agentic env-integration loop | ~16 |
 | `test_dia_output.py` | OutputContext and NDJSON logging | ~20 |
+| `test_cli_fix_command.py` | `dia fix` handler, dry-run, iterations, summary, env checks | 26 |
 | `test_integration.py` | Integration tests (real machine state) | 28 |
 
 Run unit tests:

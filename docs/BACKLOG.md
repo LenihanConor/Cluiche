@@ -31,7 +31,6 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | Feature | Spec | System |
 |---------|------|--------|
 | per-app-bin-layout | [per-app-bin-layout.md](specs/features/dia/diapipeline/per-app-bin-layout.md) | DiaPipeline ✅ |
-| dia-fix | [dia-fix.md](specs/features/dia/diacli/dia-fix.md) | DiaCLI ✅ — `dia fix <target>` aider+Ollama test-fix loop. Task 0: install aider, ollama, pull qwen2.5-coder:14b. |
 
 ---
 
