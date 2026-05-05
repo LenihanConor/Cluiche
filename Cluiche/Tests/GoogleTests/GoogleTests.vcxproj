@@ -377,6 +377,7 @@
     <ClCompile Include="DiaAssetRuntime\TestStageLifecycle.cpp" />
     <ClCompile Include="DiaAssetRuntime\TestEventNotification.cpp" />
     <ClCompile Include="DiaAssetRuntime\TestDebugQueryAPI.cpp" />
+    <ClCompile Include="DiaAssetRuntime\TestDebugCommands.cpp" />
     <!-- DiaAssetCatalogue -->
     <ClCompile Include="DiaAssetCatalogue\TestJsonDefinitionLoader.cpp" />
     <ClCompile Include="DiaAssetCatalogue\TestAssetTypeFramework.cpp" />

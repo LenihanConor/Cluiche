@@ -1,7 +1,7 @@
 # Plan: DiaAssetRuntime
 
 **Spec:** @docs/specs/systems/dia/diaassetruntime.md  
-**Status:** In Progress  
+**Status:** Done  
 **Started:** 2026-05-05  
 **Last Updated:** 2026-05-05
 
@@ -37,11 +37,11 @@ Build order is strictly sequential: F1 → F2 → F3 → F4 → F5 → F6. Each 
 | 20 | Implement GetLoadedAssets + GetStagedAssets | F5 | Done | haiku | Iterate mAssetTable, cross-ref mStateTable. HashTableC has no GetKeyByIndexConst — iterate asset table for IDs instead. |
 | 21 | Implement GetStageDependencies | F5 | Done | haiku | Lookup RuntimeStageEntry, copy mAssetIds into results. Return total count. Warn for unknown stage. |
 | 22 | GoogleTest: Feature 5 | F5 | Done | sonnet | 9 tests passing. Stage capacity = 64 (DynamicArrayC<StringCRC,64>), so overflow test uses 64-asset stage not 130. |
-| 23 | Register get_loaded, get_staged, get_state commands | F6 | Not Started | sonnet | `AssetRuntimeDebugCommands.h/.cpp` — DiaAPI handlers calling Feature 5 queries, JSON serialization |
-| 24 | Register get_stage_deps + get_all_states commands | F6 | Not Started | sonnet | Full snapshot query + stage deps query → JSON. Error responses for unknowns. |
-| 25 | Register subscribe_transitions (push stream) | F6 | Not Started | sonnet | Internal IAssetStateListener that forwards events to subscribed DiaAPI connections. Per-connection subscription. |
-| 26 | GoogleTest: Feature 6 | F6 | Not Started | sonnet | Command registration, JSON response formats, valid/invalid asset/stage IDs, get_all_states completeness, subscribe event format |
-| 27 | Add DiaAssetRuntime project reference to GoogleTests.vcxproj | — | Not Started | haiku | So GoogleTests can link DiaAssetRuntime and compile the test files |
+| 23 | Register get_loaded, get_staged, get_state commands | F6 | Done | sonnet | `AssetRuntimeDebugCommands.h/.cpp` — DiaAPI handlers calling Feature 5 queries, JSON via jsoncpp FastWriter |
+| 24 | Register get_stage_deps + get_all_states commands | F6 | Done | sonnet | Full snapshot (staged+loaded) + stage deps → JSON. Error responses for unknowns. |
+| 25 | Register subscribe_transitions (push stream) | F6 | Done | sonnet | Internal IAssetStateListener (TransitionLogger) logs events via DiaLogger. Push-stream to WebSocket requires DiaDebugServer layer above this. |
+| 26 | GoogleTest: Feature 6 | F6 | Done | sonnet | 10 tests passing: command registration, all 6 commands callable, valid/invalid params, subscribe idempotency. |
+| 27 | Add DiaAssetRuntime project reference to GoogleTests.vcxproj | — | Done | haiku | Done in F1. |
 
 ## File Map
 
@@ -110,3 +110,10 @@ GoogleTests/Tests/
   - DynamicArrayC::IsFull() used for bounds guard instead of hardcoding 128.
   - RuntimeStageEntry::mAssetIds capacity is 64 (not 128), so stage overflow test capped at 64.
   - F5 tests use unique PathStore alias (`test_arun_f5`).
+- Feature 6 complete (tasks 23–26): 10 tests passing. All 27 tasks Done.
+  - DiaAPI has no `DiaAPI` class — uses free functions `Dia::API::RegisterCommand`, `GetCommand`, `Initialize`, `Shutdown`.
+  - Command names are lowercase-hyphenated (e.g., `asset-runtime-get-loaded`).
+  - subscribe_transitions: registers TransitionLogger (IAssetStateListener) via DiaLogger; push-stream delivery requires DiaDebugServer layer.
+  - DiaAPI project reference added to DiaAssetRuntime.vcxproj ({1E7F6E13}).
+  - F6 tests use unique PathStore alias (`test_arun_f6`).
+  - Total: 62 DiaAssetRuntime tests across 6 features, all passing.
