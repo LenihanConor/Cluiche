@@ -1142,17 +1142,12 @@
     var items = pendingBulkItems.slice();
     pendingBulkItems = [];
 
-    // Execute all creates sequentially; batch is wrapped as compound on C++ side (each create is a separate command here)
-    var chain = Promise.resolve();
-    items.forEach(function(item) {
-      chain = chain.then(function() {
-        return diaRequest('asset_catalogue.create_record', {
-          id: item.id, type: item.type, source_path: item.path, status: 'Active', scope: 'global', tags: []
-        });
-      });
+    // Bulk-add as a single CompoundCommand for atomic undo
+    var records = items.map(function(item) {
+      return { id: item.id, type: item.type, source_path: item.path, status: 'Active', scope: 'global', tags: [] };
     });
-    chain.then(function() {
-      // Refresh done via PushRegistryState from each create
+    diaRequest('asset_catalogue.bulk_create_records', { records: records }).then(function(r) {
+      if (!r.success) alert('Bulk add failed: ' + r.error);
     });
   }
 

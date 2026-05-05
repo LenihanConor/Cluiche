@@ -68,6 +68,7 @@ namespace Dia
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.load_manifest"));
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.save_manifest"));
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.new_manifest"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.bulk_create_records"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.discover_files"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.add_relationship"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.remove_relationship"));
@@ -837,6 +838,48 @@ namespace Dia
 							arr.append(RecordToJson(*records[i]));
 						result["success"] = true;
 						result["records"] = arr;
+						return result;
+					});
+
+				// bulk_create_records — wraps N creates in a single CompoundCommand for atomic undo
+				mBridge->RegisterRequestHandler(
+					Dia::Core::StringCRC("asset_catalogue.bulk_create_records"),
+					[this](const Json::Value& data) -> Json::Value
+					{
+						Json::Value result;
+						if (!data.isMember("records") || !data["records"].isArray())
+						{
+							result["success"] = false;
+							result["error"]   = "missing records array";
+							return result;
+						}
+
+						const Json::Value& records = data["records"];
+						if (records.size() == 0)
+						{
+							result["success"] = true;
+							result["created"] = 0;
+							return result;
+						}
+
+						mHistory.BeginCompound();
+						int created = 0;
+						for (unsigned int i = 0; i < records.size(); ++i)
+						{
+							Dia::AssetCatalogue::AssetRecord rec = RecordFromJson(records[i]);
+							if (rec.mId == Dia::Core::StringCRC())
+								continue;
+							if (!rec.mSourcePath.IsEmpty())
+								rec.mContentHash = mContentHasher.ComputeHash(rec.mSourcePath.AsCStr());
+							auto* cmd = new Dia::AssetCatalogue::Editor::CreateRecordCommand(mRegistry, rec);
+							mHistory.ExecuteCommand(cmd);
+							++created;
+						}
+						mHistory.EndCompound();
+
+						result["success"] = true;
+						result["created"] = created;
+						PushRegistryState();
 						return result;
 					});
 			}

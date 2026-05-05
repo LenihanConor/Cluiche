@@ -109,6 +109,9 @@
     <Filter Include="DiaVisualDebugger">
       <UniqueIdentifier>{DVDBG001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaAssetCatalogueEditor">
+      <UniqueIdentifier>{DACTE001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -831,6 +834,10 @@
     </ClCompile>
     <ClCompile Include="Animation2D\IntegrationTests.cpp">
       <Filter>Animation2D</Filter>
+    </ClCompile>
+    <!-- DiaAssetCatalogueEditor -->
+    <ClCompile Include="DiaAssetCatalogueEditor\TestDiaAssetCatalogueEditorExhaustive.cpp">
+      <Filter>DiaAssetCatalogueEditor</Filter>
     </ClCompile>
     <!-- DiaVisualDebugger -->
     <ClCompile Include="..\..\..\Dia\DiaVisualDebugger\DebugLayerPanelPlugin.cpp">
