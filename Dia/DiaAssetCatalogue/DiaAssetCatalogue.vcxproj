@@ -62,11 +62,28 @@
     <ClInclude Include="AssetTypeDescriptor.h" />
     <ClInclude Include="AssetTypeRegistry.h" />
     <ClInclude Include="BuiltInAssetTypes.h" />
+    <ClInclude Include="AssetRecord.h" />
+    <ClInclude Include="RelationshipTypes.h" />
+    <ClInclude Include="RelationshipIndex.h" />
+    <ClInclude Include="AssetRegistry.h" />
+    <ClInclude Include="CatalogueManifestSerializer.h" />
+    <ClInclude Include="ContentHasher.h" />
+    <ClInclude Include="ScopeComputer.h" />
+    <ClInclude Include="RelationshipInferrer.h" />
+    <ClInclude Include="CatalogueRulesEngine.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="JsonDefinitionLoader.cpp" />
     <ClCompile Include="AssetTypeRegistry.cpp" />
     <ClCompile Include="BuiltInAssetTypes.cpp" />
+    <ClCompile Include="RelationshipTypes.cpp" />
+    <ClCompile Include="AssetRegistry.cpp" />
+    <ClCompile Include="RelationshipIndex.cpp" />
+    <ClCompile Include="CatalogueManifestSerializer.cpp" />
+    <ClCompile Include="ContentHasher.cpp" />
+    <ClCompile Include="ScopeComputer.cpp" />
+    <ClCompile Include="RelationshipInferrer.cpp" />
+    <ClCompile Include="CatalogueRulesEngine.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="JsonDefinitionLoader.inl" />

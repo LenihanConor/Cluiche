@@ -281,5 +281,5 @@ No dependencies on DiaAPI, DiaApplication, DiaEditor, or any rendering/windowing
 
 ## Status
 
-`Approved` — all 4 child feature specs Approved  
+`Done` — all 4 features implemented 2026-05-04; 92 tests (34 feature + 58 exhaustive)  
 **Plan:** @docs/specs/systems/dia/diaassetcatalogue.plan.md

@@ -58,5 +58,30 @@ namespace Dia
 			}
 		};
 
+		//---------------------------------------------------------------------------------------------------------
+		// LoadResult<void> specialization — for operations that return success/errors but no value.
+		//---------------------------------------------------------------------------------------------------------
+		template<>
+		struct LoadResult<void>
+		{
+			bool mSuccess;
+			Dia::Core::Containers::DynamicArrayC<LoadError, 16> mErrors;
+
+			LoadResult()
+				: mSuccess(false)
+			{}
+
+			bool HasErrors() const
+			{
+				return mErrors.Size() > 0;
+			}
+
+			const LoadError& GetFirstError() const
+			{
+				DIA_ASSERT(mErrors.Size() > 0, "No errors to retrieve");
+				return mErrors[0];
+			}
+		};
+
 	} // namespace AssetCatalogue
 } // namespace Dia

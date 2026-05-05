@@ -38,7 +38,7 @@ namespace Dia
 				
 				friend TypeRegistryHashFunctor;
 
-				const static unsigned int kMaxTypes = 128; // Increment this as necessary
+				const static unsigned int kMaxTypes = 256; // Increment this as necessary
 				const static unsigned int kMaxTableSize = static_cast<unsigned int>(kMaxTypes * 1.5); // Increment this as necessary
 
 				typedef Containers::HashTableC <CRC, TypeDefinition*, TypeRegistryHashFunctor, kMaxTypes, kMaxTableSize> IDToTypeMap;	

@@ -373,6 +373,9 @@
     <!-- DiaAssetCatalogue -->
     <ClCompile Include="DiaAssetCatalogue\TestJsonDefinitionLoader.cpp" />
     <ClCompile Include="DiaAssetCatalogue\TestAssetTypeFramework.cpp" />
+    <ClCompile Include="DiaAssetCatalogue\TestIdentityRelationshipBackbone.cpp" />
+    <ClCompile Include="DiaAssetCatalogue\TestCatalogueAutomation.cpp" />
+    <ClCompile Include="DiaAssetCatalogue\TestDiaAssetCatalogueExhaustive.cpp" />
     <!-- Animation2D -->
     <ClCompile Include="Animation2D\SpringParamUtilsTests.cpp" />
     <ClCompile Include="Animation2D\SpringChainTests.cpp" />

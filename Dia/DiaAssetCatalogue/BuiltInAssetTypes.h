@@ -42,9 +42,13 @@ namespace Dia
 		};
 
 		// Open-ended JSON config — no fixed structural fields at this level.
+		// Note: mVersion is a placeholder stub field; real config fields are defined by downstream specs.
 		struct ConfigAsset
 		{
 			DIA_TYPE_DECLARATION;
+			char mVersion[8];
+
+			ConfigAsset() { mVersion[0] = '\0'; }
 		};
 
 		// Component composition string (simplified stub — full schema in downstream specs).

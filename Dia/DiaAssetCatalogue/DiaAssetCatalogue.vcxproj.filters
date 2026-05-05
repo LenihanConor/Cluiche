@@ -29,6 +29,33 @@
     <ClInclude Include="BuiltInAssetTypes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="AssetRecord.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RelationshipTypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RelationshipIndex.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AssetRegistry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CatalogueManifestSerializer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ContentHasher.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ScopeComputer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RelationshipInferrer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CatalogueRulesEngine.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="JsonDefinitionLoader.cpp">
@@ -38,6 +65,30 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="BuiltInAssetTypes.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RelationshipTypes.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AssetRegistry.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RelationshipIndex.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CatalogueManifestSerializer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ContentHasher.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ScopeComputer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RelationshipInferrer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CatalogueRulesEngine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

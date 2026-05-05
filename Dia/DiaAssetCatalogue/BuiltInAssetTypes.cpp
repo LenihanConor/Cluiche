@@ -26,8 +26,9 @@ namespace Dia
 		DIA_TYPE_DEFINITION(AudioAsset)
 		DIA_TYPE_DEFINITION_END()
 
-		// ConfigAsset — open-ended JSON, no fixed structural fields
+		// ConfigAsset — open-ended JSON, placeholder field
 		DIA_TYPE_DEFINITION(ConfigAsset)
+			DIA_TYPE_ADD_VARIABLE_ARRAY("mVersion", mVersion, 8)
 		DIA_TYPE_DEFINITION_END()
 
 		// EntityAsset — component composition string
@@ -91,7 +92,7 @@ namespace Dia
 				desc.mTypeId          = Dia::Core::StringCRC("config");
 				desc.mName            = Dia::Core::Containers::String64("Config");
 				desc.mFilePattern     = Dia::Core::Containers::String64("*.config.json");
-				desc.mTypeDefinition  = nullptr; // TODO: restore ConfigAsset::GetTypeStatic()
+				desc.mTypeDefinition  = ConfigAsset::GetTypeStatic();
 				registry.Register(desc);
 			}
 
@@ -101,7 +102,7 @@ namespace Dia
 				desc.mTypeId          = Dia::Core::StringCRC("entity");
 				desc.mName            = Dia::Core::Containers::String64("Entity Definition");
 				desc.mFilePattern     = Dia::Core::Containers::String64("*.entity.json");
-				desc.mTypeDefinition  = nullptr; // TODO: restore EntityAsset::GetTypeStatic()
+				desc.mTypeDefinition  = EntityAsset::GetTypeStatic();
 				registry.Register(desc);
 			}
 
@@ -111,7 +112,7 @@ namespace Dia
 				desc.mTypeId          = Dia::Core::StringCRC("stage");
 				desc.mName            = Dia::Core::Containers::String64("Stage");
 				desc.mFilePattern     = Dia::Core::Containers::String64("*.stage.json");
-				desc.mTypeDefinition  = nullptr; // TODO: restore StageAsset::GetTypeStatic()
+				desc.mTypeDefinition  = StageAsset::GetTypeStatic();
 				registry.Register(desc);
 			}
 
@@ -121,7 +122,7 @@ namespace Dia
 				desc.mTypeId          = Dia::Core::StringCRC("ui");
 				desc.mName            = Dia::Core::Containers::String64("UI Definition");
 				desc.mFilePattern     = Dia::Core::Containers::String64("*.ui.json");
-				desc.mTypeDefinition  = nullptr; // TODO: restore UIAsset::GetTypeStatic()
+				desc.mTypeDefinition  = UIAsset::GetTypeStatic();
 				registry.Register(desc);
 			}
 
