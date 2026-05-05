@@ -14,7 +14,7 @@ from dia_cli.commands.test.googletest_runner import find_binary, run
 # ---------------------------------------------------------------------------
 
 def _make_binary(tmp_path: Path, config: str = "Debug") -> Path:
-    binary = tmp_path / "Cluiche" / "bin" / config / "x64" / "GoogleTests.exe"
+    binary = tmp_path / "Cluiche" / "bin" / "GoogleTests" / config / "x64" / "GoogleTests.exe"
     binary.parent.mkdir(parents=True, exist_ok=True)
     binary.write_bytes(b"fake exe")
     return binary

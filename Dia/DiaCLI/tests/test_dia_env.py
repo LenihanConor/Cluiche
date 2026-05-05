@@ -684,12 +684,11 @@ class TestDepsRestoreCmd:
 
     def test_run_named_dep_found(self, tmp_path):
         from dia_cli.commands.env.deps_restore_cmd import run
-        _dr = _get_utils_deps_restore()
         _make_deps_json(tmp_path)
         zip_bytes = _make_zip([("file.txt", b"data")])
 
-        with patch.object(_dr, "_download_from_sources", side_effect=self._make_fake_dl(zip_bytes)), \
-             patch.object(_dr, "_install_zip"):
+        with patch("dia_cli.utils.deps_restore._download_from_sources", side_effect=self._make_fake_dl(zip_bytes)), \
+             patch("dia_cli.utils.deps_restore._install_zip"):
             code = run(repo_root=tmp_path, dep_id="sfml", force=False, quiet=True)
         assert code == 0
 
@@ -703,12 +702,11 @@ class TestDepsRestoreCmd:
 
     def test_run_all_deps(self, tmp_path):
         from dia_cli.commands.env.deps_restore_cmd import run
-        _dr = _get_utils_deps_restore()
         _make_deps_json(tmp_path)
         zip_bytes = _make_zip([("file.txt", b"data")])
 
-        with patch.object(_dr, "_download_from_sources", side_effect=self._make_fake_dl(zip_bytes)), \
-             patch.object(_dr, "_install_zip"):
+        with patch("dia_cli.utils.deps_restore._download_from_sources", side_effect=self._make_fake_dl(zip_bytes)), \
+             patch("dia_cli.utils.deps_restore._install_zip"):
             code = run(repo_root=tmp_path, dep_id=None, force=False, quiet=True)
         assert code == 0
 
@@ -719,14 +717,13 @@ class TestDepsRestoreCmd:
 
     def test_run_force_flag_passed_through(self, tmp_path):
         from dia_cli.commands.env.deps_restore_cmd import run
-        _dr = _get_utils_deps_restore()
         _make_deps_json(tmp_path)
         _write_sentinel(tmp_path, "sfml", "2.6.1")
 
         zip_bytes = _make_zip([("file.txt", b"data")])
 
-        with patch.object(_dr, "_download_from_sources", side_effect=self._make_fake_dl(zip_bytes)), \
-             patch.object(_dr, "_install_zip"):
+        with patch("dia_cli.utils.deps_restore._download_from_sources", side_effect=self._make_fake_dl(zip_bytes)), \
+             patch("dia_cli.utils.deps_restore._install_zip"):
             code = run(repo_root=tmp_path, dep_id="sfml", force=True, quiet=True)
         assert code == 0
 
@@ -1067,15 +1064,12 @@ class TestVerifyOrchestrator:
     def test_verify_json_output_all_pass(self, tmp_path):
         import dia_cli.commands.env.verify_orchestrator as _vo_full
         from dia_cli.commands.env.verify_orchestrator import run
-        _tv = _get_utils_toolchain_verify()
-        _dv = _get_utils_deps_verify()
-        _sv = _get_utils_submodule_verify()
 
         _make_deps_json(tmp_path)
 
-        with patch.object(_tv, "check_all_toolchain", return_value=self._toolchain_pass_results()), \
-             patch.object(_dv, "check_deps", return_value=self._deps_pass_results()), \
-             patch.object(_sv, "check_submodules", return_value=self._submodules_pass_results()), \
+        with patch("dia_cli.utils.toolchain_verify.check_all_toolchain", return_value=self._toolchain_pass_results()), \
+             patch("dia_cli.utils.deps_verify.check_deps", return_value=self._deps_pass_results()), \
+             patch("dia_cli.utils.submodule_verify.check_submodules", return_value=self._submodules_pass_results()), \
              patch.object(_vo_full, "_check_claude", return_value=[]):
             code = run(repo_root=tmp_path, toolchain=False, deps_only=False,
                        submodules=False, docker_only=False, claude=False,
@@ -1086,15 +1080,12 @@ class TestVerifyOrchestrator:
     def test_verify_json_structure(self, tmp_path, capsys):
         import dia_cli.commands.env.verify_orchestrator as _vo_full
         from dia_cli.commands.env.verify_orchestrator import run
-        _tv = _get_utils_toolchain_verify()
-        _dv = _get_utils_deps_verify()
-        _sv = _get_utils_submodule_verify()
 
         _make_deps_json(tmp_path)
 
-        with patch.object(_tv, "check_all_toolchain", return_value=self._toolchain_pass_results()), \
-             patch.object(_dv, "check_deps", return_value=self._deps_pass_results()), \
-             patch.object(_sv, "check_submodules", return_value=self._submodules_pass_results()), \
+        with patch("dia_cli.utils.toolchain_verify.check_all_toolchain", return_value=self._toolchain_pass_results()), \
+             patch("dia_cli.utils.deps_verify.check_deps", return_value=self._deps_pass_results()), \
+             patch("dia_cli.utils.submodule_verify.check_submodules", return_value=self._submodules_pass_results()), \
              patch.object(_vo_full, "_check_claude", return_value=[]):
             run(repo_root=tmp_path, toolchain=False, deps_only=False,
                 submodules=False, docker_only=False, claude=False,
@@ -1131,16 +1122,14 @@ class TestVerifyOrchestrator:
     def test_verify_exits_2_on_warn_only(self, tmp_path):
         import dia_cli.commands.env.verify_orchestrator as _vo_full
         from dia_cli.commands.env.verify_orchestrator import run
-        _tv = _get_utils_toolchain_verify()
-        _dv = _get_utils_deps_verify()
-        _sv = _get_utils_submodule_verify()
+        from dia_cli.utils.toolchain_verify import CheckResult
 
-        warn_checks = [_tv.CheckResult("Node.js", "toolchain", "warn", "old version")]
+        warn_checks = [CheckResult("Node.js", "toolchain", "warn", "old version")]
         _make_deps_json(tmp_path)
 
-        with patch.object(_tv, "check_all_toolchain", return_value=warn_checks), \
-             patch.object(_dv, "check_deps", return_value=[]), \
-             patch.object(_sv, "check_submodules", return_value=[]), \
+        with patch("dia_cli.utils.toolchain_verify.check_all_toolchain", return_value=warn_checks), \
+             patch("dia_cli.utils.deps_verify.check_deps", return_value=[]), \
+             patch("dia_cli.utils.submodule_verify.check_submodules", return_value=[]), \
              patch.object(_vo_full, "_check_claude", return_value=[]):
             code = run(repo_root=tmp_path, toolchain=False, deps_only=False,
                        submodules=False, docker_only=False, claude=False,
@@ -1158,12 +1147,10 @@ class TestVerifyOrchestrator:
     def test_verify_toolchain_only_flag(self, tmp_path):
         import dia_cli.commands.env.verify_orchestrator as _vo_full
         from dia_cli.commands.env.verify_orchestrator import run
-        _tv = _get_utils_toolchain_verify()
-        _dv = _get_utils_deps_verify()
 
-        with patch.object(_tv, "check_all_toolchain",
+        with patch("dia_cli.utils.toolchain_verify.check_all_toolchain",
                           return_value=self._toolchain_pass_results()) as mock_tc, \
-             patch.object(_dv, "check_deps") as mock_deps, \
+             patch("dia_cli.utils.deps_verify.check_deps") as mock_deps, \
              patch.object(_vo_full, "_check_claude", return_value=[]):
             run(repo_root=tmp_path, toolchain=True, deps_only=False,
                 submodules=False, docker_only=False, claude=False,
@@ -1174,14 +1161,12 @@ class TestVerifyOrchestrator:
     def test_verify_deps_only_flag(self, tmp_path):
         import dia_cli.commands.env.verify_orchestrator as _vo_full
         from dia_cli.commands.env.verify_orchestrator import run
-        _tv = _get_utils_toolchain_verify()
-        _dv = _get_utils_deps_verify()
 
         _make_deps_json(tmp_path)
         _write_sentinel(tmp_path, "sfml", "2.6.1")
 
-        with patch.object(_tv, "check_all_toolchain") as mock_tc, \
-             patch.object(_dv, "check_deps",
+        with patch("dia_cli.utils.toolchain_verify.check_all_toolchain") as mock_tc, \
+             patch("dia_cli.utils.deps_verify.check_deps",
                           return_value=self._deps_pass_results()) as mock_deps, \
              patch.object(_vo_full, "_check_claude", return_value=[]):
             run(repo_root=tmp_path, toolchain=False, deps_only=True,
@@ -1193,17 +1178,16 @@ class TestVerifyOrchestrator:
     def test_verify_docker_only_flag(self, tmp_path):
         import dia_cli.commands.env.verify_orchestrator as _vo_full
         from dia_cli.commands.env.verify_orchestrator import run
-        _tv = _get_utils_toolchain_verify()
-        _dv = _get_utils_deps_verify()
+        from dia_cli.utils.toolchain_verify import CheckResult
 
         docker_results = [
-            _tv.CheckResult("Docker Desktop", "toolchain", "pass"),
-            _tv.CheckResult("Windows Containers mode", "toolchain", "pass"),
+            CheckResult("Docker Desktop", "toolchain", "pass"),
+            CheckResult("Windows Containers mode", "toolchain", "pass"),
         ]
 
-        with patch.object(_tv, "check_all_toolchain") as mock_all, \
-             patch.object(_tv, "check_docker", return_value=docker_results) as mock_docker, \
-             patch.object(_dv, "check_deps") as mock_deps, \
+        with patch("dia_cli.utils.toolchain_verify.check_all_toolchain") as mock_all, \
+             patch("dia_cli.utils.toolchain_verify.check_docker", return_value=docker_results) as mock_docker, \
+             patch("dia_cli.utils.deps_verify.check_deps") as mock_deps, \
              patch.object(_vo_full, "_check_claude", return_value=[]):
             code = run(repo_root=tmp_path, toolchain=False, deps_only=False,
                        submodules=False, docker_only=True, claude=False,
@@ -1221,14 +1205,13 @@ class TestSetupOrchestrator:
     def test_run_all_steps_not_admin_toolchain_skipped(self, tmp_path, capsys):
         import dia_cli.commands.env.setup_orchestrator as _so_full
         from dia_cli.commands.env.setup_orchestrator import run
-        _dr = _get_commands_env_deps_restore_cmd()
-        _cc = _get_commands_env_claude_context_cmd()
 
         with patch.object(_so_full, "_is_admin", return_value=False), \
              patch.object(_so_full, "_run_submodules", return_value=0), \
              patch.object(_so_full, "_run_toolchain", return_value=0), \
-             patch.object(_dr, "run", return_value=0), \
-             patch.object(_cc, "run", return_value=0):
+             patch.object(_so_full, "_set_cli_config_env", return_value=0), \
+             patch("dia_cli.commands.env.deps_restore_cmd.run", return_value=0), \
+             patch("dia_cli.commands.env.claude_context_cmd.run", return_value=0):
             code = run(repo_root=tmp_path, toolchain=False, deps_only=False,
                        dep_id=None, submodules=False, claude=False,
                        force=False, fail_fast=False, quiet=False)
@@ -1240,9 +1223,8 @@ class TestSetupOrchestrator:
 
     def test_run_deps_only_step(self, tmp_path):
         from dia_cli.commands.env.setup_orchestrator import run
-        _dr = _get_commands_env_deps_restore_cmd()
 
-        with patch.object(_dr, "run", return_value=0) as mock_deps:
+        with patch("dia_cli.commands.env.deps_restore_cmd.run", return_value=0) as mock_deps:
             code = run(repo_root=tmp_path, toolchain=False, deps_only=True,
                        dep_id=None, submodules=False, claude=False,
                        force=False, fail_fast=False, quiet=True)
@@ -1262,9 +1244,8 @@ class TestSetupOrchestrator:
 
     def test_run_claude_step(self, tmp_path):
         from dia_cli.commands.env.setup_orchestrator import run
-        _cc = _get_commands_env_claude_context_cmd()
 
-        with patch.object(_cc, "run", return_value=0) as mock_claude:
+        with patch("dia_cli.commands.env.claude_context_cmd.run", return_value=0) as mock_claude:
             code = run(repo_root=tmp_path, toolchain=False, deps_only=False,
                        dep_id=None, submodules=False, claude=True,
                        force=False, fail_fast=False, quiet=True)
@@ -1757,7 +1738,7 @@ def test_googletest_runner_handles_file_not_found(mock_run, tmp_path, capsys):
     """googletest_runner should catch FileNotFoundError and return 1."""
     from dia_cli.commands.test.googletest_runner import run as gt_run, _BINARY_SUBPATH, _PYTHON_DLL
     # Create the binary and dll so we get past the prereq checks
-    binary = tmp_path / "Cluiche" / "bin" / "Debug" / "x64" / "GoogleTests.exe"
+    binary = tmp_path / "Cluiche" / "bin" / "GoogleTests" / "Debug" / "x64" / "GoogleTests.exe"
     binary.parent.mkdir(parents=True, exist_ok=True)
     binary.write_bytes(b"fake")
     (binary.parent / _PYTHON_DLL).write_bytes(b"fake")

@@ -80,19 +80,29 @@ class TestDepsJsonIntegrity:
         assert len(self.deps) > 0
 
     def test_all_entries_have_required_fields(self):
-        required = {"id", "version", "unzip_to"}
+        base_required = {"id", "version"}
         for dep in self.deps:
-            missing = required - dep.keys()
+            missing = base_required - dep.keys()
             assert not missing, f"dep '{dep.get('id', '?')}' missing fields: {missing}"
+            install_type = dep.get("install_type", "zip")
+            if install_type == "zip":
+                assert "unzip_to" in dep, f"dep '{dep['id']}' (zip) missing 'unzip_to'"
+            elif install_type == "single_file":
+                assert "install_to" in dep, f"dep '{dep['id']}' (single_file) missing 'install_to'"
 
     def test_no_duplicate_ids(self):
         ids = [d["id"] for d in self.deps]
         assert len(ids) == len(set(ids)), f"duplicate dep ids: {ids}"
 
-    def test_all_unzip_to_are_under_external(self):
+    def test_all_install_paths_are_under_external(self):
         for dep in self.deps:
-            assert dep["unzip_to"].startswith("External/"), \
-                f"dep '{dep['id']}' unzip_to '{dep['unzip_to']}' is not under External/"
+            install_type = dep.get("install_type", "zip")
+            if install_type == "zip":
+                path = dep["unzip_to"]
+            else:
+                path = dep["install_to"]
+            assert path.startswith("External/"), \
+                f"dep '{dep['id']}' install path '{path}' is not under External/"
 
 
 # ---------------------------------------------------------------------------

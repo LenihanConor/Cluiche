@@ -202,12 +202,12 @@ def test_cli_unknown_stage_exits_2(mock_root, tmp_path):
     assert result.exit_code == 2
 
 
-@patch("utils.repo_root.find_repo_root")
+@patch("dia_cli.cli.pipeline.find_repo_root")
 def test_cli_missing_toml_exits_2(mock_root, tmp_path):
     mock_root.return_value = tmp_path  # tmp_path has no pipeline.toml
-    with patch("commands.pipeline.pipeline_config.load_pipeline_config") as mock_load:
-        from commands.pipeline.pipeline_config import PipelineConfigError as E
-        mock_load.side_effect = E("pipeline.toml not found")
+    from dia_cli.commands.pipeline.pipeline_config import PipelineConfigError
+    with patch("dia_cli.commands.pipeline.pipeline_config.load_pipeline_config") as mock_load:
+        mock_load.side_effect = PipelineConfigError("pipeline.toml not found")
         runner = CliRunner()
         result = runner.invoke(cli, ["pipeline"])
     assert result.exit_code == 2
