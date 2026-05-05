@@ -11,6 +11,7 @@
   <ItemGroup>
     <ClInclude Include="DiaAssetRuntimeEditorPlugin.h" />
     <ClInclude Include="SharedPluginState.h" />
+    <ClInclude Include="SessionContext.h" />
     <ClInclude Include="Panels\AssetStateRow.h">
       <Filter>Panels</Filter>
     </ClInclude>
@@ -32,6 +33,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaAssetRuntimeEditorPlugin.cpp" />
+    <ClCompile Include="SessionContext.cpp" />
     <ClCompile Include="Panels\AssetStateTablePanel.cpp">
       <Filter>Panels</Filter>
     </ClCompile>

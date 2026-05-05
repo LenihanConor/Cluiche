@@ -7,6 +7,8 @@
 #include <DiaEditor/UI/WebUIBridge.h>
 #include <DiaLogger/DiaLog.h>
 
+static const char* kDefaultOutputDir = "Cluiche/out/CluicheEditor/DiaAssetRuntimeEditor";
+
 namespace Dia
 {
 	namespace AssetRuntime
@@ -27,10 +29,14 @@ namespace Dia
 				mManager.SetConnectionCallback(
 					[this](bool connected) { HandleConnectionStateChange(connected); });
 
+				mSessionContext.Load(kDefaultOutputDir);
+
 				mAssetStateTable.Activate(mBridge, &mManager, mState);
+				mAssetStateTable.SetPollInterval(mSessionContext.GetPollInterval());
 				mStageAssetTree.Activate(mBridge, &mManager, mState, &mAssetStateTable);
 				mRefCountInspector.Activate(mBridge, &mManager, mState, &mAssetStateTable);
 				mTransitionLog.Activate(mBridge, &mManager, mState);
+				mTransitionLog.SetMaxEntries(mSessionContext.GetMaxLogEntries());
 
 				RegisterRequestHandlers();
 
@@ -40,6 +46,10 @@ namespace Dia
 			void DiaAssetRuntimeEditorPlugin::OnUnload()
 			{
 				DIA_LOG_INFO("Editor", "DiaAssetRuntimeEditorPlugin: OnUnload");
+
+				mSessionContext.SetPollInterval(mAssetStateTable.GetPollInterval());
+				mSessionContext.SetMaxLogEntries(mTransitionLog.GetMaxEntries());
+				mSessionContext.Save(kDefaultOutputDir);
 
 				mTransitionLog.Deactivate();
 				mRefCountInspector.Deactivate();

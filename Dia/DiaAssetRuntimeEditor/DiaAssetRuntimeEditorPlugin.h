@@ -8,6 +8,7 @@
 #include "DiaAssetRuntimeEditor/Panels/StageAssetTreePanel.h"
 #include "DiaAssetRuntimeEditor/Panels/RefCountInspectorPanel.h"
 #include "DiaAssetRuntimeEditor/Panels/StateTransitionLogPanel.h"
+#include "DiaAssetRuntimeEditor/SessionContext.h"
 
 namespace Dia
 {
@@ -54,6 +55,7 @@ namespace Dia
 				StageAssetTreePanel mStageAssetTree;
 				RefCountInspectorPanel mRefCountInspector;
 				StateTransitionLogPanel mTransitionLog;
+				SessionContext mSessionContext;
 			};
 		}
 	}
