@@ -26,10 +26,10 @@ Build order is strictly sequential: F1 → F2 → F3 → F4 → F5 → F6. Each 
 | 9 | Implement AcknowledgeAssetLoaded + AcknowledgeAssetUnloaded | F2 | Done | haiku | Public API methods that call TryTransition(Staged→Loaded) and (Unloading→Registered) |
 | 10 | Implement GetAssetState + IsAssetReady | F2 | Done | haiku | Lookup by StringCRC. Return sentinel/false for unknown IDs + DiaLogger warning. |
 | 11 | GoogleTest: Feature 2 | F2 | Done | sonnet | 9 tests all passing. Fixed: PathStore::RegisterToStore asserts on duplicate — RegisterPathAliases now skips (not overwrites) already-registered aliases. |
-| 12 | Implement per-asset ref count storage + GetAssetRefCount | F3 | Not Started | haiku | `HashTableC<StringCRC, unsigned int, 512>`, initialized to 0. Public query method. |
-| 13 | Implement RequestStageLoad | F3 | Not Started | sonnet | Lookup RuntimeStageEntry, iterate member assets, increment ref count, transition Registered→Staged for 0→1 assets |
-| 14 | Implement RequestStageUnload + edge cases | F3 | Not Started | sonnet | Decrement ref counts (clamp at 0), transition to Unloading when reaching 0. Handle unknown stage, double unload (warning). |
-| 15 | GoogleTest: Feature 3 | F3 | Not Started | sonnet | Single stage load/unload, shared global asset across two stages, stage-scoped lifecycle, ref count correctness, double load idempotency, double unload clamping, unknown stage |
+| 12 | Implement per-asset ref count storage + GetAssetRefCount | F3 | Done | haiku | `HashTableC<StringCRC, unsigned int, 512>`, initialized to 0. Public query method. |
+| 13 | Implement RequestStageLoad | F3 | Done | sonnet | Lookup RuntimeStageEntry, iterate member assets, increment ref count, transition Registered→Staged for 0→1 assets |
+| 14 | Implement RequestStageUnload + edge cases | F3 | Done | sonnet | Decrement ref counts (clamp at 0), transition to Unloading when reaching 0. Handle unknown stage, double unload (warning). |
+| 15 | GoogleTest: Feature 3 | F3 | Done | sonnet | 13 tests, all passing: single load/unload, shared global asset, double load/unload, unknown stage, ref count init. |
 | 16 | Implement IAssetStateListener interface | F4 | Not Started | haiku | `IAssetStateListener.h` — abstract class with virtual dtor, OnAssetReady, OnAssetUnloading |
 | 17 | Implement listener registration + deferred removal | F4 | Not Started | sonnet | `DynamicArrayC<IAssetStateListener*, 16>`, RegisterListener (reject dup), UnregisterListener (defer if dispatching), mIsDispatching flag |
 | 18 | Wire event dispatch into state transitions | F4 | Not Started | sonnet | Dispatch OnAssetReady on Registered→Staged, OnAssetUnloading on →Unloading. Pass resolved path to OnAssetReady. |
@@ -96,3 +96,7 @@ GoogleTests/Tests/
   - `PathStore::RegisterToStore` has a `DIA_ASSERT` on duplicate keys — `RegisterPathAliases` must skip, not overwrite. Fixed during F2 test run.
   - TryTransition allows Staged→Unloading (cancellation path, documented in Key Design Notes).
   - F2 tests use unique PathStore alias (`test_arun_f2`) to avoid collision with F1 alias.
+- Feature 3 complete (tasks 12–15): 13 tests passing. Clean first run.
+  - RefCountTable reuses StateHashFunctor (same key type). InitRefCountTable called from LoadManifest alongside InitStateTable.
+  - Double-unload clamping: skip (warn) if ref count already 0, rather than decrement below 0.
+  - F3 tests use unique PathStore alias (`test_arun_f3`).

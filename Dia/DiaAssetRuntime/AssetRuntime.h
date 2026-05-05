@@ -30,6 +30,13 @@ namespace Dia
             void AcknowledgeAssetLoaded(const Dia::Core::StringCRC& assetId);
             void AcknowledgeAssetUnloaded(const Dia::Core::StringCRC& assetId);
 
+            // Stage lifecycle
+            void RequestStageLoad(const Dia::Core::StringCRC& stageId);
+            void RequestStageUnload(const Dia::Core::StringCRC& stageId);
+
+            // Ref count query (debug)
+            unsigned int GetAssetRefCount(const Dia::Core::StringCRC& assetId) const;
+
         private:
             class StateHashFunctor
             {
@@ -40,8 +47,9 @@ namespace Dia
                 unsigned int GetHashIndex(const Key& key, const TableData* tableData) const;
             };
 
-            static const unsigned int kMaxAssets     = RuntimeManifestLoader::kMaxAssets;
-            static const unsigned int kStateTableSize = RuntimeManifestLoader::kAssetTableSize;
+            static const unsigned int kMaxAssets      = RuntimeManifestLoader::kMaxAssets;
+            static const unsigned int kStateTableSize  = RuntimeManifestLoader::kAssetTableSize;
+            static const unsigned int kRefTableSize    = RuntimeManifestLoader::kAssetTableSize;
 
             typedef Dia::Core::Containers::HashTableC<
                 Dia::Core::StringCRC,
@@ -50,13 +58,22 @@ namespace Dia
                 kMaxAssets,
                 kStateTableSize> StateTable;
 
+            typedef Dia::Core::Containers::HashTableC<
+                Dia::Core::StringCRC,
+                unsigned int,
+                StateHashFunctor,
+                kMaxAssets,
+                kRefTableSize> RefCountTable;
+
             void RegisterPathAliases();
             void InitStateTable();
+            void InitRefCountTable();
             bool TryTransition(const Dia::Core::StringCRC& assetId, AssetState target);
 
             RuntimeManifestLoader::AssetTable mAssetTable;
             RuntimeManifestLoader::StageTable mStageTable;
             StateTable                        mStateTable;
+            RefCountTable                     mRefCountTable;
         };
     }
 }

@@ -374,6 +374,7 @@
     <!-- DiaAssetRuntime -->
     <ClCompile Include="DiaAssetRuntime\TestManifestLoadPathResolution.cpp" />
     <ClCompile Include="DiaAssetRuntime\TestAssetStateMachine.cpp" />
+    <ClCompile Include="DiaAssetRuntime\TestStageLifecycle.cpp" />
     <!-- DiaAssetCatalogue -->
     <ClCompile Include="DiaAssetCatalogue\TestJsonDefinitionLoader.cpp" />
     <ClCompile Include="DiaAssetCatalogue\TestAssetTypeFramework.cpp" />

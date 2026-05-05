@@ -37,6 +37,7 @@ namespace Dia
                 return false;
 
             InitStateTable();
+            InitRefCountTable();
             RegisterPathAliases();
             return true;
         }
@@ -84,6 +85,88 @@ namespace Dia
             TryTransition(assetId, AssetState::Registered);
         }
 
+        void AssetRuntime::RequestStageLoad(const Dia::Core::StringCRC& stageId)
+        {
+            const RuntimeStageEntry* stage = mStageTable.TryGetItemConst(stageId);
+            if (!stage)
+            {
+                DIA_LOG_WARNING("AssetRuntime", "RequestStageLoad: unknown stage '%s'", stageId.AsChar());
+                return;
+            }
+
+            unsigned int assetCount = stage->mAssetIds.Size();
+            for (unsigned int i = 0; i < assetCount; ++i)
+            {
+                const Dia::Core::StringCRC& assetId = stage->mAssetIds[i];
+
+                unsigned int* refCount = mRefCountTable.TryGetItem(assetId);
+                if (!refCount)
+                {
+                    DIA_LOG_WARNING("AssetRuntime", "RequestStageLoad: asset '%s' in stage '%s' not found in ref table",
+                        assetId.AsChar(), stageId.AsChar());
+                    continue;
+                }
+
+                unsigned int prev = *refCount;
+                (*refCount)++;
+
+                if (prev == 0)
+                {
+                    TryTransition(assetId, AssetState::Staged);
+                }
+            }
+        }
+
+        void AssetRuntime::RequestStageUnload(const Dia::Core::StringCRC& stageId)
+        {
+            const RuntimeStageEntry* stage = mStageTable.TryGetItemConst(stageId);
+            if (!stage)
+            {
+                DIA_LOG_WARNING("AssetRuntime", "RequestStageUnload: unknown stage '%s'", stageId.AsChar());
+                return;
+            }
+
+            unsigned int assetCount = stage->mAssetIds.Size();
+            for (unsigned int i = 0; i < assetCount; ++i)
+            {
+                const Dia::Core::StringCRC& assetId = stage->mAssetIds[i];
+
+                unsigned int* refCount = mRefCountTable.TryGetItem(assetId);
+                if (!refCount)
+                {
+                    DIA_LOG_WARNING("AssetRuntime", "RequestStageUnload: asset '%s' in stage '%s' not found in ref table",
+                        assetId.AsChar(), stageId.AsChar());
+                    continue;
+                }
+
+                if (*refCount == 0)
+                {
+                    DIA_LOG_WARNING("AssetRuntime",
+                        "RequestStageUnload: asset '%s' ref count already 0 (double unload for stage '%s')",
+                        assetId.AsChar(), stageId.AsChar());
+                    continue;
+                }
+
+                (*refCount)--;
+
+                if (*refCount == 0)
+                {
+                    TryTransition(assetId, AssetState::Unloading);
+                }
+            }
+        }
+
+        unsigned int AssetRuntime::GetAssetRefCount(const Dia::Core::StringCRC& assetId) const
+        {
+            const unsigned int* refCount = mRefCountTable.TryGetItemConst(assetId);
+            if (!refCount)
+            {
+                DIA_LOG_WARNING("AssetRuntime", "GetAssetRefCount: unknown asset '%s'", assetId.AsChar());
+                return 0;
+            }
+            return *refCount;
+        }
+
         //------------------------------------------------------------------------------------
         // Private
         //------------------------------------------------------------------------------------
@@ -95,6 +178,16 @@ namespace Dia
             {
                 const RuntimeAssetEntry& entry = mAssetTable.GetItemByIndexConst(i);
                 mStateTable.Add(entry.mId, AssetState::Registered);
+            }
+        }
+
+        void AssetRuntime::InitRefCountTable()
+        {
+            unsigned int count = mAssetTable.Size();
+            for (unsigned int i = 0; i < count; ++i)
+            {
+                const RuntimeAssetEntry& entry = mAssetTable.GetItemByIndexConst(i);
+                mRefCountTable.Add(entry.mId, 0u);
             }
         }
 
