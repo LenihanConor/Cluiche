@@ -199,4 +199,4 @@ class AssetHandlerRegistry:
 
 ## Status
 
-`Approved` — 4 features identified, all need `/spec-feature` before implementation
+`Approved` — 4 features, all Approved. Plan: @docs/specs/systems/dia/diaassetpipeline.plan.md

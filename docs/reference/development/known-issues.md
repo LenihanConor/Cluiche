@@ -1,3 +1,14 @@
+# Known Issues
+
+## Deprecated Code (DiaCore)
+
+`Dia/DiaCore/Deprecated/` contains old implementations that have been superseded. These files are **not compiled** — kept for historical reference only.
+
+- `CollectionShit/` utilities → use `Architecture/` instead
+- `LinkLists/` → use `Containers/LinkList/` instead
+
+---
+
 # Bug and Performance Report - DiaMaths
 
 ## 🐛 CRITICAL BUGS

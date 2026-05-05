@@ -67,6 +67,10 @@ def launch_target(target: str, config: str, filter_pattern: str = None,
     out_dir = exe_path.parent
     try:
         result = subprocess.run(cmd, cwd=str(out_dir))
+        if result.returncode == 0:
+            click.echo(f"[dia] {target}: PASSED (exit 0)")
+        else:
+            click.echo(f"[dia] {target}: FAILED (exit {result.returncode})", err=True)
         return result.returncode
     except FileNotFoundError as e:
         click.echo(f"ERROR: could not launch: {e}", err=True)

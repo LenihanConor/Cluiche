@@ -41,7 +41,7 @@ Dia is the game engine application that provides all shared engine infrastructur
 | DiaIK2D | Inverse kinematics — analytic two-bone solver, FABRIK N-joint solver, look-at constraint; post-process pass on DiaRig2D skeletons | [diaik2d.md](../systems/dia/diaik2d.md) |
 | DiaAnimation2D | Animation playback and blending — damped spring chains, keyframe clip player, pose blend stack, procedural locomotion oscillator (deferred) | [diaanimation2d.md](../systems/dia/diaanimation2d.md) |
 | DiaVisualDebugger | Visual debug rendering system — `DebugLayerManager`, stack of focused draw classes, `DebugColourPalette`, `DiaVisualDebuggerConsole` (ImGui), editor layer panel, extensions to DiaGraphics (budget, TextPrimitive) | [diavisualdebugger.md](../systems/dia/diavisualdebugger.md) |
-| DiaCore | Foundation library (containers, type system, memory, logging, CRC) | TBD |
+| DiaCore | Foundation library (containers, type system, memory, logging, CRC) | [diacore.md](../systems/dia/diacore.md) |
 | DiaMaths | Math library (vectors, matrices, core math utilities — pure linear algebra only after DiaGeometry2D migration) | TBD |
 | DiaGraphics | Graphics abstraction layer (ICanvas, FrameData, DebugPrimitive, rendering contracts) | [diagraphics.md](../systems/dia/diagraphics.md) |
 | DiaWindow | Window management | TBD |
