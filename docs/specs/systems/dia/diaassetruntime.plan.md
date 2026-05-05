@@ -34,9 +34,9 @@ Build order is strictly sequential: F1 → F2 → F3 → F4 → F5 → F6. Each 
 | 17 | Implement listener registration + deferred removal | F4 | Done | sonnet | `DynamicArrayC<IAssetStateListener*, 16>`, RegisterListener (reject dup), UnregisterListener (defer if dispatching), mIsDispatching flag |
 | 18 | Wire event dispatch into state transitions | F4 | Done | sonnet | Dispatch OnAssetReady on Registered→Staged, OnAssetUnloading on →Unloading. Pass mDeployPath String512 to OnAssetReady. |
 | 19 | GoogleTest: Feature 4 | F4 | Done | sonnet | 9 tests, all passing: single/multi listener, unregister during dispatch, duplicate registration, resolved path correctness, no events for re-stage. |
-| 20 | Implement GetLoadedAssets + GetStagedAssets | F5 | Not Started | haiku | Iterate state table, collect matching IDs into caller-provided DynamicArrayC. Return total count. |
-| 21 | Implement GetStageDependencies | F5 | Not Started | haiku | Lookup RuntimeStageEntry, copy mAssetIds into results. Return total count. Warn for unknown stage. |
-| 22 | GoogleTest: Feature 5 | F5 | Not Started | sonnet | Correct results after stage load + acknowledge, overflow truncation, empty results, unknown stage |
+| 20 | Implement GetLoadedAssets + GetStagedAssets | F5 | Done | haiku | Iterate mAssetTable, cross-ref mStateTable. HashTableC has no GetKeyByIndexConst — iterate asset table for IDs instead. |
+| 21 | Implement GetStageDependencies | F5 | Done | haiku | Lookup RuntimeStageEntry, copy mAssetIds into results. Return total count. Warn for unknown stage. |
+| 22 | GoogleTest: Feature 5 | F5 | Done | sonnet | 9 tests passing. Stage capacity = 64 (DynamicArrayC<StringCRC,64>), so overflow test uses 64-asset stage not 130. |
 | 23 | Register get_loaded, get_staged, get_state commands | F6 | Not Started | sonnet | `AssetRuntimeDebugCommands.h/.cpp` — DiaAPI handlers calling Feature 5 queries, JSON serialization |
 | 24 | Register get_stage_deps + get_all_states commands | F6 | Not Started | sonnet | Full snapshot query + stage deps query → JSON. Error responses for unknowns. |
 | 25 | Register subscribe_transitions (push stream) | F6 | Not Started | sonnet | Internal IAssetStateListener that forwards events to subscribed DiaAPI connections. Per-connection subscription. |
@@ -105,3 +105,8 @@ GoogleTests/Tests/
   - Deferred removal: mIsDispatching flag guards UnregisterListener; FlushDeferredRemovals() applies after dispatch loop completes.
   - DynamicArrayC uses RemoveAt(index) / RemoveAll() (not Remove(index) / Reset()).
   - F4 tests use unique PathStore alias (`test_arun_f4`).
+- Feature 5 complete (tasks 20–22): 9 tests passing.
+  - HashTableC has no GetKeyByIndexConst — iterate mAssetTable for IDs then cross-ref mStateTable.
+  - DynamicArrayC::IsFull() used for bounds guard instead of hardcoding 128.
+  - RuntimeStageEntry::mAssetIds capacity is 64 (not 128), so stage overflow test capped at 64.
+  - F5 tests use unique PathStore alias (`test_arun_f5`).

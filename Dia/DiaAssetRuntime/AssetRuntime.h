@@ -43,6 +43,15 @@ namespace Dia
             void RegisterListener(IAssetStateListener* listener);
             void UnregisterListener(IAssetStateListener* listener);
 
+            // Debug queries (const, read-only)
+            unsigned int GetLoadedAssets(
+                Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128>& results) const;
+            unsigned int GetStagedAssets(
+                Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128>& results) const;
+            unsigned int GetStageDependencies(
+                const Dia::Core::StringCRC& stageId,
+                Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128>& results) const;
+
         private:
             class StateHashFunctor
             {

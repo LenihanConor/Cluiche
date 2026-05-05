@@ -86,6 +86,64 @@ namespace Dia
             TryTransition(assetId, AssetState::Registered);
         }
 
+        unsigned int AssetRuntime::GetLoadedAssets(
+            Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128>& results) const
+        {
+            unsigned int total = 0;
+            unsigned int count = mAssetTable.Size();
+            for (unsigned int i = 0; i < count; ++i)
+            {
+                const RuntimeAssetEntry& entry = mAssetTable.GetItemByIndexConst(i);
+                const AssetState* state = mStateTable.TryGetItemConst(entry.mId);
+                if (state && *state == AssetState::Loaded)
+                {
+                    total++;
+                    if (!results.IsFull())
+                        results.Add(entry.mId);
+                }
+            }
+            return total;
+        }
+
+        unsigned int AssetRuntime::GetStagedAssets(
+            Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128>& results) const
+        {
+            unsigned int total = 0;
+            unsigned int count = mAssetTable.Size();
+            for (unsigned int i = 0; i < count; ++i)
+            {
+                const RuntimeAssetEntry& entry = mAssetTable.GetItemByIndexConst(i);
+                const AssetState* state = mStateTable.TryGetItemConst(entry.mId);
+                if (state && *state == AssetState::Staged)
+                {
+                    total++;
+                    if (!results.IsFull())
+                        results.Add(entry.mId);
+                }
+            }
+            return total;
+        }
+
+        unsigned int AssetRuntime::GetStageDependencies(
+            const Dia::Core::StringCRC& stageId,
+            Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128>& results) const
+        {
+            const RuntimeStageEntry* stage = mStageTable.TryGetItemConst(stageId);
+            if (!stage)
+            {
+                DIA_LOG_WARNING("AssetRuntime", "GetStageDependencies: unknown stage '%s'", stageId.AsChar());
+                return 0;
+            }
+
+            unsigned int total = stage->mAssetIds.Size();
+            for (unsigned int i = 0; i < total; ++i)
+            {
+                if (!results.IsFull())
+                    results.Add(stage->mAssetIds[i]);
+            }
+            return total;
+        }
+
         void AssetRuntime::RegisterListener(IAssetStateListener* listener)
         {
             if (!listener)
