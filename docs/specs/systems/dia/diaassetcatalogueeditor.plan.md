@@ -1,7 +1,7 @@
 # Plan: DiaAssetCatalogueEditor
 
 **Spec:** @docs/specs/systems/dia/diaassetcatalogueeditor.md  
-**Status:** In Progress  
+**Status:** Done  
 **Started:** 2026-05-05  
 **Last Updated:** 2026-05-05
 
@@ -22,7 +22,7 @@ DiaAssetCatalogue must be Done before this plan can start.
 | 5 | Feature 6 — Validation Panel | Done | sonnet | Depends on Task 2 |
 | 6 | Feature 7 — Asset Type Editor Routing | Done | sonnet | Depends on Task 2 |
 | 7 | Feature 8 — Catalogue Rules UI | Done | sonnet | Depends on Task 4 |
-| 8 | Feature 5 — Relationship Graph View | Not Started | sonnet | Depends on Task 4 (reuses get_forward/reverse_refs) |
+| 8 | Feature 5 — Relationship Graph View | Done | sonnet | Depends on Task 4 (reuses get_forward/reverse_refs) |
 
 ## Task 0: Project Scaffolding
 
