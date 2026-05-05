@@ -23,6 +23,8 @@
 #include <DiaAssetCatalogueEditor/ManifestLoadHandler.h>
 #include <DiaAssetCatalogueEditor/SessionContext.h>
 
+#include <DiaAssetCatalogue/BuiltInAssetTypes.h>
+
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
@@ -1011,4 +1013,90 @@ TEST(BoundaryTest, UpdateNonExistentRecordDoesNotCrash)
 
     // Record "texture.a" should be unaffected
     EXPECT_EQ(registry.FindById(StringCRC("texture.a"))->mStatus, AssetStatus::Active);
+}
+
+// ===========================================================================
+// ApplyRulesCommand — Excluded IDs
+// ===========================================================================
+class ApplyRulesExcludedTest : public ::testing::Test
+{
+protected:
+    AssetRegistry registry;
+    CommandHistory history;
+    CatalogueRulesEngine engine;
+    AssetTypeRegistry typeRegistry;
+
+    void SetUp() override
+    {
+        RegisterBuiltInAssetTypes(typeRegistry);
+
+        const char* rulesPath = "C:\\Temp\\test_excluded_rules.json";
+        const char* rulesJson =
+            "{\n"
+            "  \"rules\": [\n"
+            "    { \"name\": \"tag-textures\", \"match\": { \"type\": \"texture\" }, \"action\": \"assign_tag\", \"tag\": \"visual\" }\n"
+            "  ]\n"
+            "}";
+        FILE* f = nullptr;
+        fopen_s(&f, rulesPath, "w");
+        if (f) { fputs(rulesJson, f); fclose(f); }
+        engine.LoadRules(rulesPath, typeRegistry);
+        remove(rulesPath);
+
+        registry.Register(MakeRecord("texture.player", "texture", "tex/player.png"));
+        registry.Register(MakeRecord("texture.enemy", "texture", "tex/enemy.png"));
+        registry.Register(MakeRecord("texture.bg", "texture", "tex/bg.png"));
+    }
+};
+
+TEST_F(ApplyRulesExcludedTest, ExcludedIdIsNotTagged)
+{
+    auto* cmd = new ApplyRulesCommand(registry, registry.GetRelationshipIndex(), engine);
+    cmd->AddExcludedId(StringCRC("texture.enemy"));
+    history.ExecuteCommand(cmd);
+
+    const AssetRecord* player = registry.FindById(StringCRC("texture.player"));
+    const AssetRecord* enemy = registry.FindById(StringCRC("texture.enemy"));
+    const AssetRecord* bg = registry.FindById(StringCRC("texture.bg"));
+    ASSERT_NE(player, nullptr);
+    ASSERT_NE(enemy, nullptr);
+    ASSERT_NE(bg, nullptr);
+
+    EXPECT_EQ(player->mTags.Size(), 1u);
+    EXPECT_EQ(enemy->mTags.Size(), 0u);
+    EXPECT_EQ(bg->mTags.Size(), 1u);
+}
+
+TEST_F(ApplyRulesExcludedTest, MultipleExcludedIds)
+{
+    auto* cmd = new ApplyRulesCommand(registry, registry.GetRelationshipIndex(), engine);
+    cmd->AddExcludedId(StringCRC("texture.player"));
+    cmd->AddExcludedId(StringCRC("texture.bg"));
+    history.ExecuteCommand(cmd);
+
+    EXPECT_EQ(registry.FindById(StringCRC("texture.player"))->mTags.Size(), 0u);
+    EXPECT_EQ(registry.FindById(StringCRC("texture.enemy"))->mTags.Size(), 1u);
+    EXPECT_EQ(registry.FindById(StringCRC("texture.bg"))->mTags.Size(), 0u);
+}
+
+TEST_F(ApplyRulesExcludedTest, UndoRestoresExcludedAndNonExcluded)
+{
+    auto* cmd = new ApplyRulesCommand(registry, registry.GetRelationshipIndex(), engine);
+    cmd->AddExcludedId(StringCRC("texture.enemy"));
+    history.ExecuteCommand(cmd);
+    history.Undo();
+
+    EXPECT_EQ(registry.FindById(StringCRC("texture.player"))->mTags.Size(), 0u);
+    EXPECT_EQ(registry.FindById(StringCRC("texture.enemy"))->mTags.Size(), 0u);
+    EXPECT_EQ(registry.FindById(StringCRC("texture.bg"))->mTags.Size(), 0u);
+}
+
+TEST_F(ApplyRulesExcludedTest, NoExclusionsAppliesAll)
+{
+    auto* cmd = new ApplyRulesCommand(registry, registry.GetRelationshipIndex(), engine);
+    history.ExecuteCommand(cmd);
+
+    EXPECT_EQ(registry.FindById(StringCRC("texture.player"))->mTags.Size(), 1u);
+    EXPECT_EQ(registry.FindById(StringCRC("texture.enemy"))->mTags.Size(), 1u);
+    EXPECT_EQ(registry.FindById(StringCRC("texture.bg"))->mTags.Size(), 1u);
 }
