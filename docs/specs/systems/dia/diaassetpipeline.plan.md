@@ -1,7 +1,7 @@
 # Plan: DiaAssetPipeline
 
 **Spec:** @docs/specs/systems/dia/diaassetpipeline.md  
-**Status:** In Progress  
+**Status:** Done  
 **Started:** 2026-05-05  
 **Last Updated:** 2026-05-05
 
@@ -28,13 +28,13 @@ Pure Python implementation inside `Dia/DiaCLI/dia_cli/commands/asset/`. No C++ c
 | 13 | `StageHandler` | F2 | Done | sonnet | `handlers/stage.py` — extends DefaultAssetHandler, validates name field is non-empty string; does NOT validate member assets (SD-CAT-012) |
 | 14 | Auto-registration | F2 | Done | sonnet | `handlers/__init__.py` — `register_built_in_handlers(registry)` importing all 8 handlers |
 | 15 | Tests for Feature 2 | F2 | Done | sonnet | `tests/test_built_in_handlers.py` — 21 tests passing |
-| 16 | `pipeline.toml` config loader | F4 | Not Started | sonnet | `config_loader.py` — shared utility: load pipeline.toml, resolve target, extract catalogue_manifest + asset_stages; tomllib with tomli fallback |
-| 17 | `dia asset build` command | F4 | Not Started | sonnet | `build_cmd.py` + `build_handler.py` — --target (required), --config (Debug/Release), --platform (x64), --force (clean deploy dir) |
-| 18 | `dia asset validate` command | F4 | Not Started | haiku | `validate_cmd.py` + `validate_handler.py` — validate-only phases, no file writes |
-| 19 | `dia asset deploy` command | F4 | Not Started | haiku | `deploy_cmd.py` + `deploy_handler.py` — deploy-only phases |
-| 20 | `dia asset` command group + plugin registration | F4 | Not Started | haiku | `group.py` — Click group discovered by DiaCLI plugin loader |
-| 21 | Tests for Feature 4 | F4 | Not Started | sonnet | `tests/test_cli_asset_commands.py` — target config loading, exit code mapping, --force clean, validate-only/deploy-only phase selection, human-readable summary |
-| 22 | Wire `build-assets` stage in DiaPipeline | F4 | Not Started | opus | Replace no-op stub (SD-PIPE-005) with call to `dia asset build` |
+| 16 | `pipeline.toml` config loader | F4 | Done | sonnet | `config_loader.py` — uses `toml` package (matches DiaCLI convention, not tomllib) |
+| 17 | `dia asset build` command | F4 | Done | sonnet | `build_cmd.py` + `build_handler.py` — --target (required), --config (Debug/Release), --platform (x64), --force |
+| 18 | `dia asset validate` command | F4 | Done | sonnet | `validate_cmd.py` + `validate_handler.py` — validate-only phases, no file writes |
+| 19 | `dia asset deploy` command | F4 | Done | sonnet | `deploy_cmd.py` + `deploy_handler.py` — deploy-only phases |
+| 20 | `dia asset` command group + plugin registration | F4 | Done | sonnet | `group.py` + `cli/asset.py` DiaCLI shim |
+| 21 | Tests for Feature 4 | F4 | Done | sonnet | `tests/test_cli_asset_commands.py` — 19 tests passing |
+| 22 | Wire `build-assets` stage in DiaPipeline | F4 | Done | sonnet | Replaced no-op stub (SD-PIPE-005) with run_asset_phases delegation |
 
 ## File Map
 
@@ -96,3 +96,8 @@ Dia/DiaCLI/tests/
 - Feature 2 complete (tasks 11–15): all 8 handlers + handlers/__init__.py; 21 tests passing.
   - Pattern mismatch emits OutputContext.warn(), never an AssetError.
   - StageHandler explicitly does not validate member assets (SD-CAT-012).
+- Feature 4 complete (tasks 16–22): CLI commands + config loader + DiaPipeline stub wired; 19 tests passing.
+  - DiaCLI uses `toml` package (not tomllib) — config_loader follows same pattern.
+  - Shared _common_handler.py avoids duplication across build/validate/deploy handlers.
+  - DiaPipeline asset_build_stage test updated: now expects exit 2 (no pipeline.toml in tmp) not 0.
+  - 106 total tests passing across all 4 features.

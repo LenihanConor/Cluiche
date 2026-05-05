@@ -354,10 +354,13 @@ from dia_cli.commands.pipeline.stages import asset_build_stage
 
 
 def test_build_assets_exits_0(tmp_path):
+    """build-assets stage now delegates to DiaAssetPipeline.
+    Returns 2 when pipeline.toml is missing (config error), not 0."""
     from dia_cli.commands.pipeline.pipeline_config import PipelineConfig, GlobalConfig, ProtoConfig
     cfg = PipelineConfig(global_cfg=GlobalConfig(), proto=ProtoConfig(), targets={})
+    # tmp_path has no pipeline.toml — expect exit code 2 (config error)
     code = asset_build_stage.run(cfg, "googletest", "Debug", False, tmp_path)
-    assert code == 0
+    assert code == 2
 
 
 # ---------------------------------------------------------------------------
