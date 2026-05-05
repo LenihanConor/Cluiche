@@ -31,6 +31,7 @@ def _make_context(tmp_path: Path) -> BuildContext:
         deploy_root=tmp_path / "assets",
         asset_stages=[],
         output=MagicMock(),
+        source_root=tmp_path,
     )
 
 

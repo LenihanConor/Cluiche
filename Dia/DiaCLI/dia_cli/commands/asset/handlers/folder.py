@@ -10,11 +10,18 @@ if TYPE_CHECKING:
     from ..context import BuildContext
 
 
+def _resolve_source(record: dict, context: "BuildContext") -> Path:
+    raw = Path(record.get("source_path", ""))
+    if raw.is_absolute():
+        return raw
+    return context.source_root / raw
+
+
 class FolderHandler(AssetHandler):
     type_id = "folder"
 
     def validate(self, record: dict, context: "BuildContext") -> list[AssetError]:
-        source_path = Path(record.get("source_path", ""))
+        source_path = _resolve_source(record, context)
         if not source_path.is_dir():
             return [AssetError(
                 asset_id=record.get("id", ""),
@@ -24,14 +31,16 @@ class FolderHandler(AssetHandler):
         return []
 
     def transform(self, record: dict, context: "BuildContext") -> TransformResult:
-        return TransformResult(success=True, output_path=record.get("source_path"))
+        source_path = _resolve_source(record, context)
+        return TransformResult(success=True, output_path=str(source_path))
 
     def deploy(self, record: dict, context: "BuildContext") -> DeployResult:
         from ..layout import resolve_deploy_path
+        source_path = _resolve_source(record, context)
         try:
             deploy_path = resolve_deploy_path(record, context)
             deploy_path.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copytree(record["source_path"], str(deploy_path), dirs_exist_ok=True)
+            shutil.copytree(str(source_path), str(deploy_path), dirs_exist_ok=True)
             return DeployResult(success=True, deploy_path=str(deploy_path))
         except Exception as exc:
             return DeployResult(

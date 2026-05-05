@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from ..handler import AssetError
-from .default import DefaultAssetHandler
+from .default import DefaultAssetHandler, _resolve_source
 
 if TYPE_CHECKING:
     from ..context import BuildContext
@@ -18,7 +18,7 @@ class StageHandler(DefaultAssetHandler):
     def validate(self, record: dict, context: "BuildContext") -> list[AssetError]:
         errors = super().validate(record, context)
 
-        source_path = Path(record.get("source_path", ""))
+        source_path = _resolve_source(record, context)
         if not source_path.exists():
             return errors  # already caught by super
 

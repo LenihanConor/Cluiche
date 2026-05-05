@@ -37,6 +37,7 @@ def _make_context(tmp_path: Path) -> BuildContext:
         deploy_root=tmp_path / "assets",
         asset_stages=[],
         output=MagicMock(),
+        source_root=tmp_path,
     )
 
 
@@ -139,7 +140,7 @@ def test_default_transform_returns_source_path(tmp_path):
     record = _make_record("texture.hero", source_path="Raw/hero.texture.png")
     result = DefaultAssetHandler().transform(record, ctx)
     assert result.success is True
-    assert result.output_path == "Raw/hero.texture.png"
+    assert Path(result.output_path) == ctx.source_root / "Raw" / "hero.texture.png"
 
 
 # ---------------------------------------------------------------------------
@@ -207,7 +208,7 @@ def test_folder_transform_is_noop(tmp_path):
     record = _make_record("folder.art_pack", source_path="Raw/art_pack")
     result = FolderHandler().transform(record, ctx)
     assert result.success is True
-    assert result.output_path == "Raw/art_pack"
+    assert Path(result.output_path) == ctx.source_root / "Raw" / "art_pack"
 
 
 # ---------------------------------------------------------------------------

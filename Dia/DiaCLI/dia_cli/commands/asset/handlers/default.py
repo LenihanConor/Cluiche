@@ -17,7 +17,7 @@ class DefaultAssetHandler(AssetHandler):
     def validate(self, record: dict, context: "BuildContext") -> list[AssetError]:
         errors: list[AssetError] = []
         asset_id = record.get("id", "")
-        source_path = Path(record.get("source_path", ""))
+        source_path = _resolve_source(record, context)
 
         if not source_path.exists():
             errors.append(AssetError(
@@ -26,7 +26,6 @@ class DefaultAssetHandler(AssetHandler):
                 message=f"Source file not found: {source_path}",
             ))
 
-        # Pattern mismatch is a warning, not an error (AI Q4)
         if self.file_pattern and not source_path.match(self.file_pattern):
             context.output.warn(
                 "asset",
@@ -37,17 +36,26 @@ class DefaultAssetHandler(AssetHandler):
         return errors
 
     def transform(self, record: dict, context: "BuildContext") -> TransformResult:
-        return TransformResult(success=True, output_path=record.get("source_path"))
+        source_path = _resolve_source(record, context)
+        return TransformResult(success=True, output_path=str(source_path))
 
     def deploy(self, record: dict, context: "BuildContext") -> DeployResult:
         from ..layout import copy_asset, resolve_deploy_path
-        source = record.get("source_path", "")
+        source_path = _resolve_source(record, context)
         try:
             deploy_path = resolve_deploy_path(record, context)
-            copy_asset(source, deploy_path)
+            copy_asset(source_path, deploy_path)
             return DeployResult(success=True, deploy_path=str(deploy_path))
         except Exception as exc:
             return DeployResult(
                 success=False,
                 errors=[AssetError(asset_id=record.get("id", ""), phase="deploy", message=str(exc))],
             )
+
+
+def _resolve_source(record: dict, context: "BuildContext") -> Path:
+    """Resolve source_path against context.source_root if relative."""
+    raw = Path(record.get("source_path", ""))
+    if raw.is_absolute():
+        return raw
+    return context.source_root / raw

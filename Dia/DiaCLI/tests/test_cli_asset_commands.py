@@ -157,12 +157,17 @@ def _run_via_handler(tmp_path, phases, runner_return=0, force=False):
     _write_catalogue(tmp_path)
     import click
     from dia_cli.commands.asset._common_handler import run_asset_phases
+    from dia_cli.commands.asset.runner import RunResult
 
     ctx = click.Context(click.Command("test"))
 
     with patch("dia_cli.commands.asset._common_handler.BuildRunner") as MockRunner:
         instance = MockRunner.return_value
-        instance.run.return_value = runner_return
+        pass_count = 1 if runner_return == 0 else 0
+        fail_count = 0 if runner_return == 0 else 1
+        instance.run_with_result.return_value = RunResult(
+            exit_code=runner_return, pass_count=pass_count, fail_count=fail_count
+        )
         code = run_asset_phases(
             target="cluichetest",
             config="Debug",
@@ -217,6 +222,7 @@ def test_validate_only_passes_validate_phase(tmp_path):
     _write_catalogue(tmp_path)
     import click
     from dia_cli.commands.asset._common_handler import run_asset_phases
+    from dia_cli.commands.asset.runner import RunResult
 
     ctx = click.Context(click.Command("test"))
     captured_phases = []
@@ -224,8 +230,8 @@ def test_validate_only_passes_validate_phase(tmp_path):
     with patch("dia_cli.commands.asset._common_handler.BuildRunner") as MockRunner:
         def fake_run(phases=None):
             captured_phases.extend(phases or [])
-            return 0
-        MockRunner.return_value.run.side_effect = fake_run
+            return RunResult(exit_code=0, pass_count=0, fail_count=0)
+        MockRunner.return_value.run_with_result.side_effect = fake_run
         run_asset_phases(
             target="cluichetest", config="Debug", platform="x64",
             force=False, phases=["validate"], ctx=ctx, repo_root=tmp_path,
@@ -239,6 +245,7 @@ def test_deploy_only_passes_deploy_phase(tmp_path):
     _write_catalogue(tmp_path)
     import click
     from dia_cli.commands.asset._common_handler import run_asset_phases
+    from dia_cli.commands.asset.runner import RunResult
 
     ctx = click.Context(click.Command("test"))
     captured_phases = []
@@ -246,8 +253,8 @@ def test_deploy_only_passes_deploy_phase(tmp_path):
     with patch("dia_cli.commands.asset._common_handler.BuildRunner") as MockRunner:
         def fake_run(phases=None):
             captured_phases.extend(phases or [])
-            return 0
-        MockRunner.return_value.run.side_effect = fake_run
+            return RunResult(exit_code=0, pass_count=0, fail_count=0)
+        MockRunner.return_value.run_with_result.side_effect = fake_run
         run_asset_phases(
             target="cluichetest", config="Debug", platform="x64",
             force=False, phases=["deploy"], ctx=ctx, repo_root=tmp_path,

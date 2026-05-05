@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import time
+from dataclasses import dataclass
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from .handler import AssetError, AssetHandler, DeployResult, TransformResult
@@ -14,25 +16,37 @@ _SYSTEM = "asset"
 _VALID_PHASES = ("validate", "transform", "deploy")
 
 
+@dataclass
+class RunResult:
+    exit_code: int
+    pass_count: int
+    fail_count: int
+
+
 class BuildRunner:
     def __init__(self, registry: AssetHandlerRegistry, context: "BuildContext") -> None:
         self._registry = registry
         self._ctx = context
-        # Pre-build reverse map: asset_id -> list of stage asset IDs that contain it.
-        # Uses `contains` edges stored on stage asset records in the catalogue.
         self._stage_membership: dict[str, list[str]] = _build_stage_membership(context.catalogue)
+        self._deployed: list[tuple[dict, Path]] = []  # (record, deploy_path) for manifest gen
 
     # ------------------------------------------------------------------ #
     # Public                                                               #
     # ------------------------------------------------------------------ #
 
     def run(self, phases: list[str] | None = None) -> int:
+        result = self.run_with_result(phases)
+        return result.exit_code
+
+    def run_with_result(self, phases: list[str] | None = None) -> RunResult:
         if phases is None:
             phases = list(_VALID_PHASES)
 
         invalid = [p for p in phases if p not in _VALID_PHASES]
         if invalid:
             raise ValueError(f"Invalid phases: {invalid!r}. Must be subset of {_VALID_PHASES!r}")
+
+        self._ctx.output.run_started(system=_SYSTEM)
 
         start = time.time()
         pass_count = 0
@@ -65,16 +79,40 @@ class BuildRunner:
                 if not result.success:
                     failed = True
                     self._emit_asset_failed(asset_id, handler.type_id, "deploy", result.errors)
+                elif result.deploy_path:
+                    self._deployed.append((record, Path(result.deploy_path)))
 
             if failed:
                 fail_count += 1
             else:
                 pass_count += 1
 
+        # Generate runtime manifest after deploy
+        if "deploy" in phases and self._deployed:
+            self._generate_runtime_manifest()
+
         total_ms = int((time.time() - start) * 1000)
         self._emit_build_completed(pass_count, fail_count, total_ms)
 
-        return 0 if fail_count == 0 else 1
+        if fail_count == 0:
+            self._ctx.output.run_completed(system=_SYSTEM, pass_count=pass_count, fail_count=fail_count)
+        else:
+            self._ctx.output.run_failed(system=_SYSTEM, pass_count=pass_count, fail_count=fail_count)
+
+        return RunResult(exit_code=0 if fail_count == 0 else 1, pass_count=pass_count, fail_count=fail_count)
+
+    # ------------------------------------------------------------------ #
+    # Manifest generation                                                  #
+    # ------------------------------------------------------------------ #
+
+    def _generate_runtime_manifest(self) -> None:
+        from .manifest_generator import RuntimeManifestGenerator
+        gen = RuntimeManifestGenerator(self._ctx)
+        for record, deploy_path in self._deployed:
+            is_folder = record.get("type") == "folder"
+            gen.add_asset(record["id"], record.get("scope", "global"), deploy_path, is_folder=is_folder)
+        gen.build_stages()
+        gen.generate()
 
     # ------------------------------------------------------------------ #
     # Filtering                                                            #

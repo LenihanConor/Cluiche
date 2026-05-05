@@ -61,6 +61,10 @@ def run_asset_phases(
     if force and deploy_root.exists():
         shutil.rmtree(deploy_root)
 
+    # source_root is the parent of the catalogue manifest — asset source_path
+    # values are relative to this directory
+    source_root = catalogue_path.parent
+
     context = BuildContext(
         catalogue=catalogue,
         config=config,
@@ -69,6 +73,7 @@ def run_asset_phases(
         deploy_root=deploy_root,
         asset_stages=target_cfg.asset_stages,
         output=output_ctx,
+        source_root=source_root,
     )
 
     # --- register handlers and run ---
@@ -77,21 +82,24 @@ def run_asset_phases(
 
     t0 = time.time()
     runner = BuildRunner(registry, context)
-    exit_code = runner.run(phases=phases)
+    run_result = runner.run_with_result(phases=phases)
     elapsed = time.time() - t0
 
     # human-readable summary (AC 14)
-    total = len(catalogue.get("assets", []))
-    if exit_code == 0:
+    total_processed = run_result.pass_count + run_result.fail_count
+    if run_result.exit_code == 0:
         click.echo(
-            f"Asset {'+'.join(phases)} complete: {total} total  ({elapsed:.1f}s)"
+            f"Asset {'+'.join(phases)} complete: "
+            f"{run_result.pass_count} passed, {total_processed} processed  ({elapsed:.1f}s)"
         )
     else:
         click.echo(
-            f"Asset {'+'.join(phases)} FAILED  ({elapsed:.1f}s)"
+            f"Asset {'+'.join(phases)} FAILED: "
+            f"{run_result.pass_count} passed, {run_result.fail_count} failed, "
+            f"{total_processed} processed  ({elapsed:.1f}s)"
         )
 
-    return exit_code
+    return run_result.exit_code
 
 
 def _get_output(ctx: click.Context, repo_root: Path):

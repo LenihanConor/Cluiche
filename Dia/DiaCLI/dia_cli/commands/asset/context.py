@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 
+
 @dataclass
 class BuildContext:
     catalogue: dict           # parsed assets.catalogue.json
@@ -14,3 +15,4 @@ class BuildContext:
     deploy_root: Path         # bin/<App>/<Config>/<Platform>/assets/
     asset_stages: list[str]   # Stage asset IDs from pipeline.toml target
     output: Any               # OutputContext for NDJSON event logging
+    source_root: Path = field(default_factory=Path)  # root for resolving relative source_path

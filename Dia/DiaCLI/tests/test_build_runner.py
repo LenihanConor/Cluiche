@@ -21,6 +21,9 @@ def _make_output() -> MagicMock:
     out = MagicMock()
     out.emit = MagicMock()
     out.warn = MagicMock()
+    out.run_started = MagicMock()
+    out.run_completed = MagicMock()
+    out.run_failed = MagicMock()
     return out
 
 
@@ -33,6 +36,7 @@ def _make_context(catalogue: dict, asset_stages: list[str] | None = None) -> Bui
         deploy_root=Path("/bin/TestApp/Debug/x64/assets"),
         asset_stages=asset_stages or [],
         output=_make_output(),
+        source_root=Path("/src"),
     )
 
 
