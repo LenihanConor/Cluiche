@@ -75,9 +75,13 @@
 
   <ItemGroup>
     <ClInclude Include="DiaAssetCatalogueEditorPlugin.h" />
+    <ClInclude Include="ManifestLoadHandler.h" />
+    <ClInclude Include="SessionContext.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaAssetCatalogueEditorPlugin.cpp" />
+    <ClCompile Include="ManifestLoadHandler.cpp" />
+    <ClCompile Include="SessionContext.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.assetcatalogueeditor.architecture.module.md" />

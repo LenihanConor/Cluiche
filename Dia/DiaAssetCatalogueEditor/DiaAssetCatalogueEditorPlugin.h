@@ -1,13 +1,23 @@
 #pragma once
 
 #include <DiaEditor/Plugin/IEditorPlugin.h>
+#include <DiaEditor/Command/CommandHistory.h>
 #include <DiaAssetCatalogue/AssetRegistry.h>
 #include <DiaAssetCatalogue/CatalogueManifestSerializer.h>
 #include <DiaAssetCatalogue/AssetTypeRegistry.h>
 #include <DiaAssetCatalogue/RelationshipIndex.h>
 
+#include "DiaAssetCatalogueEditor/ManifestLoadHandler.h"
+#include "DiaAssetCatalogueEditor/SessionContext.h"
+
 namespace Dia
 {
+	namespace Editor
+	{
+		class WebUIBridge;
+		class EditorView;
+	}
+
 	namespace AssetCatalogue
 	{
 		namespace Editor
@@ -26,10 +36,25 @@ namespace Dia
 				void OnUpdate(float deltaTime) override;
 
 			private:
+				void RegisterRequestHandlers();
+				void PushDirtyState();
+
+				static const unsigned int kOutputDirLength = 512;
+				char mOutputDir[kOutputDirLength];
+
+				static const unsigned int kCurrentPathLength = 512;
+				char mCurrentPath[kCurrentPathLength];
+
 				Dia::AssetCatalogue::AssetRegistry             mRegistry;
 				Dia::AssetCatalogue::CatalogueManifestSerializer mSerializer;
 				Dia::AssetCatalogue::AssetTypeRegistry         mTypeRegistry;
-				Dia::AssetCatalogue::RelationshipIndex*        mRelationshipIndex = nullptr;
+
+				Dia::Editor::CommandHistory                    mHistory;
+				ManifestLoadHandler                            mLoadHandler;
+				SessionContext                                 mSessionContext;
+
+				Dia::Editor::WebUIBridge*                      mBridge = nullptr;
+				Dia::Editor::EditorView*                       mView   = nullptr;
 			};
 		}
 	}

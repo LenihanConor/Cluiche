@@ -160,22 +160,65 @@
 </div>
 
 <script>
-  function onNew() {
-    if (window.DiaEditor) {
-      DiaEditor.request('asset_catalogue.new_manifest', {});
+  function diaRequest(command, params) {
+    return new Promise(function(resolve) {
+      if (window.DiaEditor && window.DiaEditor.request) {
+        window.DiaEditor.request(command, params).then(resolve).catch(function(e) {
+          console.error(command, e);
+          resolve({ success: false, error: String(e) });
+        });
+      } else {
+        console.warn('DiaEditor not available');
+        resolve({ success: false, error: 'DiaEditor not available' });
+      }
+    });
+  }
+
+  function setManifestPath(path) {
+    var el = document.getElementById('manifest-path');
+    if (el) el.textContent = path || 'No manifest loaded';
+  }
+
+  function setDirty(dirty) {
+    var el = document.getElementById('dirty-indicator');
+    if (el) {
+      if (dirty) el.classList.add('dirty');
+      else el.classList.remove('dirty');
     }
   }
 
-  function onOpen() {
-    if (window.DiaEditor) {
-      DiaEditor.request('asset_catalogue.open_manifest_dialog', {});
+  // C++ pushes state changes here
+  window.DiaEditor_onDataChanged = function(msg) {
+    if (msg.topic === 'assetcatalogue.state') {
+      setManifestPath(msg.data.path);
+      setDirty(msg.data.dirty);
+    } else if (msg.topic === 'assetcatalogue.lastManifestPath') {
+      // Offer re-open on startup
+      if (msg.data.lastManifestPath) {
+        var reopen = confirm('Re-open last manifest?\n' + msg.data.lastManifestPath);
+        if (reopen) onOpen(msg.data.lastManifestPath);
+      }
     }
+  };
+
+  function onNew() {
+    diaRequest('asset_catalogue.new_manifest', {}).then(function(r) {
+      if (!r.success) alert('Failed: ' + r.error);
+    });
+  }
+
+  function onOpen(prefilledPath) {
+    var path = prefilledPath || prompt('Manifest path (assets.catalogue.json):');
+    if (!path) return;
+    diaRequest('asset_catalogue.load_manifest', { path: path }).then(function(r) {
+      if (!r.success) alert('Load failed: ' + r.error);
+    });
   }
 
   function onSave() {
-    if (window.DiaEditor) {
-      DiaEditor.request('asset_catalogue.save_manifest', {});
-    }
+    diaRequest('asset_catalogue.save_manifest', {}).then(function(r) {
+      if (!r.success) alert('Save failed: ' + r.error);
+    });
   }
 
   function showTab(name) {
