@@ -23,11 +23,11 @@ Pure Python implementation inside `Dia/DiaCLI/dia_cli/commands/asset/`. No C++ c
 | 8 | `copy_asset` + `copy_asset_directory` + `create_deploy_directories` | F3 | Done | sonnet | `layout.py` — shutil.copy2 for files, shutil.copytree for folders (SD-CAT-013), mkdir parents |
 | 9 | `RuntimeManifestGenerator` | F3 | Done | sonnet | `manifest_generator.py` — add_asset(is_folder), build_stages, generate → assets.runtime.json |
 | 10 | Tests for Feature 3 | F3 | Done | sonnet | `tests/test_deploy_layout.py`, `tests/test_manifest_generator.py` — 31 tests passing |
-| 11 | `DefaultAssetHandler` + 6 standard type handlers | F2 | Not Started | sonnet | `handlers/default.py` + texture/sprite/audio/config/entity/ui — thin subclasses with type_id and file_pattern; pattern mismatch = warning not error |
-| 12 | `FolderHandler` | F2 | Not Started | haiku | `handlers/folder.py` — validate checks is_dir, transform no-op, deploy shutil.copytree (SD-CAT-013) |
-| 13 | `StageHandler` | F2 | Not Started | haiku | `handlers/stage.py` — extends DefaultAssetHandler, validates name field is non-empty string; does NOT validate member assets (SD-CAT-012) |
-| 14 | Auto-registration | F2 | Not Started | haiku | `handlers/__init__.py` — `register_built_in_handlers(registry)` importing all 8 handlers |
-| 15 | Tests for Feature 2 | F2 | Not Started | sonnet | `tests/test_built_in_handlers.py` — default validate (missing file, pattern mismatch warning), FolderHandler (non-dir source, recursive copy), StageHandler (missing name, empty name), all 8 registered |
+| 11 | `DefaultAssetHandler` + 6 standard type handlers | F2 | Done | sonnet | `handlers/default.py` + texture/sprite/audio/config/entity/ui — thin subclasses with type_id and file_pattern; pattern mismatch = warning not error |
+| 12 | `FolderHandler` | F2 | Done | sonnet | `handlers/folder.py` — validate checks is_dir, transform no-op, deploy shutil.copytree (SD-CAT-013) |
+| 13 | `StageHandler` | F2 | Done | sonnet | `handlers/stage.py` — extends DefaultAssetHandler, validates name field is non-empty string; does NOT validate member assets (SD-CAT-012) |
+| 14 | Auto-registration | F2 | Done | sonnet | `handlers/__init__.py` — `register_built_in_handlers(registry)` importing all 8 handlers |
+| 15 | Tests for Feature 2 | F2 | Done | sonnet | `tests/test_built_in_handlers.py` — 21 tests passing |
 | 16 | `pipeline.toml` config loader | F4 | Not Started | sonnet | `config_loader.py` — shared utility: load pipeline.toml, resolve target, extract catalogue_manifest + asset_stages; tomllib with tomli fallback |
 | 17 | `dia asset build` command | F4 | Not Started | sonnet | `build_cmd.py` + `build_handler.py` — --target (required), --config (Debug/Release), --platform (x64), --force (clean deploy dir) |
 | 18 | `dia asset validate` command | F4 | Not Started | haiku | `validate_cmd.py` + `validate_handler.py` — validate-only phases, no file writes |
@@ -93,3 +93,6 @@ Dia/DiaCLI/tests/
 - Feature 3 complete (tasks 7–10): layout.py, manifest_generator.py created; 31 tests passing.
   - Windows Path strips trailing slashes — folder trailing slash lives in manifest deploy_path string only.
   - add_asset() takes is_folder=True to append trailing slash to the manifest string (not the Path).
+- Feature 2 complete (tasks 11–15): all 8 handlers + handlers/__init__.py; 21 tests passing.
+  - Pattern mismatch emits OutputContext.warn(), never an AssetError.
+  - StageHandler explicitly does not validate member assets (SD-CAT-012).
