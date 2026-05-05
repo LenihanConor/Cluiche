@@ -50,6 +50,13 @@ namespace
                 "subscribe_transitions: asset '%s' -> Unloading",
                 assetId.AsChar());
         }
+
+        void OnAssetLoadFailed(const Dia::Core::StringCRC& assetId) override
+        {
+            DIA_LOG_WARNING("AssetRuntimeDebugCommands",
+                "subscribe_transitions: asset '%s' load failed -> Registered",
+                assetId.AsChar());
+        }
     };
 
     static TransitionLogger sTransitionLogger;

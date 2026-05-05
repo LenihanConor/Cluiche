@@ -244,3 +244,55 @@ TEST_F(AssetStateMachineTest, AcknowledgeAssetLoaded_UnknownId_SafeNoCrash)
     // No assertion needed — just verifying no crash/assert.
     SUCCEED();
 }
+
+// ---------------------------------------------------------------------------
+// Tests — AcknowledgeAssetLoadFailed
+// ---------------------------------------------------------------------------
+
+TEST_F(AssetStateMachineTest, AcknowledgeAssetLoadFailed_FromRegistered_Invalid)
+{
+    // Registered→Registered via LoadFailed is not valid.
+    Dia::AssetRuntime::AssetRuntime runtime;
+    ASSERT_TRUE(LoadTwoAssetRuntime(runtime, "f2_loadfail_reg.json"));
+
+    runtime.AcknowledgeAssetLoadFailed(Dia::Core::StringCRC("asset.alpha"));
+    EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.alpha")),
+              Dia::AssetRuntime::AssetState::Registered);
+}
+
+TEST_F(AssetStateMachineTest, AcknowledgeAssetLoadFailed_FromStaged_ReturnsToRegistered)
+{
+    // Staged→Registered (load failed, retry path).
+    Dia::AssetRuntime::AssetRuntime runtime;
+    ASSERT_TRUE(LoadTwoAssetRuntime(runtime, "f2_loadfail_staged.json"));
+
+    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
+    EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.alpha")),
+              Dia::AssetRuntime::AssetState::Staged);
+
+    runtime.AcknowledgeAssetLoadFailed(Dia::Core::StringCRC("asset.alpha"));
+    EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.alpha")),
+              Dia::AssetRuntime::AssetState::Registered);
+}
+
+TEST_F(AssetStateMachineTest, AcknowledgeAssetLoadFailed_RefCountPreserved)
+{
+    // After load failure, the stage still wants the asset — ref count unchanged.
+    Dia::AssetRuntime::AssetRuntime runtime;
+    ASSERT_TRUE(LoadTwoAssetRuntime(runtime, "f2_loadfail_refcount.json"));
+
+    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
+    EXPECT_EQ(runtime.GetAssetRefCount(Dia::Core::StringCRC("asset.alpha")), 1u);
+
+    runtime.AcknowledgeAssetLoadFailed(Dia::Core::StringCRC("asset.alpha"));
+    EXPECT_EQ(runtime.GetAssetRefCount(Dia::Core::StringCRC("asset.alpha")), 1u);
+}
+
+TEST_F(AssetStateMachineTest, AcknowledgeAssetLoadFailed_UnknownId_SafeNoCrash)
+{
+    Dia::AssetRuntime::AssetRuntime runtime;
+    ASSERT_TRUE(LoadTwoAssetRuntime(runtime, "f2_loadfail_unknown.json"));
+
+    runtime.AcknowledgeAssetLoadFailed(Dia::Core::StringCRC("asset.ghost"));
+    SUCCEED();
+}

@@ -86,6 +86,11 @@ namespace Dia
             TryTransition(assetId, AssetState::Registered);
         }
 
+        void AssetRuntime::AcknowledgeAssetLoadFailed(const Dia::Core::StringCRC& assetId)
+        {
+            TryTransition(assetId, AssetState::Registered);
+        }
+
         unsigned int AssetRuntime::GetLoadedAssets(
             Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128>& results) const
         {
@@ -345,6 +350,17 @@ namespace Dia
             FlushDeferredRemovals();
         }
 
+        void AssetRuntime::DispatchAssetLoadFailed(const Dia::Core::StringCRC& assetId)
+        {
+            mIsDispatching = true;
+            unsigned int count = mListeners.Size();
+            for (unsigned int i = 0; i < count; ++i)
+                mListeners[i]->OnAssetLoadFailed(assetId);
+            mIsDispatching = false;
+
+            FlushDeferredRemovals();
+        }
+
         void AssetRuntime::FlushDeferredRemovals()
         {
             unsigned int removeCount = mDeferredRemovals.Size();
@@ -379,11 +395,12 @@ namespace Dia
             bool valid = false;
             switch (current)
             {
-                case AssetState::Registered: valid = (target == AssetState::Staged);    break;
+                case AssetState::Registered: valid = (target == AssetState::Staged);       break;
                 case AssetState::Staged:     valid = (target == AssetState::Loaded)
-                                                  || (target == AssetState::Unloading); break;
-                case AssetState::Loaded:     valid = (target == AssetState::Unloading); break;
-                case AssetState::Unloading:  valid = (target == AssetState::Registered); break;
+                                                  || (target == AssetState::Unloading)
+                                                  || (target == AssetState::Registered); break;
+                case AssetState::Loaded:     valid = (target == AssetState::Unloading);   break;
+                case AssetState::Unloading:  valid = (target == AssetState::Registered);  break;
             }
 
             if (!valid)
@@ -408,6 +425,8 @@ namespace Dia
                 DispatchAssetReady(assetId);
             else if (target == AssetState::Unloading)
                 DispatchAssetUnloading(assetId);
+            else if (target == AssetState::Registered && current == AssetState::Staged)
+                DispatchAssetLoadFailed(assetId);
 
             return true;
         }

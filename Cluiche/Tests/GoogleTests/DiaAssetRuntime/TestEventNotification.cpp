@@ -111,6 +111,9 @@ namespace
         Dia::Core::StringCRC unloadingIds[kMaxEvents];
         unsigned int         unloadingCount = 0;
 
+        Dia::Core::StringCRC loadFailedIds[kMaxEvents];
+        unsigned int         loadFailedCount = 0;
+
         void OnAssetReady(const Dia::Core::StringCRC& assetId,
                           const Dia::Core::Containers::String512& resolvedPath) override
         {
@@ -127,6 +130,12 @@ namespace
         {
             if (unloadingCount < kMaxEvents)
                 unloadingIds[unloadingCount++] = assetId;
+        }
+
+        void OnAssetLoadFailed(const Dia::Core::StringCRC& assetId) override
+        {
+            if (loadFailedCount < kMaxEvents)
+                loadFailedIds[loadFailedCount++] = assetId;
         }
     };
 
@@ -149,6 +158,8 @@ namespace
         {
             unloadCount++;
         }
+
+        void OnAssetLoadFailed(const Dia::Core::StringCRC&) override {}
     };
 
 } // anonymous namespace
@@ -318,4 +329,28 @@ TEST_F(EventNotificationTest, UnregisterBeforeLoad_ReceivesNoEvents)
     runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
 
     EXPECT_EQ(listener.readyCount, 0u);
+}
+
+// ---------------------------------------------------------------------------
+// Tests — OnAssetLoadFailed dispatch
+// ---------------------------------------------------------------------------
+
+TEST_F(EventNotificationTest, OnAssetLoadFailed_Dispatched_WhenLoadFailsFromStaged)
+{
+    Dia::AssetRuntime::AssetRuntime runtime;
+    ASSERT_TRUE(LoadTwoAssetRuntimeF4(runtime, "f4_loadfail_dispatch.json"));
+
+    RecordingListener listener;
+    runtime.RegisterListener(&listener);
+
+    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
+    EXPECT_EQ(listener.readyCount, 2u);
+
+    runtime.AcknowledgeAssetLoadFailed(Dia::Core::StringCRC("asset.alpha"));
+
+    EXPECT_EQ(listener.loadFailedCount, 1u);
+    EXPECT_EQ(listener.loadFailedIds[0], Dia::Core::StringCRC("asset.alpha"));
+    // Asset is back to Registered
+    EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.alpha")),
+              Dia::AssetRuntime::AssetState::Registered);
 }

@@ -19,6 +19,10 @@ namespace Dia
 
             // Called when an asset transitions to Unloading (content must be released).
             virtual void OnAssetUnloading(const Dia::Core::StringCRC& assetId) = 0;
+
+            // Called when a load attempt failed and the asset returned to Registered.
+            // Consumer should abort the load. Asset remains ref-counted; stage still wants it.
+            virtual void OnAssetLoadFailed(const Dia::Core::StringCRC& assetId) = 0;
         };
     }
 }

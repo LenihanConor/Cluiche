@@ -31,6 +31,7 @@ namespace Dia
             // Consumer acknowledgements
             void AcknowledgeAssetLoaded(const Dia::Core::StringCRC& assetId);
             void AcknowledgeAssetUnloaded(const Dia::Core::StringCRC& assetId);
+            void AcknowledgeAssetLoadFailed(const Dia::Core::StringCRC& assetId);
 
             // Stage lifecycle
             void RequestStageLoad(const Dia::Core::StringCRC& stageId);
@@ -86,6 +87,7 @@ namespace Dia
             bool TryTransition(const Dia::Core::StringCRC& assetId, AssetState target);
             void DispatchAssetReady(const Dia::Core::StringCRC& assetId);
             void DispatchAssetUnloading(const Dia::Core::StringCRC& assetId);
+            void DispatchAssetLoadFailed(const Dia::Core::StringCRC& assetId);
             void FlushDeferredRemovals();
 
             static const unsigned int kMaxListeners = 16;
