@@ -19,12 +19,12 @@
 | 0 | Project scaffolding | Done | sonnet | Created Dia/DiaAssetRuntimeEditor/ directory, .vcxproj, .vcxproj.filters, module architecture doc, solution integration |
 | 1 | Plugin shell class | Done | sonnet | DiaAssetRuntimeEditorPlugin.h/.cpp implementing IEditorPlugin, REGISTER_EDITOR_PLUGIN macro, connect/disconnect handlers |
 | 2 | Shared selection state | Done | sonnet | SharedPluginState struct with selected asset ID (StringCRC) and connection state. Expanded in later tasks. |
-| 3 | F1-T1: AssetStateTablePanel class | Not Started | sonnet | Panel lifecycle, poll timer, sends get_all_states via GameConnectionManager |
-| 4 | F1-T2: Parse get_all_states response | Not Started | sonnet | Deserialize JSON into DynamicArrayC<AssetStateRow> (asset ID as StringCRC, state enum, scope enum, ref count, deploy path) |
-| 5 | F1-T3: Connection state handling | Not Started | sonnet | Subscribe to "game_connection" topic, disable panel on disconnect, re-enable + immediate poll on reconnect |
-| 6 | F1-T4: CEF table UI | Not Started | sonnet | HTML/JS panel with virtualized table, color-coded state badges, sortable columns |
-| 7 | F1-T5: Filter controls | Not Started | sonnet | State dropdown + ID substring search, client-side filtering |
-| 8 | F1-T6: Row selection and publish | Not Started | sonnet | Click handler updates SharedPluginState selection, other panels observe |
+| 3 | F1-T1: AssetStateTablePanel class | Done | sonnet | Panel lifecycle, poll timer, sends get_all_states via GameConnectionManager |
+| 4 | F1-T2: Parse get_all_states response | Done | sonnet | ParseGetAllStatesResponse static method, DynamicArrayC<AssetStateRow, 4096> |
+| 5 | F1-T3: Connection state handling | Done | sonnet | OnConnectionStateChanged wires disable/enable, immediate poll on reconnect |
+| 6 | F1-T4: CEF table UI | Done | sonnet | HTML/JS/CSS panel with color-coded state badges, sortable columns |
+| 7 | F1-T5: Filter controls | Done | sonnet | State dropdown + ID substring search, client-side composable filters |
+| 8 | F1-T6: Row selection and publish | Done | sonnet | Click handler updates SharedPluginState.mSelectedAssetId via bridge |
 | 9 | F1-T7: Persist poll interval | Not Started | haiku | Read/write poll interval from .context.json |
 | 10 | F1-T8: Unit tests | Not Started | sonnet | JSON parsing, filter logic, connection state transitions, poll timer reset |
 | 11 | F2-T1: StageAssetTreePanel class | Not Started | sonnet | Panel lifecycle, subscribes to shared get_all_states snapshot, sends get_stage_deps on expand |

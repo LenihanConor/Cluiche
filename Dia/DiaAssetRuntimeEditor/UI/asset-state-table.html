@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asset State Table</title>
+    <link rel="stylesheet" href="asset-state-table.css">
+</head>
+<body>
+    <div id="app">
+        <div id="disconnected-overlay" class="overlay hidden">
+            <span>Not connected</span>
+        </div>
+        <div class="toolbar">
+            <select id="state-filter">
+                <option value="All">All States</option>
+                <option value="Registered">Registered</option>
+                <option value="Staged">Staged</option>
+                <option value="Loaded">Loaded</option>
+                <option value="Unloading">Unloading</option>
+            </select>
+            <input type="text" id="id-search" placeholder="Filter by ID..." />
+            <label class="poll-label">
+                Poll:
+                <input type="number" id="poll-interval" min="0.1" step="0.1" value="1.0" />
+                s
+            </label>
+            <button id="btn-refresh" title="Force Refresh">Refresh</button>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th data-col="id" class="sortable">Asset ID</th>
+                        <th data-col="state" class="sortable">State</th>
+                        <th data-col="scope" class="sortable">Scope</th>
+                        <th data-col="refCount" class="sortable">Ref Count</th>
+                        <th data-col="deployPath" class="sortable">Deploy Path</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </div>
+        <div class="status-bar">
+            <span id="status-count">0 / 0 assets</span>
+            <span id="status-time">Last refresh: --</span>
+        </div>
+    </div>
+    <script src="asset-state-table.js"></script>
+</body>
+</html>

@@ -27,6 +27,8 @@ namespace Dia
 				mManager.SetConnectionCallback(
 					[this](bool connected) { HandleConnectionStateChange(connected); });
 
+				mAssetStateTable.Activate(mBridge, &mManager, mState);
+
 				RegisterRequestHandlers();
 
 				DIA_LOG_INFO("Editor", "DiaAssetRuntimeEditorPlugin: Initialized");
@@ -36,6 +38,7 @@ namespace Dia
 			{
 				DIA_LOG_INFO("Editor", "DiaAssetRuntimeEditorPlugin: OnUnload");
 
+				mAssetStateTable.Deactivate();
 				mManager.Shutdown();
 
 				delete mState;
@@ -49,6 +52,7 @@ namespace Dia
 			void DiaAssetRuntimeEditorPlugin::OnUpdate(float deltaTime)
 			{
 				mManager.Update(deltaTime);
+				mAssetStateTable.Update(deltaTime);
 			}
 
 			SharedPluginState* DiaAssetRuntimeEditorPlugin::GetPluginData()
@@ -94,6 +98,8 @@ namespace Dia
 			{
 				if (mState)
 					mState->mConnected = connected;
+
+				mAssetStateTable.OnConnectionStateChanged(connected);
 
 				if (mBridge)
 				{

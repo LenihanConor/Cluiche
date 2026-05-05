@@ -11,11 +11,29 @@
   <ItemGroup>
     <ClInclude Include="DiaAssetRuntimeEditorPlugin.h" />
     <ClInclude Include="SharedPluginState.h" />
+    <ClInclude Include="Panels\AssetStateRow.h">
+      <Filter>Panels</Filter>
+    </ClInclude>
+    <ClInclude Include="Panels\AssetStateTablePanel.h">
+      <Filter>Panels</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaAssetRuntimeEditorPlugin.cpp" />
+    <ClCompile Include="Panels\AssetStateTablePanel.cpp">
+      <Filter>Panels</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.assetruntimeeditor.architecture.module.md" />
+    <None Include="UI\asset-state-table.html">
+      <Filter>UI</Filter>
+    </None>
+    <None Include="UI\asset-state-table.css">
+      <Filter>UI</Filter>
+    </None>
+    <None Include="UI\asset-state-table.js">
+      <Filter>UI</Filter>
+    </None>
   </ItemGroup>
 </Project>

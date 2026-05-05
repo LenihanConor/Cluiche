@@ -4,6 +4,8 @@
 #include <DiaEditor/LiveConnection/GameConnectionManager.h>
 #include <DiaCore/Json/external/json/json.h>
 
+#include "DiaAssetRuntimeEditor/Panels/AssetStateTablePanel.h"
+
 namespace Dia
 {
 	namespace Editor
@@ -44,6 +46,8 @@ namespace Dia
 
 				Dia::Editor::GameConnectionManager mManager;
 				SharedPluginState* mState = nullptr;
+
+				AssetStateTablePanel mAssetStateTable;
 			};
 		}
 	}
