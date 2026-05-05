@@ -1,12 +1,14 @@
 #pragma once
 
 #include "DiaAssetRuntime/AssetState.h"
+#include "DiaAssetRuntime/IAssetStateListener.h"
 #include "DiaAssetRuntime/RuntimeManifestLoader.h"
 
 #include "DiaCore/CRC/StringCRC.h"
 #include "DiaCore/Strings/String512.h"
 #include "DiaCore/Containers/HashTables/HashTableC.h"
 #include "DiaCore/Containers/HashTables/HashTableHashFunctionData.h"
+#include "DiaCore/Containers/Arrays/DynamicArrayC.h"
 
 namespace Dia
 {
@@ -36,6 +38,10 @@ namespace Dia
 
             // Ref count query (debug)
             unsigned int GetAssetRefCount(const Dia::Core::StringCRC& assetId) const;
+
+            // Listener registration
+            void RegisterListener(IAssetStateListener* listener);
+            void UnregisterListener(IAssetStateListener* listener);
 
         private:
             class StateHashFunctor
@@ -69,11 +75,20 @@ namespace Dia
             void InitStateTable();
             void InitRefCountTable();
             bool TryTransition(const Dia::Core::StringCRC& assetId, AssetState target);
+            void DispatchAssetReady(const Dia::Core::StringCRC& assetId);
+            void DispatchAssetUnloading(const Dia::Core::StringCRC& assetId);
+            void FlushDeferredRemovals();
+
+            static const unsigned int kMaxListeners = 16;
 
             RuntimeManifestLoader::AssetTable mAssetTable;
             RuntimeManifestLoader::StageTable mStageTable;
             StateTable                        mStateTable;
             RefCountTable                     mRefCountTable;
+
+            Dia::Core::Containers::DynamicArrayC<IAssetStateListener*, kMaxListeners> mListeners;
+            Dia::Core::Containers::DynamicArrayC<IAssetStateListener*, kMaxListeners> mDeferredRemovals;
+            bool                              mIsDispatching;
         };
     }
 }

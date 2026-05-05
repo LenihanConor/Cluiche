@@ -59,6 +59,7 @@
   <ItemGroup>
     <ClInclude Include="AssetScope.h" />
     <ClInclude Include="AssetState.h" />
+    <ClInclude Include="IAssetStateListener.h" />
     <ClInclude Include="RuntimeAssetEntry.h" />
     <ClInclude Include="RuntimeStageEntry.h" />
     <ClInclude Include="RuntimeManifestLoader.h" />

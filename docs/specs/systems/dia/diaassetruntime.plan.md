@@ -30,10 +30,10 @@ Build order is strictly sequential: F1 → F2 → F3 → F4 → F5 → F6. Each 
 | 13 | Implement RequestStageLoad | F3 | Done | sonnet | Lookup RuntimeStageEntry, iterate member assets, increment ref count, transition Registered→Staged for 0→1 assets |
 | 14 | Implement RequestStageUnload + edge cases | F3 | Done | sonnet | Decrement ref counts (clamp at 0), transition to Unloading when reaching 0. Handle unknown stage, double unload (warning). |
 | 15 | GoogleTest: Feature 3 | F3 | Done | sonnet | 13 tests, all passing: single load/unload, shared global asset, double load/unload, unknown stage, ref count init. |
-| 16 | Implement IAssetStateListener interface | F4 | Not Started | haiku | `IAssetStateListener.h` — abstract class with virtual dtor, OnAssetReady, OnAssetUnloading |
-| 17 | Implement listener registration + deferred removal | F4 | Not Started | sonnet | `DynamicArrayC<IAssetStateListener*, 16>`, RegisterListener (reject dup), UnregisterListener (defer if dispatching), mIsDispatching flag |
-| 18 | Wire event dispatch into state transitions | F4 | Not Started | sonnet | Dispatch OnAssetReady on Registered→Staged, OnAssetUnloading on →Unloading. Pass resolved path to OnAssetReady. |
-| 19 | GoogleTest: Feature 4 | F4 | Not Started | sonnet | Single/multi listener, unregister during dispatch, duplicate registration, resolved path correctness, no events for already-loaded re-stage |
+| 16 | Implement IAssetStateListener interface | F4 | Done | haiku | `IAssetStateListener.h` — abstract class with virtual dtor, OnAssetReady(StringCRC, String512), OnAssetUnloading(StringCRC). Uses String512 not FilePath (consistent with F1 design). |
+| 17 | Implement listener registration + deferred removal | F4 | Done | sonnet | `DynamicArrayC<IAssetStateListener*, 16>`, RegisterListener (reject dup), UnregisterListener (defer if dispatching), mIsDispatching flag |
+| 18 | Wire event dispatch into state transitions | F4 | Done | sonnet | Dispatch OnAssetReady on Registered→Staged, OnAssetUnloading on →Unloading. Pass mDeployPath String512 to OnAssetReady. |
+| 19 | GoogleTest: Feature 4 | F4 | Done | sonnet | 9 tests, all passing: single/multi listener, unregister during dispatch, duplicate registration, resolved path correctness, no events for re-stage. |
 | 20 | Implement GetLoadedAssets + GetStagedAssets | F5 | Not Started | haiku | Iterate state table, collect matching IDs into caller-provided DynamicArrayC. Return total count. |
 | 21 | Implement GetStageDependencies | F5 | Not Started | haiku | Lookup RuntimeStageEntry, copy mAssetIds into results. Return total count. Warn for unknown stage. |
 | 22 | GoogleTest: Feature 5 | F5 | Not Started | sonnet | Correct results after stage load + acknowledge, overflow truncation, empty results, unknown stage |
@@ -100,3 +100,8 @@ GoogleTests/Tests/
   - RefCountTable reuses StateHashFunctor (same key type). InitRefCountTable called from LoadManifest alongside InitStateTable.
   - Double-unload clamping: skip (warn) if ref count already 0, rather than decrement below 0.
   - F3 tests use unique PathStore alias (`test_arun_f3`).
+- Feature 4 complete (tasks 16–19): 9 tests passing. Clean first run.
+  - IAssetStateListener::OnAssetReady takes String512 (not FilePath) consistent with F1 mDeployPath design.
+  - Deferred removal: mIsDispatching flag guards UnregisterListener; FlushDeferredRemovals() applies after dispatch loop completes.
+  - DynamicArrayC uses RemoveAt(index) / RemoveAll() (not Remove(index) / Reset()).
+  - F4 tests use unique PathStore alias (`test_arun_f4`).

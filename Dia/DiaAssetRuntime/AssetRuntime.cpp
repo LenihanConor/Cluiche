@@ -28,6 +28,7 @@ namespace Dia
         // AssetRuntime
         //------------------------------------------------------------------------------------
         AssetRuntime::AssetRuntime()
+            : mIsDispatching(false)
         {}
 
         bool AssetRuntime::LoadManifest(const Dia::Core::FilePath& manifestPath)
@@ -83,6 +84,55 @@ namespace Dia
         void AssetRuntime::AcknowledgeAssetUnloaded(const Dia::Core::StringCRC& assetId)
         {
             TryTransition(assetId, AssetState::Registered);
+        }
+
+        void AssetRuntime::RegisterListener(IAssetStateListener* listener)
+        {
+            if (!listener)
+                return;
+
+            unsigned int count = mListeners.Size();
+            for (unsigned int i = 0; i < count; ++i)
+            {
+                if (mListeners[i] == listener)
+                {
+                    DIA_LOG_WARNING("AssetRuntime", "RegisterListener: listener already registered");
+                    return;
+                }
+            }
+
+            if (mListeners.Size() == kMaxListeners)
+            {
+                DIA_LOG_WARNING("AssetRuntime", "RegisterListener: listener list full (capacity %u)", kMaxListeners);
+                return;
+            }
+
+            mListeners.Add(listener);
+        }
+
+        void AssetRuntime::UnregisterListener(IAssetStateListener* listener)
+        {
+            if (!listener)
+                return;
+
+            if (mIsDispatching)
+            {
+                if (mDeferredRemovals.Size() < kMaxListeners)
+                    mDeferredRemovals.Add(listener);
+                return;
+            }
+
+            unsigned int count = mListeners.Size();
+            for (unsigned int i = 0; i < count; ++i)
+            {
+                if (mListeners[i] == listener)
+                {
+                    mListeners.RemoveAt(i);
+                    return;
+                }
+            }
+
+            DIA_LOG_WARNING("AssetRuntime", "UnregisterListener: listener not found");
         }
 
         void AssetRuntime::RequestStageLoad(const Dia::Core::StringCRC& stageId)
@@ -211,6 +261,51 @@ namespace Dia
             }
         }
 
+        void AssetRuntime::DispatchAssetReady(const Dia::Core::StringCRC& assetId)
+        {
+            const RuntimeAssetEntry* entry = mAssetTable.TryGetItemConst(assetId);
+            if (!entry)
+                return;
+
+            mIsDispatching = true;
+            unsigned int count = mListeners.Size();
+            for (unsigned int i = 0; i < count; ++i)
+                mListeners[i]->OnAssetReady(assetId, entry->mDeployPath);
+            mIsDispatching = false;
+
+            FlushDeferredRemovals();
+        }
+
+        void AssetRuntime::DispatchAssetUnloading(const Dia::Core::StringCRC& assetId)
+        {
+            mIsDispatching = true;
+            unsigned int count = mListeners.Size();
+            for (unsigned int i = 0; i < count; ++i)
+                mListeners[i]->OnAssetUnloading(assetId);
+            mIsDispatching = false;
+
+            FlushDeferredRemovals();
+        }
+
+        void AssetRuntime::FlushDeferredRemovals()
+        {
+            unsigned int removeCount = mDeferredRemovals.Size();
+            for (unsigned int i = 0; i < removeCount; ++i)
+            {
+                IAssetStateListener* listener = mDeferredRemovals[i];
+                unsigned int count = mListeners.Size();
+                for (unsigned int j = 0; j < count; ++j)
+                {
+                    if (mListeners[j] == listener)
+                    {
+                        mListeners.RemoveAt(j);
+                        break;
+                    }
+                }
+            }
+            mDeferredRemovals.RemoveAll();
+        }
+
         bool AssetRuntime::TryTransition(const Dia::Core::StringCRC& assetId, AssetState target)
         {
             AssetState* state = mStateTable.TryGetItem(assetId);
@@ -250,6 +345,12 @@ namespace Dia
                 static_cast<int>(target));
 
             *state = target;
+
+            if (target == AssetState::Staged)
+                DispatchAssetReady(assetId);
+            else if (target == AssetState::Unloading)
+                DispatchAssetUnloading(assetId);
+
             return true;
         }
 
