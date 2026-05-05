@@ -319,6 +319,22 @@ TEST(DirectedGraphOutEdgesTest, WrongNodeID_GetOutEdges_ReturnsEmpty)
 	EXPECT_EQ(results.Size(), 0u);
 }
 
+TEST(DirectedGraphOutEdgesTest, EdgePointer_HasCorrectFromAndTo)
+{
+	TestGraph g;
+	g.AddNode(StringCRC("src"), 10);
+	g.AddNode(StringCRC("dst"), 20);
+	g.AddEdge(StringCRC("e"), StringCRC("src"), StringCRC("dst"), 7.0f);
+	TestGraph::EdgeResults results;
+	g.GetOutEdges(StringCRC("src"), results);
+	ASSERT_EQ(results.Size(), 1u);
+	const TestEdge* e = results.At(0);
+	ASSERT_NE(e, nullptr);
+	EXPECT_EQ(e->GetFrom()->GetUniqueID(), StringCRC("src"));
+	EXPECT_EQ(e->GetTo()->GetUniqueID(), StringCRC("dst"));
+	EXPECT_FLOAT_EQ(e->GetPayloadConst(), 7.0f);
+}
+
 // ============================================================
 // Suite 5 — DirectedGraphInEdgesTest  (Policy::None)
 // ============================================================
@@ -364,6 +380,22 @@ TEST(DirectedGraphInEdgesTest, NodeNotInGraph_GetInEdges_ReturnsEmpty)
 	TestGraph::EdgeResults results;
 	g.GetInEdges(StringCRC("ghost"), results);
 	EXPECT_EQ(results.Size(), 0u);
+}
+
+TEST(DirectedGraphInEdgesTest, EdgePointer_HasCorrectFromAndTo)
+{
+	TestGraph g;
+	g.AddNode(StringCRC("src"), 10);
+	g.AddNode(StringCRC("dst"), 20);
+	g.AddEdge(StringCRC("e"), StringCRC("src"), StringCRC("dst"), 3.5f);
+	TestGraph::EdgeResults results;
+	g.GetInEdges(StringCRC("dst"), results);
+	ASSERT_EQ(results.Size(), 1u);
+	const TestEdge* e = results.At(0);
+	ASSERT_NE(e, nullptr);
+	EXPECT_EQ(e->GetFrom()->GetUniqueID(), StringCRC("src"));
+	EXPECT_EQ(e->GetTo()->GetUniqueID(), StringCRC("dst"));
+	EXPECT_FLOAT_EQ(e->GetPayloadConst(), 3.5f);
 }
 
 // ============================================================
@@ -535,6 +567,35 @@ TEST(DirectedGraphDFSTest, MissingStart_VisitorNotCalled)
 	EXPECT_EQ(count, 0);
 }
 
+TEST(DirectedGraphDFSTest, BranchingGraph_VisitorOrderDepthFirst)
+{
+	// root -> l -> ll (deep left)
+	//      -> r       (shallow right)
+	// DFS should go deep before wide: root, l, ll, r (or root, r, root, l, ll depending on push order)
+	// Our impl pushes in reverse order so first out-edge is visited first: root, l, ll, r
+	TestGraph g;
+	g.AddNode(StringCRC("root"), 0);
+	g.AddNode(StringCRC("l"), 1);
+	g.AddNode(StringCRC("r"), 2);
+	g.AddNode(StringCRC("ll"), 3);
+	g.AddEdge(StringCRC("rl"),  StringCRC("root"), StringCRC("l"),  0.0f);
+	g.AddEdge(StringCRC("rr"),  StringCRC("root"), StringCRC("r"),  0.0f);
+	g.AddEdge(StringCRC("lll"), StringCRC("l"),    StringCRC("ll"), 0.0f);
+	DynamicArrayC<const TestNode*, 8> buf;
+	DynamicArrayC<int, 8> order;
+	g.DFS(StringCRC("root"), [&](const TestNode& n) { order.Add(n.GetPayloadConst()); }, buf);
+	ASSERT_EQ(order.Size(), 4u);
+	// root (0) is first; ll (3) must come before r (2) — DFS goes deep before wide
+	EXPECT_EQ(order.At(0), 0); // root always first
+	unsigned int llPos = 99, rPos = 99;
+	for (unsigned int i = 0; i < order.Size(); i++)
+	{
+		if (order.At(i) == 3) llPos = i;
+		if (order.At(i) == 2) rPos  = i;
+	}
+	EXPECT_LT(llPos, rPos); // depth-first: ll reached before r
+}
+
 TEST(DirectedGraphDFSTest, LinearChain_VisitorOrderDepthFirst)
 {
 	// a -> b -> c: DFS from a should visit a, b, c in that order
@@ -568,6 +629,15 @@ TEST(DirectedGraphDFSTest, CyclicGraph_EachNodeVisitedAtMostOnce)
 // ============================================================
 // Suite 8 — DirectedGraphTopoSortTest
 // ============================================================
+
+TEST(DirectedGraphTopoSortTest, EmptyGraph_ReturnsTrue_EmptyResults)
+{
+	TestGraph g;
+	TestGraph::NodeResults results;
+	DynamicArrayC<const TestNode*, 8> work;
+	EXPECT_TRUE(g.TopoSort(results, work));
+	EXPECT_EQ(results.Size(), 0u);
+}
 
 TEST(DirectedGraphTopoSortTest, SingleNode_ResultHasOneNode)
 {
@@ -739,6 +809,33 @@ TEST(DirectedGraphHasCycleTest, LongerCycle_HasCycle)
 	EXPECT_TRUE(g.HasCycle());
 }
 
+TEST(DirectedGraphHasCycleTest, DisconnectedGraph_OneCyclicComponent_HasCycle)
+{
+	// Component 1: x -> y (acyclic); Component 2: a -> b -> a (cycle)
+	TestGraph g;
+	g.AddNode(StringCRC("x"), 1);
+	g.AddNode(StringCRC("y"), 2);
+	g.AddNode(StringCRC("a"), 3);
+	g.AddNode(StringCRC("b"), 4);
+	g.AddEdge(StringCRC("xy"), StringCRC("x"), StringCRC("y"), 0.0f);
+	g.AddEdge(StringCRC("ab"), StringCRC("a"), StringCRC("b"), 0.0f);
+	g.AddEdge(StringCRC("ba"), StringCRC("b"), StringCRC("a"), 0.0f);
+	EXPECT_TRUE(g.HasCycle());
+}
+
+TEST(DirectedGraphHasCycleTest, DisconnectedGraph_NoCycleInAnyComponent_NoCycle)
+{
+	// Two independent acyclic components
+	TestGraph g;
+	g.AddNode(StringCRC("x"), 1);
+	g.AddNode(StringCRC("y"), 2);
+	g.AddNode(StringCRC("a"), 3);
+	g.AddNode(StringCRC("b"), 4);
+	g.AddEdge(StringCRC("xy"), StringCRC("x"), StringCRC("y"), 0.0f);
+	g.AddEdge(StringCRC("ab"), StringCRC("a"), StringCRC("b"), 0.0f);
+	EXPECT_FALSE(g.HasCycle());
+}
+
 // ============================================================
 // Suite 10 — DirectedGraphPolicyReverseEdgeCacheTest
 // ============================================================
@@ -823,6 +920,35 @@ TEST(DirectedGraphPolicyReverseEdgeCacheTest, QueryAfterAddNode_RebuildCorrect)
 	// Should rebuild; now two in-edges to b
 	g.GetInEdges(StringCRC("b"), r);
 	EXPECT_EQ(r.Size(), 2u);
+}
+
+TEST(DirectedGraphPolicyReverseEdgeCacheTest, EdgePointerContent_MatchesNoneScan)
+{
+	// Verify that GetInEdges via ReverseEdgeCache returns the same edge (by ID and payload)
+	// as the Policy::None linear scan — not just the same count.
+	TestGraph    gNone;
+	TestGraphREC gRec;
+
+	auto setup = [](auto& g)
+	{
+		g.AddNode(StringCRC("src"), 1);
+		g.AddNode(StringCRC("dst"), 2);
+		g.AddEdge(StringCRC("myEdge"), StringCRC("src"), StringCRC("dst"), 9.9f);
+	};
+	setup(gNone);
+	setup(gRec);
+
+	TestGraph::EdgeResults    noneRes;
+	TestGraphREC::EdgeResults recRes;
+	gNone.GetInEdges(StringCRC("dst"), noneRes);
+	gRec.GetInEdges(StringCRC("dst"), recRes);
+
+	ASSERT_EQ(noneRes.Size(), 1u);
+	ASSERT_EQ(recRes.Size(),  1u);
+	EXPECT_EQ(recRes.At(0)->GetUniqueID(),   StringCRC("myEdge"));
+	EXPECT_FLOAT_EQ(recRes.At(0)->GetPayloadConst(), 9.9f);
+	EXPECT_EQ(recRes.At(0)->GetFrom()->GetUniqueID(), StringCRC("src"));
+	EXPECT_EQ(recRes.At(0)->GetTo()->GetUniqueID(),   StringCRC("dst"));
 }
 
 TEST(DirectedGraphPolicyReverseEdgeCacheTest, DoubleQuery_NoCacheRebuildOnSecondCall)
