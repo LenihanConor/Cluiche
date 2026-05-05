@@ -1,7 +1,7 @@
 # Plan: DirectedGraph Container
 
 **Spec:** @docs/specs/features/dia/diacore/directed-graph.md  
-**Status:** In Progress  
+**Status:** Done  
 **Started:** 2026-05-05  
 **Last Updated:** 2026-05-05
 
@@ -19,7 +19,7 @@
 | 8 | Update `DiaCore.vcxproj` + `.vcxproj.filters` | Done | haiku | Added all 7 new files to Graphs filter |
 | 9 | Update `dia.core.containers.graphs.architecture.module.md` | Done | haiku | Extended public_api entries |
 | 10 | GoogleTest coverage | Done | sonnet | 11 suites, TestDirectedGraph.cpp |
-| 11 | Phase 2 — `RelationshipIndex` wraps `DirectedGraph` | Not Started | sonnet | Deferred to separate session |
+| 11 | Phase 2 — `RelationshipIndex` wraps `DirectedGraph` | Done | sonnet | RelationshipGraph heap-allocated (255KB); AssetRegistry gets correct copy ctor; DirectedGraph gains Clear(); all 92 DiaAssetCatalogue tests pass |
 
 ## Session Notes
 
@@ -29,3 +29,4 @@
 - `AddEdge` registers the stored edge pointer (not a temporary) as out-edge of fromNode — avoids the dangling pointer issue present in the original `GraphEdge` constructor pattern.
 - All traversals use caller-provided buffers; no heap allocation anywhere.
 - TopoSort uses Kahn's (iterative, natural cycle detection, queue-as-array with front index).
+- Phase 2 fixes: `kMaxOutEdgesPerNode` 6th template param separates per-node out-edge capacity from total edge capacity; `InEdgeCacheEntry` uses same param to avoid stack blow-up; `DirectedGraph::Clear()` added for in-place rebuild; `RelationshipGraph` heap-allocated in `RelationshipIndex` (255KB, RelationshipEdge has two 68-byte StringCRC members = 136B per payload, 1024 edges = too large for stack); `RelationshipIndex` copy ctor/assign reset to dirty; `AssetRegistry` copy ctor re-inserts all records to fix `HashTableC`'s shallow-copy pointer table.

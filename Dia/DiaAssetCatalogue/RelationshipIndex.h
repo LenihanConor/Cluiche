@@ -4,6 +4,7 @@
 
 #include "DiaCore/CRC/StringCRC.h"
 #include "DiaCore/Containers/Arrays/DynamicArrayC.h"
+#include "DiaCore/Containers/Graphs/DirectedGraph.h"
 
 namespace Dia
 {
@@ -17,7 +18,12 @@ namespace Dia
 		// Manages bidirectional relationship queries over an AssetRegistry.
 		//
 		// Forward refs are read directly from each AssetRecord's mReferences list.
-		// Reverse refs are computed lazily on first GetReverseRefs call and cached until invalidated.
+		// Reverse refs are served from a DirectedGraph<GraphPolicy::ReverseEdgeCache> that is rebuilt
+		// lazily on the first reverse query after any registry mutation.
+		//
+		// The RelationshipGraph is heap-allocated: it is ~255 KB (128 nodes × StringCRC payloads,
+		// 1024 edges × RelationshipEdge payloads) which is too large to embed on the stack,
+		// given that AssetRegistry is itself stack-allocated in several places.
 		//
 		// The cache is invalidated by AssetRegistry whenever records are added or removed.
 		// Call InvalidateReverseCache() to mark the cache dirty; the next reverse query rebuilds it.
@@ -26,6 +32,12 @@ namespace Dia
 		{
 		public:
 			RelationshipIndex();
+			~RelationshipIndex();
+
+			// Copy leaves the graph dirty so it is rebuilt lazily on first reverse query.
+			// Copying a live DirectedGraph would produce dangling Edge* pointers.
+			RelationshipIndex(const RelationshipIndex&);
+			RelationshipIndex& operator=(const RelationshipIndex&);
 
 			// Forward refs — read directly from the record's mReferences field.
 			void GetForwardRefs(const Dia::Core::StringCRC& assetId,
@@ -51,26 +63,27 @@ namespace Dia
 			void InvalidateReverseCache();
 
 		private:
-			void BuildReverseIndex(const AssetRegistry& registry);
+			void RebuildGraph(const AssetRegistry& registry);
 
-			// Flat reverse index entry: one entry per (target, from, relType) triple.
-			struct ReverseEntry
-			{
-				Dia::Core::StringCRC mTargetId;
-				Dia::Core::StringCRC mFromId;
-				Dia::Core::StringCRC mRelType;
+			// kMaxAssets must match AssetRegistry::kMaxRecords.
+			// kMaxRelationships = kMaxAssets * 8 (max 8 forward refs per AssetRecord).
+			static const unsigned int kMaxAssets        = 128;
+			static const unsigned int kMaxRelationships = 1024;
 
-				ReverseEntry()
-					: mTargetId()
-					, mFromId()
-					, mRelType()
-				{}
-			};
+			// ReverseEdgeCache policy: GetInEdges() is O(1) after the first lazy rebuild,
+			// which is exactly the "rarely mutated, frequently queried" access pattern of
+			// the asset registry.
+			// kMaxOutEdgesPerNode=8: each asset has at most 8 forward references.
+			typedef Dia::Core::Containers::DirectedGraph<
+				Dia::Core::StringCRC,
+				kMaxAssets,
+				RelationshipEdge,
+				kMaxRelationships,
+				Dia::Core::Containers::GraphPolicy::ReverseEdgeCache,
+				8> RelationshipGraph;
 
-			static const unsigned int kMaxReverseEntries = 256; // generous for a small game
-
-			bool                                                           mReverseCacheDirty;
-			Dia::Core::Containers::DynamicArrayC<ReverseEntry, kMaxReverseEntries> mReverseIndex;
+			bool               mGraphDirty;
+			RelationshipGraph* mGraph;     // heap-allocated; ~255 KB per instance
 		};
 
 	} // namespace AssetCatalogue

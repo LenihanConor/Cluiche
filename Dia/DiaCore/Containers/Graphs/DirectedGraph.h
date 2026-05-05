@@ -28,14 +28,16 @@ namespace Dia
 				unsigned int kMaxNodes,
 				class        EdgePayload,
 				unsigned int kMaxEdges,
-				class        Policy = GraphPolicy::None
+				class        Policy              = GraphPolicy::None,
+				unsigned int kMaxOutEdgesPerNode = kMaxEdges  // per-node out-edge cap; defaults to kMaxEdges (star topology worst case)
 			>
 			class DirectedGraph
 			{
 			public:
-				// Each node stores up to kMaxEdges out-edge pointers (worst-case star).
-				typedef DirectedGraphNode<NodePayload, EdgePayload, kMaxEdges> Node;
-				typedef DirectedGraphEdge<EdgePayload, NodePayload, kMaxEdges> Edge;
+				// kMaxOutEdgesPerNode caps the out-edge list per node.
+				// Set it to the real per-node fan-out to avoid over-allocating when kMaxEdges is large.
+				typedef DirectedGraphNode<NodePayload, EdgePayload, kMaxOutEdgesPerNode> Node;
+				typedef DirectedGraphEdge<EdgePayload, NodePayload, kMaxOutEdgesPerNode> Edge;
 
 				typedef Dia::Core::Containers::DynamicArrayC<Node*, kMaxNodes> NodeResults;
 				typedef Dia::Core::Containers::DynamicArrayC<Edge*, kMaxEdges> EdgeResults;
@@ -45,6 +47,9 @@ namespace Dia
 				// ------------------------------------------------------------------
 				// Mutation
 				// ------------------------------------------------------------------
+
+				// Reset the graph to an empty state (remove all nodes and edges).
+				void Clear();
 
 				// Add a node. Returns false (and asserts) if ID already exists or
 				// capacity is full.
@@ -149,7 +154,11 @@ namespace Dia
 				// They are present in all instantiations but consume no space when the compiler
 				// eliminates dead code on kMaxNodes/kMaxEdges == 0 — and on MSVC with /O2.
 				// For a zero-overhead guarantee, see the static_assert in DirectedGraph.inl.
-				typedef Dia::Core::Containers::DynamicArrayC<Edge*, kMaxEdges> InEdgeCacheEntry;
+				//
+				// In-edge cache entry uses kMaxOutEdgesPerNode as the per-node capacity for
+				// both in- and out-edges.  Set kMaxOutEdgesPerNode to the real per-node
+				// fan-out/fan-in to avoid over-allocating stack space.
+				typedef Dia::Core::Containers::DynamicArrayC<Edge*, kMaxOutEdgesPerNode> InEdgeCacheEntry;
 				typedef Dia::Core::Containers::DynamicArrayC<InEdgeCacheEntry, kMaxNodes> InEdgeCache;
 
 				mutable InEdgeCache mInEdgeCache;   // only used by ReverseEdgeCache policy

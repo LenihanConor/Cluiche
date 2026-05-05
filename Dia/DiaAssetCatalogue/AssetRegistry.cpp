@@ -94,6 +94,28 @@ namespace Dia
 			, mRelationshipIndex()
 		{}
 
+		AssetRegistry::AssetRegistry(const AssetRegistry& other)
+			: mRecordMap()
+			, mCount(0)
+			, mRelationshipIndex()
+		{
+			for (unsigned int i = 0; i < other.mCount; ++i)
+				Register(other.mRecordMap.GetItemByIndexConst(i));
+		}
+
+		AssetRegistry& AssetRegistry::operator=(const AssetRegistry& other)
+		{
+			if (this != &other)
+			{
+				mRecordMap.RemoveAll();
+				mCount = 0;
+				mRelationshipIndex = RelationshipIndex();
+				for (unsigned int i = 0; i < other.mCount; ++i)
+					Register(other.mRecordMap.GetItemByIndexConst(i));
+			}
+			return *this;
+		}
+
 		bool AssetRegistry::Register(const AssetRecord& record)
 		{
 			// Validate ID format

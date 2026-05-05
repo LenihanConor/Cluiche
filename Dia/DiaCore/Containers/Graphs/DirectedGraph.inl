@@ -12,17 +12,34 @@ namespace Dia
 			// Constructor
 			// ======================================================================
 
-			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy>
-			DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy>::DirectedGraph()
+			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy, unsigned int kMaxOutEdgesPerNode>
+			DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy, kMaxOutEdgesPerNode>::DirectedGraph()
 				: mCacheDirty(true)
 			{}
+
+			// ======================================================================
+			// Mutation — Clear
+			// ======================================================================
+
+			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy, unsigned int kMaxOutEdgesPerNode>
+			void DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy, kMaxOutEdgesPerNode>::Clear()
+			{
+				mNodeList.RemoveAll();
+				mEdgeList.RemoveAll();
+
+				if constexpr (std::is_same_v<Policy, GraphPolicy::ReverseEdgeCache>)
+				{
+					mInEdgeCache.RemoveAll();
+					mCacheDirty = true;
+				}
+			}
 
 			// ======================================================================
 			// Mutation — AddNode
 			// ======================================================================
 
-			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy>
-			bool DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy>::AddNode(
+			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy, unsigned int kMaxOutEdgesPerNode>
+			bool DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy, kMaxOutEdgesPerNode>::AddNode(
 				const Dia::Core::StringCRC& id, const NodePayload& payload)
 			{
 				DIA_ASSERT(FindNodeIndex(id) == -1, "AddNode: node ID '%s' already exists", id.AsChar());
@@ -49,8 +66,8 @@ namespace Dia
 			// Mutation — AddEdge
 			// ======================================================================
 
-			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy>
-			bool DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy>::AddEdge(
+			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy, unsigned int kMaxOutEdgesPerNode>
+			bool DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy, kMaxOutEdgesPerNode>::AddEdge(
 				const Dia::Core::StringCRC& id,
 				const Dia::Core::StringCRC& fromNodeId,
 				const Dia::Core::StringCRC& toNodeId,
@@ -103,33 +120,33 @@ namespace Dia
 			// Query — FindNode / FindEdge
 			// ======================================================================
 
-			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy>
-			typename DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy>::Node*
-			DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy>::FindNode(const Dia::Core::StringCRC& id)
+			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy, unsigned int kMaxOutEdgesPerNode>
+			typename DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy, kMaxOutEdgesPerNode>::Node*
+			DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy, kMaxOutEdgesPerNode>::FindNode(const Dia::Core::StringCRC& id)
 			{
 				int index = FindNodeIndex(id);
 				return (index == -1) ? nullptr : &mNodeList[index];
 			}
 
-			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy>
-			const typename DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy>::Node*
-			DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy>::FindNode(const Dia::Core::StringCRC& id) const
+			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy, unsigned int kMaxOutEdgesPerNode>
+			const typename DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy, kMaxOutEdgesPerNode>::Node*
+			DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy, kMaxOutEdgesPerNode>::FindNode(const Dia::Core::StringCRC& id) const
 			{
 				int index = FindNodeIndex(id);
 				return (index == -1) ? nullptr : &mNodeList[index];
 			}
 
-			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy>
-			typename DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy>::Edge*
-			DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy>::FindEdge(const Dia::Core::StringCRC& id)
+			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy, unsigned int kMaxOutEdgesPerNode>
+			typename DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy, kMaxOutEdgesPerNode>::Edge*
+			DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy, kMaxOutEdgesPerNode>::FindEdge(const Dia::Core::StringCRC& id)
 			{
 				int index = FindEdgeIndex(id);
 				return (index == -1) ? nullptr : &mEdgeList[index];
 			}
 
-			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy>
-			const typename DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy>::Edge*
-			DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy>::FindEdge(const Dia::Core::StringCRC& id) const
+			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy, unsigned int kMaxOutEdgesPerNode>
+			const typename DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy, kMaxOutEdgesPerNode>::Edge*
+			DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy, kMaxOutEdgesPerNode>::FindEdge(const Dia::Core::StringCRC& id) const
 			{
 				int index = FindEdgeIndex(id);
 				return (index == -1) ? nullptr : &mEdgeList[index];
@@ -139,14 +156,14 @@ namespace Dia
 			// Query — counts
 			// ======================================================================
 
-			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy>
-			unsigned int DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy>::GetNumberOfNodes() const
+			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy, unsigned int kMaxOutEdgesPerNode>
+			unsigned int DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy, kMaxOutEdgesPerNode>::GetNumberOfNodes() const
 			{
 				return mNodeList.Size();
 			}
 
-			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy>
-			unsigned int DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy>::GetNumberOfEdges() const
+			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy, unsigned int kMaxOutEdgesPerNode>
+			unsigned int DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy, kMaxOutEdgesPerNode>::GetNumberOfEdges() const
 			{
 				return mEdgeList.Size();
 			}
@@ -155,8 +172,8 @@ namespace Dia
 			// Query — GetOutEdges
 			// ======================================================================
 
-			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy>
-			void DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy>::GetOutEdges(
+			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy, unsigned int kMaxOutEdgesPerNode>
+			void DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy, kMaxOutEdgesPerNode>::GetOutEdges(
 				const Dia::Core::StringCRC& nodeId, EdgeResults& results) const
 			{
 				results.RemoveAll();
@@ -177,8 +194,8 @@ namespace Dia
 			// Query — GetInEdges (policy-dispatched)
 			// ======================================================================
 
-			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy>
-			void DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy>::GetInEdges(
+			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy, unsigned int kMaxOutEdgesPerNode>
+			void DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy, kMaxOutEdgesPerNode>::GetInEdges(
 				const Dia::Core::StringCRC& nodeId, EdgeResults& results) const
 			{
 				results.RemoveAll();
@@ -216,9 +233,9 @@ namespace Dia
 			// Traversal — BFS
 			// ======================================================================
 
-			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy>
+			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy, unsigned int kMaxOutEdgesPerNode>
 			template <class Visitor>
-			void DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy>::BFS(
+			void DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy, kMaxOutEdgesPerNode>::BFS(
 				const Dia::Core::StringCRC& startNodeId,
 				const Visitor& visitor,
 				DynamicArrayC<const Node*, kMaxNodes>& visitedBuffer) const
@@ -262,9 +279,9 @@ namespace Dia
 			// Traversal — DFS
 			// ======================================================================
 
-			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy>
+			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy, unsigned int kMaxOutEdgesPerNode>
 			template <class Visitor>
-			void DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy>::DFS(
+			void DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy, kMaxOutEdgesPerNode>::DFS(
 				const Dia::Core::StringCRC& startNodeId,
 				const Visitor& visitor,
 				DynamicArrayC<const Node*, kMaxNodes>& visitedBuffer) const
@@ -311,8 +328,8 @@ namespace Dia
 			// Traversal — TopoSort (Kahn's algorithm)
 			// ======================================================================
 
-			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy>
-			bool DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy>::TopoSort(
+			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy, unsigned int kMaxOutEdgesPerNode>
+			bool DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy, kMaxOutEdgesPerNode>::TopoSort(
 				NodeResults& results,
 				DynamicArrayC<const Node*, kMaxNodes>& workBuffer) const
 			{
@@ -369,8 +386,8 @@ namespace Dia
 			// Traversal — HasCycle
 			// ======================================================================
 
-			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy>
-			bool DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy>::HasCycle() const
+			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy, unsigned int kMaxOutEdgesPerNode>
+			bool DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy, kMaxOutEdgesPerNode>::HasCycle() const
 			{
 				if constexpr (std::is_same_v<Policy, GraphPolicy::AcyclicEnforced>)
 				{
@@ -390,8 +407,8 @@ namespace Dia
 			// Private — FindNodeIndex / FindEdgeIndex
 			// ======================================================================
 
-			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy>
-			int DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy>::FindNodeIndex(
+			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy, unsigned int kMaxOutEdgesPerNode>
+			int DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy, kMaxOutEdgesPerNode>::FindNodeIndex(
 				const Dia::Core::StringCRC& id) const
 			{
 				for (unsigned int i = 0; i < mNodeList.Size(); i++)
@@ -402,8 +419,8 @@ namespace Dia
 				return -1;
 			}
 
-			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy>
-			int DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy>::FindEdgeIndex(
+			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy, unsigned int kMaxOutEdgesPerNode>
+			int DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy, kMaxOutEdgesPerNode>::FindEdgeIndex(
 				const Dia::Core::StringCRC& id) const
 			{
 				for (unsigned int i = 0; i < mEdgeList.Size(); i++)
@@ -418,8 +435,8 @@ namespace Dia
 			// Private — CanReachNode (used by AcyclicEnforced cycle detection)
 			// ======================================================================
 
-			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy>
-			bool DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy>::CanReachNode(
+			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy, unsigned int kMaxOutEdgesPerNode>
+			bool DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy, kMaxOutEdgesPerNode>::CanReachNode(
 				const Node* start, const Dia::Core::StringCRC& targetId) const
 			{
 				if (start->GetUniqueID() == targetId)
@@ -459,8 +476,8 @@ namespace Dia
 			// Private — RebuildReverseCache (ReverseEdgeCache policy only)
 			// ======================================================================
 
-			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy>
-			void DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy>::RebuildReverseCache() const
+			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy, unsigned int kMaxOutEdgesPerNode>
+			void DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy, kMaxOutEdgesPerNode>::RebuildReverseCache() const
 			{
 				// ReverseEdgeCache: clear all per-node in-edge lists, then re-populate
 				// from the current edge list.  Called lazily on the first GetInEdges()
@@ -483,8 +500,8 @@ namespace Dia
 			// Private — InvalidateReverseCache (no-op for non-ReverseEdgeCache policies)
 			// ======================================================================
 
-			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy>
-			void DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy>::InvalidateReverseCache()
+			template <class NodePayload, unsigned int kMaxNodes, class EdgePayload, unsigned int kMaxEdges, class Policy, unsigned int kMaxOutEdgesPerNode>
+			void DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy, kMaxOutEdgesPerNode>::InvalidateReverseCache()
 			{
 				// ReverseEdgeCache: mark the reverse index stale after any mutation
 				if constexpr (std::is_same_v<Policy, GraphPolicy::ReverseEdgeCache>)

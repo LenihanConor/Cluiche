@@ -29,6 +29,11 @@ namespace Dia
 		public:
 			AssetRegistry();
 
+			// Correct copy constructor — re-inserts all records so HashTableC
+			// internal pointer table is consistent with the new mPayloadNodes buffer.
+			AssetRegistry(const AssetRegistry& other);
+			AssetRegistry& operator=(const AssetRegistry& other);
+
 			// Register a record. Returns false if:
 			//   - the ID already exists in the registry
 			//   - the ID format is invalid (see above)
