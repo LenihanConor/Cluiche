@@ -3,6 +3,8 @@
 #include "DiaAssetCatalogueEditor/Commands/UpdateRecordCommand.h"
 #include "DiaAssetCatalogueEditor/Commands/DeleteRecordCommand.h"
 #include "DiaAssetCatalogueEditor/Handlers/FileDiscoverer.h"
+#include "DiaAssetCatalogueEditor/Commands/AddRelationshipCommand.h"
+#include "DiaAssetCatalogueEditor/Commands/RemoveRelationshipCommand.h"
 #include <DiaEditor/Plugin/EditorPluginRegistrationMacros.h>
 #include <DiaEditor/Plugin/EditorPluginContext.h>
 #include <DiaEditor/MVC/EditorView.h>
@@ -59,6 +61,10 @@ namespace Dia
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.save_manifest"));
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.new_manifest"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.discover_files"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.add_relationship"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.remove_relationship"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.get_forward_refs"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.get_reverse_refs"));
 				}
 
 				mSessionContext.Save(mOutputDir);
@@ -77,6 +83,7 @@ namespace Dia
 
 				RegisterCRUDHandlers();
 				RegisterDiscovererHandlers();
+				RegisterRelationshipHandlers();
 
 				mBridge->RegisterRequestHandler(
 					Dia::Core::StringCRC("asset_catalogue.load_manifest"),
@@ -262,6 +269,130 @@ namespace Dia
 				}
 				d["references"] = refs;
 				return d;
+			}
+
+			// relationship handlers
+			void DiaAssetCatalogueEditorPlugin::RegisterRelationshipHandlers()
+			{
+				if (!mBridge)
+					return;
+
+				// add_relationship
+				mBridge->RegisterRequestHandler(
+					Dia::Core::StringCRC("asset_catalogue.add_relationship"),
+					[this](const Json::Value& data) -> Json::Value
+					{
+						Json::Value result;
+						if (!data.isMember("from") || !data.isMember("rel") || !data.isMember("to"))
+						{
+							result["success"] = false;
+							result["error"]   = "missing from/rel/to";
+							return result;
+						}
+						Dia::Core::StringCRC fromId(data["from"].asCString());
+						Dia::Core::StringCRC relType(data["rel"].asCString());
+						Dia::Core::StringCRC toId(data["to"].asCString());
+
+						if (!mRegistry.FindById(fromId) || !mRegistry.FindById(toId))
+						{
+							result["success"] = false;
+							result["error"]   = "record not found";
+							return result;
+						}
+
+						auto* cmd = new Dia::AssetCatalogue::Editor::AddRelationshipCommand(
+							mRegistry, fromId, relType, toId);
+						mHistory.ExecuteCommand(cmd);
+
+						result["success"] = true;
+						PushRegistryState();
+						return result;
+					});
+
+				// remove_relationship
+				mBridge->RegisterRequestHandler(
+					Dia::Core::StringCRC("asset_catalogue.remove_relationship"),
+					[this](const Json::Value& data) -> Json::Value
+					{
+						Json::Value result;
+						if (!data.isMember("from") || !data.isMember("rel") || !data.isMember("to"))
+						{
+							result["success"] = false;
+							result["error"]   = "missing from/rel/to";
+							return result;
+						}
+						Dia::Core::StringCRC fromId(data["from"].asCString());
+						Dia::Core::StringCRC relType(data["rel"].asCString());
+						Dia::Core::StringCRC toId(data["to"].asCString());
+
+						auto* cmd = new Dia::AssetCatalogue::Editor::RemoveRelationshipCommand(
+							mRegistry, fromId, relType, toId);
+						mHistory.ExecuteCommand(cmd);
+
+						result["success"] = true;
+						PushRegistryState();
+						return result;
+					});
+
+				// get_forward_refs (read-only query)
+				mBridge->RegisterRequestHandler(
+					Dia::Core::StringCRC("asset_catalogue.get_forward_refs"),
+					[this](const Json::Value& data) -> Json::Value
+					{
+						Json::Value result;
+						if (!data.isMember("id") || !data["id"].isString())
+						{
+							result["success"] = false;
+							result["error"]   = "missing id";
+							return result;
+						}
+						Dia::Core::StringCRC assetId(data["id"].asCString());
+
+						Dia::Core::Containers::DynamicArrayC<RelationshipEdge, 16> refs;
+						mRegistry.GetRelationshipIndex().GetForwardRefs(assetId, mRegistry, refs);
+
+						Json::Value arr(Json::arrayValue);
+						for (unsigned int i = 0; i < refs.Size(); ++i)
+						{
+							Json::Value edge;
+							edge["rel"]    = refs[i].mRelationshipType.AsChar();
+							edge["target"] = refs[i].mTargetAssetId.AsChar();
+							arr.append(edge);
+						}
+						result["success"] = true;
+						result["refs"]    = arr;
+						return result;
+					});
+
+				// get_reverse_refs (read-only query)
+				mBridge->RegisterRequestHandler(
+					Dia::Core::StringCRC("asset_catalogue.get_reverse_refs"),
+					[this](const Json::Value& data) -> Json::Value
+					{
+						Json::Value result;
+						if (!data.isMember("id") || !data["id"].isString())
+						{
+							result["success"] = false;
+							result["error"]   = "missing id";
+							return result;
+						}
+						Dia::Core::StringCRC assetId(data["id"].asCString());
+
+						Dia::Core::Containers::DynamicArrayC<RelationshipEdge, 16> refs;
+						mRegistry.GetRelationshipIndex().GetReverseRefs(assetId, mRegistry, refs);
+
+						Json::Value arr(Json::arrayValue);
+						for (unsigned int i = 0; i < refs.Size(); ++i)
+						{
+							Json::Value edge;
+							edge["rel"]    = refs[i].mRelationshipType.AsChar();
+							edge["source"] = refs[i].mTargetAssetId.AsChar(); // mTargetAssetId holds the "from" in reverse results
+							arr.append(edge);
+						}
+						result["success"] = true;
+						result["refs"]    = arr;
+						return result;
+					});
 			}
 
 			// discover_files handler

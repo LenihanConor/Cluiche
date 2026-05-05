@@ -18,7 +18,7 @@ DiaAssetCatalogue must be Done before this plan can start.
 | 1 | Feature 1 — Manifest Load/Save | Done | sonnet | Depends on Task 0 |
 | 2 | Feature 2 — Asset Record CRUD | Done | sonnet | Depends on Task 1 |
 | 3 | Feature 3 — File Discoverer | Done | sonnet | Depends on Task 2 |
-| 4 | Feature 4 — Relationship Editor | Not Started | sonnet | Depends on Task 2 |
+| 4 | Feature 4 — Relationship Editor | Done | sonnet | Depends on Task 2 |
 | 5 | Feature 6 — Validation Panel | Not Started | sonnet | Depends on Task 2 |
 | 6 | Feature 7 — Asset Type Editor Routing | Not Started | sonnet | Depends on Task 2 |
 | 7 | Feature 8 — Catalogue Rules UI | Not Started | sonnet | Depends on Task 4 |

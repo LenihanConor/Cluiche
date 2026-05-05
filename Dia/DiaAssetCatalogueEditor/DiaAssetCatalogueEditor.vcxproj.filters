@@ -27,6 +27,12 @@
     <ClInclude Include="Handlers\FileDiscoverer.h">
       <Filter>Handlers</Filter>
     </ClInclude>
+    <ClInclude Include="Commands\AddRelationshipCommand.h">
+      <Filter>Commands</Filter>
+    </ClInclude>
+    <ClInclude Include="Commands\RemoveRelationshipCommand.h">
+      <Filter>Commands</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaAssetCatalogueEditorPlugin.cpp" />
@@ -43,6 +49,12 @@
     </ClCompile>
     <ClCompile Include="Handlers\FileDiscoverer.cpp">
       <Filter>Handlers</Filter>
+    </ClCompile>
+    <ClCompile Include="Commands\AddRelationshipCommand.cpp">
+      <Filter>Commands</Filter>
+    </ClCompile>
+    <ClCompile Include="Commands\RemoveRelationshipCommand.cpp">
+      <Filter>Commands</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

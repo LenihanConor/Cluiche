@@ -41,6 +41,7 @@ namespace Dia
 				void RegisterRequestHandlers();
 				void RegisterCRUDHandlers();
 				void RegisterDiscovererHandlers();
+				void RegisterRelationshipHandlers();
 				void PushDirtyState();
 				void PushRegistryState();
 

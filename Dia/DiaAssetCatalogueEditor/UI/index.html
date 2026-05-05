@@ -340,6 +340,27 @@
           <button class="btn-primary" onclick="onSaveRecord()">Save Changes</button>
           <button onclick="onDiscardRecord()">Discard</button>
         </div>
+
+        <!-- Relationship section -->
+        <div style="margin-top:16px;border-top:1px solid #3c3c3c;padding-top:12px;">
+          <div style="font-size:11px;font-weight:600;text-transform:uppercase;color:#9cdcfe;margin-bottom:8px;letter-spacing:.05em;">Relationships</div>
+
+          <div style="margin-bottom:8px;">
+            <div style="font-size:11px;color:#9d9d9d;margin-bottom:4px;">Forward refs (this asset references)</div>
+            <div id="rel-forward-list" style="font-size:11px;"></div>
+          </div>
+
+          <div style="margin-bottom:10px;">
+            <div style="font-size:11px;color:#9d9d9d;margin-bottom:4px;">Reverse refs (references this asset)</div>
+            <div id="rel-reverse-list" style="font-size:11px;"></div>
+          </div>
+
+          <div style="display:flex;gap:6px;align-items:center;">
+            <input type="text" id="rel-add-rel"    placeholder="rel type (e.g. uses)" style="width:130px;background:#2d2d2d;color:#d4d4d4;border:1px solid #555;padding:3px 6px;font-size:11px;border-radius:3px;" />
+            <input type="text" id="rel-add-target" placeholder="target ID (autocomplete)" style="flex:1;background:#2d2d2d;color:#d4d4d4;border:1px solid #555;padding:3px 6px;font-size:11px;border-radius:3px;" />
+            <button onclick="onAddRelationship()" style="background:#3c3c3c;color:#d4d4d4;border:1px solid #555;padding:3px 10px;font-size:11px;cursor:pointer;border-radius:3px;">Add</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -483,6 +504,7 @@
     } else if (msg.topic === 'assetcatalogue.records') {
       allRecords = Array.isArray(msg.data) ? msg.data : [];
       renderAssetList();
+      if (selectedId) loadRelationships(selectedId);
     } else if (msg.topic === 'assetcatalogue.lastManifestPath') {
       if (msg.data.lastManifestPath) {
         var reopen = confirm('Re-open last manifest?\n' + msg.data.lastManifestPath);
@@ -623,6 +645,7 @@
 
     editingTags = (rec.tags || []).slice();
     renderTags();
+    loadRelationships(id);
   }
 
   /* ── Record Editor ───────────────────────────────── */
@@ -689,6 +712,65 @@
 
   function onDiscardRecord() {
     if (selectedId) selectRecord(selectedId);
+  }
+
+  /* ── Relationships ───────────────────────────────── */
+  function loadRelationships(id) {
+    var fwdEl = document.getElementById('rel-forward-list');
+    var revEl = document.getElementById('rel-reverse-list');
+    if (!fwdEl || !revEl) return;
+
+    Promise.all([
+      diaRequest('asset_catalogue.get_forward_refs', { id: id }),
+      diaRequest('asset_catalogue.get_reverse_refs', { id: id })
+    ]).then(function(results) {
+      var fwd = results[0];
+      var rev = results[1];
+
+      if (fwd.success && fwd.refs && fwd.refs.length > 0) {
+        fwdEl.innerHTML = fwd.refs.map(function(r) {
+          return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">' +
+            '<span style="color:#ce9178;font-size:10px;">[' + escHtml(r.rel) + ']</span>' +
+            '<a href="#" style="color:#9cdcfe;text-decoration:none;" onclick="selectRecord(\'' + escHtml(r.target) + '\');return false;">' + escHtml(r.target) + '</a>' +
+            '<span class="remove" style="cursor:pointer;color:#9d9d9d;font-size:10px;" onclick="onRemoveRelationship(\'' + escHtml(id) + '\',\'' + escHtml(r.rel) + '\',\'' + escHtml(r.target) + '\')">✕</span>' +
+            '</div>';
+        }).join('');
+      } else {
+        fwdEl.innerHTML = '<span style="color:#555;font-style:italic;">None</span>';
+      }
+
+      if (rev.success && rev.refs && rev.refs.length > 0) {
+        revEl.innerHTML = rev.refs.map(function(r) {
+          return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">' +
+            '<span style="color:#ce9178;font-size:10px;">[' + escHtml(r.rel) + ']</span>' +
+            '<a href="#" style="color:#9cdcfe;text-decoration:none;" onclick="selectRecord(\'' + escHtml(r.source) + '\');return false;">' + escHtml(r.source) + '</a>' +
+            '</div>';
+        }).join('');
+      } else {
+        revEl.innerHTML = '<span style="color:#555;font-style:italic;">None</span>';
+      }
+    });
+  }
+
+  function onAddRelationship() {
+    if (!selectedId) return;
+    var rel    = document.getElementById('rel-add-rel').value.trim();
+    var target = document.getElementById('rel-add-target').value.trim();
+    if (!rel || !target) { alert('Enter rel type and target ID.'); return; }
+
+    diaRequest('asset_catalogue.add_relationship', { from: selectedId, rel: rel, to: target }).then(function(r) {
+      if (!r.success) { alert('Add relationship failed: ' + r.error); return; }
+      document.getElementById('rel-add-rel').value = '';
+      document.getElementById('rel-add-target').value = '';
+      loadRelationships(selectedId);
+    });
+  }
+
+  function onRemoveRelationship(from, rel, to) {
+    diaRequest('asset_catalogue.remove_relationship', { from: from, rel: rel, to: to }).then(function(r) {
+      if (!r.success) alert('Remove relationship failed: ' + r.error);
+      else loadRelationships(selectedId);
+    });
   }
 
   /* ── Create Dialog ───────────────────────────────── */

@@ -81,6 +81,8 @@
     <ClInclude Include="Commands\UpdateRecordCommand.h" />
     <ClInclude Include="Commands\DeleteRecordCommand.h" />
     <ClInclude Include="Handlers\FileDiscoverer.h" />
+    <ClInclude Include="Commands\AddRelationshipCommand.h" />
+    <ClInclude Include="Commands\RemoveRelationshipCommand.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaAssetCatalogueEditorPlugin.cpp" />
@@ -90,6 +92,8 @@
     <ClCompile Include="Commands\UpdateRecordCommand.cpp" />
     <ClCompile Include="Commands\DeleteRecordCommand.cpp" />
     <ClCompile Include="Handlers\FileDiscoverer.cpp" />
+    <ClCompile Include="Commands\AddRelationshipCommand.cpp" />
+    <ClCompile Include="Commands\RemoveRelationshipCommand.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.assetcatalogueeditor.architecture.module.md" />
