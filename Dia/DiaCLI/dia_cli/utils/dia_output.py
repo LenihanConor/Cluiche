@@ -153,6 +153,10 @@ class OutputContext:
     def warn(self, system: str, message: str, stage: str = "") -> None:
         self.log(system=system, level="warn", message=message, stage=stage)
 
+    def emit(self, payload: dict) -> None:
+        """Write an arbitrary NDJSON event. Caller is responsible for all fields."""
+        self._write_event(payload)
+
     # ------------------------------------------------------------------ #
     # Internal helpers                                                     #
     # ------------------------------------------------------------------ #

@@ -1,0 +1,16 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any
+
+
+@dataclass
+class BuildContext:
+    catalogue: dict           # parsed assets.catalogue.json
+    config: str               # "Debug" | "Release"
+    platform: str             # "x64"
+    app_name: str             # e.g. "CluicheTest"
+    deploy_root: Path         # bin/<App>/<Config>/<Platform>/assets/
+    asset_stages: list[str]   # Stage asset IDs from pipeline.toml target
+    output: Any               # OutputContext for NDJSON event logging
