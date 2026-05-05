@@ -12,30 +12,46 @@ language: cpp
 parent_module_id: dia.core.containers
 
 summary: >
-  Defines Graphs APIs (Graph, GraphC, GraphEdge, GraphNode) including: DynamicArrayC, Graph, GraphEdge, GraphNode.
+  Defines Graph and DirectedGraph APIs. Includes fixed-capacity undirected (Graph, GraphEdge, GraphNode)
+  and directed (DirectedGraph, DirectedGraphNode, DirectedGraphEdge, DirectedGraphPolicy) containers
+  with BFS, DFS, topological sort, and compile-time policy specialisation.
 
 intent: >
-  Provide reusable Graphs building blocks with consistent semantics for higher-level systems.
+  Provide reusable graph building blocks with consistent semantics for higher-level systems.
 
 responsibilities:
-  - Expose primary types: DynamicArrayC, Graph, GraphEdge, GraphNode
+  - Expose undirected graph types: Graph, GraphEdge, GraphNode
+  - Expose directed graph types: DirectedGraph, DirectedGraphNode, DirectedGraphEdge, DirectedGraphPolicy
+  - Provide BFS, DFS, topological sort (Kahn's), and cycle detection on DirectedGraph
+  - Provide compile-time policies (None, ReverseEdgeCache, AcyclicEnforced) for DirectedGraph
   - Define and maintain the public header surface for this module
-  - Provide lightweight operations with predictable behavior
+  - Provide lightweight, zero-heap-allocation operations with predictable behaviour
 
 non_responsibilities:
-  - Domain-specific gameplay behavior
-  - Rendering or platform integration concerns (unless this module is explicitly an adapter)
+  - Domain-specific gameplay behaviour
+  - Rendering or platform integration concerns
   - High-level orchestration (owned by higher-layer modules)
 
 public_api:
   headers:
+    - Dia/DiaCore/Containers/Graphs/DirectedGraph.h
+    - Dia/DiaCore/Containers/Graphs/DirectedGraphEdge.h
+    - Dia/DiaCore/Containers/Graphs/DirectedGraphNode.h
+    - Dia/DiaCore/Containers/Graphs/DirectedGraphPolicy.h
     - Dia/DiaCore/Containers/Graphs/Graph.h
     - Dia/DiaCore/Containers/Graphs/GraphC.h
     - Dia/DiaCore/Containers/Graphs/GraphEdge.h
     - Dia/DiaCore/Containers/Graphs/GraphNode.h
-  namespaces: []
+  namespaces:
+    - Dia::Core::Containers
+    - Dia::Core::Containers::GraphPolicy
   entry_points:
-    - DynamicArrayC
+    - DirectedGraph
+    - DirectedGraphEdge
+    - DirectedGraphNode
+    - GraphPolicy::None
+    - GraphPolicy::ReverseEdgeCache
+    - GraphPolicy::AcyclicEnforced
     - Graph
     - GraphEdge
     - GraphNode

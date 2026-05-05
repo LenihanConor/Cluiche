@@ -82,6 +82,10 @@
     <ClInclude Include="Architecture\Events\EventQueue.h" />
     <ClInclude Include="Architecture\Events\Delegate.h" />
     <ClInclude Include="Architecture\Events\EventDispatcher.h" />
+    <ClInclude Include="Containers\Graphs\DirectedGraph.h" />
+    <ClInclude Include="Containers\Graphs\DirectedGraphEdge.h" />
+    <ClInclude Include="Containers\Graphs\DirectedGraphNode.h" />
+    <ClInclude Include="Containers\Graphs\DirectedGraphPolicy.h" />
     <ClInclude Include="Containers\Graphs\Graph.h" />
     <ClInclude Include="Containers\Graphs\GraphEdge.h" />
     <ClInclude Include="Containers\Graphs\GraphNode.h" />
@@ -250,6 +254,9 @@
     <None Include="Architecture\Components\Concrete\StaticPooledComponentFactory.inl" />
     <None Include="Architecture\Components\Concrete\StaticSizedComponentObject.inl" />
     <None Include="Architecture\Singleton\Singleton.inl" />
+    <None Include="Containers\Graphs\DirectedGraph.inl" />
+    <None Include="Containers\Graphs\DirectedGraphEdge.inl" />
+    <None Include="Containers\Graphs\DirectedGraphNode.inl" />
     <None Include="Containers\Graphs\Graph.inl" />
     <None Include="Containers\Graphs\GraphEdge.inl" />
     <None Include="Containers\Graphs\GraphNode.inl" />

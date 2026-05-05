@@ -357,6 +357,18 @@
     <ClInclude Include="CRC\CRCHashFunctor.h">
       <Filter>CRC</Filter>
     </ClInclude>
+    <ClInclude Include="Containers\Graphs\DirectedGraph.h">
+      <Filter>Containers\Graphs</Filter>
+    </ClInclude>
+    <ClInclude Include="Containers\Graphs\DirectedGraphEdge.h">
+      <Filter>Containers\Graphs</Filter>
+    </ClInclude>
+    <ClInclude Include="Containers\Graphs\DirectedGraphNode.h">
+      <Filter>Containers\Graphs</Filter>
+    </ClInclude>
+    <ClInclude Include="Containers\Graphs\DirectedGraphPolicy.h">
+      <Filter>Containers\Graphs</Filter>
+    </ClInclude>
     <ClInclude Include="Containers\Graphs\Graph.h">
       <Filter>Containers\Graphs</Filter>
     </ClInclude>
@@ -750,6 +762,15 @@
     </None>
     <None Include="Containers\BitFlag\BitArray8.inl">
       <Filter>Containers\BitFlag\Source</Filter>
+    </None>
+    <None Include="Containers\Graphs\DirectedGraph.inl">
+      <Filter>Containers\Graphs</Filter>
+    </None>
+    <None Include="Containers\Graphs\DirectedGraphEdge.inl">
+      <Filter>Containers\Graphs</Filter>
+    </None>
+    <None Include="Containers\Graphs\DirectedGraphNode.inl">
+      <Filter>Containers\Graphs</Filter>
     </None>
     <None Include="Containers\Graphs\Graph.inl">
       <Filter>Containers\Graphs</Filter>

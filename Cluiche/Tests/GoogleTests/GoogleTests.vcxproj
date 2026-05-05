@@ -126,6 +126,7 @@
 
     <ClCompile Include="Core\Containers\TestHashTable.cpp" />
     <ClCompile Include="Core\Containers\TestGraph.cpp" />
+    <ClCompile Include="Core\Containers\TestDirectedGraph.cpp" />
     <ClCompile Include="Core\Containers\TestContainerStress.cpp" />
     <ClCompile Include="Core\Containers\TestContainerInvariants.cpp" />
     <ClCompile Include="Core\Events\TestDelegate.cpp" />

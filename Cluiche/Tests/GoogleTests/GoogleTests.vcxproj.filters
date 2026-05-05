@@ -159,6 +159,9 @@
     <ClCompile Include="Core\Containers\TestGraph.cpp">
       <Filter>Core\Containers</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Containers\TestDirectedGraph.cpp">
+      <Filter>Core\Containers</Filter>
+    </ClCompile>
     <ClCompile Include="Core\Containers\TestContainerStress.cpp">
       <Filter>Core\Containers</Filter>
     </ClCompile>
