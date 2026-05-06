@@ -12,7 +12,6 @@ from dia_cli.commands.asset.layout import (
     CATEGORY_TAGS,
     copy_asset,
     copy_asset_directory,
-    create_deploy_directories,
     resolve_category,
     resolve_deploy_path,
 )
@@ -150,23 +149,6 @@ def test_resolve_folder_path_points_into_category_dir(tmp_path):
     )
     path = resolve_deploy_path(record, ctx)
     assert path == ctx.deploy_root / "global" / "characters" / "art_pack.folder"
-
-
-# ---------------------------------------------------------------------------
-# create_deploy_directories
-# ---------------------------------------------------------------------------
-
-def test_create_deploy_directories_creates_global_tree(tmp_path):
-    deploy_root = tmp_path / "assets"
-    create_deploy_directories(deploy_root)
-    for tag in CATEGORY_TAGS:
-        assert (deploy_root / "global" / tag).is_dir()
-
-
-def test_create_deploy_directories_idempotent(tmp_path):
-    deploy_root = tmp_path / "assets"
-    create_deploy_directories(deploy_root)
-    create_deploy_directories(deploy_root)  # must not raise
 
 
 # ---------------------------------------------------------------------------

@@ -1,27 +1,20 @@
 from __future__ import annotations
 
 import shutil
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 from ..handler import AssetError, AssetHandler, DeployResult, TransformResult
+from .._resolve import resolve_source
 
 if TYPE_CHECKING:
     from ..context import BuildContext
-
-
-def _resolve_source(record: dict, context: "BuildContext") -> Path:
-    raw = Path(record.get("source_path", ""))
-    if raw.is_absolute():
-        return raw
-    return context.source_root / raw
 
 
 class FolderHandler(AssetHandler):
     type_id = "folder"
 
     def validate(self, record: dict, context: "BuildContext") -> list[AssetError]:
-        source_path = _resolve_source(record, context)
+        source_path = resolve_source(record, context)
         if not source_path.is_dir():
             return [AssetError(
                 asset_id=record.get("id", ""),
@@ -31,12 +24,12 @@ class FolderHandler(AssetHandler):
         return []
 
     def transform(self, record: dict, context: "BuildContext") -> TransformResult:
-        source_path = _resolve_source(record, context)
+        source_path = resolve_source(record, context)
         return TransformResult(success=True, output_path=str(source_path))
 
     def deploy(self, record: dict, context: "BuildContext") -> DeployResult:
         from ..layout import resolve_deploy_path
-        source_path = _resolve_source(record, context)
+        source_path = resolve_source(record, context)
         try:
             deploy_path = resolve_deploy_path(record, context)
             deploy_path.parent.mkdir(parents=True, exist_ok=True)

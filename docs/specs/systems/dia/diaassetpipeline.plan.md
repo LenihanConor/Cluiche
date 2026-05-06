@@ -100,4 +100,4 @@ Dia/DiaCLI/tests/
   - DiaCLI uses `toml` package (not tomllib) — config_loader follows same pattern.
   - Shared _common_handler.py avoids duplication across build/validate/deploy handlers.
   - DiaPipeline asset_build_stage test updated: now expects exit 2 (no pipeline.toml in tmp) not 0.
-  - 106 total tests passing across all 4 features.
+  - 103 total tests passing across all 4 features (after removing dead-code tests for `create_deploy_directories`).

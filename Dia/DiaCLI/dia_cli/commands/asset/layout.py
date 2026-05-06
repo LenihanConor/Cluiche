@@ -51,12 +51,6 @@ def resolve_deploy_path(record: dict, context: "BuildContext") -> Path:
     return base / filename
 
 
-def create_deploy_directories(deploy_root: Path) -> None:
-    """Create the full deploy directory tree under deploy_root."""
-    for category in CATEGORY_TAGS:
-        (deploy_root / "global" / category).mkdir(parents=True, exist_ok=True)
-
-
 def copy_asset(source: str | Path, dest: Path) -> None:
     """Copy a single file to dest, creating parent directories. Overwrites existing."""
     dest.parent.mkdir(parents=True, exist_ok=True)

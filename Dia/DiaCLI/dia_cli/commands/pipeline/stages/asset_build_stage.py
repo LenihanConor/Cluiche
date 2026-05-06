@@ -1,8 +1,6 @@
 """build-assets stage: delegates to DiaAssetPipeline."""
 from pathlib import Path
 
-from loguru import logger
-
 from ..pipeline_config import PipelineConfig
 
 
