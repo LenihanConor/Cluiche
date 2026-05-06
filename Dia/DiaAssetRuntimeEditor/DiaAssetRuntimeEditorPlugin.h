@@ -45,6 +45,8 @@ namespace Dia
 			private:
 				void RegisterRequestHandlers();
 				void HandleConnectionStateChange(bool connected);
+				void PushSavedFiltersToUI();
+				void SaveCurrentFilters();
 
 				Dia::Editor::WebUIBridge* mBridge = nullptr;
 				Dia::Editor::EditorView* mView = nullptr;
@@ -58,6 +60,9 @@ namespace Dia
 				RefCountInspectorPanel mRefCountInspector;
 				StateTransitionLogPanel mTransitionLog;
 				SessionContext mSessionContext;
+
+				char mCurrentStateFilter[32] = {};
+				char mCurrentIdSearch[128] = {};
 			};
 		}
 	}

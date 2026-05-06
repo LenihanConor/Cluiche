@@ -1,6 +1,7 @@
 (function() {
     'use strict';
 
+    var ROW_HEIGHT = 24;
     var allAssets = [];
     var filteredAssets = [];
     var selectedAssetId = null;
@@ -12,9 +13,13 @@
     var pollIntervalInput = document.getElementById('poll-interval');
     var btnRefresh = document.getElementById('btn-refresh');
     var tableBody = document.getElementById('table-body');
+    var tableContainer = document.querySelector('.table-container');
     var statusCount = document.getElementById('status-count');
     var statusTime = document.getElementById('status-time');
     var disconnectedOverlay = document.getElementById('disconnected-overlay');
+
+    var scrollSpacer = document.createElement('tr');
+    var scrollSpacerBottom = document.createElement('tr');
 
     function applyFilters() {
         var stateVal = stateFilter.value;
@@ -27,7 +32,7 @@
         });
 
         sortAssets();
-        renderTable();
+        renderViewport();
         updateStatus();
     }
 
@@ -43,19 +48,39 @@
         });
     }
 
-    function renderTable() {
+    function renderViewport() {
+        var scrollTop = tableContainer.scrollTop;
+        var viewHeight = tableContainer.clientHeight;
+        var totalHeight = filteredAssets.length * ROW_HEIGHT;
+
+        var startIdx = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - 5);
+        var visibleCount = Math.ceil(viewHeight / ROW_HEIGHT) + 10;
+        var endIdx = Math.min(filteredAssets.length, startIdx + visibleCount);
+
+        var topPad = startIdx * ROW_HEIGHT;
+        var bottomPad = Math.max(0, totalHeight - endIdx * ROW_HEIGHT);
+
         var html = '';
-        for (var i = 0; i < filteredAssets.length; i++) {
+        if (topPad > 0) {
+            html += '<tr style="height:' + topPad + 'px"><td colspan="5"></td></tr>';
+        }
+
+        for (var i = startIdx; i < endIdx; i++) {
             var a = filteredAssets[i];
             var sel = (a.id === selectedAssetId) ? ' class="selected"' : '';
-            html += '<tr data-id="' + a.id + '"' + sel + '>';
+            html += '<tr data-id="' + escapeAttr(a.id) + '"' + sel + '>';
             html += '<td>' + escapeHtml(a.id) + '</td>';
             html += '<td><span class="state-badge ' + a.state + '">' + a.state + '</span></td>';
             html += '<td>' + a.scope + '</td>';
             html += '<td>' + a.refCount + '</td>';
-            html += '<td title="' + escapeHtml(a.deployPath) + '">' + escapeHtml(a.deployPath) + '</td>';
+            html += '<td title="' + escapeAttr(a.deployPath) + '">' + escapeHtml(a.deployPath) + '</td>';
             html += '</tr>';
         }
+
+        if (bottomPad > 0) {
+            html += '<tr style="height:' + bottomPad + 'px"><td colspan="5"></td></tr>';
+        }
+
         tableBody.innerHTML = html;
     }
 
@@ -68,9 +93,33 @@
         return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
+    function escapeAttr(str) {
+        if (!str) return '';
+        return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+    }
+
+    // Scroll-driven virtualization
+    var scrollRafId = null;
+    tableContainer.addEventListener('scroll', function() {
+        if (scrollRafId) return;
+        scrollRafId = requestAnimationFrame(function() {
+            scrollRafId = null;
+            renderViewport();
+        });
+    });
+
+    function reportFilterChange() {
+        if (window.diaBridge) {
+            window.diaBridge.sendRequest('asset_runtime_editor.update_filters', {
+                stateFilter: stateFilter.value,
+                idSearch: idSearch.value
+            });
+        }
+    }
+
     // Event listeners
-    stateFilter.addEventListener('change', applyFilters);
-    idSearch.addEventListener('input', applyFilters);
+    stateFilter.addEventListener('change', function() { applyFilters(); reportFilterChange(); });
+    idSearch.addEventListener('input', function() { applyFilters(); reportFilterChange(); });
 
     btnRefresh.addEventListener('click', function() {
         if (window.diaBridge) {
@@ -92,7 +141,7 @@
         if (!id) return;
 
         selectedAssetId = id;
-        renderTable();
+        renderViewport();
 
         if (window.diaBridge) {
             window.diaBridge.sendRequest('asset_runtime_editor.select_asset', { assetId: id });
@@ -116,7 +165,7 @@
             th.classList.add(sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
 
             sortAssets();
-            renderTable();
+            renderViewport();
         });
     });
 
@@ -136,6 +185,12 @@
                 allAssets = [];
                 applyFilters();
             }
+        });
+
+        window.diaBridge.onDataChanged('asset_runtime_editor.table_filters', function(data) {
+            if (data.stateFilter) stateFilter.value = data.stateFilter;
+            if (data.idSearch) idSearch.value = data.idSearch;
+            applyFilters();
         });
     }
 })();

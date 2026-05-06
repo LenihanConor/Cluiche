@@ -16,6 +16,8 @@ namespace Dia
 				: mBridge(nullptr)
 				, mManager(nullptr)
 				, mState(nullptr)
+				, mLogHead(0)
+				, mLogCount(0)
 				, mMaxEntries(kDefaultMaxEntries)
 				, mGeneration(0)
 				, mPaused(false)
@@ -139,6 +141,12 @@ namespace Dia
 				PushLogToUI();
 			}
 
+			const TransitionLogEntry& StateTransitionLogPanel::GetLogEntry(unsigned int logicalIndex) const
+			{
+				unsigned int bufIdx = (mLogHead + logicalIndex) % kMaxLogCapacity;
+				return mLogBuffer[bufIdx];
+			}
+
 			void StateTransitionLogPanel::SetMaxEntries(unsigned int max)
 			{
 				if (max < 10) max = 10;
@@ -155,7 +163,8 @@ namespace Dia
 
 			void StateTransitionLogPanel::ClearLog()
 			{
-				mLog.RemoveAll();
+				mLogHead = 0;
+				mLogCount = 0;
 				PushLogToUI();
 			}
 
@@ -222,15 +231,15 @@ namespace Dia
 
 			void StateTransitionLogPanel::AppendEntry(const TransitionLogEntry& entry)
 			{
-				while (mLog.Size() >= mMaxEntries)
-				{
-					mLog.RemoveAt(0);
-				}
-				if (mLog.IsFull())
-				{
-					mLog.RemoveAt(0);
-				}
-				mLog.Add(entry);
+				unsigned int writeIdx = (mLogHead + mLogCount) % kMaxLogCapacity;
+				mLogBuffer[writeIdx] = entry;
+
+				if (mLogCount < kMaxLogCapacity)
+					mLogCount++;
+				else
+					mLogHead = (mLogHead + 1) % kMaxLogCapacity;
+
+				EnforceFIFO();
 			}
 
 			void StateTransitionLogPanel::AppendMarker(LogEntryType type)
@@ -248,9 +257,10 @@ namespace Dia
 
 			void StateTransitionLogPanel::EnforceFIFO()
 			{
-				while (mLog.Size() > mMaxEntries)
+				while (mLogCount > mMaxEntries)
 				{
-					mLog.RemoveAt(0);
+					mLogHead = (mLogHead + 1) % kMaxLogCapacity;
+					mLogCount--;
 				}
 			}
 
@@ -263,9 +273,9 @@ namespace Dia
 				Json::Value entries(Json::arrayValue);
 
 				// Send in reverse chronological order (newest first)
-				for (int i = static_cast<int>(mLog.Size()) - 1; i >= 0; --i)
+				for (int i = static_cast<int>(mLogCount) - 1; i >= 0; --i)
 				{
-					const TransitionLogEntry& entry = mLog[static_cast<unsigned int>(i)];
+					const TransitionLogEntry& entry = GetLogEntry(static_cast<unsigned int>(i));
 					Json::Value e;
 					e["timestamp"] = static_cast<Json::UInt64>(entry.mTimestamp);
 
@@ -289,7 +299,7 @@ namespace Dia
 				}
 
 				data["entries"] = entries;
-				data["total"] = static_cast<int>(mLog.Size());
+				data["total"] = static_cast<int>(mLogCount);
 				data["paused"] = mPaused;
 				data["maxEntries"] = static_cast<int>(mMaxEntries);
 				mBridge->NotifyUIDataChanged("asset_runtime_editor.log_data", data);
@@ -321,7 +331,7 @@ namespace Dia
 				}
 
 				data["entry"] = e;
-				data["total"] = static_cast<int>(mLog.Size());
+				data["total"] = static_cast<int>(mLogCount);
 				data["paused"] = mPaused;
 				mBridge->NotifyUIDataChanged("asset_runtime_editor.log_entry", data);
 			}

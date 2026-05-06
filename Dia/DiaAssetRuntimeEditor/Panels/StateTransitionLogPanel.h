@@ -2,7 +2,6 @@
 
 #include "DiaAssetRuntimeEditor/Panels/TransitionLogEntry.h"
 
-#include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
 
@@ -42,6 +41,9 @@ namespace Dia
 				bool IsPaused() const { return mPaused; }
 				void ClearLog();
 
+				unsigned int GetLogCount() const { return mLogCount; }
+				const TransitionLogEntry& GetLogEntry(unsigned int logicalIndex) const;
+
 			private:
 				void SubscribeToTransitions();
 				void UnsubscribeFromTransitions();
@@ -56,7 +58,9 @@ namespace Dia
 				Dia::Editor::GameConnectionManager* mManager;
 				SharedPluginState* mState;
 
-				Dia::Core::Containers::DynamicArrayC<TransitionLogEntry, kMaxLogCapacity> mLog;
+				TransitionLogEntry mLogBuffer[kMaxLogCapacity];
+				unsigned int mLogHead;
+				unsigned int mLogCount;
 
 				unsigned int mMaxEntries;
 				unsigned int mGeneration;

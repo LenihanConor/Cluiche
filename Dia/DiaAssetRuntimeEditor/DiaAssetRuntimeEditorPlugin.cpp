@@ -7,6 +7,8 @@
 #include <DiaEditor/UI/WebUIBridge.h>
 #include <DiaLogger/DiaLog.h>
 
+#include <cstring>
+
 static const char* kDefaultOutputDir = "Cluiche/out/CluicheEditor/DiaAssetRuntimeEditor";
 
 namespace Dia
@@ -38,9 +40,32 @@ namespace Dia
 				mTransitionLog.Activate(mBridge, &mManager, mState.get());
 				mTransitionLog.SetMaxEntries(mSessionContext.GetMaxLogEntries());
 
+				if (mSessionContext.GetStateFilter())
+					strncpy_s(mCurrentStateFilter, mSessionContext.GetStateFilter(), _TRUNCATE);
+				if (mSessionContext.GetIdSearchText())
+					strncpy_s(mCurrentIdSearch, mSessionContext.GetIdSearchText(), _TRUNCATE);
+
 				RegisterRequestHandlers();
+				PushSavedFiltersToUI();
 
 				DIA_LOG_INFO("Editor", "DiaAssetRuntimeEditorPlugin: Initialized");
+			}
+
+			void DiaAssetRuntimeEditorPlugin::PushSavedFiltersToUI()
+			{
+				if (!mBridge)
+					return;
+
+				const char* stateFilter = mSessionContext.GetStateFilter();
+				const char* idSearch = mSessionContext.GetIdSearchText();
+
+				if ((stateFilter && stateFilter[0] != '\0') || (idSearch && idSearch[0] != '\0'))
+				{
+					Json::Value data;
+					data["stateFilter"] = stateFilter ? stateFilter : "";
+					data["idSearch"] = idSearch ? idSearch : "";
+					mBridge->NotifyUIDataChanged("asset_runtime_editor.table_filters", data);
+				}
 			}
 
 			void DiaAssetRuntimeEditorPlugin::OnUnload()
@@ -49,6 +74,7 @@ namespace Dia
 
 				mSessionContext.SetPollInterval(mAssetStateTable.GetPollInterval());
 				mSessionContext.SetMaxLogEntries(mTransitionLog.GetMaxEntries());
+				SaveCurrentFilters();
 				mSessionContext.Save(kDefaultOutputDir);
 
 				mTransitionLog.Deactivate();
@@ -110,6 +136,25 @@ namespace Dia
 						result["success"] = true;
 						return result;
 					});
+
+				mBridge->RegisterRequestHandler(
+					Dia::Core::StringCRC("asset_runtime_editor.update_filters"),
+					[this](const Json::Value& data) -> Json::Value
+					{
+						if (data.isMember("stateFilter") && data["stateFilter"].isString())
+							strncpy_s(mCurrentStateFilter, data["stateFilter"].asCString(), _TRUNCATE);
+						if (data.isMember("idSearch") && data["idSearch"].isString())
+							strncpy_s(mCurrentIdSearch, data["idSearch"].asCString(), _TRUNCATE);
+						Json::Value result;
+						result["success"] = true;
+						return result;
+					});
+			}
+
+			void DiaAssetRuntimeEditorPlugin::SaveCurrentFilters()
+			{
+				mSessionContext.SetStateFilter(mCurrentStateFilter);
+				mSessionContext.SetIdSearchText(mCurrentIdSearch);
 			}
 
 			void DiaAssetRuntimeEditorPlugin::HandleConnectionStateChange(bool connected)

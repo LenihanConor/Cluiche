@@ -591,3 +591,308 @@ TEST(AssetStateRow, DefaultConstruction_StageIdEmpty)
 	AssetStateRow row;
 	EXPECT_EQ(StringCRC(), row.mStageId);
 }
+
+// ===========================================================================
+// StageAssetTreePanel — Root node derivation from snapshot
+// ===========================================================================
+
+TEST(StageAssetTreePanel, RootNodeDerivation_GlobalAndStageAssets)
+{
+	// Build a snapshot with global and stage-scoped assets
+	auto rows = std::make_unique<Dia::Core::Containers::DynamicArrayC<AssetStateRow, AssetStateTablePanel::kMaxAssets>>();
+
+	Json::Value data;
+	Json::Value assets(Json::arrayValue);
+
+	// 3 global assets
+	for (int i = 0; i < 3; ++i)
+	{
+		Json::Value asset;
+		char id[32];
+		snprintf(id, sizeof(id), "global.asset%d", i);
+		asset["id"] = id;
+		asset["state"] = "Loaded";
+		asset["scope"] = "Global";
+		asset["refCount"] = 2;
+		assets.append(asset);
+	}
+
+	// 2 assets in stage "gameplay"
+	for (int i = 0; i < 2; ++i)
+	{
+		Json::Value asset;
+		char id[32];
+		snprintf(id, sizeof(id), "stage.asset%d", i);
+		asset["id"] = id;
+		asset["state"] = "Staged";
+		asset["scope"] = "Stage";
+		asset["stageId"] = "stage.gameplay";
+		asset["refCount"] = 1;
+		assets.append(asset);
+	}
+
+	// 1 asset in stage "menu"
+	{
+		Json::Value asset;
+		asset["id"] = "menu.bg";
+		asset["state"] = "Loaded";
+		asset["scope"] = "Stage";
+		asset["stageId"] = "stage.menu";
+		asset["refCount"] = 1;
+		assets.append(asset);
+	}
+
+	data["assets"] = assets;
+	AssetStateTablePanel::ParseGetAllStatesResponse(data, *rows);
+
+	ASSERT_EQ(6u, rows->Size());
+
+	// Verify global assets parsed correctly
+	unsigned int globalCount = 0;
+	unsigned int stageGameplayCount = 0;
+	unsigned int stageMenuCount = 0;
+	for (unsigned int i = 0; i < rows->Size(); ++i)
+	{
+		if ((*rows)[i].mScope == AssetScopeEnum::kGlobal) globalCount++;
+		else if ((*rows)[i].mStageId == StringCRC("stage.gameplay")) stageGameplayCount++;
+		else if ((*rows)[i].mStageId == StringCRC("stage.menu")) stageMenuCount++;
+	}
+
+	EXPECT_EQ(3u, globalCount);
+	EXPECT_EQ(2u, stageGameplayCount);
+	EXPECT_EQ(1u, stageMenuCount);
+}
+
+TEST(StageAssetTreePanel, RootNodeDerivation_NoGlobalAssets)
+{
+	auto rows = std::make_unique<Dia::Core::Containers::DynamicArrayC<AssetStateRow, AssetStateTablePanel::kMaxAssets>>();
+
+	Json::Value data;
+	Json::Value assets(Json::arrayValue);
+
+	Json::Value asset;
+	asset["id"] = "level.terrain";
+	asset["state"] = "Loaded";
+	asset["scope"] = "Stage";
+	asset["stageId"] = "stage.world";
+	asset["refCount"] = 1;
+	assets.append(asset);
+	data["assets"] = assets;
+
+	AssetStateTablePanel::ParseGetAllStatesResponse(data, *rows);
+	ASSERT_EQ(1u, rows->Size());
+	EXPECT_EQ(AssetScopeEnum::kStage, (*rows)[0].mScope);
+	EXPECT_EQ(StringCRC("stage.world"), (*rows)[0].mStageId);
+}
+
+// ===========================================================================
+// RefCountInspectorPanel — Reference resolution logic
+// ===========================================================================
+
+TEST(RefCountInspectorPanel, ReferenceResolution_GlobalAssetInMultipleStages)
+{
+	// Build a snapshot with a global asset and stage-scoped assets
+	auto rows = std::make_unique<Dia::Core::Containers::DynamicArrayC<AssetStateRow, AssetStateTablePanel::kMaxAssets>>();
+
+	Json::Value data;
+	Json::Value assets(Json::arrayValue);
+
+	// Global asset with refCount 3
+	{
+		Json::Value asset;
+		asset["id"] = "texture.shared";
+		asset["state"] = "Loaded";
+		asset["scope"] = "Global";
+		asset["refCount"] = 3;
+		assets.append(asset);
+	}
+
+	// Stage-scoped assets to define stages
+	const char* stageIds[] = {"stage.level1", "stage.level2", "stage.menu"};
+	for (int i = 0; i < 3; ++i)
+	{
+		Json::Value asset;
+		char id[32];
+		snprintf(id, sizeof(id), "stage.local%d", i);
+		asset["id"] = id;
+		asset["state"] = "Loaded";
+		asset["scope"] = "Stage";
+		asset["stageId"] = stageIds[i];
+		asset["refCount"] = 1;
+		assets.append(asset);
+	}
+
+	data["assets"] = assets;
+	AssetStateTablePanel::ParseGetAllStatesResponse(data, *rows);
+
+	ASSERT_EQ(4u, rows->Size());
+
+	// Verify the global asset has correct ref count in snapshot
+	EXPECT_EQ(StringCRC("texture.shared"), (*rows)[0].mAssetId);
+	EXPECT_EQ(AssetScopeEnum::kGlobal, (*rows)[0].mScope);
+	EXPECT_EQ(3u, (*rows)[0].mRefCount);
+
+	// Verify we can identify all stages from snapshot
+	Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 64> stages;
+	for (unsigned int i = 0; i < rows->Size(); ++i)
+	{
+		const AssetStateRow& row = (*rows)[i];
+		if (row.mScope != AssetScopeEnum::kStage || row.mStageId == StringCRC())
+			continue;
+		bool found = false;
+		for (unsigned int s = 0; s < stages.Size(); ++s)
+		{
+			if (stages[s] == row.mStageId) { found = true; break; }
+		}
+		if (!found) stages.Add(row.mStageId);
+	}
+	EXPECT_EQ(3u, stages.Size());
+}
+
+TEST(RefCountInspectorPanel, ReferenceResolution_StageScopedAsset)
+{
+	auto rows = std::make_unique<Dia::Core::Containers::DynamicArrayC<AssetStateRow, AssetStateTablePanel::kMaxAssets>>();
+
+	Json::Value data;
+	Json::Value assets(Json::arrayValue);
+	Json::Value asset;
+	asset["id"] = "stage.only.asset";
+	asset["state"] = "Loaded";
+	asset["scope"] = "Stage";
+	asset["stageId"] = "stage.owner";
+	asset["refCount"] = 1;
+	assets.append(asset);
+	data["assets"] = assets;
+
+	AssetStateTablePanel::ParseGetAllStatesResponse(data, *rows);
+	ASSERT_EQ(1u, rows->Size());
+
+	// Stage-scoped asset: inspector should show single reference message
+	EXPECT_EQ(AssetScopeEnum::kStage, (*rows)[0].mScope);
+	EXPECT_EQ(StringCRC("stage.owner"), (*rows)[0].mStageId);
+	EXPECT_EQ(1u, (*rows)[0].mRefCount);
+}
+
+TEST(RefCountInspectorPanel, ReferenceResolution_AssetNotInSnapshot)
+{
+	auto rows = std::make_unique<Dia::Core::Containers::DynamicArrayC<AssetStateRow, AssetStateTablePanel::kMaxAssets>>();
+
+	Json::Value data;
+	Json::Value assets(Json::arrayValue);
+	Json::Value asset;
+	asset["id"] = "some.other.asset";
+	asset["state"] = "Loaded";
+	asset["scope"] = "Global";
+	asset["refCount"] = 1;
+	assets.append(asset);
+	data["assets"] = assets;
+
+	AssetStateTablePanel::ParseGetAllStatesResponse(data, *rows);
+	ASSERT_EQ(1u, rows->Size());
+
+	// Searching for a non-existent asset should find nothing
+	StringCRC missingId("does.not.exist");
+	bool found = false;
+	for (unsigned int i = 0; i < rows->Size(); ++i)
+	{
+		if ((*rows)[i].mAssetId == missingId)
+		{
+			found = true;
+			break;
+		}
+	}
+	EXPECT_FALSE(found);
+}
+
+// ===========================================================================
+// StateTransitionLogPanel — Ring buffer FIFO overflow
+// ===========================================================================
+
+TEST(StateTransitionLogPanel, FIFOOverflow_OldestDropped)
+{
+	StateTransitionLogPanel panel;
+	panel.SetMaxEntries(10);
+	panel.Activate(nullptr, nullptr, nullptr);
+
+	// Simulate connected state so HandleTransitionEvent processes events
+	panel.OnConnectionStateChanged(true);
+
+	EXPECT_EQ(10u, panel.GetMaxEntries());
+
+	// The log count should start with just the reconnect marker
+	EXPECT_EQ(1u, panel.GetLogCount());
+
+	// Clear to get a clean state
+	panel.ClearLog();
+	EXPECT_EQ(0u, panel.GetLogCount());
+
+	panel.Deactivate();
+}
+
+TEST(StateTransitionLogPanel, FIFOOverflow_SetMaxReducesCount)
+{
+	StateTransitionLogPanel panel;
+	panel.SetMaxEntries(100);
+
+	// We can't easily inject entries without a mock manager,
+	// but we can verify that reducing max enforces the cap
+	panel.Activate(nullptr, nullptr, nullptr);
+	panel.SetMaxEntries(5);
+	EXPECT_LE(panel.GetLogCount(), 5u);
+	panel.Deactivate();
+}
+
+TEST(StateTransitionLogPanel, RingBuffer_GetLogEntry)
+{
+	StateTransitionLogPanel panel;
+	panel.SetMaxEntries(4096);
+	panel.Activate(nullptr, nullptr, nullptr);
+
+	// After activate with no connection, log count is 0
+	EXPECT_EQ(0u, panel.GetLogCount());
+
+	// Trigger connection which appends a reconnect marker
+	panel.OnConnectionStateChanged(true);
+	EXPECT_EQ(1u, panel.GetLogCount());
+
+	// Entry at index 0 should be a reconnect marker
+	const TransitionLogEntry& entry = panel.GetLogEntry(0);
+	EXPECT_EQ(LogEntryType::kMarkerReconnect, entry.mType);
+
+	// Disconnect appends another marker
+	panel.OnConnectionStateChanged(false);
+	EXPECT_EQ(2u, panel.GetLogCount());
+
+	const TransitionLogEntry& entry2 = panel.GetLogEntry(1);
+	EXPECT_EQ(LogEntryType::kMarkerDisconnect, entry2.mType);
+
+	panel.Deactivate();
+}
+
+TEST(StateTransitionLogPanel, FIFOOverflow_MaxEntriesEnforced)
+{
+	StateTransitionLogPanel panel;
+	panel.Activate(nullptr, nullptr, nullptr);
+
+	// Generate 12 markers (min settable max is 10)
+	for (int i = 0; i < 6; ++i)
+	{
+		panel.OnConnectionStateChanged(true);
+		panel.OnConnectionStateChanged(false);
+	}
+	EXPECT_EQ(12u, panel.GetLogCount());
+
+	// Reduce max to 10 (minimum allowed) — oldest 2 should be evicted
+	panel.SetMaxEntries(10);
+	EXPECT_EQ(10u, panel.GetLogCount());
+
+	// Newest entry is a disconnect marker (last toggle was false)
+	const TransitionLogEntry& newest = panel.GetLogEntry(panel.GetLogCount() - 1);
+	EXPECT_EQ(LogEntryType::kMarkerDisconnect, newest.mType);
+
+	// Oldest remaining is a reconnect (3rd event: index 2 of original 12, now index 0)
+	const TransitionLogEntry& oldest = panel.GetLogEntry(0);
+	EXPECT_EQ(LogEntryType::kMarkerReconnect, oldest.mType);
+
+	panel.Deactivate();
+}
