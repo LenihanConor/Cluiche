@@ -407,6 +407,9 @@
     <ClCompile Include="Application\TestManifestLoader.cpp">
       <Filter>Application</Filter>
     </ClCompile>
+    <ClCompile Include="Application\TestManifestImports.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
     <ClCompile Include="Application\TestMessageBus.cpp">
       <Filter>Application</Filter>
     </ClCompile>

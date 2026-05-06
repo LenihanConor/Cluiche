@@ -2,6 +2,7 @@
 
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/Strings/String256.h>
 
 namespace Json { class Value; }
 
@@ -21,6 +22,7 @@ namespace Dia
 				Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 8> phaseIds;  // Phases this module belongs to
 				Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 8> dependencies; // Other module instance IDs
 				Json::Value* config;                // Configuration (owned by this entry)
+				Dia::Core::Containers::String256 sourceManifestPath;  // Which .diaapp file this entry came from
 
 				ModuleEntry();
 				ModuleEntry(const ModuleEntry& other);
@@ -34,6 +36,7 @@ namespace Dia
 				Dia::Core::StringCRC typeId;        // Type of phase (e.g., "UpdatePhase")
 				Dia::Core::StringCRC instanceId;    // Unique instance ID
 				Json::Value* config;                // Configuration (owned by this entry)
+				Dia::Core::Containers::String256 sourceManifestPath;  // Which .diaapp file this entry came from
 
 				PhaseEntry();
 				PhaseEntry(const PhaseEntry& other);
@@ -55,7 +58,9 @@ namespace Dia
 				Dia::Core::StringCRC instanceId;    // Unique instance ID
 				float frequencyHz;                  // Update frequency (-1 = unlimited)
 				bool dedicatedThread;               // Run on dedicated thread?
+				bool root;                          // True for the single tree root PU
 				Json::Value* config;                // Configuration (owned by this entry)
+				Dia::Core::Containers::String256 sourceManifestPath;  // Which .diaapp file this entry came from
 
 				Dia::Core::Containers::DynamicArrayC<PhaseEntry, 16> phases;
 				Dia::Core::Containers::DynamicArrayC<PhaseTransition, 32> transitions;
@@ -71,7 +76,7 @@ namespace Dia
 			// Manifest data
 			unsigned int version;  // Schema version (e.g., 1)
 			Dia::Core::Containers::DynamicArrayC<ProcessingUnitEntry, 4> processingUnits;
-			Dia::Core::Containers::DynamicArrayC<const char*, 16> imports;  // Imported manifest file paths
+			Dia::Core::Containers::DynamicArrayC<const char*, 16> imports;  // Imported manifest file paths (heap-allocated, owned)
 			Json::Value* metadata;  // Editor metadata (optional, owned by manifest loader)
 
 			ApplicationManifest();

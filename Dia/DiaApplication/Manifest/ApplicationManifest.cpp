@@ -13,6 +13,7 @@ namespace Dia
 			, phaseIds()
 			, dependencies()
 			, config(nullptr)
+			, sourceManifestPath()
 		{
 		}
 
@@ -22,6 +23,7 @@ namespace Dia
 			, phaseIds(other.phaseIds)
 			, dependencies(other.dependencies)
 			, config(other.config ? new Json::Value(*other.config) : nullptr)
+			, sourceManifestPath(other.sourceManifestPath)
 		{
 		}
 
@@ -35,6 +37,7 @@ namespace Dia
 				dependencies = other.dependencies;
 				delete config;
 				config = other.config ? new Json::Value(*other.config) : nullptr;
+				sourceManifestPath = other.sourceManifestPath;
 			}
 			return *this;
 		}
@@ -42,6 +45,7 @@ namespace Dia
 		ApplicationManifest::ModuleEntry::~ModuleEntry()
 		{
 			delete config;
+			config = nullptr;
 		}
 
 		// PhaseEntry
@@ -49,6 +53,7 @@ namespace Dia
 			: typeId()
 			, instanceId()
 			, config(nullptr)
+			, sourceManifestPath()
 		{
 		}
 
@@ -56,6 +61,7 @@ namespace Dia
 			: typeId(other.typeId)
 			, instanceId(other.instanceId)
 			, config(other.config ? new Json::Value(*other.config) : nullptr)
+			, sourceManifestPath(other.sourceManifestPath)
 		{
 		}
 
@@ -67,6 +73,7 @@ namespace Dia
 				instanceId = other.instanceId;
 				delete config;
 				config = other.config ? new Json::Value(*other.config) : nullptr;
+				sourceManifestPath = other.sourceManifestPath;
 			}
 			return *this;
 		}
@@ -74,6 +81,7 @@ namespace Dia
 		ApplicationManifest::PhaseEntry::~PhaseEntry()
 		{
 			delete config;
+			config = nullptr;
 		}
 
 		// ProcessingUnitEntry
@@ -82,7 +90,9 @@ namespace Dia
 			, instanceId()
 			, frequencyHz(-1.0f)
 			, dedicatedThread(false)
+			, root(false)
 			, config(nullptr)
+			, sourceManifestPath()
 			, phases()
 			, transitions()
 			, initialPhase()
@@ -95,12 +105,18 @@ namespace Dia
 			, instanceId(other.instanceId)
 			, frequencyHz(other.frequencyHz)
 			, dedicatedThread(other.dedicatedThread)
+			, root(other.root)
 			, config(other.config ? new Json::Value(*other.config) : nullptr)
-			, phases(other.phases)
+			, sourceManifestPath(other.sourceManifestPath)
+			, phases()
 			, transitions(other.transitions)
 			, initialPhase(other.initialPhase)
-			, modules(other.modules)
+			, modules()
 		{
+			for (unsigned int i = 0; i < other.phases.Size(); ++i)
+				phases.Add(other.phases[i]);
+			for (unsigned int i = 0; i < other.modules.Size(); ++i)
+				modules.Add(other.modules[i]);
 		}
 
 		ApplicationManifest::ProcessingUnitEntry& ApplicationManifest::ProcessingUnitEntry::operator=(const ProcessingUnitEntry& other)
@@ -111,12 +127,20 @@ namespace Dia
 				instanceId = other.instanceId;
 				frequencyHz = other.frequencyHz;
 				dedicatedThread = other.dedicatedThread;
+				root = other.root;
 				delete config;
 				config = other.config ? new Json::Value(*other.config) : nullptr;
-				phases = other.phases;
+				sourceManifestPath = other.sourceManifestPath;
+				// RemoveAll calls ~PhaseEntry() which nulls config; Add calls operator= which
+				// safely deletes null. Safe because destructors null their pointers.
+				phases.RemoveAll();
+				for (unsigned int i = 0; i < other.phases.Size(); ++i)
+					phases.Add(other.phases[i]);
 				transitions = other.transitions;
 				initialPhase = other.initialPhase;
-				modules = other.modules;
+				modules.RemoveAll();
+				for (unsigned int i = 0; i < other.modules.Size(); ++i)
+					modules.Add(other.modules[i]);
 			}
 			return *this;
 		}
@@ -124,6 +148,7 @@ namespace Dia
 		ApplicationManifest::ProcessingUnitEntry::~ProcessingUnitEntry()
 		{
 			delete config;
+			config = nullptr;
 		}
 
 		// ApplicationManifest
@@ -137,7 +162,8 @@ namespace Dia
 
 		ApplicationManifest::~ApplicationManifest()
 		{
-			// Clean up imports (string literals owned elsewhere)
+			for (unsigned int i = 0; i < imports.Size(); ++i)
+				delete[] imports[i];
 			imports.RemoveAll();
 
 			delete metadata;

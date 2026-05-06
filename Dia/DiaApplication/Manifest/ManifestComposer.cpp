@@ -1,10 +1,51 @@
 #include "ManifestComposer.h"
+#include "JsonApplicationManifestSerializer.h"
 
 #include <DiaLogger/DiaLog.h>
 #include <DiaCore/Strings/String256.h>
 #include <DiaCore/Strings/String512.h>
 #include <DiaCore/Strings/stringutils.h>
 #include <DiaCore/Json/external/json/json.h>
+
+namespace
+{
+	// Build an absolute path for an import relative to the importing manifest's directory.
+	// e.g. base="C:/Game/main.diaapp", importPath="sub/sim.diaapp" -> "C:/Game/sub/sim.diaapp"
+	// If importPath is already absolute (starts with drive letter or '/'), returns it unchanged.
+	void ResolveRelativePath(const char* baseFilePath, const char* importPath,
+		Dia::Core::Containers::String512& outResolved)
+	{
+		// Check if import is already absolute
+		if (importPath[0] == '/' || importPath[0] == '\\' ||
+			(importPath[0] != '\0' && importPath[1] == ':'))
+		{
+			outResolved = importPath;
+			return;
+		}
+
+		// Find last separator in base path to get the directory
+		const char* lastSlash = nullptr;
+		for (const char* p = baseFilePath; *p; ++p)
+			if (*p == '/' || *p == '\\')
+				lastSlash = p;
+
+		if (lastSlash == nullptr)
+		{
+			outResolved = importPath;
+			return;
+		}
+
+		// Copy directory prefix
+		unsigned int dirLen = static_cast<unsigned int>(lastSlash - baseFilePath) + 1;
+		char dirBuf[512];
+		if (dirLen >= sizeof(dirBuf))
+			dirLen = sizeof(dirBuf) - 1;
+		memcpy(dirBuf, baseFilePath, dirLen);
+		dirBuf[dirLen] = '\0';
+
+		outResolved.Format("%s%s", dirBuf, importPath);
+	}
+}
 
 namespace Dia
 {
@@ -32,16 +73,9 @@ namespace Dia
 			// Compose each file in order, merging into output manifest
 			for (unsigned int i = 0; i < filePaths.Size(); ++i)
 			{
-				ApplicationManifest tempManifest;
-				ManifestValidationResult result = ResolveImportsRecursive(filePaths[i], tempManifest);
-
+				ManifestValidationResult result = ResolveImportsRecursive(filePaths[i], outComposedManifest);
 				if (result != ManifestValidationResult::kSuccess)
-				{
 					return result;
-				}
-
-				// Merge into output
-				MergeManifests(tempManifest, outComposedManifest);
 			}
 
 			return ManifestValidationResult::kSuccess;
@@ -65,56 +99,39 @@ namespace Dia
 			// Check for import cycle
 			if (DetectImportCycle(filePath))
 			{
-				Dia::Core::Containers::String512 cyclePath;
-				for (unsigned int i = 0; i < mImportStack.Size(); ++i)
-				{
-					if (i > 0)
-					{
-						cyclePath.Append(" -> ");
-					}
-					cyclePath.Append(mImportStack[i]);
-				}
-				cyclePath.Append(" -> ");
-				cyclePath.Append(filePath);
-
-				Dia::Core::Containers::String512 msg;
-				msg.Format("Import cycle detected: %s", cyclePath.AsCStr());
-				AddError(ManifestValidationResult::kImportCycle, msg.AsCStr(), filePath);
+				AddError(ManifestValidationResult::kImportCycle, "Import cycle detected", filePath);
 				return ManifestValidationResult::kImportCycle;
 			}
 
-			// Check if already processed (avoid reprocessing same file)
+			// Check if already processed (diamond-import dedup)
 			Dia::Core::StringCRC filePathCRC(filePath);
 			if (mProcessedFiles.ContainsKey(filePathCRC))
-			{
-				return ManifestValidationResult::kSuccess; // Already processed
-			}
+				return ManifestValidationResult::kSuccess;
 
-			// Load manifest from file
-			ApplicationManifest currentManifest;
-			ManifestValidationResult result = LoadManifestFromFile(filePath, currentManifest);
+			// Load manifest from file (heap-allocated to avoid large stack frames at depth)
+			ApplicationManifest* currentManifest = new ApplicationManifest();
+			ManifestValidationResult result = LoadManifestFromFile(filePath, *currentManifest);
 			if (result != ManifestValidationResult::kSuccess)
 			{
+				delete currentManifest;
 				return result;
 			}
 
 			// Mark as being processed (for cycle detection)
 			mImportStack.Add(filePath);
 
-			// Recursively resolve imports (depth-first)
-			for (unsigned int i = 0; i < currentManifest.imports.Size(); ++i)
+			// Recursively resolve imports (depth-first), merging directly into outManifest
+			for (unsigned int i = 0; i < currentManifest->imports.Size(); ++i)
 			{
-				const char* importPath = currentManifest.imports[i];
-				ApplicationManifest importedManifest;
+				Dia::Core::Containers::String512 resolvedPath;
+				ResolveRelativePath(filePath, currentManifest->imports[i], resolvedPath);
 
-				result = ResolveImportsRecursive(importPath, importedManifest);
+				result = ResolveImportsRecursive(resolvedPath.AsCStr(), outManifest);
 				if (result != ManifestValidationResult::kSuccess)
 				{
+					delete currentManifest;
 					return result;
 				}
-
-				// Merge imported manifest into output
-				MergeManifests(importedManifest, outManifest);
 			}
 
 			// Pop from stack
@@ -123,9 +140,22 @@ namespace Dia
 			// Mark as fully processed
 			mProcessedFiles.Add(filePathCRC, true);
 
-			// Merge current manifest into output (after imports, so it takes precedence)
-			MergeManifests(currentManifest, outManifest);
+			// Merge current manifest into output; tag newly added entries with provenance
+			unsigned int pusBefore = outManifest.processingUnits.Size();
+			MergeManifests(*currentManifest, outManifest);
 
+			// Tag new PU entries with provenance (String256 has value semantics — safe with DynamicArrayC bitwise copy)
+			for (unsigned int i = pusBefore; i < outManifest.processingUnits.Size(); ++i)
+			{
+				ApplicationManifest::ProcessingUnitEntry& pu = outManifest.processingUnits[i];
+				pu.sourceManifestPath = filePath;
+				for (unsigned int j = 0; j < pu.phases.Size(); ++j)
+					pu.phases[j].sourceManifestPath = filePath;
+				for (unsigned int j = 0; j < pu.modules.Size(); ++j)
+					pu.modules[j].sourceManifestPath = filePath;
+			}
+
+			delete currentManifest;
 			return ManifestValidationResult::kSuccess;
 		}
 
@@ -172,12 +202,20 @@ namespace Dia
 
 				if (!found)
 				{
-					// Add new processing unit
-					ApplicationManifest::ProcessingUnitEntry newPU;
+					// Add a default slot then populate it in-place via reference.
+					// This avoids a temporary ProcessingUnitEntry copy: DynamicArrayC::operator=
+					// uses MemoryCopy for sub-arrays, which would share PhaseEntry/ModuleEntry
+					// config pointers between the temporary and the target slot, causing
+					// double-free when the temporary is destroyed.
+					target.processingUnits.AddDefault();
+					ApplicationManifest::ProcessingUnitEntry& newPU =
+						target.processingUnits[target.processingUnits.Size() - 1];
+
 					newPU.typeId = sourcePU.typeId;
 					newPU.instanceId = sourcePU.instanceId;
 					newPU.frequencyHz = sourcePU.frequencyHz;
 					newPU.dedicatedThread = sourcePU.dedicatedThread;
+					newPU.root = sourcePU.root;
 					newPU.initialPhase = sourcePU.initialPhase;
 
 					// Deep copy config
@@ -186,7 +224,7 @@ namespace Dia
 						newPU.config = new Json::Value(*sourcePU.config);
 					}
 
-					// Copy phases
+					// Copy phases — Add calls PhaseEntry::operator= which deep-copies config
 					for (unsigned int k = 0; k < sourcePU.phases.Size(); ++k)
 					{
 						const ApplicationManifest::PhaseEntry& sourcePhase = sourcePU.phases[k];
@@ -200,7 +238,7 @@ namespace Dia
 						newPU.phases.Add(newPhase);
 					}
 
-					// Copy modules
+					// Copy modules — Add calls ModuleEntry::operator= which deep-copies config
 					for (unsigned int k = 0; k < sourcePU.modules.Size(); ++k)
 					{
 						const ApplicationManifest::ModuleEntry& sourceModule = sourcePU.modules[k];
@@ -232,8 +270,6 @@ namespace Dia
 					{
 						newPU.transitions.Add(sourcePU.transitions[k]);
 					}
-
-					target.processingUnits.Add(newPU);
 				}
 			}
 
@@ -507,18 +543,19 @@ namespace Dia
 
 		ManifestValidationResult ManifestComposer::LoadManifestFromFile(const char* filePath, ApplicationManifest& outManifest)
 		{
-			// TODO: This is a stub. Will be implemented when ManifestLoader is complete.
-			// For now, return an error indicating the file couldn't be loaded.
-			// This will be replaced with actual JSON parsing logic.
+			JsonApplicationManifestSerializer serializer;
+			auto result = serializer.LoadFromFile(filePath, outManifest);
+			if (!result)
+			{
+				Dia::Core::Containers::String256 msg;
+				msg.Format("Failed to load manifest: %s (%s)", filePath, result.error ? result.error : "unknown error");
+				AddError(ManifestValidationResult::kImportNotFound, msg.AsCStr(), filePath);
+				return ManifestValidationResult::kImportNotFound;
+			}
 
-			Dia::Core::Containers::String256 msg;
-			msg.Format("ManifestComposer::LoadManifestFromFile not yet implemented (file: %s)", filePath);
-			AddError(ManifestValidationResult::kImportNotFound, msg.AsCStr(), "composer");
+			// sourceManifestPath will be set on the final merged manifest after merge (see ResolveImportsRecursive)
 
-			DIA_LOG_WARNING("Application", "%s", msg.AsCStr());
-			DIA_LOG_WARNING("Application", "This will be implemented when ApplicationManifestLoader is complete.");
-
-			return ManifestValidationResult::kImportNotFound;
+			return ManifestValidationResult::kSuccess;
 		}
 
 		const Dia::Core::Containers::DynamicArrayC<ManifestValidationError, 32>& ManifestComposer::GetErrors() const

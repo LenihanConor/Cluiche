@@ -76,6 +76,7 @@ namespace Dia
 			out.instanceId = Dia::Core::StringCRC(puJson["instance_id"].asCString());
 			out.frequencyHz    = puJson.get("frequency_hz",    -1.0f).asFloat();
 			out.dedicatedThread = puJson.get("dedicated_thread", false).asBool();
+			out.root            = puJson.get("root", false).asBool();
 
 			if (puJson.isMember("config"))
 				out.config = new Json::Value(puJson["config"]);
@@ -144,13 +145,31 @@ namespace Dia
 			const Json::Value& pus = root["processing_units"];
 			for (unsigned int i = 0; i < pus.size(); ++i)
 			{
-				ApplicationManifest::ProcessingUnitEntry entry;
+				// AddDefault then populate in-place to avoid MemoryCopy sharing phase/module
+				// config pointers between temporary and the target slot (double-free on temp dtor).
+				outManifest.processingUnits.AddDefault();
+				ApplicationManifest::ProcessingUnitEntry& entry =
+					outManifest.processingUnits[outManifest.processingUnits.Size() - 1];
 				if (!ParseProcessingUnit(pus[i], entry))
 				{
 					DIA_LOG_WARNING("Application", "JsonApplicationManifestSerializer: error parsing processing_unit[%u]", i);
 					return Dia::Serializer::SerializeResult::Failure("malformed processing_unit entry");
 				}
-				outManifest.processingUnits.Add(entry);
+			}
+
+			if (root.isMember("imports") && root["imports"].isArray())
+			{
+				const Json::Value& importsJson = root["imports"];
+				for (unsigned int i = 0; i < importsJson.size() && !outManifest.imports.IsFull(); ++i)
+				{
+					if (importsJson[i].isString())
+					{
+						const std::string& s = importsJson[i].asString();
+						char* copy = new char[s.size() + 1];
+						memcpy(copy, s.c_str(), s.size() + 1);
+						outManifest.imports.Add(copy);
+					}
+				}
 			}
 
 			if (root.isMember("metadata"))
@@ -202,6 +221,8 @@ namespace Dia
 			j["instance_id"]    = pu.instanceId.AsChar();
 			j["frequency_hz"]   = pu.frequencyHz;
 			j["dedicated_thread"] = pu.dedicatedThread;
+			if (pu.root)
+				j["root"] = true;
 			j["initial_phase"]  = pu.initialPhase.AsChar();
 
 			if (pu.config)
@@ -235,6 +256,14 @@ namespace Dia
 			Json::Value root;
 			root["version"] = manifest.version;
 
+			if (manifest.imports.Size() > 0)
+			{
+				Json::Value importsArray(Json::arrayValue);
+				for (unsigned int i = 0; i < manifest.imports.Size(); ++i)
+					importsArray.append(manifest.imports[i]);
+				root["imports"] = importsArray;
+			}
+
 			Json::Value pusArray(Json::arrayValue);
 			for (unsigned int i = 0; i < manifest.processingUnits.Size(); ++i)
 				pusArray.append(SerialiseProcessingUnit(manifest.processingUnits[i]));
@@ -262,10 +291,16 @@ namespace Dia
 
 		Dia::Serializer::SerializeResult JsonApplicationManifestSerializer::LoadFromFile(const char* path, ApplicationManifest& outManifest) const
 		{
-			char buffer[32768];
-			if (!ReadFileToBuffer(path, buffer, sizeof(buffer)))
+			static const unsigned int kBufferSize = 32768;
+			char* buffer = new char[kBufferSize];
+			if (!ReadFileToBuffer(path, buffer, kBufferSize))
+			{
+				delete[] buffer;
 				return Dia::Serializer::SerializeResult::Failure("file read error");
-			return Load(buffer, outManifest);
+			}
+			auto r = Load(buffer, outManifest);
+			delete[] buffer;
+			return r;
 		}
 
 		Dia::Serializer::SerializeResult JsonApplicationManifestSerializer::SaveToFile(const char* path, const ApplicationManifest& manifest) const
