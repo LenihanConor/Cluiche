@@ -39,9 +39,6 @@ namespace Dia
 				return nullptr;
 			}
 
-			// Instantiate first ProcessingUnit
-			// NOTE: Currently only supporting single ProcessingUnit per manifest
-			// Multi-PU support can be added later if needed
 			if (manifest.processingUnits.Size() == 0)
 			{
 				DIA_LOG_ERROR("Application", "Manifest contains no processing units: %s", manifestPath);
@@ -49,7 +46,18 @@ namespace Dia
 				return nullptr;
 			}
 
-			ProcessingUnit* pu = loader.Instantiate(manifest.processingUnits[0]);
+			// Find the root PU (marked with "root": true), falling back to index 0
+			unsigned int rootIndex = 0;
+			for (unsigned int i = 0; i < manifest.processingUnits.Size(); ++i)
+			{
+				if (manifest.processingUnits[i].root)
+				{
+					rootIndex = i;
+					break;
+				}
+			}
+
+			ProcessingUnit* pu = loader.Instantiate(manifest.processingUnits[rootIndex]);
 			if (!pu)
 			{
 				DIA_LOG_ERROR("Application", "Failed to instantiate ProcessingUnit from manifest: %s", manifestPath);
