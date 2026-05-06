@@ -40,7 +40,7 @@ Cluiche/bin/Debug/x64/UnitTests.exe
 - **Framework**: Google Test
 - **Location**: `Cluiche/Tests/UnitTests/` and `Cluiche/Tests/GoogleTests/`
 - **Coverage requirement**: All public APIs should have unit tests; critical paths require integration tests
-- **Pattern**: Test-after (write tests after or alongside implementation)
+- **Pattern**: TDD for new features (RED-GREEN-REFACTOR per AC); test-after for bug fixes and existing modules
 - **Thread Safety**: Dedicated thread safety tests for multi-threaded components
 - **Execution**: Run via `Cluiche/bin/Debug/x64/UnitTests.exe`
 

@@ -1,6 +1,6 @@
 {
   "env": {
-    "PATH": "/c/GitHub/Cluiche/Dia/DiaCLI/.venv/Scripts:${PATH}",
+    "PATH": "C:\\GitHub\\Cluiche\\Dia\\DiaCLI\\.venv\\Scripts;C:\\Users\\clenihan\\.local\\bin;${PATH}",
     "DIA_CLI_CONFIG": "C:\\GitHub\\Cluiche\\Dia\\DiaCLI\\dia_cli_prime_config.json"
   },
   "permissions": {
@@ -681,7 +681,20 @@
       "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/amd64/MSBuild.exe\" \"Dia/DiaAssetCatalogueEditor/DiaAssetCatalogueEditor.vcxproj\" \"/p:Configuration=Debug\" \"/p:Platform=x64\" /verbosity:minimal)",
       "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/amd64/MSBuild.exe\" \"Dia/DiaAssetCatalogueEditor/DiaAssetCatalogueEditor.vcxproj\" -p:Configuration=Debug -p:Platform=x64 -verbosity:minimal)",
       "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/amd64/MSBuild.exe\" \"Cluiche/Tests/GoogleTests/GoogleTests.vcxproj\" -p:Configuration=Debug -p:Platform=x64 -verbosity:minimal)",
-      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/amd64/MSBuild.exe\" \"Cluiche/Tests/GoogleTests/GoogleTests.vcxproj\" -p:Configuration=Debug -p:Platform=x64 -verbosity:minimal -t:ClCompile)"
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/amd64/MSBuild.exe\" \"Cluiche/Tests/GoogleTests/GoogleTests.vcxproj\" -p:Configuration=Debug -p:Platform=x64 -verbosity:minimal -t:ClCompile)",
+      "Bash(mkdir -p \"C:/GitHub/Cluiche/Dia/DiaAssetRuntimeEditor/Panels\")",
+      "Bash(mkdir -p \"C:/GitHub/Cluiche/Dia/DiaAssetRuntimeEditor/UI\")",
+      "Bash(MSBuild.exe Cluiche/CluicheTest/Levels/DummyStage/DummyStage.vcxproj -p:Configuration=Debug -p:Platform=x64 \"-p:SolutionDir=C:\\\\\\\\GitHub\\\\\\\\Cluiche\\\\\\\\Cluiche\\\\\\\\\\\\\\\\\" -v:minimal)",
+      "Bash(mkdir -p Cluiche/CluicheTest/Stages/DummyStage/LevelFlow/Phases)",
+      "Bash(mkdir -p Cluiche/CluicheTest/Stages/DummyStage/UI)",
+      "Bash(gh pr *)",
+      "Bash(winget list *)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/MSBuild.exe\" Dia/DiaAssetCatalogueEditor/DiaAssetCatalogueEditor.vcxproj /p:Configuration=Debug /p:Platform=x64 /v:minimal)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/MSBuild.exe\" \"Dia/DiaAssetCatalogueEditor/DiaAssetCatalogueEditor.vcxproj\" \"/p:Configuration=Debug\" \"/p:Platform=x64\" \"/v:minimal\")",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/MSBuild.exe\" \"Dia/DiaAssetCatalogueEditor/DiaAssetCatalogueEditor.vcxproj\" -p:Configuration=Debug -p:Platform=x64 -v:minimal)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/MSBuild.exe\" \"Cluiche/Tests/GoogleTests/GoogleTests.vcxproj\" -p:Configuration=Debug -p:Platform=x64 -v:minimal)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Enterprise/MSBuild/Current/Bin/MSBuild.exe\" Dia/DiaAssetRuntime/DiaAssetRuntime.vcxproj /p:Configuration=Debug /p:Platform=x64 /v:minimal)"
     ],
     "defaultMode": "auto"
   }

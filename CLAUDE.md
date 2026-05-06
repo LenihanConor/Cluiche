@@ -180,9 +180,9 @@ Plans live alongside their spec as `<spec-name>.plan.md`. For system-level plans
 
 ## Tasks
 
-| # | Task | Status | Model | Notes |
-|---|------|--------|-------|-------|
-| 1 | Description of task | Not Started / In Progress / Done / Blocked | haiku / sonnet / opus | Any blockers or notes |
+| # | Task | Test | Status | Model | Notes |
+|---|------|------|--------|-------|-------|
+| 1 | Description of task | TestName that defines done (or — for non-TDD tasks) | Not Started / In Progress / Done / Blocked | haiku / sonnet / opus | Any blockers or notes |
 
 ## Session Notes
 
@@ -207,6 +207,62 @@ Plans live alongside their spec as `<spec-name>.plan.md`. For system-level plans
 - **Update the plan in the same commit** as the code it tracks
 - **Link back** — the spec's Status section should reference its plan file once one exists
 
+#### Subagent Dispatch Protocol
+
+When delegating plan tasks to subagents, follow `.claude/skills/dispatch.md`. Key rules:
+
+- **Inline all context** — subagents start with zero conversation history. Spec excerpts, relevant code, and constraints must be in the prompt. Never say "read the plan."
+- **Two-stage verification** — after a subagent reports DONE, check (1) spec compliance and (2) code quality before marking the task complete.
+- **Model matches task** — haiku for mechanical edits, sonnet for standard implementation, opus for architecture/debugging.
+- **Parallel only when independent** — different files, no shared headers/vcxproj, no output dependencies.
+- **BLOCKED triggers debugging** — if a subagent reports BLOCKED, enter the debug skill or fix the plan before re-dispatching.
+
+### Debugging
+
+When something breaks (build failure, test failure, crash), follow `.claude/skills/debug.md`. Key rules:
+
+- **Investigate before fixing** — read the full error, identify the boundary, check recent changes.
+- **One hypothesis, one change** — never change two things at once.
+- **Three-Fix Ceiling** — after 3 failed attempts at the same root issue, STOP and report what was tried. Wait for user direction.
+- **No shotgun debugging** — no commenting out code, no pragma disables, no "just make it compile" hacks.
+
+### Verification Gate
+
+Every task completion requires fresh evidence. Follow `.claude/skills/verify.md`. Key rules:
+
+- **Run the verification command NOW** — not "I ran it earlier." Fresh run, full output, quoted evidence.
+- **Banned language** — never say "should work", "likely passes", "previously verified." Replace with actual output.
+- **Failure enters debugging** — if verification fails, the task is not done. Enter the debug skill.
+- **Applies to** — plan tasks marked Done, commit claims, subagent DONE reports.
+- **Does not apply to** — specs, plans, docs, intermediate edits.
+
+### Anti-Rationalization
+
+Never accept these excuses to skip process — they are the most common failure modes:
+
+- "This is simple enough to skip the test" — No. If it's simple, the test is fast to write.
+- "I'll write the test after since I need to explore the API first" — No. Write a test for what you THINK the API should be. If you're wrong, the test evolves.
+- "The Three-Fix Ceiling doesn't apply here because each error is different" — No. Three failed fixes is three failed fixes. Stop.
+- "I'll verify later once the next task is also done" — No. Verify NOW. Cascading failures are harder to debug.
+- "I don't need to inline context because the subagent can read the file" — No. Inline it. Subagents that explore waste tokens and miss things.
+- "This is just a refactor so it doesn't need a test" — If it has no test, how do you know it's still correct?
+- "The spec doesn't explicitly say this, but obviously..." — No. If it's not in the spec, ask. Don't invent requirements.
+- "I'll skip the RED step because I know the test will fail" — No. Prove it. Quote the output.
+
+If you catch yourself forming a sentence that starts with "I can skip X because...", treat that as a signal to do X more carefully, not less.
+
+### Test-Driven Development (New Features)
+
+All new feature work follows RED-GREEN-REFACTOR. See `.claude/skills/tdd.md`. Key rules:
+
+- **Write the test FIRST** — assert the desired behavior before implementing it.
+- **Confirm RED** — run the test, quote the failure output. If it passes, investigate why.
+- **Minimal GREEN** — write only enough code to make the test pass. Stop.
+- **Refactor while green** — clean up with the safety net of a passing test.
+- **Applies to** — new public API, new behavior, new ACs in feature specs.
+- **Does not apply to** — mechanical tasks (vcxproj, registry), bug fixes, refactors with existing coverage, prototypes.
+- **`/gen-tests` still runs after** — TDD writes essential tests per AC. `/gen-tests` audits for exhaustiveness (edge cases, stress, boundary).
+
 ### Spec Commands
 
 - `/spec-platform` - Create or update the platform spec
@@ -215,6 +271,15 @@ Plans live alongside their spec as `<spec-name>.plan.md`. For system-level plans
 - `/spec-feature` - Create a new feature spec (includes interview + AI review)
 - `/spec-review` - Review any spec and populate AI review questions
 - `/spec-trace` - Trace a feature's full lineage up to platform
+
+### Review Command
+
+- `/review <spec-path>` - Review implementation against its spec with 8 passes
+  - Passes: Spec Compliance, Test Exhaustiveness, Architecture, Product, Performance, Thread Safety, Binding Decisions, API Surface
+  - Outputs a punch-list table with severity (Critical/Important/Minor), location, and suggestion per finding
+  - Verdict: PASS / PASS WITH ISSUES / BLOCKED
+  - Options: `--pass=<name>` for single pass, `--severity=<level>` to filter, `--diff=<range>` for custom diff range
+  - Use after completing a feature (all plan tasks done) or before merging to master
 
 ### Test Commands
 
