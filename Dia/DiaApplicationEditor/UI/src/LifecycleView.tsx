@@ -1,6 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { useManifestStore } from './ManifestStore';
 import type { ManifestData, ProcessingUnitData, PhaseData, ModuleData } from './types';
+
+function sendToPlugin(type: string, data: object): void {
+    window.parent.postMessage({ __diaFromFrame: true, payload: { type, data } }, '*');
+}
 
 // ─── Colours ────────────────────────────────────────────────────────────────
 const C = {
@@ -100,9 +104,10 @@ interface PUGridProps {
     pu: ProcessingUnitData;
     selectedNode: string | null;
     onSelectModule: (nodeId: string) => void;
+    onToggleCell: (puId: string, moduleId: string, phaseId: string, currentlyActive: boolean, modulePhaseCount: number) => void;
 }
 
-const PUGrid: React.FC<PUGridProps> = ({ pu, selectedNode, onSelectModule }) => {
+const PUGrid: React.FC<PUGridProps> = ({ pu, selectedNode, onSelectModule, onToggleCell }) => {
     const sortedPhases = useMemo(
         () => sortPhases(pu.phases, pu.transitions),
         [pu.phases, pu.transitions],
@@ -177,12 +182,20 @@ const PUGrid: React.FC<PUGridProps> = ({ pu, selectedNode, onSelectModule }) => 
                                         const nextPhase = colIdx < sortedPhases.length - 1 ? sortedPhases[colIdx + 1].instance_id : null;
                                         const state = classifyCell(mod.instance_id, phase.instance_id, nextPhase, prevPhase, modulePhases, hasTransitionTo);
                                         const bg = state === 'inactive' ? 'transparent' : C[state];
+                                        const isActive = state !== 'inactive';
+                                        const isLastPhase = isActive && modulePhases.size <= 1;
+                                        const cellTitle = isLastPhase
+                                            ? 'Module must be active in at least one phase'
+                                            : isActive ? 'Click to remove from phase' : 'Click to add to phase';
 
                                         return (
                                             <td
                                                 key={phase.instance_id}
-                                                title={CELL_TITLE[state]}
-                                                style={{ width: COL_W, background: bg, borderRight: `1px solid ${C.border}`, borderBottom: `1px solid #222`, textAlign: 'center', fontSize: 12, color: '#fff', userSelect: 'none' }}
+                                                title={cellTitle}
+                                                style={{ width: COL_W, background: bg, borderRight: `1px solid ${C.border}`, borderBottom: `1px solid #222`, textAlign: 'center', fontSize: 12, color: '#fff', userSelect: 'none', cursor: isLastPhase ? 'not-allowed' : 'pointer', transition: 'opacity 0.1s' }}
+                                                onClick={() => onToggleCell(pu.instance_id, mod.instance_id, phase.instance_id, isActive, modulePhases.size)}
+                                                onMouseEnter={e => { if (!isLastPhase) (e.currentTarget as HTMLElement).style.opacity = '0.7'; }}
+                                                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
                                             >
                                                 {CELL_LABEL[state]}
                                             </td>
@@ -200,15 +213,17 @@ const PUGrid: React.FC<PUGridProps> = ({ pu, selectedNode, onSelectModule }) => 
 
 // ─── Legend ───────────────────────────────────────────────────────────────────
 
+const LEGEND_ITEMS: { color: string; label: string; description: string }[] = [
+    { color: C.active,   label: '● Active',   description: 'Module is active in this phase (no adjacent transition context available)' },
+    { color: C.retained, label: '↔ Retained', description: 'Module stays active across the transition — alive in both the previous and next phase' },
+    { color: C.released, label: '↓ Released', description: 'Module is active here but dropped at the outgoing transition — its lifetime ends after this phase' },
+    { color: C.acquired, label: '↑ Acquired', description: 'Module was not active in the previous phase — it starts participating at this transition' },
+];
+
 const Legend: React.FC = () => (
     <div style={{ display: 'flex', gap: 16, padding: '6px 12px', background: C.header, borderBottom: `1px solid ${C.border}`, flexShrink: 0, flexWrap: 'wrap' }}>
-        {([
-            ['active',   C.active,   '● Active'],
-            ['retained', C.retained, '↔ Retained across transition'],
-            ['released', C.released, '↓ Released on transition'],
-            ['acquired', C.acquired, '↑ Acquired on transition'],
-        ] as const).map(([, color, label]) => (
-            <span key={label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: C.text }}>
+        {LEGEND_ITEMS.map(({ color, label, description }) => (
+            <span key={label} title={description} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: C.text, cursor: 'default' }}>
                 <span style={{ width: 12, height: 12, background: color, display: 'inline-block', borderRadius: 2 }} />
                 {label}
             </span>
@@ -238,6 +253,29 @@ export const LifecycleView: React.FC = () => {
         })).filter(pu => pu.modules.length > 0);
     }, [manifest, filter]);
 
+    const handleToggleCell = useCallback((puId: string, moduleId: string, phaseId: string, currentlyActive: boolean, modulePhaseCount: number) => {
+        if (currentlyActive && modulePhaseCount <= 1) return;
+
+        const pu = manifest!.processing_units.find(p => p.instance_id === puId);
+        if (!pu) return;
+        const mod = pu.modules.find(m => m.instance_id === moduleId);
+        if (!mod) return;
+
+        useManifestStore.getState().pushUndo(currentlyActive ? `Remove ${moduleId} from ${phaseId}` : `Add ${moduleId} to ${phaseId}`);
+
+        const currentPhases = mod.phases ?? [];
+        const newPhases = currentlyActive
+            ? currentPhases.filter(p => p !== phaseId)
+            : [...currentPhases, phaseId];
+
+        sendToPlugin('module_phases_changed', {
+            pu_id: puId,
+            module_id: moduleId,
+            phase_ids: newPhases,
+        });
+        useManifestStore.getState().setDirty(true);
+    }, [manifest]);
+
     if (!manifest) return null;
 
     const handleSelectModule = (nodeId: string) => {
@@ -263,6 +301,7 @@ export const LifecycleView: React.FC = () => {
                         pu={pu as ProcessingUnitData}
                         selectedNode={selectedNode}
                         onSelectModule={handleSelectModule}
+                        onToggleCell={handleToggleCell}
                     />
                 ))}
             </div>

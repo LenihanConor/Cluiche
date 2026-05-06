@@ -11,13 +11,17 @@ export interface PhaseNodeData {
     isCurrent: boolean;
 }
 
-function phaseColor(type: string): string {
-    if (type.includes('Init'))     return '#2e7d32';
-    if (type.includes('Boot'))     return '#1b5e20';
-    if (type.includes('Update'))   return '#1565c0';
-    if (type.includes('Running'))  return '#0d47a1';
-    if (type.includes('Render'))   return '#e65100';
-    if (type.includes('Shutdown')) return '#b71c1c';
+export const PHASE_COLORS: { label: string; color: string; description: string }[] = [
+    { label: 'Init / Boot', color: '#2e7d32', description: 'Startup phases — resource loading, subsystem initialization, one-time setup' },
+    { label: 'Update / Running', color: '#1565c0', description: 'Main loop phases — per-frame logic, simulation, input processing' },
+    { label: 'Shutdown', color: '#b71c1c', description: 'Teardown phases — resource release, cleanup, save state' },
+    { label: 'Other', color: '#37474f', description: 'Phases that don\'t match a known lifecycle category' },
+];
+
+export function phaseColor(type: string): string {
+    if (type.includes('Init') || type.includes('Boot'))       return '#2e7d32';
+    if (type.includes('Update') || type.includes('Running'))  return '#1565c0';
+    if (type.includes('Shutdown'))                            return '#b71c1c';
     return '#37474f';
 }
 

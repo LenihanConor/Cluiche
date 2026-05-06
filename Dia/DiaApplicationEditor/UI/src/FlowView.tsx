@@ -14,10 +14,11 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import dagre from '@dagrejs/dagre';
-import { PhaseNode } from './PhaseNode';
+import { PhaseNode, PHASE_COLORS } from './PhaseNode';
 import type { PhaseNodeData } from './PhaseNode';
 import type { Node, Edge } from 'reactflow';
 import { useManifestStore } from './ManifestStore';
+import { useUndoStore } from './UndoStore';
 import type { ManifestData, ProcessingUnitData } from './types';
 
 const nodeTypes: NodeTypes = { phaseNode: PhaseNode };
@@ -34,12 +35,18 @@ function buildGraph(
     const edges: Edge[] = [];
 
     manifest.processing_units.forEach((pu: ProcessingUnitData, puIdx: number) => {
+        const isImported = !!pu._source;
         nodes.push({
             id: `__pu_${pu.instance_id}`,
             type: 'group',
             data: {} as unknown as PhaseNodeData,
             position: { x: puIdx * 700, y: 0 },
-            style: { width: 600, height: 500, background: 'rgba(255,255,255,0.03)', border: '1px dashed #444', borderRadius: 8 },
+            style: {
+                width: 600, height: 500,
+                background: isImported ? 'rgba(100,100,255,0.03)' : 'rgba(255,255,255,0.03)',
+                border: isImported ? '2px dashed #666' : '1px dashed #444',
+                borderRadius: 8,
+            },
             selectable: false,
             draggable: false,
         });
@@ -155,6 +162,7 @@ export const FlowView: React.FC = () => {
         const edgeId = `${source}__to__${target}`;
         if (edges.some(e => e.id === edgeId)) return; // no duplicates
 
+        useManifestStore.getState().pushUndo('Add transition');
         const newEdge: Edge = {
             id: edgeId,
             source,
@@ -191,6 +199,7 @@ export const FlowView: React.FC = () => {
         const edge = edges.find(e => e.id === edgeId);
         if (!edge) return;
         if (!window.confirm('Delete this transition?')) return;
+        useManifestStore.getState().pushUndo('Remove transition');
         setEdges(eds => eds.filter(e => e.id !== edgeId));
         sendToPlugin('transition_removed', { from_phase: edge.source, to_phase: edge.target });
         setSelectedEdgeId(null);
@@ -216,7 +225,7 @@ export const FlowView: React.FC = () => {
     if (!manifest) return null;
 
     return (
-        <div style={{ width: '100%', height: '100%' }} onClick={edgeMenu ? () => setEdgeMenu(null) : undefined}>
+        <div style={{ width: '100%', height: '100%', position: 'relative' }} onClick={edgeMenu ? () => setEdgeMenu(null) : undefined}>
             <ReactFlow
                 nodes={nodes}
                 edges={edges.map(e => ({ ...e, selected: e.id === selectedEdgeId }))}
@@ -235,6 +244,20 @@ export const FlowView: React.FC = () => {
                 <Controls />
                 <MiniMap nodeColor={n => n.data?.isSelected ? '#ffd600' : '#37474f'} style={{ background: '#1e1e1e' }} />
             </ReactFlow>
+
+            <div style={{
+                position: 'absolute', bottom: 8, left: 8,
+                display: 'flex', gap: 12, padding: '6px 10px',
+                background: 'rgba(30,30,30,0.9)', border: '1px solid #444',
+                borderRadius: 4, zIndex: 10,
+            }}>
+                {PHASE_COLORS.map(({ label, color, description }) => (
+                    <span key={label} title={description} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#ccc', cursor: 'default' }}>
+                        <span style={{ width: 10, height: 10, background: color, display: 'inline-block', borderRadius: 2 }} />
+                        {label}
+                    </span>
+                ))}
+            </div>
 
             {edgeMenu && (
                 <div
