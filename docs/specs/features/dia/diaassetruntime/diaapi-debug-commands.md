@@ -27,7 +27,7 @@ DiaAssetRuntime's debug query API (Feature 5) is a C++ in-process API. External 
 6. `asset_runtime.get_all_states` returns a JSON array of all assets with their state, scope, ref count, and deploy path -- a full runtime snapshot
 7. `asset_runtime.subscribe_transitions` establishes a push event stream. Each state transition (asset ID, old state, new state, ref count) is pushed as a JSON message to the subscriber. Subscription is per-connection.
 8. All commands use DiaCore containers for internal processing and serialize to JSON for the response
-9. Command registration happens once via a single `RegisterAssetRuntimeCommands(DiaAPI&, AssetRuntime&)` function
+9. Command registration happens once via a single `RegisterAssetRuntimeCommands(AssetRuntime&, ITransitionNotifier*)` function
 10. Commands are read-only -- they do not modify DiaAssetRuntime state
 
 ## API Design
@@ -37,8 +37,15 @@ DiaAssetRuntime's debug query API (Feature 5) is a C++ in-process API. External 
 ```cpp
 namespace Dia::AssetRuntime
 {
-    void RegisterAssetRuntimeCommands(Dia::API::DiaAPI& api,
-                                      AssetRuntime& runtime);
+    class ITransitionNotifier
+    {
+    public:
+        virtual ~ITransitionNotifier() = default;
+        virtual void Notify(const Dia::Core::StringCRC& topic, const char* jsonPayload) = 0;
+    };
+
+    void RegisterAssetRuntimeCommands(AssetRuntime& runtime,
+                                      ITransitionNotifier* notifier = nullptr);
 }
 ```
 
@@ -114,7 +121,7 @@ ws.send(JSON.stringify({ command: "asset_runtime.subscribe_transitions" }));
 | ID | Decision | Compliance |
 |----|----------|------------|
 | PD-001 | StringCRC for IDs | **Compliant.** Asset IDs and Stage IDs are StringCRC internally. JSON responses serialize them as human-readable strings for editor consumption. |
-| PD-004 | No STL in public APIs | **Compliant.** RegisterAssetRuntimeCommands takes DiaAPI& and AssetRuntime& references. JSON serialization uses DiaCore JSON (jsoncpp wrapper). No STL in public interface. |
+| PD-004 | No STL in public APIs | **Compliant.** RegisterAssetRuntimeCommands takes AssetRuntime& and ITransitionNotifier* (abstract interface). JSON serialization uses DiaCore JSON (jsoncpp wrapper). No STL in public interface. |
 | PD-005 | x64 Windows only | **Compliant.** No platform-specific code. |
 | PD-007 | C++20 required | **Compliant.** Available but no specific C++20 features required. |
 | PD-008 | Directory.Build.props owns build settings | **Compliant.** No vcxproj build setting overrides. |

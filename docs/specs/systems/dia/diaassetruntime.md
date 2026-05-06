@@ -169,8 +169,9 @@ namespace Dia::AssetRuntime
     {
     public:
         virtual void OnAssetReady(const Dia::Core::StringCRC& assetId,
-                                  const Dia::Core::FilePath& resolvedPath) = 0;
+                                  const Dia::Core::Containers::String512& resolvedPath) = 0;
         virtual void OnAssetUnloading(const Dia::Core::StringCRC& assetId) = 0;
+        virtual void OnAssetLoadFailed(const Dia::Core::StringCRC& assetId) = 0;
     };
 
     class AssetRuntime
@@ -179,8 +180,9 @@ namespace Dia::AssetRuntime
         // Startup — call once before any queries
         bool LoadManifest(const Dia::Core::FilePath& manifestPath);
 
-        // Path resolution
-        const Dia::Core::FilePath* ResolveAssetPath(const Dia::Core::StringCRC& assetId) const;
+        // Path resolution — returns String512* (not FilePath*; FilePath's 32-char component
+        // limit cannot hold arbitrary absolute paths)
+        const Dia::Core::Containers::String512* ResolveAssetPath(const Dia::Core::StringCRC& assetId) const;
 
         // Stage lifecycle — expands Stage → Assets
         void RequestStageLoad(const Dia::Core::StringCRC& stageId);
@@ -189,6 +191,7 @@ namespace Dia::AssetRuntime
         // Consumer acknowledgement
         void AcknowledgeAssetLoaded(const Dia::Core::StringCRC& assetId);
         void AcknowledgeAssetUnloaded(const Dia::Core::StringCRC& assetId);
+        void AcknowledgeAssetLoadFailed(const Dia::Core::StringCRC& assetId);
 
         // State queries
         AssetState GetAssetState(const Dia::Core::StringCRC& assetId) const;
@@ -198,14 +201,24 @@ namespace Dia::AssetRuntime
         void RegisterListener(IAssetStateListener* listener);
         void UnregisterListener(IAssetStateListener* listener);
 
-        // Debug query
-        void GetLoadedAssets(
+        // Teardown — fire OnAssetUnloading for all non-Registered assets, reset state
+        void Reset();
+
+        // Debug queries — returns total count (may exceed array capacity)
+        unsigned int GetAllAssets(
             Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128>& results) const;
-        void GetStagedAssets(
+        unsigned int GetLoadedAssets(
             Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128>& results) const;
-        void GetStageDependencies(
+        unsigned int GetStagedAssets(
+            Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128>& results) const;
+        unsigned int GetStageDependencies(
             const Dia::Core::StringCRC& stageId,
             Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128>& results) const;
+
+        // Debug info
+        unsigned int GetAssetRefCount(const Dia::Core::StringCRC& assetId) const;
+        AssetScope GetAssetScope(const Dia::Core::StringCRC& assetId) const;
+        Dia::Core::StringCRC GetAssetStageId(const Dia::Core::StringCRC& assetId) const;
     };
 }
 ```
@@ -222,14 +235,14 @@ runtime.RegisterListener(&myGraphicsSystem);
 runtime.RequestStageLoad(StringCRC("stage.gameplay"));
 
 // In IAssetStateListener::OnAssetReady — consumer loads content
-void MyGraphicsSystem::OnAssetReady(const StringCRC& assetId, const FilePath& path)
+void MyGraphicsSystem::OnAssetReady(const StringCRC& assetId, const String512& path)
 {
     if (assetId == StringCRC("texture.player_ship"))
         mTextures.Load(assetId, path);
 }
 
 // Path query without lifecycle management
-const FilePath* path = runtime.ResolveAssetPath(StringCRC("config.ship_stats"));
+const String512* path = runtime.ResolveAssetPath(StringCRC("config.ship_stats"));
 
 // Stage transition — unload all Assets owned by this Stage
 runtime.RequestStageUnload(StringCRC("stage.gameplay"));

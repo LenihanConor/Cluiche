@@ -144,10 +144,10 @@ No dependency on DiaAssetPipeline, DiaAssetRuntime, DiaWebSocket, or any renderi
 | 2 | Asset Record CRUD | M | Create, edit, delete records. Tag editing, scope selection, stage name. Full undo/redo. Calls `ContentHasher` (DiaAssetCatalogue) on create/update. | [asset-record-crud.md](../../features/dia/diaassetcatalogueeditor/asset-record-crud.md) | Done |
 | 3 | File Discoverer | M | Filesystem browse from root, pattern matching via AssetTypeRegistry, bulk-add suggestions. | [file-discoverer.md](../../features/dia/diaassetcatalogueeditor/file-discoverer.md) | Done |
 | 4 | Relationship Editor | S | Add/remove relationship edges per record. Forward/reverse display. | [relationship-editor.md](../../features/dia/diaassetcatalogueeditor/relationship-editor.md) | Done |
-| 5 | Relationship Graph View | M | Visual graph of asset dependencies. Click to navigate to record. | [relationship-graph-view.md](../../features/dia/diaassetcatalogueeditor/relationship-graph-view.md) | In Progress |
+| 5 | Relationship Graph View | M | Visual graph of asset dependencies. Click to navigate to record. | [relationship-graph-view.md](../../features/dia/diaassetcatalogueeditor/relationship-graph-view.md) | Done |
 | 6 | Validation Panel | S | Run validate, display per-record errors, click-to-navigate. | [validation-panel.md](../../features/dia/diaassetcatalogueeditor/validation-panel.md) | Done |
 | 7 | Asset Type Editor Routing | S | `AssetTypeEditorRegistry`, open-asset action, OS default fallback. | [asset-type-editor-routing.md](../../features/dia/diaassetcatalogueeditor/asset-type-editor-routing.md) | Done |
-| 8 | Catalogue Rules UI | S-M | UI for the Catalogue Rules Engine (DiaAssetCatalogue Feature 4). Load/save `assets.rules.json`, "Dry Run" preview (shows proposed changeset with conflict warnings), "Apply Rules" action, display results and manual overrides. All business logic (validation, dry-run, conflict detection, evaluation) is in DiaAssetCatalogue — this feature is presentation only. | [catalogue-rules-ui.md](../../features/dia/diaassetcatalogueeditor/catalogue-rules-ui.md) | In Progress |
+| 8 | Catalogue Rules UI | S-M | UI for the Catalogue Rules Engine (DiaAssetCatalogue Feature 4). Load/save `assets.rules.json`, "Dry Run" preview (shows proposed changeset with conflict warnings), "Apply Rules" action, display results and manual overrides. All business logic (validation, dry-run, conflict detection, evaluation) is in DiaAssetCatalogue — this feature is presentation only. | [catalogue-rules-ui.md](../../features/dia/diaassetcatalogueeditor/catalogue-rules-ui.md) | Done |
 
 **Build order:** 1 → 2 → 3 → 4 → 6 → 7 → 8 → 5 (rules engine after relationship editor exists; graph view last)
 
@@ -208,5 +208,5 @@ No dependency on DiaAssetPipeline, DiaAssetRuntime, DiaWebSocket, or any renderi
 
 ## Status
 
-`Approved` — 8 features, all Approved. Blocked on DiaAssetCatalogue being built first.  
+`Done` — All 8 features implemented and tested.  
 **Plan:** @docs/specs/systems/dia/diaassetcatalogueeditor.plan.md

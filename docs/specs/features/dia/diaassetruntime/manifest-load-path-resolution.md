@@ -22,14 +22,14 @@ Game code needs to resolve asset IDs to absolute file paths at runtime without k
 ## Acceptance Criteria
 
 1. `RuntimeManifestLoader::Load` reads a JSON file at the given `FilePath`, parses it into `RuntimeAssetEntry` and `RuntimeStageEntry` records, and populates caller-provided `HashTableC` containers
-2. `RuntimeAssetEntry` stores: StringCRC `mId`, `AssetScope mScope` (kGlobal or kStage), `FilePath mDeployPath` (absolute, resolved from deploy root)
-3. `RuntimeStageEntry` stores: StringCRC `mId`, `DynamicArrayC<StringCRC, 64> mAssetIds`
+2. `RuntimeAssetEntry` stores: StringCRC `mId`, `AssetScope mScope` (kGlobal or kStage), `String512 mDeployPath` (absolute, resolved from deploy root). String512 is used instead of FilePath because FilePath's 32-char component limit cannot hold arbitrary absolute deploy paths.
+3. `RuntimeStageEntry` stores: StringCRC `mId`, `DynamicArrayC<StringCRC, 128> mAssetIds`
 4. `AssetScope` is an enum with values `kGlobal` and `kStage`
 5. `deploy_path` values in the JSON are relative to the manifest file's parent directory; the loader resolves them to absolute paths by prepending that parent directory
 6. Folder assets have a trailing `/` in their `deploy_path` -- the loader preserves this
 7. Duplicate asset IDs within the manifest are rejected with a clear error; loading fails and reports which ID is duplicated
 8. Duplicate stage IDs within the manifest are rejected with a clear error
-9. `ResolveAssetPath` on the `AssetRuntime` class returns a `const FilePath*` for a given asset ID, or null if the ID is not registered
+9. `ResolveAssetPath` on the `AssetRuntime` class returns a `const String512*` for a given asset ID, or null if the ID is not registered
 10. All asset IDs are registered as path aliases in DiaCore's `PathStore` after loading, so downstream code can resolve assets via the path alias system
 11. No dependency on DiaAssetCatalogue -- the loader owns its own types and parsing logic
 12. No file watching, no caching, no content loading -- pure manifest parsing and path resolution
@@ -51,13 +51,13 @@ namespace Dia::AssetRuntime
     {
         Dia::Core::StringCRC mId;
         AssetScope mScope;
-        Dia::Core::FilePath mDeployPath; // absolute, resolved from deploy root
+        Dia::Core::Containers::String512 mDeployPath; // absolute, resolved from deploy root
     };
 
     struct RuntimeStageEntry
     {
         Dia::Core::StringCRC mId;
-        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 64> mAssetIds;
+        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128> mAssetIds;
     };
 
     class RuntimeManifestLoader
@@ -109,7 +109,7 @@ namespace Dia::AssetRuntime
     {
     public:
         bool LoadManifest(const Dia::Core::FilePath& manifestPath);
-        const Dia::Core::FilePath* ResolveAssetPath(const Dia::Core::StringCRC& assetId) const;
+        const Dia::Core::Containers::String512* ResolveAssetPath(const Dia::Core::StringCRC& assetId) const;
     };
 }
 ```
@@ -121,7 +121,7 @@ Dia::AssetRuntime::AssetRuntime runtime;
 runtime.LoadManifest(manifestPath);
 
 // Resolve by ID
-const Dia::Core::FilePath* path = runtime.ResolveAssetPath(StringCRC("texture.player_ship"));
+const Dia::Core::Containers::String512* path = runtime.ResolveAssetPath(StringCRC("texture.player_ship"));
 // path is absolute: "C:/Game/bin/Debug/x64/assets/stages/Gameplay/characters/player_ship.texture.png"
 ```
 

@@ -3,7 +3,7 @@
 **Spec:** @docs/specs/systems/dia/diaassetruntime.md  
 **Status:** Done  
 **Started:** 2026-05-05  
-**Last Updated:** 2026-05-05
+**Last Updated:** 2026-05-06
 
 ## Overview
 
@@ -117,3 +117,11 @@ GoogleTests/Tests/
   - DiaAPI project reference added to DiaAssetRuntime.vcxproj ({1E7F6E13}).
   - F6 tests use unique PathStore alias (`test_arun_f6`).
   - Total: 62 DiaAssetRuntime tests across 6 features, all passing.
+
+### 2026-05-06 — Post-review fixes
+- Replaced `std::function` + `Json::Value` in `AssetRuntimeDebugCommands.h` with `ITransitionNotifier` abstract interface (PD-004 compliance).
+- Removed `<thread>` from `AssetRuntime.h`; moved thread-owner check to `.cpp` using platform-native thread IDs (PD-004 compliance).
+- Replaced static 256KB file buffer in `RuntimeManifestLoader.cpp` with heap allocation (re-entrancy fix).
+- Added 2 capacity boundary tests (512 assets = success, 513 = failure) — total now 69 DiaAssetRuntime tests.
+- Updated specs to match implementation: String512 return type for ResolveAssetPath, 128-capacity mAssetIds, OnAssetLoadFailed listener method, extra utility APIs documented.
+- Full test suite: 4251 tests passing, zero regressions.

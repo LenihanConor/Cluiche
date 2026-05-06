@@ -21,7 +21,7 @@ Without event notification, consuming systems would need to poll DiaAssetRuntime
 
 ## Acceptance Criteria
 
-1. `IAssetStateListener` is an abstract interface with two virtual methods: `OnAssetReady(assetId, resolvedPath)` and `OnAssetUnloading(assetId)`
+1. `IAssetStateListener` is an abstract interface with three virtual methods: `OnAssetReady(assetId, resolvedPath)`, `OnAssetUnloading(assetId)`, and `OnAssetLoadFailed(assetId)` (dispatched when a consumer calls `AcknowledgeAssetLoadFailed` while the asset is in Staged state)
 2. `RegisterListener(IAssetStateListener*)` adds a listener to the notification list
 3. `UnregisterListener(IAssetStateListener*)` removes a listener from the notification list
 4. `OnAssetReady` is dispatched when an asset transitions `Registered->Staged` (during `RequestStageLoad`)
@@ -49,8 +49,9 @@ namespace Dia::AssetRuntime
     public:
         virtual ~IAssetStateListener() = default;
         virtual void OnAssetReady(const Dia::Core::StringCRC& assetId,
-                                  const Dia::Core::FilePath& resolvedPath) = 0;
+                                  const Dia::Core::Containers::String512& resolvedPath) = 0;
         virtual void OnAssetUnloading(const Dia::Core::StringCRC& assetId) = 0;
+        virtual void OnAssetLoadFailed(const Dia::Core::StringCRC& assetId) = 0;
     };
 }
 ```

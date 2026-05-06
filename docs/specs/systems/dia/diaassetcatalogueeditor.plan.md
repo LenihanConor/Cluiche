@@ -1,7 +1,7 @@
 # Plan: DiaAssetCatalogueEditor
 
 **Spec:** @docs/specs/systems/dia/diaassetcatalogueeditor.md  
-**Status:** In Progress  
+**Status:** Done  
 **Started:** 2026-05-05  
 **Last Updated:** 2026-05-06
 
@@ -279,3 +279,4 @@ Audit revealed 4 acceptance criteria unmet across Features 5 and 8, plus spec/pl
 - Task 13 (manual override) is the most invasive; confirm scope with user before starting.
 - Status corrected to In Progress.
 - Task 13 completed: `ManualOverrideField` enum + `mManualOverrideFlags` on `AssetRecord`; `UpdateRecordCommand` sets bits; `CatalogueRulesEngine::Evaluate()` populates `RuleChange::mIsManualOverride`; `ApplyRulesCommand` skips manual-flagged fields (with `mOverwriteManuals` opt-in); UI shows yellow "manual" badge in dry-run.
+- Exhaustive tests appended to `TestDiaAssetCatalogueEditorExhaustive.cpp`: 24 new tests across ManualOverrideFlagTest (9), ApplyRulesManualOverrideTest (7), GetRuleTest (8). All pass. Registry updated. Feature specs 5 and 8 marked Done. System spec marked Done.
