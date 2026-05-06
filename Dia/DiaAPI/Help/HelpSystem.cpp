@@ -4,7 +4,7 @@
 // Feature spec: docs/specs/features/dia/diacli/help-system.md
 ////////////////////////////////////////////////////////////////////////////////
 #include "HelpSystem.h"
-#include "Events/EventSystem.h"
+#include <DiaAPI/Events/EventSystem.h>
 #include <DiaLogger/DiaLog.h>
 #include <cstdio>
 #include <cstring>
@@ -18,8 +18,7 @@ namespace Dia
 		////////////////////////////////////////////////////////////////////////////////
 		bool IsHelpRequested(const CommandArgs& args, const Dia::Core::StringCRC& commandName)
 		{
-			// Help requested if --help flag is present (using std::unordered_map)
-			return args.flags.find(Dia::Core::StringCRC("help").Value()) != args.flags.end();
+			return args.HasFlag(Dia::Core::StringCRC("help").Value());
 		}
 
 		////////////////////////////////////////////////////////////////////////////////

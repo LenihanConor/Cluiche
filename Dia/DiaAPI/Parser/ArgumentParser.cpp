@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Filename: ArgumentParser.cpp
 // Description: Command-line argument parser implementation
-// Feature spec: docs/specs/features/dia/diacli/cli-parser.md
+// Feature spec: docs/specs/features/dia/diaapi/cli-parser.md
 ////////////////////////////////////////////////////////////////////////////////
 #include "ArgumentParser.h"
 #include <DiaLogger/DiaLog.h>
@@ -17,10 +17,16 @@ namespace Dia
 			////////////////////////////////////////////////////////////////////////////////
 			// Internal parser state
 			////////////////////////////////////////////////////////////////////////////////
+			struct ShortFlagAlias
+			{
+				unsigned int shortCRC;
+				unsigned int longCRC;
+			};
+
 			struct ParserState
 			{
-				std::unordered_map<unsigned int, unsigned int> shortFlagAliases;
-				// Key: StringCRC("-v").Value(), Value: StringCRC("verbose").Value()
+				Dia::Core::Containers::DynamicArrayC<ShortFlagAlias, 16> shortFlagAliases;
+				bool initialized = false;
 			};
 
 			ParserState gParserState;
@@ -71,25 +77,22 @@ namespace Dia
 			}
 
 			////////////////////////////////////////////////////////////////////////////////
-			// Extract substring before '=' (allocates static buffer - NOT thread-safe)
+			// Extract key from --key=value into caller-provided buffer
 			////////////////////////////////////////////////////////////////////////////////
-			const char* ExtractKey(const char* str, const char* equalsPos)
+			void ExtractKey(const char* str, const char* equalsPos, char* outBuffer, unsigned int bufferSize)
 			{
-				static char keyBuffer[256];
 				size_t length = equalsPos - str;
 
-				if (length >= 256)
+				if (length >= bufferSize)
 				{
-					length = 255;
+					length = bufferSize - 1;
 				}
 
 				for (size_t i = 0; i < length; i++)
 				{
-					keyBuffer[i] = str[i];
+					outBuffer[i] = str[i];
 				}
-				keyBuffer[length] = '\0';
-
-				return keyBuffer;
+				outBuffer[length] = '\0';
 			}
 
 			////////////////////////////////////////////////////////////////////////////////
@@ -97,23 +100,20 @@ namespace Dia
 			////////////////////////////////////////////////////////////////////////////////
 			bool ParseNamedArg(const char* arg, ParseResult& result)
 			{
-				// Find '=' separator
 				const char* equalsPos = FindEquals(arg);
 				if (!equalsPos)
 				{
-					// Malformed: --key without =value
 					result.errorCode = 2;
 					result.errorMessage = "Invalid named argument format (expected --key=value)";
 					DIA_LOG_ERROR("API", "Invalid named argument format: %s (expected --key=value)", arg);
 					return false;
 				}
 
-				// Extract key (skip "--" prefix)
-				const char* key = ExtractKey(arg + 2, equalsPos);
-				const char* value = equalsPos + 1;  // Value starts after '='
+				char keyBuffer[256];
+				ExtractKey(arg + 2, equalsPos, keyBuffer, 256);
+				const char* value = equalsPos + 1;
 
-				// Add to named args (using std::unordered_map)
-				result.args.namedArgs[Dia::Core::StringCRC(key).Value()] = value;
+				result.args.SetNamedArg(Dia::Core::StringCRC(keyBuffer).Value(), value);
 				return true;
 			}
 
@@ -122,9 +122,8 @@ namespace Dia
 			////////////////////////////////////////////////////////////////////////////////
 			void ParseFlag(const char* arg, ParseResult& result)
 			{
-				// Skip "--" prefix
 				const char* flagName = arg + 2;
-				result.args.flags[Dia::Core::StringCRC(flagName).Value()] = true;
+				result.args.SetFlag(Dia::Core::StringCRC(flagName).Value(), true);
 			}
 
 			////////////////////////////////////////////////////////////////////////////////
@@ -134,30 +133,42 @@ namespace Dia
 			{
 				Dia::Core::StringCRC shortFlagCRC(arg);
 
-				// Look up alias
-				auto it = gParserState.shortFlagAliases.find(shortFlagCRC.Value());
-				if (it == gParserState.shortFlagAliases.end())
+				for (unsigned int i = 0; i < gParserState.shortFlagAliases.Size(); i++)
 				{
-					// Unknown short flag
-					result.errorCode = 2;
-					result.errorMessage = "Unknown short flag";
-					DIA_LOG_ERROR("API", "Unknown short flag: %s", arg);
-					return false;
+					if (gParserState.shortFlagAliases[i].shortCRC == shortFlagCRC.Value())
+					{
+						result.args.SetFlag(gParserState.shortFlagAliases[i].longCRC, true);
+						return true;
+					}
 				}
 
-				// Add long flag to flags (it->second is the long flag StringCRC value)
-				result.args.flags[it->second] = true;
-				return true;
+				result.errorCode = 2;
+				result.errorMessage = "Unknown short flag";
+				DIA_LOG_ERROR("API", "Unknown short flag: %s", arg);
+				return false;
 			}
 
 			////////////////////////////////////////////////////////////////////////////////
-			// Initialize short flag alias map (called during DiaAPI::Initialize)
+			// Initialize short flag alias map
 			////////////////////////////////////////////////////////////////////////////////
 			void InitializeShortFlagAliases()
 			{
-				// Register built-in short flags
-				gParserState.shortFlagAliases[Dia::Core::StringCRC("-h").Value()] = Dia::Core::StringCRC("help").Value();
-				gParserState.shortFlagAliases[Dia::Core::StringCRC("-v").Value()] = Dia::Core::StringCRC("verbose").Value();
+				if (gParserState.initialized)
+				{
+					return;
+				}
+
+				ShortFlagAlias hAlias;
+				hAlias.shortCRC = Dia::Core::StringCRC("-h").Value();
+				hAlias.longCRC = Dia::Core::StringCRC("help").Value();
+				gParserState.shortFlagAliases.Add(hAlias);
+
+				ShortFlagAlias vAlias;
+				vAlias.shortCRC = Dia::Core::StringCRC("-v").Value();
+				vAlias.longCRC = Dia::Core::StringCRC("verbose").Value();
+				gParserState.shortFlagAliases.Add(vAlias);
+
+				gParserState.initialized = true;
 			}
 		}
 
@@ -171,14 +182,11 @@ namespace Dia
 			result.errorCode = 0;
 			result.errorMessage = nullptr;
 
-			// Initialize short flag aliases if not already done
-			if (gParserState.shortFlagAliases.empty())
+			if (!gParserState.initialized)
 			{
 				InitializeShortFlagAliases();
 			}
 
-
-			// Check for minimum arguments (argv[0] = executable, argv[1] = command)
 			if (argc < 2)
 			{
 				result.errorCode = 2;
@@ -187,19 +195,15 @@ namespace Dia
 				return;
 			}
 
-			// Extract command name from argv[1]
 			const char* commandArg = argv[1];
 
-			// Special case: --help with no command
 			if (std::strcmp(commandArg, "--help") == 0)
 			{
-				// Empty command, set help flag
 				result.commandName = Dia::Core::StringCRC("");
-				result.args.flags[Dia::Core::StringCRC("help").Value()] = true;
+				result.args.SetFlag(Dia::Core::StringCRC("help").Value(), true);
 				return;
 			}
 
-			// Check if command name starts with "-" (invalid)
 			if (commandArg[0] == '-')
 			{
 				result.errorCode = 2;
@@ -208,34 +212,28 @@ namespace Dia
 				return;
 			}
 
-			// Valid command name
 			result.commandName = Dia::Core::StringCRC(commandArg);
 
-			// Parse remaining arguments
 			bool endOfFlags = false;
 
 			for (int i = 2; i < argc; i++)
 			{
 				const char* arg = argv[i];
 
-				// Check for end-of-flags marker
 				if (std::strcmp(arg, "--") == 0)
 				{
 					endOfFlags = true;
 					continue;
 				}
 
-				// After --, everything is positional
 				if (endOfFlags)
 				{
 					result.args.positionalArgs.Add(arg);
 					continue;
 				}
 
-				// Check for named arg (--key=value)
 				if (StartsWith(arg, "--"))
 				{
-					// Validate no triple-dash
 					if (arg[2] == '-')
 					{
 						result.errorCode = 2;
@@ -244,12 +242,11 @@ namespace Dia
 						return;
 					}
 
-					// Check if it's --key=value or --flag
 					if (FindEquals(arg))
 					{
 						if (!ParseNamedArg(arg, result))
 						{
-							return;  // Error already set
+							return;
 						}
 					}
 					else
@@ -257,15 +254,13 @@ namespace Dia
 						ParseFlag(arg, result);
 					}
 				}
-				// Check for short flag (-v)
 				else if (arg[0] == '-' && arg[1] != '\0' && arg[1] != '-')
 				{
 					if (!ParseShortFlag(arg, result))
 					{
-						return;  // Error already set
+						return;
 					}
 				}
-				// Positional argument
 				else
 				{
 					result.args.positionalArgs.Add(arg);
@@ -280,13 +275,15 @@ namespace Dia
 		{
 			using namespace Internal;
 
-			// Initialize if not already
-			if (gParserState.shortFlagAliases.empty())
+			if (!gParserState.initialized)
 			{
 				InitializeShortFlagAliases();
 			}
 
-			gParserState.shortFlagAliases[Dia::Core::StringCRC(shortFlag).Value()] = Dia::Core::StringCRC(longFlag).Value();
+			ShortFlagAlias alias;
+			alias.shortCRC = Dia::Core::StringCRC(shortFlag).Value();
+			alias.longCRC = Dia::Core::StringCRC(longFlag).Value();
+			gParserState.shortFlagAliases.Add(alias);
 		}
 	}
 }

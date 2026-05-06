@@ -196,7 +196,7 @@ TEST_F(DebugCommandsTest, GetState_WithValidAsset_ReturnsZero)
     ASSERT_NE(cmd, nullptr);
 
     Dia::API::CommandArgs args;
-    args.namedArgs[Dia::Core::StringCRC("assetId").Value()] = "asset.alpha";
+    args.SetNamedArg(Dia::Core::StringCRC("assetId").Value(), "asset.alpha");
     EXPECT_EQ(cmd->callback(args), 0);
 }
 
@@ -227,7 +227,7 @@ TEST_F(DebugCommandsTest, GetStageDeps_WithValidStage_ReturnsZero)
     ASSERT_NE(cmd, nullptr);
 
     Dia::API::CommandArgs args;
-    args.namedArgs[Dia::Core::StringCRC("stageId").Value()] = "stage.s1";
+    args.SetNamedArg(Dia::Core::StringCRC("stageId").Value(), "stage.s1");
     EXPECT_EQ(cmd->callback(args), 0);
 }
 
@@ -243,7 +243,7 @@ TEST_F(DebugCommandsTest, GetStageDeps_WithUnknownStage_ReturnsError)
     ASSERT_NE(cmd, nullptr);
 
     Dia::API::CommandArgs args;
-    args.namedArgs[Dia::Core::StringCRC("stageId").Value()] = "stage.ghost";
+    args.SetNamedArg(Dia::Core::StringCRC("stageId").Value(), "stage.ghost");
     EXPECT_NE(cmd->callback(args), 0);
 }
 

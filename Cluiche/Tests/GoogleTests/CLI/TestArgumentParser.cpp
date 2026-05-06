@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Filename: TestArgumentParser.cpp
 // Description: Unit tests for DiaAPI argument parser
-// Feature spec: docs/specs/features/dia/diacli/cli-parser.md
+// Feature spec: docs/specs/features/dia/diaapi/cli-parser.md
 ////////////////////////////////////////////////////////////////////////////////
 #include <gtest/gtest.h>
 #include <DiaAPI/DiaAPI.h>
@@ -17,13 +17,10 @@ class ArgumentParserTest : public ::testing::Test
 protected:
 	void SetUp() override
 	{
-		// Parser doesn't require Initialize() - it's self-contained
-		// Initialize() is only needed for command registry
 	}
 
 	void TearDown() override
 	{
-		// No cleanup needed
 	}
 
 	// Helper: Create argv from string array
@@ -74,8 +71,8 @@ TEST_F(ArgumentParserTest, ParseNoArguments)
 	EXPECT_EQ(0, result.errorCode);
 	EXPECT_EQ(Dia::Core::StringCRC("build"), result.commandName);
 	EXPECT_EQ(0u, result.args.positionalArgs.Size());
-	EXPECT_EQ(0u, result.args.namedArgs.size());
-	EXPECT_EQ(0u, result.args.flags.size());
+	EXPECT_EQ(0u, result.args.namedArgs.Size());
+	EXPECT_EQ(0u, result.args.flags.Size());
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -92,8 +89,8 @@ TEST_F(ArgumentParserTest, ParseNamedArguments)
 
 	EXPECT_EQ(0, result.errorCode);
 	EXPECT_EQ(Dia::Core::StringCRC("build"), result.commandName);
-	EXPECT_TRUE(result.args.namedArgs.find(Dia::Core::StringCRC("format").Value()) != result.args.namedArgs.end());
-	EXPECT_STREQ("gltf", result.args.namedArgs[Dia::Core::StringCRC("format").Value()]);
+	EXPECT_NE(nullptr, result.args.GetNamedArg(Dia::Core::StringCRC("format").Value()));
+	EXPECT_STREQ("gltf", result.args.GetNamedArg(Dia::Core::StringCRC("format").Value()));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -109,9 +106,9 @@ TEST_F(ArgumentParserTest, ParseMultipleNamedArguments)
 	ParseArguments(argc, argv, result);
 
 	EXPECT_EQ(0, result.errorCode);
-	EXPECT_EQ(2u, result.args.namedArgs.size());
-	EXPECT_STREQ("value", result.args.namedArgs[Dia::Core::StringCRC("key").Value()]);
-	EXPECT_STREQ("123", result.args.namedArgs[Dia::Core::StringCRC("other").Value()]);
+	EXPECT_EQ(2u, result.args.namedArgs.Size());
+	EXPECT_STREQ("value", result.args.GetNamedArg(Dia::Core::StringCRC("key").Value()));
+	EXPECT_STREQ("123", result.args.GetNamedArg(Dia::Core::StringCRC("other").Value()));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -127,8 +124,7 @@ TEST_F(ArgumentParserTest, ParseFlags)
 	ParseArguments(argc, argv, result);
 
 	EXPECT_EQ(0, result.errorCode);
-	EXPECT_TRUE(result.args.flags.find(Dia::Core::StringCRC("verbose").Value()) != result.args.flags.end());
-	EXPECT_TRUE(result.args.flags[Dia::Core::StringCRC("verbose").Value()]);
+	EXPECT_TRUE(result.args.HasFlag(Dia::Core::StringCRC("verbose").Value()));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -144,9 +140,9 @@ TEST_F(ArgumentParserTest, ParseMultipleFlags)
 	ParseArguments(argc, argv, result);
 
 	EXPECT_EQ(0, result.errorCode);
-	EXPECT_EQ(2u, result.args.flags.size());
-	EXPECT_TRUE(result.args.flags.find(Dia::Core::StringCRC("flag1").Value()) != result.args.flags.end());
-	EXPECT_TRUE(result.args.flags.find(Dia::Core::StringCRC("flag2").Value()) != result.args.flags.end());
+	EXPECT_EQ(2u, result.args.flags.Size());
+	EXPECT_TRUE(result.args.HasFlag(Dia::Core::StringCRC("flag1").Value()));
+	EXPECT_TRUE(result.args.HasFlag(Dia::Core::StringCRC("flag2").Value()));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -162,7 +158,7 @@ TEST_F(ArgumentParserTest, ParseShortFlags)
 	ParseArguments(argc, argv, result);
 
 	EXPECT_EQ(0, result.errorCode);
-	EXPECT_TRUE(result.args.flags.find(Dia::Core::StringCRC("verbose").Value()) != result.args.flags.end());
+	EXPECT_TRUE(result.args.HasFlag(Dia::Core::StringCRC("verbose").Value()));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -178,8 +174,8 @@ TEST_F(ArgumentParserTest, ParseMultipleShortFlags)
 	ParseArguments(argc, argv, result);
 
 	EXPECT_EQ(0, result.errorCode);
-	EXPECT_TRUE(result.args.flags.find(Dia::Core::StringCRC("verbose").Value()) != result.args.flags.end());
-	EXPECT_TRUE(result.args.flags.find(Dia::Core::StringCRC("help").Value()) != result.args.flags.end());
+	EXPECT_TRUE(result.args.HasFlag(Dia::Core::StringCRC("verbose").Value()));
+	EXPECT_TRUE(result.args.HasFlag(Dia::Core::StringCRC("help").Value()));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -197,15 +193,14 @@ TEST_F(ArgumentParserTest, ExtractCommandName)
 	EXPECT_EQ(0, result.errorCode);
 	EXPECT_EQ(Dia::Core::StringCRC("build"), result.commandName);
 	EXPECT_EQ(0u, result.args.positionalArgs.Size());
-	EXPECT_EQ(1u, result.args.flags.size());
+	EXPECT_EQ(1u, result.args.flags.Size());
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// AC6: Handle quoted arguments (note: OS/shell handles quotes, argv already unquoted)
+// AC6: Handle quoted arguments (shell handles quotes, argv already unquoted)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(ArgumentParserTest, ParseQuotedArguments)
 {
-	// Simulating shell behavior: quotes removed by shell, we receive unquoted string
 	const char* args[] = { "DiaAPI", "build", "path with spaces" };
 	int argc;
 	char** argv = MakeArgv(args, argc);
@@ -220,8 +215,6 @@ TEST_F(ArgumentParserTest, ParseQuotedArguments)
 
 ////////////////////////////////////////////////////////////////////////////////
 // AC7/AC9: --key without = is treated as a flag (not error)
-// Parser cannot distinguish between --key (flag) vs --key (malformed named arg)
-// Commands validate if flag makes sense for them
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(ArgumentParserTest, KeyWithoutEqualsIsTreatedAsFlag)
 {
@@ -233,7 +226,7 @@ TEST_F(ArgumentParserTest, KeyWithoutEqualsIsTreatedAsFlag)
 	ParseArguments(argc, argv, result);
 
 	EXPECT_EQ(0, result.errorCode);
-	EXPECT_TRUE(result.args.flags.find(Dia::Core::StringCRC("key").Value()) != result.args.flags.end());
+	EXPECT_TRUE(result.args.HasFlag(Dia::Core::StringCRC("key").Value()));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -297,7 +290,7 @@ TEST_F(ArgumentParserTest, ParseUnknownFlag)
 	ParseArguments(argc, argv, result);
 
 	EXPECT_EQ(0, result.errorCode);
-	EXPECT_TRUE(result.args.flags.find(Dia::Core::StringCRC("unknown-flag").Value()) != result.args.flags.end());
+	EXPECT_TRUE(result.args.HasFlag(Dia::Core::StringCRC("unknown-flag").Value()));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -313,7 +306,7 @@ TEST_F(ArgumentParserTest, ParseEndOfFlagsMarker)
 	ParseArguments(argc, argv, result);
 
 	EXPECT_EQ(0, result.errorCode);
-	EXPECT_TRUE(result.args.flags.find(Dia::Core::StringCRC("flag").Value()) != result.args.flags.end());
+	EXPECT_TRUE(result.args.HasFlag(Dia::Core::StringCRC("flag").Value()));
 	EXPECT_EQ(1u, result.args.positionalArgs.Size());
 	EXPECT_STREQ("--not-a-flag", result.args.positionalArgs[0]);
 }
@@ -331,7 +324,7 @@ TEST_F(ArgumentParserTest, ParseEndOfFlagsWithHelp)
 	ParseArguments(argc, argv, result);
 
 	EXPECT_EQ(0, result.errorCode);
-	EXPECT_FALSE(result.args.flags.find(Dia::Core::StringCRC("help").Value()) != result.args.flags.end());
+	EXPECT_FALSE(result.args.HasFlag(Dia::Core::StringCRC("help").Value()));
 	EXPECT_EQ(1u, result.args.positionalArgs.Size());
 	EXPECT_STREQ("--help", result.args.positionalArgs[0]);
 }
@@ -349,8 +342,8 @@ TEST_F(ArgumentParserTest, ParseEmptyValue)
 	ParseArguments(argc, argv, result);
 
 	EXPECT_EQ(0, result.errorCode);
-	EXPECT_TRUE(result.args.namedArgs.find(Dia::Core::StringCRC("key").Value()) != result.args.namedArgs.end());
-	EXPECT_STREQ("", result.args.namedArgs[Dia::Core::StringCRC("key").Value()]);
+	EXPECT_NE(nullptr, result.args.GetNamedArg(Dia::Core::StringCRC("key").Value()));
+	EXPECT_STREQ("", result.args.GetNamedArg(Dia::Core::StringCRC("key").Value()));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -368,8 +361,8 @@ TEST_F(ArgumentParserTest, ParseMixedArguments)
 	EXPECT_EQ(0, result.errorCode);
 	EXPECT_EQ(1u, result.args.positionalArgs.Size());
 	EXPECT_STREQ("file.txt", result.args.positionalArgs[0]);
-	EXPECT_STREQ("gltf", result.args.namedArgs[Dia::Core::StringCRC("format").Value()]);
-	EXPECT_TRUE(result.args.flags.find(Dia::Core::StringCRC("verbose").Value()) != result.args.flags.end());
+	EXPECT_STREQ("gltf", result.args.GetNamedArg(Dia::Core::StringCRC("format").Value()));
+	EXPECT_TRUE(result.args.HasFlag(Dia::Core::StringCRC("verbose").Value()));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -386,7 +379,7 @@ TEST_F(ArgumentParserTest, ParseHelpNoCommand)
 
 	EXPECT_EQ(0, result.errorCode);
 	EXPECT_EQ(Dia::Core::StringCRC(""), result.commandName);
-	EXPECT_TRUE(result.args.flags.find(Dia::Core::StringCRC("help").Value()) != result.args.flags.end());
+	EXPECT_TRUE(result.args.HasFlag(Dia::Core::StringCRC("help").Value()));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -410,7 +403,6 @@ TEST_F(ArgumentParserTest, ErrorCommandNameWithDash)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(ArgumentParserTest, RegisterCustomShortFlag)
 {
-	// Register custom short flag
 	RegisterShortFlag("-f", "force");
 
 	const char* args[] = { "DiaAPI", "build", "-f" };
@@ -421,5 +413,5 @@ TEST_F(ArgumentParserTest, RegisterCustomShortFlag)
 	ParseArguments(argc, argv, result);
 
 	EXPECT_EQ(0, result.errorCode);
-	EXPECT_TRUE(result.args.flags.find(Dia::Core::StringCRC("force").Value()) != result.args.flags.end());
+	EXPECT_TRUE(result.args.HasFlag(Dia::Core::StringCRC("force").Value()));
 }

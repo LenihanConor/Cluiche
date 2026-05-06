@@ -134,17 +134,8 @@ namespace Dia
 		ObserverSubject<CommandErrorEvent>& GetCommandErrorSubject();
 		ObserverSubject<HelpRequestedEvent>& GetHelpRequestedSubject();
 
-		////////////////////////////////////////////////////////////////////////////////
-		// Internal API: Fire Events
-		////////////////////////////////////////////////////////////////////////////////
-
-		namespace Internal
-		{
-			void FireCommandRegistered(const Dia::Core::StringCRC& name, const char* description);
-			void FireCommandExecuting(const Dia::Core::StringCRC& name, const CommandArgs* args);
-			void FireCommandExecuted(const Dia::Core::StringCRC& name, int exitCode, float duration);
-			void FireCommandError(const Dia::Core::StringCRC& name, const char* errorMessage, int exitCode);
-			void FireHelpRequested(const Dia::Core::StringCRC& commandName, bool isGlobalHelp);
-		}
 	}
 }
+
+// Internal fire functions — intended for DiaAPI internals only, not external consumers
+#include "EventSystemInternal.h"

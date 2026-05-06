@@ -4,7 +4,7 @@
 // Feature spec: docs/specs/features/dia/diacli/event-system.md
 ////////////////////////////////////////////////////////////////////////////////
 #include "EventSystem.h"
-#include <DiaCore/Core/Log.h>
+#include <DiaLogger/DiaLog.h>
 
 namespace Dia
 {

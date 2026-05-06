@@ -37,11 +37,11 @@ namespace Dia
 
 					if (argsJson[members[i]].isBool())
 					{
-						args.flags[keyHash] = argsJson[members[i]].asBool();
+						args.SetFlag(keyHash, argsJson[members[i]].asBool());
 					}
 					else if (argsJson[members[i]].isString())
 					{
-						args.namedArgs[keyHash] = argsJson[members[i]].asCString();
+						args.SetNamedArg(keyHash, argsJson[members[i]].asCString());
 					}
 				}
 			}

@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Filename: ArgumentParser.h
 // Description: Command-line argument parser for DiaAPI
-// Feature spec: docs/specs/features/dia/diacli/cli-parser.md
+// Feature spec: docs/specs/features/dia/diaapi/cli-parser.md
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
@@ -25,27 +25,11 @@ namespace Dia
 
 		////////////////////////////////////////////////////////////////////////////////
 		// Parse command-line arguments
-		// Populates result with commandName, args, and error status
-		//
-		// Arguments:
-		//   argc - Argument count (from main)
-		//   argv - Argument vector (from main)
-		//   result - Output parameter to populate
-		//
-		// Note: CommandArgs contains pointers into argv - caller must keep argv alive
 		////////////////////////////////////////////////////////////////////////////////
 		void ParseArguments(int argc, char* argv[], ParseResult& result);
 
 		////////////////////////////////////////////////////////////////////////////////
-		// Register short flag alias (e.g., -v → --verbose)
-		//
-		// Arguments:
-		//   shortFlag - Short form with single dash (e.g., "-v")
-		//   longFlag - Long form without dashes (e.g., "verbose")
-		//
-		// Built-in aliases registered during Initialize():
-		//   -h → help
-		//   -v → verbose
+		// Register short flag alias (e.g., -v -> --verbose)
 		////////////////////////////////////////////////////////////////////////////////
 		void RegisterShortFlag(const char* shortFlag, const char* longFlag);
 	}

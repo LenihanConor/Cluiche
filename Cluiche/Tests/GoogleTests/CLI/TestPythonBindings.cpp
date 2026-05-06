@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Filename: TestPythonBindings.cpp
 // Description: Unit tests for DiaAPI Python bindings
-// Feature spec: docs/specs/features/dia/diacli/python-bindings.md
+// Feature spec: docs/specs/features/dia/diaapi/python-bindings.md
 ////////////////////////////////////////////////////////////////////////////////
 #include <gtest/gtest.h>
 #include <DiaAPI/DiaAPI.h>
@@ -11,6 +11,56 @@ using namespace Dia::API;
 using namespace Dia::Python;
 
 ////////////////////////////////////////////////////////////////////////////////
+// Global test state (needed since callbacks are function pointers, not lambdas)
+////////////////////////////////////////////////////////////////////////////////
+static int gPyTestCallCount = 0;
+static int gPyTestLastExitCode = 0;
+static Dia::Core::Containers::DynamicArrayC<const char*, 8> gPyTestReceivedArgs;
+static bool gPyTestReceivedNamedKey = false;
+static const char* gPyTestReceivedNamedValue = nullptr;
+static bool gPyTestReceivedFlag = false;
+
+static int PyTestCountCallback(const CommandArgs& args)
+{
+	gPyTestCallCount++;
+	return 0;
+}
+
+static int PyTestReturn42(const CommandArgs& args)
+{
+	return 42;
+}
+
+static int PyTestPositionalCallback(const CommandArgs& args)
+{
+	for (unsigned int i = 0; i < args.positionalArgs.Size(); i++)
+	{
+		gPyTestReceivedArgs.Add(args.positionalArgs[i]);
+	}
+	return 0;
+}
+
+static int PyTestNamedCallback(const CommandArgs& args)
+{
+	const char* value = args.GetNamedArg(Dia::Core::StringCRC("format").Value());
+	if (value)
+	{
+		gPyTestReceivedNamedKey = true;
+		gPyTestReceivedNamedValue = value;
+	}
+	return 0;
+}
+
+static int PyTestFlagCallback(const CommandArgs& args)
+{
+	if (args.HasFlag(Dia::Core::StringCRC("verbose").Value()))
+	{
+		gPyTestReceivedFlag = true;
+	}
+	return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Test fixture
 ////////////////////////////////////////////////////////////////////////////////
 class PythonBindingsTest : public ::testing::Test
@@ -18,17 +68,21 @@ class PythonBindingsTest : public ::testing::Test
 protected:
 	void SetUp() override
 	{
-		// Initialize Python
 		bool pythonInit = Dia::Python::Initialize("External/Python311/", "External/Python/", false);
 		ASSERT_TRUE(pythonInit) << "Failed to initialize Python";
 
-		// Initialize DiaAPI
 		Dia::API::Initialize();
+
+		gPyTestCallCount = 0;
+		gPyTestLastExitCode = 0;
+		gPyTestReceivedArgs.RemoveAll();
+		gPyTestReceivedNamedKey = false;
+		gPyTestReceivedNamedValue = nullptr;
+		gPyTestReceivedFlag = false;
 	}
 
 	void TearDown() override
 	{
-		// Clean up
 		if (Dia::API::IsInitialized())
 		{
 			Dia::API::Shutdown();
@@ -40,11 +94,7 @@ protected:
 		}
 	}
 
-	// Helper: Create a test command
-	CommandInfo CreateTestCommand(
-		const char* name,
-		const char* desc,
-		std::function<int(const CommandArgs&)> callback)
+	CommandInfo CreateTestCommand(const char* name, const char* desc, CommandCallback callback)
 	{
 		CommandInfo cmd;
 		cmd.name = Dia::Core::StringCRC(name);
@@ -52,6 +102,7 @@ protected:
 		cmd.category = Dia::Core::StringCRC("test");
 		cmd.owner = "TestOwner";
 		cmd.version = "1.0.0";
+		cmd.example = nullptr;
 		cmd.callback = callback;
 		return cmd;
 	}
@@ -60,15 +111,11 @@ protected:
 ////////////////////////////////////////////////////////////////////////////////
 // AC1: Create dia_api Python module during InitializePythonBindings()
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(PythonBindingsTest, CreateDiaCliModule)
+TEST_F(PythonBindingsTest, CreateDiaApiModule)
 {
-	// Call InitializePythonBindings
 	InitializePythonBindings();
 
-	// Execute Python: import dia_api
 	int exitCode = Dia::Python::ExecuteString("import dia_api");
-
-	// Verify no exception
 	EXPECT_EQ(0, exitCode);
 }
 
@@ -77,30 +124,21 @@ TEST_F(PythonBindingsTest, CreateDiaCliModule)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(PythonBindingsTest, RegisterAllCommands)
 {
-	// Register 3 commands
-	int callCount = 0;
-
-	CommandInfo cmd1 = CreateTestCommand("test-cmd-1", "Test command 1",
-		[&](const CommandArgs& args) { callCount++; return 0; });
-	CommandInfo cmd2 = CreateTestCommand("test-cmd-2", "Test command 2",
-		[&](const CommandArgs& args) { callCount++; return 0; });
-	CommandInfo cmd3 = CreateTestCommand("test-cmd-3", "Test command 3",
-		[&](const CommandArgs& args) { callCount++; return 0; });
+	CommandInfo cmd1 = CreateTestCommand("test-cmd-1", "Test command 1", PyTestCountCallback);
+	CommandInfo cmd2 = CreateTestCommand("test-cmd-2", "Test command 2", PyTestCountCallback);
+	CommandInfo cmd3 = CreateTestCommand("test-cmd-3", "Test command 3", PyTestCountCallback);
 
 	RegisterCommand(cmd1);
 	RegisterCommand(cmd2);
 	RegisterCommand(cmd3);
 
-	// Initialize Python bindings
 	InitializePythonBindings();
 
-	// Call all 3 from Python (hyphens converted to underscores)
 	Dia::Python::ExecuteString("import dia_api\ndia_api.test_cmd_1()");
 	Dia::Python::ExecuteString("dia_api.test_cmd_2()");
 	Dia::Python::ExecuteString("dia_api.test_cmd_3()");
 
-	// Verify all 3 were called
-	EXPECT_EQ(3, callCount);
+	EXPECT_EQ(3, gPyTestCallCount);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -108,27 +146,16 @@ TEST_F(PythonBindingsTest, RegisterAllCommands)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(PythonBindingsTest, PositionalArgsConversion)
 {
-	Dia::Core::Containers::DynamicArrayC<const char*, 8> receivedArgs;
-
-	CommandInfo cmd = CreateTestCommand("test-positional", "Test positional args",
-		[&](const CommandArgs& args) {
-			for (unsigned int i = 0; i < args.positionalArgs.Size(); i++)
-			{
-				receivedArgs.Add(args.positionalArgs[i]);
-			}
-			return 0;
-		});
+	CommandInfo cmd = CreateTestCommand("test-positional", "Test positional args", PyTestPositionalCallback);
 
 	RegisterCommand(cmd);
 	InitializePythonBindings();
 
-	// Call from Python with positional args
 	Dia::Python::ExecuteString("import dia_api\ndia_api.test_positional('arg1', 'arg2')");
 
-	// Verify C++ received positional args
-	ASSERT_EQ(2u, receivedArgs.Size());
-	EXPECT_STREQ("arg1", receivedArgs[0]);
-	EXPECT_STREQ("arg2", receivedArgs[1]);
+	ASSERT_EQ(2u, gPyTestReceivedArgs.Size());
+	EXPECT_STREQ("arg1", gPyTestReceivedArgs[0]);
+	EXPECT_STREQ("arg2", gPyTestReceivedArgs[1]);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -136,30 +163,15 @@ TEST_F(PythonBindingsTest, PositionalArgsConversion)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(PythonBindingsTest, NamedArgsConversion)
 {
-	bool receivedKey = false;
-	const char* receivedValue = nullptr;
-
-	CommandInfo cmd = CreateTestCommand("test-named", "Test named args",
-		[&](const CommandArgs& args) {
-			// Check if format key exists in namedArgs (std::unordered_map)
-			auto it = args.namedArgs.find(Dia::Core::StringCRC("format").Value());
-			if (it != args.namedArgs.end())
-			{
-				receivedKey = true;
-				receivedValue = it->second;
-			}
-			return 0;
-		});
+	CommandInfo cmd = CreateTestCommand("test-named", "Test named args", PyTestNamedCallback);
 
 	RegisterCommand(cmd);
 	InitializePythonBindings();
 
-	// Call from Python with argv-style named arg
 	Dia::Python::ExecuteString("import dia_api\ndia_api.test_named('--format=gltf')");
 
-	// Verify C++ received named arg
-	EXPECT_TRUE(receivedKey);
-	EXPECT_STREQ("gltf", receivedValue);
+	EXPECT_TRUE(gPyTestReceivedNamedKey);
+	EXPECT_STREQ("gltf", gPyTestReceivedNamedValue);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -167,26 +179,14 @@ TEST_F(PythonBindingsTest, NamedArgsConversion)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(PythonBindingsTest, FlagsConversion)
 {
-	bool receivedFlag = false;
-
-	CommandInfo cmd = CreateTestCommand("test-flags", "Test flags",
-		[&](const CommandArgs& args) {
-			// Check if verbose flag exists (std::unordered_map)
-			if (args.flags.find(Dia::Core::StringCRC("verbose").Value()) != args.flags.end())
-			{
-				receivedFlag = true;
-			}
-			return 0;
-		});
+	CommandInfo cmd = CreateTestCommand("test-flags", "Test flags", PyTestFlagCallback);
 
 	RegisterCommand(cmd);
 	InitializePythonBindings();
 
-	// Call from Python with argv-style flag
 	Dia::Python::ExecuteString("import dia_api\ndia_api.test_flags('--verbose')");
 
-	// Verify C++ received flag
-	EXPECT_TRUE(receivedFlag);
+	EXPECT_TRUE(gPyTestReceivedFlag);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -194,31 +194,23 @@ TEST_F(PythonBindingsTest, FlagsConversion)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(PythonBindingsTest, ReturnExitCode)
 {
-	CommandInfo cmd = CreateTestCommand("test-return", "Test return value",
-		[](const CommandArgs& args) { return 42; });
+	CommandInfo cmd = CreateTestCommand("test-return", "Test return value", PyTestReturn42);
 
 	RegisterCommand(cmd);
 	InitializePythonBindings();
 
-	// Call from Python and capture return value
 	Dia::Python::ExecuteString(
 		"import dia_api\n"
 		"result = dia_api.test_return()\n"
 		"assert result == 42, f'Expected 42, got {result}'"
 	);
-
-	// If assertion passed in Python, test succeeds
-	// (Dia::Python::ExecuteString returns 0 on success)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // AC7: Never include pybind11 headers in DiaAPI code
-// This is a compile-time check - if we compile, we pass
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(PythonBindingsTest, NoPybind11InDiaAPI)
 {
-	// Compile-time test: DiaAPI should compile without pybind11 headers
-	// If this test compiles and runs, AC7 is satisfied
 	SUCCEED();
 }
 
@@ -227,25 +219,15 @@ TEST_F(PythonBindingsTest, NoPybind11InDiaAPI)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(PythonBindingsTest, PreInitRegistration)
 {
-	// This test is handled by SetUp() - commands are registered after Initialize()
-	// Let's test the opposite: register BEFORE Initialize
-
-	// Shutdown and start fresh
 	Dia::API::Shutdown();
 
-	// Register command BEFORE Initialize
-	int callCount = 0;
-	CommandInfo cmd = CreateTestCommand("pre-init-cmd", "Pre-init test",
-		[&](const CommandArgs& args) { callCount++; return 0; });
+	CommandInfo cmd = CreateTestCommand("pre-init-cmd", "Pre-init test", PyTestCountCallback);
 	RegisterCommand(cmd);
 
-	// Now initialize
 	Dia::API::Initialize();
 	InitializePythonBindings();
 
-	// Call from Python
 	Dia::Python::ExecuteString("import dia_api\ndia_api.pre_init_cmd()");
 
-	// Verify command was called
-	EXPECT_EQ(1, callCount);
+	EXPECT_EQ(1, gPyTestCallCount);
 }

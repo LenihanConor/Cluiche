@@ -12,11 +12,9 @@
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
 #include <DiaLogger/DiaLog.h>
 
-#include <chrono>
-
 namespace
 {
-    static Dia::AssetRuntime::TransitionNotifyCallback sNotifyCallback;
+    static Dia::AssetRuntime::ITransitionNotifier* sNotifier = nullptr;
 
     const char* StateToString(Dia::AssetRuntime::AssetState state)
     {
@@ -35,8 +33,6 @@ namespace
         return (scope == Dia::AssetRuntime::AssetScope::kGlobal) ? "Global" : "Stage";
     }
 
-    // Internal listener that logs state transitions as DiaLogger messages
-    // and pushes events via DiaDebugServer when a notify callback is provided.
     class TransitionLogger : public Dia::AssetRuntime::IAssetStateListener
     {
     public:
@@ -44,20 +40,18 @@ namespace
                           const Dia::Core::Containers::String512& resolvedPath) override
         {
             DIA_LOG_INFO("AssetRuntimeDebugCommands",
-                "subscribe_transitions: asset '%s' -> Loaded (path: %s)",
+                "subscribe_transitions: asset '%s' -> Staged (path: %s)",
                 assetId.AsChar(), resolvedPath.AsCStr());
 
-            if (sNotifyCallback)
+            if (sNotifier)
             {
                 Json::Value payload;
                 payload["assetId"] = assetId.AsChar();
-                payload["oldState"] = "Staged";
-                payload["newState"] = "Loaded";
-                auto now = std::chrono::system_clock::now();
-                payload["timestamp"] = static_cast<Json::UInt64>(
-                    std::chrono::duration_cast<std::chrono::milliseconds>(
-                        now.time_since_epoch()).count());
-                sNotifyCallback(Dia::Core::StringCRC("asset_runtime.transitions"), payload);
+                payload["oldState"] = "Registered";
+                payload["newState"] = "Staged";
+                Json::FastWriter writer;
+                sNotifier->Notify(Dia::Core::StringCRC("asset_runtime.transitions"),
+                                  writer.write(payload).c_str());
             }
         }
 
@@ -67,17 +61,15 @@ namespace
                 "subscribe_transitions: asset '%s' -> Unloading",
                 assetId.AsChar());
 
-            if (sNotifyCallback)
+            if (sNotifier)
             {
                 Json::Value payload;
                 payload["assetId"] = assetId.AsChar();
                 payload["oldState"] = "Loaded";
                 payload["newState"] = "Unloading";
-                auto now = std::chrono::system_clock::now();
-                payload["timestamp"] = static_cast<Json::UInt64>(
-                    std::chrono::duration_cast<std::chrono::milliseconds>(
-                        now.time_since_epoch()).count());
-                sNotifyCallback(Dia::Core::StringCRC("asset_runtime.transitions"), payload);
+                Json::FastWriter writer;
+                sNotifier->Notify(Dia::Core::StringCRC("asset_runtime.transitions"),
+                                  writer.write(payload).c_str());
             }
         }
 
@@ -87,17 +79,15 @@ namespace
                 "subscribe_transitions: asset '%s' load failed -> Registered",
                 assetId.AsChar());
 
-            if (sNotifyCallback)
+            if (sNotifier)
             {
                 Json::Value payload;
                 payload["assetId"] = assetId.AsChar();
                 payload["oldState"] = "Staged";
                 payload["newState"] = "Registered";
-                auto now = std::chrono::system_clock::now();
-                payload["timestamp"] = static_cast<Json::UInt64>(
-                    std::chrono::duration_cast<std::chrono::milliseconds>(
-                        now.time_since_epoch()).count());
-                sNotifyCallback(Dia::Core::StringCRC("asset_runtime.transitions"), payload);
+                Json::FastWriter writer;
+                sNotifier->Notify(Dia::Core::StringCRC("asset_runtime.transitions"),
+                                  writer.write(payload).c_str());
             }
         }
     };
@@ -111,9 +101,9 @@ namespace Dia
 {
     namespace AssetRuntime
     {
-        void RegisterAssetRuntimeCommands(AssetRuntime& runtime, TransitionNotifyCallback notifyCallback)
+        void RegisterAssetRuntimeCommands(AssetRuntime& runtime, ITransitionNotifier* notifier)
         {
-            sNotifyCallback = notifyCallback;
+            sNotifier = notifier;
 
             // ----------------------------------------------------------------
             // asset_runtime.get-loaded
@@ -188,21 +178,21 @@ namespace Dia
                 cmd.example     = "asset-runtime-get-state --assetId=texture.player";
                 cmd.callback    = [&runtime](const Dia::API::CommandArgs& args) -> int
                 {
-                    auto it = args.namedArgs.find(Dia::Core::StringCRC("assetId").Value());
-                    if (it == args.namedArgs.end() || !it->second)
+                    const char* assetIdStr = args.GetNamedArg(Dia::Core::StringCRC("assetId").Value());
+                    if (!assetIdStr)
                     {
                         DIA_LOG_WARNING("AssetRuntimeDebugCommands",
                             "asset-runtime-get-state: missing --assetId parameter");
                         return 1;
                     }
 
-                    Dia::Core::StringCRC assetId(it->second);
+                    Dia::Core::StringCRC assetId(assetIdStr);
                     AssetState state = runtime.GetAssetState(assetId);
                     unsigned int refCount = runtime.GetAssetRefCount(assetId);
                     const Dia::Core::Containers::String512* path = runtime.ResolveAssetPath(assetId);
 
                     Json::Value root;
-                    root["assetId"]  = it->second;
+                    root["assetId"]  = assetIdStr;
                     root["state"]    = StateToString(state);
                     root["scope"]    = ScopeToString(runtime.GetAssetScope(assetId));
                     root["refCount"] = refCount;
@@ -236,20 +226,20 @@ namespace Dia
                 cmd.example     = "asset-runtime-get-stage-deps --stageId=stage.gameplay";
                 cmd.callback    = [&runtime](const Dia::API::CommandArgs& args) -> int
                 {
-                    auto it = args.namedArgs.find(Dia::Core::StringCRC("stageId").Value());
-                    if (it == args.namedArgs.end() || !it->second)
+                    const char* stageIdStr = args.GetNamedArg(Dia::Core::StringCRC("stageId").Value());
+                    if (!stageIdStr)
                     {
                         DIA_LOG_WARNING("AssetRuntimeDebugCommands",
                             "asset-runtime-get-stage-deps: missing --stageId parameter");
                         return 1;
                     }
 
-                    Dia::Core::StringCRC stageId(it->second);
+                    Dia::Core::StringCRC stageId(stageIdStr);
                     Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128> results;
                     unsigned int total = runtime.GetStageDependencies(stageId, results);
 
                     Json::Value root;
-                    root["stageId"] = it->second;
+                    root["stageId"] = stageIdStr;
                     root["total"]   = total;
                     Json::Value& assets = root["assets"];
                     assets = Json::Value(Json::arrayValue);

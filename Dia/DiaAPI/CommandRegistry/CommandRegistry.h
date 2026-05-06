@@ -8,7 +8,6 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <functional>
-#include <unordered_map>
 
 namespace Dia
 {
@@ -17,25 +16,42 @@ namespace Dia
 		// Forward declarations
 		struct CommandArgs;
 		struct CommandInfo;
-		class CommandRegistry;
 
 		////////////////////////////////////////////////////////////////////////////////
 		// Command callback signature
-		// Parameters: CommandArgs with positional/named/flags
-		// Returns: Exit code (0 = success, non-zero = error)
+		// std::function allows lambdas with captures (used by debug commands)
 		////////////////////////////////////////////////////////////////////////////////
 		using CommandCallback = std::function<int(const CommandArgs& args)>;
 
 		////////////////////////////////////////////////////////////////////////////////
+		// Fixed-size flat map entry (key = StringCRC value, value = const char*)
+		////////////////////////////////////////////////////////////////////////////////
+		struct NamedArgEntry
+		{
+			unsigned int key;
+			const char* value;
+		};
+
+		struct FlagEntry
+		{
+			unsigned int key;
+			bool value;
+		};
+
+		////////////////////////////////////////////////////////////////////////////////
 		// Command arguments structure (parsed by cli-parser feature)
-		// NOTE: Using std::unordered_map instead of DiaCore::HashTable due to critical
-		// bugs in HashTable copy/move constructors that cause hangs
+		// Uses Dia containers only (PD-004 compliant)
 		////////////////////////////////////////////////////////////////////////////////
 		struct CommandArgs
 		{
 			Dia::Core::Containers::DynamicArrayC<const char*, 32> positionalArgs;
-			std::unordered_map<unsigned int, const char*> namedArgs;  // --key=value (key is StringCRC.Value())
-			std::unordered_map<unsigned int, bool> flags;              // --flag (key is StringCRC.Value())
+			Dia::Core::Containers::DynamicArrayC<NamedArgEntry, 32> namedArgs;
+			Dia::Core::Containers::DynamicArrayC<FlagEntry, 32> flags;
+
+			const char* GetNamedArg(unsigned int crcValue) const;
+			bool HasFlag(unsigned int crcValue) const;
+			void SetNamedArg(unsigned int crcValue, const char* value);
+			void SetFlag(unsigned int crcValue, bool value);
 		};
 
 		////////////////////////////////////////////////////////////////////////////////
@@ -50,17 +66,6 @@ namespace Dia
 			const char* version;                     // Version string (e.g., "1.0.0")
 			const char* example;                     // Usage example (e.g., "compile-asset model.fbx --format=gltf")
 			CommandCallback callback;                // Function to execute
-		};
-
-		////////////////////////////////////////////////////////////////////////////////
-		// Command registry class (opaque - no direct access)
-		////////////////////////////////////////////////////////////////////////////////
-		class CommandRegistry
-		{
-			CommandRegistry(const CommandRegistry&) = delete;
-			CommandRegistry& operator=(const CommandRegistry&) = delete;
-		private:
-			CommandRegistry() = default;
 		};
 
 		////////////////////////////////////////////////////////////////////////////////
@@ -82,11 +87,19 @@ namespace Dia
 
 		// Register a new command
 		// Returns true on success, false if command name is invalid or duplicate
-		// Validates:
-		//   - Command name format (lowercase + hyphens only)
-		//   - Description, category, owner are non-null
-		//   - Name is unique (no duplicates)
 		bool RegisterCommand(const CommandInfo& info);
+
+		////////////////////////////////////////////////////////////////////////////////
+		// Command Execution
+		////////////////////////////////////////////////////////////////////////////////
+
+		// Execute a registered command by name
+		// Returns: exit code (0=success, 3=command not found)
+		int ExecuteCommand(const Dia::Core::StringCRC& commandName, const CommandArgs& args);
+
+		// Main entry point for CLI usage (parses argv, dispatches command)
+		// Returns: exit code
+		int RunCLI(int argc, char* argv[]);
 
 		////////////////////////////////////////////////////////////////////////////////
 		// Command Query

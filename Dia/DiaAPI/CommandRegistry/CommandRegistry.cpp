@@ -5,7 +5,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "CommandRegistry.h"
 #include "Events/EventSystem.h"
+#include "Parser/ArgumentParser.h"
+#include "Help/HelpSystem.h"
 #include <DiaLogger/DiaLog.h>
+#include <DiaCore/Core/Assert.h>
 #include <cctype>
 #include <cstring>
 
@@ -13,6 +16,65 @@ namespace Dia
 {
 	namespace API
 	{
+		////////////////////////////////////////////////////////////////////////////////
+		// CommandArgs accessor implementations
+		////////////////////////////////////////////////////////////////////////////////
+		const char* CommandArgs::GetNamedArg(unsigned int crcValue) const
+		{
+			for (unsigned int i = 0; i < namedArgs.Size(); i++)
+			{
+				if (namedArgs[i].key == crcValue)
+				{
+					return namedArgs[i].value;
+				}
+			}
+			return nullptr;
+		}
+
+		bool CommandArgs::HasFlag(unsigned int crcValue) const
+		{
+			for (unsigned int i = 0; i < flags.Size(); i++)
+			{
+				if (flags[i].key == crcValue)
+				{
+					return flags[i].value;
+				}
+			}
+			return false;
+		}
+
+		void CommandArgs::SetNamedArg(unsigned int crcValue, const char* value)
+		{
+			for (unsigned int i = 0; i < namedArgs.Size(); i++)
+			{
+				if (namedArgs[i].key == crcValue)
+				{
+					namedArgs[i].value = value;
+					return;
+				}
+			}
+			NamedArgEntry entry;
+			entry.key = crcValue;
+			entry.value = value;
+			namedArgs.Add(entry);
+		}
+
+		void CommandArgs::SetFlag(unsigned int crcValue, bool value)
+		{
+			for (unsigned int i = 0; i < flags.Size(); i++)
+			{
+				if (flags[i].key == crcValue)
+				{
+					flags[i].value = value;
+					return;
+				}
+			}
+			FlagEntry entry;
+			entry.key = crcValue;
+			entry.value = value;
+			flags.Add(entry);
+		}
+
 		namespace Internal
 		{
 			////////////////////////////////////////////////////////////////////////////////
@@ -21,11 +83,23 @@ namespace Dia
 			struct RegistryState
 			{
 				bool isInitialized = false;
-				std::unordered_map<unsigned int, CommandInfo*> commands;  // Key: StringCRC.Value(), Value: Heap-allocated CommandInfo
-				Dia::Core::Containers::DynamicArrayC<CommandInfo*, 64> pendingRegistrations;    // Pre-init registrations
+				Dia::Core::Containers::DynamicArrayC<CommandInfo*, 64> commands;
+				Dia::Core::Containers::DynamicArrayC<CommandInfo*, 64> pendingRegistrations;
 			};
 
 			RegistryState gRegistryState;
+
+			CommandInfo* FindCommandInternal(unsigned int crcValue)
+			{
+				for (unsigned int i = 0; i < gRegistryState.commands.Size(); i++)
+				{
+					if (gRegistryState.commands[i]->name.Value() == crcValue)
+					{
+						return gRegistryState.commands[i];
+					}
+				}
+				return nullptr;
+			}
 
 			////////////////////////////////////////////////////////////////////////////////
 			// Validate command name format: lowercase + hyphens only [a-z0-9-]+
@@ -96,22 +170,18 @@ namespace Dia
 			if (gRegistryState.isInitialized)
 			{
 				DIA_LOG_WARNING("API", "Initialize() called but DiaAPI is already initialized");
-				return;  // Idempotent
+				return;
 			}
 
 			// Process pending registrations (commands registered before Initialize)
 			for (unsigned int i = 0; i < gRegistryState.pendingRegistrations.Size(); i++)
 			{
 				CommandInfo* cmdInfo = gRegistryState.pendingRegistrations[i];
-				gRegistryState.commands[cmdInfo->name.Value()] = cmdInfo;
-
-				// Fire event for each pending command
+				gRegistryState.commands.Add(cmdInfo);
 				FireCommandRegistered(cmdInfo->name, cmdInfo->description);
 			}
 
-			// Clear pending list (commands are now in main registry)
 			gRegistryState.pendingRegistrations.RemoveAll();
-
 			gRegistryState.isInitialized = true;
 
 			DIA_LOG_INFO("API", "DiaAPI command registry initialized");
@@ -130,11 +200,8 @@ namespace Dia
 				return;
 			}
 
-			// Note: We don't delete CommandInfo structs - they live for application lifetime
-			// This is acceptable as registry is singleton and commands are permanent
-			gRegistryState.commands.clear();
+			gRegistryState.commands.RemoveAll();
 			gRegistryState.pendingRegistrations.RemoveAll();
-
 			gRegistryState.isInitialized = false;
 
 			DIA_LOG_INFO("API", "DiaAPI command registry shutdown");
@@ -155,27 +222,25 @@ namespace Dia
 		{
 			using namespace Internal;
 
-			// Validate command info
 			if (!ValidateCommandInfo(info))
 			{
-				return false;  // Error already logged
+				return false;
 			}
 
-			// Validate callback is not null
 			if (!info.callback)
 			{
 				DIA_LOG_ERROR("API", "Command '%s' has null callback", info.name.AsChar());
 				return false;
 			}
 
-			// Check for duplicate
-			if (gRegistryState.commands.find(info.name.Value()) != gRegistryState.commands.end())
+			// Check for duplicate in main registry
+			if (FindCommandInternal(info.name.Value()) != nullptr)
 			{
 				DIA_LOG_ERROR("API", "Command '%s' is already registered (duplicate)", info.name.AsChar());
 				return false;
 			}
 
-			// Also check pending registrations for duplicates
+			// Check pending registrations for duplicates
 			for (unsigned int i = 0; i < gRegistryState.pendingRegistrations.Size(); i++)
 			{
 				if (gRegistryState.pendingRegistrations[i]->name == info.name)
@@ -185,19 +250,16 @@ namespace Dia
 				}
 			}
 
-			// Heap-allocate CommandInfo (lives for application lifetime)
 			CommandInfo* cmdInfo = new CommandInfo();
-			*cmdInfo = info;  // Copy
+			*cmdInfo = info;
 
-			// If initialized, register immediately
 			if (gRegistryState.isInitialized)
 			{
-				gRegistryState.commands[cmdInfo->name.Value()] = cmdInfo;
+				gRegistryState.commands.Add(cmdInfo);
 				FireCommandRegistered(cmdInfo->name, cmdInfo->description);
 			}
 			else
 			{
-				// Not initialized yet - add to pending list
 				gRegistryState.pendingRegistrations.Add(cmdInfo);
 			}
 
@@ -205,19 +267,69 @@ namespace Dia
 		}
 
 		////////////////////////////////////////////////////////////////////////////////
+		// Execute a registered command by name
+		////////////////////////////////////////////////////////////////////////////////
+		int ExecuteCommand(const Dia::Core::StringCRC& commandName, const CommandArgs& args)
+		{
+			using namespace Internal;
+
+			DIA_ASSERT(gRegistryState.isInitialized, "ExecuteCommand called before Initialize()");
+
+			const CommandInfo* cmd = GetCommand(commandName);
+			if (!cmd)
+			{
+				DIA_LOG_ERROR("API", "Command not found: %s", commandName.AsChar());
+				FireCommandError(commandName, "Command not found", 3);
+				return 3;
+			}
+
+			FireCommandExecuting(commandName, &args);
+
+			int exitCode = cmd->callback(args);
+
+			if (exitCode != 0)
+			{
+				FireCommandError(commandName, "Command returned non-zero exit code", exitCode);
+			}
+
+			FireCommandExecuted(commandName, exitCode, 0.0f);
+
+			return exitCode;
+		}
+
+		////////////////////////////////////////////////////////////////////////////////
+		// Main CLI entry point: parse args, dispatch command
+		////////////////////////////////////////////////////////////////////////////////
+		int RunCLI(int argc, char* argv[])
+		{
+			ParseResult parseResult;
+			ParseArguments(argc, argv, parseResult);
+
+			if (parseResult.errorCode != 0)
+			{
+				DIA_LOG_ERROR("API", "Argument parse error: %s", parseResult.errorMessage);
+				return parseResult.errorCode;
+			}
+
+			// Check for help
+			if (IsHelpRequested(parseResult.args, parseResult.commandName))
+			{
+				if (parseResult.commandName.AsChar()[0] == '\0')
+				{
+					return ShowGlobalHelp();
+				}
+				return ShowCommandHelp(parseResult.commandName);
+			}
+
+			return ExecuteCommand(parseResult.commandName, parseResult.args);
+		}
+
+		////////////////////////////////////////////////////////////////////////////////
 		// Get command info by name
 		////////////////////////////////////////////////////////////////////////////////
 		const CommandInfo* GetCommand(const Dia::Core::StringCRC& name)
 		{
-			using namespace Internal;
-
-			auto it = gRegistryState.commands.find(name.Value());
-			if (it != gRegistryState.commands.end())
-			{
-				return it->second;
-			}
-
-			return nullptr;
+			return Internal::FindCommandInternal(name.Value());
 		}
 
 		////////////////////////////////////////////////////////////////////////////////
@@ -229,13 +341,10 @@ namespace Dia
 
 			Dia::Core::Containers::DynamicArrayC<const CommandInfo*, 64> result;
 
-			// Iterate all commands in registry
-			for (auto& pair : gRegistryState.commands)
+			for (unsigned int i = 0; i < gRegistryState.commands.Size(); i++)
 			{
-				result.Add(pair.second);
+				result.Add(gRegistryState.commands[i]);
 			}
-
-			// TODO: Sort alphabetically by name (optional polish)
 
 			return result;
 		}
@@ -249,17 +358,14 @@ namespace Dia
 
 			Dia::Core::Containers::DynamicArrayC<const CommandInfo*, 64> result;
 
-			// Filter commands by category
-			for (auto& pair : gRegistryState.commands)
+			for (unsigned int i = 0; i < gRegistryState.commands.Size(); i++)
 			{
-				const CommandInfo* cmdInfo = pair.second;
+				const CommandInfo* cmdInfo = gRegistryState.commands[i];
 				if (cmdInfo->category == category)
 				{
 					result.Add(cmdInfo);
 				}
 			}
-
-			// TODO: Sort alphabetically by name (optional polish)
 
 			return result;
 		}

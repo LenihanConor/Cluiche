@@ -8,7 +8,6 @@
 #include <DiaPython/DiaPython.h>
 #include <DiaLogger/DiaLog.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
-#include <DiaCore/Strings/String64.h>
 #include <cstring>
 #include <cstdio>
 
@@ -19,25 +18,20 @@ namespace Dia
 		namespace Internal
 		{
 			////////////////////////////////////////////////////////////////////////////////
-			// Convert PythonArgs to CommandArgs
-			// Parses argv-style strings ("--key=value", "--flag") using cli-parser
+			// Convert PythonArgs to CommandArgs via cli-parser
 			////////////////////////////////////////////////////////////////////////////////
 			CommandArgs ConvertPythonArgs(const Dia::Python::PythonArgs& pyArgs)
 			{
-				// Build argv-style string array (need char**, not const char**)
-				static char* argv[64];
+				char* argv[64];
 				int argc = 0;
 
-				// Add dummy program name (required by ParseArguments)
 				static char progName[] = "dia_api";
 				argv[argc++] = progName;
 
-				// Add dummy command name
 				static char cmdName[] = "python_command";
 				argv[argc++] = cmdName;
 
-				// Convert all Python args to strings (using static buffers)
-				static char argBuffers[32][256];  // 32 args, max 256 chars each
+				static char argBuffers[32][256];
 				int bufferIndex = 0;
 
 				int argCount = pyArgs.GetCount();
@@ -48,7 +42,7 @@ namespace Dia
 
 					if (bufferIndex >= 32)
 					{
-						break;  // Max 32 arguments
+						break;
 					}
 
 					if (arg.IsString())
@@ -74,45 +68,23 @@ namespace Dia
 					}
 				}
 
-				// Parse using cli-parser
-				static ParseResult parseResult;  // Static to avoid HashTable copy/move issues
+				ParseResult parseResult;
 				ParseArguments(argc, argv, parseResult);
 
-				// Return directly (avoid copying HashTable which has buggy copy constructor)
-				return std::move(parseResult.args);
+				return parseResult.args;
 			}
 
 			////////////////////////////////////////////////////////////////////////////////
 			// Wrapper function for a single command
-			// Converts Python args to CommandArgs, calls command callback, returns exit code
 			////////////////////////////////////////////////////////////////////////////////
 			Dia::Python::PythonObject WrapCommand(
 				const CommandInfo* cmdInfo,
 				const Dia::Python::PythonArgs& pyArgs)
 			{
-				// Convert Python args to CommandArgs
 				CommandArgs cppArgs = ConvertPythonArgs(pyArgs);
 
-				// Execute command callback
-				int exitCode = 0;
-				try
-				{
-					exitCode = cmdInfo->callback(cppArgs);
-				}
-				catch (const std::exception& ex)
-				{
-					DIA_LOG_ERROR("API", "Command '%s' threw exception: %s",
-						cmdInfo->name.AsChar(), ex.what());
-					exitCode = 1;
-				}
-				catch (...)
-				{
-					DIA_LOG_ERROR("API", "Command '%s' threw unknown exception",
-						cmdInfo->name.AsChar());
-					exitCode = 1;
-				}
+				int exitCode = cmdInfo->callback(cppArgs);
 
-				// Convert exit code to Python
 				return Dia::Python::ToPython(exitCode);
 			}
 		}
@@ -122,14 +94,12 @@ namespace Dia
 		////////////////////////////////////////////////////////////////////////////////
 		void InitializePythonBindings()
 		{
-			// Check if Python is initialized
 			if (!Dia::Python::IsInitialized())
 			{
 				DIA_LOG_WARNING("API", "InitializePythonBindings() called but Python is not initialized");
 				return;
 			}
 
-			// Create dia_api module
 			Dia::Python::Module* module = Dia::Python::CreateModule("dia_api");
 			if (!module)
 			{
@@ -137,20 +107,15 @@ namespace Dia
 				return;
 			}
 
-			// Enumerate all registered commands
 			auto commands = ListCommands();
-
-			DIA_LOG_INFO("API", "Found %d commands", commands.Size());
 
 			DIA_LOG_INFO("API", "Registering %d commands with Python module 'dia_api'",
 				commands.Size());
 
-			// Register each command as a Python function
 			for (unsigned int i = 0; i < commands.Size(); i++)
 			{
 				const CommandInfo* cmdInfo = commands[i];
 
-				// Convert command name to Python function name (replace hyphens with underscores)
 				const char* cliName = cmdInfo->name.AsChar();
 				char pythonName[64];
 				int destIdx = 0;
@@ -169,13 +134,11 @@ namespace Dia
 				}
 				pythonName[destIdx] = '\0';
 
-				// Create wrapper lambda
 				Dia::Python::PythonCallback wrapper = [cmdInfo](const Dia::Python::PythonArgs& pyArgs)
 				{
 					return Internal::WrapCommand(cmdInfo, pyArgs);
 				};
 
-				// Register with DiaPython
 				Dia::Python::AddFunction(
 					module,
 					pythonName,

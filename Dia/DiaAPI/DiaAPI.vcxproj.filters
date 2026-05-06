@@ -31,6 +31,9 @@
     <ClInclude Include="Events\EventSystem.h">
       <Filter>Events</Filter>
     </ClInclude>
+    <ClInclude Include="Events\EventSystemInternal.h">
+      <Filter>Events</Filter>
+    </ClInclude>
     <ClInclude Include="PythonBindings\PythonBindings.h">
       <Filter>PythonBindings</Filter>
     </ClInclude>

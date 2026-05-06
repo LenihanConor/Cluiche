@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Filename: TestHelpSystem.cpp
 // Description: Unit tests for DiaAPI help system
-// Feature spec: docs/specs/features/dia/diacli/help-system.md
+// Feature spec: docs/specs/features/dia/diaapi/help-system.md
 ////////////////////////////////////////////////////////////////////////////////
 #include <gtest/gtest.h>
 #include <DiaAPI/DiaAPI.h>
@@ -16,7 +16,6 @@ class HelpSystemTest : public ::testing::Test
 protected:
 	void SetUp() override
 	{
-		// Initialize DiaAPI for each test
 		if (!IsInitialized())
 		{
 			Initialize();
@@ -25,14 +24,14 @@ protected:
 
 	void TearDown() override
 	{
-		// Clean up after each test
 		if (IsInitialized())
 		{
 			Shutdown();
 		}
 	}
 
-	// Helper: Create a test command
+	static int DummyCallback(const CommandArgs&) { return 0; }
+
 	CommandInfo CreateTestCommand(const char* name, const char* desc, const char* cat,
 		const char* owner = "TestOwner", const char* version = "1.0.0", const char* example = nullptr)
 	{
@@ -43,7 +42,7 @@ protected:
 		cmd.owner = owner;
 		cmd.version = version;
 		cmd.example = example;
-		cmd.callback = [](const CommandArgs&) { return 0; };
+		cmd.callback = DummyCallback;
 		return cmd;
 	}
 };
@@ -54,7 +53,7 @@ protected:
 TEST_F(HelpSystemTest, IsHelpRequestedDetectsFlag)
 {
 	CommandArgs args;
-	args.flags[Dia::Core::StringCRC("help").Value()] = true;
+	args.SetFlag(Dia::Core::StringCRC("help").Value(), true);
 
 	EXPECT_TRUE(IsHelpRequested(args, Dia::Core::StringCRC("build")));
 }
@@ -65,7 +64,6 @@ TEST_F(HelpSystemTest, IsHelpRequestedDetectsFlag)
 TEST_F(HelpSystemTest, IsHelpRequestedWithoutFlag)
 {
 	CommandArgs args;
-	// Empty flags map
 
 	EXPECT_FALSE(IsHelpRequested(args, Dia::Core::StringCRC("build")));
 }
@@ -75,7 +73,6 @@ TEST_F(HelpSystemTest, IsHelpRequestedWithoutFlag)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(HelpSystemTest, ShowGlobalHelpListsCommands)
 {
-	// Register multiple commands
 	CommandInfo cmd1 = CreateTestCommand("build", "Build project", "build", "TestOwner", "1.0.0", "build project.dia");
 	CommandInfo cmd2 = CreateTestCommand("clean", "Clean output", "build", "TestOwner", "1.0.0", "clean");
 	CommandInfo cmd3 = CreateTestCommand("compile-asset", "Compile asset", "asset", "AssetSystem", "2.0.0", "compile-asset model.fbx");
@@ -84,8 +81,6 @@ TEST_F(HelpSystemTest, ShowGlobalHelpListsCommands)
 	RegisterCommand(cmd2);
 	RegisterCommand(cmd3);
 
-	// ShowGlobalHelp prints to stdout - we can't easily capture in this test
-	// Just verify it returns success
 	int result = ShowGlobalHelp();
 	EXPECT_EQ(0, result);
 }
@@ -95,11 +90,9 @@ TEST_F(HelpSystemTest, ShowGlobalHelpListsCommands)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(HelpSystemTest, ShowCommandHelpShowsSpecificCommand)
 {
-	// Register a command
 	CommandInfo cmd = CreateTestCommand("build", "Build project", "build", "TestOwner", "1.0.0", "build project.dia");
 	RegisterCommand(cmd);
 
-	// Show help for this command
 	int result = ShowCommandHelp(Dia::Core::StringCRC("build"));
 	EXPECT_EQ(0, result);
 }
@@ -109,7 +102,6 @@ TEST_F(HelpSystemTest, ShowCommandHelpShowsSpecificCommand)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(HelpSystemTest, CommandsGroupedByCategory)
 {
-	// Register commands in 3 different categories
 	CommandInfo cmd1 = CreateTestCommand("build", "Build project", "build");
 	CommandInfo cmd2 = CreateTestCommand("compile-asset", "Compile asset", "asset");
 	CommandInfo cmd3 = CreateTestCommand("debug-print", "Print debug info", "debug");
@@ -118,10 +110,8 @@ TEST_F(HelpSystemTest, CommandsGroupedByCategory)
 	RegisterCommand(cmd2);
 	RegisterCommand(cmd3);
 
-	// ShowGlobalHelp should group by category
 	int result = ShowGlobalHelp();
 	EXPECT_EQ(0, result);
-	// Note: We can't easily verify console output in unit test, but the function runs
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -129,14 +119,11 @@ TEST_F(HelpSystemTest, CommandsGroupedByCategory)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(HelpSystemTest, DisplayCommandMetadata)
 {
-	// Register command with all metadata
 	CommandInfo cmd = CreateTestCommand("test-cmd", "Test command", "test", "TestOwner", "2.5.0", "test-cmd --flag");
 	RegisterCommand(cmd);
 
-	// Show command help - should display all fields
 	int result = ShowCommandHelp(Dia::Core::StringCRC("test-cmd"));
 	EXPECT_EQ(0, result);
-	// Output contains name, description, category, owner, version, example (verified by inspection)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -147,10 +134,7 @@ TEST_F(HelpSystemTest, HelpReturnsSuccess)
 	CommandInfo cmd = CreateTestCommand("build", "Build project", "build");
 	RegisterCommand(cmd);
 
-	// Global help returns 0
 	EXPECT_EQ(0, ShowGlobalHelp());
-
-	// Command help returns 0
 	EXPECT_EQ(0, ShowCommandHelp(Dia::Core::StringCRC("build")));
 }
 
@@ -159,9 +143,8 @@ TEST_F(HelpSystemTest, HelpReturnsSuccess)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(HelpSystemTest, UnknownCommandHelpReturnsError)
 {
-	// Try to show help for non-existent command
 	int result = ShowCommandHelp(Dia::Core::StringCRC("unknown-command"));
-	EXPECT_EQ(3, result);  // Error code 3 = command not found
+	EXPECT_EQ(3, result);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -169,10 +152,8 @@ TEST_F(HelpSystemTest, UnknownCommandHelpReturnsError)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(HelpSystemTest, EmptyRegistryShowsMessage)
 {
-	// Don't register any commands
-
 	int result = ShowGlobalHelp();
-	EXPECT_EQ(0, result);  // Still returns success, just shows "No commands registered"
+	EXPECT_EQ(0, result);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -180,7 +161,6 @@ TEST_F(HelpSystemTest, EmptyRegistryShowsMessage)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(HelpSystemTest, MultipleCategoriesDisplayed)
 {
-	// Register commands in multiple categories
 	CommandInfo build1 = CreateTestCommand("build", "Build project", "build");
 	CommandInfo build2 = CreateTestCommand("rebuild", "Rebuild project", "build");
 	CommandInfo asset1 = CreateTestCommand("compile-asset", "Compile asset", "asset");
@@ -203,9 +183,8 @@ TEST_F(HelpSystemTest, MultipleCategoriesDisplayed)
 TEST_F(HelpSystemTest, IsHelpRequestedWithEmptyCommand)
 {
 	CommandArgs args;
-	args.flags[Dia::Core::StringCRC("help").Value()] = true;
+	args.SetFlag(Dia::Core::StringCRC("help").Value(), true);
 
-	// Help requested even with empty command name
 	EXPECT_TRUE(IsHelpRequested(args, Dia::Core::StringCRC("")));
 }
 
@@ -214,7 +193,6 @@ TEST_F(HelpSystemTest, IsHelpRequestedWithEmptyCommand)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(HelpSystemTest, ShowGlobalHelpFiresEvent)
 {
-	// Observer for help event
 	class TestHelpObserver : public Observer<HelpRequestedEvent>
 	{
 	public:
@@ -231,10 +209,8 @@ TEST_F(HelpSystemTest, ShowGlobalHelpFiresEvent)
 	TestHelpObserver observer;
 	GetHelpRequestedSubject().Attach(&observer);
 
-	// Call ShowGlobalHelp - should fire event
 	ShowGlobalHelp();
 
-	// Verify event was fired with isGlobalHelp=true
 	EXPECT_EQ(1, observer.callCount);
 	EXPECT_TRUE(observer.lastIsGlobalHelp);
 
@@ -246,11 +222,9 @@ TEST_F(HelpSystemTest, ShowGlobalHelpFiresEvent)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(HelpSystemTest, ShowCommandHelpFiresEvent)
 {
-	// Register a test command first
 	CommandInfo cmd = CreateTestCommand("test-cmd", "Test command", "test");
 	RegisterCommand(cmd);
 
-	// Observer for help event
 	class TestHelpObserver : public Observer<HelpRequestedEvent>
 	{
 	public:
@@ -269,10 +243,8 @@ TEST_F(HelpSystemTest, ShowCommandHelpFiresEvent)
 	TestHelpObserver observer;
 	GetHelpRequestedSubject().Attach(&observer);
 
-	// Call ShowCommandHelp - should fire event
 	ShowCommandHelp(Dia::Core::StringCRC("test-cmd"));
 
-	// Verify event was fired with correct command name and isGlobalHelp=false
 	EXPECT_EQ(1, observer.callCount);
 	EXPECT_EQ(Dia::Core::StringCRC("test-cmd"), observer.lastCommandName);
 	EXPECT_FALSE(observer.lastIsGlobalHelp);

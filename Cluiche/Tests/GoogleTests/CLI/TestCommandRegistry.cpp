@@ -454,3 +454,170 @@ TEST_F(CommandRegistryTest, CommandCallbackExecution)
 	ASSERT_NE(nullptr, failureCmd);
 	EXPECT_EQ(1, failureCmd->callback(args));
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// ExecuteCommand: dispatches to correct command and returns exit code
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(CommandRegistryTest, ExecuteCommandSuccess)
+{
+	Initialize();
+
+	CommandInfo cmd;
+	cmd.name = Dia::Core::StringCRC("exec-test");
+	cmd.description = "Execution test";
+	cmd.category = Dia::Core::StringCRC("test");
+	cmd.owner = "TestSystem";
+	cmd.callback = TestCallback;
+	RegisterCommand(cmd);
+
+	CommandArgs args;
+	int exitCode = ExecuteCommand(Dia::Core::StringCRC("exec-test"), args);
+	EXPECT_EQ(0, exitCode);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// ExecuteCommand: returns 3 for unknown command
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(CommandRegistryTest, ExecuteCommandNotFound)
+{
+	Initialize();
+
+	CommandArgs args;
+	int exitCode = ExecuteCommand(Dia::Core::StringCRC("nonexistent"), args);
+	EXPECT_EQ(3, exitCode);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// ExecuteCommand: fires OnCommandExecuting and OnCommandExecuted events
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(CommandRegistryTest, ExecuteCommandFiresEvents)
+{
+	Initialize();
+
+	CommandInfo cmd;
+	cmd.name = Dia::Core::StringCRC("event-test");
+	cmd.description = "Event test";
+	cmd.category = Dia::Core::StringCRC("test");
+	cmd.owner = "TestSystem";
+	cmd.callback = TestCallback;
+	RegisterCommand(cmd);
+
+	// Attach observers
+	class ExecutingObserver : public Observer<CommandExecutingEvent>
+	{
+	public:
+		int count = 0;
+		void Notify(const CommandExecutingEvent& event) override { count++; }
+	};
+
+	class ExecutedObserver : public Observer<CommandExecutedEvent>
+	{
+	public:
+		int count = 0;
+		int lastExitCode = -1;
+		void Notify(const CommandExecutedEvent& event) override
+		{
+			count++;
+			lastExitCode = event.exitCode;
+		}
+	};
+
+	ExecutingObserver executingObs;
+	ExecutedObserver executedObs;
+	GetCommandExecutingSubject().Attach(&executingObs);
+	GetCommandExecutedSubject().Attach(&executedObs);
+
+	CommandArgs args;
+	ExecuteCommand(Dia::Core::StringCRC("event-test"), args);
+
+	EXPECT_EQ(1, executingObs.count);
+	EXPECT_EQ(1, executedObs.count);
+	EXPECT_EQ(0, executedObs.lastExitCode);
+
+	GetCommandExecutingSubject().Detach(&executingObs);
+	GetCommandExecutedSubject().Detach(&executedObs);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// ExecuteCommand: fires OnCommandError for non-zero exit code
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(CommandRegistryTest, ExecuteCommandFiresErrorEvent)
+{
+	Initialize();
+
+	CommandInfo cmd;
+	cmd.name = Dia::Core::StringCRC("fail-event-test");
+	cmd.description = "Fail event test";
+	cmd.category = Dia::Core::StringCRC("test");
+	cmd.owner = "TestSystem";
+	cmd.callback = FailCallback;
+	RegisterCommand(cmd);
+
+	class ErrorObserver : public Observer<CommandErrorEvent>
+	{
+	public:
+		int count = 0;
+		int lastExitCode = 0;
+		void Notify(const CommandErrorEvent& event) override
+		{
+			count++;
+			lastExitCode = event.exitCode;
+		}
+	};
+
+	ErrorObserver errorObs;
+	GetCommandErrorSubject().Attach(&errorObs);
+
+	CommandArgs args;
+	int exitCode = ExecuteCommand(Dia::Core::StringCRC("fail-event-test"), args);
+
+	EXPECT_EQ(1, exitCode);
+	EXPECT_EQ(1, errorObs.count);
+	EXPECT_EQ(1, errorObs.lastExitCode);
+
+	GetCommandErrorSubject().Detach(&errorObs);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// RunCLI: dispatches to correct command via argv parsing
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(CommandRegistryTest, RunCLISuccess)
+{
+	Initialize();
+
+	CommandInfo cmd;
+	cmd.name = Dia::Core::StringCRC("run-test");
+	cmd.description = "RunCLI test";
+	cmd.category = Dia::Core::StringCRC("test");
+	cmd.owner = "TestSystem";
+	cmd.callback = TestCallback;
+	RegisterCommand(cmd);
+
+	char* argv[] = { const_cast<char*>("DiaAPI"), const_cast<char*>("run-test") };
+	int exitCode = RunCLI(2, argv);
+	EXPECT_EQ(0, exitCode);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// RunCLI: returns error for missing command
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(CommandRegistryTest, RunCLINoCommand)
+{
+	Initialize();
+
+	char* argv[] = { const_cast<char*>("DiaAPI") };
+	int exitCode = RunCLI(1, argv);
+	EXPECT_EQ(2, exitCode);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// RunCLI: returns 3 for unknown command
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(CommandRegistryTest, RunCLIUnknownCommand)
+{
+	Initialize();
+
+	char* argv[] = { const_cast<char*>("DiaAPI"), const_cast<char*>("nonexistent") };
+	int exitCode = RunCLI(2, argv);
+	EXPECT_EQ(3, exitCode);
+}

@@ -11,7 +11,7 @@ namespace Dia
 	{
 		////////////////////////////////////////////////////////////////////////////////
 		// Initialize Python bindings for all registered commands
-		// Creates a "dia_cli" Python module with all registered commands as functions
+		// Creates a "dia_api" Python module with all registered commands as functions
 		//
 		// Prerequisites:
 		//   - DiaPython::Initialize() must be called first

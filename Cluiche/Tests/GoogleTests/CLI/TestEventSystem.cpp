@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Filename: TestEventSystem.cpp
 // Description: Unit tests for DiaAPI event system
-// Feature spec: docs/specs/features/dia/diacli/event-system.md
+// Feature spec: docs/specs/features/dia/diaapi/event-system.md
 ////////////////////////////////////////////////////////////////////////////////
 #include <gtest/gtest.h>
 #include <DiaAPI/DiaAPI.h>
@@ -9,10 +9,9 @@
 using namespace Dia::API;
 
 ////////////////////////////////////////////////////////////////////////////////
-// Global helper variables (accessible from observer classes and test fixture)
+// Global helper variables
 ////////////////////////////////////////////////////////////////////////////////
 static int gEventCount = 0;
-static void* gLastEvent = nullptr;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Test fixture
@@ -22,9 +21,7 @@ class EventSystemTest : public ::testing::Test
 protected:
 	void SetUp() override
 	{
-		// Reset event counters
 		gEventCount = 0;
-		gLastEvent = nullptr;
 	}
 
 	void TearDown() override
@@ -36,7 +33,6 @@ protected:
 // Test Observers
 ////////////////////////////////////////////////////////////////////////////////
 
-// Observer for CommandRegisteredEvent
 class CommandRegisteredObserver : public Observer<CommandRegisteredEvent>
 {
 public:
@@ -51,7 +47,6 @@ public:
 	const char* lastDescription = nullptr;
 };
 
-// Observer for CommandExecutingEvent
 class CommandExecutingObserver : public Observer<CommandExecutingEvent>
 {
 public:
@@ -66,7 +61,6 @@ public:
 	const CommandArgs* lastArgs = nullptr;
 };
 
-// Observer for CommandExecutedEvent
 class CommandExecutedObserver : public Observer<CommandExecutedEvent>
 {
 public:
@@ -83,7 +77,6 @@ public:
 	float lastDuration = 0.0f;
 };
 
-// Observer for CommandErrorEvent
 class CommandErrorObserver : public Observer<CommandErrorEvent>
 {
 public:
@@ -100,7 +93,6 @@ public:
 	int lastExitCode = 0;
 };
 
-// Observer for HelpRequestedEvent
 class HelpRequestedObserver : public Observer<HelpRequestedEvent>
 {
 public:
@@ -123,10 +115,8 @@ TEST_F(EventSystemTest, CommandRegisteredEventFires)
 	CommandRegisteredObserver observer;
 	GetCommandRegisteredSubject().Attach(&observer);
 
-	// Fire event
 	Internal::FireCommandRegistered(Dia::Core::StringCRC("test-cmd"), "Test command description");
 
-	// Verify observer was called
 	EXPECT_EQ(1, gEventCount);
 	EXPECT_EQ(Dia::Core::StringCRC("test-cmd"), observer.lastCommandName);
 	EXPECT_STREQ("Test command description", observer.lastDescription);
@@ -142,14 +132,11 @@ TEST_F(EventSystemTest, CommandExecutingEventFires)
 	CommandExecutingObserver observer;
 	GetCommandExecutingSubject().Attach(&observer);
 
-	// Create test args
 	CommandArgs args;
 	args.positionalArgs.Add("arg1");
 
-	// Fire event
 	Internal::FireCommandExecuting(Dia::Core::StringCRC("build"), &args);
 
-	// Verify observer was called
 	EXPECT_EQ(1, gEventCount);
 	EXPECT_EQ(Dia::Core::StringCRC("build"), observer.lastCommandName);
 	EXPECT_EQ(&args, observer.lastArgs);
@@ -165,10 +152,8 @@ TEST_F(EventSystemTest, CommandExecutedEventFires)
 	CommandExecutedObserver observer;
 	GetCommandExecutedSubject().Attach(&observer);
 
-	// Fire event
 	Internal::FireCommandExecuted(Dia::Core::StringCRC("build"), 0, 1.25f);
 
-	// Verify observer was called
 	EXPECT_EQ(1, gEventCount);
 	EXPECT_EQ(Dia::Core::StringCRC("build"), observer.lastCommandName);
 	EXPECT_EQ(0, observer.lastExitCode);
@@ -185,10 +170,8 @@ TEST_F(EventSystemTest, CommandErrorEventFires)
 	CommandErrorObserver observer;
 	GetCommandErrorSubject().Attach(&observer);
 
-	// Fire event
 	Internal::FireCommandError(Dia::Core::StringCRC("build"), "File not found", 2);
 
-	// Verify observer was called
 	EXPECT_EQ(1, gEventCount);
 	EXPECT_EQ(Dia::Core::StringCRC("build"), observer.lastCommandName);
 	EXPECT_STREQ("File not found", observer.lastErrorMessage);
@@ -205,14 +188,11 @@ TEST_F(EventSystemTest, HelpRequestedEventFires)
 	HelpRequestedObserver observer;
 	GetHelpRequestedSubject().Attach(&observer);
 
-	// Fire event for global help
 	Internal::FireHelpRequested(Dia::Core::StringCRC(""), true);
 
-	// Verify observer was called
 	EXPECT_EQ(1, gEventCount);
 	EXPECT_TRUE(observer.lastIsGlobalHelp);
 
-	// Fire event for command-specific help
 	gEventCount = 0;
 	Internal::FireHelpRequested(Dia::Core::StringCRC("build"), false);
 
@@ -236,10 +216,8 @@ TEST_F(EventSystemTest, MultipleObservers)
 	GetCommandExecutedSubject().Attach(&observer2);
 	GetCommandExecutedSubject().Attach(&observer3);
 
-	// Fire event
 	Internal::FireCommandExecuted(Dia::Core::StringCRC("test"), 0, 0.5f);
 
-	// Verify all 3 observers were called
 	EXPECT_EQ(3, gEventCount);
 
 	GetCommandExecutedSubject().Detach(&observer1);
@@ -252,7 +230,6 @@ TEST_F(EventSystemTest, MultipleObservers)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(EventSystemTest, EventPayloadsContainCorrectData)
 {
-	// Test CommandRegisteredEvent
 	{
 		CommandRegisteredObserver observer;
 		GetCommandRegisteredSubject().Attach(&observer);
@@ -265,7 +242,6 @@ TEST_F(EventSystemTest, EventPayloadsContainCorrectData)
 		GetCommandRegisteredSubject().Detach(&observer);
 	}
 
-	// Test CommandExecutedEvent with non-zero exit code
 	{
 		CommandExecutedObserver observer;
 		GetCommandExecutedSubject().Attach(&observer);
@@ -288,14 +264,11 @@ TEST_F(EventSystemTest, ObserverDetach)
 	CommandExecutedObserver observer;
 	GetCommandExecutedSubject().Attach(&observer);
 
-	// Fire event - observer should be called
 	Internal::FireCommandExecuted(Dia::Core::StringCRC("test"), 0, 0.1f);
 	EXPECT_EQ(1, gEventCount);
 
-	// Detach observer
 	GetCommandExecutedSubject().Detach(&observer);
 
-	// Fire event again - observer should NOT be called
 	gEventCount = 0;
 	Internal::FireCommandExecuted(Dia::Core::StringCRC("test"), 0, 0.1f);
 	EXPECT_EQ(0, gEventCount);
@@ -306,13 +279,11 @@ TEST_F(EventSystemTest, ObserverDetach)
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(EventSystemTest, FireEventWithNoObservers)
 {
-	// Should not crash
 	Internal::FireCommandRegistered(Dia::Core::StringCRC("test"), "desc");
 	Internal::FireCommandExecuting(Dia::Core::StringCRC("test"), nullptr);
 	Internal::FireCommandExecuted(Dia::Core::StringCRC("test"), 0, 0.1f);
 	Internal::FireCommandError(Dia::Core::StringCRC("test"), "error", 1);
 	Internal::FireHelpRequested(Dia::Core::StringCRC("test"), false);
 
-	// No observers attached, so no events should have fired
 	EXPECT_EQ(0, gEventCount);
 }
