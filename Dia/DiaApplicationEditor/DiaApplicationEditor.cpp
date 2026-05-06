@@ -6,6 +6,7 @@
 #include <DiaEditor/UI/WebUIBridge.h>
 
 #include <DiaApplication/Manifest/ApplicationManifestLoader.h>
+#include <DiaApplication/Manifest/ManifestComposer.h>
 #include <DiaApplication/Manifest/ManifestValidator.h>
 #include <DiaApplication/TypeRegistry/ApplicationTypeRegistry.h>
 
@@ -62,6 +63,9 @@ void DiaApplicationEditor::OnLoad(const Dia::Editor::EditorPluginContext& contex
 		mBridge->RegisterEventHandler(StringCRC("add_node"), [this](const Json::Value& data) {
 			HandleAddNode(data);
 		});
+		mBridge->RegisterEventHandler(StringCRC("add_node_confirmed"), [this](const Json::Value& data) {
+			HandleAddNodeConfirmed(data);
+		});
 		mBridge->RegisterEventHandler(StringCRC("remove_node"), [this](const Json::Value& data) {
 			HandleRemoveNode(data);
 		});
@@ -90,6 +94,30 @@ void DiaApplicationEditor::OnLoad(const Dia::Editor::EditorPluginContext& contex
 			if (mData != nullptr && data.isMember("node_id"))
 				strncpy_s(mData->selectedNodeId, sizeof(mData->selectedNodeId), data["node_id"].asCString(), _TRUNCATE);
 		});
+		mBridge->RegisterEventHandler(StringCRC("pu_property_changed"), [this](const Json::Value& data) {
+			HandlePUPropertyChanged(data);
+		});
+		mBridge->RegisterEventHandler(StringCRC("phase_property_changed"), [this](const Json::Value& data) {
+			HandlePhasePropertyChanged(data);
+		});
+		mBridge->RegisterEventHandler(StringCRC("initial_phase_changed"), [this](const Json::Value& data) {
+			HandleInitialPhaseChanged(data);
+		});
+		mBridge->RegisterEventHandler(StringCRC("module_phases_changed"), [this](const Json::Value& data) {
+			HandleModulePhasesChanged(data);
+		});
+		mBridge->RegisterEventHandler(StringCRC("new_manifest"), [this](const Json::Value&) {
+			HandleNewManifest();
+		});
+		mBridge->RegisterEventHandler(StringCRC("manifest_restored"), [this](const Json::Value& data) {
+			HandleManifestRestored(data);
+		});
+		mBridge->RegisterEventHandler(StringCRC("add_import"), [this](const Json::Value& data) {
+			HandleAddImport(data);
+		});
+		mBridge->RegisterEventHandler(StringCRC("remove_import"), [this](const Json::Value& data) {
+			HandleRemoveImport(data);
+		});
 	}
 
 	mFileWatcher.Start();
@@ -109,6 +137,7 @@ void DiaApplicationEditor::OnUnload()
 		mBridge->UnregisterEventHandler(StringCRC("validate"));
 		mBridge->UnregisterEventHandler(StringCRC("refresh_types"));
 		mBridge->UnregisterEventHandler(StringCRC("add_node"));
+		mBridge->UnregisterEventHandler(StringCRC("add_node_confirmed"));
 		mBridge->UnregisterEventHandler(StringCRC("remove_node"));
 		mBridge->UnregisterEventHandler(StringCRC("reorder_node"));
 		mBridge->UnregisterEventHandler(StringCRC("phase_positions_changed"));
@@ -118,6 +147,14 @@ void DiaApplicationEditor::OnUnload()
 		mBridge->UnregisterEventHandler(StringCRC("module_config_changed"));
 		mBridge->UnregisterEventHandler(StringCRC("resolve_conflict"));
 		mBridge->UnregisterEventHandler(StringCRC("node_selected"));
+		mBridge->UnregisterEventHandler(StringCRC("pu_property_changed"));
+		mBridge->UnregisterEventHandler(StringCRC("phase_property_changed"));
+		mBridge->UnregisterEventHandler(StringCRC("initial_phase_changed"));
+		mBridge->UnregisterEventHandler(StringCRC("module_phases_changed"));
+		mBridge->UnregisterEventHandler(StringCRC("new_manifest"));
+		mBridge->UnregisterEventHandler(StringCRC("manifest_restored"));
+		mBridge->UnregisterEventHandler(StringCRC("add_import"));
+		mBridge->UnregisterEventHandler(StringCRC("remove_import"));
 		mBridge = nullptr;
 	}
 
@@ -349,9 +386,9 @@ bool DiaApplicationEditor::WriteManifestToDisk(const char* path)
 		std::rename(path, backupPath);
 	}
 
-	// Serialize manifest IR to JSON
+	// Serialize only local PUs to JSON (imported PUs stay in their source files)
 	Json::Value json;
-	if (!ManifestSerializer::Serialize(mData->manifest, json))
+	if (!ManifestSerializer::SerializeLocal(mData->manifest, mData->filePath, json))
 	{
 		NotifyUI("file_error", "Failed to serialize manifest");
 		return false;
@@ -504,12 +541,129 @@ void DiaApplicationEditor::HandleAddNode(const Json::Value& data)
 	const std::string parentId = data["parent_id"].asString();
 	const std::string nodeType = data["node_type"].asString();
 
-	// Trigger type selector in UI — JS calls back add_node_confirmed with selected type
 	Json::Value payload;
-	payload["parent_id"] = parentId;
 	payload["node_type"] = nodeType;
+
+	if (nodeType == "phase")
+	{
+		// parent_id is a PU instance_id — resolve it to validate
+		int puIdx = FindProcessingUnitIndex(parentId.c_str());
+		if (puIdx < 0) return;
+		payload["pu_id"] = parentId;
+	}
+	else if (nodeType == "module")
+	{
+		// parent_id is composite "puId_phaseId" — resolve by iterating PUs/phases
+		bool resolved = false;
+		for (unsigned int i = 0; i < mData->manifest.processingUnits.Size(); ++i)
+		{
+			const auto& pu = mData->manifest.processingUnits[i];
+			const std::string puId(pu.instanceId.AsChar());
+			for (unsigned int j = 0; j < pu.phases.Size(); ++j)
+			{
+				const std::string phaseId(pu.phases[j].instanceId.AsChar());
+				const std::string composite = puId + "_" + phaseId;
+				if (composite == parentId)
+				{
+					payload["pu_id"] = puId;
+					payload["phase_id"] = phaseId;
+					resolved = true;
+					break;
+				}
+			}
+			if (resolved) break;
+		}
+		if (!resolved) return;
+	}
+
+	Json::Value availableTypes(Json::arrayValue);
+	if (nodeType == "phase")
+	{
+		for (unsigned int i = 0; i < mData->typeCache.phaseTypes.Size(); ++i)
+		{
+			Json::Value entry;
+			entry["type"] = mData->typeCache.phaseTypes[i].typeId.AsChar();
+			entry["description"] = mData->typeCache.phaseTypes[i].description;
+			availableTypes.append(entry);
+		}
+	}
+	else if (nodeType == "module")
+	{
+		for (unsigned int i = 0; i < mData->typeCache.moduleTypes.Size(); ++i)
+		{
+			Json::Value entry;
+			entry["type"] = mData->typeCache.moduleTypes[i].typeId.AsChar();
+			entry["description"] = mData->typeCache.moduleTypes[i].description;
+			availableTypes.append(entry);
+		}
+	}
+	payload["available_types"] = availableTypes;
+
 	if (mBridge != nullptr)
 		mBridge->NotifyUIDataChanged("show_type_selector", payload);
+}
+
+void DiaApplicationEditor::HandleAddNodeConfirmed(const Json::Value& data)
+{
+	if (!mData->hasManifest) return;
+	if (!data.isMember("pu_id") || !data.isMember("node_type") ||
+		!data.isMember("type_name") || !data.isMember("instance_id"))
+		return;
+
+	const std::string puId = data["pu_id"].asString();
+	const std::string nodeType = data["node_type"].asString();
+	const std::string typeName = data["type_name"].asString();
+	const std::string instanceId = data["instance_id"].asString();
+
+	int puIdx = FindProcessingUnitIndex(puId.c_str());
+	if (puIdx < 0) return;
+
+	auto& pu = mData->manifest.processingUnits[static_cast<unsigned int>(puIdx)];
+
+	if (nodeType == "phase")
+	{
+		Dia::Core::StringCRC newId(instanceId.c_str());
+		for (unsigned int i = 0; i < pu.phases.Size(); ++i)
+		{
+			if (pu.phases[i].instanceId == newId)
+			{
+				NotifyUI("add_node_error", "A phase with this instance ID already exists");
+				return;
+			}
+		}
+
+		ApplicationManifest::PhaseEntry phase;
+		phase.typeId = Dia::Core::StringCRC(typeName.c_str());
+		phase.instanceId = newId;
+		pu.phases.Add(phase);
+
+		MarkDirty();
+		NotifyManifestUpdated();
+	}
+	else if (nodeType == "module")
+	{
+		if (!data.isMember("phase_id")) return;
+		const std::string phaseId = data["phase_id"].asString();
+
+		Dia::Core::StringCRC newId(instanceId.c_str());
+		for (unsigned int i = 0; i < pu.modules.Size(); ++i)
+		{
+			if (pu.modules[i].instanceId == newId)
+			{
+				NotifyUI("add_node_error", "A module with this instance ID already exists");
+				return;
+			}
+		}
+
+		ApplicationManifest::ModuleEntry module;
+		module.typeId = Dia::Core::StringCRC(typeName.c_str());
+		module.instanceId = newId;
+		module.phaseIds.Add(Dia::Core::StringCRC(phaseId.c_str()));
+		pu.modules.Add(module);
+
+		MarkDirty();
+		NotifyManifestUpdated();
+	}
 }
 
 void DiaApplicationEditor::HandleRemoveNode(const Json::Value& data)
@@ -866,6 +1020,342 @@ void DiaApplicationEditor::HandleModuleConfigChanged(const Json::Value& data)
 
 	MarkDirty();
 	ValidateManifest();
+}
+
+void DiaApplicationEditor::HandlePUPropertyChanged(const Json::Value& data)
+{
+	if (!mData->hasManifest) return;
+	if (!data.isMember("pu_id") || !data.isMember("property") || !data.isMember("value")) return;
+
+	const std::string puId    = data["pu_id"].asString();
+	const std::string prop    = data["property"].asString();
+	const Json::Value& value  = data["value"];
+
+	int puIdx = FindProcessingUnitIndex(puId.c_str());
+	if (puIdx < 0) return;
+
+	auto& pu = mData->manifest.processingUnits[static_cast<unsigned int>(puIdx)];
+
+	if (prop == "instance_id" && value.isString())
+		pu.instanceId = Dia::Core::StringCRC(value.asCString());
+	else if (prop == "frequency_hz" && value.isDouble())
+		pu.frequencyHz = value.asFloat();
+	else if (prop == "dedicated_thread" && value.isBool())
+		pu.dedicatedThread = value.asBool();
+	else if (prop == "config" && value.isObject())
+	{
+		if (pu.config != nullptr)
+			*pu.config = value;
+		else
+			pu.config = new Json::Value(value);
+	}
+
+	MarkDirty();
+	NotifyManifestUpdated();
+}
+
+void DiaApplicationEditor::HandlePhasePropertyChanged(const Json::Value& data)
+{
+	if (!mData->hasManifest) return;
+	if (!data.isMember("pu_id") || !data.isMember("phase_id") || !data.isMember("property") || !data.isMember("value")) return;
+
+	const std::string puId    = data["pu_id"].asString();
+	const std::string phaseId = data["phase_id"].asString();
+	const std::string prop    = data["property"].asString();
+	const Json::Value& value  = data["value"];
+
+	int puIdx = FindProcessingUnitIndex(puId.c_str());
+	if (puIdx < 0) return;
+	int phaseIdx = FindPhaseIndex(puIdx, phaseId.c_str());
+	if (phaseIdx < 0) return;
+
+	auto& phase = mData->manifest.processingUnits[static_cast<unsigned int>(puIdx)]
+	                              .phases[static_cast<unsigned int>(phaseIdx)];
+
+	if (prop == "config" && value.isObject())
+	{
+		if (phase.config != nullptr)
+			*phase.config = value;
+		else
+			phase.config = new Json::Value(value);
+	}
+
+	MarkDirty();
+	NotifyManifestUpdated();
+}
+
+void DiaApplicationEditor::HandleInitialPhaseChanged(const Json::Value& data)
+{
+	if (!mData->hasManifest) return;
+	if (!data.isMember("pu_id") || !data.isMember("phase_id")) return;
+
+	const std::string puId    = data["pu_id"].asString();
+	const std::string phaseId = data["phase_id"].asString();
+
+	int puIdx = FindProcessingUnitIndex(puId.c_str());
+	if (puIdx < 0) return;
+
+	mData->manifest.processingUnits[static_cast<unsigned int>(puIdx)].initialPhase =
+		Dia::Core::StringCRC(phaseId.c_str());
+
+	MarkDirty();
+	NotifyManifestUpdated();
+}
+
+void DiaApplicationEditor::HandleModulePhasesChanged(const Json::Value& data)
+{
+	if (!mData->hasManifest) return;
+	if (!data.isMember("pu_id") || !data.isMember("module_id") || !data.isMember("phase_ids")) return;
+
+	const std::string puId     = data["pu_id"].asString();
+	const std::string moduleId = data["module_id"].asString();
+	const Json::Value& phaseIds = data["phase_ids"];
+	if (!phaseIds.isArray()) return;
+
+	int puIdx = FindProcessingUnitIndex(puId.c_str());
+	if (puIdx < 0) return;
+	int modIdx = FindModuleIndex(puIdx, moduleId.c_str());
+	if (modIdx < 0) return;
+
+	auto& mod = mData->manifest.processingUnits[static_cast<unsigned int>(puIdx)]
+	                            .modules[static_cast<unsigned int>(modIdx)];
+
+	mod.phaseIds.RemoveAll();
+	for (Json::ArrayIndex i = 0; i < phaseIds.size(); ++i)
+	{
+		if (phaseIds[i].isString())
+			mod.phaseIds.Add(Dia::Core::StringCRC(phaseIds[i].asCString()));
+	}
+
+	MarkDirty();
+	NotifyManifestUpdated();
+	ValidateManifest();
+}
+
+void DiaApplicationEditor::HandleNewManifest()
+{
+	StopWatchingFile();
+
+	mData->manifest = ApplicationManifest();
+	mData->manifest.version = 1;
+
+	ApplicationManifest::ProcessingUnitEntry pu;
+	pu.typeId = Dia::Core::StringCRC("NewProcessingUnit");
+	pu.instanceId = Dia::Core::StringCRC("NewProcessingUnit");
+	pu.frequencyHz = 30.0f;
+	pu.dedicatedThread = false;
+	pu.root = true;
+
+	ApplicationManifest::PhaseEntry phase;
+	phase.typeId = Dia::Core::StringCRC("InitPhase");
+	phase.instanceId = Dia::Core::StringCRC("InitPhase");
+	pu.phases.Add(phase);
+	pu.initialPhase = Dia::Core::StringCRC("InitPhase");
+
+	mData->manifest.processingUnits.Add(pu);
+
+	mData->filePath[0] = '\0';
+	mData->isDirty = true;
+	mData->hasManifest = true;
+}
+
+void DiaApplicationEditor::HandleManifestRestored(const Json::Value& data)
+{
+	if (!data.isMember("manifest")) return;
+
+	// Re-parse the manifest JSON from the UI's undo snapshot
+	ApplicationTypeRegistry registry;
+	ApplicationManifestLoader loader(registry);
+	Json::FastWriter writer;
+	std::string jsonStr = writer.write(data["manifest"]);
+
+	ApplicationManifest restored;
+	ManifestValidationResult result = loader.LoadFromString(jsonStr.c_str(), restored);
+	if (result != ManifestValidationResult::kSuccess && result != ManifestValidationResult::kUnknownType)
+		return;
+
+	mData->manifest = restored;
+	mData->hasManifest = true;
+	NotifyManifestUpdated();
+}
+
+void DiaApplicationEditor::HandleAddImport(const Json::Value& data)
+{
+	if (!mData->hasManifest) return;
+
+	char dialogPath[MAX_PATH] = {};
+	const char* path = nullptr;
+
+	if (data.isMember("path") && data["path"].isString())
+	{
+		path = data["path"].asCString();
+	}
+	else
+	{
+		OPENFILENAMEA ofn = {};
+		ofn.lStructSize = sizeof(ofn);
+		ofn.lpstrFilter = "Dia App Manifest (*.diaapp)\0*.diaapp\0All Files (*.*)\0*.*\0";
+		ofn.lpstrFile = dialogPath;
+		ofn.nMaxFile = MAX_PATH;
+		ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
+		ofn.lpstrDefExt = "diaapp";
+		if (!GetOpenFileNameA(&ofn))
+			return;
+		path = dialogPath;
+	}
+
+	if (path == nullptr || path[0] == '\0') return;
+
+	// Check for duplicates
+	for (unsigned int i = 0; i < mData->manifest.imports.Size(); ++i)
+	{
+		if (mData->manifest.imports[i] != nullptr && strcmp(mData->manifest.imports[i], path) == 0)
+		{
+			NotifyUI("import_error", "This file is already imported");
+			return;
+		}
+	}
+
+	// Resolve the target file and all its transitive imports
+	ManifestComposer composer;
+	ApplicationManifest targetManifest;
+	ManifestValidationResult result = composer.ComposeSingleManifest(path, targetManifest);
+	if (result == ManifestValidationResult::kImportCycle)
+	{
+		NotifyUI("import_error", "Adding this import would create a circular dependency");
+		return;
+	}
+
+	// Transitive cycle detection: check if the target (or anything it imports)
+	// imports our current file. After ComposeSingleManifest, any PU originating
+	// from our file will have sourceManifestPath == our file path.
+	if (mData->filePath[0] != '\0')
+	{
+		bool hasCycle = false;
+		for (unsigned int i = 0; i < targetManifest.processingUnits.Size(); ++i)
+		{
+			if (targetManifest.processingUnits[i].sourceManifestPath.Length() > 0 &&
+				strcmp(targetManifest.processingUnits[i].sourceManifestPath.AsCStr(), mData->filePath) == 0)
+			{
+				hasCycle = true;
+				break;
+			}
+		}
+		if (hasCycle)
+		{
+			NotifyUI("import_error", "Adding this import would create a circular dependency");
+			return;
+		}
+	}
+
+	// Add the import path string
+	size_t pathLen = strlen(path) + 1;
+	char* heapPath = new char[pathLen];
+	strcpy_s(heapPath, pathLen, path);
+	mData->manifest.imports.Add(heapPath);
+
+	// Merge the resolved PUs into the existing manifest (preserving local edits)
+	for (unsigned int i = 0; i < targetManifest.processingUnits.Size(); ++i)
+	{
+		const ApplicationManifest::ProcessingUnitEntry& sourcePU = targetManifest.processingUnits[i];
+
+		// Skip if a PU with this instance_id already exists
+		bool duplicate = false;
+		for (unsigned int j = 0; j < mData->manifest.processingUnits.Size(); ++j)
+		{
+			if (mData->manifest.processingUnits[j].instanceId == sourcePU.instanceId)
+			{
+				duplicate = true;
+				break;
+			}
+		}
+		if (duplicate) continue;
+
+		// Deep-copy PU into our manifest
+		mData->manifest.processingUnits.AddDefault();
+		ApplicationManifest::ProcessingUnitEntry& newPU =
+			mData->manifest.processingUnits[mData->manifest.processingUnits.Size() - 1];
+
+		newPU.typeId = sourcePU.typeId;
+		newPU.instanceId = sourcePU.instanceId;
+		newPU.frequencyHz = sourcePU.frequencyHz;
+		newPU.dedicatedThread = sourcePU.dedicatedThread;
+		newPU.root = sourcePU.root;
+		newPU.initialPhase = sourcePU.initialPhase;
+		newPU.sourceManifestPath = sourcePU.sourceManifestPath.Length() > 0
+			? sourcePU.sourceManifestPath : Dia::Core::Containers::String256(path);
+
+		if (sourcePU.config != nullptr)
+			newPU.config = new Json::Value(*sourcePU.config);
+
+		for (unsigned int k = 0; k < sourcePU.phases.Size(); ++k)
+		{
+			ApplicationManifest::PhaseEntry newPhase;
+			newPhase.typeId = sourcePU.phases[k].typeId;
+			newPhase.instanceId = sourcePU.phases[k].instanceId;
+			newPhase.sourceManifestPath = sourcePU.phases[k].sourceManifestPath;
+			if (sourcePU.phases[k].config != nullptr)
+				newPhase.config = new Json::Value(*sourcePU.phases[k].config);
+			newPU.phases.Add(newPhase);
+		}
+
+		for (unsigned int k = 0; k < sourcePU.modules.Size(); ++k)
+		{
+			ApplicationManifest::ModuleEntry newModule;
+			newModule.typeId = sourcePU.modules[k].typeId;
+			newModule.instanceId = sourcePU.modules[k].instanceId;
+			newModule.sourceManifestPath = sourcePU.modules[k].sourceManifestPath;
+			if (sourcePU.modules[k].config != nullptr)
+				newModule.config = new Json::Value(*sourcePU.modules[k].config);
+			for (unsigned int m = 0; m < sourcePU.modules[k].phaseIds.Size(); ++m)
+				newModule.phaseIds.Add(sourcePU.modules[k].phaseIds[m]);
+			for (unsigned int m = 0; m < sourcePU.modules[k].dependencies.Size(); ++m)
+				newModule.dependencies.Add(sourcePU.modules[k].dependencies[m]);
+			newPU.modules.Add(newModule);
+		}
+
+		for (unsigned int k = 0; k < sourcePU.transitions.Size(); ++k)
+			newPU.transitions.Add(sourcePU.transitions[k]);
+	}
+
+	MarkDirty();
+	NotifyManifestUpdated();
+}
+
+void DiaApplicationEditor::HandleRemoveImport(const Json::Value& data)
+{
+	if (!mData->hasManifest) return;
+	if (!data.isMember("path")) return;
+
+	const char* path = data["path"].asCString();
+	bool found = false;
+
+	for (unsigned int i = 0; i < mData->manifest.imports.Size(); ++i)
+	{
+		if (mData->manifest.imports[i] != nullptr && strcmp(mData->manifest.imports[i], path) == 0)
+		{
+			delete[] mData->manifest.imports[i];
+			mData->manifest.imports.RemoveAt(i);
+			found = true;
+			break;
+		}
+	}
+
+	if (!found) return;
+
+	// Remove PUs that came from the removed import
+	for (unsigned int i = mData->manifest.processingUnits.Size(); i > 0; --i)
+	{
+		unsigned int idx = i - 1;
+		if (mData->manifest.processingUnits[idx].sourceManifestPath.Length() > 0 &&
+			strcmp(mData->manifest.processingUnits[idx].sourceManifestPath.AsCStr(), path) == 0)
+		{
+			mData->manifest.processingUnits.RemoveAt(idx);
+		}
+	}
+
+	MarkDirty();
+	NotifyManifestUpdated();
 }
 
 REGISTER_EDITOR_PLUGIN(DiaApplicationEditor, "DiaApplicationEditor")

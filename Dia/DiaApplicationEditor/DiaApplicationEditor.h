@@ -64,6 +64,7 @@ namespace Dia
 
 				// Tree node mutation handlers (registered as bridge event handlers)
 				void HandleAddNode(const Json::Value& data);
+				void HandleAddNodeConfirmed(const Json::Value& data);
 				void HandleRemoveNode(const Json::Value& data);
 				void HandleReorderNode(const Json::Value& data);
 
@@ -78,6 +79,22 @@ namespace Dia
 
 				// File conflict resolution handler
 				void HandleResolveConflict(const Json::Value& data);
+
+				// PU/Phase property handlers
+				void HandlePUPropertyChanged(const Json::Value& data);
+				void HandlePhasePropertyChanged(const Json::Value& data);
+				void HandleInitialPhaseChanged(const Json::Value& data);
+
+				// Module phase association handler
+				void HandleModulePhasesChanged(const Json::Value& data);
+
+				// New manifest / undo-restore handlers
+				void HandleNewManifest();
+				void HandleManifestRestored(const Json::Value& data);
+
+				// Import management handlers
+				void HandleAddImport(const Json::Value& data);
+				void HandleRemoveImport(const Json::Value& data);
 
 				// File watcher helpers
 				void StartWatchingFile();
