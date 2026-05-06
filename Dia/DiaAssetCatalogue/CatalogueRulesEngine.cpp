@@ -13,6 +13,23 @@
 #include <stdio.h>
 #include <string.h>
 
+namespace
+{
+	// Helper: returns the ManualOverrideField bit for a given field name, or 0 if not tracked.
+	unsigned char GetManualOverrideBitForField(const char* field)
+	{
+		if (strcmp(field, "scope") == 0)
+			return Dia::AssetCatalogue::kManualOverrideScope;
+		if (strcmp(field, "tag") == 0)
+			return Dia::AssetCatalogue::kManualOverrideTags;
+		if (strcmp(field, "source_path") == 0)
+			return Dia::AssetCatalogue::kManualOverrideSourcePath;
+		if (strcmp(field, "stage") == 0)
+			return Dia::AssetCatalogue::kManualOverrideStage;
+		return 0;
+	}
+}
+
 namespace Dia
 {
 	namespace AssetCatalogue
@@ -664,6 +681,21 @@ namespace Dia
 						}
 						break;
 					}
+					}
+				}
+			}
+
+			// Populate mIsManualOverride by checking each record's override bitmask
+			for (unsigned int i = 0; i < changeset.mChanges.Size(); ++i)
+			{
+				RuleChange& change = changeset.mChanges[i];
+				unsigned char bit = GetManualOverrideBitForField(change.mField.AsCStr());
+				if (bit != 0)
+				{
+					const AssetRecord* rec = registry.FindById(change.mRecordId);
+					if (rec && (rec->mManualOverrideFlags & bit) != 0)
+					{
+						change.mIsManualOverride = true;
 					}
 				}
 			}

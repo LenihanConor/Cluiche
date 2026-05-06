@@ -24,6 +24,7 @@ namespace Dia
 					const Dia::AssetCatalogue::CatalogueRulesEngine& engine);
 
 				void AddExcludedId(const Dia::Core::StringCRC& id);
+				void SetOverwriteManuals(bool overwrite) { mOverwriteManuals = overwrite; }
 
 				void Execute() override;
 				void Undo()    override;
@@ -40,6 +41,7 @@ namespace Dia
 
 				Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, kMaxExcluded> mExcludedIds;
 				Dia::AssetCatalogue::RuleChangeset mChangeset;
+				bool mOverwriteManuals;
 
 				static const unsigned int kMaxSnapshots = 128;
 				Dia::Core::Containers::DynamicArrayC<Dia::AssetCatalogue::AssetRecord, kMaxSnapshots> mPreApplySnapshot;

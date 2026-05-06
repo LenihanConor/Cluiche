@@ -2,6 +2,19 @@
 #include <DiaAssetCatalogue/RelationshipTypes.h>
 #include <string.h>
 
+namespace
+{
+	unsigned char GetManualBitForField(const char* field)
+	{
+		using namespace Dia::AssetCatalogue;
+		if (strcmp(field, "scope") == 0)       return kManualOverrideScope;
+		if (strcmp(field, "tag") == 0)         return kManualOverrideTags;
+		if (strcmp(field, "source_path") == 0) return kManualOverrideSourcePath;
+		if (strcmp(field, "stage") == 0)       return kManualOverrideStage;
+		return 0;
+	}
+}
+
 namespace Dia
 {
 	namespace AssetCatalogue
@@ -17,6 +30,7 @@ namespace Dia
 				, mEngine(engine)
 				, mExcludedIds()
 				, mChangeset()
+				, mOverwriteManuals(false)
 				, mPreApplySnapshot()
 				, mExecuted(false)
 			{}
@@ -51,6 +65,10 @@ namespace Dia
 				{
 					const RuleChange& change = mChangeset.mChanges[i];
 					if (IsExcluded(change.mRecordId))
+						continue;
+
+					// Skip manually-overridden fields unless overwrite is requested
+					if (change.mIsManualOverride && !mOverwriteManuals)
 						continue;
 
 					AssetRecord* record = mRegistry.FindById(change.mRecordId);
@@ -102,6 +120,11 @@ namespace Dia
 							mRelationships.InvalidateReverseCache();
 						}
 					}
+
+					// Clear the manual override flag for fields written by a rule
+					unsigned char bit = GetManualBitForField(field);
+					if (bit != 0)
+						record->mManualOverrideFlags &= ~bit;
 				}
 
 				mExecuted = true;

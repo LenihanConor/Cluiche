@@ -28,6 +28,20 @@ namespace Dia
 		};
 
 		//---------------------------------------------------------------------------------------------------------
+		// ManualOverrideField
+		//
+		// Bit positions for tracking which fields were manually set by the user (not by a rule).
+		// Used as flags in AssetRecord::mManualOverrideFlags.
+		//---------------------------------------------------------------------------------------------------------
+		enum ManualOverrideField : unsigned char
+		{
+			kManualOverrideScope      = 1 << 0,
+			kManualOverrideTags       = 1 << 1,
+			kManualOverrideSourcePath = 1 << 2,
+			kManualOverrideStage      = 1 << 3
+		};
+
+		//---------------------------------------------------------------------------------------------------------
 		// RelationshipEdge
 		//
 		// A typed directed edge from one asset to another.
@@ -67,6 +81,7 @@ namespace Dia
 			Dia::Core::StringCRC                                                   mScopeStageName; // only meaningful when mScope == kStage
 			Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 4>          mTags;
 			Dia::Core::Containers::DynamicArrayC<RelationshipEdge, 8>             mReferences;    // forward refs
+			unsigned char                                                          mManualOverrideFlags; // bitmask of ManualOverrideField
 
 			AssetRecord()
 				: mId()
@@ -78,6 +93,7 @@ namespace Dia
 				, mScopeStageName()
 				, mTags()
 				, mReferences()
+				, mManualOverrideFlags(0)
 			{}
 
 			bool HasContentHash() const { return mContentHash != 0; }

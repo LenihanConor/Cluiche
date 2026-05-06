@@ -510,6 +510,7 @@ namespace Dia
 							item["newValue"]  = c.mNewValue.AsCStr();
 							item["ruleName"]  = c.mRuleName.AsCStr();
 							item["conflict"]  = c.mIsConflict;
+							item["manualOverride"] = c.mIsManualOverride;
 							changes.append(item);
 						}
 						result["success"]       = true;
@@ -536,6 +537,9 @@ namespace Dia
 									cmd->AddExcludedId(Dia::Core::StringCRC(data["excluded"][i].asCString()));
 							}
 						}
+
+						if (data.isMember("overwrite_manuals") && data["overwrite_manuals"].isBool())
+							cmd->SetOverwriteManuals(data["overwrite_manuals"].asBool());
 
 						mHistory.ExecuteCommand(cmd);
 

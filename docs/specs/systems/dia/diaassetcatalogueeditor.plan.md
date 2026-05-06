@@ -171,7 +171,7 @@ Audit revealed 4 acceptance criteria unmet across Features 5 and 8, plus spec/pl
 | 10 | Feature 5 — Graph: expand no-op for already-expanded nodes | Done | haiku | Add `graphExpandedNodes` set; guard `fetchAndAddGraphRefs` to skip if node already expanded. AC9 unmet. |
 | 11 | Feature 8 — Rules: expose rule enumeration | Done | sonnet | Add `RuleInfo` DTO + `GetRule(i)` to `CatalogueRulesEngine`. Register `asset_catalogue.get_rules` DiaAPI handler. Wire UI to render rules list table on load. AC2 unmet. |
 | 12 | Housekeeping — correct spec/plan statuses | Done | haiku | Feature specs 1,2,3,4,6,7 → Done. Features 5,8 → In Progress. System spec note updated. BACKLOG updated. |
-| 13 | Feature 8 — Rules: manual override tracking | Not Started | opus | Add per-field manual-override flags to `AssetRecord`. Set in `UpdateRecordCommand::Execute`. Surface in `RuleChange::mIsManualOverride`. Add badge to UI + filter in `apply_rules` handler. AC9/AC10 unmet. High complexity — confirm scope before starting. |
+| 13 | Feature 8 — Rules: manual override tracking | Done | opus | Add per-field manual-override flags to `AssetRecord`. Set in `UpdateRecordCommand::Execute`. Surface in `RuleChange::mIsManualOverride`. Add badge to UI + filter in `apply_rules` handler. AC9/AC10 closed. |
 
 ## Task 9: Feature 5 — Graph: Type-Based Node Coloring
 
@@ -278,3 +278,4 @@ Audit revealed 4 acceptance criteria unmet across Features 5 and 8, plus spec/pl
 - Added Tasks 9–13 to close gaps. Build order: 12 → 9 → 10 → 11 → 13.
 - Task 13 (manual override) is the most invasive; confirm scope with user before starting.
 - Status corrected to In Progress.
+- Task 13 completed: `ManualOverrideField` enum + `mManualOverrideFlags` on `AssetRecord`; `UpdateRecordCommand` sets bits; `CatalogueRulesEngine::Evaluate()` populates `RuleChange::mIsManualOverride`; `ApplyRulesCommand` skips manual-flagged fields (with `mOverwriteManuals` opt-in); UI shows yellow "manual" badge in dry-run.

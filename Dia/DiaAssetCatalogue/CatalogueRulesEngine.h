@@ -28,6 +28,7 @@ namespace Dia
 			Dia::Core::Containers::String64 mNewValue;
 			Dia::Core::Containers::String64 mRuleName;
 			bool mIsConflict;
+			bool mIsManualOverride;  // true if the target field was manually set by the user
 
 			RuleChange()
 				: mRecordId()
@@ -36,6 +37,7 @@ namespace Dia
 				, mNewValue()
 				, mRuleName()
 				, mIsConflict(false)
+				, mIsManualOverride(false)
 			{}
 		};
 
