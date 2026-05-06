@@ -1,8 +1,6 @@
 #pragma once
 
-#include <DiaCore/Json/external/json/json.h>
 #include <DiaCore/CRC/StringCRC.h>
-#include <functional>
 
 namespace Dia
 {
@@ -10,10 +8,15 @@ namespace Dia
     {
         class AssetRuntime;
 
-        using TransitionNotifyCallback = std::function<void(const Dia::Core::StringCRC& topic, const Json::Value& payload)>;
+        class ITransitionNotifier
+        {
+        public:
+            virtual ~ITransitionNotifier() = default;
+            virtual void Notify(const Dia::Core::StringCRC& topic, const char* jsonPayload) = 0;
+        };
 
         // Registers all asset_runtime.* DiaAPI commands.
         // Call once after initialising Dia::API and loading the manifest.
-        void RegisterAssetRuntimeCommands(AssetRuntime& runtime, TransitionNotifyCallback notifyCallback = nullptr);
+        void RegisterAssetRuntimeCommands(AssetRuntime& runtime, ITransitionNotifier* notifier = nullptr);
     }
 }

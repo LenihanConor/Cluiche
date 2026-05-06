@@ -389,3 +389,63 @@ TEST_F(ManifestLoadTest, AssetRuntime_ResolveAssetPath_UnknownId_ReturnsNull)
         runtime.ResolveAssetPath(Dia::Core::StringCRC("texture.nonexistent"));
     EXPECT_EQ(path, nullptr);
 }
+
+// ---------------------------------------------------------------------------
+// Capacity boundary tests
+// ---------------------------------------------------------------------------
+namespace
+{
+    void BuildCapacityJson(char* buffer, unsigned int bufferSize, unsigned int assetCount)
+    {
+        int offset = snprintf(buffer, bufferSize, "{\"assets\":[");
+        for (unsigned int i = 0; i < assetCount && offset < (int)bufferSize - 128; ++i)
+        {
+            if (i > 0)
+                offset += snprintf(buffer + offset, bufferSize - offset, ",");
+            offset += snprintf(buffer + offset, bufferSize - offset,
+                "{\"id\":\"asset.cap%u\",\"scope\":\"stage\",\"deploy_path\":\"cap%u.bin\"}", i, i);
+        }
+        snprintf(buffer + offset, bufferSize - offset, "],\"stages\":[]}");
+    }
+}
+
+TEST_F(ManifestLoadTest, AssetTableCapacity_ExactlyMaxAssets_Succeeds)
+{
+    static const unsigned int kMaxAssets = Dia::AssetRuntime::RuntimeManifestLoader::kMaxAssets;
+    static const unsigned int kBufSize = kMaxAssets * 80 + 256;
+    char* json = new char[kBufSize];
+    BuildCapacityJson(json, kBufSize, kMaxAssets);
+
+    char filePath[512];
+    ASSERT_TRUE(WriteTempFile("arun_cap_max.json", json, filePath, sizeof(filePath)));
+    delete[] json;
+
+    Dia::Core::FilePath fp = MakeFilePath("arun_cap_max.json");
+
+    Dia::AssetRuntime::RuntimeManifestLoader loader;
+    Dia::AssetRuntime::RuntimeManifestLoader::AssetTable assetTable;
+    Dia::AssetRuntime::RuntimeManifestLoader::StageTable stageTable;
+
+    EXPECT_TRUE(loader.Load(fp, assetTable, stageTable));
+    EXPECT_EQ(assetTable.Size(), kMaxAssets);
+}
+
+TEST_F(ManifestLoadTest, AssetTableCapacity_ExceedsMaxAssets_Fails)
+{
+    static const unsigned int kOverflow = Dia::AssetRuntime::RuntimeManifestLoader::kMaxAssets + 1;
+    static const unsigned int kBufSize = kOverflow * 80 + 256;
+    char* json = new char[kBufSize];
+    BuildCapacityJson(json, kBufSize, kOverflow);
+
+    char filePath[512];
+    ASSERT_TRUE(WriteTempFile("arun_cap_overflow.json", json, filePath, sizeof(filePath)));
+    delete[] json;
+
+    Dia::Core::FilePath fp = MakeFilePath("arun_cap_overflow.json");
+
+    Dia::AssetRuntime::RuntimeManifestLoader loader;
+    Dia::AssetRuntime::RuntimeManifestLoader::AssetTable assetTable;
+    Dia::AssetRuntime::RuntimeManifestLoader::StageTable stageTable;
+
+    EXPECT_FALSE(loader.Load(fp, assetTable, stageTable));
+}

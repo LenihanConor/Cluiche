@@ -16,7 +16,6 @@ namespace Dia
         namespace
         {
             static const unsigned int kMaxManifestSize = 256 * 1024;
-            static char sManifestBuffer[kMaxManifestSize];
 
             bool ReadFileToBuffer(const char* path, char* buffer, unsigned int bufferSize)
             {
@@ -115,8 +114,10 @@ namespace Dia
             manifestPath.Resolve(resolvedPath);
             const char* manifestPathStr = resolvedPath.AsCStr();
 
-            if (!ReadFileToBuffer(manifestPathStr, sManifestBuffer, kMaxManifestSize))
+            char* manifestBuffer = new char[kMaxManifestSize];
+            if (!ReadFileToBuffer(manifestPathStr, manifestBuffer, kMaxManifestSize))
             {
+                delete[] manifestBuffer;
                 DIA_LOG_ERROR("AssetRuntime", "RuntimeManifestLoader: failed to read manifest: %s", manifestPathStr);
                 return false;
             }
@@ -127,7 +128,10 @@ namespace Dia
 
             Json::Value root;
             Json::Reader reader;
-            if (!reader.parse(sManifestBuffer, root, false))
+            bool parseOk = reader.parse(manifestBuffer, root, false);
+            delete[] manifestBuffer;
+
+            if (!parseOk)
             {
                 DIA_LOG_ERROR("AssetRuntime", "RuntimeManifestLoader: JSON parse error in %s", manifestPathStr);
                 return false;

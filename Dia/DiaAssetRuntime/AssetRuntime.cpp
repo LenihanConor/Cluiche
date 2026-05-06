@@ -7,7 +7,25 @@
 #include <DiaLogger/DiaLog.h>
 
 #include <math.h>
-#include <thread>
+
+#if defined(_MSC_VER)
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#else
+#include <pthread.h>
+#endif
+
+namespace
+{
+    unsigned int GetCurrentThreadIdValue()
+    {
+#if defined(_MSC_VER)
+        return static_cast<unsigned int>(::GetCurrentThreadId());
+#else
+        return static_cast<unsigned int>(reinterpret_cast<uintptr_t>(pthread_self()) & 0xFFFFFFFF);
+#endif
+    }
+}
 
 namespace Dia
 {
@@ -30,7 +48,7 @@ namespace Dia
         //------------------------------------------------------------------------------------
         AssetRuntime::AssetRuntime()
             : mIsDispatching(false)
-            , mOwnerThreadId(std::this_thread::get_id())
+            , mOwnerThreadId(GetCurrentThreadIdValue())
         {}
 
         bool AssetRuntime::LoadManifest(const Dia::Core::FilePath& manifestPath)
@@ -464,7 +482,7 @@ namespace Dia
 
         void AssetRuntime::AssertOwnerThread() const
         {
-            DIA_ASSERT(std::this_thread::get_id() == mOwnerThreadId,
+            DIA_ASSERT(GetCurrentThreadIdValue() == mOwnerThreadId,
                 "AssetRuntime accessed from wrong thread — single-threaded use only");
         }
 

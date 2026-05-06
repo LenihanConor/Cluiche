@@ -11,8 +11,6 @@
 #include "DiaCore/Containers/HashTables/HashTableHashFunctionData.h"
 #include "DiaCore/Containers/Arrays/DynamicArrayC.h"
 
-#include <thread>
-
 namespace Dia
 {
     namespace AssetRuntime
@@ -115,7 +113,7 @@ namespace Dia
             Dia::Core::Containers::DynamicArrayC<IAssetStateListener*, kMaxListeners> mListeners;
             Dia::Core::Containers::DynamicArrayC<IAssetStateListener*, kMaxListeners> mDeferredRemovals;
             bool                              mIsDispatching;
-            std::thread::id                   mOwnerThreadId;
+            unsigned int                      mOwnerThreadId;
         };
     }
 }
