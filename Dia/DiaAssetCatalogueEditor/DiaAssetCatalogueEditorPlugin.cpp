@@ -80,6 +80,7 @@ namespace Dia
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.open_asset"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.register_type_editor"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.load_rules"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.get_rules"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.dry_run_rules"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.apply_rules"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.query_asset_ids"));
@@ -542,6 +543,29 @@ namespace Dia
 						result["success"]       = true;
 						result["applied_count"] = static_cast<int>(cs.mChanges.Size());
 						PushRegistryState();
+						return result;
+					});
+
+				// get_rules — returns loaded rules list for UI display
+				mBridge->RegisterRequestHandler(
+					Dia::Core::StringCRC("asset_catalogue.get_rules"),
+					[this](const Json::Value& /*data*/) -> Json::Value
+					{
+						Json::Value result;
+						Json::Value rules(Json::arrayValue);
+						for (unsigned int i = 0; i < mRulesEngine.GetRuleCount(); ++i)
+						{
+							Dia::AssetCatalogue::RuleInfo info = mRulesEngine.GetRule(i);
+							Json::Value rule;
+							rule["name"]        = info.mName.AsCStr();
+							rule["match"]       = info.mMatchType.AsCStr();
+							rule["matchValue"]  = info.mMatchValue.AsCStr();
+							rule["action"]      = info.mActionType.AsCStr();
+							rule["actionParam"] = info.mActionParam.AsCStr();
+							rules.append(rule);
+						}
+						result["success"] = true;
+						result["rules"]   = rules;
 						return result;
 					});
 

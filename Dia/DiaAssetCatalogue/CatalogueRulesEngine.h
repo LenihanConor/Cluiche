@@ -70,6 +70,22 @@ namespace Dia
 		//
 		// Supports dry-run mode (returns changes without mutation) and conflict detection.
 		//---------------------------------------------------------------------------------------------------------
+		//---------------------------------------------------------------------------------------------------------
+		// RuleInfo
+		//
+		// Public read-only view of a loaded rule, for UI display purposes.
+		//---------------------------------------------------------------------------------------------------------
+		struct RuleInfo
+		{
+			Dia::Core::Containers::String64 mName;
+			Dia::Core::Containers::String64 mMatchType;   // e.g. "type", "source_path_glob", "tag", "all"
+			Dia::Core::Containers::String64 mMatchValue;  // the pattern/value, empty for "all"
+			Dia::Core::Containers::String64 mActionType;  // e.g. "assign_tag", "assign_scope", "infer_references"
+			Dia::Core::Containers::String64 mActionParam; // tag name, scope value, etc.
+
+			RuleInfo() : mName(), mMatchType(), mMatchValue(), mActionType(), mActionParam() {}
+		};
+
 		class CatalogueRulesEngine
 		{
 		public:
@@ -91,6 +107,9 @@ namespace Dia
 
 			// Number of loaded rules.
 			unsigned int GetRuleCount() const;
+
+			// Read-only access to a loaded rule by index (0-based).
+			RuleInfo GetRule(unsigned int index) const;
 
 		private:
 			//-------------------------------------------------------------------

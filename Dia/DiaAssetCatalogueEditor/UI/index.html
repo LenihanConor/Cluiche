@@ -1007,9 +1007,35 @@
         rulesLoaded = true;
         document.getElementById('btn-dry-run').disabled    = false;
         document.getElementById('btn-apply-rules').disabled = false;
-        document.getElementById('rules-list').innerHTML = '<div class="empty-state">Run Dry Run to preview changes</div>';
+        diaRequest('asset_catalogue.get_rules', {}).then(function(gr) {
+          renderRulesList(gr.rules || []);
+        });
       }
     });
+  }
+
+  function renderRulesList(rules) {
+    var listEl = document.getElementById('rules-list');
+    if (rules.length === 0) {
+      listEl.innerHTML = '<div class="empty-state">No rules loaded</div>';
+      return;
+    }
+    var header = '<table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:10px;">' +
+      '<thead><tr>' +
+      '<th style="background:#2d2d2d;color:#9cdcfe;text-align:left;padding:4px 8px;border-bottom:1px solid #3c3c3c;">Name</th>' +
+      '<th style="background:#2d2d2d;color:#9cdcfe;text-align:left;padding:4px 8px;border-bottom:1px solid #3c3c3c;">Match</th>' +
+      '<th style="background:#2d2d2d;color:#9cdcfe;text-align:left;padding:4px 8px;border-bottom:1px solid #3c3c3c;">Action</th>' +
+      '</tr></thead><tbody>';
+    var rows = rules.map(function(r) {
+      var match = escHtml(r.match) + (r.matchValue ? ': <span style="color:#9cdcfe;">' + escHtml(r.matchValue) + '</span>' : '');
+      var action = escHtml(r.action) + (r.actionParam ? ': <span style="color:#4ec9a0;">' + escHtml(r.actionParam) + '</span>' : '');
+      return '<tr>' +
+        '<td style="padding:3px 8px;border-bottom:1px solid #2d2d2d;color:#d4d4d4;">' + escHtml(r.name) + '</td>' +
+        '<td style="padding:3px 8px;border-bottom:1px solid #2d2d2d;">' + match + '</td>' +
+        '<td style="padding:3px 8px;border-bottom:1px solid #2d2d2d;">' + action + '</td>' +
+        '</tr>';
+    }).join('');
+    listEl.innerHTML = header + rows + '</tbody></table><div class="empty-state" style="font-style:italic;font-size:11px;padding:4px 0;">Run Dry Run to preview changes</div>';
   }
 
   function onDryRun() {

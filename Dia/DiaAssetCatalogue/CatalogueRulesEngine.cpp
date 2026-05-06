@@ -371,6 +371,43 @@ namespace Dia
 		}
 
 		//------------------------------------------------------------------------------------
+		// GetRule
+		//------------------------------------------------------------------------------------
+		RuleInfo CatalogueRulesEngine::GetRule(unsigned int index) const
+		{
+			RuleInfo info;
+			if (index >= mRules.Size())
+				return info;
+
+			const Rule& r = mRules[index];
+			info.mName = r.mName;
+
+			switch (r.mMatchType)
+			{
+				case MatchType::Type:           info.mMatchType = "type";             break;
+				case MatchType::SourcePathGlob: info.mMatchType = "source_path_glob"; break;
+				case MatchType::Tag:            info.mMatchType = "tag";              break;
+				case MatchType::StageRefCount:  info.mMatchType = "stage_ref_count";  break;
+				case MatchType::All:            info.mMatchType = "all";              break;
+				default:                        info.mMatchType = "unknown";          break;
+			}
+			info.mMatchValue = r.mMatchValue;
+
+			switch (r.mActionType)
+			{
+				case ActionType::AssignTag:         info.mActionType = "assign_tag";         break;
+				case ActionType::AssignScope:       info.mActionType = "assign_scope";       break;
+				case ActionType::AssignStage:       info.mActionType = "assign_stage";       break;
+				case ActionType::InferReferences:   info.mActionType = "infer_references";   break;
+				case ActionType::ComputeScope:      info.mActionType = "compute_scope";      break;
+				default:                            info.mActionType = "unknown";            break;
+			}
+			info.mActionParam = r.mActionParam;
+
+			return info;
+		}
+
+		//------------------------------------------------------------------------------------
 		// EvaluateDryRun
 		//------------------------------------------------------------------------------------
 		RuleChangeset CatalogueRulesEngine::EvaluateDryRun(const AssetRegistry& registry,
