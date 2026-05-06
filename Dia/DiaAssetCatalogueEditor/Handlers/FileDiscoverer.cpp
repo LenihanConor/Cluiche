@@ -54,7 +54,6 @@ namespace Dia
 
 					if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 					{
-						// Try to match folder itself as a folder asset type (pattern e.g. "*.folder")
 						const AssetTypeDescriptor* desc = typeRegistry.FindByFileName(name);
 						if (desc && !outFiles.IsFull())
 						{
@@ -67,6 +66,11 @@ namespace Dia
 									strncpy_s(df.mFullPath, sizeof(df.mFullPath), fullPath, _TRUNCATE);
 									strncpy_s(df.mSuggestedType, sizeof(df.mSuggestedType), desc->mTypeId.AsChar(), _TRUNCATE);
 									strncpy_s(df.mSuggestedId, sizeof(df.mSuggestedId), suggestedId, _TRUNCATE);
+									df.mFileSize = 0;
+									ULARGE_INTEGER ft;
+									ft.LowPart = findData.ftLastWriteTime.dwLowDateTime;
+									ft.HighPart = findData.ftLastWriteTime.dwHighDateTime;
+									df.mLastModified = ft.QuadPart;
 									outFiles.Add(df);
 								}
 							}
@@ -88,6 +92,14 @@ namespace Dia
 									strncpy_s(df.mFullPath, sizeof(df.mFullPath), fullPath, _TRUNCATE);
 									strncpy_s(df.mSuggestedType, sizeof(df.mSuggestedType), desc->mTypeId.AsChar(), _TRUNCATE);
 									strncpy_s(df.mSuggestedId, sizeof(df.mSuggestedId), suggestedId, _TRUNCATE);
+									ULARGE_INTEGER size;
+									size.LowPart = findData.nFileSizeLow;
+									size.HighPart = findData.nFileSizeHigh;
+									df.mFileSize = size.QuadPart;
+									ULARGE_INTEGER ft;
+									ft.LowPart = findData.ftLastWriteTime.dwLowDateTime;
+									ft.HighPart = findData.ftLastWriteTime.dwHighDateTime;
+									df.mLastModified = ft.QuadPart;
 									outFiles.Add(df);
 								}
 							}

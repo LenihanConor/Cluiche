@@ -15,6 +15,8 @@ namespace Dia
 				char mFullPath[512];
 				char mSuggestedType[64];
 				char mSuggestedId[256];
+				unsigned long long mFileSize;
+				unsigned long long mLastModified;
 			};
 
 			static const unsigned int kMaxDiscoveredFiles = 64;
