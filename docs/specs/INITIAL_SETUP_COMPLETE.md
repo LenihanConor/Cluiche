@@ -42,7 +42,7 @@ The spec-driven development system has been initialized with Cluiche-specific in
 - Application purpose and scope
 - Systems table: 5 systems identified (ApplicationFlow, Levels, Rendering, Input, UI)
 - Threading model: Main/Render/Sim ProcessingUnits
-- Level system: DummyLevel, UnitTestLevel
+- Level system: DummyStage, UnitTestLevel
 - Platform dependencies: All Dia modules checked/listed
 - Out of scope: Clear boundaries (not production game, not networked, etc.)
 - Key personas: Engine devs, game devs, QA, docs writers
@@ -184,7 +184,7 @@ docs/specs/
    
    Suggested systems to create:
    - ApplicationFlow (Main/Render/Sim PUs, level management)
-   - Levels (DummyLevel, UnitTestLevel, level lifecycle)
+   - Levels (DummyStage, UnitTestLevel, level lifecycle)
    - Rendering (Graphics, canvas, frame composition)
    - Input (Event handling, keyboard/mouse state)
    - UI (interface rendering)

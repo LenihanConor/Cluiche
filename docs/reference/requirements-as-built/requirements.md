@@ -50,7 +50,7 @@ This document tracks functional and non-functional requirements with status, pri
 
 → Implementation:
 - `Cluiche/CluicheKernel/LevelFactory.h`
-- `Cluiche/Levels/DummyLevel/DummyLevel.h`
+- `Cluiche/Stages/DummyStage/DummyStage.h`
 - `Cluiche/Levels/UnitTestLevel/UnitTestLevel.h`
 
 **Verification:**

@@ -18,7 +18,7 @@
 
 ## Problem Statement
 
-Game content like levels (e.g., DummyLevel) injects phases and modules into ProcessingUnits purely through code. These injections are invisible to the manifest system and the editor — the editor can show the application's PU/phase/module structure from .diaapp files, but has no way to see or edit what a level contributes. Levels also have confusing naming ("level" implies spatial, but DummyLevel is really a gameplay stage that defines execution flow).
+Game content like levels (e.g., DummyStage) injects phases and modules into ProcessingUnits purely through code. These injections are invisible to the manifest system and the editor — the editor can show the application's PU/phase/module structure from .diaapp files, but has no way to see or edit what a level contributes. Levels also have confusing naming ("level" implies spatial, but DummyStage is really a gameplay stage that defines execution flow).
 
 ---
 
@@ -29,7 +29,7 @@ Rename the "level" concept to **stage**. Each stage gets its own `.diaapp` manif
 ### Key Design Points
 
 1. **Stages inject, don't own** — a stage declares phases and modules tagged with a target PU instance ID. The loader merges these into the target PU's entry. Stages never create new PUs or threads (SD-012).
-2. **Rename Level -> Stage** — DummyLevel becomes DummyStage throughout CluicheTest. ILevel becomes IStage. LevelFactory becomes StageFactory.
+2. **Rename Level -> Stage** — DummyStage becomes DummyStage throughout CluicheTest. ILevel becomes IStage. LevelFactory becomes StageFactory.
 3. **Stage .diaapp format** — uses the same .diaapp JSON schema, with a `stage` metadata field marking it as a stage manifest and a `target_processing_unit` field on each phase/module entry indicating which PU to inject into.
 4. **Auto-generated manifests from introspection** — the Stage class constructs its phases in C++ (source of truth for runtime). After code-based construction, `ApplicationIntrospector` auto-generates the stage manifest from the runtime topology. The editor reads this derived manifest. This eliminates code/manifest divergence — there is one source of truth (code), and the manifest is always a faithful reflection of it.
 5. **Backward compatible** — stages can still be constructed purely in code (no manifest required). The manifest is opt-in for editor visibility.
@@ -42,7 +42,7 @@ Rename the "level" concept to **stage**. Each stage gets its own `.diaapp` manif
 | ID | Criterion | Verification Method |
 |----|-----------|---------------------|
 | AC1 | ILevel is renamed to IStage; LevelFactory renamed to StageFactory; all references updated | Build succeeds with no ILevel/LevelFactory references remaining |
-| AC2 | DummyLevel namespace/class renamed to DummyStage throughout CluicheTest | Build succeeds; grep for "DummyLevel" returns zero hits |
+| AC2 | DummyStage namespace/class renamed to DummyStage throughout CluicheTest | Build succeeds; grep for "DummyStage" returns zero hits |
 | AC3 | DummyStage has a .diaapp manifest (`stages/dummy_stage.diaapp`) declaring its phases and transitions | File exists with correct JSON structure |
 | AC4 | Stage manifest declares `target_processing_unit` on each phase entry, indicating which PU to inject into | Unit test: parse stage manifest, verify target PU field present on all phase entries |
 | AC5 | ApplicationManifestLoader merges stage manifest phases into the target PU when the stage is imported | Unit test: root manifest imports stage; merged result has stage's phases in the target PU's entry |
@@ -197,8 +197,8 @@ Files affected in CluicheTest:
 - `CluicheKernel/ILevel.h` → `CluicheKernel/IStage.h`
 - `CluicheKernel/LevelFactory.h/.cpp` → `CluicheKernel/StageFactory.h/.cpp`
 - `CluicheKernel/LevelRegistryModule.h/.cpp` → `CluicheKernel/StageRegistryModule.h/.cpp`
-- `Levels/DummyLevel/` → `Stages/DummyStage/`
-- All phase files within DummyLevel rename namespace
+- `Stages/DummyStage/` → `Stages/DummyStage/`
+- All phase files within DummyStage rename namespace
 - `ApplicationFlow/` references to levels → stages
 - vcxproj and vcxproj.filters for CluicheTest and CluicheKernel
 
@@ -280,7 +280,7 @@ The IStage interface keeps the same shape as ILevel — constructor still receiv
 ### Integration Tests
 
 12. **CluicheTest end-to-end** — application starts, DummyStage loads and transitions through MainLoadPhase -> MainFEPhase
-13. **Code-only stage** — stage without manifest constructs and runs identically to current DummyLevel
+13. **Code-only stage** — stage without manifest constructs and runs identically to current DummyStage
 14. **Manifest round-trip** — save merged manifest, reload, verify stage phases still present
 
 ---
@@ -293,7 +293,7 @@ The IStage interface keeps the same shape as ILevel — constructor still receiv
 - `CluicheKernel/LevelRegistryModule.h/.cpp` → `CluicheKernel/StageRegistryModule.h/.cpp`
 
 ### Renamed (CluicheTest)
-- `Cluiche/CluicheTest/Levels/DummyLevel/` → `Cluiche/CluicheTest/Stages/DummyStage/`
+- `Cluiche/CluicheTest/Stages/DummyStage/` → `Cluiche/CluicheTest/Stages/DummyStage/`
 - All files within: Level.h/.cpp, phase files, namespace references
 
 ### Modified (DiaApplication)

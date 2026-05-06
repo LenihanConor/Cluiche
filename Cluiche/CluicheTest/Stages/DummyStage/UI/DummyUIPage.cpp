@@ -3,7 +3,7 @@
 
 namespace Cluiche
 {
-	namespace DummyLevel
+	namespace DummyStage
 	{
 		DummyUIPage::DummyUIPage(DummyUIPageExternalInterface* parentPhase)
 			: Dia::UI::Page()
@@ -17,7 +17,7 @@ namespace Cluiche
 
 		void DummyUIPage::InitializePage()
 		{
-			Initialize(Dia::Core::FilePath("root", "DummyLevel/", "dummyLevel.html"));
+			Initialize(Dia::Core::FilePath("root", "DummyStage/", "dummyStage.html"));
 
 			BindMethod(Dia::UI::BoundMethod::CreateBoundMethod("Application_ExitLevel",
 				Dia::UI::BoundMethod::MethodPtr(this, &DummyUIPage::RequestExitLevel)));

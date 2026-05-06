@@ -58,7 +58,7 @@ Main Thread (MainProcessingUnit)
 
 **Levels** = Pluggable game states loaded via `LevelFactory`
 
-- `DummyLevel` - Example level implementation
+- `DummyStage` - Example level implementation
 - `UnitTestLevel` - In-engine test harness
 - Custom levels registered at startup
 
@@ -121,7 +121,7 @@ int main() {
 1. **MainProcessingUnit::Start()**
    - Starts `MainBootPhase`
      - Registers modules: `MainKernelModule`, `LevelFactoryModule`
-     - Registers levels: `DummyLevel`, `UnitTestLevel`
+     - Registers levels: `DummyStage`, `UnitTestLevel`
    - Transitions to `MainBootStrapPhase`
      - Spawns `RenderProcessingUnit` thread
      - Spawns `SimProcessingUnit` thread
@@ -163,7 +163,7 @@ int main() {
 
 **Level System:**
 - `Cluiche/CluicheTest/CluicheKernel/LevelFactory.h` - Level registry and factory
-- `Cluiche/CluicheTest/Levels/DummyLevel/DummyLevel.h` - Example level
+- `Cluiche/CluicheTest/Stages/DummyStage/DummyStage.h` - Example level
 
 ### Want to understand Dia engine subsystems?
 

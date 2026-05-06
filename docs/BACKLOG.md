@@ -20,8 +20,6 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 |--------|------|----------|------------|
 | DiaApplicationEditor | [diaapplicationeditor.md](specs/systems/dia/diaapplicationeditor.md) | 15 features, all Approved — **not yet implemented** | DiaEditor ✅, DiaWebSocket ✅, DiaUICEF ✅ |
 | DiaAssetCatalogueEditor | [diaassetcatalogueeditor.md](specs/systems/dia/diaassetcatalogueeditor.md) | 8 features, all Approved — manifest load/save, CRUD, file discoverer, relationship editor, graph view, validation, routing, rules UI. [Plan](specs/systems/dia/diaassetcatalogueeditor.plan.md) | DiaAssetCatalogue ✅ |
-| DiaAssetRuntime | [diaassetruntime.md](specs/systems/dia/diaassetruntime.md) | 6 features, all Approved — manifest-load-path-resolution, asset-state-machine, stage-lifecycle-ref-counting, event-notification, debug-query-api, diaapi-debug-commands. Build order: 1→2→3→4→5→6. [Plan](specs/systems/dia/diaassetruntime.plan.md) | DiaCore ✅, DiaAssetPipeline ✅ |
-| DiaAssetRuntimeEditor | [diaassetruntimeeditor.md](specs/systems/dia/diaassetruntimeeditor.md) | 4 features, all Approved — asset-state-table, stage-asset-tree-view, ref-count-inspector, state-transition-log. HTML mockup exists. Build order: 1→2→3→4. | DiaAssetRuntime Feature 6 |
 | DiaApplication — Flow Tree | [diaapplication.md](specs/systems/dia/diaapplication.md) | 3 features, all Approved — manifest-imports (A), pu-parent-child-tree (B), stage-manifests (C). Build order: A→B→C. Phase D (editor graph view) unlocks inside DiaApplicationEditor after A/B/C ship. | DiaCore ✅ |
 
 ---

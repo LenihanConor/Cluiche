@@ -237,7 +237,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CluicheKernel", "CluicheTes
 		{DD3D58EF-028B-42CB-B837-0042BA30D96F} = {DD3D58EF-028B-42CB-B837-0042BA30D96F}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DummyLevel", "CluicheTest\Levels\DummyLevel\DummyLevel.vcxproj", "{8A8A5635-62AB-4516-A3F4-978499024724}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DummyStage", "CluicheTest\Stages\DummyStage\DummyStage.vcxproj", "{8A8A5635-62AB-4516-A3F4-978499024724}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DiaWebSocket", "..\Dia\DiaWebSocket\DiaWebSocket.vcxproj", "{458B1E8F-6660-499F-B265-E40DC3257B81}"
 	ProjectSection(ProjectDependencies) = postProject

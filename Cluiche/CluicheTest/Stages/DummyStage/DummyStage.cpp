@@ -1,16 +1,16 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Filename: DummyProject
 ////////////////////////////////////////////////////////////////////////////////
-#include "DummyLevel/DummyLevel.h"
+#include "DummyStage/DummyStage.h"
 
 #include <DiaApplication/ApplicationPhase.h>
 #include <DiaApplication/ApplicationProcessingUnit.h>
 
 namespace Cluiche
 {
-	namespace DummyLevel
+	namespace DummyStage
 	{
-		const Dia::Core::StringCRC Level::kLevelUniqueId("dummy_level"); // This is registered with the level manager and is used by UI/flow to determine what to boot.
+		const Dia::Core::StringCRC Level::kLevelUniqueId("dummy_stage"); // This is registered with the level manager and is used by UI/flow to determine what to boot.
 
 		Level::Level(Dia::Application::Phase* currentPhase, 
 						Dia::Application::ProcessingUnit* mainPU, 
@@ -19,7 +19,7 @@ namespace Cluiche
 			: mMainFEPhase(mainPU)
 			, mMainLoadPhase(mainPU)
 		{
-			mEntryPhaseUniqueId = Cluiche::DummyLevel::MainLoadPhase::kTypeId;
+			mEntryPhaseUniqueId = Cluiche::DummyStage::MainLoadPhase::kTypeId;
 			mExitPhaseUniqueId = currentPhase->GetUniqueId();
 
 			mainPU->AddPhaseTransiton(currentPhase, &mMainLoadPhase);

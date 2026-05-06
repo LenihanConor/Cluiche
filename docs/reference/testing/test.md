@@ -255,12 +255,12 @@ TEST(PhaseSystem, BootToBootStrapTransition) {
 ```cpp
 TEST(LevelFactory, CreateRegisteredLevel) {
     LevelFactory::Create();
-    LevelFactory::Instance()->Register<DummyLevel>("DummyLevel");
+    LevelFactory::Instance()->Register<DummyStage>("DummyStage");
     
-    ILevel* level = LevelFactory::Instance()->Create("DummyLevel");
+    ILevel* level = LevelFactory::Instance()->Create("DummyStage");
     
     EXPECT_NE(level, nullptr);
-    EXPECT_TRUE(dynamic_cast<DummyLevel*>(level) != nullptr);
+    EXPECT_TRUE(dynamic_cast<DummyStage*>(level) != nullptr);
     
     delete level;
     LevelFactory::Destroy();

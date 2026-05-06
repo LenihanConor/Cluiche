@@ -301,7 +301,7 @@ kConstructed → kFlaggedToStart → kRunning → kFlaggedToStop → kNotRunning
 | Data-Driven Application System | Type registration, manifest loading, and introspection for editor-driven application topology definition | [data-driven-application-system.md](../../features/dia/diaapplication/data-driven-application-system.md) | Done |
 | Manifest Imports (Phase A) | Recursive import resolution in ApplicationManifestLoader; merged manifests with provenance tracking | [manifest-imports.md](../../features/dia/diaapplication/manifest-imports.md) | Approved |
 | PU Parent-Child Tree (Phase B) | ProcessingUnit gains AddChildPU/GetParent/GetChildren; automatic thread spawn/join lifecycle | [pu-parent-child-tree.md](../../features/dia/diaapplication/pu-parent-child-tree.md) | Approved |
-| Stage Manifests (Phase C) | DummyLevel→DummyStage rename; stage .diaapp manifests declaring phase/module injections into parent PUs | [stage-manifests.md](../../features/dia/diaapplication/stage-manifests.md) | Approved |
+| Stage Manifests (Phase C) | DummyStage→DummyStage rename; stage .diaapp manifests declaring phase/module injections into parent PUs | [stage-manifests.md](../../features/dia/diaapplication/stage-manifests.md) | Approved |
 
 ## Platform Primitives Used
 

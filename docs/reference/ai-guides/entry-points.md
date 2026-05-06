@@ -558,7 +558,7 @@ Edit `Cluiche/CluicheKernel/ApplicationFlow/Modules/LevelFactoryModule.cpp`:
 void LevelFactoryModule::DoStart()
 {
     // Existing levels...
-    Dia::Application::LevelFactory::Instance()->Register<Cluiche::DummyLevel>("DummyLevel");
+    Dia::Application::LevelFactory::Instance()->Register<Cluiche::DummyStage>("DummyStage");
     Dia::Application::LevelFactory::Instance()->Register<Cluiche::UnitTestLevel>("UnitTestLevel");
     
     // NEW

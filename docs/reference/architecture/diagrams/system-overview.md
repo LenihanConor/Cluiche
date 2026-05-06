@@ -35,7 +35,7 @@ graph TB
         MainPU["MainProcessingUnit<br/>Main Thread"]
         RenderPU["RenderProcessingUnit<br/>Render Thread"]
         SimPU["SimProcessingUnit<br/>Sim Thread"]
-        Levels["Level System<br/>DummyLevel, UnitTestLevel"]
+        Levels["Level System<br/>DummyStage, UnitTestLevel"]
         Modules["Core Modules<br/>Kernel, UI, LevelFactory"]
     end
 

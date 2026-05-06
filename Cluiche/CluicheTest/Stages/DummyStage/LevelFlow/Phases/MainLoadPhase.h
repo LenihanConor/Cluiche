@@ -9,7 +9,7 @@ namespace Dia { namespace Application { class ProcessingUnit; } }
 
 namespace Cluiche
 {
-	namespace DummyLevel
+	namespace DummyStage
 	{
 		////////////////////////////////////////////////////
 		//

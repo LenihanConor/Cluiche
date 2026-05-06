@@ -33,7 +33,7 @@ Cluiche/                        [Platform Root]
 │
 ├── Cluiche/                    [Cluiche Game Application]
 │   ├── Main/Render/Sim threads with phase-based execution
-│   ├── Pluggable level system (DummyLevel, UnitTestLevel)
+│   ├── Pluggable level system (DummyStage, UnitTestLevel)
 │   └── Module-based architecture for extensibility
 │
 ├── Tests/                      [GoogleTest Application]
@@ -111,7 +111,7 @@ Cluiche uses three independent threads for performance and clarity:
 
 Pluggable game state management through the `ILevel` interface:
 
-- **DummyLevel** - Example level implementation
+- **DummyStage** - Example level implementation
 - **UnitTestLevel** - Testing harness for in-engine tests
 - **Custom Levels** - Register via `LevelFactory` for runtime loading
 

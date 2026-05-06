@@ -77,13 +77,13 @@
     </BuildLog>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="DummyLevel.h" />
+    <ClInclude Include="DummyStage.h" />
     <ClInclude Include="LevelFlow\Phases\MainFEPhase.h" />
     <ClInclude Include="LevelFlow\Phases\MainLoadPhase.h" />
     <ClInclude Include="UI\DummyUIPage.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DummyLevel.cpp" />
+    <ClCompile Include="DummyStage.cpp" />
     <ClCompile Include="LevelFlow\Phases\MainFEPhase.cpp" />
     <ClCompile Include="LevelFlow\Phases\MainLoadPhase.cpp" />
     <ClCompile Include="UI\DummyUIPage.cpp" />

@@ -35,7 +35,7 @@ This registry catalogs all `.architecture.module.md` files that describe modules
   - `dia.cluiche.levels.unittestlevel`
 
 ##### dia.cluiche.levels.dummylevel
-- **Path:** `Cluiche/Levels/DummyLevel/`
+- **Path:** `Cluiche/Stages/DummyStage/`
 - **File:** `dia.cluiche.levels.dummylevel.architecture.module.md`
 - **Purpose:** Simple example level
 

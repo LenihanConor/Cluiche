@@ -372,12 +372,12 @@ protected:
 #### Usage Example (Level)
 
 ```cpp
-class DummyLevel : public Dia::Application::StateObject
+class DummyStage : public Dia::Application::StateObject
 {
 public:
     static const Dia::Core::StringCRC kUniqueId;
     
-    DummyLevel()
+    DummyStage()
         : StateObject(kUniqueId)
     {
     }
@@ -385,7 +385,7 @@ public:
 private:
     void DoStart() override
     {
-        DIA_LOG("DummyLevel: Starting");
+        DIA_LOG("DummyStage: Starting");
         // Initialize level
     }
     
@@ -396,7 +396,7 @@ private:
     
     void DoStop() override
     {
-        DIA_LOG("DummyLevel: Stopping");
+        DIA_LOG("DummyStage: Stopping");
         // Cleanup level
     }
 };
@@ -442,11 +442,11 @@ public:
 ```cpp
 // Registration (usually in LevelFactoryModule)
 LevelFactory::Create();
-LevelFactory::Instance()->Register<DummyLevel>("DummyLevel");
+LevelFactory::Instance()->Register<DummyStage>("DummyStage");
 LevelFactory::Instance()->Register<UnitTestLevel>("UnitTestLevel");
 
 // Creation
-ILevel* level = LevelFactory::Instance()->Create("DummyLevel");
+ILevel* level = LevelFactory::Instance()->Create("DummyStage");
 if (level)
 {
     level->Start();

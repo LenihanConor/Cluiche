@@ -132,7 +132,7 @@ Module dependency changes validated via `python Tools/dia_modules.py --validate`
 
 | # | Section | Question | Answer |
 |---|---------|----------|--------|
-| 1 | Applications | Should DummyLevel and UnitTestLevel be documented as separate applications or as part of Cluiche? | Part of Cluiche - they are test levels within the main application |
+| 1 | Applications | Should DummyStage and UnitTestLevel be documented as separate applications or as part of Cluiche? | Part of Cluiche - they are test levels within the main application |
 | 2 | Shared Infrastructure | Are there specific performance budgets for frame times on different threads? | Main thread: <16ms, Render thread: <16ms, Sim thread: variable (design to be specified per-application) |
 | 3 | Decisions | Should deprecated code in `Dia/DiaCore/Deprecated/` be covered by binding decisions? | No - deprecated code is not compiled and should not be referenced by any new work |
 | 4 | Change Policy | What is the process for emergency hotfixes that bypass the spec workflow? | TBD - needs definition for production releases |

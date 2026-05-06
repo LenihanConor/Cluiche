@@ -143,7 +143,7 @@ Modules provide functionality to phases:
 
 Pluggable game states via `ILevel` interface:
 
-- **DummyLevel** - Example level implementation
+- **DummyStage** - Example level implementation
 - **UnitTestLevel** - Testing harness for in-engine tests
 - **Custom Levels** - Registered via `LevelFactory`, loaded at runtime
 
@@ -451,7 +451,7 @@ public:
 
 ```cpp
 // In MainBootPhase
-LevelFactory::Instance().Register<DummyLevel>("DummyLevel");
+LevelFactory::Instance().Register<DummyStage>("DummyStage");
 LevelFactory::Instance().Register<UnitTestLevel>("UnitTests");
 ```
 
@@ -475,7 +475,7 @@ Cluiche and Dia employ several design patterns:
 
 **LevelFactory** - Creates levels by type
 ```cpp
-ILevel* level = LevelFactory::Instance().Create("DummyLevel");
+ILevel* level = LevelFactory::Instance().Create("DummyStage");
 ```
 
 ### 2. Observer Pattern

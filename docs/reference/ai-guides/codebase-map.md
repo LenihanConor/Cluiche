@@ -94,8 +94,8 @@ ApplicationFlow/
 **Files:**
 ```
 Levels/
-├── DummyLevel/
-│   ├── DummyLevel.h/cpp               # Simple example level
+├── DummyStage/
+│   ├── DummyStage.h/cpp               # Simple example level
 │   └── dia.cluiche.levels.dummylevel.architecture.module.md
 └── UnitTestLevel/
     ├── UnitTestLevel.h/cpp            # In-engine test harness
@@ -104,7 +104,7 @@ Levels/
 
 **Key Classes:**
 - `ILevel` - Interface (defined in DiaApplication)
-- `DummyLevel` - Simple demo level
+- `DummyStage` - Simple demo level
 - `UnitTestLevel` - Runs tests at startup
 
 **When to Modify:**

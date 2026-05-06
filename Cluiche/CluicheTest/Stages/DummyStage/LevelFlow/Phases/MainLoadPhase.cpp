@@ -10,7 +10,7 @@
 
 namespace Cluiche
 {
-	namespace DummyLevel
+	namespace DummyStage
 	{
 		const Dia::Core::StringCRC MainLoadPhase::kTypeId("DummyProject::MainLoadPhase");
 

@@ -29,7 +29,7 @@ Cluiche implements the platform's multi-threaded architecture with three Process
 
 ### Level System
 
-- **DummyLevel** - Basic test level for engine validation
+- **DummyStage** - Basic test level for engine validation
 - **UnitTestLevel** - Level that runs unit tests within the game context
 - Future levels defined per-feature specs
 
@@ -80,7 +80,7 @@ What this application deliberately does NOT do:
 | AD-001 | Use three ProcessingUnits (Main/Render/Sim) | Demonstrates platform's multi-threading capabilities; validates thread-safe phase transitions | This app + all systems | Accepted | Yes |
 | AD-002 | Levels are code-based (not data-driven) | Simpler for testing and demonstration; no need for asset pipeline yet | Levels system | Accepted | Yes |
 | AD-003 | Entry point in Main.cpp initializes engine and starts main PU | Standard pattern; clear application startup sequence | ApplicationFlow | Accepted | Yes |
-| AD-004 | Test levels (DummyLevel, UnitTestLevel) included in application | Validates engine features; enables in-context testing | Levels system | Accepted | No |
+| AD-004 | Test levels (DummyStage, UnitTestLevel) included in application | Validates engine features; enables in-context testing | Levels system | Accepted | No |
 | AD-005 | Application serves as engine testbed, not shipped product | Frees team from production constraints; focus on engine validation | This app + all systems | Accepted | Yes |
 
 **Status values:** `Proposed` · `Accepted` · `Rejected` · `Superseded`  

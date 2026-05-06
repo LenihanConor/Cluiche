@@ -217,7 +217,7 @@ protected:
     void AfterModulesStart() override {
         // Register levels with factory
         LevelFactory& factory = LevelFactory::Instance();
-        factory.Register<DummyLevel>("DummyLevel");
+        factory.Register<DummyStage>("DummyStage");
         factory.Register<UnitTestLevel>("UnitTestLevel");
         
         // Transition to bootstrap phase
@@ -793,14 +793,14 @@ private:
 **Registration:**
 ```cpp
 // In MainBootPhase::AfterModulesStart()
-LevelFactory::Instance().Register<DummyLevel>("DummyLevel");
+LevelFactory::Instance().Register<DummyStage>("DummyStage");
 LevelFactory::Instance().Register<UnitTestLevel>("UnitTestLevel");
 ```
 
 **Creation:**
 ```cpp
 // In SimBootStrapPhase (after user selects level)
-ILevel* level = LevelFactory::Instance().Create("DummyLevel");
+ILevel* level = LevelFactory::Instance().Create("DummyStage");
 level->Start();
 ```
 
@@ -879,8 +879,8 @@ Cluiche/CluicheTest/
 │           └── MainPhaseBase.h/cpp              # Base phase utilities
 │
 └── Levels/                                      # Level implementations
-    ├── DummyLevel/
-    │   ├── DummyLevel.h/cpp                     # Example level
+    ├── DummyStage/
+    │   ├── DummyStage.h/cpp                     # Example level
     │   ├── LevelFlow/Phases/                    # Level-specific phases
     │   └── UI/                                   # Level-specific UI pages
     └── UnitTestLevel/
@@ -899,7 +899,7 @@ Cluiche demonstrates a **production-ready multi-threaded game architecture** usi
 - ✅ 3 ProcessingUnits (Main, Render, Sim threads)
 - ✅ 6 Phases (Boot, BootStrap, Running across threads)
 - ✅ 6 Core Modules (Kernel, UI, LevelFactory, TimeServer, InputFrame, UIProxy)
-- ✅ Pluggable level system (DummyLevel, UnitTestLevel)
+- ✅ Pluggable level system (DummyStage, UnitTestLevel)
 - ✅ Thread-safe communication (FrameStreams, Observer pattern)
 
 **Architecture Highlights:**

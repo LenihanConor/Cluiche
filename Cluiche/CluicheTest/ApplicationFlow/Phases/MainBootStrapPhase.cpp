@@ -3,7 +3,7 @@
 #include "CluicheKernel/ApplicationFlow/Modules/MainKernelModule.h"
 #include "CluicheKernel/ApplicationFlow/Modules/LevelFactoryModule.h"
 #include "CluicheKernel/ApplicationFlow/Modules/MainUIModule.h"
-#include "Levels/DummyLevel/DummyLevel.h"
+#include "Stages/DummyStage/DummyStage.h"
 
 #include <CluicheKernel/LevelFactory.h>
 
@@ -19,12 +19,12 @@ namespace Cluiche
 	MainBootStrapPhase::MainBootStrapPhase(Dia::Application::ProcessingUnit* associatedProcessingUnit, const Dia::Core::StringCRC& instanceId)
 		: MainPhaseBase(associatedProcessingUnit, instanceId)
 		, mLaunchUIPage(this)
-		, mDummyLevel(nullptr)
+		, mDummyStage(nullptr)
 	{}
 
 	MainBootStrapPhase::~MainBootStrapPhase()
 	{
-		DIA_DELETE(mDummyLevel);
+		DIA_DELETE(mDummyStage);
 	}
 
 	void MainBootStrapPhase::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
@@ -37,8 +37,8 @@ namespace Cluiche
 
 	void MainBootStrapPhase::AfterModulesStart()
 	{
-		if (mDummyLevel == nullptr)
-			mDummyLevel = DIA_NEW(Cluiche::DummyLevel::Level(this, this->GetAssociatedProcessingUnit(), nullptr, nullptr));
+		if (mDummyStage == nullptr)
+			mDummyStage = DIA_NEW(Cluiche::DummyStage::Level(this, this->GetAssociatedProcessingUnit(), nullptr, nullptr));
 
 		mLaunchUIPage.InitializePage();
 
@@ -73,9 +73,9 @@ namespace Cluiche
 
 		// Allocate level
 		Cluiche::Kernel::ILevel* level = nullptr;
-		if (levelName == "dummy_level")
+		if (levelName == "dummy_stage")
 		{
-			level = mDummyLevel;
+			level = mDummyStage;
 		}
 		if (level == nullptr)
 		{

@@ -144,7 +144,7 @@ This section documents the public API surface of Cluiche (application) and Dia (
 - `RenderProcessingUnit` - Render thread
 - `SimProcessingUnit` - Sim thread
 - Application modules (6 modules)
-- Level system (DummyLevel, UnitTestLevel)
+- Level system (DummyStage, UnitTestLevel)
 
 **[→ Cluiche Architecture Details](../architecture/cluichetest-application.md)**
 
@@ -432,7 +432,7 @@ APIs from third-party libraries (used via abstractions):
 Comprehensive examples available:
 - **Code Patterns:** [Patterns Reference](../ai-guides/patterns-reference.md)
 - **Entry Points:** [Common Tasks](../ai-guides/entry-points.md)
-- **Sample Code:** `Cluiche/Levels/DummyLevel/`
+- **Sample Code:** `Cluiche/Stages/DummyStage/`
 - **Tests:** `Cluiche/Levels/UnitTestLevel/`
 
 ---

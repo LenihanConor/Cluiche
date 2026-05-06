@@ -8,7 +8,7 @@
 
 namespace Cluiche
 {
-	namespace DummyLevel
+	namespace DummyStage
 	{
 		class Level : public Cluiche::Kernel::ILevel
 		{

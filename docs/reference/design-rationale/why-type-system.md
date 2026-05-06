@@ -296,7 +296,7 @@ if (comp->GetTypeId() == TransformComponent::kTypeId) {
 **Problem:**
 ```cpp
 // Create objects by string name
-ILevel* level = CreateLevel("DummyLevel");
+ILevel* level = CreateLevel("DummyStage");
 ```
 
 **Solution:**

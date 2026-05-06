@@ -83,7 +83,7 @@ This document defines clear boundaries between subsystems to help AI agents:
 
 ---
 
-### Levels (DummyLevel, UnitTestLevel, etc.)
+### Levels (DummyStage, UnitTestLevel, etc.)
 
 **✅ Owns:**
 - Level-specific behavior

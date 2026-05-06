@@ -202,7 +202,7 @@ Support runtime level creation via factory pattern.
 **Implementation:**
 - `LevelFactory` - Singleton factory
 - `ILevel` - Level interface
-- `DummyLevel`, `UnitTestLevel` - Example levels
+- `DummyStage`, `UnitTestLevel` - Example levels
 
 **Test Cases:**
 - Level registration
@@ -256,19 +256,19 @@ Provide example levels demonstrating framework capabilities.
 - Starting point for new developers
 
 **Acceptance Criteria:**
-- [ ] DummyLevel - Minimal level (baseline)
+- [ ] DummyStage - Minimal level (baseline)
 - [ ] UnitTestLevel - Automated testing harness
 - [ ] Example gameplay level (future)
 
 **Implementation:**
-- `Levels/DummyLevel/` - Minimal level
+- `Stages/DummyStage/` - Minimal level
 - `Levels/UnitTestLevel/` - Test harness
 
 **Test Cases:**
 - Load each example level
 - Verify expected behavior
 
-**Status:** ✅ Complete (DummyLevel, UnitTestLevel exist)
+**Status:** ✅ Complete (DummyStage, UnitTestLevel exist)
 
 ---
 

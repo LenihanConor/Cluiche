@@ -72,7 +72,7 @@ Support runtime-swappable game levels (menus, gameplay, test levels) via factory
 **Implementation:**
 - `ILevel` - Level interface
 - `LevelFactory` - Singleton factory
-- `DummyLevel`, `UnitTestLevel` - Example levels
+- `DummyStage`, `UnitTestLevel` - Example levels
 
 **Test Cases:**
 - Level registration

@@ -159,7 +159,7 @@ void MainBootPhase::AfterModulesStart() {
     LevelFactory& factory = factoryModule->GetLevelFactory();
     
     // Register levels
-    factory.Register<DummyLevel>("DummyLevel");
+    factory.Register<DummyStage>("DummyStage");
     factory.Register<UnitTestLevel>("UnitTestLevel");
     // factory.Register<MyCustomLevel>("MyCustomLevel");
     
@@ -240,51 +240,51 @@ void SimBootStrapPhase::AfterModulesUpdate() {
 
 ## Example Levels
 
-### DummyLevel
+### DummyStage
 
-**Location:** `Cluiche/CluicheTest/Levels/DummyLevel/`
+**Location:** `Cluiche/CluicheTest/Stages/DummyStage/`
 
 **Purpose:** Example level demonstrating basic functionality
 
 **Structure:**
 ```
-DummyLevel/
-├── DummyLevel.h/cpp                 # Level implementation
+DummyStage/
+├── DummyStage.h/cpp                 # Level implementation
 ├── LevelFlow/
 │   └── Phases/
-│       ├── DummyLevelBootPhase.h/cpp
-│       └── DummyLevelRunningPhase.h/cpp
+│       ├── DummyStageBootPhase.h/cpp
+│       └── DummyStageRunningPhase.h/cpp
 └── UI/
-    ├── dummy_level.html
-    └── dummy_level.css
+    ├── dummy_stage.html
+    └── dummy_stage.css
 ```
 
 **Implementation:**
 ```cpp
-// DummyLevel.h
-class DummyLevel : public ILevel {
+// DummyStage.h
+class DummyStage : public ILevel {
 public:
-    DummyLevel();
-    ~DummyLevel();
+    DummyStage();
+    ~DummyStage();
     
     void Start() override;
     void Update() override;
     void Stop() override;
     
-    const char* GetName() const override { return "DummyLevel"; }
+    const char* GetName() const override { return "DummyStage"; }
 
 private:
     // Level-specific state
-    DummyLevelBootPhase* mBootPhase;
-    DummyLevelRunningPhase* mRunningPhase;
+    DummyStageBootPhase* mBootPhase;
+    DummyStageRunningPhase* mRunningPhase;
     
     // Level-specific data
     int mScore;
     float mTime;
 };
 
-// DummyLevel.cpp
-DummyLevel::DummyLevel()
+// DummyStage.cpp
+DummyStage::DummyStage()
     : mBootPhase(nullptr)
     , mRunningPhase(nullptr)
     , mScore(0)
@@ -292,21 +292,21 @@ DummyLevel::DummyLevel()
 {
 }
 
-void DummyLevel::Start() {
-    DIA_LOG("DummyLevel", "Starting");
+void DummyStage::Start() {
+    DIA_LOG("DummyStage", "Starting");
     
     // Create level-specific phases
-    mBootPhase = new DummyLevelBootPhase();
-    mRunningPhase = new DummyLevelRunningPhase();
+    mBootPhase = new DummyStageBootPhase();
+    mRunningPhase = new DummyStageRunningPhase();
     
     // Initialize phase (could add to ProcessingUnit here)
     mBootPhase->Start();
     
     // Load UI page
-    UISystem::Instance()->LoadPage("dummy_level.html");
+    UISystem::Instance()->LoadPage("dummy_stage.html");
 }
 
-void DummyLevel::Update() {
+void DummyStage::Update() {
     // Update game logic
     mTime += TimeServer::Instance()->GetDeltaTimeFloat();
     
@@ -320,8 +320,8 @@ void DummyLevel::Update() {
     }
 }
 
-void DummyLevel::Stop() {
-    DIA_LOG("DummyLevel", "Stopping with score %d", mScore);
+void DummyStage::Stop() {
+    DIA_LOG("DummyStage", "Stopping with score %d", mScore);
     
     // Cleanup phases
     if (mBootPhase) {
@@ -336,8 +336,8 @@ void DummyLevel::Stop() {
 ```
 
 **Features:**
-- Custom phases (DummyLevelBootPhase, DummyLevelRunningPhase)
-- Custom UI page (dummy_level.html)
+- Custom phases (DummyStageBootPhase, DummyStageRunningPhase)
+- Custom UI page (dummy_stage.html)
 - Level-specific state (mScore, mTime)
 
 ---
@@ -533,7 +533,7 @@ void MainBootPhase::AfterModulesStart() {
     LevelFactory& factory = LevelFactory::Instance();
     
     // Existing registrations
-    factory.Register<DummyLevel>("DummyLevel");
+    factory.Register<DummyStage>("DummyStage");
     factory.Register<UnitTestLevel>("UnitTestLevel");
     
     // NEW: Register your level
@@ -723,7 +723,7 @@ The Level System provides:
 - ✅ **Pluggable architecture** (easy to add levels)
 - ✅ **Level-specific phases, modules, and UI**
 - ✅ **Clean lifecycle** (Start → Update → Stop)
-- ✅ **Examples** (DummyLevel, UnitTestLevel)
+- ✅ **Examples** (DummyStage, UnitTestLevel)
 
 **Key Components:**
 - `ILevel` - Level interface

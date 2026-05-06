@@ -7,7 +7,7 @@
 
 DiaApplication currently treats ProcessingUnits as flat, independent peers. CluicheTest manually creates three PUs (Main, Sim, Render), each described by a separate `.diaapp` manifest. MainPU hard-codes creation of SimPU and RenderPU in `PostPhaseStart()`, spawns threads, and joins them in `PrePhaseStop()`. There is no formal parent/child relationship, no root concept, and no way to see the complete thread topology as a connected tree.
 
-This creates three interrelated problems. First, the name "DiaApplication" is ambiguous -- it could mean the running application, the framework, or the module itself, leading to confusion about what `ProcessingUnit` actually represents in the execution flow. Second, the PU hierarchy is implicit: MainPU knows about SimPU and RenderPU only because it manually creates them in application-specific code, making it impossible for the engine or editor to discover the full topology generically. Third, the editor can only open one `.diaapp` file at a time, with no way to show how multiple manifests connect into a complete application flow -- and game "levels" (like DummyLevel) that inject phases into existing PUs have no manifest representation at all.
+This creates three interrelated problems. First, the name "DiaApplication" is ambiguous -- it could mean the running application, the framework, or the module itself, leading to confusion about what `ProcessingUnit` actually represents in the execution flow. Second, the PU hierarchy is implicit: MainPU knows about SimPU and RenderPU only because it manually creates them in application-specific code, making it impossible for the engine or editor to discover the full topology generically. Third, the editor can only open one `.diaapp` file at a time, with no way to show how multiple manifests connect into a complete application flow -- and game "levels" (like DummyStage) that inject phases into existing PUs have no manifest representation at all.
 
 The goal is to research whether DiaApplication should evolve into a tree-structured flow model where PUs have explicit parent/child relationships, levels become "stages" with their own manifests, and the editor can visualize the entire connected graph.
 
@@ -36,7 +36,7 @@ The goal is to research whether DiaApplication should evolve into a tree-structu
 
 - **Explicit tree vs. flexibility**: A formal parent/child tree is easy to visualize but constrains PU topologies. If a future application needs a PU that communicates with two "parents" (fan-in), a strict tree won't support it. A DAG would, but adds complexity.
 - **Naming disruption**: Renaming DiaApplication to DiaApplicationFlow touches every include path, namespace, vcxproj, and architecture doc. Large blast radius for a naming improvement.
-- **Stage manifests**: Giving DummyLevel (DummyStage) its own .diaapp means the level/stage contributes PU structure, not just phases. This is a shift in ownership -- currently levels inject into PUs they don't own.
+- **Stage manifests**: Giving DummyStage (DummyStage) its own .diaapp means the level/stage contributes PU structure, not just phases. This is a shift in ownership -- currently levels inject into PUs they don't own.
 - **Import resolution order**: If stages import PU definitions, the engine needs to resolve imports before constructing the PU tree. Circular imports must be prevented.
 - **Editor complexity**: Showing a tree of connected .diaapp files requires the editor to load multiple manifests, resolve references, and render a graph. More work than single-file editing.
 - **Backward compatibility**: CluicheTest's manual PU wiring must continue to work during migration. A big-bang rewrite of application startup is risky.
@@ -93,5 +93,5 @@ The `ApplicationManifest` struct already contains:
 - Should stages (currently levels) own their own PUs, or only inject phases/modules into parent PUs? Owning PUs means stages can bring their own threads.
 - How should the editor represent the tree -- a single "application flow" document that references .diaapp files, or a live multi-file view?
 - Should the `imports` field in ApplicationManifest be the mechanism for connecting stages, or should a separate orchestrator manifest (e.g., `.diaflow`) describe the tree structure?
-- What happens to DummyLevel's constructor pattern (receives MainPU, SimPU, RenderPU as args)? Can it be replaced with manifest-driven discovery?
+- What happens to DummyStage's constructor pattern (receives MainPU, SimPU, RenderPU as args)? Can it be replaced with manifest-driven discovery?
 - Should PU-to-PU communication (currently via shared FrameStreams passed in StartData) be formalized as part of the tree model, or remain ad-hoc?

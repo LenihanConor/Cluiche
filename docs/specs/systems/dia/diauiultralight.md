@@ -66,7 +66,7 @@ namespace Dia::UI::Ultralight {
 ```javascript
 // 'app' global object created per-page; methods are bound to C++ BoundMethod entries.
 // Example for LaunchUIPage:
-app.Application_LaunchLevel("DummyLevel");
+app.Application_LaunchLevel("DummyStage");
 
 // Example for DummyUIPage:
 app.Application_ExitLevel();

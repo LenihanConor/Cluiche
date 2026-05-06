@@ -56,7 +56,7 @@ C:\GitHub\Cluiche\
 
 ### Game Levels
 - `Cluiche/Levels/`
-  - `DummyLevel/DummyLevel.h/.cpp`
+  - `DummyStage/DummyStage.h/.cpp`
   - `UnitTestLevel/UnitTestLevel.h/.cpp`
 
 ### Tests
@@ -338,7 +338,7 @@ C:\GitHub\Cluiche\
 **Examples:**
 - `Dia/DiaCore/Containers/Arrays/dia.core.containers.arrays.architecture.module.md`
 - `Dia/DiaMaths/Vector/dia.maths.vector.architecture.module.md`
-- `Cluiche/Levels/DummyLevel/dia.cluiche.levels.dummylevel.architecture.module.md`
+- `Cluiche/Stages/DummyStage/dia.cluiche.levels.dummylevel.architecture.module.md`
 
 **[→ Module Registry](module-registry.md)**
 

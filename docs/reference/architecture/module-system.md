@@ -698,7 +698,7 @@ public:
 ```cpp
 void Phase::AfterModulesStart() {
     FactoryModule* factory = GetModule<FactoryModule>();
-    ILevel* level = factory->GetLevelFactory()->Create("DummyLevel");
+    ILevel* level = factory->GetLevelFactory()->Create("DummyStage");
 }
 ```
 

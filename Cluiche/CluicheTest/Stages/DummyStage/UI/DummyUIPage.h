@@ -7,7 +7,7 @@
 
 namespace Cluiche
 {
-	namespace DummyLevel
+	namespace DummyStage
 	{
 		////////////////////////////////////////////////////
 		//

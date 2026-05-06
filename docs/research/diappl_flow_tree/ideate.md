@@ -75,7 +75,7 @@ The editor opens a .diaflow to see the entire application. Individual .diaapp fi
 **Home module/system:** DiaApplication + CluicheTest
 **Size:** M (1-3 weeks)
 
-Rename DummyLevel to DummyStage. Each stage gets its own `.diaapp` manifest(s) describing the phases and modules it contributes. Stages don't create PUs -- they declare phase/module injections that the loader merges into parent PUs at load time. The manifest `imports` field links stage manifests into the application tree.
+Rename DummyStage to DummyStage. Each stage gets its own `.diaapp` manifest(s) describing the phases and modules it contributes. Stages don't create PUs -- they declare phase/module injections that the loader merges into parent PUs at load time. The manifest `imports` field links stage manifests into the application tree.
 
 Example: `stages/dummy_stage.diaapp` declares `MainLoadPhase`, `MainFEPhase`, and their transitions, tagged with the target PU instance ID. The loader injects these into the already-constructed MainPU.
 
@@ -121,12 +121,12 @@ This is the user-facing payoff of the runtime tree work. Depends on at least one
 Don't change the runtime model. Instead:
 - Establish a naming convention: the root PU is always named `<App>MainProcessingUnit`
 - Organize manifests in a standard directory: `Data/Manifests/<app>.diaapp` (root), `Data/Manifests/stages/<stage>.diaapp`
-- Rename DummyLevel to DummyStage in CluicheTest
+- Rename DummyStage to DummyStage in CluicheTest
 - Document the convention in the platform spec
 
 The editor lists all .diaapp files in the manifest directory and lets you open any one. No tree view -- just a flat file browser with conventions.
 
-**Primary value:** Zero runtime risk; solves the DummyLevel -> DummyStage naming immediately; buys time to evaluate whether a full tree model is needed.
+**Primary value:** Zero runtime risk; solves the DummyStage -> DummyStage naming immediately; buys time to evaluate whether a full tree model is needed.
 
 ---
 
@@ -152,7 +152,7 @@ Not a single feature but a sequenced delivery plan combining candidates:
 
 1. **Phase A (S):** Candidate 6 -- activate imports in manifest loader
 2. **Phase B (M):** Candidate 3 -- PU parent-child tree in runtime
-3. **Phase C (M):** Candidate 5 -- stage manifests (DummyLevel -> DummyStage)
+3. **Phase C (M):** Candidate 5 -- stage manifests (DummyStage -> DummyStage)
 4. **Phase D (S):** Candidate 4 -- .diaflow orchestrator manifest (optional, may be unnecessary if imports suffice)
 5. **Phase E (L):** Candidate 7 -- editor connected graph view
 

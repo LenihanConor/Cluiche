@@ -217,8 +217,8 @@ DIA_ASSERT(!"Circular dependency detected");
 
 ✅ **Level-Specific Code:**
 ```
-Levels/DummyLevel/
-├── DummyLevel.h/cpp           # Level logic
+Stages/DummyStage/
+├── DummyStage.h/cpp           # Level logic
 ├── LevelFlow/Phases/          # Level phases
 └── UI/                        # Level UI
 ```
@@ -235,9 +235,9 @@ DiaCore/
 ❌ **Scattered Code (Avoided):**
 ```
 # BAD: Level code scattered
-src/levels/dummy_level.cpp
-include/levels/dummy_level.h
-ui/pages/dummy_level.html
+src/levels/dummy_stage.cpp
+include/levels/dummy_stage.h
+ui/pages/dummy_stage.html
 assets/levels/dummy/
 ```
 
@@ -657,8 +657,8 @@ Dia/<Subsystem>/<Subsystem><Class>.h
 
 ✅ **Co-Located:**
 ```
-Levels/DummyLevel/
-├── DummyLevel.h/cpp
+Stages/DummyStage/
+├── DummyStage.h/cpp
 ├── Phases/
 └── UI/
 ```

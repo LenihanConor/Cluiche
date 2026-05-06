@@ -80,8 +80,8 @@ private:
 
 **Example:**
 ```cpp
-LevelFactory::Instance().Register<DummyLevel>("DummyLevel");
-ILevel* level = LevelFactory::Instance().Create("DummyLevel");
+LevelFactory::Instance().Register<DummyStage>("DummyStage");
+ILevel* level = LevelFactory::Instance().Create("DummyStage");
 ```
 
 **Benefits:**
@@ -205,7 +205,7 @@ class LevelFactory : public Singleton<LevelFactory> {
 
 // Usage
 LevelFactory::Create();
-LevelFactory::Instance()->Register<DummyLevel>("DummyLevel");
+LevelFactory::Instance()->Register<DummyStage>("DummyStage");
 LevelFactory::Destroy();
 ```
 

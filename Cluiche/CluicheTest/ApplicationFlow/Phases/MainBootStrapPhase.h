@@ -7,7 +7,7 @@
 #include <DiaCore/Strings/String64.h>
 
 namespace Dia { namespace Application { class ProcessingUnit; } }
-namespace Cluiche { namespace DummyLevel { class Level; } }
+namespace Cluiche { namespace DummyStage { class Level; } }
 
 
 namespace Cluiche
@@ -37,6 +37,6 @@ namespace Cluiche
 	private:
 		LaunchUIPage mLaunchUIPage;
 
-		Cluiche::DummyLevel::Level* mDummyLevel;
+		Cluiche::DummyStage::Level* mDummyStage;
 	};
 }

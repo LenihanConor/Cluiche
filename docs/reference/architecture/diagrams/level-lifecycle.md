@@ -37,7 +37,7 @@ stateDiagram-v2
 
         note right of Constructor
             Example:
-            DummyLevel()
+            DummyStage()
             UnitTestLevel()
         end note
     }
@@ -104,7 +104,7 @@ stateDiagram-v2
 
     note left of Unloaded
         Level Registry:
-        - DummyLevel
+        - DummyStage
         - UnitTestLevel
         - Custom levels...
     end note

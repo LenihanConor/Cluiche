@@ -20,7 +20,7 @@ C:\GitHub\Cluiche\
 │   ├── Cluiche/                  # Main executable project
 │   │   ├── Main.cpp              # Entry point
 │   │   ├── ApplicationFlow/      # Main processing unit implementation
-│   │   └── Levels/               # Game levels (DummyLevel, UnitTestLevel)
+│   │   └── Stages/               # Game stages (DummyStage, UnitTestLevel)
 │   └── Tests/                    # Test projects
 │       ├── UnitTests/            # Unit test project
 │       └── GoogleTests/          # Google Test suites
