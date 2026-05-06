@@ -15,6 +15,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | DiaVisualDebugger | [diavisualdebugger.md](specs/systems/dia/diavisualdebugger.md) | 2026-05-04 | All 12 features; 114 C++ tests + 13 Vitest/jsdom tests |
 | DiaAssetRuntime | [diaassetruntime.md](specs/systems/dia/diaassetruntime.md) | 2026-05-05 | 6 features, all Done; 58 tests |
 | DiaAssetRuntimeEditor | [diaassetruntimeeditor.md](specs/systems/dia/diaassetruntimeeditor.md) | 2026-05-05 | 4 features, all Done; 58 editor tests; gap analysis performed and fixes applied |
+| DiaAssetCatalogueEditor | [diaassetcatalogueeditor.md](specs/systems/dia/diaassetcatalogueeditor.md) | 2026-05-06 | 8 features, all Done; 73+ exhaustive tests; manual override system (mManualOverrideFlags), GetRule API, type-based graph coloring, expand no-op |
 
 ---
 

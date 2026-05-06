@@ -6,9 +6,7 @@ Derived from spec status across `docs/specs/`. When a spec moves to Done, move i
 
 ## In Progress
 
-| System | Spec | Progress | Notes |
-|--------|------|----------|-------|
-| DiaAssetCatalogueEditor | [diaassetcatalogueeditor.md](specs/systems/dia/diaassetcatalogueeditor.md) | 6/8 features Done | Tasks 9–13 remaining — graph node colors, expand no-op, rules list, manual override tracking. [Plan](specs/systems/dia/diaassetcatalogueeditor.plan.md) |
+_Nothing currently in progress._
 
 ---
 

@@ -1,9 +1,11 @@
 {
   "version": 1,
+  "imports": ["cluiche_sim.diaapp", "cluiche_render.diaapp"],
   "processing_units": [
     {
       "type_id": "MainProcessingUnit",
       "instance_id": "MainProcessingUnit",
+      "root": true,
       "frequency_hz": 30.0,
       "dedicated_thread": false,
       "config": {},
