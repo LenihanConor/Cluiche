@@ -189,4 +189,4 @@ namespace Dia::AssetCatalogue::Editor
 
 ## Status
 
-`Approved`
+`Done`

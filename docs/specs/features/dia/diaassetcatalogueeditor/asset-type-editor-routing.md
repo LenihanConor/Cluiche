@@ -159,4 +159,4 @@ No dedicated panel. The `open_asset` action is triggered from the Asset List (do
 
 ## Status
 
-`Approved`
+`Done`

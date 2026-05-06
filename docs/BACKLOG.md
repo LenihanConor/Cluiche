@@ -6,7 +6,9 @@ Derived from spec status across `docs/specs/`. When a spec moves to Done, move i
 
 ## In Progress
 
-_Nothing currently in progress._
+| System | Spec | Progress | Notes |
+|--------|------|----------|-------|
+| DiaAssetCatalogueEditor | [diaassetcatalogueeditor.md](specs/systems/dia/diaassetcatalogueeditor.md) | 6/8 features Done | Tasks 9–13 remaining — graph node colors, expand no-op, rules list, manual override tracking. [Plan](specs/systems/dia/diaassetcatalogueeditor.plan.md) |
 
 ---
 
@@ -19,7 +21,6 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | System | Spec | Features | Depends On |
 |--------|------|----------|------------|
 | DiaApplicationEditor | [diaapplicationeditor.md](specs/systems/dia/diaapplicationeditor.md) | 15 features, all Approved — **not yet implemented** | DiaEditor ✅, DiaWebSocket ✅, DiaUICEF ✅ |
-| DiaAssetCatalogueEditor | [diaassetcatalogueeditor.md](specs/systems/dia/diaassetcatalogueeditor.md) | 8 features, all Approved — manifest load/save, CRUD, file discoverer, relationship editor, graph view, validation, routing, rules UI. [Plan](specs/systems/dia/diaassetcatalogueeditor.plan.md) | DiaAssetCatalogue ✅ |
 | DiaApplication — Flow Tree | [diaapplication.md](specs/systems/dia/diaapplication.md) | 3 features, all Approved — manifest-imports (A), pu-parent-child-tree (B), stage-manifests (C). Build order: A→B→C. Phase D (editor graph view) unlocks inside DiaApplicationEditor after A/B/C ship. | DiaCore ✅ |
 
 ---
@@ -36,6 +37,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 | Item | Spec | What's needed |
 |------|------|---------------|
+| E2E Testing system | TBD | Needs `/spec-system` + 2 child feature specs (Phase 1: Hybrid Harness, Phase 2: Multi-Stage Test Levels). Research complete — see `docs/research/e2e_testing/summary.md`. First targets: DiaRigidBody2D then CluicheEditor. |
 | DiaStateMachineEditor system | TBD | Needs `/spec-system` — editor plugin for state machine visual debugging + design-time editing. Depends on DiaStateMachine ✅, DiaEditor |
 
 ---

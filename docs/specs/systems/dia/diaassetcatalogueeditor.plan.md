@@ -1,9 +1,9 @@
 # Plan: DiaAssetCatalogueEditor
 
 **Spec:** @docs/specs/systems/dia/diaassetcatalogueeditor.md  
-**Status:** Done  
+**Status:** In Progress  
 **Started:** 2026-05-05  
-**Last Updated:** 2026-05-05
+**Last Updated:** 2026-05-06
 
 ## Prerequisite
 
@@ -161,6 +161,90 @@ DiaAssetCatalogue must be Done before this plan can start.
 
 **Commit after Task 8.**
 
+## Finishing Tasks (Gap Close — 2026-05-06)
+
+Audit revealed 4 acceptance criteria unmet across Features 5 and 8, plus spec/plan housekeeping. Tasks 9–12 close these gaps. Build order: 12 (housekeeping, no code) → 9 → 10 → 11 → 13.
+
+| # | Task | Status | Model | Notes |
+|---|------|--------|-------|-------|
+| 9 | Feature 5 — Graph: type-based node coloring | Not Started | haiku | In `UI/index.html`: derive per-node color from asset type prefix (texture/entity/config/stage/etc). AC2 unmet — currently colors by role only. |
+| 10 | Feature 5 — Graph: expand no-op for already-expanded nodes | Not Started | haiku | Add `graphExpandedNodes` set; guard `fetchAndAddGraphRefs` to skip if node already expanded. AC9 unmet. |
+| 11 | Feature 8 — Rules: expose rule enumeration | Not Started | sonnet | Add `RuleInfo` DTO + `GetRule(i)` to `CatalogueRulesEngine`. Register `asset_catalogue.get_rules` DiaAPI handler. Wire UI to render rules list table on load. AC2 unmet. |
+| 12 | Housekeeping — correct spec/plan statuses | Done | haiku | Feature specs 1,2,3,4,6,7 → Done. Features 5,8 → In Progress. System spec note updated. BACKLOG updated. |
+| 13 | Feature 8 — Rules: manual override tracking | Not Started | opus | Add per-field manual-override flags to `AssetRecord`. Set in `UpdateRecordCommand::Execute`. Surface in `RuleChange::mIsManualOverride`. Add badge to UI + filter in `apply_rules` handler. AC9/AC10 unmet. High complexity — confirm scope before starting. |
+
+## Task 9: Feature 5 — Graph: Type-Based Node Coloring
+
+**Spec:** @docs/specs/features/dia/diaassetcatalogueeditor/relationship-graph-view.md  
+**AC addressed:** AC2 — nodes colored by asset type, legend shown.
+
+| # | Sub-task | Model | Notes |
+|---|----------|-------|-------|
+| 9.1 | Add `TYPE_COLORS` map in `index.html` — type prefix → color (texture=#007acc, entity=#4ec9a0, config=#ce9178, stage=#dcdcaa, default=#9cdcfe) | haiku | Extract prefix from node ID via `id.split('.')[0]` |
+| 9.2 | Change `addGraphNode` to store type prefix; update `renderGraph` to use `TYPE_COLORS[n.type]` instead of `GRAPH_COLORS[n.role]` | haiku | Root node retains larger radius (r=18) for visual distinction |
+| 9.3 | Update graph legend bar to show type colors instead of role colors | haiku | `#graph-legend` element in HTML |
+| 9.4 | **Acceptance gate**: open mockup graph tab, compare legend and node colors | haiku | |
+
+**Commit after Task 9.**
+
+## Task 10: Feature 5 — Graph: Expand No-Op
+
+**Spec:** @docs/specs/features/dia/diaassetcatalogueeditor/relationship-graph-view.md  
+**AC addressed:** AC9 — expanding an already-expanded node is a no-op.
+
+| # | Sub-task | Model | Notes |
+|---|----------|-------|-------|
+| 10.1 | Add `var graphExpandedNodes = {}` to graph state in `index.html` | haiku | Object used as a set: `graphExpandedNodes[id] = true` |
+| 10.2 | In `fetchAndAddGraphRefs(id, isExpand)`, guard with `if (isExpand && graphExpandedNodes[id]) return;` then set `graphExpandedNodes[id] = true` on completion | haiku | Root load (`isExpand=false`) always proceeds; reset on `loadGraphForAsset` |
+| 10.3 | Clear `graphExpandedNodes` in `loadGraphForAsset` (fresh graph load) | haiku | |
+| 10.4 | **Acceptance gate**: verify double-click on expanded node makes no network call | haiku | |
+
+**Commit after Task 10.**
+
+## Task 11: Feature 8 — Rules Enumeration
+
+**Spec:** @docs/specs/features/dia/diaassetcatalogueeditor/catalogue-rules-ui.md  
+**AC addressed:** AC2 — rules list shows name, match criteria, action type after load.
+
+| # | Sub-task | Model | Notes |
+|---|----------|-------|-------|
+| 11.1 | Add `RuleInfo` struct to `CatalogueRulesEngine.h` — `mName`, `mMatchType` (as string), `mMatchValue`, `mActionType` (as string), `mActionParam` | sonnet | Public DTO; `GetRule(unsigned int index) const` returns `RuleInfo` |
+| 11.2 | Implement `GetRule()` in `CatalogueRulesEngine.cpp` — map internal `MatchType`/`ActionType` enums to display strings | sonnet | |
+| 11.3 | Register `asset_catalogue.get_rules` handler in `DiaAssetCatalogueEditorPlugin::RegisterRulesHandlers()` — returns `{ rules: [{ name, match, matchValue, action, actionParam }] }` | sonnet | Call after `load_rules` succeeds |
+| 11.4 | In `index.html` `onLoadRules()`, after success: call `get_rules` and render rules list table above the Dry Run preview area | sonnet | Columns: Name, Match, Action |
+| 11.5 | **Acceptance gate**: load a rules file, verify rules list populates | haiku | |
+
+**Commit after Task 11.**
+
+## Task 12: Housekeeping
+
+| # | Sub-task | Model | Notes |
+|---|----------|-------|-------|
+| 12.1 | Feature specs 1,2,3,4,6,7 → Status: `Done` | haiku | Edit each .md file's Status section |
+| 12.2 | Feature specs 5,8 → Status: `In Progress` | haiku | |
+| 12.3 | System spec (`diaassetcatalogueeditor.md`) → add note that 6/8 features are Done, 2 in progress | haiku | Do not change `Approved` — system spec stays Approved until all features Done |
+| 12.4 | Update BACKLOG.md — move DiaAssetCatalogueEditor row to In Progress, note Tasks 9–13 remaining | haiku | |
+
+**Commit after Task 12.**
+
+## Task 13: Feature 8 — Manual Override Tracking
+
+**Spec:** @docs/specs/features/dia/diaassetcatalogueeditor/catalogue-rules-ui.md  
+**AC addressed:** AC9 (manual badge in preview), AC10 (manual fields skipped on apply).  
+**Note:** Highest complexity task — touches DiaAssetCatalogue core. Confirm scope before starting.
+
+| # | Sub-task | Model | Notes |
+|---|----------|-------|-------|
+| 13.1 | Add `mManualOverrideFlags` bitmask to `AssetRecord` — one bit per field (scope, tags, source_path, stage) | opus | Define `AssetRecord::ManualField` enum for bit positions |
+| 13.2 | Set bits in `UpdateRecordCommand::Execute()` for each field the user explicitly changed | opus | Compare old vs new record; set flag on any changed field |
+| 13.3 | Clear bits in `ApplyRulesCommand::Execute()` for fields written by a rule (rules own those fields now) | opus | |
+| 13.4 | Populate `RuleChange::mIsManualOverride` in `CatalogueRulesEngine::Evaluate()` — check source record's flag for the target field | opus | Add `mIsManualOverride` bool to `RuleChange` struct |
+| 13.5 | Update `apply_rules` handler — filter out entries where `mIsManualOverride == true` unless `data["overwrite_manuals"]` is true | sonnet | |
+| 13.6 | UI: add yellow "manual" badge to dry-run preview rows where `mIsManualOverride == true` | haiku | |
+| 13.7 | **Acceptance gate**: manually set a field, run dry run, verify badge appears; run apply, verify field is skipped | haiku | |
+
+**Commit after Task 13.**
+
 ## Key Patterns (All Tasks)
 
 - **Plugin registration**: `REGISTER_EDITOR_PLUGIN` macro in `.cpp` — automatic discovery
@@ -186,3 +270,11 @@ DiaAssetCatalogue must be Done before this plan can start.
 - Each task ends with an acceptance gate comparing against the HTML mockup.
 - Task 0 complete: DiaAssetCatalogueEditor.vcxproj created (GUID {D1E2F3A4-B5C6-7890-DEFA-012345678901}), added to Cluiche.sln (Editors folder), wired into CluicheEditor.vcxproj. Plugin skeleton compiles. Deploy step fails on node (pre-existing env issue, not code). UI shell at UI/index.html.
 - Tasks 1–3 complete: ManifestLoadHandler, SessionContext, CRUD commands (Create/Update/Delete), FileDiscoverer (Win32 scan + GenerateDefaultId), discover_files handler, full Asset List + Record Editor + File Discoverer UI panels. Added FindByFileName() to AssetTypeRegistry to avoid FilePath PathAlias assert during scanning.
+
+### 2026-05-06
+- Gap audit: plan was incorrectly marked Done. Tasks 4–8 (relationship editor, validation, routing, rules UI, graph) are implemented in C++ and UI, but 4 acceptance criteria remain unmet across Features 5 and 8.
+- Feature 5 gaps: AC2 (node color by type, not role) and AC9 (expand no-op for already-expanded nodes). Both are JS-only fixes in `UI/index.html`.
+- Feature 8 gap: AC2 (rules list table after load) requires `GetRule(i)` on `CatalogueRulesEngine` — not currently public. AC9/AC10 (manual override badge + skip-on-apply) requires per-field bitmask on `AssetRecord` — high complexity, cross-cutting change.
+- Added Tasks 9–13 to close gaps. Build order: 12 → 9 → 10 → 11 → 13.
+- Task 13 (manual override) is the most invasive; confirm scope with user before starting.
+- Status corrected to In Progress.
