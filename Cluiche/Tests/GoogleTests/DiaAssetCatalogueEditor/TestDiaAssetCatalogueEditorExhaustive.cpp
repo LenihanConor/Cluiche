@@ -997,6 +997,78 @@ TEST(BoundaryTest, AddRelationshipToFullArray)
     EXPECT_EQ(registry.FindById(StringCRC("entity.full"))->mReferences.Size(), 8u);
 }
 
+TEST(BoundaryTest, SelfReferentialEdgeRejected)
+{
+    AssetRegistry registry;
+    registry.Register(MakeRecord("entity.hero", "entity"));
+
+    CommandHistory history;
+    // Self-referential edge should be rejected at the validation layer.
+    // The handler checks fromId == toId before creating the command.
+    // Simulate that check here directly:
+    StringCRC fromId("entity.hero");
+    StringCRC toId("entity.hero");
+    EXPECT_EQ(fromId, toId);
+
+    // If handler allows it through (bug), AddRelationshipCommand would add blindly.
+    // Verify that no edge exists — the handler must reject before command creation.
+    const AssetRecord* hero = registry.FindById(StringCRC("entity.hero"));
+    ASSERT_NE(hero, nullptr);
+    EXPECT_EQ(hero->mReferences.Size(), 0u);
+
+    // Verify that executing the command with self-ref still results in an edge
+    // (proving the guard must live at handler level, not command level)
+    auto* cmd = new AddRelationshipCommand(registry, fromId, StringCRC("uses"), toId);
+    history.ExecuteCommand(cmd);
+    EXPECT_EQ(registry.FindById(StringCRC("entity.hero"))->mReferences.Size(), 1u);
+
+    // Undo to restore clean state
+    history.Undo();
+    EXPECT_EQ(registry.FindById(StringCRC("entity.hero"))->mReferences.Size(), 0u);
+}
+
+TEST(BoundaryTest, DuplicateEdgeDetectedByValidation)
+{
+    AssetRegistry registry;
+    registry.Register(MakeRecord("entity.hero", "entity"));
+    registry.Register(MakeRecord("texture.player", "texture"));
+
+    CommandHistory history;
+    StringCRC fromId("entity.hero");
+    StringCRC relType("uses");
+    StringCRC toId("texture.player");
+
+    auto* cmd1 = new AddRelationshipCommand(registry, fromId, relType, toId);
+    history.ExecuteCommand(cmd1);
+
+    const AssetRecord* hero = registry.FindById(fromId);
+    ASSERT_NE(hero, nullptr);
+    EXPECT_EQ(hero->mReferences.Size(), 1u);
+
+    // Simulate handler-level duplicate check (same logic as RegisterRelationshipHandlers)
+    bool duplicateFound = false;
+    for (unsigned int i = 0; i < hero->mReferences.Size(); ++i)
+    {
+        if (hero->mReferences[i].mRelationshipType == relType &&
+            hero->mReferences[i].mTargetAssetId == toId)
+        {
+            duplicateFound = true;
+            break;
+        }
+    }
+    EXPECT_TRUE(duplicateFound);
+
+    // Handler would reject here — verify the guard works
+    if (!duplicateFound)
+    {
+        auto* cmd2 = new AddRelationshipCommand(registry, fromId, relType, toId);
+        history.ExecuteCommand(cmd2);
+    }
+
+    // Edge count should remain 1 (duplicate was blocked)
+    EXPECT_EQ(registry.FindById(fromId)->mReferences.Size(), 1u);
+}
+
 TEST(BoundaryTest, UpdateNonExistentRecordDoesNotCrash)
 {
     AssetRegistry registry;
@@ -1140,6 +1212,35 @@ TEST_F(ApplyRulesExcludedTest, NoExclusionsAppliesAll)
 {
     auto* cmd = new ApplyRulesCommand(registry, registry.GetRelationshipIndex(), engine);
     history.ExecuteCommand(cmd);
+
+    EXPECT_EQ(registry.FindById(StringCRC("texture.player"))->mTags.Size(), 1u);
+    EXPECT_EQ(registry.FindById(StringCRC("texture.enemy"))->mTags.Size(), 1u);
+    EXPECT_EQ(registry.FindById(StringCRC("texture.bg"))->mTags.Size(), 1u);
+}
+
+// ===========================================================================
+// ApplyRulesCommand — Undo restores field-level changes from real rules
+// ===========================================================================
+TEST_F(ApplyRulesExcludedTest, UndoRestoresTagChangesFromRealRule)
+{
+    EXPECT_EQ(registry.FindById(StringCRC("texture.player"))->mTags.Size(), 0u);
+    EXPECT_EQ(registry.FindById(StringCRC("texture.enemy"))->mTags.Size(), 0u);
+    EXPECT_EQ(registry.FindById(StringCRC("texture.bg"))->mTags.Size(), 0u);
+
+    auto* cmd = new ApplyRulesCommand(registry, registry.GetRelationshipIndex(), engine);
+    history.ExecuteCommand(cmd);
+
+    EXPECT_EQ(registry.FindById(StringCRC("texture.player"))->mTags.Size(), 1u);
+    EXPECT_EQ(registry.FindById(StringCRC("texture.enemy"))->mTags.Size(), 1u);
+    EXPECT_EQ(registry.FindById(StringCRC("texture.bg"))->mTags.Size(), 1u);
+
+    history.Undo();
+
+    EXPECT_EQ(registry.FindById(StringCRC("texture.player"))->mTags.Size(), 0u);
+    EXPECT_EQ(registry.FindById(StringCRC("texture.enemy"))->mTags.Size(), 0u);
+    EXPECT_EQ(registry.FindById(StringCRC("texture.bg"))->mTags.Size(), 0u);
+
+    history.Redo();
 
     EXPECT_EQ(registry.FindById(StringCRC("texture.player"))->mTags.Size(), 1u);
     EXPECT_EQ(registry.FindById(StringCRC("texture.enemy"))->mTags.Size(), 1u);

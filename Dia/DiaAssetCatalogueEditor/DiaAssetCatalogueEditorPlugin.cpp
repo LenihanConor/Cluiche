@@ -462,9 +462,11 @@ namespace Dia
 						{
 							const DiscoveredFile& df = discovered[i];
 							Json::Value entry;
-							entry["path"]         = df.mFullPath;
+							entry["path"]           = df.mFullPath;
 							entry["suggested_type"] = df.mSuggestedType;
 							entry["suggested_id"]   = df.mSuggestedId;
+							entry["file_size"]      = static_cast<Json::UInt64>(df.mFileSize);
+							entry["last_modified"]  = static_cast<Json::UInt64>(df.mLastModified);
 							files.append(entry);
 						}
 
@@ -608,6 +610,7 @@ namespace Dia
 						if (data.isMember("typeId") && data["typeId"].isString())
 							filterType = Dia::Core::StringCRC(data["typeId"].asCString());
 
+						static const unsigned int kMaxAutocompleteResults = 10;
 						Json::Value ids(Json::arrayValue);
 						for (unsigned int i = 0; i < mRegistry.GetCount(); ++i)
 						{
@@ -621,6 +624,8 @@ namespace Dia
 								continue;
 
 							ids.append(idStr);
+							if (ids.size() >= kMaxAutocompleteResults)
+								break;
 						}
 						result["success"] = true;
 						result["ids"]     = ids;

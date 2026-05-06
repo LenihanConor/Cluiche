@@ -368,8 +368,14 @@
           </div>
 
           <div style="display:flex;gap:6px;align-items:center;">
-            <input type="text" id="rel-add-rel"    placeholder="rel type (e.g. uses)" style="width:130px;background:#2d2d2d;color:#d4d4d4;border:1px solid #555;padding:3px 6px;font-size:11px;border-radius:3px;" />
-            <input type="text" id="rel-add-target" placeholder="target ID (autocomplete)" style="flex:1;background:#2d2d2d;color:#d4d4d4;border:1px solid #555;padding:3px 6px;font-size:11px;border-radius:3px;" />
+            <select id="rel-add-rel" style="width:130px;background:#2d2d2d;color:#d4d4d4;border:1px solid #555;padding:3px 6px;font-size:11px;border-radius:3px;">
+              <option value="uses">uses</option>
+              <option value="contains">contains</option>
+            </select>
+            <div style="flex:1;position:relative;">
+              <input type="text" id="rel-add-target" placeholder="target ID" style="width:100%;background:#2d2d2d;color:#d4d4d4;border:1px solid #555;padding:3px 6px;font-size:11px;border-radius:3px;" oninput="onRelTargetInput()" />
+              <div id="rel-autocomplete" style="display:none;position:absolute;top:100%;left:0;right:0;max-height:120px;overflow:auto;background:#252526;border:1px solid #555;border-top:none;z-index:10;font-size:11px;"></div>
+            </div>
             <button onclick="onAddRelationship()" style="background:#3c3c3c;color:#d4d4d4;border:1px solid #555;padding:3px 10px;font-size:11px;cursor:pointer;border-radius:3px;">Add</button>
           </div>
         </div>
@@ -419,6 +425,9 @@
       <div style="flex-shrink:0;margin-bottom:6px;display:flex;gap:6px;">
         <button onclick="onDryRun()" id="btn-dry-run" disabled style="background:#3c3c3c;color:#d4d4d4;border:1px solid #555;padding:3px 10px;font-size:11px;cursor:pointer;border-radius:3px;">Dry Run</button>
         <button onclick="onApplyRules()" id="btn-apply-rules" disabled style="background:#0078d4;color:#fff;border:1px solid #0078d4;padding:3px 10px;font-size:11px;cursor:pointer;border-radius:3px;">Apply</button>
+        <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#9d9d9d;margin-left:6px;cursor:pointer;">
+          <input type="checkbox" id="chk-overwrite-manuals" /> Overwrite manual fields
+        </label>
       </div>
       <div id="rules-list" style="flex:1;overflow:auto;font-size:11px;">
         <div class="empty-state">Load a rules file to begin</div>
@@ -822,10 +831,35 @@
 
     diaRequest('asset_catalogue.add_relationship', { from: selectedId, rel: rel, to: target }).then(function(r) {
       if (!r.success) { alert('Add relationship failed: ' + r.error); return; }
-      document.getElementById('rel-add-rel').value = '';
       document.getElementById('rel-add-target').value = '';
+      document.getElementById('rel-autocomplete').style.display = 'none';
       loadRelationships(selectedId);
     });
+  }
+
+  var relAutoTimeout = null;
+  function onRelTargetInput() {
+    var input = document.getElementById('rel-add-target');
+    var prefix = input.value.trim();
+    var dropdown = document.getElementById('rel-autocomplete');
+    if (prefix.length < 2) { dropdown.style.display = 'none'; return; }
+    clearTimeout(relAutoTimeout);
+    relAutoTimeout = setTimeout(function() {
+      diaRequest('asset_catalogue.query_asset_ids', { prefix: prefix }).then(function(r) {
+        if (!r.success || !r.ids || r.ids.length === 0) { dropdown.style.display = 'none'; return; }
+        var filtered = r.ids.filter(function(id) { return id !== selectedId; });
+        if (filtered.length === 0) { dropdown.style.display = 'none'; return; }
+        dropdown.innerHTML = filtered.slice(0, 10).map(function(id) {
+          return '<div style="padding:3px 6px;cursor:pointer;color:#d4d4d4;" onmousedown="pickRelTarget(\'' + escHtml(id) + '\')">' + escHtml(id) + '</div>';
+        }).join('');
+        dropdown.style.display = '';
+      });
+    }, 150);
+  }
+
+  function pickRelTarget(id) {
+    document.getElementById('rel-add-target').value = id;
+    document.getElementById('rel-autocomplete').style.display = 'none';
   }
 
   function onRemoveRelationship(from, rel, to) {
@@ -1077,8 +1111,12 @@
   }
 
   function onApplyRules() {
-    if (!confirm('Apply all rules to the catalogue?\nThis can be undone.')) return;
-    diaRequest('asset_catalogue.apply_rules', {}).then(function(r) {
+    var overwriteManuals = document.getElementById('chk-overwrite-manuals').checked;
+    var msg = 'Apply all rules to the catalogue?';
+    if (overwriteManuals) msg += '\n⚠ Manual overrides will be overwritten.';
+    msg += '\nThis can be undone.';
+    if (!confirm(msg)) return;
+    diaRequest('asset_catalogue.apply_rules', { overwrite_manuals: overwriteManuals }).then(function(r) {
       if (!r.success) { alert('Apply failed: ' + r.error); return; }
       document.getElementById('rules-list').innerHTML =
         '<div style="color:#4ec9a0;font-size:11px;">✓ Applied ' + r.applied_count + ' change' + (r.applied_count !== 1 ? 's' : '') + '</div>';
