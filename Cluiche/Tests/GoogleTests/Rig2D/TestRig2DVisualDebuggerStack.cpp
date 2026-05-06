@@ -5,8 +5,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include <gtest/gtest.h>
 
-// Pull in DIA_DEBUG so the headers compile
+#ifndef DIA_DEBUG
 #define DIA_DEBUG
+#endif
 
 #include <DiaRig2DVisualDebugger/BoneLinesDrawer.h>
 #include <DiaRig2DVisualDebugger/JointCirclesDrawer.h>

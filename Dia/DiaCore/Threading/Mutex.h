@@ -3,6 +3,7 @@
 
 #include <mutex>
 #include <shared_mutex>
+#include <sal.h>
 
 namespace Dia
 {
@@ -27,16 +28,19 @@ namespace Dia
 			Mutex() = default;
 			~Mutex() = default;
 
+			_Acquires_lock_(mMutex)
 			void Lock()
 			{
 				mMutex.lock();
 			}
 
+			_When_(return, _Acquires_lock_(mMutex))
 			bool TryLock()
 			{
 				return mMutex.try_lock();
 			}
 
+			_Releases_lock_(mMutex)
 			void Unlock()
 			{
 				mMutex.unlock();
@@ -60,16 +64,19 @@ namespace Dia
 			RecursiveMutex() = default;
 			~RecursiveMutex() = default;
 
+			_Acquires_lock_(mMutex)
 			void Lock()
 			{
 				mMutex.lock();
 			}
 
+			_When_(return, _Acquires_lock_(mMutex))
 			bool TryLock()
 			{
 				return mMutex.try_lock();
 			}
 
+			_Releases_lock_(mMutex)
 			void Unlock()
 			{
 				mMutex.unlock();

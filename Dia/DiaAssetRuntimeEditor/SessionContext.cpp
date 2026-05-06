@@ -54,15 +54,13 @@ namespace Dia
 				if (root.isMember("stateFilter") && root["stateFilter"].isString())
 				{
 					const char* sf = root["stateFilter"].asCString();
-					strncpy(mStateFilter, sf, sizeof(mStateFilter) - 1);
-					mStateFilter[sizeof(mStateFilter) - 1] = '\0';
+					strncpy_s(mStateFilter, sizeof(mStateFilter), sf, _TRUNCATE);
 				}
 
 				if (root.isMember("idSearchText") && root["idSearchText"].isString())
 				{
 					const char* st = root["idSearchText"].asCString();
-					strncpy(mIdSearchText, st, sizeof(mIdSearchText) - 1);
-					mIdSearchText[sizeof(mIdSearchText) - 1] = '\0';
+					strncpy_s(mIdSearchText, sizeof(mIdSearchText), st, _TRUNCATE);
 				}
 
 				if (mPollInterval < 0.1f) mPollInterval = 0.1f;
@@ -115,8 +113,7 @@ namespace Dia
 					mStateFilter[0] = '\0';
 					return;
 				}
-				strncpy(mStateFilter, filter, sizeof(mStateFilter) - 1);
-				mStateFilter[sizeof(mStateFilter) - 1] = '\0';
+				strncpy_s(mStateFilter, sizeof(mStateFilter), filter, _TRUNCATE);
 			}
 
 			void SessionContext::SetIdSearchText(const char* text)
@@ -126,8 +123,7 @@ namespace Dia
 					mIdSearchText[0] = '\0';
 					return;
 				}
-				strncpy(mIdSearchText, text, sizeof(mIdSearchText) - 1);
-				mIdSearchText[sizeof(mIdSearchText) - 1] = '\0';
+				strncpy_s(mIdSearchText, sizeof(mIdSearchText), text, _TRUNCATE);
 			}
 		}
 	}

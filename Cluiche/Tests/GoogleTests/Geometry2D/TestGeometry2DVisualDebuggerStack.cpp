@@ -6,7 +6,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include <gtest/gtest.h>
 
+#ifndef DIA_DEBUG
 #define DIA_DEBUG
+#endif
 #include <DiaGeometry2DVisualDebugger/ShapeDrawer.h>
 #include <DiaGeometry2DVisualDebugger/SpatialGridDrawer.h>
 #include <DiaGeometry2DVisualDebugger/QuadtreeDrawer.h>

@@ -5,10 +5,16 @@ from ..pipeline_config import PipelineConfig
 
 
 def run(config: PipelineConfig, target: str, build_config: str, force: bool, repo_root: Path, output=None, system: str = "pipeline") -> int:
+    from dia_cli.commands.asset.config_loader import AssetConfigError, load_asset_target_config
     from dia_cli.commands.asset._common_handler import run_asset_phases
     import click
 
-    # Build a minimal Click context so _common_handler can resolve output
+    try:
+        target_cfg = load_asset_target_config(repo_root, target)
+    except AssetConfigError:
+        click.echo(f"build-assets: skipped (no catalogue_manifest configured for '{target}')")
+        return 0
+
     ctx = click.Context(click.Command("build-assets"))
     if output is not None:
         class _Obj:

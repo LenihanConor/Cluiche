@@ -120,8 +120,7 @@ namespace
             if (readyCount < kMaxEvents)
             {
                 readyEvents[readyCount].assetId = assetId;
-                strncpy(readyEvents[readyCount].path, resolvedPath.AsCStr(), 511);
-                readyEvents[readyCount].path[511] = '\0';
+                strncpy_s(readyEvents[readyCount].path, sizeof(readyEvents[readyCount].path), resolvedPath.AsCStr(), _TRUNCATE);
                 readyCount++;
             }
         }

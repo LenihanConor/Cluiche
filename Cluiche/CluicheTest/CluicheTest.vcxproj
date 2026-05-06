@@ -64,11 +64,6 @@
     <ProjectReference Include="..\..\Dia\DiaSFML\DiaSFML.vcxproj">
       <Project>{d0101596-9011-46af-a16a-69a2bb0cca69}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\Dia\DiaUIAwesomium\DiaUIAwesomium.vcxproj">
-      <Project>{a5b2650d-8283-483f-827e-ca29140cfa63}</Project>
-      <ReferenceOutputAssembly Condition="'$(Platform)'=='x64'">false</ReferenceOutputAssembly>
-      <LinkLibraryDependencies Condition="'$(Platform)'=='x64'">false</LinkLibraryDependencies>
-    </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaUIUltralight\DiaUIUltralight.vcxproj">
       <Project>{b7c3d812-4f91-4e2a-9b56-fa38e1d09c74}</Project>
       <ReferenceOutputAssembly Condition="'$(Platform)'=='Win32'">false</ReferenceOutputAssembly>
@@ -116,6 +111,9 @@
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <OutDir>$(BinRoot)$(MSBuildProjectName)\$(Configuration)\$(Platform)\</OutDir>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <RunCodeAnalysis>true</RunCodeAnalysis>
   </PropertyGroup>

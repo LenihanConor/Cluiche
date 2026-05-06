@@ -6,7 +6,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include <gtest/gtest.h>
 
+#ifndef DIA_DEBUG
 #define DIA_DEBUG
+#endif
 #include <DiaIK2DVisualDebugger/IKChainBonesDrawer.h>
 #include <DiaIK2DVisualDebugger/IKChainJointsDrawer.h>
 #include <DiaIK2DVisualDebugger/IKChainArrowsDrawer.h>

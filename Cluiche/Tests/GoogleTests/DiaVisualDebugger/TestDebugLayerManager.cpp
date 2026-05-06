@@ -5,7 +5,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include <gtest/gtest.h>
 
+#ifndef DIA_DEBUG
 #define DIA_DEBUG
+#endif
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaVisualDebugger/DebugColourPalette.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>

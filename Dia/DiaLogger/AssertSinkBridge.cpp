@@ -37,8 +37,7 @@ namespace Dia
 			entry.level = LogLevel::kError;
 			entry.channel = Dia::Core::StringCRC("Assert");
 
-			strncpy(entry.message, formattedMessage, sizeof(entry.message) - 1);
-			entry.message[sizeof(entry.message) - 1] = '\0';
+			strncpy_s(entry.message, sizeof(entry.message), formattedMessage, _TRUNCATE);
 
 			Logger::Instance().DispatchImmediate(entry);
 		}

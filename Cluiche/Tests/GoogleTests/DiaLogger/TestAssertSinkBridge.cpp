@@ -102,8 +102,7 @@ TEST(TestDispatchImmediate, SinkReceivesEntry)
 	LogEntry entry;
 	entry.level = LogLevel::kError;
 	entry.channel = Dia::Core::StringCRC("Assert");
-	strncpy(entry.message, "test dispatch", sizeof(entry.message) - 1);
-	entry.message[sizeof(entry.message) - 1] = '\0';
+	strncpy_s(entry.message, sizeof(entry.message), "test dispatch", _TRUNCATE);
 
 	Logger::Instance().DispatchImmediate(entry);
 
@@ -127,8 +126,7 @@ TEST(TestDispatchImmediate, MultipleSinks_AllReceive)
 	LogEntry entry;
 	entry.level = LogLevel::kError;
 	entry.channel = Dia::Core::StringCRC("Assert");
-	strncpy(entry.message, "broadcast assert", sizeof(entry.message) - 1);
-	entry.message[sizeof(entry.message) - 1] = '\0';
+	strncpy_s(entry.message, sizeof(entry.message), "broadcast assert", _TRUNCATE);
 
 	Logger::Instance().DispatchImmediate(entry);
 
@@ -149,14 +147,12 @@ TEST(TestDispatchImmediate, SinkFilterRespected)
 	LogEntry entryLow;
 	entryLow.level = LogLevel::kInfo;
 	entryLow.channel = Dia::Core::StringCRC("Assert");
-	strncpy(entryLow.message, "low priority", sizeof(entryLow.message) - 1);
-	entryLow.message[sizeof(entryLow.message) - 1] = '\0';
+	strncpy_s(entryLow.message, sizeof(entryLow.message), "low priority", _TRUNCATE);
 
 	LogEntry entryHigh;
 	entryHigh.level = LogLevel::kError;
 	entryHigh.channel = Dia::Core::StringCRC("Assert");
-	strncpy(entryHigh.message, "high priority", sizeof(entryHigh.message) - 1);
-	entryHigh.message[sizeof(entryHigh.message) - 1] = '\0';
+	strncpy_s(entryHigh.message, sizeof(entryHigh.message), "high priority", _TRUNCATE);
 
 	Logger::Instance().DispatchImmediate(entryLow);
 	Logger::Instance().DispatchImmediate(entryHigh);
@@ -172,8 +168,7 @@ TEST(TestDispatchImmediate, NoSinks_NoCrash)
 	LogEntry entry;
 	entry.level = LogLevel::kError;
 	entry.channel = Dia::Core::StringCRC("Assert");
-	strncpy(entry.message, "orphan", sizeof(entry.message) - 1);
-	entry.message[sizeof(entry.message) - 1] = '\0';
+	strncpy_s(entry.message, sizeof(entry.message), "orphan", _TRUNCATE);
 
 	Logger::Instance().DispatchImmediate(entry);
 }

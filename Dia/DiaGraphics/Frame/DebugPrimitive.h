@@ -27,7 +27,7 @@ namespace Dia
 		struct DebugPrimitiveCircle2D
 		{
 			Maths::Vector2D position;
-			float           radius;
+			float           radius = 0.0f;
 			RGBA            outlineColour;
 			RGBA            fillColour;   // alpha == 0 means no fill
 		};

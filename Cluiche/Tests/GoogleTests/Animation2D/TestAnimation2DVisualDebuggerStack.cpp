@@ -6,7 +6,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include <gtest/gtest.h>
 
+#ifndef DIA_DEBUG
 #define DIA_DEBUG
+#endif
 #include <DiaAnimation2DVisualDebugger/AnimClipCursorDrawer.h>
 #include <DiaAnimation2DVisualDebugger/AnimBlendWeightsDrawer.h>
 #include <DiaAnimation2DVisualDebugger/AnimSpringDrawer.h>
