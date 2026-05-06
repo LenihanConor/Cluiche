@@ -49,6 +49,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.assetruntimeeditor.architecture.module.md" />
+    <None Include="UI\index.html">
+      <Filter>UI</Filter>
+    </None>
     <None Include="UI\asset-state-table.html">
       <Filter>UI</Filter>
     </None>

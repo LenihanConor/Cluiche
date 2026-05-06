@@ -19,6 +19,7 @@ namespace Dia
 				, mState(nullptr)
 				, mPollInterval(kDefaultPollIntervalSeconds)
 				, mPollTimer(0.0f)
+				, mGeneration(0)
 				, mActive(false)
 				, mConnected(false)
 			{}
@@ -86,6 +87,8 @@ namespace Dia
 
 			void AssetStateTablePanel::Deactivate()
 			{
+				++mGeneration;
+
 				if (mBridge)
 				{
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_runtime_editor.force_refresh"));
@@ -156,10 +159,13 @@ namespace Dia
 				if (!mManager)
 					return;
 
+				unsigned int gen = mGeneration;
 				Json::Value args(Json::objectValue);
 				mManager->SendCommandWithResponse("asset_runtime.get_all_states", args,
-					[this](bool success, const Json::Value& result)
+					[this, gen](bool success, const Json::Value& result)
 					{
+						if (gen != mGeneration)
+							return;
 						HandlePollResponse(success, result);
 					});
 			}

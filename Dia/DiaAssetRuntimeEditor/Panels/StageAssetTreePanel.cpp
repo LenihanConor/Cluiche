@@ -20,6 +20,7 @@ namespace Dia
 				, mState(nullptr)
 				, mTablePanel(nullptr)
 				, mLastProcessedSnapshotVersion(0)
+				, mGeneration(0)
 				, mActive(false)
 				, mConnected(false)
 			{}
@@ -105,6 +106,8 @@ namespace Dia
 
 			void StageAssetTreePanel::Deactivate()
 			{
+				++mGeneration;
+
 				if (mBridge)
 				{
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_runtime_editor.expand_stage"));
@@ -310,9 +313,12 @@ namespace Dia
 								Json::Value args;
 								args["stageId"] = stageId.AsChar();
 								Dia::Core::StringCRC capturedId = stageId;
+								unsigned int gen = mGeneration;
 								mManager->SendCommandWithResponse("asset_runtime.get_stage_deps", args,
-									[this, capturedId](bool success, const Json::Value& result)
+									[this, capturedId, gen](bool success, const Json::Value& result)
 									{
+										if (gen != mGeneration)
+											return;
 										HandleStageDepsResponse(capturedId, success, result);
 									});
 							}

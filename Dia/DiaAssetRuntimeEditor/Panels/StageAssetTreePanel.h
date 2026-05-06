@@ -69,6 +69,7 @@ namespace Dia
 				Dia::Core::Containers::DynamicArrayC<StageNode, kMaxStages> mStageNodes;
 
 				unsigned int mLastProcessedSnapshotVersion;
+				unsigned int mGeneration;
 				bool mActive;
 				bool mConnected;
 			};

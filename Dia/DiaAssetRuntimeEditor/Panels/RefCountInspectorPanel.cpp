@@ -18,6 +18,7 @@ namespace Dia
 				, mTablePanel(nullptr)
 				, mLastInspectedAssetId()
 				, mLastSnapshotVersion(0)
+				, mGeneration(0)
 				, mActive(false)
 				, mConnected(false)
 			{}
@@ -37,6 +38,7 @@ namespace Dia
 
 			void RefCountInspectorPanel::Deactivate()
 			{
+				++mGeneration;
 				mActive = false;
 				mBridge = nullptr;
 				mManager = nullptr;
@@ -150,14 +152,17 @@ namespace Dia
 
 				// Query each stage's deps to see if our asset appears
 				Dia::Core::StringCRC capturedAssetId = assetId;
+				unsigned int gen = mGeneration;
 				for (unsigned int i = 0; i < stages.Size(); ++i)
 				{
 					Dia::Core::StringCRC stageId = stages[i];
 					Json::Value args;
 					args["stageId"] = stageId.AsChar();
 					mManager->SendCommandWithResponse("asset_runtime.get_stage_deps", args,
-						[this, capturedAssetId, stageId](bool success, const Json::Value& result)
+						[this, capturedAssetId, stageId, gen](bool success, const Json::Value& result)
 						{
+							if (gen != mGeneration)
+								return;
 							if (!success || !mActive)
 								return;
 

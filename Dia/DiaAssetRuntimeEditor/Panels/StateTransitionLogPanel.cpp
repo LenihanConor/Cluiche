@@ -17,6 +17,7 @@ namespace Dia
 				, mManager(nullptr)
 				, mState(nullptr)
 				, mMaxEntries(kDefaultMaxEntries)
+				, mGeneration(0)
 				, mPaused(false)
 				, mActive(false)
 				, mConnected(false)
@@ -87,6 +88,8 @@ namespace Dia
 
 			void StateTransitionLogPanel::Deactivate()
 			{
+				++mGeneration;
+
 				if (mSubscribed)
 					UnsubscribeFromTransitions();
 
@@ -161,8 +164,14 @@ namespace Dia
 				if (!mManager || mSubscribed)
 					return;
 
+				unsigned int gen = mGeneration;
 				mManager->Subscribe(Dia::Core::StringCRC("asset_runtime.transitions"),
-					[this](const Json::Value& data) { HandleTransitionEvent(data); });
+					[this, gen](const Json::Value& data)
+					{
+						if (gen != mGeneration)
+							return;
+						HandleTransitionEvent(data);
+					});
 				mSubscribed = true;
 
 				// Also send the subscribe command to the game

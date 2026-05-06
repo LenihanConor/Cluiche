@@ -58,6 +58,7 @@ namespace Dia
 
 				float mPollInterval;
 				float mPollTimer;
+				unsigned int mGeneration;
 				bool mActive;
 				bool mConnected;
 			};

@@ -57,6 +57,7 @@ namespace Dia
 
 				Dia::Core::Containers::DynamicArrayC<StageReference, kMaxStageReferences> mStageRefs;
 
+				unsigned int mGeneration;
 				bool mActive;
 				bool mConnected;
 			};

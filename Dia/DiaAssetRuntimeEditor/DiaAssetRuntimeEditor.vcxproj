@@ -94,6 +94,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.assetruntimeeditor.architecture.module.md" />
+    <None Include="UI\index.html" />
     <None Include="UI\asset-state-table.html" />
     <None Include="UI\asset-state-table.css" />
     <None Include="UI\asset-state-table.js" />

@@ -59,6 +59,7 @@ namespace Dia
 				Dia::Core::Containers::DynamicArrayC<TransitionLogEntry, kMaxLogCapacity> mLog;
 
 				unsigned int mMaxEntries;
+				unsigned int mGeneration;
 				bool mPaused;
 				bool mActive;
 				bool mConnected;
