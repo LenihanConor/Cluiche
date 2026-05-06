@@ -430,10 +430,13 @@
         <button onclick="onGraphReset()" style="background:#3c3c3c;color:#d4d4d4;border:1px solid #555;padding:2px 8px;font-size:11px;cursor:pointer;border-radius:3px;">Reset</button>
       </div>
       <div id="graph-legend" style="flex-shrink:0;padding:4px 8px;font-size:10px;color:#6a6a6a;border-bottom:1px solid #2d2d2d;display:none;">
-        <span style="color:#9cdcfe;">● root</span>
-        <span style="margin-left:8px;color:#4ec9a0;">● forward</span>
-        <span style="margin-left:8px;color:#ce9178;">● reverse</span>
-        <span style="margin-left:8px;color:#9d9d9d;">dblclick node to expand</span>
+        <span style="color:#007acc;">● texture</span>
+        <span style="margin-left:8px;color:#4ec9a0;">● entity</span>
+        <span style="margin-left:8px;color:#ce9178;">● config</span>
+        <span style="margin-left:8px;color:#dcdcaa;">● stage</span>
+        <span style="margin-left:8px;color:#c586c0;">● audio</span>
+        <span style="margin-left:8px;color:#9cdcfe;">● other</span>
+        <span style="margin-left:8px;color:#9d9d9d;">root=larger · dblclick to expand</span>
       </div>
       <div id="graph-canvas" style="flex:1;position:relative;">
         <div class="empty-state" id="graph-empty">Select an asset to view its relationship graph</div>
@@ -1156,14 +1159,30 @@
   function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
   /* ── Relationship Graph ──────────────────────────── */
-  var graphNodes = {};   // id → { id, x, y, vx, vy, role }
-  var graphEdges = [];   // { from, to, rel }
+  var graphNodes = {};         // id → { id, x, y, vx, vy, role, type }
+  var graphEdges = [];         // { from, to, rel }
+  var graphExpandedNodes = {}; // id → true once refs have been fetched
   var graphRootId = null;
   var graphSvg = null;
   var graphRaf = null;
   var graphDragging = null;
 
-  var GRAPH_COLORS = { root: '#007acc', forward: '#4ec9a0', reverse: '#ce9178', expanded: '#9cdcfe' };
+  var TYPE_COLORS = {
+    texture:  '#007acc',
+    entity:   '#4ec9a0',
+    config:   '#ce9178',
+    stage:    '#dcdcaa',
+    audio:    '#c586c0',
+    shader:   '#569cd6',
+    mesh:     '#9cdcfe',
+    material: '#4fc1ff',
+    folder:   '#808080'
+  };
+  var TYPE_COLOR_DEFAULT = '#9cdcfe';
+  function typeColor(id) {
+    var prefix = id ? id.split('.')[0] : '';
+    return TYPE_COLORS[prefix] || TYPE_COLOR_DEFAULT;
+  }
 
   function initGraph() {
     var canvas = document.getElementById('graph-canvas');
@@ -1199,6 +1218,7 @@
     graphRootId = id;
     graphNodes = {};
     graphEdges = [];
+    graphExpandedNodes = {};
     document.getElementById('graph-empty').style.display = 'none';
     document.getElementById('graph-legend').style.display = '';
     document.getElementById('graph-root-label').textContent = id;
@@ -1208,6 +1228,8 @@
   }
 
   function fetchAndAddGraphRefs(id, isExpand) {
+    if (isExpand && graphExpandedNodes[id]) return;
+    graphExpandedNodes[id] = true;
     Promise.all([
       diaRequest('asset_catalogue.get_forward_refs', { id: id }),
       diaRequest('asset_catalogue.get_reverse_refs', { id: id })
@@ -1235,7 +1257,7 @@
     var cx = canvas ? canvas.offsetWidth  / 2 : 150;
     var cy = canvas ? canvas.offsetHeight / 2 : 150;
     graphNodes[id] = {
-      id: id, role: role,
+      id: id, role: role, type: id ? id.split('.')[0] : '',
       x: cx + (Math.random() - 0.5) * 120,
       y: cy + (Math.random() - 0.5) * 120,
       vx: 0, vy: 0
@@ -1288,7 +1310,7 @@
     var nodeIds = Object.keys(graphNodes);
     nodeIds.forEach(function(id) {
       var n = graphNodes[id];
-      var color = GRAPH_COLORS[n.role] || GRAPH_COLORS.expanded;
+      var color = typeColor(n.id);
       var r = n.role === 'root' ? 18 : 14;
 
       var g = document.createElementNS(ns, 'g');
