@@ -14,6 +14,14 @@ const NODE_ICONS: Record<ManifestTreeNode['nodeType'], string> = {
     module: '⚙️',       // ⚙️
 };
 
+function extractStageName(sourcePath: string | undefined): string | null {
+    if (!sourcePath) return null;
+    const lastSlash = Math.max(sourcePath.lastIndexOf('/'), sourcePath.lastIndexOf('\\'));
+    const filename = lastSlash >= 0 ? sourcePath.substring(lastSlash + 1) : sourcePath;
+    const dotIdx = filename.lastIndexOf('.');
+    return dotIdx > 0 ? filename.substring(0, dotIdx) : filename;
+}
+
 export const TreeNodeRenderer: React.FC<TreeNodeRendererProps> = ({
     node,
     style,
@@ -21,7 +29,7 @@ export const TreeNodeRenderer: React.FC<TreeNodeRendererProps> = ({
     selectedNodeId,
     onContextMenu,
 }) => {
-    const { nodeType, typeName, moduleCount, configKeys } = node.data;
+    const { nodeType, typeName, moduleCount, configKeys, source } = node.data;
     const validationResult = useManifestStore(s => s.validationResult);
 
     const hasError = validationResult?.errors.some(
@@ -63,6 +71,24 @@ export const TreeNodeRenderer: React.FC<TreeNodeRendererProps> = ({
 
             <span style={{ flexShrink: 0 }}>{node.data.name}</span>
             <span style={{ color: '#666', fontSize: 11, flexShrink: 0 }}>({typeName})</span>
+
+            {(nodeType === 'phase' || nodeType === 'processing_unit') && source && (() => {
+                const stageName = extractStageName(source);
+                if (!stageName) return null;
+                const isStage = source.includes('/stages/') || source.includes('\\stages\\');
+                const bg = isStage ? '#1e3a5f' : '#2d4a2d';
+                const border = isStage ? '#3a6a9f' : '#4a7a4a';
+                const fg = isStage ? '#7fb3de' : '#8fbc8f';
+                return (
+                    <span style={{
+                        background: bg, border: `1px solid ${border}`, borderRadius: 3,
+                        padding: '0 4px', fontSize: 9, color: fg, marginLeft: 4,
+                        flexShrink: 0,
+                    }}>
+                        {stageName}
+                    </span>
+                );
+            })()}
 
             {nodeType === 'phase' && moduleCount !== undefined && moduleCount > 0 && (
                 <span style={{
