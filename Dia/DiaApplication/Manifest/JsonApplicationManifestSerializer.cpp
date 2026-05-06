@@ -293,14 +293,16 @@ namespace Dia
 		{
 			static const unsigned int kBufferSize = 32768;
 			char* buffer = new char[kBufferSize];
-			if (!ReadFileToBuffer(path, buffer, kBufferSize))
-			{
-				delete[] buffer;
-				return Dia::Serializer::SerializeResult::Failure("file read error");
-			}
-			auto r = Load(buffer, outManifest);
+			auto r = LoadFromFile(path, outManifest, buffer, kBufferSize);
 			delete[] buffer;
 			return r;
+		}
+
+		Dia::Serializer::SerializeResult JsonApplicationManifestSerializer::LoadFromFile(const char* path, ApplicationManifest& outManifest, char* buffer, unsigned int bufferSize) const
+		{
+			if (!ReadFileToBuffer(path, buffer, bufferSize))
+				return Dia::Serializer::SerializeResult::Failure("file read error");
+			return Load(buffer, outManifest);
 		}
 
 		Dia::Serializer::SerializeResult JsonApplicationManifestSerializer::SaveToFile(const char* path, const ApplicationManifest& manifest) const

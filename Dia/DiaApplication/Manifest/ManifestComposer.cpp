@@ -59,7 +59,13 @@ namespace Dia
 			: mErrors()
 			, mImportStack()
 			, mProcessedFiles(64, 64)
+			, mFileBuffer(new char[kFileBufferSize])
 		{
+		}
+
+		ManifestComposer::~ManifestComposer()
+		{
+			delete[] mFileBuffer;
 		}
 
 		ManifestValidationResult ManifestComposer::ComposeManifests(
@@ -333,7 +339,7 @@ namespace Dia
 		ManifestValidationResult ManifestComposer::LoadManifestFromFile(const char* filePath, ApplicationManifest& outManifest)
 		{
 			JsonApplicationManifestSerializer serializer;
-			auto result = serializer.LoadFromFile(filePath, outManifest);
+			auto result = serializer.LoadFromFile(filePath, outManifest, mFileBuffer, kFileBufferSize);
 			if (!result)
 			{
 				const char* err = result.error ? result.error : "unknown error";

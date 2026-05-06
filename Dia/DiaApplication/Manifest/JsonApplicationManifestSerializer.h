@@ -20,6 +20,7 @@ namespace Dia
 			Dia::Serializer::SerializeResult Save(const ApplicationManifest& manifest, char* outBuffer, unsigned int bufferSize) const;
 
 			Dia::Serializer::SerializeResult LoadFromFile(const char* path, ApplicationManifest& outManifest) const;
+			Dia::Serializer::SerializeResult LoadFromFile(const char* path, ApplicationManifest& outManifest, char* buffer, unsigned int bufferSize) const;
 			Dia::Serializer::SerializeResult SaveToFile(const char* path, const ApplicationManifest& manifest) const;
 		};
 	}

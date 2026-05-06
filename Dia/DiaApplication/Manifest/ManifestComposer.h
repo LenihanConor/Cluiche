@@ -18,6 +18,7 @@ namespace Dia
 		{
 		public:
 			ManifestComposer();
+			~ManifestComposer();
 
 			// Compose multiple manifests into a single unified manifest
 			// Resolves imports recursively (depth-first) and merges with defined rules
@@ -41,9 +42,12 @@ namespace Dia
 			void ClearErrors();
 
 		private:
+			static const unsigned int kFileBufferSize = 32768;
+
 			Dia::Core::Containers::DynamicArrayC<ManifestValidationError, 32> mErrors;
 			Dia::Core::Containers::DynamicArrayC<const char*, 16> mImportStack; // For cycle detection
 			Dia::Core::Containers::HashTable<Dia::Core::StringCRC, bool, Dia::Core::StringCRCHashFunctor> mProcessedFiles; // Track processed files
+			char* mFileBuffer; // Reused across recursive loads to avoid per-level allocation
 
 			// Import resolution
 			bool DetectImportCycle(const char* filePath);
