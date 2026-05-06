@@ -1,6 +1,9 @@
 #include "ApplicationLoader.h"
 
 #include <DiaApplication/Manifest/ApplicationManifestLoader.h>
+#include <DiaApplication/Manifest/ManifestComposer.h>
+#include <DiaApplication/Manifest/DiaGameManifest.h>
+#include <DiaApplication/Manifest/DiaGameManifestLoader.h>
 #include <DiaApplication/TypeRegistry/ApplicationTypeRegistry.h>
 #include <DiaApplication/ApplicationProcessingUnit.h>
 #include <DiaLogger/DiaLog.h>
@@ -115,6 +118,85 @@ namespace Dia
 			}
 
 			return pu;
+		}
+
+		// -----------------------------------------------------------------------------
+		// LoadFromGameFile
+		// -----------------------------------------------------------------------------
+		ProcessingUnit* ApplicationLoader::LoadFromGameFile(ApplicationTypeRegistry& registry,
+														   const char* diagamePath,
+														   ManifestValidationResult& outResult)
+		{
+			DIA_ASSERT(diagamePath != nullptr, "Game file path cannot be null");
+
+			DiaGameManifest gameManifest;
+			outResult = DiaGameManifestLoader::LoadGameFile(diagamePath, gameManifest);
+			if (outResult != ManifestValidationResult::kSuccess)
+			{
+				DIA_LOG_ERROR("Application", "Failed to parse .diagame file: %s", diagamePath);
+				return nullptr;
+			}
+
+			// Find the first manifest-type import to use as root application manifest
+			const char* rootManifestRelPath = nullptr;
+			for (unsigned int i = 0; i < gameManifest.imports.Size(); ++i)
+			{
+				if (gameManifest.imports[i].type == TypedImport::ImportType::kManifest)
+				{
+					rootManifestRelPath = gameManifest.imports[i].path.AsCStr();
+					break;
+				}
+			}
+
+			if (rootManifestRelPath == nullptr)
+			{
+				DIA_LOG_ERROR("Application", "Game file contains no manifest imports: %s", diagamePath);
+				outResult = ManifestValidationResult::kMissingRequiredField;
+				return nullptr;
+			}
+
+			// Resolve manifest path relative to .diagame location
+			const char* lastSlash = nullptr;
+			for (const char* p = diagamePath; *p; ++p)
+				if (*p == '/' || *p == '\\')
+					lastSlash = p;
+
+			char resolvedPath[512];
+			if (lastSlash != nullptr)
+			{
+				unsigned int dirLen = static_cast<unsigned int>(lastSlash - diagamePath) + 1;
+				if (dirLen >= sizeof(resolvedPath)) dirLen = sizeof(resolvedPath) - 1;
+				memcpy(resolvedPath, diagamePath, dirLen);
+				resolvedPath[dirLen] = '\0';
+				strncat(resolvedPath, rootManifestRelPath, sizeof(resolvedPath) - dirLen - 1);
+			}
+			else
+			{
+				strncpy(resolvedPath, rootManifestRelPath, sizeof(resolvedPath) - 1);
+				resolvedPath[sizeof(resolvedPath) - 1] = '\0';
+			}
+
+			return LoadApplication(registry, resolvedPath, outResult);
+		}
+
+		// -----------------------------------------------------------------------------
+		// LoadGameManifest
+		// -----------------------------------------------------------------------------
+		ManifestValidationResult ApplicationLoader::LoadGameManifest(const char* diagamePath,
+																	 DiaGameManifest& outManifest)
+		{
+			DIA_ASSERT(diagamePath != nullptr, "Game file path cannot be null");
+			return DiaGameManifestLoader::LoadGameFile(diagamePath, outManifest);
+		}
+
+		// -----------------------------------------------------------------------------
+		// LoadStageManifest
+		// -----------------------------------------------------------------------------
+		ManifestValidationResult ApplicationLoader::LoadStageManifest(const char* diastagePath,
+																	  DiaStageManifest& outStage)
+		{
+			DIA_ASSERT(diastagePath != nullptr, "Stage file path cannot be null");
+			return DiaGameManifestLoader::LoadStageFile(diastagePath, outStage);
 		}
 	}
 }

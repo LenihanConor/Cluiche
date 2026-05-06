@@ -25,6 +25,7 @@
     <ClCompile Include="Manifest\ManifestComposer.cpp" />
     <ClCompile Include="Manifest\ManifestValidator.cpp" />
     <ClCompile Include="Manifest\JsonApplicationManifestSerializer.cpp" />
+    <ClCompile Include="Manifest\DiaGameManifestLoader.cpp" />
     <ClCompile Include="TypeRegistry\ApplicationTypeRegistry.cpp" />
     <ClCompile Include="Metrics\MetricsCollectorModule.cpp" />
   </ItemGroup>
@@ -42,6 +43,9 @@
     <ClInclude Include="Manifest\ManifestComposer.h" />
     <ClInclude Include="Manifest\ManifestValidator.h" />
     <ClInclude Include="Manifest\JsonApplicationManifestSerializer.h" />
+    <ClInclude Include="Manifest\TypedImport.h" />
+    <ClInclude Include="Manifest\DiaGameManifest.h" />
+    <ClInclude Include="Manifest\DiaGameManifestLoader.h" />
     <ClInclude Include="TypeRegistry\ApplicationTypeRegistry.h" />
     <ClInclude Include="DebugDataTypes.h" />
     <ClInclude Include="Metrics\MetricsCollectorModule.h" />

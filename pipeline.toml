@@ -10,7 +10,7 @@ language = "cpp"
 
 [targets.googletest]
 project = "Cluiche/Tests/GoogleTests/GoogleTests.vcxproj"
-stages = ["compile-code", "build-assets", "deploy"]
+stages = ["compile-code", "deploy"]
 
 [targets.googletest.build_deps]
 protobuf = true
@@ -18,7 +18,9 @@ protobuf = true
 [targets.googletest.deploy]
 files = [
   { src = "External/Python311/python311.dll", dest = "$(OutDir)" },
-  { src = "Cluiche/CluicheTest/Data/Manifests/*.diaapp", dest = "$(OutDir)Data/Manifests/" }
+  { src = "Cluiche/CluicheTest/Data/Manifests/*.diaapp", dest = "$(OutDir)Data/Manifests/" },
+  { src = "Cluiche/CluicheTest/Data/Manifests/*.diagame", dest = "$(OutDir)Data/Manifests/" },
+  { src = "Cluiche/CluicheTest/Data/Manifests/stages/*", dest = "$(OutDir)Data/Manifests/stages/" }
 ]
 
 [targets.cluichetest]
@@ -32,7 +34,11 @@ protobuf = true
 files = [
   { src = "Cluiche/pathStoreConfig.json", dest = "$(OutDir)" },
   { src = "External/SFML/Current-x64/bin/*.dll", dest = "$(OutDir)" },
-  { src = "Cluiche/CluicheTest/Data/Manifests/*.diaapp", dest = "$(OutDir)Data/Manifests/" }
+  { src = "Dia/DiaUIUltralight/Deploy/*", dest = "$(OutDir)" },
+  { src = "External/Ultralight/resources/*", dest = "$(OutDir)resources/" },
+  { src = "Cluiche/CluicheTest/Data/Manifests/*.diaapp", dest = "$(OutDir)Data/Manifests/" },
+  { src = "Cluiche/CluicheTest/Data/Manifests/*.diagame", dest = "$(OutDir)Data/Manifests/" },
+  { src = "Cluiche/CluicheTest/Data/Manifests/stages/*", dest = "$(OutDir)Data/Manifests/stages/" }
 ]
 
 [targets.cluicheeditor]
@@ -60,6 +66,8 @@ files = [
   { src = "Dia/DiaApplicationEditor/UI/dist/*",           dest = "$(OutDir)plugins/diaapplicationeditor/" },
   { src = "Dia/DiaApplicationEditor/UI/dist/assets/*",    dest = "$(OutDir)plugins/diaapplicationeditor/assets/" },
   { src = "Dia/DiaApplicationEditor/Assets/*",            dest = "$(OutDir)plugins/diaapplicationeditor/" },
+  { src = "Dia/DiaAssetRuntimeEditor/UI/*",                dest = "$(OutDir)plugins/assetruntimeeditor/" },
+  { src = "Dia/DiaAssetCatalogueEditor/UI/*",              dest = "$(OutDir)plugins/assetcatalogue/" },
   { src = "Dia/DiaPipelineEditor/UI/dist/*",              dest = "$(OutDir)plugins/diapipelineeditor/" },
   { src = "Dia/DiaPipelineEditor/UI/dist/assets/*",       dest = "$(OutDir)plugins/diapipelineeditor/assets/" },
   { src = "Cluiche/Assets/CluicheEditor/*",               dest = "$(OutDir)assets/icons/" },

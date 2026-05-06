@@ -1,5 +1,6 @@
 #pragma once
 
+#include <DiaApplication/Manifest/TypedImport.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Strings/String256.h>
@@ -76,7 +77,7 @@ namespace Dia
 			// Manifest data
 			unsigned int version;  // Schema version (e.g., 1)
 			Dia::Core::Containers::DynamicArrayC<ProcessingUnitEntry, 4> processingUnits;
-			Dia::Core::Containers::DynamicArrayC<const char*, 16> imports;  // Imported manifest file paths (heap-allocated, owned)
+			Dia::Core::Containers::DynamicArrayC<TypedImport, 16> imports;
 			Json::Value* metadata;  // Editor metadata (optional, owned by manifest loader)
 
 			ApplicationManifest();

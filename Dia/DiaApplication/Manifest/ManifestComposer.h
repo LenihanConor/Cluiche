@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ApplicationManifest.h"
+#include "DiaGameManifest.h"
 #include "ManifestValidator.h"
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Containers/HashTables/HashTable.h>
@@ -22,20 +23,20 @@ namespace Dia
 
 			// Compose multiple manifests into a single unified manifest
 			// Resolves imports recursively (depth-first) and merges with defined rules
-			// @param filePaths - Root manifest file paths to compose
-			// @param outComposedManifest - Output composed manifest
-			// @return Validation result (kSuccess or error code)
 			ManifestValidationResult ComposeManifests(
 				const Dia::Core::Containers::DynamicArrayC<const char*, 16>& filePaths,
 				ApplicationManifest& outComposedManifest);
 
 			// Compose a single manifest (with its imports resolved)
-			// @param filePath - Root manifest file path
-			// @param outComposedManifest - Output composed manifest
-			// @return Validation result (kSuccess or error code)
 			ManifestValidationResult ComposeSingleManifest(
 				const char* filePath,
 				ApplicationManifest& outComposedManifest);
+
+			// Compose from a .diagame file — resolves typed imports (manifests + stages)
+			ManifestValidationResult ComposeFromGameFile(
+				const char* diagamePath,
+				ApplicationManifest& outComposedManifest,
+				DiaGameManifest& outGameManifest);
 
 			// Error reporting
 			const Dia::Core::Containers::DynamicArrayC<ManifestValidationError, 32>& GetErrors() const;
@@ -55,6 +56,17 @@ namespace Dia
 				const char* filePath,
 				ApplicationManifest& outManifest);
 
+			// Stage import resolution — loads .diastage, resolves its .diaapp, merges phases into target PUs
+			ManifestValidationResult ResolveStageImport(
+				const char* diastagePath,
+				ApplicationManifest& outManifest);
+
+			// Stage merge — merges stage_phases/transitions/modules into existing PU entries
+			ManifestValidationResult MergeStageManifest(
+				const ApplicationManifest& stageManifest,
+				ApplicationManifest& target,
+				const char* sourceFilePath);
+
 			// Merging logic
 			ManifestValidationResult MergeManifests(const ApplicationManifest& source, ApplicationManifest& target, const char* sourceFilePath);
 
@@ -64,7 +76,7 @@ namespace Dia
 			// Error reporting helper
 			void AddError(ManifestValidationResult code, const char* message, const char* context);
 
-			// File loading helper (stub for now - will integrate with loader)
+			// File loading helper
 			ManifestValidationResult LoadManifestFromFile(const char* filePath, ApplicationManifest& outManifest);
 		};
 	}

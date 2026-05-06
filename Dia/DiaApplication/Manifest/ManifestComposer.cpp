@@ -1,7 +1,9 @@
 #include "ManifestComposer.h"
 #include "JsonApplicationManifestSerializer.h"
+#include "DiaGameManifestLoader.h"
 
 #include <DiaLogger/DiaLog.h>
+#include <DiaCore/Core/Assert.h>
 #include <DiaCore/Strings/String256.h>
 #include <DiaCore/Strings/String512.h>
 #include <DiaCore/Strings/stringutils.h>
@@ -140,10 +142,19 @@ namespace Dia
 			// ManifestComposer is discarded after any error return — callers construct a new one.
 			for (unsigned int i = 0; i < currentManifest->imports.Size(); ++i)
 			{
+				const TypedImport& import = currentManifest->imports[i];
 				Dia::Core::Containers::String512 resolvedPath;
-				ResolveRelativePath(filePath, currentManifest->imports[i], resolvedPath);
+				ResolveRelativePath(filePath, import.path.AsCStr(), resolvedPath);
 
-				result = ResolveImportsRecursive(resolvedPath.AsCStr(), outManifest);
+				if (import.type == TypedImport::ImportType::kStage)
+				{
+					result = ResolveStageImport(resolvedPath.AsCStr(), outManifest);
+				}
+				else
+				{
+					result = ResolveImportsRecursive(resolvedPath.AsCStr(), outManifest);
+				}
+
 				if (result != ManifestValidationResult::kSuccess)
 				{
 					delete currentManifest;
@@ -374,6 +385,271 @@ namespace Dia
 		{
 			ManifestValidationError error(code, message, context);
 			mErrors.Add(error);
+		}
+
+		ManifestValidationResult ManifestComposer::ComposeFromGameFile(
+			const char* diagamePath,
+			ApplicationManifest& outComposedManifest,
+			DiaGameManifest& outGameManifest)
+		{
+			DIA_ASSERT(diagamePath != nullptr, "Game file path cannot be null");
+
+			ClearErrors();
+			mImportStack.RemoveAll();
+			mProcessedFiles.Clear();
+
+			ManifestValidationResult result = DiaGameManifestLoader::LoadGameFile(diagamePath, outGameManifest);
+			if (result != ManifestValidationResult::kSuccess)
+			{
+				AddError(result, "Failed to parse .diagame file", diagamePath);
+				return result;
+			}
+
+			for (unsigned int i = 0; i < outGameManifest.imports.Size(); ++i)
+			{
+				const TypedImport& import = outGameManifest.imports[i];
+				Dia::Core::Containers::String512 resolvedPath;
+				ResolveRelativePath(diagamePath, import.path.AsCStr(), resolvedPath);
+
+				if (import.type == TypedImport::ImportType::kStage)
+				{
+					result = ResolveStageImport(resolvedPath.AsCStr(), outComposedManifest);
+				}
+				else
+				{
+					result = ResolveImportsRecursive(resolvedPath.AsCStr(), outComposedManifest);
+				}
+
+				if (result != ManifestValidationResult::kSuccess)
+					return result;
+			}
+
+			return ManifestValidationResult::kSuccess;
+		}
+
+		ManifestValidationResult ManifestComposer::ResolveStageImport(
+			const char* diastagePath,
+			ApplicationManifest& outManifest)
+		{
+			DiaStageManifest stageManifest;
+			ManifestValidationResult result = DiaGameManifestLoader::LoadStageFile(diastagePath, stageManifest);
+			if (result != ManifestValidationResult::kSuccess)
+			{
+				AddError(result, "Failed to parse .diastage file", diastagePath);
+				return result;
+			}
+
+			// Resolve the stage's .diaapp relative to the .diastage file
+			Dia::Core::Containers::String512 resolvedManifestPath;
+			ResolveRelativePath(diastagePath, stageManifest.manifestPath.AsCStr(), resolvedManifestPath);
+
+			// Load the stage .diaapp
+			ApplicationManifest* stageAppManifest = new ApplicationManifest();
+			result = LoadManifestFromFile(resolvedManifestPath.AsCStr(), *stageAppManifest);
+			if (result != ManifestValidationResult::kSuccess)
+			{
+				delete stageAppManifest;
+				return result;
+			}
+
+			// Check metadata.type == "stage"
+			bool isStageManifest = false;
+			if (stageAppManifest->metadata != nullptr &&
+				stageAppManifest->metadata->isMember("type") &&
+				(*stageAppManifest->metadata)["type"].asString() == "stage")
+			{
+				isStageManifest = true;
+			}
+
+			if (isStageManifest)
+			{
+				result = MergeStageManifest(*stageAppManifest, outManifest, resolvedManifestPath.AsCStr());
+			}
+			else
+			{
+				DIA_LOG_WARNING("Application",
+					".diastage '%s' points to a .diaapp without metadata.type=\"stage\" — treating as regular manifest",
+					diastagePath);
+				result = MergeManifests(*stageAppManifest, outManifest, resolvedManifestPath.AsCStr());
+			}
+
+			delete stageAppManifest;
+			return result;
+		}
+
+		ManifestValidationResult ManifestComposer::MergeStageManifest(
+			const ApplicationManifest& stageManifest,
+			ApplicationManifest& target,
+			const char* sourceFilePath)
+		{
+			// Stage manifests use metadata to hold stage_phases, stage_transitions, stage_modules
+			// These are stored in the manifest's metadata JSON (parsed by JsonApplicationManifestSerializer)
+			if (stageManifest.metadata == nullptr)
+			{
+				AddError(ManifestValidationResult::kMissingRequiredField, "Stage manifest missing metadata", sourceFilePath);
+				return ManifestValidationResult::kMissingRequiredField;
+			}
+
+			const Json::Value& meta = *stageManifest.metadata;
+
+			// Validate requires_phases if present
+			if (meta.isMember("requires_phases") && meta["requires_phases"].isArray())
+			{
+				const Json::Value& reqPhases = meta["requires_phases"];
+				for (unsigned int r = 0; r < reqPhases.size(); ++r)
+				{
+					if (!reqPhases[r].isString()) continue;
+					Dia::Core::StringCRC reqId(reqPhases[r].asCString());
+					bool found = false;
+					for (unsigned int p = 0; p < target.processingUnits.Size() && !found; ++p)
+					{
+						for (unsigned int q = 0; q < target.processingUnits[p].phases.Size(); ++q)
+						{
+							if (target.processingUnits[p].phases[q].instanceId == reqId)
+							{
+								found = true;
+								break;
+							}
+						}
+					}
+					if (!found)
+					{
+						Dia::Core::Containers::String256 msg;
+						msg.Format("Stage requires phase '%s' but it was not found in any PU", reqPhases[r].asCString());
+						AddError(ManifestValidationResult::kMissingRequiredField, msg.AsCStr(), sourceFilePath);
+						return ManifestValidationResult::kMissingRequiredField;
+					}
+				}
+			}
+
+			// Process stage_phases — inject into target PUs
+			if (meta.isMember("stage_phases") && meta["stage_phases"].isArray())
+			{
+				const Json::Value& stagePhases = meta["stage_phases"];
+				for (unsigned int i = 0; i < stagePhases.size(); ++i)
+				{
+					const Json::Value& sp = stagePhases[i];
+					if (!sp.isMember("type_id") || !sp.isMember("instance_id") || !sp.isMember("target_processing_unit"))
+						continue;
+
+					Dia::Core::StringCRC targetPuId(sp["target_processing_unit"].asCString());
+					Dia::Core::StringCRC phaseInstanceId(sp["instance_id"].asCString());
+
+					// Find target PU
+					int puIdx = -1;
+					for (unsigned int p = 0; p < target.processingUnits.Size(); ++p)
+					{
+						if (target.processingUnits[p].instanceId == targetPuId)
+						{
+							puIdx = static_cast<int>(p);
+							break;
+						}
+					}
+
+					if (puIdx < 0)
+					{
+						Dia::Core::Containers::String256 msg;
+						msg.Format("Stage phase targets PU '%s' which does not exist", sp["target_processing_unit"].asCString());
+						AddError(ManifestValidationResult::kMissingRequiredField, msg.AsCStr(), sourceFilePath);
+						return ManifestValidationResult::kMissingRequiredField;
+					}
+
+					// Check for duplicate phase ID
+					auto& targetPU = target.processingUnits[static_cast<unsigned int>(puIdx)];
+					for (unsigned int q = 0; q < targetPU.phases.Size(); ++q)
+					{
+						if (targetPU.phases[q].instanceId == phaseInstanceId)
+						{
+							Dia::Core::Containers::String256 msg;
+							msg.Format("Duplicate phase instance_id '%s' in PU '%s'", sp["instance_id"].asCString(), sp["target_processing_unit"].asCString());
+							AddError(ManifestValidationResult::kDuplicateInstanceId, msg.AsCStr(), sourceFilePath);
+							return ManifestValidationResult::kDuplicateInstanceId;
+						}
+					}
+
+					// Add phase to target PU
+					ApplicationManifest::PhaseEntry newPhase;
+					newPhase.typeId = Dia::Core::StringCRC(sp["type_id"].asCString());
+					newPhase.instanceId = phaseInstanceId;
+					newPhase.sourceManifestPath = sourceFilePath;
+					if (sp.isMember("config"))
+						newPhase.config = new Json::Value(sp["config"]);
+					targetPU.phases.Add(newPhase);
+				}
+			}
+
+			// Process stage_transitions
+			if (meta.isMember("stage_transitions") && meta["stage_transitions"].isArray())
+			{
+				const Json::Value& stageTransitions = meta["stage_transitions"];
+				for (unsigned int i = 0; i < stageTransitions.size(); ++i)
+				{
+					const Json::Value& st = stageTransitions[i];
+					if (!st.isMember("from") || !st.isMember("to") || !st.isMember("target_processing_unit"))
+						continue;
+
+					Dia::Core::StringCRC targetPuId(st["target_processing_unit"].asCString());
+					int puIdx = -1;
+					for (unsigned int p = 0; p < target.processingUnits.Size(); ++p)
+					{
+						if (target.processingUnits[p].instanceId == targetPuId)
+						{
+							puIdx = static_cast<int>(p);
+							break;
+						}
+					}
+					if (puIdx < 0) continue;
+
+					ApplicationManifest::PhaseTransition t;
+					t.fromPhase = Dia::Core::StringCRC(st["from"].asCString());
+					t.toPhase = Dia::Core::StringCRC(st["to"].asCString());
+					target.processingUnits[static_cast<unsigned int>(puIdx)].transitions.Add(t);
+				}
+			}
+
+			// Process stage_modules
+			if (meta.isMember("stage_modules") && meta["stage_modules"].isArray())
+			{
+				const Json::Value& stageModules = meta["stage_modules"];
+				for (unsigned int i = 0; i < stageModules.size(); ++i)
+				{
+					const Json::Value& sm = stageModules[i];
+					if (!sm.isMember("type_id") || !sm.isMember("instance_id") || !sm.isMember("target_processing_unit"))
+						continue;
+
+					Dia::Core::StringCRC targetPuId(sm["target_processing_unit"].asCString());
+					int puIdx = -1;
+					for (unsigned int p = 0; p < target.processingUnits.Size(); ++p)
+					{
+						if (target.processingUnits[p].instanceId == targetPuId)
+						{
+							puIdx = static_cast<int>(p);
+							break;
+						}
+					}
+					if (puIdx < 0) continue;
+
+					ApplicationManifest::ModuleEntry newModule;
+					newModule.typeId = Dia::Core::StringCRC(sm["type_id"].asCString());
+					newModule.instanceId = Dia::Core::StringCRC(sm["instance_id"].asCString());
+					newModule.sourceManifestPath = sourceFilePath;
+
+					if (sm.isMember("phase_ids") && sm["phase_ids"].isArray())
+					{
+						const Json::Value& ids = sm["phase_ids"];
+						for (unsigned int j = 0; j < ids.size(); ++j)
+							if (ids[j].isString())
+								newModule.phaseIds.Add(Dia::Core::StringCRC(ids[j].asCString()));
+					}
+
+					if (sm.isMember("config"))
+						newModule.config = new Json::Value(sm["config"]);
+
+					target.processingUnits[static_cast<unsigned int>(puIdx)].modules.Add(newModule);
+				}
+			}
+
+			return ManifestValidationResult::kSuccess;
 		}
 	}
 }

@@ -302,6 +302,7 @@ kConstructed → kFlaggedToStart → kRunning → kFlaggedToStop → kNotRunning
 | Manifest Imports (Phase A) | Recursive import resolution in ApplicationManifestLoader; merged manifests with provenance tracking | [manifest-imports.md](../../features/dia/diaapplication/manifest-imports.md) | Approved |
 | PU Parent-Child Tree (Phase B) | ProcessingUnit gains AddChildPU/GetParent/GetChildren; automatic thread spawn/join lifecycle | [pu-parent-child-tree.md](../../features/dia/diaapplication/pu-parent-child-tree.md) | Approved |
 | Stage Manifests (Phase C) | DummyStage→DummyStage rename; stage .diaapp manifests declaring phase/module injections into parent PUs | [stage-manifests.md](../../features/dia/diaapplication/stage-manifests.md) | Approved |
+| DiaGame File Format | Top-level .diagame project root with typed imports; .diastage wrapper for stages; unified import format | [diagame-file-format.md](../../features/dia/diaapplication/diagame-file-format.md) | Approved |
 
 ## Platform Primitives Used
 

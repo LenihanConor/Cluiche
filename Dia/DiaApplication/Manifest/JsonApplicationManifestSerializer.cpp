@@ -162,18 +162,39 @@ namespace Dia
 				const Json::Value& importsJson = root["imports"];
 				for (unsigned int i = 0; i < importsJson.size() && !outManifest.imports.IsFull(); ++i)
 				{
-					if (importsJson[i].isString())
+					if (importsJson[i].isObject() && importsJson[i].isMember("path"))
 					{
-						const std::string& s = importsJson[i].asString();
-						char* copy = new char[s.size() + 1];
-						memcpy(copy, s.c_str(), s.size() + 1);
-						outManifest.imports.Add(copy);
+						TypedImport import;
+						import.path = importsJson[i]["path"].asCString();
+						const std::string typeStr = importsJson[i].get("type", "manifest").asString();
+						import.type = (typeStr == "stage")
+							? TypedImport::ImportType::kStage
+							: TypedImport::ImportType::kManifest;
+						outManifest.imports.Add(import);
+					}
+					else if (importsJson[i].isString())
+					{
+						DIA_LOG_WARNING("Application",
+							"Deprecated: flat-string import \"%s\" — use { \"path\": \"...\", \"type\": \"manifest\" } format",
+							importsJson[i].asCString());
+						TypedImport import(importsJson[i].asCString(), TypedImport::ImportType::kManifest);
+						outManifest.imports.Add(import);
 					}
 				}
 			}
 
 			if (root.isMember("metadata"))
+			{
 				outManifest.metadata = new Json::Value(root["metadata"]);
+				// For stage manifests, fold top-level stage data into metadata
+				// so MergeStageManifest can access it uniformly
+				if (root.isMember("stage_phases"))
+					(*outManifest.metadata)["stage_phases"] = root["stage_phases"];
+				if (root.isMember("stage_transitions"))
+					(*outManifest.metadata)["stage_transitions"] = root["stage_transitions"];
+				if (root.isMember("stage_modules"))
+					(*outManifest.metadata)["stage_modules"] = root["stage_modules"];
+			}
 
 			return Dia::Serializer::SerializeResult::Success();
 		}
@@ -260,7 +281,12 @@ namespace Dia
 			{
 				Json::Value importsArray(Json::arrayValue);
 				for (unsigned int i = 0; i < manifest.imports.Size(); ++i)
-					importsArray.append(manifest.imports[i]);
+				{
+					Json::Value entry;
+					entry["path"] = manifest.imports[i].path.AsCStr();
+					entry["type"] = (manifest.imports[i].type == TypedImport::ImportType::kStage) ? "stage" : "manifest";
+					importsArray.append(entry);
+				}
 				root["imports"] = importsArray;
 			}
 

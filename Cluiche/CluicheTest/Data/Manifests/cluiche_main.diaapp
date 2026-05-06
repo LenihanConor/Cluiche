@@ -1,6 +1,9 @@
 {
   "version": 1,
-  "imports": ["cluiche_sim.diaapp", "cluiche_render.diaapp"],
+  "imports": [
+    { "path": "cluiche_sim.diaapp", "type": "manifest" },
+    { "path": "cluiche_render.diaapp", "type": "manifest" }
+  ],
   "processing_units": [
     {
       "type_id": "MainProcessingUnit",

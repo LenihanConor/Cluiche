@@ -162,10 +162,6 @@ namespace Dia
 
 		ApplicationManifest::~ApplicationManifest()
 		{
-			for (unsigned int i = 0; i < imports.Size(); ++i)
-				delete[] imports[i];
-			imports.RemoveAll();
-
 			delete metadata;
 		}
 	}

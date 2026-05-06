@@ -8,6 +8,8 @@ namespace Dia
 	{
 		class ProcessingUnit;
 		class ApplicationTypeRegistry;
+		struct DiaGameManifest;
+		struct DiaStageManifest;
 
 		// ApplicationLoader
 		// High-level API for loading applications from manifests
@@ -48,6 +50,20 @@ namespace Dia
 				ApplicationTypeRegistry& registry,
 				const char* manifestPath,
 				ProcessingUnit* (*fallbackFactory)());
+
+			// Load application from a .diagame project file
+			// Resolves typed imports (manifest + stage) and returns root PU
+			static ProcessingUnit* LoadFromGameFile(ApplicationTypeRegistry& registry,
+													const char* diagamePath,
+													ManifestValidationResult& outResult);
+
+			// Parse a .diagame file (no PU construction — for editor use)
+			static ManifestValidationResult LoadGameManifest(const char* diagamePath,
+															 DiaGameManifest& outManifest);
+
+			// Parse a .diastage file
+			static ManifestValidationResult LoadStageManifest(const char* diastagePath,
+															  DiaStageManifest& outStage);
 
 		private:
 			ApplicationLoader() = delete;
