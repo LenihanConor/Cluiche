@@ -29,6 +29,7 @@ namespace Dia
 			struct AssetStateRow
 			{
 				Dia::Core::StringCRC mAssetId;
+				Dia::Core::StringCRC mStageId;  // stage that owns this asset (empty for global)
 				AssetStateEnum mState;
 				AssetScopeEnum mScope;
 				unsigned int mRefCount;
@@ -36,6 +37,7 @@ namespace Dia
 
 				AssetStateRow()
 					: mAssetId()
+					, mStageId()
 					, mState(AssetStateEnum::kRegistered)
 					, mScope(AssetScopeEnum::kGlobal)
 					, mRefCount(0)

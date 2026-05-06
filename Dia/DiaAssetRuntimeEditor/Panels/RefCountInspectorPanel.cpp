@@ -120,11 +120,68 @@ namespace Dia
 				PushInspectorToUI();
 			}
 
-			void RefCountInspectorPanel::QueryStageDepsForAsset(const Dia::Core::StringCRC& /*assetId*/)
+			void RefCountInspectorPanel::QueryStageDepsForAsset(const Dia::Core::StringCRC& assetId)
 			{
-				// Stage reference resolution will be populated by get_stage_deps responses
-				// For now, the ref count from the snapshot is the authoritative data.
-				// A full implementation would query all loaded stages and check each deps list.
+				if (!mManager || !mTablePanel)
+					return;
+
+				// Collect unique stage IDs from the snapshot
+				const auto& snapshot = mTablePanel->GetSnapshot();
+				Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 64> stages;
+
+				for (unsigned int i = 0; i < snapshot.Size(); ++i)
+				{
+					const AssetStateRow& row = snapshot[i];
+					if (row.mScope != AssetScopeEnum::kStage || row.mStageId == Dia::Core::StringCRC())
+						continue;
+
+					bool alreadyAdded = false;
+					for (unsigned int s = 0; s < stages.Size(); ++s)
+					{
+						if (stages[s] == row.mStageId)
+						{
+							alreadyAdded = true;
+							break;
+						}
+					}
+					if (!alreadyAdded && !stages.IsFull())
+						stages.Add(row.mStageId);
+				}
+
+				// Query each stage's deps to see if our asset appears
+				Dia::Core::StringCRC capturedAssetId = assetId;
+				for (unsigned int i = 0; i < stages.Size(); ++i)
+				{
+					Dia::Core::StringCRC stageId = stages[i];
+					Json::Value args;
+					args["stageId"] = stageId.AsChar();
+					mManager->SendCommandWithResponse("asset_runtime.get_stage_deps", args,
+						[this, capturedAssetId, stageId](bool success, const Json::Value& result)
+						{
+							if (!success || !mActive)
+								return;
+
+							if (result.isMember("assets") && result["assets"].isArray())
+							{
+								const Json::Value& assets = result["assets"];
+								for (unsigned int j = 0; j < assets.size(); ++j)
+								{
+									if (assets[j].isString() &&
+										Dia::Core::StringCRC(assets[j].asCString()) == capturedAssetId)
+									{
+										if (!mStageRefs.IsFull())
+										{
+											StageReference ref;
+											ref.mStageId = stageId;
+											mStageRefs.Add(ref);
+										}
+										PushInspectorToUI();
+										break;
+									}
+								}
+							}
+						});
+				}
 			}
 
 			void RefCountInspectorPanel::PushInspectorToUI()

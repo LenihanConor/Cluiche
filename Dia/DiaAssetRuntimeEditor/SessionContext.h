@@ -20,9 +20,17 @@ namespace Dia
 				unsigned int GetMaxLogEntries() const { return mMaxLogEntries; }
 				void SetMaxLogEntries(unsigned int max);
 
+				const char* GetStateFilter() const { return mStateFilter; }
+				void SetStateFilter(const char* filter);
+
+				const char* GetIdSearchText() const { return mIdSearchText; }
+				void SetIdSearchText(const char* text);
+
 			private:
 				float mPollInterval;
 				unsigned int mMaxLogEntries;
+				char mStateFilter[32];
+				char mIdSearchText[128];
 			};
 		}
 	}

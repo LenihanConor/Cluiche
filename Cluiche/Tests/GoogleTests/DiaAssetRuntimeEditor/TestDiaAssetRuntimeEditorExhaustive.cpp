@@ -465,3 +465,129 @@ TEST(StateTransitionLogPanel, ActivateDeactivate_NoNull)
 	panel->ClearLog();
 	panel->Deactivate();
 }
+
+// ===========================================================================
+// Parser — "assetId" field name support (game-side uses "assetId" not "id")
+// ===========================================================================
+
+TEST_F(AssetStateTablePanelParseTest, ParseAssetIdFieldName)
+{
+	Json::Value data;
+	Json::Value assets(Json::arrayValue);
+	Json::Value asset;
+	asset["assetId"] = "game.style.id";
+	asset["state"] = "Loaded";
+	asset["scope"] = "Global";
+	asset["refCount"] = 5;
+	asset["deployPath"] = "/deploy/file.bin";
+	assets.append(asset);
+	data["assets"] = assets;
+
+	AssetStateTablePanel::ParseGetAllStatesResponse(data, *mRows);
+
+	ASSERT_EQ(1u, mRows->Size());
+	EXPECT_EQ(StringCRC("game.style.id"), (*mRows)[0].mAssetId);
+	EXPECT_EQ(AssetStateEnum::kLoaded, (*mRows)[0].mState);
+}
+
+// ===========================================================================
+// Parser — stageId field parsing
+// ===========================================================================
+
+TEST_F(AssetStateTablePanelParseTest, ParseStageIdField)
+{
+	Json::Value data;
+	Json::Value assets(Json::arrayValue);
+	Json::Value asset;
+	asset["assetId"] = "bg.texture";
+	asset["state"] = "Staged";
+	asset["scope"] = "Stage";
+	asset["stageId"] = "stage.gameplay";
+	asset["refCount"] = 1;
+	asset["deployPath"] = "/deploy/bg.dds";
+	assets.append(asset);
+	data["assets"] = assets;
+
+	AssetStateTablePanel::ParseGetAllStatesResponse(data, *mRows);
+
+	ASSERT_EQ(1u, mRows->Size());
+	EXPECT_EQ(AssetScopeEnum::kStage, (*mRows)[0].mScope);
+	EXPECT_EQ(StringCRC("stage.gameplay"), (*mRows)[0].mStageId);
+}
+
+TEST_F(AssetStateTablePanelParseTest, ParseMissingStageId_DefaultsToEmpty)
+{
+	Json::Value data;
+	Json::Value assets(Json::arrayValue);
+	Json::Value asset;
+	asset["assetId"] = "global.asset";
+	asset["state"] = "Loaded";
+	asset["scope"] = "Global";
+	asset["refCount"] = 2;
+	assets.append(asset);
+	data["assets"] = assets;
+
+	AssetStateTablePanel::ParseGetAllStatesResponse(data, *mRows);
+
+	ASSERT_EQ(1u, mRows->Size());
+	EXPECT_EQ(StringCRC(), (*mRows)[0].mStageId);
+}
+
+// ===========================================================================
+// SessionContext — Filter state persistence
+// ===========================================================================
+
+TEST(SessionContext, FilterState_DefaultsEmpty)
+{
+	SessionContext ctx;
+	EXPECT_STREQ("", ctx.GetStateFilter());
+	EXPECT_STREQ("", ctx.GetIdSearchText());
+}
+
+TEST(SessionContext, FilterState_SetAndGet)
+{
+	SessionContext ctx;
+	ctx.SetStateFilter("Loaded");
+	ctx.SetIdSearchText("texture");
+	EXPECT_STREQ("Loaded", ctx.GetStateFilter());
+	EXPECT_STREQ("texture", ctx.GetIdSearchText());
+}
+
+TEST(SessionContext, FilterState_NullSetsEmpty)
+{
+	SessionContext ctx;
+	ctx.SetStateFilter("Loaded");
+	ctx.SetStateFilter(nullptr);
+	EXPECT_STREQ("", ctx.GetStateFilter());
+}
+
+TEST(SessionContext, FilterState_SaveAndLoadRoundTrip)
+{
+	const char* testDir = "Cluiche/out/test_session_context_filters";
+
+	{
+		SessionContext ctx;
+		ctx.SetPollInterval(1.5f);
+		ctx.SetStateFilter("Staged");
+		ctx.SetIdSearchText("mesh");
+		ctx.Save(testDir);
+	}
+
+	{
+		SessionContext ctx;
+		ctx.Load(testDir);
+		EXPECT_FLOAT_EQ(1.5f, ctx.GetPollInterval());
+		EXPECT_STREQ("Staged", ctx.GetStateFilter());
+		EXPECT_STREQ("mesh", ctx.GetIdSearchText());
+	}
+}
+
+// ===========================================================================
+// AssetStateRow — mStageId field
+// ===========================================================================
+
+TEST(AssetStateRow, DefaultConstruction_StageIdEmpty)
+{
+	AssetStateRow row;
+	EXPECT_EQ(StringCRC(), row.mStageId);
+}

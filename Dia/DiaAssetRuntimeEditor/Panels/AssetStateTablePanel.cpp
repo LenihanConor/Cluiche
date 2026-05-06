@@ -215,7 +215,9 @@ namespace Dia
 					const Json::Value& item = assets[i];
 					AssetStateRow row;
 
-					if (item.isMember("id") && item["id"].isString())
+					if (item.isMember("assetId") && item["assetId"].isString())
+						row.mAssetId = Dia::Core::StringCRC(item["assetId"].asCString());
+					else if (item.isMember("id") && item["id"].isString())
 						row.mAssetId = Dia::Core::StringCRC(item["id"].asCString());
 
 					if (item.isMember("state") && item["state"].isString())
@@ -223,6 +225,9 @@ namespace Dia
 
 					if (item.isMember("scope") && item["scope"].isString())
 						row.mScope = StringToAssetScopeEnum(item["scope"].asCString());
+
+					if (item.isMember("stageId") && item["stageId"].isString())
+						row.mStageId = Dia::Core::StringCRC(item["stageId"].asCString());
 
 					if (item.isMember("refCount") && item["refCount"].isNumeric())
 						row.mRefCount = item["refCount"].asUInt();

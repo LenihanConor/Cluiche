@@ -49,6 +49,7 @@ namespace Dia
 				void AppendEntry(const TransitionLogEntry& entry);
 				void EnforceFIFO();
 				void PushLogToUI();
+				void PushIncrementalToUI(const TransitionLogEntry& entry);
 				void AppendMarker(LogEntryType type);
 
 				Dia::Editor::WebUIBridge* mBridge;

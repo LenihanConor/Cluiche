@@ -3,6 +3,8 @@
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaLogger/DiaLog.h>
 
+#include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <string>
 
@@ -19,7 +21,10 @@ namespace Dia
 			SessionContext::SessionContext()
 				: mPollInterval(kDefaultPollInterval)
 				, mMaxLogEntries(kDefaultMaxLogEntries)
-			{}
+			{
+				mStateFilter[0] = '\0';
+				mIdSearchText[0] = '\0';
+			}
 
 			void SessionContext::Load(const char* outputDir)
 			{
@@ -46,6 +51,20 @@ namespace Dia
 				if (root.isMember("maxLogEntries") && root["maxLogEntries"].isNumeric())
 					mMaxLogEntries = root["maxLogEntries"].asUInt();
 
+				if (root.isMember("stateFilter") && root["stateFilter"].isString())
+				{
+					const char* sf = root["stateFilter"].asCString();
+					strncpy(mStateFilter, sf, sizeof(mStateFilter) - 1);
+					mStateFilter[sizeof(mStateFilter) - 1] = '\0';
+				}
+
+				if (root.isMember("idSearchText") && root["idSearchText"].isString())
+				{
+					const char* st = root["idSearchText"].asCString();
+					strncpy(mIdSearchText, st, sizeof(mIdSearchText) - 1);
+					mIdSearchText[sizeof(mIdSearchText) - 1] = '\0';
+				}
+
 				if (mPollInterval < 0.1f) mPollInterval = 0.1f;
 				if (mMaxLogEntries < 10) mMaxLogEntries = 10;
 				if (mMaxLogEntries > 4096) mMaxLogEntries = 4096;
@@ -53,15 +72,17 @@ namespace Dia
 
 			void SessionContext::Save(const char* outputDir) const
 			{
-				std::string dirStr = outputDir;
-				std::string cmd = "mkdir \"" + dirStr + "\" 2>nul";
-				std::system(cmd.c_str());
+				std::filesystem::create_directories(outputDir);
 
 				std::string path = std::string(outputDir) + "/" + kContextFileName;
 
 				Json::Value root;
 				root["pollInterval"] = mPollInterval;
 				root["maxLogEntries"] = mMaxLogEntries;
+				if (mStateFilter[0] != '\0')
+					root["stateFilter"] = mStateFilter;
+				if (mIdSearchText[0] != '\0')
+					root["idSearchText"] = mIdSearchText;
 
 				Json::StreamWriterBuilder writer;
 				writer["indentation"] = "  ";
@@ -85,6 +106,28 @@ namespace Dia
 				if (max < 10) max = 10;
 				if (max > 4096) max = 4096;
 				mMaxLogEntries = max;
+			}
+
+			void SessionContext::SetStateFilter(const char* filter)
+			{
+				if (!filter)
+				{
+					mStateFilter[0] = '\0';
+					return;
+				}
+				strncpy(mStateFilter, filter, sizeof(mStateFilter) - 1);
+				mStateFilter[sizeof(mStateFilter) - 1] = '\0';
+			}
+
+			void SessionContext::SetIdSearchText(const char* text)
+			{
+				if (!text)
+				{
+					mIdSearchText[0] = '\0';
+					return;
+				}
+				strncpy(mIdSearchText, text, sizeof(mIdSearchText) - 1);
+				mIdSearchText[sizeof(mIdSearchText) - 1] = '\0';
 			}
 		}
 	}

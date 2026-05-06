@@ -23,7 +23,7 @@ namespace Dia
 				mView = context.mView;
 				mPluginLoader = context.mPluginLoader;
 
-				mState = new SharedPluginState();
+				mState = std::make_unique<SharedPluginState>();
 
 				mManager.Initialize();
 				mManager.SetConnectionCallback(
@@ -31,11 +31,11 @@ namespace Dia
 
 				mSessionContext.Load(kDefaultOutputDir);
 
-				mAssetStateTable.Activate(mBridge, &mManager, mState);
+				mAssetStateTable.Activate(mBridge, &mManager, mState.get());
 				mAssetStateTable.SetPollInterval(mSessionContext.GetPollInterval());
-				mStageAssetTree.Activate(mBridge, &mManager, mState, &mAssetStateTable);
-				mRefCountInspector.Activate(mBridge, &mManager, mState, &mAssetStateTable);
-				mTransitionLog.Activate(mBridge, &mManager, mState);
+				mStageAssetTree.Activate(mBridge, &mManager, mState.get(), &mAssetStateTable);
+				mRefCountInspector.Activate(mBridge, &mManager, mState.get(), &mAssetStateTable);
+				mTransitionLog.Activate(mBridge, &mManager, mState.get());
 				mTransitionLog.SetMaxEntries(mSessionContext.GetMaxLogEntries());
 
 				RegisterRequestHandlers();
@@ -57,8 +57,7 @@ namespace Dia
 				mAssetStateTable.Deactivate();
 				mManager.Shutdown();
 
-				delete mState;
-				mState = nullptr;
+				mState.reset();
 
 				mBridge = nullptr;
 				mView = nullptr;
@@ -76,7 +75,7 @@ namespace Dia
 
 			SharedPluginState* DiaAssetRuntimeEditorPlugin::GetPluginData()
 			{
-				return mState;
+				return mState.get();
 			}
 
 			void DiaAssetRuntimeEditorPlugin::RegisterRequestHandlers()

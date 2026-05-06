@@ -12,8 +12,12 @@
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
 #include <DiaLogger/DiaLog.h>
 
+#include <chrono>
+
 namespace
 {
+    static Dia::AssetRuntime::TransitionNotifyCallback sNotifyCallback;
+
     const char* StateToString(Dia::AssetRuntime::AssetState state)
     {
         switch (state)
@@ -28,11 +32,11 @@ namespace
 
     const char* ScopeToString(Dia::AssetRuntime::AssetScope scope)
     {
-        return (scope == Dia::AssetRuntime::AssetScope::kGlobal) ? "global" : "stage";
+        return (scope == Dia::AssetRuntime::AssetScope::kGlobal) ? "Global" : "Stage";
     }
 
-    // Internal listener that logs state transitions as DiaLogger messages.
-    // Registered as an IAssetStateListener when subscribe_transitions is invoked.
+    // Internal listener that logs state transitions as DiaLogger messages
+    // and pushes events via DiaDebugServer when a notify callback is provided.
     class TransitionLogger : public Dia::AssetRuntime::IAssetStateListener
     {
     public:
@@ -40,8 +44,21 @@ namespace
                           const Dia::Core::Containers::String512& resolvedPath) override
         {
             DIA_LOG_INFO("AssetRuntimeDebugCommands",
-                "subscribe_transitions: asset '%s' -> Staged (path: %s)",
+                "subscribe_transitions: asset '%s' -> Loaded (path: %s)",
                 assetId.AsChar(), resolvedPath.AsCStr());
+
+            if (sNotifyCallback)
+            {
+                Json::Value payload;
+                payload["assetId"] = assetId.AsChar();
+                payload["oldState"] = "Staged";
+                payload["newState"] = "Loaded";
+                auto now = std::chrono::system_clock::now();
+                payload["timestamp"] = static_cast<Json::UInt64>(
+                    std::chrono::duration_cast<std::chrono::milliseconds>(
+                        now.time_since_epoch()).count());
+                sNotifyCallback(Dia::Core::StringCRC("asset_runtime.transitions"), payload);
+            }
         }
 
         void OnAssetUnloading(const Dia::Core::StringCRC& assetId) override
@@ -49,6 +66,19 @@ namespace
             DIA_LOG_INFO("AssetRuntimeDebugCommands",
                 "subscribe_transitions: asset '%s' -> Unloading",
                 assetId.AsChar());
+
+            if (sNotifyCallback)
+            {
+                Json::Value payload;
+                payload["assetId"] = assetId.AsChar();
+                payload["oldState"] = "Loaded";
+                payload["newState"] = "Unloading";
+                auto now = std::chrono::system_clock::now();
+                payload["timestamp"] = static_cast<Json::UInt64>(
+                    std::chrono::duration_cast<std::chrono::milliseconds>(
+                        now.time_since_epoch()).count());
+                sNotifyCallback(Dia::Core::StringCRC("asset_runtime.transitions"), payload);
+            }
         }
 
         void OnAssetLoadFailed(const Dia::Core::StringCRC& assetId) override
@@ -56,6 +86,19 @@ namespace
             DIA_LOG_WARNING("AssetRuntimeDebugCommands",
                 "subscribe_transitions: asset '%s' load failed -> Registered",
                 assetId.AsChar());
+
+            if (sNotifyCallback)
+            {
+                Json::Value payload;
+                payload["assetId"] = assetId.AsChar();
+                payload["oldState"] = "Staged";
+                payload["newState"] = "Registered";
+                auto now = std::chrono::system_clock::now();
+                payload["timestamp"] = static_cast<Json::UInt64>(
+                    std::chrono::duration_cast<std::chrono::milliseconds>(
+                        now.time_since_epoch()).count());
+                sNotifyCallback(Dia::Core::StringCRC("asset_runtime.transitions"), payload);
+            }
         }
     };
 
@@ -68,8 +111,10 @@ namespace Dia
 {
     namespace AssetRuntime
     {
-        void RegisterAssetRuntimeCommands(AssetRuntime& runtime)
+        void RegisterAssetRuntimeCommands(AssetRuntime& runtime, TransitionNotifyCallback notifyCallback)
         {
+            sNotifyCallback = notifyCallback;
+
             // ----------------------------------------------------------------
             // asset_runtime.get-loaded
             // ----------------------------------------------------------------
@@ -159,8 +204,17 @@ namespace Dia
                     Json::Value root;
                     root["assetId"]  = it->second;
                     root["state"]    = StateToString(state);
+                    root["scope"]    = ScopeToString(runtime.GetAssetScope(assetId));
                     root["refCount"] = refCount;
                     root["deployPath"] = path ? path->AsCStr() : "";
+
+                    AssetScope assetScope = runtime.GetAssetScope(assetId);
+                    if (assetScope == AssetScope::kStage)
+                    {
+                        Dia::Core::StringCRC stageId = runtime.GetAssetStageId(assetId);
+                        if (stageId.Value() != 0)
+                            root["stageId"] = stageId.AsChar();
+                    }
 
                     Json::FastWriter writer;
                     DIA_LOG_INFO("AssetRuntimeDebugCommands", "%s", writer.write(root).c_str());
@@ -233,12 +287,22 @@ namespace Dia
                     {
                         const Dia::Core::StringCRC& id = all[i];
                         AssetState state = runtime.GetAssetState(id);
+                        AssetScope scope = runtime.GetAssetScope(id);
                         Json::Value entry;
                         entry["assetId"]    = id.AsChar();
                         entry["state"]      = StateToString(state);
+                        entry["scope"]      = ScopeToString(scope);
                         entry["refCount"]   = runtime.GetAssetRefCount(id);
                         const Dia::Core::Containers::String512* path = runtime.ResolveAssetPath(id);
                         entry["deployPath"] = path ? path->AsCStr() : "";
+
+                        if (scope == AssetScope::kStage)
+                        {
+                            Dia::Core::StringCRC stageId = runtime.GetAssetStageId(id);
+                            if (stageId.Value() != 0)
+                                entry["stageId"] = stageId.AsChar();
+                        }
+
                         assets.append(entry);
                     }
 
@@ -253,14 +317,13 @@ namespace Dia
 
             // ----------------------------------------------------------------
             // asset_runtime.subscribe-transitions
-            // Registers an IAssetStateListener that logs transitions.
-            // Push-stream delivery over WebSocket requires DiaDebugServer
-            // integration beyond this layer; this implementation logs via DiaLogger.
+            // Registers an IAssetStateListener that logs transitions and
+            // pushes events via the TransitionNotifyCallback (DiaDebugServer).
             // ----------------------------------------------------------------
             {
                 Dia::API::CommandInfo cmd;
                 cmd.name        = Dia::Core::StringCRC("asset-runtime-subscribe-transitions");
-                cmd.description = "Begin logging asset state transitions via DiaLogger";
+                cmd.description = "Subscribe to asset state transitions (logs + push via DiaDebugServer)";
                 cmd.category    = Dia::Core::StringCRC("asset-runtime");
                 cmd.owner       = "DiaAssetRuntime";
                 cmd.version     = "1.0.0";

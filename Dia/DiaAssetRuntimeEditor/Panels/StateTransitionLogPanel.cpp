@@ -208,17 +208,20 @@ namespace Dia
 				AppendEntry(entry);
 
 				if (!mPaused)
-					PushLogToUI();
+					PushIncrementalToUI(entry);
 			}
 
 			void StateTransitionLogPanel::AppendEntry(const TransitionLogEntry& entry)
 			{
+				while (mLog.Size() >= mMaxEntries)
+				{
+					mLog.RemoveAt(0);
+				}
 				if (mLog.IsFull())
 				{
 					mLog.RemoveAt(0);
 				}
 				mLog.Add(entry);
-				EnforceFIFO();
 			}
 
 			void StateTransitionLogPanel::AppendMarker(LogEntryType type)
@@ -281,6 +284,37 @@ namespace Dia
 				data["paused"] = mPaused;
 				data["maxEntries"] = static_cast<int>(mMaxEntries);
 				mBridge->NotifyUIDataChanged("asset_runtime_editor.log_data", data);
+			}
+
+			void StateTransitionLogPanel::PushIncrementalToUI(const TransitionLogEntry& entry)
+			{
+				if (!mBridge)
+					return;
+
+				Json::Value data;
+				Json::Value e;
+				e["timestamp"] = static_cast<Json::UInt64>(entry.mTimestamp);
+
+				switch (entry.mType)
+				{
+					case LogEntryType::kTransition:
+						e["type"] = "transition";
+						e["assetId"] = entry.mAssetId.AsChar();
+						e["oldState"] = AssetStateEnumToString(entry.mOldState);
+						e["newState"] = AssetStateEnumToString(entry.mNewState);
+						break;
+					case LogEntryType::kMarkerDisconnect:
+						e["type"] = "disconnect";
+						break;
+					case LogEntryType::kMarkerReconnect:
+						e["type"] = "reconnect";
+						break;
+				}
+
+				data["entry"] = e;
+				data["total"] = static_cast<int>(mLog.Size());
+				data["paused"] = mPaused;
+				mBridge->NotifyUIDataChanged("asset_runtime_editor.log_entry", data);
 			}
 		}
 	}

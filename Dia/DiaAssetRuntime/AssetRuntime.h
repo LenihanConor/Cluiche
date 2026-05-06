@@ -1,5 +1,6 @@
 #pragma once
 
+#include "DiaAssetRuntime/AssetScope.h"
 #include "DiaAssetRuntime/AssetState.h"
 #include "DiaAssetRuntime/IAssetStateListener.h"
 #include "DiaAssetRuntime/RuntimeManifestLoader.h"
@@ -41,6 +42,12 @@ namespace Dia
 
             // Ref count query (debug)
             unsigned int GetAssetRefCount(const Dia::Core::StringCRC& assetId) const;
+
+            // Scope query (debug)
+            AssetScope GetAssetScope(const Dia::Core::StringCRC& assetId) const;
+
+            // Returns the stage ID that owns this asset (empty StringCRC if global or not found)
+            Dia::Core::StringCRC GetAssetStageId(const Dia::Core::StringCRC& assetId) const;
 
             // Listener registration
             void RegisterListener(IAssetStateListener* listener);

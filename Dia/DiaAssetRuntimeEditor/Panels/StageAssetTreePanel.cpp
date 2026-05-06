@@ -213,10 +213,37 @@ namespace Dia
 					if (row.mScope != AssetScopeEnum::kStage)
 						continue;
 
-					// We use a simple heuristic: if get_all_states provides stage info,
-					// we need to find unique stages. For now, we'll rely on the fact
-					// that the game's get_all_states response should include stage membership.
-					// The real stage ID list comes from expanded nodes via get_stage_deps.
+					if (row.mStageId == Dia::Core::StringCRC())
+						continue;
+
+					// Check if this stage already has a node
+					bool found = false;
+					for (unsigned int s = 0; s < mStageNodes.Size(); ++s)
+					{
+						if (mStageNodes[s].mStageId == row.mStageId)
+						{
+							mStageNodes[s].mAssetCount++;
+							found = true;
+							break;
+						}
+					}
+
+					if (!found && !mStageNodes.IsFull())
+					{
+						StageNode node;
+						node.mStageId = row.mStageId;
+						node.mAssetCount = 1;
+						node.mLastSnapshotVersion = mLastProcessedSnapshotVersion;
+						for (unsigned int e = 0; e < expandedStages.Size(); ++e)
+						{
+							if (expandedStages[e] == node.mStageId)
+							{
+								node.mExpanded = true;
+								break;
+							}
+						}
+						mStageNodes.Add(node);
+					}
 				}
 			}
 

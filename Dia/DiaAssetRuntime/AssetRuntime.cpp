@@ -336,6 +336,32 @@ namespace Dia
             return *refCount;
         }
 
+        AssetScope AssetRuntime::GetAssetScope(const Dia::Core::StringCRC& assetId) const
+        {
+            AssertOwnerThread();
+            const RuntimeAssetEntry* entry = mAssetTable.TryGetItemConst(assetId);
+            if (!entry)
+                return AssetScope::kGlobal;
+            return entry->mScope;
+        }
+
+        Dia::Core::StringCRC AssetRuntime::GetAssetStageId(const Dia::Core::StringCRC& assetId) const
+        {
+            AssertOwnerThread();
+            unsigned int stageCount = mStageTable.Size();
+            for (unsigned int i = 0; i < stageCount; ++i)
+            {
+                const RuntimeStageEntry& stage = mStageTable.GetItemByIndexConst(i);
+                unsigned int assetCount = stage.mAssetIds.Size();
+                for (unsigned int j = 0; j < assetCount; ++j)
+                {
+                    if (stage.mAssetIds[j] == assetId)
+                        return stage.mId;
+                }
+            }
+            return Dia::Core::StringCRC();
+        }
+
         //------------------------------------------------------------------------------------
         // Private
         //------------------------------------------------------------------------------------

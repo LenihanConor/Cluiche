@@ -4,6 +4,8 @@
 #include <DiaEditor/LiveConnection/GameConnectionManager.h>
 #include <DiaCore/Json/external/json/json.h>
 
+#include <memory>
+
 #include "DiaAssetRuntimeEditor/Panels/AssetStateTablePanel.h"
 #include "DiaAssetRuntimeEditor/Panels/StageAssetTreePanel.h"
 #include "DiaAssetRuntimeEditor/Panels/RefCountInspectorPanel.h"
@@ -49,7 +51,7 @@ namespace Dia
 				Dia::Editor::IPluginLoader* mPluginLoader = nullptr;
 
 				Dia::Editor::GameConnectionManager mManager;
-				SharedPluginState* mState = nullptr;
+				std::unique_ptr<SharedPluginState> mState;
 
 				AssetStateTablePanel mAssetStateTable;
 				StageAssetTreePanel mStageAssetTree;
