@@ -11,6 +11,7 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <cstdio>
 #include <cstring>
+#include <direct.h>
 
 using namespace Dia::Application;
 using namespace Dia::Core;
@@ -530,15 +531,12 @@ TEST_F(ManifestImportsTest, DuplicatePUInstanceId_ReturnsError)
 
 TEST_F(ManifestImportsTest, RelativePath_SubdirImport_Resolves)
 {
-	// Create subdirectory by path prefix in filename (simulates sub/sim.diaapp relative to main dir)
-	// Test uses current-directory-relative paths: test_subdir_b.diaapp acts as "sub/imported"
-	// We write the root and import side by side, with the import path using a prefix that
-	// resolves relative to the root's directory (both in CWD, so prefix = "")
-	WriteFile("test_relpath_sub.diaapp", MinimalPU("ImportTestPU", "PU_Sub", false, "ImportTestPhase", "PhaseSub"));
+	_mkdir("test_subdir");
+	WriteFile("test_subdir/test_relpath_sub.diaapp", MinimalPU("ImportTestPU", "PU_Sub", false, "ImportTestPhase", "PhaseSub"));
 
 	static char root[512];
 	snprintf(root, sizeof(root),
-		"{ \"version\": 1, \"imports\": [\"test_relpath_sub.diaapp\"],"
+		"{ \"version\": 1, \"imports\": [\"test_subdir/test_relpath_sub.diaapp\"],"
 		"  \"processing_units\": [{"
 		"    \"type_id\": \"ImportTestPU\", \"instance_id\": \"PU_Root\","
 		"    \"root\": true, \"frequency_hz\": 30.0, \"dedicated_thread\": false,"
@@ -565,7 +563,8 @@ TEST_F(ManifestImportsTest, RelativePath_SubdirImport_Resolves)
 	EXPECT_TRUE(foundSub);
 
 	DeleteFile("test_relpath_root.diaapp");
-	DeleteFile("test_relpath_sub.diaapp");
+	DeleteFile("test_subdir/test_relpath_sub.diaapp");
+	_rmdir("test_subdir");
 }
 
 // ---------------------------------------------------------------------------

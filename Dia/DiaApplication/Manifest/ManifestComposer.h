@@ -51,22 +51,10 @@ namespace Dia
 				const char* filePath,
 				ApplicationManifest& outManifest);
 
-			// Merging logic (AC12 merge rules)
+			// Merging logic
 			ManifestValidationResult MergeManifests(const ApplicationManifest& source, ApplicationManifest& target, const char* sourceFilePath);
-			void MergeProcessingUnit(
-				const ApplicationManifest::ProcessingUnitEntry& source,
-				ApplicationManifest::ProcessingUnitEntry& target);
-			void MergePhases(
-				const Dia::Core::Containers::DynamicArrayC<ApplicationManifest::PhaseEntry, 16>& sourcePhases,
-				Dia::Core::Containers::DynamicArrayC<ApplicationManifest::PhaseEntry, 16>& targetPhases);
-			void MergeModules(
-				const Dia::Core::Containers::DynamicArrayC<ApplicationManifest::ModuleEntry, 32>& sourceModules,
-				Dia::Core::Containers::DynamicArrayC<ApplicationManifest::ModuleEntry, 32>& targetModules);
-			void MergeTransitions(
-				const Dia::Core::Containers::DynamicArrayC<ApplicationManifest::PhaseTransition, 32>& sourceTransitions,
-				Dia::Core::Containers::DynamicArrayC<ApplicationManifest::PhaseTransition, 32>& targetTransitions);
 
-			// Deep merge JSON config (AC12 rule 3: deep merge module configs)
+			// Deep merge JSON config
 			void DeepMergeConfig(const Json::Value& source, Json::Value& target);
 
 			// Error reporting helper
