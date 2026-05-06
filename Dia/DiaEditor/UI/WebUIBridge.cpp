@@ -40,7 +40,11 @@ namespace Dia
 
 		void WebUIBridge::RegisterEventHandler(const Dia::Core::StringCRC& eventType, EventHandler handler)
 		{
-			DIA_ASSERT(!mEventHandlers.IsFull(), "WebUIBridge: max event handler capacity reached");
+			if (mEventHandlers.IsFull())
+			{
+				DIA_LOG_ERROR("Editor", "WebUIBridge: Cannot register event handler '%s' - max capacity (%u) reached", eventType.AsChar(), kMaxHandlers);
+				return;
+			}
 			DIA_LOG_INFO("Editor", "WebUIBridge: RegisterEventHandler '%s' (count=%u)", eventType.AsChar(), mEventHandlers.Size() + 1);
 			EventEntry entry;
 			entry.eventType = eventType;
@@ -50,7 +54,11 @@ namespace Dia
 
 		void WebUIBridge::RegisterRequestHandler(const Dia::Core::StringCRC& eventType, RequestHandler handler)
 		{
-			DIA_ASSERT(!mRequestHandlers.IsFull(), "WebUIBridge: max request handler capacity reached");
+			if (mRequestHandlers.IsFull())
+			{
+				DIA_LOG_ERROR("Editor", "WebUIBridge: Cannot register request handler '%s' - max capacity (%u) reached", eventType.AsChar(), kMaxHandlers);
+				return;
+			}
 			DIA_LOG_INFO("Editor", "WebUIBridge: RegisterRequestHandler '%s' (count=%u)", eventType.AsChar(), mRequestHandlers.Size() + 1);
 			RequestEntry entry;
 			entry.eventType = eventType;
