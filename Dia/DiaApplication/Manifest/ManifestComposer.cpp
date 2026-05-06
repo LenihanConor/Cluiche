@@ -547,13 +547,20 @@ namespace Dia
 			auto result = serializer.LoadFromFile(filePath, outManifest);
 			if (!result)
 			{
-				Dia::Core::Containers::String256 msg;
-				msg.Format("Failed to load manifest: %s (%s)", filePath, result.error ? result.error : "unknown error");
-				AddError(ManifestValidationResult::kImportNotFound, msg.AsCStr(), filePath);
-				return ManifestValidationResult::kImportNotFound;
-			}
+				const char* err = result.error ? result.error : "unknown error";
+				ManifestValidationResult code;
+				if (strcmp(err, "file read error") == 0)
+					code = ManifestValidationResult::kImportNotFound;
+				else if (strcmp(err, "json parse error") == 0)
+					code = ManifestValidationResult::kInvalidJSON;
+				else
+					code = ManifestValidationResult::kMissingRequiredField;
 
-			// sourceManifestPath will be set on the final merged manifest after merge (see ResolveImportsRecursive)
+				Dia::Core::Containers::String256 msg;
+				msg.Format("Failed to load manifest: %s (%s)", filePath, err);
+				AddError(code, msg.AsCStr(), filePath);
+				return code;
+			}
 
 			return ManifestValidationResult::kSuccess;
 		}

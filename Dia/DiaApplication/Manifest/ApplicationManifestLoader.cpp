@@ -1,5 +1,6 @@
 #include "ApplicationManifestLoader.h"
 #include "JsonApplicationManifestSerializer.h"
+#include "ManifestComposer.h"
 
 #include <DiaApplication/TypeRegistry/ApplicationTypeRegistry.h>
 #include <DiaApplication/ApplicationProcessingUnit.h>
@@ -9,9 +10,11 @@
 #include <DiaLogger/DiaLog.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaCore/Strings/String256.h>
+#include <DiaCore/Strings/String512.h>
 #include <DiaCore/Containers/HashTables/HashTable.h>
 #include <DiaCore/CRC/CRCHashFunctor.h>
 #include <DiaCore/Memory/UniquePtr.h>
+#include <cstring>
 
 namespace Dia
 {
@@ -35,12 +38,14 @@ namespace Dia
 		ManifestValidationResult ApplicationManifestLoader::LoadFromFile(const char* filePath, ApplicationManifest& outManifest)
 		{
 			ClearErrors();
-			JsonApplicationManifestSerializer serializer;
-			auto result = serializer.LoadFromFile(filePath, outManifest);
-			if (!result)
+			ManifestComposer composer;
+			ManifestValidationResult result = composer.ComposeSingleManifest(filePath, outManifest);
+			if (result != ManifestValidationResult::kSuccess)
 			{
-				AddError(ManifestValidationResult::kImportNotFound, result.error ? result.error : "file read error", "file");
-				return ManifestValidationResult::kImportNotFound;
+				const auto& composerErrors = composer.GetErrors();
+				for (unsigned int i = 0; i < composerErrors.Size(); ++i)
+					mErrors.Add(composerErrors[i]);
+				return result;
 			}
 			return Validate(outManifest);
 		}
@@ -52,8 +57,12 @@ namespace Dia
 			auto result = serializer.Load(jsonString, outManifest);
 			if (!result)
 			{
-				AddError(ManifestValidationResult::kInvalidJSON, result.error ? result.error : "parse error", "json");
-				return ManifestValidationResult::kInvalidJSON;
+				const char* err = result.error ? result.error : "parse error";
+				ManifestValidationResult code = (strcmp(err, "json parse error") == 0)
+					? ManifestValidationResult::kInvalidJSON
+					: ManifestValidationResult::kMissingRequiredField;
+				AddError(code, err, "json");
+				return code;
 			}
 			return Validate(outManifest);
 		}
@@ -433,15 +442,22 @@ namespace Dia
 		{
 			ClearErrors();
 
-			// TODO: Delegate to ManifestComposer (Task #7)
-			// For now, just load the first manifest
-			if (filePaths.Size() > 0)
+			if (filePaths.Size() == 0)
 			{
-				return LoadFromFile(filePaths[0], outComposedManifest);
+				AddError(ManifestValidationResult::kMissingRequiredField, "No manifest files provided", "compose");
+				return ManifestValidationResult::kMissingRequiredField;
 			}
 
-			AddError(ManifestValidationResult::kMissingRequiredField, "No manifest files provided", "compose");
-			return ManifestValidationResult::kMissingRequiredField;
+			ManifestComposer composer;
+			ManifestValidationResult result = composer.ComposeManifests(filePaths, outComposedManifest);
+			if (result != ManifestValidationResult::kSuccess)
+			{
+				const auto& composerErrors = composer.GetErrors();
+				for (unsigned int i = 0; i < composerErrors.Size(); ++i)
+					mErrors.Add(composerErrors[i]);
+				return result;
+			}
+			return Validate(outComposedManifest);
 		}
 
 		const Dia::Core::Containers::DynamicArrayC<ManifestValidationError, 32>& ApplicationManifestLoader::GetErrors() const

@@ -1,6 +1,6 @@
 # Test Completeness Registry
 
-**Last Updated:** 2026-05-02 (DiaRig2D exhaustive tests added; DiaIK2D section added)
+**Last Updated:** 2026-05-06 (ManifestImports tests added; ManifestLoader/ApplicationLoader error-code fixes)
 
 Single source of truth for test coverage across all Dia modules. Updated alongside test commits.
 
@@ -240,6 +240,7 @@ Gap markers: **ZERO** = no tests, **LOW** = under-tested relative to API surface
 | CluicheManifests | 29 | TestCluicheManifests.cpp | 29 | 0 | 0 | GOOD |
 | HotReload | 6 | TestHotReload.cpp | 6 | 0 | 0 | OK |
 | ManifestLoader | 24 | TestManifestLoader.cpp | 24 | 0 | 0 | GOOD |
+| ManifestImports | 13 | TestManifestImports.cpp | 13 | 0 | 0 | GOOD — import resolution, cycles, diamond-dedup, provenance |
 | MessageBus | 13 | TestMessageBus.cpp | 13 | 0 | 0 | OK |
 | MetricsCollector | 9 | TestMetricsCollector.cpp | 9 | 0 | 0 | OK |
 | Introspector | 10 | TestApplicationIntrospector.cpp | 10 | 0 | 0 | OK |
@@ -247,7 +248,7 @@ Gap markers: **ZERO** = no tests, **LOW** = under-tested relative to API surface
 | PhaseTransition | 10 | TestPhaseTransition.cpp | 10 | 0 | 0 | OK |
 | StateObject | **0** | — | 0 | 0 | 0 | **ZERO** — base class for Module/Phase/PU |
 
-**Application totals: 12 files, 148 tests** | Gaps: StateObject (zero); module lifecycle integration
+**Application totals: 13 files, 161 tests** | Gaps: StateObject (zero); module lifecycle integration
 
 ---
 
@@ -439,6 +440,24 @@ Gap markers: **ZERO** = no tests, **LOW** = under-tested relative to API surface
 | RunHistoryStore | 13 | TestRunHistoryStore.cpp | 13 | 0 | 0 | OK |
 
 **PipelineEditor totals: 5 files, 51 tests** | OK coverage
+
+---
+
+## DiaAssetCatalogueEditor
+
+| Component | Tests | Files | Unit | Stress/Boundary | Golden/Regression | Notes |
+|-----------|-------|-------|------|-----------------|-------------------|-------|
+| UpdateRecordCommand | 9 | TestDiaAssetCatalogueEditorExhaustive.cpp | 9 | 0 | 0 | OK |
+| ApplyRulesCommand | 7 | TestDiaAssetCatalogueEditorExhaustive.cpp | 7 | 0 | 0 | OK |
+| CatalogueRulesEngine.GetRule | 8 | TestDiaAssetCatalogueEditorExhaustive.cpp | 8 | 0 | 0 | OK |
+| ManualOverrideFlags (AssetRecord) | 9 | TestDiaAssetCatalogueEditorExhaustive.cpp | 9 | 0 | 0 | OK |
+| LoadManifestCommand | ~10 | TestDiaAssetCatalogueEditorExhaustive.cpp | ~10 | 0 | 0 | OK |
+| SaveManifestCommand | ~8 | TestDiaAssetCatalogueEditorExhaustive.cpp | ~8 | 0 | 0 | OK |
+| AddAssetCommand | ~8 | TestDiaAssetCatalogueEditorExhaustive.cpp | ~8 | 0 | 0 | OK |
+| DeleteAssetCommand | ~6 | TestDiaAssetCatalogueEditorExhaustive.cpp | ~6 | 0 | 0 | OK |
+| CommandHistory (undo/redo) | ~8 | TestDiaAssetCatalogueEditorExhaustive.cpp | ~8 | 0 | 0 | OK |
+
+**AssetCatalogueEditor totals: 1 file, ~73 tests** | All 8 features + manual override system covered
 
 ---
 
