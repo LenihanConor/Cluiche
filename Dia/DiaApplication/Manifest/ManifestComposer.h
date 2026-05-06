@@ -52,7 +52,7 @@ namespace Dia
 				ApplicationManifest& outManifest);
 
 			// Merging logic (AC12 merge rules)
-			void MergeManifests(const ApplicationManifest& source, ApplicationManifest& target);
+			ManifestValidationResult MergeManifests(const ApplicationManifest& source, ApplicationManifest& target, const char* sourceFilePath);
 			void MergeProcessingUnit(
 				const ApplicationManifest::ProcessingUnitEntry& source,
 				ApplicationManifest::ProcessingUnitEntry& target);

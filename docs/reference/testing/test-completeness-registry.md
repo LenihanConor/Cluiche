@@ -1,6 +1,6 @@
 # Test Completeness Registry
 
-**Last Updated:** 2026-05-06 (ManifestImports tests added; ManifestLoader/ApplicationLoader error-code fixes)
+**Last Updated:** 2026-05-06 (ManifestImports: added AC5/AC6/AC7/deep-nesting tests; ManifestComposer: AC5 duplicate rejection, depth limit, comments)
 
 Single source of truth for test coverage across all Dia modules. Updated alongside test commits.
 
@@ -237,10 +237,10 @@ Gap markers: **ZERO** = no tests, **LOW** = under-tested relative to API surface
 | Lifecycle | 8 | TestApplicationLifecycle.cpp | 8 | 0 | 0 | OK |
 | Loader | 8 | TestApplicationLoader.cpp | 8 | 0 | 0 | OK |
 | TypeRegistry | 21 | TestApplicationTypeRegistry.cpp | 21 | 0 | 0 | GOOD |
-| CluicheManifests | 29 | TestCluicheManifests.cpp | 29 | 0 | 0 | GOOD |
+| CluicheManifests | 27 | TestCluicheManifests.cpp | 27 | 0 | 0 | GOOD — includes AC7 composed-import integration test |
 | HotReload | 6 | TestHotReload.cpp | 6 | 0 | 0 | OK |
 | ManifestLoader | 24 | TestManifestLoader.cpp | 24 | 0 | 0 | GOOD |
-| ManifestImports | 13 | TestManifestImports.cpp | 13 | 0 | 0 | GOOD — import resolution, cycles, diamond-dedup, provenance |
+| ManifestImports | 16 | TestManifestImports.cpp | 16 | 0 | 0 | GOOD — AC1-AC9, duplicate reject, relative path, diamond-dedup, deep nesting |
 | MessageBus | 13 | TestMessageBus.cpp | 13 | 0 | 0 | OK |
 | MetricsCollector | 9 | TestMetricsCollector.cpp | 9 | 0 | 0 | OK |
 | Introspector | 10 | TestApplicationIntrospector.cpp | 10 | 0 | 0 | OK |
@@ -248,7 +248,7 @@ Gap markers: **ZERO** = no tests, **LOW** = under-tested relative to API surface
 | PhaseTransition | 10 | TestPhaseTransition.cpp | 10 | 0 | 0 | OK |
 | StateObject | **0** | — | 0 | 0 | 0 | **ZERO** — base class for Module/Phase/PU |
 
-**Application totals: 13 files, 161 tests** | Gaps: StateObject (zero); module lifecycle integration
+**Application totals: 13 files, 164 tests** | Gaps: StateObject (zero); module lifecycle integration
 
 ---
 

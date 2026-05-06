@@ -60,7 +60,9 @@ Implement recursive import resolution in `ApplicationManifestLoader`. When loadi
 struct ProcessingUnitEntry
 {
     // ... existing fields ...
-    const char* sourceManifestPath;  // Path of .diaapp this entry was loaded from (nullptr if root)
+    Dia::Core::Containers::String256 sourceManifestPath;  // Path of .diaapp this entry was loaded from (empty if root)
+    // Note: String256 (value semantics) is used instead of const char* to avoid lifetime/ownership
+    // hazards when DynamicArrayC bitwise-copies entries during array growth.
 
     // ... existing methods ...
 };
@@ -69,7 +71,7 @@ struct ProcessingUnitEntry
 struct PhaseEntry
 {
     // ... existing fields ...
-    const char* sourceManifestPath;  // Provenance tracking
+    Dia::Core::Containers::String256 sourceManifestPath;  // Provenance tracking
     // ...
 };
 
@@ -77,7 +79,7 @@ struct PhaseEntry
 struct ModuleEntry
 {
     // ... existing fields ...
-    const char* sourceManifestPath;  // Provenance tracking
+    Dia::Core::Containers::String256 sourceManifestPath;  // Provenance tracking
     // ...
 };
 ```

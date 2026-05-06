@@ -96,7 +96,16 @@ namespace Dia
 			const char* filePath,
 			ApplicationManifest& outManifest)
 		{
-			// Check for import cycle
+			// Enforce max import depth (AI Review Q5: cap at 16 levels)
+			if (mImportStack.Size() >= 16)
+			{
+				AddError(ManifestValidationResult::kImportCycle, "max import depth exceeded", filePath);
+				return ManifestValidationResult::kImportCycle;
+			}
+
+			// Check for import cycle.
+			// Fixed-string error message: path-string building with String512 locals at recursion
+			// depth 3 caused stack overflow, so we emit a minimal message and use filePath as context.
 			if (DetectImportCycle(filePath))
 			{
 				AddError(ManifestValidationResult::kImportCycle, "Import cycle detected", filePath);
@@ -120,7 +129,9 @@ namespace Dia
 			// Mark as being processed (for cycle detection)
 			mImportStack.Add(filePath);
 
-			// Recursively resolve imports (depth-first), merging directly into outManifest
+			// Recursively resolve imports (depth-first), merging directly into outManifest.
+			// On error: mImportStack is not popped, leaving a stale entry. This is safe because
+			// ManifestComposer is discarded after any error return — callers construct a new one.
 			for (unsigned int i = 0; i < currentManifest->imports.Size(); ++i)
 			{
 				Dia::Core::Containers::String512 resolvedPath;
@@ -142,7 +153,12 @@ namespace Dia
 
 			// Merge current manifest into output; tag newly added entries with provenance
 			unsigned int pusBefore = outManifest.processingUnits.Size();
-			MergeManifests(*currentManifest, outManifest);
+			result = MergeManifests(*currentManifest, outManifest, filePath);
+			if (result != ManifestValidationResult::kSuccess)
+			{
+				delete currentManifest;
+				return result;
+			}
 
 			// Tag new PU entries with provenance (String256 has value semantics — safe with DynamicArrayC bitwise copy)
 			for (unsigned int i = pusBefore; i < outManifest.processingUnits.Size(); ++i)
@@ -172,7 +188,7 @@ namespace Dia
 			return false;
 		}
 
-		void ManifestComposer::MergeManifests(const ApplicationManifest& source, ApplicationManifest& target)
+		ManifestValidationResult ManifestComposer::MergeManifests(const ApplicationManifest& source, ApplicationManifest& target, const char* sourceFilePath)
 		{
 			// Use source version if target is uninitialized
 			if (target.version == 0)
@@ -180,96 +196,85 @@ namespace Dia
 				target.version = source.version;
 			}
 
-			// AC12 Rule 1: Processing units merged by instance_id (later overrides earlier)
+			// AC5: Duplicate PU instance_id across distinct manifests → reject with kDuplicateInstanceId.
+			// Each source PU must have a unique instance_id not already present in target.
 			for (unsigned int i = 0; i < source.processingUnits.Size(); ++i)
 			{
 				const ApplicationManifest::ProcessingUnitEntry& sourcePU = source.processingUnits[i];
 
-				// Find matching processing unit in target
-				bool found = false;
 				for (unsigned int j = 0; j < target.processingUnits.Size(); ++j)
 				{
-					ApplicationManifest::ProcessingUnitEntry& targetPU = target.processingUnits[j];
-
+					const ApplicationManifest::ProcessingUnitEntry& targetPU = target.processingUnits[j];
 					if (targetPU.instanceId == sourcePU.instanceId)
 					{
-						// Merge into existing processing unit
-						MergeProcessingUnit(sourcePU, targetPU);
-						found = true;
-						break;
+						Dia::Core::Containers::String256 msg;
+						msg.Format("Duplicate processing_unit instance_id '%s' found in '%s' (already defined in '%s')",
+							sourcePU.instanceId.AsChar(), sourceFilePath,
+							targetPU.sourceManifestPath.IsEmpty() ? "root" : targetPU.sourceManifestPath.AsCStr());
+						AddError(ManifestValidationResult::kDuplicateInstanceId, msg.AsCStr(), sourceFilePath);
+						return ManifestValidationResult::kDuplicateInstanceId;
 					}
 				}
 
-				if (!found)
+				// No duplicate found — add PU to target.
+				// AddDefault + in-place reference avoids DynamicArrayC::operator= MemoryCopy,
+				// which would alias Json::Value* config pointers → double-free on temp dtor.
+				target.processingUnits.AddDefault();
+				ApplicationManifest::ProcessingUnitEntry& newPU =
+					target.processingUnits[target.processingUnits.Size() - 1];
+
+				newPU.typeId = sourcePU.typeId;
+				newPU.instanceId = sourcePU.instanceId;
+				newPU.frequencyHz = sourcePU.frequencyHz;
+				newPU.dedicatedThread = sourcePU.dedicatedThread;
+				newPU.root = sourcePU.root;
+				newPU.initialPhase = sourcePU.initialPhase;
+
+				if (sourcePU.config != nullptr)
 				{
-					// Add a default slot then populate it in-place via reference.
-					// This avoids a temporary ProcessingUnitEntry copy: DynamicArrayC::operator=
-					// uses MemoryCopy for sub-arrays, which would share PhaseEntry/ModuleEntry
-					// config pointers between the temporary and the target slot, causing
-					// double-free when the temporary is destroyed.
-					target.processingUnits.AddDefault();
-					ApplicationManifest::ProcessingUnitEntry& newPU =
-						target.processingUnits[target.processingUnits.Size() - 1];
+					newPU.config = new Json::Value(*sourcePU.config);
+				}
 
-					newPU.typeId = sourcePU.typeId;
-					newPU.instanceId = sourcePU.instanceId;
-					newPU.frequencyHz = sourcePU.frequencyHz;
-					newPU.dedicatedThread = sourcePU.dedicatedThread;
-					newPU.root = sourcePU.root;
-					newPU.initialPhase = sourcePU.initialPhase;
-
-					// Deep copy config
-					if (sourcePU.config != nullptr)
+				for (unsigned int k = 0; k < sourcePU.phases.Size(); ++k)
+				{
+					const ApplicationManifest::PhaseEntry& sourcePhase = sourcePU.phases[k];
+					ApplicationManifest::PhaseEntry newPhase;
+					newPhase.typeId = sourcePhase.typeId;
+					newPhase.instanceId = sourcePhase.instanceId;
+					if (sourcePhase.config != nullptr)
 					{
-						newPU.config = new Json::Value(*sourcePU.config);
+						newPhase.config = new Json::Value(*sourcePhase.config);
+					}
+					newPU.phases.Add(newPhase);
+				}
+
+				for (unsigned int k = 0; k < sourcePU.modules.Size(); ++k)
+				{
+					const ApplicationManifest::ModuleEntry& sourceModule = sourcePU.modules[k];
+					ApplicationManifest::ModuleEntry newModule;
+					newModule.typeId = sourceModule.typeId;
+					newModule.instanceId = sourceModule.instanceId;
+					if (sourceModule.config != nullptr)
+					{
+						newModule.config = new Json::Value(*sourceModule.config);
 					}
 
-					// Copy phases — Add calls PhaseEntry::operator= which deep-copies config
-					for (unsigned int k = 0; k < sourcePU.phases.Size(); ++k)
+					for (unsigned int m = 0; m < sourceModule.phaseIds.Size(); ++m)
 					{
-						const ApplicationManifest::PhaseEntry& sourcePhase = sourcePU.phases[k];
-						ApplicationManifest::PhaseEntry newPhase;
-						newPhase.typeId = sourcePhase.typeId;
-						newPhase.instanceId = sourcePhase.instanceId;
-						if (sourcePhase.config != nullptr)
-						{
-							newPhase.config = new Json::Value(*sourcePhase.config);
-						}
-						newPU.phases.Add(newPhase);
+						newModule.phaseIds.Add(sourceModule.phaseIds[m]);
 					}
 
-					// Copy modules — Add calls ModuleEntry::operator= which deep-copies config
-					for (unsigned int k = 0; k < sourcePU.modules.Size(); ++k)
+					for (unsigned int m = 0; m < sourceModule.dependencies.Size(); ++m)
 					{
-						const ApplicationManifest::ModuleEntry& sourceModule = sourcePU.modules[k];
-						ApplicationManifest::ModuleEntry newModule;
-						newModule.typeId = sourceModule.typeId;
-						newModule.instanceId = sourceModule.instanceId;
-						if (sourceModule.config != nullptr)
-						{
-							newModule.config = new Json::Value(*sourceModule.config);
-						}
-
-						// Copy phase IDs
-						for (unsigned int m = 0; m < sourceModule.phaseIds.Size(); ++m)
-						{
-							newModule.phaseIds.Add(sourceModule.phaseIds[m]);
-						}
-
-						// Copy dependencies
-						for (unsigned int m = 0; m < sourceModule.dependencies.Size(); ++m)
-						{
-							newModule.dependencies.Add(sourceModule.dependencies[m]);
-						}
-
-						newPU.modules.Add(newModule);
+						newModule.dependencies.Add(sourceModule.dependencies[m]);
 					}
 
-					// Copy transitions
-					for (unsigned int k = 0; k < sourcePU.transitions.Size(); ++k)
-					{
-						newPU.transitions.Add(sourcePU.transitions[k]);
-					}
+					newPU.modules.Add(newModule);
+				}
+
+				for (unsigned int k = 0; k < sourcePU.transitions.Size(); ++k)
+				{
+					newPU.transitions.Add(sourcePU.transitions[k]);
 				}
 			}
 
@@ -285,6 +290,8 @@ namespace Dia
 					DeepMergeConfig(*source.metadata, *target.metadata);
 				}
 			}
+
+			return ManifestValidationResult::kSuccess;
 		}
 
 		void ManifestComposer::MergeProcessingUnit(

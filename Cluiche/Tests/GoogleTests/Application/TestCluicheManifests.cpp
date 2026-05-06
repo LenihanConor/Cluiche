@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <DiaApplication/Manifest/ApplicationManifest.h>
+#include <DiaApplication/Manifest/ApplicationManifestLoader.h>
 #include <DiaApplication/TypeRegistry/ApplicationTypeRegistry.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <json/json.h>
@@ -384,4 +385,49 @@ TEST_F(CluicheManifestTest, AllManifests_InstanceIdsMatchTypeIds)
 	EXPECT_EQ(mainManifest.processingUnits[0].typeId, mainManifest.processingUnits[0].instanceId);
 	EXPECT_EQ(renderManifest.processingUnits[0].typeId, renderManifest.processingUnits[0].instanceId);
 	EXPECT_EQ(simManifest.processingUnits[0].typeId, simManifest.processingUnits[0].instanceId);
+}
+
+// ============================================================================
+// AC7: cluiche_main.diaapp imports sim and render — composed result has 3 PUs
+// ============================================================================
+
+TEST_F(CluicheManifestTest, MainManifest_ComposedImports_HasThreePUs)
+{
+	// Register all known type IDs from the three manifests so validation passes
+	mRegistry->RegisterKnownProcessingUnitType(StringCRC("MainProcessingUnit"));
+	mRegistry->RegisterKnownProcessingUnitType(StringCRC("SimProcessingUnit"));
+	mRegistry->RegisterKnownProcessingUnitType(StringCRC("RenderProcessingUnit"));
+	mRegistry->RegisterKnownPhaseType(StringCRC("MainBootPhase"));
+	mRegistry->RegisterKnownPhaseType(StringCRC("MainBootStrapPhase"));
+	mRegistry->RegisterKnownPhaseType(StringCRC("SimBootPhase"));
+	mRegistry->RegisterKnownPhaseType(StringCRC("SimBootStrapPhase"));
+	mRegistry->RegisterKnownPhaseType(StringCRC("RenderRunningPhase"));
+	mRegistry->RegisterKnownModuleType(StringCRC("LoggerModule"));
+	mRegistry->RegisterKnownModuleType(StringCRC("Main::KernelModule"));
+	mRegistry->RegisterKnownModuleType(StringCRC("Main::LevelRegistryModule"));
+	mRegistry->RegisterKnownModuleType(StringCRC("Main::UIModule"));
+	mRegistry->RegisterKnownModuleType(StringCRC("MetricsCollectorModule"));
+	mRegistry->RegisterKnownModuleType(StringCRC("DebugServerModule"));
+	mRegistry->RegisterKnownModuleType(StringCRC("Sim::TimeServerModule"));
+	mRegistry->RegisterKnownModuleType(StringCRC("Sim::UIProxyModule"));
+	mRegistry->RegisterKnownModuleType(StringCRC("Sim::InputFrameStreamModule"));
+
+	ApplicationManifestLoader loader(*mRegistry);
+	ApplicationManifest composedManifest;
+	ManifestValidationResult result = loader.LoadFromFile("Data/Manifests/cluiche_main.diaapp", composedManifest);
+
+	ASSERT_EQ(result, ManifestValidationResult::kSuccess);
+	EXPECT_EQ(composedManifest.processingUnits.Size(), 3u);
+
+	bool foundMain = false, foundSim = false, foundRender = false;
+	for (unsigned int i = 0; i < composedManifest.processingUnits.Size(); ++i)
+	{
+		const auto& pu = composedManifest.processingUnits[i];
+		if (pu.instanceId == StringCRC("MainProcessingUnit")) foundMain = true;
+		if (pu.instanceId == StringCRC("SimProcessingUnit"))  foundSim = true;
+		if (pu.instanceId == StringCRC("RenderProcessingUnit")) foundRender = true;
+	}
+	EXPECT_TRUE(foundMain);
+	EXPECT_TRUE(foundSim);
+	EXPECT_TRUE(foundRender);
 }

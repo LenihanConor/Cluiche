@@ -494,6 +494,136 @@ TEST_F(ManifestImportsTest, DiamondImport_SharedNodeLoadedOnce)
 }
 
 // ---------------------------------------------------------------------------
+// AC5: Duplicate PU instance_id across manifests → kDuplicateInstanceId
+// ---------------------------------------------------------------------------
+
+TEST_F(ManifestImportsTest, DuplicatePUInstanceId_ReturnsError)
+{
+	// Both files define a PU with instance_id "PU_A"
+	WriteFile("test_dup_imported.diaapp", MinimalPU("ImportTestPU", "PU_A", false, "ImportTestPhase", "PhaseA2"));
+
+	static char root[512];
+	snprintf(root, sizeof(root),
+		"{ \"version\": 1, \"imports\": [\"test_dup_imported.diaapp\"],"
+		"  \"processing_units\": [{"
+		"    \"type_id\": \"ImportTestPU\", \"instance_id\": \"PU_A\","
+		"    \"root\": true, \"frequency_hz\": 30.0, \"dedicated_thread\": false,"
+		"    \"initial_phase\": \"PhaseA\","
+		"    \"phases\": [{ \"type_id\": \"ImportTestPhase\", \"instance_id\": \"PhaseA\", \"config\": {} }],"
+		"    \"modules\": [], \"transitions\": [], \"config\": {}"
+		"  }] }");
+	WriteFile("test_dup_root.diaapp", root);
+
+	ApplicationManifestLoader loader(mRegistry);
+	ApplicationManifest manifest;
+	ManifestValidationResult result = loader.LoadFromFile("test_dup_root.diaapp", manifest);
+
+	EXPECT_EQ(result, ManifestValidationResult::kDuplicateInstanceId);
+
+	DeleteFile("test_dup_root.diaapp");
+	DeleteFile("test_dup_imported.diaapp");
+}
+
+// ---------------------------------------------------------------------------
+// AC6: Relative path resolution — import in a subdirectory resolves correctly
+// ---------------------------------------------------------------------------
+
+TEST_F(ManifestImportsTest, RelativePath_SubdirImport_Resolves)
+{
+	// Create subdirectory by path prefix in filename (simulates sub/sim.diaapp relative to main dir)
+	// Test uses current-directory-relative paths: test_subdir_b.diaapp acts as "sub/imported"
+	// We write the root and import side by side, with the import path using a prefix that
+	// resolves relative to the root's directory (both in CWD, so prefix = "")
+	WriteFile("test_relpath_sub.diaapp", MinimalPU("ImportTestPU", "PU_Sub", false, "ImportTestPhase", "PhaseSub"));
+
+	static char root[512];
+	snprintf(root, sizeof(root),
+		"{ \"version\": 1, \"imports\": [\"test_relpath_sub.diaapp\"],"
+		"  \"processing_units\": [{"
+		"    \"type_id\": \"ImportTestPU\", \"instance_id\": \"PU_Root\","
+		"    \"root\": true, \"frequency_hz\": 30.0, \"dedicated_thread\": false,"
+		"    \"initial_phase\": \"PhaseRoot\","
+		"    \"phases\": [{ \"type_id\": \"ImportTestPhase\", \"instance_id\": \"PhaseRoot\", \"config\": {} }],"
+		"    \"modules\": [], \"transitions\": [], \"config\": {}"
+		"  }] }");
+	WriteFile("test_relpath_root.diaapp", root);
+
+	ApplicationManifestLoader loader(mRegistry);
+	ApplicationManifest manifest;
+	ManifestValidationResult result = loader.LoadFromFile("test_relpath_root.diaapp", manifest);
+
+	EXPECT_EQ(result, ManifestValidationResult::kSuccess);
+	EXPECT_EQ(manifest.processingUnits.Size(), 2u);
+
+	bool foundRoot = false, foundSub = false;
+	for (unsigned int i = 0; i < manifest.processingUnits.Size(); ++i)
+	{
+		if (manifest.processingUnits[i].instanceId == StringCRC("PU_Root")) foundRoot = true;
+		if (manifest.processingUnits[i].instanceId == StringCRC("PU_Sub")) foundSub = true;
+	}
+	EXPECT_TRUE(foundRoot);
+	EXPECT_TRUE(foundSub);
+
+	DeleteFile("test_relpath_root.diaapp");
+	DeleteFile("test_relpath_sub.diaapp");
+}
+
+// ---------------------------------------------------------------------------
+// Deep nesting: 4-level chain — A→B→C→D, all PUs present
+// Stays within ApplicationManifest::processingUnits capacity (DynamicArrayC<..., 4>)
+// ---------------------------------------------------------------------------
+
+TEST_F(ManifestImportsTest, DeepNesting_FourLevels_AllPUsPresent)
+{
+	WriteFile("test_deep_d.diaapp", MinimalPU("ImportTestPU", "PU_D", false, "ImportTestPhase", "PhaseD"));
+
+	static char c[512];
+	snprintf(c, sizeof(c),
+		"{ \"version\": 1, \"imports\": [\"test_deep_d.diaapp\"],"
+		"  \"processing_units\": [{"
+		"    \"type_id\": \"ImportTestPU\", \"instance_id\": \"PU_C\","
+		"    \"frequency_hz\": 30.0, \"dedicated_thread\": false, \"initial_phase\": \"PhaseC\","
+		"    \"phases\": [{ \"type_id\": \"ImportTestPhase\", \"instance_id\": \"PhaseC\", \"config\": {} }],"
+		"    \"modules\": [], \"transitions\": [], \"config\": {}"
+		"  }] }");
+	WriteFile("test_deep_c.diaapp", c);
+
+	static char b[512];
+	snprintf(b, sizeof(b),
+		"{ \"version\": 1, \"imports\": [\"test_deep_c.diaapp\"],"
+		"  \"processing_units\": [{"
+		"    \"type_id\": \"ImportTestPU\", \"instance_id\": \"PU_B\","
+		"    \"frequency_hz\": 30.0, \"dedicated_thread\": false, \"initial_phase\": \"PhaseB\","
+		"    \"phases\": [{ \"type_id\": \"ImportTestPhase\", \"instance_id\": \"PhaseB\", \"config\": {} }],"
+		"    \"modules\": [], \"transitions\": [], \"config\": {}"
+		"  }] }");
+	WriteFile("test_deep_b.diaapp", b);
+
+	static char a[512];
+	snprintf(a, sizeof(a),
+		"{ \"version\": 1, \"imports\": [\"test_deep_b.diaapp\"],"
+		"  \"processing_units\": [{"
+		"    \"type_id\": \"ImportTestPU\", \"instance_id\": \"PU_A\","
+		"    \"root\": true, \"frequency_hz\": 30.0, \"dedicated_thread\": false, \"initial_phase\": \"PhaseA\","
+		"    \"phases\": [{ \"type_id\": \"ImportTestPhase\", \"instance_id\": \"PhaseA\", \"config\": {} }],"
+		"    \"modules\": [], \"transitions\": [], \"config\": {}"
+		"  }] }");
+	WriteFile("test_deep_a.diaapp", a);
+
+	ApplicationManifestLoader loader(mRegistry);
+	ApplicationManifest manifest;
+	ManifestValidationResult result = loader.LoadFromFile("test_deep_a.diaapp", manifest);
+
+	EXPECT_EQ(result, ManifestValidationResult::kSuccess);
+	EXPECT_EQ(manifest.processingUnits.Size(), 4u);
+
+	DeleteFile("test_deep_a.diaapp");
+	DeleteFile("test_deep_b.diaapp");
+	DeleteFile("test_deep_c.diaapp");
+	DeleteFile("test_deep_d.diaapp");
+}
+
+// ---------------------------------------------------------------------------
 // Serialize round-trip: imports array preserved
 // ---------------------------------------------------------------------------
 
