@@ -3,8 +3,10 @@
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaLogger/DiaLog.h>
 
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 #include <fstream>
-#include <string>
+#include <cstring>
 
 namespace Dia
 {
@@ -23,7 +25,9 @@ namespace Dia
 			{
 				mLastManifestPath[0] = '\0';
 
-				std::string path = std::string(outputDir) + "/" + kContextFileName;
+				char path[kMaxPathLength];
+				_snprintf_s(path, kMaxPathLength, _TRUNCATE, "%s/%s", outputDir, kContextFileName);
+
 				std::ifstream file(path);
 				if (!file.is_open())
 					return;
@@ -39,20 +43,17 @@ namespace Dia
 
 				if (root.isMember("lastManifestPath") && root["lastManifestPath"].isString())
 				{
-					const std::string& val = root["lastManifestPath"].asString();
-					strncpy_s(mLastManifestPath, kMaxPathLength, val.c_str(), _TRUNCATE);
+					strncpy_s(mLastManifestPath, kMaxPathLength,
+						root["lastManifestPath"].asCString(), _TRUNCATE);
 				}
 			}
 
 			void SessionContext::Save(const char* outputDir) const
 			{
-				// Ensure output directory exists
-				std::string dirStr = outputDir;
-				// Create directories (best-effort; CreateDirectoryA is no-op if exists)
-				std::string cmd = "mkdir \"" + dirStr + "\" 2>nul";
-				std::system(cmd.c_str());
+				CreateDirectoryA(outputDir, nullptr);
 
-				std::string path = std::string(outputDir) + "/" + kContextFileName;
+				char path[kMaxPathLength];
+				_snprintf_s(path, kMaxPathLength, _TRUNCATE, "%s/%s", outputDir, kContextFileName);
 
 				Json::Value root;
 				root["lastManifestPath"] = mLastManifestPath;

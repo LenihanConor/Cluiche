@@ -3,7 +3,6 @@
 #include <DiaAssetCatalogue/AssetTypeRegistry.h>
 #include <DiaAssetCatalogue/AssetRegistry.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
-#include <DiaCore/Strings/String256.h>
 
 namespace Dia
 {

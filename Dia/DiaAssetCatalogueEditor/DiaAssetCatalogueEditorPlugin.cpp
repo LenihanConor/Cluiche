@@ -20,7 +20,6 @@
 #include <DiaLogger/DiaLog.h>
 
 #include <cstring>
-#include <string>
 
 // Output dir for session context per SED-020 / SD-ACE-005.
 // Real path resolved at runtime from RepoRoot; fall back to relative path.
@@ -68,22 +67,21 @@ namespace Dia
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.load_manifest"));
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.save_manifest"));
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.new_manifest"));
-				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.bulk_create_records"));
-				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.discover_files"));
-				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.add_relationship"));
-				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.remove_relationship"));
-				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.get_forward_refs"));
-				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.get_reverse_refs"));
-				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.validate"));
+					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.bulk_create_records"));
+					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.discover_files"));
+					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.add_relationship"));
+					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.remove_relationship"));
+					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.get_forward_refs"));
+					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.get_reverse_refs"));
+					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.validate"));
+					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.open_asset"));
+					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.register_type_editor"));
+					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.load_rules"));
+					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.get_rules"));
+					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.dry_run_rules"));
+					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.apply_rules"));
+					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.query_asset_ids"));
 				}
-
-				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.open_asset"));
-				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.register_type_editor"));
-				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.load_rules"));
-				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.get_rules"));
-				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.dry_run_rules"));
-				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.apply_rules"));
-				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.query_asset_ids"));
 
 				mSessionContext.Save(mOutputDir);
 				mBridge       = nullptr;
@@ -118,16 +116,16 @@ namespace Dia
 							result["error"]   = "missing path parameter";
 							return result;
 						}
-						std::string path = data["path"].asString();
+						const char* path = data["path"].asCString();
 
 						char errorBuf[256] = {};
-						bool ok = mLoadHandler.Load(path.c_str(), mRegistry, mSerializer, mHistory,
+						bool ok = mLoadHandler.Load(path, mRegistry, mSerializer, mHistory,
 							errorBuf, sizeof(errorBuf));
 
 						if (ok)
 						{
-							strncpy_s(mCurrentPath, kCurrentPathLength, path.c_str(), _TRUNCATE);
-							mSessionContext.SetLastManifestPath(path.c_str());
+							strncpy_s(mCurrentPath, kCurrentPathLength, path, _TRUNCATE);
+							mSessionContext.SetLastManifestPath(path);
 							mSessionContext.Save(mOutputDir);
 
 							result["success"]      = true;
@@ -149,11 +147,11 @@ namespace Dia
 						Json::Value result;
 
 						// Use provided path, or fall back to current path
-						std::string path = mCurrentPath;
+						const char* path = mCurrentPath;
 						if (data.isMember("path") && data["path"].isString())
-							path = data["path"].asString();
+							path = data["path"].asCString();
 
-						if (path.empty())
+						if (!path || path[0] == '\0')
 						{
 							result["success"] = false;
 							result["error"]   = "no path specified";
@@ -161,13 +159,13 @@ namespace Dia
 						}
 
 						char errorBuf[256] = {};
-						bool ok = mLoadHandler.Save(path.c_str(), mRegistry, mSerializer, mHistory,
+						bool ok = mLoadHandler.Save(path, mRegistry, mSerializer, mHistory,
 							errorBuf, sizeof(errorBuf));
 
 						if (ok)
 						{
-							strncpy_s(mCurrentPath, kCurrentPathLength, path.c_str(), _TRUNCATE);
-							mSessionContext.SetLastManifestPath(path.c_str());
+							strncpy_s(mCurrentPath, kCurrentPathLength, path, _TRUNCATE);
+							mSessionContext.SetLastManifestPath(path);
 							mSessionContext.Save(mOutputDir);
 							result["success"] = true;
 							PushDirtyState();
@@ -227,14 +225,14 @@ namespace Dia
 					rec.mSourcePath = d["source_path"].asCString();
 				if (d.isMember("status") && d["status"].isString())
 				{
-					std::string s = d["status"].asString();
-					if (s == "Draft")       rec.mStatus = AssetStatus::Draft;
-					else if (s == "Deprecated") rec.mStatus = AssetStatus::Deprecated;
-					else                    rec.mStatus = AssetStatus::Active;
+					const char* s = d["status"].asCString();
+					if (strcmp(s, "Draft") == 0)            rec.mStatus = AssetStatus::Draft;
+					else if (strcmp(s, "Deprecated") == 0)  rec.mStatus = AssetStatus::Deprecated;
+					else                                    rec.mStatus = AssetStatus::Active;
 				}
 				if (d.isMember("scope") && d["scope"].isString())
 				{
-					if (d["scope"].asString() == "stage")
+					if (strcmp(d["scope"].asCString(), "stage") == 0)
 					{
 						rec.mScope = AssetScope::kStage;
 						if (d.isMember("stage") && d["stage"].isString())
@@ -315,11 +313,30 @@ namespace Dia
 						Dia::Core::StringCRC relType(data["rel"].asCString());
 						Dia::Core::StringCRC toId(data["to"].asCString());
 
-						if (!mRegistry.FindById(fromId) || !mRegistry.FindById(toId))
+						if (fromId == toId)
+						{
+							result["success"] = false;
+							result["error"]   = "self-referential edge not allowed";
+							return result;
+						}
+
+						const Dia::AssetCatalogue::AssetRecord* fromRec = mRegistry.FindById(fromId);
+						if (!fromRec || !mRegistry.FindById(toId))
 						{
 							result["success"] = false;
 							result["error"]   = "record not found";
 							return result;
+						}
+
+						for (unsigned int i = 0; i < fromRec->mReferences.Size(); ++i)
+						{
+							if (fromRec->mReferences[i].mRelationshipType == relType &&
+								fromRec->mReferences[i].mTargetAssetId == toId)
+							{
+								result["success"] = false;
+								result["error"]   = "duplicate edge";
+								return result;
+							}
 						}
 
 						auto* cmd = new Dia::AssetCatalogue::Editor::AddRelationshipCommand(
@@ -435,10 +452,10 @@ namespace Dia
 							return result;
 						}
 
-						std::string rootPath = data["root_path"].asString();
+						const char* rootPath = data["root_path"].asCString();
 
 						Dia::Core::Containers::DynamicArrayC<DiscoveredFile, kMaxDiscoveredFiles> discovered;
-						mFileDiscoverer.Discover(rootPath.c_str(), mTypeRegistry, mRegistry, discovered);
+						mFileDiscoverer.Discover(rootPath, mTypeRegistry, mRegistry, discovered);
 
 						Json::Value files(Json::arrayValue);
 						for (unsigned int i = 0; i < discovered.Size(); ++i)
@@ -475,8 +492,8 @@ namespace Dia
 							result["error"]   = "missing path";
 							return result;
 						}
-						std::string path = data["path"].asString();
-						Dia::AssetCatalogue::LoadResult<void> lr = mRulesEngine.LoadRules(path.c_str(), mTypeRegistry);
+						const char* rulesPath = data["path"].asCString();
+						Dia::AssetCatalogue::LoadResult<void> lr = mRulesEngine.LoadRules(rulesPath, mTypeRegistry);
 						if (!lr.mSuccess)
 						{
 							result["success"] = false;
@@ -579,9 +596,13 @@ namespace Dia
 					[this](const Json::Value& data) -> Json::Value
 					{
 						Json::Value result;
-						std::string prefix;
+						const char* prefix = nullptr;
+						unsigned int prefixLen = 0;
 						if (data.isMember("prefix") && data["prefix"].isString())
-							prefix = data["prefix"].asString();
+						{
+							prefix = data["prefix"].asCString();
+							prefixLen = static_cast<unsigned int>(strlen(prefix));
+						}
 
 						Dia::Core::StringCRC filterType;
 						if (data.isMember("typeId") && data["typeId"].isString())
@@ -596,7 +617,7 @@ namespace Dia
 								continue;
 
 							const char* idStr = rec.mId.AsChar();
-							if (!prefix.empty() && strncmp(idStr, prefix.c_str(), prefix.size()) != 0)
+							if (prefix && prefixLen > 0 && strncmp(idStr, prefix, prefixLen) != 0)
 								continue;
 
 							ids.append(idStr);
@@ -741,9 +762,10 @@ namespace Dia
 									e["assetId"]  = id;
 									e["severity"] = "error";
 									e["type"]     = "dangling_reference";
-									std::string msg = "References unknown asset: ";
-									msg += targetId.AsChar();
-									e["message"]  = msg.c_str();
+									char msg[320];
+									_snprintf_s(msg, sizeof(msg), _TRUNCATE,
+										"References unknown asset: %s", targetId.AsChar());
+									e["message"]  = msg;
 									errors.append(e);
 								}
 							}

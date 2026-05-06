@@ -1016,6 +1016,51 @@ TEST(BoundaryTest, UpdateNonExistentRecordDoesNotCrash)
 }
 
 // ===========================================================================
+// Relationship Validation (AC6: no duplicates, AC7: no self-referential edges)
+// Note: These validations are enforced at the DiaAPI handler level in the plugin.
+// These tests verify the scenario through the command layer to document expected behavior.
+// ===========================================================================
+TEST(RelationshipValidationTest, SelfReferentialEdgeDetection)
+{
+    // AC7: fromId must not equal toId — validated in add_relationship handler
+    // At the command level, the edge would be added (no guard in command itself).
+    // The handler prevents this from reaching the command.
+    AssetRegistry registry;
+    registry.Register(MakeRecord("entity.hero", "entity"));
+
+    CommandHistory history;
+
+    // Verify that if a self-referential edge reaches the command, it is stored
+    // (the handler is responsible for blocking this — this documents command behavior)
+    auto* cmd = new AddRelationshipCommand(registry, StringCRC("entity.hero"), StringCRC("uses"), StringCRC("entity.hero"));
+    history.ExecuteCommand(cmd);
+    EXPECT_EQ(registry.FindById(StringCRC("entity.hero"))->mReferences.Size(), 1u);
+
+    // Undo should remove it
+    history.Undo();
+    EXPECT_EQ(registry.FindById(StringCRC("entity.hero"))->mReferences.Size(), 0u);
+}
+
+TEST(RelationshipValidationTest, DuplicateEdgeAtCommandLevel)
+{
+    // AC6: duplicate edges should not be created — validated in add_relationship handler
+    // At command level, duplicates ARE added (handler blocks before reaching command).
+    AssetRegistry registry;
+    registry.Register(MakeRecord("entity.hero", "entity"));
+    registry.Register(MakeRecord("texture.player", "texture"));
+
+    CommandHistory history;
+
+    auto* cmd1 = new AddRelationshipCommand(registry, StringCRC("entity.hero"), StringCRC("uses"), StringCRC("texture.player"));
+    auto* cmd2 = new AddRelationshipCommand(registry, StringCRC("entity.hero"), StringCRC("uses"), StringCRC("texture.player"));
+    history.ExecuteCommand(cmd1);
+    history.ExecuteCommand(cmd2);
+
+    // Command layer does not guard against duplicates — handler does
+    EXPECT_EQ(registry.FindById(StringCRC("entity.hero"))->mReferences.Size(), 2u);
+}
+
+// ===========================================================================
 // ApplyRulesCommand — Excluded IDs
 // ===========================================================================
 class ApplyRulesExcludedTest : public ::testing::Test
@@ -1099,4 +1144,536 @@ TEST_F(ApplyRulesExcludedTest, NoExclusionsAppliesAll)
     EXPECT_EQ(registry.FindById(StringCRC("texture.player"))->mTags.Size(), 1u);
     EXPECT_EQ(registry.FindById(StringCRC("texture.enemy"))->mTags.Size(), 1u);
     EXPECT_EQ(registry.FindById(StringCRC("texture.bg"))->mTags.Size(), 1u);
+}
+
+// ===========================================================================
+// Manual Override Tracking — UpdateRecordCommand flag-setting (Task 13)
+// ===========================================================================
+
+namespace
+{
+    // Writes a rules file for scope-based tests, returns a CatalogueRulesEngine with it loaded.
+    // rulesPath must be a writable temp path.
+    bool WriteScopeRule(const char* rulesPath, AssetTypeRegistry& typeRegistry, CatalogueRulesEngine& engine)
+    {
+        const char* json =
+            "{\n"
+            "  \"rules\": [\n"
+            "    { \"name\": \"global-all\", \"match\": { \"all\": true }, \"action\": \"assign_scope\", \"scope\": \"global\" }\n"
+            "  ]\n"
+            "}";
+        FILE* f = nullptr;
+        fopen_s(&f, rulesPath, "w");
+        if (!f) return false;
+        fputs(json, f);
+        fclose(f);
+        auto lr = engine.LoadRules(rulesPath, typeRegistry);
+        remove(rulesPath);
+        return lr.mSuccess;
+    }
+
+    bool WriteTagRule(const char* rulesPath, AssetTypeRegistry& typeRegistry, CatalogueRulesEngine& engine)
+    {
+        const char* json =
+            "{\n"
+            "  \"rules\": [\n"
+            "    { \"name\": \"tag-textures\", \"match\": { \"type\": \"texture\" }, \"action\": \"assign_tag\", \"tag\": \"visual\" }\n"
+            "  ]\n"
+            "}";
+        FILE* f = nullptr;
+        fopen_s(&f, rulesPath, "w");
+        if (!f) return false;
+        fputs(json, f);
+        fclose(f);
+        auto lr = engine.LoadRules(rulesPath, typeRegistry);
+        remove(rulesPath);
+        return lr.mSuccess;
+    }
+}
+
+class ManualOverrideFlagTest : public ::testing::Test
+{
+protected:
+    AssetRegistry registry;
+    CommandHistory history;
+
+    void SetUp() override
+    {
+        registry.Register(MakeRecord("texture.player", "texture", "old/path.png"));
+    }
+};
+
+TEST_F(ManualOverrideFlagTest, ScopeChange_SetsScopeFlag)
+{
+    const AssetRecord* old = registry.FindById(StringCRC("texture.player"));
+    AssetRecord newRec = *old;
+    newRec.mScope = AssetScope::kStage;
+    newRec.mScopeStageName = StringCRC("level_1");
+
+    auto* cmd = new UpdateRecordCommand(registry, StringCRC("texture.player"), *old, newRec);
+    history.ExecuteCommand(cmd);
+
+    const AssetRecord* updated = registry.FindById(StringCRC("texture.player"));
+    ASSERT_NE(updated, nullptr);
+    EXPECT_TRUE(updated->mManualOverrideFlags & kManualOverrideScope);
+}
+
+TEST_F(ManualOverrideFlagTest, SourcePathChange_SetsSourcePathFlag)
+{
+    const AssetRecord* old = registry.FindById(StringCRC("texture.player"));
+    AssetRecord newRec = *old;
+    newRec.mSourcePath = Dia::Core::Containers::String256("new/path.png");
+
+    auto* cmd = new UpdateRecordCommand(registry, StringCRC("texture.player"), *old, newRec);
+    history.ExecuteCommand(cmd);
+
+    const AssetRecord* updated = registry.FindById(StringCRC("texture.player"));
+    ASSERT_NE(updated, nullptr);
+    EXPECT_TRUE(updated->mManualOverrideFlags & kManualOverrideSourcePath);
+}
+
+TEST_F(ManualOverrideFlagTest, StageNameChange_SetsStageFlag)
+{
+    const AssetRecord* old = registry.FindById(StringCRC("texture.player"));
+    AssetRecord newRec = *old;
+    newRec.mScopeStageName = StringCRC("stage_a");
+
+    auto* cmd = new UpdateRecordCommand(registry, StringCRC("texture.player"), *old, newRec);
+    history.ExecuteCommand(cmd);
+
+    const AssetRecord* updated = registry.FindById(StringCRC("texture.player"));
+    ASSERT_NE(updated, nullptr);
+    EXPECT_TRUE(updated->mManualOverrideFlags & kManualOverrideStage);
+}
+
+TEST_F(ManualOverrideFlagTest, TagsChange_SetsTagsFlag)
+{
+    const AssetRecord* old = registry.FindById(StringCRC("texture.player"));
+    AssetRecord newRec = *old;
+    newRec.mTags.Add(StringCRC("hero"));
+
+    auto* cmd = new UpdateRecordCommand(registry, StringCRC("texture.player"), *old, newRec);
+    history.ExecuteCommand(cmd);
+
+    const AssetRecord* updated = registry.FindById(StringCRC("texture.player"));
+    ASSERT_NE(updated, nullptr);
+    EXPECT_TRUE(updated->mManualOverrideFlags & kManualOverrideTags);
+}
+
+TEST_F(ManualOverrideFlagTest, NoChange_DoesNotSetAnyFlag)
+{
+    const AssetRecord* old = registry.FindById(StringCRC("texture.player"));
+    AssetRecord newRec = *old; // identical copy
+
+    auto* cmd = new UpdateRecordCommand(registry, StringCRC("texture.player"), *old, newRec);
+    history.ExecuteCommand(cmd);
+
+    const AssetRecord* updated = registry.FindById(StringCRC("texture.player"));
+    ASSERT_NE(updated, nullptr);
+    EXPECT_EQ(updated->mManualOverrideFlags, 0u);
+}
+
+TEST_F(ManualOverrideFlagTest, UndoRestoresOriginalFlags)
+{
+    const AssetRecord* old = registry.FindById(StringCRC("texture.player"));
+    AssetRecord newRec = *old;
+    newRec.mScope = AssetScope::kStage;
+
+    auto* cmd = new UpdateRecordCommand(registry, StringCRC("texture.player"), *old, newRec);
+    history.ExecuteCommand(cmd);
+
+    EXPECT_TRUE(registry.FindById(StringCRC("texture.player"))->mManualOverrideFlags & kManualOverrideScope);
+
+    history.Undo();
+    EXPECT_EQ(registry.FindById(StringCRC("texture.player"))->mManualOverrideFlags, 0u);
+}
+
+TEST_F(ManualOverrideFlagTest, MultipleFieldsSetMultipleBits)
+{
+    const AssetRecord* old = registry.FindById(StringCRC("texture.player"));
+    AssetRecord newRec = *old;
+    newRec.mScope = AssetScope::kStage;
+    newRec.mSourcePath = Dia::Core::Containers::String256("new/path.png");
+    newRec.mTags.Add(StringCRC("tagged"));
+
+    auto* cmd = new UpdateRecordCommand(registry, StringCRC("texture.player"), *old, newRec);
+    history.ExecuteCommand(cmd);
+
+    const AssetRecord* updated = registry.FindById(StringCRC("texture.player"));
+    ASSERT_NE(updated, nullptr);
+    EXPECT_TRUE(updated->mManualOverrideFlags & kManualOverrideScope);
+    EXPECT_TRUE(updated->mManualOverrideFlags & kManualOverrideSourcePath);
+    EXPECT_TRUE(updated->mManualOverrideFlags & kManualOverrideTags);
+}
+
+TEST_F(ManualOverrideFlagTest, FlagsAccumulateAcrossUpdates)
+{
+    // First update: change scope
+    const AssetRecord* r1 = registry.FindById(StringCRC("texture.player"));
+    AssetRecord u1 = *r1;
+    u1.mScope = AssetScope::kStage;
+    history.ExecuteCommand(new UpdateRecordCommand(registry, StringCRC("texture.player"), *r1, u1));
+
+    // Second update: change source path (scope already set)
+    const AssetRecord* r2 = registry.FindById(StringCRC("texture.player"));
+    AssetRecord u2 = *r2;
+    u2.mSourcePath = Dia::Core::Containers::String256("newer/path.png");
+    history.ExecuteCommand(new UpdateRecordCommand(registry, StringCRC("texture.player"), *r2, u2));
+
+    const AssetRecord* final = registry.FindById(StringCRC("texture.player"));
+    ASSERT_NE(final, nullptr);
+    EXPECT_TRUE(final->mManualOverrideFlags & kManualOverrideScope);
+    EXPECT_TRUE(final->mManualOverrideFlags & kManualOverrideSourcePath);
+}
+
+TEST_F(ManualOverrideFlagTest, AllFourFlagsAreIndependent)
+{
+    const unsigned char allFlags =
+        kManualOverrideScope | kManualOverrideTags | kManualOverrideSourcePath | kManualOverrideStage;
+
+    // Each flag must be a power of two (exactly one bit set)
+    EXPECT_TRUE(kManualOverrideScope      && !(kManualOverrideScope      & (kManualOverrideScope      - 1)));
+    EXPECT_TRUE(kManualOverrideTags       && !(kManualOverrideTags       & (kManualOverrideTags       - 1)));
+    EXPECT_TRUE(kManualOverrideSourcePath && !(kManualOverrideSourcePath & (kManualOverrideSourcePath - 1)));
+    EXPECT_TRUE(kManualOverrideStage      && !(kManualOverrideStage      & (kManualOverrideStage      - 1)));
+
+    // No two flags share a bit
+    EXPECT_EQ((kManualOverrideScope & kManualOverrideTags),       0u);
+    EXPECT_EQ((kManualOverrideScope & kManualOverrideSourcePath), 0u);
+    EXPECT_EQ((kManualOverrideScope & kManualOverrideStage),      0u);
+    EXPECT_EQ((kManualOverrideTags  & kManualOverrideSourcePath), 0u);
+    EXPECT_EQ((kManualOverrideTags  & kManualOverrideStage),      0u);
+    EXPECT_EQ((kManualOverrideSourcePath & kManualOverrideStage), 0u);
+
+    // All four fit in one byte
+    EXPECT_LE(allFlags, 0xFFu);
+}
+
+// ===========================================================================
+// ApplyRulesCommand — Manual Override Interaction (Task 13)
+// ===========================================================================
+
+class ApplyRulesManualOverrideTest : public ::testing::Test
+{
+protected:
+    AssetRegistry registry;
+    CommandHistory history;
+    CatalogueRulesEngine engine;
+    AssetTypeRegistry typeRegistry;
+
+    void SetUp() override
+    {
+        RegisterBuiltInAssetTypes(typeRegistry);
+        registry.Register(MakeRecord("texture.player", "texture", "tex/player.png"));
+    }
+
+    bool LoadScopeRule()
+    {
+        return WriteScopeRule("C:\\Temp\\test_manual_scope_rule.json", typeRegistry, engine);
+    }
+
+    bool LoadTagRule()
+    {
+        return WriteTagRule("C:\\Temp\\test_manual_tag_rule.json", typeRegistry, engine);
+    }
+};
+
+TEST_F(ApplyRulesManualOverrideTest, SkipsManualFieldByDefault)
+{
+    ASSERT_TRUE(LoadScopeRule());
+
+    // Manually set scope to stage
+    const AssetRecord* old = registry.FindById(StringCRC("texture.player"));
+    AssetRecord updated = *old;
+    updated.mScope = AssetScope::kStage;
+    updated.mScopeStageName = StringCRC("level_1");
+    history.ExecuteCommand(new UpdateRecordCommand(registry, StringCRC("texture.player"), *old, updated));
+
+    EXPECT_TRUE(registry.FindById(StringCRC("texture.player"))->mManualOverrideFlags & kManualOverrideScope);
+
+    // Rule wants to set scope = global — but field is manually overridden
+    auto* cmd = new ApplyRulesCommand(registry, registry.GetRelationshipIndex(), engine);
+    history.ExecuteCommand(cmd);
+
+    // Scope should remain stage (manual override protected it)
+    EXPECT_EQ(registry.FindById(StringCRC("texture.player"))->mScope, AssetScope::kStage);
+}
+
+TEST_F(ApplyRulesManualOverrideTest, OverwriteManualsAppliesAll)
+{
+    ASSERT_TRUE(LoadScopeRule());
+
+    // Manually set scope to stage
+    const AssetRecord* old = registry.FindById(StringCRC("texture.player"));
+    AssetRecord updated = *old;
+    updated.mScope = AssetScope::kStage;
+    updated.mScopeStageName = StringCRC("level_1");
+    history.ExecuteCommand(new UpdateRecordCommand(registry, StringCRC("texture.player"), *old, updated));
+
+    EXPECT_TRUE(registry.FindById(StringCRC("texture.player"))->mManualOverrideFlags & kManualOverrideScope);
+
+    // Force overwrite
+    auto* cmd = new ApplyRulesCommand(registry, registry.GetRelationshipIndex(), engine);
+    cmd->SetOverwriteManuals(true);
+    history.ExecuteCommand(cmd);
+
+    // Rule wins — scope back to global
+    EXPECT_EQ(registry.FindById(StringCRC("texture.player"))->mScope, AssetScope::kGlobal);
+}
+
+TEST_F(ApplyRulesManualOverrideTest, ClearsManualFlagAfterRuleApply)
+{
+    ASSERT_TRUE(LoadScopeRule());
+
+    // Manually set scope to stage
+    const AssetRecord* old = registry.FindById(StringCRC("texture.player"));
+    AssetRecord updated = *old;
+    updated.mScope = AssetScope::kStage;
+    history.ExecuteCommand(new UpdateRecordCommand(registry, StringCRC("texture.player"), *old, updated));
+
+    EXPECT_TRUE(registry.FindById(StringCRC("texture.player"))->mManualOverrideFlags & kManualOverrideScope);
+
+    // Apply with overwrite — rule now owns the field, flag must clear
+    auto* cmd = new ApplyRulesCommand(registry, registry.GetRelationshipIndex(), engine);
+    cmd->SetOverwriteManuals(true);
+    history.ExecuteCommand(cmd);
+
+    EXPECT_FALSE(registry.FindById(StringCRC("texture.player"))->mManualOverrideFlags & kManualOverrideScope);
+}
+
+TEST_F(ApplyRulesManualOverrideTest, UndoRestoresManualFlags)
+{
+    ASSERT_TRUE(LoadScopeRule());
+
+    // Manually set scope
+    const AssetRecord* old = registry.FindById(StringCRC("texture.player"));
+    AssetRecord updated = *old;
+    updated.mScope = AssetScope::kStage;
+    history.ExecuteCommand(new UpdateRecordCommand(registry, StringCRC("texture.player"), *old, updated));
+
+    const unsigned char flagsBefore =
+        registry.FindById(StringCRC("texture.player"))->mManualOverrideFlags;
+
+    auto* cmd = new ApplyRulesCommand(registry, registry.GetRelationshipIndex(), engine);
+    cmd->SetOverwriteManuals(true);
+    history.ExecuteCommand(cmd);
+
+    history.Undo();
+
+    EXPECT_EQ(registry.FindById(StringCRC("texture.player"))->mManualOverrideFlags, flagsBefore);
+}
+
+TEST_F(ApplyRulesManualOverrideTest, NonManualFieldNotFlagged_InDryRun)
+{
+    ASSERT_TRUE(LoadTagRule());
+
+    // No manual flag set for tags — dry run should report mIsManualOverride = false
+    RuleChangeset cs = engine.EvaluateDryRun(registry, registry.GetRelationshipIndex());
+
+    bool found = false;
+    for (unsigned int i = 0; i < cs.mChanges.Size(); ++i)
+    {
+        if (cs.mChanges[i].mRecordId == StringCRC("texture.player"))
+        {
+            EXPECT_FALSE(cs.mChanges[i].mIsManualOverride);
+            found = true;
+        }
+    }
+    EXPECT_TRUE(found);
+}
+
+TEST_F(ApplyRulesManualOverrideTest, ManualFieldFlagged_InDryRun)
+{
+    ASSERT_TRUE(LoadTagRule());
+
+    // Manually set tags
+    const AssetRecord* old = registry.FindById(StringCRC("texture.player"));
+    AssetRecord updated = *old;
+    updated.mTags.Add(StringCRC("manual_tag"));
+    history.ExecuteCommand(new UpdateRecordCommand(registry, StringCRC("texture.player"), *old, updated));
+
+    EXPECT_TRUE(registry.FindById(StringCRC("texture.player"))->mManualOverrideFlags & kManualOverrideTags);
+
+    // Dry run — rule tries to add a tag; field is manually set so mIsManualOverride should be true
+    RuleChangeset cs = engine.EvaluateDryRun(registry, registry.GetRelationshipIndex());
+
+    bool found = false;
+    for (unsigned int i = 0; i < cs.mChanges.Size(); ++i)
+    {
+        if (cs.mChanges[i].mRecordId == StringCRC("texture.player") &&
+            strcmp(cs.mChanges[i].mField.AsCStr(), "tag") == 0)
+        {
+            EXPECT_TRUE(cs.mChanges[i].mIsManualOverride);
+            found = true;
+        }
+    }
+    EXPECT_TRUE(found);
+}
+
+TEST_F(ApplyRulesManualOverrideTest, ManualSkipDoesNotAffectNonManualFieldOnSameRecord)
+{
+    // Load a rule that sets tag AND scope on same record
+    const char* rulesPath = "C:\\Temp\\test_manual_two_fields.json";
+    const char* json =
+        "{\n"
+        "  \"rules\": [\n"
+        "    { \"name\": \"tag-textures\",   \"match\": { \"type\": \"texture\" }, \"action\": \"assign_tag\",   \"tag\": \"visual\" },\n"
+        "    { \"name\": \"scope-textures\",  \"match\": { \"type\": \"texture\" }, \"action\": \"assign_scope\", \"scope\": \"global\" }\n"
+        "  ]\n"
+        "}";
+    FILE* f = nullptr;
+    fopen_s(&f, rulesPath, "w");
+    ASSERT_NE(f, nullptr);
+    fputs(json, f);
+    fclose(f);
+    engine.LoadRules(rulesPath, typeRegistry);
+    remove(rulesPath);
+
+    // Manually set scope — but NOT tags
+    const AssetRecord* old = registry.FindById(StringCRC("texture.player"));
+    AssetRecord updated = *old;
+    updated.mScope = AssetScope::kStage;
+    history.ExecuteCommand(new UpdateRecordCommand(registry, StringCRC("texture.player"), *old, updated));
+
+    EXPECT_TRUE(registry.FindById(StringCRC("texture.player"))->mManualOverrideFlags & kManualOverrideScope);
+    EXPECT_FALSE(registry.FindById(StringCRC("texture.player"))->mManualOverrideFlags & kManualOverrideTags);
+
+    // Apply without overwrite — scope should be protected, tag should be applied
+    auto* cmd = new ApplyRulesCommand(registry, registry.GetRelationshipIndex(), engine);
+    history.ExecuteCommand(cmd);
+
+    const AssetRecord* result = registry.FindById(StringCRC("texture.player"));
+    ASSERT_NE(result, nullptr);
+    EXPECT_EQ(result->mScope, AssetScope::kStage);       // manual field protected
+    EXPECT_EQ(result->mTags.Size(), 1u);                  // non-manual field applied
+    EXPECT_EQ(result->mTags[0], StringCRC("visual"));
+}
+
+// ===========================================================================
+// CatalogueRulesEngine::GetRule / RuleInfo (Task 11)
+// ===========================================================================
+
+class GetRuleTest : public ::testing::Test
+{
+protected:
+    CatalogueRulesEngine engine;
+    AssetTypeRegistry typeRegistry;
+
+    void SetUp() override
+    {
+        RegisterBuiltInAssetTypes(typeRegistry);
+    }
+
+    bool LoadRules(const char* json)
+    {
+        const char* path = "C:\\Temp\\test_getrule.json";
+        FILE* f = nullptr;
+        fopen_s(&f, path, "w");
+        if (!f) return false;
+        fputs(json, f);
+        fclose(f);
+        auto lr = engine.LoadRules(path, typeRegistry);
+        remove(path);
+        return lr.mSuccess;
+    }
+};
+
+TEST_F(GetRuleTest, OutOfBoundsReturnsEmptyRuleInfo)
+{
+    RuleInfo info = engine.GetRule(0);
+    EXPECT_EQ(info.mName.Length(), 0u);
+    EXPECT_EQ(info.mMatchType.Length(), 0u);
+    EXPECT_EQ(info.mActionType.Length(), 0u);
+}
+
+TEST_F(GetRuleTest, GetRuleCountMatchesLoadedRules)
+{
+    const char* json =
+        "{ \"rules\": ["
+        "  { \"name\": \"r1\", \"match\": { \"all\": true }, \"action\": \"assign_tag\", \"tag\": \"a\" },"
+        "  { \"name\": \"r2\", \"match\": { \"all\": true }, \"action\": \"assign_tag\", \"tag\": \"b\" }"
+        "] }";
+    ASSERT_TRUE(LoadRules(json));
+    EXPECT_EQ(engine.GetRuleCount(), 2u);
+}
+
+TEST_F(GetRuleTest, NameAndMatchTypeAndActionCorrect)
+{
+    const char* json =
+        "{ \"rules\": ["
+        "  { \"name\": \"tag-textures\", \"match\": { \"type\": \"texture\" }, \"action\": \"assign_tag\", \"tag\": \"visual\" }"
+        "] }";
+    ASSERT_TRUE(LoadRules(json));
+    ASSERT_EQ(engine.GetRuleCount(), 1u);
+
+    RuleInfo info = engine.GetRule(0);
+    EXPECT_STREQ(info.mName.AsCStr(),       "tag-textures");
+    EXPECT_STREQ(info.mMatchType.AsCStr(),  "type");
+    EXPECT_STREQ(info.mMatchValue.AsCStr(), "texture");
+    EXPECT_STREQ(info.mActionType.AsCStr(), "assign_tag");
+    EXPECT_STREQ(info.mActionParam.AsCStr(),"visual");
+}
+
+TEST_F(GetRuleTest, MatchTypeAll_SerializesCorrectly)
+{
+    const char* json =
+        "{ \"rules\": ["
+        "  { \"name\": \"all-rule\", \"match\": { \"all\": true }, \"action\": \"assign_scope\", \"scope\": \"global\" }"
+        "] }";
+    ASSERT_TRUE(LoadRules(json));
+    RuleInfo info = engine.GetRule(0);
+    EXPECT_STREQ(info.mMatchType.AsCStr(), "all");
+    EXPECT_STREQ(info.mActionType.AsCStr(), "assign_scope");
+}
+
+TEST_F(GetRuleTest, MatchTypeSourcePathGlob_SerializesCorrectly)
+{
+    const char* json =
+        "{ \"rules\": ["
+        "  { \"name\": \"glob-rule\", \"match\": { \"source_path_glob\": \"*.png\" }, \"action\": \"assign_tag\", \"tag\": \"image\" }"
+        "] }";
+    ASSERT_TRUE(LoadRules(json));
+    RuleInfo info = engine.GetRule(0);
+    EXPECT_STREQ(info.mMatchType.AsCStr(),  "source_path_glob");
+    EXPECT_STREQ(info.mMatchValue.AsCStr(), "*.png");
+}
+
+TEST_F(GetRuleTest, MatchTypeTag_SerializesCorrectly)
+{
+    const char* json =
+        "{ \"rules\": ["
+        "  { \"name\": \"tag-match\", \"match\": { \"tag\": \"hero\" }, \"action\": \"assign_tag\", \"tag\": \"important\" }"
+        "] }";
+    ASSERT_TRUE(LoadRules(json));
+    RuleInfo info = engine.GetRule(0);
+    EXPECT_STREQ(info.mMatchType.AsCStr(),  "tag");
+    EXPECT_STREQ(info.mMatchValue.AsCStr(), "hero");
+}
+
+TEST_F(GetRuleTest, GetRuleIndexOutOfBoundsHighValue_ReturnsEmpty)
+{
+    const char* json =
+        "{ \"rules\": ["
+        "  { \"name\": \"r1\", \"match\": { \"all\": true }, \"action\": \"assign_tag\", \"tag\": \"x\" }"
+        "] }";
+    ASSERT_TRUE(LoadRules(json));
+
+    RuleInfo info = engine.GetRule(999);
+    EXPECT_EQ(info.mName.Length(), 0u);
+}
+
+TEST_F(GetRuleTest, MultipleRulesCorrectIndex)
+{
+    const char* json =
+        "{ \"rules\": ["
+        "  { \"name\": \"first\",  \"match\": { \"type\": \"texture\" }, \"action\": \"assign_tag\", \"tag\": \"a\" },"
+        "  { \"name\": \"second\", \"match\": { \"type\": \"entity\" },  \"action\": \"assign_tag\", \"tag\": \"b\" },"
+        "  { \"name\": \"third\",  \"match\": { \"all\": true },         \"action\": \"assign_scope\", \"scope\": \"global\" }"
+        "] }";
+    ASSERT_TRUE(LoadRules(json));
+    ASSERT_EQ(engine.GetRuleCount(), 3u);
+
+    EXPECT_STREQ(engine.GetRule(0).mName.AsCStr(), "first");
+    EXPECT_STREQ(engine.GetRule(1).mName.AsCStr(), "second");
+    EXPECT_STREQ(engine.GetRule(2).mName.AsCStr(), "third");
 }
