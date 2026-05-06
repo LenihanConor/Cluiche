@@ -61,7 +61,7 @@ namespace Dia
 				RequestHandler handler;
 			};
 
-			static const unsigned int kMaxHandlers = 32;
+			static const unsigned int kMaxHandlers = 64;
 			Dia::Core::Containers::DynamicArrayC<EventEntry, kMaxHandlers> mEventHandlers;
 			Dia::Core::Containers::DynamicArrayC<RequestEntry, kMaxHandlers> mRequestHandlers;
 		};
