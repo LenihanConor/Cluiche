@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import click
-from pathlib import Path
 
 from dia_cli.utils.repo_root import find_repo_root
 from ._common_handler import run_asset_phases

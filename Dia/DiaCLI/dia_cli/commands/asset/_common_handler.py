@@ -29,15 +29,15 @@ def run_asset_phases(
 
     Returns exit code: 0 success, 1 asset failures, 2 config/IO error.
     """
-    # --- resolve output context ---
-    output_ctx = _get_output(ctx, repo_root)
-
     # --- load pipeline.toml target config ---
     try:
         target_cfg = load_asset_target_config(repo_root, target)
     except AssetConfigError as exc:
         click.echo(f"Error: {exc}", err=True)
         return 2
+
+    # --- resolve output context (after config so we have app_name) ---
+    output_ctx = _get_output(ctx, repo_root, app_name=target_cfg.app_name)
 
     # --- load catalogue manifest ---
     catalogue_path = (repo_root / target_cfg.catalogue_manifest).resolve()
@@ -102,9 +102,9 @@ def run_asset_phases(
     return run_result.exit_code
 
 
-def _get_output(ctx: click.Context, repo_root: Path):
+def _get_output(ctx: click.Context, repo_root: Path, app_name: str = "DiaCLI"):
     if ctx.obj is not None and hasattr(ctx.obj, "output") and ctx.obj.output is not None:
         return ctx.obj.output
     from dia_cli.utils.dia_output import OutputContext
-    log_dir = repo_root / "Cluiche" / "out" / "DiaCLI" / "logs"
+    log_dir = repo_root / "Cluiche" / "out" / app_name / "logs"
     return OutputContext(log_dir=log_dir)

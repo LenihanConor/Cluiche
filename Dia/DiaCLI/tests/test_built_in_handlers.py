@@ -131,6 +131,25 @@ def test_default_validate_no_pattern_no_warning(tmp_path):
     ctx.output.warn.assert_not_called()
 
 
+def test_default_validate_relative_source_path_resolved_via_source_root(tmp_path):
+    (tmp_path / "Raw").mkdir()
+    src = tmp_path / "Raw" / "hero.texture.png"
+    src.write_bytes(b"img")
+    ctx = _make_context(tmp_path)
+    record = _make_record("texture.hero", source_path="Raw/hero.texture.png")
+    handler = TextureHandler()
+    errors = handler.validate(record, ctx)
+    assert errors == []
+
+
+def test_default_validate_relative_path_missing_reports_error(tmp_path):
+    ctx = _make_context(tmp_path)
+    record = _make_record("texture.hero", source_path="Raw/missing.png")
+    errors = DefaultAssetHandler().validate(record, ctx)
+    assert len(errors) == 1
+    assert "not found" in errors[0].message
+
+
 # ---------------------------------------------------------------------------
 # DefaultAssetHandler — transform
 # ---------------------------------------------------------------------------

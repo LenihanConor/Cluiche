@@ -12,7 +12,7 @@ from .registry import AssetHandlerRegistry
 if TYPE_CHECKING:
     from .context import BuildContext
 
-_SYSTEM = "asset"
+_SYSTEM = "asset-pipeline"
 _VALID_PHASES = ("validate", "transform", "deploy")
 
 

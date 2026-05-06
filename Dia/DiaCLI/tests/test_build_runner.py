@@ -165,6 +165,19 @@ def test_orphaned_asset_included_with_warning():
     ctx.output.warn.assert_called_once()
 
 
+def test_stage_asset_included_when_one_of_multiple_stages_in_list():
+    catalogue = {
+        "assets": [
+            _make_stage_record("stage.menu", ["texture.bg"]),
+            _make_stage_record("stage.level1", ["texture.bg"]),
+            _make_record("texture.bg", scope="stage", stage_name="menu"),
+        ]
+    }
+    ctx = _make_context(catalogue, asset_stages=["stage.menu"])
+    runner = BuildRunner(AssetHandlerRegistry(), ctx)
+    assert runner._should_include_asset(catalogue["assets"][2]) is True
+
+
 # ---------------------------------------------------------------------------
 # BuildRunner.run — phase dispatch and exit codes
 # ---------------------------------------------------------------------------

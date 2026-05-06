@@ -169,7 +169,7 @@ def test_full_pipeline_round_trip(tmp_path):
     assert "config.hud" in stage["assets"]
 
     # NDJSON log file created
-    ndjson_path = log_dir / "asset" / "last-run.ndjson"
+    ndjson_path = log_dir / "asset-pipeline" / "last-run.ndjson"
     assert ndjson_path.exists(), "NDJSON log should be written"
     events = _read_ndjson(ndjson_path)
     assert len(events) > 0
@@ -223,7 +223,7 @@ def test_pipeline_with_validation_failure(tmp_path):
     assert not (deploy_root / "assets.runtime.json").exists()
 
     # NDJSON log shows failure event
-    ndjson_path = log_dir / "asset" / "last-run.ndjson"
+    ndjson_path = log_dir / "asset-pipeline" / "last-run.ndjson"
     events = _read_ndjson(ndjson_path)
     event_types = [e["event"] for e in events]
     assert "OnAssetFailed" in event_types
