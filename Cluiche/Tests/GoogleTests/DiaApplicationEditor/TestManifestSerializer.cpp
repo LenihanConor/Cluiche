@@ -409,3 +409,127 @@ TEST(ManifestSerializer, Serialize_Module_NoPhaseIds_NoPhasesKey)
 
     EXPECT_FALSE(outJson["processing_units"][0]["modules"][0].isMember("phases"));
 }
+
+// ==============================================================================
+// SerializeLocal Tests (save-flattening guard)
+// ==============================================================================
+
+TEST(ManifestSerializer, SerializeLocal_ExcludesImportedPUs)
+{
+    ApplicationManifest manifest;
+    manifest.version = 1;
+
+    ApplicationManifest::ProcessingUnitEntry localPU;
+    localPU.typeId = StringCRC("LocalPU");
+    localPU.instanceId = StringCRC("LocalPU");
+    localPU.frequencyHz = 60.0f;
+    manifest.processingUnits.Add(localPU);
+
+    ApplicationManifest::ProcessingUnitEntry importedPU;
+    importedPU.typeId = StringCRC("ImportedPU");
+    importedPU.instanceId = StringCRC("ImportedPU");
+    importedPU.frequencyHz = 30.0f;
+    importedPU.sourceManifestPath = "C:/Other/shared.diaapp";
+    manifest.processingUnits.Add(importedPU);
+
+    Json::Value outJson;
+    EXPECT_TRUE(ManifestSerializer::SerializeLocal(manifest, "C:/Game/main.diaapp", outJson));
+
+    ASSERT_EQ(outJson["processing_units"].size(), 1u);
+    EXPECT_STREQ(outJson["processing_units"][0]["instance_id"].asCString(), "LocalPU");
+}
+
+TEST(ManifestSerializer, SerializeLocal_IncludesPUWithMatchingSourcePath)
+{
+    ApplicationManifest manifest;
+    manifest.version = 1;
+
+    ApplicationManifest::ProcessingUnitEntry pu;
+    pu.typeId = StringCRC("MyPU");
+    pu.instanceId = StringCRC("MyPU");
+    pu.frequencyHz = 60.0f;
+    pu.sourceManifestPath = "C:/Game/main.diaapp";
+    manifest.processingUnits.Add(pu);
+
+    Json::Value outJson;
+    EXPECT_TRUE(ManifestSerializer::SerializeLocal(manifest, "C:/Game/main.diaapp", outJson));
+
+    EXPECT_EQ(outJson["processing_units"].size(), 1u);
+}
+
+TEST(ManifestSerializer, SerializeLocal_IncludesPUWithEmptySourcePath)
+{
+    ApplicationManifest manifest;
+    manifest.version = 1;
+
+    ApplicationManifest::ProcessingUnitEntry pu;
+    pu.typeId = StringCRC("NewPU");
+    pu.instanceId = StringCRC("NewPU");
+    pu.frequencyHz = 60.0f;
+    manifest.processingUnits.Add(pu);
+
+    Json::Value outJson;
+    EXPECT_TRUE(ManifestSerializer::SerializeLocal(manifest, "C:/Game/main.diaapp", outJson));
+
+    EXPECT_EQ(outJson["processing_units"].size(), 1u);
+}
+
+TEST(ManifestSerializer, SerializeLocal_PreservesImportsArray)
+{
+    ApplicationManifest manifest;
+    manifest.version = 1;
+
+    TypedImport import("shared/sim.diaapp", TypedImport::ImportType::kManifest);
+    manifest.imports.Add(import);
+
+    Json::Value outJson;
+    ManifestSerializer::SerializeLocal(manifest, "C:/Game/main.diaapp", outJson);
+
+    ASSERT_TRUE(outJson.isMember("imports"));
+    ASSERT_EQ(outJson["imports"].size(), 1u);
+    ASSERT_TRUE(outJson["imports"][0].isObject());
+    EXPECT_STREQ(outJson["imports"][0]["path"].asCString(), "shared/sim.diaapp");
+    EXPECT_STREQ(outJson["imports"][0]["type"].asCString(), "manifest");
+}
+
+TEST(ManifestSerializer, SerializeLocal_NullFilePath_IncludesAllPUs)
+{
+    ApplicationManifest manifest;
+    manifest.version = 1;
+
+    ApplicationManifest::ProcessingUnitEntry pu1;
+    pu1.typeId = StringCRC("PU1");
+    pu1.instanceId = StringCRC("PU1");
+    pu1.frequencyHz = 60.0f;
+    manifest.processingUnits.Add(pu1);
+
+    ApplicationManifest::ProcessingUnitEntry pu2;
+    pu2.typeId = StringCRC("PU2");
+    pu2.instanceId = StringCRC("PU2");
+    pu2.frequencyHz = 30.0f;
+    pu2.sourceManifestPath = "other.diaapp";
+    manifest.processingUnits.Add(pu2);
+
+    Json::Value outJson;
+    ManifestSerializer::SerializeLocal(manifest, nullptr, outJson);
+
+    EXPECT_EQ(outJson["processing_units"].size(), 2u);
+}
+
+TEST(ManifestSerializer, SerializeLocal_CaseInsensitivePath)
+{
+    ApplicationManifest manifest;
+    manifest.version = 1;
+
+    ApplicationManifest::ProcessingUnitEntry pu;
+    pu.typeId = StringCRC("PU1");
+    pu.instanceId = StringCRC("PU1");
+    pu.frequencyHz = 60.0f;
+    pu.sourceManifestPath = "C:/Game/Main.diaapp";
+    manifest.processingUnits.Add(pu);
+
+    Json::Value outJson;
+    ManifestSerializer::SerializeLocal(manifest, "c:/game/main.diaapp", outJson);
+
+    EXPECT_EQ(outJson["processing_units"].size(), 1u);
+}

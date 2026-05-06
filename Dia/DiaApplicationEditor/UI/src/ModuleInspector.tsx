@@ -45,11 +45,18 @@ export const ModuleInspector: React.FC = () => {
             setConfigText('{}');
         }
         setIsPending(false);
+        undoPushed.current = false;
     }, [selectedNode, manifest]);
+
+    const undoPushed = useRef(false);
 
     const applyConfig = useCallback((text: string, pu: ProcessingUnitData, mod: ModuleData) => {
         try {
             const parsed = JSON.parse(text);
+            if (!undoPushed.current) {
+                useManifestStore.getState().pushUndo('Edit module config');
+                undoPushed.current = true;
+            }
             sendToPlugin('module_config_changed', {
                 processing_unit: pu.instance_id,
                 module_id: mod.instance_id,

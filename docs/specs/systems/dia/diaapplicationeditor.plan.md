@@ -44,6 +44,18 @@ All features that work without a connected game.
 | 2.8 | **Module Config Editor** | Done | ModuleInspector.tsx (Form/JSON toggle, 500ms debounce); FormView.tsx (bool/number/string fields); jsonLinter.ts (CodeMirror lint); @uiw/react-codemirror; C++ HandleModuleConfigChanged; inspector panel shown in App.tsx when module node selected |
 | 2.9 | **File Conflict Detection** | Done | DiaCore::FileWatcher (polling, Update() called from OnUpdate); StartWatchingFile/StopWatchingFile; auto-reload if clean, conflict banner if dirty; HandleResolveConflict (keep_local/reload_disk); mIsSaving guard; ConflictBanner.tsx with side-by-side diff |
 
+### Phase 2b — Static Editing Enhancements
+Additional static editing features (no game connection required).
+
+| # | Task | Status | Notes |
+|---|------|--------|-------|
+| 2b.1 | **Undo/Redo** | Not Started | @docs/specs/features/dia/diaapplicationeditor/undo-redo.md — 8-entry snapshot stack; Ctrl+Z/Y; resets on view switch |
+| 2b.2 | **PU/Phase Inspector** | Not Started | @docs/specs/features/dia/diaapplicationeditor/pu-phase-inspector.md — reuse inspector panel; PU fields (frequency_hz, dedicated_thread, initial_phase dropdown); Phase fields (type_id, config, is-initial checkbox) |
+| 2b.3 | **Editable Lifecycle Grid** | Not Started | @docs/specs/features/dia/diaapplicationeditor/editable-lifecycle-grid.md — click cell to toggle module↔phase; instant apply; last-phase guard |
+| 2b.4 | **Import Management** | Not Started | @docs/specs/features/dia/diaapplicationeditor/import-management.md — resolve imports, show with badges, inline editing, multi-file save, add/remove imports, cycle detection |
+| 2b.5 | **Validation Navigation** | Not Started | @docs/specs/features/dia/diaapplicationeditor/validation-navigation.md — click error → select + scroll to node |
+| 2b.6 | **New Manifest** | Not Started | @docs/specs/features/dia/diaapplicationeditor/new-manifest.md — Ctrl+N blank manifest (1 PU, 1 Phase); Save As for untitled |
+
 ### Phase 3 — Live Debugging
 All features that require a WebSocket connection to a running game. Requires DiaWebSocket to be available.
 
@@ -70,6 +82,12 @@ All features that require a WebSocket connection to a running game. Requires Dia
 | Phase Transition Editor | 2.7 | Approved |
 | Module Config Editor | 2.8 | Approved |
 | File Conflict Detection | 2.9 | Approved |
+| Undo/Redo | 2b.1 | Approved |
+| PU/Phase Inspector | 2b.2 | Approved |
+| Editable Lifecycle Grid | 2b.3 | Approved |
+| Import Management | 2b.4 | Approved |
+| Validation Navigation | 2b.5 | Approved |
+| New Manifest | 2b.6 | Approved |
 | WebSocket Connection | 3.1 | Approved |
 | Runtime State Inspector | 3.2 | Approved |
 | Live Phase Visualization | 3.3 | Approved |

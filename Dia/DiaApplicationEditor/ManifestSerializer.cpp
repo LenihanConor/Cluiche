@@ -22,12 +22,55 @@ bool ManifestSerializer::Serialize(const ApplicationManifest& manifest, Json::Va
 		Json::Value& importsJson = outJson["imports"] = Json::Value(Json::arrayValue);
 		for (unsigned int i = 0; i < manifest.imports.Size(); ++i)
 		{
-			if (manifest.imports[i] != nullptr)
-				importsJson.append(manifest.imports[i]);
+			Json::Value entry;
+			entry["path"] = manifest.imports[i].path.AsCStr();
+			entry["type"] = (manifest.imports[i].type == Dia::Application::TypedImport::ImportType::kStage) ? "stage" : "manifest";
+			importsJson.append(entry);
 		}
 	}
 
 	return true;
+}
+
+bool ManifestSerializer::SerializeLocal(const ApplicationManifest& manifest, const char* localFilePath, Json::Value& outJson)
+{
+	outJson = Json::Value(Json::objectValue);
+	outJson["version"] = manifest.version;
+
+	if (manifest.imports.Size() > 0)
+	{
+		Json::Value& importsJson = outJson["imports"] = Json::Value(Json::arrayValue);
+		for (unsigned int i = 0; i < manifest.imports.Size(); ++i)
+		{
+			Json::Value entry;
+			entry["path"] = manifest.imports[i].path.AsCStr();
+			entry["type"] = (manifest.imports[i].type == Dia::Application::TypedImport::ImportType::kStage) ? "stage" : "manifest";
+			importsJson.append(entry);
+		}
+	}
+
+	Json::Value& pusJson = outJson["processing_units"] = Json::Value(Json::arrayValue);
+	for (unsigned int i = 0; i < manifest.processingUnits.Size(); ++i)
+	{
+		const auto& pu = manifest.processingUnits[i];
+		if (IsLocalEntry(pu.sourceManifestPath, localFilePath))
+		{
+			Json::Value puJson;
+			SerializeProcessingUnit(pu, puJson);
+			pusJson.append(puJson);
+		}
+	}
+
+	return true;
+}
+
+bool ManifestSerializer::IsLocalEntry(const Dia::Core::Containers::String256& sourceManifestPath, const char* localFilePath)
+{
+	if (sourceManifestPath.Length() == 0)
+		return true;
+	if (localFilePath == nullptr || localFilePath[0] == '\0')
+		return true;
+	return _stricmp(sourceManifestPath.AsCStr(), localFilePath) == 0;
 }
 
 void ManifestSerializer::SerializeProcessingUnit(const ApplicationManifest::ProcessingUnitEntry& pu, Json::Value& outJson)
@@ -36,6 +79,10 @@ void ManifestSerializer::SerializeProcessingUnit(const ApplicationManifest::Proc
 	outJson["instance_id"] = pu.instanceId.AsChar();
 	outJson["frequency_hz"] = pu.frequencyHz;
 	outJson["dedicated_thread"] = pu.dedicatedThread;
+	if (pu.root)
+		outJson["root"] = true;
+	if (pu.sourceManifestPath.Length() > 0)
+		outJson["_source"] = pu.sourceManifestPath.AsCStr();
 
 	if (pu.initialPhase != Dia::Core::StringCRC::kZero)
 		outJson["initial_phase"] = pu.initialPhase.AsChar();
@@ -73,6 +120,9 @@ void ManifestSerializer::SerializePhase(const ApplicationManifest::PhaseEntry& p
 {
 	outJson["type"] = phase.typeId.AsChar();
 	outJson["instance_id"] = phase.instanceId.AsChar();
+
+	if (phase.sourceManifestPath.Length() > 0)
+		outJson["_source"] = phase.sourceManifestPath.AsCStr();
 
 	if (phase.config != nullptr)
 		outJson["config"] = *phase.config;

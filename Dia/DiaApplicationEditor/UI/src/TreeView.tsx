@@ -3,6 +3,8 @@ import { Tree } from 'react-arborist';
 import type { NodeApi, NodeRendererProps } from 'react-arborist';
 import { TreeNodeRenderer } from './TreeNodeRenderer';
 import { useManifestStore } from './ManifestStore';
+import { useUndoStore } from './UndoStore';
+import type { ManifestData } from './types';
 
 export interface ManifestTreeNode {
     id: string;
@@ -12,27 +14,32 @@ export interface ManifestTreeNode {
     moduleCount?: number;
     configKeys?: string[];
     children?: ManifestTreeNode[];
+    source?: string;
 }
 
 interface ManifestData {
     processing_units: Array<{
         instance_id: string;
         type: string;
+        root?: boolean;
+        _source?: string;
         phases: Array<{
             instance_id: string;
             type: string;
+            _source?: string;
             modules?: Array<{ instance_id: string; type: string; config?: Record<string, unknown> }>;
         }>;
-        modules?: Array<{ instance_id: string; type: string; config?: Record<string, unknown> }>;
+        modules?: Array<{ instance_id: string; type: string; config?: Record<string, unknown>; phases?: string[] }>;
     }>;
 }
 
-function buildTree(manifest: ManifestData): ManifestTreeNode[] {
-    return manifest.processing_units.map(pu => ({
+function buildPuNode(pu: ManifestData['processing_units'][number]): ManifestTreeNode {
+    return {
         id: pu.instance_id,
         name: pu.instance_id,
         nodeType: 'processing_unit' as const,
         typeName: pu.type,
+        source: pu._source,
         children: pu.phases.map(phase => {
             const phaseModules = (pu.modules ?? []).filter(m =>
                 Array.isArray((m as unknown as { phases?: string[] }).phases) &&
@@ -43,6 +50,7 @@ function buildTree(manifest: ManifestData): ManifestTreeNode[] {
                 name: phase.instance_id,
                 nodeType: 'phase' as const,
                 typeName: phase.type,
+                source: phase._source,
                 moduleCount: phaseModules.length,
                 children: phaseModules.map(mod => ({
                     id: `${pu.instance_id}_${phase.instance_id}_${mod.instance_id}`,
@@ -53,7 +61,21 @@ function buildTree(manifest: ManifestData): ManifestTreeNode[] {
                 })),
             };
         }),
-    }));
+    };
+}
+
+function buildTree(manifest: ManifestData): ManifestTreeNode[] {
+    const rootPu = manifest.processing_units.find(pu => pu.root);
+    const childPus = manifest.processing_units.filter(pu => !pu.root);
+
+    if (!rootPu) {
+        return manifest.processing_units.map(buildPuNode);
+    }
+
+    const rootNode = buildPuNode(rootPu);
+    const childNodes = childPus.map(buildPuNode);
+    rootNode.children = [...childNodes, ...(rootNode.children ?? [])];
+    return [rootNode];
 }
 
 function filterTree(nodes: ManifestTreeNode[], term: string): ManifestTreeNode[] {
@@ -109,6 +131,7 @@ export const TreeView: React.FC = () => {
 
     const handleMove = useCallback(({ dragIds, parentId, index }: { dragIds: string[]; parentId: string | null; index: number }) => {
         if (dragIds.length === 0) return;
+        useManifestStore.getState().pushUndo('Reorder node');
         sendToPlugin('reorder_node', { node_id: dragIds[0], new_parent: parentId, new_index: index });
     }, []);
 
@@ -121,18 +144,21 @@ export const TreeView: React.FC = () => {
 
     const handleAddPhase = useCallback(() => {
         if (!contextMenu) return;
+        useManifestStore.getState().pushUndo('Add phase');
         sendToPlugin('add_node', { parent_id: contextMenu.node.id, node_type: 'phase' });
         closeMenu();
     }, [contextMenu, closeMenu]);
 
     const handleAddModule = useCallback(() => {
         if (!contextMenu) return;
+        useManifestStore.getState().pushUndo('Add module');
         sendToPlugin('add_node', { parent_id: contextMenu.node.id, node_type: 'module' });
         closeMenu();
     }, [contextMenu, closeMenu]);
 
     const handleRemove = useCallback(() => {
         if (!contextMenu) return;
+        useManifestStore.getState().pushUndo('Remove node');
         sendToPlugin('remove_node', { node_id: contextMenu.node.id });
         closeMenu();
     }, [contextMenu, closeMenu]);

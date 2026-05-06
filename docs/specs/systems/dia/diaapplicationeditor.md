@@ -494,6 +494,12 @@ Features within the DiaApplicationEditor system (create with `/spec-feature`):
 | Type Discovery | Hybrid: query game registry + static fallback for available types | @docs/specs/features/dia/diaapplicationeditor/type-discovery.md | Approved |
 | Real-time Validation | Debounced 500ms validation with inline annotations + error panel | @docs/specs/features/dia/diaapplicationeditor/real-time-validation.md | Approved |
 | File Conflict Detection | Filesystem watcher + non-modal banner for external changes | @docs/specs/features/dia/diaapplicationeditor/file-conflict-detection.md | Approved |
+| Undo/Redo | Ctrl+Z/Y with 8-entry snapshot history, resets on view switch | @docs/specs/features/dia/diaapplicationeditor/undo-redo.md | Approved |
+| PU/Phase Inspector | Reuses inspector panel for PU and Phase property editing (frequency, initial_phase, etc.) | @docs/specs/features/dia/diaapplicationeditor/pu-phase-inspector.md | Approved |
+| Editable Lifecycle Grid | Click cells to toggle module↔phase associations; instant apply | @docs/specs/features/dia/diaapplicationeditor/editable-lifecycle-grid.md | Approved |
+| Import Management | Visualize, edit inline, add/remove manifest imports with provenance badges | @docs/specs/features/dia/diaapplicationeditor/import-management.md | Approved |
+| Validation Navigation | Click validation error → select and scroll to offending node | @docs/specs/features/dia/diaapplicationeditor/validation-navigation.md | Approved |
+| New Manifest | Ctrl+N creates blank manifest (1 PU, 1 Phase); Save triggers Save As | @docs/specs/features/dia/diaapplicationeditor/new-manifest.md | Approved |
 
 ### Live Debugging Features
 | Feature | Description | Spec | Status |
@@ -522,7 +528,7 @@ Features within the DiaApplicationEditor system (create with `/spec-feature`):
 
 ## Status
 
-`Approved` - All 15 features complete with comprehensive design (Decisions 43-60), ready for implementation
+`Approved` - All 21 features complete with comprehensive design, ready for implementation
 
 **Plan:** @docs/specs/systems/dia/diaapplicationeditor.plan.md
 

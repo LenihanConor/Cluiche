@@ -24,11 +24,13 @@ export interface ProcessingUnitData {
     type: string;
     frequency_hz?: number;
     dedicated_thread?: boolean;
+    root?: boolean;
     initial_phase?: string;
     phases: PhaseData[];
     transitions: TransitionData[];
     modules: ModuleData[];
     config?: Record<string, unknown>;
+    _source?: string;
 }
 
 export interface ManifestData {

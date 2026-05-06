@@ -1,5 +1,7 @@
 import React from 'react';
 import { useManifestStore } from './ManifestStore';
+import { useUndoStore } from './UndoStore';
+import { performUndo, performRedo, performNew } from './undoActions';
 
 function sendToPlugin(type: string, data: object = {}): void {
     window.parent.postMessage({ __diaFromFrame: true, payload: { type, data } }, '*');
@@ -17,7 +19,10 @@ export const Toolbar: React.FC = () => {
     const isDirty     = useManifestStore(s => s.isDirty);
     const currentView = useManifestStore(s => s.currentView);
     const setView     = useManifestStore(s => s.setView);
+    const canUndo     = useUndoStore(s => s.canUndo);
+    const canRedo     = useUndoStore(s => s.canRedo);
 
+    const handleNew  = () => performNew(isDirty);
     const handleOpen = () => sendToPlugin('open_manifest');
     const handleSave = () => sendToPlugin('save_manifest');
 
@@ -28,6 +33,13 @@ export const Toolbar: React.FC = () => {
                 {isDirty && <span style={styles.dirty}> *</span>}
             </span>
             <div style={styles.actions}>
+                <button
+                    style={{ ...styles.btn, ...styles.btnActive }}
+                    onClick={handleNew}
+                    title="New Manifest (Ctrl+N)"
+                >
+                    New
+                </button>
                 <button
                     style={{ ...styles.btn, ...styles.btnActive }}
                     onClick={handleOpen}
@@ -42,6 +54,25 @@ export const Toolbar: React.FC = () => {
                     title="Save (Ctrl+S)"
                 >
                     Save
+                </button>
+
+                <div style={styles.divider} />
+
+                <button
+                    style={{ ...styles.btn, ...(canUndo ? styles.btnActive : styles.btnDisabled) }}
+                    onClick={performUndo}
+                    disabled={!canUndo}
+                    title="Undo (Ctrl+Z)"
+                >
+                    Undo
+                </button>
+                <button
+                    style={{ ...styles.btn, ...(canRedo ? styles.btnActive : styles.btnDisabled) }}
+                    onClick={performRedo}
+                    disabled={!canRedo}
+                    title="Redo (Ctrl+Y)"
+                >
+                    Redo
                 </button>
 
                 <div style={styles.divider} />

@@ -8,6 +8,7 @@
 #include <DiaApplication/Manifest/ApplicationManifestLoader.h>
 #include <DiaApplication/Manifest/ManifestComposer.h>
 #include <DiaApplication/Manifest/ManifestValidator.h>
+#include <DiaApplication/Manifest/DiaGameManifest.h>
 #include <DiaApplication/TypeRegistry/ApplicationTypeRegistry.h>
 
 #include <DiaCore/Json/external/json/json.h>
@@ -174,11 +175,11 @@ void DiaApplicationEditor::OpenManifest(const char* path)
 	{
 		OPENFILENAMEA ofn = {};
 		ofn.lStructSize  = sizeof(ofn);
-		ofn.lpstrFilter  = "Dia App Manifest (*.diaapp)\0*.diaapp\0All Files (*.*)\0*.*\0";
+		ofn.lpstrFilter  = "Dia Game Project (*.diagame)\0*.diagame\0Dia App Manifest (*.diaapp)\0*.diaapp\0All Files (*.*)\0*.*\0";
 		ofn.lpstrFile    = dialogPath;
 		ofn.nMaxFile     = MAX_PATH;
 		ofn.Flags        = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
-		ofn.lpstrDefExt  = "diaapp";
+		ofn.lpstrDefExt  = "diagame";
 		if (!GetOpenFileNameA(&ofn))
 			return;
 		path = dialogPath;
@@ -191,12 +192,23 @@ void DiaApplicationEditor::OpenManifest(const char* path)
 		return;
 	}
 
-	// Load via ApplicationManifestLoader (empty registry — type validation deferred to Phase 3)
-	ApplicationTypeRegistry registry;
-	ApplicationManifestLoader loader(registry);
-
 	ApplicationManifest newManifest;
-	ManifestValidationResult result = loader.LoadFromFile(path, newManifest);
+	ManifestValidationResult result;
+
+	// Detect .diagame extension — route to ComposeFromGameFile
+	const char* ext = strrchr(path, '.');
+	if (ext != nullptr && _stricmp(ext, ".diagame") == 0)
+	{
+		ManifestComposer composer;
+		DiaGameManifest gameManifest;
+		result = composer.ComposeFromGameFile(path, newManifest, gameManifest);
+	}
+	else
+	{
+		ApplicationTypeRegistry registry;
+		ApplicationManifestLoader loader(registry);
+		result = loader.LoadFromFile(path, newManifest);
+	}
 
 	// kUnknownType is non-fatal in the editor — type registry is empty offline;
 	// live type validation is deferred to Phase 3. Any other error means the file
@@ -207,6 +219,9 @@ void DiaApplicationEditor::OpenManifest(const char* path)
 		NotifyUI("file_error", "Failed to parse manifest");
 		return;
 	}
+
+	if (newManifest.processingUnits.Size() == 0)
+		NotifyUI("warning", "Manifest has no processing units — check imports");
 
 	mData->manifest = newManifest;
 	strncpy_s(mData->filePath, sizeof(mData->filePath), path, _TRUNCATE);
@@ -1209,7 +1224,7 @@ void DiaApplicationEditor::HandleAddImport(const Json::Value& data)
 	// Check for duplicates
 	for (unsigned int i = 0; i < mData->manifest.imports.Size(); ++i)
 	{
-		if (mData->manifest.imports[i] != nullptr && strcmp(mData->manifest.imports[i], path) == 0)
+		if (strcmp(mData->manifest.imports[i].path.AsCStr(), path) == 0)
 		{
 			NotifyUI("import_error", "This file is already imported");
 			return;
@@ -1248,11 +1263,9 @@ void DiaApplicationEditor::HandleAddImport(const Json::Value& data)
 		}
 	}
 
-	// Add the import path string
-	size_t pathLen = strlen(path) + 1;
-	char* heapPath = new char[pathLen];
-	strcpy_s(heapPath, pathLen, path);
-	mData->manifest.imports.Add(heapPath);
+	// Add the typed import
+	TypedImport newImport(path, TypedImport::ImportType::kManifest);
+	mData->manifest.imports.Add(newImport);
 
 	// Merge the resolved PUs into the existing manifest (preserving local edits)
 	for (unsigned int i = 0; i < targetManifest.processingUnits.Size(); ++i)
@@ -1332,9 +1345,8 @@ void DiaApplicationEditor::HandleRemoveImport(const Json::Value& data)
 
 	for (unsigned int i = 0; i < mData->manifest.imports.Size(); ++i)
 	{
-		if (mData->manifest.imports[i] != nullptr && strcmp(mData->manifest.imports[i], path) == 0)
+		if (strcmp(mData->manifest.imports[i].path.AsCStr(), path) == 0)
 		{
-			delete[] mData->manifest.imports[i];
 			mData->manifest.imports.RemoveAt(i);
 			found = true;
 			break;

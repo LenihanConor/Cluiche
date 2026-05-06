@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useManifestStore } from './ManifestStore';
+import type { ManifestData } from './types';
 
 export interface ValidationError {
     message: string;
@@ -13,8 +14,41 @@ export interface ValidationResult {
     errors: ValidationError[];
 }
 
+export function resolveContextToNodeId(manifest: ManifestData, context: string): string | null {
+    if (!context) return null;
+
+    const puMatch = context.match(/processing_units\[(\d+)\]/);
+    if (!puMatch) {
+        const pu = manifest.processing_units.find(p => p.instance_id === context);
+        if (pu) return pu.instance_id;
+        return null;
+    }
+
+    const puIdx = parseInt(puMatch[1]);
+    const pu = manifest.processing_units[puIdx];
+    if (!pu) return null;
+
+    const phaseMatch = context.match(/phases\[(\d+)\]/);
+    if (!phaseMatch) return pu.instance_id;
+
+    const phaseIdx = parseInt(phaseMatch[1]);
+    const phase = pu.phases[phaseIdx];
+    if (!phase) return pu.instance_id;
+
+    const moduleMatch = context.match(/modules\[(\d+)\]/);
+    if (!moduleMatch) return `${pu.instance_id}_${phase.instance_id}`;
+
+    const modIdx = parseInt(moduleMatch[1]);
+    const mod = pu.modules[modIdx];
+    if (!mod) return `${pu.instance_id}_${phase.instance_id}`;
+
+    const modPhase = mod.phases?.[0] ?? phase.instance_id;
+    return `${pu.instance_id}_${modPhase}_${mod.instance_id}`;
+}
+
 export const ValidationPanel: React.FC = () => {
     const validationResult = useManifestStore(s => s.validationResult);
+    const manifest         = useManifestStore(s => s.manifest) as ManifestData | null;
     const setSelectedNode  = useManifestStore(s => s.setSelectedNode);
 
     if (!validationResult) return null;
@@ -33,7 +67,9 @@ export const ValidationPanel: React.FC = () => {
     const warningCount = errors.filter(e => e.severity === 'warning').length;
 
     const handleClick = (error: ValidationError) => {
-        if (error.context) setSelectedNode(error.context);
+        if (!error.context || !manifest) return;
+        const nodeId = resolveContextToNodeId(manifest, error.context);
+        if (nodeId) setSelectedNode(nodeId);
     };
 
     return (
@@ -51,6 +87,8 @@ export const ValidationPanel: React.FC = () => {
                         key={i}
                         style={{ ...styles.item, borderLeft: `3px solid ${e.severity === 'error' ? '#f44336' : '#ff9800'}` }}
                         onClick={() => handleClick(e)}
+                        onMouseEnter={ev => { (ev.currentTarget as HTMLElement).style.background = '#2a2d3a'; }}
+                        onMouseLeave={ev => { (ev.currentTarget as HTMLElement).style.background = ''; }}
                     >
                         <span style={styles.icon}>{e.severity === 'error' ? '✕' : '!'}</span>
                         <div style={styles.content}>

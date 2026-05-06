@@ -143,6 +143,57 @@ describe('TreeView – selection', () => {
     });
 });
 
+// ── hierarchical PU nesting ──────────────────────────────────────────────────
+
+const MULTI_PU_MANIFEST = {
+    version: 1,
+    processing_units: [
+        {
+            instance_id: 'MainPU',
+            type: 'MainProcessingUnit',
+            root: true,
+            phases: [{ instance_id: 'InitPhase', type: 'InitPhase' }],
+            modules: [],
+            transitions: [],
+        },
+        {
+            instance_id: 'RenderPU',
+            type: 'RenderProcessingUnit',
+            _source: 'cluiche_render.diaapp',
+            phases: [{ instance_id: 'RenderPhase', type: 'RenderPhase' }],
+            modules: [],
+            transitions: [],
+        },
+        {
+            instance_id: 'SimPU',
+            type: 'SimProcessingUnit',
+            _source: 'cluiche_sim.diaapp',
+            phases: [{ instance_id: 'SimPhase', type: 'SimPhase' }],
+            modules: [],
+            transitions: [],
+        },
+    ],
+};
+
+describe('TreeView – hierarchical PU nesting', () => {
+    beforeEach(() => { useManifestStore.setState({ manifest: MULTI_PU_MANIFEST }); });
+
+    it('nests non-root PUs under the root PU', () => {
+        render(<TreeView />);
+        // Root PU is top-level
+        expect(screen.getByTestId('node-MainPU')).toBeInTheDocument();
+        // Child PUs appear as children of root (rendered at second level)
+        expect(screen.getByTestId('node-RenderPU')).toBeInTheDocument();
+        expect(screen.getByTestId('node-SimPU')).toBeInTheDocument();
+    });
+
+    it('child PU phases are still rendered', () => {
+        render(<TreeView />);
+        expect(screen.getByTestId('node-RenderPU_RenderPhase')).toBeInTheDocument();
+        expect(screen.getByTestId('node-SimPU_SimPhase')).toBeInTheDocument();
+    });
+});
+
 // ── empty/null manifest ───────────────────────────────────────────────────────
 
 describe('TreeView – no manifest', () => {
