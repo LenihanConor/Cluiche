@@ -1,6 +1,7 @@
 #pragma once
 
 #include "DiaCore/Strings/String256.h"
+#include "DiaCore/Strings/String512.h"
 #include "DiaCore/CRC/StringCRC.h"
 
 namespace Dia
@@ -35,6 +36,10 @@ namespace Dia
 			// Concatenate two path strings with proper separator handling
 			// Normalizes slashes and ensures single separator between parts
 			static void AppendStrings(const String& str1, const String& str2, String& outString);
+
+			// Resolve a relative path against a base directory into an absolute path.
+			// Handles "." (base dir itself), "./" prefix (strip and append), and bare relative paths.
+			static void ResolveRelative(const char* baseDir, const char* relativePath, Containers::String512& outPath);
 
 			// Normalize path string: converts backslashes to forward slashes, removes trailing slash
 			static void CleanPathString(String& outString);

@@ -75,6 +75,22 @@ namespace Dia
 		const Path::Alias Path::GetAlias()const { return mAlias; }
 		const Path::String Path::GetPath()const { return mPath; }
 
+		void Path::ResolveRelative(const char* baseDir, const char* relativePath, Containers::String512& outPath)
+		{
+			if (relativePath[0] == '.' && relativePath[1] == '/')
+			{
+				outPath = Containers::String512("%s%s", baseDir, relativePath + 2);
+			}
+			else if (relativePath[0] == '.' && relativePath[1] == '\0')
+			{
+				outPath = Containers::String512("%s", baseDir);
+			}
+			else
+			{
+				outPath = Containers::String512("%s%s", baseDir, relativePath);
+			}
+		}
+
 		// Replace all backslashes with forward slashes
 		// Loops until all backslashes are converted
 		void Path::ReplaceAllBackSlashWithForwardSlash(Path::String& outString)

@@ -57,21 +57,6 @@ namespace
 		}
 	}
 
-	void ResolvePath(const char* baseDir, const char* relativePath, Dia::Core::Containers::String512& outPath)
-	{
-		if (relativePath[0] == '.' && relativePath[1] == '/')
-		{
-			outPath = Dia::Core::Containers::String512("%s%s", baseDir, relativePath + 2);
-		}
-		else if (relativePath[0] == '.' && relativePath[1] == '\0')
-		{
-			outPath = Dia::Core::Containers::String512("%s", baseDir);
-		}
-		else
-		{
-			outPath = Dia::Core::Containers::String512("%s%s", baseDir, relativePath);
-		}
-	}
 }
 
 namespace Cluiche
@@ -121,7 +106,7 @@ namespace Cluiche
 							if (entry.isMember("type") && entry["type"].asString() == "stage" && entry.isMember("path"))
 							{
 								Dia::Core::Containers::String512 resolvedStagePath;
-								ResolvePath(diagameDir, entry["path"].asCString(), resolvedStagePath);
+								Dia::Core::Path::ResolveRelative(diagameDir, entry["path"].asCString(), resolvedStagePath);
 
 								// Read the .diastage to get the stage name for the ID
 								char stageFileBuffer[kMaxFileSize];
@@ -169,7 +154,7 @@ namespace Cluiche
 
 								PathAliasEntry entry;
 								entry.mAlias = Dia::Core::Containers::String32(aliasName.c_str());
-								ResolvePath(diagameDir2, relativePath, entry.mResolvedPath);
+								Dia::Core::Path::ResolveRelative(diagameDir2, relativePath, entry.mResolvedPath);
 
 								mGlobalAliases.Add(entry);
 							}
@@ -244,7 +229,7 @@ namespace Cluiche
 
 				PathAliasEntry entry;
 				entry.mAlias = Dia::Core::Containers::String32(aliasName.c_str());
-				ResolvePath(stageDir, relativePath, entry.mResolvedPath);
+				Dia::Core::Path::ResolveRelative(stageDir, relativePath, entry.mResolvedPath);
 
 				mStageAliases.Add(entry);
 
