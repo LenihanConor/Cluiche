@@ -1,9 +1,12 @@
 #pragma once
 
 #include <DiaApplication/Manifest/ApplicationManifest.h>
+#include <DiaApplication/Manifest/DiaGameManifest.h>
 #include <DiaApplication/Manifest/ManifestValidator.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/CRC/StringCRC.h>
+
+namespace Json { class Value; }
 
 namespace Dia
 {
@@ -56,6 +59,9 @@ namespace Dia
 				char selectedNodeId[256];
 				bool isDirty;
 				bool hasManifest;
+				bool isDiaGameFile;
+				DiaGameManifest gameManifest;
+				Json::Value* gameFileRawConfig;
 
 				ValidationResult validationResult;
 				TypeCache typeCache;
@@ -63,9 +69,16 @@ namespace Dia
 				ManifestEditorData()
 					: isDirty(false)
 					, hasManifest(false)
+					, isDiaGameFile(false)
+					, gameFileRawConfig(nullptr)
 				{
 					filePath[0] = '\0';
 					selectedNodeId[0] = '\0';
+				}
+
+				~ManifestEditorData()
+				{
+					delete gameFileRawConfig;
 				}
 			};
 		}

@@ -26,6 +26,7 @@ namespace Dia
 			private:
 				static bool IsLocalEntry(const Dia::Core::Containers::String256& sourceManifestPath, const char* localFilePath);
 				static void SerializeProcessingUnit(const ApplicationManifest::ProcessingUnitEntry& pu, Json::Value& outJson);
+				static void SerializeProcessingUnitLocal(const ApplicationManifest::ProcessingUnitEntry& pu, const char* localFilePath, Json::Value& outJson);
 				static void SerializePhase(const ApplicationManifest::PhaseEntry& phase, Json::Value& outJson);
 				static void SerializeModule(const ApplicationManifest::ModuleEntry& module, Json::Value& outJson);
 			};

@@ -198,14 +198,16 @@ void DiaApplicationEditor::OpenManifest(const char* path)
 
 	ApplicationManifest newManifest;
 	ManifestValidationResult result;
+	bool isDiaGameFile = false;
+	DiaGameManifest gameManifest;
 
 	// Detect .diagame extension — route to ComposeFromGameFile
 	const char* ext = strrchr(path, '.');
 	if (ext != nullptr && _stricmp(ext, ".diagame") == 0)
 	{
 		ManifestComposer composer;
-		DiaGameManifest gameManifest;
 		result = composer.ComposeFromGameFile(path, newManifest, gameManifest);
+		isDiaGameFile = true;
 	}
 	else
 	{
@@ -231,6 +233,24 @@ void DiaApplicationEditor::OpenManifest(const char* path)
 	strncpy_s(mData->filePath, sizeof(mData->filePath), path, _TRUNCATE);
 	mData->isDirty = false;
 	mData->hasManifest = true;
+	mData->isDiaGameFile = isDiaGameFile;
+	mData->gameManifest = gameManifest;
+
+	// Preserve raw .diagame config (may contain fields not in DiaGameConfig struct)
+	delete mData->gameFileRawConfig;
+	mData->gameFileRawConfig = nullptr;
+	if (isDiaGameFile)
+	{
+		std::ifstream rawFile(path);
+		if (rawFile.is_open())
+		{
+			Json::Value rawRoot;
+			Json::Reader rawReader;
+			if (rawReader.parse(rawFile, rawRoot) && rawRoot.isMember("config"))
+				mData->gameFileRawConfig = new Json::Value(rawRoot["config"]);
+			rawFile.close();
+		}
+	}
 
 	// Serialize manifest to JSON and push to UI so TreeView can render it
 	Json::Value manifestJson;
@@ -395,6 +415,9 @@ const ValidationResult& DiaApplicationEditor::GetValidationResult() const
 
 bool DiaApplicationEditor::WriteManifestToDisk(const char* path)
 {
+	if (mData->isDiaGameFile)
+		return WriteDiaGameToDisk(path);
+
 	// Create .bak backup if file already exists
 	std::ifstream existingFile(path);
 	if (existingFile.good())
@@ -424,6 +447,137 @@ bool DiaApplicationEditor::WriteManifestToDisk(const char* path)
 	Json::StyledWriter writer;
 	file << writer.write(json);
 	file.close();
+
+	return true;
+}
+
+bool DiaApplicationEditor::WriteDiaGameToDisk(const char* path)
+{
+	// For .diagame files, write changes back to the source .diaapp files
+	// Group PUs by their sourceManifestPath and serialize each group to its file
+
+	// Collect unique source paths
+	struct SourceGroup
+	{
+		char path[512];
+		Dia::Core::Containers::DynamicArrayC<unsigned int, 4> puIndices;
+	};
+	Dia::Core::Containers::DynamicArrayC<SourceGroup, 8> groups;
+
+	for (unsigned int i = 0; i < mData->manifest.processingUnits.Size(); ++i)
+	{
+		const auto& pu = mData->manifest.processingUnits[i];
+		const char* sourcePath = pu.sourceManifestPath.AsCStr();
+		if (sourcePath == nullptr || sourcePath[0] == '\0')
+			continue;
+
+		// Find existing group
+		int groupIdx = -1;
+		for (unsigned int g = 0; g < groups.Size(); ++g)
+		{
+			if (_stricmp(groups[g].path, sourcePath) == 0)
+			{
+				groupIdx = static_cast<int>(g);
+				break;
+			}
+		}
+
+		if (groupIdx < 0)
+		{
+			groups.AddDefault();
+			SourceGroup& newGroup = groups[groups.Size() - 1];
+			strncpy_s(newGroup.path, sizeof(newGroup.path), sourcePath, _TRUNCATE);
+			newGroup.puIndices.Add(i);
+		}
+		else
+		{
+			groups[static_cast<unsigned int>(groupIdx)].puIndices.Add(i);
+		}
+	}
+
+	// Write each source .diaapp file with its PUs
+	Json::StyledWriter writer;
+	for (unsigned int g = 0; g < groups.Size(); ++g)
+	{
+		const SourceGroup& group = groups[g];
+
+		// Back up the source file
+		std::ifstream existingFile(group.path);
+		if (existingFile.good())
+		{
+			existingFile.close();
+			char backupPath[512 + 4];
+			snprintf(backupPath, sizeof(backupPath), "%s.bak", group.path);
+			std::rename(group.path, backupPath);
+		}
+
+		// Serialize PUs belonging to this source file
+		Json::Value json;
+		if (!ManifestSerializer::SerializeLocal(mData->manifest, group.path, json))
+		{
+			NotifyUI("file_error", "Failed to serialize manifest for source file");
+			return false;
+		}
+
+		std::ofstream file(group.path);
+		if (!file.is_open())
+		{
+			char errMsg[600];
+			snprintf(errMsg, sizeof(errMsg), "Cannot write to: %s", group.path);
+			NotifyUI("file_error", errMsg);
+			return false;
+		}
+
+		file << writer.write(json);
+		file.close();
+	}
+
+	// Now write the .diagame file itself (preserving its schema)
+	std::ifstream existingGameFile(path);
+	if (existingGameFile.good())
+	{
+		existingGameFile.close();
+		char backupPath[512 + 4];
+		snprintf(backupPath, sizeof(backupPath), "%s.bak", path);
+		std::rename(path, backupPath);
+	}
+
+	Json::Value gameJson(Json::objectValue);
+	gameJson["name"] = mData->gameManifest.name.AsCStr();
+	gameJson["version"] = mData->gameManifest.version.AsCStr();
+
+	Json::Value importsJson(Json::arrayValue);
+	for (unsigned int i = 0; i < mData->gameManifest.imports.Size(); ++i)
+	{
+		Json::Value entry;
+		entry["path"] = mData->gameManifest.imports[i].path.AsCStr();
+		entry["type"] = (mData->gameManifest.imports[i].type == TypedImport::ImportType::kStage)
+			? "stage" : "manifest";
+		importsJson.append(entry);
+	}
+	gameJson["imports"] = importsJson;
+
+	if (mData->gameFileRawConfig != nullptr)
+		gameJson["config"] = *mData->gameFileRawConfig;
+	else
+	{
+		Json::Value configJson(Json::objectValue);
+		if (mData->gameManifest.config.defaultLevel.Length() > 0)
+			configJson["default_level"] = mData->gameManifest.config.defaultLevel.AsCStr();
+		if (mData->gameManifest.config.assetRoot.Length() > 0)
+			configJson["asset_root"] = mData->gameManifest.config.assetRoot.AsCStr();
+		gameJson["config"] = configJson;
+	}
+
+	std::ofstream gameFile(path);
+	if (!gameFile.is_open())
+	{
+		NotifyUI("file_error", "Cannot open .diagame file for writing");
+		return false;
+	}
+
+	gameFile << writer.write(gameJson);
+	gameFile.close();
 
 	return true;
 }

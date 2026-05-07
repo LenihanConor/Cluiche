@@ -70,3 +70,9 @@ namespace Cluiche
 		}
 	}
 }
+
+#include <DiaApplication/TypeRegistry/RegistrationMacros.h>
+namespace { using _DummyStageMainFEPhase = Cluiche::DummyStage::MainFEPhase; }
+DIA_REGISTER_PHASE(_DummyStageMainFEPhase) {
+	return new Cluiche::DummyStage::MainFEPhase(pu);
+}

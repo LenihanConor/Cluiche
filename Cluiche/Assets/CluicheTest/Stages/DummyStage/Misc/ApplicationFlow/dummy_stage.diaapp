@@ -7,84 +7,64 @@
   },
   "stage_phases": [
     {
-      "type_id": "DummyStage::MainLoadPhase",
-      "instance_id": "DummyStage::MainLoadPhase",
+      "type_id": "DummyProject::MainLoadPhase",
+      "instance_id": "DummyProject::MainLoadPhase",
       "target_processing_unit": "MainProcessingUnit"
     },
     {
-      "type_id": "DummyStage::MainFEPhase",
-      "instance_id": "DummyStage::MainFEPhase",
+      "type_id": "DummyProject::MainFEPhase",
+      "instance_id": "DummyProject::MainFEPhase",
       "target_processing_unit": "MainProcessingUnit"
     }
   ],
   "stage_transitions": [
-    { "from": "MainBootStrapPhase", "to": "DummyStage::MainLoadPhase", "target_processing_unit": "MainProcessingUnit" },
-    { "from": "DummyStage::MainLoadPhase", "to": "DummyStage::MainFEPhase", "target_processing_unit": "MainProcessingUnit" },
-    { "from": "DummyStage::MainFEPhase", "to": "MainBootStrapPhase", "target_processing_unit": "MainProcessingUnit" }
+    { "from": "MainBootStrapPhase", "to": "DummyProject::MainLoadPhase", "target_processing_unit": "MainProcessingUnit" },
+    { "from": "DummyProject::MainLoadPhase", "to": "DummyProject::MainFEPhase", "target_processing_unit": "MainProcessingUnit" },
+    { "from": "DummyProject::MainFEPhase", "to": "MainBootStrapPhase", "target_processing_unit": "MainProcessingUnit" }
   ],
   "stage_modules": [
     {
-          "type_id": "LoggerModule",
-          "instance_id": "LoggerModule",
-          "phase_ids": ["MainBootPhase", "MainBootStrapPhase"],
-          "dependencies": [],
-          "config": {
-            "default_level": "info",
-            "sinks": [
-              {
-                "type": "DebugOutput",
-                "level_threshold": "info"
-              }
-            ]
-          }
-        },
-        {
-          "type_id": "Main::AssetServiceModule",
-          "instance_id": "Main::AssetServiceModule",
-          "phase_ids": ["MainBootPhase", "MainBootStrapPhase"],
-          "dependencies": ["LoggerModule"],
-          "config": {}
-        },
-        {
-          "type_id": "Main::KernelModule",
-          "instance_id": "Main::KernelModule",
-          "phase_ids": ["MainBootPhase", "MainBootStrapPhase"],
-          "dependencies": ["LoggerModule"],
-          "config": {}
-        },
-        {
-          "type_id": "Main::LevelRegistryModule",
-          "instance_id": "Main::LevelRegistryModule",
-          "phase_ids": ["MainBootStrapPhase"],
-          "dependencies": [],
-          "config": {}
-        },
-        {
-          "type_id": "Main::UIModule",
-          "instance_id": "Main::UIModule",
-          "phase_ids": ["MainBootStrapPhase"],
-          "dependencies": ["Main::KernelModule"],
-          "config": {}
-        },
-        {
-          "type_id": "MetricsCollectorModule",
-          "instance_id": "MetricsCollectorModule",
-          "phase_ids": ["MainBootPhase", "MainBootStrapPhase"],
-          "dependencies": [],
-          "config": {}
-        },
-        {
-          "type_id": "DebugServerModule",
-          "instance_id": "DebugServerModule",
-          "phase_ids": ["MainBootPhase", "MainBootStrapPhase"],
-          "dependencies": ["MetricsCollectorModule"],
-          "config": {
-            "port": 9002,
-            "auto_start": true,
-            "game_name": "CluicheTest",
-            "game_build": "dev-0.1"
-          }
-        }
-      ],
+      "type_id": "LoggerModule",
+      "instance_id": "LoggerModule",
+      "phase_ids": ["DummyProject::MainLoadPhase", "DummyProject::MainFEPhase"],
+      "target_processing_unit": "MainProcessingUnit"
+    },
+    {
+      "type_id": "Main::AssetServiceModule",
+      "instance_id": "Main::AssetServiceModule",
+      "phase_ids": ["DummyProject::MainLoadPhase", "DummyProject::MainFEPhase"],
+      "target_processing_unit": "MainProcessingUnit"
+    },
+    {
+      "type_id": "Main::KernelModule",
+      "instance_id": "Main::KernelModule",
+      "phase_ids": ["DummyProject::MainLoadPhase", "DummyProject::MainFEPhase"],
+      "target_processing_unit": "MainProcessingUnit"
+    },
+    {
+      "type_id": "Main::LevelRegistryModule",
+      "instance_id": "Main::LevelRegistryModule",
+      "phase_ids": ["DummyProject::MainLoadPhase", "DummyProject::MainFEPhase"],
+      "target_processing_unit": "MainProcessingUnit"
+    },
+    {
+      "type_id": "Main::UIModule",
+      "instance_id": "Main::UIModule",
+      "phase_ids": ["DummyProject::MainFEPhase"],
+      "target_processing_unit": "MainProcessingUnit"
+    },
+    {
+      "type_id": "MetricsCollectorModule",
+      "instance_id": "MetricsCollectorModule",
+      "phase_ids": ["DummyProject::MainLoadPhase", "DummyProject::MainFEPhase"],
+      "target_processing_unit": "MainProcessingUnit"
+    },
+    {
+      "type_id": "DebugServerModule",
+      "instance_id": "DebugServerModule",
+      "phase_ids": ["DummyProject::MainLoadPhase", "DummyProject::MainFEPhase"],
+      "target_processing_unit": "MainProcessingUnit"
+    }
+  ],
   "processing_units": []
 }

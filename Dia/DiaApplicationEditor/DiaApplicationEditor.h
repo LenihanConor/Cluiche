@@ -58,6 +58,7 @@ namespace Dia
 				bool mIsSaving;
 
 				bool WriteManifestToDisk(const char* path);
+				bool WriteDiaGameToDisk(const char* path);
 				void NotifyUI(const char* topic, const char* message = nullptr);
 				void NotifyManifestUpdated();
 				void LoadStaticTypeList();

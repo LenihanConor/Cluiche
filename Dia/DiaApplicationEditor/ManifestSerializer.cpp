@@ -56,7 +56,7 @@ bool ManifestSerializer::SerializeLocal(const ApplicationManifest& manifest, con
 		if (IsLocalEntry(pu.sourceManifestPath, localFilePath))
 		{
 			Json::Value puJson;
-			SerializeProcessingUnit(pu, puJson);
+			SerializeProcessingUnitLocal(pu, localFilePath, puJson);
 			pusJson.append(puJson);
 		}
 	}
@@ -71,6 +71,55 @@ bool ManifestSerializer::IsLocalEntry(const Dia::Core::Containers::String256& so
 	if (localFilePath == nullptr || localFilePath[0] == '\0')
 		return true;
 	return _stricmp(sourceManifestPath.AsCStr(), localFilePath) == 0;
+}
+
+void ManifestSerializer::SerializeProcessingUnitLocal(const ApplicationManifest::ProcessingUnitEntry& pu, const char* localFilePath, Json::Value& outJson)
+{
+	outJson["type"] = pu.typeId.AsChar();
+	outJson["instance_id"] = pu.instanceId.AsChar();
+	outJson["frequency_hz"] = pu.frequencyHz;
+	outJson["dedicated_thread"] = pu.dedicatedThread;
+	if (pu.root)
+		outJson["root"] = true;
+	if (pu.sourceManifestPath.Length() > 0)
+		outJson["_source"] = pu.sourceManifestPath.AsCStr();
+
+	if (pu.initialPhase != Dia::Core::StringCRC::kZero)
+		outJson["initial_phase"] = pu.initialPhase.AsChar();
+
+	if (pu.config != nullptr)
+		outJson["config"] = *pu.config;
+
+	Json::Value& phasesJson = outJson["phases"] = Json::Value(Json::arrayValue);
+	for (unsigned int i = 0; i < pu.phases.Size(); ++i)
+	{
+		if (IsLocalEntry(pu.phases[i].sourceManifestPath, localFilePath))
+		{
+			Json::Value phaseJson;
+			SerializePhase(pu.phases[i], phaseJson);
+			phasesJson.append(phaseJson);
+		}
+	}
+
+	Json::Value& transitionsJson = outJson["transitions"] = Json::Value(Json::arrayValue);
+	for (unsigned int i = 0; i < pu.transitions.Size(); ++i)
+	{
+		Json::Value tJson;
+		tJson["from"] = pu.transitions[i].fromPhase.AsChar();
+		tJson["to"] = pu.transitions[i].toPhase.AsChar();
+		transitionsJson.append(tJson);
+	}
+
+	Json::Value& modulesJson = outJson["modules"] = Json::Value(Json::arrayValue);
+	for (unsigned int i = 0; i < pu.modules.Size(); ++i)
+	{
+		if (IsLocalEntry(pu.modules[i].sourceManifestPath, localFilePath))
+		{
+			Json::Value moduleJson;
+			SerializeModule(pu.modules[i], moduleJson);
+			modulesJson.append(moduleJson);
+		}
+	}
 }
 
 void ManifestSerializer::SerializeProcessingUnit(const ApplicationManifest::ProcessingUnitEntry& pu, Json::Value& outJson)

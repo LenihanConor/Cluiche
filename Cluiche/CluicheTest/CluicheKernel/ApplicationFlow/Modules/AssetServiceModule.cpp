@@ -117,14 +117,22 @@ namespace Cluiche
 									Json::Value stageRoot;
 									if (reader.parse(stageFileBuffer, stageRoot, false) && stageRoot.isMember("name"))
 									{
-										Dia::Core::Containers::String512 stageIdStr("stage.%s",
-											stageRoot["name"].asCString());
-										// Lowercase the stage name for the ID
-										for (unsigned int c = 6; c < stageIdStr.Length(); ++c)
+										const char* rawName = stageRoot["name"].asCString();
+										// Convert PascalCase to snake_case: "DummyStage" → "stage.dummy_stage"
+										Dia::Core::Containers::String512 stageIdStr("stage.");
+										for (unsigned int c = 0; rawName[c] != '\0'; ++c)
 										{
-											char ch = stageIdStr.AsCStr()[c];
+											char ch = rawName[c];
 											if (ch >= 'A' && ch <= 'Z')
-												const_cast<char*>(stageIdStr.AsCStr())[c] = ch + 32;
+											{
+												if (c > 0)
+													stageIdStr.Append('_');
+												stageIdStr.Append(static_cast<char>(ch + 32));
+											}
+											else
+											{
+												stageIdStr.Append(ch);
+											}
 										}
 
 										StagePathEntry stageEntry;

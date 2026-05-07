@@ -629,23 +629,67 @@ namespace Dia
 					}
 					if (puIdx < 0) continue;
 
-					ApplicationManifest::ModuleEntry newModule;
-					newModule.typeId = Dia::Core::StringCRC(sm["type_id"].asCString());
-					newModule.instanceId = Dia::Core::StringCRC(sm["instance_id"].asCString());
-					newModule.sourceManifestPath = sourceFilePath;
+					auto& targetPU = target.processingUnits[static_cast<unsigned int>(puIdx)];
+					Dia::Core::StringCRC moduleInstanceId(sm["instance_id"].asCString());
 
-					if (sm.isMember("phase_ids") && sm["phase_ids"].isArray())
+					// Check if module already exists in target PU — if so, extend its phaseIds
+					int existingModIdx = -1;
+					for (unsigned int m = 0; m < targetPU.modules.Size(); ++m)
 					{
-						const Json::Value& ids = sm["phase_ids"];
-						for (unsigned int j = 0; j < ids.size(); ++j)
-							if (ids[j].isString())
-								newModule.phaseIds.Add(Dia::Core::StringCRC(ids[j].asCString()));
+						if (targetPU.modules[m].instanceId == moduleInstanceId)
+						{
+							existingModIdx = static_cast<int>(m);
+							break;
+						}
 					}
 
-					if (sm.isMember("config"))
-						newModule.config = new Json::Value(sm["config"]);
+					if (existingModIdx >= 0)
+					{
+						// Merge: append stage phase_ids to existing module
+						auto& existingMod = targetPU.modules[static_cast<unsigned int>(existingModIdx)];
+						if (sm.isMember("phase_ids") && sm["phase_ids"].isArray())
+						{
+							const Json::Value& ids = sm["phase_ids"];
+							for (unsigned int j = 0; j < ids.size(); ++j)
+							{
+								if (!ids[j].isString()) continue;
+								Dia::Core::StringCRC phaseId(ids[j].asCString());
+								// Avoid duplicate phase_ids
+								bool alreadyPresent = false;
+								for (unsigned int k = 0; k < existingMod.phaseIds.Size(); ++k)
+								{
+									if (existingMod.phaseIds[k] == phaseId)
+									{
+										alreadyPresent = true;
+										break;
+									}
+								}
+								if (!alreadyPresent)
+									existingMod.phaseIds.Add(phaseId);
+							}
+						}
+					}
+					else
+					{
+						// New module — add it to the PU
+						ApplicationManifest::ModuleEntry newModule;
+						newModule.typeId = Dia::Core::StringCRC(sm["type_id"].asCString());
+						newModule.instanceId = moduleInstanceId;
+						newModule.sourceManifestPath = sourceFilePath;
 
-					target.processingUnits[static_cast<unsigned int>(puIdx)].modules.Add(newModule);
+						if (sm.isMember("phase_ids") && sm["phase_ids"].isArray())
+						{
+							const Json::Value& ids = sm["phase_ids"];
+							for (unsigned int j = 0; j < ids.size(); ++j)
+								if (ids[j].isString())
+									newModule.phaseIds.Add(Dia::Core::StringCRC(ids[j].asCString()));
+						}
+
+						if (sm.isMember("config"))
+							newModule.config = new Json::Value(sm["config"]);
+
+						targetPU.modules.Add(newModule);
+					}
 				}
 			}
 

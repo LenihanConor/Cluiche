@@ -41,3 +41,9 @@ namespace Cluiche
 		}
 	}
 }
+
+#include <DiaApplication/TypeRegistry/RegistrationMacros.h>
+namespace { using _DummyStageMainLoadPhase = Cluiche::DummyStage::MainLoadPhase; }
+DIA_REGISTER_PHASE(_DummyStageMainLoadPhase) {
+	return new Cluiche::DummyStage::MainLoadPhase(pu);
+}

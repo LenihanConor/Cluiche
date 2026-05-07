@@ -236,54 +236,49 @@ namespace Dia
 		{
 			DIA_ASSERT(diagamePath != nullptr, "Game file path cannot be null");
 
+			// Compose the full manifest including stages — this extends module phaseIds
+			// so that modules are wired to stage phases at instantiation time.
+			ManifestComposer composer;
+			ApplicationManifest manifest;
 			DiaGameManifest gameManifest;
-			outResult = DiaGameManifestLoader::LoadGameFile(diagamePath, gameManifest);
+			outResult = composer.ComposeFromGameFile(diagamePath, manifest, gameManifest);
 			if (outResult != ManifestValidationResult::kSuccess)
 			{
-				DIA_LOG_ERROR("Application", "Failed to parse .diagame file: %s", diagamePath);
+				DIA_LOG_ERROR("Application", "Failed to compose .diagame file: %s", diagamePath);
 				return nullptr;
 			}
 
-			// Find the first manifest-type import to use as root application manifest
-			const char* rootManifestRelPath = nullptr;
-			for (unsigned int i = 0; i < gameManifest.imports.Size(); ++i)
+			if (manifest.processingUnits.Size() == 0)
 			{
-				if (gameManifest.imports[i].type == TypedImport::ImportType::kManifest)
-				{
-					rootManifestRelPath = gameManifest.imports[i].path.AsCStr();
-					break;
-				}
-			}
-
-			if (rootManifestRelPath == nullptr)
-			{
-				DIA_LOG_ERROR("Application", "Game file contains no manifest imports: %s", diagamePath);
+				DIA_LOG_ERROR("Application", "Composed manifest has no processing units: %s", diagamePath);
 				outResult = ManifestValidationResult::kMissingRequiredField;
 				return nullptr;
 			}
 
-			// Resolve manifest path relative to .diagame location
-			const char* lastSlash = nullptr;
-			for (const char* p = diagamePath; *p; ++p)
-				if (*p == '/' || *p == '\\')
-					lastSlash = p;
-
-			char resolvedPath[512];
-			if (lastSlash != nullptr)
+			// Find the root PU
+			unsigned int rootIndex = 0;
+			for (unsigned int i = 0; i < manifest.processingUnits.Size(); ++i)
 			{
-				unsigned int dirLen = static_cast<unsigned int>(lastSlash - diagamePath) + 1;
-				if (dirLen >= sizeof(resolvedPath)) dirLen = sizeof(resolvedPath) - 1;
-				memcpy(resolvedPath, diagamePath, dirLen);
-				resolvedPath[dirLen] = '\0';
-				strncat(resolvedPath, rootManifestRelPath, sizeof(resolvedPath) - dirLen - 1);
-			}
-			else
-			{
-				strncpy(resolvedPath, rootManifestRelPath, sizeof(resolvedPath) - 1);
-				resolvedPath[sizeof(resolvedPath) - 1] = '\0';
+				if (manifest.processingUnits[i].root)
+				{
+					rootIndex = i;
+					break;
+				}
 			}
 
-			return LoadApplication(registry, resolvedPath, outResult);
+			ApplicationManifestLoader loader(registry);
+			ProcessingUnit* pu = loader.Instantiate(manifest.processingUnits[rootIndex]);
+			if (!pu)
+			{
+				DIA_LOG_ERROR("Application", "Failed to instantiate ProcessingUnit from composed manifest: %s", diagamePath);
+				outResult = ManifestValidationResult::kUnknownType;
+				return nullptr;
+			}
+
+			pu->Initialize();
+
+			DIA_LOG_INFO("Application", "Successfully loaded application from .diagame: %s", diagamePath);
+			return pu;
 		}
 
 		// -----------------------------------------------------------------------------
