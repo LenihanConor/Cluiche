@@ -10,6 +10,7 @@
 #include <DiaApplication/Loader/ApplicationLoader.h>
 #include <DiaApplication/TypeRegistry/ApplicationTypeRegistry.h>
 #include <DiaApplication/Metrics/MetricsCollectorModule.h>
+#include <DiaCore/Memory/UniquePtr.h>
 
 namespace Cluiche
 {
@@ -18,16 +19,10 @@ namespace Cluiche
 	MainProcessingUnit::MainProcessingUnit(const Dia::Core::StringCRC& instanceId, float hz)
 		: Dia::Application::ProcessingUnit(instanceId, hz)
 		, mRenderThread(nullptr)
-		, mRenderingPU(nullptr)
 		, mSimThread(nullptr)
+		, mRenderingPU(nullptr)
 		, mSimPU(nullptr)
 	{
-	}
-
-	MainProcessingUnit::~MainProcessingUnit()
-	{
-		delete mRenderingPU;
-		delete mSimPU;
 	}
 
 	Cluiche::MainProcessingUnit* MainProcessingUnit::GetMainPU()
@@ -49,10 +44,14 @@ namespace Cluiche
 	{
 		auto* kernel = GetModule<Cluiche::Main::KernelModule>();
 
-		// Load and start the render processing unit from manifest
+		// Load render PU from manifest, add to tree for ownership
 		{
-			mRenderingPU = static_cast<Cluiche::RenderProcessingUnit*>(
+			auto* rawRenderPU = static_cast<Cluiche::RenderProcessingUnit*>(
 				Dia::Application::ApplicationLoader::LoadApplication(*GetTypeRegistry(), "Data/Manifests/cluiche_render.diaapp"));
+
+			mRenderingPU = rawRenderPU;
+			Dia::Core::UniquePtr<Dia::Application::ProcessingUnit> owned(rawRenderPU);
+			AddChildProcessingUnit(std::move(owned));
 
 			RenderProcessingUnit::StartData data;
 			data.mRunning = &(kernel->mRunning);
@@ -65,12 +64,16 @@ namespace Cluiche
 			mRenderThread = DIA_NEW(std::thread(std::ref(*mRenderingPU)));
 		}
 
-		// Load and start the sim processing unit from manifest
+		// Load sim PU from manifest, add to tree for ownership
 		{
 			auto* ui = GetModule<Cluiche::Main::UIModule>();
 
-			mSimPU = static_cast<Cluiche::SimProcessingUnit*>(
+			auto* rawSimPU = static_cast<Cluiche::SimProcessingUnit*>(
 				Dia::Application::ApplicationLoader::LoadApplication(*GetTypeRegistry(), "Data/Manifests/cluiche_sim.diaapp"));
+
+			mSimPU = rawSimPU;
+			Dia::Core::UniquePtr<Dia::Application::ProcessingUnit> owned(rawSimPU);
+			AddChildProcessingUnit(std::move(owned));
 
 			SimProcessingUnit::StartData data;
 			data.mRunning = &(kernel->mRunning);

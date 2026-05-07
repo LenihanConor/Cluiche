@@ -60,6 +60,7 @@ namespace Dia
 				float frequencyHz;                  // Update frequency (-1 = unlimited)
 				bool dedicatedThread;               // Run on dedicated thread?
 				bool root;                          // True for the single tree root PU
+				Dia::Core::StringCRC parentInstanceId;  // Parent PU instance ID (empty = root or child of root)
 				Json::Value* config;                // Configuration (owned by this entry)
 				Dia::Core::Containers::String256 sourceManifestPath;  // Which .diaapp file this entry came from
 

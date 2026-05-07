@@ -9,7 +9,7 @@
 | System | DiaApplication | @docs/specs/systems/dia/diaapplication.md |
 | Feature | **DiaGame File Format and Typed Imports** | (this document) |
 
-**Status:** `Approved`
+**Status:** `Done`
 
 **Depends on:** @docs/specs/features/dia/diaapplication/manifest-imports.md (Phase A — import resolution)
 **Supersedes (partial):** The import format in @docs/specs/features/dia/diaapplication/stage-manifests.md — flat string imports replaced by typed import objects; `.diastage` wrapper introduced.

@@ -9,7 +9,7 @@
 | System | DiaApplication | @docs/specs/systems/dia/diaapplication.md |
 | Feature | **Stage Manifests** | (this document) |
 
-**Status:** `Approved`
+**Status:** `Done`
 
 **Research:** @docs/research/diappl_flow_tree/summary.md (Phase C)
 **Depends on:** @docs/specs/features/dia/diaapplication/manifest-imports.md (Phase A — import resolution used to link stage manifests)

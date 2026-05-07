@@ -410,6 +410,12 @@
     <ClCompile Include="Application\TestManifestImports.cpp">
       <Filter>Application</Filter>
     </ClCompile>
+    <ClCompile Include="Application\TestPUTree.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\TestPUTreeIntegration.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
     <ClCompile Include="Application\TestDiaGameFormat.cpp">
       <Filter>Application</Filter>
     </ClCompile>

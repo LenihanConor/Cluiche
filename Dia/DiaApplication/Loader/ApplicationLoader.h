@@ -51,6 +51,13 @@ namespace Dia
 				const char* manifestPath,
 				ProcessingUnit* (*fallbackFactory)());
 
+			// Builds full PU tree from merged manifest.
+			// Returns the root PU which owns all children.
+			// Exactly one PU entry must have root == true.
+			static ProcessingUnit* LoadApplicationTree(ApplicationTypeRegistry& registry,
+													   const char* manifestPath,
+													   ManifestValidationResult& outResult);
+
 			// Load application from a .diagame project file
 			// Resolves typed imports (manifest + stage) and returns root PU
 			static ProcessingUnit* LoadFromGameFile(ApplicationTypeRegistry& registry,

@@ -121,6 +121,113 @@ namespace Dia
 		}
 
 		// -----------------------------------------------------------------------------
+		// LoadApplicationTree
+		// -----------------------------------------------------------------------------
+		ProcessingUnit* ApplicationLoader::LoadApplicationTree(ApplicationTypeRegistry& registry,
+															   const char* manifestPath,
+															   ManifestValidationResult& outResult)
+		{
+			DIA_ASSERT(manifestPath != nullptr, "Manifest path cannot be null");
+
+			ApplicationManifestLoader loader(registry);
+
+			ApplicationManifest manifest;
+			outResult = loader.LoadFromFile(manifestPath, manifest);
+
+			if (outResult != ManifestValidationResult::kSuccess)
+			{
+				DIA_LOG_ERROR("Application", "LoadApplicationTree: Failed to load manifest: %s", manifestPath);
+				return nullptr;
+			}
+
+			if (manifest.processingUnits.Size() == 0)
+			{
+				DIA_LOG_ERROR("Application", "LoadApplicationTree: No processing units in manifest: %s", manifestPath);
+				outResult = ManifestValidationResult::kMissingRequiredField;
+				return nullptr;
+			}
+
+			// Validate exactly one root PU
+			int rootIndex = -1;
+			int rootCount = 0;
+			for (unsigned int i = 0; i < manifest.processingUnits.Size(); ++i)
+			{
+				if (manifest.processingUnits[i].root)
+				{
+					rootIndex = static_cast<int>(i);
+					++rootCount;
+				}
+			}
+
+			if (rootCount == 0)
+			{
+				DIA_LOG_ERROR("Application", "LoadApplicationTree: No root PU declared in manifest: %s", manifestPath);
+				outResult = ManifestValidationResult::kMissingRequiredField;
+				return nullptr;
+			}
+
+			if (rootCount > 1)
+			{
+				DIA_LOG_ERROR("Application", "LoadApplicationTree: Multiple root PUs declared in manifest: %s", manifestPath);
+				outResult = ManifestValidationResult::kDuplicateInstanceId;
+				return nullptr;
+			}
+
+			// Instantiate all PUs
+			Dia::Core::Containers::DynamicArrayC<ProcessingUnit*, 4> instantiatedPUs;
+			for (unsigned int i = 0; i < manifest.processingUnits.Size(); ++i)
+			{
+				ProcessingUnit* pu = loader.Instantiate(manifest.processingUnits[i]);
+				if (!pu)
+				{
+					DIA_LOG_ERROR("Application", "LoadApplicationTree: Failed to instantiate PU index %u", i);
+					// Clean up already-created PUs
+					for (unsigned int j = 0; j < instantiatedPUs.Size(); ++j)
+						delete instantiatedPUs[j];
+					outResult = ManifestValidationResult::kUnknownType;
+					return nullptr;
+				}
+				instantiatedPUs.Add(pu);
+			}
+
+			ProcessingUnit* rootPU = instantiatedPUs[static_cast<unsigned int>(rootIndex)];
+
+			// Build parent-child relationships
+			for (unsigned int i = 0; i < manifest.processingUnits.Size(); ++i)
+			{
+				if (static_cast<int>(i) == rootIndex)
+					continue;
+
+				const auto& entry = manifest.processingUnits[i];
+				ProcessingUnit* childPU = instantiatedPUs[i];
+
+				ProcessingUnit* parentPU = nullptr;
+				if (entry.parentInstanceId != Dia::Core::StringCRC::kZero)
+				{
+					parentPU = rootPU->FindProcessingUnitInTree(entry.parentInstanceId);
+				}
+
+				if (parentPU == nullptr)
+					parentPU = rootPU;
+
+				Dia::Core::UniquePtr<ProcessingUnit> owned(childPU);
+				if (!parentPU->AddChildProcessingUnit(std::move(owned)))
+				{
+					DIA_LOG_ERROR("Application", "LoadApplicationTree: Failed to add child PU '%s' to parent",
+						entry.instanceId.AsChar());
+					delete rootPU;
+					outResult = ManifestValidationResult::kDuplicateInstanceId;
+					return nullptr;
+				}
+			}
+
+			rootPU->Initialize();
+
+			DIA_LOG_INFO("Application", "Successfully loaded application tree from manifest: %s", manifestPath);
+			return rootPU;
+		}
+
+		// -----------------------------------------------------------------------------
 		// LoadFromGameFile
 		// -----------------------------------------------------------------------------
 		ProcessingUnit* ApplicationLoader::LoadFromGameFile(ApplicationTypeRegistry& registry,

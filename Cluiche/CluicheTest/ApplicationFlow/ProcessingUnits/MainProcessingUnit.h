@@ -13,7 +13,6 @@ namespace Cluiche
 		static const Dia::Core::StringCRC kTypeId;
 
 		MainProcessingUnit(const Dia::Core::StringCRC& instanceId, float hz);
-		~MainProcessingUnit();
 
 		Cluiche::MainProcessingUnit* GetMainPU();
 		Cluiche::RenderProcessingUnit* GetRenderingPU();
@@ -28,9 +27,10 @@ namespace Cluiche
 		virtual bool FlaggedToStopUpdating()const override final;
 
 		std::thread* mRenderThread;
-		Cluiche::RenderProcessingUnit* mRenderingPU;
-
 		std::thread* mSimThread;
+
+		// Non-owning pointers for typed access (ownership via PU tree)
+		Cluiche::RenderProcessingUnit* mRenderingPU;
 		Cluiche::SimProcessingUnit* mSimPU;
 	};
 }

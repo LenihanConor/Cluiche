@@ -205,6 +205,8 @@
     <ClCompile Include="Application\TestApplicationTypeRegistry.cpp" />
     <ClCompile Include="Application\TestManifestLoader.cpp" />
     <ClCompile Include="Application\TestManifestImports.cpp" />
+    <ClCompile Include="Application\TestPUTree.cpp" />
+    <ClCompile Include="Application\TestPUTreeIntegration.cpp" />
     <ClCompile Include="Application\TestDiaGameFormat.cpp" />
     <ClCompile Include="Application\TestMessageBus.cpp" />
     <ClCompile Include="Application\TestApplicationLifecycle.cpp" />

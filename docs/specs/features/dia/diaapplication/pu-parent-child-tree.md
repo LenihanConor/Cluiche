@@ -9,8 +9,9 @@
 | System | DiaApplication | @docs/specs/systems/dia/diaapplication.md |
 | Feature | **PU Parent-Child Tree** | (this document) |
 
-**Status:** `Approved`
+**Status:** `Done`
 
+**Plan:** @docs/specs/features/dia/diaapplication/pu-parent-child-tree.plan.md
 **Research:** @docs/research/diappl_flow_tree/summary.md (Phase B)
 **Depends on:** @docs/specs/features/dia/diaapplication/manifest-imports.md (Phase A — merged manifests provide the PU entries that build the tree)
 

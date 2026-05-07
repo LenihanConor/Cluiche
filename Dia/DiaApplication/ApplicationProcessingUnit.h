@@ -22,6 +22,7 @@
 #include "DiaApplication/ApplicationStateObject.h"
 
 #include <chrono>
+#include <thread>
 
 #include <DiaCore/Core/EnumClass.h>
 #include <DiaCore/Containers/HashTables/HashTable.h>
@@ -69,6 +70,7 @@ namespace Dia
 			typedef Dia::Core::Containers::HashTable<Dia::Core::StringCRC, ProcessingUnit*, Dia::Core::StringCRCHashFunctor> ProcessingUnitTable;
 
 			ProcessingUnit(const Dia::Core::StringCRC& uniqueId, float hz = -1.0f, unsigned int initialModuleMapSize = 8, unsigned int initialPhaseMapSize = 8);
+			virtual ~ProcessingUnit();
 
 			void Initialize();
 			
@@ -150,6 +152,24 @@ namespace Dia
 			HotReloadManager* GetHotReloadManager();
 			const HotReloadManager* GetHotReloadManager() const;
 
+			// === PU Tree API ===
+
+			bool AddChildProcessingUnit(Dia::Core::UniquePtr<ProcessingUnit> child);
+			bool RemoveChildProcessingUnit(const Dia::Core::StringCRC& childId);
+
+			ProcessingUnit* GetParent();
+			const ProcessingUnit* GetParent() const;
+
+			ProcessingUnit* FindChildProcessingUnit(const Dia::Core::StringCRC& childId);
+			const ProcessingUnit* FindChildProcessingUnit(const Dia::Core::StringCRC& childId) const;
+
+			const ProcessingUnitTable& GetChildren() const;
+
+			bool IsRoot() const;
+
+			ProcessingUnit* FindProcessingUnitInTree(const Dia::Core::StringCRC& id);
+			const ProcessingUnit* FindProcessingUnitInTree(const Dia::Core::StringCRC& id) const;
+
 			// Serialization support - exports current phase/module topology
 			virtual void SerializeTopology(Json::Value& out) const;
 			virtual bool DeserializeTopology(const Json::Value& in);
@@ -225,6 +245,21 @@ namespace Dia
 
 			// Set by ApplicationManifestLoader after construction via friend access
 			ApplicationTypeRegistry* mTypeRegistry = nullptr;
+
+			// PU Tree members
+			ProcessingUnit* mParent = nullptr;
+			ProcessingUnitTable mChildPUs;
+			std::vector<Dia::Core::UniquePtr<ProcessingUnit>> mOwnedChildPUs;
+
+			struct ManagedChildThread
+			{
+				ProcessingUnit* pu;
+				std::thread* thread;
+			};
+			std::vector<ManagedChildThread> mManagedChildThreads;
+			std::atomic<bool> mTreeStopRequested{false};
+
+			static const unsigned int kMaxTreeDepth = 8;
 		};
 
 		////////////////////////////////////////////////////////////////////////////////

@@ -36,12 +36,31 @@ namespace Dia
 			, mMetricsCollector(nullptr)
 			, mFrameTimingActive(false)
 			, mHotReloadManager(nullptr)
+			, mParent(nullptr)
+			, mChildPUs(4, 8)
 		{
 			if (hz != -1.0f)
 			{
 				EnableThreadLimiting(hz);
 			}
 			mErrorHistory.reserve(100);  // Reserve space for last 100 errors
+		}
+
+		//---------------------------------------------------------------------------------------------------------
+		ProcessingUnit::~ProcessingUnit()
+		{
+			// Destroy children bottom-up (vector destruction is back-to-front via clear)
+			// Clear children in reverse order for bottom-up teardown
+			while (!mOwnedChildPUs.empty())
+			{
+				mOwnedChildPUs.pop_back();
+			}
+
+			if (mHotReloadManager != nullptr)
+			{
+				delete mHotReloadManager;
+				mHotReloadManager = nullptr;
+			}
 		}
 
 		//---------------------------------------------------------------------------------------------------------
@@ -286,6 +305,8 @@ namespace Dia
 		//---------------------------------------------------------------------------------------------------------
 		StateObject::OpertionResponse ProcessingUnit::DoStart(const IStartData* startData)
 		{
+			mTreeStopRequested.store(false, std::memory_order_release);
+
 			Phase* currentPhase = mCurrentPhase.load(std::memory_order_acquire);
 			DIA_ASSERT(currentPhase, "For Processing Unit %s Current Phase is NULL, cannot start", GetUniqueId().AsChar());
 
@@ -297,6 +318,20 @@ namespace Dia
 			}
 
 			PostPhaseStart(startData);
+
+			// Auto-start child PUs that haven't been manually started
+			for (unsigned int i = 0; i < mChildPUs.Size(); ++i)
+			{
+				ProcessingUnit* child = mChildPUs.GetItemByIndex(i);
+				if (child->HasStarted())
+					continue;
+
+				child->Initialize();
+				child->Start(nullptr);
+
+				std::thread* childThread = new std::thread(std::ref(*child));
+				mManagedChildThreads.push_back({child, childThread});
+			}
 
 			// TODO: Currently only support immediate starts
 			return StateObject::OpertionResponse::kImmediate;
@@ -316,7 +351,7 @@ namespace Dia
 
 			auto lastFrameStart = std::chrono::high_resolution_clock::now();
 
-			while (!FlaggedToStopUpdating())
+			while (!FlaggedToStopUpdating() && !mTreeStopRequested.load(std::memory_order_acquire))
 			{
 				if (mEnableThreadLimiter)
 					mThreadLimiter.Start();
@@ -389,6 +424,29 @@ namespace Dia
 			Phase* currentPhase = mCurrentPhase.load(std::memory_order_acquire);
 			DIA_ASSERT(currentPhase, "For Processing Unit %s Current Phase is NULL, cannot stop", GetUniqueId().AsChar());
 
+			// Signal only auto-managed children to exit their update loops
+			for (auto& entry : mManagedChildThreads)
+			{
+				entry.pu->mTreeStopRequested.store(true, std::memory_order_release);
+			}
+
+			// Join auto-managed child threads (reverse order for bottom-up teardown)
+			for (int i = static_cast<int>(mManagedChildThreads.size()) - 1; i >= 0; --i)
+			{
+				if (mManagedChildThreads[i].thread && mManagedChildThreads[i].thread->joinable())
+				{
+					mManagedChildThreads[i].thread->join();
+				}
+				delete mManagedChildThreads[i].thread;
+			}
+
+			// Stop auto-managed child PUs (after threads have exited)
+			for (auto& entry : mManagedChildThreads)
+			{
+				entry.pu->Stop();
+			}
+			mManagedChildThreads.clear();
+
 			PrePhaseStop();
 
 			if (currentPhase != nullptr)
@@ -444,19 +502,27 @@ namespace Dia
 		//---------------------------------------------------------------------------------------------------------
 		void ProcessingUnit::ReportError(const ErrorInfo& error)
 		{
-			std::lock_guard<std::mutex> lock(mErrorMutex);
-
-			// Add to history (keep last 100 errors)
-			mErrorHistory.push_back(error);
-			if (mErrorHistory.size() > 100)
 			{
-				mErrorHistory.erase(mErrorHistory.begin());
+				std::lock_guard<std::mutex> lock(mErrorMutex);
+
+				// Add to history (keep last 100 errors)
+				mErrorHistory.push_back(error);
+				if (mErrorHistory.size() > 100)
+				{
+					mErrorHistory.erase(mErrorHistory.begin());
+				}
+
+				// Call user callback if set
+				if (mErrorCallback != nullptr)
+				{
+					mErrorCallback(error);
+				}
 			}
 
-			// Call user callback if set
-			if (mErrorCallback != nullptr)
+			// Propagate to parent
+			if (mParent != nullptr)
 			{
-				mErrorCallback(error);
+				mParent->ReportError(error);
 			}
 		}
 
@@ -568,6 +634,150 @@ namespace Dia
 			// NOTE: This is intentionally minimal - deserialization is complex and
 			// typically requires factory support to reconstruct objects
 			return true;
+		}
+
+		//---------------------------------------------------------------------------------------------------------
+		// PU Tree methods
+		//---------------------------------------------------------------------------------------------------------
+
+		bool ProcessingUnit::AddChildProcessingUnit(Dia::Core::UniquePtr<ProcessingUnit> child)
+		{
+			if (!child)
+				return false;
+
+			const Dia::Core::StringCRC& childId = child->GetUniqueId();
+
+			// Reject duplicate ID among direct children
+			if (mChildPUs.ContainsKey(childId))
+				return false;
+
+			// Reject if ID matches this PU
+			if (childId == GetUniqueId())
+				return false;
+
+			// Check tree-wide uniqueness by walking up to root and searching down
+			ProcessingUnit* root = this;
+			while (root->mParent != nullptr)
+				root = root->mParent;
+
+			if (root->FindProcessingUnitInTree(childId) != nullptr)
+				return false;
+
+			// Check max depth
+			unsigned int depth = 0;
+			ProcessingUnit* ancestor = this;
+			while (ancestor != nullptr)
+			{
+				++depth;
+				ancestor = ancestor->mParent;
+			}
+			if (depth >= kMaxTreeDepth)
+				return false;
+
+			// Wire parent pointer
+			child->mParent = this;
+
+			// Transfer ownership first (if push_back throws, hash table stays consistent)
+			ProcessingUnit* rawPtr = child.Get();
+			mOwnedChildPUs.push_back(std::move(child));
+
+			// Store raw pointer in lookup table
+			mChildPUs.Add(childId, rawPtr);
+
+			return true;
+		}
+
+		//---------------------------------------------------------------------------------------------------------
+		bool ProcessingUnit::RemoveChildProcessingUnit(const Dia::Core::StringCRC& childId)
+		{
+			if (!mChildPUs.ContainsKey(childId))
+				return false;
+
+			mChildPUs.Remove(childId);
+
+			// Find and remove from owned storage
+			for (auto it = mOwnedChildPUs.begin(); it != mOwnedChildPUs.end(); ++it)
+			{
+				if (*it && (*it)->GetUniqueId() == childId)
+				{
+					mOwnedChildPUs.erase(it);
+					break;
+				}
+			}
+
+			return true;
+		}
+
+		//---------------------------------------------------------------------------------------------------------
+		ProcessingUnit* ProcessingUnit::GetParent()
+		{
+			return mParent;
+		}
+
+		//---------------------------------------------------------------------------------------------------------
+		const ProcessingUnit* ProcessingUnit::GetParent() const
+		{
+			return mParent;
+		}
+
+		//---------------------------------------------------------------------------------------------------------
+		ProcessingUnit* ProcessingUnit::FindChildProcessingUnit(const Dia::Core::StringCRC& childId)
+		{
+			ProcessingUnit** pp = mChildPUs.TryGetItem(childId);
+			return pp ? *pp : nullptr;
+		}
+
+		//---------------------------------------------------------------------------------------------------------
+		const ProcessingUnit* ProcessingUnit::FindChildProcessingUnit(const Dia::Core::StringCRC& childId) const
+		{
+			const ProcessingUnit* const* pp = mChildPUs.TryGetItemConst(childId);
+			return pp ? *pp : nullptr;
+		}
+
+		//---------------------------------------------------------------------------------------------------------
+		const ProcessingUnit::ProcessingUnitTable& ProcessingUnit::GetChildren() const
+		{
+			return mChildPUs;
+		}
+
+		//---------------------------------------------------------------------------------------------------------
+		bool ProcessingUnit::IsRoot() const
+		{
+			return mParent == nullptr;
+		}
+
+		//---------------------------------------------------------------------------------------------------------
+		ProcessingUnit* ProcessingUnit::FindProcessingUnitInTree(const Dia::Core::StringCRC& id)
+		{
+			if (GetUniqueId() == id)
+				return this;
+
+			for (unsigned int i = 0; i < mChildPUs.Size(); ++i)
+			{
+				ProcessingUnit* child = mChildPUs.GetItemByIndex(i);
+				ProcessingUnit* found = child->FindProcessingUnitInTree(id);
+				if (found)
+					return found;
+			}
+
+			return nullptr;
+		}
+
+		//---------------------------------------------------------------------------------------------------------
+		const ProcessingUnit* ProcessingUnit::FindProcessingUnitInTree(const Dia::Core::StringCRC& id) const
+		{
+			if (GetUniqueId() == id)
+				return this;
+
+			for (unsigned int i = 0; i < mChildPUs.Size(); ++i)
+			{
+				const ProcessingUnit* child = mChildPUs.GetItemByIndexConst(i);
+				const ProcessingUnit* found = child->FindProcessingUnitInTree(id);
+				if (found)
+					return found;
+			}
+
+			return nullptr;
 		}
 	}
 }

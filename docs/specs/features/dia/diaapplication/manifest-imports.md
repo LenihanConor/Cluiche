@@ -9,7 +9,7 @@
 | System | DiaApplication | @docs/specs/systems/dia/diaapplication.md |
 | Feature | **Manifest Imports** | (this document) |
 
-**Status:** `Approved`
+**Status:** `Done`
 
 **Research:** @docs/research/diappl_flow_tree/summary.md (Phase A)
 
