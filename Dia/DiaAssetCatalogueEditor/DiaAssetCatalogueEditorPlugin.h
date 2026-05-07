@@ -50,6 +50,10 @@ namespace Dia
 				void RegisterRulesHandlers();
 				void PushDirtyState();
 				void PushRegistryState();
+				void AutoLoadRules();
+				bool LoadManifestFromPath(const char* path, char* errorOut, unsigned int errorCapacity);
+				void GetManifestDirectory(char* dirOut, unsigned int dirOutSize) const;
+				void MakeRelativeToManifest(const char* absPath, char* relOut, unsigned int relOutSize) const;
 
 				static Dia::AssetCatalogue::AssetRecord RecordFromJson(const Json::Value& data);
 				static Json::Value RecordToJson(const Dia::AssetCatalogue::AssetRecord& rec);

@@ -55,7 +55,7 @@
     }
     .panel-body { flex: 1; overflow: auto; padding: 10px; }
 
-    #panel-asset-list  { width: 300px; min-width: 200px; }
+    #panel-asset-list  { width: 420px; min-width: 300px; }
     #panel-center      { flex: 1; }
     #panel-right       { width: 320px; min-width: 240px; border-right: none; }
 
@@ -419,6 +419,7 @@
     <div class="tab-content" id="tab-right-rules" style="flex-direction:column;">
       <div style="flex-shrink:0;margin-bottom:8px;display:flex;gap:6px;align-items:center;">
         <input type="text" id="rules-path" placeholder="assets.rules.json" style="flex:1;background:#2d2d2d;color:#d4d4d4;border:1px solid #555;padding:3px 6px;font-size:11px;border-radius:3px;" />
+        <button onclick="onBrowseRules()" style="background:#3c3c3c;color:#d4d4d4;border:1px solid #555;padding:3px 10px;font-size:11px;cursor:pointer;border-radius:3px;">Browse…</button>
         <button onclick="onLoadRules()" style="background:#3c3c3c;color:#d4d4d4;border:1px solid #555;padding:3px 10px;font-size:11px;cursor:pointer;border-radius:3px;">Load</button>
       </div>
       <div id="rules-status" style="flex-shrink:0;font-size:11px;margin-bottom:8px;color:#9d9d9d;"></div>
@@ -430,7 +431,7 @@
         </label>
       </div>
       <div id="rules-list" style="flex:1;overflow:auto;font-size:11px;">
-        <div class="empty-state">Load a rules file to begin</div>
+        <div class="empty-state">No rules loaded. Use Load Rules to open assets.rules.json.</div>
       </div>
     </div>
     <div class="tab-content" id="tab-right-graph" style="flex-direction:column;padding:0;">
@@ -537,17 +538,32 @@
   var pendingDeleteId = null;
 
   /* ── Bridge ──────────────────────────────────────── */
+  var _diaReqId = 1;
+  var _diaPending = {};
+
   function diaRequest(command, params) {
     return new Promise(function(resolve) {
-      if (window.DiaEditor && window.DiaEditor.request) {
-        window.DiaEditor.request(command, params)
-          .then(resolve)
-          .catch(function(e) { resolve({ success: false, error: String(e) }); });
-      } else {
-        resolve({ success: false, error: 'DiaEditor bridge not available' });
-      }
+      var reqId = 'acr' + (_diaReqId++);
+      _diaPending[reqId] = resolve;
+      window.parent.postMessage({
+        __diaFromFrame: true,
+        payload: { type: command, reqId: reqId, data: params || {} }
+      }, '*');
     });
   }
+
+  window.addEventListener('message', function(ev) {
+    var d = ev.data;
+    if (d && d.__diaResponse && d.reqId && _diaPending[d.reqId]) {
+      _diaPending[d.reqId](d.result || {});
+      delete _diaPending[d.reqId];
+    }
+    if (d && d.__dia && d.topic) {
+      if (window.DiaEditor_onDataChanged) {
+        window.DiaEditor_onDataChanged({ topic: d.topic, data: d.data });
+      }
+    }
+  });
 
   /* ── C++ push ─────────────────────────────────────── */
   window.DiaEditor_onDataChanged = function(msg) {
@@ -563,6 +579,22 @@
         var reopen = confirm('Re-open last manifest?\n' + msg.data.lastManifestPath);
         if (reopen) loadManifest(msg.data.lastManifestPath);
       }
+    } else if (msg.topic === 'assetcatalogue.rulesLoaded') {
+      document.getElementById('rules-path').value = msg.data.rules_path || '';
+      var statusEl = document.getElementById('rules-status');
+      statusEl.textContent = '✓ Auto-loaded — ' + msg.data.rule_count + ' rule' + (msg.data.rule_count !== 1 ? 's' : '');
+      statusEl.style.color = '#4ec9a0';
+      rulesLoaded = true;
+      document.getElementById('btn-dry-run').disabled = false;
+      document.getElementById('btn-apply-rules').disabled = false;
+      diaRequest('asset_catalogue.get_rules', {}).then(function(gr) {
+        renderRulesList(gr.rules || []);
+      });
+    } else if (msg.topic === 'assetcatalogue.rulesLoadFailed') {
+      document.getElementById('rules-path').value = msg.data.rules_path || '';
+      var statusEl = document.getElementById('rules-status');
+      statusEl.textContent = '⛔ Auto-load failed: ' + (msg.data.error || 'unknown error');
+      statusEl.style.color = '#f48771';
     }
   };
 
@@ -583,9 +615,13 @@
   }
   function onOpen(prefilled) {
     if (!confirmUnsaved()) return;
-    var path = prefilled || prompt('Manifest path (assets.catalogue.json):');
-    if (!path) return;
-    loadManifest(path);
+    if (prefilled) {
+      loadManifest(prefilled);
+      return;
+    }
+    diaRequest('asset_catalogue.browse_open', {}).then(function(r) {
+      if (r.success === false && r.error) alert('Open failed: ' + r.error);
+    });
   }
   function loadManifest(path) {
     diaRequest('asset_catalogue.load_manifest', { path: path }).then(function(r) {
@@ -1025,6 +1061,22 @@
   /* ── Rules ───────────────────────────────────────── */
   var rulesLoaded = false;
   var dryRunResults = [];
+
+  function onBrowseRules() {
+    diaRequest('asset_catalogue.browse_rules', {}).then(function(r) {
+      if (!r.success) { if (r.error) alert('Browse rules failed: ' + r.error); return; }
+      var statusEl = document.getElementById('rules-status');
+      document.getElementById('rules-path').value = r.path || '';
+      statusEl.textContent = '✓ Loaded — ' + r.rule_count + ' rule' + (r.rule_count !== 1 ? 's' : '');
+      statusEl.style.color = '#4ec9a0';
+      rulesLoaded = true;
+      document.getElementById('btn-dry-run').disabled = false;
+      document.getElementById('btn-apply-rules').disabled = false;
+      diaRequest('asset_catalogue.get_rules', {}).then(function(gr) {
+        renderRulesList(gr.rules || []);
+      });
+    });
+  }
 
   function onLoadRules() {
     var path = document.getElementById('rules-path').value.trim();

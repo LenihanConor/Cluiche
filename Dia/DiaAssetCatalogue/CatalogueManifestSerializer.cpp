@@ -245,7 +245,34 @@ namespace Dia
 		// CatalogueManifestSerializer
 		//------------------------------------------------------------------------------------
 		CatalogueManifestSerializer::CatalogueManifestSerializer()
-		{}
+		{
+			mRulesPath[0] = '\0';
+		}
+
+		const char* CatalogueManifestSerializer::GetRulesPath() const
+		{
+			return mRulesPath;
+		}
+
+		void CatalogueManifestSerializer::SetRulesPath(const char* path)
+		{
+			if (path == nullptr || path[0] == '\0')
+			{
+				mRulesPath[0] = '\0';
+				return;
+			}
+#if defined(_MSC_VER)
+			strncpy_s(mRulesPath, kRulesPathLength, path, _TRUNCATE);
+#else
+			strncpy(mRulesPath, path, kRulesPathLength - 1);
+			mRulesPath[kRulesPathLength - 1] = '\0';
+#endif
+		}
+
+		bool CatalogueManifestSerializer::HasRulesPath() const
+		{
+			return mRulesPath[0] != '\0';
+		}
 
 		void CatalogueManifestSerializer::ParseAssetsFromJson(
 			const char* jsonText,
@@ -297,8 +324,9 @@ namespace Dia
 			}
 		}
 
-		LoadResult<AssetRegistry> CatalogueManifestSerializer::LoadManifest(const char* path) const
+		LoadResult<AssetRegistry> CatalogueManifestSerializer::LoadManifest(const char* path)
 		{
+			mRulesPath[0] = '\0';
 			LoadResult<AssetRegistry> result;
 
 			if (path == nullptr || path[0] == '\0')
@@ -330,6 +358,12 @@ namespace Dia
 #else
 			GetDirectoryFromPath(path, dirBuf, sizeof(dirBuf));
 #endif
+
+			// Extract rules_path (stored as-is; caller resolves relative to manifest dir)
+			if (root.isMember("rules_path") && root["rules_path"].isString())
+			{
+				SetRulesPath(root["rules_path"].asCString());
+			}
 
 			// Process includes first
 			if (root.isMember("includes") && root["includes"].isArray())
@@ -413,6 +447,11 @@ namespace Dia
 			}
 
 			root["assets"] = assetsArray;
+
+			if (HasRulesPath())
+			{
+				root["rules_path"] = mRulesPath;
+			}
 
 			Json::StyledWriter writer;
 			std::string jsonOutput = writer.write(root);

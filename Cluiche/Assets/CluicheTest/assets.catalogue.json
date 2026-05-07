@@ -1,5 +1,6 @@
 {
   "version": 1,
+  "rules_path": "assets.rules.json",
   "assets": [
     {
       "id": "stage.global",

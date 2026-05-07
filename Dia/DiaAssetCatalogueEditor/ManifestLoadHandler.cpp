@@ -16,7 +16,7 @@ namespace Dia
 			bool ManifestLoadHandler::Load(
 				const char* path,
 				Dia::AssetCatalogue::AssetRegistry& registry,
-				const Dia::AssetCatalogue::CatalogueManifestSerializer& serializer,
+				Dia::AssetCatalogue::CatalogueManifestSerializer& serializer,
 				Dia::Editor::CommandHistory& history,
 				char* errorOut, unsigned int errorCapacity)
 			{

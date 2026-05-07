@@ -29,23 +29,29 @@ namespace Dia
 		public:
 			CatalogueManifestSerializer();
 
-			// Load a manifest from a file path (null-terminated C string).
-			// Returns a LoadResult<AssetRegistry> with success flag and any errors.
-			LoadResult<AssetRegistry> LoadManifest(const char* path) const;
+			// Non-const: populates mRulesPath from the manifest's "rules_path" field.
+			// Call GetRulesPath() after a successful load to retrieve it.
+			LoadResult<AssetRegistry> LoadManifest(const char* path);
 
 			// Save a registry to a manifest file path (null-terminated C string).
+			// If a rules_path has been set (via load or SetRulesPath), it is preserved.
 			// Returns true on success.
 			bool SaveManifest(const AssetRegistry& registry, const char* path) const;
 
+			// Rules path accessors — relative path stored in the manifest.
+			const char* GetRulesPath() const;
+			void SetRulesPath(const char* path);
+			bool HasRulesPath() const;
+
 		private:
-			// Parse a single JSON "assets" array into the registry.
-			// parentPath is used for error messages only.
-			// If isSubManifest is true, the presence of an "includes" field is an error.
 			void ParseAssetsFromJson(
 				const char* jsonText,
 				const char* sourcePath,
 				bool isSubManifest,
 				LoadResult<AssetRegistry>& result) const;
+
+			static const unsigned int kRulesPathLength = 256;
+			char mRulesPath[kRulesPathLength];
 		};
 
 	} // namespace AssetCatalogue

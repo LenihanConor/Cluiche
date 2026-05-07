@@ -8,6 +8,7 @@
 #include "DiaAssetCatalogueEditor/Handlers/AssetTypeEditorRegistry.h"
 #include "DiaAssetCatalogueEditor/Commands/ApplyRulesCommand.h"
 #include <DiaEditor/Plugin/IPluginLoader.h>
+#include <DiaEditor/UI/FileDialogHandler.h>
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -65,6 +66,7 @@ namespace Dia
 				if (mBridge)
 				{
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.load_manifest"));
+					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.browse_open"));
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.save_manifest"));
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.new_manifest"));
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.bulk_create_records"));
@@ -76,6 +78,7 @@ namespace Dia
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.validate"));
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.open_asset"));
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.register_type_editor"));
+					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.browse_rules"));
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.load_rules"));
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.get_rules"));
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.dry_run_rules"));
@@ -116,26 +119,52 @@ namespace Dia
 							result["error"]   = "missing path parameter";
 							return result;
 						}
-						const char* path = data["path"].asCString();
 
 						char errorBuf[256] = {};
-						bool ok = mLoadHandler.Load(path, mRegistry, mSerializer, mHistory,
-							errorBuf, sizeof(errorBuf));
-
-						if (ok)
+						if (LoadManifestFromPath(data["path"].asCString(), errorBuf, sizeof(errorBuf)))
 						{
-							strncpy_s(mCurrentPath, kCurrentPathLength, path, _TRUNCATE);
-							mSessionContext.SetLastManifestPath(path);
-							mSessionContext.Save(mOutputDir);
-
 							result["success"]      = true;
 							result["record_count"] = static_cast<int>(mRegistry.GetCount());
-							PushDirtyState();
 						}
 						else
 						{
 							result["success"] = false;
 							result["error"]   = errorBuf[0] ? errorBuf : "load failed";
+						}
+						return result;
+					});
+
+				mBridge->RegisterRequestHandler(
+					Dia::Core::StringCRC("asset_catalogue.browse_open"),
+					[this](const Json::Value& /*data*/) -> Json::Value
+					{
+						Json::Value dialogData;
+						Json::Value filters(Json::arrayValue);
+						Json::Value f1; f1["name"] = "Asset Catalogue"; f1["ext"] = "*.json"; filters.append(f1);
+						Json::Value f2; f2["name"] = "Dia Game Project"; f2["ext"] = "*.diagame"; filters.append(f2);
+						Json::Value f3; f3["name"] = "All Files"; f3["ext"] = "*.*"; filters.append(f3);
+						dialogData["filters"] = filters;
+						dialogData["default_ext"] = "json";
+						dialogData["title"] = "Open Asset Catalogue";
+
+						Json::Value dialogResult = Dia::Editor::FileDialogHandler::HandleOpenFileDialog(dialogData);
+						if (!dialogResult.get("success", false).asBool())
+						{
+							Json::Value r;
+							r["success"] = false;
+							return r;
+						}
+
+						char errorBuf[256] = {};
+						Json::Value result;
+						if (LoadManifestFromPath(dialogResult["path"].asCString(), errorBuf, sizeof(errorBuf)))
+						{
+							result["success"] = true;
+						}
+						else
+						{
+							result["success"] = false;
+							result["error"] = errorBuf[0] ? errorBuf : "load failed";
 						}
 						return result;
 					});
@@ -184,7 +213,7 @@ namespace Dia
 					{
 						mLoadHandler.NewManifest(mRegistry, mHistory);
 						mCurrentPath[0] = '\0';
-						PushDirtyState();
+						PushRegistryState();
 
 						Json::Value result;
 						result["success"] = true;
@@ -211,6 +240,91 @@ namespace Dia
 					records.append(RecordToJson(mRegistry.GetRecordByIndex(i)));
 				mBridge->NotifyUIDataChanged("assetcatalogue.records", records);
 				PushDirtyState();
+			}
+
+			bool DiaAssetCatalogueEditorPlugin::LoadManifestFromPath(const char* path, char* errorOut, unsigned int errorCapacity)
+			{
+				bool ok = mLoadHandler.Load(path, mRegistry, mSerializer, mHistory,
+					errorOut, errorCapacity);
+				if (!ok)
+					return false;
+
+				strncpy_s(mCurrentPath, kCurrentPathLength, path, _TRUNCATE);
+				mSessionContext.SetLastManifestPath(path);
+				mSessionContext.Save(mOutputDir);
+				PushRegistryState();
+				AutoLoadRules();
+				return true;
+			}
+
+			void DiaAssetCatalogueEditorPlugin::GetManifestDirectory(char* dirOut, unsigned int dirOutSize) const
+			{
+				dirOut[0] = '\0';
+				int lastSlash = -1;
+				for (int i = 0; mCurrentPath[i] != '\0'; ++i)
+				{
+					if (mCurrentPath[i] == '/' || mCurrentPath[i] == '\\')
+						lastSlash = i;
+				}
+				if (lastSlash >= 0)
+					strncpy_s(dirOut, dirOutSize, mCurrentPath, static_cast<size_t>(lastSlash + 1));
+			}
+
+			void DiaAssetCatalogueEditorPlugin::MakeRelativeToManifest(const char* absPath, char* relOut, unsigned int relOutSize) const
+			{
+				char dirBuf[512] = {};
+				GetManifestDirectory(dirBuf, sizeof(dirBuf));
+				unsigned int dirLen = static_cast<unsigned int>(strlen(dirBuf));
+
+				// If absPath starts with the manifest directory, strip it
+				if (dirLen > 0 && _strnicmp(absPath, dirBuf, dirLen) == 0)
+				{
+					strncpy_s(relOut, relOutSize, absPath + dirLen, _TRUNCATE);
+				}
+				else
+				{
+					strncpy_s(relOut, relOutSize, absPath, _TRUNCATE);
+				}
+			}
+
+			void DiaAssetCatalogueEditorPlugin::AutoLoadRules()
+			{
+				if (!mSerializer.HasRulesPath())
+					return;
+
+				char dirBuf[512] = {};
+				GetManifestDirectory(dirBuf, sizeof(dirBuf));
+
+				char resolvedPath[512] = {};
+				_snprintf_s(resolvedPath, sizeof(resolvedPath), _TRUNCATE, "%s%s", dirBuf, mSerializer.GetRulesPath());
+
+				Dia::AssetCatalogue::LoadResult<void> lr = mRulesEngine.LoadRules(resolvedPath, mTypeRegistry);
+				if (lr.mSuccess)
+				{
+					DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: auto-loaded %d rules from %s",
+						mRulesEngine.GetRuleCount(), resolvedPath);
+
+					if (mBridge)
+					{
+						Json::Value data;
+						data["rules_path"] = resolvedPath;
+						data["rule_count"] = static_cast<int>(mRulesEngine.GetRuleCount());
+						mBridge->NotifyUIDataChanged("assetcatalogue.rulesLoaded", data);
+					}
+				}
+				else
+				{
+					DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: failed to auto-load rules from %s",
+						resolvedPath);
+
+					if (mBridge)
+					{
+						Json::Value data;
+						data["rules_path"] = resolvedPath;
+						data["error"] = lr.HasErrors() ? lr.GetFirstError().mMessage.AsCStr() : "load failed";
+						mBridge->NotifyUIDataChanged("assetcatalogue.rulesLoadFailed", data);
+					}
+				}
 			}
 
 			Dia::AssetCatalogue::AssetRecord DiaAssetCatalogueEditorPlugin::RecordFromJson(const Json::Value& d)
@@ -481,6 +595,51 @@ namespace Dia
 			{
 				if (!mBridge)
 					return;
+
+				// browse_rules — open file dialog then load
+				mBridge->RegisterRequestHandler(
+					Dia::Core::StringCRC("asset_catalogue.browse_rules"),
+					[this](const Json::Value& /*data*/) -> Json::Value
+					{
+						Json::Value dialogData;
+						Json::Value filters(Json::arrayValue);
+						Json::Value f1; f1["name"] = "Rules Files"; f1["ext"] = "*.rules.json"; filters.append(f1);
+						Json::Value f2; f2["name"] = "JSON Files"; f2["ext"] = "*.json"; filters.append(f2);
+						Json::Value f3; f3["name"] = "All Files"; f3["ext"] = "*.*"; filters.append(f3);
+						dialogData["filters"] = filters;
+						dialogData["default_ext"] = "json";
+						dialogData["title"] = "Open Rules File";
+
+						Json::Value dialogResult = Dia::Editor::FileDialogHandler::HandleOpenFileDialog(dialogData);
+						if (!dialogResult.get("success", false).asBool())
+						{
+							Json::Value r;
+							r["success"] = false;
+							return r;
+						}
+
+						const char* rulesPath = dialogResult["path"].asCString();
+						Dia::AssetCatalogue::LoadResult<void> lr = mRulesEngine.LoadRules(rulesPath, mTypeRegistry);
+
+						Json::Value result;
+						if (!lr.mSuccess)
+						{
+							result["success"] = false;
+							result["error"]   = lr.HasErrors() ? lr.GetFirstError().mMessage.AsCStr() : "load failed";
+						}
+						else
+						{
+							// Store as relative path so it persists correctly on save
+							char relPath[256] = {};
+							MakeRelativeToManifest(rulesPath, relPath, sizeof(relPath));
+							mSerializer.SetRulesPath(relPath);
+
+							result["success"]    = true;
+							result["path"]       = rulesPath;
+							result["rule_count"] = static_cast<int>(mRulesEngine.GetRuleCount());
+						}
+						return result;
+					});
 
 				// load_rules
 				mBridge->RegisterRequestHandler(

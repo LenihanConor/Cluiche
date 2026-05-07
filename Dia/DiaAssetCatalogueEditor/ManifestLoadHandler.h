@@ -23,7 +23,7 @@ namespace Dia
 				// Load manifest from path into registry. Clears CommandHistory. Returns false on error (errorOut filled).
 				bool Load(const char* path,
 					Dia::AssetCatalogue::AssetRegistry& registry,
-					const Dia::AssetCatalogue::CatalogueManifestSerializer& serializer,
+					Dia::AssetCatalogue::CatalogueManifestSerializer& serializer,
 					Dia::Editor::CommandHistory& history,
 					char* errorOut, unsigned int errorCapacity);
 

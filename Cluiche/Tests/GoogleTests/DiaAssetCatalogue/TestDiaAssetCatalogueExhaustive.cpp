@@ -1417,3 +1417,129 @@ TEST_F(AssetCatalogueIntegrationExhaustive, RulesEngine_SourcePathGlob_MatchesSu
 
 	remove(rulesPath);
 }
+
+// ---------------------------------------------------------------------------
+// rules_path: round-trip through serializer (load manifest with rules_path,
+// verify accessor, save, reload, verify preserved)
+// ---------------------------------------------------------------------------
+TEST_F(AssetCatalogueIntegrationExhaustive, ManifestSerializer_RulesPath_RoundTrip)
+{
+	if (!EnsureTestTempDir()) GTEST_SKIP() << "C:\\Temp not accessible";
+
+	const char* manifestPath = "C:\\Temp\\test_rulespath.catalogue.json";
+	const char* manifestJson =
+		"{ \"version\": 1, \"rules_path\": \"my.rules.json\", \"assets\": ["
+		"  { \"id\": \"texture.hero\", \"type\": \"texture\", \"source_path\": \"hero.png\" }"
+		"]}";
+	ASSERT_TRUE(WriteTestFileHelper(manifestPath, manifestJson));
+
+	Dia::AssetCatalogue::CatalogueManifestSerializer serializer;
+
+	// Load
+	auto result = serializer.LoadManifest(manifestPath);
+	ASSERT_TRUE(result.mSuccess);
+	EXPECT_TRUE(serializer.HasRulesPath());
+	EXPECT_STREQ(serializer.GetRulesPath(), "my.rules.json");
+	EXPECT_EQ(result.mValue.GetCount(), 1u);
+
+	// Save
+	const char* outPath = "C:\\Temp\\test_rulespath_out.catalogue.json";
+	ASSERT_TRUE(serializer.SaveManifest(result.mValue, outPath));
+
+	// Reload and verify round-trip
+	Dia::AssetCatalogue::CatalogueManifestSerializer serializer2;
+	auto result2 = serializer2.LoadManifest(outPath);
+	ASSERT_TRUE(result2.mSuccess);
+	EXPECT_TRUE(serializer2.HasRulesPath());
+	EXPECT_STREQ(serializer2.GetRulesPath(), "my.rules.json");
+	EXPECT_EQ(result2.mValue.GetCount(), 1u);
+
+	remove(manifestPath);
+	remove(outPath);
+}
+
+// rules_path: manifest without rules_path has no rules path set
+TEST_F(AssetCatalogueIntegrationExhaustive, ManifestSerializer_NoRulesPath_HasRulesPathFalse)
+{
+	if (!EnsureTestTempDir()) GTEST_SKIP() << "C:\\Temp not accessible";
+
+	const char* manifestPath = "C:\\Temp\\test_norulespath.catalogue.json";
+	const char* manifestJson =
+		"{ \"version\": 1, \"assets\": ["
+		"  { \"id\": \"config.main\", \"type\": \"config\", \"source_path\": \"main.json\" }"
+		"]}";
+	ASSERT_TRUE(WriteTestFileHelper(manifestPath, manifestJson));
+
+	Dia::AssetCatalogue::CatalogueManifestSerializer serializer;
+	auto result = serializer.LoadManifest(manifestPath);
+	ASSERT_TRUE(result.mSuccess);
+	EXPECT_FALSE(serializer.HasRulesPath());
+	EXPECT_STREQ(serializer.GetRulesPath(), "");
+
+	remove(manifestPath);
+}
+
+// rules_path: SetRulesPath updates the stored path and is written on save
+TEST_F(AssetCatalogueIntegrationExhaustive, ManifestSerializer_SetRulesPath_PersistsOnSave)
+{
+	if (!EnsureTestTempDir()) GTEST_SKIP() << "C:\\Temp not accessible";
+
+	const char* manifestPath = "C:\\Temp\\test_setrulespath.catalogue.json";
+	const char* manifestJson =
+		"{ \"version\": 1, \"assets\": ["
+		"  { \"id\": \"texture.a\", \"type\": \"texture\", \"source_path\": \"a.png\" }"
+		"]}";
+	ASSERT_TRUE(WriteTestFileHelper(manifestPath, manifestJson));
+
+	Dia::AssetCatalogue::CatalogueManifestSerializer serializer;
+	auto result = serializer.LoadManifest(manifestPath);
+	ASSERT_TRUE(result.mSuccess);
+	EXPECT_FALSE(serializer.HasRulesPath());
+
+	// User browses and sets a rules path
+	serializer.SetRulesPath("custom.rules.json");
+	EXPECT_TRUE(serializer.HasRulesPath());
+	EXPECT_STREQ(serializer.GetRulesPath(), "custom.rules.json");
+
+	// Save and reload
+	const char* outPath = "C:\\Temp\\test_setrulespath_out.catalogue.json";
+	ASSERT_TRUE(serializer.SaveManifest(result.mValue, outPath));
+
+	Dia::AssetCatalogue::CatalogueManifestSerializer serializer2;
+	auto result2 = serializer2.LoadManifest(outPath);
+	ASSERT_TRUE(result2.mSuccess);
+	EXPECT_TRUE(serializer2.HasRulesPath());
+	EXPECT_STREQ(serializer2.GetRulesPath(), "custom.rules.json");
+
+	remove(manifestPath);
+	remove(outPath);
+}
+
+// rules_path: manifest with invalid rules_path loads fine (rules loading is caller's concern)
+TEST_F(AssetCatalogueIntegrationExhaustive, ManifestSerializer_InvalidRulesPath_LoadSucceeds)
+{
+	if (!EnsureTestTempDir()) GTEST_SKIP() << "C:\\Temp not accessible";
+
+	const char* manifestPath = "C:\\Temp\\test_badrulespath.catalogue.json";
+	const char* manifestJson =
+		"{ \"version\": 1, \"rules_path\": \"nonexistent.rules.json\", \"assets\": ["
+		"  { \"id\": \"texture.b\", \"type\": \"texture\", \"source_path\": \"b.png\" }"
+		"]}";
+	ASSERT_TRUE(WriteTestFileHelper(manifestPath, manifestJson));
+
+	Dia::AssetCatalogue::CatalogueManifestSerializer serializer;
+	auto result = serializer.LoadManifest(manifestPath);
+
+	// Manifest load itself succeeds — rules_path is just metadata
+	ASSERT_TRUE(result.mSuccess);
+	EXPECT_TRUE(serializer.HasRulesPath());
+	EXPECT_STREQ(serializer.GetRulesPath(), "nonexistent.rules.json");
+
+	// Attempting to load the rules file would fail, but that's the caller's job
+	Dia::AssetCatalogue::AssetTypeRegistry typeReg;
+	Dia::AssetCatalogue::CatalogueRulesEngine engine;
+	auto lr = engine.LoadRules("C:\\Temp\\nonexistent.rules.json", typeReg);
+	EXPECT_FALSE(lr.mSuccess);
+
+	remove(manifestPath);
+}
