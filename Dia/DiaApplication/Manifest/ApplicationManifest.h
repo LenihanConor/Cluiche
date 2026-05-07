@@ -50,6 +50,7 @@ namespace Dia
 			{
 				Dia::Core::StringCRC fromPhase;     // Source phase instance ID
 				Dia::Core::StringCRC toPhase;       // Target phase instance ID
+				Dia::Core::Containers::String256 sourceManifestPath;  // Which .diaapp file this transition came from
 			};
 
 			// ProcessingUnit entry: describes a processing unit instance

@@ -7,6 +7,7 @@
 #include <DiaEditor/UI/FileDialogHandler.h>
 
 #include <DiaApplication/Manifest/ApplicationManifestLoader.h>
+#include <DiaApplication/Manifest/JsonApplicationManifestSerializer.h>
 #include <DiaApplication/Manifest/ManifestComposer.h>
 #include <DiaApplication/Manifest/ManifestValidator.h>
 #include <DiaApplication/Manifest/DiaGameManifest.h>
@@ -413,6 +414,117 @@ const ValidationResult& DiaApplicationEditor::GetValidationResult() const
 	return mData->validationResult;
 }
 
+static void ReadImportsFromFile(const char* filePath, ApplicationManifest& outManifest)
+{
+	std::ifstream file(filePath);
+	if (!file.is_open()) return;
+
+	Json::Value root;
+	Json::Reader reader;
+	if (!reader.parse(file, root)) return;
+	file.close();
+
+	if (!root.isMember("imports") || !root["imports"].isArray()) return;
+
+	const Json::Value& importsJson = root["imports"];
+	for (unsigned int i = 0; i < importsJson.size(); ++i)
+	{
+		if (importsJson[i].isObject() && importsJson[i].isMember("path"))
+		{
+			TypedImport import;
+			import.path = importsJson[i]["path"].asCString();
+			const std::string typeStr = importsJson[i].get("type", "manifest").asString();
+			import.type = (typeStr == "stage")
+				? TypedImport::ImportType::kStage
+				: TypedImport::ImportType::kManifest;
+			outManifest.imports.Add(import);
+		}
+	}
+}
+
+static void BuildLocalManifest(const ApplicationManifest& merged, const char* localFilePath, ApplicationManifest& outLocal)
+{
+	outLocal.version = merged.version;
+
+	// Preserve imports from the merged manifest (for single-file editing)
+	for (unsigned int i = 0; i < merged.imports.Size(); ++i)
+		outLocal.imports.Add(merged.imports[i]);
+
+	auto isLocal = [localFilePath](const Dia::Core::Containers::String256& sourcePath) -> bool
+	{
+		if (sourcePath.Length() == 0) return true;
+		if (localFilePath == nullptr || localFilePath[0] == '\0') return true;
+		return _stricmp(sourcePath.AsCStr(), localFilePath) == 0;
+	};
+
+	for (unsigned int i = 0; i < merged.processingUnits.Size(); ++i)
+	{
+		const auto& pu = merged.processingUnits[i];
+		if (!isLocal(pu.sourceManifestPath))
+			continue;
+
+		outLocal.processingUnits.AddDefault();
+		auto& outPU = outLocal.processingUnits[outLocal.processingUnits.Size() - 1];
+		outPU.typeId = pu.typeId;
+		outPU.instanceId = pu.instanceId;
+		outPU.frequencyHz = pu.frequencyHz;
+		outPU.dedicatedThread = pu.dedicatedThread;
+		outPU.root = pu.root;
+		outPU.initialPhase = pu.initialPhase;
+		if (pu.config)
+			outPU.config = new Json::Value(*pu.config);
+
+		// Only include local phases
+		for (unsigned int j = 0; j < pu.phases.Size(); ++j)
+		{
+			if (isLocal(pu.phases[j].sourceManifestPath))
+				outPU.phases.Add(pu.phases[j]);
+		}
+
+		// Only include local transitions
+		for (unsigned int j = 0; j < pu.transitions.Size(); ++j)
+		{
+			if (isLocal(pu.transitions[j].sourceManifestPath))
+				outPU.transitions.Add(pu.transitions[j]);
+		}
+
+		// Only include local modules, with only local phase_ids
+		for (unsigned int j = 0; j < pu.modules.Size(); ++j)
+		{
+			const auto& mod = pu.modules[j];
+			if (!isLocal(mod.sourceManifestPath))
+				continue;
+
+			ApplicationManifest::ModuleEntry outMod;
+			outMod.typeId = mod.typeId;
+			outMod.instanceId = mod.instanceId;
+			if (mod.config)
+				outMod.config = new Json::Value(*mod.config);
+
+			for (unsigned int k = 0; k < mod.dependencies.Size(); ++k)
+				outMod.dependencies.Add(mod.dependencies[k]);
+
+			// Only include phase_ids that reference phases local to this file
+			for (unsigned int k = 0; k < mod.phaseIds.Size(); ++k)
+			{
+				bool phaseIsLocal = false;
+				for (unsigned int p = 0; p < pu.phases.Size(); ++p)
+				{
+					if (pu.phases[p].instanceId == mod.phaseIds[k] && isLocal(pu.phases[p].sourceManifestPath))
+					{
+						phaseIsLocal = true;
+						break;
+					}
+				}
+				if (phaseIsLocal)
+					outMod.phaseIds.Add(mod.phaseIds[k]);
+			}
+
+			outPU.modules.Add(outMod);
+		}
+	}
+}
+
 bool DiaApplicationEditor::WriteManifestToDisk(const char* path)
 {
 	if (mData->isDiaGameFile)
@@ -428,78 +540,187 @@ bool DiaApplicationEditor::WriteManifestToDisk(const char* path)
 		std::rename(path, backupPath);
 	}
 
-	// Serialize only local PUs to JSON (imported PUs stay in their source files)
-	Json::Value json;
-	if (!ManifestSerializer::SerializeLocal(mData->manifest, mData->filePath, json))
+	// Build a manifest containing only entries local to this file
+	ApplicationManifest localManifest;
+	BuildLocalManifest(mData->manifest, mData->filePath, localManifest);
+
+	// Use the shared serializer (same as runtime) to write to disk
+	JsonApplicationManifestSerializer serializer;
+	auto result = serializer.SaveToFile(path, localManifest);
+	if (!result)
 	{
-		NotifyUI("file_error", "Failed to serialize manifest");
+		NotifyUI("file_error", "Failed to write manifest to disk");
 		return false;
 	}
-
-	// Write to disk
-	std::ofstream file(path);
-	if (!file.is_open())
-	{
-		NotifyUI("file_error", "Cannot open file for writing");
-		return false;
-	}
-
-	Json::StyledWriter writer;
-	file << writer.write(json);
-	file.close();
 
 	return true;
+}
+
+static bool IsStageSourceFile(const ApplicationManifest& manifest, const char* sourcePath)
+{
+	// A source file is a stage if it contributes phases/modules/transitions to PUs
+	// it doesn't own (i.e., no PU has this as its sourceManifestPath)
+	for (unsigned int i = 0; i < manifest.processingUnits.Size(); ++i)
+	{
+		if (_stricmp(manifest.processingUnits[i].sourceManifestPath.AsCStr(), sourcePath) == 0)
+			return false;
+	}
+	return true;
+}
+
+static void BuildStageJson(const ApplicationManifest& manifest, const char* stageSourcePath, const Json::Value& originalMetadata, Json::Value& outJson)
+{
+	outJson = Json::Value(Json::objectValue);
+	outJson["version"] = manifest.version;
+	outJson["metadata"] = originalMetadata;
+
+	Json::Value stagePhases(Json::arrayValue);
+	Json::Value stageTransitions(Json::arrayValue);
+	Json::Value stageModules(Json::arrayValue);
+
+	for (unsigned int i = 0; i < manifest.processingUnits.Size(); ++i)
+	{
+		const auto& pu = manifest.processingUnits[i];
+		const char* puInstanceId = pu.instanceId.AsChar();
+
+		// Collect phases from this stage
+		for (unsigned int j = 0; j < pu.phases.Size(); ++j)
+		{
+			if (_stricmp(pu.phases[j].sourceManifestPath.AsCStr(), stageSourcePath) == 0)
+			{
+				Json::Value sp;
+				sp["type_id"] = pu.phases[j].typeId.AsChar();
+				sp["instance_id"] = pu.phases[j].instanceId.AsChar();
+				sp["target_processing_unit"] = puInstanceId;
+				if (pu.phases[j].config)
+					sp["config"] = *pu.phases[j].config;
+				stagePhases.append(sp);
+			}
+		}
+
+		// Collect transitions from this stage
+		for (unsigned int j = 0; j < pu.transitions.Size(); ++j)
+		{
+			if (_stricmp(pu.transitions[j].sourceManifestPath.AsCStr(), stageSourcePath) == 0)
+			{
+				Json::Value st;
+				st["from"] = pu.transitions[j].fromPhase.AsChar();
+				st["to"] = pu.transitions[j].toPhase.AsChar();
+				st["target_processing_unit"] = puInstanceId;
+				stageTransitions.append(st);
+			}
+		}
+
+		// Collect stage module contributions — modules that have phase_ids referencing stage phases
+		for (unsigned int j = 0; j < pu.modules.Size(); ++j)
+		{
+			const auto& mod = pu.modules[j];
+
+			// Collect phase_ids that belong to this stage (phases sourced from stageSourcePath)
+			Json::Value stagePhaseIds(Json::arrayValue);
+			for (unsigned int k = 0; k < mod.phaseIds.Size(); ++k)
+			{
+				// Check if this phase_id references a phase from the stage
+				for (unsigned int p = 0; p < pu.phases.Size(); ++p)
+				{
+					if (pu.phases[p].instanceId == mod.phaseIds[k] &&
+						_stricmp(pu.phases[p].sourceManifestPath.AsCStr(), stageSourcePath) == 0)
+					{
+						stagePhaseIds.append(mod.phaseIds[k].AsChar());
+						break;
+					}
+				}
+			}
+
+			if (stagePhaseIds.size() > 0)
+			{
+				Json::Value sm;
+				sm["type_id"] = mod.typeId.AsChar();
+				sm["instance_id"] = mod.instanceId.AsChar();
+				sm["phase_ids"] = stagePhaseIds;
+				sm["target_processing_unit"] = puInstanceId;
+				stageModules.append(sm);
+			}
+		}
+	}
+
+	outJson["stage_phases"] = stagePhases;
+	outJson["stage_transitions"] = stageTransitions;
+	outJson["stage_modules"] = stageModules;
+	outJson["processing_units"] = Json::Value(Json::arrayValue);
 }
 
 bool DiaApplicationEditor::WriteDiaGameToDisk(const char* path)
 {
 	// For .diagame files, write changes back to the source .diaapp files
-	// Group PUs by their sourceManifestPath and serialize each group to its file
+	// Collect all unique source paths from PUs, phases, modules, and transitions
 
-	// Collect unique source paths
 	struct SourceGroup
 	{
 		char path[512];
-		Dia::Core::Containers::DynamicArrayC<unsigned int, 4> puIndices;
+		bool isStage;
 	};
 	Dia::Core::Containers::DynamicArrayC<SourceGroup, 8> groups;
 
-	for (unsigned int i = 0; i < mData->manifest.processingUnits.Size(); ++i)
+	auto addSource = [&groups](const char* sourcePath)
 	{
-		const auto& pu = mData->manifest.processingUnits[i];
-		const char* sourcePath = pu.sourceManifestPath.AsCStr();
 		if (sourcePath == nullptr || sourcePath[0] == '\0')
-			continue;
-
-		// Find existing group
-		int groupIdx = -1;
+			return;
 		for (unsigned int g = 0; g < groups.Size(); ++g)
 		{
 			if (_stricmp(groups[g].path, sourcePath) == 0)
-			{
-				groupIdx = static_cast<int>(g);
-				break;
-			}
+				return;
 		}
+		groups.AddDefault();
+		SourceGroup& newGroup = groups[groups.Size() - 1];
+		strncpy_s(newGroup.path, sizeof(newGroup.path), sourcePath, _TRUNCATE);
+		newGroup.isStage = false;
+	};
 
-		if (groupIdx < 0)
-		{
-			groups.AddDefault();
-			SourceGroup& newGroup = groups[groups.Size() - 1];
-			strncpy_s(newGroup.path, sizeof(newGroup.path), sourcePath, _TRUNCATE);
-			newGroup.puIndices.Add(i);
-		}
-		else
-		{
-			groups[static_cast<unsigned int>(groupIdx)].puIndices.Add(i);
-		}
+	// Collect source paths from all entries
+	for (unsigned int i = 0; i < mData->manifest.processingUnits.Size(); ++i)
+	{
+		const auto& pu = mData->manifest.processingUnits[i];
+		addSource(pu.sourceManifestPath.AsCStr());
+		for (unsigned int j = 0; j < pu.phases.Size(); ++j)
+			addSource(pu.phases[j].sourceManifestPath.AsCStr());
+		for (unsigned int j = 0; j < pu.modules.Size(); ++j)
+			addSource(pu.modules[j].sourceManifestPath.AsCStr());
+		for (unsigned int j = 0; j < pu.transitions.Size(); ++j)
+			addSource(pu.transitions[j].sourceManifestPath.AsCStr());
 	}
 
-	// Write each source .diaapp file with its PUs
+	// Classify each group as stage or regular manifest
+	for (unsigned int g = 0; g < groups.Size(); ++g)
+		groups[g].isStage = IsStageSourceFile(mData->manifest, groups[g].path);
+
+	// Write each source file
+	JsonApplicationManifestSerializer serializer;
 	Json::StyledWriter writer;
 	for (unsigned int g = 0; g < groups.Size(); ++g)
 	{
 		const SourceGroup& group = groups[g];
+
+		// Read data from original file before backup renames it
+		Json::Value originalMetadata(Json::objectValue);
+		ApplicationManifest originalImports;
+		if (group.isStage)
+		{
+			originalMetadata["type"] = "stage";
+			std::ifstream origFile(group.path);
+			if (origFile.is_open())
+			{
+				Json::Value origRoot;
+				Json::Reader reader;
+				if (reader.parse(origFile, origRoot) && origRoot.isMember("metadata"))
+					originalMetadata = origRoot["metadata"];
+				origFile.close();
+			}
+		}
+		else
+		{
+			ReadImportsFromFile(group.path, originalImports);
+		}
 
 		// Back up the source file
 		std::ifstream existingFile(group.path);
@@ -511,25 +732,45 @@ bool DiaApplicationEditor::WriteDiaGameToDisk(const char* path)
 			std::rename(group.path, backupPath);
 		}
 
-		// Serialize PUs belonging to this source file
-		Json::Value json;
-		if (!ManifestSerializer::SerializeLocal(mData->manifest, group.path, json))
+		if (group.isStage)
 		{
-			NotifyUI("file_error", "Failed to serialize manifest for source file");
-			return false;
-		}
+			// Reconstruct stage file format
+			Json::Value stageJson;
+			BuildStageJson(mData->manifest, group.path, originalMetadata, stageJson);
 
-		std::ofstream file(group.path);
-		if (!file.is_open())
+			std::ofstream file(group.path);
+			if (!file.is_open())
+			{
+				char errMsg[600];
+				snprintf(errMsg, sizeof(errMsg), "Cannot write to: %s", group.path);
+				NotifyUI("file_error", errMsg);
+				return false;
+			}
+			file << writer.write(stageJson);
+			file.close();
+		}
+		else
 		{
-			char errMsg[600];
-			snprintf(errMsg, sizeof(errMsg), "Cannot write to: %s", group.path);
-			NotifyUI("file_error", errMsg);
-			return false;
-		}
+			// Regular manifest — build local-only and use shared serializer
+			ApplicationManifest localManifest;
+			BuildLocalManifest(mData->manifest, group.path, localManifest);
 
-		file << writer.write(json);
-		file.close();
+			// Restore original imports (lost during composition)
+			if (localManifest.imports.Size() == 0 && originalImports.imports.Size() > 0)
+			{
+				for (unsigned int ii = 0; ii < originalImports.imports.Size(); ++ii)
+					localManifest.imports.Add(originalImports.imports[ii]);
+			}
+
+			auto result = serializer.SaveToFile(group.path, localManifest);
+			if (!result)
+			{
+				char errMsg[600];
+				snprintf(errMsg, sizeof(errMsg), "Cannot write to: %s", group.path);
+				NotifyUI("file_error", errMsg);
+				return false;
+			}
+		}
 	}
 
 	// Now write the .diagame file itself (preserving its schema)
@@ -562,8 +803,6 @@ bool DiaApplicationEditor::WriteDiaGameToDisk(const char* path)
 	else
 	{
 		Json::Value configJson(Json::objectValue);
-		if (mData->gameManifest.config.defaultLevel.Length() > 0)
-			configJson["default_level"] = mData->gameManifest.config.defaultLevel.AsCStr();
 		if (mData->gameManifest.config.assetRoot.Length() > 0)
 			configJson["asset_root"] = mData->gameManifest.config.assetRoot.AsCStr();
 		gameJson["config"] = configJson;

@@ -276,15 +276,20 @@ namespace Cluiche
 			mCurrentLoadStageId = stageId;
 			mPendingAcknowledgements = 0;
 
+			bool foundAlias = false;
 			// Look up the .diastage path from the map built at startup
 			for (unsigned int i = 0; i < mStagePathMap.Size(); ++i)
 			{
 				if (mStagePathMap[i].mStageId == stageId)
 				{
+					foundAlias = true;
 					RegisterStageAliases(mStagePathMap[i].mDiastagePath.AsCStr());
 					break;
 				}
 			}
+
+			if (!foundAlias)
+				DIA_LOG_INFO("Application", "Stage (%s), has no aliases", stageId.AsChar());
 
 			Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128> stageAssets;
 			mRuntime.GetStageDependencies(stageId, stageAssets);

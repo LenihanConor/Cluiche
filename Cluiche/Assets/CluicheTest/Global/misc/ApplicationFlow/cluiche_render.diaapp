@@ -1,18 +1,22 @@
 {
-  "version": 1,
-  "processing_units": [
-    {
-      "type_id": "RenderProcessingUnit",
-      "instance_id": "RenderProcessingUnit",
-      "frequency_hz": 60.0,
-      "dedicated_thread": true,
-      "config": {},
-      "phases": [
-        { "type_id": "RenderRunningPhase", "instance_id": "RenderRunningPhase", "config": {} }
-      ],
-      "transitions": [],
-      "initial_phase": "RenderRunningPhase",
-      "modules": []
-    }
-  ]
+   "processing_units" : [
+      {
+         "config" : {},
+         "dedicated_thread" : true,
+         "frequency_hz" : 60,
+         "initial_phase" : "RenderRunningPhase",
+         "instance_id" : "RenderProcessingUnit",
+         "modules" : [],
+         "phases" : [
+            {
+               "config" : {},
+               "instance_id" : "RenderRunningPhase",
+               "type_id" : "RenderRunningPhase"
+            }
+         ],
+         "transitions" : [],
+         "type_id" : "RenderProcessingUnit"
+      }
+   ],
+   "version" : 1
 }

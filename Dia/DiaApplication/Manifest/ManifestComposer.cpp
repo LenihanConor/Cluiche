@@ -186,6 +186,8 @@ namespace Dia
 					pu.phases[j].sourceManifestPath = filePath;
 				for (unsigned int j = 0; j < pu.modules.Size(); ++j)
 					pu.modules[j].sourceManifestPath = filePath;
+				for (unsigned int j = 0; j < pu.transitions.Size(); ++j)
+					pu.transitions[j].sourceManifestPath = filePath;
 			}
 
 			delete currentManifest;
@@ -603,6 +605,7 @@ namespace Dia
 					ApplicationManifest::PhaseTransition t;
 					t.fromPhase = Dia::Core::StringCRC(st["from"].asCString());
 					t.toPhase = Dia::Core::StringCRC(st["to"].asCString());
+					t.sourceManifestPath = sourceFilePath;
 					target.processingUnits[static_cast<unsigned int>(puIdx)].transitions.Add(t);
 				}
 			}

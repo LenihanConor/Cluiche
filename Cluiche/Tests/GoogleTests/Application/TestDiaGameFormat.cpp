@@ -39,7 +39,7 @@ TEST(DiaGameFormat, LoadGameFile_ValidFile_ReturnsSuccess)
 	WriteFile("test_game.diagame",
 		"{ \"name\": \"TestGame\", \"version\": \"1.0\","
 		"  \"imports\": [{ \"path\": \"main.diaapp\", \"type\": \"manifest\" }],"
-		"  \"config\": { \"asset_root\": \"Data/Assets\", \"default_level\": \"level1\" } }");
+		"  \"config\": { \"asset_root\": \"Data/Assets\" } }");
 
 	DiaGameManifest manifest;
 	ManifestValidationResult result = DiaGameManifestLoader::LoadGameFile("test_game.diagame", manifest);
@@ -51,7 +51,6 @@ TEST(DiaGameFormat, LoadGameFile_ValidFile_ReturnsSuccess)
 	EXPECT_STREQ(manifest.imports[0].path.AsCStr(), "main.diaapp");
 	EXPECT_EQ(manifest.imports[0].type, TypedImport::ImportType::kManifest);
 	EXPECT_STREQ(manifest.config.assetRoot.AsCStr(), "Data/Assets");
-	EXPECT_STREQ(manifest.config.defaultLevel.AsCStr(), "level1");
 
 	DeleteFile("test_game.diagame");
 }

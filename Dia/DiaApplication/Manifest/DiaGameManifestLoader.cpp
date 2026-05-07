@@ -68,8 +68,6 @@ namespace Dia
 				const Json::Value& cfg = root["config"];
 				if (cfg.isMember("asset_root") && cfg["asset_root"].isString())
 					outManifest.config.assetRoot = cfg["asset_root"].asCString();
-				if (cfg.isMember("default_level") && cfg["default_level"].isString())
-					outManifest.config.defaultLevel = cfg["default_level"].asCString();
 			}
 
 			return ManifestValidationResult::kSuccess;
