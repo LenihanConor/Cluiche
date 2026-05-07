@@ -84,7 +84,7 @@
     {
       "id": "manifest.dummy_stage",
       "type": "manifest",
-      "source_path": "Stages/DummyStage/misc/ApplicationFlow/dummy_stage.diaapp",
+      "source_path": "Stages/DummyStage/Misc/ApplicationFlow/dummy_stage.diaapp",
       "scope": "stage",
       "stage_name": "DummyStage",
       "tags": ["misc/ApplicationFlow"]

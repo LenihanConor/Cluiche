@@ -19,8 +19,8 @@ protobuf = true
 files = [
   { src = "External/Python311/python311.dll", dest = "$(OutDir)" },
   { src = "Cluiche/Assets/CluicheTest/Global/misc/ApplicationFlow/*.diaapp", dest = "$(OutDir)Data/Manifests/misc/ApplicationFlow/" },
-  { src = "Cluiche/Assets/CluicheTest/Global/cluichetest.diagame", dest = "$(OutDir)Data/Manifests/" },
-  { src = "Cluiche/Assets/CluicheTest/Stages/DummyStage/misc/ApplicationFlow/*", dest = "$(OutDir)Data/stages/DummyStage/misc/ApplicationFlow/" },
+  { src = "Cluiche/Assets/CluicheTest/cluichetest.diagame", dest = "$(OutDir)Data/Manifests/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/DummyStage/Misc/ApplicationFlow/*", dest = "$(OutDir)Data/stages/DummyStage/Misc/ApplicationFlow/" },
   { src = "Cluiche/Assets/CluicheTest/Stages/DummyStage/dummy_stage.diastage", dest = "$(OutDir)Data/stages/DummyStage/" }
 ]
 
@@ -38,7 +38,7 @@ protobuf = true
 files = [
   { src = "External/SFML/Current-x64/bin/*.dll", dest = "$(OutDir)" },
   { src = "Dia/DiaUIUltralight/Deploy/*", dest = "$(OutDir)" },
-  { src = "Cluiche/Assets/CluicheTest/Global/cluichetest.diagame", dest = "$(OutDir)assets/global/" },
+  { src = "Cluiche/Assets/CluicheTest/cluichetest.diagame", dest = "$(OutDir)assets/" },
   { src = "Cluiche/Assets/CluicheTest/Stages/DummyStage/dummy_stage.diastage", dest = "$(OutDir)assets/stages/DummyStage/" }
 ]
 
