@@ -18,7 +18,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 | System | Spec | Features | Depends On |
 |--------|------|----------|------------|
-| DiaApplicationEditor | [diaapplicationeditor.md](specs/systems/dia/diaapplicationeditor.md) | 15 features, all Approved — **not yet implemented** | DiaEditor ✅, DiaWebSocket ✅, DiaUICEF ✅, DiaApplication Flow Tree ✅ |
+| DiaApplicationEditor | [diaapplicationeditor.md](specs/systems/dia/diaapplicationeditor.md) | 15 features, all Approved — **not yet implemented** | DiaEditor ✅, DiaWebSocket ✅, DiaUICEF ✅, DiaApplication ✅ |
 
 ---
 
