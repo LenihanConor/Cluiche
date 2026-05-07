@@ -50,9 +50,9 @@ namespace Cluiche
 			Dia::SFML::RenderWindow* renderWindow = static_cast<Dia::SFML::RenderWindow*>(mCanvas);
 			if (renderWindow)
 			{
-				mTestRedTexture = renderWindow->LoadTexture("Assets/Textures/test_red.png");
-				mTestBlueTexture = renderWindow->LoadTexture("Assets/Textures/test_blue.png");
-				mTestGreenTexture = renderWindow->LoadTexture("Assets/Textures/test_green.png");
+				mTestRedTexture = renderWindow->LoadTexture("assets/stages/DummyStage/misc/test_red.png");
+				mTestBlueTexture = renderWindow->LoadTexture("assets/stages/DummyStage/misc/test_blue.png");
+				mTestGreenTexture = renderWindow->LoadTexture("assets/stages/DummyStage/misc/test_green.png");
 			}
 		}
 	}

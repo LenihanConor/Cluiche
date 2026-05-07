@@ -21,6 +21,7 @@ namespace Dia
             AssetRuntime();
 
             bool LoadManifest(const Dia::Core::FilePath& manifestPath);
+            bool LoadManifest(const Dia::Core::FilePath::ResoledFilePath& resolvedManifestPath);
 
             // Returns absolute deploy path for the asset, or null if not registered.
             const Dia::Core::Containers::String512* ResolveAssetPath(const Dia::Core::StringCRC& assetId) const;

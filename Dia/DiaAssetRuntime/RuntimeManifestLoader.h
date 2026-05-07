@@ -54,6 +54,10 @@ namespace Dia
             bool Load(const Dia::Core::FilePath& manifestPath,
                       AssetTable& assetTable,
                       StageTable& stageTable);
+
+            bool Load(const Dia::Core::FilePath::ResoledFilePath& resolvedManifestPath,
+                      AssetTable& assetTable,
+                      StageTable& stageTable);
         };
     }
 }

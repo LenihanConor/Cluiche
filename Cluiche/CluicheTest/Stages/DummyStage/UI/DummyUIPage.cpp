@@ -17,7 +17,7 @@ namespace Cluiche
 
 		void DummyUIPage::InitializePage()
 		{
-			Initialize(Dia::Core::FilePath("root", "DummyStage/", "dummyStage.html"));
+			Initialize(Dia::Core::FilePath("stage_ui", "dummyStage.html"));
 
 			BindMethod(Dia::UI::BoundMethod::CreateBoundMethod("Application_ExitLevel",
 				Dia::UI::BoundMethod::MethodPtr(this, &DummyUIPage::RequestExitLevel)));

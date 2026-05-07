@@ -26,7 +26,7 @@ int main( int argc, const char* argv[] )
 
 	Dia::Application::ManifestValidationResult result;
 	Dia::Application::ProcessingUnit* mainPU =
-		Dia::Application::ApplicationLoader::LoadFromGameFile(registry, "Data/Manifests/cluichetest.diagame", result);
+		Dia::Application::ApplicationLoader::LoadFromGameFile(registry, "assets/global/cluichetest.diagame", result);
 
 	if (!mainPU)
 	{

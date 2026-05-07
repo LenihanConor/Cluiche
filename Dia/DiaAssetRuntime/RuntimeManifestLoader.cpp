@@ -112,7 +112,14 @@ namespace Dia
         {
             Dia::Core::FilePath::ResoledFilePath resolvedPath;
             manifestPath.Resolve(resolvedPath);
-            const char* manifestPathStr = resolvedPath.AsCStr();
+            return Load(resolvedPath, assetTable, stageTable);
+        }
+
+        bool RuntimeManifestLoader::Load(const Dia::Core::FilePath::ResoledFilePath& resolvedManifestPath,
+                                         AssetTable& assetTable,
+                                         StageTable& stageTable)
+        {
+            const char* manifestPathStr = resolvedManifestPath.AsCStr();
 
             char* manifestBuffer = new char[kMaxManifestSize];
             if (!ReadFileToBuffer(manifestPathStr, manifestBuffer, kMaxManifestSize))

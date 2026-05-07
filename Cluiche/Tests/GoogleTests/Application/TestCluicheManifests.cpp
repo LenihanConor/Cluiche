@@ -116,26 +116,26 @@ protected:
 
 TEST_F(CluicheManifestTest, DISABLED_MainManifest_FileExists)
 {
-	ASSERT_TRUE(FileExists("Data/Manifests/cluiche_main.diaapp"));
+	ASSERT_TRUE(FileExists("Data/Manifests/misc/ApplicationFlow/cluiche_main.diaapp"));
 }
 
 TEST_F(CluicheManifestTest, DISABLED_MainManifest_ParsesSuccessfully)
 {
 	ApplicationManifest manifest;
-	ASSERT_TRUE(LoadManifest("Data/Manifests/cluiche_main.diaapp", manifest));
+	ASSERT_TRUE(LoadManifest("Data/Manifests/misc/ApplicationFlow/cluiche_main.diaapp", manifest));
 }
 
 TEST_F(CluicheManifestTest, DISABLED_MainManifest_HasOneProcessingUnit)
 {
 	ApplicationManifest manifest;
-	LoadManifest("Data/Manifests/cluiche_main.diaapp", manifest);
+	LoadManifest("Data/Manifests/misc/ApplicationFlow/cluiche_main.diaapp", manifest);
 	ASSERT_EQ(manifest.processingUnits.Size(), 1u);
 }
 
 TEST_F(CluicheManifestTest, MainManifest_PUTypeAndInstance)
 {
 	ApplicationManifest manifest;
-	LoadManifest("Data/Manifests/cluiche_main.diaapp", manifest);
+	LoadManifest("Data/Manifests/misc/ApplicationFlow/cluiche_main.diaapp", manifest);
 	const auto& pu = manifest.processingUnits[0];
 
 	EXPECT_EQ(pu.typeId, StringCRC("MainProcessingUnit"));
@@ -145,14 +145,14 @@ TEST_F(CluicheManifestTest, MainManifest_PUTypeAndInstance)
 TEST_F(CluicheManifestTest, MainManifest_HasTwoPhases)
 {
 	ApplicationManifest manifest;
-	LoadManifest("Data/Manifests/cluiche_main.diaapp", manifest);
+	LoadManifest("Data/Manifests/misc/ApplicationFlow/cluiche_main.diaapp", manifest);
 	EXPECT_EQ(manifest.processingUnits[0].phases.Size(), 2u);
 }
 
 TEST_F(CluicheManifestTest, MainManifest_PhaseTypes)
 {
 	ApplicationManifest manifest;
-	LoadManifest("Data/Manifests/cluiche_main.diaapp", manifest);
+	LoadManifest("Data/Manifests/misc/ApplicationFlow/cluiche_main.diaapp", manifest);
 	const auto& phases = manifest.processingUnits[0].phases;
 
 	EXPECT_EQ(phases[0].typeId, StringCRC("MainBootPhase"));
@@ -162,14 +162,14 @@ TEST_F(CluicheManifestTest, MainManifest_PhaseTypes)
 TEST_F(CluicheManifestTest, MainManifest_InitialPhase)
 {
 	ApplicationManifest manifest;
-	LoadManifest("Data/Manifests/cluiche_main.diaapp", manifest);
+	LoadManifest("Data/Manifests/misc/ApplicationFlow/cluiche_main.diaapp", manifest);
 	EXPECT_EQ(manifest.processingUnits[0].initialPhase, StringCRC("MainBootPhase"));
 }
 
 TEST_F(CluicheManifestTest, MainManifest_HasOneTransition)
 {
 	ApplicationManifest manifest;
-	LoadManifest("Data/Manifests/cluiche_main.diaapp", manifest);
+	LoadManifest("Data/Manifests/misc/ApplicationFlow/cluiche_main.diaapp", manifest);
 	const auto& transitions = manifest.processingUnits[0].transitions;
 
 	ASSERT_EQ(transitions.Size(), 1u);
@@ -180,28 +180,29 @@ TEST_F(CluicheManifestTest, MainManifest_HasOneTransition)
 TEST_F(CluicheManifestTest, MainManifest_HasFiveModules)
 {
 	ApplicationManifest manifest;
-	LoadManifest("Data/Manifests/cluiche_main.diaapp", manifest);
-	EXPECT_EQ(manifest.processingUnits[0].modules.Size(), 6u);
+	LoadManifest("Data/Manifests/misc/ApplicationFlow/cluiche_main.diaapp", manifest);
+	EXPECT_EQ(manifest.processingUnits[0].modules.Size(), 7u);
 }
 
 TEST_F(CluicheManifestTest, MainManifest_ModuleTypes)
 {
 	ApplicationManifest manifest;
-	LoadManifest("Data/Manifests/cluiche_main.diaapp", manifest);
+	LoadManifest("Data/Manifests/misc/ApplicationFlow/cluiche_main.diaapp", manifest);
 	const auto& modules = manifest.processingUnits[0].modules;
 
 	EXPECT_EQ(modules[0].typeId, StringCRC("LoggerModule"));
-	EXPECT_EQ(modules[1].typeId, StringCRC("Main::KernelModule"));
-	EXPECT_EQ(modules[2].typeId, StringCRC("Main::LevelRegistryModule"));
-	EXPECT_EQ(modules[3].typeId, StringCRC("Main::UIModule"));
-	EXPECT_EQ(modules[4].typeId, StringCRC("MetricsCollectorModule"));
-	EXPECT_EQ(modules[5].typeId, StringCRC("DebugServerModule"));
+	EXPECT_EQ(modules[1].typeId, StringCRC("Main::AssetServiceModule"));
+	EXPECT_EQ(modules[2].typeId, StringCRC("Main::KernelModule"));
+	EXPECT_EQ(modules[3].typeId, StringCRC("Main::LevelRegistryModule"));
+	EXPECT_EQ(modules[4].typeId, StringCRC("Main::UIModule"));
+	EXPECT_EQ(modules[5].typeId, StringCRC("MetricsCollectorModule"));
+	EXPECT_EQ(modules[6].typeId, StringCRC("DebugServerModule"));
 }
 
 TEST_F(CluicheManifestTest, MainManifest_KernelModuleInBothPhases)
 {
 	ApplicationManifest manifest;
-	LoadManifest("Data/Manifests/cluiche_main.diaapp", manifest);
+	LoadManifest("Data/Manifests/misc/ApplicationFlow/cluiche_main.diaapp", manifest);
 	const auto& kernelModule = manifest.processingUnits[0].modules[1];
 
 	ASSERT_EQ(kernelModule.phaseIds.Size(), 2u);
@@ -212,8 +213,8 @@ TEST_F(CluicheManifestTest, MainManifest_KernelModuleInBothPhases)
 TEST_F(CluicheManifestTest, MainManifest_UIModuleDependsOnKernel)
 {
 	ApplicationManifest manifest;
-	LoadManifest("Data/Manifests/cluiche_main.diaapp", manifest);
-	const auto& uiModule = manifest.processingUnits[0].modules[3];
+	LoadManifest("Data/Manifests/misc/ApplicationFlow/cluiche_main.diaapp", manifest);
+	const auto& uiModule = manifest.processingUnits[0].modules[4];
 
 	ASSERT_EQ(uiModule.dependencies.Size(), 1u);
 	EXPECT_EQ(uiModule.dependencies[0], StringCRC("Main::KernelModule"));
@@ -225,19 +226,19 @@ TEST_F(CluicheManifestTest, MainManifest_UIModuleDependsOnKernel)
 
 TEST_F(CluicheManifestTest, RenderManifest_FileExists)
 {
-	ASSERT_TRUE(FileExists("Data/Manifests/cluiche_render.diaapp"));
+	ASSERT_TRUE(FileExists("Data/Manifests/misc/ApplicationFlow/cluiche_render.diaapp"));
 }
 
 TEST_F(CluicheManifestTest, RenderManifest_ParsesSuccessfully)
 {
 	ApplicationManifest manifest;
-	ASSERT_TRUE(LoadManifest("Data/Manifests/cluiche_render.diaapp", manifest));
+	ASSERT_TRUE(LoadManifest("Data/Manifests/misc/ApplicationFlow/cluiche_render.diaapp", manifest));
 }
 
 TEST_F(CluicheManifestTest, RenderManifest_PUTypeAndFrequency)
 {
 	ApplicationManifest manifest;
-	LoadManifest("Data/Manifests/cluiche_render.diaapp", manifest);
+	LoadManifest("Data/Manifests/misc/ApplicationFlow/cluiche_render.diaapp", manifest);
 	const auto& pu = manifest.processingUnits[0];
 
 	EXPECT_EQ(pu.typeId, StringCRC("RenderProcessingUnit"));
@@ -248,7 +249,7 @@ TEST_F(CluicheManifestTest, RenderManifest_PUTypeAndFrequency)
 TEST_F(CluicheManifestTest, RenderManifest_HasOnePhaseNoModules)
 {
 	ApplicationManifest manifest;
-	LoadManifest("Data/Manifests/cluiche_render.diaapp", manifest);
+	LoadManifest("Data/Manifests/misc/ApplicationFlow/cluiche_render.diaapp", manifest);
 	const auto& pu = manifest.processingUnits[0];
 
 	EXPECT_EQ(pu.phases.Size(), 1u);
@@ -259,7 +260,7 @@ TEST_F(CluicheManifestTest, RenderManifest_HasOnePhaseNoModules)
 TEST_F(CluicheManifestTest, RenderManifest_PhaseType)
 {
 	ApplicationManifest manifest;
-	LoadManifest("Data/Manifests/cluiche_render.diaapp", manifest);
+	LoadManifest("Data/Manifests/misc/ApplicationFlow/cluiche_render.diaapp", manifest);
 
 	EXPECT_EQ(manifest.processingUnits[0].phases[0].typeId, StringCRC("RenderRunningPhase"));
 	EXPECT_EQ(manifest.processingUnits[0].initialPhase, StringCRC("RenderRunningPhase"));
@@ -271,19 +272,19 @@ TEST_F(CluicheManifestTest, RenderManifest_PhaseType)
 
 TEST_F(CluicheManifestTest, SimManifest_FileExists)
 {
-	ASSERT_TRUE(FileExists("Data/Manifests/cluiche_sim.diaapp"));
+	ASSERT_TRUE(FileExists("Data/Manifests/misc/ApplicationFlow/cluiche_sim.diaapp"));
 }
 
 TEST_F(CluicheManifestTest, SimManifest_ParsesSuccessfully)
 {
 	ApplicationManifest manifest;
-	ASSERT_TRUE(LoadManifest("Data/Manifests/cluiche_sim.diaapp", manifest));
+	ASSERT_TRUE(LoadManifest("Data/Manifests/misc/ApplicationFlow/cluiche_sim.diaapp", manifest));
 }
 
 TEST_F(CluicheManifestTest, SimManifest_PUTypeAndFrequency)
 {
 	ApplicationManifest manifest;
-	LoadManifest("Data/Manifests/cluiche_sim.diaapp", manifest);
+	LoadManifest("Data/Manifests/misc/ApplicationFlow/cluiche_sim.diaapp", manifest);
 	const auto& pu = manifest.processingUnits[0];
 
 	EXPECT_EQ(pu.typeId, StringCRC("SimProcessingUnit"));
@@ -294,7 +295,7 @@ TEST_F(CluicheManifestTest, SimManifest_PUTypeAndFrequency)
 TEST_F(CluicheManifestTest, SimManifest_HasTwoPhases)
 {
 	ApplicationManifest manifest;
-	LoadManifest("Data/Manifests/cluiche_sim.diaapp", manifest);
+	LoadManifest("Data/Manifests/misc/ApplicationFlow/cluiche_sim.diaapp", manifest);
 	const auto& pu = manifest.processingUnits[0];
 
 	ASSERT_EQ(pu.phases.Size(), 2u);
@@ -305,7 +306,7 @@ TEST_F(CluicheManifestTest, SimManifest_HasTwoPhases)
 TEST_F(CluicheManifestTest, SimManifest_HasOneTransition)
 {
 	ApplicationManifest manifest;
-	LoadManifest("Data/Manifests/cluiche_sim.diaapp", manifest);
+	LoadManifest("Data/Manifests/misc/ApplicationFlow/cluiche_sim.diaapp", manifest);
 	const auto& transitions = manifest.processingUnits[0].transitions;
 
 	ASSERT_EQ(transitions.Size(), 1u);
@@ -316,14 +317,14 @@ TEST_F(CluicheManifestTest, SimManifest_HasOneTransition)
 TEST_F(CluicheManifestTest, SimManifest_HasThreeModules)
 {
 	ApplicationManifest manifest;
-	LoadManifest("Data/Manifests/cluiche_sim.diaapp", manifest);
+	LoadManifest("Data/Manifests/misc/ApplicationFlow/cluiche_sim.diaapp", manifest);
 	EXPECT_EQ(manifest.processingUnits[0].modules.Size(), 3u);
 }
 
 TEST_F(CluicheManifestTest, SimManifest_ModuleTypes)
 {
 	ApplicationManifest manifest;
-	LoadManifest("Data/Manifests/cluiche_sim.diaapp", manifest);
+	LoadManifest("Data/Manifests/misc/ApplicationFlow/cluiche_sim.diaapp", manifest);
 	const auto& modules = manifest.processingUnits[0].modules;
 
 	EXPECT_EQ(modules[0].typeId, StringCRC("Sim::TimeServerModule"));
@@ -334,7 +335,7 @@ TEST_F(CluicheManifestTest, SimManifest_ModuleTypes)
 TEST_F(CluicheManifestTest, SimManifest_TimeServerModuleConfig)
 {
 	ApplicationManifest manifest;
-	LoadManifest("Data/Manifests/cluiche_sim.diaapp", manifest);
+	LoadManifest("Data/Manifests/misc/ApplicationFlow/cluiche_sim.diaapp", manifest);
 	const auto& timeModule = manifest.processingUnits[0].modules[0];
 
 	ASSERT_NE(timeModule.config, nullptr);
@@ -344,7 +345,7 @@ TEST_F(CluicheManifestTest, SimManifest_TimeServerModuleConfig)
 TEST_F(CluicheManifestTest, SimManifest_UIProxyModuleDependencies)
 {
 	ApplicationManifest manifest;
-	LoadManifest("Data/Manifests/cluiche_sim.diaapp", manifest);
+	LoadManifest("Data/Manifests/misc/ApplicationFlow/cluiche_sim.diaapp", manifest);
 	const auto& uiProxy = manifest.processingUnits[0].modules[1];
 
 	ASSERT_EQ(uiProxy.dependencies.Size(), 2u);
@@ -355,7 +356,7 @@ TEST_F(CluicheManifestTest, SimManifest_UIProxyModuleDependencies)
 TEST_F(CluicheManifestTest, SimManifest_InitialPhase)
 {
 	ApplicationManifest manifest;
-	LoadManifest("Data/Manifests/cluiche_sim.diaapp", manifest);
+	LoadManifest("Data/Manifests/misc/ApplicationFlow/cluiche_sim.diaapp", manifest);
 	EXPECT_EQ(manifest.processingUnits[0].initialPhase, StringCRC("SimBootPhase"));
 }
 
@@ -366,9 +367,9 @@ TEST_F(CluicheManifestTest, SimManifest_InitialPhase)
 TEST_F(CluicheManifestTest, AllManifests_VersionIsOne)
 {
 	ApplicationManifest mainManifest, renderManifest, simManifest;
-	LoadManifest("Data/Manifests/cluiche_main.diaapp", mainManifest);
-	LoadManifest("Data/Manifests/cluiche_render.diaapp", renderManifest);
-	LoadManifest("Data/Manifests/cluiche_sim.diaapp", simManifest);
+	LoadManifest("Data/Manifests/misc/ApplicationFlow/cluiche_main.diaapp", mainManifest);
+	LoadManifest("Data/Manifests/misc/ApplicationFlow/cluiche_render.diaapp", renderManifest);
+	LoadManifest("Data/Manifests/misc/ApplicationFlow/cluiche_sim.diaapp", simManifest);
 
 	EXPECT_EQ(mainManifest.version, 1u);
 	EXPECT_EQ(renderManifest.version, 1u);
@@ -378,9 +379,9 @@ TEST_F(CluicheManifestTest, AllManifests_VersionIsOne)
 TEST_F(CluicheManifestTest, AllManifests_InstanceIdsMatchTypeIds)
 {
 	ApplicationManifest mainManifest, renderManifest, simManifest;
-	LoadManifest("Data/Manifests/cluiche_main.diaapp", mainManifest);
-	LoadManifest("Data/Manifests/cluiche_render.diaapp", renderManifest);
-	LoadManifest("Data/Manifests/cluiche_sim.diaapp", simManifest);
+	LoadManifest("Data/Manifests/misc/ApplicationFlow/cluiche_main.diaapp", mainManifest);
+	LoadManifest("Data/Manifests/misc/ApplicationFlow/cluiche_render.diaapp", renderManifest);
+	LoadManifest("Data/Manifests/misc/ApplicationFlow/cluiche_sim.diaapp", simManifest);
 
 	EXPECT_EQ(mainManifest.processingUnits[0].typeId, mainManifest.processingUnits[0].instanceId);
 	EXPECT_EQ(renderManifest.processingUnits[0].typeId, renderManifest.processingUnits[0].instanceId);
@@ -403,6 +404,7 @@ TEST_F(CluicheManifestTest, MainManifest_ComposedImports_HasThreePUs)
 	mRegistry->RegisterKnownPhaseType(StringCRC("SimBootStrapPhase"));
 	mRegistry->RegisterKnownPhaseType(StringCRC("RenderRunningPhase"));
 	mRegistry->RegisterKnownModuleType(StringCRC("LoggerModule"));
+	mRegistry->RegisterKnownModuleType(StringCRC("Main::AssetServiceModule"));
 	mRegistry->RegisterKnownModuleType(StringCRC("Main::KernelModule"));
 	mRegistry->RegisterKnownModuleType(StringCRC("Main::LevelRegistryModule"));
 	mRegistry->RegisterKnownModuleType(StringCRC("Main::UIModule"));
@@ -414,7 +416,7 @@ TEST_F(CluicheManifestTest, MainManifest_ComposedImports_HasThreePUs)
 
 	ApplicationManifestLoader loader(*mRegistry);
 	ApplicationManifest composedManifest;
-	ManifestValidationResult result = loader.LoadFromFile("Data/Manifests/cluiche_main.diaapp", composedManifest);
+	ManifestValidationResult result = loader.LoadFromFile("Data/Manifests/misc/ApplicationFlow/cluiche_main.diaapp", composedManifest);
 
 	ASSERT_EQ(result, ManifestValidationResult::kSuccess);
 	EXPECT_EQ(composedManifest.processingUnits.Size(), 3u);

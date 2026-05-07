@@ -1,13 +1,10 @@
 #include "CluicheKernel/ApplicationFlow/Modules/MainKernelModule.h"
 
 #include <DiaUI/IUISystem.h>
-#include <DiaCore/FilePath/PathStoreConfig.h>
 #include <DiaCore/Type/TypeFacade.h>
-#include <DiaCore/FilePath/SerializedFileLoad.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaSFML/RenderWindow.h>
 #include <DiaCore/Time/TimeAbsolute.h>
-#include <DiaCore/FilePath/PathStore.h>
 #include <DiaGraphics/Interface/ICanvas.h>
 #include <DiaInput/IInputSource.h>
 
@@ -80,23 +77,6 @@ namespace Cluiche
 
 		Dia::Application::StateObject::OpertionResponse KernelModule::DoStart(const IStartData* startData)
 		{
-			//Setup paths
-			Dia::Core::PathStoreConfig pathStoreConfig;
-
-			std::string dir;
-			Dia::Core::Path::ExePath(dir);
-
-			Dia::Core::FilePath::ResoledFilePath pathStroreConfigFile("%s//pathStoreConfig.json", dir.c_str());
-
-			Dia::Core::SerializedFileLoad fileLoad;
-			if (fileLoad.LoadNow(pathStroreConfigFile, pathStoreConfig, 5096) != Dia::Core::IFileLoad::ReturnCode::kSuccess)
-			{
-				DIA_ASSERT(0, "Could not load pathStoreConfig at %s, ", dir.c_str());
-				return StateObject::OpertionResponse::kImmediate;
-			}
-
-			Dia::Core::PathStore::RegisterToStore(pathStoreConfig);
-
 			// Setup the rendering windoow
 			Dia::Window::IWindow::Settings windowSetting("Cluiche Application", Dia::Window::IWindow::Settings::Dimensions(1400, 1000), Dia::Window::IWindow::Settings::Style());
 			Dia::Graphics::ICanvas::Settings canvasSettings(Dia::Graphics::ICanvas::Settings::VSyncEnum::kEnable, 0, 0, 2, 0);

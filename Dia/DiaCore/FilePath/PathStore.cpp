@@ -101,6 +101,15 @@ namespace Dia
 			sPathRootStore.insert(std::pair<Path::Alias, Path::String>(pathalias, temp));
 		}
 
+		void PathStore::UnregisterFromStore(const Path::Alias& pathalias)
+		{
+			ScopedWriteLock lock(sLock);
+
+			DIA_ASSERT(!sLocked, "PathStore is locked; all UnregisterFromStore calls must happen before PathStore::Lock()");
+
+			sPathRootStore.erase(pathalias);
+		}
+
 		bool PathStore::IsPathAliasRegistered(const Path::Alias& pathalias)
 		{
 			ScopedReadLock lock(sLock);

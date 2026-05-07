@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from .handler import AssetError, AssetHandler, DeployResult, TransformResult
+from .handlers.default import DefaultAssetHandler
 from .registry import AssetHandlerRegistry
 
 if TYPE_CHECKING:
@@ -58,7 +59,7 @@ class BuildRunner:
             if not self._should_include_asset(record):
                 continue
 
-            handler = self._registry.get(_type_from_id(asset_id)) or AssetHandler()
+            handler = self._registry.get(_type_from_id(asset_id)) or DefaultAssetHandler()
             errors: list[AssetError] = []
             failed = False
 

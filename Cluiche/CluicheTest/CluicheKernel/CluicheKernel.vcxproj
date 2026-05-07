@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ApplicationFlow\Modules\AssetServiceModule.h" />
     <ClInclude Include="ApplicationFlow\Modules\LevelFactoryModule.h" />
     <ClInclude Include="ApplicationFlow\Modules\MainKernelModule.h" />
     <ClInclude Include="ApplicationFlow\Modules\MainUIModule.h" />
@@ -22,6 +23,7 @@
     <ClInclude Include="LevelFactory.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ApplicationFlow\Modules\AssetServiceModule.cpp" />
     <ClCompile Include="ApplicationFlow\Modules\LevelFactoryModule.cpp" />
     <ClCompile Include="ApplicationFlow\Modules\MainKernelModule.cpp" />
     <ClCompile Include="ApplicationFlow\Modules\MainUIModule.cpp" />

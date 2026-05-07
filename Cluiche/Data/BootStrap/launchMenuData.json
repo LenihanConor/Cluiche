@@ -1,9 +1,0 @@
- [
-  {
-    id: "1",
-    title: "Dummy Project",
-    unique_name: "dummy_project",
-    status: "Complete",
-    details: "Dummy project to allow quick testing of new idea's"
-  }
-]

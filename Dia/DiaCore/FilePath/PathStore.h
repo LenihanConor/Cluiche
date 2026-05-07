@@ -49,6 +49,10 @@ namespace Dia
 			// Must be called before Lock().
 			static void RegisterToStore(const Path::Alias& pathalias, const Path::String& path);
 
+			// Remove a previously registered alias.
+			// Must be called before Lock().
+			static void UnregisterFromStore(const Path::Alias& pathalias);
+
 			// Seal the store against further writes.
 			// Call once all startup registration is complete.
 			// In DEBUG builds, subsequent RegisterToStore calls will assert.

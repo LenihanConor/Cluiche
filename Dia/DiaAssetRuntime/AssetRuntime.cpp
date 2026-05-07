@@ -64,6 +64,19 @@ namespace Dia
             return true;
         }
 
+        bool AssetRuntime::LoadManifest(const Dia::Core::FilePath::ResoledFilePath& resolvedManifestPath)
+        {
+            AssertOwnerThread();
+            RuntimeManifestLoader loader;
+            if (!loader.Load(resolvedManifestPath, mAssetTable, mStageTable))
+                return false;
+
+            InitStateTable();
+            InitRefCountTable();
+            RegisterPathAliases();
+            return true;
+        }
+
         const Dia::Core::Containers::String512* AssetRuntime::ResolveAssetPath(const Dia::Core::StringCRC& assetId) const
         {
             AssertOwnerThread();

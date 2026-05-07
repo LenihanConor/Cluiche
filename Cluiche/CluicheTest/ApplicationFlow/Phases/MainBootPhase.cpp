@@ -1,6 +1,7 @@
 #include "ApplicationFlow/Phases/MainBootPhase.h"
 
 #include "CluicheKernel/ApplicationFlow/Modules/MainKernelModule.h"
+#include "CluicheKernel/ApplicationFlow/Modules/AssetServiceModule.h"
 #include "ApplicationFlow/Phases/MainBootStrapPhase.h"
 
 #include <DiaApplication/ApplicationProcessingUnit.h>
@@ -15,6 +16,10 @@ namespace Cluiche
 
 	void MainBootPhase::AfterModulesStart()
 	{
+		auto* assetService = GetModule<Cluiche::Main::AssetServiceModule>();
+		if (assetService)
+			assetService->RequestGlobalLoad();
+
 		GetAssociatedProcessingUnit()->QueuePhaseTransition(MainBootStrapPhase::kTypeId);
 	}
 

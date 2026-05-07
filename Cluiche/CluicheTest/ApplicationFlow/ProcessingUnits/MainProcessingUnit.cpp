@@ -47,7 +47,7 @@ namespace Cluiche
 		// Load render PU from manifest, add to tree for ownership
 		{
 			auto* rawRenderPU = static_cast<Cluiche::RenderProcessingUnit*>(
-				Dia::Application::ApplicationLoader::LoadApplication(*GetTypeRegistry(), "Data/Manifests/cluiche_render.diaapp"));
+				Dia::Application::ApplicationLoader::LoadApplication(*GetTypeRegistry(), "assets/global/misc/ApplicationFlow/cluiche_render.diaapp"));
 
 			mRenderingPU = rawRenderPU;
 			Dia::Core::UniquePtr<Dia::Application::ProcessingUnit> owned(rawRenderPU);
@@ -69,7 +69,7 @@ namespace Cluiche
 			auto* ui = GetModule<Cluiche::Main::UIModule>();
 
 			auto* rawSimPU = static_cast<Cluiche::SimProcessingUnit*>(
-				Dia::Application::ApplicationLoader::LoadApplication(*GetTypeRegistry(), "Data/Manifests/cluiche_sim.diaapp"));
+				Dia::Application::ApplicationLoader::LoadApplication(*GetTypeRegistry(), "assets/global/misc/ApplicationFlow/cluiche_sim.diaapp"));
 
 			mSimPU = rawSimPU;
 			Dia::Core::UniquePtr<Dia::Application::ProcessingUnit> owned(rawSimPU);

@@ -369,11 +369,11 @@ TEST(DiaGameFormat, CluicheTestDataFiles_DiastageLoads)
 {
 	DiaStageManifest manifest;
 	ManifestValidationResult result = DiaGameManifestLoader::LoadStageFile(
-		"Data/Manifests/stages/dummy_stage.diastage", manifest);
+		"Data/stages/DummyStage/dummy_stage.diastage", manifest);
 
 	EXPECT_EQ(result, ManifestValidationResult::kSuccess);
 	EXPECT_STREQ(manifest.name.AsCStr(), "DummyStage");
-	EXPECT_STREQ(manifest.manifestPath.AsCStr(), "dummy_stage.diaapp");
+	EXPECT_STREQ(manifest.manifestPath.AsCStr(), "misc/ApplicationFlow/dummy_stage.diaapp");
 }
 
 TEST(DiaGameFormat, CluicheTestDataFiles_ComposeFromGameFile_Succeeds)
@@ -520,7 +520,7 @@ TEST(DiaGameFormat, ApplicationLoader_LoadStageManifest_ParsesFile)
 {
 	DiaStageManifest manifest;
 	ManifestValidationResult result = ApplicationLoader::LoadStageManifest(
-		"Data/Manifests/stages/dummy_stage.diastage", manifest);
+		"Data/stages/DummyStage/dummy_stage.diastage", manifest);
 
 	EXPECT_EQ(result, ManifestValidationResult::kSuccess);
 	EXPECT_STREQ(manifest.name.AsCStr(), "DummyStage");

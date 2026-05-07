@@ -18,27 +18,28 @@ protobuf = true
 [targets.googletest.deploy]
 files = [
   { src = "External/Python311/python311.dll", dest = "$(OutDir)" },
-  { src = "Cluiche/CluicheTest/Data/Manifests/*.diaapp", dest = "$(OutDir)Data/Manifests/" },
-  { src = "Cluiche/CluicheTest/Data/Manifests/*.diagame", dest = "$(OutDir)Data/Manifests/" },
-  { src = "Cluiche/CluicheTest/Data/Manifests/stages/*", dest = "$(OutDir)Data/Manifests/stages/" }
+  { src = "Cluiche/Assets/CluicheTest/Global/misc/ApplicationFlow/*.diaapp", dest = "$(OutDir)Data/Manifests/misc/ApplicationFlow/" },
+  { src = "Cluiche/Assets/CluicheTest/Global/cluichetest.diagame", dest = "$(OutDir)Data/Manifests/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/DummyStage/misc/ApplicationFlow/*", dest = "$(OutDir)Data/stages/DummyStage/misc/ApplicationFlow/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/DummyStage/dummy_stage.diastage", dest = "$(OutDir)Data/stages/DummyStage/" }
 ]
 
 [targets.cluichetest]
 project = "Cluiche/CluicheTest/CluicheTest.vcxproj"
 stages = ["compile-code", "build-assets", "deploy"]
+app_name = "CluicheTest"
+catalogue_manifest = "Cluiche/Assets/CluicheTest/assets.catalogue.json"
+asset_stages = ["stage.global", "stage.dummy_stage"]
 
 [targets.cluichetest.build_deps]
 protobuf = true
 
 [targets.cluichetest.deploy]
 files = [
-  { src = "Cluiche/pathStoreConfig.json", dest = "$(OutDir)" },
   { src = "External/SFML/Current-x64/bin/*.dll", dest = "$(OutDir)" },
   { src = "Dia/DiaUIUltralight/Deploy/*", dest = "$(OutDir)" },
-  { src = "External/Ultralight/resources/*", dest = "$(OutDir)resources/" },
-  { src = "Cluiche/CluicheTest/Data/Manifests/*.diaapp", dest = "$(OutDir)Data/Manifests/" },
-  { src = "Cluiche/CluicheTest/Data/Manifests/*.diagame", dest = "$(OutDir)Data/Manifests/" },
-  { src = "Cluiche/CluicheTest/Data/Manifests/stages/*", dest = "$(OutDir)Data/Manifests/stages/" }
+  { src = "Cluiche/Assets/CluicheTest/Global/cluichetest.diagame", dest = "$(OutDir)assets/global/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/DummyStage/dummy_stage.diastage", dest = "$(OutDir)assets/stages/DummyStage/" }
 ]
 
 [targets.cluicheeditor]

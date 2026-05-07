@@ -4,8 +4,10 @@
 #include "CluicheKernel/ApplicationFlow/Modules/MainKernelModule.h"
 #include "CluicheKernel/ApplicationFlow/Modules/MainUIModule.h"
 #include "CluicheKernel/ApplicationFlow/Modules/LevelFactoryModule.h"
+#include "CluicheKernel/ApplicationFlow/Modules/AssetServiceModule.h"
 
 #include <DiaApplication/ApplicationProcessingUnit.h>
+#include <DiaCore/CRC/StringCRC.h>
 #include <DiaDebugServer/DebugServerModule.h>
 
 namespace Cluiche
@@ -28,6 +30,10 @@ namespace Cluiche
 
 		void MainLoadPhase::AfterModulesStart()
 		{
+			auto* assetService = GetModule<Cluiche::Main::AssetServiceModule>();
+			if (assetService)
+				assetService->RequestStageLoad(Dia::Core::StringCRC("stage.dummy_stage"));
+
 			GetAssociatedProcessingUnit()->QueuePhaseTransition(MainFEPhase::kTypeId);
 		}
 	}

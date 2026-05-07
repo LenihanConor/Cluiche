@@ -11,6 +11,7 @@ if TYPE_CHECKING:
 CATEGORY_TAGS = [
     "Presentation/UI",
     "Presentation",
+    "misc/ApplicationFlow",
     "characters",
     "environments",
     "gameplay",

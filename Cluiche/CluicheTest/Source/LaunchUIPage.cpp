@@ -15,7 +15,7 @@ namespace Cluiche
 
 	void LaunchUIPage::InitializePage()
 	{
-		Initialize(Dia::Core::FilePath("root", "BootStrap/", "bootscreen.html"));
+		Initialize(Dia::Core::FilePath("root", "Presentation/UI/BootStrap/", "bootscreen.html"));
 			
 		BindMethod(Dia::UI::BoundMethod::CreateBoundMethod("Application_LaunchLevel",
 				Dia::UI::BoundMethod::MethodPtr(this, &LaunchUIPage::LaunchLevel)));

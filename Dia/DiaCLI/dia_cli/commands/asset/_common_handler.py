@@ -56,7 +56,7 @@ def run_asset_phases(
 
     # --- build context ---
     deploy_root = (
-        repo_root / "bin" / target_cfg.app_name / config / platform / "assets"
+        repo_root / "Cluiche" / "bin" / target_cfg.app_name / config / platform / "assets"
     )
     if force and deploy_root.exists():
         shutil.rmtree(deploy_root)
