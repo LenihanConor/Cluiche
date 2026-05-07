@@ -9,6 +9,7 @@
 #include <DiaApplication/ApplicationProcessingUnit.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaDebugServer/DebugServerModule.h>
+#include <DiaLogger/DiaLog.h>
 
 namespace Cluiche
 {
@@ -22,17 +23,19 @@ namespace Cluiche
 
 		void MainLoadPhase::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
 		{
-			AddModule(buildDependencies->GetModule(Cluiche::Main::KernelModule::kTypeId));
-			AddModule(buildDependencies->GetModule(Cluiche::Main::LevelFactoryModule::kTypeId));
-			AddModule(buildDependencies->GetModule(Cluiche::Main::UIModule::kTypeId));
-			AddModule(buildDependencies->GetModule(Dia::DebugServer::DebugServerModule::kTypeId));
+	//		AddModule(buildDependencies->GetModule(Cluiche::Main::KernelModule::kTypeId));
+	//		AddModule(buildDependencies->GetModule(Cluiche::Main::LevelFactoryModule::kTypeId));
+	//		AddModule(buildDependencies->GetModule(Cluiche::Main::UIModule::kTypeId));
+	//		AddModule(buildDependencies->GetModule(Cluiche::Main::AssetServiceModule::kTypeId));
+	//		AddModule(buildDependencies->GetModule(Dia::DebugServer::DebugServerModule::kTypeId));
+
+			DIA_ASSERT(this->ContainsModule(Cluiche::Main::AssetServiceModule::kTypeId), "MainLoadPhase FAILED to add AssetServiceModule");
 		}
 
 		void MainLoadPhase::AfterModulesStart()
 		{
-			auto* assetService = GetModule<Cluiche::Main::AssetServiceModule>();
-			if (assetService)
-				assetService->RequestStageLoad(Dia::Core::StringCRC("stage.dummy_stage"));
+			Cluiche::Main::AssetServiceModule* assetService = this->GetModule<Cluiche::Main::AssetServiceModule>();
+			assetService->RequestStageLoad(Dia::Core::StringCRC("stage.dummy_stage"));
 
 			GetAssociatedProcessingUnit()->QueuePhaseTransition(MainFEPhase::kTypeId);
 		}

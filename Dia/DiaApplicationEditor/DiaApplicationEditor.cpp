@@ -4,6 +4,7 @@
 #include <DiaEditor/Plugin/EditorPluginRegistrationMacros.h>
 #include <DiaEditor/Plugin/EditorPluginContext.h>
 #include <DiaEditor/UI/WebUIBridge.h>
+#include <DiaEditor/UI/FileDialogHandler.h>
 
 #include <DiaApplication/Manifest/ApplicationManifestLoader.h>
 #include <DiaApplication/Manifest/ManifestComposer.h>
@@ -18,7 +19,6 @@
 #include <cstdio>
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include <commdlg.h>
 
 using namespace Dia::Application::Editor;
 using namespace Dia::Application;
@@ -173,15 +173,19 @@ void DiaApplicationEditor::OpenManifest(const char* path)
 	char dialogPath[MAX_PATH] = {};
 	if (path == nullptr || path[0] == '\0')
 	{
-		OPENFILENAMEA ofn = {};
-		ofn.lStructSize  = sizeof(ofn);
-		ofn.lpstrFilter  = "Dia Game Project (*.diagame)\0*.diagame\0Dia App Manifest (*.diaapp)\0*.diaapp\0All Files (*.*)\0*.*\0";
-		ofn.lpstrFile    = dialogPath;
-		ofn.nMaxFile     = MAX_PATH;
-		ofn.Flags        = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
-		ofn.lpstrDefExt  = "diagame";
-		if (!GetOpenFileNameA(&ofn))
+		Json::Value dialogData;
+		Json::Value filters(Json::arrayValue);
+		Json::Value f1; f1["name"] = "Dia Game Project"; f1["ext"] = "*.diagame"; filters.append(f1);
+		Json::Value f2; f2["name"] = "Dia App Manifest"; f2["ext"] = "*.diaapp"; filters.append(f2);
+		Json::Value f3; f3["name"] = "All Files"; f3["ext"] = "*.*"; filters.append(f3);
+		dialogData["filters"] = filters;
+		dialogData["default_ext"] = "diagame";
+		dialogData["title"] = "Open Manifest";
+
+		Json::Value result = Dia::Editor::FileDialogHandler::HandleOpenFileDialog(dialogData);
+		if (!result.get("success", false).asBool())
 			return;
+		strncpy_s(dialogPath, MAX_PATH, result["path"].asCString(), _TRUNCATE);
 		path = dialogPath;
 	}
 
@@ -1207,15 +1211,18 @@ void DiaApplicationEditor::HandleAddImport(const Json::Value& data)
 	}
 	else
 	{
-		OPENFILENAMEA ofn = {};
-		ofn.lStructSize = sizeof(ofn);
-		ofn.lpstrFilter = "Dia App Manifest (*.diaapp)\0*.diaapp\0All Files (*.*)\0*.*\0";
-		ofn.lpstrFile = dialogPath;
-		ofn.nMaxFile = MAX_PATH;
-		ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
-		ofn.lpstrDefExt = "diaapp";
-		if (!GetOpenFileNameA(&ofn))
+		Json::Value dialogData;
+		Json::Value filters(Json::arrayValue);
+		Json::Value f1; f1["name"] = "Dia App Manifest"; f1["ext"] = "*.diaapp"; filters.append(f1);
+		Json::Value f2; f2["name"] = "All Files"; f2["ext"] = "*.*"; filters.append(f2);
+		dialogData["filters"] = filters;
+		dialogData["default_ext"] = "diaapp";
+		dialogData["title"] = "Add Import";
+
+		Json::Value result = Dia::Editor::FileDialogHandler::HandleOpenFileDialog(dialogData);
+		if (!result.get("success", false).asBool())
 			return;
+		strncpy_s(dialogPath, MAX_PATH, result["path"].asCString(), _TRUNCATE);
 		path = dialogPath;
 	}
 

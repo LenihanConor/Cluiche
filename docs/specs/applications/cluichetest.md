@@ -13,6 +13,7 @@ CluicheTest is a demo game and engine testbed built on the Dia engine. It serves
 |--------|-------------|------|
 | ApplicationFlow | Main processing unit orchestration, level management, core game loop | TODO |
 | Asset Pipeline | End-to-end asset integration: directory structure, pipeline deploy, AssetServiceModule, manifest path aliases | @docs/specs/systems/cluichetest/asset-pipeline.md |
+| CluicheTestScenarios | DiaTestHarness e2e scenario files and test plan for CluicheTest | @docs/specs/systems/cluichetest/cluichetestscenarios.md |
 | Levels | Level loading, lifecycle management, and level-specific logic | TODO |
 | Rendering | Graphics rendering, canvas management, frame composition | TODO |
 | Input | Input event handling, keyboard/mouse state management | TODO |

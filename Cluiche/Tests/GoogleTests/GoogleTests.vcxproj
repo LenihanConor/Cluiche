@@ -256,6 +256,7 @@
     <ClCompile Include="Editor\TestGameConnectionManager.cpp" />
     <ClCompile Include="Editor\TestDockingLayout.cpp" />
     <ClCompile Include="Editor\TestWebUIBridge.cpp" />
+    <ClCompile Include="Editor\TestFileDialogHandler.cpp" />
     <ClCompile Include="Editor\TestEditorApplication.cpp" />
     <ClCompile Include="Editor\TestEditorApplicationLifecycle.cpp" />
     <ClCompile Include="Editor\TestEditorPluginPipeline.cpp" />

@@ -553,6 +553,9 @@
     <ClCompile Include="Editor\TestWebUIBridge.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
+    <ClCompile Include="Editor\TestFileDialogHandler.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
     <ClCompile Include="Editor\TestEditorApplication.cpp">
       <Filter>Editor</Filter>
     </ClCompile>

@@ -95,6 +95,7 @@
     <ClInclude Include="LiveConnection\GameConnectionController.h" />
     <ClInclude Include="Layout\DockingLayout.h" />
     <ClInclude Include="UI\WebUIBridge.h" />
+    <ClInclude Include="UI\FileDialogHandler.h" />
     <ClInclude Include="EditorManifestLoader.h" />
     <ClInclude Include="Sinks\EditorConsoleSink.h" />
   </ItemGroup>
@@ -109,6 +110,7 @@
     <ClCompile Include="LiveConnection\GameConnectionController.cpp" />
     <ClCompile Include="Layout\DockingLayout.cpp" />
     <ClCompile Include="UI\WebUIBridge.cpp" />
+    <ClCompile Include="UI\FileDialogHandler.cpp" />
     <ClCompile Include="EditorManifestLoader.cpp" />
     <ClCompile Include="Sinks\EditorConsoleSink.cpp" />
   </ItemGroup>

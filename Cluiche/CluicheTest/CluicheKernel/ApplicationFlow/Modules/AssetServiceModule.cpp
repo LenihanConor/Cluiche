@@ -77,13 +77,15 @@ namespace Cluiche
 
 			mDeployRoot = Dia::Core::Containers::String512("%s/assets/", exePath.c_str());
 
+			const char* deployRoot = mDeployRoot.AsCStr();
+
 			// Load runtime manifest
-			Dia::Core::FilePath::ResoledFilePath manifestPath("%sassets.runtime.json", mDeployRoot.AsCStr());
+			Dia::Core::FilePath::ResoledFilePath manifestPath("%sassets.runtime.json", deployRoot);
 			mRuntime.LoadManifest(manifestPath);
 			mRuntime.RegisterListener(this);
 
 			// Parse .diagame for config (path_aliases, ultralight)
-			Dia::Core::Containers::String512 diagamePath("%sglobal/cluichetest.diagame", mDeployRoot.AsCStr());
+			Dia::Core::Containers::String512 diagamePath("%scluichetest.diagame", deployRoot);
 
 			static const unsigned int kMaxFileSize = 4096;
 			char fileBuffer[kMaxFileSize];
@@ -167,7 +169,7 @@ namespace Cluiche
 							if (ul.isMember("resource_path_prefix") && ul["resource_path_prefix"].isString())
 							{
 								mUltralightResourcePrefix = Dia::Core::Containers::String512(
-									"%s%s", mDeployRoot.AsCStr(), ul["resource_path_prefix"].asCString());
+									"%s%s", deployRoot, ul["resource_path_prefix"].asCString());
 							}
 						}
 					}

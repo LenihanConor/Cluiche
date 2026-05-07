@@ -1,0 +1,18 @@
+{
+  "name": "CluicheTest",
+  "version": "0.1",
+  "imports": [
+    { "path": "global/misc/ApplicationFlow/cluiche_main.diaapp", "type": "manifest" },
+    { "path": "stages/DummyStage/dummy_stage.diastage", "type": "stage" }
+  ],
+  "config": {
+    "default_level": "dummy_stage",
+    "path_aliases": {
+      "root": ".",
+      "ui_common": "./global/Presentation/UI"
+    },
+    "ultralight": {
+      "resource_path_prefix": "global/Misc/Resources/"
+    }
+  }
+}

@@ -596,6 +596,7 @@ Features within the DiaEditor system (create with `/spec-feature`):
 | Home Panel | Built-in landing panel so the docking area is never empty | @docs/specs/features/dia/diaeditor/home-panel.md | Approved |
 | Game Connection Panel | UI for the editor's WebSocket connection to a running game | @docs/specs/features/dia/diaeditor/game-connection-panel.md | Draft |
 | Plugin Lifecycle Toolbar | Persistent toolbar strip, Plugin Browser panel, runtime load/unload/hide/show of plugins, connection status indicator | @docs/specs/features/dia/diaeditor/plugin-lifecycle-toolbar.md | Done |
+| Shared File Dialog | Framework-level native file dialog service (open/save) available to all plugins via WebUIBridge | @docs/specs/features/dia/diaeditor/shared-file-dialog.md | Draft |
 
 ## AI Review Questions
 

@@ -1,6 +1,7 @@
 #include "DiaEditor/MVC/EditorView.h"
 
 #include "DiaEditor/UI/WebUIBridge.h"
+#include "DiaEditor/UI/FileDialogHandler.h"
 #include "DiaEditor/Layout/DockingLayout.h"
 #include "DiaEditor/MVC/EditorViewController.h"
 
@@ -17,6 +18,8 @@ namespace Dia
 		static const Dia::Core::StringCRC kReqGetPanels("get_panels");
 		static const Dia::Core::StringCRC kReqGetCommands("get_commands");
 		static const Dia::Core::StringCRC kReqLoadLayout("load_layout");
+		static const Dia::Core::StringCRC kReqOpenFileDialog("editor.open_file_dialog");
+		static const Dia::Core::StringCRC kReqSaveFileDialog("editor.save_file_dialog");
 		static const Dia::Core::StringCRC kEventSaveLayout("save_layout");
 		static const Dia::Core::StringCRC kEventExecuteCommand("execute_command");
 		static const Dia::Core::StringCRC kEventTogglePanelVisibility("toggle_panel_visibility");
@@ -232,6 +235,18 @@ namespace Dia
 					Json::Value result;
 					mDockingLayout->Serialize(result);
 					return result;
+				});
+
+			mWebUIBridge->RegisterRequestHandler(kReqOpenFileDialog,
+				[](const Json::Value& data) -> Json::Value
+				{
+					return FileDialogHandler::HandleOpenFileDialog(data);
+				});
+
+			mWebUIBridge->RegisterRequestHandler(kReqSaveFileDialog,
+				[](const Json::Value& data) -> Json::Value
+				{
+					return FileDialogHandler::HandleSaveFileDialog(data);
 				});
 
 			mWebUIBridge->RegisterEventHandler(kEventSaveLayout,

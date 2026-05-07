@@ -70,7 +70,7 @@ namespace Dia
 
 			//TODO: Replace with a better file load system
 			//TODO: Move this shader to a centralized place
-			Dia::Core::FilePath uiShaderFile("root", "Render_Common/", "ui.frag");
+			Dia::Core::FilePath uiShaderFile("root", "global/Presentation/", "ui.frag");
 			Dia::Core::FilePath::ResoledFilePath resolvedUIShaderFile;
 
 			uiShaderFile.Resolve(resolvedUIShaderFile);

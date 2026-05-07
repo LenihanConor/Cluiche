@@ -195,8 +195,8 @@ Features within the DiaTestHarness system (create with `/spec-feature`):
 
 | Feature | Description | Spec | Status |
 |---------|-------------|------|--------|
-| Harness Core | WebSocket client, app launcher, scenario runner, assertion framework, result output | TBD | Draft |
-| Smoke Test Scenario | First scenario: CluicheTest launches, connects, enters main phase, renders 60 frames at >30 FPS, exits cleanly | TBD | Draft |
+| Harness Core | WebSocket client, app launcher, scenario runner, observation framework, test plan orchestrator, DiaCLI shim, result output | [harness-core.md](../../features/dia/diatestharness/harness-core.md) | Approved |
+| Smoke Test Scenario | Moved to CluicheTest/CluicheTestScenarios — app owns its scenarios | @docs/specs/features/cluichetest/cluichetestscenarios/smoke-test-scenario.md | Approved |
 
 ## AI Review Questions
 

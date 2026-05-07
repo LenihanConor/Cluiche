@@ -112,11 +112,10 @@ namespace Dia
 		// Ensures paths don't end with a separator
 		void Path::RemoveEndingForwardSlash(Path::String& outString)
 		{
-			Path::String::ConstReverseIterator iter(&outString.Back(), &outString.Front(), &outString.Back());
-			char lastChar = *iter.Begin();
-			if (lastChar == '/')
+			unsigned int len = outString.Length();
+			if (len > 0 && outString[len - 1] == '/')
 			{
-				outString.Trim(outString.Size() - 1);
+				outString.Trim(0, len - 1);
 			}
 		}
 	}

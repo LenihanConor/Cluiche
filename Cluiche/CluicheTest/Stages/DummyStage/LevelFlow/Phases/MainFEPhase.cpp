@@ -25,6 +25,7 @@ namespace Cluiche
 			AddModule(buildDependencies->GetModule(Cluiche::Main::KernelModule::kTypeId));
 			AddModule(buildDependencies->GetModule(Cluiche::Main::LevelFactoryModule::kTypeId));
 			AddModule(buildDependencies->GetModule(Cluiche::Main::UIModule::kTypeId));
+			AddModule(buildDependencies->GetModule(Cluiche::Main::AssetServiceModule::kTypeId));
 			AddModule(buildDependencies->GetModule(Dia::DebugServer::DebugServerModule::kTypeId));
 		}
 
@@ -38,9 +39,8 @@ namespace Cluiche
 
 		void MainFEPhase::BeforeModulesStop()
 		{
-			auto* assetService = GetModule<Cluiche::Main::AssetServiceModule>();
-			if (assetService)
-				assetService->RequestStageUnload(Dia::Core::StringCRC("stage.dummy_stage"));
+			Cluiche::Main::AssetServiceModule* assetService = this->GetModule<Cluiche::Main::AssetServiceModule>();
+			assetService->RequestStageUnload(Dia::Core::StringCRC("stage.dummy_stage"));
 
 			Cluiche::Main::UIModule* ui = this->GetModule<Cluiche::Main::UIModule>();
 			ui->GetUISystem()->UnloadPage();
