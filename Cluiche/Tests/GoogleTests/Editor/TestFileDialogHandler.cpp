@@ -2,32 +2,44 @@
 #include <DiaEditor/UI/FileDialogHandler.h>
 #include <DiaCore/Json/external/json/json.h>
 
+#include <cstdlib>
+
 using namespace Dia::Editor;
+
+namespace
+{
+	struct HeadlessGuard
+	{
+		HeadlessGuard() { _putenv_s("DIA_HEADLESS", "1"); }
+		~HeadlessGuard() { _putenv_s("DIA_HEADLESS", ""); }
+	};
+}
 
 TEST(FileDialogHandler, HandleOpenFileDialog_EmptyData_ReturnsFalseOnCancel)
 {
-	// Cannot verify a real dialog in automated tests, but we can verify
-	// the handler doesn't crash with empty/minimal input and returns a
-	// well-formed response. In CI the dialog will be dismissed immediately
-	// (no HWND owner), returning success=false.
+	HeadlessGuard guard;
 	Json::Value data;
 	Json::Value result = FileDialogHandler::HandleOpenFileDialog(data);
 
 	EXPECT_TRUE(result.isMember("success"));
 	EXPECT_TRUE(result["success"].isBool());
+	EXPECT_FALSE(result["success"].asBool());
 }
 
 TEST(FileDialogHandler, HandleSaveFileDialog_EmptyData_ReturnsFalseOnCancel)
 {
+	HeadlessGuard guard;
 	Json::Value data;
 	Json::Value result = FileDialogHandler::HandleSaveFileDialog(data);
 
 	EXPECT_TRUE(result.isMember("success"));
 	EXPECT_TRUE(result["success"].isBool());
+	EXPECT_FALSE(result["success"].asBool());
 }
 
 TEST(FileDialogHandler, HandleOpenFileDialog_WithFilters_DoesNotCrash)
 {
+	HeadlessGuard guard;
 	Json::Value data;
 	Json::Value filters(Json::arrayValue);
 	Json::Value f1;
@@ -49,6 +61,7 @@ TEST(FileDialogHandler, HandleOpenFileDialog_WithFilters_DoesNotCrash)
 
 TEST(FileDialogHandler, HandleOpenFileDialog_WithInitialDir_DoesNotCrash)
 {
+	HeadlessGuard guard;
 	Json::Value data;
 	data["initial_dir"] = "C:\\";
 	data["title"] = "Test with initial dir";
@@ -60,6 +73,7 @@ TEST(FileDialogHandler, HandleOpenFileDialog_WithInitialDir_DoesNotCrash)
 
 TEST(FileDialogHandler, HandleOpenFileDialog_SemicolonExtensions_DoesNotCrash)
 {
+	HeadlessGuard guard;
 	Json::Value data;
 	Json::Value filters(Json::arrayValue);
 	Json::Value f1;
@@ -75,6 +89,7 @@ TEST(FileDialogHandler, HandleOpenFileDialog_SemicolonExtensions_DoesNotCrash)
 
 TEST(FileDialogHandler, HandleSaveFileDialog_WithOverwritePrompt_DoesNotCrash)
 {
+	HeadlessGuard guard;
 	Json::Value data;
 	data["title"] = "Save Test";
 	data["default_ext"] = "json";

@@ -37,6 +37,17 @@ namespace Dia
 		{
 			Json::Value result;
 
+			char* headless = nullptr;
+			size_t len = 0;
+			_dupenv_s(&headless, &len, "DIA_HEADLESS");
+			bool isHeadless = headless && headless[0] != '\0';
+			free(headless);
+			if (isHeadless)
+			{
+				result["success"] = false;
+				return result;
+			}
+
 			std::string filterStr;
 			BuildFilterString(data.get("filters", Json::Value(Json::arrayValue)), filterStr);
 
