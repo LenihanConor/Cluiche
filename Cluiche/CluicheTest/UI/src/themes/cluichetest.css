@@ -1,0 +1,43 @@
+/*
+  CluicheTest game theme — DaisyUI CSS custom property overrides.
+  Applied via <html data-theme="cluichetest"> in any panel (Alpine or React).
+  Only override what differs from DaisyUI's built-in "dark" theme baseline.
+  Per-game: copy this file, rename, and adjust values.
+*/
+
+[data-theme="cluichetest"] {
+  /* Primary accent — used for buttons, highlights, active states */
+  --p: 210 100% 56%;         /* bright blue */
+  --pf: 210 100% 46%;        /* primary focus */
+  --pc: 0 0% 100%;           /* primary content (text on primary) */
+
+  /* Secondary accent */
+  --s: 160 60% 45%;          /* teal-green */
+  --sf: 160 60% 35%;
+  --sc: 0 0% 100%;
+
+  /* Base colours */
+  --b1: 220 16% 10%;         /* main background */
+  --b2: 220 16% 14%;         /* panel/card background */
+  --b3: 220 16% 18%;         /* elevated surface */
+  --bc: 215 20% 85%;         /* base content (text) */
+
+  /* Neutral */
+  --n: 220 16% 22%;
+  --nf: 220 16% 28%;
+  --nc: 215 20% 85%;
+
+  /* Semantic */
+  --su: 160 60% 45%;         /* success */
+  --wa: 40 90% 55%;          /* warning */
+  --er: 0 80% 55%;           /* error */
+  --in: 210 100% 56%;        /* info */
+
+  /* Border radius — tighter for debug tooling */
+  --rounded-box: 0.375rem;
+  --rounded-btn: 0.25rem;
+  --rounded-badge: 0.25rem;
+
+  /* Font */
+  --font-family: "Consolas", "Cascadia Code", "Fira Mono", monospace;
+}

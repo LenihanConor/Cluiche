@@ -5,6 +5,8 @@
 #include "DiaCore/Type/TypeFacade.h"
 #include "DiaCore/Type/TypeParameterInput.h"
 #include "DiaCore/Strings/String1024.h"
+#include "DiaCore/crc/CRC.h"
+
 namespace Dia
 {
 	namespace Core
@@ -71,7 +73,7 @@ namespace Dia
 				SortVariableByOffset sortVariableByOffset;
 				mVariables.Sort(sortVariableByOffset);
 
-				// If it has variables  then append it to the crc
+				// If it has variables then append it to the crc
 				const TypeDefinition::VariableLinkListNode* nextVariable = mVariables.Head();
 				while (nextVariable != NULL)
 				{
@@ -87,12 +89,12 @@ namespace Dia
 					nextVariable = nextVariable->GetNextConst();
 				}
 
-				mUniqueCRC = CRC(runningCRC);
+				mUniqueCRC = runningCRC;
 				
 				GetTypeFacade().Registry().Add(this);
 			}
 		
-			const CRC& TypeDefinition::GetUniqueCRC()const 
+			const unsigned int TypeDefinition::GetUniqueCRC()const 
 			{ 
 				return mUniqueCRC; 
 			}

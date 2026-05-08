@@ -6,8 +6,9 @@
 #include "DiaCore/Type/TypeVariableAttributes.h"
 #include "DiaCore/Type/TypeVariableData.h"
 #include "DiaCore/Containers/BitFlag/BitArray8.h"
-#include "DiaCore/Containers/BitFlag/BitArray16.h"
 #include "DiaCore/Containers/LinkList/LinkListC.h"
+
+#include <cstdint>
 
 namespace Dia
 {
@@ -36,6 +37,8 @@ namespace Dia
 				unsigned int GetSize()const;
 				unsigned int GetOffsetFromParent(unsigned int element = 0)const;
 				unsigned int GetNumberOfElements()const;
+
+				const char* GetTypeAsString()const; // Returns a string of type. i.e int would renturn "int"
 
 				bool IsArithmeticType()const;				
 				bool IsClassType()const;
@@ -68,8 +71,8 @@ namespace Dia
 				const char* GetClassPointee(const TypeInstance& instance, unsigned int element)const;
 
 				// Pointer Interface
-				unsigned int GetVariableAddress(TypeInstance& instance, unsigned int element)const;
-				unsigned int GetVariableAddress(const TypeInstance& instance, unsigned int element)const;
+				uintptr_t GetVariableAddress(TypeInstance& instance, unsigned int element)const;
+				uintptr_t GetVariableAddress(const TypeInstance& instance, unsigned int element)const;
 
 				char* GetVariablePointer(TypeInstance& instance, unsigned int element)const;
 				const char* GetVariablePointer(const TypeInstance& instance, unsigned int element)const;

@@ -18,19 +18,19 @@ namespace Dia
 			//---------------------------------------------------------------------------------------------------------------------------------
 			Vector2D& ToVector2DFromVector3D (Vector2D& lhs, const Vector3D& rhs)
 			{
-				return Vector2DFromVector3DXZ(lhs, rhs);
+				return Vector2DFromVector3DXY(lhs, rhs);
 			}
 
 			//---------------------------------------------------------------------------------------------------------------------------------
 			Vector2D& ToVector2DFromVector4D (Vector2D& lhs, const Vector4D& rhs)
 			{
-				return Vector2DFromVector4DXZ(lhs, rhs);
+				return Vector2DFromVector4DXY(lhs, rhs);
 			}
 
 			//---------------------------------------------------------------------------------------------------------------------------------
 			Vector3D& ToVector3DFromVector2D (Vector3D& lhs, const Vector2D& rhs)
 			{
-				return Vector3DXZFromVector2D(lhs, rhs);
+				return Vector3DXYFromVector2D(lhs, rhs);
 			}
 
 			//---------------------------------------------------------------------------------------------------------------------------------
@@ -43,14 +43,14 @@ namespace Dia
 			//---------------------------------------------------------------------------------------------------------------------------------
 			Vector4D& ToVector4DPointFromVector2D (Vector4D& lhs, const Vector2D& rhs)
 			{
-				Vector4DXZFromVector2D(lhs, rhs).W(1.0f);
+				Vector4DXYFromVector2D(lhs, rhs).W(1.0f);
 				return lhs;
 			}
 
 			//---------------------------------------------------------------------------------------------------------------------------------
 			Vector4D& ToVector4DVectorFromVector2D (Vector4D& lhs, const Vector2D& rhs)
 			{
-				Vector4DXZFromVector2D(lhs, rhs).W(0.0f);
+				Vector4DXYFromVector2D(lhs, rhs).W(0.0f);
 				return lhs;
 			}
 
@@ -163,7 +163,7 @@ namespace Dia
 			//---------------------------------------------------------------------------------------------------------------------------------
 			Vector2D& Vector2DSwizzleYX(Vector2D& lhs, const Vector2D& rhs)
 			{
-				lhs.Set(rhs.y, rhs.y);
+				lhs.Set(rhs.y, rhs.x);
 				return lhs;
 			}
 	
@@ -205,35 +205,35 @@ namespace Dia
 			//---------------------------------------------------------------------------------------------------------------------------------
 			Vector4D& Vector4DSwizzleXZY(Vector4D& lhs, const Vector4D& rhs)
 			{
-				lhs.Set(rhs.x, rhs.z, rhs.y, 0.0f);
+				lhs.Set(rhs.x, rhs.z, rhs.y, rhs.w);
 				return lhs;
 			}
 
 			//---------------------------------------------------------------------------------------------------------------------------------
 			Vector4D& Vector4DSwizzleYXZ(Vector4D& lhs, const Vector4D& rhs)
 			{
-				lhs.Set(rhs.y, rhs.x, rhs.z, 0.0f);
+				lhs.Set(rhs.y, rhs.x, rhs.z, rhs.w);
 				return lhs;
 			}
 
 			//---------------------------------------------------------------------------------------------------------------------------------
 			Vector4D& Vector4DSwizzleYZX(Vector4D& lhs, const Vector4D& rhs)
 			{
-				lhs.Set(rhs.y, rhs.z, rhs.x, 0.0f);
+				lhs.Set(rhs.y, rhs.z, rhs.x, rhs.w);
 				return lhs;
 			}
 
 			//---------------------------------------------------------------------------------------------------------------------------------
 			Vector4D& Vector4DSwizzleZXY(Vector4D& lhs, const Vector4D& rhs)
 			{
-				lhs.Set(rhs.z, rhs.x, rhs.y, 0.0f);
+				lhs.Set(rhs.z, rhs.x, rhs.y, rhs.w);
 				return lhs;
 			}
 
 			//---------------------------------------------------------------------------------------------------------------------------------
 			Vector4D& Vector4DSwizzleZYX(Vector4D& lhs, const Vector4D& rhs)
 			{
-				lhs.Set(rhs.z, rhs.y, rhs.x, 0.0f);
+				lhs.Set(rhs.z, rhs.y, rhs.x, rhs.w);
 				return lhs;
 			}
 		};

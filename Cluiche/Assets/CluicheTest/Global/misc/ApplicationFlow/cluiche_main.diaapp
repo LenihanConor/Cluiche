@@ -1,0 +1,106 @@
+{
+   "imports" : [
+      {
+         "path" : "cluiche_sim.diaapp",
+         "type" : "manifest"
+      },
+      {
+         "path" : "cluiche_render.diaapp",
+         "type" : "manifest"
+      }
+   ],
+   "processing_units" : [
+      {
+         "config" : {},
+         "dedicated_thread" : false,
+         "frequency_hz" : 30,
+         "initial_phase" : "MainBootPhase",
+         "instance_id" : "MainProcessingUnit",
+         "modules" : [
+            {
+               "config" : {
+                  "default_level" : "info",
+                  "sinks" : [
+                     {
+                        "level_threshold" : "info",
+                        "type" : "DebugOutput"
+                     }
+                  ]
+               },
+               "dependencies" : [],
+               "instance_id" : "LoggerModule",
+               "phase_ids" : [ "MainBootPhase", "MainBootStrapPhase" ],
+               "type_id" : "LoggerModule"
+            },
+            {
+               "config" : {},
+               "dependencies" : [ "LoggerModule" ],
+               "instance_id" : "Main::AssetServiceModule",
+               "phase_ids" : [ "MainBootPhase", "MainBootStrapPhase" ],
+               "type_id" : "Main::AssetServiceModule"
+            },
+            {
+               "config" : {},
+               "dependencies" : [ "LoggerModule" ],
+               "instance_id" : "Main::KernelModule",
+               "phase_ids" : [ "MainBootPhase", "MainBootStrapPhase" ],
+               "type_id" : "Main::KernelModule"
+            },
+            {
+               "config" : {},
+               "dependencies" : [],
+               "instance_id" : "Main::LevelRegistryModule",
+               "phase_ids" : [ "MainBootStrapPhase" ],
+               "type_id" : "Main::LevelRegistryModule"
+            },
+            {
+               "config" : {},
+               "dependencies" : [ "Main::KernelModule" ],
+               "instance_id" : "Main::UIModule",
+               "phase_ids" : [ "MainBootStrapPhase" ],
+               "type_id" : "Main::UIModule"
+            },
+            {
+               "config" : {},
+               "dependencies" : [],
+               "instance_id" : "MetricsCollectorModule",
+               "phase_ids" : [ "MainBootPhase", "MainBootStrapPhase" ],
+               "type_id" : "MetricsCollectorModule"
+            },
+            {
+               "config" : {
+                  "auto_start" : true,
+                  "game_build" : "dev-0.1",
+                  "game_name" : "CluicheTest",
+                  "port" : 9002
+               },
+               "dependencies" : [ "MetricsCollectorModule" ],
+               "instance_id" : "DebugServerModule",
+               "phase_ids" : [ "MainBootPhase", "MainBootStrapPhase" ],
+               "type_id" : "DebugServerModule"
+            }
+         ],
+         "phases" : [
+            {
+               "config" : {},
+               "instance_id" : "MainBootPhase",
+               "type_id" : "MainBootPhase"
+            },
+            {
+               "config" : {},
+               "instance_id" : "MainBootStrapPhase",
+               "type_id" : "MainBootStrapPhase"
+            }
+         ],
+         "root" : true,
+         "transitions" : [
+            {
+               "from" : "MainBootPhase",
+               "to" : "MainBootStrapPhase"
+            }
+         ],
+         "type_id" : "MainProcessingUnit"
+      }
+   ],
+   "version" : 1
+}

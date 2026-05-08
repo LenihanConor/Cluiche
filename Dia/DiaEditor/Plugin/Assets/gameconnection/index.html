@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Game Connection</title>
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      font-size: 12px;
+    }
+    .wrap {
+      padding: 14px 16px;
+      box-sizing: border-box;
+      height: 100%;
+      overflow: auto;
+    }
+    h1 {
+      font-size: 14px;
+      margin: 0 0 10px 0;
+      color: #569cd6;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .status {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 12px;
+    }
+    .status.disconnected { background: #3a1f1f; color: #f48771; }
+    .status.connecting   { background: #3a3a1f; color: #dcdcaa; }
+    .status.connected    { background: #1f3a22; color: #89d185; }
+    label {
+      display: block;
+      margin-bottom: 4px;
+      color: #9cdcfe;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    input[type="text"] {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 5px 8px;
+      background: #252526;
+      color: #d4d4d4;
+      border: 1px solid #3c3c3c;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 12px;
+      outline: none;
+    }
+    input[type="text"]:focus { border-color: #569cd6; }
+    button {
+      padding: 5px 14px;
+      background: #0e639c;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+    button:hover { background: #1177bb; }
+    button.secondary { background: #3a3d41; }
+    button.secondary:hover { background: #4a4d51; }
+    button:disabled {
+      background: #2a2d2e;
+      color: #666;
+      cursor: not-allowed;
+    }
+    .err {
+      margin-top: 8px;
+      padding: 6px 10px;
+      background: #3a1f1f;
+      border-left: 3px solid #f48771;
+      color: #f48771;
+      font-size: 11px;
+      white-space: pre-wrap;
+    }
+    .info {
+      background: #252526;
+      border: 1px solid #3c3c3c;
+      padding: 10px 12px;
+      margin-top: 10px;
+    }
+    .info dt {
+      color: #9cdcfe;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 8px;
+    }
+    .info dt:first-child { margin-top: 0; }
+    .info dd {
+      margin: 2px 0 0 0;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 12px;
+      color: #d4d4d4;
+    }
+    .heartbeat {
+      margin-top: 10px;
+      font-size: 11px;
+      color: #808080;
+    }
+    .heartbeat .dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #89d185;
+      margin-right: 5px;
+      vertical-align: 1px;
+    }
+    .row { margin-top: 8px; }
+    .metrics { margin-top: 14px; }
+    .summary-bar {
+      display: flex;
+      gap: 16px;
+      background: #252526;
+      border: 1px solid #3c3c3c;
+      padding: 8px 12px;
+      margin-bottom: 10px;
+    }
+    .summary-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 70px;
+    }
+    .summary-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #9cdcfe;
+      margin-bottom: 2px;
+    }
+    .summary-value {
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 14px;
+      color: #d4d4d4;
+    }
+    .chart-section {
+      margin-top: 8px;
+    }
+    .chart-title {
+      font-size: 11px;
+      color: #9cdcfe;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+    .chart-canvas {
+      width: 100%;
+      height: 100px;
+      background: #1a1a1a;
+      border: 1px solid #3c3c3c;
+      display: block;
+    }
+    .chart-legend {
+      font-size: 10px;
+      color: #808080;
+      margin-top: 3px;
+    }
+    .chart-legend span {
+      margin-right: 10px;
+    }
+    .chart-legend .swatch {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      margin-right: 3px;
+      vertical-align: 1px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Game Connection</h1>
+    <div id="status" class="status disconnected">Disconnected</div>
+
+    <!-- disconnected view -->
+    <div id="view-disconnected">
+      <label for="url">Game URL</label>
+      <input id="url" type="text" value="ws://localhost:9002/" autocomplete="off" />
+      <button id="btn-connect">Connect</button>
+      <div id="err" class="err" style="display:none"></div>
+    </div>
+
+    <!-- connecting view -->
+    <div id="view-connecting" style="display:none">
+      <div class="row">Connecting to <code id="connecting-url"></code>...</div>
+      <button id="btn-cancel" class="secondary">Cancel</button>
+    </div>
+
+    <!-- connected view -->
+    <div id="view-connected" style="display:none">
+      <div class="row">
+        Connected to <code id="connected-url"></code>
+      </div>
+      <dl class="info">
+        <dt>Name</dt><dd id="info-name">-</dd>
+        <dt>Build</dt><dd id="info-build">-</dd>
+        <dt>Processing Units</dt><dd id="info-pu-count">-</dd>
+        <dt>Current Phase</dt><dd id="info-phase">-</dd>
+      </dl>
+      <div class="heartbeat"><span class="dot"></span><span id="heartbeat-text">awaiting heartbeat...</span></div>
+
+      <div class="metrics" id="metrics-section">
+        <div class="summary-bar">
+          <div class="summary-item"><span class="summary-label">FPS</span><span class="summary-value" id="sum-fps">-</span></div>
+          <div class="summary-item"><span class="summary-label">Memory</span><span class="summary-value" id="sum-mem">-</span></div>
+          <div class="summary-item"><span class="summary-label">Uptime</span><span class="summary-value" id="sum-uptime">-</span></div>
+        </div>
+        <div class="chart-section">
+          <div class="chart-title">FPS (per Processing Unit)</div>
+          <canvas id="fps-chart" class="chart-canvas"></canvas>
+          <div class="chart-legend" id="fps-legend"></div>
+        </div>
+        <div class="chart-section">
+          <div class="chart-title">Memory (MB)</div>
+          <canvas id="mem-chart" class="chart-canvas"></canvas>
+        </div>
+      </div>
+
+      <button id="btn-disconnect" class="secondary" style="margin-top:10px">Disconnect</button>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var nextReqId = 1;
+      var pending = {};
+
+      function callCpp(type, reqId, data) {
+        var payload = { type: type, data: data || {} };
+        if (reqId) payload.reqId = reqId;
+        console.log("[GameConnection] callCpp type=" + type + " reqId=" + (reqId || "(none)"));
+        try {
+          window.parent.postMessage({ __diaFromFrame: true, payload: payload }, "*");
+        } catch (e) {
+          console.warn("[GameConnection] postMessage failed:", e);
+        }
+      }
+
+      window.addEventListener("message", function (e) {
+        var msg = e.data || {};
+        if (msg.__diaResponse && msg.reqId && pending[msg.reqId]) {
+          console.log("[GameConnection] Response received reqId=" + msg.reqId);
+          var cb = pending[msg.reqId];
+          delete pending[msg.reqId];
+          cb(msg.result);
+          return;
+        }
+        if (!msg.__dia) return;
+        if (msg.topic === "game_connection") {
+          console.log("[GameConnection] Topic received: " + msg.topic);
+          apply(msg.data || {});
+        } else if (msg.topic === "game_connection_heartbeat") {
+          applyHeartbeat(msg.data || {});
+        }
+      });
+
+      function request(type, data, onResult) {
+        var reqId = "gc" + (nextReqId++);
+        pending[reqId] = onResult || function () {};
+        callCpp(type, reqId, data);
+      }
+
+      function send(type, data) {
+        callCpp(type, null, data);
+      }
+
+      // UI elements
+      var statusEl   = document.getElementById("status");
+      var viewDis    = document.getElementById("view-disconnected");
+      var viewCon    = document.getElementById("view-connecting");
+      var viewOk     = document.getElementById("view-connected");
+      var urlInput   = document.getElementById("url");
+      var errBox     = document.getElementById("err");
+      var conUrlEl   = document.getElementById("connecting-url");
+      var okUrlEl    = document.getElementById("connected-url");
+      var infoName   = document.getElementById("info-name");
+      var infoBuild  = document.getElementById("info-build");
+      var infoPU     = document.getElementById("info-pu-count");
+      var infoPhase  = document.getElementById("info-phase");
+      var heartbeat  = document.getElementById("heartbeat-text");
+
+      document.getElementById("btn-connect").addEventListener("click", function () {
+        var url = (urlInput.value || "").trim();
+        console.log("[GameConnection] Connect clicked, url=" + url);
+        if (!url) { showError("URL is required"); return; }
+        errBox.style.display = "none";
+        request("game_connection.connect", { url: url }, function (res) {
+          console.log("[GameConnection] Connect response:", JSON.stringify(res));
+          if (res && res.ok === false) showError(res.error || "connect failed");
+        });
+      });
+
+      document.getElementById("btn-disconnect").addEventListener("click", function () {
+        request("game_connection.disconnect", {}, function () {});
+      });
+
+      document.getElementById("btn-cancel").addEventListener("click", function () {
+        request("game_connection.disconnect", {}, function () {});
+      });
+
+      function showError(msg) {
+        errBox.textContent = msg;
+        errBox.style.display = "block";
+      }
+
+      function apply(state) {
+        var s = state.state || "disconnected";
+        statusEl.className = "status " + s;
+        statusEl.textContent = s.charAt(0).toUpperCase() + s.slice(1);
+
+        viewDis.style.display = (s === "disconnected") ? "block" : "none";
+        viewCon.style.display = (s === "connecting")   ? "block" : "none";
+        viewOk.style.display  = (s === "connected")    ? "block" : "none";
+
+        if (state.url) {
+          urlInput.value = state.url;
+          conUrlEl.textContent = state.url;
+          okUrlEl.textContent = state.url;
+        }
+
+        if (s === "disconnected" && state.lastError) {
+          showError(state.lastError);
+        } else if (s === "disconnected") {
+          errBox.style.display = "none";
+        }
+
+        var info = state.info || {};
+        infoName.textContent  = info.name  || "-";
+        infoBuild.textContent = info.build || "-";
+        infoPU.textContent    = (info.processingUnitCount != null) ? info.processingUnitCount : "-";
+        infoPhase.textContent = info.currentPhase || "-";
+
+        if (s !== "connected") {
+          heartbeat.textContent = "awaiting heartbeat...";
+        }
+      }
+
+      function applyHeartbeat(data) {
+        var ms = data.lastPongMs;
+        if (!ms) { heartbeat.textContent = "heartbeat received"; return; }
+        var d = new Date(ms);
+        var hh = String(d.getHours()).padStart(2, "0");
+        var mm = String(d.getMinutes()).padStart(2, "0");
+        var ss = String(d.getSeconds()).padStart(2, "0");
+        heartbeat.textContent = "last heartbeat at " + hh + ":" + mm + ":" + ss;
+      }
+
+      // --- Metrics ---
+      var MAX_SAMPLES = 60;
+      var PU_COLORS = ["#569cd6", "#89d185", "#dcdcaa", "#f48771", "#c586c0", "#4ec9b0", "#ce9178", "#d7ba7d"];
+      var MEM_COLOR = "#dcdcaa";
+      var fpsData = {};   // { puName: [float] }
+      var memData = [];   // [float]
+      var puOrder = [];   // [puName] in discovery order
+
+      var sumFps    = document.getElementById("sum-fps");
+      var sumMem    = document.getElementById("sum-mem");
+      var sumUptime = document.getElementById("sum-uptime");
+      var fpsCanvas = document.getElementById("fps-chart");
+      var memCanvas = document.getElementById("mem-chart");
+      var fpsLegend = document.getElementById("fps-legend");
+
+      function formatUptime(secs) {
+        var m = Math.floor(secs / 60);
+        var s = Math.floor(secs % 60);
+        return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+      }
+
+      function applyMetrics(payload) {
+        if (!payload) return;
+
+        var pus = payload.processing_units || [];
+        if (pus.length > 0) {
+          sumFps.textContent = Math.round(pus[0].fps);
+        }
+        sumMem.textContent = (payload.memory_used_mb != null)
+          ? payload.memory_used_mb.toFixed(1) + " MB" : "-";
+        sumUptime.textContent = (payload.uptime_seconds != null)
+          ? formatUptime(payload.uptime_seconds) : "-";
+
+        for (var i = 0; i < pus.length; i++) {
+          var name = pus[i].name || ("PU" + i);
+          if (!fpsData[name]) {
+            fpsData[name] = [];
+            puOrder.push(name);
+          }
+          var arr = fpsData[name];
+          arr.push(pus[i].fps || 0);
+          if (arr.length > MAX_SAMPLES) arr.shift();
+        }
+
+        var mem = payload.memory_used_mb || 0;
+        memData.push(mem);
+        if (memData.length > MAX_SAMPLES) memData.shift();
+
+        drawFpsChart();
+        drawMemChart();
+        updateFpsLegend();
+      }
+
+      function drawLineChart(canvas, datasets, colors, yMin, yMax) {
+        var rect = canvas.getBoundingClientRect();
+        var w = Math.floor(rect.width);
+        var h = Math.floor(rect.height);
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w;
+          canvas.height = h;
+        }
+        var ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, w, h);
+
+        var pad = { top: 4, bottom: 14, left: 36, right: 4 };
+        var cw = w - pad.left - pad.right;
+        var ch = h - pad.top - pad.bottom;
+        if (cw <= 0 || ch <= 0) return;
+
+        var range = yMax - yMin;
+        if (range <= 0) range = 1;
+
+        ctx.strokeStyle = "#333";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(pad.left, h - pad.bottom);
+        ctx.lineTo(pad.left + cw, h - pad.bottom);
+        ctx.stroke();
+
+        ctx.font = "9px Consolas, monospace";
+        ctx.fillStyle = "#666";
+        ctx.textAlign = "right";
+        ctx.fillText(Math.round(yMax), pad.left - 4, pad.top + 8);
+        ctx.fillText(Math.round(yMin), pad.left - 4, h - pad.bottom);
+
+        for (var d = 0; d < datasets.length; d++) {
+          var data = datasets[d];
+          if (data.length < 2) continue;
+          ctx.strokeStyle = colors[d % colors.length];
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          for (var i = 0; i < data.length; i++) {
+            var x = pad.left + (i / (MAX_SAMPLES - 1)) * cw;
+            var y = pad.top + ch - ((data[i] - yMin) / range) * ch;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+        }
+      }
+
+      function drawFpsChart() {
+        var datasets = [];
+        var colors = [];
+        var maxFps = 120;
+        for (var i = 0; i < puOrder.length; i++) {
+          var arr = fpsData[puOrder[i]];
+          datasets.push(arr);
+          colors.push(PU_COLORS[i % PU_COLORS.length]);
+          for (var j = 0; j < arr.length; j++) {
+            if (arr[j] > maxFps) maxFps = arr[j] * 1.1;
+          }
+        }
+        drawLineChart(fpsCanvas, datasets, colors, 0, maxFps);
+      }
+
+      function drawMemChart() {
+        var maxMem = 256;
+        for (var i = 0; i < memData.length; i++) {
+          if (memData[i] > maxMem) maxMem = memData[i] * 1.1;
+        }
+        drawLineChart(memCanvas, [memData], [MEM_COLOR], 0, maxMem);
+      }
+
+      function updateFpsLegend() {
+        var html = "";
+        for (var i = 0; i < puOrder.length; i++) {
+          var color = PU_COLORS[i % PU_COLORS.length];
+          html += '<span><span class="swatch" style="background:' + color + '"></span>' + puOrder[i] + '</span>';
+        }
+        fpsLegend.innerHTML = html;
+      }
+
+      // Listen for core_metrics topic
+      window.addEventListener("message", function (e) {
+        var msg = e.data || {};
+        if (!msg.__dia) return;
+        if (msg.topic === "core_metrics") {
+          applyMetrics(msg.data || {});
+        }
+      });
+
+      console.log("[GameConnection] Panel loaded, requesting initial state");
+      request("game_connection.get_state", {}, function (res) {
+        console.log("[GameConnection] Initial state response:", JSON.stringify(res));
+        if (res) apply(res);
+      });
+    })();
+  </script>
+</body>
+</html>

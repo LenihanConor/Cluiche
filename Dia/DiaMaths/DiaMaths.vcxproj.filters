@@ -37,6 +37,15 @@
     <Filter Include="Shape\Common\Source">
       <UniqueIdentifier>{1fec2d7c-2a1b-413c-84b9-ecf87d411316}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Transform">
+      <UniqueIdentifier>{a1b2c3d4-e5f6-7890-abcd-ef1234567890}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Transform\Source">
+      <UniqueIdentifier>{b2c3d4e5-f678-90ab-cdef-123456789abc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{c3d4e5f6-7890-abcd-ef12-3456789abcde}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Vector\Vector2D.h">
@@ -69,13 +78,22 @@
     <ClInclude Include="Core\CoreMaths.h">
       <Filter>Core</Filter>
     </ClInclude>
+    <ClInclude Include="Core\Easing.h">
+      <Filter>Core</Filter>
+    </ClInclude>
     <ClInclude Include="Core\FloatMaths.h">
       <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="Core\HalfFloat.h">
       <Filter>Core</Filter>
     </ClInclude>
+    <ClInclude Include="Core\Interpolation.h">
+      <Filter>Core</Filter>
+    </ClInclude>
     <ClInclude Include="Core\MathsDefines.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Random.h">
       <Filter>Core</Filter>
     </ClInclude>
     <ClInclude Include="Core\Trigonometry.h">
@@ -85,9 +103,6 @@
       <Filter>Matrix</Filter>
     </ClInclude>
     <ClInclude Include="Matrix\Matrix33.h">
-      <Filter>Matrix</Filter>
-    </ClInclude>
-    <ClInclude Include="Matrix\Matrix44.h">
       <Filter>Matrix</Filter>
     </ClInclude>
     <ClInclude Include="Shape\2D\AARect2D.h">
@@ -111,6 +126,9 @@
     <ClInclude Include="Shape\2D\OORect2D.h">
       <Filter>Shape\2D</Filter>
     </ClInclude>
+    <ClInclude Include="Shape\2D\Ray2D.h">
+      <Filter>Shape\2D</Filter>
+    </ClInclude>
     <ClInclude Include="Shape\2D\Triangle2D.h">
       <Filter>Shape\2D</Filter>
     </ClInclude>
@@ -119,6 +137,9 @@
     </ClInclude>
     <ClInclude Include="Shape\Common\IntersectionTests.h">
       <Filter>Shape\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Transform\Transform2D.h">
+      <Filter>Transform</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -158,13 +179,13 @@
     <ClCompile Include="Core\HalfFloat.cpp">
       <Filter>Core\Source</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Random.cpp">
+      <Filter>Core\Source</Filter>
+    </ClCompile>
     <ClCompile Include="Matrix\Matrix22.cpp">
       <Filter>Matrix\Source</Filter>
     </ClCompile>
     <ClCompile Include="Matrix\Matrix33.cpp">
-      <Filter>Matrix\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Matrix\Matrix44.cpp">
       <Filter>Matrix\Source</Filter>
     </ClCompile>
     <ClCompile Include="Shape\2D\AARect2D.cpp">
@@ -188,6 +209,9 @@
     <ClCompile Include="Shape\2D\OORect2D.cpp">
       <Filter>Shape\2D\Source</Filter>
     </ClCompile>
+    <ClCompile Include="Shape\2D\Ray2D.cpp">
+      <Filter>Shape\2D\Source</Filter>
+    </ClCompile>
     <ClCompile Include="Shape\2D\Triangle2D.cpp">
       <Filter>Shape\2D\Source</Filter>
     </ClCompile>
@@ -196,6 +220,9 @@
     </ClCompile>
     <ClCompile Include="Shape\Common\IntersectionTests.cpp">
       <Filter>Shape\Common\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Transform\Transform2D.cpp">
+      <Filter>Transform\Source</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -211,10 +238,19 @@
     <None Include="Core\CoreMaths.inl">
       <Filter>Core\Source</Filter>
     </None>
+    <None Include="Core\Easing.inl">
+      <Filter>Core\Source</Filter>
+    </None>
     <None Include="Core\FloatMaths.inl">
       <Filter>Core\Source</Filter>
     </None>
     <None Include="Core\HalfFloat.inl">
+      <Filter>Core\Source</Filter>
+    </None>
+    <None Include="Core\Interpolation.inl">
+      <Filter>Core\Source</Filter>
+    </None>
+    <None Include="Core\Random.inl">
       <Filter>Core\Source</Filter>
     </None>
     <None Include="Core\Trigonometry.inl">
@@ -241,11 +277,25 @@
     <None Include="Shape\2D\OORect2D.inl">
       <Filter>Shape\2D\Source</Filter>
     </None>
+    <None Include="Shape\2D\Ray2D.inl">
+      <Filter>Shape\2D\Source</Filter>
+    </None>
     <None Include="Shape\2D\Triangle2D.inl">
       <Filter>Shape\2D\Source</Filter>
     </None>
     <None Include="Shape\Common\IntersectionClassify.inl">
       <Filter>Shape\Common\Source</Filter>
+    </None>
+    <None Include="Matrix\Matrix33.inl">
+      <Filter>Matrix\Source</Filter>
+    </None>
+    <None Include="Transform\Transform2D.inl">
+      <Filter>Transform\Source</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\dia.maths.architecture.module.md">
+      <Filter>Docs</Filter>
     </None>
   </ItemGroup>
 </Project>

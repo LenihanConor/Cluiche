@@ -2,45 +2,43 @@
 
 #include "DiaCore/Core/Assert.h"
 
-
 namespace Dia
 {
 	namespace Core
 	{
 		namespace Containers
 		{
-			template <class EdgePayload, class VertexPayload>
-			class GraphVertex;
+			template <class NodePayload, class EdgePayload>
+			class GraphNode;
 
-			template <class EdgePayload, class VertexPayload>
+			template <class EdgePayload, class NodePayload>
 			class GraphEdge
 			{
 			public:
 				GraphEdge();
+				GraphEdge(const Dia::Core::StringCRC& uniqueId, const EdgePayload& payload, GraphNode<NodePayload, EdgePayload>* head, GraphNode<NodePayload, EdgePayload>* tail);
 				~GraphEdge();
 
-				GraphVertex* GetTail();
-				const GraphVertex* GetTail()const;
+				const Dia::Core::StringCRC& GetUniqueID()const { return mUniqueId; }
 
-				GraphVertex* GetHead();
-				const GraphVertex* GetHead()const;
+				GraphNode<NodePayload, EdgePayload>* GetTail();
+				const GraphNode<NodePayload, EdgePayload>* GetTail()const;
 
-				void SetTail(GraphVertex* vert);
-				void SetHead(GraphVertex* head);
-
-				void SetPayload(EdgePayload* payload);
+				GraphNode<NodePayload, EdgePayload>* GetHead();
+				const GraphNode<NodePayload, EdgePayload>* GetHead()const;
 
 				EdgePayload& GetPayload();
 				const EdgePayload& GetPayloadConst()const;
 
 			private:
-				GraphVertex* mTail;
-				GraphVertex* mHead;
+				Dia::Core::StringCRC mUniqueId;
 				EdgePayload mPayload;
+
+				GraphNode<NodePayload, EdgePayload>* mHead;
+				GraphNode<NodePayload, EdgePayload>* mTail;
 			};
 		}
 	}
 }
-
 
 #include "DiaCore/Containers/Graphs/GraphEdge.inl"

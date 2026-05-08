@@ -5,7 +5,7 @@
 
 #include <DiaCore/Core/Assert.h>
 #include <DiaCore/Type/BasicTypeDefines.h>
-#include <DiaCore/Core/Log.h>
+#include <DiaLogger/DiaLog.h>
 
 namespace Dia
 {
@@ -22,25 +22,29 @@ namespace Dia
 		{}
 
 		//-----------------------------------------------------------------------------
-		void StateObject::BuildDependancies()
+		void StateObject::BuildDependancies(IBuildDependencyData* buildDependencies)
 		{
-			DIA_ASSERT(mState == StateEnum::kConstructed, "Starting %s but in wrong state: %s", mUniqueId.AsChar(), mState.AsString() );
+			DIA_ASSERT(mState == StateEnum::kConstructed || mState == StateEnum::kRunning, "BuildDependancies on %s but in wrong state: %s", mUniqueId.AsChar(), mState.AsString() );
 
-			DoBuildDependancies();
+			DoBuildDependancies(buildDependencies);
 
-			mState = StateEnum::kNotRunning;
+			// If the state object is not already running then we can need to set into a ready fro running state
+			if (mState == StateEnum::kConstructed)
+			{
+				mState = StateEnum::kNotRunning;
+			}
 		}
 
 		//-----------------------------------------------------------------------------
-		StateObject::OpertionResponse StateObject::Start()
+		StateObject::OpertionResponse StateObject::Start(const IStartData* startData)
 		{
-			Dia::Core::Log::OutputVaradicLine("Starting %s", GetUniqueId().AsChar());
+			DIA_LOG_INFO("Application", "Starting %s - %s", GetStateObjectType(), GetUniqueId().AsChar());
 
 			DIA_ASSERT(mState == StateEnum::kNotRunning, "Starting %s but in wrong state: %s", mUniqueId.AsChar(), mState.AsString() );
 
-			mStartMutex.lock();
-			OpertionResponse response = DoStart();
+			OpertionResponse response = DoStart(startData);
 
+			mStateMutex.lock();
 			switch (response)
 			{
 			case StateObject::OpertionResponse::kImmediate:
@@ -52,7 +56,7 @@ namespace Dia
 			default: DIA_ASSERT(0, "Cannot handle this response: %s", response.AsString());
 				break;
 			}
-			mStartMutex.unlock();
+			mStateMutex.unlock();
 
 			return response;
 		}
@@ -62,13 +66,13 @@ namespace Dia
 		// This is to be called when an async start has finished
 		void StateObject::NotifyReadyToStartAsync()
 		{
-			mStartMutex.lock();
+			mStateMutex.lock();
 
 			DIA_ASSERT(mState == StateEnum::kFlaggedToStart, "RespondToAsyncStart %s but in wrong state: %s", mUniqueId.AsChar(), mState.AsString());
 
 			mState = StateEnum::kRunning;
 
-			mStartMutex.unlock();
+			mStateMutex.unlock();
 		}
 
 		//-----------------------------------------------------------------------------
@@ -82,11 +86,29 @@ namespace Dia
 		//-----------------------------------------------------------------------------
 		void StateObject::Stop()
 		{
-			Dia::Core::Log::OutputVaradicLine("Stoping %s", GetUniqueId().AsChar());
+			DIA_LOG_INFO("Application", "Stopping %s - %s", GetStateObjectType(), GetUniqueId().AsChar());
 
 			DIA_ASSERT(mState == StateEnum::kRunning, "Stoping %s but in wrong state: %s", mUniqueId.AsChar(), mState.AsString());
 
 			DoStop();
+
+			mStateMutex.lock();
+
+			mState = StateEnum::kNotRunning;
+
+			mStateMutex.unlock();
+		}
+
+
+		//-----------------------------------------------------------------------
+		// Function for phases transitions called after all modules are stopped
+		void StateObject::AfterPhaseTransition()
+		{
+			mStateMutex.lock();
+
+			mState = StateEnum::kNotRunning;
+
+			mStateMutex.unlock();
 		}
 	}
 }

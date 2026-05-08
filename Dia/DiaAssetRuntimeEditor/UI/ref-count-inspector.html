@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ref Count Inspector</title>
+    <link rel="stylesheet" href="ref-count-inspector.css">
+</head>
+<body>
+    <div id="app">
+        <div id="disconnected-overlay" class="overlay hidden">
+            <span>Not connected</span>
+        </div>
+        <div id="content">
+            <div id="empty-state" class="empty-message">Select an asset to inspect ref counts.</div>
+            <div id="inspector" class="hidden">
+                <div class="inspector-header">
+                    <span id="asset-id" class="asset-id"></span>
+                    <span id="state-badge" class="state-badge"></span>
+                </div>
+                <div class="summary-row">
+                    <span class="label">Scope:</span>
+                    <span id="scope-value"></span>
+                    <span class="label">Ref Count:</span>
+                    <span id="refcount-value"></span>
+                </div>
+                <div id="stage-refs-section">
+                    <div class="section-header">Stage References</div>
+                    <div id="stage-refs-list"></div>
+                </div>
+                <div id="stage-scoped-message" class="info-message hidden"></div>
+            </div>
+        </div>
+    </div>
+    <script src="ref-count-inspector.js"></script>
+</body>
+</html>

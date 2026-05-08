@@ -31,7 +31,7 @@ namespace Dia
 			template <class T, unsigned int size>
 			bool CircularBufferC<T, size>::operator!=(const CircularBufferC<T, size>& other) const
 			{
-				return !(*this == rhs);
+				return !(*this == other);
 			}
 
 			//-----------------------------------------------------------------------------

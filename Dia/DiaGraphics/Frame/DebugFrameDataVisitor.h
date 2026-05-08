@@ -3,27 +3,26 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
+#include <DiaGraphics/Frame/DebugPrimitive.h>
+
 namespace Dia
 {
 	namespace Graphics
 	{
-		// Forward declerations
-		class DebugFrameDataCircle2D;
-		class DebugFrameDataLine2D;
+		// Forward declarations
 		class DebugFrameData;
 
 		///
-		/// DebugFrameDataVisitor - Used my external systems to interface with frame data
+		/// DebugFrameDataVisitor - Implemented by renderers and test recorders to consume debug primitives
 		///
 		class DebugFrameDataVisitor
 		{
 		public:
-			DebugFrameDataVisitor(){};
-			virtual ~DebugFrameDataVisitor(){};
+			DebugFrameDataVisitor() {}
+			virtual ~DebugFrameDataVisitor() {}
 
-			virtual void Visit(const DebugFrameDataCircle2D& object)const = 0;
-			virtual void Visit(const DebugFrameDataLine2D& object)const = 0;
-			virtual void Visit(const DebugFrameData& object)const = 0;
+			virtual void Visit(const DebugPrimitive& primitive) const = 0;
+			virtual void Visit(const DebugFrameData& frameData) const = 0;
 		};
 	}
 }

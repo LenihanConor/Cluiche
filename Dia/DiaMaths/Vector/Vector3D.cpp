@@ -143,6 +143,18 @@ namespace Dia
 		}
 
 		//-----------------------------------------------------------------------------
+		Vector3D Vector3D::operator +() const
+		{
+			return *this;
+		}
+
+		//-----------------------------------------------------------------------------
+		Vector3D Vector3D::operator -() const
+		{
+			return Vector3D(-x, -y, -z);
+		}
+
+		//-----------------------------------------------------------------------------
 		Vector3D Vector3D::operator + ( const Vector3D& rhs ) const
 		{
 			return Vector3D(*this) += rhs;
@@ -163,7 +175,7 @@ namespace Dia
 		// -----------------------------------------------------------------------------
 		Vector3D Vector3D::operator / ( const Vector3D& rhs ) const
 		{
-			return Vector3D(*this) *= rhs;
+			return Vector3D(*this) /= rhs;
 		}
 
 		//-----------------------------------------------------------------------------
@@ -386,7 +398,7 @@ namespace Dia
 		// -----------------------------------------------------------------------------
 		Vector3D Vector3D::ProjectOn( const Vector3D& rhs ) const
 		{
-			return (*this) * (this->Dot(rhs) / rhs.Dot(rhs));
+			return rhs * (this->Dot(rhs) / rhs.Dot(rhs));
 		}
 		
 		// -----------------------------------------------------------------------------	

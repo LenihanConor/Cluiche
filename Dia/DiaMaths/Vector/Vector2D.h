@@ -109,7 +109,13 @@ namespace Dia
 			bool			IsClockwiseTo			( const Vector2D& ) const;
 			bool			IsCounterClockwiseTo	( const Vector2D& ) const;
 			bool			IsParallelTo			( const Vector2D&, float accuracy = Dia::Maths::FLOAT_EPSILON ) const;
-			
+
+			// Interpolation
+			static Vector2D	Lerp				( const Vector2D& a, const Vector2D& b, float t );
+			static Vector2D	LerpUnclamped		( const Vector2D& a, const Vector2D& b, float t );
+			static Vector2D	SmoothLerp			( const Vector2D& a, const Vector2D& b, float t );
+			static Vector2D	MoveTowards			( const Vector2D& current, const Vector2D& target, float maxDistance );
+
 			float x, y;
 		};
 	}

@@ -1,0 +1,23 @@
+{
+  "env": {
+    "PATH": "/c/GitHub/Cluiche/Dia/DiaCLI/.venv/Scripts:${PATH}",
+    "DIA_CLI_CONFIG": "C:\\GitHub\\Cluiche\\Dia\\DiaCLI\\dia_cli_prime_config.json"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(git:*)",
+      "Bash(msbuild:*)",
+      "Bash(python:*)",
+      "Bash(poetry:*)",
+      "Bash(npm:*)",
+      "Bash(node:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(cat)",
+      "Bash(powershell:*)",
+      "Bash(pwsh:*)"
+    ],
+    "defaultMode": "auto"
+  }
+}

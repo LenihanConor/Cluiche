@@ -64,10 +64,12 @@ namespace Dia
 				const Payload* 		TryGetItemConst			( const Key& key )const;
 
 			private:
-				HashTableHashFunctionData						mHasFunctorData;	
+				void				RebuildTable			();
+
+				HashTableHashFunctionData						mHasFunctorData;
 				HashFunctor										mHashFunctor;
 				ArrayC<PayloadTableNode*, sizeTable> 			mTable;
-				DynamicArrayC<PayloadTableNode, sizePayload> 	mPayloadNodes; 
+				DynamicArrayC<PayloadTableNode, sizePayload> 	mPayloadNodes;
 			};
 		}
 	}

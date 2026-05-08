@@ -1,0 +1,98 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="ApplicationFlow\ProcessingUnits\MainProcessingUnit.cpp">
+      <Filter>ApplicationFlow\ProcessingUnits</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\Phases\MainBootStrapPhase.cpp">
+      <Filter>ApplicationFlow\Phases</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\Phases\MainBootPhase.cpp">
+      <Filter>ApplicationFlow\Phases</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\ProcessingUnits\RenderProcessingUnit.cpp">
+      <Filter>ApplicationFlow\ProcessingUnits</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\Phases\RenderRunningPhase.cpp">
+      <Filter>ApplicationFlow\Phases</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\ProcessingUnits\SimProcessingUnit.cpp">
+      <Filter>ApplicationFlow\ProcessingUnits</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\Phases\SimBootPhase.cpp">
+      <Filter>ApplicationFlow\Phases</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\Phases\SimBootStrapPhase.cpp">
+      <Filter>ApplicationFlow\Phases</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\LaunchUIPage.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="ApplicationFlow">
+      <UniqueIdentifier>{cb998eec-267d-4eee-bc14-f40d3b64cdc8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ApplicationFlow\ProcessingUnits">
+      <UniqueIdentifier>{a944998d-68ed-49f0-9dcb-21e3e82778e2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ApplicationFlow\Phases">
+      <UniqueIdentifier>{bb066c32-d621-49b2-925e-ea19f4394f2b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ApplicationFlow\Modules">
+      <UniqueIdentifier>{3c25b1d8-299a-4a1b-ad3e-fa82cc4b198a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source">
+      <UniqueIdentifier>{e63b6e6a-3c59-4b0a-accc-30ea65625e99}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ApplicationFlow\ProcessingUnits\MainProcessingUnit.h">
+      <Filter>ApplicationFlow\ProcessingUnits</Filter>
+    </ClInclude>
+    <ClInclude Include="ApplicationFlow\Phases\MainBootPhase.h">
+      <Filter>ApplicationFlow\Phases</Filter>
+    </ClInclude>
+    <ClInclude Include="ApplicationFlow\Phases\MainBootStrapPhase.h">
+      <Filter>ApplicationFlow\Phases</Filter>
+    </ClInclude>
+    <ClInclude Include="ApplicationFlow\ProcessingUnits\RenderProcessingUnit.h">
+      <Filter>ApplicationFlow\ProcessingUnits</Filter>
+    </ClInclude>
+    <ClInclude Include="ApplicationFlow\Phases\RenderRunningPhase.h">
+      <Filter>ApplicationFlow\Phases</Filter>
+    </ClInclude>
+    <ClInclude Include="ApplicationFlow\ProcessingUnits\SimProcessingUnit.h">
+      <Filter>ApplicationFlow\ProcessingUnits</Filter>
+    </ClInclude>
+    <ClInclude Include="ApplicationFlow\Phases\SimBootPhase.h">
+      <Filter>ApplicationFlow\Phases</Filter>
+    </ClInclude>
+    <ClInclude Include="ApplicationFlow\Phases\SimBootStrapPhase.h">
+      <Filter>ApplicationFlow\Phases</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\LaunchUIPage.h">
+      <Filter>Source</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Data">
+      <UniqueIdentifier>{f1a2b3c4-d5e6-7890-abcd-ef1234567890}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Data\Manifests">
+      <UniqueIdentifier>{a1b2c3d4-e5f6-7890-abcd-ef1234567891}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Data\Manifests\cluiche_main.diaapp">
+      <Filter>Data\Manifests</Filter>
+    </None>
+    <None Include="Data\Manifests\cluiche_render.diaapp">
+      <Filter>Data\Manifests</Filter>
+    </None>
+    <None Include="Data\Manifests\cluiche_sim.diaapp">
+      <Filter>Data\Manifests</Filter>
+    </None>
+  </ItemGroup>
+</Project>

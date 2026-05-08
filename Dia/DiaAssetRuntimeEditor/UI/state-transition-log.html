@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>State Transition Log</title>
+    <link rel="stylesheet" href="state-transition-log.css">
+</head>
+<body>
+    <div id="app">
+        <div id="disconnected-overlay" class="overlay hidden">
+            <span>Not connected</span>
+        </div>
+        <div class="toolbar">
+            <input type="text" id="id-filter" placeholder="Filter by asset ID..." />
+            <select id="transition-filter">
+                <option value="All">All transitions</option>
+                <option value="Registered->Staged">Registered -> Staged</option>
+                <option value="Staged->Loaded">Staged -> Loaded</option>
+                <option value="Loaded->Unloading">Loaded -> Unloading</option>
+                <option value="Any->Unloading">Any -> Unloading</option>
+            </select>
+            <label class="max-label">
+                Max:
+                <input type="number" id="max-entries" min="10" step="100" value="1000" />
+            </label>
+            <button id="btn-pause">Pause</button>
+            <button id="btn-clear">Clear</button>
+        </div>
+        <div class="log-container" id="log-container"></div>
+        <div class="status-bar">
+            <span id="status-count">0 entries</span>
+            <span id="status-paused"></span>
+        </div>
+    </div>
+    <script src="state-transition-log.js"></script>
+</body>
+</html>

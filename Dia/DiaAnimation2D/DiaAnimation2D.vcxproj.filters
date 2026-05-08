@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{ANIM2D01-A1B2-C3D4-E5F6-789012345678}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{ANIM2D02-B2C3-D4E5-F6A7-890123456789}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="SpringNodeDef.h" />
+    <ClInclude Include="SpringChainDef.h" />
+    <ClInclude Include="SpringChain.h" />
+    <ClInclude Include="SpringParamUtils.h" />
+    <ClInclude Include="Keyframe.h" />
+    <ClInclude Include="KeyframeTrack.h" />
+    <ClInclude Include="AnimClipDef.h" />
+    <ClInclude Include="AnimClip.h" />
+    <ClInclude Include="AnimClipPlayer.h" />
+    <ClInclude Include="AnimClipLoader.h" />
+    <ClInclude Include="BoneMask.h" />
+    <ClInclude Include="PoseLayer.h" />
+    <ClInclude Include="PoseBlendStack.h" />
+    <ClInclude Include="AnimationEvaluator.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="SpringChain.cpp" />
+    <ClCompile Include="SpringParamUtils.cpp" />
+    <ClCompile Include="AnimClip.cpp" />
+    <ClCompile Include="AnimClipPlayer.cpp" />
+    <ClCompile Include="AnimClipLoader.cpp" />
+    <ClCompile Include="PoseBlendStack.cpp" />
+    <ClCompile Include="AnimationEvaluator.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\dia.animation2d.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Testing\AnimClipTestHelpers.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\SpringChainTestHelpers.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\PoseAssertions.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\EvaluatorTestHelpers.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

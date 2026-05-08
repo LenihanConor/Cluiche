@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Building Cluiche + Dia — The Evolution with Claude</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #21262d;
+    --accent: #58a6ff;
+    --accent2: #3fb950;
+    --accent3: #f78166;
+    --accent4: #d2a8ff;
+    --accent5: #ffa657;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --border: #30363d;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* ─── Slide container ─── */
+  #deck { width: 100%; height: 100%; position: relative; }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 80px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+  .slide.active { opacity: 1; pointer-events: all; }
+
+  /* ─── Nav ─── */
+  #nav {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    z-index: 100;
+    background: rgba(22,27,34,0.85);
+    backdrop-filter: blur(8px);
+    padding: 10px 20px;
+    border-radius: 32px;
+    border: 1px solid var(--border);
+  }
+  #nav button {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 7px 18px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+  }
+  #nav button:hover { background: var(--accent); color: #000; }
+  #counter { color: var(--muted); font-size: 13px; min-width: 60px; text-align: center; }
+
+  /* ─── Progress bar ─── */
+  #progress {
+    position: fixed;
+    top: 0; left: 0;
+    height: 3px;
+    background: var(--accent);
+    transition: width 0.4s ease;
+    z-index: 200;
+  }
+
+  /* ─── Typography ─── */
+  h1 { font-size: clamp(2rem, 4vw, 3.2rem); font-weight: 700; line-height: 1.15; }
+  h2 { font-size: clamp(1.5rem, 2.5vw, 2.2rem); font-weight: 600; margin-bottom: 28px; }
+  h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 10px; color: var(--accent); }
+  p  { font-size: 1.05rem; line-height: 1.7; color: var(--muted); max-width: 800px; }
+
+  .tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: var(--accent);
+    color: #000;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-bottom: 16px;
+  }
+  .tag.green  { background: var(--accent2); }
+  .tag.red    { background: var(--accent3); }
+  .tag.purple { background: var(--accent4); color: #000; }
+  .tag.orange { background: var(--accent5); color: #000; }
+
+  /* ─── Layout helpers ─── */
+  .center { text-align: center; }
+  .left   { align-items: flex-start; width: 100%; max-width: 1100px; }
+  .cols   { display: grid; gap: 24px; width: 100%; max-width: 1100px; }
+  .cols-2 { grid-template-columns: 1fr 1fr; }
+  .cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+  /* ─── Cards ─── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 28px;
+  }
+  .card p { font-size: 0.95rem; margin-top: 6px; }
+  .card.accent-blue   { border-top: 3px solid var(--accent); }
+  .card.accent-green  { border-top: 3px solid var(--accent2); }
+  .card.accent-red    { border-top: 3px solid var(--accent3); }
+  .card.accent-purple { border-top: 3px solid var(--accent4); }
+  .card.accent-orange { border-top: 3px solid var(--accent5); }
+
+  /* ─── Lists ─── */
+  ul.bullets { list-style: none; margin-top: 12px; }
+  ul.bullets li {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.95rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    color: var(--muted);
+  }
+  ul.bullets li:last-child { border-bottom: none; }
+  ul.bullets li::before { content: "▸"; color: var(--accent); flex-shrink: 0; margin-top: 1px; }
+  ul.bullets li strong { color: var(--text); }
+
+  /* ─── Code blocks ─── */
+  pre {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    overflow-x: auto;
+    color: #c9d1d9;
+    margin-top: 12px;
+  }
+  .kw  { color: #ff7b72; }
+  .str { color: #a5d6ff; }
+  .cmt { color: #8b949e; font-style: italic; }
+  .fn  { color: #d2a8ff; }
+  .num { color: #79c0ff; }
+
+  /* ─── Stats ─── */
+  .stat-row { display: flex; gap: 20px; flex-wrap: wrap; }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 24px;
+    text-align: center;
+    min-width: 130px;
+  }
+  .stat .big { font-size: 2rem; font-weight: 700; color: var(--accent); display: block; }
+  .stat .big.green  { color: var(--accent2); }
+  .stat .big.purple { color: var(--accent4); }
+  .stat .big.orange { color: var(--accent5); }
+  .stat .big.red    { color: var(--accent3); }
+  .stat .lbl { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+
+  /* ─── Quote ─── */
+  blockquote {
+    border-left: 3px solid var(--accent);
+    padding: 14px 24px;
+    background: var(--surface);
+    border-radius: 0 8px 8px 0;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: var(--text);
+    max-width: 820px;
+    margin-top: 16px;
+  }
+
+  /* ─── Hero gradient ─── */
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 70% 60% at 50% 40%, rgba(88,166,255,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* ─── Tree ─── */
+  .tree {
+    font-family: 'Cascadia Code', monospace;
+    font-size: 0.88rem;
+    line-height: 2;
+    color: var(--muted);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 24px;
+    margin-top: 12px;
+  }
+  .tree .hl  { color: var(--accent); }
+  .tree .hl2 { color: var(--accent2); }
+  .tree .hl3 { color: var(--accent4); }
+  .tree .hl4 { color: var(--accent5); }
+
+  /* ─── Pipeline ─── */
+  .pipeline {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    width: 100%;
+    max-width: 960px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 12px;
+  }
+  .pipe-step {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 18px;
+    text-align: center;
+    font-size: 0.85rem;
+    font-weight: 600;
+    min-width: 110px;
+  }
+  .pipe-step small { display: block; font-weight: 400; color: var(--muted); font-size: 0.72rem; margin-top: 3px; }
+  .pipe-arrow { color: var(--muted); font-size: 1.2rem; padding: 0 6px; }
+
+  /* ─── Timeline ─── */
+  .timeline {
+    width: 100%;
+    max-width: 1050px;
+    position: relative;
+    margin-top: 20px;
+  }
+  .tl-track {
+    position: relative;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 32px 0 60px;
+  }
+  .tl-fill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 2px;
+    width: 100%;
+  }
+  .tl-node {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--bg);
+    cursor: default;
+  }
+  .tl-label {
+    position: absolute;
+    top: 16px;
+    transform: translateX(-50%);
+    font-size: 0.7rem;
+    color: var(--muted);
+    white-space: nowrap;
+    text-align: center;
+    line-height: 1.4;
+  }
+  .tl-label strong { display: block; font-size: 0.75rem; color: var(--text); }
+
+  /* ─── Module grid ─── */
+  .module-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+    max-width: 1050px;
+  }
+  .mod-chip {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid;
+    white-space: nowrap;
+  }
+  .mod-chip.core     { background: rgba(88,166,255,0.12); border-color: rgba(88,166,255,0.35); color: var(--accent); }
+  .mod-chip.physics  { background: rgba(247,129,102,0.12); border-color: rgba(247,129,102,0.35); color: var(--accent3); }
+  .mod-chip.anim     { background: rgba(210,168,255,0.12); border-color: rgba(210,168,255,0.35); color: var(--accent4); }
+  .mod-chip.tools    { background: rgba(255,166,87,0.12); border-color: rgba(255,166,87,0.35); color: var(--accent5); }
+  .mod-chip.debug    { background: rgba(63,185,80,0.12); border-color: rgba(63,185,80,0.35); color: var(--accent2); }
+
+  /* ─── Phase row ─── */
+  .phase-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    margin-top: 8px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .phase-date {
+    background: var(--surface2);
+    padding: 12px 16px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--muted);
+    min-width: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-right: 1px solid var(--border);
+    text-align: center;
+    line-height: 1.4;
+  }
+  .phase-label {
+    background: var(--surface);
+    padding: 12px 18px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    min-width: 180px;
+    display: flex;
+    align-items: center;
+    border-right: 1px solid var(--border);
+  }
+  .phase-items {
+    background: var(--surface);
+    padding: 10px 18px;
+    font-size: 0.8rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    flex: 1;
+  }
+  .chip {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2px 10px;
+    font-size: 0.72rem;
+    white-space: nowrap;
+  }
+  .chip.done { border-color: rgba(63,185,80,0.4); color: var(--accent2); }
+  .phase-tests {
+    padding: 12px 16px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--accent2);
+    display: flex;
+    align-items: center;
+    background: var(--surface);
+    white-space: nowrap;
+    border-left: 1px solid var(--border);
+    min-width: 80px;
+    justify-content: center;
+  }
+
+  /* ─── Slide overrides ─── */
+  #slide-1 h1 { text-align: center; max-width: 820px; }
+  #slide-1 .sub { font-size: 1.1rem; color: var(--muted); margin-top: 18px; text-align: center; }
+  #slide-1 .by  { font-size: 0.9rem; color: var(--muted); margin-top: 32px; text-align: center; }
+
+  .divider {
+    width: 60px; height: 3px;
+    background: var(--accent);
+    border-radius: 2px;
+    margin: 16px 0 24px;
+  }
+
+  #hint {
+    position: fixed;
+    bottom: 80px;
+    right: 32px;
+    font-size: 0.7rem;
+    color: var(--muted);
+    opacity: 0.5;
+  }
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+
+<div id="deck">
+
+  <!-- ─────────────── SLIDE 1: Title ─────────────── -->
+  <div class="slide active center" id="slide-1">
+    <div class="hero-bg"></div>
+    <div class="tag orange">Evolution</div>
+    <h1>Building Cluiche + Dia<br>with Claude</h1>
+    <p class="sub">From engine foundation to 37+ modules, 20+ systems,<br>and 1,000+ tests — a story of spec-driven AI collaboration.</p>
+    <p class="by">Conor Lenihan · 2026</p>
+  </div>
+
+  <!-- ─────────────── SLIDE 2: The Vision ─────────────── -->
+  <div class="slide center" id="slide-2">
+    <div class="tag purple">The Vision</div>
+    <h2>Cluiche — an Irish word for "game"</h2>
+    <p>A production-quality game development platform. Not a prototype, not a tutorial project — a real engine with real architecture, real tests, and real tooling. Built by one developer, with an AI as a senior collaborator on the team.</p>
+    <div class="cols cols-3" style="margin-top:28px;">
+      <div class="card accent-blue">
+        <h3>Platform: Cluiche</h3>
+        <p>9 binding decisions. Every module, every feature traces back to the platform spec. No orphaned code.</p>
+      </div>
+      <div class="card accent-purple">
+        <h3>Engine: Dia</h3>
+        <p>37+ modules across physics, animation, rigging, geometry, serialization, state machines, debugging, and tooling.</p>
+      </div>
+      <div class="card accent-green">
+        <h3>Methodology: Spec-First</h3>
+        <p>Platform → Application → System → Feature. Nothing ships without an approved spec and a traceable lineage.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 3: The Foundation ─────────────── -->
+  <div class="slide left" id="slide-3">
+    <div class="tag">The Foundation</div>
+    <h2>Where it started — the engine bedrock</h2>
+    <p>Before tracked development began, the Dia engine had a core runtime. These modules form the immovable foundation everything else is built on.</p>
+    <div class="cols cols-2" style="margin-top:20px;">
+      <div>
+        <ul class="bullets">
+          <li><strong>DiaCore</strong> — containers, memory, CRC hashing, type system, serialization primitives, logging, assertions</li>
+          <li><strong>DiaMaths</strong> — vectors, matrices, shapes, transforms, easing, interpolation</li>
+          <li><strong>DiaApplication</strong> — ProcessingUnit / Phase / Module architecture, multi-threaded execution</li>
+          <li><strong>DiaGraphics</strong> — platform-agnostic ICanvas, Frame, DebugPrimitive rendering</li>
+          <li><strong>DiaSFML</strong> — SFML backend (window, renderer, input events)</li>
+          <li><strong>DiaWindow + DiaInput</strong> — window lifecycle and input event routing</li>
+        </ul>
+      </div>
+      <div class="tree">
+        Dia/ (foundation)<br>
+        &nbsp;&nbsp;<span class="hl">DiaCore/</span>          <span class="cmt"># containers, CRC, memory</span><br>
+        &nbsp;&nbsp;<span class="hl">DiaMaths/</span>         <span class="cmt"># vectors, matrices, shapes</span><br>
+        &nbsp;&nbsp;<span class="hl">DiaApplication/</span>   <span class="cmt"># PU/Phase/Module</span><br>
+        &nbsp;&nbsp;<span class="hl">DiaGraphics/</span>      <span class="cmt"># ICanvas, Frame</span><br>
+        &nbsp;&nbsp;<span class="hl">DiaSFML/</span>          <span class="cmt"># SFML backend</span><br>
+        &nbsp;&nbsp;<span class="hl">DiaWindow/</span>        <span class="cmt"># window lifecycle</span><br>
+        &nbsp;&nbsp;<span class="hl">DiaInput/</span>         <span class="cmt"># input events</span><br>
+        <br>
+        <span class="cmt"># The "three-thread" model:</span><br>
+        <span class="hl2">Main</span> / <span class="hl3">Render</span> / <span class="hl4">Sim</span> threads — separate PUs
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 4: The Partnership ─────────────── -->
+  <div class="slide center" id="slide-4">
+    <div class="tag blue">The Partnership</div>
+    <h2>What changed when Claude joined the team</h2>
+    <div class="cols cols-2" style="margin-top:16px; max-width:960px;">
+      <div class="card accent-red">
+        <h3>Before</h3>
+        <ul class="bullets" style="margin-top:0;">
+          <li>Architecture decisions made informally</li>
+          <li>Tests written after the fact — or skipped</li>
+          <li>Documentation fell behind the code</li>
+          <li>Each system reinvented patterns</li>
+          <li>Context lost between sessions</li>
+        </ul>
+      </div>
+      <div class="card accent-green">
+        <h3>After</h3>
+        <ul class="bullets" style="margin-top:0;">
+          <li>Spec-first: every feature interviewed before code</li>
+          <li>Tests generated automatically from public API</li>
+          <li>Docs co-authored alongside implementation</li>
+          <li>Binding decisions cascade through every child spec</li>
+          <li>Memory + CLAUDE.md: context survives session restarts</li>
+        </ul>
+      </div>
+    </div>
+    <blockquote style="margin-top:28px;">
+      Claude doesn't just write code — it enforces architecture, generates tests, maintains context, and flags decisions you forgot you made six months ago.
+    </blockquote>
+  </div>
+
+  <!-- ─────────────── SLIDE 5: Full Timeline ─────────────── -->
+  <div class="slide left" id="slide-5">
+    <div class="tag orange">Timeline</div>
+    <h2>11 days — the tracked development arc</h2>
+    <p>Every phase below produced complete, tested, spec-linked systems. Commits are atomic; plans updated alongside code.</p>
+
+    <div class="timeline" style="width:100%; max-width:1050px;">
+      <div class="tl-track">
+        <div class="tl-fill"></div>
+        <!-- nodes at positions: Apr23=0%, Apr24=18%, Apr26=36%, Apr27=45%, May1=73%, May2=82%, May3-4=100% -->
+        <div class="tl-node" style="left:0%;   background:var(--accent3);"></div>
+        <div class="tl-label" style="left:0%;">   <strong>Apr 23</strong>Editor Layer</div>
+
+        <div class="tl-node" style="left:18%;  background:var(--accent);"></div>
+        <div class="tl-label" style="left:18%;"><strong>Apr 24</strong>Geometry</div>
+
+        <div class="tl-node" style="left:36%;  background:var(--accent5);"></div>
+        <div class="tl-label" style="left:36%;"><strong>Apr 26</strong>Dev Tools</div>
+
+        <div class="tl-node" style="left:45%;  background:var(--accent3);"></div>
+        <div class="tl-label" style="left:45%;"><strong>Apr 27</strong>Physics</div>
+
+        <div class="tl-node" style="left:64%;  background:var(--accent4);"></div>
+        <div class="tl-label" style="left:64%;"><strong>May 1</strong>Simulation</div>
+
+        <div class="tl-node" style="left:82%;  background:var(--accent4);"></div>
+        <div class="tl-label" style="left:82%;"><strong>May 2</strong>Anim + IK</div>
+
+        <div class="tl-node" style="left:100%; background:var(--accent2);"></div>
+        <div class="tl-label" style="left:100%;"><strong>May 3–4</strong>Debug</div>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:6px; width:100%; max-width:1050px;">
+      <div class="phase-row">
+        <div class="phase-date" style="color:var(--accent3);">Apr 23</div>
+        <div class="phase-label" style="color:var(--accent3);">Editor Layer</div>
+        <div class="phase-items">
+          <span class="chip done">CluicheEditor</span>
+          <span class="chip done">DiaApplicationEditor</span>
+          <span class="chip done">Splash screen</span>
+          <span class="chip done">Protobuf debug</span>
+          <span class="chip done">WebSocket server</span>
+          <span class="chip done">ImGui docking</span>
+        </div>
+        <div class="phase-tests" style="color:var(--accent3);">258 tests</div>
+      </div>
+      <div class="phase-row">
+        <div class="phase-date" style="color:var(--accent);">Apr 24</div>
+        <div class="phase-label" style="color:var(--accent);">Geometry</div>
+        <div class="phase-items">
+          <span class="chip done">DiaGeometry2D</span>
+          <span class="chip done">BVH tree</span>
+          <span class="chip done">Quadtree</span>
+          <span class="chip done">Hex grid</span>
+        </div>
+        <div class="phase-tests">181 tests</div>
+      </div>
+      <div class="phase-row">
+        <div class="phase-date" style="color:var(--accent5);">Apr 26</div>
+        <div class="phase-label" style="color:var(--accent5);">Dev Tools</div>
+        <div class="phase-items">
+          <span class="chip done">DiaEnv (9 features)</span>
+          <span class="chip done">DiaCLI</span>
+          <span class="chip done">DiaPipeline</span>
+          <span class="chip done">DiaTest</span>
+        </div>
+        <div class="phase-tests" style="color:var(--accent5);">270 tests</div>
+      </div>
+      <div class="phase-row">
+        <div class="phase-date" style="color:var(--accent3);">Apr 27</div>
+        <div class="phase-label" style="color:var(--accent3);">Physics</div>
+        <div class="phase-items">
+          <span class="chip done">DiaRigidBody2D</span>
+          <span class="chip done">DiaSoftBody2D (PBD)</span>
+          <span class="chip done">DiaPipelineEditor</span>
+          <span class="chip done">Collision + constraints</span>
+        </div>
+        <div class="phase-tests" style="color:var(--accent3);">238 tests</div>
+      </div>
+      <div class="phase-row">
+        <div class="phase-date" style="color:var(--accent4);">May 1–2</div>
+        <div class="phase-label" style="color:var(--accent4);">Simulation</div>
+        <div class="phase-items">
+          <span class="chip done">DiaStateMachine</span>
+          <span class="chip done">DiaRig2D</span>
+          <span class="chip done">DiaIK2D</span>
+          <span class="chip done">DiaAnimation2D</span>
+          <span class="chip done">DiaSerializer Ph3</span>
+        </div>
+        <div class="phase-tests" style="color:var(--accent4);">389 tests</div>
+      </div>
+      <div class="phase-row">
+        <div class="phase-date" style="color:var(--accent2);">May 3–4</div>
+        <div class="phase-label" style="color:var(--accent2);">Visual Debug</div>
+        <div class="phase-items">
+          <span class="chip done">DiaVisualDebugger (12 features)</span>
+          <span class="chip done">DebugLayerManager</span>
+          <span class="chip done">FixedDrawLayer</span>
+          <span class="chip done">ImGui console</span>
+        </div>
+        <div class="phase-tests" style="color:var(--accent2);">127 tests</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 6: Phase 1 — Editor Layer ─────────────── -->
+  <div class="slide left" id="slide-6">
+    <div class="tag red">Phase 1 — Apr 23</div>
+    <h2>The Editor Layer</h2>
+    <p>Day one of tracked development. The goal: a real plugin-based editor with live debug introspection. Built the full scaffolding in one sitting.</p>
+    <div class="cols cols-2" style="margin-top:16px;">
+      <div>
+        <ul class="bullets">
+          <li><strong>CluicheEditor</strong> — standalone editor application with ImGui docking, panel management, fullscreen mode</li>
+          <li><strong>DiaApplicationEditor plugin</strong> — manifest editing UI with lifecycle view, flow view, module inspector</li>
+          <li><strong>Splash screen</strong> — native Win32 splash with React overlay, shown during engine startup</li>
+          <li><strong>Protobuf migration</strong> — replaced string payloads with <code>google.protobuf.Struct</code> in DiaDebugServer</li>
+          <li><strong>WebSocket lifecycle fix</strong> — client-reuse bug tracked and resolved</li>
+          <li><strong>258 tests</strong> — Vitest suites for editor UI, integration tests for plugin pipeline</li>
+        </ul>
+      </div>
+      <div class="card accent-red">
+        <h3>The pattern established here</h3>
+        <p>Every editor panel is a DiaAPI plugin. The plugin manifest drives the UI — no hardcoded panel layouts. This pattern carries through DiaApplicationEditor, DiaPipelineEditor, and DiaAssetCatalogueEditor.</p>
+        <p style="margin-top:12px;">Claude generated all Vitest test suites from the component interfaces, catching the DockingManager fullscreen bug before it shipped.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 7: Phase 2 — Geometry + Dev Env ─────────────── -->
+  <div class="slide left" id="slide-7">
+    <div class="tag">Phase 2 — Apr 24–26</div>
+    <h2>Geometry + the Developer Environment</h2>
+    <p>Two parallel tracks: spatial data structures for the simulation layer, and tooling that makes the project cloneable and buildable from scratch.</p>
+    <div class="cols cols-2" style="margin-top:16px;">
+      <div class="card accent-blue">
+        <h3>DiaGeometry2D — 181 tests</h3>
+        <ul class="bullets" style="margin-top:8px;">
+          <li>2D shapes: Circle, AABB, OBB, Polygon, Capsule, Ray</li>
+          <li><strong>BVH tree</strong> — bounding volume hierarchy for broad-phase queries</li>
+          <li><strong>Quadtree</strong> — spatial partitioning with configurable depth</li>
+          <li><strong>Hex grid</strong> — axial coordinate system, corner-sampling</li>
+          <li>181 exhaustive unit tests — boundary, edge, degenerate geometry</li>
+        </ul>
+      </div>
+      <div class="card accent-orange">
+        <h3>DiaEnv — 9 features</h3>
+        <ul class="bullets" style="margin-top:8px;">
+          <li><strong>deps.json manifest</strong> — declarative dependency declaration</li>
+          <li><strong>winget toolchain</strong> — automated tool install on fresh machine</li>
+          <li><strong>MSBuild RestoreExternals</strong> — auto-restore on build</li>
+          <li><strong>git submodule migration</strong> — SFML via submodule</li>
+          <li><strong>GitHub CLI + ImGui</strong> added to manifest</li>
+          <li>Goal: <code>git clone</code> → build works</li>
+        </ul>
+      </div>
+    </div>
+    <div class="cols cols-2" style="margin-top:12px;">
+      <div class="card accent-green">
+        <h3>DiaPipeline + DiaTest + DiaCLI</h3>
+        <p>3-stage asset/compile/package pipeline. Test runner framework. CLI command surface with full reference docs. 270 tests across all three systems.</p>
+      </div>
+      <div class="card">
+        <h3>Research archive</h3>
+        <p><code>docs/research/</code> — portable build setup decision documented with 9 candidates evaluated. All reasoning permanently archived.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 8: Phase 3 — Physics ─────────────── -->
+  <div class="slide left" id="slide-8">
+    <div class="tag red">Phase 3 — Apr 27</div>
+    <h2>The Physics Engine</h2>
+    <p>Two full physics systems implemented on the same day — rigid body dynamics and Position-Based Dynamics soft body simulation.</p>
+    <div class="cols cols-3" style="margin-top:16px;">
+      <div class="card accent-red">
+        <h3>DiaRigidBody2D — 121 tests</h3>
+        <ul class="bullets" style="margin-top:0;">
+          <li>Static, dynamic, kinematic bodies</li>
+          <li>Circle, box, polygon shapes</li>
+          <li>Collision detection + response</li>
+          <li>Distance + revolute constraints</li>
+          <li>Trigger zones (enter/exit callbacks)</li>
+          <li>Determinism tests</li>
+        </ul>
+      </div>
+      <div class="card accent-purple">
+        <h3>DiaSoftBody2D — 117 tests</h3>
+        <ul class="bullets" style="margin-top:0;">
+          <li>PBD (Position-Based Dynamics)</li>
+          <li>Stretch, bend, and shear constraints</li>
+          <li>Cloth simulation + rope simulation</li>
+          <li>Rigid body coupling</li>
+          <li>Pinned vertices, anchor constraints</li>
+          <li>Conservation + determinism tests</li>
+        </ul>
+      </div>
+      <div class="card accent-orange">
+        <h3>DiaPipelineEditor</h3>
+        <ul class="bullets" style="margin-top:0;">
+          <li>Pipeline panel UI (plugin)</li>
+          <li>Build-trigger with live status</li>
+          <li>Run-history log viewer</li>
+          <li>ndjson-tailer for streaming output</li>
+          <li>13 Vitest tests for tailer</li>
+          <li>Registered in CluicheEditor manifest</li>
+        </ul>
+      </div>
+    </div>
+    <blockquote style="margin-top:20px;">
+      DiaRigidBody2DVisualDebugger shipped alongside — 28 tests. Physics systems always ship with their debug drawer.
+    </blockquote>
+  </div>
+
+  <!-- ─────────────── SLIDE 9: Phase 4 — Simulation Systems ─────────────── -->
+  <div class="slide center" id="slide-9">
+    <div class="tag purple">Phase 4 — May 1–2</div>
+    <h2>The Simulation Layer</h2>
+    <p>Five systems across state, rigging, IK, animation, and serialization — all built spec-first with full test suites.</p>
+    <div class="cols cols-3" style="margin-top:20px;">
+      <div class="card accent-purple">
+        <h3>DiaStateMachine — 71 tests</h3>
+        <p>Flat FSM, hierarchical state machine (HSM), and pushdown automaton. TransitionRecorder, Clone, HSM 3-level nesting, full tracer modes.</p>
+      </div>
+      <div class="card accent-blue">
+        <h3>DiaRig2D — 82 tests</h3>
+        <p>2D skeletal rig: ISkeletonLoader, bone metadata, FK, pose blending. 44 unit tests + 38 exhaustive (golden, invariant, stress, boundary, determinism, integration).</p>
+      </div>
+      <div class="card accent-orange">
+        <h3>DiaIK2D — 33 tests</h3>
+        <p>Post-process IK: two-bone solver, FABRIK (iterative), look-at constraint. No heap allocation during solve. Root bone pinned. Joint limits clamped per iteration.</p>
+      </div>
+      <div class="card accent-green">
+        <h3>DiaAnimation2D — 120 tests</h3>
+        <p>Keyframe clip player, pose blend stack, damped spring chains, animation evaluator. 107 initial tests + 13 more after pointer stability bug discovered and fixed.</p>
+      </div>
+      <div class="card accent-red">
+        <h3>DiaSerializer Phase 3 — 43 tests</h3>
+        <p>Serializers for DiaApplication manifest, spatial grids (BVH, quadtree, hex grid), and IK chain definition. ApplicationManifestLoader parse bug found and fixed during testing.</p>
+      </div>
+      <div class="card">
+        <h3>Gap-fill session</h3>
+        <p>96 additional tests added across Observer, Graph, FilePath, Easing, FloatMaths boundaries, container stress — filling coverage gaps identified by /gen-tests.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 10: Phase 5 — Visual Debugging ─────────────── -->
+  <div class="slide left" id="slide-10">
+    <div class="tag green">Phase 5 — May 3–4</div>
+    <h2>DiaVisualDebugger — 12 features, 127 tests</h2>
+    <p>Visual debugging as a first-class system. Layer-managed, priority-sorted debug render pipeline. Every simulation system ships with a visual debugger.</p>
+    <div class="cols cols-2" style="margin-top:16px;">
+      <div>
+        <ul class="bullets">
+          <li><strong>DebugLayerManager</strong> — registry of named draw layers with priority ordering</li>
+          <li><strong>IVisualDebugger interface</strong> — pure interface: reads const sim state, writes primitives</li>
+          <li><strong>5 simulation stacks</strong> — RigidBody2D, SoftBody2D, Geometry2D, Rig2D, IK2D draw layers</li>
+          <li><strong>DiaAnimation2DVisualDebugger</strong> — bone lines, spring chains, blend stack</li>
+          <li><strong>DebugColourPalette</strong> — canonical RGBA constants with semantic names</li>
+          <li><strong>FixedDrawLayer</strong> — register objects once; rendered automatically every frame</li>
+          <li><strong>ImGui console</strong> — in-game toggle + DiaAPI command input + log tail</li>
+          <li><strong>Editor panel</strong> — layer visibility toggles + budget monitoring</li>
+          <li><strong>#ifdef DIA_DEBUG</strong> — zero overhead in Release builds</li>
+        </ul>
+      </div>
+      <div>
+        <pre><span class="cmt">// One-time registration</span>
+<span class="fn">debugManager</span>.<span class="fn">RegisterLayer</span>(
+  <span class="fn">BoneLinesDrawer</span>{&skeleton},
+  <span class="num">priority</span>: <span class="num">10</span>
+);
+
+<span class="cmt">// Fixed-draw: register an object</span>
+<span class="cmt">// → rendered every frame automatically</span>
+<span class="fn">fixedRegistry</span>.<span class="fn">Register</span>(
+  &amp;physicsWorld,
+  <span class="fn">PhysicsWorldRenderer</span>{}
+);
+
+<span class="cmt">// Toggle from in-game console or editor</span>
+<span class="str">"debug.layer.toggle bone-lines"</span>
+
+<span class="cmt">// Budget logging in debug builds</span>
+<span class="cmt">// Warns when draw budget exceeded</span></pre>
+        <div class="stat-row" style="margin-top:12px;">
+          <div class="stat"><span class="big">12</span><span class="lbl">features</span></div>
+          <div class="stat"><span class="big green">114</span><span class="lbl">C++ tests</span></div>
+          <div class="stat"><span class="big purple">13</span><span class="lbl">Vitest tests</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 11: The Numbers ─────────────── -->
+  <div class="slide center" id="slide-11">
+    <div class="hero-bg"></div>
+    <div class="tag green">By the Numbers</div>
+    <h2>What 11 days of spec-driven AI collaboration produced</h2>
+    <div class="stat-row" style="justify-content:center; margin-top:28px; flex-wrap:wrap; gap:16px;">
+      <div class="stat"><span class="big">11</span><span class="lbl">days tracked</span></div>
+      <div class="stat"><span class="big green">100+</span><span class="lbl">atomic commits</span></div>
+      <div class="stat"><span class="big purple">37+</span><span class="lbl">engine modules</span></div>
+      <div class="stat"><span class="big orange">20+</span><span class="lbl">systems fully done</span></div>
+      <div class="stat"><span class="big red">200+</span><span class="lbl">feature specs</span></div>
+      <div class="stat"><span class="big green">1,400+</span><span class="lbl">tests written</span></div>
+    </div>
+    <div class="cols cols-3" style="margin-top:32px;">
+      <div class="card accent-green">
+        <h3>Test breakdown</h3>
+        <ul class="bullets" style="margin-top:0; font-size:0.85rem;">
+          <li>DiaGeometry2D — <strong>181</strong></li>
+          <li>DiaRigidBody2D — <strong>121</strong></li>
+          <li>DiaSoftBody2D — <strong>117</strong></li>
+          <li>DiaAnimation2D — <strong>120</strong></li>
+          <li>DiaRig2D (unit+exhaustive) — <strong>82</strong></li>
+          <li>DiaStateMachine — <strong>71</strong></li>
+          <li>DiaVisualDebugger — <strong>127</strong></li>
+        </ul>
+      </div>
+      <div class="card accent-blue">
+        <h3>Spec counts</h3>
+        <ul class="bullets" style="margin-top:0; font-size:0.85rem;">
+          <li>Platform specs — <strong>1</strong></li>
+          <li>Application specs — <strong>4</strong></li>
+          <li>System specs — <strong>20+</strong></li>
+          <li>Feature specs — <strong>200+</strong></li>
+          <li>Binding decisions — <strong>9 (PD-001→009)</strong></li>
+          <li>Research docs — <strong>5+</strong></li>
+        </ul>
+      </div>
+      <div class="card accent-purple">
+        <h3>Test types used</h3>
+        <ul class="bullets" style="margin-top:0; font-size:0.85rem;">
+          <li>Unit — method-level isolation</li>
+          <li>Golden value — regression anchors</li>
+          <li>Invariant — properties that must hold</li>
+          <li>Determinism — same input, same output</li>
+          <li>Stress / boundary — max, zero, degenerate</li>
+          <li>Integration — cross-system end-to-end</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 12: The Module Landscape ─────────────── -->
+  <div class="slide left" id="slide-12">
+    <div class="tag">Module Landscape</div>
+    <h2>Every module in the Dia engine</h2>
+    <p>37+ modules across 5 domains. Each ships with tests, architecture documentation, and a spec chain linking it back to the platform.</p>
+
+    <div style="margin-top:16px; width:100%; max-width:1050px;">
+      <div style="font-size:0.72rem; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:8px;">Core Infrastructure</div>
+      <div class="module-grid" style="margin-top:0;">
+        <span class="mod-chip core">DiaCore</span>
+        <span class="mod-chip core">DiaMaths</span>
+        <span class="mod-chip core">DiaApplication</span>
+        <span class="mod-chip core">DiaLogger</span>
+        <span class="mod-chip core">DiaSerializer</span>
+        <span class="mod-chip core">DiaStateMachine</span>
+        <span class="mod-chip core">DiaProtobuf</span>
+        <span class="mod-chip core">DiaPython</span>
+      </div>
+
+      <div style="font-size:0.72rem; font-weight:700; color:var(--accent3); text-transform:uppercase; letter-spacing:0.1em; margin-top:16px; margin-bottom:8px;">Physics &amp; Geometry</div>
+      <div class="module-grid" style="margin-top:0;">
+        <span class="mod-chip physics">DiaGeometry2D</span>
+        <span class="mod-chip physics">DiaGeometry2DVisualDebugger</span>
+        <span class="mod-chip physics">DiaRigidBody2D</span>
+        <span class="mod-chip physics">DiaRigidBody2DVisualDebugger</span>
+        <span class="mod-chip physics">DiaSoftBody2D</span>
+        <span class="mod-chip physics">DiaSoftBody2DVisualDebugger</span>
+      </div>
+
+      <div style="font-size:0.72rem; font-weight:700; color:var(--accent4); text-transform:uppercase; letter-spacing:0.1em; margin-top:16px; margin-bottom:8px;">Animation &amp; Rigging</div>
+      <div class="module-grid" style="margin-top:0;">
+        <span class="mod-chip anim">DiaRig2D</span>
+        <span class="mod-chip anim">DiaRig2DVisualDebugger</span>
+        <span class="mod-chip anim">DiaIK2D</span>
+        <span class="mod-chip anim">DiaIK2DVisualDebugger</span>
+        <span class="mod-chip anim">DiaAnimation2D</span>
+        <span class="mod-chip anim">DiaAnimation2DVisualDebugger</span>
+      </div>
+
+      <div style="font-size:0.72rem; font-weight:700; color:var(--accent2); text-transform:uppercase; letter-spacing:0.1em; margin-top:16px; margin-bottom:8px;">Debugging &amp; Graphics</div>
+      <div class="module-grid" style="margin-top:0;">
+        <span class="mod-chip debug">DiaVisualDebugger</span>
+        <span class="mod-chip debug">DiaVisualDebuggerConsole</span>
+        <span class="mod-chip debug">DiaDebugServer</span>
+        <span class="mod-chip debug">DiaDebugProtocol</span>
+        <span class="mod-chip debug">DiaGraphics</span>
+        <span class="mod-chip debug">DiaSFML</span>
+        <span class="mod-chip debug">DiaWindow</span>
+        <span class="mod-chip debug">DiaInput</span>
+        <span class="mod-chip debug">DiaImGui</span>
+        <span class="mod-chip debug">DiaUI</span>
+        <span class="mod-chip debug">DiaUICEF</span>
+        <span class="mod-chip debug">DiaUIUltralight</span>
+        <span class="mod-chip debug">DiaWebSocket</span>
+      </div>
+
+      <div style="font-size:0.72rem; font-weight:700; color:var(--accent5); text-transform:uppercase; letter-spacing:0.1em; margin-top:16px; margin-bottom:8px;">Tooling, Pipeline &amp; Assets</div>
+      <div class="module-grid" style="margin-top:0;">
+        <span class="mod-chip tools">DiaAPI</span>
+        <span class="mod-chip tools">DiaCLI</span>
+        <span class="mod-chip tools">DiaPipeline</span>
+        <span class="mod-chip tools">DiaPipelineEditor</span>
+        <span class="mod-chip tools">DiaEnv</span>
+        <span class="mod-chip tools">DiaTest</span>
+        <span class="mod-chip tools">DiaEditor</span>
+        <span class="mod-chip tools">DiaApplicationEditor</span>
+        <span class="mod-chip tools">DiaAssetCatalogue</span>
+        <span class="mod-chip tools">DiaAssetCatalogueEditor</span>
+        <span class="mod-chip tools">DiaAssetPipeline</span>
+        <span class="mod-chip tools">DiaAssetRuntime</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 13: The Spec Lineage ─────────────── -->
+  <div class="slide left" id="slide-13">
+    <div class="tag purple">Traceability</div>
+    <h2>Every feature traces back to the platform</h2>
+    <p>The 4-level hierarchy isn't documentation overhead — it's the enforcement mechanism. No feature ships without a complete lineage. Binding decisions cascade down every level.</p>
+    <div class="cols cols-2" style="margin-top:20px;">
+      <div>
+        <div class="tree">
+          <span class="hl">Platform: Cluiche</span><br>
+          &nbsp;&nbsp;9 binding decisions (PD-001→009)<br>
+          &nbsp;&nbsp;└─ <span class="hl2">Application: Dia</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;20+ system decisions (SED-001→021)<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─ <span class="hl3">System: DiaIK2D</span>  <span class="cmt"># example</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─ <span class="hl4">Feature: fabrik-solver</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Binding compliance table<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AI review questions answered<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Status: Done<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─ <span class="hl4">Feature: two-bone-solver</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─ <span class="hl4">Feature: look-at-constraint</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─ <span class="hl4">Feature: ik-chain-definition</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─ <span class="hl4">… 3 more features</span>
+        </div>
+      </div>
+      <div>
+        <ul class="bullets">
+          <li><strong>PD-001</strong> — StringCRC for all IDs (no raw string comparisons)</li>
+          <li><strong>PD-002</strong> — ProcessingUnit / Phase / Module architecture enforced everywhere</li>
+          <li><strong>PD-004</strong> — No STL containers in public APIs</li>
+          <li><strong>PD-007</strong> — C++20 required language standard</li>
+          <li><strong>PD-009</strong> — All generated output under <code>Cluiche/out/&lt;AppName&gt;/</code></li>
+          <li><strong>SED-020</strong> — Per-plugin session context via <code>.context.json</code></li>
+          <li><strong>Every feature spec</strong> has a compliance table verifying all 9 PDs are honored</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 14: What Claude Made Possible ─────────────── -->
+  <div class="slide center" id="slide-14">
+    <div class="tag blue">The AI Story</div>
+    <h2>What Claude specifically contributed</h2>
+    <div class="cols cols-3" style="margin-top:20px;">
+      <div class="card accent-blue">
+        <h3>Spec enforcement</h3>
+        <p>The 5-step spec process is encoded in a slash command. Claude won't approve a spec without completed binding decisions and AI review questions — even when asked to go fast.</p>
+      </div>
+      <div class="card accent-green">
+        <h3>Test generation</h3>
+        <p><code>/gen-tests</code> reads public API headers and generates all 6 test types: unit, golden, invariant, determinism, stress, integration. Tests aren't a chore — they're a command.</p>
+      </div>
+      <div class="card accent-purple">
+        <h3>Bug discovery</h3>
+        <p>The DiaAnimation2D pointer stability bug. The HexGrid coordinate system error. The Circle closest-point offset bug. All caught by exhaustive tests generated before the code shipped.</p>
+      </div>
+      <div class="card accent-orange">
+        <h3>Context persistence</h3>
+        <p>CLAUDE.md, steering docs, and the memory system mean every session starts with full project context. Architecture decisions made months ago are respected automatically.</p>
+      </div>
+      <div class="card accent-red">
+        <h3>Research funnels</h3>
+        <p>DiaEnv: 9 candidates evaluated for portable build setup. Webix removal: 3 replacement options scored. All reasoning archived in <code>docs/research/</code> — permanently queryable.</p>
+      </div>
+      <div class="card">
+        <h3>Parallel subagents</h3>
+        <p>Each plan task runs as an independent subagent. Independent tasks run in parallel. DiaAnimation2D, DiaRig2D, and DiaIK2D were specced and partially implemented concurrently.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 15: Bugs Caught ─────────────── -->
+  <div class="slide left" id="slide-15">
+    <div class="tag red">Quality Gates</div>
+    <h2>Bugs caught before they could ship</h2>
+    <p>Exhaustive test suites — generated from specs, not written as an afterthought — caught real architectural issues during development.</p>
+    <div class="cols cols-2" style="margin-top:20px;">
+      <div class="card accent-red">
+        <h3>DiaAnimation2D — pointer stability</h3>
+        <p>Spring chain pointers stored raw. When the chain vector reallocated, all pointers dangled. Caught by integration tests that ran the evaluator across multiple frames with growing chain counts.</p>
+        <p style="margin-top:8px; color:var(--accent3);">13 extra tests added, architecture fixed.</p>
+      </div>
+      <div class="card accent-red">
+        <h3>HexGrid — axial coordinate system</h3>
+        <p>Grid extent was computed with incorrect coordinate assumptions — grid appeared correct for small sizes but broke at the boundary. Corner-sampling logic was wrong.</p>
+        <p style="margin-top:8px; color:var(--accent3);">Rewritten with true axial coords and new boundary tests.</p>
+      </div>
+      <div class="card accent-red">
+        <h3>Circle closest-point — missing offset</h3>
+        <p>Closest-point methods on Circle were computing against the origin, ignoring the circle's center position. Would have produced wrong physics contact normals silently.</p>
+        <p style="margin-top:8px; color:var(--accent3);">Geometry2D edge case tests added and fix committed.</p>
+      </div>
+      <div class="card accent-red">
+        <h3>ApplicationManifestLoader — parse duplication</h3>
+        <p>Manifest entries were parsed twice due to a loop structure bug. Only visible under stress tests with large manifests.</p>
+        <p style="margin-top:8px; color:var(--accent3);">9 extra tests added covering duplicate-entry detection.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 16: What's Next ─────────────── -->
+  <div class="slide left" id="slide-16">
+    <div class="tag orange">What's Next</div>
+    <h2>The pipeline ahead</h2>
+    <p>Three categories of upcoming work — all specs approved or partially approved, ready for implementation to begin.</p>
+    <div class="cols cols-3" style="margin-top:20px;">
+      <div class="card accent-blue">
+        <h3>Asset System</h3>
+        <ul class="bullets" style="margin-top:0;">
+          <li><strong>DiaAssetCatalogue</strong> — 3 features Approved: json-definition-loader, asset-type-framework, identity-relationship-backbone</li>
+          <li><strong>DiaAssetPipeline</strong> — system Approved, 4 feature specs needed</li>
+          <li><strong>DiaAssetRuntime</strong> — needs /spec-system: Stage→Bundle→Asset runtime resolution</li>
+        </ul>
+      </div>
+      <div class="card accent-green">
+        <h3>Editor Features</h3>
+        <ul class="bullets" style="margin-top:0;">
+          <li><strong>DiaApplicationEditor</strong> — 15 features all Approved, ready to build</li>
+          <li><strong>DiaStateMachineEditor</strong> — needs /spec-system for visual editing + debug</li>
+          <li><strong>DiaAssetCatalogueEditor</strong> — needs /spec-system for asset browser UI</li>
+        </ul>
+      </div>
+      <div class="card accent-purple">
+        <h3>Open Ends</h3>
+        <ul class="bullets" style="margin-top:0;">
+          <li><strong>HotReload stubs</strong> — CollectDependentModules + UpdateDependencyReferences placeholder implementations</li>
+          <li><strong>per-app-bin-layout</strong> — standalone feature, spec Approved</li>
+          <li><strong>Blackboard</strong> — general-purpose key-value store (useful for AI, animation, gameplay)</li>
+          <li><strong>Phase 3d serializer</strong> — physics body serialization, blocked on DiaAssetCatalogue</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────── SLIDE 17: The Bigger Picture ─────────────── -->
+  <div class="slide center" id="slide-17">
+    <div class="tag green">The Bigger Picture</div>
+    <h2>This isn't just about speed</h2>
+    <div class="cols cols-2" style="margin-top:16px; max-width:900px;">
+      <div class="card accent-blue">
+        <h3>Architecture that holds</h3>
+        <p>Binding decisions set once at the Platform level flow into every feature — automatically. A decision made in April is still respected in every new module added in December. The AI carries it forward.</p>
+      </div>
+      <div class="card accent-green">
+        <h3>Tests as documentation</h3>
+        <p>Golden value tests document expected behavior. Invariant tests document what must always be true. Determinism tests document the simulation contract. Tests are the spec made executable.</p>
+      </div>
+      <div class="card accent-purple">
+        <h3>Research that's permanent</h3>
+        <p><code>docs/research/</code> archives every major decision: why PBD over impulse-based physics, why deps.json over a package manager, why alpine/react over Webix. Future sessions can query the reasoning.</p>
+      </div>
+      <div class="card accent-orange">
+        <h3>Scale without drift</h3>
+        <p>37+ modules and no two have inconsistent patterns. Every module follows the same naming, every interface follows the same contract, every test follows the same fixture structure. Enforced — not hoped for.</p>
+      </div>
+    </div>
+    <blockquote style="margin-top:28px;">
+      The architecture doesn't survive because people remember it. It survives because the AI reads CLAUDE.md every session.
+    </blockquote>
+  </div>
+
+  <!-- ─────────────── SLIDE 18: Closing ─────────────── -->
+  <div class="slide center" id="slide-18">
+    <div class="hero-bg"></div>
+    <div class="tag green">The Journey</div>
+    <h2>Foundation → Geometry → Physics → Animation → Debug</h2>
+    <div class="pipeline" style="margin-top:28px; flex-wrap:wrap; row-gap:16px; justify-content:center;">
+      <div class="pipe-step" style="border-top:3px solid var(--muted);">
+        Foundation
+        <small>DiaCore, DiaMaths, DiaApplication</small>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step" style="border-top:3px solid var(--accent3);">
+        Editor Layer
+        <small>Apr 23</small>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step" style="border-top:3px solid var(--accent);">
+        Geometry + Env
+        <small>Apr 24–26</small>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step" style="border-top:3px solid var(--accent3);">
+        Physics
+        <small>Apr 27</small>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step" style="border-top:3px solid var(--accent4);">
+        Simulation
+        <small>May 1–2</small>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step" style="border-top:3px solid var(--accent2);">
+        Debug System
+        <small>May 3–4</small>
+      </div>
+    </div>
+    <div class="cols cols-4" style="margin-top:36px; max-width:960px;">
+      <div style="text-align:center;">
+        <div style="font-size:1.8rem; font-weight:700; color:var(--accent);">37+</div>
+        <div style="color:var(--muted); font-size:0.8rem;">Modules</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:1.8rem; font-weight:700; color:var(--accent2);">1,400+</div>
+        <div style="color:var(--muted); font-size:0.8rem;">Tests</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:1.8rem; font-weight:700; color:var(--accent4);">200+</div>
+        <div style="color:var(--muted); font-size:0.8rem;">Feature specs</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:1.8rem; font-weight:700; color:var(--accent5);">11 days</div>
+        <div style="color:var(--muted); font-size:0.8rem;">Tracked dev</div>
+      </div>
+    </div>
+    <p style="margin-top:24px; font-size:0.9rem;">
+      Built by <strong style="color:var(--text);">Conor Lenihan</strong> + <strong style="color:var(--accent);">Claude</strong> — spec by spec, commit by commit.
+    </p>
+  </div>
+
+</div><!-- /deck -->
+
+<div id="nav">
+  <button id="btn-prev">← Prev</button>
+  <span id="counter">1 / 18</span>
+  <button id="btn-next">Next →</button>
+</div>
+<div id="hint">← → arrow keys to navigate</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let current = 0;
+
+  const counter = document.getElementById('counter');
+  const progress = document.getElementById('progress');
+
+  function go(n) {
+    slides[current].classList.remove('active');
+    current = Math.max(0, Math.min(total - 1, n));
+    slides[current].classList.add('active');
+    counter.textContent = `${current + 1} / ${total}`;
+    progress.style.width = `${((current + 1) / total) * 100}%`;
+  }
+
+  document.getElementById('btn-next').addEventListener('click', () => go(current + 1));
+  document.getElementById('btn-prev').addEventListener('click', () => go(current - 1));
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') go(current + 1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')                      go(current - 1);
+  });
+
+  go(0);
+</script>
+</body>
+</html>

@@ -50,8 +50,11 @@ namespace Dia
 			template<class T> 
 			TypeVariableDataClass::TypeVariableDataClass(T* field)
 				: TypeVariableDataBase()
+				, mClassDefinition(nullptr)
 			{
 				mClassDefinition = &field->GetType();
+
+				DIA_ASSERT(mClassDefinition, "Could not find type class, potentially it has not been initialized yet. Add an include in file to ensure order");
 			}
 
 			//------------------------------------------------------------------------------------
@@ -60,8 +63,11 @@ namespace Dia
 			template<class T> 
 			TypeVariableDataPointerClass::TypeVariableDataPointerClass(T* field)
 				: TypeVariableDataBase()
+				, mClassDefinition(nullptr)
 			{
 				mClassDefinition = &((*field)->GetType());	
+
+				DIA_ASSERT(mClassDefinition, "Could not find type class, potentially it has not been initialized yet. Add an include in file to ensure order");
 			}
 		}
 	}

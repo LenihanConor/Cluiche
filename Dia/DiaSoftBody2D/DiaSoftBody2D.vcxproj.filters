@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Constraints">
+      <UniqueIdentifier>{SB2D0001-A1B2-C3D4-E5F6-789012345678}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Debug">
+      <UniqueIdentifier>{SB2D0002-B2C3-D4E5-F6A7-890123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{SB2D0003-C3D4-E5F6-A7B8-901234567890}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{SB2D0004-D4E5-F6A7-B8C9-012345678901}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Particle.h" />
+    <ClInclude Include="SoftBody.h" />
+    <ClInclude Include="Rope.h" />
+    <ClInclude Include="Cloth.h" />
+    <ClInclude Include="SoftBodyWorld.h" />
+    <ClInclude Include="Constraints\DistanceConstraint.h">
+      <Filter>Constraints</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Rope.cpp" />
+    <ClCompile Include="Cloth.cpp" />
+    <ClCompile Include="SoftBodyWorld.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\dia.softbody2d.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Testing\SoftBodyWorldBuilder.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

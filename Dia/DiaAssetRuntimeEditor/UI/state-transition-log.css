@@ -1,0 +1,66 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 12px;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    overflow: hidden;
+    height: 100vh;
+}
+
+#app { display: flex; flex-direction: column; height: 100%; position: relative; }
+
+.overlay {
+    position: absolute; inset: 0;
+    background: rgba(30, 30, 30, 0.5);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100; font-size: 14px; color: #808080;
+}
+.overlay.hidden { display: none; }
+
+.toolbar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px; background: #252526; border-bottom: 1px solid #3c3c3c;
+}
+
+.toolbar input[type="text"],
+.toolbar input[type="number"],
+.toolbar select {
+    background: #3c3c3c; border: 1px solid #555; color: #d4d4d4;
+    padding: 3px 6px; border-radius: 2px; font-size: 11px;
+}
+.toolbar input[type="text"] { flex: 1; min-width: 100px; }
+.toolbar input[type="number"] { width: 60px; }
+.max-label { display: flex; align-items: center; gap: 4px; color: #999; font-size: 11px; }
+
+.toolbar button {
+    background: #0e639c; border: none; color: #fff;
+    padding: 4px 10px; border-radius: 2px; cursor: pointer; font-size: 11px;
+}
+.toolbar button:hover { background: #1177bb; }
+.toolbar button.active { background: #d48806; }
+
+.log-container { flex: 1; overflow-y: auto; font-family: 'Consolas', monospace; font-size: 11px; }
+
+.log-entry {
+    padding: 2px 8px; border-bottom: 1px solid #2a2a2a; white-space: nowrap;
+}
+.log-entry:hover { background: #2a2d2e; }
+
+.log-entry .timestamp { color: #888; margin-right: 8px; }
+.log-entry .asset-id { color: #569cd6; margin-right: 8px; }
+.log-entry .state-old { color: #ce9178; }
+.log-entry .arrow { color: #666; margin: 0 4px; }
+.log-entry .state-new { color: #b5cea8; }
+
+.log-entry.marker {
+    background: #2d2d2d; font-style: italic; color: #888;
+    border-left: 3px solid #555; padding-left: 6px;
+}
+
+.status-bar {
+    display: flex; justify-content: space-between;
+    padding: 4px 8px; background: #007acc; color: #fff; font-size: 11px;
+}
+.status-bar .paused-indicator { color: #ffd700; font-weight: 600; }

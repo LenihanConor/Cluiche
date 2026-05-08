@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<!-- Alpine widget: stat/badge — displays labelled numeric stats with optional badge status -->
+<html lang="en" data-theme="cluichetest">
+<head>
+  <meta charset="UTF-8" />
+  <title>Stat / Badge</title>
+  <link rel="stylesheet" href="../../../External/DaisyUI/daisyui.min.css" />
+  <script src="../../../External/Tailwind/tailwind.min.js"></script>
+  <link rel="stylesheet" href="themes/cluichetest.css" />
+  <script defer src="../../../External/Alpine/alpine.min.js"></script>
+</head>
+<body class="bg-base-100 text-base-content p-4">
+
+  <div x-data="{
+    stats: [],
+
+    init() {
+      window.GameBridge_dispatch = (topic, dataJson) => {
+        if (topic !== 'stats') return;
+        try { this.stats = JSON.parse(dataJson); }
+        catch (e) { console.warn('stat-badge: parse error', e); }
+      };
+    },
+
+    badgeClass(status) {
+      if (status === 'ok')   return 'badge-success';
+      if (status === 'warn') return 'badge-warning';
+      if (status === 'err')  return 'badge-error';
+      return 'badge-neutral';
+    }
+  }">
+
+    <h2 class="text-sm font-bold uppercase tracking-widest opacity-60 mb-3">Stats</h2>
+
+    <template x-if="stats.length === 0">
+      <p class="text-xs opacity-40">Waiting for data…</p>
+    </template>
+
+    <div class="flex flex-wrap gap-3">
+      <template x-for="s in stats" :key="s.label">
+        <div class="stats shadow bg-base-200">
+          <div class="stat py-2 px-4">
+            <div class="stat-title text-xs" x-text="s.label"></div>
+            <div class="stat-value text-2xl" x-text="s.value"></div>
+            <div class="stat-desc">
+              <span class="badge badge-sm" :class="badgeClass(s.status)" x-text="s.status ?? 'ok'"></span>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+
+  </div>
+</body>
+</html>

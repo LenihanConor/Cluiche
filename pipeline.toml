@@ -1,0 +1,98 @@
+[global]
+default_config = "Debug"
+default_platform = "x64"
+default_target = "googletest"
+
+[proto]
+proto_dir = "Dia/DiaDebugProtocol/proto"
+output_dir = "Dia/DiaDebugProtocol/proto/generated"
+language = "cpp"
+
+[targets.googletest]
+project = "Cluiche/Tests/GoogleTests/GoogleTests.vcxproj"
+stages = ["compile-code", "deploy"]
+
+[targets.googletest.build_deps]
+protobuf = true
+
+[targets.googletest.deploy]
+files = [
+  { src = "External/Python311/python311.dll", dest = "$(OutDir)" },
+  { src = "Cluiche/Assets/CluicheTest/Global/misc/ApplicationFlow/*.diaapp", dest = "$(OutDir)Data/Manifests/misc/ApplicationFlow/" },
+  { src = "Cluiche/Assets/CluicheTest/cluichetest.diagame", dest = "$(OutDir)Data/Manifests/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/DummyStage/Misc/ApplicationFlow/*", dest = "$(OutDir)Data/stages/DummyStage/Misc/ApplicationFlow/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/DummyStage/dummy_stage.diastage", dest = "$(OutDir)Data/stages/DummyStage/" }
+]
+
+[targets.cluichetest]
+project = "Cluiche/CluicheTest/CluicheTest.vcxproj"
+stages = ["compile-code", "build-assets", "deploy"]
+app_name = "CluicheTest"
+catalogue_manifest = "Cluiche/Assets/CluicheTest/assets.catalogue.json"
+asset_stages = ["stage.global", "stage.dummy_stage"]
+
+[targets.cluichetest.build_deps]
+protobuf = true
+
+[targets.cluichetest.deploy]
+files = [
+  { src = "External/SFML/Current-x64/bin/*.dll", dest = "$(OutDir)" },
+  { src = "Dia/DiaUIUltralight/Deploy/*", dest = "$(OutDir)" },
+  { src = "Cluiche/Assets/CluicheTest/cluichetest.diagame", dest = "$(OutDir)assets/" },
+  { src = "Cluiche/Assets/CluicheTest/Stages/DummyStage/dummy_stage.diastage", dest = "$(OutDir)assets/stages/DummyStage/" }
+]
+
+[targets.cluicheeditor]
+project = "Cluiche/CluicheEditor/CluicheEditor.vcxproj"
+stages = ["compile-code", "build-assets", "deploy"]
+
+[targets.cluicheeditor.build_deps]
+protobuf = true
+cef_wrapper = true
+
+[targets.cluicheeditor.deploy]
+ui_builds = [
+  { cwd = "Cluiche/CluicheEditor/UI", cmd = "node node_modules/vite/bin/vite.js build" },
+  { cwd = "Dia/DiaApplicationEditor/UI", cmd = "node node_modules/vite/bin/vite.js build" },
+  { cwd = "Dia/DiaPipelineEditor/UI", cmd = "node node_modules/vite/bin/vite.js build" }
+]
+files = [
+  { src = "External/CEF/Resources/*",                     dest = "$(OutDir)" },
+  { src = "External/CEF/Resources/locales/**",            dest = "$(OutDir)locales/" },
+  { src = "External/CEF/bin/$(Configuration)/*",          dest = "$(OutDir)" },
+  { src = "Cluiche/CluicheEditor/Data/*",                 dest = "$(OutDir)assets/configs/" },
+  { src = "Cluiche/CluicheEditor/UI/dist/*",              dest = "$(OutDir)ui/" },
+  { src = "Cluiche/CluicheEditor/UI/dist/assets/*",       dest = "$(OutDir)ui/assets/" },
+  { src = "Dia/DiaEditor/Plugin/Assets/**/*",             dest = "$(OutDir)plugins/" },
+  { src = "Dia/DiaApplicationEditor/UI/dist/*",           dest = "$(OutDir)plugins/diaapplicationeditor/" },
+  { src = "Dia/DiaApplicationEditor/UI/dist/assets/*",    dest = "$(OutDir)plugins/diaapplicationeditor/assets/" },
+  { src = "Dia/DiaApplicationEditor/Assets/*",            dest = "$(OutDir)plugins/diaapplicationeditor/" },
+  { src = "Dia/DiaAssetRuntimeEditor/UI/*",                dest = "$(OutDir)plugins/assetruntimeeditor/" },
+  { src = "Dia/DiaAssetCatalogueEditor/UI/*",              dest = "$(OutDir)plugins/assetcatalogue/" },
+  { src = "Dia/DiaPipelineEditor/UI/dist/*",              dest = "$(OutDir)plugins/diapipelineeditor/" },
+  { src = "Dia/DiaPipelineEditor/UI/dist/assets/*",       dest = "$(OutDir)plugins/diapipelineeditor/assets/" },
+  { src = "Cluiche/Assets/CluicheEditor/*",               dest = "$(OutDir)assets/icons/" },
+  { src = "Cluiche/bin/DiaUICEF_TestSubprocess/$(Configuration)/x64/DiaUICEF_TestSubprocess.exe", dest = "$(OutDir)cef/" },
+  { src = "Cluiche/bin/DiaUICEF_TestSubprocess/$(Configuration)/x64/DiaUICEF_TestSubprocess.pdb", dest = "$(OutDir)cef/" }
+]
+
+[targets.diasfml]
+project = "Dia/DiaSFML/DiaSFML.vcxproj"
+stages = ["compile-code"]
+hidden = true
+
+[targets.diasfml.deploy]
+files = [
+  { src = "External/SFML/Current-x64/bin/*.dll", dest = "$(OutDir)" }
+]
+
+[targets.diauiultralight]
+project = "Dia/DiaUIUltralight/DiaUIUltralight.vcxproj"
+stages = ["compile-code"]
+hidden = true
+
+[targets.diauiultralight.deploy]
+files = [
+  { src = "Dia/DiaUIUltralight/Deploy/*",          dest = "$(OutDir)" },
+  { src = "External/Ultralight/resources/*",        dest = "$(OutDir)resources/" }
+]

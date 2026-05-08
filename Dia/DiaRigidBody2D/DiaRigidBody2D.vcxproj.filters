@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Bodies">
+      <UniqueIdentifier>{A1B2C3D4-E5F6-7890-1234-567890ABCDEF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="World">
+      <UniqueIdentifier>{B2C3D4E5-F6A7-8901-2345-678901BCDEF0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Integration">
+      <UniqueIdentifier>{C3D4E5F6-A7B8-9012-3456-789012CDEF01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Detection">
+      <UniqueIdentifier>{D4E5F6A7-B8C9-0123-4567-890123DEF012}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Response">
+      <UniqueIdentifier>{E5F6A7B8-C9D0-1234-5678-901234EF0123}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Events">
+      <UniqueIdentifier>{F6A7B8C9-D0E1-2345-6789-012345F01234}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Queries">
+      <UniqueIdentifier>{A7B8C9D0-E1F2-3456-7890-123456012345}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Constraints">
+      <UniqueIdentifier>{B8C9D0E1-F2A3-4567-8901-234567123456}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{C9D0E1F2-A3B4-5678-9012-345678234567}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Triggers">
+      <UniqueIdentifier>{D0E1F2A3-B4C5-6789-0123-456789345678}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{E1F2A3B4-C5D6-7890-1234-567890456789}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Bodies\BodyType.h">
+      <Filter>Bodies</Filter>
+    </ClInclude>
+    <ClInclude Include="Bodies\Body2DBase.h">
+      <Filter>Bodies</Filter>
+    </ClInclude>
+    <ClInclude Include="Bodies\PointBody2D.h">
+      <Filter>Bodies</Filter>
+    </ClInclude>
+    <ClInclude Include="Bodies\RigidBody2D.h">
+      <Filter>Bodies</Filter>
+    </ClInclude>
+    <ClInclude Include="Constraints\IConstraint.h">
+      <Filter>Constraints</Filter>
+    </ClInclude>
+    <ClInclude Include="Constraints\ConstraintSolver.h">
+      <Filter>Constraints</Filter>
+    </ClInclude>
+    <ClInclude Include="Constraints\PinJoint.h">
+      <Filter>Constraints</Filter>
+    </ClInclude>
+    <ClInclude Include="Constraints\DistanceConstraint.h">
+      <Filter>Constraints</Filter>
+    </ClInclude>
+    <ClInclude Include="Constraints\SpringConstraint.h">
+      <Filter>Constraints</Filter>
+    </ClInclude>
+    <ClInclude Include="Constraints\HingeJoint.h">
+      <Filter>Constraints</Filter>
+    </ClInclude>
+    <ClInclude Include="Detection\Contact.h">
+      <Filter>Detection</Filter>
+    </ClInclude>
+    <ClInclude Include="Detection\DetectCollisions.h">
+      <Filter>Detection</Filter>
+    </ClInclude>
+    <ClInclude Include="Response\ResolveCollisions.h">
+      <Filter>Response</Filter>
+    </ClInclude>
+    <ClInclude Include="Events\CollisionEvent.h">
+      <Filter>Events</Filter>
+    </ClInclude>
+    <ClInclude Include="Events\EmitCollisionEvents.h">
+      <Filter>Events</Filter>
+    </ClInclude>
+    <ClInclude Include="Integration\Integration.h">
+      <Filter>Integration</Filter>
+    </ClInclude>
+    <ClInclude Include="Integration\MomentOfInertia.h">
+      <Filter>Integration</Filter>
+    </ClInclude>
+    <ClInclude Include="Integration\UpdateSleepTimers.h">
+      <Filter>Integration</Filter>
+    </ClInclude>
+    <ClInclude Include="Queries\RaycastHit.h">
+      <Filter>Queries</Filter>
+    </ClInclude>
+    <ClInclude Include="World\BodyPairKey.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="World\PhysicsWorld.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="World\PhysicsWorldCapacities.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="World\WorldDef.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="Triggers\TriggerVolume2D.h">
+      <Filter>Triggers</Filter>
+    </ClInclude>
+    <ClInclude Include="Triggers\TriggerEvent.h">
+      <Filter>Triggers</Filter>
+    </ClInclude>
+    <ClInclude Include="Triggers\TriggerPairKey.h">
+      <Filter>Triggers</Filter>
+    </ClInclude>
+    <ClInclude Include="Triggers\DetectTriggerOverlaps.h">
+      <Filter>Triggers</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Constraints\ConstraintSolver.cpp">
+      <Filter>Constraints</Filter>
+    </ClCompile>
+    <ClCompile Include="Constraints\PinJoint.cpp">
+      <Filter>Constraints</Filter>
+    </ClCompile>
+    <ClCompile Include="Constraints\DistanceConstraint.cpp">
+      <Filter>Constraints</Filter>
+    </ClCompile>
+    <ClCompile Include="Constraints\SpringConstraint.cpp">
+      <Filter>Constraints</Filter>
+    </ClCompile>
+    <ClCompile Include="Constraints\HingeJoint.cpp">
+      <Filter>Constraints</Filter>
+    </ClCompile>
+    <ClCompile Include="Bodies\Body2DBase.cpp">
+      <Filter>Bodies</Filter>
+    </ClCompile>
+    <ClCompile Include="Bodies\PointBody2D.cpp">
+      <Filter>Bodies</Filter>
+    </ClCompile>
+    <ClCompile Include="Bodies\RigidBody2D.cpp">
+      <Filter>Bodies</Filter>
+    </ClCompile>
+    <ClCompile Include="Detection\DetectCollisions.cpp">
+      <Filter>Detection</Filter>
+    </ClCompile>
+    <ClCompile Include="Events\EmitCollisionEvents.cpp">
+      <Filter>Events</Filter>
+    </ClCompile>
+    <ClCompile Include="Response\ResolveCollisions.cpp">
+      <Filter>Response</Filter>
+    </ClCompile>
+    <ClCompile Include="Integration\Integration.cpp">
+      <Filter>Integration</Filter>
+    </ClCompile>
+    <ClCompile Include="Integration\MomentOfInertia.cpp">
+      <Filter>Integration</Filter>
+    </ClCompile>
+    <ClCompile Include="Integration\UpdateSleepTimers.cpp">
+      <Filter>Integration</Filter>
+    </ClCompile>
+    <ClCompile Include="World\PhysicsWorld.cpp">
+      <Filter>World</Filter>
+    </ClCompile>
+    <ClCompile Include="Triggers\TriggerVolume2D.cpp">
+      <Filter>Triggers</Filter>
+    </ClCompile>
+    <ClCompile Include="Triggers\DetectTriggerOverlaps.cpp">
+      <Filter>Triggers</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\dia.rigidbody2d.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Testing\PhysicsWorldBuilder.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

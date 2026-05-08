@@ -1,56 +1,39 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="Debug|Win32">
+  
+    <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
-      <Platform>Win32</Platform>
+      <Platform>x64</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="Release|Win32">
+    <ProjectConfiguration Include="Release|x64">
       <Configuration>Release</Configuration>
-      <Platform>Win32</Platform>
+      <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{2BBA0AD3-D449-4C0E-8C84-ACFA8BCA456B}</ProjectGuid>
     <RootNamespace>DiaMaths</RootNamespace>
-    <Keyword>ManagedCProj</Keyword>
+    <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
-    <CLRSupport>true</CLRSupport>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
-    <CLRSupport>false</CLRSupport>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <_ProjectFileVersion>11.0.51106.1</_ProjectFileVersion>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
-    <IntDir>..\DiaBin\$(TargetName)\$(Configuration)\</IntDir>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
-    <IntDir>..\DiaBin\$(TargetName)\$(Configuration)\</IntDir>
-  </PropertyGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>./;./../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -65,7 +48,7 @@
       <PreserveSbr>true</PreserveSbr>
     </Bscmake>
   </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>./;./../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -85,13 +68,15 @@
     <ClInclude Include="Vector\VectorUtils.h" />
     <ClInclude Include="Core\Angle.h" />
     <ClInclude Include="Core\CoreMaths.h" />
+    <ClInclude Include="Core\Easing.h" />
     <ClInclude Include="Core\FloatMaths.h" />
     <ClInclude Include="Core\HalfFloat.h" />
+    <ClInclude Include="Core\Interpolation.h" />
     <ClInclude Include="Core\MathsDefines.h" />
+    <ClInclude Include="Core\Random.h" />
     <ClInclude Include="Core\Trigonometry.h" />
     <ClInclude Include="Matrix\Matrix22.h" />
     <ClInclude Include="Matrix\Matrix33.h" />
-    <ClInclude Include="Matrix\Matrix44.h" />
     <ClInclude Include="Shape\2D\AARect2D.h" />
     <ClInclude Include="Shape\2D\Arc2D.h" />
     <ClInclude Include="Shape\2D\Capsule2D.h" />
@@ -99,9 +84,11 @@
     <ClInclude Include="Shape\2D\IntersectionPoint2D.h" />
     <ClInclude Include="Shape\2D\Line2D.h" />
     <ClInclude Include="Shape\2D\OORect2D.h" />
+    <ClInclude Include="Shape\2D\Ray2D.h" />
     <ClInclude Include="Shape\2D\Triangle2D.h" />
     <ClInclude Include="Shape\Common\IntersectionClassify.h" />
     <ClInclude Include="Shape\Common\IntersectionTests.h" />
+    <ClInclude Include="Transform\Transform2D.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Vector\Vector2D.cpp" />
@@ -116,9 +103,9 @@
     <ClCompile Include="Core\CoreMaths.cpp" />
     <ClCompile Include="Core\FloatMaths.cpp" />
     <ClCompile Include="Core\HalfFloat.cpp" />
+    <ClCompile Include="Core\Random.cpp" />
     <ClCompile Include="Matrix\Matrix22.cpp" />
     <ClCompile Include="Matrix\Matrix33.cpp" />
-    <ClCompile Include="Matrix\Matrix44.cpp" />
     <ClCompile Include="Shape\2D\AARect2D.cpp" />
     <ClCompile Include="Shape\2D\Arc2D.cpp" />
     <ClCompile Include="Shape\2D\Capsule2D.cpp" />
@@ -126,17 +113,22 @@
     <ClCompile Include="Shape\2D\IntersectionPoint2D.cpp" />
     <ClCompile Include="Shape\2D\Line2D.cpp" />
     <ClCompile Include="Shape\2D\OORect2D.cpp" />
+    <ClCompile Include="Shape\2D\Ray2D.cpp" />
     <ClCompile Include="Shape\2D\Triangle2D.cpp" />
     <ClCompile Include="Shape\Common\IntersectionClassify.cpp" />
     <ClCompile Include="Shape\Common\IntersectionTests.cpp" />
+    <ClCompile Include="Transform\Transform2D.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Vector\Vector2D.inl" />
     <None Include="Vector\VectorHalf2D.inl" />
     <None Include="Core\Angle.inl" />
     <None Include="Core\CoreMaths.inl" />
+    <None Include="Core\Easing.inl" />
     <None Include="Core\FloatMaths.inl" />
     <None Include="Core\HalfFloat.inl" />
+    <None Include="Core\Interpolation.inl" />
+    <None Include="Core\Random.inl" />
     <None Include="Core\Trigonometry.inl" />
     <None Include="Shape\2D\AARect2D.inl" />
     <None Include="Shape\2D\Arc2D.inl" />
@@ -145,8 +137,12 @@
     <None Include="Shape\2D\IntersectionPoint2D.inl" />
     <None Include="Shape\2D\Line2D.inl" />
     <None Include="Shape\2D\OORect2D.inl" />
+    <None Include="Shape\2D\Ray2D.inl" />
     <None Include="Shape\2D\Triangle2D.inl" />
     <None Include="Shape\Common\IntersectionClassify.inl" />
+    <None Include="Matrix\Matrix33.inl" />
+    <None Include="Transform\Transform2D.inl" />
+    <None Include="Docs\dia.maths.architecture.module.md" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">

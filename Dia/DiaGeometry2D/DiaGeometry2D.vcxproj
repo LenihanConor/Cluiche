@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{A3C4D5E6-F7B8-9012-CDEF-012345678901}</ProjectGuid>
+    <RootNamespace>DiaGeometry2D</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>11.0.51106.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>./;./../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>DEBUG;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <BrowseInformation>true</BrowseInformation>
+    </ClCompile>
+    <Bscmake>
+      <PreserveSbr>true</PreserveSbr>
+    </Bscmake>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>./;./../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="Shapes\IntersectionClassify.h" />
+    <ClInclude Include="Shapes\ContactResult.h" />
+    <ClInclude Include="Shapes\AARect.h" />
+    <ClInclude Include="Shapes\Arc.h" />
+    <ClInclude Include="Shapes\Capsule.h" />
+    <ClInclude Include="Shapes\Circle.h" />
+    <ClInclude Include="Shapes\Line.h" />
+    <ClInclude Include="Shapes\OORect.h" />
+    <ClInclude Include="Shapes\Ray.h" />
+    <ClInclude Include="Shapes\Triangle.h" />
+    <ClInclude Include="Shapes\Point.h" />
+    <ClInclude Include="Shapes\Plane.h" />
+    <ClInclude Include="Shapes\ConvexPolygon.h" />
+    <ClInclude Include="Shapes\Sector.h" />
+    <ClInclude Include="Shapes\AnnularSector.h" />
+    <ClInclude Include="Intersection\IntersectionTests.h" />
+    <ClInclude Include="Transform\Transform.h" />
+    <ClInclude Include="Spatial\ISpatialStructure.h" />
+    <ClInclude Include="Spatial\SpatialGrid.h" />
+    <ClInclude Include="Spatial\Quadtree.h" />
+    <ClInclude Include="Spatial\BVH.h" />
+    <ClInclude Include="Spatial\HexGrid.h" />
+    <ClInclude Include="Spatial\SpatialGridDef.h" />
+    <ClInclude Include="Spatial\ISpatialGridSerializer.h" />
+    <ClInclude Include="Spatial\JsonSpatialGridSerializer.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Shapes\IntersectionClassify.cpp" />
+    <ClCompile Include="Shapes\ContactResult.cpp" />
+    <ClCompile Include="Shapes\AARect.cpp" />
+    <ClCompile Include="Shapes\Arc.cpp" />
+    <ClCompile Include="Shapes\Capsule.cpp" />
+    <ClCompile Include="Shapes\Circle.cpp" />
+    <ClCompile Include="Shapes\Line.cpp" />
+    <ClCompile Include="Shapes\OORect.cpp" />
+    <ClCompile Include="Shapes\Ray.cpp" />
+    <ClCompile Include="Shapes\Triangle.cpp" />
+    <ClCompile Include="Shapes\Point.cpp" />
+    <ClCompile Include="Shapes\Plane.cpp" />
+    <ClCompile Include="Shapes\ConvexPolygon.cpp" />
+    <ClCompile Include="Shapes\Sector.cpp" />
+    <ClCompile Include="Shapes\AnnularSector.cpp" />
+    <ClCompile Include="Intersection\IntersectionTests.cpp" />
+    <ClCompile Include="Transform\Transform.cpp" />
+    <ClCompile Include="Spatial\SpatialGrid.cpp" />
+    <ClCompile Include="Spatial\Quadtree.cpp" />
+    <ClCompile Include="Spatial\BVH.cpp" />
+    <ClCompile Include="Spatial\HexGrid.cpp" />
+    <ClCompile Include="Spatial\JsonSpatialGridSerializer.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Shapes\IntersectionClassify.inl" />
+    <None Include="Shapes\AARect.inl" />
+    <None Include="Shapes\Arc.inl" />
+    <None Include="Shapes\Capsule.inl" />
+    <None Include="Shapes\Circle.inl" />
+    <None Include="Shapes\Line.inl" />
+    <None Include="Shapes\OORect.inl" />
+    <None Include="Shapes\Ray.inl" />
+    <None Include="Shapes\Triangle.inl" />
+    <None Include="Shapes\ConvexPolygon.inl" />
+    <None Include="Transform\Transform.inl" />
+    <None Include="Spatial\SpatialGrid.inl" />
+    <None Include="Spatial\Quadtree.inl" />
+    <None Include="Spatial\BVH.inl" />
+    <None Include="Spatial\HexGrid.inl" />
+    <None Include="Docs\dia.geometry2d.architecture.module.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Testing\ShapeFactory.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
+      <Project>{8d41cbe3-c493-428d-95f3-627e56500667}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaMaths\DiaMaths.vcxproj">
+      <Project>{2BBA0AD3-D449-4C0E-8C84-ACFA8BCA456B}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaSerializer\DiaSerializer.vcxproj">
+      <Project>{B0C1D2E3-F4A5-6789-BCDE-F01234567891}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

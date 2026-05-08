@@ -12,6 +12,7 @@
 #include <DiaCore/CRC/CRCHashFunctor.h>
 #include <DiaCore/Containers/Arrays/DynamicArray.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <DiaCore/Json/external/json/json.h>
 
 namespace Dia
 {
@@ -24,10 +25,15 @@ namespace Dia
 		////////////////////////////////////////////////////////////////////////////////
 		class Phase: public StateObject
 		{
+			friend class ApplicationIntrospector;
+
 		public:
+			static const Dia::Core::StringCRC kTypeId;
+
 			Phase(ProcessingUnit* associatedProcessingUnit, const Dia::Core::StringCRC& uniqueId, unsigned int maxModules = 16);
 
             void AddModule(Module* module);
+			bool RemoveModule(const Dia::Core::StringCRC& moduleId);
 
 			void QueuePhaseTransition(const Dia::Core::StringCRC& crc);
 
@@ -35,17 +41,28 @@ namespace Dia
 
 			bool ContainsModule(const Dia::Core::StringCRC& crc)const;
 
+			virtual void BeforeModulesStart(){};
+			virtual void AfterModulesStart(){};
+
+			virtual void BeforeModulesUpdate(){};
+			virtual void AfterModulesUpdate(){};
+
+			virtual void BeforeModulesStop(){};
+			virtual void AfterModulesStop(){};
+
+			// Configuration serialization (subclasses can override for custom config)
+			virtual void SerializeConfig(Json::Value& out) const {}
+			virtual bool DeserializeConfig(const Json::Value& in) { return true; }
+
+			virtual bool FlaggedToStopUpdating()const = 0;
+
+			template <class T> inline T* GetModule() { return static_cast<T*>(GetModule(T::kTypeId)); }
+			template <class T> inline const T* GetModule() const { return static_cast<const T*>(GetModule(T::kTypeId)); }
+
 			Module* GetModule(const Dia::Core::StringCRC& crc);
 			const Module* GetModule(const Dia::Core::StringCRC& crc)const;
 
-			virtual void PreStart(){};
-			virtual void PostStart(){};
-
-			virtual void PreUpdate(){};
-			virtual void PostUpdate(){};
-
-			virtual void PreStop(){};
-			virtual void PostStop(){};
+			virtual const char* GetStateObjectType()const override { return "Phase"; }
 
 		protected:
 			ProcessingUnit* GetAssociatedProcessingUnit();
@@ -56,8 +73,8 @@ namespace Dia
 			typedef Dia::Core::Containers::DynamicArray<Module*> ModuleArray;
 
 			// Inherited from StateObject
-			virtual void DoBuildDependancies()override{};
-			virtual StateObject::OpertionResponse DoStart()override;
+			virtual void DoBuildDependancies(IBuildDependencyData* buildDependencies)override{};
+			virtual StateObject::OpertionResponse DoStart(const IStartData* startData)override;
 			virtual void DoUpdate()override;
 			virtual void DoStop() override;
 

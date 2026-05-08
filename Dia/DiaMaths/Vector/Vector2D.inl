@@ -449,15 +449,88 @@ namespace Dia
 			 return Vector2D( y, -x );
 		}
 
-		// -----------------------------------------------------------------------------	
+		// -----------------------------------------------------------------------------
 		inline
 		Vector2D& Vector2D::Rotate90DegreeClockwise()
 		{
-			float tempX = x; 
+			float tempX = x;
 			x = y;
 			y = -tempX;
 
 			return *this;
+		}
+
+		// -----------------------------------------------------------------------------
+		// Interpolation Functions
+		//
+		// Convenience functions for animating and moving vectors.
+		// These wrap the generic interpolation functions from Interpolation.h
+		// with Vector2D-specific implementations.
+		// -----------------------------------------------------------------------------
+
+		// Linear interpolation between a and b by t (clamped to 0-1)
+		// Parameters: a - start vector, b - end vector, t - interpolation factor
+		// Returns: Interpolated vector between a (at t=0) and b (at t=1)
+		// Use for: Smooth movement between two points over time
+		inline
+		Vector2D Vector2D::Lerp(const Vector2D& a, const Vector2D& b, float t)
+		{
+			t = Clamp(t, 0.0f, 1.0f);
+			return Vector2D(
+				a.x + (b.x - a.x) * t,
+				a.y + (b.y - a.y) * t
+			);
+		}
+
+		// -----------------------------------------------------------------------------
+		// Linear interpolation between a and b by t (not clamped)
+		// Allows extrapolation beyond the a-b range when t < 0 or t > 1
+		// Use for: Predicting future positions, trajectories
+		inline
+		Vector2D Vector2D::LerpUnclamped(const Vector2D& a, const Vector2D& b, float t)
+		{
+			return Vector2D(
+				a.x + (b.x - a.x) * t,
+				a.y + (b.y - a.y) * t
+			);
+		}
+
+		// -----------------------------------------------------------------------------
+		// Smooth interpolation between a and b using smoothstep
+		// Provides ease-in and ease-out (slow start, fast middle, slow end)
+		// Use for: Smooth animations, camera movement, polished motion
+		inline
+		Vector2D Vector2D::SmoothLerp(const Vector2D& a, const Vector2D& b, float t)
+		{
+			t = Clamp(t, 0.0f, 1.0f);
+			float smoothT = t * t * (3.0f - 2.0f * t); // Classic smoothstep formula
+			return LerpUnclamped(a, b, smoothT);
+		}
+
+		// -----------------------------------------------------------------------------
+		// Moves current toward target by maxDistance (does not overshoot)
+		// Guarantees we stop exactly at target if within maxDistance
+		// Parameters:
+		//   current     - Current position
+		//   target      - Target position to move toward
+		//   maxDistance - Maximum distance to move this frame
+		// Use for: Speed-limited following (camera, AI), frame-rate independent movement
+		inline
+		Vector2D Vector2D::MoveTowards(const Vector2D& current, const Vector2D& target, float maxDistance)
+		{
+			Vector2D diff = target - current;
+			float sqrDist = diff.SquareMagnitude();
+
+			// If already at target or within one step, return target exactly
+			// This prevents oscillation and ensures we stop precisely
+			if (sqrDist <= maxDistance * maxDistance || sqrDist < FLOAT_EPSILON)
+			{
+				return target;
+			}
+
+			// Move maxDistance toward target along direction vector
+			float dist = Dia::Maths::SquareRoot(sqrDist);
+			return current + diff * (maxDistance / dist);
 		}
 	}
 }

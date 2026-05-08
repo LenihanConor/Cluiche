@@ -1,0 +1,6 @@
+{
+	"id": "missing_pos",
+	"bones": [
+		{ "name": "root", "parent": -1 }
+	]
+}

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Lifecycle">
+      <UniqueIdentifier>{1A2B3C4D-5E6F-7890-ABCD-EF1234567890}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Lifecycle\Source">
+      <UniqueIdentifier>{2B3C4D5E-6F78-90AB-CDEF-123456789ABC}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="TypeConversion">
+      <UniqueIdentifier>{3C4D5E6F-7890-ABCD-EF12-3456789ABCDE}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="TypeConversion\Source">
+      <UniqueIdentifier>{4D5E6F78-90AB-CDEF-1234-56789ABCDEF0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Module">
+      <UniqueIdentifier>{5E6F7890-ABCD-EF12-3456-789ABCDEF012}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Module\Source">
+      <UniqueIdentifier>{6F789ABC-DEF0-1234-5678-9ABCDEF01234}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ErrorHandling">
+      <UniqueIdentifier>{789ABCDE-F012-3456-789A-BCDEF0123456}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ErrorHandling\Source">
+      <UniqueIdentifier>{89ABCDEF-0123-4567-89AB-CDEF01234567}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ScriptExecution">
+      <UniqueIdentifier>{9ABCDEF0-1234-5678-9ABC-DEF012345678}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ScriptExecution\Source">
+      <UniqueIdentifier>{ABCDEF01-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{BCDEF012-3456-789A-BCDE-F01234567890}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="DiaPython.h" />
+    <ClInclude Include="DiaPythonInternal.h" />
+    <ClInclude Include="Lifecycle\Lifecycle.h">
+      <Filter>Lifecycle</Filter>
+    </ClInclude>
+    <ClInclude Include="TypeConversion\PythonObject.h">
+      <Filter>TypeConversion</Filter>
+    </ClInclude>
+    <ClInclude Include="TypeConversion\Conversion.h">
+      <Filter>TypeConversion</Filter>
+    </ClInclude>
+    <ClInclude Include="Module\Module.h">
+      <Filter>Module</Filter>
+    </ClInclude>
+    <ClInclude Include="ErrorHandling\Error.h">
+      <Filter>ErrorHandling</Filter>
+    </ClInclude>
+    <ClInclude Include="ScriptExecution\Script.h">
+      <Filter>ScriptExecution</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Lifecycle\Lifecycle.cpp">
+      <Filter>Lifecycle\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="TypeConversion\PythonObject.cpp">
+      <Filter>TypeConversion\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="TypeConversion\Conversion.cpp">
+      <Filter>TypeConversion\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Module\Module.cpp">
+      <Filter>Module\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="ErrorHandling\Error.cpp">
+      <Filter>ErrorHandling\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="ScriptExecution\Script.cpp">
+      <Filter>ScriptExecution\Source</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

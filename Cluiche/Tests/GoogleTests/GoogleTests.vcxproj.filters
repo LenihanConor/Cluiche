@@ -1,0 +1,906 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Core">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\Architecture">
+      <UniqueIdentifier>{A0B1C2D3-0000-1111-2222-333333333333}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\Containers">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\CRC">
+      <UniqueIdentifier>{E5F6G7H8-5555-6666-7777-888888888888}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\Events">
+      <UniqueIdentifier>{B2C3D4E5-2222-3333-4444-555555555555}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\Memory">
+      <UniqueIdentifier>{C3D4E5F6-3333-4444-5555-666666666666}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\FilePath">
+      <UniqueIdentifier>{FILEPATH1-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\Threading">
+      <UniqueIdentifier>{A1B2C3D4-1111-2222-3333-444444444444}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\Time">
+      <UniqueIdentifier>{D4E5F6G7-4444-5555-6666-777777777777}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\Type">
+      <UniqueIdentifier>{F6G7H8I9-6666-7777-8888-999999999999}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Maths">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Graphics">
+      <UniqueIdentifier>{78EB7BC7-G911-5d19-9C8B-94CC232BBE12}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Input">
+      <UniqueIdentifier>{79FC9DD9-H122-6f3a-AE0D-C6FF656FGH56}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Python">
+      <UniqueIdentifier>{PYTHON01-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CLI">
+      <UniqueIdentifier>{CLI00001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaCLI">
+      <UniqueIdentifier>{DIACLI01-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Application">
+      <UniqueIdentifier>{APP00001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="UI">
+      <UniqueIdentifier>{UI000001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="WebSocket">
+      <UniqueIdentifier>{WS000001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="UICEF">
+      <UniqueIdentifier>{UICEF001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GoogleTest">
+      <UniqueIdentifier>{AB1E0EFA-J244-8g4c-CF1E-C7FF565EEG45}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DebugProtocol">
+      <UniqueIdentifier>{DBGPRT01-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DebugServer">
+      <UniqueIdentifier>{DBGSRV01-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Integration">
+      <UniqueIdentifier>{INTGR001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Editor">
+      <UniqueIdentifier>{EDTR0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaLogger">
+      <UniqueIdentifier>{DLGR0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="PipelineEditor">
+      <UniqueIdentifier>{PIPE0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaApplicationEditor">
+      <UniqueIdentifier>{DAPPEDTR-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Geometry2D">
+      <UniqueIdentifier>{GEO2D001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="RigidBody2D">
+      <UniqueIdentifier>{RB2D0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SoftBody2D">
+      <UniqueIdentifier>{SB2D0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="StateMachine">
+      <UniqueIdentifier>{SMCH0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Rig2D">
+      <UniqueIdentifier>{RIG20001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="IK2D">
+      <UniqueIdentifier>{IK2D0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Animation2D">
+      <UniqueIdentifier>{AN2D0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaVisualDebugger">
+      <UniqueIdentifier>{DVDBG001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaAssetCatalogueEditor">
+      <UniqueIdentifier>{DACTE001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaAssetRuntime">
+      <UniqueIdentifier>{DARU0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Main.cpp" />
+    <!-- Core\Architecture -->
+    <ClCompile Include="Core\Architecture\TestSingleton.cpp">
+      <Filter>Core\Architecture</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Architecture\TestComponent.cpp">
+      <Filter>Core\Architecture</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Architecture\TestObserver.cpp">
+      <Filter>Core\Architecture</Filter>
+    </ClCompile>
+    <!-- Core\Containers -->
+    <ClCompile Include="Core\Containers\TestArray.cpp">
+      <Filter>Core\Containers</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Containers\TestArrayC.cpp">
+      <Filter>Core\Containers</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Containers\TestBitArray.cpp">
+      <Filter>Core\Containers</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Containers\TestDynamicArray.cpp">
+      <Filter>Core\Containers</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Containers\TestDynamicArrayC.cpp">
+      <Filter>Core\Containers</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Containers\TestStringWriter.cpp">
+      <Filter>Core\Containers</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Containers\TestString.cpp">
+      <Filter>Core\Containers</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Containers\TestCircularBuffer.cpp">
+      <Filter>Core\Containers</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Containers\TestArrayIterators.cpp">
+      <Filter>Core\Containers</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Containers\TestLinkListC.cpp">
+      <Filter>Core\Containers</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Containers\TestHashTable.cpp">
+      <Filter>Core\Containers</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Containers\TestGraph.cpp">
+      <Filter>Core\Containers</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Containers\TestDirectedGraph.cpp">
+      <Filter>Core\Containers</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Containers\TestContainerStress.cpp">
+      <Filter>Core\Containers</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Containers\TestContainerInvariants.cpp">
+      <Filter>Core\Containers</Filter>
+    </ClCompile>
+    <!-- Core\CRC -->
+    <ClCompile Include="Core\CRC\TestCRC.cpp">
+      <Filter>Core\CRC</Filter>
+    </ClCompile>
+    <!-- Core\Events -->
+    <ClCompile Include="Core\Events\TestDelegate.cpp">
+      <Filter>Core\Events</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Events\TestEventDispatcher.cpp">
+      <Filter>Core\Events</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Events\TestEventQueue.cpp">
+      <Filter>Core\Events</Filter>
+    </ClCompile>
+    <!-- Core\Memory -->
+    <ClCompile Include="Core\Memory\TestSmartPointers.cpp">
+      <Filter>Core\Memory</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Memory\TestAllocator.cpp">
+      <Filter>Core\Memory</Filter>
+    </ClCompile>
+    <!-- Core\FilePath -->
+    <ClCompile Include="Core\FilePath\TestFilePath.cpp">
+      <Filter>Core\FilePath</Filter>
+    </ClCompile>
+    <!-- Core\Threading -->
+    <ClCompile Include="Core\Threading\TestAtomic.cpp">
+      <Filter>Core\Threading</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Threading\TestJobSystem.cpp">
+      <Filter>Core\Threading</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Threading\TestMutex.cpp">
+      <Filter>Core\Threading</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Threading\TestThreadPool.cpp">
+      <Filter>Core\Threading</Filter>
+    </ClCompile>
+    <!-- Core\Time -->
+    <ClCompile Include="Core\Time\TestTimeAbsolute.cpp">
+      <Filter>Core\Time</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Time\TestTimeRelative.cpp">
+      <Filter>Core\Time</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Time\TestTimeServer.cpp">
+      <Filter>Core\Time</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Time\TestTimer.cpp">
+      <Filter>Core\Time</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Time\TestTimerExpiry.cpp">
+      <Filter>Core\Time</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Time\TestTimerSystem.cpp">
+      <Filter>Core\Time</Filter>
+    </ClCompile>
+    <!-- Core\Type -->
+    <ClCompile Include="Core\Type\TestEnum.cpp">
+      <Filter>Core\Type</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Type\TestMetaLogic.cpp">
+      <Filter>Core\Type</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Type\TestTypeTraits.cpp">
+      <Filter>Core\Type</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Type\TestJsonTypes.cpp">
+      <Filter>Core\Type</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Type\TestTypes.cpp">
+      <Filter>Core\Type</Filter>
+    </ClCompile>
+    <!-- Maths -->
+    <ClCompile Include="Maths\TestAngle.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestCoreMaths.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestFloatMaths.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestFloatMathsBoundary.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestEasing.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestInterpolation.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestMathsInvariants.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestMatrix22.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestMatrix33.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestTrigonometry.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestVector2D.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestVector3D.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestVector4D.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestVectorUtils.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestHalfFloat.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestIntersectionClassify.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestCircle2D.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <ClCompile Include="Maths\TestHalfVector2D.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
+    <!-- Graphics -->
+    <ClCompile Include="Graphics\TestPrimitiveType.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\TestRenderStates.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\TestRGBA.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\TestTransform.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\TestVertex.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\TestFrameData.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <!-- Input -->
+    <ClCompile Include="Input\TestInputState.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\TestActionMap.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\TestActionContext.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\TestInputProfile.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\TestInputRecorder.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\TestLegacyEventConverter.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\TestModernEvents.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Python\TestLifecycle.cpp">
+      <Filter>Python</Filter>
+    </ClCompile>
+    <ClCompile Include="Python\TestTypeConversion.cpp">
+      <Filter>Python</Filter>
+    </ClCompile>
+    <ClCompile Include="Python\TestErrorHandling.cpp">
+      <Filter>Python</Filter>
+    </ClCompile>
+    <ClCompile Include="Python\TestModule.cpp">
+      <Filter>Python</Filter>
+    </ClCompile>
+    <ClCompile Include="Python\TestScriptExecution.cpp">
+      <Filter>Python</Filter>
+    </ClCompile>
+    <ClCompile Include="Python\TestIntegration.cpp">
+      <Filter>Python</Filter>
+    </ClCompile>
+    <!-- Python Test Scripts -->
+    <None Include="Python\test_hello.py">
+      <Filter>Python</Filter>
+    </None>
+    <None Include="Python\test_args.py">
+      <Filter>Python</Filter>
+    </None>
+    <None Include="Python\test_error.py">
+      <Filter>Python</Filter>
+    </None>
+    <None Include="Python\test_syntax_error.py">
+      <Filter>Python</Filter>
+    </None>
+    <!-- CLI -->
+    <ClCompile Include="CLI\TestCommandRegistry.cpp">
+      <Filter>CLI</Filter>
+    </ClCompile>
+    <ClCompile Include="CLI\TestArgumentParser.cpp">
+      <Filter>CLI</Filter>
+    </ClCompile>
+    <ClCompile Include="CLI\TestHelpSystem.cpp">
+      <Filter>CLI</Filter>
+    </ClCompile>
+    <ClCompile Include="CLI\TestEventSystem.cpp">
+      <Filter>CLI</Filter>
+    </ClCompile>
+    <ClCompile Include="CLI\TestPythonBindings.cpp">
+      <Filter>CLI</Filter>
+    </ClCompile>
+    <!-- DiaCLI -->
+    <ClCompile Include="DiaCLI\TestDiaCLI.cpp">
+      <Filter>DiaCLI</Filter>
+    </ClCompile>
+    <!-- Application -->
+    <ClCompile Include="Application\TestBasicApplication.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\TestHotReload.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\TestApplicationTypeRegistry.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\TestManifestLoader.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\TestManifestImports.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\TestPUTree.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\TestPUTreeIntegration.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\TestDiaGameFormat.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\TestDiaGameSerializers.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\TestMessageBus.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\TestApplicationLifecycle.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\TestApplicationIntrospector.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\TestApplicationLoader.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\TestPhaseTransition.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\TestModuleRef.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\TestMetricsCollector.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\TestStateObject.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\TestCluicheManifests.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
+    <!-- UI -->
+    <ClCompile Include="UI\TestBoundMethod.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="UI\TestUIDataBuffer.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="UI\TestPage.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <!-- WebSocket -->
+    <ClCompile Include="WebSocket\TestWebSocketServer.cpp">
+      <Filter>WebSocket</Filter>
+    </ClCompile>
+    <ClCompile Include="WebSocket\TestWebSocketClient.cpp">
+      <Filter>WebSocket</Filter>
+    </ClCompile>
+    <ClCompile Include="WebSocket\TestWebSocketIntegration.cpp">
+      <Filter>WebSocket</Filter>
+    </ClCompile>
+    <ClCompile Include="WebSocket\TestWebSocketError.cpp">
+      <Filter>WebSocket</Filter>
+    </ClCompile>
+    <ClCompile Include="WebSocket\TestWebSocketTransport.cpp">
+      <Filter>WebSocket</Filter>
+    </ClCompile>
+    <ClCompile Include="WebSocket\TestWebSocketClientState.cpp">
+      <Filter>WebSocket</Filter>
+    </ClCompile>
+    <!-- UICEF -->
+    <ClCompile Include="UICEF\TestCEFMimeTypes.cpp">
+      <Filter>UICEF</Filter>
+    </ClCompile>
+    <ClCompile Include="UICEF\TestCEFPixelConversion.cpp">
+      <Filter>UICEF</Filter>
+    </ClCompile>
+    <ClCompile Include="UICEF\TestCEFURLParsing.cpp">
+      <Filter>UICEF</Filter>
+    </ClCompile>
+    <ClCompile Include="UICEF\TestCEFPageManagement.cpp">
+      <Filter>UICEF</Filter>
+    </ClCompile>
+    <!-- DebugProtocol -->
+    <ClCompile Include="DebugProtocol\TestDebugProtocolProto.cpp">
+      <Filter>DebugProtocol</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugProtocol\TestDebugProtocolWireCompat.cpp">
+      <Filter>DebugProtocol</Filter>
+    </ClCompile>
+    <!-- DebugServer -->
+    <ClCompile Include="DebugServer\TestSubscriptionManager.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugServer\TestCommandDispatcher.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugServer\TestStateSerializer.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugServer\TestDebugServerProtocol.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
+    <!-- Integration -->
+    <ClCompile Include="Integration\TestInputPipeline.cpp">
+      <Filter>Integration</Filter>
+    </ClCompile>
+    <ClCompile Include="Integration\TestFrameStreamPipeline.cpp">
+      <Filter>Integration</Filter>
+    </ClCompile>
+    <ClCompile Include="Integration\TestDebugProtocolEndToEnd.cpp">
+      <Filter>Integration</Filter>
+    </ClCompile>
+    <ClCompile Include="Integration\TestManifestRoundTrip.cpp">
+      <Filter>Integration</Filter>
+    </ClCompile>
+    <ClCompile Include="Integration\TestWebUIBridgeDispatch.cpp">
+      <Filter>Integration</Filter>
+    </ClCompile>
+    <ClCompile Include="Integration\TestTypeRegistrySeeding.cpp">
+      <Filter>Integration</Filter>
+    </ClCompile>
+    <ClCompile Include="Integration\TestPhysicsGeometryIntegration.cpp">
+      <Filter>Integration</Filter>
+    </ClCompile>
+    <!-- DiaApplicationEditor -->
+    <ClCompile Include="DiaApplicationEditor\TestManifestSerializer.cpp">
+      <Filter>DiaApplicationEditor</Filter>
+    </ClCompile>
+    <!-- Editor -->
+    <ClCompile Include="Editor\TestEditorPluginRegistry.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TestCommandHistory.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TestEditorModel.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TestGameConnectionManager.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TestDockingLayout.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TestWebUIBridge.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TestFileDialogHandler.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TestEditorApplication.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TestEditorApplicationLifecycle.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TestEditorPluginPipeline.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TestGameConnectionManagerIntegration.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TestGameConnectionController.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TestGameConnectionControllerMessages.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TestGameConnectionLifecycle.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TestEditorToolbarItem.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\PluginBrowserEditorPlugin.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <!-- Geometry2D -->
+    <ClCompile Include="Geometry2D\TestGeometry2DVisualDebuggerStack.cpp">
+      <Filter>Geometry2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry2D\TestShapePrimitives.cpp">
+      <Filter>Geometry2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry2D\TestIntersectionTests.cpp">
+      <Filter>Geometry2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry2D\TestIntersectionInvariants.cpp">
+      <Filter>Geometry2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry2D\TestGeometry2DTransform.cpp">
+      <Filter>Geometry2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry2D\TestSpatialGrid.cpp">
+      <Filter>Geometry2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry2D\TestHandle.cpp">
+      <Filter>Geometry2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry2D\TestEdgeCases.cpp">
+      <Filter>Geometry2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry2D\TestBVH.cpp">
+      <Filter>Geometry2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry2D\TestQuadtree.cpp">
+      <Filter>Geometry2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry2D\TestHexGrid.cpp">
+      <Filter>Geometry2D</Filter>
+    </ClCompile>
+    <!-- RigidBody2D -->
+    <ClCompile Include="RigidBody2D\TestPhysicsBody.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestForceAndIntegration.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestPhysicsWorld.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestCollisionDetection.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestCollisionResponse.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestCollisionEvents.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestSpatialQueries.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestBodySleeping.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestCollisionLayers.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestConstraints.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestRobustness.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestPhysicsIntegration.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestTriggerVolumes.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestRigidBodyGolden.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestRigidBodyStress.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestRigidBodyDeterminism.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestConservationLaws.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <!-- DiaLogger -->
+    <ClCompile Include="DiaLogger\TestLogLevel.cpp">
+      <Filter>DiaLogger</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaLogger\TestThreadLogBuffer.cpp">
+      <Filter>DiaLogger</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaLogger\TestISink.cpp">
+      <Filter>DiaLogger</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaLogger\TestLogger.cpp">
+      <Filter>DiaLogger</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaLogger\TestAssertSinkBridge.cpp">
+      <Filter>DiaLogger</Filter>
+    </ClCompile>
+    <!-- PipelineEditor -->
+    <ClCompile Include="PipelineEditor\TestPipelineLogTailer.cpp">
+      <Filter>PipelineEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="PipelineEditor\TestPipelineEditorPluginBridge.cpp">
+      <Filter>PipelineEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="PipelineEditor\TestBuildTrigger.cpp">
+      <Filter>PipelineEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="PipelineEditor\TestRunHistoryStore.cpp">
+      <Filter>PipelineEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="PipelineEditor\TestPipelineTargetParser.cpp">
+      <Filter>PipelineEditor</Filter>
+    </ClCompile>
+    <!-- SoftBody2D -->
+    <ClCompile Include="SoftBody2D\TestParticle.cpp">
+      <Filter>SoftBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="SoftBody2D\TestRope.cpp">
+      <Filter>SoftBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="SoftBody2D\TestCloth.cpp">
+      <Filter>SoftBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="SoftBody2D\TestSoftBodyWorld.cpp">
+      <Filter>SoftBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="SoftBody2D\TestGeometryCollision.cpp">
+      <Filter>SoftBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="SoftBody2D\TestRigidBodyCoupling.cpp">
+      <Filter>SoftBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="SoftBody2D\TestSoftBodyLogging.cpp">
+      <Filter>SoftBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="SoftBody2D\TestSoftBodyIntegration.cpp">
+      <Filter>SoftBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="SoftBody2D\TestSoftBodyStress.cpp">
+      <Filter>SoftBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="SoftBody2D\TestSoftBodyRegression.cpp">
+      <Filter>SoftBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="SoftBody2D\TestSoftBodyGolden.cpp">
+      <Filter>SoftBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="SoftBody2D\TestSoftBodyConservation.cpp">
+      <Filter>SoftBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="SoftBody2D\TestSoftBodyDeterminism.cpp">
+      <Filter>SoftBody2D</Filter>
+    </ClCompile>
+    <!-- Rig2D -->
+    <ClCompile Include="Rig2D\TestRig2DGolden.cpp">
+      <Filter>Rig2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Rig2D\TestRig2DInvariant.cpp">
+      <Filter>Rig2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Rig2D\TestRig2DStress.cpp">
+      <Filter>Rig2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Rig2D\TestRig2DDeterminism.cpp">
+      <Filter>Rig2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Rig2D\TestRig2DBoundary.cpp">
+      <Filter>Rig2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Rig2D\TestRig2DIntegration.cpp">
+      <Filter>Rig2D</Filter>
+    </ClCompile>
+    <!-- IK2D -->
+    <ClCompile Include="IK\TestIKChainDef.cpp">
+      <Filter>IK2D</Filter>
+    </ClCompile>
+    <ClCompile Include="IK\TestIKSolverRegistration.cpp">
+      <Filter>IK2D</Filter>
+    </ClCompile>
+    <ClCompile Include="IK\TestTwoBoneSolver.cpp">
+      <Filter>IK2D</Filter>
+    </ClCompile>
+    <ClCompile Include="IK\TestFABRIKSolver.cpp">
+      <Filter>IK2D</Filter>
+    </ClCompile>
+    <ClCompile Include="IK\TestLookAtConstraint.cpp">
+      <Filter>IK2D</Filter>
+    </ClCompile>
+    <ClCompile Include="IK\TestIKChainedSolves.cpp">
+      <Filter>IK2D</Filter>
+    </ClCompile>
+    <ClCompile Include="IK\TestIKLogging.cpp">
+      <Filter>IK2D</Filter>
+    </ClCompile>
+    <ClCompile Include="IK\TestIKGolden.cpp">
+      <Filter>IK2D</Filter>
+    </ClCompile>
+    <ClCompile Include="IK\TestIKInvariant.cpp">
+      <Filter>IK2D</Filter>
+    </ClCompile>
+    <ClCompile Include="IK\TestIKStress.cpp">
+      <Filter>IK2D</Filter>
+    </ClCompile>
+    <ClCompile Include="IK\TestIKBoundary.cpp">
+      <Filter>IK2D</Filter>
+    </ClCompile>
+    <ClCompile Include="IK\TestIKDeterminism.cpp">
+      <Filter>IK2D</Filter>
+    </ClCompile>
+    <ClCompile Include="IK\TestIKIntegration.cpp">
+      <Filter>IK2D</Filter>
+    </ClCompile>
+    <ClCompile Include="IK\TestIK2DVisualDebuggerStack.cpp">
+      <Filter>IK2D</Filter>
+    </ClCompile>
+    <!-- StateMachine -->
+    <ClCompile Include="StateMachine\TestFlatStateMachine.cpp">
+      <Filter>StateMachine</Filter>
+    </ClCompile>
+    <ClCompile Include="StateMachine\TestHierarchicalStateMachine.cpp">
+      <Filter>StateMachine</Filter>
+    </ClCompile>
+    <ClCompile Include="StateMachine\TestPushdownAutomaton.cpp">
+      <Filter>StateMachine</Filter>
+    </ClCompile>
+    <ClCompile Include="StateMachine\TestStateMachineExtended.cpp">
+      <Filter>StateMachine</Filter>
+    </ClCompile>
+    <ClCompile Include="StateMachine\TestCallbackRegistry.cpp">
+      <Filter>StateMachine</Filter>
+    </ClCompile>
+    <ClCompile Include="StateMachine\TestStateMachineTracer.cpp">
+      <Filter>StateMachine</Filter>
+    </ClCompile>
+    <ClCompile Include="StateMachine\TestStateMachineGaps.cpp">
+      <Filter>StateMachine</Filter>
+    </ClCompile>
+    <!-- Animation2D -->
+    <ClCompile Include="Animation2D\SpringParamUtilsTests.cpp">
+      <Filter>Animation2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation2D\SpringChainTests.cpp">
+      <Filter>Animation2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation2D\AnimClipTests.cpp">
+      <Filter>Animation2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation2D\AnimClipPlayerTests.cpp">
+      <Filter>Animation2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation2D\AnimClipLoaderTests.cpp">
+      <Filter>Animation2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation2D\PoseBlendStackTests.cpp">
+      <Filter>Animation2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation2D\AnimationEvaluatorTests.cpp">
+      <Filter>Animation2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation2D\TestUtilitiesTests.cpp">
+      <Filter>Animation2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation2D\IntegrationTests.cpp">
+      <Filter>Animation2D</Filter>
+    </ClCompile>
+    <!-- DiaAssetRuntime -->
+    <ClCompile Include="DiaAssetRuntime\TestManifestLoadPathResolution.cpp">
+      <Filter>DiaAssetRuntime</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAssetRuntime\TestAssetStateMachine.cpp">
+      <Filter>DiaAssetRuntime</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAssetRuntime\TestStageLifecycle.cpp">
+      <Filter>DiaAssetRuntime</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAssetRuntime\TestEventNotification.cpp">
+      <Filter>DiaAssetRuntime</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAssetRuntime\TestDebugQueryAPI.cpp">
+      <Filter>DiaAssetRuntime</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAssetRuntime\TestDebugCommands.cpp">
+      <Filter>DiaAssetRuntime</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAssetRuntime\TestGetAllAssets.cpp">
+      <Filter>DiaAssetRuntime</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAssetRuntime\TestReset.cpp">
+      <Filter>DiaAssetRuntime</Filter>
+    </ClCompile>
+    <!-- DiaAssetCatalogueEditor -->
+    <ClCompile Include="DiaAssetCatalogueEditor\TestDiaAssetCatalogueEditorExhaustive.cpp">
+      <Filter>DiaAssetCatalogueEditor</Filter>
+    </ClCompile>
+    <!-- DiaVisualDebugger -->
+    <ClCompile Include="..\..\..\Dia\DiaVisualDebugger\DebugLayerPanelPlugin.cpp">
+      <Filter>DiaVisualDebugger</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\TestDebugLayerManager.cpp">
+      <Filter>DiaVisualDebugger</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\TestDebugLayerPanelPlugin.cpp">
+      <Filter>DiaVisualDebugger</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\TestDiaVisualDebuggerConsole.cpp">
+      <Filter>DiaVisualDebugger</Filter>
+    </ClCompile>
+    <!-- GoogleTest -->
+    <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">
+      <Filter>GoogleTest</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

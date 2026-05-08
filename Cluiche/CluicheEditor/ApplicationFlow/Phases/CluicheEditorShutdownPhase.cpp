@@ -1,0 +1,42 @@
+#include "CluicheEditorShutdownPhase.h"
+
+#include "../Modules/EditorModelModule.h"
+#include "../Modules/EditorViewModule.h"
+#include "../Modules/PluginLoaderModule.h"
+#include "../Modules/LoggerModule.h"
+#include "../Modules/EditorConsoleSinkModule.h"
+
+#include <DiaEditor/MVC/EditorView.h>
+
+namespace Cluiche
+{
+	namespace Editor
+	{
+		const Dia::Core::StringCRC CluicheEditorShutdownPhase::kTypeId("CluicheEditorShutdownPhase");
+
+		CluicheEditorShutdownPhase::CluicheEditorShutdownPhase(Dia::Application::ProcessingUnit* pu)
+			: Dia::Application::Phase(pu, kTypeId)
+		{
+		}
+
+		void CluicheEditorShutdownPhase::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
+		{
+			AddModule(buildDependencies->GetModule(LoggerModule::kTypeId));
+			AddModule(buildDependencies->GetModule(EditorModelModule::kTypeId));
+			AddModule(buildDependencies->GetModule(EditorViewModule::kTypeId));
+			AddModule(buildDependencies->GetModule(PluginLoaderModule::kTypeId));
+			AddModule(buildDependencies->GetModule(EditorConsoleSinkModule::kTypeId));
+		}
+
+		void CluicheEditorShutdownPhase::BeforeModulesStop()
+		{
+			EditorViewModule* viewModule =
+				static_cast<EditorViewModule*>(GetModule(EditorViewModule::kTypeId));
+			if (viewModule == nullptr)
+				return;
+
+			Dia::Editor::EditorView& view = viewModule->GetView();
+			view.SaveLayoutToDisk();
+		}
+	}
+}

@@ -4,19 +4,28 @@
     <ClCompile Include="Misc\RGBA.cpp">
       <Filter>Misc</Filter>
     </ClCompile>
+    <ClCompile Include="Misc\RenderStates.cpp">
+      <Filter>Misc</Filter>
+    </ClCompile>
+    <ClCompile Include="Misc\Transform.cpp">
+      <Filter>Misc</Filter>
+    </ClCompile>
+    <ClCompile Include="Misc\Vertex.cpp">
+      <Filter>Misc</Filter>
+    </ClCompile>
     <ClCompile Include="Frame\FrameData.cpp">
       <Filter>Frame</Filter>
     </ClCompile>
     <ClCompile Include="Frame\DebugFrameData.cpp">
       <Filter>Frame</Filter>
     </ClCompile>
-    <ClCompile Include="Frame\DebugFrameDataCircle2D.cpp">
-      <Filter>Frame</Filter>
-    </ClCompile>
-    <ClCompile Include="Frame\DebugFrameDataLine2D.cpp">
-      <Filter>Frame</Filter>
-    </ClCompile>
     <ClCompile Include="Frame\UIFrameData.cpp">
+      <Filter>Frame</Filter>
+    </ClCompile>
+    <ClCompile Include="Frame\EntityFrameData.cpp">
+      <Filter>Frame</Filter>
+    </ClCompile>
+    <ClCompile Include="Frame\SpriteDrawCommand.cpp">
       <Filter>Frame</Filter>
     </ClCompile>
   </ItemGroup>
@@ -36,29 +45,53 @@
     <ClInclude Include="Misc\RGBA.h">
       <Filter>Misc</Filter>
     </ClInclude>
+    <ClInclude Include="Misc\PrimitiveType.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="Misc\RenderStates.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="Misc\Transform.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="Misc\Vertex.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="Assets\ITexture.h">
+      <Filter>Assets</Filter>
+    </ClInclude>
+    <ClInclude Include="Assets\IShader.h">
+      <Filter>Assets</Filter>
+    </ClInclude>
     <ClInclude Include="Frame\FrameData.h">
       <Filter>Frame</Filter>
     </ClInclude>
     <ClInclude Include="Frame\DebugFrameData.h">
       <Filter>Frame</Filter>
     </ClInclude>
+    <ClInclude Include="Frame\DebugPrimitive.h">
+      <Filter>Frame</Filter>
+    </ClInclude>
     <ClInclude Include="Frame\DebugFrameDataVisitor.h">
-      <Filter>Frame</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\DebugFrameDataBase.h">
-      <Filter>Frame</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\DebugFrameDataCircle2D.h">
-      <Filter>Frame</Filter>
-    </ClInclude>
-    <ClInclude Include="Frame\DebugFrameDataLine2D.h">
       <Filter>Frame</Filter>
     </ClInclude>
     <ClInclude Include="Frame\UIFrameData.h">
       <Filter>Frame</Filter>
     </ClInclude>
+    <ClInclude Include="Frame\EntityFrameData.h">
+      <Filter>Frame</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\EntityFrameDataVisitor.h">
+      <Filter>Frame</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\SpriteDrawCommand.h">
+      <Filter>Frame</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <Filter Include="Assets">
+      <UniqueIdentifier>{a1b2c3d4-e5f6-7890-abcd-ef1234567890}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Frame">
       <UniqueIdentifier>{81bc9439-ca54-4c90-9919-27647de0fff6}</UniqueIdentifier>
     </Filter>
@@ -68,5 +101,13 @@
     <Filter Include="Misc">
       <UniqueIdentifier>{71a9b7ee-c0d2-4041-b9ca-02c4f519b545}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{B7C8D9E0-F1A2-3456-7890-123456A01234}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Testing\MockVisitors.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

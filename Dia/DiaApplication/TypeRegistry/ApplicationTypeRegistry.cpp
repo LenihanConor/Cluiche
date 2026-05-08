@@ -1,0 +1,238 @@
+#include "ApplicationTypeRegistry.h"
+
+#include <DiaCore/Core/Assert.h>
+#include <DiaLogger/DiaLog.h>
+
+namespace Dia
+{
+	namespace Application
+	{
+		PendingRegistrationQueue& GetPendingRegistrationQueue()
+		{
+			// POD struct with no constructor — safe at static-init time
+			static PendingRegistrationQueue queue = {};
+			return queue;
+		}
+
+		void ApplicationTypeRegistry::DrainPendingRegistrations()
+		{
+			PendingRegistrationQueue& queue = GetPendingRegistrationQueue();
+			for (unsigned int i = 0; i < queue.count; ++i)
+			{
+				const PendingRegistration& entry = queue.entries[i];
+				switch (entry.kind)
+				{
+				case PendingRegistrationKind::ProcessingUnit:
+					RegisterProcessingUnitType(entry.typeId, static_cast<ITypeFactory<ProcessingUnit>*>(entry.factory));
+					break;
+				case PendingRegistrationKind::Phase:
+					RegisterPhaseType(entry.typeId, static_cast<ITypeFactory<Phase>*>(entry.factory));
+					break;
+				case PendingRegistrationKind::Module:
+					RegisterModuleType(entry.typeId, static_cast<ITypeFactory<Module>*>(entry.factory));
+					break;
+				}
+			}
+			queue.count = 0;
+		}
+
+		ApplicationTypeRegistry::ApplicationTypeRegistry()
+			: mProcessingUnitFactories(32, 64)
+			, mPhaseFactories(64, 128)
+			, mModuleFactories(128, 256)
+			, mProcessingUnitTypes()
+			, mPhaseTypes()
+			, mModuleTypes()
+			, mTypeListsDirty(true)
+		{
+		}
+
+		ApplicationTypeRegistry::~ApplicationTypeRegistry()
+		{
+			// Factories are owned by static registration objects, not deleted here
+		}
+
+		void ApplicationTypeRegistry::RegisterProcessingUnitType(const Dia::Core::StringCRC& typeId, ITypeFactory<ProcessingUnit>* factory)
+		{
+			DIA_ASSERT(factory != nullptr, "Factory cannot be null");
+
+			if (mProcessingUnitFactories.ContainsKey(typeId))
+			{
+				DIA_LOG_WARNING("Application", "ProcessingUnit type '%s' already registered, skipping duplicate", typeId.AsChar());
+				return;
+			}
+
+			mProcessingUnitFactories.Add(typeId, factory);
+			mTypeListsDirty = true;
+		}
+
+		void ApplicationTypeRegistry::RegisterPhaseType(const Dia::Core::StringCRC& typeId, ITypeFactory<Phase>* factory)
+		{
+			DIA_ASSERT(factory != nullptr, "Factory cannot be null");
+
+			if (mPhaseFactories.ContainsKey(typeId))
+			{
+				DIA_LOG_WARNING("Application", "Phase type '%s' already registered, skipping duplicate", typeId.AsChar());
+				return;
+			}
+
+			mPhaseFactories.Add(typeId, factory);
+			mTypeListsDirty = true;
+		}
+
+		void ApplicationTypeRegistry::RegisterModuleType(const Dia::Core::StringCRC& typeId, ITypeFactory<Module>* factory)
+		{
+			DIA_ASSERT(factory != nullptr, "Factory cannot be null");
+
+			if (mModuleFactories.ContainsKey(typeId))
+			{
+				DIA_LOG_WARNING("Application", "Module type '%s' already registered, skipping duplicate", typeId.AsChar());
+				return;
+			}
+
+			mModuleFactories.Add(typeId, factory);
+			mTypeListsDirty = true;
+		}
+
+		void ApplicationTypeRegistry::RegisterKnownProcessingUnitType(const Dia::Core::StringCRC& typeId)
+		{
+			if (!mProcessingUnitFactories.ContainsKey(typeId))
+			{
+				mProcessingUnitFactories.Add(typeId, nullptr);
+				mTypeListsDirty = true;
+			}
+		}
+
+		void ApplicationTypeRegistry::RegisterKnownPhaseType(const Dia::Core::StringCRC& typeId)
+		{
+			if (!mPhaseFactories.ContainsKey(typeId))
+			{
+				mPhaseFactories.Add(typeId, nullptr);
+				mTypeListsDirty = true;
+			}
+		}
+
+		void ApplicationTypeRegistry::RegisterKnownModuleType(const Dia::Core::StringCRC& typeId)
+		{
+			if (!mModuleFactories.ContainsKey(typeId))
+			{
+				mModuleFactories.Add(typeId, nullptr);
+				mTypeListsDirty = true;
+			}
+		}
+
+		ProcessingUnit* ApplicationTypeRegistry::CreateProcessingUnit(const Dia::Core::StringCRC& typeId,
+			const Dia::Core::StringCRC& instanceId,
+			const Json::Value& config)
+		{
+			ITypeFactory<ProcessingUnit>** ppFactory = mProcessingUnitFactories.TryGetItem(typeId);
+			if (ppFactory == nullptr || *ppFactory == nullptr)
+			{
+				DIA_LOG_ERROR("Application", "ProcessingUnit type '%s' not registered", typeId.AsChar());
+				return nullptr;
+			}
+
+			return (*ppFactory)->Create(instanceId, config);
+		}
+
+		Phase* ApplicationTypeRegistry::CreatePhase(const Dia::Core::StringCRC& typeId,
+			ProcessingUnit* pu,
+			const Dia::Core::StringCRC& instanceId,
+			const Json::Value& config)
+		{
+			DIA_ASSERT(pu != nullptr, "ProcessingUnit cannot be null");
+
+			ITypeFactory<Phase>** ppFactory = mPhaseFactories.TryGetItem(typeId);
+			if (ppFactory == nullptr || *ppFactory == nullptr)
+			{
+				DIA_LOG_ERROR("Application", "Phase type '%s' not registered", typeId.AsChar());
+				return nullptr;
+			}
+
+			return (*ppFactory)->Create(pu, instanceId, config);
+		}
+
+		Module* ApplicationTypeRegistry::CreateModule(const Dia::Core::StringCRC& typeId,
+			ProcessingUnit* pu,
+			const Dia::Core::StringCRC& instanceId,
+			const Json::Value& config)
+		{
+			DIA_ASSERT(pu != nullptr, "ProcessingUnit cannot be null");
+
+			ITypeFactory<Module>** ppFactory = mModuleFactories.TryGetItem(typeId);
+			if (ppFactory == nullptr || *ppFactory == nullptr)
+			{
+				DIA_LOG_ERROR("Application", "Module type '%s' not registered", typeId.AsChar());
+				return nullptr;
+			}
+
+			return (*ppFactory)->Create(pu, instanceId, config);
+		}
+
+		const Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32>& ApplicationTypeRegistry::GetRegisteredProcessingUnitTypes() const
+		{
+			if (mTypeListsDirty)
+			{
+				RebuildTypeLists();
+			}
+			return mProcessingUnitTypes;
+		}
+
+		const Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 64>& ApplicationTypeRegistry::GetRegisteredPhaseTypes() const
+		{
+			if (mTypeListsDirty)
+			{
+				RebuildTypeLists();
+			}
+			return mPhaseTypes;
+		}
+
+		const Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128>& ApplicationTypeRegistry::GetRegisteredModuleTypes() const
+		{
+			if (mTypeListsDirty)
+			{
+				RebuildTypeLists();
+			}
+			return mModuleTypes;
+		}
+
+		bool ApplicationTypeRegistry::IsProcessingUnitTypeRegistered(const Dia::Core::StringCRC& typeId) const
+		{
+			return mProcessingUnitFactories.ContainsKey(typeId);
+		}
+
+		bool ApplicationTypeRegistry::IsPhaseTypeRegistered(const Dia::Core::StringCRC& typeId) const
+		{
+			return mPhaseFactories.ContainsKey(typeId);
+		}
+
+		bool ApplicationTypeRegistry::IsModuleTypeRegistered(const Dia::Core::StringCRC& typeId) const
+		{
+			return mModuleFactories.ContainsKey(typeId);
+		}
+
+		void ApplicationTypeRegistry::RebuildTypeLists() const
+		{
+			mProcessingUnitTypes.RemoveAll();
+			mPhaseTypes.RemoveAll();
+			mModuleTypes.RemoveAll();
+
+			for (auto it = mProcessingUnitFactories.Begin(); it != mProcessingUnitFactories.End(); ++it)
+			{
+				mProcessingUnitTypes.Add(it.Key());
+			}
+
+			for (auto it = mPhaseFactories.Begin(); it != mPhaseFactories.End(); ++it)
+			{
+				mPhaseTypes.Add(it.Key());
+			}
+
+			for (auto it = mModuleFactories.Begin(); it != mModuleFactories.End(); ++it)
+			{
+				mModuleTypes.Add(it.Key());
+			}
+
+			mTypeListsDirty = false;
+		}
+	}
+}

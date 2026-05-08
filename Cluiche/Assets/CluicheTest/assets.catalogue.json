@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "rules_path": "assets.rules.json",
+  "assets": [
+    {
+      "id": "stage.global",
+      "type": "stage",
+      "source_path": "Global/global.stage.json",
+      "scope": "global",
+      "tags": ["misc"],
+      "references": [
+        { "type": "contains", "target": "manifest.cluiche_main" },
+        { "type": "contains", "target": "manifest.cluiche_render" },
+        { "type": "contains", "target": "manifest.cluiche_sim" },
+        { "type": "contains", "target": "shader.ui_frag" },
+        { "type": "contains", "target": "folder.bootstrap_ui" },
+        { "type": "contains", "target": "folder.webix_5_2_1" },
+        { "type": "contains", "target": "folder.ultralight_resources" }
+      ]
+    },
+    {
+      "id": "stage.dummy_stage",
+      "type": "stage",
+      "source_path": "Stages/DummyStage/dummy_stage.stage.json",
+      "scope": "global",
+      "tags": ["misc"],
+      "references": [
+        { "type": "contains", "target": "manifest.dummy_stage" },
+        { "type": "contains", "target": "ui.dummy_stage_page" },
+        { "type": "contains", "target": "texture.test_red" },
+        { "type": "contains", "target": "texture.test_blue" },
+        { "type": "contains", "target": "texture.test_green" }
+      ]
+    },
+    {
+      "id": "manifest.cluiche_main",
+      "type": "manifest",
+      "source_path": "Global/misc/ApplicationFlow/cluiche_main.diaapp",
+      "scope": "global",
+      "tags": ["misc/ApplicationFlow"]
+    },
+    {
+      "id": "manifest.cluiche_render",
+      "type": "manifest",
+      "source_path": "Global/misc/ApplicationFlow/cluiche_render.diaapp",
+      "scope": "global",
+      "tags": ["misc/ApplicationFlow"]
+    },
+    {
+      "id": "manifest.cluiche_sim",
+      "type": "manifest",
+      "source_path": "Global/misc/ApplicationFlow/cluiche_sim.diaapp",
+      "scope": "global",
+      "tags": ["misc/ApplicationFlow"]
+    },
+    {
+      "id": "shader.ui_frag",
+      "type": "shader",
+      "source_path": "Global/Presentation/ui.frag",
+      "scope": "global",
+      "tags": ["Presentation"]
+    },
+    {
+      "id": "folder.bootstrap_ui",
+      "type": "folder",
+      "source_path": "Global/Presentation/UI/BootStrap",
+      "scope": "global",
+      "tags": ["Presentation/UI"]
+    },
+    {
+      "id": "folder.webix_5_2_1",
+      "type": "folder",
+      "source_path": "Global/Presentation/UI/Webix",
+      "scope": "global",
+      "tags": ["Presentation/UI"]
+    },
+    {
+      "id": "folder.ultralight_resources",
+      "type": "folder",
+      "source_path": "Global/Misc/Resources",
+      "scope": "global",
+      "tags": ["misc"]
+    },
+    {
+      "id": "manifest.dummy_stage",
+      "type": "manifest",
+      "source_path": "Stages/DummyStage/Misc/ApplicationFlow/dummy_stage.diaapp",
+      "scope": "stage",
+      "stage_name": "DummyStage",
+      "tags": ["misc/ApplicationFlow"]
+    },
+    {
+      "id": "ui.dummy_stage_page",
+      "type": "ui",
+      "source_path": "Stages/DummyStage/Presentation/UI/dummyStage.html",
+      "scope": "stage",
+      "stage_name": "DummyStage",
+      "tags": ["Presentation/UI"]
+    },
+    {
+      "id": "texture.test_red",
+      "type": "texture",
+      "source_path": "Stages/DummyStage/World/Textures/test_red.png",
+      "scope": "stage",
+      "stage_name": "DummyStage",
+      "tags": ["World"]
+    },
+    {
+      "id": "texture.test_blue",
+      "type": "texture",
+      "source_path": "Stages/DummyStage/World/Textures/test_blue.png",
+      "scope": "stage",
+      "stage_name": "DummyStage",
+      "tags": ["World"]
+    },
+    {
+      "id": "texture.test_green",
+      "type": "texture",
+      "source_path": "Stages/DummyStage/World/Textures/test_green.png",
+      "scope": "stage",
+      "stage_name": "DummyStage",
+      "tags": ["World"]
+    }
+  ]
+}

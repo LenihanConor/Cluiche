@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Asset Runtime Editor</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 10px;
+      background: #2d2d2d;
+      border-bottom: 1px solid #3c3c3c;
+      flex-shrink: 0;
+    }
+    .toolbar button {
+      background: #3c3c3c; color: #d4d4d4;
+      border: 1px solid #555; padding: 3px 10px;
+      font-size: 12px; cursor: pointer; border-radius: 3px;
+    }
+    .toolbar button:hover { background: #4c4c4c; }
+    .toolbar button.btn-primary { background: #0078d4; border-color: #0078d4; color: #fff; }
+    .toolbar button.btn-primary:hover { background: #1081d8; }
+    .toolbar button.btn-danger { background: #5c1a1a; border-color: #8b2020; color: #f48771; }
+    .toolbar button.btn-danger:hover { background: #6c2a2a; }
+    .toolbar .separator { width: 1px; height: 16px; background: #555; margin: 0 4px; }
+    .toolbar .status { font-size: 11px; }
+    .toolbar .status .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+    .toolbar .status .dot.connected { background: #4ec9a0; }
+    .toolbar .status .dot.disconnected { background: #f48771; }
+
+    .connect-bar {
+      display: flex; align-items: center; gap: 6px;
+    }
+    .connect-bar input {
+      background: #2d2d2d; color: #d4d4d4; border: 1px solid #555;
+      padding: 3px 6px; font-size: 11px; border-radius: 3px;
+    }
+    .connect-bar input#host { width: 140px; }
+    .connect-bar input#port { width: 60px; }
+
+    .layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .panel {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-right: 1px solid #3c3c3c;
+    }
+    .panel:last-child { border-right: none; }
+
+    .panel-header {
+      padding: 5px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #9cdcfe;
+      background: #252526;
+      border-bottom: 1px solid #3c3c3c;
+      flex-shrink: 0;
+    }
+
+    .panel-body {
+      flex: 1;
+      overflow: hidden;
+    }
+    .panel-body iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    #panel-left { width: 220px; min-width: 180px; }
+    #panel-center { flex: 1; display: flex; flex-direction: column; }
+    #panel-right { width: 280px; min-width: 220px; display: flex; flex-direction: column; }
+
+    .center-top { flex: 1; display: flex; flex-direction: column; border-bottom: 1px solid #3c3c3c; overflow: hidden; }
+    .center-bottom { height: 240px; min-height: 120px; display: flex; flex-direction: column; overflow: hidden; }
+  </style>
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="connect-bar">
+    <input type="text" id="host" placeholder="127.0.0.1" value="127.0.0.1" />
+    <input type="text" id="port" placeholder="9090" value="9090" />
+    <button class="btn-primary" id="btn-connect" onclick="onConnect()">Connect</button>
+    <button class="btn-danger" id="btn-disconnect" onclick="onDisconnect()" style="display:none;">Disconnect</button>
+  </div>
+  <div class="separator"></div>
+  <div class="status">
+    <span class="dot disconnected" id="status-dot"></span>
+    <span id="status-text">Disconnected</span>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="panel" id="panel-left">
+    <div class="panel-header">Stage / Asset Tree</div>
+    <div class="panel-body">
+      <iframe src="stage-asset-tree.html" id="frame-tree"></iframe>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-center">
+    <div class="center-top">
+      <div class="panel-header">Asset State Table</div>
+      <div class="panel-body">
+        <iframe src="asset-state-table.html" id="frame-table"></iframe>
+      </div>
+    </div>
+    <div class="center-bottom">
+      <div class="panel-header">State Transition Log</div>
+      <div class="panel-body">
+        <iframe src="state-transition-log.html" id="frame-log"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-right">
+    <div class="panel-header">Ref Count Inspector</div>
+    <div class="panel-body">
+      <iframe src="ref-count-inspector.html" id="frame-inspector"></iframe>
+    </div>
+  </div>
+</div>
+
+<script>
+  var connected = false;
+
+  function diaRequest(command, params) {
+    return new Promise(function(resolve) {
+      if (window.DiaEditor && window.DiaEditor.request) {
+        window.DiaEditor.request(command, params)
+          .then(resolve)
+          .catch(function(e) { resolve({ success: false, error: String(e) }); });
+      } else {
+        resolve({ success: false, error: 'DiaEditor bridge not available' });
+      }
+    });
+  }
+
+  function onConnect() {
+    var host = document.getElementById('host').value || '127.0.0.1';
+    var port = parseInt(document.getElementById('port').value || '9090', 10);
+    diaRequest('asset_runtime_editor.connect', { host: host, port: port });
+  }
+
+  function onDisconnect() {
+    diaRequest('asset_runtime_editor.disconnect', {});
+  }
+
+  function updateConnectionUI(isConnected) {
+    connected = isConnected;
+    var dot = document.getElementById('status-dot');
+    var text = document.getElementById('status-text');
+    var btnConn = document.getElementById('btn-connect');
+    var btnDisc = document.getElementById('btn-disconnect');
+
+    if (isConnected) {
+      dot.className = 'dot connected';
+      text.textContent = 'Connected';
+      btnConn.style.display = 'none';
+      btnDisc.style.display = '';
+    } else {
+      dot.className = 'dot disconnected';
+      text.textContent = 'Disconnected';
+      btnConn.style.display = '';
+      btnDisc.style.display = 'none';
+    }
+  }
+
+  window.DiaEditor_onDataChanged = function(msg) {
+    if (msg.topic === 'asset_runtime_editor.connection_state') {
+      updateConnectionUI(msg.data.connected);
+    }
+
+    // Forward all messages to child iframes
+    var frames = ['frame-table', 'frame-tree', 'frame-inspector', 'frame-log'];
+    frames.forEach(function(id) {
+      var iframe = document.getElementById(id);
+      if (iframe && iframe.contentWindow && iframe.contentWindow.DiaEditor_onDataChanged) {
+        iframe.contentWindow.DiaEditor_onDataChanged(msg);
+      }
+    });
+  };
+</script>
+
+</body>
+</html>

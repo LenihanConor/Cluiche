@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectName>DiaAssetCatalogueEditor</ProjectName>
+    <ProjectGuid>{D1E2F3A4-B5C6-7890-DEFA-012345678901}</ProjectGuid>
+    <RootNamespace>DiaAssetCatalogueEditor</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <CLRSupport>false</CLRSupport>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>14.0.22823.1</_ProjectFileVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+
+  <!-- x64 Debug compile -->
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;DEBUG;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalIncludeDirectories>$(ProjectDir)../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/Zc:strictStrings- %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+
+  <!-- x64 Release compile -->
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <PreprocessorDefinitions>WIN32;NDEBUG;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalIncludeDirectories>$(ProjectDir)../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/Zc:strictStrings- %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+
+  <ItemGroup>
+    <ClInclude Include="DiaAssetCatalogueEditorPlugin.h" />
+    <ClInclude Include="ManifestLoadHandler.h" />
+    <ClInclude Include="SessionContext.h" />
+    <ClInclude Include="Commands\CreateRecordCommand.h" />
+    <ClInclude Include="Commands\UpdateRecordCommand.h" />
+    <ClInclude Include="Commands\DeleteRecordCommand.h" />
+    <ClInclude Include="Handlers\FileDiscoverer.h" />
+    <ClInclude Include="Commands\AddRelationshipCommand.h" />
+    <ClInclude Include="Commands\RemoveRelationshipCommand.h" />
+    <ClInclude Include="Handlers\AssetTypeEditorRegistry.h" />
+    <ClInclude Include="Commands\ApplyRulesCommand.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="DiaAssetCatalogueEditorPlugin.cpp" />
+    <ClCompile Include="ManifestLoadHandler.cpp" />
+    <ClCompile Include="SessionContext.cpp" />
+    <ClCompile Include="Commands\CreateRecordCommand.cpp" />
+    <ClCompile Include="Commands\UpdateRecordCommand.cpp" />
+    <ClCompile Include="Commands\DeleteRecordCommand.cpp" />
+    <ClCompile Include="Handlers\FileDiscoverer.cpp" />
+    <ClCompile Include="Commands\AddRelationshipCommand.cpp" />
+    <ClCompile Include="Commands\RemoveRelationshipCommand.cpp" />
+    <ClCompile Include="Handlers\AssetTypeEditorRegistry.cpp" />
+    <ClCompile Include="Commands\ApplyRulesCommand.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="dia.assetcatalogueeditor.architecture.module.md" />
+    <None Include="UI\index.html" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DiaEditor\DiaEditor.vcxproj">
+      <Project>{f1a2b3c4-d5e6-7890-abcd-ef1234567890}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaAssetCatalogue\DiaAssetCatalogue.vcxproj">
+      <Project>{a8b9c0d1-e2f3-4567-8901-abcdef012345}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
+      <Project>{8d41cbe3-c493-428d-95f3-627e56500667}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaLogger\DiaLogger.vcxproj">
+      <Project>{7a8b9c0d-e1f2-3456-7890-abcdef012345}</Project>
+    </ProjectReference>
+  </ItemGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

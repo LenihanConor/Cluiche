@@ -1,0 +1,7 @@
+{
+	"id": "invalid",
+	"bones": [
+		{ "name": "root",  "parent": -1,          "position": [0, 0] },
+		{ "name": "child", "parent": "nonexistent", "position": [0, 1] }
+	]
+}

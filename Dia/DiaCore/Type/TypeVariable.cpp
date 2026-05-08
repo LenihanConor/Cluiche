@@ -35,6 +35,25 @@ namespace Dia
 				return mNumberOfElements;
 			}
 
+
+			const char* TypeVariable::GetTypeAsString()const
+			{
+				const char* result = nullptr;
+				if(IsClassType())
+				{
+					result = GetClassDefinition()->GetName();
+				}
+				else if (IsArithmeticType())
+				{
+					result = static_cast<TypeVariableDataArithmetic*>(mSpecificData)->GetTypeAsString();
+				}
+				else
+				{
+					DIA_ASSERT(0, "Do not recognize type of vvariable, could not convert to string ");
+				}
+
+				return result;
+			}
 			//------------------------------------------------------------------------------------
 			bool TypeVariable::IsArithmeticType()const								
 			{ 
@@ -121,23 +140,23 @@ namespace Dia
 			}
 			
 			//------------------------------------------------------------------------------------
-			unsigned int TypeVariable::GetVariableAddress(TypeInstance& instance, unsigned int element)const
+			uintptr_t TypeVariable::GetVariableAddress(TypeInstance& instance, unsigned int element)const
 			{
-				char* pointeeAsType = reinterpret_cast<char*>(instance.Pointee());	
-				unsigned int* ptrAsInt = reinterpret_cast<unsigned int*>((GetOffsetFromParent(element) / sizeof (char)) + pointeeAsType);
+				char* pointeeAsType = reinterpret_cast<char*>(instance.Pointee());
+				uintptr_t* ptrAsInt = reinterpret_cast<uintptr_t*>((GetOffsetFromParent(element) / sizeof (char)) + pointeeAsType);
 
-				unsigned int address = *ptrAsInt;
+				uintptr_t address = *ptrAsInt;
 
 				return address;
 			}
 
 			//------------------------------------------------------------------------------------
-			unsigned int TypeVariable::GetVariableAddress(const TypeInstance& instance, unsigned int element)const
+			uintptr_t TypeVariable::GetVariableAddress(const TypeInstance& instance, unsigned int element)const
 			{
-				const char* pointeeAsType = reinterpret_cast<const char*>(instance.Pointee());	
-				const unsigned int* ptrAsInt = reinterpret_cast<const unsigned int*>((GetOffsetFromParent(element) / sizeof (char)) + pointeeAsType);
+				const char* pointeeAsType = reinterpret_cast<const char*>(instance.Pointee());
+				const uintptr_t* ptrAsInt = reinterpret_cast<const uintptr_t*>((GetOffsetFromParent(element) / sizeof (char)) + pointeeAsType);
 
-				unsigned int address = *ptrAsInt;
+				uintptr_t address = *ptrAsInt;
 
 				return address;
 			}
@@ -145,7 +164,7 @@ namespace Dia
 			//------------------------------------------------------------------------------------
 			char* TypeVariable::GetVariablePointer(TypeInstance& instance, unsigned int element)const
 			{
-				unsigned int address = GetVariableAddress(instance, element);
+				uintptr_t address = GetVariableAddress(instance, element);
 				char* value = reinterpret_cast<char*>(address);
 
 				return value;
@@ -154,7 +173,7 @@ namespace Dia
 			//------------------------------------------------------------------------------------
 			const char* TypeVariable::GetVariablePointer(const TypeInstance& instance, unsigned int element)const
 			{
-				unsigned int address = GetVariableAddress(instance, element);
+				uintptr_t address = GetVariableAddress(instance, element);
 				const char* value = reinterpret_cast<const char*>(address);
 
 				return value;

@@ -1,0 +1,27 @@
+{
+  "rules": [
+    {
+      "name": "tag_textures_as_visual",
+      "match": { "type": "texture" },
+      "action": "assign_tag",
+      "tag": "visual"
+    },
+    {
+      "name": "tag_shaders_as_visual",
+      "match": { "type": "shader" },
+      "action": "assign_tag",
+      "tag": "visual"
+    },
+    {
+      "name": "tag_manifests_as_config",
+      "match": { "type": "manifest" },
+      "action": "assign_tag",
+      "tag": "config"
+    },
+    {
+      "name": "compute_scope_from_stages",
+      "match": { "all": true },
+      "action": "compute_scope"
+    }
+  ]
+}

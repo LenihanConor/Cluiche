@@ -1,0 +1,10 @@
+{
+  "name": "DummyStage",
+  "manifest": "misc/ApplicationFlow/dummy_stage.diaapp",
+  "config": {
+    "path_aliases": {
+      "stage_root": ".",
+      "stage_ui": "./Presentation/UI"
+    }
+  }
+}

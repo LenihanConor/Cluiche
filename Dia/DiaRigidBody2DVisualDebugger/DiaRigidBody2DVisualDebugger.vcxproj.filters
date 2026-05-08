@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{RB2DVD01-A1B2-C3D4-E5F6-789012345678}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="DiaRigidBodyVisualDebugger.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="DiaRigidBodyVisualDebugger.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\dia.rigidbody2dvisualdebugger.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+</Project>

@@ -3,6 +3,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
+#include <optional>
+
 #include <DiaInput\IInputSource.h>
 #include <DiaCore/Containers/BitFlag/BitArray8.h>
 
@@ -57,9 +59,12 @@ namespace Dia
 
 			virtual void Poll(Dia::Input::EventData& outStream)override;
 
+		protected:
+			// Called for each SFML event during Poll(). Override to forward events
+			// to subsystems (e.g. ImGui). Default implementation is a no-op.
+			virtual void OnRawSFMLEvent(const sf::Event& /*event*/) {}
+
 		private:
-			void Convert(Dia::Input::Event& lhs, const sf::Event& rhs)const;
-			
 			bool IsListeningForEvent(Dia::Input::Event::EType eventType)const;
 
 			sf::Window* mWindowContext;

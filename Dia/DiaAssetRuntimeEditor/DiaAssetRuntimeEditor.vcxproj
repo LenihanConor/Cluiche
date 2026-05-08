@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectName>DiaAssetRuntimeEditor</ProjectName>
+    <ProjectGuid>{E2F3A4B5-C6D7-8901-EFAB-123456789012}</ProjectGuid>
+    <RootNamespace>DiaAssetRuntimeEditor</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <CLRSupport>false</CLRSupport>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>14.0.22823.1</_ProjectFileVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+
+  <!-- x64 Debug compile -->
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;DEBUG;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalIncludeDirectories>$(ProjectDir)../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/Zc:strictStrings- %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+
+  <!-- x64 Release compile -->
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <PreprocessorDefinitions>WIN32;NDEBUG;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalIncludeDirectories>$(ProjectDir)../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/Zc:strictStrings- %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+
+  <ItemGroup>
+    <ClInclude Include="DiaAssetRuntimeEditorPlugin.h" />
+    <ClInclude Include="SharedPluginState.h" />
+    <ClInclude Include="SessionContext.h" />
+    <ClInclude Include="Panels\AssetStateRow.h" />
+    <ClInclude Include="Panels\AssetStateTablePanel.h" />
+    <ClInclude Include="Panels\StageAssetTreePanel.h" />
+    <ClInclude Include="Panels\RefCountInspectorPanel.h" />
+    <ClInclude Include="Panels\TransitionLogEntry.h" />
+    <ClInclude Include="Panels\StateTransitionLogPanel.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="DiaAssetRuntimeEditorPlugin.cpp" />
+    <ClCompile Include="SessionContext.cpp" />
+    <ClCompile Include="Panels\AssetStateTablePanel.cpp" />
+    <ClCompile Include="Panels\StageAssetTreePanel.cpp" />
+    <ClCompile Include="Panels\RefCountInspectorPanel.cpp" />
+    <ClCompile Include="Panels\StateTransitionLogPanel.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="dia.assetruntimeeditor.architecture.module.md" />
+    <None Include="UI\index.html" />
+    <None Include="UI\asset-state-table.html" />
+    <None Include="UI\asset-state-table.css" />
+    <None Include="UI\asset-state-table.js" />
+    <None Include="UI\stage-asset-tree.html" />
+    <None Include="UI\stage-asset-tree.css" />
+    <None Include="UI\stage-asset-tree.js" />
+    <None Include="UI\ref-count-inspector.html" />
+    <None Include="UI\ref-count-inspector.css" />
+    <None Include="UI\ref-count-inspector.js" />
+    <None Include="UI\state-transition-log.html" />
+    <None Include="UI\state-transition-log.css" />
+    <None Include="UI\state-transition-log.js" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DiaEditor\DiaEditor.vcxproj">
+      <Project>{f1a2b3c4-d5e6-7890-abcd-ef1234567890}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
+      <Project>{8d41cbe3-c493-428d-95f3-627e56500667}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaLogger\DiaLogger.vcxproj">
+      <Project>{7a8b9c0d-e1f2-3456-7890-abcdef012345}</Project>
+    </ProjectReference>
+  </ItemGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

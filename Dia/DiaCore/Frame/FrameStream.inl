@@ -13,8 +13,7 @@ namespace Dia
 
 			DIA_ASSERT(IsTimeStampGreaterThanCurrentData(timeStamp), "Inserting data into FrameStream that is not greater in time since the last update");
 
-			InternalData tempStamp;
-			mFrameList.push_back(tempStamp);				// Create a default value then insert the data so that it is faster
+			mFrameList.emplace_back();
 			mFrameList.back().Create(data, timeStamp);
 		}
 
@@ -121,7 +120,7 @@ namespace Dia
 				position++;
 			}
 
-			mFrameList.erase(mFrameList.begin(), mFrameList.begin() + Dia::Maths::Clamp(position, 0, static_cast<int>(mFrameList.size())));
+			mFrameList.erase(mFrameList.begin(), mFrameList.begin() + (std::max)(0, (std::min)(position, static_cast<int>(mFrameList.size()))));
 		}
 
 
@@ -131,7 +130,8 @@ namespace Dia
 		
 		template <class T> inline
 		FrameStream<T>::InternalData::InternalData()
-			: mTimeStamp(Dia::Core::TimeAbsolute::Zero())
+			: mFrameIndex(0)
+			, mTimeStamp(Dia::Core::TimeAbsolute::Zero())
 		{}
 
 

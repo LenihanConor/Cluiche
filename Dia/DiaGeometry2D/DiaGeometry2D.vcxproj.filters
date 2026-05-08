@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Shapes">
+      <UniqueIdentifier>{B1C2D3E4-F5A6-7890-1234-567890ABCDEF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Intersection">
+      <UniqueIdentifier>{C2D3E4F5-A6B7-8901-2345-678901BCDEF0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Transform">
+      <UniqueIdentifier>{D3E4F5A6-B7C8-9012-3456-789012CDEF01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Spatial">
+      <UniqueIdentifier>{E4F5A6B7-C8D9-0123-4567-890123DEF012}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{F5A6B7C8-D9E0-1234-5678-901234EF0123}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{A6B7C8D9-E0F1-2345-6789-012345F01234}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Shapes\IntersectionClassify.h">
+      <Filter>Shapes</Filter>
+    </ClInclude>
+    <ClInclude Include="Shapes\ContactResult.h">
+      <Filter>Shapes</Filter>
+    </ClInclude>
+    <ClInclude Include="Shapes\AARect.h">
+      <Filter>Shapes</Filter>
+    </ClInclude>
+    <ClInclude Include="Shapes\Arc.h">
+      <Filter>Shapes</Filter>
+    </ClInclude>
+    <ClInclude Include="Shapes\Capsule.h">
+      <Filter>Shapes</Filter>
+    </ClInclude>
+    <ClInclude Include="Shapes\Circle.h">
+      <Filter>Shapes</Filter>
+    </ClInclude>
+    <ClInclude Include="Shapes\Line.h">
+      <Filter>Shapes</Filter>
+    </ClInclude>
+    <ClInclude Include="Shapes\OORect.h">
+      <Filter>Shapes</Filter>
+    </ClInclude>
+    <ClInclude Include="Shapes\Ray.h">
+      <Filter>Shapes</Filter>
+    </ClInclude>
+    <ClInclude Include="Shapes\Triangle.h">
+      <Filter>Shapes</Filter>
+    </ClInclude>
+    <ClInclude Include="Shapes\Point.h">
+      <Filter>Shapes</Filter>
+    </ClInclude>
+    <ClInclude Include="Shapes\Plane.h">
+      <Filter>Shapes</Filter>
+    </ClInclude>
+    <ClInclude Include="Shapes\ConvexPolygon.h">
+      <Filter>Shapes</Filter>
+    </ClInclude>
+    <ClInclude Include="Shapes\Sector.h">
+      <Filter>Shapes</Filter>
+    </ClInclude>
+    <ClInclude Include="Shapes\AnnularSector.h">
+      <Filter>Shapes</Filter>
+    </ClInclude>
+    <ClInclude Include="Intersection\IntersectionTests.h">
+      <Filter>Intersection</Filter>
+    </ClInclude>
+    <ClInclude Include="Transform\Transform.h">
+      <Filter>Transform</Filter>
+    </ClInclude>
+    <ClInclude Include="Spatial\ISpatialStructure.h">
+      <Filter>Spatial</Filter>
+    </ClInclude>
+    <ClInclude Include="Spatial\SpatialGrid.h">
+      <Filter>Spatial</Filter>
+    </ClInclude>
+    <ClInclude Include="Spatial\Quadtree.h">
+      <Filter>Spatial</Filter>
+    </ClInclude>
+    <ClInclude Include="Spatial\BVH.h">
+      <Filter>Spatial</Filter>
+    </ClInclude>
+    <ClInclude Include="Spatial\HexGrid.h">
+      <Filter>Spatial</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Shapes\IntersectionClassify.cpp">
+      <Filter>Shapes</Filter>
+    </ClCompile>
+    <ClCompile Include="Shapes\ContactResult.cpp">
+      <Filter>Shapes</Filter>
+    </ClCompile>
+    <ClCompile Include="Shapes\AARect.cpp">
+      <Filter>Shapes</Filter>
+    </ClCompile>
+    <ClCompile Include="Shapes\Arc.cpp">
+      <Filter>Shapes</Filter>
+    </ClCompile>
+    <ClCompile Include="Shapes\Capsule.cpp">
+      <Filter>Shapes</Filter>
+    </ClCompile>
+    <ClCompile Include="Shapes\Circle.cpp">
+      <Filter>Shapes</Filter>
+    </ClCompile>
+    <ClCompile Include="Shapes\Line.cpp">
+      <Filter>Shapes</Filter>
+    </ClCompile>
+    <ClCompile Include="Shapes\OORect.cpp">
+      <Filter>Shapes</Filter>
+    </ClCompile>
+    <ClCompile Include="Shapes\Ray.cpp">
+      <Filter>Shapes</Filter>
+    </ClCompile>
+    <ClCompile Include="Shapes\Triangle.cpp">
+      <Filter>Shapes</Filter>
+    </ClCompile>
+    <ClCompile Include="Shapes\Point.cpp">
+      <Filter>Shapes</Filter>
+    </ClCompile>
+    <ClCompile Include="Shapes\Plane.cpp">
+      <Filter>Shapes</Filter>
+    </ClCompile>
+    <ClCompile Include="Shapes\ConvexPolygon.cpp">
+      <Filter>Shapes</Filter>
+    </ClCompile>
+    <ClCompile Include="Shapes\Sector.cpp">
+      <Filter>Shapes</Filter>
+    </ClCompile>
+    <ClCompile Include="Shapes\AnnularSector.cpp">
+      <Filter>Shapes</Filter>
+    </ClCompile>
+    <ClCompile Include="Intersection\IntersectionTests.cpp">
+      <Filter>Intersection</Filter>
+    </ClCompile>
+    <ClCompile Include="Transform\Transform.cpp">
+      <Filter>Transform</Filter>
+    </ClCompile>
+    <ClCompile Include="Spatial\SpatialGrid.cpp">
+      <Filter>Spatial</Filter>
+    </ClCompile>
+    <ClCompile Include="Spatial\Quadtree.cpp">
+      <Filter>Spatial</Filter>
+    </ClCompile>
+    <ClCompile Include="Spatial\BVH.cpp">
+      <Filter>Spatial</Filter>
+    </ClCompile>
+    <ClCompile Include="Spatial\HexGrid.cpp">
+      <Filter>Spatial</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Shapes\IntersectionClassify.inl">
+      <Filter>Shapes</Filter>
+    </None>
+    <None Include="Shapes\AARect.inl">
+      <Filter>Shapes</Filter>
+    </None>
+    <None Include="Shapes\Arc.inl">
+      <Filter>Shapes</Filter>
+    </None>
+    <None Include="Shapes\Capsule.inl">
+      <Filter>Shapes</Filter>
+    </None>
+    <None Include="Shapes\Circle.inl">
+      <Filter>Shapes</Filter>
+    </None>
+    <None Include="Shapes\Line.inl">
+      <Filter>Shapes</Filter>
+    </None>
+    <None Include="Shapes\OORect.inl">
+      <Filter>Shapes</Filter>
+    </None>
+    <None Include="Shapes\Ray.inl">
+      <Filter>Shapes</Filter>
+    </None>
+    <None Include="Shapes\Triangle.inl">
+      <Filter>Shapes</Filter>
+    </None>
+    <None Include="Shapes\ConvexPolygon.inl">
+      <Filter>Shapes</Filter>
+    </None>
+    <None Include="Transform\Transform.inl">
+      <Filter>Transform</Filter>
+    </None>
+    <None Include="Spatial\SpatialGrid.inl">
+      <Filter>Spatial</Filter>
+    </None>
+    <None Include="Spatial\Quadtree.inl">
+      <Filter>Spatial</Filter>
+    </None>
+    <None Include="Spatial\BVH.inl">
+      <Filter>Spatial</Filter>
+    </None>
+    <None Include="Spatial\HexGrid.inl">
+      <Filter>Spatial</Filter>
+    </None>
+    <None Include="Docs\dia.geometry2d.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Testing\ShapeFactory.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

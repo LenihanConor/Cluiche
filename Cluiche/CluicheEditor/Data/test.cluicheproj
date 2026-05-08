@@ -1,0 +1,8 @@
+{
+    "version": 1,
+    "name": "Test",
+    "manifests": [
+        "Data/test-editor-plugins.diaapp"
+    ],
+    "editor_state": {}
+}

@@ -1,0 +1,80 @@
+{
+  "version": "1.0",
+  "schema": "dia.application.manifest.v1",
+
+  "processing_units": [
+    {
+      "type": "MainProcessingUnit",
+      "instance_id": "MainPU",
+      "thread_policy": "dedicated",
+      "frequency_hz": 60.0,
+
+      "config": {
+        "description": "Example main processing unit"
+      },
+
+      "phases": [
+        {
+          "type": "InitPhase",
+          "instance_id": "Init",
+          "config": {}
+        },
+        {
+          "type": "UpdatePhase",
+          "instance_id": "Update",
+          "config": {}
+        },
+        {
+          "type": "RenderPhase",
+          "instance_id": "Render",
+          "config": {}
+        },
+        {
+          "type": "ShutdownPhase",
+          "instance_id": "Shutdown",
+          "config": {}
+        }
+      ],
+
+      "phase_transitions": [
+        {"from": "Init", "to": "Update"},
+        {"from": "Update", "to": "Update"},
+        {"from": "Update", "to": "Shutdown"}
+      ],
+
+      "initial_phase": "Init",
+
+      "modules": [
+        {
+          "type": "RenderModule",
+          "instance_id": "Renderer",
+          "phases": ["Update", "Render"],
+          "config": {
+            "vsync": true,
+            "resolution": [1920, 1080]
+          }
+        },
+        {
+          "type": "PhysicsModule",
+          "instance_id": "Physics",
+          "phases": ["Update"],
+          "dependencies": [],
+          "config": {
+            "gravity": [0, -9.8, 0]
+          }
+        },
+        {
+          "type": "InputModule",
+          "instance_id": "Input",
+          "phases": ["Update"],
+          "dependencies": [],
+          "config": {}
+        }
+      ],
+
+      "module_dependencies": [
+        {"module": "Renderer", "depends_on": "Input"}
+      ]
+    }
+  ]
+}

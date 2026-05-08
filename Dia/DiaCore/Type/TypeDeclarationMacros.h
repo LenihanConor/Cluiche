@@ -9,6 +9,7 @@
 	friend class Dia::Core::Types::TypeDefinition;\
 	friend class Dia::Core::Types::TypeDefinition;\
 	static Dia::Core::Types::TypeDefinition* sType;\
+	static Dia::Core::Types::TypeDefinition* GetTypeStatic();\
 	static Dia::Core::Types::TypeParameterInput& TypeCreationalInput();\
 
 #define DIA_TYPE_DECLARATION\

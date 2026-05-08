@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Panels">
+      <UniqueIdentifier>{C1111111-1111-1111-1111-111111111111}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="UI">
+      <UniqueIdentifier>{C2222222-2222-2222-2222-222222222222}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="DiaAssetRuntimeEditorPlugin.h" />
+    <ClInclude Include="SharedPluginState.h" />
+    <ClInclude Include="SessionContext.h" />
+    <ClInclude Include="Panels\AssetStateRow.h">
+      <Filter>Panels</Filter>
+    </ClInclude>
+    <ClInclude Include="Panels\AssetStateTablePanel.h">
+      <Filter>Panels</Filter>
+    </ClInclude>
+    <ClInclude Include="Panels\StageAssetTreePanel.h">
+      <Filter>Panels</Filter>
+    </ClInclude>
+    <ClInclude Include="Panels\RefCountInspectorPanel.h">
+      <Filter>Panels</Filter>
+    </ClInclude>
+    <ClInclude Include="Panels\TransitionLogEntry.h">
+      <Filter>Panels</Filter>
+    </ClInclude>
+    <ClInclude Include="Panels\StateTransitionLogPanel.h">
+      <Filter>Panels</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="DiaAssetRuntimeEditorPlugin.cpp" />
+    <ClCompile Include="SessionContext.cpp" />
+    <ClCompile Include="Panels\AssetStateTablePanel.cpp">
+      <Filter>Panels</Filter>
+    </ClCompile>
+    <ClCompile Include="Panels\StageAssetTreePanel.cpp">
+      <Filter>Panels</Filter>
+    </ClCompile>
+    <ClCompile Include="Panels\RefCountInspectorPanel.cpp">
+      <Filter>Panels</Filter>
+    </ClCompile>
+    <ClCompile Include="Panels\StateTransitionLogPanel.cpp">
+      <Filter>Panels</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="dia.assetruntimeeditor.architecture.module.md" />
+    <None Include="UI\index.html">
+      <Filter>UI</Filter>
+    </None>
+    <None Include="UI\asset-state-table.html">
+      <Filter>UI</Filter>
+    </None>
+    <None Include="UI\asset-state-table.css">
+      <Filter>UI</Filter>
+    </None>
+    <None Include="UI\asset-state-table.js">
+      <Filter>UI</Filter>
+    </None>
+    <None Include="UI\stage-asset-tree.html">
+      <Filter>UI</Filter>
+    </None>
+    <None Include="UI\stage-asset-tree.css">
+      <Filter>UI</Filter>
+    </None>
+    <None Include="UI\stage-asset-tree.js">
+      <Filter>UI</Filter>
+    </None>
+  </ItemGroup>
+</Project>

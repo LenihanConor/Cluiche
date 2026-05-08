@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!--
+    Import this .targets file from any project that has .proto files.
+
+    Usage in your .vcxproj:
+    1. Import this file:
+       <Import Project="..\DiaProtobuf\DiaProtobuf.targets" />
+    2. Add your .proto files as <ProtoCompile> items:
+       <ItemGroup>
+         <ProtoCompile Include="proto\my_protocol.proto" />
+       </ItemGroup>
+    3. Generated files appear in a 'generated' subdirectory under the project dir.
+  -->
+
+  <PropertyGroup>
+    <ProtocExe>$(MSBuildThisFileDirectory)..\..\External\protobuf\Current-x64\bin\protoc.exe</ProtocExe>
+    <ProtobufIncludeDir>$(MSBuildThisFileDirectory)..\..\External\protobuf\Current-x64\include</ProtobufIncludeDir>
+    <ProtoGeneratedDir>$(ProjectDir)generated</ProtoGeneratedDir>
+  </PropertyGroup>
+
+  <Target Name="CompileProtoFiles" BeforeTargets="ClCompile" Inputs="@(ProtoCompile)" Outputs="@(ProtoCompile->'$(ProtoGeneratedDir)\%(Filename).pb.cc')">
+    <MakeDir Directories="$(ProtoGeneratedDir)" />
+    <Exec Command="&quot;$(ProtocExe)&quot; --proto_path=&quot;$(ProjectDir)proto&quot; --proto_path=&quot;$(ProtobufIncludeDir)&quot; --cpp_out=&quot;$(ProtoGeneratedDir)&quot; &quot;%(ProtoCompile.Filename).proto&quot;" />
+  </Target>
+</Project>

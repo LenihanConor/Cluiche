@@ -81,7 +81,7 @@ namespace Dia
 
 			//-----------------------------------------------------------------------------
 			template <class T>
-			Array<T>::Array ( unsigned int size, ConstIterator& iter )
+			Array<T>::Array ( unsigned int size, const ConstIterator& iter )
 				: mSize(size)
 				, mData(NULL)
 			{
@@ -98,7 +98,7 @@ namespace Dia
 
 			//-----------------------------------------------------------------------------
 			template <class T>
-			Array<T>::Array ( unsigned int size, ConstReverseIterator& iter )
+			Array<T>::Array ( unsigned int size, const ConstReverseIterator& iter )
 				: mSize(size)
 				, mData(NULL)
 			{
@@ -115,7 +115,7 @@ namespace Dia
 
 			//-----------------------------------------------------------------------------
 			template <class T> 
-			template<class Evaluator> Array<T>::Array ( unsigned int size, ConstIterator& iter, const Evaluator& filter)
+			template<class Evaluator> Array<T>::Array ( unsigned int size, const ConstIterator& iter, const Evaluator& filter)
 				: mSize(size)
 				, mData(NULL)
 			{
@@ -193,7 +193,7 @@ namespace Dia
 	
 			//-----------------------------------------------------------------------------
 			template <class T>
-			Array<T>& Array<T>::Assign ( ConstIterator& iter )
+			Array<T>& Array<T>::Assign ( const ConstIterator& iter )
 			{
 				MemorySet(mData, 0, sizeof(T)*Size());
 
@@ -209,7 +209,7 @@ namespace Dia
 
 			//-----------------------------------------------------------------------------
 			template <class T>
-			Array<T>& Array<T>::Assign ( ConstReverseIterator& iter )
+			Array<T>& Array<T>::Assign ( const ConstReverseIterator& iter )
 			{
 				MemorySet(mData, 0, sizeof(T)*Size());
 
@@ -225,7 +225,7 @@ namespace Dia
 
 			//-----------------------------------------------------------------------------
 			template <class T>
-			template<class Evaluator> Array<T>& Array<T>::Assign ( ConstIterator& iter, const Evaluator& filter )
+			template<class Evaluator> Array<T>& Array<T>::Assign ( const ConstIterator& iter, const Evaluator& filter )
 			{
 				MemorySet(mData, 0, sizeof(T)*Size());
 

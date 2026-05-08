@@ -4,6 +4,7 @@
 #include "DiaInput/ConsoleGamepadManager.h"
 
 #include <DiaCore/Core/Assert.h>
+#include <DiaLogger/DiaLog.h>
 
 namespace Dia
 {
@@ -39,10 +40,14 @@ namespace Dia
 
 				if (!mGamepadActiveList[i]->IsConnected())
 				{
+					unsigned int gamepadIndex = mGamepadActiveList[i]->GetIndex();
+
 					Event disconnectEvent;
 					disconnectEvent.type = Event::EType::kConsoleGamepadDisconnected;
-					disconnectEvent.consoleGamepadConnectEvent.gamepadIndex = mGamepadActiveList[i]->GetIndex();
+					disconnectEvent.consoleGamepadConnectEvent.gamepadIndex = gamepadIndex;
 					outStream.Add(disconnectEvent);
+
+					DIA_LOG_INFO("Input", "Gamepad disconnected: XInput index %d", gamepadIndex);
 
 					mGamepadActiveList.RemoveAt(i);
 				}
@@ -55,10 +60,14 @@ namespace Dia
 				{
 					if (mGamepadPool[i].IsConnected())
 					{
+						unsigned int gamepadIndex = mGamepadPool[i].GetIndex();
+
 						Event connectEvent;
 						connectEvent.type = Event::EType::kConsoleGamepadConnected;
-						connectEvent.consoleGamepadConnectEvent.gamepadIndex = mGamepadPool[i].GetIndex();
+						connectEvent.consoleGamepadConnectEvent.gamepadIndex = gamepadIndex;
 						outStream.Add(connectEvent);
+
+						DIA_LOG_INFO("Input", "Gamepad connected: XInput index %d", gamepadIndex);
 
 						mGamepadActiveList.Add(&mGamepadPool[i]);
 					}
@@ -119,23 +128,23 @@ namespace Dia
 				}
 				
 				// Test digital buttons
-				for (unsigned int i = 0; i < ConsoleGamepad::GetMaxDigitalButtons(); i++)
+				for (unsigned int buttonIdx = 0; buttonIdx < ConsoleGamepad::GetMaxDigitalButtons(); buttonIdx++)
 				{
-					if (gamepad->IsButtonPressed(i))
+					if (gamepad->IsButtonPressed(buttonIdx))
 					{
 						Event buttonPressedEvent;
 						buttonPressedEvent.type = Event::EType::kConsoleGamepadButtonPressed;
 						buttonPressedEvent.consoleGamepadButtonEvent.gamepadIndex = gamepad->GetIndex();
-						buttonPressedEvent.consoleGamepadButtonEvent.button = i;
+						buttonPressedEvent.consoleGamepadButtonEvent.button = buttonIdx;
 						outStream.Add(buttonPressedEvent);
 					}
 
-					if (gamepad->IsButtonReleased(i))
+					if (gamepad->IsButtonReleased(buttonIdx))
 					{
 						Event buttonPressedEvent;
 						buttonPressedEvent.type = Event::EType::kConsoleGamepadButtonReleased;
 						buttonPressedEvent.consoleGamepadButtonEvent.gamepadIndex = gamepad->GetIndex();
-						buttonPressedEvent.consoleGamepadButtonEvent.button = i;
+						buttonPressedEvent.consoleGamepadButtonEvent.button = buttonIdx;
 						outStream.Add(buttonPressedEvent);
 					}
 				}

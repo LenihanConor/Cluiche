@@ -1,0 +1,104 @@
+# Threading Model Diagram
+
+This sequence diagram shows the multi-threaded execution model with three processing units running on separate threads:
+
+- **Main Thread** - Handles UI, input collection, and spawning other threads
+- **Render Thread** - Graphics rendering at 60 FPS
+- **Sim Thread** - Game logic and physics simulation
+
+```mermaid
+sequenceDiagram
+    participant Main as Main Thread<br/>(MainProcessingUnit)
+    participant Render as Render Thread<br/>(RenderProcessingUnit)
+    participant Sim as Sim Thread<br/>(SimProcessingUnit)
+
+    Note over Main: Application Entry Point
+    Main->>Main: main() starts
+    Main->>Main: Create MainProcessingUnit
+    Main->>Main: Start()
+
+    Note over Main: Phase: MainBootPhase
+    Main->>Main: Register MainKernelModule
+    Main->>Main: Register LevelFactoryModule
+    Main->>Main: Register Levels (Dummy, UnitTest)
+
+    Note over Main: Phase: MainBootStrapPhase
+    Main->>Main: Initialize MainUIModule
+    Main->>Main: Show launch UI
+
+    Note over Main: Spawn Threads
+    Main->>Render: std::thread(RenderPU)
+    Main->>Sim: std::thread(SimPU)
+
+    activate Render
+    activate Sim
+
+    Note over Render: Phase: RenderRunningPhase
+    Render->>Render: Initialize RenderKernel
+    Render->>Render: Setup Canvas (SFML)
+
+    Note over Sim: Phase: SimBootPhase
+    Sim->>Sim: Initialize SimTimeServer
+    Sim->>Sim: Initialize SimInputFrameStream
+
+    Note over Sim: Phase: SimBootStrapPhase
+    Sim->>Sim: Initialize SimUIProxyModule
+    Sim->>Sim: Wait for UI ready (Observer)
+
+    Note over Main,Sim: Main Loop Begins
+
+    loop Main Update Loop
+        Main->>Main: Collect input from SFML
+        Main->>Main: Write to InputToSimFrameStream
+        Main->>Main: Update UI system
+        Main->>Main: Update TimeServer @ 30Hz
+    end
+
+    loop Render Update Loop (60 FPS)
+        Note over Render: TimeThreadLimiter @ 60 FPS
+        Render->>Render: Read SimToRenderFrameStream
+        Render->>Render: Lock: Read graphics commands
+        Render->>Render: Render to SFML canvas
+        Render->>Render: Display frame
+        Render->>Render: Sleep if frame early
+    end
+
+    loop Sim Update Loop (Variable Rate)
+        Sim->>Sim: Read InputToSimFrameStream
+        Sim->>Sim: Lock: Consume input events
+        Sim->>Sim: Update game logic
+        Sim->>Sim: Update physics
+        Sim->>Sim: Write to SimToRenderFrameStream
+        Sim->>Sim: Lock: Write graphics commands
+    end
+
+    Note over Main,Sim: Cross-Thread Communication
+    Main-->>Sim: InputToSimFrameStream<EventData>
+    Sim-->>Render: SimToRenderFrameStream<FrameData>
+    Sim-->>Main: SimUIProxyModule (Observer + Mutex)
+
+    Note over Main: Shutdown Signal
+    Main->>Main: Stop signal (user exit)
+    Main->>Render: Set mRunning = false
+    Main->>Sim: Set mRunning = false
+
+    Render->>Render: Exit update loop
+    Sim->>Sim: Exit update loop
+
+    Render->>Render: Stop modules
+    Sim->>Sim: Stop modules
+
+    Render->>Main: Thread join
+    Sim->>Main: Thread join
+
+    deactivate Render
+    deactivate Sim
+
+    Main->>Main: Stop modules
+    Main->>Main: Cleanup
+    Main->>Main: return 0
+
+    Note over Main: Application Exit
+```
+
+[← Back to Architecture Overview](../architecture.md)

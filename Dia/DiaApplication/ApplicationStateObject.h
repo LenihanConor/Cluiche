@@ -15,7 +15,23 @@ namespace Dia
 	namespace Application
 	{	
 		class StateObject;
+		class Module;
+		class Phase;
+		class ProcessingUnit;
 
+		////////////////////////////////////////////////////////////////////////////////
+		// Class name: IBuildDependencyData
+		////////////////////////////////////////////////////////////////////////////////
+		class IBuildDependencyData
+		{
+		public:
+			virtual Module* GetModule(const Dia::Core::StringCRC& crc) = 0;
+			virtual const Module* GetModule(const Dia::Core::StringCRC& crc)const = 0;
+
+			virtual Phase* GetPhase(const Dia::Core::StringCRC& crc) = 0;
+			virtual const Phase* GetPhase(const Dia::Core::StringCRC& crc)const = 0;
+		};
+		
 		////////////////////////////////////////////////////////////////////////////////
 		// Class name: StateObject
 		////////////////////////////////////////////////////////////////////////////////
@@ -45,27 +61,37 @@ namespace Dia
 				, kImmediate \
 				);
 
+			class IStartData
+			{
+			public:
+				IStartData() {};
+				virtual ~IStartData() {};
+			};
+
 			StateObject(const Dia::Core::StringCRC& uniqueId);
 
-			void BuildDependancies();
+			void BuildDependancies(IBuildDependencyData* buildDependencies);
 
-			OpertionResponse Start();			
+			OpertionResponse Start(const IStartData* startData = nullptr);
 			void NotifyReadyToStartAsync();
 
 			void Update();
 
 			void Stop();							// All modules turning off
 			
+			void AfterPhaseTransition();
+
 			const Dia::Core::StringCRC& GetUniqueId()const{ return mUniqueId; }
+			virtual const char* GetStateObjectType()const = 0;
 
 			StateEnum GetState()const { return mState; }
 
 			bool HasStarted()const { return (mState == StateEnum::kRunning); }
 
 		protected:
-			virtual void DoBuildDependancies() = 0;
+			virtual void DoBuildDependancies(IBuildDependencyData* buildDependencies) = 0;
 
-			virtual OpertionResponse DoStart() = 0;
+			virtual OpertionResponse DoStart(const IStartData* startData) = 0;
 
 			virtual void DoUpdate() = 0;
 
@@ -77,7 +103,7 @@ namespace Dia
 			Dia::Core::StringCRC mUniqueId;
 			StateEnum mState;
 
-			std::mutex mStartMutex;
+			std::mutex mStateMutex;
 		};
 	}
 }
