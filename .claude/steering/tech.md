@@ -1,3 +1,7 @@
+---
+include: conditional
+---
+
 # Tech Standards
 
 ## Language & Runtime
@@ -7,31 +11,11 @@
 **Platform**: Windows 10+ (x64)  
 **Build System**: MSBuild via Visual Studio project files (`.vcxproj`)
 
-### Build Configurations
-
-- `Debug|x64` - Primary development configuration with symbols and assertions
-- `Release|x64` - Optimized release build
-
-### Build Commands
-
-```bash
-# Build via MSBuild from repository root
-msbuild Cluiche/Cluiche.sln /p:Configuration=Debug /p:Platform=x64
-msbuild Cluiche/Cluiche.sln /p:Configuration=Release /p:Platform=x64
-
-# Build specific project
-msbuild Dia/DiaCore/DiaCore.vcxproj /p:Configuration=Debug /p:Platform=x64
-
-# Run unit tests (after building UnitTests project)
-Cluiche/bin/Debug/x64/UnitTests.exe
-```
-
 ## Frameworks
 
 **Graphics & Multimedia**: SFML (Simple and Fast Multimedia Library)  
 **JSON Parsing**: jsoncpp (wrapped in `DiaCore/Json/`)  
-**Web UI/Visualization**: Webix, VisJS (for debugging/visualization tools)
-
+**Web UI/Visualization**: Webix, VisJS (for debugging/visualization tools)  
 **Testing**: Google Test (C++ testing framework)  
 **Module Analysis**: Custom Python tooling (`Tools/dia_modules.py`)
 
@@ -40,9 +24,7 @@ Cluiche/bin/Debug/x64/UnitTests.exe
 - **Framework**: Google Test
 - **Location**: `Cluiche/Tests/UnitTests/` and `Cluiche/Tests/GoogleTests/`
 - **Coverage requirement**: All public APIs should have unit tests; critical paths require integration tests
-- **Pattern**: TDD for new features (RED-GREEN-REFACTOR per AC); test-after for bug fixes and existing modules
 - **Thread Safety**: Dedicated thread safety tests for multi-threaded components
-- **Execution**: Run via `Cluiche/bin/Debug/x64/UnitTests.exe`
 
 ### Test Organization
 
@@ -57,14 +39,6 @@ Cluiche/bin/Debug/x64/UnitTests.exe
 - **Max line length**: 120 characters (soft guideline)
 - **Indentation**: Tabs preferred (consistent with existing codebase)
 - **Braces**: Opening brace on same line for functions; K&R style encouraged
-
-### Include Style
-
-Use full paths from module root:
-```cpp
-#include <DiaCore/Containers/Arrays/Array.h>
-#include <DiaMaths/Vector/Vector2D.h>
-```
 
 ## Naming Conventions
 
@@ -91,7 +65,7 @@ Use full paths from module root:
 - **Primary branch**: `master` (production/main branch)
 - **Development branch**: `Development` (active development)
 - **Commit style**: Imperative mood, descriptive ("Add X", "Fix Y", "Refactor Z")
-- **Co-authoring**: Include `Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>` when applicable
+- **Co-authoring**: Include `Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>` when applicable
 - **PR requirements**: 
   - All tests passing
   - No uncommitted debug code
@@ -108,16 +82,8 @@ Add comprehensive Google Test suite for DiaInput
 - Verify thread safety for event queue
 - Document test coverage in diainput-google-tests-summary.md
 
-Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 ```
-
-## Common Patterns
-
-- **Singleton**: Use `Dia::Core::Singleton<T>` from `Architecture/Singleton/`
-- **Observer**: Use `Observer`/`ObserverSubject` from `Architecture/Observer.h`
-- **String Comparison**: Prefer `StringCRC` over raw strings for performance
-- **Containers**: Use DiaCore containers (`DynamicArrayC`, `HashTable`, `LinkList`) over STL in public APIs
-- **Components**: Register factories with `ComponentFactoryRegistry`, create via factories
 
 ## Deprecated Code
 

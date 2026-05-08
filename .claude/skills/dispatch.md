@@ -22,6 +22,10 @@ When sending a task to a subagent, the prompt MUST include all of these sections
 ## Context
 [2-3 sentences: what project this is, what module we're in, what the overall goal is]
 
+## Spec Decisions Summary
+[One paragraph: the binding decisions and constraints from the spec chain that apply to this task.
+ Copy this from the plan's Session Notes if it exists — avoids re-reading the full spec chain.]
+
 ## Spec Excerpt
 [The specific acceptance criteria or task description from the feature spec — copied verbatim, not summarized]
 

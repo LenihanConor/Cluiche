@@ -16,6 +16,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 The Dia engine follows a component-based architecture with distinct separation of concerns across subsystems.
 
+## Engine vs Application Boundary
+
+Applications (CluicheTest, CluicheEditor, CoW, future games) live as siblings under `Cluiche/`. CluicheEditor is a standalone app — not a game mode.
+
+### Layer boundary rule
+
+- **Reusable capability any game could consume → belongs in Dia**
+- **Specific to one game's content, logic, or characters → belongs in the Application**
+
+This applies to systems, libraries, and data equally. `Animation2D` is engine — any game could use it. CoW's dragon animation system is application — only CoW needs it. The wiring (calling engine APIs from a game module) always stays in the application; the implementation, once it's generically useful, belongs in Dia.
+
+*Anchor cases: `DiaGame` serializer started in CluicheTest, moved to Dia because it was generic engine capability. The CluicheTest call-site stayed in CluicheTest.*
+
+### Escalation rule
+
+If a task would add a new header or implementation to a Dia project while working in a game project, **stop and flag it** — do not place it in the game. Describe what the Dia API should look like and ask the user to confirm the placement before proceeding.
+
 ## Build System
 
 This is a Visual Studio C++ project using MSBuild.
@@ -25,42 +42,25 @@ This is a Visual Studio C++ project using MSBuild.
 **NEVER call executables directly** (e.g., `GoogleTests.exe`, `CluicheTest.exe`). Always use `dia run` or `dia launch`. The CLI handles path resolution, working directories, and runtime dependencies. If the CLI fails, fix the CLI — do not bypass it.
 
 ```bash
-# Build + deploy + run GoogleTests
 dia run googletest
 dia run googletest --filter="FixedDrawLayer*"
 dia run googletest --config Release
-
-# Build + deploy + launch CluicheTest game
 dia run cluichetest
-
-# Build + deploy + launch CluicheEditor
 dia run cluicheeditor
-
-# Just launch (skip build — exe must already exist)
 dia launch googletest --filter="SomeSuite*"
 dia launch cluichetest
-
-# Build pipeline only (no launch)
 dia pipeline --target googletest
 dia pipeline --target cluichetest --config Release
-
-# Other dia commands
-dia env setup          # Set up environment (toolchain, deps, PATH, DIA_CLI_CONFIG)
-dia env verify         # Check environment health
-dia test cli           # Run DiaCLI pytest suite
+dia env setup
+dia env verify
+dia test cli
 ```
 
 ### Raw MSBuild (fallback)
 
 ```bash
-# Open solution in Visual Studio
 start Cluiche/Cluiche.sln
-
-# Build via MSBuild (from repository root)
 msbuild Cluiche/Cluiche.sln /p:Configuration=Debug /p:Platform=x64
-msbuild Cluiche/Cluiche.sln /p:Configuration=Release /p:Platform=x64
-
-# Build specific project
 msbuild Dia/DiaCore/DiaCore.vcxproj /p:Configuration=Debug /p:Platform=x64
 ```
 
@@ -168,27 +168,7 @@ Plans are living implementation documents. They are separate from specs (which a
 
 #### Plan File Format
 
-Plans live alongside their spec as `<spec-name>.plan.md`. For system-level plans, create `<system-spec-name>.plan.md` alongside the system spec.
-
-```markdown
-# Plan: <Spec Title>
-
-**Spec:** @path/to/spec.md  
-**Status:** Not Started | In Progress | Done | Blocked  
-**Started:** YYYY-MM-DD  
-**Last Updated:** YYYY-MM-DD
-
-## Tasks
-
-| # | Task | Test | Status | Model | Notes |
-|---|------|------|--------|-------|-------|
-| 1 | Description of task | TestName that defines done (or — for non-TDD tasks) | Not Started / In Progress / Done / Blocked | haiku / sonnet / opus | Any blockers or notes |
-
-## Session Notes
-
-### YYYY-MM-DD
-- What was done, what was decided, what changed
-```
+Plans live alongside their spec as `<spec-name>.plan.md`. See `.claude/skills/dispatch.md` for the full template. Tasks table columns: `# | Task | Test | Status | Model | Notes`.
 
 **Model selection guide:**
 
@@ -206,6 +186,7 @@ Plans live alongside their spec as `<spec-name>.plan.md`. For system-level plans
 - **Spec is the contract, plan is the tracker** — never move design decisions into the plan; put them in the spec
 - **Update the plan in the same commit** as the code it tracks
 - **Link back** — the spec's Status section should reference its plan file once one exists
+- **Session Notes must include a spec decisions summary** — one paragraph capturing the binding decisions and constraints from the full spec chain (Platform → App → System → Feature). Subagents read this instead of re-reading the full spec chain.
 
 #### Subagent Dispatch Protocol
 
@@ -219,75 +200,27 @@ When delegating plan tasks to subagents, follow `.claude/skills/dispatch.md`. Ke
 
 ### Debugging
 
-When something breaks (build failure, test failure, crash), follow `.claude/skills/debug.md`. Key rules:
-
-- **Investigate before fixing** — read the full error, identify the boundary, check recent changes.
-- **One hypothesis, one change** — never change two things at once.
-- **Three-Fix Ceiling** — after 3 failed attempts at the same root issue, STOP and report what was tried. Wait for user direction.
-- **No shotgun debugging** — no commenting out code, no pragma disables, no "just make it compile" hacks.
+Follow `.claude/skills/debug.md`. One hypothesis, one change. Three failed fixes on the same root issue → stop and report. No shotgun debugging.
 
 ### Verification Gate
 
-Every task completion requires fresh evidence. Follow `.claude/skills/verify.md`. Key rules:
+Follow `.claude/skills/verify.md`. Every task completion needs a fresh run with quoted output. Never say "should work" or "previously verified." Applies to plan tasks, commits, and subagent DONE reports — not to specs, plans, or docs.
 
-- **Run the verification command NOW** — not "I ran it earlier." Fresh run, full output, quoted evidence.
-- **Banned language** — never say "should work", "likely passes", "previously verified." Replace with actual output.
-- **Failure enters debugging** — if verification fails, the task is not done. Enter the debug skill.
-- **Applies to** — plan tasks marked Done, commit claims, subagent DONE reports.
-- **Does not apply to** — specs, plans, docs, intermediate edits.
+### Build and Test Output
+
+When Claude runs `dia run` or `dia pipeline`, report only: pass/fail, failing test names, and error messages. Do not quote full test output. If the user runs tests locally, they see the full output themselves — do not repeat it.
 
 ### Anti-Rationalization
 
-Never accept these excuses to skip process — they are the most common failure modes:
-
-- "This is simple enough to skip the test" — No. If it's simple, the test is fast to write.
-- "I'll write the test after since I need to explore the API first" — No. Write a test for what you THINK the API should be. If you're wrong, the test evolves.
-- "The Three-Fix Ceiling doesn't apply here because each error is different" — No. Three failed fixes is three failed fixes. Stop.
-- "I'll verify later once the next task is also done" — No. Verify NOW. Cascading failures are harder to debug.
-- "I don't need to inline context because the subagent can read the file" — No. Inline it. Subagents that explore waste tokens and miss things.
-- "This is just a refactor so it doesn't need a test" — If it has no test, how do you know it's still correct?
-- "The spec doesn't explicitly say this, but obviously..." — No. If it's not in the spec, ask. Don't invent requirements.
-- "I'll skip the RED step because I know the test will fail" — No. Prove it. Quote the output.
-
-If you catch yourself forming a sentence that starts with "I can skip X because...", treat that as a signal to do X more carefully, not less.
+If forming the sentence "I can skip X because..." — do X more carefully, not less.
 
 ### Test-Driven Development (New Features)
 
-All new feature work follows RED-GREEN-REFACTOR. See `.claude/skills/tdd.md`. Key rules:
+Follow `.claude/skills/tdd.md`. RED-GREEN-REFACTOR for all new public API, new behavior, and new ACs. Prove RED with quoted output. Write minimal GREEN. Does not apply to mechanical tasks, bug fixes, or refactors with existing coverage. `/gen-tests` audits exhaustiveness after TDD completes.
 
-- **Write the test FIRST** — assert the desired behavior before implementing it.
-- **Confirm RED** — run the test, quote the failure output. If it passes, investigate why.
-- **Minimal GREEN** — write only enough code to make the test pass. Stop.
-- **Refactor while green** — clean up with the safety net of a passing test.
-- **Applies to** — new public API, new behavior, new ACs in feature specs.
-- **Does not apply to** — mechanical tasks (vcxproj, registry), bug fixes, refactors with existing coverage, prototypes.
-- **`/gen-tests` still runs after** — TDD writes essential tests per AC. `/gen-tests` audits for exhaustiveness (edge cases, stress, boundary).
+### Commands
 
-### Spec Commands
-
-- `/spec-platform` - Create or update the platform spec
-- `/spec-app` - Create a new application spec
-- `/spec-system` - Create a new system spec  
-- `/spec-feature` - Create a new feature spec (includes interview + AI review)
-- `/spec-review` - Review any spec and populate AI review questions
-- `/spec-trace` - Trace a feature's full lineage up to platform
-
-### Review Command
-
-- `/review <spec-path>` - Review implementation against its spec with 8 passes
-  - Passes: Spec Compliance, Test Exhaustiveness, Architecture, Product, Performance, Thread Safety, Binding Decisions, API Surface
-  - Outputs a punch-list table with severity (Critical/Important/Minor), location, and suggestion per finding
-  - Verdict: PASS / PASS WITH ISSUES / BLOCKED
-  - Options: `--pass=<name>` for single pass, `--severity=<level>` to filter, `--diff=<range>` for custom diff range
-  - Use after completing a feature (all plan tasks done) or before merging to master
-
-### Test Commands
-
-- `/gen-tests <target>` - Generate comprehensive tests for a Dia module or component
-  - Reads public API headers, checks test-completeness-registry, proposes all applicable test types (unit, stress, golden-value, invariant, determinism, conservation, integration)
-  - Creates test files, updates vcxproj, builds, runs, and updates the registry
-  - Options: `--type=<type>` to limit test types, `--dry-run` to preview, `--update-registry` to refresh counts only
-- `/gtest [options]` - Build and run GoogleTest suite with filtering and failure analysis
+See `.claude/steering/commands.md` for full command reference (`/spec-*`, `/review`, `/gen-tests`, `/gtest`).
 
 ## Development Workflow
 
