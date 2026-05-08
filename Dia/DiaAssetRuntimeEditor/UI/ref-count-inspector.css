@@ -39,8 +39,10 @@ body {
 }
 .state-badge.Loaded { background: #2d5f2d; color: #6ecc6e; }
 .state-badge.Staged { background: #5f5f2d; color: #cccc6e; }
-.state-badge.Registered { background: #3c3c3c; color: #999; }
-.state-badge.Unloading { background: #5f2d2d; color: #cc6e6e; }
+.state-badge.Null { background: #3c3c3c; color: #999; }
+.state-badge.Loading { background: #2d4f5f; color: #6eaacc; }
+.state-badge.Failed { background: #5f2d2d; color: #cc6e6e; }
+.state-badge.Unloaded { background: #4a3c2d; color: #cc9e6e; }
 
 .summary-row {
     display: flex; gap: 12px; align-items: center; padding: 6px 0;

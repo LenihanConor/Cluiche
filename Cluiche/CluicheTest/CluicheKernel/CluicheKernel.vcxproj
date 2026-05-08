@@ -12,6 +12,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApplicationFlow\Modules\AssetServiceModule.h" />
+    <ClInclude Include="ApplicationFlow\Modules\SFMLTextureHandler.h" />
+    <ClInclude Include="ApplicationFlow\Modules\UltralightUIHandler.h" />
     <ClInclude Include="ApplicationFlow\Modules\LevelFactoryModule.h" />
     <ClInclude Include="ApplicationFlow\Modules\MainKernelModule.h" />
     <ClInclude Include="ApplicationFlow\Modules\MainUIModule.h" />

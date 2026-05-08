@@ -60,7 +60,7 @@
     <ClInclude Include="AssetRuntimeDebugCommands.h" />
     <ClInclude Include="AssetScope.h" />
     <ClInclude Include="AssetState.h" />
-    <ClInclude Include="IAssetStateListener.h" />
+    <ClInclude Include="IAssetTypeHandler.h" />
     <ClInclude Include="RuntimeAssetEntry.h" />
     <ClInclude Include="RuntimeStageEntry.h" />
     <ClInclude Include="RuntimeManifestLoader.h" />

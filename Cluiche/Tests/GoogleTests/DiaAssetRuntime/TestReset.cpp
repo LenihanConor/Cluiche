@@ -7,7 +7,7 @@
 
 #include <DiaAssetRuntime/AssetRuntime.h>
 #include <DiaAssetRuntime/AssetState.h>
-#include <DiaAssetRuntime/IAssetStateListener.h>
+#include <DiaAssetRuntime/IAssetTypeHandler.h>
 
 #include <DiaCore/FilePath/PathStore.h>
 #include <DiaCore/FilePath/FilePath.h>
@@ -92,15 +92,21 @@ namespace
         return runtime.LoadManifest(MakeF8FilePath(filename));
     }
 
-    struct CountingListener : public Dia::AssetRuntime::IAssetStateListener
+    struct ImmediateHandler : public Dia::AssetRuntime::IAssetTypeHandler
     {
-        unsigned int readyCount     = 0;
-        unsigned int unloadingCount = 0;
+        unsigned int unloadCount = 0;
 
-        void OnAssetReady(const Dia::Core::StringCRC&,
-                          const Dia::Core::Containers::String512&) override { readyCount++; }
-        void OnAssetUnloading(const Dia::Core::StringCRC&) override          { unloadingCount++; }
-        void OnAssetLoadFailed(const Dia::Core::StringCRC&) override          {}
+        void Load(const Dia::Core::StringCRC& assetId,
+                  const Dia::Core::Containers::String512&,
+                  Dia::AssetRuntime::IAssetLoadCallback* callback) override
+        {
+            callback->OnLoadComplete(assetId);
+        }
+
+        void Unload(const Dia::Core::StringCRC&) override
+        {
+            unloadCount++;
+        }
     };
 
 } // anonymous namespace
@@ -118,21 +124,23 @@ protected:
 // Tests — state after Reset
 // ---------------------------------------------------------------------------
 
-TEST_F(ResetTest, Reset_AllAssetsReturnToRegistered)
+TEST_F(ResetTest, Reset_AllAssetsReturnToNull)
 {
     Dia::AssetRuntime::AssetRuntime runtime;
     ASSERT_TRUE(LoadF8Runtime(runtime, "f8_reset_state.json"));
 
+    ImmediateHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
     runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
     EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.alpha")),
-              Dia::AssetRuntime::AssetState::Staged);
+              Dia::AssetRuntime::AssetState::Loaded);
 
     runtime.Reset();
 
     EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.alpha")),
-              Dia::AssetRuntime::AssetState::Registered);
+              Dia::AssetRuntime::AssetState::Null);
     EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.beta")),
-              Dia::AssetRuntime::AssetState::Registered);
+              Dia::AssetRuntime::AssetState::Null);
 }
 
 TEST_F(ResetTest, Reset_RefCountsDropToZero)
@@ -140,6 +148,8 @@ TEST_F(ResetTest, Reset_RefCountsDropToZero)
     Dia::AssetRuntime::AssetRuntime runtime;
     ASSERT_TRUE(LoadF8Runtime(runtime, "f8_reset_refcount.json"));
 
+    ImmediateHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
     runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
     EXPECT_EQ(runtime.GetAssetRefCount(Dia::Core::StringCRC("asset.alpha")), 1u);
 
@@ -149,86 +159,48 @@ TEST_F(ResetTest, Reset_RefCountsDropToZero)
     EXPECT_EQ(runtime.GetAssetRefCount(Dia::Core::StringCRC("asset.beta")),  0u);
 }
 
-TEST_F(ResetTest, Reset_FromAllRegistered_NoUnloadingEvents)
+TEST_F(ResetTest, Reset_CallsHandlerUnload_ForLoadedAssets)
 {
-    // All assets already Registered — Reset should not fire OnAssetUnloading.
+    Dia::AssetRuntime::AssetRuntime runtime;
+    ASSERT_TRUE(LoadF8Runtime(runtime, "f8_reset_unload.json"));
+
+    ImmediateHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
+    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
+
+    runtime.Reset();
+
+    EXPECT_EQ(handler.unloadCount, 2u);
+}
+
+TEST_F(ResetTest, Reset_FromAllNull_NoUnloadCalls)
+{
     Dia::AssetRuntime::AssetRuntime runtime;
     ASSERT_TRUE(LoadF8Runtime(runtime, "f8_reset_noevents.json"));
 
-    CountingListener listener;
-    runtime.RegisterListener(&listener);
+    ImmediateHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
 
     runtime.Reset();
 
-    EXPECT_EQ(listener.unloadingCount, 0u);
-}
-
-TEST_F(ResetTest, Reset_StagedAssets_FireOnAssetUnloading)
-{
-    Dia::AssetRuntime::AssetRuntime runtime;
-    ASSERT_TRUE(LoadF8Runtime(runtime, "f8_reset_staged_unloading.json"));
-
-    CountingListener listener;
-    runtime.RegisterListener(&listener);
-    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
-
-    unsigned int readyBefore = listener.readyCount; // 2
-    runtime.Reset();
-
-    EXPECT_EQ(listener.unloadingCount, readyBefore); // one unloading per staged asset
-}
-
-TEST_F(ResetTest, Reset_LoadedAssets_FireOnAssetUnloading)
-{
-    Dia::AssetRuntime::AssetRuntime runtime;
-    ASSERT_TRUE(LoadF8Runtime(runtime, "f8_reset_loaded_unloading.json"));
-
-    CountingListener listener;
-    runtime.RegisterListener(&listener);
-    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
-    runtime.AcknowledgeAssetLoaded(Dia::Core::StringCRC("asset.alpha"));
-
-    EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.alpha")),
-              Dia::AssetRuntime::AssetState::Loaded);
-
-    runtime.Reset();
-
-    // asset.alpha (Loaded) and asset.beta (Staged) both fire unloading
-    EXPECT_EQ(listener.unloadingCount, 2u);
-}
-
-TEST_F(ResetTest, Reset_AllRegistered_AfterLoadedAndStaged)
-{
-    Dia::AssetRuntime::AssetRuntime runtime;
-    ASSERT_TRUE(LoadF8Runtime(runtime, "f8_reset_allreg.json"));
-
-    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
-    runtime.AcknowledgeAssetLoaded(Dia::Core::StringCRC("asset.alpha"));
-
-    runtime.Reset();
-
-    EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.alpha")),
-              Dia::AssetRuntime::AssetState::Registered);
-    EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.beta")),
-              Dia::AssetRuntime::AssetState::Registered);
-    EXPECT_EQ(runtime.GetAssetRefCount(Dia::Core::StringCRC("asset.alpha")), 0u);
-    EXPECT_EQ(runtime.GetAssetRefCount(Dia::Core::StringCRC("asset.beta")),  0u);
+    EXPECT_EQ(handler.unloadCount, 0u);
 }
 
 TEST_F(ResetTest, Reset_FollowedByStageLoad_WorksCorrectly)
 {
-    // After Reset, the state machine should accept new RequestStageLoad calls.
     Dia::AssetRuntime::AssetRuntime runtime;
     ASSERT_TRUE(LoadF8Runtime(runtime, "f8_reset_reload.json"));
 
+    ImmediateHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
     runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
     runtime.Reset();
 
-    // Second load cycle should work normally
+    // Second load cycle should work normally (Null->Staged->Loading->Loaded)
     runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
 
     EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.alpha")),
-              Dia::AssetRuntime::AssetState::Staged);
+              Dia::AssetRuntime::AssetState::Loaded);
     EXPECT_EQ(runtime.GetAssetRefCount(Dia::Core::StringCRC("asset.alpha")), 1u);
 }
 
@@ -238,6 +210,6 @@ TEST_F(ResetTest, Reset_OnAlreadyReset_SafeNoCrash)
     ASSERT_TRUE(LoadF8Runtime(runtime, "f8_reset_double.json"));
 
     runtime.Reset();
-    runtime.Reset(); // double Reset on already-Registered state — must not crash
+    runtime.Reset();
     SUCCEED();
 }

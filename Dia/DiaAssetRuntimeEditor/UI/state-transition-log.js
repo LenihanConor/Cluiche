@@ -22,8 +22,8 @@
             if (e.type !== 'transition') return true; // always show markers
             if (idVal && e.assetId.toLowerCase().indexOf(idVal) === -1) return false;
             if (transVal !== 'All') {
-                if (transVal === 'Any->Unloading') {
-                    if (e.newState !== 'Unloading') return false;
+                if (transVal === 'Any->Failed') {
+                    if (e.newState !== 'Failed') return false;
                 } else {
                     var parts = transVal.split('->');
                     if (e.oldState !== parts[0] || e.newState !== parts[1]) return false;

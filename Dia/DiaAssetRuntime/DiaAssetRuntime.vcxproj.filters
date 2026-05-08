@@ -29,6 +29,15 @@
     <ClInclude Include="AssetRuntime.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="AssetState.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IAssetTypeHandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AssetRuntimeDebugCommands.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RuntimeManifestLoader.cpp">

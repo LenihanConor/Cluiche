@@ -111,12 +111,20 @@ body {
     background: #cccc6e;
 }
 
-.state-dot.Registered {
+.state-dot.Null {
     background: #666;
 }
 
-.state-dot.Unloading {
+.state-dot.Loading {
+    background: #6eaacc;
+}
+
+.state-dot.Failed {
     background: #cc6e6e;
+}
+
+.state-dot.Unloaded {
+    background: #cc9e6e;
 }
 
 .asset-id {

@@ -15,10 +15,13 @@
             <input type="text" id="id-filter" placeholder="Filter by asset ID..." />
             <select id="transition-filter">
                 <option value="All">All transitions</option>
-                <option value="Registered->Staged">Registered -> Staged</option>
-                <option value="Staged->Loaded">Staged -> Loaded</option>
-                <option value="Loaded->Unloading">Loaded -> Unloading</option>
-                <option value="Any->Unloading">Any -> Unloading</option>
+                <option value="Null->Staged">Null -> Staged</option>
+                <option value="Staged->Loading">Staged -> Loading</option>
+                <option value="Loading->Loaded">Loading -> Loaded</option>
+                <option value="Loading->Failed">Loading -> Failed</option>
+                <option value="Loaded->Unloaded">Loaded -> Unloaded</option>
+                <option value="Failed->Loading">Failed -> Loading (retry)</option>
+                <option value="Any->Failed">Any -> Failed</option>
             </select>
             <label class="max-label">
                 Max:

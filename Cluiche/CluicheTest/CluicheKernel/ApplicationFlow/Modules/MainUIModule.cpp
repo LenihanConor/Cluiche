@@ -37,6 +37,8 @@ namespace Cluiche
 
 		Dia::Application::StateObject::OpertionResponse UIModule::DoStart(const IStartData* startData)
 		{
+			DIA_ASSERT(mUISystem == nullptr, "UIModule::DoStart called while already initialized — UISystem would be double-initialized. Check phase_ids in stage manifest to ensure UIModule is retained across transitions.");
+
 			Cluiche::Main::KernelModule* kernel = this->GetModule<Cluiche::Main::KernelModule>();
 
 			if (kernel == nullptr)

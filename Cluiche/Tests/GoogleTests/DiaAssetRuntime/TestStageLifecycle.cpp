@@ -7,6 +7,7 @@
 
 #include <DiaAssetRuntime/AssetRuntime.h>
 #include <DiaAssetRuntime/AssetState.h>
+#include <DiaAssetRuntime/IAssetTypeHandler.h>
 
 #include <DiaCore/FilePath/PathStore.h>
 #include <DiaCore/FilePath/FilePath.h>
@@ -73,9 +74,6 @@ namespace
         return Dia::Core::FilePath(Dia::Core::StringCRC(kF3Alias), filename);
     }
 
-    // Two stages sharing one global asset.
-    // stage.a  → [asset.stage_only_a, asset.shared_global]
-    // stage.b  → [asset.stage_only_b, asset.shared_global]
     static const char* kSharedJson = R"({
         "assets": [
             {"id": "asset.stage_only_a", "scope": "stage",  "deploy_path": "sa.png"},
@@ -96,6 +94,17 @@ namespace
         return runtime.LoadManifest(MakeF3FilePath(filename));
     }
 
+    struct ImmediateHandler : public Dia::AssetRuntime::IAssetTypeHandler
+    {
+        void Load(const Dia::Core::StringCRC& assetId,
+                  const Dia::Core::Containers::String512&,
+                  Dia::AssetRuntime::IAssetLoadCallback* callback) override
+        {
+            callback->OnLoadComplete(assetId);
+        }
+        void Unload(const Dia::Core::StringCRC&) override {}
+    };
+
 } // anonymous namespace
 
 // ---------------------------------------------------------------------------
@@ -111,20 +120,22 @@ protected:
 // Tests — single stage load / unload
 // ---------------------------------------------------------------------------
 
-TEST_F(StageLifecycleTest, SingleStageLoad_TransitionsAssetsToStaged)
+TEST_F(StageLifecycleTest, SingleStageLoad_TransitionsAssetsToLoaded)
 {
     Dia::AssetRuntime::AssetRuntime runtime;
     ASSERT_TRUE(LoadSharedRuntime(runtime, "f3_single_load.json"));
 
+    ImmediateHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
     runtime.RequestStageLoad(Dia::Core::StringCRC("stage.a"));
 
     EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.stage_only_a")),
-              Dia::AssetRuntime::AssetState::Staged);
+              Dia::AssetRuntime::AssetState::Loaded);
     EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.shared_global")),
-              Dia::AssetRuntime::AssetState::Staged);
+              Dia::AssetRuntime::AssetState::Loaded);
     // stage.b's asset unaffected
     EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.stage_only_b")),
-              Dia::AssetRuntime::AssetState::Registered);
+              Dia::AssetRuntime::AssetState::Null);
 }
 
 TEST_F(StageLifecycleTest, SingleStageLoad_RefCountsCorrect)
@@ -132,6 +143,8 @@ TEST_F(StageLifecycleTest, SingleStageLoad_RefCountsCorrect)
     Dia::AssetRuntime::AssetRuntime runtime;
     ASSERT_TRUE(LoadSharedRuntime(runtime, "f3_refcount_load.json"));
 
+    ImmediateHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
     runtime.RequestStageLoad(Dia::Core::StringCRC("stage.a"));
 
     EXPECT_EQ(runtime.GetAssetRefCount(Dia::Core::StringCRC("asset.stage_only_a")), 1u);
@@ -139,18 +152,20 @@ TEST_F(StageLifecycleTest, SingleStageLoad_RefCountsCorrect)
     EXPECT_EQ(runtime.GetAssetRefCount(Dia::Core::StringCRC("asset.stage_only_b")), 0u);
 }
 
-TEST_F(StageLifecycleTest, SingleStageUnload_TransitionsToUnloading)
+TEST_F(StageLifecycleTest, SingleStageUnload_TransitionsToUnloaded)
 {
     Dia::AssetRuntime::AssetRuntime runtime;
     ASSERT_TRUE(LoadSharedRuntime(runtime, "f3_single_unload.json"));
 
+    ImmediateHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
     runtime.RequestStageLoad(Dia::Core::StringCRC("stage.a"));
     runtime.RequestStageUnload(Dia::Core::StringCRC("stage.a"));
 
     EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.stage_only_a")),
-              Dia::AssetRuntime::AssetState::Unloading);
+              Dia::AssetRuntime::AssetState::Unloaded);
     EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.shared_global")),
-              Dia::AssetRuntime::AssetState::Unloading);
+              Dia::AssetRuntime::AssetState::Unloaded);
 }
 
 TEST_F(StageLifecycleTest, SingleStageUnload_RefCountsDropToZero)
@@ -158,6 +173,8 @@ TEST_F(StageLifecycleTest, SingleStageUnload_RefCountsDropToZero)
     Dia::AssetRuntime::AssetRuntime runtime;
     ASSERT_TRUE(LoadSharedRuntime(runtime, "f3_refcount_unload.json"));
 
+    ImmediateHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
     runtime.RequestStageLoad(Dia::Core::StringCRC("stage.a"));
     runtime.RequestStageUnload(Dia::Core::StringCRC("stage.a"));
 
@@ -174,6 +191,8 @@ TEST_F(StageLifecycleTest, SharedGlobalAsset_RefCountTwoWhenBothStagesLoaded)
     Dia::AssetRuntime::AssetRuntime runtime;
     ASSERT_TRUE(LoadSharedRuntime(runtime, "f3_shared_both.json"));
 
+    ImmediateHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
     runtime.RequestStageLoad(Dia::Core::StringCRC("stage.a"));
     runtime.RequestStageLoad(Dia::Core::StringCRC("stage.b"));
 
@@ -185,25 +204,29 @@ TEST_F(StageLifecycleTest, SharedGlobalAsset_StaysLoadedWhenOneStageUnloads)
     Dia::AssetRuntime::AssetRuntime runtime;
     ASSERT_TRUE(LoadSharedRuntime(runtime, "f3_shared_stay.json"));
 
+    ImmediateHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
     runtime.RequestStageLoad(Dia::Core::StringCRC("stage.a"));
     runtime.RequestStageLoad(Dia::Core::StringCRC("stage.b"));
     runtime.RequestStageUnload(Dia::Core::StringCRC("stage.a"));
 
     // Still ref'd by stage.b
     EXPECT_EQ(runtime.GetAssetRefCount(Dia::Core::StringCRC("asset.shared_global")), 1u);
-    EXPECT_NE(runtime.GetAssetState(Dia::Core::StringCRC("asset.shared_global")),
-              Dia::AssetRuntime::AssetState::Unloading);
+    EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.shared_global")),
+              Dia::AssetRuntime::AssetState::Loaded);
 
-    // stage.a's exclusive asset should be Unloading
+    // stage.a's exclusive asset should be Unloaded
     EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.stage_only_a")),
-              Dia::AssetRuntime::AssetState::Unloading);
+              Dia::AssetRuntime::AssetState::Unloaded);
 }
 
-TEST_F(StageLifecycleTest, SharedGlobalAsset_TransitionsToUnloadingWhenBothStagesUnload)
+TEST_F(StageLifecycleTest, SharedGlobalAsset_TransitionsToUnloadedWhenBothStagesUnload)
 {
     Dia::AssetRuntime::AssetRuntime runtime;
     ASSERT_TRUE(LoadSharedRuntime(runtime, "f3_shared_unload_both.json"));
 
+    ImmediateHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
     runtime.RequestStageLoad(Dia::Core::StringCRC("stage.a"));
     runtime.RequestStageLoad(Dia::Core::StringCRC("stage.b"));
     runtime.RequestStageUnload(Dia::Core::StringCRC("stage.a"));
@@ -211,7 +234,7 @@ TEST_F(StageLifecycleTest, SharedGlobalAsset_TransitionsToUnloadingWhenBothStage
 
     EXPECT_EQ(runtime.GetAssetRefCount(Dia::Core::StringCRC("asset.shared_global")), 0u);
     EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.shared_global")),
-              Dia::AssetRuntime::AssetState::Unloading);
+              Dia::AssetRuntime::AssetState::Unloaded);
 }
 
 // ---------------------------------------------------------------------------
@@ -223,13 +246,15 @@ TEST_F(StageLifecycleTest, DoubleLoad_IncrementsRefCountTwice)
     Dia::AssetRuntime::AssetRuntime runtime;
     ASSERT_TRUE(LoadSharedRuntime(runtime, "f3_double_load.json"));
 
+    ImmediateHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
     runtime.RequestStageLoad(Dia::Core::StringCRC("stage.a"));
     runtime.RequestStageLoad(Dia::Core::StringCRC("stage.a"));
 
     EXPECT_EQ(runtime.GetAssetRefCount(Dia::Core::StringCRC("asset.stage_only_a")), 2u);
-    // State should be Staged (already staged from first load; no re-transition)
+    // State should be Loaded (already loaded from first call; no re-dispatch)
     EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.stage_only_a")),
-              Dia::AssetRuntime::AssetState::Staged);
+              Dia::AssetRuntime::AssetState::Loaded);
 }
 
 // ---------------------------------------------------------------------------
@@ -241,6 +266,8 @@ TEST_F(StageLifecycleTest, DoubleUnload_RefCountClampedAtZero)
     Dia::AssetRuntime::AssetRuntime runtime;
     ASSERT_TRUE(LoadSharedRuntime(runtime, "f3_double_unload.json"));
 
+    ImmediateHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
     runtime.RequestStageLoad(Dia::Core::StringCRC("stage.a"));
     runtime.RequestStageUnload(Dia::Core::StringCRC("stage.a"));
     // Second unload should warn but not underflow
@@ -258,7 +285,6 @@ TEST_F(StageLifecycleTest, UnknownStageLoad_SafeNoCrash)
     Dia::AssetRuntime::AssetRuntime runtime;
     ASSERT_TRUE(LoadSharedRuntime(runtime, "f3_unknown_load.json"));
 
-    // Should log warning and return without crashing.
     runtime.RequestStageLoad(Dia::Core::StringCRC("stage.does_not_exist"));
     SUCCEED();
 }
@@ -292,4 +318,65 @@ TEST_F(StageLifecycleTest, GetAssetRefCount_UnknownId_ReturnsZero)
     ASSERT_TRUE(LoadSharedRuntime(runtime, "f3_refunknown.json"));
 
     EXPECT_EQ(runtime.GetAssetRefCount(Dia::Core::StringCRC("asset.ghost")), 0u);
+}
+
+// ---------------------------------------------------------------------------
+// Tests — re-staging cycle (Unloaded -> Staged -> Loading -> Loaded)
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Tests — Loading state reached via DeferredHandler (foundation for AC5 guard)
+// ---------------------------------------------------------------------------
+
+TEST_F(StageLifecycleTest, DeferredHandler_AssetsReachLoadingState)
+{
+    struct DeferredHandler : public Dia::AssetRuntime::IAssetTypeHandler
+    {
+        void Load(const Dia::Core::StringCRC&,
+                  const Dia::Core::Containers::String512&,
+                  Dia::AssetRuntime::IAssetLoadCallback*) override {}
+        void Unload(const Dia::Core::StringCRC&) override {}
+    };
+
+    Dia::AssetRuntime::AssetRuntime runtime;
+    ASSERT_TRUE(LoadSharedRuntime(runtime, "f3_deferred_loading.json"));
+
+    DeferredHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
+    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.a"));
+
+    EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.stage_only_a")),
+              Dia::AssetRuntime::AssetState::Loading);
+    EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.shared_global")),
+              Dia::AssetRuntime::AssetState::Loading);
+    EXPECT_FALSE(runtime.IsLoadComplete(Dia::Core::StringCRC("stage.a")));
+}
+
+// ---------------------------------------------------------------------------
+// Tests — re-staging cycle (Unloaded -> Staged -> Loading -> Loaded)
+// ---------------------------------------------------------------------------
+
+TEST_F(StageLifecycleTest, Restage_UnloadThenReload_TransitionsBackToLoaded)
+{
+    Dia::AssetRuntime::AssetRuntime runtime;
+    ASSERT_TRUE(LoadSharedRuntime(runtime, "f3_restage.json"));
+
+    ImmediateHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
+
+    // First cycle: load then unload
+    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.a"));
+    EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.stage_only_a")),
+              Dia::AssetRuntime::AssetState::Loaded);
+
+    runtime.RequestStageUnload(Dia::Core::StringCRC("stage.a"));
+    EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.stage_only_a")),
+              Dia::AssetRuntime::AssetState::Unloaded);
+
+    // Second cycle: re-load from Unloaded state
+    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.a"));
+    EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.stage_only_a")),
+              Dia::AssetRuntime::AssetState::Loaded);
+    EXPECT_EQ(runtime.GetAssetRefCount(Dia::Core::StringCRC("asset.stage_only_a")), 1u);
+    EXPECT_TRUE(runtime.IsLoadComplete(Dia::Core::StringCRC("stage.a")));
 }

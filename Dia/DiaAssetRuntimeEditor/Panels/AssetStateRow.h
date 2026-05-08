@@ -13,10 +13,12 @@ namespace Dia
 		{
 			enum class AssetStateEnum
 			{
-				kRegistered = 0,
+				kNull = 0,
 				kStaged,
+				kLoading,
 				kLoaded,
-				kUnloading,
+				kFailed,
+				kUnloaded,
 				kCount
 			};
 
@@ -38,7 +40,7 @@ namespace Dia
 				AssetStateRow()
 					: mAssetId()
 					, mStageId()
-					, mState(AssetStateEnum::kRegistered)
+					, mState(AssetStateEnum::kNull)
 					, mScope(AssetScopeEnum::kGlobal)
 					, mRefCount(0)
 					, mDeployPath()
@@ -49,21 +51,25 @@ namespace Dia
 			{
 				switch (state)
 				{
-					case AssetStateEnum::kRegistered: return "Registered";
+					case AssetStateEnum::kNull: return "Null";
 					case AssetStateEnum::kStaged: return "Staged";
+					case AssetStateEnum::kLoading: return "Loading";
 					case AssetStateEnum::kLoaded: return "Loaded";
-					case AssetStateEnum::kUnloading: return "Unloading";
+					case AssetStateEnum::kFailed: return "Failed";
+					case AssetStateEnum::kUnloaded: return "Unloaded";
 					default: return "Unknown";
 				}
 			}
 
 			inline AssetStateEnum StringToAssetStateEnum(const char* str)
 			{
-				if (!str) return AssetStateEnum::kRegistered;
+				if (!str) return AssetStateEnum::kNull;
 				if (strcmp(str, "Staged") == 0) return AssetStateEnum::kStaged;
+				if (strcmp(str, "Loading") == 0) return AssetStateEnum::kLoading;
 				if (strcmp(str, "Loaded") == 0) return AssetStateEnum::kLoaded;
-				if (strcmp(str, "Unloading") == 0) return AssetStateEnum::kUnloading;
-				return AssetStateEnum::kRegistered;
+				if (strcmp(str, "Failed") == 0) return AssetStateEnum::kFailed;
+				if (strcmp(str, "Unloaded") == 0) return AssetStateEnum::kUnloaded;
+				return AssetStateEnum::kNull;
 			}
 
 			inline const char* AssetScopeEnumToString(AssetScopeEnum scope)

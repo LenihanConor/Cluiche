@@ -24,25 +24,29 @@ using namespace Dia::Core;
 
 TEST(AssetStateRow, StateEnumToString_AllValues)
 {
-	EXPECT_STREQ("Registered", AssetStateEnumToString(AssetStateEnum::kRegistered));
+	EXPECT_STREQ("Null", AssetStateEnumToString(AssetStateEnum::kNull));
 	EXPECT_STREQ("Staged", AssetStateEnumToString(AssetStateEnum::kStaged));
+	EXPECT_STREQ("Loading", AssetStateEnumToString(AssetStateEnum::kLoading));
 	EXPECT_STREQ("Loaded", AssetStateEnumToString(AssetStateEnum::kLoaded));
-	EXPECT_STREQ("Unloading", AssetStateEnumToString(AssetStateEnum::kUnloading));
+	EXPECT_STREQ("Failed", AssetStateEnumToString(AssetStateEnum::kFailed));
+	EXPECT_STREQ("Unloaded", AssetStateEnumToString(AssetStateEnum::kUnloaded));
 }
 
 TEST(AssetStateRow, StringToStateEnum_ValidStrings)
 {
-	EXPECT_EQ(AssetStateEnum::kRegistered, StringToAssetStateEnum("Registered"));
+	EXPECT_EQ(AssetStateEnum::kNull, StringToAssetStateEnum("Null"));
 	EXPECT_EQ(AssetStateEnum::kStaged, StringToAssetStateEnum("Staged"));
+	EXPECT_EQ(AssetStateEnum::kLoading, StringToAssetStateEnum("Loading"));
 	EXPECT_EQ(AssetStateEnum::kLoaded, StringToAssetStateEnum("Loaded"));
-	EXPECT_EQ(AssetStateEnum::kUnloading, StringToAssetStateEnum("Unloading"));
+	EXPECT_EQ(AssetStateEnum::kFailed, StringToAssetStateEnum("Failed"));
+	EXPECT_EQ(AssetStateEnum::kUnloaded, StringToAssetStateEnum("Unloaded"));
 }
 
-TEST(AssetStateRow, StringToStateEnum_InvalidString_DefaultsToRegistered)
+TEST(AssetStateRow, StringToStateEnum_InvalidString_DefaultsToNull)
 {
-	EXPECT_EQ(AssetStateEnum::kRegistered, StringToAssetStateEnum("Unknown"));
-	EXPECT_EQ(AssetStateEnum::kRegistered, StringToAssetStateEnum(""));
-	EXPECT_EQ(AssetStateEnum::kRegistered, StringToAssetStateEnum(nullptr));
+	EXPECT_EQ(AssetStateEnum::kNull, StringToAssetStateEnum("Unknown"));
+	EXPECT_EQ(AssetStateEnum::kNull, StringToAssetStateEnum(""));
+	EXPECT_EQ(AssetStateEnum::kNull, StringToAssetStateEnum(nullptr));
 }
 
 TEST(AssetStateRow, ScopeEnumToString_AllValues)
@@ -68,7 +72,7 @@ TEST(AssetStateRow, StringToScopeEnum_InvalidString_DefaultsToGlobal)
 TEST(AssetStateRow, DefaultConstruction)
 {
 	AssetStateRow row;
-	EXPECT_EQ(AssetStateEnum::kRegistered, row.mState);
+	EXPECT_EQ(AssetStateEnum::kNull, row.mState);
 	EXPECT_EQ(AssetScopeEnum::kGlobal, row.mScope);
 	EXPECT_EQ(0u, row.mRefCount);
 }
@@ -121,7 +125,7 @@ TEST_F(AssetStateTablePanelParseTest, ParseMultipleAssets)
 	Json::Value assets(Json::arrayValue);
 
 	const char* ids[] = {"tex.a", "tex.b", "mesh.c", "audio.d"};
-	const char* states[] = {"Registered", "Staged", "Loaded", "Unloading"};
+	const char* states[] = {"Null", "Staged", "Loaded", "Failed"};
 
 	for (int i = 0; i < 4; ++i)
 	{
@@ -138,10 +142,10 @@ TEST_F(AssetStateTablePanelParseTest, ParseMultipleAssets)
 	AssetStateTablePanel::ParseGetAllStatesResponse(data, *mRows);
 
 	ASSERT_EQ(4u, mRows->Size());
-	EXPECT_EQ(AssetStateEnum::kRegistered, (*mRows)[0].mState);
+	EXPECT_EQ(AssetStateEnum::kNull, (*mRows)[0].mState);
 	EXPECT_EQ(AssetStateEnum::kStaged, (*mRows)[1].mState);
 	EXPECT_EQ(AssetStateEnum::kLoaded, (*mRows)[2].mState);
-	EXPECT_EQ(AssetStateEnum::kUnloading, (*mRows)[3].mState);
+	EXPECT_EQ(AssetStateEnum::kFailed, (*mRows)[3].mState);
 }
 
 TEST_F(AssetStateTablePanelParseTest, ParseStageScopedAsset)
@@ -177,7 +181,7 @@ TEST_F(AssetStateTablePanelParseTest, ParseMissingFields_DefaultsUsed)
 
 	ASSERT_EQ(1u, mRows->Size());
 	EXPECT_EQ(StringCRC("minimal.asset"), (*mRows)[0].mAssetId);
-	EXPECT_EQ(AssetStateEnum::kRegistered, (*mRows)[0].mState);
+	EXPECT_EQ(AssetStateEnum::kNull, (*mRows)[0].mState);
 	EXPECT_EQ(AssetScopeEnum::kGlobal, (*mRows)[0].mScope);
 	EXPECT_EQ(0u, (*mRows)[0].mRefCount);
 }
@@ -254,8 +258,8 @@ TEST(TransitionLogEntry, DefaultConstruction)
 {
 	TransitionLogEntry entry;
 	EXPECT_EQ(LogEntryType::kTransition, entry.mType);
-	EXPECT_EQ(AssetStateEnum::kRegistered, entry.mOldState);
-	EXPECT_EQ(AssetStateEnum::kRegistered, entry.mNewState);
+	EXPECT_EQ(AssetStateEnum::kNull, entry.mOldState);
+	EXPECT_EQ(AssetStateEnum::kNull, entry.mNewState);
 	EXPECT_EQ(0ull, entry.mTimestamp);
 }
 
@@ -398,7 +402,7 @@ TEST(AssetStateTablePanel, ParseLargeDataset_100Assets)
 		char id[64];
 		snprintf(id, sizeof(id), "asset.%03d", i);
 		asset["id"] = id;
-		asset["state"] = (i % 4 == 0) ? "Loaded" : (i % 4 == 1) ? "Staged" : (i % 4 == 2) ? "Registered" : "Unloading";
+		asset["state"] = (i % 4 == 0) ? "Loaded" : (i % 4 == 1) ? "Staged" : (i % 4 == 2) ? "Null" : "Failed";
 		asset["scope"] = (i % 3 == 0) ? "Stage" : "Global";
 		asset["refCount"] = i;
 		asset["deployPath"] = "/deploy/path";

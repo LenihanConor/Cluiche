@@ -2,10 +2,11 @@
 
 #include "DiaAssetRuntime/AssetScope.h"
 #include "DiaAssetRuntime/AssetState.h"
-#include "DiaAssetRuntime/IAssetStateListener.h"
+#include "DiaAssetRuntime/IAssetTypeHandler.h"
 #include "DiaAssetRuntime/RuntimeManifestLoader.h"
 
 #include "DiaCore/CRC/StringCRC.h"
+#include "DiaCore/Strings/String32.h"
 #include "DiaCore/Strings/String512.h"
 #include "DiaCore/Containers/HashTables/HashTableC.h"
 #include "DiaCore/Containers/HashTables/HashTableHashFunctionData.h"
@@ -15,29 +16,41 @@ namespace Dia
 {
     namespace AssetRuntime
     {
-        class AssetRuntime
+        class AssetRuntime : public IAssetLoadCallback
         {
         public:
+            struct LoadProgress
+            {
+                unsigned int loaded;
+                unsigned int total;
+                unsigned int failed;
+            };
+
             AssetRuntime();
 
             bool LoadManifest(const Dia::Core::FilePath& manifestPath);
             bool LoadManifest(const Dia::Core::FilePath::ResoledFilePath& resolvedManifestPath);
 
-            // Returns absolute deploy path for the asset, or null if not registered.
             const Dia::Core::Containers::String512* ResolveAssetPath(const Dia::Core::StringCRC& assetId) const;
 
             // State queries
             AssetState GetAssetState(const Dia::Core::StringCRC& assetId) const;
             bool IsAssetReady(const Dia::Core::StringCRC& assetId) const;
-
-            // Consumer acknowledgements
-            void AcknowledgeAssetLoaded(const Dia::Core::StringCRC& assetId);
-            void AcknowledgeAssetUnloaded(const Dia::Core::StringCRC& assetId);
-            void AcknowledgeAssetLoadFailed(const Dia::Core::StringCRC& assetId);
+            bool IsLoadComplete(const Dia::Core::StringCRC& stageId) const;
 
             // Stage lifecycle
             void RequestStageLoad(const Dia::Core::StringCRC& stageId);
             void RequestStageUnload(const Dia::Core::StringCRC& stageId);
+
+            // Type handler registration
+            void RegisterTypeHandler(const char* typePrefix, IAssetTypeHandler* handler);
+            void UnregisterTypeHandler(const char* typePrefix);
+
+            // Explicit retry for failed assets
+            void RetryAssetLoad(const Dia::Core::StringCRC& assetId);
+
+            // Load progress for a stage
+            LoadProgress GetLoadProgress(const Dia::Core::StringCRC& stageId) const;
 
             // Ref count query (debug)
             unsigned int GetAssetRefCount(const Dia::Core::StringCRC& assetId) const;
@@ -48,14 +61,10 @@ namespace Dia
             // Returns the stage ID that owns this asset (empty StringCRC if global or not found)
             Dia::Core::StringCRC GetAssetStageId(const Dia::Core::StringCRC& assetId) const;
 
-            // Listener registration
-            void RegisterListener(IAssetStateListener* listener);
-            void UnregisterListener(IAssetStateListener* listener);
-
-            // Teardown — fire OnAssetUnloading for all non-Registered assets, reset all state/ref-counts
+            // Teardown
             void Reset();
 
-            // Debug queries (const, read-only)
+            // Debug queries
             unsigned int GetAllAssets(
                 Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128>& results) const;
             unsigned int GetLoadedAssets(
@@ -67,6 +76,10 @@ namespace Dia
                 Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128>& results) const;
 
         private:
+            // IAssetLoadCallback
+            virtual void OnLoadComplete(const Dia::Core::StringCRC& assetId) override;
+            virtual void OnLoadFailed(const Dia::Core::StringCRC& assetId, const char* reason) override;
+
             class StateHashFunctor
             {
             public:
@@ -79,6 +92,7 @@ namespace Dia
             static const unsigned int kMaxAssets      = RuntimeManifestLoader::kMaxAssets;
             static const unsigned int kStateTableSize  = RuntimeManifestLoader::kAssetTableSize;
             static const unsigned int kRefTableSize    = RuntimeManifestLoader::kAssetTableSize;
+            static const unsigned int kMaxHandlers     = 16;
 
             typedef Dia::Core::Containers::HashTableC<
                 Dia::Core::StringCRC,
@@ -94,26 +108,29 @@ namespace Dia
                 kMaxAssets,
                 kRefTableSize> RefCountTable;
 
+            struct HandlerEntry
+            {
+                Dia::Core::StringCRC mTypePrefixCRC;
+                Dia::Core::Containers::String32 mTypePrefix;
+                IAssetTypeHandler* mHandler;
+            };
+
             void RegisterPathAliases();
             void InitStateTable();
             void InitRefCountTable();
             bool TryTransition(const Dia::Core::StringCRC& assetId, AssetState target);
-            void DispatchAssetReady(const Dia::Core::StringCRC& assetId);
-            void DispatchAssetUnloading(const Dia::Core::StringCRC& assetId);
-            void DispatchAssetLoadFailed(const Dia::Core::StringCRC& assetId);
-            void FlushDeferredRemovals();
+            void DispatchLoad(const Dia::Core::StringCRC& assetId);
+            void DispatchUnload(const Dia::Core::StringCRC& assetId);
+            Dia::Core::StringCRC ExtractTypePrefix(const Dia::Core::StringCRC& assetId) const;
+            IAssetTypeHandler* FindHandler(const Dia::Core::StringCRC& typePrefixCRC) const;
             void AssertOwnerThread() const;
-
-            static const unsigned int kMaxListeners = 16;
 
             RuntimeManifestLoader::AssetTable mAssetTable;
             RuntimeManifestLoader::StageTable mStageTable;
             StateTable                        mStateTable;
             RefCountTable                     mRefCountTable;
 
-            Dia::Core::Containers::DynamicArrayC<IAssetStateListener*, kMaxListeners> mListeners;
-            Dia::Core::Containers::DynamicArrayC<IAssetStateListener*, kMaxListeners> mDeferredRemovals;
-            bool                              mIsDispatching;
+            Dia::Core::Containers::DynamicArrayC<HandlerEntry, kMaxHandlers> mHandlers;
             unsigned int                      mOwnerThreadId;
         };
     }

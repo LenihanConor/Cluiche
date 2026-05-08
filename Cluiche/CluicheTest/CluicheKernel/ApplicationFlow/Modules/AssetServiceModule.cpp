@@ -1,4 +1,6 @@
 #include "CluicheKernel/ApplicationFlow/Modules/AssetServiceModule.h"
+#include "CluicheKernel/ApplicationFlow/Modules/MainKernelModule.h"
+#include "CluicheKernel/ApplicationFlow/Modules/MainUIModule.h"
 
 #include <DiaCore/FilePath/FilePath.h>
 #include <DiaCore/FilePath/Path.h>
@@ -7,6 +9,7 @@
 #include <DiaLogger/DiaLog.h>
 #include <DiaGame/DiaGameManifest.h>
 #include <DiaGame/DiaGameManifestLoader.h>
+#include <DiaSFML/RenderWindow.h>
 
 #include <DiaApplication/TypeRegistry/RegistrationMacros.h>
 
@@ -64,11 +67,28 @@ namespace Cluiche
 {
 	namespace Main
 	{
+		//------------------------------------------------------------------------------------
+		// DefaultAssetHandler — immediately acknowledges load (placeholder for real handlers)
+		//------------------------------------------------------------------------------------
+		void DefaultAssetHandler::Load(const Dia::Core::StringCRC& assetId,
+		                               const Dia::Core::Containers::String512& /*resolvedPath*/,
+		                               Dia::AssetRuntime::IAssetLoadCallback* callback)
+		{
+			callback->OnLoadComplete(assetId);
+		}
+
+		void DefaultAssetHandler::Unload(const Dia::Core::StringCRC& /*assetId*/)
+		{
+		}
+
+		//------------------------------------------------------------------------------------
+		// AssetServiceModule
+		//------------------------------------------------------------------------------------
 		const Dia::Core::StringCRC AssetServiceModule::kTypeId("Main::AssetServiceModule");
 
 		AssetServiceModule::AssetServiceModule(Dia::Application::ProcessingUnit* associatedProcessingUnit, const Dia::Core::StringCRC& instanceId)
 			: Dia::Application::Module(associatedProcessingUnit, instanceId, Dia::Application::Module::RunningEnum::kIdle)
-			, mPendingAcknowledgements(0)
+			, mHandlerDependenciesWired(false)
 		{}
 
 		Dia::Application::StateObject::OpertionResponse AssetServiceModule::DoStart(const IStartData* startData)
@@ -83,7 +103,19 @@ namespace Cluiche
 			// Load runtime manifest
 			Dia::Core::FilePath::ResoledFilePath manifestPath("%sassets.runtime.json", deployRoot);
 			mRuntime.LoadManifest(manifestPath);
-			mRuntime.RegisterListener(this);
+
+			// Register type-specific handlers
+			mRuntime.RegisterTypeHandler("texture", &mTextureHandler);
+			mRuntime.RegisterTypeHandler("ui", &mUIHandler);
+
+			// Register default handler for remaining types
+			mRuntime.RegisterTypeHandler("manifest", &mDefaultHandler);
+			mRuntime.RegisterTypeHandler("shader", &mDefaultHandler);
+			mRuntime.RegisterTypeHandler("audio", &mDefaultHandler);
+			mRuntime.RegisterTypeHandler("config", &mDefaultHandler);
+			mRuntime.RegisterTypeHandler("entity", &mDefaultHandler);
+			mRuntime.RegisterTypeHandler("folder", &mDefaultHandler);
+			mRuntime.RegisterTypeHandler("asset", &mDefaultHandler);
 
 			// Load .diagame via DiaGameManifestLoader
 			Dia::Core::Containers::String512 diagamePath("%scluichetest.diagame", deployRoot);
@@ -177,12 +209,16 @@ namespace Cluiche
 
 			RegisterGlobalAliases();
 
+			// AC9: Load global assets during module start. Since DefaultAssetHandler
+			// completes synchronously, kImmediate is correct. When real async handlers
+			// are used, switch to kAsync and call NotifyReadyToStartAsync() on completion.
+			RequestGlobalLoad();
+
 			return StateObject::OpertionResponse::kImmediate;
 		}
 
 		void AssetServiceModule::DoStop()
 		{
-			mRuntime.UnregisterListener(this);
 			mRuntime.Reset();
 		}
 
@@ -256,38 +292,44 @@ namespace Cluiche
 		void AssetServiceModule::RequestGlobalLoad()
 		{
 			mCurrentLoadStageId = Dia::Core::StringCRC("stage.global");
-			mPendingAcknowledgements = 0;
-
-			Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128> stageAssets;
-			mRuntime.GetStageDependencies(mCurrentLoadStageId, stageAssets);
-			mPendingAcknowledgements = stageAssets.Size();
-
 			mRuntime.RequestStageLoad(mCurrentLoadStageId);
+		}
+
+		void AssetServiceModule::EnsureHandlerDependencies()
+		{
+			if (mHandlerDependenciesWired)
+				return;
+
+			Cluiche::Main::KernelModule* kernel = this->GetModule<Cluiche::Main::KernelModule>();
+			if (kernel && kernel->GetWindow())
+			{
+				mTextureHandler.SetRenderWindow(static_cast<Dia::SFML::RenderWindow*>(kernel->GetWindow()));
+			}
+
+			Cluiche::Main::UIModule* uiModule = this->GetModule<Cluiche::Main::UIModule>();
+			if (uiModule && uiModule->GetUISystem())
+			{
+				mUIHandler.SetUISystem(uiModule->GetUISystem());
+			}
+
+			mHandlerDependenciesWired = true;
 		}
 
 		void AssetServiceModule::RequestStageLoad(const Dia::Core::StringCRC& stageId)
 		{
-			mCurrentLoadStageId = stageId;
-			mPendingAcknowledgements = 0;
+			EnsureHandlerDependencies();
 
-			bool foundAlias = false;
+			mCurrentLoadStageId = stageId;
+
 			// Look up the .diastage path from the map built at startup
 			for (unsigned int i = 0; i < mStagePathMap.Size(); ++i)
 			{
 				if (mStagePathMap[i].mStageId == stageId)
 				{
-					foundAlias = true;
 					RegisterStageAliases(mStagePathMap[i].mDiastagePath.AsCStr());
 					break;
 				}
 			}
-
-			if (!foundAlias)
-				DIA_LOG_WARNING("AssetService", "Stage '%s' not found in stage path map — no aliases registered", stageId.AsChar());
-
-			Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128> stageAssets;
-			mRuntime.GetStageDependencies(stageId, stageAssets);
-			mPendingAcknowledgements = stageAssets.Size();
 
 			mRuntime.RequestStageLoad(stageId);
 		}
@@ -297,12 +339,14 @@ namespace Cluiche
 			UnregisterStageAliases();
 			mRuntime.RequestStageUnload(stageId);
 			mCurrentLoadStageId = Dia::Core::StringCRC();
-			mPendingAcknowledgements = 0;
 		}
 
 		bool AssetServiceModule::IsLoadComplete() const
 		{
-			return mPendingAcknowledgements == 0;
+			if (mCurrentLoadStageId.Value() == 0)
+				return true;
+
+			return mRuntime.IsLoadComplete(mCurrentLoadStageId);
 		}
 
 		const Dia::AssetRuntime::AssetRuntime& AssetServiceModule::GetRuntime() const
@@ -313,29 +357,6 @@ namespace Cluiche
 		const Dia::Core::Containers::String512& AssetServiceModule::GetUltralightResourcePrefix() const
 		{
 			return mUltralightResourcePrefix;
-		}
-
-		void AssetServiceModule::OnAssetReady(const Dia::Core::StringCRC& assetId,
-		                                      const Dia::Core::Containers::String512& resolvedPath)
-		{
-			mRuntime.AcknowledgeAssetLoaded(assetId);
-			if (mPendingAcknowledgements > 0)
-			{
-				--mPendingAcknowledgements;
-			}
-		}
-
-		void AssetServiceModule::OnAssetUnloading(const Dia::Core::StringCRC& assetId)
-		{
-			mRuntime.AcknowledgeAssetUnloaded(assetId);
-		}
-
-		void AssetServiceModule::OnAssetLoadFailed(const Dia::Core::StringCRC& assetId)
-		{
-			if (mPendingAcknowledgements > 0)
-			{
-				--mPendingAcknowledgements;
-			}
 		}
 	}
 }

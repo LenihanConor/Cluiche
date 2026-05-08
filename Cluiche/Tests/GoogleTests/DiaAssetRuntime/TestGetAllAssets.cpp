@@ -7,6 +7,7 @@
 
 #include <DiaAssetRuntime/AssetRuntime.h>
 #include <DiaAssetRuntime/AssetState.h>
+#include <DiaAssetRuntime/IAssetTypeHandler.h>
 
 #include <DiaCore/FilePath/PathStore.h>
 #include <DiaCore/FilePath/FilePath.h>
@@ -102,6 +103,17 @@ namespace
         return false;
     }
 
+    struct ImmediateHandler : public Dia::AssetRuntime::IAssetTypeHandler
+    {
+        void Load(const Dia::Core::StringCRC& assetId,
+                  const Dia::Core::Containers::String512&,
+                  Dia::AssetRuntime::IAssetLoadCallback* callback) override
+        {
+            callback->OnLoadComplete(assetId);
+        }
+        void Unload(const Dia::Core::StringCRC&) override {}
+    };
+
 } // anonymous namespace
 
 typedef Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128> QueryResults7;
@@ -144,39 +156,21 @@ TEST_F(GetAllAssetsTest, GetAllAssets_ContainsAllIds)
     EXPECT_TRUE(ContainsCRC7(results, Dia::Core::StringCRC("asset.gamma")));
 }
 
-TEST_F(GetAllAssetsTest, GetAllAssets_IncludesRegisteredAssets)
+TEST_F(GetAllAssetsTest, GetAllAssets_IncludesNullStateAssets)
 {
-    // All assets begin Registered after load — GetAllAssets must include them.
+    // All assets begin Null after manifest load — GetAllAssets must include them.
     Dia::AssetRuntime::AssetRuntime runtime;
-    ASSERT_TRUE(LoadF7Runtime(runtime, "f7_registered.json"));
+    ASSERT_TRUE(LoadF7Runtime(runtime, "f7_null.json"));
 
     QueryResults7 results;
     unsigned int count = runtime.GetAllAssets(results);
 
     EXPECT_EQ(count, 3u);
-    // All three in Registered state
     for (unsigned int i = 0; i < results.Size(); ++i)
     {
         EXPECT_EQ(runtime.GetAssetState(results[i]),
-                  Dia::AssetRuntime::AssetState::Registered);
+                  Dia::AssetRuntime::AssetState::Null);
     }
-}
-
-TEST_F(GetAllAssetsTest, GetAllAssets_IncludesStagedAssets)
-{
-    Dia::AssetRuntime::AssetRuntime runtime;
-    ASSERT_TRUE(LoadF7Runtime(runtime, "f7_staged.json"));
-
-    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
-
-    QueryResults7 results;
-    unsigned int count = runtime.GetAllAssets(results);
-
-    // Total is still 3 — staged assets are still enumerated
-    EXPECT_EQ(count, 3u);
-    EXPECT_TRUE(ContainsCRC7(results, Dia::Core::StringCRC("asset.alpha")));
-    EXPECT_TRUE(ContainsCRC7(results, Dia::Core::StringCRC("asset.beta")));
-    EXPECT_TRUE(ContainsCRC7(results, Dia::Core::StringCRC("asset.gamma")));
 }
 
 TEST_F(GetAllAssetsTest, GetAllAssets_IncludesLoadedAssets)
@@ -184,8 +178,9 @@ TEST_F(GetAllAssetsTest, GetAllAssets_IncludesLoadedAssets)
     Dia::AssetRuntime::AssetRuntime runtime;
     ASSERT_TRUE(LoadF7Runtime(runtime, "f7_loaded.json"));
 
+    ImmediateHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
     runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
-    runtime.AcknowledgeAssetLoaded(Dia::Core::StringCRC("asset.alpha"));
 
     QueryResults7 results;
     unsigned int count = runtime.GetAllAssets(results);
@@ -196,19 +191,20 @@ TEST_F(GetAllAssetsTest, GetAllAssets_IncludesLoadedAssets)
 
 TEST_F(GetAllAssetsTest, GetAllAssets_MixedStates_AllPresent)
 {
-    // alpha=Loaded, beta=Staged, gamma=Registered — all three must be enumerated.
+    // s1 loaded (alpha + beta = Loaded), gamma still Null
     Dia::AssetRuntime::AssetRuntime runtime;
     ASSERT_TRUE(LoadF7Runtime(runtime, "f7_mixed.json"));
 
+    ImmediateHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
     runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
-    runtime.AcknowledgeAssetLoaded(Dia::Core::StringCRC("asset.alpha"));
 
     EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.alpha")),
               Dia::AssetRuntime::AssetState::Loaded);
     EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.beta")),
-              Dia::AssetRuntime::AssetState::Staged);
+              Dia::AssetRuntime::AssetState::Loaded);
     EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.gamma")),
-              Dia::AssetRuntime::AssetState::Registered);
+              Dia::AssetRuntime::AssetState::Null);
 
     QueryResults7 results;
     unsigned int count = runtime.GetAllAssets(results);
@@ -225,16 +221,17 @@ TEST_F(GetAllAssetsTest, GetAllAssets_DoesNotModifyState)
     Dia::AssetRuntime::AssetRuntime runtime;
     ASSERT_TRUE(LoadF7Runtime(runtime, "f7_nomodify.json"));
 
+    ImmediateHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
     runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
 
     QueryResults7 results;
     runtime.GetAllAssets(results);
 
-    // States unchanged after the query
     EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.alpha")),
-              Dia::AssetRuntime::AssetState::Staged);
+              Dia::AssetRuntime::AssetState::Loaded);
     EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.gamma")),
-              Dia::AssetRuntime::AssetState::Registered);
+              Dia::AssetRuntime::AssetState::Null);
 }
 
 TEST_F(GetAllAssetsTest, GetAllAssets_ReturnValueMatchesResultSize)

@@ -7,6 +7,7 @@
 
 #include <DiaAssetRuntime/AssetRuntime.h>
 #include <DiaAssetRuntime/AssetState.h>
+#include <DiaAssetRuntime/IAssetTypeHandler.h>
 
 #include <DiaCore/FilePath/PathStore.h>
 #include <DiaCore/FilePath/FilePath.h>
@@ -102,6 +103,26 @@ namespace
         return false;
     }
 
+    struct ImmediateHandler : public Dia::AssetRuntime::IAssetTypeHandler
+    {
+        void Load(const Dia::Core::StringCRC& assetId,
+                  const Dia::Core::Containers::String512&,
+                  Dia::AssetRuntime::IAssetLoadCallback* callback) override
+        {
+            callback->OnLoadComplete(assetId);
+        }
+        void Unload(const Dia::Core::StringCRC&) override {}
+    };
+
+    // Handler that does NOT call callback — leaves assets in Loading state
+    struct DeferredHandler : public Dia::AssetRuntime::IAssetTypeHandler
+    {
+        void Load(const Dia::Core::StringCRC&,
+                  const Dia::Core::Containers::String512&,
+                  Dia::AssetRuntime::IAssetLoadCallback*) override {}
+        void Unload(const Dia::Core::StringCRC&) override {}
+    };
+
 } // anonymous namespace
 
 typedef Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128> QueryResults;
@@ -116,7 +137,10 @@ protected:
 };
 
 // ---------------------------------------------------------------------------
-// Tests — GetStagedAssets
+// Tests — GetStagedAssets (assets that are still in Staged state — only
+// possible if no handler is registered to move them forward, which means
+// they go to Failed. GetStagedAssets in the new model is less useful as
+// Staged is a transient state, but let's verify correctness.)
 // ---------------------------------------------------------------------------
 
 TEST_F(DebugQueryAPITest, GetStagedAssets_EmptyBeforeLoad)
@@ -130,52 +154,35 @@ TEST_F(DebugQueryAPITest, GetStagedAssets_EmptyBeforeLoad)
     EXPECT_EQ(results.Size(), 0u);
 }
 
-TEST_F(DebugQueryAPITest, GetStagedAssets_CorrectAfterStageLoad)
-{
-    Dia::AssetRuntime::AssetRuntime runtime;
-    ASSERT_TRUE(LoadF5Runtime(runtime, "f5_staged_after_load.json"));
-
-    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
-
-    QueryResults results;
-    unsigned int count = runtime.GetStagedAssets(results);
-
-    EXPECT_EQ(count, 2u);
-    EXPECT_TRUE(ContainsCRC(results, Dia::Core::StringCRC("asset.a")));
-    EXPECT_TRUE(ContainsCRC(results, Dia::Core::StringCRC("asset.b")));
-    EXPECT_FALSE(ContainsCRC(results, Dia::Core::StringCRC("asset.c")));
-}
-
 // ---------------------------------------------------------------------------
 // Tests — GetLoadedAssets
 // ---------------------------------------------------------------------------
 
-TEST_F(DebugQueryAPITest, GetLoadedAssets_EmptyBeforeAcknowledge)
+TEST_F(DebugQueryAPITest, GetLoadedAssets_EmptyBeforeLoad)
 {
     Dia::AssetRuntime::AssetRuntime runtime;
-    ASSERT_TRUE(LoadF5Runtime(runtime, "f5_loaded_before_ack.json"));
-
-    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
+    ASSERT_TRUE(LoadF5Runtime(runtime, "f5_loaded_before.json"));
 
     QueryResults results;
     unsigned int count = runtime.GetLoadedAssets(results);
-    EXPECT_EQ(count, 0u); // staged, not loaded
+    EXPECT_EQ(count, 0u);
 }
 
-TEST_F(DebugQueryAPITest, GetLoadedAssets_CorrectAfterAcknowledge)
+TEST_F(DebugQueryAPITest, GetLoadedAssets_CorrectAfterStageLoad)
 {
     Dia::AssetRuntime::AssetRuntime runtime;
-    ASSERT_TRUE(LoadF5Runtime(runtime, "f5_loaded_after_ack.json"));
+    ASSERT_TRUE(LoadF5Runtime(runtime, "f5_loaded_after.json"));
 
+    ImmediateHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
     runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
-    runtime.AcknowledgeAssetLoaded(Dia::Core::StringCRC("asset.a"));
 
     QueryResults results;
     unsigned int count = runtime.GetLoadedAssets(results);
 
-    EXPECT_EQ(count, 1u);
+    EXPECT_EQ(count, 2u);
     EXPECT_TRUE(ContainsCRC(results, Dia::Core::StringCRC("asset.a")));
-    EXPECT_FALSE(ContainsCRC(results, Dia::Core::StringCRC("asset.b")));
+    EXPECT_TRUE(ContainsCRC(results, Dia::Core::StringCRC("asset.b")));
 }
 
 // ---------------------------------------------------------------------------
@@ -226,8 +233,6 @@ TEST_F(DebugQueryAPITest, GetStageDependencies_UnknownStage_ReturnsZero)
 
 TEST_F(DebugQueryAPITest, GetStageDependencies_MaxStageCapacity)
 {
-    // RuntimeStageEntry holds up to 128 asset IDs (DynamicArrayC<StringCRC, 128>).
-    // Build a manifest that fills a stage to capacity and verify all 128 are returned.
     static const unsigned int kStageCapacity = 128;
 
     char json[65536];
@@ -253,12 +258,11 @@ TEST_F(DebugQueryAPITest, GetStageDependencies_MaxStageCapacity)
     Dia::AssetRuntime::AssetRuntime runtime;
     ASSERT_TRUE(runtime.LoadManifest(MakeF5FilePath("f5_overflow.json")));
 
-    // GetStageDependencies returns total count even when results array is smaller.
     QueryResults results;
     unsigned int total = runtime.GetStageDependencies(Dia::Core::StringCRC("stage.big"), results);
 
-    EXPECT_EQ(total, kStageCapacity);      // 128 assets in stage — total count correct
-    EXPECT_EQ(results.Size(), 128u);       // result array exactly matches capacity
+    EXPECT_EQ(total, kStageCapacity);
+    EXPECT_EQ(results.Size(), 128u);
 }
 
 // ---------------------------------------------------------------------------
@@ -270,10 +274,10 @@ TEST_F(DebugQueryAPITest, Queries_DoNotModifyState)
     Dia::AssetRuntime::AssetRuntime runtime;
     ASSERT_TRUE(LoadF5Runtime(runtime, "f5_no_modify.json"));
 
+    ImmediateHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
     runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
 
-    QueryResults staged;
-    runtime.GetStagedAssets(staged);
     QueryResults loaded;
     runtime.GetLoadedAssets(loaded);
     QueryResults deps;
@@ -281,7 +285,7 @@ TEST_F(DebugQueryAPITest, Queries_DoNotModifyState)
 
     // States unchanged after queries
     EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.a")),
-              Dia::AssetRuntime::AssetState::Staged);
+              Dia::AssetRuntime::AssetState::Loaded);
     EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.b")),
-              Dia::AssetRuntime::AssetState::Staged);
+              Dia::AssetRuntime::AssetState::Loaded);
 }

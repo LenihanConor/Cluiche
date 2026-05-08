@@ -3,7 +3,6 @@
 #include "DiaAssetRuntime/AssetState.h"
 #include "DiaAssetRuntime/AssetScope.h"
 #include "DiaAssetRuntime/RuntimeAssetEntry.h"
-#include "DiaAssetRuntime/IAssetStateListener.h"
 
 #include "DiaCore/Json/external/json/json.h"
 #include "DiaCore/CRC/StringCRC.h"
@@ -14,17 +13,17 @@
 
 namespace
 {
-    static Dia::AssetRuntime::ITransitionNotifier* sNotifier = nullptr;
-
     const char* StateToString(Dia::AssetRuntime::AssetState state)
     {
         switch (state)
         {
-            case Dia::AssetRuntime::AssetState::Registered: return "Registered";
-            case Dia::AssetRuntime::AssetState::Staged:     return "Staged";
-            case Dia::AssetRuntime::AssetState::Loaded:     return "Loaded";
-            case Dia::AssetRuntime::AssetState::Unloading:  return "Unloading";
-            default:                                         return "Unknown";
+            case Dia::AssetRuntime::AssetState::Null:     return "Null";
+            case Dia::AssetRuntime::AssetState::Staged:   return "Staged";
+            case Dia::AssetRuntime::AssetState::Loading:  return "Loading";
+            case Dia::AssetRuntime::AssetState::Loaded:   return "Loaded";
+            case Dia::AssetRuntime::AssetState::Failed:   return "Failed";
+            case Dia::AssetRuntime::AssetState::Unloaded: return "Unloaded";
+            default:                                       return "Unknown";
         }
     }
 
@@ -32,68 +31,6 @@ namespace
     {
         return (scope == Dia::AssetRuntime::AssetScope::kGlobal) ? "Global" : "Stage";
     }
-
-    class TransitionLogger : public Dia::AssetRuntime::IAssetStateListener
-    {
-    public:
-        void OnAssetReady(const Dia::Core::StringCRC& assetId,
-                          const Dia::Core::Containers::String512& resolvedPath) override
-        {
-            DIA_LOG_INFO("AssetRuntimeDebugCommands",
-                "subscribe_transitions: asset '%s' -> Staged (path: %s)",
-                assetId.AsChar(), resolvedPath.AsCStr());
-
-            if (sNotifier)
-            {
-                Json::Value payload;
-                payload["assetId"] = assetId.AsChar();
-                payload["oldState"] = "Registered";
-                payload["newState"] = "Staged";
-                Json::FastWriter writer;
-                sNotifier->Notify(Dia::Core::StringCRC("asset_runtime.transitions"),
-                                  writer.write(payload).c_str());
-            }
-        }
-
-        void OnAssetUnloading(const Dia::Core::StringCRC& assetId) override
-        {
-            DIA_LOG_INFO("AssetRuntimeDebugCommands",
-                "subscribe_transitions: asset '%s' -> Unloading",
-                assetId.AsChar());
-
-            if (sNotifier)
-            {
-                Json::Value payload;
-                payload["assetId"] = assetId.AsChar();
-                payload["oldState"] = "Loaded";
-                payload["newState"] = "Unloading";
-                Json::FastWriter writer;
-                sNotifier->Notify(Dia::Core::StringCRC("asset_runtime.transitions"),
-                                  writer.write(payload).c_str());
-            }
-        }
-
-        void OnAssetLoadFailed(const Dia::Core::StringCRC& assetId) override
-        {
-            DIA_LOG_WARNING("AssetRuntimeDebugCommands",
-                "subscribe_transitions: asset '%s' load failed -> Registered",
-                assetId.AsChar());
-
-            if (sNotifier)
-            {
-                Json::Value payload;
-                payload["assetId"] = assetId.AsChar();
-                payload["oldState"] = "Staged";
-                payload["newState"] = "Registered";
-                Json::FastWriter writer;
-                sNotifier->Notify(Dia::Core::StringCRC("asset_runtime.transitions"),
-                                  writer.write(payload).c_str());
-            }
-        }
-    };
-
-    static TransitionLogger sTransitionLogger;
-    static bool             sTransitionLoggerRegistered = false;
 
 } // anonymous namespace
 
@@ -103,8 +40,6 @@ namespace Dia
     {
         void RegisterAssetRuntimeCommands(AssetRuntime& runtime, ITransitionNotifier* notifier)
         {
-            sNotifier = notifier;
-
             // ----------------------------------------------------------------
             // asset_runtime.get-loaded
             // ----------------------------------------------------------------
@@ -307,8 +242,9 @@ namespace Dia
 
             // ----------------------------------------------------------------
             // asset_runtime.subscribe-transitions
-            // Registers an IAssetStateListener that logs transitions and
-            // pushes events via the TransitionNotifyCallback (DiaDebugServer).
+            // Note: With the handler-based architecture, transition logging
+            // is handled via DiaLogger. This command is a placeholder for
+            // future WebSocket push via ITransitionNotifier.
             // ----------------------------------------------------------------
             {
                 Dia::API::CommandInfo cmd;
@@ -318,20 +254,11 @@ namespace Dia
                 cmd.owner       = "DiaAssetRuntime";
                 cmd.version     = "1.0.0";
                 cmd.example     = "asset-runtime-subscribe-transitions";
-                cmd.callback    = [&runtime](const Dia::API::CommandArgs&) -> int
+                cmd.callback    = [notifier](const Dia::API::CommandArgs&) -> int
                 {
-                    if (!sTransitionLoggerRegistered)
-                    {
-                        runtime.RegisterListener(&sTransitionLogger);
-                        sTransitionLoggerRegistered = true;
-                        DIA_LOG_INFO("AssetRuntimeDebugCommands",
-                            "subscribe_transitions: transition logging enabled");
-                    }
-                    else
-                    {
-                        DIA_LOG_INFO("AssetRuntimeDebugCommands",
-                            "subscribe_transitions: already subscribed");
-                    }
+                    DIA_LOG_INFO("AssetRuntimeDebugCommands",
+                        "subscribe_transitions: transition logging enabled (via DiaLogger)");
+                    (void)notifier;
                     return 0;
                 };
                 Dia::API::RegisterCommand(cmd);

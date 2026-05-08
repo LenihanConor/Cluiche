@@ -22,7 +22,8 @@ DiaAssetRuntime answers: "where is this asset, is it currently available, and wh
 - Asset state machine — tracks each asset through `Registered → Staged → Loaded → Unloading` states
 - Stage-level load/unload requests — game code calls `RequestStageLoad(stageId)`; DiaAssetRuntime expands Stage → Assets via `RuntimeStageEntry` and manages state transitions
 - Reference counting for shared assets — `global/` assets referenced by multiple Stages are not unloaded until all referencing Stages release them
-- Event notification — fires `OnAssetReady` / `OnAssetUnloading` events so consuming systems can load/release content
+- Handler dispatch — invokes registered `IAssetTypeHandler` implementations (keyed by asset type prefix) to perform actual load/unload, tracks completion via `IAssetLoadCallback`
+- State query API — debug tools and editors query state via `GetAssetState`, `GetLoadedAssets`, etc. and DiaAPI commands over WebSocket
 - Debug query API — "what's loaded?", "what's pending?", "what does this Stage depend on?"
 - Additive path aliasing — integrates with DiaCore FilePath's path alias system; asset IDs become a first-class alias source alongside existing path store entries. All resolved paths are absolute.
 
@@ -36,26 +37,40 @@ DiaAssetRuntime answers: "where is this asset, is it currently available, and wh
 ## Asset State Machine
 
 ```
-Registered   — known to the registry; path resolvable; content not requested
+Null         — not yet known to the runtime (pre-manifest)
      │
-     │  RequestStageLoad()
+     │  manifest load
      ▼
-Staged       — load requested; path resolved and available; awaiting consumer acknowledgement
+Staged       — known to registry; path resolvable; eligible for loading
      │
-     │  AcknowledgeAssetLoaded()  (called by consumer after content is loaded)
+     │  RequestStageLoad() — handler invoked
      ▼
-Loaded       — content confirmed loaded by consumer; fully active
+Loading      — IAssetTypeHandler::Load called; I/O in progress
      │
-     │  RequestStageUnload()
-     ▼
-Unloading    — unload requested; ref count reached zero; OnAssetUnloading fired
+     ├──[handler success]──> Loaded    — content confirmed in memory; fully active
      │
-     │  AcknowledgeAssetUnloaded()  (called by consumer after content is released)
+     └──[handler failure]──> Failed    — load attempt failed; blocks IsLoadComplete
+                                │
+                                ├──[explicit retry]──> Loading
+                                │
+                                └──[RequestStageUnload]──> Unloaded
+
+Loaded       — content in memory; fully active
+     │
+     │  RequestStageUnload() (ref count reaches zero)
      ▼
-Registered   — back to idle; path still resolvable
+Unloaded     — content released; path still resolvable; eligible for re-staging
+     │
+     │  re-staging (RequestStageLoad again)
+     ▼
+Staged       — (cycle restarts)
 ```
 
-**Reference counting:** Global assets (scope = `global`) are ref-counted across Stage requests. An asset only transitions to `Unloading` when its ref count drops to zero. Stage-scoped assets have a ref count of 1 — owned by their Stage.
+**ASSERT:** `RequestStageUnload` while any asset is `Loading` is a programming error — asserts in debug builds.
+
+**Reference counting:** Global assets (scope = `global`) are ref-counted across Stage requests. An asset only transitions to `Unloaded` when its ref count drops to zero. Stage-scoped assets have a ref count of 1 — owned by their Stage.
+
+**Handler dispatch:** Asset type is derived from the asset ID prefix (before first `.`). A registered `IAssetTypeHandler` for that type prefix performs the actual load/unload. See Feature 7 (Asset Lifecycle Management) for full design.
 
 ## Public API
 
@@ -67,7 +82,8 @@ Registered   — back to idle; path still resolvable
 | `RuntimeAssetEntry` | Lightweight runtime record: StringCRC ID, scope (`global`/`stage`), absolute deploy path. No source path, no content hash, no tags, no type metadata. |
 | `RuntimeStageEntry` | Stage record: StringCRC stage ID, list of member asset IDs. Used by `RequestStageLoad` to expand stage → assets. |
 | `RuntimeManifestLoader` | Deserializes `assets.runtime.json` into the runtime asset table and stage table. Standalone — no dependency on DiaAssetCatalogue's `CatalogueManifestSerializer`. |
-| `IAssetStateListener` | Interface for consuming systems to subscribe to state transitions. |
+| `IAssetTypeHandler` | Interface for systems that perform actual asset I/O. Registered by type prefix. `Load`/`Unload` methods. |
+| `IAssetLoadCallback` | Callback interface passed to handlers. `OnLoadComplete`/`OnLoadFailed`. Implemented internally by AssetRuntime. |
 | `AssetStateQuery` | Read-only query handle returned by debug API. |
 
 ### Runtime Manifest Format (`assets.runtime.json`)
@@ -159,20 +175,33 @@ namespace Dia::AssetRuntime
 {
     enum class AssetState
     {
-        Registered,
+        Null,
         Staged,
+        Loading,
         Loaded,
-        Unloading
+        Failed,
+        Unloaded
     };
 
-    class IAssetStateListener
+    class IAssetLoadCallback
     {
     public:
-        virtual void OnAssetReady(const Dia::Core::StringCRC& assetId,
-                                  const Dia::Core::Containers::String512& resolvedPath) = 0;
-        virtual void OnAssetUnloading(const Dia::Core::StringCRC& assetId) = 0;
-        virtual void OnAssetLoadFailed(const Dia::Core::StringCRC& assetId) = 0;
+        virtual void OnLoadComplete(const Dia::Core::StringCRC& assetId) = 0;
+        virtual void OnLoadFailed(const Dia::Core::StringCRC& assetId, const char* reason) = 0;
     };
+
+    class IAssetTypeHandler
+    {
+    public:
+        virtual ~IAssetTypeHandler() = default;
+        virtual void Load(const Dia::Core::StringCRC& assetId,
+                          const Dia::Core::Containers::String512& resolvedPath,
+                          IAssetLoadCallback* callback) = 0;
+        virtual void Unload(const Dia::Core::StringCRC& assetId) = 0;
+    };
+
+    // IAssetStateListener removed — handlers own load/unload; debug tools use
+    // GetAssetState / DiaAPI commands for observation.
 
     class AssetRuntime
     {
@@ -188,18 +217,23 @@ namespace Dia::AssetRuntime
         void RequestStageLoad(const Dia::Core::StringCRC& stageId);
         void RequestStageUnload(const Dia::Core::StringCRC& stageId);
 
-        // Consumer acknowledgement
-        void AcknowledgeAssetLoaded(const Dia::Core::StringCRC& assetId);
-        void AcknowledgeAssetUnloaded(const Dia::Core::StringCRC& assetId);
-        void AcknowledgeAssetLoadFailed(const Dia::Core::StringCRC& assetId);
+        // Type handler registration (keyed by asset ID prefix)
+        void RegisterTypeHandler(const char* typePrefix, IAssetTypeHandler* handler);
+        void UnregisterTypeHandler(const char* typePrefix);
+
+        // Explicit retry for failed assets
+        void RetryAssetLoad(const Dia::Core::StringCRC& assetId);
+
+        // Load progress (loaded/total/failed counts for a stage)
+        struct LoadProgress { unsigned int loaded; unsigned int total; unsigned int failed; };
+        LoadProgress GetLoadProgress(const Dia::Core::StringCRC& stageId) const;
 
         // State queries
         AssetState GetAssetState(const Dia::Core::StringCRC& assetId) const;
         bool IsAssetReady(const Dia::Core::StringCRC& assetId) const;
 
-        // Event subscription
-        void RegisterListener(IAssetStateListener* listener);
-        void UnregisterListener(IAssetStateListener* listener);
+        // Type handler registration (see above)
+        // IAssetStateListener removed — debug tools use query API / DiaAPI commands
 
         // Teardown — fire OnAssetUnloading for all non-Registered assets, reset state
         void Reset();
@@ -226,25 +260,30 @@ namespace Dia::AssetRuntime
 ### Usage Pattern
 
 ```cpp
-// Startup
+// Startup — register handlers by asset type prefix
 Dia::AssetRuntime::AssetRuntime runtime;
 runtime.LoadManifest(manifestPath);
-runtime.RegisterListener(&myGraphicsSystem);
+runtime.RegisterTypeHandler("texture", &mySFMLTextureHandler);
+runtime.RegisterTypeHandler("ui", &myUltralightHandler);
 
-// Stage transition — one call loads all Assets in the Stage
+// Stage transition — dispatches Load to handlers for each asset
 runtime.RequestStageLoad(StringCRC("stage.gameplay"));
 
-// In IAssetStateListener::OnAssetReady — consumer loads content
-void MyGraphicsSystem::OnAssetReady(const StringCRC& assetId, const String512& path)
+// In IAssetTypeHandler::Load — system performs actual I/O
+void SFMLTextureHandler::Load(const StringCRC& assetId, const String512& path,
+                              IAssetLoadCallback* callback)
 {
-    if (assetId == StringCRC("texture.player_ship"))
-        mTextures.Load(assetId, path);
+    bool ok = mTextures.LoadFromFile(path.AsCStr());
+    if (ok)
+        callback->OnLoadComplete(assetId);
+    else
+        callback->OnLoadFailed(assetId);
 }
 
 // Path query without lifecycle management
 const String512* path = runtime.ResolveAssetPath(StringCRC("config.ship_stats"));
 
-// Stage transition — unload all Assets owned by this Stage
+// Stage transition — calls Unload on handlers, releases content
 runtime.RequestStageUnload(StringCRC("stage.gameplay"));
 ```
 
@@ -272,14 +311,15 @@ No dependency on DiaApplication, DiaGraphics, DiaSFML, DiaInput, or any renderin
 | 4 | Event Notification | S | `IAssetStateListener`, `RegisterListener/UnregisterListener`, `OnAssetReady`/`OnAssetUnloading` dispatch | @docs/specs/features/dia/diaassetruntime/event-notification.md | Approved |
 | 5 | Debug Query API | S | `GetLoadedAssets`, `GetStagedAssets`, `GetStageDependencies` | @docs/specs/features/dia/diaassetruntime/debug-query-api.md | Approved |
 | 6 | DiaAPI Debug Commands | S | Register DiaAPI commands (`asset_runtime.get_loaded`, `asset_runtime.get_staged`, `asset_runtime.get_state`, `asset_runtime.get_stage_deps`) so DiaDebugServer can expose runtime state to editors over WebSocket | @docs/specs/features/dia/diaassetruntime/diaapi-debug-commands.md | Approved |
+| 7 | Asset Lifecycle Management | L | Truthful load/unload state machine (`Loading`, `Failed` states), `IAssetTypeHandler` dispatch by asset type prefix, module-lifecycle integration for deferred loads | @docs/specs/features/dia/diaassetruntime/asset-lifecycle-management.md | Draft |
 
-**Build order:** 1 → 2 → 3 → 4 → 5 → 6
+**Build order:** 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 ## Design Constraints
 
 - **Pure C++ library, no DiaApplication dependency.** Game code wires DiaAssetRuntime into a Module. DiaAssetRuntime has no knowledge of ProcessingUnits or Phases.
 - **Additive over DiaCore FilePath.** Asset IDs are registered as path aliases; existing game code using FilePath directly is unaffected. All resolved paths are absolute, rooted at the deploy directory.
-- **Does not load content.** DiaAssetRuntime resolves paths and manages state. Actual bytes-to-memory loading is the consumer's responsibility, triggered by `OnAssetReady`.
+- **Does not load content directly.** DiaAssetRuntime dispatches to `IAssetTypeHandler` implementations which perform actual I/O. Handlers live in game code, not DiaAssetRuntime — the runtime coordinates the lifecycle but owns no format-specific loading logic.
 - **Reads `assets.runtime.json`, not `assets.catalogue.json`.** The runtime manifest is generated by DiaAssetPipeline and contains deploy paths and stage membership only — no source paths, content hashes, tags, or type metadata.
 - **No dependency on DiaAssetCatalogue.** DiaAssetRuntime owns its own data types (`RuntimeAssetEntry`, `RuntimeStageEntry`) and its own deserializer (`RuntimeManifestLoader`). The two manifest formats are independent; the pipeline transforms one into the other. This keeps the game binary free of build-time type framework and authoring machinery.
 - **Stage-level granularity.** Game code operates on Stages, not individual assets. Asset-level state is an implementation detail.
@@ -324,7 +364,7 @@ No dependency on DiaApplication, DiaGraphics, DiaSFML, DiaInput, or any renderin
 | # | Section | Question | Answer |
 |---|---------|----------|--------|
 | 1 | State machine | What happens if `RequestStageLoad` is called for a Stage that is already `Loaded`? | Increment ref counts on its assets, no state change, no events fired. Idempotent for already-loaded assets. |
-| 2 | State machine | What happens if `RequestStageUnload` is called before consumers have acknowledged all `OnAssetReady` events (asset in `Staged` state)? | Transition to `Unloading` immediately; fire `OnAssetUnloading`. Consumer must handle receiving `OnAssetUnloading` before they finished loading — they should abort their load and call `AcknowledgeAssetUnloaded`. |
+| 2 | State machine | What happens if `RequestStageUnload` is called while assets are in `Loading` state? | ASSERT in debug builds — this is a programming error in the game's flow logic (AC5 of Asset Lifecycle Management feature). Game code must wait for `IsLoadComplete()` or handle failure before unloading a stage. Assets in `Staged` (not yet dispatched to handler) can be unloaded safely. |
 | 3 | Listeners | Should listeners be called synchronously on the calling thread, or queued for the next update? | Synchronously for now — DiaAssetRuntime is a library with no thread model of its own. If thread safety is needed, the Module wrapper above DiaAssetRuntime owns that synchronization. |
 | 4 | Path resolution | Should `ResolveAssetPath` return null for assets not in `Loaded` or `Staged` state, or always return the path if the asset is registered? | Always return the path if the asset is registered — path resolution is independent of load state. Game code may need to know the path before requesting a load (e.g. for streaming decisions). Returned path is always absolute, rooted at the deploy directory. |
 | 5 | Manifest location | How does DiaAssetRuntime know the manifest path? Is it hardcoded, passed at startup, or resolved via DiaCore FilePath alias? | Passed at startup via `LoadManifest(const FilePath& manifestPath)`. Caller (game code or Module wrapper) resolves the path to `assets.runtime.json` in the deploy directory. No hardcoding in DiaAssetRuntime. |

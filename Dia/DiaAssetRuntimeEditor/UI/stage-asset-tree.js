@@ -37,7 +37,7 @@
                 for (var c = 0; c < children.length; c++) {
                     var child = children[c];
                     var cId = (typeof child === 'string') ? child : (child.id || child);
-                    var cState = (typeof child === 'object' && child.state) ? child.state : 'Registered';
+                    var cState = (typeof child === 'object' && child.state) ? child.state : 'Null';
                     var cSel = (cId === treeData.selectedAssetId) ? ' selected' : '';
                     html += '<div class="asset-node' + cSel + '" data-asset="' + escapeAttr(cId) + '">';
                     html += '<span class="state-dot ' + cState + '"></span>';

@@ -2,18 +2,30 @@
 
 #include <DiaApplication/ApplicationModule.h>
 #include <DiaAssetRuntime/AssetRuntime.h>
-#include <DiaAssetRuntime/IAssetStateListener.h>
+#include <DiaAssetRuntime/IAssetTypeHandler.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Strings/String32.h>
 #include <DiaCore/Strings/String512.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
+#include "CluicheKernel/ApplicationFlow/Modules/SFMLTextureHandler.h"
+#include "CluicheKernel/ApplicationFlow/Modules/UltralightUIHandler.h"
+
 namespace Cluiche
 {
 	namespace Main
 	{
-		class AssetServiceModule : public Dia::Application::Module,
-		                           public Dia::AssetRuntime::IAssetStateListener
+		class DefaultAssetHandler : public Dia::AssetRuntime::IAssetTypeHandler
+		{
+		public:
+			virtual void Load(const Dia::Core::StringCRC& assetId,
+			                  const Dia::Core::Containers::String512& resolvedPath,
+			                  Dia::AssetRuntime::IAssetLoadCallback* callback) override;
+
+			virtual void Unload(const Dia::Core::StringCRC& assetId) override;
+		};
+
+		class AssetServiceModule : public Dia::Application::Module
 		{
 		public:
 			static const Dia::Core::StringCRC kTypeId;
@@ -33,15 +45,10 @@ namespace Cluiche
 			virtual StateObject::OpertionResponse DoStart(const IStartData* startData) override;
 			virtual void DoStop() override;
 
-			// IAssetStateListener
-			virtual void OnAssetReady(const Dia::Core::StringCRC& assetId,
-			                          const Dia::Core::Containers::String512& resolvedPath) override;
-			virtual void OnAssetUnloading(const Dia::Core::StringCRC& assetId) override;
-			virtual void OnAssetLoadFailed(const Dia::Core::StringCRC& assetId) override;
-
 			void RegisterGlobalAliases();
 			void RegisterStageAliases(const char* diastagePath);
 			void UnregisterStageAliases();
+			void EnsureHandlerDependencies();
 
 			struct PathAliasEntry
 			{
@@ -56,14 +63,17 @@ namespace Cluiche
 			};
 
 			Dia::AssetRuntime::AssetRuntime mRuntime;
+			DefaultAssetHandler mDefaultHandler;
+			SFMLTextureHandler mTextureHandler;
+			UltralightUIHandler mUIHandler;
 			Dia::Core::StringCRC mCurrentLoadStageId;
-			unsigned int mPendingAcknowledgements;
 
 			Dia::Core::Containers::DynamicArrayC<PathAliasEntry, 16> mGlobalAliases;
 			Dia::Core::Containers::DynamicArrayC<PathAliasEntry, 16> mStageAliases;
 			Dia::Core::Containers::DynamicArrayC<StagePathEntry, 8> mStagePathMap;
 			Dia::Core::Containers::String512 mUltralightResourcePrefix;
 			Dia::Core::Containers::String512 mDeployRoot;
+			bool mHandlerDependenciesWired;
 		};
 	}
 }

@@ -28,8 +28,8 @@ namespace Dia
 				TransitionLogEntry()
 					: mType(LogEntryType::kTransition)
 					, mAssetId()
-					, mOldState(AssetStateEnum::kRegistered)
-					, mNewState(AssetStateEnum::kRegistered)
+					, mOldState(AssetStateEnum::kNull)
+					, mNewState(AssetStateEnum::kNull)
 					, mTimestamp(0)
 				{}
 			};

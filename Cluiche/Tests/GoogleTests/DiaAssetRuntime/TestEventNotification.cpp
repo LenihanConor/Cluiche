@@ -7,7 +7,7 @@
 
 #include <DiaAssetRuntime/AssetRuntime.h>
 #include <DiaAssetRuntime/AssetState.h>
-#include <DiaAssetRuntime/IAssetStateListener.h>
+#include <DiaAssetRuntime/IAssetTypeHandler.h>
 
 #include <DiaCore/FilePath/PathStore.h>
 #include <DiaCore/FilePath/FilePath.h>
@@ -84,6 +84,16 @@ namespace
         ]
     })";
 
+    static const char* kMultiTypeJson = R"({
+        "assets": [
+            {"id": "texture.player", "scope": "stage",  "deploy_path": "player.png"},
+            {"id": "audio.bgm",     "scope": "global", "deploy_path": "bgm.ogg"}
+        ],
+        "stages": [
+            {"id": "stage.s1", "assets": ["texture.player", "audio.bgm"]}
+        ]
+    })";
+
     bool LoadTwoAssetRuntimeF4(Dia::AssetRuntime::AssetRuntime& runtime, const char* filename)
     {
         char filePath[512];
@@ -92,73 +102,44 @@ namespace
         return runtime.LoadManifest(MakeF4FilePath(filename));
     }
 
-    // ---------------------------------------------------------------------------
-    // Recording listener
-    // ---------------------------------------------------------------------------
-    struct RecordingListener : public Dia::AssetRuntime::IAssetStateListener
+    bool LoadMultiTypeRuntime(Dia::AssetRuntime::AssetRuntime& runtime, const char* filename)
     {
-        struct ReadyEvent
-        {
-            Dia::Core::StringCRC assetId;
-            char                 path[512];
-        };
+        char filePath[512];
+        if (!WriteTempFileF4(filename, kMultiTypeJson, filePath, sizeof(filePath)))
+            return false;
+        return runtime.LoadManifest(MakeF4FilePath(filename));
+    }
 
+    // Handler that records which assets it was asked to load
+    struct RecordingHandler : public Dia::AssetRuntime::IAssetTypeHandler
+    {
         static const unsigned int kMaxEvents = 32;
+        Dia::Core::StringCRC loadedIds[kMaxEvents];
+        unsigned int loadCount = 0;
+        Dia::Core::StringCRC unloadedIds[kMaxEvents];
+        unsigned int unloadCount = 0;
+        bool shouldFail = false;
 
-        ReadyEvent   readyEvents[kMaxEvents];
-        unsigned int readyCount = 0;
-
-        Dia::Core::StringCRC unloadingIds[kMaxEvents];
-        unsigned int         unloadingCount = 0;
-
-        Dia::Core::StringCRC loadFailedIds[kMaxEvents];
-        unsigned int         loadFailedCount = 0;
-
-        void OnAssetReady(const Dia::Core::StringCRC& assetId,
-                          const Dia::Core::Containers::String512& resolvedPath) override
+        void Load(const Dia::Core::StringCRC& assetId,
+                  const Dia::Core::Containers::String512&,
+                  Dia::AssetRuntime::IAssetLoadCallback* callback) override
         {
-            if (readyCount < kMaxEvents)
-            {
-                readyEvents[readyCount].assetId = assetId;
-                strncpy_s(readyEvents[readyCount].path, sizeof(readyEvents[readyCount].path), resolvedPath.AsCStr(), _TRUNCATE);
-                readyCount++;
-            }
+            if (loadCount < kMaxEvents)
+                loadedIds[loadCount] = assetId;
+            loadCount++;
+
+            if (shouldFail)
+                callback->OnLoadFailed(assetId, "forced failure");
+            else
+                callback->OnLoadComplete(assetId);
         }
 
-        void OnAssetUnloading(const Dia::Core::StringCRC& assetId) override
+        void Unload(const Dia::Core::StringCRC& assetId) override
         {
-            if (unloadingCount < kMaxEvents)
-                unloadingIds[unloadingCount++] = assetId;
-        }
-
-        void OnAssetLoadFailed(const Dia::Core::StringCRC& assetId) override
-        {
-            if (loadFailedCount < kMaxEvents)
-                loadFailedIds[loadFailedCount++] = assetId;
-        }
-    };
-
-    // Listener that unregisters itself during OnAssetReady dispatch.
-    struct SelfUnregisteringListener : public Dia::AssetRuntime::IAssetStateListener
-    {
-        Dia::AssetRuntime::AssetRuntime* runtime = nullptr;
-        unsigned int readyCount   = 0;
-        unsigned int unloadCount  = 0;
-
-        void OnAssetReady(const Dia::Core::StringCRC&,
-                          const Dia::Core::Containers::String512&) override
-        {
-            readyCount++;
-            if (runtime)
-                runtime->UnregisterListener(this);
-        }
-
-        void OnAssetUnloading(const Dia::Core::StringCRC&) override
-        {
+            if (unloadCount < kMaxEvents)
+                unloadedIds[unloadCount] = assetId;
             unloadCount++;
         }
-
-        void OnAssetLoadFailed(const Dia::Core::StringCRC&) override {}
     };
 
 } // anonymous namespace
@@ -166,190 +147,135 @@ namespace
 // ---------------------------------------------------------------------------
 // Fixture
 // ---------------------------------------------------------------------------
-class EventNotificationTest : public ::testing::Test
+class HandlerDispatchTest : public ::testing::Test
 {
 protected:
     void SetUp() override { SetupF4Alias(); }
 };
 
 // ---------------------------------------------------------------------------
-// Tests — OnAssetReady
+// Tests — handler dispatch on load
 // ---------------------------------------------------------------------------
 
-TEST_F(EventNotificationTest, SingleListener_ReceivesOnAssetReady)
+TEST_F(HandlerDispatchTest, SingleHandler_ReceivesAllAssetsOfType)
 {
     Dia::AssetRuntime::AssetRuntime runtime;
-    ASSERT_TRUE(LoadTwoAssetRuntimeF4(runtime, "f4_ready_single.json"));
+    ASSERT_TRUE(LoadTwoAssetRuntimeF4(runtime, "f4_dispatch_single.json"));
 
-    RecordingListener listener;
-    runtime.RegisterListener(&listener);
+    RecordingHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
     runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
 
-    EXPECT_EQ(listener.readyCount, 2u); // both assets staged
+    EXPECT_EQ(handler.loadCount, 2u);
 }
 
-TEST_F(EventNotificationTest, OnAssetReady_PathContainsFilename)
+TEST_F(HandlerDispatchTest, MultipleHandlers_EachReceivesOwnType)
 {
     Dia::AssetRuntime::AssetRuntime runtime;
-    ASSERT_TRUE(LoadTwoAssetRuntimeF4(runtime, "f4_ready_path.json"));
+    ASSERT_TRUE(LoadMultiTypeRuntime(runtime, "f4_multi_handler.json"));
 
-    RecordingListener listener;
-    runtime.RegisterListener(&listener);
+    RecordingHandler textureHandler, audioHandler;
+    runtime.RegisterTypeHandler("texture", &textureHandler);
+    runtime.RegisterTypeHandler("audio", &audioHandler);
     runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
 
-    bool foundAlpha = false;
-    for (unsigned int i = 0; i < listener.readyCount; ++i)
-    {
-        if (listener.readyEvents[i].assetId == Dia::Core::StringCRC("asset.alpha"))
-        {
-            EXPECT_NE(strstr(listener.readyEvents[i].path, "alpha.png"), nullptr);
-            foundAlpha = true;
-        }
-    }
-    EXPECT_TRUE(foundAlpha);
-}
-
-TEST_F(EventNotificationTest, MultipleListeners_AllNotifiedInOrder)
-{
-    Dia::AssetRuntime::AssetRuntime runtime;
-    ASSERT_TRUE(LoadTwoAssetRuntimeF4(runtime, "f4_multi_listener.json"));
-
-    RecordingListener l1, l2;
-    runtime.RegisterListener(&l1);
-    runtime.RegisterListener(&l2);
-    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
-
-    EXPECT_EQ(l1.readyCount, 2u);
-    EXPECT_EQ(l2.readyCount, 2u);
+    EXPECT_EQ(textureHandler.loadCount, 1u);
+    EXPECT_EQ(audioHandler.loadCount, 1u);
+    EXPECT_EQ(textureHandler.loadedIds[0], Dia::Core::StringCRC("texture.player"));
+    EXPECT_EQ(audioHandler.loadedIds[0], Dia::Core::StringCRC("audio.bgm"));
 }
 
 // ---------------------------------------------------------------------------
-// Tests — OnAssetUnloading
+// Tests — handler dispatch on unload
 // ---------------------------------------------------------------------------
 
-TEST_F(EventNotificationTest, SingleListener_ReceivesOnAssetUnloading)
+TEST_F(HandlerDispatchTest, Unload_DispatchesToCorrectHandler)
 {
     Dia::AssetRuntime::AssetRuntime runtime;
-    ASSERT_TRUE(LoadTwoAssetRuntimeF4(runtime, "f4_unloading_single.json"));
+    ASSERT_TRUE(LoadMultiTypeRuntime(runtime, "f4_unload_dispatch.json"));
 
-    RecordingListener listener;
-    runtime.RegisterListener(&listener);
+    RecordingHandler textureHandler, audioHandler;
+    runtime.RegisterTypeHandler("texture", &textureHandler);
+    runtime.RegisterTypeHandler("audio", &audioHandler);
     runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
     runtime.RequestStageUnload(Dia::Core::StringCRC("stage.s1"));
 
-    EXPECT_EQ(listener.unloadingCount, 2u);
-}
-
-TEST_F(EventNotificationTest, NoEvents_ForAlreadyActiveAssets_OnReload)
-{
-    // Double load: assets already in Staged state; second load increments ref
-    // count but does NOT fire OnAssetReady again (no Registered->Staged transition).
-    Dia::AssetRuntime::AssetRuntime runtime;
-    ASSERT_TRUE(LoadTwoAssetRuntimeF4(runtime, "f4_no_refire.json"));
-
-    RecordingListener listener;
-    runtime.RegisterListener(&listener);
-    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
-    unsigned int afterFirst = listener.readyCount;
-
-    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
-    EXPECT_EQ(listener.readyCount, afterFirst); // no new events
+    EXPECT_EQ(textureHandler.unloadCount, 1u);
+    EXPECT_EQ(audioHandler.unloadCount, 1u);
+    EXPECT_EQ(textureHandler.unloadedIds[0], Dia::Core::StringCRC("texture.player"));
+    EXPECT_EQ(audioHandler.unloadedIds[0], Dia::Core::StringCRC("audio.bgm"));
 }
 
 // ---------------------------------------------------------------------------
-// Tests — unregister during dispatch
+// Tests — no duplicate dispatch on double load
 // ---------------------------------------------------------------------------
 
-TEST_F(EventNotificationTest, UnregisterDuringDispatch_SafeNoCrash)
+TEST_F(HandlerDispatchTest, DoubleLoad_NoRedispatch)
 {
     Dia::AssetRuntime::AssetRuntime runtime;
-    ASSERT_TRUE(LoadTwoAssetRuntimeF4(runtime, "f4_unregister_dispatch.json"));
+    ASSERT_TRUE(LoadTwoAssetRuntimeF4(runtime, "f4_no_redispatch.json"));
 
-    SelfUnregisteringListener selfRemover;
-    selfRemover.runtime = &runtime;
-
-    RecordingListener after;
-
-    runtime.RegisterListener(&selfRemover);
-    runtime.RegisterListener(&after);
+    RecordingHandler handler;
+    runtime.RegisterTypeHandler("asset", &handler);
+    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
+    unsigned int afterFirst = handler.loadCount;
 
     runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
-
-    // selfRemover received at least the first event then unregistered itself.
-    EXPECT_GE(selfRemover.readyCount, 1u);
-    // after should still receive all events for this stage load.
-    EXPECT_EQ(after.readyCount, 2u);
+    EXPECT_EQ(handler.loadCount, afterFirst); // no new dispatches
 }
 
 // ---------------------------------------------------------------------------
-// Tests — duplicate registration
+// Tests — no handler registered
 // ---------------------------------------------------------------------------
 
-TEST_F(EventNotificationTest, DuplicateRegistration_NoDoubleNotify)
+TEST_F(HandlerDispatchTest, NoHandler_StageLoadDoesNotCrash)
 {
     Dia::AssetRuntime::AssetRuntime runtime;
-    ASSERT_TRUE(LoadTwoAssetRuntimeF4(runtime, "f4_dup_register.json"));
-
-    RecordingListener listener;
-    runtime.RegisterListener(&listener);
-    runtime.RegisterListener(&listener); // duplicate — should warn, not double-add
+    ASSERT_TRUE(LoadTwoAssetRuntimeF4(runtime, "f4_no_handler.json"));
 
     runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
-
-    EXPECT_EQ(listener.readyCount, 2u); // exactly 2, not 4
-}
-
-// ---------------------------------------------------------------------------
-// Tests — no listeners registered
-// ---------------------------------------------------------------------------
-
-TEST_F(EventNotificationTest, NoListeners_StageLoadDoesNotCrash)
-{
-    Dia::AssetRuntime::AssetRuntime runtime;
-    ASSERT_TRUE(LoadTwoAssetRuntimeF4(runtime, "f4_no_listeners.json"));
-
-    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
-    SUCCEED();
-}
-
-// ---------------------------------------------------------------------------
-// Tests — unregister before events
-// ---------------------------------------------------------------------------
-
-TEST_F(EventNotificationTest, UnregisterBeforeLoad_ReceivesNoEvents)
-{
-    Dia::AssetRuntime::AssetRuntime runtime;
-    ASSERT_TRUE(LoadTwoAssetRuntimeF4(runtime, "f4_unreg_before.json"));
-
-    RecordingListener listener;
-    runtime.RegisterListener(&listener);
-    runtime.UnregisterListener(&listener);
-
-    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
-
-    EXPECT_EQ(listener.readyCount, 0u);
-}
-
-// ---------------------------------------------------------------------------
-// Tests — OnAssetLoadFailed dispatch
-// ---------------------------------------------------------------------------
-
-TEST_F(EventNotificationTest, OnAssetLoadFailed_Dispatched_WhenLoadFailsFromStaged)
-{
-    Dia::AssetRuntime::AssetRuntime runtime;
-    ASSERT_TRUE(LoadTwoAssetRuntimeF4(runtime, "f4_loadfail_dispatch.json"));
-
-    RecordingListener listener;
-    runtime.RegisterListener(&listener);
-
-    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
-    EXPECT_EQ(listener.readyCount, 2u);
-
-    runtime.AcknowledgeAssetLoadFailed(Dia::Core::StringCRC("asset.alpha"));
-
-    EXPECT_EQ(listener.loadFailedCount, 1u);
-    EXPECT_EQ(listener.loadFailedIds[0], Dia::Core::StringCRC("asset.alpha"));
-    // Asset is back to Registered
+    // Assets transition to Failed (no handler)
     EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.alpha")),
-              Dia::AssetRuntime::AssetState::Registered);
+              Dia::AssetRuntime::AssetState::Failed);
+}
+
+// ---------------------------------------------------------------------------
+// Tests — handler failure path
+// ---------------------------------------------------------------------------
+
+TEST_F(HandlerDispatchTest, HandlerFailure_AssetInFailedState)
+{
+    Dia::AssetRuntime::AssetRuntime runtime;
+    ASSERT_TRUE(LoadTwoAssetRuntimeF4(runtime, "f4_handler_fail.json"));
+
+    RecordingHandler handler;
+    handler.shouldFail = true;
+    runtime.RegisterTypeHandler("asset", &handler);
+    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
+
+    EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("asset.alpha")),
+              Dia::AssetRuntime::AssetState::Failed);
+    EXPECT_FALSE(runtime.IsLoadComplete(Dia::Core::StringCRC("stage.s1")));
+}
+
+// ---------------------------------------------------------------------------
+// Tests — type prefix extraction
+// ---------------------------------------------------------------------------
+
+TEST_F(HandlerDispatchTest, TypePrefix_ExtractedFromAssetId)
+{
+    // Manifest has "texture.player" — prefix is "texture"
+    Dia::AssetRuntime::AssetRuntime runtime;
+    ASSERT_TRUE(LoadMultiTypeRuntime(runtime, "f4_prefix.json"));
+
+    RecordingHandler textureHandler;
+    runtime.RegisterTypeHandler("texture", &textureHandler);
+    // Don't register audio handler — it should go to Failed
+    runtime.RequestStageLoad(Dia::Core::StringCRC("stage.s1"));
+
+    EXPECT_EQ(textureHandler.loadCount, 1u);
+    EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("texture.player")),
+              Dia::AssetRuntime::AssetState::Loaded);
+    EXPECT_EQ(runtime.GetAssetState(Dia::Core::StringCRC("audio.bgm")),
+              Dia::AssetRuntime::AssetState::Failed);
 }

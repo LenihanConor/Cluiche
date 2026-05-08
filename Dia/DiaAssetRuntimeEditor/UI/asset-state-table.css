@@ -163,14 +163,24 @@ tr.selected {
     color: #cccc6e;
 }
 
-.state-badge.Registered {
+.state-badge.Null {
     background: #3c3c3c;
     color: #999;
 }
 
-.state-badge.Unloading {
+.state-badge.Loading {
+    background: #2d4f5f;
+    color: #6eaacc;
+}
+
+.state-badge.Failed {
     background: #5f2d2d;
     color: #cc6e6e;
+}
+
+.state-badge.Unloaded {
+    background: #4a3c2d;
+    color: #cc9e6e;
 }
 
 .status-bar {

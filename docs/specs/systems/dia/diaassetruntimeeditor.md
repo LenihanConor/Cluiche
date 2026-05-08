@@ -17,7 +17,7 @@ DiaAssetRuntimeEditor answers: "what is the game's asset state right now?"
 ## Responsibilities
 
 **Owns:**
-- Live asset state display — per-asset state (Registered, Staged, Loaded, Unloading) updated in real-time via WebSocket subscription
+- Live asset state display — per-asset state (Null, Staged, Loading, Loaded, Failed, Unloaded) updated in real-time via WebSocket subscription
 - Stage/Asset tree view — shows which Stages are loaded and each Stage's member assets with current state
 - Global asset ref count display — shows ref count per global asset and which Stages hold references
 - State transition log — scrollable history of state transitions (asset ID, old state → new state, timestamp)
@@ -67,6 +67,8 @@ These commands are registered by DiaAssetRuntime Feature 6 in the game process. 
 |---------|----------|
 | `asset_runtime.get_loaded` | Array of asset IDs currently in `Loaded` state |
 | `asset_runtime.get_staged` | Array of asset IDs currently in `Staged` state |
+| `asset_runtime.get_loading` | Array of asset IDs currently in `Loading` state |
+| `asset_runtime.get_failed` | Array of asset IDs currently in `Failed` state (with error info) |
 | `asset_runtime.get_state { assetId }` | State, scope, ref count, deploy path for one asset |
 | `asset_runtime.get_stage_deps { stageId }` | Asset IDs for a loaded Stage |
 | `asset_runtime.get_all_states` | Full snapshot: all assets with state, scope, ref count |
@@ -76,10 +78,10 @@ These commands are registered by DiaAssetRuntime Feature 6 in the game process. 
 
 | Panel | Description |
 |-------|-------------|
-| Asset State Table | Filterable table of all known assets — ID, state, scope, ref count, deploy path. Color-coded by state. |
-| Stage/Asset Tree | Hierarchical tree: Stages → Assets. Expand a Stage to see its member assets and their states. |
+| Asset State Table | Filterable table of all known assets — ID, state, scope, ref count, deploy path. Color-coded by state (Loading=yellow, Loaded=green, Failed=red, Staged=grey). |
+| Stage/Asset Tree | Hierarchical tree: Stages → Assets. Expand a Stage to see its member assets and their states. Loading/Failed indicators prominent. |
 | Ref Count Inspector | Selected global asset's ref count breakdown — which Stages hold references. |
-| Transition Log | Scrollable, filterable log of state transitions. Newest at top. Pause/resume. |
+| Transition Log | Scrollable, filterable log of state transitions. Newest at top. Pause/resume. Failed transitions highlighted. |
 
 ## Dependencies
 
