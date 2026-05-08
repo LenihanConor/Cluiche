@@ -11,7 +11,7 @@
 #include <DiaWindow/Interface/IWindow.h>
 
 #include "DiaSFML/InputSource.h"
-#include "DiaSFML/TextureManager.h"
+#include "DiaSFML/TextureHandler.h"
 
 #ifdef DIA_DEBUG
 #include "DiaSFML/SFMLImGuiBackend.h"
@@ -50,8 +50,8 @@ namespace Dia
 			virtual void EndFrame(const Dia::Graphics::FrameData& nextFrame)override;
 
 			// Texture management
-			unsigned int LoadTexture(const char* path);
 			const sf::Texture* GetTexture(unsigned int textureId) const;
+			TextureHandler* GetTextureHandler();
 
 			// Inherited from IWindow
 			virtual void Initialize(const Window::IWindow::Settings& settings) override;
@@ -84,7 +84,7 @@ namespace Dia
 			sf::Texture* mUIOverlayTexture;		//TODO: Replace this with a DIA texture when i create one
 
 			// Texture management
-			TextureManager mTextureManager;		// Manages texture loading and caching
+			TextureHandler mTextureHandler;
 
 #ifdef DIA_DEBUG
 			// ImGui backend -- initialised in constructor, registered with DiaImGuiManager

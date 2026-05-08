@@ -440,6 +440,7 @@ namespace Dia
 				, mUISystemImpl(nullptr)
 			{
 				mUISystemImpl = DIA_NEW(UISystemImpl(windowContext));
+				mUIHandler.SetUISystem(this);
 			}
 
 			//-------------------------------------------------------------------
@@ -447,6 +448,12 @@ namespace Dia
 			{
 				DIA_ASSERT(mUISystemImpl, "mUISystemImpl is NULL");
 				DIA_DELETE(mUISystemImpl);
+			}
+
+			//-------------------------------------------------------------------
+			UIHandler* UISystem::GetUIHandler()
+			{
+				return &mUIHandler;
 			}
 
 			//-------------------------------------------------------------------

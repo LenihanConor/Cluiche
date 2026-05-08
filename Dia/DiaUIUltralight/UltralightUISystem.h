@@ -4,6 +4,7 @@
 #pragma once
 
 #include <DiaUI/IUISystem.h>
+#include "DiaUIUltralight/UIHandler.h"
 
 #include <mutex>
 
@@ -50,10 +51,13 @@ namespace Dia
 				virtual void InjectMouseClick(Dia::Input::EMouseButton button, int x, int y) override;
 				virtual void InjectMouseWheel(int scroll_vert, int scroll_horz) override;
 
+				UIHandler* GetUIHandler();
+
 			private:
 				bool mIsPageLoaded;
 				mutable std::mutex mSystemMutex;
 				UISystemImpl* mUISystemImpl;
+				UIHandler mUIHandler;
 			};
 		}
 	}

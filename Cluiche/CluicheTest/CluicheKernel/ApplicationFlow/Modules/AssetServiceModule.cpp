@@ -11,6 +11,7 @@
 #include <DiaGame/DiaGameManifest.h>
 #include <DiaGame/DiaGameManifestLoader.h>
 #include <DiaSFML/RenderWindow.h>
+#include <DiaUIUltralight/UltralightUISystem.h>
 
 #include <DiaApplication/TypeRegistry/RegistrationMacros.h>
 
@@ -68,28 +69,10 @@ namespace Cluiche
 {
 	namespace Main
 	{
-		//------------------------------------------------------------------------------------
-		// DefaultAssetHandler — immediately acknowledges load (placeholder for real handlers)
-		//------------------------------------------------------------------------------------
-		void DefaultAssetHandler::Load(const Dia::Core::StringCRC& assetId,
-		                               const Dia::Core::Containers::String512& /*resolvedPath*/,
-		                               Dia::AssetRuntime::IAssetLoadCallback* callback)
-		{
-			callback->OnLoadComplete(assetId);
-		}
-
-		void DefaultAssetHandler::Unload(const Dia::Core::StringCRC& /*assetId*/)
-		{
-		}
-
-		//------------------------------------------------------------------------------------
-		// AssetServiceModule
-		//------------------------------------------------------------------------------------
 		const Dia::Core::StringCRC AssetServiceModule::kTypeId("Main::AssetServiceModule");
 
 		AssetServiceModule::AssetServiceModule(Dia::Application::ProcessingUnit* associatedProcessingUnit, const Dia::Core::StringCRC& instanceId)
 			: Dia::Application::Module(associatedProcessingUnit, instanceId, Dia::Application::Module::RunningEnum::kIdle)
-			, mHandlerDependenciesWired(false)
 		{}
 
 		Dia::Application::StateObject::OpertionResponse AssetServiceModule::DoStart(const IStartData* startData)
@@ -105,18 +88,6 @@ namespace Cluiche
 			Dia::Core::FilePath::ResoledFilePath manifestPath("%sassets.runtime.json", deployRoot);
 			mRuntime.LoadManifest(manifestPath);
 
-			// Register type-specific handlers
-			mRuntime.RegisterTypeHandler("texture", &mTextureHandler);
-			mRuntime.RegisterTypeHandler("ui", &mUIHandler);
-
-			// Register default handler for remaining types
-			mRuntime.RegisterTypeHandler("manifest", &mDefaultHandler);
-			mRuntime.RegisterTypeHandler("shader", &mDefaultHandler);
-			mRuntime.RegisterTypeHandler("audio", &mDefaultHandler);
-			mRuntime.RegisterTypeHandler("config", &mDefaultHandler);
-			mRuntime.RegisterTypeHandler("entity", &mDefaultHandler);
-			mRuntime.RegisterTypeHandler("folder", &mDefaultHandler);
-			mRuntime.RegisterTypeHandler("asset", &mDefaultHandler);
 
 			// Load .diagame via DiaGameManifestLoader
 			Dia::Core::Containers::String512 diagamePath("%scluichetest.diagame", deployRoot);
@@ -210,11 +181,10 @@ namespace Cluiche
 
 			RegisterGlobalAliases();
 
-			// AC9: Load global assets during module start. Since DefaultAssetHandler
-			// completes synchronously, kImmediate is correct. When real async handlers
-			// are used, switch to kAsync and call NotifyReadyToStartAsync() on completion.
 			RequestGlobalLoad();
 
+			// AC9: kImmediate is correct while all handlers complete synchronously.
+			// Switch to kDeferred + SignalStartComplete() when async handlers are added.
 			return StateObject::OpertionResponse::kImmediate;
 		}
 
@@ -290,42 +260,44 @@ namespace Cluiche
 			mStageAliases.RemoveAll();
 		}
 
-		void AssetServiceModule::RequestGlobalLoad()
+		void AssetServiceModule::EnsureHandlersRegistered()
 		{
-			mCurrentLoadStageId = Dia::Core::StringCRC("stage.global");
-			mRuntime.RequestStageLoad(mCurrentLoadStageId);
-		}
-
-		void AssetServiceModule::EnsureHandlerDependencies()
-		{
-			if (mHandlerDependenciesWired)
+			if (mHandlersRegistered)
 				return;
 
+			mHandlersRegistered = true;
+
 			Dia::Application::ProcessingUnit* pu = GetAssociatedProcessingUnit();
+
 			Cluiche::Main::KernelModule* kernel = static_cast<Cluiche::Main::KernelModule*>(
 				pu->FindModule(Cluiche::Main::KernelModule::kTypeId));
 			if (kernel && kernel->GetWindow())
 			{
-				mTextureHandler.SetRenderWindow(static_cast<Dia::SFML::RenderWindow*>(kernel->GetWindow()));
+				Dia::SFML::RenderWindow* window = static_cast<Dia::SFML::RenderWindow*>(kernel->GetWindow());
+				mRuntime.RegisterTypeHandler("texture", window->GetTextureHandler());
 			}
 
 			Cluiche::Main::UIModule* uiModule = static_cast<Cluiche::Main::UIModule*>(
 				pu->FindModule(Cluiche::Main::UIModule::kTypeId));
 			if (uiModule && uiModule->GetUISystem())
 			{
-				mUIHandler.SetUISystem(uiModule->GetUISystem());
+				auto* uiSystem = static_cast<Dia::UI::Ultralight::UISystem*>(uiModule->GetUISystem());
+				mRuntime.RegisterTypeHandler("ui", uiSystem->GetUIHandler());
 			}
+		}
 
-			mHandlerDependenciesWired = true;
+		void AssetServiceModule::RequestGlobalLoad()
+		{
+			EnsureHandlersRegistered();
+			mCurrentLoadStageId = Dia::Core::StringCRC("stage.global");
+			mRuntime.RequestStageLoad(mCurrentLoadStageId);
 		}
 
 		void AssetServiceModule::RequestStageLoad(const Dia::Core::StringCRC& stageId)
 		{
-			EnsureHandlerDependencies();
-
+			EnsureHandlersRegistered();
 			mCurrentLoadStageId = stageId;
 
-			// Look up the .diastage path from the map built at startup
 			for (unsigned int i = 0; i < mStagePathMap.Size(); ++i)
 			{
 				if (mStagePathMap[i].mStageId == stageId)

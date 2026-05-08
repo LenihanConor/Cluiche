@@ -18,6 +18,7 @@ protobuf = true
 [targets.googletest.deploy]
 files = [
   { src = "External/Python311/python311.dll", dest = "$(OutDir)" },
+  { src = "External/SFML/Current-x64/bin/*.dll", dest = "$(OutDir)" },
   { src = "Cluiche/Assets/CluicheTest/Global/misc/ApplicationFlow/*.diaapp", dest = "$(OutDir)Data/Manifests/misc/ApplicationFlow/" },
   { src = "Cluiche/Assets/CluicheTest/cluichetest.diagame", dest = "$(OutDir)Data/Manifests/" },
   { src = "Cluiche/Assets/CluicheTest/Stages/DummyStage/Misc/ApplicationFlow/*", dest = "$(OutDir)Data/stages/DummyStage/Misc/ApplicationFlow/" },

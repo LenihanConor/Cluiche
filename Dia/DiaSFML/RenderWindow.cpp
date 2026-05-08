@@ -33,7 +33,8 @@ namespace Dia
 			, mBackBuffer(nullptr)
 			, mUIShader(nullptr)
 			, mUIOverlayTexture(nullptr)
-		{}
+		{
+		}
 
 		//-------------------------------------------------------------------------------------
 		RenderWindow::RenderWindow(const Window::IWindow::Settings& windowSetting, const Graphics::ICanvas::Settings& canvasSettings)
@@ -200,7 +201,7 @@ namespace Dia
 			if (mBackBuffer)
 			{
 				// Render entities/sprites first (background)
-				EntityFrameRenderer renderEntities(mBackBuffer, &mTextureManager);
+				EntityFrameRenderer renderEntities(mBackBuffer, &mTextureHandler);
 				renderEntities.Visit(nextFrame);
 
 				// Render debug objects on top
@@ -404,15 +405,15 @@ namespace Dia
 		}
 
 		//-------------------------------------------------------------------------------------
-		unsigned int RenderWindow::LoadTexture(const char* path)
+		const sf::Texture* RenderWindow::GetTexture(unsigned int textureId) const
 		{
-			return mTextureManager.LoadTexture(path);
+			return mTextureHandler.GetTexture(textureId);
 		}
 
 		//-------------------------------------------------------------------------------------
-		const sf::Texture* RenderWindow::GetTexture(unsigned int textureId) const
+		TextureHandler* RenderWindow::GetTextureHandler()
 		{
-			return mTextureManager.GetTexture(textureId);
+			return &mTextureHandler;
 		}
 	}
 }

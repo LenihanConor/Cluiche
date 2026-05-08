@@ -97,14 +97,24 @@
 
   <ItemGroup>
     <ClInclude Include="UltralightUISystem.h" />
+    <ClInclude Include="UIHandler.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="UltralightUISystem.cpp" />
+    <ClCompile Include="UIHandler.cpp" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\DiaLogger\DiaLogger.vcxproj">
       <Project>{7a8b9c0d-e1f2-3456-7890-abcdef012345}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaAsset\DiaAsset.vcxproj">
+      <Project>{43AB4006-91F4-4250-8901-C2B667FDAB21}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
+      <Project>{8d41cbe3-c493-428d-95f3-627e56500667}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

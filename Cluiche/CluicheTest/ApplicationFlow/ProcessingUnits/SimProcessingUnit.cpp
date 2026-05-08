@@ -7,7 +7,7 @@
 
 #include <DiaGraphics/Interface/ICanvas.h>
 #include <DiaGraphics/Frame/SpriteDrawCommand.h>
-#include <DiaSFML/RenderWindow.h>
+#include <DiaSFML/TextureHandler.h>
 #include <DiaUI/IUISystem.h>
 #include <DiaLogger/Logger.h>
 #include <DiaLogger/DiaLog.h>
@@ -25,9 +25,7 @@ namespace Cluiche
 		, mRunning(nullptr)
 		, mSimToRenderFrameStream(nullptr)
 		, mCanvas(nullptr)
-		, mTestRedTexture(0)
-		, mTestBlueTexture(0)
-		, mTestGreenTexture(0)
+		, mTextureHandler(nullptr)
 	{}
 
 	void SimProcessingUnit::PostPhaseStart(const Dia::Application::StateObject::IStartData* startData)
@@ -38,23 +36,10 @@ namespace Cluiche
 		mRunning = simStartData->mRunning;
 		mSimToRenderFrameStream = simStartData->mFrameStream;
 		mCanvas = simStartData->mCanvas;
+		mTextureHandler = simStartData->mTextureHandler;
 
 		GetModule<Cluiche::Sim::UIProxyModule>()->Initialize(simStartData->mMainUIModule, &mRenderFrameBuffer);
 		GetModule<Cluiche::Sim::InputFrameStreamModule>()->Initialize(simStartData->mInputToSimFrameStream);
-
-		// Load test textures
-		// Note: This is thread-safe as TextureManager has internal mutex protection
-		if (mCanvas)
-		{
-			// Cast to access SFML-specific LoadTexture method
-			Dia::SFML::RenderWindow* renderWindow = static_cast<Dia::SFML::RenderWindow*>(mCanvas);
-			if (renderWindow)
-			{
-				mTestRedTexture = renderWindow->LoadTexture("assets/stages/DummyStage/Misc/test_red.png");
-				mTestBlueTexture = renderWindow->LoadTexture("assets/stages/DummyStage/Misc/test_blue.png");
-				mTestGreenTexture = renderWindow->LoadTexture("assets/stages/DummyStage/Misc/test_green.png");
-			}
-		}
 	}
 
 	void SimProcessingUnit::PrePhaseUpdate()
@@ -81,27 +66,40 @@ namespace Cluiche
 		mRenderFrameBuffer.RequestDraw(dynamicCirclePos, 25.0f, dynamicCircleColour);
 		mRenderFrameBuffer.RequestDraw(Dia::Maths::Vector2D(100.0f, 100.0f), dynamicCirclePos, Dia::Graphics::RGBA::White);
 
-		// TEST: Draw sprites with various transformations
-		if (mTestRedTexture != 0)
+		// Draw sprites using texture IDs from AssetRuntime (only available after stage load)
+		if (mTextureHandler)
 		{
-			Dia::Graphics::SpriteDrawCommand redSprite(mTestRedTexture, Dia::Maths::Vector2D(200.0f, 200.0f));
-			mRenderFrameBuffer.RequestDrawSprite(redSprite);
+			unsigned int redId = mTextureHandler->GetTextureId(Dia::Core::StringCRC("texture.test_red"));
+			unsigned int blueId = mTextureHandler->GetTextureId(Dia::Core::StringCRC("texture.test_blue"));
+			unsigned int greenId = mTextureHandler->GetTextureId(Dia::Core::StringCRC("texture.test_green"));
 
-			Dia::Graphics::SpriteDrawCommand blueSprite(mTestBlueTexture, Dia::Maths::Vector2D(300.0f, 200.0f));
-			blueSprite.scale = Dia::Maths::Vector2D(1.5f, 1.5f);
-			mRenderFrameBuffer.RequestDrawSprite(blueSprite);
+			if (redId != 0)
+			{
+				Dia::Graphics::SpriteDrawCommand redSprite(redId, Dia::Maths::Vector2D(200.0f, 200.0f));
+				mRenderFrameBuffer.RequestDrawSprite(redSprite);
 
-			Dia::Graphics::SpriteDrawCommand greenSprite(mTestGreenTexture, Dia::Maths::Vector2D(400.0f, 200.0f));
-			greenSprite.rotation = 45.0f;
-			mRenderFrameBuffer.RequestDrawSprite(greenSprite);
+				Dia::Graphics::SpriteDrawCommand transparentSprite(redId, Dia::Maths::Vector2D(200.0f, 300.0f));
+				transparentSprite.tint = Dia::Graphics::RGBA(255, 255, 255, 128);
+				mRenderFrameBuffer.RequestDrawSprite(transparentSprite);
+			}
 
-			Dia::Graphics::SpriteDrawCommand transparentSprite(mTestRedTexture, Dia::Maths::Vector2D(200.0f, 300.0f));
-			transparentSprite.tint = Dia::Graphics::RGBA(255, 255, 255, 128);
-			mRenderFrameBuffer.RequestDrawSprite(transparentSprite);
+			if (blueId != 0)
+			{
+				Dia::Graphics::SpriteDrawCommand blueSprite(blueId, Dia::Maths::Vector2D(300.0f, 200.0f));
+				blueSprite.scale = Dia::Maths::Vector2D(1.5f, 1.5f);
+				mRenderFrameBuffer.RequestDrawSprite(blueSprite);
 
-			Dia::Graphics::SpriteDrawCommand dynamicSprite(mTestBlueTexture, dynamicCirclePos);
-			dynamicSprite.scale = Dia::Maths::Vector2D(0.5f, 0.5f);
-			mRenderFrameBuffer.RequestDrawSprite(dynamicSprite);
+				Dia::Graphics::SpriteDrawCommand dynamicSprite(blueId, dynamicCirclePos);
+				dynamicSprite.scale = Dia::Maths::Vector2D(0.5f, 0.5f);
+				mRenderFrameBuffer.RequestDrawSprite(dynamicSprite);
+			}
+
+			if (greenId != 0)
+			{
+				Dia::Graphics::SpriteDrawCommand greenSprite(greenId, Dia::Maths::Vector2D(400.0f, 200.0f));
+				greenSprite.rotation = 45.0f;
+				mRenderFrameBuffer.RequestDrawSprite(greenSprite);
+			}
 		}
 
 		mSimToRenderFrameStream->InsertCopyOfDataToStream(mRenderFrameBuffer, timeModule->GetTimeServer().GetTime());

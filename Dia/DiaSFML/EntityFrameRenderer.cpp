@@ -2,10 +2,11 @@
 // Filename: EntityFrameRenderer.cpp
 ////////////////////////////////////////////////////////////////////////////////
 #include "DiaSFML/EntityFrameRenderer.h"
-#include "DiaSFML/TextureManager.h"
+#include "DiaSFML/TextureHandler.h"
 #include "DiaGraphics/Frame/EntityFrameData.h"
 #include "DiaGraphics/Frame/SpriteDrawCommand.h"
 #include "DiaSFML/Conversion.h"
+#include <DiaCore/Core/Assert.h>
 
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Graphics/Sprite.hpp>
@@ -16,52 +17,32 @@ namespace Dia
 {
 	namespace SFML
 	{
-		////////////////////////////////////////////////////////////
-		EntityFrameRenderer::EntityFrameRenderer(sf::RenderTarget* target, TextureManager* textureManager)
+		EntityFrameRenderer::EntityFrameRenderer(sf::RenderTarget* target, TextureHandler* textureHandler)
 			: mTarget(target)
-			, mTextureManager(textureManager)
+			, mTextureHandler(textureHandler)
 		{
 		}
 
-		////////////////////////////////////////////////////////////
 		void EntityFrameRenderer::Visit(const Graphics::EntityFrameData& data) const
 		{
 			const Core::Containers::DynamicArrayC<Graphics::SpriteDrawCommand, 256>& sprites = data.GetSprites();
-
-			// TODO: Implement texture batching for optimization (Phase 2 enhancement)
-			// For now, render sprites individually
 
 			for (unsigned int i = 0; i < sprites.Size(); ++i)
 			{
 				const Graphics::SpriteDrawCommand& cmd = sprites[i];
 
-				// Get texture from manager
-				const sf::Texture* texture = mTextureManager->GetTexture(cmd.textureId);
+				const sf::Texture* texture = mTextureHandler->GetTexture(cmd.textureId);
+				DIA_ASSERT(texture, "Draw command references texture ID %u which is not loaded — asset must be loaded through AssetRuntime before use", cmd.textureId);
 				if (!texture)
-				{
-					// Skip sprites with invalid/missing textures
 					continue;
-				}
 
-				// Create SFML sprite with texture
 				sf::Sprite sprite(*texture);
-
-				// Set position
 				sprite.setPosition(sf::Vector2f(cmd.position.X(), cmd.position.Y()));
-
-				// Set scale
 				sprite.setScale(sf::Vector2f(cmd.scale.X(), cmd.scale.Y()));
-
-				// Set rotation (convert degrees to SFML angle)
 				sprite.setRotation(sf::degrees(cmd.rotation));
-
-				// Set origin (pivot point)
 				sprite.setOrigin(sf::Vector2f(cmd.origin.X(), cmd.origin.Y()));
-
-				// Set color tint
 				sprite.setColor(sf::Color(cmd.tint.R(), cmd.tint.G(), cmd.tint.B(), cmd.tint.A()));
 
-				// Set texture rect if specified (non-zero size means use sub-rect)
 				const Maths::Vector2D& bottomLeft = cmd.textureRect.GetBottomLeft();
 				const Maths::Vector2D& topRight = cmd.textureRect.GetTopRight();
 				float width = topRight.X() - bottomLeft.X();
@@ -75,8 +56,6 @@ namespace Dia
 					));
 				}
 
-				// Draw sprite
-				// Note: Layer and subOrder sorting should happen before this visitor is called
 				mTarget->draw(sprite);
 			}
 		}

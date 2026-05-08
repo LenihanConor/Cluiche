@@ -120,6 +120,8 @@ namespace Dia
             void InitRefCountTable();
             bool TryTransition(const Dia::Core::StringCRC& assetId, AssetState target);
             void DispatchLoad(const Dia::Core::StringCRC& assetId);
+            void AutoValidate(const Dia::Core::StringCRC& assetId,
+                              const Dia::Core::Containers::String512& resolvedPath);
             void DispatchUnload(const Dia::Core::StringCRC& assetId);
             Dia::Core::StringCRC ExtractTypePrefix(const Dia::Core::StringCRC& assetId) const;
             IAssetTypeHandler* FindHandler(const Dia::Core::StringCRC& typePrefixCRC) const;

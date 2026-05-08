@@ -66,11 +66,11 @@ namespace Cluiche
 			Dia::SFML::RenderWindowFactory mWindowFactory;
 
 			// Abstract Interfaces
-			Dia::Window::IWindow* mWindow;
+			Dia::Window::IWindow* mWindow = nullptr;
 			Dia::Input::EventData mInputEventData;
 			Dia::Core::FrameStream<Dia::Graphics::FrameData> mSimToRenderFrameStream;
 			Dia::Core::FrameStream<Dia::Input::EventData> mInputToSimFrameStream;
-			Dia::Graphics::ICanvas* mCanvas;
+			Dia::Graphics::ICanvas* mCanvas = nullptr;
 		};
 	}
 }

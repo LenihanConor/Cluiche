@@ -5,6 +5,8 @@
 #include "CluicheKernel/ApplicationFlow/Modules/MainKernelModule.h"
 #include "CluicheKernel/ApplicationFlow/Modules/MainUIModule.h"
 
+#include <DiaSFML/RenderWindow.h>
+
 #include <DiaApplication/ApplicationPhase.h>
 #include <DiaApplication/ApplicationModule.h>
 #include <DiaApplication/Loader/ApplicationLoader.h>
@@ -75,12 +77,16 @@ namespace Cluiche
 			Dia::Core::UniquePtr<Dia::Application::ProcessingUnit> owned(rawSimPU);
 			AddChildProcessingUnit(std::move(owned));
 
+			Dia::SFML::RenderWindow* renderWindow = kernel->GetWindow()
+				? static_cast<Dia::SFML::RenderWindow*>(kernel->GetWindow()) : nullptr;
+
 			SimProcessingUnit::StartData data;
 			data.mRunning = &(kernel->mRunning);
 			data.mFrameStream = &(kernel->GetSimToRenderFrameStream());
 			data.mInputToSimFrameStream = &(kernel->GetInputToSimFrameStream());
 			data.mMainUIModule = ui;
 			data.mCanvas = kernel->GetCanvas();
+			data.mTextureHandler = renderWindow ? renderWindow->GetTextureHandler() : nullptr;
 
 			mSimPU->Start(&data);
 			if (GetMetricsCollector())

@@ -263,15 +263,15 @@ namespace Dia::AssetRuntime
 // Startup — register handlers by asset type prefix
 Dia::AssetRuntime::AssetRuntime runtime;
 runtime.LoadManifest(manifestPath);
-runtime.RegisterTypeHandler("texture", &mySFMLTextureHandler);
-runtime.RegisterTypeHandler("ui", &myUltralightHandler);
+runtime.RegisterTypeHandler("texture", &myTextureHandler);
+runtime.RegisterTypeHandler("ui", &myUIHandler);
 
 // Stage transition — dispatches Load to handlers for each asset
 runtime.RequestStageLoad(StringCRC("stage.gameplay"));
 
 // In IAssetTypeHandler::Load — system performs actual I/O
-void SFMLTextureHandler::Load(const StringCRC& assetId, const String512& path,
-                              IAssetLoadCallback* callback)
+void TextureHandler::Load(const StringCRC& assetId, const String512& path,
+                          IAssetLoadCallback* callback)
 {
     bool ok = mTextures.LoadFromFile(path.AsCStr());
     if (ok)

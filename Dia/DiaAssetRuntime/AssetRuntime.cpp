@@ -8,6 +8,8 @@
 
 #include <math.h>
 #include <string.h>
+#include <cstdio>
+#include <filesystem>
 
 #if defined(_MSC_VER)
 #define WIN32_LEAN_AND_MEAN
@@ -537,16 +539,6 @@ namespace Dia
             if (!currentState || *currentState != AssetState::Loading)
                 TryTransition(assetId, AssetState::Loading);
 
-            Dia::Core::StringCRC typePrefixCRC = ExtractTypePrefix(assetId);
-            IAssetTypeHandler* handler = FindHandler(typePrefixCRC);
-
-            if (!handler)
-            {
-                DIA_LOG_ERROR("AssetRuntime", "DispatchLoad: no handler registered for asset '%s'", assetId.AsChar());
-                TryTransition(assetId, AssetState::Failed);
-                return;
-            }
-
             const RuntimeAssetEntry* entry = mAssetTable.TryGetItemConst(assetId);
             if (!entry)
             {
@@ -555,7 +547,51 @@ namespace Dia
                 return;
             }
 
-            handler->Load(assetId, entry->mDeployPath, this);
+            Dia::Core::StringCRC typePrefixCRC = ExtractTypePrefix(assetId);
+            IAssetTypeHandler* handler = FindHandler(typePrefixCRC);
+
+            if (handler)
+            {
+                handler->Load(assetId, entry->mDeployPath, this);
+            }
+            else
+            {
+                AutoValidate(assetId, entry->mDeployPath);
+            }
+        }
+
+        void AssetRuntime::AutoValidate(const Dia::Core::StringCRC& assetId,
+                                         const Dia::Core::Containers::String512& resolvedPath)
+        {
+            const char* path = resolvedPath.AsCStr();
+            bool exists = false;
+
+            // Folder assets have trailing '/' in their deploy path
+            unsigned int len = resolvedPath.Length();
+            if (len > 0 && (path[len - 1] == '/' || path[len - 1] == '\\'))
+            {
+                exists = std::filesystem::is_directory(path);
+            }
+            else
+            {
+                FILE* f = nullptr;
+                fopen_s(&f, path, "rb");
+                if (f)
+                {
+                    fclose(f);
+                    exists = true;
+                }
+            }
+
+            if (exists)
+            {
+                TryTransition(assetId, AssetState::Loaded);
+            }
+            else
+            {
+                DIA_LOG_ERROR("AssetRuntime", "AutoValidate: resource not found at '%s' for asset '%s'", path, assetId.AsChar());
+                TryTransition(assetId, AssetState::Failed);
+            }
         }
 
         void AssetRuntime::DispatchUnload(const Dia::Core::StringCRC& assetId)

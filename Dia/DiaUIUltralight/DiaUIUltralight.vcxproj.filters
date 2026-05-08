@@ -14,9 +14,15 @@
     <ClInclude Include="UltralightUISystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="UIHandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="UltralightUISystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="UIHandler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

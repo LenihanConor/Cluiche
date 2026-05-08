@@ -7,6 +7,7 @@
 #include <DiaInput/EventData.h>
 
 namespace Dia { namespace Graphics { class ICanvas; } }
+namespace Dia { namespace SFML { class TextureHandler; } }
 namespace Cluiche { namespace Main { class UIModule; } }
 
 namespace Cluiche
@@ -17,13 +18,14 @@ namespace Cluiche
 		class StartData : public Dia::Application::ProcessingUnit::IStartData
 		{
 		public:
-			StartData() : mRunning(nullptr), mMainUIModule(nullptr), mInputToSimFrameStream(nullptr), mFrameStream(nullptr), mCanvas(nullptr) {}
+			StartData() : mRunning(nullptr), mMainUIModule(nullptr), mInputToSimFrameStream(nullptr), mFrameStream(nullptr), mCanvas(nullptr), mTextureHandler(nullptr) {}
 
 			const bool* mRunning;
 			Cluiche::Main::UIModule* mMainUIModule;
 			Dia::Core::FrameStream<Dia::Input::EventData>* mInputToSimFrameStream;
 			Dia::Core::FrameStream<Dia::Graphics::FrameData>* mFrameStream;
 			Dia::Graphics::ICanvas* mCanvas;
+			Dia::SFML::TextureHandler* mTextureHandler;
 		};
 
 		static const Dia::Core::StringCRC kTypeId;
@@ -42,9 +44,6 @@ namespace Cluiche
 		const bool* mRunning;
 		Dia::Core::FrameStream<Dia::Graphics::FrameData>* mSimToRenderFrameStream;
 		Dia::Graphics::ICanvas* mCanvas;
-
-		unsigned int mTestRedTexture;
-		unsigned int mTestBlueTexture;
-		unsigned int mTestGreenTexture;
+		Dia::SFML::TextureHandler* mTextureHandler;
 	};
 }

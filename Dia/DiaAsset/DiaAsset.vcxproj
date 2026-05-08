@@ -10,20 +10,30 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="IAssetTypeHandler.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="DiaAsset.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
+      <Project>{8D41CBE3-C493-428D-95F3-627E56500667}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{C9D0E1F2-A3B4-5678-9CDE-F01234567890}</ProjectGuid>
-    <RootNamespace>DiaAssetRuntime</RootNamespace>
-    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{43AB4006-91F4-4250-8901-C2B667FDAB21}</ProjectGuid>
+    <RootNamespace>DiaAsset</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -36,66 +46,32 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>./;./../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>DEBUG;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DEBUG;WIN32;_DEBUG;DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <WarningLevel>Level3</WarningLevel>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <BrowseInformation>true</BrowseInformation>
     </ClCompile>
+    <Lib>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
     <Bscmake>
       <PreserveSbr>true</PreserveSbr>
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
       <AdditionalIncludeDirectories>./;./../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClInclude Include="AssetRuntimeDebugCommands.h" />
-    <ClInclude Include="AssetScope.h" />
-    <ClInclude Include="AssetState.h" />
-    <ClInclude Include="IAssetTypeHandler.h" />
-    <ClInclude Include="RuntimeAssetEntry.h" />
-    <ClInclude Include="RuntimeStageEntry.h" />
-    <ClInclude Include="RuntimeManifestLoader.h" />
-    <ClInclude Include="AssetRuntime.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="AssetRuntimeDebugCommands.cpp" />
-    <ClCompile Include="RuntimeManifestLoader.cpp" />
-    <ClCompile Include="AssetRuntime.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="dia.assetruntime.architecture.module.md" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\DiaAsset\DiaAsset.vcxproj">
-      <Project>{43AB4006-91F4-4250-8901-C2B667FDAB21}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
-      <Project>{8d41cbe3-c493-428d-95f3-627e56500667}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="..\DiaLogger\DiaLogger.vcxproj">
-      <Project>{7a8b9c0d-e1f2-3456-7890-abcdef012345}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="..\DiaAPI\DiaAPI.vcxproj">
-      <Project>{1E7F6E13-50CF-411C-B34C-66D70121DD03}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="..\DiaDebugServer\DiaDebugServer.vcxproj">
-      <Project>{6AAFCCCB-71D0-4D8D-A6BE-081F5E02093D}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
