@@ -3,6 +3,8 @@
 
 #include <DiaEditor/Plugin/EditorPluginRegistrationMacros.h>
 #include <DiaEditor/Plugin/EditorPluginContext.h>
+#include <DiaEditor/Plugin/PluginServiceLocator.h>
+#include <DiaEditor/LiveConnection/GameConnectionManager.h>
 #include <DiaEditor/MVC/EditorView.h>
 #include <DiaEditor/UI/WebUIBridge.h>
 #include <DiaLogger/DiaLog.h>
@@ -27,17 +29,19 @@ namespace Dia
 
 				mState = std::make_unique<SharedPluginState>();
 
-				mManager.Initialize();
-				mManager.SetConnectionCallback(
-					[this](bool connected) { HandleConnectionStateChange(connected); });
+				if (context.mServices)
+					mManager = context.mServices->GetService<Dia::Editor::GameConnectionManager>();
+
+				if (!mManager)
+					DIA_LOG_WARNING("Editor", "DiaAssetRuntimeEditorPlugin: GameConnectionManager service not available");
 
 				mSessionContext.Load(kDefaultOutputDir);
 
-				mAssetStateTable.Activate(mBridge, &mManager, mState.get());
+				mAssetStateTable.Activate(mBridge, mManager, mState.get());
 				mAssetStateTable.SetPollInterval(mSessionContext.GetPollInterval());
-				mStageAssetTree.Activate(mBridge, &mManager, mState.get(), &mAssetStateTable);
-				mRefCountInspector.Activate(mBridge, &mManager, mState.get(), &mAssetStateTable);
-				mTransitionLog.Activate(mBridge, &mManager, mState.get());
+				mStageAssetTree.Activate(mBridge, mManager, mState.get(), &mAssetStateTable);
+				mRefCountInspector.Activate(mBridge, mManager, mState.get(), &mAssetStateTable);
+				mTransitionLog.Activate(mBridge, mManager, mState.get());
 				mTransitionLog.SetMaxEntries(mSessionContext.GetMaxLogEntries());
 
 				if (mSessionContext.GetStateFilter())
@@ -47,6 +51,9 @@ namespace Dia
 
 				RegisterRequestHandlers();
 				PushSavedFiltersToUI();
+
+				if (mManager && mManager->IsConnected())
+					HandleConnectionStateChange(true);
 
 				DIA_LOG_INFO("Editor", "DiaAssetRuntimeEditorPlugin: Initialized");
 			}
@@ -81,9 +88,9 @@ namespace Dia
 				mRefCountInspector.Deactivate();
 				mStageAssetTree.Deactivate();
 				mAssetStateTable.Deactivate();
-				mManager.Shutdown();
 
 				mState.reset();
+				mManager = nullptr;
 
 				mBridge = nullptr;
 				mView = nullptr;
@@ -92,7 +99,16 @@ namespace Dia
 
 			void DiaAssetRuntimeEditorPlugin::OnUpdate(float deltaTime)
 			{
-				mManager.Update(deltaTime);
+				if (mManager)
+				{
+					bool isConnected = mManager->IsConnected();
+					if (isConnected != mWasConnected)
+					{
+						mWasConnected = isConnected;
+						HandleConnectionStateChange(isConnected);
+					}
+				}
+
 				mAssetStateTable.Update(deltaTime);
 				mStageAssetTree.Update(deltaTime);
 				mRefCountInspector.Update(deltaTime);
@@ -110,30 +126,11 @@ namespace Dia
 					return;
 
 				mBridge->RegisterRequestHandler(
-					Dia::Core::StringCRC("asset_runtime_editor.connect"),
-					[this](const Json::Value& data) -> Json::Value
-					{
-						Json::Value result;
-						if (!data.isMember("host") || !data.isMember("port"))
-						{
-							result["success"] = false;
-							result["error"] = "missing host or port";
-							return result;
-						}
-						const char* host = data["host"].asCString();
-						int port = data["port"].asInt();
-						mManager.Connect(host, port);
-						result["success"] = true;
-						return result;
-					});
-
-				mBridge->RegisterRequestHandler(
-					Dia::Core::StringCRC("asset_runtime_editor.disconnect"),
+					Dia::Core::StringCRC("asset_runtime_editor.get_connection_state"),
 					[this](const Json::Value& /*data*/) -> Json::Value
 					{
-						mManager.Disconnect();
 						Json::Value result;
-						result["success"] = true;
+						result["connected"] = (mManager != nullptr && mManager->IsConnected());
 						return result;
 					});
 

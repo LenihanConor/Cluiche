@@ -266,6 +266,7 @@
     <ClCompile Include="Editor\TestGameConnectionControllerMessages.cpp" />
     <ClCompile Include="Editor\TestGameConnectionLifecycle.cpp" />
     <ClCompile Include="Editor\TestEditorToolbarItem.cpp" />
+    <ClCompile Include="Editor\TestPluginServiceLocator.cpp" />
     <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\PluginBrowserEditorPlugin.cpp" />
     <ClCompile Include="..\..\..\Dia\DiaVisualDebugger\DebugLayerPanelPlugin.cpp">
       <PreprocessorDefinitions>DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>

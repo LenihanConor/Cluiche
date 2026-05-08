@@ -11,8 +11,9 @@
 #ifdef DIA_DEBUG
 
 #include <DiaEditor/Plugin/IEditorPlugin.h>
-#include <DiaEditor/LiveConnection/GameConnectionManager.h>
 #include <DiaCore/Json/external/json/json.h>
+
+namespace Dia { namespace Editor { class GameConnectionManager; } }
 
 namespace Dia
 {
@@ -24,7 +25,7 @@ namespace Dia
         // Dockable editor panel for the DiaVisualDebugger system.
         //
         // On load:
-        //   - Initialises a GameConnectionManager pointing at ws://localhost:9002
+        //   - Acquires the shared GameConnectionManager via PluginServiceLocator
         //   - Subscribes to the "debug.layer.state" topic
         //   - On each data update: calls mBridge->NotifyUIDataChanged to push state
         //     to the CEF front-end
@@ -51,8 +52,8 @@ namespace Dia
         private:
             void HandleLayerStateData(const Json::Value& data);
 
-            Dia::Editor::WebUIBridge*        mBridge  = nullptr;
-            Dia::Editor::GameConnectionManager mManager;
+            Dia::Editor::WebUIBridge*            mBridge  = nullptr;
+            Dia::Editor::GameConnectionManager*  mManager = nullptr;
         };
 
     } // namespace Debug

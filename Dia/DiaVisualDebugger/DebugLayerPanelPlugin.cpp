@@ -8,6 +8,8 @@
 
 #include <DiaEditor/Plugin/EditorPluginRegistrationMacros.h>
 #include <DiaEditor/Plugin/EditorPluginContext.h>
+#include <DiaEditor/Plugin/PluginServiceLocator.h>
+#include <DiaEditor/LiveConnection/GameConnectionManager.h>
 #include <DiaEditor/UI/WebUIBridge.h>
 #include <DiaLogger/DiaLog.h>
 
@@ -38,17 +40,21 @@ namespace Dia
             DIA_LOG_INFO("Editor", "DebugLayerPanelPlugin: OnLoad");
             mBridge = context.mBridge;
 
-            mManager.Initialize();
+            if (context.mServices)
+                mManager = context.mServices->GetService<Dia::Editor::GameConnectionManager>();
 
-            // Subscribe to the debug.layer.state topic broadcast by
-            // DebugLayerManager::BroadcastLayerState() via NotifySubscribers().
-            mManager.Subscribe(
+            if (!mManager)
+            {
+                DIA_LOG_WARNING("Editor", "DebugLayerPanelPlugin: GameConnectionManager service not available");
+                return;
+            }
+
+            mManager->Subscribe(
                 Dia::Core::StringCRC("debug.layer.state"),
                 [this](const Json::Value& data) {
                     HandleLayerStateData(data);
                 });
 
-            mManager.Connect("localhost", 9002);
             DIA_LOG_INFO("Editor", "DebugLayerPanelPlugin: Subscribed to debug.layer.state");
         }
 
@@ -59,18 +65,18 @@ namespace Dia
         void DebugLayerPanelPlugin::OnUnload()
         {
             DIA_LOG_INFO("Editor", "DebugLayerPanelPlugin: OnUnload");
-            mManager.Unsubscribe(Dia::Core::StringCRC("debug.layer.state"));
-            mManager.Shutdown();
+            if (mManager)
+                mManager->Unsubscribe(Dia::Core::StringCRC("debug.layer.state"));
+            mManager = nullptr;
             mBridge = nullptr;
         }
 
         // --------------------------------------------------------------------
-        // OnUpdate — pump the connection manager
+        // OnUpdate
         // --------------------------------------------------------------------
 
-        void DebugLayerPanelPlugin::OnUpdate(float deltaTime)
+        void DebugLayerPanelPlugin::OnUpdate(float /*deltaTime*/)
         {
-            mManager.Update(deltaTime);
         }
 
         // --------------------------------------------------------------------

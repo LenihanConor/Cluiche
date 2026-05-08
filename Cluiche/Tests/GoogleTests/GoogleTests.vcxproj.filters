@@ -583,6 +583,9 @@
     <ClCompile Include="Editor\TestEditorToolbarItem.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
+    <ClCompile Include="Editor\TestPluginServiceLocator.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\PluginBrowserEditorPlugin.cpp">
       <Filter>Editor</Filter>
     </ClCompile>

@@ -130,6 +130,8 @@ export type PanelInfo = { name: string; uiPath: string; visible: boolean };
 export type CommandInfo = { id: string; label: string };
 
 export const EditorBridge = {
+  request: <T>(type: string, data?: object) => sendRequest<T>(type, data),
+
   shellReady: () => sendEvent("shell_ready"),
 
   executeCommand: (commandId: string, args?: object) =>

@@ -8,6 +8,8 @@ namespace Dia
 {
 	namespace Editor
 	{
+		class PluginServiceLocator;
+
 		class GameConnectionEditorPlugin : public IEditorPlugin
 		{
 		public:
@@ -24,6 +26,7 @@ namespace Dia
 		private:
 			GameConnectionManager mManager;
 			GameConnectionController mController;
+			PluginServiceLocator* mServices = nullptr;
 		};
 	}
 }

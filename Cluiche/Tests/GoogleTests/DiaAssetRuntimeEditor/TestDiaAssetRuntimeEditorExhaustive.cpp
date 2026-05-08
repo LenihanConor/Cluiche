@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <DiaAssetRuntimeEditor/DiaAssetRuntimeEditorPlugin.h>
 #include <DiaAssetRuntimeEditor/Panels/AssetStateRow.h>
 #include <DiaAssetRuntimeEditor/Panels/AssetStateTablePanel.h>
 #include <DiaAssetRuntimeEditor/Panels/TransitionLogEntry.h>
@@ -8,6 +9,10 @@
 #include <DiaAssetRuntimeEditor/Panels/StageAssetTreePanel.h>
 #include <DiaAssetRuntimeEditor/SharedPluginState.h>
 #include <DiaAssetRuntimeEditor/SessionContext.h>
+
+#include <DiaEditor/Plugin/EditorPluginContext.h>
+#include <DiaEditor/Plugin/PluginServiceLocator.h>
+#include <DiaEditor/LiveConnection/GameConnectionManager.h>
 
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
@@ -899,4 +904,91 @@ TEST(StateTransitionLogPanel, FIFOOverflow_MaxEntriesEnforced)
 	EXPECT_EQ(LogEntryType::kMarkerReconnect, oldest.mType);
 
 	panel.Deactivate();
+}
+
+// ===========================================================================
+// Shared Connection — Plugin acquires manager via service locator
+// ===========================================================================
+
+TEST(SharedConnection, PluginOnLoad_WithServiceLocator_AcquiresManager)
+{
+	Dia::Editor::GameConnectionManager manager;
+	manager.Initialize();
+
+	Dia::Editor::PluginServiceLocator locator;
+	locator.RegisterService(&manager);
+
+	Dia::Editor::EditorPluginContext context;
+	context.mServices = &locator;
+
+	auto plugin = std::make_unique<DiaAssetRuntimeEditorPlugin>();
+	plugin->OnLoad(context);
+
+	SharedPluginState* state = plugin->GetPluginData();
+	ASSERT_NE(state, nullptr);
+	EXPECT_FALSE(state->mConnected);
+
+	plugin->OnUnload();
+	manager.Shutdown();
+}
+
+TEST(SharedConnection, PluginOnLoad_NullServiceLocator_GracefulDegradation)
+{
+	Dia::Editor::EditorPluginContext context;
+	context.mServices = nullptr;
+
+	auto plugin = std::make_unique<DiaAssetRuntimeEditorPlugin>();
+	plugin->OnLoad(context);
+
+	SharedPluginState* state = plugin->GetPluginData();
+	ASSERT_NE(state, nullptr);
+	EXPECT_FALSE(state->mConnected);
+
+	plugin->OnUpdate(0.016f);
+
+	plugin->OnUnload();
+}
+
+TEST(SharedConnection, PluginOnLoad_ServiceLocator_NoManagerRegistered)
+{
+	Dia::Editor::PluginServiceLocator locator;
+
+	Dia::Editor::EditorPluginContext context;
+	context.mServices = &locator;
+
+	auto plugin = std::make_unique<DiaAssetRuntimeEditorPlugin>();
+	plugin->OnLoad(context);
+
+	SharedPluginState* state = plugin->GetPluginData();
+	ASSERT_NE(state, nullptr);
+	EXPECT_FALSE(state->mConnected);
+
+	plugin->OnUpdate(0.016f);
+
+	plugin->OnUnload();
+}
+
+TEST(SharedConnection, PluginOnUpdate_DetectsConnectionStateChange)
+{
+	Dia::Editor::GameConnectionManager manager;
+	manager.Initialize();
+
+	Dia::Editor::PluginServiceLocator locator;
+	locator.RegisterService(&manager);
+
+	Dia::Editor::EditorPluginContext context;
+	context.mServices = &locator;
+
+	auto plugin = std::make_unique<DiaAssetRuntimeEditorPlugin>();
+	plugin->OnLoad(context);
+
+	SharedPluginState* state = plugin->GetPluginData();
+	EXPECT_FALSE(state->mConnected);
+
+	// Manager is not connected (no server), so state stays false after update
+	plugin->OnUpdate(0.016f);
+	EXPECT_FALSE(state->mConnected);
+
+	plugin->OnUnload();
+	manager.Shutdown();
 }

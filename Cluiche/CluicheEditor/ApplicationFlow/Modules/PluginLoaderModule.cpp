@@ -20,6 +20,7 @@ namespace Cluiche
 			, mView(nullptr)
 		{
 			mContext.mPluginLoader = this;
+			mContext.mServices = &mServiceLocator;
 		}
 
 		void PluginLoaderModule::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
@@ -55,7 +56,7 @@ namespace Cluiche
 		void PluginLoaderModule::DoStop()
 		{
 			DIA_LOG_INFO("Application", "PluginLoaderModule: DoStop - unloading %u plugins", mLoadedPlugins.Size());
-			for (unsigned int i = 0; i < mLoadedPlugins.Size(); ++i)
+			for (int i = static_cast<int>(mLoadedPlugins.Size()) - 1; i >= 0; --i)
 			{
 				DIA_LOG_INFO("Application", "PluginLoaderModule: OnUnload '%s'", mLoadedPlugins[i].plugin->GetName());
 				mLoadedPlugins[i].plugin->OnUnload();

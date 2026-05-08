@@ -81,13 +81,29 @@ def _copy_files(
     return 0
 
 
+def _build_env_with_node() -> dict:
+    """Return a copy of os.environ with node's directory on PATH if needed."""
+    import os
+    import shutil
+    if shutil.which("node"):
+        return None  # already on PATH, use inherited env
+    from dia_cli.utils.node_resolve import node_dir
+    ndir = node_dir()
+    if ndir is None:
+        return None
+    env = os.environ.copy()
+    env["PATH"] = str(ndir) + os.pathsep + env.get("PATH", "")
+    return env
+
+
 def _run_ui_builds(ui_builds, repo_root: Path, output=None, system: str = "pipeline", stage: str = "deploy") -> int:
     if output:
         output.step_started(system=system, stage=stage, step="ui-builds")
+    env = _build_env_with_node()
     for entry in ui_builds:
         cwd = repo_root / entry.cwd
         logger.info(f"deploy: ui_build in {entry.cwd}: {entry.cmd}")
-        result = subprocess.run(entry.cmd, cwd=str(cwd), shell=True)
+        result = subprocess.run(entry.cmd, cwd=str(cwd), shell=True, env=env)
         if result.returncode != 0:
             err = f"ui_build failed (exit {result.returncode}): {entry.cmd}"
             logger.error(f"deploy: {err}")

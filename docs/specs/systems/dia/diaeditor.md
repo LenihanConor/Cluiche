@@ -575,6 +575,7 @@ Decisions specific to DiaEditor system. Binding decisions constrain all features
 | SED-019 | The CluicheEditor shell frame must register document-level `dragover`/`drop` listeners that call `preventDefault()` | Without this, files dropped on the shell (toolbar, window border, gaps between panels) trigger CEF's default navigate-frame behaviour, blanking the entire editor window | Accepted | Yes |
 | SED-020 | Each editor plugin writes persistent output to `Cluiche/out/CluicheEditor/<PluginName>/` | Per PD-009 all generated output lives under `Cluiche/out/<AppName>/`; subdividing by plugin prevents collisions and makes per-plugin cleanup trivial; mirrors the per-system subdivision DiaCLI uses (`Cluiche/out/DiaCLI/logs/<system>/`) | Accepted | Yes |
 | SED-021 | Per-plugin session context via `.context.json` sidecar and `.sessions/` archive | Plugins track session context without encoding it in directory paths. Current session metadata lives in `<PluginName>/.context.json`. On `Initialize()`, if `.context.json` references a stale session, the plugin moves its current data into `.sessions/<old-session-id>/` (with its `.context.json`) before starting fresh. Plugins decide what to archive; `.sessions/` entries mirror the plugin's own internal layout. Boot-time cleanup prunes old sessions per a plugin-defined retention policy. Extensible to personas and other context dimensions by adding fields to `.context.json` — no folder restructure needed. | Accepted | Yes |
+| SED-022 | PluginServiceLocator is the mechanism for inter-plugin service sharing | Plugins register shared services (e.g. GameConnectionManager) via `PluginServiceLocator::RegisterService<T>()` using `T::kUniqueId` for type-safe resolution. Consumers call `GetService<T>()` on the context. Avoids raw pointers in EditorPluginContext for every shared service, keeps context stable as new services are added. | Accepted | Yes |
 
 **Status values:** `Proposed` · `Accepted` · `Rejected` · `Superseded`
 **Binding:** `Yes` = enforced on all features · `No` = guidance only
@@ -597,6 +598,7 @@ Features within the DiaEditor system (create with `/spec-feature`):
 | Game Connection Panel | UI for the editor's WebSocket connection to a running game | @docs/specs/features/dia/diaeditor/game-connection-panel.md | Draft |
 | Plugin Lifecycle Toolbar | Persistent toolbar strip, Plugin Browser panel, runtime load/unload/hide/show of plugins, connection status indicator | @docs/specs/features/dia/diaeditor/plugin-lifecycle-toolbar.md | Done |
 | Shared File Dialog | Framework-level native file dialog service (open/save) available to all plugins via WebUIBridge | @docs/specs/features/dia/diaeditor/shared-file-dialog.md | Draft |
+| Plugin Service Locator | Type-safe service locator on EditorPluginContext for inter-plugin service sharing | @docs/specs/features/dia/diaeditor/plugin-service-locator.md | Done |
 
 ## AI Review Questions
 

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <DiaEditor/Plugin/IEditorPlugin.h>
-#include <DiaEditor/LiveConnection/GameConnectionManager.h>
 #include <DiaCore/Json/external/json/json.h>
 
 #include <memory>
@@ -19,6 +18,7 @@ namespace Dia
 		class WebUIBridge;
 		class EditorView;
 		class IPluginLoader;
+		class GameConnectionManager;
 	}
 
 	namespace AssetRuntime
@@ -52,8 +52,9 @@ namespace Dia
 				Dia::Editor::EditorView* mView = nullptr;
 				Dia::Editor::IPluginLoader* mPluginLoader = nullptr;
 
-				Dia::Editor::GameConnectionManager mManager;
+				Dia::Editor::GameConnectionManager* mManager = nullptr;
 				std::unique_ptr<SharedPluginState> mState;
+				bool mWasConnected = false;
 
 				AssetStateTablePanel mAssetStateTable;
 				StageAssetTreePanel mStageAssetTree;

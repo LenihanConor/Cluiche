@@ -85,6 +85,7 @@
     <ClInclude Include="Plugin\GameConnectionEditorPlugin.h" />
     <ClInclude Include="Plugin\PluginBrowserEditorPlugin.h" />
     <ClInclude Include="Plugin\IPluginLoader.h" />
+    <ClInclude Include="Plugin\PluginServiceLocator.h" />
     <ClInclude Include="Command\IEditorCommand.h" />
     <ClInclude Include="Command\CompoundCommand.h" />
     <ClInclude Include="Command\CommandHistory.h" />

@@ -86,24 +86,33 @@ def check_git() -> CheckResult:
 
 
 def check_nodejs() -> CheckResult:
-    rc, out, _ = _run(["node", "--version"])
+    from dia_cli.utils.node_resolve import find_node
+
+    node_path = find_node()
+    if node_path is None:
+        return CheckResult("Node.js", "toolchain", "fail", "not installed", "dia env setup --toolchain")
+
+    rc, out, _ = _run([str(node_path), "--version"])
     if rc == 0:
         ver = out.strip().lstrip("v")
+        detail = out.strip()
+        if node_path != Path(shutil.which("node") or ""):
+            detail += f" (at {node_path})"
         try:
             major = int(ver.split(".")[0])
             if major >= 18:
-                return CheckResult("Node.js", "toolchain", "pass", out.strip())
+                return CheckResult("Node.js", "toolchain", "pass", detail)
             elif major >= 10:
                 return CheckResult("Node.js", "toolchain", "warn",
-                                   f"Node.js {out.strip()} installed; recommend >= 18",
+                                   f"Node.js {detail} installed; recommend >= 18",
                                    "dia env setup --toolchain")
             else:
                 return CheckResult("Node.js", "toolchain", "fail",
-                                   f"Node.js {out.strip()} too old (< 10)",
+                                   f"Node.js {detail} too old (< 10)",
                                    "dia env setup --toolchain")
         except ValueError:
-            return CheckResult("Node.js", "toolchain", "pass", out.strip())
-    return CheckResult("Node.js", "toolchain", "fail", "not installed", "dia env setup --toolchain")
+            return CheckResult("Node.js", "toolchain", "pass", detail)
+    return CheckResult("Node.js", "toolchain", "fail", "found but could not run", "dia env setup --toolchain")
 
 
 def check_poetry() -> CheckResult:

@@ -51,6 +51,9 @@
     <ClInclude Include="Plugin\IPluginLoader.h">
       <Filter>Plugin</Filter>
     </ClInclude>
+    <ClInclude Include="Plugin\PluginServiceLocator.h">
+      <Filter>Plugin</Filter>
+    </ClInclude>
     <ClInclude Include="Command\IEditorCommand.h" />
     <ClInclude Include="Command\CompoundCommand.h" />
     <ClInclude Include="Command\CommandHistory.h" />

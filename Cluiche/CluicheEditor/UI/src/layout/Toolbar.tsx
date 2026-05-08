@@ -9,6 +9,12 @@ export function Toolbar({ panels }: ToolbarProps) {
   const [connectionState, setConnectionState] = useState("disconnected");
 
   useEffect(() => {
+    EditorBridge.request<{ state?: string }>("game_connection.get_state", {})
+      .then((result) => {
+        if (result?.state) setConnectionState(result.state);
+      })
+      .catch(() => {});
+
     return EditorBridge.subscribe("game_connection", (data: unknown) => {
       const d = data as { state?: string } | null;
       if (d?.state) setConnectionState(d.state);
