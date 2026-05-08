@@ -1,7 +1,6 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
-  
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
       <Platform>x64</Platform>
@@ -11,45 +10,10 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="ApplicationModule.cpp" />
-    <ClCompile Include="ApplicationPhase.cpp" />
-    <ClCompile Include="ApplicationProcessingUnit.cpp" />
-    <ClCompile Include="ApplicationStateObject.cpp" />
-    <ClCompile Include="MessageBus.cpp" />
-    <ClCompile Include="HotReloadManager.cpp" />
-    <ClCompile Include="Introspection\ApplicationIntrospector.cpp" />
-    <ClCompile Include="Loader\ApplicationLoader.cpp" />
-    <ClCompile Include="Manifest\ApplicationManifest.cpp" />
-    <ClCompile Include="Manifest\ApplicationManifestLoader.cpp" />
-    <ClCompile Include="Manifest\ManifestComposer.cpp" />
-    <ClCompile Include="Manifest\ManifestValidator.cpp" />
-    <ClCompile Include="Manifest\JsonApplicationManifestSerializer.cpp" />
-    <ClCompile Include="TypeRegistry\ApplicationTypeRegistry.cpp" />
-    <ClCompile Include="Metrics\MetricsCollectorModule.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="ApplicationModule.h" />
-    <ClInclude Include="ModuleRef.h" />
-    <ClInclude Include="ApplicationPhase.h" />
-    <ClInclude Include="ApplicationProcessingUnit.h" />
-    <ClInclude Include="ApplicationStateObject.h" />
-    <ClInclude Include="MessageBus.h" />
-    <ClInclude Include="Introspection\ApplicationIntrospector.h" />
-    <ClInclude Include="Loader\ApplicationLoader.h" />
-    <ClInclude Include="Manifest\ApplicationManifest.h" />
-    <ClInclude Include="Manifest\ApplicationManifestLoader.h" />
-    <ClInclude Include="Manifest\ManifestComposer.h" />
-    <ClInclude Include="Manifest\ManifestValidator.h" />
-    <ClInclude Include="Manifest\JsonApplicationManifestSerializer.h" />
-    <ClInclude Include="Manifest\TypedImport.h" />
-    <ClInclude Include="TypeRegistry\ApplicationTypeRegistry.h" />
-    <ClInclude Include="DebugDataTypes.h" />
-    <ClInclude Include="Metrics\MetricsCollectorModule.h" />
-  </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{DD3D58EF-028B-42CB-B837-0042BA30D96F}</ProjectGuid>
-    <RootNamespace>DiaApplication</RootNamespace>
+    <ProjectGuid>{A1B2C3D4-E5F6-7890-ABCD-EF0123456789}</ProjectGuid>
+    <RootNamespace>DiaGame</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
@@ -79,11 +43,6 @@
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <BrowseInformation>true</BrowseInformation>
     </ClCompile>
-    <Lib>
-      <AdditionalDependencies>
-      </AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir)DiaMaths.lib;$(OutDir)DiaCore.lib;$(OutDir)DiaGraphics.lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-    </Lib>
     <Bscmake>
       <PreserveSbr>true</PreserveSbr>
     </Bscmake>
@@ -98,19 +57,38 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
-    <Link>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <OptimizeReferences>true</OptimizeReferences>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <TargetMachine>MachineX86</TargetMachine>
-    </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="DiaGameManifest.h" />
+    <ClInclude Include="DiaGameManifestLoader.h" />
+    <ClInclude Include="JsonDiaGameSerializer.h" />
+    <ClInclude Include="JsonDiaStageSerializer.h" />
+    <ClInclude Include="GameFileComposer.h" />
+    <ClInclude Include="GameLoader.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="DiaGameManifest.cpp" />
+    <ClCompile Include="DiaGameManifestLoader.cpp" />
+    <ClCompile Include="JsonDiaGameSerializer.cpp" />
+    <ClCompile Include="JsonDiaStageSerializer.cpp" />
+    <ClCompile Include="GameFileComposer.cpp" />
+    <ClCompile Include="GameLoader.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
+      <Project>{8d41cbe3-c493-428d-95f3-627e56500667}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
     <ProjectReference Include="..\DiaLogger\DiaLogger.vcxproj">
       <Project>{7a8b9c0d-e1f2-3456-7890-abcdef012345}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\DiaSerializer\DiaSerializer.vcxproj">
       <Project>{B0C1D2E3-F4A5-6789-BCDE-F01234567891}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaApplication\DiaApplication.vcxproj">
+      <Project>{DD3D58EF-028B-42CB-B837-0042BA30D96F}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

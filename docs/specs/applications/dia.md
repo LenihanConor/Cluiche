@@ -15,6 +15,7 @@ Dia is the game engine application that provides all shared engine infrastructur
 | DiaCLI | Python-based CLI tool for development workflows (build, assets, scaffolding, utilities) | [diacli.md](../systems/dia/diacli.md) |
 | DiaPython | Python embedding framework - wraps pybind11 with clean C++ API for scripting integration | [diapython.md](../systems/dia/diapython.md) |
 | DiaApplication | Application framework (ProcessingUnit/Phase/Module architecture for multi-threaded execution) | [diaapplication.md](../systems/dia/diaapplication.md) |
+| DiaGame | Game project system — owns .diagame/.diastage file formats, serializers, GameFileComposer, GameLoader | [diagame.md](../systems/dia/diagame.md) |
 | DiaApplicationEditor | Editor plugin for editing .diaapp manifests (separate system, uses DiaEditor framework) | [diaapplicationeditor.md](../systems/dia/diaapplicationeditor.md) |
 | DiaDebugProtocol | Shared header-only protocol types for editor-game communication (used by DiaEditor and DiaDebugServer) | [diadebugprotocol.md](../systems/dia/diadebugprotocol.md) |
 | DiaDebugServer | WebSocket server for remote debugging - broadcasts game state, forwards DiaAPI commands to editors | [diadebugserver.md](../systems/dia/diadebugserver.md) |

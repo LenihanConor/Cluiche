@@ -2,8 +2,6 @@
 
 #include <DiaApplication/Manifest/ApplicationManifestLoader.h>
 #include <DiaApplication/Manifest/ManifestComposer.h>
-#include <DiaApplication/Manifest/DiaGameManifest.h>
-#include <DiaApplication/Manifest/DiaGameManifestLoader.h>
 #include <DiaApplication/TypeRegistry/ApplicationTypeRegistry.h>
 #include <DiaApplication/ApplicationProcessingUnit.h>
 #include <DiaLogger/DiaLog.h>
@@ -227,78 +225,5 @@ namespace Dia
 			return rootPU;
 		}
 
-		// -----------------------------------------------------------------------------
-		// LoadFromGameFile
-		// -----------------------------------------------------------------------------
-		ProcessingUnit* ApplicationLoader::LoadFromGameFile(ApplicationTypeRegistry& registry,
-														   const char* diagamePath,
-														   ManifestValidationResult& outResult)
-		{
-			DIA_ASSERT(diagamePath != nullptr, "Game file path cannot be null");
-
-			// Compose the full manifest including stages — this extends module phaseIds
-			// so that modules are wired to stage phases at instantiation time.
-			ManifestComposer composer;
-			ApplicationManifest manifest;
-			DiaGameManifest gameManifest;
-			outResult = composer.ComposeFromGameFile(diagamePath, manifest, gameManifest);
-			if (outResult != ManifestValidationResult::kSuccess)
-			{
-				DIA_LOG_ERROR("Application", "Failed to compose .diagame file: %s", diagamePath);
-				return nullptr;
-			}
-
-			if (manifest.processingUnits.Size() == 0)
-			{
-				DIA_LOG_ERROR("Application", "Composed manifest has no processing units: %s", diagamePath);
-				outResult = ManifestValidationResult::kMissingRequiredField;
-				return nullptr;
-			}
-
-			// Find the root PU
-			unsigned int rootIndex = 0;
-			for (unsigned int i = 0; i < manifest.processingUnits.Size(); ++i)
-			{
-				if (manifest.processingUnits[i].root)
-				{
-					rootIndex = i;
-					break;
-				}
-			}
-
-			ApplicationManifestLoader loader(registry);
-			ProcessingUnit* pu = loader.Instantiate(manifest.processingUnits[rootIndex]);
-			if (!pu)
-			{
-				DIA_LOG_ERROR("Application", "Failed to instantiate ProcessingUnit from composed manifest: %s", diagamePath);
-				outResult = ManifestValidationResult::kUnknownType;
-				return nullptr;
-			}
-
-			pu->Initialize();
-
-			DIA_LOG_INFO("Application", "Successfully loaded application from .diagame: %s", diagamePath);
-			return pu;
-		}
-
-		// -----------------------------------------------------------------------------
-		// LoadGameManifest
-		// -----------------------------------------------------------------------------
-		ManifestValidationResult ApplicationLoader::LoadGameManifest(const char* diagamePath,
-																	 DiaGameManifest& outManifest)
-		{
-			DIA_ASSERT(diagamePath != nullptr, "Game file path cannot be null");
-			return DiaGameManifestLoader::LoadGameFile(diagamePath, outManifest);
-		}
-
-		// -----------------------------------------------------------------------------
-		// LoadStageManifest
-		// -----------------------------------------------------------------------------
-		ManifestValidationResult ApplicationLoader::LoadStageManifest(const char* diastagePath,
-																	  DiaStageManifest& outStage)
-		{
-			DIA_ASSERT(diastagePath != nullptr, "Stage file path cannot be null");
-			return DiaGameManifestLoader::LoadStageFile(diastagePath, outStage);
-		}
 	}
 }

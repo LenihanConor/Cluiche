@@ -25,6 +25,11 @@ namespace Dia
 
 			DiaGameManifest();
 			~DiaGameManifest();
+
+			DiaGameManifest(const DiaGameManifest&) = delete;
+			DiaGameManifest& operator=(const DiaGameManifest&) = delete;
+			DiaGameManifest(DiaGameManifest&& other) noexcept;
+			DiaGameManifest& operator=(DiaGameManifest&& other) noexcept;
 		};
 
 		struct DiaStageManifest

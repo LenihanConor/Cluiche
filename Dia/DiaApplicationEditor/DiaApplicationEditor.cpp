@@ -10,12 +10,15 @@
 #include <DiaApplication/Manifest/JsonApplicationManifestSerializer.h>
 #include <DiaApplication/Manifest/ManifestComposer.h>
 #include <DiaApplication/Manifest/ManifestValidator.h>
-#include <DiaApplication/Manifest/DiaGameManifest.h>
+#include <DiaGame/DiaGameManifest.h>
+#include <DiaGame/JsonDiaGameSerializer.h>
+#include <DiaGame/GameFileComposer.h>
 #include <DiaApplication/TypeRegistry/ApplicationTypeRegistry.h>
 
 #include <DiaCore/Json/external/json/json.h>
 
 #include <fstream>
+#include <utility>
 #include <cstring>
 #include <cstdio>
 #define WIN32_LEAN_AND_MEAN
@@ -23,6 +26,7 @@
 
 using namespace Dia::Application::Editor;
 using namespace Dia::Application;
+using namespace Dia::Game;
 using namespace Dia::Core;
 
 DiaApplicationEditor::DiaApplicationEditor()
@@ -200,13 +204,13 @@ void DiaApplicationEditor::OpenManifest(const char* path)
 	ApplicationManifest newManifest;
 	ManifestValidationResult result;
 	bool isDiaGameFile = false;
-	DiaGameManifest gameManifest;
+	Dia::Game::DiaGameManifest gameManifest;
 
-	// Detect .diagame extension — route to ComposeFromGameFile
+	// Detect .diagame extension — route to GameFileComposer
 	const char* ext = strrchr(path, '.');
 	if (ext != nullptr && _stricmp(ext, ".diagame") == 0)
 	{
-		ManifestComposer composer;
+		GameFileComposer composer;
 		result = composer.ComposeFromGameFile(path, newManifest, gameManifest);
 		isDiaGameFile = true;
 	}
@@ -235,23 +239,8 @@ void DiaApplicationEditor::OpenManifest(const char* path)
 	mData->isDirty = false;
 	mData->hasManifest = true;
 	mData->isDiaGameFile = isDiaGameFile;
-	mData->gameManifest = gameManifest;
+	mData->gameManifest = std::move(gameManifest);
 
-	// Preserve raw .diagame config (may contain fields not in DiaGameConfig struct)
-	delete mData->gameFileRawConfig;
-	mData->gameFileRawConfig = nullptr;
-	if (isDiaGameFile)
-	{
-		std::ifstream rawFile(path);
-		if (rawFile.is_open())
-		{
-			Json::Value rawRoot;
-			Json::Reader rawReader;
-			if (rawReader.parse(rawFile, rawRoot) && rawRoot.isMember("config"))
-				mData->gameFileRawConfig = new Json::Value(rawRoot["config"]);
-			rawFile.close();
-		}
-	}
 
 	// Serialize manifest to JSON and push to UI so TreeView can render it
 	Json::Value manifestJson;
@@ -773,7 +762,7 @@ bool DiaApplicationEditor::WriteDiaGameToDisk(const char* path)
 		}
 	}
 
-	// Now write the .diagame file itself (preserving its schema)
+	// Now write the .diagame file itself via the canonical serializer
 	std::ifstream existingGameFile(path);
 	if (existingGameFile.good())
 	{
@@ -783,40 +772,13 @@ bool DiaApplicationEditor::WriteDiaGameToDisk(const char* path)
 		std::rename(path, backupPath);
 	}
 
-	Json::Value gameJson(Json::objectValue);
-	gameJson["name"] = mData->gameManifest.name.AsCStr();
-	gameJson["version"] = mData->gameManifest.version.AsCStr();
-
-	Json::Value importsJson(Json::arrayValue);
-	for (unsigned int i = 0; i < mData->gameManifest.imports.Size(); ++i)
+	JsonDiaGameSerializer gameSerializer;
+	auto gameResult = gameSerializer.SaveToFile(path, mData->gameManifest);
+	if (!gameResult)
 	{
-		Json::Value entry;
-		entry["path"] = mData->gameManifest.imports[i].path.AsCStr();
-		entry["type"] = (mData->gameManifest.imports[i].type == TypedImport::ImportType::kStage)
-			? "stage" : "manifest";
-		importsJson.append(entry);
-	}
-	gameJson["imports"] = importsJson;
-
-	if (mData->gameFileRawConfig != nullptr)
-		gameJson["config"] = *mData->gameFileRawConfig;
-	else
-	{
-		Json::Value configJson(Json::objectValue);
-		if (mData->gameManifest.config.assetRoot.Length() > 0)
-			configJson["asset_root"] = mData->gameManifest.config.assetRoot.AsCStr();
-		gameJson["config"] = configJson;
-	}
-
-	std::ofstream gameFile(path);
-	if (!gameFile.is_open())
-	{
-		NotifyUI("file_error", "Cannot open .diagame file for writing");
+		NotifyUI("file_error", "Cannot write .diagame file");
 		return false;
 	}
-
-	gameFile << writer.write(gameJson);
-	gameFile.close();
 
 	return true;
 }

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ApplicationManifest.h"
-#include "DiaGameManifest.h"
 #include "ManifestValidator.h"
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Containers/HashTables/HashTable.h>
@@ -32,11 +31,11 @@ namespace Dia
 				const char* filePath,
 				ApplicationManifest& outComposedManifest);
 
-			// Compose from a .diagame file — resolves typed imports (manifests + stages)
-			ManifestValidationResult ComposeFromGameFile(
-				const char* diagamePath,
-				ApplicationManifest& outComposedManifest,
-				DiaGameManifest& outGameManifest);
+			// Compose from a set of typed imports relative to a base path
+			ManifestValidationResult ComposeFromTypedImports(
+				const char* basePath,
+				const Dia::Core::Containers::DynamicArrayC<TypedImport, 16>& imports,
+				ApplicationManifest& outComposedManifest);
 
 			// Error reporting
 			const Dia::Core::Containers::DynamicArrayC<ManifestValidationError, 32>& GetErrors() const;

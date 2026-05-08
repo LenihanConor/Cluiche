@@ -419,6 +419,9 @@
     <ClCompile Include="Application\TestDiaGameFormat.cpp">
       <Filter>Application</Filter>
     </ClCompile>
+    <ClCompile Include="Application\TestDiaGameSerializers.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
     <ClCompile Include="Application\TestMessageBus.cpp">
       <Filter>Application</Filter>
     </ClCompile>

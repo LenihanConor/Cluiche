@@ -1,12 +1,10 @@
 #pragma once
 
 #include <DiaApplication/Manifest/ApplicationManifest.h>
-#include <DiaApplication/Manifest/DiaGameManifest.h>
+#include <DiaGame/DiaGameManifest.h>
 #include <DiaApplication/Manifest/ManifestValidator.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/CRC/StringCRC.h>
-
-namespace Json { class Value; }
 
 namespace Dia
 {
@@ -60,8 +58,7 @@ namespace Dia
 				bool isDirty;
 				bool hasManifest;
 				bool isDiaGameFile;
-				DiaGameManifest gameManifest;
-				Json::Value* gameFileRawConfig;
+				Dia::Game::DiaGameManifest gameManifest;
 
 				ValidationResult validationResult;
 				TypeCache typeCache;
@@ -70,15 +67,9 @@ namespace Dia
 					: isDirty(false)
 					, hasManifest(false)
 					, isDiaGameFile(false)
-					, gameFileRawConfig(nullptr)
 				{
 					filePath[0] = '\0';
 					selectedNodeId[0] = '\0';
-				}
-
-				~ManifestEditorData()
-				{
-					delete gameFileRawConfig;
 				}
 			};
 		}

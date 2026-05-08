@@ -39,9 +39,6 @@
     <ClCompile Include="Manifest\ManifestValidator.cpp">
       <Filter>Manifest</Filter>
     </ClCompile>
-    <ClCompile Include="Manifest\DiaGameManifestLoader.cpp">
-      <Filter>Manifest</Filter>
-    </ClCompile>
     <ClCompile Include="TypeRegistry\ApplicationTypeRegistry.cpp">
       <Filter>TypeRegistry</Filter>
     </ClCompile>
@@ -75,12 +72,6 @@
       <Filter>Manifest</Filter>
     </ClInclude>
     <ClInclude Include="Manifest\TypedImport.h">
-      <Filter>Manifest</Filter>
-    </ClInclude>
-    <ClInclude Include="Manifest\DiaGameManifest.h">
-      <Filter>Manifest</Filter>
-    </ClInclude>
-    <ClInclude Include="Manifest\DiaGameManifestLoader.h">
       <Filter>Manifest</Filter>
     </ClInclude>
     <ClInclude Include="TypeRegistry\ApplicationTypeRegistry.h">

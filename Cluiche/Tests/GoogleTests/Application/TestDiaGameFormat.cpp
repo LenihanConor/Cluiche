@@ -1,11 +1,12 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <gtest/gtest.h>
-#include <DiaApplication/Manifest/DiaGameManifest.h>
-#include <DiaApplication/Manifest/DiaGameManifestLoader.h>
+#include <DiaGame/DiaGameManifest.h>
+#include <DiaGame/DiaGameManifestLoader.h>
+#include <DiaGame/GameFileComposer.h>
+#include <DiaGame/GameLoader.h>
 #include <DiaApplication/Manifest/ManifestComposer.h>
 #include <DiaApplication/Manifest/ApplicationManifest.h>
 #include <DiaApplication/Manifest/ManifestValidator.h>
-#include <DiaApplication/Loader/ApplicationLoader.h>
 #include <DiaApplication/TypeRegistry/ApplicationTypeRegistry.h>
 #include <DiaApplication/ApplicationProcessingUnit.h>
 #include <DiaApplication/ApplicationPhase.h>
@@ -16,6 +17,7 @@
 #include <direct.h>
 
 using namespace Dia::Application;
+using namespace Dia::Game;
 using namespace Dia::Core;
 
 // ---------------------------------------------------------------------------
@@ -155,7 +157,7 @@ TEST(DiaGameFormat, ComposeFromGameFile_ManifestImport_ResolvesPUs)
 		"{ \"name\": \"TestGame\", \"version\": \"1.0\","
 		"  \"imports\": [{ \"path\": \"test_compose_main.diaapp\", \"type\": \"manifest\" }] }");
 
-	ManifestComposer composer;
+	GameFileComposer composer;
 	ApplicationManifest manifest;
 	DiaGameManifest gameManifest;
 	ManifestValidationResult result = composer.ComposeFromGameFile("test_compose.diagame", manifest, gameManifest);
@@ -174,7 +176,7 @@ TEST(DiaGameFormat, ComposeFromGameFile_MissingImport_ReturnsError)
 		"{ \"name\": \"TestGame\", \"version\": \"1.0\","
 		"  \"imports\": [{ \"path\": \"nonexistent.diaapp\", \"type\": \"manifest\" }] }");
 
-	ManifestComposer composer;
+	GameFileComposer composer;
 	ApplicationManifest manifest;
 	DiaGameManifest gameManifest;
 	ManifestValidationResult result = composer.ComposeFromGameFile("test_compose_missing.diagame", manifest, gameManifest);
@@ -222,7 +224,7 @@ TEST(DiaGameFormat, ComposeFromGameFile_StageImport_MergesPhasesIntoTargetPU)
 		"    { \"path\": \"test_stage_level.diastage\", \"type\": \"stage\" }"
 		"  ] }");
 
-	ManifestComposer composer;
+	GameFileComposer composer;
 	ApplicationManifest manifest;
 	DiaGameManifest gameManifest;
 	ManifestValidationResult result = composer.ComposeFromGameFile("test_stage_game.diagame", manifest, gameManifest);
@@ -270,7 +272,7 @@ TEST(DiaGameFormat, ComposeFromGameFile_StageRequiresPhase_MissingPhase_ReturnsE
 		"    { \"path\": \"test_reqphase_stage.diastage\", \"type\": \"stage\" }"
 		"  ] }");
 
-	ManifestComposer composer;
+	GameFileComposer composer;
 	ApplicationManifest manifest;
 	DiaGameManifest gameManifest;
 	ManifestValidationResult result = composer.ComposeFromGameFile("test_reqphase_game.diagame", manifest, gameManifest);
@@ -314,7 +316,7 @@ TEST(DiaGameFormat, ComposeFromGameFile_StageTargetsMissingPU_ReturnsError)
 		"    { \"path\": \"test_badpu_stage.diastage\", \"type\": \"stage\" }"
 		"  ] }");
 
-	ManifestComposer composer;
+	GameFileComposer composer;
 	ApplicationManifest manifest;
 	DiaGameManifest gameManifest;
 	ManifestValidationResult result = composer.ComposeFromGameFile("test_badpu_game.diagame", manifest, gameManifest);
@@ -377,7 +379,7 @@ TEST(DiaGameFormat, CluicheTestDataFiles_DiastageLoads)
 
 TEST(DiaGameFormat, CluicheTestDataFiles_ComposeFromGameFile_Succeeds)
 {
-	ManifestComposer composer;
+	GameFileComposer composer;
 	ApplicationManifest manifest;
 	DiaGameManifest gameManifest;
 	ManifestValidationResult result = composer.ComposeFromGameFile(
@@ -442,7 +444,7 @@ TEST(DiaGameFormat, StageTransitions_MergedIntoTargetPU)
 		"    { \"path\": \"test_ac6_stage.diastage\", \"type\": \"stage\" }"
 		"  ] }");
 
-	ManifestComposer composer;
+	GameFileComposer composer;
 	ApplicationManifest manifest;
 	DiaGameManifest gameManifest;
 	ManifestValidationResult result = composer.ComposeFromGameFile("test_ac6.diagame", manifest, gameManifest);
@@ -505,20 +507,20 @@ TEST(DiaGameFormat, LoadApplication_DiaappOnly_StillWorks)
 // AC14: LoadFromGameFile via ApplicationLoader (integration)
 // ---------------------------------------------------------------------------
 
-TEST(DiaGameFormat, ApplicationLoader_LoadGameManifest_ParsesFile)
+TEST(DiaGameFormat, GameLoader_LoadGameManifest_ParsesFile)
 {
 	DiaGameManifest manifest;
-	ManifestValidationResult result = ApplicationLoader::LoadGameManifest(
+	ManifestValidationResult result = GameLoader::LoadGameManifest(
 		"Data/Manifests/cluichetest.diagame", manifest);
 
 	EXPECT_EQ(result, ManifestValidationResult::kSuccess);
 	EXPECT_STREQ(manifest.name.AsCStr(), "CluicheTest");
 }
 
-TEST(DiaGameFormat, ApplicationLoader_LoadStageManifest_ParsesFile)
+TEST(DiaGameFormat, GameLoader_LoadStageManifest_ParsesFile)
 {
 	DiaStageManifest manifest;
-	ManifestValidationResult result = ApplicationLoader::LoadStageManifest(
+	ManifestValidationResult result = GameLoader::LoadStageManifest(
 		"Data/stages/DummyStage/dummy_stage.diastage", manifest);
 
 	EXPECT_EQ(result, ManifestValidationResult::kSuccess);

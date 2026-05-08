@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include <DiaApplication/Loader/ApplicationLoader.h>
+#include <DiaGame/GameLoader.h>
 #include <DiaApplication/TypeRegistry/ApplicationTypeRegistry.h>
 #include <DiaApplication/ApplicationProcessingUnit.h>
 
@@ -13,7 +13,7 @@ int main( int argc, const char* argv[] )
 
 	Dia::Application::ManifestValidationResult result;
 	Dia::Application::ProcessingUnit* mainPU =
-		Dia::Application::ApplicationLoader::LoadFromGameFile(registry, "assets/cluichetest.diagame", result);
+		Dia::Game::GameLoader::LoadFromGameFile(registry, "assets/cluichetest.diagame", result);
 
 	if (!mainPU)
 	{
