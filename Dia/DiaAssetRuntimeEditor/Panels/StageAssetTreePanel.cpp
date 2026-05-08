@@ -314,7 +314,7 @@ namespace Dia
 								args["stageId"] = stageId.AsChar();
 								Dia::Core::StringCRC capturedId = stageId;
 								unsigned int gen = mGeneration;
-								mManager->SendCommandWithResponse("asset_runtime.get_stage_deps", args,
+								mManager->SendCommandWithResponse("asset-runtime-get-stage-deps", args,
 									[this, capturedId, gen](bool success, const Json::Value& result)
 									{
 										if (gen != mGeneration)

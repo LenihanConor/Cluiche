@@ -1,6 +1,7 @@
 #include "ApplicationFlow/Phases/MainBootStrapPhase.h"
 
 #include "CluicheKernel/ApplicationFlow/Modules/MainKernelModule.h"
+#include "CluicheKernel/ApplicationFlow/Modules/AssetServiceModule.h"
 #include "CluicheKernel/ApplicationFlow/Modules/LevelFactoryModule.h"
 #include "CluicheKernel/ApplicationFlow/Modules/MainUIModule.h"
 #include "Stages/DummyStage/DummyStage.h"
@@ -8,6 +9,7 @@
 #include <CluicheKernel/LevelFactory.h>
 
 #include <DiaApplication/ApplicationProcessingUnit.h>
+#include <DiaAssetRuntime/AssetRuntimeDebugCommands.h>
 #include <DiaDebugServer/DebugServerModule.h>
 
 #include <DiaCore/Strings/stringutils.h>
@@ -37,6 +39,15 @@ namespace Cluiche
 
 	void MainBootStrapPhase::AfterModulesStart()
 	{
+		auto* debugServer = this->GetModule<Dia::DebugServer::DebugServerModule>();
+		auto* assetService = this->GetModule<Cluiche::Main::AssetServiceModule>();
+		if (debugServer && assetService &&
+			!debugServer->GetQueryRegistry().Has(Dia::Core::StringCRC("asset-runtime-get-all-states")))
+		{
+			Dia::AssetRuntime::RegisterAssetRuntimeQueryHandlers(
+				debugServer->GetQueryRegistry(), assetService->GetRuntime());
+		}
+
 		if (mDummyStage == nullptr)
 			mDummyStage = DIA_NEW(Cluiche::DummyStage::Level(this, this->GetAssociatedProcessingUnit(), nullptr, nullptr));
 

@@ -256,6 +256,7 @@ Features within the DiaDebugServer system (create with `/spec-feature`):
 | Event Broadcasting | Forward MessageBus events to subscribed editors | @docs/specs/features/dia/diadebugserver/event-broadcasting.md | Approved |
 | DiaAPI Command Gateway | Receive commands via WebSocket, forward to CommandRegistry, return results | @docs/specs/features/dia/diadebugserver/diaapi-command-gateway.md | Approved |
 | Protocol Command Handling | Handle subscribe, unsubscribe, get_state commands | @docs/specs/features/dia/diadebugserver/protocol-command-handling.md | Approved |
+| Query Registry | Structured remote query dispatch — domain modules register JSON-in/JSON-out handlers; migrates protocol commands | @docs/specs/features/dia/diadebugserver/query-registry.md | Approved |
 | Server Self-Monitoring | Track game/editor performance impact, server health metrics, debugging | @docs/specs/features/dia/diadebugserver/server-self-monitoring.md | Approved |
 
 ## AI Review Questions

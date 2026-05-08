@@ -159,6 +159,26 @@
     }
   }
 
+  // Listen for push notifications from the main frame (via postMessage).
+  window.addEventListener('message', function(e) {
+    var msg = e.data || {};
+    if (!msg.__dia) return;
+
+    if (msg.topic === 'asset_runtime_editor.connection_state') {
+      updateConnectionUI(msg.data.connected);
+    }
+
+    // Forward to child iframes (sub-panels).
+    var frames = ['frame-table', 'frame-tree', 'frame-inspector', 'frame-log'];
+    frames.forEach(function(id) {
+      var iframe = document.getElementById(id);
+      if (iframe && iframe.contentWindow) {
+        try { iframe.contentWindow.postMessage(msg, '*'); } catch(ex) {}
+      }
+    });
+  });
+
+  // Also support direct calls from the bridge (for backwards compatibility).
   window.DiaEditor_onDataChanged = function(msg) {
     if (msg.topic === 'asset_runtime_editor.connection_state') {
       updateConnectionUI(msg.data.connected);
@@ -173,14 +193,31 @@
     });
   };
 
+  // Request initial connection state from the C++ backend via the parent frame.
   (function() {
-    if (window.DiaEditor && window.DiaEditor.request) {
-      window.DiaEditor.request('asset_runtime_editor.get_connection_state', {})
-        .then(function(result) {
-          if (result && result.connected !== undefined) {
-            updateConnectionUI(result.connected);
-          }
-        });
+    var reqId = 'arte-init-' + Date.now();
+
+    // Listen for the response routed back via postMessage.
+    function onResponse(e) {
+      var msg = e.data;
+      if (!msg || !msg.__diaResponse || msg.reqId !== reqId) return;
+      window.removeEventListener('message', onResponse);
+      if (msg.result && msg.result.connected !== undefined) {
+        updateConnectionUI(msg.result.connected);
+      }
+    }
+    window.addEventListener('message', onResponse);
+
+    // Send the request through the parent frame's bridge.
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({
+        __diaFromFrame: true,
+        payload: {
+          type: 'asset_runtime_editor.get_connection_state',
+          reqId: reqId,
+          data: {}
+        }
+      }, '*');
     }
   })();
 </script>

@@ -222,6 +222,7 @@
     <ClCompile Include="UI\TestUIDataBuffer.cpp" />
     <ClCompile Include="UI\TestPage.cpp" />
     <ClCompile Include="WebSocket\TestWebSocketServer.cpp" />
+    <ClCompile Include="WebSocket\TestWebSocketServerBuffer.cpp" />
     <ClCompile Include="WebSocket\TestWebSocketClient.cpp" />
     <ClCompile Include="WebSocket\TestWebSocketIntegration.cpp" />
     <ClCompile Include="WebSocket\TestWebSocketError.cpp" />
@@ -262,6 +263,7 @@
     <ClCompile Include="Editor\TestEditorApplicationLifecycle.cpp" />
     <ClCompile Include="Editor\TestEditorPluginPipeline.cpp" />
     <ClCompile Include="Editor\TestGameConnectionManagerIntegration.cpp" />
+    <ClCompile Include="Editor\TestGameConnectionManagerPendingQueue.cpp" />
     <ClCompile Include="Editor\TestGameConnectionController.cpp" />
     <ClCompile Include="Editor\TestGameConnectionControllerMessages.cpp" />
     <ClCompile Include="Editor\TestGameConnectionLifecycle.cpp" />

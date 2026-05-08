@@ -1,8 +1,6 @@
 #include "DiaDebugServer/CommandDispatcher.h"
-#include "DiaDebugServer/DebugServerModule.h"
 
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
-#include <DiaDebugProtocol/generated/debug_protocol.pb.h>
 
 namespace Dia
 {
@@ -51,38 +49,6 @@ namespace Dia
 			response["message"] = (result == 0) ? "Command executed successfully" : "Command failed";
 			response["result_code"] = result;
 			return response;
-		}
-
-		void CommandDispatcher::ExecuteProtocolCommand(const Dia::Core::StringCRC& commandName,
-		                                               const Json::Value& payload,
-		                                               DebugServerModule* server,
-		                                               dia::debug::CommandResponse* responseOut)
-		{
-			auto it = mProtocolHandlers.find(commandName);
-			if (it != mProtocolHandlers.end())
-			{
-				it->second(payload, responseOut);
-				return;
-			}
-
-			responseOut->set_success(false);
-			responseOut->set_message("Unknown protocol command");
-		}
-
-		void CommandDispatcher::RegisterProtocolCommand(const Dia::Core::StringCRC& commandName,
-		                                                ProtocolCommandHandler handler)
-		{
-			mProtocolHandlers[commandName] = handler;
-		}
-
-		void CommandDispatcher::UnregisterProtocolCommand(const Dia::Core::StringCRC& commandName)
-		{
-			mProtocolHandlers.erase(commandName);
-		}
-
-		bool CommandDispatcher::IsProtocolCommand(const Dia::Core::StringCRC& commandName) const
-		{
-			return mProtocolHandlers.find(commandName) != mProtocolHandlers.end();
 		}
 	}
 }

@@ -61,6 +61,7 @@ namespace Dia
 				unsigned int mGeneration;
 				bool mActive;
 				bool mConnected;
+				bool mPollInFlight;
 			};
 		}
 	}

@@ -2,6 +2,7 @@
 #include "CluicheKernel/ApplicationFlow/Modules/MainKernelModule.h"
 #include "CluicheKernel/ApplicationFlow/Modules/MainUIModule.h"
 
+#include <DiaApplication/ApplicationProcessingUnit.h>
 #include <DiaCore/FilePath/FilePath.h>
 #include <DiaCore/FilePath/Path.h>
 #include <DiaCore/FilePath/PathStore.h>
@@ -300,13 +301,16 @@ namespace Cluiche
 			if (mHandlerDependenciesWired)
 				return;
 
-			Cluiche::Main::KernelModule* kernel = this->GetModule<Cluiche::Main::KernelModule>();
+			Dia::Application::ProcessingUnit* pu = GetAssociatedProcessingUnit();
+			Cluiche::Main::KernelModule* kernel = static_cast<Cluiche::Main::KernelModule*>(
+				pu->FindModule(Cluiche::Main::KernelModule::kTypeId));
 			if (kernel && kernel->GetWindow())
 			{
 				mTextureHandler.SetRenderWindow(static_cast<Dia::SFML::RenderWindow*>(kernel->GetWindow()));
 			}
 
-			Cluiche::Main::UIModule* uiModule = this->GetModule<Cluiche::Main::UIModule>();
+			Cluiche::Main::UIModule* uiModule = static_cast<Cluiche::Main::UIModule*>(
+				pu->FindModule(Cluiche::Main::UIModule::kTypeId));
 			if (uiModule && uiModule->GetUISystem())
 			{
 				mUIHandler.SetUISystem(uiModule->GetUISystem());

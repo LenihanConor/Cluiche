@@ -463,6 +463,9 @@
     <ClCompile Include="WebSocket\TestWebSocketServer.cpp">
       <Filter>WebSocket</Filter>
     </ClCompile>
+    <ClCompile Include="WebSocket\TestWebSocketServerBuffer.cpp">
+      <Filter>WebSocket</Filter>
+    </ClCompile>
     <ClCompile Include="WebSocket\TestWebSocketClient.cpp">
       <Filter>WebSocket</Filter>
     </ClCompile>
@@ -569,6 +572,9 @@
       <Filter>Editor</Filter>
     </ClCompile>
     <ClCompile Include="Editor\TestGameConnectionManagerIntegration.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TestGameConnectionManagerPendingQueue.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
     <ClCompile Include="Editor\TestGameConnectionController.cpp">

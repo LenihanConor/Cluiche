@@ -6,6 +6,7 @@
 
 #include "DiaDebugServer/SubscriptionManager.h"
 #include "DiaDebugServer/CommandDispatcher.h"
+#include "DiaDebugServer/QueryRegistry.h"
 #include "DiaDebugServer/StateSerializer.h"
 #include "DiaDebugServer/DebugServerLogSink.h"
 #include <DiaLogger/LogLevel.h>
@@ -83,6 +84,7 @@ namespace Dia
 
 			SubscriptionManager& GetSubscriptionManager() { return mSubscriptionManager; }
 			CommandDispatcher& GetCommandDispatcher() { return mCommandDispatcher; }
+			QueryRegistry& GetQueryRegistry() { return mQueryRegistry; }
 
 			// Send a data-update to all subscribers of the given topic.
 			// Uses MESSAGE_TYPE_DATA_UPDATE envelope; payload is arbitrary JSON.
@@ -131,6 +133,7 @@ namespace Dia
 			ServerStats mStats;
 			SubscriptionManager mSubscriptionManager;
 			CommandDispatcher mCommandDispatcher;
+			QueryRegistry mQueryRegistry;
 			DebugServerLogSink mLogSink;
 
 			uint64_t mStartTimestamp;

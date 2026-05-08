@@ -357,12 +357,16 @@ namespace Dia
 			auto* resp = response.mutable_command_response();
 			resp->set_command(cmd.command());
 
-			if (mCommandDispatcher.IsProtocolCommand(commandName))
+			if (mQueryRegistry.Has(commandName))
 			{
-				mCommandDispatcher.ExecuteProtocolCommand(commandName, payload, this, resp);
+				DIA_LOG_DEBUG("DebugServer", "HandleCommand: '%s' dispatched via QueryRegistry", cmd.command().c_str());
+				Json::Value result = mQueryRegistry.Execute(commandName, payload);
+				resp->set_success(true);
+				Dia::Proto::JsonValueToProtoStruct(result, resp->mutable_payload());
 			}
 			else
 			{
+				DIA_LOG_DEBUG("DebugServer", "HandleCommand: '%s' dispatched via DiaAPI fallback", cmd.command().c_str());
 				Json::Value result = mCommandDispatcher.ExecuteDiaAPICommand(commandName, payload);
 				resp->set_success(result.get("success", false).asBool());
 				resp->set_message(result.get("message", "").asString());
@@ -479,38 +483,35 @@ namespace Dia
 
 		void DebugServerModule::RegisterProtocolCommands()
 		{
-			mCommandDispatcher.RegisterProtocolCommand(
+			mQueryRegistry.Register(
 				Dia::Core::StringCRC("get_state"),
-				[this](const Json::Value& /*payload*/, dia::debug::CommandResponse* responseOut) {
+				[this](const Json::Value& /*args*/) -> Json::Value {
 					const Dia::Application::ProcessingUnit* pu = GetAssociatedProcessingUnit();
-					responseOut->set_success(true);
 
-					Json::Value statePayload;
+					Json::Value result;
 					if (pu)
 					{
-						statePayload["processing_unit"] = StateSerializer::SerializeProcessingUnitState(pu);
+						result["processing_unit"] = StateSerializer::SerializeProcessingUnitState(pu);
 						const Dia::Application::Phase* currentPhase = pu->GetCurrentPhase();
 						if (currentPhase)
 						{
-							statePayload["current_phase"] = StateSerializer::SerializePhaseState(currentPhase);
+							result["current_phase"] = StateSerializer::SerializePhaseState(currentPhase);
 						}
 					}
-					Dia::Proto::JsonValueToProtoStruct(statePayload, responseOut->mutable_payload());
+					return result;
 				}
 			);
 
-			mCommandDispatcher.RegisterProtocolCommand(
+			mQueryRegistry.Register(
 				Dia::Core::StringCRC("list_commands"),
-				[this](const Json::Value& /*payload*/, dia::debug::CommandResponse* responseOut) {
-					responseOut->set_success(true);
+				[this](const Json::Value& /*args*/) -> Json::Value {
+					Json::Value result;
 
-					Json::Value commandsPayload;
-
-					Json::Value protocolCmds(Json::arrayValue);
-					protocolCmds.append("get_state");
-					protocolCmds.append("list_commands");
-					protocolCmds.append("get_server_stats");
-					commandsPayload["protocol_commands"] = protocolCmds;
+					Json::Value queryCmds(Json::arrayValue);
+					queryCmds.append("get_state");
+					queryCmds.append("list_commands");
+					queryCmds.append("get_server_stats");
+					result["query_commands"] = queryCmds;
 
 					Json::Value apiCmds(Json::arrayValue);
 					auto commands = Dia::API::ListCommands();
@@ -518,35 +519,33 @@ namespace Dia
 					{
 						apiCmds.append(commands[i]->name.AsChar());
 					}
-					commandsPayload["api_commands"] = apiCmds;
+					result["api_commands"] = apiCmds;
 
-					Dia::Proto::JsonValueToProtoStruct(commandsPayload, responseOut->mutable_payload());
+					return result;
 				}
 			);
 
-			mCommandDispatcher.RegisterProtocolCommand(
+			mQueryRegistry.Register(
 				Dia::Core::StringCRC("get_server_stats"),
-				[this](const Json::Value& /*payload*/, dia::debug::CommandResponse* responseOut) {
-					responseOut->set_success(true);
+				[this](const Json::Value& /*args*/) -> Json::Value {
+					Json::Value result;
 
-					Json::Value statsPayload;
+					result["game_side"]["debug_server_overhead_ms"] = mStats.debugServerOverheadMs;
+					result["game_side"]["serialization_time_ms"] = mStats.serializationTimeMs;
+					result["game_side"]["broadcast_time_ms"] = mStats.broadcastTimeMs;
+					result["game_side"]["subscription_count"] = mStats.subscriptionCount;
 
-					statsPayload["game_side"]["debug_server_overhead_ms"] = mStats.debugServerOverheadMs;
-					statsPayload["game_side"]["serialization_time_ms"] = mStats.serializationTimeMs;
-					statsPayload["game_side"]["broadcast_time_ms"] = mStats.broadcastTimeMs;
-					statsPayload["game_side"]["subscription_count"] = mStats.subscriptionCount;
+					result["editor_side"]["bytes_sent_per_sec"] = mStats.bytesSentPerSec;
+					result["editor_side"]["message_queue_size"] = mStats.messageQueueSize;
+					result["editor_side"]["messages_dropped"] = mStats.messagesDropped;
+					result["editor_side"]["average_message_size_bytes"] = mStats.averageMessageSizeBytes;
 
-					statsPayload["editor_side"]["bytes_sent_per_sec"] = mStats.bytesSentPerSec;
-					statsPayload["editor_side"]["message_queue_size"] = mStats.messageQueueSize;
-					statsPayload["editor_side"]["messages_dropped"] = mStats.messagesDropped;
-					statsPayload["editor_side"]["average_message_size_bytes"] = mStats.averageMessageSizeBytes;
+					result["server"]["connection_count"] = mStats.connectionCount;
+					result["server"]["messages_sent_total"] = mStats.messagesSentTotal;
+					result["server"]["messages_received_total"] = mStats.messagesReceivedTotal;
+					result["server"]["uptime_seconds"] = mStats.uptimeSeconds;
 
-					statsPayload["server"]["connection_count"] = mStats.connectionCount;
-					statsPayload["server"]["messages_sent_total"] = mStats.messagesSentTotal;
-					statsPayload["server"]["messages_received_total"] = mStats.messagesReceivedTotal;
-					statsPayload["server"]["uptime_seconds"] = mStats.uptimeSeconds;
-
-					Dia::Proto::JsonValueToProtoStruct(statsPayload, responseOut->mutable_payload());
+					return result;
 				}
 			);
 		}

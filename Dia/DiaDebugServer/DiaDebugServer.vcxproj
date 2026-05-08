@@ -16,6 +16,7 @@
     <ClInclude Include="SubscriptionManager.h" />
     <ClInclude Include="StateSerializer.h" />
     <ClInclude Include="CommandDispatcher.h" />
+    <ClInclude Include="QueryRegistry.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugServerModule.cpp" />
@@ -23,6 +24,7 @@
     <ClCompile Include="SubscriptionManager.cpp" />
     <ClCompile Include="StateSerializer.cpp" />
     <ClCompile Include="CommandDispatcher.cpp" />
+    <ClCompile Include="QueryRegistry.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">

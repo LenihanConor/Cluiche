@@ -23,13 +23,6 @@ namespace Cluiche
 
 		void MainLoadPhase::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
 		{
-	//		AddModule(buildDependencies->GetModule(Cluiche::Main::KernelModule::kTypeId));
-	//		AddModule(buildDependencies->GetModule(Cluiche::Main::LevelFactoryModule::kTypeId));
-	//		AddModule(buildDependencies->GetModule(Cluiche::Main::UIModule::kTypeId));
-	//		AddModule(buildDependencies->GetModule(Cluiche::Main::AssetServiceModule::kTypeId));
-	//		AddModule(buildDependencies->GetModule(Dia::DebugServer::DebugServerModule::kTypeId));
-
-			DIA_ASSERT(this->ContainsModule(Cluiche::Main::AssetServiceModule::kTypeId), "MainLoadPhase FAILED to add AssetServiceModule");
 		}
 
 		void MainLoadPhase::AfterModulesStart()

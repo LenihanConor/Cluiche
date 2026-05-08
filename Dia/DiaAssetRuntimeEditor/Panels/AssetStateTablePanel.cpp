@@ -22,6 +22,7 @@ namespace Dia
 				, mGeneration(0)
 				, mActive(false)
 				, mConnected(false)
+				, mPollInFlight(false)
 			{}
 
 			void AssetStateTablePanel::Activate(Dia::Editor::WebUIBridge* bridge,
@@ -156,14 +157,16 @@ namespace Dia
 
 			void AssetStateTablePanel::Poll()
 			{
-				if (!mManager)
+				if (!mManager || mPollInFlight)
 					return;
 
+				mPollInFlight = true;
 				unsigned int gen = mGeneration;
 				Json::Value args(Json::objectValue);
-				mManager->SendCommandWithResponse("asset_runtime.get_all_states", args,
+				mManager->SendCommandWithResponse("asset-runtime-get-all-states", args,
 					[this, gen](bool success, const Json::Value& result)
 					{
+						mPollInFlight = false;
 						if (gen != mGeneration)
 							return;
 						HandlePollResponse(success, result);
@@ -172,6 +175,9 @@ namespace Dia
 
 			void AssetStateTablePanel::HandlePollResponse(bool success, const Json::Value& result)
 			{
+				DIA_LOG_DEBUG("Editor", "AssetStateTablePanel::HandlePollResponse success=%d hasAssets=%d",
+					success ? 1 : 0, result.isMember("assets") ? 1 : 0);
+
 				if (!success || !mActive)
 					return;
 

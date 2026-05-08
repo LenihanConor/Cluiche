@@ -60,14 +60,14 @@ namespace Dia
 				int connectionId;
 				Message message;
 				Error error;
-				Dia::Core::Containers::DynamicArrayC<char, 1024> dataBuffer;
+				Dia::Core::Containers::DynamicArrayC<char, 8192> dataBuffer;
 			};
 
 			struct OutgoingMessage
 			{
 				int connectionId; // -1 = broadcast
 				MessageType type;
-				Dia::Core::Containers::DynamicArrayC<char, 1024> dataBuffer;
+				Dia::Core::Containers::DynamicArrayC<char, 8192> dataBuffer;
 				size_t dataLength;
 			};
 

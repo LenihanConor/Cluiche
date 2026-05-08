@@ -158,7 +158,7 @@ namespace Dia
 					Dia::Core::StringCRC stageId = stages[i];
 					Json::Value args;
 					args["stageId"] = stageId.AsChar();
-					mManager->SendCommandWithResponse("asset_runtime.get_stage_deps", args,
+					mManager->SendCommandWithResponse("asset-runtime-get-stage-deps", args,
 						[this, capturedAssetId, stageId, gen](bool success, const Json::Value& result)
 						{
 							if (gen != mGeneration)

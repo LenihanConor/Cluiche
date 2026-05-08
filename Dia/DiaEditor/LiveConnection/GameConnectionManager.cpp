@@ -166,9 +166,14 @@ namespace Dia
 
 		void GameConnectionManager::SendCommandWithResponse(const char* command, const Json::Value& args, CommandResponseCallback callback)
 		{
+			if (mPendingCommands.IsFull())
+			{
+				DIA_LOG_WARNING("Editor", "GameConnectionManager: pending command queue full, dropping '%s'", command);
+				return;
+			}
+
 			SendCommand(command, args);
 
-			DIA_ASSERT(!mPendingCommands.IsFull(), "GameConnectionManager: max pending command capacity reached");
 			PendingCommand pending;
 			pending.command = Dia::Core::StringCRC(command);
 			pending.callback = callback;
@@ -187,7 +192,8 @@ namespace Dia
 			{
 				if (mPendingCommands[i].command == command)
 				{
-					mPendingCommands[i].callback(success, json);
+					const Json::Value& result = json.isMember("payload") ? json["payload"] : json;
+					mPendingCommands[i].callback(success, result);
 					mPendingCommands.RemoveAt(i);
 					return;
 				}
@@ -245,6 +251,8 @@ namespace Dia
 				if (protoMsg.payload_case() == dia::debug::DebugMessage::kCommandResponse)
 				{
 					const auto& resp = protoMsg.command_response();
+					DIA_LOG_DEBUG("Editor", "GameConnectionManager: received command_response for '%s' success=%d hasPayload=%d",
+						resp.command().c_str(), resp.success() ? 1 : 0, resp.has_payload() ? 1 : 0);
 					Json::Value responseJson;
 					responseJson["command"] = resp.command();
 					responseJson["success"] = resp.success();

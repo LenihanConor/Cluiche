@@ -185,7 +185,7 @@ namespace Dia
 
 				// Also send the subscribe command to the game
 				Json::Value args(Json::objectValue);
-				mManager->SendCommand("asset_runtime.subscribe_transitions", args);
+				mManager->SendCommand("asset-runtime-subscribe-transitions", args);
 			}
 
 			void StateTransitionLogPanel::UnsubscribeFromTransitions()

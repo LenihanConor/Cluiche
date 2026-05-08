@@ -9,6 +9,7 @@
 #include "DiaCore/Containers/Arrays/DynamicArrayC.h"
 
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
+#include <DiaDebugServer/QueryRegistry.h>
 #include <DiaLogger/DiaLog.h>
 
 namespace
@@ -263,6 +264,132 @@ namespace Dia
                 };
                 Dia::API::RegisterCommand(cmd);
             }
+        }
+
+        void RegisterAssetRuntimeQueryHandlers(Dia::DebugServer::QueryRegistry& registry, const AssetRuntime& runtime)
+        {
+            registry.Register(
+                Dia::Core::StringCRC("asset-runtime-get-all-states"),
+                [&runtime](const Json::Value& /*args*/) -> Json::Value
+                {
+                    Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128> all;
+                    unsigned int total = runtime.GetAllAssets(all);
+
+                    Json::Value root;
+                    Json::Value assets(Json::arrayValue);
+
+                    for (unsigned int i = 0; i < all.Size(); ++i)
+                    {
+                        const Dia::Core::StringCRC& id = all[i];
+                        Json::Value entry;
+                        entry["assetId"] = id.AsChar();
+                        entry["state"] = StateToString(runtime.GetAssetState(id));
+                        entry["scope"] = ScopeToString(runtime.GetAssetScope(id));
+                        entry["refCount"] = runtime.GetAssetRefCount(id);
+                        const Dia::Core::Containers::String512* path = runtime.ResolveAssetPath(id);
+                        entry["deployPath"] = path ? path->AsCStr() : "";
+
+                        AssetScope scope = runtime.GetAssetScope(id);
+                        if (scope == AssetScope::kStage)
+                        {
+                            Dia::Core::StringCRC stageId = runtime.GetAssetStageId(id);
+                            if (stageId.Value() != 0)
+                                entry["stageId"] = stageId.AsChar();
+                        }
+
+                        assets.append(entry);
+                    }
+
+                    root["assets"] = assets;
+                    root["total"] = static_cast<int>(total);
+                    return root;
+                });
+
+            registry.Register(
+                Dia::Core::StringCRC("asset-runtime-get-loaded"),
+                [&runtime](const Json::Value& /*args*/) -> Json::Value
+                {
+                    Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128> results;
+                    unsigned int total = runtime.GetLoadedAssets(results);
+
+                    Json::Value root;
+                    root["total"] = static_cast<int>(total);
+                    Json::Value assets(Json::arrayValue);
+                    for (unsigned int i = 0; i < results.Size(); ++i)
+                        assets.append(results[i].AsChar());
+                    root["assets"] = assets;
+                    return root;
+                });
+
+            registry.Register(
+                Dia::Core::StringCRC("asset-runtime-get-staged"),
+                [&runtime](const Json::Value& /*args*/) -> Json::Value
+                {
+                    Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128> results;
+                    unsigned int total = runtime.GetStagedAssets(results);
+
+                    Json::Value root;
+                    root["total"] = static_cast<int>(total);
+                    Json::Value assets(Json::arrayValue);
+                    for (unsigned int i = 0; i < results.Size(); ++i)
+                        assets.append(results[i].AsChar());
+                    root["assets"] = assets;
+                    return root;
+                });
+
+            registry.Register(
+                Dia::Core::StringCRC("asset-runtime-get-state"),
+                [&runtime](const Json::Value& args) -> Json::Value
+                {
+                    Json::Value root;
+                    if (!args.isMember("assetId") || !args["assetId"].isString())
+                    {
+                        root["success"] = false;
+                        root["error"] = "missing assetId parameter";
+                        return root;
+                    }
+
+                    Dia::Core::StringCRC assetId(args["assetId"].asCString());
+                    root["assetId"] = args["assetId"].asCString();
+                    root["state"] = StateToString(runtime.GetAssetState(assetId));
+                    root["scope"] = ScopeToString(runtime.GetAssetScope(assetId));
+                    root["refCount"] = runtime.GetAssetRefCount(assetId);
+                    const Dia::Core::Containers::String512* path = runtime.ResolveAssetPath(assetId);
+                    root["deployPath"] = path ? path->AsCStr() : "";
+
+                    if (runtime.GetAssetScope(assetId) == AssetScope::kStage)
+                    {
+                        Dia::Core::StringCRC stageId = runtime.GetAssetStageId(assetId);
+                        if (stageId.Value() != 0)
+                            root["stageId"] = stageId.AsChar();
+                    }
+                    return root;
+                });
+
+            registry.Register(
+                Dia::Core::StringCRC("asset-runtime-get-stage-deps"),
+                [&runtime](const Json::Value& args) -> Json::Value
+                {
+                    Json::Value root;
+                    if (!args.isMember("stageId") || !args["stageId"].isString())
+                    {
+                        root["success"] = false;
+                        root["error"] = "missing stageId parameter";
+                        return root;
+                    }
+
+                    Dia::Core::StringCRC stageId(args["stageId"].asCString());
+                    Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128> results;
+                    unsigned int total = runtime.GetStageDependencies(stageId, results);
+
+                    root["stageId"] = args["stageId"].asCString();
+                    root["total"] = static_cast<int>(total);
+                    Json::Value assets(Json::arrayValue);
+                    for (unsigned int i = 0; i < results.Size(); ++i)
+                        assets.append(results[i].AsChar());
+                    root["assets"] = assets;
+                    return root;
+                });
         }
 
     } // namespace AssetRuntime
