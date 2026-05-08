@@ -5,6 +5,7 @@
 
 #include "LevelFlow\Phases\MainLoadPhase.h"
 #include "LevelFlow\Phases\MainFEPhase.h"
+#include "LevelFlow\Phases\SimRunningPhase.h"
 
 namespace Cluiche
 {
@@ -22,9 +23,13 @@ namespace Cluiche
 			virtual const Dia::Core::StringCRC& GetEntryPhaseUniqueId()const final {return mEntryPhaseUniqueId;}
 			virtual const Dia::Core::StringCRC& GetExitPhaseUniqueId()const final { return mExitPhaseUniqueId; }
 
+			Dia::Application::ProcessingUnit* GetSimPU() const { return mSimPU; }
+
 		private:
 			MainLoadPhase mMainLoadPhase;
 			MainFEPhase mMainFEPhase;
+			SimRunningPhase mSimRunningPhase;
+			Dia::Application::ProcessingUnit* mSimPU;
 			Dia::Core::StringCRC mEntryPhaseUniqueId; // This is the id of the phase we should use to enter this mode
 			Dia::Core::StringCRC mExitPhaseUniqueId; // This is the id of the phase we should return to after exiting mode
 		};		

@@ -18,7 +18,7 @@ namespace Cluiche
 
 		SimBootStrapPhase(Dia::Application::ProcessingUnit* associatedProcessingUnit, const Dia::Core::StringCRC& instanceId = kTypeId);
 
-		virtual bool FlaggedToStopUpdating(void)const override { return false; }
+		virtual bool FlaggedToStopUpdating(void)const override { return true; }
 		virtual void DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)override;
 	};
 }

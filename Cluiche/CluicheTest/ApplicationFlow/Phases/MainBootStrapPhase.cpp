@@ -4,6 +4,8 @@
 #include "CluicheKernel/ApplicationFlow/Modules/AssetServiceModule.h"
 #include "CluicheKernel/ApplicationFlow/Modules/LevelFactoryModule.h"
 #include "CluicheKernel/ApplicationFlow/Modules/MainUIModule.h"
+#include "ApplicationFlow/ProcessingUnits/MainProcessingUnit.h"
+#include "ApplicationFlow/ProcessingUnits/SimProcessingUnit.h"
 #include "Stages/DummyStage/DummyStage.h"
 
 #include <CluicheKernel/LevelFactory.h>
@@ -49,7 +51,10 @@ namespace Cluiche
 		}
 
 		if (mDummyStage == nullptr)
-			mDummyStage = DIA_NEW(Cluiche::DummyStage::Level(this, this->GetAssociatedProcessingUnit(), nullptr, nullptr));
+		{
+			Cluiche::MainProcessingUnit* mainPU = static_cast<Cluiche::MainProcessingUnit*>(this->GetAssociatedProcessingUnit());
+			mDummyStage = DIA_NEW(Cluiche::DummyStage::Level(this, mainPU, mainPU->GetSimPU(), nullptr));
+		}
 
 		mLaunchUIPage.InitializePage();
 

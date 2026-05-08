@@ -1,10 +1,13 @@
 #include "LevelFlow/Phases/MainLoadPhase.h"
 #include "LevelFlow/Phases/MainFEPhase.h"
+#include "LevelFlow/Phases/SimRunningPhase.h"
 
 #include "CluicheKernel/ApplicationFlow/Modules/MainKernelModule.h"
 #include "CluicheKernel/ApplicationFlow/Modules/MainUIModule.h"
 #include "CluicheKernel/ApplicationFlow/Modules/LevelFactoryModule.h"
 #include "CluicheKernel/ApplicationFlow/Modules/AssetServiceModule.h"
+#include "ApplicationFlow/ProcessingUnits/MainProcessingUnit.h"
+#include "ApplicationFlow/ProcessingUnits/SimProcessingUnit.h"
 
 #include <DiaApplication/ApplicationProcessingUnit.h>
 #include <DiaCore/CRC/StringCRC.h>
@@ -29,6 +32,12 @@ namespace Cluiche
 		{
 			Cluiche::Main::AssetServiceModule* assetService = this->GetModule<Cluiche::Main::AssetServiceModule>();
 			assetService->RequestStageLoad(Dia::Core::StringCRC("stage.dummy_stage"));
+
+			Cluiche::MainProcessingUnit* mainPU = static_cast<Cluiche::MainProcessingUnit*>(GetAssociatedProcessingUnit());
+			if (mainPU->GetSimPU())
+			{
+				mainPU->GetSimPU()->QueuePhaseTransition(SimRunningPhase::kTypeId);
+			}
 
 			GetAssociatedProcessingUnit()->QueuePhaseTransition(MainFEPhase::kTypeId);
 		}

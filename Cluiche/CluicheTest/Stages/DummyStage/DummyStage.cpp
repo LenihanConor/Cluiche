@@ -20,6 +20,8 @@ namespace Cluiche
 						Dia::Application::ProcessingUnit* renderPU)
 			: mMainLoadPhase(mainPU)
 			, mMainFEPhase(mainPU)
+			, mSimRunningPhase(simPU)
+			, mSimPU(simPU)
 		{
 			mEntryPhaseUniqueId = Cluiche::DummyStage::MainLoadPhase::kTypeId;
 			mExitPhaseUniqueId = currentPhase->GetUniqueId();
@@ -27,6 +29,11 @@ namespace Cluiche
 			mainPU->AddPhaseTransiton(currentPhase, &mMainLoadPhase);
 			mainPU->AddPhaseTransiton(&mMainLoadPhase, &mMainFEPhase);
 			mainPU->AddPhaseTransiton(&mMainFEPhase, currentPhase);
+
+			if (simPU)
+			{
+				simPU->AddPhaseTransiton(simPU->GetCurrentPhase(), &mSimRunningPhase);
+			}
 
 			mainPU->Initialize();
 		}

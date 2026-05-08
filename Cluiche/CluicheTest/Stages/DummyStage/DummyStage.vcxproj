@@ -80,12 +80,14 @@
     <ClInclude Include="DummyStage.h" />
     <ClInclude Include="LevelFlow\Phases\MainFEPhase.h" />
     <ClInclude Include="LevelFlow\Phases\MainLoadPhase.h" />
+    <ClInclude Include="LevelFlow\Phases\SimRunningPhase.h" />
     <ClInclude Include="UI\DummyUIPage.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DummyStage.cpp" />
     <ClCompile Include="LevelFlow\Phases\MainFEPhase.cpp" />
     <ClCompile Include="LevelFlow\Phases\MainLoadPhase.cpp" />
+    <ClCompile Include="LevelFlow\Phases\SimRunningPhase.cpp" />
     <ClCompile Include="UI\DummyUIPage.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
