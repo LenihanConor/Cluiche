@@ -372,7 +372,10 @@ namespace Dia
             AssertOwnerThread();
             const RuntimeAssetEntry* entry = mAssetTable.TryGetItemConst(assetId);
             if (!entry)
+            {
+                DIA_LOG_WARNING("AssetRuntime", "GetAssetScope: asset '%s' not found, defaulting to kGlobal", assetId.AsChar());
                 return AssetScope::kGlobal;
+            }
             return entry->mScope;
         }
 
@@ -441,7 +444,10 @@ namespace Dia
         {
             const RuntimeAssetEntry* entry = mAssetTable.TryGetItemConst(assetId);
             if (!entry)
+            {
+                DIA_LOG_ERROR("AssetRuntime", "DispatchAssetReady: asset '%s' not in table — listeners will not be notified", assetId.AsChar());
                 return;
+            }
 
             mIsDispatching = true;
             unsigned int count = mListeners.Size();

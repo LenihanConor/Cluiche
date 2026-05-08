@@ -8,6 +8,7 @@
 #include <DiaGraphics\Misc\RGBA.h>
 #include <DiaGraphics\Misc\Vertex.h>
 #include <DiaGraphics\Misc\Transform.h>
+#include <DiaCore/Core/Log.h>
 #include <DiaGraphics\Misc\RenderStates.h>
 #include <DiaGraphics\Misc\PrimitiveType.h>
 #include <DiaMaths\Vector\Vector2D.h>
@@ -134,6 +135,7 @@ namespace Dia
 			case Dia::Graphics::RenderStates::BlendMode::None:
 				return sf::BlendNone;
 			default:
+				Dia::Core::Log::OutputVaradicLine("[WARNING][Graphics] Unknown BlendMode value %d, defaulting to Alpha", static_cast<int>(rhs));
 				return sf::BlendAlpha;
 			}
 		}

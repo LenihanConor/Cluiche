@@ -2,6 +2,7 @@
 #define HASH_TABLE
 
 #include "DiaCore/Core/Assert.h"
+#include "DiaCore/Core/Log.h"
 #include "DiaCore/Containers/Arrays/Array.h"
 #include "DiaCore/Containers/Arrays/DynamicArray.h"
 

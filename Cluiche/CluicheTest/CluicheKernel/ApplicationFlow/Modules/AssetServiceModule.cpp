@@ -5,6 +5,8 @@
 #include <DiaCore/FilePath/PathStore.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaLogger/DiaLog.h>
+#include <DiaGame/DiaGameManifest.h>
+#include <DiaGame/DiaGameManifestLoader.h>
 
 #include <DiaApplication/TypeRegistry/RegistrationMacros.h>
 
@@ -12,29 +14,6 @@
 
 namespace
 {
-	bool ReadFileToString(const char* path, char* buffer, unsigned int bufferSize)
-	{
-		FILE* f = nullptr;
-		fopen_s(&f, path, "rb");
-		if (!f)
-			return false;
-
-		fseek(f, 0, SEEK_END);
-		long size = ftell(f);
-		fseek(f, 0, SEEK_SET);
-
-		if (size <= 0 || static_cast<unsigned int>(size) >= bufferSize)
-		{
-			fclose(f);
-			return false;
-		}
-
-		fread(buffer, 1, size, f);
-		buffer[size] = '\0';
-		fclose(f);
-		return true;
-	}
-
 	void GetDirectoryFromPath(const char* filePath, char* outDir, unsigned int outDirSize)
 	{
 		const char* lastSlash = nullptr;
@@ -57,6 +36,28 @@ namespace
 		}
 	}
 
+	bool ReadFileToString(const char* path, char* buffer, unsigned int bufferSize)
+	{
+		FILE* f = nullptr;
+		fopen_s(&f, path, "rb");
+		if (!f)
+			return false;
+
+		fseek(f, 0, SEEK_END);
+		long size = ftell(f);
+		fseek(f, 0, SEEK_SET);
+
+		if (size <= 0 || static_cast<unsigned int>(size) >= bufferSize)
+		{
+			fclose(f);
+			return false;
+		}
+
+		fread(buffer, 1, size, f);
+		buffer[size] = '\0';
+		fclose(f);
+		return true;
+	}
 }
 
 namespace Cluiche
@@ -84,101 +85,91 @@ namespace Cluiche
 			mRuntime.LoadManifest(manifestPath);
 			mRuntime.RegisterListener(this);
 
-			// Parse .diagame for config (path_aliases, ultralight)
+			// Load .diagame via DiaGameManifestLoader
 			Dia::Core::Containers::String512 diagamePath("%scluichetest.diagame", deployRoot);
+			Dia::Game::DiaGameManifest gameManifest;
 
-			static const unsigned int kMaxFileSize = 4096;
-			char fileBuffer[kMaxFileSize];
-			if (ReadFileToString(diagamePath.AsCStr(), fileBuffer, kMaxFileSize))
+			auto loadResult = Dia::Game::DiaGameManifestLoader::LoadGameFile(diagamePath.AsCStr(), gameManifest);
+			if (loadResult != Dia::Application::ManifestValidationResult::kSuccess)
 			{
-				Json::Value root;
-				Json::Reader reader;
-				if (reader.parse(fileBuffer, root, false))
+				DIA_LOG_ERROR("AssetService", "Failed to load .diagame file: %s", diagamePath.AsCStr());
+			}
+			else
+			{
+				char diagameDir[512];
+				GetDirectoryFromPath(diagamePath.AsCStr(), diagameDir, sizeof(diagameDir));
+
+				// Build stageId-to-diastage path map from typed imports
+				for (unsigned int i = 0; i < gameManifest.imports.Size(); ++i)
 				{
-					// Parse stage imports to build stageId→diastage path map
-					if (root.isMember("imports") && root["imports"].isArray())
+					const Dia::Application::TypedImport& import = gameManifest.imports[i];
+					if (import.type != Dia::Application::TypedImport::ImportType::kStage)
+						continue;
+
+					Dia::Core::Containers::String512 resolvedStagePath;
+					Dia::Core::Path::ResolveRelative(diagameDir, import.path.AsCStr(), resolvedStagePath);
+
+					Dia::Game::DiaStageManifest stageManifest;
+					auto stageResult = Dia::Game::DiaGameManifestLoader::LoadStageFile(resolvedStagePath.AsCStr(), stageManifest);
+					if (stageResult != Dia::Application::ManifestValidationResult::kSuccess)
 					{
-						char diagameDir[512];
-						GetDirectoryFromPath(diagamePath.AsCStr(), diagameDir, sizeof(diagameDir));
+						DIA_LOG_ERROR("AssetService", "Failed to load .diastage file: %s", resolvedStagePath.AsCStr());
+						continue;
+					}
 
-						const Json::Value& imports = root["imports"];
-						for (unsigned int i = 0; i < imports.size(); ++i)
+					// Convert PascalCase name to snake_case stage ID
+					const char* rawName = stageManifest.name.AsCStr();
+					Dia::Core::Containers::String512 stageIdStr("stage.");
+					for (unsigned int c = 0; rawName[c] != '\0'; ++c)
+					{
+						char ch = rawName[c];
+						if (ch >= 'A' && ch <= 'Z')
 						{
-							const Json::Value& entry = imports[i];
-							if (entry.isMember("type") && entry["type"].asString() == "stage" && entry.isMember("path"))
-							{
-								Dia::Core::Containers::String512 resolvedStagePath;
-								Dia::Core::Path::ResolveRelative(diagameDir, entry["path"].asCString(), resolvedStagePath);
-
-								// Read the .diastage to get the stage name for the ID
-								char stageFileBuffer[kMaxFileSize];
-								if (ReadFileToString(resolvedStagePath.AsCStr(), stageFileBuffer, kMaxFileSize))
-								{
-									Json::Value stageRoot;
-									if (reader.parse(stageFileBuffer, stageRoot, false) && stageRoot.isMember("name"))
-									{
-										const char* rawName = stageRoot["name"].asCString();
-										// Convert PascalCase to snake_case: "DummyStage" → "stage.dummy_stage"
-										Dia::Core::Containers::String512 stageIdStr("stage.");
-										for (unsigned int c = 0; rawName[c] != '\0'; ++c)
-										{
-											char ch = rawName[c];
-											if (ch >= 'A' && ch <= 'Z')
-											{
-												if (c > 0)
-													stageIdStr.Append('_');
-												stageIdStr.Append(static_cast<char>(ch + 32));
-											}
-											else
-											{
-												stageIdStr.Append(ch);
-											}
-										}
-
-										StagePathEntry stageEntry;
-										stageEntry.mStageId = Dia::Core::StringCRC(stageIdStr.AsCStr());
-										stageEntry.mDiastagePath = resolvedStagePath;
-										mStagePathMap.Add(stageEntry);
-									}
-								}
-							}
+							if (c > 0)
+								stageIdStr.Append('_');
+							stageIdStr.Append(static_cast<char>(ch + 32));
+						}
+						else
+						{
+							stageIdStr.Append(ch);
 						}
 					}
 
-					if (root.isMember("config"))
+					StagePathEntry stageEntry;
+					stageEntry.mStageId = Dia::Core::StringCRC(stageIdStr.AsCStr());
+					stageEntry.mDiastagePath = resolvedStagePath;
+					mStagePathMap.Add(stageEntry);
+				}
+
+				// Parse config from rawConfig (path_aliases, ultralight)
+				if (gameManifest.rawConfig)
+				{
+					const Json::Value& config = *gameManifest.rawConfig;
+
+					if (config.isMember("path_aliases") && config["path_aliases"].isObject())
 					{
-						const Json::Value& config = root["config"];
-
-						// Parse path_aliases
-						if (config.isMember("path_aliases") && config["path_aliases"].isObject())
+						const Json::Value& aliases = config["path_aliases"];
+						Json::Value::Members members = aliases.getMemberNames();
+						for (unsigned int i = 0; i < members.size(); ++i)
 						{
-							char diagameDir2[512];
-							GetDirectoryFromPath(diagamePath.AsCStr(), diagameDir2, sizeof(diagameDir2));
+							const std::string& aliasName = members[i];
+							const char* relativePath = aliases[aliasName].asCString();
 
-							const Json::Value& aliases = config["path_aliases"];
-							Json::Value::Members members = aliases.getMemberNames();
-							for (unsigned int i = 0; i < members.size(); ++i)
-							{
-								const std::string& aliasName = members[i];
-								const char* relativePath = aliases[aliasName].asCString();
+							PathAliasEntry entry;
+							entry.mAlias = Dia::Core::Containers::String32(aliasName.c_str());
+							Dia::Core::Path::ResolveRelative(diagameDir, relativePath, entry.mResolvedPath);
 
-								PathAliasEntry entry;
-								entry.mAlias = Dia::Core::Containers::String32(aliasName.c_str());
-								Dia::Core::Path::ResolveRelative(diagameDir2, relativePath, entry.mResolvedPath);
-
-								mGlobalAliases.Add(entry);
-							}
+							mGlobalAliases.Add(entry);
 						}
+					}
 
-						// Parse ultralight config
-						if (config.isMember("ultralight") && config["ultralight"].isObject())
+					if (config.isMember("ultralight") && config["ultralight"].isObject())
+					{
+						const Json::Value& ul = config["ultralight"];
+						if (ul.isMember("resource_path_prefix") && ul["resource_path_prefix"].isString())
 						{
-							const Json::Value& ul = config["ultralight"];
-							if (ul.isMember("resource_path_prefix") && ul["resource_path_prefix"].isString())
-							{
-								mUltralightResourcePrefix = Dia::Core::Containers::String512(
-									"%s%s", deployRoot, ul["resource_path_prefix"].asCString());
-							}
+							mUltralightResourcePrefix = Dia::Core::Containers::String512(
+								"%s%s", deployRoot, ul["resource_path_prefix"].asCString());
 						}
 					}
 				}
@@ -221,7 +212,10 @@ namespace Cluiche
 			Json::Value root;
 			Json::Reader reader;
 			if (!reader.parse(fileBuffer, root, false) || !root.isMember("config"))
+			{
+				DIA_LOG_ERROR("AssetService", "Failed to parse .diastage JSON or missing 'config': %s", diastagePath);
 				return;
+			}
 
 			const Json::Value& config = root["config"];
 			if (!config.isMember("path_aliases") || !config["path_aliases"].isObject())
@@ -289,7 +283,7 @@ namespace Cluiche
 			}
 
 			if (!foundAlias)
-				DIA_LOG_INFO("Application", "Stage (%s), has no aliases", stageId.AsChar());
+				DIA_LOG_WARNING("AssetService", "Stage '%s' not found in stage path map — no aliases registered", stageId.AsChar());
 
 			Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 128> stageAssets;
 			mRuntime.GetStageDependencies(stageId, stageAssets);

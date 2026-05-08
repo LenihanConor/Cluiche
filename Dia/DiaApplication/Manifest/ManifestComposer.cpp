@@ -1,8 +1,8 @@
 #include "ManifestComposer.h"
 #include "JsonApplicationManifestSerializer.h"
-#include "DiaGameManifestLoader.h"
 
 #include <DiaLogger/DiaLog.h>
+#include <cstdio>
 #include <DiaCore/Core/Assert.h>
 #include <DiaCore/Strings/String256.h>
 #include <DiaCore/Strings/String512.h>
@@ -389,30 +389,24 @@ namespace Dia
 			mErrors.Add(error);
 		}
 
-		ManifestValidationResult ManifestComposer::ComposeFromGameFile(
-			const char* diagamePath,
-			ApplicationManifest& outComposedManifest,
-			DiaGameManifest& outGameManifest)
+		ManifestValidationResult ManifestComposer::ComposeFromTypedImports(
+			const char* basePath,
+			const Dia::Core::Containers::DynamicArrayC<TypedImport, 16>& imports,
+			ApplicationManifest& outComposedManifest)
 		{
-			DIA_ASSERT(diagamePath != nullptr, "Game file path cannot be null");
+			DIA_ASSERT(basePath != nullptr, "Base path cannot be null");
 
 			ClearErrors();
 			mImportStack.RemoveAll();
 			mProcessedFiles.Clear();
 
-			ManifestValidationResult result = DiaGameManifestLoader::LoadGameFile(diagamePath, outGameManifest);
-			if (result != ManifestValidationResult::kSuccess)
+			for (unsigned int i = 0; i < imports.Size(); ++i)
 			{
-				AddError(result, "Failed to parse .diagame file", diagamePath);
-				return result;
-			}
-
-			for (unsigned int i = 0; i < outGameManifest.imports.Size(); ++i)
-			{
-				const TypedImport& import = outGameManifest.imports[i];
+				const TypedImport& import = imports[i];
 				Dia::Core::Containers::String512 resolvedPath;
-				ResolveRelativePath(diagamePath, import.path.AsCStr(), resolvedPath);
+				ResolveRelativePath(basePath, import.path.AsCStr(), resolvedPath);
 
+				ManifestValidationResult result;
 				if (import.type == TypedImport::ImportType::kStage)
 				{
 					result = ResolveStageImport(resolvedPath.AsCStr(), outComposedManifest);
@@ -433,21 +427,51 @@ namespace Dia
 			const char* diastagePath,
 			ApplicationManifest& outManifest)
 		{
-			DiaStageManifest stageManifest;
-			ManifestValidationResult result = DiaGameManifestLoader::LoadStageFile(diastagePath, stageManifest);
-			if (result != ManifestValidationResult::kSuccess)
+			// Inline .diastage parse — just need "manifest" field
+			FILE* stageFile = fopen(diastagePath, "rb");
+			if (!stageFile)
 			{
-				AddError(result, "Failed to parse .diastage file", diastagePath);
-				return result;
+				AddError(ManifestValidationResult::kImportNotFound, "Failed to read .diastage file", diastagePath);
+				return ManifestValidationResult::kImportNotFound;
+			}
+			fseek(stageFile, 0, SEEK_END);
+			long stageSize = ftell(stageFile);
+			fseek(stageFile, 0, SEEK_SET);
+			if (stageSize <= 0 || static_cast<unsigned int>(stageSize) >= kFileBufferSize)
+			{
+				fclose(stageFile);
+				AddError(ManifestValidationResult::kImportNotFound, ".diastage file too large or empty", diastagePath);
+				return ManifestValidationResult::kImportNotFound;
+			}
+			size_t stageBytesRead = fread(mFileBuffer, 1, static_cast<size_t>(stageSize), stageFile);
+			fclose(stageFile);
+			if (stageBytesRead != static_cast<size_t>(stageSize))
+			{
+				DIA_LOG_ERROR("Application", "Partial read of .diastage '%s': expected %ld bytes, got %zu", diastagePath, stageSize, stageBytesRead);
+			}
+			mFileBuffer[stageBytesRead] = '\0';
+
+			Json::Value stageRoot;
+			Json::Reader stageReader;
+			if (!stageReader.parse(mFileBuffer, stageRoot))
+			{
+				AddError(ManifestValidationResult::kInvalidJSON, "Failed to parse .diastage JSON", diastagePath);
+				return ManifestValidationResult::kInvalidJSON;
+			}
+
+			if (!stageRoot.isMember("manifest") || !stageRoot["manifest"].isString())
+			{
+				AddError(ManifestValidationResult::kMissingRequiredField, "Missing 'manifest' field in .diastage", diastagePath);
+				return ManifestValidationResult::kMissingRequiredField;
 			}
 
 			// Resolve the stage's .diaapp relative to the .diastage file
 			Dia::Core::Containers::String512 resolvedManifestPath;
-			ResolveRelativePath(diastagePath, stageManifest.manifestPath.AsCStr(), resolvedManifestPath);
+			ResolveRelativePath(diastagePath, stageRoot["manifest"].asCString(), resolvedManifestPath);
 
 			// Load the stage .diaapp
 			ApplicationManifest* stageAppManifest = new ApplicationManifest();
-			result = LoadManifestFromFile(resolvedManifestPath.AsCStr(), *stageAppManifest);
+			ManifestValidationResult result = LoadManifestFromFile(resolvedManifestPath.AsCStr(), *stageAppManifest);
 			if (result != ManifestValidationResult::kSuccess)
 			{
 				delete stageAppManifest;

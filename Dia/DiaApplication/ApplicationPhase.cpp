@@ -157,6 +157,11 @@ namespace Dia
 				}
 
 				DIA_ASSERT(numberOfModulesStarted > 0 || modulesFlaggedToStartAsync.Size() > 0, "Cannot start Phase %s, due to the module dependency having circular references", GetUniqueId().AsChar());
+				if (numberOfModulesStarted == 0 && modulesFlaggedToStartAsync.Size() == 0)
+				{
+					DIA_LOG_ERROR("Application", "Phase '%s' has circular module dependencies — cannot start", GetUniqueId().AsChar());
+					break;
+				}
 
 				StartAsyncModules(modulesFlaggedToStartAsync);
 
@@ -395,6 +400,7 @@ namespace Dia
 
 						moduleNames += "]";
 
+						DIA_LOG_ERROR("Application", "Phase '%s' timed out (2 min) waiting on async modules: %s", GetUniqueId().AsChar(), moduleNames.AsCStr());
 						DIA_ASSERT(0, "Phase %s has been running for over %d waiting on %s", GetUniqueId().AsChar(), moduleNames.AsCStr());
 					}
 					std::chrono::milliseconds dura(1);

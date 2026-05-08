@@ -5,6 +5,7 @@
 
 #include <DiaCore/Core/Assert.h>
 #include <DiaCore/Type/BasicTypeDefines.h>
+#include <DiaLogger/DiaLog.h>
 
 #include "DiaApplication/ApplicationPhase.h"
 #include "DiaApplication/ApplicationModule.h"
@@ -208,12 +209,28 @@ namespace Dia
 		{
 			Phase* currentPhase = mCurrentPhase.load(std::memory_order_acquire);
 			DIA_ASSERT(currentPhase, "Null current phase %s", GetUniqueId().AsChar());
+			if (!currentPhase)
+			{
+				DIA_LOG_ERROR("Application", "TransitionPhase: current phase is null in PU '%s'", GetUniqueId().AsChar());
+				return;
+			}
+
 			DIA_ASSERT(mAssociatedPhases.ContainsKey(phaseCrc), "Phase %s not associated to Processing Unit %s", phaseCrc.AsChar(), GetUniqueId().AsChar());
+			if (!mAssociatedPhases.ContainsKey(phaseCrc))
+			{
+				DIA_LOG_ERROR("Application", "TransitionPhase: phase '%s' not found in PU '%s'", phaseCrc.AsChar(), GetUniqueId().AsChar());
+				return;
+			}
 
 			Phase* endPhase = mAssociatedPhases.GetItem(phaseCrc);
 			PhaseTransitionList& list = mPhaseTransitions.GetItem(currentPhase->GetUniqueId());
 
 			DIA_ASSERT(list.FindIndex(phaseCrc) != -1, "Cannot transition from %s to %s in Processing Unit %s", currentPhase->GetUniqueId().AsChar(), phaseCrc.AsChar(), GetUniqueId().AsChar());
+			if (list.FindIndex(phaseCrc) == -1)
+			{
+				DIA_LOG_ERROR("Application", "TransitionPhase: invalid transition from '%s' to '%s' in PU '%s'", currentPhase->GetUniqueId().AsChar(), phaseCrc.AsChar(), GetUniqueId().AsChar());
+				return;
+			}
 
 			currentPhase->TransitionTo(endPhase);
 

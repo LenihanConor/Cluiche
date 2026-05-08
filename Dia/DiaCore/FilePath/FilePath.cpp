@@ -6,6 +6,7 @@
 #include "DiaCore/FilePath/FilePath.h"
 
 #include "DiaCore/FilePath/PathStore.h"
+#include <DiaCore/Core/Log.h>
 
 namespace Dia
 {
@@ -22,6 +23,8 @@ namespace Dia
 			, mFileName(filename)
 		{
 			DIA_ASSERT(PathStore::IsPathAliasRegistered(pathAlias), "%s is not a register alias", pathAlias.AsChar());
+			if (!PathStore::IsPathAliasRegistered(pathAlias))
+				Log::OutputVaradicLine("[ERROR][FilePath] Alias '%s' not registered (file: %s)", pathAlias.AsChar(), filename.AsCStr());
 		}
 
 		// Construct with path alias, subdirectory amendment, and filename
@@ -32,14 +35,18 @@ namespace Dia
 			, mFileName(filename)
 		{
 			DIA_ASSERT(PathStore::IsPathAliasRegistered(pathAlias), "%s is not a register alias", pathAlias.AsChar());
+			if (!PathStore::IsPathAliasRegistered(pathAlias))
+				Log::OutputVaradicLine("[ERROR][FilePath] Alias '%s' not registered (file: %s)", pathAlias.AsChar(), filename.AsCStr());
 		}
 
 		void FilePath::Create(const Path::Alias& pathAlias, const FileName& filename)
 		{
 			mPathAlias = pathAlias;
 			mFileName = filename;
-		
+
 			DIA_ASSERT(PathStore::IsPathAliasRegistered(pathAlias), "%s is not a register alias", pathAlias.AsChar());
+			if (!PathStore::IsPathAliasRegistered(pathAlias))
+				Log::OutputVaradicLine("[ERROR][FilePath] Alias '%s' not registered (file: %s)", pathAlias.AsChar(), filename.AsCStr());
 		}
 
 		void FilePath::Create(const Path::Alias& pathAlias, const PathAmendment& pathAmendment, const FileName& filename)
@@ -47,8 +54,10 @@ namespace Dia
 			mPathAlias = pathAlias;
 			mPathAmendment = pathAmendment;
 			mFileName = filename;
-			
+
 			DIA_ASSERT(PathStore::IsPathAliasRegistered(pathAlias), "%s is not a register alias", pathAlias.AsChar());
+			if (!PathStore::IsPathAliasRegistered(pathAlias))
+				Log::OutputVaradicLine("[ERROR][FilePath] Alias '%s' not registered (file: %s)", pathAlias.AsChar(), filename.AsCStr());
 		}
 
 		// Resolve the file path to a full absolute path string

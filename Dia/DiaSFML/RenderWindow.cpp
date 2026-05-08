@@ -12,6 +12,7 @@
 #include <DiaCore/Memory/Memory.h>
 #include <DiaCore/Strings/stringutils.h>
 #include <DiaCore/FilePath/FilePath.h>
+#include <DiaCore/Core/Log.h>
 
 #include <SFML/Graphics.hpp>
 #include <SFML/OpenGL.hpp>
@@ -76,6 +77,8 @@ namespace Dia
 			uiShaderFile.Resolve(resolvedUIShaderFile);
 			bool isLoadedUIShader = mUIShader->loadFromFile(resolvedUIShaderFile.AsCStr(), sf::Shader::Type::Fragment);
 			DIA_ASSERT(isLoadedUIShader, "Could not load ui.frag from %s", resolvedUIShaderFile.AsCStr());
+			if (!isLoadedUIShader)
+				Dia::Core::Log::OutputVaradicLine("[ERROR][Graphics] Failed to load shader: %s", resolvedUIShaderFile.AsCStr());
 
 
 			mUIShader->setUniform("uiOverlayTex", *mUIOverlayTexture);

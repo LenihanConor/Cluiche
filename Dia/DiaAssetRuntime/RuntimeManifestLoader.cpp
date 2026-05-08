@@ -40,6 +40,10 @@ namespace Dia
 
                 size_t bytesRead = fread(buffer, 1, static_cast<size_t>(fileSize), f);
                 fclose(f);
+                if (bytesRead != static_cast<size_t>(fileSize))
+                {
+                    DIA_LOG_ERROR("AssetRuntime", "Partial read of '%s': expected %ld bytes, got %zu", path, fileSize, bytesRead);
+                }
                 buffer[bytesRead] = '\0';
                 return true;
             }

@@ -339,12 +339,16 @@ namespace Dia
 			}
 
 			//----------------------------------------------------------
-			template< class Key, class Payload, class HashFunctor > 
+			template< class Key, class Payload, class HashFunctor >
 			Payload& HashTable<Key, Payload, HashFunctor >::GetItem(const Key& key)
 			{
 				Payload* payload = TryGetItem(key);
 
 				DIA_ASSERT(payload, "Could not find");
+				if (!payload)
+				{
+					Log::OutputVaradicLine("[ERROR][HashTable] GetItem: key not found — will dereference nullptr");
+				}
 
 				return *payload;
 			}
@@ -354,10 +358,14 @@ namespace Dia
 			const Payload& HashTable<Key, Payload, HashFunctor >::GetItemConst(const Key& key) const
 			{
 				const Payload* payload = TryGetItemConst(key);
-				 
- 				DIA_ASSERT(payload, "Could not find");
- 
- 				return *payload;
+
+				DIA_ASSERT(payload, "Could not find");
+				if (!payload)
+				{
+					Log::OutputVaradicLine("[ERROR][HashTable] GetItemConst: key not found — will dereference nullptr");
+				}
+
+				return *payload;
 			}
 
 			//----------------------------------------------------------

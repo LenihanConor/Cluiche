@@ -5,6 +5,7 @@
 #include <SFML/Graphics/Texture.hpp>
 #include <DiaCore/Memory/Memory.h>
 #include <DiaCore/Core/Assert.h>
+#include <DiaCore/Core/Log.h>
 
 namespace Dia
 {
@@ -39,7 +40,7 @@ namespace Dia
 			sf::Texture* texture = DIA_NEW(sf::Texture());
 			if (!texture->loadFromFile(path))
 			{
-				// Failed to load
+				Dia::Core::Log::OutputVaradicLine("[ERROR][Graphics] TextureManager: Failed to load texture '%s'", path);
 				DIA_DELETE(texture);
 				return 0; // Invalid ID
 			}

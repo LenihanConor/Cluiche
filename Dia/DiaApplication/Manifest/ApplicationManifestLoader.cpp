@@ -395,10 +395,11 @@ namespace Dia
 				Module* newModule = registry.CreateModule(moduleEntry.typeId, existingPU, moduleEntry.instanceId, moduleConfig);
 				if (newModule == nullptr)
 				{
+					DIA_LOG_ERROR("Application", "Hot reload: Failed to create module '%s' (type '%s') — skipping", moduleEntry.instanceId.AsChar(), moduleEntry.typeId.AsChar());
 					Dia::Core::Containers::String256 msg;
 					msg.Format("Failed to create new module '%s' during hot reload", moduleEntry.instanceId.AsChar());
 					AddError(ManifestValidationResult::kUnknownType, msg.AsCStr(), "reload");
-					continue; // Skip this module but continue with others
+					continue;
 				}
 
 				// Add to ProcessingUnit with ownership

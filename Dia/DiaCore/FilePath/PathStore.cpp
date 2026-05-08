@@ -8,6 +8,7 @@
 #include <tuple>
 #include "DiaCore/FilePath/PathStoreConfig.h"
 #include <DiaCore/FilePath/SerializedFileLoad.h>
+#include <DiaCore/Core/Log.h>
 
 namespace Dia
 {
@@ -56,6 +57,7 @@ namespace Dia
 						DIA_ASSERT(isAliasRegistered, "Could not find alias to build from, %s", tuple.GetBaseAlias());
 						if (!isAliasRegistered)
 						{
+							Log::OutputVaradicLine("[ERROR][PathStore] Compound alias build failed: base alias '%s' not registered", tuple.GetBaseAlias().AsCStr());
 							continue;
 						}
 						Path::AppendStrings(sPathRootStore.at(baseAlias), tuple.GetPathAppend(), appendString);
@@ -129,6 +131,7 @@ namespace Dia
 				return pathRootIter->second.AsCStr();
 			}
 
+			Log::OutputVaradicLine("[ERROR][PathStore] ResolvePathToCString: alias '%s' not registered", pathalias.AsChar());
 			return nullptr;
 		}
 
@@ -147,6 +150,7 @@ namespace Dia
 				return pathRootIter->second;
 			}
 
+			Log::OutputVaradicLine("[ERROR][PathStore] ResolvePathToString: alias '%s' not registered", pathalias.AsChar());
 			return nullString;
 		}
 	}

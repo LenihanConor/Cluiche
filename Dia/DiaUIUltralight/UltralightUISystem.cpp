@@ -373,18 +373,38 @@ namespace Dia
 					const ::ultralight::String& description,
 					const ::ultralight::String& /*error_domain*/, int error_code) override
 				{
-					if (!is_main_frame) return;
-					DIA_ASSERT(0, "Ultralight failed to load page. URL: %s  Error %d: %s",
-						url.utf8().data(), error_code, description.utf8().data());
+					if (is_main_frame)
+					{
+						DIA_ASSERT(0, "Ultralight failed to load page. URL: %s  Error %d: %s",
+							url.utf8().data(), error_code, description.utf8().data());
+					}
+					else
+					{
+						DIA_LOG_ERROR("UI", "Ultralight sub-resource load failed. URL: %s  Error %d: %s",
+							url.utf8().data(), error_code, description.utf8().data());
+					}
 				}
 
 				virtual void OnAddConsoleMessage(::ultralight::View* /*caller*/,
-					::ultralight::MessageSource /*source*/, ::ultralight::MessageLevel /*level*/,
+					::ultralight::MessageSource /*source*/, ::ultralight::MessageLevel level,
 					const ::ultralight::String& message, uint32_t line_number,
 					uint32_t /*column_number*/, const ::ultralight::String& source_id) override
 				{
-					DIA_LOG_DEBUG("UI", "DiaUltralightUI Log - Source: %s, Line: %d, Message: %s",
-						source_id.utf8().data(), line_number, message.utf8().data());
+					if (level == ::ultralight::kMessageLevel_Error)
+					{
+						DIA_LOG_ERROR("UI", "JS Error - Source: %s, Line: %d, Message: %s",
+							source_id.utf8().data(), line_number, message.utf8().data());
+					}
+					else if (level == ::ultralight::kMessageLevel_Warning)
+					{
+						DIA_LOG_WARNING("UI", "JS Warning - Source: %s, Line: %d, Message: %s",
+							source_id.utf8().data(), line_number, message.utf8().data());
+					}
+					else
+					{
+						DIA_LOG_DEBUG("UI", "JS Log - Source: %s, Line: %d, Message: %s",
+							source_id.utf8().data(), line_number, message.utf8().data());
+					}
 				}
 
 			private:
