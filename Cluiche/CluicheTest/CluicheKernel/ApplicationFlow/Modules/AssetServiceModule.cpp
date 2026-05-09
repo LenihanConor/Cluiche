@@ -265,8 +265,6 @@ namespace Cluiche
 			if (mHandlersRegistered)
 				return;
 
-			mHandlersRegistered = true;
-
 			Dia::Application::ProcessingUnit* pu = GetAssociatedProcessingUnit();
 
 			Cluiche::Main::KernelModule* kernel = static_cast<Cluiche::Main::KernelModule*>(
@@ -283,6 +281,11 @@ namespace Cluiche
 			{
 				auto* uiSystem = static_cast<Dia::UI::Ultralight::UISystem*>(uiModule->GetUISystem());
 				mRuntime.RegisterTypeHandler("ui", uiSystem->GetUIHandler());
+			}
+
+			if (kernel && kernel->GetWindow() && uiModule && uiModule->GetUISystem())
+			{
+				mHandlersRegistered = true;
 			}
 		}
 

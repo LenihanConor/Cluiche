@@ -33,6 +33,7 @@ namespace Cluiche
 			if (simPU)
 			{
 				simPU->AddPhaseTransiton(simPU->GetCurrentPhase(), &mSimRunningPhase);
+				simPU->Initialize();
 			}
 
 			mainPU->Initialize();

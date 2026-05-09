@@ -6,8 +6,6 @@
 #include "CluicheKernel/ApplicationFlow/Modules/SimTimeServerModule.h"
 
 #include <DiaGraphics/Interface/ICanvas.h>
-#include <DiaGraphics/Frame/SpriteDrawCommand.h>
-#include <DiaSFML/TextureHandler.h>
 #include <DiaUI/IUISystem.h>
 #include <DiaLogger/Logger.h>
 #include <DiaLogger/DiaLog.h>
@@ -65,42 +63,6 @@ namespace Cluiche
 		mRenderFrameBuffer.RequestDraw(Dia::Maths::Vector2D(100.0f, 100.0f), 75.0f, Dia::Graphics::RGBA::White);
 		mRenderFrameBuffer.RequestDraw(dynamicCirclePos, 25.0f, dynamicCircleColour);
 		mRenderFrameBuffer.RequestDraw(Dia::Maths::Vector2D(100.0f, 100.0f), dynamicCirclePos, Dia::Graphics::RGBA::White);
-
-		// Draw sprites using texture IDs from AssetRuntime (only available after stage load)
-		if (mTextureHandler)
-		{
-			unsigned int redId = mTextureHandler->GetTextureId(Dia::Core::StringCRC("texture.test_red"));
-			unsigned int blueId = mTextureHandler->GetTextureId(Dia::Core::StringCRC("texture.test_blue"));
-			unsigned int greenId = mTextureHandler->GetTextureId(Dia::Core::StringCRC("texture.test_green"));
-
-			if (redId != 0)
-			{
-				Dia::Graphics::SpriteDrawCommand redSprite(redId, Dia::Maths::Vector2D(200.0f, 200.0f));
-				mRenderFrameBuffer.RequestDrawSprite(redSprite);
-
-				Dia::Graphics::SpriteDrawCommand transparentSprite(redId, Dia::Maths::Vector2D(200.0f, 300.0f));
-				transparentSprite.tint = Dia::Graphics::RGBA(255, 255, 255, 128);
-				mRenderFrameBuffer.RequestDrawSprite(transparentSprite);
-			}
-
-			if (blueId != 0)
-			{
-				Dia::Graphics::SpriteDrawCommand blueSprite(blueId, Dia::Maths::Vector2D(300.0f, 200.0f));
-				blueSprite.scale = Dia::Maths::Vector2D(1.5f, 1.5f);
-				mRenderFrameBuffer.RequestDrawSprite(blueSprite);
-
-				Dia::Graphics::SpriteDrawCommand dynamicSprite(blueId, dynamicCirclePos);
-				dynamicSprite.scale = Dia::Maths::Vector2D(0.5f, 0.5f);
-				mRenderFrameBuffer.RequestDrawSprite(dynamicSprite);
-			}
-
-			if (greenId != 0)
-			{
-				Dia::Graphics::SpriteDrawCommand greenSprite(greenId, Dia::Maths::Vector2D(400.0f, 200.0f));
-				greenSprite.rotation = 45.0f;
-				mRenderFrameBuffer.RequestDrawSprite(greenSprite);
-			}
-		}
 
 		mSimToRenderFrameStream->InsertCopyOfDataToStream(mRenderFrameBuffer, timeModule->GetTimeServer().GetTime());
 

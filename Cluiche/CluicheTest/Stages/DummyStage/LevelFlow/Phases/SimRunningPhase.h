@@ -18,6 +18,7 @@ namespace Cluiche
 
 			virtual bool FlaggedToStopUpdating(void)const override { return false; }
 			virtual void DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies) override;
+			virtual void AfterModulesUpdate() override;
 		};
 	}
 }

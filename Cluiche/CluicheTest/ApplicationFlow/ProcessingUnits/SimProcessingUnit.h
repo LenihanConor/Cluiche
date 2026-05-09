@@ -32,6 +32,9 @@ namespace Cluiche
 
 		SimProcessingUnit(const Dia::Core::StringCRC& instanceId, float hz);
 
+		Dia::Graphics::FrameData& GetRenderFrameBuffer() { return mRenderFrameBuffer; }
+		Dia::SFML::TextureHandler* GetTextureHandler() const { return mTextureHandler; }
+
 	private:
 		virtual void PostPhaseStart(const IStartData* startData) override final;
 		virtual void PrePhaseUpdate() override final;

@@ -6,7 +6,6 @@
 #include "DiaGraphics/Frame/EntityFrameData.h"
 #include "DiaGraphics/Frame/SpriteDrawCommand.h"
 #include "DiaSFML/Conversion.h"
-#include <DiaCore/Core/Assert.h>
 
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Graphics/Sprite.hpp>
@@ -26,13 +25,16 @@ namespace Dia
 		void EntityFrameRenderer::Visit(const Graphics::EntityFrameData& data) const
 		{
 			const Core::Containers::DynamicArrayC<Graphics::SpriteDrawCommand, 256>& sprites = data.GetSprites();
+			if (sprites.Size() == 0)
+				return;
+
+			mTarget->pushGLStates();
 
 			for (unsigned int i = 0; i < sprites.Size(); ++i)
 			{
 				const Graphics::SpriteDrawCommand& cmd = sprites[i];
 
 				const sf::Texture* texture = mTextureHandler->GetTexture(cmd.textureId);
-				DIA_ASSERT(texture, "Draw command references texture ID %u which is not loaded — asset must be loaded through AssetRuntime before use", cmd.textureId);
 				if (!texture)
 					continue;
 
@@ -58,6 +60,8 @@ namespace Dia
 
 				mTarget->draw(sprite);
 			}
+
+			mTarget->popGLStates();
 		}
 	}
 }
