@@ -2,32 +2,46 @@
 #include "EditorModelModule.h"
 #include "CommandHistoryModule.h"
 
+#include <DiaApplicationFlow/ProcessingUnit.h>
+#include <DiaApplicationFlow/RegistrationMacrosV2.h>
+
 namespace Cluiche
 {
 	namespace Editor
 	{
 		const Dia::Core::StringCRC EditorViewControllerModule::kTypeId("EditorViewControllerModule");
 
-		EditorViewControllerModule::EditorViewControllerModule(Dia::Application::ProcessingUnit* pu)
-			: Dia::Application::Module(pu, kTypeId, RunningEnum::kIdle)
+		EditorViewControllerModule::EditorViewControllerModule(const Dia::Core::StringCRC& instanceId)
+			: Dia::ApplicationFlow::Module(instanceId)
+			, mModelRef(this, EditorModelModule::kTypeId)
+			, mHistoryRef(this, CommandHistoryModule::kTypeId)
 		{
 		}
 
-		void EditorViewControllerModule::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
+		Dia::ApplicationFlow::StartResult EditorViewControllerModule::DoStart()
 		{
-			AddDependancy(buildDependencies->GetModule(EditorModelModule::kTypeId));
-			AddDependancy(buildDependencies->GetModule(CommandHistoryModule::kTypeId));
+			EditorModelModule* modelModule = mModelRef.Get();
+			CommandHistoryModule* historyModule = mHistoryRef.Get();
+
+			if (modelModule != nullptr)
+				mController.SetModel(&modelModule->GetModel());
+
+			if (historyModule != nullptr)
+				mController.SetCommandHistory(&historyModule->GetHistory());
+
+			return Dia::ApplicationFlow::StartResult::kReady;
 		}
 
-		Dia::Application::StateObject::OpertionResponse EditorViewControllerModule::DoStart(const Dia::Application::StateObject::IStartData*)
+		void EditorViewControllerModule::DoUpdate(float /*deltaTime*/)
 		{
-			EditorModelModule* modelModule = GetModule<EditorModelModule>();
-			CommandHistoryModule* historyModule = GetModule<CommandHistoryModule>();
+		}
 
-			mController.SetModel(&modelModule->GetModel());
-			mController.SetCommandHistory(&historyModule->GetHistory());
-
-			return Dia::Application::StateObject::OpertionResponse::kImmediate;
+		Dia::ApplicationFlow::StopResult EditorViewControllerModule::DoStop()
+		{
+			return Dia::ApplicationFlow::StopResult::kDone;
 		}
 	}
 }
+
+namespace { using EditorViewControllerModule_ = Cluiche::Editor::EditorViewControllerModule; }
+DIA_MODULE(EditorViewControllerModule_);

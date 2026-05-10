@@ -1,27 +1,35 @@
 #pragma once
 
-#include <DiaApplicationFlow/ApplicationModule.h>
+#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaEditor/MVC/EditorViewController.h>
 
 namespace Cluiche
 {
 	namespace Editor
 	{
-		class EditorViewControllerModule : public Dia::Application::Module
+		class EditorModelModule;
+		class CommandHistoryModule;
+
+		class EditorViewControllerModule : public Dia::ApplicationFlow::Module
 		{
 		public:
 			static const Dia::Core::StringCRC kTypeId;
 
-			explicit EditorViewControllerModule(Dia::Application::ProcessingUnit* pu);
+			explicit EditorViewControllerModule(const Dia::Core::StringCRC& instanceId);
 
 			Dia::Editor::EditorViewController& GetController() { return mController; }
 
 		protected:
-			void DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies) override;
-			Dia::Application::StateObject::OpertionResponse DoStart(const Dia::Application::StateObject::IStartData*) override;
+			Dia::ApplicationFlow::StartResult DoStart() override;
+			void DoUpdate(float deltaTime) override;
+			Dia::ApplicationFlow::StopResult DoStop() override;
 
 		private:
 			Dia::Editor::EditorViewController mController;
+
+			Dia::ApplicationFlow::ModuleRef<EditorModelModule>     mModelRef;
+			Dia::ApplicationFlow::ModuleRef<CommandHistoryModule>  mHistoryRef;
 		};
 	}
 }

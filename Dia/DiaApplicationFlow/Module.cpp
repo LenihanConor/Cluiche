@@ -30,6 +30,10 @@ namespace Dia { namespace ApplicationFlow {
     }
 
     //--------------------------------------------------------------------------
+    // Helpers (file-local) for atomic state access.
+    //--------------------------------------------------------------------------
+
+    //--------------------------------------------------------------------------
     const Dia::Core::StringCRC& Module::GetInstanceId() const
     {
         return mInstanceId;
@@ -44,7 +48,7 @@ namespace Dia { namespace ApplicationFlow {
     //--------------------------------------------------------------------------
     ModuleState Module::GetState() const
     {
-        return mState;
+        return mState.load(std::memory_order_acquire);
     }
 
     //--------------------------------------------------------------------------
@@ -66,11 +70,15 @@ namespace Dia { namespace ApplicationFlow {
     //--------------------------------------------------------------------------
     void Module::BeginStart()
     {
-        DIA_ASSERT(mState == ModuleState::kInactive, "Module '%s' (PU '%s') BeginStart called in wrong state", mInstanceId.AsChar(), PuName(mProcessingUnit));
+        DIA_ASSERT(mState.load(std::memory_order_acquire) == ModuleState::kInactive,
+                   "Module '%s' (PU '%s') BeginStart called in wrong state",
+                   mInstanceId.AsChar(), PuName(mProcessingUnit));
 
-        mState          = ModuleState::kStarting;
         mStateElapsedMs = 0.0f;
         mStartLogged    = false;
+        // Release: publish mStateElapsedMs / mStartLogged resets before the
+        // dedicated PU thread observes kStarting and begins ticking DoStart().
+        mState.store(ModuleState::kStarting, std::memory_order_release);
 
         DIA_LOG_INFO("Application", "Module '%s' (PU '%s') BeginStart", mInstanceId.AsChar(), PuName(mProcessingUnit));
     }
@@ -78,11 +86,14 @@ namespace Dia { namespace ApplicationFlow {
     //--------------------------------------------------------------------------
     void Module::BeginStop()
     {
-        DIA_ASSERT(mState == ModuleState::kActive, "Module '%s' (PU '%s') BeginStop called in wrong state", mInstanceId.AsChar(), PuName(mProcessingUnit));
+        DIA_ASSERT(mState.load(std::memory_order_acquire) == ModuleState::kActive,
+                   "Module '%s' (PU '%s') BeginStop called in wrong state",
+                   mInstanceId.AsChar(), PuName(mProcessingUnit));
 
-        mState          = ModuleState::kStopping;
         mStateElapsedMs = 0.0f;
         mStopLogged     = false;
+        // Release: publish resets before the PU thread observes kStopping.
+        mState.store(ModuleState::kStopping, std::memory_order_release);
 
         DIA_LOG_INFO("Application", "Module '%s' (PU '%s') BeginStop", mInstanceId.AsChar(), PuName(mProcessingUnit));
     }
@@ -92,7 +103,12 @@ namespace Dia { namespace ApplicationFlow {
     {
         mStateElapsedMs += deltaTime * 1000.0f;
 
-        switch (mState)
+        // Acquire: pairs with BeginStart/BeginStop release stores so any
+        // pre-transition resets (mStateElapsedMs, mStartLogged, mStopLogged)
+        // are visible on this thread before we branch on the state.
+        const ModuleState state = mState.load(std::memory_order_acquire);
+
+        switch (state)
         {
             case ModuleState::kStarting:
             {
@@ -107,20 +123,20 @@ namespace Dia { namespace ApplicationFlow {
                 if (result == StartResult::kReady)
                 {
                     DIA_LOG_INFO("Application", "Module '%s' (PU '%s') DoStart complete -> Active", mInstanceId.AsChar(), PuName(mProcessingUnit));
-                    mState          = ModuleState::kActive;
                     mStateElapsedMs = 0.0f;
+                    mState.store(ModuleState::kActive, std::memory_order_release);
                 }
                 else if (result == StartResult::kFailed)
                 {
                     DIA_LOG_ERROR("Application", "Module '%s' (PU '%s') DoStart FAILED", mInstanceId.AsChar(), PuName(mProcessingUnit));
-                    mState = ModuleState::kFailed;
+                    mState.store(ModuleState::kFailed, std::memory_order_release);
                 }
                 else // kLoading — still starting; check timeout
                 {
                     if (mStateElapsedMs > startTimeoutMs)
                     {
                         DIA_LOG_ERROR("Application", "Module '%s' (PU '%s') DoStart TIMEOUT (%.1f ms)", mInstanceId.AsChar(), PuName(mProcessingUnit), mStateElapsedMs);
-                        mState = ModuleState::kFailed;
+                        mState.store(ModuleState::kFailed, std::memory_order_release);
                     }
                 }
                 break;
@@ -145,16 +161,16 @@ namespace Dia { namespace ApplicationFlow {
                 if (result == StopResult::kDone)
                 {
                     DIA_LOG_INFO("Application", "Module '%s' (PU '%s') DoStop complete -> Inactive", mInstanceId.AsChar(), PuName(mProcessingUnit));
-                    mState          = ModuleState::kInactive;
                     mStateElapsedMs = 0.0f;
+                    mState.store(ModuleState::kInactive, std::memory_order_release);
                 }
                 else // kStopping — still winding down; check timeout
                 {
                     if (mStateElapsedMs > stopTimeoutMs)
                     {
                         DIA_LOG_WARNING("Application", "Module '%s' (PU '%s') DoStop TIMEOUT (%.1f ms) -> forcing Inactive", mInstanceId.AsChar(), PuName(mProcessingUnit), mStateElapsedMs);
-                        mState          = ModuleState::kInactive;
                         mStateElapsedMs = 0.0f;
+                        mState.store(ModuleState::kInactive, std::memory_order_release);
                     }
                 }
                 break;

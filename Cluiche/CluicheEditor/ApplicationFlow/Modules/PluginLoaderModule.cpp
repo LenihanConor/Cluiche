@@ -2,6 +2,8 @@
 #include "EditorModelModule.h"
 #include "EditorViewModule.h"
 
+#include <DiaApplicationFlow/ProcessingUnit.h>
+#include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaEditor/Plugin/EditorPluginRegistry.h>
 #include <DiaEditor/Plugin/IEditorPlugin.h>
 #include <DiaEditor/EditorManifestLoader.h>
@@ -15,18 +17,14 @@ namespace Cluiche
 	{
 		const Dia::Core::StringCRC PluginLoaderModule::kTypeId("PluginLoaderModule");
 
-		PluginLoaderModule::PluginLoaderModule(Dia::Application::ProcessingUnit* pu)
-			: Dia::Application::Module(pu, kTypeId, RunningEnum::kUpdate)
+		PluginLoaderModule::PluginLoaderModule(const Dia::Core::StringCRC& instanceId)
+			: Dia::ApplicationFlow::Module(instanceId)
 			, mView(nullptr)
+			, mModelRef(this, EditorModelModule::kTypeId)
+			, mViewRef(this, EditorViewModule::kTypeId)
 		{
 			mContext.mPluginLoader = this;
 			mContext.mServices = &mServiceLocator;
-		}
-
-		void PluginLoaderModule::DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies)
-		{
-			AddDependancy(buildDependencies->GetModule(EditorModelModule::kTypeId));
-			AddDependancy(buildDependencies->GetModule(EditorViewModule::kTypeId));
 		}
 
 		void PluginLoaderModule::SetBridge(Dia::Editor::WebUIBridge* bridge)
@@ -34,26 +32,50 @@ namespace Cluiche
 			mContext.mBridge = bridge;
 		}
 
-		Dia::Application::StateObject::OpertionResponse PluginLoaderModule::DoStart(const Dia::Application::StateObject::IStartData*)
+		Dia::ApplicationFlow::StartResult PluginLoaderModule::DoStart()
 		{
-			EditorModelModule* modelModule = GetModule<EditorModelModule>();
+			EditorModelModule* modelModule = mModelRef.Get();
 			DIA_ASSERT(modelModule != nullptr, "PluginLoaderModule requires EditorModelModule");
-			mContext.mModel = &modelModule->GetModel();
+			if (modelModule != nullptr)
+				mContext.mModel = &modelModule->GetModel();
+
+			EditorViewModule* viewModule = mViewRef.Get();
+			if (viewModule != nullptr)
+			{
+				RegisterView(&viewModule->GetView());
+				SetBridge(viewModule->GetView().GetWebUIBridge());
+			}
 
 			DIA_LOG_INFO("Application", "PluginLoaderModule: DoStart");
-			return Dia::Application::StateObject::OpertionResponse::kImmediate;
+			LoadBuiltInPlugins();
+
+			// If a project path was set on the model before start, load it now
+			if (modelModule != nullptr)
+			{
+				const char* projectPath = modelModule->GetModel().GetProjectPath();
+				if (projectPath != nullptr && projectPath[0] != '\0')
+				{
+					modelModule->GetModel().LoadProject(projectPath);
+					unsigned int manifestCount = modelModule->GetModel().GetManifestCount();
+					for (unsigned int i = 0; i < manifestCount; ++i)
+					{
+						LoadManifest(modelModule->GetModel().GetManifestPath(i));
+					}
+				}
+			}
+
+			return Dia::ApplicationFlow::StartResult::kReady;
 		}
 
-		void PluginLoaderModule::DoUpdate()
+		void PluginLoaderModule::DoUpdate(float deltaTime)
 		{
-			static const float kFixedDeltaTime = 1.0f / 60.0f;
 			for (unsigned int i = 0; i < mLoadedPlugins.Size(); ++i)
 			{
-				mLoadedPlugins[i].plugin->OnUpdate(kFixedDeltaTime);
+				mLoadedPlugins[i].plugin->OnUpdate(deltaTime);
 			}
 		}
 
-		void PluginLoaderModule::DoStop()
+		Dia::ApplicationFlow::StopResult PluginLoaderModule::DoStop()
 		{
 			DIA_LOG_INFO("Application", "PluginLoaderModule: DoStop - unloading %u plugins", mLoadedPlugins.Size());
 			for (int i = static_cast<int>(mLoadedPlugins.Size()) - 1; i >= 0; --i)
@@ -63,15 +85,16 @@ namespace Cluiche
 				delete mLoadedPlugins[i].plugin;
 			}
 			mLoadedPlugins.RemoveAll();
+			return Dia::ApplicationFlow::StopResult::kDone;
 		}
 
 		void PluginLoaderModule::LoadBuiltInPlugins()
 		{
 			DIA_LOG_INFO("Application", "PluginLoaderModule: Loading built-in plugins");
-			LoadPlugin(Dia::Core::StringCRC("HomeEditorPlugin"), Dia::Core::StringCRC("home_builtin"));
-			LoadPlugin(Dia::Core::StringCRC("OutputConsoleEditorPlugin"), Dia::Core::StringCRC("outputconsole_builtin"));
-			LoadPlugin(Dia::Core::StringCRC("GameConnectionEditorPlugin"), Dia::Core::StringCRC("gameconnection_builtin"));
-			LoadPlugin(Dia::Core::StringCRC("PluginBrowserEditorPlugin"), Dia::Core::StringCRC("pluginbrowser_builtin"));
+			LoadPlugin(Dia::Core::StringCRC("HomeEditorPlugin"),             Dia::Core::StringCRC("home_builtin"));
+			LoadPlugin(Dia::Core::StringCRC("OutputConsoleEditorPlugin"),    Dia::Core::StringCRC("outputconsole_builtin"));
+			LoadPlugin(Dia::Core::StringCRC("GameConnectionEditorPlugin"),   Dia::Core::StringCRC("gameconnection_builtin"));
+			LoadPlugin(Dia::Core::StringCRC("PluginBrowserEditorPlugin"),    Dia::Core::StringCRC("pluginbrowser_builtin"));
 		}
 
 		void PluginLoaderModule::LoadManifest(const char* manifestPath)
@@ -170,9 +193,7 @@ namespace Cluiche
 			for (unsigned int i = 0; i < mLoadedPlugins.Size(); ++i)
 			{
 				if (mLoadedPlugins[i].typeId == typeId)
-				{
 					return true;
-				}
 			}
 			return false;
 		}
@@ -203,3 +224,6 @@ namespace Cluiche
 		}
 	}
 }
+
+namespace { using PluginLoaderModule_ = Cluiche::Editor::PluginLoaderModule; }
+DIA_MODULE(PluginLoaderModule_);

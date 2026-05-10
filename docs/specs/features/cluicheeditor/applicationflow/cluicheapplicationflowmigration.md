@@ -26,7 +26,7 @@ Migrate CluicheEditor from the deprecated DiaApplication v1 API to DiaApplicatio
 |---|-----------|
 | AC-1 | `CluicheEditorProcessingUnit.h/.cpp` deleted; `Application` bootstrapped in `wWinMain` using `ApplicationManifestLoaderV2` |
 | AC-2 | All three v1 Phase classes (`CluicheEditorBootPhase`, `CluicheEditorRunningPhase`, `CluicheEditorShutdownPhase`) deleted |
-| AC-3 | Five v2 Module subclasses created: `EditorModelModule`, `CommandHistoryModule`, `EditorViewModule`, `EditorViewControllerModule`, `GameConnectionModule`; each uses `DIA_MODULE` registration macro |
+| AC-3 | Seven v2 Module subclasses created: `EditorModelModule`, `CommandHistoryModule`, `SplashScreenModule`, `EditorViewModule`, `EditorViewControllerModule`, `PluginLoaderModule`, `GameConnectionModule`; each uses `DIA_MODULE` registration macro (Logger absorbed into EditorModel; ConsoleSink absorbed into EditorView) |
 | AC-4 | `editor.diaapp` manifest upgraded to v2 schema (version: 2, stages: [Boot, Running], auto_stages: [Boot], module stage membership declared) |
 | AC-5 | `CluicheEditor.vcxproj` references `DiaApplicationFlow.vcxproj` and removes reference to `DiaApplication.vcxproj` |
 | AC-6 | `CluicheEditor.vcxproj` and `.vcxproj.filters` updated to reflect deleted/added source files |
@@ -82,6 +82,6 @@ None.
 
 ## Status
 
-`Approved` — 2026-05-09
+`Done` — 2026-05-09
 
 **Plan:** [applicationflow.plan.md](../../../systems/cluicheeditor/applicationflow.plan.md)

@@ -75,14 +75,16 @@ int APIENTRY wWinMain(...) {
     "processing_units": [
         {
             "instance_id": "EditorPU",
-            "frequency_hz": 30,
+            "frequency_hz": 60,
             "dedicated_thread": false,
             "modules": [
-                { "instance_id": "EditorModel",           "type_id": "EditorModelModule",           "stages": ["Boot", "Running"] },
-                { "instance_id": "CommandHistory",        "type_id": "CommandHistoryModule",        "stages": ["Boot", "Running"] },
-                { "instance_id": "EditorView",            "type_id": "EditorViewModule",            "stages": ["Running"] },
-                { "instance_id": "EditorViewController",  "type_id": "EditorViewControllerModule",  "stages": ["Running"] },
-                { "instance_id": "GameConnection",        "type_id": "GameConnectionModule",        "stages": ["Running"] }
+                { "instance_id": "EditorModel",          "type_id": "EditorModelModule",          "stages": ["Boot", "Running"] },
+                { "instance_id": "CommandHistory",       "type_id": "CommandHistoryModule",       "stages": ["Boot", "Running"] },
+                { "instance_id": "SplashScreen",         "type_id": "SplashScreenModule",         "stages": ["Boot"] },
+                { "instance_id": "EditorView",           "type_id": "EditorViewModule",           "stages": ["Running"] },
+                { "instance_id": "EditorViewController", "type_id": "EditorViewControllerModule", "stages": ["Running"] },
+                { "instance_id": "PluginLoader",         "type_id": "PluginLoaderModule",         "stages": ["Running"] },
+                { "instance_id": "GameConnection",       "type_id": "GameConnectionModule",       "stages": ["Running"] }
             ]
         }
     ]
@@ -111,11 +113,12 @@ int APIENTRY wWinMain(...) {
 | ID | Decision | Rationale | Scope | Status | Binding |
 |----|----------|-----------|-------|--------|---------|
 | SCED-001 | Phases deleted, not migrated | SD-002 (DiaApplicationFlow) removes Phase concept entirely; Boot→Running is expressed as a stage transition with auto_stages on Boot; no Phase subclasses survive | All features | Accepted | Yes |
-| SCED-002 | Boot stage holds only EditorModel + CommandHistory | CEF (EditorViewModule) must not initialise until Boot completes (window + CEF initialisation is Running-only); matches original BootPhase intent | All features | Accepted | Yes |
-| SCED-003 | Shutdown is via RequestShutdown, not a Shutdown phase | SD-011 (DiaApplicationFlow): shutdown is framework lifecycle, not a stage. EditorViewModule::DoStop handles CEF teardown | All features | Accepted | Yes |
-| SCED-004 | PluginLoaderModule absorbed into EditorModelModule | Plugin loading is a detail of EditorModel::DoStart; a separate PluginLoaderModule adds indirection with no benefit | All features | Accepted | Yes |
-| SCED-005 | LoggerModule absorbed into EditorModelModule | Logger/sink init is one-line setup in DoStart; a separate module adds boilerplate for no modularity gain | All features | Accepted | Yes |
-| SCED-006 | EditorConsoleSinkModule absorbed into EditorViewModule | Console sink is a UI concern owned by the view; merging avoids cross-module dependency for a single registration call | All features | Accepted | Yes |
+| SCED-002 | Boot stage holds EditorModel, CommandHistory, and SplashScreen | CEF (EditorViewModule) must not initialise until Boot completes; SplashScreen shows during Boot; matches original BootPhase intent | All features | Accepted | Yes |
+| SCED-003 | Shutdown is via RequestShutdown, not a Shutdown phase | SD-011 (DiaApplicationFlow): shutdown is framework lifecycle, not a stage. EditorViewModule::DoStop handles CEF teardown; EditorView::SaveLayoutToDisk called in DoStop | All features | Accepted | Yes |
+| SCED-004 | PluginLoaderModule kept as own v2 Module (revised) | PluginLoaderModule implements IPluginLoader (~200 lines of plugin lifecycle management). Too substantial to absorb; kept as a dedicated Running-stage v2 Module. | All features | Accepted | Yes |
+| SCED-005 | LoggerModule absorbed into EditorModelModule | Logger/sink init is a few calls in DoStart; a separate module adds boilerplate for no modularity gain | All features | Accepted | Yes |
+| SCED-006 | EditorConsoleSinkModule absorbed into EditorViewModule | Console sink registration is one call in DoStart; kept co-located with the view | All features | Accepted | Yes |
+| SCED-007 | SplashScreenModule kept as own v2 Module | Has real Win32 splash window behavior (DoStart creates Win32 splash, Dismiss called from EditorViewModule on shell_ready). Belongs in Boot stage. | All features | Accepted | Yes |
 
 ## Inherited Binding Decisions
 

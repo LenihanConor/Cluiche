@@ -1,5 +1,6 @@
 #pragma once
 #include <DiaCore/CRC/StringCRC.h>
+#include <atomic>
 
 namespace Dia { namespace ApplicationFlow {
 
@@ -49,12 +50,17 @@ namespace Dia { namespace ApplicationFlow {
         void BeginStart();
         void BeginStop();
 
-        Dia::Core::StringCRC mInstanceId;
-        ProcessingUnit*      mProcessingUnit  = nullptr;
-        ModuleState          mState           = ModuleState::kInactive;
-        float                mStateElapsedMs  = 0.0f;
-        bool                 mStartLogged     = false;
-        bool                 mStopLogged      = false;
+        Dia::Core::StringCRC     mInstanceId;
+        ProcessingUnit*          mProcessingUnit  = nullptr;
+        // mState is accessed across threads: written on the PU's own thread
+        // during FrameTick(), and written on the main thread by BeginStart() /
+        // BeginStop().  It is also read on the main thread by Application's
+        // bookkeeping (AllModulesInactive, AnyModuleFailed, introspection).
+        // Atomic + acq/rel avoids a formal data race on the enum.
+        std::atomic<ModuleState> mState{ModuleState::kInactive};
+        float                    mStateElapsedMs  = 0.0f;
+        bool                     mStartLogged     = false;
+        bool                     mStopLogged      = false;
     };
 
 }} // namespace Dia::ApplicationFlow

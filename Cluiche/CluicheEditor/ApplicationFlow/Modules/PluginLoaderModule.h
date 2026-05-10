@@ -1,6 +1,7 @@
 #pragma once
 
-#include <DiaApplicationFlow/ApplicationModule.h>
+#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaEditor/Plugin/EditorPluginContext.h>
 #include <DiaEditor/Plugin/IPluginLoader.h>
@@ -12,12 +13,15 @@ namespace Cluiche
 {
 	namespace Editor
 	{
-		class PluginLoaderModule : public Dia::Application::Module, public Dia::Editor::IPluginLoader
+		class EditorModelModule;
+		class EditorViewModule;
+
+		class PluginLoaderModule : public Dia::ApplicationFlow::Module, public Dia::Editor::IPluginLoader
 		{
 		public:
 			static const Dia::Core::StringCRC kTypeId;
 
-			PluginLoaderModule(Dia::Application::ProcessingUnit* pu);
+			explicit PluginLoaderModule(const Dia::Core::StringCRC& instanceId);
 
 			void SetBridge(Dia::Editor::WebUIBridge* bridge);
 			void LoadBuiltInPlugins();
@@ -29,10 +33,9 @@ namespace Cluiche
 			void RegisterView(Dia::Editor::EditorView* view);
 
 		protected:
-			void DoBuildDependancies(Dia::Application::IBuildDependencyData* buildDependencies) override;
-			Dia::Application::StateObject::OpertionResponse DoStart(const Dia::Application::StateObject::IStartData*) override;
-			void DoUpdate() override;
-			void DoStop() override;
+			Dia::ApplicationFlow::StartResult DoStart() override;
+			void DoUpdate(float deltaTime) override;
+			Dia::ApplicationFlow::StopResult DoStop() override;
 
 		private:
 			struct LoadedPluginEntry
@@ -41,12 +44,15 @@ namespace Cluiche
 				Dia::Editor::IEditorPlugin* plugin;
 			};
 
-			Dia::Editor::EditorPluginContext mContext;
+			Dia::Editor::EditorPluginContext  mContext;
 			Dia::Editor::PluginServiceLocator mServiceLocator;
-			Dia::Editor::EditorView* mView;
+			Dia::Editor::EditorView*          mView;
 
 			static const unsigned int kMaxPlugins = 16;
 			Dia::Core::Containers::DynamicArrayC<LoadedPluginEntry, kMaxPlugins> mLoadedPlugins;
+
+			Dia::ApplicationFlow::ModuleRef<EditorModelModule> mModelRef;
+			Dia::ApplicationFlow::ModuleRef<EditorViewModule>  mViewRef;
 		};
 	}
 }

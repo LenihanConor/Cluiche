@@ -1,5 +1,7 @@
 #include "SplashScreenModule.h"
 
+#include <DiaApplicationFlow/RegistrationMacrosV2.h>
+
 namespace Cluiche
 {
 	namespace Editor
@@ -51,13 +53,13 @@ namespace Cluiche
 
 		const Dia::Core::StringCRC SplashScreenModule::kTypeId("SplashScreenModule");
 
-		SplashScreenModule::SplashScreenModule(Dia::Application::ProcessingUnit* pu)
-			: Dia::Application::Module(pu, kTypeId, RunningEnum::kIdle)
+		SplashScreenModule::SplashScreenModule(const Dia::Core::StringCRC& instanceId)
+			: Dia::ApplicationFlow::Module(instanceId)
 			, mHwnd(nullptr)
 		{
 		}
 
-		Dia::Application::StateObject::OpertionResponse SplashScreenModule::DoStart(const Dia::Application::StateObject::IStartData*)
+		Dia::ApplicationFlow::StartResult SplashScreenModule::DoStart()
 		{
 			HINSTANCE hInstance = GetModuleHandleW(nullptr);
 
@@ -84,7 +86,17 @@ namespace Cluiche
 			if (mHwnd)
 				UpdateWindow(mHwnd);
 
-			return Dia::Application::StateObject::OpertionResponse::kImmediate;
+			return Dia::ApplicationFlow::StartResult::kReady;
+		}
+
+		void SplashScreenModule::DoUpdate(float /*deltaTime*/)
+		{
+			MSG msg;
+			while (PeekMessageW(&msg, mHwnd, 0, 0, PM_REMOVE))
+			{
+				TranslateMessage(&msg);
+				DispatchMessageW(&msg);
+			}
 		}
 
 		void SplashScreenModule::Dismiss()
@@ -96,9 +108,13 @@ namespace Cluiche
 			}
 		}
 
-		void SplashScreenModule::DoStop()
+		Dia::ApplicationFlow::StopResult SplashScreenModule::DoStop()
 		{
 			Dismiss();
+			return Dia::ApplicationFlow::StopResult::kDone;
 		}
 	}
 }
+
+namespace { using SplashScreenModule_ = Cluiche::Editor::SplashScreenModule; }
+DIA_MODULE(SplashScreenModule_);

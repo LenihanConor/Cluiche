@@ -1,23 +1,25 @@
 #pragma once
 
-#include <DiaApplicationFlow/ApplicationModule.h>
+#include <DiaApplicationFlow/Module.h>
 #include <DiaEditor/Command/CommandHistory.h>
 
 namespace Cluiche
 {
 	namespace Editor
 	{
-		class CommandHistoryModule : public Dia::Application::Module
+		class CommandHistoryModule : public Dia::ApplicationFlow::Module
 		{
 		public:
 			static const Dia::Core::StringCRC kTypeId;
 
-			explicit CommandHistoryModule(Dia::Application::ProcessingUnit* pu);
+			explicit CommandHistoryModule(const Dia::Core::StringCRC& instanceId);
 
 			Dia::Editor::CommandHistory& GetHistory() { return mHistory; }
 
 		protected:
-			void DoStop() override;
+			Dia::ApplicationFlow::StartResult DoStart() override;
+			void DoUpdate(float deltaTime) override;
+			Dia::ApplicationFlow::StopResult DoStop() override;
 
 		private:
 			Dia::Editor::CommandHistory mHistory;

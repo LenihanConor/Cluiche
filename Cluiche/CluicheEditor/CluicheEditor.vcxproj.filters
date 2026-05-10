@@ -7,12 +7,6 @@
     <Filter Include="ApplicationFlow">
       <UniqueIdentifier>{a3bf7add-56c7-4a26-91b7-756354ba1356}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ApplicationFlow\ProcessingUnits">
-      <UniqueIdentifier>{a6b7c8d9-e0f1-2345-0123-456789012345}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ApplicationFlow\Phases">
-      <UniqueIdentifier>{a9fdd10b-8e2a-47cb-b752-8ee257cac035}</UniqueIdentifier>
-    </Filter>
     <Filter Include="ApplicationFlow\Modules">
       <UniqueIdentifier>{0978e770-d4ee-432e-b169-0c53091bbe33}</UniqueIdentifier>
     </Filter>
@@ -24,18 +18,6 @@
     <ClCompile Include="..\..\Dia\DiaEditor\Plugin\OutputConsoleEditorPlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaEditor\Plugin\GameConnectionEditorPlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaEditor\Plugin\PluginBrowserEditorPlugin.cpp" />
-    <ClCompile Include="ApplicationFlow\ProcessingUnits\CluicheEditorProcessingUnit.cpp">
-      <Filter>ApplicationFlow\ProcessingUnits</Filter>
-    </ClCompile>
-    <ClCompile Include="ApplicationFlow\Phases\CluicheEditorBootPhase.cpp">
-      <Filter>ApplicationFlow\Phases</Filter>
-    </ClCompile>
-    <ClCompile Include="ApplicationFlow\Phases\CluicheEditorRunningPhase.cpp">
-      <Filter>ApplicationFlow\Phases</Filter>
-    </ClCompile>
-    <ClCompile Include="ApplicationFlow\Phases\CluicheEditorShutdownPhase.cpp">
-      <Filter>ApplicationFlow\Phases</Filter>
-    </ClCompile>
     <ClCompile Include="ApplicationFlow\Modules\CommandHistoryModule.cpp">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClCompile>
@@ -54,23 +36,11 @@
     <ClCompile Include="ApplicationFlow\Modules\PluginLoaderModule.cpp">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClCompile>
-    <ClCompile Include="ApplicationFlow\Modules\LoggerModule.cpp">
+    <ClCompile Include="ApplicationFlow\Modules\GameConnectionModule.cpp">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ApplicationFlow\ProcessingUnits\CluicheEditorProcessingUnit.h">
-      <Filter>ApplicationFlow\ProcessingUnits</Filter>
-    </ClInclude>
-    <ClInclude Include="ApplicationFlow\Phases\CluicheEditorBootPhase.h">
-      <Filter>ApplicationFlow\Phases</Filter>
-    </ClInclude>
-    <ClInclude Include="ApplicationFlow\Phases\CluicheEditorRunningPhase.h">
-      <Filter>ApplicationFlow\Phases</Filter>
-    </ClInclude>
-    <ClInclude Include="ApplicationFlow\Phases\CluicheEditorShutdownPhase.h">
-      <Filter>ApplicationFlow\Phases</Filter>
-    </ClInclude>
     <ClInclude Include="ApplicationFlow\Modules\CommandHistoryModule.h">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
@@ -89,7 +59,7 @@
     <ClInclude Include="ApplicationFlow\Modules\PluginLoaderModule.h">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
-    <ClInclude Include="ApplicationFlow\Modules\LoggerModule.h">
+    <ClInclude Include="ApplicationFlow\Modules\GameConnectionModule.h">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
   </ItemGroup>
@@ -104,6 +74,9 @@
       <Filter>Data Files</Filter>
     </None>
     <None Include="Data\test-editor-plugins.diaapp">
+      <Filter>Data Files</Filter>
+    </None>
+    <None Include="Data\editor.diaapp">
       <Filter>Data Files</Filter>
     </None>
   </ItemGroup>

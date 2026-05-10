@@ -359,15 +359,20 @@ namespace Dia { namespace ApplicationFlow {
                 }
 
                 // Check dependencies reference existing instance_ids in the same PU
+                // and appear EARLIER in the module array than this module.  The
+                // framework uses array order as startup order, so a dep at a later
+                // index would not be started before the dependent module.
                 for (unsigned int d = 0; d < mod.dependencies.Size(); ++d)
                 {
                     const Dia::Core::StringCRC& depId = mod.dependencies[d];
-                    bool depFound = false;
+                    bool depFound    = false;
+                    unsigned int depIndex = 0;
                     for (unsigned int k = 0; k < pu.modules.Size(); ++k)
                     {
                         if (pu.modules[k].instanceId == depId)
                         {
                             depFound = true;
+                            depIndex = k;
                             break;
                         }
                     }
@@ -377,6 +382,17 @@ namespace Dia { namespace ApplicationFlow {
                         msg.Format("Module '%s' in PU '%s' depends on unknown instance_id '%s'",
                             mod.instanceId.AsChar(), pu.instanceId.AsChar(), depId.AsChar());
                         AddError("UNKNOWN_DEPENDENCY", msg.AsCStr(), mod.instanceId);
+                    }
+                    else if (depIndex >= m)
+                    {
+                        Dia::Core::Containers::String256 msg;
+                        msg.Format("Module '%s' in PU '%s' depends on '%s' but '%s' appears at index %u "
+                                   "(must be earlier than '%s' at index %u). "
+                                   "Array order is startup order — reorder the 'modules' list so dependencies come first.",
+                                   mod.instanceId.AsChar(), pu.instanceId.AsChar(),
+                                   depId.AsChar(), depId.AsChar(), depIndex,
+                                   mod.instanceId.AsChar(), m);
+                        AddError("DEPENDENCY_ORDER", msg.AsCStr(), mod.instanceId);
                     }
                 }
 

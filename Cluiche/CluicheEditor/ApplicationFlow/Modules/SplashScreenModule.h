@@ -3,24 +3,25 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-#include <DiaApplicationFlow/ApplicationModule.h>
+#include <DiaApplicationFlow/Module.h>
 
 namespace Cluiche
 {
 	namespace Editor
 	{
-		class SplashScreenModule : public Dia::Application::Module
+		class SplashScreenModule : public Dia::ApplicationFlow::Module
 		{
 		public:
 			static const Dia::Core::StringCRC kTypeId;
 
-			explicit SplashScreenModule(Dia::Application::ProcessingUnit* pu);
+			explicit SplashScreenModule(const Dia::Core::StringCRC& instanceId);
 
 			void Dismiss();
 
 		protected:
-			Dia::Application::StateObject::OpertionResponse DoStart(const Dia::Application::StateObject::IStartData*) override;
-			void DoStop() override;
+			Dia::ApplicationFlow::StartResult DoStart() override;
+			void DoUpdate(float deltaTime) override;
+			Dia::ApplicationFlow::StopResult DoStop() override;
 
 		private:
 			HWND mHwnd;
