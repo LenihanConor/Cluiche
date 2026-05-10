@@ -10,7 +10,7 @@
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
 #include <DiaGraphics/Frame/FrameData.h>
 #include <DiaGraphics/Frame/DebugFrameDataVisitor.h>
-#include <DiaDebugServer/DebugServerModule.h>
+#include <DiaDebugServer/DebugServer.h>
 #include <DiaDebugProtocol/DiaDebugProtocol.h>
 #include <DiaProtobuf/ProtoJsonCodec.h>
 #include <cstdlib>  // std::atof
@@ -231,7 +231,7 @@ namespace Dia
         // --------------------------------------------------------------------
 
         void DebugLayerManager::BroadcastLayerState(
-            Dia::DebugServer::DebugServerModule* debugServer)
+            Dia::DebugServer::DebugServer* debugServer)
         {
             if (debugServer == nullptr) return;
             if (!mLayersDirty) return;

@@ -1,28 +1,25 @@
 #include "DiaDebugServer/StateSerializer.h"
-
-#include <DiaApplicationFlow/IApplicationInspectable.h>
-#include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include "DiaDebugServer/IDebugStateProvider.h"
 
 namespace Dia
 {
 	namespace DebugServer
 	{
-		Json::Value StateSerializer::SerializeApplicationState(const Dia::ApplicationFlow::IApplicationInspectable* app)
+		Json::Value StateSerializer::SerializeApplicationState(const IDebugStateProvider* provider)
 		{
 			Json::Value result;
-			if (!app)
+			if (!provider)
 			{
-				result["error"] = "null application";
+				result["error"] = "null state provider";
 				return result;
 			}
 
-			result["current_stage"] = app->GetCurrentStage().AsChar();
-			result["is_transitioning"] = app->IsTransitioning();
-			result["is_shutting_down"] = app->IsShuttingDown();
+			result["current_stage"]    = provider->GetCurrentStage().AsChar();
+			result["is_transitioning"] = provider->IsTransitioning();
+			result["is_shutting_down"] = provider->IsShuttingDown();
 
-			// Enumerate PUs.
 			Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 4> puIds;
-			app->GetProcessingUnits(puIds);
+			provider->GetProcessingUnitIds(puIds);
 
 			Json::Value pusJson(Json::arrayValue);
 			for (unsigned int p = 0; p < puIds.Size(); ++p)
@@ -30,8 +27,8 @@ namespace Dia
 				Json::Value puJson;
 				puJson["pu_id"] = puIds[p].AsChar();
 
-				Dia::Core::Containers::DynamicArrayC<Dia::ApplicationFlow::ModuleStateInfo, 64> modules;
-				app->GetActiveModules(puIds[p], modules);
+				Dia::Core::Containers::DynamicArrayC<DebugModuleInfo, 64> modules;
+				provider->GetModulesInPU(puIds[p], modules);
 
 				Json::Value modulesJson(Json::arrayValue);
 				for (unsigned int m = 0; m < modules.Size(); ++m)
@@ -47,22 +44,12 @@ namespace Dia
 			return result;
 		}
 
-		Json::Value StateSerializer::SerializeModuleState(const Dia::ApplicationFlow::ModuleStateInfo& info)
+		Json::Value StateSerializer::SerializeModuleState(const DebugModuleInfo& info)
 		{
 			Json::Value result;
 			result["module_id"] = info.instanceId.AsChar();
 			result["type_id"]   = info.typeId.AsChar();
-
-			const char* stateName = "unknown";
-			switch (info.state)
-			{
-				case Dia::ApplicationFlow::ModuleState::kInactive: stateName = "inactive"; break;
-				case Dia::ApplicationFlow::ModuleState::kStarting: stateName = "starting"; break;
-				case Dia::ApplicationFlow::ModuleState::kActive:   stateName = "active";   break;
-				case Dia::ApplicationFlow::ModuleState::kStopping: stateName = "stopping"; break;
-				case Dia::ApplicationFlow::ModuleState::kFailed:   stateName = "failed";   break;
-			}
-			result["state"] = stateName;
+			result["state"]     = info.state ? info.state : "unknown";
 			return result;
 		}
 

@@ -11,15 +11,16 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DebugServerModule.h" />
+    <ClInclude Include="DebugServer.h" />
     <ClInclude Include="DebugServerLogSink.h" />
+    <ClInclude Include="IDebugStateProvider.h" />
     <ClInclude Include="SubscriptionManager.h" />
     <ClInclude Include="StateSerializer.h" />
     <ClInclude Include="CommandDispatcher.h" />
     <ClInclude Include="QueryRegistry.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DebugServerModule.cpp" />
+    <ClCompile Include="DebugServer.cpp" />
     <ClCompile Include="DebugServerLogSink.cpp" />
     <ClCompile Include="SubscriptionManager.cpp" />
     <ClCompile Include="StateSerializer.cpp" />
@@ -29,9 +30,6 @@
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
       <Project>{8D41CBE3-C493-428D-95F3-627E56500667}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\DiaApplicationFlow\DiaApplicationFlow.vcxproj">
-      <Project>{DD3D58EF-028B-42CB-B837-0042BA30D96F}</Project>
     </ProjectReference>
     <ProjectReference Include="..\DiaWebSocket\DiaWebSocket.vcxproj">
       <Project>{458B1E8F-6660-499F-B265-E40DC3257B81}</Project>

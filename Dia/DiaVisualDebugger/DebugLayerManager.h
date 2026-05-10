@@ -26,7 +26,7 @@ namespace Dia
 
     namespace DebugServer
     {
-        class DebugServerModule;  // Forward declaration — no header included; caller passes nullptr if absent
+        class DebugServer;  // Forward declaration — no header included; caller passes nullptr if absent
     }
 }
 
@@ -136,7 +136,7 @@ namespace Dia
             // No-op if debugServer is nullptr (DiaDebugServer is an optional dependency).
             // Only broadcasts when mLayersDirty is true (set on Register/Enable/Disable/Unregister).
             // Clears mLayersDirty after broadcast.
-            void BroadcastLayerState(Dia::DebugServer::DebugServerModule* debugServer);
+            void BroadcastLayerState(Dia::DebugServer::DebugServer* debugServer);
 
             // ----------------------------------------------------------------
             // Query

@@ -1,61 +1,42 @@
 #include <gtest/gtest.h>
 
 #include "DiaDebugServer/StateSerializer.h"
-#include <DiaApplicationFlow/IApplicationInspectable.h>
+#include "DiaDebugServer/IDebugStateProvider.h"
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
 using namespace Dia::DebugServer;
 
 // -----------------------------------------------------------------------------
-// Stub IApplicationInspectable for testing SerializeApplicationState without
+// Stub IDebugStateProvider for testing SerializeApplicationState without
 // spinning up a real Application.
 // -----------------------------------------------------------------------------
-struct StubInspectable : Dia::ApplicationFlow::IApplicationInspectable
+struct StubProvider : IDebugStateProvider
 {
 	Dia::Core::StringCRC currentStage;
 	bool transitioning = false;
 	bool shuttingDown  = false;
 
 	Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 4> puIds;
-	Dia::Core::Containers::DynamicArrayC<Dia::ApplicationFlow::ModuleStateInfo, 64> modules;
+	Dia::Core::Containers::DynamicArrayC<DebugModuleInfo, 64> modules;
 
 	Dia::Core::StringCRC GetCurrentStage() const override { return currentStage; }
 	bool IsTransitioning() const override { return transitioning; }
 	bool IsShuttingDown() const override { return shuttingDown; }
 
-	Dia::ApplicationFlow::TransitionInfo GetTransitionInfo() const override
-	{
-		Dia::ApplicationFlow::TransitionInfo info;
-		info.inProgress = transitioning;
-		info.fromStage = currentStage;
-		info.toStage = currentStage;
-		return info;
-	}
-
-	void GetAllStages(
-		Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16>& out) const override
-	{
-		out.Add(currentStage);
-	}
-
-	void GetProcessingUnits(
+	void GetProcessingUnitIds(
 		Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 4>& out) const override
 	{
 		for (unsigned int i = 0; i < puIds.Size() && !out.IsFull(); ++i)
 			out.Add(puIds[i]);
 	}
 
-	void GetActiveModules(
+	void GetModulesInPU(
 		const Dia::Core::StringCRC& /*puId*/,
-		Dia::Core::Containers::DynamicArrayC<Dia::ApplicationFlow::ModuleStateInfo, 64>& out) const override
+		Dia::Core::Containers::DynamicArrayC<DebugModuleInfo, 64>& out) const override
 	{
 		for (unsigned int i = 0; i < modules.Size() && !out.IsFull(); ++i)
 			out.Add(modules[i]);
 	}
-
-	void GetStreamInfo(
-		Dia::Core::Containers::DynamicArrayC<Dia::ApplicationFlow::StreamInfo, 16>& /*out*/) const override
-	{}
 };
 
 // -----------------------------------------------------------------------------
@@ -100,15 +81,15 @@ TEST(StateSerializer, SerializeApplicationState_NullReturnsError)
 {
 	Json::Value result = StateSerializer::SerializeApplicationState(nullptr);
 	EXPECT_TRUE(result.isMember("error"));
-	EXPECT_STREQ(result["error"].asCString(), "null application");
+	EXPECT_STREQ(result["error"].asCString(), "null state provider");
 }
 
 TEST(StateSerializer, SerializeApplicationState_ReportsCurrentStage)
 {
-	StubInspectable app;
-	app.currentStage = Dia::Core::StringCRC("RunStage");
+	StubProvider prov;
+	prov.currentStage = Dia::Core::StringCRC("RunStage");
 
-	Json::Value result = StateSerializer::SerializeApplicationState(&app);
+	Json::Value result = StateSerializer::SerializeApplicationState(&prov);
 
 	EXPECT_FALSE(result.isMember("error"));
 	EXPECT_STREQ(result["current_stage"].asCString(), "RunStage");
@@ -118,17 +99,17 @@ TEST(StateSerializer, SerializeApplicationState_ReportsCurrentStage)
 
 TEST(StateSerializer, SerializeApplicationState_IncludesPUsAndModules)
 {
-	StubInspectable app;
-	app.currentStage = Dia::Core::StringCRC("Boot");
-	app.puIds.Add(Dia::Core::StringCRC("MainPU"));
+	StubProvider prov;
+	prov.currentStage = Dia::Core::StringCRC("Boot");
+	prov.puIds.Add(Dia::Core::StringCRC("MainPU"));
 
-	Dia::ApplicationFlow::ModuleStateInfo mod0;
+	DebugModuleInfo mod0;
 	mod0.instanceId = Dia::Core::StringCRC("kernel");
 	mod0.typeId     = Dia::Core::StringCRC("KernelModule");
-	mod0.state      = Dia::ApplicationFlow::ModuleState::kActive;
-	app.modules.Add(mod0);
+	mod0.state      = "active";
+	prov.modules.Add(mod0);
 
-	Json::Value result = StateSerializer::SerializeApplicationState(&app);
+	Json::Value result = StateSerializer::SerializeApplicationState(&prov);
 
 	ASSERT_TRUE(result["processing_units"].isArray());
 	ASSERT_EQ(result["processing_units"].size(), 1u);
@@ -145,27 +126,31 @@ TEST(StateSerializer, SerializeApplicationState_IncludesPUsAndModules)
 // Per-module
 // -----------------------------------------------------------------------------
 
-TEST(StateSerializer, SerializeModuleState_AllStatesStringify)
+TEST(StateSerializer, SerializeModuleState_PassesThroughStateString)
 {
-	Dia::ApplicationFlow::ModuleStateInfo info;
+	DebugModuleInfo info;
 	info.instanceId = Dia::Core::StringCRC("mod");
 	info.typeId     = Dia::Core::StringCRC("Type");
 
-	const Dia::ApplicationFlow::ModuleState states[] = {
-		Dia::ApplicationFlow::ModuleState::kInactive,
-		Dia::ApplicationFlow::ModuleState::kStarting,
-		Dia::ApplicationFlow::ModuleState::kActive,
-		Dia::ApplicationFlow::ModuleState::kStopping,
-		Dia::ApplicationFlow::ModuleState::kFailed,
-	};
-	const char* expected[] = { "inactive", "starting", "active", "stopping", "failed" };
+	const char* states[] = { "inactive", "starting", "active", "stopping", "failed" };
 
 	for (unsigned int i = 0; i < sizeof(states)/sizeof(states[0]); ++i)
 	{
 		info.state = states[i];
 		Json::Value result = StateSerializer::SerializeModuleState(info);
-		EXPECT_STREQ(result["state"].asCString(), expected[i]) << "state index " << i;
+		EXPECT_STREQ(result["state"].asCString(), states[i]) << "state index " << i;
 	}
+}
+
+TEST(StateSerializer, SerializeModuleState_NullStateStringBecomesUnknown)
+{
+	DebugModuleInfo info;
+	info.instanceId = Dia::Core::StringCRC("mod");
+	info.typeId     = Dia::Core::StringCRC("Type");
+	info.state      = nullptr;
+
+	Json::Value result = StateSerializer::SerializeModuleState(info);
+	EXPECT_STREQ(result["state"].asCString(), "unknown");
 }
 
 // -----------------------------------------------------------------------------

@@ -8,18 +8,15 @@
 
 namespace Dia
 {
-	namespace ApplicationFlow
-	{
-		class IApplicationInspectable;
-		struct ModuleStateInfo;
-	}
-
 	namespace DebugServer
 	{
+		class IDebugStateProvider;
+		struct DebugModuleInfo;
+
 		// Frame-rate and memory snapshot broadcast over CORE_METRICS messages.
-		// Populated by DebugServerModule itself in v2 (no separate collector
-		// module — per-PU timings are dropped; frame time comes from DoUpdate
-		// deltaTime and memory comes from the OS).
+		// Populated by DebugServer's host adapter — per-PU timings are not
+		// tracked here; frame time comes from the host tick delta and memory
+		// comes from the OS.
 		struct CoreMetrics
 		{
 			float fps;
@@ -31,12 +28,12 @@ namespace Dia
 		class StateSerializer
 		{
 		public:
-			// Serialize the running Application's current stage + active modules.
-			// Null app → {"error": "null application"}.
-			static Json::Value SerializeApplicationState(const Dia::ApplicationFlow::IApplicationInspectable* app);
+			// Serialize the host application's current stage + active modules.
+			// Null provider → {"error": "null state provider"}.
+			static Json::Value SerializeApplicationState(const IDebugStateProvider* provider);
 
-			// Serialize a single module's state snapshot (from GetActiveModules).
-			static Json::Value SerializeModuleState(const Dia::ApplicationFlow::ModuleStateInfo& info);
+			// Serialize a single module snapshot.
+			static Json::Value SerializeModuleState(const DebugModuleInfo& info);
 
 			// Serialize a stage transition event.
 			static Json::Value SerializeStageTransition(const Dia::Core::StringCRC& fromStage,
