@@ -457,22 +457,10 @@
       <Filter>DebugServer</Filter>
     </ClCompile>
     <!-- Integration -->
-    <ClCompile Include="Integration\TestInputPipeline.cpp">
-      <Filter>Integration</Filter>
-    </ClCompile>
-    <ClCompile Include="Integration\TestFrameStreamPipeline.cpp">
-      <Filter>Integration</Filter>
-    </ClCompile>
     <ClCompile Include="Integration\TestDebugProtocolEndToEnd.cpp">
       <Filter>Integration</Filter>
     </ClCompile>
-    <ClCompile Include="Integration\TestManifestRoundTrip.cpp">
-      <Filter>Integration</Filter>
-    </ClCompile>
     <ClCompile Include="Integration\TestWebUIBridgeDispatch.cpp">
-      <Filter>Integration</Filter>
-    </ClCompile>
-    <ClCompile Include="Integration\TestTypeRegistrySeeding.cpp">
       <Filter>Integration</Filter>
     </ClCompile>
     <ClCompile Include="Integration\TestPhysicsGeometryIntegration.cpp">
