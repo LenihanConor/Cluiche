@@ -27,10 +27,10 @@ Migrate CluicheEditor from the deprecated DiaApplication v1 API to DiaApplicatio
 | AC-1 | `CluicheEditorProcessingUnit.h/.cpp` deleted; `Application` bootstrapped in `wWinMain` using `ApplicationManifestLoaderV2` |
 | AC-2 | All three v1 Phase classes (`CluicheEditorBootPhase`, `CluicheEditorRunningPhase`, `CluicheEditorShutdownPhase`) deleted |
 | AC-3 | Seven v2 Module subclasses created: `EditorModelModule`, `CommandHistoryModule`, `SplashScreenModule`, `EditorViewModule`, `EditorViewControllerModule`, `PluginLoaderModule`, `GameConnectionModule`; each uses `DIA_MODULE` registration macro (Logger absorbed into EditorModel; ConsoleSink absorbed into EditorView) |
-| AC-4 | `editor.diaapp` manifest upgraded to v2 schema (version: 2, stages: [Boot, Running], auto_stages: [Boot], module stage membership declared) |
+| AC-4 | `editor.diaapp` manifest upgraded to v2 schema (version: 2, single `Running` stage, `frequency_hz: 120`, `instance_id` == `type_id` for each module, `stages: ["Running"]` per module) deployed to `assets/configs/editor.diaapp` |
 | AC-5 | `CluicheEditor.vcxproj` references `DiaApplicationFlow.vcxproj` and removes reference to `DiaApplication.vcxproj` |
 | AC-6 | `CluicheEditor.vcxproj` and `.vcxproj.filters` updated to reflect deleted/added source files |
-| AC-7 | `dia run cluicheeditor` launches without error; editor boots to Running stage |
+| AC-7 | `CluicheEditor.exe` launches, reaches Running stage, CEF initialises (DevTools listening on port 9222), and 6 CEF helper processes spawn alongside the main process |
 
 ## Tasks
 
@@ -52,19 +52,22 @@ Migrate CluicheEditor from the deprecated DiaApplication v1 API to DiaApplicatio
 | PD-002 | Platform | PU/Phase/Module architecture (updated to PU/Stage/Module) | Adopts PU/Stage/Module via DiaApplicationFlow v2. Phase concept removed per SD-002. |
 | PD-004 | Platform | No STL containers in public APIs | Module public APIs use DiaCore containers only. |
 | PD-006 | Platform | Visual Studio project files are source of truth | CluicheEditor.vcxproj updated manually; no generated project files. |
-| PD-007 | Platform | C++20 required | `constexpr StringCRC kTypeId` in each module requires C++20 constexpr. |
+| PD-007 | Platform | C++20 required | `static const Dia::Core::StringCRC kTypeId` in each module (StringCRC has no constexpr ctor, so `constexpr` was revised to `const` during implementation — pattern matches CluicheTest). |
 | AED-001 | CluicheEditor App | CluicheEditor owns all application flow; DiaEditor is pure library | Modules are thin wrappers — all business logic remains in DiaEditor library classes. DiaEditor has no DiaApplicationFlow include. |
-| SD-001 | DiaApplicationFlow | Config is sole source of truth for structural wiring | `editor.diaapp` v2 manifest is the single declaration of modules, stages, and stage membership. No code-side wiring. |
-| SD-002 | DiaApplicationFlow | Phase concept removed, replaced by Stages | All three v1 Phase classes deleted. Boot and Running are config-declared stages. auto_stages handles Boot→Running transition. |
-| SD-003 | DiaApplicationFlow | ModuleRef<T> is sole module access pattern | Any cross-module dependency (e.g., EditorViewController needing EditorModel) resolved via `ModuleRef<EditorModelModule>` in `DoStart`. |
+| SD-001 | DiaApplicationFlow | Config is sole source of truth for structural wiring | `editor.diaapp` v2 manifest is the single declaration of modules and the EditorPU. No code-side wiring. |
+| SD-002 | DiaApplicationFlow | Phase concept removed, replaced by Stages | All three v1 Phase classes deleted. CluicheEditor uses a single `Running` stage (see SCED-002) — array order replaces the Boot→Running gate. |
+| SD-003 | DiaApplicationFlow | ModuleRef<T> is sole module access pattern | Any cross-module dependency (e.g., EditorViewController needing EditorModel) resolved via `ModuleRef<EditorModelModule>` member + init in constructor. |
 | SD-008 | DiaApplicationFlow | DIA_MODULE one-liner registration | Every module file ends with `DIA_MODULE(XxxModule);`. |
-| SD-017 | DiaApplicationFlow | Clean break — no v1 backward compatibility | DiaApplication.vcxproj removed from CluicheEditor.vcxproj. No v1 headers included anywhere in CluicheEditor. |
-| SCED-001 | CluicheEditor AppFlow | Phases deleted, not migrated | Compliant — AC-2 explicitly deletes all three Phase files. |
-| SCED-002 | CluicheEditor AppFlow | Boot stage holds only EditorModel + CommandHistory | Compliant — manifest assigns EditorView/ViewController/GameConnection to Running stage only. |
-| SCED-003 | CluicheEditor AppFlow | Shutdown via RequestShutdown, not Shutdown phase | Compliant — EditorViewModule::DoUpdate polls `IsCloseRequested()` and calls `GetApplication()->RequestShutdown()`. No Shutdown phase. |
-| SCED-004 | CluicheEditor AppFlow | PluginLoaderModule absorbed into EditorModelModule | Compliant — no PluginLoaderModule class created; plugin init handled in `EditorModelModule::DoStart`. |
-| SCED-005 | CluicheEditor AppFlow | LoggerModule absorbed into EditorModelModule | Compliant — logger/sink setup is one call in `EditorModelModule::DoStart`. |
-| SCED-006 | CluicheEditor AppFlow | EditorConsoleSinkModule absorbed into EditorViewModule | Compliant — console sink registration is one call in `EditorViewModule::DoStart`. |
+| SD-017 | DiaApplicationFlow | Clean break — no v1 backward compatibility | No v1 headers included anywhere in CluicheEditor. DiaApplicationFlow vcxproj was already the project reference. |
+| SCED-001 | CluicheEditor AppFlow | Phases deleted, not migrated | Compliant — all three Phase files deleted. |
+| SCED-002 | CluicheEditor AppFlow | Single Running stage | Compliant — manifest has `stages: ["Running"]` and all 7 modules belong to it. |
+| SCED-003 | CluicheEditor AppFlow | Shutdown via RequestShutdown, not Shutdown phase | Compliant — EditorViewModule::DoUpdate polls `IsCloseRequested()` and calls `GetProcessingUnit()->GetApplication()->RequestShutdown()`. No Shutdown phase. |
+| SCED-004 | CluicheEditor AppFlow | PluginLoaderModule kept as own v2 Module | Compliant — PluginLoaderModule class exists; full IPluginLoader impl ported. |
+| SCED-005 | CluicheEditor AppFlow | LoggerModule absorbed into EditorModelModule | Compliant — logger/sink setup is a few calls in `EditorModelModule::DoStart`. `editor-logger.json` loaded at start. |
+| SCED-006 | CluicheEditor AppFlow | EditorConsoleSinkModule absorbed into EditorViewModule | Compliant — console sink registration inline in `EditorViewModule::DoStart`. |
+| SCED-007 | CluicheEditor AppFlow | SplashScreenModule kept as own v2 Module | Compliant — Win32 splash preserved, dismissed via `shell_ready` handler in EditorViewModule. |
+| SCED-008 | CluicheEditor AppFlow | Manifest `instance_id` matches `type_id` | Compliant — all 7 modules use the same string for both fields. |
+| SCED-009 | CluicheEditor AppFlow | Frame pacing at 120 Hz | Compliant — `kFrameTimeSec = 1.0f / 120.0f` in Main.cpp's loop, with sleep to frame budget. |
 
 ## Open Questions
 

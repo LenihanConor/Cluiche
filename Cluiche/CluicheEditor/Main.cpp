@@ -22,6 +22,9 @@
 #include <DiaApplicationFlow/Manifest/ApplicationManifestLoaderV2.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV2.h>
 
+#include <chrono>
+#include <thread>
+
 int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPWSTR /*lpCmdLine*/, int /*nCmdShow*/)
 {
     // CEF subprocess guard: must come before ANY Dia initialization.
@@ -51,9 +54,27 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPWSTR /
         return 1;
     }
 
-    const float kFrameTimeSec = 1.0f / 60.0f;
-    while (app.Update(kFrameTimeSec))
+    // Frame-paced main loop at 120 Hz.  The editor is GUI-only; an uncapped
+    // loop wastes CPU spinning without matching renderer output.  Sleep off
+    // any time left in the frame budget after Update returns.
+    using Clock    = std::chrono::steady_clock;
+    using Duration = std::chrono::duration<float>;
+    constexpr Duration kFrameBudget{1.0f / 120.0f};
+
+    auto lastFrameStart = Clock::now();
+    while (true)
     {
+        const auto frameStart = Clock::now();
+        const float deltaTime = std::chrono::duration_cast<Duration>(frameStart - lastFrameStart).count();
+        lastFrameStart = frameStart;
+
+        if (!app.Update(deltaTime))
+            break;
+
+        const auto elapsed   = Clock::now() - frameStart;
+        const auto remaining = kFrameBudget - elapsed;
+        if (remaining.count() > 0.0f)
+            std::this_thread::sleep_for(remaining);
     }
     return 0;
 }

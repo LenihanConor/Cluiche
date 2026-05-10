@@ -6,7 +6,7 @@
     "processing_units": [
         {
             "instance_id": "EditorPU",
-            "frequency_hz": 60,
+            "frequency_hz": 120,
             "dedicated_thread": false,
             "modules": [
                 { "instance_id": "EditorModelModule",          "type_id": "EditorModelModule",          "stages": ["Running"] },
