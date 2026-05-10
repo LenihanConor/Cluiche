@@ -224,33 +224,54 @@ namespace Dia { namespace ApplicationFlow {
             {
 #if defined(NDEBUG)
                 // Release, non-boot: attempt rollback by re-entering the stage.
-                // The simplest correct rollback: stop any newly-started modules
-                // (those in kStarting/kActive for the current stage) and restart
-                // them.  If the rollback itself produces failures, escalate.
-                DIA_LOG_ERROR("Application", "Module failed in stage '%s' — attempting rollback (re-entering stage)",
-                              mCurrentStage.AsChar());
-
-                // Stop all active modules in the current stage.
-                for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
+                // A deterministic failure (missing asset, bad config) would
+                // otherwise loop forever — cap retries per stage and escalate
+                // to shutdown if we exceed the cap.
+                if (mLastRollbackStage == mCurrentStage)
                 {
-                    ProcessingUnit* pu = mProcessingUnits[p].Get();
-                    const ProcessingUnitDeclaration& puDecl = mManifest.processingUnits[p];
-                    for (unsigned int m = 0; m < puDecl.modules.Size(); ++m)
+                    ++mRollbackAttempts;
+                }
+                else
+                {
+                    mLastRollbackStage = mCurrentStage;
+                    mRollbackAttempts  = 1;
+                }
+
+                if (mRollbackAttempts > kMaxRollbackAttempts)
+                {
+                    DIA_LOG_ERROR("Application",
+                                  "Module failed in stage '%s' — rollback exceeded %u attempts, shutting down",
+                                  mCurrentStage.AsChar(), kMaxRollbackAttempts);
+                    RequestShutdown();
+                }
+                else
+                {
+                    DIA_LOG_ERROR("Application",
+                                  "Module failed in stage '%s' — attempting rollback (attempt %u/%u)",
+                                  mCurrentStage.AsChar(), mRollbackAttempts, kMaxRollbackAttempts);
+
+                    // Stop all active modules in the current stage.
+                    for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
                     {
-                        const ModuleDeclaration& modDecl = puDecl.modules[m];
-                        if (ModuleIsInStage(modDecl, mCurrentStage))
+                        ProcessingUnit* pu = mProcessingUnits[p].Get();
+                        const ProcessingUnitDeclaration& puDecl = mManifest.processingUnits[p];
+                        for (unsigned int m = 0; m < puDecl.modules.Size(); ++m)
                         {
-                            Module* module = pu->FindModule(modDecl.instanceId);
-                            if (module && module->GetState() == ModuleState::kActive)
+                            const ModuleDeclaration& modDecl = puDecl.modules[m];
+                            if (ModuleIsInStage(modDecl, mCurrentStage))
                             {
-                                module->BeginStop();
+                                Module* module = pu->FindModule(modDecl.instanceId);
+                                if (module && module->GetState() == ModuleState::kActive)
+                                {
+                                    module->BeginStop();
+                                }
                             }
                         }
                     }
-                }
 
-                // Re-queue the current stage so modules restart next transition.
-                TransitionTo(mCurrentStage);
+                    // Re-queue the current stage so modules restart next transition.
+                    TransitionTo(mCurrentStage);
+                }
 #else
                 // Debug: assert hard.
                 DIA_ASSERT(false, "Module failed in stage '%s' — investigate and fix",
@@ -573,6 +594,14 @@ namespace Dia { namespace ApplicationFlow {
         // All outgoing modules are down — commit stage and start incoming.
         mCurrentStage       = newStage;
         mTransitionDraining = false;
+
+        // A successful transition into a new stage resets the rollback counter:
+        // rollback attempts are only counted consecutively within the same stage.
+        if (mLastRollbackStage != newStage)
+        {
+            mLastRollbackStage = Dia::Core::StringCRC();
+            mRollbackAttempts  = 0;
+        }
 
         DIA_LOG_INFO("Application", "Stage transition drain complete, entering '%s'",
                      newStage.AsChar());

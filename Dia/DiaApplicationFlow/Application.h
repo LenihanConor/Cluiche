@@ -160,6 +160,13 @@ namespace Dia { namespace ApplicationFlow {
         // incoming modules can be started. Cleared once all outgoing are kInactive.
         bool                 mTransitionDraining = false;
         Dia::Core::StringCRC mDrainingToStage;
+
+        // Rollback retry state: on a non-boot module failure the release-build
+        // policy is to stop and restart the current stage.  If the failure is
+        // deterministic we'd otherwise loop forever — cap it and shut down.
+        static constexpr unsigned int kMaxRollbackAttempts = 3;
+        Dia::Core::StringCRC mLastRollbackStage;     // which stage we last rolled back in
+        unsigned int         mRollbackAttempts = 0;  // consecutive attempts in that stage
     };
 
 }} // namespace Dia::ApplicationFlow

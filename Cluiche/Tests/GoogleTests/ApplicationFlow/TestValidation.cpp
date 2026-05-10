@@ -378,6 +378,102 @@ TEST(Validation, UnknownDependencyReportsError)
         << "Expected UNKNOWN_DEPENDENCY error";
 }
 
+// A module depends on another module that appears LATER in the array.  The
+// framework uses array order as startup order, so this would start the
+// dependent before its dependency — must produce DEPENDENCY_ORDER.
+TEST(Validation, DependencyOrderReportsError)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+
+    ApplicationManifestV2 manifest;
+    manifest.version = 2;
+
+    StageDeclaration boot;
+    boot.name = StringCRC("Boot");
+    manifest.stages.Add(boot);
+    manifest.initialStage = StringCRC("Boot");
+
+    ProcessingUnitDeclaration pu;
+    pu.instanceId      = StringCRC("MainPU");
+    pu.frequencyHz     = 60.0f;
+    pu.dedicatedThread = false;
+
+    // modA declared FIRST but depends on modB which comes later.
+    ModuleDeclaration modA;
+    modA.instanceId     = StringCRC("modA");
+    modA.typeId         = Val_SimpleModule::kTypeId;
+    modA.startTimeoutMs = 10000.0f;
+    modA.stopTimeoutMs  = 5000.0f;
+    modA.stages.Add(StringCRC("Boot"));
+    modA.dependencies.Add(StringCRC("modB"));
+    pu.modules.Add(modA);
+
+    // modB — at a LATER index than its dependent modA.
+    ModuleDeclaration modB;
+    modB.instanceId     = StringCRC("modB");
+    modB.typeId         = Val_SimpleModule::kTypeId;
+    modB.startTimeoutMs = 10000.0f;
+    modB.stopTimeoutMs  = 5000.0f;
+    modB.stages.Add(StringCRC("Boot"));
+    pu.modules.Add(modB);
+
+    manifest.processingUnits.Add(pu);
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_TRUE(validator.HasErrors());
+    EXPECT_TRUE(HasCode(validator.GetResults(), "DEPENDENCY_ORDER"))
+        << "Expected DEPENDENCY_ORDER error when a module depends on a later-indexed module";
+}
+
+// A module depending on a module at a lower (earlier) index is valid — no
+// DEPENDENCY_ORDER error is produced.
+TEST(Validation, DependencyOrderValidWhenDepIsEarlier)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+
+    ApplicationManifestV2 manifest;
+    manifest.version = 2;
+
+    StageDeclaration boot;
+    boot.name = StringCRC("Boot");
+    manifest.stages.Add(boot);
+    manifest.initialStage = StringCRC("Boot");
+
+    ProcessingUnitDeclaration pu;
+    pu.instanceId      = StringCRC("MainPU");
+    pu.frequencyHz     = 60.0f;
+    pu.dedicatedThread = false;
+
+    // modB first — it's the dependency.
+    ModuleDeclaration modB;
+    modB.instanceId     = StringCRC("modB");
+    modB.typeId         = Val_SimpleModule::kTypeId;
+    modB.startTimeoutMs = 10000.0f;
+    modB.stopTimeoutMs  = 5000.0f;
+    modB.stages.Add(StringCRC("Boot"));
+    pu.modules.Add(modB);
+
+    // modA second — correctly depends on modB (at a lower index).
+    ModuleDeclaration modA;
+    modA.instanceId     = StringCRC("modA");
+    modA.typeId         = Val_SimpleModule::kTypeId;
+    modA.startTimeoutMs = 10000.0f;
+    modA.stopTimeoutMs  = 5000.0f;
+    modA.stages.Add(StringCRC("Boot"));
+    modA.dependencies.Add(StringCRC("modB"));
+    pu.modules.Add(modA);
+
+    manifest.processingUnits.Add(pu);
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_FALSE(HasCode(validator.GetResults(), "DEPENDENCY_ORDER"))
+        << "Expected no DEPENDENCY_ORDER error when dep is at an earlier index";
+}
+
 // Two modules depend on each other (A → B, B → A) — produces CYCLE_DETECTED.
 TEST(Validation, CycleDetectedReportsError)
 {
