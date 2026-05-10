@@ -49,9 +49,6 @@
     <Filter Include="DiaCLI">
       <UniqueIdentifier>{DIACLI01-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Application">
-      <UniqueIdentifier>{APP00001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
-    </Filter>
     <Filter Include="UI">
       <UniqueIdentifier>{UI000001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
@@ -393,61 +390,6 @@
     <!-- DiaCLI -->
     <ClCompile Include="DiaCLI\TestDiaCLI.cpp">
       <Filter>DiaCLI</Filter>
-    </ClCompile>
-    <!-- Application -->
-    <ClCompile Include="Application\TestBasicApplication.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestHotReload.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestApplicationTypeRegistry.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestManifestLoader.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestManifestImports.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestPUTree.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestPUTreeIntegration.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestDiaGameFormat.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestDiaGameSerializers.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestMessageBus.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestApplicationLifecycle.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestApplicationIntrospector.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestApplicationLoader.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestPhaseTransition.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestModuleRef.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestMetricsCollector.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestStateObject.cpp">
-      <Filter>Application</Filter>
-    </ClCompile>
-    <ClCompile Include="Application\TestCluicheManifests.cpp">
-      <Filter>Application</Filter>
     </ClCompile>
     <!-- UI -->
     <ClCompile Include="UI\TestBoundMethod.cpp">
