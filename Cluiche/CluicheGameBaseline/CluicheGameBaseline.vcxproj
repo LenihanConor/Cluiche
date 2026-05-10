@@ -19,7 +19,6 @@
     <ClCompile Include="Modules\RenderModule.cpp" />
     <ClCompile Include="Modules\TimeServerModule.cpp" />
     <ClCompile Include="Modules\UIModule.cpp" />
-    <ClCompile Include="UI\LaunchUIPage.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\AssetServiceModule.h" />
@@ -32,7 +31,6 @@
     <ClInclude Include="Modules\UIModule.h" />
     <ClInclude Include="Types\InputEvent.h" />
     <ClInclude Include="Types\UICommand.h" />
-    <ClInclude Include="UI\LaunchUIPage.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">

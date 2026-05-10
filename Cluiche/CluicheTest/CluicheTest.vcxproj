@@ -14,9 +14,11 @@
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Modules\BootUIPageModule.cpp" />
+    <ClCompile Include="Pages\LaunchUIPage.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\BootUIPageModule.h" />
+    <ClInclude Include="Pages\LaunchUIPage.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">

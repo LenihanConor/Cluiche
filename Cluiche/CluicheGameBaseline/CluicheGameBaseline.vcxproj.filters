@@ -7,9 +7,6 @@
     <Filter Include="Types">
       <UniqueIdentifier>{b2c3d4e5-f6a7-8901-bcde-f12345678902}</UniqueIdentifier>
     </Filter>
-    <Filter Include="UI">
-      <UniqueIdentifier>{e63b6e6a-3c59-4b0a-accc-30ea65625e99}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Modules\AssetServiceModule.cpp">
@@ -35,9 +32,6 @@
     </ClCompile>
     <ClCompile Include="Modules\UIModule.cpp">
       <Filter>Modules</Filter>
-    </ClCompile>
-    <ClCompile Include="UI\LaunchUIPage.cpp">
-      <Filter>UI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -70,9 +64,6 @@
     </ClInclude>
     <ClInclude Include="Types\UICommand.h">
       <Filter>Types</Filter>
-    </ClInclude>
-    <ClInclude Include="UI\LaunchUIPage.h">
-      <Filter>UI</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

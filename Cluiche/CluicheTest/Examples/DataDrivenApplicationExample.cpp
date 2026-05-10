@@ -10,13 +10,13 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-#include <DiaApplication/ApplicationProcessingUnit.h>
-#include <DiaApplication/ApplicationPhase.h>
-#include <DiaApplication/ApplicationModule.h>
-#include <DiaApplication/TypeRegistry/ApplicationTypeRegistry.h>
-#include <DiaApplication/TypeRegistry/RegistrationMacros.h>
-#include <DiaApplication/Loader/ApplicationLoader.h>
-#include <DiaApplication/Introspection/ApplicationIntrospector.h>
+#include <DiaApplicationFlow/ApplicationProcessingUnit.h>
+#include <DiaApplicationFlow/ApplicationPhase.h>
+#include <DiaApplicationFlow/ApplicationModule.h>
+#include <DiaApplicationFlow/TypeRegistry/ApplicationTypeRegistry.h>
+#include <DiaApplicationFlow/TypeRegistry/RegistrationMacros.h>
+#include <DiaApplicationFlow/Loader/ApplicationLoader.h>
+#include <DiaApplicationFlow/Introspection/ApplicationIntrospector.h>
 #include <DiaCore/Core/Log.h>
 
 using namespace Dia::Application;

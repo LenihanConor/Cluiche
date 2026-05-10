@@ -1,53 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="Main.cpp" />
-    <ClCompile Include="Modules\BootUIPageModule.cpp">
-      <Filter>ApplicationFlow\Modules</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
     <Filter Include="ApplicationFlow">
       <UniqueIdentifier>{cb998eec-267d-4eee-bc14-f40d3b64cdc8}</UniqueIdentifier>
     </Filter>
     <Filter Include="ApplicationFlow\Modules">
       <UniqueIdentifier>{3c25b1d8-299a-4a1b-ad3e-fa82cc4b198a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Pages">
+      <UniqueIdentifier>{d7e19b4c-2f31-4a88-9e26-85c4f3a1b872}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Modules\BootUIPageModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Pages\LaunchUIPage.cpp">
+      <Filter>Pages</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\BootUIPageModule.h">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <Filter Include="Data">
-      <UniqueIdentifier>{f1a2b3c4-d5e6-7890-abcd-ef1234567890}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Data\Manifests">
-      <UniqueIdentifier>{a1b2c3d4-e5f6-7890-abcd-ef1234567891}</UniqueIdentifier>
-    </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Data\Manifests\cluiche_main.diaapp">
-      <Filter>Data\Manifests</Filter>
-    </None>
-    <None Include="Data\Manifests\cluiche_render.diaapp">
-      <Filter>Data\Manifests</Filter>
-    </None>
-    <None Include="Data\Manifests\cluiche_sim.diaapp">
-      <Filter>Data\Manifests</Filter>
-    </None>
-    <None Include="Data\cluichetest.diagame">
-      <Filter>Data</Filter>
-    </None>
-    <None Include="Data\cluiche.diaapp">
-      <Filter>Data</Filter>
-    </None>
-    <None Include="Data\dummy_stage.diastage">
-      <Filter>Data</Filter>
-    </None>
-    <None Include="Data\dummy_stage.diaapp">
-      <Filter>Data</Filter>
-    </None>
+    <ClInclude Include="Pages\LaunchUIPage.h">
+      <Filter>Pages</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
