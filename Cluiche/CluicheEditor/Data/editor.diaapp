@@ -1,21 +1,21 @@
 {
     "version": 2,
-    "stages": ["Boot", "Running"],
-    "initial_stage": "Boot",
-    "auto_stages": ["Boot"],
+    "stages": ["Running"],
+    "initial_stage": "Running",
+    "auto_stages": [],
     "processing_units": [
         {
             "instance_id": "EditorPU",
             "frequency_hz": 60,
             "dedicated_thread": false,
             "modules": [
-                { "instance_id": "EditorModel",          "type_id": "EditorModelModule",          "stages": ["Boot", "Running"] },
-                { "instance_id": "CommandHistory",       "type_id": "CommandHistoryModule",       "stages": ["Boot", "Running"] },
-                { "instance_id": "SplashScreen",         "type_id": "SplashScreenModule",         "stages": ["Boot", "Running"] },
-                { "instance_id": "EditorView",           "type_id": "EditorViewModule",           "stages": ["Running"] },
-                { "instance_id": "EditorViewController", "type_id": "EditorViewControllerModule", "stages": ["Running"] },
-                { "instance_id": "PluginLoader",         "type_id": "PluginLoaderModule",         "stages": ["Running"] },
-                { "instance_id": "GameConnection",       "type_id": "GameConnectionModule",       "stages": ["Running"] }
+                { "instance_id": "EditorModelModule",          "type_id": "EditorModelModule",          "stages": ["Running"] },
+                { "instance_id": "CommandHistoryModule",       "type_id": "CommandHistoryModule",       "stages": ["Running"] },
+                { "instance_id": "SplashScreenModule",         "type_id": "SplashScreenModule",         "stages": ["Running"] },
+                { "instance_id": "EditorViewControllerModule", "type_id": "EditorViewControllerModule", "stages": ["Running"] },
+                { "instance_id": "EditorViewModule",           "type_id": "EditorViewModule",           "stages": ["Running"] },
+                { "instance_id": "PluginLoaderModule",         "type_id": "PluginLoaderModule",         "stages": ["Running"] },
+                { "instance_id": "GameConnectionModule",       "type_id": "GameConnectionModule",       "stages": ["Running"] }
             ]
         }
     ]

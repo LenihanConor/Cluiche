@@ -149,12 +149,9 @@ namespace Cluiche
 			logger.RegisterThreadBuffer();
 			logger.RegisterSink(&mDebugOutputSink);
 
-			// Apply editor-logger.json — sets levels/channels on registered sinks.
 			Dia::Logger::ISink* sinks[] = { &mDebugOutputSink };
 			ApplyLoggerConfig("assets/configs/editor-logger.json", sinks, 1);
 
-			// Resolve the project path from the command line (argv[1]) so the
-			// PluginLoader can load .diaapp manifests referenced by the project.
 			ParseProjectPathFromCommandLine(mProjectPath, kMaxProjectPathLength);
 
 			return Dia::ApplicationFlow::StartResult::kReady;
