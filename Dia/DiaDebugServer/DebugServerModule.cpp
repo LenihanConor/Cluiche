@@ -1,13 +1,13 @@
 #include "DiaDebugServer/DebugServerModule.h"
 
 #include <DiaProtobuf/ProtoStructConverter.h>
-#include <DiaApplicationFlow/ApplicationProcessingUnit.h>
-#include <DiaApplicationFlow/ApplicationPhase.h>
-#include <DiaApplicationFlow/DebugDataTypes.h>
-#include <DiaApplicationFlow/Metrics/MetricsCollectorModule.h>
+#include <DiaApplicationFlow/IApplicationControl.h>
+#include <DiaApplicationFlow/IApplicationInspectable.h>
+#include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaWebSocket/Server.h>
 #include <DiaDebugProtocol/DiaDebugProtocol.h>
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
+#include <DiaCore/Json/external/json/json.h>
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaLogger/DiaLog.h>
 #include <DiaLogger/Logger.h>
@@ -17,34 +17,41 @@
 #include <windows.h>
 #include <psapi.h>
 #pragma comment(lib, "psapi.lib")
+// windows.h defines SetPort as a macro that expands to SetPortA/W.
+// Drop it so we can call the real method.
+#ifdef SetPort
+#undef SetPort
 #endif
+#endif
+
+namespace
+{
+	// Sentinel data-type for stage-transition subscribers (mirrors the v1
+	// DebugDataType::kPhaseTransition value).
+	static const Dia::Core::StringCRC kStageTransitionTopic("stage_transition");
+}
 
 namespace Dia
 {
 	namespace DebugServer
 	{
-		const Dia::Core::StringCRC DebugServerModule::kUniqueId("DebugServerModule");
-		const Dia::Core::StringCRC& DebugServerModule::kTypeId = DebugServerModule::kUniqueId;
+		const Dia::Core::StringCRC DebugServerModule::kTypeId("DebugServerModule");
 
-		DebugServerModule::DebugServerModule(Dia::Application::ProcessingUnit* pu)
-			: Module(pu, kUniqueId, RunningEnum::kUpdate)
+		DebugServerModule::DebugServerModule(const Dia::Core::StringCRC& instanceId)
+			: Dia::ApplicationFlow::Module(instanceId)
 			, mServer(nullptr)
 			, mPort(8080)
 			, mAutoStart(true)
 			, mMetricsBroadcastInterval(0.5f)
 			, mMetricsTimer(0.0f)
+			, mFrameTimeAccumMs(0.0f)
+			, mFrameTimeSampleCount(0)
+			, mLastFpsSample(0.0f)
+			, mLastFrameTimeMsSample(0.0f)
 			, mStartTimestamp(0)
 		{
 			mGameName[0] = '\0';
 			mGameBuild[0] = '\0';
-		}
-
-		void DebugServerModule::SetGameInfo(const char* name, const char* build)
-		{
-			if (name) strncpy_s(mGameName, sizeof(mGameName), name, _TRUNCATE);
-			else mGameName[0] = '\0';
-			if (build) strncpy_s(mGameBuild, sizeof(mGameBuild), build, _TRUNCATE);
-			else mGameBuild[0] = '\0';
 		}
 
 		DebugServerModule::~DebugServerModule()
@@ -57,9 +64,50 @@ namespace Dia
 			}
 		}
 
-		Dia::Application::StateObject::OpertionResponse DebugServerModule::DoStart(const IStartData* /*startData*/)
+		void DebugServerModule::SetGameInfo(const char* name, const char* build)
 		{
-			DIA_LOG_INFO("DebugServer", "DebugServerModule: DoStart port=%d autoStart=%d", static_cast<int>(mPort), mAutoStart ? 1 : 0);
+			if (name) strncpy_s(mGameName, sizeof(mGameName), name, _TRUNCATE);
+			else mGameName[0] = '\0';
+			if (build) strncpy_s(mGameBuild, sizeof(mGameBuild), build, _TRUNCATE);
+			else mGameBuild[0] = '\0';
+		}
+
+		//---------------------------------------------------------------------
+		// v2 lifecycle
+		//---------------------------------------------------------------------
+
+		void DebugServerModule::OnConfigure(const char* configJson)
+		{
+			if (configJson == nullptr || configJson[0] == '\0')
+				return;
+
+			Json::Value config;
+			Json::Reader reader;
+			if (!reader.parse(configJson, config))
+			{
+				DIA_LOG_WARNING("DebugServer", "DebugServerModule: OnConfigure — JSON parse failed, using defaults");
+				return;
+			}
+
+			if (config.isMember("port") && config["port"].isInt())
+				mPort = static_cast<uint16_t>(config["port"].asInt());
+			if (config.isMember("auto_start") && config["auto_start"].isBool())
+				mAutoStart = config["auto_start"].asBool();
+
+			const char* gameName = config.isMember("game_name") && config["game_name"].isString()
+				? config["game_name"].asCString() : "";
+			const char* gameBuild = config.isMember("game_build") && config["game_build"].isString()
+				? config["game_build"].asCString() : "";
+			SetGameInfo(gameName, gameBuild);
+
+			if (config.isMember("log_level") && config["log_level"].isString())
+				SetLogSinkLevel(Dia::Logger::LogLevelFromString(config["log_level"].asCString()));
+		}
+
+		Dia::ApplicationFlow::StartResult DebugServerModule::DoStart()
+		{
+			DIA_LOG_INFO("DebugServer", "DebugServerModule: DoStart port=%d autoStart=%d",
+				static_cast<int>(mPort), mAutoStart ? 1 : 0);
 			mServer = new Dia::WebSocket::Server(mPort);
 
 			mServer->SetConnectionCallback([this](int connId, bool connected) {
@@ -72,35 +120,10 @@ namespace Dia
 
 			RegisterProtocolCommands();
 
-			GetAssociatedProcessingUnit()->GetMessageBus().Subscribe(
-				Dia::Application::DebugDataType::kPhaseTransition,
-				kUniqueId,
-				[this](const Dia::Application::Message& /*busMsg*/) {
-					auto subscribers = mSubscriptionManager.GetSubscribers(
-						Dia::Application::DebugDataType::kPhaseTransition);
-					if (subscribers.Size() == 0) return;
-
-					Json::Value eventPayload;
-					eventPayload["pu_id"] = GetAssociatedProcessingUnit()->GetUniqueId().AsChar();
-
-					dia::debug::DebugMessage eventMsg;
-					eventMsg.set_type(dia::debug::MESSAGE_TYPE_EVENT);
-					eventMsg.set_timestamp(Dia::DebugProtocol::GetTimestampNow());
-					auto* evt = eventMsg.mutable_event();
-					evt->set_event_type(Dia::Application::DebugDataType::kPhaseTransition.AsChar());
-					Dia::Proto::JsonValueToProtoStruct(eventPayload, evt->mutable_payload());
-
-					char jsonBuffer[4096];
-					if (Dia::Proto::ToJson(eventMsg, jsonBuffer, sizeof(jsonBuffer)))
-					{
-						for (unsigned int i = 0; i < subscribers.Size(); ++i)
-						{
-							mServer->SendText(subscribers[i], jsonBuffer);
-						}
-					}
-					mStats.messagesSentTotal += static_cast<int>(subscribers.Size());
-				}
-			);
+			// Initialize last-observed stage so the first DoUpdate doesn't
+			// fire a spurious "transition from 0 to current".
+			if (auto* app = GetApplication())
+				mLastObservedStage = app->GetCurrentStage();
 
 			if (mAutoStart)
 			{
@@ -112,10 +135,10 @@ namespace Dia
 
 			mStartTimestamp = Dia::DebugProtocol::GetTimestampNow();
 
-			return StateObject::OpertionResponse::kImmediate;
+			return Dia::ApplicationFlow::StartResult::kReady;
 		}
 
-		void DebugServerModule::DoUpdate()
+		void DebugServerModule::DoUpdate(float deltaTime)
 		{
 			if (!mServer || !mServer->IsRunning()) return;
 
@@ -124,7 +147,27 @@ namespace Dia
 			mLogSink.FlushToServer();
 			mServer->Update();
 
-			mMetricsTimer += 0.016f; // ~60fps approximation; real delta time not available on Module
+			// --- Accumulate frame-time for metrics. -------------------------
+			const float deltaMs = deltaTime * 1000.0f;
+			mFrameTimeAccumMs    += deltaMs;
+			mFrameTimeSampleCount++;
+
+			// --- Poll for stage transitions. --------------------------------
+			// v2 has no MessageBus — observe stage changes by comparing the
+			// current stage to what we saw last DoUpdate and broadcasting on
+			// change to any 'stage_transition' subscribers.
+			if (auto* app = GetApplication())
+			{
+				const Dia::Core::StringCRC now = app->GetCurrentStage();
+				if (now != mLastObservedStage)
+				{
+					BroadcastStageTransition(mLastObservedStage, now);
+					mLastObservedStage = now;
+				}
+			}
+
+			// --- Periodic core-metrics broadcast. ---------------------------
+			mMetricsTimer += deltaTime;
 			if (mMetricsTimer >= mMetricsBroadcastInterval)
 			{
 				if (mServer->GetConnectionCount() > 0)
@@ -147,7 +190,7 @@ namespace Dia
 			mStats.debugServerOverheadMs = static_cast<float>(frameEnd - frameStart) / 1000.0f;
 		}
 
-		void DebugServerModule::DoStop()
+		Dia::ApplicationFlow::StopResult DebugServerModule::DoStop()
 		{
 			Dia::Logger::Logger::Instance().UnregisterSink(&mLogSink);
 			mLogSink.SetServer(nullptr);
@@ -159,14 +202,20 @@ namespace Dia
 				delete mServer;
 				mServer = nullptr;
 			}
+			return Dia::ApplicationFlow::StopResult::kDone;
 		}
+
+		//---------------------------------------------------------------------
+		// Server control
+		//---------------------------------------------------------------------
 
 		bool DebugServerModule::StartServer()
 		{
 			if (!mServer) return false;
 			if (mServer->IsRunning()) return true;
 			bool ok = mServer->Start();
-			DIA_LOG_INFO("DebugServer", "DebugServerModule: StartServer on port %d result=%d", static_cast<int>(mPort), ok ? 1 : 0);
+			DIA_LOG_INFO("DebugServer", "DebugServerModule: StartServer on port %d result=%d",
+				static_cast<int>(mPort), ok ? 1 : 0);
 			return ok;
 		}
 
@@ -189,9 +238,15 @@ namespace Dia
 			return mServer->GetConnectionCount();
 		}
 
+		//---------------------------------------------------------------------
+		// Connection / message handling
+		//---------------------------------------------------------------------
+
 		void DebugServerModule::HandleConnection(int connId, bool connected)
 		{
-			DIA_LOG_INFO("DebugServer", "DebugServerModule: HandleConnection connId=%d connected=%d totalConnections=%d", connId, connected ? 1 : 0, mServer ? mServer->GetConnectionCount() : -1);
+			DIA_LOG_INFO("DebugServer",
+				"DebugServerModule: HandleConnection connId=%d connected=%d totalConnections=%d",
+				connId, connected ? 1 : 0, mServer ? mServer->GetConnectionCount() : -1);
 			if (connected)
 			{
 				dia::debug::DebugMessage welcome;
@@ -201,7 +256,7 @@ namespace Dia
 				resp->set_protocol_version(Dia::DebugProtocol::kProtocolVersion);
 				resp->set_accepted(true);
 				resp->set_server_name("DiaDebugServer");
-				resp->set_server_version("1.0.0");
+				resp->set_server_version("2.0.0");
 				SendProtoMessage(connId, welcome);
 
 				DIA_LOG_INFO("DebugServer", "DebugServerModule: Sending game_info to connId=%d", connId);
@@ -216,7 +271,7 @@ namespace Dia
 
 		void DebugServerModule::SendGameInfo(int connId)
 		{
-			const char* name = mGameName[0] ? mGameName : "DiaDebugServer";
+			const char* name  = mGameName[0]  ? mGameName  : "DiaDebugServer";
 			const char* build = mGameBuild[0] ? mGameBuild : "unknown";
 
 			dia::debug::DebugMessage msg;
@@ -226,25 +281,30 @@ namespace Dia
 			info->set_name(name);
 			info->set_build(build);
 			info->set_processing_unit_count(GetProcessingUnitCount());
-			info->set_current_phase(GetCurrentPhaseName());
+			info->set_current_phase(GetCurrentStageName());
 			SendProtoMessage(connId, msg);
 		}
 
-		const char* DebugServerModule::GetCurrentPhaseName() const
+		const char* DebugServerModule::GetCurrentStageName() const
 		{
-			const Dia::Application::ProcessingUnit* pu = GetAssociatedProcessingUnit();
-			if (pu == nullptr) return "";
-			const Dia::Application::Phase* phase = pu->GetCurrentPhase();
-			if (phase == nullptr) return "";
-			return phase->GetUniqueId().AsChar();
+			const auto* app = GetApplication();
+			if (app == nullptr) return "";
+			return app->GetCurrentStage().AsChar();
 		}
 
 		int DebugServerModule::GetProcessingUnitCount() const
 		{
-			// DiaDebugServer runs inside a single ProcessingUnit and has no global view
-			// of the application's PU graph; report 1 (self) until the application
-			// wires a PU-count provider through SetGameInfo.
-			return 1;
+			// Ask the introspection interface.  Application implements both
+			// IApplicationControl and IApplicationInspectable, but
+			// GetApplication() returns the narrow control view — do a
+			// dynamic_cast to reach the inspectable interface.
+			auto* app = GetApplication();
+			if (app == nullptr) return 0;
+			auto* insp = dynamic_cast<const Dia::ApplicationFlow::IApplicationInspectable*>(app);
+			if (insp == nullptr) return 0;
+			Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 4> puIds;
+			insp->GetProcessingUnits(puIds);
+			return static_cast<int>(puIds.Size());
 		}
 
 		void DebugServerModule::HandleMessage(int connId, const Dia::WebSocket::Message& msg)
@@ -267,7 +327,9 @@ namespace Dia
 				return;
 			}
 
-			DIA_LOG_DEBUG("DebugServer", "DebugServerModule: HandleMessage connId=%d type=%d", connId, static_cast<int>(protoMsg.type()));
+			DIA_LOG_DEBUG("DebugServer",
+				"DebugServerModule: HandleMessage connId=%d type=%d",
+				connId, static_cast<int>(protoMsg.type()));
 
 			switch (protoMsg.payload_case())
 			{
@@ -359,14 +421,16 @@ namespace Dia
 
 			if (mQueryRegistry.Has(commandName))
 			{
-				DIA_LOG_DEBUG("DebugServer", "HandleCommand: '%s' dispatched via QueryRegistry", cmd.command().c_str());
+				DIA_LOG_DEBUG("DebugServer", "HandleCommand: '%s' dispatched via QueryRegistry",
+					cmd.command().c_str());
 				Json::Value result = mQueryRegistry.Execute(commandName, payload);
 				resp->set_success(true);
 				Dia::Proto::JsonValueToProtoStruct(result, resp->mutable_payload());
 			}
 			else
 			{
-				DIA_LOG_DEBUG("DebugServer", "HandleCommand: '%s' dispatched via DiaAPI fallback", cmd.command().c_str());
+				DIA_LOG_DEBUG("DebugServer", "HandleCommand: '%s' dispatched via DiaAPI fallback",
+					cmd.command().c_str());
 				Json::Value result = mCommandDispatcher.ExecuteDiaAPICommand(commandName, payload);
 				resp->set_success(result.get("success", false).asBool());
 				resp->set_message(result.get("message", "").asString());
@@ -378,7 +442,6 @@ namespace Dia
 		void DebugServerModule::HandleHandshake(int connId, const dia::debug::DebugMessage& msg)
 		{
 			const auto& request = msg.handshake_request();
-
 			bool accepted = (request.protocol_version() == Dia::DebugProtocol::kProtocolVersion);
 
 			dia::debug::DebugMessage response;
@@ -388,15 +451,16 @@ namespace Dia
 			resp->set_protocol_version(Dia::DebugProtocol::kProtocolVersion);
 			resp->set_accepted(accepted);
 			resp->set_server_name("DiaDebugServer");
-			resp->set_server_version("1.0.0");
+			resp->set_server_version("2.0.0");
 			SendProtoMessage(connId, response);
 		}
 
 		void DebugServerModule::HandlePing(int connId, const dia::debug::DebugMessage& msg)
 		{
 			const auto& ping = msg.ping();
-			DIA_LOG_DEBUG("DebugServer", "DebugServerModule: HandlePing connId=%d ts=%llu, sending pong", connId, static_cast<unsigned long long>(ping.ts()));
-
+			DIA_LOG_DEBUG("DebugServer",
+				"DebugServerModule: HandlePing connId=%d ts=%llu, sending pong",
+				connId, static_cast<unsigned long long>(ping.ts()));
 			dia::debug::DebugMessage pongMsg;
 			pongMsg.set_type(dia::debug::MESSAGE_TYPE_PONG);
 			pongMsg.set_timestamp(Dia::DebugProtocol::GetTimestampNow());
@@ -404,29 +468,38 @@ namespace Dia
 			SendProtoMessage(connId, pongMsg);
 		}
 
+		//---------------------------------------------------------------------
+		// Metrics & event broadcasts
+		//---------------------------------------------------------------------
+
 		void DebugServerModule::BroadcastCoreMetrics()
 		{
 			uint64_t serializeStart = Dia::DebugProtocol::GetTimestampNow();
+
+			// --- Compute frame-time + FPS from the rolling accumulator.
+			if (mFrameTimeSampleCount > 0)
+			{
+				mLastFrameTimeMsSample = mFrameTimeAccumMs / static_cast<float>(mFrameTimeSampleCount);
+				mLastFpsSample = (mLastFrameTimeMsSample > 0.0f)
+					? (1000.0f / mLastFrameTimeMsSample) : 0.0f;
+			}
+			mFrameTimeAccumMs = 0.0f;
+			mFrameTimeSampleCount = 0;
 
 			dia::debug::DebugMessage msg;
 			msg.set_type(dia::debug::MESSAGE_TYPE_CORE_METRICS);
 			msg.set_timestamp(Dia::DebugProtocol::GetTimestampNow());
 			auto* cm = msg.mutable_core_metrics();
 
-			Dia::Application::MetricsCollectorModule* collector = GetAssociatedProcessingUnit()->GetMetricsCollector();
-			if (collector != nullptr)
-			{
-				Dia::DebugProtocol::PopulateCoreMetrics(cm, collector->GetSnapshot());
-			}
+			cm->set_fps(mLastFpsSample);
+			cm->set_frame_time_ms(mLastFrameTimeMsSample);
+			cm->set_uptime_seconds(static_cast<float>(mStats.uptimeSeconds));
 
 #ifdef _WIN32
-			if (collector == nullptr)
+			PROCESS_MEMORY_COUNTERS pmc;
+			if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc)))
 			{
-				PROCESS_MEMORY_COUNTERS pmc;
-				if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc)))
-				{
-					cm->set_memory_used_mb(static_cast<float>(pmc.WorkingSetSize) / (1024.0f * 1024.0f));
-				}
+				cm->set_memory_used_mb(static_cast<float>(pmc.WorkingSetSize) / (1024.0f * 1024.0f));
 			}
 
 			MEMORYSTATUSEX memStatus;
@@ -458,7 +531,35 @@ namespace Dia
 			}
 		}
 
-		void DebugServerModule::NotifySubscribers(const Dia::Core::StringCRC& dataType, const Json::Value& payload)
+		void DebugServerModule::BroadcastStageTransition(const Dia::Core::StringCRC& from,
+		                                                  const Dia::Core::StringCRC& to)
+		{
+			auto subscribers = mSubscriptionManager.GetSubscribers(kStageTransitionTopic);
+			if (subscribers.Size() == 0) return;
+
+			Json::Value payload = StateSerializer::SerializeStageTransition(
+				from, to, Dia::DebugProtocol::GetTimestampNow());
+
+			dia::debug::DebugMessage msg;
+			msg.set_type(dia::debug::MESSAGE_TYPE_EVENT);
+			msg.set_timestamp(Dia::DebugProtocol::GetTimestampNow());
+			auto* evt = msg.mutable_event();
+			evt->set_event_type(kStageTransitionTopic.AsChar());
+			Dia::Proto::JsonValueToProtoStruct(payload, evt->mutable_payload());
+
+			char jsonBuffer[4096];
+			if (Dia::Proto::ToJson(msg, jsonBuffer, sizeof(jsonBuffer)))
+			{
+				for (unsigned int i = 0; i < subscribers.Size(); ++i)
+				{
+					mServer->SendText(subscribers[i], jsonBuffer);
+				}
+			}
+			mStats.messagesSentTotal += static_cast<int>(subscribers.Size());
+		}
+
+		void DebugServerModule::NotifySubscribers(const Dia::Core::StringCRC& dataType,
+		                                           const Json::Value& payload)
 		{
 			auto subscribers = mSubscriptionManager.GetSubscribers(dataType);
 			if (subscribers.Size() == 0) return;
@@ -481,24 +582,18 @@ namespace Dia
 			mStats.messagesSentTotal += static_cast<int>(subscribers.Size());
 		}
 
+		//---------------------------------------------------------------------
+		// Query commands
+		//---------------------------------------------------------------------
+
 		void DebugServerModule::RegisterProtocolCommands()
 		{
 			mQueryRegistry.Register(
 				Dia::Core::StringCRC("get_state"),
 				[this](const Json::Value& /*args*/) -> Json::Value {
-					const Dia::Application::ProcessingUnit* pu = GetAssociatedProcessingUnit();
-
-					Json::Value result;
-					if (pu)
-					{
-						result["processing_unit"] = StateSerializer::SerializeProcessingUnitState(pu);
-						const Dia::Application::Phase* currentPhase = pu->GetCurrentPhase();
-						if (currentPhase)
-						{
-							result["current_phase"] = StateSerializer::SerializePhaseState(currentPhase);
-						}
-					}
-					return result;
+					auto* app = GetApplication();
+					auto* insp = dynamic_cast<const Dia::ApplicationFlow::IApplicationInspectable*>(app);
+					return StateSerializer::SerializeApplicationState(insp);
 				}
 			);
 
@@ -531,24 +626,28 @@ namespace Dia
 					Json::Value result;
 
 					result["game_side"]["debug_server_overhead_ms"] = mStats.debugServerOverheadMs;
-					result["game_side"]["serialization_time_ms"] = mStats.serializationTimeMs;
-					result["game_side"]["broadcast_time_ms"] = mStats.broadcastTimeMs;
-					result["game_side"]["subscription_count"] = mStats.subscriptionCount;
+					result["game_side"]["serialization_time_ms"]    = mStats.serializationTimeMs;
+					result["game_side"]["broadcast_time_ms"]        = mStats.broadcastTimeMs;
+					result["game_side"]["subscription_count"]       = mStats.subscriptionCount;
 
-					result["editor_side"]["bytes_sent_per_sec"] = mStats.bytesSentPerSec;
-					result["editor_side"]["message_queue_size"] = mStats.messageQueueSize;
-					result["editor_side"]["messages_dropped"] = mStats.messagesDropped;
-					result["editor_side"]["average_message_size_bytes"] = mStats.averageMessageSizeBytes;
+					result["editor_side"]["bytes_sent_per_sec"]        = mStats.bytesSentPerSec;
+					result["editor_side"]["message_queue_size"]        = mStats.messageQueueSize;
+					result["editor_side"]["messages_dropped"]          = mStats.messagesDropped;
+					result["editor_side"]["average_message_size_bytes"]= mStats.averageMessageSizeBytes;
 
-					result["server"]["connection_count"] = mStats.connectionCount;
-					result["server"]["messages_sent_total"] = mStats.messagesSentTotal;
+					result["server"]["connection_count"]        = mStats.connectionCount;
+					result["server"]["messages_sent_total"]     = mStats.messagesSentTotal;
 					result["server"]["messages_received_total"] = mStats.messagesReceivedTotal;
-					result["server"]["uptime_seconds"] = mStats.uptimeSeconds;
+					result["server"]["uptime_seconds"]          = mStats.uptimeSeconds;
 
 					return result;
 				}
 			);
 		}
+
+		//---------------------------------------------------------------------
+		// Send helpers
+		//---------------------------------------------------------------------
 
 		void DebugServerModule::SendProtoMessage(int connId, const dia::debug::DebugMessage& msg)
 		{
@@ -582,28 +681,5 @@ namespace Dia
 	}
 }
 
-#include <DiaApplicationFlow/TypeRegistry/RegistrationMacros.h>
-
-// windows.h (included above) defines SetPort as a macro that expands to
-// SetPortA / SetPortW. Drop the macro so we can call the real method.
-#ifdef SetPort
-#undef SetPort
-#endif
-
-namespace { using _DebugServerModule = Dia::DebugServer::DebugServerModule; }
-DIA_REGISTER_MODULE(_DebugServerModule) {
-	Dia::DebugServer::DebugServerModule* mod = new Dia::DebugServer::DebugServerModule(pu);
-	if (config.isMember("port") && config["port"].isInt())
-		mod->SetPort(static_cast<uint16_t>(config["port"].asInt()));
-	if (config.isMember("auto_start") && config["auto_start"].isBool())
-		mod->EnableAutoStart(config["auto_start"].asBool());
-	const char* gameName = config.isMember("game_name") && config["game_name"].isString()
-		? config["game_name"].asCString() : "";
-	const char* gameBuild = config.isMember("game_build") && config["game_build"].isString()
-		? config["game_build"].asCString() : "";
-	mod->SetGameInfo(gameName, gameBuild);
-	if (config.isMember("log_level") && config["log_level"].isString())
-		mod->SetLogSinkLevel(Dia::Logger::LogLevelFromString(config["log_level"].asCString()));
-	return mod;
-}
-
+namespace { using DebugServerModule_ = Dia::DebugServer::DebugServerModule; }
+DIA_MODULE(DebugServerModule_);

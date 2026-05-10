@@ -512,6 +512,10 @@ namespace Dia { namespace ApplicationFlow {
 
                 rawModule->SetApplication(this);
 
+                // Deliver per-module config from the manifest.  Runs once,
+                // before BeginStart, on the main thread.
+                rawModule->OnConfigure(modDecl.configJson.AsCStr());
+
                 Dia::Core::UniquePtr<Module> modulePtr(rawModule);
                 pu->AddModule(std::move(modulePtr),
                               modDecl.startTimeoutMs,

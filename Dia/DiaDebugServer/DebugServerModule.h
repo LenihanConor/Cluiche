@@ -1,7 +1,7 @@
 #ifndef DIA_DEBUG_SERVER_MODULE_H
 #define DIA_DEBUG_SERVER_MODULE_H
 
-#include <DiaApplicationFlow/ApplicationModule.h>
+#include <DiaApplicationFlow/Module.h>
 #include <DiaCore/CRC/StringCRC.h>
 
 #include "DiaDebugServer/SubscriptionManager.h"
@@ -58,14 +58,19 @@ namespace Dia
 			{}
 		};
 
-		class DebugServerModule : public Dia::Application::Module
+		// DiaApplicationFlow v2 Module.
+		//
+		// Observes the running Application via its IApplicationControl handle
+		// and polls for stage transitions in DoUpdate — v2 has no MessageBus.
+		// Collects frame time from the DoUpdate deltaTime and memory from the
+		// OS; v1's separate MetricsCollectorModule is gone.
+		class DebugServerModule : public Dia::ApplicationFlow::Module
 		{
 		public:
-			static const Dia::Core::StringCRC kUniqueId;
-			static const Dia::Core::StringCRC& kTypeId;
+			static const Dia::Core::StringCRC kTypeId;
 
-			DebugServerModule(Dia::Application::ProcessingUnit* pu);
-			virtual ~DebugServerModule();
+			explicit DebugServerModule(const Dia::Core::StringCRC& instanceId);
+			~DebugServerModule() override;
 
 			bool StartServer();
 			void StopServer();
@@ -74,8 +79,6 @@ namespace Dia
 			void SetPort(uint16_t port) { mPort = port; }
 			void EnableAutoStart(bool enable) { mAutoStart = enable; }
 
-			// Sets the game identity published to newly connected clients as a game_info payload.
-			// processingUnitCountProvider lets the server refresh the count at publish time.
 			void SetGameInfo(const char* name, const char* build);
 			void SetLogSinkLevel(Dia::Logger::LogLevel level) { mLogSink.SetLevelThreshold(level); }
 
@@ -90,12 +93,12 @@ namespace Dia
 			// Uses MESSAGE_TYPE_DATA_UPDATE envelope; payload is arbitrary JSON.
 			void NotifySubscribers(const Dia::Core::StringCRC& dataType, const Json::Value& payload);
 
-			virtual const char* GetStateObjectType() const override { return "DebugServerModule"; }
-
 		protected:
-			virtual StateObject::OpertionResponse DoStart(const IStartData* startData) override;
-			virtual void DoUpdate() override;
-			virtual void DoStop() override;
+			// v2 module lifecycle
+			void OnConfigure(const char* configJson) override;
+			Dia::ApplicationFlow::StartResult DoStart() override;
+			void DoUpdate(float deltaTime) override;
+			Dia::ApplicationFlow::StopResult DoStop() override;
 
 		private:
 			void HandleConnection(int connId, bool connected);
@@ -108,10 +111,12 @@ namespace Dia
 			void HandlePing(int connId, const dia::debug::DebugMessage& msg);
 
 			void SendGameInfo(int connId);
-			const char* GetCurrentPhaseName() const;
+			const char* GetCurrentStageName() const;
 			int GetProcessingUnitCount() const;
 
 			void BroadcastCoreMetrics();
+			void BroadcastStageTransition(const Dia::Core::StringCRC& from,
+			                               const Dia::Core::StringCRC& to);
 
 			void RegisterProtocolCommands();
 			void SendProtoMessage(int connId, const dia::debug::DebugMessage& msg);
@@ -129,6 +134,16 @@ namespace Dia
 
 			float mMetricsBroadcastInterval;
 			float mMetricsTimer;
+
+			// Frame-time smoothing — 30-frame moving average.
+			float mFrameTimeAccumMs;
+			int   mFrameTimeSampleCount;
+			float mLastFpsSample;
+			float mLastFrameTimeMsSample;
+
+			// Last-observed stage, for edge detection in DoUpdate.  Initialized
+			// in DoStart.
+			Dia::Core::StringCRC mLastObservedStage;
 
 			ServerStats mStats;
 			SubscriptionManager mSubscriptionManager;

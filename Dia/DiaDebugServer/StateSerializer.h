@@ -8,15 +8,18 @@
 
 namespace Dia
 {
-	namespace Application
+	namespace ApplicationFlow
 	{
-		class ProcessingUnit;
-		class Phase;
-		class Module;
+		class IApplicationInspectable;
+		struct ModuleStateInfo;
 	}
 
 	namespace DebugServer
 	{
+		// Frame-rate and memory snapshot broadcast over CORE_METRICS messages.
+		// Populated by DebugServerModule itself in v2 (no separate collector
+		// module — per-PU timings are dropped; frame time comes from DoUpdate
+		// deltaTime and memory comes from the OS).
 		struct CoreMetrics
 		{
 			float fps;
@@ -28,13 +31,20 @@ namespace Dia
 		class StateSerializer
 		{
 		public:
-			static Json::Value SerializeProcessingUnitState(const Dia::Application::ProcessingUnit* pu);
-			static Json::Value SerializePhaseState(const Dia::Application::Phase* phase);
-			static Json::Value SerializeModuleState(const Dia::Application::Module* module);
-			static Json::Value SerializeCoreMetrics(const CoreMetrics& metrics);
-			static Json::Value SerializePhaseTransition(const Dia::Core::StringCRC& fromPhase,
-			                                            const Dia::Core::StringCRC& toPhase,
+			// Serialize the running Application's current stage + active modules.
+			// Null app → {"error": "null application"}.
+			static Json::Value SerializeApplicationState(const Dia::ApplicationFlow::IApplicationInspectable* app);
+
+			// Serialize a single module's state snapshot (from GetActiveModules).
+			static Json::Value SerializeModuleState(const Dia::ApplicationFlow::ModuleStateInfo& info);
+
+			// Serialize a stage transition event.
+			static Json::Value SerializeStageTransition(const Dia::Core::StringCRC& fromStage,
+			                                            const Dia::Core::StringCRC& toStage,
 			                                            uint64_t timestamp);
+
+			static Json::Value SerializeCoreMetrics(const CoreMetrics& metrics);
+
 			static Json::Value SerializeCommandResponse(const Dia::Core::StringCRC& command,
 			                                            bool success,
 			                                            const char* message);

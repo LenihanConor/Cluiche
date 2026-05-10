@@ -1,87 +1,89 @@
 #include "DiaDebugServer/StateSerializer.h"
 
-#include <DiaApplicationFlow/ApplicationProcessingUnit.h>
-#include <DiaApplicationFlow/ApplicationPhase.h>
-#include <DiaApplicationFlow/ApplicationModule.h>
+#include <DiaApplicationFlow/IApplicationInspectable.h>
+#include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
 namespace Dia
 {
 	namespace DebugServer
 	{
-		Json::Value StateSerializer::SerializeProcessingUnitState(const Dia::Application::ProcessingUnit* pu)
+		Json::Value StateSerializer::SerializeApplicationState(const Dia::ApplicationFlow::IApplicationInspectable* app)
 		{
 			Json::Value result;
-			if (!pu)
+			if (!app)
 			{
-				result["error"] = "null processing unit";
+				result["error"] = "null application";
 				return result;
 			}
 
-			result["pu_id"] = pu->GetUniqueId().AsChar();
-			result["state"] = pu->GetStateObjectType();
+			result["current_stage"] = app->GetCurrentStage().AsChar();
+			result["is_transitioning"] = app->IsTransitioning();
+			result["is_shutting_down"] = app->IsShuttingDown();
 
-			const Dia::Application::Phase* currentPhase = pu->GetCurrentPhase();
-			if (currentPhase)
+			// Enumerate PUs.
+			Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 4> puIds;
+			app->GetProcessingUnits(puIds);
+
+			Json::Value pusJson(Json::arrayValue);
+			for (unsigned int p = 0; p < puIds.Size(); ++p)
 			{
-				result["current_phase"] = currentPhase->GetUniqueId().AsChar();
+				Json::Value puJson;
+				puJson["pu_id"] = puIds[p].AsChar();
+
+				Dia::Core::Containers::DynamicArrayC<Dia::ApplicationFlow::ModuleStateInfo, 64> modules;
+				app->GetActiveModules(puIds[p], modules);
+
+				Json::Value modulesJson(Json::arrayValue);
+				for (unsigned int m = 0; m < modules.Size(); ++m)
+				{
+					modulesJson.append(SerializeModuleState(modules[m]));
+				}
+				puJson["modules"] = modulesJson;
+
+				pusJson.append(puJson);
 			}
-			else
-			{
-				result["current_phase"] = Json::Value::null;
-			}
+			result["processing_units"] = pusJson;
 
 			return result;
 		}
 
-		Json::Value StateSerializer::SerializePhaseState(const Dia::Application::Phase* phase)
+		Json::Value StateSerializer::SerializeModuleState(const Dia::ApplicationFlow::ModuleStateInfo& info)
 		{
 			Json::Value result;
-			if (!phase)
+			result["module_id"] = info.instanceId.AsChar();
+			result["type_id"]   = info.typeId.AsChar();
+
+			const char* stateName = "unknown";
+			switch (info.state)
 			{
-				result["error"] = "null phase";
-				return result;
+				case Dia::ApplicationFlow::ModuleState::kInactive: stateName = "inactive"; break;
+				case Dia::ApplicationFlow::ModuleState::kStarting: stateName = "starting"; break;
+				case Dia::ApplicationFlow::ModuleState::kActive:   stateName = "active";   break;
+				case Dia::ApplicationFlow::ModuleState::kStopping: stateName = "stopping"; break;
+				case Dia::ApplicationFlow::ModuleState::kFailed:   stateName = "failed";   break;
 			}
-
-			result["phase_id"] = phase->GetUniqueId().AsChar();
-			result["state"] = phase->GetStateObjectType();
-
+			result["state"] = stateName;
 			return result;
 		}
 
-		Json::Value StateSerializer::SerializeModuleState(const Dia::Application::Module* module)
+		Json::Value StateSerializer::SerializeStageTransition(const Dia::Core::StringCRC& fromStage,
+		                                                      const Dia::Core::StringCRC& toStage,
+		                                                      uint64_t timestamp)
 		{
 			Json::Value result;
-			if (!module)
-			{
-				result["error"] = "null module";
-				return result;
-			}
-
-			result["module_id"] = module->GetUniqueId().AsChar();
-			result["type"] = module->GetStateObjectType();
-			result["started"] = module->HasStarted();
-
+			result["from_stage"] = fromStage.AsChar();
+			result["to_stage"]   = toStage.AsChar();
+			result["timestamp"]  = static_cast<Json::UInt64>(timestamp);
 			return result;
 		}
 
 		Json::Value StateSerializer::SerializeCoreMetrics(const CoreMetrics& metrics)
 		{
 			Json::Value result;
-			result["fps"] = metrics.fps;
-			result["frame_time_ms"] = metrics.frameTimeMs;
-			result["memory_used_mb"] = metrics.memoryUsedMb;
-			result["memory_available_mb"] = metrics.memoryAvailableMb;
-			return result;
-		}
-
-		Json::Value StateSerializer::SerializePhaseTransition(const Dia::Core::StringCRC& fromPhase,
-		                                                      const Dia::Core::StringCRC& toPhase,
-		                                                      uint64_t timestamp)
-		{
-			Json::Value result;
-			result["from_phase"] = fromPhase.AsChar();
-			result["to_phase"] = toPhase.AsChar();
-			result["timestamp"] = static_cast<Json::UInt64>(timestamp);
+			result["fps"]                  = metrics.fps;
+			result["frame_time_ms"]        = metrics.frameTimeMs;
+			result["memory_used_mb"]       = metrics.memoryUsedMb;
+			result["memory_available_mb"]  = metrics.memoryAvailableMb;
 			return result;
 		}
 

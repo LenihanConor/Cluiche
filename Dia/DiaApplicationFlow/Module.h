@@ -42,6 +42,13 @@ namespace Dia { namespace ApplicationFlow {
         virtual void        DoUpdate(float deltaTime) = 0;
         virtual StopResult  DoStop() = 0;
 
+        // Called by Application after the module is created but before any
+        // dedicated threads start, once per module.  Default no-op.  Receives
+        // the module's `config` JSON string from its manifest declaration
+        // (ModuleDeclaration::configJson).  Empty string if the manifest has
+        // no config for this module.  Runs on the main thread.
+        virtual void OnConfigure(const char* /*configJson*/) {}
+
         // Called by Application after all PUs and modules are built, before
         // the initial stage is entered.  Override to call Connect() on any
         // StreamWriter / StreamReader / EventStreamWriter / EventStreamReader
