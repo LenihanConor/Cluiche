@@ -91,8 +91,14 @@ namespace Cluiche
 
 		void SplashScreenModule::DoUpdate(float /*deltaTime*/)
 		{
+			// Splash is passive; its paint messages are dispatched through
+			// EditorViewModule's PumpNativeMessages once that starts.  During Boot
+			// (before the editor window exists) we pump the thread queue directly
+			// so the initial WM_PAINT lands and the splash is visible.
+			if (mHwnd == nullptr) return;
+
 			MSG msg;
-			while (PeekMessageW(&msg, mHwnd, 0, 0, PM_REMOVE))
+			while (PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE))
 			{
 				TranslateMessage(&msg);
 				DispatchMessageW(&msg);

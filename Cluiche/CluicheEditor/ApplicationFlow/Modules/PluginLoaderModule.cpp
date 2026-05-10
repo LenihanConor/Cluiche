@@ -42,25 +42,41 @@ namespace Cluiche
 			EditorViewModule* viewModule = mViewRef.Get();
 			if (viewModule != nullptr)
 			{
-				RegisterView(&viewModule->GetView());
-				SetBridge(viewModule->GetView().GetWebUIBridge());
+				Dia::Editor::EditorView& view = viewModule->GetView();
+
+				// Layout config path must be set BEFORE RegisterView so NotifyPanelsChanged calls
+				// during plugin load can persist to the right file, and before LoadLayoutFromDisk.
+				view.SetLayoutPath("assets/configs/editor-layout.json");
+				view.LoadLayoutFromDisk();
+
+				RegisterView(&view);
+				SetBridge(view.GetWebUIBridge());
 			}
 
 			DIA_LOG_INFO("Application", "PluginLoaderModule: DoStart");
 			LoadBuiltInPlugins();
 
-			// If a project path was set on the model before start, load it now
+			// Load the project (if one was specified on the command line) and any
+			// manifests it references.  The module's mProjectPath is populated by
+			// EditorModelModule::DoStart from GetCommandLineW().
 			if (modelModule != nullptr)
 			{
-				const char* projectPath = modelModule->GetModel().GetProjectPath();
+				const char* projectPath = modelModule->GetProjectPath();
 				if (projectPath != nullptr && projectPath[0] != '\0')
 				{
-					modelModule->GetModel().LoadProject(projectPath);
-					unsigned int manifestCount = modelModule->GetModel().GetManifestCount();
+					DIA_LOG_INFO("Application", "PluginLoaderModule: Loading project '%s'", projectPath);
+					Dia::Editor::EditorModel& model = modelModule->GetModel();
+					model.LoadProject(projectPath);
+
+					unsigned int manifestCount = model.GetManifestCount();
 					for (unsigned int i = 0; i < manifestCount; ++i)
 					{
-						LoadManifest(modelModule->GetModel().GetManifestPath(i));
+						LoadManifest(model.GetManifestPath(i));
 					}
+				}
+				else
+				{
+					DIA_LOG_INFO("Application", "PluginLoaderModule: No project path set, skipping project load");
 				}
 			}
 
