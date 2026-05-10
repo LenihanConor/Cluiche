@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Modules">
+      <UniqueIdentifier>{3a8f61bc-1d2e-4fc4-a0a9-8e7c5e1f9d21}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="UI">
+      <UniqueIdentifier>{b9f34e12-7b48-4a3c-b2a1-c3f27e4d8a15}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="DummyLevelModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="DummyUIPageModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="UI\DummyUIPage.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="DummyLevelModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="DummyUIPageModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="UI\DummyUIPage.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

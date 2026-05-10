@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Modules\AssetServiceModule.cpp" />
+    <ClCompile Include="Modules\InputStreamModule.cpp" />
+    <ClCompile Include="Modules\KernelModule.cpp" />
+    <ClCompile Include="Modules\LoadingScreenModule.cpp" />
+    <ClCompile Include="Modules\LoggerModule.cpp" />
+    <ClCompile Include="Modules\RenderModule.cpp" />
+    <ClCompile Include="Modules\TimeServerModule.cpp" />
+    <ClCompile Include="Modules\UIModule.cpp" />
+    <ClCompile Include="UI\LaunchUIPage.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Modules\AssetServiceModule.h" />
+    <ClInclude Include="Modules\InputStreamModule.h" />
+    <ClInclude Include="Modules\KernelModule.h" />
+    <ClInclude Include="Modules\LoadingScreenModule.h" />
+    <ClInclude Include="Modules\LoggerModule.h" />
+    <ClInclude Include="Modules\RenderModule.h" />
+    <ClInclude Include="Modules\TimeServerModule.h" />
+    <ClInclude Include="Modules\UIModule.h" />
+    <ClInclude Include="Types\InputEvent.h" />
+    <ClInclude Include="Types\UICommand.h" />
+    <ClInclude Include="UI\LaunchUIPage.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">
+      <Project>{dd3d58ef-028b-42cb-b837-0042ba30d96f}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaCore\DiaCore.vcxproj">
+      <Project>{8d41cbe3-c493-428d-95f3-627e56500667}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaLogger\DiaLogger.vcxproj">
+      <Project>{7a8b9c0d-e1f2-3456-7890-abcdef012345}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaGraphics\DiaGraphics.vcxproj">
+      <Project>{1cf9f92b-666e-4b39-9dde-b1cfbef68618}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaInput\DiaInput.vcxproj">
+      <Project>{936fa28f-e171-401f-8185-d2af48db4098}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaMaths\DiaMaths.vcxproj">
+      <Project>{2bba0ad3-d449-4c0e-8c84-acfa8bca456b}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaSFML\DiaSFML.vcxproj">
+      <Project>{d0101596-9011-46af-a16a-69a2bb0cca69}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaUI\DiaUI.vcxproj">
+      <Project>{835ca128-691f-4cea-a0b3-ce6e41c394e7}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaUIUltralight\DiaUIUltralight.vcxproj">
+      <Project>{b7c3d812-4f91-4e2a-9b56-fa38e1d09c74}</Project>
+      <ReferenceOutputAssembly Condition="'$(Platform)'=='Win32'">false</ReferenceOutputAssembly>
+      <LinkLibraryDependencies Condition="'$(Platform)'=='Win32'">false</LinkLibraryDependencies>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaWindow\DiaWindow.vcxproj">
+      <Project>{52178c86-628d-4fe4-ae55-d3485faec070}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaAssetRuntime\DiaAssetRuntime.vcxproj">
+      <Project>{c9d0e1f2-a3b4-5678-9cde-f01234567890}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{7b4a5c2e-3f1d-4a8b-9c6e-12d5f8b3a7e1}</ProjectGuid>
+    <RootNamespace>CluicheGameBaseline</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>11.0.51106.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)../../DIA/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>DEBUG;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <BrowseInformation>true</BrowseInformation>
+    </ClCompile>
+    <Lib>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
+    </Lib>
+    <Bscmake>
+      <PreserveSbr>true</PreserveSbr>
+    </Bscmake>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)../../DIA/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+    </Link>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

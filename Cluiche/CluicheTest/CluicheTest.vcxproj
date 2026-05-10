@@ -12,74 +12,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ApplicationFlow\Phases\MainBootPhase.cpp" />
-    <ClCompile Include="ApplicationFlow\Phases\MainBootStrapPhase.cpp" />
-    <ClCompile Include="ApplicationFlow\Phases\RenderRunningPhase.cpp" />
-    <ClCompile Include="ApplicationFlow\Phases\SimBootPhase.cpp" />
-    <ClCompile Include="ApplicationFlow\Phases\SimBootStrapPhase.cpp" />
-    <ClCompile Include="ApplicationFlow\ProcessingUnits\MainProcessingUnit.cpp" />
-    <ClCompile Include="ApplicationFlow\ProcessingUnits\RenderProcessingUnit.cpp" />
-    <ClCompile Include="ApplicationFlow\ProcessingUnits\SimProcessingUnit.cpp" />
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="Modules\AssetServiceModule.cpp" />
     <ClCompile Include="Modules\BootUIPageModule.cpp" />
-    <ClCompile Include="Modules\DummyLevelModule.cpp" />
-    <ClCompile Include="Modules\DummyUIPageModule.cpp" />
-    <ClCompile Include="Modules\InputStreamModule.cpp" />
-    <ClCompile Include="Modules\KernelModule.cpp" />
-    <ClCompile Include="Modules\LoadingScreenModule.cpp" />
-    <ClCompile Include="Modules\LoggerModule.cpp" />
-    <ClCompile Include="Modules\RenderModule.cpp" />
-    <ClCompile Include="Modules\TimeServerModule.cpp" />
-    <ClCompile Include="Modules\UIModule.cpp" />
-    <ClCompile Include="Source\LaunchUIPage.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Data\Manifests\cluiche_main.diaapp">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="Data\Manifests\cluiche_render.diaapp">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="Data\Manifests\cluiche_sim.diaapp">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="Data\cluichetest.diagame">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="Data\cluiche.diaapp">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="Data\dummy_stage.diastage">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="Data\dummy_stage.diaapp">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="ApplicationFlow\Phases\MainBootPhase.h" />
-    <ClInclude Include="ApplicationFlow\Phases\MainBootStrapPhase.h" />
-    <ClInclude Include="ApplicationFlow\Phases\RenderRunningPhase.h" />
-    <ClInclude Include="ApplicationFlow\Phases\SimBootPhase.h" />
-    <ClInclude Include="ApplicationFlow\Phases\SimBootStrapPhase.h" />
-    <ClInclude Include="ApplicationFlow\ProcessingUnits\MainProcessingUnit.h" />
-    <ClInclude Include="ApplicationFlow\ProcessingUnits\RenderProcessingUnit.h" />
-    <ClInclude Include="ApplicationFlow\ProcessingUnits\SimProcessingUnit.h" />
-    <ClInclude Include="Modules\AssetServiceModule.h" />
     <ClInclude Include="Modules\BootUIPageModule.h" />
-    <ClInclude Include="Modules\DummyLevelModule.h" />
-    <ClInclude Include="Modules\DummyUIPageModule.h" />
-    <ClInclude Include="Modules\InputStreamModule.h" />
-    <ClInclude Include="Modules\KernelModule.h" />
-    <ClInclude Include="Modules\LoadingScreenModule.h" />
-    <ClInclude Include="Modules\LoggerModule.h" />
-    <ClInclude Include="Modules\RenderModule.h" />
-    <ClInclude Include="Modules\TimeServerModule.h" />
-    <ClInclude Include="Modules\UIModule.h" />
-    <ClInclude Include="Source\LaunchUIPage.h" />
-    <ClInclude Include="Types\InputEvent.h" />
-    <ClInclude Include="Types\UICommand.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">
@@ -114,9 +51,6 @@
     <ProjectReference Include="..\..\Dia\DiaWindow\DiaWindow.vcxproj">
       <Project>{52178c86-628d-4fe4-ae55-d3485faec070}</Project>
     </ProjectReference>
-    <ProjectReference Include="CluicheKernel\CluicheKernel.vcxproj">
-      <Project>{649d1b1d-c23f-4373-aca8-8a3a59c0cfa0}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaDebugServer\DiaDebugServer.vcxproj">
       <Project>{6aafcccb-71d0-4d8d-a6be-081f5e02093d}</Project>
     </ProjectReference>
@@ -126,11 +60,14 @@
     <ProjectReference Include="..\..\Dia\DiaWebSocket\DiaWebSocket.vcxproj">
       <Project>{458b1e8f-6660-499f-b265-e40dc3257b81}</Project>
     </ProjectReference>
-    <ProjectReference Include="Stages\DummyStage\DummyStage.vcxproj">
+    <ProjectReference Include="..\Stages\DummyStage\DummyStage.vcxproj">
       <Project>{8a8a5635-62ab-4516-a3f4-978499024724}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaAssetRuntime\DiaAssetRuntime.vcxproj">
       <Project>{C9D0E1F2-A3B4-5678-9CDE-F01234567890}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">
+      <Project>{7b4a5c2e-3f1d-4a8b-9c6e-12d5f8b3a7e1}</Project>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -164,7 +101,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
-      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)../../DIA/;$(ProjectDir)../../External/protobuf/Current-x64/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)../CluicheGameBaseline/;$(ProjectDir)../../DIA/;$(ProjectDir)../../External/protobuf/Current-x64/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>DEBUG;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <BrowseInformation>true</BrowseInformation>
@@ -172,9 +109,9 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(LibOutDir)DummyStage.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)CluicheKernel.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaSFML.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaAPI.lib;sfml-graphics-d.lib;sfml-window-d.lib;sfml-system-d.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(RepoRoot)SFML\Current-x64\lib\Debug;$(RepoRoot)Dia\DiaBin\CluicheKernel;$(RepoRoot)Dia\DiaBin\DiaInput;$(RepoRoot)External\SFML\Current-x64\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalOptions>/WHOLEARCHIVE:DiaDebugServer.lib /WHOLEARCHIVE:CluicheKernel.lib %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalDependencies>$(LibOutDir)CluicheGameBaseline.lib;$(LibOutDir)DummyStage.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaSFML.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaAPI.lib;sfml-graphics-d.lib;sfml-window-d.lib;sfml-system-d.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(RepoRoot)SFML\Current-x64\lib\Debug;$(RepoRoot)Dia\DiaBin\DiaInput;$(RepoRoot)External\SFML\Current-x64\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>/WHOLEARCHIVE:DiaDebugServer.lib /WHOLEARCHIVE:CluicheGameBaseline.lib /WHOLEARCHIVE:DummyStage.lib %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
       <Command>cd "$(RepoRoot)Dia\DiaCLI" &amp;&amp; ".venv\Scripts\python.exe" -m dia_cli pipeline deploy cluichetest --config $(Configuration) --out-dir "$(BinRoot)$(MSBuildProjectName)\$(Configuration)\$(Platform)\"</Command>
@@ -187,15 +124,16 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)../../DIA/;$(ProjectDir)../../External/protobuf/Current-x64/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)../CluicheGameBaseline/;$(ProjectDir)../../DIA/;$(ProjectDir)../../External/protobuf/Current-x64/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>$(LibOutDir)DummyStage.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)CluicheKernel.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaSFML.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaDebugProtocol.lib;$(LibOutDir)DiaProtobuf.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaAPI.lib;sfml-graphics.lib;sfml-window.lib;sfml-system.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;ws2_32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(LibOutDir)CluicheGameBaseline.lib;$(LibOutDir)DummyStage.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaSFML.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaDebugProtocol.lib;$(LibOutDir)DiaProtobuf.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaAPI.lib;sfml-graphics.lib;sfml-window.lib;sfml-system.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;ws2_32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(RepoRoot)External\SFML\Current-x64\lib\;$(ProjectDir)..\..\External\protobuf\Current-x64\lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>/WHOLEARCHIVE:DiaDebugServer.lib /WHOLEARCHIVE:CluicheGameBaseline.lib /WHOLEARCHIVE:DummyStage.lib %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
       <Command>cd "$(RepoRoot)Dia\DiaCLI" &amp;&amp; ".venv\Scripts\python.exe" -m dia_cli pipeline deploy cluichetest --config $(Configuration) --out-dir "$(BinRoot)$(MSBuildProjectName)\$(Configuration)\$(Platform)\"</Command>

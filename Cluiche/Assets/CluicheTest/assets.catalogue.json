@@ -21,7 +21,7 @@
     {
       "id": "stage.dummy_stage",
       "type": "stage",
-      "source_path": "Stages/DummyStage/dummy_stage.stage.json",
+      "source_path": "../Stages/DummyStage/dummy_stage.stage.json",
       "scope": "global",
       "tags": ["misc"],
       "references": [
@@ -84,7 +84,7 @@
     {
       "id": "manifest.dummy_stage",
       "type": "manifest",
-      "source_path": "Stages/DummyStage/Misc/ApplicationFlow/dummy_stage.diaapp",
+      "source_path": "../Stages/DummyStage/Misc/ApplicationFlow/dummy_stage.diaapp",
       "scope": "stage",
       "stage_name": "DummyStage",
       "tags": ["misc/ApplicationFlow"]
@@ -92,7 +92,7 @@
     {
       "id": "ui.dummy_stage_page",
       "type": "ui",
-      "source_path": "Stages/DummyStage/Presentation/UI/dummyStage.html",
+      "source_path": "../Stages/DummyStage/Presentation/UI/dummyStage.html",
       "scope": "stage",
       "stage_name": "DummyStage",
       "tags": ["Presentation/UI"]
@@ -100,7 +100,7 @@
     {
       "id": "texture.test_red",
       "type": "texture",
-      "source_path": "Stages/DummyStage/World/Textures/test_red.png",
+      "source_path": "../Stages/DummyStage/World/Textures/test_red.png",
       "scope": "stage",
       "stage_name": "DummyStage",
       "tags": ["World"]
@@ -108,7 +108,7 @@
     {
       "id": "texture.test_blue",
       "type": "texture",
-      "source_path": "Stages/DummyStage/World/Textures/test_blue.png",
+      "source_path": "../Stages/DummyStage/World/Textures/test_blue.png",
       "scope": "stage",
       "stage_name": "DummyStage",
       "tags": ["World"]
@@ -116,7 +116,7 @@
     {
       "id": "texture.test_green",
       "type": "texture",
-      "source_path": "Stages/DummyStage/World/Textures/test_green.png",
+      "source_path": "../Stages/DummyStage/World/Textures/test_green.png",
       "scope": "stage",
       "stage_name": "DummyStage",
       "tags": ["World"]

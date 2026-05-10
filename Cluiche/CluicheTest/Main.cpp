@@ -85,7 +85,6 @@ bool RegisterPathAliasesFromDiagame(const char* diagamePath)
 
 int main(int argc, const char* argv[])
 {
-    setbuf(stdout, NULL);
     const char* kDiagamePath = "assets/cluichetest.diagame";
 
     // Register path aliases (config.path_aliases from .diagame) BEFORE any module
