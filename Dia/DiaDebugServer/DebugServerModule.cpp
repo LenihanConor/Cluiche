@@ -1,10 +1,10 @@
 #include "DiaDebugServer/DebugServerModule.h"
 
 #include <DiaProtobuf/ProtoStructConverter.h>
-#include <DiaApplication/ApplicationProcessingUnit.h>
-#include <DiaApplication/ApplicationPhase.h>
-#include <DiaApplication/DebugDataTypes.h>
-#include <DiaApplication/Metrics/MetricsCollectorModule.h>
+#include <DiaApplicationFlow/ApplicationProcessingUnit.h>
+#include <DiaApplicationFlow/ApplicationPhase.h>
+#include <DiaApplicationFlow/DebugDataTypes.h>
+#include <DiaApplicationFlow/Metrics/MetricsCollectorModule.h>
 #include <DiaWebSocket/Server.h>
 #include <DiaDebugProtocol/DiaDebugProtocol.h>
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
@@ -582,7 +582,7 @@ namespace Dia
 	}
 }
 
-#include <DiaApplication/TypeRegistry/RegistrationMacros.h>
+#include <DiaApplicationFlow/TypeRegistry/RegistrationMacros.h>
 
 // windows.h (included above) defines SetPort as a macro that expands to
 // SetPortA / SetPortW. Drop the macro so we can call the real method.

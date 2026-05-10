@@ -1,11 +1,11 @@
-# System Spec: DiaApplication
+# System Spec: DiaApplicationFlow
 
 ## Parent Application
 @docs/specs/applications/dia.md
 
 ## Purpose
 
-DiaApplication is the application framework system that provides the runtime architecture for structuring game applications and tools. It implements the ProcessingUnit/Phase/Module pattern, enabling multi-threaded execution with explicit state lifecycle management, inter-module messaging, error handling, and runtime module hot-reloading. This system defines the core abstractions that all Dia-based applications use to organize their execution flow.
+DiaApplicationFlow is the application framework system that provides the runtime architecture for structuring game applications and tools. It implements the ProcessingUnit/Phase/Module pattern, enabling multi-threaded execution with explicit state lifecycle management, inter-module messaging, error handling, and runtime module hot-reloading. This system defines the core abstractions that all Dia-based applications use to organize their execution flow.
 
 ## Responsibilities
 
@@ -319,17 +319,17 @@ kConstructed → kFlaggedToStart → kRunning → kFlaggedToStop → kNotRunning
 - **DiaCore** - Foundation containers, CRC, time, threading primitives
 
 **Optional:**
-- None - DiaApplication is self-contained
+- None - DiaApplicationFlow is self-contained
 
 **Dependents:**
-- All Dia-based applications (CluicheTest, GoogleTests, future games) use DiaApplication to structure execution
+- All Dia-based applications (CluicheTest, GoogleTests, future games) use DiaApplicationFlow to structure execution
 - Most Dia systems (DiaGraphics, DiaInput, DiaUI, etc.) provide Modules that run within this framework
 
 ## Out of Scope
 
 - **Network Distribution**: ProcessingUnits are local-thread only, no distributed execution
 - **Serialization**: No built-in save/load of application state (modules responsible for own state)
-- **Scripting Integration**: DiaApplication is C++ only; scripting provided by DiaPython
+- **Scripting Integration**: DiaApplicationFlow is C++ only; scripting provided by DiaPython
 - **GUI Debugging**: No built-in visual debugger for phase/module state (future DiaEditor feature)
 - **Dynamic Module Loading**: No DLL/shared library loading; modules compiled into executable
 - **Parallel Module Execution**: Modules within a phase run sequentially, not in parallel
@@ -360,7 +360,7 @@ kConstructed → kFlaggedToStart → kRunning → kFlaggedToStop → kNotRunning
 | PD-001 | Platform | Use StringCRC for all entity/component IDs | ProcessingUnit, Phase, Module, Message types all identified by StringCRC. GetModule<T>() relies on T::kUniqueId being a StringCRC. |
 | PD-002 | Platform | ProcessingUnit/Phase/Module architecture for app structure | This is the system that implements PD-002 for the entire platform. All binding rules defined here. |
 | PD-004 | Platform | No STL containers in public APIs | Use DynamicArrayC, HashTable instead of std::vector, std::map. Exception: std::vector for owned modules/phases (internal) and error history (internal). |
-| PD-006 | Platform | Visual Studio project files are source of truth | DiaApplication.vcxproj with filters. All headers/cpp files manually added. |
+| PD-006 | Platform | Visual Studio project files are source of truth | DiaApplicationFlow.vcxproj with filters. All headers/cpp files manually added. |
 | AD-001 | Dia App | Module system with YAML frontmatter documentation | Create dia.application.architecture.module.md with public API, dependencies, responsibilities. |
 | AD-002 | Dia App | No STL containers in public APIs | Reinforces PD-004. Internal use of std::vector for ownership is acceptable. |
 | AD-003 | Dia App | Namespace convention: `Dia::<Module>::` | All code in `Dia::Application::` namespace. |
@@ -370,17 +370,17 @@ kConstructed → kFlaggedToStart → kRunning → kFlaggedToStop → kNotRunning
 
 | # | Section | Question | Answer |
 |---|---------|----------|--------|
-| 1 | Purpose | Should DiaApplication also manage application entry point (main)? | No - applications provide their own main(). DiaApplication provides ProcessingUnit that main() instantiates. |
+| 1 | Purpose | Should DiaApplicationFlow also manage application entry point (main)? | No - applications provide their own main(). DiaApplicationFlow provides ProcessingUnit that main() instantiates. |
 | 2 | Public Interfaces | Should modules support parallel execution within a phase? | No - keep simple sequential execution. Parallelism achieved via multiple ProcessingUnits on different threads. |
 | 3 | Threading | Should ProcessingUnits automatically spawn threads or require explicit std::thread? | Explicit - provides control. ProcessingUnit::operator()() is thread entry point; caller wraps in std::thread. |
 | 4 | Dependencies | Should circular module dependencies be detected and prevented? | Yes - BuildDependancies() can detect cycles. Currently asserts; future could provide error recovery. |
 | 5 | Message Bus | Should message queue have size limits? | No - unbounded for now. Messages processed each frame, so growth limited by frame rate. Future monitoring could warn on excessive queue size. |
 | 6 | Hot Reload | Should hot reload support swapping phases, not just modules? | Not yet - phases define structure, modules provide functionality. Phase swapping is more complex (requires entire state machine rebuild). Future feature. |
 | 7 | Error Handling | Should errors stop execution or allow continuation? | Depends on error severity. ErrorCallback can inspect ErrorCode and decide (e.g., kStartupFailed might stop, kTimeout might retry). Framework is agnostic. |
-| 8 | Scope | Should DiaApplication provide a default main() implementation? | No - too opinionated. Each application has different initialization needs. Provide example in docs/reference instead. |
+| 8 | Scope | Should DiaApplicationFlow provide a default main() implementation? | No - too opinionated. Each application has different initialization needs. Provide example in docs/reference instead. |
 | 9 | Lifecycle | Should modules support Pause/Resume states (not just Start/Stop)? | Not yet - adds complexity. Applications can achieve pause via FlaggedToStopUpdating() without full Stop(). Future enhancement if needed. |
 | 10 | Threading | What is the expected pattern for inter-ProcessingUnit communication? | Message bus is intra-ProcessingUnit. For inter-PU communication, use shared state with mutexes or separate message queues. Future spec if common pattern emerges. |
 
 ## Status
 
-`Active` - System is implemented and actively used by all Dia-based applications.
+`Superseded` — Superseded by [diaapplication-v2.md](diaapplication-v2.md) (2026-05-08). Config-driven PU/Stage/Module architecture replaces Phase-based model.

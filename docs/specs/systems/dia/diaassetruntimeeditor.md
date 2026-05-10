@@ -94,7 +94,7 @@ These commands are registered by DiaAssetRuntime Feature 6 in the game process. 
 
 **Connection state dependency:** DiaAssetRuntimeEditor subscribes to the `"game_connection"` topic (same one that drives the toolbar's green/red connection indicator, per Plugin Lifecycle Toolbar feature). All panels are disabled/greyed with a "Not connected — connect to a running game to view asset state" message when the connection is inactive. Panels activate automatically when the connection comes up.
 
-No dependency on DiaAssetCatalogue, DiaAssetPipeline, DiaApplication, or any rendering/windowing module.
+No dependency on DiaAssetCatalogue, DiaAssetPipeline, DiaApplicationFlow, or any rendering/windowing module.
 
 ## Features
 
@@ -141,7 +141,7 @@ No dependency on DiaAssetCatalogue, DiaAssetPipeline, DiaApplication, or any ren
 | AD-002 | No STL in public APIs | Application | Same as PD-004. |
 | AD-003 | Namespace: Dia::\<Module\>:: | Application | All code under `Dia::AssetRuntime::Editor::` namespace. |
 | SED-009 | Undo/redo via IEditorCommand + CommandHistory | DiaEditor | Not applicable — read-only editor, no mutations to undo. |
-| SED-015 | DiaEditor is a pure C++ library, no DiaApplication dependency | DiaEditor | DiaAssetRuntimeEditor implements IEditorPlugin; no DiaApplication types used. |
+| SED-015 | DiaEditor is a pure C++ library, no DiaApplicationFlow dependency | DiaEditor | DiaAssetRuntimeEditor implements IEditorPlugin; no DiaApplicationFlow types used. |
 | SED-020 | Plugin output to `Cluiche/out/CluicheEditor/<PluginName>/` | DiaEditor | Output path is `Cluiche/out/CluicheEditor/DiaAssetRuntimeEditor/`. SD-ARED-004. |
 | SED-021 | Per-plugin session context via `.context.json` | DiaEditor | Session context (last connection target, panel layout, filters) persisted in `.context.json`. |
 

@@ -140,7 +140,7 @@ private:
 | Feature 3 (AssetServiceModule) | Module must exist and be wired up before adding alias management |
 | Feature 1 (Directory Structure) | .diagame and .diastage must have config sections |
 | DiaCore PathStore | Alias registration API |
-| DiaApplication manifest loader | Reading .diagame/.diastage JSON |
+| DiaApplicationFlow manifest loader | Reading .diagame/.diastage JSON |
 | Ultralight integration | resource_path_prefix configuration |
 
 ## Files

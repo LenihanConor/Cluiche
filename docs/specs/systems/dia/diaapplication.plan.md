@@ -1,4 +1,4 @@
-# Plan: DiaApplication — Flow Tree
+# Plan: DiaApplicationFlow — Flow Tree
 
 **Spec:** @docs/specs/systems/dia/diaapplication.md  
 **Status:** Not Started  
@@ -59,7 +59,7 @@ Three Approved features to implement in build order A → B → C.
 | C9 | Build + run Phase C tests; fix failures | Not Started | sonnet | `dia run googletest --filter="StageManifests*"` |
 | D1 | Update test-completeness-registry for all new test files | Not Started | haiku | Add rows for TestManifestImports, TestPUTree, TestPUTreeIntegration, TestStageManifests |
 | D2 | Mark feature specs A/B/C Done; mark system spec Done | Not Started | haiku | Update status fields in spec files |
-| D3 | Update BACKLOG.md / BACKLOG-HISTORY.md | Not Started | haiku | Move DiaApplication Flow Tree to history |
+| D3 | Update BACKLOG.md / BACKLOG-HISTORY.md | Not Started | haiku | Move DiaApplicationFlow Flow Tree to history |
 
 ---
 

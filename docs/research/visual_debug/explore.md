@@ -33,7 +33,7 @@ The Cluiche engine has a complete editor stack: CluicheEditor (Win32 executable)
 | DiaIK2D | Implemented | End effector, target, per-joint limits, solve iteration convergence |
 | DiaGeometry2D | Done | 13 primitive shapes, spatial grid cells, quadtree partitions, BVH nodes, intersection contacts |
 | DiaInput | Done | Active keys/buttons, action bindings, recorded input event timeline |
-| DiaApplication | Done | Phase transitions, frame time per ProcessingUnit, module update order |
+| DiaApplicationFlow | Done | Phase transitions, frame time per ProcessingUnit, module update order |
 | DiaStateMachine | Done | Active state, transition graph, current transition progress |
 
 ---
@@ -69,7 +69,7 @@ The Cluiche engine has a complete editor stack: CluicheEditor (Win32 executable)
 
 ## Known Tradeoffs
 
-- **Manager adds coupling.** A `DebugLayerManager` must live somewhere (DiaApplication module? New DiaVisualDebugger module?). Every visual debugger module that registers with it gains a dependency on that module.
+- **Manager adds coupling.** A `DebugLayerManager` must live somewhere (DiaApplicationFlow module? New DiaVisualDebugger module?). Every visual debugger module that registers with it gains a dependency on that module.
 - **Separate vcxproj per debugger scales poorly.** At 6+ debuggers the number of projects grows; a shared `DiaVisualDebugger` static lib with all debuggers might be simpler, but it would force a dependency on every system's data types simultaneously, creating a fat dependency.
 - **Editor and in-game toggle share the same code path via DiaAPI.** A `DebugLayerManager` that registers DiaAPI commands (`debug.layer.enable`, `debug.layer.disable`, `debug.layer.list`) can be driven by both an in-game keypress handler and an editor panel checkbox — the editor sends a `MessageType::COMMAND_REQUEST` over WebSocket which DiaDebugServer forwards to `CommandRegistry::Execute()`. This unifies both surfaces without duplicating logic.
 - **Picking requires coordinate transform infrastructure** that does not exist today. It is a large dependency chain (screen-space → world-space, hit-test on spatial structure).
@@ -149,7 +149,7 @@ A `DebugLayerManager` is the bridge: it controls which in-game overlays are acti
 ## Open Questions for Ideation
 
 - Should all visual debuggers share a common `IVisualDebugger` interface (with `Draw(FrameData&)` and `SetEnabled(bool)`) so a manager can hold them polymorphically — or is the per-module standalone pattern sufficient?
-- Where does a `DebugLayerManager` live: new `DiaVisualDebugger` module, inside `DiaGraphics`, or inside `DiaApplication`?
+- Where does a `DebugLayerManager` live: new `DiaVisualDebugger` module, inside `DiaGraphics`, or inside `DiaApplicationFlow`?
 - Layer toggle commands should flow via DiaAPI (both in-game keypresses and editor panel send the same `debug.layer.enable/disable` command). Should the in-game keypress handler be built into the `DebugLayerManager` itself, or left to game code?
 - Is the 1024 primitive cap a hard constraint going forward, or should it become configurable at manager construction?
 - Should per-entity filtering be scoped to a future "picking" feature, or should debuggers accept an optional entity-ID filter parameter from day one?

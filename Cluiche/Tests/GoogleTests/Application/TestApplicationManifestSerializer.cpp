@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include <DiaApplication/Manifest/JsonApplicationManifestSerializer.h>
+#include <DiaApplicationFlow/Manifest/JsonApplicationManifestSerializer.h>
 #include <DiaSerializer/SerializeResult.h>
 #include <cstdio>
 

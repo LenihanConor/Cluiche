@@ -6,7 +6,7 @@
 |-------|------|------|
 | Platform | Cluiche | @docs/specs/platform/Cluiche.md |
 | Application | Dia | @docs/specs/applications/dia.md |
-| System | DiaApplication | @docs/specs/systems/dia/diaapplication.md |
+| System | DiaApplicationFlow | @docs/specs/systems/dia/diaapplication.md |
 | Feature | **DiaGame File Format and Typed Imports** | (this document) |
 
 **Status:** `Done`
@@ -282,7 +282,7 @@ Updated files:
 ## Dependencies
 
 ### Required Modules
-- **DiaApplication/Manifest** — manifest loader, composer, validator, serializer
+- **DiaApplicationFlow/Manifest** — manifest loader, composer, validator, serializer
 - **DiaCore/Json** — JSON parsing for new file formats
 - **DiaCore/Containers** — String256, DynamicArrayC for struct storage
 
@@ -325,17 +325,17 @@ Updated files:
 ## Files Affected
 
 ### New Headers
-- `Dia/DiaApplication/Manifest/DiaGameManifest.h` — DiaGameManifest, DiaStageManifest, TypedImport structs
-- `Dia/DiaApplication/Manifest/DiaGameManifestLoader.h` — parse .diagame and .diastage files
+- `Dia/DiaApplicationFlow/Manifest/DiaGameManifest.h` — DiaGameManifest, DiaStageManifest, TypedImport structs
+- `Dia/DiaApplicationFlow/Manifest/DiaGameManifestLoader.h` — parse .diagame and .diastage files
 
 ### New Implementation
-- `Dia/DiaApplication/Manifest/DiaGameManifestLoader.cpp`
+- `Dia/DiaApplicationFlow/Manifest/DiaGameManifestLoader.cpp`
 
 ### Modified
-- `Dia/DiaApplication/Manifest/ApplicationManifest.h` — imports field type change (flat string → TypedImport)
-- `Dia/DiaApplication/Manifest/ApplicationManifestLoader.h/.cpp` — support typed imports during resolution
-- `Dia/DiaApplication/Manifest/ManifestComposer.h/.cpp` — ComposeFromGameFile, ComposeTypedImports
-- `Dia/DiaApplication/Loader/ApplicationLoader.h/.cpp` — LoadFromGameFile, LoadGameManifest, LoadStageManifest
+- `Dia/DiaApplicationFlow/Manifest/ApplicationManifest.h` — imports field type change (flat string → TypedImport)
+- `Dia/DiaApplicationFlow/Manifest/ApplicationManifestLoader.h/.cpp` — support typed imports during resolution
+- `Dia/DiaApplicationFlow/Manifest/ManifestComposer.h/.cpp` — ComposeFromGameFile, ComposeTypedImports
+- `Dia/DiaApplicationFlow/Loader/ApplicationLoader.h/.cpp` — LoadFromGameFile, LoadGameManifest, LoadStageManifest
 - `Dia/DiaApplicationEditor/DiaApplicationEditor.h/.cpp` — OpenDiaGame entry point, detect file type on open
 - `Dia/DiaApplicationEditor/ManifestSerializer.h/.cpp` — serialize typed imports
 - `Dia/DiaApplicationEditor/UI/src/TreeView.tsx` — stage badge display
@@ -354,7 +354,7 @@ Updated files:
 - `Cluiche/Tests/GoogleTests/Application/TestDiaGameFormat.cpp`
 
 ### Modified Project Files
-- `Dia/DiaApplication/DiaApplication.vcxproj` + filters — new headers/impl
+- `Dia/DiaApplicationFlow/DiaApplicationFlow.vcxproj` + filters — new headers/impl
 - `Cluiche/Tests/GoogleTests/GoogleTests.vcxproj` + filters — new test file
 
 ---
@@ -371,14 +371,14 @@ Updated files:
 | PD-007 | Platform | C++20 required | **Compliant** — no special language features required. |
 | PD-008 | Platform | Directory.Build.props owns build settings | **Compliant** — no build setting changes. |
 | PD-009 | Platform | Output under Cluiche/out/ | **Compliant** — no output path changes. |
-| AD-001 | Dia App | Module docs with YAML frontmatter | **Compliant** — update DiaApplication architecture doc to reflect new file formats. |
+| AD-001 | Dia App | Module docs with YAML frontmatter | **Compliant** — update DiaApplicationFlow architecture doc to reflect new file formats. |
 | AD-002 | Dia App | No STL in public APIs | **Compliant** — see PD-004. |
 | AD-003 | Dia App | Namespace Dia::\<Module\>:: | **Compliant** — all new code in Dia::Application:: namespace. |
-| SD-001 | DiaApplication | PU/Phase/Module three-level hierarchy | **Compliant** — .diagame composes into the three-level hierarchy. No new runtime level. |
-| SD-002 | DiaApplication | StateObject base with state machine | **Compliant** — no changes to state machine. |
-| SD-004 | DiaApplication | Modules identified by StringCRC | **Compliant** — unchanged. |
-| SD-006 | DiaApplication | Raw pointer and UniquePtr ownership | **Compliant** — loader returns raw pointer (caller owns); internal structs use value types. |
-| SD-010 | DiaApplication | Explicit dependencies via AddDependancy() | **Compliant** — no change to dependency model. |
+| SD-001 | DiaApplicationFlow | PU/Phase/Module three-level hierarchy | **Compliant** — .diagame composes into the three-level hierarchy. No new runtime level. |
+| SD-002 | DiaApplicationFlow | StateObject base with state machine | **Compliant** — no changes to state machine. |
+| SD-004 | DiaApplicationFlow | Modules identified by StringCRC | **Compliant** — unchanged. |
+| SD-006 | DiaApplicationFlow | Raw pointer and UniquePtr ownership | **Compliant** — loader returns raw pointer (caller owns); internal structs use value types. |
+| SD-010 | DiaApplicationFlow | Explicit dependencies via AddDependancy() | **Compliant** — no change to dependency model. |
 | DAED-001 | DiaApplicationEditor | Reuse ApplicationManifestValidator | **Compliant** — validation runs on the composed manifest using existing validator. |
 | DAED-008 | DiaApplicationEditor | Manual save workflow | **Compliant** — opening .diagame follows same dirty/save pattern as .diaapp. |
 

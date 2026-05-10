@@ -16,7 +16,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | DiaAssetRuntime | [diaassetruntime.md](specs/systems/dia/diaassetruntime.md) | 2026-05-05 | 6 features, all Done; 58 tests |
 | DiaAssetRuntimeEditor | [diaassetruntimeeditor.md](specs/systems/dia/diaassetruntimeeditor.md) | 2026-05-05 | 4 features, all Done; 58 editor tests; gap analysis performed and fixes applied |
 | DiaAssetCatalogueEditor | [diaassetcatalogueeditor.md](specs/systems/dia/diaassetcatalogueeditor.md) | 2026-05-06 | 8 features, all Done; 73+ exhaustive tests; manual override system (mManualOverrideFlags), GetRule API, type-based graph coloring, expand no-op |
-| DiaApplication — Flow Tree | [diaapplication.md](specs/systems/dia/diaapplication.md) | 2026-05-06 | 4 features Done: manifest-imports (A), pu-parent-child-tree (B), stage-manifests (C), diagame-file-format; 20 PU tree tests; CluicheTest migrated to tree ownership |
+| DiaApplicationFlow — Flow Tree | [diaapplication.md](specs/systems/dia/diaapplication.md) | 2026-05-06 | 4 features Done: manifest-imports (A), pu-parent-child-tree (B), stage-manifests (C), diagame-file-format; 20 PU tree tests; CluicheTest migrated to tree ownership |
 
 ---
 
@@ -24,7 +24,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 
 | Feature | Spec | System | Completed |
 |---------|------|--------|-----------|
-| data-driven-application-system | [data-driven-application-system.md](specs/features/dia/diaapplication/data-driven-application-system.md) | DiaApplication | 2026-05-02 — JsonApplicationManifestSerializer + 12 tests |
+| data-driven-application-system | [data-driven-application-system.md](specs/features/dia/diaapplication/data-driven-application-system.md) | DiaApplicationFlow | 2026-05-02 — JsonApplicationManifestSerializer + 12 tests |
 
 ---
 
@@ -57,7 +57,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | DiaAssetPipeline system spec work | Approved — moved to Ready to Build |
 | DiaAssetRuntime system spec work | Approved — moved to Ready to Build |
 | DiaAssetCatalogueEditor system spec work | Approved — moved to Ready to Build |
-| DiaApplication — Flow Tree (Phases A/B/C) spec work | Approved — moved to Ready to Build |
+| DiaApplicationFlow — Flow Tree (Phases A/B/C) spec work | Approved — moved to Ready to Build |
 
 ---
 

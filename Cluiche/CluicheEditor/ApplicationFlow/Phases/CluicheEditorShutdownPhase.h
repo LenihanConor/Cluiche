@@ -1,6 +1,6 @@
 #pragma once
 
-#include <DiaApplication/ApplicationPhase.h>
+#include <DiaApplicationFlow/ApplicationPhase.h>
 
 namespace Cluiche
 {

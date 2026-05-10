@@ -4,7 +4,7 @@
 
 #include <gtest/gtest.h>
 #include <DiaApplicationEditor/ManifestSerializer.h>
-#include <DiaApplication/Manifest/ApplicationManifest.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifest.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
 

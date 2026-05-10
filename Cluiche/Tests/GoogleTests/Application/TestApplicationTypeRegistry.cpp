@@ -3,11 +3,11 @@
 // Tests the type registration and instantiation system for ProcessingUnits, Phases, and Modules
 
 #include <gtest/gtest.h>
-#include <DiaApplication/TypeRegistry/ApplicationTypeRegistry.h>
-#include <DiaApplication/TypeRegistry/RegistrationMacros.h>
-#include <DiaApplication/ApplicationProcessingUnit.h>
-#include <DiaApplication/ApplicationPhase.h>
-#include <DiaApplication/ApplicationModule.h>
+#include <DiaApplicationFlow/TypeRegistry/ApplicationTypeRegistry.h>
+#include <DiaApplicationFlow/TypeRegistry/RegistrationMacros.h>
+#include <DiaApplicationFlow/ApplicationProcessingUnit.h>
+#include <DiaApplicationFlow/ApplicationPhase.h>
+#include <DiaApplicationFlow/ApplicationModule.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <json/json.h>
 

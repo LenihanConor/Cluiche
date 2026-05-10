@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include <DiaApplication/Metrics/MetricsCollectorModule.h>
-#include <DiaApplication/ApplicationProcessingUnit.h>
+#include <DiaApplicationFlow/Metrics/MetricsCollectorModule.h>
+#include <DiaApplicationFlow/ApplicationProcessingUnit.h>
 #include <DiaCore/CRC/StringCRC.h>
 
 using namespace Dia::Application;

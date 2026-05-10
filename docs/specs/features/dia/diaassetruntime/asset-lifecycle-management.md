@@ -326,7 +326,7 @@ None — all resolved during design discussion.
 | PD-008 | Directory.Build.props owns output | No vcxproj output path changes. |
 | AD-002 | No STL in public APIs | Same as PD-004. |
 | AD-003 | Namespace `Dia::<Module>::` | All new types in `Dia::AssetRuntime::` namespace. |
-| SD-ARUN-001 | No DiaApplication dependency | `IAssetTypeHandler` and state machine are pure library code. Module lifecycle integration is game-code responsibility. |
+| SD-ARUN-001 | No DiaApplicationFlow dependency | `IAssetTypeHandler` and state machine are pure library code. Module lifecycle integration is game-code responsibility. |
 | SD-ARUN-002 | Stage = unit of load/unload; asset = unit of state | Preserved — `RequestStageLoad` dispatches per-asset handlers. |
 | SD-ARUN-004 | Consumer acknowledgement advances state | Replaced with handler callback pattern — same contract, typed dispatch. |
 | SD-ARUN-006 | No content loading in DiaAssetRuntime | Handlers perform loading; they live in game code, not the runtime. |

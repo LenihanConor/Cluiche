@@ -132,21 +132,21 @@ FinalizeBuildStatus:
   Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaGraphics\Release\x64\DiaGraphics.lastbuildstate".
 Done Building Project "C:\GitHub\Cluiche\Dia\DiaGraphics\DiaGraphics.vcxproj" (default targets).
 Done Building Project "C:\GitHub\Cluiche\Dia\DiaGraphics\DiaGraphics.vcxproj.metaproj" (default targets).
-Project "C:\GitHub\Cluiche\Cluiche\Cluiche.sln" (1) is building "C:\GitHub\Cluiche\Dia\DiaApplication\DiaApplication.vcxproj" (15) on node 1 (default targets).
+Project "C:\GitHub\Cluiche\Cluiche\Cluiche.sln" (1) is building "C:\GitHub\Cluiche\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj" (15) on node 1 (default targets).
 PrepareForBuild:
   Structured output is enabled. The formatting of compiler diagnostics will reflect the error hierarchy. See https://aka.ms/cpp/structured-output for more details.
 InitializeBuildStatus:
-  Creating "C:\GitHub\Cluiche\Cluiche\bin\log\DiaApplication\Release\x64\unsuccessfulbuild" because "AlwaysCreate" was specified.
-  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaApplication\Release\x64\unsuccessfulbuild".
+  Creating "C:\GitHub\Cluiche\Cluiche\bin\log\DiaApplicationFlow\Release\x64\unsuccessfulbuild" because "AlwaysCreate" was specified.
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaApplicationFlow\Release\x64\unsuccessfulbuild".
 ClCompile:
   All outputs are up-to-date.
 Lib:
   All outputs are up-to-date.
-  DiaApplication.vcxproj -> C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaApplication.lib
+  DiaApplicationFlow.vcxproj -> C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaApplicationFlow.lib
 FinalizeBuildStatus:
-  Deleting file "C:\GitHub\Cluiche\Cluiche\bin\log\DiaApplication\Release\x64\unsuccessfulbuild".
-  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaApplication\Release\x64\DiaApplication.lastbuildstate".
-Done Building Project "C:\GitHub\Cluiche\Dia\DiaApplication\DiaApplication.vcxproj" (default targets).
+  Deleting file "C:\GitHub\Cluiche\Cluiche\bin\log\DiaApplicationFlow\Release\x64\unsuccessfulbuild".
+  Touching "C:\GitHub\Cluiche\Cluiche\bin\log\DiaApplicationFlow\Release\x64\DiaApplicationFlow.lastbuildstate".
+Done Building Project "C:\GitHub\Cluiche\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj" (default targets).
 Project "C:\GitHub\Cluiche\Cluiche\Cluiche.sln" (1) is building "C:\GitHub\Cluiche\Cluiche\CluicheTest\CluicheTest.vcxproj.metaproj" (16) on node 1 (default targets).
 Project "C:\GitHub\Cluiche\Cluiche\CluicheTest\CluicheTest.vcxproj.metaproj" (16) is building "C:\GitHub\Cluiche\Dia\DiaWindow\DiaWindow.vcxproj.metaproj" (17) on node 1 (default targets).
 Project "C:\GitHub\Cluiche\Dia\DiaWindow\DiaWindow.vcxproj.metaproj" (17) is building "C:\GitHub\Cluiche\Dia\DiaWindow\DiaWindow.vcxproj" (18) on node 1 (default targets).
@@ -341,7 +341,7 @@ InitializeBuildStatus:
 ClCompile:
   All outputs are up-to-date.
 Link:
-  C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Tools\MSVC\14.44.35207\bin\HostX86\x64\link.exe /ERRORREPORT:QUEUE /OUT:"C:\GitHub\Cluiche\Cluiche\bin\Release\x64\CluicheTest.exe" /NOLOGO /LIBPATH:"C:\GitHub\Cluiche\Cluiche\..\External\SFML\Current-x64\lib\\" /LIBPATH:"C:\GitHub\Cluiche\Cluiche\CluicheTest\..\..\External\protobuf\Current-x64\lib\Release" C:\GitHub\Cluiche\Cluiche\bin\Release\x64\UnitTestLevel.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DummyLevel.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaCore.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\CluicheKernel.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaMaths.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaGraphics.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaSFML.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaWindow.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaInput.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaApplication.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaUI.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaUIUltralight.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaDebugServer.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaDebugProtocol.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaProtobuf.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaWebSocket.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaAPI.lib "sfml-graphics.lib" "sfml-window.lib" "sfml-system.lib" glu32.lib opengl32.lib XINPUT9_1_0.lib ws2_32.lib winmm.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\GitHub\Cluiche\Cluiche\bin\Release\x64\CluicheTest.pdb" /OPT:REF /OPT:ICF /LTCG:incremental /LTCGOUT:"C:\GitHub\Cluiche\Cluiche\bin\intermediate\CluicheTest\Release\x64\CluicheTest.iobj" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\GitHub\Cluiche\Cluiche\bin\Release\x64\CluicheTest.lib" /MACHINE:X64 C:\GitHub\Cluiche\Cluiche\bin\intermediate\CluicheTest\Release\x64\MainBootPhase.obj
+  C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Tools\MSVC\14.44.35207\bin\HostX86\x64\link.exe /ERRORREPORT:QUEUE /OUT:"C:\GitHub\Cluiche\Cluiche\bin\Release\x64\CluicheTest.exe" /NOLOGO /LIBPATH:"C:\GitHub\Cluiche\Cluiche\..\External\SFML\Current-x64\lib\\" /LIBPATH:"C:\GitHub\Cluiche\Cluiche\CluicheTest\..\..\External\protobuf\Current-x64\lib\Release" C:\GitHub\Cluiche\Cluiche\bin\Release\x64\UnitTestLevel.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DummyLevel.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaCore.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\CluicheKernel.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaMaths.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaGraphics.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaSFML.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaWindow.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaInput.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaApplicationFlow.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaUI.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaUIUltralight.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaDebugServer.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaDebugProtocol.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaProtobuf.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaWebSocket.lib C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaAPI.lib "sfml-graphics.lib" "sfml-window.lib" "sfml-system.lib" glu32.lib opengl32.lib XINPUT9_1_0.lib ws2_32.lib winmm.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\GitHub\Cluiche\Cluiche\bin\Release\x64\CluicheTest.pdb" /OPT:REF /OPT:ICF /LTCG:incremental /LTCGOUT:"C:\GitHub\Cluiche\Cluiche\bin\intermediate\CluicheTest\Release\x64\CluicheTest.iobj" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\GitHub\Cluiche\Cluiche\bin\Release\x64\CluicheTest.lib" /MACHINE:X64 C:\GitHub\Cluiche\Cluiche\bin\intermediate\CluicheTest\Release\x64\MainBootPhase.obj
   C:\GitHub\Cluiche\Cluiche\bin\intermediate\CluicheTest\Release\x64\MainBootStrapPhase.obj
   C:\GitHub\Cluiche\Cluiche\bin\intermediate\CluicheTest\Release\x64\RenderRunningPhase.obj
   C:\GitHub\Cluiche\Cluiche\bin\intermediate\CluicheTest\Release\x64\SimBootPhase.obj
@@ -353,7 +353,7 @@ Link:
   C:\GitHub\Cluiche\Cluiche\bin\intermediate\CluicheTest\Release\x64\LaunchUIPage.obj
   C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaCore.lib
   C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaLogger.lib
-  C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaApplication.lib
+  C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaApplicationFlow.lib
   C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaMaths.lib
   C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaInput.lib
   C:\GitHub\Cluiche\Cluiche\bin\Release\x64\DiaUI.lib

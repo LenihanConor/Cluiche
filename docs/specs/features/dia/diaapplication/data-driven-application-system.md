@@ -19,7 +19,7 @@
 |-------|-------|------|------|
 | Platform | Cluiche | Cluiche Game Development Platform | @docs/specs/platform/Cluiche.md |
 | Application | Dia | Dia Game Engine | @docs/specs/applications/dia.md |
-| System | DiaApplication | Application Framework System | @docs/specs/systems/dia/diaapplication.md |
+| System | DiaApplicationFlow | Application Framework System | @docs/specs/systems/dia/diaapplication.md |
 | Feature | F-DiaApp-DataDriven | Data-Driven Application System | (this document) |
 
 ## Purpose
@@ -56,7 +56,7 @@ This feature separates **topology** (what connects to what) from **behavior** (w
 
 ### Overview
 
-The Data-Driven Application System adds three layers on top of existing DiaApplication infrastructure:
+The Data-Driven Application System adds three layers on top of existing DiaApplicationFlow infrastructure:
 
 1. **Type Registration System** - Registers C++ classes (ProcessingUnit/Phase/Module subclasses) with string IDs for runtime lookup
 2. **Serialization Layer** - Converts application structure to/from JSON manifests
@@ -178,7 +178,7 @@ public:
 };
 
 // In cpp file (MyProcessingUnit.cpp):
-#include <DiaApplication/TypeRegistry/ApplicationTypeRegistry.h>
+#include <DiaApplicationFlow/TypeRegistry/ApplicationTypeRegistry.h>
 
 const StringCRC MyProcessingUnit::kTypeId = StringCRC("MyProcessingUnit");
 
@@ -719,43 +719,43 @@ private:
 ### New Files
 
 **Type Registry:**
-- `Dia/DiaApplication/TypeRegistry/ApplicationTypeRegistry.h` - Registry interface
-- `Dia/DiaApplication/TypeRegistry/ApplicationTypeRegistry.cpp` - Registry implementation
-- `Dia/DiaApplication/TypeRegistry/RegistrationMacros.h` - DIA_REGISTER_* macros
+- `Dia/DiaApplicationFlow/TypeRegistry/ApplicationTypeRegistry.h` - Registry interface
+- `Dia/DiaApplicationFlow/TypeRegistry/ApplicationTypeRegistry.cpp` - Registry implementation
+- `Dia/DiaApplicationFlow/TypeRegistry/RegistrationMacros.h` - DIA_REGISTER_* macros
 
 **Manifest System:**
-- `Dia/DiaApplication/Manifest/ApplicationManifest.h` - Manifest data structures
-- `Dia/DiaApplication/Manifest/ApplicationManifestLoader.h` - Loader interface
-- `Dia/DiaApplication/Manifest/ApplicationManifestLoader.cpp` - Loader implementation
-- `Dia/DiaApplication/Manifest/ManifestValidator.h` - Validation logic
-- `Dia/DiaApplication/Manifest/ManifestValidator.cpp` - Validation implementation
-- `Dia/DiaApplication/Manifest/ManifestComposer.h` - Composition logic (AC12)
-- `Dia/DiaApplication/Manifest/ManifestComposer.cpp` - Composition implementation
+- `Dia/DiaApplicationFlow/Manifest/ApplicationManifest.h` - Manifest data structures
+- `Dia/DiaApplicationFlow/Manifest/ApplicationManifestLoader.h` - Loader interface
+- `Dia/DiaApplicationFlow/Manifest/ApplicationManifestLoader.cpp` - Loader implementation
+- `Dia/DiaApplicationFlow/Manifest/ManifestValidator.h` - Validation logic
+- `Dia/DiaApplicationFlow/Manifest/ManifestValidator.cpp` - Validation implementation
+- `Dia/DiaApplicationFlow/Manifest/ManifestComposer.h` - Composition logic (AC12)
+- `Dia/DiaApplicationFlow/Manifest/ManifestComposer.cpp` - Composition implementation
 
 **Introspection:**
-- `Dia/DiaApplication/Introspection/ApplicationIntrospector.h` - Introspection interface
-- `Dia/DiaApplication/Introspection/ApplicationIntrospector.cpp` - Introspection implementation
+- `Dia/DiaApplicationFlow/Introspection/ApplicationIntrospector.h` - Introspection interface
+- `Dia/DiaApplicationFlow/Introspection/ApplicationIntrospector.cpp` - Introspection implementation
 
 **Application Loader:**
-- `Dia/DiaApplication/Loader/ApplicationLoader.h` - High-level application loader (AC3, AC9)
-- `Dia/DiaApplication/Loader/ApplicationLoader.cpp` - Implementation
+- `Dia/DiaApplicationFlow/Loader/ApplicationLoader.h` - High-level application loader (AC3, AC9)
+- `Dia/DiaApplicationFlow/Loader/ApplicationLoader.cpp` - Implementation
 
 ### Modified Files
 
 **Core Classes (add serialization interface):**
-- `Dia/DiaApplication/ProcessingUnit.h` - Add `SerializeTopology()` / `DeserializeTopology()`
-- `Dia/DiaApplication/ProcessingUnit.cpp` - Implement serialization
-- `Dia/DiaApplication/Phase.h` - Add `SerializeConfig()` / `DeserializeConfig()`
-- `Dia/DiaApplication/Phase.cpp` - Default implementations
-- `Dia/DiaApplication/Module.h` - Add `SerializeConfig()` / `DeserializeConfig()`
-- `Dia/DiaApplication/Module.cpp` - Default implementations
+- `Dia/DiaApplicationFlow/ProcessingUnit.h` - Add `SerializeTopology()` / `DeserializeTopology()`
+- `Dia/DiaApplicationFlow/ProcessingUnit.cpp` - Implement serialization
+- `Dia/DiaApplicationFlow/Phase.h` - Add `SerializeConfig()` / `DeserializeConfig()`
+- `Dia/DiaApplicationFlow/Phase.cpp` - Default implementations
+- `Dia/DiaApplicationFlow/Module.h` - Add `SerializeConfig()` / `DeserializeConfig()`
+- `Dia/DiaApplicationFlow/Module.cpp` - Default implementations
 
 **Project Files:**
-- `Dia/DiaApplication/DiaApplication.vcxproj` - Add new files
-- `Dia/DiaApplication/DiaApplication.vcxproj.filters` - Add filters for TypeRegistry, Manifest, Introspection folders
+- `Dia/DiaApplicationFlow/DiaApplicationFlow.vcxproj` - Add new files
+- `Dia/DiaApplicationFlow/DiaApplicationFlow.vcxproj.filters` - Add filters for TypeRegistry, Manifest, Introspection folders
 
 **Module Documentation:**
-- `Dia/DiaApplication/dia.application.architecture.module.md` - Update with new public API
+- `Dia/DiaApplicationFlow/dia.application.architecture.module.md` - Update with new public API
 
 ### Example Usage Files
 
@@ -868,7 +868,7 @@ private:
 | 13 | Write unit tests for hot reload | 3 days | Task 9 | TBD |
 | 14 | Create example .diaapp manifest for CluicheTest | 1 day | Task 5, 8 | TBD |
 | 15 | Write integration test for end-to-end application loading | 2 days | Task 8, 14 | TBD |
-| 16 | Update DiaApplication module documentation | 1 day | All tasks | TBD |
+| 16 | Update DiaApplicationFlow module documentation | 1 day | All tasks | TBD |
 | 17 | Write developer guide and examples | 2 days | All tasks | TBD |
 
 **Total Estimated Effort:** ~41 days (~8 weeks for single developer, ~4 weeks with pair)
@@ -894,7 +894,7 @@ private:
 | **PD-002** | ProcessingUnit/Phase/Module architecture for app structure | ✅ Compliant | This feature enhances PD-002 by making it data-driven while preserving the architecture. No structural changes to the hierarchy. |
 | **PD-003** | Component-based entities (IComponent/IComponentObject) | ✅ N/A | This feature is orthogonal to component system. Modules can still use components internally. |
 | **PD-004** | No STL containers in public APIs | ✅ Compliant | All public APIs use DiaCore containers (DynamicArrayC, HashTable). Internal use of std::function in factory lambdas is acceptable (not part of public API surface). Json::Value is existing exception already used in DiaCore/Json. |
-| **PD-006** | Visual Studio project files are source of truth | ✅ Compliant | All new files added to DiaApplication.vcxproj and .vcxproj.filters manually. |
+| **PD-006** | Visual Studio project files are source of truth | ✅ Compliant | All new files added to DiaApplicationFlow.vcxproj and .vcxproj.filters manually. |
 | **AD-001** | Module system with YAML frontmatter documentation | ✅ Compliant | Will update dia.application.architecture.module.md with new public API entries. |
 | **AD-002** | No STL containers in public APIs | ✅ Compliant | Reinforces PD-004. Uses DynamicArrayC, HashTable throughout. |
 | **AD-003** | Namespace convention: `Dia::<Module>::` | ✅ Compliant | All new code in `Dia::Application::` namespace. |

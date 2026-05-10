@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include <DiaApplication/ApplicationProcessingUnit.h>
-#include <DiaApplication/ApplicationPhase.h>
-#include <DiaApplication/ApplicationModule.h>
+#include <DiaApplicationFlow/ApplicationProcessingUnit.h>
+#include <DiaApplicationFlow/ApplicationPhase.h>
+#include <DiaApplicationFlow/ApplicationModule.h>
 
 using namespace Dia::Application;
 using namespace Dia::Core;
@@ -9,7 +9,7 @@ using namespace Dia::Core;
 // Basic test - just verify compilation and linkage
 TEST(BasicApplication, CanInstantiateClasses)
 {
-    // Test that the basic DiaApplication classes can be instantiated
+    // Test that the basic DiaApplicationFlow classes can be instantiated
     // This verifies that the libs are linked correctly
 
     class TestPU : public ProcessingUnit

@@ -167,7 +167,7 @@ namespace Dia::AssetCatalogue::Editor
 | SD-ACE-004 | All mutations are IEditorCommand | **Compliant** — Create, Update, Delete are each IEditorCommand subclasses with Execute/Undo |
 | SD-ACE-005 | Output to Cluiche/out/CluicheEditor/DiaAssetCatalogueEditor/ | **N/A** — CRUD does not produce output files; manifest save is Feature 1 |
 | SED-009 | Undo/redo via IEditorCommand + CommandHistory | **Compliant** — all three commands go through CommandHistory.ExecuteCommand() |
-| SED-015 | DiaEditor is pure C++ library, no DiaApplication dependency | **Compliant** — no DiaApplication types used |
+| SED-015 | DiaEditor is pure C++ library, no DiaApplicationFlow dependency | **Compliant** — no DiaApplicationFlow types used |
 | SED-020 | Plugin output to Cluiche/out/CluicheEditor/\<PluginName\>/ | **N/A** — no output files from CRUD |
 | SED-021 | Per-plugin session context via .context.json | **N/A** — session context is Feature 1's responsibility |
 

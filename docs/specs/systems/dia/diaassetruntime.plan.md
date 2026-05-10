@@ -7,7 +7,7 @@
 
 ## Overview
 
-Pure C++ library under `Dia/DiaAssetRuntime/`. No DiaApplication dependency. Namespace `Dia::AssetRuntime::`. Uses DiaCore containers (HashTableC, DynamicArrayC), StringCRC, FilePath, JSON. Feature 6 adds an optional DiaAPI dependency for debug commands. All tests live in GoogleTests project.
+Pure C++ library under `Dia/DiaAssetRuntime/`. No DiaApplicationFlow dependency. Namespace `Dia::AssetRuntime::`. Uses DiaCore containers (HashTableC, DynamicArrayC), StringCRC, FilePath, JSON. Feature 6 adds an optional DiaAPI dependency for debug commands. All tests live in GoogleTests project.
 
 Build order is strictly sequential: F1 → F2 → F3 → F4 → F5 → F6. Each feature builds on the prior one's types and APIs.
 

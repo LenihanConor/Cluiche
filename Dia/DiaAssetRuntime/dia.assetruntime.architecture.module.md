@@ -32,7 +32,7 @@ responsibilities:
 
 non_responsibilities:
   - Asset content loading (textures, audio, meshes — owned by DiaGraphics, DiaAudio)
-  - DiaApplication lifecycle integration
+  - DiaApplicationFlow lifecycle integration
   - Manifest authoring or editing (owned by DiaAssetCatalogueEditor)
   - Asset pipeline or transform (owned by DiaAssetPipeline)
 

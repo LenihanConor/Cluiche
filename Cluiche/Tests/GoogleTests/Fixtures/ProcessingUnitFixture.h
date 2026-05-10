@@ -8,10 +8,10 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include <DiaApplication/ApplicationProcessingUnit.h>
-#include <DiaApplication/ApplicationPhase.h>
-#include <DiaApplication/ApplicationModule.h>
-#include <DiaApplication/ApplicationStateObject.h>
+#include <DiaApplicationFlow/ApplicationProcessingUnit.h>
+#include <DiaApplicationFlow/ApplicationPhase.h>
+#include <DiaApplicationFlow/ApplicationModule.h>
+#include <DiaApplicationFlow/ApplicationStateObject.h>
 
 namespace TestFixtures
 {

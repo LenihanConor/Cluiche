@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <DiaApplication/MessageBus.h>
+#include <DiaApplicationFlow/MessageBus.h>
 
 using namespace Dia::Application;
 using namespace Dia::Core;

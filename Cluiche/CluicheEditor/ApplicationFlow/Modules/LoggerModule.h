@@ -1,6 +1,6 @@
 #pragma once
 
-#include <DiaApplication/ApplicationModule.h>
+#include <DiaApplicationFlow/ApplicationModule.h>
 #include <DiaLogger/DebugOutputSink.h>
 
 namespace Cluiche

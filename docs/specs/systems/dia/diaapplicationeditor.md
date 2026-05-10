@@ -5,14 +5,14 @@
 
 ## Purpose
 
-DiaApplicationEditor is a comprehensive editor system for both static .diaapp manifest editing and live runtime debugging of DiaApplication-based games. It implements the IEditorPlugin interface (from DiaEditor framework) and provides:
+DiaApplicationEditor is a comprehensive editor system for both static .diaapp manifest editing and live runtime debugging of DiaApplicationFlow-based games. It implements the IEditorPlugin interface (from DiaEditor framework) and provides:
 
 1. **Static Editing** - Load, visually edit, and save .diaapp manifest files with graph-based phase/module connection editing
 2. **Live Debugging** - Connect to running games via WebSocket to visualize real-time phase transitions and runtime state
 3. **Hot Reload Integration** - Trigger hot reload of modified manifests on connected games
 4. **Runtime Configuration** - Change ProcessingUnit/Phase/Module configuration on live games and see immediate effects
 
-**Location:** `Dia/DiaApplicationEditor/` - separate system at Dia level, not under DiaApplication.
+**Location:** `Dia/DiaApplicationEditor/` - separate system at Dia level, not under DiaApplicationFlow.
 
 ## Responsibilities
 
@@ -409,7 +409,7 @@ Game: Attempts to add module (may succeed or fail)
 
 ### Required Systems (from Dia)
 - **DiaEditor** - IEditorPlugin interface, EditorModel, plugin registry, WebUIBridge
-- **DiaApplication** - ApplicationManifest, ApplicationManifestLoader, ApplicationManifestValidator, ApplicationTypeRegistry
+- **DiaApplicationFlow** - ApplicationManifest, ApplicationManifestLoader, ApplicationManifestValidator, ApplicationTypeRegistry
 - **DiaCore** - Containers, StringCRC, JSON parsing (jsoncpp wrapper)
 
 ### UI Dependencies
@@ -434,7 +434,7 @@ What DiaApplicationEditor explicitly does NOT handle:
 | System | Relationship | Interface |
 |--------|--------------|-----------|
 | DiaEditor | Framework - provides plugin infrastructure | IEditorPlugin interface |
-| DiaApplication | Parent system - provides manifest schema and validation | ApplicationManifest, ApplicationManifestValidator |
+| DiaApplicationFlow | Parent system - provides manifest schema and validation | ApplicationManifest, ApplicationManifestValidator |
 | CluicheEditor | Host application - loads and runs this plugin | Plugin discovery via EditorPluginRegistry |
 
 ## Inherited Binding Decisions
@@ -445,7 +445,7 @@ These decisions from parent platform and application specs are binding constrain
 |--------|----|----------|-------------------------------|
 | Platform | PD-001 | C++ as primary language | Plugin core in C++; UI in TypeScript via CEF bridge |
 | Platform | PD-002 | Windows as primary platform | Test on Windows; React UI cross-platform by nature |
-| Platform | PD-003 | Visual Studio + MSBuild | Built as part of DiaApplication .vcxproj |
+| Platform | PD-003 | Visual Studio + MSBuild | Built as part of DiaApplicationFlow .vcxproj |
 | Platform | PD-004 | Spec-driven development | This spec approved before implementation |
 | Dia | AD-001 | Module system with YAML frontmatter | Document as `dia.diaapplication.editor.architecture.module.md` |
 | Dia | AD-002 | No STL in public APIs | IEditorPlugin methods use `const char*`, not std::string |
@@ -528,7 +528,7 @@ Features within the DiaApplicationEditor system (create with `/spec-feature`):
 
 ## Status
 
-`Approved` - All 21 features complete with comprehensive design, ready for implementation
+`Superseded` — Superseded by [diaapplicationeditor-v2.md](diaapplicationeditor-v2.md) (2026-05-08). Redesigned for PU/Stage/Module v2 model.
 
 **Plan:** @docs/specs/systems/dia/diaapplicationeditor.plan.md
 

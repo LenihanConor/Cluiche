@@ -156,7 +156,7 @@ runtime.UnregisterListener(&myGraphicsSystem);
 | AD-002 | No STL in public APIs | **Compliant.** Same as PD-004. |
 | AD-003 | Namespace Dia::AssetRuntime:: | **Compliant.** All code under `Dia::AssetRuntime::`. |
 | SD-CAT-001 | Asset IDs are type.name composites | **Compliant.** Listener callbacks receive type.name StringCRC IDs. |
-| SD-ARUN-001 | No DiaApplication dependency | **Compliant.** Listeners are raw interface pointers registered by game code. No ProcessingUnit or Module awareness. |
+| SD-ARUN-001 | No DiaApplicationFlow dependency | **Compliant.** Listeners are raw interface pointers registered by game code. No ProcessingUnit or Module awareness. |
 | SD-ARUN-008 | No DiaAssetCatalogue dependency | **Compliant.** No imports from DiaAssetCatalogue. Events carry only runtime data (asset ID, deploy path). |
 
 ## AI Review Questions

@@ -19,7 +19,7 @@ If this is a new session:
 4. Derive the subsystem slug:
    - Lowercase the subsystem name
    - Replace spaces with underscores
-   - Example: "DiaApplication" → `dia_application`, "render backend" → `render_backend`
+   - Example: "DiaApplicationFlow" → `dia_application`, "render backend" → `render_backend`
 5. Present the proposed slug: "Proposed folder: docs/refactors/<slug>/. Confirm, or type a custom slug."
 6. Wait for confirmation before creating any files. Then continue to Step 2.
 
@@ -336,7 +336,7 @@ Engine modules available:
 - DiaWindow — Win32 window management
 - DiaInput — keyboard, mouse, event queue
 - DiaUI / DiaUIAwesomium / DiaUICEF / DiaUIUltralight — UI systems
-- DiaApplication — ProcessingUnit, Phase, Module lifecycle
+- DiaApplicationFlow — ProcessingUnit, Phase, Module lifecycle
 - DiaAPI — command/plugin framework
 - DiaSFML — SFML integration layer
 - DiaLogger — logging channels and sinks

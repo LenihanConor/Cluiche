@@ -98,7 +98,7 @@ Which shared platform modules (Dia engine) does this app use?
 - [x] DiaMaths - All math, vector, matrix, shape tests
 - [x] DiaGraphics - Graphics primitive and render state tests
 - [x] DiaInput - Input handling and event system tests
-- [ ] DiaApplication - Not directly tested (tested via integration in CluicheTest app)
+- [ ] DiaApplicationFlow - Not directly tested (tested via integration in CluicheTest app)
 - [ ] DiaWindow - Not directly tested (integration tests only)
 - [ ] DiaUI - Not directly tested (integration tests only)
 - [ ] DiaPhysics - Not yet implemented
@@ -150,7 +150,7 @@ What this application deliberately does NOT do:
 | # | Section | Question | Answer |
 |---|---------|----------|--------|
 | 1 | Systems | Should Dirty Tracking be its own system or part of Test Runner? | Separate system - it's a pre-build tool (Python script) independent of Test Runner (C++ executable). Different lifecycle and technology. |
-| 2 | Dependencies | Are DiaWindow/DiaUI/DiaApplication tested anywhere? | No unit tests currently. Integration tests in CluicheTest application cover these. Consider adding unit tests for testable components. |
+| 2 | Dependencies | Are DiaWindow/DiaUI/DiaApplicationFlow tested anywhere? | No unit tests currently. Integration tests in CluicheTest application cover these. Consider adding unit tests for testable components. |
 | 3 | Out of Scope | Should performance testing be added? | TBD - would require separate performance test suite with benchmarking framework (e.g., Google Benchmark). Out of scope for current unit tests. |
 | 4 | Architecture | Should test organization match Dia's filesystem or module YAML structure? | Filesystem - easier for developers to navigate. Module YAML is for dependency analysis, not test organization. |
 | 5 | Decisions | Should tests be allowed to depend on each other? | No - each test must be independent and runnable in isolation. This is a Google Test best practice. Add as AD-007 if needed. |

@@ -5,7 +5,7 @@
 
 ## Purpose
 
-DiaEditor is the editor framework system that provides the foundation for building game development tools within the Cluiche platform. It implements an MVC architecture with a plugin system that allows each Dia subsystem to register specialized editor tools (e.g., DiaApplicationEditor for manifest editing). DiaEditor is a **pure C++ library with no DiaApplication dependency** — it contains no Module, Phase, or ProcessingUnit subclasses. Application flow (wiring modules into phases, phase transitions, lifecycle) lives entirely in the consumer executable (CluicheEditor). This separation keeps DiaEditor independently testable and reusable without the application framework.
+DiaEditor is the editor framework system that provides the foundation for building game development tools within the Cluiche platform. It implements an MVC architecture with a plugin system that allows each Dia subsystem to register specialized editor tools (e.g., DiaApplicationEditor for manifest editing). DiaEditor is a **pure C++ library with no DiaApplicationFlow dependency** — it contains no Module, Phase, or ProcessingUnit subclasses. Application flow (wiring modules into phases, phase transitions, lifecycle) lives entirely in the consumer executable (CluicheEditor). This separation keeps DiaEditor independently testable and reusable without the application framework.
 
 ## Responsibilities
 
@@ -503,7 +503,7 @@ namespace Dia::Editor {
 - **DiaDebugProtocol** - Shared message types and serialization for editor-game communication (header-only)
 - **DiaWebSocket** - WebSocket client transport (used by GameConnectionManager)
 
-**Note:** DiaEditor has **no dependency on DiaApplication** (ProcessingUnit, Phase, Module). Application flow is the consumer's responsibility (CluicheEditor).
+**Note:** DiaEditor has **no dependency on DiaApplicationFlow** (ProcessingUnit, Phase, Module). Application flow is the consumer's responsibility (CluicheEditor).
 
 ### External Dependencies
 - **CEF (Chromium Embedded Framework)** - Web rendering engine (~100MB)
@@ -568,7 +568,7 @@ Decisions specific to DiaEditor system. Binding decisions constrain all features
 | SED-012 | Shared data path constants as typed StringCRC in `Dia::Editor::DataPath` | Same pattern as DDP-006; compile-time safety, no raw strings at call sites | Proposed | Yes |
 | SED-013 | Plugin data structs declare `kPluginDataTypeId`; EditorModel asserts type on retrieval | Catches wrong-type casts in Debug; matches Dia `kUniqueId` pattern; no RTTI; zero cost in Release | Proposed | Yes |
 | SED-014 | `.cluicheproj` is the top-level project file; references `.diaapp` manifests | Separates "what to work on" from "what tools to load"; extensible for future project-level concerns | Proposed | Yes |
-| SED-015 | DiaEditor is a pure C++ library — no DiaApplication dependency (no Module/Phase/ProcessingUnit subclasses) | Independently testable without the application framework; reusable in future editor executables; consumer (CluicheEditor) owns all application flow via thin Module/Phase wrappers that call into DiaEditor library classes | Accepted | Yes |
+| SED-015 | DiaEditor is a pure C++ library — no DiaApplicationFlow dependency (no Module/Phase/ProcessingUnit subclasses) | Independently testable without the application framework; reusable in future editor executables; consumer (CluicheEditor) owns all application flow via thin Module/Phase wrappers that call into DiaEditor library classes | Accepted | Yes |
 | SED-016 | GameConnectionManager boots clean with no game; Connect() is explicit and user-triggered | Tool must be usable without a running game; non-blocking boot; avoids startup failure or hang when no game is present | Accepted | Yes |
 | SED-017 | EditorManifestLoader is a static utility (not a class instance) that parses .diaapp and invokes a callback per plugin | Decouples manifest parsing from plugin lifecycle; consumer decides how to instantiate plugins; callback + void* avoids std::function in the public API | Accepted | Yes |
 | SED-018 | Fullscreen is implemented by collapsing the Mosaic layout to a single leaf node; the Mosaic component stays mounted | Swapping render trees (separate div + iframe) destroys the iframe and loses all in-page state (console history, editor content). Keeping Mosaic alive preserves every panel's iframe across fullscreen and drag/move. Exiting fullscreen restores the saved layout tree. | Accepted | Yes |

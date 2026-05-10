@@ -8,13 +8,13 @@
 ## Implementation Patterns
 
 ### TypedImport struct
-New enum + struct in a new header `Dia/DiaApplication/Manifest/TypedImport.h`. The enum uses `kManifest` and `kStage` values. The struct holds `String256 path` and `ImportType type`. This is a simple POD used in both `ApplicationManifest::imports` and `DiaGameManifest::imports`.
+New enum + struct in a new header `Dia/DiaApplicationFlow/Manifest/TypedImport.h`. The enum uses `kManifest` and `kStage` values. The struct holds `String256 path` and `ImportType type`. This is a simple POD used in both `ApplicationManifest::imports` and `DiaGameManifest::imports`.
 
 ### DiaGameManifest / DiaStageManifest structs
-New header `Dia/DiaApplication/Manifest/DiaGameManifest.h` defines both structs. `DiaGameManifest` has `name`, `version` (String256), typed imports array, and a `DiaGameConfig` sub-struct. `DiaStageManifest` has `name` (String256) and `manifestPath` (String256).
+New header `Dia/DiaApplicationFlow/Manifest/DiaGameManifest.h` defines both structs. `DiaGameManifest` has `name`, `version` (String256), typed imports array, and a `DiaGameConfig` sub-struct. `DiaStageManifest` has `name` (String256) and `manifestPath` (String256).
 
 ### DiaGameManifestLoader
-New class in `Dia/DiaApplication/Manifest/DiaGameManifestLoader.h/.cpp`. Static methods: `LoadGameFile(path, outGameManifest)` and `LoadStageFile(path, outStageManifest)`. Uses jsoncpp for parsing. Returns `ManifestValidationResult`. Follows the same error accumulation pattern as `ApplicationManifestLoader`.
+New class in `Dia/DiaApplicationFlow/Manifest/DiaGameManifestLoader.h/.cpp`. Static methods: `LoadGameFile(path, outGameManifest)` and `LoadStageFile(path, outStageManifest)`. Uses jsoncpp for parsing. Returns `ManifestValidationResult`. Follows the same error accumulation pattern as `ApplicationManifestLoader`.
 
 ### ApplicationManifest imports migration
 `ApplicationManifest.h` changes `DynamicArrayC<const char*, 16> imports` → `DynamicArrayC<TypedImport, 16> imports`. This is a breaking internal change. All sites reading/writing imports must be updated: `JsonApplicationManifestSerializer`, `ManifestComposer`, `ManifestSerializer` (editor), `HandleAddImport`/`HandleRemoveImport` (editor).
@@ -50,7 +50,7 @@ Update `cluiche_main.diaapp` imports to typed format. Create `cluichetest.diagam
 | 13 | Create CluicheTest data files: `cluichetest.diagame`, `stages/dummy_stage.diastage`, `stages/dummy_stage.diaapp` | — | Done | haiku | Data files per spec examples |
 | 14 | Migrate `cluiche_main.diaapp` imports to typed format | — | Done | haiku | Replace flat strings with objects |
 | 15 | Create `TestDiaGameFormat.cpp` — unit tests for new loaders and composition | All AC unit tests | Done | sonnet | 16 tests all passing |
-| 16 | Update vcxproj files (DiaApplication, GoogleTests) with new source files | Build succeeds | Done | haiku | Add headers and .cpp files |
+| 16 | Update vcxproj files (DiaApplicationFlow, GoogleTests) with new source files | Build succeeds | Done | haiku | Add headers and .cpp files |
 | 17 | Build + run GoogleTests to verify all pass | dia run googletest | Done | haiku | 58 manifest tests pass, full suite 4272/4273 (1 flaky pre-existing) |
 | 18 | TreeView stage badge display | Visual verification | Done | sonnet | Green badge with stage filename on phases/PUs with _source |
 

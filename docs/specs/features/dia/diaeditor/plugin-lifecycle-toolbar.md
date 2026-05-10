@@ -231,7 +231,7 @@ The toolbar's right zone subscribes to the existing `"game_connection"` topic:
 | System | SED-012 | StringCRC constants in DataPath | **Compliant** — Request handler IDs are static `StringCRC` constants |
 | System | SED-013 | Plugin data structs kPluginDataTypeId | **N/A** — Plugin Browser stores no custom data in EditorModel |
 | System | SED-014 | .cluicheproj references .diaapp | **N/A** — No project file changes |
-| System | SED-015 | DiaEditor is pure library, no DiaApplication dependency | **Compliant** — `IPluginLoader` is a pure interface in DiaEditor; `PluginLoaderModule` (DiaApplication subclass) is in CluicheEditor |
+| System | SED-015 | DiaEditor is pure library, no DiaApplicationFlow dependency | **Compliant** — `IPluginLoader` is a pure interface in DiaEditor; `PluginLoaderModule` (DiaApplicationFlow subclass) is in CluicheEditor |
 | System | SED-016 | GameConnectionManager boots clean, Connect() explicit | **Compliant** — Connection indicator is read-only; doesn't affect connection lifecycle |
 | System | SED-017 | EditorManifestLoader static utility with callback | **N/A** — No manifest loading changes |
 

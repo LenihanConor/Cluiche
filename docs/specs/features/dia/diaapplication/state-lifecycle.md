@@ -246,7 +246,7 @@ All state transitions hold mStateMutex to prevent race conditions.
 |----------|--------|---------|------------|
 | PD-001 | Platform | Use StringCRC for all entity/component IDs | ✅ **Compliant** - StateObject uniqueId is StringCRC |
 | AD-003 | Dia App | Namespace convention: `Dia::<Module>::` | ✅ **Compliant** - All code in `Dia::Application::` |
-| SD-002 | DiaApplication System | StateObject base class with explicit state machine | ✅ **Compliant** - This feature implements SD-002 |
+| SD-002 | DiaApplicationFlow System | StateObject base class with explicit state machine | ✅ **Compliant** - This feature implements SD-002 |
 
 ---
 
@@ -271,10 +271,10 @@ All questions answered. Feature is fully specified and implemented.
 ## Files Affected
 
 ### Headers
-- `Dia/DiaApplication/ApplicationStateObject.h` - StateObject class definition
+- `Dia/DiaApplicationFlow/ApplicationStateObject.h` - StateObject class definition
 
 ### Implementation
-- `Dia/DiaApplication/ApplicationStateObject.cpp` - Lifecycle methods
+- `Dia/DiaApplicationFlow/ApplicationStateObject.cpp` - Lifecycle methods
 
 ### Tests
 - `Cluiche/Tests/GoogleTests/Application/TestStateObject.cpp` - Unit tests

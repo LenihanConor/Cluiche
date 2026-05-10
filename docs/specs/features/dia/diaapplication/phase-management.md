@@ -232,15 +232,15 @@ AfterModulesStop();
 |----------|--------|---------|------------|
 | PD-001 | Platform | Use StringCRC for all IDs | ✅ **Compliant** - Phase and module IDs are StringCRC |
 | PD-002 | Platform | ProcessingUnit/Phase/Module architecture | ✅ **Compliant** - Phase is middle layer |
-| SD-001 | DiaApplication | Three-level hierarchy | ✅ **Compliant** - Phase sits between PU and Module |
-| SD-005 | DiaApplication | Phases define module dependencies | ✅ **Compliant** - Phases choose which modules to activate |
+| SD-001 | DiaApplicationFlow | Three-level hierarchy | ✅ **Compliant** - Phase sits between PU and Module |
+| SD-005 | DiaApplicationFlow | Phases define module dependencies | ✅ **Compliant** - Phases choose which modules to activate |
 
 ---
 
 ## Files Affected
 
-- `Dia/DiaApplication/ApplicationPhase.h`
-- `Dia/DiaApplication/ApplicationPhase.cpp`
+- `Dia/DiaApplicationFlow/ApplicationPhase.h`
+- `Dia/DiaApplicationFlow/ApplicationPhase.cpp`
 - `Cluiche/Tests/GoogleTests/Application/TestPhase.cpp`
 
 ---

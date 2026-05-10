@@ -1,0 +1,145 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+  
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Application.cpp" />
+    <ClCompile Include="ApplicationModule.cpp" />
+    <ClCompile Include="ApplicationPhase.cpp" />
+    <ClCompile Include="ApplicationProcessingUnit.cpp" />
+    <ClCompile Include="ApplicationStateObject.cpp" />
+    <ClCompile Include="MessageBus.cpp" />
+    <ClCompile Include="HotReloadManager.cpp" />
+    <ClCompile Include="Introspection\ApplicationIntrospector.cpp" />
+    <ClCompile Include="Loader\ApplicationLoader.cpp" />
+    <ClCompile Include="Manifest\ApplicationManifest.cpp" />
+    <ClCompile Include="Manifest\ApplicationManifestLoader.cpp" />
+    <ClCompile Include="Manifest\ManifestComposer.cpp" />
+    <ClCompile Include="Manifest\ManifestValidator.cpp" />
+    <ClCompile Include="Manifest\ApplicationManifestLoaderV2.cpp" />
+    <ClCompile Include="Manifest\ManifestComposerV2.cpp" />
+    <ClCompile Include="Manifest\ManifestValidatorV2.cpp" />
+    <ClCompile Include="Module.cpp" />
+    <ClCompile Include="ProcessingUnit.cpp" />
+    <ClCompile Include="TypeRegistry.cpp" />
+    <ClCompile Include="Manifest\JsonApplicationManifestSerializer.cpp" />
+    <ClCompile Include="TypeRegistry\ApplicationTypeRegistry.cpp" />
+    <ClCompile Include="Metrics\MetricsCollectorModule.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Application.h" />
+    <ClInclude Include="IApplicationInspectable.h" />
+    <ClInclude Include="Streams\IStreamStore.h" />
+    <ClInclude Include="Streams\FrameStreamStore.h" />
+    <ClInclude Include="Streams\EventStreamStore.h" />
+    <ClInclude Include="Streams\StreamWriter.h" />
+    <ClInclude Include="Streams\StreamReader.h" />
+    <ClInclude Include="Streams\EventStreamWriter.h" />
+    <ClInclude Include="Streams\EventStreamReader.h" />
+    <ClInclude Include="ApplicationModule.h" />
+    <ClInclude Include="ModuleRef.h" />
+    <ClInclude Include="ApplicationPhase.h" />
+    <ClInclude Include="ApplicationProcessingUnit.h" />
+    <ClInclude Include="ApplicationStateObject.h" />
+    <ClInclude Include="MessageBus.h" />
+    <ClInclude Include="Introspection\ApplicationIntrospector.h" />
+    <ClInclude Include="Loader\ApplicationLoader.h" />
+    <ClInclude Include="Manifest\ApplicationManifest.h" />
+    <ClInclude Include="Manifest\ApplicationManifestLoader.h" />
+    <ClInclude Include="Manifest\ManifestComposer.h" />
+    <ClInclude Include="Manifest\ManifestValidator.h" />
+    <ClInclude Include="Manifest\ApplicationManifestV2.h" />
+    <ClInclude Include="Manifest\ApplicationManifestLoaderV2.h" />
+    <ClInclude Include="Manifest\ManifestComposerV2.h" />
+    <ClInclude Include="Manifest\ManifestValidatorV2.h" />
+    <ClInclude Include="Module.h" />
+    <ClInclude Include="ModuleRefV2.h" />
+    <ClInclude Include="ProcessingUnit.h" />
+    <ClInclude Include="RegistrationMacrosV2.h" />
+    <ClInclude Include="TypeRegistry.h" />
+    <ClInclude Include="Manifest\JsonApplicationManifestSerializer.h" />
+    <ClInclude Include="Manifest\TypedImport.h" />
+    <ClInclude Include="TypeRegistry\ApplicationTypeRegistry.h" />
+    <ClInclude Include="DebugDataTypes.h" />
+    <ClInclude Include="Metrics\MetricsCollectorModule.h" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{DD3D58EF-028B-42CB-B837-0042BA30D96F}</ProjectGuid>
+    <RootNamespace>DiaApplicationFlow</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>11.0.51106.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>./;./../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>DEBUG;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <BrowseInformation>true</BrowseInformation>
+    </ClCompile>
+    <Lib>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OutDir)DiaMaths.lib;$(OutDir)DiaCore.lib;$(OutDir)DiaGraphics.lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Lib>
+    <Bscmake>
+      <PreserveSbr>true</PreserveSbr>
+    </Bscmake>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>./;./../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DiaLogger\DiaLogger.vcxproj">
+      <Project>{7a8b9c0d-e1f2-3456-7890-abcdef012345}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaSerializer\DiaSerializer.vcxproj">
+      <Project>{B0C1D2E3-F4A5-6789-BCDE-F01234567891}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

@@ -113,7 +113,7 @@ void SomePlugin::OnLoad(const EditorPluginContext& context) {
 | Dia | AD-003 | Namespace convention `Dia::<Module>::` | **Compliant** — `Dia::Editor::PluginServiceLocator` |
 | DiaEditor | SED-001 | Plugin interface minimal and stable | **Compliant** — service locator is additive; IEditorPlugin unchanged |
 | DiaEditor | SED-013 | Plugin data structs declare kPluginDataTypeId | **Compliant** — same `kUniqueId` pattern for service type resolution |
-| DiaEditor | SED-015 | DiaEditor is a pure library, no DiaApplication dependency | **Compliant** — PluginServiceLocator is a plain class; instance owned by consumer |
+| DiaEditor | SED-015 | DiaEditor is a pure library, no DiaApplicationFlow dependency | **Compliant** — PluginServiceLocator is a plain class; instance owned by consumer |
 
 **All binding decisions: COMPLIANT**
 

@@ -1,11 +1,11 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <gtest/gtest.h>
-#include <DiaApplication/ApplicationProcessingUnit.h>
-#include <DiaApplication/ApplicationPhase.h>
-#include <DiaApplication/ApplicationModule.h>
-#include <DiaApplication/ApplicationError.h>
-#include <DiaApplication/Loader/ApplicationLoader.h>
-#include <DiaApplication/TypeRegistry/ApplicationTypeRegistry.h>
+#include <DiaApplicationFlow/ApplicationProcessingUnit.h>
+#include <DiaApplicationFlow/ApplicationPhase.h>
+#include <DiaApplicationFlow/ApplicationModule.h>
+#include <DiaApplicationFlow/ApplicationError.h>
+#include <DiaApplicationFlow/Loader/ApplicationLoader.h>
+#include <DiaApplicationFlow/TypeRegistry/ApplicationTypeRegistry.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Memory/UniquePtr.h>
 

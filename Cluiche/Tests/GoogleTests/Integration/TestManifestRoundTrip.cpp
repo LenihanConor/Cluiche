@@ -9,16 +9,16 @@
 // verify each direction independently.
 
 #include <gtest/gtest.h>
-#include <DiaApplication/Manifest/ApplicationManifest.h>
-#include <DiaApplication/Manifest/ApplicationManifestLoader.h>
-#include <DiaApplication/TypeRegistry/ApplicationTypeRegistry.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifest.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifestLoader.h>
+#include <DiaApplicationFlow/TypeRegistry/ApplicationTypeRegistry.h>
 #include <DiaApplicationEditor/ManifestSerializer.h>
 #include <DiaApplicationEditor/ManifestEditorData.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
-#include <DiaApplication/ApplicationProcessingUnit.h>
-#include <DiaApplication/ApplicationPhase.h>
-#include <DiaApplication/ApplicationModule.h>
+#include <DiaApplicationFlow/ApplicationProcessingUnit.h>
+#include <DiaApplicationFlow/ApplicationPhase.h>
+#include <DiaApplicationFlow/ApplicationModule.h>
 
 #include <sstream>
 

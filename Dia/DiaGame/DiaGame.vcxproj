@@ -87,7 +87,7 @@
       <Project>{B0C1D2E3-F4A5-6789-BCDE-F01234567891}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="..\DiaApplication\DiaApplication.vcxproj">
+    <ProjectReference Include="..\DiaApplicationFlow\DiaApplicationFlow.vcxproj">
       <Project>{DD3D58EF-028B-42CB-B837-0042BA30D96F}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>

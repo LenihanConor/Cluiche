@@ -134,7 +134,7 @@ No dedicated panel. Load/Save is accessed via:
 | SD-ACE-004 | All mutations are IEditorCommand | **Compliant** — load resets command history; save marks save point; neither is a mutation command itself |
 | SD-ACE-005 | Output to Cluiche/out/CluicheEditor/DiaAssetCatalogueEditor/ | **Compliant** — session context written to this path |
 | SED-009 | Undo/redo via IEditorCommand + CommandHistory | **Compliant** — load clears history; save marks save point; dirty flag tracks via IsAtSavePoint() |
-| SED-015 | DiaEditor is pure C++ library, no DiaApplication dependency | **Compliant** — no DiaApplication types used |
+| SED-015 | DiaEditor is pure C++ library, no DiaApplicationFlow dependency | **Compliant** — no DiaApplicationFlow types used |
 | SED-020 | Plugin output to Cluiche/out/CluicheEditor/\<PluginName\>/ | **Compliant** — same as SD-ACE-005 |
 | SED-021 | Per-plugin session context via .context.json | **Compliant** — SessionContext reads/writes `.context.json` with last manifest path |
 

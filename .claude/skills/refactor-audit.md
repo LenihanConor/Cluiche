@@ -29,7 +29,7 @@ If no slug is provided:
 
 Derive the slug if a full name is given:
 - Lowercase, replace spaces with underscores
-- Example: "DiaApplication" → `dia_application`
+- Example: "DiaApplicationFlow" → `dia_application`
 
 If `docs/refactors/<slug>/outputs/audit.json` already exists:
 - Warn: "audit.json already exists for this session. Regenerate? (yes/no)"
@@ -132,7 +132,7 @@ Next step: /refactor-plan <slug>
 
 ## Cluiche Context
 
-Engine modules: DiaCore, DiaMaths, DiaGeometry2D, DiaGraphics, DiaWindow, DiaInput, DiaUI/Awesomium/CEF/Ultralight, DiaApplication, DiaAPI, DiaSFML, DiaLogger, DiaRigidBody2D, DiaSoftBody2D, DiaWebSocket, DiaEditor, DiaPython
+Engine modules: DiaCore, DiaMaths, DiaGeometry2D, DiaGraphics, DiaWindow, DiaInput, DiaUI/Awesomium/CEF/Ultralight, DiaApplicationFlow, DiaAPI, DiaSFML, DiaLogger, DiaRigidBody2D, DiaSoftBody2D, DiaWebSocket, DiaEditor, DiaPython
 
 Applications: CluicheTest (demo + testbed), CluicheEditor (plugin editor), GoogleTests
 

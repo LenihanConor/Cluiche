@@ -6,7 +6,7 @@
 |-------|------|------|
 | Platform | Cluiche | @docs/specs/platform/Cluiche.md |
 | Application | Dia | @docs/specs/applications/dia.md |
-| System | DiaApplication | @docs/specs/systems/dia/diaapplication.md |
+| System | DiaApplicationFlow | @docs/specs/systems/dia/diaapplication.md |
 | Feature | **Stage Manifests** | (this document) |
 
 **Status:** `Done`
@@ -249,7 +249,7 @@ The IStage interface keeps the same shape as ILevel — constructor still receiv
 ## Dependencies
 
 ### Required Modules
-- **DiaApplication/Manifest** — manifest loader, serializer, validator
+- **DiaApplicationFlow/Manifest** — manifest loader, serializer, validator
 - **DiaCore/CRC** — StringCRC for stage and phase IDs
 - **DiaCore/Containers** — DynamicArrayC for stage phases/modules
 
@@ -296,11 +296,11 @@ The IStage interface keeps the same shape as ILevel — constructor still receiv
 - `Cluiche/CluicheTest/Stages/DummyStage/` → `Cluiche/CluicheTest/Stages/DummyStage/`
 - All files within: Level.h/.cpp, phase files, namespace references
 
-### Modified (DiaApplication)
-- `Dia/DiaApplication/Manifest/ApplicationManifestLoader.h/.cpp` — stage manifest merge logic, requires_phases validation
-- `Dia/DiaApplication/Manifest/JsonApplicationManifestSerializer.cpp` — parse/write stage schema fields including requires_phases
-- `Dia/DiaApplication/Manifest/ManifestValidator.h/.cpp` — validate stage manifest structure, requires_phases contracts
-- `Dia/DiaApplication/Introspection/ApplicationIntrospector.h/.cpp` — auto-generate stage manifests from runtime topology
+### Modified (DiaApplicationFlow)
+- `Dia/DiaApplicationFlow/Manifest/ApplicationManifestLoader.h/.cpp` — stage manifest merge logic, requires_phases validation
+- `Dia/DiaApplicationFlow/Manifest/JsonApplicationManifestSerializer.cpp` — parse/write stage schema fields including requires_phases
+- `Dia/DiaApplicationFlow/Manifest/ManifestValidator.h/.cpp` — validate stage manifest structure, requires_phases contracts
+- `Dia/DiaApplicationFlow/Introspection/ApplicationIntrospector.h/.cpp` — auto-generate stage manifests from runtime topology
 
 ### New (Data)
 - `Cluiche/CluicheTest/Data/Manifests/stages/dummy_stage.diaapp` — DummyStage manifest
@@ -328,11 +328,11 @@ The IStage interface keeps the same shape as ILevel — constructor still receiv
 | PD-008 | Platform | Directory.Build.props owns build settings | **Compliant** — no build setting changes. |
 | PD-009 | Platform | Output under Cluiche/out/ | **Compliant** — no output path changes. |
 | AD-002 | Dia App | No STL in public APIs | **Compliant** — see PD-004. |
-| AD-003 | Dia App | Namespace Dia::\<Module\>:: | **Compliant** — DiaApplication code stays in Dia::Application::. CluicheTest code in Cluiche::DummyStage::. |
-| SD-001 | DiaApplication | PU/Phase/Module three-level hierarchy | **Compliant** — stage phases are Phase objects injected into PUs. The three levels are unchanged. |
-| SD-004 | DiaApplication | Modules identified by StringCRC | **Compliant** — stage modules use StringCRC instance IDs. |
-| SD-011 | DiaApplication | PU parent-child tree | **Compliant** — stages inject into PUs in the tree. Stage manifests are imported by the root or any PU's manifest. |
-| SD-012 | DiaApplication | Stages inject phases, don't own PUs | **Compliant** — this feature implements SD-012. Stage manifests declare phase/module injections only. |
+| AD-003 | Dia App | Namespace Dia::\<Module\>:: | **Compliant** — DiaApplicationFlow code stays in Dia::Application::. CluicheTest code in Cluiche::DummyStage::. |
+| SD-001 | DiaApplicationFlow | PU/Phase/Module three-level hierarchy | **Compliant** — stage phases are Phase objects injected into PUs. The three levels are unchanged. |
+| SD-004 | DiaApplicationFlow | Modules identified by StringCRC | **Compliant** — stage modules use StringCRC instance IDs. |
+| SD-011 | DiaApplicationFlow | PU parent-child tree | **Compliant** — stages inject into PUs in the tree. Stage manifests are imported by the root or any PU's manifest. |
+| SD-012 | DiaApplicationFlow | Stages inject phases, don't own PUs | **Compliant** — this feature implements SD-012. Stage manifests declare phase/module injections only. |
 
 ---
 
@@ -345,7 +345,7 @@ The IStage interface keeps the same shape as ILevel — constructor still receiv
 | 3 | Transition Bridging | Stage transitions reference phases from both the stage and the parent PU (e.g., MainBootStrapPhase -> DummyStage::MainLoadPhase). How does the loader validate these cross-boundary transitions? | Two layers of validation: (1) `requires_phases` is validated before merge — if the stage declares it requires "MainBootStrapPhase" and that phase doesn't exist in the target PU, load fails immediately with a clear error. (2) After merge, standard phase transition validation catches any remaining invalid references. The requires_phases contract makes cross-boundary dependencies explicit rather than buried in transition edges. |
 | 4 | Multiple Stages | Can multiple stages inject into the same PU? | Yes — each stage's phases are appended to the PU. Instance ID uniqueness across stages is enforced. Transition bridging between stages is the application's responsibility (stage A's exit -> stage B's entry). |
 | 5 | Stage Loading Order | Does the order of stage imports matter? | For the merge: no — phases are appended and transitions are additive. For runtime behavior: the application controls which stage's entry phase to transition to. Import order doesn't affect execution order. |
-| 6 | Rename Blast Radius | Is the Level->Stage rename limited to CluicheTest, or does it affect DiaApplication? | CluicheTest and CluicheKernel only. DiaApplication has no "level" or "stage" concept — it deals with PUs, phases, and modules. The stage concept lives in the application layer (CluicheKernel), not the engine. |
+| 6 | Rename Blast Radius | Is the Level->Stage rename limited to CluicheTest, or does it affect DiaApplicationFlow? | CluicheTest and CluicheKernel only. DiaApplicationFlow has no "level" or "stage" concept — it deals with PUs, phases, and modules. The stage concept lives in the application layer (CluicheKernel), not the engine. |
 | 7 | Manifest Parity | What if the code-based stage structure diverges from the manifest? | It can't — the manifest is auto-generated from the code-constructed topology via ApplicationIntrospector. Code is the single source of truth. The manifest is a derived artifact regenerated whenever the stage is constructed. No hand-authored stage manifests means no divergence. |
 | 8 | Stage Metadata in Merged Manifest | After merge, how does the editor know which phases came from which stage? | Via sourceManifestPath (Phase A provenance) + metadata.type == "stage". The editor groups phases by sourceManifestPath and renders stage boundaries. Stage name from metadata provides the display label. |
 

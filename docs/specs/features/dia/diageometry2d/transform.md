@@ -22,7 +22,7 @@
 
 Migrate `Transform2D.h/.cpp/.inl` to `Dia/DiaGeometry2D/Transform/Transform.h/.cpp/.inl`. Rename the class from `Transform2D` to `Transform`. Update the namespace. Remove from `DiaMaths.vcxproj`; add to `DiaGeometry2D.vcxproj`. Update all callers.
 
-`Transform` is a plain value type — it is **not** a component (`IComponent`) and carries no DiaApplication dependency. Game code that wants a transform component wraps it in a Module or Component at the application layer.
+`Transform` is a plain value type — it is **not** a component (`IComponent`) and carries no DiaApplicationFlow dependency. Game code that wants a transform component wraps it in a Module or Component at the application layer.
 
 ### Key Design Points
 

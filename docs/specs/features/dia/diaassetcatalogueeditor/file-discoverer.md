@@ -137,7 +137,7 @@ namespace Dia::AssetCatalogue::Editor
 | SD-ACE-004 | All mutations are IEditorCommand | **Compliant** — bulk-add uses CompoundCommand containing CreateRecordCommands, all executed via CommandHistory |
 | SD-ACE-005 | Output to Cluiche/out/CluicheEditor/DiaAssetCatalogueEditor/ | **N/A** — no file output from discovery |
 | SED-009 | Undo/redo via IEditorCommand + CommandHistory | **Compliant** — CompoundCommand allows undoing entire bulk-add in one step |
-| SED-015 | DiaEditor is pure C++ library, no DiaApplication dependency | **Compliant** — no DiaApplication types used |
+| SED-015 | DiaEditor is pure C++ library, no DiaApplicationFlow dependency | **Compliant** — no DiaApplicationFlow types used |
 | SED-020 | Plugin output to Cluiche/out/CluicheEditor/\<PluginName\>/ | **N/A** — no file output |
 | SED-021 | Per-plugin session context via .context.json | **N/A** — discovery results are transient; root path could be persisted in context by Feature 1 in the future |
 

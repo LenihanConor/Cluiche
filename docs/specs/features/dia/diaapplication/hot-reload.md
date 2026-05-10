@@ -262,16 +262,16 @@ bool IsVersionCompatible(const char* oldVersion, const char* newVersion) {
 | Decision | Source | Summary | Compliance |
 |----------|--------|---------|------------|
 | PD-001 | Platform | Use StringCRC for all IDs | ✅ **Compliant** - Module IDs are StringCRC |
-| SD-009 | DiaApplication | Hot reload requires module opt-in | ✅ **Compliant** - CanHotReload() must return true |
+| SD-009 | DiaApplicationFlow | Hot reload requires module opt-in | ✅ **Compliant** - CanHotReload() must return true |
 
 ---
 
 ## Files Affected
 
-- `Dia/DiaApplication/HotReloadManager.h`
-- `Dia/DiaApplication/HotReloadManager.cpp`
-- `Dia/DiaApplication/ApplicationModule.h` (CanHotReload, SaveState, RestoreState)
-- `Dia/DiaApplication/ApplicationProcessingUnit.h` (GetHotReloadManager)
+- `Dia/DiaApplicationFlow/HotReloadManager.h`
+- `Dia/DiaApplicationFlow/HotReloadManager.cpp`
+- `Dia/DiaApplicationFlow/ApplicationModule.h` (CanHotReload, SaveState, RestoreState)
+- `Dia/DiaApplicationFlow/ApplicationProcessingUnit.h` (GetHotReloadManager)
 - `Cluiche/Tests/GoogleTests/Application/TestHotReload.cpp`
 
 ---

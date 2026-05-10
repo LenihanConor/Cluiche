@@ -103,7 +103,7 @@ A single dockable CEF panel named "Asset State Table" rendered within the DiaAss
 | SD-ARED-004 | Output to Cluiche/out/CluicheEditor/DiaAssetRuntimeEditor/ | Compliant -- session context path follows this rule |
 | SD-ARED-005 | All panels disabled when disconnected | Compliant -- panel greyed with "Not connected" message on disconnect |
 | SED-009 | Undo/redo | Not applicable -- read-only panel, no mutations to undo |
-| SED-015 | DiaEditor is pure C++ library, no DiaApplication dependency | Compliant -- implements IEditorPlugin, no DiaApplication types |
+| SED-015 | DiaEditor is pure C++ library, no DiaApplicationFlow dependency | Compliant -- implements IEditorPlugin, no DiaApplicationFlow types |
 | SED-020 | Plugin output to Cluiche/out/CluicheEditor/\<PluginName\>/ | Compliant -- SD-ARED-004 |
 | SED-021 | Per-plugin session context via .context.json | Compliant -- poll interval persisted in .context.json |
 

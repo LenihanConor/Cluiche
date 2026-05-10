@@ -3,13 +3,13 @@
 // Tests manifest loading, validation, and instantiation
 
 #include <gtest/gtest.h>
-#include <DiaApplication/Manifest/ApplicationManifestLoader.h>
-#include <DiaApplication/Manifest/ApplicationManifest.h>
-#include <DiaApplication/Manifest/ManifestValidator.h>
-#include <DiaApplication/TypeRegistry/ApplicationTypeRegistry.h>
-#include <DiaApplication/ApplicationProcessingUnit.h>
-#include <DiaApplication/ApplicationPhase.h>
-#include <DiaApplication/ApplicationModule.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifestLoader.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifest.h>
+#include <DiaApplicationFlow/Manifest/ManifestValidator.h>
+#include <DiaApplicationFlow/TypeRegistry/ApplicationTypeRegistry.h>
+#include <DiaApplicationFlow/ApplicationProcessingUnit.h>
+#include <DiaApplicationFlow/ApplicationPhase.h>
+#include <DiaApplicationFlow/ApplicationModule.h>
 #include <DiaCore/CRC/StringCRC.h>
 
 using namespace Dia::Application;

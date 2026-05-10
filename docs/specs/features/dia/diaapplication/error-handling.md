@@ -212,15 +212,15 @@ void ProcessingUnit::ReportError(const ErrorInfo& error) {
 | Decision | Source | Summary | Compliance |
 |----------|--------|---------|------------|
 | PD-001 | Platform | Use StringCRC for all IDs | ✅ **Compliant** - ErrorInfo.contextId is StringCRC |
-| SD-008 | DiaApplication | Error history limited to 100 | ✅ **Compliant** - Implements SD-008 |
+| SD-008 | DiaApplicationFlow | Error history limited to 100 | ✅ **Compliant** - Implements SD-008 |
 
 ---
 
 ## Files Affected
 
-- `Dia/DiaApplication/ApplicationError.h`
-- `Dia/DiaApplication/ApplicationProcessingUnit.h` (error methods)
-- `Dia/DiaApplication/ApplicationProcessingUnit.cpp` (error implementation)
+- `Dia/DiaApplicationFlow/ApplicationError.h`
+- `Dia/DiaApplicationFlow/ApplicationProcessingUnit.h` (error methods)
+- `Dia/DiaApplicationFlow/ApplicationProcessingUnit.cpp` (error implementation)
 - `Cluiche/Tests/GoogleTests/Application/TestErrorHandling.cpp`
 
 ---

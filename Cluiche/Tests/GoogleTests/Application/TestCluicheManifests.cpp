@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include <DiaApplication/Manifest/ApplicationManifest.h>
-#include <DiaApplication/Manifest/ApplicationManifestLoader.h>
-#include <DiaApplication/TypeRegistry/ApplicationTypeRegistry.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifest.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifestLoader.h>
+#include <DiaApplicationFlow/TypeRegistry/ApplicationTypeRegistry.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <json/json.h>
 

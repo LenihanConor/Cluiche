@@ -6,7 +6,10 @@ Derived from spec status across `docs/specs/`. When a spec moves to Done, move i
 
 ## In Progress
 
-_Nothing currently in progress._
+| Item | Spec | What's next |
+|------|------|-------------|
+| DiaApplicationFlow | [diaapplicationflow.md](specs/systems/dia/diaapplicationflow.md) | All 8 feature specs Approved. Next: implement P1 (Framework Core: Module Lifecycle + Stage System + Error Handling). Research: `docs/research/diapp_simplif/summary.md` |
+| CluicheTest Application Flow | [applicationflow.md](specs/systems/cluichetest/applicationflow.md) | All 5 feature specs Approved. Blocked on DiaApplicationFlow implementation. |
 
 ---
 
@@ -18,7 +21,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 | System | Spec | Features | Depends On |
 |--------|------|----------|------------|
-| DiaApplicationEditor | [diaapplicationeditor.md](specs/systems/dia/diaapplicationeditor.md) | 15 features, all Approved — **not yet implemented** | DiaEditor ✅, DiaWebSocket ✅, DiaUICEF ✅, DiaApplication ✅ |
+| DiaApplicationFlowEditor | [diaapplicationfloweditor.md](specs/systems/dia/diaapplicationfloweditor.md) | 15 features (Draft) — blocked on DiaApplicationFlow implementation | DiaEditor ✅, DiaWebSocket ✅, DiaApplicationFlow (in progress) |
 
 ---
 
@@ -36,6 +39,10 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 | Item | Spec | What's needed |
 |------|------|---------------|
+| DiaEntity system | TBD | Needs `/spec-system` — layered ECS (components = config + asset trigger + interface). Depends on HandlePool (DiaCore), DiaMailbox. Remove old IComponent first. Research: `docs/research/entity_system/summary.md` |
+| DiaMailbox system | TBD | Needs `/spec-system` — standalone typed deferred messaging with structured addressing (Entity/All/ComponentType/Self). DiaEntity depends on this. Research: `docs/research/entity_system/summary.md` |
+| HandlePool\<T\> (DiaCore) | TBD | Needs `/spec-feature` under DiaCore — generic freelist + generation bump allocator, companion to existing `DiaCore/Containers/Handle.h`. DiaEntity and DiaMailbox depend on this. |
+| Old IComponent removal | TBD | Needs `/spec-feature` — remove `DiaCore/Architecture/Components/` (IComponent, IComponentObject, IComponentFactory). Migrate StateMachineComponent + SkeletonComponent. Prerequisite for DiaEntity. |
 | Asset Lifecycle Management | [asset-lifecycle-management.md](specs/features/dia/diaassetruntime/asset-lifecycle-management.md) | Draft — needs `/spec-review` then Approval. Extends state machine with `IAssetTypeHandler` dispatch, `Loading`/`Failed` states, progress query. |
 | DiaAPI quit command | TBD | Needed for DiaTestHarness graceful shutdown. No quit command exists today (exit is UI-driven). Needs `/spec-feature` under DiaAPI |
 | CluicheTest TestStages system | TBD | Needs `/spec-system` under CluicheTest — multi-stage test stages for deep engine validation (DiaRigidBody2D first). Open questions: phase vs level vs own PU; reporting mechanism. Research: `docs/research/e2e_testing/summary.md` |
@@ -48,7 +55,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | Item | Notes |
 |------|-------|
 | DiaAssetRuntime — Hot reload path | Asset Lifecycle Management adds `Failed → Loading` retry but no `Loaded → Loading → Loaded` path. Still need a `ReloadAsset(assetId)` for live iteration (future feature on top of lifecycle management). |
-| DiaApplication — Feature 6: Compile-Time Dependency Validation | Deferred by user ("let's come back and talk about 6") |
+| DiaApplicationFlow — Feature 6: Compile-Time Dependency Validation | Deferred by user ("let's come back and talk about 6") |
 | HotReloadManager — `CollectDependentModules()` / `UpdateDependencyReferences()` | Placeholder stubs; needs real implementation |
 | `Dia::Core::Blackboard` — general-purpose key-value store | Identified during DiaStateMachine research; useful for AI, animation, gameplay. Needs `/spec-feature` under DiaCore. |
 | DiaStateMachine — `MarkValid()` exposed on definitions | Added to support serializer load path; could be misused to bypass `Validate()`. Consider making package-internal if access control becomes a concern. |

@@ -127,7 +127,7 @@ Static utility — no state, no lifetime management. Registered in `EditorView::
 | AD-003 | `Dia::<Module>::` namespace | Compliant — `Dia::Editor::FileDialogHandler` |
 | SED-001 | Minimal stable plugin interface | Compliant — no IEditorPlugin changes; plugins call through existing bridge |
 | SED-003 | Plugins at `Dia/Dia<System>Editor/` | N/A — this is framework code in DiaEditor, not a plugin |
-| SED-015 | DiaEditor is pure library, no DiaApplication dep | Compliant — `FileDialogHandler` is static utility, no Module/Phase/PU |
+| SED-015 | DiaEditor is pure library, no DiaApplicationFlow dep | Compliant — `FileDialogHandler` is static utility, no Module/Phase/PU |
 | SED-020 | Plugin output under `Cluiche/out/CluicheEditor/<Plugin>/` | N/A — no file output |
 
 ## Open Questions

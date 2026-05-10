@@ -24,7 +24,7 @@ The Dia engine is a modular C++ framework organized into subsystems:
 **Core Infrastructure:**
 - **DiaCore** - Foundation library (containers, type system, serialization, memory management, CRC hashing)
 - **DiaMaths** - Math library (vectors, matrices, shapes for 2D/3D)
-- **DiaApplication** - Application framework (ProcessingUnit/Phase/Module architecture)
+- **DiaApplicationFlow** - Application framework (ProcessingUnit/Phase/Module architecture)
 
 **Rendering & Graphics:**
 - **DiaGraphics** - Graphics abstraction layer (ICanvas, Frame)
@@ -64,7 +64,7 @@ See @docs/specs/applications/dia.md for full Dia engine specification.
 - **Singleton**: `Dia::Core::Singleton<T>`
 - **Observer**: `Observer` / `ObserverSubject`
 - **Factory**: Component factory registry pattern
-- **State Machine**: Phase transition system in DiaApplication
+- **State Machine**: Phase transition system in DiaApplicationFlow
 - **Component-Based Architecture**: Composition over inheritance
 
 ## Architecture Principles

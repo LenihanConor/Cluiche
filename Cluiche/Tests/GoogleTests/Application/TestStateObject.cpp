@@ -8,9 +8,9 @@
 // (which provides stub DoStart/DoUpdate/DoStop implementations).
 ////////////////////////////////////////////////////////////////////////////////
 #include <gtest/gtest.h>
-#include <DiaApplication/ApplicationStateObject.h>
-#include <DiaApplication/ApplicationModule.h>
-#include <DiaApplication/ApplicationProcessingUnit.h>
+#include <DiaApplicationFlow/ApplicationStateObject.h>
+#include <DiaApplicationFlow/ApplicationModule.h>
+#include <DiaApplicationFlow/ApplicationProcessingUnit.h>
 
 using namespace Dia::Application;
 using namespace Dia::Core;
@@ -75,7 +75,7 @@ static void ReadyForStart(StateObjectTestPU& pu, MinimalModule& mod)
 
 // 1. DefaultConstruction — freshly constructed module is in kConstructed,
 //    HasStarted() == false.
-TEST(DiaApplication_StateObject, DefaultConstruction)
+TEST(DiaApplicationFlow_StateObject, DefaultConstruction)
 {
     StateObjectTestPU pu;
     MinimalModule mod(&pu, StringCRC("ModDefault"));
@@ -86,7 +86,7 @@ TEST(DiaApplication_StateObject, DefaultConstruction)
 
 // 2. Start_TransitionsToRunning — after BuildDependancies then Start(),
 //    state is kRunning and HasStarted() == true.
-TEST(DiaApplication_StateObject, Start_TransitionsToRunning)
+TEST(DiaApplicationFlow_StateObject, Start_TransitionsToRunning)
 {
     StateObjectTestPU pu;
     MinimalModule mod(&pu, StringCRC("ModStart"));
@@ -103,7 +103,7 @@ TEST(DiaApplication_StateObject, Start_TransitionsToRunning)
 
 // 3. Stop_TransitionsToStopped — after Start() then Stop(), state is
 //    kNotRunning and HasStarted() == false.
-TEST(DiaApplication_StateObject, Stop_TransitionsToStopped)
+TEST(DiaApplicationFlow_StateObject, Stop_TransitionsToStopped)
 {
     StateObjectTestPU pu;
     MinimalModule mod(&pu, StringCRC("ModStop"));
@@ -121,7 +121,7 @@ TEST(DiaApplication_StateObject, Stop_TransitionsToStopped)
 
 // 4. DoubleStart_Asserts — calling Start() twice without an intervening
 //    Stop() triggers a DIA_ASSERT (process terminates in Debug builds).
-TEST(DiaApplication_StateObject, DoubleStart_Asserts)
+TEST(DiaApplicationFlow_StateObject, DoubleStart_Asserts)
 {
     EXPECT_DEATH(
     {
@@ -135,7 +135,7 @@ TEST(DiaApplication_StateObject, DoubleStart_Asserts)
 
 // 5. StopWithoutStart_Asserts — calling Stop() from kNotRunning (never
 //    started) triggers a DIA_ASSERT.
-TEST(DiaApplication_StateObject, StopWithoutStart_Asserts)
+TEST(DiaApplicationFlow_StateObject, StopWithoutStart_Asserts)
 {
     EXPECT_DEATH(
     {
@@ -148,7 +148,7 @@ TEST(DiaApplication_StateObject, StopWithoutStart_Asserts)
 
 // 6. IsStarted_BeforeStart_ReturnsFalse — HasStarted() is false before any
 //    Start() call (in kConstructed and kNotRunning states).
-TEST(DiaApplication_StateObject, IsStarted_BeforeStart_ReturnsFalse)
+TEST(DiaApplicationFlow_StateObject, IsStarted_BeforeStart_ReturnsFalse)
 {
     StateObjectTestPU pu;
     MinimalModule mod(&pu, StringCRC("ModIsStartedPre"));
@@ -162,7 +162,7 @@ TEST(DiaApplication_StateObject, IsStarted_BeforeStart_ReturnsFalse)
 
 // 7. IsStarted_AfterStart_ReturnsTrue — HasStarted() is true immediately
 //    after a synchronous Start() call.
-TEST(DiaApplication_StateObject, IsStarted_AfterStart_ReturnsTrue)
+TEST(DiaApplicationFlow_StateObject, IsStarted_AfterStart_ReturnsTrue)
 {
     StateObjectTestPU pu;
     MinimalModule mod(&pu, StringCRC("ModIsStartedPost"));
@@ -175,7 +175,7 @@ TEST(DiaApplication_StateObject, IsStarted_AfterStart_ReturnsTrue)
 
 // 8. IsStopped_BeforeStop_ReturnsFalse — while running, GetState() is
 //    kRunning, not kNotRunning.
-TEST(DiaApplication_StateObject, IsStopped_BeforeStop_ReturnsFalse)
+TEST(DiaApplicationFlow_StateObject, IsStopped_BeforeStop_ReturnsFalse)
 {
     StateObjectTestPU pu;
     MinimalModule mod(&pu, StringCRC("ModIsStoppedPre"));
@@ -187,7 +187,7 @@ TEST(DiaApplication_StateObject, IsStopped_BeforeStop_ReturnsFalse)
 }
 
 // 9. IsStopped_AfterStop_ReturnsTrue — after Stop(), state is kNotRunning.
-TEST(DiaApplication_StateObject, IsStopped_AfterStop_ReturnsTrue)
+TEST(DiaApplicationFlow_StateObject, IsStopped_AfterStop_ReturnsTrue)
 {
     StateObjectTestPU pu;
     MinimalModule mod(&pu, StringCRC("ModIsStoppedPost"));
@@ -201,7 +201,7 @@ TEST(DiaApplication_StateObject, IsStopped_AfterStop_ReturnsTrue)
 
 // 10. FullLifecycle — complete Start -> Stop round-trip leaves the object in
 //     kNotRunning with DoStart/DoStop each called exactly once.
-TEST(DiaApplication_StateObject, FullLifecycle_CorrectFinalState)
+TEST(DiaApplicationFlow_StateObject, FullLifecycle_CorrectFinalState)
 {
     StateObjectTestPU pu;
     MinimalModule mod(&pu, StringCRC("ModFullCycle"));

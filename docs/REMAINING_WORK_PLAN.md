@@ -208,7 +208,7 @@ Comprehensive plan for completing the Cluiche documentation.
 ### All Files Remaining (8 files)
 
 25. `/docs/07-subsystems/dia-application/overview.md`
-    - **Content:** DiaApplication deep dive (Module/Phase/PU internals)
+    - **Content:** DiaApplicationFlow deep dive (Module/Phase/PU internals)
     - **Estimated Lines:** ~400 lines
     - **Effort:** Medium (2-3 hours)
 
@@ -400,7 +400,7 @@ Comprehensive plan for completing the Cluiche documentation.
 **Files:** 8 deep dive docs
 
 **Order:**
-1. DiaApplication deep dive - 2 files
+1. DiaApplicationFlow deep dive - 2 files
 2. DiaCore deep dive - 2 files
 3. DiaMaths deep dive - 3 files
 4. DiaGraphics deep dive - 1 file

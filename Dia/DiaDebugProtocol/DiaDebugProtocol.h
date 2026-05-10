@@ -7,7 +7,7 @@
 #pragma warning(pop)
 #include "DiaProtobuf/ProtoJsonCodec.h"
 #include "DiaCore/Time/TimeAbsolute.h"
-#include "DiaApplication/Metrics/MetricsCollectorModule.h"
+#include "DiaApplicationFlow/Metrics/MetricsCollectorModule.h"
 
 #include <cstdint>
 

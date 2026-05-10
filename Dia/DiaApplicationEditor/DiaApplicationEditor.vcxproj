@@ -87,7 +87,7 @@
     <ProjectReference Include="..\DiaEditor\DiaEditor.vcxproj">
       <Project>{f1a2b3c4-d5e6-7890-abcd-ef1234567890}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\DiaApplication\DiaApplication.vcxproj">
+    <ProjectReference Include="..\DiaApplicationFlow\DiaApplicationFlow.vcxproj">
       <Project>{dd3d58ef-028b-42cb-b837-0042ba30d96f}</Project>
     </ProjectReference>
     <ProjectReference Include="..\DiaGame\DiaGame.vcxproj">

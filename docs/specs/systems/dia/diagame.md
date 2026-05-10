@@ -5,7 +5,7 @@
 
 ## Purpose
 
-DiaGame is the game project system that owns the `.diagame` and `.diastage` file formats, their data types, serialization (Load + Save), and composition/loading APIs. It represents the "game project" layer above DiaApplication — where DiaApplication defines *how* an app runs (PU/Phase/Module), DiaGame defines *what* a game project is (its manifest, stages, config, and imports).
+DiaGame is the game project system that owns the `.diagame` and `.diastage` file formats, their data types, serialization (Load + Save), and composition/loading APIs. It represents the "game project" layer above DiaApplicationFlow — where DiaApplicationFlow defines *how* an app runs (PU/Phase/Module), DiaGame defines *what* a game project is (its manifest, stages, config, and imports).
 
 The driving principle: **serialization lives beside its object**. Every data type owns its own serializer at the same module level.
 
@@ -16,14 +16,14 @@ The driving principle: **serialization lives beside its object**. Every data typ
 - Own the `.diastage` JSON file format (name, manifest path)
 - Provide round-trip `ISerializer` implementations for both formats (Load + Save)
 - Preserve unknown config fields via `rawConfig` for forward compatibility
-- Provide `GameFileComposer` — loads .diagame, delegates import resolution to DiaApplication's `ManifestComposer`
+- Provide `GameFileComposer` — loads .diagame, delegates import resolution to DiaApplicationFlow's `ManifestComposer`
 - Provide `GameLoader` — high-level API to load a full ProcessingUnit tree from a .diagame file
 - Provide `DiaGameManifestLoader` — low-level file loading for .diagame and .diastage
 
 ## Non-Responsibilities
 
-- Application structure (PU/Phase/Module) — owned by DiaApplication
-- Manifest composition and merge logic (.diaapp resolution, stage merge, cycle detection) — owned by DiaApplication's `ManifestComposer`
+- Application structure (PU/Phase/Module) — owned by DiaApplicationFlow
+- Manifest composition and merge logic (.diaapp resolution, stage merge, cycle detection) — owned by DiaApplicationFlow's `ManifestComposer`
 - Editor UI for editing game files — owned by DiaApplicationEditor
 - Runtime asset loading — owned by DiaAssetRuntime
 - Game-specific logic (save slots, player progress) — owned by game applications
@@ -125,12 +125,12 @@ namespace Dia::Game {
 
 | Dependency | What DiaGame uses from it |
 |-----------|--------------------------|
-| DiaApplication | `TypedImport`, `ManifestComposer::ComposeFromTypedImports`, `ApplicationManifest`, `ManifestValidator`, `ApplicationManifestLoader`, `ApplicationTypeRegistry`, `ProcessingUnit` |
+| DiaApplicationFlow | `TypedImport`, `ManifestComposer::ComposeFromTypedImports`, `ApplicationManifest`, `ManifestValidator`, `ApplicationManifestLoader`, `ApplicationTypeRegistry`, `ProcessingUnit` |
 | DiaSerializer | `ISerializer`, `SerializeResult` |
 | DiaCore | Containers (`DynamicArrayC`, `String256`, `String512`), `StringCRC`, JSON (jsoncpp) |
 | DiaLogger | `DIA_LOG_*` macros |
 
-**Dependency direction:** DiaGame depends on DiaApplication (not the reverse). DiaApplication has no knowledge of DiaGame types.
+**Dependency direction:** DiaGame depends on DiaApplicationFlow (not the reverse). DiaApplicationFlow has no knowledge of DiaGame types.
 
 ## File Formats
 
@@ -163,7 +163,7 @@ namespace Dia::Game {
 
 | Feature | Description | Spec | Status |
 |---------|-------------|------|--------|
-| DiaGame File Format | .diagame and .diastage file formats, parsing, typed imports | [diagame-file-format.md](../../features/dia/diaapplication/diagame-file-format.md) | Done (migrated from DiaApplication) |
+| DiaGame File Format | .diagame and .diastage file formats, parsing, typed imports | [diagame-file-format.md](../../features/dia/diaapplication/diagame-file-format.md) | Done (migrated from DiaApplicationFlow) |
 | Game Serializers | JsonDiaGameSerializer + JsonDiaStageSerializer with round-trip support | — | Done |
 | GameFileComposer | Orchestrates .diagame loading + import resolution | — | Done |
 | GameLoader | High-level PU instantiation from .diagame | — | Done |
@@ -192,7 +192,7 @@ namespace Dia::Game {
 | 2 | rawConfig | Is Json::Value* on a public struct acceptable given AD-002 (no STL in APIs)? | Json::Value is from jsoncpp (external dependency), not STL. The pointer is nullable and owned. ApplicationManifest already uses this pattern for metadata. Acceptable. |
 | 3 | Growth | Should game state persistence (save/load player progress) live in DiaGame? | No — game state is game-specific. DiaGame owns project structure, not runtime state. A future DiaGameState module could exist for shared save infrastructure. |
 | 4 | Config | Should DiaGameConfig grow typed fields or stay minimal with rawConfig? | Grow typed fields for well-known config (path_aliases, ultralight). rawConfig provides forward compatibility for new fields before they get typed. Both coexist. |
-| 5 | Dependencies | Could DiaApplication ever need to depend on DiaGame (circular)? | No. DiaApplication's ManifestComposer accepts TypedImports (its own type) and resolves stages via inline parse. The dependency is strictly one-way: DiaGame → DiaApplication. |
+| 5 | Dependencies | Could DiaApplicationFlow ever need to depend on DiaGame (circular)? | No. DiaApplicationFlow's ManifestComposer accepts TypedImports (its own type) and resolves stages via inline parse. The dependency is strictly one-way: DiaGame → DiaApplicationFlow. |
 
 ## Status
 

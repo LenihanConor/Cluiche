@@ -160,7 +160,7 @@ namespace Dia::Serializer {
 **Dependents (once DiaSerializer ships):**
 - **DiaRig2D** — removes local MetadataValue; inherits ISerializer for JsonSkeletonSerializer
 - **DiaStateMachine** — removes StateMachineMetadata.h; inherits ISerializer for JsonStateMachineSerializer
-- **All future domain serializers** — DiaApplication data-driven topology, spatial grid config, DiaIK2D solver config, physics body definitions
+- **All future domain serializers** — DiaApplicationFlow data-driven topology, spatial grid config, DiaIK2D solver config, physics body definitions
 
 ## Out of Scope
 

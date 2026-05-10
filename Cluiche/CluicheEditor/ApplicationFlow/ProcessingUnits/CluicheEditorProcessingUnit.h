@@ -1,6 +1,6 @@
 #pragma once
 
-#include <DiaApplication/ApplicationProcessingUnit.h>
+#include <DiaApplicationFlow/ApplicationProcessingUnit.h>
 #include <DiaCore/CRC/StringCRC.h>
 
 #include "../Modules/EditorModelModule.h"

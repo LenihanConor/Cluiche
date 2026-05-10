@@ -14,7 +14,7 @@
 
 ## Problem Statement
 
-Game code needs to react to collisions — deal damage, play sounds, trigger pickups, start animations. The physics engine must notify listeners when two bodies begin overlapping (Enter), continue overlapping (Stay), or stop overlapping (Exit), without coupling to DiaApplication's MessageBus.
+Game code needs to react to collisions — deal damage, play sounds, trigger pickups, start animations. The physics engine must notify listeners when two bodies begin overlapping (Enter), continue overlapping (Stay), or stop overlapping (Exit), without coupling to DiaApplicationFlow's MessageBus.
 
 ---
 

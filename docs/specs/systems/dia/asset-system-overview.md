@@ -67,7 +67,7 @@ Raw authored files (Assets/<AppName>/)
                         ▼
  ┌─────────────────────────────────────────────────────┐
  │  DiaAssetRuntime                                    │
- │  Pure C++ library. No DiaApplication dependency.    │
+ │  Pure C++ library. No DiaApplicationFlow dependency.    │
  │  No DiaAssetCatalogue dependency.                   │
  │  Own types: RuntimeAssetEntry, RuntimeStageEntry.   │
  │  Own deserializer: RuntimeManifestLoader.           │
@@ -115,7 +115,7 @@ Raw authored files (Assets/<AppName>/)
 4. **DiaAssetPipeline is plugins, DiaPipeline is orchestrator** — DiaPipeline's `build-assets` stage calls DiaAssetPipeline handlers; they are not the same system
 5. **DiaAssetPipeline reads catalogue, generates runtime** — it never writes to the catalogue manifest (SD-APIPE-001)
 6. **DiaAssetRuntime wraps, doesn't replace** — DiaCore FilePath still works; DiaAssetRuntime adds asset-aware resolution on top. All resolved paths are absolute.
-7. **DiaAssetRuntime is fully independent** — no DiaApplication dependency, no DiaAssetCatalogue dependency. Owns its own types (`RuntimeAssetEntry`, `RuntimeStageEntry`) and deserializer (`RuntimeManifestLoader`). Game binary ships without build-time type framework or authoring machinery.
+7. **DiaAssetRuntime is fully independent** — no DiaApplicationFlow dependency, no DiaAssetCatalogue dependency. Owns its own types (`RuntimeAssetEntry`, `RuntimeStageEntry`) and deserializer (`RuntimeManifestLoader`). Game binary ships without build-time type framework or authoring machinery.
 8. **Pipeline is the bridge** — DiaAssetPipeline (Python) is the only system that reads the catalogue format and writes the runtime format. The two manifest schemas are independent; neither C++ system knows the other's format.
 9. **Root asset pattern** — in-game, call `RequestStageLoad(stageId)` and DiaAssetRuntime resolves the full chain: Stage → Assets. You don't load individual assets by path in gameplay code.
 10. **Editor is UI only** — DiaAssetCatalogueEditor has no business logic; it calls DiaAssetCatalogue's query API and renders results

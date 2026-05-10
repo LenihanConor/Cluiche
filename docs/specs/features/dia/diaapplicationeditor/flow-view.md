@@ -27,8 +27,8 @@ Provides an interactive state machine diagram view of .diaapp manifests using re
 - [x] Display phase dependencies as dotted edges (read-only)
 - [x] Animate current phase during live debugging (highlight node)
 - [x] Drag-to-connect transitions (handled by phase-transition-editor.md)
-- [ ] **[Requires DiaApplication Phase A]** Each phase node shows a `sourceManifestPath` badge so developers can trace which .diaapp file contributed it
-- [ ] **[Requires DiaApplication Phase C]** Phases contributed by a stage manifest are enclosed in a colored bounding box labeled with the stage name (detected via `sourceManifestPath` metadata.type == "stage"). Stage color is deterministically assigned from a fixed palette by stage name hash.
+- [ ] **[Requires DiaApplicationFlow Phase A]** Each phase node shows a `sourceManifestPath` badge so developers can trace which .diaapp file contributed it
+- [ ] **[Requires DiaApplicationFlow Phase C]** Phases contributed by a stage manifest are enclosed in a colored bounding box labeled with the stage name (detected via `sourceManifestPath` metadata.type == "stage"). Stage color is deterministically assigned from a fixed palette by stage name hash.
 
 ## Design
 

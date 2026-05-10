@@ -176,7 +176,7 @@ This document defines clear boundaries between subsystems to help AI agents:
 
 ## Dia Engine Layer
 
-### DiaApplication
+### DiaApplicationFlow
 
 **✅ Owns:**
 - ProcessingUnit base class
@@ -211,7 +211,7 @@ This document defines clear boundaries between subsystems to help AI agents:
 - JSON parsing wrapper
 
 **❌ Doesn't Own:**
-- Application framework (DiaApplication)
+- Application framework (DiaApplicationFlow)
 - Math operations (DiaMaths)
 - Graphics (DiaGraphics)
 - Platform-specific code (DiaSFML)
@@ -321,7 +321,7 @@ This document defines clear boundaries between subsystems to help AI agents:
 - Audio playback (DiaSFMLSoundManager)
 
 **❌ Doesn't Own:**
-- Application framework (DiaApplication)
+- Application framework (DiaApplicationFlow)
 - Game logic (Cluiche)
 - UI (DiaUI)
 
@@ -404,7 +404,7 @@ This document defines clear boundaries between subsystems to help AI agents:
 - Basic 2D rendering
 
 **❌ Doesn't Own:**
-- Application architecture (DiaApplication)
+- Application architecture (DiaApplicationFlow)
 - Custom containers (DiaCore)
 - Game logic (Cluiche)
 
@@ -508,17 +508,17 @@ Cluiche → Dia (any subsystem)
 Dia subsystems → DiaCore
 Dia subsystems → DiaMaths
 DiaSFML → DiaGraphics, DiaWindow, DiaInput
-DiaApplication → DiaCore
+DiaApplicationFlow → DiaCore
 ```
 
 ### Forbidden Dependencies
 
 ```
-❌ DiaCore → DiaApplication (layer violation)
+❌ DiaCore → DiaApplicationFlow (layer violation)
 ❌ DiaCore → DiaMaths (layer violation)
 ❌ DiaMaths → DiaGraphics (separation of concerns)
 ❌ DiaGraphics → DiaSFML (abstraction violation)
-❌ DiaApplication → Cluiche (engine shouldn't know app)
+❌ DiaApplicationFlow → Cluiche (engine shouldn't know app)
 ```
 
 ---
@@ -528,7 +528,7 @@ DiaApplication → DiaCore
 | Subsystem | Primary Responsibility |
 |-----------|------------------------|
 | **Cluiche** | Application logic, threading orchestration, levels |
-| **DiaApplication** | Application framework (PU/Phase/Module pattern) |
+| **DiaApplicationFlow** | Application framework (PU/Phase/Module pattern) |
 | **DiaCore** | Foundation (containers, patterns, type system) |
 | **DiaMaths** | Math operations (vectors, matrices, transforms) |
 | **DiaGraphics** | Rendering abstraction |
@@ -570,7 +570,7 @@ namespace Dia::Maths {
 
 **❌ Wrong:**
 ```cpp
-// Dia/DiaApplication/GameManager.h
+// Dia/DiaApplicationFlow/GameManager.h
 class GameManager {  // NO! Game-specific
     void UpdatePlayer();
 };
@@ -618,7 +618,7 @@ Dia::Graphics::ICanvas* canvas = GetCanvas();
 | Math function | DiaMaths/Core/ |
 | Rendering primitive | DiaGraphics/Interface/ |
 | Input event | DiaInput/ |
-| Threading logic | DiaApplication/ (ProcessingUnit/Phase) |
+| Threading logic | DiaApplicationFlow/ (ProcessingUnit/Phase) |
 | Application module | Cluiche/CluicheKernel/ApplicationFlow/Modules/ |
 | Game level | Cluiche/Levels/ |
 | Platform implementation | DiaSFML/ |

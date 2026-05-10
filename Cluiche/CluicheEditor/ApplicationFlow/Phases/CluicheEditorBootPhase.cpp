@@ -5,7 +5,7 @@
 #include "../Modules/CommandHistoryModule.h"
 #include "../Modules/LoggerModule.h"
 
-#include <DiaApplication/ApplicationProcessingUnit.h>
+#include <DiaApplicationFlow/ApplicationProcessingUnit.h>
 
 namespace Cluiche
 {

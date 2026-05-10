@@ -147,7 +147,7 @@ void MyGraphicsSystem::OnAssetUnloading(const StringCRC& assetId)
 | AD-002 | No STL in public APIs | **Compliant.** Same as PD-004. |
 | AD-003 | Namespace Dia::AssetRuntime:: | **Compliant.** All code under `Dia::AssetRuntime::`. |
 | SD-CAT-001 | Asset IDs are type.name composites | **Compliant.** State machine operates on StringCRC IDs that follow the type.name convention. |
-| SD-ARUN-001 | No DiaApplication dependency | **Compliant.** State machine is a pure library mechanism with no ProcessingUnit or Phase awareness. |
+| SD-ARUN-001 | No DiaApplicationFlow dependency | **Compliant.** State machine is a pure library mechanism with no ProcessingUnit or Phase awareness. |
 | SD-ARUN-008 | No DiaAssetCatalogue dependency | **Compliant.** No imports from DiaAssetCatalogue. State is tracked on RuntimeAssetEntry IDs, not catalogue records. |
 
 ## AI Review Questions

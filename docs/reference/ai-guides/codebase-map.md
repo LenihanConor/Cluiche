@@ -103,7 +103,7 @@ Levels/
 ```
 
 **Key Classes:**
-- `ILevel` - Interface (defined in DiaApplication)
+- `ILevel` - Interface (defined in DiaApplicationFlow)
 - `DummyStage` - Simple demo level
 - `UnitTestLevel` - Runs tests at startup
 
@@ -171,7 +171,7 @@ Tests/
 
 | Subsystem | Purpose | Key Files |
 |-----------|---------|-----------|
-| **DiaApplication** | Application framework | `ProcessingUnit.h`, `Phase.h`, `Module.h` |
+| **DiaApplicationFlow** | Application framework | `ProcessingUnit.h`, `Phase.h`, `Module.h` |
 | **DiaCore** | Foundation library | `Containers/`, `Architecture/`, `Type/` |
 | **DiaMaths** | Math library | `Vector/`, `Matrix/`, `Transform/`, `Shape/` |
 | **DiaGraphics** | Graphics abstraction | `Interface/ICanvas.h` |
@@ -186,15 +186,15 @@ Tests/
 
 ---
 
-### DiaApplication/ - Application Framework
+### DiaApplicationFlow/ - Application Framework
 
-**Location:** `Dia/DiaApplication/`
+**Location:** `Dia/DiaApplicationFlow/`
 
 **Purpose:** ProcessingUnit/Phase/Module pattern
 
 **Key Files:**
 ```
-DiaApplication/
+DiaApplicationFlow/
 ├── ApplicationProcessingUnit.h        # Base class for all PUs
 ├── ApplicationPhase.h                 # Base class for all phases
 ├── ApplicationModule.h                # Base class for all modules
@@ -619,7 +619,7 @@ dependencies:
 **Entry Points:**
 - `Cluiche/CluicheTest/Main.cpp` - Application entry
 - `Cluiche/ApplicationFlow/ProcessingUnits/MainProcessingUnit.h` - Threading orchestrator
-- `Dia/DiaApplication/` - Framework base classes
+- `Dia/DiaApplicationFlow/` - Framework base classes
 - `Dia/DiaCore/` - Foundation library
 
 **[→ Entry Points for Common Tasks](entry-points.md)**  

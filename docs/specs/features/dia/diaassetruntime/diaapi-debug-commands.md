@@ -130,14 +130,14 @@ ws.send(JSON.stringify({ command: "asset_runtime.subscribe_transitions" }));
 | AD-002 | No STL in public APIs | **Compliant.** Same as PD-004. |
 | AD-003 | Namespace Dia::AssetRuntime:: | **Compliant.** All code under `Dia::AssetRuntime::`. |
 | SD-CAT-001 | Asset IDs are type.name composites | **Compliant.** JSON responses use type.name strings. |
-| SD-ARUN-001 | No DiaApplication dependency | **Compliant.** DiaAPI is a separate framework from DiaApplication. Command registration does not introduce a DiaApplication dependency. |
+| SD-ARUN-001 | No DiaApplicationFlow dependency | **Compliant.** DiaAPI is a separate framework from DiaApplicationFlow. Command registration does not introduce a DiaApplicationFlow dependency. |
 | SD-ARUN-008 | No DiaAssetCatalogue dependency | **Compliant.** Commands query DiaAssetRuntime state only. No imports from DiaAssetCatalogue. |
 
 ## AI Review Questions
 
 | # | Section | Question | Answer |
 |---|---------|----------|--------|
-| 1 | Dependencies | This feature adds a DiaAPI dependency to DiaAssetRuntime. Is that acceptable given SD-ARUN-001 (no DiaApplication dependency)? | Yes. DiaAPI is the plugin-based CLI/command framework, separate from DiaApplication. It does not introduce lifecycle coupling. The dependency is optional -- if a game does not use DiaAPI, these commands are simply not registered. |
+| 1 | Dependencies | This feature adds a DiaAPI dependency to DiaAssetRuntime. Is that acceptable given SD-ARUN-001 (no DiaApplicationFlow dependency)? | Yes. DiaAPI is the plugin-based CLI/command framework, separate from DiaApplicationFlow. It does not introduce lifecycle coupling. The dependency is optional -- if a game does not use DiaAPI, these commands are simply not registered. |
 | 2 | subscribe_transitions | How does the subscription listener handle multiple WebSocket connections subscribing simultaneously? | Each connection gets its own subscription. The internal IAssetStateListener multiplexes events to all active subscribers. On disconnect, the subscription is cleaned up. The listener list capacity (Feature 4's DynamicArrayC<IAssetStateListener*, 16>) is shared with game-code listeners. |
 | 3 | Performance | get_all_states iterates all 512 assets. Is that acceptable for a debug command called over WebSocket? | Yes. 512 entries with JSON serialization is fast (sub-millisecond). This is a debug tool, not a hot path. The WebSocket transport latency dominates. |
 | 4 | Serialization | Should StringCRC values in JSON responses be human-readable strings or numeric CRC values? | Human-readable strings. The editor needs to display asset names, not CRC hashes. The runtime manifest already contains the string form of IDs, so they are available. |

@@ -75,7 +75,7 @@ The user has stated a strong preference for: keeping this layer simple, leaning 
 | DiaGeometry2D | Terrain contact queries for IK foot placement, spatial queries |
 | DiaCore/CRC | StringCRC for bone names (PD-001 compliant) |
 | DiaCore/Json | Loading pose/skeleton data from JSON files |
-| DiaApplication | Module lifecycle — animation update runs as a Module within SimProcessingUnit |
+| DiaApplicationFlow | Module lifecycle — animation update runs as a Module within SimProcessingUnit |
 | DiaGraphics | Debug line rendering for bones, joints, IK targets |
 
 ### Platform Decision Constraints

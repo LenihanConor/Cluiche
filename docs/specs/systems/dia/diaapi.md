@@ -150,7 +150,7 @@ DiaAPI <command> --help          # Show command-specific help
 |---|---------|----------|--------|
 | 1 | Purpose | Should DiaAPI be an executable or a library? | Library with a thin main.cpp wrapper. Allows other tools to link against it and reuse command registration. |
 | 2 | Public Interfaces | Should commands support subcommands (e.g., `DiaAPI asset compile`)? | No - keep simple. Use distinct command names instead: `compile-asset`, `validate-asset`. Subcommands add complexity. |
-| 3 | Dependencies | Does DiaAPI need DiaApplication's Module system? | No - DiaAPI is a build tool, not a runtime application. It doesn't use ProcessingUnits/Phases. |
+| 3 | Dependencies | Does DiaAPI need DiaApplicationFlow's Module system? | No - DiaAPI is a build tool, not a runtime application. It doesn't use ProcessingUnits/Phases. |
 | 4 | Events | Should events use Observer pattern or callbacks? | Observer pattern - consistent with DiaCore/Architecture/Observer. Allows multiple listeners. |
 | 5 | Scope | Should asset compilation be in DiaAPI or separate system? | Start in DiaAPI via registered commands. If complexity grows, refactor to DiaAssetPipeline system later. |
 | 6 | Out of Scope | Should we support piping/stdin for CI/CD scenarios? | TBD - defer until concrete use case. Start with argv only. |

@@ -216,7 +216,7 @@ FIXES_APPLIED.md → docs/09-development/changelog.md (already done)
 - `/docs/05-api/cluiche/module-catalog.md`
 
 ### Phase 8: Subsystem Deep Dives (11 files)
-- DiaApplication subsystem (3 files)
+- DiaApplicationFlow subsystem (3 files)
 - DiaCore subsystem (3 files)
 - DiaGraphics subsystem (2 files)
 - DiaMaths subsystem (3 files)

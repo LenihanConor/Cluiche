@@ -4,8 +4,8 @@
 #include <DiaGame/JsonDiaGameSerializer.h>
 #include <DiaGame/JsonDiaStageSerializer.h>
 #include <DiaGame/GameLoader.h>
-#include <DiaApplication/Manifest/ManifestValidator.h>
-#include <DiaApplication/TypeRegistry/ApplicationTypeRegistry.h>
+#include <DiaApplicationFlow/Manifest/ManifestValidator.h>
+#include <DiaApplicationFlow/TypeRegistry/ApplicationTypeRegistry.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <cstdio>
 #include <cstring>

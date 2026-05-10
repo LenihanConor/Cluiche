@@ -463,7 +463,7 @@ namespace Dia
 #include "MyClass.h"  // Corresponding header first
 
 #include "DiaCore/Containers/Array.h"
-#include "DiaApplication/Module/Module.h"
+#include "DiaApplicationFlow/Module/Module.h"
 
 #include <SFML/Graphics.hpp>
 

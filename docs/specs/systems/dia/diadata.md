@@ -88,7 +88,7 @@ All public headers under `Dia/DiaData/`.
 | DiaCore — FilePath/PathStore | Path aliasing for source locations, deferred resolution |
 | DiaCore — JSON | jsoncpp wrapper for reading/writing authored JSON |
 
-No dependencies on DiaAPI, DiaApplication, DiaEditor, or any rendering/windowing module.
+No dependencies on DiaAPI, DiaApplicationFlow, DiaEditor, or any rendering/windowing module.
 
 ## Features
 

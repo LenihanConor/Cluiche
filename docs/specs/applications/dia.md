@@ -5,7 +5,7 @@
 
 ## Purpose
 
-Dia is the game engine application that provides all shared engine infrastructure for the Cluiche platform. While organized as an "application" in the spec hierarchy, Dia functionally serves as the shared codebase that all other applications (games, tools, tests) depend on. It provides core systems (DiaCore, DiaMaths, DiaGraphics, DiaInput, etc.), runtime frameworks (DiaApplication), and build tooling (DiaAPI) that enable rapid game development with a component-based architecture, multi-threaded execution model, and modular design.
+Dia is the game engine application that provides all shared engine infrastructure for the Cluiche platform. While organized as an "application" in the spec hierarchy, Dia functionally serves as the shared codebase that all other applications (games, tools, tests) depend on. It provides core systems (DiaCore, DiaMaths, DiaGraphics, DiaInput, etc.), runtime frameworks (DiaApplicationFlow), and build tooling (DiaAPI) that enable rapid game development with a component-based architecture, multi-threaded execution model, and modular design.
 
 ## Systems
 
@@ -14,9 +14,11 @@ Dia is the game engine application that provides all shared engine infrastructur
 | DiaAPI | C++ command registration and execution API framework - provides runtime command infrastructure | [diaapi.md](../systems/dia/diaapi.md) |
 | DiaCLI | Python-based CLI tool for development workflows (build, assets, scaffolding, utilities) | [diacli.md](../systems/dia/diacli.md) |
 | DiaPython | Python embedding framework - wraps pybind11 with clean C++ API for scripting integration | [diapython.md](../systems/dia/diapython.md) |
-| DiaApplication | Application framework (ProcessingUnit/Phase/Module architecture for multi-threaded execution) | [diaapplication.md](../systems/dia/diaapplication.md) |
+| DiaApplicationFlow (v1) | Application framework (ProcessingUnit/Phase/Module) — SUPERSEDED | [diaapplication.md](../systems/dia/diaapplication.md) |
+| DiaApplicationFlow | Config-driven application framework (PU/Stage/Module with unified streams) | [diaapplicationflow.md](../systems/dia/diaapplicationflow.md) |
 | DiaGame | Game project system — owns .diagame/.diastage file formats, serializers, GameFileComposer, GameLoader | [diagame.md](../systems/dia/diagame.md) |
-| DiaApplicationEditor | Editor plugin for editing .diaapp manifests (separate system, uses DiaEditor framework) | [diaapplicationeditor.md](../systems/dia/diaapplicationeditor.md) |
+| DiaApplicationEditor (v1) | Editor plugin for .diaapp manifests — SUPERSEDED | [diaapplicationeditor.md](../systems/dia/diaapplicationeditor.md) |
+| DiaApplicationFlowEditor | Visual .diaapp v2 editor with live runtime inspection (PU graph, presence grid, streams) | [diaapplicationfloweditor.md](../systems/dia/diaapplicationfloweditor.md) |
 | DiaDebugProtocol | Shared header-only protocol types for editor-game communication (used by DiaEditor and DiaDebugServer) | [diadebugprotocol.md](../systems/dia/diadebugprotocol.md) |
 | DiaDebugServer | WebSocket server for remote debugging - broadcasts game state, forwards DiaAPI commands to editors | [diadebugserver.md](../systems/dia/diadebugserver.md) |
 | DiaEditor | Editor framework system (MVC, plugin system, CEF UI, command integration, live WebSocket connection) | [diaeditor.md](../systems/dia/diaeditor.md) |
@@ -59,7 +61,7 @@ Dia is organized into independent subsystems with clear responsibilities and dep
 - **Dependency Management**: Module dependency graph validated via `Tools/dia_modules.py`
 - **Public APIs**: Each module exposes headers, namespaces, and entry points
 
-### Runtime Framework (DiaApplication)
+### Runtime Framework (DiaApplicationFlow)
 
 ProcessingUnit/Phase/Module architecture for multi-threaded game execution:
 - **ProcessingUnit**: High-level execution containers (can run on separate threads)
@@ -107,7 +109,7 @@ What the Dia engine deliberately does NOT provide:
 | AD-001 | Module system with YAML frontmatter documentation | Enables tooling (dependency validation, graph generation); enforces clear ownership | All Dia modules | Accepted | Yes |
 | AD-002 | No STL containers in public APIs | Dia containers (DynamicArrayC, HashTable) ensure consistent memory management and engine integration | All Dia modules | Accepted | Yes |
 | AD-003 | Namespace convention: `Dia::<Module>::` | Clear ownership; prevents naming conflicts | All Dia modules | Accepted | Yes |
-| AD-004 | ProcessingUnit/Phase/Module for application structure | Multi-threaded execution with explicit scheduling; clear lifecycle management | DiaApplication | Accepted | Yes |
+| AD-004 | ProcessingUnit/Phase/Module for application structure | Multi-threaded execution with explicit scheduling; clear lifecycle management | DiaApplicationFlow | Accepted | Yes |
 | AD-005 | Component-based entities (IComponent/IComponentObject) | Composition over inheritance; flexible runtime entity construction | All game-facing modules | Accepted | Yes |
 
 **Status values:** `Proposed` · `Accepted` · `Rejected` · `Superseded`

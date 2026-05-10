@@ -148,7 +148,7 @@ namespace Dia::AssetCatalogue::Editor
 | SD-ACE-004 | All mutations are IEditorCommand | **Compliant** — AddRelationshipCommand and RemoveRelationshipCommand are both IEditorCommand subclasses |
 | SD-ACE-005 | Output to Cluiche/out/CluicheEditor/DiaAssetCatalogueEditor/ | **N/A** — no file output from relationship editing |
 | SED-009 | Undo/redo via IEditorCommand + CommandHistory | **Compliant** — both commands go through CommandHistory.ExecuteCommand() |
-| SED-015 | DiaEditor is pure C++ library, no DiaApplication dependency | **Compliant** — no DiaApplication types used |
+| SED-015 | DiaEditor is pure C++ library, no DiaApplicationFlow dependency | **Compliant** — no DiaApplicationFlow types used |
 | SED-020 | Plugin output to Cluiche/out/CluicheEditor/\<PluginName\>/ | **N/A** — no file output |
 | SED-021 | Per-plugin session context via .context.json | **N/A** — no session state specific to relationships |
 

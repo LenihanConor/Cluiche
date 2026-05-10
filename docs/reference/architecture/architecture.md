@@ -29,7 +29,7 @@ The **Cluiche platform** supports multiple applications, all built on the **Dia 
 ┌─────────────────────────────────────────────────────────┐
 │  Dia Engine (13+ subsystems)                            │
 │  - DiaCore, DiaMaths, DiaGraphics, DiaAPI          │
-│  - DiaApplication (Module/Phase/ProcessingUnit)         │
+│  - DiaApplicationFlow (Module/Phase/ProcessingUnit)         │
 │  - Graphics, Input, Physics, UI, Build Tools            │
 └─────────────────────────────────────────────────────────┘
                          ↓ depends on
@@ -162,7 +162,7 @@ Pluggable game states via `ILevel` interface:
 
 #### Core Subsystems
 
-##### 1. DiaApplication
+##### 1. DiaApplicationFlow
 
 **Module/Phase/ProcessingUnit Framework**
 
@@ -537,7 +537,7 @@ dependencies:
     - dia.core.containers.arrays
 public_api:
   headers:
-    - Dia/DiaApplication/ApplicationModule.h
+    - Dia/DiaApplicationFlow/ApplicationModule.h
 ---
 ```
 
@@ -625,7 +625,7 @@ Dia/
 ### API Documentation
 
 - [API Overview](../api/api-overview.md) - Public interface reference
-- [DiaApplication API](../api/dia/application-api.md) - Framework API
+- [DiaApplicationFlow API](../api/dia/application-api.md) - Framework API
 - [DiaCore API](../api/dia/core-api.md) - Core utilities API
 
 ### For AI Agents

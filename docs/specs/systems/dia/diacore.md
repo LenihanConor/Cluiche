@@ -27,7 +27,7 @@ headers define the shared vocabulary of the entire engine.
 - JSON: jsoncpp wrapper (`DiaCore/Json/`)
 
 **Does NOT own:**
-- Application lifecycle (DiaApplication)
+- Application lifecycle (DiaApplicationFlow)
 - Rendering, windowing, input (DiaGraphics, DiaWindow, DiaInput)
 - Build tooling (DiaAPI, DiaCLI)
 - High-level gameplay or physics systems

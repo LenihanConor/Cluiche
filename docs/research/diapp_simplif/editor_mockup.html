@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DiaApplication Editor - Mockup v2</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #1e1e2e; color: #cdd6f4; display: flex; flex-direction: column; height: 100vh; }
+
+/* Header */
+.header { background: #181825; padding: 8px 16px; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid #313244; }
+.header h1 { font-size: 14px; font-weight: 600; color: #89b4fa; }
+.header .file-path { font-size: 12px; color: #6c7086; }
+.header .actions { margin-left: auto; display: flex; gap: 8px; }
+.header .actions button { background: #313244; border: 1px solid #45475a; color: #cdd6f4; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+.header .actions button:hover { background: #45475a; }
+.header .actions button.primary { background: #89b4fa; color: #1e1e2e; border-color: #89b4fa; }
+.header .actions button.live { background: #a6e3a1; color: #1e1e2e; border-color: #a6e3a1; }
+.header .actions button.live.inactive { background: #313244; color: #a6e3a1; border-color: #a6e3a1; }
+
+/* Tabs */
+.tab-bar { background: #181825; padding: 0 16px; display: flex; gap: 0; border-bottom: 1px solid #313244; }
+.tab { padding: 6px 14px; font-size: 11px; color: #6c7086; cursor: pointer; border-bottom: 2px solid transparent; }
+.tab.active { color: #89b4fa; border-bottom-color: #89b4fa; }
+.tab:hover { color: #cdd6f4; }
+
+/* Main Layout */
+.main { display: flex; flex: 1; overflow: hidden; }
+
+/* Left: Graph Panel */
+.graph-panel { flex: 1; padding: 16px; position: relative; border-right: 1px solid #313244; min-width: 450px; }
+.graph-panel h2 { font-size: 12px; color: #6c7086; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+
+.graph-canvas { position: relative; width: 100%; height: calc(100% - 30px); }
+
+/* PU Nodes */
+.pu-node { position: absolute; background: #313244; border: 2px solid #45475a; border-radius: 8px; padding: 12px 16px; min-width: 180px; cursor: pointer; transition: border-color 0.2s; }
+.pu-node:hover { border-color: #89b4fa; }
+.pu-node.selected { border-color: #89b4fa; box-shadow: 0 0 12px rgba(137, 180, 250, 0.2); }
+.pu-node .pu-name { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+.pu-node .pu-meta { font-size: 11px; color: #6c7086; }
+.pu-node .pu-badges { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+.pu-node .pu-badge { display: inline-block; background: #45475a; padding: 1px 6px; border-radius: 3px; font-size: 10px; }
+.pu-node .pu-badge.order { background: #89b4fa20; color: #89b4fa; border: 1px solid #89b4fa40; }
+.pu-node .pu-badge.live-active { background: #a6e3a120; color: #a6e3a1; border: 1px solid #a6e3a140; }
+
+/* Stream Connections */
+.stream-label { position: absolute; background: #1e1e2e; padding: 4px 8px; border-radius: 4px; font-size: 10px; color: #a6e3a1; border: 1px solid #313244; white-space: nowrap; cursor: pointer; transition: border-color 0.2s; }
+.stream-label:hover { border-color: #a6e3a1; }
+.stream-label.selected { border-color: #a6e3a1; box-shadow: 0 0 8px rgba(166, 227, 161, 0.2); }
+.stream-label .stream-type { color: #6c7086; font-size: 9px; display: block; }
+
+/* SVG for lines */
+.graph-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+.graph-svg line { stroke: #a6e3a1; stroke-width: 2; stroke-dasharray: 6 3; }
+.graph-svg .arrow { fill: #a6e3a1; }
+
+/* Right Side */
+.right-side { width: 620px; display: flex; flex-direction: column; }
+
+/* Inspector Panel */
+.inspector { flex: 1; padding: 16px; overflow-y: auto; border-bottom: 1px solid #313244; }
+.inspector h2 { font-size: 12px; color: #6c7086; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+
+.inspector-section { margin-bottom: 16px; }
+.inspector-section h3 { font-size: 12px; color: #89b4fa; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #313244; display: flex; align-items: center; gap: 8px; }
+.inspector-section h3 .section-action { margin-left: auto; font-size: 10px; color: #6c7086; cursor: pointer; background: #313244; padding: 2px 6px; border-radius: 3px; }
+.inspector-section h3 .section-action:hover { color: #cdd6f4; }
+
+/* PU Properties */
+.pu-properties { display: grid; grid-template-columns: 100px 1fr; gap: 6px 12px; margin-bottom: 12px; font-size: 11px; }
+.pu-properties .prop-label { color: #6c7086; }
+.pu-properties .prop-value { color: #cdd6f4; }
+.pu-properties .prop-value.editable { background: #181825; padding: 2px 6px; border-radius: 3px; border: 1px solid #313244; cursor: text; }
+
+/* Stage pills */
+.stage-bar { display: flex; gap: 4px; margin-bottom: 8px; flex-wrap: wrap; align-items: center; }
+.stage-pill { padding: 4px 10px; border-radius: 12px; font-size: 11px; background: #45475a; cursor: pointer; position: relative; }
+.stage-pill.active { background: #89b4fa; color: #1e1e2e; }
+.stage-pill.boot { background: #f9e2af; color: #1e1e2e; }
+.stage-pill.add { background: transparent; border: 1px dashed #6c7086; color: #6c7086; }
+.stage-pill .stage-trigger { font-size: 9px; display: block; text-align: center; margin-top: 1px; opacity: 0.8; }
+
+/* Stage config row */
+.stage-config { display: flex; gap: 12px; margin-bottom: 12px; font-size: 11px; padding: 6px 10px; background: #181825; border-radius: 4px; border: 1px solid #313244; }
+.stage-config .config-item { display: flex; align-items: center; gap: 4px; }
+.stage-config .config-label { color: #6c7086; }
+.stage-config .config-value { color: #cdd6f4; background: #313244; padding: 1px 6px; border-radius: 3px; }
+.stage-config .config-value.toggle { cursor: pointer; }
+.stage-config .config-value.toggle.on { background: #a6e3a120; color: #a6e3a1; border: 1px solid #a6e3a140; }
+
+/* Module cards */
+.module-card { background: #181825; border: 1px solid #313244; border-radius: 6px; padding: 10px 12px; margin-bottom: 8px; transition: border-color 0.2s; }
+.module-card:hover { border-color: #45475a; }
+.module-card .module-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.module-card .module-name { font-weight: 600; font-size: 12px; }
+.module-card .module-type { font-size: 10px; color: #6c7086; background: #313244; padding: 1px 6px; border-radius: 3px; }
+.module-card .module-provenance { font-size: 9px; color: #f9e2af; margin-left: auto; }
+.module-card .module-detail { font-size: 11px; color: #6c7086; margin-bottom: 3px; }
+.module-card .module-detail span { color: #cdd6f4; }
+
+/* Stream badges */
+.stream-badge { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 10px; margin-right: 4px; }
+.stream-badge.reads { background: #31324480; border: 1px solid #94e2d5; color: #94e2d5; }
+.stream-badge.writes { background: #31324480; border: 1px solid #f38ba8; color: #f38ba8; }
+
+/* Timeout config */
+.module-timeouts { display: flex; gap: 8px; margin-top: 4px; }
+.timeout-badge { font-size: 9px; color: #6c7086; background: #313244; padding: 1px 6px; border-radius: 3px; }
+.timeout-badge .timeout-val { color: #cdd6f4; }
+
+/* Stage presence indicators */
+.stage-presence { display: flex; gap: 3px; margin-top: 6px; align-items: center; }
+.stage-dot { width: 8px; height: 8px; border-radius: 50%; background: #45475a; }
+.stage-dot.active { background: #a6e3a1; }
+.stage-dot.boot { background: #f9e2af; }
+.all-badge { font-size: 9px; color: #a6e3a1; background: #a6e3a120; padding: 1px 6px; border-radius: 3px; border: 1px solid #a6e3a140; }
+
+/* Dependency mini-graph */
+.dep-graph { margin-top: 12px; padding: 10px; background: #181825; border: 1px solid #313244; border-radius: 6px; }
+.dep-graph h4 { font-size: 10px; color: #6c7086; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+.dep-chain { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; font-size: 11px; }
+.dep-chain .dep-node { background: #313244; padding: 2px 8px; border-radius: 3px; }
+.dep-chain .dep-node.highlight { background: #89b4fa20; border: 1px solid #89b4fa40; color: #89b4fa; }
+.dep-chain .dep-arrow { color: #6c7086; font-size: 10px; }
+
+/* Stream Inspector */
+.stream-inspector { background: #181825; border: 1px solid #313244; border-radius: 6px; padding: 10px 12px; margin-bottom: 8px; }
+.stream-inspector .stream-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.stream-inspector .stream-name { font-weight: 600; font-size: 12px; color: #a6e3a1; }
+.stream-inspector .stream-props { display: grid; grid-template-columns: 60px 1fr; gap: 4px 12px; font-size: 11px; }
+.stream-inspector .stream-prop-label { color: #6c7086; }
+.stream-inspector .stream-prop-value { color: #cdd6f4; }
+
+/* Timeline Panel */
+.timeline-panel { height: 220px; padding: 16px; background: #181825; overflow-x: auto; }
+.timeline-panel h2 { font-size: 12px; color: #6c7086; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+
+.timeline { display: grid; grid-template-columns: 130px repeat(3, 1fr); gap: 1px; }
+.timeline-header { font-size: 11px; color: #6c7086; padding: 4px 8px; text-align: center; background: #1e1e2e; border-radius: 3px; }
+.timeline-header.stage-name { color: #89b4fa; font-weight: 600; }
+.timeline-header.stage-name.auto { border-bottom: 2px solid #f9e2af; }
+.timeline-row-label { font-size: 11px; padding: 4px 8px; display: flex; align-items: center; }
+.timeline-row-label.infra { color: #a6e3a1; }
+.timeline-cell { padding: 4px; display: flex; align-items: center; justify-content: center; }
+.timeline-bar { height: 6px; border-radius: 3px; width: 80%; }
+.timeline-bar.active { background: #a6e3a1; }
+.timeline-bar.inactive { background: #313244; }
+.timeline-bar.infra { background: #a6e3a180; height: 4px; }
+
+/* Live overlay */
+.live-indicator { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #a6e3a1; margin-right: 6px; animation: pulse 1.5s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+.live-stage-indicator { position: absolute; top: 4px; right: 4px; width: 6px; height: 6px; border-radius: 50%; }
+.live-stage-indicator.active { background: #a6e3a1; animation: pulse 1.5s ease-in-out infinite; }
+
+/* Module live states */
+.module-live-state { font-size: 9px; padding: 1px 6px; border-radius: 3px; margin-left: auto; }
+.module-live-state.running { background: #a6e3a120; color: #a6e3a1; }
+.module-live-state.loading { background: #f9e2af20; color: #f9e2af; }
+.module-live-state.stopped { background: #31324480; color: #6c7086; }
+
+/* Validation */
+.validation-bar { background: #181825; padding: 6px 16px; border-top: 1px solid #313244; display: flex; align-items: center; gap: 12px; font-size: 11px; }
+.validation-bar .status { display: flex; align-items: center; gap: 4px; }
+.validation-bar .status.ok { color: #a6e3a1; }
+.validation-bar .status.warn { color: #f9e2af; }
+.validation-bar .status.error { color: #f38ba8; }
+.validation-bar .dot { width: 6px; height: 6px; border-radius: 50%; }
+.validation-bar .dot.ok { background: #a6e3a1; }
+.validation-bar .dot.warn { background: #f9e2af; }
+.validation-bar .dot.error { background: #f38ba8; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+    <h1>Application Flow</h1>
+    <span class="file-path">CluicheTest / cluiche.diaapp</span>
+    <div class="actions">
+        <button class="live inactive"><span class="live-indicator" style="animation:none; opacity:0.4"></span>Live</button>
+        <button>Validate</button>
+        <button class="primary">Save</button>
+    </div>
+</div>
+
+<!-- Tabs -->
+<div class="tab-bar">
+    <div class="tab active">Graph</div>
+    <div class="tab">Stages</div>
+    <div class="tab">Streams</div>
+</div>
+
+<!-- Main -->
+<div class="main">
+    <!-- Graph Panel -->
+    <div class="graph-panel">
+        <h2>Processing Units & Streams</h2>
+        <div class="graph-canvas">
+            <!-- SVG lines for streams -->
+            <svg class="graph-svg">
+                <!-- MainPU → SimPU -->
+                <line x1="200" y1="95" x2="200" y2="190"/>
+                <polygon class="arrow" points="195,185 200,195 205,185"/>
+                <!-- SimPU → RenderPU -->
+                <line x1="280" y1="230" x2="380" y2="230"/>
+                <polygon class="arrow" points="375,225 385,230 375,235"/>
+            </svg>
+
+            <!-- Stream labels (clickable) -->
+            <div class="stream-label" style="left: 210px; top: 130px;">
+                InputToSim
+                <span class="stream-type">EventStream&lt;InputEvent&gt;</span>
+            </div>
+            <div class="stream-label selected" style="left: 295px; top: 210px;">
+                SimToRender
+                <span class="stream-type">FrameStream&lt;FrameData&gt;</span>
+            </div>
+
+            <!-- PU Nodes -->
+            <div class="pu-node" style="left: 100px; top: 30px;">
+                <div class="pu-name">MainPU</div>
+                <div class="pu-meta">4 modules &bull; infra only</div>
+                <div class="pu-badges">
+                    <span class="pu-badge order">#1 startup</span>
+                    <span class="pu-badge">main thread</span>
+                    <span class="pu-badge">30 Hz</span>
+                </div>
+            </div>
+
+            <div class="pu-node selected" style="left: 100px; top: 190px;">
+                <div class="pu-name">SimPU</div>
+                <div class="pu-meta">5 modules &bull; 2 game stages</div>
+                <div class="pu-badges">
+                    <span class="pu-badge order">#2 startup</span>
+                    <span class="pu-badge">dedicated</span>
+                    <span class="pu-badge">30 Hz</span>
+                </div>
+            </div>
+
+            <div class="pu-node" style="left: 380px; top: 190px;">
+                <div class="pu-name">RenderPU</div>
+                <div class="pu-meta">2 modules</div>
+                <div class="pu-badges">
+                    <span class="pu-badge order">#3 startup</span>
+                    <span class="pu-badge">dedicated</span>
+                    <span class="pu-badge">60 Hz</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Side -->
+    <div class="right-side">
+        <!-- Inspector -->
+        <div class="inspector">
+            <h2>SimPU &mdash; Inspector</h2>
+
+            <!-- PU Properties -->
+            <div class="inspector-section">
+                <h3>Properties</h3>
+                <div class="pu-properties">
+                    <span class="prop-label">Frequency</span>
+                    <span class="prop-value editable">30 Hz</span>
+                    <span class="prop-label">Thread</span>
+                    <span class="prop-value editable">dedicated</span>
+                    <span class="prop-label">Startup order</span>
+                    <span class="prop-value">#2 (after MainPU)</span>
+                </div>
+            </div>
+
+            <!-- Stages -->
+            <div class="inspector-section">
+                <h3>Stages <span class="section-action">+ Add Stage</span></h3>
+                <div class="stage-bar">
+                    <div class="stage-pill boot">Boot<span class="stage-trigger">auto</span></div>
+                    <div class="stage-pill active">DummyStage<span class="stage-trigger">manual</span></div>
+                    <div class="stage-pill">StupidStage<span class="stage-trigger">manual</span></div>
+                </div>
+                <!-- Selected stage config -->
+                <div class="stage-config">
+                    <div class="config-item">
+                        <span class="config-label">Trigger:</span>
+                        <span class="config-value">manual</span>
+                    </div>
+                    <div class="config-item">
+                        <span class="config-label">Auto-advance:</span>
+                        <span class="config-value toggle">off</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stream Inspector (for selected stream) -->
+            <div class="inspector-section">
+                <h3>Selected Stream <span class="section-action">+ Add Stream</span></h3>
+                <div class="stream-inspector">
+                    <div class="stream-header">
+                        <span class="stream-name">SimToRender</span>
+                    </div>
+                    <div class="stream-props">
+                        <span class="stream-prop-label">Type</span>
+                        <span class="stream-prop-value">FrameStream&lt;FrameData&gt;</span>
+                        <span class="stream-prop-label">From</span>
+                        <span class="stream-prop-value">SimPU</span>
+                        <span class="stream-prop-label">To</span>
+                        <span class="stream-prop-value">RenderPU</span>
+                        <span class="stream-prop-label">Writers</span>
+                        <span class="stream-prop-value">DummyLevel, StupidLevel, LoadingScreen</span>
+                        <span class="stream-prop-label">Readers</span>
+                        <span class="stream-prop-value">Renderer</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modules -->
+            <div class="inspector-section">
+                <h3>Modules <span class="section-action">+ Add Module</span></h3>
+
+                <div class="module-card">
+                    <div class="module-header">
+                        <span class="module-name">TimeServer</span>
+                        <span class="module-type">TimeServerModule</span>
+                        <span class="module-live-state running">running</span>
+                    </div>
+                    <div class="module-detail">deps: <span>none</span></div>
+                    <div class="module-timeouts">
+                        <span class="timeout-badge">start: <span class="timeout-val">3000ms</span></span>
+                        <span class="timeout-badge">stop: <span class="timeout-val">1000ms</span></span>
+                    </div>
+                    <div class="stage-presence">
+                        <span class="all-badge">all stages</span>
+                    </div>
+                </div>
+
+                <div class="module-card">
+                    <div class="module-header">
+                        <span class="module-name">InputStream</span>
+                        <span class="module-type">InputFrameStreamModule</span>
+                        <span class="module-live-state running">running</span>
+                    </div>
+                    <div class="module-detail">deps: <span>TimeServer</span></div>
+                    <div class="module-detail"><span class="stream-badge reads">reads: InputToSim</span></div>
+                    <div class="module-timeouts">
+                        <span class="timeout-badge">start: <span class="timeout-val">3000ms</span></span>
+                        <span class="timeout-badge">stop: <span class="timeout-val">1000ms</span></span>
+                    </div>
+                    <div class="stage-presence">
+                        <span class="all-badge">all stages</span>
+                    </div>
+                </div>
+
+                <div class="module-card">
+                    <div class="module-header">
+                        <span class="module-name">LoadingScreen</span>
+                        <span class="module-type">LoadingScreenModule</span>
+                        <span class="module-live-state running">running</span>
+                    </div>
+                    <div class="module-detail">deps: <span>none</span></div>
+                    <div class="module-detail"><span class="stream-badge writes">writes: SimToRender</span></div>
+                    <div class="module-timeouts">
+                        <span class="timeout-badge">start: <span class="timeout-val">1000ms</span></span>
+                        <span class="timeout-badge">stop: <span class="timeout-val">1000ms</span></span>
+                    </div>
+                    <div class="stage-presence">
+                        <span class="all-badge">all stages</span>
+                    </div>
+                </div>
+
+                <div class="module-card">
+                    <div class="module-header">
+                        <span class="module-name">DummyLevel</span>
+                        <span class="module-type">DummyLevelModule</span>
+                        <span class="module-live-state running">running</span>
+                    </div>
+                    <div class="module-detail">deps: <span>TimeServer, InputStream</span></div>
+                    <div class="module-detail">
+                        <span class="stream-badge reads">reads: InputToSim</span>
+                        <span class="stream-badge writes">writes: SimToRender</span>
+                    </div>
+                    <div class="module-timeouts">
+                        <span class="timeout-badge">start: <span class="timeout-val">5000ms</span></span>
+                        <span class="timeout-badge">stop: <span class="timeout-val">2000ms</span></span>
+                    </div>
+                    <div class="module-card module-provenance" style="border:0; padding:0; margin:0; background:none;">
+                        <span class="module-provenance">from: dummy_stage.diastage</span>
+                    </div>
+                    <div class="stage-presence">
+                        <div class="stage-dot" title="Boot"></div>
+                        <div class="stage-dot active" title="DummyStage"></div>
+                        <div class="stage-dot" title="StupidStage"></div>
+                    </div>
+                </div>
+
+                <div class="module-card">
+                    <div class="module-header">
+                        <span class="module-name">DummyPhysics</span>
+                        <span class="module-type">DummyPhysicsModule</span>
+                        <span class="module-live-state running">running</span>
+                    </div>
+                    <div class="module-detail">deps: <span>DummyLevel</span></div>
+                    <div class="module-timeouts">
+                        <span class="timeout-badge">start: <span class="timeout-val">3000ms</span></span>
+                        <span class="timeout-badge">stop: <span class="timeout-val">1000ms</span></span>
+                    </div>
+                    <div class="module-card module-provenance" style="border:0; padding:0; margin:0; background:none;">
+                        <span class="module-provenance">from: dummy_stage.diastage</span>
+                    </div>
+                    <div class="stage-presence">
+                        <div class="stage-dot" title="Boot"></div>
+                        <div class="stage-dot active" title="DummyStage"></div>
+                        <div class="stage-dot" title="StupidStage"></div>
+                    </div>
+                </div>
+
+                <div class="module-card">
+                    <div class="module-header">
+                        <span class="module-name">StupidLevel</span>
+                        <span class="module-type">StupidLevelModule</span>
+                        <span class="module-live-state stopped">stopped</span>
+                    </div>
+                    <div class="module-detail">deps: <span>TimeServer, InputStream</span></div>
+                    <div class="module-detail">
+                        <span class="stream-badge writes">writes: SimToRender</span>
+                    </div>
+                    <div class="module-timeouts">
+                        <span class="timeout-badge">start: <span class="timeout-val">5000ms</span></span>
+                        <span class="timeout-badge">stop: <span class="timeout-val">2000ms</span></span>
+                    </div>
+                    <div class="module-card module-provenance" style="border:0; padding:0; margin:0; background:none;">
+                        <span class="module-provenance">from: stupid_stage.diastage</span>
+                    </div>
+                    <div class="stage-presence">
+                        <div class="stage-dot" title="Boot"></div>
+                        <div class="stage-dot" title="DummyStage"></div>
+                        <div class="stage-dot active" title="StupidStage"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dependency Graph -->
+            <div class="inspector-section">
+                <h3>Dependency Order (DummyStage)</h3>
+                <div class="dep-graph">
+                    <h4>Start order (top to bottom)</h4>
+                    <div class="dep-chain">
+                        <span class="dep-node">TimeServer</span>
+                        <span class="dep-arrow">&rarr;</span>
+                        <span class="dep-node">InputStream</span>
+                        <span class="dep-arrow">&rarr;</span>
+                        <span class="dep-node highlight">DummyLevel</span>
+                        <span class="dep-arrow">&rarr;</span>
+                        <span class="dep-node">DummyPhysics</span>
+                    </div>
+                    <div class="dep-chain" style="margin-top: 6px;">
+                        <span class="dep-node">LoadingScreen</span>
+                        <span style="font-size:9px; color:#6c7086; margin-left: 4px;">(no deps &mdash; starts immediately)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Timeline -->
+        <div class="timeline-panel">
+            <h2>Stage Timeline &mdash; Module Presence</h2>
+            <div class="timeline">
+                <!-- Header row -->
+                <div class="timeline-header"></div>
+                <div class="timeline-header stage-name auto">Boot (auto)</div>
+                <div class="timeline-header stage-name">DummyStage</div>
+                <div class="timeline-header stage-name">StupidStage</div>
+
+                <!-- TimeServer -->
+                <div class="timeline-row-label infra">TimeServer</div>
+                <div class="timeline-cell"><div class="timeline-bar infra"></div></div>
+                <div class="timeline-cell"><div class="timeline-bar infra"></div></div>
+                <div class="timeline-cell"><div class="timeline-bar infra"></div></div>
+
+                <!-- InputStream -->
+                <div class="timeline-row-label infra">InputStream</div>
+                <div class="timeline-cell"><div class="timeline-bar infra"></div></div>
+                <div class="timeline-cell"><div class="timeline-bar infra"></div></div>
+                <div class="timeline-cell"><div class="timeline-bar infra"></div></div>
+
+                <!-- LoadingScreen -->
+                <div class="timeline-row-label infra">LoadingScreen</div>
+                <div class="timeline-cell"><div class="timeline-bar infra"></div></div>
+                <div class="timeline-cell"><div class="timeline-bar infra"></div></div>
+                <div class="timeline-cell"><div class="timeline-bar infra"></div></div>
+
+                <!-- DummyLevel -->
+                <div class="timeline-row-label">DummyLevel</div>
+                <div class="timeline-cell"><div class="timeline-bar inactive"></div></div>
+                <div class="timeline-cell"><div class="timeline-bar active"></div></div>
+                <div class="timeline-cell"><div class="timeline-bar inactive"></div></div>
+
+                <!-- DummyPhysics -->
+                <div class="timeline-row-label">DummyPhysics</div>
+                <div class="timeline-cell"><div class="timeline-bar inactive"></div></div>
+                <div class="timeline-cell"><div class="timeline-bar active"></div></div>
+                <div class="timeline-cell"><div class="timeline-bar inactive"></div></div>
+
+                <!-- StupidLevel -->
+                <div class="timeline-row-label">StupidLevel</div>
+                <div class="timeline-cell"><div class="timeline-bar inactive"></div></div>
+                <div class="timeline-cell"><div class="timeline-bar inactive"></div></div>
+                <div class="timeline-cell"><div class="timeline-bar active"></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Validation Bar -->
+<div class="validation-bar">
+    <div class="status ok"><div class="dot ok"></div> Dependencies valid</div>
+    <div class="status ok"><div class="dot ok"></div> No orphaned modules</div>
+    <div class="status ok"><div class="dot ok"></div> All streams connected</div>
+    <div class="status ok"><div class="dot ok"></div> Stage coverage complete</div>
+    <div class="status warn"><div class="dot warn"></div> DummyPhysics: no stream output (intentional?)</div>
+</div>
+
+</body>
+</html>

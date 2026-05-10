@@ -11,7 +11,7 @@
 #include "../Modules/EditorConsoleSinkModule.h"
 #include "../ProcessingUnits/CluicheEditorProcessingUnit.h"
 
-#include <DiaApplication/ApplicationProcessingUnit.h>
+#include <DiaApplicationFlow/ApplicationProcessingUnit.h>
 #include <DiaEditor/MVC/EditorModel.h>
 #include <DiaEditor/MVC/EditorView.h>
 #include <DiaLogger/DiaLog.h>

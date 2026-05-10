@@ -15,19 +15,19 @@ CluicheEditor manages `.cluicheproj` project files — the top-level project def
 
 | System | Description | Spec |
 |--------|-------------|------|
-| *(Host Application Only)* | CluicheEditor has no internal Dia systems — it owns application flow (Modules/Phases) that wrap DiaEditor library classes | N/A |
+| CluicheEditor ApplicationFlow | Thin application host layer wiring DiaEditor library classes into DiaApplicationFlow v2 (Module subclasses, manifest, bootstrap) | [applicationflow.md](../systems/cluicheeditor/applicationflow.md) |
 
-CluicheEditor owns all application flow: the `CluicheEditorProcessingUnit` (extends `Dia::Application::ProcessingUnit`) wires together thin Module and Phase subclasses that delegate to DiaEditor library classes. DiaEditor has no DiaApplication dependency — it is a pure library. CluicheEditor is the seam where the library and the application framework meet.
+CluicheEditor owns all application flow: the `Application` bootstrap in `wWinMain` and thin v2 `Module` subclasses that delegate to DiaEditor library classes. DiaEditor has no DiaApplicationFlow dependency — it is a pure library. CluicheEditor is the seam where the library and the framework meet.
 
 **Key Dependencies:**
 - **Dia.DiaEditor** - The editor framework providing MVC, plugin system, undo/redo, UI, commands, and live connection
 - **Dia.DiaUICEF** - CEF-based IUISystem implementation (editor-only — CEF is too heavy at ~100MB for shipping in games)
-- **Dia.DiaApplication** - For ProcessingUnit/Phase/Module architecture
+- **Dia.DiaApplicationFlow** - For Application bootstrap, ProcessingUnit, and Module v2 architecture
 - **Dia.DiaCore** - For containers, StringCRC, and foundation utilities
 - **Dia.DiaDebugProtocol** - Shared message types for editor-game communication (header-only)
 
 **Loaded Plugins (Examples):**
-- **DiaApplicationEditor** (from Dia.DiaApplication) - Edits .diaapp manifests
+- **DiaApplicationEditor** (from Dia.DiaApplicationFlow) - Edits .diaapp manifests
 - **DiaGraphicsEditor** (future) - Edits rendering settings
 - **DiaPhysicsEditor** (future) - Edits physics configuration
 
@@ -35,18 +35,16 @@ CluicheEditor owns all application flow: the `CluicheEditorProcessingUnit` (exte
 
 ### Application Flow Pattern
 
-CluicheEditor owns the ProcessingUnit, all Module wrappers, and all Phase subclasses. DiaEditor library objects are members of the Modules; the Modules drive them.
+CluicheEditor owns the Application bootstrap and all Module wrappers. DiaEditor library objects are members of the Modules; the Modules drive them. Phases are removed — stage membership is declared in `Data/editor.diaapp`.
 
 ```
-CluicheEditorProcessingUnit (extends ProcessingUnit)
-  ├─ EditorModelModule       → owns Dia::Editor::EditorModel
-  ├─ CommandHistoryModule    → owns Dia::Editor::CommandHistory
-  ├─ EditorViewModule        → owns Dia::Editor::EditorView + Win32Window + CEFUISystem
-  ├─ EditorViewControllerModule → owns Dia::Editor::EditorViewController
-  ├─ GameConnectionModule    → owns Dia::Editor::GameConnectionManager
-  ├─ CluicheEditorBootPhase
-  ├─ CluicheEditorRunningPhase
-  └─ CluicheEditorShutdownPhase
+Application (DiaApplicationFlow v2)
+  └─ EditorPU (ProcessingUnit, 30hz, main thread)
+       ├─ EditorModelModule        [Boot, Running] → owns Dia::Editor::EditorModel
+       ├─ CommandHistoryModule     [Boot, Running] → owns Dia::Editor::CommandHistory
+       ├─ EditorViewModule         [Running]       → owns Dia::Editor::EditorView + Win32Window + CEFUISystem
+       ├─ EditorViewControllerModule [Running]     → owns Dia::Editor::EditorViewController
+       └─ GameConnectionModule     [Running]       → owns Dia::Editor::GameConnectionManager
 ```
 
 The Module layer is intentionally thin: `DoStart` initializes the library object, `DoUpdate` ticks it, `DoStop` shuts it down. No business logic lives in the Modules themselves.
@@ -59,12 +57,14 @@ int APIENTRY wWinMain(HINSTANCE hInstance, ...) {
     CefMainArgs mainArgs(hInstance);
     int exitCode = CefExecuteProcess(mainArgs, nullptr, nullptr);
     if (exitCode >= 0) return exitCode;
-    
-    auto* pu = new Cluiche::Editor::CluicheEditorProcessingUnit();
-    pu->Start();
-    pu->Update();  // Runs until FlaggedToStopUpdating() returns true
-    pu->Stop();
-    delete pu;
+
+    Dia::ApplicationFlow::TypeRegistry registry;
+    auto manifest = Dia::ApplicationFlow::ApplicationManifestLoaderV2::Load("Data/editor.diaapp");
+    Dia::ApplicationFlow::Application app(manifest, registry);
+
+    if (!app.Start()) return 1;
+    float deltaTime = 1.0f / 30.0f;
+    while (app.Update(deltaTime)) { /* frame loop */ }
     return 0;
 }
 ```
@@ -109,19 +109,19 @@ Plugins are specified in `.diaapp` manifests referenced by the project file:
 ```
 
 Each plugin:
-1. Lives with its parent system (e.g., `Dia/DiaApplication/Editor/`)
+1. Lives with its parent system (e.g., `Dia/DiaApplicationFlow/Editor/`)
 2. Implements `IEditorPlugin` interface (defined in DiaEditor)
 3. Registers via `REGISTER_EDITOR_PLUGIN` macro
 4. Auto-discovered and loaded by CluicheEditor when the manifest is processed
 
 ### Execution Model
 
-CluicheEditor runs as a standard ProcessingUnit with three editor-specific phases:
-- **CluicheEditorBootPhase** - Starts EditorModelModule + CommandHistoryModule; transitions immediately to Running
-- **CluicheEditorRunningPhase** - Starts all 5 modules (EditorViewModule creates the window and initializes CEF); polls `EditorModel::IsCloseRequested()` for `FlaggedToStopUpdating()`
-- **CluicheEditorShutdownPhase** - Final cleanup; returns `FlaggedToStopUpdating() = true` immediately
+CluicheEditor uses DiaApplicationFlow v2 stages (no Phase classes):
+- **Boot stage** (auto-advances) — Starts `EditorModelModule` + `CommandHistoryModule`; framework auto-transitions to Running once all Boot modules are ready
+- **Running stage** — Starts `EditorViewModule` (creates Win32Window, initialises CEF async via `kLoading`→`kReady`), `EditorViewControllerModule`, `GameConnectionModule`; `EditorViewModule::DoUpdate` polls `EditorModel::IsCloseRequested()` and calls `Application::RequestShutdown()`
+- **Shutdown** — `Application::RequestShutdown()` stops all modules (DoStop called in reverse dependency order); CEF teardown in `EditorViewModule::DoStop`
 
-`EditorViewModule::DoStart` creates the `Win32Window`, sets the close callback → `EditorModel::RequestClose()`, then initializes `CEFUISystem` with windowed rendering and the subprocess path, and loads the React shell page.
+`EditorViewModule::DoStart` creates the `Win32Window`, sets the close callback → `EditorModel::RequestClose()`, then initializes `CEFUISystem`. Returns `kLoading` until `CEFUISystem::IsReady()`, then `kReady`.
 
 ## Platform Dependencies
 
@@ -129,7 +129,7 @@ CluicheEditor runs as a standard ProcessingUnit with three editor-specific phase
 - **DiaEditor** - Core framework (MVC, plugin system, undo/redo, UI, commands, live connection)
 - **DiaUICEF** - CEF-based IUISystem implementation (editor-only, replaces deprecated DiaUIAwesomium)
 - **DiaCore** - Containers, StringCRC, CRC, Observer pattern
-- **DiaApplication** - ProcessingUnit/Phase/Module architecture
+- **DiaApplicationFlow** - Application, ProcessingUnit, Module v2 architecture (replaces DiaApplication v1)
 - **DiaAPI** - Command registry and infrastructure
 - **DiaCLI** - Python CLI framework (embedded)
 - **DiaDebugProtocol** - Shared message types for editor-game communication (header-only)

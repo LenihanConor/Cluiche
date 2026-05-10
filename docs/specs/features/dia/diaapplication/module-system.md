@@ -218,15 +218,15 @@ void RenderModule::DoRetainThroughTransition(const Phase* start, const Phase* en
 |----------|--------|---------|------------|
 | PD-001 | Platform | Use StringCRC for all IDs | ✅ **Compliant** - Module IDs are StringCRC |
 | PD-002 | Platform | ProcessingUnit/Phase/Module architecture | ✅ **Compliant** - Module is bottom layer |
-| SD-001 | DiaApplication | Three-level hierarchy | ✅ **Compliant** - Module is lowest level |
-| SD-010 | DiaApplication | Explicit AddDependancy() | ✅ **Compliant** - No automatic dependency resolution |
+| SD-001 | DiaApplicationFlow | Three-level hierarchy | ✅ **Compliant** - Module is lowest level |
+| SD-010 | DiaApplicationFlow | Explicit AddDependancy() | ✅ **Compliant** - No automatic dependency resolution |
 
 ---
 
 ## Files Affected
 
-- `Dia/DiaApplication/ApplicationModule.h`
-- `Dia/DiaApplication/ApplicationModule.cpp`
+- `Dia/DiaApplicationFlow/ApplicationModule.h`
+- `Dia/DiaApplicationFlow/ApplicationModule.cpp`
 - `Cluiche/Tests/GoogleTests/Application/TestModule.cpp`
 
 ---

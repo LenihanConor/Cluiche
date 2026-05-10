@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 
-#include <DiaApplication/ApplicationProcessingUnit.h>
-#include <DiaApplication/ApplicationPhase.h>
-#include <DiaApplication/ApplicationModule.h>
-#include <DiaApplication/MessageBus.h>
+#include <DiaApplicationFlow/ApplicationProcessingUnit.h>
+#include <DiaApplicationFlow/ApplicationPhase.h>
+#include <DiaApplicationFlow/ApplicationModule.h>
+#include <DiaApplicationFlow/MessageBus.h>
 #include <DiaInput/InputSourceManager.h>
 #include <DiaInput/EventData.h>
 #include <DiaInput/Event.h>

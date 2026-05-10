@@ -15,7 +15,7 @@ namespace Dia
 
 	namespace Editor
 	{
-		// Pure manager — no DiaApplication dependency.
+		// Pure manager — no DiaApplicationFlow dependency.
 		// Call Initialize() once on startup. Call Update() each frame.
 		// Connection is on-demand: call Connect(host, port) when the game is ready.
 		// The tool boots cleanly with no game present.

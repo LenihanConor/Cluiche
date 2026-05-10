@@ -259,7 +259,7 @@ int DebugServerModule::GetConnectionCount() const {
 | Source | ID | Decision Summary | Compliance |
 |--------|----|--------------------|------------|
 | Dia | AD-004 | ProcessingUnit/Phase/Module for apps | ✅ **Compliant** - DebugServerModule extends Module |
-| DiaDebugServer | DDS-001 | Generic system (not DiaApplication-specific) | ✅ **Compliant** - Can be used by any Dia app |
+| DiaDebugServer | DDS-001 | Generic system (not DiaApplicationFlow-specific) | ✅ **Compliant** - Can be used by any Dia app |
 | DiaDebugServer | DDS-004 | Always listen in Debug, disabled in Release | ✅ **Compliant** - Conditional compilation |
 | DiaDebugServer | DDS-009 | Use DiaWebSocket::Server | ✅ **Compliant** - Uses WebSocket::Server |
 

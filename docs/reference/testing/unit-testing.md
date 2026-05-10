@@ -357,7 +357,7 @@ void TestMatrix33Operations()
 
 ---
 
-### DiaApplication: Module System
+### DiaApplicationFlow: Module System
 
 #### Module Dependency Tests
 
@@ -562,7 +562,7 @@ void TestRenderer()
 **Coverage Goals:**
 - DiaCore: 70%+ (containers, type system)
 - DiaMaths: 70%+ (vectors, matrices, shapes)
-- DiaApplication: 60%+ (modules, phases)
+- DiaApplicationFlow: 60%+ (modules, phases)
 
 **[→ Testing Strategy](test.md)**  
 **[→ Integration Testing](integration-testing.md)**  

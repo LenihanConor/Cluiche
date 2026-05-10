@@ -30,7 +30,7 @@
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
       <Project>{8D41CBE3-C493-428D-95F3-627E56500667}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\DiaApplication\DiaApplication.vcxproj">
+    <ProjectReference Include="..\DiaApplicationFlow\DiaApplicationFlow.vcxproj">
       <Project>{DD3D58EF-028B-42CB-B837-0042BA30D96F}</Project>
     </ProjectReference>
     <ProjectReference Include="..\DiaWebSocket\DiaWebSocket.vcxproj">

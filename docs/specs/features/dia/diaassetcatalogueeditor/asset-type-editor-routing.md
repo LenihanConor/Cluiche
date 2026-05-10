@@ -139,7 +139,7 @@ No dedicated panel. The `open_asset` action is triggered from the Asset List (do
 | SD-ACE-005 | Output to Cluiche/out/CluicheEditor/DiaAssetCatalogueEditor/ | **Compliant** — no file output |
 | SD-ACE-007 | Rules engine logic in DiaAssetCatalogue, editor UI only | **N/A** — not related to rules engine |
 | SED-009 | Undo/redo via IEditorCommand + CommandHistory | **N/A** — open_asset is not undoable (external side effect) |
-| SED-015 | DiaEditor is pure C++ library, no DiaApplication dependency | **Compliant** — no DiaApplication types used |
+| SED-015 | DiaEditor is pure C++ library, no DiaApplicationFlow dependency | **Compliant** — no DiaApplicationFlow types used |
 | SED-020 | Plugin output to Cluiche/out/CluicheEditor/\<PluginName\>/ | **Compliant** — no file output |
 | SED-021 | Per-plugin session context via .context.json | **N/A** — no session state for routing |
 

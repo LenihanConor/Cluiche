@@ -115,7 +115,7 @@ Public interface reference:
 
 #### Dia Engine APIs
 
-- [DiaApplication API](reference/api/dia/application-api.md) - Module/Phase/ProcessingUnit
+- [DiaApplicationFlow API](reference/api/dia/application-api.md) - Module/Phase/ProcessingUnit
 - [DiaCore API](reference/api/dia/core-api.md) - Containers, Type system, Time
 - [DiaGraphics API](reference/api/dia/graphics-api.md) - ICanvas, Frame
 - [DiaMaths API](reference/api/dia/maths-api.md) - Vector, Matrix, Transform, Shape
@@ -166,11 +166,11 @@ Detailed exploration of major subsystems:
 
 ### Other Subsystems
 *For detailed information on other subsystems, see:*
-- **DiaApplication** - See [Application API](reference/api/dia/application-api.md) and [Architecture](reference/architecture/architecture.md)
+- **DiaApplicationFlow** - See [Application API](reference/api/dia/application-api.md) and [Architecture](reference/architecture/architecture.md)
 - **DiaCore** - See [Core API](reference/api/dia/core-api.md) and [Why Type System?](reference/design-rationale/why-type-system.md)
 - **DiaGraphics** - See [Graphics API](reference/api/dia/graphics-api.md)
 
-<!-- TODO: Create detailed subsystem deep dives for DiaApplication, DiaCore, DiaGraphics -->
+<!-- TODO: Create detailed subsystem deep dives for DiaApplicationFlow, DiaCore, DiaGraphics -->
 
 ---
 

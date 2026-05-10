@@ -6,7 +6,7 @@
 |-------|------|------|
 | Platform | Cluiche | @docs/specs/platform/Cluiche.md |
 | Application | Dia | @docs/specs/applications/dia.md |
-| System | DiaApplication | @docs/specs/systems/dia/diaapplication.md |
+| System | DiaApplicationFlow | @docs/specs/systems/dia/diaapplication.md |
 | Feature | **PU Parent-Child Tree** | (this document) |
 
 **Status:** `Done`
@@ -282,15 +282,15 @@ Returns false if a collision is found.
 ## Files Affected
 
 ### Headers (Modified)
-- `Dia/DiaApplication/ApplicationProcessingUnit.h` — add tree API, parent pointer, child storage, child threads
+- `Dia/DiaApplicationFlow/ApplicationProcessingUnit.h` — add tree API, parent pointer, child storage, child threads
 
 ### Implementation (Modified)
-- `Dia/DiaApplication/ApplicationProcessingUnit.cpp` — implement tree methods, modify DoStart/DoStop for auto thread lifecycle
+- `Dia/DiaApplicationFlow/ApplicationProcessingUnit.cpp` — implement tree methods, modify DoStart/DoStop for auto thread lifecycle
 
 ### Headers (New or Modified)
-- `Dia/DiaApplication/Loader/ApplicationLoader.h` — add LoadApplicationTree()
-- `Dia/DiaApplication/Loader/ApplicationLoader.cpp` — implement tree construction from merged manifest
-- `Dia/DiaApplication/Manifest/ApplicationManifest.h` — add parentInstanceId to ProcessingUnitEntry
+- `Dia/DiaApplicationFlow/Loader/ApplicationLoader.h` — add LoadApplicationTree()
+- `Dia/DiaApplicationFlow/Loader/ApplicationLoader.cpp` — implement tree construction from merged manifest
+- `Dia/DiaApplicationFlow/Manifest/ApplicationManifest.h` — add parentInstanceId to ProcessingUnitEntry
 
 ### Tests (New)
 - `Cluiche/Tests/GoogleTests/Application/TestPUTree.cpp`
@@ -317,12 +317,12 @@ Returns false if a collision is found.
 | AD-001 | Dia App | Module docs with YAML frontmatter | **Compliant** — update existing dia.application architecture doc to reflect tree capability. |
 | AD-002 | Dia App | No STL in public APIs | **Compliant** — see PD-004. |
 | AD-003 | Dia App | Namespace Dia::\<Module\>:: | **Compliant** — all new code in Dia::Application::. |
-| SD-001 | DiaApplication | PU/Phase/Module three-level hierarchy | **Compliant** — PU tree is a layer above the three levels, not a replacement. Each PU in the tree still has its own phases and modules. |
-| SD-002 | DiaApplication | StateObject base with explicit state machine | **Compliant** — child PUs follow the same state machine. Parent respects child state during teardown. |
-| SD-003 | DiaApplication | QueuePhaseTransition thread-safe, TransitionPhase immediate | **Compliant** — unchanged. Tree doesn't affect phase transition semantics within a PU. |
-| SD-006 | DiaApplication | Raw pointer and UniquePtr ownership | **Compliant** — children owned via UniquePtr (AddChildProcessingUnit). Parent back-pointer is raw (non-owning). Consistent with existing AddPhaseWithOwnership pattern. |
-| SD-010 | DiaApplication | Explicit dependencies via AddDependancy() | **Compliant** — PU tree relationships are explicit (AddChildProcessingUnit). No automatic discovery. |
-| SD-011 | DiaApplication | PU parent-child tree with auto thread lifecycle | **Compliant** — this feature implements SD-011. |
+| SD-001 | DiaApplicationFlow | PU/Phase/Module three-level hierarchy | **Compliant** — PU tree is a layer above the three levels, not a replacement. Each PU in the tree still has its own phases and modules. |
+| SD-002 | DiaApplicationFlow | StateObject base with explicit state machine | **Compliant** — child PUs follow the same state machine. Parent respects child state during teardown. |
+| SD-003 | DiaApplicationFlow | QueuePhaseTransition thread-safe, TransitionPhase immediate | **Compliant** — unchanged. Tree doesn't affect phase transition semantics within a PU. |
+| SD-006 | DiaApplicationFlow | Raw pointer and UniquePtr ownership | **Compliant** — children owned via UniquePtr (AddChildProcessingUnit). Parent back-pointer is raw (non-owning). Consistent with existing AddPhaseWithOwnership pattern. |
+| SD-010 | DiaApplicationFlow | Explicit dependencies via AddDependancy() | **Compliant** — PU tree relationships are explicit (AddChildProcessingUnit). No automatic discovery. |
+| SD-011 | DiaApplicationFlow | PU parent-child tree with auto thread lifecycle | **Compliant** — this feature implements SD-011. |
 
 ---
 

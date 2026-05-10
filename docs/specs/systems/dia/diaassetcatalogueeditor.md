@@ -189,7 +189,7 @@ No dependency on DiaAssetPipeline, DiaAssetRuntime, DiaWebSocket, or any renderi
 | SD-CAT-001 | Asset IDs strictly `type.name` composites | DiaAssetCatalogue | Editor enforces `type.name` format on create; shows error inline if format invalid. |
 | SD-CAT-007 | AssetRecord carries scope and tags | DiaAssetCatalogue | Editor exposes scope selector (global/stage + stage name) and tag editor per record. |
 | SED-009 | Undo/redo via IEditorCommand + CommandHistory | DiaEditor | All manifest mutations wrapped as IEditorCommand. SD-ACE-004. |
-| SED-015 | DiaEditor is a pure C++ library, no DiaApplication dependency | DiaEditor | DiaAssetCatalogueEditor implements IEditorPlugin; no DiaApplication types used. |
+| SED-015 | DiaEditor is a pure C++ library, no DiaApplicationFlow dependency | DiaEditor | DiaAssetCatalogueEditor implements IEditorPlugin; no DiaApplicationFlow types used. |
 | SED-020 | Plugin output to `Cluiche/out/CluicheEditor/<PluginName>/` | DiaEditor | Output path is `Cluiche/out/CluicheEditor/DiaAssetCatalogueEditor/`. SD-ACE-005. |
 | SED-021 | Per-plugin session context via `.context.json` | DiaEditor | Session context (last manifest path, active panel, selected record) persisted in `.context.json`. |
 | SD-APIPE-001 | DiaAssetPipeline reads `assets.catalogue.json`; generates `assets.runtime.json` | DiaAssetPipeline | DiaAssetCatalogueEditor is the sole writer of `assets.catalogue.json`. Pipeline never writes to it. |

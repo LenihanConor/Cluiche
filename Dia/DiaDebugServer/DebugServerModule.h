@@ -1,7 +1,7 @@
 #ifndef DIA_DEBUG_SERVER_MODULE_H
 #define DIA_DEBUG_SERVER_MODULE_H
 
-#include <DiaApplication/ApplicationModule.h>
+#include <DiaApplicationFlow/ApplicationModule.h>
 #include <DiaCore/CRC/StringCRC.h>
 
 #include "DiaDebugServer/SubscriptionManager.h"

@@ -216,7 +216,7 @@ Code coverage ≥ 60% for core systems.
 **Acceptance Criteria:**
 - [ ] DiaCore: ≥ 70% coverage
 - [ ] DiaMaths: ≥ 70% coverage
-- [ ] DiaApplication: ≥ 60% coverage
+- [ ] DiaApplicationFlow: ≥ 60% coverage
 - [ ] Cluiche: ≥ 40% coverage (lower due to integration code)
 
 **Measurement:**

@@ -22,7 +22,7 @@ This section documents the public API surface of Cluiche (application) and Dia (
 ### Dia Engine APIs
 
 **Foundation:**
-- [DiaApplication API](dia/application-api.md) - ProcessingUnit/Phase/Module framework
+- [DiaApplicationFlow API](dia/application-api.md) - ProcessingUnit/Phase/Module framework
 - [DiaCore API](dia/core-api.md) - Containers, patterns, type system
 
 **Platform Abstractions:**
@@ -78,7 +78,7 @@ This section documents the public API surface of Cluiche (application) and Dia (
 
 ### Framework APIs (Layer 2)
 
-**DiaApplication - Application Framework**
+**DiaApplicationFlow - Application Framework**
 - `ProcessingUnit` - Thread container
 - `Phase` - Execution stage
 - `Module` - Functional unit
@@ -87,7 +87,7 @@ This section documents the public API surface of Cluiche (application) and Dia (
 - `LevelFactory` - Level creation
 - `FrameStream<T>` - Thread-safe queue
 
-**[→ DiaApplication API Details](dia/application-api.md)**
+**[→ DiaApplicationFlow API Details](dia/application-api.md)**
 
 ---
 
@@ -391,7 +391,7 @@ while (mFrameStream.Read(data)) {
 **Need containers?** → [DiaCore API](dia/core-api.md)
 **Need math?** → [DiaMaths API](dia/maths-api.md)
 **Need rendering?** → [DiaGraphics API](dia/graphics-api.md)
-**Need threading?** → [DiaApplication API](dia/application-api.md)
+**Need threading?** → [DiaApplicationFlow API](dia/application-api.md)
 
 ---
 
@@ -445,7 +445,7 @@ Comprehensive examples available:
 
 **API Layers:**
 1. Foundation (DiaCore)
-2. Framework (DiaApplication) + Platform (DiaMaths, DiaGraphics, etc.)
+2. Framework (DiaApplicationFlow) + Platform (DiaMaths, DiaGraphics, etc.)
 3. Backend (DiaSFML)
 4. Application (Cluiche)
 

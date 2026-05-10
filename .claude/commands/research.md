@@ -288,7 +288,7 @@ Engine modules available:
 - DiaWindow — Win32 window management
 - DiaInput — keyboard, mouse, event queue
 - DiaUI / DiaUIAwesomium / DiaUICEF / DiaUIUltralight — UI systems
-- DiaApplication — ProcessingUnit, Phase, Module lifecycle
+- DiaApplicationFlow — ProcessingUnit, Phase, Module lifecycle
 - DiaAPI — command/plugin framework (DiaAPI plugins)
 - DiaSFML — SFML integration layer
 - DiaLogger — logging channels and sinks

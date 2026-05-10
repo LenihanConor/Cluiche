@@ -229,7 +229,7 @@ Gap markers: **ZERO** = no tests, **LOW** = under-tested relative to API surface
 
 ---
 
-## DiaApplication
+## DiaApplicationFlow
 
 | Component | Tests | Files | Unit | Stress/Boundary | Golden/Regression | Notes |
 |-----------|-------|-------|------|-----------------|-------------------|-------|

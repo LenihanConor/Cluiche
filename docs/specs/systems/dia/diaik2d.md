@@ -183,7 +183,7 @@ namespace Dia::IK2D {
 **Explicitly excluded:**
 - **DiaStateMachine** — no dependency; IK is a pure math/transform operation
 - **DiaGraphics** — no rendering; visual debug belongs to a future debugger system
-- **DiaApplication** — no dependency; callers invoke `IKSolver` from within their phases/modules
+- **DiaApplicationFlow** — no dependency; callers invoke `IKSolver` from within their phases/modules
 
 **Dependents:**
 - Game code (CluicheTest and future games) — creates `IKSolver`, registers chains, calls solve each frame after FK

@@ -7,7 +7,7 @@
 
 DiaRigidBody2D is the 2D rigid body physics simulation system for the Dia engine. It provides a fixed-timestep deterministic simulation loop covering velocity integration, force and torque accumulation, collision detection (broad-phase via injected spatial structure + narrow-phase via DiaGeometry2D), and collision response (impulse-based resolution). It emits collision events via an Observer-based event system.
 
-DiaRigidBody2D is a simulation layer — it does not own rendering, entity management, or application scheduling. Those concerns belong to DiaGraphics, DiaApplication, and game code respectively.
+DiaRigidBody2D is a simulation layer — it does not own rendering, entity management, or application scheduling. Those concerns belong to DiaGraphics, DiaApplicationFlow, and game code respectively.
 
 **Two body types:** `PointBody2D` (translational physics only — no angular state, no constraints) and `RigidBody2D` (full rigid body — translation + rotation + constraint attachment). `PhysicsWorld` manages separate pools for each and routes them through appropriate integration steps.
 
@@ -263,7 +263,7 @@ while accum >= fixedTimestep and steps < maxSubSteps:
 - `ISpatialStructure<void*>` — caller provides Grid, Quadtree, or BVH from DiaGeometry2D; used for both PointBody2D and RigidBody2D AABBs
 
 **Explicitly excluded:**
-- **DiaApplication** — no dependency; scheduling and module integration are the caller's concern
+- **DiaApplicationFlow** — no dependency; scheduling and module integration are the caller's concern
 
 **Dependents:**
 - Game code (CluicheTest and future games) — creates PhysicsWorld, adds bodies, calls Update()
@@ -285,7 +285,7 @@ while accum >= fixedTimestep and steps < maxSubSteps:
 | SD-001 | Fixed timestep with accumulator pattern | Deterministic simulation; decoupled from render frame rate; standard game physics practice | PhysicsWorld | Accepted | Yes |
 | SD-002 | Broad-phase injected via `ISpatialStructure<PhysicsBody*>` | Caller chooses Grid vs Quadtree based on scene type (dense dynamic vs sparse static); enables per-scene optimisation without changing physics code | Collision Detection | Accepted | Yes |
 | SD-003 | Impulse-based collision resolution | Simple, stable, well-understood; sufficient for rigid body games without constraints | Collision Response | Accepted | Yes |
-| SD-004 | Collision events via `ObserverSubject<CollisionEvent>` (DiaCore Observer pattern) | Decoupled from DiaApplication; any system can subscribe without a MessageBus dependency; consistent with platform observer pattern | Collision Events | Accepted | Yes |
+| SD-004 | Collision events via `ObserverSubject<CollisionEvent>` (DiaCore Observer pattern) | Decoupled from DiaApplicationFlow; any system can subscribe without a MessageBus dependency; consistent with platform observer pattern | Collision Events | Accepted | Yes |
 | SD-005 | PhysicsBody holds non-owning pointer to `Dia::Geometry2D::Transform` | Transform is owned by the game entity; physics updates position via the transform pointer each step | PhysicsBody | Accepted | Yes |
 | SD-006 | No STL containers in public API | Consistent with PD-004 / AD-002; DiaCore containers (DynamicArrayC) used for all output parameters | All features | Accepted | Yes |
 | SD-007 | Constraint solver uses sequential impulses (SI) | SI is iterative, stable, and well-suited to game physics; simpler than full LCP; standard choice for 2D rigid body engines (Box2D, Chipmunk) | Constraints | Accepted | Yes |

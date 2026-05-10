@@ -83,7 +83,7 @@ This registry catalogs all `.architecture.module.md` files that describe modules
 ## Dia Engine Layer
 
 ### dia.application
-- **Path:** `Dia/DiaApplication/`
+- **Path:** `Dia/DiaApplicationFlow/`
 - **File:** `dia.application.architecture.module.md`
 - **Purpose:** Application framework (ProcessingUnit/Phase/Module)
 - **No Children** (single subsystem)
@@ -339,7 +339,7 @@ This registry catalogs all `.architecture.module.md` files that describe modules
 | **Cluiche** | 10+ | Application, levels, phases, modules |
 | **DiaCore** | 20+ | Containers, architecture, type system |
 | **DiaMaths** | 5 | Vector, matrix, transform, shape, core |
-| **DiaApplication** | 1 | Framework |
+| **DiaApplicationFlow** | 1 | Framework |
 | **DiaGraphics** | 2 | Interface, frame |
 | **DiaWindow** | 2 | Interface |
 | **DiaInput** | 1 | Input events |

@@ -146,7 +146,7 @@ The editor feature creates DiaAPI command handlers that wrap these calls and ser
 | SD-ACE-005 | Output to Cluiche/out/CluicheEditor/DiaAssetCatalogueEditor/ | **Compliant** — no additional file output |
 | SD-ACE-007 | Rules engine logic in DiaAssetCatalogue, editor UI only | **Compliant** — this feature IS the UI-only implementation of SD-ACE-007; all rule parsing, evaluation, dry-run, conflict detection logic is in `CatalogueRulesEngine` (DiaAssetCatalogue) |
 | SED-009 | Undo/redo via IEditorCommand + CommandHistory | **Compliant** — Apply Rules uses `CompoundCommand` wrapping per-record update commands; full undo/redo support |
-| SED-015 | DiaEditor is pure C++ library, no DiaApplication dependency | **Compliant** — no DiaApplication types used |
+| SED-015 | DiaEditor is pure C++ library, no DiaApplicationFlow dependency | **Compliant** — no DiaApplicationFlow types used |
 | SED-020 | Plugin output to Cluiche/out/CluicheEditor/\<PluginName\>/ | **Compliant** — no file output |
 | SED-021 | Per-plugin session context via .context.json | **Compliant** — last loaded rules file path can be persisted in session context for quick reload |
 

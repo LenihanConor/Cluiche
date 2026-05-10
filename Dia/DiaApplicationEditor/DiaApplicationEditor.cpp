@@ -6,14 +6,14 @@
 #include <DiaEditor/UI/WebUIBridge.h>
 #include <DiaEditor/UI/FileDialogHandler.h>
 
-#include <DiaApplication/Manifest/ApplicationManifestLoader.h>
-#include <DiaApplication/Manifest/JsonApplicationManifestSerializer.h>
-#include <DiaApplication/Manifest/ManifestComposer.h>
-#include <DiaApplication/Manifest/ManifestValidator.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifestLoader.h>
+#include <DiaApplicationFlow/Manifest/JsonApplicationManifestSerializer.h>
+#include <DiaApplicationFlow/Manifest/ManifestComposer.h>
+#include <DiaApplicationFlow/Manifest/ManifestValidator.h>
 #include <DiaGame/DiaGameManifest.h>
 #include <DiaGame/JsonDiaGameSerializer.h>
 #include <DiaGame/GameFileComposer.h>
-#include <DiaApplication/TypeRegistry/ApplicationTypeRegistry.h>
+#include <DiaApplicationFlow/TypeRegistry/ApplicationTypeRegistry.h>
 
 #include <DiaCore/Json/external/json/json.h>
 

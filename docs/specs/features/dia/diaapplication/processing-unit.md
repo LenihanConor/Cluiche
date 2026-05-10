@@ -314,9 +314,9 @@ while (!FlaggedToStopUpdating()) {
 | PD-001 | Platform | Use StringCRC for all entity/component IDs | ✅ **Compliant** - PU uniqueId, phase IDs, module IDs all StringCRC |
 | PD-002 | Platform | ProcessingUnit/Phase/Module architecture | ✅ **Compliant** - This feature implements PD-002 |
 | PD-004 | Platform | No STL containers in public APIs | ✅ **Compliant** - Uses HashTable, DynamicArrayC. std::vector for internal ownership only. |
-| SD-001 | DiaApplication | ProcessingUnit/Phase/Module three-level hierarchy | ✅ **Compliant** - ProcessingUnit is top level of hierarchy |
-| SD-003 | DiaApplication | QueuePhaseTransition() thread-safe, TransitionPhase() immediate | ✅ **Compliant** - Queue uses mutex, Transition is immediate |
-| SD-006 | DiaApplication | Support raw pointer and UniquePtr ownership | ✅ **Compliant** - AddPhase() vs AddPhaseWithOwnership() |
+| SD-001 | DiaApplicationFlow | ProcessingUnit/Phase/Module three-level hierarchy | ✅ **Compliant** - ProcessingUnit is top level of hierarchy |
+| SD-003 | DiaApplicationFlow | QueuePhaseTransition() thread-safe, TransitionPhase() immediate | ✅ **Compliant** - Queue uses mutex, Transition is immediate |
+| SD-006 | DiaApplicationFlow | Support raw pointer and UniquePtr ownership | ✅ **Compliant** - AddPhase() vs AddPhaseWithOwnership() |
 
 ---
 
@@ -334,10 +334,10 @@ while (!FlaggedToStopUpdating()) {
 ## Files Affected
 
 ### Headers
-- `Dia/DiaApplication/ApplicationProcessingUnit.h`
+- `Dia/DiaApplicationFlow/ApplicationProcessingUnit.h`
 
 ### Implementation
-- `Dia/DiaApplication/ApplicationProcessingUnit.cpp`
+- `Dia/DiaApplicationFlow/ApplicationProcessingUnit.cpp`
 
 ### Tests
 - `Cluiche/Tests/GoogleTests/Application/TestProcessingUnit.cpp`

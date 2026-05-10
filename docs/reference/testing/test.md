@@ -600,7 +600,7 @@ TEST(Random, NoRaceCondition) {
 | **DiaCore** | 70% | ~30% | 🚧 Needs Work |
 | **DiaMaths** | 70% | ~40% | 🚧 Needs Work |
 | **DiaGraphics** | 60% | ~10% | ❌ Minimal |
-| **DiaApplication** | 80% | <20% | ❌ Minimal |
+| **DiaApplicationFlow** | 80% | <20% | ❌ Minimal |
 | **DiaInput** | 60% | ~20% | 🚧 Needs Work |
 | **DiaSFML** | 50% | 0% | ❌ None |
 | **Cluiche App** | 70% | ~25% | 🚧 Needs Work |
@@ -608,8 +608,8 @@ TEST(Random, NoRaceCondition) {
 ### Priority Areas (By Impact)
 
 **P0 (Critical):**
-1. Module dependency resolution (DiaApplication)
-2. Phase transitions (DiaApplication)
+1. Module dependency resolution (DiaApplicationFlow)
+2. Phase transitions (DiaApplicationFlow)
 3. Thread synchronization (ObserverSubject, FrameStream)
 4. Type system (StringCRC, TypeRegistry)
 
@@ -636,7 +636,7 @@ TEST(Random, NoRaceCondition) {
 ├── UnitTests/              # Unit test projects
 │   ├── DiaCoreTests/
 │   ├── DiaMathsTests/
-│   ├── DiaApplicationTests/
+│   ├── DiaApplicationFlowTests/
 │   └── CluicheTests/
 └── Tests/                  # Integration test projects
     ├── ModuleTests/
@@ -800,7 +800,7 @@ DiaMathsTests.exe --gtest_repeat=100
 
 ### High-Priority Gaps
 
-**DiaApplication:**
+**DiaApplicationFlow:**
 - ❌ Module dependency cycle detection
 - ❌ Phase retention logic
 - ❌ Cross-thread module communication
@@ -876,7 +876,7 @@ DiaMathsTests.exe --gtest_repeat=100
 **Coverage Goals:**
 - DiaCore: 70% (currently ~30%)
 - DiaMaths: 70% (currently ~40%)
-- DiaApplication: 80% (currently <20%)
+- DiaApplicationFlow: 80% (currently <20%)
 
 **Priorities:**
 1. Fix DiaMaths template bugs, add regression tests

@@ -278,7 +278,7 @@ struct DebugPrimitiveText2D {
 - **imgui-sfml** — two `.cpp` files added to `DiaSFML`
 
 **Explicitly excluded:**
-- **DiaApplication** — no dependency; caller schedules `Draw()` in the appropriate phase
+- **DiaApplicationFlow** — no dependency; caller schedules `Draw()` in the appropriate phase
 - **DiaStateMachine** — state graph visualisation belongs in the editor (VisJS), not a draw class
 
 **Dependents:**

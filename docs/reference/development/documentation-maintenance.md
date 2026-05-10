@@ -365,7 +365,7 @@ void Update()
 
 **Better:**
 ```cpp
-// Dia/DiaApplication/ApplicationModule.h
+// Dia/DiaApplicationFlow/ApplicationModule.h
 void ApplicationModule::Update(float dt)
 {
     mTime += dt;

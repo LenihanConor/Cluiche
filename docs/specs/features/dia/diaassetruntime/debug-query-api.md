@@ -114,7 +114,7 @@ for (unsigned int i = 0; i < loaded.Size(); ++i)
 | AD-002 | No STL in public APIs | **Compliant.** Same as PD-004. |
 | AD-003 | Namespace Dia::AssetRuntime:: | **Compliant.** All code under `Dia::AssetRuntime::`. |
 | SD-CAT-001 | Asset IDs are type.name composites | **Compliant.** Queries return type.name StringCRC IDs. |
-| SD-ARUN-001 | No DiaApplication dependency | **Compliant.** Debug queries are pure library methods with no lifecycle coupling. |
+| SD-ARUN-001 | No DiaApplicationFlow dependency | **Compliant.** Debug queries are pure library methods with no lifecycle coupling. |
 | SD-ARUN-008 | No DiaAssetCatalogue dependency | **Compliant.** Queries operate on RuntimeStageEntry and AssetState data, not catalogue records. |
 
 ## AI Review Questions

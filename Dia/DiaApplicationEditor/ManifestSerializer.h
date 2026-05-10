@@ -1,6 +1,6 @@
 #pragma once
 
-#include <DiaApplication/Manifest/ApplicationManifest.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifest.h>
 
 namespace Json { class Value; }
 

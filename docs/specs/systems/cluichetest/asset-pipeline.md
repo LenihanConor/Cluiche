@@ -276,7 +276,7 @@ For V1, all handlers are copy-as-is (no-op transform). The pipeline:
 | DiaAssetRuntime | AssetRuntime instance (load manifest, request stage load/unload, path resolution, state queries) |
 | DiaAssetPipeline | Build-time deploy of raw → bin (configured via pipeline.toml) |
 | DiaAssetCatalogue | Tool-time registry (editor uses to discover and display assets) |
-| DiaApplication | Module base class, ProcessingUnit, Phase gating |
+| DiaApplicationFlow | Module base class, ProcessingUnit, Phase gating |
 | DiaCore PathStore | Runtime path alias registration |
 | Ultralight | `resource_path_prefix` configuration |
 
@@ -326,7 +326,7 @@ For V1, all handlers are copy-as-is (no-op transform). The pipeline:
 | PD-010 | `.diagame` is project root; `.diastage` declares stage metadata | Platform | `cluichetest.diagame` is the entry point; stages discovered via typed imports |
 | AD-001 | Three ProcessingUnits (Main/Render/Sim) | CluicheTest | AssetServiceModule on Main PU; Sim and Render are read-only consumers |
 | AD-005 | Application is testbed, not production | CluicheTest | Blocking loads are acceptable; no streaming requirements |
-| SD-ARUN-001 | DiaAssetRuntime has no DiaApplication dependency | DiaAssetRuntime | AssetServiceModule wraps DiaAssetRuntime; the library doesn't know about Modules |
+| SD-ARUN-001 | DiaAssetRuntime has no DiaApplicationFlow dependency | DiaAssetRuntime | AssetServiceModule wraps DiaAssetRuntime; the library doesn't know about Modules |
 | SD-ARUN-002 | Stage is unit of load/unload | DiaAssetRuntime | AssetServiceModule calls `RequestStageLoad/Unload` — never individual asset loads |
 | SD-ARUN-004 | Consumers acknowledge load/unload | DiaAssetRuntime | AssetServiceModule (or downstream listeners) must call `AcknowledgeAssetLoaded` |
 | SD-ARUN-006 | No content loading in DiaAssetRuntime | DiaAssetRuntime | Consuming systems (DiaGraphics, etc.) load content in response to `OnAssetReady` |
@@ -338,7 +338,7 @@ For V1, all handlers are copy-as-is (no-op transform). The pipeline:
 | 1 | Phase gating | How does the load phase know all assets are loaded if acknowledgement comes from content consumers (DiaGraphics, etc.) and not from AssetServiceModule itself? | AssetServiceModule registers as an `IAssetStateListener`. Content consumers register separately. The gating condition checks `DiaAssetRuntime::IsAssetReady()` for all assets in the requested stage — which requires consumers to have called `AcknowledgeAssetLoaded`. The load phase doesn't transition until all assets reach `Loaded` state. |
 | 2 | Threading | What if a stage unload is triggered while Sim/Render are mid-frame reading asset data? | Unload only happens during a phase transition. Phase transitions on Main PU synchronize with Sim/Render PU phase boundaries. Assets are guaranteed immutable during active gameplay phases. |
 | 3 | Global as stage | Global assets are loaded via `RequestStageLoad("global")` — does DiaAssetRuntime need a special "global" stage entry in `assets.runtime.json`? | Yes. The pipeline creates a synthetic `stage.global` entry in `assets.runtime.json` listing all global-scoped assets. DiaAssetRuntime treats it as a regular stage with ref-counted assets. |
-| 4 | Manifest paths | `.diagame` uses relative paths to `.diaapp` imports. After deploy, these paths change (assets are under `assets/global/Manifests/`). How is this resolved? | The `.diagame` and `.diastage` are deployment configuration — they tell AssetServiceModule what to load. The actual file resolution uses DiaAssetRuntime's path resolution (asset ID → absolute deploy path). Manifest imports in `.diagame` are for the DiaApplication loader (existing system), not for asset resolution. |
+| 4 | Manifest paths | `.diagame` uses relative paths to `.diaapp` imports. After deploy, these paths change (assets are under `assets/global/Manifests/`). How is this resolved? | The `.diagame` and `.diastage` are deployment configuration — they tell AssetServiceModule what to load. The actual file resolution uses DiaAssetRuntime's path resolution (asset ID → absolute deploy path). Manifest imports in `.diagame` are for the DiaApplicationFlow loader (existing system), not for asset resolution. |
 | 5 | DiaAssetCatalogue | When enumerating from `.diagame` at tool-time, how does DiaAssetCatalogue discover assets if there's no `assets.catalogue.json` yet? | Feature 1 creates the directory structure. DiaAssetCatalogueEditor's file discovery (existing feature) scans the raw directory tree to discover assets and create/update `assets.catalogue.json`. The `.diagame` provides the root; the editor walks `Global/` and `Stages/`. |
 | 6 | pathStoreConfig removal | Other applications (CluicheEditor, GoogleTests) may also use pathStoreConfig.json — does removing it break them? | Each application gets its own asset tree and manifest. CluicheEditor and GoogleTests would need their own `.diagame` with path aliases. This migration is scoped to CluicheTest only. |
 | 7 | Webix retention | Webix 5.2.1 is ~30MB of library files. Does it deploy as a folder asset or individual files? | Folder asset (`folder.webix_5_2_1`). DiaAssetPipeline's folder handler deploys the entire directory tree recursively (SD-CAT-013). A single asset ID resolves to the folder root. |

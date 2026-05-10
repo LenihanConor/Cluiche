@@ -103,7 +103,7 @@ const Dia::Core::Containers::DynamicArrayC<Contact, kMaxContacts>& GetLastContac
 - **DiaGeometry2D** (transitive via DiaRigidBody2D) — `Transform`, shape primitives for position/dimension reads
 
 **Explicitly excluded:**
-- **DiaApplication** — no dependency; scheduling is the caller's concern
+- **DiaApplicationFlow** — no dependency; scheduling is the caller's concern
 - **DiaLogger** — debug drawing is visual, not logged
 
 **Dependents:**

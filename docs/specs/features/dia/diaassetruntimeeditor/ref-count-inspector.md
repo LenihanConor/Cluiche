@@ -103,7 +103,7 @@ A dockable CEF panel named "Ref Count Inspector" rendered within the DiaAssetRun
 | SD-ARED-004 | Output to Cluiche/out/CluicheEditor/DiaAssetRuntimeEditor/ | Compliant |
 | SD-ARED-005 | All panels disabled when disconnected | Compliant -- panel greyed with "Not connected" message |
 | SED-009 | Undo/redo | Not applicable -- read-only panel |
-| SED-015 | DiaEditor is pure C++ library, no DiaApplication dependency | Compliant |
+| SED-015 | DiaEditor is pure C++ library, no DiaApplicationFlow dependency | Compliant |
 | SED-020 | Plugin output to Cluiche/out/CluicheEditor/\<PluginName\>/ | Compliant |
 | SED-021 | Per-plugin session context via .context.json | Compliant -- selected asset ID not persisted (transient selection) |
 

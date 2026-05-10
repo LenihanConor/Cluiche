@@ -17,7 +17,7 @@ Developers need real-time visibility into running game performance — FPS per P
 
 Two layers:
 
-**Game side (DiaApplication):** A `MetricsCollectorModule` that lives in the main ProcessingUnit. Sub-PUs receive a pointer to it via `ProcessingUnit::SetMetricsCollector()` and call `ReportFrame()` at the end of each update tick. The module also queries process memory. `DebugServerModule` reads the latest snapshot and broadcasts it in the existing `core_metrics` message.
+**Game side (DiaApplicationFlow):** A `MetricsCollectorModule` that lives in the main ProcessingUnit. Sub-PUs receive a pointer to it via `ProcessingUnit::SetMetricsCollector()` and call `ReportFrame()` at the end of each update tick. The module also queries process memory. `DebugServerModule` reads the latest snapshot and broadcasts it in the existing `core_metrics` message.
 
 **Editor side:** The Game Connection panel UI (already exists) gains a summary bar, an FPS line chart (one line per PU), and a memory line chart. Data arrives via the existing `GameConnectionManager` raw message channel. No new panels, plugins, or C++ visualization framework needed.
 
@@ -44,7 +44,7 @@ Two layers:
 ### MetricsCollectorModule (Game Side)
 
 ```cpp
-// Dia/DiaApplication/Metrics/MetricsCollectorModule.h
+// Dia/DiaApplicationFlow/Metrics/MetricsCollectorModule.h
 namespace Dia::Application
 {
     struct PUMetrics
@@ -106,7 +106,7 @@ namespace Dia::Application
 ### ProcessingUnit Injection
 
 ```cpp
-// Added to Dia/DiaApplication/ApplicationProcessingUnit.h
+// Added to Dia/DiaApplicationFlow/ApplicationProcessingUnit.h
 void SetMetricsCollector(MetricsCollectorModule* collector);
 MetricsCollectorModule* GetMetricsCollector() const;
 ```
@@ -212,17 +212,17 @@ Both charts use plain vanilla JS with HTML5 canvas — the Game Connection panel
 ## Implementation Files
 
 **New files:**
-- `Dia/DiaApplication/Metrics/MetricsCollectorModule.h`
-- `Dia/DiaApplication/Metrics/MetricsCollectorModule.cpp`
+- `Dia/DiaApplicationFlow/Metrics/MetricsCollectorModule.h`
+- `Dia/DiaApplicationFlow/Metrics/MetricsCollectorModule.cpp`
 - `Cluiche/Tests/GoogleTests/Application/TestMetricsCollector.cpp`
 
 **Modified files:**
-- `Dia/DiaApplication/ApplicationProcessingUnit.h` — `SetMetricsCollector` / `GetMetricsCollector`
-- `Dia/DiaApplication/ApplicationProcessingUnit.cpp` — member init, ReportFrame call site
+- `Dia/DiaApplicationFlow/ApplicationProcessingUnit.h` — `SetMetricsCollector` / `GetMetricsCollector`
+- `Dia/DiaApplicationFlow/ApplicationProcessingUnit.cpp` — member init, ReportFrame call site
 - `Dia/DiaDebugProtocol/MessageStructs.h` — extended `CoreMetricsPayload`
 - `Dia/DiaDebugProtocol/Serialization.h` — serialize per-PU array
 - `Dia/DiaDebugServer/DebugServerModule.cpp` — read from MetricsCollectorModule
-- `Dia/DiaApplication/DiaApplication.vcxproj` + `.filters` — new Metrics files
+- `Dia/DiaApplicationFlow/DiaApplicationFlow.vcxproj` + `.filters` — new Metrics files
 - `Cluiche/Tests/GoogleTests/GoogleTests.vcxproj` — new test file
 - Game Connection panel HTML/JS — summary bar + charts
 

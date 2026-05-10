@@ -265,7 +265,7 @@ public:
 - `Dia/DiaApplicationEditor/DiaApplicationEditor.cpp` - Config push command and response handling
 - `Dia/DiaApplicationEditor/UI/ModuleInspector.tsx` - Debounced config editing
 - `Dia/DiaDebugServer/DiaDebugServer.cpp` - update_config command handler
-- `Dia/DiaApplication/Module.h` - CanHotUpdateConfig() and UpdateConfig() interface
+- `Dia/DiaApplicationFlow/Module.h` - CanHotUpdateConfig() and UpdateConfig() interface
 
 ## Binding Decisions Compliance
 

@@ -153,7 +153,7 @@ namespace Dia::DebugProtocol {
 
 ### Data Type Constants
 
-Core data types defined here. Systems export their own domain-specific data types as **typed StringCRC constants in a dedicated header** (e.g., `DiaApplication/DebugDataTypes.h`). Callers reference the constant — never raw strings — so a typo is a compile error.
+Core data types defined here. Systems export their own domain-specific data types as **typed StringCRC constants in a dedicated header** (e.g., `DiaApplicationFlow/DebugDataTypes.h`). Callers reference the constant — never raw strings — so a typo is a compile error.
 
 ```cpp
 namespace Dia::DebugProtocol {
@@ -164,7 +164,7 @@ namespace Dia::DebugProtocol {
 }
 
 // System-specific data types live in their own headers:
-// DiaApplication/DebugDataTypes.h
+// DiaApplicationFlow/DebugDataTypes.h
 namespace Dia::Application::DebugDataType {
     static const StringCRC kProcessingUnitState("processing_unit_state");
     static const StringCRC kPhaseTransition("phase_transition");
@@ -338,15 +338,15 @@ If the server does not support the client's protocol version, it responds with `
 
 ### Example Data Types (for subscription)
 
-Data types are StringCRC values defined by each system. The protocol does not enumerate them — any StringCRC is valid as a subscription data type. Examples from DiaApplication:
+Data types are StringCRC values defined by each system. The protocol does not enumerate them — any StringCRC is valid as a subscription data type. Examples from DiaApplicationFlow:
 
 | Data Type | Defined By | Description |
 |-----------|------------|-------------|
-| `processing_unit_state` | DiaApplication | PU/Phase/Module runtime state |
-| `phase_transition` | DiaApplication | Phase transition events |
-| `module_state` | DiaApplication | Individual module state details |
-| `message_bus` | DiaApplication | MessageBus messages (inter-module) |
-| `performance_breakdown` | DiaApplication | Detailed timing per module/phase |
+| `processing_unit_state` | DiaApplicationFlow | PU/Phase/Module runtime state |
+| `phase_transition` | DiaApplicationFlow | Phase transition events |
+| `module_state` | DiaApplicationFlow | Individual module state details |
+| `message_bus` | DiaApplicationFlow | MessageBus messages (inter-module) |
+| `performance_breakdown` | DiaApplicationFlow | Detailed timing per module/phase |
 
 ## Dependencies
 
@@ -354,7 +354,7 @@ Data types are StringCRC values defined by each system. The protocol does not en
 - **DiaCore** - StringCRC for data type constants, JSON parsing (jsoncpp wrapper)
 
 ### No Other Dependencies
-DiaDebugProtocol is intentionally dependency-light. It does not depend on DiaApplication, DiaWebSocket, or any transport layer.
+DiaDebugProtocol is intentionally dependency-light. It does not depend on DiaApplicationFlow, DiaWebSocket, or any transport layer.
 
 ## Related Systems
 
@@ -406,7 +406,7 @@ DiaDebugProtocol is header-only shared types with no runtime behavior. No featur
 | 6 | Structs | Who owns memory behind `const char*` in parse output structs? | Pointers reference jsoncpp's internal buffer. Structs are transient — valid only within the parse callback scope. Document at struct block. Callers who need persistence copy explicitly. |
 | 7 | Module Doc | Does header-only DiaDebugProtocol need a module doc per AD-001? | Yes — lightweight module doc so it appears in `dia_modules.py` dependency graph and documents consumers. No Module base class needed. |
 | 8 | Handshake | What is the handshake sequence on connect? | Client-first: editor sends handshake with protocol version, server responds accepted/rejected. No other messages before handshake completes. Server closes connection on version mismatch. |
-| 9 | Extensibility | Where do system-specific data type constants live? | Each system exports typed StringCRC constants in a dedicated header (e.g., `DiaApplication/DebugDataTypes.h`). Callers use the constant, never raw strings — typo = compile error. Protocol is type-agnostic; subscriptions are just StringCRC values. |
+| 9 | Extensibility | Where do system-specific data type constants live? | Each system exports typed StringCRC constants in a dedicated header (e.g., `DiaApplicationFlow/DebugDataTypes.h`). Callers use the constant, never raw strings — typo = compile error. Protocol is type-agnostic; subscriptions are just StringCRC values. |
 
 ## Status
 

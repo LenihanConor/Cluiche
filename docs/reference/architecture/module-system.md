@@ -64,7 +64,7 @@ Dependencies (Other Modules)
 
 **Purpose:** Thread orchestrator that runs phases
 
-**File:** `Dia/DiaApplication/ApplicationProcessingUnit.h`
+**File:** `Dia/DiaApplicationFlow/ApplicationProcessingUnit.h`
 
 **Key Responsibilities:**
 - Execute phases in sequence
@@ -133,7 +133,7 @@ private:
 
 **Purpose:** Execution stage containing modules
 
-**File:** `Dia/DiaApplication/ApplicationPhase.h`
+**File:** `Dia/DiaApplicationFlow/ApplicationPhase.h`
 
 **Key Responsibilities:**
 - Manage module lifecycle (Start → Update → Stop)
@@ -208,7 +208,7 @@ private:
 
 **Purpose:** Functional unit with explicit dependencies
 
-**File:** `Dia/DiaApplication/ApplicationModule.h`
+**File:** `Dia/DiaApplicationFlow/ApplicationModule.h`
 
 **Key Responsibilities:**
 - Implement Start/Update/Stop lifecycle
@@ -735,7 +735,7 @@ private:
 
 **Purpose:** Safely reference another module within the same ProcessingUnit without manual pointer management or Observer boilerplate.
 
-**File:** `Dia/DiaApplication/ModuleRef.h`
+**File:** `Dia/DiaApplicationFlow/ModuleRef.h`
 
 **Problem:** When Module A needs to access Module B, a raw pointer requires manual nulling when B shuts down — typically via Observer inheritance, `ObserverNotification()` overrides, and explicit disconnect logic. This is fragile boilerplate that every cross-module reference would need to duplicate.
 
@@ -998,7 +998,7 @@ void MyPhase::BeforeModulesUpdate() {
 - [Design Patterns](../design-rationale/design-patterns.md) - Common patterns
 
 ### API Documentation
-- [DiaApplication API](../api/dia/application-api.md) - Module/Phase/PU API reference
+- [DiaApplicationFlow API](../api/dia/application-api.md) - Module/Phase/PU API reference
 - See [Module System](../architecture/module-system.md) for lifecycle details - Detailed lifecycle
 
 ### For AI Agents

@@ -37,7 +37,7 @@ responsibilities:
 
 non_responsibilities:
   - Editor visualization (future DiaStateMachineEditor)
-  - Application phase management (DiaApplication)
+  - Application phase management (DiaApplicationFlow)
   - Animation blending or clip playback
   - Thread safety within callbacks
   - Network synchronization

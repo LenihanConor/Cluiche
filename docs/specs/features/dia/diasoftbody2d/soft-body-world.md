@@ -14,7 +14,7 @@
 
 ## Problem Statement
 
-Soft body objects (ropes, cloth) need a simulation container that drives them at a consistent fixed timestep regardless of the render frame rate. This container must handle body lifetime, gravity, static geometry registration, and the ordered PBD step loop — while remaining decoupled from both DiaApplication scheduling and, optionally, from DiaRigidBody2D when rigid body coupling is not needed.
+Soft body objects (ropes, cloth) need a simulation container that drives them at a consistent fixed timestep regardless of the render frame rate. This container must handle body lifetime, gravity, static geometry registration, and the ordered PBD step loop — while remaining decoupled from both DiaApplicationFlow scheduling and, optionally, from DiaRigidBody2D when rigid body coupling is not needed.
 
 ---
 

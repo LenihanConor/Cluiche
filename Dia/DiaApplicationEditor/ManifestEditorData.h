@@ -1,8 +1,8 @@
 #pragma once
 
-#include <DiaApplication/Manifest/ApplicationManifest.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifest.h>
 #include <DiaGame/DiaGameManifest.h>
-#include <DiaApplication/Manifest/ManifestValidator.h>
+#include <DiaApplicationFlow/Manifest/ManifestValidator.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/CRC/StringCRC.h>
 

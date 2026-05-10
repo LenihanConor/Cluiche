@@ -28,7 +28,7 @@
 - Texture loading in SimPU: replace hardcoded paths with `AssetRuntime::ResolveAssetPath()`
 
 ### Feature 4: Manifest Path Alias Integration
-- Read `.diagame` config section via existing DiaApplication JSON loader
+- Read `.diagame` config section via existing DiaApplicationFlow JSON loader
 - Register aliases in DiaCore PathStore using existing `AddAlias` API
 - Stage aliases registered on load, unregistered on unload
 - Update `UltralightUISystem` config init to use `resource_path_prefix` from manifest

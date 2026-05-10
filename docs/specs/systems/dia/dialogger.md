@@ -26,7 +26,7 @@ DiaLogger is the engine-wide logging system for the Dia engine. It provides stru
 
 - Does NOT manage its own lifecycle (no self-init, no auto-flush)
 - Does NOT provide concrete sinks beyond `DebugOutputSink` — `EditorConsoleSink`, `FileSink`, etc. are assembled at the application level
-- Does NOT depend on or know about DiaApplication, ProcessingUnits, Phases, or Modules
+- Does NOT depend on or know about DiaApplicationFlow, ProcessingUnits, Phases, or Modules
 - Does NOT replace `Dia::Core::Log` — that stays in DiaCore for Assert and low-level debug output
 - Does NOT provide file I/O, log rotation, or disk persistence (that is a `FileSink` concern at the app level)
 - Does NOT use mutexes on the write path
@@ -205,7 +205,7 @@ All `Dia::Core::Log::OutputVaradicLine` calls outside DiaCore have been migrated
 
 | Channel | Modules | Typical Content |
 |---------|---------|-----------------|
-| `Application` | DiaApplication, CluicheEditor phases/modules | Phase transitions, module lifecycle, manifest loading, type registry |
+| `Application` | DiaApplicationFlow, CluicheEditor phases/modules | Phase transitions, module lifecycle, manifest loading, type registry |
 | `Editor` | DiaEditor (plugins, MVC, WebUIBridge, LiveConnection) | Editor framework, plugin lifecycle, game connection, UI bridge |
 | `DebugServer` | DiaDebugServer | Debug server lifecycle, protocol handling, client connections |
 | `WebSocket` | DiaWebSocket | Client/server transport errors, queue drops, connection lifecycle |
@@ -231,7 +231,7 @@ DiaCore cannot use `DIA_LOG_*` (circular dependency) and continues to use `Dia::
 - None
 
 **Dependents:**
-- **DiaApplication** — calls `DIA_LOG` from modules/phases; does not manage logger lifecycle
+- **DiaApplicationFlow** — calls `DIA_LOG` from modules/phases; does not manage logger lifecycle
 - **DiaAPI** — calls `DIA_LOG` from command registry, argument parser, Python bindings
 - **DiaWebSocket** — calls `DIA_LOG` from client/server transport
 - **DiaUICEF / DiaUIUltralight / DiaUIAwesomium** — call `DIA_LOG` from UI system implementations
@@ -247,7 +247,7 @@ DiaCore cannot use `DIA_LOG_*` (circular dependency) and continues to use `Dia::
 - File I/O, log rotation, disk persistence (owned by `FileSink` at app level)
 - Network logging (future `NetworkSink`)
 - Log aggregation, search, or indexing
-- Integration with `DiaApplication` framework (no `Module` subclass in this system)
+- Integration with `DiaApplicationFlow` framework (no `Module` subclass in this system)
 - Replacing `Dia::Core::Log` — Assert and DiaCore internals continue using it
 
 ## Decisions

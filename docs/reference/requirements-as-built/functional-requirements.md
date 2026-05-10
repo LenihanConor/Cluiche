@@ -198,7 +198,7 @@ Core framework must not depend on platform-specific APIs.
 - [ ] Can build without backend (core only)
 
 **Implementation:**
-- `DiaApplication`, `DiaCore`, `DiaMaths` - Platform-agnostic
+- `DiaApplicationFlow`, `DiaCore`, `DiaMaths` - Platform-agnostic
 - `DiaGraphics::ICanvas` - Abstract interface
 - `DiaSFML` - SFML backend (Windows/Linux/macOS)
 

@@ -365,7 +365,7 @@ All binding decisions from parent specs must be honored:
 |---|---------|----------|-------------------|--------|
 | 1 | Subprocess | How is DiaUICEF_subprocess.exe created? | CEF provides helper_main() entry point; create separate .exe project | ✅ Separate .exe project with CEF helper_main(); built alongside DiaUICEF.dll |
 | 2 | Sandbox | Should CEF sandbox be enabled? | No for Phase 5 (requires extra setup); add in Phase 7+ for security | ✅ Disabled (no_sandbox = true) - simpler deployment; enable in Phase 7+ for hardening |
-| 3 | Message Loop | CefDoMessageLoopWork vs CefRunMessageLoop? | CefDoMessageLoopWork - integrates with existing main loop | ✅ CefDoMessageLoopWork in Update() - simpler and fits DiaApplication pattern |
+| 3 | Message Loop | CefDoMessageLoopWork vs CefRunMessageLoop? | CefDoMessageLoopWork - integrates with existing main loop | ✅ CefDoMessageLoopWork in Update() - simpler and fits DiaApplicationFlow pattern |
 | 4 | Thread Safety | Can CEF be initialized on worker thread? | No - must be main thread (CEF requirement) | ✅ Main thread only - assert and document; CEF API is not thread-safe |
 | 5 | Shutdown Order | What if browsers still open during Shutdown()? | Close all browsers first, then CefShutdown (it blocks until done) | ✅ Close all CEFPage instances first; CefShutdown blocks until all browsers closed |
 | 6 | Error Handling | What if CefInitialize fails? | Return false from Initialize(); log error; CEFUISystem unusable | ✅ Return false, log error, set mIsInitialized = false; graceful degradation |

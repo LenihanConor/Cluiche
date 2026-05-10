@@ -116,9 +116,9 @@ This document tracks functional and non-functional requirements with status, pri
 **✅ P0: Provide platform-agnostic application framework**
 
 → Implementation:
-- `Dia/DiaApplication/ApplicationProcessingUnit.h`
-- `Dia/DiaApplication/ApplicationPhase.h`
-- `Dia/DiaApplication/ApplicationModule.h`
+- `Dia/DiaApplicationFlow/ApplicationProcessingUnit.h`
+- `Dia/DiaApplicationFlow/ApplicationPhase.h`
+- `Dia/DiaApplicationFlow/ApplicationModule.h`
 
 **Verification:**
 - Core framework has no platform-specific code
@@ -395,7 +395,7 @@ This document tracks functional and non-functional requirements with status, pri
 **Target Coverage:**
 - DiaCore: 70% (current ~30%)
 - DiaMaths: 70% (current ~40%)
-- DiaApplication: 80% (current <20%)
+- DiaApplicationFlow: 80% (current <20%)
 
 **[→ Test coverage targets](../testing/test-coverage-targets.md)**
 
@@ -503,7 +503,7 @@ CF-004 (Phases) → 5 phase implementations
 
 **Dia Engine:**
 ```
-DE-001 (Framework) → DiaApplication subsystem
+DE-001 (Framework) → DiaApplicationFlow subsystem
 DE-002 (Containers) → DiaCore/Containers/*
 DE-003 (Type System) → StringCRC + TypeRegistry
 DE-004 (Graphics) → DiaGraphics + DiaSFML

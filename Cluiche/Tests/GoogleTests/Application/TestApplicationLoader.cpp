@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
-#include <DiaApplication/Loader/ApplicationLoader.h>
-#include <DiaApplication/TypeRegistry/ApplicationTypeRegistry.h>
-#include <DiaApplication/ApplicationProcessingUnit.h>
-#include <DiaApplication/ApplicationPhase.h>
-#include <DiaApplication/ApplicationModule.h>
+#include <DiaApplicationFlow/Loader/ApplicationLoader.h>
+#include <DiaApplicationFlow/TypeRegistry/ApplicationTypeRegistry.h>
+#include <DiaApplicationFlow/ApplicationProcessingUnit.h>
+#include <DiaApplicationFlow/ApplicationPhase.h>
+#include <DiaApplicationFlow/ApplicationModule.h>
 #include <DiaCore/CRC/StringCRC.h>
 
 #include <fstream>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <DiaApplication/Manifest/TypedImport.h>
+#include <DiaApplicationFlow/Manifest/TypedImport.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Strings/String256.h>
 

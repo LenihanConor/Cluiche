@@ -1,6 +1,6 @@
 #pragma once
 
-#include <DiaApplication/ApplicationModule.h>
+#include <DiaApplicationFlow/ApplicationModule.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaEditor/Plugin/EditorPluginContext.h>
 #include <DiaEditor/Plugin/IPluginLoader.h>

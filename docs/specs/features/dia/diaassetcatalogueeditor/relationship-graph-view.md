@@ -126,7 +126,7 @@ No new C++ types are introduced. The graph is entirely a CEF-side visualization 
 | SD-ACE-005 | Output to Cluiche/out/CluicheEditor/DiaAssetCatalogueEditor/ | **Compliant** — no file output from this feature |
 | SD-ACE-007 | Rules engine logic in DiaAssetCatalogue, editor UI only | **Compliant** — graph queries RelationshipIndex (DiaAssetCatalogue), no logic in editor |
 | SED-009 | Undo/redo via IEditorCommand + CommandHistory | **N/A** — read-only feature, no undoable actions |
-| SED-015 | DiaEditor is pure C++ library, no DiaApplication dependency | **Compliant** — no DiaApplication types used |
+| SED-015 | DiaEditor is pure C++ library, no DiaApplicationFlow dependency | **Compliant** — no DiaApplicationFlow types used |
 | SED-020 | Plugin output to Cluiche/out/CluicheEditor/\<PluginName\>/ | **Compliant** — no file output |
 | SED-021 | Per-plugin session context via .context.json | **Compliant** — selected asset for graph can be persisted in session context |
 

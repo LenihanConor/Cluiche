@@ -2,10 +2,10 @@
 #include "GameFileComposer.h"
 #include "DiaGameManifestLoader.h"
 
-#include <DiaApplication/Manifest/ApplicationManifest.h>
-#include <DiaApplication/Manifest/ApplicationManifestLoader.h>
-#include <DiaApplication/TypeRegistry/ApplicationTypeRegistry.h>
-#include <DiaApplication/ApplicationProcessingUnit.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifest.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifestLoader.h>
+#include <DiaApplicationFlow/TypeRegistry/ApplicationTypeRegistry.h>
+#include <DiaApplicationFlow/ApplicationProcessingUnit.h>
 #include <DiaLogger/DiaLog.h>
 #include <DiaCore/Core/Assert.h>
 

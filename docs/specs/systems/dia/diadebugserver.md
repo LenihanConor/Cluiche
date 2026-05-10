@@ -177,13 +177,13 @@ DiaDebugServer-specific protocol behavior:
 - **Phase transitions** pushed as immediate events (DDS-007)
 - **DiaAPI commands** forwarded to CommandRegistry and results returned (DDS-008)
 - **Protocol commands** (`get_state`, `subscribe`, `unsubscribe`) handled by DebugServerModule directly
-- **Data type constants** for DiaApplication subscriptions defined in `DiaApplication/DebugDataTypes.h` per DDP-006
+- **Data type constants** for DiaApplicationFlow subscriptions defined in `DiaApplicationFlow/DebugDataTypes.h` per DDP-006
 
 ## Dependencies
 
 ### Required Systems (from Dia)
 - **DiaCore** - Containers (DynamicArrayC, HashTable), StringCRC, JSON parsing (jsoncpp wrapper), logging, Threading (Thread, Mutex, ScopedLock)
-- **DiaApplication** - Module base class, MessageBus (for event forwarding), ProcessingUnit introspection, HotReloadManager
+- **DiaApplicationFlow** - Module base class, MessageBus (for event forwarding), ProcessingUnit introspection, HotReloadManager
 - **DiaAPI** - CommandRegistry (execute commands remotely), CommandArgs, ArgumentParser
 - **DiaWebSocket** - WebSocket::Server for accepting editor connections (wraps websocketpp)
 - **DiaDebugProtocol** - Shared message types, serialization helpers, and data type constants (header-only, @docs/specs/systems/dia/diadebugprotocol.md)
@@ -203,7 +203,7 @@ What DiaDebugServer explicitly does NOT handle:
 | System | Relationship | Interface |
 |--------|--------------|-----------|
 | DiaAPI | Command provider | DiaDebugServer forwards remote commands to CommandRegistry |
-| DiaApplication | Data source | Introspects ProcessingUnit/Phase/Module state for serialization |
+| DiaApplicationFlow | Data source | Introspects ProcessingUnit/Phase/Module state for serialization |
 | DiaEditor | Consumer | GameConnectionManager connects to DiaDebugServer via WebSocket |
 | DiaApplicationEditor | Consumer | Subscribes to "processing_unit_state" for live visualization |
 | DiaDebugProtocol | Shared dependency | Provides message types, serialization helpers (header-only) |
@@ -229,7 +229,7 @@ Decisions specific to DiaDebugServer. Binding decisions constrain all features w
 
 | ID | Decision | Rationale | Status | Binding |
 |----|----------|-----------|--------|---------|
-| DDS-001 | Generic system, not DiaApplication-specific | Any Dia app can use it; extensible for future systems (graphics, physics) | Proposed | Yes |
+| DDS-001 | Generic system, not DiaApplicationFlow-specific | Any Dia app can use it; extensible for future systems (graphics, physics) | Proposed | Yes |
 | DDS-002 | Broadcast core metrics always, specialized data on subscription (Q1 - Option C) | Balance between discoverability and bandwidth | Proposed | Yes |
 | DDS-003 | Broadcast to all connected editors (Q1 - Option A) | Simpler protocol; editors filter what they need | Proposed | Yes |
 | DDS-004 | Always listen in Debug builds, disabled in Release (Q1 - Option C) | Low overhead if no connections; Release builds exclude entirely | Proposed | Yes |
@@ -263,7 +263,7 @@ Features within the DiaDebugServer system (create with `/spec-feature`):
 
 | # | Section | Question | Answer |
 |---|---------|----------|--------|
-| 1 | Architecture | Generic or DiaApplication-specific? | Generic (DDS-001) - any Dia app can use it; extensible for future systems |
+| 1 | Architecture | Generic or DiaApplicationFlow-specific? | Generic (DDS-001) - any Dia app can use it; extensible for future systems |
 | 2 | Broadcasting | What to broadcast by default? | Core metrics always (DDS-002); specialized data on subscription |
 | 3 | Multi-Connection | Separate streams or broadcast? | Broadcast to all (DDS-003) - simpler, editors filter |
 | 4 | Opt-In | Enabled by default? | Always in Debug (DDS-004), excluded from Release builds |

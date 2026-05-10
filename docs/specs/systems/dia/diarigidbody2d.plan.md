@@ -211,7 +211,7 @@ Each body has at most one narrow-phase shape. Priority: `circleShape` → `polyS
 - System spec approved; all 8 feature specs written and approved
 - Scope is full rigid body + constraints in v1 (pin, distance, spring, hinge)
 - Broad-phase injected via ISpatialStructure (caller chooses Grid/Quadtree/BVH)
-- Collision events via DiaCore ObserverSubject (no DiaApplication dependency)
+- Collision events via DiaCore ObserverSubject (no DiaApplicationFlow dependency)
 - Constraint solver: sequential impulses with warm-starting
 - StepOnce call order documented above — order is load-bearing (constraints after response, velocities last)
 

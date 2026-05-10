@@ -172,7 +172,7 @@ const Dia::Core::Containers::String512* path = runtime.ResolveAssetPath(StringCR
 | AD-002 | No STL in public APIs | **Compliant.** Same as PD-004. |
 | AD-003 | Namespace Dia::AssetRuntime:: | **Compliant.** All code under `Dia::AssetRuntime::` namespace. |
 | SD-CAT-001 | Asset IDs are type.name composites | **Compliant.** Manifest uses `type.name` format for asset IDs (convention from catalogue, not a code dependency). |
-| SD-ARUN-001 | No DiaApplication dependency | **Compliant.** Pure library -- no ProcessingUnit, Phase, or Module references. |
+| SD-ARUN-001 | No DiaApplicationFlow dependency | **Compliant.** Pure library -- no ProcessingUnit, Phase, or Module references. |
 | SD-ARUN-008 | No DiaAssetCatalogue dependency | **Compliant.** RuntimeManifestLoader owns its own types (RuntimeAssetEntry, RuntimeStageEntry) and its own JSON parsing. No imports from DiaAssetCatalogue. |
 
 ## AI Review Questions

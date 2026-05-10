@@ -1,7 +1,7 @@
 #include "GameFileComposer.h"
 #include "DiaGameManifestLoader.h"
 
-#include <DiaApplication/Manifest/ManifestComposer.h>
+#include <DiaApplicationFlow/Manifest/ManifestComposer.h>
 
 namespace Dia
 {

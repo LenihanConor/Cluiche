@@ -240,14 +240,14 @@ ProcessingUnit::DoUpdate() → MessageBus::ProcessQueue() → Handler1(), Handle
 | Decision | Source | Summary | Compliance |
 |----------|--------|---------|------------|
 | PD-001 | Platform | Use StringCRC for all IDs | ✅ **Compliant** - Message types and sender IDs are StringCRC |
-| SD-007 | DiaApplication | Type-erased void* with size tracking | ✅ **Compliant** - Message uses void* + size, not templates |
+| SD-007 | DiaApplicationFlow | Type-erased void* with size tracking | ✅ **Compliant** - Message uses void* + size, not templates |
 
 ---
 
 ## Files Affected
 
-- `Dia/DiaApplication/MessageBus.h`
-- `Dia/DiaApplication/MessageBus.cpp`
+- `Dia/DiaApplicationFlow/MessageBus.h`
+- `Dia/DiaApplicationFlow/MessageBus.cpp`
 - `Cluiche/Tests/GoogleTests/Application/TestMessageBus.cpp`
 
 ---

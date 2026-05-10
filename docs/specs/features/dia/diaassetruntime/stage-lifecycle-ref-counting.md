@@ -126,7 +126,7 @@ runtime.RequestStageUnload(StringCRC("stage.main_menu"));
 | AD-002 | No STL in public APIs | **Compliant.** Same as PD-004. |
 | AD-003 | Namespace Dia::AssetRuntime:: | **Compliant.** All code under `Dia::AssetRuntime::`. |
 | SD-CAT-001 | Asset IDs are type.name composites | **Compliant.** Stage->Asset expansion uses type.name StringCRC IDs from the runtime manifest. |
-| SD-ARUN-001 | No DiaApplication dependency | **Compliant.** Stage lifecycle is driven by explicit game-code calls, not by ProcessingUnit phases. |
+| SD-ARUN-001 | No DiaApplicationFlow dependency | **Compliant.** Stage lifecycle is driven by explicit game-code calls, not by ProcessingUnit phases. |
 | SD-ARUN-008 | No DiaAssetCatalogue dependency | **Compliant.** Stage membership comes from RuntimeStageEntry (loaded from assets.runtime.json), not from DiaAssetCatalogue relationships. |
 
 ## AI Review Questions

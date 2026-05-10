@@ -110,7 +110,7 @@ Internalization pattern:
 
 **Binding constraints from spec chain (Platform → App → System → Feature):**
 - SD-ARUN-006: No content loading in DiaAssetRuntime — handlers live in engine subsystem modules (DiaSFML, DiaUIUltralight), not DiaAssetRuntime
-- SD-ARUN-001: No DiaApplication dependency in DiaAssetRuntime
+- SD-ARUN-001: No DiaApplicationFlow dependency in DiaAssetRuntime
 - PD-004/AD-002: No STL in public APIs — use DiaCore containers
 - SD-ARUN-002: Stage = unit of load/unload; asset = unit of state
 - Handlers live in engine modules, not game code — push complexity down, keep game layer thin

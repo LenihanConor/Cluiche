@@ -6,7 +6,7 @@
 |-------|------|------|
 | Platform | Cluiche | @docs/specs/platform/Cluiche.md |
 | Application | Dia | @docs/specs/applications/dia.md |
-| System | DiaApplication | @docs/specs/systems/dia/diaapplication.md |
+| System | DiaApplicationFlow | @docs/specs/systems/dia/diaapplication.md |
 | Feature | **Manifest Imports** | (this document) |
 
 **Status:** `Done`
@@ -227,12 +227,12 @@ MainProcessingUnit's `PostPhaseStart()` currently calls `ApplicationLoader::Load
 ## Files Affected
 
 ### Headers (Modified)
-- `Dia/DiaApplication/Manifest/ApplicationManifest.h` — add `sourceManifestPath` to entry structs
-- `Dia/DiaApplication/Manifest/ApplicationManifestLoader.h` — add ResolveImports, MergeManifest, HasDuplicateInstanceIds
-- `Dia/DiaApplication/Manifest/JsonApplicationManifestSerializer.cpp` — parse/write imports array and provenance
+- `Dia/DiaApplicationFlow/Manifest/ApplicationManifest.h` — add `sourceManifestPath` to entry structs
+- `Dia/DiaApplicationFlow/Manifest/ApplicationManifestLoader.h` — add ResolveImports, MergeManifest, HasDuplicateInstanceIds
+- `Dia/DiaApplicationFlow/Manifest/JsonApplicationManifestSerializer.cpp` — parse/write imports array and provenance
 
 ### Implementation (Modified)
-- `Dia/DiaApplication/Manifest/ApplicationManifestLoader.cpp` — import resolution logic in LoadFromFile, implement ComposeManifests
+- `Dia/DiaApplicationFlow/Manifest/ApplicationManifestLoader.cpp` — import resolution logic in LoadFromFile, implement ComposeManifests
 
 ### Data (Modified)
 - `Cluiche/CluicheTest/Data/Manifests/cluiche_main.diaapp` — add imports array
@@ -262,10 +262,10 @@ MainProcessingUnit's `PostPhaseStart()` currently calls `ApplicationLoader::Load
 | AD-001 | Dia App | Module system with YAML frontmatter | **Compliant** — no new modules created; existing architecture docs unaffected. |
 | AD-002 | Dia App | No STL in public APIs | **Compliant** — see PD-004. |
 | AD-003 | Dia App | Namespace Dia::\<Module\>:: | **Compliant** — all new code in Dia::Application::. |
-| SD-001 | DiaApplication | PU/Phase/Module three-level hierarchy | **Compliant** — import merging respects the three levels; PU entries contain their phases/modules. |
-| SD-004 | DiaApplication | Modules identified by StringCRC | **Compliant** — duplicate detection uses StringCRC matching. |
-| SD-006 | DiaApplication | Support raw pointer and UniquePtr ownership | **Compliant** — provenance field is const char* (owned by manifest memory); no ownership model change. |
-| SD-010 | DiaApplication | Explicit dependencies via AddDependancy() | **Compliant** — module dependencies within imported manifests preserved as-is during merge. |
+| SD-001 | DiaApplicationFlow | PU/Phase/Module three-level hierarchy | **Compliant** — import merging respects the three levels; PU entries contain their phases/modules. |
+| SD-004 | DiaApplicationFlow | Modules identified by StringCRC | **Compliant** — duplicate detection uses StringCRC matching. |
+| SD-006 | DiaApplicationFlow | Support raw pointer and UniquePtr ownership | **Compliant** — provenance field is const char* (owned by manifest memory); no ownership model change. |
+| SD-010 | DiaApplicationFlow | Explicit dependencies via AddDependancy() | **Compliant** — module dependencies within imported manifests preserved as-is during merge. |
 
 ---
 

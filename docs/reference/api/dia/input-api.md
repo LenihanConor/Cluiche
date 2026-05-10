@@ -700,4 +700,4 @@ Input events **stop when window loses focus**. Handle focus events if needed.
 
 **[→ API Overview](../api-overview.md)**  
 **[→ DiaSFML API](sfml-api.md)**  
-**[→ DiaApplication API](application-api.md)**
+**[→ DiaApplicationFlow API](application-api.md)**

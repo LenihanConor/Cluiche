@@ -6,9 +6,9 @@
 #include <DiaGraphics/Frame/FrameData.h>
 #include <DiaGraphics/Interface/ICanvas.h>
 
-#include <DiaApplication/ApplicationProcessingUnit.h>
-#include <DiaApplication/ApplicationPhase.h>
-#include <DiaApplication/ApplicationModule.h>
+#include <DiaApplicationFlow/ApplicationProcessingUnit.h>
+#include <DiaApplicationFlow/ApplicationPhase.h>
+#include <DiaApplicationFlow/ApplicationModule.h>
 
 #include "Fixtures/FakeCanvas.h"
 #include "Fixtures/ProcessingUnitFixture.h"

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <DiaGame/DiaGameManifest.h>
-#include <DiaApplication/Manifest/ManifestValidator.h>
+#include <DiaApplicationFlow/Manifest/ManifestValidator.h>
 
 namespace Dia
 {

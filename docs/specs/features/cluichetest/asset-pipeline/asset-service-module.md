@@ -15,7 +15,7 @@ Create `AssetServiceModule`, a `Dia::Application::Module` on the Main Processing
 
 ## Problem
 
-DiaAssetRuntime is a pure library with no knowledge of DiaApplication's ProcessingUnit/Phase/Module architecture. CluicheTest needs a Module that wires DiaAssetRuntime into the application lifecycle: loading global assets at boot, loading/unloading stage assets during transitions, and gating phase progression on asset readiness. Without this, there is no integration point between the asset system and the game loop.
+DiaAssetRuntime is a pure library with no knowledge of DiaApplicationFlow's ProcessingUnit/Phase/Module architecture. CluicheTest needs a Module that wires DiaAssetRuntime into the application lifecycle: loading global assets at boot, loading/unloading stage assets during transitions, and gating phase progression on asset readiness. Without this, there is no integration point between the asset system and the game loop.
 
 ## Acceptance Criteria
 
@@ -161,7 +161,7 @@ bool BootLoadPhase::CanTransition() const
 |------------|----------------------|
 | Feature 2 (Pipeline Deploy) | `assets.runtime.json` must exist in deploy directory for LoadManifest to succeed |
 | DiaAssetRuntime (Features 1-4) | AssetRuntime class, IAssetStateListener, state machine, stage lifecycle |
-| DiaApplication Module | Base class for AssetServiceModule |
+| DiaApplicationFlow Module | Base class for AssetServiceModule |
 | CluicheTest MainProcessingUnit | Module registration |
 | CluicheTest phase system | Phase gating condition mechanism |
 
@@ -186,7 +186,7 @@ bool BootLoadPhase::CanTransition() const
 | PD-004 | No STL in public APIs | **Compliant.** All public methods use DiaCore types. |
 | PD-006 | VS project files are source of truth | **Compliant.** New files added to .vcxproj manually. |
 | AD-001 | Three ProcessingUnits (Main/Render/Sim) | **Compliant.** Module on Main PU; Sim/Render read via GetRuntime(). |
-| SD-ARUN-001 | DiaAssetRuntime has no DiaApplication dependency | **Compliant.** AssetServiceModule wraps DiaAssetRuntime; the library doesn't know about Modules. |
+| SD-ARUN-001 | DiaAssetRuntime has no DiaApplicationFlow dependency | **Compliant.** AssetServiceModule wraps DiaAssetRuntime; the library doesn't know about Modules. |
 | SD-ARUN-002 | Stage is unit of load/unload | **Compliant.** RequestGlobalLoad/RequestStageLoad operate on stages, not individual assets. |
 | SD-ARUN-004 | Consumers acknowledge load/unload | **Compliant.** AssetServiceModule implements IAssetStateListener and calls AcknowledgeAssetLoaded. |
 | SD-CTAP-002 | AssetServiceModule on Main PU, persists across all stages | **Compliant.** Registered at kernel level, never destroyed during stage transitions. |

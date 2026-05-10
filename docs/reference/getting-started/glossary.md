@@ -33,7 +33,7 @@ Definitions of terms, acronyms, and concepts used throughout the Cluiche codebas
 - **Examples:** MainProcessingUnit, RenderProcessingUnit, SimProcessingUnit
 - **Purpose:** Organizes application execution into logical, potentially parallelizable units
 
-**[→ DiaApplication API](../api/dia/application-api.md)**
+**[→ DiaApplicationFlow API](../api/dia/application-api.md)**
 
 ---
 

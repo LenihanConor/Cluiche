@@ -7,7 +7,7 @@
 
 State machines are one of the most fundamental abstractions in game development, governing everything from high-level application flow to individual AI behaviors, animation blending, UI navigation, and gameplay mechanics. A well-designed state machine system reduces bugs caused by implicit state, makes complex behavior inspectable and debuggable, and provides a shared vocabulary for reasoning about entity behavior across gameplay, animation, and AI domains.
 
-The Cluiche platform currently has a sophisticated phase/module lifecycle system in DiaApplication (ProcessingUnit/Phase/Module) that functions as a bespoke state machine for application flow. However, this system is tightly coupled to the application lifecycle concept — it manages module startup/shutdown ordering, dependency resolution, and thread-safe phase transitions. It is not reusable for gameplay entities, AI agents, animation controllers, or UI flows. There is no general-purpose state machine abstraction available to game code.
+The Cluiche platform currently has a sophisticated phase/module lifecycle system in DiaApplicationFlow (ProcessingUnit/Phase/Module) that functions as a bespoke state machine for application flow. However, this system is tightly coupled to the application lifecycle concept — it manages module startup/shutdown ordering, dependency resolution, and thread-safe phase transitions. It is not reusable for gameplay entities, AI agents, animation controllers, or UI flows. There is no general-purpose state machine abstraction available to game code.
 
 The gap is significant: every game system that needs stateful behavior (enemy AI, player state, menu navigation, cutscene sequencing, animation blending) must either roll its own ad-hoc state management or abuse the phase system for something it wasn't designed for. A generic state machine library would fill this gap while leveraging the engine's existing strengths — StringCRC identification, DiaCore containers, the event system, the editor plugin framework, and the logging infrastructure.
 
@@ -103,10 +103,10 @@ The gap is significant: every game system that needs stateful behavior (enemy AI
 | **DiaCore/Containers/Graphs** | Graph<N,E> template — could represent transition graphs at compile time or runtime |
 | **DiaCore/CRC/StringCRC** | State and transition identification (PD-001 compliance) |
 | **DiaCore/Type** | Type system and serialization — enables runtime type info for states |
-| **DiaApplication** | Phase/Module system — reference architecture for lifecycle management; potential integration point |
-| **DiaApplication/MessageBus** | Thread-safe pub/sub — FSM transition events could publish to MessageBus |
-| **DiaApplication/Introspector** | Runtime topology queries — pattern to follow for FSM introspection |
-| **DiaApplication/DebugDataTypes** | Debug data constants — extend with kStateMachineTransition etc. |
+| **DiaApplicationFlow** | Phase/Module system — reference architecture for lifecycle management; potential integration point |
+| **DiaApplicationFlow/MessageBus** | Thread-safe pub/sub — FSM transition events could publish to MessageBus |
+| **DiaApplicationFlow/Introspector** | Runtime topology queries — pattern to follow for FSM introspection |
+| **DiaApplicationFlow/DebugDataTypes** | Debug data constants — extend with kStateMachineTransition etc. |
 | **DiaDebugServer/StateSerializer** | JSON serialization of phase transitions — reusable pattern for FSM state serialization |
 | **DiaEditor/Plugin** | IEditorPlugin framework — state machine visualizer as editor plugin |
 | **DiaEditor/WebUIBridge** | C++ ↔ JS bridge — push FSM state to React UI for visualization |
@@ -131,7 +131,7 @@ The gap is significant: every game system that needs stateful behavior (enemy AI
 
 - **One library or two?** Should flat FSM and HSM be separate implementations (simpler each, more code) or a unified implementation where flat is just depth=1 HSM (more complex, less code)?
 - **Where does it live?** New top-level module (DiaStateMachine) or subsystem within DiaCore/Architecture? A dedicated module is cleaner but adds a dependency edge.
-- **How does it integrate with DiaApplication?** Should the Phase system be refactored to use the generic FSM internally, or should they remain separate systems? Refactoring is risky but proves the abstraction.
+- **How does it integrate with DiaApplicationFlow?** Should the Phase system be refactored to use the generic FSM internally, or should they remain separate systems? Refactoring is risky but proves the abstraction.
 - **Component or standalone?** Should every FSM be an IComponent, or should the core FSM be standalone with an optional component wrapper? Standalone core is more flexible.
 - **Data-driven from day one?** Should JSON/data definition be part of v1 or deferred? Editor tooling needs it, but code-only is simpler to ship first.
 - **What visualization library?** The editor has React + Mosaic but no graph visualization library. Cytoscape.js, vis-network, or D3-force are candidates. Or a custom SVG renderer for full control.

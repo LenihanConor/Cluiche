@@ -18,7 +18,7 @@ Additionally provides:
 - **`StateMachineComponent`** — An `IComponent` wrapper for attaching state machines to entities
 - **Logging and tracing** — Dedicated DiaLogger channel with structured transition tracing
 
-DiaStateMachine is a behavioral building block — it does not own application scheduling, entity management, rendering, or editor visualization. Those concerns belong to DiaApplication, game code, DiaGraphics, and a future DiaStateMachineEditor system respectively.
+DiaStateMachine is a behavioral building block — it does not own application scheduling, entity management, rendering, or editor visualization. Those concerns belong to DiaApplicationFlow, game code, DiaGraphics, and a future DiaStateMachineEditor system respectively.
 
 **Research:** @docs/research/state_machine/summary.md
 
@@ -52,7 +52,7 @@ DiaStateMachine is a behavioral building block — it does not own application s
 
 - Editor visualization or visual debugging — future DiaStateMachineEditor system
 - Design-time visual state machine editing — future DiaStateMachineEditor system
-- Application phase management — DiaApplication owns ProcessingUnit/Phase/Module lifecycle
+- Application phase management — DiaApplicationFlow owns ProcessingUnit/Phase/Module lifecycle
 - Entity/component ownership — game code owns entities; state machines are attached via component
 - Animation blending, clip playback, or animation-specific state semantics — future animation system
 - Behavior trees — separate concern; may integrate via shared blackboard in future
@@ -439,7 +439,7 @@ namespace Dia::StateMachine {
 - **DiaLogger** — ISink, LogLevel, Logger singleton, log channel registration
 
 **Explicitly excluded:**
-- **DiaApplication** — no dependency; state machines operate within phases/modules but don't depend on the Phase system
+- **DiaApplicationFlow** — no dependency; state machines operate within phases/modules but don't depend on the Phase system
 - **DiaGraphics** — no rendering; visual debugging belongs to future DiaStateMachineEditor
 - **DiaMaths** — no math needed; state machines are purely logical
 
@@ -447,7 +447,7 @@ namespace Dia::StateMachine {
 - Game code (CluicheTest and future games) — creates state machines for gameplay, AI, UI
 - Future DiaStateMachineEditor — uses `IStateMachineInspectable` for visualization
 - Future animation system — may specialize `HierarchicalStateMachine` for animation blending
-- DiaApplication (potential future) — Phase system could optionally use generic FSM internally
+- DiaApplicationFlow (potential future) — Phase system could optionally use generic FSM internally
 
 ## Out of Scope
 
@@ -456,7 +456,7 @@ namespace Dia::StateMachine {
 - Behavior trees or utility AI — separate concern
 - Animation-specific features (blend durations, interruption priority, pose caching)
 - Thread-safe FSM dispatch — machines are single-threaded; caller synchronizes
-- Refactoring DiaApplication Phase system to use generic FSM — deferred for separate discussion
+- Refactoring DiaApplicationFlow Phase system to use generic FSM — deferred for separate discussion
 - Network synchronization of machine state
 - Coroutine-based state machines (C++20 co_await)
 - General-purpose blackboard/shared data store — belongs in DiaCore, not DiaStateMachine (future spec item)
@@ -496,7 +496,7 @@ namespace Dia::StateMachine {
 | ID | Source | Decision | Implication for this system |
 |----|--------|----------|----------------------------|
 | PD-001 | Platform | StringCRC for all entity/component IDs | All state IDs, transition IDs, trigger IDs, and machine IDs use StringCRC. `StateMachineComponent::kUniqueId` is a StringCRC constant. |
-| PD-002 | Platform | ProcessingUnit/Phase/Module architecture | State machines operate *within* phases/modules, not as a parallel lifecycle. No dependency on DiaApplication. |
+| PD-002 | Platform | ProcessingUnit/Phase/Module architecture | State machines operate *within* phases/modules, not as a parallel lifecycle. No dependency on DiaApplicationFlow. |
 | PD-003 | Platform | Component-based entities (IComponent/IComponentObject) | `StateMachineComponent` implements `IComponent`; registered via `ComponentFactoryRegistry` with both dynamic and pooled factory variants. |
 | PD-004 | Platform | No STL containers in public APIs | All output parameters use DiaCore containers (DynamicArrayC, HashTable). Internal implementation may use STL. |
 | PD-005 | Platform | x64 only | DiaStateMachine.vcxproj targets x64 exclusively. |
