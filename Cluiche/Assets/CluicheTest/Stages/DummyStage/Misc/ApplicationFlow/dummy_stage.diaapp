@@ -1,82 +1,35 @@
 {
-   "metadata" : {
-      "name" : "DummyStage",
-      "requires_phases" : [ "MainBootStrapPhase" ],
-      "type" : "stage"
-   },
-   "processing_units" : [],
-   "stage_modules" : [
-      {
-         "instance_id" : "LoggerModule",
-         "phase_ids" : [ "DummyProject::MainLoadPhase", "DummyProject::MainFEPhase" ],
-         "target_processing_unit" : "MainProcessingUnit",
-         "type_id" : "LoggerModule"
-      },
-      {
-         "instance_id" : "Main::AssetServiceModule",
-         "phase_ids" : [ "DummyProject::MainLoadPhase", "DummyProject::MainFEPhase" ],
-         "target_processing_unit" : "MainProcessingUnit",
-         "type_id" : "Main::AssetServiceModule"
-      },
-      {
-         "instance_id" : "Main::KernelModule",
-         "phase_ids" : [ "DummyProject::MainLoadPhase", "DummyProject::MainFEPhase" ],
-         "target_processing_unit" : "MainProcessingUnit",
-         "type_id" : "Main::KernelModule"
-      },
-      {
-         "instance_id" : "Main::LevelRegistryModule",
-         "phase_ids" : [ "DummyProject::MainLoadPhase", "DummyProject::MainFEPhase" ],
-         "target_processing_unit" : "MainProcessingUnit",
-         "type_id" : "Main::LevelRegistryModule"
-      },
-      {
-         "instance_id" : "Main::UIModule",
-         "phase_ids" : [ "DummyProject::MainFEPhase", "DummyProject::MainLoadPhase" ],
-         "target_processing_unit" : "MainProcessingUnit",
-         "type_id" : "Main::UIModule"
-      },
-      {
-         "instance_id" : "MetricsCollectorModule",
-         "phase_ids" : [ "DummyProject::MainLoadPhase", "DummyProject::MainFEPhase" ],
-         "target_processing_unit" : "MainProcessingUnit",
-         "type_id" : "MetricsCollectorModule"
-      },
-      {
-         "instance_id" : "DebugServerModule",
-         "phase_ids" : [ "DummyProject::MainLoadPhase", "DummyProject::MainFEPhase" ],
-         "target_processing_unit" : "MainProcessingUnit",
-         "type_id" : "DebugServerModule"
-      }
-   ],
-   "stage_phases" : [
-      {
-         "instance_id" : "DummyProject::MainLoadPhase",
-         "target_processing_unit" : "MainProcessingUnit",
-         "type_id" : "DummyProject::MainLoadPhase"
-      },
-      {
-         "instance_id" : "DummyProject::MainFEPhase",
-         "target_processing_unit" : "MainProcessingUnit",
-         "type_id" : "DummyProject::MainFEPhase"
-      }
-   ],
-   "stage_transitions" : [
-      {
-         "from" : "MainBootStrapPhase",
-         "target_processing_unit" : "MainProcessingUnit",
-         "to" : "DummyProject::MainLoadPhase"
-      },
-      {
-         "from" : "DummyProject::MainLoadPhase",
-         "target_processing_unit" : "MainProcessingUnit",
-         "to" : "DummyProject::MainFEPhase"
-      },
-      {
-         "from" : "DummyProject::MainFEPhase",
-         "target_processing_unit" : "MainProcessingUnit",
-         "to" : "MainBootStrapPhase"
-      }
-   ],
-   "version" : 1
+    "version": 2,
+    "processing_units": [
+        {
+            "instance_id": "MainPU",
+            "frequency_hz": 30,
+            "dedicated_thread": false,
+            "modules": [
+                {
+                    "instance_id": "DummyUIPageModule",
+                    "type_id": "DummyUIPageModule",
+                    "stages": [ "DummyStage" ],
+                    "dependencies": [ "UIModule" ],
+                    "reads": [],
+                    "writes": []
+                }
+            ]
+        },
+        {
+            "instance_id": "SimPU",
+            "frequency_hz": 30,
+            "dedicated_thread": true,
+            "modules": [
+                {
+                    "instance_id": "DummyLevelModule",
+                    "type_id": "DummyLevelModule",
+                    "stages": [ "DummyStage" ],
+                    "dependencies": [ "TimeServerModule", "InputStreamModule" ],
+                    "reads": [ "UIToSim" ],
+                    "writes": [ "SimToRender", "SimToUI" ]
+                }
+            ]
+        }
+    ]
 }

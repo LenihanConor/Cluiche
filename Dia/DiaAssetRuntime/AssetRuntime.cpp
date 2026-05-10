@@ -77,6 +77,8 @@ namespace Dia
             InitStateTable();
             InitRefCountTable();
             RegisterPathAliases();
+            DIA_LOG_INFO("AssetRuntime", "LoadManifest: %u assets across %u stages registered",
+                mAssetTable.Size(), mStageTable.Size());
             return true;
         }
 
@@ -90,6 +92,8 @@ namespace Dia
             InitStateTable();
             InitRefCountTable();
             RegisterPathAliases();
+            DIA_LOG_INFO("AssetRuntime", "LoadManifest: %u assets across %u stages registered",
+                mAssetTable.Size(), mStageTable.Size());
             return true;
         }
 
@@ -158,6 +162,9 @@ namespace Dia
                 DIA_LOG_WARNING("AssetRuntime", "RequestStageLoad: unknown stage '%s'", stageId.AsChar());
                 return;
             }
+
+            DIA_LOG_INFO("AssetRuntime", "RequestStageLoad: stage '%s' (%u assets)",
+                stageId.AsChar(), stage->mAssetIds.Size());
 
             unsigned int assetCount = stage->mAssetIds.Size();
             for (unsigned int i = 0; i < assetCount; ++i)
@@ -481,6 +488,7 @@ namespace Dia
         //------------------------------------------------------------------------------------
         void AssetRuntime::OnLoadComplete(const Dia::Core::StringCRC& assetId)
         {
+            DIA_LOG_INFO("AssetRuntime", "Asset '%s' loaded", assetId.AsChar());
             TryTransition(assetId, AssetState::Loaded);
         }
 
@@ -585,6 +593,7 @@ namespace Dia
 
             if (exists)
             {
+                DIA_LOG_INFO("AssetRuntime", "Asset '%s' auto-validated at '%s'", assetId.AsChar(), path);
                 TryTransition(assetId, AssetState::Loaded);
             }
             else

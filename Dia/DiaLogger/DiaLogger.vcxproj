@@ -16,6 +16,7 @@
     <ClCompile Include="Logger.cpp" />
     <ClCompile Include="ISink.cpp" />
     <ClCompile Include="DebugOutputSink.cpp" />
+    <ClCompile Include="StdOutSink.cpp" />
     <ClCompile Include="AssertSinkBridge.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -25,6 +26,7 @@
     <ClInclude Include="Logger.h" />
     <ClInclude Include="ISink.h" />
     <ClInclude Include="DebugOutputSink.h" />
+    <ClInclude Include="StdOutSink.h" />
     <ClInclude Include="DiaLog.h" />
     <ClInclude Include="AssertSinkBridge.h" />
   </ItemGroup>

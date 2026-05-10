@@ -1,106 +1,131 @@
 {
-   "imports" : [
-      {
-         "path" : "cluiche_sim.diaapp",
-         "type" : "manifest"
-      },
-      {
-         "path" : "cluiche_render.diaapp",
-         "type" : "manifest"
-      }
-   ],
-   "processing_units" : [
-      {
-         "config" : {},
-         "dedicated_thread" : false,
-         "frequency_hz" : 30,
-         "initial_phase" : "MainBootPhase",
-         "instance_id" : "MainProcessingUnit",
-         "modules" : [
-            {
-               "config" : {
-                  "default_level" : "info",
-                  "sinks" : [
-                     {
-                        "level_threshold" : "info",
-                        "type" : "DebugOutput"
-                     }
-                  ]
-               },
-               "dependencies" : [],
-               "instance_id" : "LoggerModule",
-               "phase_ids" : [ "MainBootPhase", "MainBootStrapPhase" ],
-               "type_id" : "LoggerModule"
-            },
-            {
-               "config" : {},
-               "dependencies" : [ "LoggerModule" ],
-               "instance_id" : "Main::AssetServiceModule",
-               "phase_ids" : [ "MainBootPhase", "MainBootStrapPhase" ],
-               "type_id" : "Main::AssetServiceModule"
-            },
-            {
-               "config" : {},
-               "dependencies" : [ "LoggerModule" ],
-               "instance_id" : "Main::KernelModule",
-               "phase_ids" : [ "MainBootPhase", "MainBootStrapPhase" ],
-               "type_id" : "Main::KernelModule"
-            },
-            {
-               "config" : {},
-               "dependencies" : [],
-               "instance_id" : "Main::LevelRegistryModule",
-               "phase_ids" : [ "MainBootStrapPhase" ],
-               "type_id" : "Main::LevelRegistryModule"
-            },
-            {
-               "config" : {},
-               "dependencies" : [ "Main::KernelModule" ],
-               "instance_id" : "Main::UIModule",
-               "phase_ids" : [ "MainBootStrapPhase" ],
-               "type_id" : "Main::UIModule"
-            },
-            {
-               "config" : {},
-               "dependencies" : [],
-               "instance_id" : "MetricsCollectorModule",
-               "phase_ids" : [ "MainBootPhase", "MainBootStrapPhase" ],
-               "type_id" : "MetricsCollectorModule"
-            },
-            {
-               "config" : {
-                  "auto_start" : true,
-                  "game_build" : "dev-0.1",
-                  "game_name" : "CluicheTest",
-                  "port" : 9002
-               },
-               "dependencies" : [ "MetricsCollectorModule" ],
-               "instance_id" : "DebugServerModule",
-               "phase_ids" : [ "MainBootPhase", "MainBootStrapPhase" ],
-               "type_id" : "DebugServerModule"
-            }
-         ],
-         "phases" : [
-            {
-               "config" : {},
-               "instance_id" : "MainBootPhase",
-               "type_id" : "MainBootPhase"
-            },
-            {
-               "config" : {},
-               "instance_id" : "MainBootStrapPhase",
-               "type_id" : "MainBootStrapPhase"
-            }
-         ],
-         "root" : true,
-         "transitions" : [
-            {
-               "from" : "MainBootPhase",
-               "to" : "MainBootStrapPhase"
-            }
-         ],
-         "type_id" : "MainProcessingUnit"
-      }
-   ],
-   "version" : 1
+    "version": 2,
+    "stages": [
+        "Boot",
+        "DummyStage"
+    ],
+    "initial_stage": "Boot",
+    "auto_stages": [],
+    "streams": [
+        {
+            "id": "InputToSim",
+            "type": "EventStream",
+            "from": "MainPU",
+            "to": "SimPU"
+        },
+        {
+            "id": "SimToRender",
+            "type": "FrameStream",
+            "from": "SimPU",
+            "to": "RenderPU",
+            "multi_writer": true
+        },
+        {
+            "id": "SimToUI",
+            "type": "EventStream",
+            "from": "SimPU",
+            "to": "MainPU"
+        },
+        {
+            "id": "UIToSim",
+            "type": "FrameStream",
+            "from": "MainPU",
+            "to": "SimPU"
+        }
+    ],
+    "processing_units": [
+        {
+            "instance_id": "MainPU",
+            "frequency_hz": 30,
+            "dedicated_thread": false,
+            "modules": [
+                {
+                    "instance_id": "LoggerModule",
+                    "type_id": "LoggerModule",
+                    "stages": [ "all" ],
+                    "dependencies": [],
+                    "reads": [],
+                    "writes": []
+                },
+                {
+                    "instance_id": "KernelModule",
+                    "type_id": "KernelModule",
+                    "stages": [ "all" ],
+                    "dependencies": [ "LoggerModule" ],
+                    "reads": [],
+                    "writes": [ "InputToSim" ]
+                },
+                {
+                    "instance_id": "UIModule",
+                    "type_id": "UIModule",
+                    "stages": [ "all" ],
+                    "dependencies": [ "LoggerModule", "KernelModule" ],
+                    "reads": [ "SimToUI" ],
+                    "writes": [ "UIToSim" ]
+                },
+                {
+                    "instance_id": "AssetServiceModule",
+                    "type_id": "AssetServiceModule",
+                    "stages": [ "all" ],
+                    "dependencies": [ "LoggerModule", "KernelModule", "UIModule" ],
+                    "reads": [],
+                    "writes": []
+                },
+                {
+                    "instance_id": "BootUIPageModule",
+                    "type_id": "BootUIPageModule",
+                    "stages": [ "Boot" ],
+                    "dependencies": [ "UIModule" ],
+                    "reads": [],
+                    "writes": []
+                }
+            ]
+        },
+        {
+            "instance_id": "SimPU",
+            "frequency_hz": 30,
+            "dedicated_thread": true,
+            "modules": [
+                {
+                    "instance_id": "TimeServerModule",
+                    "type_id": "TimeServerModule",
+                    "stages": [ "all" ],
+                    "dependencies": [],
+                    "reads": [],
+                    "writes": []
+                },
+                {
+                    "instance_id": "InputStreamModule",
+                    "type_id": "InputStreamModule",
+                    "stages": [ "all" ],
+                    "dependencies": [ "TimeServerModule" ],
+                    "reads": [ "InputToSim" ],
+                    "writes": []
+                },
+                {
+                    "instance_id": "LoadingScreenModule",
+                    "type_id": "LoadingScreenModule",
+                    "stages": [ "Boot" ],
+                    "dependencies": [],
+                    "reads": [ "UIToSim" ],
+                    "writes": [ "SimToRender" ]
+                }
+            ]
+        },
+        {
+            "instance_id": "RenderPU",
+            "frequency_hz": 60,
+            "dedicated_thread": true,
+            "modules": [
+                {
+                    "instance_id": "RenderModule",
+                    "type_id": "RenderModule",
+                    "stages": [ "all" ],
+                    "dependencies": [],
+                    "reads": [ "SimToRender" ],
+                    "writes": []
+                }
+            ]
+        }
+    ]
 }

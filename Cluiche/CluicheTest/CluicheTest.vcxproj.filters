@@ -29,6 +29,39 @@
     <ClCompile Include="Source\LaunchUIPage.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\AssetServiceModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\BootUIPageModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\DummyLevelModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\DummyUIPageModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\InputStreamModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\KernelModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\LoadingScreenModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\LoggerModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\RenderModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TimeServerModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\UIModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="ApplicationFlow">
@@ -75,6 +108,39 @@
     <ClInclude Include="Source\LaunchUIPage.h">
       <Filter>Source</Filter>
     </ClInclude>
+    <ClInclude Include="Modules\AssetServiceModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\BootUIPageModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\DummyLevelModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\DummyUIPageModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\InputStreamModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\KernelModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\LoadingScreenModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\LoggerModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\RenderModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TimeServerModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\UIModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Data">
@@ -82,6 +148,9 @@
     </Filter>
     <Filter Include="Data\Manifests">
       <UniqueIdentifier>{a1b2c3d4-e5f6-7890-abcd-ef1234567891}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Types">
+      <UniqueIdentifier>{b2c3d4e5-f6a7-8901-bcde-f12345678902}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -94,5 +163,25 @@
     <None Include="Data\Manifests\cluiche_sim.diaapp">
       <Filter>Data\Manifests</Filter>
     </None>
+    <None Include="Data\cluichetest.diagame">
+      <Filter>Data</Filter>
+    </None>
+    <None Include="Data\cluiche.diaapp">
+      <Filter>Data</Filter>
+    </None>
+    <None Include="Data\dummy_stage.diastage">
+      <Filter>Data</Filter>
+    </None>
+    <None Include="Data\dummy_stage.diaapp">
+      <Filter>Data</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Types\InputEvent.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\UICommand.h">
+      <Filter>Types</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -21,6 +21,17 @@
     <ClCompile Include="ApplicationFlow\ProcessingUnits\RenderProcessingUnit.cpp" />
     <ClCompile Include="ApplicationFlow\ProcessingUnits\SimProcessingUnit.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Modules\AssetServiceModule.cpp" />
+    <ClCompile Include="Modules\BootUIPageModule.cpp" />
+    <ClCompile Include="Modules\DummyLevelModule.cpp" />
+    <ClCompile Include="Modules\DummyUIPageModule.cpp" />
+    <ClCompile Include="Modules\InputStreamModule.cpp" />
+    <ClCompile Include="Modules\KernelModule.cpp" />
+    <ClCompile Include="Modules\LoadingScreenModule.cpp" />
+    <ClCompile Include="Modules\LoggerModule.cpp" />
+    <ClCompile Include="Modules\RenderModule.cpp" />
+    <ClCompile Include="Modules\TimeServerModule.cpp" />
+    <ClCompile Include="Modules\UIModule.cpp" />
     <ClCompile Include="Source\LaunchUIPage.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -33,6 +44,18 @@
     <None Include="Data\Manifests\cluiche_sim.diaapp">
       <DeploymentContent>true</DeploymentContent>
     </None>
+    <None Include="Data\cluichetest.diagame">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Data\cluiche.diaapp">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Data\dummy_stage.diastage">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Data\dummy_stage.diaapp">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApplicationFlow\Phases\MainBootPhase.h" />
@@ -43,10 +66,23 @@
     <ClInclude Include="ApplicationFlow\ProcessingUnits\MainProcessingUnit.h" />
     <ClInclude Include="ApplicationFlow\ProcessingUnits\RenderProcessingUnit.h" />
     <ClInclude Include="ApplicationFlow\ProcessingUnits\SimProcessingUnit.h" />
+    <ClInclude Include="Modules\AssetServiceModule.h" />
+    <ClInclude Include="Modules\BootUIPageModule.h" />
+    <ClInclude Include="Modules\DummyLevelModule.h" />
+    <ClInclude Include="Modules\DummyUIPageModule.h" />
+    <ClInclude Include="Modules\InputStreamModule.h" />
+    <ClInclude Include="Modules\KernelModule.h" />
+    <ClInclude Include="Modules\LoadingScreenModule.h" />
+    <ClInclude Include="Modules\LoggerModule.h" />
+    <ClInclude Include="Modules\RenderModule.h" />
+    <ClInclude Include="Modules\TimeServerModule.h" />
+    <ClInclude Include="Modules\UIModule.h" />
     <ClInclude Include="Source\LaunchUIPage.h" />
+    <ClInclude Include="Types\InputEvent.h" />
+    <ClInclude Include="Types\UICommand.h" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Dia\DiaApplication\DiaApplication.vcxproj">
+    <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">
       <Project>{dd3d58ef-028b-42cb-b837-0042ba30d96f}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaGame\DiaGame.vcxproj">
@@ -136,7 +172,7 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(LibOutDir)DummyStage.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)CluicheKernel.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaSFML.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaApplication.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaAPI.lib;sfml-graphics-d.lib;sfml-window-d.lib;sfml-system-d.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(LibOutDir)DummyStage.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)CluicheKernel.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaSFML.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaAPI.lib;sfml-graphics-d.lib;sfml-window-d.lib;sfml-system-d.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(RepoRoot)SFML\Current-x64\lib\Debug;$(RepoRoot)Dia\DiaBin\CluicheKernel;$(RepoRoot)Dia\DiaBin\DiaInput;$(RepoRoot)External\SFML\Current-x64\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/WHOLEARCHIVE:DiaDebugServer.lib /WHOLEARCHIVE:CluicheKernel.lib %(AdditionalOptions)</AdditionalOptions>
     </Link>
@@ -158,7 +194,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>$(LibOutDir)DummyStage.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)CluicheKernel.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaSFML.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaApplication.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaDebugProtocol.lib;$(LibOutDir)DiaProtobuf.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaAPI.lib;sfml-graphics.lib;sfml-window.lib;sfml-system.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;ws2_32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(LibOutDir)DummyStage.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)CluicheKernel.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaSFML.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaDebugProtocol.lib;$(LibOutDir)DiaProtobuf.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaAPI.lib;sfml-graphics.lib;sfml-window.lib;sfml-system.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;ws2_32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(RepoRoot)External\SFML\Current-x64\lib\;$(ProjectDir)..\..\External\protobuf\Current-x64\lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
