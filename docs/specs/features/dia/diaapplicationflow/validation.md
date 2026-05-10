@@ -25,6 +25,7 @@ Config-as-source-of-truth requires that invalid manifests are caught immediately
    - All `initial_stage` and `auto_stages` entries exist in `stages` array
    - All module `stages` entries exist in `stages` array (or are `"all"`)
    - All module `dependencies` reference instance_ids that exist in the same PU
+   - Every declared dependency appears at an EARLIER index in the `modules` array than the dependent module (array order is startup order — see `config-format.md`)
    - No circular dependencies within a PU
    - All module `type_id` values exist in the TypeRegistry
    - All `reads`/`writes` stream IDs exist in the `streams` array
@@ -74,6 +75,7 @@ namespace Dia::ApplicationFlow {
 |------|----------|-------------|
 | UNKNOWN_STAGE | Error | initial_stage, auto_stages, or module stage not in stages array |
 | UNKNOWN_DEPENDENCY | Error | Module dependency references non-existent instance_id in same PU |
+| DEPENDENCY_ORDER | Error | Module depends on an instance_id that appears LATER in the `modules` array (array order is startup order) |
 | CYCLE_DETECTED | Error | Circular dependency chain within a PU |
 | UNKNOWN_TYPE | Error | Module type_id not found in TypeRegistry |
 | UNKNOWN_STREAM | Error | reads/writes references non-existent stream ID |

@@ -14,7 +14,8 @@ parent_module_id: dia.root
 summary: >
   DiaApplicationFlow — config-driven application framework (v2). Defines Application,
   Module, ProcessingUnit, TypeRegistry, ModuleRef, stream handles (FrameStream / EventStream),
-  and IApplicationInspectable. Replaces the v1 Phase-based system; v1 files (ApplicationModule,
+  IApplicationInspectable (read-only introspection) and IApplicationControl (narrow control
+  interface exposed to modules). Replaces the v1 Phase-based system; v1 files (ApplicationModule,
   ApplicationPhase, MessageBus, HotReloadManager) are present but superseded.
 
 intent: >
@@ -23,9 +24,12 @@ intent: >
   they belong to, and how processing units and streams connect them.
 
 responsibilities:
-  - Module base class (DoStart/DoUpdate/DoStop lifecycle, async kLoading startup, timeout handling)
-  - ProcessingUnit — owns modules, drives their FrameTick loop, supports dedicated thread
+  - Module base class (DoStart/DoUpdate/DoStop lifecycle, async kLoading startup, timeout handling,
+    atomic cross-thread state, narrow IApplicationControl handle via GetApplication())
+  - ProcessingUnit — pure scheduler: owns modules, drives their FrameTick loop in manifest array
+    order, supports dedicated thread; does NOT hold a back-pointer to Application
   - Application — manifest validation, PU/module creation, stage transition algorithm, error policy
+    (boot failure → shutdown; non-boot failure → capped rollback retries, then shutdown)
   - TypeRegistry + DIA_MODULE macro — static-init factory registration
   - ModuleRef<T> — lazy, lifecycle-safe inter-module access within a PU
   - FrameStreamStore / EventStreamStore — framework-owned inter-PU data channels
@@ -33,8 +37,11 @@ responsibilities:
   - ApplicationManifestV2 POD structs — in-memory representation of .diaapp + .diastage files
   - ApplicationManifestLoaderV2 — JSON → ApplicationManifestV2
   - ManifestComposerV2 — .diagame → merged manifest (base + stage overlays)
-  - ManifestValidatorV2 — full structural + dependency + cycle validation
+  - ManifestValidatorV2 — full structural + dependency + cycle validation, including
+    array-order enforcement for declared dependencies (DEPENDENCY_ORDER error)
   - IApplicationInspectable — read-only runtime introspection for debug tools and tests
+  - IApplicationControl — narrow control interface (TransitionTo, RequestShutdown,
+    GetCurrentStage) exposed to runtime module code via Module::GetApplication()
 
 non_responsibilities:
   - Game-specific module implementations (belong in game application)
@@ -52,6 +59,7 @@ public_api:
     - Dia/DiaApplicationFlow/ModuleRefV2.h
     - Dia/DiaApplicationFlow/RegistrationMacrosV2.h
     - Dia/DiaApplicationFlow/IApplicationInspectable.h
+    - Dia/DiaApplicationFlow/IApplicationControl.h
     - Dia/DiaApplicationFlow/Manifest/ApplicationManifestV2.h
     - Dia/DiaApplicationFlow/Manifest/ApplicationManifestLoaderV2.h
     - Dia/DiaApplicationFlow/Manifest/ManifestComposerV2.h
@@ -73,6 +81,7 @@ public_api:
     - ModuleRef<T>
     - DIA_MODULE
     - IApplicationInspectable
+    - IApplicationControl
     - ApplicationManifestV2
     - ApplicationManifestLoaderV2
     - ManifestComposerV2

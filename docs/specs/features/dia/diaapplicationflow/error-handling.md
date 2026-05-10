@@ -54,6 +54,19 @@ Module lifecycle failures (DoStart returning kFailed, timeouts) need well-define
 7. If any module in step 3 or 4 fails → escalate to Shutdown
 ```
 
+### Rollback retry cap
+
+Rollback that re-enters the same stage can loop forever if the failure is
+deterministic (missing asset, bad config). Application tracks consecutive
+rollback attempts per stage:
+
+- `kMaxRollbackAttempts = 3` (Application.h).
+- If the same stage fails N+1 times in a row, escalate to Shutdown.
+- The counter resets when a subsequent transition lands on a different
+  stage (successful transitions do not count as attempts).
+
+Log on escalation: `"Module failed in stage '[X]' — rollback exceeded N attempts, shutting down"`.
+
 ## Shutdown Sequence
 
 ```

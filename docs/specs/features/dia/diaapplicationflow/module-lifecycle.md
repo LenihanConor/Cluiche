@@ -27,8 +27,10 @@ DiaApplicationFlow needs a base Module class with a well-defined lifecycle contr
 7. Timeout triggers the error handling policy (assert in debug, rollback in release, shutdown on boot — per system SD-009)
 8. Module state machine: `Inactive → Starting → Active → Stopping → Inactive` (+ `Failed` terminal state)
 9. Framework drives all state transitions — modules never call their own Start/Stop
-10. Module base class provides `GetInstanceId()`, `GetProcessingUnit()`, and `TransitionTo()` (convenience that calls up to Application)
+10. Module base class provides `GetInstanceId()`, `GetProcessingUnit()`, `GetApplication()` (returns narrow `IApplicationControl*`), and `TransitionTo()` (convenience that delegates to `GetApplication()->TransitionTo`)
 11. Module constructor takes only `instanceId` (StringCRC) — all initialization happens in DoStart
+12. `Module::mState` is `std::atomic<ModuleState>` with acquire/release ordering — `BeginStart`/`BeginStop` run on the main thread while `FrameTick` runs on the PU's thread; a plain enum would be a data race
+13. `Module::GetApplication()` returns `IApplicationControl*`, not `Application*` — runtime module code can `TransitionTo`, `RequestShutdown`, `GetCurrentStage`, and nothing else (no stream-store registration, no introspection, no cross-PU module lookup)
 
 ## Public API
 
@@ -56,7 +58,11 @@ namespace Dia::ApplicationFlow {
         ProcessingUnit* GetProcessingUnit() const;
         ModuleState GetState() const;
 
-        // Convenience — delegates to Application::TransitionTo
+        // Narrow control handle: TransitionTo, RequestShutdown, GetCurrentStage.
+        // Runtime module code cannot reach Application internals through this.
+        IApplicationControl* GetApplication() const;
+
+        // Convenience — delegates to GetApplication()->TransitionTo
         void TransitionTo(const StringCRC& stageId);
 
     protected:
@@ -72,10 +78,11 @@ namespace Dia::ApplicationFlow {
         void BeginStart();
         void BeginStop();
 
-        StringCRC mInstanceId;
-        ProcessingUnit* mProcessingUnit = nullptr;
-        ModuleState mState = ModuleState::kInactive;
-        float mStateElapsedMs = 0.0f;
+        StringCRC                mInstanceId;
+        ProcessingUnit*          mProcessingUnit = nullptr;
+        Application*             mApplication = nullptr;   // exposed as IApplicationControl* via GetApplication()
+        std::atomic<ModuleState> mState{ModuleState::kInactive};
+        float                    mStateElapsedMs = 0.0f;
     };
 }
 ```
