@@ -41,7 +41,20 @@ namespace Dia { namespace ApplicationFlow {
             RequestShutdown();
         }
 
-        // Join any dedicated threads that are still running.
+        // Destructor is the last chance to join — blocking here is the
+        // expected behaviour (Update() wasn't drained).
+        JoinDedicatedThreads();
+    }
+
+    //--------------------------------------------------------------------------
+    // JoinDedicatedThreads  (private)
+    //
+    // Idempotent — called from Update()'s shutdown tail and from the
+    // destructor as a safety net.  After calling, mDedicatedThreadCount is 0.
+    //--------------------------------------------------------------------------
+
+    void Application::JoinDedicatedThreads()
+    {
         for (unsigned int i = 0; i < mDedicatedThreadCount; ++i)
         {
             if (mDedicatedThreads[i].joinable())
@@ -49,6 +62,7 @@ namespace Dia { namespace ApplicationFlow {
                 mDedicatedThreads[i].join();
             }
         }
+        mDedicatedThreadCount = 0;
     }
 
     //--------------------------------------------------------------------------
@@ -109,7 +123,7 @@ namespace Dia { namespace ApplicationFlow {
             ProcessingUnit* pu = mProcessingUnits[p].Get();
             if (pu->IsDedicatedThread())
             {
-                DIA_ASSERT(mDedicatedThreadCount < (kMaxProcessingUnits - 1),
+                DIA_ASSERT(mDedicatedThreadCount < kMaxDedicatedThreads,
                            "Application::Start() — dedicated thread capacity exceeded");
                 mDedicatedThreads[mDedicatedThreadCount] = std::thread(std::ref(*pu));
                 ++mDedicatedThreadCount;
@@ -184,6 +198,11 @@ namespace Dia { namespace ApplicationFlow {
             // Return false once everything has settled.
             if (AllModulesInactive())
             {
+                // Join dedicated threads now that all modules are down and no
+                // further work will be scheduled on them.  Deferred here (not
+                // in RequestShutdown) so callers don't block on thread joins.
+                JoinDedicatedThreads();
+
                 DIA_LOG_INFO("Application", "Application shutdown complete — all modules inactive");
                 return false;
             }
@@ -309,21 +328,16 @@ namespace Dia { namespace ApplicationFlow {
 
         DIA_LOG_INFO("Application", "Application shutdown requested");
 
-        // Stop dedicated threads.
+        // Signal dedicated-PU threads to stop their loops.  Do NOT join here
+        // — RequestShutdown is thread-safe and may be invoked from inside a
+        // module's DoUpdate on the main PU; joining inline would make the
+        // caller block on every dedicated thread finishing its current frame.
+        // The joins happen in Update()'s shutdown tail (or the destructor as
+        // a safety net) once AllModulesInactive() has settled.
         for (unsigned int p = 1; p < mProcessingUnitCount; ++p)
         {
             mProcessingUnits[p]->RequestStop();
         }
-
-        // Join dedicated threads.
-        for (unsigned int i = 0; i < mDedicatedThreadCount; ++i)
-        {
-            if (mDedicatedThreads[i].joinable())
-            {
-                mDedicatedThreads[i].join();
-            }
-        }
-        mDedicatedThreadCount = 0;
     }
 
     //--------------------------------------------------------------------------
@@ -744,6 +758,10 @@ namespace Dia { namespace ApplicationFlow {
 
     void Application::ConnectModuleStreams()
     {
+        // Stream-store registration is only permitted inside this window.
+        // See FindOrRegisterStreamStoreAtStartup for the rationale.
+        mConnectingStreams = true;
+
         for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
         {
             const ProcessingUnitDeclaration& puDecl = mManifest.processingUnits[p];
@@ -757,6 +775,8 @@ namespace Dia { namespace ApplicationFlow {
                 }
             }
         }
+
+        mConnectingStreams = false;
     }
 
     //--------------------------------------------------------------------------
@@ -776,11 +796,15 @@ namespace Dia { namespace ApplicationFlow {
     }
 
     //--------------------------------------------------------------------------
-    // FindOrRegisterStreamStore  (public)
+    // FindOrRegisterStreamStoreAtStartup  (public, main-thread, startup-only)
     //--------------------------------------------------------------------------
 
-    IStreamStore* Application::FindOrRegisterStreamStore(Dia::Core::UniquePtr<IStreamStore> newStore)
+    IStreamStore* Application::FindOrRegisterStreamStoreAtStartup(Dia::Core::UniquePtr<IStreamStore> newStore)
     {
+        DIA_ASSERT(mConnectingStreams,
+                   "FindOrRegisterStreamStoreAtStartup called outside OnConnectStreams — "
+                   "mStreamStores is only main-thread-safe during startup");
+
         // If a store with this ID is already registered, discard the new one
         // and return the existing (first-registrant wins).
         IStreamStore* existing = FindStreamStore(newStore->GetId());

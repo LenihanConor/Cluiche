@@ -66,7 +66,7 @@ inline bool StreamWriter<T>::IsConnected() const
 template<typename T>
 inline void StreamWriter<T>::Connect(Application& app)
 {
-    IStreamStore* istore = app.FindOrRegisterStreamStore(
+    IStreamStore* istore = app.FindOrRegisterStreamStoreAtStartup(
         Dia::Core::UniquePtr<IStreamStore>(new FrameStreamStore<T>(mStreamId)));
     mStore = static_cast<FrameStreamStore<T>*>(istore);
 }

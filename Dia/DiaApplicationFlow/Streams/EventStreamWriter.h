@@ -65,7 +65,7 @@ inline bool EventStreamWriter<T>::IsConnected() const
 template<typename T>
 inline void EventStreamWriter<T>::Connect(Application& app)
 {
-    IStreamStore* istore = app.FindOrRegisterStreamStore(
+    IStreamStore* istore = app.FindOrRegisterStreamStoreAtStartup(
         Dia::Core::UniquePtr<IStreamStore>(new EventStreamStore<T>(mStreamId)));
     mStore = static_cast<EventStreamStore<T>*>(istore);
 }

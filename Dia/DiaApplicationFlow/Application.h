@@ -76,20 +76,32 @@ namespace Dia { namespace ApplicationFlow {
         void GetStreamInfo(Dia::Core::Containers::DynamicArrayC<StreamInfo, 16>& out) const override;
         [[nodiscard]] bool IsShuttingDown() const override;
 
-        // Stream store registry — called from module's OnConnectStreams override.
+        // Stream store registry — main-thread-only, startup-only.
         //
-        // FindOrRegisterStreamStore: takes ownership of newStore. If a store with
-        // the same ID already exists, returns the existing one (first-registrant
-        // wins) and the passed-in store is discarded. Always returns non-null on
-        // success; returns null only if capacity is exceeded (asserts in debug).
-        IStreamStore* FindOrRegisterStreamStore(Dia::Core::UniquePtr<IStreamStore> newStore);
+        // FindOrRegisterStreamStoreAtStartup: takes ownership of newStore. If a
+        // store with the same ID already exists, returns the existing one
+        // (first-registrant wins) and the passed-in store is discarded.
+        // Always returns non-null on success; returns null only if capacity
+        // is exceeded (asserts in debug).
+        //
+        // Contract: only call during Module::OnConnectStreams, which runs
+        // once on the main thread from Application::Start() before any
+        // dedicated PU threads are launched.  Calling it after Start() has
+        // completed (i.e. from DoStart/DoUpdate/DoStop) asserts in debug;
+        // in release the unsynchronized store array would be a data race.
+        IStreamStore* FindOrRegisterStreamStoreAtStartup(Dia::Core::UniquePtr<IStreamStore> newStore);
 
         // FindStreamStore: lookup only, no creation. Returns null if not found.
+        // Safe to call at any time — mStreamStores is immutable after Start().
         IStreamStore* FindStreamStore(const Dia::Core::StringCRC& id) const;
 
     private:
         // Maximum number of ProcessingUnits supported (matches spec).
         static constexpr unsigned int kMaxProcessingUnits = 4;
+
+        // The main PU (index 0) runs inline in Update(); only PUs at
+        // indices 1..N can be dedicated-thread, hence (kMax - 1).
+        static constexpr unsigned int kMaxDedicatedThreads = kMaxProcessingUnits - 1;
 
         // Maximum number of stream stores (frame + event combined).
         static constexpr unsigned int kMaxStreams = 16;
@@ -116,6 +128,11 @@ namespace Dia { namespace ApplicationFlow {
         // Begin stopping all active modules across all PUs (shutdown path).
         void BeginStopAllActive();
 
+        // Join any running dedicated-thread PUs.  Called from Update()'s
+        // shutdown tail once all modules have settled, and from the
+        // destructor as a safety net.  Idempotent.
+        void JoinDedicatedThreads();
+
         // Returns true if every module in every PU is kInactive or kFailed.
         bool AllModulesInactive() const;
 
@@ -141,8 +158,7 @@ namespace Dia { namespace ApplicationFlow {
         unsigned int                       mStreamStoreCount = 0;
 
         // One std::thread per dedicated PU (index 0 = main PU, no thread).
-        // Max 3 dedicated threads (kMaxProcessingUnits - 1).
-        std::thread  mDedicatedThreads[kMaxProcessingUnits - 1];
+        std::thread  mDedicatedThreads[kMaxDedicatedThreads];
         unsigned int mDedicatedThreadCount = 0;
 
         Dia::Core::StringCRC mCurrentStage;
@@ -155,6 +171,10 @@ namespace Dia { namespace ApplicationFlow {
         std::atomic<bool>    mShuttingDown{false};
         bool                 mStarted = false;
         bool                 mShutdownInitiated = false;  // tracks whether BeginStopAllActive has been called
+        // True only while ConnectModuleStreams() is running.  Guards
+        // FindOrRegisterStreamStoreAtStartup — calls outside this window
+        // would race against dedicated-PU threads.
+        bool                 mConnectingStreams = false;
 
         // Transition drain state: set when outgoing modules are being stopped before
         // incoming modules can be started. Cleared once all outgoing are kInactive.
