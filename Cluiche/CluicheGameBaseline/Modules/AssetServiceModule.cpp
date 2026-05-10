@@ -8,6 +8,7 @@
 #include <DiaSFML/RenderWindow.h>
 #include <DiaUIUltralight/UltralightUISystem.h>
 #include <DiaApplicationFlow/Application.h>
+#include <DiaApplicationFlow/IApplicationControl.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 
@@ -113,8 +114,7 @@ void AssetServiceModule::DoUpdate(float /*dt*/)
     // per-stage load/unload. v1 did this from MainLoadPhase/MainFEPhase;
     // v2 centralises it here so each new stage doesn't need its own
     // load-trigger module.
-    Dia::ApplicationFlow::Application* app =
-        GetProcessingUnit() ? GetProcessingUnit()->GetApplication() : nullptr;
+    Dia::ApplicationFlow::IApplicationControl* app = GetApplication();
     if (app == nullptr)
         return;
 

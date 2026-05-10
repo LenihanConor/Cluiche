@@ -453,12 +453,13 @@ namespace Dia { namespace ApplicationFlow {
         {
             const ProcessingUnitDeclaration& puDecl = mManifest.processingUnits[p];
 
-            // Create the ProcessingUnit.
+            // Create the ProcessingUnit.  The PU is a pure scheduler — it does
+            // NOT get a back-pointer to Application.  Modules that need to
+            // reach the Application get one via Module::SetApplication below.
             Dia::Core::UniquePtr<ProcessingUnit> pu(
                 new ProcessingUnit(puDecl.instanceId,
                                    puDecl.frequencyHz,
                                    puDecl.dedicatedThread));
-            pu->SetApplication(this);
 
             // Create and add modules in manifest array order (= dep order).
             for (unsigned int m = 0; m < puDecl.modules.Size(); ++m)
@@ -473,6 +474,8 @@ namespace Dia { namespace ApplicationFlow {
                                   modDecl.instanceId.AsChar(), modDecl.typeId.AsChar());
                     return false;
                 }
+
+                rawModule->SetApplication(this);
 
                 Dia::Core::UniquePtr<Module> modulePtr(rawModule);
                 pu->AddModule(std::move(modulePtr),

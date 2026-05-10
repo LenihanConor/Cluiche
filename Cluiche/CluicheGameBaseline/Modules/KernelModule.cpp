@@ -72,7 +72,8 @@ void KernelModule::DoUpdate(float /*dt*/)
 
         if (ev.type == Dia::Input::Event::EType::kClosed)
         {
-            GetProcessingUnit()->GetApplication()->RequestShutdown();
+            if (auto* app = GetApplication())
+                app->RequestShutdown();
         }
     }
 }

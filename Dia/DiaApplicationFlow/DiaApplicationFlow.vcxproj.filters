@@ -68,6 +68,7 @@
   <ItemGroup>
     <ClInclude Include="Application.h" />
     <ClInclude Include="IApplicationInspectable.h" />
+    <ClInclude Include="IApplicationControl.h" />
     <ClInclude Include="Module.h" />
     <ClInclude Include="Streams\IStreamStore.h">
       <Filter>Streams</Filter>

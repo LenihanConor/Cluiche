@@ -12,6 +12,7 @@
 #include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaApplicationFlow/Streams/IStreamStore.h>
 #include <DiaApplicationFlow/IApplicationInspectable.h>
+#include <DiaApplicationFlow/IApplicationControl.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Memory/UniquePtr.h>
 #include <atomic>
@@ -33,6 +34,7 @@ namespace Dia { namespace ApplicationFlow {
     //   Update() must be called from the main thread.
     // ---------------------------------------------------------------------------
     class Application : public IApplicationInspectable
+                      , public IApplicationControl
     {
     public:
         Application(const ApplicationManifestV2& manifest,
@@ -52,13 +54,13 @@ namespace Dia { namespace ApplicationFlow {
         // (i.e. the application has fully shut down).
         bool Update(float deltaTime);
 
-        // Thread-safe.  Queues a stage transition to execute at the top of the
-        // next Update() call.
-        void TransitionTo(const Dia::Core::StringCRC& stageId);
+        // IApplicationControl — thread-safe; queues a stage transition to
+        // execute at the top of the next Update() call.
+        void TransitionTo(const Dia::Core::StringCRC& stageId) override;
 
-        // Thread-safe.  Stops all dedicated threads and begins stopping every
-        // active module.
-        void RequestShutdown();
+        // IApplicationControl — thread-safe; stops all dedicated threads and
+        // begins stopping every active module.
+        void RequestShutdown() override;
 
         // IApplicationInspectable — returns self (Application implements the interface directly).
         IApplicationInspectable* GetInspectable() { return this; }

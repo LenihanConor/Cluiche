@@ -8,6 +8,7 @@
 
 #include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaApplicationFlow/Application.h>
+#include <DiaApplicationFlow/IApplicationControl.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaWindow/NativeWindow.h>
 #include <DiaUICEF/EditorUISystemFactory.h>
@@ -116,13 +117,8 @@ namespace Cluiche
 			EditorModelModule* modelModule = mModelRef.Get();
 			if (modelModule != nullptr && modelModule->GetModel().IsCloseRequested())
 			{
-				Dia::ApplicationFlow::ProcessingUnit* pu = GetProcessingUnit();
-				if (pu != nullptr)
-				{
-					Dia::ApplicationFlow::Application* app = pu->GetApplication();
-					if (app != nullptr)
-						app->RequestShutdown();
-				}
+				if (auto* app = GetApplication())
+					app->RequestShutdown();
 			}
 		}
 

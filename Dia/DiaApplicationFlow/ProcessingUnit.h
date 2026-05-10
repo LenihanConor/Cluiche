@@ -7,8 +7,10 @@
 
 namespace Dia { namespace ApplicationFlow {
 
-    class Application;
-
+    // A ProcessingUnit is a scheduler: it owns its Modules and drives their
+    // FrameTick in array order at a fixed rate.  It deliberately does NOT
+    // hold a back-pointer to Application — modules that need to reach the
+    // Application use Module::GetApplication() (narrow IApplicationControl).
     class ProcessingUnit {
     public:
         ProcessingUnit(const Dia::Core::StringCRC& instanceId,
@@ -30,10 +32,6 @@ namespace Dia { namespace ApplicationFlow {
 
         Module* FindModule(const Dia::Core::StringCRC& instanceId);
         const Module* FindModule(const Dia::Core::StringCRC& instanceId) const;
-
-        // Application back-pointer (set by Application after construction)
-        void SetApplication(Application* app);
-        Application* GetApplication() const;
 
         // Update — called by dedicated thread loop, or by Application::Update() for main PU
         void Update(float deltaTime);
@@ -69,7 +67,6 @@ namespace Dia { namespace ApplicationFlow {
         ModuleEntry     mModules[kMaxModules];
         unsigned int    mModuleCount = 0;
 
-        Application* mApplication = nullptr;
         std::atomic<bool> mStopRequested{false};
     };
 

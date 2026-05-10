@@ -4,6 +4,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "DiaApplicationFlow/Module.h"
 #include "DiaApplicationFlow/Application.h"
+#include "DiaApplicationFlow/IApplicationControl.h"
 #include "DiaApplicationFlow/ProcessingUnit.h"
 
 #include <DiaCore/Core/Assert.h>
@@ -22,6 +23,7 @@ namespace Dia { namespace ApplicationFlow {
     Module::Module(const Dia::Core::StringCRC& instanceId)
         : mInstanceId(instanceId)
         , mProcessingUnit(nullptr)
+        , mApplication(nullptr)
         , mState(ModuleState::kInactive)
         , mStateElapsedMs(0.0f)
         , mStartLogged(false)
@@ -46,6 +48,15 @@ namespace Dia { namespace ApplicationFlow {
     }
 
     //--------------------------------------------------------------------------
+    IApplicationControl* Module::GetApplication() const
+    {
+        // Application implements IApplicationControl; upcast hides the full
+        // Application surface (stream registration, introspection) from
+        // runtime module code.
+        return static_cast<IApplicationControl*>(mApplication);
+    }
+
+    //--------------------------------------------------------------------------
     ModuleState Module::GetState() const
     {
         return mState.load(std::memory_order_acquire);
@@ -58,13 +69,19 @@ namespace Dia { namespace ApplicationFlow {
     }
 
     //--------------------------------------------------------------------------
+    void Module::SetApplication(Application* app)
+    {
+        mApplication = app;
+    }
+
+    //--------------------------------------------------------------------------
     void Module::TransitionTo(const Dia::Core::StringCRC& stageId)
     {
-        DIA_ASSERT(mProcessingUnit != nullptr, "Module '%s' (PU '%s') TransitionTo called with no ProcessingUnit set", mInstanceId.AsChar());
-        Application* app = mProcessingUnit->GetApplication();
-        DIA_ASSERT(app != nullptr, "Module '%s' (PU '%s') TransitionTo: ProcessingUnit has no Application set", mInstanceId.AsChar());
-        if (app)
-            app->TransitionTo(stageId);
+        DIA_ASSERT(mApplication != nullptr,
+                   "Module '%s' (PU '%s') TransitionTo called before Application was set",
+                   mInstanceId.AsChar(), PuName(mProcessingUnit));
+        if (mApplication)
+            mApplication->TransitionTo(stageId);
     }
 
     //--------------------------------------------------------------------------

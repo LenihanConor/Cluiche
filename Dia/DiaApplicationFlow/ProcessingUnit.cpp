@@ -19,7 +19,6 @@ namespace Dia { namespace ApplicationFlow {
         , mFrequencyHz(frequencyHz)
         , mDedicatedThread(dedicatedThread)
         , mModuleCount(0)
-        , mApplication(nullptr)
     {
         DIA_LOG_INFO("Application", "ProcessingUnit '%s' created (%.0fHz, dedicated=%d)",
                      mInstanceId.AsChar(), static_cast<double>(mFrequencyHz),
@@ -48,18 +47,6 @@ namespace Dia { namespace ApplicationFlow {
     bool ProcessingUnit::IsDedicatedThread() const
     {
         return mDedicatedThread;
-    }
-
-    //--------------------------------------------------------------------------
-    void ProcessingUnit::SetApplication(Application* app)
-    {
-        mApplication = app;
-    }
-
-    //--------------------------------------------------------------------------
-    Application* ProcessingUnit::GetApplication() const
-    {
-        return mApplication;
     }
 
     //--------------------------------------------------------------------------

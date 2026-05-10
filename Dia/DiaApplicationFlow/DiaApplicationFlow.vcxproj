@@ -38,6 +38,7 @@
   <ItemGroup>
     <ClInclude Include="Application.h" />
     <ClInclude Include="IApplicationInspectable.h" />
+    <ClInclude Include="IApplicationControl.h" />
     <ClInclude Include="Streams\IStreamStore.h" />
     <ClInclude Include="Streams\FrameStreamStore.h" />
     <ClInclude Include="Streams\EventStreamStore.h" />

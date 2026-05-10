@@ -6,6 +6,7 @@ namespace Dia { namespace ApplicationFlow {
 
     class ProcessingUnit;
     class Application;
+    class IApplicationControl;
 
     enum class StartResult { kReady, kLoading, kFailed };
     enum class StopResult  { kDone, kStopping };
@@ -21,8 +22,18 @@ namespace Dia { namespace ApplicationFlow {
         Module& operator=(const Module&) = delete;
 
         [[nodiscard]] const Dia::Core::StringCRC& GetInstanceId() const;
+
+        // The PU is a scheduler, not a directory.  The only mutating API it
+        // exposes is AddModule, which is private to Application.  Cross-PU
+        // lookups are not provided by design.
         [[nodiscard]] ProcessingUnit* GetProcessingUnit() const;
+
         [[nodiscard]] ModuleState GetState() const;
+
+        // Narrow control handle: TransitionTo, RequestShutdown, GetCurrentStage.
+        // Modules cannot reach Application internals (stream registration,
+        // introspection) through this interface.
+        [[nodiscard]] IApplicationControl* GetApplication() const;
 
         void TransitionTo(const Dia::Core::StringCRC& stageId);
 
@@ -34,7 +45,8 @@ namespace Dia { namespace ApplicationFlow {
         // Called by Application after all PUs and modules are built, before
         // the initial stage is entered.  Override to call Connect() on any
         // StreamWriter / StreamReader / EventStreamWriter / EventStreamReader
-        // handles declared by this module.
+        // handles declared by this module.  Receives the full Application& so
+        // stream-store registration can take ownership of newly-created stores.
         virtual void OnConnectStreams(Application& /*app*/) {}
 
     private:
@@ -42,6 +54,7 @@ namespace Dia { namespace ApplicationFlow {
         friend class Application;
 
         void SetProcessingUnit(ProcessingUnit* pu);
+        void SetApplication(Application* app);
 
         // FrameTick: called by ProcessingUnit each frame — drives the state machine.
         // deltaTime: wall-clock delta (seconds).
@@ -52,6 +65,11 @@ namespace Dia { namespace ApplicationFlow {
 
         Dia::Core::StringCRC     mInstanceId;
         ProcessingUnit*          mProcessingUnit  = nullptr;
+        // Stored as concrete Application* for framework-internal use (e.g.
+        // OnConnectStreams needs the full Application&).  Exposed to module
+        // code only through GetApplication(), which returns the narrow
+        // IApplicationControl* view.
+        Application*             mApplication     = nullptr;
         // mState is accessed across threads: written on the PU's own thread
         // during FrameTick(), and written on the main thread by BeginStart() /
         // BeginStop().  It is also read on the main thread by Application's
