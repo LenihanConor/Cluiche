@@ -46,6 +46,9 @@
     <Filter Include="Docs">
       <UniqueIdentifier>{c3d4e5f6-7890-abcd-ef12-3456789abcde}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Quaternion">
+      <UniqueIdentifier>{d4e5f6a7-b890-cdef-0123-456789abcdef}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Vector\Vector2D.h">
@@ -141,6 +144,9 @@
     <ClInclude Include="Transform\Transform2D.h">
       <Filter>Transform</Filter>
     </ClInclude>
+    <ClInclude Include="Quaternion\Quaternion.h">
+      <Filter>Quaternion</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Vector\Vector2D.cpp">
@@ -224,6 +230,9 @@
     <ClCompile Include="Transform\Transform2D.cpp">
       <Filter>Transform\Source</Filter>
     </ClCompile>
+    <ClCompile Include="Quaternion\Quaternion.cpp">
+      <Filter>Quaternion</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Vector\Vector2D.inl">
@@ -292,10 +301,16 @@
     <None Include="Transform\Transform2D.inl">
       <Filter>Transform\Source</Filter>
     </None>
+    <None Include="Quaternion\Quaternion.inl">
+      <Filter>Quaternion</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.maths.architecture.module.md">
       <Filter>Docs</Filter>
+    </None>
+    <None Include="Quaternion\dia.maths.quaternion.architecture.module.md">
+      <Filter>Quaternion</Filter>
     </None>
   </ItemGroup>
 </Project>

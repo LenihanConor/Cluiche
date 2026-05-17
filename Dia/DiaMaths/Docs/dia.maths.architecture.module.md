@@ -29,6 +29,7 @@ non_responsibilities:
 dependent_modules:
   - dia.maths.core
   - dia.maths.matrix
+  - dia.maths.quaternion
   - dia.maths.shape
   - dia.maths.vector
 
