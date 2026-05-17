@@ -5,6 +5,7 @@ namespace Dia { namespace Maths {
 
 class Vector3D;
 class Matrix33;
+class Matrix44;
 class Angle;
 
 //==============================================================================
@@ -33,6 +34,7 @@ public:
     static Quaternion FromAxisAngle(const Vector3D& axis, const Angle& angle);
     static Quaternion FromEuler(const Angle& yaw, const Angle& pitch, const Angle& roll);  // YXZ intrinsic
     static Quaternion FromMatrix33(const Matrix33& rotation);
+    static Quaternion FromMatrix44(const Matrix44& transform);
     static Quaternion LookRotation(const Vector3D& forward, const Vector3D& up);
 
     Quaternion& operator=(const Quaternion& other);
@@ -55,6 +57,7 @@ public:
     Vector3D Rotate(const Vector3D& v) const;
 
     Matrix33   ToMatrix33() const;
+    Matrix44   ToMatrix44() const;
     void       ToAxisAngle(Vector3D& outAxis, Angle& outAngle) const;
     void       ToEuler(Angle& outYaw, Angle& outPitch, Angle& outRoll) const;  // YXZ intrinsic
 

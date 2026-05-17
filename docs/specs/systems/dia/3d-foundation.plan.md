@@ -136,7 +136,7 @@ Tasks are ordered by dependency. Each task is a feature spec implementation; ref
 |---|------|------|--------|-------|-------|
 | 1 | **Vector3D::Cross** — `Vector3D::Cross(rhs)` method, right-handed (X×Y=Z) | `Vector3D*` filter | Done | sonnet | @docs/specs/features/dia/diamaths/vector3d-cross.md. Smallest feature — single method on existing class. ~30 lines. |
 | 2 | **Quaternion** — new `Dia/DiaMaths/Quaternion/` submodule; xyzw storage; Hamilton convention; Slerp/Nlerp; FromAxisAngle/FromEuler(YXZ)/FromMatrix33/44; LookRotation | `Quaternion*` filter | Done | sonnet | @docs/specs/features/dia/diamaths/quaternion.md. 38/38 tests pass. `FromMatrix44`/`ToMatrix44` deferred — implement when Matrix44 lands (task 3). |
-| 3 | **Matrix44** — row-major `float m[4][4]`; Identity/FromTranslation/FromRotation/FromScale/FromTRS; Perspective(Angle, …)/Orthographic/LookAt (Y-up RH, OpenGL [-1,1] depth); Inverse/Determinant/Transpose; GetColumnMajor for GL/glTF upload | `Matrix44*` filter | Pending | sonnet | @docs/specs/features/dia/diamaths/matrix44.md. Largest single file (Inverse alone ~80 lines). Mirror Matrix33 patterns. |
+| 3 | **Matrix44** — row-major `float m[4][4]`; Identity/FromTranslation/FromRotation/FromScale/FromTRS; Perspective(Angle, …)/Orthographic/LookAt (Y-up RH, OpenGL [-1,1] depth); Inverse/Determinant/Transpose; GetColumnMajor for GL/glTF upload | `Matrix44*` filter | Done | sonnet | @docs/specs/features/dia/diamaths/matrix44.md. Largest single file (Inverse alone ~80 lines). Mirror Matrix33 patterns. Includes Quaternion::FromMatrix44/ToMatrix44. |
 | 4 | **Matrix34** — row-major `float m[3][4]` affine, no projection row; FromMatrix44/ToMatrix44; affine-specific Inverse | `Matrix34*` filter | Pending | sonnet | @docs/specs/features/dia/diamaths/matrix34.md. Depends on Matrix44. |
 | 5 | **Transform3D** — Vector3D position + Quaternion rotation + Vector3D scale; raw non-owning parent pointer; world-space getters AND setters; Euler-overload setters (YXZ); GetForward/Right/Up (Y-up RH); LookAt; debug cycle detection | `Transform3D*` filter | Pending | sonnet | @docs/specs/features/dia/diamaths/transform3d.md. Mirrors Transform2D verbatim with 3D types. Last DiaMaths 3D-additions feature in dependency order. |
 | 6 | **DiaMaths Shape Cleanup** — pre-deletion grep verification (zero hits); delete `Shape/2D/`, `Shape/Common/`, parent module docs; update `DiaMaths.vcxproj` and parent `dia.maths.architecture.module.md` `dependent_modules` | `dia pipeline --target googletest` Debug+Release green | Pending | haiku | @docs/specs/features/dia/diamaths/shape-cleanup.md. Mechanical deletion + verification. Recommended last in DiaMaths batch (after 3D features ship clean) so the cleanup is the only variable. |
@@ -178,6 +178,12 @@ After Phase 3 (tasks 10–11) complete:
 ## Session Notes
 
 (Append session-by-session notes here as tasks are dispatched and completed. Each entry should reference the task number and any decisions, blockers, or deviations.)
+
+### 2026-05-17 — Task 3 (Matrix44) Done
+
+Matrix44 + Quaternion::FromMatrix44/ToMatrix44 landed in single commit. Files created: `Dia/DiaMaths/Matrix/{Matrix44.h,.cpp,.inl}`, `Cluiche/Tests/GoogleTests/Maths/TestMatrix44.cpp`. Row-major `float m[4][4]`, all factory methods (Identity/FromTranslation/FromRotation/FromScale/FromTRS/Perspective/Orthographic/LookAt), full 4×4 cofactor Inverse, Transpose, Determinant, GetColumnMajor, Transform{Point,Direction,Vector4}, component extraction (GetTranslation/GetRotation/GetScale). Quaternion conversions: `FromMatrix44` extracts upper-left 3×3 and delegates to existing FromMatrix33; `ToMatrix44` produces 4×4 with rotation + (0,0,0,1) bottom row. Y-up RH, OpenGL [-1,1] depth per spec. vcxproj/filters updated. Module arch doc updated (entry_points += Matrix33, Matrix44). **Tests:** 39/39 Matrix44 tests green, 42/42 Quaternion tests green (38 previous + 4 new Matrix44 conversion tests). Debug pipeline clean. All 23 spec ACs satisfied.
+
+**Deviation from plan note:** Task 2 originally deferred Matrix44 conversions; Task 3 implemented them in same window as planned.
 
 ### 2026-05-17 — Task 2 (Quaternion) Done
 

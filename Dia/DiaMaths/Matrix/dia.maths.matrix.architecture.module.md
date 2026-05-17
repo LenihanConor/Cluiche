@@ -38,6 +38,8 @@ public_api:
     - Angle
     - Matrix
     - Matrix22
+    - Matrix33
+    - Matrix44
     - Vector2D
 
 dependencies:

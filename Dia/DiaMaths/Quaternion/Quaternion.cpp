@@ -1,6 +1,7 @@
 #include "DiaMaths/Quaternion/Quaternion.h"
 #include "DiaMaths/Vector/Vector3D.h"
 #include "DiaMaths/Matrix/Matrix33.h"
+#include "DiaMaths/Matrix/Matrix44.h"
 #include "DiaMaths/Core/Angle.h"
 #include "DiaMaths/Core/CoreMaths.h"
 #include "DiaMaths/Core/FloatMaths.h"
@@ -128,6 +129,22 @@ namespace Dia { namespace Maths {
     }
 
     //-----------------------------------------------------------------------------
+    // ToMatrix44: pure rotation; translation is zero; last row is (0,0,0,1)
+    Matrix44 Quaternion::ToMatrix44() const
+    {
+        float x2 = x * x, y2 = y * y, z2 = z * z;
+        float xy = x * y, xz = x * z, yz = y * z;
+        float wx = w * x, wy = w * y, wz = w * z;
+
+        return Matrix44(
+            1.0f - 2.0f * (y2 + z2),  2.0f * (xy - wz),           2.0f * (xz + wy),           0.0f,
+            2.0f * (xy + wz),          1.0f - 2.0f * (x2 + z2),    2.0f * (yz - wx),           0.0f,
+            2.0f * (xz - wy),          2.0f * (yz + wx),            1.0f - 2.0f * (x2 + y2),   0.0f,
+            0.0f,                      0.0f,                        0.0f,                       1.0f
+        );
+    }
+
+    //-----------------------------------------------------------------------------
     // Shepperd's method
     Quaternion Quaternion::FromMatrix33(const Matrix33& m)
     {
@@ -173,6 +190,20 @@ namespace Dia { namespace Maths {
                 (m.m[1][0] - m.m[0][1]) / s
             );
         }
+    }
+
+    //-----------------------------------------------------------------------------
+    // FromMatrix44: extract upper-left 3×3 and delegate to FromMatrix33
+    Quaternion Quaternion::FromMatrix44(const Matrix44& m)
+    {
+        // Extract upper-left 3×3 rotation part
+        Matrix33 rotation(
+            m.m[0][0], m.m[0][1], m.m[0][2],
+            m.m[1][0], m.m[1][1], m.m[1][2],
+            m.m[2][0], m.m[2][1], m.m[2][2]
+        );
+
+        return FromMatrix33(rotation);
     }
 
     //-----------------------------------------------------------------------------

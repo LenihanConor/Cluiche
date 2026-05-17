@@ -158,6 +158,7 @@
     <ClCompile Include="Maths\TestVector3D.cpp" />
     <ClCompile Include="Maths\TestVector4D.cpp" />
     <ClCompile Include="Maths\TestMatrix33.cpp" />
+    <ClCompile Include="Maths\TestMatrix44.cpp" />
     <ClCompile Include="Maths\TestQuaternion.cpp" />
     <ClCompile Include="Maths\TestVectorUtils.cpp" />
     <ClCompile Include="Maths\TestCoreMaths.cpp" />

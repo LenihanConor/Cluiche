@@ -272,6 +272,9 @@
     <ClCompile Include="Maths\TestMatrix33.cpp">
       <Filter>Maths</Filter>
     </ClCompile>
+    <ClCompile Include="Maths\TestMatrix44.cpp">
+      <Filter>Maths</Filter>
+    </ClCompile>
     <ClCompile Include="Maths\TestQuaternion.cpp">
       <Filter>Maths</Filter>
     </ClCompile>
