@@ -360,8 +360,12 @@ namespace Dia { namespace ApplicationFlow {
 
                 // Check dependencies reference existing instance_ids in the same PU
                 // and appear EARLIER in the module array than this module.  The
-                // framework uses array order as startup order, so a dep at a later
-                // index would not be started before the dependent module.
+                // framework uses array order as startup order (forward) and reverse
+                // array order as stop order; both invariants require deps-before-
+                // dependents in declaration order.  A dep at a later index would
+                // start AFTER its dependent (kStarting fails to find it) and be
+                // torn down BEFORE its dependent (kStopping calls into freed
+                // dependency resources — see ProcessingUnit::Update two-pass tick).
                 for (unsigned int d = 0; d < mod.dependencies.Size(); ++d)
                 {
                     const Dia::Core::StringCRC& depId = mod.dependencies[d];

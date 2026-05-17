@@ -12,6 +12,22 @@ namespace Dia { namespace ApplicationFlow {
     enum class StopResult  { kDone, kStopping };
     enum class ModuleState { kInactive, kStarting, kActive, kStopping, kFailed };
 
+    // Lifecycle resource rule
+    // ------------------------
+    // All thread-affined or externally-owned resources (GPU handles, audio
+    // voices, file handles, sockets, registrations on shared services) MUST be
+    // acquired in DoStart and released in DoStop. Do NOT hold them across the
+    // module destructor.
+    //
+    // Why: by the time ~Module runs the owning PU thread may already have
+    // exited, sibling modules that owned shared services (e.g. KernelModule's
+    // RenderWindow + GL context) may be destroyed, and there is no guarantee
+    // the framework can route work back to the correct thread. DoStop runs
+    // on the PU's own thread while sibling-PU modules are still settling —
+    // it is the only safe place to release thread-affined state.
+    //
+    // The destructor should only release plain CPU-side memory owned by the
+    // module's own members (which UniquePtr / DynamicArrayC handle for free).
     class Module
     {
     public:

@@ -90,13 +90,61 @@ namespace Dia { namespace ApplicationFlow {
     }
 
     //--------------------------------------------------------------------------
+    // Update — two-pass tick respecting dependency order.
+    //
+    // The manifest declares modules in dependency order (dep before dependent),
+    // so mModules[] is stored in the same order. That order is correct for
+    // start/run but inverted for stop: a module's DoStop must run before its
+    // dependencies' DoStop, otherwise the dependency may be torn down (e.g.
+    // KernelModule destroying RenderWindow + TextureHandler) before the
+    // dependent (AssetServiceModule's mRuntime.Reset) finishes using it.
+    //
+    // Pass 1 (forward): tick modules in kStarting/kActive — respects deps.
+    // Pass 2 (reverse): tick modules in kStopping — respects reverse-deps.
+    //
+    // Modules in other states (kInactive/kFailed) are skipped; FrameTick is a
+    // no-op in those states anyway, but pre-filtering keeps the intent clear.
+    //
+    // A module that flips state mid-tick (kActive→kStopping via BeginStop
+    // from another module's DoUpdate) will be picked up by the reverse pass
+    // on the same Update call — it gets one DoStop tick rather than waiting
+    // a whole frame.
+    //--------------------------------------------------------------------------
     void ProcessingUnit::Update(float deltaTime)
+    {
+        // Forward pass: starting/active modules.
+        for (unsigned int i = 0; i < mModuleCount; ++i)
+        {
+            const ModuleState s = mModules[i].module->GetState();
+            if (s == ModuleState::kStarting || s == ModuleState::kActive)
+            {
+                ModuleEntry& entry = mModules[i];
+                entry.module->FrameTick(deltaTime, entry.startTimeoutMs, entry.stopTimeoutMs);
+            }
+        }
+
+        // Reverse pass: stopping modules (dependent-before-dependency).
+        for (int i = static_cast<int>(mModuleCount) - 1; i >= 0; --i)
+        {
+            const ModuleState s = mModules[i].module->GetState();
+            if (s == ModuleState::kStopping)
+            {
+                ModuleEntry& entry = mModules[i];
+                entry.module->FrameTick(deltaTime, entry.startTimeoutMs, entry.stopTimeoutMs);
+            }
+        }
+    }
+
+    //--------------------------------------------------------------------------
+    bool ProcessingUnit::AllModulesSettled() const
     {
         for (unsigned int i = 0; i < mModuleCount; ++i)
         {
-            ModuleEntry& entry = mModules[i];
-            entry.module->FrameTick(deltaTime, entry.startTimeoutMs, entry.stopTimeoutMs);
+            const ModuleState s = mModules[i].module->GetState();
+            if (s != ModuleState::kInactive && s != ModuleState::kFailed)
+                return false;
         }
+        return true;
     }
 
     //--------------------------------------------------------------------------
@@ -108,7 +156,16 @@ namespace Dia { namespace ApplicationFlow {
         float targetIntervalMs = (mFrequencyHz > 0.0f) ? (1000.0f / mFrequencyHz) : 0.0f;
         auto lastTime = std::chrono::high_resolution_clock::now();
 
-        while (!mStopRequested.load())
+        // Keep ticking until either:
+        //   (a) no stop has been requested (normal run), OR
+        //   (b) stop requested AND every module has reached a settled state
+        //       (kInactive/kFailed). The settle-after-stop loop is essential:
+        //       Application::RequestShutdown calls BeginStop on modules from
+        //       MainPU, which flips them to kStopping. Only this thread can
+        //       call FrameTick on them to reach kInactive — exiting early
+        //       would strand kStopping modules forever and Application::Update
+        //       would spin in AllModulesInactive() on MainPU.
+        while (!mStopRequested.load() || !AllModulesSettled())
         {
             auto now = std::chrono::high_resolution_clock::now();
             float dt = std::chrono::duration<float>(now - lastTime).count();

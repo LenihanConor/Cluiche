@@ -2,6 +2,7 @@
 #include "Modules/KernelModule.h"
 
 #include <DiaGraphics/Interface/ICanvas.h>
+#include <DiaSFML/TextureHandler.h>
 #include <DiaLogger/DiaLog.h>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
@@ -54,6 +55,12 @@ void RenderModule::DoUpdate(float /*dt*/)
         mEmptyFrame.Clear();
         mCanvas->RenderFrame(mEmptyFrame);
     }
+
+    // Drain GPU resource deletions queued by Unload() on other threads.
+    // RenderPU owns the GL context; this is the only place sf::Texture
+    // destructors can safely run. See TextureHandler::ProcessGpuDeletions.
+    if (Dia::SFML::TextureHandler* tex = KernelModule::GetStaticTextureHandler())
+        tex->ProcessGpuDeletions();
 }
 
 Dia::ApplicationFlow::StopResult RenderModule::DoStop()
@@ -62,6 +69,12 @@ Dia::ApplicationFlow::StopResult RenderModule::DoStop()
 
     if (mCanvas != nullptr)
     {
+        // Final GPU-deletion drain while we still hold the context. Anything
+        // Unload()'ed between the last DoUpdate and now (e.g. from a sibling
+        // PU's DoStop) must be destroyed before we release the context.
+        if (Dia::SFML::TextureHandler* tex = KernelModule::GetStaticTextureHandler())
+            tex->ProcessGpuDeletions();
+
         mCanvas->SetActiveContext(false);
         mCanvas = nullptr;
     }

@@ -102,8 +102,18 @@ namespace Dia
 			mImGuiBackend.Shutdown();
 #endif
 
-			DIA_ASSERT(mWindowContext, "Window is NULL");
-			DIA_DELETE(mWindowContext);
+			// GL resources (RenderTexture's FBO, Texture, Shader, and the textures
+			// owned by mTextureHandler) must be destroyed while the window's GL
+			// context is alive on this thread. The window owns the context —
+			// destroying it first invalidates the context the FBO was created in,
+			// and glDeleteFramebuffers then fails with GL_INVALID_OPERATION
+			// (RenderTextureImplFBO.cpp:55). mTextureHandler is a value member, so
+			// its destructor would otherwise run AFTER this body, after the
+			// context is gone — call Shutdown() explicitly here.
+			if (mWindowContext)
+				mWindowContext->setActive(true);
+
+			mTextureHandler.Shutdown();
 
 			DIA_ASSERT(mBackBuffer, "mBackBuffer is NULL");
 			DIA_DELETE(mBackBuffer);
@@ -113,6 +123,9 @@ namespace Dia
 
 			DIA_ASSERT(mUIOverlayTexture, "mUIOverlayTexture is NULL");
 			DIA_DELETE(mUIOverlayTexture);
+
+			DIA_ASSERT(mWindowContext, "Window is NULL");
+			DIA_DELETE(mWindowContext);
 		}
 
 		//-------------------------------------------------------------------------------------
@@ -171,9 +184,9 @@ namespace Dia
 
 			if (mWindowContext)
 			{
-				bool isSuccess = mWindowContext->setActive(false);
+				bool isSuccess = mWindowContext->setActive(active);
 
-				DIA_ASSERT(isSuccess, "Rednere window activity failed");
+				DIA_ASSERT(isSuccess, "Render window context activation failed");
 			}
 		}
 

@@ -39,9 +39,15 @@ namespace Dia { namespace ApplicationFlow {
         // Thread entry point (dedicated thread only)
         void operator()();
 
-        // Request stop of dedicated thread
+        // Request stop of dedicated thread. The thread will keep ticking
+        // until every module has reached kInactive/kFailed, so that modules
+        // flipped to kStopping by Application::RequestShutdown can complete
+        // their DoStop on this PU's thread.
         void RequestStop();
         [[nodiscard]] bool IsStopRequested() const;
+
+        // True iff every module owned by this PU is kInactive or kFailed.
+        [[nodiscard]] bool AllModulesSettled() const;
 
     private:
         static constexpr unsigned int kMaxModules = 32;
