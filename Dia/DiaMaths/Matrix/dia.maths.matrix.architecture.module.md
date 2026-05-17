@@ -33,6 +33,7 @@ public_api:
     - Dia/DiaMaths/Matrix/Matrix22.h
     - Dia/DiaMaths/Matrix/Matrix33.h
     - Dia/DiaMaths/Matrix/Matrix44.h
+    - Dia/DiaMaths/Matrix/Matrix34.h
   namespaces: []
   entry_points:
     - Angle
@@ -40,6 +41,7 @@ public_api:
     - Matrix22
     - Matrix33
     - Matrix44
+    - Matrix34
     - Vector2D
 
 dependencies:

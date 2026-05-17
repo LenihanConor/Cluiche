@@ -78,6 +78,7 @@
     <ClInclude Include="Matrix\Matrix22.h" />
     <ClInclude Include="Matrix\Matrix33.h" />
     <ClInclude Include="Matrix\Matrix44.h" />
+    <ClInclude Include="Matrix\Matrix34.h" />
     <ClInclude Include="Shape\2D\AARect2D.h" />
     <ClInclude Include="Shape\2D\Arc2D.h" />
     <ClInclude Include="Shape\2D\Capsule2D.h" />
@@ -109,6 +110,7 @@
     <ClCompile Include="Matrix\Matrix22.cpp" />
     <ClCompile Include="Matrix\Matrix33.cpp" />
     <ClCompile Include="Matrix\Matrix44.cpp" />
+    <ClCompile Include="Matrix\Matrix34.cpp" />
     <ClCompile Include="Shape\2D\AARect2D.cpp" />
     <ClCompile Include="Shape\2D\Arc2D.cpp" />
     <ClCompile Include="Shape\2D\Capsule2D.cpp" />
@@ -146,6 +148,7 @@
     <None Include="Shape\Common\IntersectionClassify.inl" />
     <None Include="Matrix\Matrix33.inl" />
     <None Include="Matrix\Matrix44.inl" />
+    <None Include="Matrix\Matrix34.inl" />
     <None Include="Transform\Transform2D.inl" />
     <None Include="Docs\dia.maths.architecture.module.md" />
     <None Include="Quaternion\Quaternion.inl" />

@@ -111,6 +111,9 @@
     <ClInclude Include="Matrix\Matrix44.h">
       <Filter>Matrix</Filter>
     </ClInclude>
+    <ClInclude Include="Matrix\Matrix34.h">
+      <Filter>Matrix</Filter>
+    </ClInclude>
     <ClInclude Include="Shape\2D\AARect2D.h">
       <Filter>Shape\2D</Filter>
     </ClInclude>
@@ -198,6 +201,9 @@
       <Filter>Matrix\Source</Filter>
     </ClCompile>
     <ClCompile Include="Matrix\Matrix44.cpp">
+      <Filter>Matrix\Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Matrix\Matrix34.cpp">
       <Filter>Matrix\Source</Filter>
     </ClCompile>
     <ClCompile Include="Shape\2D\AARect2D.cpp">
@@ -305,6 +311,9 @@
       <Filter>Matrix\Source</Filter>
     </None>
     <None Include="Matrix\Matrix44.inl">
+      <Filter>Matrix\Source</Filter>
+    </None>
+    <None Include="Matrix\Matrix34.inl">
       <Filter>Matrix\Source</Filter>
     </None>
     <None Include="Transform\Transform2D.inl">
