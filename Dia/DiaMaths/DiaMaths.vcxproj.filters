@@ -150,6 +150,9 @@
     <ClInclude Include="Transform\Transform2D.h">
       <Filter>Transform</Filter>
     </ClInclude>
+    <ClInclude Include="Transform\Transform3D.h">
+      <Filter>Transform</Filter>
+    </ClInclude>
     <ClInclude Include="Quaternion\Quaternion.h">
       <Filter>Quaternion</Filter>
     </ClInclude>
@@ -242,6 +245,9 @@
     <ClCompile Include="Transform\Transform2D.cpp">
       <Filter>Transform\Source</Filter>
     </ClCompile>
+    <ClCompile Include="Transform\Transform3D.cpp">
+      <Filter>Transform\Source</Filter>
+    </ClCompile>
     <ClCompile Include="Quaternion\Quaternion.cpp">
       <Filter>Quaternion</Filter>
     </ClCompile>
@@ -319,6 +325,9 @@
     <None Include="Transform\Transform2D.inl">
       <Filter>Transform\Source</Filter>
     </None>
+    <None Include="Transform\Transform3D.inl">
+      <Filter>Transform\Source</Filter>
+    </None>
     <None Include="Quaternion\Quaternion.inl">
       <Filter>Quaternion</Filter>
     </None>
@@ -329,6 +338,9 @@
     </None>
     <None Include="Quaternion\dia.maths.quaternion.architecture.module.md">
       <Filter>Quaternion</Filter>
+    </None>
+    <None Include="Transform\dia.maths.transform.architecture.module.md">
+      <Filter>Transform</Filter>
     </None>
   </ItemGroup>
 </Project>

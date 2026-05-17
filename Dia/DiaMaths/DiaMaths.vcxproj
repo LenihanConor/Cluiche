@@ -91,6 +91,7 @@
     <ClInclude Include="Shape\Common\IntersectionClassify.h" />
     <ClInclude Include="Shape\Common\IntersectionTests.h" />
     <ClInclude Include="Transform\Transform2D.h" />
+    <ClInclude Include="Transform\Transform3D.h" />
     <ClInclude Include="Quaternion\Quaternion.h" />
   </ItemGroup>
   <ItemGroup>
@@ -123,6 +124,7 @@
     <ClCompile Include="Shape\Common\IntersectionClassify.cpp" />
     <ClCompile Include="Shape\Common\IntersectionTests.cpp" />
     <ClCompile Include="Transform\Transform2D.cpp" />
+    <ClCompile Include="Transform\Transform3D.cpp" />
     <ClCompile Include="Quaternion\Quaternion.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -150,9 +152,11 @@
     <None Include="Matrix\Matrix44.inl" />
     <None Include="Matrix\Matrix34.inl" />
     <None Include="Transform\Transform2D.inl" />
+    <None Include="Transform\Transform3D.inl" />
     <None Include="Docs\dia.maths.architecture.module.md" />
     <None Include="Quaternion\Quaternion.inl" />
     <None Include="Quaternion\dia.maths.quaternion.architecture.module.md" />
+    <None Include="Transform\dia.maths.transform.architecture.module.md" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">

@@ -31,6 +31,7 @@ dependent_modules:
   - dia.maths.matrix
   - dia.maths.quaternion
   - dia.maths.shape
+  - dia.maths.transform
   - dia.maths.vector
 
 public_api:
