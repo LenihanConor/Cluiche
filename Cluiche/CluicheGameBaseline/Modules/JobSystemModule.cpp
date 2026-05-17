@@ -7,6 +7,8 @@ namespace Cluiche { namespace AppFlow {
 
 const Dia::Core::StringCRC JobSystemModule::kTypeId("JobSystemModule");
 
+JobSystemModule* JobSystemModule::sInstance = nullptr;
+
 JobSystemModule::JobSystemModule(const Dia::Core::StringCRC& instanceId)
     : Module(instanceId)
 {
@@ -15,7 +17,9 @@ JobSystemModule::JobSystemModule(const Dia::Core::StringCRC& instanceId)
 Dia::ApplicationFlow::StartResult JobSystemModule::DoStart()
 {
     DIA_LOG_INFO("Application", "JobSystemModule DoStart entry");
-    Dia::Core::JobSystem::Initialize(0);
+    sInstance = this;
+    mJobSystem.Init(0);
+    Dia::Core::JobSystem::Initialize(0);  // legacy shim for backward compat
     DIA_LOG_INFO("Application", "JobSystemModule DoStart ready");
     return Dia::ApplicationFlow::StartResult::kReady;
 }
@@ -27,8 +31,25 @@ void JobSystemModule::DoUpdate(float /*dt*/)
 Dia::ApplicationFlow::StopResult JobSystemModule::DoStop()
 {
     DIA_LOG_INFO("Application", "JobSystemModule DoStop entry");
-    Dia::Core::JobSystem::Shutdown();
+    Dia::Core::JobSystem::Shutdown();  // legacy shim for backward compat
+    mJobSystem.Quit();
+    sInstance = nullptr;
     return Dia::ApplicationFlow::StopResult::kDone;
+}
+
+JobSystemModule* JobSystemModule::GetStatic()
+{
+    return sInstance;
+}
+
+Dia::Core::JobSystem& JobSystemModule::GetJobSystem()
+{
+    return mJobSystem;
+}
+
+const Dia::Core::JobSystem& JobSystemModule::GetJobSystem() const
+{
+    return mJobSystem;
 }
 
 } } // namespace Cluiche::AppFlow

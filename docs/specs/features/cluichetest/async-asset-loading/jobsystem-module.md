@@ -31,11 +31,14 @@
 
 ## Module Specification
 
+**Instance Ownership (Refactor Update 2026-05-17):** The module now owns a `Dia::Core::JobSystem` instance by value (member `mJobSystem`) and exposes it via the standard `GetStatic()` + `GetJobSystem()` pattern (mirroring `AssetServiceModule::GetStatic()`). The legacy static shim (`Dia::Core::JobSystem::Initialize/Shutdown`) is initialized in parallel during `DoStart`/`DoStop` for backward compatibility while existing callers (e.g., `TextureHandler`) migrate to the instance API. The shim will be removed in a follow-up phase after all consumers have migrated.
+
 ```cpp
 // JobSystemModule.h
 #pragma once
 #include <DiaApplicationFlow/Module.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/Threading/JobSystem.h>
 
 namespace Cluiche { namespace AppFlow {
 
@@ -44,10 +47,18 @@ public:
     static const Dia::Core::StringCRC kTypeId;
     explicit JobSystemModule(const Dia::Core::StringCRC& instanceId);
 
+    static JobSystemModule*      GetStatic();
+    Dia::Core::JobSystem&        GetJobSystem();
+    const Dia::Core::JobSystem&  GetJobSystem() const;
+
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
     void                              DoUpdate(float dt) override;
     Dia::ApplicationFlow::StopResult  DoStop() override;
+
+private:
+    static JobSystemModule* sInstance;
+    Dia::Core::JobSystem    mJobSystem;
 };
 
 } }
@@ -57,12 +68,16 @@ protected:
 // JobSystemModule.cpp (sketch)
 const Dia::Core::StringCRC JobSystemModule::kTypeId("JobSystemModule");
 
+JobSystemModule* JobSystemModule::sInstance = nullptr;
+
 JobSystemModule::JobSystemModule(const Dia::Core::StringCRC& instanceId)
     : Module(instanceId) {}
 
 Dia::ApplicationFlow::StartResult JobSystemModule::DoStart() {
     DIA_LOG_INFO("Application", "JobSystemModule DoStart entry");
-    Dia::Core::Threading::JobSystem::Initialize(0);
+    sInstance = this;
+    mJobSystem.Init(0);  // module's instance
+    Dia::Core::Threading::JobSystem::Initialize(0);  // legacy shim for backward compat
     DIA_LOG_INFO("Application", "JobSystemModule DoStart ready");
     return Dia::ApplicationFlow::StartResult::kReady;
 }
@@ -71,9 +86,17 @@ void JobSystemModule::DoUpdate(float) {}
 
 Dia::ApplicationFlow::StopResult JobSystemModule::DoStop() {
     DIA_LOG_INFO("Application", "JobSystemModule DoStop entry");
-    Dia::Core::Threading::JobSystem::Shutdown();
+    Dia::Core::Threading::JobSystem::Shutdown();  // legacy shim for backward compat
+    mJobSystem.Quit();
+    sInstance = nullptr;
     return Dia::ApplicationFlow::StopResult::kDone;
 }
+
+JobSystemModule* JobSystemModule::GetStatic() { return sInstance; }
+
+Dia::Core::JobSystem& JobSystemModule::GetJobSystem() { return mJobSystem; }
+
+const Dia::Core::JobSystem& JobSystemModule::GetJobSystem() const { return mJobSystem; }
 
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 namespace { using JobSystemModule_ = Cluiche::AppFlow::JobSystemModule; }
@@ -96,8 +119,8 @@ DIA_MODULE(JobSystemModule_);
 
 | File | Action |
 |------|--------|
-| `Cluiche/CluicheGameBaseline/Modules/JobSystemModule.h` | New |
-| `Cluiche/CluicheGameBaseline/Modules/JobSystemModule.cpp` | New |
+| `Cluiche/CluicheGameBaseline/Modules/JobSystemModule.h` | New (initial) → Updated (refactor: instance ownership) |
+| `Cluiche/CluicheGameBaseline/Modules/JobSystemModule.cpp` | New (initial) → Updated (refactor: instance ownership) |
 | `Cluiche/CluicheGameBaseline/CluicheGameBaseline.vcxproj` | Update |
 | `Cluiche/CluicheGameBaseline/CluicheGameBaseline.vcxproj.filters` | Update |
 | `Cluiche/Assets/CluicheTest/Global/Misc/ApplicationFlow/cluiche.diaapp` (or wherever the merged manifest lives — verify path) | Update — add JobSystem entry, add JobSystem to AssetService dependencies |
