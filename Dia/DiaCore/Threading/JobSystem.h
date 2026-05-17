@@ -131,6 +131,7 @@ namespace Dia
 				if (mThreadPool)
 				{
 					DIA_DELETE(mThreadPool);
+					mThreadPool = nullptr;
 				}
 			}
 

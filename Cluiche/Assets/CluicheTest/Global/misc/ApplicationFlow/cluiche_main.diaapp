@@ -48,10 +48,18 @@
                     "writes": []
                 },
                 {
+                    "instance_id": "JobSystemModule",
+                    "type_id": "JobSystemModule",
+                    "stages": [ "all" ],
+                    "dependencies": [ "LoggerModule" ],
+                    "reads": [],
+                    "writes": []
+                },
+                {
                     "instance_id": "KernelModule",
                     "type_id": "KernelModule",
                     "stages": [ "all" ],
-                    "dependencies": [ "LoggerModule" ],
+                    "dependencies": [ "LoggerModule", "JobSystemModule" ],
                     "reads": [],
                     "writes": [ "InputToSim" ]
                 },
@@ -67,7 +75,7 @@
                     "instance_id": "AssetServiceModule",
                     "type_id": "AssetServiceModule",
                     "stages": [ "all" ],
-                    "dependencies": [ "LoggerModule", "KernelModule", "UIModule" ],
+                    "dependencies": [ "LoggerModule", "KernelModule", "UIModule", "JobSystemModule" ],
                     "reads": [],
                     "writes": []
                 },

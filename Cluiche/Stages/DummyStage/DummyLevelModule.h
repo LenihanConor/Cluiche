@@ -32,7 +32,7 @@ private:
     Dia::ApplicationFlow::ModuleRef<InputStreamModule>             mInput{this};
 
     Dia::Graphics::FrameData mFrame;
-    bool  mStartLoadRequested = false;
+    bool  mLoadEntryLogged = false;
     float mSpriteX = 400.0f;
     float mSpriteY = 300.0f;
     float mScore   = 0.0f;

@@ -13,6 +13,7 @@
   <ItemGroup>
     <ClCompile Include="Modules\AssetServiceModule.cpp" />
     <ClCompile Include="Modules\DebugServerHostModule.cpp" />
+    <ClCompile Include="Modules\JobSystemModule.cpp" />
     <ClCompile Include="Modules\InputStreamModule.cpp" />
     <ClCompile Include="Modules\KernelModule.cpp" />
     <ClCompile Include="Modules\LoadingScreenModule.cpp" />
@@ -24,6 +25,7 @@
   <ItemGroup>
     <ClInclude Include="Modules\AssetServiceModule.h" />
     <ClInclude Include="Modules\DebugServerHostModule.h" />
+    <ClInclude Include="Modules\JobSystemModule.h" />
     <ClInclude Include="Modules\InputStreamModule.h" />
     <ClInclude Include="Modules\KernelModule.h" />
     <ClInclude Include="Modules\LoadingScreenModule.h" />

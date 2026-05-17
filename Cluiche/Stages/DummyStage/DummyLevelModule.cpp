@@ -1,5 +1,6 @@
 #include "DummyLevelModule.h"
 #include "Modules/KernelModule.h"
+#include "Modules/AssetServiceModule.h"
 
 #include <DiaApplicationFlow/Application.h>
 #include <DiaCore/Time/TimeAbsolute.h>
@@ -28,15 +29,31 @@ DummyLevelModule::DummyLevelModule(const Dia::Core::StringCRC& instanceId)
 
 Dia::ApplicationFlow::StartResult DummyLevelModule::DoStart()
 {
-    if (!mStartLoadRequested)
+    AssetServiceModule* assets = AssetServiceModule::GetStatic();
+
+    if (!mLoadEntryLogged)
     {
-        DIA_LOG_INFO("Application", "DummyLevelModule DoStart entry (loading)");
-        mStartLoadRequested = true;
-        return Dia::ApplicationFlow::StartResult::kLoading;
+        DIA_LOG_INFO("Application", "DummyLevelModule DoStart entry — polling for stage load");
+        mLoadEntryLogged = true;
     }
 
-    DIA_LOG_INFO("Application", "DummyLevelModule DoStart ready");
-    return Dia::ApplicationFlow::StartResult::kReady;
+    if (!assets)
+        return Dia::ApplicationFlow::StartResult::kLoading;
+
+    using LoadState = AssetServiceModule::StageLoadState;
+    LoadState state = assets->GetStageLoadState(Dia::Core::StringCRC("DummyStage"));
+
+    if (state == LoadState::kFailed)
+    {
+        DIA_LOG_ERROR("Application", "DummyLevelModule DoStart — stage load failed");
+        return Dia::ApplicationFlow::StartResult::kFailed;
+    }
+    if (state == LoadState::kComplete)
+    {
+        DIA_LOG_INFO("Application", "DummyLevelModule DoStart ready");
+        return Dia::ApplicationFlow::StartResult::kReady;
+    }
+    return Dia::ApplicationFlow::StartResult::kLoading;
 }
 
 void DummyLevelModule::DoUpdate(float dt)
@@ -159,7 +176,7 @@ void DummyLevelModule::DoUpdate(float dt)
 Dia::ApplicationFlow::StopResult DummyLevelModule::DoStop()
 {
     DIA_LOG_INFO("Application", "DummyLevelModule DoStop entry");
-    mStartLoadRequested = false;
+    mLoadEntryLogged = false;
     return Dia::ApplicationFlow::StopResult::kDone;
 }
 

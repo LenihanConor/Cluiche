@@ -6,6 +6,7 @@
 #include <DiaCore/Strings/String32.h>
 #include <DiaCore/Strings/String512.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <atomic>
 
 #include "Modules/KernelModule.h"
 #include "Modules/UIModule.h"
@@ -32,6 +33,14 @@ public:
 
     bool IsLoadComplete() const;
     const Dia::AssetRuntime::AssetRuntime& GetRuntime() const { return mRuntime; }
+
+    // Per-stage load state (written on MainPU, read atomically from any PU)
+    enum class StageLoadState { kIdle, kLoading, kComplete, kFailed };
+
+    static AssetServiceModule* GetStatic();
+
+    bool           IsStageLoadComplete(const Dia::Core::StringCRC& stageId) const;
+    StageLoadState GetStageLoadState (const Dia::Core::StringCRC& stageId) const;
 
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
@@ -61,6 +70,13 @@ private:
     // convention v1 used in AssetServiceModule.
     Dia::Core::StringCRC AssetStageIdFromAppStage(const Dia::Core::StringCRC& appStage) const;
 
+    // Find or create a state slot for the given app-stage id (MainPU only).
+    std::atomic<StageLoadState>* FindOrCreateStateSlot(const Dia::Core::StringCRC& appStageId);
+    // Const lookup: safe to call from any PU (read-only, no resize).
+    const std::atomic<StageLoadState>* FindStateSlot(const Dia::Core::StringCRC& appStageId) const;
+
+    static AssetServiceModule* sInstance;
+
     Dia::AssetRuntime::AssetRuntime mRuntime;
     Dia::Core::StringCRC mCurrentLoadStageId;         // AssetRuntime stage id
     Dia::Core::StringCRC mCurrentAppFlowStage;         // last app-flow stage we reacted to
@@ -69,6 +85,21 @@ private:
     Dia::Core::Containers::DynamicArrayC<PathAliasEntry, 16>  mStageAliases;
     Dia::Core::Containers::DynamicArrayC<StagePathEntry,   8> mStagePathMap;
     Dia::Core::Containers::String512 mDeployRoot;
+
+    // Per-stage load state tracking: plain C array avoids DynamicArrayC copy
+    // issues with non-copyable std::atomic members.
+    static const unsigned int kMaxTrackedStages = 8;
+    struct StageStateEntry
+    {
+        Dia::Core::StringCRC appStageId;
+        std::atomic<StageLoadState> state{ StageLoadState::kIdle };
+
+        StageStateEntry() = default;
+        StageStateEntry(const StageStateEntry&) = delete;
+        StageStateEntry& operator=(const StageStateEntry&) = delete;
+    };
+    StageStateEntry  mStageStates[kMaxTrackedStages];
+    unsigned int     mStageStateCount = 0;
 
     Dia::ApplicationFlow::ModuleRef<KernelModule> mKernel{this};
     Dia::ApplicationFlow::ModuleRef<UIModule>     mUI{this};

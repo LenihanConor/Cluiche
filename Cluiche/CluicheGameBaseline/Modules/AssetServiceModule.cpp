@@ -67,6 +67,7 @@ namespace {
 namespace Cluiche { namespace AppFlow {
 
 const Dia::Core::StringCRC AssetServiceModule::kTypeId("AssetServiceModule");
+AssetServiceModule* AssetServiceModule::sInstance = nullptr;
 
 AssetServiceModule::AssetServiceModule(const Dia::Core::StringCRC& instanceId)
     : Module(instanceId)
@@ -99,6 +100,7 @@ Dia::ApplicationFlow::StartResult AssetServiceModule::DoStart()
     // Kick off global load.
     RequestGlobalLoad();
 
+    sInstance = this;
     DIA_LOG_INFO("Application", "AssetServiceModule DoStart exit");
     return Dia::ApplicationFlow::StartResult::kReady;
 }
@@ -110,7 +112,7 @@ void AssetServiceModule::DoUpdate(float /*dt*/)
     if (!mHandlersRegistered)
         EnsureHandlersRegistered();
 
-    // React to app-flow stage transitions by driving AssetRuntime's
+    // 1. React to app-flow stage transitions by driving AssetRuntime's
     // per-stage load/unload. v1 did this from MainLoadPhase/MainFEPhase;
     // v2 centralises it here so each new stage doesn't need its own
     // load-trigger module.
@@ -119,46 +121,93 @@ void AssetServiceModule::DoUpdate(float /*dt*/)
         return;
 
     const Dia::Core::StringCRC currentStage = app->GetCurrentStage();
-    if (currentStage == mCurrentAppFlowStage)
-        return;
-
-    // Stage changed — unload the old stage (alias + assets), load the new.
-    if (mCurrentAppFlowStage.Value() != 0)
+    if (currentStage != mCurrentAppFlowStage)
     {
-        // Unregister stage-scoped path aliases.
-        UnregisterStageAliases();
-
-        Dia::Core::StringCRC prevAssetStage = AssetStageIdFromAppStage(mCurrentAppFlowStage);
-        if (prevAssetStage.Value() != 0)
+        // Stage changed — unload the old stage (alias + assets), load the new.
+        if (mCurrentAppFlowStage.Value() != 0)
         {
-            DIA_LOG_INFO("AssetRuntime",
-                "AssetServiceModule: app-flow stage left '%s' -> unload '%s'",
-                mCurrentAppFlowStage.AsChar(), prevAssetStage.AsChar());
-            RequestStageUnload(prevAssetStage);
-        }
-    }
+            // Unregister stage-scoped path aliases.
+            UnregisterStageAliases();
 
-    mCurrentAppFlowStage = currentStage;
-
-    if (currentStage.Value() != 0)
-    {
-        // Register stage-scoped path aliases from this stage's .diastage.
-        for (unsigned int i = 0; i < mStagePathMap.Size(); ++i)
-        {
-            if (mStagePathMap[i].mStageId == currentStage)
+            Dia::Core::StringCRC prevAssetStage = AssetStageIdFromAppStage(mCurrentAppFlowStage);
+            if (prevAssetStage.Value() != 0)
             {
-                RegisterStageAliases(mStagePathMap[i].mDiastagePath.AsCStr());
-                break;
+                DIA_LOG_INFO("AssetRuntime",
+                    "AssetServiceModule: app-flow stage left '%s' -> unload '%s'",
+                    mCurrentAppFlowStage.AsChar(), prevAssetStage.AsChar());
+                RequestStageUnload(prevAssetStage);
             }
         }
 
-        Dia::Core::StringCRC assetStage = AssetStageIdFromAppStage(currentStage);
-        if (assetStage.Value() != 0)
+        mCurrentAppFlowStage = currentStage;
+
+        if (currentStage.Value() != 0)
         {
-            DIA_LOG_INFO("AssetRuntime",
-                "AssetServiceModule: app-flow stage entered '%s' -> load '%s'",
-                currentStage.AsChar(), assetStage.AsChar());
-            RequestStageLoad(assetStage);
+            // Register stage-scoped path aliases from this stage's .diastage.
+            for (unsigned int i = 0; i < mStagePathMap.Size(); ++i)
+            {
+                if (mStagePathMap[i].mStageId == currentStage)
+                {
+                    RegisterStageAliases(mStagePathMap[i].mDiastagePath.AsCStr());
+                    break;
+                }
+            }
+
+            Dia::Core::StringCRC assetStage = AssetStageIdFromAppStage(currentStage);
+            if (assetStage.Value() != 0)
+            {
+                DIA_LOG_INFO("AssetRuntime",
+                    "AssetServiceModule: app-flow stage entered '%s' -> load '%s'",
+                    currentStage.AsChar(), assetStage.AsChar());
+                RequestStageLoad(assetStage);
+            }
+
+            // Mark new stage as loading in state tracker.
+            std::atomic<StageLoadState>* slot = FindOrCreateStateSlot(currentStage);
+            if (slot)
+                slot->store(StageLoadState::kLoading, std::memory_order_release);
+        }
+    }
+
+    // 2. Pump main-thread texture upload completions.
+    // TextureHandler::Tick() drains decoded images -> GPU upload -> fires callbacks.
+    Dia::SFML::TextureHandler* textureHandler = KernelModule::GetStaticTextureHandler();
+    if (textureHandler)
+        textureHandler->Tick();
+
+    // 3. Recompute terminal states for any kLoading stage.
+    for (unsigned int i = 0; i < mStageStateCount; ++i)
+    {
+        if (mStageStates[i].state.load(std::memory_order_acquire) != StageLoadState::kLoading)
+            continue;
+
+        Dia::Core::StringCRC assetStage = AssetStageIdFromAppStage(mStageStates[i].appStageId);
+        if (assetStage.Value() == 0)
+        {
+            // Stages with no asset runtime stage (e.g. "Boot") complete immediately.
+            mStageStates[i].state.store(StageLoadState::kComplete, std::memory_order_release);
+            DIA_LOG_INFO("Application",
+                "AssetService: stage '%s' complete (no asset stage)",
+                mStageStates[i].appStageId.AsChar());
+            continue;
+        }
+
+        const Dia::AssetRuntime::AssetRuntime::LoadProgress progress =
+            mRuntime.GetLoadProgress(assetStage);
+
+        if (progress.failed > 0)
+        {
+            mStageStates[i].state.store(StageLoadState::kFailed, std::memory_order_release);
+            DIA_LOG_ERROR("Application",
+                "AssetService: stage '%s' failed (%u/%u failed)",
+                mStageStates[i].appStageId.AsChar(), progress.failed, progress.total);
+        }
+        else if (progress.total == 0 || progress.loaded == progress.total)
+        {
+            mStageStates[i].state.store(StageLoadState::kComplete, std::memory_order_release);
+            DIA_LOG_INFO("Application",
+                "AssetService: stage '%s' complete (%u/%u loaded)",
+                mStageStates[i].appStageId.AsChar(), progress.loaded, progress.total);
         }
     }
 }
@@ -198,6 +247,7 @@ Dia::Core::StringCRC AssetServiceModule::AssetStageIdFromAppStage(
 Dia::ApplicationFlow::StopResult AssetServiceModule::DoStop()
 {
     DIA_LOG_INFO("Application", "AssetServiceModule DoStop entry");
+    sInstance = nullptr;
     UnregisterStageAliases();
     mRuntime.Reset();
     DIA_LOG_INFO("Application", "AssetServiceModule DoStop exit");
@@ -207,6 +257,53 @@ Dia::ApplicationFlow::StopResult AssetServiceModule::DoStop()
 bool AssetServiceModule::IsLoadComplete() const
 {
     return mRuntime.IsLoadComplete(Dia::Core::StringCRC("stage.global"));
+}
+
+AssetServiceModule* AssetServiceModule::GetStatic()
+{
+    return sInstance;
+}
+
+bool AssetServiceModule::IsStageLoadComplete(const Dia::Core::StringCRC& stageId) const
+{
+    return GetStageLoadState(stageId) == StageLoadState::kComplete;
+}
+
+AssetServiceModule::StageLoadState
+AssetServiceModule::GetStageLoadState(const Dia::Core::StringCRC& stageId) const
+{
+    const std::atomic<StageLoadState>* slot = FindStateSlot(stageId);
+    if (!slot)
+        return StageLoadState::kIdle;
+    return slot->load(std::memory_order_acquire);
+}
+
+std::atomic<AssetServiceModule::StageLoadState>*
+AssetServiceModule::FindOrCreateStateSlot(const Dia::Core::StringCRC& appStageId)
+{
+    for (unsigned int i = 0; i < mStageStateCount; ++i)
+    {
+        if (mStageStates[i].appStageId == appStageId)
+            return &mStageStates[i].state;
+    }
+    if (mStageStateCount < kMaxTrackedStages)
+    {
+        mStageStates[mStageStateCount].appStageId = appStageId;
+        mStageStates[mStageStateCount].state.store(StageLoadState::kIdle, std::memory_order_relaxed);
+        return &mStageStates[mStageStateCount++].state;
+    }
+    return nullptr;
+}
+
+const std::atomic<AssetServiceModule::StageLoadState>*
+AssetServiceModule::FindStateSlot(const Dia::Core::StringCRC& appStageId) const
+{
+    for (unsigned int i = 0; i < mStageStateCount; ++i)
+    {
+        if (mStageStates[i].appStageId == appStageId)
+            return &mStageStates[i].state;
+    }
+    return nullptr;
 }
 
 void AssetServiceModule::RequestGlobalLoad()

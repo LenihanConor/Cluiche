@@ -15,6 +15,9 @@
     <ClCompile Include="Modules\InputStreamModule.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\JobSystemModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
     <ClCompile Include="Modules\KernelModule.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
@@ -39,6 +42,9 @@
       <Filter>Modules</Filter>
     </ClInclude>
     <ClInclude Include="Modules\InputStreamModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\JobSystemModule.h">
       <Filter>Modules</Filter>
     </ClInclude>
     <ClInclude Include="Modules\KernelModule.h">
