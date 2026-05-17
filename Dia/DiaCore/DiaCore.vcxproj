@@ -248,6 +248,8 @@
     <ClCompile Include="Containers\HashTables\HashTableHashFunctionData.cpp" />
     <ClCompile Include="Containers\Strings\StringReader.cpp" />
     <ClCompile Include="Containers\Strings\StringWriter.cpp" />
+    <ClCompile Include="Threading\ThreadPool.cpp" />
+    <ClCompile Include="Threading\JobSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Architecture\Components\Concrete\DynamicComponentFactory.inl" />

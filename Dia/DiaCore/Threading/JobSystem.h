@@ -5,6 +5,7 @@
 #include "DiaCore/Threading/Atomic.h"
 #include "DiaCore/Memory/Memory.h"
 #include <functional>
+#include <memory>
 
 namespace Dia
 {
@@ -16,27 +17,48 @@ namespace Dia
 		// Task-based parallelism system for game engines.
 		// Jobs can have dependencies and can spawn child jobs.
 		//
-		// USAGE:
-		//   JobSystem::Initialize();
+		// NEW INSTANCE API (Phase 1):
+		//   JobSystem js;
+		//   js.Init();
+		//   JobHandle h = js.Submit([]() { /* work */ });
+		//   js.Wait(h);
+		//   js.Quit();
 		//
-		//   Job* job = JobSystem::CreateJob([]() {
-		//       // Do work
-		//   });
+		// LEGACY STATIC API (preserved for backward compatibility):
+		//   JobSystem::Initialize();
+		//   Job* job = JobSystem::CreateJob([](Job*) { /* work */ });
 		//   JobSystem::Run(job);
 		//   JobSystem::Wait(job);
-		//
-		// FEATURES:
-		//   - Dependency tracking
-		//   - Job priorities
-		//   - Parent-child relationships
-		//   - Work stealing
+		//   JobSystem::Shutdown();
 		//---------------------------------------------------------------------------------------------------------------------------------
 
+		// Forward declaration - internal Job struct used by legacy API
 		struct Job;
-		class JobSystem;
+
+		// New instance API types
+		using JobFn = std::function<void()>;
 
 		//-----------------------------------------------------------------------------
-		// Job handle
+		// JobHandle - refcounted handle to a job
+		//-----------------------------------------------------------------------------
+		struct JobHandle
+		{
+			JobHandle();
+			~JobHandle();
+			JobHandle(const JobHandle& other);
+			JobHandle(JobHandle&& other) noexcept;
+			JobHandle& operator=(const JobHandle& other);
+			JobHandle& operator=(JobHandle&& other) noexcept;
+
+			bool IsValid() const;
+
+		private:
+			friend class JobSystem;
+			std::shared_ptr<Job> mPtr;
+		};
+
+		//-----------------------------------------------------------------------------
+		// Legacy Job struct (used by static shim API)
 		//-----------------------------------------------------------------------------
 		struct Job
 		{
@@ -55,164 +77,49 @@ namespace Dia
 		};
 
 		//-----------------------------------------------------------------------------
-		// Job System singleton
+		// JobSystem - task-based parallelism
 		//-----------------------------------------------------------------------------
 		class JobSystem
 		{
 		public:
-			// Initialize job system
-			static void Initialize(unsigned int numThreads = 0)
-			{
-				GetInstance().InitializeImpl(numThreads);
-			}
+			JobSystem();
+			~JobSystem();
 
-			// Shutdown job system
-			static void Shutdown()
-			{
-				GetInstance().ShutdownImpl();
-			}
+			// Instance API (Phase 1 - temporary names to avoid collision with static shim)
+			void Init(unsigned int numThreads = 0);
+			void Quit();
+			JobHandle Submit(JobFn fn);
+			void Wait(const JobHandle& h);
+			bool IsComplete(const JobHandle& h) const;
 
-			// Create a job
-			static Job* CreateJob(Job::JobFunc function)
-			{
-				return GetInstance().CreateJobImpl(function);
-			}
-
-			// Create a child job (depends on parent)
-			static Job* CreateChildJob(Job* parent, Job::JobFunc function)
-			{
-				return GetInstance().CreateChildJobImpl(parent, function);
-			}
-
-			// Run a job
-			static void Run(Job* job)
-			{
-				GetInstance().RunImpl(job);
-			}
-
-			// Wait for a job to complete
-			static void Wait(Job* job)
-			{
-				GetInstance().WaitImpl(job);
-			}
-
-			// Check if job is complete
-			static bool IsComplete(Job* job)
-			{
-				return job->unfinishedJobs.load(std::memory_order_acquire) == 0;
-			}
+			// Legacy static shim API (preserved for backward compatibility)
+			static void Initialize(unsigned int numThreads = 0);
+			static void Shutdown();
+			static Job* CreateJob(Job::JobFunc function);
+			static Job* CreateChildJob(Job* parent, Job::JobFunc function);
+			static void Run(Job* job);
+			static void Wait(Job* job);
+			static bool IsComplete(Job* job);
 
 		private:
-			JobSystem()
-				: mThreadPool(nullptr)
-			{}
+			// Legacy implementation methods (called by static shim)
+			void InitializeImpl(unsigned int numThreads);
+			void ShutdownImpl();
+			Job* CreateJobImpl(Job::JobFunc function);
+			Job* CreateChildJobImpl(Job* parent, Job::JobFunc function);
+			void RunImpl(Job* job);
+			void WaitImpl(Job* job);
 
-			~JobSystem()
-			{
-				ShutdownImpl();
-			}
-
-			static JobSystem& GetInstance()
-			{
-				static JobSystem instance;
-				return instance;
-			}
-
-			void InitializeImpl(unsigned int numThreads)
-			{
-				if (!mThreadPool)
-				{
-					mThreadPool = DIA_NEW(ThreadPool(numThreads));
-				}
-			}
-
-			void ShutdownImpl()
-			{
-				if (mThreadPool)
-				{
-					DIA_DELETE(mThreadPool);
-					mThreadPool = nullptr;
-				}
-			}
-
-			Job* CreateJobImpl(Job::JobFunc function)
-			{
-				Job* job = DIA_NEW(Job());
-				job->function = function;
-				job->parent = nullptr;
-				return job;
-			}
-
-			Job* CreateChildJobImpl(Job* parent, Job::JobFunc function)
-			{
-				// Increment parent's unfinished count
-				parent->unfinishedJobs.fetch_add(1, std::memory_order_relaxed);
-
-				Job* job = DIA_NEW(Job());
-				job->function = function;
-				job->parent = parent;
-				return job;
-			}
-
-			void RunImpl(Job* job)
-			{
-				if (!mThreadPool) return;
-
-				mThreadPool->Enqueue([job]() {
-					Execute(job);
-				});
-			}
-
-			void WaitImpl(Job* job)
-			{
-				// Help execute jobs while waiting
-				while (job->unfinishedJobs.load(std::memory_order_acquire) > 0)
-				{
-					// Could implement work stealing here
-					ThisThread::Yield();
-				}
-
-				// Job is complete - clean it up
-				// We're safe to delete now because we know unfinishedJobs reached 0
-				DIA_DELETE(job);
-			}
-
-			static void Execute(Job* job)
-			{
-				// Execute the job function
-				if (job->function)
-				{
-					job->function(job);
-				}
-
-				// Finish the job
-				Finish(job);
-			}
-
-			static void Finish(Job* job)
-			{
-				// Decrement unfinished count
-				const int unfinished = job->unfinishedJobs.fetch_sub(1, std::memory_order_acq_rel);
-
-				if (unfinished == 1)
-				{
-					// Job is complete - notify parent
-					if (job->parent)
-					{
-						Finish(job->parent);
-					}
-
-					// Note: Job is NOT deleted here
-					// The caller of Wait() or JobSystem is responsible for cleanup
-					// This avoids use-after-free bugs when Wait() checks IsComplete()
-				}
-			}
+			// Helper for static shim
+			static JobSystem& GetInstance();
+			static void Execute(Job* job);
+			static void Finish(Job* job);
 
 			ThreadPool* mThreadPool;
 		};
 
 		//-----------------------------------------------------------------------------
-		// Parallel for helper
+		// Parallel for helper (legacy API)
 		//-----------------------------------------------------------------------------
 		template <typename Func>
 		inline void ParallelFor(int start, int end, Func func, int batchSize = 64)

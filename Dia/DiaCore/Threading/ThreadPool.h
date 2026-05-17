@@ -7,6 +7,9 @@
 #include <queue>
 #include <functional>
 #include <condition_variable>
+#include <thread>
+#include <vector>
+#include <atomic>
 
 namespace Dia
 {
@@ -35,132 +38,17 @@ namespace Dia
 		public:
 			using Task = std::function<void()>;
 
-			// Constructor - creates worker threads
-			explicit ThreadPool(unsigned int numThreads = 0)
-				: mShutdown(false)
-			{
-				if (numThreads == 0)
-				{
-					numThreads = Thread::GetHardwareConcurrency();
-					if (numThreads == 0) numThreads = 4; // Fallback
-				}
+			explicit ThreadPool(unsigned int numThreads = 0);
+			~ThreadPool();
 
-				mThreads.reserve(numThreads);
-				for (unsigned int i = 0; i < numThreads; ++i)
-				{
-					mThreads.push_back(std::thread([this]() { WorkerThread(); }));
-				}
-			}
-
-			// Destructor - waits for all tasks and shuts down
-			~ThreadPool()
-			{
-				Shutdown();
-			}
-
-			// Enqueue a task
-			void Enqueue(Task task)
-			{
-				{
-					std::unique_lock<std::mutex> lock(mQueueMutex);
-					mTasks.push(std::move(task));
-				}
-				mCondition.notify_one();
-			}
-
-			// Wait for all tasks to complete
-			void WaitAll()
-			{
-				std::unique_lock<std::mutex> lock(mQueueMutex);
-				mWaitCondition.wait(lock, [this]() {
-					return mTasks.empty() && mActiveTasks == 0;
-				});
-			}
-
-			// Get number of worker threads
-			size_t GetThreadCount() const
-			{
-				return mThreads.size();
-			}
-
-			// Get number of pending tasks
-			size_t GetPendingTaskCount() const
-			{
-				std::unique_lock<std::mutex> lock(mQueueMutex);
-				return mTasks.size();
-			}
-
-			// Shutdown pool
-			void Shutdown()
-			{
-				{
-					std::unique_lock<std::mutex> lock(mQueueMutex);
-					mShutdown = true;
-				}
-				mCondition.notify_all();
-
-				for (auto& thread : mThreads)
-				{
-					if (thread.joinable())
-					{
-						thread.join();
-					}
-				}
-				mThreads.clear();
-			}
+			void Enqueue(Task task);
+			void WaitAll();
+			size_t GetThreadCount() const;
+			size_t GetPendingTaskCount() const;
+			void Shutdown();
 
 		private:
-			void WorkerThread()
-			{
-				while (true)
-				{
-					Task task;
-
-					{
-						std::unique_lock<std::mutex> lock(mQueueMutex);
-
-						// Wait for task or shutdown
-						mCondition.wait(lock, [this]() {
-							return mShutdown || !mTasks.empty();
-						});
-
-						if (mShutdown && mTasks.empty())
-						{
-							return;
-						}
-
-						if (!mTasks.empty())
-						{
-							task = std::move(mTasks.front());
-							mTasks.pop();
-							++mActiveTasks;
-						}
-					}
-
-					// Execute task
-					if (task)
-					{
-						try
-						{
-							task();
-						}
-						catch (...)
-						{
-							// Suppress exceptions to prevent thread termination
-							// The task failed, but other tasks should continue
-						}
-
-						{
-							std::unique_lock<std::mutex> lock(mQueueMutex);
-							--mActiveTasks;
-							if (mTasks.empty() && mActiveTasks == 0)
-							{
-								mWaitCondition.notify_all();
-							}
-						}
-					}
-				}
-			}
+			void WorkerThread();
 
 			std::vector<std::thread> mThreads;
 			std::queue<Task> mTasks;

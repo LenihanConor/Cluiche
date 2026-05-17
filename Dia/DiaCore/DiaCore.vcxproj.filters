@@ -680,6 +680,12 @@
     <ClCompile Include="Architecture\Observer.cpp">
       <Filter>Architecture</Filter>
     </ClCompile>
+    <ClCompile Include="Threading\ThreadPool.cpp">
+      <Filter>Threading</Filter>
+    </ClCompile>
+    <ClCompile Include="Threading\JobSystem.cpp">
+      <Filter>Threading</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Type\TypeFacade.inl">
