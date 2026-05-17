@@ -12,7 +12,7 @@ language: cpp
 parent_module_id: dia.root
 
 summary: >
-  Groups Maths submodules: Core, Matrix, Shape, Vector.
+  Groups Maths submodules: Core, Matrix, Quaternion, Transform, Vector.
 
 intent: >
   Provide a clear module boundary and navigation surface for the Maths area.
@@ -30,7 +30,6 @@ dependent_modules:
   - dia.maths.core
   - dia.maths.matrix
   - dia.maths.quaternion
-  - dia.maths.shape
   - dia.maths.transform
   - dia.maths.vector
 

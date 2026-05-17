@@ -173,8 +173,6 @@
     <ClCompile Include="Maths\TestMatrix22.cpp" />
     <ClCompile Include="Maths\TestVector2D.cpp" />
     <ClCompile Include="Maths\TestHalfFloat.cpp" />
-    <ClCompile Include="Maths\TestIntersectionClassify.cpp" />
-    <ClCompile Include="Maths\TestCircle2D.cpp" />
     <ClCompile Include="Maths\TestHalfVector2D.cpp" />
     <ClCompile Include="Graphics\TestPrimitiveType.cpp" />
     <ClCompile Include="Graphics\TestRenderStates.cpp" />

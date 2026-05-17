@@ -19,6 +19,9 @@
     <Filter Include="Testing">
       <UniqueIdentifier>{A6B7C8D9-E0F1-2345-6789-012345F01234}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Random">
+      <UniqueIdentifier>{B7C8D9E0-F1A2-3456-789A-123456A01235}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Shapes\IntersectionClassify.h">
@@ -87,6 +90,9 @@
     <ClInclude Include="Spatial\HexGrid.h">
       <Filter>Spatial</Filter>
     </ClInclude>
+    <ClInclude Include="Random\Random.h">
+      <Filter>Random</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Shapes\IntersectionClassify.cpp">
@@ -152,6 +158,9 @@
     <ClCompile Include="Spatial\HexGrid.cpp">
       <Filter>Spatial</Filter>
     </ClCompile>
+    <ClCompile Include="Random\Random.cpp">
+      <Filter>Random</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shapes\IntersectionClassify.inl">
@@ -201,6 +210,9 @@
     </None>
     <None Include="Docs\dia.geometry2d.architecture.module.md">
       <Filter>Docs</Filter>
+    </None>
+    <None Include="Random\dia.geometry2d.random.architecture.module.md">
+      <Filter>Random</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

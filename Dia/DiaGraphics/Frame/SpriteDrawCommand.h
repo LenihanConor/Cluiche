@@ -4,7 +4,7 @@
 #pragma once
 
 #include <DiaMaths/Vector/Vector2D.h>
-#include <DiaMaths/Shape/2D/AARect2D.h>
+#include <DiaGeometry2D/Shapes/AARect.h>
 #include <DiaGraphics/Misc/RGBA.h>
 
 namespace Dia
@@ -43,7 +43,7 @@ namespace Dia
 			Maths::Vector2D scale;       ///< Scale factors (default 1,1)
 			float rotation;              ///< Rotation in degrees (default 0)
 			RGBA tint;                   ///< Color tint/modulation (default white)
-			Maths::AARect2D textureRect; ///< Sub-rectangle for sprite atlases (default full texture)
+			Geometry2D::AARect textureRect; ///< Sub-rectangle for sprite atlases (default full texture)
 			Maths::Vector2D origin;      ///< Pivot point for rotation/scale (default 0,0 = top-left)
 			int layer;                   ///< Z-order layer (0=back, higher=front, default 0)
 			int subOrder;                ///< Fine-grained ordering within layer (default 0)

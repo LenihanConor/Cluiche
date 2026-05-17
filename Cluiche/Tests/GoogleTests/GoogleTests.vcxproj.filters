@@ -302,12 +302,6 @@
     <ClCompile Include="Maths\TestHalfFloat.cpp">
       <Filter>Maths</Filter>
     </ClCompile>
-    <ClCompile Include="Maths\TestIntersectionClassify.cpp">
-      <Filter>Maths</Filter>
-    </ClCompile>
-    <ClCompile Include="Maths\TestCircle2D.cpp">
-      <Filter>Maths</Filter>
-    </ClCompile>
     <ClCompile Include="Maths\TestHalfVector2D.cpp">
       <Filter>Maths</Filter>
     </ClCompile>

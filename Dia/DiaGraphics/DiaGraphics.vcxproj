@@ -104,6 +104,12 @@
   <ItemGroup>
     <ClInclude Include="Testing\MockVisitors.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DiaGeometry2D\DiaGeometry2D.vcxproj">
+      <Project>{A3C4D5E6-F7B8-9012-CDEF-012345678901}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

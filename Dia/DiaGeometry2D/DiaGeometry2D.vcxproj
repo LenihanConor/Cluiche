@@ -83,6 +83,7 @@
     <ClInclude Include="Spatial\SpatialGridDef.h" />
     <ClInclude Include="Spatial\ISpatialGridSerializer.h" />
     <ClInclude Include="Spatial\JsonSpatialGridSerializer.h" />
+    <ClInclude Include="Random\Random.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Shapes\IntersectionClassify.cpp" />
@@ -107,6 +108,7 @@
     <ClCompile Include="Spatial\BVH.cpp" />
     <ClCompile Include="Spatial\HexGrid.cpp" />
     <ClCompile Include="Spatial\JsonSpatialGridSerializer.cpp" />
+    <ClCompile Include="Random\Random.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Shapes\IntersectionClassify.inl" />
@@ -125,6 +127,7 @@
     <None Include="Spatial\BVH.inl" />
     <None Include="Spatial\HexGrid.inl" />
     <None Include="Docs\dia.geometry2d.architecture.module.md" />
+    <None Include="Random\dia.geometry2d.random.architecture.module.md" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Testing\ShapeFactory.h" />
