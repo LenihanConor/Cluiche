@@ -65,16 +65,9 @@ void UIModule::DoUpdate(float /*dt*/)
         }
     }
 
-    // Drain HUD commands from Sim (FPS, Score, etc.) — logged for now.
+    // Drain HUD commands from Sim (FPS, Score, etc.).
     Dia::Core::Containers::DynamicArrayC<UICommand, 32> pending;
     mUICommands.Consume(pending);
-    for (unsigned int i = 0; i < pending.Size(); ++i)
-    {
-        DIA_LOG_INFO("UI", "UICommand received: key=%u type=%d value=%f",
-            pending[i].key.Value(),
-            static_cast<int>(pending[i].type),
-            pending[i].value);
-    }
 
     mUISystem->Update();
 
