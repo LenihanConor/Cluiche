@@ -82,6 +82,9 @@
     <Filter Include="DiaApplicationEditor">
       <UniqueIdentifier>{DAPPEDTR-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Geometry3D">
+      <UniqueIdentifier>{GEO3D001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Geometry2D">
       <UniqueIdentifier>{GEO2D001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
@@ -530,6 +533,34 @@
     </ClCompile>
     <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\PluginBrowserEditorPlugin.cpp">
       <Filter>Editor</Filter>
+    </ClCompile>
+    <!-- Geometry3D -->
+    <ClCompile Include="Geometry3D\TestAABB.cpp">
+      <Filter>Geometry3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry3D\TestOOBB.cpp">
+      <Filter>Geometry3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry3D\TestSphere.cpp">
+      <Filter>Geometry3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry3D\TestCapsule.cpp">
+      <Filter>Geometry3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry3D\TestTriangle.cpp">
+      <Filter>Geometry3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry3D\TestCylinder.cpp">
+      <Filter>Geometry3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry3D\TestRay3D.cpp">
+      <Filter>Geometry3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry3D\TestPlane3D.cpp">
+      <Filter>Geometry3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry3D\TestFrustum.cpp">
+      <Filter>Geometry3D</Filter>
     </ClCompile>
     <!-- Geometry2D -->
     <ClCompile Include="Geometry2D\TestGeometry2DVisualDebuggerStack.cpp">

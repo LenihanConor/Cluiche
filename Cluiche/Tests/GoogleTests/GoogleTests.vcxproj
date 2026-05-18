@@ -74,7 +74,7 @@
       <DisableSpecificWarnings>4267;4244;4127</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaAssetCatalogue.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaAssetCatalogueEditor.lib;$(LibOutDir)DiaAssetRuntimeEditor.lib;$(LibOutDir)DiaGeometry2D.lib;$(LibOutDir)DiaGeometry2DVisualDebugger.lib;$(LibOutDir)DiaRigidBody2D.lib;$(LibOutDir)DiaRigidBody2DVisualDebugger.lib;$(LibOutDir)DiaSoftBody2D.lib;$(LibOutDir)DiaSoftBody2DVisualDebugger.lib;$(LibOutDir)DiaRig2D.lib;$(LibOutDir)DiaRig2DVisualDebugger.lib;$(LibOutDir)DiaIK2D.lib;$(LibOutDir)DiaIK2DVisualDebugger.lib;$(LibOutDir)DiaAnimation2D.lib;$(LibOutDir)DiaAnimation2DVisualDebugger.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaPython.lib;$(LibOutDir)DiaAPI.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaEditor.lib;$(LibOutDir)DiaLogger.lib;$(LibOutDir)DiaStateMachine.lib;$(LibOutDir)DiaSerializer.lib;$(LibOutDir)DiaApplicationEditor.lib;$(LibOutDir)DiaVisualDebugger.lib;$(LibOutDir)DiaImGui.lib;$(LibOutDir)DiaVisualDebuggerConsole.lib;$(LibOutDir)DiaSFML.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaAsset.lib;$(LibOutDir)DiaWindow.lib;sfml-graphics-d.lib;sfml-window-d.lib;sfml-system-d.lib;opengl32.lib;glu32.lib;$(ProjectDir)../../../External/Python311/libs/python311.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaAssetCatalogue.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaAssetCatalogueEditor.lib;$(LibOutDir)DiaAssetRuntimeEditor.lib;$(LibOutDir)DiaGeometry2D.lib;$(LibOutDir)DiaGeometry2DVisualDebugger.lib;$(LibOutDir)DiaGeometry3D.lib;$(LibOutDir)DiaRigidBody2D.lib;$(LibOutDir)DiaRigidBody2DVisualDebugger.lib;$(LibOutDir)DiaSoftBody2D.lib;$(LibOutDir)DiaSoftBody2DVisualDebugger.lib;$(LibOutDir)DiaRig2D.lib;$(LibOutDir)DiaRig2DVisualDebugger.lib;$(LibOutDir)DiaIK2D.lib;$(LibOutDir)DiaIK2DVisualDebugger.lib;$(LibOutDir)DiaAnimation2D.lib;$(LibOutDir)DiaAnimation2DVisualDebugger.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaPython.lib;$(LibOutDir)DiaAPI.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaEditor.lib;$(LibOutDir)DiaLogger.lib;$(LibOutDir)DiaStateMachine.lib;$(LibOutDir)DiaSerializer.lib;$(LibOutDir)DiaApplicationEditor.lib;$(LibOutDir)DiaVisualDebugger.lib;$(LibOutDir)DiaImGui.lib;$(LibOutDir)DiaVisualDebuggerConsole.lib;$(LibOutDir)DiaSFML.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaAsset.lib;$(LibOutDir)DiaWindow.lib;sfml-graphics-d.lib;sfml-window-d.lib;sfml-system-d.lib;opengl32.lib;glu32.lib;$(ProjectDir)../../../External/Python311/libs/python311.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)../../../External/googletest/lib/x64/Debug/;$(ProjectDir)../../../External/SFML/Current-x64/lib/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -99,7 +99,7 @@
       <DisableSpecificWarnings>4267;4244;4127</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaAssetCatalogue.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaAssetCatalogueEditor.lib;$(LibOutDir)DiaAssetRuntimeEditor.lib;$(LibOutDir)DiaGeometry2D.lib;$(LibOutDir)DiaGeometry2DVisualDebugger.lib;$(LibOutDir)DiaRigidBody2D.lib;$(LibOutDir)DiaRigidBody2DVisualDebugger.lib;$(LibOutDir)DiaSoftBody2D.lib;$(LibOutDir)DiaSoftBody2DVisualDebugger.lib;$(LibOutDir)DiaRig2D.lib;$(LibOutDir)DiaRig2DVisualDebugger.lib;$(LibOutDir)DiaIK2D.lib;$(LibOutDir)DiaIK2DVisualDebugger.lib;$(LibOutDir)DiaAnimation2D.lib;$(LibOutDir)DiaAnimation2DVisualDebugger.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaPython.lib;$(LibOutDir)DiaAPI.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaEditor.lib;$(LibOutDir)DiaLogger.lib;$(LibOutDir)DiaStateMachine.lib;$(LibOutDir)DiaSerializer.lib;$(LibOutDir)DiaApplicationEditor.lib;$(LibOutDir)DiaVisualDebugger.lib;$(LibOutDir)DiaImGui.lib;$(LibOutDir)DiaVisualDebuggerConsole.lib;$(LibOutDir)DiaSFML.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaAsset.lib;$(LibOutDir)DiaWindow.lib;sfml-graphics.lib;sfml-window.lib;sfml-system.lib;opengl32.lib;glu32.lib;winmm.lib;$(ProjectDir)../../../External/Python311/libs/python311.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaAssetCatalogue.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaAssetCatalogueEditor.lib;$(LibOutDir)DiaAssetRuntimeEditor.lib;$(LibOutDir)DiaGeometry2D.lib;$(LibOutDir)DiaGeometry2DVisualDebugger.lib;$(LibOutDir)DiaGeometry3D.lib;$(LibOutDir)DiaRigidBody2D.lib;$(LibOutDir)DiaRigidBody2DVisualDebugger.lib;$(LibOutDir)DiaSoftBody2D.lib;$(LibOutDir)DiaSoftBody2DVisualDebugger.lib;$(LibOutDir)DiaRig2D.lib;$(LibOutDir)DiaRig2DVisualDebugger.lib;$(LibOutDir)DiaIK2D.lib;$(LibOutDir)DiaIK2DVisualDebugger.lib;$(LibOutDir)DiaAnimation2D.lib;$(LibOutDir)DiaAnimation2DVisualDebugger.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaPython.lib;$(LibOutDir)DiaAPI.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaEditor.lib;$(LibOutDir)DiaLogger.lib;$(LibOutDir)DiaStateMachine.lib;$(LibOutDir)DiaSerializer.lib;$(LibOutDir)DiaApplicationEditor.lib;$(LibOutDir)DiaVisualDebugger.lib;$(LibOutDir)DiaImGui.lib;$(LibOutDir)DiaVisualDebuggerConsole.lib;$(LibOutDir)DiaSFML.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaAsset.lib;$(LibOutDir)DiaWindow.lib;sfml-graphics.lib;sfml-window.lib;sfml-system.lib;opengl32.lib;glu32.lib;winmm.lib;$(ProjectDir)../../../External/Python311/libs/python311.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)../../../External/googletest/lib/x64/Release/;$(ProjectDir)../../../External/SFML/Current-x64/lib/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -270,6 +270,16 @@
     <ClCompile Include="DiaVisualDebugger\TestFixedDrawLayer.cpp">
       <PreprocessorDefinitions>DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <!-- Geometry3D -->
+    <ClCompile Include="Geometry3D\TestAABB.cpp" />
+    <ClCompile Include="Geometry3D\TestOOBB.cpp" />
+    <ClCompile Include="Geometry3D\TestSphere.cpp" />
+    <ClCompile Include="Geometry3D\TestCapsule.cpp" />
+    <ClCompile Include="Geometry3D\TestTriangle.cpp" />
+    <ClCompile Include="Geometry3D\TestCylinder.cpp" />
+    <ClCompile Include="Geometry3D\TestRay3D.cpp" />
+    <ClCompile Include="Geometry3D\TestPlane3D.cpp" />
+    <ClCompile Include="Geometry3D\TestFrustum.cpp" />
     <!-- Geometry2D -->
     <ClCompile Include="Geometry2D\TestGeometry2DVisualDebuggerStack.cpp" />
     <ClCompile Include="Geometry2D\TestSpatialGridSerializer.cpp" />
@@ -426,6 +436,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Dia\DiaGeometry3D\DiaGeometry3D.vcxproj">
+      <Project>{B4C5D6E7-F8A9-0123-DEF0-123456789012}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaAssetCatalogue\DiaAssetCatalogue.vcxproj">
       <Project>{A8B9C0D1-E2F3-4567-8901-ABCDEF012345}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
