@@ -29,6 +29,10 @@ Dia::ApplicationFlow::StartResult RenderModule::DoStart()
 
     DIA_LOG_INFO("Application", "RenderModule DoStart: canvas acquired");
 
+    // Reset the cross-PU stop fence on every (re-)entry. KernelModule::DoStop
+    // blocks until this flips back to true in our DoStop.
+    KernelModule::SetRenderContextReleased(false);
+
     // Activate the GL context on this (render) thread.
     // KernelModule deactivates it on the main thread in DoStart so this is safe.
     mCanvas->SetActiveContext(true);
@@ -78,6 +82,12 @@ Dia::ApplicationFlow::StopResult RenderModule::DoStop()
         mCanvas->SetActiveContext(false);
         mCanvas = nullptr;
     }
+
+    // Release the cross-PU stop fence. KernelModule::DoStop has been returning
+    // kStopping waiting for this — once observed, it tears the window down on
+    // MainPU. Must be the very last thing in DoStop, after the GL context is
+    // released and we no longer touch any window-owned resource.
+    KernelModule::SetRenderContextReleased(true);
 
     DIA_LOG_INFO("Application", "RenderModule DoStop exit");
     return Dia::ApplicationFlow::StopResult::kDone;

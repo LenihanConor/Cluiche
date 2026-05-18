@@ -98,20 +98,20 @@ namespace Dia
 		//-------------------------------------------------------------------------------------
 		RenderWindow::~RenderWindow()
 		{
+			// GL resources (RenderTexture's FBO, Texture, Shader, the ImGui font
+			// atlas, and the textures owned by mTextureHandler) must be destroyed
+			// while the window's GL context is current on this thread. Make the
+			// context current BEFORE any GL-issuing teardown call — the previous
+			// owning thread (RenderPU) released it in RenderModule::DoStop, so it
+			// is unowned when we get here. mImGuiBackend.Shutdown() issues
+			// glDeleteTextures for the font atlas and so must run after the
+			// context is current.
+			if (mWindowContext)
+				mWindowContext->setActive(true);
+
 #ifdef DIA_DEBUG
 			mImGuiBackend.Shutdown();
 #endif
-
-			// GL resources (RenderTexture's FBO, Texture, Shader, and the textures
-			// owned by mTextureHandler) must be destroyed while the window's GL
-			// context is alive on this thread. The window owns the context —
-			// destroying it first invalidates the context the FBO was created in,
-			// and glDeleteFramebuffers then fails with GL_INVALID_OPERATION
-			// (RenderTextureImplFBO.cpp:55). mTextureHandler is a value member, so
-			// its destructor would otherwise run AFTER this body, after the
-			// context is gone — call Shutdown() explicitly here.
-			if (mWindowContext)
-				mWindowContext->setActive(true);
 
 			mTextureHandler.Shutdown();
 

@@ -8,6 +8,8 @@
 #include <DiaSFML/RenderWindowFactory.h>
 #include "Types/InputEvent.h"
 
+#include <atomic>
+
 namespace Dia { namespace Graphics { class ICanvas; } }
 namespace Dia { namespace Window { class IWindow; } }
 namespace Dia { namespace SFML { class TextureHandler; } }
@@ -34,6 +36,16 @@ public:
     static Dia::Graphics::ICanvas*     GetStaticCanvas()         { return sCanvas; }
     static Dia::SFML::TextureHandler*  GetStaticTextureHandler() { return sTextureHandler; }
 
+    // Cross-PU shutdown fence. RenderModule (RenderPU) sets this true after it
+    // has released the GL context in DoStop; KernelModule (MainPU) blocks in
+    // DoStop until it observes true, then destroys the window. Without this
+    // fence the two DoStops race: KernelModule can tear down the SFML window
+    // (and call setActive(true) on MainPU) while RenderPU is still issuing GL
+    // calls, causing a driver hang inside glDeleteFramebuffers / wglMakeCurrent.
+    // RenderModule::DoStart resets it false on each (re-)entry.
+    static void SetRenderContextReleased(bool released) { sRenderContextReleased.store(released, std::memory_order_release); }
+    static bool IsRenderContextReleased()               { return sRenderContextReleased.load(std::memory_order_acquire); }
+
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
     void DoUpdate(float dt) override;
@@ -44,6 +56,7 @@ private:
     Dia::ApplicationFlow::EventStreamWriter<InputEvent> mInputWriter{this, "InputToSim"};
     static Dia::Graphics::ICanvas*    sCanvas;
     static Dia::SFML::TextureHandler* sTextureHandler;
+    static std::atomic<bool>          sRenderContextReleased;
 
     Dia::Input::InputSourceManager mInputSourceManager;
     Dia::Input::ConsoleGamepadManager mGamepadManager;

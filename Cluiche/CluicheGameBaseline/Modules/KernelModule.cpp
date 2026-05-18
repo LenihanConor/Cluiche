@@ -18,6 +18,7 @@ namespace Cluiche { namespace AppFlow {
 const Dia::Core::StringCRC KernelModule::kTypeId("KernelModule");
 Dia::Graphics::ICanvas*    KernelModule::sCanvas         = nullptr;
 Dia::SFML::TextureHandler* KernelModule::sTextureHandler = nullptr;
+std::atomic<bool>          KernelModule::sRenderContextReleased{false};
 
 KernelModule::KernelModule(const Dia::Core::StringCRC& instanceId)
     : Module(instanceId)
@@ -87,6 +88,17 @@ void KernelModule::DoUpdate(float /*dt*/)
 
 Dia::ApplicationFlow::StopResult KernelModule::DoStop()
 {
+    // Wait for RenderModule (RenderPU) to release the GL context before we
+    // destroy the window. Both modules flip to kStopping in the same
+    // BeginStopAllActive() pass and tick concurrently on different PU threads;
+    // without this fence ~RenderWindow can race RenderPU's final GL calls and
+    // hang inside the GL driver. RenderModule sets this flag true after its
+    // SetActiveContext(false).
+    if (!IsRenderContextReleased())
+    {
+        return Dia::ApplicationFlow::StopResult::kStopping;
+    }
+
     DIA_LOG_INFO("Application", "KernelModule DoStop entry");
 
     sCanvas         = nullptr;
