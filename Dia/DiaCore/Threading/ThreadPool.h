@@ -18,19 +18,18 @@ namespace Dia
 		//---------------------------------------------------------------------------------------------------------------------------------
 		// Thread Pool
 		//
-		// Pool of worker threads for executing tasks concurrently.
+		// Pool of worker threads pulling from a single FIFO queue.
 		//
 		// USAGE:
-		//   ThreadPool pool(4);  // 4 worker threads
-		//   pool.Enqueue([]() {
-		//       // Work here
-		//   });
-		//   pool.WaitAll();  // Wait for all tasks to complete
+		//   ThreadPool pool(4);  // 4 worker threads, 0 = hardware concurrency
+		//   pool.Enqueue([]() { /* work */ });
+		//   pool.WaitAll();      // wait until queue is empty + no active tasks
 		//
-		// FEATURES:
-		//   - Fixed number of worker threads
-		//   - Work-stealing task queue
-		//   - Automatic load balancing
+		// SHUTDOWN CONTRACT:
+		//   ~ThreadPool / Shutdown() drains: workers keep pulling tasks until the
+		//   queue is empty, then exit. Tasks submitted before Shutdown are
+		//   guaranteed to run. Submitting after Shutdown is undefined — the task
+		//   will sit in the queue with no workers to drain it.
 		//---------------------------------------------------------------------------------------------------------------------------------
 
 		class ThreadPool

@@ -18,8 +18,7 @@ Dia::ApplicationFlow::StartResult JobSystemModule::DoStart()
 {
     DIA_LOG_INFO("Application", "JobSystemModule DoStart entry");
     sInstance = this;
-    mJobSystem.Init(0);
-    Dia::Core::JobSystem::Initialize(0);  // legacy shim for backward compat
+    mJobSystem.Initialize(0);
     DIA_LOG_INFO("Application", "JobSystemModule DoStart ready");
     return Dia::ApplicationFlow::StartResult::kReady;
 }
@@ -31,8 +30,7 @@ void JobSystemModule::DoUpdate(float /*dt*/)
 Dia::ApplicationFlow::StopResult JobSystemModule::DoStop()
 {
     DIA_LOG_INFO("Application", "JobSystemModule DoStop entry");
-    Dia::Core::JobSystem::Shutdown();  // legacy shim for backward compat
-    mJobSystem.Quit();
+    mJobSystem.Shutdown();
     sInstance = nullptr;
     return Dia::ApplicationFlow::StopResult::kDone;
 }

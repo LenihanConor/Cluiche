@@ -1,7 +1,7 @@
 # Refactor Plan — JobSystem (Phases 1–3)
 
 **Spec:** `docs/refactors/job_system/reports/plan.md` (audit + 5-phase plan)
-**Scope this session:** Phases 1–3. Static shim stays; ParallelFor / parent-child / priority dropped per the plan. Phases 4–5 (delete shim, drain semantics + diagnostics) deferred.
+**Scope:** Phases 1–5 (all phases complete).
 
 ## Session Notes — Spec Decisions Summary
 
@@ -18,17 +18,18 @@
 | 5 | `JobSystemModule` holds `Dia::Core::JobSystem` by value. `DoStart` sets `sInstance = this`, calls `mJobSystem.Init(0)` AND legacy `Dia::Core::JobSystem::Initialize(0)` (parallel — TextureHandler still needs the shim). `DoStop` reverses. Cross-module access: `JobSystemModule::GetStatic()` + `GetJobSystem()`, mirrors `AssetServiceModule::GetStatic()` pattern. Spec `docs/specs/features/cluichetest/async-asset-loading/jobsystem-module.md` updated. | `dia run cluichetest` launches; JobSystem `DoStart entry`/`DoStart ready` log lines present | Done | sonnet | DiaApplicationFlow has no service-locator; reused the project's `GetStatic()` convention. Pre-existing GL teardown noise (`RenderTextureImplFBO.cpp`) is unrelated. |
 | 6 | Commit P2. Update plan row 5 to Done. | `git status` clean | Done | haiku | Commit `684f9af`. |
 | 7 | `TextureHandler` takes a `JobSystem*` via `SetJobSystem`. Replace `JobSystem::CreateJob/Run/Wait` static calls with `instance.Submit` + handle-based `Wait`. Drop `Job* job` from `PendingUpload`, replace with `JobHandle`. Keep `shared_ptr<PendingUpload>`. | `dia run cluichetest` dummy stage texture load + teardown clean | Done | sonnet | KernelModule wires `JobSystemModule::GetStatic()->GetJobSystem()` into the renderwindow's TextureHandler in DoStart. Hit a `windows.h` `Yield` macro collision with `Thread.h` (KernelModule.cpp's pre-existing SFML transitive include of windows.h). Fixed defensively in `Thread.h` with `#ifdef Yield / #undef Yield`. cluichetest launches and exits clean (exit 0); GL teardown noise is the pre-existing issue from earlier phases. 36/36 JobSystem tests still pass. |
-| 8 | Commit P3. Update plan row 7 to Done. | `git status` clean | Done | haiku | Single commit, plan + code together. |
+| 8 | Commit P3. Update plan row 7 to Done. | `git status` clean | Done | haiku | Single commit, plan + code together. Commit `b88449e`. |
+| 9 | P4 — Delete static shim and dead surface. `JobSystem.h`: drop `Job` struct (move to `.cpp` as a minimal completion flag), drop `ParallelFor`, drop all static shim methods (`Initialize`/`Shutdown`/`CreateJob`/`CreateChildJob`/`Run`/`Wait(Job*)`/`IsComplete(Job*)`), drop all `*Impl` helpers, drop `GetInstance`/`Execute`/`Finish`. Rename instance methods `Init`/`Quit` → `Initialize`/`Shutdown`. Honest docstring. `JobSystemModule.cpp`: drop the legacy `JobSystem::Initialize/Shutdown` calls and rename. `TestJobSystem.cpp`: drop the 26 legacy/parent-child/ParallelFor tests, rename in remaining tests. | `dia run googletest --filter="JobSystem*"` + `dia run cluichetest` | Done | sonnet | All `JobSystemInstance` tests still pass. Full GoogleTest suite (4245 tests) green. |
+| 10 | P5 — Drain semantics + diagnostics. `ThreadPool.h`: fix "work-stealing / automatic load balancing" comments (lie — it's a single FIFO queue); document drain-on-shutdown contract. `JobSystem`: assert on double-`Initialize`. Add tests: `DoubleInitialize_Asserts`, `Shutdown_DrainsPendingTasks` (submits 64 jobs and immediately calls Shutdown — all must run), `ShutdownIsIdempotent`. | New test cases pass | Done | sonnet | Drain was already correct in `ThreadPool::WorkerThread` (`mShutdown && mTasks.empty()` exit condition); the test pins the contract. Idempotent Shutdown verified. |
+| 11 | Commit P4 + P5. Update plan rows 9–10 to Done. Update `docs/BACKLOG.md` to mark JobSystem refactor done. | `git status` clean | Done | haiku | Single commit, code + plan + backlog together. |
 
-## Acceptance for this session
+## Acceptance — final
 
-- AC2 (no Job leaks via refcounted handles): partial — Phase 1 lands the mechanism, Phase 3 makes TextureHandler use it.
-- AC3 (Wait from inside running job no longer deadlocks): proven in Phase 1 (new test).
-- AC4 (Submit after Shutdown asserts): proven in Phase 1.
-- AC6 (.h/.cpp split): done in Phase 1 for `ThreadPool` and `JobSystem`.
-- AC7 (cluichetest texture load + teardown preserved): proven in Phases 2 + 3.
-- AC8 (existing GoogleTest threading still passes; new tests for missing list): done in Phase 1.
-
-Deferred to Phase 4–5:
-- AC1 (no caller hits the static surface) — shim stays.
-- AC5 (header docstrings honest, no work-stealing/priority claims) — wait until shim is removed.
+- AC1 (no caller hits the static surface): done in Phase 4 — static surface deleted.
+- AC2 (no Job leaks via refcounted handles): done — Phase 1 mechanism + Phase 3 TextureHandler migration + Phase 4 removed legacy `Job*` path entirely.
+- AC3 (Wait from inside running job no longer deadlocks): proven in Phase 1.
+- AC4 (Submit after Shutdown asserts): proven in Phase 1; renamed in Phase 4.
+- AC5 (honest header docstrings): done in Phase 5 — `JobSystem.h` and `ThreadPool.h` no longer claim work-stealing / priority / parallel-for.
+- AC6 (.h/.cpp split): done in Phase 1.
+- AC7 (cluichetest texture load + teardown preserved): proven in Phases 2 + 3 + 4.
+- AC8 (existing GoogleTest still passes; new tests cover the missing list): done — 4245/4245 pass after P4/P5.

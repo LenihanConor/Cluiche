@@ -45,6 +45,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | DiaVisualDebugger — implement fixed-draw-layer (feature 12) | 2026-05-04 | `FixedDrawRegistry`, `IObjectRenderer`, `TypedObjectRenderer<T>`, `IFixedPrimitiveBuffer`, `FixedPrimitiveBuffer`; default renderers Spatial/Quadtree/BVH/Hex; 24 tests |
 | DiaVisualDebugger — migrate Rig2D rest pose to fixed-draw-layer | 2026-05-04 | `RigRestPoseRenderer` in `DiaRig2DVisualDebugger/`; 4 tests. RestPoseDrawer kept for dynamic callers |
 | DiaVisualDebugger — migrate Geometry2D spatial structures to fixed-draw-layer | 2026-05-04 | Re-export headers in `DiaGeometry2DVisualDebugger/Renderers/`; canonical renderers in `DiaVisualDebugger/Renderers/` |
+| DiaCore JobSystem refactor | 2026-05-17 | All 5 phases done. P1 (`c1fe4d5`): `ThreadPool` .h/.cpp split, instance API + refcounted `JobHandle` behind a static shim. P2 (`684f9af`): `JobSystemModule` owns the `JobSystem` instance via `GetStatic()`/`GetJobSystem()`. P3 (`b88449e`): `TextureHandler` migrated to `JobHandle` + `Submit`; KernelModule wires the JobSystem in. P4+P5: deleted the static shim, `Job` struct, `ParallelFor`, parent-child fan-out, priority field, and all dead surface; renamed `Init`/`Quit` → `Initialize`/`Shutdown`; honest header docstrings (no work-stealing/priority claims); double-`Initialize` asserts; `ThreadPool` shutdown drains pending tasks (test pins the contract). Final: 11 instance-API tests, full GoogleTest suite (4245 tests) pass; cluichetest launches and exits clean. |
 
 ---
 

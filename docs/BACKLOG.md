@@ -32,6 +32,23 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | per-app-bin-layout | [per-app-bin-layout.md](specs/features/dia/diapipeline/per-app-bin-layout.md) | DiaPipeline ✅ |
 | Harness Core | [harness-core.md](specs/features/dia/diatestharness/harness-core.md) | DiaTestHarness |
 | Smoke Test Scenario | [smoke-test-scenario.md](specs/features/cluichetest/cluichetestscenarios/smoke-test-scenario.md) | CluicheTestScenarios (depends on Harness Core) |
+| HandlePool\<T\> | [handle-pool.md](specs/features/dia/diacore/handle-pool.md) | DiaCore ✅ — foundation for DiaMailbox + DiaEntity |
+| DiaObservation Skeleton + DiaLogger Fold + Async Drain | [skeleton-and-logger-fold.md](specs/features/dia/diaobservation/skeleton-and-logger-fold.md) | DiaObservation — feature #1 of 7; ships first, blocks all other DiaObservation work; folds `Dia/DiaLogger/` into `Dia/DiaObservation/Log/` (155 caller files rewritten) and moves logger drain off the main PU thread |
+
+---
+
+### Entity System Stack (build in dependency order)
+
+System specs and the foundation feature are all `Approved`. Each system's child feature specs are still `Planned/TBD` and need `/spec-feature` before implementation. Strict order: HandlePool → remove old IComponent → DiaMailbox → DiaEntity. Research: `docs/research/entity_system/summary.md`.
+
+| # | Item | Spec | What's next |
+|---|------|------|-------------|
+| 1 | HandlePool\<T\> implementation | [handle-pool.md](specs/features/dia/diacore/handle-pool.md) | Approved feature — implement (plan + tasks). Foundation for everything below. |
+| 2 | Remove old IComponent infrastructure | TBD | Needs `/spec-feature` (likely under DiaCore or DiaEntity). Per SD-ENT-020: delete `Dia/DiaCore/Architecture/Components/`, migrate the two consumers (`SkeletonComponent`, `StateMachineComponent`), remove their tests. Must land before DiaEntity is built. |
+| 3 | DiaMailbox features (5 features) | [diamailbox.md](specs/systems/dia/diamailbox.md) | System Approved. Need `/spec-feature` for: address-and-types, typed-queue, subscriptions, routers, module-and-build. |
+| 4 | DiaEntity features (11 features) | [diaentity.md](specs/systems/dia/diaentity.md) | System Approved. Need `/spec-feature` in implementation order: foundation, reflection, blueprint-loader, component-deps-and-refs, hierarchy, mailbox-router, query-system, editor-inspection, update-loop, module-and-build (#2 remove-old-icomponent is item #2 above). |
+| 5 | EntityModule adapter (CluicheTest) | TBD | Needs `/spec-feature` under CluicheTest — application-level adapter that owns a Realm and plugs into DiaApplicationFlow v2 stage lifecycle (DoStart loads blueprints, returns kLoading until assets resolve, kReady; stage transition destroys Realm). Lives in CluicheTest, not in DiaEntity. |
+| 6 | PD-003 / AD-005 Supersede amendment | TBD | After DiaEntity ships, amend platform decision PD-003 and app decision AD-005 (both reference the old IComponent model) to Superseded, pointing to DiaEntity as the new authority. Per SD-ENT-021. Housekeeping. |
 
 ---
 
@@ -39,14 +56,12 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 | Item | Spec | What's needed |
 |------|------|---------------|
-| DiaEntity system | TBD | Needs `/spec-system` — layered ECS (components = config + asset trigger + interface). Depends on HandlePool (DiaCore), DiaMailbox. Remove old IComponent first. Research: `docs/research/entity_system/summary.md` |
-| DiaMailbox system | TBD | Needs `/spec-system` — standalone typed deferred messaging with structured addressing (Entity/All/ComponentType/Self). DiaEntity depends on this. Research: `docs/research/entity_system/summary.md` |
-| HandlePool\<T\> (DiaCore) | TBD | Needs `/spec-feature` under DiaCore — generic freelist + generation bump allocator, companion to existing `DiaCore/Containers/Handle.h`. DiaEntity and DiaMailbox depend on this. |
-| Old IComponent removal | TBD | Needs `/spec-feature` — remove `DiaCore/Architecture/Components/` (IComponent, IComponentObject, IComponentFactory). Migrate StateMachineComponent + SkeletonComponent. Prerequisite for DiaEntity. |
 | Asset Lifecycle Management | [asset-lifecycle-management.md](specs/features/dia/diaassetruntime/asset-lifecycle-management.md) | Draft — needs `/spec-review` then Approval. Extends state machine with `IAssetTypeHandler` dispatch, `Loading`/`Failed` states, progress query. |
 | DiaAPI quit command | TBD | Needed for DiaTestHarness graceful shutdown. No quit command exists today (exit is UI-driven). Needs `/spec-feature` under DiaAPI |
 | CluicheTest TestStages system | TBD | Needs `/spec-system` under CluicheTest — multi-stage test stages for deep engine validation (DiaRigidBody2D first). Open questions: phase vs level vs own PU; reporting mechanism. Research: `docs/research/e2e_testing/summary.md` |
 | DiaStateMachineEditor system | TBD | Needs `/spec-system` — editor plugin for state machine visual debugging + design-time editing. Depends on DiaStateMachine ✅, DiaEditor |
+| DiaObservation features 2–7 | [diaobservation.md](specs/systems/dia/diaobservation.md) | System Approved (2026-05-17); feature #1 Approved and Ready to Build. Need `/spec-feature` (in this order, parallel where noted): (#2) DiaObservation Foundation — session directory, `JsonLineSink`, retention ring, crash auto-dump, exit-reason capture, `session.json` schema; (#3) DiaObservation Config — `.diagame` `observation` block + CLI overrides; (#4) DiaTrace Spans, (#5) DiaMetrics Registry, (#6) DiaHealth Reporting — independent, can spec in parallel; (#7) DebugServer Observation Bridge — last, depends on at least one pillar shipping. Research: `docs/research/observ_telemetry/summary.md`. **Terminal goal: substrate for future `DiaE2E` test framework.** |
+| Future DiaE2E system | TBD | Needs `/spec-system` AFTER DiaObservation features #1–#6 are Done. The actual reason DiaObservation exists. Sibling `Cluiche/out/<App>/suites/<id>/` directory, `suite.json` + per-scenario summary + JUnit XML emitter, `dia e2e --suite=<name>` CLI command, scenario subprocess spawning. Estimated M because DiaObservation did the schema work; orchestrator is ~200 lines of file reading. Research: `docs/research/observ_telemetry/summary.md` "Future: Multi-Scenario E2E Suites". |
 
 ---
 
@@ -61,3 +76,6 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | `Dia::Core::Blackboard` — general-purpose key-value store | Identified during DiaStateMachine research; useful for AI, animation, gameplay. Needs `/spec-feature` under DiaCore. |
 | DiaStateMachine — `MarkValid()` exposed on definitions | Added to support serializer load path; could be misused to bypass `Validate()`. Consider making package-internal if access control becomes a concern. |
 | Phase 3d — Physics body serialization | DiaRigidBody2D / DiaSoftBody2D body definitions — DiaAssetCatalogue ✅ now unblocked |
+| DiaLogger system spec final supersede | `docs/specs/systems/dia/dialogger.md` is currently `Superseded (pending)`. Once DiaObservation feature #1 lands and `Dia/DiaLogger/` is deleted from disk, flip the status to `Superseded` and add a forwarding pointer at the top of the document. Tracked as DiaObservation feature #1 AC12. |
+| DiaApplicationFlow MetricsCollectorModule replacement | Existing `Dia/DiaApplicationFlow/Metrics/MetricsCollectorModule.{h,cpp}` is hand-rolled (FPS, frame-time, memory, uptime). DiaObservation feature #5 (DiaMetrics Registry) subsumes it — those four become registered gauges populated by the same module. Replacement is part of feature #5, not a separate item; flagged here so the connection is visible. |
+| DiaDebugServer ServerStats subsumption | `Dia/DiaDebugServer/DebugServer.h` `ServerStats` struct + `BroadcastCoreMetrics` method are hand-rolled. DiaObservation feature #5 replaces ServerStats fields with registered counters/gauges; feature #7 (DebugServer Observation Bridge) replaces `BroadcastCoreMetrics` with the registry-driven version. Flagged here for visibility. |
