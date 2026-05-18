@@ -408,6 +408,8 @@ namespace Dia { namespace ApplicationFlow {
                 for (unsigned int r = 0; r < mod.reads.Size(); ++r)
                 {
                     const Dia::Core::StringCRC& streamId = mod.reads[r];
+                    if (IsReservedStreamId(streamId))
+                        continue;  // reserved streams ($lifecycle, etc.) are always allowed
                     if (!streamExists(streamId))
                     {
                         Dia::Core::Containers::String256 msg;
@@ -421,6 +423,8 @@ namespace Dia { namespace ApplicationFlow {
                 for (unsigned int w = 0; w < mod.writes.Size(); ++w)
                 {
                     const Dia::Core::StringCRC& streamId = mod.writes[w];
+                    if (IsReservedStreamId(streamId))
+                        continue;  // reserved streams are always allowed
                     if (!streamExists(streamId))
                     {
                         Dia::Core::Containers::String256 msg;

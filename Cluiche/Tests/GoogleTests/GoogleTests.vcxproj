@@ -207,7 +207,12 @@
     <ClCompile Include="ApplicationFlow\TestManifestLoaderV2.cpp" />
     <ClCompile Include="ApplicationFlow\TestInspectable.cpp" />
     <ClCompile Include="ApplicationFlow\TestValidation.cpp" />
+    <ClCompile Include="ApplicationFlow\TestValidationExtended.cpp" />
     <ClCompile Include="ApplicationFlow\TestStreams.cpp" />
+    <ClCompile Include="ApplicationFlow\TestStreamPolicy.cpp" />
+    <ClCompile Include="ApplicationFlow\TestStreamEnvelope.cpp" />
+    <ClCompile Include="ApplicationFlow\TestStreamTap.cpp" />
+    <ClCompile Include="ApplicationFlow\TestLifecycleEvents.cpp" />
     <ClCompile Include="ApplicationFlow\TestApplicationE2E.cpp" />
     <ClCompile Include="UI\TestBoundMethod.cpp" />
     <ClCompile Include="UI\TestUIDataBuffer.cpp" />
