@@ -535,6 +535,9 @@
       <Filter>Editor</Filter>
     </ClCompile>
     <!-- Geometry3D -->
+    <ClCompile Include="Geometry3D\TestSpatialGrid3D.cpp">
+      <Filter>Geometry3D</Filter>
+    </ClCompile>
     <ClCompile Include="Geometry3D\TestIntersectionTests.cpp">
       <Filter>Geometry3D</Filter>
     </ClCompile>

@@ -1,7 +1,7 @@
 # Plan: DiaGeometry3D System
 
 **Spec:** @docs/specs/systems/dia/diageometry3d.md  
-**Status:** In Progress  
+**Status:** Done  
 **Started:** 2026-05-18  
 **Last Updated:** 2026-05-18
 
@@ -11,7 +11,7 @@
 |---|------|------|--------|-------|-------|
 | 1 | Shape Primitives | `dia run googletest --filter="AABB*:OOBB*:Sphere*:Capsule*:Triangle*:Cylinder*:Ray3D*:Plane3D*:Frustum*"` | Done | sonnet | 91 tests green |
 | 2 | Intersection Tests | `dia run googletest --filter="Intersection*:Contains*:ClosestPoint*"` | Done | sonnet | 81 tests green |
-| 3 | Spatial Grid | `dia run googletest --filter="SpatialGrid3D*"` | Not Started | sonnet | See spatial-grid.plan.md |
+| 3 | Spatial Grid | `dia run googletest --filter="SpatialGrid3D*"` | Done | sonnet | 28 tests green; see spatial-grid.plan.md |
 
 ## Session Notes
 
