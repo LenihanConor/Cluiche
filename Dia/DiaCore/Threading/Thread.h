@@ -5,6 +5,12 @@
 #include <thread>
 #include <functional>
 
+// <windows.h> defines `Yield` as a macro that expands to nothing, which breaks
+// our `ThisThread::Yield()` declaration when both headers are included.
+#ifdef Yield
+#undef Yield
+#endif
+
 namespace Dia
 {
 	namespace Core

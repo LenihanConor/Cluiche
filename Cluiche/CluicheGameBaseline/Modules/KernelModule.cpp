@@ -2,6 +2,7 @@
 
 #include <DiaSFML/RenderWindow.h>
 #include <DiaSFML/InputSource.h>
+#include <DiaSFML/TextureHandler.h>
 #include <DiaGraphics/Interface/ICanvas.h>
 #include <DiaWindow/Interface/IWindow.h>
 #include <DiaInput/EventData.h>
@@ -10,6 +11,7 @@
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
+#include "Modules/JobSystemModule.h"
 
 namespace Cluiche { namespace AppFlow {
 
@@ -41,6 +43,11 @@ Dia::ApplicationFlow::StartResult KernelModule::DoStart()
     mCanvas = renderWindow;
     sCanvas = renderWindow;
     sTextureHandler = renderWindow->GetTextureHandler();
+
+    // Wire the JobSystem into TextureHandler for async asset loading
+    auto* jobSystemModule = Cluiche::AppFlow::JobSystemModule::GetStatic();
+    DIA_ASSERT(jobSystemModule != nullptr, "TextureHandler requires JobSystemModule to be initialized first");
+    sTextureHandler->SetJobSystem(&jobSystemModule->GetJobSystem());
 
     renderWindow->ListenForInputSources(Dia::Core::BitArray8(
         Dia::SFML::InputSource::ESources::kSystem |

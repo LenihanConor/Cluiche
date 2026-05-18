@@ -18,7 +18,7 @@ namespace Dia
 			Dia::Core::Containers::String512 resolvedPath;
 			sf::Image image;
 			Dia::AssetRuntime::IAssetLoadCallback* callback = nullptr;
-			Dia::Core::Job* job = nullptr;
+			Dia::Core::JobHandle job;
 			bool success = false;
 			const char* failureReason = nullptr;
 		};
@@ -32,9 +32,15 @@ namespace Dia
 			Shutdown();
 		}
 
+		void TextureHandler::SetJobSystem(Dia::Core::JobSystem* jobSystem)
+		{
+			DIA_ASSERT(jobSystem != nullptr, "TextureHandler requires a valid JobSystem");
+			mJobSystem = jobSystem;
+		}
+
 		void TextureHandler::Shutdown()
 		{
-			// All uploads are registered before Run(), so swapping here catches every
+			// All uploads are registered before Submit(), so swapping here catches every
 			// in-flight job. Wait() on each ensures workers have exited their lambdas
 			// before Job allocations and shared_ptrs are freed.
 			std::vector<std::shared_ptr<PendingUpload>> pending;
@@ -44,10 +50,11 @@ namespace Dia
 			}
 			for (auto& entry : pending)
 			{
-				if (entry->job)
+				if (entry->job.IsValid())
 				{
-					Dia::Core::JobSystem::Wait(entry->job);
-					entry->job = nullptr;
+					if (mJobSystem)
+						mJobSystem->Wait(entry->job);
+					entry->job = Dia::Core::JobHandle();
 				}
 			}
 
@@ -99,10 +106,12 @@ namespace Dia
 			}
 
 			// Cache miss: submit async job for disk I/O.
-			// Register in mPendingUploads BEFORE Run() so the destructor can wait on
+			// Register in mPendingUploads BEFORE Submit() so the destructor can wait on
 			// any job that is mid-decode when TextureHandler is torn down. The lambda
 			// captures only the shared_ptr — no 'this' — so it is safe even if
 			// TextureHandler is destroyed while the decode is still running.
+			DIA_ASSERT(mJobSystem != nullptr, "TextureHandler::Load called before SetJobSystem");
+
 			auto upload = std::make_shared<PendingUpload>();
 			upload->assetId = assetId;
 			upload->resolvedPath = resolvedPath;
@@ -110,19 +119,17 @@ namespace Dia
 			upload->success = false;
 			upload->failureReason = nullptr;
 
-			Dia::Core::Job* job = Dia::Core::JobSystem::CreateJob([upload](Dia::Core::Job*)
+			upload->job = mJobSystem->Submit([upload]()
 			{
 				upload->success = upload->image.loadFromFile(upload->resolvedPath.AsCStr());
 				if (!upload->success)
 					upload->failureReason = "failed to load texture file";
 			});
-			upload->job = job;
 
 			{
 				std::lock_guard<std::mutex> lock(mPendingUploadsMutex);
 				mPendingUploads.push_back(upload);
 			}
-			Dia::Core::JobSystem::Run(job);
 		}
 
 		void TextureHandler::Tick()
@@ -135,11 +142,12 @@ namespace Dia
 
 			for (auto& entry : toProcess)
 			{
-				// Wait() blocks until the job is finished, then deletes the job allocation
-				if (entry->job)
+				// Wait() blocks until the job is finished
+				if (entry->job.IsValid())
 				{
-					Dia::Core::JobSystem::Wait(entry->job);
-					entry->job = nullptr;
+					if (mJobSystem)
+						mJobSystem->Wait(entry->job);
+					entry->job = Dia::Core::JobHandle();
 				}
 
 				if (!entry->success)

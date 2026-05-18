@@ -10,6 +10,8 @@
 #include <unordered_map>
 #include <vector>
 
+namespace Dia { namespace Core { class JobSystem; struct JobHandle; } }
+
 namespace sf
 {
 	class Texture;
@@ -27,6 +29,8 @@ namespace Dia
 		public:
 			TextureHandler();
 			~TextureHandler();
+
+			void SetJobSystem(Dia::Core::JobSystem* jobSystem);
 
 			unsigned int GetTextureId(const Dia::Core::StringCRC& assetId) const;
 			const sf::Texture* GetTexture(unsigned int textureId) const;
@@ -82,6 +86,8 @@ namespace Dia
 			// ProcessGpuDeletions() (GL-context thread only) drains and deletes.
 			std::mutex mPendingDeletionsMutex;
 			std::vector<sf::Texture*> mPendingDeletions;
+
+			Dia::Core::JobSystem* mJobSystem = nullptr;
 		};
 	}
 }
