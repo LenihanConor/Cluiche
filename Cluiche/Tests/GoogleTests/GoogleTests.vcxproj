@@ -271,6 +271,7 @@
       <PreprocessorDefinitions>DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <!-- Geometry3D -->
+    <ClCompile Include="Geometry3D\TestIntersectionTests.cpp" />
     <ClCompile Include="Geometry3D\TestAABB.cpp" />
     <ClCompile Include="Geometry3D\TestOOBB.cpp" />
     <ClCompile Include="Geometry3D\TestSphere.cpp" />

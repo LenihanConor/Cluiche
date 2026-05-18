@@ -9,9 +9,9 @@
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 1 | Shape Primitives | `dia run googletest --filter="AABB*:OOBB*:Sphere*:Capsule*:Triangle*:Cylinder*:Ray3D*:Plane3D*:Frustum*"` | Not Started | sonnet | See shape-primitives.plan.md |
-| 2 | Intersection Tests | `dia run googletest --filter="Intersection*:Contains*:ClosestPoint*"` | Not Started | sonnet | Blocked until Task 1 Done. See intersection-tests.plan.md |
-| 3 | Spatial Grid | `dia run googletest --filter="SpatialGrid3D*"` | Not Started | sonnet | Blocked until Tasks 1+2 Done. See spatial-grid.plan.md |
+| 1 | Shape Primitives | `dia run googletest --filter="AABB*:OOBB*:Sphere*:Capsule*:Triangle*:Cylinder*:Ray3D*:Plane3D*:Frustum*"` | Done | sonnet | 91 tests green |
+| 2 | Intersection Tests | `dia run googletest --filter="Intersection*:Contains*:ClosestPoint*"` | Done | sonnet | 81 tests green |
+| 3 | Spatial Grid | `dia run googletest --filter="SpatialGrid3D*"` | Not Started | sonnet | See spatial-grid.plan.md |
 
 ## Session Notes
 

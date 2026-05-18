@@ -1,22 +1,22 @@
 # Plan: 3D Intersection Tests
 
 **Spec:** @docs/specs/features/dia/diageometry3d/intersection-tests.md  
-**Status:** Not Started  
-**Started:** —  
+**Status:** Done  
+**Started:** 2026-05-18  
 **Last Updated:** 2026-05-18
 
 ## Tasks
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 1 | Create `Dia/DiaGeometry3D/Intersection/IntersectionTests.h` | — | Not Started | sonnet | Full class declaration: all Test() + Contains() + ClosestPoint() overloads |
-| 2 | Implement priority pairs | IntersectionAABBFrustumTest, IntersectionSphereFrustumTest, IntersectionTriangleFrustumTest, IntersectionAABBAABBTest, IntersectionAABBSphereTest, IntersectionSphereSphereTest, ray casts | Not Started | sonnet | ACs 6–15: Vs-Frustum tests, AABB-AABB, AABB-Sphere+sym, Sphere-Sphere, Ray vs AABB/Sphere/Triangle/Plane |
-| 3 | Implement fast-path pairs | IntersectionAABBOOBBTest, IntersectionOOBBOOBBTest, IntersectionTriangleAABBTest, IntersectionTriangleSphereTest | Not Started | sonnet | ACs 16–19: OOBB SAT (15-axis), Akenine-Möller Triangle-vs-AABB, Triangle-vs-Sphere |
-| 4 | Implement Contains + ClosestPoint | ContainsTest, ClosestPointTest | Not Started | sonnet | ACs 21–30: per-shape point queries; OOBB local-space via Quaternion::Inverse; Triangle barycentric all 7 regions |
-| 5 | Update `dia.geometry3d.architecture.module.md` | — | Not Started | haiku | Add `IntersectionTests` to public_api.entry_points |
-| 6 | Register in `DiaGeometry3D.vcxproj` + `.vcxproj.filters` | Build passes | Not Started | haiku | Add `Intersection/IntersectionTests.h` and `.cpp` under Intersection filter |
-| 7 | Write tests | All green | Not Started | sonnet | `Cluiche/Tests/GoogleTests/Geometry3D/TestIntersectionTests.cpp`; register in GoogleTests.vcxproj + filters |
-| 8 | `dia run googletest --filter="Intersection*:Contains*:ClosestPoint*"` | All green | Not Started | haiku | Verify and report pass/fail + any failures |
+| 1 | Create `Dia/DiaGeometry3D/Intersection/IntersectionTests.h` | — | Done | sonnet | Full class declaration: all Test() + Contains() + ClosestPoint() overloads |
+| 2 | Implement priority pairs | IntersectionAABBFrustumTest, IntersectionSphereFrustumTest, IntersectionTriangleFrustumTest, IntersectionAABBAABBTest, IntersectionAABBSphereTest, IntersectionSphereSphereTest, ray casts | Done | sonnet | ACs 6–15 all implemented and passing |
+| 3 | Implement fast-path pairs | IntersectionAABBOOBBTest, IntersectionOOBBOOBBTest, IntersectionTriangleAABBTest, IntersectionTriangleSphereTest | Done | sonnet | ACs 16–19: OOBB 15-axis SAT, Akenine-Möller Triangle-vs-AABB, Triangle-vs-Sphere |
+| 4 | Implement Contains + ClosestPoint | ContainsTest, ClosestPointTest | Done | sonnet | ACs 21–30: OOBB local-space via Quaternion::Inverse; Triangle barycentric all 7 regions |
+| 5 | Update `dia.geometry3d.architecture.module.md` | — | Done | haiku | IntersectionTests listed in public_api.entry_points (was in stub already) |
+| 6 | Register in `DiaGeometry3D.vcxproj` + `.vcxproj.filters` | Build passes | Done | haiku | Intersection filter present from P1 |
+| 7 | Write tests | All green | Done | sonnet | `Cluiche/Tests/GoogleTests/Geometry3D/TestIntersectionTests.cpp`; 81 tests across 16 suites |
+| 8 | `dia run googletest --filter="Intersection*:Contains*:ClosestPoint*"` | All green | Done | haiku | [PASSED] 81 tests from 16 test suites |
 
 ## Session Notes
 
