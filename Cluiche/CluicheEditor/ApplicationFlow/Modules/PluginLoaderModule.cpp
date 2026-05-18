@@ -134,6 +134,12 @@ namespace Cluiche
 
 		void PluginLoaderModule::LoadPlugin(const Dia::Core::StringCRC& typeId, const Dia::Core::StringCRC& instanceId)
 		{
+			if (IsPluginTypeLoaded(typeId))
+			{
+				DIA_LOG_WARNING("Application", "PluginLoaderModule::LoadPlugin: plugin type already loaded, skipping");
+				return;
+			}
+
 			DIA_LOG_INFO("Application", "PluginLoaderModule::LoadPlugin: Creating plugin");
 
 			if (mLoadedPlugins.IsFull())

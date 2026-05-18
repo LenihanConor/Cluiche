@@ -109,6 +109,9 @@
     <Filter Include="DiaVisualDebugger">
       <UniqueIdentifier>{DVDBG001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaGame">
+      <UniqueIdentifier>{DIAGME01-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
     <Filter Include="DiaAssetCatalogueEditor">
       <UniqueIdentifier>{DACTE001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
@@ -465,6 +468,9 @@
     <ClCompile Include="DebugServer\TestDebugServerProtocol.cpp">
       <Filter>DebugServer</Filter>
     </ClCompile>
+    <ClCompile Include="DebugServer\TestDebugServerAppState.cpp">
+      <Filter>DebugServer</Filter>
+    </ClCompile>
     <!-- Integration -->
     <ClCompile Include="Integration\TestDebugProtocolEndToEnd.cpp">
       <Filter>Integration</Filter>
@@ -489,10 +495,19 @@
     <ClCompile Include="Editor\TestEditorModel.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
+    <ClCompile Include="Editor\TestEditorModelDiagame.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
     <ClCompile Include="Editor\TestGameConnectionManager.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
     <ClCompile Include="Editor\TestDockingLayout.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TestDockingLayoutDuplication.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TestPluginLoaderDuplication.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
     <ClCompile Include="Editor\TestWebUIBridge.cpp">
@@ -517,6 +532,9 @@
       <Filter>Editor</Filter>
     </ClCompile>
     <ClCompile Include="Editor\TestGameConnectionController.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\TestProjectContextController.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
     <ClCompile Include="Editor\TestGameConnectionControllerMessages.cpp">
@@ -868,6 +886,10 @@
     </ClCompile>
     <ClCompile Include="DiaAssetRuntime\TestReset.cpp">
       <Filter>DiaAssetRuntime</Filter>
+    </ClCompile>
+    <!-- DiaGame -->
+    <ClCompile Include="DiaGame\TestJsonDiaGameSerializer.cpp">
+      <Filter>DiaGame</Filter>
     </ClCompile>
     <!-- DiaAssetCatalogueEditor -->
     <ClCompile Include="DiaAssetCatalogueEditor\TestDiaAssetCatalogueEditorExhaustive.cpp">

@@ -29,6 +29,23 @@ function collectLeaves(node: MosaicNode<PanelId> | null): PanelId[] {
   return [...collectLeaves(node.first), ...collectLeaves(node.second)];
 }
 
+function dedupTree(
+  node: MosaicNode<PanelId> | null,
+  seen: Set<PanelId> = new Set()
+): MosaicNode<PanelId> | null {
+  if (node == null) return null;
+  if (typeof node === "string") {
+    if (seen.has(node)) return null;
+    seen.add(node);
+    return node;
+  }
+  const first = dedupTree(node.first, seen);
+  const second = dedupTree(node.second, seen);
+  if (first == null) return second;
+  if (second == null) return first;
+  return { ...node, first, second };
+}
+
 function removeFromLayout(
   node: MosaicNode<PanelId> | null,
   id: PanelId
@@ -82,7 +99,9 @@ export function DockingManager({ onReady }: DockingManagerProps) {
           .then((saved) => {
             const savedTree = (saved as { tree?: MosaicNode<PanelId> })?.tree;
             if (savedTree) {
-              setLayout(savedTree);
+              const clean = dedupTree(savedTree);
+              setLayout(clean);
+              if (clean) EditorBridge.saveLayout({ tree: clean }).catch(() => {});
             } else {
               const visible = list.filter((p) => p.visible).map((p) => p.name);
               setLayout(buildTree(visible));

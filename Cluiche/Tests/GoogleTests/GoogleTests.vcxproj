@@ -235,6 +235,7 @@
     <ClCompile Include="Dia\TestProtoStructConverter.cpp" />
     <ClCompile Include="DebugServer\TestStateSerializer.cpp" />
     <ClCompile Include="DebugServer\TestDebugServerProtocol.cpp" />
+    <ClCompile Include="DebugServer\TestDebugServerAppState.cpp" />
     <ClCompile Include="Integration\TestDebugProtocolEndToEnd.cpp" />
     <ClCompile Include="Integration\TestWebUIBridgeDispatch.cpp" />
     <ClCompile Include="Integration\TestPhysicsGeometryIntegration.cpp" />
@@ -248,8 +249,11 @@
     <ClCompile Include="Editor\TestEditorPluginRegistry.cpp" />
     <ClCompile Include="Editor\TestCommandHistory.cpp" />
     <ClCompile Include="Editor\TestEditorModel.cpp" />
+    <ClCompile Include="Editor\TestEditorModelDiagame.cpp" />
     <ClCompile Include="Editor\TestGameConnectionManager.cpp" />
     <ClCompile Include="Editor\TestDockingLayout.cpp" />
+    <ClCompile Include="Editor\TestDockingLayoutDuplication.cpp" />
+    <ClCompile Include="Editor\TestPluginLoaderDuplication.cpp" />
     <ClCompile Include="Editor\TestWebUIBridge.cpp" />
     <ClCompile Include="Editor\TestFileDialogHandler.cpp" />
     <ClCompile Include="Editor\TestEditorApplication.cpp" />
@@ -258,6 +262,7 @@
     <ClCompile Include="Editor\TestGameConnectionManagerIntegration.cpp" />
     <ClCompile Include="Editor\TestGameConnectionManagerPendingQueue.cpp" />
     <ClCompile Include="Editor\TestGameConnectionController.cpp" />
+    <ClCompile Include="Editor\TestProjectContextController.cpp" />
     <ClCompile Include="Editor\TestGameConnectionControllerMessages.cpp" />
     <ClCompile Include="Editor\TestGameConnectionLifecycle.cpp" />
     <ClCompile Include="Editor\TestEditorToolbarItem.cpp" />
@@ -410,6 +415,8 @@
     <ClCompile Include="DiaAssetCatalogue\TestIdentityRelationshipBackbone.cpp" />
     <ClCompile Include="DiaAssetCatalogue\TestCatalogueAutomation.cpp" />
     <ClCompile Include="DiaAssetCatalogue\TestDiaAssetCatalogueExhaustive.cpp" />
+    <!-- DiaGame -->
+    <ClCompile Include="DiaGame\TestJsonDiaGameSerializer.cpp" />
     <!-- DiaAssetCatalogueEditor -->
     <ClCompile Include="DiaAssetCatalogueEditor\TestDiaAssetCatalogueEditorExhaustive.cpp" />
     <!-- DiaAssetRuntimeEditor -->

@@ -7,6 +7,7 @@
 #include <DiaLogger/Logger.h>
 #include <DiaLogger/ISink.h>
 #include <DiaLogger/LogLevel.h>
+#include <DiaLogger/DiaLog.h>
 #include <DiaCore/Json/external/json/json.h>
 
 #include <fstream>
@@ -20,17 +21,20 @@ namespace Cluiche
 
 		namespace
 		{
-			// Parse the single project path argument from GetCommandLineW() — strip
-			// the exe name, whitespace, and surrounding quotes; convert to UTF-8.
-			void ParseProjectPathFromCommandLine(char* outUtf8, unsigned int outSize)
+			// Parse command-line arguments from GetCommandLineW():
+			//   - Bare path (no prefix)       -> outProjectPath  (.cluicheproj)
+			//   - --project=<path>            -> outDiagamePath  (.diagame)
+			// Strips the exe argv[0] first.
+			void ParseCommandLine(char* outProjectPath, unsigned int projectPathSize,
+			                      char* outDiagamePath, unsigned int diagamePathSize)
 			{
-				if (outSize == 0) return;
-				outUtf8[0] = '\0';
+				if (projectPathSize > 0) outProjectPath[0] = '\0';
+				if (diagamePathSize > 0) outDiagamePath[0]  = '\0';
 
 				LPWSTR fullCmd = GetCommandLineW();
 				if (fullCmd == nullptr || fullCmd[0] == L'\0') return;
 
-				// Skip the exe argv[0] — either a quoted string or a whitespace-terminated token.
+				// Skip exe argv[0].
 				LPWSTR p = fullCmd;
 				if (*p == L'"')
 				{
@@ -43,26 +47,47 @@ namespace Cluiche
 					while (*p && *p != L' ' && *p != L'\t') ++p;
 				}
 
-				// Skip whitespace between argv[0] and argv[1].
 				while (*p == L' ' || *p == L'\t') ++p;
-				if (*p == L'\0') return;
 
-				// Strip surrounding quotes from the project path arg.
-				wchar_t buf[260] = {0};
-				LPWSTR dest = buf;
-				LPWSTR end   = buf + (sizeof(buf) / sizeof(buf[0])) - 1;
-				if (*p == L'"')
+				// Process each argument.
+				while (*p != L'\0')
 				{
-					++p;
-					while (*p && *p != L'"' && dest < end) *dest++ = *p++;
-				}
-				else
-				{
-					while (*p && dest < end) *dest++ = *p++;
-				}
-				*dest = L'\0';
+					// Skip leading whitespace between args.
+					while (*p == L' ' || *p == L'\t') ++p;
+					if (*p == L'\0') break;
 
-				WideCharToMultiByte(CP_UTF8, 0, buf, -1, outUtf8, static_cast<int>(outSize), nullptr, nullptr);
+					// Extract the argument token into a wide buffer.
+					wchar_t arg[512] = {0};
+					wchar_t* dest = arg;
+					wchar_t* end  = arg + (sizeof(arg) / sizeof(arg[0])) - 1;
+
+					if (*p == L'"')
+					{
+						++p;
+						while (*p && *p != L'"' && dest < end) *dest++ = *p++;
+						if (*p == L'"') ++p;
+					}
+					else
+					{
+						while (*p && *p != L' ' && *p != L'\t' && dest < end) *dest++ = *p++;
+					}
+					*dest = L'\0';
+
+					// Check for --project=<path>
+					static const wchar_t kProjectPrefix[] = L"--project=";
+					static const int kProjectPrefixLen = 10;
+					if (wcsncmp(arg, kProjectPrefix, kProjectPrefixLen) == 0)
+					{
+						WideCharToMultiByte(CP_UTF8, 0, arg + kProjectPrefixLen, -1,
+						                    outDiagamePath, static_cast<int>(diagamePathSize), nullptr, nullptr);
+					}
+					else if (arg[0] != L'-' && outProjectPath[0] == '\0')
+					{
+						// First non-flag argument is the .cluicheproj path.
+						WideCharToMultiByte(CP_UTF8, 0, arg, -1,
+						                    outProjectPath, static_cast<int>(projectPathSize), nullptr, nullptr);
+					}
+				}
 			}
 
 			// Apply editor-logger.json (if present): sets default level + per-sink thresholds/channels.
@@ -124,8 +149,12 @@ namespace Cluiche
 
 		EditorModelModule::EditorModelModule(const Dia::Core::StringCRC& instanceId)
 			: Dia::ApplicationFlow::Module(instanceId)
+			, mRecentCount(0)
 		{
-			mProjectPath[0] = '\0';
+			mProjectPath[0]         = '\0';
+			mDiagamePath[0]         = '\0';
+			mCluicheproj[0]         = '\0';
+			mRestoredLastProject[0] = '\0';
 		}
 
 		void EditorModelModule::SetProjectPath(const char* path)
@@ -152,7 +181,30 @@ namespace Cluiche
 			Dia::Logger::ISink* sinks[] = { &mDebugOutputSink };
 			ApplyLoggerConfig("assets/configs/editor-logger.json", sinks, 1);
 
-			ParseProjectPathFromCommandLine(mProjectPath, kMaxProjectPathLength);
+			ParseCommandLine(mProjectPath, kMaxProjectPathLength, mDiagamePath, kMaxProjectPathLength);
+
+			// Subscribe to game-project changes to maintain editor_state persistence.
+			mModel.OnDiagameProjectChanged([](const Dia::Editor::ProjectContext& ctx, void* ud)
+			{
+				auto* self = static_cast<EditorModelModule*>(ud);
+				self->OnDiagameProjectChanged(ctx);
+			}, this);
+
+			// Restore last_project from editor_state if no --project arg was supplied.
+			if (mDiagamePath[0] == '\0' && mProjectPath[0] != '\0')
+				ReadEditorState(mProjectPath);
+
+			// Apply --project arg (takes precedence over restored last_project).
+			if (mDiagamePath[0] != '\0')
+			{
+				if (!mModel.LoadDiagameProject(mDiagamePath))
+					DIA_LOG_WARNING("Editor", "EditorModelModule: --project path not found or invalid: '%s'", mDiagamePath);
+			}
+			else if (mRestoredLastProject[0] != '\0')
+			{
+				if (!mModel.LoadDiagameProject(mRestoredLastProject))
+					DIA_LOG_WARNING("Editor", "EditorModelModule: last_project not found, starting with no project");
+			}
 
 			return Dia::ApplicationFlow::StartResult::kReady;
 		}
@@ -169,6 +221,138 @@ namespace Cluiche
 			logger.UnregisterThreadBuffer();
 			mModel.Reset();
 			return Dia::ApplicationFlow::StopResult::kDone;
+		}
+
+		void EditorModelModule::ReadEditorState(const char* cluicheprojPath)
+		{
+			strncpy_s(mCluicheproj, kMaxProjectPathLength, cluicheprojPath, _TRUNCATE);
+			mRestoredLastProject[0] = '\0';
+
+			std::ifstream file(cluicheprojPath);
+			if (!file.is_open()) return;
+
+			Json::Value root;
+			Json::CharReaderBuilder builder;
+			std::string errors;
+			if (!Json::parseFromStream(builder, file, &root, &errors)) return;
+
+			const Json::Value& state = root["editor_state"];
+			if (!state.isObject()) return;
+
+			if (state.isMember("last_project") && state["last_project"].isString())
+				strncpy_s(mRestoredLastProject, kMaxProjectPathLength, state["last_project"].asCString(), _TRUNCATE);
+
+			// Load recent list into mRecentProjects.
+			mRecentCount = 0;
+			const Json::Value& recent = state["recent_projects"];
+			if (recent.isArray())
+			{
+				for (Json::ArrayIndex i = 0; i < recent.size() && mRecentCount < kMaxRecent; ++i)
+				{
+					if (recent[i].isString())
+					{
+						strncpy_s(mRecentProjects[mRecentCount], kMaxProjectPathLength,
+						          recent[i].asCString(), _TRUNCATE);
+						++mRecentCount;
+					}
+				}
+			}
+		}
+
+		void EditorModelModule::WriteEditorState()
+		{
+			if (mCluicheproj[0] == '\0') return;
+
+			// Read existing file so we preserve version/name/manifests.
+			Json::Value root;
+			{
+				std::ifstream in(mCluicheproj);
+				if (in.is_open())
+				{
+					Json::CharReaderBuilder builder;
+					std::string errors;
+					if (!Json::parseFromStream(builder, in, &root, &errors))
+						root = Json::Value(Json::objectValue);
+				}
+				else
+				{
+					root = Json::Value(Json::objectValue);
+				}
+			}
+
+			Json::Value& state = root["editor_state"];
+			if (!state.isObject()) state = Json::Value(Json::objectValue);
+
+			const Dia::Editor::ProjectContext& ctx = mModel.GetDiagameProject();
+			if (ctx.IsValid())
+				state["last_project"] = ctx.diagamePath;
+			else
+				state.removeMember("last_project");
+
+			Json::Value recentArr(Json::arrayValue);
+			for (unsigned int i = 0; i < mRecentCount; ++i)
+				recentArr.append(mRecentProjects[i]);
+			state["recent_projects"] = recentArr;
+
+			root["editor_state"] = state;
+
+			Json::StyledWriter writer;
+			std::string output = writer.write(root);
+			std::ofstream out(mCluicheproj);
+			if (!out.is_open())
+			{
+				DIA_LOG_WARNING("Editor", "EditorModelModule: failed to write editor_state to '%s'", mCluicheproj);
+				return;
+			}
+			out << output;
+		}
+
+		void EditorModelModule::OnDiagameProjectChanged(const Dia::Editor::ProjectContext& ctx)
+		{
+			if (ctx.IsValid())
+			{
+				// Update recent list: add to front, keep last kMaxRecent unique paths.
+				const char* path = ctx.diagamePath;
+				// Remove existing entry for this path.
+				unsigned int write = 0;
+				for (unsigned int i = 0; i < mRecentCount; ++i)
+				{
+					if (strcmp(mRecentProjects[i], path) != 0)
+					{
+						if (write != i)
+							strncpy_s(mRecentProjects[write], kMaxProjectPathLength, mRecentProjects[i], _TRUNCATE);
+						++write;
+					}
+				}
+				// Shift right and insert at front (limited to kMaxRecent).
+				unsigned int newCount = (write < kMaxRecent) ? write + 1 : kMaxRecent;
+				for (unsigned int i = newCount - 1; i > 0; --i)
+				{
+					if (i - 1 < write)
+						strncpy_s(mRecentProjects[i], kMaxProjectPathLength, mRecentProjects[i - 1], _TRUNCATE);
+				}
+				strncpy_s(mRecentProjects[0], kMaxProjectPathLength, path, _TRUNCATE);
+				mRecentCount = newCount;
+			}
+
+			// Mirror recent list into EditorModel so IEditorContext can expose it.
+			const char* ptrs[kMaxRecent];
+			for (unsigned int i = 0; i < mRecentCount; ++i)
+				ptrs[i] = mRecentProjects[i];
+			mModel.SetRecentProjects(ptrs, mRecentCount);
+
+			WriteEditorState();
+		}
+
+		unsigned int EditorModelModule::GetRecentProjectCount() const
+		{
+			return mRecentCount;
+		}
+
+		const char* EditorModelModule::GetRecentProject(unsigned int index) const
+		{
+			if (index >= mRecentCount) return nullptr;
+			return mRecentProjects[index];
 		}
 	}
 }

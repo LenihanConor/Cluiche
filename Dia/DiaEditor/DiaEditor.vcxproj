@@ -89,12 +89,16 @@
     <ClInclude Include="Command\IEditorCommand.h" />
     <ClInclude Include="Command\CompoundCommand.h" />
     <ClInclude Include="Command\CommandHistory.h" />
+    <ClInclude Include="Project\ProjectContext.h" />
+    <ClInclude Include="Project\ProjectContextController.h" />
+    <ClInclude Include="MVC\IEditorContext.h" />
     <ClInclude Include="MVC\EditorModel.h" />
     <ClInclude Include="MVC\EditorView.h" />
     <ClInclude Include="MVC\EditorViewController.h" />
     <ClInclude Include="LiveConnection\GameConnectionManager.h" />
     <ClInclude Include="LiveConnection\GameConnectionController.h" />
     <ClInclude Include="Layout\DockingLayout.h" />
+    <ClInclude Include="UI\DataPath.h" />
     <ClInclude Include="UI\WebUIBridge.h" />
     <ClInclude Include="UI\FileDialogHandler.h" />
     <ClInclude Include="EditorManifestLoader.h" />
@@ -104,6 +108,7 @@
     <ClCompile Include="Plugin\EditorPluginRegistry.cpp" />
     <ClCompile Include="Command\CompoundCommand.cpp" />
     <ClCompile Include="Command\CommandHistory.cpp" />
+    <ClCompile Include="Project\ProjectContextController.cpp" />
     <ClCompile Include="MVC\EditorModel.cpp" />
     <ClCompile Include="MVC\EditorView.cpp" />
     <ClCompile Include="MVC\EditorViewController.cpp" />
@@ -125,6 +130,9 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaDebugProtocol\DiaDebugProtocol.vcxproj">
       <Project>{E9E22143-02A3-4D92-894D-079E8ABD8BCA}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaGame\DiaGame.vcxproj">
+      <Project>{A1B2C3D4-E5F6-7890-ABCD-EF0123456789}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

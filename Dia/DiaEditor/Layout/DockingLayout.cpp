@@ -19,6 +19,9 @@ namespace Dia
 			DIA_ASSERT(uiPath != nullptr, "DockingLayout: panel uiPath must not be null");
 			DIA_ASSERT(!mPanels.IsFull(), "DockingLayout: max panel capacity reached");
 
+			if (IsPanelRegistered(name))
+				return;
+
 			PanelInfo info;
 			strncpy_s(info.name, sizeof(info.name), name, _TRUNCATE);
 			strncpy_s(info.uiPath, sizeof(info.uiPath), uiPath, _TRUNCATE);
@@ -102,8 +105,11 @@ namespace Dia
 			const Json::Value& panels = in["panels"];
 			for (unsigned int i = 0; i < panels.size() && i < kMaxPanels; ++i)
 			{
-				PanelInfo info;
 				std::string name = panels[i]["name"].asString();
+				if (IsPanelRegistered(name.c_str()))
+					continue;
+
+				PanelInfo info;
 				std::string uiPath = panels[i]["uiPath"].asString();
 				strncpy_s(info.name, sizeof(info.name), name.c_str(), _TRUNCATE);
 				strncpy_s(info.uiPath, sizeof(info.uiPath), uiPath.c_str(), _TRUNCATE);

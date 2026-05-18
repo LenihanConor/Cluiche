@@ -1,3 +1,25 @@
 {
-	"panels" : []
+	"panels" :
+	[
+		{
+			"name" : "Home",
+			"uiPath" : "dia://plugins/home/index.html",
+			"visible" : true
+		},
+		{
+			"name" : "Output Console",
+			"uiPath" : "dia://plugins/outputconsole/index.html",
+			"visible" : true
+		},
+		{
+			"name" : "Game Connection",
+			"uiPath" : "dia://plugins/gameconnection/index.html",
+			"visible" : true
+		},
+		{
+			"name" : "Plugin Browser",
+			"uiPath" : "dia://plugins/pluginbrowser/index.html",
+			"visible" : true
+		}
+	]
 }

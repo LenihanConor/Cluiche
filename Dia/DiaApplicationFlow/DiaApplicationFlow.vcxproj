@@ -14,12 +14,18 @@
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="LifecycleEvent.cpp" />
+    <ClCompile Include="Manifest\ApplicationManifest.cpp" />
+    <ClCompile Include="Manifest\ApplicationManifestLoader.cpp" />
     <ClCompile Include="Manifest\ApplicationManifestLoaderV2.cpp" />
+    <ClCompile Include="Manifest\JsonApplicationManifestSerializer.cpp" />
+    <ClCompile Include="Manifest\ManifestComposer.cpp" />
     <ClCompile Include="Manifest\ManifestComposerV2.cpp" />
+    <ClCompile Include="Manifest\ManifestValidator.cpp" />
     <ClCompile Include="Manifest\ManifestValidatorV2.cpp" />
     <ClCompile Include="Module.cpp" />
     <ClCompile Include="ProcessingUnit.cpp" />
     <ClCompile Include="TypeRegistry.cpp" />
+    <ClCompile Include="TypeRegistry\ApplicationTypeRegistry.cpp" />
     <ClCompile Include="Streams\StreamTypeRegistry.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -39,15 +45,23 @@
     <ClInclude Include="Streams\EventStreamReader.h" />
     <ClInclude Include="Streams\StreamTypeRegistry.h" />
     <ClInclude Include="ModuleRef.h" />
+    <ClInclude Include="Manifest\ApplicationManifest.h" />
+    <ClInclude Include="Manifest\ApplicationManifestLoader.h" />
     <ClInclude Include="Manifest\ApplicationManifestV2.h" />
     <ClInclude Include="Manifest\ApplicationManifestLoaderV2.h" />
+    <ClInclude Include="Manifest\JsonApplicationManifestSerializer.h" />
+    <ClInclude Include="Manifest\ManifestComposer.h" />
     <ClInclude Include="Manifest\ManifestComposerV2.h" />
+    <ClInclude Include="Manifest\ManifestValidator.h" />
     <ClInclude Include="Manifest\ManifestValidatorV2.h" />
+    <ClInclude Include="Manifest\TypedImport.h" />
     <ClInclude Include="Module.h" />
     <ClInclude Include="ModuleRefV2.h" />
     <ClInclude Include="ProcessingUnit.h" />
     <ClInclude Include="RegistrationMacrosV2.h" />
     <ClInclude Include="TypeRegistry.h" />
+    <ClInclude Include="TypeRegistry\ApplicationTypeRegistry.h" />
+    <ClInclude Include="TypeRegistry\RegistrationMacros.h" />
     <ClInclude Include="DebugDataTypes.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
