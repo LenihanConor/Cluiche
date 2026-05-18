@@ -5,11 +5,14 @@
 
 #include <DiaCore/Core/Assert.h>
 #include <DiaCore/Memory/Memory.h>
+#include <DiaApplicationFlow/RegistrationMacrosV2.h>
 
 namespace Dia
 {
 	namespace UI
 	{
+		DIA_STREAM_TYPE(UIDataBuffer);
+
 		UIDataBuffer::UIDataBuffer()
 			: mWidth(0)
 			, mHeight(0)
@@ -42,15 +45,11 @@ namespace Dia
 
 		UIDataBuffer& UIDataBuffer::operator=(const UIDataBuffer& rhs)
 		{
-			mWidth = 0;
-			mHeight = 0;
-			mBufferSize = 0;
-			mBuffer = nullptr;
-			mDeleteWhenDone = true;
-			// Only copy if this is already been set
+			if (this == &rhs)
+				return *this;
+			Destroy();
 			if (rhs.mBuffer != nullptr)
 				Create(rhs.GetWidth(), rhs.GetHeight(), rhs.GetBuffer(), rhs.GetBufferSize());
-			
 			return *this;
 		}
 
@@ -78,8 +77,6 @@ namespace Dia
 			mHeight = height;
 			mBufferSize = datasize;
 			mBuffer = data;
-			Dia::Core::MemoryCopy(static_cast<void*>(mBuffer), data, datasize);
-
 			mDeleteWhenDone = deleteWhenDone;
 		}
 
