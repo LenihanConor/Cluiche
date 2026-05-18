@@ -27,7 +27,8 @@ public:
     bool IsConnected() const;
 
     // Called from the owning module's OnConnectStreams() override.
-    // Finds or creates the FrameStreamStore<T> with this ID in app.
+    // Registers or finds the FrameStreamStore<T> with this ID in app.
+    // The stream ID must be declared in the application manifest.
     void Connect(Application& app);
 
 private:
@@ -66,7 +67,7 @@ inline bool StreamWriter<T>::IsConnected() const
 template<typename T>
 inline void StreamWriter<T>::Connect(Application& app)
 {
-    IStreamStore* istore = app.FindOrRegisterStreamStoreAtStartup(
+    IStreamStore* istore = app.RegisterOrFindStreamStore(
         Dia::Core::UniquePtr<IStreamStore>(new FrameStreamStore<T>(mStreamId)));
     mStore = static_cast<FrameStreamStore<T>*>(istore);
 }

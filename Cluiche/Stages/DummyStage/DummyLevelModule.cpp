@@ -161,13 +161,13 @@ void DummyLevelModule::DoUpdate(float dt)
     fpsCmd.type  = UICommand::Type::kUpdateValue;
     fpsCmd.key   = Dia::Core::StringCRC("FPS");
     fpsCmd.value = fps;
-    mUIOutput.Send(fpsCmd);
+    (void)mUIOutput.Send(fpsCmd);
 
     UICommand scoreCmd;
     scoreCmd.type  = UICommand::Type::kUpdateValue;
     scoreCmd.key   = Dia::Core::StringCRC("Score");
     scoreCmd.value = mScore;
-    mUIOutput.Send(scoreCmd);
+    (void)mUIOutput.Send(scoreCmd);
 
     // Accumulate score to prove the pipeline is live
     mScore += dt;

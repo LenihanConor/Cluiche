@@ -2,6 +2,10 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <atomic>
 
+// Forward-declare LifecycleEvent to avoid pulling the full header into every
+// module consumer.  The full include is only needed in Module.cpp.
+namespace Dia { namespace ApplicationFlow { struct LifecycleEvent; } }
+
 namespace Dia { namespace ApplicationFlow {
 
     class ProcessingUnit;
@@ -78,6 +82,12 @@ namespace Dia { namespace ApplicationFlow {
 
         void SetProcessingUnit(ProcessingUnit* pu);
         void SetApplication(Application* app);
+
+        // Called by Application after creating the $lifecycle writer (F2).
+        // Pointer must outlive the module; cleared to nullptr if Application is destroyed first.
+        void SetLifecycleEmitter(Application* app);
+
+        void EmitModuleStateChanged(ModuleState prev, ModuleState next);
 
         // FrameTick: called by ProcessingUnit each frame — drives the state machine.
         // deltaTime: wall-clock delta (seconds).

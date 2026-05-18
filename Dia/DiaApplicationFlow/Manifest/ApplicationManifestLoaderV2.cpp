@@ -2,6 +2,7 @@
 
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaLogger/DiaLog.h>
+#include <DiaApplicationFlow/Streams/OverflowPolicy.h>
 
 #include <fstream>
 #include <sstream>
@@ -134,8 +135,23 @@ namespace Dia { namespace ApplicationFlow {
 
                 if (s.isMember("id") && s["id"].isString())
                     stream.id = Dia::Core::StringCRC(s["id"].asCString());
-                if (s.isMember("type") && s["type"].isString())
-                    stream.type = Dia::Core::StringCRC(s["type"].asCString());
+
+                // v2.1 fields
+                if (s.isMember("kind") && s["kind"].isString())
+                    stream.kind = Dia::Core::StringCRC(s["kind"].asCString());
+                if (s.isMember("payload_type") && s["payload_type"].isString())
+                    stream.payloadType = Dia::Core::StringCRC(s["payload_type"].asCString());
+                if (s.isMember("capacity") && s["capacity"].isUInt())
+                    stream.capacity = s["capacity"].asUInt();
+                if (s.isMember("max_readers") && s["max_readers"].isUInt())
+                    stream.maxReaders = s["max_readers"].asUInt();
+
+                // F3 policy fields
+                if (s.isMember("overflow") && s["overflow"].isString())
+                    stream.overflowPolicy = ParseOverflowPolicy(Dia::Core::StringCRC(s["overflow"].asCString()));
+                if (s.isMember("block_timeout_ms") && s["block_timeout_ms"].isUInt())
+                    stream.blockTimeoutMs = s["block_timeout_ms"].asUInt();
+
                 if (s.isMember("from") && s["from"].isString())
                     stream.fromPU = Dia::Core::StringCRC(s["from"].asCString());
                 if (s.isMember("to") && s["to"].isString())

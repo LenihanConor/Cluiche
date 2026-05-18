@@ -176,4 +176,4 @@ None.
 
 ## Status
 
-`Approved` — 2026-05-09
+`Superseded` — 2026-05-18. Replaced by Stream Topology (F1), Stream Policy & Envelope (F3), Lifecycle Events (F2), and Stream Tap (F4).

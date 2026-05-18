@@ -20,6 +20,8 @@
 #include <DiaApplicationFlow/Streams/StreamReader.h>
 #include <DiaApplicationFlow/Streams/EventStreamWriter.h>
 #include <DiaApplicationFlow/Streams/EventStreamReader.h>
+#include <DiaApplicationFlow/Streams/Event.h>
+#include <DiaApplicationFlow/Streams/SendResult.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Time/TimeAbsolute.h>
@@ -70,6 +72,14 @@ TEST(FrameStream, DoubleBufferWriteReadsLatest)
 // Section 2: EventStreamStore<T> unit tests
 // ---------------------------------------------------------------------------
 
+// Helper to make an Event<int> with a given payload value.
+static Event<int> MakeEvent(int payload)
+{
+    Event<int> ev;
+    ev.payload = payload;
+    return ev;
+}
+
 TEST(EventStream, RegisterReaderReturnsValidIndex)
 {
     EventStreamStore<int> estore(StringCRC("e_idx"));
@@ -83,15 +93,15 @@ TEST(EventStream, SendAndConsume)
     EventStreamStore<int> estore(StringCRC("e_basic"));
     int rIdx = estore.RegisterReader();
 
-    estore.Send(10);
-    estore.Send(20);
+    estore.Send(MakeEvent(10));
+    estore.Send(MakeEvent(20));
 
-    DynamicArrayC<int, 32> out;
+    DynamicArrayC<Event<int>, 32> out;
     estore.Consume(rIdx, out);
 
     ASSERT_EQ(out.Size(), 2u);
-    EXPECT_EQ(out[0], 10);
-    EXPECT_EQ(out[1], 20);
+    EXPECT_EQ(out[0].payload, 10);
+    EXPECT_EQ(out[1].payload, 20);
 }
 
 TEST(EventStream, ConsumeIsPerReader)
@@ -100,21 +110,20 @@ TEST(EventStream, ConsumeIsPerReader)
     int rA = estore.RegisterReader();
     int rB = estore.RegisterReader();
 
-    estore.Send(100);
-    estore.Send(200);
+    estore.Send(MakeEvent(100));
+    estore.Send(MakeEvent(200));
 
-    // Each reader should independently receive both events.
-    DynamicArrayC<int, 32> outA;
+    DynamicArrayC<Event<int>, 32> outA;
     estore.Consume(rA, outA);
     ASSERT_EQ(outA.Size(), 2u) << "Reader A should get 2 events";
-    EXPECT_EQ(outA[0], 100);
-    EXPECT_EQ(outA[1], 200);
+    EXPECT_EQ(outA[0].payload, 100);
+    EXPECT_EQ(outA[1].payload, 200);
 
-    DynamicArrayC<int, 32> outB;
+    DynamicArrayC<Event<int>, 32> outB;
     estore.Consume(rB, outB);
     ASSERT_EQ(outB.Size(), 2u) << "Reader B should get 2 events independently";
-    EXPECT_EQ(outB[0], 100);
-    EXPECT_EQ(outB[1], 200);
+    EXPECT_EQ(outB[0].payload, 100);
+    EXPECT_EQ(outB[1].payload, 200);
 }
 
 // When the ring buffer is full (capacity=2) and a third event is sent, the
@@ -122,20 +131,64 @@ TEST(EventStream, ConsumeIsPerReader)
 TEST(EventStream, OverflowDropsOldest)
 {
     // Capacity of 2: only 2 events can be buffered per reader.
-    EventStreamStore<int> estore(StringCRC("e_overflow"), /*capacity=*/2u);
+    EventStreamStore<int> estore(StringCRC("e_overflow"), Dia::Core::StringCRC::kZero, /*capacity=*/2u);
     int rIdx = estore.RegisterReader();
 
-    estore.Send(1);  // oldest — will be dropped
-    estore.Send(2);
-    estore.Send(3);  // causes overflow: 1 is dropped, 2 and 3 remain
+    SendResult r1 = estore.Send(MakeEvent(1));  // oldest — will be dropped
+    SendResult r2 = estore.Send(MakeEvent(2));
+    SendResult r3 = estore.Send(MakeEvent(3));  // causes overflow: 1 is dropped
 
-    DynamicArrayC<int, 32> out;
+    EXPECT_EQ(r1, SendResult::kDelivered);
+    EXPECT_EQ(r2, SendResult::kDelivered);
+    EXPECT_EQ(r3, SendResult::kDroppedOldest);
+
+    DynamicArrayC<Event<int>, 32> out;
     estore.Consume(rIdx, out);
 
     ASSERT_EQ(out.Size(), 2u)
         << "Buffer capacity 2 should hold at most 2 events after overflow";
-    EXPECT_EQ(out[0], 2) << "Second event should be first after overflow drop";
-    EXPECT_EQ(out[1], 3) << "Third event should be second";
+    EXPECT_EQ(out[0].payload, 2) << "Second event should be first after overflow drop";
+    EXPECT_EQ(out[1].payload, 3) << "Third event should be second";
+}
+
+TEST(EventStream, DropNewestPolicy)
+{
+    EventStreamStore<int> estore(StringCRC("e_drop_newest"),
+        Dia::Core::StringCRC::kZero, /*capacity=*/2u,
+        /*maxReaders=*/EventStreamStore<int>::kDefaultMaxReaders,
+        OverflowPolicy::kDropNewest);
+    int rIdx = estore.RegisterReader();
+
+    estore.Send(MakeEvent(1));
+    estore.Send(MakeEvent(2));
+    SendResult r3 = estore.Send(MakeEvent(3));  // should be dropped-newest
+
+    EXPECT_EQ(r3, SendResult::kDroppedNewest);
+
+    DynamicArrayC<Event<int>, 32> out;
+    estore.Consume(rIdx, out);
+
+    ASSERT_EQ(out.Size(), 2u);
+    EXPECT_EQ(out[0].payload, 1);
+    EXPECT_EQ(out[1].payload, 2);
+}
+
+TEST(EventStream, SequenceMonotonic)
+{
+    EventStreamStore<int> estore(StringCRC("e_sequence"));
+    int rIdx = estore.RegisterReader();
+
+    estore.Send(MakeEvent(1));
+    estore.Send(MakeEvent(2));
+    estore.Send(MakeEvent(3));
+
+    DynamicArrayC<Event<int>, 32> out;
+    estore.Consume(rIdx, out);
+
+    ASSERT_EQ(out.Size(), 3u);
+    EXPECT_LT(out[0].sequence, out[1].sequence)
+        << "sequence should be monotonically increasing";
+    EXPECT_LT(out[1].sequence, out[2].sequence);
 }
 
 // ---------------------------------------------------------------------------
@@ -248,12 +301,17 @@ TEST(StreamIntegration, FrameStreamWriterReaderRoundTrip)
     manifest.stages.Add(boot);
     manifest.initialStage = StringCRC("Boot");
 
+    // Declare the stream so manifest-gating passes.
+    StreamDeclaration sd;
+    sd.id   = StringCRC("Str_FrameChannel");
+    sd.kind = StringCRC("FrameStream");
+    manifest.streams.Add(sd);
+
     ProcessingUnitDeclaration pu;
     pu.instanceId      = StringCRC("MainPU");
     pu.frequencyHz     = 60.0f;
     pu.dedicatedThread = false;
 
-    // Writer declared before reader so stream store is created on first Connect.
     {
         ModuleDeclaration mod;
         mod.instanceId     = StringCRC("frameWriter");
@@ -286,10 +344,9 @@ TEST(StreamIntegration, FrameStreamWriterReaderRoundTrip)
     EXPECT_TRUE(g_frameReader->mReader.IsConnected())
         << "Reader handle should be connected after OnConnectStreams";
 
-    // Set the value we want to observe, then pump one Update so DoUpdate runs.
     g_frameWriter->writeValue = 99;
-    app.Update(1.0f / 60.0f);  // writer calls Write(99, ...), reader calls FetchLatest()
-    app.Update(1.0f / 60.0f);  // second tick ensures reader observes the write
+    app.Update(1.0f / 60.0f);
+    app.Update(1.0f / 60.0f);
 
     EXPECT_EQ(g_frameReader->lastRead, 99)
         << "Reader should observe the value written by the writer";
@@ -312,7 +369,7 @@ struct Str_EventWriterModule : Module
     {
         if (sendOnNextUpdate)
         {
-            mWriter.Send(sendValue);
+            (void)mWriter.Send(sendValue);
             sendOnNextUpdate = false;
         }
     }
@@ -326,7 +383,7 @@ struct Str_EventReaderModule : Module
     static const StringCRC kTypeId;
 
     EventStreamReader<int> mReader{this, StringCRC("Str_EventChannel")};
-    DynamicArrayC<int, 32> consumed;
+    DynamicArrayC<Event<int>, 32> consumed;
 
     void OnConnectStreams(Application& app) override { mReader.Connect(app); }
     StartResult DoStart() override { return StartResult::kReady; }
@@ -372,6 +429,12 @@ TEST(StreamIntegration, EventStreamWriterReaderRoundTrip)
     manifest.stages.Add(boot);
     manifest.initialStage = StringCRC("Boot");
 
+    // Declare the stream so manifest-gating passes.
+    StreamDeclaration sd;
+    sd.id   = StringCRC("Str_EventChannel");
+    sd.kind = StringCRC("EventStream");
+    manifest.streams.Add(sd);
+
     ProcessingUnitDeclaration pu;
     pu.instanceId      = StringCRC("MainPU");
     pu.frequencyHz     = 60.0f;
@@ -409,9 +472,6 @@ TEST(StreamIntegration, EventStreamWriterReaderRoundTrip)
     EXPECT_TRUE(g_eventReader->mReader.IsConnected())
         << "EventStreamReader handle should be connected after OnConnectStreams";
 
-    // Queue a send on the next DoUpdate, then pump two ticks:
-    //   Tick 1: writer sends event 77; reader consumes it in the same tick.
-    //   Tick 2: no new events; consumed array unchanged from tick 1.
     g_eventWriter->sendValue        = 77;
     g_eventWriter->sendOnNextUpdate = true;
     app.Update(1.0f / 60.0f);
@@ -419,6 +479,6 @@ TEST(StreamIntegration, EventStreamWriterReaderRoundTrip)
 
     ASSERT_GE(g_eventReader->consumed.Size(), 1u)
         << "Reader should have consumed at least one event";
-    EXPECT_EQ(g_eventReader->consumed[0], 77)
+    EXPECT_EQ(g_eventReader->consumed[0].payload, 77)
         << "Reader should have consumed the event value sent by the writer";
 }

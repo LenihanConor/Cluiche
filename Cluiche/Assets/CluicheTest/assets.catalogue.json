@@ -10,8 +10,6 @@
       "tags": ["misc"],
       "references": [
         { "type": "contains", "target": "manifest.cluiche_main" },
-        { "type": "contains", "target": "manifest.cluiche_render" },
-        { "type": "contains", "target": "manifest.cluiche_sim" },
         { "type": "contains", "target": "shader.ui_frag" },
         { "type": "contains", "target": "folder.bootstrap_ui" },
         { "type": "contains", "target": "folder.webix_5_2_1" },
@@ -36,20 +34,6 @@
       "id": "manifest.cluiche_main",
       "type": "manifest",
       "source_path": "Global/misc/ApplicationFlow/cluiche_main.diaapp",
-      "scope": "global",
-      "tags": ["misc/ApplicationFlow"]
-    },
-    {
-      "id": "manifest.cluiche_render",
-      "type": "manifest",
-      "source_path": "Global/misc/ApplicationFlow/cluiche_render.diaapp",
-      "scope": "global",
-      "tags": ["misc/ApplicationFlow"]
-    },
-    {
-      "id": "manifest.cluiche_sim",
-      "type": "manifest",
-      "source_path": "Global/misc/ApplicationFlow/cluiche_sim.diaapp",
       "scope": "global",
       "tags": ["misc/ApplicationFlow"]
     },

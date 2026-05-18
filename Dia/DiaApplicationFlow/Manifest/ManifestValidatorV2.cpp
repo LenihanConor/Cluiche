@@ -25,6 +25,10 @@ namespace Dia { namespace ApplicationFlow {
         CheckOrphanStreams(manifest);
         CheckEmptyStages(manifest);
         CheckMultiWriterViolations(manifest);
+        CheckStreamReadsWritesBinding(manifest);
+        CheckStreamPayloadTypes(manifest);
+        CheckStreamOrphanReadersWriters(manifest);
+        CheckReservedPrefixViolations(manifest);
     }
 
     bool ManifestValidatorV2::HasErrors() const
@@ -765,6 +769,210 @@ namespace Dia { namespace ApplicationFlow {
         }
 
         return processedCount < moduleCount;
+    }
+
+    //-----------------------------------------------------------------------------
+    // IsReservedStreamId
+    //
+    // Reserved streams start with '$' (e.g. $lifecycle).  They are allowed in
+    // module reads/writes without a corresponding manifest declaration.
+    //-----------------------------------------------------------------------------
+    /*static*/ bool ManifestValidatorV2::IsReservedStreamId(const Dia::Core::StringCRC& id)
+    {
+        const char* str = id.AsChar();
+        return (str != nullptr && str[0] == '$');
+    }
+
+    //-----------------------------------------------------------------------------
+    // CheckStreamReadsWritesBinding
+    //
+    // For each module in each PU, every entry in reads[] and writes[] must
+    // reference a stream declared in manifest.streams — unless the stream ID
+    // starts with '$', which marks it as a reserved/built-in stream.
+    //
+    // Error codes: UNKNOWN_STREAM_IN_READS, UNKNOWN_STREAM_IN_WRITES
+    //-----------------------------------------------------------------------------
+    void ManifestValidatorV2::CheckStreamReadsWritesBinding(const ApplicationManifestV2& manifest)
+    {
+        // Build flat set of declared stream ids
+        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16> declaredIds;
+        for (unsigned int i = 0; i < manifest.streams.Size(); ++i)
+        {
+            declaredIds.Add(manifest.streams[i].id);
+        }
+
+        auto isDeclared = [&declaredIds](const Dia::Core::StringCRC& id) -> bool {
+            for (unsigned int i = 0; i < declaredIds.Size(); ++i)
+            {
+                if (declaredIds[i] == id)
+                {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        for (unsigned int p = 0; p < manifest.processingUnits.Size(); ++p)
+        {
+            const ProcessingUnitDeclaration& pu = manifest.processingUnits[p];
+            for (unsigned int m = 0; m < pu.modules.Size(); ++m)
+            {
+                const ModuleDeclaration& mod = pu.modules[m];
+
+                for (unsigned int r = 0; r < mod.reads.Size(); ++r)
+                {
+                    const Dia::Core::StringCRC& streamId = mod.reads[r];
+                    if (IsReservedStreamId(streamId))
+                    {
+                        continue;  // reserved streams are always allowed in reads
+                    }
+                    if (!isDeclared(streamId))
+                    {
+                        Dia::Core::Containers::String256 msg;
+                        msg.Format("Module '%s' in PU '%s' reads undeclared stream '%s'",
+                            mod.instanceId.AsChar(), pu.instanceId.AsChar(), streamId.AsChar());
+                        AddError("UNKNOWN_STREAM_IN_READS", msg.AsCStr(), mod.instanceId);
+                    }
+                }
+
+                for (unsigned int w = 0; w < mod.writes.Size(); ++w)
+                {
+                    const Dia::Core::StringCRC& streamId = mod.writes[w];
+                    if (IsReservedStreamId(streamId))
+                    {
+                        continue;
+                    }
+                    if (!isDeclared(streamId))
+                    {
+                        Dia::Core::Containers::String256 msg;
+                        msg.Format("Module '%s' in PU '%s' writes undeclared stream '%s'",
+                            mod.instanceId.AsChar(), pu.instanceId.AsChar(), streamId.AsChar());
+                        AddError("UNKNOWN_STREAM_IN_WRITES", msg.AsCStr(), mod.instanceId);
+                    }
+                }
+            }
+        }
+    }
+
+    //-----------------------------------------------------------------------------
+    // CheckStreamPayloadTypes
+    //
+    // For each stream declaration: if kind is set but payload_type is empty
+    // (Value() == 0), emit a PAYLOAD_TYPE_MISSING warning.  The actual type-tag
+    // check happens at Connect() time in the handles — this is a manifest-level
+    // early warning only.  No StreamTypeRegistry dependency.
+    //-----------------------------------------------------------------------------
+    void ManifestValidatorV2::CheckStreamPayloadTypes(const ApplicationManifestV2& manifest)
+    {
+        for (unsigned int i = 0; i < manifest.streams.Size(); ++i)
+        {
+            const StreamDeclaration& decl = manifest.streams[i];
+
+            if (decl.kind.Value() != 0 && decl.payloadType.Value() == 0)
+            {
+                Dia::Core::Containers::String256 msg;
+                msg.Format("Stream '%s' has kind '%s' but no payload_type — type will not be validated until Connect()",
+                    decl.id.AsChar(), decl.kind.AsChar());
+                AddWarning("PAYLOAD_TYPE_MISSING", msg.AsCStr(), decl.id);
+            }
+        }
+    }
+
+    //-----------------------------------------------------------------------------
+    // CheckStreamOrphanReadersWriters
+    //
+    // For each declared stream, scan all module reads/writes across all PUs.
+    // - Stream has readers but no writers → ORPHAN_READER_STREAM (warning)
+    // - Stream has writers but no readers → ORPHAN_WRITER_STREAM (warning)
+    //   (multiWriter streams still warn — write-only may be intentional logging
+    //    but worth flagging)
+    //-----------------------------------------------------------------------------
+    void ManifestValidatorV2::CheckStreamOrphanReadersWriters(const ApplicationManifestV2& manifest)
+    {
+        for (unsigned int si = 0; si < manifest.streams.Size(); ++si)
+        {
+            const StreamDeclaration& stream = manifest.streams[si];
+            const Dia::Core::StringCRC& streamId = stream.id;
+
+            bool hasReader = false;
+            bool hasWriter = false;
+
+            for (unsigned int p = 0; p < manifest.processingUnits.Size(); ++p)
+            {
+                const ProcessingUnitDeclaration& pu = manifest.processingUnits[p];
+                for (unsigned int m = 0; m < pu.modules.Size(); ++m)
+                {
+                    const ModuleDeclaration& mod = pu.modules[m];
+
+                    for (unsigned int r = 0; r < mod.reads.Size(); ++r)
+                    {
+                        if (mod.reads[r] == streamId)
+                        {
+                            hasReader = true;
+                        }
+                    }
+
+                    for (unsigned int w = 0; w < mod.writes.Size(); ++w)
+                    {
+                        if (mod.writes[w] == streamId)
+                        {
+                            hasWriter = true;
+                        }
+                    }
+                }
+            }
+
+            if (hasReader && !hasWriter)
+            {
+                Dia::Core::Containers::String256 msg;
+                msg.Format("Stream '%s' has readers but no writers", streamId.AsChar());
+                AddWarning("ORPHAN_READER_STREAM", msg.AsCStr(), streamId);
+            }
+
+            if (hasWriter && !hasReader)
+            {
+                Dia::Core::Containers::String256 msg;
+                msg.Format("Stream '%s' has writers but no readers", streamId.AsChar());
+                AddWarning("ORPHAN_WRITER_STREAM", msg.AsCStr(), streamId);
+            }
+        }
+    }
+
+    //-----------------------------------------------------------------------------
+    // CheckReservedPrefixViolations
+    //
+    // User-declared streams and module instance IDs must NOT start with '$'.
+    // The '$' prefix is reserved for framework-auto-created streams (SD-018).
+    //-----------------------------------------------------------------------------
+    void ManifestValidatorV2::CheckReservedPrefixViolations(const ApplicationManifestV2& manifest)
+    {
+        for (unsigned int i = 0; i < manifest.streams.Size(); ++i)
+        {
+            const Dia::Core::StringCRC& id = manifest.streams[i].id;
+            if (IsReservedStreamId(id))
+            {
+                Dia::Core::Containers::String256 msg;
+                msg.Format("Stream '%s' uses reserved '$' prefix — framework-owned streams cannot be declared in the manifest",
+                    id.AsChar());
+                AddError("RESERVED_PREFIX", msg.AsCStr(), id);
+            }
+        }
+
+        for (unsigned int p = 0; p < manifest.processingUnits.Size(); ++p)
+        {
+            const ProcessingUnitDeclaration& pu = manifest.processingUnits[p];
+            for (unsigned int m = 0; m < pu.modules.Size(); ++m)
+            {
+                const Dia::Core::StringCRC& id = pu.modules[m].instanceId;
+                if (IsReservedStreamId(id))
+                {
+                    Dia::Core::Containers::String256 msg;
+                    msg.Format("Module instance_id '%s' in PU '%s' uses reserved '$' prefix",
+                        id.AsChar(), pu.instanceId.AsChar());
+                    AddError("RESERVED_PREFIX", msg.AsCStr(), id);
+                }
+            }
+        }
     }
 
 }} // namespace Dia::ApplicationFlow

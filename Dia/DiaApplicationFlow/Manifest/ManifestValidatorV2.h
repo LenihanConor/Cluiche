@@ -43,8 +43,16 @@ namespace Dia { namespace ApplicationFlow {
         void CheckEmptyStages(const ApplicationManifestV2& manifest);
         void CheckMultiWriterViolations(const ApplicationManifestV2& manifest);
 
+        void CheckStreamReadsWritesBinding(const ApplicationManifestV2& manifest);   // reads/writes reference declared streams
+        void CheckStreamPayloadTypes(const ApplicationManifestV2& manifest);          // payload_type registered
+        void CheckStreamOrphanReadersWriters(const ApplicationManifestV2& manifest);  // orphan reader/writer detection
+        void CheckReservedPrefixViolations(const ApplicationManifestV2& manifest);    // user $ prefix forbidden
+
         // Kahn's algorithm cycle detection — returns true if cycle found
         bool DetectCycle(const ProcessingUnitDeclaration& pu);
+
+        // Returns true if the stream id is a reserved stream (e.g. $lifecycle)
+        static bool IsReservedStreamId(const Dia::Core::StringCRC& id);
     };
 
 }} // namespace Dia::ApplicationFlow

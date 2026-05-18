@@ -9,26 +9,32 @@
     "streams": [
         {
             "id": "InputToSim",
-            "type": "EventStream",
+            "kind": "EventStream",
+            "payload_type": "InputEvent",
+            "overflow": "drop-oldest",
             "from": "MainPU",
             "to": "SimPU"
         },
         {
             "id": "SimToRender",
-            "type": "FrameStream",
+            "kind": "FrameStream",
+            "payload_type": "FrameData",
             "from": "SimPU",
             "to": "RenderPU",
             "multi_writer": true
         },
         {
             "id": "SimToUI",
-            "type": "EventStream",
+            "kind": "EventStream",
+            "payload_type": "UICommand",
+            "overflow": "drop-oldest",
             "from": "SimPU",
             "to": "MainPU"
         },
         {
             "id": "UIToSim",
-            "type": "FrameStream",
+            "kind": "FrameStream",
+            "payload_type": "UIDataBuffer",
             "from": "MainPU",
             "to": "SimPU"
         }

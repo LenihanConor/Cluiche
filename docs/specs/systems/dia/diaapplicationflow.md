@@ -268,7 +268,11 @@ Active → [DoStop called each frame] → kStopping... → kDone → Inactive
 | Registration | One-liner DIA_MODULE macro, TypeRegistry, constexpr StringCRC type IDs | [registration.md](../../features/dia/diaapplicationflow/registration.md) | Approved |
 | Config Format v2 | Manifest schema with stages, streams, module stage membership, version field | [config-format.md](../../features/dia/diaapplicationflow/config-format.md) | Approved |
 | Validation | Full manifest validation at load (deps, cycles, streams, stage coverage, type existence) | [validation.md](../../features/dia/diaapplicationflow/validation.md) | Approved |
-| Streams | Framework-owned FrameStream/EventStream, config-declared, StreamReader/StreamWriter handles | [streams.md](../../features/dia/diaapplicationflow/streams.md) | Approved |
+| Streams | Framework-owned FrameStream/EventStream, config-declared, StreamReader/StreamWriter handles | [streams.md](../../features/dia/diaapplicationflow/streams.md) | Superseded |
+| Stream Topology — Manifest-Authoritative | Manifest creates stores; binds module reads/writes; type-tag check; per-stream caps from data; deletes v1 MessageBus + dead v1 phase manifests | [stream-topology-manifest.md](../../features/dia/diaapplicationflow/stream-topology-manifest.md) | Done |
+| Stream Policy & Envelope | Per-stream overflow policy (drop-oldest / drop-newest / block / fail-loud); framework-supplied Event<T> envelope (timestamp, sender, sequence) | [stream-policy-envelope.md](../../features/dia/diaapplicationflow/stream-policy-envelope.md) | Done |
+| Lifecycle Events | Reserved $lifecycle stream emits ModuleStateChanged, StageTransitionRequested/Started/Committed, RollbackAttempted, ShutdownRequested events from Application | [lifecycle-events.md](../../features/dia/diaapplicationflow/lifecycle-events.md) | Done |
+| Stream Tap & Debug Iteration | Type-erased AttachTap/DetachTap on any IStreamStore; per-payload-type JSON serializer registry; deletes DiaDebugServer/SubscriptionManager; DebugServer migrated onto taps | [stream-tap.md](../../features/dia/diaapplicationflow/stream-tap.md) | In Progress (tap API done; DebugServer migration deferred) |
 | Error Handling | Timeout per module, assert/rollback/shutdown policies, transition failure recovery | [error-handling.md](../../features/dia/diaapplicationflow/error-handling.md) | Approved |
 | Inspectable Interface | IApplicationInspectable for debug/editor/test consumers | [inspectable.md](../../features/dia/diaapplicationflow/inspectable.md) | Approved |
 
@@ -317,12 +321,12 @@ Active → [DoStop called each frame] → kStopping... → kDone → Inactive
 
 | ID | Decision | Rationale | Scope | Status | Binding |
 |----|----------|-----------|-------|--------|---------|
-| SD-001 | Config is sole source of truth for all structural wiring | Eliminates redundant code+config declarations; manifest is a complete, readable description of app structure | All features | Accepted | Yes |
+| SD-001 | Config is sole source of truth for all structural wiring | Eliminates redundant code+config declarations; manifest is a complete, readable description of app structure. Exception: reserved `$`-prefix streams (see SD-018) are auto-created by the framework without manifest declaration. | All features | Accepted | Yes |
 | SD-002 | Phase concept removed, replaced by config-declared Stages | Phases added complexity without matching real usage (boot→run). Stages are simpler, fully config-driven, and handle the real need (content switching). | All features | Accepted | Yes |
 | SD-003 | ModuleRef<T> is the sole module access pattern | Eliminates confusion of 3 access patterns (GetModule, FindModule, ModuleRef). One way to do one thing. | All features | Accepted | Yes |
 | SD-004 | TransitionTo is app-wide — all PUs transition together | Stages are an app concept. Infrastructure modules use "all" keyword to stay active. Simplifies reasoning about system state. | Stage System | Accepted | Yes |
 | SD-005 | Transitions execute at start of next frame (async, queued) | Prevents torn state mid-update. Predictable timing. Same as old QueuePhaseTransition but mandatory. | Stage System | Accepted | Yes |
-| SD-006 | Streams are framework-owned, declared in config | Streams are structural wiring (like PUs). Config makes dataflow visible and inspectable. StreamReader/StreamWriter are typed handles. | Streams | Accepted | Yes |
+| SD-006 | Streams are framework-owned, declared in config | Streams are structural wiring (like PUs). Config makes dataflow visible and inspectable. StreamReader/StreamWriter are typed handles. Exception: reserved `$`-prefix streams (see SD-018) are framework-created without manifest declaration. | Streams | Accepted | Yes |
 | SD-007 | MessageBus removed — EventStream replaces inter-module events | Unified communication model. One concept (streams) for all data flow. Fewer patterns to learn. | Streams | Accepted | Yes |
 | SD-008 | One-liner registration macro (DIA_MODULE) | Eliminates ~40 lines boilerplate per class. Still maps StringCRC→class for config resolution. | Registration | Accepted | Yes |
 | SD-009 | Module failure: assert debug, rollback release, shutdown on boot | Fail-fast in development. Graceful degradation in production. Boot failure is unrecoverable. | Error Handling | Accepted | Yes |
@@ -334,6 +338,7 @@ Active → [DoStop called each frame] → kStopping... → kDone → Inactive
 | SD-015 | No shared modules across PUs | Not a real case. Streams handle cross-PU data. Each PU owns its modules. Simpler ownership model. | All features | Accepted | Yes |
 | SD-016 | IApplicationInspectable exposes runtime state | Clean interface that debug, editor, and test consumers can adapt without coupling to framework internals. | Inspectable | Accepted | Yes |
 | SD-017 | Clean break — no backward compatibility with v1 | Shim code adds weeks of throwaway work. Old code deleted, old specs superseded, modules rewritten in one pass. | All features | Accepted | Yes |
+| SD-018 | Reserved `$`-prefix for framework-owned streams | Streams whose IDs begin with `$` are auto-created by the framework and do not require manifest declaration. User-declared stream IDs, module instance IDs, and sender StringCRCs starting with `$` are forbidden (validator returns `RESERVED_PREFIX` error). `$lifecycle` is the first reserved stream. Any module may subscribe to a reserved stream by listing it in `module.reads`; the validator allows `$`-prefix targets in `reads`. | Lifecycle Events (F2) | Accepted | Yes |
 
 **Status values:** `Proposed` · `Accepted` · `Rejected` · `Superseded`
 **Binding:** `Yes` = enforced constraint on all features in this system · `No` = guidance only

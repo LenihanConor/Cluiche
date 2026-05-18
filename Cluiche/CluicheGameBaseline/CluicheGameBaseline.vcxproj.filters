@@ -36,6 +36,12 @@
     <ClCompile Include="Modules\UIModule.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
+    <ClCompile Include="Types\InputEvent.cpp">
+      <Filter>Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Types\UICommand.cpp">
+      <Filter>Types</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\AssetServiceModule.h">

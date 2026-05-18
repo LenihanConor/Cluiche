@@ -13,51 +13,32 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
-    <ClCompile Include="ApplicationModule.cpp" />
-    <ClCompile Include="ApplicationPhase.cpp" />
-    <ClCompile Include="ApplicationProcessingUnit.cpp" />
-    <ClCompile Include="ApplicationStateObject.cpp" />
-    <ClCompile Include="MessageBus.cpp" />
-    <ClCompile Include="HotReloadManager.cpp" />
-    <ClCompile Include="Introspection\ApplicationIntrospector.cpp" />
-    <ClCompile Include="Loader\ApplicationLoader.cpp" />
-    <ClCompile Include="Manifest\ApplicationManifest.cpp" />
-    <ClCompile Include="Manifest\ApplicationManifestLoader.cpp" />
-    <ClCompile Include="Manifest\ManifestComposer.cpp" />
-    <ClCompile Include="Manifest\ManifestValidator.cpp" />
+    <ClCompile Include="LifecycleEvent.cpp" />
     <ClCompile Include="Manifest\ApplicationManifestLoaderV2.cpp" />
     <ClCompile Include="Manifest\ManifestComposerV2.cpp" />
     <ClCompile Include="Manifest\ManifestValidatorV2.cpp" />
     <ClCompile Include="Module.cpp" />
     <ClCompile Include="ProcessingUnit.cpp" />
     <ClCompile Include="TypeRegistry.cpp" />
-    <ClCompile Include="Manifest\JsonApplicationManifestSerializer.cpp" />
-    <ClCompile Include="TypeRegistry\ApplicationTypeRegistry.cpp" />
-    <ClCompile Include="Metrics\MetricsCollectorModule.cpp" />
+    <ClCompile Include="Streams\StreamTypeRegistry.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
     <ClInclude Include="IApplicationInspectable.h" />
     <ClInclude Include="IApplicationControl.h" />
+    <ClInclude Include="LifecycleEvent.h" />
     <ClInclude Include="Streams\IStreamStore.h" />
     <ClInclude Include="Streams\FrameStreamStore.h" />
     <ClInclude Include="Streams\EventStreamStore.h" />
+    <ClInclude Include="Streams\Event.h" />
+    <ClInclude Include="Streams\SendResult.h" />
+    <ClInclude Include="Streams\OverflowPolicy.h" />
     <ClInclude Include="Streams\StreamWriter.h" />
     <ClInclude Include="Streams\StreamReader.h" />
     <ClInclude Include="Streams\EventStreamWriter.h" />
     <ClInclude Include="Streams\EventStreamReader.h" />
-    <ClInclude Include="ApplicationModule.h" />
+    <ClInclude Include="Streams\StreamTypeRegistry.h" />
     <ClInclude Include="ModuleRef.h" />
-    <ClInclude Include="ApplicationPhase.h" />
-    <ClInclude Include="ApplicationProcessingUnit.h" />
-    <ClInclude Include="ApplicationStateObject.h" />
-    <ClInclude Include="MessageBus.h" />
-    <ClInclude Include="Introspection\ApplicationIntrospector.h" />
-    <ClInclude Include="Loader\ApplicationLoader.h" />
-    <ClInclude Include="Manifest\ApplicationManifest.h" />
-    <ClInclude Include="Manifest\ApplicationManifestLoader.h" />
-    <ClInclude Include="Manifest\ManifestComposer.h" />
-    <ClInclude Include="Manifest\ManifestValidator.h" />
     <ClInclude Include="Manifest\ApplicationManifestV2.h" />
     <ClInclude Include="Manifest\ApplicationManifestLoaderV2.h" />
     <ClInclude Include="Manifest\ManifestComposerV2.h" />
@@ -67,11 +48,7 @@
     <ClInclude Include="ProcessingUnit.h" />
     <ClInclude Include="RegistrationMacrosV2.h" />
     <ClInclude Include="TypeRegistry.h" />
-    <ClInclude Include="Manifest\JsonApplicationManifestSerializer.h" />
-    <ClInclude Include="Manifest\TypedImport.h" />
-    <ClInclude Include="TypeRegistry\ApplicationTypeRegistry.h" />
     <ClInclude Include="DebugDataTypes.h" />
-    <ClInclude Include="Metrics\MetricsCollectorModule.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{DD3D58EF-028B-42CB-B837-0042BA30D96F}</ProjectGuid>

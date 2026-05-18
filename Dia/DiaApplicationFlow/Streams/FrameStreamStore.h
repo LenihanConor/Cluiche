@@ -21,7 +21,9 @@ template<typename T>
 class FrameStreamStore : public IStreamStore
 {
 public:
-    explicit FrameStreamStore(const Dia::Core::StringCRC& id, bool multiWriter = false);
+    explicit FrameStreamStore(const Dia::Core::StringCRC& id,
+                              const Dia::Core::StringCRC& payloadType = Dia::Core::StringCRC::kZero,
+                              bool multiWriter = false);
 
     // Writer side
     void Write(const T& data, const Dia::Core::TimeAbsolute& timestamp);
@@ -33,6 +35,8 @@ public:
 
     const Dia::Core::StringCRC& GetId() const override;
     StreamKind GetKind() const override { return StreamKind::kFrame; }
+    const Dia::Core::StringCRC& GetPayloadType() const override { return mPayloadType; }
+    unsigned int GetMaxReaders() const override { return 0; }
 
 private:
     // Double buffer: two slots, atomic index selects which is "front"
@@ -44,6 +48,7 @@ private:
     };
 
     Dia::Core::StringCRC  mId;
+    Dia::Core::StringCRC  mPayloadType;
     bool                  mMultiWriter;
     Slot                  mSlots[2];
     std::atomic<int>      mFrontIndex{0};    // readers read mSlots[mFrontIndex]
@@ -55,8 +60,11 @@ private:
 // ---------------------------------------------------------------------------
 
 template<typename T>
-inline FrameStreamStore<T>::FrameStreamStore(const Dia::Core::StringCRC& id, bool multiWriter)
+inline FrameStreamStore<T>::FrameStreamStore(const Dia::Core::StringCRC& id,
+                                              const Dia::Core::StringCRC& payloadType,
+                                              bool multiWriter)
     : mId(id)
+    , mPayloadType(payloadType)
     , mMultiWriter(multiWriter)
     , mFrontIndex(0)
 {

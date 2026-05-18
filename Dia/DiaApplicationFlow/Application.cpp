@@ -6,6 +6,9 @@
 #include "DiaApplicationFlow/Module.h"
 #include "DiaApplicationFlow/Manifest/ManifestValidatorV2.h"
 #include "DiaApplicationFlow/IApplicationInspectable.h"
+#include "DiaApplicationFlow/LifecycleEvent.h"
+#include <DiaApplicationFlow/Streams/Event.h>
+#include <DiaCore/Time/TimeAbsolute.h>
 
 #include <DiaCore/Core/Assert.h>
 #include <DiaLogger/DiaLog.h>
@@ -107,6 +110,21 @@ namespace Dia { namespace ApplicationFlow {
             }
         }
 
+        // --- 1b. Create $lifecycle stream (framework-owned, bypasses manifest gating) ---
+        {
+            static const Dia::Core::StringCRC kLifecycleId("$lifecycle");
+            auto* lifecycleStore = new EventStreamStore<LifecycleEvent>(
+                kLifecycleId,
+                Dia::Core::StringCRC("LifecycleEvent"),
+                /*capacity=*/1024,
+                /*maxReaders=*/8);
+
+            DIA_ASSERT(mStreamStoreCount < kMaxStreams, "Application: stream capacity exceeded");
+            mLifecycleStore = lifecycleStore;
+            mStreamStores[mStreamStoreCount] = Dia::Core::UniquePtr<IStreamStore>(lifecycleStore);
+            ++mStreamStoreCount;
+        }
+
         // --- 2. Build PUs and modules from manifest --------------------------
         if (!BuildFromManifest())
         {
@@ -115,6 +133,13 @@ namespace Dia { namespace ApplicationFlow {
 
         // --- 2b. Connect stream handles across all modules -------------------
         ConnectModuleStreams();
+
+        if (mConnectFailed)
+        {
+            DIA_LOG_ERROR("Application",
+                          "Application::Start() — one or more stream connections failed manifest validation");
+            return false;
+        }
 
         // --- 3. Start dedicated threads (non-main PUs) -----------------------
         // PU index 0 is the main PU — it runs inline in Update().
@@ -269,6 +294,15 @@ namespace Dia { namespace ApplicationFlow {
                                   "Module failed in stage '%s' — attempting rollback (attempt %u/%u)",
                                   mCurrentStage.AsChar(), mRollbackAttempts, kMaxRollbackAttempts);
 
+                    {
+                        LifecycleEvent ev;
+                        ev.kind             = LifecycleEventKind::kRollbackAttempted;
+                        ev.fromStage        = mCurrentStage;
+                        ev.toStage          = mCurrentStage;
+                        ev.rollbackAttempt  = mRollbackAttempts;
+                        EmitLifecycleEvent(ev);
+                    }
+
                     // Stop all active modules in the current stage.
                     for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
                     {
@@ -310,6 +344,14 @@ namespace Dia { namespace ApplicationFlow {
 
     void Application::TransitionTo(const Dia::Core::StringCRC& stageId)
     {
+        {
+            LifecycleEvent ev;
+            ev.kind      = LifecycleEventKind::kStageTransitionRequested;
+            ev.fromStage = mCurrentStage;
+            ev.toStage   = stageId;
+            EmitLifecycleEvent(ev);
+        }
+
         std::lock_guard<std::mutex> lock(mTransitionMutex);
         mPendingStage = stageId;
         mHasPendingTransition.store(true);
@@ -327,6 +369,19 @@ namespace Dia { namespace ApplicationFlow {
         }
 
         DIA_LOG_INFO("Application", "Application shutdown requested");
+
+        // Emit lifecycle event before signalling threads.
+        {
+            LifecycleEvent ev;
+            ev.kind = LifecycleEventKind::kShutdownRequested;
+            EmitLifecycleEvent(ev);
+        }
+
+        // Unblock any kBlock EventStreamStore writers waiting on condvar.
+        for (unsigned int i = 0; i < mStreamStoreCount; ++i)
+        {
+            mStreamStores[i]->NotifyShutdown();
+        }
 
         // Signal dedicated-PU threads to stop their loops.  Do NOT join here
         // — RequestShutdown is thread-safe and may be invoked from inside a
@@ -461,7 +516,7 @@ namespace Dia { namespace ApplicationFlow {
             const StreamDeclaration& sd = mManifest.streams[i];
             StreamInfo si;
             si.id          = sd.id;
-            si.type        = sd.type;
+            si.type        = sd.kind;  // kind maps to the legacy 'type' field in StreamInfo
             si.fromPU      = sd.fromPU;
             si.toPU        = sd.toPU;
             si.multiWriter = sd.multiWriter;
@@ -553,6 +608,14 @@ namespace Dia { namespace ApplicationFlow {
         DIA_LOG_INFO("Application", "Stage transition: '%s' -> '%s'",
                      mCurrentStage.AsChar(), newStage.AsChar());
 
+        {
+            LifecycleEvent ev;
+            ev.kind      = LifecycleEventKind::kStageTransitionStarted;
+            ev.fromStage = mCurrentStage;
+            ev.toStage   = newStage;
+            EmitLifecycleEvent(ev);
+        }
+
         const Dia::Core::StringCRC oldStage = mCurrentStage;
 
         // --- Stop modules active in old stage but NOT in new stage -----------
@@ -623,6 +686,14 @@ namespace Dia { namespace ApplicationFlow {
 
         DIA_LOG_INFO("Application", "Stage transition drain complete, entering '%s'",
                      newStage.AsChar());
+
+        {
+            LifecycleEvent ev;
+            ev.kind      = LifecycleEventKind::kStageTransitionCommitted;
+            ev.fromStage = oldStage;
+            ev.toStage   = newStage;
+            EmitLifecycleEvent(ev);
+        }
 
         // Start modules in new stage that are not already started (forward dep order).
         for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
@@ -763,7 +834,7 @@ namespace Dia { namespace ApplicationFlow {
     void Application::ConnectModuleStreams()
     {
         // Stream-store registration is only permitted inside this window.
-        // See FindOrRegisterStreamStoreAtStartup for the rationale.
+        // See RegisterOrFindStreamStore for the rationale.
         mConnectingStreams = true;
 
         for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
@@ -800,14 +871,40 @@ namespace Dia { namespace ApplicationFlow {
     }
 
     //--------------------------------------------------------------------------
-    // FindOrRegisterStreamStoreAtStartup  (public, main-thread, startup-only)
+    // RegisterOrFindStreamStore  (public, main-thread, startup-only)
+    //
+    // Manifest-gating (F1 AC1): rejects streams not declared in the manifest.
     //--------------------------------------------------------------------------
 
-    IStreamStore* Application::FindOrRegisterStreamStoreAtStartup(Dia::Core::UniquePtr<IStreamStore> newStore)
+    IStreamStore* Application::RegisterOrFindStreamStore(Dia::Core::UniquePtr<IStreamStore> newStore)
     {
         DIA_ASSERT(mConnectingStreams,
-                   "FindOrRegisterStreamStoreAtStartup called outside OnConnectStreams — "
+                   "RegisterOrFindStreamStore called outside OnConnectStreams — "
                    "mStreamStores is only main-thread-safe during startup");
+
+        // --- Manifest-gating: stream ID must be declared in manifest ---------
+        bool declaredInManifest = false;
+        for (unsigned int i = 0; i < mManifest.streams.Size(); ++i)
+        {
+            if (mManifest.streams[i].id == newStore->GetId())
+            {
+                declaredInManifest = true;
+                break;
+            }
+        }
+
+        if (!declaredInManifest)
+        {
+            DIA_LOG_ERROR("Application",
+                          "RegisterOrFindStreamStore: stream '%s' not declared in manifest",
+                          newStore->GetId().AsChar());
+            DIA_ASSERT(false,
+                       "RegisterOrFindStreamStore: stream '%s' not declared in manifest — "
+                       "add it to manifest.streams[]",
+                       newStore->GetId().AsChar());
+            mConnectFailed = true;
+            return nullptr;
+        }
 
         // If a store with this ID is already registered, discard the new one
         // and return the existing (first-registrant wins).
@@ -821,6 +918,7 @@ namespace Dia { namespace ApplicationFlow {
                    "Application: stream store capacity exceeded (max %u)", kMaxStreams);
         if (mStreamStoreCount >= kMaxStreams)
         {
+            mConnectFailed = true;
             return nullptr;
         }
 
@@ -828,6 +926,25 @@ namespace Dia { namespace ApplicationFlow {
         mStreamStores[mStreamStoreCount] = std::move(newStore);
         ++mStreamStoreCount;
         return raw;
+    }
+
+    //--------------------------------------------------------------------------
+    // EmitLifecycleEvent  (public)
+    //--------------------------------------------------------------------------
+
+    void Application::EmitLifecycleEvent(const LifecycleEvent& ev)
+    {
+        if (!mLifecycleStore)
+            return;
+
+        static const Dia::Core::StringCRC kFrameworkId("$framework");
+
+        Event<LifecycleEvent> wrapped;
+        wrapped.timestampUs = Dia::Core::TimeAbsolute::GetSystemTime().AsLongLongInMicroseconds();
+        wrapped.senderCrc   = kFrameworkId.Value();
+        wrapped.sequence    = 0;  // stamped inside EventStreamStore::SendInternal
+        wrapped.payload     = ev;
+        mLifecycleStore->Send(wrapped);
     }
 
 }} // namespace Dia::ApplicationFlow

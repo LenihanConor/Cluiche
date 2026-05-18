@@ -2,6 +2,7 @@
 
 #include <DiaLogger/DiaLog.h>
 #include <DiaApplicationFlow/Application.h>
+#include <DiaApplicationFlow/Streams/Event.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaCore/Core/Assert.h>
@@ -66,7 +67,7 @@ void UIModule::DoUpdate(float /*dt*/)
     }
 
     // Drain HUD commands from Sim (FPS, Score, etc.).
-    Dia::Core::Containers::DynamicArrayC<UICommand, 32> pending;
+    Dia::Core::Containers::DynamicArrayC<Dia::ApplicationFlow::Event<UICommand>, 32> pending;
     mUICommands.Consume(pending);
 
     mUISystem->Update();

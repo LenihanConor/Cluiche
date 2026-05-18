@@ -257,14 +257,14 @@ TEST(Validation, DuplicateStreamIdReportsError)
     // Two streams with the same id.
     StreamDeclaration s1;
     s1.id          = StringCRC("DataStream");
-    s1.type        = StringCRC("int");
+    s1.kind        = StringCRC("EventStream");
     s1.fromPU      = StringCRC("MainPU");
     s1.toPU        = StringCRC("SecondPU");
     s1.multiWriter = false;
 
     StreamDeclaration s2;
     s2.id          = StringCRC("DataStream");  // duplicate
-    s2.type        = StringCRC("int");
+    s2.kind        = StringCRC("EventStream");
     s2.fromPU      = StringCRC("MainPU");
     s2.toPU        = StringCRC("SecondPU");
     s2.multiWriter = false;
@@ -288,7 +288,7 @@ TEST(Validation, UnknownStreamPUReportsError)
 
     StreamDeclaration s;
     s.id          = StringCRC("MyStream");
-    s.type        = StringCRC("int");
+    s.kind        = StringCRC("EventStream");
     s.fromPU      = StringCRC("GhostPU");  // does not exist in manifest
     s.toPU        = StringCRC("MainPU");
     s.multiWriter = false;
@@ -538,7 +538,7 @@ TEST(Validation, MultiWriterViolationReportsError)
 
     StreamDeclaration stream;
     stream.id          = StringCRC("SharedStream");
-    stream.type        = StringCRC("int");
+    stream.kind        = StringCRC("EventStream");
     stream.fromPU      = StringCRC("MainPU");
     stream.toPU        = StringCRC("MainPU");
     stream.multiWriter = false;  // single writer only
@@ -620,7 +620,7 @@ TEST(Validation, OrphanStreamReportsWarning)
     // Stream declared but never written.
     StreamDeclaration s;
     s.id          = StringCRC("UnusedStream");
-    s.type        = StringCRC("int");
+    s.kind        = StringCRC("EventStream");
     s.fromPU      = StringCRC("MainPU");
     s.toPU        = StringCRC("MainPU");
     s.multiWriter = false;

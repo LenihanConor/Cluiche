@@ -11,6 +11,8 @@
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaApplicationFlow/Streams/IStreamStore.h>
+#include <DiaApplicationFlow/Streams/EventStreamStore.h>
+#include <DiaApplicationFlow/LifecycleEvent.h>
 #include <DiaApplicationFlow/IApplicationInspectable.h>
 #include <DiaApplicationFlow/IApplicationControl.h>
 #include <DiaCore/CRC/StringCRC.h>
@@ -78,22 +80,31 @@ namespace Dia { namespace ApplicationFlow {
 
         // Stream store registry — main-thread-only, startup-only.
         //
-        // FindOrRegisterStreamStoreAtStartup: takes ownership of newStore. If a
+        // RegisterOrFindStreamStore: takes ownership of newStore. If a
         // store with the same ID already exists, returns the existing one
         // (first-registrant wins) and the passed-in store is discarded.
-        // Always returns non-null on success; returns null only if capacity
-        // is exceeded (asserts in debug).
+        // Returns non-null on success; returns nullptr if:
+        //   - the stream ID is not declared in mManifest.streams (manifest-gating)
+        //   - capacity is exceeded (asserts in debug)
+        //
+        // Manifest-gating (AC1): a handle whose streamId does not appear in
+        // manifest.streams[] causes Start() to return false. The mConnectFailed
+        // flag is set on any such violation and checked after ConnectModuleStreams().
         //
         // Contract: only call during Module::OnConnectStreams, which runs
         // once on the main thread from Application::Start() before any
         // dedicated PU threads are launched.  Calling it after Start() has
         // completed (i.e. from DoStart/DoUpdate/DoStop) asserts in debug;
         // in release the unsynchronized store array would be a data race.
-        IStreamStore* FindOrRegisterStreamStoreAtStartup(Dia::Core::UniquePtr<IStreamStore> newStore);
+        IStreamStore* RegisterOrFindStreamStore(Dia::Core::UniquePtr<IStreamStore> newStore);
 
         // FindStreamStore: lookup only, no creation. Returns null if not found.
         // Safe to call at any time — mStreamStores is immutable after Start().
         IStreamStore* FindStreamStore(const Dia::Core::StringCRC& id) const;
+
+        // Emit a lifecycle event on the $lifecycle stream.
+        // Called internally by Application and Module; not part of the public module API.
+        void EmitLifecycleEvent(const LifecycleEvent& ev);
 
     private:
         // Maximum number of ProcessingUnits supported (matches spec).
@@ -104,7 +115,7 @@ namespace Dia { namespace ApplicationFlow {
         static constexpr unsigned int kMaxDedicatedThreads = kMaxProcessingUnits - 1;
 
         // Maximum number of stream stores (frame + event combined).
-        static constexpr unsigned int kMaxStreams = 16;
+        static constexpr unsigned int kMaxStreams = 64;
 
         // --- Helpers -----------------------------------------------------------
 
@@ -172,9 +183,19 @@ namespace Dia { namespace ApplicationFlow {
         bool                 mStarted = false;
         bool                 mShutdownInitiated = false;  // tracks whether BeginStopAllActive has been called
         // True only while ConnectModuleStreams() is running.  Guards
-        // FindOrRegisterStreamStoreAtStartup — calls outside this window
+        // RegisterOrFindStreamStore — calls outside this window
         // would race against dedicated-PU threads.
         bool                 mConnectingStreams = false;
+
+        // Set to true by RegisterOrFindStreamStore when a handle attempts to
+        // connect a stream whose ID is not declared in mManifest.streams.
+        // Checked after ConnectModuleStreams() — causes Start() to return false.
+        bool                 mConnectFailed = false;
+
+        // F2: framework-owned $lifecycle EventStreamStore.
+        // Created in Start() before module stream connection; capacity 1024.
+        // EmitLifecycleEvent() stamps the Event<T> envelope and calls Send directly.
+        EventStreamStore<LifecycleEvent>* mLifecycleStore = nullptr;
 
         // Transition drain state: set when outgoing modules are being stopped before
         // incoming modules can be started. Cleared once all outgoing are kInactive.

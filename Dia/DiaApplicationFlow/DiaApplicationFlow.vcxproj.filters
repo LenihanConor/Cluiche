@@ -22,31 +22,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
+    <ClCompile Include="LifecycleEvent.cpp" />
     <ClCompile Include="Module.cpp" />
     <ClCompile Include="ProcessingUnit.cpp" />
     <ClCompile Include="TypeRegistry.cpp" />
-    <ClCompile Include="ApplicationProcessingUnit.cpp" />
-    <ClCompile Include="ApplicationStateObject.cpp" />
-    <ClCompile Include="ApplicationPhase.cpp" />
-    <ClCompile Include="ApplicationModule.cpp" />
-    <ClCompile Include="MessageBus.cpp" />
-    <ClCompile Include="HotReloadManager.cpp" />
-    <ClCompile Include="Loader\ApplicationLoader.cpp">
-      <Filter>Loader</Filter>
-    </ClCompile>
-    <ClCompile Include="Manifest\ApplicationManifest.cpp">
-      <Filter>Manifest</Filter>
-    </ClCompile>
-    <ClCompile Include="Manifest\ApplicationManifestLoader.cpp">
-      <Filter>Manifest</Filter>
-    </ClCompile>
     <ClCompile Include="Manifest\ApplicationManifestLoaderV2.cpp">
-      <Filter>Manifest</Filter>
-    </ClCompile>
-    <ClCompile Include="Manifest\ManifestComposer.cpp">
-      <Filter>Manifest</Filter>
-    </ClCompile>
-    <ClCompile Include="Manifest\ManifestValidator.cpp">
       <Filter>Manifest</Filter>
     </ClCompile>
     <ClCompile Include="Manifest\ManifestComposerV2.cpp">
@@ -55,20 +35,15 @@
     <ClCompile Include="Manifest\ManifestValidatorV2.cpp">
       <Filter>Manifest</Filter>
     </ClCompile>
-    <ClCompile Include="TypeRegistry\ApplicationTypeRegistry.cpp">
-      <Filter>TypeRegistry</Filter>
-    </ClCompile>
-    <ClCompile Include="Introspection\ApplicationIntrospector.cpp">
-      <Filter>Introspection</Filter>
-    </ClCompile>
-    <ClCompile Include="Metrics\MetricsCollectorModule.cpp">
-      <Filter>Metrics</Filter>
+    <ClCompile Include="Streams\StreamTypeRegistry.cpp">
+      <Filter>Streams</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
     <ClInclude Include="IApplicationInspectable.h" />
     <ClInclude Include="IApplicationControl.h" />
+    <ClInclude Include="LifecycleEvent.h" />
     <ClInclude Include="Module.h" />
     <ClInclude Include="Streams\IStreamStore.h">
       <Filter>Streams</Filter>
@@ -77,6 +52,15 @@
       <Filter>Streams</Filter>
     </ClInclude>
     <ClInclude Include="Streams\EventStreamStore.h">
+      <Filter>Streams</Filter>
+    </ClInclude>
+    <ClInclude Include="Streams\Event.h">
+      <Filter>Streams</Filter>
+    </ClInclude>
+    <ClInclude Include="Streams\SendResult.h">
+      <Filter>Streams</Filter>
+    </ClInclude>
+    <ClInclude Include="Streams\OverflowPolicy.h">
       <Filter>Streams</Filter>
     </ClInclude>
     <ClInclude Include="Streams\StreamWriter.h">
@@ -91,35 +75,18 @@
     <ClInclude Include="Streams\EventStreamReader.h">
       <Filter>Streams</Filter>
     </ClInclude>
+    <ClInclude Include="Streams\StreamTypeRegistry.h">
+      <Filter>Streams</Filter>
+    </ClInclude>
     <ClInclude Include="ProcessingUnit.h" />
     <ClInclude Include="TypeRegistry.h" />
     <ClInclude Include="ModuleRefV2.h" />
     <ClInclude Include="RegistrationMacrosV2.h" />
-    <ClInclude Include="ApplicationProcessingUnit.h" />
-    <ClInclude Include="ApplicationStateObject.h" />
-    <ClInclude Include="ApplicationModule.h" />
     <ClInclude Include="ModuleRef.h" />
-    <ClInclude Include="ApplicationPhase.h" />
-    <ClInclude Include="MessageBus.h" />
-    <ClInclude Include="Loader\ApplicationLoader.h">
-      <Filter>Loader</Filter>
-    </ClInclude>
-    <ClInclude Include="Manifest\ApplicationManifest.h">
-      <Filter>Manifest</Filter>
-    </ClInclude>
-    <ClInclude Include="Manifest\ApplicationManifestLoader.h">
-      <Filter>Manifest</Filter>
-    </ClInclude>
     <ClInclude Include="Manifest\ApplicationManifestV2.h">
       <Filter>Manifest</Filter>
     </ClInclude>
     <ClInclude Include="Manifest\ApplicationManifestLoaderV2.h">
-      <Filter>Manifest</Filter>
-    </ClInclude>
-    <ClInclude Include="Manifest\ManifestComposer.h">
-      <Filter>Manifest</Filter>
-    </ClInclude>
-    <ClInclude Include="Manifest\ManifestValidator.h">
       <Filter>Manifest</Filter>
     </ClInclude>
     <ClInclude Include="Manifest\ManifestComposerV2.h">
@@ -128,18 +95,6 @@
     <ClInclude Include="Manifest\ManifestValidatorV2.h">
       <Filter>Manifest</Filter>
     </ClInclude>
-    <ClInclude Include="Manifest\TypedImport.h">
-      <Filter>Manifest</Filter>
-    </ClInclude>
-    <ClInclude Include="TypeRegistry\ApplicationTypeRegistry.h">
-      <Filter>TypeRegistry</Filter>
-    </ClInclude>
-    <ClInclude Include="Introspection\ApplicationIntrospector.h">
-      <Filter>Introspection</Filter>
-    </ClInclude>
     <ClInclude Include="DebugDataTypes.h" />
-    <ClInclude Include="Metrics\MetricsCollectorModule.h">
-      <Filter>Metrics</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>

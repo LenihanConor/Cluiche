@@ -3,6 +3,7 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Strings/String256.h>
+#include <DiaApplicationFlow/Streams/OverflowPolicy.h>
 
 namespace Dia { namespace ApplicationFlow {
 
@@ -10,10 +11,22 @@ namespace Dia { namespace ApplicationFlow {
     struct StreamDeclaration
     {
         Dia::Core::StringCRC id;
-        Dia::Core::StringCRC type;
+
+        // v2.1 fields
+        Dia::Core::StringCRC kind;         // "EventStream" or "FrameStream"
+        Dia::Core::StringCRC payloadType;  // e.g. "InputEvent" — must match DIA_STREAM_TYPE registration
+
         Dia::Core::StringCRC fromPU;
         Dia::Core::StringCRC toPU;
         bool multiWriter = false;
+
+        // Per-stream capacity and reader cap (optional in manifest; 0 = use defaults)
+        unsigned int capacity   = 0;
+        unsigned int maxReaders = 0;
+
+        // F3 policy fields (EventStream only; ignored for FrameStream)
+        OverflowPolicy overflowPolicy  = OverflowPolicy::kDropOldest;
+        unsigned int   blockTimeoutMs  = 100;
     };
 
     // Describes a single module instance within a processing unit

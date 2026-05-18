@@ -6,6 +6,7 @@
 #include "DiaApplicationFlow/Application.h"
 #include "DiaApplicationFlow/IApplicationControl.h"
 #include "DiaApplicationFlow/ProcessingUnit.h"
+#include "DiaApplicationFlow/LifecycleEvent.h"
 
 #include <DiaCore/Core/Assert.h>
 #include <DiaLogger/DiaLog.h>
@@ -75,6 +76,27 @@ namespace Dia { namespace ApplicationFlow {
     }
 
     //--------------------------------------------------------------------------
+    void Module::SetLifecycleEmitter(Application* app)
+    {
+        // We reuse mApplication for lifecycle emission (it's the same pointer).
+        // This method exists so the call site is explicit.
+        (void)app;  // already set via SetApplication
+    }
+
+    //--------------------------------------------------------------------------
+    void Module::EmitModuleStateChanged(ModuleState prev, ModuleState next)
+    {
+        if (!mApplication)
+            return;
+        LifecycleEvent ev;
+        ev.kind             = LifecycleEventKind::kModuleStateChanged;
+        ev.moduleInstanceId = mInstanceId;
+        ev.previousState    = prev;
+        ev.newState         = next;
+        mApplication->EmitLifecycleEvent(ev);
+    }
+
+    //--------------------------------------------------------------------------
     void Module::TransitionTo(const Dia::Core::StringCRC& stageId)
     {
         DIA_ASSERT(mApplication != nullptr,
@@ -93,9 +115,8 @@ namespace Dia { namespace ApplicationFlow {
 
         mStateElapsedMs = 0.0f;
         mStartLogged    = false;
-        // Release: publish mStateElapsedMs / mStartLogged resets before the
-        // dedicated PU thread observes kStarting and begins ticking DoStart().
         mState.store(ModuleState::kStarting, std::memory_order_release);
+        EmitModuleStateChanged(ModuleState::kInactive, ModuleState::kStarting);
 
         DIA_LOG_INFO("Application", "Module '%s' (PU '%s') BeginStart", mInstanceId.AsChar(), PuName(mProcessingUnit));
     }
@@ -109,8 +130,8 @@ namespace Dia { namespace ApplicationFlow {
 
         mStateElapsedMs = 0.0f;
         mStopLogged     = false;
-        // Release: publish resets before the PU thread observes kStopping.
         mState.store(ModuleState::kStopping, std::memory_order_release);
+        EmitModuleStateChanged(ModuleState::kActive, ModuleState::kStopping);
 
         DIA_LOG_INFO("Application", "Module '%s' (PU '%s') BeginStop", mInstanceId.AsChar(), PuName(mProcessingUnit));
     }
@@ -142,11 +163,13 @@ namespace Dia { namespace ApplicationFlow {
                     DIA_LOG_INFO("Application", "Module '%s' (PU '%s') DoStart complete -> Active", mInstanceId.AsChar(), PuName(mProcessingUnit));
                     mStateElapsedMs = 0.0f;
                     mState.store(ModuleState::kActive, std::memory_order_release);
+                    EmitModuleStateChanged(ModuleState::kStarting, ModuleState::kActive);
                 }
                 else if (result == StartResult::kFailed)
                 {
                     DIA_LOG_ERROR("Application", "Module '%s' (PU '%s') DoStart FAILED", mInstanceId.AsChar(), PuName(mProcessingUnit));
                     mState.store(ModuleState::kFailed, std::memory_order_release);
+                    EmitModuleStateChanged(ModuleState::kStarting, ModuleState::kFailed);
                 }
                 else // kLoading — still starting; check timeout
                 {
@@ -180,6 +203,7 @@ namespace Dia { namespace ApplicationFlow {
                     DIA_LOG_INFO("Application", "Module '%s' (PU '%s') DoStop complete -> Inactive", mInstanceId.AsChar(), PuName(mProcessingUnit));
                     mStateElapsedMs = 0.0f;
                     mState.store(ModuleState::kInactive, std::memory_order_release);
+                    EmitModuleStateChanged(ModuleState::kStopping, ModuleState::kInactive);
                 }
                 else // kStopping — still winding down; check timeout
                 {
@@ -188,6 +212,7 @@ namespace Dia { namespace ApplicationFlow {
                         DIA_LOG_WARNING("Application", "Module '%s' (PU '%s') DoStop TIMEOUT (%.1f ms) -> forcing Inactive", mInstanceId.AsChar(), PuName(mProcessingUnit), mStateElapsedMs);
                         mStateElapsedMs = 0.0f;
                         mState.store(ModuleState::kInactive, std::memory_order_release);
+                        EmitModuleStateChanged(ModuleState::kStopping, ModuleState::kInactive);
                     }
                 }
                 break;

@@ -4,6 +4,7 @@
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Memory/UniquePtr.h>
 #include <DiaApplicationFlow/Streams/EventStreamStore.h>
+#include <DiaApplicationFlow/Streams/Event.h>
 #include <DiaApplicationFlow/Application.h>
 
 namespace Dia { namespace ApplicationFlow {
@@ -15,8 +16,11 @@ class Module;
 // Handle held by a Module for consuming discrete typed events from an
 // EventStreamStore. Constructed by the module; call Connect(app) from the
 // module's OnConnectStreams() override to wire the backing store and register
-// a per-reader slot. IsConnected() returns false until Connect() is called
-// and a reader slot was successfully allocated.
+// a per-reader slot.
+//
+// Consume() drains into DynamicArrayC<Event<T>, N>. Each event carries the
+// full envelope (timestampUs, senderCrc, sequence, payload).  Access the
+// payload via ev.payload.
 // ---------------------------------------------------------------------------
 template<typename T>
 class EventStreamReader
@@ -25,14 +29,12 @@ public:
     EventStreamReader(Module* owner, const Dia::Core::StringCRC& streamId);
 
     template<unsigned int N>
-    void Consume(Dia::Core::Containers::DynamicArrayC<T, N>& outEvents);
+    void Consume(Dia::Core::Containers::DynamicArrayC<Event<T>, N>& outEvents);
 
     bool HasPending() const;
     bool IsConnected() const;
 
     // Called from the owning module's OnConnectStreams() override.
-    // Finds or creates the EventStreamStore<T> with this ID in app, then
-    // registers a per-reader slot in the store.
     void Connect(Application& app);
 
 private:
@@ -57,7 +59,7 @@ inline EventStreamReader<T>::EventStreamReader(Module* owner, const Dia::Core::S
 
 template<typename T>
 template<unsigned int N>
-inline void EventStreamReader<T>::Consume(Dia::Core::Containers::DynamicArrayC<T, N>& outEvents)
+inline void EventStreamReader<T>::Consume(Dia::Core::Containers::DynamicArrayC<Event<T>, N>& outEvents)
 {
     if (mStore && mReaderIndex >= 0)
     {
@@ -80,10 +82,13 @@ inline bool EventStreamReader<T>::IsConnected() const
 template<typename T>
 inline void EventStreamReader<T>::Connect(Application& app)
 {
-    IStreamStore* istore = app.FindOrRegisterStreamStoreAtStartup(
+    IStreamStore* istore = app.RegisterOrFindStreamStore(
         Dia::Core::UniquePtr<IStreamStore>(new EventStreamStore<T>(mStreamId)));
-    mStore       = static_cast<EventStreamStore<T>*>(istore);
-    mReaderIndex = mStore->RegisterReader();
+    if (istore)
+    {
+        mStore       = static_cast<EventStreamStore<T>*>(istore);
+        mReaderIndex = mStore->RegisterReader();
+    }
 }
 
 }} // namespace Dia::ApplicationFlow

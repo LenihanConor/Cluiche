@@ -21,6 +21,8 @@
     <ClCompile Include="Modules\RenderModule.cpp" />
     <ClCompile Include="Modules\TimeServerModule.cpp" />
     <ClCompile Include="Modules\UIModule.cpp" />
+    <ClCompile Include="Types\InputEvent.cpp" />
+    <ClCompile Include="Types\UICommand.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\AssetServiceModule.h" />

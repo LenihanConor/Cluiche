@@ -94,7 +94,8 @@ TEST(ManifestLoaderV2, LoadWithStreams)
   "stages": ["Boot"],
   "streams": [{
     "id": "InputStream",
-    "type": "InputData",
+    "kind": "EventStream",
+    "payload_type": "InputData",
     "from": "InputPU",
     "to": "MainPU",
     "multi_writer": false
@@ -114,7 +115,8 @@ TEST(ManifestLoaderV2, LoadWithStreams)
     ASSERT_EQ(manifest.streams.Size(), 1u);
     const StreamDeclaration& stream = manifest.streams[0];
     EXPECT_EQ(stream.id, StringCRC("InputStream"));
-    EXPECT_EQ(stream.type, StringCRC("InputData"));
+    EXPECT_EQ(stream.kind, StringCRC("EventStream"));
+    EXPECT_EQ(stream.payloadType, StringCRC("InputData"));
     EXPECT_EQ(stream.fromPU, StringCRC("InputPU"));
     EXPECT_EQ(stream.toPU, StringCRC("MainPU"));
     EXPECT_FALSE(stream.multiWriter);

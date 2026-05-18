@@ -76,7 +76,7 @@ void KernelModule::DoUpdate(float /*dt*/)
     {
         const Dia::Input::Event& ev = mFrameEvents[i];
 
-        mInputWriter.Send(ev);
+        (void)mInputWriter.Send(ev);
 
         if (ev.type == Dia::Input::Event::EType::kClosed)
         {

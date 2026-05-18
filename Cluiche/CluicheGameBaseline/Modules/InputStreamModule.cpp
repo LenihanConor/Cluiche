@@ -3,6 +3,7 @@
 #include <DiaLogger/DiaLog.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaApplicationFlow/Application.h>
+#include <DiaApplicationFlow/Streams/Event.h>
 
 #include <cstring>
 
@@ -30,12 +31,12 @@ void InputStreamModule::DoUpdate(float /*dt*/)
 {
     memcpy(mPreviousKeys, mCurrentKeys, sizeof(mCurrentKeys));
 
-    Dia::Core::Containers::DynamicArrayC<InputEvent, 64> events;
+    Dia::Core::Containers::DynamicArrayC<Dia::ApplicationFlow::Event<InputEvent>, 64> events;
     mInput.Consume(events);
 
     for (unsigned int i = 0; i < static_cast<unsigned int>(events.Size()); ++i)
     {
-        const InputEvent& evt = events[i];
+        const InputEvent& evt = events[i].payload;
         if (evt.type == InputEvent::EType::kKeyPressed)
         {
             unsigned int idx = static_cast<unsigned int>(evt.key.code);
