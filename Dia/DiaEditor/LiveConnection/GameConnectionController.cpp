@@ -388,8 +388,51 @@ namespace Dia
 			}
 		}
 
-		void GameConnectionController::OnManagerRawMessage(const char* rawText, const Json::Value& /*envelope*/)
+		void GameConnectionController::OnManagerRawMessage(const char* rawText, const Json::Value& envelope)
 		{
+			// Dispatch observation.metric JSON topic — bridge sends these as plain JSON,
+			// not proto-wrapped. Map gauge values to the core_metrics shape the panel expects.
+			if (envelope.isMember("topic") && envelope["topic"].asString() == "observation.metric")
+			{
+				if (mBridge != nullptr)
+				{
+					const Json::Value& metrics = envelope["metrics"];
+					Json::Value metricsPayload;
+					float fps = 0.0f, frameTimeMs = 0.0f, memoryBytes = 0.0f, uptimeSecs = 0.0f;
+
+					if (metrics.isArray())
+					{
+						for (unsigned int i = 0; i < static_cast<unsigned int>(metrics.size()); ++i)
+						{
+							const Json::Value& m = metrics[i];
+							if (!m.isMember("name") || !m.isMember("value")) continue;
+							const std::string& name = m["name"].asString();
+							float v = static_cast<float>(m["value"].asDouble());
+							if      (name == "dia.fps")           fps         = v;
+							else if (name == "dia.frame_time_ms") frameTimeMs = v;
+							else if (name == "dia.memory_bytes")  memoryBytes = v;
+							else if (name == "dia.uptime_s")      uptimeSecs  = v;
+						}
+					}
+
+					metricsPayload["fps"]              = fps;
+					metricsPayload["frame_time_ms"]    = frameTimeMs;
+					metricsPayload["memory_used_mb"]   = memoryBytes / (1024.0f * 1024.0f);
+					metricsPayload["uptime_seconds"]   = uptimeSecs;
+
+					Json::Value puArray(Json::arrayValue);
+					Json::Value pu;
+					pu["name"] = "MainPU";
+					pu["fps"]  = fps;
+					pu["frame_time_ms"] = frameTimeMs;
+					puArray.append(pu);
+					metricsPayload["processing_units"] = puArray;
+
+					mBridge->NotifyUIDataChanged(kTopicCoreMetrics, metricsPayload);
+				}
+				return;
+			}
+
 			dia::debug::DebugMessage msg;
 			if (!Dia::Proto::FromJson(rawText, &msg))
 			{
@@ -464,33 +507,6 @@ namespace Dia
 				{
 					const auto& e = batch.entries(i);
 					PushGameConsoleEntry(e.level().c_str(), e.message().c_str());
-				}
-				break;
-			}
-			case dia::debug::DebugMessage::kCoreMetrics:
-			{
-				if (mBridge != nullptr)
-				{
-					Json::Value metricsPayload;
-					const auto& cm = msg.core_metrics();
-					metricsPayload["fps"] = cm.fps();
-					metricsPayload["frame_time_ms"] = cm.frame_time_ms();
-					metricsPayload["memory_used_mb"] = cm.memory_used_mb();
-					metricsPayload["memory_available_mb"] = cm.memory_available_mb();
-					metricsPayload["uptime_seconds"] = cm.uptime_seconds();
-
-					Json::Value puArray(Json::arrayValue);
-					for (int i = 0; i < cm.processing_units_size(); ++i)
-					{
-						Json::Value pu;
-						pu["name"] = cm.processing_units(i).name();
-						pu["fps"] = cm.processing_units(i).fps();
-						pu["frame_time_ms"] = cm.processing_units(i).frame_time_ms();
-						puArray.append(pu);
-					}
-					metricsPayload["processing_units"] = puArray;
-
-					mBridge->NotifyUIDataChanged(kTopicCoreMetrics, metricsPayload);
 				}
 				break;
 			}
