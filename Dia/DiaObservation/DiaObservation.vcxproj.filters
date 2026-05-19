@@ -25,6 +25,9 @@
     <Filter Include="Config">
       <UniqueIdentifier>{7a8b9c0d-1e2f-3a4b-5c6d-7e8f9a0b1c2d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Profile">
+      <UniqueIdentifier>{9b0c1d2e-3f4a-5b6c-7d8e-9f0a1b2c3d4e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Log\Logger.cpp">
@@ -95,6 +98,15 @@
     </ClCompile>
     <ClCompile Include="Health\HealthRegistry.cpp">
       <Filter>Health</Filter>
+    </ClCompile>
+    <ClCompile Include="Profile\Profiler.cpp">
+      <Filter>Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="Profile\ProfileScopedZone.cpp">
+      <Filter>Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="Profile\ProfileFileSink.cpp">
+      <Filter>Profile</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -210,6 +222,27 @@
     </ClInclude>
     <ClInclude Include="Testing\HealthFixture.h">
       <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\ProfileFixture.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\ProfileCategory.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\ScopeRecord.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\Profiler.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\ScopedZone.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\ProfileFileSink.h">
+      <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Profile\DiaProfile.h">
+      <Filter>Profile</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

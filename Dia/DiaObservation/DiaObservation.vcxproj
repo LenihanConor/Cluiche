@@ -34,6 +34,9 @@
     <ClCompile Include="Metric\MetricsFileSink.cpp" />
     <ClCompile Include="Health\HealthReporterBase.cpp" />
     <ClCompile Include="Health\HealthRegistry.cpp" />
+    <ClCompile Include="Profile\Profiler.cpp" />
+    <ClCompile Include="Profile\ProfileScopedZone.cpp" />
+    <ClCompile Include="Profile\ProfileFileSink.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\Logger.h" />
@@ -72,8 +75,15 @@
     <ClInclude Include="Health\DiaHealth.h" />
     <ClInclude Include="Health\IHealthTransitionSink.h" />
     <ClInclude Include="JsonEscape.h" />
+    <ClInclude Include="Profile\ProfileCategory.h" />
+    <ClInclude Include="Profile\ScopeRecord.h" />
+    <ClInclude Include="Profile\Profiler.h" />
+    <ClInclude Include="Profile\ScopedZone.h" />
+    <ClInclude Include="Profile\ProfileFileSink.h" />
+    <ClInclude Include="Profile\DiaProfile.h" />
     <ClInclude Include="Testing\MockSink.h" />
     <ClInclude Include="Testing\HealthFixture.h" />
+    <ClInclude Include="Testing\ProfileFixture.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">

@@ -18,6 +18,7 @@
     <ClCompile Include="Modules\KernelModule.cpp" />
     <ClCompile Include="Modules\LoadingScreenModule.cpp" />
     <ClCompile Include="Modules\ObservationModule.cpp" />
+    <ClCompile Include="Modules\ProfilerModule.cpp" />
     <ClCompile Include="Modules\RenderModule.cpp" />
     <ClCompile Include="Modules\TimeServerModule.cpp" />
     <ClCompile Include="Modules\UIModule.cpp" />
@@ -32,6 +33,7 @@
     <ClInclude Include="Modules\KernelModule.h" />
     <ClInclude Include="Modules\LoadingScreenModule.h" />
     <ClInclude Include="Modules\ObservationModule.h" />
+    <ClInclude Include="Modules\ProfilerModule.h" />
     <ClInclude Include="Modules\RenderModule.h" />
     <ClInclude Include="Modules\TimeServerModule.h" />
     <ClInclude Include="Modules\UIModule.h" />

@@ -97,6 +97,9 @@
     <Filter Include="DiaObservation\Config">
       <UniqueIdentifier>{DLGR0007-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaObservation\Profile">
+      <UniqueIdentifier>{DLGR0008-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
     <Filter Include="PipelineEditor">
       <UniqueIdentifier>{PIPE0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
@@ -748,6 +751,9 @@
     </ClCompile>
     <ClCompile Include="DiaObservation\Trace\TestScopedZoneEdgeCases.cpp">
       <Filter>DiaObservation\Trace</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Profile\TestProfiler.cpp">
+      <Filter>DiaObservation\Profile</Filter>
     </ClCompile>
     <ClCompile Include="DiaObservation\Health\TestHealthReporterBase.cpp">
       <Filter>DiaObservation\Health</Filter>

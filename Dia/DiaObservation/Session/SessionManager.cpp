@@ -8,6 +8,7 @@
 #include "DiaObservation/Metric/MetricsFileSink.h"
 #include "DiaObservation/Metric/MetricRegistry.h"
 #include "DiaObservation/Health/HealthRegistry.h"
+#include "DiaObservation/Profile/Profiler.h"
 
 #include "DiaCore/Json/external/json/json.h"
 
@@ -141,6 +142,14 @@ namespace Dia
 				Trace::Tracer::Instance().Start(tracePath, mSessionId, epochOffsetNs);
 			}
 
+			// Start Profiler (conditionally)
+			if (obsConfig.profileEnabled)
+			{
+				char profilePath[600];
+				snprintf(profilePath, sizeof(profilePath), "%sprofile.jsonl", mSessionDir);
+				Profile::Profiler::Instance().Start(profilePath, obsConfig.profileCategoryMask, mSessionId, epochOffsetNs);
+			}
+
 			// Create and register MetricsFileSink (conditionally)
 			if (obsConfig.enableMetricsFileSink)
 			{
@@ -221,6 +230,7 @@ namespace Dia
 			}
 
 			Trace::Tracer::Instance().Stop();
+			Profile::Profiler::Instance().Stop();
 
 			// Write health.json from final health poll
 			WriteHealthJson();

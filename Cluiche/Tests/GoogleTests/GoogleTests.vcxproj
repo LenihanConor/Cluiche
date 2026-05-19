@@ -346,6 +346,7 @@
     <ClCompile Include="DiaObservation\Trace\TestTracerRingOverflow.cpp" />
     <ClCompile Include="DiaObservation\Trace\TestTraceFileSink.cpp" />
     <ClCompile Include="DiaObservation\Trace\TestScopedZoneEdgeCases.cpp" />
+    <ClCompile Include="DiaObservation\Profile\TestProfiler.cpp" />
     <ClCompile Include="DiaObservation\Health\TestHealthReporterBase.cpp" />
     <ClCompile Include="DiaObservation\Health\TestHealthRegistry.cpp" />
     <ClCompile Include="DiaObservation\Metric\TestMetricsFileSink.cpp" />
