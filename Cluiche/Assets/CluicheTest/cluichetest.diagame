@@ -1,6 +1,7 @@
 {
    "config" : {
       "asset_catalogue" : "assets.catalogue.json",
+      "observation" : "cluichetest.diaobservation",
       "path_aliases" : {
          "root" : ".",
          "ui_common" : "./global/Presentation/UI"

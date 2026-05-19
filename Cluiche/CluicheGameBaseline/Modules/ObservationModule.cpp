@@ -71,7 +71,7 @@ Dia::ApplicationFlow::StartResult ObservationModule::DoStart()
 
     Dia::Observation::ObservationConfig obsConfig;
     char obsConfigPath[512] = {};
-    snprintf(obsConfigPath, sizeof(obsConfigPath), "%s../../../../Assets/CluicheTest/Global/cluichetest.diaobservation", exePath);
+    snprintf(obsConfigPath, sizeof(obsConfigPath), "%s../../../../Assets/CluicheTest/cluichetest.diaobservation", exePath);
     Dia::Observation::ObservationConfigLoader::Load(obsConfigPath, obsConfig);
 
     Dia::Observation::ObservationConfigCli::ApplyOverrides(__argc, (const char* const*)__argv, obsConfig);
