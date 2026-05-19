@@ -112,8 +112,8 @@ namespace Dia
 			void Start();
 
 			// Advance server state for the given wall-clock delta.  Drains the
-			// WebSocket queue, flushes the log sink, polls the state provider
-			// for stage changes, and broadcasts periodic core metrics.
+			// WebSocket queue, flushes the log sink, and polls the state provider
+			// for stage changes.
 			void Tick(float deltaTime);
 
 			// Stop the WebSocket server and destroy it.  Safe to call once.
@@ -187,9 +187,6 @@ namespace Dia
 
 			uint64_t mStartTimestamp;
 			bool     mStarted;
-
-			float    mMetricsBroadcastTimer;
-			static constexpr float kMetricsBroadcastInterval = 1.0f;
 		};
 	}
 }
