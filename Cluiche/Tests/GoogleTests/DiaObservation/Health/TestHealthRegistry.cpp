@@ -44,16 +44,20 @@ TEST_F(HealthRegistryTest, RegisterAndSnapshot)
     EXPECT_EQ(snaps[0].health.status, HealthStatus::kOK);
 }
 
-TEST_F(HealthRegistryTest, UnregisterRemovesFromSnapshot)
+TEST_F(HealthRegistryTest, UnregisterRetainsInSnapshot)
 {
     MockHealthReporter r(Dia::Core::StringCRC("mod.b"));
     HealthRegistry::Instance().Register(&r);
     HealthRegistry::Instance().Unregister(&r);
 
+    // Retired reporters stay in the snapshot so health.json captures modules
+    // that stopped before WriteHealthJson() runs at session end.
     HealthRegistry::ReporterSnapshot snaps[32];
     unsigned int count = 0;
     HealthRegistry::Instance().Snapshot(snaps, 32, count);
-    EXPECT_EQ(count, 0u);
+    EXPECT_EQ(count, 1u);
+    EXPECT_EQ(snaps[0].name.Value(), Dia::Core::StringCRC("mod.b").Value());
+    EXPECT_EQ(snaps[0].health.status, HealthStatus::kOK);
 }
 
 TEST_F(HealthRegistryTest, PollTransitions_DetectsChange)

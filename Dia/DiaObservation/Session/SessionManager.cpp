@@ -469,42 +469,6 @@ namespace Dia
 			}
 			root["retained_warnings_and_errors"] = retained;
 
-			// Files array — scan session directory
-			Json::Value files(Json::arrayValue);
-			{
-				char searchPath[600];
-				snprintf(searchPath, sizeof(searchPath), "%s*", mSessionDir);
-
-				WIN32_FIND_DATAA findData;
-				HANDLE hFind = FindFirstFileA(searchPath, &findData);
-				if (hFind != INVALID_HANDLE_VALUE)
-				{
-					do
-					{
-						if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-							continue;
-
-						Json::Value fileEntry;
-						fileEntry["path"] = findData.cFileName;
-
-						const char* ext = strrchr(findData.cFileName, '.');
-						if (ext && strcmp(ext, ".jsonl") == 0)
-							fileEntry["kind"] = "log";
-						else
-							fileEntry["kind"] = "data";
-
-						LARGE_INTEGER fileSize;
-						fileSize.LowPart = findData.nFileSizeLow;
-						fileSize.HighPart = findData.nFileSizeHigh;
-						fileEntry["bytes"] = Json::Value(static_cast<Json::Int64>(fileSize.QuadPart));
-
-						files.append(fileEntry);
-					}
-					while (FindNextFileA(hFind, &findData));
-					FindClose(hFind);
-				}
-			}
-			root["files"] = files;
 
 			// Write via temp-file-and-rename for atomicity (clean stop only)
 			Json::StreamWriterBuilder builder;
