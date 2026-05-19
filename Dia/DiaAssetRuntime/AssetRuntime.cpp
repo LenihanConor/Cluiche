@@ -5,6 +5,7 @@
 #include "DiaCore/CRC/CRC.h"
 
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Profile/DiaProfile.h>
 
 #include <math.h>
 #include <string.h>
@@ -155,6 +156,7 @@ namespace Dia
 
         void AssetRuntime::RequestStageLoad(const Dia::Core::StringCRC& stageId)
         {
+            DIA_PROFILE_SCOPE("asset.catalog.load", Dia::Observation::Profile::Category::kDiaAssetRuntime);
             AssertOwnerThread();
             const RuntimeStageEntry* stage = mStageTable.TryGetItemConst(stageId);
             if (!stage)
@@ -543,6 +545,7 @@ namespace Dia
 
         void AssetRuntime::DispatchLoad(const Dia::Core::StringCRC& assetId)
         {
+            DIA_PROFILE_SCOPE("asset.load", Dia::Observation::Profile::Category::kDiaAssetRuntime);
             const AssetState* currentState = mStateTable.TryGetItemConst(assetId);
             if (!currentState || *currentState != AssetState::Loading)
                 TryTransition(assetId, AssetState::Loading);

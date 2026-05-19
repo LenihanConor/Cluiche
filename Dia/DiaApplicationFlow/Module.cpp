@@ -10,6 +10,7 @@
 
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Profile/DiaProfile.h>
 
 namespace Dia { namespace ApplicationFlow {
 
@@ -184,6 +185,7 @@ namespace Dia { namespace ApplicationFlow {
 
             case ModuleState::kActive:
             {
+                DIA_PROFILE_SCOPE("module.update", Dia::Observation::Profile::Category::kDiaApplicationFlow);
                 DoUpdate(deltaTime);
                 break;
             }

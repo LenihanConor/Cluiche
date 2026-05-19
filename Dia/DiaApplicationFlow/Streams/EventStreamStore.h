@@ -16,6 +16,7 @@
 #include <DiaApplicationFlow/Streams/SendResult.h>
 #include <DiaApplicationFlow/Streams/OverflowPolicy.h>
 #include <DiaApplicationFlow/Streams/Event.h>
+#include <DiaObservation/Profile/DiaProfile.h>
 
 namespace Dia { namespace ApplicationFlow {
 
@@ -203,6 +204,7 @@ inline int EventStreamStore<T>::RegisterReader()
 template<typename T>
 inline SendResult EventStreamStore<T>::Send(const Event<T>& event)
 {
+    DIA_PROFILE_SCOPE("stream.send", Dia::Observation::Profile::Category::kDiaStream);
     if (mPolicy == OverflowPolicy::kBlock)
     {
         std::unique_lock<std::mutex> lock(mMutex);
@@ -331,6 +333,7 @@ template<unsigned int N>
 inline void EventStreamStore<T>::Consume(int readerIndex,
     Dia::Core::Containers::DynamicArrayC<Event<T>, N>& outEvents)
 {
+    DIA_PROFILE_SCOPE("stream.consume", Dia::Observation::Profile::Category::kDiaStream);
     DIA_ASSERT(readerIndex >= 0 && readerIndex < mReaderCount,
         "EventStreamStore::Consume — invalid readerIndex %d", readerIndex);
 
