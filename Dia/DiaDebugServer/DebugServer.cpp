@@ -11,6 +11,8 @@
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Log/Logger.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Metric/Gauge.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -33,6 +35,7 @@ namespace Dia
 			, mObservationBridge(nullptr)
 			, mStartTimestamp(0)
 			, mStarted(false)
+			, mMetricsBroadcastTimer(0.0f)
 		{
 			mGameName[0]    = '\0';
 			mGameBuild[0]   = '\0';
@@ -148,7 +151,6 @@ namespace Dia
 
 		void DebugServer::Tick(float deltaTime)
 		{
-			(void)deltaTime;
 			if (!mServer || !mServer->IsRunning()) return;
 
 			uint64_t frameStart = Dia::DebugProtocol::GetTimestampNow();
@@ -163,6 +165,55 @@ namespace Dia
 			{
 				uint64_t now = Dia::DebugProtocol::GetTimestampNow();
 				mStats.uptimeSeconds = static_cast<int>((now - mStartTimestamp) / 1000000);
+			}
+
+			// Broadcast core metrics to all connected clients once per interval.
+			// Values are read directly from MetricRegistry — MetricsCollectorModule
+			// keeps dia.fps, dia.frame_time_ms, dia.memory_bytes, dia.uptime_s current.
+			if (mStats.connectionCount > 0)
+			{
+				mMetricsBroadcastTimer += deltaTime;
+				if (mMetricsBroadcastTimer >= kMetricsBroadcastInterval)
+				{
+					mMetricsBroadcastTimer = 0.0f;
+
+					auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
+					auto* fpsGauge       = reg.FindGauge(Dia::Core::StringCRC("dia.fps"));
+					auto* frameTimeGauge = reg.FindGauge(Dia::Core::StringCRC("dia.frame_time_ms"));
+					auto* memGauge       = reg.FindGauge(Dia::Core::StringCRC("dia.memory_bytes"));
+					auto* uptimeGauge    = reg.FindGauge(Dia::Core::StringCRC("dia.uptime_s"));
+
+					dia::debug::DebugMessage metricsMsg;
+					metricsMsg.set_type(dia::debug::MESSAGE_TYPE_CORE_METRICS);
+					metricsMsg.set_timestamp(Dia::DebugProtocol::GetTimestampNow());
+
+					auto* cm = metricsMsg.mutable_core_metrics();
+
+					float fps         = fpsGauge        ? static_cast<float>(fpsGauge->Value())        : 0.0f;
+					float frameTimeMs = frameTimeGauge   ? static_cast<float>(frameTimeGauge->Value())   : 0.0f;
+					float memBytes    = memGauge         ? static_cast<float>(memGauge->Value())         : 0.0f;
+					float uptimeSecs  = uptimeGauge      ? static_cast<float>(uptimeGauge->Value())      : static_cast<float>(mStats.uptimeSeconds);
+
+					cm->set_fps(fps);
+					cm->set_frame_time_ms(frameTimeMs);
+					cm->set_memory_used_mb(memBytes / (1024.0f * 1024.0f));
+					cm->set_uptime_seconds(uptimeSecs);
+
+					// Report the single observed PU (the one MetricsCollectorModule ticks on).
+					if (fps > 0.0f)
+					{
+						auto* pu = cm->add_processing_units();
+						pu->set_name("MainPU");
+						pu->set_fps(fps);
+						pu->set_frame_time_ms(frameTimeMs);
+					}
+
+					BroadcastProtoMessage(metricsMsg);
+				}
+			}
+			else
+			{
+				mMetricsBroadcastTimer = 0.0f;
 			}
 
 			uint64_t frameEnd = Dia::DebugProtocol::GetTimestampNow();

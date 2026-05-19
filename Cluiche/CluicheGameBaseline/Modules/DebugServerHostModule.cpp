@@ -8,8 +8,16 @@
 #include <DiaObservation/Log/LogLevel.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Metric/Gauge.h>
 
 #include <chrono>
+
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <psapi.h>
+#pragma comment(lib, "psapi.lib")
+#endif
 
 namespace Cluiche { namespace AppFlow {
 
@@ -70,9 +78,13 @@ Dia::ApplicationFlow::StartResult DebugServerHostModule::DoStart()
     int64_t steadyNanos = static_cast<int64_t>(steadyNow.time_since_epoch().count());
     mServer.StartObservationBridge("", sysNanos - steadyNanos);
 
-    // Register debug server metrics with the global MetricRegistry.
+    // Register metrics with the global MetricRegistry.
     {
         auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
+        mMetricFps           = reg.RegisterGauge(Dia::Core::StringCRC("dia.fps"));
+        mMetricFrameTimeMs   = reg.RegisterGauge(Dia::Core::StringCRC("dia.frame_time_ms"));
+        mMetricMemoryBytes   = reg.RegisterGauge(Dia::Core::StringCRC("dia.memory_bytes"));
+        mMetricUptimeSecs    = reg.RegisterGauge(Dia::Core::StringCRC("dia.uptime_s"));
         mMetricConnections   = reg.RegisterGauge(Dia::Core::StringCRC("dia.debugserver.connections"));
         mMetricSubscriptions = reg.RegisterGauge(Dia::Core::StringCRC("dia.debugserver.subscriptions"));
         mMetricMessagesSent  = reg.RegisterCounter(Dia::Core::StringCRC("dia.debugserver.messages_sent"));
@@ -86,6 +98,28 @@ Dia::ApplicationFlow::StartResult DebugServerHostModule::DoStart()
 
 void DebugServerHostModule::DoUpdate(float deltaTime)
 {
+    // Rolling FPS over kFpsWindowSec.
+    if (deltaTime > 0.0f)
+    {
+        mFpsAccMs += deltaTime * 1000.0f;
+        mFpsFrames++;
+        mUptimeSecs += static_cast<double>(deltaTime);
+
+        float windowSec = mFpsAccMs / 1000.0f;
+        if (windowSec >= kFpsWindowSec)
+        {
+            float fps         = static_cast<float>(mFpsFrames) / windowSec;
+            float frameTimeMs = mFpsAccMs / static_cast<float>(mFpsFrames);
+            if (mMetricFps)         mMetricFps->Set(static_cast<double>(fps));
+            if (mMetricFrameTimeMs) mMetricFrameTimeMs->Set(static_cast<double>(frameTimeMs));
+            mFpsAccMs  = 0.0f;
+            mFpsFrames = 0;
+        }
+
+        if (mMetricUptimeSecs) mMetricUptimeSecs->Set(mUptimeSecs);
+    }
+
+    QueryMemory();
     mServer.Tick(deltaTime);
 
     // Update debug server metrics from current ServerStats.
@@ -103,11 +137,27 @@ void DebugServerHostModule::DoUpdate(float deltaTime)
     }
 }
 
+void DebugServerHostModule::QueryMemory()
+{
+#ifdef _WIN32
+    PROCESS_MEMORY_COUNTERS pmc;
+    if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc)))
+    {
+        if (mMetricMemoryBytes)
+            mMetricMemoryBytes->Set(static_cast<double>(pmc.WorkingSetSize));
+    }
+#endif
+}
+
 Dia::ApplicationFlow::StopResult DebugServerHostModule::DoStop()
 {
     mServer.Stop();
 
     // Null metric pointers — MetricRegistry owns the objects.
+    mMetricFps           = nullptr;
+    mMetricFrameTimeMs   = nullptr;
+    mMetricMemoryBytes   = nullptr;
+    mMetricUptimeSecs    = nullptr;
     mMetricConnections   = nullptr;
     mMetricSubscriptions = nullptr;
     mMetricMessagesSent  = nullptr;

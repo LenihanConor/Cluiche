@@ -187,6 +187,9 @@ namespace Dia
 
 			uint64_t mStartTimestamp;
 			bool     mStarted;
+
+			float    mMetricsBroadcastTimer;
+			static constexpr float kMetricsBroadcastInterval = 1.0f;
 		};
 	}
 }

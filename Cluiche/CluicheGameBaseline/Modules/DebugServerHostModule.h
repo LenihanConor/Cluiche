@@ -63,9 +63,21 @@ protected:
         const Dia::Core::StringCRC& id) override;
 
 private:
+    void QueryMemory();
+
     Dia::DebugServer::DebugServer mServer;
 
+    // Rolling FPS over a short accumulation window.
+    float  mFpsAccMs   = 0.0f;
+    int    mFpsFrames  = 0;
+    double mUptimeSecs = 0.0;
+    static constexpr float kFpsWindowSec = 0.5f;
+
     // Metric primitives — owned by MetricRegistry, pointers nulled on DoStop.
+    Dia::Observation::Metric::Gauge*     mMetricFps           = nullptr;
+    Dia::Observation::Metric::Gauge*     mMetricFrameTimeMs   = nullptr;
+    Dia::Observation::Metric::Gauge*     mMetricMemoryBytes   = nullptr;
+    Dia::Observation::Metric::Gauge*     mMetricUptimeSecs    = nullptr;
     Dia::Observation::Metric::Gauge*     mMetricConnections   = nullptr;
     Dia::Observation::Metric::Gauge*     mMetricSubscriptions = nullptr;
     Dia::Observation::Metric::Counter*   mMetricMessagesSent  = nullptr;

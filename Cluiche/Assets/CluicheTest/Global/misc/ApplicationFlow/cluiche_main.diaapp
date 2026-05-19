@@ -100,6 +100,21 @@
                     "dependencies": [ "UIModule" ],
                     "reads": [],
                     "writes": []
+                },
+                {
+                    "instance_id": "DebugServerHostModule",
+                    "type_id": "DebugServerHostModule",
+                    "stages": [ "all" ],
+                    "dependencies": [ "ObservationModule" ],
+                    "config": {
+                        "port": 9002,
+                        "auto_start": true,
+                        "game_name": "CluicheTest",
+                        "game_build": "dev-0.1",
+                        "diagame_path": "assets/cluichetest.diagame"
+                    },
+                    "reads": [],
+                    "writes": []
                 }
             ]
         },
