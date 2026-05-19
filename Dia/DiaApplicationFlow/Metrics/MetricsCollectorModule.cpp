@@ -1,7 +1,7 @@
 #include "DiaApplicationFlow/Metrics/MetricsCollectorModule.h"
 
-#include <DiaMetrics/MetricRegistry.h>
-#include <DiaMetrics/Gauge.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Metric/Gauge.h>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -30,7 +30,7 @@ namespace Dia
         {
             mUptimeAccumulator = 0.0;
 
-            auto& registry = Dia::Metric::MetricRegistry::Instance();
+            auto& registry = Dia::Observation::Metric::MetricRegistry::Instance();
             mFpsGauge       = registry.RegisterGauge(Dia::Core::StringCRC("dia.fps"));
             mFrameTimeGauge = registry.RegisterGauge(Dia::Core::StringCRC("dia.frame_time_ms"));
             mMemoryGauge    = registry.RegisterGauge(Dia::Core::StringCRC("dia.memory_bytes"));

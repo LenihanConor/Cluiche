@@ -2,6 +2,7 @@
 #include "DiaObservation/Log/ThreadLogBuffer.h"
 #include "DiaObservation/Log/ISink.h"
 #include "DiaObservation/Log/LogEntry.h"
+#include "DiaObservation/Session/ScenarioStepStack.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -32,10 +33,15 @@ namespace Dia
 		Logger::Logger()
 			: mThreadBufferCount(0)
 			, mSinkCount(0)
+			, mRetentionCallback(nullptr)
+			, mRetentionUserData(nullptr)
+			, mMinLevel(LogLevel::kTrace)
+			, mChannelOverrideCount(0)
 			, mDrainRunning(false)
 		{
 			memset(mThreadBuffers, 0, sizeof(mThreadBuffers));
 			memset(mSinks, 0, sizeof(mSinks));
+			memset(mChannelOverrides, 0, sizeof(mChannelOverrides));
 		}
 
 		Logger::~Logger()
@@ -123,6 +129,61 @@ namespace Dia
 			tLocalBuffer = nullptr;
 		}
 
+		void Logger::SetRetentionCallback(RetentionCallback callback, void* userData)
+		{
+			std::lock_guard<std::mutex> lock(mRegistryMutex);
+			mRetentionCallback = callback;
+			mRetentionUserData = userData;
+		}
+
+		void Logger::SetMinLevel(LogLevel level)
+		{
+			mMinLevel = level;
+		}
+
+		LogLevel Logger::GetMinLevel() const
+		{
+			return mMinLevel;
+		}
+
+		void Logger::SetChannelOverride(const Dia::Core::StringCRC& channel, LogLevel level)
+		{
+			// Check if override already exists for this channel
+			for (unsigned int i = 0; i < mChannelOverrideCount; ++i)
+			{
+				if (mChannelOverrides[i].channel == channel)
+				{
+					mChannelOverrides[i].level = level;
+					return;
+				}
+			}
+
+			// Add new override if space available
+			if (mChannelOverrideCount < kMaxChannelOverrides)
+			{
+				mChannelOverrides[mChannelOverrideCount].channel = channel;
+				mChannelOverrides[mChannelOverrideCount].level = level;
+				++mChannelOverrideCount;
+			}
+		}
+
+		bool Logger::PassesFilter(LogLevel level, const Dia::Core::StringCRC& channel) const
+		{
+			// Check per-channel overrides first
+			for (unsigned int i = 0; i < mChannelOverrideCount; ++i)
+			{
+				if (mChannelOverrides[i].channel == channel)
+				{
+					return static_cast<unsigned char>(level) >=
+						static_cast<unsigned char>(mChannelOverrides[i].level);
+				}
+			}
+
+			// Fall back to global min level
+			return static_cast<unsigned char>(level) >=
+				static_cast<unsigned char>(mMinLevel);
+		}
+
 		void Logger::InternalFlush()
 		{
 			if (tFlushing)
@@ -150,6 +211,12 @@ namespace Dia
 							mSinks[s]->OnLogEntry(entry);
 						}
 					}
+
+					if (mRetentionCallback &&
+						(entry.level == LogLevel::kWarning || entry.level == LogLevel::kError))
+					{
+						mRetentionCallback(entry, mRetentionUserData);
+					}
 				}
 			}
 
@@ -159,6 +226,11 @@ namespace Dia
 		void Logger::FlushBuffers()
 		{
 			// No-op: drain thread owns flushing. Left for source-level backward compatibility.
+		}
+
+		void Logger::FlushSync()
+		{
+			InternalFlush();
 		}
 
 		void Logger::Stop()
@@ -186,9 +258,16 @@ namespace Dia
 			if (tLocalBuffer == nullptr)
 				return;
 
+			if (!PassesFilter(level, channel))
+				return;
+
 			LogEntry entry;
 			entry.level = level;
 			entry.channel = channel;
+			entry.timestampNs = static_cast<uint64_t>(
+				std::chrono::steady_clock::now().time_since_epoch().count());
+			entry.threadId = static_cast<uint32_t>(GetCurrentThreadId());
+			entry.scenarioStep = Dia::Observation::ScenarioStepStack::Current();
 
 			va_list args;
 			va_start(args, fmt);

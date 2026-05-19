@@ -311,7 +311,8 @@ No dependency on DiaApplicationFlow, DiaGraphics, DiaSFML, DiaInput, or any rend
 | 4 | Event Notification | S | `IAssetStateListener`, `RegisterListener/UnregisterListener`, `OnAssetReady`/`OnAssetUnloading` dispatch | @docs/specs/features/dia/diaassetruntime/event-notification.md | Approved |
 | 5 | Debug Query API | S | `GetLoadedAssets`, `GetStagedAssets`, `GetStageDependencies` | @docs/specs/features/dia/diaassetruntime/debug-query-api.md | Approved |
 | 6 | DiaAPI Debug Commands | S | Register DiaAPI commands (`asset_runtime.get_loaded`, `asset_runtime.get_staged`, `asset_runtime.get_state`, `asset_runtime.get_stage_deps`) so DiaDebugServer can expose runtime state to editors over WebSocket | @docs/specs/features/dia/diaassetruntime/diaapi-debug-commands.md | Approved |
-| 7 | Asset Lifecycle Management | L | Truthful load/unload state machine (`Loading`, `Failed` states), `IAssetTypeHandler` dispatch by asset type prefix, module-lifecycle integration for deferred loads | @docs/specs/features/dia/diaassetruntime/asset-lifecycle-management.md | Draft |
+| 7 | Asset Lifecycle Management | L | Truthful load/unload state machine (`Loading`, `Failed` states), `IAssetTypeHandler` dispatch by asset type prefix, module-lifecycle integration for deferred loads | @docs/specs/features/dia/diaassetruntime/asset-lifecycle-management.md | Done |
+| 8 | Asset Lifecycle Management — Tests | S | Unit tests for the four coverage gaps from Feature 7: unload-while-loading assert, OnLoadFailed reason string, GetAssetScope, GetAssetStageId | @docs/specs/features/dia/diaassetruntime/asset-lifecycle-management-tests.md | Approved |
 
 **Build order:** 1 → 2 → 3 → 4 → 5 → 6 → 7
 

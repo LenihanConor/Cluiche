@@ -1,12 +1,12 @@
 #include <gtest/gtest.h>
-#include <DiaMetrics/MetricRegistry.h>
-#include <DiaMetrics/Testing/MetricFixture.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Metric/Testing/MetricFixture.h>
 
 #include <atomic>
 #include <thread>
 #include <vector>
 
-using namespace Dia::Metric;
+using namespace Dia::Observation::Metric;
 
 struct MetricGaugeTest : ::testing::Test
 {

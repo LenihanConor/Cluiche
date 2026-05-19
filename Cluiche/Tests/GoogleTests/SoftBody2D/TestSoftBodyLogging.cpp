@@ -81,7 +81,7 @@ protected:
 
     void FlushLogs()
     {
-        Dia::Observation::Log::Logger::Instance().FlushBuffers();
+        Dia::Observation::Log::Logger::Instance().FlushSync();
     }
 
     SoftBodyLogSink mSink;

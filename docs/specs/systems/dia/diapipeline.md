@@ -152,6 +152,7 @@ files = [
 | deploy | `dia pipeline --stage deploy` | File copy rules from `pipeline.toml`, UI builds, glob support, `$(OutDir)`/`$(Configuration)` resolution, skip-if-staged guard | [package.md](../../features/dia/diapipeline/package.md) | 3 days | Done |
 | docker-execution | `dia pipeline --docker` | Run all stages inside Docker container via `docker run` with volume-mounted repo | [docker-execution.md](../../features/dia/diapipeline/docker-execution.md) | 2 days | Done |
 | per-app-bin-layout | Per-app bin directory layout | Branch `OutDir` in `Directory.Build.props` by `ConfigurationType`; update `path_resolver.py` for per-app deploy paths | [per-app-bin-layout.md](../../features/dia/diapipeline/per-app-bin-layout.md) | 1 day | Approved |
+| bgfx-shader-cook | bgfx `shaderc` cook step as `build_deps.bgfx_shaders` sub-step of compile-code | Per-backend `.bin` output to `Cluiche/out/<App>/shaders/<backend>/`, sentinel-driven incremental cook, `pipeline.toml` schema extension; gates `diabgfx-canvas-parity` shader-loading work | [bgfx-shader-cook.md](../../features/dia/diapipeline/bgfx-shader-cook.md) | 2 days | Approved |
 
 **Total Effort Estimate:** ~11 days
 
@@ -237,4 +238,4 @@ files = [
 
 ## Status
 
-`Done` - All 5 features implemented. Pipeline consolidated to 3 stages (compile-code, build-assets, deploy) with protobuf and CEF wrapper as build_deps sub-steps of compile-code.
+`In Progress` — Original 5 features Done. New `bgfx-shader-cook` feature added (`Draft`) for the render-backend Phase 1 swap; system status drops from `Done` until that feature is implemented and `Done`.

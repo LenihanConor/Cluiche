@@ -253,25 +253,25 @@ void AssetServiceModule::OnAllAssetsLoaded()
 
 | # | Task | Status |
 |---|------|--------|
-| 1 | Extend `AssetState` enum with new states | Not Started |
-| 2 | Create `IAssetTypeHandler` and `IAssetLoadCallback` interfaces (with error reason string) | Not Started |
-| 3 | Add handler registry to `AssetRuntime` (register/unregister by prefix) | Not Started |
-| 4 | Implement handler dispatch in `RequestStageLoad` path | Not Started |
-| 5 | Implement `IAssetLoadCallback` in `AssetRuntime` (advance state on complete/fail) | Not Started |
-| 6 | Add assert in `RequestStageUnload` for assets in `Loading` state | Not Started |
-| 7 | Update `IsLoadComplete` / `IsAssetReady` for new states | Not Started |
-| 8 | Add `GetLoadProgress(stageId)` returning loaded/total/failed counts | Not Started |
-| 9 | Add Release-build timeout/failure path (Failed state reachable without assert, game code can react) | Not Started |
-| 10 | Rewrite `AssetServiceModule` to use deferred start + handler registration | Not Started |
-| 11 | Remove `IAssetStateListener` interface and all usages | Not Started |
+| 1 | Extend `AssetState` enum with new states | Done |
+| 2 | Create `IAssetTypeHandler` and `IAssetLoadCallback` interfaces (with error reason string) | Done |
+| 3 | Add handler registry to `AssetRuntime` (register/unregister by prefix) | Done |
+| 4 | Implement handler dispatch in `RequestStageLoad` path | Done |
+| 5 | Implement `IAssetLoadCallback` in `AssetRuntime` (advance state on complete/fail) | Done |
+| 6 | Add assert in `RequestStageUnload` for assets in `Loading` state | Done |
+| 7 | Update `IsLoadComplete` / `IsAssetReady` for new states | Done |
+| 8 | Add `GetLoadProgress(stageId)` returning loaded/total/failed counts | Done |
+| 9 | Add Release-build timeout/failure path (Failed state reachable without assert, game code can react) | Done |
+| 10 | Rewrite `AssetServiceModule` to use deferred start + handler registration | Done |
+| 11 | Remove `IAssetStateListener` interface and all usages | Done |
 | 12 | Add tests for new state transitions, handler dispatch, failure path, and progress query | Not Started |
 
 ### Phase 2 — Real I/O Handlers
 
 | # | Task | Status |
 |---|------|--------|
-| 13 | `TextureHandler` — real I/O: call `TextureManager::LoadTexture` in `Load`, release in `Unload`, expose `GetTextureId(assetId)` | Not Started |
-| 14 | `UIHandler` — real I/O: load UI resources in `Load`, release in `Unload`, expose type-specific accessor | Not Started |
+| 13 | `TextureHandler` — real I/O: call `TextureManager::LoadTexture` in `Load`, release in `Unload`, expose `GetTextureId(assetId)` | Done |
+| 14 | `UIHandler` — real I/O: load UI resources in `Load`, release in `Unload`, expose type-specific accessor | Done |
 | 15 | `ShaderHandler` — real I/O: load shader files (e.g. `ui.frag`) in `Load`, expose accessor | Not Started |
 | 16 | `AudioHandler` — real I/O: load audio resources in `Load`, release in `Unload`, expose accessor | Not Started |
 
@@ -279,18 +279,18 @@ void AssetServiceModule::OnAllAssetsLoaded()
 
 | # | Task | Status |
 |---|------|--------|
-| 17 | `ValidationAssetHandler` — replaces `DefaultAssetHandler`: validates file/folder exists on disk, calls `OnLoadComplete`/`OnLoadFailed` | Not Started |
-| 18 | Register validation handler for config, entity, folder, manifest type prefixes | Not Started |
+| 17 | `ValidationAssetHandler` — replaces `DefaultAssetHandler`: validates file/folder exists on disk, calls `OnLoadComplete`/`OnLoadFailed` | Done — implemented inline in `AssetRuntime::AutoValidate`; no separate class needed |
+| 18 | Register validation handler for config, entity, folder, manifest type prefixes | Done — `DefaultAssetHandler` removed; handler-less types auto-validated by AssetRuntime |
 
 ### Phase 4 — Enforcement & Internalization
 
 | # | Task | Status |
 |---|------|--------|
-| 19 | Internalize `TextureManager::LoadTexture` — make non-public, only callable by `TextureHandler` | Not Started |
-| 20 | Internalize Ultralight direct resource loading — only callable by `UIHandler` | Not Started |
-| 21 | Internalize shader file loading — only callable by `ShaderHandler` | Not Started |
-| 22 | Add debug assert when application code attempts to use a texture ID that isn't in `Loaded` state | Not Started |
-| 23 | Verify `SimProcessingUnit` test sprites trigger assert during kernel boot (proves enforcement) | Not Started |
+| 19 | Internalize `TextureManager::LoadTexture` — make non-public, only callable by `TextureHandler` | Done — private + `friend class Dia::SFML::TextureHandler`; `RenderWindow::LoadTexture` removed from public API |
+| 20 | Internalize Ultralight direct resource loading — only callable by `UIHandler` | Deferred — Ultralight page loading not yet driven by asset system |
+| 21 | Internalize shader file loading — only callable by `ShaderHandler` | Deferred — shader loading inline in `RenderWindow::Initialize`; extract when shader system created |
+| 22 | Add debug assert when application code attempts to use a texture ID that isn't in `Loaded` state | Done — `DIA_ASSERT` in `EntityFrameRenderer` before graceful skip |
+| 23 | Verify `SimProcessingUnit` test sprites trigger assert during kernel boot (proves enforcement) | Done — `SimProcessingUnit` now queries `TextureHandler::GetTextureId`; DummyStage textures only render after stage load |
 
 ## Design Decisions
 
@@ -356,4 +356,4 @@ None — all resolved during design discussion.
 
 ## Status
 
-`Approved`
+`Done` — Phases 1–4 complete. Tasks 12 (tests), 15 (ShaderHandler), 16 (AudioHandler), 20 (Ultralight internalization), 21 (shader internalization) deferred to future specs. Plan: @docs/specs/features/dia/diaassetruntime/asset-lifecycle-management.plan.md

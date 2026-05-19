@@ -8,7 +8,7 @@
 | Application | @docs/specs/applications/dia.md | - |
 | System | @docs/specs/systems/dia/diaobservation.md | **foundation** |
 
-**Status:** `Draft`
+**Status:** `Done` — 2026-05-19
 
 **Research:** @docs/research/observ_telemetry/summary.md
 

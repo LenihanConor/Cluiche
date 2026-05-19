@@ -14,8 +14,6 @@
 
 #ifdef _WIN32
 #include <windows.h>
-#include <psapi.h>
-#pragma comment(lib, "psapi.lib")
 // windows.h defines SetPort as a macro; drop it so we can call the real method.
 #ifdef SetPort
 #undef SetPort
@@ -31,13 +29,8 @@ namespace Dia
 			, mStateProvider(nullptr)
 			, mPort(8080)
 			, mAutoStart(true)
-			, mMetricsBroadcastInterval(0.5f)
-			, mMetricsTimer(0.0f)
-			, mFrameTimeAccumMs(0.0f)
-			, mFrameTimeSampleCount(0)
-			, mLastFpsSample(0.0f)
-			, mLastFrameTimeMsSample(0.0f)
 			, mLifecycleTapId(0)
+			, mObservationBridge(nullptr)
 			, mStartTimestamp(0)
 			, mStarted(false)
 		{
@@ -144,27 +137,24 @@ namespace Dia
 			mStarted = true;
 		}
 
+		void DebugServer::StartObservationBridge(const char* sessionId, int64_t epochOffsetNs)
+		{
+			if (!mServer || mObservationBridge)
+				return;
+
+			mObservationBridge = new ObservationBridge(mServer);
+			mObservationBridge->Start(sessionId, epochOffsetNs);
+		}
+
 		void DebugServer::Tick(float deltaTime)
 		{
+			(void)deltaTime;
 			if (!mServer || !mServer->IsRunning()) return;
 
 			uint64_t frameStart = Dia::DebugProtocol::GetTimestampNow();
 
 			mLogSink.FlushToServer();
 			mServer->Update();
-
-			const float deltaMs = deltaTime * 1000.0f;
-			mFrameTimeAccumMs    += deltaMs;
-			mFrameTimeSampleCount++;
-
-			// Periodic core-metrics broadcast.
-			mMetricsTimer += deltaTime;
-			if (mMetricsTimer >= mMetricsBroadcastInterval)
-			{
-				if (mServer->GetConnectionCount() > 0)
-					BroadcastCoreMetrics();
-				mMetricsTimer = 0.0f;
-			}
 
 			mStats.connectionCount   = mServer->GetConnectionCount();
 			mStats.subscriptionCount = static_cast<int>(mClientTaps.Size());
@@ -200,6 +190,13 @@ namespace Dia
 				}
 			}
 			mClientTaps.RemoveAll();
+
+			if (mObservationBridge)
+			{
+				mObservationBridge->Stop();
+				delete mObservationBridge;
+				mObservationBridge = nullptr;
+			}
 
 			Dia::Observation::Log::Logger::Instance().UnregisterSink(&mLogSink);
 			mLogSink.SetServer(nullptr);
@@ -541,66 +538,8 @@ namespace Dia
 		}
 
 		//---------------------------------------------------------------------
-		// Metrics & event broadcasts
+		// Event broadcasts
 		//---------------------------------------------------------------------
-
-		void DebugServer::BroadcastCoreMetrics()
-		{
-			uint64_t serializeStart = Dia::DebugProtocol::GetTimestampNow();
-
-			if (mFrameTimeSampleCount > 0)
-			{
-				mLastFrameTimeMsSample = mFrameTimeAccumMs / static_cast<float>(mFrameTimeSampleCount);
-				mLastFpsSample = (mLastFrameTimeMsSample > 0.0f)
-					? (1000.0f / mLastFrameTimeMsSample) : 0.0f;
-			}
-			mFrameTimeAccumMs = 0.0f;
-			mFrameTimeSampleCount = 0;
-
-			dia::debug::DebugMessage msg;
-			msg.set_type(dia::debug::MESSAGE_TYPE_CORE_METRICS);
-			msg.set_timestamp(Dia::DebugProtocol::GetTimestampNow());
-			auto* cm = msg.mutable_core_metrics();
-
-			cm->set_fps(mLastFpsSample);
-			cm->set_frame_time_ms(mLastFrameTimeMsSample);
-			cm->set_uptime_seconds(static_cast<float>(mStats.uptimeSeconds));
-
-#ifdef _WIN32
-			PROCESS_MEMORY_COUNTERS pmc;
-			if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc)))
-			{
-				cm->set_memory_used_mb(static_cast<float>(pmc.WorkingSetSize) / (1024.0f * 1024.0f));
-			}
-
-			MEMORYSTATUSEX memStatus;
-			memStatus.dwLength = sizeof(memStatus);
-			if (GlobalMemoryStatusEx(&memStatus))
-			{
-				cm->set_memory_available_mb(static_cast<float>(memStatus.ullAvailPhys) / (1024.0f * 1024.0f));
-			}
-#endif
-
-			uint64_t serializeEnd = Dia::DebugProtocol::GetTimestampNow();
-			mStats.serializationTimeMs = static_cast<float>(serializeEnd - serializeStart) / 1000.0f;
-
-			uint64_t broadcastStart = Dia::DebugProtocol::GetTimestampNow();
-
-			char jsonBuffer[4096];
-			unsigned int jsonLength = 0;
-			if (Dia::Proto::ToJson(msg, jsonBuffer, sizeof(jsonBuffer), &jsonLength))
-				mServer->BroadcastText(jsonBuffer);
-
-			uint64_t broadcastEnd = Dia::DebugProtocol::GetTimestampNow();
-			mStats.broadcastTimeMs = static_cast<float>(broadcastEnd - broadcastStart) / 1000.0f;
-
-			mStats.messagesSentTotal++;
-			mStats.averageMessageSizeBytes = static_cast<int>(jsonLength);
-			if (mMetricsBroadcastInterval > 0.0f)
-			{
-				mStats.bytesSentPerSec = static_cast<float>(jsonLength) / mMetricsBroadcastInterval;
-			}
-		}
 
 		void DebugServer::NotifySubscribers(const Dia::Core::StringCRC& dataType,
 		                                     const Json::Value& payload)

@@ -116,6 +116,7 @@ Follows DiaCLI conventions (SD-CLI-008):
 | deps-single-file | `single_file` install type in `deps.json` + `dia env setup` | Download a single file (JS, CSS, binary) to a specified path; no unzip; used for Alpine.js, Tailwind, DaisyUI | [deps-single-file.md](../../features/dia/diaenv/deps-single-file.md) | 1 day | Done |
 | env-export | `dia env export` / `dia env import` transfer zip | Deferred — `deps.json` + `file://` mirrors + git submodules covers the new-machine case | — | — | Deferred |
 | docker-build-env | Docker Windows Container for headless build + test | `build-env/Dockerfile` + `docker-compose.yml`; both `Debug\|x64` and `Release\|x64`; invocable via `dia env docker`; no GPU/GUI required | [docker-build-env.md](../../features/dia/diaenv/docker-build-env.md) | 5 days | Done |
+| bgfx-env-setup | Add `install_type:"build"` to `deps.json` + `bx`/`bimg`/`bgfx` entries; `dia env setup` clones, builds, and stages bgfx libs + `shaderc.exe` | Source-built deps, `depends_on` resolution, sentinel SHA over staged outputs; gates render-backend Phase 1 work | [bgfx-env-setup.md](../../features/dia/diaenv/bgfx-env-setup.md) | 3 days | Approved |
 
 **Total Effort Estimate:** ~21 days
 

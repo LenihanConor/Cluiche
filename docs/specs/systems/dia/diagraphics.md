@@ -104,6 +104,8 @@ namespace Dia::Graphics {
 | Feature | Description | Spec | Status |
 |---------|-------------|------|--------|
 | debug-primitive-tagged-union | Replace per-type debug buffers with a single tagged-union `DebugPrimitive` buffer | [debug-primitive-tagged-union.md](../../features/dia/diagraphics/debug-primitive-tagged-union.md) | Done |
+| texture-handle-stringcrc | Refactor `ITexture` to canonical asset-aware handle (StringCRC asset id + atomic ready state); `SpriteDrawCommand::textureId` (unsigned int) → `texture` (ITexture*); add `Dia::SFML::SfmlTexture` impl; coordinates with async-asset-loading per RB-009 | [texture-handle-stringcrc.md](../../features/dia/diagraphics/texture-handle-stringcrc.md) | Approved |
+| graphics-3d-types | Phase 2 — moved to DiaGraphics3D system (G3D-001); `Camera3D`, lights, `Mesh3DDrawCommand`, `Mesh3DFrameData`, `FrameData3D` now live in `Dia/DiaGraphics3D/` under `Dia::Graphics3D::`. DiaGraphics::FrameData unchanged. | [graphics-3d-types.md](../../features/dia/diagraphics3d/graphics-3d-types.md) | Approved (re-homed) |
 
 ---
 

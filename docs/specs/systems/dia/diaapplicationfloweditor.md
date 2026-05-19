@@ -33,7 +33,7 @@ The editor serves two modes:
 - Edit PU properties (frequency, thread, startup order)
 - Edit stage configuration (add/remove stages, auto/manual trigger)
 - Edit module configuration (add/remove, assign stages, set deps, configure timeouts)
-- Edit stream configuration (add/remove, set type/from/to)
+- Edit stream configuration (add/remove, set kind/payloadType/from/to, capacity, maxReaders)
 - Real-time validation with error/warning display
 - Undo/redo for all edits
 - File conflict detection (external modification)
@@ -90,7 +90,7 @@ namespace Dia::ApplicationFlow::Editor {
 | `ModulePresenceGrid` | Presence | Full-tab modules × stages matrix with active/inactive indicators |
 | `PUInspector` | (sidebar) | Properties, stages, modules for selected PU |
 | `ModuleInspector` | (sidebar) | Details for selected module (deps, streams, timeouts, provenance) |
-| `StreamInspector` | (sidebar) | Details for selected stream (type, from/to, readers/writers) |
+| `StreamInspector` | (sidebar) | Details for selected stream (kind, payloadType, from/to PU, capacity, maxReaders, readers/writers) |
 | `StageConfig` | (sidebar) | Stage properties (auto/manual, ordering) |
 | `ValidationBar` | (footer) | Errors/warnings with click-to-navigate |
 | `LiveOverlay` | (all views) | Runtime state badges overlaid when connected |
@@ -106,7 +106,7 @@ namespace Dia::ApplicationFlow::Editor {
 | Stream Inspector | Type, from/to PU, readers/writers list, add/remove/edit | TBD | Draft |
 | Stage Configuration | Add/remove stages, auto/manual trigger, ordering | TBD | Draft |
 | Manifest Load/Save | Load .diaapp v2, dirty tracking, .bak backup, format validation on save | TBD | Draft |
-| Real-Time Validation | Dependency cycles, orphaned modules, missing stream refs, stage coverage gaps | TBD | Draft |
+| Real-Time Validation | Dependency cycles, orphaned modules, missing/undeclared stream refs (`UNKNOWN_STREAM_IN_READS/WRITES`), orphan reader/writer streams (`ORPHAN_*`), missing payload type (`PAYLOAD_TYPE_MISSING`), stage coverage gaps | TBD | Draft |
 | Undo/Redo | Command pattern for all edits, Ctrl+Z/Y, history display | TBD | Draft |
 | File Conflict Detection | Watch .diaapp file for external changes, prompt reload/overwrite | TBD | Draft |
 | Type Discovery | Query TypeRegistry for available module/PU types, autocomplete in add dialogs | TBD | Draft |
@@ -176,6 +176,7 @@ namespace Dia::ApplicationFlow::Editor {
 | SD-002 | DiaApp v2 | Stages replace Phases | Editor visualizes stages, not phases. |
 | SD-006 | DiaApp v2 | Streams in config, framework-owned | Editor visualizes and edits stream declarations. |
 | SD-014 | DiaApp v2 | Full validation at load | Editor validates same rules as runtime. Same errors surfaced. |
+| SD-018 | DiaApp v2 | Reserved `$`-prefix streams are framework-auto-created; user `$`-prefix forbidden | Editor shows `$`-streams as read-only; blocks creation of streams with `$` prefix. |
 
 ## AI Review Questions
 

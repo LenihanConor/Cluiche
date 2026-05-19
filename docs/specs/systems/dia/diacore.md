@@ -37,6 +37,7 @@ headers define the shared vocabulary of the entire engine.
 | # | Feature | Size | Description | Spec |
 |---|---------|------|-------------|------|
 | 1 | DirectedGraph Container | M | `DirectedGraph<NodePayload, kMaxNodes, EdgePayload, kMaxEdges, Policy>` — fixed-capacity directed graph with BFS, DFS, topo sort, cycle detection, and compile-time policies (None, ReverseEdgeCache, AcyclicEnforced) | [directed-graph.md](../../features/dia/diacore/directed-graph.md) |
+| 2 | HandlePool<T> | S | `HandlePool<T, kCapacity>` — fixed-capacity object pool that issues `Handle<T>` (index + generation), validates stale handles via generation match, supports inline T storage, freelist reuse, and `ForEach` iteration. Foundation for DiaEntity entity storage and any pooled-object system. | [handle-pool.md](../../features/dia/diacore/handle-pool.md) |
 
 ## Dependencies
 

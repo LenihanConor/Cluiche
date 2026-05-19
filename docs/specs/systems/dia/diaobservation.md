@@ -7,7 +7,7 @@
 
 ## Purpose
 
-DiaObservation is the engine-wide observability system for the Dia engine. It captures four pillars — **logs, traces, metrics, health** — into a single per-session directory under `Cluiche/out/<AppName>/sessions/<sessionId>/`, with a binding `session.json` manifest as the consumer's entry point.
+DiaObservation is the engine-wide observability system for the Dia engine. It captures five pillars — **logs, traces, metrics, health, profiling** — into a single per-session directory under `Cluiche/out/<AppName>/sessions/<sessionId>/`, with a binding `session.json` manifest as the consumer's entry point.
 
 The system is explicitly designed as the **substrate for E2E testing**. Today's signal of "did the engine work?" is `exit_code == 0` plus stdout grep — neither expressive enough nor deterministic enough for AI-driven testing. DiaObservation gives a future `DiaE2E` orchestrator a one-file pass/fail predicate, scenario step tagging, per-module health reporting, and self-contained crash artifacts. The terminal goal of this work is not observability for its own sake; observability is the contract the test framework will sit on.
 
@@ -16,8 +16,9 @@ DiaObservation **subsumes** the existing `DiaLogger` system — its files (Logge
 The system is wire-compatible with OpenTelemetry (matching `trace_id`, `span_id`, `parent_span_id`, `start_unix_nano`, `severity_text`, `severity_number` field names) but does **not** depend on `opentelemetry-cpp`. A future OTLP exporter ships as a single sink class, never as a producer-side refactor.
 
 **Dependency chain:**
-`DiaMetrics → DiaCore (containers, StringCRC)`
-`DiaObservation → DiaMetrics + DiaCore (Json, String1024, Log)`
+`DiaObservation → DiaCore (containers, StringCRC, Json, String1024, Log)`
+
+Profiling is **frame-structured**, not time-series: data is keyed by frame number and thread, forming a tree of instrumented scopes within each frame. It is distinct from metrics (which aggregate over time) and traces (which model request causality). Its data shape — a forest of timed scopes per frame — is unique to this pillar.
 
 ## Responsibilities
 
@@ -45,11 +46,13 @@ The system is wire-compatible with OpenTelemetry (matching `trace_id`, `span_id`
 - Support multiple sinks registered simultaneously, each with independent level threshold and channel filter (existing)
 
 ### Traces (Spans)
-- Provide `DIA_TRACE_ZONE("Name")` and `DIA_TRACE_ZONE_NAMED(handle, "Name")` macros — RAII span scopes
-- Records carry `{trace_id, span_id, parent_span_id, name (StringCRC), start_unix_nano, end_unix_nano, thread_id, scenario_step}`
+- Provide `DIA_TRACE_ZONE("Name", kCategory)` and `DIA_TRACE_ZONE_NAMED(handle, "Name", kCategory)` macros — RAII span scopes
+- Category is a bitmask integer constant (`TraceCategory`); the macro performs a single AND against `TraceRegistry::ActiveMask()` before doing any work — ~1ns when the category is disabled
+- Records carry `{trace_id, span_id, parent_span_id, name (StringCRC), category, start_unix_nano, end_unix_nano, thread_id, scenario_step}`
 - Per-thread span ring (drop-oldest on overflow); `MaxOpenSpans` guard catches missing-end bugs at dev time
 - Closed spans emitted into the observation sink stream as `record_type: "span"`
 - Use `std::source_location` for an auto-name fallback when no name is provided
+- Built-in categories declared in `Dia/DiaObservation/Trace/TraceCategory.h`; user categories extend by defining additional bitmask constants in application code
 
 ### Metrics
 - Provide three primitives registered with a `MetricRegistry` by StringCRC:
@@ -59,6 +62,23 @@ The system is wire-compatible with OpenTelemetry (matching `trace_id`, `span_id`
 - Periodic snapshot every N ms (default 100ms; configurable) emits a `record_type: "metric_snapshot"` record
 - Final snapshot at exit dumped to `metrics-final.json`
 - Subsume the existing `MetricsCollectorModule` — FPS, frame-time, memory, uptime become registered gauges populated by the same module that produces them today
+
+### Profiling
+- Provide `DIA_PROFILE_SCOPE("Name", kCategory)` macro — RAII instrumented scope; records start/end time, thread ID, frame number, parent scope (forming a tree per thread per frame)
+- Provide `DIA_PROFILE_SCOPE_NAMED(var, "Name", kCategory)` for cases where the handle is needed explicitly
+- Category is a bitmask integer constant (`ProfileCategory`); the macro performs a single AND against `Profiler::ActiveMask()` before doing any work — ~1ns when the category is disabled
+- Profile records carry `{frame_number, thread_id, scope_name (StringCRC), category, parent_scope_id, start_unix_nano, duration_ns}`
+- Per-thread scope stack (max depth 64, dev-time assert on overflow in Debug; silent truncation in Release)
+- Built-in categories declared in `Dia/DiaObservation/Profile/ProfileCategory.h`; user categories extend by defining additional bitmask constants in application code
+- Frame boundary driven by `ProfilerModule::BeginFrame()` / `EndFrame()` — increments the global frame counter and flushes completed frame records to `profile.jsonl`
+- Primary instrumentation sites (in priority order):
+  1. **ProcessingUnit / Phase / Module** — `pu.update`, `phase.update.<name>`, `module.tick.<name>` (frame backbone)
+  2. **DiaGraphics / DiaBgfx** — `canvas.renderframe`, `canvas.startframe`, `canvas.processframe`, `canvas.endframe`
+  3. **DiaStream** — `stream.send` (fan-out cost), `stream.consume` (drain cost)
+  4. **Asset loading** — `asset.catalog.load`, `asset.load.<type>` (load-time profiling, not per-frame)
+- Final frame record written to `profile-final.json` (last N frames, default 60) on session end
+- GPU profiling is **out of scope for v1** — requires bgfx timer query integration, deferred until DiaBgfx lands
+- **Metric bridge** — `DIA_PROFILE_SCOPE_METRIC` variant accepts an optional `Histogram*` pointer; on scope close, the duration is fed into the histogram via `Observe()` in addition to (or instead of, when profiling is disabled) recording a profile entry. This avoids dual-instrumentation at hot call sites. When `histogram == nullptr` the macro behaves identically to `DIA_PROFILE_SCOPE`.
 
 ### Health
 - Provide `IHealthReporter` interface — modules optionally implement `Health Report() const` returning `{ status: OK | Degraded | Failing, errors, warnings, reason: StringCRC }`
@@ -70,15 +90,20 @@ The system is wire-compatible with OpenTelemetry (matching `trace_id`, `span_id`
 - Read `observation` block from `.diagame` `config` (PD-010); shape forward-compatible with future `metrics`, `traces`, `health`, `live_reload`, `sidecar` sub-blocks
 - CLI overrides win over file values: `dia run <app> --log-level=trace --log-channel=asset`
 - v1 reads config at startup; live reload not implemented but format must not foreclose it
+- **Traces default OFF** — `observation.traces.enabled = false`; all categories disabled unless explicitly turned on
+- **Profiling defaults OFF** — `observation.profile.enabled = false`; all categories disabled unless explicitly turned on
+- Per-category enable in config: `observation.traces.categories.diaapplicationflow = true`, `observation.profile.categories.diagraphics = true`
+- CLI overrides for categories: `--trace-categories=diaapplicationflow,diastream`, `--profile-categories=diagraphics`
+- When `enabled = false`, the master bitmask is `0` — every `DIA_TRACE_ZONE` / `DIA_PROFILE_SCOPE` is a single AND against zero, ~1ns, no allocation, no file output
 
 ### DebugServer Bridge
-- Provide a `ObservationBridge` class (lives in `DiaDebugServer`, not in this module) that subscribes to the observation stream and forwards records as WebSocket subscription topics: `observation.log`, `observation.trace`, `observation.metric`, `observation.health`
+- Provide a `ObservationBridge` class (lives in `DiaDebugServer`, not in this module) that subscribes to the observation stream and forwards records as WebSocket subscription topics: `observation.log`, `observation.trace`, `observation.metric`, `observation.health`, `observation.profile`
 - Replaces hand-rolled metric serialization in `DebugServer::BroadcastCoreMetrics` with registry-driven version
 
 ### Schema and contract
 - Every record carries `schema_version: "1.0"` (semver, breaking changes bump major)
 - Field names mirror OpenTelemetry where reasonable (`trace_id`, `span_id`, `start_unix_nano`, `severity_text`, `severity_number`)
-- Session-directory layout, `session.json` shape, and `log.jsonl` / `trace.jsonl` / `metric.jsonl` record shapes are **public contracts** — future E2E orchestration depends on them; changes bump `schema_version` major
+- Session-directory layout, `session.json` shape, and `log.jsonl` / `trace.jsonl` / `metric.jsonl` / `profile.jsonl` record shapes are **public contracts** — future E2E orchestration depends on them; changes bump `schema_version` major
 
 ### Module documentation and build
 - Provide `dia.dia.observation.architecture.module.md` YAML module documentation
@@ -91,7 +116,7 @@ The system is wire-compatible with OpenTelemetry (matching `trace_id`, `span_id`
 - **Sidecar process** — deferred (C7); reconsider when crash-survival of log stream is needed
 - **OTLP exporter** — deferred (C8); ships as a future sink class when an aggregation backend exists. Wire format is OTel-shaped from v1 so this is non-refactor work later
 - **Live config reload** — deferred (C9); v1 reads at startup, format must not foreclose live reload
-- **GPU markers (PIX/RenderDoc bridge)** — out of scope for v1
+- **GPU profiling (PIX/RenderDoc/bgfx timer queries)** — deferred until DiaBgfx lands; CPU profiling ships first
 - **Multi-dimensional metric labels** (`counter("http", method="GET")`) — out of scope for v1
 - **Cross-process span propagation** — irrelevant until sidecar exists
 - **Sampling** — every span and log record is captured; rate-limit via channel level
@@ -191,8 +216,28 @@ namespace Dia::Observation::Log {
 
 ```cpp
 namespace Dia::Observation::Trace {
+    // Bitmask category — extend with application-defined constants in the same pattern
+    using TraceCategory = uint32_t;
+    namespace Category {
+        constexpr TraceCategory kNone               = 0;
+        constexpr TraceCategory kDiaApplicationFlow = 1 << 0;
+        constexpr TraceCategory kDiaGraphics        = 1 << 1;
+        constexpr TraceCategory kDiaStream          = 1 << 2;
+        constexpr TraceCategory kDiaAssetRuntime    = 1 << 3;
+        constexpr TraceCategory kDiaAnimation       = 1 << 4;
+        constexpr TraceCategory kAll                = ~0u;
+    }
+
+    class TraceRegistry {
+    public:
+        static TraceRegistry& Instance();
+        void            SetActiveMask(TraceCategory mask);
+        TraceCategory   ActiveMask() const;   // read by DIA_TRACE_ZONE hot path
+    };
+
     struct Span {
         Dia::Core::StringCRC name;
+        TraceCategory        category;
         uint64_t             traceId;
         uint64_t             spanId;
         uint64_t             parentSpanId;   // 0 if root
@@ -204,20 +249,83 @@ namespace Dia::Observation::Trace {
 
     class ScopedZone {
     public:
-        explicit ScopedZone(const Dia::Core::StringCRC& name,
-                            const std::source_location& loc =
-                                std::source_location::current());
+        ScopedZone(const Dia::Core::StringCRC& name, TraceCategory category,
+                   const std::source_location& loc = std::source_location::current());
         ~ScopedZone();
         ScopedZone(const ScopedZone&) = delete;
         ScopedZone& operator=(const ScopedZone&) = delete;
     };
 }
 
-#define DIA_TRACE_ZONE(name) \
-    Dia::Observation::Trace::ScopedZone _dia_zone_##__LINE__(Dia::Core::StringCRC(name))
+// Category check is a single AND — ~1ns when disabled; no span allocated
+#define DIA_TRACE_ZONE(name, category) \
+    Dia::Observation::Trace::ScopedZone _dia_zone_##__LINE__( \
+        (Dia::Observation::Trace::TraceRegistry::Instance().ActiveMask() & (category)) \
+            ? Dia::Core::StringCRC(name) : Dia::Core::StringCRC{}, (category))
 
-#define DIA_TRACE_ZONE_NAMED(var, name) \
-    Dia::Observation::Trace::ScopedZone var(Dia::Core::StringCRC(name))
+#define DIA_TRACE_ZONE_NAMED(var, name, category) \
+    Dia::Observation::Trace::ScopedZone var(Dia::Core::StringCRC(name), (category))
+```
+
+### Profiling
+
+```cpp
+namespace Dia::Observation::Profile {
+    // Bitmask category — extend with application-defined constants in the same pattern
+    using ProfileCategory = uint32_t;
+    namespace Category {
+        constexpr ProfileCategory kNone               = 0;
+        constexpr ProfileCategory kDiaApplicationFlow = 1 << 0;
+        constexpr ProfileCategory kDiaGraphics        = 1 << 1;
+        constexpr ProfileCategory kDiaStream          = 1 << 2;
+        constexpr ProfileCategory kDiaAssetRuntime    = 1 << 3;
+        constexpr ProfileCategory kDiaAnimation       = 1 << 4;
+        constexpr ProfileCategory kAll                = ~0u;
+    }
+
+    class Profiler {
+    public:
+        static Profiler& Instance();
+        void              SetActiveMask(ProfileCategory mask);
+        ProfileCategory   ActiveMask() const;   // read by DIA_PROFILE_SCOPE hot path
+        void BeginFrame();   // called by ProfilerModule — increments frame counter, flushes previous frame
+        void EndFrame();
+        uint32_t GetCurrentFrame() const;
+    };
+
+    struct ScopeRecord {
+        Dia::Core::StringCRC name;
+        ProfileCategory      category;
+        uint64_t             parentScopeId;  // 0 if root
+        uint64_t             startUnixNano;
+        uint64_t             durationNs;
+        uint32_t             frameNumber;
+        uint32_t             threadId;
+    };
+
+    class ScopedZone {
+    public:
+        ScopedZone(const Dia::Core::StringCRC& name, ProfileCategory category,
+                   Dia::Observation::Metric::Histogram* histogram = nullptr);
+        ~ScopedZone();  // feeds duration into histogram (if set) on destruction
+        ScopedZone(const ScopedZone&) = delete;
+        ScopedZone& operator=(const ScopedZone&) = delete;
+    };
+}
+
+// Category check is a single AND — ~1ns when disabled; no record allocated
+#define DIA_PROFILE_SCOPE(name, category) \
+    Dia::Observation::Profile::ScopedZone _dia_profile_##__LINE__( \
+        Dia::Core::StringCRC(name), (category))
+
+#define DIA_PROFILE_SCOPE_NAMED(var, name, category) \
+    Dia::Observation::Profile::ScopedZone var(Dia::Core::StringCRC(name), (category))
+
+// Bridge variant — feeds scope duration into a Histogram on close, regardless of whether
+// profiling is enabled. When profiling is off, only the metric is populated.
+#define DIA_PROFILE_SCOPE_METRIC(name, category, histogram) \
+    Dia::Observation::Profile::ScopedZone _dia_profile_##__LINE__( \
+        Dia::Core::StringCRC(name), (category), (histogram))
 ```
 
 ### Metrics
@@ -313,6 +421,16 @@ The full schema is documented in `docs/research/observ_telemetry/choose.md` and 
 
 `severity_number` follows OpenTelemetry's mapping: Trace=1, Debug=5, Info=9, Warning=13, Error=17.
 
+### Wire format — `profile.jsonl` record shape
+
+Each line is one completed scope. Records are flushed per-frame (at `EndFrame()`), grouping all closed scopes for that frame.
+
+```json
+{"schema_version":"1.0","record_type":"profile_scope","session_id":"...","frame_number":142,"thread_id":1,"scope_name":"module.tick.RenderModule","parent_scope_id":7,"start_unix_nano":...,"duration_ns":4200}
+```
+
+`parent_scope_id` is `0` for root scopes. The full call tree for a frame can be reconstructed by grouping on `frame_number` and threading `parent_scope_id`.
+
 ## Features
 
 | # | Feature | Description | Spec | Status |
@@ -321,9 +439,15 @@ The full schema is documented in `docs/research/observ_telemetry/choose.md` and 
 | 2 | DiaObservation Foundation | `SessionManager`, session directory, `ObservationFileSink`, timestamps + scenario step + thread id added to `LogEntry`, retention ring (warnings/errors), exit-reason capture (assert/exception/terminate), crash auto-dump (`crashes/<n>.json`), `session.json` writer, `SessionModule` host. Freezes the `session.json` and `log.jsonl` schemas at v1.0. | [foundation.md](../../features/dia/diaobservation/foundation.md) | Approved |
 | 3 | DiaObservation Config | `.diagame` `observation` block parser; CLI overrides (`--log-level`, `--log-channel`); per-channel level threshold; sink enable/disable; scenario tagging toggle. Forward-compatible with future `metrics`/`traces`/`health`/`live_reload` sub-blocks. | [config.md](../../features/dia/diaobservation/config.md) | Approved |
 | 4 | DiaTrace Spans | `DIA_TRACE_ZONE` / `DIA_TRACE_ZONE_NAMED` macros, `Span` struct, per-thread span ring with drop-oldest, `MaxOpenSpans` dev-time guard, `trace.jsonl` writer, OTel-compatible field names. | [trace-spans.md](../../features/dia/diaobservation/trace-spans.md) | Approved |
-| 5 | DiaMetrics Registry | `MetricRegistry`, `Counter` (per-thread shard + reduce), `Gauge` (atomic), `Histogram` (fixed buckets, p50/p95/p99 at snapshot), periodic snapshots → `metric.jsonl`, final dump → `metrics-final.json`. Subsume `MetricsCollectorModule` (FPS, frame-time, memory, uptime become registered gauges) and `DebugServer::ServerStats`. | [metrics-registry.md](../../features/dia/diaobservation/metrics-registry.md) | Approved |
+| 5 | Metrics Registry | `MetricRegistry`, `Counter` (per-thread shard + reduce), `Gauge` (atomic), `Histogram` (fixed buckets, p50/p95/p99 at snapshot), periodic snapshots → `metric.jsonl`, final dump → `metrics-final.json`. Subsume `MetricsCollectorModule` (FPS, frame-time, memory, uptime become registered gauges) and `DebugServer::ServerStats`. | [metrics-registry.md](../../features/dia/diaobservation/metrics-registry.md) | Approved |
 | 6 | DiaHealth Reporting | `IHealthReporter` interface, `HealthStatus` enum, `Health` struct, session-level rollup (`overall_status`, per-module status), `health.json` writer, `DIA_OBSERVATION_ASSERT` / `DIA_OBSERVATION_FAIL` macros. Health polled at exit AND on crash before manifest write. | [health-reporting.md](../../features/dia/diaobservation/health-reporting.md) | Approved |
 | 7 | DebugServer Observation Bridge | `ObservationBridge` class in `DiaDebugServer` that subscribes to observation streams and forwards as WebSocket topics (`observation.log`, `observation.trace`, `observation.metric`, `observation.health`). Replaces hand-rolled `BroadcastCoreMetrics` with registry-driven version. | [debugserver-bridge.md](../../features/dia/diaobservation/debugserver-bridge.md) | Approved |
+| 8 | DiaProfiling — Frame Instrumentation | `DIA_PROFILE_SCOPE` / `DIA_PROFILE_SCOPE_NAMED` macros, `ScopeRecord` struct, per-thread scope stack (max depth 64), `Profiler` singleton, `ProfilerModule` host (drives `BeginFrame`/`EndFrame`), `profile.jsonl` writer (flush per frame), `profile-final.json` (last 60 frames on exit). Primary instrumentation: ProcessingUnit/Phase/Module hierarchy, DiaGraphics canvas, DiaStream fan-out/drain, asset catalog load. GPU profiling deferred to v2. | [profiling-frame-instrumentation.md](../../features/dia/diaobservation/profiling-frame-instrumentation.md) | Approved |
+| 9 | DiaProfiling — Domain Instrumentation | Add `DIA_PROFILE_SCOPE` to all primary instrumentation sites identified in feature #8: ProcessingUnit/Phase/Module tick hierarchy, DiaGraphics canvas render path, DiaStream fan-out/drain, asset catalog load path. Prerequisite: Feature #8 (Profiling infrastructure) must be Done. | [profiling-domain-instrumentation.md](../../features/dia/diaobservation/profiling-domain-instrumentation.md) | Approved |
+| 10 | Domain-Level Log Instrumentation | Add INFO/DEBUG-level logging to subsystems with zero observability coverage. **Asset System:** catalog load start/complete/fail (with asset count), asset type registration, relationship inference, record creation/deletion, scope computation. **Animation2D:** clip load/unload, playback start/stop/loop. **Streams:** writer/reader connect/disconnect, overflow events with policy applied, tap attach/detach. **Lifecycle gaps:** Module OnConfigure/OnConnectStreams calls, explicit state transitions (kInactive→kStarting→kActive→kStopping→kInactive), dedicated thread join/shutdown, frame tick boundaries (trace-level). **Enrichment:** duration on lifecycle events (module start took X ms), `module_id` tag on all domain logs. | [domain-log-instrumentation.md](../../features/dia/diaobservation/domain-log-instrumentation.md) | Approved |
+| 11 | Domain-Level Trace Instrumentation | Add `DIA_TRACE_ZONE` spans to subsystems for per-frame profiling and lifecycle duration measurement. **Per-frame hierarchy:** `app.frame` → `pu.update` → `module.tick.<name>` → `module.update.<name>`. **Render:** `canvas.renderframe` → `canvas.startframe` / `canvas.processframe` / `canvas.endframe`. **Animation:** `anim.evaluate` → `anim.clip.sample` (per clip) + `anim.blend`. **Streams:** `stream.send` (event fan-out), `stream.consume` (drain). **Lifecycle (multi-frame):** `stage.transition` (ApplyPendingTransition → drain complete), `module.startup.<name>` (BeginStart → kActive/kFailed), `module.stop.<name>` (BeginStop → kInactive), `asset.catalog.load` (loader start → rules engine complete). **Excluded (too fast, no children):** FrameStreamStore atomic read/write, individual keyframe interpolation, asset registry lookups, individual draw command submission. | [domain-trace-instrumentation.md](../../features/dia/diaobservation/domain-trace-instrumentation.md) | Approved |
+| 12 | Domain-Level Health Reporting | Add `IHealthReporter` implementations to subsystems with observable degradation/failure modes. **Tier 1 (critical):** `ModuleLifecycleReporter` — generic per-Module reporter (Degraded: kStarting >50% of startTimeoutMs; Failing: kFailed or timeout exceeded). `RenderHealthReporter` — canvas availability and frame flow (Degraded: FetchLatest nullptr >3 frames; Failing: mCanvas nullptr after timeout, GL fence stuck >5s). `AssetHealthReporter` — stage load state and handler registration (Degraded: kLoading >2s beyond expected; Failing: StageLoadState::kFailed, manifest parse failure). `StreamHealthReporter` — per-EventStreamStore dropped event ratio (Degraded: >10% dropped; Failing: kFailLoudRejected or reader_count==0 with active writers). **Tier 2:** `DebugServerReporter` (connection count, message drop rate), `FrameStreamReporter` (frame staleness detection), `ApplicationReporter` (module failure cascade, stuck transitions >5s). **Tier 3:** `TimeServerReporter` (deltaTime stability), `JobSystemReporter` (queue depth), `AnimationReporter` (evaluator/clip state). **Design:** Most signals already exist (ModuleState, StageLoadState, ServerStats, SendResult) — work is wrapping in IHealthReporter. ModuleLifecycleReporter is generic in base Module class; subsystem reporters layer on top. Thresholds configurable via `.diagame` `observation.health` block. | [domain-health-reporting.md](../../features/dia/diaobservation/domain-health-reporting.md) | Approved |
+| 13 | Domain-Level Metric Registration | Register `MetricRegistry` primitives across subsystems that have observable quantitative signals. **DiaAssetRuntime:** `dia.assets.loaded` (Gauge), `dia.assets.loading` (Gauge), `dia.assets.failed` (Counter), `dia.assets.load_time_ms` (Histogram per asset type) — registered in `AssetRuntimeModule::DoStart`, updated in load callbacks. **DiaDebugServer:** `dia.debugserver.connections` (Gauge), `dia.debugserver.subscriptions` (Gauge), `dia.debugserver.messages_sent` (Counter), `dia.debugserver.tick_ms` (Histogram) — registered in server init; subsumes hand-rolled `ServerStats` struct. **DiaInput:** `dia.input.sources` (Gauge), `dia.input.events_per_frame` (Histogram), `dia.input.active_gamepads` (Gauge) — registered in input module init, updated per-frame. **DiaThreading (requires JobSystem extraction from DiaCore):** `dia.jobs.queue_depth` (Gauge), `dia.jobs.submitted` (Counter), `dia.jobs.completed` (Counter), `dia.jobs.active_workers` (Gauge) — blocked on DiaThreading module extraction to break DiaCore→DiaMetrics cycle. **Prerequisite:** Feature #5 (DiaMetrics wiring) must be Done. DiaThreading extraction is a separate spec item but its metrics land here once unblocked. | [domain-metric-registration.md](../../features/dia/diaobservation/domain-metric-registration.md) | Approved |
 
 ## Dependencies on Other Systems
 
@@ -352,7 +476,7 @@ The full schema is documented in `docs/research/observ_telemetry/choose.md` and 
 - Sidecar observation process (C7) — deferred until crash-survival of log stream is needed
 - OTLP exporter (C8) — deferred until aggregation backend exists; ships as a sink class
 - Live config reload (C9) — deferred until dev-loop pain is real
-- GPU markers (PIX / RenderDoc bridge)
+- GPU profiling (PIX / RenderDoc / bgfx timer queries) — deferred until DiaBgfx lands
 - Multi-dimensional metric labels
 - Cross-process span propagation
 - Sampling
@@ -365,7 +489,7 @@ The full schema is documented in `docs/research/observ_telemetry/choose.md` and 
 
 | ID | Decision | Rationale | Scope | Status | Binding |
 |----|----------|-----------|-------|--------|---------|
-| SD-O01 | Logs, traces, health in one `DiaObservation` module; metrics extracted to standalone `DiaMetrics` sibling | Logs/traces/health are intrinsically session-aware — a span without a session ID has no `trace_id`; a health report without a session has no rollup. Metrics (`Counter`/`Gauge`/`Histogram`) are general-purpose primitives useful for profiling, gameplay stats, and editor panels without any observation context. `DiaMetrics → DiaCore` only; `DiaObservation → DiaMetrics + DiaCore`. **Amended in Feature #5** from original "one module for all four pillars". | All features | Accepted | Yes |
+| SD-O01 | All five pillars (logs, traces, metrics, health, profiling) live in one `DiaObservation` module | A standalone `DiaMetrics` was originally proposed on the grounds that Counter/Gauge/Histogram are useful without session context. In practice: anything running the engine has a session; the metric bridge (`DIA_PROFILE_SCOPE_METRIC`) couples metrics and profiling at the call site anyway; and the asymmetry produced a worse story for consumers. Folding metrics in simplifies the dependency chain to `DiaObservation → DiaCore` and eliminates the only outlier. **Amended 2026-05-19** from previous "metrics extracted to standalone DiaMetrics sibling". | All features | Accepted | Yes |
 | SD-O02 | DiaLogger is folded into `Dia/DiaObservation/Log/`; `Dia/DiaLogger/` is deleted | Logs are one of the four pillars; keeping it as a sibling is asymmetric and forces consumers to import two modules. Macro API preserved verbatim — only include paths change. Schema coupling (timestamp + session ID on every entry) is unavoidable, so the producer must already know about the observation schema. | Feature #1 | Accepted | Yes |
 | SD-O03 | Logger drain runs on a dedicated thread inside `Logger`, not on the main PU | Producer side (`Logger::Log` writing to thread-local rings) is already cheap; the cost is `FlushBuffers` running synchronously on main + per-entry `printf` / `OutputDebugStringA`. Async drain removes the perf hit without changing the producer API. Sidecar (C7) is the next escalation, not this one. | Feature #1 | Accepted | Yes |
 | SD-O04 | Two distinct sinks coexist: human console (`StdOutSink` / `DebugOutputSink`) and AI JSON-line (`ObservationFileSink`) | Humans want `[INFO][channel] msg`; AI wants `{"level":"info",...}`. Forcing one format on both audiences makes neither happy. Both ship by default; config can disable either. | Feature #1, #2 | Accepted | Yes |
@@ -387,6 +511,13 @@ The full schema is documented in `docs/research/observ_telemetry/choose.md` and 
 | SD-O20 | Test utilities ship in `Dia/DiaObservation/Testing/` | Mock sink, session fixture, scenario harness live with the library; consumers opt in via include. Platform-wide pattern (matches DiaStateMachine, DiaRig2D). | All features | Accepted | Yes |
 | SD-O21 | DiaCore is the only required dependency; the system is callable from anywhere above DiaCore | Observation must work from any thread, in any phase, before/after `DiaApplicationFlow` is up. No `Module` subclass in this system. The `SessionModule` host lives in application code (`Cluiche/CluicheGameBaseline/`), not in this module. | All features | Accepted | Yes |
 | SD-O22 | DiaCore cannot include observation headers | Would create a cycle. DiaCore continues to use `Dia::Core::Log::OutputLine` for its own internal output (the same constraint as the current DiaLogger arrangement). | All features | Accepted | Yes |
+| SD-O30 | Profiling and metrics are separate pillars with a one-way bridge (`DIA_PROFILE_SCOPE_METRIC`) | Metrics aggregate over time (trend, p95); profiling retains full per-frame resolution (drill-down). They answer different questions and must not be collapsed. The bridge avoids dual-instrumentation at hot sites — a single `DIA_PROFILE_SCOPE_METRIC` call populates the Histogram from the same timestamp pair used for the profile record. When profiling is disabled, only the metric is populated; there is no silent data loss. | Feature #8 | Accepted | Yes |
+| SD-O27 | Traces and profiling default OFF; logs and metrics default ON | Traces and profile scopes fire every frame — leaving them on by default produces unworkable file volume and ~1ns overhead per scope across the whole codebase. Logs and metrics are already bounded (level threshold + 100ms snapshot cadence) so defaulting them on is safe. The master bitmask being `0` means every macro is a single AND against zero — no allocation, no file write, no measurable cost. | All features | Accepted | Yes |
+| SD-O28 | Traces and profiling use integer bitmask categories; logs use StringCRC channels | Profile scopes and trace zones fire at up to 60,000/sec combined. A hash lookup at that frequency is a measurable frame-time cost. A bitmask AND is ~1ns regardless of how many categories are defined. Logs fire at human-observable rates where a hash lookup (~10ns) is acceptable. Both expose the same user-facing concept ("tag a call site, configure what's active") but with the right implementation for their respective frequencies. | Feature #4, #8 | Accepted | Yes |
+| SD-O29 | Category constants are `uint32_t` bitmasks defined in `Dia::Observation::Trace::Category` and `Dia::Observation::Profile::Category`; application code extends with additional constants in the same pattern | 32 bits gives 32 categories per pillar — sufficient for the engine's subsystem count. Application-defined categories use the upper bits by convention. Sharing the same integer type means the active mask can be set from config without a registry lookup. | Feature #4, #8 | Accepted | Yes |
+| SD-O24 | Profiling is a 5th pillar, frame-structured and separate from traces | Metrics aggregate over time; traces model request causality; profiling records hierarchical call-tree cost within a frame. Data is keyed by frame number and thread, forming a scope tree per frame — a shape that neither metrics nor traces can represent. This pillar is the primary tool for diagnosing frame-time regressions. | Feature #8, #9 | Accepted | Yes |
+| SD-O25 | `DIA_PROFILE_SCOPE` vs `DIA_TRACE_ZONE` — both exist; neither replaces the other | Trace zones (`DIA_TRACE_ZONE`) model causality and lifetime (request → sub-request); profile scopes (`DIA_PROFILE_SCOPE`) model cost within a frame. A module startup trace spans multiple frames; a per-frame module tick profile scope is sub-millisecond. Using one for the other produces wrong data. | Feature #8 | Accepted | Yes |
+| SD-O26 | `ProfilerModule::BeginFrame`/`EndFrame` drives the frame boundary | The profiler must know where frames begin and end to group records and flush `profile.jsonl`. The `ProfilerModule` (application code, like `SessionModule`) calls these on the main PU tick. The profiler itself does not depend on `DiaApplicationFlow`. | Feature #8 | Accepted | Yes |
 | SD-O23 | DiaLogger system spec marked Superseded by feature #1 | Once feature #1 lands and `Dia/DiaLogger/` is deleted, `docs/specs/systems/dia/dialogger.md` Status is set to `Superseded` with a pointer to this spec. Channel registry table from DiaLogger spec is migrated into this spec's documentation. | Feature #1 | Accepted | Yes |
 
 **Status values:** `Proposed` · `Accepted` · `Rejected` · `Superseded`
@@ -444,10 +575,18 @@ The full schema is documented in `docs/research/observ_telemetry/choose.md` and 
 
 `Approved` — 2026-05-17. Spec written from research at `docs/research/observ_telemetry/summary.md`. Steps 3 (Inherited Binding Decisions) and 4 (AI Review Questions) complete and confirmed.
 
-All 7 feature specs Approved — 2026-05-17.
+All 7 original feature specs Approved — 2026-05-17.
+
+**Amended 2026-05-19:** Added profiling as 5th pillar. Features #8 (infrastructure) and #9 (domain instrumentation) added as `Draft`. Feature numbering updated: old 8–11 → new 10–13. Three new decisions added (SD-O24, SD-O25, SD-O26).
+
+**Plan:** [diaobservation.plan.md](diaobservation.plan.md)
 
 **Next:**
-- Create plan file `diaobservation.plan.md` when implementation starts (serial order: #1 → #2 → #3 → #4/#5/#6 can partially overlap → #7 last)
-- Note: `DiaMetrics` is a new standalone module (sibling to `DiaObservation`) — needs its own system spec or can be treated as a sub-spec of this feature work. Confirm before implementation.
-- System becomes `In Progress` once feature #1 implementation begins; `Done` only when all 7 features are `Done`.
-- System Status becomes `In Progress` once feature #1 begins, `Done` only when all 7 features are `Approved`
+- Feature #1 Done. Feature #5 partially done (primitives built in standalone DiaMetrics; fold + wiring deferred).
+- Features #2–#7 specs are Approved — ready for implementation.
+- Feature specs #8 and #9 (profiling) need to be written and approved before implementation.
+- Features #10–#13 (domain instrumentation) need specs written.
+- `DiaMetrics` physical fold into `DiaObservation/Metric/` scheduled after Feature #2 lands.
+- System becomes `In Progress` once Feature #2 implementation begins; `Done` only when all features are `Done`.
+
+**On completion of this system (all features Done):** Add an Observation Opportunity Scan step to the global Claude workflow. At the Verify/Prove step of every future feature implementation, Claude must scan all touched files for missed instrumentation opportunities across all 5 pillars (logs, traces, profiling, metrics, health) and report findings in the task notes. Findings feed the domain instrumentation features of this system — they do not block the feature being marked Done. Update `CLAUDE.md` and memory at that point to make this permanent.

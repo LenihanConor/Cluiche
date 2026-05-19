@@ -20,6 +20,7 @@
 #include "DiaDebugServer/QueryRegistry.h"
 #include "DiaDebugServer/DebugServerLogSink.h"
 #include "DiaDebugServer/IDebugStateProvider.h"
+#include "DiaDebugServer/ObservationBridge.h"
 
 #include <cstdint>
 
@@ -118,6 +119,10 @@ namespace Dia
 			// Stop the WebSocket server and destroy it.  Safe to call once.
 			void Stop();
 
+			// --- Observation Bridge ----------------------------------------------
+			// Call after Start() once session info is available.
+			void StartObservationBridge(const char* sessionId, int64_t epochOffsetNs);
+
 			// --- Manual server control (rarely used; Start/Stop usually suffice)
 			bool StartServer();
 			void StopServer();
@@ -154,8 +159,6 @@ namespace Dia
 			const char* GetCurrentStageName() const;
 			int  GetProcessingUnitCount() const;
 
-			void BroadcastCoreMetrics();
-
 			void RegisterProtocolCommands();
 			void SendProtoMessage(int connId, const dia::debug::DebugMessage& msg);
 			void BroadcastProtoMessage(const dia::debug::DebugMessage& msg);
@@ -174,21 +177,13 @@ namespace Dia
 			char mGameBuild[kMaxGameFieldLength];
 			char mDiagamePath[kMaxPathLength];
 
-			float mMetricsBroadcastInterval;
-			float mMetricsTimer;
-
-			// Frame-time rolling accumulator.
-			float mFrameTimeAccumMs;
-			int   mFrameTimeSampleCount;
-			float mLastFpsSample;
-			float mLastFrameTimeMsSample;
-
 			ServerStats          mStats;
 			Dia::Core::Containers::DynamicArrayC<ClientTap, 64> mClientTaps;
 			unsigned int                                        mLifecycleTapId;
 			CommandDispatcher    mCommandDispatcher;
 			QueryRegistry        mQueryRegistry;
 			DebugServerLogSink   mLogSink;
+			ObservationBridge*   mObservationBridge;
 
 			uint64_t mStartTimestamp;
 			bool     mStarted;

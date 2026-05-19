@@ -8,7 +8,7 @@
 | Application | @docs/specs/applications/dia.md | - |
 | System | @docs/specs/systems/dia/diaobservation.md | **debugserver-bridge** |
 
-**Status:** `Draft`
+**Status:** `Approved` — 2026-05-17
 
 **Research:** @docs/research/observ_telemetry/summary.md
 

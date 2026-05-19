@@ -17,6 +17,7 @@
     <ClInclude Include="StateSerializer.h" />
     <ClInclude Include="CommandDispatcher.h" />
     <ClInclude Include="QueryRegistry.h" />
+    <ClInclude Include="ObservationBridge.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugServer.cpp" />
@@ -24,6 +25,7 @@
     <ClCompile Include="StateSerializer.cpp" />
     <ClCompile Include="CommandDispatcher.cpp" />
     <ClCompile Include="QueryRegistry.cpp" />
+    <ClCompile Include="ObservationBridge.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">

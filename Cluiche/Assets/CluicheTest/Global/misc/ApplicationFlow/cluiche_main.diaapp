@@ -46,10 +46,18 @@
             "dedicated_thread": false,
             "modules": [
                 {
-                    "instance_id": "LoggerModule",
-                    "type_id": "LoggerModule",
+                    "instance_id": "ObservationModule",
+                    "type_id": "ObservationModule",
                     "stages": [ "all" ],
                     "dependencies": [],
+                    "reads": [],
+                    "writes": []
+                },
+                {
+                    "instance_id": "ProfilerModule",
+                    "type_id": "ProfilerModule",
+                    "stages": [ "all" ],
+                    "dependencies": [ "ObservationModule" ],
                     "reads": [],
                     "writes": []
                 },
@@ -57,7 +65,7 @@
                     "instance_id": "JobSystemModule",
                     "type_id": "JobSystemModule",
                     "stages": [ "all" ],
-                    "dependencies": [ "LoggerModule" ],
+                    "dependencies": [ "ObservationModule" ],
                     "reads": [],
                     "writes": []
                 },
@@ -65,7 +73,7 @@
                     "instance_id": "KernelModule",
                     "type_id": "KernelModule",
                     "stages": [ "all" ],
-                    "dependencies": [ "LoggerModule", "JobSystemModule" ],
+                    "dependencies": [ "ObservationModule", "JobSystemModule" ],
                     "reads": [],
                     "writes": [ "InputToSim" ]
                 },
@@ -73,7 +81,7 @@
                     "instance_id": "UIModule",
                     "type_id": "UIModule",
                     "stages": [ "all" ],
-                    "dependencies": [ "LoggerModule", "KernelModule" ],
+                    "dependencies": [ "ObservationModule", "KernelModule" ],
                     "reads": [ "SimToUI" ],
                     "writes": [ "UIToSim" ]
                 },
@@ -81,7 +89,7 @@
                     "instance_id": "AssetServiceModule",
                     "type_id": "AssetServiceModule",
                     "stages": [ "all" ],
-                    "dependencies": [ "LoggerModule", "KernelModule", "UIModule", "JobSystemModule" ],
+                    "dependencies": [ "ObservationModule", "KernelModule", "UIModule", "JobSystemModule" ],
                     "reads": [],
                     "writes": []
                 },

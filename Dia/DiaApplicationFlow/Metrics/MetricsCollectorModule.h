@@ -3,7 +3,7 @@
 #include <DiaApplicationFlow/Module.h>
 #include <DiaCore/CRC/StringCRC.h>
 
-namespace Dia { namespace Metric { class Gauge; } }
+namespace Dia { namespace Observation { namespace Metric { class Gauge; } } }
 
 namespace Dia
 {
@@ -24,10 +24,10 @@ namespace Dia
         private:
             void QueryMemory();
 
-            Dia::Metric::Gauge* mFpsGauge;
-            Dia::Metric::Gauge* mFrameTimeGauge;
-            Dia::Metric::Gauge* mMemoryGauge;
-            Dia::Metric::Gauge* mUptimeGauge;
+            Dia::Observation::Metric::Gauge* mFpsGauge;
+            Dia::Observation::Metric::Gauge* mFrameTimeGauge;
+            Dia::Observation::Metric::Gauge* mMemoryGauge;
+            Dia::Observation::Metric::Gauge* mUptimeGauge;
 
             double mUptimeAccumulator;
         };

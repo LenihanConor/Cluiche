@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
-#include <DiaMetrics/MetricRegistry.h>
-#include <DiaMetrics/Testing/MetricFixture.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Metric/Testing/MetricFixture.h>
 
-using namespace Dia::Metric;
+using namespace Dia::Observation::Metric;
 
 struct MetricHistogramTest : ::testing::Test
 {

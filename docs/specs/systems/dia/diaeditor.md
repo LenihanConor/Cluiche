@@ -599,6 +599,7 @@ Features within the DiaEditor system (create with `/spec-feature`):
 | Plugin Lifecycle Toolbar | Persistent toolbar strip, Plugin Browser panel, runtime load/unload/hide/show of plugins, connection status indicator | @docs/specs/features/dia/diaeditor/plugin-lifecycle-toolbar.md | Done |
 | Shared File Dialog | Framework-level native file dialog service (open/save) available to all plugins via WebUIBridge | @docs/specs/features/dia/diaeditor/shared-file-dialog.md | Draft |
 | Plugin Service Locator | Type-safe service locator on EditorPluginContext for inter-plugin service sharing | @docs/specs/features/dia/diaeditor/plugin-service-locator.md | Done |
+| Project Context Bar | Shared `.diagame` project context for all plugins — toolbar project button, `IEditorContext::LoadProject`, `OnProjectChanged` callbacks, `--project` CLI arg, live auto-load on connect | @docs/specs/features/dia/diaeditor/project-context-bar.md | Approved |
 
 ## AI Review Questions
 
