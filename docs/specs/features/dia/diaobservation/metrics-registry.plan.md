@@ -36,6 +36,11 @@ DiaObservation adds `MetricsFileSink` — stamps snapshots with `session_id` + e
 | 14 | Rewrite `MetricsCollectorModule` internals | `dia pipeline --target cluichetest` green | Done | sonnet | Register 4 gauges (`dia.fps`, `dia.frame_time_ms`, `dia.memory_bytes`, `dia.uptime_s`) in `DoInit`. Update in `DoUpdate`. Delete hand-rolled `PUMetrics`/`MetricsSnapshot` internal storage. Module ID + `DoUpdate` signature unchanged. AC19. Add `DiaMetrics` project reference to `DiaApplicationFlow.vcxproj`. |
 | 15 | Update module registry | Inspect file | Done | haiku | Add DiaMetrics entry to `docs/reference/registry/module-registry.md` |
 | 16 | Final integration gate | `dia pipeline --target googletest` + `dia pipeline --target cluichetest` both green in Debug | Done | sonnet | AC18, AC19, AC20. Full verification of all ACs that don't require DiaObservation. |
+| 17 | Wire `editor.plugin.load_ms` in `PluginLoaderModule` | `dia pipeline --target cluicheeditor` green | Deferred | haiku | `RegisterHistogram` in `DoInit`; `Observe()` per plugin after load. Buckets: {10, 50, 100, 250, 500, 1000} ms. AC21. **DEFER until DiaMetrics linkage in CluicheEditor confirmed post-Tasks 11–13.** |
+| 18 | Wire `editor.project.load_ms` + `editor.project.save_ms` in `EditorModelModule` | `dia pipeline --target cluicheeditor` green | Deferred | haiku | `RegisterHistogram` in `DoInit`; `Observe()` on each load/save call site. Buckets: {50, 100, 250, 500, 1000, 2000} ms. AC22. |
+| 19 | Wire `editor.game_connection.state` + `editor.game_connection.message_roundtrip_ms` in `GameConnectionModule` | `dia pipeline --target cluicheeditor` green | Deferred | haiku | `RegisterGauge` (state 0/1/2) + `RegisterHistogram` in `DoInit`. Set gauge on state transitions; Observe roundtrip on each completed send/ack. Buckets: {1, 5, 10, 25, 50, 100} ms. AC23, AC24. |
+| 20 | Wire `editor.command.execute_count` + `editor.command.history_depth` in `CommandHistoryModule` | `dia pipeline --target cluicheeditor` green | Deferred | haiku | `RegisterCounter` + `RegisterGauge` in `DoInit`. `Inc()` on execute; `Set()` on push/pop/undo/redo. AC25, AC26. |
+| 21 | Editor integration gate | `dia pipeline --target cluicheeditor` green | Deferred | sonnet | AC27. Verify no warnings; spot-check metric names in a manual editor run's `metrics-final.json`. |
 
 ---
 
@@ -83,7 +88,9 @@ Task 1 (vcxproj) ──┬──► Task 2 (module doc)     [parallel with 3]
 
 Tasks 11, 12, 13 require the DiaObservation module to exist on disk. DiaObservation is blocked behind Feature #1 (Skeleton + DiaLogger Fold) and Feature #2 (Foundation) — neither is built yet.
 
-**Strategy:** Complete Tasks 1–10, 14–16. The DiaMetrics module ships standalone with full test coverage. Tasks 11–13 execute later as part of DiaObservation Feature #5 implementation.
+Tasks 17–21 (CluicheEditor metric wiring) require DiaMetrics to be fully linked into CluicheEditor — this is confirmed by CluicheEditor already referencing `DiaObservation.lib`, but the `DiaMetrics` project reference needs adding to `CluicheEditor.vcxproj` as part of Task 13.
+
+**Strategy:** Complete Tasks 1–10, 14–16 first (done). Then Tasks 11–13 + 17–21 execute once DiaObservation Features #1+#2 are built. Tasks 17–20 can run in parallel with each other after Task 13.
 
 ---
 

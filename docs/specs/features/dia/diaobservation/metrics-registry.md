@@ -8,7 +8,7 @@
 | Application | @docs/specs/applications/dia.md | - |
 | System | @docs/specs/systems/dia/diaobservation.md | **metrics-registry** |
 
-**Status:** `In Progress (partial)` — 2026-05-18. Tasks 1–10, 14–16 Done; Tasks 11–13 Deferred pending DiaObservation Features #1+#2. Steps 3 (Binding Decisions) and 4 (AI Review Questions) complete and confirmed. **Amended 2026-05-17** — `MetricRegistry`/primitives extracted to standalone `DiaMetrics` module; `MetricsFileSink` stays in `DiaObservation`.
+**Status:** `In Progress (partial)` — 2026-05-18. Tasks 1–10, 14–16 Done; Tasks 11–13 Deferred pending DiaObservation Features #1+#2; Tasks 17–21 Deferred (editor wiring, same dependency). Steps 3 (Binding Decisions) and 4 (AI Review Questions) complete and confirmed. **Amended 2026-05-17** — `MetricRegistry`/primitives extracted to standalone `DiaMetrics` module; `MetricsFileSink` stays in `DiaObservation`. **Amended 2026-05-18** — added CluicheEditor metric wiring tasks (17–21).
 
 **Plan:** [metrics-registry.plan.md](metrics-registry.plan.md)
 
@@ -65,6 +65,13 @@ After Features #1–#4 the engine can log and trace, but has no way to track cou
 | AC18 | `DiaMetrics` builds independently without `DiaObservation` in the dependency chain | `dia pipeline --target diametrics` green |
 | AC19 | `MetricsCollectorModule` rewritten: FPS, frame-time, memory, uptime registered as named gauges with `MetricRegistry`; module ID and `DoUpdate` signature unchanged | Build + run: `dia pipeline --target cluichetest` green; existing consumers unaffected |
 | AC20 | `dia pipeline --target cluichetest` green in Debug + Release | Build + run verification |
+| AC21 | `editor.plugin.load_ms` Histogram registered in `PluginLoaderModule::DoInit`; `Observe()` called per plugin after load completes | Code review; metric present in `metrics-final.json` after editor session |
+| AC22 | `editor.project.load_ms` and `editor.project.save_ms` Histograms registered in `EditorModelModule::DoInit`; `Observe()` called on each operation | Code review + manual run: values non-zero in snapshot |
+| AC23 | `editor.game_connection.state` Gauge registered in `GameConnectionModule::DoInit`; Set to 0/1/2 on disconnect/connecting/connected state transitions | Code review; state visible in `metric.jsonl` stream |
+| AC24 | `editor.game_connection.message_roundtrip_ms` Histogram registered in `GameConnectionModule::DoInit`; `Observe()` called on each completed round-trip | Code review |
+| AC25 | `editor.command.execute_count` Counter registered in `CommandHistoryModule::DoInit`; `Inc()` called once per executed command | Code review |
+| AC26 | `editor.command.history_depth` Gauge registered in `CommandHistoryModule::DoInit`; `Set()` called whenever the history stack changes | Code review |
+| AC27 | `dia pipeline --target cluicheeditor` green after editor metric wiring | Build verification |
 
 ---
 
@@ -252,6 +259,10 @@ Module ID, `DoStart`, `DoStop`, and PU wiring unchanged. Internal hand-rolled st
 | `Cluiche/Cluiche.sln` | Add `DiaMetrics` project |
 | `docs/reference/registry/module-registry.md` | Register `DiaMetrics` |
 | CluicheTest `.diagame` | Add `sinks.metrics_file: true` |
+| `Cluiche/CluicheEditor/ApplicationFlow/Modules/PluginLoaderModule.cpp` | Register + observe `editor.plugin.load_ms` (AC21) |
+| `Cluiche/CluicheEditor/ApplicationFlow/Modules/EditorModelModule.cpp` | Register + observe `editor.project.load_ms`, `editor.project.save_ms` (AC22) |
+| `Cluiche/CluicheEditor/ApplicationFlow/Modules/GameConnectionModule.cpp` | Register `editor.game_connection.state` gauge + `editor.game_connection.message_roundtrip_ms` histogram (AC23, AC24) |
+| `Cluiche/CluicheEditor/ApplicationFlow/Modules/CommandHistoryModule.cpp` | Register `editor.command.execute_count` counter + `editor.command.history_depth` gauge (AC25, AC26) |
 
 ---
 

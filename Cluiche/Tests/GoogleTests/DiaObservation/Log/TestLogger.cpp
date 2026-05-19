@@ -1,14 +1,16 @@
 #include <gtest/gtest.h>
 
-#include <DiaLogger/Logger.h>
-#include <DiaLogger/ISink.h>
-#include <DiaLogger/LogEntry.h>
-#include <DiaLogger/LogLevel.h>
+#include <DiaObservation/Log/Logger.h>
+#include <DiaObservation/Log/ISink.h>
+#include <DiaObservation/Log/LogEntry.h>
+#include <DiaObservation/Log/LogLevel.h>
 #include <DiaCore/CRC/StringCRC.h>
 
 #include <string.h>
+#include <thread>
+#include <chrono>
 
-using namespace Dia::Logger;
+using namespace Dia::Observation::Log;
 
 // ==============================================================================
 // Test sink that captures entries
@@ -39,6 +41,13 @@ private:
 	unsigned int mEntryCount;
 };
 
+// Wait up to 50ms for the sink to accumulate at least `expected` entries.
+static void WaitForDrain(CaptureSink* sink, unsigned int expected, int maxMs = 50)
+{
+	for (int i = 0; i < maxMs && sink->GetEntryCount() < expected; ++i)
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+}
+
 // ==============================================================================
 // Fixture — registers/unregisters thread buffer and sink per test
 // ==============================================================================
@@ -67,7 +76,7 @@ protected:
 };
 
 // ==============================================================================
-// End-to-End: Log → FlushBuffers → Sink
+// End-to-End: Log → drain → Sink
 // ==============================================================================
 
 TEST_F(LoggerTest, LogAndFlush_SinkReceivesEntry)
@@ -75,7 +84,7 @@ TEST_F(LoggerTest, LogAndFlush_SinkReceivesEntry)
 	Logger::Instance().Log(LogLevel::kInfo, Dia::Core::StringCRC("Test"),
 		"hello world");
 
-	Logger::Instance().FlushBuffers();
+	WaitForDrain(mSink, 1);
 
 	EXPECT_EQ(1u, mSink->GetEntryCount());
 	EXPECT_EQ(LogLevel::kInfo, mSink->GetEntry(0).level);
@@ -87,7 +96,7 @@ TEST_F(LoggerTest, LogAndFlush_ChannelPreserved)
 	Dia::Core::StringCRC channel("Physics");
 	Logger::Instance().Log(LogLevel::kWarning, channel, "body fell through floor");
 
-	Logger::Instance().FlushBuffers();
+	WaitForDrain(mSink, 1);
 
 	ASSERT_EQ(1u, mSink->GetEntryCount());
 	EXPECT_EQ(channel, mSink->GetEntry(0).channel);
@@ -98,7 +107,7 @@ TEST_F(LoggerTest, LogAndFlush_FormatString)
 	Logger::Instance().Log(LogLevel::kInfo, Dia::Core::StringCRC("Test"),
 		"value=%d name=%s", 42, "foo");
 
-	Logger::Instance().FlushBuffers();
+	WaitForDrain(mSink, 1);
 
 	ASSERT_EQ(1u, mSink->GetEntryCount());
 	EXPECT_STREQ("value=42 name=foo", mSink->GetEntry(0).message);
@@ -112,7 +121,7 @@ TEST_F(LoggerTest, MultipleEntries_AllFlushed)
 			"msg_%d", i);
 	}
 
-	Logger::Instance().FlushBuffers();
+	WaitForDrain(mSink, 10);
 
 	EXPECT_EQ(10u, mSink->GetEntryCount());
 	EXPECT_STREQ("msg_0", mSink->GetEntry(0).message);
@@ -121,19 +130,20 @@ TEST_F(LoggerTest, MultipleEntries_AllFlushed)
 
 TEST_F(LoggerTest, FlushWithEmptyBuffer_NoEntries)
 {
-	Logger::Instance().FlushBuffers();
+	// No log calls — wait a couple of ms to ensure drain ran at least once, still 0.
+	std::this_thread::sleep_for(std::chrono::milliseconds(5));
 	EXPECT_EQ(0u, mSink->GetEntryCount());
 }
 
 TEST_F(LoggerTest, DoubleFlush_SecondFlushEmpty)
 {
 	Logger::Instance().Log(LogLevel::kInfo, Dia::Core::StringCRC("Test"), "one");
-
-	Logger::Instance().FlushBuffers();
+	WaitForDrain(mSink, 1);
 	EXPECT_EQ(1u, mSink->GetEntryCount());
 
 	mSink->Clear();
-	Logger::Instance().FlushBuffers();
+	// Wait another tick to confirm drain doesn't re-deliver.
+	std::this_thread::sleep_for(std::chrono::milliseconds(5));
 	EXPECT_EQ(0u, mSink->GetEntryCount());
 }
 
@@ -141,11 +151,13 @@ TEST_F(LoggerTest, SinkFilterRespected_BelowThresholdNotDelivered)
 {
 	mSink->SetLevelThreshold(LogLevel::kError);
 
-	Logger::Instance().Log(LogLevel::kInfo, Dia::Core::StringCRC("Test"), "low");
+	Logger::Instance().Log(LogLevel::kInfo,    Dia::Core::StringCRC("Test"), "low");
 	Logger::Instance().Log(LogLevel::kWarning, Dia::Core::StringCRC("Test"), "medium");
-	Logger::Instance().Log(LogLevel::kError, Dia::Core::StringCRC("Test"), "high");
+	Logger::Instance().Log(LogLevel::kError,   Dia::Core::StringCRC("Test"), "high");
 
-	Logger::Instance().FlushBuffers();
+	WaitForDrain(mSink, 1);
+	// Give drain a bit more time to deliver any unexpected extra entries.
+	std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
 	EXPECT_EQ(1u, mSink->GetEntryCount());
 	EXPECT_STREQ("high", mSink->GetEntry(0).message);
@@ -158,10 +170,8 @@ TEST_F(LoggerTest, SinkFilterRespected_BelowThresholdNotDelivered)
 TEST(TestLoggerEdge, FlushWithNoSinks_NoCrash)
 {
 	Logger::Instance().RegisterThreadBuffer();
-
 	Logger::Instance().Log(LogLevel::kInfo, Dia::Core::StringCRC("Test"), "orphan");
-	Logger::Instance().FlushBuffers();
-
+	std::this_thread::sleep_for(std::chrono::milliseconds(5));
 	Logger::Instance().UnregisterThreadBuffer();
 }
 
@@ -173,7 +183,7 @@ TEST(TestLoggerEdge, LogWithoutRegisteredBuffer_NoCrash)
 
 TEST(TestLoggerEdge, FlushWithEmptyBuffersAndNoSinks_NoCrash)
 {
-	Logger::Instance().FlushBuffers();
+	Logger::Instance().FlushBuffers(); // Must be a no-op, not a crash.
 }
 
 TEST(TestLoggerEdge, MultipleSinks_AllReceiveEntries)
@@ -188,7 +198,8 @@ TEST(TestLoggerEdge, MultipleSinks_AllReceiveEntries)
 	Logger::Instance().RegisterSink(&sinkB);
 
 	Logger::Instance().Log(LogLevel::kInfo, Dia::Core::StringCRC("Test"), "broadcast");
-	Logger::Instance().FlushBuffers();
+	WaitForDrain(&sinkA, 1);
+	WaitForDrain(&sinkB, 1);
 
 	EXPECT_EQ(1u, sinkA.GetEntryCount());
 	EXPECT_EQ(1u, sinkB.GetEntryCount());
@@ -209,14 +220,14 @@ TEST(TestLoggerEdge, UnregisterSink_StopsReceiving)
 	Logger::Instance().RegisterSink(&sink);
 
 	Logger::Instance().Log(LogLevel::kInfo, Dia::Core::StringCRC("Test"), "before");
-	Logger::Instance().FlushBuffers();
+	WaitForDrain(&sink, 1);
 	EXPECT_EQ(1u, sink.GetEntryCount());
 
 	Logger::Instance().UnregisterSink(&sink);
 	sink.Clear();
 
 	Logger::Instance().Log(LogLevel::kInfo, Dia::Core::StringCRC("Test"), "after");
-	Logger::Instance().FlushBuffers();
+	std::this_thread::sleep_for(std::chrono::milliseconds(5));
 	EXPECT_EQ(0u, sink.GetEntryCount());
 
 	Logger::Instance().UnregisterThreadBuffer();
@@ -229,10 +240,10 @@ TEST(TestLoggerEdge, RegisterSameSinkTwice_OnlyOneDelivery)
 
 	Logger::Instance().RegisterThreadBuffer();
 	Logger::Instance().RegisterSink(&sink);
-	Logger::Instance().RegisterSink(&sink);
+	Logger::Instance().RegisterSink(&sink); // duplicate — should be ignored
 
 	Logger::Instance().Log(LogLevel::kInfo, Dia::Core::StringCRC("Test"), "once");
-	Logger::Instance().FlushBuffers();
+	WaitForDrain(&sink, 1);
 
 	EXPECT_EQ(1u, sink.GetEntryCount());
 

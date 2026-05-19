@@ -1,16 +1,16 @@
 #include <gtest/gtest.h>
 
 #include <DiaCore/Core/Assert.h>
-#include <DiaLogger/AssertSinkBridge.h>
-#include <DiaLogger/Logger.h>
-#include <DiaLogger/ISink.h>
-#include <DiaLogger/LogEntry.h>
-#include <DiaLogger/LogLevel.h>
+#include <DiaObservation/Log/AssertSinkBridge.h>
+#include <DiaObservation/Log/Logger.h>
+#include <DiaObservation/Log/ISink.h>
+#include <DiaObservation/Log/LogEntry.h>
+#include <DiaObservation/Log/LogLevel.h>
 #include <DiaCore/CRC/StringCRC.h>
 
 #include <string.h>
 
-using namespace Dia::Logger;
+using namespace Dia::Observation::Log;
 
 // ==============================================================================
 // Test sink that captures entries for verification

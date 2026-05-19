@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
-#include <DiaLogger/LogLevel.h>
+#include <DiaObservation/Log/LogLevel.h>
 
-using namespace Dia::Logger;
+using namespace Dia::Observation::Log;
 
 // ==============================================================================
 // LogLevel Tests

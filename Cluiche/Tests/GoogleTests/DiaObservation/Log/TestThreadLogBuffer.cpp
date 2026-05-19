@@ -1,14 +1,14 @@
 #include <gtest/gtest.h>
 
-#include <DiaLogger/ThreadLogBuffer.h>
-#include <DiaLogger/LogEntry.h>
-#include <DiaLogger/LogLevel.h>
+#include <DiaObservation/Log/ThreadLogBuffer.h>
+#include <DiaObservation/Log/LogEntry.h>
+#include <DiaObservation/Log/LogLevel.h>
 #include <DiaCore/CRC/StringCRC.h>
 
 #include <string.h>
 #include <memory>
 
-using namespace Dia::Logger;
+using namespace Dia::Observation::Log;
 
 // ==============================================================================
 // Fixture — heap-allocates ThreadLogBuffer (1MB, too large for stack)
