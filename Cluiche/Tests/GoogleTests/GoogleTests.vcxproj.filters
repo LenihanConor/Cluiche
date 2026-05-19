@@ -124,6 +124,9 @@
     <Filter Include="DiaAssetRuntime">
       <UniqueIdentifier>{DARU0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ApplicationFlow">
+      <UniqueIdentifier>{APPFL001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -462,10 +465,10 @@
       <Filter>DebugProtocol</Filter>
     </ClCompile>
     <!-- DebugServer -->
-    <ClCompile Include="DebugServer\TestSubscriptionManager.cpp">
+    <ClCompile Include="DebugServer\TestCommandDispatcher.cpp">
       <Filter>DebugServer</Filter>
     </ClCompile>
-    <ClCompile Include="DebugServer\TestCommandDispatcher.cpp">
+    <ClCompile Include="DebugServer\TestDebugServerTaps.cpp">
       <Filter>DebugServer</Filter>
     </ClCompile>
     <ClCompile Include="DebugServer\TestStateSerializer.cpp">
@@ -908,6 +911,10 @@
     </ClCompile>
     <ClCompile Include="DiaAssetRuntime\TestReset.cpp">
       <Filter>DiaAssetRuntime</Filter>
+    </ClCompile>
+    <!-- ApplicationFlow -->
+    <ClCompile Include="ApplicationFlow\TestStreamTypeSerializer.cpp">
+      <Filter>ApplicationFlow</Filter>
     </ClCompile>
     <!-- DiaGame -->
     <ClCompile Include="DiaGame\TestJsonDiaGameSerializer.cpp">

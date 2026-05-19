@@ -7,6 +7,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 #include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/Streams/IStreamStore.h>   // StreamKind
+#include <DiaApplicationFlow/Streams/OverflowPolicy.h> // OverflowPolicy
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
@@ -20,10 +22,16 @@ namespace Dia { namespace ApplicationFlow {
 
     struct StreamInfo {
         Dia::Core::StringCRC id;
-        Dia::Core::StringCRC type;
+        Dia::Core::StringCRC type;         // payload type StringCRC (kept for compat)
         Dia::Core::StringCRC fromPU;
         Dia::Core::StringCRC toPU;
         bool                 multiWriter;
+        // F4 additions:
+        StreamKind           kind;
+        OverflowPolicy       overflowPolicy;
+        unsigned long long   currentSequence;
+        unsigned int         attachedReaderCount;
+        unsigned int         attachedTapCount;
     };
 
     struct TransitionInfo {
@@ -56,6 +64,10 @@ namespace Dia { namespace ApplicationFlow {
             Dia::Core::Containers::DynamicArrayC<StreamInfo, 16>& out) const = 0;
 
         virtual bool IsShuttingDown() const = 0;
+
+        // Tap attachment path — returns the store for the given stream id, or null.
+        // Safe to call at any time after Application::Start() returns true.
+        virtual IStreamStore* FindStream(const Dia::Core::StringCRC& id) = 0;
     };
 
 }} // namespace Dia::ApplicationFlow

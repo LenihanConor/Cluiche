@@ -13,9 +13,9 @@
 
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
+#include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaObservation/Log/LogLevel.h>
 
-#include "DiaDebugServer/SubscriptionManager.h"
 #include "DiaDebugServer/CommandDispatcher.h"
 #include "DiaDebugServer/QueryRegistry.h"
 #include "DiaDebugServer/DebugServerLogSink.h"
@@ -128,7 +128,6 @@ namespace Dia
 			int GetConnectionCount() const;
 			const ServerStats& GetStats() const { return mStats; }
 
-			SubscriptionManager& GetSubscriptionManager() { return mSubscriptionManager; }
 			CommandDispatcher&   GetCommandDispatcher()   { return mCommandDispatcher; }
 			QueryRegistry&       GetQueryRegistry()       { return mQueryRegistry; }
 
@@ -136,6 +135,12 @@ namespace Dia
 			void NotifySubscribers(const Dia::Core::StringCRC& dataType, const Json::Value& payload);
 
 		private:
+			struct ClientTap {
+				int connId;
+				Dia::Core::StringCRC streamId;
+				unsigned int tapId;
+			};
+
 			void HandleConnection(int connId, bool connected);
 			void HandleMessage(int connId, const Dia::WebSocket::Message& msg);
 
@@ -150,8 +155,6 @@ namespace Dia
 			int  GetProcessingUnitCount() const;
 
 			void BroadcastCoreMetrics();
-			void BroadcastStageTransition(const Dia::Core::StringCRC& from,
-			                               const Dia::Core::StringCRC& to);
 
 			void RegisterProtocolCommands();
 			void SendProtoMessage(int connId, const dia::debug::DebugMessage& msg);
@@ -180,11 +183,9 @@ namespace Dia
 			float mLastFpsSample;
 			float mLastFrameTimeMsSample;
 
-			// Last-observed stage for transition edge-detection in Tick.
-			Dia::Core::StringCRC mLastObservedStage;
-
 			ServerStats          mStats;
-			SubscriptionManager  mSubscriptionManager;
+			Dia::Core::Containers::DynamicArrayC<ClientTap, 64> mClientTaps;
+			unsigned int                                        mLifecycleTapId;
 			CommandDispatcher    mCommandDispatcher;
 			QueryRegistry        mQueryRegistry;
 			DebugServerLogSink   mLogSink;

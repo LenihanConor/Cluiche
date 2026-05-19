@@ -1,6 +1,7 @@
 #pragma once
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Core/Assert.h>
+#include <DiaCore/Json/external/json/json.h>
 #include <typeindex>
 
 namespace Dia { namespace ApplicationFlow {
@@ -12,8 +13,10 @@ namespace Dia { namespace ApplicationFlow {
 // Populated by DIA_STREAM_TYPE(T) static-init registrations.
 // Zero public instance methods — everything is static.
 //
-// Uses a fixed-capacity array instead of a hash table to avoid
-// static-init order issues inherent in non-trivial static objects.
+// Uses function-local statics (construct-on-first-use idiom) to avoid
+// the static-initialization-order fiasco that would occur with class-level
+// or file-scope static arrays when registrations happen during static init
+// of other translation units.
 // ---------------------------------------------------------------------------
 class StreamTypeRegistry
 {
@@ -30,9 +33,22 @@ public:
     // Duplicate registrations (same typeIdx) are a no-op in Release and assert in Debug.
     static void Register(const std::type_index& typeIdx, const Dia::Core::StringCRC& typeId);
 
+    // Serializer registry (added for F4 tap/debug forwarding)
+    using JsonSerializer = Json::Value(*)(const void* bytes, size_t size);
+
+    // Internal — called by StreamTypeSerializerRegistration<T> ctor only.
+    static void RegisterSerializer(const Dia::Core::StringCRC& payloadType, JsonSerializer fn);
+
+    // Returns Json::nullValue if no serializer registered.
+    // Logs a one-time warning per type.
+    static Json::Value SerializeToJson(const Dia::Core::StringCRC& payloadType,
+                                       const void* bytes, size_t size);
+
 private:
     // No instances
     StreamTypeRegistry() = delete;
+
+    static constexpr unsigned int kMaxTypes = 64;
 
     struct Entry
     {
@@ -40,11 +56,18 @@ private:
         Dia::Core::StringCRC typeId;
     };
 
-    static constexpr unsigned int kMaxTypes = 64;
+    struct SerializerEntry
+    {
+        Dia::Core::StringCRC payloadType;
+        JsonSerializer       fn = nullptr;
+        bool                 warnedMissing = false;
+    };
 
-    // Plain array — safe for static-init, no constructor dependencies.
-    static Entry        s_entries[kMaxTypes];
-    static unsigned int s_count;
+    // Construct-on-first-use accessors — safe across all static-init ordering.
+    static Entry*        Entries();
+    static unsigned int& Count();
+    static SerializerEntry* Serializers();
+    static unsigned int& SerializerCount();
 };
 
 // ---------------------------------------------------------------------------
@@ -54,11 +77,13 @@ template<typename T>
 /*static*/ Dia::Core::StringCRC StreamTypeRegistry::GetTypeId()
 {
     const std::type_index target{ typeid(T) };
-    for (unsigned int i = 0; i < s_count; ++i)
+    const unsigned int count = Count();
+    Entry* entries = Entries();
+    for (unsigned int i = 0; i < count; ++i)
     {
-        if (s_entries[i].typeIdx == target)
+        if (entries[i].typeIdx == target)
         {
-            return s_entries[i].typeId;
+            return entries[i].typeId;
         }
     }
     DIA_ASSERT(false, "StreamTypeRegistry::GetTypeId — type not registered. Use DIA_STREAM_TYPE(T) in the owning .cpp.");
@@ -77,6 +102,22 @@ struct StreamTypeRegistration
     explicit StreamTypeRegistration(const Dia::Core::StringCRC& typeId)
     {
         StreamTypeRegistry::Register(std::type_index(typeid(T)), typeId);
+    }
+};
+
+// ---------------------------------------------------------------------------
+// StreamTypeSerializerRegistration<T>
+//
+// Instantiated by DIA_STREAM_TYPE_WITH_SERIALIZER(T, fn). Constructor calls
+// StreamTypeRegistry::RegisterSerializer once at static-init time.
+// ---------------------------------------------------------------------------
+template<typename T>
+struct StreamTypeSerializerRegistration
+{
+    explicit StreamTypeSerializerRegistration(const Dia::Core::StringCRC& typeId,
+                                              StreamTypeRegistry::JsonSerializer fn)
+    {
+        StreamTypeRegistry::RegisterSerializer(typeId, fn);
     }
 };
 

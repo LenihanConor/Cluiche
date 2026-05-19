@@ -10,7 +10,7 @@
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaCore/Time/TimeAbsolute.h>
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 #include <DiaApplicationFlow/Streams/IStreamStore.h>
 #include <DiaApplicationFlow/Streams/SendResult.h>
@@ -53,6 +53,22 @@ public:
     StreamKind                  GetKind()         const override { return StreamKind::kEvent; }
     const Dia::Core::StringCRC& GetPayloadType()  const override { return mPayloadType; }
     unsigned int                GetMaxReaders()   const override { return mMaxReaders; }
+
+    // IStreamStore introspection overrides (F4)
+    OverflowPolicy     GetOverflowPolicy()        const override { return mPolicy; }
+    unsigned long long GetLastSequence()          const override
+    {
+        const uint64_t next = mNextSequence.load(std::memory_order_relaxed);
+        return next > 0 ? static_cast<unsigned long long>(next - 1) : 0;
+    }
+    unsigned int       GetRegisteredReaderCount() const override
+    {
+        std::lock_guard<std::mutex> lock(mMutex);
+        unsigned int active = 0;
+        for (int i = 0; i < mReaderCount; ++i)
+            if (mReaders[i].active) ++active;
+        return active;
+    }
 
     // Called by framework to register a reader slot.
     // Returns reader index, or -1 if no slots remain.

@@ -1,5 +1,8 @@
 #include "DiaDebugServer/DebugServer.h"
 #include "DiaDebugServer/StateSerializer.h"
+#include <DiaApplicationFlow/Streams/IStreamStore.h>
+#include <DiaApplicationFlow/Streams/StreamTypeRegistry.h>
+#include <DiaApplicationFlow/LifecycleEvent.h>
 
 #include <DiaProtobuf/ProtoStructConverter.h>
 #include <DiaWebSocket/Server.h>
@@ -19,11 +22,6 @@
 #endif
 #endif
 
-namespace
-{
-	static const Dia::Core::StringCRC kStageTransitionTopic("stage_transition");
-}
-
 namespace Dia
 {
 	namespace DebugServer
@@ -39,6 +37,7 @@ namespace Dia
 			, mFrameTimeSampleCount(0)
 			, mLastFpsSample(0.0f)
 			, mLastFrameTimeMsSample(0.0f)
+			, mLifecycleTapId(0)
 			, mStartTimestamp(0)
 			, mStarted(false)
 		{
@@ -87,8 +86,53 @@ namespace Dia
 
 			RegisterProtocolCommands();
 
+			// Attach tap on $lifecycle stream so stage transitions arrive via push, not polling.
 			if (mStateProvider)
-				mLastObservedStage = mStateProvider->GetCurrentStage();
+			{
+				auto* lifecycleStore = mStateProvider->FindStream(Dia::Core::StringCRC("$lifecycle"));
+				if (lifecycleStore)
+				{
+					mLifecycleTapId = lifecycleStore->AttachTap(
+						[this](const void* bytes, unsigned int size,
+						       const Dia::Core::StringCRC& /*streamId*/)
+						{
+							if (!bytes || size < sizeof(Dia::ApplicationFlow::LifecycleEvent)) return;
+							const auto* evt = static_cast<const Dia::ApplicationFlow::LifecycleEvent*>(bytes);
+							if (evt->kind != Dia::ApplicationFlow::LifecycleEventKind::kStageTransitionCommitted) return;
+
+							const Dia::Core::StringCRC stageTransitionTopic("stage_transition");
+							Json::Value payload = StateSerializer::SerializeStageTransition(
+								evt->fromStage, evt->toStage, Dia::DebugProtocol::GetTimestampNow());
+
+							for (unsigned int i = 0; i < mClientTaps.Size(); ++i)
+							{
+								if (mClientTaps[i].streamId == stageTransitionTopic)
+								{
+									dia::debug::DebugMessage msg;
+									msg.set_type(dia::debug::MESSAGE_TYPE_EVENT);
+									msg.set_timestamp(Dia::DebugProtocol::GetTimestampNow());
+									auto* e = msg.mutable_event();
+									e->set_event_type(stageTransitionTopic.AsChar());
+									Dia::Proto::JsonValueToProtoStruct(payload, e->mutable_payload());
+
+									char jsonBuffer[4096];
+									if (mServer && Dia::Proto::ToJson(msg, jsonBuffer, sizeof(jsonBuffer)))
+										mServer->SendText(mClientTaps[i].connId, jsonBuffer);
+									mStats.messagesSentTotal++;
+								}
+							}
+						}
+					).id;
+					if (mLifecycleTapId == 0)
+					{
+						DIA_LOG_WARNING("DebugServer", "DebugServer::Start - $lifecycle stream found but AttachTap failed");
+					}
+				}
+				else
+				{
+					DIA_LOG_WARNING("DebugServer", "DebugServer::Start - $lifecycle stream not found, stage transitions degraded");
+				}
+			}
 
 			if (mAutoStart)
 				StartServer();
@@ -113,17 +157,6 @@ namespace Dia
 			mFrameTimeAccumMs    += deltaMs;
 			mFrameTimeSampleCount++;
 
-			// Poll for stage changes.
-			if (mStateProvider)
-			{
-				const Dia::Core::StringCRC now = mStateProvider->GetCurrentStage();
-				if (now != mLastObservedStage)
-				{
-					BroadcastStageTransition(mLastObservedStage, now);
-					mLastObservedStage = now;
-				}
-			}
-
 			// Periodic core-metrics broadcast.
 			mMetricsTimer += deltaTime;
 			if (mMetricsTimer >= mMetricsBroadcastInterval)
@@ -134,7 +167,7 @@ namespace Dia
 			}
 
 			mStats.connectionCount   = mServer->GetConnectionCount();
-			mStats.subscriptionCount = mSubscriptionManager.GetSubscriptionCount();
+			mStats.subscriptionCount = static_cast<int>(mClientTaps.Size());
 
 			if (mStartTimestamp > 0)
 			{
@@ -149,6 +182,24 @@ namespace Dia
 		void DebugServer::Stop()
 		{
 			if (!mStarted) return;
+
+			// Detach $lifecycle tap
+			if (mStateProvider && mLifecycleTapId != 0)
+			{
+				auto* lifecycleStore = mStateProvider->FindStream(Dia::Core::StringCRC("$lifecycle"));
+				if (lifecycleStore) lifecycleStore->DetachTap(Dia::ApplicationFlow::TapHandle{mLifecycleTapId});
+				mLifecycleTapId = 0;
+			}
+			// Detach all client taps
+			for (unsigned int i = 0; i < mClientTaps.Size(); ++i)
+			{
+				if (mStateProvider)
+				{
+					auto* store = mStateProvider->FindStream(mClientTaps[i].streamId);
+					if (store) store->DetachTap(Dia::ApplicationFlow::TapHandle{mClientTaps[i].tapId});
+				}
+			}
+			mClientTaps.RemoveAll();
 
 			Dia::Observation::Log::Logger::Instance().UnregisterSink(&mLogSink);
 			mLogSink.SetServer(nullptr);
@@ -220,7 +271,23 @@ namespace Dia
 			else
 			{
 				DIA_LOG_INFO("DebugServer", "DebugServer: Client disconnected connId=%d", connId);
-				mSubscriptionManager.UnsubscribeAll(connId);
+				// Detach all taps for this connection
+				for (unsigned int i = 0; i < mClientTaps.Size(); )
+				{
+					if (mClientTaps[i].connId == connId)
+					{
+						if (mStateProvider)
+						{
+							auto* store = mStateProvider->FindStream(mClientTaps[i].streamId);
+							if (store) store->DetachTap(Dia::ApplicationFlow::TapHandle{mClientTaps[i].tapId});
+						}
+						mClientTaps.RemoveAt(i);
+					}
+					else
+					{
+						++i;
+					}
+				}
 			}
 		}
 
@@ -325,10 +392,53 @@ namespace Dia
 			}
 
 			Dia::Core::StringCRC dataType(sub.data_type().c_str());
-			Json::Value filter;
-			if (sub.has_filter())
-				filter = Dia::Proto::ProtoStructToJsonValue(sub.filter());
-			mSubscriptionManager.Subscribe(connId, dataType, filter);
+			if (mStateProvider)
+			{
+				auto* store = mStateProvider->FindStream(dataType);
+				if (store)
+				{
+					auto cb = [this, connId, dataType](const void* bytes, unsigned int size,
+					                                    const Dia::Core::StringCRC& /*streamId*/)
+					{
+						Json::Value payload = Dia::ApplicationFlow::StreamTypeRegistry::SerializeToJson(
+							dataType, bytes, static_cast<size_t>(size));
+
+						dia::debug::DebugMessage updateMsg;
+						updateMsg.set_type(dia::debug::MESSAGE_TYPE_DATA_UPDATE);
+						updateMsg.set_timestamp(Dia::DebugProtocol::GetTimestampNow());
+						auto* update = updateMsg.mutable_data_update();
+						update->set_data_type(dataType.AsChar());
+						if (!payload.isNull())
+							Dia::Proto::JsonValueToProtoStruct(payload, update->mutable_payload());
+
+						char jsonBuffer[4096];
+						if (mServer && Dia::Proto::ToJson(updateMsg, jsonBuffer, sizeof(jsonBuffer)))
+							mServer->SendText(connId, jsonBuffer);
+						mStats.messagesSentTotal++;
+					};
+
+					auto tapHandle = store->AttachTap(cb);
+					if (tapHandle.id != 0)
+					{
+						ClientTap ct;
+						ct.connId   = connId;
+						ct.streamId = dataType;
+						ct.tapId    = tapHandle.id;
+						mClientTaps.Add(ct);
+					}
+				}
+				else
+				{
+					// Virtual topic: no Application stream exists. Register in mClientTaps
+					// with tapId == 0 so NotifySubscribers and the $lifecycle tap can still
+					// push to subscribed clients by scanning streamId.
+					ClientTap ct;
+					ct.connId   = connId;
+					ct.streamId = dataType;
+					ct.tapId    = 0;
+					mClientTaps.Add(ct);
+				}
+			}
 		}
 
 		void DebugServer::HandleUnsubscribe(int connId, const dia::debug::DebugMessage& msg)
@@ -337,7 +447,22 @@ namespace Dia
 			if (unsub.data_type().empty()) return;
 
 			Dia::Core::StringCRC dataType(unsub.data_type().c_str());
-			mSubscriptionManager.Unsubscribe(connId, dataType);
+			for (unsigned int i = 0; i < mClientTaps.Size(); )
+			{
+				if (mClientTaps[i].connId == connId && mClientTaps[i].streamId == dataType)
+				{
+					if (mStateProvider)
+					{
+						auto* store = mStateProvider->FindStream(dataType);
+						if (store) store->DetachTap(Dia::ApplicationFlow::TapHandle{mClientTaps[i].tapId});
+					}
+					mClientTaps.RemoveAt(i);
+				}
+				else
+				{
+					++i;
+				}
+			}
 		}
 
 		void DebugServer::HandleCommand(int connId, const dia::debug::DebugMessage& msg)
@@ -477,36 +602,10 @@ namespace Dia
 			}
 		}
 
-		void DebugServer::BroadcastStageTransition(const Dia::Core::StringCRC& from,
-		                                            const Dia::Core::StringCRC& to)
-		{
-			auto subscribers = mSubscriptionManager.GetSubscribers(kStageTransitionTopic);
-			if (subscribers.Size() == 0) return;
-
-			Json::Value payload = StateSerializer::SerializeStageTransition(
-				from, to, Dia::DebugProtocol::GetTimestampNow());
-
-			dia::debug::DebugMessage msg;
-			msg.set_type(dia::debug::MESSAGE_TYPE_EVENT);
-			msg.set_timestamp(Dia::DebugProtocol::GetTimestampNow());
-			auto* evt = msg.mutable_event();
-			evt->set_event_type(kStageTransitionTopic.AsChar());
-			Dia::Proto::JsonValueToProtoStruct(payload, evt->mutable_payload());
-
-			char jsonBuffer[4096];
-			if (Dia::Proto::ToJson(msg, jsonBuffer, sizeof(jsonBuffer)))
-			{
-				for (unsigned int i = 0; i < subscribers.Size(); ++i)
-					mServer->SendText(subscribers[i], jsonBuffer);
-			}
-			mStats.messagesSentTotal += static_cast<int>(subscribers.Size());
-		}
-
 		void DebugServer::NotifySubscribers(const Dia::Core::StringCRC& dataType,
 		                                     const Json::Value& payload)
 		{
-			auto subscribers = mSubscriptionManager.GetSubscribers(dataType);
-			if (subscribers.Size() == 0) return;
+			if (!mServer) return;
 
 			dia::debug::DebugMessage msg;
 			msg.set_type(dia::debug::MESSAGE_TYPE_DATA_UPDATE);
@@ -516,12 +615,16 @@ namespace Dia
 			Dia::Proto::JsonValueToProtoStruct(payload, update->mutable_payload());
 
 			char jsonBuffer[4096];
-			if (Dia::Proto::ToJson(msg, jsonBuffer, sizeof(jsonBuffer)))
+			if (!Dia::Proto::ToJson(msg, jsonBuffer, sizeof(jsonBuffer))) return;
+
+			for (unsigned int i = 0; i < mClientTaps.Size(); ++i)
 			{
-				for (unsigned int i = 0; i < subscribers.Size(); ++i)
-					mServer->SendText(subscribers[i], jsonBuffer);
+				if (mClientTaps[i].streamId == dataType)
+				{
+					mServer->SendText(mClientTaps[i].connId, jsonBuffer);
+					mStats.messagesSentTotal++;
+				}
 			}
-			mStats.messagesSentTotal += static_cast<int>(subscribers.Size());
 		}
 
 		//---------------------------------------------------------------------

@@ -14,7 +14,6 @@
     <ClInclude Include="DebugServer.h" />
     <ClInclude Include="DebugServerLogSink.h" />
     <ClInclude Include="IDebugStateProvider.h" />
-    <ClInclude Include="SubscriptionManager.h" />
     <ClInclude Include="StateSerializer.h" />
     <ClInclude Include="CommandDispatcher.h" />
     <ClInclude Include="QueryRegistry.h" />
@@ -22,7 +21,6 @@
   <ItemGroup>
     <ClCompile Include="DebugServer.cpp" />
     <ClCompile Include="DebugServerLogSink.cpp" />
-    <ClCompile Include="SubscriptionManager.cpp" />
     <ClCompile Include="StateSerializer.cpp" />
     <ClCompile Include="CommandDispatcher.cpp" />
     <ClCompile Include="QueryRegistry.cpp" />
@@ -45,6 +43,9 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaObservation\DiaObservation.vcxproj">
       <Project>{7a8b9c0d-e1f2-3456-7890-abcdef012345}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaApplicationFlow\DiaApplicationFlow.vcxproj">
+      <Project>{DD3D58EF-028B-42CB-B837-0042BA30D96F}</Project>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">

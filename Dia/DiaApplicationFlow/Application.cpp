@@ -520,6 +520,27 @@ namespace Dia { namespace ApplicationFlow {
             si.fromPU      = sd.fromPU;
             si.toPU        = sd.toPU;
             si.multiWriter = sd.multiWriter;
+
+            // F4 runtime fields — look up the live store.
+            const IStreamStore* store = FindStreamStore(sd.id);
+            if (store != nullptr)
+            {
+                si.kind                = store->GetKind();
+                si.overflowPolicy      = store->GetOverflowPolicy();
+                si.currentSequence     = store->GetLastSequence();
+                si.attachedReaderCount = store->GetRegisteredReaderCount();
+                si.attachedTapCount    = store->GetTapCount();
+            }
+            else
+            {
+                // Store not yet registered (pre-Start) — fill safe defaults.
+                si.kind                = StreamKind::kEvent;
+                si.overflowPolicy      = sd.overflowPolicy;
+                si.currentSequence     = 0;
+                si.attachedReaderCount = 0;
+                si.attachedTapCount    = 0;
+            }
+
             out.Add(si);
         }
     }
@@ -868,6 +889,15 @@ namespace Dia { namespace ApplicationFlow {
             }
         }
         return nullptr;
+    }
+
+    //--------------------------------------------------------------------------
+    // FindStream  (IApplicationInspectable override)
+    //--------------------------------------------------------------------------
+
+    IStreamStore* Application::FindStream(const Dia::Core::StringCRC& id)
+    {
+        return FindStreamStore(id);
     }
 
     //--------------------------------------------------------------------------

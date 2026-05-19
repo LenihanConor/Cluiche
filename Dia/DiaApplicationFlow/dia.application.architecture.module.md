@@ -32,7 +32,7 @@ responsibilities:
     (boot failure → shutdown; non-boot failure → capped rollback retries, then shutdown)
   - TypeRegistry + DIA_MODULE macro — static-init factory registration
   - ModuleRef<T> — lazy, lifecycle-safe inter-module access within a PU
-  - FrameStreamStore / EventStreamStore — manifest-authoritative inter-PU data channels, created at startup from manifest declarations
+  - FrameStreamStore / EventStreamStore — manifest-authoritative inter-PU data channels, created at startup from manifest declarations; IStreamStore tap API: AttachTap(callback) → TapHandle, DetachTap(handle), GetTapCount()
   - StreamWriter/Reader, EventStreamWriter/Reader — typed module-side handles
   - StreamTypeRegistry — process-static registry mapping C++ type → StringCRC type ID for stream payload type checking
   - ApplicationManifestV2 POD structs — in-memory representation of .diaapp + .diastage files
@@ -40,7 +40,7 @@ responsibilities:
   - ManifestComposerV2 — .diagame → merged manifest (base + stage overlays)
   - ManifestValidatorV2 — full structural + dependency + cycle validation, including
     array-order enforcement for declared dependencies (DEPENDENCY_ORDER error)
-  - IApplicationInspectable — read-only runtime introspection for debug tools and tests
+  - IApplicationInspectable — read-only runtime introspection for debug tools and tests; FindStream(StringCRC) → IStreamStore*
   - IApplicationControl — narrow control interface (TransitionTo, RequestShutdown,
     GetCurrentStage) exposed to runtime module code via Module::GetApplication()
 
@@ -94,6 +94,8 @@ public_api:
     - StreamReader<T>
     - EventStreamWriter<T>
     - EventStreamReader<T>
+    - IStreamStore (AttachTap / DetachTap / GetTapCount)
+    - TapHandle
 
 dependencies:
   required:

@@ -45,3 +45,15 @@
 #define DIA_STREAM_TYPE(T) \
     static Dia::ApplicationFlow::StreamTypeRegistration<T> \
         s_streamtype_##T { Dia::Core::StringCRC(#T) }
+
+// ---------------------------------------------------------------------------
+// DIA_STREAM_TYPE_WITH_SERIALIZER(T, serializerFn)
+//
+// Registers the type AND a JSON serializer for tap/debug forwarding.
+// serializerFn signature: Json::Value fn(const void* bytes, size_t size)
+// Place in the .cpp file of the owning module — NOT in a header.
+// ---------------------------------------------------------------------------
+#define DIA_STREAM_TYPE_WITH_SERIALIZER(T, serializerFn) \
+    DIA_STREAM_TYPE(T); \
+    static Dia::ApplicationFlow::StreamTypeSerializerRegistration<T> \
+        s_streamserializer_##T { Dia::Core::StringCRC(#T), serializerFn }

@@ -318,6 +318,88 @@ TEST(LifecycleEvents, BootSequenceEmitsAtLeastOneEvent)
         << "At least one lifecycle event should have been consumed from the $lifecycle stream";
 }
 
+// Tap API: attaching a tap to the $lifecycle stream via IStreamStore::AttachTap
+// delivers stage transition events with correct payload.
+//
+// Note: DispatchTaps passes only the payload bytes (sizeof(T)) to the callback,
+// not the full Event<T> envelope — so the tap records LifecycleEvent directly.
+TEST(LifecycleEvents, TapReceivesStageTransition)
+{
+    // Collect the kind field from each tap delivery.
+    DynamicArrayC<LifecycleEventKind, 128> tapKinds;
+    int tapFireCount = 0;
+
+    TypeRegistry reg;
+    reg.Register(LC_LifecycleReaderModule::kTypeId, CreateLcReader);
+    reg.Register(LC_SimpleModule::kTypeId,           CreateLcSimple);
+
+    ApplicationManifestV2 manifest = BuildTwoStageManifest();
+    Application app(manifest, reg);
+    ASSERT_TRUE(app.Start());
+    ASSERT_TRUE(LcPumpUntilStable(app, StringCRC("MainPU"), 100));
+
+    // Attach a tap directly to the $lifecycle stream store.
+    IStreamStore* istore = app.FindStream(StringCRC("$lifecycle"));
+    ASSERT_NE(istore, nullptr) << "$lifecycle stream store must exist after Start()";
+
+    TapHandle handle = istore->AttachTap(
+        [&tapKinds, &tapFireCount](const void* bytes, unsigned int /*size*/,
+                                   const Dia::Core::StringCRC& /*streamId*/)
+        {
+            ++tapFireCount;
+            // DispatchTaps passes &event.payload (not the full Event<T> envelope).
+            const LifecycleEvent* ev = static_cast<const LifecycleEvent*>(bytes);
+            if (tapKinds.Size() < 128)
+                tapKinds.Add(ev->kind);
+        });
+    EXPECT_NE(handle.id, 0u) << "AttachTap should return a valid (non-zero) handle";
+
+    // Trigger a stage transition and pump until committed.
+    app.TransitionTo(StringCRC("Run"));
+    for (int i = 0; i < 50; ++i)
+        app.Update(1.0f / 60.0f);
+
+    // --- Assertions ---
+
+    // At least one tap callback must have fired.
+    EXPECT_GT(tapFireCount, 0) << "Tap callback should fire at least once";
+
+    // At least one event should have kStageTransitionRequested (emitted by TransitionTo).
+    bool hasRequested = false;
+    for (unsigned int i = 0; i < tapKinds.Size(); ++i)
+    {
+        if (tapKinds[i] == LifecycleEventKind::kStageTransitionRequested)
+        {
+            hasRequested = true;
+            break;
+        }
+    }
+    EXPECT_TRUE(hasRequested)
+        << "TransitionTo should emit kStageTransitionRequested through the tap";
+
+    // At least one event should have kStageTransitionCommitted (after full drain).
+    bool hasCommitted = false;
+    for (unsigned int i = 0; i < tapKinds.Size(); ++i)
+    {
+        if (tapKinds[i] == LifecycleEventKind::kStageTransitionCommitted)
+        {
+            hasCommitted = true;
+            break;
+        }
+    }
+    EXPECT_TRUE(hasCommitted)
+        << "After pumping a full transition, at least one kStageTransitionCommitted event "
+           "should have arrived through the tap";
+
+    // Sequence number verification via GetLastSequence(): the store's counter
+    // must have advanced (i.e. more than zero events were sent).
+    EXPECT_GT(istore->GetLastSequence(), 0ull)
+        << "GetLastSequence() should be > 0 after events have been sent";
+
+    // Clean up.
+    istore->DetachTap(handle);
+}
+
 // Envelope sanity: the senderCrc on lifecycle events should be the framework
 // sender ($framework crc).
 TEST(LifecycleEvents, EnvelopeSenderCrcIsFramework)

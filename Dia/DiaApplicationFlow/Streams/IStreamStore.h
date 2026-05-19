@@ -1,5 +1,6 @@
 #pragma once
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaApplicationFlow/Streams/OverflowPolicy.h>
 #include <functional>
 
 namespace Dia { namespace ApplicationFlow {
@@ -34,6 +35,12 @@ namespace Dia { namespace ApplicationFlow {
         virtual TapHandle    AttachTap(TapCallback /*cb*/)    { return TapHandle{0}; }
         virtual void         DetachTap(TapHandle /*handle*/)  {}
         virtual unsigned int GetTapCount()               const { return 0; }
+
+        // Introspection extras — implemented by EventStreamStore; FrameStreamStore
+        // returns safe defaults (kDropOldest, 0, 0).
+        virtual OverflowPolicy   GetOverflowPolicy()           const { return OverflowPolicy::kDropOldest; }
+        virtual unsigned long long GetLastSequence()           const { return 0; }
+        virtual unsigned int     GetRegisteredReaderCount()    const { return 0; }
 
         // Shutdown notification — unblocks kBlock writers. No-op for FrameStream.
         virtual void NotifyShutdown() {}

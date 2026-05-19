@@ -77,6 +77,7 @@ namespace Dia { namespace ApplicationFlow {
                               Dia::Core::Containers::DynamicArrayC<ModuleStateInfo, 64>& out) const override;
         void GetStreamInfo(Dia::Core::Containers::DynamicArrayC<StreamInfo, 16>& out) const override;
         [[nodiscard]] bool IsShuttingDown() const override;
+        IStreamStore* FindStream(const Dia::Core::StringCRC& id) override;
 
         // Stream store registry — main-thread-only, startup-only.
         //
