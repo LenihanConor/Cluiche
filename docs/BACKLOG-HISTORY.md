@@ -33,6 +33,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 | Feature | Spec | System | Completed |
 |---------|------|--------|-----------|
 | DiaCore — DirectedGraph + RelationshipIndex refactor | [directed-graph.md](specs/features/dia/diacore/directed-graph.md) | DiaCore | 2026-05-05 — `DirectedGraph<..., IDType>` with 3 policies + 7th IDType template param; RelationshipIndex rebuilt on DirectedGraph with CRC keys (~47KB stack); 78 graph tests + 92 asset catalogue tests passing |
+| DiaMetrics Registry (standalone) | [metrics-registry.md](specs/features/dia/diaobservation/metrics-registry.md) · [diametrics.md](specs/systems/dia/diametrics.md) | DiaMetrics | 2026-05-18 — New `Dia/DiaMetrics/` static lib: `Counter` (per-thread lock-free shards), `Gauge` (atomic\<double\>), `Histogram` (fixed buckets, p50/p95/p99), `MetricRegistry` Meyer's singleton, `IMetricSink`, `MetricSnapshot`. 24 tests. `MetricsCollectorModule` rewritten to v2 Module API, registers 4 engine gauges. Tasks 11–13 (MetricsFileSink, SessionManager wiring) deferred to DiaObservation #5. |
 
 ---
 
