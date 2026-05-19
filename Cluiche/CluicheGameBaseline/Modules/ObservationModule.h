@@ -1,16 +1,17 @@
 #pragma once
 #include <DiaApplicationFlow/Module.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaObservation/Session/SessionManager.h>
 
 namespace Dia { namespace Observation { namespace Log { class ISink; } } }
 
 namespace Cluiche { namespace AppFlow {
 
-class LoggerModule : public Dia::ApplicationFlow::Module {
+class ObservationModule : public Dia::ApplicationFlow::Module {
 public:
     static const Dia::Core::StringCRC kTypeId;
-    explicit LoggerModule(const Dia::Core::StringCRC& instanceId);
-    ~LoggerModule();
+    explicit ObservationModule(const Dia::Core::StringCRC& instanceId);
+    ~ObservationModule();
 
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
@@ -21,6 +22,7 @@ private:
     static constexpr unsigned int kMaxSinks = 8;
     Dia::Observation::Log::ISink* mOwnedSinks[kMaxSinks];
     unsigned int mOwnedSinkCount = 0;
+    Dia::Observation::SessionManager mSessionManager;
 };
 
 } } // namespace Cluiche::AppFlow

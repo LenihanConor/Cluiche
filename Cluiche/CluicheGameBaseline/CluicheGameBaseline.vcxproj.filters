@@ -24,7 +24,7 @@
     <ClCompile Include="Modules\LoadingScreenModule.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
-    <ClCompile Include="Modules\LoggerModule.cpp">
+    <ClCompile Include="Modules\ObservationModule.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
     <ClCompile Include="Modules\RenderModule.cpp">
@@ -59,7 +59,7 @@
     <ClInclude Include="Modules\LoadingScreenModule.h">
       <Filter>Modules</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\LoggerModule.h">
+    <ClInclude Include="Modules\ObservationModule.h">
       <Filter>Modules</Filter>
     </ClInclude>
     <ClInclude Include="Modules\RenderModule.h">
