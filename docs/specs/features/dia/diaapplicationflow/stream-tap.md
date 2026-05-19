@@ -293,6 +293,8 @@ The legacy `stage_transition` topic maps to a tap on `$lifecycle` with a filter 
 
 None — all interview answers locked, all AI review questions answered.
 
+**Plan:** [stream-tap.plan.md](stream-tap.plan.md)
+
 ## Status
 
-`In Progress` — 2026-05-18. Tap API on IStreamStore + EventStreamStore implemented (AttachTap/DetachTap/GetTapCount, re-entrance guard, NotifyShutdown). DebugServer migration (F4-11 through F4-14) deferred to a separate workstream — requires NotifySubscribers audit first. F4-8 spec example update (SPSC queue pattern) still pending.
+`In Progress` — 2026-05-18. Tap API on IStreamStore + EventStreamStore implemented (AttachTap/DetachTap/GetTapCount). DebugServer migration (Tasks 5–6), serializer registry (Task 1), StreamInfo extension (Task 2), and tests (Tasks 8–10) are the remaining work. See plan.

@@ -8,8 +8,8 @@ Derived from spec status across `docs/specs/`. When a spec moves to Done, move i
 
 | Item | Spec | What's next |
 |------|------|-------------|
-| DiaApplicationFlow | [diaapplicationflow.md](specs/systems/dia/diaapplicationflow.md) | All 8 feature specs Approved. Next: implement P1 (Framework Core: Module Lifecycle + Stage System + Error Handling). Research: `docs/research/diapp_simplif/summary.md` |
-| CluicheTest Application Flow | [applicationflow.md](specs/systems/cluichetest/applicationflow.md) | All 5 feature specs Approved. Blocked on DiaApplicationFlow implementation. |
+| DiaApplicationFlow — Stream Tap & Debug Iteration | [stream-tap.md](specs/features/dia/diaapplicationflow/stream-tap.md) | 7 of 8 live features Done (validated 2026-05-18). One remaining: Stream Tap DebugServer migration. Plan: [stream-tap.plan.md](specs/features/dia/diaapplicationflow/stream-tap.plan.md). Next: Task 1 (SerializeToJson) + Task 2 (StreamInfo extension) + Task 3 (FindStream on inspectable) in parallel. |
+| CluicheTest Application Flow | [applicationflow.md](specs/systems/cluichetest/applicationflow.md) | All 5 feature specs Approved. Unblocks once DiaApplicationFlow Stream Tap lands (system will be Done). |
 
 ---
 

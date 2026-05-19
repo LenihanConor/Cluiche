@@ -263,18 +263,18 @@ Active → [DoStop called each frame] → kStopping... → kDone → Inactive
 
 | Feature | Description | Spec | Status |
 |---------|-------------|------|--------|
-| Module Lifecycle | DoStart (kLoading/kReady/kFailed), DoUpdate, DoStop (kStopping/kDone), timeout handling | [module-lifecycle.md](../../features/dia/diaapplicationflow/module-lifecycle.md) | Approved |
-| Stage System | Config-declared stages, app-wide TransitionTo, diff-based module swap, auto-advance for boot stages | [stage-system.md](../../features/dia/diaapplicationflow/stage-system.md) | Approved |
-| Registration | One-liner DIA_MODULE macro, TypeRegistry, constexpr StringCRC type IDs | [registration.md](../../features/dia/diaapplicationflow/registration.md) | Approved |
-| Config Format v2 | Manifest schema with stages, streams, module stage membership, version field | [config-format.md](../../features/dia/diaapplicationflow/config-format.md) | Approved |
-| Validation | Full manifest validation at load (deps, cycles, streams, stage coverage, type existence) | [validation.md](../../features/dia/diaapplicationflow/validation.md) | Approved |
+| Module Lifecycle | DoStart (kLoading/kReady/kFailed), DoUpdate, DoStop (kStopping/kDone), timeout handling | [module-lifecycle.md](../../features/dia/diaapplicationflow/module-lifecycle.md) | Done |
+| Stage System | Config-declared stages, app-wide TransitionTo, diff-based module swap, auto-advance for boot stages | [stage-system.md](../../features/dia/diaapplicationflow/stage-system.md) | Done |
+| Registration | One-liner DIA_MODULE macro, TypeRegistry, constexpr StringCRC type IDs | [registration.md](../../features/dia/diaapplicationflow/registration.md) | Done |
+| Config Format v2 | Manifest schema with stages, streams, module stage membership, version field | [config-format.md](../../features/dia/diaapplicationflow/config-format.md) | Done |
+| Validation | Full manifest validation at load (deps, cycles, streams, stage coverage, type existence) | [validation.md](../../features/dia/diaapplicationflow/validation.md) | Done |
 | Streams | Framework-owned FrameStream/EventStream, config-declared, StreamReader/StreamWriter handles | [streams.md](../../features/dia/diaapplicationflow/streams.md) | Superseded |
 | Stream Topology — Manifest-Authoritative | Manifest creates stores; binds module reads/writes; type-tag check; per-stream caps from data; deletes v1 MessageBus + dead v1 phase manifests | [stream-topology-manifest.md](../../features/dia/diaapplicationflow/stream-topology-manifest.md) | Done |
 | Stream Policy & Envelope | Per-stream overflow policy (drop-oldest / drop-newest / block / fail-loud); framework-supplied Event<T> envelope (timestamp, sender, sequence) | [stream-policy-envelope.md](../../features/dia/diaapplicationflow/stream-policy-envelope.md) | Done |
 | Lifecycle Events | Reserved $lifecycle stream emits ModuleStateChanged, StageTransitionRequested/Started/Committed, RollbackAttempted, ShutdownRequested events from Application | [lifecycle-events.md](../../features/dia/diaapplicationflow/lifecycle-events.md) | Done |
-| Stream Tap & Debug Iteration | Type-erased AttachTap/DetachTap on any IStreamStore; per-payload-type JSON serializer registry; deletes DiaDebugServer/SubscriptionManager; DebugServer migrated onto taps | [stream-tap.md](../../features/dia/diaapplicationflow/stream-tap.md) | In Progress (tap API done; DebugServer migration deferred) |
-| Error Handling | Timeout per module, assert/rollback/shutdown policies, transition failure recovery | [error-handling.md](../../features/dia/diaapplicationflow/error-handling.md) | Approved |
-| Inspectable Interface | IApplicationInspectable for debug/editor/test consumers | [inspectable.md](../../features/dia/diaapplicationflow/inspectable.md) | Approved |
+| Stream Tap & Debug Iteration | Type-erased AttachTap/DetachTap on any IStreamStore; per-payload-type JSON serializer registry; deletes DiaDebugServer/SubscriptionManager; DebugServer migrated onto taps | [stream-tap.md](../../features/dia/diaapplicationflow/stream-tap.md) | In Progress (tap API done; DebugServer migration + serializer registry + tests remaining — see plan) |
+| Error Handling | Timeout per module, assert/rollback/shutdown policies, transition failure recovery | [error-handling.md](../../features/dia/diaapplicationflow/error-handling.md) | Done |
+| Inspectable Interface | IApplicationInspectable for debug/editor/test consumers | [inspectable.md](../../features/dia/diaapplicationflow/inspectable.md) | Done |
 
 ## Platform Primitives Used
 

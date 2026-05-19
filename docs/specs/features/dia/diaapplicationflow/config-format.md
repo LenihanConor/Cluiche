@@ -183,4 +183,4 @@ None.
 
 ## Status
 
-`Approved` — 2026-05-09
+`Done` — 2026-05-18 (implemented; validated against code 2026-05-18)
