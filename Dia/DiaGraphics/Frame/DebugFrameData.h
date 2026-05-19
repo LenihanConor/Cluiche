@@ -6,7 +6,7 @@
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaMaths/Vector/Vector2D.h>
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 #include "DiaGraphics/Frame/DebugPrimitive.h"
 

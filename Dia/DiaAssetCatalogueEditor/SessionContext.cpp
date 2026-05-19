@@ -1,7 +1,7 @@
 #include "DiaAssetCatalogueEditor/SessionContext.h"
 
 #include <DiaCore/Json/external/json/json.h>
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>

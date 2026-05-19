@@ -3,6 +3,7 @@
 
 #include <DiaEditor/Plugin/EditorPluginRegistrationMacros.h>
 #include <DiaEditor/Plugin/EditorPluginContext.h>
+#include <DiaEditor/MVC/EditorModel.h>
 #include <DiaEditor/UI/WebUIBridge.h>
 #include <DiaEditor/UI/FileDialogHandler.h>
 
@@ -41,10 +42,30 @@ DiaApplicationEditor::~DiaApplicationEditor()
 	delete mData;
 }
 
+void DiaApplicationEditor::OnProjectChangedStatic(const Dia::Editor::ProjectContext& ctx, void* ud)
+{
+	auto* self = static_cast<DiaApplicationEditor*>(ud);
+	if (ctx.IsValid() && ctx.applicationManifestPath[0] != '\0')
+		self->OpenManifest(ctx.applicationManifestPath);
+	else
+		self->CloseManifest();
+}
+
 void DiaApplicationEditor::OnLoad(const Dia::Editor::EditorPluginContext& context)
 {
 	mData = new ManifestEditorData();
 	mBridge = context.mBridge;
+
+	if (context.mModel != nullptr)
+	{
+		context.mModel->OnDiagameProjectChanged(&DiaApplicationEditor::OnProjectChangedStatic, this);
+		if (context.mModel->GetDiagameProject().IsValid())
+		{
+			const char* path = context.mModel->GetDiagameProject().applicationManifestPath;
+			if (path[0] != '\0')
+				OpenManifest(path);
+		}
+	}
 
 	if (mBridge != nullptr)
 	{

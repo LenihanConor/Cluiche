@@ -1,10 +1,10 @@
 #pragma once
 
-#include <DiaLogger/ISink.h>
+#include <DiaObservation/Log/ISink.h>
 
 namespace Dia
 {
-	namespace Logger
+	namespace Observation { namespace Log
 	{
 		// Writes each log entry to stdout as a line. Useful for running under
 		// bash/CI where OutputDebugString (Visual Studio Output window) is
@@ -16,4 +16,5 @@ namespace Dia
 			const char* GetName() const override { return "StdOut"; }
 		};
 	}
-}
+} // namespace Observation
+} // namespace Dia

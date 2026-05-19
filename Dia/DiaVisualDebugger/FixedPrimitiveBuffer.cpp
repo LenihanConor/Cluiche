@@ -5,7 +5,7 @@
 
 #ifdef DIA_DEBUG
 
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 namespace Dia
 {

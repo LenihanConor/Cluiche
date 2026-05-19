@@ -2,7 +2,7 @@
 
 namespace Dia
 {
-	namespace Logger
+	namespace Observation { namespace Log
 	{
 		enum class LogLevel : unsigned char
 		{
@@ -16,4 +16,5 @@ namespace Dia
 		const char* LogLevelToString(LogLevel level);
 		LogLevel LogLevelFromString(const char* str, LogLevel defaultLevel = LogLevel::kInfo);
 	}
-}
+} // namespace Observation
+} // namespace Dia

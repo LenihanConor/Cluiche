@@ -4,7 +4,7 @@
 #include "CEFSchemeHandler.h"
 #include "CEFUtils.h"
 
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 #include <include/cef_scheme.h>
 

@@ -1,8 +1,8 @@
-#include "DiaLogger/ISink.h"
+#include "DiaObservation/Log/ISink.h"
 
 namespace Dia
 {
-	namespace Logger
+	namespace Observation { namespace Log
 	{
 		ISink::ISink()
 			: mMinLevel(LogLevel::kInfo)
@@ -63,4 +63,5 @@ namespace Dia
 			return false;
 		}
 	}
-}
+} // namespace Observation
+} // namespace Dia

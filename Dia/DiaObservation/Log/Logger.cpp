@@ -1,16 +1,24 @@
-#include "DiaLogger/Logger.h"
-#include "DiaLogger/ThreadLogBuffer.h"
-#include "DiaLogger/ISink.h"
-#include "DiaLogger/LogEntry.h"
+#include "DiaObservation/Log/Logger.h"
+#include "DiaObservation/Log/ThreadLogBuffer.h"
+#include "DiaObservation/Log/ISink.h"
+#include "DiaObservation/Log/LogEntry.h"
 
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include <mutex>
+#include <thread>
+#include <atomic>
+#include <chrono>
+
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
 
 namespace Dia
 {
-	namespace Logger
+	namespace Observation { namespace Log
 	{
 		static thread_local ThreadLogBuffer* tLocalBuffer = nullptr;
 		static thread_local bool tFlushing = false;
@@ -24,6 +32,7 @@ namespace Dia
 		Logger::Logger()
 			: mThreadBufferCount(0)
 			, mSinkCount(0)
+			, mDrainRunning(false)
 		{
 			memset(mThreadBuffers, 0, sizeof(mThreadBuffers));
 			memset(mSinks, 0, sizeof(mSinks));
@@ -31,24 +40,40 @@ namespace Dia
 
 		Logger::~Logger()
 		{
+			Stop();
 		}
 
 		void Logger::RegisterSink(ISink* sink)
 		{
-			if (sink == nullptr || mSinkCount >= kMaxSinks)
+			if (sink == nullptr)
 				return;
 
-			for (unsigned int i = 0; i < mSinkCount; ++i)
 			{
-				if (mSinks[i] == sink)
+				std::lock_guard<std::mutex> lock(mRegistryMutex);
+				if (mSinkCount >= kMaxSinks)
 					return;
+				for (unsigned int i = 0; i < mSinkCount; ++i)
+				{
+					if (mSinks[i] == sink)
+						return;
+				}
+				mSinks[mSinkCount++] = sink;
 			}
 
-			mSinks[mSinkCount++] = sink;
+			// Start drain thread on first sink registration.
+			std::call_once(mDrainOnce, [this]
+			{
+				mDrainRunning.store(true, std::memory_order_release);
+				mDrainThread = std::thread(&Logger::DrainLoop, this);
+#ifdef _WIN32
+				SetThreadDescription(mDrainThread.native_handle(), L"DiaObservation::Log::Drain");
+#endif
+			});
 		}
 
 		void Logger::UnregisterSink(ISink* sink)
 		{
+			std::lock_guard<std::mutex> lock(mRegistryMutex);
 			for (unsigned int i = 0; i < mSinkCount; ++i)
 			{
 				if (mSinks[i] == sink)
@@ -98,7 +123,7 @@ namespace Dia
 			tLocalBuffer = nullptr;
 		}
 
-		void Logger::FlushBuffers()
+		void Logger::InternalFlush()
 		{
 			if (tFlushing)
 				return;
@@ -129,6 +154,30 @@ namespace Dia
 			}
 
 			tFlushing = false;
+		}
+
+		void Logger::FlushBuffers()
+		{
+			// No-op: drain thread owns flushing. Left for source-level backward compatibility.
+		}
+
+		void Logger::Stop()
+		{
+			if (!mDrainRunning.exchange(false, std::memory_order_acq_rel))
+				return;
+
+			if (mDrainThread.joinable())
+				mDrainThread.join();
+		}
+
+		void Logger::DrainLoop()
+		{
+			while (mDrainRunning.load(std::memory_order_acquire))
+			{
+				InternalFlush();
+				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+			}
+			InternalFlush(); // Final drain after stop signal
 		}
 
 		void Logger::Log(LogLevel level, const Dia::Core::StringCRC& channel,
@@ -162,4 +211,5 @@ namespace Dia
 			}
 		}
 	}
-}
+} // namespace Observation
+} // namespace Dia

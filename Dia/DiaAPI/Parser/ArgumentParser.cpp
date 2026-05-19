@@ -4,7 +4,7 @@
 // Feature spec: docs/specs/features/dia/diaapi/cli-parser.md
 ////////////////////////////////////////////////////////////////////////////////
 #include "ArgumentParser.h"
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <cstring>
 #include <cstdio>
 

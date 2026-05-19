@@ -1,11 +1,11 @@
 #pragma once
 
-#include <DiaLogger/LogLevel.h>
+#include <DiaObservation/Log/LogLevel.h>
 #include <DiaCore/CRC/StringCRC.h>
 
 namespace Dia
 {
-	namespace Logger
+	namespace Observation { namespace Log
 	{
 		struct LogEntry
 		{
@@ -14,4 +14,5 @@ namespace Dia
 			char message[1024];
 		};
 	}
-}
+} // namespace Observation
+} // namespace Dia

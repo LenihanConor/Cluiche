@@ -13,6 +13,7 @@ namespace Dia
 		struct DiaGameConfig
 		{
 			Dia::Core::Containers::String256 assetRoot;
+			Dia::Core::Containers::String256 assetCatalogue;
 		};
 
 		struct DiaGameManifest

@@ -2,6 +2,7 @@
 
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
+#include <DiaEditor/MVC/IEditorContext.h>
 
 #include <cstdint>
 
@@ -35,6 +36,7 @@ namespace Dia
 			~GameConnectionController();
 
 			void Initialize(WebUIBridge* bridge, GameConnectionManager* manager, EditorView* editorView = nullptr);
+			void SetEditorContext(IEditorContext* context);
 			void Shutdown();
 
 			// Pumped by the owning module each frame.
@@ -86,6 +88,7 @@ namespace Dia
 			WebUIBridge* mBridge;
 			GameConnectionManager* mManager;
 			EditorView* mEditorView;
+			IEditorContext* mEditorContext;
 
 			State mState;
 

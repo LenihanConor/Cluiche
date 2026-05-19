@@ -3,7 +3,7 @@
 #include <cmath>
 
 #include <DiaCore/Core/Assert.h>
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 namespace Dia
 {

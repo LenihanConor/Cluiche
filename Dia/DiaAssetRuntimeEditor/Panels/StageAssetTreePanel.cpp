@@ -4,7 +4,7 @@
 
 #include <DiaEditor/UI/WebUIBridge.h>
 #include <DiaEditor/LiveConnection/GameConnectionManager.h>
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 #include <cstring>
 

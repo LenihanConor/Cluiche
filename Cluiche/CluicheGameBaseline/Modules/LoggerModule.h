@@ -2,7 +2,7 @@
 #include <DiaApplicationFlow/Module.h>
 #include <DiaCore/CRC/StringCRC.h>
 
-namespace Dia { namespace Logger { class ISink; } }
+namespace Dia { namespace Observation { namespace Log { class ISink; } } }
 
 namespace Cluiche { namespace AppFlow {
 
@@ -19,7 +19,7 @@ protected:
 
 private:
     static constexpr unsigned int kMaxSinks = 8;
-    Dia::Logger::ISink* mOwnedSinks[kMaxSinks];
+    Dia::Observation::Log::ISink* mOwnedSinks[kMaxSinks];
     unsigned int mOwnedSinkCount = 0;
 };
 

@@ -15,8 +15,8 @@
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaVisualDebugger/IVisualDebugger.h>
 #include <DiaGraphics/Frame/DebugFrameData.h>
-#include <DiaLogger/Logger.h>
-#include <DiaLogger/LogEntry.h>
+#include <DiaObservation/Log/Logger.h>
+#include <DiaObservation/Log/LogEntry.h>
 #include <DiaCore/CRC/StringCRC.h>
 
 // =====================================================================
@@ -136,7 +136,7 @@ TEST(VisualDebuggerConsole_Visibility, Toggle_HidesConsole)
 TEST(VisualDebuggerConsole_LogTail, Attach_LogMessage_AppearsInTail)
 {
     Dia::Debug::DiaVisualDebuggerConsole console;
-    Dia::Logger::Logger& logger = Dia::Logger::Logger::Instance();
+    Dia::Observation::Log::Logger& logger = Dia::Observation::Log::Logger::Instance();
 
     // Register a thread buffer for this thread (required by DiaLogger)
     logger.RegisterThreadBuffer();
@@ -144,8 +144,8 @@ TEST(VisualDebuggerConsole_LogTail, Attach_LogMessage_AppearsInTail)
     console.Attach(logger);
 
     // Log a warning (console sink threshold is kWarning)
-    Dia::Logger::LogEntry entry;
-    entry.level = Dia::Logger::LogLevel::kWarning;
+    Dia::Observation::Log::LogEntry entry;
+    entry.level = Dia::Observation::Log::LogLevel::kWarning;
     entry.channel = Dia::Core::StringCRC("test");
     strncpy_s(entry.message, sizeof(entry.message), "Test warning message", sizeof(entry.message));
     logger.DispatchImmediate(entry);
@@ -160,7 +160,7 @@ TEST(VisualDebuggerConsole_LogTail, Attach_LogMessage_AppearsInTail)
 TEST(VisualDebuggerConsole_LogTail, LogTail_CapacityLimit_OldestDropped)
 {
     Dia::Debug::DiaVisualDebuggerConsole console;
-    Dia::Logger::Logger& logger = Dia::Logger::Logger::Instance();
+    Dia::Observation::Log::Logger& logger = Dia::Observation::Log::Logger::Instance();
     logger.RegisterThreadBuffer();
 
     console.Attach(logger);
@@ -168,8 +168,8 @@ TEST(VisualDebuggerConsole_LogTail, LogTail_CapacityLimit_OldestDropped)
     const int totalMessages = Dia::Debug::DiaVisualDebuggerConsole::kLogTailCapacity + 5;
     for (int i = 0; i < totalMessages; ++i)
     {
-        Dia::Logger::LogEntry entry;
-        entry.level = Dia::Logger::LogLevel::kError;
+        Dia::Observation::Log::LogEntry entry;
+        entry.level = Dia::Observation::Log::LogLevel::kError;
         entry.channel = Dia::Core::StringCRC("test");
         snprintf(entry.message, sizeof(entry.message), "Message %d", i);
         logger.DispatchImmediate(entry);
@@ -189,14 +189,14 @@ TEST(VisualDebuggerConsole_LogTail, LogTail_CapacityLimit_OldestDropped)
 TEST(VisualDebuggerConsole_LogTail, Detach_StopsReceivingLogs)
 {
     Dia::Debug::DiaVisualDebuggerConsole console;
-    Dia::Logger::Logger& logger = Dia::Logger::Logger::Instance();
+    Dia::Observation::Log::Logger& logger = Dia::Observation::Log::Logger::Instance();
     logger.RegisterThreadBuffer();
 
     console.Attach(logger);
 
     // Log one message
-    Dia::Logger::LogEntry entry;
-    entry.level = Dia::Logger::LogLevel::kError;
+    Dia::Observation::Log::LogEntry entry;
+    entry.level = Dia::Observation::Log::LogLevel::kError;
     entry.channel = Dia::Core::StringCRC("test");
     strncpy_s(entry.message, sizeof(entry.message), "Before detach", sizeof(entry.message));
     logger.DispatchImmediate(entry);
@@ -207,8 +207,8 @@ TEST(VisualDebuggerConsole_LogTail, Detach_StopsReceivingLogs)
     console.Detach();
 
     // Log another message after detach
-    Dia::Logger::LogEntry entry2;
-    entry2.level = Dia::Logger::LogLevel::kError;
+    Dia::Observation::Log::LogEntry entry2;
+    entry2.level = Dia::Observation::Log::LogLevel::kError;
     entry2.channel = Dia::Core::StringCRC("test");
     strncpy_s(entry2.message, sizeof(entry2.message), "After detach", sizeof(entry2.message) - 1);
     logger.DispatchImmediate(entry2);
@@ -275,14 +275,14 @@ TEST(VisualDebuggerConsole_Visibility, GetLogCount_DefaultIsZero)
 TEST(VisualDebuggerConsole_LogTail, LogBelowThreshold_NotAppended)
 {
     Dia::Debug::DiaVisualDebuggerConsole console;
-    Dia::Logger::Logger& logger = Dia::Logger::Logger::Instance();
+    Dia::Observation::Log::Logger& logger = Dia::Observation::Log::Logger::Instance();
     logger.RegisterThreadBuffer();
 
     console.Attach(logger);
 
     // kInfo is below the kWarning threshold — should not appear in the tail
-    Dia::Logger::LogEntry entry;
-    entry.level = Dia::Logger::LogLevel::kInfo;
+    Dia::Observation::Log::LogEntry entry;
+    entry.level = Dia::Observation::Log::LogLevel::kInfo;
     entry.channel = Dia::Core::StringCRC("test");
     strncpy_s(entry.message, sizeof(entry.message), "Info message", sizeof(entry.message));
     logger.DispatchImmediate(entry);
@@ -296,13 +296,13 @@ TEST(VisualDebuggerConsole_LogTail, LogBelowThreshold_NotAppended)
 TEST(VisualDebuggerConsole_LogTail, LogAtThreshold_Warning_Appended)
 {
     Dia::Debug::DiaVisualDebuggerConsole console;
-    Dia::Logger::Logger& logger = Dia::Logger::Logger::Instance();
+    Dia::Observation::Log::Logger& logger = Dia::Observation::Log::Logger::Instance();
     logger.RegisterThreadBuffer();
 
     console.Attach(logger);
 
-    Dia::Logger::LogEntry entry;
-    entry.level = Dia::Logger::LogLevel::kWarning;
+    Dia::Observation::Log::LogEntry entry;
+    entry.level = Dia::Observation::Log::LogLevel::kWarning;
     entry.channel = Dia::Core::StringCRC("test");
     strncpy_s(entry.message, sizeof(entry.message), "Warning message", sizeof(entry.message));
     logger.DispatchImmediate(entry);
@@ -316,13 +316,13 @@ TEST(VisualDebuggerConsole_LogTail, LogAtThreshold_Warning_Appended)
 TEST(VisualDebuggerConsole_LogTail, LogAtError_Appended)
 {
     Dia::Debug::DiaVisualDebuggerConsole console;
-    Dia::Logger::Logger& logger = Dia::Logger::Logger::Instance();
+    Dia::Observation::Log::Logger& logger = Dia::Observation::Log::Logger::Instance();
     logger.RegisterThreadBuffer();
 
     console.Attach(logger);
 
-    Dia::Logger::LogEntry entry;
-    entry.level = Dia::Logger::LogLevel::kError;
+    Dia::Observation::Log::LogEntry entry;
+    entry.level = Dia::Observation::Log::LogLevel::kError;
     entry.channel = Dia::Core::StringCRC("test");
     strncpy_s(entry.message, sizeof(entry.message), "Error message", sizeof(entry.message));
     logger.DispatchImmediate(entry);
@@ -336,15 +336,15 @@ TEST(VisualDebuggerConsole_LogTail, LogAtError_Appended)
 TEST(VisualDebuggerConsole_LogTail, DoubleAttach_SecondAttach_NoAssert)
 {
     Dia::Debug::DiaVisualDebuggerConsole console;
-    Dia::Logger::Logger& logger = Dia::Logger::Logger::Instance();
+    Dia::Observation::Log::Logger& logger = Dia::Observation::Log::Logger::Instance();
     logger.RegisterThreadBuffer();
 
     // Double attach should not crash (idempotent or safe)
     console.Attach(logger);
     console.Attach(logger);
 
-    Dia::Logger::LogEntry entry;
-    entry.level = Dia::Logger::LogLevel::kWarning;
+    Dia::Observation::Log::LogEntry entry;
+    entry.level = Dia::Observation::Log::LogLevel::kWarning;
     entry.channel = Dia::Core::StringCRC("test");
     strncpy_s(entry.message, sizeof(entry.message), "Double attach message", sizeof(entry.message));
     logger.DispatchImmediate(entry);
@@ -363,13 +363,13 @@ TEST(VisualDebuggerConsole_LogTail, DoubleAttach_SecondAttach_NoAssert)
 TEST(VisualDebuggerConsole_LogCapacity, LogLine_FirstEntry_HasCorrectContent)
 {
     Dia::Debug::DiaVisualDebuggerConsole console;
-    Dia::Logger::Logger& logger = Dia::Logger::Logger::Instance();
+    Dia::Observation::Log::Logger& logger = Dia::Observation::Log::Logger::Instance();
     logger.RegisterThreadBuffer();
 
     console.Attach(logger);
 
-    Dia::Logger::LogEntry entry;
-    entry.level = Dia::Logger::LogLevel::kWarning;
+    Dia::Observation::Log::LogEntry entry;
+    entry.level = Dia::Observation::Log::LogLevel::kWarning;
     entry.channel = Dia::Core::StringCRC("test");
     strncpy_s(entry.message, sizeof(entry.message), "hello world", sizeof(entry.message));
     logger.DispatchImmediate(entry);
@@ -384,7 +384,7 @@ TEST(VisualDebuggerConsole_LogCapacity, LogLine_FirstEntry_HasCorrectContent)
 TEST(VisualDebuggerConsole_LogCapacity, LogLine_RingBuffer_IndexAfterWrap)
 {
     Dia::Debug::DiaVisualDebuggerConsole console;
-    Dia::Logger::Logger& logger = Dia::Logger::Logger::Instance();
+    Dia::Observation::Log::Logger& logger = Dia::Observation::Log::Logger::Instance();
     logger.RegisterThreadBuffer();
 
     console.Attach(logger);
@@ -393,8 +393,8 @@ TEST(VisualDebuggerConsole_LogCapacity, LogLine_RingBuffer_IndexAfterWrap)
     const int totalMessages = Dia::Debug::DiaVisualDebuggerConsole::kLogTailCapacity + 3;
     for (int i = 0; i < totalMessages; ++i)
     {
-        Dia::Logger::LogEntry entry;
-        entry.level = Dia::Logger::LogLevel::kError;
+        Dia::Observation::Log::LogEntry entry;
+        entry.level = Dia::Observation::Log::LogLevel::kError;
         entry.channel = Dia::Core::StringCRC("test");
         snprintf(entry.message, sizeof(entry.message), "Message %d", i);
         logger.DispatchImmediate(entry);

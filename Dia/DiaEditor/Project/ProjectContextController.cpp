@@ -3,7 +3,7 @@
 #include "DiaEditor/UI/WebUIBridge.h"
 #include "DiaEditor/UI/DataPath.h"
 
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <DiaCore/CRC/StringCRC.h>
 
 #define WIN32_LEAN_AND_MEAN

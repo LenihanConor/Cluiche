@@ -1,6 +1,7 @@
 #pragma once
 
 #include <DiaEditor/Plugin/IEditorPlugin.h>
+#include <DiaEditor/Project/ProjectContext.h>
 #include "DiaApplicationEditor/ManifestEditorData.h"
 #include <DiaCore/FilePath/FileWatcher.h>
 
@@ -56,6 +57,8 @@ namespace Dia
 				Dia::Editor::WebUIBridge* mBridge;
 				Dia::Core::FileWatcher mFileWatcher;
 				bool mIsSaving;
+
+				static void OnProjectChangedStatic(const Dia::Editor::ProjectContext& ctx, void* ud);
 
 				bool WriteManifestToDisk(const char* path);
 				bool WriteDiaGameToDisk(const char* path);

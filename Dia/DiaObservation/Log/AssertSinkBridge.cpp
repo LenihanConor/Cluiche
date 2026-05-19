@@ -1,6 +1,6 @@
-#include "DiaLogger/AssertSinkBridge.h"
-#include "DiaLogger/Logger.h"
-#include "DiaLogger/LogEntry.h"
+#include "DiaObservation/Log/AssertSinkBridge.h"
+#include "DiaObservation/Log/Logger.h"
+#include "DiaObservation/Log/LogEntry.h"
 
 #include <DiaCore/Core/Assert.h>
 #include <DiaCore/CRC/StringCRC.h>
@@ -9,7 +9,7 @@
 
 namespace Dia
 {
-	namespace Logger
+	namespace Observation { namespace Log
 	{
 		bool AssertSinkBridge::sInstalled = false;
 
@@ -42,4 +42,5 @@ namespace Dia
 			Logger::Instance().DispatchImmediate(entry);
 		}
 	}
-}
+} // namespace Observation
+} // namespace Dia

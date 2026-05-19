@@ -1,7 +1,7 @@
 #include "ManifestComposer.h"
 #include "JsonApplicationManifestSerializer.h"
 
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <cstdio>
 #include <DiaCore/Core/Assert.h>
 #include <DiaCore/Strings/String256.h>

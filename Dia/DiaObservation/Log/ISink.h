@@ -1,13 +1,13 @@
 #pragma once
 
-#include <DiaLogger/LogLevel.h>
-#include <DiaLogger/LogEntry.h>
+#include <DiaObservation/Log/LogLevel.h>
+#include <DiaObservation/Log/LogEntry.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
 namespace Dia
 {
-	namespace Logger
+	namespace Observation { namespace Log
 	{
 		class ISink
 		{
@@ -33,4 +33,5 @@ namespace Dia
 			Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, kMaxChannelFilters> mChannelWhitelist;
 		};
 	}
-}
+} // namespace Observation
+} // namespace Dia

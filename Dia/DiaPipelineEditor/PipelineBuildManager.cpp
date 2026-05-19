@@ -1,6 +1,6 @@
 #include "DiaPipelineEditor/PipelineBuildManager.h"
 #include "DiaPipelineEditor/PipelineLogTailer.h"
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 #include <cstdio>
 #include <cstring>

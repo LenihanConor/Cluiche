@@ -5,7 +5,7 @@
 
 #include <DiaWebSocket/Client.h>
 #include <DiaCore/Core/Assert.h>
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 #include <string.h>
 #include <stdio.h>

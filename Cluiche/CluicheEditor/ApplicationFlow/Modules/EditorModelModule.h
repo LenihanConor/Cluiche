@@ -2,7 +2,8 @@
 
 #include <DiaApplicationFlow/Module.h>
 #include <DiaEditor/MVC/EditorModel.h>
-#include <DiaLogger/DebugOutputSink.h>
+#include <DiaEditor/Project/ProjectContext.h>
+#include <DiaObservation/Log/DebugOutputSink.h>
 
 namespace Cluiche
 {
@@ -21,17 +22,32 @@ namespace Cluiche
 			void SetProjectPath(const char* path);
 			const char* GetProjectPath() const;
 
+			unsigned int GetRecentProjectCount() const;
+			const char* GetRecentProject(unsigned int index) const;
+
 		protected:
 			Dia::ApplicationFlow::StartResult DoStart() override;
 			void DoUpdate(float deltaTime) override;
 			Dia::ApplicationFlow::StopResult DoStop() override;
 
 		private:
-			Dia::Editor::EditorModel       mModel;
-			Dia::Logger::DebugOutputSink   mDebugOutputSink;
+			void ReadEditorState(const char* cluicheprojPath);
+			void WriteEditorState();
+			void OnDiagameProjectChanged(const Dia::Editor::ProjectContext& ctx);
 
-			static const unsigned int kMaxProjectPathLength = 260;
-			char mProjectPath[kMaxProjectPathLength];
+			Dia::Editor::EditorModel       mModel;
+			Dia::Observation::Log::DebugOutputSink   mDebugOutputSink;
+
+			static const unsigned int kMaxProjectPathLength = 512;
+			static const unsigned int kMaxRecent = 5;
+
+			char mProjectPath[kMaxProjectPathLength];    // .cluicheproj path (bare arg)
+			char mDiagamePath[kMaxProjectPathLength];    // --project=<path> arg
+			char mCluicheproj[kMaxProjectPathLength];    // path of loaded .cluicheproj for writeback
+			char mRestoredLastProject[kMaxProjectPathLength];
+
+			char mRecentProjects[kMaxRecent][kMaxProjectPathLength];
+			unsigned int mRecentCount;
 		};
 	}
 }

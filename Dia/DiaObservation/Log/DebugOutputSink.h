@@ -1,10 +1,10 @@
 #pragma once
 
-#include <DiaLogger/ISink.h>
+#include <DiaObservation/Log/ISink.h>
 
 namespace Dia
 {
-	namespace Logger
+	namespace Observation { namespace Log
 	{
 		class DebugOutputSink : public ISink
 		{
@@ -13,4 +13,5 @@ namespace Dia
 			const char* GetName() const override { return "DebugOutput"; }
 		};
 	}
-}
+} // namespace Observation
+} // namespace Dia

@@ -2,7 +2,7 @@
 
 #include "DiaEditor/Command/CommandHistory.h"
 #include "DiaEditor/MVC/EditorModel.h"
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 namespace Dia
 {

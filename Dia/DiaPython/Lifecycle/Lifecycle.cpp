@@ -7,7 +7,7 @@
 #include "DiaPython/TypeConversion/PythonObject.h"
 #include "DiaPython/Module/Module.h"
 
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 namespace Dia
 {

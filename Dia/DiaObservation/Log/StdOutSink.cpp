@@ -1,11 +1,11 @@
-#include "DiaLogger/StdOutSink.h"
-#include "DiaLogger/LogLevel.h"
+#include "DiaObservation/Log/StdOutSink.h"
+#include "DiaObservation/Log/LogLevel.h"
 
 #include <cstdio>
 
 namespace Dia
 {
-	namespace Logger
+	namespace Observation { namespace Log
 	{
 		static const char* LevelTag(LogLevel level)
 		{
@@ -26,4 +26,5 @@ namespace Dia
 			std::fflush(stdout);
 		}
 	}
-}
+} // namespace Observation
+} // namespace Dia

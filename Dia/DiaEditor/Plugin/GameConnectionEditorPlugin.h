@@ -3,6 +3,7 @@
 #include <DiaEditor/Plugin/IEditorPlugin.h>
 #include <DiaEditor/LiveConnection/GameConnectionManager.h>
 #include <DiaEditor/LiveConnection/GameConnectionController.h>
+#include <DiaEditor/Project/ProjectContextController.h>
 
 namespace Dia
 {
@@ -26,6 +27,7 @@ namespace Dia
 		private:
 			GameConnectionManager mManager;
 			GameConnectionController mController;
+			ProjectContextController mProjectController;
 			PluginServiceLocator* mServices = nullptr;
 		};
 	}

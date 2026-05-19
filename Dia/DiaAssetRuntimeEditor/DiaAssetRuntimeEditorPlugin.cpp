@@ -3,11 +3,12 @@
 
 #include <DiaEditor/Plugin/EditorPluginRegistrationMacros.h>
 #include <DiaEditor/Plugin/EditorPluginContext.h>
+#include <DiaEditor/MVC/EditorModel.h>
 #include <DiaEditor/Plugin/PluginServiceLocator.h>
 #include <DiaEditor/LiveConnection/GameConnectionManager.h>
 #include <DiaEditor/MVC/EditorView.h>
 #include <DiaEditor/UI/WebUIBridge.h>
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 #include <cstring>
 
@@ -19,6 +20,13 @@ namespace Dia
 	{
 		namespace Editor
 		{
+			void DiaAssetRuntimeEditorPlugin::OnProjectChangedStatic(const Dia::Editor::ProjectContext& ctx, void* ud)
+			{
+				auto* self = static_cast<DiaAssetRuntimeEditorPlugin*>(ud);
+				strncpy_s(self->mExpectedDiagamePath, sizeof(self->mExpectedDiagamePath),
+				          ctx.IsValid() ? ctx.diagamePath : "", _TRUNCATE);
+			}
+
 			void DiaAssetRuntimeEditorPlugin::OnLoad(const Dia::Editor::EditorPluginContext& context)
 			{
 				DIA_LOG_INFO("Editor", "DiaAssetRuntimeEditorPlugin: OnLoad");
@@ -26,6 +34,14 @@ namespace Dia
 				mBridge = context.mBridge;
 				mView = context.mView;
 				mPluginLoader = context.mPluginLoader;
+
+				if (context.mModel != nullptr)
+				{
+					context.mModel->OnDiagameProjectChanged(&DiaAssetRuntimeEditorPlugin::OnProjectChangedStatic, this);
+					const Dia::Editor::ProjectContext& proj = context.mModel->GetDiagameProject();
+					strncpy_s(mExpectedDiagamePath, sizeof(mExpectedDiagamePath),
+					          proj.IsValid() ? proj.diagamePath : "", _TRUNCATE);
+				}
 
 				mState = std::make_unique<SharedPluginState>();
 

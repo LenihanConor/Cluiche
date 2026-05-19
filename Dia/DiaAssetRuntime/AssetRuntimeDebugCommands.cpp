@@ -10,7 +10,7 @@
 
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
 #include <DiaDebugServer/QueryRegistry.h>
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 namespace
 {

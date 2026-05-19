@@ -2,7 +2,7 @@
 
 namespace Dia
 {
-	namespace Logger
+	namespace Observation { namespace Log
 	{
 		class AssertSinkBridge
 		{
@@ -15,4 +15,5 @@ namespace Dia
 			static bool sInstalled;
 		};
 	}
-}
+} // namespace Observation
+} // namespace Dia

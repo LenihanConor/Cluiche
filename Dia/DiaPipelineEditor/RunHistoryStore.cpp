@@ -1,6 +1,6 @@
 #include "DiaPipelineEditor/RunHistoryStore.h"
 
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <DiaCore/CRC/StringCRC.h>
 
 #include <cstdio>

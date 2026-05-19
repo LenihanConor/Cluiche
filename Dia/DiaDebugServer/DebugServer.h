@@ -13,7 +13,7 @@
 
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
-#include <DiaLogger/LogLevel.h>
+#include <DiaObservation/Log/LogLevel.h>
 
 #include "DiaDebugServer/SubscriptionManager.h"
 #include "DiaDebugServer/CommandDispatcher.h"
@@ -95,7 +95,8 @@ namespace Dia
 			void SetPort(uint16_t port)             { mPort = port; }
 			void EnableAutoStart(bool enable)       { mAutoStart = enable; }
 			void SetGameInfo(const char* name, const char* build);
-			void SetLogSinkLevel(Dia::Logger::LogLevel level) { mLogSink.SetLevelThreshold(level); }
+			void SetDiagamePath(const char* diagamePath);
+			void SetLogSinkLevel(Dia::Observation::Log::LogLevel level) { mLogSink.SetLevelThreshold(level); }
 
 			// State provider — the host translates its lifecycle framework's
 			// introspection (stage, PUs, modules) into this narrow interface.
@@ -165,8 +166,10 @@ namespace Dia
 			bool     mAutoStart;
 
 			static const unsigned int kMaxGameFieldLength = 128;
+			static const unsigned int kMaxPathLength = 512;
 			char mGameName[kMaxGameFieldLength];
 			char mGameBuild[kMaxGameFieldLength];
+			char mDiagamePath[kMaxPathLength];
 
 			float mMetricsBroadcastInterval;
 			float mMetricsTimer;

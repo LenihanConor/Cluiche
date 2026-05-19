@@ -2,8 +2,9 @@
 #include "DiaEditor/Plugin/EditorPluginRegistrationMacros.h"
 #include "DiaEditor/Plugin/EditorPluginContext.h"
 #include "DiaEditor/Plugin/PluginServiceLocator.h"
+#include "DiaEditor/MVC/EditorModel.h"
 
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 namespace Dia
 {
@@ -16,8 +17,11 @@ namespace Dia
 			mManager.Initialize();
 			mController.SetPersistencePath("assets/configs/editor-connection.json");
 			mController.LoadPersistedUrl();
+			mController.SetEditorContext(context.mModel);
 			mController.Initialize(context.mBridge, &mManager, context.mView);
 			mController.AutoConnect("ws://localhost:9002");
+
+			mProjectController.Initialize(context.mBridge, context.mModel);
 
 			if (mServices)
 				mServices->RegisterService(&mManager);
@@ -32,6 +36,7 @@ namespace Dia
 			if (mServices)
 				mServices->UnregisterService<GameConnectionManager>();
 
+			mProjectController.Shutdown();
 			mController.Shutdown();
 			mManager.Shutdown();
 		}

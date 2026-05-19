@@ -1,12 +1,12 @@
-#include "DiaLogger/DebugOutputSink.h"
-#include "DiaLogger/LogLevel.h"
+#include "DiaObservation/Log/DebugOutputSink.h"
+#include "DiaObservation/Log/LogLevel.h"
 
 #include <DiaCore/Core/Log.h>
 #include <DiaCore/Strings/String1024.h>
 
 namespace Dia
 {
-	namespace Logger
+	namespace Observation { namespace Log
 	{
 		static const char* LevelTag(LogLevel level)
 		{
@@ -28,4 +28,5 @@ namespace Dia
 			Dia::Core::Log::OutputLine(formatted.AsCStr());
 		}
 	}
-}
+} // namespace Observation
+} // namespace Dia

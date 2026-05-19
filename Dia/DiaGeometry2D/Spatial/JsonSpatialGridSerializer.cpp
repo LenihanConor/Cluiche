@@ -2,7 +2,7 @@
 #include "ISpatialGridSerializer.h"
 
 #include <DiaCore/Json/external/json/json.h>
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <cstring>
 
 namespace Dia

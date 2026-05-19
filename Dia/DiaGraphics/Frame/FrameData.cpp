@@ -2,11 +2,14 @@
 // Filename: Frame.cpp
 ////////////////////////////////////////////////////////////////////////////////
 #include "DiaGraphics/Frame/FrameData.h"
+#include <DiaApplicationFlow/RegistrationMacrosV2.h>
 
 namespace Dia
 {
 	namespace Graphics
 	{
+		DIA_STREAM_TYPE(FrameData);
+
 		FrameData::FrameData()
 		{}
 

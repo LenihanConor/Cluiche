@@ -11,7 +11,7 @@
 #include <DiaEditor/Plugin/PluginServiceLocator.h>
 #include <DiaEditor/LiveConnection/GameConnectionManager.h>
 #include <DiaEditor/UI/WebUIBridge.h>
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 namespace Dia
 {

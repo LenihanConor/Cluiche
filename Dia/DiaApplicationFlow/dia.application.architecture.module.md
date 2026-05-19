@@ -16,7 +16,7 @@ summary: >
   Module, ProcessingUnit, TypeRegistry, ModuleRef, stream handles (FrameStream / EventStream),
   IApplicationInspectable (read-only introspection) and IApplicationControl (narrow control
   interface exposed to modules). Replaces the v1 Phase-based system; v1 files (ApplicationModule,
-  ApplicationPhase, MessageBus, HotReloadManager) are present but superseded.
+  ApplicationPhase, HotReloadManager) are present but superseded.
 
 intent: >
   Provide a config-driven, stage-based application lifecycle framework where a .diaapp JSON
@@ -32,8 +32,9 @@ responsibilities:
     (boot failure → shutdown; non-boot failure → capped rollback retries, then shutdown)
   - TypeRegistry + DIA_MODULE macro — static-init factory registration
   - ModuleRef<T> — lazy, lifecycle-safe inter-module access within a PU
-  - FrameStreamStore / EventStreamStore — framework-owned inter-PU data channels
+  - FrameStreamStore / EventStreamStore — manifest-authoritative inter-PU data channels, created at startup from manifest declarations
   - StreamWriter/Reader, EventStreamWriter/Reader — typed module-side handles
+  - StreamTypeRegistry — process-static registry mapping C++ type → StringCRC type ID for stream payload type checking
   - ApplicationManifestV2 POD structs — in-memory representation of .diaapp + .diastage files
   - ApplicationManifestLoaderV2 — JSON → ApplicationManifestV2
   - ManifestComposerV2 — .diagame → merged manifest (base + stage overlays)
@@ -56,6 +57,7 @@ public_api:
     - Dia/DiaApplicationFlow/Module.h
     - Dia/DiaApplicationFlow/ProcessingUnit.h
     - Dia/DiaApplicationFlow/TypeRegistry.h
+    - Dia/DiaApplicationFlow/StreamTypeRegistry.h
     - Dia/DiaApplicationFlow/ModuleRefV2.h
     - Dia/DiaApplicationFlow/RegistrationMacrosV2.h
     - Dia/DiaApplicationFlow/IApplicationInspectable.h
@@ -78,8 +80,10 @@ public_api:
     - Module
     - ProcessingUnit
     - TypeRegistry
+    - StreamTypeRegistry
     - ModuleRef<T>
     - DIA_MODULE
+    - DIA_STREAM_TYPE(T)
     - IApplicationInspectable
     - IApplicationControl
     - ApplicationManifestV2

@@ -1,6 +1,6 @@
 #include "DiaDebugServer/DebugServerLogSink.h"
 
-#include <DiaLogger/LogLevel.h>
+#include <DiaObservation/Log/LogLevel.h>
 #include <DiaWebSocket/Server.h>
 #include <DiaDebugProtocol/DiaDebugProtocol.h>
 
@@ -18,14 +18,14 @@ namespace Dia
 			mServer = server;
 		}
 
-		void DebugServerLogSink::OnLogEntry(const Dia::Logger::LogEntry& entry)
+		void DebugServerLogSink::OnLogEntry(const Dia::Observation::Log::LogEntry& entry)
 		{
 			if (mPending.IsFull())
 				return;
 
 			BufferedEntry buffered;
 			strncpy_s(buffered.level, sizeof(buffered.level),
-				Dia::Logger::LogLevelToString(entry.level), _TRUNCATE);
+				Dia::Observation::Log::LogLevelToString(entry.level), _TRUNCATE);
 			strncpy_s(buffered.channel, sizeof(buffered.channel),
 				entry.channel.AsChar(), _TRUNCATE);
 			strncpy_s(buffered.message, sizeof(buffered.message),

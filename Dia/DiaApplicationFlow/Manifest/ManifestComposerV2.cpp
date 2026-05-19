@@ -1,7 +1,7 @@
 #include "ManifestComposerV2.h"
 #include "ApplicationManifestLoaderV2.h"
 
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <DiaCore/Json/external/json/json.h>
 
 #include <fstream>

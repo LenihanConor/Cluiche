@@ -42,6 +42,10 @@ namespace Dia
 			// Push a data update to JS. JS receives via window.DiaEditor_onDataChanged({ topic, data }).
 			void NotifyUIDataChanged(const char* topic, const Json::Value& data);
 
+			// Synchronously invoke a registered request handler and return its result.
+			// Returns an empty Value if no handler is registered for eventType.
+			Json::Value InvokeRequestHandler(const Dia::Core::StringCRC& eventType, const Json::Value& data) const;
+
 		private:
 			std::string HandleEditorCall(const std::string& argsJson);
 			void SendResponse(const std::string& reqId, const Json::Value& result);

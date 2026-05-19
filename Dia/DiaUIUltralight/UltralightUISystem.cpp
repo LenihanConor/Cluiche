@@ -7,7 +7,7 @@
 // (Ultralight pulls in <windows.h> which redefines symbols like GetSystemHandle)
 #include <DiaCore/Core/Assert.h>
 #include <DiaCore/Memory/Memory.h>
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <DiaUI/IPage.h>
 #include <DiaUI/UIDataBuffer.h>
 #include <DiaUI/Page.h>

@@ -6,7 +6,7 @@
 #include "Script.h"
 #include "DiaPython/DiaPythonInternal.h"
 #include "DiaPython/Lifecycle/Lifecycle.h"
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <chrono>
 #include <cstdio>
 

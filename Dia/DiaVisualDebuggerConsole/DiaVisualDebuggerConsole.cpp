@@ -9,9 +9,9 @@
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaGraphics/Frame/DebugFrameData.h>
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
-#include <DiaLogger/Logger.h>
-#include <DiaLogger/ISink.h>
-#include <DiaLogger/LogEntry.h>
+#include <DiaObservation/Log/Logger.h>
+#include <DiaObservation/Log/ISink.h>
+#include <DiaObservation/Log/LogEntry.h>
 #include <DiaCore/CRC/StringCRC.h>
 
 #include <imgui.h>
@@ -25,7 +25,7 @@ namespace Dia
         // -----------------------------------------------------------------
         // ConsoleSink: ISink implementation that writes to the ring buffer
         // -----------------------------------------------------------------
-        class ConsoleSink : public Dia::Logger::ISink
+        class ConsoleSink : public Dia::Observation::Log::ISink
         {
         public:
             ConsoleSink(char logBuffer[][128], int& logHead, int& logCount, bool& scrollToBottom, int capacity)
@@ -36,10 +36,10 @@ namespace Dia
                 , mCapacity(capacity)
             {
                 // Accept warnings and errors by default
-                SetLevelThreshold(Dia::Logger::LogLevel::kWarning);
+                SetLevelThreshold(Dia::Observation::Log::LogLevel::kWarning);
             }
 
-            void OnLogEntry(const Dia::Logger::LogEntry& entry) override
+            void OnLogEntry(const Dia::Observation::Log::LogEntry& entry) override
             {
                 // Copy message into ring buffer
                 strncpy_s(mLogBuffer[mLogHead], 128, entry.message, 127);
@@ -84,7 +84,7 @@ namespace Dia
         // Logger integration
         // -----------------------------------------------------------------
 
-        void DiaVisualDebuggerConsole::Attach(Dia::Logger::Logger& logger)
+        void DiaVisualDebuggerConsole::Attach(Dia::Observation::Log::Logger& logger)
         {
             if (mSink != nullptr)
                 Detach();

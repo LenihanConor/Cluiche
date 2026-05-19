@@ -4,7 +4,7 @@
 #include "DiaInput/InputSourceManager.h"
 
 #include <DiaCore/Architecture/Events/EventDispatcher.h>
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include "DiaInput/Events/LegacyEventConverter.h"
 
 namespace Dia

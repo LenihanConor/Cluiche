@@ -2,8 +2,8 @@
 #include "DiaWebSocket/Internal/WebSocketppWrapper.h"
 #include "DiaCore/Threading/Thread.h"
 #include "DiaCore/Threading/Mutex.h"
-#include <DiaLogger/DiaLog.h>
-#include <DiaLogger/Logger.h>
+#include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Log/Logger.h>
 
 #include <cstring>
 #include <string>
@@ -242,7 +242,7 @@ namespace Dia
 
 			void WorkerThreadMain()
 			{
-				Dia::Logger::Logger::Instance().RegisterThreadBuffer();
+				Dia::Observation::Log::Logger::Instance().RegisterThreadBuffer();
 				DIA_LOG_INFO("WebSocket", "Client worker thread registered for logging");
 
 				while (mIsRunning)
@@ -264,7 +264,7 @@ namespace Dia
 					Dia::Core::ThisThread::SleepMs(1);
 				}
 
-				Dia::Logger::Logger::Instance().UnregisterThreadBuffer();
+				Dia::Observation::Log::Logger::Instance().UnregisterThreadBuffer();
 			}
 		};
 

@@ -1,5 +1,7 @@
 # System Spec: DiaLogger
 
+> **SUPERSEDED** — 2026-05-18. DiaLogger has been folded into [DiaObservation](diaobservation.md) as the `Log/` subsystem. Include path: `<DiaObservation/Log/DiaLog.h>`. Namespace: `Dia::Observation::Log::`. This document is historical reference only.
+
 ## Parent Application
 @docs/specs/applications/dia.md
 
@@ -298,4 +300,7 @@ DiaCore cannot use `DIA_LOG_*` (circular dependency) and continues to use `Dia::
 
 ## Status
 
-`Done` — Implementation complete.
+`Superseded` — 2026-05-18. Superseded by `DiaObservation` (see [diaobservation.md](diaobservation.md)). `Dia/DiaLogger/` has been deleted; all content now lives in `Dia/DiaObservation/Log/`. Namespace: `Dia::Observation::Log::`. The `DIA_LOG_*` macro API is preserved verbatim — only the include path changed from `<DiaLogger/DiaLog.h>` to `<DiaObservation/Log/DiaLog.h>`. This spec is retained as historical reference only.
+
+**Migration target:** [diaobservation.md](diaobservation.md)
+**Migration trigger:** Completion of `DiaObservation` feature #1 (DiaObservation Skeleton + DiaLogger Fold + Async Drain).

@@ -1,7 +1,7 @@
 #include "ManifestValidator.h"
 
 #include <DiaApplicationFlow/TypeRegistry/ApplicationTypeRegistry.h>
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <DiaCore/CRC/CRCHashFunctor.h>
 #include <DiaCore/Strings/String256.h>
 

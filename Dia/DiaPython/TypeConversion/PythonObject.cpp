@@ -5,7 +5,7 @@
 #include "PythonObject.h"
 #include "DiaPython/DiaPythonInternal.h"
 
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 namespace Dia
 {

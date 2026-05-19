@@ -1,6 +1,7 @@
 #pragma once
 
 #include <DiaEditor/Plugin/IEditorPlugin.h>
+#include <DiaEditor/Project/ProjectContext.h>
 #include <DiaCore/Json/external/json/json.h>
 
 #include <memory>
@@ -43,6 +44,7 @@ namespace Dia
 				SharedPluginState* GetPluginData();
 
 			private:
+				static void OnProjectChangedStatic(const Dia::Editor::ProjectContext& ctx, void* ud);
 				void RegisterRequestHandlers();
 				void HandleConnectionStateChange(bool connected);
 				void PushSavedFiltersToUI();
@@ -64,6 +66,7 @@ namespace Dia
 
 				char mCurrentStateFilter[32] = {};
 				char mCurrentIdSearch[128] = {};
+				char mExpectedDiagamePath[512] = {};
 			};
 		}
 	}

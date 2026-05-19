@@ -23,11 +23,11 @@ namespace Dia
     {
         class DebugFrameData;
     }
-    namespace Logger
+    namespace Observation { namespace Log
     {
         class Logger;
         class ISink;
-    }
+    } }
 }
 
 namespace Dia
@@ -42,7 +42,7 @@ namespace Dia
             DiaVisualDebuggerConsole();
             ~DiaVisualDebuggerConsole();
 
-            void Attach(Dia::Logger::Logger& logger);
+            void Attach(Dia::Observation::Log::Logger& logger);
             void Detach();
 
             void Toggle();
@@ -71,8 +71,8 @@ namespace Dia
 
             char mCommandBuffer[256];
 
-            Dia::Logger::ISink* mSink = nullptr;
-            Dia::Logger::Logger* mAttachedLogger = nullptr;
+            Dia::Observation::Log::ISink* mSink = nullptr;
+            Dia::Observation::Log::Logger* mAttachedLogger = nullptr;
         };
 
     } // namespace Debug

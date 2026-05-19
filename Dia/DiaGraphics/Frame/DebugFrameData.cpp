@@ -4,7 +4,7 @@
 #include "DiaGraphics/Frame/DebugFrameData.h"
 
 #include "DiaGraphics/Frame/DebugFrameDataVisitor.h"
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 namespace Dia
 {

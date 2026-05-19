@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Log">
+      <UniqueIdentifier>{1a2b3c4d-5e6f-7a8b-9c0d-e1f2a3b4c5d6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{2b3c4d5e-6f7a-8b9c-0d1e-f2a3b4c5d6e7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Session">
+      <UniqueIdentifier>{3c4d5e6f-7a8b-9c0d-e1f2-a3b4c5d6e7f8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Trace">
+      <UniqueIdentifier>{4d5e6f7a-8b9c-0d1e-f2a3-b4c5d6e7f8a9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Metric">
+      <UniqueIdentifier>{5e6f7a8b-9c0d-e1f2-a3b4-c5d6e7f8a9b0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Health">
+      <UniqueIdentifier>{6f7a8b9c-0d1e-f2a3-b4c5-d6e7f8a9b0c1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Config">
+      <UniqueIdentifier>{7a8b9c0d-1e2f-3a4b-5c6d-7e8f9a0b1c2d}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Log\Logger.cpp">
+      <Filter>Log</Filter>
+    </ClCompile>
+    <ClCompile Include="Log\LogLevel.cpp">
+      <Filter>Log</Filter>
+    </ClCompile>
+    <ClCompile Include="Log\ISink.cpp">
+      <Filter>Log</Filter>
+    </ClCompile>
+    <ClCompile Include="Log\ThreadLogBuffer.cpp">
+      <Filter>Log</Filter>
+    </ClCompile>
+    <ClCompile Include="Log\StdOutSink.cpp">
+      <Filter>Log</Filter>
+    </ClCompile>
+    <ClCompile Include="Log\DebugOutputSink.cpp">
+      <Filter>Log</Filter>
+    </ClCompile>
+    <ClCompile Include="Log\AssertSinkBridge.cpp">
+      <Filter>Log</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Log\Logger.h">
+      <Filter>Log</Filter>
+    </ClInclude>
+    <ClInclude Include="Log\LogEntry.h">
+      <Filter>Log</Filter>
+    </ClInclude>
+    <ClInclude Include="Log\LogLevel.h">
+      <Filter>Log</Filter>
+    </ClInclude>
+    <ClInclude Include="Log\ISink.h">
+      <Filter>Log</Filter>
+    </ClInclude>
+    <ClInclude Include="Log\ThreadLogBuffer.h">
+      <Filter>Log</Filter>
+    </ClInclude>
+    <ClInclude Include="Log\StdOutSink.h">
+      <Filter>Log</Filter>
+    </ClInclude>
+    <ClInclude Include="Log\DebugOutputSink.h">
+      <Filter>Log</Filter>
+    </ClInclude>
+    <ClInclude Include="Log\AssertSinkBridge.h">
+      <Filter>Log</Filter>
+    </ClInclude>
+    <ClInclude Include="Log\DiaLog.h">
+      <Filter>Log</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\MockSink.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

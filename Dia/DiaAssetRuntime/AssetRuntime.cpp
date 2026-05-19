@@ -4,7 +4,7 @@
 #include "DiaCore/FilePath/Path.h"
 #include "DiaCore/CRC/CRC.h"
 
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 #include <math.h>
 #include <string.h>

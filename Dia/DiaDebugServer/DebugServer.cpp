@@ -6,8 +6,8 @@
 #include <DiaDebugProtocol/DiaDebugProtocol.h>
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
 #include <DiaCore/Time/TimeAbsolute.h>
-#include <DiaLogger/DiaLog.h>
-#include <DiaLogger/Logger.h>
+#include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Log/Logger.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -42,8 +42,9 @@ namespace Dia
 			, mStartTimestamp(0)
 			, mStarted(false)
 		{
-			mGameName[0] = '\0';
-			mGameBuild[0] = '\0';
+			mGameName[0]    = '\0';
+			mGameBuild[0]   = '\0';
+			mDiagamePath[0] = '\0';
 		}
 
 		DebugServer::~DebugServer()
@@ -58,6 +59,12 @@ namespace Dia
 			else mGameName[0] = '\0';
 			if (build) strncpy_s(mGameBuild, sizeof(mGameBuild), build, _TRUNCATE);
 			else mGameBuild[0] = '\0';
+		}
+
+		void DebugServer::SetDiagamePath(const char* diagamePath)
+		{
+			if (diagamePath) strncpy_s(mDiagamePath, sizeof(mDiagamePath), diagamePath, _TRUNCATE);
+			else mDiagamePath[0] = '\0';
 		}
 
 		//---------------------------------------------------------------------
@@ -87,7 +94,7 @@ namespace Dia
 				StartServer();
 
 			mLogSink.SetServer(mServer);
-			Dia::Logger::Logger::Instance().RegisterSink(&mLogSink);
+			Dia::Observation::Log::Logger::Instance().RegisterSink(&mLogSink);
 
 			mStartTimestamp = Dia::DebugProtocol::GetTimestampNow();
 			mStarted = true;
@@ -143,7 +150,7 @@ namespace Dia
 		{
 			if (!mStarted) return;
 
-			Dia::Logger::Logger::Instance().UnregisterSink(&mLogSink);
+			Dia::Observation::Log::Logger::Instance().UnregisterSink(&mLogSink);
 			mLogSink.SetServer(nullptr);
 
 			DIA_LOG_INFO("DebugServer", "DebugServer::Stop");
@@ -523,6 +530,15 @@ namespace Dia
 
 		void DebugServer::RegisterProtocolCommands()
 		{
+			mQueryRegistry.Register(
+				Dia::Core::StringCRC("get_app_state"),
+				[this](const Json::Value& /*args*/) -> Json::Value {
+					Json::Value result;
+					result["diagame_path"] = mDiagamePath;
+					return result;
+				}
+			);
+
 			mQueryRegistry.Register(
 				Dia::Core::StringCRC("get_state"),
 				[this](const Json::Value& /*args*/) -> Json::Value {

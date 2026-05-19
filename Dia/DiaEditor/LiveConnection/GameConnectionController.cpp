@@ -6,7 +6,7 @@
 #include "DiaEditor/MVC/EditorView.h"
 #include "DiaEditor/UI/WebUIBridge.h"
 
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <DiaCore/Strings/String32.h>
 #include <DiaCore/Strings/String1024.h>
 
@@ -50,6 +50,7 @@ namespace Dia
 			, mManager(nullptr)
 			, mState(State::kDisconnected)
 			, mEditorView(nullptr)
+			, mEditorContext(nullptr)
 			, mUseStub(false)
 			, mConnectingPending(false)
 			, mConnectingElapsed(0.0f)
@@ -74,6 +75,11 @@ namespace Dia
 		GameConnectionController::~GameConnectionController()
 		{
 			Shutdown();
+		}
+
+		void GameConnectionController::SetEditorContext(IEditorContext* context)
+		{
+			mEditorContext = context;
 		}
 
 		void GameConnectionController::Initialize(WebUIBridge* bridge, GameConnectionManager* manager, EditorView* editorView)
@@ -416,6 +422,22 @@ namespace Dia
 					snprintf(logMsg, sizeof(logMsg), "Connected to %s (build %s)",
 						info.name().c_str(), info.build().c_str());
 					PushGameConsoleEntry("info", logMsg);
+
+					// Request .diagame path — live context takes precedence over manual project.
+					if (mEditorContext != nullptr && mManager != nullptr)
+					{
+						IEditorContext* ctx = mEditorContext;
+						mManager->SendCommandWithResponse("get_app_state", Json::Value(Json::objectValue),
+							[ctx](bool success, const Json::Value& result)
+							{
+								if (!success) return;
+								if (!result.isMember("diagame_path") || !result["diagame_path"].isString()) return;
+								const char* path = result["diagame_path"].asCString();
+								if (path == nullptr || path[0] == '\0') return;
+								ctx->LoadDiagameProject(path);
+							}
+						);
+					}
 				}
 				break;
 			}
@@ -531,6 +553,10 @@ namespace Dia
 
 			if (!mUseStub && mManager != nullptr)
 				mManager->Disconnect();
+
+			// Clear game-project context — live state is no longer valid.
+			if (mEditorContext != nullptr)
+				mEditorContext->ClearDiagameProject();
 
 			if (reason != nullptr && reason[0] != '\0' &&
 				strcmp(reason, "user requested") != 0)

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <DiaEditor/Plugin/IEditorPlugin.h>
+#include <DiaEditor/Project/ProjectContext.h>
 #include <DiaEditor/Command/CommandHistory.h>
 #include <DiaAssetCatalogue/AssetRegistry.h>
 #include <DiaAssetCatalogue/CatalogueManifestSerializer.h>
@@ -41,6 +42,7 @@ namespace Dia
 				void OnUpdate(float deltaTime) override;
 
 			private:
+				static void OnProjectChangedStatic(const Dia::Editor::ProjectContext& ctx, void* ud);
 				void RegisterRequestHandlers();
 				void RegisterCRUDHandlers();
 				void RegisterDiscovererHandlers();

@@ -3,7 +3,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "DiaInput/ConsoleGamepad.h"
 
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 // Link the 'Xinput' library - Important!
 #pragma comment(lib, "Xinput.lib")

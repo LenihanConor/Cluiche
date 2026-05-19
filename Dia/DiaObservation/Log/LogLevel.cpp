@@ -1,10 +1,10 @@
-#include "DiaLogger/LogLevel.h"
+#include "DiaObservation/Log/LogLevel.h"
 
 #include <string.h>
 
 namespace Dia
 {
-	namespace Logger
+	namespace Observation { namespace Log
 	{
 		const char* LogLevelToString(LogLevel level)
 		{
@@ -32,4 +32,5 @@ namespace Dia
 			return defaultLevel;
 		}
 	}
-}
+} // namespace Observation
+} // namespace Dia

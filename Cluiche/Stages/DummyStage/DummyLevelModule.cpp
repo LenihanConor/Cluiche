@@ -8,7 +8,7 @@
 #include <DiaGraphics/Misc/RGBA.h>
 #include <DiaSFML/TextureHandler.h>
 #include <DiaInput/EKey.h>
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <DiaMaths/Vector/Vector2D.h>
 
 #include <cmath>

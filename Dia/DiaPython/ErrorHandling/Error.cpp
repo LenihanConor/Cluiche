@@ -6,7 +6,7 @@
 #include "Error.h"
 #include "DiaPython/DiaPythonInternal.h"
 
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <sstream>
 
 namespace Dia

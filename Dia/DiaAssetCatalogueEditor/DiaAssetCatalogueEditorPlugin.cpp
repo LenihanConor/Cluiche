@@ -15,10 +15,11 @@
 #include <shellapi.h>
 #include <DiaEditor/Plugin/EditorPluginRegistrationMacros.h>
 #include <DiaEditor/Plugin/EditorPluginContext.h>
+#include <DiaEditor/MVC/EditorModel.h>
 #include <DiaEditor/MVC/EditorView.h>
 #include <DiaEditor/UI/WebUIBridge.h>
 #include <DiaCore/Json/external/json/json.h>
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 #include <cstring>
 
@@ -32,6 +33,40 @@ namespace Dia
 	{
 		namespace Editor
 		{
+			void DiaAssetCatalogueEditorPlugin::OnProjectChangedStatic(const Dia::Editor::ProjectContext& ctx, void* ud)
+			{
+				auto* self = static_cast<DiaAssetCatalogueEditorPlugin*>(ud);
+				DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: OnProjectChanged — IsValid=%d diagamePath='%s' assetCataloguePath='%s'",
+					ctx.IsValid() ? 1 : 0, ctx.diagamePath, ctx.assetCataloguePath);
+
+				if (ctx.IsValid() && ctx.assetCataloguePath[0] != '\0')
+				{
+					char err[256] = {};
+					DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: loading catalogue from '%s'", ctx.assetCataloguePath);
+					if (!self->LoadManifestFromPath(ctx.assetCataloguePath, err, sizeof(err)))
+					{
+						DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: failed to load catalogue '%s': %s",
+							ctx.assetCataloguePath, err);
+						if (self->mBridge)
+							self->mBridge->NotifyUIDataChanged("assetcatalogue.status",
+								Json::Value(err[0] ? err : "Failed to load catalogue"));
+					}
+					else
+					{
+						DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: catalogue loaded OK, %u records", self->mRegistry.GetCount());
+					}
+				}
+				else
+				{
+					if (ctx.IsValid())
+						DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: project '%s' has no asset_catalogue field",
+							ctx.diagamePath);
+					if (self->mBridge)
+						self->mBridge->NotifyUIDataChanged("assetcatalogue.status",
+							Json::Value(ctx.IsValid() ? "No asset_catalogue configured in .diagame" : "No project loaded"));
+				}
+			}
+
 			void DiaAssetCatalogueEditorPlugin::OnLoad(const Dia::Editor::EditorPluginContext& context)
 			{
 				DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: OnLoad");
@@ -47,14 +82,31 @@ namespace Dia
 
 				RegisterRequestHandlers();
 
-				// Offer re-open if session context has a last path
-				if (mSessionContext.HasLastManifestPath())
+				if (context.mModel != nullptr)
 				{
-					Json::Value msg;
-					msg["lastManifestPath"] = mSessionContext.GetLastManifestPath();
-					if (mBridge)
-						mBridge->NotifyUIDataChanged("assetcatalogue.lastManifestPath", msg);
+					context.mModel->OnDiagameProjectChanged(&DiaAssetCatalogueEditorPlugin::OnProjectChangedStatic, this);
+					const Dia::Editor::ProjectContext& proj = context.mModel->GetDiagameProject();
+					DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: OnLoad — checking current project: IsValid=%d diagamePath='%s' assetCataloguePath='%s'",
+						proj.IsValid() ? 1 : 0, proj.diagamePath, proj.assetCataloguePath);
+					if (proj.IsValid() && proj.assetCataloguePath[0] != '\0')
+					{
+						char err[256] = {};
+						DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: OnLoad — loading catalogue from '%s'", proj.assetCataloguePath);
+						if (!LoadManifestFromPath(proj.assetCataloguePath, err, sizeof(err)))
+							DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: OnLoad — failed to load catalogue: %s", err);
+						else
+							DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: OnLoad — catalogue loaded OK, %u records", mRegistry.GetCount());
+					}
+					else
+					{
+						DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: OnLoad — no catalogue to load (no project or no asset_catalogue field)");
+					}
 				}
+				else
+				{
+					DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: OnLoad — context.mModel is null");
+				}
+
 
 				DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: Initialized");
 			}
@@ -84,6 +136,7 @@ namespace Dia
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.dry_run_rules"));
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.apply_rules"));
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.query_asset_ids"));
+					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.get_state"));
 				}
 
 				mSessionContext.Save(mOutputDir);
@@ -217,6 +270,26 @@ namespace Dia
 
 						Json::Value result;
 						result["success"] = true;
+						return result;
+					});
+
+				mBridge->RegisterRequestHandler(
+					Dia::Core::StringCRC("asset_catalogue.get_state"),
+					[this](const Json::Value& /*data*/) -> Json::Value
+					{
+						Json::Value result;
+						result["success"] = true;
+						result["path"]    = mCurrentPath;
+						result["dirty"]   = mLoadHandler.IsDirty(mHistory);
+
+						Json::Value records(Json::arrayValue);
+						for (unsigned int i = 0; i < mRegistry.GetCount(); ++i)
+							records.append(RecordToJson(mRegistry.GetRecordByIndex(i)));
+						result["records"] = records;
+
+						if (mCurrentPath[0] == '\0' && mRegistry.GetCount() == 0)
+							result["status"] = "No catalogue loaded — open a project with asset_catalogue configured in .diagame";
+
 						return result;
 					});
 			}

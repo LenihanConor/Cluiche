@@ -1,10 +1,10 @@
-#include "DiaLogger/ThreadLogBuffer.h"
+#include "DiaObservation/Log/ThreadLogBuffer.h"
 
 #include <string.h>
 
 namespace Dia
 {
-	namespace Logger
+	namespace Observation { namespace Log
 	{
 		ThreadLogBuffer::ThreadLogBuffer()
 			: mWriteIndex(0)
@@ -46,4 +46,5 @@ namespace Dia
 			mReadIndex = mWriteIndex;
 		}
 	}
-}
+} // namespace Observation
+} // namespace Dia

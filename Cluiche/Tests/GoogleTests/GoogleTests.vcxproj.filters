@@ -76,8 +76,11 @@
     <Filter Include="DiaMetrics">
       <UniqueIdentifier>{DMET0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
-    <Filter Include="DiaLogger">
+    <Filter Include="DiaObservation">
       <UniqueIdentifier>{DLGR0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaObservation\Log">
+      <UniqueIdentifier>{DLGR0002-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
     <Filter Include="PipelineEditor">
       <UniqueIdentifier>{PIPE0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
@@ -694,21 +697,24 @@
     <ClCompile Include="DiaMetrics\TestMetricRegistry.cpp">
       <Filter>DiaMetrics</Filter>
     </ClCompile>
-    <!-- DiaLogger -->
-    <ClCompile Include="DiaLogger\TestLogLevel.cpp">
-      <Filter>DiaLogger</Filter>
+    <!-- DiaObservation -->
+    <ClCompile Include="DiaObservation\Log\TestLogLevel.cpp">
+      <Filter>DiaObservation\Log</Filter>
     </ClCompile>
-    <ClCompile Include="DiaLogger\TestThreadLogBuffer.cpp">
-      <Filter>DiaLogger</Filter>
+    <ClCompile Include="DiaObservation\Log\TestThreadLogBuffer.cpp">
+      <Filter>DiaObservation\Log</Filter>
     </ClCompile>
-    <ClCompile Include="DiaLogger\TestISink.cpp">
-      <Filter>DiaLogger</Filter>
+    <ClCompile Include="DiaObservation\Log\TestISink.cpp">
+      <Filter>DiaObservation\Log</Filter>
     </ClCompile>
-    <ClCompile Include="DiaLogger\TestLogger.cpp">
-      <Filter>DiaLogger</Filter>
+    <ClCompile Include="DiaObservation\Log\TestLogger.cpp">
+      <Filter>DiaObservation\Log</Filter>
     </ClCompile>
-    <ClCompile Include="DiaLogger\TestAssertSinkBridge.cpp">
-      <Filter>DiaLogger</Filter>
+    <ClCompile Include="DiaObservation\Log\TestAssertSinkBridge.cpp">
+      <Filter>DiaObservation\Log</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Log\TestAsyncDrain.cpp">
+      <Filter>DiaObservation\Log</Filter>
     </ClCompile>
     <!-- PipelineEditor -->
     <ClCompile Include="PipelineEditor\TestPipelineLogTailer.cpp">

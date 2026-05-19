@@ -7,7 +7,7 @@
 #include "Events/EventSystem.h"
 #include "Parser/ArgumentParser.h"
 #include "Help/HelpSystem.h"
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <DiaCore/Core/Assert.h>
 #include <cctype>
 #include <cstring>

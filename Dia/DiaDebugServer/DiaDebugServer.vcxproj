@@ -43,7 +43,7 @@
     <ProjectReference Include="..\DiaProtobuf\DiaProtobuf.vcxproj">
       <Project>{87758331-BA9E-4055-B3F0-A62671738D42}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\DiaLogger\DiaLogger.vcxproj">
+    <ProjectReference Include="..\DiaObservation\DiaObservation.vcxproj">
       <Project>{7a8b9c0d-e1f2-3456-7890-abcdef012345}</Project>
     </ProjectReference>
   </ItemGroup>

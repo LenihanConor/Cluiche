@@ -4,7 +4,7 @@
 
 #include <DiaApplicationFlow/TypeRegistry/ApplicationTypeRegistry.h>
 
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaCore/Strings/String256.h>
 #include <DiaCore/Strings/String512.h>

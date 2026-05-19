@@ -8,8 +8,10 @@
 #include <DiaEditor/Plugin/IEditorPlugin.h>
 #include <DiaEditor/EditorManifestLoader.h>
 #include <DiaEditor/MVC/EditorView.h>
+#include <DiaEditor/Layout/DockingLayout.h>
 #include <DiaCore/Core/Assert.h>
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
+#include <string>
 
 namespace Cluiche
 {
@@ -55,6 +57,7 @@ namespace Cluiche
 
 			DIA_LOG_INFO("Application", "PluginLoaderModule: DoStart");
 			LoadBuiltInPlugins();
+			RestoreLayoutPlugins();
 
 			// Load the project (if one was specified on the command line) and any
 			// manifests it references.  The module's mProjectPath is populated by
@@ -111,6 +114,39 @@ namespace Cluiche
 			LoadPlugin(Dia::Core::StringCRC("OutputConsoleEditorPlugin"),    Dia::Core::StringCRC("outputconsole_builtin"));
 			LoadPlugin(Dia::Core::StringCRC("GameConnectionEditorPlugin"),   Dia::Core::StringCRC("gameconnection_builtin"));
 			LoadPlugin(Dia::Core::StringCRC("PluginBrowserEditorPlugin"),    Dia::Core::StringCRC("pluginbrowser_builtin"));
+		}
+
+		void PluginLoaderModule::RestoreLayoutPlugins()
+		{
+			if (mView == nullptr)
+				return;
+
+			Dia::Editor::DockingLayout* layout = mView->GetDockingLayout();
+			if (layout == nullptr)
+				return;
+
+			Dia::Editor::EditorPluginRegistry& registry = Dia::Editor::EditorPluginRegistry::Instance();
+
+			for (unsigned int p = 0; p < layout->GetPanelCount(); ++p)
+			{
+				const char* panelName = layout->GetPanel(p).name;
+
+				for (unsigned int r = 0; r < registry.GetRegisteredCount(); ++r)
+				{
+					Dia::Editor::EditorPluginInfo info = registry.GetFactory(r)->GetPluginInfo();
+					if (strcmp(info.name, panelName) == 0)
+					{
+						const Dia::Core::StringCRC& typeId = registry.GetRegisteredTypeId(r);
+						if (!IsPluginTypeLoaded(typeId))
+						{
+							DIA_LOG_INFO("Application", "PluginLoaderModule: Restoring layout plugin '%s'", panelName);
+							Dia::Core::StringCRC instanceId((std::string(panelName) + "_layout").c_str());
+							LoadPlugin(typeId, instanceId);
+						}
+						break;
+					}
+				}
+			}
 		}
 
 		void PluginLoaderModule::LoadManifest(const char* manifestPath)

@@ -1,10 +1,10 @@
 #pragma once
 
-#include <DiaLogger/LogEntry.h>
+#include <DiaObservation/Log/LogEntry.h>
 
 namespace Dia
 {
-	namespace Logger
+	namespace Observation { namespace Log
 	{
 		class ThreadLogBuffer
 		{
@@ -26,4 +26,5 @@ namespace Dia
 			unsigned int mReadIndex;
 		};
 	}
-}
+} // namespace Observation
+} // namespace Dia

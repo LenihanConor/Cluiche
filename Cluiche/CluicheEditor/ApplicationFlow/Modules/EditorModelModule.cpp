@@ -4,10 +4,10 @@
 #include <windows.h>
 
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
-#include <DiaLogger/Logger.h>
-#include <DiaLogger/ISink.h>
-#include <DiaLogger/LogLevel.h>
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/Logger.h>
+#include <DiaObservation/Log/ISink.h>
+#include <DiaObservation/Log/LogLevel.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <DiaCore/Json/external/json/json.h>
 
 #include <fstream>
@@ -91,7 +91,7 @@ namespace Cluiche
 			}
 
 			// Apply editor-logger.json (if present): sets default level + per-sink thresholds/channels.
-			void ApplyLoggerConfig(const char* configPath, Dia::Logger::ISink** sinks, unsigned int sinkCount)
+			void ApplyLoggerConfig(const char* configPath, Dia::Observation::Log::ISink** sinks, unsigned int sinkCount)
 			{
 				if (configPath == nullptr) return;
 
@@ -102,9 +102,9 @@ namespace Cluiche
 				Json::Reader reader;
 				if (!reader.parse(file, root)) return;
 
-				Dia::Logger::LogLevel defaultLevel = Dia::Logger::LogLevel::kInfo;
+				Dia::Observation::Log::LogLevel defaultLevel = Dia::Observation::Log::LogLevel::kInfo;
 				if (root.isMember("default_level") && root["default_level"].isString())
-					defaultLevel = Dia::Logger::LogLevelFromString(root["default_level"].asCString());
+					defaultLevel = Dia::Observation::Log::LogLevelFromString(root["default_level"].asCString());
 
 				if (root.isMember("sinks") && root["sinks"].isArray())
 				{
@@ -121,7 +121,7 @@ namespace Cluiche
 							if (strcmp(sinks[s]->GetName(), sinkName) != 0) continue;
 
 							if (sinkConfig.isMember("level_threshold") && sinkConfig["level_threshold"].isString())
-								sinks[s]->SetLevelThreshold(Dia::Logger::LogLevelFromString(sinkConfig["level_threshold"].asCString(), defaultLevel));
+								sinks[s]->SetLevelThreshold(Dia::Observation::Log::LogLevelFromString(sinkConfig["level_threshold"].asCString(), defaultLevel));
 							else
 								sinks[s]->SetLevelThreshold(defaultLevel);
 
@@ -174,11 +174,11 @@ namespace Cluiche
 
 		Dia::ApplicationFlow::StartResult EditorModelModule::DoStart()
 		{
-			Dia::Logger::Logger& logger = Dia::Logger::Logger::Instance();
+			Dia::Observation::Log::Logger& logger = Dia::Observation::Log::Logger::Instance();
 			logger.RegisterThreadBuffer();
 			logger.RegisterSink(&mDebugOutputSink);
 
-			Dia::Logger::ISink* sinks[] = { &mDebugOutputSink };
+			Dia::Observation::Log::ISink* sinks[] = { &mDebugOutputSink };
 			ApplyLoggerConfig("assets/configs/editor-logger.json", sinks, 1);
 
 			ParseCommandLine(mProjectPath, kMaxProjectPathLength, mDiagamePath, kMaxProjectPathLength);
@@ -211,12 +211,12 @@ namespace Cluiche
 
 		void EditorModelModule::DoUpdate(float /*deltaTime*/)
 		{
-			Dia::Logger::Logger::Instance().FlushBuffers();
+			Dia::Observation::Log::Logger::Instance().FlushBuffers();
 		}
 
 		Dia::ApplicationFlow::StopResult EditorModelModule::DoStop()
 		{
-			Dia::Logger::Logger& logger = Dia::Logger::Logger::Instance();
+			Dia::Observation::Log::Logger& logger = Dia::Observation::Log::Logger::Instance();
 			logger.UnregisterSink(&mDebugOutputSink);
 			logger.UnregisterThreadBuffer();
 			mModel.Reset();

@@ -5,7 +5,7 @@
 #include "DiaApplicationFlow/ProcessingUnit.h"
 
 #include <DiaCore/Core/Assert.h>
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 #include <chrono>
 

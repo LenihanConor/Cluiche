@@ -2,7 +2,7 @@
 
 **Last Updated:** 2026-05-18
 
-Complete catalog of all 57 module architecture files in the Cluiche codebase.
+Complete catalog of all 58 module architecture files in the Cluiche codebase.
 
 ---
 
@@ -12,7 +12,7 @@ This registry catalogs all `.architecture.module.md` files that describe modules
 
 **Schema Documentation:** [Module Metadata Schema](module-metadata-schema.md)
 
-**Total Modules:** 57
+**Total Modules:** 58
 
 ---
 
@@ -320,6 +320,15 @@ This registry catalogs all `.architecture.module.md` files that describe modules
 
 ---
 
+### dia.observation
+- **Path:** `Dia/DiaObservation/`
+- **File:** `dia.dia.observation.architecture.module.md`
+- **Purpose:** Four-pillar observability — Log/ (async drain, folded from DiaLogger), Session/ Trace/ Metric/ Health/ Config/ (placeholders for Features #2–#6)
+- **Dependencies:** dia.core
+- **Key Classes:** `Dia::Observation::Log::Logger`, `ISink`, `StdOutSink`, `DebugOutputSink`, `AssertSinkBridge`, `DIA_LOG_*` macros
+
+---
+
 ### dia.io
 - **Path:** `Dia/DiaIO/`
 - **File:** `dia.io.architecture.module.md`
@@ -355,6 +364,7 @@ This registry catalogs all `.architecture.module.md` files that describe modules
 | **DiaUI** | 1 | UI interface |
 | **DiaSFML** | 1 | SFML backend |
 | **DiaMetrics** | 1 | Counter, Gauge, Histogram, MetricRegistry |
+| **DiaObservation** | 1 | Log/ (async drain); Session/Trace/Metric/Health/Config placeholders |
 | **DiaIO** | 1 | File I/O |
 | **DiaPhysics** | 1 | Physics (stub) |
 | **DiaAI** | 1 | AI (stub) |

@@ -1,6 +1,6 @@
 #include "DummyUIPageModule.h"
 
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 
 namespace Cluiche { namespace AppFlow {

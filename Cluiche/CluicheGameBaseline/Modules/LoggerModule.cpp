@@ -1,11 +1,11 @@
 #include "Modules/LoggerModule.h"
 
-#include <DiaLogger/Logger.h>
-#include <DiaLogger/ISink.h>
-#include <DiaLogger/DebugOutputSink.h>
-#include <DiaLogger/StdOutSink.h>
-#include <DiaLogger/LogLevel.h>
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/Logger.h>
+#include <DiaObservation/Log/ISink.h>
+#include <DiaObservation/Log/DebugOutputSink.h>
+#include <DiaObservation/Log/StdOutSink.h>
+#include <DiaObservation/Log/LogLevel.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 
 #include <cstring>
@@ -23,13 +23,13 @@ LoggerModule::LoggerModule(const Dia::Core::StringCRC& instanceId)
     // Config-driven sink selection can be added later once v2 module config
     // parsing is wired up.
     {
-        Dia::Logger::DebugOutputSink* sink = new Dia::Logger::DebugOutputSink();
-        sink->SetLevelThreshold(Dia::Logger::LogLevel::kInfo);
+        Dia::Observation::Log::DebugOutputSink* sink = new Dia::Observation::Log::DebugOutputSink();
+        sink->SetLevelThreshold(Dia::Observation::Log::LogLevel::kInfo);
         mOwnedSinks[mOwnedSinkCount++] = sink;
     }
     {
-        Dia::Logger::StdOutSink* sink = new Dia::Logger::StdOutSink();
-        sink->SetLevelThreshold(Dia::Logger::LogLevel::kInfo);
+        Dia::Observation::Log::StdOutSink* sink = new Dia::Observation::Log::StdOutSink();
+        sink->SetLevelThreshold(Dia::Observation::Log::LogLevel::kInfo);
         mOwnedSinks[mOwnedSinkCount++] = sink;
     }
 }
@@ -40,7 +40,7 @@ LoggerModule::~LoggerModule()
 
 Dia::ApplicationFlow::StartResult LoggerModule::DoStart()
 {
-    Dia::Logger::Logger& logger = Dia::Logger::Logger::Instance();
+    Dia::Observation::Log::Logger& logger = Dia::Observation::Log::Logger::Instance();
     logger.RegisterThreadBuffer();
 
     for (unsigned int i = 0; i < mOwnedSinkCount; ++i)
@@ -52,13 +52,17 @@ Dia::ApplicationFlow::StartResult LoggerModule::DoStart()
 
 void LoggerModule::DoUpdate(float /*dt*/)
 {
-    Dia::Logger::Logger::Instance().FlushBuffers();
+    // Drain is async — no work needed here.
 }
 
 Dia::ApplicationFlow::StopResult LoggerModule::DoStop()
 {
     DIA_LOG_INFO("Application", "LoggerModule DoStop");
-    Dia::Logger::Logger& logger = Dia::Logger::Logger::Instance();
+    Dia::Observation::Log::Logger& logger = Dia::Observation::Log::Logger::Instance();
+
+    // Stop() must be called before UnregisterSink to avoid use-after-free
+    // while the drain thread is still running.
+    logger.Stop();
 
     for (unsigned int i = 0; i < mOwnedSinkCount; ++i)
         logger.UnregisterSink(mOwnedSinks[i]);
