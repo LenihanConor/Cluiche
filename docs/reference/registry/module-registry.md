@@ -1,8 +1,8 @@
 # Module Registry
 
-**Last Updated:** 2026-04-01
+**Last Updated:** 2026-05-18
 
-Complete catalog of all 56 module architecture files in the Cluiche codebase.
+Complete catalog of all 57 module architecture files in the Cluiche codebase.
 
 ---
 
@@ -12,7 +12,7 @@ This registry catalogs all `.architecture.module.md` files that describe modules
 
 **Schema Documentation:** [Module Metadata Schema](module-metadata-schema.md)
 
-**Total Modules:** 56
+**Total Modules:** 57
 
 ---
 
@@ -311,6 +311,15 @@ This registry catalogs all `.architecture.module.md` files that describe modules
 
 ---
 
+### dia.metrics
+- **Path:** `Dia/DiaMetrics/`
+- **File:** `dia.dia.metrics.architecture.module.md`
+- **Purpose:** Metric primitives (Counter, Gauge, Histogram), MetricRegistry singleton, IMetricSink extension point
+- **Dependencies:** dia.core
+- **Key Classes:** `MetricRegistry`, `Counter`, `Gauge`, `Histogram`, `MetricSnapshot`, `IMetricSink`
+
+---
+
 ### dia.io
 - **Path:** `Dia/DiaIO/`
 - **File:** `dia.io.architecture.module.md`
@@ -345,6 +354,7 @@ This registry catalogs all `.architecture.module.md` files that describe modules
 | **DiaInput** | 1 | Input events |
 | **DiaUI** | 1 | UI interface |
 | **DiaSFML** | 1 | SFML backend |
+| **DiaMetrics** | 1 | Counter, Gauge, Histogram, MetricRegistry |
 | **DiaIO** | 1 | File I/O |
 | **DiaPhysics** | 1 | Physics (stub) |
 | **DiaAI** | 1 | AI (stub) |

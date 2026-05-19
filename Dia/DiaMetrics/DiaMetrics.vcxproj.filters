@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="DiaMetrics">
+      <UniqueIdentifier>{4B5C6D7E-F8A9-0123-BCDE-F12345678901}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{5C6D7E8F-A9B0-1234-CDEF-012345678902}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{6D7E8F9A-B0C1-2345-DEF0-123456789012}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Counter.h">
+      <Filter>DiaMetrics</Filter>
+    </ClInclude>
+    <ClInclude Include="Gauge.h">
+      <Filter>DiaMetrics</Filter>
+    </ClInclude>
+    <ClInclude Include="Histogram.h">
+      <Filter>DiaMetrics</Filter>
+    </ClInclude>
+    <ClInclude Include="IMetricSink.h">
+      <Filter>DiaMetrics</Filter>
+    </ClInclude>
+    <ClInclude Include="MetricRegistry.h">
+      <Filter>DiaMetrics</Filter>
+    </ClInclude>
+    <ClInclude Include="MetricSnapshot.h">
+      <Filter>DiaMetrics</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\MetricFixture.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Counter.cpp">
+      <Filter>DiaMetrics</Filter>
+    </ClCompile>
+    <ClCompile Include="Gauge.cpp">
+      <Filter>DiaMetrics</Filter>
+    </ClCompile>
+    <ClCompile Include="Histogram.cpp">
+      <Filter>DiaMetrics</Filter>
+    </ClCompile>
+    <ClCompile Include="MetricRegistry.cpp">
+      <Filter>DiaMetrics</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="dia.dia.metrics.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+</Project>

@@ -73,6 +73,9 @@
     <Filter Include="Editor">
       <UniqueIdentifier>{EDTR0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaMetrics">
+      <UniqueIdentifier>{DMET0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
     <Filter Include="DiaLogger">
       <UniqueIdentifier>{DLGR0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
@@ -677,6 +680,19 @@
     </ClCompile>
     <ClCompile Include="RigidBody2D\TestConservationLaws.cpp">
       <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <!-- DiaMetrics -->
+    <ClCompile Include="DiaMetrics\TestMetricGauge.cpp">
+      <Filter>DiaMetrics</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMetrics\TestMetricCounter.cpp">
+      <Filter>DiaMetrics</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMetrics\TestMetricHistogram.cpp">
+      <Filter>DiaMetrics</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMetrics\TestMetricRegistry.cpp">
+      <Filter>DiaMetrics</Filter>
     </ClCompile>
     <!-- DiaLogger -->
     <ClCompile Include="DiaLogger\TestLogLevel.cpp">
