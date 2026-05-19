@@ -1,5 +1,6 @@
 {
    "config" : {
+      "asset_catalogue" : "assets.catalogue.json",
       "path_aliases" : {
          "root" : ".",
          "ui_common" : "./global/Presentation/UI"
