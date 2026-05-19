@@ -14,7 +14,7 @@
 #include <DiaUICEF/EditorUISystemFactory.h>
 #include <DiaUI/IUISystem.h>
 #include <DiaEditor/UI/WebUIBridge.h>
-#include <DiaLogger/Logger.h>
+#include <DiaObservation/Log/Logger.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaCore/Strings/String64.h>
 #include <DiaCore/CRC/StringCRC.h>
@@ -79,7 +79,7 @@ namespace Cluiche
 			mConsoleSink.SetBridge(bridge);
 			bridge->RegisterEventHandler(Dia::Core::StringCRC("console_ready"),
 				[this](const Json::Value&) { mConsoleSink.NotifyConsoleReady(); });
-			Dia::Logger::Logger::Instance().RegisterSink(&mConsoleSink);
+			Dia::Observation::Log::Logger::Instance().RegisterSink(&mConsoleSink);
 
 			// When the React shell fires "shell_ready" dismiss the native splash
 			// and reveal the editor window.
@@ -125,7 +125,7 @@ namespace Cluiche
 		Dia::ApplicationFlow::StopResult EditorViewModule::DoStop()
 		{
 			// Unregister console sink
-			Dia::Logger::Logger::Instance().UnregisterSink(&mConsoleSink);
+			Dia::Observation::Log::Logger::Instance().UnregisterSink(&mConsoleSink);
 			mConsoleSink.SetBridge(nullptr);
 
 			mView.SaveLayoutToDisk();

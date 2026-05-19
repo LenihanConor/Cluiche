@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { EditorBridge, PanelInfo } from "../bridge/EditorBridge";
+import { ProjectContextButton } from "../toolbar/ProjectContextButton";
 
 interface ToolbarProps {
   panels: PanelInfo[];
@@ -42,7 +43,7 @@ export function Toolbar({ panels }: ToolbarProps) {
       flexShrink: 0,
       gap: 2,
     }}>
-      <div style={{ display: "flex", gap: 2, flex: 1 }}>
+      <div style={{ display: "flex", gap: 2 }}>
         {panels.map((p) => (
           <button
             key={p.name}
@@ -68,6 +69,9 @@ export function Toolbar({ panels }: ToolbarProps) {
             {p.name.charAt(0).toUpperCase()}
           </button>
         ))}
+      </div>
+      <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center" }}>
+        <ProjectContextButton />
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <button

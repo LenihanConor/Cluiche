@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import React from "react";
 
 let subscribeCallback: ((data: unknown) => void) | null = null;
 
@@ -12,6 +11,7 @@ vi.mock("../bridge/EditorBridge", () => ({
       if (topic === "game_connection") subscribeCallback = cb;
       return vi.fn();
     }),
+    request: vi.fn(() => Promise.resolve(null)),
   },
 }));
 
@@ -33,6 +33,7 @@ beforeEach(() => {
       return vi.fn();
     }
   );
+  (EditorBridge.request as ReturnType<typeof vi.fn>).mockResolvedValue(null);
 });
 
 describe("Toolbar – panel buttons", () => {
@@ -46,8 +47,8 @@ describe("Toolbar – panel buttons", () => {
 
   it("renders no panel buttons when panels list is empty", () => {
     render(<Toolbar panels={[]} />);
-    // Only the connection button should be present
-    expect(screen.queryAllByRole("button")).toHaveLength(1);
+    // Project context button + connection button; no panel toggle buttons.
+    expect(screen.queryAllByRole("button")).toHaveLength(2);
   });
 
   it("visible panel button has active background colour", () => {

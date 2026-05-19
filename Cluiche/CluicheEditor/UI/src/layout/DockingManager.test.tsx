@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, act, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import React from "react";
 
 // Mock EditorBridge before importing DockingManager so it doesn't touch window.dia
 vi.mock("../bridge/EditorBridge", () => ({

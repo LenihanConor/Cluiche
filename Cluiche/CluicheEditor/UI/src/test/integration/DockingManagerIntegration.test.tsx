@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, act, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import React from "react";
 
 // ── Shared mock state for the bridge ────────────────────────────────────────
 let panelsChangedCb: ((data: unknown) => void) | null = null;
@@ -16,6 +15,7 @@ vi.mock("../../bridge/EditorBridge", () => ({
       if (topic === "panels_changed") panelsChangedCb = cb;
       return vi.fn();
     }),
+    request: vi.fn(() => Promise.resolve(null)),
   },
 }));
 
