@@ -108,6 +108,18 @@ namespace Dia
 		{
 			Json::Value result;
 
+			char* headless = nullptr;
+			size_t headlessLen = 0;
+			_dupenv_s(&headless, &headlessLen, "DIA_HEADLESS");
+			bool isHeadless = headless && headless[0] != '\0';
+			free(headless);
+			if (isHeadless)
+			{
+				result["ok"]        = false;
+				result["cancelled"] = true;
+				return result;
+			}
+
 			char filePath[MAX_PATH] = {0};
 			OPENFILENAMEA ofn = {};
 			ofn.lStructSize  = sizeof(ofn);
