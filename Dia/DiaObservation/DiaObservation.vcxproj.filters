@@ -16,6 +16,9 @@
     <Filter Include="Metric">
       <UniqueIdentifier>{5e6f7a8b-9c0d-e1f2-a3b4-c5d6e7f8a9b0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Metric\Testing">
+      <UniqueIdentifier>{8b9c0d1e-2f3a-4b5c-6d7e-8f9a0b1c2d3e}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Health">
       <UniqueIdentifier>{6f7a8b9c-0d1e-f2a3-b4c5-d6e7f8a9b0c1}</UniqueIdentifier>
     </Filter>
@@ -44,6 +47,54 @@
     </ClCompile>
     <ClCompile Include="Log\AssertSinkBridge.cpp">
       <Filter>Log</Filter>
+    </ClCompile>
+    <ClCompile Include="Log\ObservationFileSink.cpp">
+      <Filter>Log</Filter>
+    </ClCompile>
+    <ClCompile Include="Session\SessionManager.cpp">
+      <Filter>Session</Filter>
+    </ClCompile>
+    <ClCompile Include="Session\SessionIdGenerator.cpp">
+      <Filter>Session</Filter>
+    </ClCompile>
+    <ClCompile Include="Session\ScenarioStepStack.cpp">
+      <Filter>Session</Filter>
+    </ClCompile>
+    <ClCompile Include="Metric\Counter.cpp">
+      <Filter>Metric</Filter>
+    </ClCompile>
+    <ClCompile Include="Metric\Gauge.cpp">
+      <Filter>Metric</Filter>
+    </ClCompile>
+    <ClCompile Include="Metric\Histogram.cpp">
+      <Filter>Metric</Filter>
+    </ClCompile>
+    <ClCompile Include="Metric\MetricRegistry.cpp">
+      <Filter>Metric</Filter>
+    </ClCompile>
+    <ClCompile Include="Metric\MetricsFileSink.cpp">
+      <Filter>Metric</Filter>
+    </ClCompile>
+    <ClCompile Include="Config\ObservationConfigLoader.cpp">
+      <Filter>Config</Filter>
+    </ClCompile>
+    <ClCompile Include="Config\ObservationConfigCli.cpp">
+      <Filter>Config</Filter>
+    </ClCompile>
+    <ClCompile Include="Trace\Tracer.cpp">
+      <Filter>Trace</Filter>
+    </ClCompile>
+    <ClCompile Include="Trace\ScopedZone.cpp">
+      <Filter>Trace</Filter>
+    </ClCompile>
+    <ClCompile Include="Trace\TraceFileSink.cpp">
+      <Filter>Trace</Filter>
+    </ClCompile>
+    <ClCompile Include="Health\HealthReporterBase.cpp">
+      <Filter>Health</Filter>
+    </ClCompile>
+    <ClCompile Include="Health\HealthRegistry.cpp">
+      <Filter>Health</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -74,7 +125,90 @@
     <ClInclude Include="Log\DiaLog.h">
       <Filter>Log</Filter>
     </ClInclude>
+    <ClInclude Include="Log\ObservationFileSink.h">
+      <Filter>Log</Filter>
+    </ClInclude>
+    <ClInclude Include="Session\SessionManager.h">
+      <Filter>Session</Filter>
+    </ClInclude>
+    <ClInclude Include="Session\SessionIdGenerator.h">
+      <Filter>Session</Filter>
+    </ClInclude>
+    <ClInclude Include="Session\ScenarioStepStack.h">
+      <Filter>Session</Filter>
+    </ClInclude>
+    <ClInclude Include="Metric\Counter.h">
+      <Filter>Metric</Filter>
+    </ClInclude>
+    <ClInclude Include="Metric\Gauge.h">
+      <Filter>Metric</Filter>
+    </ClInclude>
+    <ClInclude Include="Metric\Histogram.h">
+      <Filter>Metric</Filter>
+    </ClInclude>
+    <ClInclude Include="Metric\MetricSnapshot.h">
+      <Filter>Metric</Filter>
+    </ClInclude>
+    <ClInclude Include="Metric\IMetricSink.h">
+      <Filter>Metric</Filter>
+    </ClInclude>
+    <ClInclude Include="Metric\MetricRegistry.h">
+      <Filter>Metric</Filter>
+    </ClInclude>
+    <ClInclude Include="Metric\MetricsFileSink.h">
+      <Filter>Metric</Filter>
+    </ClInclude>
+    <ClInclude Include="Metric\Testing\MetricFixture.h">
+      <Filter>Metric\Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="JsonEscape.h">
+    </ClInclude>
     <ClInclude Include="Testing\MockSink.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Config\ObservationConfig.h">
+      <Filter>Config</Filter>
+    </ClInclude>
+    <ClInclude Include="Config\ObservationConfigLoader.h">
+      <Filter>Config</Filter>
+    </ClInclude>
+    <ClInclude Include="Config\ObservationConfigCli.h">
+      <Filter>Config</Filter>
+    </ClInclude>
+    <ClInclude Include="Trace\SpanRecord.h">
+      <Filter>Trace</Filter>
+    </ClInclude>
+    <ClInclude Include="Trace\Tracer.h">
+      <Filter>Trace</Filter>
+    </ClInclude>
+    <ClInclude Include="Trace\ScopedZone.h">
+      <Filter>Trace</Filter>
+    </ClInclude>
+    <ClInclude Include="Trace\TraceFileSink.h">
+      <Filter>Trace</Filter>
+    </ClInclude>
+    <ClInclude Include="Trace\DiaTrace.h">
+      <Filter>Trace</Filter>
+    </ClInclude>
+    <ClInclude Include="Trace\ITraceSink.h">
+      <Filter>Trace</Filter>
+    </ClInclude>
+    <ClInclude Include="Health\IHealthReporter.h">
+      <Filter>Health</Filter>
+    </ClInclude>
+    <ClInclude Include="Health\HealthReporterBase.h">
+      <Filter>Health</Filter>
+    </ClInclude>
+    <ClInclude Include="Health\HealthRegistry.h">
+      <Filter>Health</Filter>
+    </ClInclude>
+    <ClInclude Include="Health\DiaHealth.h">
+      <Filter>Health</Filter>
+    </ClInclude>
+    <ClInclude Include="Health\IHealthTransitionSink.h">
+      <Filter>Health</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\HealthFixture.h">
       <Filter>Testing</Filter>
     </ClInclude>
   </ItemGroup>

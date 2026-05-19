@@ -341,6 +341,17 @@
     <ClCompile Include="DiaObservation\Log\TestLogger.cpp" />
     <ClCompile Include="DiaObservation\Log\TestAssertSinkBridge.cpp" />
     <ClCompile Include="DiaObservation\Log\TestAsyncDrain.cpp" />
+    <ClCompile Include="DiaObservation\TestJsonEscape.cpp" />
+    <ClCompile Include="DiaObservation\Trace\TestTracer.cpp" />
+    <ClCompile Include="DiaObservation\Trace\TestTracerRingOverflow.cpp" />
+    <ClCompile Include="DiaObservation\Trace\TestTraceFileSink.cpp" />
+    <ClCompile Include="DiaObservation\Trace\TestScopedZoneEdgeCases.cpp" />
+    <ClCompile Include="DiaObservation\Health\TestHealthReporterBase.cpp" />
+    <ClCompile Include="DiaObservation\Health\TestHealthRegistry.cpp" />
+    <ClCompile Include="DiaObservation\Metric\TestMetricsFileSink.cpp" />
+    <ClCompile Include="DiaObservation\Config\TestObservationConfigLoader.cpp" />
+    <ClCompile Include="DiaObservation\Session\TestSessionManagerTick.cpp" />
+    <ClCompile Include="DiaObservation\Session\TestSessionManagerRetention.cpp" />
     <!-- PipelineEditor -->
     <ClCompile Include="PipelineEditor\TestPipelineLogTailer.cpp" />
     <ClCompile Include="PipelineEditor\TestPipelineEditorPluginBridge.cpp" />
@@ -538,10 +549,6 @@
     </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaObservation\DiaObservation.vcxproj">
       <Project>{7a8b9c0d-e1f2-3456-7890-abcdef012345}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\Dia\DiaMetrics\DiaMetrics.vcxproj">
-      <Project>{3A4B5C6D-E7F8-9012-ABCD-EF1234567890}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaStateMachine\DiaStateMachine.vcxproj">
       <Project>{E3F4A5B6-C7D8-9012-EFAB-334455667788}</Project>

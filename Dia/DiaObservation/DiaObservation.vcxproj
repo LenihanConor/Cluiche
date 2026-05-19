@@ -18,6 +18,22 @@
     <ClCompile Include="Log\StdOutSink.cpp" />
     <ClCompile Include="Log\DebugOutputSink.cpp" />
     <ClCompile Include="Log\AssertSinkBridge.cpp" />
+    <ClCompile Include="Log\ObservationFileSink.cpp" />
+    <ClCompile Include="Config\ObservationConfigLoader.cpp" />
+    <ClCompile Include="Config\ObservationConfigCli.cpp" />
+    <ClCompile Include="Session\SessionManager.cpp" />
+    <ClCompile Include="Session\SessionIdGenerator.cpp" />
+    <ClCompile Include="Session\ScenarioStepStack.cpp" />
+    <ClCompile Include="Trace\Tracer.cpp" />
+    <ClCompile Include="Trace\ScopedZone.cpp" />
+    <ClCompile Include="Trace\TraceFileSink.cpp" />
+    <ClCompile Include="Metric\Counter.cpp" />
+    <ClCompile Include="Metric\Gauge.cpp" />
+    <ClCompile Include="Metric\Histogram.cpp" />
+    <ClCompile Include="Metric\MetricRegistry.cpp" />
+    <ClCompile Include="Metric\MetricsFileSink.cpp" />
+    <ClCompile Include="Health\HealthReporterBase.cpp" />
+    <ClCompile Include="Health\HealthRegistry.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\Logger.h" />
@@ -29,7 +45,35 @@
     <ClInclude Include="Log\DebugOutputSink.h" />
     <ClInclude Include="Log\AssertSinkBridge.h" />
     <ClInclude Include="Log\DiaLog.h" />
+    <ClInclude Include="Log\ObservationFileSink.h" />
+    <ClInclude Include="Config\ObservationConfig.h" />
+    <ClInclude Include="Config\ObservationConfigLoader.h" />
+    <ClInclude Include="Config\ObservationConfigCli.h" />
+    <ClInclude Include="Session\SessionManager.h" />
+    <ClInclude Include="Session\SessionIdGenerator.h" />
+    <ClInclude Include="Session\ScenarioStepStack.h" />
+    <ClInclude Include="Trace\SpanRecord.h" />
+    <ClInclude Include="Trace\Tracer.h" />
+    <ClInclude Include="Trace\ScopedZone.h" />
+    <ClInclude Include="Trace\TraceFileSink.h" />
+    <ClInclude Include="Trace\DiaTrace.h" />
+    <ClInclude Include="Trace\ITraceSink.h" />
+    <ClInclude Include="Metric\Counter.h" />
+    <ClInclude Include="Metric\Gauge.h" />
+    <ClInclude Include="Metric\Histogram.h" />
+    <ClInclude Include="Metric\MetricSnapshot.h" />
+    <ClInclude Include="Metric\IMetricSink.h" />
+    <ClInclude Include="Metric\MetricRegistry.h" />
+    <ClInclude Include="Metric\MetricsFileSink.h" />
+    <ClInclude Include="Metric\Testing\MetricFixture.h" />
+    <ClInclude Include="Health\IHealthReporter.h" />
+    <ClInclude Include="Health\HealthReporterBase.h" />
+    <ClInclude Include="Health\HealthRegistry.h" />
+    <ClInclude Include="Health\DiaHealth.h" />
+    <ClInclude Include="Health\IHealthTransitionSink.h" />
+    <ClInclude Include="JsonEscape.h" />
     <ClInclude Include="Testing\MockSink.h" />
+    <ClInclude Include="Testing\HealthFixture.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">

@@ -82,6 +82,21 @@
     <Filter Include="DiaObservation\Log">
       <UniqueIdentifier>{DLGR0002-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaObservation\Trace">
+      <UniqueIdentifier>{DLGR0003-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaObservation\Health">
+      <UniqueIdentifier>{DLGR0004-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaObservation\Metric">
+      <UniqueIdentifier>{DLGR0005-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaObservation\Session">
+      <UniqueIdentifier>{DLGR0006-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DiaObservation\Config">
+      <UniqueIdentifier>{DLGR0007-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
     <Filter Include="PipelineEditor">
       <UniqueIdentifier>{PIPE0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
@@ -718,6 +733,39 @@
     </ClCompile>
     <ClCompile Include="DiaObservation\Log\TestAsyncDrain.cpp">
       <Filter>DiaObservation\Log</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\TestJsonEscape.cpp">
+      <Filter>DiaObservation</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Trace\TestTracer.cpp">
+      <Filter>DiaObservation\Trace</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Trace\TestTracerRingOverflow.cpp">
+      <Filter>DiaObservation\Trace</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Trace\TestTraceFileSink.cpp">
+      <Filter>DiaObservation\Trace</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Trace\TestScopedZoneEdgeCases.cpp">
+      <Filter>DiaObservation\Trace</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Health\TestHealthReporterBase.cpp">
+      <Filter>DiaObservation\Health</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Health\TestHealthRegistry.cpp">
+      <Filter>DiaObservation\Health</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Metric\TestMetricsFileSink.cpp">
+      <Filter>DiaObservation\Metric</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Config\TestObservationConfigLoader.cpp">
+      <Filter>DiaObservation\Config</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Session\TestSessionManagerTick.cpp">
+      <Filter>DiaObservation\Session</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaObservation\Session\TestSessionManagerRetention.cpp">
+      <Filter>DiaObservation\Session</Filter>
     </ClCompile>
     <!-- PipelineEditor -->
     <ClCompile Include="PipelineEditor\TestPipelineLogTailer.cpp">
