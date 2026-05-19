@@ -7,7 +7,7 @@
 #include <DiaWindow/Interface/IWindow.h>
 #include <DiaInput/EventData.h>
 #include <DiaInput/Event.h>
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>

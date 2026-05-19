@@ -1,6 +1,6 @@
 #include "Modules/LoadingScreenModule.h"
 
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaGraphics/Misc/RGBA.h>

@@ -53,6 +53,8 @@ protected:
     void GetModulesInPU(
         const Dia::Core::StringCRC& puId,
         Dia::Core::Containers::DynamicArrayC<Dia::DebugServer::DebugModuleInfo, 64>& out) const override;
+    Dia::ApplicationFlow::IStreamStore* FindStream(
+        const Dia::Core::StringCRC& id) override;
 
 private:
     Dia::DebugServer::DebugServer mServer;

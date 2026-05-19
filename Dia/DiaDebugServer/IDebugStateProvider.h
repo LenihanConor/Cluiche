@@ -12,6 +12,8 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
+namespace Dia { namespace ApplicationFlow { class IStreamStore; } }
+
 namespace Dia
 {
 	namespace DebugServer
@@ -51,6 +53,11 @@ namespace Dia
 			virtual void GetModulesInPU(
 				const Dia::Core::StringCRC& puId,
 				Dia::Core::Containers::DynamicArrayC<DebugModuleInfo, 64>& out) const = 0;
+
+			// Returns the stream store for the given id, or null.
+			// Used by DebugServer to attach taps at runtime.
+			virtual Dia::ApplicationFlow::IStreamStore* FindStream(
+				const Dia::Core::StringCRC& id) = 0;
 		};
 	}
 }

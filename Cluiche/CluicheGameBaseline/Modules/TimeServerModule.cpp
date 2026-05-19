@@ -1,6 +1,6 @@
 #include "Modules/TimeServerModule.h"
 
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaCore/Time/TimeRelative.h>
 

@@ -37,6 +37,12 @@ struct StubProvider : IDebugStateProvider
 		for (unsigned int i = 0; i < modules.Size() && !out.IsFull(); ++i)
 			out.Add(modules[i]);
 	}
+
+	Dia::ApplicationFlow::IStreamStore* FindStream(
+		const Dia::Core::StringCRC& /*id*/) override
+	{
+		return nullptr;
+	}
 };
 
 // -----------------------------------------------------------------------------

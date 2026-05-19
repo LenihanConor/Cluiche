@@ -3,7 +3,7 @@
 
 #include <DiaGraphics/Interface/ICanvas.h>
 #include <DiaSFML/TextureHandler.h>
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 

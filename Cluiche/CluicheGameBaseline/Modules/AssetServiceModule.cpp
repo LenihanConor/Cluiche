@@ -1,6 +1,6 @@
 #include "Modules/AssetServiceModule.h"
 
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <DiaCore/FilePath/FilePath.h>
 #include <DiaCore/FilePath/Path.h>
 #include <DiaCore/FilePath/PathStore.h>

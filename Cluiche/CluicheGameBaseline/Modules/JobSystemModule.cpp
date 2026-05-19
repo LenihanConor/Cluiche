@@ -1,6 +1,6 @@
 #include "Modules/JobSystemModule.h"
 
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <DiaCore/Threading/JobSystem.h>
 
 namespace Cluiche { namespace AppFlow {

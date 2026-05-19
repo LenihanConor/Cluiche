@@ -2,10 +2,11 @@
 
 #include <DiaApplicationFlow/IApplicationControl.h>
 #include <DiaApplicationFlow/IApplicationInspectable.h>
+#include <DiaApplicationFlow/Streams/IStreamStore.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaCore/Json/external/json/json.h>
-#include <DiaLogger/LogLevel.h>
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/LogLevel.h>
+#include <DiaObservation/Log/DiaLog.h>
 
 namespace Cluiche { namespace AppFlow {
 
@@ -46,8 +47,11 @@ void DebugServerHostModule::OnConfigure(const char* configJson)
         ? config["game_build"].asCString() : "";
     mServer.SetGameInfo(gameName, gameBuild);
 
+    if (config.isMember("diagame_path") && config["diagame_path"].isString())
+        mServer.SetDiagamePath(config["diagame_path"].asCString());
+
     if (config.isMember("log_level") && config["log_level"].isString())
-        mServer.SetLogSinkLevel(Dia::Logger::LogLevelFromString(config["log_level"].asCString()));
+        mServer.SetLogSinkLevel(Dia::Observation::Log::LogLevelFromString(config["log_level"].asCString()));
 }
 
 Dia::ApplicationFlow::StartResult DebugServerHostModule::DoStart()
@@ -145,6 +149,15 @@ void DebugServerHostModule::GetModulesInPU(
         info.state      = ModuleStateName(native[i].state);
         out.Add(info);
     }
+}
+
+Dia::ApplicationFlow::IStreamStore* DebugServerHostModule::FindStream(
+    const Dia::Core::StringCRC& id)
+{
+    auto* ctrl = GetApplication();
+    auto* app = dynamic_cast<Dia::ApplicationFlow::IApplicationInspectable*>(ctrl);
+    if (!app) return nullptr;
+    return app->FindStream(id);
 }
 
 } } // namespace Cluiche::AppFlow

@@ -1,6 +1,6 @@
 #include "Modules/UIModule.h"
 
-#include <DiaLogger/DiaLog.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/Streams/Event.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
