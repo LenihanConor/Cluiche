@@ -42,8 +42,7 @@ DiaObservation features are serial: #1 → #2 → #3 → #4/#6 (parallel) → #5
 
 | Feature | Spec | Notes |
 |---------|------|-------|
-| DiaObservation #1 — Skeleton + DiaLogger Fold | [skeleton-and-logger-fold.md](specs/features/dia/diaobservation/skeleton-and-logger-fold.md) | Ships first; blocks all other DiaObservation features; 155 caller include rewrites |
-| DiaObservation #2 — Foundation | [foundation.md](specs/features/dia/diaobservation/foundation.md) | Blocked on #1; `SessionManager`, session directory, `ObservationFileSink`, retention ring, crash dump, `session.json` + `log.jsonl` schemas frozen v1.0 |
+| DiaObservation #2 — Foundation | [foundation.md](specs/features/dia/diaobservation/foundation.md) | #1 Done (2026-05-18); `SessionManager`, session directory, `ObservationFileSink`, retention ring, crash dump, `session.json` + `log.jsonl` schemas frozen v1.0 |
 | DiaObservation #3 — Config | [config.md](specs/features/dia/diaobservation/config.md) | Blocked on #2; `ObservationConfigLoader`, `.diagame` block, per-channel log levels, all sinks configurable |
 | DiaObservation #4 — DiaTrace Spans | [trace-spans.md](specs/features/dia/diaobservation/trace-spans.md) | Blocked on #2; `DIA_TRACE_ZONE` macros, `Tracer` singleton + drain thread, `trace.jsonl` |
 | DiaObservation #5 — DiaMetrics wiring | [metrics-registry.md](specs/features/dia/diaobservation/metrics-registry.md) | Blocked on #2; `MetricsFileSink` in DiaObservation, `SessionManager::Tick` snapshot timer. `MetricsCollectorModule` rewrite **already done** (2026-05-18). Only Tasks 11–13 remain. |

@@ -8,7 +8,7 @@
 | Application | @docs/specs/applications/dia.md | - |
 | System | @docs/specs/systems/dia/diaobservation.md | **skeleton-and-logger-fold** |
 
-**Status:** `In Progress` — 2026-05-18
+**Status:** `Done` — 2026-05-18
 
 **Plan:** [skeleton-and-logger-fold.plan.md](skeleton-and-logger-fold.plan.md)
 
