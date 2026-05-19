@@ -14,6 +14,7 @@
 #include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 
+#include <chrono>
 #include <cstdio>
 #include <cstring>
 
@@ -180,10 +181,32 @@ void AssetServiceModule::DoUpdate(float /*dt*/)
                 RequestStageLoad(assetStage);
             }
 
-            // Mark new stage as loading in state tracker.
-            std::atomic<StageLoadState>* slot = FindOrCreateStateSlot(currentStage);
-            if (slot)
-                slot->store(StageLoadState::kLoading, std::memory_order_release);
+            // Find or create state slot, stamp load start time, mark kLoading.
+            {
+                StageStateEntry* entry = nullptr;
+                for (unsigned int i = 0; i < mStageStateCount; ++i)
+                {
+                    if (mStageStates[i].appStageId == currentStage)
+                    {
+                        entry = &mStageStates[i];
+                        break;
+                    }
+                }
+                if (!entry && mStageStateCount < kMaxTrackedStages)
+                {
+                    entry = &mStageStates[mStageStateCount];
+                    entry->appStageId = currentStage;
+                    entry->state.store(StageLoadState::kIdle, std::memory_order_relaxed);
+                    ++mStageStateCount;
+                }
+                if (entry)
+                {
+                    entry->loadStartMs = static_cast<uint64_t>(
+                        std::chrono::duration_cast<std::chrono::milliseconds>(
+                            std::chrono::steady_clock::now().time_since_epoch()).count());
+                    entry->state.store(StageLoadState::kLoading, std::memory_order_release);
+                }
+            }
         }
     }
 
@@ -223,6 +246,13 @@ void AssetServiceModule::DoUpdate(float /*dt*/)
         else if (progress.total == 0 || progress.loaded == progress.total)
         {
             mStageStates[i].state.store(StageLoadState::kComplete, std::memory_order_release);
+            if (mMetricLoadTimeMs && mStageStates[i].loadStartMs != 0)
+            {
+                uint64_t nowMs = static_cast<uint64_t>(
+                    std::chrono::duration_cast<std::chrono::milliseconds>(
+                        std::chrono::steady_clock::now().time_since_epoch()).count());
+                mMetricLoadTimeMs->Observe(static_cast<double>(nowMs - mStageStates[i].loadStartMs));
+            }
             DIA_LOG_INFO("Application",
                 "AssetService: stage '%s' complete (%u/%u loaded)",
                 mStageStates[i].appStageId.AsChar(), progress.loaded, progress.total);

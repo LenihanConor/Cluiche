@@ -100,6 +100,7 @@ private:
     {
         Dia::Core::StringCRC appStageId;
         std::atomic<StageLoadState> state{ StageLoadState::kIdle };
+        uint64_t loadStartMs = 0;
 
         StageStateEntry() = default;
         StageStateEntry(const StageStateEntry&) = delete;
@@ -124,7 +125,7 @@ private:
     public:
         Dia::Core::StringCRC GetReporterName() const override
         {
-            return Dia::Core::StringCRC("AssetServiceModule");
+            return Dia::Core::StringCRC("AssetServiceModule.assets");
         }
         Dia::Observation::Health::Health Report() const override { return HealthReporterBase::Report(); }
     };
