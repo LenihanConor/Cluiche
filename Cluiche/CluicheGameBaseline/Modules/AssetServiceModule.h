@@ -6,10 +6,17 @@
 #include <DiaCore/Strings/String32.h>
 #include <DiaCore/Strings/String512.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <DiaObservation/Health/HealthReporterBase.h>
 #include <atomic>
 
 #include "Modules/KernelModule.h"
 #include "Modules/UIModule.h"
+
+namespace Dia { namespace Observation { namespace Metric {
+    class Gauge;
+    class Counter;
+    class Histogram;
+} } }
 
 namespace Cluiche { namespace AppFlow {
 
@@ -103,6 +110,25 @@ private:
 
     Dia::ApplicationFlow::ModuleRef<KernelModule> mKernel{this};
     Dia::ApplicationFlow::ModuleRef<UIModule>     mUI{this};
+
+    // Metric primitives — owned by MetricRegistry, pointers nulled on DoStop.
+    Dia::Observation::Metric::Gauge*     mMetricAssetsLoaded  = nullptr;
+    Dia::Observation::Metric::Gauge*     mMetricAssetsLoading = nullptr;
+    Dia::Observation::Metric::Counter*   mMetricAssetsFailed  = nullptr;
+    Dia::Observation::Metric::Histogram* mMetricLoadTimeMs    = nullptr;
+    unsigned int                         mPrevAssetsFailed    = 0;
+
+    // Health reporting — monitors stage load state.
+    class AssetHealthReporter : public Dia::Observation::Health::HealthReporterBase
+    {
+    public:
+        Dia::Core::StringCRC GetReporterName() const override
+        {
+            return Dia::Core::StringCRC("AssetServiceModule");
+        }
+        Dia::Observation::Health::Health Report() const override { return HealthReporterBase::Report(); }
+    };
+    AssetHealthReporter mAssetReporter;
 };
 
 } } // namespace Cluiche::AppFlow

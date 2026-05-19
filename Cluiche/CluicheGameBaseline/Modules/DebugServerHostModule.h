@@ -17,6 +17,12 @@
 #include <DiaDebugServer/IDebugStateProvider.h>
 #include <DiaCore/CRC/StringCRC.h>
 
+namespace Dia { namespace Observation { namespace Metric {
+    class Gauge;
+    class Counter;
+    class Histogram;
+} } }
+
 namespace Cluiche { namespace AppFlow {
 
 class DebugServerHostModule
@@ -58,6 +64,13 @@ protected:
 
 private:
     Dia::DebugServer::DebugServer mServer;
+
+    // Metric primitives — owned by MetricRegistry, pointers nulled on DoStop.
+    Dia::Observation::Metric::Gauge*     mMetricConnections   = nullptr;
+    Dia::Observation::Metric::Gauge*     mMetricSubscriptions = nullptr;
+    Dia::Observation::Metric::Counter*   mMetricMessagesSent  = nullptr;
+    Dia::Observation::Metric::Histogram* mMetricTickMs        = nullptr;
+    int                                  mPrevMessagesSent    = 0;
 };
 
 } } // namespace Cluiche::AppFlow

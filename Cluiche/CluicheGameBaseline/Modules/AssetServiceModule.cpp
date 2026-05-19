@@ -1,6 +1,8 @@
 #include "Modules/AssetServiceModule.h"
 
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Health/HealthRegistry.h>
 #include <DiaCore/FilePath/FilePath.h>
 #include <DiaCore/FilePath/Path.h>
 #include <DiaCore/FilePath/PathStore.h>
@@ -101,6 +103,22 @@ Dia::ApplicationFlow::StartResult AssetServiceModule::DoStart()
     RequestGlobalLoad();
 
     sInstance = this;
+
+    // Register health reporter.
+    Dia::Observation::Health::HealthRegistry::Instance().Register(&mAssetReporter);
+    mAssetReporter.SetOK();
+
+    // Register asset metrics with the global MetricRegistry.
+    {
+        auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
+        mMetricAssetsLoaded  = reg.RegisterGauge(Dia::Core::StringCRC("dia.assets.loaded"));
+        mMetricAssetsLoading = reg.RegisterGauge(Dia::Core::StringCRC("dia.assets.loading"));
+        mMetricAssetsFailed  = reg.RegisterCounter(Dia::Core::StringCRC("dia.assets.failed"));
+        static const float kLoadTimeBuckets[] = { 0.0f, 10.0f, 50.0f, 100.0f, 500.0f, 1000.0f, 5000.0f };
+        mMetricLoadTimeMs = reg.RegisterHistogram(
+            Dia::Core::StringCRC("dia.assets.load_time_ms"), kLoadTimeBuckets, 7);
+    }
+
     DIA_LOG_INFO("Application", "AssetServiceModule DoStart exit");
     return Dia::ApplicationFlow::StartResult::kReady;
 }
@@ -210,6 +228,41 @@ void AssetServiceModule::DoUpdate(float /*dt*/)
                 mStageStates[i].appStageId.AsChar(), progress.loaded, progress.total);
         }
     }
+
+    // 4. Update asset health reporter — failing if any stage has failed.
+    {
+        bool anyFailed = false;
+        for (unsigned int i = 0; i < mStageStateCount; ++i)
+        {
+            if (mStageStates[i].state.load(std::memory_order_acquire) == StageLoadState::kFailed)
+            {
+                anyFailed = true;
+                break;
+            }
+        }
+        if (anyFailed)
+            mAssetReporter.SetFailing(Dia::Core::StringCRC("asset.stage.failed"));
+        else
+            mAssetReporter.SetOK();
+    }
+
+    // 5. Update asset metrics from current load stage.
+    if (mCurrentLoadStageId.Value() != 0)
+    {
+        const Dia::AssetRuntime::AssetRuntime::LoadProgress progress =
+            mRuntime.GetLoadProgress(mCurrentLoadStageId);
+
+        if (mMetricAssetsLoaded)
+            mMetricAssetsLoaded->Set(static_cast<double>(progress.loaded));
+        if (mMetricAssetsLoading)
+            mMetricAssetsLoading->Set(static_cast<double>(
+                progress.total > progress.loaded ? progress.total - progress.loaded : 0u));
+        if (mMetricAssetsFailed && progress.failed > mPrevAssetsFailed)
+        {
+            mMetricAssetsFailed->Inc(progress.failed - mPrevAssetsFailed);
+            mPrevAssetsFailed = progress.failed;
+        }
+    }
 }
 
 // Map app-flow stage id (e.g. "DummyStage") to AssetRuntime stage id
@@ -247,9 +300,20 @@ Dia::Core::StringCRC AssetServiceModule::AssetStageIdFromAppStage(
 Dia::ApplicationFlow::StopResult AssetServiceModule::DoStop()
 {
     DIA_LOG_INFO("Application", "AssetServiceModule DoStop entry");
+
+    // Unregister health reporter before tearing down state.
+    Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mAssetReporter);
+
     sInstance = nullptr;
     UnregisterStageAliases();
     mRuntime.Reset();
+
+    // Null metric pointers — MetricRegistry owns the objects.
+    mMetricAssetsLoaded  = nullptr;
+    mMetricAssetsLoading = nullptr;
+    mMetricAssetsFailed  = nullptr;
+    mMetricLoadTimeMs    = nullptr;
+
     DIA_LOG_INFO("Application", "AssetServiceModule DoStop exit");
     return Dia::ApplicationFlow::StopResult::kDone;
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaObservation/Health/HealthReporterBase.h>
 #include <atomic>
 
 // Forward-declare LifecycleEvent to avoid pulling the full header into every
@@ -95,6 +96,19 @@ namespace Dia { namespace ApplicationFlow {
         void FrameTick(float deltaTime, float startTimeoutMs, float stopTimeoutMs);
         void BeginStart();
         void BeginStop();
+
+        // Health reporting — one reporter per Module instance, tracks lifecycle state.
+        class LifecycleReporter : public Dia::Observation::Health::HealthReporterBase
+        {
+        public:
+            LifecycleReporter() = default;
+            Dia::Core::StringCRC               GetReporterName() const override { return mName; }
+            Dia::Observation::Health::Health   Report()          const override { return HealthReporterBase::Report(); }
+            void SetName(const Dia::Core::StringCRC& name)                      { mName = name; }
+        private:
+            Dia::Core::StringCRC mName;
+        };
+        LifecycleReporter        mLifecycleReporter;
 
         Dia::Core::StringCRC     mInstanceId;
         ProcessingUnit*          mProcessingUnit  = nullptr;

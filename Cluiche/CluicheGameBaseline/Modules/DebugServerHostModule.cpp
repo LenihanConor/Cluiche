@@ -7,6 +7,9 @@
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaObservation/Log/LogLevel.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
+
+#include <chrono>
 
 namespace Cluiche { namespace AppFlow {
 
@@ -58,17 +61,58 @@ Dia::ApplicationFlow::StartResult DebugServerHostModule::DoStart()
 {
     mServer.SetStateProvider(this);
     mServer.Start();
+
+    // Start observation bridge — epoch offset computed from system/steady clock delta
+    auto sysNow = std::chrono::system_clock::now();
+    auto steadyNow = std::chrono::steady_clock::now();
+    int64_t sysNanos = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        sysNow.time_since_epoch()).count();
+    int64_t steadyNanos = static_cast<int64_t>(steadyNow.time_since_epoch().count());
+    mServer.StartObservationBridge("", sysNanos - steadyNanos);
+
+    // Register debug server metrics with the global MetricRegistry.
+    {
+        auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
+        mMetricConnections   = reg.RegisterGauge(Dia::Core::StringCRC("dia.debugserver.connections"));
+        mMetricSubscriptions = reg.RegisterGauge(Dia::Core::StringCRC("dia.debugserver.subscriptions"));
+        mMetricMessagesSent  = reg.RegisterCounter(Dia::Core::StringCRC("dia.debugserver.messages_sent"));
+        static const float kTickBuckets[] = { 0.0f, 1.0f, 2.0f, 5.0f, 10.0f, 20.0f };
+        mMetricTickMs = reg.RegisterHistogram(
+            Dia::Core::StringCRC("dia.debugserver.tick_ms"), kTickBuckets, 6);
+    }
+
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
 void DebugServerHostModule::DoUpdate(float deltaTime)
 {
     mServer.Tick(deltaTime);
+
+    // Update debug server metrics from current ServerStats.
+    const auto& stats = mServer.GetStats();
+    if (mMetricConnections)
+        mMetricConnections->Set(static_cast<double>(stats.connectionCount));
+    if (mMetricSubscriptions)
+        mMetricSubscriptions->Set(static_cast<double>(stats.subscriptionCount));
+    if (mMetricTickMs)
+        mMetricTickMs->Observe(static_cast<double>(stats.debugServerOverheadMs));
+    if (mMetricMessagesSent && stats.messagesSentTotal > mPrevMessagesSent)
+    {
+        mMetricMessagesSent->Inc(static_cast<uint64_t>(stats.messagesSentTotal - mPrevMessagesSent));
+        mPrevMessagesSent = stats.messagesSentTotal;
+    }
 }
 
 Dia::ApplicationFlow::StopResult DebugServerHostModule::DoStop()
 {
     mServer.Stop();
+
+    // Null metric pointers — MetricRegistry owns the objects.
+    mMetricConnections   = nullptr;
+    mMetricSubscriptions = nullptr;
+    mMetricMessagesSent  = nullptr;
+    mMetricTickMs        = nullptr;
+
     return Dia::ApplicationFlow::StopResult::kDone;
 }
 

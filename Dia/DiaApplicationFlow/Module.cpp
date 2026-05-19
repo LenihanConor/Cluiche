@@ -12,6 +12,7 @@
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Profile/DiaProfile.h>
 #include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaObservation/Health/HealthRegistry.h>
 
 namespace Dia { namespace ApplicationFlow {
 
@@ -133,6 +134,9 @@ namespace Dia { namespace ApplicationFlow {
         mState.store(ModuleState::kStarting, std::memory_order_release);
         EmitModuleStateChanged(ModuleState::kInactive, ModuleState::kStarting);
 
+        mLifecycleReporter.SetName(mInstanceId);
+        Dia::Observation::Health::HealthRegistry::Instance().Register(&mLifecycleReporter);
+
         DIA_LOG_INFO("module", "module.state.transition module_id=%s from=%s to=%s",
                      mInstanceId.AsChar(),
                      ModuleStateName(ModuleState::kInactive),
@@ -184,6 +188,7 @@ namespace Dia { namespace ApplicationFlow {
                 if (result == StartResult::kReady)
                 {
                     DIA_LOG_INFO("Application", "Module '%s' (PU '%s') DoStart complete -> Active", mInstanceId.AsChar(), PuName(mProcessingUnit));
+                    mLifecycleReporter.SetOK();
                     mStateElapsedMs = 0.0f;
                     mState.store(ModuleState::kActive, std::memory_order_release);
                     EmitModuleStateChanged(ModuleState::kStarting, ModuleState::kActive);
@@ -197,6 +202,7 @@ namespace Dia { namespace ApplicationFlow {
                 else if (result == StartResult::kFailed)
                 {
                     DIA_LOG_ERROR("Application", "Module '%s' (PU '%s') DoStart FAILED", mInstanceId.AsChar(), PuName(mProcessingUnit));
+                    mLifecycleReporter.SetFailing(Dia::Core::StringCRC("module.failed"));
                     mState.store(ModuleState::kFailed, std::memory_order_release);
                     EmitModuleStateChanged(ModuleState::kStarting, ModuleState::kFailed);
                     DIA_LOG_INFO("module", "module.state.transition module_id=%s from=%s to=%s",
@@ -206,9 +212,13 @@ namespace Dia { namespace ApplicationFlow {
                 }
                 else // kLoading — still starting; check timeout
                 {
+                    if (mStateElapsedMs > startTimeoutMs * 0.5f)
+                        mLifecycleReporter.SetDegraded(Dia::Core::StringCRC("module.start.slow"));
+
                     if (mStateElapsedMs > startTimeoutMs)
                     {
                         DIA_LOG_ERROR("Application", "Module '%s' (PU '%s') DoStart TIMEOUT (%.1f ms)", mInstanceId.AsChar(), PuName(mProcessingUnit), mStateElapsedMs);
+                        mLifecycleReporter.SetFailing(Dia::Core::StringCRC("module.start.timeout"));
                         mState.store(ModuleState::kFailed, std::memory_order_release);
                         DIA_LOG_INFO("module", "module.state.transition module_id=%s from=%s to=%s",
                                      mInstanceId.AsChar(),
@@ -240,6 +250,8 @@ namespace Dia { namespace ApplicationFlow {
                 if (result == StopResult::kDone)
                 {
                     DIA_LOG_INFO("Application", "Module '%s' (PU '%s') DoStop complete -> Inactive", mInstanceId.AsChar(), PuName(mProcessingUnit));
+                    mLifecycleReporter.SetOK();
+                    Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mLifecycleReporter);
                     mStateElapsedMs = 0.0f;
                     mState.store(ModuleState::kInactive, std::memory_order_release);
                     EmitModuleStateChanged(ModuleState::kStopping, ModuleState::kInactive);
@@ -255,6 +267,8 @@ namespace Dia { namespace ApplicationFlow {
                     if (mStateElapsedMs > stopTimeoutMs)
                     {
                         DIA_LOG_WARNING("Application", "Module '%s' (PU '%s') DoStop TIMEOUT (%.1f ms) -> forcing Inactive", mInstanceId.AsChar(), PuName(mProcessingUnit), mStateElapsedMs);
+                        mLifecycleReporter.SetOK();
+                        Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mLifecycleReporter);
                         mStateElapsedMs = 0.0f;
                         mState.store(ModuleState::kInactive, std::memory_order_release);
                         EmitModuleStateChanged(ModuleState::kStopping, ModuleState::kInactive);
