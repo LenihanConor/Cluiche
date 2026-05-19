@@ -242,8 +242,6 @@
 
 <!-- ── Toolbar ───────────────────────────────────── -->
 <div class="toolbar">
-  <button onclick="onNew()">New</button>
-  <button onclick="onOpen()">Open</button>
   <button onclick="onSave()">Save</button>
   <div class="separator"></div>
   <span class="manifest-path" id="manifest-path">No manifest loaded</span>
@@ -552,6 +550,13 @@
     });
   }
 
+  function diaLog(msg) {
+    window.parent.postMessage({
+      __diaFromFrame: true,
+      payload: { type: 'editor.ui_log', data: { source: 'assetcatalogue', msg: msg } }
+    }, '*');
+  }
+
   window.addEventListener('message', function(ev) {
     var d = ev.data;
     if (d && d.__diaResponse && d.reqId && _diaPending[d.reqId]) {
@@ -559,6 +564,7 @@
       delete _diaPending[d.reqId];
     }
     if (d && d.__dia && d.topic) {
+      if (d.topic !== 'console_entries') diaLog('[AssetCatalogue] received topic=' + d.topic);
       if (window.DiaEditor_onDataChanged) {
         window.DiaEditor_onDataChanged({ topic: d.topic, data: d.data });
       }
@@ -567,18 +573,23 @@
 
   /* ── C++ push ─────────────────────────────────────── */
   window.DiaEditor_onDataChanged = function(msg) {
-    if (msg.topic === 'assetcatalogue.state') {
+    if (msg.topic !== 'console_entries') diaLog('[AssetCatalogue] DiaEditor_onDataChanged topic=' + msg.topic);
+    if (msg.topic === 'assetcatalogue.status') {
+      var emptyEl = document.getElementById('asset-empty');
+      if (emptyEl) {
+        emptyEl.textContent = msg.data || 'No catalogue loaded';
+        emptyEl.style.color = '#f48771';
+        emptyEl.style.display = '';
+      }
+      setManifestPath('');
+      setDirty(false);
+    } else if (msg.topic === 'assetcatalogue.state') {
       setManifestPath(msg.data.path);
       setDirty(msg.data.dirty);
     } else if (msg.topic === 'assetcatalogue.records') {
       allRecords = Array.isArray(msg.data) ? msg.data : [];
       renderAssetList();
       if (selectedId) loadRelationships(selectedId);
-    } else if (msg.topic === 'assetcatalogue.lastManifestPath') {
-      if (msg.data.lastManifestPath) {
-        var reopen = confirm('Re-open last manifest?\n' + msg.data.lastManifestPath);
-        if (reopen) loadManifest(msg.data.lastManifestPath);
-      }
     } else if (msg.topic === 'assetcatalogue.rulesLoaded') {
       document.getElementById('rules-path').value = msg.data.rules_path || '';
       var statusEl = document.getElementById('rules-status');
@@ -607,45 +618,51 @@
     dirty ? el.classList.add('dirty') : el.classList.remove('dirty');
   }
 
-  function onNew() {
-    if (!confirmUnsaved()) return;
-    diaRequest('asset_catalogue.new_manifest', {}).then(function(r) {
-      if (!r.success) alert('Failed: ' + r.error);
-    });
-  }
-  function onOpen(prefilled) {
-    if (!confirmUnsaved()) return;
-    if (prefilled) {
-      loadManifest(prefilled);
-      return;
-    }
-    diaRequest('asset_catalogue.browse_open', {}).then(function(r) {
-      if (r.success === false && r.error) alert('Open failed: ' + r.error);
-    });
-  }
-  function loadManifest(path) {
-    diaRequest('asset_catalogue.load_manifest', { path: path }).then(function(r) {
-      if (!r.success) alert('Load failed: ' + r.error);
-    });
-  }
   function onSave() {
     diaRequest('asset_catalogue.save_manifest', {}).then(function(r) {
       if (!r.success) alert('Save failed: ' + r.error);
     });
-  }
-  function confirmUnsaved() {
-    var ind = document.getElementById('dirty-indicator');
-    if (!ind.classList.contains('dirty')) return true;
-    var choice = confirm('Unsaved changes. Discard?');
-    return choice;
   }
 
   document.addEventListener('keydown', function(e) {
     if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); onSave(); }
   });
 
-  // Deferred graph init — runs after layout is established
-  window.addEventListener('load', function() { initGraph(); });
+  // On mount: init graph then pull current state from the backend. The plugin may
+  // not be registered yet (loaded on demand), so retry until we get a real response.
+  window.addEventListener('load', function() {
+    initGraph();
+    pollGetState(0);
+  });
+
+  function applyGetState(r) {
+    if (r.status) {
+      var emptyEl = document.getElementById('asset-empty');
+      if (emptyEl) { emptyEl.textContent = r.status; emptyEl.style.color = '#f48771'; emptyEl.style.display = ''; }
+      return;
+    }
+    setManifestPath(r.path);
+    setDirty(r.dirty);
+    if (Array.isArray(r.records) && r.records.length > 0) {
+      allRecords = r.records;
+      renderAssetList();
+    }
+  }
+
+  var _pollGetStateTimer = null;
+  function pollGetState(attempt) {
+    diaLog('[AssetCatalogue] pollGetState attempt=' + attempt);
+    diaRequest('asset_catalogue.get_state', {}).then(function(r) {
+      diaLog('[AssetCatalogue] get_state response attempt=' + attempt + ' success=' + (r.success || false) + ' records=' + (r.records ? r.records.length : 0));
+      // Bridge returns {} when no handler is registered yet — retry up to 10 times.
+      if (!r.success && attempt < 10) {
+        _pollGetStateTimer = setTimeout(function() { pollGetState(attempt + 1); }, 500);
+        return;
+      }
+      if (r.success) applyGetState(r);
+      else diaLog('[AssetCatalogue] pollGetState exhausted — no handler after 10 attempts');
+    });
+  }
 
   /* ── Tabs ─────────────────────────────────────────── */
   function showCenterTab(name, el) {

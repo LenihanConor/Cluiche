@@ -21,6 +21,10 @@ let nextReqId = 1;
 type TopicListener = (data: unknown) => void;
 const topicListeners = new Map<string, Set<TopicListener>>();
 
+function uiLog(source: string, msg: string): void {
+  sendEvent("editor.ui_log", { source, msg });
+}
+
 function sendEvent(type: string, data?: object): void {
   if (!window.dia || !window.dia.callCpp) {
     console.warn("dia.callCpp not available; event dropped:", type);
@@ -108,21 +112,25 @@ window.DiaEditor_onDataChanged = (payload: unknown) => {
     if (!env || !env.topic) return;
 
     const listeners = topicListeners.get(env.topic);
+    const frames = document.querySelectorAll("iframe");
+
     if (listeners) {
       listeners.forEach((fn) => {
         try { fn(env.data); }
-        catch (err) { console.warn("topic listener failed:", env.topic, err); }
+        catch (err) { uiLog("EditorBridge", `topic listener failed: ${env.topic} ${err}`); }
       });
     }
 
     // Re-broadcast to every iframe so dockable panels can subscribe too.
-    const frames = document.querySelectorAll("iframe");
     frames.forEach((f) => {
-      try { f.contentWindow?.postMessage({ __dia: true, topic: env.topic, data: env.data }, "*"); }
-      catch { /* frame not ready or cross-origin, ignore */ }
+      try {
+        f.contentWindow?.postMessage({ __dia: true, topic: env.topic, data: env.data }, "*");
+      } catch (err) {
+        uiLog("EditorBridge", `failed to relay topic='${env.topic}' to iframe '${f.title || f.src || "(unknown)"}': ${err}`);
+      }
     });
   } catch (err) {
-    console.warn("DiaEditor_onDataChanged parse failed:", err);
+    uiLog("EditorBridge", `onDataChanged parse failed: ${err}`);
   }
 };
 

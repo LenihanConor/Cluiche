@@ -25,6 +25,7 @@ namespace Cluiche
 
 			void SetBridge(Dia::Editor::WebUIBridge* bridge);
 			void LoadBuiltInPlugins();
+			void RestoreLayoutPlugins();
 			void LoadManifest(const char* manifestPath);
 			void LoadPlugin(const Dia::Core::StringCRC& typeId, const Dia::Core::StringCRC& instanceId) override;
 			bool UnloadPlugin(const Dia::Core::StringCRC& typeId) override;
