@@ -2,6 +2,7 @@
 
 #include <DiaObservation/Log/LogEntry.h>
 #include <DiaObservation/Config/ObservationConfig.h>
+#include <DiaObservation/Metric/MetricSnapshot.h>
 #include <DiaCore/CRC/StringCRC.h>
 
 #include <cstdint>
@@ -69,6 +70,7 @@ namespace Dia
 			static constexpr uint32_t kMetricSnapshotIntervalMs = 100;
 			float mMetricSnapshotAccumMs;
 			int64_t mEpochOffsetNs;
+			Metric::MetricSnapshot mLastSnapshot;
 
 			static constexpr float kHealthPollIntervalMs = 500.0f;
 			float mHealthPollAccumMs;

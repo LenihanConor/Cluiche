@@ -191,9 +191,35 @@ namespace Dia
 			return true;
 		}
 
+		static bool MetricSnapshotChanged(const Metric::MetricSnapshot& prev,
+		                                   const Metric::MetricSnapshot& curr)
+		{
+			if (prev.entryCount != curr.entryCount)
+				return true;
+			for (unsigned int i = 0; i < curr.entryCount; ++i)
+			{
+				const Metric::MetricEntry& p = prev.entries[i];
+				const Metric::MetricEntry& c = curr.entries[i];
+				if (p.kind != c.kind) return true;
+				switch (c.kind)
+				{
+				case Metric::MetricEntry::Kind::kCounter:
+					if (p.counterValue != c.counterValue) return true;
+					break;
+				case Metric::MetricEntry::Kind::kGauge:
+					if (p.gaugeValue != c.gaugeValue) return true;
+					break;
+				case Metric::MetricEntry::Kind::kHistogram:
+					if (p.histCount != c.histCount || p.histSum != c.histSum) return true;
+					break;
+				}
+			}
+			return false;
+		}
+
 		void SessionManager::Tick(float deltaTime)
 		{
-			// Metric snapshot on interval
+			// Metric snapshot on interval — only emit to file sink when values changed
 			mMetricSnapshotAccumMs += deltaTime * 1000.0f;
 			if (mMetricSnapshotAccumMs >= static_cast<float>(kMetricSnapshotIntervalMs))
 			{
@@ -202,7 +228,11 @@ namespace Dia
 				Metric::MetricSnapshot snapshot;
 				Metric::MetricRegistry::Instance().Snapshot(snapshot);
 				snapshot.intervalMs = kMetricSnapshotIntervalMs;
-				Metric::MetricRegistry::Instance().NotifySnapshot(snapshot);
+				if (snapshot.entryCount == 0 || MetricSnapshotChanged(mLastSnapshot, snapshot))
+				{
+					Metric::MetricRegistry::Instance().NotifySnapshot(snapshot);
+					mLastSnapshot = snapshot;
+				}
 			}
 
 			// Health polling on interval
