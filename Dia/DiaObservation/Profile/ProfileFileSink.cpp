@@ -49,10 +49,7 @@ namespace Dia
 
 				char line[512];
 				int len = snprintf(line, sizeof(line),
-					"{\"schema_version\":\"1.0\","
-					"\"record_type\":\"profile_scope\","
-					"\"session_id\":\"%s\","
-					"\"frame_number\":%u,"
+					"{\"frame_number\":%u,"
 					"\"thread_id\":%u,"
 					"\"scope_name\":%u,"
 					"\"category\":%u,"
@@ -60,7 +57,6 @@ namespace Dia
 					"\"parent_scope_id\":%llu,"
 					"\"start_unix_nano\":%lld,"
 					"\"duration_ns\":%llu}\n",
-					mSessionId,
 					record.frameNumber,
 					record.threadId,
 					static_cast<unsigned int>(record.name.Value()),

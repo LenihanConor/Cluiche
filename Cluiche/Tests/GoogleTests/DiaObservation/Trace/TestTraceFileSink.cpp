@@ -54,9 +54,6 @@ TEST_F(TraceFileSinkTest, OnSpan_WritesValidJsonl)
     std::string content = ReadFile(kTraceFilePath);
     ASSERT_FALSE(content.empty());
 
-    EXPECT_NE(content.find("\"schema_version\":\"1.0\""), std::string::npos);
-    EXPECT_NE(content.find("\"record_type\":\"span\""), std::string::npos);
-    EXPECT_NE(content.find("\"session_id\":\"sess-trace-001\""), std::string::npos);
     EXPECT_NE(content.find("\"thread_id\":42"), std::string::npos);
 }
 

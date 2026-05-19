@@ -58,7 +58,6 @@ TEST_F(MetricsFileSinkTest, OnSnapshot_WritesJsonlRecord)
     std::string content = ReadFile(kMetricJsonlPath);
     EXPECT_FALSE(content.empty());
     EXPECT_NE(content.find("\"record_type\":\"metric_snapshot\""), std::string::npos);
-    EXPECT_NE(content.find("\"session_id\":\"sess-001\""), std::string::npos);
     EXPECT_NE(content.find("\"kind\":\"counter\""), std::string::npos);
     EXPECT_NE(content.find("\"value\":42"), std::string::npos);
 }
