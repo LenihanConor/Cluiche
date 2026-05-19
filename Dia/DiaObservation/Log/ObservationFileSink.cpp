@@ -42,20 +42,17 @@ ObservationFileSink::ObservationFileSink(const char* filePath, const char* sessi
 			Dia::Observation::EscapeJsonString(entry.message, escapedMsg, sizeof(escapedMsg));
 
 			const char* channelStr = entry.channel.AsChar();
-			const char* stepStr = entry.scenarioStep.AsChar();
 
 			char line[4096];
 			int len = snprintf(line, sizeof(line),
 				"{\"ts_unix_nano\":%lld,"
 				"\"level\":\"%s\","
 				"\"channel\":\"%s\","
-				"\"scenario_step\":\"%s\","
 				"\"thread_id\":%u,"
 				"\"msg\":\"%s\"}\n",
 				static_cast<long long>(tsUnixNano),
 				levelStr,
 				channelStr ? channelStr : "",
-				stepStr ? stepStr : "",
 				entry.threadId,
 				escapedMsg);
 
