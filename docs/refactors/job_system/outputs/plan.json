@@ -1,0 +1,170 @@
+{
+  "command": "plan",
+  "status": "ok",
+  "data": {
+    "subsystem": "job_system",
+    "input": "docs/refactors/job_system/outputs/audit.json",
+    "goal": "Replace the singleton-based, header-only, leak-prone JobSystem with a value-typed instance owned by JobSystemModule that exposes a three-primitive RAII handle API (Submit / Wait / IsComplete).",
+    "current_problem": "Singleton + header-only impl + manual Job* lifetime causes child-job leaks, double-Run hazards, undocumented lifetime contract, and dead surface (priority, work-stealing, ParallelFor) that no production caller uses.",
+    "target_shape": {
+      "ownership": "JobSystemModule holds a Dia::Core::JobSystem by value. Callers receive Dia::Core::JobSystem* via service locator (or are passed a reference). No Meyers singleton.",
+      "api": [
+        "JobHandle JobSystem::Submit(JobFn fn)  — refcounted handle; Job is freed when last handle drops AND job has finished",
+        "void JobSystem::Wait(const JobHandle& h) — blocks until fn() has fully executed; safe to call from any thread including a worker",
+        "bool JobSystem::IsComplete(const JobHandle& h) — non-blocking check; safe after Wait",
+        "void JobSystem::Initialize(unsigned numThreads) / Shutdown() — called by JobSystemModule only"
+      ],
+      "handle_semantics": "JobHandle is a small value type wrapping shared_ptr<Job> (or equivalent intrusive refcount). Copying the handle increases refcount. Holding it past Wait is safe and a no-op on re-Wait.",
+      "deferred_features": [
+        "Parent/child relationships",
+        "ParallelFor",
+        "Job priorities",
+        "Work stealing"
+      ],
+      "thread_pool": "ThreadPool gets impl moved to .cpp. Shutdown semantic chosen: drain (run remaining tasks) before joining; document this. Workers exit on shutdown only when queue empty AND flag set.",
+      "header_layout": "JobSystem.h declares JobSystem, JobHandle, JobFn. JobSystem.cpp holds impl. ThreadPool.h gets a slim public surface; ThreadPool.cpp holds workers.",
+      "diagnostics": "DIA_ASSERT on Submit-after-Shutdown. DIA_ASSERT on double-Initialize. Wait on a never-Run handle is impossible because Submit always Runs."
+    },
+    "boundary_changes": [
+      "JobSystem moves from globally-accessible singleton to instance reachable through JobSystemModule (service locator or accessor).",
+      "ParallelFor helper removed from JobSystem.h (deferred until needed).",
+      "ThreadPool implementation moves from .h to .cpp; public surface unchanged."
+    ],
+    "responsibilities_before_after": [
+      {"responsibility": "Worker thread management", "before": "ThreadPool (header-only)", "after": "ThreadPool (split .h/.cpp)"},
+      {"responsibility": "Job lifetime", "before": "Manual: caller calls Wait which deletes; child jobs leak", "after": "Refcounted JobHandle; Job released when handle count == 0 AND job finished"},
+      {"responsibility": "Lifecycle ownership", "before": "Singleton + JobSystemModule both manage", "after": "JobSystemModule alone owns instance"},
+      {"responsibility": "Fan-out (ParallelFor, parent-child)", "before": "Implemented in JobSystem (leaky)", "after": "Removed; reintroduced via separate spec when a real caller appears"},
+      {"responsibility": "Priority scheduling", "before": "Field exists, ignored by ThreadPool", "after": "Field removed"},
+      {"responsibility": "Submit-after-Shutdown", "before": "Silent (early return if pool null)", "after": "DIA_ASSERT"}
+    ],
+    "affected_systems": [
+      {
+        "name": "JobSystemModule (Cluiche/CluicheGameBaseline)",
+        "change": "Holds JobSystem instance. Registers it with service locator on DoStart; deregisters on DoStop.",
+        "spec": "docs/specs/features/cluichetest/async-asset-loading/jobsystem-module.md"
+      },
+      {
+        "name": "TextureHandler (Dia/DiaSFML)",
+        "change": "Receives JobSystem* (constructor or setter). Replaces JobSystem::CreateJob/Run/Wait calls with instance->Submit / Wait. Drops shared_ptr<PendingUpload> if handle keeps state alive — TBD during execute, may stay as-is for migration safety.",
+        "spec": null
+      },
+      {
+        "name": "AsyncFileLoader (Dia/DiaCore/FilePath)",
+        "change": "Currently uses ThreadPool directly, not JobSystem — no API change needed for the JobSystem refactor. ThreadPool .cpp split will recompile this TU but not change semantics.",
+        "spec": null
+      },
+      {
+        "name": "GoogleTests (Cluiche/Tests/GoogleTests/Core/Threading)",
+        "change": "TestJobSystem.cpp loses parent/child + ParallelFor cases (deferred). Adds tests for the audit's missing-test list. Tests construct a local JobSystem instance instead of using a singleton.",
+        "spec": null
+      }
+    ],
+    "api_changes": [
+      {
+        "header": "Dia/DiaCore/Threading/JobSystem.h",
+        "before": "static JobSystem& GetInstance(); static Job* CreateJob(JobFn); static void Run(Job*); static void Wait(Job*); static bool IsComplete(Job*); ParallelFor template",
+        "after": "class JobSystem { void Initialize(unsigned); void Shutdown(); JobHandle Submit(JobFn); void Wait(const JobHandle&); bool IsComplete(const JobHandle&); }; struct JobHandle { ... };"
+      },
+      {
+        "header": "Dia/DiaCore/Threading/ThreadPool.h",
+        "before": "Full impl in header (constructor, Enqueue, WaitAll, Shutdown, WorkerThread)",
+        "after": "Class declaration only; impl moves to ThreadPool.cpp"
+      }
+    ],
+    "migration_phases": [
+      {
+        "phase": 1,
+        "name": "Carve out JobSystem.cpp + JobHandle skeleton",
+        "description": "Move ThreadPool impl to ThreadPool.cpp (no API change). Introduce JobSystem.cpp with the new instance-shaped class behind a feature toggle: keep old static API delegating to a hidden global instance so callers don't break. Add JobHandle type. Add new tests for missing-test list against the new API. CHECKPOINT: builds + all tests pass.",
+        "files_touched": [
+          "Dia/DiaCore/Threading/JobSystem.h",
+          "Dia/DiaCore/Threading/JobSystem.cpp (new)",
+          "Dia/DiaCore/Threading/ThreadPool.h",
+          "Dia/DiaCore/Threading/ThreadPool.cpp (new)",
+          "Dia/DiaCore/DiaCore.vcxproj",
+          "Dia/DiaCore/DiaCore.vcxproj.filters",
+          "Cluiche/Tests/GoogleTests/Core/Threading/TestJobSystem.cpp"
+        ],
+        "risk": "Low — additive."
+      },
+      {
+        "phase": 2,
+        "name": "Migrate JobSystemModule to instance ownership",
+        "description": "JobSystemModule holds a JobSystem by value (or unique_ptr). Service-locator-registers a JobSystem* on DoStart, removes on DoStop. Spec update: jobsystem-module.md architecture section reflects instance ownership. CHECKPOINT: cluichetest launches; module logs init/shutdown.",
+        "files_touched": [
+          "Cluiche/CluicheGameBaseline/Modules/JobSystemModule.h",
+          "Cluiche/CluicheGameBaseline/Modules/JobSystemModule.cpp",
+          "docs/specs/features/cluichetest/async-asset-loading/jobsystem-module.md"
+        ],
+        "risk": "Medium — touches live ApplicationFlow module. Requires the service-locator hookup to exist or be added. Validate by running cluichetest end-to-end."
+      },
+      {
+        "phase": 3,
+        "name": "Migrate TextureHandler to instance API",
+        "description": "TextureHandler receives JobSystem* via constructor or AssetService wiring. Replace JobSystem::Create/Run/Wait calls with instance->Submit/Wait. Verify shutdown-drain semantics (the dtor's wait loop must still work). CHECKPOINT: dummystage texture loads still work; teardown clean.",
+        "files_touched": [
+          "Dia/DiaSFML/TextureHandler.h",
+          "Dia/DiaSFML/TextureHandler.cpp"
+        ],
+        "risk": "Medium — last production caller of the JobSystem API. Lifetime nuance with PendingUpload."
+      },
+      {
+        "phase": 4,
+        "name": "Remove the static-API shim and dead surface",
+        "description": "Delete the static singleton bridge added in Phase 1. Delete ParallelFor, parent-child API (Job::parent, CreateChildJob, Finish-walking-parent), priority field, work-stealing comments. Update GoogleTests to drop parent/child + ParallelFor tests (file an issue or deferred-feature note). Strip stale doc strings.",
+        "files_touched": [
+          "Dia/DiaCore/Threading/JobSystem.h",
+          "Dia/DiaCore/Threading/JobSystem.cpp",
+          "Cluiche/Tests/GoogleTests/Core/Threading/TestJobSystem.cpp"
+        ],
+        "risk": "Low — only removes deprecated surface once callers are off it."
+      },
+      {
+        "phase": 5,
+        "name": "Tighten ThreadPool shutdown + add diagnostics",
+        "description": "Document and assert: ThreadPool drains queue on Shutdown. Submit after Shutdown asserts. Double-Initialize asserts. Add tests for these.",
+        "files_touched": [
+          "Dia/DiaCore/Threading/ThreadPool.cpp",
+          "Dia/DiaCore/Threading/JobSystem.cpp",
+          "Cluiche/Tests/GoogleTests/Core/Threading/TestJobSystem.cpp",
+          "Cluiche/Tests/GoogleTests/Core/Threading/TestThreadPool.cpp"
+        ],
+        "risk": "Low — defensive checks."
+      }
+    ],
+    "minimal_viable_slice": "Phase 1 alone delivers value: ThreadPool impl is split, JobHandle exists, missing-test cases land. The static-API shim keeps existing callers working, so even if Phases 2-5 stall the bug-fixes (drain semantics, leak fix via handle) are reachable.",
+    "risks_and_rollback": [
+      {
+        "risk": "Service locator wiring for JobSystem* doesn't exist in current AppFlow — Phase 2 may need to add it.",
+        "mitigation": "During Phase 2, check for an existing service registry in DiaApplicationFlow. If absent, fall back to a plain accessor on JobSystemModule and pass via constructor wiring in module factories.",
+        "rollback": "Revert Phase 2 commit; the static-shim keeps the old code working."
+      },
+      {
+        "risk": "TextureHandler's PendingUpload shared_ptr was added to outlive the Job. JobHandle changes that — keeping the lambda alive via handle could be enough.",
+        "mitigation": "During Phase 3, decide: keep shared_ptr (zero-risk) or simplify (touch lifetime — needs verification). Default = keep.",
+        "rollback": "Revert TextureHandler commit; module wiring continues to work because Phase 2 didn't touch TextureHandler."
+      },
+      {
+        "risk": "Dropping ParallelFor breaks a test that other tests indirectly rely on for setup.",
+        "mitigation": "Phase 4 audits TestJobSystem.cpp for transitive uses before deleting.",
+        "rollback": "Restore from prior commit; ParallelFor can survive in a deprecated namespace if needed."
+      },
+      {
+        "risk": "Phase 5's drain semantics could change observable shutdown timing for existing callers.",
+        "mitigation": "Drain is the de-facto behaviour callers expect today (they Wait first); changing the contract from 'undefined' to 'drain' should not break any caller that wasn't already broken.",
+        "rollback": "Revert Phase 5 commit."
+      }
+    ],
+    "acceptance_criteria": [
+      "AC1 — All callers (JobSystemModule, TextureHandler) use the instance-based JobSystem; no caller calls JobSystem static methods.",
+      "AC2 — Job allocations have no leaks: every Submit returns a JobHandle, and the Job is freed when refcount hits zero AND the job has finished.",
+      "AC3 — Calling Wait from inside a running job does not deadlock under any existing test or new test.",
+      "AC4 — Submit after Shutdown asserts (test verifies).",
+      "AC5 — Header docstrings describe only implemented features; no work-stealing or priority claims.",
+      "AC6 — JobSystem.h and ThreadPool.h have only declarations (impl in .cpp).",
+      "AC7 — Existing TextureHandler behaviour (cluichetest dummy stage texture load + teardown) is preserved.",
+      "AC8 — GoogleTest suite for Threading still passes; new tests cover the missing-test list."
+    ]
+  }
+}

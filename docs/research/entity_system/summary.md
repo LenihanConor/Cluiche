@@ -5,7 +5,7 @@
 
 ## One-Line Answer
 
-A layered ECS where components are config + asset trigger + gameplay interface into independent systems, with editor-first inspection, deferred mailbox communication, and cached queries — all housed in a standalone DiaEntity module.
+A layered ECS where components are config + asset trigger + gameplay interface into independent systems, with reflection-backed editor inspection, deferred mailbox communication, parent/child hierarchy, and cached queries — all housed in a standalone DiaEntity module.
 
 ## Journey
 
@@ -13,13 +13,15 @@ A layered ECS where components are config + asset trigger + gameplay interface i
 2. **Ideated:** 10 candidates generated spanning minimal handle registries to full archetype ECS to reactive signal graphs. Ranged from S (1 week) to L (2 months).
 3. **Evaluated:** Candidates 3 (Component Bindings + Interfaces) and 8 (Editor-First Inspection) tied at 4.15. Archetype ECS and Signal Graph scored lowest due to complexity/cost vs. stated priorities.
 4. **Chose:** Merged 3+8 confirmed by user. Extended with decisions on identity (generational index), communication (typed mailbox + structured addressing), queries (dynamic + cached, end-of-frame rebuild), typed reference slots, and blueprint schema (versioned JSON).
+5. **Reviewed against Dragon ECS doc (2026-05-17):** External archetype-chunk design rejected on the same grounds as candidate 4. Four refinements lifted into addendum: reflection metadata required from foundation (Decision 14); parent/child hierarchy in v1 (Decision 15); container renamed `World` → `Realm` (Decision 16); editor mutation tiered into read-only + live field edit (v1) and live structural edit (deferred) (Decision 17). Feature order revised to surface reflection before blueprints and inspection.
 
 ## Chosen Work Item
 
 **Name:** DiaEntity — Layered ECS with Component Interfaces + Editor-First Inspection
 **Home module:** New `Dia/DiaEntity/` (standalone, no DiaApplicationFlow dependency)
 **Suggested spec type:** System (with multiple feature specs for each layer)
-**Estimated size:** M (1–3 weeks for foundation; queries and editor inspection layer on after)
+**Estimated size:** M (1–3 weeks for foundation; reflection, hierarchy, queries, and editor inspection layer on after)
+**Container term:** `Realm` (not `World` — avoids overlap with Stage)
 
 ## Key Insights from Exploration
 

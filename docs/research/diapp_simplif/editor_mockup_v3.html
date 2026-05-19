@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DiaApplicationFlowEditor — Mockup v3</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #1e1e2e; color: #cdd6f4; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+/* ─── Header ─── */
+.header { background: #181825; padding: 8px 16px; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid #313244; flex-shrink: 0; }
+.header h1 { font-size: 14px; font-weight: 600; color: #89b4fa; }
+.header .file-path { font-size: 12px; color: #6c7086; }
+.dirty { color: #f9e2af; }
+.header .actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.btn { background: #313244; border: 1px solid #45475a; color: #cdd6f4; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; gap: 6px; }
+.btn:hover { background: #45475a; }
+.btn.primary { background: #89b4fa; color: #1e1e2e; border-color: #89b4fa; }
+.btn.live-btn { border-color: #6c7086; color: #6c7086; }
+.btn.live-btn.connecting { border-color: #f9e2af; color: #f9e2af; }
+.btn.live-btn.connected { border-color: #a6e3a1; color: #a6e3a1; background: #a6e3a110; }
+
+/* Traffic light dot — single reusable primitive */
+.tl { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.tl.green  { background: #a6e3a1; }
+.tl.amber  { background: #f9e2af; }
+.tl.red    { background: #f38ba8; }
+.tl.grey   { background: #45475a; }
+.tl.sm     { width: 6px; height: 6px; }
+.tl.lg     { width: 10px; height: 10px; }
+.tl.pulse  { animation: pulse 1.5s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* ─── Tabs ─── */
+.tab-bar { background: #181825; padding: 0 16px; display: flex; border-bottom: 1px solid #313244; flex-shrink: 0; }
+.tab { padding: 7px 16px; font-size: 12px; color: #6c7086; cursor: pointer; border-bottom: 2px solid transparent; user-select: none; }
+.tab.active { color: #89b4fa; border-bottom-color: #89b4fa; }
+.tab:hover:not(.active) { color: #cdd6f4; }
+
+/* ─── Tab Content ─── */
+.tab-content { display: none; flex: 1; overflow: hidden; min-height: 0; }
+.tab-content.active { display: flex; }
+
+/* ══════════════════════════════════════
+   GRAPH TAB
+══════════════════════════════════════ */
+.graph-panel { flex: 1; padding: 16px; position: relative; overflow: hidden; min-width: 0; }
+.panel-title { font-size: 11px; color: #6c7086; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+.graph-canvas { position: relative; width: 100%; height: calc(100% - 28px); }
+.graph-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+.graph-svg line { stroke: #a6e3a1; stroke-width: 1.5; stroke-dasharray: 5 3; }
+.graph-svg .arr { fill: #a6e3a1; }
+
+/* PU Nodes */
+.pu-node { position: absolute; background: #313244; border: 2px solid #45475a; border-radius: 8px; padding: 10px 14px; min-width: 170px; cursor: pointer; transition: border-color 0.15s; }
+.pu-node:hover { border-color: #7f849c; }
+.pu-node.selected { border-color: #89b4fa; box-shadow: 0 0 14px rgba(137,180,250,.15); }
+.pu-name { font-weight: 600; font-size: 13px; margin-bottom: 2px; display: flex; align-items: center; gap: 6px; }
+.pu-meta { font-size: 11px; color: #6c7086; }
+.pu-tags { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+.tag { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; background: #45475a; }
+.tag.order { background: #89b4fa15; color: #89b4fa; border: 1px solid #89b4fa30; }
+
+/* Stream labels on graph */
+.stream-label { position: absolute; background: #1e1e2e; padding: 3px 8px; border-radius: 4px; font-size: 10px; color: #a6e3a1; border: 1px solid #313244; cursor: pointer; transition: border-color 0.15s; white-space: nowrap; }
+.stream-label:hover { border-color: #a6e3a160; }
+.stream-label.selected { border-color: #a6e3a1; box-shadow: 0 0 8px rgba(166,227,161,.15); }
+.stream-type-sub { color: #6c7086; font-size: 9px; display: block; }
+
+/* ─── Sidebar ─── */
+.sidebar { width: 580px; flex-shrink: 0; display: flex; flex-direction: column; border-left: 1px solid #313244; position: relative; transition: width 0.2s; }
+.sidebar.collapsed { width: 28px; }
+.sidebar-collapse-btn { position: absolute; top: 10px; left: -12px; width: 22px; height: 22px; background: #313244; border: 1px solid #45475a; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 10px; color: #6c7086; z-index: 10; }
+.sidebar-collapse-btn:hover { color: #cdd6f4; border-color: #7f849c; }
+.sidebar.collapsed .sidebar-collapse-btn { left: 3px; }
+.sidebar-label { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%) rotate(90deg); font-size: 10px; color: #45475a; white-space: nowrap; display: none; pointer-events: none; }
+.sidebar.collapsed .sidebar-label { display: block; }
+
+/* Inspector inner scroll areas */
+.inspector-view { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.sidebar.collapsed .inspector-view { display: none; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 11px; color: #6c7086; display: flex; align-items: center; gap: 4px; }
+.breadcrumb a { color: #89b4fa; cursor: pointer; }
+.breadcrumb a:hover { text-decoration: underline; }
+.inspector-title { font-size: 13px; font-weight: 600; }
+
+/* Section headers */
+.section-hdr { font-size: 11px; color: #89b4fa; padding: 5px 0; border-bottom: 1px solid #313244; display: flex; align-items: center; gap: 5px; margin-bottom: 8px; cursor: pointer; user-select: none; }
+.section-toggle { font-size: 10px; color: #6c7086; }
+.section-action { margin-left: auto; font-size: 10px; color: #6c7086; background: #313244; padding: 2px 7px; border-radius: 3px; cursor: pointer; }
+.section-action:hover { color: #cdd6f4; }
+
+/* Property grid */
+.prop-grid { display: grid; grid-template-columns: 110px 1fr; gap: 5px 10px; font-size: 11px; }
+.pl { color: #6c7086; line-height: 22px; }
+.pv { color: #cdd6f4; line-height: 22px; }
+.pv.editable { background: #181825; padding: 2px 8px; border-radius: 3px; border: 1px solid #313244; cursor: text; }
+.pv.editable:hover { border-color: #45475a; }
+
+/* Stage pills */
+.stage-bar { display: flex; gap: 4px; flex-wrap: wrap; }
+.stage-pill { padding: 3px 10px; border-radius: 12px; font-size: 11px; background: #45475a; cursor: pointer; text-align: center; }
+.stage-pill .trigger { font-size: 9px; display: block; opacity: 0.7; }
+.stage-pill.active { background: #89b4fa; color: #1e1e2e; }
+.stage-pill.boot { background: #f9e2af; color: #1e1e2e; }
+.stage-pill.add { background: transparent; border: 1px dashed #6c7086; color: #6c7086; }
+
+/* Module cards */
+.module-card { background: #181825; border: 1px solid #313244; border-radius: 5px; padding: 9px 11px; margin-bottom: 6px; }
+.module-card:hover { border-color: #45475a; }
+.mod-hdr { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; }
+.mod-name { font-weight: 600; font-size: 12px; }
+.mod-type-tag { font-size: 10px; color: #6c7086; background: #313244; padding: 1px 5px; border-radius: 3px; }
+.mod-prov { font-size: 9px; color: #f9e2af; margin-left: auto; }
+.mod-detail { font-size: 11px; color: #6c7086; margin-bottom: 3px; }
+.mod-detail span { color: #cdd6f4; }
+.stream-badge { display: inline-block; padding: 2px 5px; border-radius: 3px; font-size: 10px; margin-right: 3px; }
+.stream-badge.r { border: 1px solid #94e2d5; color: #94e2d5; }
+.stream-badge.w { border: 1px solid #f38ba8; color: #f38ba8; }
+.mod-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 5px; }
+.timeout-row { display: flex; gap: 5px; }
+.tmt { font-size: 9px; color: #6c7086; background: #313244; padding: 1px 5px; border-radius: 3px; }
+.tmt .tv { color: #cdd6f4; }
+.stage-dots { display: flex; gap: 3px; align-items: center; }
+.sdot { width: 7px; height: 7px; border-radius: 50%; background: #45475a; }
+.sdot.on { background: #a6e3a1; }
+.sdot.boot { background: #f9e2af; }
+.all-badge { font-size: 9px; color: #a6e3a1; background: #a6e3a110; padding: 1px 6px; border-radius: 3px; border: 1px solid #a6e3a130; }
+
+/* Live state label */
+.ls { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; margin-left: auto; }
+.ls.running { color: #a6e3a1; }
+.ls.loading { color: #f9e2af; }
+.ls.stopped { color: #6c7086; }
+.ls.failed  { color: #f38ba8; }
+
+/* Dep order */
+.dep-content { font-size: 11px; padding: 8px; background: #181825; border-radius: 4px; border: 1px solid #313244; }
+.dep-chain { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; flex-wrap: wrap; }
+.dep-node { background: #313244; padding: 2px 8px; border-radius: 3px; font-size: 11px; }
+.dep-node.hi { background: #89b4fa15; border: 1px solid #89b4fa30; color: #89b4fa; }
+.dep-arrow { color: #45475a; font-size: 10px; }
+
+/* Stream inspector */
+.stream-name-title { font-size: 14px; font-weight: 600; color: #a6e3a1; }
+
+/* ══════════════════════════════════════
+   PRESENCE TAB
+══════════════════════════════════════ */
+#tab-presence { flex-direction: column; }
+.presence-toolbar { padding: 10px 16px; background: #181825; border-bottom: 1px solid #313244; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.search-input { background: #313244; border: 1px solid #45475a; color: #cdd6f4; padding: 4px 10px; border-radius: 4px; font-size: 12px; width: 220px; outline: none; }
+.search-input:focus { border-color: #89b4fa; }
+.legend { display: flex; gap: 12px; margin-left: auto; font-size: 11px; color: #6c7086; align-items: center; }
+.legend-item { display: flex; align-items: center; gap: 4px; }
+
+/* Grid */
+.presence-wrap { flex: 1; overflow: auto; min-height: 0; }
+.pgrid { width: 100%; border-collapse: collapse; font-size: 12px; }
+.pgrid thead { position: sticky; top: 0; z-index: 10; }
+.pgrid thead th { padding: 8px 16px; text-align: center; border-bottom: 2px solid #313244; font-size: 11px; font-weight: 600; color: #89b4fa; white-space: nowrap; border-right: 1px solid #31324450; background: #181825; }
+.pgrid thead th.mod-col { text-align: left; min-width: 210px; position: sticky; left: 0; border-right: 2px solid #313244; z-index: 11; }
+.pgrid thead th.auto-stage { color: #f9e2af; }
+
+/* PU group rows */
+.pu-grp { background: #2a2a3e; cursor: pointer; user-select: none; }
+.pu-grp td { padding: 6px 16px; font-size: 11px; font-weight: 600; border-bottom: 1px solid #45475a; }
+.pu-grp td:first-child { position: sticky; left: 0; background: #2a2a3e; z-index: 5; }
+.pu-count { font-size: 10px; color: #6c7086; margin-left: 6px; font-weight: 400; }
+.col-icon { font-size: 10px; color: #6c7086; margin-right: 5px; }
+
+/* Module rows */
+.mod-row { border-bottom: 1px solid #31324430; transition: background 0.1s; }
+.mod-row:hover { background: #31324470; }
+.mod-row td { padding: 5px 16px; vertical-align: middle; border-right: 1px solid #31324430; }
+.mod-row td.mod-col { position: sticky; left: 0; background: #1e1e2e; border-right: 2px solid #313244; z-index: 5; }
+.mod-row:hover td.mod-col { background: #31324470; }
+.mod-row .mn { font-size: 12px; }
+.mod-row .mt { font-size: 10px; color: #6c7086; }
+
+/* Presence cells */
+.pcell { display: flex; align-items: center; justify-content: center; gap: 4px; min-height: 26px; }
+.infra-lbl { font-size: 9px; color: #6c7086; }
+
+/* ══════════════════════════════════════
+   STREAMS TAB
+══════════════════════════════════════ */
+.streams-list { flex: 1; padding: 16px; overflow-y: auto; min-width: 0; }
+.stream-card { background: #313244; border: 1px solid #45475a; border-radius: 6px; padding: 12px 14px; margin-bottom: 10px; cursor: pointer; transition: border-color 0.15s; }
+.stream-card:hover { border-color: #7f849c; }
+.stream-card.selected { border-color: #a6e3a1; }
+.sc-hdr { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.sc-name { font-weight: 600; font-size: 13px; color: #a6e3a1; }
+.sc-type { font-size: 10px; color: #6c7086; background: #45475a; padding: 2px 6px; border-radius: 3px; }
+.sc-throughput { font-size: 10px; color: #94e2d5; margin-left: auto; }
+.sc-props { display: grid; grid-template-columns: 70px 1fr; gap: 3px 10px; font-size: 11px; }
+.scp-l { color: #6c7086; }
+.scp-v { color: #cdd6f4; }
+
+/* ─── Validation bar ─── */
+.validation-bar { background: #181825; padding: 5px 16px; border-top: 1px solid #313244; display: flex; align-items: center; gap: 14px; font-size: 11px; flex-shrink: 0; }
+.vb { display: flex; align-items: center; gap: 4px; }
+.vb.ok   { color: #a6e3a1; }
+.vb.warn { color: #f9e2af; }
+.vb.err  { color: #f38ba8; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     HEADER
+══════════════════════════════════════ -->
+<div class="header">
+    <h1>Application Flow</h1>
+    <span class="file-path">CluicheTest / cluiche.diaapp <span class="dirty">●</span></span>
+    <div class="actions">
+        <!-- Live button: click to cycle states (disconnected → connecting → connected) -->
+        <button class="btn live-btn connected" id="live-btn" onclick="cycleLive()">
+            <span class="tl green pulse" id="live-dot"></span>
+            <span id="live-label">Live: CluicheTest</span>
+        </button>
+        <button class="btn">Validate</button>
+        <button class="btn primary">Save</button>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     TAB BAR
+══════════════════════════════════════ -->
+<div class="tab-bar">
+    <div class="tab active" onclick="switchTab('graph',this)">Graph</div>
+    <div class="tab" onclick="switchTab('presence',this)">Presence</div>
+    <div class="tab" onclick="switchTab('streams',this)">Streams</div>
+</div>
+
+<!-- ══════════════════════════════════════
+     TAB: GRAPH
+══════════════════════════════════════ -->
+<div id="tab-graph" class="tab-content active">
+
+    <!-- Graph canvas -->
+    <div class="graph-panel">
+        <div class="panel-title">Processing Units &amp; Streams</div>
+        <div class="graph-canvas">
+            <svg class="graph-svg">
+                <line x1="175" y1="88" x2="175" y2="183"/>
+                <polygon class="arr" points="170,178 175,188 180,178"/>
+                <line x1="268" y1="228" x2="358" y2="228"/>
+                <polygon class="arr" points="353,223 363,228 353,233"/>
+            </svg>
+
+            <!-- Stream labels — clicking a stream switches inspector to stream view -->
+            <div class="stream-label" style="left:186px;top:120px" onclick="showStreamInspector('InputToSim','EventStream&lt;InputEvent&gt;','MainPU','SimPU')">
+                InputToSim
+                <span class="stream-type-sub">EventStream&lt;InputEvent&gt;</span>
+            </div>
+            <div class="stream-label selected" style="left:275px;top:210px" onclick="showStreamInspector('SimToRender','FrameStream&lt;FrameData&gt;','SimPU','RenderPU')">
+                SimToRender
+                <span class="stream-type-sub">FrameStream&lt;FrameData&gt;</span>
+            </div>
+
+            <!-- PU nodes — clicking a PU switches inspector to PU view -->
+            <div class="pu-node" style="left:78px;top:18px" onclick="showPUInspector(this)">
+                <div class="pu-name"><span class="tl green pulse"></span> MainPU</div>
+                <div class="pu-meta">4 modules · infra only</div>
+                <div class="pu-tags">
+                    <span class="tag order">#1 startup</span>
+                    <span class="tag">main thread</span>
+                    <span class="tag">30 Hz</span>
+                </div>
+            </div>
+
+            <div class="pu-node selected" style="left:78px;top:175px" onclick="showPUInspector(this)">
+                <div class="pu-name"><span class="tl green pulse"></span> SimPU</div>
+                <div class="pu-meta">6 modules · 2 game stages</div>
+                <div class="pu-tags">
+                    <span class="tag order">#2 startup</span>
+                    <span class="tag">dedicated</span>
+                    <span class="tag">30 Hz</span>
+                </div>
+            </div>
+
+            <div class="pu-node" style="left:350px;top:175px" onclick="showPUInspector(this)">
+                <div class="pu-name"><span class="tl green pulse"></span> RenderPU</div>
+                <div class="pu-meta">2 modules</div>
+                <div class="pu-tags">
+                    <span class="tag order">#3 startup</span>
+                    <span class="tag">dedicated</span>
+                    <span class="tag">60 Hz</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar — collapse button sits on the left edge -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-collapse-btn" onclick="toggleSidebar()" title="Collapse sidebar" id="sidebar-btn">◀</div>
+        <span class="sidebar-label">Inspector</span>
+
+        <!-- ─ PU Inspector ─ -->
+        <div class="inspector-view" id="pu-view">
+            <div class="breadcrumb">SimPU</div>
+
+            <!-- Properties -->
+            <div>
+                <div class="section-hdr"><span>Properties</span></div>
+                <div class="prop-grid">
+                    <span class="pl">Frequency</span>   <span class="pv editable">30 Hz</span>
+                    <span class="pl">Thread</span>       <span class="pv editable">dedicated</span>
+                    <span class="pl">Startup order</span><span class="pv">#2 (after MainPU)</span>
+                    <span class="pl">Live state</span>
+                    <span class="pv"><span class="ls running"><span class="tl green pulse"></span> running — DummyStage</span></span>
+                </div>
+            </div>
+
+            <!-- Stages -->
+            <div>
+                <div class="section-hdr"><span>Stages</span><span class="section-action">+ Add</span></div>
+                <div class="stage-bar">
+                    <div class="stage-pill boot">Boot<span class="trigger">auto</span></div>
+                    <div class="stage-pill active">DummyStage<span class="trigger">manual</span></div>
+                    <div class="stage-pill">StupidStage<span class="trigger">manual</span></div>
+                    <div class="stage-pill add">+ Stage</div>
+                </div>
+            </div>
+
+            <!-- Modules -->
+            <div>
+                <div class="section-hdr"><span>Modules</span><span class="section-action">+ Add</span></div>
+
+                <div class="module-card">
+                    <div class="mod-hdr">
+                        <span class="tl green"></span>
+                        <span class="mod-name">TimeServer</span>
+                        <span class="mod-type-tag">TimeServerModule</span>
+                        <span class="ls running">running</span>
+                    </div>
+                    <div class="mod-detail">deps: <span>none</span></div>
+                    <div class="mod-footer">
+                        <div class="timeout-row"><span class="tmt">start <span class="tv">3000ms</span></span><span class="tmt">stop <span class="tv">1000ms</span></span></div>
+                        <span class="all-badge">all stages</span>
+                    </div>
+                </div>
+
+                <div class="module-card">
+                    <div class="mod-hdr">
+                        <span class="tl green"></span>
+                        <span class="mod-name">InputStream</span>
+                        <span class="mod-type-tag">InputFrameStreamModule</span>
+                        <span class="ls running">running</span>
+                    </div>
+                    <div class="mod-detail">deps: <span>TimeServer</span></div>
+                    <div class="mod-detail"><span class="stream-badge r">reads InputToSim</span></div>
+                    <div class="mod-footer">
+                        <div class="timeout-row"><span class="tmt">start <span class="tv">3000ms</span></span><span class="tmt">stop <span class="tv">1000ms</span></span></div>
+                        <span class="all-badge">all stages</span>
+                    </div>
+                </div>
+
+                <div class="module-card">
+                    <div class="mod-hdr">
+                        <span class="tl green"></span>
+                        <span class="mod-name">LoadingScreen</span>
+                        <span class="mod-type-tag">LoadingScreenModule</span>
+                        <span class="ls running">running</span>
+                    </div>
+                    <div class="mod-detail">deps: <span>none</span></div>
+                    <div class="mod-detail"><span class="stream-badge w">writes SimToRender</span></div>
+                    <div class="mod-footer">
+                        <div class="timeout-row"><span class="tmt">start <span class="tv">1000ms</span></span><span class="tmt">stop <span class="tv">1000ms</span></span></div>
+                        <span class="all-badge">all stages</span>
+                    </div>
+                </div>
+
+                <div class="module-card">
+                    <div class="mod-hdr">
+                        <span class="tl amber pulse"></span>
+                        <span class="mod-name">DummyLevel</span>
+                        <span class="mod-type-tag">DummyLevelModule</span>
+                        <span class="ls loading">loading</span>
+                    </div>
+                    <div class="mod-detail">deps: <span>TimeServer, InputStream</span></div>
+                    <div class="mod-detail">
+                        <span class="stream-badge r">reads InputToSim</span>
+                        <span class="stream-badge w">writes SimToRender</span>
+                    </div>
+                    <div class="mod-footer">
+                        <div class="timeout-row"><span class="tmt">start <span class="tv">5000ms</span></span><span class="tmt">stop <span class="tv">2000ms</span></span></div>
+                        <div class="stage-dots">
+                            <span class="sdot" title="Boot"></span>
+                            <span class="sdot on" title="DummyStage"></span>
+                            <span class="sdot" title="StupidStage"></span>
+                        </div>
+                    </div>
+                    <div style="font-size:9px;color:#f9e2af;margin-top:4px">from: dummy_stage.diastage</div>
+                </div>
+
+                <div class="module-card">
+                    <div class="mod-hdr">
+                        <span class="tl amber pulse"></span>
+                        <span class="mod-name">DummyPhysics</span>
+                        <span class="mod-type-tag">DummyPhysicsModule</span>
+                        <span class="ls loading">loading</span>
+                    </div>
+                    <div class="mod-detail">deps: <span>DummyLevel</span></div>
+                    <div class="mod-footer">
+                        <div class="timeout-row"><span class="tmt">start <span class="tv">3000ms</span></span><span class="tmt">stop <span class="tv">1000ms</span></span></div>
+                        <div class="stage-dots">
+                            <span class="sdot" title="Boot"></span>
+                            <span class="sdot on" title="DummyStage"></span>
+                            <span class="sdot" title="StupidStage"></span>
+                        </div>
+                    </div>
+                    <div style="font-size:9px;color:#f9e2af;margin-top:4px">from: dummy_stage.diastage</div>
+                </div>
+
+                <div class="module-card">
+                    <div class="mod-hdr">
+                        <span class="tl grey"></span>
+                        <span class="mod-name">StupidLevel</span>
+                        <span class="mod-type-tag">StupidLevelModule</span>
+                        <span class="ls stopped">stopped</span>
+                    </div>
+                    <div class="mod-detail">deps: <span>TimeServer, InputStream</span></div>
+                    <div class="mod-detail"><span class="stream-badge w">writes SimToRender</span></div>
+                    <div class="mod-footer">
+                        <div class="timeout-row"><span class="tmt">start <span class="tv">5000ms</span></span><span class="tmt">stop <span class="tv">2000ms</span></span></div>
+                        <div class="stage-dots">
+                            <span class="sdot" title="Boot"></span>
+                            <span class="sdot" title="DummyStage"></span>
+                            <span class="sdot on" title="StupidStage"></span>
+                        </div>
+                    </div>
+                    <div style="font-size:9px;color:#f9e2af;margin-top:4px">from: stupid_stage.diastage</div>
+                </div>
+            </div>
+
+            <!-- Dependency Order — collapsed by default -->
+            <div>
+                <div class="section-hdr" onclick="toggleSection('dep-body','dep-icon')">
+                    <span class="section-toggle" id="dep-icon">▶</span>
+                    <span>Dependency Order (DummyStage)</span>
+                </div>
+                <div id="dep-body" style="display:none">
+                    <div class="dep-content">
+                        <div class="dep-chain">
+                            <span class="dep-node">TimeServer</span><span class="dep-arrow">→</span>
+                            <span class="dep-node">InputStream</span><span class="dep-arrow">→</span>
+                            <span class="dep-node hi">DummyLevel</span><span class="dep-arrow">→</span>
+                            <span class="dep-node">DummyPhysics</span>
+                        </div>
+                        <div class="dep-chain" style="margin-top:4px">
+                            <span class="dep-node">LoadingScreen</span>
+                            <span style="font-size:9px;color:#6c7086;margin-left:6px">(no deps — starts immediately)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─ Stream Inspector — full context (shown when a stream is clicked) ─ -->
+        <div class="inspector-view" id="stream-view" style="display:none">
+            <div class="breadcrumb">
+                <a onclick="backToPU()">SimPU</a> › <span id="sv-name-bc">Stream</span>
+            </div>
+            <div class="stream-name-title" id="sv-name">SimToRender</div>
+
+            <div>
+                <div class="section-hdr"><span>Properties</span></div>
+                <div class="prop-grid">
+                    <span class="pl">Type</span> <span class="pv" id="sv-type">FrameStream&lt;FrameData&gt;</span>
+                    <span class="pl">From</span>  <span class="pv" id="sv-from">SimPU</span>
+                    <span class="pl">To</span>    <span class="pv" id="sv-to">RenderPU</span>
+                </div>
+            </div>
+
+            <div>
+                <div class="section-hdr"><span>Writers</span></div>
+                <div class="module-card"><div class="mod-hdr"><span class="tl amber pulse"></span><span class="mod-name">DummyLevel</span><span class="ls loading" style="margin-left:auto">loading</span></div></div>
+                <div class="module-card"><div class="mod-hdr"><span class="tl grey"></span><span class="mod-name">StupidLevel</span><span class="ls stopped" style="margin-left:auto">stopped</span></div></div>
+                <div class="module-card"><div class="mod-hdr"><span class="tl green"></span><span class="mod-name">LoadingScreen</span><span class="ls running" style="margin-left:auto">running</span></div></div>
+            </div>
+
+            <div>
+                <div class="section-hdr"><span>Readers</span></div>
+                <div class="module-card"><div class="mod-hdr"><span class="tl green"></span><span class="mod-name">Renderer</span><span class="ls running" style="margin-left:auto">running</span></div></div>
+            </div>
+
+            <div>
+                <div class="section-hdr"><span>Live Throughput</span></div>
+                <div class="prop-grid">
+                    <span class="pl">Frame rate</span>   <span class="pv" style="color:#94e2d5">28.3 fps</span>
+                    <span class="pl">Dropped</span>       <span class="pv">0</span>
+                    <span class="pl">Backpressure</span> <span class="pv" style="color:#a6e3a1">none</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     TAB: PRESENCE  (full-width module × stage matrix)
+══════════════════════════════════════ -->
+<div id="tab-presence" class="tab-content">
+    <div class="presence-toolbar">
+        <input class="search-input" type="text" placeholder="Filter modules…" oninput="filterModules(this.value)">
+        <span style="font-size:11px;color:#6c7086">Group by: PU</span>
+        <div class="legend">
+            <span class="legend-item"><span class="tl green lg"></span> running</span>
+            <span class="legend-item"><span class="tl amber lg"></span> loading / transitioning</span>
+            <span class="legend-item"><span class="tl red lg"></span> failed</span>
+            <span class="legend-item"><span class="tl grey lg"></span> not assigned / stopped</span>
+        </div>
+    </div>
+
+    <div class="presence-wrap">
+        <table class="pgrid" id="pgrid">
+            <thead>
+                <tr>
+                    <th class="mod-col">Module</th>
+                    <th class="auto-stage">Boot (auto)</th>
+                    <th>DummyStage</th>
+                    <th>StupidStage</th>
+                </tr>
+            </thead>
+            <tbody>
+
+                <!-- ══ MainPU ══ -->
+                <tr class="pu-grp" onclick="toggleGroup('mainpu')">
+                    <td colspan="4">
+                        <span class="col-icon" id="gi-mainpu">▼</span>
+                        <span class="tl green pulse" style="vertical-align:middle;margin-right:6px"></span>
+                        MainPU
+                        <span class="pu-count">4 modules · main thread · 30 Hz · #1</span>
+                    </td>
+                </tr>
+                <tr class="mod-row" data-group="mainpu"><td class="mod-col"><div class="mn">Logger</div><div class="mt">LoggerModule</div></td>
+                    <td><div class="pcell"><span class="tl green lg"></span><span class="infra-lbl">infra</span></div></td>
+                    <td><div class="pcell"><span class="tl green lg"></span><span class="infra-lbl">infra</span></div></td>
+                    <td><div class="pcell"><span class="tl green lg"></span><span class="infra-lbl">infra</span></div></td>
+                </tr>
+                <tr class="mod-row" data-group="mainpu"><td class="mod-col"><div class="mn">AssetRuntime</div><div class="mt">AssetRuntimeModule</div></td>
+                    <td><div class="pcell"><span class="tl green lg"></span><span class="infra-lbl">infra</span></div></td>
+                    <td><div class="pcell"><span class="tl green lg"></span><span class="infra-lbl">infra</span></div></td>
+                    <td><div class="pcell"><span class="tl green lg"></span><span class="infra-lbl">infra</span></div></td>
+                </tr>
+                <tr class="mod-row" data-group="mainpu"><td class="mod-col"><div class="mn">Kernel</div><div class="mt">KernelModule</div></td>
+                    <td><div class="pcell"><span class="tl green lg"></span><span class="infra-lbl">infra</span></div></td>
+                    <td><div class="pcell"><span class="tl green lg"></span><span class="infra-lbl">infra</span></div></td>
+                    <td><div class="pcell"><span class="tl green lg"></span><span class="infra-lbl">infra</span></div></td>
+                </tr>
+                <tr class="mod-row" data-group="mainpu"><td class="mod-col"><div class="mn">DebugServer</div><div class="mt">DebugServerModule</div></td>
+                    <td><div class="pcell"><span class="tl green lg"></span><span class="infra-lbl">infra</span></div></td>
+                    <td><div class="pcell"><span class="tl green lg"></span><span class="infra-lbl">infra</span></div></td>
+                    <td><div class="pcell"><span class="tl green lg"></span><span class="infra-lbl">infra</span></div></td>
+                </tr>
+
+                <!-- ══ SimPU ══ -->
+                <tr class="pu-grp" onclick="toggleGroup('simpu')">
+                    <td colspan="4">
+                        <span class="col-icon" id="gi-simpu">▼</span>
+                        <span class="tl green pulse" style="vertical-align:middle;margin-right:6px"></span>
+                        SimPU
+                        <span class="pu-count">6 modules · dedicated · 30 Hz · #2</span>
+                    </td>
+                </tr>
+                <tr class="mod-row" data-group="simpu"><td class="mod-col"><div class="mn">TimeServer</div><div class="mt">TimeServerModule</div></td>
+                    <td><div class="pcell"><span class="tl green lg"></span><span class="infra-lbl">infra</span></div></td>
+                    <td><div class="pcell"><span class="tl green lg"></span><span class="infra-lbl">infra</span></div></td>
+                    <td><div class="pcell"><span class="tl green lg"></span><span class="infra-lbl">infra</span></div></td>
+                </tr>
+                <tr class="mod-row" data-group="simpu"><td class="mod-col"><div class="mn">InputStream</div><div class="mt">InputFrameStreamModule</div></td>
+                    <td><div class="pcell"><span class="tl green lg"></span><span class="infra-lbl">infra</span></div></td>
+                    <td><div class="pcell"><span class="tl green lg"></span><span class="infra-lbl">infra</span></div></td>
+                    <td><div class="pcell"><span class="tl green lg"></span><span class="infra-lbl">infra</span></div></td>
+                </tr>
+                <tr class="mod-row" data-group="simpu"><td class="mod-col"><div class="mn">LoadingScreen</div><div class="mt">LoadingScreenModule</div></td>
+                    <td><div class="pcell"><span class="tl green lg"></span><span class="infra-lbl">infra</span></div></td>
+                    <td><div class="pcell"><span class="tl green lg"></span><span class="infra-lbl">infra</span></div></td>
+                    <td><div class="pcell"><span class="tl green lg"></span><span class="infra-lbl">infra</span></div></td>
+                </tr>
+                <tr class="mod-row" data-group="simpu"><td class="mod-col"><div class="mn">DummyLevel</div><div class="mt">DummyLevelModule</div></td>
+                    <td><div class="pcell"><span class="tl grey lg"></span></div></td>
+                    <td><div class="pcell"><span class="tl amber lg pulse"></span></div></td>
+                    <td><div class="pcell"><span class="tl grey lg"></span></div></td>
+                </tr>
+                <tr class="mod-row" data-group="simpu"><td class="mod-col"><div class="mn">DummyPhysics</div><div class="mt">DummyPhysicsModule</div></td>
+                    <td><div class="pcell"><span class="tl grey lg"></span></div></td>
+                    <td><div class="pcell"><span class="tl amber lg pulse"></span></div></td>
+                    <td><div class="pcell"><span class="tl grey lg"></span></div></td>
+                </tr>
+                <tr class="mod-row" data-group="simpu"><td class="mod-col"><div class="mn">StupidLevel</div><div class="mt">StupidLevelModule</div></td>
+                    <td><div class="pcell"><span class="tl grey lg"></span></div></td>
+                    <td><div class="pcell"><span class="tl grey lg"></span></div></td>
+                    <td><div class="pcell"><span class="tl grey lg"></span></div></td>
+                </tr>
+
+                <!-- ══ RenderPU ══ -->
+                <tr class="pu-grp" onclick="toggleGroup('renderpu')">
+                    <td colspan="4">
+                        <span class="col-icon" id="gi-renderpu">▼</span>
+                        <span class="tl green pulse" style="vertical-align:middle;margin-right:6px"></span>
+                        RenderPU
+                        <span class="pu-count">2 modules · dedicated · 60 Hz · #3</span>
+                    </td>
+                </tr>
+                <tr class="mod-row" data-group="renderpu"><td class="mod-col"><div class="mn">Renderer</div><div class="mt">RendererModule</div></td>
+                    <td><div class="pcell"><span class="tl green lg"></span><span class="infra-lbl">infra</span></div></td>
+                    <td><div class="pcell"><span class="tl green lg"></span><span class="infra-lbl">infra</span></div></td>
+                    <td><div class="pcell"><span class="tl green lg"></span><span class="infra-lbl">infra</span></div></td>
+                </tr>
+                <tr class="mod-row" data-group="renderpu"><td class="mod-col"><div class="mn">ImGui</div><div class="mt">ImGuiModule</div></td>
+                    <td><div class="pcell"><span class="tl green lg"></span><span class="infra-lbl">infra</span></div></td>
+                    <td><div class="pcell"><span class="tl green lg"></span><span class="infra-lbl">infra</span></div></td>
+                    <td><div class="pcell"><span class="tl green lg"></span><span class="infra-lbl">infra</span></div></td>
+                </tr>
+
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     TAB: STREAMS
+══════════════════════════════════════ -->
+<div id="tab-streams" class="tab-content">
+    <div class="streams-list">
+        <div style="font-size:11px;color:#6c7086;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">All Streams</div>
+
+        <div class="stream-card selected">
+            <div class="sc-hdr">
+                <span class="sc-name">SimToRender</span>
+                <span class="sc-type">FrameStream&lt;FrameData&gt;</span>
+                <span class="sc-throughput">↑ 28.3 fps</span>
+            </div>
+            <div class="sc-props">
+                <span class="scp-l">From</span>    <span class="scp-v">SimPU</span>
+                <span class="scp-l">To</span>      <span class="scp-v">RenderPU</span>
+                <span class="scp-l">Writers</span> <span class="scp-v">DummyLevel, StupidLevel, LoadingScreen</span>
+                <span class="scp-l">Readers</span> <span class="scp-v">Renderer</span>
+            </div>
+        </div>
+
+        <div class="stream-card">
+            <div class="sc-hdr">
+                <span class="sc-name">InputToSim</span>
+                <span class="sc-type">EventStream&lt;InputEvent&gt;</span>
+                <span class="sc-throughput">↑ 0 evt/s</span>
+            </div>
+            <div class="sc-props">
+                <span class="scp-l">From</span>    <span class="scp-v">MainPU</span>
+                <span class="scp-l">To</span>      <span class="scp-v">SimPU</span>
+                <span class="scp-l">Writers</span> <span class="scp-v">InputModule</span>
+                <span class="scp-l">Readers</span> <span class="scp-v">InputStream, DummyLevel</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     VALIDATION BAR  (traffic light dots)
+══════════════════════════════════════ -->
+<div class="validation-bar">
+    <span class="vb ok"><span class="tl green sm"></span> Dependencies valid</span>
+    <span class="vb ok"><span class="tl green sm"></span> No orphaned modules</span>
+    <span class="vb ok"><span class="tl green sm"></span> All streams connected</span>
+    <span class="vb ok"><span class="tl green sm"></span> Stage coverage complete</span>
+    <span class="vb warn"><span class="tl amber sm"></span> DummyPhysics: no stream output (intentional?)</span>
+</div>
+
+<script>
+// ─── Tab switching ───
+function switchTab(name, el) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    el.classList.add('active');
+}
+
+// ─── Sidebar collapse ───
+let sbCollapsed = false;
+function toggleSidebar() {
+    const sb = document.getElementById('sidebar');
+    const btn = document.getElementById('sidebar-btn');
+    sbCollapsed = !sbCollapsed;
+    sb.classList.toggle('collapsed', sbCollapsed);
+    btn.textContent = sbCollapsed ? '▶' : '◀';
+}
+
+// ─── Inspector context switch: PU vs Stream ───
+function showStreamInspector(name, type, from, to) {
+    document.querySelectorAll('.stream-label').forEach(l => l.classList.remove('selected'));
+    event.currentTarget.classList.add('selected');
+    document.getElementById('sv-name').textContent = name;
+    document.getElementById('sv-name-bc').textContent = name;
+    document.getElementById('sv-type').textContent = type;
+    document.getElementById('sv-from').textContent = from;
+    document.getElementById('sv-to').textContent = to;
+    document.getElementById('pu-view').style.display = 'none';
+    document.getElementById('stream-view').style.display = 'flex';
+}
+function showPUInspector(node) {
+    document.querySelectorAll('.pu-node').forEach(n => n.classList.remove('selected'));
+    node.classList.add('selected');
+    document.getElementById('stream-view').style.display = 'none';
+    document.getElementById('pu-view').style.display = 'flex';
+}
+function backToPU() {
+    document.getElementById('stream-view').style.display = 'none';
+    document.getElementById('pu-view').style.display = 'flex';
+}
+
+// ─── Collapsible sections ───
+function toggleSection(bodyId, iconId) {
+    const body = document.getElementById(bodyId);
+    const icon = document.getElementById(iconId);
+    const open = body.style.display !== 'none';
+    body.style.display = open ? 'none' : 'block';
+    icon.textContent = open ? '▶' : '▼';
+}
+
+// ─── Presence grid: PU group collapse ───
+function toggleGroup(group) {
+    const rows = document.querySelectorAll(`[data-group="${group}"]`);
+    const icon = document.getElementById('gi-' + group);
+    const anyVisible = [...rows].some(r => r.style.display !== 'none');
+    rows.forEach(r => r.style.display = anyVisible ? 'none' : '');
+    icon.textContent = anyVisible ? '▶' : '▼';
+}
+
+// ─── Presence grid: module filter ───
+function filterModules(q) {
+    const lq = q.toLowerCase();
+    document.querySelectorAll('.mod-row').forEach(row => {
+        const name = row.querySelector('.mn').textContent.toLowerCase();
+        row.style.display = (!lq || name.includes(lq)) ? '' : 'none';
+    });
+}
+
+// ─── Live button: 3-state cycle (click to demo) ───
+const LIVE_STATES = [
+    { btnCls: '',           dotCls: 'grey',           label: 'Live' },
+    { btnCls: 'connecting', dotCls: 'amber pulse',    label: 'Connecting…' },
+    { btnCls: 'connected',  dotCls: 'green pulse',    label: 'Live: CluicheTest' },
+];
+let liveIdx = 2;
+function cycleLive() {
+    liveIdx = (liveIdx + 1) % LIVE_STATES.length;
+    const s = LIVE_STATES[liveIdx];
+    const btn = document.getElementById('live-btn');
+    btn.className = 'btn live-btn ' + s.btnCls;
+    document.getElementById('live-dot').className = 'tl ' + s.dotCls;
+    document.getElementById('live-label').textContent = s.label;
+}
+</script>
+</body>
+</html>

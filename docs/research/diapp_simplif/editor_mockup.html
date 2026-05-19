@@ -131,6 +131,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #1e1e2e; color: #cdd6f4;
 .stream-inspector .stream-props { display: grid; grid-template-columns: 60px 1fr; gap: 4px 12px; font-size: 11px; }
 .stream-inspector .stream-prop-label { color: #6c7086; }
 .stream-inspector .stream-prop-value { color: #cdd6f4; }
+.stream-inspector .stream-prop-value.editable { background: #181825; padding: 2px 6px; border-radius: 3px; border: 1px solid #313244; cursor: text; }
 
 /* Timeline Panel */
 .timeline-panel { height: 220px; padding: 16px; background: #181825; overflow-x: auto; }
@@ -300,12 +301,18 @@ body { font-family: 'Segoe UI', sans-serif; background: #1e1e2e; color: #cdd6f4;
                         <span class="stream-name">SimToRender</span>
                     </div>
                     <div class="stream-props">
-                        <span class="stream-prop-label">Type</span>
-                        <span class="stream-prop-value">FrameStream&lt;FrameData&gt;</span>
+                        <span class="stream-prop-label">Kind</span>
+                        <span class="stream-prop-value editable">FrameStream</span>
+                        <span class="stream-prop-label">Payload</span>
+                        <span class="stream-prop-value editable">FrameData</span>
                         <span class="stream-prop-label">From</span>
                         <span class="stream-prop-value">SimPU</span>
                         <span class="stream-prop-label">To</span>
                         <span class="stream-prop-value">RenderPU</span>
+                        <span class="stream-prop-label">Capacity</span>
+                        <span class="stream-prop-value editable">3 frames</span>
+                        <span class="stream-prop-label">Max Readers</span>
+                        <span class="stream-prop-value editable">2</span>
                         <span class="stream-prop-label">Writers</span>
                         <span class="stream-prop-value">DummyLevel, StupidLevel, LoadingScreen</span>
                         <span class="stream-prop-label">Readers</span>
@@ -515,9 +522,9 @@ body { font-family: 'Segoe UI', sans-serif; background: #1e1e2e; color: #cdd6f4;
 <div class="validation-bar">
     <div class="status ok"><div class="dot ok"></div> Dependencies valid</div>
     <div class="status ok"><div class="dot ok"></div> No orphaned modules</div>
-    <div class="status ok"><div class="dot ok"></div> All streams connected</div>
+    <div class="status ok"><div class="dot ok"></div> All stream refs declared</div>
     <div class="status ok"><div class="dot ok"></div> Stage coverage complete</div>
-    <div class="status warn"><div class="dot warn"></div> DummyPhysics: no stream output (intentional?)</div>
+    <div class="status warn"><div class="dot warn"></div> ORPHAN_WRITER_STREAM: SimToRender has writers but no readers</div>
 </div>
 
 </body>

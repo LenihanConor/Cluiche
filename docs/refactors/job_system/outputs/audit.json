@@ -1,0 +1,155 @@
+{
+  "command": "audit",
+  "status": "ok",
+  "data": {
+    "subsystem": "job_system",
+    "summary": "Dia::Core::JobSystem (Dia/DiaCore/Threading/JobSystem.h) is a header-only Meyers-singleton wrapping a ThreadPool, exposing Job*/CreateJob/Run/Wait + parent-child + ParallelFor. Production callers (TextureHandler, AsyncFileLoader, JobSystemModule) only use Create/Run/Wait. The implementation has correctness bugs (child-job leaks, no-op work-stealing, unguarded double-Run), unimplemented advertised features (priorities, work stealing), and confused ownership (singleton + module wrapper).",
+    "strengths": [
+      "Single small header — easy to replace wholesale",
+      "JobSystemModule already owns init/shutdown lifecycle on MainPU (per spec jobsystem-module.md)",
+      "Atomic.h, Mutex.h, Thread.h primitives are clean and reusable",
+      "Existing GoogleTest suite covers basic Submit/Wait/parent-child/ParallelFor — useful as a regression net even if some tests will be retired"
+    ],
+    "debt": [
+      {
+        "id": "child-leak",
+        "title": "Child jobs leak unconditionally",
+        "evidence": "JobSystem.h:166-178 — WaitImpl only DIA_DELETEs the job it was called on. CreateChildJob allocations are never freed.",
+        "impact": "Every ParallelFor leaks N Job + std::function allocations."
+      },
+      {
+        "id": "wait-deadlock",
+        "title": "Wait() can deadlock if invoked from inside a running job",
+        "evidence": "JobSystem.h:166-173 — spin/yield loop never executes pending tasks. Comment 'Could implement work stealing here' confirms feature is missing.",
+        "impact": "Header advertises work stealing (line 33) that doesn't exist; nested job patterns can stall."
+      },
+      {
+        "id": "shutdown-leak",
+        "title": "ThreadPool::Shutdown drops queued tasks",
+        "evidence": "ThreadPool.h:94-110 — sets shutdown flag and joins; never drains queue. Job allocations enqueued but not run leak.",
+        "impact": "App shutdown leaks Jobs + lambdas; no diagnostic for unfinished work."
+      },
+      {
+        "id": "double-run",
+        "title": "Run() is not idempotent and unguarded",
+        "evidence": "JobSystem.h:157-164 — calling Run twice enqueues two copies; second Finish underflows unfinishedJobs and races with Wait's DIA_DELETE.",
+        "impact": "Silent corruption + use-after-free on misuse; no assert."
+      },
+      {
+        "id": "lifetime-uaf",
+        "title": "Job lifetime contract is undocumented and unenforceable",
+        "evidence": "JobSystem.h:99-103, 177 — IsComplete reads job->unfinishedJobs which is freed in Wait. Caller can UAF; second Wait will double-delete.",
+        "impact": "API forces callers to track job liveness manually; TextureHandler works around with shared_ptr."
+      },
+      {
+        "id": "init-races",
+        "title": "Initialize/Shutdown not thread-safe and silently no-op on re-init",
+        "evidence": "JobSystem.h:121-136 — `if (!mThreadPool) ...` not guarded; second concurrent Initialize races. Re-init after Shutdown silently rebuilds.",
+        "impact": "Module lifecycle owns this in practice, but the API permits misuse."
+      },
+      {
+        "id": "static-dtor",
+        "title": "Singleton dtor performs Shutdown at process exit",
+        "evidence": "JobSystem.h:110-113 — ~JobSystem() calls ShutdownImpl. Runs after JobSystemModule::DoStop already shut down (or didn't).",
+        "impact": "Two shutdown paths; ordering depends on static destruction (undefined relative to other globals)."
+      },
+      {
+        "id": "two-function-layers",
+        "title": "Two std::function layers per submission",
+        "evidence": "Job::function (std::function<void(Job*)>) is captured into a ThreadPool::Task (std::function<void()>).",
+        "impact": "Two heap allocations + two indirect calls per non-SBO lambda; matters for ParallelFor hot paths."
+      },
+      {
+        "id": "heap-per-job",
+        "title": "Job is heap-allocated per submission",
+        "evidence": "JobSystem.h:140 — DIA_NEW(Job()) per CreateJob.",
+        "impact": "1000-item ParallelFor = 1000 Jobs + 1000 lambda captures + 1000 mutex pushes. No pool."
+      },
+      {
+        "id": "dead-priority",
+        "title": "priority field exists but ThreadPool ignores it",
+        "evidence": "JobSystem.h:48 declares priority; ThreadPool.h:166 uses std::queue<Task> (FIFO).",
+        "impact": "Misleading API surface."
+      },
+      {
+        "id": "header-only",
+        "title": "All implementation lives in headers",
+        "evidence": "JobSystem.h, ThreadPool.h have full bodies.",
+        "impact": "Touching either recompiles every TU that includes them."
+      },
+      {
+        "id": "singleton-vs-module",
+        "title": "Singleton + module wrapper is a confused ownership contract",
+        "evidence": "JobSystemModule (Cluiche/CluicheGameBaseline/Modules/JobSystemModule.cpp) calls JobSystem::Initialize/Shutdown — but JobSystem is a global. The module owns lifecycle but not the instance.",
+        "impact": "Cannot have two instances (e.g., for tests); cannot inject a stub; dependency invisible to callers."
+      },
+      {
+        "id": "advertised-features",
+        "title": "Header docstring advertises features not implemented",
+        "evidence": "JobSystem.h:28-33 lists 'Work stealing' and 'Job priorities'.",
+        "impact": "Misleads readers and callers."
+      }
+    ],
+    "duplication": [
+      {
+        "id": "two-wait-models",
+        "title": "Two 'wait' semantics across the layer",
+        "evidence": "ThreadPool::WaitAll waits for queue drain; JobSystem::Wait waits for one job tree. Subtle overlap; AsyncFileLoader uses both."
+      },
+      {
+        "id": "two-thread-types",
+        "title": "Two thread abstractions",
+        "evidence": "Dia::Core::Thread (with name + priority slot) exists, but ThreadPool uses raw std::thread."
+      }
+    ],
+    "hidden_coupling": [
+      {
+        "id": "callers-need-shared-ptr",
+        "title": "Callers must externally keep job-captured state alive",
+        "evidence": "TextureHandler.cpp:101-114 wraps PendingUpload in shared_ptr because the Job::function lambda captures it; the Job itself does not retain its own lambda after Finish runs.",
+        "impact": "Every async caller must learn this dance."
+      },
+      {
+        "id": "shutdown-ordering",
+        "title": "Caller must drain its own outstanding jobs before JobSystemModule::DoStop",
+        "evidence": "Per jobsystem-module.md AI Q2: AssetService stops first and must Wait on outstanding jobs; if any caller forgets, Shutdown can hang or leak.",
+        "impact": "Module-graph dependency carries an unwritten 'drain on stop' contract."
+      },
+      {
+        "id": "static-init-from-module-dostart",
+        "title": "JobSystemModule.cpp depends on JobSystem header pulling in ThreadPool transitively",
+        "evidence": "JobSystemModule.cpp includes only JobSystem.h; ThreadPool/Atomic come along.",
+        "impact": "Header-only design means any change to ThreadPool internals reaches the module's TU."
+      }
+    ],
+    "missing_tests": [
+      "No test for double-Run (currently silent corruption)",
+      "No test for Wait()-from-inside-job (the deadlock scenario)",
+      "No leak / shutdown-with-pending-work test",
+      "No assert/diagnostic when Submit is called after Shutdown",
+      "No test that proves child-job storage is freed (would catch the leak)",
+      "No test that verifies a worker can outlive a re-Init/Shutdown cycle cleanly"
+    ],
+    "likely_invariants": [
+      "Submit(fn) eventually calls fn() exactly once on a worker thread",
+      "Wait(handle) returns only after fn() has fully executed",
+      "After Wait returns, the handle and any captured lambda state can be released safely",
+      "Shutdown completes only after all submitted-and-not-yet-completed work is finished or cancelled (current pick: finished)",
+      "Submit after Shutdown is a programmer error (assert)",
+      "Re-init after Shutdown produces a fresh, independent worker pool",
+      "Concurrent Submit from many threads is safe",
+      "Wait is safe to call from any thread, including a worker thread (within the same instance) — must not deadlock when caller is on a worker"
+    ],
+    "recommended_cleanup_order": [
+      "1. Decide ownership model: drop singleton, JobSystem becomes a value type owned by JobSystemModule. Service-locator or pointer-handed-to-callers.",
+      "2. Collapse API to three primitives — Submit / Wait / IsComplete — returning a refcounted JobHandle that owns Job storage. Eliminates manual delete and double-Run hazard.",
+      "3. Move impl out of header to JobSystem.cpp / ThreadPool.cpp (PIMPL or just .cpp).",
+      "4. Strip dead/misleading surface: remove priority field, remove work-stealing comment, remove ParallelFor + parent-child until needed.",
+      "5. Tighten ThreadPool shutdown: drain or assert-on-pending; document semantic.",
+      "6. Add diagnostics: assert Submit-after-Shutdown; assert Wait on stale handle is safe (refcount handles it).",
+      "7. Add the missing tests listed above.",
+      "8. Update tests to drop parent/child + ParallelFor cases; keep core Submit/Wait coverage.",
+      "9. Update TextureHandler and AsyncFileLoader to use new handle-based API; verify no behavior regression."
+    ]
+  }
+}
