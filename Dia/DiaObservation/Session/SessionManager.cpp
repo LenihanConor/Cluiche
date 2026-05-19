@@ -228,7 +228,7 @@ namespace Dia
 				Metric::MetricSnapshot snapshot;
 				Metric::MetricRegistry::Instance().Snapshot(snapshot);
 				snapshot.intervalMs = kMetricSnapshotIntervalMs;
-				if (snapshot.entryCount == 0 || MetricSnapshotChanged(mLastSnapshot, snapshot))
+				if (MetricSnapshotChanged(mLastSnapshot, snapshot))
 				{
 					Metric::MetricRegistry::Instance().NotifySnapshot(snapshot);
 					mLastSnapshot = snapshot;

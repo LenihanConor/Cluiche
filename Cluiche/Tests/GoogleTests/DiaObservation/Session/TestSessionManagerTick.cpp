@@ -2,6 +2,7 @@
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaObservation/Metric/IMetricSink.h>
 #include <DiaObservation/Metric/MetricSnapshot.h>
+#include <DiaObservation/Metric/Gauge.h>
 #include <DiaObservation/Metric/Testing/MetricFixture.h>
 #include <DiaObservation/Health/HealthRegistry.h>
 #include <DiaObservation/Testing/HealthFixture.h>
@@ -51,6 +52,10 @@ TEST_F(SessionManagerTickTest, MetricSnapshot_FiresAt100ms)
     CountingSink sink;
     Metric::MetricRegistry::Instance().RegisterSink(&sink);
 
+    // Register a gauge so the registry is non-empty; first snapshot differs from empty mLastSnapshot
+    Metric::Gauge* g = Metric::MetricRegistry::Instance().RegisterGauge(Dia::Core::StringCRC("test.gauge.tick100"));
+    g->Set(1.0);
+
     ObservationConfig obs;
     std::memset(&obs, 0, sizeof(obs));
     obs.enableObservationFileSink = false;
@@ -75,6 +80,11 @@ TEST_F(SessionManagerTickTest, MetricSnapshot_AccumulatorSubtractsPreventsReset)
     CountingSink sink;
     Metric::MetricRegistry::Instance().RegisterSink(&sink);
 
+    // Register a gauge so registry is non-empty; first snapshot differs from empty mLastSnapshot.
+    // Change value between ticks so the second interval also detects a change.
+    Metric::Gauge* g = Metric::MetricRegistry::Instance().RegisterGauge(Dia::Core::StringCRC("test.gauge.tickaccum"));
+    g->Set(1.0);
+
     ObservationConfig obs;
     std::memset(&obs, 0, sizeof(obs));
     obs.enableObservationFileSink = false;
@@ -86,6 +96,9 @@ TEST_F(SessionManagerTickTest, MetricSnapshot_AccumulatorSubtractsPreventsReset)
     // Tick 150ms — should fire once, leave 50ms remainder
     mgr.Tick(0.150f);
     EXPECT_EQ(sink.snapshotCount, 1);
+
+    // Change gauge so second snapshot differs from first
+    g->Set(2.0);
 
     // Tick 60ms — accumulator = 50 + 60 = 110ms >= 100, fires again
     mgr.Tick(0.060f);
