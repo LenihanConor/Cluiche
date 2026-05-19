@@ -9,7 +9,8 @@
             "frequency_hz": 120,
             "dedicated_thread": false,
             "modules": [
-                { "instance_id": "EditorModelModule",          "type_id": "EditorModelModule",          "stages": ["Running"] },
+                { "instance_id": "ObservationModule",           "type_id": "ObservationModule",           "stages": ["all"], "dependencies": [] },
+                { "instance_id": "EditorModelModule",          "type_id": "EditorModelModule",          "stages": ["Running"], "dependencies": ["ObservationModule"] },
                 { "instance_id": "CommandHistoryModule",       "type_id": "CommandHistoryModule",       "stages": ["Running"] },
                 { "instance_id": "SplashScreenModule",         "type_id": "SplashScreenModule",         "stages": ["Running"] },
                 { "instance_id": "EditorViewControllerModule", "type_id": "EditorViewControllerModule", "stages": ["Running"] },

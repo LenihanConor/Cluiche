@@ -29,9 +29,11 @@
     <ClCompile Include="..\..\Dia\DiaEditor\Plugin\GameConnectionEditorPlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaEditor\Plugin\PluginBrowserEditorPlugin.cpp" />
     <ClCompile Include="ApplicationFlow\Modules\GameConnectionModule.cpp" />
+    <ClCompile Include="ApplicationFlow\Modules\ObservationModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApplicationFlow\Modules\EditorModelModule.h" />
+    <ClInclude Include="ApplicationFlow\Modules\ObservationModule.h" />
     <ClInclude Include="ApplicationFlow\Modules\CommandHistoryModule.h" />
     <ClInclude Include="ApplicationFlow\Modules\EditorViewModule.h" />
     <ClInclude Include="ApplicationFlow\Modules\SplashScreenModule.h" />

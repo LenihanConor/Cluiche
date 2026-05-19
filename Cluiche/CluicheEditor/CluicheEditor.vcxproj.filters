@@ -39,6 +39,9 @@
     <ClCompile Include="ApplicationFlow\Modules\GameConnectionModule.cpp">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClCompile>
+    <ClCompile Include="ApplicationFlow\Modules\ObservationModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ApplicationFlow\Modules\CommandHistoryModule.h">
@@ -60,6 +63,9 @@
       <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
     <ClInclude Include="ApplicationFlow\Modules\GameConnectionModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="ApplicationFlow\Modules\ObservationModule.h">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
   </ItemGroup>
