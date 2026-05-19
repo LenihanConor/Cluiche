@@ -79,9 +79,9 @@ namespace Dia
 			unsigned int             mThreadRingCount;
 			mutable std::mutex       mRegistryMutex;
 
-			ProfileFileSink* mSink;
-			ProfileCategory  mActiveMask;
-			std::atomic<uint32_t> mCurrentFrame;
+			ProfileFileSink*              mSink;
+			std::atomic<ProfileCategory>  mActiveMask;
+			std::atomic<uint32_t>         mCurrentFrame;
 
 			std::thread       mDrainThread;
 			std::atomic<bool> mDrainRunning;

@@ -90,7 +90,7 @@ namespace Dia
 				return false;
 			}
 
-			mActiveMask = activeMask;
+			mActiveMask.store(activeMask, std::memory_order_relaxed);
 			mCurrentFrame.store(0, std::memory_order_release);
 			mFrameAdvanced.store(false, std::memory_order_release);
 
@@ -144,12 +144,12 @@ namespace Dia
 
 		void Profiler::SetActiveMask(ProfileCategory mask)
 		{
-			mActiveMask = mask;
+			mActiveMask.store(mask, std::memory_order_relaxed);
 		}
 
 		ProfileCategory Profiler::ActiveMask() const
 		{
-			return mActiveMask;
+			return mActiveMask.load(std::memory_order_relaxed);
 		}
 
 		void Profiler::RegisterThreadScopeBuffer()
