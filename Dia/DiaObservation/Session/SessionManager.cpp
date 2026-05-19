@@ -447,24 +447,6 @@ namespace Dia
 
 			root["scenario_steps"] = Json::Value(Json::arrayValue);
 
-			// Populate modules from HealthRegistry
-			Json::Value modulesArr(Json::arrayValue);
-			{
-				Health::HealthRegistry::ReporterSnapshot reporters[32];
-				unsigned int reporterCount = 0;
-				Health::HealthRegistry::Instance().Snapshot(reporters, 32, reporterCount);
-				for (unsigned int i = 0; i < reporterCount; ++i)
-				{
-					Json::Value mod;
-					mod["name"] = reporters[i].name.AsChar() ? reporters[i].name.AsChar() : "";
-					mod["status"] = Health::HealthStatusToString(reporters[i].health.status);
-					mod["errors"] = reporters[i].health.errors;
-					mod["warnings"] = reporters[i].health.warnings;
-					modulesArr.append(mod);
-				}
-			}
-			root["modules"] = modulesArr;
-
 			// Retained warnings/errors
 			Json::Value retained(Json::arrayValue);
 			{
