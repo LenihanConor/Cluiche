@@ -272,7 +272,7 @@ Active → [DoStop called each frame] → kStopping... → kDone → Inactive
 | Stream Topology — Manifest-Authoritative | Manifest creates stores; binds module reads/writes; type-tag check; per-stream caps from data; deletes v1 MessageBus + dead v1 phase manifests | [stream-topology-manifest.md](../../features/dia/diaapplicationflow/stream-topology-manifest.md) | Done |
 | Stream Policy & Envelope | Per-stream overflow policy (drop-oldest / drop-newest / block / fail-loud); framework-supplied Event<T> envelope (timestamp, sender, sequence) | [stream-policy-envelope.md](../../features/dia/diaapplicationflow/stream-policy-envelope.md) | Done |
 | Lifecycle Events | Reserved $lifecycle stream emits ModuleStateChanged, StageTransitionRequested/Started/Committed, RollbackAttempted, ShutdownRequested events from Application | [lifecycle-events.md](../../features/dia/diaapplicationflow/lifecycle-events.md) | Done |
-| Stream Tap & Debug Iteration | Type-erased AttachTap/DetachTap on any IStreamStore; per-payload-type JSON serializer registry; deletes DiaDebugServer/SubscriptionManager; DebugServer migrated onto taps | [stream-tap.md](../../features/dia/diaapplicationflow/stream-tap.md) | In Progress (tap API done; DebugServer migration + serializer registry + tests remaining — see plan) |
+| Stream Tap & Debug Iteration | Type-erased AttachTap/DetachTap on any IStreamStore; per-payload-type JSON serializer registry; deletes DiaDebugServer/SubscriptionManager; DebugServer migrated onto taps | [stream-tap.md](../../features/dia/diaapplicationflow/stream-tap.md) | Done |
 | Error Handling | Timeout per module, assert/rollback/shutdown policies, transition failure recovery | [error-handling.md](../../features/dia/diaapplicationflow/error-handling.md) | Done |
 | Inspectable Interface | IApplicationInspectable for debug/editor/test consumers | [inspectable.md](../../features/dia/diaapplicationflow/inspectable.md) | Done |
 
@@ -378,6 +378,6 @@ Active → [DoStop called each frame] → kStopping... → kDone → Inactive
 
 ## Status
 
-`Approved` — 2026-05-08. Supersedes DiaApplicationFlow v1.
+`Done` — 2026-05-18. All 8 live features Done. Supersedes DiaApplicationFlow v1.
 
 **Plan:** [diaapplicationflow.plan.md](diaapplicationflow.plan.md)

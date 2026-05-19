@@ -8,6 +8,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 
 | System | Spec | Completed | Notes |
 |--------|------|-----------|-------|
+| DiaApplicationFlow | [diaapplicationflow.md](specs/systems/dia/diaapplicationflow.md) | 2026-05-18 | All 8 live features Done: Module Lifecycle, Stage System, Registration, Config Format v2, Validation, Error Handling, Inspectable Interface, Stream Tap & Debug Iteration. Clean-break redesign of v1 (Phase→Stage, MessageBus→EventStream, SubscriptionManager removed). |
 | DiaAssetPipeline | [diaassetpipeline.md](specs/systems/dia/diaassetpipeline.md) | 2026-05-05 | All 4 features; CLI command surface, built-in type handlers, deploy integration |
 | DiaSerializer | [diaserializer.md](specs/systems/dia/diaserializer.md) | 2026-05-02 | Phase 2 + Phase 3a/b/c complete; 43 Phase 3 tests |
 | DiaAssetCatalogue | [diaassetcatalogue.md](specs/systems/dia/diaassetcatalogue.md) | 2026-05-04 | All 4 features; 92 tests (34 feature + 58 exhaustive) |
@@ -24,6 +25,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 
 | Feature | Spec | System | Completed |
 |---------|------|--------|-----------|
+| DiaApplicationFlow — Stream Tap & Debug Iteration | [stream-tap.md](specs/features/dia/diaapplicationflow/stream-tap.md) | DiaApplicationFlow | 2026-05-18 — Type-erased AttachTap/DetachTap/GetTapCount on IStreamStore + EventStreamStore; TapEvent/TapCallback/TapHandle; StreamInfo extended (payloadType, overflowPolicy, currentSequence, attachedReaderCount, attachedTapCount); StreamTypeRegistry serializer registration + SerializeToJson; DIA_STREAM_TYPE_WITH_SERIALIZER macro; DebugServer SubscriptionManager deleted; DebugServer migrated to tap-based subscribe/unsubscribe/connection-close; $lifecycle tap consumer; mock tap + count + stress + lifecycle integration tests. |
 | data-driven-application-system | [data-driven-application-system.md](specs/features/dia/diaapplication/data-driven-application-system.md) | DiaApplicationFlow | 2026-05-02 — JsonApplicationManifestSerializer + 12 tests |
 
 ---

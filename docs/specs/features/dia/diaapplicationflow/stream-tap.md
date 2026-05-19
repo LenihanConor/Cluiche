@@ -297,4 +297,4 @@ None — all interview answers locked, all AI review questions answered.
 
 ## Status
 
-`In Progress` — 2026-05-18. Tap API on IStreamStore + EventStreamStore implemented (AttachTap/DetachTap/GetTapCount). DebugServer migration (Tasks 5–6), serializer registry (Task 1), StreamInfo extension (Task 2), and tests (Tasks 8–10) are the remaining work. See plan.
+`Done` — 2026-05-18. All ACs implemented and integration gate passed. Tap API (AttachTap/DetachTap/GetTapCount) on IStreamStore + EventStreamStore; StreamInfo extended; serializer registry (StreamTypeRegistry + DIA_STREAM_TYPE_WITH_SERIALIZER); DebugServer migrated off SubscriptionManager onto taps; all tests passing. See plan.
