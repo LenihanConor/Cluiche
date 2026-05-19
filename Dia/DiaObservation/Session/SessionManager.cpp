@@ -30,9 +30,12 @@ namespace Dia
 			: mStarted(false)
 			, mObservationFileSink(nullptr)
 			, mMetricsFileSink(nullptr)
+			, mMetricSnapshotIntervalMs(100)
 			, mMetricSnapshotAccumMs(0.0f)
 			, mEpochOffsetNs(0)
+			, mHealthPollIntervalMs(500.0f)
 			, mHealthPollAccumMs(0.0f)
+			, mEnableHealthFileSink(true)
 			, mStartTimeUnixNano(0)
 			, mFrameCount(0)
 			, mErrorCount(0)
@@ -134,12 +137,19 @@ namespace Dia
 				}
 			}
 
+			// Store configurable intervals and health sink flag (guard against zero)
+			mMetricSnapshotIntervalMs = obsConfig.metricSnapshotIntervalMs > 0
+				? obsConfig.metricSnapshotIntervalMs : 100u;
+			mHealthPollIntervalMs     = obsConfig.healthPollIntervalMs > 0
+				? static_cast<float>(obsConfig.healthPollIntervalMs) : 500.0f;
+			mEnableHealthFileSink     = obsConfig.enableHealthFileSink;
+
 			// Create and start TraceFileSink (conditionally)
 			if (obsConfig.enableTraceFileSink)
 			{
 				char tracePath[600];
 				snprintf(tracePath, sizeof(tracePath), "%strace.jsonl", mSessionDir);
-				Trace::Tracer::Instance().Start(tracePath, mSessionId, epochOffsetNs);
+				Trace::Tracer::Instance().Start(tracePath, obsConfig.traceCategoryMask, mSessionId, epochOffsetNs);
 			}
 
 			// Start Profiler (conditionally)
@@ -221,13 +231,13 @@ namespace Dia
 		{
 			// Metric snapshot on interval — only emit to file sink when values changed
 			mMetricSnapshotAccumMs += deltaTime * 1000.0f;
-			if (mMetricSnapshotAccumMs >= static_cast<float>(kMetricSnapshotIntervalMs))
+			if (mMetricSnapshotAccumMs >= static_cast<float>(mMetricSnapshotIntervalMs))
 			{
-				mMetricSnapshotAccumMs -= static_cast<float>(kMetricSnapshotIntervalMs);
+				mMetricSnapshotAccumMs -= static_cast<float>(mMetricSnapshotIntervalMs);
 
 				Metric::MetricSnapshot snapshot;
 				Metric::MetricRegistry::Instance().Snapshot(snapshot);
-				snapshot.intervalMs = kMetricSnapshotIntervalMs;
+				snapshot.intervalMs = mMetricSnapshotIntervalMs;
 				if (MetricSnapshotChanged(mLastSnapshot, snapshot))
 				{
 					Metric::MetricRegistry::Instance().NotifySnapshot(snapshot);
@@ -237,9 +247,9 @@ namespace Dia
 
 			// Health polling on interval
 			mHealthPollAccumMs += deltaTime * 1000.0f;
-			if (mHealthPollAccumMs >= kHealthPollIntervalMs)
+			if (mHealthPollAccumMs >= mHealthPollIntervalMs)
 			{
-				mHealthPollAccumMs -= kHealthPollIntervalMs;
+				mHealthPollAccumMs -= mHealthPollIntervalMs;
 				PollAndEmitHealthTransitions();
 			}
 		}
@@ -255,15 +265,16 @@ namespace Dia
 			{
 				Metric::MetricSnapshot finalSnapshot;
 				Metric::MetricRegistry::Instance().Snapshot(finalSnapshot);
-				finalSnapshot.intervalMs = kMetricSnapshotIntervalMs;
+				finalSnapshot.intervalMs = mMetricSnapshotIntervalMs;
 				Metric::MetricRegistry::Instance().NotifyFinal(finalSnapshot);
 			}
 
 			Trace::Tracer::Instance().Stop();
 			Profile::Profiler::Instance().Stop();
 
-			// Write health.json from final health poll
-			WriteHealthJson();
+			// Write health.json from final health poll (conditionally)
+			if (mEnableHealthFileSink)
+				WriteHealthJson();
 
 			Log::Logger::Instance().SetRetentionCallback(nullptr, nullptr);
 
@@ -335,7 +346,8 @@ namespace Dia
 			if (mEmergencyDumpGuard.test_and_set())
 				return;
 
-			WriteHealthJson();
+			if (mEnableHealthFileSink)
+				WriteHealthJson();
 			WriteCrashJson();
 			WriteSessionJson("terminate", 1);
 		}

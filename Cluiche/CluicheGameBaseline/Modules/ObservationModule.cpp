@@ -70,9 +70,9 @@ Dia::ApplicationFlow::StartResult ObservationModule::DoStart()
         exePath, config.appName);
 
     Dia::Observation::ObservationConfig obsConfig;
-    char diagamePath[512] = {};
-    snprintf(diagamePath, sizeof(diagamePath), "%s../../../../Assets/CluicheTest/Global/cluichetest.diagame", exePath);
-    Dia::Observation::ObservationConfigLoader::Load(diagamePath, obsConfig);
+    char obsConfigPath[512] = {};
+    snprintf(obsConfigPath, sizeof(obsConfigPath), "%s../../../../Assets/CluicheTest/Global/cluichetest.diaobservation", exePath);
+    Dia::Observation::ObservationConfigLoader::Load(obsConfigPath, obsConfig);
 
     Dia::Observation::ObservationConfigCli::ApplyOverrides(__argc, (const char* const*)__argv, obsConfig);
 

@@ -190,6 +190,9 @@
     <ClInclude Include="Trace\SpanRecord.h">
       <Filter>Trace</Filter>
     </ClInclude>
+    <ClInclude Include="Trace\TraceCategory.h">
+      <Filter>Trace</Filter>
+    </ClInclude>
     <ClInclude Include="Trace\Tracer.h">
       <Filter>Trace</Filter>
     </ClInclude>

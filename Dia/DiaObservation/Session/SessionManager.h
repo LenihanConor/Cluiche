@@ -67,13 +67,14 @@ namespace Dia
 			Log::ObservationFileSink* mObservationFileSink;
 			Metric::MetricsFileSink*  mMetricsFileSink;
 
-			static constexpr uint32_t kMetricSnapshotIntervalMs = 100;
-			float mMetricSnapshotAccumMs;
-			int64_t mEpochOffsetNs;
+			uint32_t mMetricSnapshotIntervalMs;
+			float    mMetricSnapshotAccumMs;
+			int64_t  mEpochOffsetNs;
 			Metric::MetricSnapshot mLastSnapshot;
 
-			static constexpr float kHealthPollIntervalMs = 500.0f;
-			float mHealthPollAccumMs;
+			float    mHealthPollIntervalMs;
+			float    mHealthPollAccumMs;
+			bool     mEnableHealthFileSink;
 
 			uint64_t mStartTimeUnixNano;
 			uint64_t mFrameCount;

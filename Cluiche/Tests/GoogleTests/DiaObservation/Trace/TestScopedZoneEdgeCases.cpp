@@ -41,14 +41,14 @@ struct ScopedZoneEdgeCaseTest : ::testing::Test
 
 TEST_F(ScopedZoneEdgeCaseTest, StopMidScope_DestructorNoOp)
 {
-    Tracer::Instance().Start(kTestTracePath, "sess", 0);
+    Tracer::Instance().Start(kTestTracePath, Category::kAll, "sess", 0);
     Tracer::Instance().RegisterThreadSpanBuffer();
 
     CountingSink sink;
     Tracer::Instance().RegisterTraceSink(&sink);
 
     {
-        ScopedZone outerZone(Dia::Core::StringCRC("Outer"));
+        ScopedZone outerZone(Dia::Core::StringCRC("Outer"), Category::kAll);
 
         // Stop the tracer while the zone is still open
         // Note: UnregisterThreadSpanBuffer before stop to cleanly remove ring
@@ -68,9 +68,9 @@ TEST_F(ScopedZoneEdgeCaseTest, ZoneCreatedBeforeStart_NoOp)
 {
     // Tracer not started yet
     {
-        ScopedZone zone(Dia::Core::StringCRC("BeforeStart"));
+        ScopedZone zone(Dia::Core::StringCRC("BeforeStart"), Category::kAll);
         // Now start it mid-scope
-        Tracer::Instance().Start(kTestTracePath, "sess", 0);
+        Tracer::Instance().Start(kTestTracePath, Category::kAll, "sess", 0);
     }
 
     // Zone was constructed before start, so spanId==0, destructor should no-op
@@ -80,7 +80,7 @@ TEST_F(ScopedZoneEdgeCaseTest, ZoneCreatedBeforeStart_NoOp)
 
 TEST_F(ScopedZoneEdgeCaseTest, DeeplyNested_63Levels)
 {
-    Tracer::Instance().Start(kTestTracePath, "sess", 0);
+    Tracer::Instance().Start(kTestTracePath, Category::kAll, "sess", 0);
     // Unregister/re-register to ensure clean thread-local state
     Tracer::Instance().UnregisterThreadSpanBuffer();
     Tracer::Instance().RegisterThreadSpanBuffer();
@@ -94,9 +94,10 @@ TEST_F(ScopedZoneEdgeCaseTest, DeeplyNested_63Levels)
     for (int i = 0; i < kDepth; ++i)
     {
         std::memset(&records[i], 0, sizeof(SpanRecord));
-        records[i].name = Dia::Core::StringCRC("Deep");
+        records[i].name          = Dia::Core::StringCRC("Deep");
+        records[i].category      = Category::kAll;
         records[i].startSteadyNs = static_cast<uint64_t>(i);
-        records[i].threadId = 1;
+        records[i].threadId      = 1;
         Tracer::Instance().OnSpanOpen(records[i]);
     }
 
@@ -119,7 +120,7 @@ TEST_F(ScopedZoneEdgeCaseTest, DeeplyNested_63Levels)
 
 TEST_F(ScopedZoneEdgeCaseTest, EndTimestamp_GreaterThanStart)
 {
-    Tracer::Instance().Start(kTestTracePath, "sess", 0);
+    Tracer::Instance().Start(kTestTracePath, Category::kAll, "sess", 0);
     Tracer::Instance().RegisterThreadSpanBuffer();
 
     struct TimingSink : public ITraceSink
@@ -137,7 +138,7 @@ TEST_F(ScopedZoneEdgeCaseTest, EndTimestamp_GreaterThanStart)
     Tracer::Instance().RegisterTraceSink(&sink);
 
     {
-        ScopedZone zone(Dia::Core::StringCRC("Timing"));
+        ScopedZone zone(Dia::Core::StringCRC("Timing"), Category::kAll);
         // Brief work to ensure measurable time
         std::this_thread::sleep_for(std::chrono::microseconds(100));
     }

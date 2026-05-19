@@ -37,6 +37,13 @@ namespace Dia
 
 			bool     profileEnabled      = false;   // SD-O27: profiling defaults OFF
 			uint32_t profileCategoryMask = 0;       // 0 = all categories disabled
+
+			bool     traceEnabled        = false;   // SD-O27: tracing defaults OFF
+			uint32_t traceCategoryMask   = 0;       // 0 = all categories disabled
+
+			bool     enableHealthFileSink        = true;
+			uint32_t metricSnapshotIntervalMs    = 100;
+			uint32_t healthPollIntervalMs        = 500;
 		};
 
 	} // namespace Observation

@@ -13,14 +13,6 @@
     },
     "ultralight": {
       "resource_path_prefix": "global/Misc/Resources/"
-    },
-    "observation": {
-      "log_level": "info",
-      "sinks": {
-        "stdout": true,
-        "debug_output": true,
-        "observation_file": true
-      }
     }
   }
 }

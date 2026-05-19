@@ -1,3 +1,56 @@
+// Contents of a .diaobservation file:
+//
+// {
+//   "schema": "diaobservation/1.0",
+//   "log_level": "info",            // global floor: trace | debug | info | warning | error
+//   "log_channels": {               // per-channel overrides (up to 16)
+//     "WebSocket": "warning",
+//     "Render":    "debug"
+//   },
+//   "sinks": {
+//     "stdout":           true,     // console stdout
+//     "debug_output":     true,     // Windows OutputDebugString
+//     "observation_file": true,     // log.jsonl
+//     "trace_file":       true,     // trace.jsonl
+//     "metrics_file":     true      // metric.jsonl + metrics-final.json
+//   },
+//   "profile": {
+//     "enabled": false,             // master switch; defaults OFF
+//     "categories": {               // each category maps to a DIA_PROFILE_SCOPE bit
+//       "diaapplicationflow": false,
+//       "diagraphics":        false,
+//       "diastream":          false,
+//       "diaassetruntime":    false,
+//       "diaanimation":       false,
+//       "all":                false  // shorthand to enable every category
+//     }
+//   },
+//   "trace": {
+//     "enabled": false,             // master switch; defaults OFF
+//     "categories": {               // each category maps to a DIA_TRACE_ZONE bit
+//       "diaapplicationflow": false,
+//       "diagraphics":        false,
+//       "diastream":          false,
+//       "diaassetruntime":    false,
+//       "diaanimation":       false,
+//       "all":                false  // shorthand to enable every category
+//     }
+//   },
+//   "metrics": {
+//     "snapshot_interval_ms": 100   // how often metric snapshots are emitted
+//   },
+//   "health": {
+//     "file":            true,      // write health.json at session end
+//     "poll_interval_ms": 500       // how often health reporters are polled
+//   }
+// }
+//
+// CLI overrides (applied after file load, highest precedence):
+//   --log-level=warning
+//   --log-channel=WebSocket:error
+//   --profile-categories=diagraphics,diastream
+//   --trace-categories=diagraphics,diastream
+
 #include <DiaObservation/Config/ObservationConfigLoader.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaObservation/Log/DiaLog.h>
@@ -38,25 +91,20 @@ namespace Dia
 				return false;
 			}
 
-			const Json::Value& configBlock = root["config"];
-			if (configBlock.isNull())
-				return false;
-
-			const Json::Value& observation = configBlock["observation"];
-			if (observation.isNull())
-				return false;
+			// root IS the observation config (flat .diaobservation format)
+			// "schema" field is read but not validated — ignored for now
 
 			// Parse global log level
-			if (observation.isMember("log_level") && observation["log_level"].isString())
+			if (root.isMember("log_level") && root["log_level"].isString())
 			{
 				config.globalLogLevel = ParseLevel(
-					observation["log_level"].asCString(), LogLevelConfig::kDefault);
+					root["log_level"].asCString(), LogLevelConfig::kDefault);
 			}
 
 			// Parse per-channel overrides
-			if (observation.isMember("log_channels") && observation["log_channels"].isObject())
+			if (root.isMember("log_channels") && root["log_channels"].isObject())
 			{
-				const Json::Value& channels = observation["log_channels"];
+				const Json::Value& channels = root["log_channels"];
 				Json::Value::Members members = channels.getMemberNames();
 				for (size_t i = 0; i < members.size() && config.channelOverrideCount < 16; ++i)
 				{
@@ -74,9 +122,9 @@ namespace Dia
 			}
 
 			// Parse sink enables
-			if (observation.isMember("sinks") && observation["sinks"].isObject())
+			if (root.isMember("sinks") && root["sinks"].isObject())
 			{
-				const Json::Value& sinks = observation["sinks"];
+				const Json::Value& sinks = root["sinks"];
 				if (sinks.isMember("stdout") && sinks["stdout"].isBool())
 					config.enableStdOutSink = sinks["stdout"].asBool();
 				if (sinks.isMember("debug_output") && sinks["debug_output"].isBool())
@@ -89,10 +137,28 @@ namespace Dia
 					config.enableMetricsFileSink = sinks["metrics_file"].asBool();
 			}
 
-			// Parse profiling config
-			if (observation.isMember("profile") && observation["profile"].isObject())
+			// Parse health config (file sink toggle + poll interval)
+			if (root.isMember("health") && root["health"].isObject())
 			{
-				const Json::Value& profile = observation["profile"];
+				const Json::Value& health = root["health"];
+				if (health.isMember("file") && health["file"].isBool())
+					config.enableHealthFileSink = health["file"].asBool();
+				if (health.isMember("poll_interval_ms") && health["poll_interval_ms"].isUInt())
+					config.healthPollIntervalMs = health["poll_interval_ms"].asUInt();
+			}
+
+			// Parse metrics config (snapshot interval)
+			if (root.isMember("metrics") && root["metrics"].isObject())
+			{
+				const Json::Value& metrics = root["metrics"];
+				if (metrics.isMember("snapshot_interval_ms") && metrics["snapshot_interval_ms"].isUInt())
+					config.metricSnapshotIntervalMs = metrics["snapshot_interval_ms"].asUInt();
+			}
+
+			// Parse profiling config
+			if (root.isMember("profile") && root["profile"].isObject())
+			{
+				const Json::Value& profile = root["profile"];
 
 				bool enabled = false;
 				if (profile.isMember("enabled") && profile["enabled"].isBool())
@@ -127,6 +193,47 @@ namespace Dia
 				else if (!enabled)
 				{
 					config.profileCategoryMask = 0;
+				}
+			}
+
+			// Parse trace config (mirrors profile block structure)
+			if (root.isMember("trace") && root["trace"].isObject())
+			{
+				const Json::Value& trace = root["trace"];
+
+				bool enabled = false;
+				if (trace.isMember("enabled") && trace["enabled"].isBool())
+					enabled = trace["enabled"].asBool();
+
+				config.traceEnabled = enabled;
+
+				if (enabled && trace.isMember("categories") && trace["categories"].isObject())
+				{
+					const Json::Value& categories = trace["categories"];
+					uint32_t mask = 0;
+
+					auto checkCategory = [&](const char* key, uint32_t bit)
+					{
+						if (categories.isMember(key) && categories[key].isBool()
+							&& categories[key].asBool())
+							mask |= bit;
+					};
+
+					checkCategory("diaapplicationflow", 1u << 0);
+					checkCategory("diagraphics",        1u << 1);
+					checkCategory("diastream",          1u << 2);
+					checkCategory("diaassetruntime",    1u << 3);
+					checkCategory("diaanimation",       1u << 4);
+
+					if (categories.isMember("all") && categories["all"].isBool()
+						&& categories["all"].asBool())
+						mask = ~0u;
+
+					config.traceCategoryMask = mask;
+				}
+				else if (!enabled)
+				{
+					config.traceCategoryMask = 0;
 				}
 			}
 

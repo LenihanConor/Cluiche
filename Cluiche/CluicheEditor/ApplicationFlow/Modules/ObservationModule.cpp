@@ -6,6 +6,7 @@
 #include <DiaObservation/Log/StdOutSink.h>
 #include <DiaObservation/Log/LogLevel.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Config/ObservationConfigLoader.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 
 #include <cstring>
@@ -65,8 +66,10 @@ Dia::ApplicationFlow::StartResult ObservationModule::DoStart()
     snprintf(config.outRootDir, sizeof(config.outRootDir), "%s../../../../out/%s",
         exePath, config.appName);
 
-    // Editor has no .diagame; use default observation config.
     Dia::Observation::ObservationConfig obsConfig;
+    char obsConfigPath[512] = {};
+    snprintf(obsConfigPath, sizeof(obsConfigPath), "%s../../../../Assets/CluicheEditor/cluicheeditor.diaobservation", exePath);
+    Dia::Observation::ObservationConfigLoader::Load(obsConfigPath, obsConfig);
 
     if (!mSessionManager.Start(config, obsConfig))
     {

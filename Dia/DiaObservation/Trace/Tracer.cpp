@@ -40,6 +40,7 @@ namespace Dia
 			: mThreadRingCount(0)
 			, mSink(nullptr)
 			, mSessionSeed(0)
+			, mActiveMask(0)
 			, mTraceSinkCount(0)
 			, mDrainRunning(false)
 			, mStarted(false)
@@ -53,7 +54,8 @@ namespace Dia
 			Stop();
 		}
 
-		bool Tracer::Start(const char* traceFilePath, const char* sessionId, int64_t epochOffsetNs)
+		bool Tracer::Start(const char* traceFilePath, TraceCategory activeMask,
+		                   const char* sessionId, int64_t epochOffsetNs)
 		{
 			if (mStarted.load(std::memory_order_acquire))
 				return false;
@@ -65,6 +67,8 @@ namespace Dia
 				mSink = nullptr;
 				return false;
 			}
+
+			mActiveMask.store(activeMask, std::memory_order_release);
 
 			// Generate session seed for RNG seeding
 			auto now = std::chrono::steady_clock::now();
@@ -79,6 +83,16 @@ namespace Dia
 #endif
 
 			return true;
+		}
+
+		void Tracer::SetActiveMask(TraceCategory mask)
+		{
+			mActiveMask.store(mask, std::memory_order_relaxed);
+		}
+
+		TraceCategory Tracer::ActiveMask() const
+		{
+			return mActiveMask.load(std::memory_order_relaxed);
 		}
 
 		void Tracer::Stop()
@@ -203,6 +217,13 @@ namespace Dia
 		{
 			if (!tRegistered || !mStarted.load(std::memory_order_acquire))
 				return;
+
+			// Category mask filtering — mirror Profiler::OnScopeOpen pattern
+			if (!(record.category & mActiveMask.load(std::memory_order_relaxed)))
+			{
+				record.spanId = 0;  // signals ScopedZone destructor to skip OnSpanClose
+				return;
+			}
 
 			record.spanId = tRng();
 

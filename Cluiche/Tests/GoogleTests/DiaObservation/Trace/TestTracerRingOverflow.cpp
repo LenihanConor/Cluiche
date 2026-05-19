@@ -43,7 +43,7 @@ TEST_F(TracerRingOverflowTest, OverflowDropsOldest_NoCrash)
     // Ring capacity is 256. Produce 300 spans without giving drain a chance.
     // Then verify drain collects exactly 255 (ring stores 255 live entries
     // since head==tail means empty, not full).
-    Tracer::Instance().Start(kTestTracePath, "overflow", 0);
+    Tracer::Instance().Start(kTestTracePath, Category::kAll, "overflow", 0);
     Tracer::Instance().RegisterThreadSpanBuffer();
 
     // Pause the drain from processing by holding the registry mutex isn't possible
@@ -53,7 +53,8 @@ TEST_F(TracerRingOverflowTest, OverflowDropsOldest_NoCrash)
     {
         SpanRecord rec;
         std::memset(&rec, 0, sizeof(rec));
-        rec.name = Dia::Core::StringCRC("Overflow");
+        rec.name     = Dia::Core::StringCRC("Overflow");
+        rec.category = Category::kAll;
         Tracer::Instance().OnSpanOpen(rec);
         rec.endSteadyNs = static_cast<uint64_t>(i + 1);
         Tracer::Instance().OnSpanClose(rec);
@@ -77,7 +78,7 @@ TEST_F(TracerRingOverflowTest, OverflowProduces255LiveEntries)
 {
     // More controlled test: register sink, stop the tracer (so drain thread exits),
     // then do a manual registration + blast + manual drain to count exactly.
-    Tracer::Instance().Start(kTestTracePath, "overflow2", 0);
+    Tracer::Instance().Start(kTestTracePath, Category::kAll, "overflow2", 0);
 
     CountingSink sink;
     Tracer::Instance().RegisterTraceSink(&sink);
@@ -91,7 +92,8 @@ TEST_F(TracerRingOverflowTest, OverflowProduces255LiveEntries)
     {
         SpanRecord rec;
         std::memset(&rec, 0, sizeof(rec));
-        rec.name = Dia::Core::StringCRC("OV");
+        rec.name     = Dia::Core::StringCRC("OV");
+        rec.category = Category::kAll;
         Tracer::Instance().OnSpanOpen(rec);
         rec.endSteadyNs = static_cast<uint64_t>(i + 1);
         Tracer::Instance().OnSpanClose(rec);
@@ -117,13 +119,14 @@ TEST_F(TracerRingOverflowTest, OverflowProduces255LiveEntries)
 
 TEST_F(TracerRingOverflowTest, DoubleRegisterIsNoOp)
 {
-    Tracer::Instance().Start(kTestTracePath, "double", 0);
+    Tracer::Instance().Start(kTestTracePath, Category::kAll, "double", 0);
     Tracer::Instance().RegisterThreadSpanBuffer();
     Tracer::Instance().RegisterThreadSpanBuffer(); // should no-op
 
     SpanRecord rec;
     std::memset(&rec, 0, sizeof(rec));
-    rec.name = Dia::Core::StringCRC("Double");
+    rec.name     = Dia::Core::StringCRC("Double");
+    rec.category = Category::kAll;
     Tracer::Instance().OnSpanOpen(rec);
     EXPECT_NE(rec.spanId, 0u);
 

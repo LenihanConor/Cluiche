@@ -207,7 +207,7 @@ template<typename T>
 inline SendResult EventStreamStore<T>::Send(const Event<T>& event)
 {
     DIA_PROFILE_SCOPE("stream.send", Dia::Observation::Profile::Category::kDiaStream);
-    DIA_TRACE_ZONE("stream.send");
+    DIA_TRACE_ZONE("stream.send", Dia::Observation::Trace::Category::kDiaStream);
     if (mPolicy == OverflowPolicy::kBlock)
     {
         std::unique_lock<std::mutex> lock(mMutex);
@@ -346,7 +346,7 @@ inline void EventStreamStore<T>::Consume(int readerIndex,
     Dia::Core::Containers::DynamicArrayC<Event<T>, N>& outEvents)
 {
     DIA_PROFILE_SCOPE("stream.consume", Dia::Observation::Profile::Category::kDiaStream);
-    DIA_TRACE_ZONE("stream.consume");
+    DIA_TRACE_ZONE("stream.consume", Dia::Observation::Trace::Category::kDiaStream);
     DIA_ASSERT(readerIndex >= 0 && readerIndex < mReaderCount,
         "EventStreamStore::Consume — invalid readerIndex %d", readerIndex);
 

@@ -232,7 +232,7 @@ namespace Dia { namespace ApplicationFlow {
             case ModuleState::kActive:
             {
                 DIA_PROFILE_SCOPE("module.update", Dia::Observation::Profile::Category::kDiaApplicationFlow);
-                DIA_TRACE_ZONE("module.update");
+                DIA_TRACE_ZONE("module.update", Dia::Observation::Trace::Category::kDiaApplicationFlow);
                 DoUpdate(deltaTime);
                 break;
             }

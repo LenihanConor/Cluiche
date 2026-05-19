@@ -12,14 +12,15 @@ namespace Dia
 {
 	namespace Observation { namespace Trace
 	{
-		ScopedZone::ScopedZone(const Dia::Core::StringCRC& name)
+		ScopedZone::ScopedZone(const Dia::Core::StringCRC& name, TraceCategory category)
 		{
 			std::memset(&mRecord, 0, sizeof(mRecord));
 
 			if (!Tracer::Instance().IsStarted())
 				return;
 
-			mRecord.name = name;
+			mRecord.name     = name;
+			mRecord.category = category;
 			mRecord.startSteadyNs = static_cast<uint64_t>(
 				std::chrono::steady_clock::now().time_since_epoch().count());
 #ifdef _WIN32

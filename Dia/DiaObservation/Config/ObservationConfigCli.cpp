@@ -37,6 +37,9 @@ namespace Dia
 			const char* kProfileCategoriesPrefix = "--profile-categories=";
 			const size_t kProfileCategoriesPrefixLen = 21; // strlen("--profile-categories=")
 
+			const char* kTraceCategoriesPrefix = "--trace-categories=";
+			const size_t kTraceCategoriesPrefixLen = 19; // strlen("--trace-categories=")
+
 			for (int i = 1; i < argc; ++i)
 			{
 				if (argv[i] == nullptr)
@@ -131,6 +134,44 @@ namespace Dia
 
 					config.profileEnabled      = true;
 					config.profileCategoryMask = mask;
+					continue;
+				}
+
+				// --trace-categories=<cat1>,<cat2>,...
+				if (strncmp(argv[i], kTraceCategoriesPrefix, kTraceCategoriesPrefixLen) == 0)
+				{
+					const char* list = argv[i] + kTraceCategoriesPrefixLen;
+					uint32_t mask = 0;
+
+					const char* cursor = list;
+					while (*cursor != '\0')
+					{
+						const char* comma = strchr(cursor, ',');
+						size_t tokenLen = (comma != nullptr)
+							? static_cast<size_t>(comma - cursor)
+							: strlen(cursor);
+
+						char token[64] = {};
+						if (tokenLen >= sizeof(token))
+							tokenLen = sizeof(token) - 1;
+						memcpy(token, cursor, tokenLen);
+						token[tokenLen] = '\0';
+
+						if      (strcmp(token, "diaapplicationflow") == 0) mask |= 1u << 0;
+						else if (strcmp(token, "diagraphics")        == 0) mask |= 1u << 1;
+						else if (strcmp(token, "diastream")          == 0) mask |= 1u << 2;
+						else if (strcmp(token, "diaassetruntime")    == 0) mask |= 1u << 3;
+						else if (strcmp(token, "diaanimation")       == 0) mask |= 1u << 4;
+						else if (strcmp(token, "all")                == 0) mask  = ~0u;
+						// unknown tokens silently ignored
+
+						cursor += tokenLen;
+						if (comma != nullptr)
+							++cursor; // skip comma
+					}
+
+					config.traceEnabled      = true;
+					config.traceCategoryMask = mask;
 					continue;
 				}
 

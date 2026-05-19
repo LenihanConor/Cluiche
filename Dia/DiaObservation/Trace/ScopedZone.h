@@ -9,7 +9,7 @@ namespace Dia
 		class ScopedZone
 		{
 		public:
-			explicit ScopedZone(const Dia::Core::StringCRC& name);
+			explicit ScopedZone(const Dia::Core::StringCRC& name, TraceCategory category);
 			~ScopedZone();
 
 			ScopedZone(const ScopedZone&) = delete;

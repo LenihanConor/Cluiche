@@ -21,6 +21,7 @@ files = [
   { src = "External/SFML/Current-x64/bin/*.dll", dest = "$(OutDir)" },
   { src = "Cluiche/Assets/CluicheTest/Global/misc/ApplicationFlow/*.diaapp", dest = "$(OutDir)Data/Manifests/misc/ApplicationFlow/" },
   { src = "Cluiche/Assets/CluicheTest/cluichetest.diagame", dest = "$(OutDir)Data/Manifests/" },
+  { src = "Cluiche/Assets/CluicheTest/Global/cluichetest.diaobservation", dest = "$(OutDir)Data/Manifests/" },
   { src = "Cluiche/Assets/Stages/DummyStage/Misc/ApplicationFlow/*", dest = "$(OutDir)Data/stages/DummyStage/Misc/ApplicationFlow/" },
   { src = "Cluiche/Assets/Stages/DummyStage/dummy_stage.diastage", dest = "$(OutDir)Data/stages/DummyStage/" }
 ]
@@ -40,6 +41,7 @@ files = [
   { src = "External/SFML/Current-x64/bin/*.dll", dest = "$(OutDir)" },
   { src = "Dia/DiaUIUltralight/Deploy/*", dest = "$(OutDir)" },
   { src = "Cluiche/Assets/CluicheTest/cluichetest.diagame", dest = "$(OutDir)assets/" },
+  { src = "Cluiche/Assets/CluicheTest/Global/cluichetest.diaobservation", dest = "$(OutDir)assets/" },
   { src = "Cluiche/Assets/Stages/DummyStage/dummy_stage.diastage", dest = "$(OutDir)assets/stages/DummyStage/" }
 ]
 
@@ -72,7 +74,10 @@ files = [
   { src = "Dia/DiaAssetCatalogueEditor/UI/*",              dest = "$(OutDir)plugins/assetcatalogue/" },
   { src = "Dia/DiaPipelineEditor/UI/dist/*",              dest = "$(OutDir)plugins/diapipelineeditor/" },
   { src = "Dia/DiaPipelineEditor/UI/dist/assets/*",       dest = "$(OutDir)plugins/diapipelineeditor/assets/" },
-  { src = "Cluiche/Assets/CluicheEditor/*",               dest = "$(OutDir)assets/icons/" },
+  { src = "Cluiche/Assets/CluicheEditor/*.ico",            dest = "$(OutDir)assets/icons/" },
+  { src = "Cluiche/Assets/CluicheEditor/*.bmp",            dest = "$(OutDir)assets/icons/" },
+  { src = "Cluiche/Assets/CluicheEditor/*.png",            dest = "$(OutDir)assets/icons/" },
+  { src = "Cluiche/Assets/CluicheEditor/cluicheeditor.diaobservation", dest = "$(OutDir)assets/" },
   { src = "Cluiche/bin/DiaUICEF_TestSubprocess/$(Configuration)/x64/DiaUICEF_TestSubprocess.exe", dest = "$(OutDir)cef/" },
   { src = "Cluiche/bin/DiaUICEF_TestSubprocess/$(Configuration)/x64/DiaUICEF_TestSubprocess.pdb", dest = "$(OutDir)cef/" }
 ]

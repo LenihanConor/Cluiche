@@ -19,11 +19,15 @@ namespace Dia
 		public:
 			static Tracer& Instance();
 
-			bool Start(const char* traceFilePath, const char* sessionId, int64_t epochOffsetNs);
+			bool Start(const char* traceFilePath, TraceCategory activeMask,
+			           const char* sessionId, int64_t epochOffsetNs);
 			void Stop();
 
 			void RegisterThreadSpanBuffer();
 			void UnregisterThreadSpanBuffer();
+
+			void            SetActiveMask(TraceCategory mask);
+			TraceCategory   ActiveMask() const;
 
 			void OnSpanOpen(SpanRecord& record);
 			void OnSpanClose(const SpanRecord& record);
@@ -56,8 +60,9 @@ namespace Dia
 			unsigned int     mThreadRingCount;
 			std::mutex       mRegistryMutex;
 
-			TraceFileSink*   mSink;
-			uint64_t         mSessionSeed;
+			TraceFileSink*              mSink;
+			uint64_t                    mSessionSeed;
+			std::atomic<TraceCategory>  mActiveMask;
 
 			static const unsigned int kMaxTraceSinks = 4;
 			ITraceSink*      mTraceSinks[kMaxTraceSinks];

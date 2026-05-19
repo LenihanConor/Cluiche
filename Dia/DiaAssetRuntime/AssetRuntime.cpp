@@ -158,7 +158,7 @@ namespace Dia
         void AssetRuntime::RequestStageLoad(const Dia::Core::StringCRC& stageId)
         {
             DIA_PROFILE_SCOPE("asset.catalog.load", Dia::Observation::Profile::Category::kDiaAssetRuntime);
-            DIA_TRACE_ZONE("asset.catalog.load");
+            DIA_TRACE_ZONE("asset.catalog.load", Dia::Observation::Trace::Category::kDiaAssetRuntime);
             AssertOwnerThread();
             const RuntimeStageEntry* stage = mStageTable.TryGetItemConst(stageId);
             if (!stage)
@@ -551,7 +551,7 @@ namespace Dia
         void AssetRuntime::DispatchLoad(const Dia::Core::StringCRC& assetId)
         {
             DIA_PROFILE_SCOPE("asset.load", Dia::Observation::Profile::Category::kDiaAssetRuntime);
-            DIA_TRACE_ZONE("asset.load");
+            DIA_TRACE_ZONE("asset.load", Dia::Observation::Trace::Category::kDiaAssetRuntime);
             const AssetState* currentState = mStateTable.TryGetItemConst(assetId);
             if (!currentState || *currentState != AssetState::Loading)
                 TryTransition(assetId, AssetState::Loading);

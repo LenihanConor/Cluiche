@@ -115,7 +115,7 @@ namespace Dia { namespace ApplicationFlow {
     void ProcessingUnit::Update(float deltaTime)
     {
         DIA_PROFILE_SCOPE("pu.update", Dia::Observation::Profile::Category::kDiaApplicationFlow);
-        DIA_TRACE_ZONE("pu.update");
+        DIA_TRACE_ZONE("pu.update", Dia::Observation::Trace::Category::kDiaApplicationFlow);
 
         // Forward pass: starting/active modules.
         for (unsigned int i = 0; i < mModuleCount; ++i)

@@ -60,7 +60,7 @@ struct TracerTest : ::testing::Test
 TEST_F(TracerTest, StartAndStop)
 {
     EXPECT_FALSE(Tracer::Instance().IsStarted());
-    EXPECT_TRUE(Tracer::Instance().Start(kTestTracePath, "test-session", 0));
+    EXPECT_TRUE(Tracer::Instance().Start(kTestTracePath, Category::kAll, "test-session", 0));
     EXPECT_TRUE(Tracer::Instance().IsStarted());
     Tracer::Instance().Stop();
     EXPECT_FALSE(Tracer::Instance().IsStarted());
@@ -68,8 +68,8 @@ TEST_F(TracerTest, StartAndStop)
 
 TEST_F(TracerTest, DoubleStartReturnsFalse)
 {
-    EXPECT_TRUE(Tracer::Instance().Start(kTestTracePath, "sess", 0));
-    EXPECT_FALSE(Tracer::Instance().Start(kTestTracePath, "sess2", 0));
+    EXPECT_TRUE(Tracer::Instance().Start(kTestTracePath, Category::kAll, "sess", 0));
+    EXPECT_FALSE(Tracer::Instance().Start(kTestTracePath, Category::kAll, "sess2", 0));
 }
 
 TEST_F(TracerTest, SpanNoOp_WhenNotStarted)
@@ -83,7 +83,7 @@ TEST_F(TracerTest, SpanNoOp_WhenNotStarted)
 
 TEST_F(TracerTest, SpanNoOp_WhenThreadNotRegistered)
 {
-    Tracer::Instance().Start(kTestTracePath, "sess", 0);
+    Tracer::Instance().Start(kTestTracePath, Category::kAll, "sess", 0);
 
     SpanRecord rec;
     std::memset(&rec, 0, sizeof(rec));
@@ -94,12 +94,13 @@ TEST_F(TracerTest, SpanNoOp_WhenThreadNotRegistered)
 
 TEST_F(TracerTest, RegisterThread_SpanGetsIds)
 {
-    Tracer::Instance().Start(kTestTracePath, "sess", 0);
+    Tracer::Instance().Start(kTestTracePath, Category::kAll, "sess", 0);
     Tracer::Instance().RegisterThreadSpanBuffer();
 
     SpanRecord rec;
     std::memset(&rec, 0, sizeof(rec));
-    rec.name = Dia::Core::StringCRC("TestSpan");
+    rec.name     = Dia::Core::StringCRC("TestSpan");
+    rec.category = Category::kAll;
     Tracer::Instance().OnSpanOpen(rec);
 
     EXPECT_NE(rec.spanId, 0u);
@@ -112,17 +113,19 @@ TEST_F(TracerTest, RegisterThread_SpanGetsIds)
 
 TEST_F(TracerTest, NestedSpans_FormParentChain)
 {
-    Tracer::Instance().Start(kTestTracePath, "sess", 0);
+    Tracer::Instance().Start(kTestTracePath, Category::kAll, "sess", 0);
     Tracer::Instance().RegisterThreadSpanBuffer();
 
     SpanRecord parent;
     std::memset(&parent, 0, sizeof(parent));
-    parent.name = Dia::Core::StringCRC("Parent");
+    parent.name     = Dia::Core::StringCRC("Parent");
+    parent.category = Category::kAll;
     Tracer::Instance().OnSpanOpen(parent);
 
     SpanRecord child;
     std::memset(&child, 0, sizeof(child));
-    child.name = Dia::Core::StringCRC("Child");
+    child.name     = Dia::Core::StringCRC("Child");
+    child.category = Category::kAll;
     Tracer::Instance().OnSpanOpen(child);
 
     EXPECT_EQ(child.traceId, parent.traceId);
@@ -136,7 +139,7 @@ TEST_F(TracerTest, NestedSpans_FormParentChain)
 
 TEST_F(TracerTest, DrainDispatchesToSink)
 {
-    Tracer::Instance().Start(kTestTracePath, "sess", 0);
+    Tracer::Instance().Start(kTestTracePath, Category::kAll, "sess", 0);
     Tracer::Instance().RegisterThreadSpanBuffer();
 
     CaptureTraceSink sink;
@@ -144,7 +147,8 @@ TEST_F(TracerTest, DrainDispatchesToSink)
 
     SpanRecord rec;
     std::memset(&rec, 0, sizeof(rec));
-    rec.name = Dia::Core::StringCRC("Drained");
+    rec.name          = Dia::Core::StringCRC("Drained");
+    rec.category      = Category::kAll;
     rec.startSteadyNs = 100;
     Tracer::Instance().OnSpanOpen(rec);
     rec.endSteadyNs = 200;
@@ -161,7 +165,7 @@ TEST_F(TracerTest, DrainDispatchesToSink)
 
 TEST_F(TracerTest, UnregisterSink_StopsReceiving)
 {
-    Tracer::Instance().Start(kTestTracePath, "sess", 0);
+    Tracer::Instance().Start(kTestTracePath, Category::kAll, "sess", 0);
     Tracer::Instance().RegisterThreadSpanBuffer();
 
     CaptureTraceSink sink;
@@ -183,14 +187,14 @@ TEST_F(TracerTest, UnregisterSink_StopsReceiving)
 
 TEST_F(TracerTest, ScopedZone_AssignsSpanId)
 {
-    Tracer::Instance().Start(kTestTracePath, "sess", 0);
+    Tracer::Instance().Start(kTestTracePath, Category::kAll, "sess", 0);
     Tracer::Instance().RegisterThreadSpanBuffer();
 
     CaptureTraceSink sink;
     Tracer::Instance().RegisterTraceSink(&sink);
 
     {
-        ScopedZone zone(Dia::Core::StringCRC("ScopedTest"));
+        ScopedZone zone(Dia::Core::StringCRC("ScopedTest"), Category::kAll);
     }
 
     WaitForDrain(&sink, 1);
@@ -204,14 +208,14 @@ TEST_F(TracerTest, ScopedZone_NoOp_WhenNotStarted)
 {
     CaptureTraceSink sink;
     {
-        ScopedZone zone(Dia::Core::StringCRC("Noop"));
+        ScopedZone zone(Dia::Core::StringCRC("Noop"), Category::kAll);
     }
     EXPECT_EQ(sink.count.load(), 0u);
 }
 
 TEST_F(TracerTest, MultiThread_SpansCollected)
 {
-    Tracer::Instance().Start(kTestTracePath, "sess", 0);
+    Tracer::Instance().Start(kTestTracePath, Category::kAll, "sess", 0);
 
     CaptureTraceSink sink;
     Tracer::Instance().RegisterTraceSink(&sink);
@@ -230,7 +234,7 @@ TEST_F(TracerTest, MultiThread_SpansCollected)
 
         for (int i = 0; i < kSpansPerThread; ++i)
         {
-            ScopedZone zone(Dia::Core::StringCRC("MT"));
+            ScopedZone zone(Dia::Core::StringCRC("MT"), Category::kAll);
         }
 
         // Wait for drain to pick up all our spans before unregistering
