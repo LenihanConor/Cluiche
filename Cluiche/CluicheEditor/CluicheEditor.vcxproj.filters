@@ -36,9 +36,6 @@
     <ClCompile Include="ApplicationFlow\Modules\PluginLoaderModule.cpp">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClCompile>
-    <ClCompile Include="ApplicationFlow\Modules\GameConnectionModule.cpp">
-      <Filter>ApplicationFlow\Modules</Filter>
-    </ClCompile>
     <ClCompile Include="ApplicationFlow\Modules\ObservationModule.cpp">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClCompile>
@@ -60,9 +57,6 @@
       <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
     <ClInclude Include="ApplicationFlow\Modules\PluginLoaderModule.h">
-      <Filter>ApplicationFlow\Modules</Filter>
-    </ClInclude>
-    <ClInclude Include="ApplicationFlow\Modules\GameConnectionModule.h">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
     <ClInclude Include="ApplicationFlow\Modules\ObservationModule.h">

@@ -15,8 +15,7 @@
                 { "instance_id": "SplashScreenModule",         "type_id": "SplashScreenModule",         "stages": ["Running"] },
                 { "instance_id": "EditorViewControllerModule", "type_id": "EditorViewControllerModule", "stages": ["Running"] },
                 { "instance_id": "EditorViewModule",           "type_id": "EditorViewModule",           "stages": ["Running"] },
-                { "instance_id": "PluginLoaderModule",         "type_id": "PluginLoaderModule",         "stages": ["Running"] },
-                { "instance_id": "GameConnectionModule",       "type_id": "GameConnectionModule",       "stages": ["Running"] }
+                { "instance_id": "PluginLoaderModule",         "type_id": "PluginLoaderModule",         "stages": ["Running"] }
             ]
         }
     ]

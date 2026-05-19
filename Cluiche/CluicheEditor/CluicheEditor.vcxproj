@@ -28,7 +28,6 @@
     <ClCompile Include="..\..\Dia\DiaEditor\Plugin\OutputConsoleEditorPlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaEditor\Plugin\GameConnectionEditorPlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaEditor\Plugin\PluginBrowserEditorPlugin.cpp" />
-    <ClCompile Include="ApplicationFlow\Modules\GameConnectionModule.cpp" />
     <ClCompile Include="ApplicationFlow\Modules\ObservationModule.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -39,7 +38,6 @@
     <ClInclude Include="ApplicationFlow\Modules\SplashScreenModule.h" />
     <ClInclude Include="ApplicationFlow\Modules\EditorViewControllerModule.h" />
     <ClInclude Include="ApplicationFlow\Modules\PluginLoaderModule.h" />
-    <ClInclude Include="ApplicationFlow\Modules\GameConnectionModule.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CluicheEditor.rc" />
