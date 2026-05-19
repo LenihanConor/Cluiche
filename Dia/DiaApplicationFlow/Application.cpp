@@ -590,6 +590,7 @@ namespace Dia { namespace ApplicationFlow {
 
                 // Deliver per-module config from the manifest.  Runs once,
                 // before BeginStart, on the main thread.
+                DIA_LOG_DEBUG("module", "module.configure module_id=%s", modDecl.instanceId.AsChar());
                 rawModule->OnConfigure(modDecl.configJson.AsCStr());
 
                 Dia::Core::UniquePtr<Module> modulePtr(rawModule);
@@ -867,6 +868,7 @@ namespace Dia { namespace ApplicationFlow {
                 Module* module = pu->FindModule(puDecl.modules[m].instanceId);
                 if (module)
                 {
+                    DIA_LOG_DEBUG("module", "module.connect_streams module_id=%s", puDecl.modules[m].instanceId.AsChar());
                     module->OnConnectStreams(*this);
                 }
             }

@@ -11,6 +11,7 @@
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Trace/DiaTrace.h>
 
 namespace Dia { namespace ApplicationFlow {
 
@@ -19,6 +20,19 @@ namespace Dia { namespace ApplicationFlow {
     static const char* PuName(const ProcessingUnit* pu)
     {
         return pu ? pu->GetInstanceId().AsChar() : "<unassigned>";
+    }
+
+    static const char* ModuleStateName(ModuleState s)
+    {
+        switch(s)
+        {
+            case ModuleState::kInactive:  return "kInactive";
+            case ModuleState::kStarting:  return "kStarting";
+            case ModuleState::kActive:    return "kActive";
+            case ModuleState::kStopping:  return "kStopping";
+            case ModuleState::kFailed:    return "kFailed";
+            default: return "unknown";
+        }
     }
 
     //--------------------------------------------------------------------------
@@ -119,6 +133,10 @@ namespace Dia { namespace ApplicationFlow {
         mState.store(ModuleState::kStarting, std::memory_order_release);
         EmitModuleStateChanged(ModuleState::kInactive, ModuleState::kStarting);
 
+        DIA_LOG_INFO("module", "module.state.transition module_id=%s from=%s to=%s",
+                     mInstanceId.AsChar(),
+                     ModuleStateName(ModuleState::kInactive),
+                     ModuleStateName(ModuleState::kStarting));
         DIA_LOG_INFO("Application", "Module '%s' (PU '%s') BeginStart", mInstanceId.AsChar(), PuName(mProcessingUnit));
     }
 
@@ -134,6 +152,10 @@ namespace Dia { namespace ApplicationFlow {
         mState.store(ModuleState::kStopping, std::memory_order_release);
         EmitModuleStateChanged(ModuleState::kActive, ModuleState::kStopping);
 
+        DIA_LOG_INFO("module", "module.state.transition module_id=%s from=%s to=%s",
+                     mInstanceId.AsChar(),
+                     ModuleStateName(ModuleState::kActive),
+                     ModuleStateName(ModuleState::kStopping));
         DIA_LOG_INFO("Application", "Module '%s' (PU '%s') BeginStop", mInstanceId.AsChar(), PuName(mProcessingUnit));
     }
 
@@ -165,12 +187,22 @@ namespace Dia { namespace ApplicationFlow {
                     mStateElapsedMs = 0.0f;
                     mState.store(ModuleState::kActive, std::memory_order_release);
                     EmitModuleStateChanged(ModuleState::kStarting, ModuleState::kActive);
+                    DIA_LOG_INFO("module", "module.state.transition module_id=%s from=%s to=%s",
+                                 mInstanceId.AsChar(),
+                                 ModuleStateName(ModuleState::kStarting),
+                                 ModuleStateName(ModuleState::kActive));
+                    DIA_LOG_INFO("module", "module.start.complete module_id=%s duration_ms=%.1f",
+                                 mInstanceId.AsChar(), mStateElapsedMs);
                 }
                 else if (result == StartResult::kFailed)
                 {
                     DIA_LOG_ERROR("Application", "Module '%s' (PU '%s') DoStart FAILED", mInstanceId.AsChar(), PuName(mProcessingUnit));
                     mState.store(ModuleState::kFailed, std::memory_order_release);
                     EmitModuleStateChanged(ModuleState::kStarting, ModuleState::kFailed);
+                    DIA_LOG_INFO("module", "module.state.transition module_id=%s from=%s to=%s",
+                                 mInstanceId.AsChar(),
+                                 ModuleStateName(ModuleState::kStarting),
+                                 ModuleStateName(ModuleState::kFailed));
                 }
                 else // kLoading — still starting; check timeout
                 {
@@ -178,6 +210,10 @@ namespace Dia { namespace ApplicationFlow {
                     {
                         DIA_LOG_ERROR("Application", "Module '%s' (PU '%s') DoStart TIMEOUT (%.1f ms)", mInstanceId.AsChar(), PuName(mProcessingUnit), mStateElapsedMs);
                         mState.store(ModuleState::kFailed, std::memory_order_release);
+                        DIA_LOG_INFO("module", "module.state.transition module_id=%s from=%s to=%s",
+                                     mInstanceId.AsChar(),
+                                     ModuleStateName(ModuleState::kStarting),
+                                     ModuleStateName(ModuleState::kFailed));
                     }
                 }
                 break;
@@ -186,6 +222,7 @@ namespace Dia { namespace ApplicationFlow {
             case ModuleState::kActive:
             {
                 DIA_PROFILE_SCOPE("module.update", Dia::Observation::Profile::Category::kDiaApplicationFlow);
+                DIA_TRACE_ZONE("module.update");
                 DoUpdate(deltaTime);
                 break;
             }
@@ -206,6 +243,12 @@ namespace Dia { namespace ApplicationFlow {
                     mStateElapsedMs = 0.0f;
                     mState.store(ModuleState::kInactive, std::memory_order_release);
                     EmitModuleStateChanged(ModuleState::kStopping, ModuleState::kInactive);
+                    DIA_LOG_INFO("module", "module.state.transition module_id=%s from=%s to=%s",
+                                 mInstanceId.AsChar(),
+                                 ModuleStateName(ModuleState::kStopping),
+                                 ModuleStateName(ModuleState::kInactive));
+                    DIA_LOG_INFO("module", "module.stop.complete module_id=%s duration_ms=%.1f",
+                                 mInstanceId.AsChar(), mStateElapsedMs);
                 }
                 else // kStopping — still winding down; check timeout
                 {
@@ -215,6 +258,10 @@ namespace Dia { namespace ApplicationFlow {
                         mStateElapsedMs = 0.0f;
                         mState.store(ModuleState::kInactive, std::memory_order_release);
                         EmitModuleStateChanged(ModuleState::kStopping, ModuleState::kInactive);
+                        DIA_LOG_INFO("module", "module.state.transition module_id=%s from=%s to=%s",
+                                     mInstanceId.AsChar(),
+                                     ModuleStateName(ModuleState::kStopping),
+                                     ModuleStateName(ModuleState::kInactive));
                     }
                 }
                 break;

@@ -6,6 +6,7 @@
 
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Trace/DiaTrace.h>
 
 #include <math.h>
 #include <string.h>
@@ -157,6 +158,7 @@ namespace Dia
         void AssetRuntime::RequestStageLoad(const Dia::Core::StringCRC& stageId)
         {
             DIA_PROFILE_SCOPE("asset.catalog.load", Dia::Observation::Profile::Category::kDiaAssetRuntime);
+            DIA_TRACE_ZONE("asset.catalog.load");
             AssertOwnerThread();
             const RuntimeStageEntry* stage = mStageTable.TryGetItemConst(stageId);
             if (!stage)
@@ -236,6 +238,7 @@ namespace Dia
 
                 if (*refCount == 0)
                 {
+                    DIA_LOG_DEBUG("asset", "asset.record.deleted asset_id=%s", assetId.AsChar());
                     DispatchUnload(assetId);
                     TryTransition(assetId, AssetState::Unloaded);
                 }
@@ -273,6 +276,7 @@ namespace Dia
             entry.mTypePrefix = Dia::Core::Containers::String32(typePrefix);
             entry.mHandler = handler;
             mHandlers.Add(entry);
+            DIA_LOG_DEBUG("asset", "asset.type.registered type=%s", typePrefix);
         }
 
         void AssetRuntime::UnregisterTypeHandler(const char* typePrefix)
@@ -492,6 +496,7 @@ namespace Dia
         {
             DIA_LOG_INFO("AssetRuntime", "Asset '%s' loaded", assetId.AsChar());
             TryTransition(assetId, AssetState::Loaded);
+            DIA_LOG_DEBUG("asset", "asset.record.created asset_id=%s", assetId.AsChar());
         }
 
         void AssetRuntime::OnLoadFailed(const Dia::Core::StringCRC& assetId, const char* reason)
@@ -546,6 +551,7 @@ namespace Dia
         void AssetRuntime::DispatchLoad(const Dia::Core::StringCRC& assetId)
         {
             DIA_PROFILE_SCOPE("asset.load", Dia::Observation::Profile::Category::kDiaAssetRuntime);
+            DIA_TRACE_ZONE("asset.load");
             const AssetState* currentState = mStateTable.TryGetItemConst(assetId);
             if (!currentState || *currentState != AssetState::Loading)
                 TryTransition(assetId, AssetState::Loading);

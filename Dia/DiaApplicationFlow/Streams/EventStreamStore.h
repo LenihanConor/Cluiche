@@ -17,6 +17,7 @@
 #include <DiaApplicationFlow/Streams/OverflowPolicy.h>
 #include <DiaApplicationFlow/Streams/Event.h>
 #include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Trace/DiaTrace.h>
 
 namespace Dia { namespace ApplicationFlow {
 
@@ -195,6 +196,7 @@ inline int EventStreamStore<T>::RegisterReader()
             mReaders[i].active   = true;
             if (i >= mReaderCount)
                 mReaderCount = i + 1;
+            DIA_LOG_INFO("stream", "stream.reader.connected stream_id=%s reader_index=%d", mId.AsChar(), i);
             return i;
         }
     }
@@ -205,6 +207,7 @@ template<typename T>
 inline SendResult EventStreamStore<T>::Send(const Event<T>& event)
 {
     DIA_PROFILE_SCOPE("stream.send", Dia::Observation::Profile::Category::kDiaStream);
+    DIA_TRACE_ZONE("stream.send");
     if (mPolicy == OverflowPolicy::kBlock)
     {
         std::unique_lock<std::mutex> lock(mMutex);
@@ -270,13 +273,16 @@ inline SendResult EventStreamStore<T>::SendInternal(const Event<T>& event)
                     rb.tail = (rb.tail + 1) % rb.capacity;
                     --rb.count;
                     result = SendResult::kDroppedOldest;
-                    DIA_LOG_WARNING("EventStream",
-                        "EventStreamStore overflow on '%s' reader %d — oldest dropped",
+                    DIA_LOG_WARNING("stream",
+                        "stream.overflow stream_id=%s reader=%d policy=kDropOldest",
                         mId.AsChar(), i);
                     break;
 
                 case OverflowPolicy::kDropNewest:
                     result = SendResult::kDroppedNewest;
+                    DIA_LOG_WARNING("stream",
+                        "stream.overflow stream_id=%s reader=%d policy=kDropNewest",
+                        mId.AsChar(), i);
                     continue;  // do not write for this reader
 
                 case OverflowPolicy::kBlock:
@@ -285,6 +291,9 @@ inline SendResult EventStreamStore<T>::SendInternal(const Event<T>& event)
                     rb.tail = (rb.tail + 1) % rb.capacity;
                     --rb.count;
                     result = SendResult::kBlockedThenDropped;
+                    DIA_LOG_WARNING("stream",
+                        "stream.overflow stream_id=%s reader=%d policy=kBlock",
+                        mId.AsChar(), i);
                     break;
 
                 case OverflowPolicy::kFailLoud:
@@ -292,6 +301,9 @@ inline SendResult EventStreamStore<T>::SendInternal(const Event<T>& event)
                         "EventStreamStore '%s' overflow with fail-loud policy — reader %d buffer full",
                         mId.AsChar(), i);
                     result = SendResult::kFailLoudRejected;
+                    DIA_LOG_WARNING("stream",
+                        "stream.overflow stream_id=%s reader=%d policy=kFailLoudRejected",
+                        mId.AsChar(), i);
                     return result;  // abort entire send
             }
         }
@@ -334,6 +346,7 @@ inline void EventStreamStore<T>::Consume(int readerIndex,
     Dia::Core::Containers::DynamicArrayC<Event<T>, N>& outEvents)
 {
     DIA_PROFILE_SCOPE("stream.consume", Dia::Observation::Profile::Category::kDiaStream);
+    DIA_TRACE_ZONE("stream.consume");
     DIA_ASSERT(readerIndex >= 0 && readerIndex < mReaderCount,
         "EventStreamStore::Consume — invalid readerIndex %d", readerIndex);
 
@@ -389,6 +402,7 @@ inline TapHandle EventStreamStore<T>::AttachTap(TapCallback cb)
             mTaps[i].callback = std::move(cb);
             mTaps[i].id       = h.id;
             ++mTapCount;
+            DIA_LOG_DEBUG("stream", "stream.tap.attached stream_id=%s tap_id=%u", mId.AsChar(), h.id);
             return h;
         }
     }
@@ -408,6 +422,7 @@ inline void EventStreamStore<T>::DetachTap(TapHandle handle)
             mTaps[i].callback = nullptr;
             mTaps[i].id       = 0;
             --mTapCount;
+            DIA_LOG_DEBUG("stream", "stream.tap.detached stream_id=%s tap_id=%u", mId.AsChar(), handle.id);
             return;
         }
     }

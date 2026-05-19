@@ -7,6 +7,7 @@
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Trace/DiaTrace.h>
 
 #include <chrono>
 
@@ -114,6 +115,7 @@ namespace Dia { namespace ApplicationFlow {
     void ProcessingUnit::Update(float deltaTime)
     {
         DIA_PROFILE_SCOPE("pu.update", Dia::Observation::Profile::Category::kDiaApplicationFlow);
+        DIA_TRACE_ZONE("pu.update");
 
         // Forward pass: starting/active modules.
         for (unsigned int i = 0; i < mModuleCount; ++i)
