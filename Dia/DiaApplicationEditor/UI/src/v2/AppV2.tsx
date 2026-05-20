@@ -21,6 +21,7 @@ export const AppV2: React.FC = () => {
     const [selection, setSelection] = useState<Selection>(null);
 
     const applyStateSnapshot = useManifestStoreV2((s) => s.applyStateSnapshot);
+    const refreshState = useManifestStoreV2((s) => s.refreshState);
     const hasManifest = useManifestStoreV2((s) => s.hasManifest);
     const filePath = useManifestStoreV2((s) => s.filePath);
     const manifest = useManifestStoreV2((s) => s.manifest);
@@ -32,6 +33,11 @@ export const AppV2: React.FC = () => {
     const updateStreamStates = useLiveStoreV2((s) => s.updateStreamStates);
     const clearLiveState = useLiveStoreV2((s) => s.clearLiveState);
     const connectionState = useLiveStoreV2((s) => s.connectionState);
+
+    // Pull state from C++ on mount — handles the case where OnLoad fires before React is ready
+    useEffect(() => {
+        refreshState();
+    }, [refreshState]);
 
     useEffect(() => {
         (window as any).DiaEditor_onDataChanged = (topic: string, data: unknown) => {

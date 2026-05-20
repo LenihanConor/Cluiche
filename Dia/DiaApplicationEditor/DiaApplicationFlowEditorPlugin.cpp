@@ -179,22 +179,34 @@ namespace Dia { namespace Editor {
                 [](const Dia::Editor::ProjectContext& proj, void* ud)
                 {
                     auto* self = static_cast<DiaApplicationFlowEditorPlugin*>(ud);
+                    DIA_LOG_INFO("Editor", "AppFlowEditor: OnDiagameProjectChanged fired, applicationManifestPath='%s'",
+                        proj.applicationManifestPath[0] ? proj.applicationManifestPath : "<empty>");
                     if (proj.applicationManifestPath[0] != '\0')
                     {
                         Json::Value req;
                         req["path"] = proj.applicationManifestPath;
+                        // Store path for deferred push — React may not be mounted yet
+                        self->mPendingManifestPath = Dia::Core::Containers::String512(proj.applicationManifestPath);
                         self->HandleManifestLoad(req);
                     }
                 }, this);
 
-            // Auto-load if a project is already open
+            // Auto-load if a project is already open when plugin loads
             const auto& proj = mModel->GetDiagameProject();
+            DIA_LOG_INFO("Editor", "AppFlowEditor: OnLoad project check, diagamePath='%s' applicationManifestPath='%s'",
+                proj.diagamePath[0] ? proj.diagamePath : "<empty>",
+                proj.applicationManifestPath[0] ? proj.applicationManifestPath : "<empty>");
             if (proj.applicationManifestPath[0] != '\0')
             {
+                mPendingManifestPath = Dia::Core::Containers::String512(proj.applicationManifestPath);
                 Json::Value req;
                 req["path"] = proj.applicationManifestPath;
                 HandleManifestLoad(req);
             }
+        }
+        else
+        {
+            DIA_LOG_WARNING("Editor", "AppFlowEditor: OnLoad — mModel is null, cannot subscribe to project changes");
         }
 
         // Register metrics
@@ -263,6 +275,7 @@ namespace Dia { namespace Editor {
 
         if (!data.isMember("path") || data["path"].asString().empty())
         {
+            DIA_LOG_ERROR("Editor", "AppFlowEditor: HandleManifestLoad — no path in request");
             result["ok"]    = false;
             result["error"] = "path required";
             return result;
@@ -270,6 +283,7 @@ namespace Dia { namespace Editor {
 
         const std::string path = data["path"].asString();
         const char* pathCStr   = path.c_str();
+        DIA_LOG_INFO("Editor", "AppFlowEditor: HandleManifestLoad loading '%s'", pathCStr);
 
         LARGE_INTEGER loadFreq, loadStart, loadEnd;
         ::QueryPerformanceFrequency(&loadFreq);
@@ -286,7 +300,8 @@ namespace Dia { namespace Editor {
         {
             result["ok"]    = false;
             result["error"] = lr.errorMessage;
-            DIA_LOG_ERROR("Editor", "Manifest load failed: status %d", (int)lr.status);
+            DIA_LOG_ERROR("Editor", "AppFlowEditor: Manifest load FAILED path='%s' status=%d error='%s'",
+                pathCStr, (int)lr.status, lr.errorMessage);
             return result;
         }
 
@@ -369,15 +384,34 @@ namespace Dia { namespace Editor {
     {
         Json::Value result;
 
+        DIA_LOG_INFO("Editor", "AppFlowEditor: manifest.getState called, hasManifest=%d pendingPath='%s'",
+            (int)mEditorState.hasManifest,
+            mPendingManifestPath.IsEmpty() ? "<none>" : mPendingManifestPath.AsCStr());
+
+        // If we have a pending path but the manifest didn't load yet (e.g. file wasn't ready),
+        // try loading it now.
+        if (!mEditorState.hasManifest && !mPendingManifestPath.IsEmpty())
+        {
+            DIA_LOG_INFO("Editor", "AppFlowEditor: retrying deferred load of '%s'", mPendingManifestPath.AsCStr());
+            Json::Value req;
+            req["path"] = mPendingManifestPath.AsCStr();
+            HandleManifestLoad(req);
+        }
+
         if (!mEditorState.hasManifest)
         {
             result["ok"]    = false;
             result["error"] = "no manifest loaded";
+            DIA_LOG_INFO("Editor", "AppFlowEditor: manifest.getState — still no manifest after retry");
             return result;
         }
 
+        // Push via event AND return in response so React gets it either way
+        const Json::Value stateJson = BuildManifestStateJson(mEditorState);
+        if (mBridge) mBridge->NotifyUIDataChanged("manifest.state", stateJson);
+
         result["ok"]    = true;
-        result["state"] = BuildManifestStateJson(mEditorState);
+        result["state"] = stateJson;
         return result;
     }
 

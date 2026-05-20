@@ -2,6 +2,7 @@
 
 #include <DiaEditor/Plugin/IEditorPlugin.h>
 #include <DiaEditor/MVC/EditorModel.h>
+#include <DiaCore/Strings/String512.h>
 #include <DiaCore/FilePath/FileWatcher.h>
 #include <DiaApplicationEditor/V2/ManifestEditorState.h>
 #include <DiaApplicationEditor/V2/Commands/CommandHistory.h>
@@ -63,6 +64,9 @@ namespace Dia { namespace Editor {
 
         Dia::Core::FileWatcher mFileWatcher;
         bool mSuppressFileWatchDuringSave = false;
+
+        // Path stored so React can pull it via manifest.getState after mounting
+        Dia::Core::Containers::String512 mPendingManifestPath;
 
         // Live connection state (used by health reporter via reference)
         bool mIsLiveConnected = false;
