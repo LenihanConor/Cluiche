@@ -884,7 +884,20 @@
       "Bash(\"/c/Program Files/nodejs/npm.cmd\" run build)",
       "PowerShell(Get-Process *)",
       "Bash(PATH='/c/Program Files/nodejs:__TRACKED_VAR__' '/c/Program Files/nodejs/npm.cmd' test -- --run)",
-      "Bash(PATH='/c/Program Files/nodejs:__TRACKED_VAR__' '/c/Program Files/nodejs/npm.cmd' run build)"
+      "Bash(PATH='/c/Program Files/nodejs:__TRACKED_VAR__' '/c/Program Files/nodejs/npm.cmd' run build)",
+      "Bash(PATH='/c/Program Files/nodejs:__TRACKED_VAR__' '/c/Program Files/nodejs/npm.cmd' test -- --run src/layout/Toolbar.test.tsx)",
+      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;\" + $env:PATH; Set-Location \"C:/GitHub/Cluiche/Cluiche/CluicheEditor/UI\"; & \".\\\\node_modules\\\\.bin\\\\vitest.cmd\" run src/layout/Toolbar.test.tsx 2>&1 | Select-Object -Last 80)",
+      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;\" + $env:PATH; Set-Location \"C:/GitHub/Cluiche/Cluiche/CluicheEditor/UI\"; & \".\\\\node_modules\\\\.bin\\\\vitest.cmd\" run 2>&1 | Select-Object -Last 50)",
+      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;\" + $env:PATH; Set-Location \"C:/GitHub/Cluiche/Dia/DiaApplicationEditor/UI\"; & \".\\\\node_modules\\\\.bin\\\\vitest.cmd\" run src/v2/LiveConnectionButton.test.tsx 2>&1 | Select-Object -Last 20)",
+      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;\" + $env:PATH; Set-Location \"C:/GitHub/Cluiche/Cluiche/CluicheEditor/UI\"; & \".\\\\node_modules\\\\.bin\\\\vitest.cmd\" run src/layout/Toolbar.test.tsx 2>&1 | Select-Object -Last 15)",
+      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;\" + $env:PATH; Set-Location \"C:/GitHub/Cluiche/Cluiche/CluicheEditor/UI\"; & \"C:\\\\Program Files\\\\nodejs\\\\npm.cmd\" run build 2>&1 | Select-Object -Last 20)",
+      "Bash(PATH='/c/Program Files/nodejs:__TRACKED_VAR__' npx vitest run src/v2/StreamsTab.test.tsx)",
+      "Bash(PATH='/c/Program Files/nodejs:__TRACKED_VAR__' npx vitest run)",
+      "Read(//c/c/GitHub/Cluiche/Dia/DiaApplicationEditor/**)",
+      "Read(//c/c/GitHub/Cluiche/Cluiche/**)",
+      "Bash(PowerShell -Command \"Get-ChildItem -Path C:\\\\GitHub\\\\Cluiche\\\\Dia\\\\DiaApplicationEditor -Filter '*est*.cpp' -Recurse -File | Select-Object -ExpandProperty FullName\")",
+      "PowerShell(npx vitest run 2>&1 | Select-Object -Last 15)",
+      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;$env:PATH\"; Set-Location \"C:\\\\GitHub\\\\Cluiche\\\\Dia\\\\DiaApplicationEditor\\\\UI\"; & npx vitest run 2>&1 | Select-Object -Last 20)"
     ],
     "defaultMode": "auto"
   }

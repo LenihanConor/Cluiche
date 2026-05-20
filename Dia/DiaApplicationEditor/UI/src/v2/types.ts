@@ -1,3 +1,5 @@
+export type OverflowPolicy = 'drop-oldest' | 'drop-newest' | 'block' | 'fail-loud';
+
 export interface StreamV2 {
     id: string;
     kind: string;
@@ -6,6 +8,9 @@ export interface StreamV2 {
     toPU: string;
     capacity: number;
     maxReaders: number;
+    multiWriter?: boolean;
+    overflow?: OverflowPolicy;
+    blockTimeoutMs?: number;
 }
 
 export interface ModuleV2 {

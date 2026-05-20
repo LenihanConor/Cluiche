@@ -134,4 +134,98 @@ describe('StreamsTab', () => {
         const throughput = screen.getByTestId('live-throughput');
         expect(throughput.textContent).toContain('42 msg/s');
     });
+
+    describe('kind-aware fields', () => {
+        it('EventStream renders overflow select but no multi-writer checkbox', async () => {
+            const { bridgeRequest } = await import('./bridge');
+            (bridgeRequest as ReturnType<typeof vi.fn>).mockClear();
+
+            const streams = [makeStream({ id: 'evt', kind: 'EventStream', overflow: 'drop-oldest' })];
+            setupMocks(makeManifest(streams));
+            render(<StreamsTab />);
+            fireEvent.click(screen.getByTestId('stream-row'));
+
+            expect(screen.getByTestId('stream-overflow-row')).toBeTruthy();
+            expect(screen.queryByTestId('stream-multiwriter-row')).toBeNull();
+            expect(screen.queryByTestId('stream-block-timeout-row')).toBeNull();
+        });
+
+        it('FrameStream renders multi-writer checkbox but no overflow select', () => {
+            const streams = [makeStream({ id: 'frm', kind: 'FrameStream', multiWriter: true })];
+            setupMocks(makeManifest(streams));
+            render(<StreamsTab />);
+            fireEvent.click(screen.getByTestId('stream-row'));
+
+            expect(screen.getByTestId('stream-multiwriter-row')).toBeTruthy();
+            expect(screen.queryByTestId('stream-overflow-row')).toBeNull();
+            const cb = screen.getByTestId('stream-multiwriter-checkbox') as HTMLInputElement;
+            expect(cb.checked).toBe(true);
+        });
+
+        it('EventStream with overflow=block renders block-timeout input', () => {
+            const streams = [makeStream({ id: 'evt', kind: 'EventStream', overflow: 'block', blockTimeoutMs: 250 })];
+            setupMocks(makeManifest(streams));
+            render(<StreamsTab />);
+            fireEvent.click(screen.getByTestId('stream-row'));
+
+            expect(screen.getByTestId('stream-block-timeout-row')).toBeTruthy();
+        });
+
+        it('changing overflow select calls bridgeRequest with SetStreamOverflow', async () => {
+            const { bridgeRequest } = await import('./bridge');
+            (bridgeRequest as ReturnType<typeof vi.fn>).mockClear();
+
+            const streams = [makeStream({ id: 'evt', kind: 'EventStream', overflow: 'drop-oldest' })];
+            setupMocks(makeManifest(streams));
+            render(<StreamsTab />);
+            fireEvent.click(screen.getByTestId('stream-row'));
+
+            const sel = screen.getByTestId('stream-overflow-select') as HTMLSelectElement;
+            fireEvent.change(sel, { target: { value: 'fail-loud' } });
+
+            expect(bridgeRequest).toHaveBeenCalledWith('manifest.applyCommand', {
+                commandType: 'SetStreamOverflow',
+                streamId: 'evt',
+                value: 'fail-loud',
+            });
+        });
+
+        it('toggling multi-writer checkbox calls bridgeRequest with SetStreamMultiWriter', async () => {
+            const { bridgeRequest } = await import('./bridge');
+            (bridgeRequest as ReturnType<typeof vi.fn>).mockClear();
+
+            const streams = [makeStream({ id: 'frm', kind: 'FrameStream', multiWriter: false })];
+            setupMocks(makeManifest(streams));
+            render(<StreamsTab />);
+            fireEvent.click(screen.getByTestId('stream-row'));
+
+            const cb = screen.getByTestId('stream-multiwriter-checkbox') as HTMLInputElement;
+            fireEvent.click(cb);
+
+            expect(bridgeRequest).toHaveBeenCalledWith('manifest.applyCommand', {
+                commandType: 'SetStreamMultiWriter',
+                streamId: 'frm',
+                value: true,
+            });
+        });
+
+        it('kind select change calls bridgeRequest with SetStreamKind', async () => {
+            const { bridgeRequest } = await import('./bridge');
+            (bridgeRequest as ReturnType<typeof vi.fn>).mockClear();
+
+            const streams = [makeStream({ id: 'frm', kind: 'FrameStream' })];
+            setupMocks(makeManifest(streams));
+            render(<StreamsTab />);
+            fireEvent.click(screen.getByTestId('stream-row'));
+
+            const sel = screen.getByTestId('stream-kind-select') as HTMLSelectElement;
+            fireEvent.change(sel, { target: { value: 'EventStream' } });
+
+            expect(bridgeRequest).toHaveBeenCalledWith('manifest.applyCommand', {
+                commandType: 'SetStreamKind',
+                streamId: 'frm',
+                value: 'EventStream',
+            });
+        });
+    });
 });

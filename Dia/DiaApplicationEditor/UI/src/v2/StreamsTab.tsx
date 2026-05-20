@@ -2,11 +2,14 @@ import React, { useState } from 'react';
 import { bridgeRequest } from './bridge';
 import { useManifestStoreV2 } from './useManifestStoreV2';
 import { useLiveStoreV2 } from './useLiveStoreV2';
-import type { StreamV2 } from './types';
+import type { StreamV2, OverflowPolicy } from './types';
 
 function isSystemStream(id: string): boolean {
     return id.startsWith('$');
 }
+
+const KIND_OPTIONS = ['EventStream', 'FrameStream'] as const;
+const OVERFLOW_OPTIONS: OverflowPolicy[] = ['drop-oldest', 'drop-newest', 'block', 'fail-loud'];
 
 // ────────────────────────────────────────────────────────────
 // StreamDetailInspector
@@ -19,6 +22,8 @@ interface StreamDetailInspectorProps {
 
 const StreamDetailInspector: React.FC<StreamDetailInspectorProps> = ({ stream, msgPerSec }) => {
     const readonly = isSystemStream(stream.id);
+    const isEvent = stream.kind === 'EventStream';
+    const isFrame = stream.kind === 'FrameStream';
 
     const sendCommand = (commandType: string, value: unknown) => {
         bridgeRequest('manifest.applyCommand', { commandType, streamId: stream.id, value });
@@ -75,12 +80,20 @@ const StreamDetailInspector: React.FC<StreamDetailInspectorProps> = ({ stream, m
 
             <div style={rowStyle}>
                 <label style={labelStyle}>Kind</label>
-                <input
+                <select
+                    data-testid="stream-kind-select"
                     style={fieldStyle}
                     value={stream.kind}
                     disabled={readonly}
                     onChange={(e) => sendCommand('SetStreamKind', e.target.value)}
-                />
+                >
+                    {KIND_OPTIONS.map(k => (
+                        <option key={k} value={k}>{k}</option>
+                    ))}
+                    {!KIND_OPTIONS.includes(stream.kind as typeof KIND_OPTIONS[number]) && (
+                        <option value={stream.kind}>{stream.kind}</option>
+                    )}
+                </select>
             </div>
 
             <div style={rowStyle}>
@@ -134,6 +147,53 @@ const StreamDetailInspector: React.FC<StreamDetailInspectorProps> = ({ stream, m
                     onChange={(e) => sendCommand('SetStreamMaxReaders', Number(e.target.value))}
                 />
             </div>
+
+            {isEvent && (
+                <>
+                    <div style={rowStyle} data-testid="stream-overflow-row">
+                        <label style={labelStyle}>Overflow Policy</label>
+                        <select
+                            data-testid="stream-overflow-select"
+                            style={fieldStyle}
+                            value={stream.overflow ?? 'drop-oldest'}
+                            disabled={readonly}
+                            onChange={(e) => sendCommand('SetStreamOverflow', e.target.value)}
+                        >
+                            {OVERFLOW_OPTIONS.map(p => (
+                                <option key={p} value={p}>{p}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {stream.overflow === 'block' && (
+                        <div style={rowStyle} data-testid="stream-block-timeout-row">
+                            <label style={labelStyle}>Block Timeout (ms)</label>
+                            <input
+                                type="number"
+                                style={fieldStyle}
+                                value={stream.blockTimeoutMs ?? 0}
+                                disabled={readonly}
+                                onChange={(e) => sendCommand('SetStreamBlockTimeout', Number(e.target.value))}
+                            />
+                        </div>
+                    )}
+                </>
+            )}
+
+            {isFrame && (
+                <div style={rowStyle} data-testid="stream-multiwriter-row">
+                    <label style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <input
+                            type="checkbox"
+                            data-testid="stream-multiwriter-checkbox"
+                            checked={!!stream.multiWriter}
+                            disabled={readonly}
+                            onChange={(e) => sendCommand('SetStreamMultiWriter', e.target.checked)}
+                        />
+                        <span>Multi-writer</span>
+                    </label>
+                </div>
+            )}
         </div>
     );
 };
