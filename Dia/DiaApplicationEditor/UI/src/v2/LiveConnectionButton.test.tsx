@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import React from 'react';
 
 vi.mock('./useLiveStoreV2', () => ({
     useLiveStoreV2: vi.fn(),

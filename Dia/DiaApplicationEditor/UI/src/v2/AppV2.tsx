@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useManifestStoreV2 } from './useManifestStoreV2';
 import { useUndoStoreV2 } from './useUndoStoreV2';
 import { useValidationStoreV2 } from './useValidationStoreV2';
@@ -10,7 +10,7 @@ type Tab = 'graph' | 'presence' | 'streams';
 export const AppV2: React.FC = () => {
     const [activeTab, setActiveTab] = useState<Tab>('graph');
     const applyStateSnapshot = useManifestStoreV2((s) => s.applyStateSnapshot);
-    const syncUndoFromBackend = useUndoStoreV2((s) => s.syncFromBackend);
+    const applyUndoResponse = useUndoStoreV2((s) => s.applyUndoResponse);
     const setValidationResult = useValidationStoreV2((s) => s.setResult);
     const setConnectionState = useLiveStoreV2((s) => s.setConnectionState);
     const setActiveStage = useLiveStoreV2((s) => s.setActiveStage);
@@ -29,7 +29,7 @@ export const AppV2: React.FC = () => {
                     // handled via full manifest.state push; nothing extra needed
                     break;
                 case 'history.state':
-                    if (d) syncUndoFromBackend({ canUndo: d.canUndo, canRedo: d.canRedo, count: d.count, isDirty: d.isDirty });
+                    if (d) applyUndoResponse({ canUndo: d.canUndo, canRedo: d.canRedo, isDirty: d.isDirty });
                     break;
                 case 'validation.result':
                     if (d) setValidationResult({ errorCount: d.errorCount ?? 0, warningCount: d.warningCount ?? 0, issues: d.issues ?? [] });
@@ -52,7 +52,7 @@ export const AppV2: React.FC = () => {
                     break;
             }
         };
-    }, [applyStateSnapshot, syncUndoFromBackend, setValidationResult, setConnectionState, setActiveStage, updateModuleStates, updateStreamStates, clearLiveState]);
+    }, [applyStateSnapshot, applyUndoResponse, setValidationResult, setConnectionState, setActiveStage, updateModuleStates, updateStreamStates, clearLiveState]);
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#1e1e1e', color: '#ccc', fontFamily: 'sans-serif' }}>
