@@ -10,6 +10,11 @@
 
 #include <atomic>
 
+namespace Dia { namespace Observation { namespace Metric {
+    class Gauge;
+    class Histogram;
+} } }
+
 namespace Dia { namespace Graphics { class ICanvas; } }
 namespace Dia { namespace Window { class IWindow; } }
 namespace Dia { namespace SFML { class TextureHandler; } }
@@ -64,6 +69,11 @@ private:
     Dia::Window::IWindow*   mWindow = nullptr;
     Dia::Graphics::ICanvas* mCanvas = nullptr;
     Dia::Input::EventData   mFrameEvents;
+
+    // Metric primitives — owned by MetricRegistry, pointers nulled on DoStop.
+    Dia::Observation::Metric::Gauge*     mMetricInputSources    = nullptr;
+    Dia::Observation::Metric::Histogram* mMetricEventsPerFrame  = nullptr;
+    Dia::Observation::Metric::Gauge*     mMetricActiveGamepads  = nullptr;
 };
 
 } } // namespace Cluiche::AppFlow

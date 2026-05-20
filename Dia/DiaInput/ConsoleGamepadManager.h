@@ -85,6 +85,8 @@ namespace Dia
 			/// @return true if gamepad is in active list, false otherwise
 			bool IsRegisteredAsActive(const ConsoleGamepad& gamepad)const;
 
+			unsigned int GetActiveGamepadCount() const { return mGamepadActiveList.Size(); }
+
 		private:
 			ConsoleGamepadActiveList mGamepadActiveList;  ///< Currently connected gamepads
 			ConsoleGamepadPool mGamepadPool;              ///< Pool of up to 8 gamepads

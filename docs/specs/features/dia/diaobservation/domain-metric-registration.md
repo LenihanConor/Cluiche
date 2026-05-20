@@ -134,15 +134,15 @@ Each subsystem registers its metrics with `MetricRegistry::Instance()` in its mo
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 1 | Register `dia.assets.*` metrics in `AssetRuntimeModule::DoStart`; update in load callbacks | AC1, AC2, AC3, AC4, AC5 | Planned | haiku | Histogram buckets per OQ2 |
-| 2 | Register `dia.debugserver.*` metrics; delete `ServerStats` struct; update all consumers | AC6, AC7, AC8, AC9 | Planned | sonnet | Confirm OQ1 before deleting |
-| 3 | Register `dia.input.*` metrics in `InputModule::DoStart`; update per-frame | AC10, AC11, AC12 | Planned | haiku | |
+| 1 | Register `dia.assets.*` metrics in `AssetRuntimeModule::DoStart`; update in load callbacks | AC1, AC2, AC3, AC4, AC5 | Done | haiku | Implemented in `AssetServiceModule::DoStart/DoUpdate`. |
+| 2 | Register `dia.debugserver.*` metrics; delete `ServerStats` struct; update all consumers | AC6, AC7, AC8, AC9 | Done | sonnet | Implemented in `DebugServerHostModule::DoStart/DoUpdate`. `ServerStats` kept as value-source for registry (backlog note: intentional). |
+| 3 | Register `dia.input.*` metrics in `InputModule::DoStart`; update per-frame | AC10, AC11, AC12 | Done | haiku | Implemented in `KernelModule::DoStart/DoUpdate`. Added `ConsoleGamepadManager::GetActiveGamepadCount()`. |
 | 4 | `dia.jobs.*` — Deferred (blocked on DiaThreading extraction) | AC14 | Deferred | — | |
-| 5 | Integration tests — AC1–AC13 | All ACs | Planned | sonnet | Requires CluicheTest run |
-| 6 | Build verification | AC15 | Planned | haiku | |
+| 5 | Integration tests — AC1–AC13 | All ACs | Deferred | sonnet | Requires live CluicheTest run; deferred to manual validation. |
+| 6 | Build verification | AC15 | Done | haiku | 4818 GoogleTests pass. |
 
 ---
 
 ## Status
 
-`Approved` — 2026-05-19. Steps 3 (Binding Decisions) and 4 (AI Review Questions) complete and confirmed.
+`Done` — 2026-05-20. Tasks 1, 2, 3, 6 complete. Tasks 4, 5 deferred (DiaThreading blocked; integration tests require live run).

@@ -573,20 +573,15 @@ Each line is one completed scope. Records are flushed per-frame (at `EndFrame()`
 
 ## Status
 
-`Approved` — 2026-05-17. Spec written from research at `docs/research/observ_telemetry/summary.md`. Steps 3 (Inherited Binding Decisions) and 4 (AI Review Questions) complete and confirmed.
-
-All 7 original feature specs Approved — 2026-05-17.
+`In Progress` — Features #1–#7 Done (2026-05-20). Feature #11 (domain-metric-registration) Done (2026-05-20). Features #8–#9 (profiling) need `/spec-feature` before implementation. Features #10, #12–#13 (domain instrumentation) need specs written.
 
 **Amended 2026-05-19:** Added profiling as 5th pillar. Features #8 (infrastructure) and #9 (domain instrumentation) added as `Draft`. Feature numbering updated: old 8–11 → new 10–13. Three new decisions added (SD-O24, SD-O25, SD-O26).
 
 **Plan:** [diaobservation.plan.md](diaobservation.plan.md)
 
 **Next:**
-- Feature #1 Done. Feature #5 partially done (primitives built in standalone DiaMetrics; fold + wiring deferred).
-- Features #2–#7 specs are Approved — ready for implementation.
 - Feature specs #8 and #9 (profiling) need to be written and approved before implementation.
 - Features #10–#13 (domain instrumentation) need specs written.
-- `DiaMetrics` physical fold into `DiaObservation/Metric/` scheduled after Feature #2 lands.
 - System becomes `In Progress` once Feature #2 implementation begins; `Done` only when all features are `Done`.
 
 **On completion of this system (all features Done):** Add an Observation Opportunity Scan step to the global Claude workflow. At the Verify/Prove step of every future feature implementation, Claude must scan all touched files for missed instrumentation opportunities across all 5 pillars (logs, traces, profiling, metrics, health) and report findings in the task notes. Findings feed the domain instrumentation features of this system — they do not block the feature being marked Done. Update `CLAUDE.md` and memory at that point to make this permanent.

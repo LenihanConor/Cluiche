@@ -8,6 +8,9 @@
 #include <DiaInput/EventData.h>
 #include <DiaInput/Event.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Metric/Gauge.h>
+#include <DiaObservation/Metric/Histogram.h>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
@@ -60,6 +63,18 @@ Dia::ApplicationFlow::StartResult KernelModule::DoStart()
 
     mCanvas->SetActiveContext(false);
 
+    // Register input metrics with the global MetricRegistry.
+    {
+        auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
+        mMetricInputSources   = reg.RegisterGauge(Dia::Core::StringCRC("dia.input.sources"));
+        static const float kEventBuckets[] = { 0.0f, 1.0f, 5.0f, 10.0f, 50.0f, 100.0f };
+        mMetricEventsPerFrame = reg.RegisterHistogram(
+            Dia::Core::StringCRC("dia.input.events_per_frame"), kEventBuckets, 6);
+        mMetricActiveGamepads = reg.RegisterGauge(Dia::Core::StringCRC("dia.input.active_gamepads"));
+        // 2 sources added above (renderWindow + gamepadManager)
+        mMetricInputSources->Set(2.0);
+    }
+
     DIA_LOG_INFO("Application", "KernelModule DoStart exit");
     return Dia::ApplicationFlow::StartResult::kReady;
 }
@@ -71,6 +86,11 @@ void KernelModule::DoUpdate(float /*dt*/)
     mInputSourceManager.StartFrame();
     mInputSourceManager.Update(mFrameEvents);
     mInputSourceManager.EndFrame();
+
+    if (mMetricEventsPerFrame)
+        mMetricEventsPerFrame->Observe(static_cast<double>(mFrameEvents.Size()));
+    if (mMetricActiveGamepads)
+        mMetricActiveGamepads->Set(static_cast<double>(mGamepadManager.GetActiveGamepadCount()));
 
     for (unsigned int i = 0; i < mFrameEvents.Size(); ++i)
     {
@@ -106,6 +126,11 @@ Dia::ApplicationFlow::StopResult KernelModule::DoStop()
     mWindowFactory.Destroy(mWindow);
     mWindow  = nullptr;
     mCanvas  = nullptr;
+
+    // Null metric pointers — MetricRegistry owns the objects.
+    mMetricInputSources   = nullptr;
+    mMetricEventsPerFrame = nullptr;
+    mMetricActiveGamepads = nullptr;
 
     DIA_LOG_INFO("Application", "KernelModule DoStop exit");
     return Dia::ApplicationFlow::StopResult::kDone;
