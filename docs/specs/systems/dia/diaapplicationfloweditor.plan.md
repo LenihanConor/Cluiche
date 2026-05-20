@@ -137,19 +137,19 @@ All C++ backend code integrates with DiaObservation (when available) and DiaMetr
 |---|------|------|--------|-------|-------|
 | **Phase 1 — Data Model & Core Logic** | | | | | |
 | 1 | Define `ManifestEditorState` and provenance structs in `Dia/DiaApplicationEditor/V2/` | `TestManifestEditorState`: 11 tests — all pass | Done | sonnet | `V2/ManifestEditorState.h/.cpp` |
-| 2 | Implement `ManifestLoader::Load(path)` — JSON parse, version check, populate model | `TestManifestLoader`: valid load, malformed JSON, wrong version, locked file (4 tests) | Todo | sonnet | Depends on #1 |
-| 3 | Implement `ManifestSaver::Save(doc, path)` — canonical JSON, .bak, atomic write | `TestManifestSaver`: creates .bak, canonical output matches expected, error-blocked save, atomic (tmp+rename) | Todo | sonnet | Depends on #1 |
-| 4 | Implement `ManifestValidator` with all 12 rules | `TestManifestValidator`: 24+ tests (pass/fail per rule) | Todo | sonnet | Depends on #1 |
+| 2 | Implement `ManifestLoader::Load(path)` — JSON parse, version check, populate model | `TestManifestLoader`: 5 tests — all pass | Done | sonnet | `V2/ManifestLoader.h/.cpp` |
+| 3 | Implement `ManifestSaver::Save(doc, path)` — canonical JSON, .bak, atomic write | `TestManifestSaver`: 4 tests — all pass | Done | sonnet | `V2/ManifestSaver.h/.cpp` |
+| 4 | Implement `ManifestValidator` with all 12 rules | `TestManifestValidator`: 24 tests — all pass | Done | sonnet | `V2/ManifestValidator.h/.cpp` |
 | 5 | Define `ICommand` interface, `CommandHistory`, `CompoundCommand` | `TestCommandHistory`: 12 tests — all pass | Done | sonnet | `V2/Commands/ICommand.h`, `CommandHistory.h/.cpp`, `CompoundCommand.h/.cpp` |
-| 6 | Implement concrete commands: AddPU, RemovePU, SetPUFrequency, SetPUThread, ReorderPU | `TestCommands_PU`: execute/undo each, compound RemovePU | Todo | sonnet | Depends on #1, #5 |
-| 7 | Implement concrete commands: AddModule, RemoveModule, AddModuleDep, RemoveModuleDep, SetModuleStages, SetModuleStartTimeout, SetModuleStopTimeout | `TestCommands_Module`: execute/undo each, cycle detection on AddDep | Todo | sonnet | Depends on #1, #5 |
-| 8 | Implement concrete commands: AddStream, RemoveStream, SetStreamType, SetStreamPayload, SetStreamFromPU, SetStreamToPU, SetStreamCapacity, SetStreamMaxReaders | `TestCommands_Stream`: execute/undo each, $-prefix block | Todo | sonnet | Depends on #1, #5 |
-| 9 | Implement concrete commands: AddStage, RemoveStage, RenameStage, SetStageTrigger, SetInitialStage, ReorderStages | `TestCommands_Stage`: execute/undo each, compound RemoveStage (cleans refs) | Todo | sonnet | Depends on #1, #5 |
+| 6 | Implement concrete commands: AddPU, RemovePU, SetPUFrequency, SetPUThread, ReorderPU | `TestCommands_PU`: 10 tests — all pass | Done | sonnet | `V2/Commands/PUCommands.h/.cpp` |
+| 7 | Implement concrete commands: AddModule, RemoveModule, AddModuleDep, RemoveModuleDep, SetModuleStages, SetModuleStartTimeout, SetModuleStopTimeout | `TestCommands_Module`: 12 tests — all pass | Done | sonnet | `V2/Commands/ModuleCommands.h/.cpp` |
+| 8 | Implement concrete commands: AddStream, RemoveStream, SetStreamType, SetStreamPayload, SetStreamFromPU, SetStreamToPU, SetStreamCapacity, SetStreamMaxReaders | `TestCommands_Stream`: 8 tests — all pass | Done | sonnet | `V2/Commands/StreamCommands.h/.cpp` |
+| 9 | Implement concrete commands: AddStage, RemoveStage, RenameStage, SetStageTrigger, SetInitialStage, ReorderStages | `TestCommands_Stage`: 10 tests — all pass | Done | sonnet | `V2/Commands/StageCommands.h/.cpp` |
 | 10 | Implement `RiskAssessor` | `TestRiskAssessor`: 6 risk conditions (detected when applicable, null when safe) | Todo | sonnet | Depends on #1, commands |
 | 11 | Implement `TypeDiscoveryService` (file-based) | `TestTypeDiscoveryService`: 11 tests — all pass | Done | sonnet | `V2/TypeDiscoveryService.h/.cpp` |
 | 12 | Implement `LiveStateStore` | `TestLiveStateStore`: 12 tests — all pass | Done | sonnet | `V2/LiveStateStore.h/.cpp` |
-| 13 | Wire all Phase 1 code into `DiaApplicationEditor.vcxproj` + filters | Build passes: `dia pipeline --target googletest` ✓ | Done | haiku | |
-| 14 | Wire all GoogleTests into `GoogleTests.vcxproj` + filters | 46 tests pass: `dia run googletest` ✓ | Done | haiku | |
+| 13 | Wire all Phase 1 code into `DiaApplicationEditor.vcxproj` + filters | Build passes: `dia pipeline --target googletest` ✓ | Done | haiku | Updated again for Batch 2 |
+| 14 | Wire all GoogleTests into `GoogleTests.vcxproj` + filters | 4751 tests pass: `dia run googletest` ✓ | Done | haiku | Updated again for Batch 2 |
 | **Phase 2 — Plugin Shell & CEF Bridge** | | | | | |
 | 15 | Create `DiaApplicationFlowEditorPlugin` class implementing IEditorPlugin | Build succeeds; plugin registered in CluicheEditor | Todo | sonnet | After Phase 1 |
 | 16 | Implement CEF message handlers: manifest.load, manifest.save, manifest.getState | Integration: load→getState returns model JSON | Todo | sonnet | Depends on #15 |

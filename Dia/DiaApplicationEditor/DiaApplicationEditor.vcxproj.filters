@@ -22,6 +22,27 @@
     <ClInclude Include="V2\Commands\CompoundCommand.h">
       <Filter>V2\Commands</Filter>
     </ClInclude>
+    <ClInclude Include="V2\Commands\PUCommands.h">
+      <Filter>V2\Commands</Filter>
+    </ClInclude>
+    <ClInclude Include="V2\Commands\ModuleCommands.h">
+      <Filter>V2\Commands</Filter>
+    </ClInclude>
+    <ClInclude Include="V2\Commands\StreamCommands.h">
+      <Filter>V2\Commands</Filter>
+    </ClInclude>
+    <ClInclude Include="V2\Commands\StageCommands.h">
+      <Filter>V2\Commands</Filter>
+    </ClInclude>
+    <ClInclude Include="V2\ManifestLoader.h">
+      <Filter>V2</Filter>
+    </ClInclude>
+    <ClInclude Include="V2\ManifestSaver.h">
+      <Filter>V2</Filter>
+    </ClInclude>
+    <ClInclude Include="V2\ManifestValidator.h">
+      <Filter>V2</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaApplicationEditor.cpp" />
@@ -40,6 +61,27 @@
     </ClCompile>
     <ClCompile Include="V2\Commands\CompoundCommand.cpp">
       <Filter>V2\Commands</Filter>
+    </ClCompile>
+    <ClCompile Include="V2\Commands\PUCommands.cpp">
+      <Filter>V2\Commands</Filter>
+    </ClCompile>
+    <ClCompile Include="V2\Commands\ModuleCommands.cpp">
+      <Filter>V2\Commands</Filter>
+    </ClCompile>
+    <ClCompile Include="V2\Commands\StreamCommands.cpp">
+      <Filter>V2\Commands</Filter>
+    </ClCompile>
+    <ClCompile Include="V2\Commands\StageCommands.cpp">
+      <Filter>V2\Commands</Filter>
+    </ClCompile>
+    <ClCompile Include="V2\ManifestLoader.cpp">
+      <Filter>V2</Filter>
+    </ClCompile>
+    <ClCompile Include="V2\ManifestSaver.cpp">
+      <Filter>V2</Filter>
+    </ClCompile>
+    <ClCompile Include="V2\ManifestValidator.cpp">
+      <Filter>V2</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -247,6 +247,13 @@
     <ClCompile Include="DiaApplicationEditor\TestCommandHistory.cpp" />
     <ClCompile Include="DiaApplicationEditor\TestTypeDiscoveryService.cpp" />
     <ClCompile Include="DiaApplicationEditor\TestLiveStateStore.cpp" />
+    <ClCompile Include="DiaApplicationEditor\TestManifestLoader.cpp" />
+    <ClCompile Include="DiaApplicationEditor\TestManifestSaver.cpp" />
+    <ClCompile Include="DiaApplicationEditor\TestManifestValidator.cpp" />
+    <ClCompile Include="DiaApplicationEditor\TestCommands_PU.cpp" />
+    <ClCompile Include="DiaApplicationEditor\TestCommands_Module.cpp" />
+    <ClCompile Include="DiaApplicationEditor\TestCommands_Stream.cpp" />
+    <ClCompile Include="DiaApplicationEditor\TestCommands_Stage.cpp" />
     <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\StubEditorPlugin.cpp" />
     <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\HelloEditorPlugin.cpp" />
     <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\HomeEditorPlugin.cpp" />

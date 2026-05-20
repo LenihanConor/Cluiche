@@ -83,6 +83,13 @@
     <ClInclude Include="V2\Commands\ICommand.h" />
     <ClInclude Include="V2\Commands\CommandHistory.h" />
     <ClInclude Include="V2\Commands\CompoundCommand.h" />
+    <ClInclude Include="V2\Commands\PUCommands.h" />
+    <ClInclude Include="V2\Commands\ModuleCommands.h" />
+    <ClInclude Include="V2\Commands\StreamCommands.h" />
+    <ClInclude Include="V2\Commands\StageCommands.h" />
+    <ClInclude Include="V2\ManifestLoader.h" />
+    <ClInclude Include="V2\ManifestSaver.h" />
+    <ClInclude Include="V2\ManifestValidator.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaApplicationEditor.cpp" />
@@ -92,6 +99,13 @@
     <ClCompile Include="V2\TypeDiscoveryService.cpp" />
     <ClCompile Include="V2\Commands\CommandHistory.cpp" />
     <ClCompile Include="V2\Commands\CompoundCommand.cpp" />
+    <ClCompile Include="V2\Commands\PUCommands.cpp" />
+    <ClCompile Include="V2\Commands\ModuleCommands.cpp" />
+    <ClCompile Include="V2\Commands\StreamCommands.cpp" />
+    <ClCompile Include="V2\Commands\StageCommands.cpp" />
+    <ClCompile Include="V2\ManifestLoader.cpp" />
+    <ClCompile Include="V2\ManifestSaver.cpp" />
+    <ClCompile Include="V2\ManifestValidator.cpp" />
   </ItemGroup>
 
   <ItemGroup>
