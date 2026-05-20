@@ -193,7 +193,7 @@ All C++ backend code integrates with DiaObservation (when available) and DiaMetr
 | 51 | Add DIA_TRACE_ZONE to ManifestLoader::Load, ManifestSaver::Save, ManifestValidator::Validate | Grep: trace zones present; verify in `trace.jsonl` output during run | Done | haiku | 3 DIA_TRACE_ZONE calls (ManifestLoad/ManifestSave/ManifestValidate) |
 | 52 | Implement IHealthReporter for editor (loaded file, dirty state, live connection state) | `TestEditorHealth`: reporter returns correct state | Done | sonnet | EditorHealthReporter.h/.cpp; kDegraded when no manifest, kOK otherwise |
 | 53 | DiaCLI `dia types export` command | Integration: generates valid types.json from game build | Done | sonnet | `Dia/DiaCLI/dia_cli/cli/types.py`; scans source for Module/PU subclasses |
-| 54 | Update `dia.applicationeditor.architecture.module.md` YAML frontmatter | Doc review: frontmatter matches new code | Todo | haiku | Last |
+| 54 | Update `dia.applicationeditor.architecture.module.md` YAML frontmatter | Doc review: frontmatter matches new code | Done | haiku | Created `Dia/DiaApplicationEditor/dia.applicationeditor.architecture.module.md` |
 | 55 | Full exhaustive test run: `dia run googletest --filter="AppFlowEditor*"` + `npm test` in UI/ | All C++ tests pass, all Vitest tests pass, zero warnings | Done | sonnet | 141 C++ tests pass; 96 React tests pass |
 | 56 | Launch test: `dia run cluicheeditor` → open manifest → edit → undo → save → verify file | Manual E2E: golden path works | Todo | opus | Final gate |
 
