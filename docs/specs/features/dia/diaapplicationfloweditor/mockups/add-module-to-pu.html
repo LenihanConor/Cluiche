@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PU Inspector — Add / Remove Module</title>
+<style>
+    body {
+        margin: 0;
+        background: #1e1e1e;
+        color: #ccc;
+        font: 13px -apple-system, "Segoe UI", sans-serif;
+        padding: 24px;
+    }
+    h1 {
+        font-size: 14px;
+        font-weight: 600;
+        color: #888;
+        margin: 0 0 12px 0;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .row {
+        display: flex;
+        gap: 32px;
+        align-items: flex-start;
+    }
+    .pu-inspector {
+        background: #1e1e1e;
+        color: #ccc;
+        padding: 8px;
+        font-size: 13px;
+        min-width: 260px;
+        max-width: 280px;
+        border: 1px solid #2d2d2d;
+    }
+    .section-header {
+        padding: 4px 8px;
+        background: #2d2d2d;
+        border-radius: 4px;
+        font-size: 13px;
+        color: #ccc;
+        font-weight: 600;
+        margin-bottom: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        user-select: none;
+    }
+    .section-body {
+        padding: 0 8px 8px;
+    }
+    .props-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+    }
+    .props-label {
+        color: #888;
+        min-width: 100px;
+    }
+    input[type=text], input[type=number], select {
+        background: #2d2d2d;
+        border: 1px solid #444;
+        border-radius: 3px;
+        color: #eee;
+        padding: 2px 6px;
+        font-size: 13px;
+        width: 80px;
+    }
+    .module-card {
+        background: #2d2d2d;
+        border-radius: 4px;
+        padding: 4px 8px;
+        margin-bottom: 4px;
+        font-size: 12px;
+        color: #ccc;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+    }
+    .module-card .id {
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .remove-btn {
+        background: none;
+        border: none;
+        color: #888;
+        cursor: pointer;
+        font-size: 14px;
+        padding: 0 4px;
+        line-height: 1;
+    }
+    .remove-btn:hover { color: #f88; }
+    .add-btn {
+        background: none;
+        border: 1px solid #444;
+        border-radius: 3px;
+        color: #888;
+        cursor: pointer;
+        padding: 4px 10px;
+        font-size: 12px;
+        margin-top: 4px;
+        width: 100%;
+        text-align: left;
+    }
+    .add-btn:hover { background: #2d2d2d; color: #ccc; }
+    .add-form {
+        background: #252526;
+        border: 1px solid #444;
+        border-radius: 4px;
+        padding: 8px;
+        margin-top: 4px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .add-form-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .add-form-row label {
+        color: #888;
+        min-width: 70px;
+        font-size: 11px;
+    }
+    .add-form-row input,
+    .add-form-row select {
+        flex: 1;
+        width: auto;
+    }
+    .add-form-actions {
+        display: flex;
+        gap: 6px;
+        justify-content: flex-end;
+        margin-top: 4px;
+    }
+    .btn-confirm {
+        background: #2e7d4a;
+        border: none;
+        border-radius: 3px;
+        color: #fff;
+        cursor: pointer;
+        padding: 3px 12px;
+        font-size: 12px;
+    }
+    .btn-cancel {
+        background: none;
+        border: 1px solid #444;
+        border-radius: 3px;
+        color: #888;
+        cursor: pointer;
+        padding: 3px 12px;
+        font-size: 12px;
+    }
+    .btn-confirm:disabled {
+        background: #444;
+        color: #666;
+        cursor: not-allowed;
+    }
+    .error-text {
+        color: #e87878;
+        font-size: 11px;
+        margin-top: 2px;
+    }
+    .caption {
+        color: #888;
+        font-size: 11px;
+        margin: 0 0 16px 0;
+    }
+    .panel-title {
+        font-size: 12px;
+        color: #aaa;
+        font-weight: 600;
+        margin: 0 0 8px 0;
+    }
+    /* PU header (matches existing PUInspector style) */
+    .pu-properties {
+        margin-bottom: 8px;
+    }
+    .pu-properties .section-header {
+        cursor: default;
+    }
+</style>
+</head>
+<body>
+
+<h1>PU Inspector — Add / Remove Module mockup</h1>
+<p class="caption">Three states of the PUInspector Modules section: closed (default), inline add form open, with validation error.</p>
+
+<div class="row">
+
+    <!-- ── Default state ───────────────────────────────────────── -->
+    <div>
+        <p class="panel-title">A. Default (closed add form)</p>
+        <div class="pu-inspector">
+            <div class="pu-properties">
+                <div class="section-header">Properties</div>
+                <div class="section-body">
+                    <div class="props-row">
+                        <span class="props-label">instanceId</span>
+                        <span style="color:#eee">MainPU</span>
+                    </div>
+                    <div class="props-row">
+                        <span class="props-label">frequencyHz</span>
+                        <input type="number" value="60">
+                    </div>
+                    <div class="props-row">
+                        <span class="props-label">dedicatedThread</span>
+                        <input type="checkbox" checked>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-header">▼ Modules</div>
+            <div class="section-body">
+                <div class="module-card">
+                    <span class="id">RenderModule</span>
+                    <button class="remove-btn" title="Remove RenderModule">×</button>
+                </div>
+                <div class="module-card">
+                    <span class="id">PhysicsModule</span>
+                    <button class="remove-btn" title="Remove PhysicsModule">×</button>
+                </div>
+                <div class="module-card">
+                    <span class="id">InputModule</span>
+                    <button class="remove-btn" title="Remove InputModule">×</button>
+                </div>
+                <button class="add-btn">+ Add Module</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Form open ───────────────────────────────────────── -->
+    <div>
+        <p class="panel-title">B. + Add Module clicked (form open)</p>
+        <div class="pu-inspector">
+            <div class="section-header">▼ Modules</div>
+            <div class="section-body">
+                <div class="module-card">
+                    <span class="id">RenderModule</span>
+                    <button class="remove-btn">×</button>
+                </div>
+                <div class="module-card">
+                    <span class="id">PhysicsModule</span>
+                    <button class="remove-btn">×</button>
+                </div>
+                <div class="module-card">
+                    <span class="id">InputModule</span>
+                    <button class="remove-btn">×</button>
+                </div>
+
+                <div class="add-form">
+                    <div class="add-form-row">
+                        <label>instanceId</label>
+                        <input type="text" placeholder="e.g. AudioModule" autofocus>
+                    </div>
+                    <div class="add-form-row">
+                        <label>type</label>
+                        <select>
+                            <option value="" disabled selected>pick a type…</option>
+                            <option>RenderModuleType</option>
+                            <option>PhysicsModuleType</option>
+                            <option>InputModuleType</option>
+                            <option>AudioModuleType</option>
+                            <option>NetworkModuleType</option>
+                        </select>
+                    </div>
+                    <div class="add-form-actions">
+                        <button class="btn-cancel">Cancel</button>
+                        <button class="btn-confirm" disabled>Add</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p class="caption" style="max-width:280px;margin-top:8px">
+            Add disabled until both instanceId and typeId are filled.
+            Enter submits, Escape cancels.
+        </p>
+    </div>
+
+    <!-- ── Validation error ────────────────────────────────── -->
+    <div>
+        <p class="panel-title">C. Duplicate instanceId (inline error)</p>
+        <div class="pu-inspector">
+            <div class="section-header">▼ Modules</div>
+            <div class="section-body">
+                <div class="module-card">
+                    <span class="id">RenderModule</span>
+                    <button class="remove-btn">×</button>
+                </div>
+                <div class="module-card">
+                    <span class="id">PhysicsModule</span>
+                    <button class="remove-btn">×</button>
+                </div>
+
+                <div class="add-form">
+                    <div class="add-form-row">
+                        <label>instanceId</label>
+                        <input type="text" value="RenderModule" style="border-color:#e87878">
+                    </div>
+                    <div class="error-text">Already used in this PU.</div>
+                    <div class="add-form-row">
+                        <label>type</label>
+                        <select>
+                            <option>RenderModuleType</option>
+                        </select>
+                    </div>
+                    <div class="add-form-actions">
+                        <button class="btn-cancel">Cancel</button>
+                        <button class="btn-confirm" disabled>Add</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

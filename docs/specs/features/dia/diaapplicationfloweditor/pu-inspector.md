@@ -25,6 +25,8 @@ Provide an editable sidebar inspector panel that displays and allows modificatio
 6. **Edit via commands** — All property edits issue commands through Undo/Redo system.
 7. **Traffic-light dots** — Module cards use `.tl` dots (ED-008). Grey offline; colored in live mode.
 8. **Module card click** — Clicking a module card switches to Module Inspector for that module.
+9. **Add Module affordance** — A "+ Add Module" button at the bottom of the Modules section. Click reveals an inline form: `instanceId` text input + `typeId` dropdown populated from `types.get` (TypeDiscoveryService). Enter or "Add" submits `AddModule` command; Escape or "Cancel" discards.
+10. **Remove Module affordance** — Each module card shows a `×` button (consistent with the chip-list pattern used for dependencies/reads/writes in Module Inspector). Click issues `RemoveModule` command. ModuleInspector still owns its own destructive "Delete Module" footer button (per `module-inspector.md` AI Review #4) for users coming from that surface.
 
 ## Design
 
@@ -40,10 +42,17 @@ PUInspector (sidebar panel)
 ├── StageListSection
 │   └── StageTag[] (stage names, informational)
 ├── ModuleListSection
-│   └── ModuleCard[] (clickable)
-│       ├── ModuleLabel (instance_id / type_id)
-│       ├── StageBadge ("all" or stage name)
-│       └── TrafficLightDot
+│   ├── ModuleCard[] (clickable, has × remove button)
+│   │   ├── ModuleLabel (instance_id / type_id)
+│   │   ├── StageBadge ("all" or stage name)
+│   │   ├── TrafficLightDot
+│   │   └── RemoveButton (×)
+│   └── AddModuleAffordance
+│       ├── "+ Add Module" button (collapsed)
+│       └── InlineForm (when expanded)
+│           ├── InstanceIdInput (text, required, must be unique within PU)
+│           ├── TypeIdDropdown (populated from types.get)
+│           └── ConfirmButtons (Add / Cancel; Enter / Escape)
 └── DependencyOrderSection (collapsed by default, ED-012)
     └── OrderedModuleList (topological sort of dependencies)
 ```
@@ -57,6 +66,8 @@ Each editable field emits a command on change (debounced for text fields, immedi
 | frequency_hz | `SetPUFrequencyCommand` | Must be > 0, integer |
 | dedicated_thread | `SetPUThreadCommand` | Boolean toggle |
 | startup order | `ReorderPUCommand` | Reorders the PU array in manifest |
+| add module | `AddModuleCommand` | `instanceId` must be non-empty and unique within the PU; `typeId` must come from TypeDiscoveryService |
+| remove module | `RemoveModuleCommand` | Removes the module card and (per `module-inspector.md` AI Review #4) compound-cleans dependencies referring to it via the same path used by ModuleInspector's Delete Module footer |
 
 ### Module Cards
 
@@ -82,6 +93,8 @@ The collapsed section (ED-012) shows a topologically-sorted list of modules with
 | 4 | Module card click → switch to Module Inspector | Manual: click navigates | Todo | |
 | 5 | Dependency order section (collapsed default) | Manual: expand shows topo-sorted list | Todo | ED-012 |
 | 6 | Command integration (SetPUFrequency, SetPUThread, ReorderPU) | Unit test: commands execute/undo correctly | Todo | |
+| 7 | "+ Add Module" inline form: instanceId + type dropdown from types.get; submits AddModule | `PUInspector.test.tsx`: empty input → no command; valid → AddModule with puId + instanceId + typeId; Escape cancels | Todo | Reuses existing `AddModuleCommand` and `types.get` |
+| 8 | Module card × button issues RemoveModule | `PUInspector.test.tsx`: × calls RemoveModule with puId + instanceId | Todo | Reuses existing `RemoveModuleCommand` |
 
 ## Binding Decisions Compliance
 

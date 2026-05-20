@@ -1,9 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useManifestStoreV2 } from './useManifestStoreV2';
 import { bridgeRequest } from './bridge';
 
 export interface PUInspectorProps {
     puId: string | null;
+}
+
+interface ModuleType {
+    id: string;
+    displayName?: string;
+}
+
+interface TypesGetResult {
+    ok?: boolean;
+    moduleTypes?: ModuleType[];
 }
 
 interface SectionProps {
@@ -42,6 +52,149 @@ const Section: React.FC<SectionProps> = ({ title, testId, defaultOpen = true, ch
                     {children}
                 </div>
             )}
+        </div>
+    );
+};
+
+interface AddModuleAffordanceProps {
+    puId: string;
+    existingModuleIds: string[];
+}
+
+const AddModuleAffordance: React.FC<AddModuleAffordanceProps> = ({ puId, existingModuleIds }) => {
+    const [open, setOpen] = useState(false);
+    const [instanceId, setInstanceId] = useState('');
+    const [typeId, setTypeId] = useState('');
+    const [moduleTypes, setModuleTypes] = useState<ModuleType[]>([]);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (!open) return;
+        let cancelled = false;
+        bridgeRequest('types.get').then((res) => {
+            if (cancelled) return;
+            const r = res as TypesGetResult;
+            setModuleTypes(r?.moduleTypes ?? []);
+        });
+        return () => { cancelled = true; };
+    }, [open]);
+
+    const trimmed = instanceId.trim();
+    const isDuplicate = trimmed.length > 0 && existingModuleIds.includes(trimmed);
+    const canSubmit = trimmed.length > 0 && typeId.length > 0 && !isDuplicate;
+
+    const reset = () => {
+        setInstanceId('');
+        setTypeId('');
+        setOpen(false);
+    };
+
+    const handleAdd = () => {
+        if (!canSubmit) return;
+        bridgeRequest('manifest.applyCommand', {
+            commandType: 'AddModule',
+            puId,
+            instanceId: trimmed,
+            typeId,
+        });
+        reset();
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLSelectElement>) => {
+        if (e.key === 'Enter') handleAdd();
+        else if (e.key === 'Escape') reset();
+    };
+
+    if (!open) {
+        return (
+            <button
+                data-testid="add-module-btn"
+                onClick={() => setOpen(true)}
+                style={{
+                    background: 'none', border: '1px solid #444', borderRadius: 3,
+                    color: '#888', cursor: 'pointer', padding: '4px 10px', fontSize: 12,
+                    marginTop: 4, width: '100%', textAlign: 'left',
+                }}
+            >
+                + Add Module
+            </button>
+        );
+    }
+
+    return (
+        <div
+            data-testid="add-module-form"
+            style={{
+                background: '#252526', border: '1px solid #444', borderRadius: 4,
+                padding: 8, marginTop: 4, display: 'flex', flexDirection: 'column', gap: 6,
+            }}
+        >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <label style={{ color: '#888', minWidth: 70, fontSize: 11 }}>instanceId</label>
+                <input
+                    ref={inputRef}
+                    autoFocus
+                    data-testid="add-module-instance-input"
+                    type="text"
+                    placeholder="e.g. AudioModule"
+                    value={instanceId}
+                    onChange={(e) => setInstanceId(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    style={{
+                        flex: 1, background: '#2d2d2d', borderRadius: 3, color: '#eee',
+                        padding: '2px 6px', fontSize: 12,
+                        border: isDuplicate ? '1px solid #e87878' : '1px solid #444',
+                    }}
+                />
+            </div>
+            {isDuplicate && (
+                <div data-testid="add-module-error" style={{ color: '#e87878', fontSize: 11 }}>
+                    Already used in this PU.
+                </div>
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <label style={{ color: '#888', minWidth: 70, fontSize: 11 }}>type</label>
+                <select
+                    data-testid="add-module-type-select"
+                    value={typeId}
+                    onChange={(e) => setTypeId(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    style={{
+                        flex: 1, background: '#2d2d2d', border: '1px solid #444',
+                        borderRadius: 3, color: '#eee', padding: '2px 6px', fontSize: 12,
+                    }}
+                >
+                    <option value="" disabled>pick a type…</option>
+                    {moduleTypes.map(t => (
+                        <option key={t.id} value={t.id}>
+                            {t.displayName ? `${t.id} — ${t.displayName}` : t.id}
+                        </option>
+                    ))}
+                </select>
+            </div>
+            <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', marginTop: 4 }}>
+                <button
+                    data-testid="add-module-cancel"
+                    onClick={reset}
+                    style={{ background: 'none', border: '1px solid #444', borderRadius: 3, color: '#888', cursor: 'pointer', padding: '3px 12px', fontSize: 12 }}
+                >
+                    Cancel
+                </button>
+                <button
+                    data-testid="add-module-confirm"
+                    onClick={handleAdd}
+                    disabled={!canSubmit}
+                    style={{
+                        background: canSubmit ? '#2e7d4a' : '#444',
+                        border: 'none', borderRadius: 3,
+                        color: canSubmit ? '#fff' : '#666',
+                        cursor: canSubmit ? 'pointer' : 'not-allowed',
+                        padding: '3px 12px', fontSize: 12,
+                    }}
+                >
+                    Add
+                </button>
+            </div>
         </div>
     );
 };
@@ -93,6 +246,14 @@ export const PUInspector: React.FC<PUInspectorProps> = ({ puId }) => {
             commandType: 'SetPUThread',
             instanceId: puId,
             dedicatedThread: e.target.checked,
+        });
+    };
+
+    const handleRemoveModule = (moduleInstanceId: string) => {
+        bridgeRequest('manifest.applyCommand', {
+            commandType: 'RemoveModule',
+            puId,
+            instanceId: moduleInstanceId,
         });
     };
 
@@ -180,12 +341,28 @@ export const PUInspector: React.FC<PUInspectorProps> = ({ puId }) => {
                                 fontSize: 12,
                                 color: '#ccc',
                                 cursor: 'default',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: 6,
                             }}
                         >
-                            {mod.instanceId}
+                            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {mod.instanceId}
+                            </span>
+                            <button
+                                data-testid="remove-module-btn"
+                                data-module-id={mod.instanceId}
+                                onClick={() => handleRemoveModule(mod.instanceId)}
+                                title={`Remove ${mod.instanceId}`}
+                                style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: 14, padding: '0 4px', lineHeight: 1 }}
+                            >
+                                ×
+                            </button>
                         </div>
                     ))
                 )}
+                <AddModuleAffordance puId={puId} existingModuleIds={pu.modules.map(m => m.instanceId)} />
             </Section>
 
             {/* Dependency Order — expandable, default collapsed */}
