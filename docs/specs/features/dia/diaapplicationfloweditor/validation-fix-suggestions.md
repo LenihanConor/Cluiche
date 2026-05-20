@@ -260,6 +260,6 @@ That is the entirety of the rule-specific logic in JS — twelve lines.
 
 ## Status
 
-`Approved` — 2026-05-20
+`Done` — 2026-05-20
 
 Plan: [validation-fix-suggestions.plan.md](validation-fix-suggestions.plan.md)

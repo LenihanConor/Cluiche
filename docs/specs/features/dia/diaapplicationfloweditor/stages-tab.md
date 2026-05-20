@@ -223,6 +223,6 @@ None.
 
 ## Status
 
-`Approved` — 2026-05-20
+`Done` — 2026-05-20
 
 Plan: [stages-tab.plan.md](stages-tab.plan.md)
