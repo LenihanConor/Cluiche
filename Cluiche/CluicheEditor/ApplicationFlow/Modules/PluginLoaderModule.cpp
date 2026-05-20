@@ -109,6 +109,21 @@ namespace Cluiche
 
 		void PluginLoaderModule::LoadBuiltInPlugins()
 		{
+			// Dump the full registry at the start of plugin loading. This is the canonical
+			// place a session log shows which plugins are linked in and how they map their
+			// (typeId -> display name). Layout restore keys on the display name (GetName()),
+			// so a mismatch here is the most common cause of "plugin loads iframe but no handlers".
+			Dia::Editor::EditorPluginRegistry& registry = Dia::Editor::EditorPluginRegistry::Instance();
+			const unsigned int registryCount = registry.GetRegisteredCount();
+			DIA_LOG_INFO("Application", "PluginLoaderModule: Plugin registry has %u entries:", registryCount);
+			for (unsigned int r = 0; r < registryCount; ++r)
+			{
+				Dia::Editor::EditorPluginInfo info = registry.GetFactory(r)->GetPluginInfo();
+				DIA_LOG_INFO("Application",
+					"  registry[%u]: typeId='%s' name='%s'",
+					r, registry.GetRegisteredTypeId(r).AsChar(), info.name);
+			}
+
 			DIA_LOG_INFO("Application", "PluginLoaderModule: Loading built-in plugins");
 			LoadPlugin(Dia::Core::StringCRC("HomeEditorPlugin"),             Dia::Core::StringCRC("home_builtin"));
 			LoadPlugin(Dia::Core::StringCRC("OutputConsoleEditorPlugin"),    Dia::Core::StringCRC("outputconsole_builtin"));
@@ -119,31 +134,69 @@ namespace Cluiche
 		void PluginLoaderModule::RestoreLayoutPlugins()
 		{
 			if (mView == nullptr)
+			{
+				DIA_LOG_WARNING("Application", "PluginLoaderModule::RestoreLayoutPlugins: mView is null, skipping");
 				return;
+			}
 
 			Dia::Editor::DockingLayout* layout = mView->GetDockingLayout();
 			if (layout == nullptr)
+			{
+				DIA_LOG_WARNING("Application", "PluginLoaderModule::RestoreLayoutPlugins: docking layout is null, skipping");
 				return;
+			}
 
 			Dia::Editor::EditorPluginRegistry& registry = Dia::Editor::EditorPluginRegistry::Instance();
+			const unsigned int panelCount    = layout->GetPanelCount();
+			const unsigned int registryCount = registry.GetRegisteredCount();
+			DIA_LOG_INFO("Application",
+				"PluginLoaderModule::RestoreLayoutPlugins: panels=%u registry=%u",
+				panelCount, registryCount);
 
-			for (unsigned int p = 0; p < layout->GetPanelCount(); ++p)
+			for (unsigned int p = 0; p < panelCount; ++p)
 			{
 				const char* panelName = layout->GetPanel(p).name;
+				bool matched = false;
 
-				for (unsigned int r = 0; r < registry.GetRegisteredCount(); ++r)
+				for (unsigned int r = 0; r < registryCount; ++r)
 				{
 					Dia::Editor::EditorPluginInfo info = registry.GetFactory(r)->GetPluginInfo();
 					if (strcmp(info.name, panelName) == 0)
 					{
 						const Dia::Core::StringCRC& typeId = registry.GetRegisteredTypeId(r);
-						if (!IsPluginTypeLoaded(typeId))
+						if (IsPluginTypeLoaded(typeId))
 						{
-							DIA_LOG_INFO("Application", "PluginLoaderModule: Restoring layout plugin '%s'", panelName);
+							DIA_LOG_INFO("Application",
+								"PluginLoaderModule::RestoreLayoutPlugins: panel '%s' matched typeId='%s' (already loaded as built-in)",
+								panelName, typeId.AsChar());
+						}
+						else
+						{
+							DIA_LOG_INFO("Application",
+								"PluginLoaderModule::RestoreLayoutPlugins: panel '%s' matched typeId='%s', loading",
+								panelName, typeId.AsChar());
 							Dia::Core::StringCRC instanceId((std::string(panelName) + "_layout").c_str());
 							LoadPlugin(typeId, instanceId);
 						}
+						matched = true;
 						break;
+					}
+				}
+
+				if (!matched)
+				{
+					DIA_LOG_ERROR("Application",
+						"PluginLoaderModule::RestoreLayoutPlugins: panel '%s' has NO matching plugin (tried %u registry entries by display name). "
+						"This panel will render its iframe but request handlers will NOT be registered. "
+						"Check that the layout panel 'name' matches a registered plugin's GetName().",
+						panelName, registryCount);
+
+					for (unsigned int r = 0; r < registryCount; ++r)
+					{
+						Dia::Editor::EditorPluginInfo info = registry.GetFactory(r)->GetPluginInfo();
+						DIA_LOG_ERROR("Application",
+							"  registry[%u]: typeId='%s' name='%s'",
+							r, registry.GetRegisteredTypeId(r).AsChar(), info.name);
 					}
 				}
 			}

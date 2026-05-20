@@ -258,4 +258,4 @@ cluichetest.diagame
 
 ## Status
 
-`Approved` — 2026-05-08. Plan: [applicationflow.plan.md](applicationflow.plan.md)
+`Done` — 2026-05-08. Plan: [applicationflow.plan.md](applicationflow.plan.md)

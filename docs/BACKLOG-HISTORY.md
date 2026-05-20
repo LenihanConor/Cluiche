@@ -8,6 +8,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 
 | System | Spec | Completed | Notes |
 |--------|------|-----------|-------|
+| CluicheTest Application Flow | [applicationflow.md](specs/systems/cluichetest/applicationflow.md) | 2026-05-19 | All 5 features Done: Main PU Modules (LoggerModule, KernelModule, AssetServiceModule, UIModule), Sim PU Modules (TimeServerModule, InputStreamModule, LoadingScreenModule), Render PU Module, DummyStage Level, Manifest Configuration. Three-PU v2 topology on DiaApplicationFlow; canvas pre-bootstrap pattern; GL teardown cross-PU fence. |
 | DiaApplicationFlow | [diaapplicationflow.md](specs/systems/dia/diaapplicationflow.md) | 2026-05-18 | All 8 live features Done: Module Lifecycle, Stage System, Registration, Config Format v2, Validation, Error Handling, Inspectable Interface, Stream Tap & Debug Iteration. Clean-break redesign of v1 (Phase→Stage, MessageBus→EventStream, SubscriptionManager removed). |
 | DiaAssetPipeline | [diaassetpipeline.md](specs/systems/dia/diaassetpipeline.md) | 2026-05-05 | All 4 features; CLI command surface, built-in type handlers, deploy integration |
 | DiaSerializer | [diaserializer.md](specs/systems/dia/diaserializer.md) | 2026-05-02 | Phase 2 + Phase 3a/b/c complete; 43 Phase 3 tests |
@@ -25,6 +26,8 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 
 | Feature | Spec | System | Completed |
 |---------|------|--------|-----------|
+| Asset Lifecycle Management | [asset-lifecycle-management.md](specs/features/dia/diaassetruntime/asset-lifecycle-management.md) | DiaAssetRuntime | 2026-05-19 — Full state machine (Null→Staged→Loading→Loaded/Failed→Unloaded); `IAssetTypeHandler`/`IAssetLoadCallback`; handler registry by type prefix; auto-validation for handler-less types; `TextureHandler` + `UIHandler` real I/O; `TextureManager::LoadTexture` internalized; deferred: ShaderHandler (T15), AudioHandler (T16), Ultralight internalization (T20), shader internalization (T21), tests (T12). |
+| Project Context Bar | [project-context-bar.md](specs/features/dia/diaeditor/project-context-bar.md) | DiaEditor | 2026-05-18 — `IEditorContext::LoadProject/GetProject/OnProjectChanged`; `ProjectContext` struct; toolbar project button (name/No project, dropdown with Open/Recent/Reveal/Close); `--project` CLI arg; live connection auto-load from `get_app_state`; `.cluicheproj` recent-projects persistence; all 4 existing plugins migrated to shared `ProjectContext`; `config.assetCatalogue` added to `DiaGameConfig` + serializer. |
 | DiaApplicationFlow — Stream Tap & Debug Iteration | [stream-tap.md](specs/features/dia/diaapplicationflow/stream-tap.md) | DiaApplicationFlow | 2026-05-18 — Type-erased AttachTap/DetachTap/GetTapCount on IStreamStore + EventStreamStore; TapEvent/TapCallback/TapHandle; StreamInfo extended (payloadType, overflowPolicy, currentSequence, attachedReaderCount, attachedTapCount); StreamTypeRegistry serializer registration + SerializeToJson; DIA_STREAM_TYPE_WITH_SERIALIZER macro; DebugServer SubscriptionManager deleted; DebugServer migrated to tap-based subscribe/unsubscribe/connection-close; $lifecycle tap consumer; mock tap + count + stress + lifecycle integration tests. |
 | data-driven-application-system | [data-driven-application-system.md](specs/features/dia/diaapplication/data-driven-application-system.md) | DiaApplicationFlow | 2026-05-02 — JsonApplicationManifestSerializer + 12 tests |
 
@@ -71,5 +74,6 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 
 | Item | Spec | Reason |
 |------|------|--------|
+| HotReloadManager stubs (`CollectDependentModules` / `UpdateDependencyReferences`) | Superseded by DiaApplicationFlow v2 Stage model — hot reload via Phase/Module replacement is no longer the architecture. Never landed in the main codebase (only existed in old agent worktrees). |
 | DiaEnv — env-export | [diaenv.md](specs/systems/dia/diaenv.md) | Covered by deps.json + mirrors + submodules |
 | DiaEnv — docker continuous monitoring (`dia env doctor`) | [diaenv.md](specs/systems/dia/diaenv.md) | Premature until setup + verify stable (both now Done) |

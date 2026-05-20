@@ -24,7 +24,11 @@ namespace Dia
 			entry.factory = factory;
 			mEntries.Add(entry);
 
-			DIA_LOG_INFO("Editor", "EditorPluginRegistry: Registered plugin (count=%u)", mEntries.Size());
+			// Note: typeId is logged here, not the display name, because this runs at static-init
+			// time before the log/observation subsystems are guaranteed up — and GetPluginInfo()
+			// would construct a temp plugin instance early. Display names are logged at PluginLoaderModule
+			// startup (RestoreLayoutPlugins) when the registry is enumerated against the saved layout.
+			DIA_LOG_INFO("Editor", "EditorPluginRegistry: Registered typeId='%s' (count=%u)", typeId.AsChar(), mEntries.Size());
 		}
 
 		IEditorPlugin* EditorPluginRegistry::CreatePlugin(const Dia::Core::StringCRC& typeId)

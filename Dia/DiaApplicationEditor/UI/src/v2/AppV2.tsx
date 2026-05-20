@@ -40,7 +40,7 @@ export const AppV2: React.FC = () => {
     }, [refreshState]);
 
     useEffect(() => {
-        (window as any).DiaEditor_onDataChanged = (topic: string, data: unknown) => {
+        const dispatch = (topic: string, data: unknown) => {
             const d = data as any;
             switch (topic) {
                 case 'manifest.state':
@@ -72,6 +72,22 @@ export const AppV2: React.FC = () => {
                     break;
             }
         };
+
+        // Direct CEF call (when this page is loaded as the top window)
+        (window as any).DiaEditor_onDataChanged = dispatch;
+
+        // Iframe path: the host page (CluicheEditor shell) re-broadcasts every C++ topic
+        // to its iframes as `postMessage({ __dia: true, topic, data })`. Listen for those
+        // so manifest.state, validation.result, etc. reach this React app even when it
+        // runs inside the docking iframe — which is the only mode CluicheEditor uses today.
+        const onMessage = (e: MessageEvent) => {
+            const env = e.data;
+            if (env && env.__dia === true && typeof env.topic === 'string') {
+                dispatch(env.topic, env.data);
+            }
+        };
+        window.addEventListener('message', onMessage);
+        return () => window.removeEventListener('message', onMessage);
     }, [applyStateSnapshot, applyUndoResponse, setValidationResult, setConnectionState, setActiveStage, updateModuleStates, updateStreamStates, clearLiveState]);
 
     const stages = manifest?.stages?.map(s => s.name) ?? [];

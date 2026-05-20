@@ -4,14 +4,6 @@ Derived from spec status across `docs/specs/`. When a spec moves to Done, move i
 
 ---
 
-## In Progress
-
-| Item | Spec | What's next |
-|------|------|-------------|
-| CluicheTest Application Flow | [applicationflow.md](specs/systems/cluichetest/applicationflow.md) | All 5 feature specs Approved. DiaApplicationFlow is now fully Done (all 8 features, 2026-05-18) — this item is unblocked. Ready to implement. |
-
----
-
 ## Ready to Build (Approved → implement)
 
 These specs are `Approved` with all features `Approved`. No spec work needed — go straight to implementation.
@@ -20,7 +12,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 | System | Spec | Features | Depends On |
 |--------|------|----------|------------|
-| DiaApplicationFlowEditor | [diaapplicationfloweditor.md](specs/systems/dia/diaapplicationfloweditor.md) | 15 features (Draft) — blocked on DiaApplicationFlow implementation | DiaEditor ✅, DiaWebSocket ✅, DiaApplicationFlow (in progress) |
+| DiaApplicationFlowEditor | [diaapplicationfloweditor.md](specs/systems/dia/diaapplicationfloweditor.md) | 15 features (all Approved) — ready to implement. | DiaEditor ✅, DiaWebSocket ✅, DiaApplicationFlow ✅ |
 | DiaGraphics3D | [diagraphics3d.md](specs/systems/dia/diagraphics3d.md) ✅ | `graphics-3d-types` — Camera3D, lights, Mesh3DDrawCommand, Mesh3DFrameData, FrameData3D; new `Dia/DiaGraphics3D/` module; `Dia::Graphics3D::` namespace. Needs system specs for DiaMesh3D/Rig3D/Animation3D/Skinning3D/Scene3D before Phase 2 implements. | DiaMaths (Matrix44), DiaGeometry3D, DiaGraphics ✅ |
 | DiaBgfx3D | [diabgfx3d.md](specs/systems/dia/diabgfx3d.md) ✅ | `3d-renderers` — Canvas3D, MeshRenderer, SkinnedMeshRenderer, ShadowRenderer, MaterialRegistry, MeshGpuCache, 6 shaders; `Dia::Bgfx3D::` namespace; Phase 2 ship gate. Blocked on Phase 1 + DiaScene3D chain. | DiaBgfx (Phase 1), DiaScene3D chain, DiaGraphics3D ✅ |
 | DiaMesh3D | TBD — needs `/spec-system` | `mesh-asset-and-loader` feature already Approved (parent currently `render-backend`); needs own system spec. glTF 2.0 static+skinned mesh loading, `Mesh3DAsset`, `IAssetTypeHandler` plug-in. | DiaMaths, DiaGeometry3D, DiaAssetRuntime |
@@ -74,25 +66,10 @@ System specs and the foundation feature are all `Approved`. Each system's child 
 
 ## Ready to Build (cont.)
 
-### DiaEditor Prerequisites (must land before ApplicationFlowEditor feature specs)
-
-| Feature | Spec | Notes |
-|---------|------|-------|
-| Project Context Bar | [project-context-bar.md](specs/features/dia/diaeditor/project-context-bar.md) | **Approved** — implement before any ApplicationFlowEditor feature specs. Adds `IEditorContext::LoadProject`, `OnProjectChanged`, toolbar project button, `--project` CLI arg, live auto-load on connect. Migrates all 4 existing plugins (`DiaApplicationFlowEditor`, `DiaApplicationEditor`, `DiaAssetCatalogueEditor`, `DiaAssetRuntimeEditor`) to shared project context. Side tasks: add `diagame_path` to DiaDebugServer `get_app_state`; add `config.assetCatalogue` to `DiaGameConfig` + serializer. |
-
-### DiaApplicationFlowEditor mockup
-
-| Item | Notes |
-|------|-------|
-| Mockup v4 | `docs/research/diapp_simplif/editor_mockup_v4.html` — Approved design. Key decisions: full-tab Module-Presence grid (virtual scroll, PU group collapse, filter), traffic light dots everywhere (single `.tl` CSS primitive), Live button 3-state (grey/amber/green), stream click navigates to Streams tab (no dual surface), Add PU ghost node on graph, Dependency Order collapsed by default, Validate button removed. Offline vs Live presence modes. Before writing feature specs: update system spec decisions to capture mockup v4 choices as binding (ED-00x). |
-
----
-
 ## Spec Work Needed (Draft or unset — review/approve before building)
 
 | Item | Spec | What's needed |
 |------|------|---------------|
-| Asset Lifecycle Management | [asset-lifecycle-management.md](specs/features/dia/diaassetruntime/asset-lifecycle-management.md) | Draft — needs `/spec-review` then Approval. Extends state machine with `IAssetTypeHandler` dispatch, `Loading`/`Failed` states, progress query. |
 | DiaAPI quit command | TBD | Needed for DiaTestHarness graceful shutdown. No quit command exists today (exit is UI-driven). Needs `/spec-feature` under DiaAPI |
 | CluicheTest TestStages system | TBD | Needs `/spec-system` under CluicheTest — multi-stage test stages for deep engine validation (DiaRigidBody2D first). Open questions: phase vs level vs own PU; reporting mechanism. Research: `docs/research/e2e_testing/summary.md` |
 | DiaStateMachineEditor system | TBD | Needs `/spec-system` — editor plugin for state machine visual debugging + design-time editing. Depends on DiaStateMachine ✅, DiaEditor |
@@ -107,7 +84,6 @@ System specs and the foundation feature are all `Approved`. Each system's child 
 | DiaAssetRuntime — Hot reload path | Asset Lifecycle Management adds `Failed → Loading` retry but no `Loaded → Loading → Loaded` path. Still need a `ReloadAsset(assetId)` for live iteration (future feature on top of lifecycle management). |
 | DiaApplicationFlow — Feature 6: Compile-Time Dependency Validation | Deferred by user ("let's come back and talk about 6") |
 | DiaApplicationFlow — v1 source removal | v1 types (ApplicationPhase, ApplicationProcessingUnit, ApplicationModule, MessageBus, MetricsCollector, ApplicationManifest v1, HotReloadManager, ManifestComposer v1, ManifestValidator v1, JsonApplicationManifestSerializer v1, Introspection/ApplicationIntrospector v1, Loader/ApplicationLoader v1, TypeRegistry/ApplicationTypeRegistry v1) still live in `Dia/DiaApplicationFlow/`. **Progress:** v1 unit tests deleted (f0fbee4), dead consumers removed (f11e8cc), DiaDebugServer ported and decoupled from ApplicationFlow entirely (5653c01), 4 v1 integration tests deleted. **Remaining consumers (editor-side, feature-sized work):** `Dia/DiaApplicationEditor/DiaApplicationEditor.cpp` (~1700 lines — loads, edits, composes, saves v1 manifests for the React-based manifest editor UI), `Dia/DiaApplicationEditor/ManifestSerializer.{h,cpp}` (v1 manifest → JSON for the UI), `Dia/DiaApplicationEditor/ManifestEditorData.h` (owns a v1 `ApplicationManifest`), `Dia/DiaGame/GameFileComposer.{h,cpp}` (composes `.diagame` files via v1 `ApplicationManifest` + v1 `ManifestComposer`). Porting requires design decisions: (a) what shape the UI JSON takes for v2 stages/streams vs v1 phases/transitions, (b) whether `GameFileComposer` becomes `ComposeFromGameFileV2` returning `ApplicationManifestV2` or the whole composition path moves to `ManifestComposerV2`. Not a cleanup — treat as its own feature with a spec. |
-| HotReloadManager — `CollectDependentModules()` / `UpdateDependencyReferences()` | Placeholder stubs; needs real implementation |
 | `Dia::Core::Blackboard` — general-purpose key-value store | Identified during DiaStateMachine research; useful for AI, animation, gameplay. Needs `/spec-feature` under DiaCore. |
 | DiaAssetRuntime / DiaDebugServer / DiaInput / DiaThreading — metrics | Consolidated into DiaObservation Feature #11 (Domain-Level Metric Registration). See [diaobservation.md](specs/systems/dia/diaobservation.md). DiaThreading extraction still needs its own `/spec-system` but its metrics land in Feature #11 once unblocked. |
 | Phase 3d — Physics body serialization | DiaRigidBody2D / DiaSoftBody2D body definitions — DiaAssetCatalogue ✅ now unblocked |

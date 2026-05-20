@@ -242,4 +242,4 @@ Note: `.cluicheproj` is committed, so recent projects will appear in version con
 
 ## Status
 
-`Approved` — 2026-05-18
+`Done` — 2026-05-18

@@ -172,9 +172,14 @@ namespace Dia
 						return "{}";
 					}
 				}
-				DIA_LOG_WARNING("Editor", "WebUIBridge: No request handler found for '%s', sending empty response", eventTypeStr.c_str());
-				Json::Value empty;
-				SendResponse(reqId, empty);
+				DIA_LOG_ERROR("Editor",
+					"WebUIBridge: No request handler for '%s' (reqId='%s', %u handlers registered). "
+					"Returning {ok:false, error:'no handler'} so caller can surface the failure.",
+					eventTypeStr.c_str(), reqId.c_str(), mRequestHandlers.Size());
+				Json::Value err;
+				err["ok"]    = false;
+				err["error"] = "no handler registered for '" + eventTypeStr + "'";
+				SendResponse(reqId, err);
 				return "{}";
 			}
 

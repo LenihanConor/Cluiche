@@ -20,7 +20,7 @@
     <ClCompile Include="ApplicationFlow\Modules\PluginLoaderModule.cpp" />
     <ClCompile Include="..\..\Dia\DiaAssetCatalogueEditor\DiaAssetCatalogueEditorPlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaAssetRuntimeEditor\DiaAssetRuntimeEditorPlugin.cpp" />
-    <ClCompile Include="..\..\Dia\DiaApplicationEditor\DiaApplicationEditor.cpp" />
+    <ClCompile Include="..\..\Dia\DiaApplicationEditor\DiaApplicationFlowEditorPlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaPipelineEditor\PipelineEditorPlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaEditor\Plugin\StubEditorPlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaEditor\Plugin\HelloEditorPlugin.cpp" />
@@ -46,12 +46,6 @@
     <Image Include="icon.ico" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Data\test.cluicheproj">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
-    <None Include="Data\test-editor-plugins.diaapp">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
     <None Include="Data\editor.diaapp">
       <DeploymentContent>true</DeploymentContent>
     </None>

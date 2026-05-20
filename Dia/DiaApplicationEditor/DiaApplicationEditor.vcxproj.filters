@@ -1,11 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClInclude Include="DiaApplicationEditor.h" />
     <ClInclude Include="DiaApplicationFlowEditorPlugin.h" />
     <ClInclude Include="EditorHealthReporter.h" />
-    <ClInclude Include="ManifestEditorData.h" />
-    <ClInclude Include="ManifestSerializer.h" />
     <ClInclude Include="V2\ManifestEditorState.h">
       <Filter>V2</Filter>
     </ClInclude>
@@ -50,10 +47,8 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DiaApplicationEditor.cpp" />
     <ClCompile Include="DiaApplicationFlowEditorPlugin.cpp" />
     <ClCompile Include="EditorHealthReporter.cpp" />
-    <ClCompile Include="ManifestSerializer.cpp" />
     <ClCompile Include="V2\ManifestEditorState.cpp">
       <Filter>V2</Filter>
     </ClCompile>

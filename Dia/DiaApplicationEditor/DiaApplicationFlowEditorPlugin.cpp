@@ -146,9 +146,15 @@ namespace Dia { namespace Editor {
 
     void DiaApplicationFlowEditorPlugin::OnLoad(const EditorPluginContext& context)
     {
+        DIA_TRACE_ZONE("AppFlowEditorOnLoad", Dia::Observation::Trace::Category::kDiaApplicationFlow);
+
         mBridge = context.mBridge;
         mGameConnection = context.mServices->GetService<GameConnectionManager>();
         mModel = context.mModel;
+
+        DIA_LOG_INFO("Editor",
+            "DiaApplicationFlowEditorPlugin::OnLoad: bridge=%p gameConnection=%p model=%p",
+            mBridge, mGameConnection, mModel);
 
         if (mBridge != nullptr)
         {

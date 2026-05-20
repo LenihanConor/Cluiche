@@ -508,10 +508,6 @@
     <ClCompile Include="Integration\TestPhysicsGeometryIntegration.cpp">
       <Filter>Integration</Filter>
     </ClCompile>
-    <!-- DiaApplicationEditor -->
-    <ClCompile Include="DiaApplicationEditor\TestManifestSerializer.cpp">
-      <Filter>DiaApplicationEditor</Filter>
-    </ClCompile>
     <!-- DiaApplicationEditor V2 Tests -->
     <ClCompile Include="DiaApplicationEditor\TestManifestEditorState.cpp">
       <Filter>DiaApplicationEditor</Filter>

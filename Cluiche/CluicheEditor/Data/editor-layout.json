@@ -22,7 +22,7 @@
 			"visible" : true
 		},
 		{
-			"name" : "DiaApplicationFlowEditor",
+			"name" : "Application Flow Editor",
 			"uiPath" : "dia://plugins/diaapplicationeditor/index.html",
 			"visible" : true
 		}

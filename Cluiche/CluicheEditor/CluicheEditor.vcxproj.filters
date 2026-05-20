@@ -18,6 +18,7 @@
     <ClCompile Include="..\..\Dia\DiaEditor\Plugin\OutputConsoleEditorPlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaEditor\Plugin\GameConnectionEditorPlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaEditor\Plugin\PluginBrowserEditorPlugin.cpp" />
+    <ClCompile Include="..\..\Dia\DiaApplicationEditor\DiaApplicationFlowEditorPlugin.cpp" />
     <ClCompile Include="ApplicationFlow\Modules\CommandHistoryModule.cpp">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClCompile>
@@ -70,12 +71,6 @@
     <Image Include="icon.ico" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Data\test.cluicheproj">
-      <Filter>Data Files</Filter>
-    </None>
-    <None Include="Data\test-editor-plugins.diaapp">
-      <Filter>Data Files</Filter>
-    </None>
     <None Include="Data\editor.diaapp">
       <Filter>Data Files</Filter>
     </None>
