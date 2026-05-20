@@ -20,6 +20,11 @@
 			"name" : "Plugin Browser",
 			"uiPath" : "dia://plugins/pluginbrowser/index.html",
 			"visible" : true
+		},
+		{
+			"name" : "DiaApplicationFlowEditor",
+			"uiPath" : "dia://plugins/diaapplicationeditor/index.html",
+			"visible" : true
 		}
 	]
 }

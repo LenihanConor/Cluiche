@@ -795,4 +795,4 @@ namespace Dia { namespace Editor {
 }} // namespace Dia::Editor
 
 using namespace Dia::Editor;
-REGISTER_EDITOR_PLUGIN(DiaApplicationFlowEditorPlugin, "DiaApplicationFlowEditorPlugin")
+REGISTER_EDITOR_PLUGIN(DiaApplicationFlowEditorPlugin, "DiaApplicationFlowEditor")

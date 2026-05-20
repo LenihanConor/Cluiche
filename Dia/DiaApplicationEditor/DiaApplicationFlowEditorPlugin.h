@@ -26,7 +26,7 @@ namespace Dia { namespace Editor {
         const char* GetName() const override        { return "Application Flow Editor"; }
         const char* GetVersion() const override     { return "2.0"; }
         const char* GetDescription() const override { return "Visual editor for .diaapp v2 manifests with live runtime inspection"; }
-        const char* GetUIPath() const override      { return "dia://plugins/diaapplicationfloweditor/index.html"; }
+        const char* GetUIPath() const override      { return "dia://plugins/diaapplicationeditor/index.html"; }
         LayoutMode GetLayoutMode() const override   { return LayoutMode::kFullScreen; }
 
         EditorToolbarItem GetToolbarItem() const override;

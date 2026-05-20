@@ -1753,4 +1753,4 @@ void DiaApplicationEditor::HandleRemoveImport(const Json::Value& data)
 	NotifyManifestUpdated();
 }
 
-REGISTER_EDITOR_PLUGIN(DiaApplicationEditor, "DiaApplicationEditor")
+// v1 plugin deregistered — replaced by DiaApplicationFlowEditorPlugin
