@@ -1,5 +1,5 @@
 #pragma once
-#include <DiaApplicationFlow/Manifest/ApplicationManifestV2.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Strings/String256.h>
@@ -16,12 +16,12 @@ namespace Dia { namespace ApplicationFlow { namespace Editor {
     };
 
     // Editor's in-memory representation of an open .diaapp v2 file.
-    // Wraps ApplicationManifestV2 (structural model) with editor-specific metadata.
+    // Wraps ApplicationManifestV3 (structural model) with editor-specific metadata.
     struct ManifestEditorState
     {
         static constexpr unsigned int kMaxProvenance = 64;
 
-        Dia::ApplicationFlow::ApplicationManifestV2 manifest;
+        Dia::ApplicationFlow::ApplicationManifestV3 manifest;
 
         char filePath[512];   // absolute path; empty if no file loaded
         bool isDirty;

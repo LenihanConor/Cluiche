@@ -10,7 +10,7 @@
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/IApplicationInspectable.h>
-#include <DiaApplicationFlow/Manifest/ApplicationManifestV2.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
@@ -120,8 +120,8 @@ TEST(StageSystem, InitialStageSetsCorrectModulesActive)
 
     // Build manifest: stages "Boot", "Game"
     // modA — Boot, modB — Game, modC — all
-    ApplicationManifestV2 manifest;
-    manifest.version = 2;
+    ApplicationManifestV3 manifest;
+    manifest.version = 3;
 
     StageDeclaration bootStage, gameStage;
     bootStage.name = StringCRC("Boot");
@@ -168,8 +168,8 @@ TEST(StageSystem, TransitionStopsOldStartsNew)
     reg.Register(StageTestModule::kTypeId,
         [](const StringCRC& id) -> Module* { return new StageTestModule(id); });
 
-    ApplicationManifestV2 manifest;
-    manifest.version = 2;
+    ApplicationManifestV3 manifest;
+    manifest.version = 3;
 
     StageDeclaration bootStage, gameStage;
     bootStage.name = StringCRC("Boot");
@@ -248,8 +248,8 @@ TEST(StageSystem, SameStageTransitionIsNoop)
     reg.Register(StageTestModule::kTypeId,
         [](const StringCRC& id) -> Module* { return new StageTestModule(id); });
 
-    ApplicationManifestV2 manifest;
-    manifest.version = 2;
+    ApplicationManifestV3 manifest;
+    manifest.version = 3;
 
     StageDeclaration bootStage, gameStage;
     bootStage.name = StringCRC("Boot");
@@ -297,8 +297,8 @@ TEST(StageSystem, GetCurrentStageUpdatesAfterTransition)
     reg.Register(StageTestModule::kTypeId,
         [](const StringCRC& id) -> Module* { return new StageTestModule(id); });
 
-    ApplicationManifestV2 manifest;
-    manifest.version = 2;
+    ApplicationManifestV3 manifest;
+    manifest.version = 3;
 
     StageDeclaration bootStage, gameStage;
     bootStage.name = StringCRC("Boot");

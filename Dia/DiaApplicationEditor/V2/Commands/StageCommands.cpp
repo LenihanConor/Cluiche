@@ -65,17 +65,8 @@ namespace Dia { namespace ApplicationFlow { namespace Editor {
             return;
         }
 
-        // Check autoStages membership
-        auto& autoStages = manifest.autoStages;
-        for (unsigned int i = 0u; i < autoStages.Size(); ++i)
-        {
-            if (autoStages[i] == mName)
-            {
-                autoStages.RemoveAt(i);
-                mWasAutoStage = true;
-                break;
-            }
-        }
+        // TODO: autoStages removed in v3 — autoAdvance now lives on StageDeclaration
+        // mWasAutoStage tracking removed
 
         // Check if it was the initial stage
         if (manifest.initialStage == mName)
@@ -107,10 +98,7 @@ namespace Dia { namespace ApplicationFlow { namespace Editor {
             stages.AddAt(mSaved, insertAt);
         }
 
-        if (mWasAutoStage)
-        {
-            manifest.autoStages.Add(mName);
-        }
+        // TODO: autoStages removed in v3 — mWasAutoStage no longer applies
 
         if (mWasInitialStage)
         {
@@ -144,14 +132,7 @@ namespace Dia { namespace ApplicationFlow { namespace Editor {
             }
         }
 
-        // Update autoStages references
-        for (unsigned int i = 0u; i < manifest.autoStages.Size(); ++i)
-        {
-            if (manifest.autoStages[i] == mOldName)
-            {
-                manifest.autoStages[i] = mNewName;
-            }
-        }
+        // TODO: autoStages removed in v3 — autoAdvance rename handled in task 2
 
         // Update initialStage if it references oldName
         if (manifest.initialStage == mOldName)
@@ -192,13 +173,7 @@ namespace Dia { namespace ApplicationFlow { namespace Editor {
             }
         }
 
-        for (unsigned int i = 0u; i < manifest.autoStages.Size(); ++i)
-        {
-            if (manifest.autoStages[i] == mNewName)
-            {
-                manifest.autoStages[i] = mOldName;
-            }
-        }
+        // TODO: autoStages removed in v3 — autoAdvance undo handled in task 2
 
         if (manifest.initialStage == mNewName)
         {
@@ -237,69 +212,14 @@ namespace Dia { namespace ApplicationFlow { namespace Editor {
 
     void SetStageTriggerCommand::Execute(ManifestEditorState& doc)
     {
-        auto& autoStages = doc.manifest.autoStages;
-
-        // Determine current state
-        mOldIsAuto = false;
-        for (unsigned int i = 0u; i < autoStages.Size(); ++i)
-        {
-            if (autoStages[i] == mName)
-            {
-                mOldIsAuto = true;
-                break;
-            }
-        }
-
-        if (mNewIsAuto == mOldIsAuto)
-        {
-            return;
-        }
-
-        if (mNewIsAuto)
-        {
-            autoStages.Add(mName);
-        }
-        else
-        {
-            for (unsigned int i = 0u; i < autoStages.Size(); ++i)
-            {
-                if (autoStages[i] == mName)
-                {
-                    autoStages.RemoveAt(i);
-                    break;
-                }
-            }
-        }
-
-        doc.MarkDirty();
+        // TODO: replaced in task 6 — SetStageTriggerCommand now sets StageDeclaration::autoAdvance
+        (void)doc;
     }
 
     void SetStageTriggerCommand::Undo(ManifestEditorState& doc)
     {
-        auto& autoStages = doc.manifest.autoStages;
-
-        if (mNewIsAuto == mOldIsAuto)
-        {
-            return;
-        }
-
-        if (mOldIsAuto)
-        {
-            autoStages.Add(mName);
-        }
-        else
-        {
-            for (unsigned int i = 0u; i < autoStages.Size(); ++i)
-            {
-                if (autoStages[i] == mName)
-                {
-                    autoStages.RemoveAt(i);
-                    break;
-                }
-            }
-        }
-
-        doc.MarkDirty();
+        // TODO: replaced in task 6 — SetStageTriggerCommand now sets StageDeclaration::autoAdvance
+        (void)doc;
     }
 
     // -------------------------------------------------------------------------

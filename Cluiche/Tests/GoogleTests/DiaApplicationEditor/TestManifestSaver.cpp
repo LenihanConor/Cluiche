@@ -78,7 +78,7 @@ TEST(ManifestSaver, Save_CreatesBackupFile)
     EnsureTempDir();
     CleanupTestFiles();
 
-    WriteFile(kTestFilePath, "{\"version\":2}");
+    WriteFile(kTestFilePath, "{\"version\":3}");
 
     ManifestEditorState state = MakeStateWithPath(kTestFilePath);
 
@@ -99,10 +99,10 @@ TEST(ManifestSaver, Save_AtomicWrite_OriginalReplaced)
     EnsureTempDir();
     CleanupTestFiles();
 
-    WriteFile(kTestFilePath, "{\"version\":2}");
+    WriteFile(kTestFilePath, "{\"version\":3}");
 
     ManifestEditorState state = MakeStateWithPath(kTestFilePath);
-    state.manifest.version = 2;
+    state.manifest.version = 3;
 
     SaveResult result = ManifestSaver::Save(state);
 
@@ -152,7 +152,7 @@ TEST(ManifestSaver, Save_NoExistingFile_NoBakCreated)
 TEST(ManifestSaver, SerializeToJson_ContainsVersionField)
 {
     ManifestEditorState state;
-    state.manifest.version = 2;
+    state.manifest.version = 3;
     state.hasManifest = true;
 
     char buf[4096];
@@ -176,10 +176,9 @@ TEST(ManifestSaver, RoundTrip_PreservesOverflowAndMultiWriter)
 
     static const char* kRoundTripJson =
         "{"
-        "  \"version\": 2,"
-        "  \"stages\": [{\"name\": \"Boot\", \"manifest\": \"\"}],"
+        "  \"version\": 3,"
+        "  \"stages\": [{\"name\": \"Boot\", \"transitions\": [], \"auto_advance\": false}],"
         "  \"initial_stage\": \"Boot\","
-        "  \"auto_stages\": [],"
         "  \"streams\": ["
         "    {"
         "      \"id\": \"EvtStream\","

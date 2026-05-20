@@ -1,11 +1,11 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Filename: TestManifestLoaderV2.cpp
-// GoogleTest suite — DiaApplicationFlow v2 ApplicationManifestLoaderV2
+// GoogleTest suite — DiaApplicationFlow v3 ApplicationManifestLoaderV2
 //
-// Tests JSON → ApplicationManifestV2 loading via LoadFromString().
+// Tests JSON → ApplicationManifestV3 loading via LoadFromString().
 ////////////////////////////////////////////////////////////////////////////////
 #include <gtest/gtest.h>
-#include <DiaApplicationFlow/Manifest/ApplicationManifestV2.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestLoaderV2.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
@@ -15,12 +15,14 @@ using namespace Dia::Core;
 using namespace Dia::Core::Containers;
 
 // ---------------------------------------------------------------------------
-// Minimal valid manifest JSON (no modules — loader does not validate types)
+// Helpers — canonical minimal v3 manifest JSON
 // ---------------------------------------------------------------------------
 static const char* kMinimalManifest = R"({
-  "version": 2,
+  "version": 3,
   "initial_stage": "Boot",
-  "stages": ["Boot"],
+  "stages": [
+    { "name": "Boot", "transitions": [], "auto_advance": false }
+  ],
   "processing_units": [{
     "instance_id": "MainPU",
     "frequency_hz": 30.0,
@@ -30,19 +32,21 @@ static const char* kMinimalManifest = R"({
 })";
 
 // ---------------------------------------------------------------------------
-// Tests
+// Basic loading
 // ---------------------------------------------------------------------------
 
 TEST(ManifestLoaderV2, LoadMinimalManifest)
 {
-    ApplicationManifestV2 manifest;
+    ApplicationManifestV3 manifest;
     LoadResult result = ApplicationManifestLoaderV2::LoadFromString(kMinimalManifest, manifest);
 
     EXPECT_EQ(result, LoadResult::kSuccess);
-    EXPECT_EQ(manifest.version, 2);
+    EXPECT_EQ(manifest.version, 3);
     EXPECT_EQ(manifest.initialStage, StringCRC("Boot"));
     ASSERT_EQ(manifest.stages.Size(), 1u);
     EXPECT_EQ(manifest.stages[0].name, StringCRC("Boot"));
+    EXPECT_EQ(manifest.stages[0].transitions.Size(), 0u);
+    EXPECT_FALSE(manifest.stages[0].autoAdvance);
     ASSERT_EQ(manifest.processingUnits.Size(), 1u);
     EXPECT_EQ(manifest.processingUnits[0].instanceId, StringCRC("MainPU"));
     EXPECT_FLOAT_EQ(manifest.processingUnits[0].frequencyHz, 30.0f);
@@ -52,9 +56,11 @@ TEST(ManifestLoaderV2, LoadMinimalManifest)
 TEST(ManifestLoaderV2, LoadWithModuleDeclarations)
 {
     const char* json = R"({
-  "version": 2,
+  "version": 3,
   "initial_stage": "Boot",
-  "stages": ["Boot"],
+  "stages": [
+    { "name": "Boot", "transitions": [], "auto_advance": false }
+  ],
   "processing_units": [{
     "instance_id": "MainPU",
     "frequency_hz": 60.0,
@@ -69,7 +75,7 @@ TEST(ManifestLoaderV2, LoadWithModuleDeclarations)
   }]
 })";
 
-    ApplicationManifestV2 manifest;
+    ApplicationManifestV3 manifest;
     LoadResult result = ApplicationManifestLoaderV2::LoadFromString(json, manifest);
 
     EXPECT_EQ(result, LoadResult::kSuccess);
@@ -89,9 +95,11 @@ TEST(ManifestLoaderV2, LoadWithModuleDeclarations)
 TEST(ManifestLoaderV2, LoadWithStreams)
 {
     const char* json = R"({
-  "version": 2,
+  "version": 3,
   "initial_stage": "Boot",
-  "stages": ["Boot"],
+  "stages": [
+    { "name": "Boot", "transitions": [], "auto_advance": false }
+  ],
   "streams": [{
     "id": "InputStream",
     "kind": "EventStream",
@@ -108,7 +116,7 @@ TEST(ManifestLoaderV2, LoadWithStreams)
   }]
 })";
 
-    ApplicationManifestV2 manifest;
+    ApplicationManifestV3 manifest;
     LoadResult result = ApplicationManifestLoaderV2::LoadFromString(json, manifest);
 
     EXPECT_EQ(result, LoadResult::kSuccess);
@@ -124,14 +132,15 @@ TEST(ManifestLoaderV2, LoadWithStreams)
 
 TEST(ManifestLoaderV2, InvalidVersionReturnsVersionMismatch)
 {
+    // v2-shaped manifest (version: 2, string stages) must be rejected
     const char* json = R"({
-  "version": 1,
+  "version": 2,
   "initial_stage": "Boot",
   "stages": ["Boot"],
   "processing_units": []
 })";
 
-    ApplicationManifestV2 manifest;
+    ApplicationManifestV3 manifest;
     LoadResult result = ApplicationManifestLoaderV2::LoadFromString(json, manifest);
 
     EXPECT_EQ(result, LoadResult::kVersionMismatch);
@@ -139,7 +148,7 @@ TEST(ManifestLoaderV2, InvalidVersionReturnsVersionMismatch)
 
 TEST(ManifestLoaderV2, EmptyJsonStringReturnsParseError)
 {
-    ApplicationManifestV2 manifest;
+    ApplicationManifestV3 manifest;
     LoadResult result = ApplicationManifestLoaderV2::LoadFromString("", manifest);
 
     EXPECT_EQ(result, LoadResult::kParseError);
@@ -148,9 +157,13 @@ TEST(ManifestLoaderV2, EmptyJsonStringReturnsParseError)
 TEST(ManifestLoaderV2, MultipleStagesParsed)
 {
     const char* json = R"({
-  "version": 2,
+  "version": 3,
   "initial_stage": "Boot",
-  "stages": ["Boot", "Game", "Credits"],
+  "stages": [
+    { "name": "Boot",    "transitions": ["Game"],  "auto_advance": false },
+    { "name": "Game",    "transitions": ["Boot"],  "auto_advance": false },
+    { "name": "Credits", "transitions": [],        "auto_advance": false }
+  ],
   "processing_units": [{
     "instance_id": "MainPU",
     "frequency_hz": 30.0,
@@ -159,7 +172,7 @@ TEST(ManifestLoaderV2, MultipleStagesParsed)
   }]
 })";
 
-    ApplicationManifestV2 manifest;
+    ApplicationManifestV3 manifest;
     LoadResult result = ApplicationManifestLoaderV2::LoadFromString(json, manifest);
 
     EXPECT_EQ(result, LoadResult::kSuccess);
@@ -169,32 +182,9 @@ TEST(ManifestLoaderV2, MultipleStagesParsed)
     EXPECT_EQ(manifest.stages[2].name, StringCRC("Credits"));
 }
 
-TEST(ManifestLoaderV2, AutoStagesParsed)
-{
-    const char* json = R"({
-  "version": 2,
-  "initial_stage": "Boot",
-  "stages": ["Boot", "Game"],
-  "auto_stages": ["Boot"],
-  "processing_units": [{
-    "instance_id": "MainPU",
-    "frequency_hz": 30.0,
-    "dedicated_thread": false,
-    "modules": []
-  }]
-})";
-
-    ApplicationManifestV2 manifest;
-    LoadResult result = ApplicationManifestLoaderV2::LoadFromString(json, manifest);
-
-    EXPECT_EQ(result, LoadResult::kSuccess);
-    ASSERT_EQ(manifest.autoStages.Size(), 1u);
-    EXPECT_EQ(manifest.autoStages[0], StringCRC("Boot"));
-}
-
 TEST(ManifestLoaderV2, NullStringReturnsParseError)
 {
-    ApplicationManifestV2 manifest;
+    ApplicationManifestV3 manifest;
     LoadResult result = ApplicationManifestLoaderV2::LoadFromString(nullptr, manifest);
     EXPECT_EQ(result, LoadResult::kParseError);
 }
@@ -202,9 +192,11 @@ TEST(ManifestLoaderV2, NullStringReturnsParseError)
 TEST(ManifestLoaderV2, MultiWriterFlagParsedTrue)
 {
     const char* json = R"({
-  "version": 2,
+  "version": 3,
   "initial_stage": "Boot",
-  "stages": ["Boot"],
+  "stages": [
+    { "name": "Boot", "transitions": [], "auto_advance": false }
+  ],
   "streams": [{
     "id": "SharedStream",
     "type": "EventData",
@@ -220,10 +212,110 @@ TEST(ManifestLoaderV2, MultiWriterFlagParsedTrue)
   }]
 })";
 
-    ApplicationManifestV2 manifest;
+    ApplicationManifestV3 manifest;
     LoadResult result = ApplicationManifestLoaderV2::LoadFromString(json, manifest);
 
     EXPECT_EQ(result, LoadResult::kSuccess);
     ASSERT_EQ(manifest.streams.Size(), 1u);
     EXPECT_TRUE(manifest.streams[0].multiWriter);
+}
+
+// ---------------------------------------------------------------------------
+// v3-specific: transitions and auto_advance
+// ---------------------------------------------------------------------------
+
+TEST(ManifestLoaderV2, BranchingTransitionsParsed)
+{
+    // Boot can transition to either DummyStage or StupidStage (hub pattern)
+    const char* json = R"({
+  "version": 3,
+  "initial_stage": "Boot",
+  "stages": [
+    { "name": "Boot",       "transitions": ["DummyStage", "StupidStage"], "auto_advance": false },
+    { "name": "DummyStage", "transitions": ["Boot"],                      "auto_advance": false },
+    { "name": "StupidStage","transitions": ["Boot"],                      "auto_advance": false }
+  ],
+  "processing_units": []
+})";
+
+    ApplicationManifestV3 manifest;
+    LoadResult result = ApplicationManifestLoaderV2::LoadFromString(json, manifest);
+
+    EXPECT_EQ(result, LoadResult::kSuccess);
+    ASSERT_EQ(manifest.stages.Size(), 3u);
+
+    const StageDeclaration& boot = manifest.stages[0];
+    EXPECT_EQ(boot.name, StringCRC("Boot"));
+    ASSERT_EQ(boot.transitions.Size(), 2u);
+    EXPECT_EQ(boot.transitions[0], StringCRC("DummyStage"));
+    EXPECT_EQ(boot.transitions[1], StringCRC("StupidStage"));
+    EXPECT_FALSE(boot.autoAdvance);
+
+    const StageDeclaration& dummy = manifest.stages[1];
+    ASSERT_EQ(dummy.transitions.Size(), 1u);
+    EXPECT_EQ(dummy.transitions[0], StringCRC("Boot"));
+    EXPECT_FALSE(dummy.autoAdvance);
+}
+
+TEST(ManifestLoaderV2, AutoAdvanceParsedTrue)
+{
+    const char* json = R"({
+  "version": 3,
+  "initial_stage": "Boot",
+  "stages": [
+    { "name": "Boot", "transitions": ["Game"], "auto_advance": true },
+    { "name": "Game", "transitions": [],       "auto_advance": false }
+  ],
+  "processing_units": []
+})";
+
+    ApplicationManifestV3 manifest;
+    LoadResult result = ApplicationManifestLoaderV2::LoadFromString(json, manifest);
+
+    EXPECT_EQ(result, LoadResult::kSuccess);
+    ASSERT_EQ(manifest.stages.Size(), 2u);
+    EXPECT_TRUE(manifest.stages[0].autoAdvance);
+    EXPECT_EQ(manifest.stages[0].transitions[0], StringCRC("Game"));
+    EXPECT_FALSE(manifest.stages[1].autoAdvance);
+}
+
+TEST(ManifestLoaderV2, StringFormStageSkippedWithWarning)
+{
+    // String-form stage entries are no longer valid in v3; the version check
+    // should have already rejected v2 files, but a v3 file with a malformed
+    // string entry is skipped and the valid object entries are still loaded.
+    const char* json = R"({
+  "version": 3,
+  "initial_stage": "Good",
+  "stages": [
+    "BadStringStage",
+    { "name": "Good", "transitions": [], "auto_advance": false }
+  ],
+  "processing_units": []
+})";
+
+    ApplicationManifestV3 manifest;
+    LoadResult result = ApplicationManifestLoaderV2::LoadFromString(json, manifest);
+
+    // Load succeeds — the bad entry is skipped, the valid object is kept
+    EXPECT_EQ(result, LoadResult::kSuccess);
+    ASSERT_EQ(manifest.stages.Size(), 1u);
+    EXPECT_EQ(manifest.stages[0].name, StringCRC("Good"));
+}
+
+TEST(ManifestLoaderV2, V2ManifestRejected)
+{
+    // A well-formed v2 manifest must be rejected by the v3 loader
+    const char* json = R"({
+  "version": 2,
+  "initial_stage": "Boot",
+  "stages": ["Boot", "Game"],
+  "auto_stages": ["Boot"],
+  "processing_units": []
+})";
+
+    ApplicationManifestV3 manifest;
+    LoadResult result = ApplicationManifestLoaderV2::LoadFromString(json, manifest);
+
+    EXPECT_EQ(result, LoadResult::kVersionMismatch);
 }

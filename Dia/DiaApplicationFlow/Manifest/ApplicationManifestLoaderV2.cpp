@@ -14,7 +14,7 @@ namespace Dia { namespace ApplicationFlow {
     // LoadFromFile
     // ---------------------------------------------------------------------------
 
-    LoadResult ApplicationManifestLoaderV2::LoadFromFile(const char* filePath, ApplicationManifestV2& outManifest)
+    LoadResult ApplicationManifestLoaderV2::LoadFromFile(const char* filePath, ApplicationManifestV3& outManifest)
     {
         if (filePath == nullptr)
         {
@@ -40,7 +40,7 @@ namespace Dia { namespace ApplicationFlow {
     // LoadFromString
     // ---------------------------------------------------------------------------
 
-    LoadResult ApplicationManifestLoaderV2::LoadFromString(const char* jsonString, ApplicationManifestV2& outManifest)
+    LoadResult ApplicationManifestLoaderV2::LoadFromString(const char* jsonString, ApplicationManifestV3& outManifest)
     {
         if (jsonString == nullptr)
         {
@@ -55,7 +55,7 @@ namespace Dia { namespace ApplicationFlow {
     // ParseJson (internal)
     // ---------------------------------------------------------------------------
 
-    LoadResult ApplicationManifestLoaderV2::ParseJson(const char* jsonString, ApplicationManifestV2& outManifest)
+    LoadResult ApplicationManifestLoaderV2::ParseJson(const char* jsonString, ApplicationManifestV3& outManifest)
     {
         Json::Value root;
         Json::Reader reader;
@@ -66,13 +66,13 @@ namespace Dia { namespace ApplicationFlow {
         }
 
         // --- Version check ---
-        if (!root.isMember("version") || root["version"].asInt() != 2)
+        if (!root.isMember("version") || root["version"].asInt() != 3)
         {
-            DIA_LOG_WARNING("ApplicationFlow", "ApplicationManifestLoaderV2::ParseJson — version mismatch (expected 2, got %d)",
+            DIA_LOG_WARNING("ApplicationFlow", "ApplicationManifestLoaderV2::ParseJson — version mismatch (expected 3, got %d)",
                 root.isMember("version") ? root["version"].asInt() : -1);
             return LoadResult::kVersionMismatch;
         }
-        outManifest.version = 2;
+        outManifest.version = 3;
 
         // --- stages ---
         if (root.isMember("stages") && root["stages"].isArray())
@@ -80,27 +80,31 @@ namespace Dia { namespace ApplicationFlow {
             const Json::Value& stagesJson = root["stages"];
             for (unsigned int i = 0; i < stagesJson.size(); ++i)
             {
-                StageDeclaration decl;
                 const Json::Value& entry = stagesJson[i];
-                if (entry.isString())
+                if (!entry.isObject() || !entry.isMember("name"))
                 {
-                    // Plain string form: treat as name with empty manifestPath
-                    decl.name = Dia::Core::StringCRC(entry.asCString());
-                    // manifestPath stays default-constructed (empty)
-                }
-                else if (entry.isObject() && entry.isMember("name"))
-                {
-                    decl.name = Dia::Core::StringCRC(entry["name"].asCString());
-                    if (entry.isMember("manifestPath") && entry["manifestPath"].isString())
-                    {
-                        decl.manifestPath = entry["manifestPath"].asCString();
-                    }
-                }
-                else
-                {
-                    DIA_LOG_WARNING("ApplicationFlow", "ApplicationManifestLoaderV2::ParseJson — stages[%u] is neither a string nor an object with 'name'", i);
+                    DIA_LOG_WARNING("ApplicationFlow",
+                        "ApplicationManifestLoaderV2::ParseJson — stages[%u] is not an object with 'name' (v2 string form is no longer accepted)", i);
                     continue;
                 }
+
+                StageDeclaration decl;
+                decl.name = Dia::Core::StringCRC(entry["name"].asCString());
+
+                if (entry.isMember("manifestPath") && entry["manifestPath"].isString())
+                    decl.manifestPath = entry["manifestPath"].asCString();
+
+                if (entry.isMember("transitions") && entry["transitions"].isArray())
+                {
+                    const Json::Value& tx = entry["transitions"];
+                    for (unsigned int t = 0; t < tx.size(); ++t)
+                        if (tx[t].isString())
+                            decl.transitions.Add(Dia::Core::StringCRC(tx[t].asCString()));
+                }
+
+                if (entry.isMember("auto_advance") && entry["auto_advance"].isBool())
+                    decl.autoAdvance = entry["auto_advance"].asBool();
+
                 outManifest.stages.Add(decl);
             }
         }
@@ -111,18 +115,7 @@ namespace Dia { namespace ApplicationFlow {
             outManifest.initialStage = Dia::Core::StringCRC(root["initial_stage"].asCString());
         }
 
-        // --- auto_stages ---
-        if (root.isMember("auto_stages") && root["auto_stages"].isArray())
-        {
-            const Json::Value& autoStagesJson = root["auto_stages"];
-            for (unsigned int i = 0; i < autoStagesJson.size(); ++i)
-            {
-                if (autoStagesJson[i].isString())
-                {
-                    outManifest.autoStages.Add(Dia::Core::StringCRC(autoStagesJson[i].asCString()));
-                }
-            }
-        }
+        // auto_stages: not present in v3; silently ignored if somehow present.
 
         // --- streams ---
         if (root.isMember("streams") && root["streams"].isArray())

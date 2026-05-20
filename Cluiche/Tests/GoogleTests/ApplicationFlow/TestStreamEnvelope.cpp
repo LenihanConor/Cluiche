@@ -12,7 +12,7 @@
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
-#include <DiaApplicationFlow/Manifest/ApplicationManifestV2.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaApplicationFlow/Streams/EventStreamStore.h>
 #include <DiaApplicationFlow/Streams/EventStreamWriter.h>
 #include <DiaApplicationFlow/Streams/EventStreamReader.h>
@@ -252,7 +252,7 @@ TEST(StreamEnvelope, WriterStampsOwnerInstanceIdAsSenderCrc)
     reg.Register(Env_WriterModule::kTypeId, CreateEnvWriter);
     reg.Register(Env_ReaderModule::kTypeId, CreateEnvReader);
 
-    ApplicationManifestV2 manifest;
+    ApplicationManifestV3 manifest;
     manifest.version = 2;
 
     StageDeclaration boot;

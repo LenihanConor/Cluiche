@@ -66,7 +66,7 @@
     <ClInclude Include="Manifest\ApplicationManifestLoader.h">
       <Filter>Manifest</Filter>
     </ClInclude>
-    <ClInclude Include="Manifest\ApplicationManifestV2.h">
+    <ClInclude Include="Manifest\ApplicationManifestV3.h">
       <Filter>Manifest</Filter>
     </ClInclude>
     <ClInclude Include="Manifest\ApplicationManifestLoaderV2.h">

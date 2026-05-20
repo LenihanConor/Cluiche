@@ -11,7 +11,7 @@
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/IApplicationInspectable.h>
-#include <DiaApplicationFlow/Manifest/ApplicationManifestV2.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
@@ -65,7 +65,7 @@ const StringCRC AsyncStartModule::kTypeId("AsyncStartModule");
 // ---------------------------------------------------------------------------
 
 // Build a minimal single-PU, single-module manifest.
-static ApplicationManifestV2 BuildSingleModuleManifest(
+static ApplicationManifestV3 BuildSingleModuleManifest(
     const char* puId,
     const char* typeId,
     const char* instanceId,
@@ -73,8 +73,8 @@ static ApplicationManifestV2 BuildSingleModuleManifest(
     float startTimeoutMs = 10000.0f,
     float stopTimeoutMs  = 5000.0f)
 {
-    ApplicationManifestV2 manifest;
-    manifest.version = 2;
+    ApplicationManifestV3 manifest;
+    manifest.version = 3;
 
     StageDeclaration stage;
     stage.name = StringCRC(stageName);

@@ -19,7 +19,7 @@ namespace Dia { namespace ApplicationFlow {
     // Constructor / Destructor
     //--------------------------------------------------------------------------
 
-    Application::Application(const ApplicationManifestV2& manifest,
+    Application::Application(const ApplicationManifestV3& manifest,
                              TypeRegistry& registry)
         : mManifest(manifest)
         , mRegistry(registry)
@@ -734,24 +734,23 @@ namespace Dia { namespace ApplicationFlow {
             }
         }
 
-        // Auto-advance: if newStage is an autoStage, queue the next stage.
-        for (unsigned int i = 0; i < mManifest.autoStages.Size(); ++i)
+        // Auto-advance: per-stage flag in v3 replaces the old top-level auto_stages array.
+        for (unsigned int s = 0; s < mManifest.stages.Size(); ++s)
         {
-            if (mManifest.autoStages[i] == newStage)
+            const StageDeclaration& decl = mManifest.stages[s];
+            if (decl.name == newStage && decl.autoAdvance)
             {
-                for (unsigned int s = 0; s < mManifest.stages.Size(); ++s)
+                if (decl.transitions.Size() == 1)
                 {
-                    if (mManifest.stages[s].name == newStage)
-                    {
-                        unsigned int nextIdx = s + 1;
-                        if (nextIdx < mManifest.stages.Size())
-                        {
-                            DIA_LOG_INFO("Application", "Auto-advancing from stage '%s' to '%s'",
-                                         newStage.AsChar(), mManifest.stages[nextIdx].name.AsChar());
-                            TransitionTo(mManifest.stages[nextIdx].name);
-                        }
-                        break;
-                    }
+                    DIA_LOG_INFO("Application", "Auto-advancing from stage '%s' to '%s'",
+                                 newStage.AsChar(), decl.transitions[0].AsChar());
+                    TransitionTo(decl.transitions[0]);
+                }
+                else
+                {
+                    DIA_LOG_WARNING("Application",
+                        "Stage '%s' has auto_advance=true but %u transitions (validator should have caught this)",
+                        newStage.AsChar(), decl.transitions.Size());
                 }
                 break;
             }

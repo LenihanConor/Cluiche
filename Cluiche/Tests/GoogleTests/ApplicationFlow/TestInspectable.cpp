@@ -10,7 +10,7 @@
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/IApplicationInspectable.h>
-#include <DiaApplicationFlow/Manifest/ApplicationManifestV2.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
@@ -36,9 +36,9 @@ const StringCRC InspectModule::kTypeId("InspectModule");
 // Helpers
 // ---------------------------------------------------------------------------
 
-static ApplicationManifestV2 BuildTwoStageManifest()
+static ApplicationManifestV3 BuildTwoStageManifest()
 {
-    ApplicationManifestV2 manifest;
+    ApplicationManifestV3 manifest;
     manifest.version = 2;
 
     StageDeclaration boot, game;

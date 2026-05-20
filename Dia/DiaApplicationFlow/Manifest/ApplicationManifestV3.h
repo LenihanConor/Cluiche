@@ -64,16 +64,19 @@ namespace Dia { namespace ApplicationFlow {
     {
         Dia::Core::StringCRC                    name;
         Dia::Core::Containers::String256        manifestPath;
+
+        // v3 fields: per-stage transition targets and auto-advance flag
+        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 8>  transitions;
+        bool                                                            autoAdvance = false;
     };
 
-    // Top-level in-memory representation of a v2 .diaapp manifest
-    struct ApplicationManifestV2
+    // Top-level in-memory representation of a v3 .diaapp manifest
+    struct ApplicationManifestV3
     {
-        int version = 2;
+        int version = 3;
 
         Dia::Core::Containers::DynamicArrayC<StageDeclaration, 16>          stages;
         Dia::Core::StringCRC                                                 initialStage;
-        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16>      autoStages;
 
         Dia::Core::Containers::DynamicArrayC<StreamDeclaration, 16>         streams;
         Dia::Core::Containers::DynamicArrayC<ProcessingUnitDeclaration, 4>  processingUnits;

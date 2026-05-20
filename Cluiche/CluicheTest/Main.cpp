@@ -3,7 +3,7 @@
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/Manifest/ManifestComposerV2.h>
 #include <DiaApplicationFlow/Manifest/ManifestValidatorV2.h>
-#include <DiaApplicationFlow/Manifest/ApplicationManifestV2.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 
 #include <DiaCore/FilePath/PathStore.h>
 #include <DiaCore/FilePath/Path.h>
@@ -97,7 +97,7 @@ int main(int argc, const char* argv[])
     }
 
     // Compose manifest from .diagame (resolves imports, merges stages)
-    Dia::ApplicationFlow::ApplicationManifestV2 manifest;
+    Dia::ApplicationFlow::ApplicationManifestV3 manifest;
     Dia::ApplicationFlow::ComposeResult composeResult =
         Dia::ApplicationFlow::ManifestComposerV2::Compose(kDiagamePath, manifest);
 

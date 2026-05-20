@@ -264,7 +264,8 @@ Active → [DoStop called each frame] → kStopping... → kDone → Inactive
 | Feature | Description | Spec | Status |
 |---------|-------------|------|--------|
 | Module Lifecycle | DoStart (kLoading/kReady/kFailed), DoUpdate, DoStop (kStopping/kDone), timeout handling | [module-lifecycle.md](../../features/dia/diaapplicationflow/module-lifecycle.md) | Done |
-| Stage System | Config-declared stages, app-wide TransitionTo, diff-based module swap, auto-advance for boot stages | [stage-system.md](../../features/dia/diaapplicationflow/stage-system.md) | Done |
+| Stage System | Config-declared stages, app-wide TransitionTo, diff-based module swap, auto-advance for boot stages (auto-advance superseded by per-stage `auto_advance` in v3 — see Stage Transitions) | [stage-system.md](../../features/dia/diaapplicationflow/stage-system.md) | Done |
+| Stage Transitions (Manifest v3) | Per-stage `transitions[]` + `auto_advance` replacing v2's linear `auto_stages`; branching graphs; 4 new validator rules; hard cutover from v2 | [stage-transitions.md](../../features/dia/diaapplicationflow/stage-transitions.md) | Approved |
 | Registration | One-liner DIA_MODULE macro, TypeRegistry, constexpr StringCRC type IDs | [registration.md](../../features/dia/diaapplicationflow/registration.md) | Done |
 | Config Format v2 | Manifest schema with stages, streams, module stage membership, version field | [config-format.md](../../features/dia/diaapplicationflow/config-format.md) | Done |
 | Validation | Full manifest validation at load (deps, cycles, streams, stage coverage, type existence) | [validation.md](../../features/dia/diaapplicationflow/validation.md) | Done |
@@ -339,6 +340,7 @@ Active → [DoStop called each frame] → kStopping... → kDone → Inactive
 | SD-016 | IApplicationInspectable exposes runtime state | Clean interface that debug, editor, and test consumers can adapt without coupling to framework internals. | Inspectable | Accepted | Yes |
 | SD-017 | Clean break — no backward compatibility with v1 | Shim code adds weeks of throwaway work. Old code deleted, old specs superseded, modules rewritten in one pass. | All features | Accepted | Yes |
 | SD-018 | Reserved `$`-prefix for framework-owned streams | Streams whose IDs begin with `$` are auto-created by the framework and do not require manifest declaration. User-declared stream IDs, module instance IDs, and sender StringCRCs starting with `$` are forbidden (validator returns `RESERVED_PREFIX` error). `$lifecycle` is the first reserved stream. Any module may subscribe to a reserved stream by listing it in `module.reads`; the validator allows `$`-prefix targets in `reads`. | Lifecycle Events (F2) | Accepted | Yes |
+| SD-019 | Manifest schema bumps to v3 — stages become objects `{name, transitions[], auto_advance}` replacing v2's parallel `stages` (string[]) + `auto_stages` arrays | v2's "next-in-array" auto-advance can only express linear flows. Branching (Boot acting as a level-select hub: `Boot → {DummyStage, StupidStage}` with each level returning to Boot) is unrepresentable. Per-stage `transitions[]` encodes the graph explicitly; per-stage `auto_advance` is only legal when `transitions.length == 1`. Hard cutover, no v2 compatibility (extends SD-017's clean-break ethos). | Stage System, Validation, Config Format | Accepted | Yes |
 
 **Status values:** `Proposed` · `Accepted` · `Rejected` · `Superseded`
 **Binding:** `Yes` = enforced constraint on all features in this system · `No` = guidance only

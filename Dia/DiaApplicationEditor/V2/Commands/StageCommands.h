@@ -2,7 +2,7 @@
 
 #include <DiaApplicationEditor/V2/Commands/ICommand.h>
 #include <DiaApplicationEditor/V2/ManifestEditorState.h>
-#include <DiaApplicationFlow/Manifest/ApplicationManifestV2.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Strings/String256.h>
 

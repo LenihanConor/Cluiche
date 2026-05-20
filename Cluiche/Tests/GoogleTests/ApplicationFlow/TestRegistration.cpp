@@ -12,7 +12,7 @@
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaApplicationFlow/IApplicationInspectable.h>
-#include <DiaApplicationFlow/Manifest/ApplicationManifestV2.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
@@ -182,7 +182,7 @@ TEST(ModuleRef, ResolvesWhenSiblingIsActive)
         [](const StringCRC& id) -> Module* { return new V2RegSiblingModule(id); });
 
     // Build manifest with both modules in the same stage.
-    ApplicationManifestV2 manifest;
+    ApplicationManifestV3 manifest;
     manifest.version = 2;
 
     StageDeclaration stage;

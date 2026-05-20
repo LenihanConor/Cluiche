@@ -12,7 +12,7 @@ namespace Dia { namespace ApplicationFlow {
     {
     }
 
-    void ManifestValidatorV2::Validate(const ApplicationManifestV2& manifest)
+    void ManifestValidatorV2::Validate(const ApplicationManifestV3& manifest)
     {
         Clear();
 
@@ -29,6 +29,10 @@ namespace Dia { namespace ApplicationFlow {
         CheckStreamPayloadTypes(manifest);
         CheckStreamOrphanReadersWriters(manifest);
         CheckReservedPrefixViolations(manifest);
+        CheckTransitionTargets(manifest);
+        CheckAutoAdvanceConsistency(manifest);
+        CheckTransitionSelfLoops(manifest);
+        CheckStageReachability(manifest);
     }
 
     bool ManifestValidatorV2::HasErrors() const
@@ -92,7 +96,7 @@ namespace Dia { namespace ApplicationFlow {
     // references point to declared stage names.  The sentinel StringCRC("all")
     // is always valid for module stages.
     //-----------------------------------------------------------------------------
-    void ManifestValidatorV2::CheckStageReferences(const ApplicationManifestV2& manifest)
+    void ManifestValidatorV2::CheckStageReferences(const ApplicationManifestV3& manifest)
     {
         // Build a flat array of valid stage names from manifest.stages
         Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16> validStages;
@@ -122,18 +126,6 @@ namespace Dia { namespace ApplicationFlow {
                 Dia::Core::Containers::String256 msg;
                 msg.Format("initialStage '%s' is not declared in stages array", manifest.initialStage.AsChar());
                 AddError("UNKNOWN_STAGE", msg.AsCStr(), manifest.initialStage);
-            }
-        }
-
-        // Check autoStages entries
-        for (unsigned int i = 0; i < manifest.autoStages.Size(); ++i)
-        {
-            const Dia::Core::StringCRC& stageName = manifest.autoStages[i];
-            if (!stageExists(stageName))
-            {
-                Dia::Core::Containers::String256 msg;
-                msg.Format("autoStages[%u] '%s' is not declared in stages array", i, stageName.AsChar());
-                AddError("UNKNOWN_STAGE", msg.AsCStr(), stageName);
             }
         }
 
@@ -170,7 +162,7 @@ namespace Dia { namespace ApplicationFlow {
     //
     // All processing unit instance_ids must be unique.
     //-----------------------------------------------------------------------------
-    void ManifestValidatorV2::CheckDuplicatePUIds(const ApplicationManifestV2& manifest)
+    void ManifestValidatorV2::CheckDuplicatePUIds(const ApplicationManifestV3& manifest)
     {
         // Linear-scan uniqueness check using a flat array of seen ids
         Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 4> seenIds;
@@ -207,7 +199,7 @@ namespace Dia { namespace ApplicationFlow {
     //
     // All stream IDs must be unique.
     //-----------------------------------------------------------------------------
-    void ManifestValidatorV2::CheckDuplicateStreamIds(const ApplicationManifestV2& manifest)
+    void ManifestValidatorV2::CheckDuplicateStreamIds(const ApplicationManifestV3& manifest)
     {
         Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16> seenIds;
 
@@ -243,7 +235,7 @@ namespace Dia { namespace ApplicationFlow {
     //
     // For each stream, checks that fromPU and toPU reference declared PU ids.
     //-----------------------------------------------------------------------------
-    void ManifestValidatorV2::CheckStreamPUReferences(const ApplicationManifestV2& manifest)
+    void ManifestValidatorV2::CheckStreamPUReferences(const ApplicationManifestV3& manifest)
     {
         // Build flat array of valid PU ids
         Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 4> puIds;
@@ -295,7 +287,7 @@ namespace Dia { namespace ApplicationFlow {
     //   - Each reads/writes entry references an existing stream id
     //   - Cycle detection via Kahn's algorithm
     //-----------------------------------------------------------------------------
-    void ManifestValidatorV2::CheckPUModules(const ApplicationManifestV2& manifest)
+    void ManifestValidatorV2::CheckPUModules(const ApplicationManifestV3& manifest)
     {
         // Build flat array of valid stream ids
         Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16> streamIds;
@@ -451,7 +443,7 @@ namespace Dia { namespace ApplicationFlow {
     // A non-"all" module is orphaned if none of its declared stages exist in
     // the manifest's stages array (i.e., the module would never be active).
     //-----------------------------------------------------------------------------
-    void ManifestValidatorV2::CheckOrphanModules(const ApplicationManifestV2& manifest)
+    void ManifestValidatorV2::CheckOrphanModules(const ApplicationManifestV3& manifest)
     {
         // Build flat array of valid stage names
         Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16> validStages;
@@ -521,7 +513,7 @@ namespace Dia { namespace ApplicationFlow {
     // Warns when a stream has no writers (nothing in writes[]) or no readers
     // (nothing in reads[]) across all PU modules.
     //-----------------------------------------------------------------------------
-    void ManifestValidatorV2::CheckOrphanStreams(const ApplicationManifestV2& manifest)
+    void ManifestValidatorV2::CheckOrphanStreams(const ApplicationManifestV3& manifest)
     {
         for (unsigned int si = 0; si < manifest.streams.Size(); ++si)
         {
@@ -576,7 +568,7 @@ namespace Dia { namespace ApplicationFlow {
     //
     // Warns when a stage has only "all" modules and no stage-specific modules.
     //-----------------------------------------------------------------------------
-    void ManifestValidatorV2::CheckEmptyStages(const ApplicationManifestV2& manifest)
+    void ManifestValidatorV2::CheckEmptyStages(const ApplicationManifestV3& manifest)
     {
         const Dia::Core::StringCRC kAll("all");
 
@@ -631,7 +623,7 @@ namespace Dia { namespace ApplicationFlow {
     // When a stream has multiWriter=false, at most one module across all PUs
     // may write to it.
     //-----------------------------------------------------------------------------
-    void ManifestValidatorV2::CheckMultiWriterViolations(const ApplicationManifestV2& manifest)
+    void ManifestValidatorV2::CheckMultiWriterViolations(const ApplicationManifestV3& manifest)
     {
         for (unsigned int si = 0; si < manifest.streams.Size(); ++si)
         {
@@ -796,7 +788,7 @@ namespace Dia { namespace ApplicationFlow {
     //
     // Error codes: UNKNOWN_STREAM_IN_READS, UNKNOWN_STREAM_IN_WRITES
     //-----------------------------------------------------------------------------
-    void ManifestValidatorV2::CheckStreamReadsWritesBinding(const ApplicationManifestV2& manifest)
+    void ManifestValidatorV2::CheckStreamReadsWritesBinding(const ApplicationManifestV3& manifest)
     {
         // Build flat set of declared stream ids
         Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16> declaredIds;
@@ -866,7 +858,7 @@ namespace Dia { namespace ApplicationFlow {
     // check happens at Connect() time in the handles — this is a manifest-level
     // early warning only.  No StreamTypeRegistry dependency.
     //-----------------------------------------------------------------------------
-    void ManifestValidatorV2::CheckStreamPayloadTypes(const ApplicationManifestV2& manifest)
+    void ManifestValidatorV2::CheckStreamPayloadTypes(const ApplicationManifestV3& manifest)
     {
         for (unsigned int i = 0; i < manifest.streams.Size(); ++i)
         {
@@ -891,7 +883,7 @@ namespace Dia { namespace ApplicationFlow {
     //   (multiWriter streams still warn — write-only may be intentional logging
     //    but worth flagging)
     //-----------------------------------------------------------------------------
-    void ManifestValidatorV2::CheckStreamOrphanReadersWriters(const ApplicationManifestV2& manifest)
+    void ManifestValidatorV2::CheckStreamOrphanReadersWriters(const ApplicationManifestV3& manifest)
     {
         for (unsigned int si = 0; si < manifest.streams.Size(); ++si)
         {
@@ -948,7 +940,7 @@ namespace Dia { namespace ApplicationFlow {
     // User-declared streams and module instance IDs must NOT start with '$'.
     // The '$' prefix is reserved for framework-auto-created streams (SD-018).
     //-----------------------------------------------------------------------------
-    void ManifestValidatorV2::CheckReservedPrefixViolations(const ApplicationManifestV2& manifest)
+    void ManifestValidatorV2::CheckReservedPrefixViolations(const ApplicationManifestV3& manifest)
     {
         for (unsigned int i = 0; i < manifest.streams.Size(); ++i)
         {
@@ -975,6 +967,133 @@ namespace Dia { namespace ApplicationFlow {
                         id.AsChar(), pu.instanceId.AsChar());
                     AddError("RESERVED_PREFIX", msg.AsCStr(), id);
                 }
+            }
+        }
+    }
+
+    //-----------------------------------------------------------------------------
+    // CheckTransitionTargets
+    //
+    // Every entry in a stage's transitions[] must name a stage declared in
+    // manifest.stages.
+    // Error: TRANSITION_TARGET_INVALID
+    //-----------------------------------------------------------------------------
+    void ManifestValidatorV2::CheckTransitionTargets(const ApplicationManifestV3& manifest)
+    {
+        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16> validStages;
+        for (unsigned int i = 0; i < manifest.stages.Size(); ++i)
+            validStages.Add(manifest.stages[i].name);
+
+        auto stageExists = [&validStages](const Dia::Core::StringCRC& name) -> bool {
+            for (unsigned int i = 0; i < validStages.Size(); ++i)
+                if (validStages[i] == name) return true;
+            return false;
+        };
+
+        for (unsigned int i = 0; i < manifest.stages.Size(); ++i)
+        {
+            const StageDeclaration& stage = manifest.stages[i];
+            for (unsigned int t = 0; t < stage.transitions.Size(); ++t)
+            {
+                if (!stageExists(stage.transitions[t]))
+                {
+                    Dia::Core::Containers::String256 msg;
+                    msg.Format("Stage '%s' transition target '%s' is not a declared stage",
+                        stage.name.AsChar(), stage.transitions[t].AsChar());
+                    AddError("TRANSITION_TARGET_INVALID", msg.AsCStr(), stage.name);
+                }
+            }
+        }
+    }
+
+    //-----------------------------------------------------------------------------
+    // CheckAutoAdvanceConsistency
+    //
+    // auto_advance=true is only valid when transitions.length == 1.
+    // Error: AUTO_ADVANCE_AMBIGUOUS
+    //-----------------------------------------------------------------------------
+    void ManifestValidatorV2::CheckAutoAdvanceConsistency(const ApplicationManifestV3& manifest)
+    {
+        for (unsigned int i = 0; i < manifest.stages.Size(); ++i)
+        {
+            const StageDeclaration& stage = manifest.stages[i];
+            if (stage.autoAdvance && stage.transitions.Size() != 1)
+            {
+                Dia::Core::Containers::String256 msg;
+                msg.Format("Stage '%s' has auto_advance=true but transitions.length=%u (must be exactly 1)",
+                    stage.name.AsChar(), stage.transitions.Size());
+                AddError("AUTO_ADVANCE_AMBIGUOUS", msg.AsCStr(), stage.name);
+            }
+        }
+    }
+
+    //-----------------------------------------------------------------------------
+    // CheckTransitionSelfLoops
+    //
+    // A stage whose transitions[] contains its own name is a self-loop.
+    // Legitimate (re-enter stage = hot-reload via SD-012) but worth flagging.
+    // Warning: TRANSITION_SELF_LOOP
+    //-----------------------------------------------------------------------------
+    void ManifestValidatorV2::CheckTransitionSelfLoops(const ApplicationManifestV3& manifest)
+    {
+        for (unsigned int i = 0; i < manifest.stages.Size(); ++i)
+        {
+            const StageDeclaration& stage = manifest.stages[i];
+            for (unsigned int t = 0; t < stage.transitions.Size(); ++t)
+            {
+                if (stage.transitions[t] == stage.name)
+                {
+                    Dia::Core::Containers::String256 msg;
+                    msg.Format("Stage '%s' has a self-loop in its transitions[]",
+                        stage.name.AsChar());
+                    AddWarning("TRANSITION_SELF_LOOP", msg.AsCStr(), stage.name);
+                    break; // one warning per stage is enough
+                }
+            }
+        }
+    }
+
+    //-----------------------------------------------------------------------------
+    // CheckStageReachability
+    //
+    // A non-initial stage that no other stage lists in its transitions[] can
+    // never be entered.  Warning: STAGE_UNREACHABLE
+    //-----------------------------------------------------------------------------
+    void ManifestValidatorV2::CheckStageReachability(const ApplicationManifestV3& manifest)
+    {
+        // Build the union set of all stages that appear as a transition target
+        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16> referenced;
+        for (unsigned int i = 0; i < manifest.stages.Size(); ++i)
+        {
+            const StageDeclaration& stage = manifest.stages[i];
+            for (unsigned int t = 0; t < stage.transitions.Size(); ++t)
+            {
+                const Dia::Core::StringCRC& target = stage.transitions[t];
+                bool alreadyIn = false;
+                for (unsigned int r = 0; r < referenced.Size(); ++r)
+                    if (referenced[r] == target) { alreadyIn = true; break; }
+                if (!alreadyIn)
+                    referenced.Add(target);
+            }
+        }
+
+        auto isReferenced = [&referenced](const Dia::Core::StringCRC& name) -> bool {
+            for (unsigned int i = 0; i < referenced.Size(); ++i)
+                if (referenced[i] == name) return true;
+            return false;
+        };
+
+        for (unsigned int i = 0; i < manifest.stages.Size(); ++i)
+        {
+            const StageDeclaration& stage = manifest.stages[i];
+            if (stage.name == manifest.initialStage)
+                continue; // initial stage is always reachable by definition
+            if (!isReferenced(stage.name))
+            {
+                Dia::Core::Containers::String256 msg;
+                msg.Format("Stage '%s' is not the initial stage and is not referenced by any transition",
+                    stage.name.AsChar());
+                AddWarning("STAGE_UNREACHABLE", msg.AsCStr(), stage.name);
             }
         }
     }

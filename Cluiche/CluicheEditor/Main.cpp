@@ -20,7 +20,7 @@
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestLoaderV2.h>
-#include <DiaApplicationFlow/Manifest/ApplicationManifestV2.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 
 #include <chrono>
 #include <thread>
@@ -34,7 +34,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPWSTR /
     if (exitCode >= 0)
         return exitCode;
 
-    Dia::ApplicationFlow::ApplicationManifestV2 manifest;
+    Dia::ApplicationFlow::ApplicationManifestV3 manifest;
     Dia::ApplicationFlow::LoadResult loadResult =
         Dia::ApplicationFlow::ApplicationManifestLoaderV2::LoadFromFile("assets/configs/editor.diaapp", manifest);
 

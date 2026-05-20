@@ -12,7 +12,7 @@ language: cpp
 parent_module_id: dia.root
 
 summary: >
-  DiaApplicationFlow — config-driven application framework (v2). Defines Application,
+  DiaApplicationFlow — config-driven application framework (v3). Defines Application,
   Module, ProcessingUnit, TypeRegistry, ModuleRef, stream handles (FrameStream / EventStream),
   IApplicationInspectable (read-only introspection) and IApplicationControl (narrow control
   interface exposed to modules). Replaces the v1 Phase-based system; v1 files (ApplicationModule,
@@ -35,8 +35,8 @@ responsibilities:
   - FrameStreamStore / EventStreamStore — manifest-authoritative inter-PU data channels, created at startup from manifest declarations; IStreamStore tap API: AttachTap(callback) → TapHandle, DetachTap(handle), GetTapCount()
   - StreamWriter/Reader, EventStreamWriter/Reader — typed module-side handles
   - StreamTypeRegistry — process-static registry mapping C++ type → StringCRC type ID for stream payload type checking
-  - ApplicationManifestV2 POD structs — in-memory representation of .diaapp + .diastage files
-  - ApplicationManifestLoaderV2 — JSON → ApplicationManifestV2
+  - ApplicationManifestV3 POD structs — in-memory representation of .diaapp v3 + .diastage files; stages are objects {name, transitions[], auto_advance} (SD-019)
+  - ApplicationManifestLoaderV2 — JSON → ApplicationManifestV3 (v3 schema; rejects v2)
   - ManifestComposerV2 — .diagame → merged manifest (base + stage overlays)
   - ManifestValidatorV2 — full structural + dependency + cycle validation, including
     array-order enforcement for declared dependencies (DEPENDENCY_ORDER error)
@@ -62,7 +62,7 @@ public_api:
     - Dia/DiaApplicationFlow/RegistrationMacrosV2.h
     - Dia/DiaApplicationFlow/IApplicationInspectable.h
     - Dia/DiaApplicationFlow/IApplicationControl.h
-    - Dia/DiaApplicationFlow/Manifest/ApplicationManifestV2.h
+    - Dia/DiaApplicationFlow/Manifest/ApplicationManifestV3.h
     - Dia/DiaApplicationFlow/Manifest/ApplicationManifestLoaderV2.h
     - Dia/DiaApplicationFlow/Manifest/ManifestComposerV2.h
     - Dia/DiaApplicationFlow/Manifest/ManifestValidatorV2.h
@@ -86,8 +86,8 @@ public_api:
     - DIA_STREAM_TYPE(T)
     - IApplicationInspectable
     - IApplicationControl
-    - ApplicationManifestV2
-    - ApplicationManifestLoaderV2
+    - ApplicationManifestV3
+    - ApplicationManifestLoaderV2 (loads v3 schema)
     - ManifestComposerV2
     - ManifestValidatorV2
     - StreamWriter<T>

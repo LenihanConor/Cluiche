@@ -1,8 +1,9 @@
 {
-    "version": 2,
-    "stages": ["Running"],
+    "version": 3,
+    "stages": [
+        { "name": "Running", "transitions": [], "auto_advance": false }
+    ],
     "initial_stage": "Running",
-    "auto_stages": [],
     "processing_units": [
         {
             "instance_id": "EditorPU",

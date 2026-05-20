@@ -14,7 +14,7 @@
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
-#include <DiaApplicationFlow/Manifest/ApplicationManifestV2.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaApplicationFlow/Streams/EventStreamStore.h>
 #include <DiaApplicationFlow/Streams/EventStreamReader.h>
 #include <DiaApplicationFlow/Streams/Event.h>
@@ -143,9 +143,9 @@ static bool LcPumpUntilStable(Application& app, const StringCRC& puId, int limit
 // module in each stage.
 // ---------------------------------------------------------------------------
 
-static ApplicationManifestV2 BuildTwoStageManifest()
+static ApplicationManifestV3 BuildTwoStageManifest()
 {
-    ApplicationManifestV2 manifest;
+    ApplicationManifestV3 manifest;
     manifest.version = 2;
 
     StageDeclaration boot;  boot.name = StringCRC("Boot");
@@ -203,7 +203,7 @@ TEST(LifecycleEvents, TransitionToEmitsRequested)
     reg.Register(LC_LifecycleReaderModule::kTypeId, CreateLcReader);
     reg.Register(LC_SimpleModule::kTypeId,           CreateLcSimple);
 
-    ApplicationManifestV2 manifest = BuildTwoStageManifest();
+    ApplicationManifestV3 manifest = BuildTwoStageManifest();
     Application app(manifest, reg);
     ASSERT_TRUE(app.Start());
 
@@ -231,7 +231,7 @@ TEST(LifecycleEvents, TransitionStartedEmitted)
     reg.Register(LC_LifecycleReaderModule::kTypeId, CreateLcReader);
     reg.Register(LC_SimpleModule::kTypeId,           CreateLcSimple);
 
-    ApplicationManifestV2 manifest = BuildTwoStageManifest();
+    ApplicationManifestV3 manifest = BuildTwoStageManifest();
     Application app(manifest, reg);
     ASSERT_TRUE(app.Start());
     ASSERT_TRUE(LcPumpUntilStable(app, StringCRC("MainPU"), 100));
@@ -255,7 +255,7 @@ TEST(LifecycleEvents, TransitionCommittedEmitted)
     reg.Register(LC_LifecycleReaderModule::kTypeId, CreateLcReader);
     reg.Register(LC_SimpleModule::kTypeId,           CreateLcSimple);
 
-    ApplicationManifestV2 manifest = BuildTwoStageManifest();
+    ApplicationManifestV3 manifest = BuildTwoStageManifest();
     Application app(manifest, reg);
     ASSERT_TRUE(app.Start());
     ASSERT_TRUE(LcPumpUntilStable(app, StringCRC("MainPU"), 100));
@@ -279,7 +279,7 @@ TEST(LifecycleEvents, ShutdownRequestedEmitted)
     reg.Register(LC_LifecycleReaderModule::kTypeId, CreateLcReader);
     reg.Register(LC_SimpleModule::kTypeId,           CreateLcSimple);
 
-    ApplicationManifestV2 manifest = BuildTwoStageManifest();
+    ApplicationManifestV3 manifest = BuildTwoStageManifest();
     Application app(manifest, reg);
     ASSERT_TRUE(app.Start());
     ASSERT_TRUE(LcPumpUntilStable(app, StringCRC("MainPU"), 100));
@@ -304,7 +304,7 @@ TEST(LifecycleEvents, BootSequenceEmitsAtLeastOneEvent)
     reg.Register(LC_LifecycleReaderModule::kTypeId, CreateLcReader);
     reg.Register(LC_SimpleModule::kTypeId,           CreateLcSimple);
 
-    ApplicationManifestV2 manifest = BuildTwoStageManifest();
+    ApplicationManifestV3 manifest = BuildTwoStageManifest();
     Application app(manifest, reg);
     ASSERT_TRUE(app.Start());
     ASSERT_TRUE(LcPumpUntilStable(app, StringCRC("MainPU"), 100));
@@ -333,7 +333,7 @@ TEST(LifecycleEvents, TapReceivesStageTransition)
     reg.Register(LC_LifecycleReaderModule::kTypeId, CreateLcReader);
     reg.Register(LC_SimpleModule::kTypeId,           CreateLcSimple);
 
-    ApplicationManifestV2 manifest = BuildTwoStageManifest();
+    ApplicationManifestV3 manifest = BuildTwoStageManifest();
     Application app(manifest, reg);
     ASSERT_TRUE(app.Start());
     ASSERT_TRUE(LcPumpUntilStable(app, StringCRC("MainPU"), 100));
@@ -410,7 +410,7 @@ TEST(LifecycleEvents, EnvelopeSenderCrcIsFramework)
     reg.Register(LC_LifecycleReaderModule::kTypeId, CreateLcReader);
     reg.Register(LC_SimpleModule::kTypeId,           CreateLcSimple);
 
-    ApplicationManifestV2 manifest = BuildTwoStageManifest();
+    ApplicationManifestV3 manifest = BuildTwoStageManifest();
     Application app(manifest, reg);
     ASSERT_TRUE(app.Start());
     ASSERT_TRUE(LcPumpUntilStable(app, StringCRC("MainPU"), 100));

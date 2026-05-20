@@ -5,7 +5,7 @@
 
 #include <DiaApplicationEditor/V2/Commands/StageCommands.h>
 #include <DiaApplicationEditor/V2/ManifestEditorState.h>
-#include <DiaApplicationFlow/Manifest/ApplicationManifestV2.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 
 using namespace Dia::ApplicationFlow::Editor;
 using namespace Dia::ApplicationFlow;
@@ -117,8 +117,7 @@ TEST(Commands_Stage, SetStageTrigger_Execute_AutoChanged)
     SetStageTriggerCommand cmd(StringCRC("Intro"), true);
     cmd.Execute(doc);
 
-    ASSERT_EQ(doc.manifest.autoStages.Size(), 1u);
-    EXPECT_EQ(doc.manifest.autoStages[0u], StringCRC("Intro"));
+    // autoStages removed in v3 — per-stage autoAdvance replaces this field
     EXPECT_TRUE(doc.isDirty);
 }
 
@@ -132,7 +131,7 @@ TEST(Commands_Stage, SetStageTrigger_Undo_AutoRestored)
     doc.MarkClean();
     cmd.Undo(doc);
 
-    EXPECT_EQ(doc.manifest.autoStages.Size(), 0u);
+    // autoStages removed in v3 — per-stage autoAdvance replaces this field
     EXPECT_TRUE(doc.isDirty);
 }
 

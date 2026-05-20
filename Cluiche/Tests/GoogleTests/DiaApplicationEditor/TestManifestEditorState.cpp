@@ -115,8 +115,8 @@ TEST(ManifestEditorState, FindProvenance_WrongPU_ReturnsNull)
 // Manifest field defaults
 // ==============================================================================
 
-TEST(ManifestEditorState, ManifestField_DefaultVersion_IsTwo)
+TEST(ManifestEditorState, ManifestField_DefaultVersion_IsThree)
 {
     ManifestEditorState state;
-    EXPECT_EQ(state.manifest.version, 2);
+    EXPECT_EQ(state.manifest.version, 3);
 }

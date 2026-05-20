@@ -1,5 +1,5 @@
 #pragma once
-#include <DiaApplicationFlow/Manifest/ApplicationManifestV2.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 
 namespace Dia { namespace ApplicationFlow {
 
@@ -9,11 +9,11 @@ namespace Dia { namespace ApplicationFlow {
     {
     public:
         // Entry point: reads .diagame, resolves imports, returns merged manifest
-        static ComposeResult Compose(const char* diagamePath, ApplicationManifestV2& outManifest);
+        static ComposeResult Compose(const char* diagamePath, ApplicationManifestV3& outManifest);
 
     private:
-        static ComposeResult LoadDiagame(const char* path, ApplicationManifestV2& outManifest, char* baseDir);
-        static ComposeResult MergeStage(const char* diastagePath, const char* baseDir, ApplicationManifestV2& outManifest);
+        static ComposeResult LoadDiagame(const char* path, ApplicationManifestV3& outManifest, char* baseDir);
+        static ComposeResult MergeStage(const char* diastagePath, const char* baseDir, ApplicationManifestV3& outManifest);
         static bool ReadFile(const char* path, char* buffer, unsigned int bufferSize);
         static void BuildPath(const char* baseDir, const char* relPath, char* outPath, unsigned int outSize);
     };

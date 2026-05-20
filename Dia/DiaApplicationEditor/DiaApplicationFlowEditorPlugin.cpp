@@ -50,19 +50,22 @@ namespace Dia { namespace Editor {
         Json::Value stages(Json::arrayValue);
         for (unsigned int i = 0; i < m.stages.Size(); ++i)
         {
+            const Dia::ApplicationFlow::StageDeclaration& sd = m.stages[i];
             Json::Value s;
-            s["name"]         = m.stages[i].name.AsChar();
-            s["manifestPath"] = m.stages[i].manifestPath.AsCStr();
+            s["name"]         = sd.name.AsChar();
+            s["manifestPath"] = sd.manifestPath.AsCStr();
+            s["autoAdvance"]  = sd.autoAdvance;
+
+            Json::Value transitions(Json::arrayValue);
+            for (unsigned int t = 0; t < sd.transitions.Size(); ++t)
+                transitions.append(sd.transitions[t].AsChar());
+            s["transitions"] = transitions;
+
             stages.append(s);
         }
         manifest["stages"] = stages;
 
         manifest["initialStage"] = m.initialStage.AsChar();
-
-        Json::Value autoStages(Json::arrayValue);
-        for (unsigned int i = 0; i < m.autoStages.Size(); ++i)
-            autoStages.append(m.autoStages[i].AsChar());
-        manifest["autoStages"] = autoStages;
 
         Json::Value streams(Json::arrayValue);
         for (unsigned int i = 0; i < m.streams.Size(); ++i)

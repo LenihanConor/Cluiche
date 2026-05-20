@@ -3,7 +3,7 @@
 namespace
 {
     Dia::ApplicationFlow::ProcessingUnitDeclaration* FindPU(
-        Dia::ApplicationFlow::ApplicationManifestV2& manifest,
+        Dia::ApplicationFlow::ApplicationManifestV3& manifest,
         Dia::Core::StringCRC puId)
     {
         auto& pus = manifest.processingUnits;

@@ -1,5 +1,5 @@
 #include <DiaApplicationEditor/V2/ManifestValidator.h>
-#include <DiaApplicationFlow/Manifest/ApplicationManifestV2.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -80,7 +80,7 @@ static ValidationIssue* AddIssue(ValidationResult& result, ValidationRuleId rule
     return &result.issues[result.issues.Size() - 1];
 }
 
-static bool StreamIdExists(const ApplicationManifestV2& manifest, StringCRC id)
+static bool StreamIdExists(const ApplicationManifestV3& manifest, StringCRC id)
 {
     for (unsigned int i = 0; i < manifest.streams.Size(); ++i)
     {
@@ -90,7 +90,7 @@ static bool StreamIdExists(const ApplicationManifestV2& manifest, StringCRC id)
     return false;
 }
 
-static bool StageNameExists(const ApplicationManifestV2& manifest, StringCRC name)
+static bool StageNameExists(const ApplicationManifestV3& manifest, StringCRC name)
 {
     for (unsigned int i = 0; i < manifest.stages.Size(); ++i)
     {
@@ -100,7 +100,7 @@ static bool StageNameExists(const ApplicationManifestV2& manifest, StringCRC nam
     return false;
 }
 
-static bool PUIdExists(const ApplicationManifestV2& manifest, StringCRC id)
+static bool PUIdExists(const ApplicationManifestV3& manifest, StringCRC id)
 {
     for (unsigned int i = 0; i < manifest.processingUnits.Size(); ++i)
     {
@@ -160,7 +160,7 @@ ValidationResult ManifestValidator::Validate(const ManifestEditorState& state)
     if (!state.hasManifest)
         return result;
 
-    const ApplicationManifestV2& manifest = state.manifest;
+    const ApplicationManifestV3& manifest = state.manifest;
     char msg[256];
 
     // ------------------------------------------------------------------

@@ -29,10 +29,9 @@ static const char* kTempPath = "TestManifestLoader_temp.diaapp";
 
 static const char* kValidMinimal =
     "{"
-    "  \"version\": 2,"
-    "  \"stages\": [{\"name\": \"Boot\", \"manifest\": \"\"}],"
+    "  \"version\": 3,"
+    "  \"stages\": [{\"name\": \"Boot\", \"transitions\": [], \"auto_advance\": false}],"
     "  \"initial_stage\": \"Boot\","
-    "  \"auto_stages\": [\"Boot\"],"
     "  \"streams\": [],"
     "  \"processing_units\": ["
     "    {"
@@ -46,10 +45,9 @@ static const char* kValidMinimal =
 
 static const char* kValidWithStream =
     "{"
-    "  \"version\": 2,"
-    "  \"stages\": [{\"name\": \"Boot\", \"manifest\": \"\"}],"
+    "  \"version\": 3,"
+    "  \"stages\": [{\"name\": \"Boot\", \"transitions\": [], \"auto_advance\": false}],"
     "  \"initial_stage\": \"Boot\","
-    "  \"auto_stages\": [],"
     "  \"streams\": ["
     "    {"
     "      \"id\": \"InputToSim\","
@@ -116,8 +114,9 @@ TEST(ManifestLoader, Load_MalformedJson_ReturnsMalformed)
 
 TEST(ManifestLoader, Load_WrongVersion_ReturnsWrongVersion)
 {
+    // v2-shaped manifest must be rejected by the v3 loader
     const char* wrongVersion =
-        "{\"version\": 1, \"stages\": [], \"initial_stage\": \"\","
+        "{\"version\": 2, \"stages\": [\"Boot\"], \"initial_stage\": \"\","
         " \"auto_stages\": [], \"streams\": [], \"processing_units\": []}";
 
     WriteTempFile(kTempPath, wrongVersion);

@@ -9,7 +9,7 @@
 #include <gtest/gtest.h>
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
-#include <DiaApplicationFlow/Manifest/ApplicationManifestV2.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaApplicationFlow/Manifest/ManifestValidatorV2.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
@@ -45,10 +45,10 @@ static TypeRegistry BuildRegistryWithSimple()
     return reg;
 }
 
-static ApplicationManifestV2 BuildValidManifest()
+static ApplicationManifestV3 BuildValidManifest()
 {
-    ApplicationManifestV2 manifest;
-    manifest.version = 2;
+    ApplicationManifestV3 manifest;
+    manifest.version = 3;
 
     StageDeclaration boot;
     boot.name = StringCRC("Boot");
@@ -95,7 +95,7 @@ static bool HasCode(
 TEST(Validation, ValidManifestHasNoErrors)
 {
     TypeRegistry reg = BuildRegistryWithSimple();
-    ApplicationManifestV2 manifest = BuildValidManifest();
+    ApplicationManifestV3 manifest = BuildValidManifest();
 
     ManifestValidatorV2 validator(reg);
     validator.Validate(manifest);
@@ -113,7 +113,7 @@ TEST(Validation, UnknownTypeIdReportsError)
     TypeRegistry reg;
     // Register nothing — typeId "Val_Ghost" is unknown.
 
-    ApplicationManifestV2 manifest;
+    ApplicationManifestV3 manifest;
     manifest.version = 2;
 
     StageDeclaration boot;
@@ -148,7 +148,7 @@ TEST(Validation, UnknownInitialStageReportsError)
 {
     TypeRegistry reg = BuildRegistryWithSimple();
 
-    ApplicationManifestV2 manifest;
+    ApplicationManifestV3 manifest;
     manifest.version = 2;
 
     StageDeclaration boot;
@@ -183,7 +183,7 @@ TEST(Validation, DuplicatePUIdReportsError)
 {
     TypeRegistry reg = BuildRegistryWithSimple();
 
-    ApplicationManifestV2 manifest;
+    ApplicationManifestV3 manifest;
     manifest.version = 2;
 
     StageDeclaration boot;
@@ -237,7 +237,7 @@ TEST(Validation, DuplicatePUIdReportsError)
 TEST(Validation, DuplicateStreamIdReportsError)
 {
     TypeRegistry reg = BuildRegistryWithSimple();
-    ApplicationManifestV2 manifest = BuildValidManifest();
+    ApplicationManifestV3 manifest = BuildValidManifest();
 
     // Add a second PU so stream PU refs are valid.
     ProcessingUnitDeclaration pu2;
@@ -284,7 +284,7 @@ TEST(Validation, DuplicateStreamIdReportsError)
 TEST(Validation, UnknownStreamPUReportsError)
 {
     TypeRegistry reg = BuildRegistryWithSimple();
-    ApplicationManifestV2 manifest = BuildValidManifest();
+    ApplicationManifestV3 manifest = BuildValidManifest();
 
     StreamDeclaration s;
     s.id          = StringCRC("MyStream");
@@ -307,7 +307,7 @@ TEST(Validation, DuplicateModuleIdReportsError)
 {
     TypeRegistry reg = BuildRegistryWithSimple();
 
-    ApplicationManifestV2 manifest;
+    ApplicationManifestV3 manifest;
     manifest.version = 2;
 
     StageDeclaration boot;
@@ -347,7 +347,7 @@ TEST(Validation, UnknownDependencyReportsError)
 {
     TypeRegistry reg = BuildRegistryWithSimple();
 
-    ApplicationManifestV2 manifest;
+    ApplicationManifestV3 manifest;
     manifest.version = 2;
 
     StageDeclaration boot;
@@ -385,7 +385,7 @@ TEST(Validation, DependencyOrderReportsError)
 {
     TypeRegistry reg = BuildRegistryWithSimple();
 
-    ApplicationManifestV2 manifest;
+    ApplicationManifestV3 manifest;
     manifest.version = 2;
 
     StageDeclaration boot;
@@ -433,7 +433,7 @@ TEST(Validation, DependencyOrderValidWhenDepIsEarlier)
 {
     TypeRegistry reg = BuildRegistryWithSimple();
 
-    ApplicationManifestV2 manifest;
+    ApplicationManifestV3 manifest;
     manifest.version = 2;
 
     StageDeclaration boot;
@@ -479,7 +479,7 @@ TEST(Validation, CycleDetectedReportsError)
 {
     TypeRegistry reg = BuildRegistryWithSimple();
 
-    ApplicationManifestV2 manifest;
+    ApplicationManifestV3 manifest;
     manifest.version = 2;
 
     StageDeclaration boot;
@@ -528,7 +528,7 @@ TEST(Validation, MultiWriterViolationReportsError)
 {
     TypeRegistry reg = BuildRegistryWithSimple();
 
-    ApplicationManifestV2 manifest;
+    ApplicationManifestV3 manifest;
     manifest.version = 2;
 
     StageDeclaration boot;
@@ -579,7 +579,7 @@ TEST(Validation, OrphanModuleReportsError)
 {
     TypeRegistry reg = BuildRegistryWithSimple();
 
-    ApplicationManifestV2 manifest;
+    ApplicationManifestV3 manifest;
     manifest.version = 2;
 
     StageDeclaration boot;
@@ -615,7 +615,7 @@ TEST(Validation, OrphanModuleReportsError)
 TEST(Validation, OrphanStreamReportsWarning)
 {
     TypeRegistry reg = BuildRegistryWithSimple();
-    ApplicationManifestV2 manifest = BuildValidManifest();
+    ApplicationManifestV3 manifest = BuildValidManifest();
 
     // Stream declared but never written.
     StreamDeclaration s;
@@ -634,4 +634,191 @@ TEST(Validation, OrphanStreamReportsWarning)
     EXPECT_TRUE(validator.HasWarnings());
     EXPECT_TRUE(HasCode(validator.GetResults(), "ORPHAN_STREAM", ValidationSeverity::kWarning))
         << "Expected ORPHAN_STREAM warning for unwritten stream";
+}
+
+// ---------------------------------------------------------------------------
+// v3 transition rules
+// ---------------------------------------------------------------------------
+
+TEST(ManifestValidatorV2, TransitionTargetInvalid_FiresOnBadTarget)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+    ApplicationManifestV3 manifest = BuildValidManifest();
+
+    // Add a transition pointing at a non-existent stage
+    manifest.stages[0].transitions.Add(StringCRC("NonExistent"));
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_TRUE(validator.HasErrors());
+    EXPECT_TRUE(HasCode(validator.GetResults(), "TRANSITION_TARGET_INVALID"))
+        << "Expected TRANSITION_TARGET_INVALID for unknown transition target";
+}
+
+TEST(ManifestValidatorV2, TransitionTargetInvalid_NoFireOnValidTargets)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+    ApplicationManifestV3 manifest = BuildValidManifest();
+
+    // Add a second stage and wire Boot → Game (valid)
+    StageDeclaration game;
+    game.name = StringCRC("Game");
+    manifest.stages.Add(game);
+    manifest.stages[0].transitions.Add(StringCRC("Game"));
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_FALSE(HasCode(validator.GetResults(), "TRANSITION_TARGET_INVALID"))
+        << "Should not fire TRANSITION_TARGET_INVALID for a valid transition target";
+}
+
+TEST(ManifestValidatorV2, AutoAdvanceAmbiguous_FiresOnZeroTransitions)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+    ApplicationManifestV3 manifest = BuildValidManifest();
+
+    // auto_advance=true with empty transitions[] — ambiguous (nothing to advance to)
+    manifest.stages[0].autoAdvance = true;
+    // transitions stays empty (Size() == 0)
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_TRUE(validator.HasErrors());
+    EXPECT_TRUE(HasCode(validator.GetResults(), "AUTO_ADVANCE_AMBIGUOUS"))
+        << "Expected AUTO_ADVANCE_AMBIGUOUS for auto_advance=true with 0 transitions";
+}
+
+TEST(ManifestValidatorV2, AutoAdvanceAmbiguous_FiresOnMultipleTransitions)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+    ApplicationManifestV3 manifest = BuildValidManifest();
+
+    StageDeclaration game;
+    game.name = StringCRC("Game");
+    manifest.stages.Add(game);
+
+    StageDeclaration credits;
+    credits.name = StringCRC("Credits");
+    manifest.stages.Add(credits);
+
+    // auto_advance=true with 2 transitions — ambiguous (which one to pick?)
+    manifest.stages[0].autoAdvance = true;
+    manifest.stages[0].transitions.Add(StringCRC("Game"));
+    manifest.stages[0].transitions.Add(StringCRC("Credits"));
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_TRUE(validator.HasErrors());
+    EXPECT_TRUE(HasCode(validator.GetResults(), "AUTO_ADVANCE_AMBIGUOUS"))
+        << "Expected AUTO_ADVANCE_AMBIGUOUS for auto_advance=true with 2 transitions";
+}
+
+TEST(ManifestValidatorV2, AutoAdvanceAmbiguous_NoFireOnExactlyOne)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+    ApplicationManifestV3 manifest = BuildValidManifest();
+
+    StageDeclaration game;
+    game.name = StringCRC("Game");
+    manifest.stages.Add(game);
+
+    // auto_advance=true with exactly 1 transition — valid
+    manifest.stages[0].autoAdvance = true;
+    manifest.stages[0].transitions.Add(StringCRC("Game"));
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_FALSE(HasCode(validator.GetResults(), "AUTO_ADVANCE_AMBIGUOUS"))
+        << "Should not fire AUTO_ADVANCE_AMBIGUOUS for exactly 1 transition";
+}
+
+TEST(ManifestValidatorV2, TransitionSelfLoop_FiresOnSelfReference)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+    ApplicationManifestV3 manifest = BuildValidManifest();
+
+    // Boot → Boot (self-loop)
+    manifest.stages[0].transitions.Add(StringCRC("Boot"));
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_FALSE(validator.HasErrors())
+        << "TRANSITION_SELF_LOOP should be a warning, not an error";
+    EXPECT_TRUE(HasCode(validator.GetResults(), "TRANSITION_SELF_LOOP", ValidationSeverity::kWarning))
+        << "Expected TRANSITION_SELF_LOOP warning for self-referencing transition";
+}
+
+TEST(ManifestValidatorV2, TransitionSelfLoop_NoFireOnNormalTransition)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+    ApplicationManifestV3 manifest = BuildValidManifest();
+
+    StageDeclaration game;
+    game.name = StringCRC("Game");
+    manifest.stages.Add(game);
+    manifest.stages[0].transitions.Add(StringCRC("Game")); // Boot → Game, no self-loop
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_FALSE(HasCode(validator.GetResults(), "TRANSITION_SELF_LOOP", ValidationSeverity::kWarning))
+        << "Should not fire TRANSITION_SELF_LOOP for a normal (non-self) transition";
+}
+
+TEST(ManifestValidatorV2, StageUnreachable_FiresForIsolatedStage)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+    ApplicationManifestV3 manifest = BuildValidManifest();
+
+    // Add a stage that nobody transitions to
+    StageDeclaration orphan;
+    orphan.name = StringCRC("OrphanStage");
+    manifest.stages.Add(orphan);
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_FALSE(validator.HasErrors())
+        << "STAGE_UNREACHABLE should be a warning, not an error";
+    EXPECT_TRUE(HasCode(validator.GetResults(), "STAGE_UNREACHABLE", ValidationSeverity::kWarning))
+        << "Expected STAGE_UNREACHABLE warning for stage with no incoming transitions";
+}
+
+TEST(ManifestValidatorV2, StageUnreachable_NoFireForReachableStage)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+    ApplicationManifestV3 manifest = BuildValidManifest();
+
+    StageDeclaration game;
+    game.name = StringCRC("Game");
+    manifest.stages.Add(game);
+
+    // Boot → Game makes Game reachable
+    manifest.stages[0].transitions.Add(StringCRC("Game"));
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_FALSE(HasCode(validator.GetResults(), "STAGE_UNREACHABLE", ValidationSeverity::kWarning))
+        << "Should not flag Game as unreachable when Boot transitions to it";
+}
+
+TEST(ManifestValidatorV2, StageUnreachable_InitialStageNeverFlagged)
+{
+    TypeRegistry reg = BuildRegistryWithSimple();
+    // Manifest with only Boot (initial) — no outgoing transitions, so Boot would appear
+    // unreachable if the initial-stage exemption wasn't in place
+    ApplicationManifestV3 manifest = BuildValidManifest();
+
+    ManifestValidatorV2 validator(reg);
+    validator.Validate(manifest);
+
+    EXPECT_FALSE(HasCode(validator.GetResults(), "STAGE_UNREACHABLE", ValidationSeverity::kWarning))
+        << "Initial stage should never be flagged as unreachable";
 }

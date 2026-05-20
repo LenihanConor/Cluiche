@@ -13,7 +13,7 @@
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
-#include <DiaApplicationFlow/Manifest/ApplicationManifestV2.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaApplicationFlow/Streams/FrameStreamStore.h>
 #include <DiaApplicationFlow/Streams/EventStreamStore.h>
 #include <DiaApplicationFlow/Streams/StreamWriter.h>
@@ -293,7 +293,7 @@ TEST(StreamIntegration, FrameStreamWriterReaderRoundTrip)
     reg.Register(Str_FrameWriterModule::kTypeId, CreateFrameWriter);
     reg.Register(Str_FrameReaderModule::kTypeId, CreateFrameReader);
 
-    ApplicationManifestV2 manifest;
+    ApplicationManifestV3 manifest;
     manifest.version = 2;
 
     StageDeclaration boot;
@@ -421,7 +421,7 @@ TEST(StreamIntegration, EventStreamWriterReaderRoundTrip)
     reg.Register(Str_EventWriterModule::kTypeId, CreateEventWriter);
     reg.Register(Str_EventReaderModule::kTypeId, CreateEventReader);
 
-    ApplicationManifestV2 manifest;
+    ApplicationManifestV3 manifest;
     manifest.version = 2;
 
     StageDeclaration boot;

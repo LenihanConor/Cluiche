@@ -48,7 +48,7 @@
     <ClInclude Include="ModuleRef.h" />
     <ClInclude Include="Manifest\ApplicationManifest.h" />
     <ClInclude Include="Manifest\ApplicationManifestLoader.h" />
-    <ClInclude Include="Manifest\ApplicationManifestV2.h" />
+    <ClInclude Include="Manifest\ApplicationManifestV3.h" />
     <ClInclude Include="Manifest\ApplicationManifestLoaderV2.h" />
     <ClInclude Include="Manifest\JsonApplicationManifestSerializer.h" />
     <ClInclude Include="Manifest\ManifestComposer.h" />

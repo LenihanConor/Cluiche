@@ -1,5 +1,5 @@
 #pragma once
-#include <DiaApplicationFlow/Manifest/ApplicationManifestV2.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 
 namespace Dia { namespace ApplicationFlow {
 
@@ -8,13 +8,13 @@ namespace Dia { namespace ApplicationFlow {
     class ApplicationManifestLoaderV2 {
     public:
         // Load from file path — reads JSON, populates outManifest
-        static LoadResult LoadFromFile(const char* filePath, ApplicationManifestV2& outManifest);
+        static LoadResult LoadFromFile(const char* filePath, ApplicationManifestV3& outManifest);
 
         // Load from JSON string — for testing
-        static LoadResult LoadFromString(const char* jsonString, ApplicationManifestV2& outManifest);
+        static LoadResult LoadFromString(const char* jsonString, ApplicationManifestV3& outManifest);
 
     private:
-        static LoadResult ParseJson(const char* jsonString, ApplicationManifestV2& outManifest);
+        static LoadResult ParseJson(const char* jsonString, ApplicationManifestV3& outManifest);
     };
 
 }} // namespace Dia::ApplicationFlow

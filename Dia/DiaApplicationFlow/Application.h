@@ -2,12 +2,12 @@
 // Filename: Application.h
 // DiaApplicationFlow — v2 Application
 //
-// Top-level orchestrator.  Takes a validated ApplicationManifestV2 and a
+// Top-level orchestrator.  Takes a validated ApplicationManifestV3 and a
 // TypeRegistry, creates ProcessingUnits and Modules, manages stage transitions
 // and shutdown.
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
-#include <DiaApplicationFlow/Manifest/ApplicationManifestV2.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaApplicationFlow/Streams/IStreamStore.h>
@@ -39,7 +39,7 @@ namespace Dia { namespace ApplicationFlow {
                       , public IApplicationControl
     {
     public:
-        Application(const ApplicationManifestV2& manifest,
+        Application(const ApplicationManifestV3& manifest,
                     TypeRegistry& registry);
         ~Application();
 
@@ -157,7 +157,7 @@ namespace Dia { namespace ApplicationFlow {
                                     const Dia::Core::StringCRC& stage);
 
         // --- State -------------------------------------------------------------
-        const ApplicationManifestV2& mManifest;
+        const ApplicationManifestV3& mManifest;
         TypeRegistry&                mRegistry;
 
         // Fixed-capacity PU array (no heap allocation for PU storage).

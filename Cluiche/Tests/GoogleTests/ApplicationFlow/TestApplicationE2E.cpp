@@ -12,7 +12,7 @@
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/IApplicationInspectable.h>
-#include <DiaApplicationFlow/Manifest/ApplicationManifestV2.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
@@ -62,10 +62,10 @@ static Module* CreateRunModule(const StringCRC& id)
 // drives the Boot → Run transition explicitly via TransitionTo.
 // ---------------------------------------------------------------------------
 
-static ApplicationManifestV2 BuildTwoStageManifest()
+static ApplicationManifestV3 BuildTwoStageManifest()
 {
-    ApplicationManifestV2 manifest;
-    manifest.version = 2;
+    ApplicationManifestV3 manifest;
+    manifest.version = 3;
 
     StageDeclaration boot;  boot.name = StringCRC("Boot");
     StageDeclaration run;   run.name  = StringCRC("Run");

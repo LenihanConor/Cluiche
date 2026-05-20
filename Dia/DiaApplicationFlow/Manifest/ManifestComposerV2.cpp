@@ -81,7 +81,7 @@ namespace Dia { namespace ApplicationFlow {
     // baseDir is populated with the directory containing the .diagame file.
     //-----------------------------------------------------------------------------
 
-    ComposeResult ManifestComposerV2::LoadDiagame(const char* path, ApplicationManifestV2& outManifest, char* baseDir)
+    ComposeResult ManifestComposerV2::LoadDiagame(const char* path, ApplicationManifestV3& outManifest, char* baseDir)
     {
         char fileBuffer[kFileBufferSize];
         if (!ReadFile(path, fileBuffer, kFileBufferSize))
@@ -189,11 +189,11 @@ namespace Dia { namespace ApplicationFlow {
     //-----------------------------------------------------------------------------
     // ManifestComposerV2::MergeStage
     // Reads a .diastage file, resolves its referenced .diaapp, loads it into a
-    // temporary ApplicationManifestV2, then appends each stage PU's modules to
+    // temporary ApplicationManifestV3, then appends each stage PU's modules to
     // the matching PU in outManifest (matched by instanceId).
     //-----------------------------------------------------------------------------
 
-    ComposeResult ManifestComposerV2::MergeStage(const char* diastagePath, const char* baseDir, ApplicationManifestV2& outManifest)
+    ComposeResult ManifestComposerV2::MergeStage(const char* diastagePath, const char* baseDir, ApplicationManifestV3& outManifest)
     {
         // Read .diastage file
         char fileBuffer[kFileBufferSize];
@@ -224,7 +224,7 @@ namespace Dia { namespace ApplicationFlow {
         BuildPath(baseDir, stageRoot["manifest"].asCString(), stageManifestPath, kPathBufferSize);
 
         // Load stage .diaapp into a temporary manifest
-        ApplicationManifestV2 stageManifest;
+        ApplicationManifestV3 stageManifest;
         LoadResult loadResult = ApplicationManifestLoaderV2::LoadFromFile(stageManifestPath, stageManifest);
         if (loadResult != LoadResult::kSuccess)
         {
@@ -270,10 +270,10 @@ namespace Dia { namespace ApplicationFlow {
     //-----------------------------------------------------------------------------
     // ManifestComposerV2::Compose
     // Public entry point. Reads the .diagame file and produces a fully merged
-    // ApplicationManifestV2 combining the base manifest with all stage overlays.
+    // ApplicationManifestV3 combining the base manifest with all stage overlays.
     //-----------------------------------------------------------------------------
 
-    ComposeResult ManifestComposerV2::Compose(const char* diagamePath, ApplicationManifestV2& outManifest)
+    ComposeResult ManifestComposerV2::Compose(const char* diagamePath, ApplicationManifestV3& outManifest)
     {
         char baseDir[kPathBufferSize];
         return LoadDiagame(diagamePath, outManifest, baseDir);

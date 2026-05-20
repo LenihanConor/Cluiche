@@ -5,7 +5,7 @@
 
 #include <DiaApplicationEditor/V2/Commands/StreamCommands.h>
 #include <DiaApplicationEditor/V2/ManifestEditorState.h>
-#include <DiaApplicationFlow/Manifest/ApplicationManifestV2.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 
 using namespace Dia::ApplicationFlow::Editor;
 using namespace Dia::ApplicationFlow;

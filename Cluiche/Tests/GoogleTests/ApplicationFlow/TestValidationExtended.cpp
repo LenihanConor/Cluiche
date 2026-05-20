@@ -11,7 +11,7 @@
 #include <gtest/gtest.h>
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
-#include <DiaApplicationFlow/Manifest/ApplicationManifestV2.h>
+#include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaApplicationFlow/Manifest/ManifestValidatorV2.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
@@ -42,10 +42,10 @@ static TypeRegistry BuildValXRegistry()
     return reg;
 }
 
-static ApplicationManifestV2 BuildValXValidManifest()
+static ApplicationManifestV3 BuildValXValidManifest()
 {
-    ApplicationManifestV2 manifest;
-    manifest.version = 2;
+    ApplicationManifestV3 manifest;
+    manifest.version = 3;
 
     StageDeclaration boot;
     boot.name = StringCRC("Boot");
@@ -94,8 +94,8 @@ TEST(ValidationExtended, EmptyStageReportsWarning)
 {
     TypeRegistry reg = BuildValXRegistry();
 
-    ApplicationManifestV2 manifest;
-    manifest.version = 2;
+    ApplicationManifestV3 manifest;
+    manifest.version = 3;
 
     // Two stages: Boot (has a specific module) and Run (has nothing).
     StageDeclaration boot;  boot.name = StringCRC("Boot");
@@ -134,8 +134,8 @@ TEST(ValidationExtended, EmptyStageAllModuleOnlyReportsWarning)
 {
     TypeRegistry reg = BuildValXRegistry();
 
-    ApplicationManifestV2 manifest;
-    manifest.version = 2;
+    ApplicationManifestV3 manifest;
+    manifest.version = 3;
 
     StageDeclaration boot;  boot.name = StringCRC("Boot");
     StageDeclaration run;   run.name  = StringCRC("Run");
@@ -179,7 +179,7 @@ TEST(ValidationExtended, EmptyStageAllModuleOnlyReportsWarning)
 TEST(ValidationExtended, UnknownStreamInReadsReportsError)
 {
     TypeRegistry reg = BuildValXRegistry();
-    ApplicationManifestV2 manifest = BuildValXValidManifest();
+    ApplicationManifestV3 manifest = BuildValXValidManifest();
 
     // Module reads a stream that doesn't exist in manifest.streams.
     manifest.processingUnits[0].modules[0].reads.Add(StringCRC("GhostStream"));
@@ -200,7 +200,7 @@ TEST(ValidationExtended, UnknownStreamInReadsReportsError)
 TEST(ValidationExtended, UnknownStreamInWritesReportsError)
 {
     TypeRegistry reg = BuildValXRegistry();
-    ApplicationManifestV2 manifest = BuildValXValidManifest();
+    ApplicationManifestV3 manifest = BuildValXValidManifest();
 
     // Module writes a stream that doesn't exist in manifest.streams.
     manifest.processingUnits[0].modules[0].writes.Add(StringCRC("GhostWriteStream"));
@@ -220,7 +220,7 @@ TEST(ValidationExtended, UnknownStreamInWritesReportsError)
 TEST(ValidationExtended, ReservedStreamInReadsIsAllowed)
 {
     TypeRegistry reg = BuildValXRegistry();
-    ApplicationManifestV2 manifest = BuildValXValidManifest();
+    ApplicationManifestV3 manifest = BuildValXValidManifest();
 
     // $lifecycle is a reserved stream — reading it in module reads[] is allowed.
     manifest.processingUnits[0].modules[0].reads.Add(StringCRC("$lifecycle"));
@@ -244,7 +244,7 @@ TEST(ValidationExtended, ReservedStreamInReadsIsAllowed)
 TEST(ValidationExtended, PayloadTypeMissingReportsWarning)
 {
     TypeRegistry reg = BuildValXRegistry();
-    ApplicationManifestV2 manifest = BuildValXValidManifest();
+    ApplicationManifestV3 manifest = BuildValXValidManifest();
 
     // Declare a stream with kind but no payload_type.
     StreamDeclaration s;
@@ -270,7 +270,7 @@ TEST(ValidationExtended, PayloadTypeMissingReportsWarning)
 TEST(ValidationExtended, PayloadTypePresentNoWarning)
 {
     TypeRegistry reg = BuildValXRegistry();
-    ApplicationManifestV2 manifest = BuildValXValidManifest();
+    ApplicationManifestV3 manifest = BuildValXValidManifest();
 
     StreamDeclaration s;
     s.id          = StringCRC("TypedStream");
@@ -299,7 +299,7 @@ TEST(ValidationExtended, PayloadTypePresentNoWarning)
 TEST(ValidationExtended, OrphanReaderStreamReportsWarning)
 {
     TypeRegistry reg = BuildValXRegistry();
-    ApplicationManifestV2 manifest = BuildValXValidManifest();
+    ApplicationManifestV3 manifest = BuildValXValidManifest();
 
     StreamDeclaration s;
     s.id          = StringCRC("ReaderOnlyStream");
@@ -325,7 +325,7 @@ TEST(ValidationExtended, OrphanReaderStreamReportsWarning)
 TEST(ValidationExtended, OrphanWriterStreamReportsWarning)
 {
     TypeRegistry reg = BuildValXRegistry();
-    ApplicationManifestV2 manifest = BuildValXValidManifest();
+    ApplicationManifestV3 manifest = BuildValXValidManifest();
 
     StreamDeclaration s;
     s.id          = StringCRC("WriterOnlyStream");
@@ -352,7 +352,7 @@ TEST(ValidationExtended, OrphanWriterStreamReportsWarning)
 TEST(ValidationExtended, StreamWithBothReaderAndWriterNoOrphanWarning)
 {
     TypeRegistry reg = BuildValXRegistry();
-    ApplicationManifestV2 manifest = BuildValXValidManifest();
+    ApplicationManifestV3 manifest = BuildValXValidManifest();
 
     StreamDeclaration s;
     s.id          = StringCRC("FullStream");
@@ -387,7 +387,7 @@ TEST(ValidationExtended, StreamWithBothReaderAndWriterNoOrphanWarning)
 TEST(ValidationExtended, ReservedPrefixOnStreamIdReportsError)
 {
     TypeRegistry reg = BuildValXRegistry();
-    ApplicationManifestV2 manifest = BuildValXValidManifest();
+    ApplicationManifestV3 manifest = BuildValXValidManifest();
 
     // User tries to declare a stream starting with '$'.
     StreamDeclaration s;
@@ -410,8 +410,8 @@ TEST(ValidationExtended, ReservedPrefixOnModuleInstanceIdReportsError)
 {
     TypeRegistry reg = BuildValXRegistry();
 
-    ApplicationManifestV2 manifest;
-    manifest.version = 2;
+    ApplicationManifestV3 manifest;
+    manifest.version = 3;
 
     StageDeclaration boot;
     boot.name = StringCRC("Boot");
@@ -445,7 +445,7 @@ TEST(ValidationExtended, ReservedPrefixOnModuleInstanceIdReportsError)
 TEST(ValidationExtended, NoReservedPrefixViolationOnCleanManifest)
 {
     TypeRegistry reg = BuildValXRegistry();
-    ApplicationManifestV2 manifest = BuildValXValidManifest();
+    ApplicationManifestV3 manifest = BuildValXValidManifest();
 
     ManifestValidatorV2 validator(reg);
     validator.Validate(manifest);

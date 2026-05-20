@@ -1,11 +1,10 @@
 {
-    "version": 2,
+    "version": 3,
     "stages": [
-        "Boot",
-        "DummyStage"
+        { "name": "Boot",       "transitions": ["DummyStage"], "auto_advance": false },
+        { "name": "DummyStage", "transitions": ["Boot"],       "auto_advance": false }
     ],
     "initial_stage": "Boot",
-    "auto_stages": [],
     "streams": [
         {
             "id": "InputToSim",

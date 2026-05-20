@@ -106,28 +106,31 @@ static void SerializeProcessingUnitDeclaration(const ProcessingUnitDeclaration& 
     }
 }
 
-static void SerializeManifestV2(const ApplicationManifestV2& manifest, Json::Value& outJson)
+static void SerializeManifestV2(const ApplicationManifestV3& manifest, Json::Value& outJson)
 {
     outJson["version"] = manifest.version;
 
     Json::Value& stagesJson = outJson["stages"] = Json::Value(Json::arrayValue);
     for (unsigned int i = 0; i < manifest.stages.Size(); ++i)
     {
+        const StageDeclaration& stage = manifest.stages[i];
         Json::Value stageJson;
-        stageJson["name"]          = manifest.stages[i].name.AsChar();
-        stageJson["manifest_path"] = manifest.stages[i].manifestPath.AsCStr();
+        stageJson["name"]         = stage.name.AsChar();
+        stageJson["auto_advance"] = stage.autoAdvance;
+
+        Json::Value transitionsJson(Json::arrayValue);
+        for (unsigned int t = 0; t < stage.transitions.Size(); ++t)
+            transitionsJson.append(stage.transitions[t].AsChar());
+        stageJson["transitions"] = transitionsJson;
+
+        if (stage.manifestPath.Length() > 0)
+            stageJson["manifestPath"] = stage.manifestPath.AsCStr();
+
         stagesJson.append(stageJson);
     }
 
     if (manifest.initialStage != StringCRC::kZero)
         outJson["initial_stage"] = manifest.initialStage.AsChar();
-
-    if (manifest.autoStages.Size() > 0)
-    {
-        Json::Value& autoJson = outJson["auto_stages"] = Json::Value(Json::arrayValue);
-        for (unsigned int i = 0; i < manifest.autoStages.Size(); ++i)
-            autoJson.append(manifest.autoStages[i].AsChar());
-    }
 
     Json::Value& streamsJson = outJson["streams"] = Json::Value(Json::arrayValue);
     for (unsigned int i = 0; i < manifest.streams.Size(); ++i)
