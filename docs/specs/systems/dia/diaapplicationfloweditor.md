@@ -203,4 +203,4 @@ namespace Dia::ApplicationFlow::Editor {
 
 ## Status
 
-`Approved` — 2026-05-08. Supersedes DiaApplicationEditor v1. Plan: [diaapplicationfloweditor.plan.md](diaapplicationfloweditor.plan.md)
+`Done` — 2026-05-20. Supersedes DiaApplicationEditor v1. Plan: [diaapplicationfloweditor.plan.md](diaapplicationfloweditor.plan.md)
