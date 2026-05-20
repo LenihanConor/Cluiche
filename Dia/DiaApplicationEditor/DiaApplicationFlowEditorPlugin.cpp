@@ -10,10 +10,27 @@
 #include <DiaApplicationEditor/V2/ManifestLoader.h>
 #include <DiaApplicationEditor/V2/ManifestSaver.h>
 #include <DiaApplicationEditor/V2/ManifestValidator.h>
+#include <DiaApplicationEditor/V2/Commands/PUCommands.h>
+#include <DiaApplicationEditor/V2/Commands/ModuleCommands.h>
+#include <DiaApplicationEditor/V2/Commands/StageCommands.h>
+#include <DiaApplicationEditor/V2/Commands/StreamCommands.h>
+#include <DiaApplicationFlow/Streams/OverflowPolicy.h>
 #include <string>
 #include <windows.h>
 
 namespace Dia { namespace Editor {
+
+    static const char* OverflowPolicyToString(Dia::ApplicationFlow::OverflowPolicy policy)
+    {
+        using OP = Dia::ApplicationFlow::OverflowPolicy;
+        switch (policy)
+        {
+        case OP::kDropNewest: return "drop-newest";
+        case OP::kBlock:      return "block";
+        case OP::kFailLoud:   return "fail-loud";
+        default:              return "drop-oldest";
+        }
+    }
 
     static Json::Value BuildManifestStateJson(
         const Dia::ApplicationFlow::Editor::ManifestEditorState& state)
@@ -52,13 +69,16 @@ namespace Dia { namespace Editor {
         {
             const auto& sd = m.streams[i];
             Json::Value s;
-            s["id"]          = sd.id.AsChar();
-            s["kind"]        = sd.kind.AsChar();
-            s["payloadType"] = sd.payloadType.AsChar();
-            s["fromPU"]      = sd.fromPU.AsChar();
-            s["toPU"]        = sd.toPU.AsChar();
-            s["capacity"]    = sd.capacity;
-            s["maxReaders"]  = sd.maxReaders;
+            s["id"]             = sd.id.AsChar();
+            s["kind"]           = sd.kind.AsChar();
+            s["payloadType"]    = sd.payloadType.AsChar();
+            s["fromPU"]         = sd.fromPU.AsChar();
+            s["toPU"]           = sd.toPU.AsChar();
+            s["capacity"]       = sd.capacity;
+            s["maxReaders"]     = sd.maxReaders;
+            s["multiWriter"]    = sd.multiWriter;
+            s["overflow"]       = OverflowPolicyToString(sd.overflowPolicy);
+            s["blockTimeoutMs"] = sd.blockTimeoutMs;
             streams.append(s);
         }
         manifest["streams"] = streams;
@@ -116,6 +136,7 @@ namespace Dia { namespace Editor {
     static const Dia::Core::StringCRC kReqManifestLoad("manifest.load");
     static const Dia::Core::StringCRC kReqManifestSave("manifest.save");
     static const Dia::Core::StringCRC kReqManifestGetState("manifest.getState");
+    static const Dia::Core::StringCRC kReqManifestApplyCommand("manifest.applyCommand");
     static const Dia::Core::StringCRC kReqHistoryUndo("history.undo");
     static const Dia::Core::StringCRC kReqHistoryRedo("history.redo");
     static const Dia::Core::StringCRC kReqHistoryGetState("history.getState");
@@ -161,6 +182,7 @@ namespace Dia { namespace Editor {
             mBridge->RegisterRequestHandler(kReqManifestLoad,    [this](const Json::Value& d) { return HandleManifestLoad(d); });
             mBridge->RegisterRequestHandler(kReqManifestSave,    [this](const Json::Value& d) { return HandleManifestSave(d); });
             mBridge->RegisterRequestHandler(kReqManifestGetState,[this](const Json::Value& d) { return HandleManifestGetState(d); });
+            mBridge->RegisterRequestHandler(kReqManifestApplyCommand,[this](const Json::Value& d) { return HandleManifestApplyCommand(d); });
             mBridge->RegisterRequestHandler(kReqHistoryUndo,     [this](const Json::Value& d) { return HandleHistoryUndo(d); });
             mBridge->RegisterRequestHandler(kReqHistoryRedo,     [this](const Json::Value& d) { return HandleHistoryRedo(d); });
             mBridge->RegisterRequestHandler(kReqHistoryGetState, [this](const Json::Value& d) { return HandleHistoryGetState(d); });
@@ -238,6 +260,7 @@ namespace Dia { namespace Editor {
             mBridge->UnregisterRequestHandler(kReqManifestLoad);
             mBridge->UnregisterRequestHandler(kReqManifestSave);
             mBridge->UnregisterRequestHandler(kReqManifestGetState);
+            mBridge->UnregisterRequestHandler(kReqManifestApplyCommand);
             mBridge->UnregisterRequestHandler(kReqHistoryUndo);
             mBridge->UnregisterRequestHandler(kReqHistoryRedo);
             mBridge->UnregisterRequestHandler(kReqHistoryGetState);
@@ -418,6 +441,299 @@ namespace Dia { namespace Editor {
 
         result["ok"]    = true;
         result["state"] = stateJson;
+        return result;
+    }
+
+    Json::Value DiaApplicationFlowEditorPlugin::HandleManifestApplyCommand(const Json::Value& data)
+    {
+        DIA_TRACE_ZONE("ManifestApplyCommand", Dia::Observation::Trace::Category::kDiaApplicationFlow);
+        using namespace Dia::ApplicationFlow;
+        using namespace Dia::ApplicationFlow::Editor;
+        Json::Value result;
+
+        if (!mEditorState.hasManifest)
+        {
+            result["ok"]    = false;
+            result["error"] = "no manifest loaded";
+            return result;
+        }
+
+        if (!data.isMember("commandType") || !data["commandType"].isString())
+        {
+            result["ok"]    = false;
+            result["error"] = "commandType required";
+            return result;
+        }
+
+        const std::string cmdType = data["commandType"].asString();
+        ICommand* cmd = nullptr;
+
+        // ----- Processing Unit commands -----
+        if (cmdType == "AddPU")
+        {
+            const char* idStr = data.get("instanceId", "").asCString();
+            const float freq  = data.get("frequencyHz", 30.0f).asFloat();
+            const bool thread = data.get("dedicatedThread", false).asBool();
+            cmd = new AddPUCommand(Dia::Core::StringCRC(idStr), freq, thread);
+        }
+        else if (cmdType == "RemovePU")
+        {
+            const char* idStr = data.get("instanceId", "").asCString();
+            cmd = new RemovePUCommand(Dia::Core::StringCRC(idStr));
+        }
+        else if (cmdType == "SetPUFrequency")
+        {
+            const char* idStr = data.get("instanceId", "").asCString();
+            const float freq  = data.get("frequencyHz", 30.0f).asFloat();
+            cmd = new SetPUFrequencyCommand(Dia::Core::StringCRC(idStr), freq);
+        }
+        else if (cmdType == "SetPUThread")
+        {
+            const char* idStr = data.get("instanceId", "").asCString();
+            const bool thread = data.get("dedicatedThread", false).asBool();
+            cmd = new SetPUThreadCommand(Dia::Core::StringCRC(idStr), thread);
+        }
+        else if (cmdType == "ReorderPU")
+        {
+            const char* idStr = data.get("instanceId", "").asCString();
+            const int newIdx  = data.get("newIndex", 0).asInt();
+            cmd = new ReorderPUCommand(Dia::Core::StringCRC(idStr), newIdx);
+        }
+        // ----- Module commands -----
+        else if (cmdType == "AddModule")
+        {
+            const char* puId    = data.get("puId", "").asCString();
+            const char* instStr = data.get("instanceId", "").asCString();
+            const char* typeStr = data.get("typeId", "").asCString();
+            cmd = new AddModuleCommand(Dia::Core::StringCRC(puId),
+                                       Dia::Core::StringCRC(instStr),
+                                       Dia::Core::StringCRC(typeStr));
+        }
+        else if (cmdType == "RemoveModule")
+        {
+            const char* puId    = data.get("puId", "").asCString();
+            const char* instStr = data.get("instanceId", "").asCString();
+            cmd = new RemoveModuleCommand(Dia::Core::StringCRC(puId),
+                                          Dia::Core::StringCRC(instStr));
+        }
+        else if (cmdType == "AddModuleDep")
+        {
+            const char* puId    = data.get("puId", "").asCString();
+            const char* modStr  = data.get("instanceId", "").asCString();
+            const char* depStr  = data.get("dependency", "").asCString();
+            cmd = new AddModuleDepCommand(Dia::Core::StringCRC(puId),
+                                          Dia::Core::StringCRC(modStr),
+                                          Dia::Core::StringCRC(depStr));
+        }
+        else if (cmdType == "RemoveModuleDep")
+        {
+            const char* puId    = data.get("puId", "").asCString();
+            const char* modStr  = data.get("instanceId", "").asCString();
+            const char* depStr  = data.get("dependency", "").asCString();
+            cmd = new RemoveModuleDepCommand(Dia::Core::StringCRC(puId),
+                                             Dia::Core::StringCRC(modStr),
+                                             Dia::Core::StringCRC(depStr));
+        }
+        else if (cmdType == "SetModuleStages")
+        {
+            const char* puId    = data.get("puId", "").asCString();
+            const char* modStr  = data.get("instanceId", "").asCString();
+            const Json::Value& stagesArr = data["stages"];
+            const unsigned int count = stagesArr.isArray() ? stagesArr.size() : 0u;
+            Dia::Core::StringCRC stageIds[64];
+            const unsigned int clamped = (count > 64u) ? 64u : count;
+            for (unsigned int i = 0; i < clamped; ++i)
+            {
+                if (stagesArr[i].isString())
+                    stageIds[i] = Dia::Core::StringCRC(stagesArr[i].asCString());
+            }
+            cmd = new SetModuleStagesCommand(Dia::Core::StringCRC(puId),
+                                             Dia::Core::StringCRC(modStr),
+                                             stageIds, clamped);
+        }
+        else if (cmdType == "SetModuleStartTimeout")
+        {
+            const char* puId    = data.get("puId", "").asCString();
+            const char* modStr  = data.get("instanceId", "").asCString();
+            const float v       = data.get("startTimeoutMs", 0.0f).asFloat();
+            cmd = new SetModuleStartTimeoutCommand(Dia::Core::StringCRC(puId),
+                                                   Dia::Core::StringCRC(modStr), v);
+        }
+        else if (cmdType == "SetModuleStopTimeout")
+        {
+            const char* puId    = data.get("puId", "").asCString();
+            const char* modStr  = data.get("instanceId", "").asCString();
+            const float v       = data.get("stopTimeoutMs", 0.0f).asFloat();
+            cmd = new SetModuleStopTimeoutCommand(Dia::Core::StringCRC(puId),
+                                                  Dia::Core::StringCRC(modStr), v);
+        }
+        else if (cmdType == "AddModuleRead")
+        {
+            const char* puId    = data.get("puId", "").asCString();
+            const char* modStr  = data.get("instanceId", "").asCString();
+            const char* sStr    = data.get("streamId", "").asCString();
+            cmd = new AddModuleReadCommand(Dia::Core::StringCRC(puId),
+                                           Dia::Core::StringCRC(modStr),
+                                           Dia::Core::StringCRC(sStr));
+        }
+        else if (cmdType == "RemoveModuleRead")
+        {
+            const char* puId    = data.get("puId", "").asCString();
+            const char* modStr  = data.get("instanceId", "").asCString();
+            const char* sStr    = data.get("streamId", "").asCString();
+            cmd = new RemoveModuleReadCommand(Dia::Core::StringCRC(puId),
+                                              Dia::Core::StringCRC(modStr),
+                                              Dia::Core::StringCRC(sStr));
+        }
+        else if (cmdType == "AddModuleWrite")
+        {
+            const char* puId    = data.get("puId", "").asCString();
+            const char* modStr  = data.get("instanceId", "").asCString();
+            const char* sStr    = data.get("streamId", "").asCString();
+            cmd = new AddModuleWriteCommand(Dia::Core::StringCRC(puId),
+                                            Dia::Core::StringCRC(modStr),
+                                            Dia::Core::StringCRC(sStr));
+        }
+        else if (cmdType == "RemoveModuleWrite")
+        {
+            const char* puId    = data.get("puId", "").asCString();
+            const char* modStr  = data.get("instanceId", "").asCString();
+            const char* sStr    = data.get("streamId", "").asCString();
+            cmd = new RemoveModuleWriteCommand(Dia::Core::StringCRC(puId),
+                                               Dia::Core::StringCRC(modStr),
+                                               Dia::Core::StringCRC(sStr));
+        }
+        // ----- Stage commands -----
+        else if (cmdType == "AddStage")
+        {
+            const char* nameStr = data.get("name", "").asCString();
+            const char* mp      = data.get("manifestPath", "").asCString();
+            cmd = new AddStageCommand(Dia::Core::StringCRC(nameStr), mp);
+        }
+        else if (cmdType == "RemoveStage")
+        {
+            const char* nameStr = data.get("name", "").asCString();
+            cmd = new RemoveStageCommand(Dia::Core::StringCRC(nameStr));
+        }
+        else if (cmdType == "RenameStage")
+        {
+            const char* oldStr  = data.get("oldName", "").asCString();
+            const char* newStr  = data.get("newName", "").asCString();
+            cmd = new RenameStageCommand(Dia::Core::StringCRC(oldStr),
+                                         Dia::Core::StringCRC(newStr));
+        }
+        else if (cmdType == "SetStageTrigger")
+        {
+            const char* nameStr = data.get("name", "").asCString();
+            const bool isAuto   = data.get("isAuto", false).asBool();
+            cmd = new SetStageTriggerCommand(Dia::Core::StringCRC(nameStr), isAuto);
+        }
+        else if (cmdType == "SetInitialStage")
+        {
+            const char* nameStr = data.get("name", "").asCString();
+            cmd = new SetInitialStageCommand(Dia::Core::StringCRC(nameStr));
+        }
+        else if (cmdType == "ReorderStage")
+        {
+            const char* nameStr = data.get("name", "").asCString();
+            const int newIdx    = data.get("newIndex", 0).asInt();
+            cmd = new ReorderStageCommand(Dia::Core::StringCRC(nameStr), newIdx);
+        }
+        // ----- Stream commands -----
+        else if (cmdType == "AddStream")
+        {
+            const char* idStr   = data.get("id", "").asCString();
+            const char* kindStr = data.get("kind", "").asCString();
+            const char* plStr   = data.get("payloadType", "").asCString();
+            cmd = new AddStreamCommand(idStr,
+                                       Dia::Core::StringCRC(kindStr),
+                                       Dia::Core::StringCRC(plStr));
+        }
+        else if (cmdType == "RemoveStream")
+        {
+            const char* idStr = data.get("streamId", data.get("id", "").asCString()).asCString();
+            cmd = new RemoveStreamCommand(Dia::Core::StringCRC(idStr));
+        }
+        else if (cmdType == "SetStreamKind")
+        {
+            const char* idStr = data.get("streamId", "").asCString();
+            const char* vStr  = data.get("value", "").asCString();
+            cmd = new SetStreamKindCommand(Dia::Core::StringCRC(idStr),
+                                           Dia::Core::StringCRC(vStr));
+        }
+        else if (cmdType == "SetStreamPayload" || cmdType == "SetStreamPayloadType")
+        {
+            const char* idStr = data.get("streamId", "").asCString();
+            const char* vStr  = data.get("value", "").asCString();
+            cmd = new SetStreamPayloadCommand(Dia::Core::StringCRC(idStr),
+                                              Dia::Core::StringCRC(vStr));
+        }
+        else if (cmdType == "SetStreamFromPU")
+        {
+            const char* idStr = data.get("streamId", "").asCString();
+            const char* vStr  = data.get("value", "").asCString();
+            cmd = new SetStreamFromPUCommand(Dia::Core::StringCRC(idStr),
+                                             Dia::Core::StringCRC(vStr));
+        }
+        else if (cmdType == "SetStreamToPU")
+        {
+            const char* idStr = data.get("streamId", "").asCString();
+            const char* vStr  = data.get("value", "").asCString();
+            cmd = new SetStreamToPUCommand(Dia::Core::StringCRC(idStr),
+                                           Dia::Core::StringCRC(vStr));
+        }
+        else if (cmdType == "SetStreamCapacity")
+        {
+            const char* idStr = data.get("streamId", "").asCString();
+            const unsigned int v = data.get("value", 0u).asUInt();
+            cmd = new SetStreamCapacityCommand(Dia::Core::StringCRC(idStr), v);
+        }
+        else if (cmdType == "SetStreamMaxReaders")
+        {
+            const char* idStr = data.get("streamId", "").asCString();
+            const unsigned int v = data.get("value", 0u).asUInt();
+            cmd = new SetStreamMaxReadersCommand(Dia::Core::StringCRC(idStr), v);
+        }
+        else if (cmdType == "SetStreamOverflow")
+        {
+            const char* idStr = data.get("streamId", "").asCString();
+            const char* vStr  = data.get("value", "drop-oldest").asCString();
+            const OverflowPolicy p = ParseOverflowPolicy(Dia::Core::StringCRC(vStr));
+            cmd = new SetStreamOverflowCommand(Dia::Core::StringCRC(idStr), p);
+        }
+        else if (cmdType == "SetStreamMultiWriter")
+        {
+            const char* idStr = data.get("streamId", "").asCString();
+            const bool v      = data.get("value", false).asBool();
+            cmd = new SetStreamMultiWriterCommand(Dia::Core::StringCRC(idStr), v);
+        }
+        else
+        {
+            DIA_LOG_WARNING("Editor", "AppFlowEditor: unknown commandType '%s'", cmdType.c_str());
+            result["ok"]    = false;
+            result["error"] = "unknown commandType";
+            return result;
+        }
+
+        if (cmd == nullptr)
+        {
+            result["ok"]    = false;
+            result["error"] = "command construction failed";
+            return result;
+        }
+
+        DIA_LOG_INFO("Editor", "AppFlowEditor: applyCommand %s", cmdType.c_str());
+        if (mMetricCommandsTotal) mMetricCommandsTotal->Inc();
+        mCommandHistory.Execute(cmd, mEditorState);
+        mEditorState.isDirty = !mCommandHistory.IsAtSavePoint();
+
+        if (mBridge)
+            mBridge->NotifyUIDataChanged("manifest.state", BuildManifestStateJson(mEditorState));
+
+        result["ok"]      = true;
+        result["canUndo"] = mCommandHistory.CanUndo();
+        result["canRedo"] = mCommandHistory.CanRedo();
+        result["isDirty"] = mEditorState.isDirty;
         return result;
     }
 

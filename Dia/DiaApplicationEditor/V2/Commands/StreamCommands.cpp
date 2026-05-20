@@ -323,4 +323,84 @@ namespace Dia { namespace ApplicationFlow { namespace Editor {
         }
     }
 
+    // -------------------------------------------------------------------------
+    // SetStreamOverflowCommand
+    // -------------------------------------------------------------------------
+
+    SetStreamOverflowCommand::SetStreamOverflowCommand(Dia::Core::StringCRC id, Dia::ApplicationFlow::OverflowPolicy newPolicy)
+        : mId(id)
+        , mNew(newPolicy)
+        , mOld(Dia::ApplicationFlow::OverflowPolicy::kDropOldest)
+    {
+    }
+
+    void SetStreamOverflowCommand::Execute(ManifestEditorState& doc)
+    {
+        auto& streams = doc.manifest.streams;
+        for (unsigned int i = 0u; i < streams.Size(); ++i)
+        {
+            if (streams[i].id == mId)
+            {
+                mOld                       = streams[i].overflowPolicy;
+                streams[i].overflowPolicy  = mNew;
+                doc.MarkDirty();
+                return;
+            }
+        }
+    }
+
+    void SetStreamOverflowCommand::Undo(ManifestEditorState& doc)
+    {
+        auto& streams = doc.manifest.streams;
+        for (unsigned int i = 0u; i < streams.Size(); ++i)
+        {
+            if (streams[i].id == mId)
+            {
+                streams[i].overflowPolicy = mOld;
+                doc.MarkDirty();
+                return;
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // SetStreamMultiWriterCommand
+    // -------------------------------------------------------------------------
+
+    SetStreamMultiWriterCommand::SetStreamMultiWriterCommand(Dia::Core::StringCRC id, bool newValue)
+        : mId(id)
+        , mNew(newValue)
+        , mOld(false)
+    {
+    }
+
+    void SetStreamMultiWriterCommand::Execute(ManifestEditorState& doc)
+    {
+        auto& streams = doc.manifest.streams;
+        for (unsigned int i = 0u; i < streams.Size(); ++i)
+        {
+            if (streams[i].id == mId)
+            {
+                mOld                    = streams[i].multiWriter;
+                streams[i].multiWriter  = mNew;
+                doc.MarkDirty();
+                return;
+            }
+        }
+    }
+
+    void SetStreamMultiWriterCommand::Undo(ManifestEditorState& doc)
+    {
+        auto& streams = doc.manifest.streams;
+        for (unsigned int i = 0u; i < streams.Size(); ++i)
+        {
+            if (streams[i].id == mId)
+            {
+                streams[i].multiWriter = mOld;
+                doc.MarkDirty();
+                return;
+            }
+        }
+    }
+
 }}} // namespace Dia::ApplicationFlow::Editor

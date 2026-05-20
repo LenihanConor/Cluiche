@@ -110,4 +110,30 @@ namespace Dia { namespace ApplicationFlow { namespace Editor {
         unsigned int mOld;
     };
 
+    class SetStreamOverflowCommand : public ICommand
+    {
+    public:
+        SetStreamOverflowCommand(Dia::Core::StringCRC id, Dia::ApplicationFlow::OverflowPolicy newPolicy);
+        void Execute(ManifestEditorState& doc) override;
+        void Undo(ManifestEditorState& doc) override;
+        const char* GetDescription() const override { return "SetStreamOverflow"; }
+    private:
+        Dia::Core::StringCRC mId;
+        Dia::ApplicationFlow::OverflowPolicy mNew;
+        Dia::ApplicationFlow::OverflowPolicy mOld;
+    };
+
+    class SetStreamMultiWriterCommand : public ICommand
+    {
+    public:
+        SetStreamMultiWriterCommand(Dia::Core::StringCRC id, bool newValue);
+        void Execute(ManifestEditorState& doc) override;
+        void Undo(ManifestEditorState& doc) override;
+        const char* GetDescription() const override { return "SetStreamMultiWriter"; }
+    private:
+        Dia::Core::StringCRC mId;
+        bool mNew;
+        bool mOld;
+    };
+
 }}} // namespace Dia::ApplicationFlow::Editor

@@ -29,17 +29,23 @@ static void SerializeStreamDeclaration(const StreamDeclaration& stream, Json::Va
     outJson["id"]          = stream.id.AsChar();
     outJson["kind"]        = stream.kind.AsChar();
     outJson["payload_type"]= stream.payloadType.AsChar();
-    outJson["from_pu"]     = stream.fromPU.AsChar();
-    outJson["to_pu"]       = stream.toPU.AsChar();
-    outJson["multi_writer"]= stream.multiWriter;
+    outJson["from"]        = stream.fromPU.AsChar();
+    outJson["to"]          = stream.toPU.AsChar();
+
+    if (stream.multiWriter)
+        outJson["multi_writer"] = true;
 
     if (stream.capacity > 0)
         outJson["capacity"] = stream.capacity;
     if (stream.maxReaders > 0)
         outJson["max_readers"] = stream.maxReaders;
 
-    outJson["overflow_policy"]    = OverflowPolicyToString(stream.overflowPolicy);
-    outJson["block_timeout_ms"]   = stream.blockTimeoutMs;
+    static const Dia::Core::StringCRC kEventStream("EventStream");
+    if (stream.kind == kEventStream)
+    {
+        outJson["overflow"]         = OverflowPolicyToString(stream.overflowPolicy);
+        outJson["block_timeout_ms"] = stream.blockTimeoutMs;
+    }
 }
 
 static void SerializeModuleDeclaration(const ModuleDeclaration& module, Json::Value& outJson)

@@ -334,4 +334,142 @@ namespace Dia { namespace ApplicationFlow { namespace Editor {
         mod->stopTimeoutMs = mOldTimeout;
     }
 
+    // ==============================================================================
+    // AddModuleReadCommand / RemoveModuleReadCommand
+    // ==============================================================================
+
+    AddModuleReadCommand::AddModuleReadCommand(Dia::Core::StringCRC puId,
+                                               Dia::Core::StringCRC moduleId,
+                                               Dia::Core::StringCRC streamId)
+        : mPUId(puId), mModuleId(moduleId), mStreamId(streamId) {}
+
+    void AddModuleReadCommand::Execute(ManifestEditorState& doc)
+    {
+        ProcessingUnitDeclaration* pu = FindPU(doc.manifest, mPUId);
+        if (!pu) return;
+        ModuleDeclaration* mod = FindModule(*pu, mModuleId);
+        if (!mod) return;
+        mod->reads.Add(mStreamId);
+        doc.MarkDirty();
+    }
+
+    void AddModuleReadCommand::Undo(ManifestEditorState& doc)
+    {
+        ProcessingUnitDeclaration* pu = FindPU(doc.manifest, mPUId);
+        if (!pu) return;
+        ModuleDeclaration* mod = FindModule(*pu, mModuleId);
+        if (!mod) return;
+        auto& reads = mod->reads;
+        for (unsigned int i = 0; i < reads.Size(); ++i)
+        {
+            if (reads[i] == mStreamId) { reads.RemoveAt(i); return; }
+        }
+    }
+
+    RemoveModuleReadCommand::RemoveModuleReadCommand(Dia::Core::StringCRC puId,
+                                                     Dia::Core::StringCRC moduleId,
+                                                     Dia::Core::StringCRC streamId)
+        : mPUId(puId), mModuleId(moduleId), mStreamId(streamId), mSavedIndex(-1) {}
+
+    void RemoveModuleReadCommand::Execute(ManifestEditorState& doc)
+    {
+        ProcessingUnitDeclaration* pu = FindPU(doc.manifest, mPUId);
+        if (!pu) return;
+        ModuleDeclaration* mod = FindModule(*pu, mModuleId);
+        if (!mod) return;
+        auto& reads = mod->reads;
+        for (unsigned int i = 0; i < reads.Size(); ++i)
+        {
+            if (reads[i] == mStreamId)
+            {
+                mSavedIndex = static_cast<int>(i);
+                reads.RemoveAt(i);
+                doc.MarkDirty();
+                return;
+            }
+        }
+    }
+
+    void RemoveModuleReadCommand::Undo(ManifestEditorState& doc)
+    {
+        if (mSavedIndex < 0) return;
+        ProcessingUnitDeclaration* pu = FindPU(doc.manifest, mPUId);
+        if (!pu) return;
+        ModuleDeclaration* mod = FindModule(*pu, mModuleId);
+        if (!mod) return;
+        auto& reads = mod->reads;
+        unsigned int idx = static_cast<unsigned int>(mSavedIndex);
+        if (idx >= reads.Size()) reads.Add(mStreamId);
+        else                     reads.AddAt(mStreamId, idx);
+    }
+
+    // ==============================================================================
+    // AddModuleWriteCommand / RemoveModuleWriteCommand
+    // ==============================================================================
+
+    AddModuleWriteCommand::AddModuleWriteCommand(Dia::Core::StringCRC puId,
+                                                 Dia::Core::StringCRC moduleId,
+                                                 Dia::Core::StringCRC streamId)
+        : mPUId(puId), mModuleId(moduleId), mStreamId(streamId) {}
+
+    void AddModuleWriteCommand::Execute(ManifestEditorState& doc)
+    {
+        ProcessingUnitDeclaration* pu = FindPU(doc.manifest, mPUId);
+        if (!pu) return;
+        ModuleDeclaration* mod = FindModule(*pu, mModuleId);
+        if (!mod) return;
+        mod->writes.Add(mStreamId);
+        doc.MarkDirty();
+    }
+
+    void AddModuleWriteCommand::Undo(ManifestEditorState& doc)
+    {
+        ProcessingUnitDeclaration* pu = FindPU(doc.manifest, mPUId);
+        if (!pu) return;
+        ModuleDeclaration* mod = FindModule(*pu, mModuleId);
+        if (!mod) return;
+        auto& writes = mod->writes;
+        for (unsigned int i = 0; i < writes.Size(); ++i)
+        {
+            if (writes[i] == mStreamId) { writes.RemoveAt(i); return; }
+        }
+    }
+
+    RemoveModuleWriteCommand::RemoveModuleWriteCommand(Dia::Core::StringCRC puId,
+                                                       Dia::Core::StringCRC moduleId,
+                                                       Dia::Core::StringCRC streamId)
+        : mPUId(puId), mModuleId(moduleId), mStreamId(streamId), mSavedIndex(-1) {}
+
+    void RemoveModuleWriteCommand::Execute(ManifestEditorState& doc)
+    {
+        ProcessingUnitDeclaration* pu = FindPU(doc.manifest, mPUId);
+        if (!pu) return;
+        ModuleDeclaration* mod = FindModule(*pu, mModuleId);
+        if (!mod) return;
+        auto& writes = mod->writes;
+        for (unsigned int i = 0; i < writes.Size(); ++i)
+        {
+            if (writes[i] == mStreamId)
+            {
+                mSavedIndex = static_cast<int>(i);
+                writes.RemoveAt(i);
+                doc.MarkDirty();
+                return;
+            }
+        }
+    }
+
+    void RemoveModuleWriteCommand::Undo(ManifestEditorState& doc)
+    {
+        if (mSavedIndex < 0) return;
+        ProcessingUnitDeclaration* pu = FindPU(doc.manifest, mPUId);
+        if (!pu) return;
+        ModuleDeclaration* mod = FindModule(*pu, mModuleId);
+        if (!mod) return;
+        auto& writes = mod->writes;
+        unsigned int idx = static_cast<unsigned int>(mSavedIndex);
+        if (idx >= writes.Size()) writes.Add(mStreamId);
+        else                      writes.AddAt(mStreamId, idx);
+    }
+
 }}} // namespace Dia::ApplicationFlow::Editor

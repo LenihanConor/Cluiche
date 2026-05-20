@@ -39,6 +39,7 @@ namespace Dia { namespace Editor {
         Json::Value HandleManifestLoad(const Json::Value& data);
         Json::Value HandleManifestSave(const Json::Value& data);
         Json::Value HandleManifestGetState(const Json::Value& data);
+        Json::Value HandleManifestApplyCommand(const Json::Value& data);
         Json::Value HandleHistoryUndo(const Json::Value& data);
         Json::Value HandleHistoryRedo(const Json::Value& data);
         Json::Value HandleHistoryGetState(const Json::Value& data);

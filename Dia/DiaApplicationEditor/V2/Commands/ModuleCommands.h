@@ -103,4 +103,58 @@ namespace Dia { namespace ApplicationFlow { namespace Editor {
         float mOldTimeout;
     };
 
+    class AddModuleReadCommand : public ICommand
+    {
+    public:
+        AddModuleReadCommand(Dia::Core::StringCRC puId, Dia::Core::StringCRC moduleId, Dia::Core::StringCRC streamId);
+        void Execute(ManifestEditorState& doc) override;
+        void Undo(ManifestEditorState& doc) override;
+        const char* GetDescription() const override { return "AddModuleRead"; }
+    private:
+        Dia::Core::StringCRC mPUId;
+        Dia::Core::StringCRC mModuleId;
+        Dia::Core::StringCRC mStreamId;
+    };
+
+    class RemoveModuleReadCommand : public ICommand
+    {
+    public:
+        RemoveModuleReadCommand(Dia::Core::StringCRC puId, Dia::Core::StringCRC moduleId, Dia::Core::StringCRC streamId);
+        void Execute(ManifestEditorState& doc) override;
+        void Undo(ManifestEditorState& doc) override;
+        const char* GetDescription() const override { return "RemoveModuleRead"; }
+    private:
+        Dia::Core::StringCRC mPUId;
+        Dia::Core::StringCRC mModuleId;
+        Dia::Core::StringCRC mStreamId;
+        int mSavedIndex;
+    };
+
+    class AddModuleWriteCommand : public ICommand
+    {
+    public:
+        AddModuleWriteCommand(Dia::Core::StringCRC puId, Dia::Core::StringCRC moduleId, Dia::Core::StringCRC streamId);
+        void Execute(ManifestEditorState& doc) override;
+        void Undo(ManifestEditorState& doc) override;
+        const char* GetDescription() const override { return "AddModuleWrite"; }
+    private:
+        Dia::Core::StringCRC mPUId;
+        Dia::Core::StringCRC mModuleId;
+        Dia::Core::StringCRC mStreamId;
+    };
+
+    class RemoveModuleWriteCommand : public ICommand
+    {
+    public:
+        RemoveModuleWriteCommand(Dia::Core::StringCRC puId, Dia::Core::StringCRC moduleId, Dia::Core::StringCRC streamId);
+        void Execute(ManifestEditorState& doc) override;
+        void Undo(ManifestEditorState& doc) override;
+        const char* GetDescription() const override { return "RemoveModuleWrite"; }
+    private:
+        Dia::Core::StringCRC mPUId;
+        Dia::Core::StringCRC mModuleId;
+        Dia::Core::StringCRC mStreamId;
+        int mSavedIndex;
+    };
+
 }}} // namespace Dia::ApplicationFlow::Editor

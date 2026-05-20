@@ -129,6 +129,11 @@ namespace Dia { namespace ApplicationFlow { namespace Editor {
                     stream.maxReaders = s["max_readers"].asUInt();
                 stream.multiWriter = s.get("multi_writer", false).asBool();
 
+                if (s.isMember("overflow") && s["overflow"].isString())
+                    stream.overflowPolicy = ParseOverflowPolicy(Dia::Core::StringCRC(s["overflow"].asCString()));
+                if (s.isMember("block_timeout_ms") && s["block_timeout_ms"].isUInt())
+                    stream.blockTimeoutMs = s["block_timeout_ms"].asUInt();
+
                 loaded.streams.Add(stream);
             }
         }
