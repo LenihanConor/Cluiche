@@ -76,7 +76,7 @@ export function Toolbar({ panels }: ToolbarProps) {
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <button
           onClick={handleConnectionClick}
-          title={isConnected ? "Connected to game" : "Disconnected"}
+          title={isConnected ? "Connected — click to open Game Connection" : "Disconnected — click to open Game Connection"}
           style={{
             display: "flex",
             alignItems: "center",

@@ -133,7 +133,7 @@ export const PUInspector: React.FC<PUInspectorProps> = ({ puId }) => {
                             id="freq-input"
                             data-testid="freq-input"
                             type="number"
-                            defaultValue={pu.frequencyHz}
+                            value={pu.frequencyHz}
                             onBlur={handleFreqChange}
                             onChange={handleFreqChange}
                             style={{
@@ -155,7 +155,7 @@ export const PUInspector: React.FC<PUInspectorProps> = ({ puId }) => {
                             id="dedicated-thread"
                             data-testid="dedicated-thread-checkbox"
                             type="checkbox"
-                            defaultChecked={pu.dedicatedThread}
+                            checked={pu.dedicatedThread}
                             onChange={handleThreadChange}
                         />
                     </div>

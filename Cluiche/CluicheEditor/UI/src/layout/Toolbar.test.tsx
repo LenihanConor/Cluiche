@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, act } from "@testing-library/react";
+import { render, screen, act, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 let subscribeCallback: ((data: unknown) => void) | null = null;
@@ -85,22 +85,28 @@ describe("Toolbar – connection status", () => {
   it("status indicator is green when connected", () => {
     render(<Toolbar panels={[]} />);
     act(() => { subscribeCallback!({ state: "connected" }); });
-    // The dot span is the first child of the connection button
-    const btn = screen.getByTitle("Connected to game");
+    const btn = screen.getByTitle(/Connected/);
     const dot = btn.querySelector("span")!;
     expect(dot).toHaveStyle({ background: "#89d185" });
   });
 
   it("status indicator is red when disconnected", () => {
     render(<Toolbar panels={[]} />);
-    const btn = screen.getByTitle("Disconnected");
+    const btn = screen.getByTitle(/Disconnected/);
     const dot = btn.querySelector("span")!;
     expect(dot).toHaveStyle({ background: "#f48771" });
   });
 
-  it("clicking the connection button toggles Game Connection panel", async () => {
+  it("clicking when disconnected toggles Game Connection panel", async () => {
     render(<Toolbar panels={[]} />);
     await userEvent.click(screen.getByText("Disconnected"));
+    expect(mockToggle).toHaveBeenCalledWith("Game Connection");
+  });
+
+  it("clicking when connected also opens Game Connection panel", () => {
+    render(<Toolbar panels={[]} />);
+    act(() => { subscribeCallback!({ state: "connected" }); });
+    fireEvent.click(screen.getByText("Connected"));
     expect(mockToggle).toHaveBeenCalledWith("Game Connection");
   });
 });
