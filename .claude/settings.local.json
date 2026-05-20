@@ -882,7 +882,9 @@
       "Bash(cp -r \"C:/GitHub/Cluiche/Dia/DiaApplicationEditor/UI/dist/index.html\" \"C:/GitHub/Cluiche/Cluiche/bin/CluicheEditor/Debug/x64/plugins/diaapplicationeditor/\")",
       "Bash(cp -r \"C:/GitHub/Cluiche/Dia/DiaApplicationEditor/UI/dist/assets\" \"C:/GitHub/Cluiche/Cluiche/bin/CluicheEditor/Debug/x64/plugins/diaapplicationeditor/\")",
       "Bash(\"/c/Program Files/nodejs/npm.cmd\" run build)",
-      "PowerShell(Get-Process *)"
+      "PowerShell(Get-Process *)",
+      "Bash(PATH='/c/Program Files/nodejs:__TRACKED_VAR__' '/c/Program Files/nodejs/npm.cmd' test -- --run)",
+      "Bash(PATH='/c/Program Files/nodejs:__TRACKED_VAR__' '/c/Program Files/nodejs/npm.cmd' run build)"
     ],
     "defaultMode": "auto"
   }

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { useManifestStoreV2 } from './useManifestStoreV2';
 import { useLiveStoreV2 } from './useLiveStoreV2';
 import { TrafficLightDot } from './TrafficLightDot';
@@ -18,12 +18,30 @@ type GridRow =
     | { kind: 'pu-header'; pu: ProcessingUnitV2 }
     | { kind: 'module'; module: ModuleV2; puId: string };
 
-export const ModulePresenceGrid: React.FC<ModulePresenceGridProps> = ({ containerHeight = 400 }) => {
+export const ModulePresenceGrid: React.FC<ModulePresenceGridProps> = ({ containerHeight }) => {
     const { manifest } = useManifestStoreV2();
     const { connectionState, activeStage } = useLiveStoreV2();
     const isLive = connectionState === 'connected';
     const [scrollTop, setScrollTop] = useState(0);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const rootRef = useRef<HTMLDivElement>(null);
+    const [measuredHeight, setMeasuredHeight] = useState(containerHeight ?? 400);
+
+    useEffect(() => {
+        if (containerHeight !== undefined) return;
+        const el = rootRef.current;
+        if (!el || typeof ResizeObserver === 'undefined') return;
+        const ro = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                const h = entry.contentRect.height;
+                if (h > 0) setMeasuredHeight(h);
+            }
+        });
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, [containerHeight]);
+
+    const effectiveHeight = containerHeight ?? measuredHeight;
 
     const stages: StageV2[] = manifest?.stages ?? [];
 
@@ -40,7 +58,7 @@ export const ModulePresenceGrid: React.FC<ModulePresenceGridProps> = ({ containe
     }, [manifest]);
 
     const totalHeight = rows.length * ROW_HEIGHT;
-    const visibleCount = Math.ceil(containerHeight / ROW_HEIGHT);
+    const visibleCount = Math.ceil(effectiveHeight / ROW_HEIGHT);
     const firstVisible = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVERSCAN);
     const lastVisible = Math.min(rows.length - 1, Math.floor(scrollTop / ROW_HEIGHT) + visibleCount + OVERSCAN);
 
@@ -82,7 +100,9 @@ export const ModulePresenceGrid: React.FC<ModulePresenceGridProps> = ({ containe
 
         const mod = row.module;
         const isEven = index % 2 === 0;
-        const inAllStages = stageNames.length > 0 && stageNames.every(s => mod.stages.includes(s));
+        const isAllSentinel = mod.stages.some(s => s.toLowerCase() === 'all');
+        const inAllStages = isAllSentinel || (stageNames.length > 0 && stageNames.every(s => mod.stages.includes(s)));
+        const isInStage = (stageName: string) => isAllSentinel || mod.stages.includes(stageName);
 
         return (
             <div
@@ -161,7 +181,7 @@ export const ModulePresenceGrid: React.FC<ModulePresenceGridProps> = ({ containe
                                 background: isActiveCol ? '#0e2d4a' : undefined,
                             }}
                         >
-                            {mod.stages.includes(stageName) && (
+                            {isInStage(stageName) && (
                                 <TrafficLightDot state="green" size={8} />
                             )}
                         </div>
@@ -178,11 +198,12 @@ export const ModulePresenceGrid: React.FC<ModulePresenceGridProps> = ({ containe
 
     return (
         <div
+            ref={rootRef}
             data-testid="presence-grid"
             style={{
                 background: '#1e1e1e',
                 width: '100%',
-                height: containerHeight,
+                height: containerHeight ?? '100%',
                 display: 'flex',
                 flexDirection: 'column',
                 overflow: 'hidden',

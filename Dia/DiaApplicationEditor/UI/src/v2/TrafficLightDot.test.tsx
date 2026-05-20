@@ -16,13 +16,13 @@ describe('TrafficLightDot', () => {
         expect(dot.getAttribute('data-state')).toBe('amber');
     });
 
-    it('renders green state with pulse animation', () => {
+    it('renders green state without animation', () => {
         const { container } = render(<TrafficLightDot state="green" />);
         const dot = container.querySelector('[data-testid="traffic-light-dot"]') as HTMLElement;
-        expect(dot.style.animation).toContain('tlPulse');
+        expect(dot.style.animation ?? '').toBe('');
     });
 
-    it('renders red state without pulse', () => {
+    it('renders red state without animation', () => {
         const { container } = render(<TrafficLightDot state="red" />);
         const dot = container.querySelector('[data-testid="traffic-light-dot"]') as HTMLElement;
         expect(dot.style.animation ?? '').toBe('');

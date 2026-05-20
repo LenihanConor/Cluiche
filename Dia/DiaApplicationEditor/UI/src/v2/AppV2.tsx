@@ -27,6 +27,7 @@ export const AppV2: React.FC = () => {
     const manifest = useManifestStoreV2((s) => s.manifest);
     const applyUndoResponse = useUndoStoreV2((s) => s.applyUndoResponse);
     const setValidationResult = useValidationStoreV2((s) => s.setResult);
+    const runValidation = useValidationStoreV2((s) => s.runValidation);
     const setConnectionState = useLiveStoreV2((s) => s.setConnectionState);
     const setActiveStage = useLiveStoreV2((s) => s.setActiveStage);
     const updateModuleStates = useLiveStoreV2((s) => s.updateModuleStates);
@@ -38,6 +39,11 @@ export const AppV2: React.FC = () => {
     useEffect(() => {
         refreshState();
     }, [refreshState]);
+
+    // Auto-run validation whenever a manifest is present so the status bar reflects real state
+    useEffect(() => {
+        if (hasManifest) runValidation();
+    }, [hasManifest, manifest, runValidation]);
 
     useEffect(() => {
         const dispatch = (topic: string, data: unknown) => {
@@ -156,7 +162,7 @@ export const AppV2: React.FC = () => {
                             textTransform: 'capitalize',
                         }}
                     >
-                        {tab === 'graph' ? 'Graph' : tab === 'presence' ? 'Presence' : 'Streams'}
+                        {tab === 'graph' ? 'Process Units' : tab === 'presence' ? 'Modules' : 'Streams'}
                     </button>
                 ))}
             </div>

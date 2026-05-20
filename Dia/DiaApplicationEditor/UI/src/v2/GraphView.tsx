@@ -158,6 +158,23 @@ export const GraphView: React.FC<GraphViewProps> = ({ onStreamLabelClick, onPUSe
         });
     }, []);
 
+    // Group parallel edges (streams sharing the same undirected PU pair) so they can be
+    // fanned out horizontally and have their labels stacked vertically without overlap.
+    const edgeLayout = React.useMemo(() => {
+        const groups = new Map<string, StreamV2[]>();
+        for (const s of manifest?.streams ?? []) {
+            const key = [s.fromPU, s.toPU].sort().join('::');
+            const arr = groups.get(key) ?? [];
+            arr.push(s);
+            groups.set(key, arr);
+        }
+        const layout = new Map<string, { laneIndex: number; laneCount: number }>();
+        for (const arr of groups.values()) {
+            arr.forEach((s, i) => layout.set(s.id, { laneIndex: i, laneCount: arr.length }));
+        }
+        return layout;
+    }, [manifest?.streams]);
+
     const renderStreamEdge = (stream: StreamV2) => {
         const fromPos = positions.get(stream.fromPU);
         const toPos = positions.get(stream.toPU);
@@ -166,16 +183,20 @@ export const GraphView: React.FC<GraphViewProps> = ({ onStreamLabelClick, onPUSe
         const from = getNodeCenter(fromPos);
         const to = getNodeCenter(toPos);
 
-        const midX = (from.x + to.x) / 2;
+        const lane = edgeLayout.get(stream.id) ?? { laneIndex: 0, laneCount: 1 };
+        // Center lanes around 0; e.g. 3 lanes → offsets [-1, 0, 1]
+        const laneOffset = lane.laneIndex - (lane.laneCount - 1) / 2;
+        const FAN_SPACING = 36; // horizontal spread between parallel paths
+        const LABEL_GAP = 14;   // vertical spacing between stacked labels
+
+        const midX = (from.x + to.x) / 2 + laneOffset * FAN_SPACING;
         const midY = (from.y + to.y) / 2;
 
-        // Control points for cubic bezier
-        const cx1 = midX;
-        const cy1 = from.y;
-        const cx2 = midX;
-        const cy2 = to.y;
+        // Bezier with control points pulled toward the laned midX so paths arc apart
+        const d = `M ${from.x} ${from.y} C ${midX} ${from.y}, ${midX} ${to.y}, ${to.x} ${to.y}`;
 
-        const d = `M ${from.x} ${from.y} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${to.x} ${to.y}`;
+        // Stack labels vertically around midY so multi-edge groups don't collide
+        const labelY = midY - 6 + laneOffset * LABEL_GAP;
 
         return (
             <g key={stream.id} data-testid="stream-edge" data-stream-id={stream.id}>
@@ -188,11 +209,13 @@ export const GraphView: React.FC<GraphViewProps> = ({ onStreamLabelClick, onPUSe
                 />
                 <text
                     x={midX}
-                    y={midY - 6}
+                    y={labelY}
                     fill="#4a9eff"
                     fontSize={10}
                     textAnchor="middle"
-                    style={{ cursor: onStreamLabelClick ? 'pointer' : 'default' }}
+                    style={{ cursor: onStreamLabelClick ? 'pointer' : 'default', paintOrder: 'stroke' }}
+                    stroke="#1e1e1e"
+                    strokeWidth={3}
                     onClick={(e) => {
                         e.stopPropagation();
                         onStreamLabelClick?.(stream.id);

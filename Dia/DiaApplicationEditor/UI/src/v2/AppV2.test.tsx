@@ -47,8 +47,8 @@ import { AppV2 } from './AppV2';
 describe('AppV2', () => {
     it('renders three tab buttons', () => {
         render(<AppV2 />);
-        expect(screen.getByText('Graph')).toBeTruthy();
-        expect(screen.getByText('Presence')).toBeTruthy();
+        expect(screen.getByText('Process Units')).toBeTruthy();
+        expect(screen.getByText('Modules')).toBeTruthy();
         expect(screen.getByText('Streams')).toBeTruthy();
     });
 
@@ -59,7 +59,7 @@ describe('AppV2', () => {
 
     it('switches to presence tab on click', () => {
         render(<AppV2 />);
-        fireEvent.click(screen.getByText('Presence'));
+        fireEvent.click(screen.getByText('Modules'));
         expect(screen.getByText('presence-grid-stub')).toBeTruthy();
     });
 });
