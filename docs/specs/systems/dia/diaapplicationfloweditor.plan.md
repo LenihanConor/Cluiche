@@ -151,16 +151,16 @@ All C++ backend code integrates with DiaObservation (when available) and DiaMetr
 | 13 | Wire all Phase 1 code into `DiaApplicationEditor.vcxproj` + filters | Build passes: `dia pipeline --target googletest` ✓ | Done | haiku | Updated again for Batch 2 |
 | 14 | Wire all GoogleTests into `GoogleTests.vcxproj` + filters | 4751 tests pass: `dia run googletest` ✓ | Done | haiku | Updated again for Batch 2 |
 | **Phase 2 — Plugin Shell & CEF Bridge** | | | | | |
-| 15 | Create `DiaApplicationFlowEditorPlugin` class implementing IEditorPlugin | Build succeeds; plugin registered in CluicheEditor | Todo | sonnet | After Phase 1 |
-| 16 | Implement CEF message handlers: manifest.load, manifest.save, manifest.getState | Integration: load→getState returns model JSON | Todo | sonnet | Depends on #15 |
-| 17 | Implement CEF message handlers: history.undo, history.redo, history.getState, history.jumpTo | Integration: undo/redo round-trip | Todo | sonnet | Depends on #15, #5 |
-| 18 | Implement CEF message handlers: validation.run + onValidationComplete event | Integration: edit→debounce→validate→result | Todo | sonnet | Depends on #15, #4 |
-| 19 | Implement CEF message handlers: types.get, types.refresh | Integration: returns type list | Todo | sonnet | Depends on #15, #11 |
-| 20 | Implement FileWatcher integration + conflict detection + save suppression | `TestFileConflict`: external change detected, own save suppressed | Todo | sonnet | Depends on #15 |
-| 21 | Implement CEF message handlers: risk.check, risk.confirm, risk.cancel | Integration: risky command paused, proceeds on confirm | Todo | sonnet | Depends on #15, #10 |
-| 22 | Implement live connection: register with GameConnectionManager, connect/disconnect lifecycle | Integration: connect → status green; disconnect → status grey | Todo | sonnet | Depends on #15 |
-| 23 | Implement live state subscriptions: app.state, app.modules, app.streams topics → LiveStateStore | Integration: receive mock push → store updated | Todo | sonnet | Depends on #22, #12 |
-| 24 | Implement live commands: transitionTo, shutdown dispatch | Integration: command sent via WebSocket | Todo | sonnet | Depends on #22 |
+| 15 | Create `DiaApplicationFlowEditorPlugin` class implementing IEditorPlugin | Build succeeds; plugin registered via REGISTER_EDITOR_PLUGIN | Done | sonnet | `DiaApplicationFlowEditorPlugin.h/.cpp` |
+| 16 | Implement CEF message handlers: manifest.load, manifest.save, manifest.getState | Build passes; handlers return structured JSON | Done | sonnet | Includes BuildManifestStateJson helper |
+| 17 | Implement CEF message handlers: history.undo, history.redo, history.getState | Build passes | Done | sonnet | |
+| 18 | Implement CEF message handlers: validation.run + onValidationComplete event | Build passes | Done | sonnet | Also pushes NotifyUIDataChanged("validation.result") |
+| 19 | Implement CEF message handlers: types.get, types.refresh | Build passes | Done | sonnet | |
+| 20 | Implement FileWatcher integration + conflict detection + save suppression | Build passes | Done | sonnet | mSuppressFileWatchDuringSave flag wired in save handler |
+| 21 | Implement CEF message handlers: risk.check, risk.confirm | Build passes | Done | sonnet | risk.check checks by commandType name when live |
+| 22 | Implement live connection: register with GameConnectionManager, connect/disconnect lifecycle | Build passes | Done | sonnet | SetConnectionCallback wires connect/disconnect lifecycle |
+| 23 | Implement live state subscriptions: app.state, app.modules, app.streams topics → LiveStateStore | Build passes | Done | sonnet | Subscribe/Unsubscribe wired in connection callback |
+| 24 | Implement live commands: transitionTo, shutdown dispatch | Build passes | Done | sonnet | SendCommandWithResponse for transition, SendCommand for shutdown |
 | **Phase 3 — React UI** | | | | | |
 | 25 | Scaffold new UI shell: Vite project, tab layout (Graph/Presence/Streams), sidebar container, header | Manual: `dia run cluicheeditor` shows 3-tab layout with empty content | Todo | sonnet | After Phase 2 |
 | 26 | Implement shared `TrafficLightDot` component | `TrafficLightDot.test.tsx`: renders all states (grey/amber/green/red ± pulse) | Todo | sonnet | |

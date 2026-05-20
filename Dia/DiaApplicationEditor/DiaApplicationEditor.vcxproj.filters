@@ -2,6 +2,7 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClInclude Include="DiaApplicationEditor.h" />
+    <ClInclude Include="DiaApplicationFlowEditorPlugin.h" />
     <ClInclude Include="ManifestEditorData.h" />
     <ClInclude Include="ManifestSerializer.h" />
     <ClInclude Include="V2\ManifestEditorState.h">
@@ -49,6 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaApplicationEditor.cpp" />
+    <ClCompile Include="DiaApplicationFlowEditorPlugin.cpp" />
     <ClCompile Include="ManifestSerializer.cpp" />
     <ClCompile Include="V2\ManifestEditorState.cpp">
       <Filter>V2</Filter>
