@@ -26,9 +26,6 @@
     <ClCompile Include="Manifest\ManifestValidatorV2.cpp">
       <Filter>Manifest</Filter>
     </ClCompile>
-    <ClCompile Include="TypeRegistry\ApplicationTypeRegistry.cpp">
-      <Filter>TypeRegistry</Filter>
-    </ClCompile>
     <ClCompile Include="Streams\StreamTypeRegistry.cpp">
       <Filter>Streams</Filter>
     </ClCompile>
@@ -39,7 +36,6 @@
     <ClInclude Include="IApplicationControl.h" />
     <ClInclude Include="LifecycleEvent.h" />
     <ClInclude Include="Module.h" />
-    <ClInclude Include="ModuleRef.h" />
     <ClInclude Include="ModuleRefV2.h" />
     <ClInclude Include="ProcessingUnit.h" />
     <ClInclude Include="RegistrationMacrosV2.h" />
@@ -59,12 +55,6 @@
     </ClInclude>
     <ClInclude Include="Manifest\TypedImport.h">
       <Filter>Manifest</Filter>
-    </ClInclude>
-    <ClInclude Include="TypeRegistry\ApplicationTypeRegistry.h">
-      <Filter>TypeRegistry</Filter>
-    </ClInclude>
-    <ClInclude Include="TypeRegistry\RegistrationMacros.h">
-      <Filter>TypeRegistry</Filter>
     </ClInclude>
     <ClInclude Include="Streams\IStreamStore.h">
       <Filter>Streams</Filter>

@@ -20,7 +20,6 @@
     <ClCompile Include="Module.cpp" />
     <ClCompile Include="ProcessingUnit.cpp" />
     <ClCompile Include="TypeRegistry.cpp" />
-    <ClCompile Include="TypeRegistry\ApplicationTypeRegistry.cpp" />
     <ClCompile Include="Streams\StreamTypeRegistry.cpp" />
     <ClCompile Include="Metrics\MetricsCollectorModule.cpp" />
   </ItemGroup>
@@ -40,7 +39,6 @@
     <ClInclude Include="Streams\EventStreamWriter.h" />
     <ClInclude Include="Streams\EventStreamReader.h" />
     <ClInclude Include="Streams\StreamTypeRegistry.h" />
-    <ClInclude Include="ModuleRef.h" />
     <ClInclude Include="Manifest\ApplicationManifestV3.h" />
     <ClInclude Include="Manifest\ApplicationManifestLoaderV2.h" />
     <ClInclude Include="Manifest\ManifestComposerV2.h" />
@@ -51,8 +49,6 @@
     <ClInclude Include="ProcessingUnit.h" />
     <ClInclude Include="RegistrationMacrosV2.h" />
     <ClInclude Include="TypeRegistry.h" />
-    <ClInclude Include="TypeRegistry\ApplicationTypeRegistry.h" />
-    <ClInclude Include="TypeRegistry\RegistrationMacros.h" />
     <ClInclude Include="DebugDataTypes.h" />
     <ClInclude Include="Metrics\MetricsCollectorModule.h" />
   </ItemGroup>
