@@ -77,10 +77,21 @@
     <ClInclude Include="DiaApplicationEditor.h" />
     <ClInclude Include="ManifestEditorData.h" />
     <ClInclude Include="ManifestSerializer.h" />
+    <ClInclude Include="V2\ManifestEditorState.h" />
+    <ClInclude Include="V2\LiveStateStore.h" />
+    <ClInclude Include="V2\TypeDiscoveryService.h" />
+    <ClInclude Include="V2\Commands\ICommand.h" />
+    <ClInclude Include="V2\Commands\CommandHistory.h" />
+    <ClInclude Include="V2\Commands\CompoundCommand.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaApplicationEditor.cpp" />
     <ClCompile Include="ManifestSerializer.cpp" />
+    <ClCompile Include="V2\ManifestEditorState.cpp" />
+    <ClCompile Include="V2\LiveStateStore.cpp" />
+    <ClCompile Include="V2\TypeDiscoveryService.cpp" />
+    <ClCompile Include="V2\Commands\CommandHistory.cpp" />
+    <ClCompile Include="V2\Commands\CompoundCommand.cpp" />
   </ItemGroup>
 
   <ItemGroup>

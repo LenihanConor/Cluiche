@@ -10,7 +10,7 @@
 @docs/research/diapp_simplif/summary.md
 
 ## Mockup
-@docs/research/diapp_simplif/editor_mockup.html
+@docs/research/diapp_simplif/editor_mockup_v4.html
 
 ## Purpose
 
@@ -99,21 +99,21 @@ namespace Dia::ApplicationFlow::Editor {
 
 | Feature | Description | Spec | Status |
 |---------|-------------|------|--------|
-| Graph View | PU nodes with stream edges, click-select, drag-reposition, startup order badges | TBD | Draft |
-| Module Presence Grid | Full-tab modules × stages matrix, infrastructure vs stage-specific visual distinction, per-PU filtering | TBD | Draft |
-| PU Inspector | Editable PU properties (frequency, thread, order), stage list, module list with cards | TBD | Draft |
-| Module Inspector | Deps, stream handles, timeout config, stage presence dots, provenance from .diastage | TBD | Draft |
-| Stream Inspector | Type, from/to PU, readers/writers list, add/remove/edit | TBD | Draft |
-| Stage Configuration | Add/remove stages, auto/manual trigger, ordering | TBD | Draft |
-| Manifest Load/Save | Load .diaapp v2, dirty tracking, .bak backup, format validation on save | TBD | Draft |
-| Real-Time Validation | Dependency cycles, orphaned modules, missing/undeclared stream refs (`UNKNOWN_STREAM_IN_READS/WRITES`), orphan reader/writer streams (`ORPHAN_*`), missing payload type (`PAYLOAD_TYPE_MISSING`), stage coverage gaps | TBD | Draft |
-| Undo/Redo | Command pattern for all edits, Ctrl+Z/Y, history display | TBD | Draft |
-| File Conflict Detection | Watch .diaapp file for external changes, prompt reload/overwrite | TBD | Draft |
-| Type Discovery | Query TypeRegistry for available module/PU types, autocomplete in add dialogs | TBD | Draft |
-| Live Connection | WebSocket connect/disconnect, connection status indicator | TBD | Draft |
-| Live State Overlay | Current stage highlight, module state badges (running/loading/stopped/failed), transition progress | TBD | Draft |
-| Live Transition Trigger | "Transition To" button/command, stage selector, wait-for-ready feedback | TBD | Draft |
-| Risky Change Warnings | Warn when removing modules with dependents, breaking stream connections, etc. | TBD | Draft |
+| Graph View | PU nodes with stream edges, click-select, drag-reposition, startup order badges | [graph-view.md](../../features/dia/diaapplicationfloweditor/graph-view.md) | Approved |
+| Module Presence Grid | Full-tab modules × stages matrix, infrastructure vs stage-specific visual distinction, per-PU filtering | [module-presence-grid.md](../../features/dia/diaapplicationfloweditor/module-presence-grid.md) | Approved |
+| PU Inspector | Editable PU properties (frequency, thread, order), stage list, module list with cards | [pu-inspector.md](../../features/dia/diaapplicationfloweditor/pu-inspector.md) | Approved |
+| Module Inspector | Deps, stream handles, timeout config, stage presence dots, provenance from .diastage | [module-inspector.md](../../features/dia/diaapplicationfloweditor/module-inspector.md) | Approved |
+| Stream Inspector | Type, from/to PU, readers/writers list, add/remove/edit | [stream-inspector.md](../../features/dia/diaapplicationfloweditor/stream-inspector.md) | Approved |
+| Stage Configuration | Add/remove stages, auto/manual trigger, ordering | [stage-configuration.md](../../features/dia/diaapplicationfloweditor/stage-configuration.md) | Approved |
+| Manifest Load/Save | Load .diaapp v2, dirty tracking, .bak backup, format validation on save | [manifest-load-save.md](../../features/dia/diaapplicationfloweditor/manifest-load-save.md) | Approved |
+| Real-Time Validation | Dependency cycles, orphaned modules, missing/undeclared stream refs (`UNKNOWN_STREAM_IN_READS/WRITES`), orphan reader/writer streams (`ORPHAN_*`), missing payload type (`PAYLOAD_TYPE_MISSING`), stage coverage gaps | [real-time-validation.md](../../features/dia/diaapplicationfloweditor/real-time-validation.md) | Approved |
+| Undo/Redo | Command pattern for all edits, Ctrl+Z/Y, history display | [undo-redo.md](../../features/dia/diaapplicationfloweditor/undo-redo.md) | Approved |
+| File Conflict Detection | Watch .diaapp file for external changes, prompt reload/overwrite | [file-conflict-detection.md](../../features/dia/diaapplicationfloweditor/file-conflict-detection.md) | Approved |
+| Type Discovery | Query TypeRegistry for available module/PU types, autocomplete in add dialogs | [type-discovery.md](../../features/dia/diaapplicationfloweditor/type-discovery.md) | Approved |
+| Live Connection | WebSocket connect/disconnect, connection status indicator | [live-connection.md](../../features/dia/diaapplicationfloweditor/live-connection.md) | Approved |
+| Live State Overlay | Current stage highlight, module state badges (running/loading/stopped/failed), transition progress | [live-state-overlay.md](../../features/dia/diaapplicationfloweditor/live-state-overlay.md) | Approved |
+| Live Transition Trigger | "Transition To" button/command, stage selector, wait-for-ready feedback | [live-transition-trigger.md](../../features/dia/diaapplicationfloweditor/live-transition-trigger.md) | Approved |
+| Risky Change Warnings | Warn when removing modules with dependents, breaking stream connections, etc. | [risky-change-warnings.md](../../features/dia/diaapplicationfloweditor/risky-change-warnings.md) | Approved |
 
 ## Platform Primitives Used
 
@@ -157,6 +157,13 @@ namespace Dia::ApplicationFlow::Editor {
 | ED-005 | "all" modules visually distinct from stage-specific | Green "all stages" badge vs. individual dots. Instantly distinguishes infrastructure from game modules. | Presence Grid, Inspector | Accepted | Yes |
 | ED-006 | Provenance shown for stage-imported modules | "from: dummy_stage.diastage" in gold — so you know which file to edit for that module. | Inspector | Accepted | Yes |
 | ED-007 | React + CEF frontend, consistent with CluicheEditor | Reuse existing editor infrastructure. No new framework. | All features | Accepted | Yes |
+| ED-008 | Single `.tl` traffic-light dot primitive (grey/amber/green/red + `pulse`) used across all views | One visual vocabulary for state everywhere — PU graph, presence grid, stream detail, sidebar. No alternate state indicators. | All features | Accepted | Yes |
+| ED-009 | Live button is 3-state in the header: grey ("Connect Live") → amber+pulse ("Connecting…") → green+pulse ("Live: \<AppName\>") | Single control for connection lifecycle. State is always visible in header regardless of active tab. | Live features | Accepted | Yes |
+| ED-010 | Stream labels on the graph navigate to Streams tab on click — no stream inspector panel on the graph | Streams tab is the sole stream detail surface. No dual surface. Hint text ("→ Streams tab") shown on hover. | Graph View, Streams | Accepted | Yes |
+| ED-011 | Add PU affordance is a dashed ghost node on the graph canvas, not a toolbar button | In-context affordance — developer sees where the new PU will appear relative to existing topology. | Graph View | Accepted | Yes |
+| ED-012 | Dependency Order section in the PU inspector is collapsed by default | Reduces visual noise. Advanced detail available on demand. | Module Inspector, PU Inspector | Accepted | Yes |
+| ED-013 | No explicit Validate button — validation is always-on (debounced 500ms) | Supersedes ED-004's "button exists for explicit re-run." Errors appear immediately; no manual trigger needed. | Real-Time Validation | Accepted | Yes |
+| ED-014 | Presence Grid has two visual modes — Offline (all columns: green=required, grey=not assigned) and Live (active-stage column: green/amber/red+pulse = runtime state; inactive columns: outline-green=required, grey=not assigned; active-stage header highlighted) | Clean separation of config truth vs runtime state. Offline mode is always available; Live mode overlays runtime without replacing the config view. | Module Presence Grid | Accepted | Yes |
 
 **Status values:** `Proposed` · `Accepted` · `Rejected` · `Superseded`
 **Binding:** `Yes` = enforced constraint on all features in this system · `No` = guidance only
@@ -193,4 +200,4 @@ namespace Dia::ApplicationFlow::Editor {
 
 ## Status
 
-`Approved` — 2026-05-08. Supersedes DiaApplicationEditor v1.
+`Approved` — 2026-05-08. Supersedes DiaApplicationEditor v1. Plan: [diaapplicationfloweditor.plan.md](diaapplicationfloweditor.plan.md)

@@ -4,9 +4,46 @@
     <ClInclude Include="DiaApplicationEditor.h" />
     <ClInclude Include="ManifestEditorData.h" />
     <ClInclude Include="ManifestSerializer.h" />
+    <ClInclude Include="V2\ManifestEditorState.h">
+      <Filter>V2</Filter>
+    </ClInclude>
+    <ClInclude Include="V2\LiveStateStore.h">
+      <Filter>V2</Filter>
+    </ClInclude>
+    <ClInclude Include="V2\TypeDiscoveryService.h">
+      <Filter>V2</Filter>
+    </ClInclude>
+    <ClInclude Include="V2\Commands\ICommand.h">
+      <Filter>V2\Commands</Filter>
+    </ClInclude>
+    <ClInclude Include="V2\Commands\CommandHistory.h">
+      <Filter>V2\Commands</Filter>
+    </ClInclude>
+    <ClInclude Include="V2\Commands\CompoundCommand.h">
+      <Filter>V2\Commands</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaApplicationEditor.cpp" />
     <ClCompile Include="ManifestSerializer.cpp" />
+    <ClCompile Include="V2\ManifestEditorState.cpp">
+      <Filter>V2</Filter>
+    </ClCompile>
+    <ClCompile Include="V2\LiveStateStore.cpp">
+      <Filter>V2</Filter>
+    </ClCompile>
+    <ClCompile Include="V2\TypeDiscoveryService.cpp">
+      <Filter>V2</Filter>
+    </ClCompile>
+    <ClCompile Include="V2\Commands\CommandHistory.cpp">
+      <Filter>V2\Commands</Filter>
+    </ClCompile>
+    <ClCompile Include="V2\Commands\CompoundCommand.cpp">
+      <Filter>V2\Commands</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="V2" />
+    <Filter Include="V2\Commands" />
   </ItemGroup>
 </Project>

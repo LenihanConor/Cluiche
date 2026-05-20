@@ -512,6 +512,19 @@
     <ClCompile Include="DiaApplicationEditor\TestManifestSerializer.cpp">
       <Filter>DiaApplicationEditor</Filter>
     </ClCompile>
+    <!-- DiaApplicationEditor V2 Tests -->
+    <ClCompile Include="DiaApplicationEditor\TestManifestEditorState.cpp">
+      <Filter>DiaApplicationEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaApplicationEditor\TestCommandHistory.cpp">
+      <Filter>DiaApplicationEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaApplicationEditor\TestTypeDiscoveryService.cpp">
+      <Filter>DiaApplicationEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaApplicationEditor\TestLiveStateStore.cpp">
+      <Filter>DiaApplicationEditor</Filter>
+    </ClCompile>
     <!-- Editor -->
     <ClCompile Include="Editor\TestEditorPluginRegistry.cpp">
       <Filter>Editor</Filter>
