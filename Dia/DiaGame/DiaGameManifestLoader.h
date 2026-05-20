@@ -1,7 +1,6 @@
 #pragma once
 
 #include "DiaGameManifest.h"
-#include <DiaApplicationFlow/Manifest/ManifestValidator.h>
 
 namespace Dia
 {
@@ -10,8 +9,8 @@ namespace Dia
 		class DiaGameManifestLoader
 		{
 		public:
-			static Dia::Application::ManifestValidationResult LoadGameFile(const char* path, DiaGameManifest& outManifest);
-			static Dia::Application::ManifestValidationResult LoadStageFile(const char* path, DiaStageManifest& outManifest);
+			static bool LoadGameFile(const char* path, DiaGameManifest& outManifest);
+			static bool LoadStageFile(const char* path, DiaStageManifest& outManifest);
 		};
 	}
 }

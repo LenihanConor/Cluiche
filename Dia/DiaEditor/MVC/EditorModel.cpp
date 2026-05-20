@@ -191,8 +191,8 @@ namespace Dia
 			}
 
 			Dia::Game::DiaGameManifest manifest;
-			auto result = Dia::Game::DiaGameManifestLoader::LoadGameFile(diagamePath, manifest);
-			if (result != Dia::Application::ManifestValidationResult::kSuccess)
+			bool loaded = Dia::Game::DiaGameManifestLoader::LoadGameFile(diagamePath, manifest);
+			if (!loaded)
 			{
 				DIA_LOG_WARNING("Editor", "EditorModel: failed to load .diagame '%s'", diagamePath);
 				return false;

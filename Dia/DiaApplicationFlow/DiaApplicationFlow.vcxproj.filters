@@ -17,25 +17,10 @@
     <ClCompile Include="Module.cpp" />
     <ClCompile Include="ProcessingUnit.cpp" />
     <ClCompile Include="TypeRegistry.cpp" />
-    <ClCompile Include="Manifest\ApplicationManifest.cpp">
-      <Filter>Manifest</Filter>
-    </ClCompile>
-    <ClCompile Include="Manifest\ApplicationManifestLoader.cpp">
-      <Filter>Manifest</Filter>
-    </ClCompile>
     <ClCompile Include="Manifest\ApplicationManifestLoaderV2.cpp">
       <Filter>Manifest</Filter>
     </ClCompile>
-    <ClCompile Include="Manifest\JsonApplicationManifestSerializer.cpp">
-      <Filter>Manifest</Filter>
-    </ClCompile>
-    <ClCompile Include="Manifest\ManifestComposer.cpp">
-      <Filter>Manifest</Filter>
-    </ClCompile>
     <ClCompile Include="Manifest\ManifestComposerV2.cpp">
-      <Filter>Manifest</Filter>
-    </ClCompile>
-    <ClCompile Include="Manifest\ManifestValidator.cpp">
       <Filter>Manifest</Filter>
     </ClCompile>
     <ClCompile Include="Manifest\ManifestValidatorV2.cpp">
@@ -60,28 +45,13 @@
     <ClInclude Include="RegistrationMacrosV2.h" />
     <ClInclude Include="TypeRegistry.h" />
     <ClInclude Include="DebugDataTypes.h" />
-    <ClInclude Include="Manifest\ApplicationManifest.h">
-      <Filter>Manifest</Filter>
-    </ClInclude>
-    <ClInclude Include="Manifest\ApplicationManifestLoader.h">
-      <Filter>Manifest</Filter>
-    </ClInclude>
     <ClInclude Include="Manifest\ApplicationManifestV3.h">
       <Filter>Manifest</Filter>
     </ClInclude>
     <ClInclude Include="Manifest\ApplicationManifestLoaderV2.h">
       <Filter>Manifest</Filter>
     </ClInclude>
-    <ClInclude Include="Manifest\JsonApplicationManifestSerializer.h">
-      <Filter>Manifest</Filter>
-    </ClInclude>
-    <ClInclude Include="Manifest\ManifestComposer.h">
-      <Filter>Manifest</Filter>
-    </ClInclude>
     <ClInclude Include="Manifest\ManifestComposerV2.h">
-      <Filter>Manifest</Filter>
-    </ClInclude>
-    <ClInclude Include="Manifest\ManifestValidator.h">
       <Filter>Manifest</Filter>
     </ClInclude>
     <ClInclude Include="Manifest\ManifestValidatorV2.h">

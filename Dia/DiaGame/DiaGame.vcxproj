@@ -63,14 +63,12 @@
     <ClInclude Include="DiaGameManifestLoader.h" />
     <ClInclude Include="JsonDiaGameSerializer.h" />
     <ClInclude Include="JsonDiaStageSerializer.h" />
-    <ClInclude Include="GameFileComposer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaGameManifest.cpp" />
     <ClCompile Include="DiaGameManifestLoader.cpp" />
     <ClCompile Include="JsonDiaGameSerializer.cpp" />
     <ClCompile Include="JsonDiaStageSerializer.cpp" />
-    <ClCompile Include="GameFileComposer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
