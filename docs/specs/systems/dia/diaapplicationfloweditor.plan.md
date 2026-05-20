@@ -162,11 +162,11 @@ All C++ backend code integrates with DiaObservation (when available) and DiaMetr
 | 23 | Implement live state subscriptions: app.state, app.modules, app.streams topics → LiveStateStore | Build passes | Done | sonnet | Subscribe/Unsubscribe wired in connection callback |
 | 24 | Implement live commands: transitionTo, shutdown dispatch | Build passes | Done | sonnet | SendCommandWithResponse for transition, SendCommand for shutdown |
 | **Phase 3 — React UI** | | | | | |
-| 25 | Scaffold new UI shell: Vite project, tab layout (Graph/Presence/Streams), sidebar container, header | Manual: `dia run cluicheeditor` shows 3-tab layout with empty content | Todo | sonnet | After Phase 2 |
-| 26 | Implement shared `TrafficLightDot` component | `TrafficLightDot.test.tsx`: renders all states (grey/amber/green/red ± pulse) | Todo | sonnet | |
-| 27 | Implement `ManifestStore` (Zustand) + bridge integration | `ManifestStore.test.ts`: load/save/dirty tracking/model access | Todo | sonnet | |
-| 28 | Implement `UndoStore` (Zustand, 100-cap, save-point) | `UndoStore.test.ts`: push/undo/redo/cap/save-point/jumpTo | Todo | sonnet | |
-| 29 | Implement `ValidationStore` + `ValidationBar` footer | `ValidationBar.test.tsx`: counts render, expand shows issues, click navigates | Todo | sonnet | |
+| 25 | Scaffold new UI shell: Vite project, tab layout (Graph/Presence/Streams), sidebar container, header | Manual: `dia run cluicheeditor` shows 3-tab layout with empty content | Done | sonnet | `src/v2/AppV2.tsx`, `src/v2/bridge.ts`; 3 tests pass |
+| 26 | Implement shared `TrafficLightDot` component | `TrafficLightDot.test.tsx`: renders all states (grey/amber/green/red ± pulse) | Done | sonnet | `src/v2/TrafficLightDot.tsx`; 6 tests pass |
+| 27 | Implement `ManifestStore` (Zustand) + bridge integration | `ManifestStore.test.ts`: load/save/dirty tracking/model access | Done | sonnet | `src/v2/useManifestStoreV2.ts`, `src/v2/types.ts`; 5 tests pass |
+| 28 | Implement `UndoStore` (Zustand, 100-cap, save-point) | `UndoStore.test.ts`: push/undo/redo/cap/save-point/jumpTo | Done | sonnet | `src/v2/useUndoStoreV2.ts`; 5 tests pass |
+| 29 | Implement `ValidationStore` + `ValidationBar` footer | `ValidationBar.test.tsx`: counts render, expand shows issues, click navigates | Done | sonnet | `src/v2/useValidationStoreV2.ts`, `src/v2/ValidationBarV2.tsx`; 5 tests pass |
 | 30 | Implement `GraphView`: PU nodes, stream edges, auto-layout | `GraphView.test.tsx`: renders N nodes + M edges from model | Todo | opus | Complex SVG + layout |
 | 31 | Implement `GraphView`: click-select, drag-reposition | `GraphView.test.tsx`: selection updates, drag repositions | Todo | sonnet | Depends on #30 |
 | 32 | Implement `GraphView`: ghost node (Add PU), stream label click → Streams tab | `GraphView.test.tsx`: ghost renders, click creates PU; label click navigates | Todo | sonnet | Depends on #30 |
