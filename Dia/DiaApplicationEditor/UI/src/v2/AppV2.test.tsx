@@ -2,8 +2,8 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 
 const mockState = {
-    applyStateSnapshot: vi.fn(), manifest: null, isDirty: false, hasManifest: false, filePath: null,
-    loadManifest: vi.fn(), saveManifest: vi.fn(), refreshState: vi.fn(),
+    applyStateSnapshot: vi.fn(), manifest: null, isDirty: false, hasManifest: true, filePath: null,
+    loadManifest: vi.fn(), saveManifest: vi.fn(), refreshState: vi.fn(), setDirty: vi.fn(),
 };
 const mockUndo = {
     applyUndoResponse: vi.fn(), syncFromBackend: vi.fn(), canUndo: false, canRedo: false, count: 0, isDirty: false,

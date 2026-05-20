@@ -30,12 +30,12 @@ beforeEach(() => {
 });
 
 describe('LiveConnectionButton', () => {
-    it('renders with disconnected state shows Connect text', () => {
+    it('renders with disconnected state shows Disconnected text', () => {
         const store = makeStore({ connectionState: 'disconnected' });
         setupMock(store);
         render(<LiveConnectionButton />);
         expect(screen.getByTestId('live-connection-btn')).toBeTruthy();
-        expect(screen.getByText('Connect')).toBeTruthy();
+        expect(screen.getByText('Disconnected')).toBeTruthy();
     });
 
     it('renders with connecting state shows Connecting... and is disabled', () => {
@@ -47,11 +47,11 @@ describe('LiveConnectionButton', () => {
         expect((btn as HTMLButtonElement).disabled).toBe(true);
     });
 
-    it('renders with connected state shows Disconnect text', () => {
+    it('renders with connected state shows Connected text', () => {
         const store = makeStore({ connectionState: 'connected' });
         setupMock(store);
         render(<LiveConnectionButton />);
-        expect(screen.getByText('Disconnect')).toBeTruthy();
+        expect(screen.getByText('Connected')).toBeTruthy();
     });
 
     it('clicking when disconnected shows popover', () => {

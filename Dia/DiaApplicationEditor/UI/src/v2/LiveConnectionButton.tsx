@@ -4,9 +4,9 @@ import { useLiveStoreV2 } from './useLiveStoreV2';
 import type { TLState } from './TrafficLightDot';
 
 const STATE_CONFIG: Record<string, { dotState: TLState; label: string; bg: string; disabled: boolean }> = {
-    disconnected: { dotState: 'grey',  label: 'Connect',       bg: '#333',    disabled: false },
+    disconnected: { dotState: 'amber', label: 'Disconnected',  bg: '#333',    disabled: false },
     connecting:   { dotState: 'amber', label: 'Connecting...', bg: '#444',    disabled: true  },
-    connected:    { dotState: 'green', label: 'Disconnect',    bg: '#1a3a1a', disabled: false },
+    connected:    { dotState: 'green', label: 'Connected',     bg: '#1a3a1a', disabled: false },
 };
 
 export const LiveConnectionButton: React.FC = () => {

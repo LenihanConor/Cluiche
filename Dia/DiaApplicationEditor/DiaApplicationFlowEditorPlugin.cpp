@@ -148,6 +148,7 @@ namespace Dia { namespace Editor {
     {
         mBridge = context.mBridge;
         mGameConnection = context.mServices->GetService<GameConnectionManager>();
+        mModel = context.mModel;
 
         if (mBridge != nullptr)
         {
@@ -170,6 +171,31 @@ namespace Dia { namespace Editor {
         }
 
         mFileWatcher.Start();
+
+        // Subscribe to project changes so the manifest auto-loads when the diagame project changes
+        if (mModel != nullptr)
+        {
+            mModel->OnDiagameProjectChanged(
+                [](const Dia::Editor::ProjectContext& proj, void* ud)
+                {
+                    auto* self = static_cast<DiaApplicationFlowEditorPlugin*>(ud);
+                    if (proj.applicationManifestPath[0] != '\0')
+                    {
+                        Json::Value req;
+                        req["path"] = proj.applicationManifestPath;
+                        self->HandleManifestLoad(req);
+                    }
+                }, this);
+
+            // Auto-load if a project is already open
+            const auto& proj = mModel->GetDiagameProject();
+            if (proj.applicationManifestPath[0] != '\0')
+            {
+                Json::Value req;
+                req["path"] = proj.applicationManifestPath;
+                HandleManifestLoad(req);
+            }
+        }
 
         // Register metrics
         {
@@ -330,7 +356,7 @@ namespace Dia { namespace Editor {
             return result;
         }
 
-        DIA_LOG_INFO("Editor", "Manifest saved: %s", mEditorState.filePath.AsCStr());
+        DIA_LOG_INFO("Editor", "Manifest saved: %s", mEditorState.filePath);
 
         mCommandHistory.SetSavePoint();
         mBridge->NotifyUIDataChanged("manifest.dirty", Json::Value(false));

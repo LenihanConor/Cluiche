@@ -14,13 +14,15 @@ import { LiveTransitionPanel } from './LiveTransitionPanel';
 import type { ManifestStateV2 } from './types';
 
 type Tab = 'graph' | 'presence' | 'streams';
-type Selection = { type: 'pu'; id: string } | { type: 'module'; id: string; puId: string } | null;
+type Selection = { type: 'pu'; id: string } | null;
 
 export const AppV2: React.FC = () => {
     const [activeTab, setActiveTab] = useState<Tab>('graph');
     const [selection, setSelection] = useState<Selection>(null);
 
     const applyStateSnapshot = useManifestStoreV2((s) => s.applyStateSnapshot);
+    const hasManifest = useManifestStoreV2((s) => s.hasManifest);
+    const filePath = useManifestStoreV2((s) => s.filePath);
     const manifest = useManifestStoreV2((s) => s.manifest);
     const applyUndoResponse = useUndoStoreV2((s) => s.applyUndoResponse);
     const setValidationResult = useValidationStoreV2((s) => s.setResult);
@@ -77,33 +79,39 @@ export const AppV2: React.FC = () => {
         setActiveTab('streams');
     };
 
+    const fileBaseName = filePath
+        ? filePath.replace(/\\/g, '/').split('/').pop()
+        : null;
+
     const renderSidebar = () => {
-        if (!selection) {
-            return (
-                <div style={{ padding: 12 }}>
-                    <div
-                        data-testid="stage-configuration-section"
-                        style={{ marginBottom: 8 }}
-                    >
-                        <StageConfiguration />
-                    </div>
-                    <div style={{ padding: 8, color: '#888', fontSize: 12 }}>
-                        Select a PU or module to inspect
-                    </div>
-                </div>
-            );
-        }
-        if (selection.type === 'pu') {
+        if (selection?.type === 'pu') {
             return <PUInspector puId={selection.id} />;
         }
-        return null;
+        return (
+            <div style={{ padding: 12 }}>
+                <StageConfiguration />
+                <div style={{ padding: '8px 0', color: '#888', fontSize: 12 }}>
+                    Select a PU to inspect
+                </div>
+            </div>
+        );
     };
+
+    const renderNoManifest = () => (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 8, color: '#888' }}>
+            <div style={{ fontSize: 13 }}>No .diaapp manifest loaded</div>
+            <div style={{ fontSize: 11, color: '#666' }}>Load a project from the taskbar to begin</div>
+        </div>
+    );
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#1e1e1e', color: '#ccc', fontFamily: 'sans-serif' }}>
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', height: 40, background: '#2d2d2d', borderBottom: '1px solid #444', padding: '0 8px', gap: 8 }}>
                 <span style={{ fontWeight: 600, fontSize: 13 }}>Application Flow Editor</span>
+                {fileBaseName && (
+                    <span style={{ fontSize: 11, color: '#aaa', marginLeft: 4 }}>{fileBaseName}</span>
+                )}
                 <span style={{ flex: 1 }} />
                 {isLive && <LiveTransitionPanel stages={stages} />}
                 <LiveConnectionButton />
@@ -133,32 +141,36 @@ export const AppV2: React.FC = () => {
 
             {/* Main content + sidebar */}
             <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-                {/* Tab content */}
-                <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-                    {activeTab === 'graph' && (
-                        <div id="graph-tab-content" style={{ height: '100%' }}>
-                            <GraphView
-                                onStreamLabelClick={handleStreamLabelClick}
-                                onPUSelect={handlePUSelect}
-                            />
+                {!hasManifest ? renderNoManifest() : (
+                    <>
+                        {/* Tab content */}
+                        <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+                            {activeTab === 'graph' && (
+                                <div id="graph-tab-content" style={{ height: '100%' }}>
+                                    <GraphView
+                                        onStreamLabelClick={handleStreamLabelClick}
+                                        onPUSelect={handlePUSelect}
+                                    />
+                                </div>
+                            )}
+                            {activeTab === 'presence' && (
+                                <div id="presence-tab-content" style={{ height: '100%' }}>
+                                    <ModulePresenceGrid />
+                                </div>
+                            )}
+                            {activeTab === 'streams' && (
+                                <div id="streams-tab-content" style={{ height: '100%' }}>
+                                    <StreamsTab />
+                                </div>
+                            )}
                         </div>
-                    )}
-                    {activeTab === 'presence' && (
-                        <div id="presence-tab-content" style={{ height: '100%' }}>
-                            <ModulePresenceGrid />
-                        </div>
-                    )}
-                    {activeTab === 'streams' && (
-                        <div id="streams-tab-content" style={{ height: '100%' }}>
-                            <StreamsTab />
-                        </div>
-                    )}
-                </div>
 
-                {/* Sidebar */}
-                <div id="sidebar-container" style={{ width: 280, borderLeft: '1px solid #444', overflow: 'auto', background: '#252526' }}>
-                    {renderSidebar()}
-                </div>
+                        {/* Sidebar */}
+                        <div id="sidebar-container" style={{ width: 280, borderLeft: '1px solid #444', overflow: 'auto', background: '#252526' }}>
+                            {renderSidebar()}
+                        </div>
+                    </>
+                )}
             </div>
 
             {/* Footer */}
