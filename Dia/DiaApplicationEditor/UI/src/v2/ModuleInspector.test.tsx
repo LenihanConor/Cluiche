@@ -108,4 +108,118 @@ describe('ModuleInspector', () => {
             dependency: 'AudioModule',
         }));
     });
+
+    it('clicking × on a dep chip calls RemoveModuleDep', () => {
+        render(<ModuleInspector moduleId="RenderModule" puId="MainPU" />);
+        const removeBtn = screen.getByTitle('Remove PhysicsModule');
+        fireEvent.click(removeBtn);
+        expect(bridgeRequest).toHaveBeenCalledWith('manifest.applyCommand', expect.objectContaining({
+            commandType: 'RemoveModuleDep',
+            instanceId: 'RenderModule',
+            puId: 'MainPU',
+            dependency: 'PhysicsModule',
+        }));
+    });
+
+    it('Escape key cancels add-dep without calling bridgeRequest', () => {
+        render(<ModuleInspector moduleId="RenderModule" puId="MainPU" />);
+        fireEvent.click(screen.getByTestId('add-dep-btn'));
+
+        const input = screen.getByPlaceholderText('dependency id') as HTMLInputElement;
+        fireEvent.change(input, { target: { value: 'WillBeCancelled' } });
+        fireEvent.keyDown(input, { key: 'Escape' });
+
+        expect(bridgeRequest).not.toHaveBeenCalled();
+        // Input should be gone (reverted to + button)
+        expect(screen.queryByPlaceholderText('dependency id')).toBeNull();
+    });
+
+    it('empty value on add-dep does not call bridgeRequest', () => {
+        render(<ModuleInspector moduleId="RenderModule" puId="MainPU" />);
+        fireEvent.click(screen.getByTestId('add-dep-btn'));
+
+        const input = screen.getByPlaceholderText('dependency id') as HTMLInputElement;
+        fireEvent.change(input, { target: { value: '   ' } });
+        fireEvent.click(screen.getByText('Add'));
+
+        expect(bridgeRequest).not.toHaveBeenCalled();
+    });
+
+    it('Enter key on add-dep input confirms and calls AddModuleDep', () => {
+        render(<ModuleInspector moduleId="RenderModule" puId="MainPU" />);
+        fireEvent.click(screen.getByTestId('add-dep-btn'));
+
+        const input = screen.getByPlaceholderText('dependency id') as HTMLInputElement;
+        fireEvent.change(input, { target: { value: 'AudioModule' } });
+        fireEvent.keyDown(input, { key: 'Enter' });
+
+        expect(bridgeRequest).toHaveBeenCalledWith('manifest.applyCommand', expect.objectContaining({
+            commandType: 'AddModuleDep',
+            dependency: 'AudioModule',
+        }));
+    });
+
+    it('reads chip renders and × calls RemoveModuleRead', () => {
+        render(<ModuleInspector moduleId="RenderModule" puId="MainPU" />);
+        expect(screen.getByText('PositionStream')).toBeTruthy();
+        fireEvent.click(screen.getByTitle('Remove PositionStream'));
+        expect(bridgeRequest).toHaveBeenCalledWith('manifest.applyCommand', expect.objectContaining({
+            commandType: 'RemoveModuleRead',
+            instanceId: 'RenderModule',
+            puId: 'MainPU',
+            streamId: 'PositionStream',
+        }));
+    });
+
+    it('add-read input calls AddModuleRead', () => {
+        render(<ModuleInspector moduleId="RenderModule" puId="MainPU" />);
+        // Reads section: + button is the first stream-id placeholder trigger
+        // Click the first '+' button inside streams-section
+        const streamsSection = screen.getByTestId('streams-section');
+        const plusButtons = streamsSection.querySelectorAll('button');
+        // Find the + button under "Reads" (first one)
+        const readsPlusBtn = Array.from(plusButtons).find(b => b.textContent === '+');
+        fireEvent.click(readsPlusBtn!);
+
+        const input = screen.getByPlaceholderText('stream id') as HTMLInputElement;
+        fireEvent.change(input, { target: { value: 'NewReadStream' } });
+        fireEvent.keyDown(input, { key: 'Enter' });
+
+        expect(bridgeRequest).toHaveBeenCalledWith('manifest.applyCommand', expect.objectContaining({
+            commandType: 'AddModuleRead',
+            instanceId: 'RenderModule',
+            streamId: 'NewReadStream',
+        }));
+    });
+
+    it('writes chip renders and × calls RemoveModuleWrite', () => {
+        render(<ModuleInspector moduleId="RenderModule" puId="MainPU" />);
+        expect(screen.getByText('RenderStream')).toBeTruthy();
+        fireEvent.click(screen.getByTitle('Remove RenderStream'));
+        expect(bridgeRequest).toHaveBeenCalledWith('manifest.applyCommand', expect.objectContaining({
+            commandType: 'RemoveModuleWrite',
+            instanceId: 'RenderModule',
+            puId: 'MainPU',
+            streamId: 'RenderStream',
+        }));
+    });
+
+    it('add-write input calls AddModuleWrite', () => {
+        render(<ModuleInspector moduleId="RenderModule" puId="MainPU" />);
+        const streamsSection = screen.getByTestId('streams-section');
+        const plusButtons = Array.from(streamsSection.querySelectorAll('button')).filter(b => b.textContent === '+');
+        // Two + buttons: Reads (first), Writes (second)
+        expect(plusButtons.length).toBe(2);
+        fireEvent.click(plusButtons[1]);
+
+        const input = screen.getByPlaceholderText('stream id') as HTMLInputElement;
+        fireEvent.change(input, { target: { value: 'NewWriteStream' } });
+        fireEvent.keyDown(input, { key: 'Enter' });
+
+        expect(bridgeRequest).toHaveBeenCalledWith('manifest.applyCommand', expect.objectContaining({
+            commandType: 'AddModuleWrite',
+            instanceId: 'RenderModule',
+            streamId: 'NewWriteStream',
+        }));
+    });
 });
