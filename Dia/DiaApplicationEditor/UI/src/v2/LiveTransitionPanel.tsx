@@ -13,6 +13,7 @@ interface TransitionResponse {
 
 export const LiveTransitionPanel: React.FC<LiveTransitionPanelProps> = ({ stages }) => {
     const connectionState = useLiveStoreV2((s) => s.connectionState);
+    const setActiveStage = useLiveStoreV2((s) => s.setActiveStage);
     const [selectedStage, setSelectedStage] = useState<string | null>(null);
     const [feedback, setFeedback] = useState<string | null>(null);
     const [isPending, setIsPending] = useState(false);
@@ -30,6 +31,7 @@ export const LiveTransitionPanel: React.FC<LiveTransitionPanelProps> = ({ stages
             if (res && res.ok === false) {
                 setFeedback(res.error ?? 'Transition failed');
             } else {
+                setActiveStage(selectedStage);
                 setFeedback(`Transition to ${selectedStage} complete`);
             }
         } catch {

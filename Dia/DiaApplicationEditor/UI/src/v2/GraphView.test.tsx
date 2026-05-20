@@ -92,10 +92,21 @@ vi.mock('./bridge', () => ({
     bridgeEvent: vi.fn(),
 }));
 
+vi.mock('./useLiveStoreV2', () => ({
+    useLiveStoreV2: vi.fn(() => ({
+        connectionState: 'disconnected',
+        modules: [],
+        streams: [],
+        activeStage: null,
+    })),
+}));
+
 import { useManifestStoreV2 } from './useManifestStoreV2';
+import { useLiveStoreV2 } from './useLiveStoreV2';
 import { bridgeRequest } from './bridge';
 
 const mockUseManifestStore = vi.mocked(useManifestStoreV2);
+const mockUseLiveStore = vi.mocked(useLiveStoreV2);
 const mockBridgeRequest = vi.mocked(bridgeRequest);
 
 describe('GraphView', () => {
@@ -196,5 +207,50 @@ describe('GraphView', () => {
         fireEvent.click(streamTexts[0]);
 
         expect(onStreamLabelClick).toHaveBeenCalledWith('stream-a');
+    });
+
+    it('PU node traffic-light circle is green when PU has an active module in live state', () => {
+        mockUseLiveStore.mockReturnValue({
+            connectionState: 'connected',
+            modules: [{ moduleId: 'ModA', puId: 'PU1', isActive: true, activeStage: 'Boot' }],
+            streams: [],
+            activeStage: null,
+        } as any);
+        mockUseManifestStore.mockReturnValue({
+            manifest: {
+                version: 1,
+                stages: [],
+                initialStage: '',
+                autoStages: [],
+                streams: [],
+                processingUnits: [
+                    {
+                        instanceId: 'PU1',
+                        frequencyHz: 60,
+                        dedicatedThread: false,
+                        modules: [
+                            {
+                                instanceId: 'ModA',
+                                typeId: 'ModuleA',
+                                stages: ['Boot'],
+                                dependencies: [],
+                                reads: [],
+                                writes: [],
+                                startTimeoutMs: 1000,
+                                stopTimeoutMs: 1000,
+                            },
+                        ],
+                    },
+                ],
+            },
+        } as any);
+
+        const { container } = render(<GraphView />);
+
+        const puNode = container.querySelector('[data-pu-id="PU1"]');
+        expect(puNode).toBeTruthy();
+        const circle = puNode!.querySelector('circle');
+        expect(circle).toBeTruthy();
+        expect(circle!.getAttribute('fill')).toBe('#3cb370');
     });
 });

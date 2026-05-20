@@ -1,8 +1,18 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { ModulePresenceGrid } from './ModulePresenceGrid';
 import { useManifestStoreV2 } from './useManifestStoreV2';
+import { useLiveStoreV2 } from './useLiveStoreV2';
 import type { ManifestV2, ModuleV2 } from './types';
+
+vi.mock('./useLiveStoreV2', () => ({
+    useLiveStoreV2: vi.fn(() => ({
+        connectionState: 'disconnected',
+        activeStage: null,
+        modules: [],
+        streams: [],
+    })),
+}));
 
 function makeModule(instanceId: string, stages: string[]): ModuleV2 {
     return {
@@ -53,6 +63,12 @@ function makeManifest(overrides?: Partial<ManifestV2>): ManifestV2 {
 
 beforeEach(() => {
     useManifestStoreV2.setState({ manifest: null, filePath: null, isDirty: false, hasManifest: false });
+    vi.mocked(useLiveStoreV2).mockReturnValue({
+        connectionState: 'disconnected',
+        activeStage: null,
+        modules: [],
+        streams: [],
+    } as ReturnType<typeof useLiveStoreV2>);
 });
 
 describe('ModulePresenceGrid', () => {
@@ -151,5 +167,55 @@ describe('ModulePresenceGrid', () => {
         // Total rendered rows (PU headers + module rows) should be less than 51
         const totalRendered = puHeaders.length + renderedModuleRows;
         expect(totalRendered).toBeLessThan(51);
+    });
+
+    it('Active stage column header has data-active=true when live', () => {
+        vi.mocked(useLiveStoreV2).mockReturnValue({
+            connectionState: 'connected',
+            activeStage: 'Boot',
+            modules: [],
+            streams: [],
+        } as ReturnType<typeof useLiveStoreV2>);
+
+        const manifest = makeManifest({
+            stages: [
+                { name: 'Boot', manifestPath: 'boot.json' },
+                { name: 'Play', manifestPath: 'play.json' },
+            ],
+            processingUnits: [{
+                instanceId: 'MainPU',
+                frequencyHz: 60,
+                dedicatedThread: false,
+                modules: [makeModule('RenderModule', ['Boot', 'Play'])],
+            }],
+        });
+        useManifestStoreV2.setState({ manifest, hasManifest: true });
+        render(<ModulePresenceGrid />);
+
+        const headers = screen.getAllByTestId('stage-col-header');
+        const bootHeader = headers.find(h => h.getAttribute('data-colname') === 'Boot')!;
+        const playHeader = headers.find(h => h.getAttribute('data-colname') === 'Play')!;
+
+        expect(bootHeader.getAttribute('data-active')).toBe('true');
+        expect(playHeader.getAttribute('data-active')).toBe('false');
+    });
+
+    it('No active stage highlighted when disconnected', () => {
+        vi.mocked(useLiveStoreV2).mockReturnValue({
+            connectionState: 'disconnected',
+            activeStage: null,
+            modules: [],
+            streams: [],
+        } as ReturnType<typeof useLiveStoreV2>);
+
+        useManifestStoreV2.setState({ manifest: makeManifest(), hasManifest: true });
+        render(<ModulePresenceGrid />);
+
+        const stageHeaders = screen.getAllByTestId('stage-col-header')
+            .filter(h => h.getAttribute('data-colname') !== 'All');
+
+        for (const header of stageHeaders) {
+            expect(header.getAttribute('data-active')).toBe('false');
+        }
     });
 });

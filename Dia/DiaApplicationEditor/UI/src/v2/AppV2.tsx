@@ -1,16 +1,58 @@
 import React, { useState, useEffect } from 'react';
+import { useManifestStoreV2 } from './useManifestStoreV2';
+import { useUndoStoreV2 } from './useUndoStoreV2';
+import { useValidationStoreV2 } from './useValidationStoreV2';
+import { useLiveStoreV2 } from './useLiveStoreV2';
+import type { ManifestStateV2 } from './types';
 
 type Tab = 'graph' | 'presence' | 'streams';
 
 export const AppV2: React.FC = () => {
     const [activeTab, setActiveTab] = useState<Tab>('graph');
+    const applyStateSnapshot = useManifestStoreV2((s) => s.applyStateSnapshot);
+    const syncUndoFromBackend = useUndoStoreV2((s) => s.syncFromBackend);
+    const setValidationResult = useValidationStoreV2((s) => s.setResult);
+    const setConnectionState = useLiveStoreV2((s) => s.setConnectionState);
+    const setActiveStage = useLiveStoreV2((s) => s.setActiveStage);
+    const updateModuleStates = useLiveStoreV2((s) => s.updateModuleStates);
+    const updateStreamStates = useLiveStoreV2((s) => s.updateStreamStates);
+    const clearLiveState = useLiveStoreV2((s) => s.clearLiveState);
 
     useEffect(() => {
         (window as any).DiaEditor_onDataChanged = (topic: string, data: unknown) => {
-            // dispatch to stores based on topic
-            console.log('[DiaEditor] onDataChanged', topic, data);
+            const d = data as any;
+            switch (topic) {
+                case 'manifest.state':
+                    if (d) applyStateSnapshot(d as ManifestStateV2);
+                    break;
+                case 'manifest.dirty':
+                    // handled via full manifest.state push; nothing extra needed
+                    break;
+                case 'history.state':
+                    if (d) syncUndoFromBackend({ canUndo: d.canUndo, canRedo: d.canRedo, count: d.count, isDirty: d.isDirty });
+                    break;
+                case 'validation.result':
+                    if (d) setValidationResult({ errorCount: d.errorCount ?? 0, warningCount: d.warningCount ?? 0, issues: d.issues ?? [] });
+                    break;
+                case 'live.connected':
+                    setConnectionState('connected');
+                    if (d?.activeStage !== undefined) setActiveStage(d.activeStage);
+                    break;
+                case 'live.disconnected':
+                    clearLiveState();
+                    break;
+                case 'live.appState':
+                    if (d?.activeStage !== undefined) setActiveStage(d.activeStage);
+                    break;
+                case 'live.moduleStates':
+                    if (Array.isArray(d)) updateModuleStates(d);
+                    break;
+                case 'live.streamStates':
+                    if (Array.isArray(d)) updateStreamStates(d);
+                    break;
+            }
         };
-    }, []);
+    }, [applyStateSnapshot, syncUndoFromBackend, setValidationResult, setConnectionState, setActiveStage, updateModuleStates, updateStreamStates, clearLiveState]);
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#1e1e1e', color: '#ccc', fontFamily: 'sans-serif' }}>

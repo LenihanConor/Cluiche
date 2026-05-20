@@ -18,8 +18,10 @@ import { useLiveStoreV2 } from './useLiveStoreV2';
 const mockBridgeRequest = bridgeRequest as ReturnType<typeof vi.fn>;
 const mockUseLive = useLiveStoreV2 as unknown as ReturnType<typeof vi.fn>;
 
+const mockSetActiveStage = vi.fn();
+
 function setupLiveMock(connectionState = 'connected') {
-    const store = { connectionState };
+    const store = { connectionState, setActiveStage: mockSetActiveStage };
     mockUseLive.mockImplementation((selector: (s: typeof store) => unknown) => selector(store));
 }
 
@@ -72,5 +74,14 @@ describe('LiveTransitionPanel', () => {
         await waitFor(() => {
             expect(screen.getByTestId('transition-feedback').textContent).toBe('Transition to Menu complete');
         });
+    });
+
+    it('successful transition updates LiveStore activeStage', async () => {
+        mockBridgeRequest.mockResolvedValue({ ok: true });
+        render(<LiveTransitionPanel stages={STAGES} />);
+        fireEvent.change(screen.getByTestId('stage-select'), { target: { value: 'Gameplay' } });
+        fireEvent.click(screen.getByTestId('trigger-btn'));
+        await waitFor(() => screen.getByTestId('transition-feedback'));
+        expect(mockSetActiveStage).toHaveBeenCalledWith('Gameplay');
     });
 });

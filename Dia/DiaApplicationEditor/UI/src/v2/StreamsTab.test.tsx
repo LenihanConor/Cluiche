@@ -122,4 +122,17 @@ describe('StreamsTab', () => {
             expect(input.disabled).toBe(true);
         });
     });
+
+    it('shows live throughput in detail when stream is selected and live', () => {
+        const streams = [makeStream({ id: 'stream1' })];
+        setupMocks(makeManifest(streams), {
+            connectionState: 'connected',
+            streams: [{ streamId: 'stream1', msgPerSec: 42 }],
+        });
+        render(<StreamsTab />);
+        fireEvent.click(screen.getByTestId('stream-row'));
+
+        const throughput = screen.getByTestId('live-throughput');
+        expect(throughput.textContent).toContain('42 msg/s');
+    });
 });

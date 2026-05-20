@@ -182,11 +182,11 @@ All C++ backend code integrates with DiaObservation (when available) and DiaMetr
 | 42 | Implement `LiveTransitionPanel`: stage selector, trigger, feedback | `LiveTransitionPanel.test.tsx`: dropdown populated, button triggers, feedback shows | Done | sonnet | `src/v2/LiveTransitionPanel.tsx`; 5 tests pass |
 | 43 | Implement `LiveStore` (Zustand): connection state, module states, stream throughput | `LiveStore.test.ts`: connect/disconnect/update/clear | Done | sonnet | `src/v2/useLiveStoreV2.ts`; 6 tests pass |
 | **Phase 4 — Live Mode Integration** | | | | | |
-| 44 | Wire LiveStore ↔ C++ LiveStateStore via bridge events | Integration: push from C++ → React store updates → dots animate | Todo | sonnet | Depends on #23, #43 |
-| 45 | Wire GraphView live dots from LiveStore | Manual: PU dots show green when connected to running game | Todo | sonnet | Depends on #30, #44 |
-| 46 | Wire Presence Grid live mode from LiveStore | Manual: active-stage column shows runtime dots | Todo | sonnet | Depends on #33, #44 |
-| 47 | Wire Stream throughput from LiveStore into StreamDetailInspector | Manual: msg/sec shows when live | Todo | sonnet | Depends on #35, #44 |
-| 48 | Wire transition trigger: React button → C++ → WebSocket → feedback | Manual: trigger transition, see dots animate, toast on complete | Todo | sonnet | Depends on #42, #24 |
+| 44 | Wire LiveStore ↔ C++ LiveStateStore via bridge events | Integration: push from C++ → React store updates → dots animate | Done | sonnet | AppV2.tsx DiaEditor_onDataChanged dispatches to all 4 stores |
+| 45 | Wire GraphView live dots from LiveStore | Manual: PU dots show green when connected to running game | Done | sonnet | GraphView.tsx imports useLiveStoreV2; getPULiveState helper; 10 tests pass |
+| 46 | Wire Presence Grid live mode from LiveStore | Manual: active-stage column shows runtime dots | Done | sonnet | ModulePresenceGrid.tsx: active stage column blue-tint + data-active; 8 tests pass |
+| 47 | Wire Stream throughput from LiveStore into StreamDetailInspector | Manual: msg/sec shows when live | Done | sonnet | StreamsTab.tsx: data-testid="live-throughput"; 7 tests pass |
+| 48 | Wire transition trigger: React button → C++ → WebSocket → feedback | Manual: trigger transition, see dots animate, toast on complete | Done | sonnet | LiveTransitionPanel.tsx: calls setActiveStage on success; 6 tests pass |
 | **Phase 5 — Observability & Polish** | | | | | |
 | 49 | Add DIA_LOG calls to load/save/validate/connect/command paths | Grep: all major code paths have logging | Todo | haiku | After Phase 4 |
 | 50 | Register DiaMetrics gauges/counters for editor (load_ms, save_ms, validation counts, connection_state, command_count) | `TestEditorMetrics`: metrics registered, incremented on operations | Todo | sonnet | After Phase 4 |

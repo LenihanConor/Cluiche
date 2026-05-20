@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useManifestStoreV2 } from './useManifestStoreV2';
+import { useLiveStoreV2 } from './useLiveStoreV2';
+import type { LiveModuleState } from './useLiveStoreV2';
 import { bridgeRequest } from './bridge';
 import type { ProcessingUnitV2, StreamV2 } from './types';
 
@@ -34,6 +36,15 @@ const TL_COLORS: Record<TLNodeState, string> = {
     red: '#c0392b',
 };
 
+function getPULiveState(puId: string, connectionState: string, liveModules: LiveModuleState[]): TLNodeState {
+    if (connectionState === 'disconnected') return 'grey';
+    if (connectionState === 'connecting') return 'amber';
+    // connected: green if at least one module in this PU is active, grey otherwise
+    const puModules = liveModules.filter(m => m.puId === puId);
+    if (puModules.length === 0) return 'grey';
+    return puModules.some(m => m.isActive) ? 'green' : 'grey';
+}
+
 function computeGridPositions(pus: ProcessingUnitV2[]): Map<string, Position> {
     const positions = new Map<string, Position>();
     const count = pus.length;
@@ -60,6 +71,7 @@ function getNodeCenter(pos: Position): Position {
 
 export const GraphView: React.FC<GraphViewProps> = ({ onStreamLabelClick }) => {
     const { manifest } = useManifestStoreV2();
+    const { connectionState, modules: liveModules } = useLiveStoreV2();
     const [positions, setPositions] = useState<Map<string, Position>>(new Map());
     const [selected, setSelected] = useState<string | null>(null);
     const [dragState, setDragState] = useState<DragState | null>(null);
@@ -329,7 +341,7 @@ export const GraphView: React.FC<GraphViewProps> = ({ onStreamLabelClick }) => {
             {manifest?.streams.map((stream) => renderStreamEdge(stream))}
 
             {/* PU nodes */}
-            {manifest?.processingUnits.map((pu) => renderPUNode(pu))}
+            {manifest?.processingUnits.map((pu) => renderPUNode(pu, getPULiveState(pu.instanceId, connectionState, liveModules)))}
 
             {/* Ghost node */}
             {renderGhostNode()}

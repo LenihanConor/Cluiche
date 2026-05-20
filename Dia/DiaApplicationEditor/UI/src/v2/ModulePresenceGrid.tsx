@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { useManifestStoreV2 } from './useManifestStoreV2';
+import { useLiveStoreV2 } from './useLiveStoreV2';
 import { TrafficLightDot } from './TrafficLightDot';
 import type { ModuleV2, ProcessingUnitV2, StageV2 } from './types';
 
@@ -19,6 +20,8 @@ type GridRow =
 
 export const ModulePresenceGrid: React.FC<ModulePresenceGridProps> = ({ containerHeight = 400 }) => {
     const { manifest } = useManifestStoreV2();
+    const { connectionState, activeStage } = useLiveStoreV2();
+    const isLive = connectionState === 'connected';
     const [scrollTop, setScrollTop] = useState(0);
     const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -138,27 +141,32 @@ export const ModulePresenceGrid: React.FC<ModulePresenceGridProps> = ({ containe
                 </div>
 
                 {/* Stage columns */}
-                {stageNames.map(stageName => (
-                    <div
-                        key={stageName}
-                        data-testid="presence-cell"
-                        data-module={mod.instanceId}
-                        data-stage={stageName}
-                        style={{
-                            width: STAGE_COL_WIDTH,
-                            minWidth: STAGE_COL_WIDTH,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            padding: '0 8px',
-                            height: ROW_HEIGHT,
-                        }}
-                    >
-                        {mod.stages.includes(stageName) && (
-                            <TrafficLightDot state="green" size={8} />
-                        )}
-                    </div>
-                ))}
+                {stageNames.map(stageName => {
+                    const isActiveCol = isLive && stageName === activeStage;
+                    return (
+                        <div
+                            key={stageName}
+                            data-testid="presence-cell"
+                            data-module={mod.instanceId}
+                            data-stage={stageName}
+                            data-active-col={isActiveCol ? 'true' : undefined}
+                            style={{
+                                width: STAGE_COL_WIDTH,
+                                minWidth: STAGE_COL_WIDTH,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                padding: '0 8px',
+                                height: ROW_HEIGHT,
+                                background: isActiveCol ? '#0e2d4a' : undefined,
+                            }}
+                        >
+                            {mod.stages.includes(stageName) && (
+                                <TrafficLightDot state="green" size={8} />
+                            )}
+                        </div>
+                    );
+                })}
             </div>
         );
     };
@@ -214,24 +222,42 @@ export const ModulePresenceGrid: React.FC<ModulePresenceGridProps> = ({ containe
                 >
                     All
                 </div>
-                {stages.map(stage => (
-                    <div
-                        key={stage.name}
-                        data-testid="stage-col-header"
-                        data-colname={stage.name}
-                        style={{
-                            width: STAGE_COL_WIDTH,
-                            minWidth: STAGE_COL_WIDTH,
-                            padding: '0 8px',
-                            color: '#aaa',
-                            fontSize: 11,
-                            fontWeight: 600,
-                            textAlign: 'center',
-                        }}
-                    >
-                        {stage.name}
-                    </div>
-                ))}
+                {stages.map(stage => {
+                    const isActiveCol = isLive && stage.name === activeStage;
+                    return (
+                        <div
+                            key={stage.name}
+                            data-testid="stage-col-header"
+                            data-colname={stage.name}
+                            data-active={isLive && stage.name === activeStage ? 'true' : 'false'}
+                            style={{
+                                width: STAGE_COL_WIDTH,
+                                minWidth: STAGE_COL_WIDTH,
+                                padding: '0 8px',
+                                color: '#aaa',
+                                fontSize: 11,
+                                fontWeight: 600,
+                                textAlign: 'center',
+                                background: isActiveCol ? '#0e2d4a' : 'transparent',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 4,
+                            }}
+                        >
+                            {stage.name}
+                            {isActiveCol && (
+                                <div style={{
+                                    width: 6,
+                                    height: 6,
+                                    borderRadius: '50%',
+                                    background: '#3cb370',
+                                    flexShrink: 0,
+                                }} />
+                            )}
+                        </div>
+                    );
+                })}
             </div>
 
             {/* Scrollable body */}

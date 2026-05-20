@@ -68,7 +68,7 @@ const StreamDetailInspector: React.FC<StreamDetailInspectorProps> = ({ stream, m
             </div>
 
             {msgPerSec !== undefined && (
-                <div style={{ ...rowStyle, color: '#3cb370', fontSize: 12 }}>
+                <div data-testid="live-throughput" style={{ ...rowStyle, color: '#3cb370', fontSize: 12 }}>
                     {msgPerSec} msg/s
                 </div>
             )}
