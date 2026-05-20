@@ -12,14 +12,13 @@ vi.mock('./bridge', () => ({
 import { bridgeRequest } from './bridge';
 
 const mockManifest: ManifestV2 = {
-    version: 1,
+    version: 3,
     stages: [
-        { name: 'Boot', manifestPath: 'boot.json' },
-        { name: 'Main', manifestPath: 'main.json' },
-        { name: 'GameOver', manifestPath: 'gameover.json' },
+        { name: 'Boot',     manifestPath: 'boot.json',     transitions: [],       autoAdvance: false },
+        { name: 'Main',     manifestPath: 'main.json',     transitions: ['Boot'], autoAdvance: true  },
+        { name: 'GameOver', manifestPath: 'gameover.json', transitions: [],       autoAdvance: false },
     ],
     initialStage: 'Boot',
-    autoStages: ['Main'],
     streams: [],
     processingUnits: [],
 };
@@ -89,32 +88,81 @@ describe('StageConfiguration', () => {
         });
     });
 
-    it('auto indicator toggles and calls SetStageTrigger', () => {
+    it('auto indicator reflects per-stage autoAdvance', () => {
         render(<StageConfiguration />);
         const rows = screen.getAllByTestId('stage-row');
 
-        // Main is in autoStages — clicking should disable
+        // Main has autoAdvance:true
         const mainRow = rows.find(r => r.getAttribute('data-stage-name') === 'Main')!;
         const mainAutoIndicator = mainRow.querySelector('[data-testid="auto-indicator"]')!;
         expect(mainAutoIndicator.getAttribute('data-is-auto')).toBe('true');
+
+        // Boot has autoAdvance:false
+        const bootRow = rows.find(r => r.getAttribute('data-stage-name') === 'Boot')!;
+        const bootAutoIndicator = bootRow.querySelector('[data-testid="auto-indicator"]')!;
+        expect(bootAutoIndicator.getAttribute('data-is-auto')).toBe('false');
+    });
+
+    it('clicking auto indicator on auto stage calls SetStageTrigger with isAuto=false', () => {
+        render(<StageConfiguration />);
+        const rows = screen.getAllByTestId('stage-row');
+        const mainRow = rows.find(r => r.getAttribute('data-stage-name') === 'Main')!;
+        const mainAutoIndicator = mainRow.querySelector('[data-testid="auto-indicator"]')!;
         fireEvent.click(mainAutoIndicator);
         expect(bridgeRequest).toHaveBeenCalledWith('manifest.applyCommand', {
             commandType: 'SetStageTrigger',
             name: 'Main',
             isAuto: false,
         });
+    });
 
-        vi.clearAllMocks();
-
-        // Boot is not in autoStages — clicking should enable
+    it('clicking auto indicator on non-auto stage calls SetStageTrigger with isAuto=true', () => {
+        render(<StageConfiguration />);
+        const rows = screen.getAllByTestId('stage-row');
         const bootRow = rows.find(r => r.getAttribute('data-stage-name') === 'Boot')!;
         const bootAutoIndicator = bootRow.querySelector('[data-testid="auto-indicator"]')!;
-        expect(bootAutoIndicator.getAttribute('data-is-auto')).toBe('false');
         fireEvent.click(bootAutoIndicator);
         expect(bridgeRequest).toHaveBeenCalledWith('manifest.applyCommand', {
             commandType: 'SetStageTrigger',
             name: 'Boot',
             isAuto: true,
+        });
+    });
+
+    it('renders transition chips for stages with transitions', () => {
+        render(<StageConfiguration />);
+        const chips = screen.getAllByTestId('transition-chip');
+        // Main has one transition: Boot
+        expect(chips.length).toBe(1);
+        expect(chips[0].getAttribute('data-transition-target')).toBe('Boot');
+    });
+
+    it('clicking remove-transition calls RemoveStageTransition', () => {
+        render(<StageConfiguration />);
+        const removeBtn = screen.getByTestId('remove-transition-btn');
+        fireEvent.click(removeBtn);
+        expect(bridgeRequest).toHaveBeenCalledWith('manifest.applyCommand', {
+            commandType: 'RemoveStageTransition',
+            name: 'Main',
+            target: 'Boot',
+        });
+    });
+
+    it('clicking add-transition and entering a target calls AddStageTransition', () => {
+        render(<StageConfiguration />);
+        const rows = screen.getAllByTestId('stage-row');
+        const bootRow = rows.find(r => r.getAttribute('data-stage-name') === 'Boot')!;
+        const addTransBtn = bootRow.querySelector('[data-testid="add-transition-btn"]')!;
+        fireEvent.click(addTransBtn);
+
+        const input = screen.getByPlaceholderText('target stage');
+        fireEvent.change(input, { target: { value: 'Main' } });
+        fireEvent.keyDown(input, { key: 'Enter' });
+
+        expect(bridgeRequest).toHaveBeenCalledWith('manifest.applyCommand', {
+            commandType: 'AddStageTransition',
+            name: 'Boot',
+            target: 'Main',
         });
     });
 });

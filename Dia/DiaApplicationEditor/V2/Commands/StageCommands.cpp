@@ -40,7 +40,6 @@ namespace Dia { namespace ApplicationFlow { namespace Editor {
         : mName(name)
         , mSavedIndex(-1)
         , mWasInitialStage(false)
-        , mWasAutoStage(false)
     {
     }
 
@@ -64,9 +63,6 @@ namespace Dia { namespace ApplicationFlow { namespace Editor {
         {
             return;
         }
-
-        // TODO: autoStages removed in v3 — autoAdvance now lives on StageDeclaration
-        // mWasAutoStage tracking removed
 
         // Check if it was the initial stage
         if (manifest.initialStage == mName)
@@ -97,8 +93,6 @@ namespace Dia { namespace ApplicationFlow { namespace Editor {
         {
             stages.AddAt(mSaved, insertAt);
         }
-
-        // TODO: autoStages removed in v3 — mWasAutoStage no longer applies
 
         if (mWasInitialStage)
         {
@@ -132,7 +126,16 @@ namespace Dia { namespace ApplicationFlow { namespace Editor {
             }
         }
 
-        // TODO: autoStages removed in v3 — autoAdvance rename handled in task 2
+        // Cascade rename through all stage transitions[] arrays
+        for (unsigned int i = 0u; i < manifest.stages.Size(); ++i)
+        {
+            auto& transitions = manifest.stages[i].transitions;
+            for (unsigned int t = 0u; t < transitions.Size(); ++t)
+            {
+                if (transitions[t] == mOldName)
+                    transitions[t] = mNewName;
+            }
+        }
 
         // Update initialStage if it references oldName
         if (manifest.initialStage == mOldName)
@@ -173,7 +176,16 @@ namespace Dia { namespace ApplicationFlow { namespace Editor {
             }
         }
 
-        // TODO: autoStages removed in v3 — autoAdvance undo handled in task 2
+        // Undo: cascade rename back through all stage transitions[] arrays
+        for (unsigned int i = 0u; i < manifest.stages.Size(); ++i)
+        {
+            auto& transitions = manifest.stages[i].transitions;
+            for (unsigned int t = 0u; t < transitions.Size(); ++t)
+            {
+                if (transitions[t] == mNewName)
+                    transitions[t] = mOldName;
+            }
+        }
 
         if (manifest.initialStage == mNewName)
         {
@@ -212,14 +224,127 @@ namespace Dia { namespace ApplicationFlow { namespace Editor {
 
     void SetStageTriggerCommand::Execute(ManifestEditorState& doc)
     {
-        // TODO: replaced in task 6 — SetStageTriggerCommand now sets StageDeclaration::autoAdvance
-        (void)doc;
+        for (unsigned int i = 0u; i < doc.manifest.stages.Size(); ++i)
+        {
+            if (doc.manifest.stages[i].name == mName)
+            {
+                mOldIsAuto                       = doc.manifest.stages[i].autoAdvance;
+                doc.manifest.stages[i].autoAdvance = mNewIsAuto;
+                doc.MarkDirty();
+                return;
+            }
+        }
     }
 
     void SetStageTriggerCommand::Undo(ManifestEditorState& doc)
     {
-        // TODO: replaced in task 6 — SetStageTriggerCommand now sets StageDeclaration::autoAdvance
-        (void)doc;
+        for (unsigned int i = 0u; i < doc.manifest.stages.Size(); ++i)
+        {
+            if (doc.manifest.stages[i].name == mName)
+            {
+                doc.manifest.stages[i].autoAdvance = mOldIsAuto;
+                doc.MarkDirty();
+                return;
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // AddStageTransitionCommand
+    // -------------------------------------------------------------------------
+
+    AddStageTransitionCommand::AddStageTransitionCommand(
+        Dia::Core::StringCRC stageName, Dia::Core::StringCRC targetName)
+        : mStageName(stageName)
+        , mTargetName(targetName)
+    {
+    }
+
+    void AddStageTransitionCommand::Execute(ManifestEditorState& doc)
+    {
+        for (unsigned int i = 0u; i < doc.manifest.stages.Size(); ++i)
+        {
+            if (doc.manifest.stages[i].name == mStageName)
+            {
+                auto& t = doc.manifest.stages[i].transitions;
+                // No-op if already present
+                for (unsigned int j = 0u; j < t.Size(); ++j)
+                    if (t[j] == mTargetName) return;
+                t.Add(mTargetName);
+                doc.MarkDirty();
+                return;
+            }
+        }
+    }
+
+    void AddStageTransitionCommand::Undo(ManifestEditorState& doc)
+    {
+        for (unsigned int i = 0u; i < doc.manifest.stages.Size(); ++i)
+        {
+            if (doc.manifest.stages[i].name == mStageName)
+            {
+                auto& t = doc.manifest.stages[i].transitions;
+                for (unsigned int j = 0u; j < t.Size(); ++j)
+                {
+                    if (t[j] == mTargetName)
+                    {
+                        t.RemoveAt(j);
+                        doc.MarkDirty();
+                        return;
+                    }
+                }
+                return;
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // RemoveStageTransitionCommand
+    // -------------------------------------------------------------------------
+
+    RemoveStageTransitionCommand::RemoveStageTransitionCommand(
+        Dia::Core::StringCRC stageName, Dia::Core::StringCRC targetName)
+        : mStageName(stageName)
+        , mTargetName(targetName)
+    {
+    }
+
+    void RemoveStageTransitionCommand::Execute(ManifestEditorState& doc)
+    {
+        for (unsigned int i = 0u; i < doc.manifest.stages.Size(); ++i)
+        {
+            if (doc.manifest.stages[i].name == mStageName)
+            {
+                auto& t = doc.manifest.stages[i].transitions;
+                for (unsigned int j = 0u; j < t.Size(); ++j)
+                {
+                    if (t[j] == mTargetName)
+                    {
+                        t.RemoveAt(j);
+                        doc.MarkDirty();
+                        return;
+                    }
+                }
+                return;
+            }
+        }
+    }
+
+    void RemoveStageTransitionCommand::Undo(ManifestEditorState& doc)
+    {
+        for (unsigned int i = 0u; i < doc.manifest.stages.Size(); ++i)
+        {
+            if (doc.manifest.stages[i].name == mStageName)
+            {
+                auto& t = doc.manifest.stages[i].transitions;
+                // Re-add (no-op if already present — idempotent undo)
+                for (unsigned int j = 0u; j < t.Size(); ++j)
+                    if (t[j] == mTargetName) return;
+                t.Add(mTargetName);
+                doc.MarkDirty();
+                return;
+            }
+        }
     }
 
     // -------------------------------------------------------------------------

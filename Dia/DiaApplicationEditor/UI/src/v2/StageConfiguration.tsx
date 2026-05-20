@@ -6,12 +6,13 @@ export const StageConfiguration: React.FC = () => {
     const manifest = useManifestStoreV2(s => s.manifest);
     const [addingStage, setAddingStage] = useState(false);
     const [editingStage, setEditingStage] = useState<string | null>(null);
+    const [addingTransitionFor, setAddingTransitionFor] = useState<string | null>(null);
     const addInputRef = useRef<HTMLInputElement>(null);
     const editInputRef = useRef<HTMLInputElement>(null);
+    const transitionInputRef = useRef<HTMLInputElement>(null);
 
     const stages = manifest?.stages ?? [];
     const initialStage = manifest?.initialStage ?? '';
-    const autoStages = manifest?.autoStages ?? [];
 
     const handleAddStage = () => {
         const name = addInputRef.current?.value.trim();
@@ -38,12 +39,11 @@ export const StageConfiguration: React.FC = () => {
         });
     };
 
-    const handleToggleAuto = (name: string) => {
-        const isAuto = autoStages.includes(name);
+    const handleToggleAuto = (name: string, currentAutoAdvance: boolean) => {
         bridgeRequest('manifest.applyCommand', {
             commandType: 'SetStageTrigger',
             name,
-            isAuto: !isAuto,
+            isAuto: !currentAutoAdvance,
         });
     };
 
@@ -56,6 +56,25 @@ export const StageConfiguration: React.FC = () => {
             newName,
         });
         setEditingStage(null);
+    };
+
+    const handleAddTransition = (stageName: string) => {
+        const target = transitionInputRef.current?.value.trim();
+        if (!target) { setAddingTransitionFor(null); return; }
+        bridgeRequest('manifest.applyCommand', {
+            commandType: 'AddStageTransition',
+            name: stageName,
+            target,
+        });
+        setAddingTransitionFor(null);
+    };
+
+    const handleRemoveTransition = (stageName: string, target: string) => {
+        bridgeRequest('manifest.applyCommand', {
+            commandType: 'RemoveStageTransition',
+            name: stageName,
+            target,
+        });
     };
 
     return (
@@ -107,7 +126,8 @@ export const StageConfiguration: React.FC = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {stages.map(stage => {
                     const isInitial = stage.name === initialStage;
-                    const isAuto = autoStages.includes(stage.name);
+                    const isAuto = stage.autoAdvance;
+                    const transitions = stage.transitions ?? [];
 
                     return (
                         <div
@@ -115,79 +135,146 @@ export const StageConfiguration: React.FC = () => {
                             data-testid="stage-row"
                             data-stage-name={stage.name}
                             style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 6,
                                 background: '#2d2d2d',
                                 borderRadius: 4,
                                 padding: '4px 8px',
                             }}
                         >
-                            {editingStage === stage.name ? (
-                                <input
-                                    ref={editInputRef}
-                                    autoFocus
-                                    defaultValue={stage.name}
-                                    style={{ background: '#3a3a3a', border: '1px solid #555', borderRadius: 3, color: '#eee', padding: '1px 6px', fontSize: 12, flex: 1 }}
-                                    onBlur={() => handleRenameConfirm(stage.name)}
-                                    onKeyDown={e => { if (e.key === 'Enter') handleRenameConfirm(stage.name); if (e.key === 'Escape') setEditingStage(null); }}
+                            {/* Name row */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                {editingStage === stage.name ? (
+                                    <input
+                                        ref={editInputRef}
+                                        autoFocus
+                                        defaultValue={stage.name}
+                                        style={{ background: '#3a3a3a', border: '1px solid #555', borderRadius: 3, color: '#eee', padding: '1px 6px', fontSize: 12, flex: 1 }}
+                                        onBlur={() => handleRenameConfirm(stage.name)}
+                                        onKeyDown={e => { if (e.key === 'Enter') handleRenameConfirm(stage.name); if (e.key === 'Escape') setEditingStage(null); }}
+                                    />
+                                ) : (
+                                    <span
+                                        style={{ flex: 1, fontSize: 12, color: '#eee', cursor: 'text' }}
+                                        onDoubleClick={() => setEditingStage(stage.name)}
+                                    >
+                                        {stage.name}
+                                    </span>
+                                )}
+
+                                {/* Initial indicator */}
+                                <div
+                                    data-testid="initial-indicator"
+                                    data-is-initial={isInitial}
+                                    onClick={() => !isInitial && handleSetInitial(stage.name)}
+                                    title={isInitial ? 'Initial stage' : 'Set as initial stage'}
+                                    style={{
+                                        width: 14, height: 14,
+                                        borderRadius: '50%',
+                                        background: isInitial ? '#3cb370' : '#444',
+                                        border: `2px solid ${isInitial ? '#3cb370' : '#555'}`,
+                                        cursor: isInitial ? 'default' : 'pointer',
+                                        flexShrink: 0,
+                                    }}
                                 />
-                            ) : (
-                                <span
-                                    style={{ flex: 1, fontSize: 12, color: '#eee', cursor: 'text' }}
-                                    onDoubleClick={() => setEditingStage(stage.name)}
+
+                                {/* Auto-advance indicator */}
+                                <div
+                                    data-testid="auto-indicator"
+                                    data-is-auto={isAuto}
+                                    onClick={() => handleToggleAuto(stage.name, isAuto)}
+                                    title={isAuto ? 'Auto-advance (click to disable)' : 'Not auto-advance (click to enable)'}
+                                    style={{
+                                        fontSize: 11,
+                                        color: isAuto ? '#f0a030' : '#555',
+                                        cursor: 'pointer',
+                                        userSelect: 'none',
+                                        fontWeight: 600,
+                                        minWidth: 24,
+                                        textAlign: 'center',
+                                    }}
                                 >
-                                    {stage.name}
-                                </span>
-                            )}
+                                    {isAuto ? 'A' : 'a'}
+                                </div>
 
-                            {/* Initial indicator */}
-                            <div
-                                data-testid="initial-indicator"
-                                data-is-initial={isInitial}
-                                onClick={() => !isInitial && handleSetInitial(stage.name)}
-                                title={isInitial ? 'Initial stage' : 'Set as initial stage'}
-                                style={{
-                                    width: 14, height: 14,
-                                    borderRadius: '50%',
-                                    background: isInitial ? '#3cb370' : '#444',
-                                    border: `2px solid ${isInitial ? '#3cb370' : '#555'}`,
-                                    cursor: isInitial ? 'default' : 'pointer',
-                                    flexShrink: 0,
-                                }}
-                            />
-
-                            {/* Auto indicator */}
-                            <div
-                                data-testid="auto-indicator"
-                                data-is-auto={isAuto}
-                                onClick={() => handleToggleAuto(stage.name)}
-                                title={isAuto ? 'Auto-advance (click to disable)' : 'Not auto-advance (click to enable)'}
-                                style={{
-                                    fontSize: 11,
-                                    color: isAuto ? '#f0a030' : '#555',
-                                    cursor: 'pointer',
-                                    userSelect: 'none',
-                                    fontWeight: 600,
-                                    minWidth: 24,
-                                    textAlign: 'center',
-                                }}
-                            >
-                                {isAuto ? 'A' : 'a'}
+                                {/* Remove button */}
+                                <button
+                                    data-testid="remove-stage-btn"
+                                    onClick={() => handleRemoveStage(stage.name)}
+                                    style={{
+                                        background: 'none', border: 'none', color: '#888',
+                                        cursor: 'pointer', fontSize: 14, padding: '0 2px', lineHeight: 1,
+                                    }}
+                                    title={`Remove ${stage.name}`}
+                                >
+                                    ×
+                                </button>
                             </div>
 
-                            {/* Remove button */}
-                            <button
-                                data-testid="remove-stage-btn"
-                                onClick={() => handleRemoveStage(stage.name)}
-                                style={{
-                                    background: 'none', border: 'none', color: '#888',
-                                    cursor: 'pointer', fontSize: 14, padding: '0 2px', lineHeight: 1,
-                                }}
-                                title={`Remove ${stage.name}`}
+                            {/* Transitions row */}
+                            <div
+                                data-testid="transitions-row"
+                                style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4, alignItems: 'center' }}
                             >
-                                ×
-                            </button>
+                                {transitions.map(target => (
+                                    <span
+                                        key={target}
+                                        data-testid="transition-chip"
+                                        data-transition-target={target}
+                                        style={{
+                                            display: 'inline-flex', alignItems: 'center', gap: 3,
+                                            background: '#3a3a3a', borderRadius: 10,
+                                            padding: '1px 8px', fontSize: 11, color: '#aaa',
+                                        }}
+                                    >
+                                        {target}
+                                        <span
+                                            data-testid="remove-transition-btn"
+                                            onClick={() => handleRemoveTransition(stage.name, target)}
+                                            style={{ cursor: 'pointer', color: '#666', fontSize: 12, lineHeight: 1 }}
+                                            title={`Remove transition to ${target}`}
+                                        >
+                                            ×
+                                        </span>
+                                    </span>
+                                ))}
+                                {addingTransitionFor === stage.name ? (
+                                    <>
+                                        <input
+                                            ref={transitionInputRef}
+                                            autoFocus
+                                            placeholder="target stage"
+                                            style={{ background: '#3a3a3a', border: '1px solid #555', borderRadius: 3, color: '#eee', padding: '1px 6px', fontSize: 11, width: 90 }}
+                                            onKeyDown={e => {
+                                                if (e.key === 'Enter') handleAddTransition(stage.name);
+                                                if (e.key === 'Escape') setAddingTransitionFor(null);
+                                            }}
+                                        />
+                                        <button
+                                            onClick={() => handleAddTransition(stage.name)}
+                                            style={{ background: '#444', border: 'none', borderRadius: 3, color: '#eee', cursor: 'pointer', padding: '1px 6px', fontSize: 11 }}
+                                        >
+                                            Add
+                                        </button>
+                                        <button
+                                            onClick={() => setAddingTransitionFor(null)}
+                                            style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: 11 }}
+                                        >
+                                            Cancel
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button
+                                        data-testid="add-transition-btn"
+                                        onClick={() => setAddingTransitionFor(stage.name)}
+                                        style={{
+                                            background: 'none', border: '1px solid #444', borderRadius: 10,
+                                            color: '#666', cursor: 'pointer', padding: '1px 8px', fontSize: 11,
+                                        }}
+                                        title={`Add transition from ${stage.name}`}
+                                    >
+                                        + transition
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     );
                 })}

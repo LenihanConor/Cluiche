@@ -38,10 +38,9 @@ function makeStream(overrides: Partial<StreamV2> = {}): StreamV2 {
 
 function makeManifest(streams: StreamV2[]): ManifestV2 {
     return {
-        version: 2,
+        version: 3,
         stages: [],
         initialStage: '',
-        autoStages: [],
         streams,
         processingUnits: [],
     };

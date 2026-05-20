@@ -5,10 +5,9 @@ import type { ManifestV2 } from './types';
 
 // Mock the manifest store
 const mockManifest: ManifestV2 = {
-    version: 1,
-    stages: [{ name: 'Main', manifestPath: 'main.json' }],
+    version: 3,
+    stages: [{ name: 'Main', manifestPath: 'main.json', transitions: [], autoAdvance: false }],
     initialStage: 'Main',
-    autoStages: [],
     streams: [
         {
             id: 'stream-a',
@@ -218,10 +217,9 @@ describe('GraphView', () => {
         } as any);
         mockUseManifestStore.mockReturnValue({
             manifest: {
-                version: 1,
+                version: 3,
                 stages: [],
                 initialStage: '',
-                autoStages: [],
                 streams: [],
                 processingUnits: [
                     {

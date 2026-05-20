@@ -29,7 +29,7 @@ describe('useManifestStoreV2', () => {
     it('loadManifest on success populates state', async () => {
         mockBridgeRequest.mockResolvedValue({
             ok: true,
-            state: { filePath: '/test.diaapp', isDirty: false, hasManifest: true, manifest: { version: 2, stages: [], initialStage: '', autoStages: [], streams: [], processingUnits: [] } },
+            state: { filePath: '/test.diaapp', isDirty: false, hasManifest: true, manifest: { version: 3, stages: [], initialStage: '', streams: [], processingUnits: [] } },
         });
         const result = await useManifestStoreV2.getState().loadManifest('/test.diaapp');
         expect(result.ok).toBe(true);
@@ -56,7 +56,7 @@ describe('useManifestStoreV2', () => {
     it('applyStateSnapshot updates all fields', () => {
         useManifestStoreV2.getState().applyStateSnapshot({
             filePath: '/x.diaapp', isDirty: true, hasManifest: true,
-            manifest: { version: 2, stages: [], initialStage: 'Boot', autoStages: [], streams: [], processingUnits: [] },
+            manifest: { version: 3, stages: [], initialStage: 'Boot', streams: [], processingUnits: [] },
         });
         const s = useManifestStoreV2.getState();
         expect(s.filePath).toBe('/x.diaapp');

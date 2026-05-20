@@ -31,7 +31,6 @@ namespace Dia { namespace ApplicationFlow { namespace Editor {
         Dia::ApplicationFlow::StageDeclaration mSaved;
         int mSavedIndex;
         bool mWasInitialStage;
-        bool mWasAutoStage;
     };
 
     class RenameStageCommand : public ICommand
@@ -57,6 +56,30 @@ namespace Dia { namespace ApplicationFlow { namespace Editor {
         Dia::Core::StringCRC mName;
         bool mNewIsAuto;
         bool mOldIsAuto;
+    };
+
+    class AddStageTransitionCommand : public ICommand
+    {
+    public:
+        AddStageTransitionCommand(Dia::Core::StringCRC stageName, Dia::Core::StringCRC targetName);
+        void Execute(ManifestEditorState& doc) override;
+        void Undo(ManifestEditorState& doc) override;
+        const char* GetDescription() const override { return "AddStageTransition"; }
+    private:
+        Dia::Core::StringCRC mStageName;
+        Dia::Core::StringCRC mTargetName;
+    };
+
+    class RemoveStageTransitionCommand : public ICommand
+    {
+    public:
+        RemoveStageTransitionCommand(Dia::Core::StringCRC stageName, Dia::Core::StringCRC targetName);
+        void Execute(ManifestEditorState& doc) override;
+        void Undo(ManifestEditorState& doc) override;
+        const char* GetDescription() const override { return "RemoveStageTransition"; }
+    private:
+        Dia::Core::StringCRC mStageName;
+        Dia::Core::StringCRC mTargetName;
     };
 
     class SetInitialStageCommand : public ICommand

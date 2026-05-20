@@ -631,6 +631,20 @@ namespace Dia { namespace Editor {
             const bool isAuto   = data.get("isAuto", false).asBool();
             cmd = new SetStageTriggerCommand(Dia::Core::StringCRC(nameStr), isAuto);
         }
+        else if (cmdType == "AddStageTransition")
+        {
+            const char* stageStr  = data.get("name", "").asCString();
+            const char* targetStr = data.get("target", "").asCString();
+            cmd = new AddStageTransitionCommand(Dia::Core::StringCRC(stageStr),
+                                                Dia::Core::StringCRC(targetStr));
+        }
+        else if (cmdType == "RemoveStageTransition")
+        {
+            const char* stageStr  = data.get("name", "").asCString();
+            const char* targetStr = data.get("target", "").asCString();
+            cmd = new RemoveStageTransitionCommand(Dia::Core::StringCRC(stageStr),
+                                                   Dia::Core::StringCRC(targetStr));
+        }
         else if (cmdType == "SetInitialStage")
         {
             const char* nameStr = data.get("name", "").asCString();

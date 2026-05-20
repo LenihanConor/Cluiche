@@ -109,7 +109,7 @@ TEST(Commands_Stage, RemoveStage_ClearsInitialStage_WhenInitial)
 // SetStageTriggerCommand
 // -------------------------------------------------------------------------
 
-TEST(Commands_Stage, SetStageTrigger_Execute_AutoChanged)
+TEST(Commands_Stage, SetStageTrigger_Execute_SetsAutoAdvance)
 {
     ManifestEditorState doc = MakeDoc();
     AddTestStage(doc, "Intro");
@@ -117,11 +117,11 @@ TEST(Commands_Stage, SetStageTrigger_Execute_AutoChanged)
     SetStageTriggerCommand cmd(StringCRC("Intro"), true);
     cmd.Execute(doc);
 
-    // autoStages removed in v3 — per-stage autoAdvance replaces this field
+    EXPECT_TRUE(doc.manifest.stages[0u].autoAdvance);
     EXPECT_TRUE(doc.isDirty);
 }
 
-TEST(Commands_Stage, SetStageTrigger_Undo_AutoRestored)
+TEST(Commands_Stage, SetStageTrigger_Undo_RestoresAutoAdvance)
 {
     ManifestEditorState doc = MakeDoc();
     AddTestStage(doc, "Intro");
@@ -131,7 +131,20 @@ TEST(Commands_Stage, SetStageTrigger_Undo_AutoRestored)
     doc.MarkClean();
     cmd.Undo(doc);
 
-    // autoStages removed in v3 — per-stage autoAdvance replaces this field
+    EXPECT_FALSE(doc.manifest.stages[0u].autoAdvance);
+    EXPECT_TRUE(doc.isDirty);
+}
+
+TEST(Commands_Stage, SetStageTrigger_Execute_DisablesAutoAdvance)
+{
+    ManifestEditorState doc = MakeDoc();
+    AddTestStage(doc, "Intro");
+    doc.manifest.stages[0u].autoAdvance = true;
+
+    SetStageTriggerCommand cmd(StringCRC("Intro"), false);
+    cmd.Execute(doc);
+
+    EXPECT_FALSE(doc.manifest.stages[0u].autoAdvance);
     EXPECT_TRUE(doc.isDirty);
 }
 
@@ -185,5 +198,121 @@ TEST(Commands_Stage, ReorderStage_Execute_OrderChanged)
     EXPECT_EQ(doc.manifest.stages[0u].name, StringCRC("StageC"));
     EXPECT_EQ(doc.manifest.stages[1u].name, StringCRC("StageA"));
     EXPECT_EQ(doc.manifest.stages[2u].name, StringCRC("StageB"));
+    EXPECT_TRUE(doc.isDirty);
+}
+
+// -------------------------------------------------------------------------
+// AddStageTransitionCommand
+// -------------------------------------------------------------------------
+
+TEST(Commands_Stage, AddStageTransition_Execute_TransitionAdded)
+{
+    ManifestEditorState doc = MakeDoc();
+    AddTestStage(doc, "Boot");
+    AddTestStage(doc, "Main");
+
+    AddStageTransitionCommand cmd(StringCRC("Boot"), StringCRC("Main"));
+    cmd.Execute(doc);
+
+    ASSERT_EQ(doc.manifest.stages[0u].transitions.Size(), 1u);
+    EXPECT_EQ(doc.manifest.stages[0u].transitions[0u], StringCRC("Main"));
+    EXPECT_TRUE(doc.isDirty);
+}
+
+TEST(Commands_Stage, AddStageTransition_Undo_TransitionRemoved)
+{
+    ManifestEditorState doc = MakeDoc();
+    AddTestStage(doc, "Boot");
+    AddTestStage(doc, "Main");
+
+    AddStageTransitionCommand cmd(StringCRC("Boot"), StringCRC("Main"));
+    cmd.Execute(doc);
+    doc.MarkClean();
+    cmd.Undo(doc);
+
+    EXPECT_EQ(doc.manifest.stages[0u].transitions.Size(), 0u);
+    EXPECT_TRUE(doc.isDirty);
+}
+
+TEST(Commands_Stage, AddStageTransition_Execute_Idempotent)
+{
+    ManifestEditorState doc = MakeDoc();
+    AddTestStage(doc, "Boot");
+
+    AddStageTransitionCommand cmd(StringCRC("Boot"), StringCRC("Main"));
+    cmd.Execute(doc);
+    cmd.Execute(doc); // duplicate
+
+    EXPECT_EQ(doc.manifest.stages[0u].transitions.Size(), 1u);
+}
+
+// -------------------------------------------------------------------------
+// RemoveStageTransitionCommand
+// -------------------------------------------------------------------------
+
+TEST(Commands_Stage, RemoveStageTransition_Execute_TransitionGone)
+{
+    ManifestEditorState doc = MakeDoc();
+    AddTestStage(doc, "Boot");
+    doc.manifest.stages[0u].transitions.Add(StringCRC("Main"));
+
+    RemoveStageTransitionCommand cmd(StringCRC("Boot"), StringCRC("Main"));
+    cmd.Execute(doc);
+
+    EXPECT_EQ(doc.manifest.stages[0u].transitions.Size(), 0u);
+    EXPECT_TRUE(doc.isDirty);
+}
+
+TEST(Commands_Stage, RemoveStageTransition_Undo_TransitionRestored)
+{
+    ManifestEditorState doc = MakeDoc();
+    AddTestStage(doc, "Boot");
+    doc.manifest.stages[0u].transitions.Add(StringCRC("Main"));
+
+    RemoveStageTransitionCommand cmd(StringCRC("Boot"), StringCRC("Main"));
+    cmd.Execute(doc);
+    doc.MarkClean();
+    cmd.Undo(doc);
+
+    ASSERT_EQ(doc.manifest.stages[0u].transitions.Size(), 1u);
+    EXPECT_EQ(doc.manifest.stages[0u].transitions[0u], StringCRC("Main"));
+    EXPECT_TRUE(doc.isDirty);
+}
+
+// -------------------------------------------------------------------------
+// RenameStageCommand — transitions cascade
+// -------------------------------------------------------------------------
+
+TEST(Commands_Stage, RenameStage_Execute_CascadesTransitions)
+{
+    ManifestEditorState doc = MakeDoc();
+    AddTestStage(doc, "Boot");
+    AddTestStage(doc, "Main");
+    // Boot transitions to Main
+    doc.manifest.stages[0u].transitions.Add(StringCRC("Main"));
+
+    RenameStageCommand cmd(StringCRC("Main"), StringCRC("Gameplay"));
+    cmd.Execute(doc);
+
+    // Boot's transition should now point to Gameplay
+    ASSERT_EQ(doc.manifest.stages[0u].transitions.Size(), 1u);
+    EXPECT_EQ(doc.manifest.stages[0u].transitions[0u], StringCRC("Gameplay"));
+    EXPECT_TRUE(doc.isDirty);
+}
+
+TEST(Commands_Stage, RenameStage_Undo_CascadesTransitionsBack)
+{
+    ManifestEditorState doc = MakeDoc();
+    AddTestStage(doc, "Boot");
+    AddTestStage(doc, "Main");
+    doc.manifest.stages[0u].transitions.Add(StringCRC("Main"));
+
+    RenameStageCommand cmd(StringCRC("Main"), StringCRC("Gameplay"));
+    cmd.Execute(doc);
+    doc.MarkClean();
+    cmd.Undo(doc);
+
+    ASSERT_EQ(doc.manifest.stages[0u].transitions.Size(), 1u);
+    EXPECT_EQ(doc.manifest.stages[0u].transitions[0u], StringCRC("Main"));
     EXPECT_TRUE(doc.isDirty);
 }

@@ -12,14 +12,13 @@ vi.mock('./bridge', () => ({
 import { bridgeRequest } from './bridge';
 
 const mockManifest: ManifestV2 = {
-    version: 1,
+    version: 3,
     stages: [
-        { name: 'Boot', manifestPath: 'boot.json' },
-        { name: 'Main', manifestPath: 'main.json' },
-        { name: 'GameOver', manifestPath: 'gameover.json' },
+        { name: 'Boot',     manifestPath: 'boot.json',     transitions: [], autoAdvance: false },
+        { name: 'Main',     manifestPath: 'main.json',     transitions: [], autoAdvance: false },
+        { name: 'GameOver', manifestPath: 'gameover.json', transitions: [], autoAdvance: false },
     ],
     initialStage: 'Boot',
-    autoStages: [],
     streams: [],
     processingUnits: [
         {

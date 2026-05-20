@@ -34,13 +34,14 @@ export interface ProcessingUnitV2 {
 export interface StageV2 {
     name: string;
     manifestPath: string;
+    transitions: string[];
+    autoAdvance: boolean;
 }
 
 export interface ManifestV2 {
     version: number;
     stages: StageV2[];
     initialStage: string;
-    autoStages: string[];
     streams: StreamV2[];
     processingUnits: ProcessingUnitV2[];
 }

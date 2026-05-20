@@ -29,14 +29,13 @@ function makeModule(instanceId: string, stages: string[]): ModuleV2 {
 
 function makeManifest(overrides?: Partial<ManifestV2>): ManifestV2 {
     return {
-        version: 1,
+        version: 3,
         stages: [
-            { name: 'Boot', manifestPath: 'boot.json' },
-            { name: 'Game', manifestPath: 'game.json' },
-            { name: 'Menu', manifestPath: 'menu.json' },
+            { name: 'Boot', manifestPath: 'boot.json', transitions: [], autoAdvance: false },
+            { name: 'Game', manifestPath: 'game.json', transitions: [], autoAdvance: false },
+            { name: 'Menu', manifestPath: 'menu.json', transitions: [], autoAdvance: false },
         ],
         initialStage: 'Boot',
-        autoStages: [],
         streams: [],
         processingUnits: [
             {

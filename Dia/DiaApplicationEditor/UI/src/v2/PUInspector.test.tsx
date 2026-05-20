@@ -29,10 +29,9 @@ const setupBridge = () => {
 };
 
 const mockManifest: ManifestV2 = {
-    version: 1,
-    stages: [{ name: 'Main', manifestPath: 'main.json' }],
+    version: 3,
+    stages: [{ name: 'Main', manifestPath: 'main.json', transitions: [], autoAdvance: false }],
     initialStage: 'Main',
-    autoStages: [],
     streams: [],
     processingUnits: [
         {
