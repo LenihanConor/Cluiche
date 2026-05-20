@@ -36,6 +36,7 @@ vi.mock('./bridge', () => ({ bridgeRequest: vi.fn() }));
 vi.mock('./GraphView', () => ({ GraphView: () => <div>graph-view-stub</div> }));
 vi.mock('./ModulePresenceGrid', () => ({ ModulePresenceGrid: () => <div>presence-grid-stub</div> }));
 vi.mock('./StreamsTab', () => ({ StreamsTab: () => <div>streams-tab-stub</div> }));
+vi.mock('./StagesTab', () => ({ StagesTab: () => <div>stages-tab-stub</div> }));
 vi.mock('./PUInspector', () => ({ PUInspector: () => <div>pu-inspector-stub</div> }));
 vi.mock('./StageConfiguration', () => ({ StageConfiguration: () => <div>stage-config-stub</div> }));
 vi.mock('./ValidationBarV2', () => ({ ValidationBarV2: () => <div data-testid="validation-bar">validation-bar-stub</div> }));
@@ -45,15 +46,22 @@ vi.mock('./LiveTransitionPanel', () => ({ LiveTransitionPanel: () => <div>transi
 import { AppV2 } from './AppV2';
 
 describe('AppV2', () => {
-    it('renders three tab buttons', () => {
+    it('renders four tab buttons in order', () => {
         render(<AppV2 />);
+        expect(screen.getByText('Stages')).toBeTruthy();
         expect(screen.getByText('Process Units')).toBeTruthy();
         expect(screen.getByText('Modules')).toBeTruthy();
         expect(screen.getByText('Streams')).toBeTruthy();
     });
 
-    it('shows graph view by default', () => {
+    it('shows stages tab by default', () => {
         render(<AppV2 />);
+        expect(screen.getByText('stages-tab-stub')).toBeTruthy();
+    });
+
+    it('switches to graph (Process Units) tab on click', () => {
+        render(<AppV2 />);
+        fireEvent.click(screen.getByText('Process Units'));
         expect(screen.getByText('graph-view-stub')).toBeTruthy();
     });
 

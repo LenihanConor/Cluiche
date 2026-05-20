@@ -22,32 +22,32 @@
 
 ## Purpose
 
-Today the editor surfaces application stages in two places: the small `StageConfiguration` sidebar list (add/remove/rename/set-initial/toggle-auto) and the header `LiveTransitionPanel` (drop-down list of targets while connected). Neither view shows the **shape of the application's lifecycle** — the order of stages and the auto-advance edges between them.
+Today the editor surfaces application stages in two places: the small `StageConfiguration` sidebar list (add/remove/rename/reorder/set-initial/toggle-auto/add-transition) and the header `LiveTransitionPanel` (drop-down list of targets while connected). Neither view shows the **shape of the application's lifecycle** — the topology of stages and their declared transitions.
 
 This feature adds a **Stages** tab — the **first** top-level tab in the editor (followed by Process Units, Modules, Streams) — that renders the stage list as a left-to-right transition graph. Stages come first because the application's lifecycle is the outermost mental model: stages contain modules, modules use streams.
 
 - **Nodes** are stages, in manifest array order.
-- **Edges** are auto-advance transitions only: a solid arrow from `stage[i]` to `stage[i+1]` is drawn iff `stage[i] ∈ autoStages`.
+- **Edges** are declared transitions: a solid arrow from stage X to stage Y is drawn for each entry Y in `stage.transitions[]`.
 - **Initial stage** is highlighted with a green ring.
-- **Manual stages** appear as terminals (no outgoing edge); the runtime reaches them via `transition_to`, which is triggered from the live overlay (this feature's live mode) or from the existing header `LiveTransitionPanel`.
+- **Terminal stages** (zero outgoing transitions) appear as leaf nodes; the runtime may still reach them via manual `TransitionTo` from modules.
 
-The graph is **read-only**. Structural editing (add/remove/rename/reorder/set-initial/toggle-auto) stays in the existing `StageConfiguration` sidebar — no duplicated edit surface, no two-UI drift.
+The graph is **read-only**. Structural editing (add/remove/rename/reorder/set-initial/toggle-auto/add-transition) stays in the existing `StageConfiguration` sidebar — no duplicated edit surface, no two-UI drift.
 
-In **live mode**, the active runtime stage pulses green (per ED-008 traffic-light primitive), and the auto-advance edge currently being followed animates with a flowing dashed pattern. Clicking any non-active stage delegates to the existing `live-transition-trigger` flow (`bridgeRequest('app.transitionTo', { stage })`).
+In **live mode**, the active runtime stage pulses green (per ED-008 traffic-light primitive), and if the active stage has `autoAdvance=true`, its outgoing edge(s) animate with a flowing dashed pattern. Clicking any non-active stage delegates to the existing `live-transition-trigger` flow (`bridgeRequest('app.transitionTo', { stage })`).
 
 ## Acceptance Criteria
 
 1. **First tab** — A `Stages` tab is added as the **first** entry in AppV2's tab bar, ahead of `Process Units`, `Modules`, `Streams`. The tab bar order becomes `Stages | Process Units | Modules | Streams`. Stages is the **default active tab** on first load. Selecting it renders the stage transition graph in the main content area; the existing sidebar (`StageConfiguration` when no PU is selected) is unchanged.
 2. **Linear layout** — Stage nodes are laid out left-to-right in `manifest.stages` array order, evenly spaced. No manual drag-positioning. No persisted layout metadata.
-3. **Auto-advance edges only** — A solid arrow from `stage[i]` to `stage[i+1]` is drawn **iff** `manifest.autoStages` contains `stage[i].name`. No other edges are rendered. Manual stages with no auto predecessor have no incoming edge in the static graph.
-4. **Initial stage highlight** — The node whose name equals `manifest.initialStage` renders with a 3px green ring (`#3cb370`) and a sub-label `initial · auto` or `initial · manual`. Other auto stages render with a 2px gray ring (`#888`); other manual stages render with a 2px dashed gray ring (`#555`).
+3. **Explicit transition edges** — A solid arrow from stage X to stage Y is drawn for each entry Y in `stage.transitions[]`. Stages with empty `transitions[]` have no outgoing edges. Multiple transitions from a single stage produce multiple arrows.
+4. **Initial stage highlight** — The node whose name equals `manifest.initialStage` renders with a 3px green ring (`#3cb370`) and a sub-label `initial · auto` or `initial · manual`. Stages with `autoAdvance=true` render with a 2px amber ring (`#f0a030`); other stages render with a 2px dashed gray ring (`#555`).
 5. **Read-only** — No node or edge supports drag, click-to-edit, double-click-to-rename, or context menu in static mode. All structural edits go through the existing `StageConfiguration` sidebar component (which remains visible when no PU is selected).
 6. **Empty / single stage** — Manifest with zero stages renders the placeholder `No stages defined — add stages via the sidebar to begin.` Manifest with one stage renders just that node, no edges, with the appropriate initial/auto/manual styling.
 7. **Live overlay — active stage** — When `useLiveStoreV2.connectionState === 'connected'` and `useLiveStoreV2.activeStage` is set, the matching stage node renders with a pulsing green ring (animation period 1.6s, per ED-008 `pulse` modifier) and the sub-label `● active`.
-8. **Live overlay — animated edge** — When the active stage is in `autoStages` AND there is a successor stage in the array, the outgoing auto edge from the active stage renders green with a flowing dashed stroke pattern (visual hint that an auto-advance is in progress). All other edges render in the static gray.
+8. **Live overlay — animated edge** — When the active stage has `autoAdvance=true`, its outgoing transition edge(s) render green with a flowing dashed stroke pattern (visual hint that an auto-advance is in progress). All other edges render in static gray.
 9. **Live click-to-transition** — In live mode, clicking any stage node that is **not** currently active dispatches `bridgeRequest('app.transitionTo', { stage: <name> })` (delegates to the existing `live-transition-trigger` feature). Clicking the active node is a no-op. Clicks in static mode (disconnected) are ignored.
-10. **Re-render on manifest change** — Adding/removing/renaming/reordering stages, toggling auto, or changing the initial stage in the sidebar re-renders the graph immediately on the next React frame (state-driven; no manual refresh needed). Existing `useManifestStoreV2` reactivity carries this for free.
-11. **No new C++ work** — All required data (`stages`, `initialStage`, `autoStages`, plus live `activeStage`) is already exposed through `useManifestStoreV2` and `useLiveStoreV2`. This feature is React-only.
+10. **Re-render on manifest change** — Adding/removing/renaming/reordering stages, toggling auto-advance, adding/removing transitions, or changing the initial stage in the sidebar re-renders the graph immediately on the next React frame (state-driven; no manual refresh needed). Existing `useManifestStoreV2` reactivity carries this for free.
+11. **No new C++ work** — All required data (`stages` with `transitions[]` and `autoAdvance`, `initialStage`, plus live `activeStage`) is already exposed through `useManifestStoreV2` and `useLiveStoreV2`. This feature is React-only.
 
 ## Design
 
@@ -75,7 +75,6 @@ The tab label rendered to the user is `Stages` (other labels remap, e.g. `graph 
 ```ts
 const stages       = useManifestStoreV2(s => s.manifest?.stages ?? []);
 const initialStage = useManifestStoreV2(s => s.manifest?.initialStage ?? '');
-const autoStages   = useManifestStoreV2(s => s.manifest?.autoStages ?? []);
 const isLive       = useLiveStoreV2(s => s.connectionState === 'connected');
 const activeStage  = useLiveStoreV2(s => s.activeStage);
 ```
@@ -108,9 +107,9 @@ Width = `PADDING_X * 2 + (stages.length - 1) * NODE_SPACING`. Container scrolls 
 Inline SVG (matches the `GraphView` precedent, no extra dependency). Per node:
 
 ```tsx
-const isInitial = stage.name === initialStage;
-const isAuto    = autoStages.includes(stage.name);
-const isActive  = isLive && activeStage === stage.name;
+const isInitial   = stage.name === initialStage;
+const isAutoAdv   = stage.autoAdvance;
+const isActive    = isLive && activeStage === stage.name;
 
 <g
     onClick={isLive && !isActive ? () => transitionTo(stage.name) : undefined}
@@ -120,9 +119,9 @@ const isActive  = isLive && activeStage === stage.name;
     <circle
         cx={cx} cy={cy} r={NODE_R}
         fill={isActive ? '#1e3a26' : '#2d2d2d'}
-        stroke={isInitial ? '#3cb370' : isAuto ? '#888' : '#555'}
+        stroke={isInitial ? '#3cb370' : isAutoAdv ? '#f0a030' : '#555'}
         strokeWidth={isInitial ? 3 : 2}
-        strokeDasharray={!isInitial && !isAuto ? '3 3' : undefined}
+        strokeDasharray={!isInitial && !isAutoAdv ? '3 3' : undefined}
     />
     <text x={cx} y={cy + 4} textAnchor="middle" fontSize={12}>{stage.name}</text>
     <text x={cx} y={cy + 40} textAnchor="middle" fontSize={10} fill={subLabelColor}>
@@ -131,10 +130,10 @@ const isActive  = isLive && activeStage === stage.name;
 </g>
 ```
 
-Per edge (only when source is in `autoStages` and successor exists):
+Per edge (for each entry T in `stage.transitions[]`, draw an arrow from stage to T):
 
 ```tsx
-const sourceActive = isLive && activeStage === source.name;
+const sourceActive = isLive && activeStage === source.name && source.autoAdvance;
 <line
     x1={source.cx + NODE_R} y1={source.cy}
     x2={target.cx - NODE_R} y2={target.cy}
@@ -171,7 +170,7 @@ This piggy-backs on the existing live-transition-trigger feature; nothing new on
 - **Zero stages** — render a centered placeholder div, no SVG.
 - **One stage** — render that one node, no edges.
 - **`initialStage` missing from `stages`** — already a validation error (`INITIAL_STAGE_INVALID`); the tab still renders, no node receives the green ring. Validation bar surfaces the issue.
-- **`autoStages` entry not in `stages`** — already a validation error (`STAGE_REF_INVALID` analog); skipped silently for edge rendering.
+- **`stage.transitions[]` contains an unknown target** — already a validation error (`TRANSITION_TARGET_INVALID`); edge rendering skips unknown targets silently.
 - **`activeStage` not in `stages`** — possible during a transition or if the runtime reports a stage we don't know. Gracefully ignored — no node pulses; no warning surfaced from this feature.
 
 ## Tasks

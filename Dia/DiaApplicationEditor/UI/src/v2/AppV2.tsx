@@ -7,6 +7,7 @@ import { useLiveStoreV2 } from './useLiveStoreV2';
 import { GraphView } from './GraphView';
 import { ModulePresenceGrid } from './ModulePresenceGrid';
 import { StreamsTab } from './StreamsTab';
+import { StagesTab } from './StagesTab';
 import { PUInspector } from './PUInspector';
 import { StageConfiguration } from './StageConfiguration';
 import { ValidationBarV2 } from './ValidationBarV2';
@@ -14,10 +15,10 @@ import { LiveConnectionButton } from './LiveConnectionButton';
 import { LiveTransitionPanel } from './LiveTransitionPanel';
 import type { ManifestStateV2 } from './types';
 
-type Tab = 'graph' | 'presence' | 'streams';
+type Tab = 'stages' | 'graph' | 'presence' | 'streams';
 
 export const AppV2: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<Tab>('graph');
+    const [activeTab, setActiveTab] = useState<Tab>('stages');
     const selectedPuId = useSelectionStoreV2((s) => s.puId);
     const setPUSelection = useSelectionStoreV2((s) => s.setPU);
 
@@ -148,7 +149,7 @@ export const AppV2: React.FC = () => {
 
             {/* Tab bar */}
             <div style={{ display: 'flex', background: '#252526', borderBottom: '1px solid #444' }}>
-                {(['graph', 'presence', 'streams'] as Tab[]).map(tab => (
+                {(['stages', 'graph', 'presence', 'streams'] as Tab[]).map(tab => (
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
@@ -163,7 +164,7 @@ export const AppV2: React.FC = () => {
                             textTransform: 'capitalize',
                         }}
                     >
-                        {tab === 'graph' ? 'Process Units' : tab === 'presence' ? 'Modules' : 'Streams'}
+                        {tab === 'stages' ? 'Stages' : tab === 'graph' ? 'Process Units' : tab === 'presence' ? 'Modules' : 'Streams'}
                     </button>
                 ))}
             </div>
@@ -174,6 +175,11 @@ export const AppV2: React.FC = () => {
                     <>
                         {/* Tab content */}
                         <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+                            {activeTab === 'stages' && (
+                                <div id="stages-tab-content" style={{ height: '100%' }}>
+                                    <StagesTab />
+                                </div>
+                            )}
                             {activeTab === 'graph' && (
                                 <div id="graph-tab-content" style={{ height: '100%' }}>
                                     <GraphView
