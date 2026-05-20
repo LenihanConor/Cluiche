@@ -50,7 +50,7 @@ Completed items moved from BACKLOG.md. For active work see [BACKLOG.md](BACKLOG.
 
 | Item | Completed | Notes |
 |------|-----------|-------|
-| DiaApplicationFlow — v1 source removal | 2026-05-20 | All v1 Manifest files deleted (`ApplicationManifest`, `ApplicationManifestLoader`, `ManifestComposer`, `ManifestValidator`, `JsonApplicationManifestSerializer`). `GameFileComposer` deleted (zero callers). `DiaGameManifestLoader` return type simplified to `bool`. 4798 tests pass. |
+| DiaApplicationFlow — v1 source removal | 2026-05-20 | All v1 Manifest files deleted (`ApplicationManifest`, `ApplicationManifestLoader`, `ManifestComposer`, `ManifestValidator`, `JsonApplicationManifestSerializer`). `GameFileComposer` deleted (zero callers). `DiaGameManifestLoader` return type simplified to `bool`. v1 `ApplicationTypeRegistry`, `RegistrationMacros.h`, and `ModuleRef.h` deleted (all callers already on v2 equivalents). 4798 tests pass. |
 |------|-----------|-------|
 | FlatStateMachine `WildcardTransitionFiresFromAnyState` crash | 2026-05-05 | Stack overflow from `MetadataArray` embedded in each `StateDef`; fixed by moving state metadata to parallel slab `mStateMetadata` on definition, reducing `StateDef` from ~2604 B to ~432 B |
 | DiaRig2D — Exhaustive tests | 2026-05-02 | 38 new tests (golden, invariant, stress, boundary, determinism, integration) in `Cluiche/Tests/GoogleTests/Rig2D/` |
