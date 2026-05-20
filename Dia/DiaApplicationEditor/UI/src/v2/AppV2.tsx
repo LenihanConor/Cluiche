@@ -3,13 +3,25 @@ import { useManifestStoreV2 } from './useManifestStoreV2';
 import { useUndoStoreV2 } from './useUndoStoreV2';
 import { useValidationStoreV2 } from './useValidationStoreV2';
 import { useLiveStoreV2 } from './useLiveStoreV2';
+import { GraphView } from './GraphView';
+import { ModulePresenceGrid } from './ModulePresenceGrid';
+import { StreamsTab } from './StreamsTab';
+import { PUInspector } from './PUInspector';
+import { StageConfiguration } from './StageConfiguration';
+import { ValidationBarV2 } from './ValidationBarV2';
+import { LiveConnectionButton } from './LiveConnectionButton';
+import { LiveTransitionPanel } from './LiveTransitionPanel';
 import type { ManifestStateV2 } from './types';
 
 type Tab = 'graph' | 'presence' | 'streams';
+type Selection = { type: 'pu'; id: string } | { type: 'module'; id: string; puId: string } | null;
 
 export const AppV2: React.FC = () => {
     const [activeTab, setActiveTab] = useState<Tab>('graph');
+    const [selection, setSelection] = useState<Selection>(null);
+
     const applyStateSnapshot = useManifestStoreV2((s) => s.applyStateSnapshot);
+    const manifest = useManifestStoreV2((s) => s.manifest);
     const applyUndoResponse = useUndoStoreV2((s) => s.applyUndoResponse);
     const setValidationResult = useValidationStoreV2((s) => s.setResult);
     const setConnectionState = useLiveStoreV2((s) => s.setConnectionState);
@@ -17,6 +29,7 @@ export const AppV2: React.FC = () => {
     const updateModuleStates = useLiveStoreV2((s) => s.updateModuleStates);
     const updateStreamStates = useLiveStoreV2((s) => s.updateStreamStates);
     const clearLiveState = useLiveStoreV2((s) => s.clearLiveState);
+    const connectionState = useLiveStoreV2((s) => s.connectionState);
 
     useEffect(() => {
         (window as any).DiaEditor_onDataChanged = (topic: string, data: unknown) => {
@@ -26,7 +39,6 @@ export const AppV2: React.FC = () => {
                     if (d) applyStateSnapshot(d as ManifestStateV2);
                     break;
                 case 'manifest.dirty':
-                    // handled via full manifest.state push; nothing extra needed
                     break;
                 case 'history.state':
                     if (d) applyUndoResponse({ canUndo: d.canUndo, canRedo: d.canRedo, isDirty: d.isDirty });
@@ -54,14 +66,47 @@ export const AppV2: React.FC = () => {
         };
     }, [applyStateSnapshot, applyUndoResponse, setValidationResult, setConnectionState, setActiveStage, updateModuleStates, updateStreamStates, clearLiveState]);
 
+    const stages = manifest?.stages?.map(s => s.name) ?? [];
+    const isLive = connectionState === 'connected';
+
+    const handlePUSelect = (puId: string | null) => {
+        setSelection(puId ? { type: 'pu', id: puId } : null);
+    };
+
+    const handleStreamLabelClick = () => {
+        setActiveTab('streams');
+    };
+
+    const renderSidebar = () => {
+        if (!selection) {
+            return (
+                <div style={{ padding: 12 }}>
+                    <div
+                        data-testid="stage-configuration-section"
+                        style={{ marginBottom: 8 }}
+                    >
+                        <StageConfiguration />
+                    </div>
+                    <div style={{ padding: 8, color: '#888', fontSize: 12 }}>
+                        Select a PU or module to inspect
+                    </div>
+                </div>
+            );
+        }
+        if (selection.type === 'pu') {
+            return <PUInspector puId={selection.id} />;
+        }
+        return null;
+    };
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#1e1e1e', color: '#ccc', fontFamily: 'sans-serif' }}>
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', height: 40, background: '#2d2d2d', borderBottom: '1px solid #444', padding: '0 8px', gap: 8 }}>
                 <span style={{ fontWeight: 600, fontSize: 13 }}>Application Flow Editor</span>
                 <span style={{ flex: 1 }} />
-                {/* LiveConnectionButton placeholder */}
-                <span id="live-connection-slot" />
+                {isLive && <LiveTransitionPanel stages={stages} />}
+                <LiveConnectionButton />
             </div>
 
             {/* Tab bar */}
@@ -90,21 +135,34 @@ export const AppV2: React.FC = () => {
             <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
                 {/* Tab content */}
                 <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-                    {activeTab === 'graph' && <div id="graph-tab-content" style={{ height: '100%' }}>Graph view (coming soon)</div>}
-                    {activeTab === 'presence' && <div id="presence-tab-content" style={{ height: '100%' }}>Presence grid (coming soon)</div>}
-                    {activeTab === 'streams' && <div id="streams-tab-content" style={{ height: '100%' }}>Streams tab (coming soon)</div>}
+                    {activeTab === 'graph' && (
+                        <div id="graph-tab-content" style={{ height: '100%' }}>
+                            <GraphView
+                                onStreamLabelClick={handleStreamLabelClick}
+                                onPUSelect={handlePUSelect}
+                            />
+                        </div>
+                    )}
+                    {activeTab === 'presence' && (
+                        <div id="presence-tab-content" style={{ height: '100%' }}>
+                            <ModulePresenceGrid />
+                        </div>
+                    )}
+                    {activeTab === 'streams' && (
+                        <div id="streams-tab-content" style={{ height: '100%' }}>
+                            <StreamsTab />
+                        </div>
+                    )}
                 </div>
 
                 {/* Sidebar */}
                 <div id="sidebar-container" style={{ width: 280, borderLeft: '1px solid #444', overflow: 'auto', background: '#252526' }}>
-                    <div style={{ padding: 12, color: '#888', fontSize: 12 }}>Select a node to inspect</div>
+                    {renderSidebar()}
                 </div>
             </div>
 
-            {/* Footer: ValidationBar placeholder */}
-            <div id="validation-bar-slot" style={{ height: 28, background: '#007acc', display: 'flex', alignItems: 'center', padding: '0 8px', fontSize: 11 }}>
-                No manifest loaded
-            </div>
+            {/* Footer */}
+            <ValidationBarV2 />
         </div>
     );
 };

@@ -9,6 +9,7 @@ export type TLNodeState = 'grey' | 'amber' | 'green' | 'red';
 
 interface GraphViewProps {
     onStreamLabelClick?: (streamId: string) => void;
+    onPUSelect?: (puId: string | null) => void;
 }
 
 interface Position {
@@ -69,7 +70,7 @@ function getNodeCenter(pos: Position): Position {
     };
 }
 
-export const GraphView: React.FC<GraphViewProps> = ({ onStreamLabelClick }) => {
+export const GraphView: React.FC<GraphViewProps> = ({ onStreamLabelClick, onPUSelect }) => {
     const { manifest } = useManifestStoreV2();
     const { connectionState, modules: liveModules } = useLiveStoreV2();
     const [positions, setPositions] = useState<Map<string, Position>>(new Map());
@@ -137,14 +138,16 @@ export const GraphView: React.FC<GraphViewProps> = ({ onStreamLabelClick }) => {
             const pos = positions.get(dragState.puId);
             if (pos && pos.x === dragState.startPos.x && pos.y === dragState.startPos.y) {
                 setSelected(dragState.puId);
+                onPUSelect?.(dragState.puId);
             }
             setDragState(null);
         }
-    }, [dragState, positions]);
+    }, [dragState, positions, onPUSelect]);
 
     const handleNodeClick = useCallback((puId: string) => {
         setSelected(puId);
-    }, []);
+        onPUSelect?.(puId);
+    }, [onPUSelect]);
 
     const handleGhostClick = useCallback(() => {
         bridgeRequest('manifest.applyCommand', {
