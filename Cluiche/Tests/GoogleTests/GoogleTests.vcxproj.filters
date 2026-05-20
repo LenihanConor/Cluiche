@@ -546,6 +546,9 @@
     <ClCompile Include="DiaApplicationEditor\TestCommands_Stage.cpp">
       <Filter>DiaApplicationEditor</Filter>
     </ClCompile>
+    <ClCompile Include="DiaApplicationEditor\TestRiskAssessor.cpp">
+      <Filter>DiaApplicationEditor</Filter>
+    </ClCompile>
     <!-- Editor -->
     <ClCompile Include="Editor\TestEditorPluginRegistry.cpp">
       <Filter>Editor</Filter>

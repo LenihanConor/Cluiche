@@ -90,6 +90,7 @@
     <ClInclude Include="V2\ManifestLoader.h" />
     <ClInclude Include="V2\ManifestSaver.h" />
     <ClInclude Include="V2\ManifestValidator.h" />
+    <ClInclude Include="V2\RiskAssessor.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaApplicationEditor.cpp" />
@@ -106,6 +107,7 @@
     <ClCompile Include="V2\ManifestLoader.cpp" />
     <ClCompile Include="V2\ManifestSaver.cpp" />
     <ClCompile Include="V2\ManifestValidator.cpp" />
+    <ClCompile Include="V2\RiskAssessor.cpp" />
   </ItemGroup>
 
   <ItemGroup>

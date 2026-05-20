@@ -254,6 +254,7 @@
     <ClCompile Include="DiaApplicationEditor\TestCommands_Module.cpp" />
     <ClCompile Include="DiaApplicationEditor\TestCommands_Stream.cpp" />
     <ClCompile Include="DiaApplicationEditor\TestCommands_Stage.cpp" />
+    <ClCompile Include="DiaApplicationEditor\TestRiskAssessor.cpp" />
     <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\StubEditorPlugin.cpp" />
     <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\HelloEditorPlugin.cpp" />
     <ClCompile Include="..\..\..\Dia\DiaEditor\Plugin\HomeEditorPlugin.cpp" />

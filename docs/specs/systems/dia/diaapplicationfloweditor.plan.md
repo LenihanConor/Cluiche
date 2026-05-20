@@ -145,7 +145,7 @@ All C++ backend code integrates with DiaObservation (when available) and DiaMetr
 | 7 | Implement concrete commands: AddModule, RemoveModule, AddModuleDep, RemoveModuleDep, SetModuleStages, SetModuleStartTimeout, SetModuleStopTimeout | `TestCommands_Module`: 12 tests — all pass | Done | sonnet | `V2/Commands/ModuleCommands.h/.cpp` |
 | 8 | Implement concrete commands: AddStream, RemoveStream, SetStreamType, SetStreamPayload, SetStreamFromPU, SetStreamToPU, SetStreamCapacity, SetStreamMaxReaders | `TestCommands_Stream`: 8 tests — all pass | Done | sonnet | `V2/Commands/StreamCommands.h/.cpp` |
 | 9 | Implement concrete commands: AddStage, RemoveStage, RenameStage, SetStageTrigger, SetInitialStage, ReorderStages | `TestCommands_Stage`: 10 tests — all pass | Done | sonnet | `V2/Commands/StageCommands.h/.cpp` |
-| 10 | Implement `RiskAssessor` | `TestRiskAssessor`: 6 risk conditions (detected when applicable, null when safe) | Todo | sonnet | Depends on #1, commands |
+| 10 | Implement `RiskAssessor` | `TestRiskAssessor`: 13 tests — all pass | Done | sonnet | `V2/RiskAssessor.h/.cpp`; uses dynamic_cast (RTTI enabled) |
 | 11 | Implement `TypeDiscoveryService` (file-based) | `TestTypeDiscoveryService`: 11 tests — all pass | Done | sonnet | `V2/TypeDiscoveryService.h/.cpp` |
 | 12 | Implement `LiveStateStore` | `TestLiveStateStore`: 12 tests — all pass | Done | sonnet | `V2/LiveStateStore.h/.cpp` |
 | 13 | Wire all Phase 1 code into `DiaApplicationEditor.vcxproj` + filters | Build passes: `dia pipeline --target googletest` ✓ | Done | haiku | Updated again for Batch 2 |

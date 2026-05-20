@@ -43,6 +43,9 @@
     <ClInclude Include="V2\ManifestValidator.h">
       <Filter>V2</Filter>
     </ClInclude>
+    <ClInclude Include="V2\RiskAssessor.h">
+      <Filter>V2</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaApplicationEditor.cpp" />
@@ -81,6 +84,9 @@
       <Filter>V2</Filter>
     </ClCompile>
     <ClCompile Include="V2\ManifestValidator.cpp">
+      <Filter>V2</Filter>
+    </ClCompile>
+    <ClCompile Include="V2\RiskAssessor.cpp">
       <Filter>V2</Filter>
     </ClCompile>
   </ItemGroup>
