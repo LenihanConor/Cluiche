@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { bridgeRequest } from './bridge';
 import { useManifestStoreV2 } from './useManifestStoreV2';
 import { useLiveStoreV2 } from './useLiveStoreV2';
+import { useSelectionStoreV2 } from './useSelectionStoreV2';
 import type { StreamV2, OverflowPolicy } from './types';
 
 function isSystemStream(id: string): boolean {
@@ -230,7 +231,8 @@ export const StreamsTab: React.FC = () => {
     const connectionState = useLiveStoreV2((s) => s.connectionState);
     const liveStreams = useLiveStoreV2((s) => s.streams);
 
-    const [selectedId, setSelectedId] = useState<string | null>(null);
+    const selectedId = useSelectionStoreV2((s) => s.streamId);
+    const setSelectedId = useSelectionStoreV2((s) => s.setStream);
 
     const streams: StreamV2[] = manifest?.streams ?? [];
     const selectedStream = streams.find((s) => s.id === selectedId) ?? null;

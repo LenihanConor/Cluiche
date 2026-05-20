@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useManifestStoreV2 } from './useManifestStoreV2';
 import { useUndoStoreV2 } from './useUndoStoreV2';
-import { useValidationStoreV2 } from './useValidationStoreV2';
+import { useValidationStoreV2, normalizeValidationResult } from './useValidationStoreV2';
+import { useSelectionStoreV2 } from './useSelectionStoreV2';
 import { useLiveStoreV2 } from './useLiveStoreV2';
 import { GraphView } from './GraphView';
 import { ModulePresenceGrid } from './ModulePresenceGrid';
@@ -14,11 +15,11 @@ import { LiveTransitionPanel } from './LiveTransitionPanel';
 import type { ManifestStateV2 } from './types';
 
 type Tab = 'graph' | 'presence' | 'streams';
-type Selection = { type: 'pu'; id: string } | null;
 
 export const AppV2: React.FC = () => {
     const [activeTab, setActiveTab] = useState<Tab>('graph');
-    const [selection, setSelection] = useState<Selection>(null);
+    const selectedPuId = useSelectionStoreV2((s) => s.puId);
+    const setPUSelection = useSelectionStoreV2((s) => s.setPU);
 
     const applyStateSnapshot = useManifestStoreV2((s) => s.applyStateSnapshot);
     const refreshState = useManifestStoreV2((s) => s.refreshState);
@@ -58,7 +59,7 @@ export const AppV2: React.FC = () => {
                     if (d) applyUndoResponse({ canUndo: d.canUndo, canRedo: d.canRedo, isDirty: d.isDirty });
                     break;
                 case 'validation.result':
-                    if (d) setValidationResult({ errorCount: d.errorCount ?? 0, warningCount: d.warningCount ?? 0, issues: d.issues ?? [] });
+                    if (d) setValidationResult(normalizeValidationResult(d));
                     break;
                 case 'live.connected':
                     setConnectionState('connected');
@@ -100,7 +101,7 @@ export const AppV2: React.FC = () => {
     const isLive = connectionState === 'connected';
 
     const handlePUSelect = (puId: string | null) => {
-        setSelection(puId ? { type: 'pu', id: puId } : null);
+        setPUSelection(puId);
     };
 
     const handleStreamLabelClick = () => {
@@ -112,8 +113,8 @@ export const AppV2: React.FC = () => {
         : null;
 
     const renderSidebar = () => {
-        if (selection?.type === 'pu') {
-            return <PUInspector puId={selection.id} />;
+        if (selectedPuId) {
+            return <PUInspector puId={selectedPuId} />;
         }
         return (
             <div style={{ padding: 12 }}>
@@ -202,7 +203,7 @@ export const AppV2: React.FC = () => {
             </div>
 
             {/* Footer */}
-            <ValidationBarV2 />
+            <ValidationBarV2 setActiveTab={setActiveTab} />
         </div>
     );
 };

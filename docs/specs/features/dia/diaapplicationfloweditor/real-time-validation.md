@@ -23,7 +23,7 @@ Continuously validate the in-memory ManifestDocument against the same rules the 
 3. **Error/warning classification** — Issues classified as Error (blocks save, blocks runtime load) or Warning (informational, allows save with confirmation).
 4. **ValidationBar** — Footer bar showing: error count (red), warning count (amber). Click expands to full issue list.
 5. **Issue list** — Each issue shows: severity icon, rule ID, human-readable message, location (which PU/module/stream is involved).
-6. **Click-to-navigate** — Clicking an issue navigates to the relevant element (selects PU/module/stream in appropriate tab/inspector).
+6. **Click-to-navigate** — Clicking an issue navigates to the relevant element (selects PU/module/stream in appropriate tab/inspector). *(Implementation deferred to [validation-fix-suggestions.md](validation-fix-suggestions.md), which extends `ValidationIssue` with explicit target fields and adds optional one-click fix commands.)*
 7. **Validation rules** — At minimum:
    - Dependency cycle detection (Error)
    - Orphaned modules (module in no stage) (Warning)
@@ -121,7 +121,7 @@ Save flow (from Manifest Load/Save feature) calls validation before proceeding:
 | 2 | Debounce integration on model change | Integration test: rapid edits → single validation | Todo | |
 | 3 | CEF message handler for validation trigger/result | Integration test: round-trip | Todo | |
 | 4 | React `ValidationBar` component | Manual: shows counts, expands to list | Todo | |
-| 5 | Click-to-navigate from issue to element | Manual: click navigates to correct inspector | Todo | |
+| 5 | Click-to-navigate from issue to element | Manual: click navigates to correct inspector | Done | Implemented in [validation-fix-suggestions.md](validation-fix-suggestions.md) via `targetKind` field on `ValidationIssue` + `ValidationBarV2` 3-way switch. |
 | 6 | Save-blocking integration | Unit test: save rejected when errors exist | Todo | Integrates with Manifest Load/Save |
 
 ## Binding Decisions Compliance

@@ -17,6 +17,7 @@ vi.mock('./useLiveStoreV2', () => ({
 import { StreamsTab } from './StreamsTab';
 import { useManifestStoreV2 } from './useManifestStoreV2';
 import { useLiveStoreV2 } from './useLiveStoreV2';
+import { useSelectionStoreV2 } from './useSelectionStoreV2';
 import type { ManifestV2, StreamV2 } from './types';
 
 const mockUseManifest = useManifestStoreV2 as unknown as ReturnType<typeof vi.fn>;
@@ -56,6 +57,7 @@ function setupMocks(manifest: ManifestV2 | null, liveOverrides: Record<string, u
 
 beforeEach(() => {
     vi.clearAllMocks();
+    useSelectionStoreV2.setState({ puId: null, streamId: null });
 });
 
 describe('StreamsTab', () => {

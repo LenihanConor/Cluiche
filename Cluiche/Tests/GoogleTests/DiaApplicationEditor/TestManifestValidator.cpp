@@ -36,6 +36,13 @@ static ManifestEditorState MakeValid()
     return s;
 }
 
+static const ValidationIssue* FindIssue(const ValidationResult& r, ValidationRuleId rule)
+{
+    for (unsigned int i = 0; i < r.issues.Size(); ++i)
+        if (r.issues[i].ruleId == rule) return &r.issues[i];
+    return nullptr;
+}
+
 // ==============================================================================
 // DependencyCycle
 // ==============================================================================
@@ -661,4 +668,250 @@ TEST(ManifestValidator, StreamSelfLoop_SamePU_HasError)
     }
     EXPECT_TRUE(found);
     EXPECT_TRUE(r.HasErrors());
+}
+
+// ==============================================================================
+// Target and SuggestedCommand Tests
+// ==============================================================================
+
+TEST(ManifestValidator, DependencyCycle_Targets_PU)
+{
+    ManifestEditorState s = MakeValid();
+    s.manifest.processingUnits[0].modules[0].dependencies.Add(StringCRC("ModB"));
+
+    ModuleDeclaration modB;
+    modB.instanceId = StringCRC("ModB");
+    modB.typeId     = StringCRC("ModB");
+    modB.stages.Add(StringCRC("all"));
+    modB.dependencies.Add(StringCRC("ModA"));
+    s.manifest.processingUnits[0].modules.Add(modB);
+
+    ValidationResult r = ManifestValidator::Validate(s);
+    const ValidationIssue* iss = FindIssue(r, ValidationRuleId::DependencyCycle);
+    ASSERT_NE(iss, nullptr);
+    EXPECT_EQ(iss->targetKind, ValidationTargetKind::PU);
+    EXPECT_STREQ(iss->targetPuId, "MainPU");
+    EXPECT_STREQ(iss->targetModuleId, "");
+    EXPECT_STREQ(iss->suggestedActionLabel, "");
+    EXPECT_STREQ(iss->suggestedCommand.commandType, "");
+}
+
+TEST(ManifestValidator, OrphanModule_Targets_Module_AndFix)
+{
+    ManifestEditorState s = MakeValid();
+    s.manifest.processingUnits[0].modules[0].stages.RemoveAll();
+
+    ValidationResult r = ManifestValidator::Validate(s);
+    const ValidationIssue* iss = FindIssue(r, ValidationRuleId::OrphanModule);
+    ASSERT_NE(iss, nullptr);
+    EXPECT_EQ(iss->targetKind, ValidationTargetKind::Module);
+    EXPECT_STREQ(iss->targetPuId, "MainPU");
+    EXPECT_STREQ(iss->targetModuleId, "ModA");
+    EXPECT_STREQ(iss->suggestedActionLabel, "Assign to 'all' stages");
+    EXPECT_STREQ(iss->suggestedCommand.commandType, "SetModuleStages");
+    EXPECT_STREQ(iss->suggestedCommand.puId, "MainPU");
+    EXPECT_STREQ(iss->suggestedCommand.instanceId, "ModA");
+    EXPECT_STREQ(iss->suggestedCommand.stagesCSV, "all");
+}
+
+TEST(ManifestValidator, UnknownStreamInReads_Targets_AndFix)
+{
+    ManifestEditorState s = MakeValid();
+    s.manifest.processingUnits[0].modules[0].reads.Add(StringCRC("GhostStream"));
+
+    ValidationResult r = ManifestValidator::Validate(s);
+    const ValidationIssue* iss = FindIssue(r, ValidationRuleId::UnknownStreamInReads);
+    ASSERT_NE(iss, nullptr);
+    EXPECT_EQ(iss->targetKind, ValidationTargetKind::Module);
+    EXPECT_STREQ(iss->targetPuId, "MainPU");
+    EXPECT_STREQ(iss->targetModuleId, "ModA");
+    EXPECT_STREQ(iss->targetStreamId, "GhostStream");
+    EXPECT_STREQ(iss->suggestedActionLabel, "Remove read");
+    EXPECT_STREQ(iss->suggestedCommand.commandType, "RemoveModuleRead");
+    EXPECT_STREQ(iss->suggestedCommand.puId, "MainPU");
+    EXPECT_STREQ(iss->suggestedCommand.instanceId, "ModA");
+    EXPECT_STREQ(iss->suggestedCommand.streamId, "GhostStream");
+}
+
+TEST(ManifestValidator, UnknownStreamInWrites_Targets_AndFix)
+{
+    ManifestEditorState s = MakeValid();
+    s.manifest.processingUnits[0].modules[0].writes.Add(StringCRC("GhostStream"));
+
+    ValidationResult r = ManifestValidator::Validate(s);
+    const ValidationIssue* iss = FindIssue(r, ValidationRuleId::UnknownStreamInWrites);
+    ASSERT_NE(iss, nullptr);
+    EXPECT_EQ(iss->targetKind, ValidationTargetKind::Module);
+    EXPECT_STREQ(iss->targetPuId, "MainPU");
+    EXPECT_STREQ(iss->targetModuleId, "ModA");
+    EXPECT_STREQ(iss->targetStreamId, "GhostStream");
+    EXPECT_STREQ(iss->suggestedActionLabel, "Remove write");
+    EXPECT_STREQ(iss->suggestedCommand.commandType, "RemoveModuleWrite");
+    EXPECT_STREQ(iss->suggestedCommand.puId, "MainPU");
+    EXPECT_STREQ(iss->suggestedCommand.instanceId, "ModA");
+    EXPECT_STREQ(iss->suggestedCommand.streamId, "GhostStream");
+}
+
+TEST(ManifestValidator, OrphanReaderStream_Targets_AndFix)
+{
+    ManifestEditorState s = MakeValid();
+    StreamDeclaration stream;
+    stream.id          = StringCRC("UnreadStream");
+    stream.payloadType = StringCRC("Data");
+    stream.fromPU      = StringCRC("MainPU");
+    stream.toPU        = StringCRC("MainPU");
+    s.manifest.streams.Add(stream);
+    s.manifest.processingUnits[0].modules[0].writes.Add(StringCRC("UnreadStream"));
+
+    ValidationResult r = ManifestValidator::Validate(s);
+    const ValidationIssue* iss = FindIssue(r, ValidationRuleId::OrphanReaderStream);
+    ASSERT_NE(iss, nullptr);
+    EXPECT_EQ(iss->targetKind, ValidationTargetKind::Stream);
+    EXPECT_STREQ(iss->targetStreamId, "UnreadStream");
+    EXPECT_STREQ(iss->suggestedActionLabel, "Remove stream");
+    EXPECT_STREQ(iss->suggestedCommand.commandType, "RemoveStream");
+    EXPECT_STREQ(iss->suggestedCommand.streamId, "UnreadStream");
+}
+
+TEST(ManifestValidator, OrphanWriterStream_Targets_AndFix)
+{
+    ManifestEditorState s = MakeValid();
+    StreamDeclaration stream;
+    stream.id          = StringCRC("UnwrittenStream");
+    stream.payloadType = StringCRC("Data");
+    stream.fromPU      = StringCRC("MainPU");
+    stream.toPU        = StringCRC("MainPU");
+    s.manifest.streams.Add(stream);
+    s.manifest.processingUnits[0].modules[0].reads.Add(StringCRC("UnwrittenStream"));
+
+    ValidationResult r = ManifestValidator::Validate(s);
+    const ValidationIssue* iss = FindIssue(r, ValidationRuleId::OrphanWriterStream);
+    ASSERT_NE(iss, nullptr);
+    EXPECT_EQ(iss->targetKind, ValidationTargetKind::Stream);
+    EXPECT_STREQ(iss->targetStreamId, "UnwrittenStream");
+    EXPECT_STREQ(iss->suggestedActionLabel, "Remove stream");
+    EXPECT_STREQ(iss->suggestedCommand.commandType, "RemoveStream");
+    EXPECT_STREQ(iss->suggestedCommand.streamId, "UnwrittenStream");
+}
+
+TEST(ManifestValidator, PayloadTypeMissing_Targets_StreamOnly)
+{
+    ManifestEditorState s = MakeValid();
+    StreamDeclaration stream;
+    stream.id = StringCRC("UntypedStream");
+    stream.fromPU = StringCRC("MainPU");
+    stream.toPU = StringCRC("MainPU");
+    s.manifest.streams.Add(stream);
+    s.manifest.processingUnits[0].modules[0].reads.Add(StringCRC("UntypedStream"));
+    s.manifest.processingUnits[0].modules[0].writes.Add(StringCRC("UntypedStream"));
+
+    ValidationResult r = ManifestValidator::Validate(s);
+    const ValidationIssue* iss = FindIssue(r, ValidationRuleId::PayloadTypeMissing);
+    ASSERT_NE(iss, nullptr);
+    EXPECT_EQ(iss->targetKind, ValidationTargetKind::Stream);
+    EXPECT_STREQ(iss->targetStreamId, "UntypedStream");
+    EXPECT_STREQ(iss->suggestedActionLabel, "");
+    EXPECT_STREQ(iss->suggestedCommand.commandType, "");
+}
+
+TEST(ManifestValidator, StageRefInvalid_Targets_AndFix_StagesCSV)
+{
+    ManifestEditorState s = MakeValid();
+    s.manifest.processingUnits[0].modules[0].stages.RemoveAll();
+    s.manifest.processingUnits[0].modules[0].stages.Add(StringCRC("all"));
+    s.manifest.processingUnits[0].modules[0].stages.Add(StringCRC("GhostStage"));
+
+    ValidationResult r = ManifestValidator::Validate(s);
+    const ValidationIssue* iss = FindIssue(r, ValidationRuleId::StageRefInvalid);
+    ASSERT_NE(iss, nullptr);
+    EXPECT_EQ(iss->targetKind, ValidationTargetKind::Module);
+    EXPECT_STREQ(iss->targetPuId, "MainPU");
+    EXPECT_STREQ(iss->targetModuleId, "ModA");
+    EXPECT_STREQ(iss->suggestedActionLabel, "Remove invalid stage ref");
+    EXPECT_STREQ(iss->suggestedCommand.commandType, "SetModuleStages");
+    EXPECT_STREQ(iss->suggestedCommand.puId, "MainPU");
+    EXPECT_STREQ(iss->suggestedCommand.instanceId, "ModA");
+    EXPECT_STREQ(iss->suggestedCommand.stagesCSV, "all");
+}
+
+TEST(ManifestValidator, DuplicateInstanceId_Targets_Module_NoFix)
+{
+    ManifestEditorState s = MakeValid();
+    ProcessingUnitDeclaration pu2;
+    pu2.instanceId = StringCRC("SecondPU");
+    pu2.frequencyHz = 30.f;
+
+    ModuleDeclaration modDup;
+    modDup.instanceId = StringCRC("ModA"); // duplicate!
+    modDup.typeId     = StringCRC("ModA");
+    modDup.stages.Add(StringCRC("all"));
+    pu2.modules.Add(modDup);
+    s.manifest.processingUnits.Add(pu2);
+
+    ValidationResult r = ManifestValidator::Validate(s);
+    const ValidationIssue* iss = FindIssue(r, ValidationRuleId::DuplicateInstanceId);
+    ASSERT_NE(iss, nullptr);
+    EXPECT_EQ(iss->targetKind, ValidationTargetKind::Module);
+    EXPECT_STREQ(iss->targetPuId, "SecondPU");
+    EXPECT_STREQ(iss->targetModuleId, "ModA");
+    EXPECT_STREQ(iss->suggestedActionLabel, "");
+    EXPECT_STREQ(iss->suggestedCommand.commandType, "");
+}
+
+TEST(ManifestValidator, InitialStageInvalid_Targets_None)
+{
+    ManifestEditorState s = MakeValid();
+    s.manifest.initialStage = StringCRC("NoSuchStage");
+
+    ValidationResult r = ManifestValidator::Validate(s);
+    const ValidationIssue* iss = FindIssue(r, ValidationRuleId::InitialStageInvalid);
+    ASSERT_NE(iss, nullptr);
+    EXPECT_EQ(iss->targetKind, ValidationTargetKind::None);
+    EXPECT_STREQ(iss->targetPuId, "");
+    EXPECT_STREQ(iss->targetModuleId, "");
+    EXPECT_STREQ(iss->targetStreamId, "");
+    EXPECT_STREQ(iss->suggestedActionLabel, "");
+    EXPECT_STREQ(iss->suggestedCommand.commandType, "");
+}
+
+TEST(ManifestValidator, StreamPUInvalid_Targets_Stream)
+{
+    ManifestEditorState s = MakeValid();
+    StreamDeclaration stream;
+    stream.id          = StringCRC("BadStream");
+    stream.payloadType = StringCRC("Payload");
+    stream.fromPU      = StringCRC("GhostPU"); // not in manifest
+    stream.toPU        = StringCRC("MainPU");
+    s.manifest.streams.Add(stream);
+    s.manifest.processingUnits[0].modules[0].reads.Add(StringCRC("BadStream"));
+    s.manifest.processingUnits[0].modules[0].writes.Add(StringCRC("BadStream"));
+
+    ValidationResult r = ManifestValidator::Validate(s);
+    const ValidationIssue* iss = FindIssue(r, ValidationRuleId::StreamPUInvalid);
+    ASSERT_NE(iss, nullptr);
+    EXPECT_EQ(iss->targetKind, ValidationTargetKind::Stream);
+    EXPECT_STREQ(iss->targetStreamId, "BadStream");
+    EXPECT_STREQ(iss->suggestedActionLabel, "");
+    EXPECT_STREQ(iss->suggestedCommand.commandType, "");
+}
+
+TEST(ManifestValidator, StreamSelfLoop_Targets_Stream)
+{
+    ManifestEditorState s = MakeValid();
+    StreamDeclaration stream;
+    stream.id          = StringCRC("LoopStream");
+    stream.payloadType = StringCRC("Payload");
+    stream.fromPU      = StringCRC("MainPU");
+    stream.toPU        = StringCRC("MainPU"); // self-loop
+    s.manifest.streams.Add(stream);
+    s.manifest.processingUnits[0].modules[0].reads.Add(StringCRC("LoopStream"));
+    s.manifest.processingUnits[0].modules[0].writes.Add(StringCRC("LoopStream"));
+
+    ValidationResult r = ManifestValidator::Validate(s);
+    const ValidationIssue* iss = FindIssue(r, ValidationRuleId::StreamSelfLoop);
+    ASSERT_NE(iss, nullptr);
+    EXPECT_EQ(iss->targetKind, ValidationTargetKind::Stream);
+    EXPECT_STREQ(iss->targetStreamId, "LoopStream");
+    EXPECT_STREQ(iss->suggestedActionLabel, "");
+    EXPECT_STREQ(iss->suggestedCommand.commandType, "");
 }

@@ -830,6 +830,58 @@ namespace Dia { namespace Editor {
             item["severity"] = (issue.severity == Dia::ApplicationFlow::Editor::ValidationSeverity::Error)
                                ? "error" : "warning";
             item["message"]  = issue.message;
+
+            const char* kindStr = "";
+            switch (issue.targetKind)
+            {
+                case Dia::ApplicationFlow::Editor::ValidationTargetKind::PU:     kindStr = "pu";     break;
+                case Dia::ApplicationFlow::Editor::ValidationTargetKind::Module: kindStr = "module"; break;
+                case Dia::ApplicationFlow::Editor::ValidationTargetKind::Stream: kindStr = "stream"; break;
+                case Dia::ApplicationFlow::Editor::ValidationTargetKind::None:   kindStr = "";       break;
+            }
+            item["targetKind"]     = kindStr;
+            item["targetPuId"]     = issue.targetPuId;
+            item["targetModuleId"] = issue.targetModuleId;
+            item["targetStreamId"] = issue.targetStreamId;
+            item["suggestedActionLabel"] = issue.suggestedActionLabel;
+
+            if (issue.suggestedCommand.commandType[0] != '\0')
+            {
+                Json::Value cmd;
+                cmd["commandType"] = issue.suggestedCommand.commandType;
+                if (issue.suggestedCommand.puId[0])       cmd["puId"]       = issue.suggestedCommand.puId;
+                if (issue.suggestedCommand.instanceId[0]) cmd["instanceId"] = issue.suggestedCommand.instanceId;
+                if (issue.suggestedCommand.streamId[0])   cmd["streamId"]   = issue.suggestedCommand.streamId;
+                if (issue.suggestedCommand.stagesCSV[0])
+                {
+                    Json::Value stages(Json::arrayValue);
+                    const char* p = issue.suggestedCommand.stagesCSV;
+                    char buf[64]; unsigned int bi = 0;
+                    while (*p)
+                    {
+                        if (*p == ',')
+                        {
+                            buf[bi] = '\0';
+                            if (bi > 0) stages.append(Json::Value(buf));
+                            bi = 0;
+                        }
+                        else if (bi + 1 < sizeof(buf))
+                        {
+                            buf[bi++] = *p;
+                        }
+                        ++p;
+                    }
+                    buf[bi] = '\0';
+                    if (bi > 0) stages.append(Json::Value(buf));
+                    cmd["stages"] = stages;
+                }
+                item["suggestedCommand"] = cmd;
+            }
+            else
+            {
+                item["suggestedCommand"] = Json::nullValue;
+            }
+
             issues.append(item);
         }
         result["issues"] = issues;

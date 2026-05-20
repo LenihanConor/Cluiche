@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ValidationBar — Fix Suggestions</title>
+<style>
+    body {
+        margin: 0;
+        background: #1e1e1e;
+        color: #ccc;
+        font: 13px -apple-system, "Segoe UI", sans-serif;
+        padding: 24px;
+    }
+    h1 {
+        font-size: 14px;
+        font-weight: 600;
+        color: #888;
+        margin: 0 0 12px 0;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .caption {
+        color: #888;
+        font-size: 11px;
+        margin: 0 0 16px 0;
+        max-width: 720px;
+    }
+    .panel-title {
+        font-size: 12px;
+        color: #aaa;
+        font-weight: 600;
+        margin: 0 0 8px 0;
+    }
+
+    .editor {
+        width: 720px;
+        background: #1e1e1e;
+        border: 1px solid #2d2d2d;
+        margin-bottom: 32px;
+    }
+
+    /* Footer bar */
+    .vbar {
+        height: 28px;
+        background: #c0392b;
+        display: flex;
+        align-items: center;
+        padding: 0 8px;
+        font-size: 11px;
+        gap: 8px;
+        cursor: pointer;
+        user-select: none;
+    }
+    .vbar.warn  { background: #f0a030; }
+    .vbar.clean { background: #007acc; }
+    .vbar .spacer { margin-left: auto; }
+
+    /* Issues list (expanded) */
+    .issues {
+        background: #1e1e1e;
+        border-top: 1px solid #444;
+        max-height: 240px;
+        overflow: auto;
+    }
+    .issue {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border-bottom: 1px solid #2a2a2a;
+        font-size: 11px;
+    }
+    .issue.navigable {
+        cursor: pointer;
+    }
+    .issue.navigable:hover {
+        background: #2d2d2d;
+    }
+    .issue .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex: 0 0 auto;
+    }
+    .issue.error   .dot { background: #c0392b; }
+    .issue.warning .dot { background: #f0a030; }
+    .issue .rule {
+        font-family: ui-monospace, Consolas, monospace;
+        color: #888;
+        flex: 0 0 auto;
+        min-width: 200px;
+    }
+    .issue .msg {
+        flex: 1;
+        color: #ccc;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .issue.error .msg-color    { color: #f48771; }
+    .issue.warning .msg-color  { color: #cca700; }
+    .issue .chev {
+        color: #666;
+        flex: 0 0 auto;
+        font-size: 14px;
+        line-height: 1;
+    }
+    .issue.navigable .chev { color: #888; }
+    .fix-btn {
+        background: none;
+        border: 1px solid #444;
+        border-radius: 3px;
+        color: #aaa;
+        cursor: pointer;
+        padding: 2px 8px;
+        font-size: 11px;
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+    .fix-btn:hover {
+        background: #2d2d2d;
+        color: #fff;
+        border-color: #666;
+    }
+</style>
+</head>
+<body>
+
+<h1>ValidationBar — Click to Navigate / One-Click Fix</h1>
+<p class="caption">
+    Issue rows surface targets and (where applicable) one-click fix commands provided by the C++ validator.
+    Rows with a navigation target show a chevron and respond to hover; rows with a fix command show a
+    right-aligned button. Clean / mixed / fixable states shown below.
+</p>
+
+<!-- ── A. Mixed state, expanded ───────────────────────────────────────── -->
+<p class="panel-title">A. Errors + warnings, list expanded — fixable rules show "Fix" button</p>
+<div class="editor">
+    <div class="vbar">
+        <span>3 errors</span>
+        <span>2 warnings</span>
+        <span class="spacer">▲</span>
+    </div>
+    <div class="issues">
+
+        <div class="issue error navigable">
+            <span class="dot"></span>
+            <span class="rule">UNKNOWN_STREAM_IN_READS</span>
+            <span class="msg msg-color">RenderModule reads stream BadStream which is not declared</span>
+            <span class="chev">›</span>
+            <button class="fix-btn">Remove read</button>
+        </div>
+
+        <div class="issue error navigable">
+            <span class="dot"></span>
+            <span class="rule">UNKNOWN_STREAM_IN_WRITES</span>
+            <span class="msg msg-color">PhysicsModule writes stream OldOutput which is not declared</span>
+            <span class="chev">›</span>
+            <button class="fix-btn">Remove write</button>
+        </div>
+
+        <div class="issue error navigable">
+            <span class="dot"></span>
+            <span class="rule">DEPENDENCY_CYCLE</span>
+            <span class="msg msg-color">Cycle detected in PU MainPU (Render → Physics → Render)</span>
+            <span class="chev">›</span>
+            <!-- no fix-btn: navigate-only -->
+        </div>
+
+        <div class="issue warning navigable">
+            <span class="dot"></span>
+            <span class="rule">ORPHAN_MODULE</span>
+            <span class="msg msg-color">AudioModule in MainPU has no stage assignments</span>
+            <span class="chev">›</span>
+            <button class="fix-btn">Assign to 'all' stages</button>
+        </div>
+
+        <div class="issue warning navigable">
+            <span class="dot"></span>
+            <span class="rule">ORPHAN_READER_STREAM</span>
+            <span class="msg msg-color">Stream UnusedStream has no module reading it</span>
+            <span class="chev">›</span>
+            <button class="fix-btn">Remove stream</button>
+        </div>
+
+    </div>
+</div>
+
+<!-- ── B. Non-navigable issue ─────────────────────────────────────────── -->
+<p class="panel-title">B. Issue without a target (navigate-only blocked) — no chevron, no hover</p>
+<div class="editor">
+    <div class="vbar warn">
+        <span>1 error</span>
+        <span class="spacer">▲</span>
+    </div>
+    <div class="issues">
+        <div class="issue error">
+            <span class="dot"></span>
+            <span class="rule">INITIAL_STAGE_INVALID</span>
+            <span class="msg msg-color">stages are defined but initialStage is not set</span>
+            <!-- no chevron, no fix-btn: row is informational only -->
+        </div>
+    </div>
+</div>
+
+<!-- ── C. Clean state ─────────────────────────────────────────────────── -->
+<p class="panel-title">C. Clean (no issues) — bar collapsed</p>
+<div class="editor">
+    <div class="vbar clean">
+        <span>No issues</span>
+    </div>
+</div>
+
+</body>
+</html>

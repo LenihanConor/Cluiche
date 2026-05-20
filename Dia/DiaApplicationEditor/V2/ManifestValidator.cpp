@@ -58,17 +58,26 @@ unsigned int ValidationResult::WarningCount() const
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-static void AddIssue(ValidationResult& result, ValidationRuleId ruleId,
-                     ValidationSeverity severity, const char* message)
+template<size_t N>
+static void SafeCopy(char (&dst)[N], const char* src)
+{
+    if (!src) { dst[0] = '\0'; return; }
+    strncpy(dst, src, N - 1);
+    dst[N - 1] = '\0';
+}
+
+static ValidationIssue* AddIssue(ValidationResult& result, ValidationRuleId ruleId,
+                                 ValidationSeverity severity, const char* message)
 {
     if (result.issues.IsFull())
-        return;
+        return nullptr;
     ValidationIssue issue;
     issue.ruleId   = ruleId;
     issue.severity = severity;
     strncpy(issue.message, message, sizeof(issue.message) - 1);
     issue.message[sizeof(issue.message) - 1] = '\0';
     result.issues.Add(issue);
+    return &result.issues[result.issues.Size() - 1];
 }
 
 static bool StreamIdExists(const ApplicationManifestV2& manifest, StringCRC id)
@@ -146,6 +155,7 @@ static bool DFSHasCycle(const ProcessingUnitDeclaration& pu,
 ValidationResult ManifestValidator::Validate(const ManifestEditorState& state)
 {
     ValidationResult result;
+    result.issues.Reserve(ValidationResult::kMaxIssues);
 
     if (!state.hasManifest)
         return result;
@@ -179,8 +189,12 @@ ValidationResult ManifestValidator::Validate(const ManifestEditorState& state)
                     snprintf(msg, sizeof(msg),
                              "DEPENDENCY_CYCLE: cycle detected in PU 0x%08X",
                              pu.instanceId.Value());
-                    AddIssue(result, ValidationRuleId::DependencyCycle,
-                             ValidationSeverity::Error, msg);
+                    if (ValidationIssue* iss = AddIssue(result, ValidationRuleId::DependencyCycle,
+                                                        ValidationSeverity::Error, msg))
+                    {
+                        iss->targetKind = ValidationTargetKind::PU;
+                        SafeCopy(iss->targetPuId, pu.instanceId.AsChar());
+                    }
                 }
             }
         }
@@ -200,8 +214,18 @@ ValidationResult ManifestValidator::Validate(const ManifestEditorState& state)
                 snprintf(msg, sizeof(msg),
                          "ORPHAN_MODULE: module 0x%08X in PU 0x%08X has no stage assignments",
                          mod.instanceId.Value(), pu.instanceId.Value());
-                AddIssue(result, ValidationRuleId::OrphanModule,
-                         ValidationSeverity::Warning, msg);
+                if (ValidationIssue* iss = AddIssue(result, ValidationRuleId::OrphanModule,
+                                                    ValidationSeverity::Warning, msg))
+                {
+                    iss->targetKind = ValidationTargetKind::Module;
+                    SafeCopy(iss->targetPuId, pu.instanceId.AsChar());
+                    SafeCopy(iss->targetModuleId, mod.instanceId.AsChar());
+                    SafeCopy(iss->suggestedActionLabel, "Assign to 'all' stages");
+                    SafeCopy(iss->suggestedCommand.commandType, "SetModuleStages");
+                    SafeCopy(iss->suggestedCommand.puId, pu.instanceId.AsChar());
+                    SafeCopy(iss->suggestedCommand.instanceId, mod.instanceId.AsChar());
+                    SafeCopy(iss->suggestedCommand.stagesCSV, "all");
+                }
             }
         }
     }
@@ -223,8 +247,19 @@ ValidationResult ManifestValidator::Validate(const ManifestEditorState& state)
                     snprintf(msg, sizeof(msg),
                              "UNKNOWN_STREAM_IN_READS: module 0x%08X reads stream 0x%08X which is not declared",
                              mod.instanceId.Value(), mod.reads[r].Value());
-                    AddIssue(result, ValidationRuleId::UnknownStreamInReads,
-                             ValidationSeverity::Error, msg);
+                    if (ValidationIssue* iss = AddIssue(result, ValidationRuleId::UnknownStreamInReads,
+                                                        ValidationSeverity::Error, msg))
+                    {
+                        iss->targetKind = ValidationTargetKind::Module;
+                        SafeCopy(iss->targetPuId, pu.instanceId.AsChar());
+                        SafeCopy(iss->targetModuleId, mod.instanceId.AsChar());
+                        SafeCopy(iss->targetStreamId, mod.reads[r].AsChar());
+                        SafeCopy(iss->suggestedActionLabel, "Remove read");
+                        SafeCopy(iss->suggestedCommand.commandType, "RemoveModuleRead");
+                        SafeCopy(iss->suggestedCommand.puId, pu.instanceId.AsChar());
+                        SafeCopy(iss->suggestedCommand.instanceId, mod.instanceId.AsChar());
+                        SafeCopy(iss->suggestedCommand.streamId, mod.reads[r].AsChar());
+                    }
                 }
             }
 
@@ -235,8 +270,19 @@ ValidationResult ManifestValidator::Validate(const ManifestEditorState& state)
                     snprintf(msg, sizeof(msg),
                              "UNKNOWN_STREAM_IN_WRITES: module 0x%08X writes stream 0x%08X which is not declared",
                              mod.instanceId.Value(), mod.writes[w].Value());
-                    AddIssue(result, ValidationRuleId::UnknownStreamInWrites,
-                             ValidationSeverity::Error, msg);
+                    if (ValidationIssue* iss = AddIssue(result, ValidationRuleId::UnknownStreamInWrites,
+                                                        ValidationSeverity::Error, msg))
+                    {
+                        iss->targetKind = ValidationTargetKind::Module;
+                        SafeCopy(iss->targetPuId, pu.instanceId.AsChar());
+                        SafeCopy(iss->targetModuleId, mod.instanceId.AsChar());
+                        SafeCopy(iss->targetStreamId, mod.writes[w].AsChar());
+                        SafeCopy(iss->suggestedActionLabel, "Remove write");
+                        SafeCopy(iss->suggestedCommand.commandType, "RemoveModuleWrite");
+                        SafeCopy(iss->suggestedCommand.puId, pu.instanceId.AsChar());
+                        SafeCopy(iss->suggestedCommand.instanceId, mod.instanceId.AsChar());
+                        SafeCopy(iss->suggestedCommand.streamId, mod.writes[w].AsChar());
+                    }
                 }
             }
         }
@@ -289,8 +335,15 @@ ValidationResult ManifestValidator::Validate(const ManifestEditorState& state)
             snprintf(msg, sizeof(msg),
                      "ORPHAN_READER_STREAM: stream 0x%08X has no module reading it",
                      stream.id.Value());
-            AddIssue(result, ValidationRuleId::OrphanReaderStream,
-                     ValidationSeverity::Warning, msg);
+            if (ValidationIssue* iss = AddIssue(result, ValidationRuleId::OrphanReaderStream,
+                                                ValidationSeverity::Warning, msg))
+            {
+                iss->targetKind = ValidationTargetKind::Stream;
+                SafeCopy(iss->targetStreamId, stream.id.AsChar());
+                SafeCopy(iss->suggestedActionLabel, "Remove stream");
+                SafeCopy(iss->suggestedCommand.commandType, "RemoveStream");
+                SafeCopy(iss->suggestedCommand.streamId, stream.id.AsChar());
+            }
         }
 
         if (!hasWriter)
@@ -298,8 +351,15 @@ ValidationResult ManifestValidator::Validate(const ManifestEditorState& state)
             snprintf(msg, sizeof(msg),
                      "ORPHAN_WRITER_STREAM: stream 0x%08X has no module writing it",
                      stream.id.Value());
-            AddIssue(result, ValidationRuleId::OrphanWriterStream,
-                     ValidationSeverity::Warning, msg);
+            if (ValidationIssue* iss = AddIssue(result, ValidationRuleId::OrphanWriterStream,
+                                                ValidationSeverity::Warning, msg))
+            {
+                iss->targetKind = ValidationTargetKind::Stream;
+                SafeCopy(iss->targetStreamId, stream.id.AsChar());
+                SafeCopy(iss->suggestedActionLabel, "Remove stream");
+                SafeCopy(iss->suggestedCommand.commandType, "RemoveStream");
+                SafeCopy(iss->suggestedCommand.streamId, stream.id.AsChar());
+            }
         }
     }
 
@@ -315,8 +375,12 @@ ValidationResult ManifestValidator::Validate(const ManifestEditorState& state)
                 snprintf(msg, sizeof(msg),
                          "PAYLOAD_TYPE_MISSING: stream 0x%08X has no payloadType set",
                          manifest.streams[s].id.Value());
-                AddIssue(result, ValidationRuleId::PayloadTypeMissing,
-                         ValidationSeverity::Warning, msg);
+                if (ValidationIssue* iss = AddIssue(result, ValidationRuleId::PayloadTypeMissing,
+                                                    ValidationSeverity::Warning, msg))
+                {
+                    iss->targetKind = ValidationTargetKind::Stream;
+                    SafeCopy(iss->targetStreamId, manifest.streams[s].id.AsChar());
+                }
             }
         }
     }
@@ -340,8 +404,45 @@ ValidationResult ManifestValidator::Validate(const ManifestEditorState& state)
                         snprintf(msg, sizeof(msg),
                                  "STAGE_REF_INVALID: module 0x%08X references stage 0x%08X which is not declared",
                                  mod.instanceId.Value(), stageRef.Value());
-                        AddIssue(result, ValidationRuleId::StageRefInvalid,
-                                 ValidationSeverity::Error, msg);
+                        if (ValidationIssue* iss = AddIssue(result, ValidationRuleId::StageRefInvalid,
+                                                            ValidationSeverity::Error, msg))
+                        {
+                            iss->targetKind = ValidationTargetKind::Module;
+                            SafeCopy(iss->targetPuId, pu.instanceId.AsChar());
+                            SafeCopy(iss->targetModuleId, mod.instanceId.AsChar());
+                            SafeCopy(iss->suggestedActionLabel, "Remove invalid stage ref");
+
+                            // Build stagesCSV: all stages except the invalid one at index st
+                            char stagesCSV[256];
+                            stagesCSV[0] = '\0';
+                            size_t pos = 0;
+                            for (unsigned int i = 0; i < mod.stages.Size(); ++i)
+                            {
+                                if (i == st) continue; // skip the invalid stage
+                                const char* stageName = mod.stages[i].AsChar();
+                                if (!stageName || stageName[0] == '\0') continue; // skip empty
+
+                                if (pos > 0)
+                                {
+                                    if (pos >= sizeof(stagesCSV) - 1) break;
+                                    stagesCSV[pos++] = ',';
+                                }
+                                size_t nameLen = strlen(stageName);
+                                if (pos + nameLen >= sizeof(stagesCSV))
+                                    break; // not enough space
+                                memcpy(stagesCSV + pos, stageName, nameLen);
+                                pos += nameLen;
+                            }
+                            if (pos < sizeof(stagesCSV))
+                                stagesCSV[pos] = '\0';
+                            else
+                                stagesCSV[sizeof(stagesCSV) - 1] = '\0';
+
+                            SafeCopy(iss->suggestedCommand.commandType, "SetModuleStages");
+                            SafeCopy(iss->suggestedCommand.puId, pu.instanceId.AsChar());
+                            SafeCopy(iss->suggestedCommand.instanceId, mod.instanceId.AsChar());
+                            SafeCopy(iss->suggestedCommand.stagesCSV, stagesCSV);
+                        }
                     }
                 }
             }
@@ -376,8 +477,13 @@ ValidationResult ManifestValidator::Validate(const ManifestEditorState& state)
                     snprintf(msg, sizeof(msg),
                              "DUPLICATE_INSTANCE_ID: module instanceId 0x%08X appears in multiple PUs",
                              id.Value());
-                    AddIssue(result, ValidationRuleId::DuplicateInstanceId,
-                             ValidationSeverity::Error, msg);
+                    if (ValidationIssue* iss = AddIssue(result, ValidationRuleId::DuplicateInstanceId,
+                                                        ValidationSeverity::Error, msg))
+                    {
+                        iss->targetKind = ValidationTargetKind::Module;
+                        SafeCopy(iss->targetPuId, pu.instanceId.AsChar());
+                        SafeCopy(iss->targetModuleId, pu.modules[m].instanceId.AsChar());
+                    }
                 }
                 else if (seenCount < kMaxModules)
                 {
@@ -398,16 +504,22 @@ ValidationResult ManifestValidator::Validate(const ManifestEditorState& state)
             {
                 snprintf(msg, sizeof(msg),
                          "INITIAL_STAGE_INVALID: stages are defined but initialStage is not set");
-                AddIssue(result, ValidationRuleId::InitialStageInvalid,
-                         ValidationSeverity::Error, msg);
+                if (ValidationIssue* iss = AddIssue(result, ValidationRuleId::InitialStageInvalid,
+                                                    ValidationSeverity::Error, msg))
+                {
+                    iss->targetKind = ValidationTargetKind::None;
+                }
             }
             else if (!StageNameExists(manifest, manifest.initialStage))
             {
                 snprintf(msg, sizeof(msg),
                          "INITIAL_STAGE_INVALID: initialStage 0x%08X is not in manifest.stages",
                          manifest.initialStage.Value());
-                AddIssue(result, ValidationRuleId::InitialStageInvalid,
-                         ValidationSeverity::Error, msg);
+                if (ValidationIssue* iss = AddIssue(result, ValidationRuleId::InitialStageInvalid,
+                                                    ValidationSeverity::Error, msg))
+                {
+                    iss->targetKind = ValidationTargetKind::None;
+                }
             }
         }
     }
@@ -426,8 +538,12 @@ ValidationResult ManifestValidator::Validate(const ManifestEditorState& state)
                 snprintf(msg, sizeof(msg),
                          "STREAM_PU_INVALID: stream 0x%08X fromPU 0x%08X is not a known PU instanceId",
                          stream.id.Value(), stream.fromPU.Value());
-                AddIssue(result, ValidationRuleId::StreamPUInvalid,
-                         ValidationSeverity::Error, msg);
+                if (ValidationIssue* iss = AddIssue(result, ValidationRuleId::StreamPUInvalid,
+                                                    ValidationSeverity::Error, msg))
+                {
+                    iss->targetKind = ValidationTargetKind::Stream;
+                    SafeCopy(iss->targetStreamId, stream.id.AsChar());
+                }
             }
 
             if (stream.toPU != kZero && !PUIdExists(manifest, stream.toPU))
@@ -435,8 +551,12 @@ ValidationResult ManifestValidator::Validate(const ManifestEditorState& state)
                 snprintf(msg, sizeof(msg),
                          "STREAM_PU_INVALID: stream 0x%08X toPU 0x%08X is not a known PU instanceId",
                          stream.id.Value(), stream.toPU.Value());
-                AddIssue(result, ValidationRuleId::StreamPUInvalid,
-                         ValidationSeverity::Error, msg);
+                if (ValidationIssue* iss = AddIssue(result, ValidationRuleId::StreamPUInvalid,
+                                                    ValidationSeverity::Error, msg))
+                {
+                    iss->targetKind = ValidationTargetKind::Stream;
+                    SafeCopy(iss->targetStreamId, stream.id.AsChar());
+                }
             }
 
             if (stream.fromPU != kZero && stream.fromPU == stream.toPU)
@@ -444,8 +564,12 @@ ValidationResult ManifestValidator::Validate(const ManifestEditorState& state)
                 snprintf(msg, sizeof(msg),
                          "STREAM_SELF_LOOP: stream 0x%08X has fromPU == toPU (0x%08X)",
                          stream.id.Value(), stream.fromPU.Value());
-                AddIssue(result, ValidationRuleId::StreamSelfLoop,
-                         ValidationSeverity::Error, msg);
+                if (ValidationIssue* iss = AddIssue(result, ValidationRuleId::StreamSelfLoop,
+                                                    ValidationSeverity::Error, msg))
+                {
+                    iss->targetKind = ValidationTargetKind::Stream;
+                    SafeCopy(iss->targetStreamId, stream.id.AsChar());
+                }
             }
         }
     }
