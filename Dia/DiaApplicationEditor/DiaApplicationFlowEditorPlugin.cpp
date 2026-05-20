@@ -5,11 +5,13 @@
 #include <DiaEditor/UI/WebUIBridge.h>
 #include <DiaEditor/LiveConnection/GameConnectionManager.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaApplicationEditor/V2/ManifestLoader.h>
 #include <DiaApplicationEditor/V2/ManifestSaver.h>
 #include <DiaApplicationEditor/V2/ManifestValidator.h>
 #include <string>
+#include <windows.h>
 
 namespace Dia { namespace Editor {
 
@@ -169,6 +171,17 @@ namespace Dia { namespace Editor {
 
         mFileWatcher.Start();
 
+        // Register metrics
+        {
+            auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
+            mMetricLoadMs             = reg.RegisterGauge(Dia::Core::StringCRC("dia.editor.manifest.load_ms"));
+            mMetricSaveMs             = reg.RegisterGauge(Dia::Core::StringCRC("dia.editor.manifest.save_ms"));
+            mMetricValidationErrors   = reg.RegisterGauge(Dia::Core::StringCRC("dia.editor.validation.error_count"));
+            mMetricValidationWarnings = reg.RegisterGauge(Dia::Core::StringCRC("dia.editor.validation.warning_count"));
+            mMetricConnectionState    = reg.RegisterGauge(Dia::Core::StringCRC("dia.editor.live.connection_state"));
+            mMetricCommandsTotal      = reg.RegisterCounter(Dia::Core::StringCRC("dia.editor.commands.total"));
+        }
+
         DIA_LOG_INFO("Editor", "DiaApplicationFlowEditorPlugin: loaded");
     }
 
@@ -219,6 +232,7 @@ namespace Dia { namespace Editor {
 
     Json::Value DiaApplicationFlowEditorPlugin::HandleManifestLoad(const Json::Value& data)
     {
+        DIA_TRACE_ZONE("ManifestLoad", Dia::Observation::Trace::Category::kDiaApplicationFlow);
         Json::Value result;
 
         if (!data.isMember("path") || data["path"].asString().empty())
@@ -231,16 +245,26 @@ namespace Dia { namespace Editor {
         const std::string path = data["path"].asString();
         const char* pathCStr   = path.c_str();
 
+        LARGE_INTEGER loadFreq, loadStart, loadEnd;
+        ::QueryPerformanceFrequency(&loadFreq);
+        ::QueryPerformanceCounter(&loadStart);
+
         auto lr = Dia::ApplicationFlow::Editor::ManifestLoader::Load(pathCStr, mEditorState);
+
+        ::QueryPerformanceCounter(&loadEnd);
+        const double loadMs = static_cast<double>(loadEnd.QuadPart - loadStart.QuadPart)
+                              * 1000.0 / static_cast<double>(loadFreq.QuadPart);
+        if (mMetricLoadMs) mMetricLoadMs->Set(loadMs);
 
         if (lr.status != Dia::ApplicationFlow::Editor::LoadStatus::Ok)
         {
             result["ok"]    = false;
             result["error"] = lr.errorMessage;
+            DIA_LOG_ERROR("Editor", "Manifest load failed: status %d", (int)lr.status);
             return result;
         }
 
-        DIA_LOG_INFO("Editor", "DiaApplicationFlowEditorPlugin: manifest loaded from %s", pathCStr);
+        DIA_LOG_INFO("Editor", "Manifest loaded: %s", pathCStr);
 
         mFileWatcher.ClearAll();
         mFileWatcher.Watch(pathCStr, [this](const char* changedPath, Dia::Core::FileWatchEvent event)
@@ -266,6 +290,7 @@ namespace Dia { namespace Editor {
 
     Json::Value DiaApplicationFlowEditorPlugin::HandleManifestSave(const Json::Value& /*data*/)
     {
+        DIA_TRACE_ZONE("ManifestSave", Dia::Observation::Trace::Category::kDiaApplicationFlow);
         Json::Value result;
 
         if (!mEditorState.hasManifest)
@@ -281,12 +306,22 @@ namespace Dia { namespace Editor {
             result["ok"]         = false;
             result["error"]      = "validation errors";
             result["errorCount"] = vr.ErrorCount();
+            DIA_LOG_ERROR("Editor", "Save blocked: %d validation errors", vr.ErrorCount());
             return result;
         }
+
+        LARGE_INTEGER saveFreq, saveStart, saveEnd;
+        ::QueryPerformanceFrequency(&saveFreq);
+        ::QueryPerformanceCounter(&saveStart);
 
         mSuppressFileWatchDuringSave = true;
         auto sr = Dia::ApplicationFlow::Editor::ManifestSaver::Save(mEditorState);
         mSuppressFileWatchDuringSave = false;
+
+        ::QueryPerformanceCounter(&saveEnd);
+        const double saveMs = static_cast<double>(saveEnd.QuadPart - saveStart.QuadPart)
+                              * 1000.0 / static_cast<double>(saveFreq.QuadPart);
+        if (mMetricSaveMs) mMetricSaveMs->Set(saveMs);
 
         if (sr.status != Dia::ApplicationFlow::Editor::SaveStatus::Ok)
         {
@@ -295,7 +330,7 @@ namespace Dia { namespace Editor {
             return result;
         }
 
-        DIA_LOG_INFO("Editor", "DiaApplicationFlowEditorPlugin: manifest saved to %s", mEditorState.filePath);
+        DIA_LOG_INFO("Editor", "Manifest saved: %s", mEditorState.filePath.AsCStr());
 
         mCommandHistory.SetSavePoint();
         mBridge->NotifyUIDataChanged("manifest.dirty", Json::Value(false));
@@ -331,6 +366,8 @@ namespace Dia { namespace Editor {
             return result;
         }
 
+        DIA_LOG_INFO("Editor", "Undo/Redo command");
+        if (mMetricCommandsTotal) mMetricCommandsTotal->Inc();
         mCommandHistory.Undo(mEditorState);
         mEditorState.isDirty = !mCommandHistory.IsAtSavePoint();
 
@@ -354,6 +391,8 @@ namespace Dia { namespace Editor {
             return result;
         }
 
+        DIA_LOG_INFO("Editor", "Undo/Redo command");
+        if (mMetricCommandsTotal) mMetricCommandsTotal->Inc();
         mCommandHistory.Redo(mEditorState);
         mEditorState.isDirty = !mCommandHistory.IsAtSavePoint();
 
@@ -379,6 +418,7 @@ namespace Dia { namespace Editor {
 
     Json::Value DiaApplicationFlowEditorPlugin::HandleValidationRun(const Json::Value& /*data*/)
     {
+        DIA_TRACE_ZONE("ManifestValidate", Dia::Observation::Trace::Category::kDiaApplicationFlow);
         Json::Value result;
 
         if (!mEditorState.hasManifest)
@@ -389,6 +429,11 @@ namespace Dia { namespace Editor {
         }
 
         auto vr = Dia::ApplicationFlow::Editor::ManifestValidator::Validate(mEditorState);
+
+        if (mMetricValidationErrors)   mMetricValidationErrors->Set(static_cast<double>(vr.ErrorCount()));
+        if (mMetricValidationWarnings) mMetricValidationWarnings->Set(static_cast<double>(vr.WarningCount()));
+
+        DIA_LOG_INFO("Editor", "Validation: %d errors, %d warnings", vr.ErrorCount(), vr.WarningCount());
 
         result["ok"]           = true;
         result["errorCount"]   = vr.ErrorCount();
@@ -541,6 +586,8 @@ namespace Dia { namespace Editor {
         const char* host = data.isMember("host") ? data["host"].asCString() : "localhost";
         const int port   = data.isMember("port") ? data["port"].asInt() : 7000;
 
+        DIA_LOG_INFO("Editor", "Connecting to game at %s:%d", host, port);
+
         mGameConnection->SetConnectionCallback(
             [this, hostStr = std::string(host), port](bool connected)
             {
@@ -553,7 +600,9 @@ namespace Dia { namespace Editor {
 
                 if (connected)
                 {
-                    DIA_LOG_INFO("Editor", "DiaApplicationFlowEditorPlugin: live connected to %s:%d", hostStr.c_str(), port);
+                    mIsLiveConnected = true;
+                    if (mMetricConnectionState) mMetricConnectionState->Set(1.0);
+                    DIA_LOG_INFO("Editor", "Game connection established");
 
                     mGameConnection->Subscribe(kTopicAppState, [this](const Json::Value& d)
                     {
@@ -582,7 +631,9 @@ namespace Dia { namespace Editor {
                 }
                 else
                 {
-                    DIA_LOG_INFO("Editor", "DiaApplicationFlowEditorPlugin: live disconnected");
+                    mIsLiveConnected = false;
+                    if (mMetricConnectionState) mMetricConnectionState->Set(0.0);
+                    DIA_LOG_INFO("Editor", "Game connection lost");
 
                     mGameConnection->Unsubscribe(kTopicAppState);
                     mGameConnection->Unsubscribe(kTopicAppModules);
@@ -612,6 +663,7 @@ namespace Dia { namespace Editor {
             return result;
         }
 
+        DIA_LOG_INFO("Editor", "Disconnecting from game");
         mGameConnection->Disconnect();
 
         result["ok"] = true;

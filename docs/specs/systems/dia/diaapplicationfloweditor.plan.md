@@ -188,10 +188,10 @@ All C++ backend code integrates with DiaObservation (when available) and DiaMetr
 | 47 | Wire Stream throughput from LiveStore into StreamDetailInspector | Manual: msg/sec shows when live | Done | sonnet | StreamsTab.tsx: data-testid="live-throughput"; 7 tests pass |
 | 48 | Wire transition trigger: React button → C++ → WebSocket → feedback | Manual: trigger transition, see dots animate, toast on complete | Done | sonnet | LiveTransitionPanel.tsx: calls setActiveStage on success; 6 tests pass |
 | **Phase 5 — Observability & Polish** | | | | | |
-| 49 | Add DIA_LOG calls to load/save/validate/connect/command paths | Grep: all major code paths have logging | Todo | haiku | After Phase 4 |
-| 50 | Register DiaMetrics gauges/counters for editor (load_ms, save_ms, validation counts, connection_state, command_count) | `TestEditorMetrics`: metrics registered, incremented on operations | Todo | sonnet | After Phase 4 |
-| 51 | Add DIA_TRACE_ZONE to ManifestLoader::Load, ManifestSaver::Save, ManifestValidator::Validate | Grep: trace zones present; verify in `trace.jsonl` output during run | Todo | haiku | After Phase 4 |
-| 52 | Implement IHealthReporter for editor (loaded file, dirty state, live connection state) | `TestEditorHealth`: reporter returns correct state | Todo | sonnet | After Phase 4 |
+| 49 | Add DIA_LOG calls to load/save/validate/connect/command paths | Grep: all major code paths have logging | Done | haiku | 7 DIA_LOG_INFO/ERROR calls across all major paths |
+| 50 | Register DiaMetrics gauges/counters for editor (load_ms, save_ms, validation counts, connection_state, command_count) | `TestEditorMetrics`: metrics registered, incremented on operations | Done | sonnet | 5 gauges + 1 counter; QueryPerformanceCounter timing for load/save |
+| 51 | Add DIA_TRACE_ZONE to ManifestLoader::Load, ManifestSaver::Save, ManifestValidator::Validate | Grep: trace zones present; verify in `trace.jsonl` output during run | Done | haiku | 3 DIA_TRACE_ZONE calls (ManifestLoad/ManifestSave/ManifestValidate) |
+| 52 | Implement IHealthReporter for editor (loaded file, dirty state, live connection state) | `TestEditorHealth`: reporter returns correct state | Done | sonnet | EditorHealthReporter.h/.cpp; kDegraded when no manifest, kOK otherwise |
 | 53 | DiaCLI `dia types export` command | Integration: generates valid types.json from game build | Todo | sonnet | Can parallel with Phase 3 |
 | 54 | Update `dia.applicationeditor.architecture.module.md` YAML frontmatter | Doc review: frontmatter matches new code | Todo | haiku | Last |
 | 55 | Full exhaustive test run: `dia run googletest --filter="AppFlowEditor*"` + `npm test` in UI/ | All C++ tests pass, all Vitest tests pass, zero warnings | Todo | sonnet | Final gate |

@@ -6,6 +6,8 @@
 #include <DiaApplicationEditor/V2/Commands/CommandHistory.h>
 #include <DiaApplicationEditor/V2/TypeDiscoveryService.h>
 #include <DiaApplicationEditor/V2/LiveStateStore.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
+#include "DiaApplicationEditor/EditorHealthReporter.h"
 
 namespace Json { class Value; }
 
@@ -59,6 +61,20 @@ namespace Dia { namespace Editor {
 
         Dia::Core::FileWatcher mFileWatcher;
         bool mSuppressFileWatchDuringSave = false;
+
+        // Live connection state (used by health reporter via reference)
+        bool mIsLiveConnected = false;
+
+        // Health reporter (holds refs to mEditorState and mIsLiveConnected)
+        EditorHealthReporter mHealthReporter{ mEditorState, mIsLiveConnected };
+
+        // Metrics
+        Dia::Observation::Metric::Gauge*   mMetricLoadMs             = nullptr;
+        Dia::Observation::Metric::Gauge*   mMetricSaveMs             = nullptr;
+        Dia::Observation::Metric::Gauge*   mMetricValidationErrors   = nullptr;
+        Dia::Observation::Metric::Gauge*   mMetricValidationWarnings = nullptr;
+        Dia::Observation::Metric::Gauge*   mMetricConnectionState    = nullptr;
+        Dia::Observation::Metric::Counter* mMetricCommandsTotal      = nullptr;
     };
 
 }} // namespace Dia::Editor

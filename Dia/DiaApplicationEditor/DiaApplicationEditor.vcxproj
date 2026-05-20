@@ -76,6 +76,7 @@
   <ItemGroup>
     <ClInclude Include="DiaApplicationEditor.h" />
     <ClInclude Include="DiaApplicationFlowEditorPlugin.h" />
+    <ClInclude Include="EditorHealthReporter.h" />
     <ClInclude Include="ManifestEditorData.h" />
     <ClInclude Include="ManifestSerializer.h" />
     <ClInclude Include="V2\ManifestEditorState.h" />
@@ -96,6 +97,7 @@
   <ItemGroup>
     <ClCompile Include="DiaApplicationEditor.cpp" />
     <ClCompile Include="DiaApplicationFlowEditorPlugin.cpp" />
+    <ClCompile Include="EditorHealthReporter.cpp" />
     <ClCompile Include="ManifestSerializer.cpp" />
     <ClCompile Include="V2\ManifestEditorState.cpp" />
     <ClCompile Include="V2\LiveStateStore.cpp" />
@@ -124,6 +126,9 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
       <Project>{8d41cbe3-c493-428d-95f3-627e56500667}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaObservation\DiaObservation.vcxproj">
+      <Project>{5E6F7A8B-C9D0-E1F2-3456-789ABCDE0123}</Project>
     </ProjectReference>
   </ItemGroup>
 
