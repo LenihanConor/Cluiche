@@ -171,7 +171,7 @@ All C++ backend code integrates with DiaObservation (when available) and DiaMetr
 | 31 | Implement `GraphView`: click-select, drag-reposition | `GraphView.test.tsx`: selection updates, drag repositions | Done | sonnet | Included in #30 |
 | 32 | Implement `GraphView`: ghost node (Add PU), stream label click → Streams tab | `GraphView.test.tsx`: ghost renders, click creates PU; label click navigates | Done | sonnet | Included in #30 |
 | 33 | Implement `ModulePresenceGrid`: matrix, PU grouping, "all" badge, virtual scroll | `ModulePresenceGrid.test.tsx`: renders correct cells, badges, scrolls | Done | opus | `src/v2/ModulePresenceGrid.tsx`; 6 tests pass; manual windowed scroll |
-| 34 | Implement `ModulePresenceGrid`: live mode (ED-014) | `ModulePresenceGrid.test.tsx`: active column dots change in live | Todo | sonnet | Depends on #33, #44 |
+| 34 | Implement `ModulePresenceGrid`: live mode (ED-014) | `ModulePresenceGrid.test.tsx`: active column dots change in live | Done | sonnet | Covered by #46; 2 live-mode tests pass |
 | 35 | Implement `StreamsTab`: table + `StreamDetailInspector` sidebar | `StreamsTab.test.tsx`: rows render, selection shows detail, $-prefix read-only | Done | sonnet | `src/v2/StreamsTab.tsx`; 6 tests pass |
 | 36 | Implement `PUInspector`: properties, module cards, dep order section | `PUInspector.test.tsx`: fields editable, cards render, dep section collapses | Done | sonnet | `src/v2/PUInspector.tsx`; 6 tests pass |
 | 37 | Implement `ModuleInspector`: deps, streams, timeouts, provenance, stage dots | `ModuleInspector.test.tsx`: all sections render, add/remove deps/streams | Done | sonnet | `src/v2/ModuleInspector.tsx`; 6 tests pass |

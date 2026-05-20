@@ -41,6 +41,13 @@ This is a Visual Studio C++ project using MSBuild.
 
 **NEVER call executables directly** (e.g., `GoogleTests.exe`, `CluicheTest.exe`). Always use `dia run` or `dia launch`. The CLI handles path resolution, working directories, and runtime dependencies. If the CLI fails, fix the CLI — do not bypass it.
 
+| Command | When to use |
+|---|---|
+| `dia run <target>` | Build + run in one step (tests, game, editor). Default choice. |
+| `dia launch <target>` | Run only — skip build (use when already built). |
+| `dia pipeline --target <target>` | Full pipeline: compile-code → build-assets → deploy. Required for editor targets that need UI built and copied. |
+| `dia env setup/verify` | First-time setup or diagnosing missing dependencies. |
+
 ```bash
 dia run googletest
 dia run googletest --filter="FixedDrawLayer*"

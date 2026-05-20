@@ -900,7 +900,21 @@
       "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;$env:PATH\"; Set-Location \"C:\\\\GitHub\\\\Cluiche\\\\Dia\\\\DiaApplicationEditor\\\\UI\"; & npx vitest run 2>&1 | Select-Object -Last 20)",
       "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;$env:PATH\"; Set-Location \"C:\\\\GitHub\\\\Cluiche\\\\Dia\\\\DiaApplicationEditor\\\\UI\"; & npx vitest run src/v2/StreamsTab.test.tsx 2>&1 | Select-Object -Last 25)",
       "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;$env:PATH\"; Set-Location \"C:\\\\GitHub\\\\Cluiche\\\\Dia\\\\DiaApplicationEditor\\\\UI\"; & \"C:\\\\Program Files\\\\nodejs\\\\npm.cmd\" run build 2>&1 | Select-Object -Last 15)",
-      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;$env:PATH\"; Set-Location \"C:\\\\GitHub\\\\Cluiche\\\\Dia\\\\DiaApplicationEditor\\\\UI\"; & npx vitest run 2>&1 | Select-Object -Last 8)"
+      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;$env:PATH\"; Set-Location \"C:\\\\GitHub\\\\Cluiche\\\\Dia\\\\DiaApplicationEditor\\\\UI\"; & npx vitest run 2>&1 | Select-Object -Last 8)",
+      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;$env:PATH\"; Set-Location C:\\\\GitHub\\\\Cluiche\\\\Dia\\\\DiaApplicationEditor\\\\UI; npx vitest run --reporter=basic ModuleInspector.test.tsx 2>&1 | Select-Object -Last 40)",
+      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;$env:PATH\"; Set-Location C:\\\\GitHub\\\\Cluiche\\\\Dia\\\\DiaApplicationEditor\\\\UI; npx vitest run --reporter=basic ModuleInspector.test.tsx 2>&1 | Select-Object -Last 50)",
+      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;$env:PATH\"; Set-Location C:\\\\GitHub\\\\Cluiche\\\\Dia\\\\DiaApplicationEditor\\\\UI; npx vitest run --reporter=basic 2>&1 | Select-Object -Last 30)",
+      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;$env:PATH\"; Set-Location C:\\\\GitHub\\\\Cluiche\\\\Dia\\\\DiaApplicationEditor\\\\UI; npx vitest run --reporter=basic PUInspector.test.tsx 2>&1 | Select-Object -Last 60)",
+      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;$env:PATH\"; Set-Location C:\\\\GitHub\\\\Cluiche\\\\Dia\\\\DiaApplicationEditor\\\\UI; npx vitest run --reporter=basic PUInspector.test.tsx 2>&1 | Select-Object -Last 20)",
+      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;$env:PATH\"; Set-Location C:\\\\GitHub\\\\Cluiche\\\\Dia\\\\DiaApplicationEditor\\\\UI; npx vitest run --reporter=basic 2>&1 | Select-Object -Last 25)",
+      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;$env:PATH\"; Set-Location C:\\\\GitHub\\\\Cluiche\\\\Dia\\\\DiaApplicationEditor\\\\UI; npx tsc --noEmit 2>&1 | Select-Object -Last 30)",
+      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;$env:PATH\"; Set-Location C:\\\\GitHub\\\\Cluiche\\\\Dia\\\\DiaApplicationEditor\\\\UI; npx tsc --noEmit; \"exit=$LASTEXITCODE\")",
+      "PowerShell(\\(Get-Content Cluiche/Tests/GoogleTests/DiaApplicationEditor/TestManifestValidator.cpp | Measure-Object -Line\\).Lines)",
+      "Bash(pnpm vitest *)",
+      "PowerShell($env:PATH)",
+      "PowerShell(dia test *)",
+      "Read(//c//**)",
+      "Bash(find /c -name \"node.exe\")"
     ],
     "defaultMode": "auto"
   }
