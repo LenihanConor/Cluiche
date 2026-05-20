@@ -11,6 +11,11 @@ function isSystemStream(id: string): boolean {
 const KIND_OPTIONS = ['EventStream', 'FrameStream'] as const;
 const OVERFLOW_OPTIONS: OverflowPolicy[] = ['drop-oldest', 'drop-newest', 'block', 'fail-loud'];
 
+// Engine defaults from EventStreamStore.h. FrameStream uses a fixed 2-slot
+// double buffer, so capacity/maxReaders don't apply to it.
+const EVENT_DEFAULT_CAPACITY    = 256;
+const EVENT_DEFAULT_MAX_READERS = 8;
+
 // ────────────────────────────────────────────────────────────
 // StreamDetailInspector
 // ────────────────────────────────────────────────────────────
@@ -49,6 +54,14 @@ const StreamDetailInspector: React.FC<StreamDetailInspectorProps> = ({ stream, m
 
     const rowStyle: React.CSSProperties = {
         marginBottom: 8,
+    };
+
+    const hintStyle: React.CSSProperties = {
+        color: '#666',
+        fontSize: 10,
+        marginTop: 2,
+        display: 'block',
+        fontStyle: 'italic',
     };
 
     return (
@@ -135,6 +148,11 @@ const StreamDetailInspector: React.FC<StreamDetailInspectorProps> = ({ stream, m
                     disabled={readonly}
                     onChange={(e) => sendCommand('SetStreamCapacity', Number(e.target.value))}
                 />
+                <span data-testid="stream-capacity-hint" style={hintStyle}>
+                    {isEvent
+                        ? (stream.capacity === 0 ? `0 = engine default (${EVENT_DEFAULT_CAPACITY})` : '')
+                        : 'FrameStream uses a fixed 2-slot buffer'}
+                </span>
             </div>
 
             <div style={rowStyle}>
@@ -146,6 +164,11 @@ const StreamDetailInspector: React.FC<StreamDetailInspectorProps> = ({ stream, m
                     disabled={readonly}
                     onChange={(e) => sendCommand('SetStreamMaxReaders', Number(e.target.value))}
                 />
+                <span data-testid="stream-max-readers-hint" style={hintStyle}>
+                    {isEvent
+                        ? (stream.maxReaders === 0 ? `0 = engine default (${EVENT_DEFAULT_MAX_READERS})` : '')
+                        : 'FrameStream readers are unbounded'}
+                </span>
             </div>
 
             {isEvent && (

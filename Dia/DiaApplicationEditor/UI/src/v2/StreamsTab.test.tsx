@@ -209,6 +209,42 @@ describe('StreamsTab', () => {
             });
         });
 
+        it('EventStream with capacity=0 shows engine-default hint', () => {
+            const streams = [makeStream({ id: 'evt', kind: 'EventStream', capacity: 0, maxReaders: 0 })];
+            setupMocks(makeManifest(streams));
+            render(<StreamsTab />);
+            fireEvent.click(screen.getByTestId('stream-row'));
+
+            const capHint = screen.getByTestId('stream-capacity-hint');
+            const readersHint = screen.getByTestId('stream-max-readers-hint');
+            expect(capHint.textContent).toContain('engine default');
+            expect(capHint.textContent).toContain('256');
+            expect(readersHint.textContent).toContain('engine default');
+            expect(readersHint.textContent).toContain('8');
+        });
+
+        it('EventStream with non-zero capacity shows no default hint', () => {
+            const streams = [makeStream({ id: 'evt', kind: 'EventStream', capacity: 64, maxReaders: 4 })];
+            setupMocks(makeManifest(streams));
+            render(<StreamsTab />);
+            fireEvent.click(screen.getByTestId('stream-row'));
+
+            expect(screen.getByTestId('stream-capacity-hint').textContent).toBe('');
+            expect(screen.getByTestId('stream-max-readers-hint').textContent).toBe('');
+        });
+
+        it('FrameStream shows fixed-buffer hint regardless of capacity', () => {
+            const streams = [makeStream({ id: 'frm', kind: 'FrameStream', capacity: 0, maxReaders: 0 })];
+            setupMocks(makeManifest(streams));
+            render(<StreamsTab />);
+            fireEvent.click(screen.getByTestId('stream-row'));
+
+            const capHint = screen.getByTestId('stream-capacity-hint');
+            const readersHint = screen.getByTestId('stream-max-readers-hint');
+            expect(capHint.textContent).toContain('fixed 2-slot');
+            expect(readersHint.textContent).toContain('unbounded');
+        });
+
         it('kind select change calls bridgeRequest with SetStreamKind', async () => {
             const { bridgeRequest } = await import('./bridge');
             (bridgeRequest as ReturnType<typeof vi.fn>).mockClear();
