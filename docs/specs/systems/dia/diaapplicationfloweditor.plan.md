@@ -167,20 +167,20 @@ All C++ backend code integrates with DiaObservation (when available) and DiaMetr
 | 27 | Implement `ManifestStore` (Zustand) + bridge integration | `ManifestStore.test.ts`: load/save/dirty tracking/model access | Done | sonnet | `src/v2/useManifestStoreV2.ts`, `src/v2/types.ts`; 5 tests pass |
 | 28 | Implement `UndoStore` (Zustand, 100-cap, save-point) | `UndoStore.test.ts`: push/undo/redo/cap/save-point/jumpTo | Done | sonnet | `src/v2/useUndoStoreV2.ts`; 5 tests pass |
 | 29 | Implement `ValidationStore` + `ValidationBar` footer | `ValidationBar.test.tsx`: counts render, expand shows issues, click navigates | Done | sonnet | `src/v2/useValidationStoreV2.ts`, `src/v2/ValidationBarV2.tsx`; 5 tests pass |
-| 30 | Implement `GraphView`: PU nodes, stream edges, auto-layout | `GraphView.test.tsx`: renders N nodes + M edges from model | Todo | opus | Complex SVG + layout |
-| 31 | Implement `GraphView`: click-select, drag-reposition | `GraphView.test.tsx`: selection updates, drag repositions | Todo | sonnet | Depends on #30 |
-| 32 | Implement `GraphView`: ghost node (Add PU), stream label click → Streams tab | `GraphView.test.tsx`: ghost renders, click creates PU; label click navigates | Todo | sonnet | Depends on #30 |
-| 33 | Implement `ModulePresenceGrid`: matrix, PU grouping, "all" badge, virtual scroll | `ModulePresenceGrid.test.tsx`: renders correct cells, badges, scrolls | Todo | opus | Complex grid + virtual scroll |
-| 34 | Implement `ModulePresenceGrid`: live mode (ED-014) | `ModulePresenceGrid.test.tsx`: active column dots change in live | Todo | sonnet | Depends on #33 |
-| 35 | Implement `StreamsTab`: table + `StreamDetailInspector` sidebar | `StreamsTab.test.tsx`: rows render, selection shows detail, $-prefix read-only | Todo | sonnet | |
-| 36 | Implement `PUInspector`: properties, module cards, dep order section | `PUInspector.test.tsx`: fields editable, cards render, dep section collapses | Todo | sonnet | |
-| 37 | Implement `ModuleInspector`: deps, streams, timeouts, provenance, stage dots | `ModuleInspector.test.tsx`: all sections render, add/remove deps/streams | Todo | sonnet | |
-| 38 | Implement `StageConfiguration` panel | `StageConfiguration.test.tsx`: add/remove/rename/trigger/initial/reorder | Todo | sonnet | |
-| 39 | Implement `RiskyChangeDialog` modal | `RiskyChangeDialog.test.tsx`: shows warning, proceed/cancel work | Todo | sonnet | |
-| 40 | Implement `FileConflictDialog` modal | `FileConflictDialog.test.tsx`: reload/keep buttons | Todo | sonnet | |
-| 41 | Implement `LiveConnectionButton` (3-state header widget) | `LiveConnectionButton.test.tsx`: 3 states render correctly | Todo | sonnet | |
-| 42 | Implement `LiveTransitionPanel`: stage selector, trigger, feedback | `LiveTransitionPanel.test.tsx`: dropdown populated, button triggers, feedback shows | Todo | sonnet | |
-| 43 | Implement `LiveStore` (Zustand): connection state, module states, stream throughput | `LiveStore.test.ts`: connect/disconnect/update/clear | Todo | sonnet | |
+| 30 | Implement `GraphView`: PU nodes, stream edges, auto-layout | `GraphView.test.tsx`: renders N nodes + M edges from model | Done | opus | `src/v2/GraphView.tsx`; 9 tests pass; plain SVG, grid layout |
+| 31 | Implement `GraphView`: click-select, drag-reposition | `GraphView.test.tsx`: selection updates, drag repositions | Done | sonnet | Included in #30 |
+| 32 | Implement `GraphView`: ghost node (Add PU), stream label click → Streams tab | `GraphView.test.tsx`: ghost renders, click creates PU; label click navigates | Done | sonnet | Included in #30 |
+| 33 | Implement `ModulePresenceGrid`: matrix, PU grouping, "all" badge, virtual scroll | `ModulePresenceGrid.test.tsx`: renders correct cells, badges, scrolls | Done | opus | `src/v2/ModulePresenceGrid.tsx`; 6 tests pass; manual windowed scroll |
+| 34 | Implement `ModulePresenceGrid`: live mode (ED-014) | `ModulePresenceGrid.test.tsx`: active column dots change in live | Todo | sonnet | Depends on #33, #44 |
+| 35 | Implement `StreamsTab`: table + `StreamDetailInspector` sidebar | `StreamsTab.test.tsx`: rows render, selection shows detail, $-prefix read-only | Done | sonnet | `src/v2/StreamsTab.tsx`; 6 tests pass |
+| 36 | Implement `PUInspector`: properties, module cards, dep order section | `PUInspector.test.tsx`: fields editable, cards render, dep section collapses | Done | sonnet | `src/v2/PUInspector.tsx`; 6 tests pass |
+| 37 | Implement `ModuleInspector`: deps, streams, timeouts, provenance, stage dots | `ModuleInspector.test.tsx`: all sections render, add/remove deps/streams | Done | sonnet | `src/v2/ModuleInspector.tsx`; 6 tests pass |
+| 38 | Implement `StageConfiguration` panel | `StageConfiguration.test.tsx`: add/remove/rename/trigger/initial/reorder | Done | sonnet | `src/v2/StageConfiguration.tsx`; 6 tests pass |
+| 39 | Implement `RiskyChangeDialog` modal | `RiskyChangeDialog.test.tsx`: shows warning, proceed/cancel work | Done | sonnet | `src/v2/RiskyChangeDialog.tsx`; 6 tests pass |
+| 40 | Implement `FileConflictDialog` modal | `FileConflictDialog.test.tsx`: reload/keep buttons | Done | sonnet | `src/v2/FileConflictDialog.tsx`; 5 tests pass |
+| 41 | Implement `LiveConnectionButton` (3-state header widget) | `LiveConnectionButton.test.tsx`: 3 states render correctly | Done | sonnet | `src/v2/LiveConnectionButton.tsx`; 5 tests pass |
+| 42 | Implement `LiveTransitionPanel`: stage selector, trigger, feedback | `LiveTransitionPanel.test.tsx`: dropdown populated, button triggers, feedback shows | Done | sonnet | `src/v2/LiveTransitionPanel.tsx`; 5 tests pass |
+| 43 | Implement `LiveStore` (Zustand): connection state, module states, stream throughput | `LiveStore.test.ts`: connect/disconnect/update/clear | Done | sonnet | `src/v2/useLiveStoreV2.ts`; 6 tests pass |
 | **Phase 4 — Live Mode Integration** | | | | | |
 | 44 | Wire LiveStore ↔ C++ LiveStateStore via bridge events | Integration: push from C++ → React store updates → dots animate | Todo | sonnet | Depends on #23, #43 |
 | 45 | Wire GraphView live dots from LiveStore | Manual: PU dots show green when connected to running game | Todo | sonnet | Depends on #30, #44 |
