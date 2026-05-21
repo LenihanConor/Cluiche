@@ -8,7 +8,7 @@
 | Application | @docs/specs/applications/dia.md | - |
 | System | @docs/specs/systems/dia/diathreading.md | **job-metrics** |
 
-**Status:** `Approved` — 2026-05-20
+**Status:** `Done` — 2026-05-20
 
 **Depends on:** Feature 1 (job-system-extraction) — `JobSystem::GetQueueDepth()`, `GetActiveJobCount()`, `GetSubmittedCount()`, `GetCompletedCount()` must exist.
 
@@ -74,6 +74,6 @@
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 1 | Add metric fields + delta vars to `JobSystemModule.h` | — | Planned | haiku | |
-| 2 | Register + update + null metrics in `JobSystemModule.cpp` | AC1–AC4 | Planned | haiku | Pattern identical to KernelModule/AssetServiceModule |
-| 3 | Build + test verification | AC6 | Planned | haiku | |
+| 1 | Add metric fields + delta vars to `JobSystemModule.h` | — | Done | haiku | |
+| 2 | Register + update + null metrics in `JobSystemModule.cpp` | AC1–AC4 | Done | haiku | |
+| 3 | Build + test verification | AC6 | Done | haiku | 4818 tests pass |

@@ -90,4 +90,4 @@ JobSystemModule             →  DiaThreading + DiaObservation (no cycle)
 
 ## Status
 
-`Approved` — 2026-05-20. Steps 3 (Binding Decisions) and 4 (AI Review Questions) complete.
+`Done` — 2026-05-20. Both features complete. 4818 tests pass.

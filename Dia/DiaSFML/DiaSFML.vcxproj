@@ -45,6 +45,9 @@
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
       <Project>{8d41cbe3-c493-428d-95f3-627e56500667}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\DiaThreading\DiaThreading.vcxproj">
+      <Project>{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\DiaGraphics\DiaGraphics.vcxproj">
       <Project>{1cf9f92b-666e-4b39-9dde-b1cfbef68618}</Project>
     </ProjectReference>

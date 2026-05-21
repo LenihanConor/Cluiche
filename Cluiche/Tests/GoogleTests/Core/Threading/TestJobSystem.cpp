@@ -3,13 +3,14 @@
 // Tests JobSystem from DiaCore Threading subsystem
 
 #include <gtest/gtest.h>
-#include <DiaCore/Threading/JobSystem.h>
+#include <DiaThreading/JobSystem.h>
 #include <DiaCore/Threading/Thread.h>
 #include <DiaCore/Threading/Atomic.h>
 #include <DiaCore/Core/Assert.h>
 #include <chrono>
 #include <memory>
 
+using namespace Dia::Threading;
 using namespace Dia::Core;
 
 namespace

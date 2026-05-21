@@ -2,7 +2,7 @@
 
 #include <DiaCore/Core/Log.h>
 #include <DiaCore/Memory/Memory.h>
-#include <DiaCore/Threading/JobSystem.h>
+#include <DiaThreading/JobSystem.h>
 #include <SFML/Graphics/Image.hpp>
 #include <SFML/Graphics/Texture.hpp>
 

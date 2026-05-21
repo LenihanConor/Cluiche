@@ -483,6 +483,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Dia\DiaThreading\DiaThreading.vcxproj">
+      <Project>{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaGeometry3D\DiaGeometry3D.vcxproj">
       <Project>{B4C5D6E7-F8A9-0123-DEF0-123456789012}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>

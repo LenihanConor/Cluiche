@@ -30,6 +30,7 @@ namespace Dia
 			{
 				std::unique_lock<std::mutex> lock(mQueueMutex);
 				mTasks.push(std::move(task));
+				mSubmittedCount.fetch_add(1, std::memory_order_relaxed);
 			}
 			mCondition.notify_one();
 		}
@@ -111,6 +112,7 @@ namespace Dia
 					{
 						std::unique_lock<std::mutex> lock(mQueueMutex);
 						--mActiveTasks;
+						mCompletedCount.fetch_add(1, std::memory_order_relaxed);
 						if (mTasks.empty() && mActiveTasks == 0)
 						{
 							mWaitCondition.notify_all();

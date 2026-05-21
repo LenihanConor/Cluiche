@@ -8,7 +8,7 @@
 | Application | @docs/specs/applications/dia.md | - |
 | System | @docs/specs/systems/dia/diathreading.md | **job-system-extraction** |
 
-**Status:** `Approved` — 2026-05-20
+**Status:** `Done` — 2026-05-20
 
 ---
 
@@ -87,8 +87,8 @@ The extraction also adds the four metric accessors that Feature 2 (job-metrics) 
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 1 | Add metric accessors to `ThreadPool` (`GetSubmittedCount`, `GetCompletedCount`, `GetActiveJobCount`, `GetQueueDepth`) | AC3–AC6 | Planned | sonnet | Atomic counters; increment in Enqueue + worker |
-| 2 | Create `Dia/DiaThreading/` — new .vcxproj, .vcxproj.filters, module doc | AC8 | Planned | haiku | Static lib; DiaCore-only reference |
-| 3 | Move JobSystem.h/.cpp → DiaThreading; update namespace to `Dia::Threading::` | AC1, AC7, AC8 | Planned | sonnet | Leave forwarding header at old path |
-| 4 | Update all consumers (TextureHandler, JobSystemModule, TestJobSystem) | AC2, AC9 | Planned | haiku | Update includes + namespace references |
-| 5 | Build verification (`dia run googletest`) | AC9 | Planned | haiku | |
+| 1 | Add metric accessors to `ThreadPool` (`GetSubmittedCount`, `GetCompletedCount`, `GetActiveJobCount`, `GetQueueDepth`) | AC3–AC6 | Done | sonnet | |
+| 2 | Create `Dia/DiaThreading/` — new .vcxproj, .vcxproj.filters, module doc | AC8 | Done | haiku | |
+| 3 | Move JobSystem.h/.cpp → DiaThreading; update namespace to `Dia::Threading::` | AC1, AC7, AC8 | Done | sonnet | Compatibility aliases in DiaThreading/JobSystem.h |
+| 4 | Update all consumers (TextureHandler, JobSystemModule, TestJobSystem) | AC2, AC9 | Done | haiku | TextureHandler.h also updated |
+| 5 | Build verification (`dia run googletest`) | AC9 | Done | haiku | 4818 tests pass |

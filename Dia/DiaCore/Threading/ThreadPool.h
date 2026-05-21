@@ -44,6 +44,10 @@ namespace Dia
 			void WaitAll();
 			size_t GetThreadCount() const;
 			size_t GetPendingTaskCount() const;
+			size_t GetQueueDepth() const { return GetPendingTaskCount(); }
+			int    GetActiveTaskCount() const { return mActiveTasks.load(std::memory_order_acquire); }
+			uint64_t GetSubmittedCount() const { return mSubmittedCount.load(std::memory_order_relaxed); }
+			uint64_t GetCompletedCount() const { return mCompletedCount.load(std::memory_order_relaxed); }
 			void Shutdown();
 
 		private:
@@ -56,7 +60,9 @@ namespace Dia
 			std::condition_variable mCondition;
 			std::condition_variable mWaitCondition;
 
-			std::atomic<int> mActiveTasks{0};
+			std::atomic<int>      mActiveTasks{0};
+			std::atomic<uint64_t> mSubmittedCount{0};
+			std::atomic<uint64_t> mCompletedCount{0};
 			bool mShutdown;
 		};
 	}

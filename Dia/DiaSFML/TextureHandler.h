@@ -2,6 +2,7 @@
 
 #include <DiaAsset/IAssetTypeHandler.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaThreading/JobSystem.h>
 
 #include <memory>
 #include <mutex>
@@ -9,8 +10,6 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-
-namespace Dia { namespace Core { class JobSystem; struct JobHandle; } }
 
 namespace sf
 {
