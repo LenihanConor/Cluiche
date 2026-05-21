@@ -1,7 +1,7 @@
 # Implementation Plan: DiaReflect
 
 **Spec:** [diareflect.md](diareflect.md)
-**Status:** In Progress (Phase 3b next)
+**Status:** Done (all phases shipped 2026-05-21)
 **Created:** 2026-05-21
 
 ## Session Notes
@@ -101,6 +101,5 @@
 | 9 | Inheritance (`DIA_BASE`) integration | Covered in macro + polymorphic tests | Done | — | DIA_BASE macro was part of T3; tested in T8 |
 | **Phase 3 — Attributes & Migration** | | | | | |
 | 10 | Field attributes system (`RequiredAttribute`, `RangeAttribute<T>`, `AssetRefAttribute`) + `DIA_ATTR_*` macros | 12 tests GREEN; 150 total GREEN | Done | sonnet | Committed 2026-05-21 |
-| 11 | Migration adapter (`ReflectTypeDefinition<T>`) | Unit tests: adapter exposes DiaReflect type as TypeDefinition | Not Started | opus | Bridge to old system — deferred |
-| 12 | Migrate DiaMaths types (Vector2D, Matrix22, etc.) | Existing DiaMaths tests still pass + new round-trip tests | Not Started | sonnet | Depends on #11 |
-| 13 | Documentation + remove DiaCore/Type dead code (when all migrated) | Build passes, no references to old macros | Not Started | haiku | Final cleanup — last step |
+| 11 | Migrate DiaMaths types + add serialize() to DiaCore Strings/PathStoreConfig | 160 tests GREEN | Done | sonnet | Went direct (no adapter). Committed 2026-05-21 |
+| 12 | Delete DiaCore/Type directory (31 files); migrate all consumers to DiaReflect | 5065 tests GREEN | Done | sonnet | BasicTypeDefines.h → DiaCore/Core/; deleted 3 Type test files; fixed ADL boundary. Committed 2026-05-21 |

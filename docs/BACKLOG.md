@@ -48,18 +48,6 @@ System specs and the foundation feature are all `Approved`. Each system's child 
 
 ## Ready to Build (cont.)
 
-### DiaReflect (archive-based reflection & serialization)
-
-System spec `Approved`. Phases 1+2+3a shipped (2026-05-21) — 150 tests GREEN. Phase 3b (migration) is the remaining work.
-
-| # | Phase | Status | Description |
-|---|-------|--------|-------------|
-| 1 | Foundation | **Done** | Archive concept, macro DSL, JSON + binary archives — 106 tests |
-| 2 | Containers & Polymorphism | **Done** | T[N] + DynamicArrayC specializations, polymorphic registry — 138 tests |
-| 3a | Field Attributes | **Done** | RequiredAttribute, RangeAttribute, AssetRefAttribute, DIA_ATTR_* macros — 150 tests |
-| 3b | Migration | **Next** | ReflectTypeDefinition<T> adapter, migrate DiaMaths types, remove DiaCore/Type macros |
-
-Plan: [specs/systems/dia/diareflect.plan.md](specs/systems/dia/diareflect.plan.md)
 
 ---
 
