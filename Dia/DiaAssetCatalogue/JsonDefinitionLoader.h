@@ -2,8 +2,7 @@
 
 #include "DiaAssetCatalogue/LoadResult.h"
 
-#include "DiaCore/Type/TypeRegistry.h"
-#include "DiaCore/Type/TypeJsonSerializer.h"
+#include "DiaCore/Reflect/JsonArchive.h"
 #include "DiaCore/FilePath/FilePath.h"
 #include "DiaCore/Containers/Strings/StringReader.h"
 
@@ -15,25 +14,22 @@ namespace Dia
 		// JsonDefinitionLoader
 		//
 		// Loads a JSON file from disk (or buffer), deserializes it into a typed C++ object using
-		// DiaCore's TypeJsonSerializer, and validates required fields.
+		// DiaReflect's JsonReadArchive.
 		// Returns LoadResult<T> with either the populated object or detailed LoadError entries.
+		//
+		// T must have a serialize() free function registered via DIA_SERIALIZE.
+		// Required-field errors are reported by JsonReadArchive via DIA_FIELD_REQUIRED.
 		//---------------------------------------------------------------------------------------------------------
 		class JsonDefinitionLoader
 		{
 		public:
-			explicit JsonDefinitionLoader(const Dia::Core::Types::TypeRegistry& registry);
+			JsonDefinitionLoader() = default;
 
 			template<typename T>
 			LoadResult<T> Load(const Dia::Core::FilePath& path) const;
 
 			template<typename T>
 			LoadResult<T> LoadFromBuffer(const Dia::Core::Containers::StringReader& buffer) const;
-
-		private:
-			template<typename T>
-			void ValidateRequiredFields(const T& value, const char* jsonText, LoadResult<T>& result) const;
-
-			const Dia::Core::Types::TypeRegistry& mRegistry;
 		};
 
 	} // namespace AssetCatalogue

@@ -87,6 +87,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="JsonDefinitionLoader.inl" />
+    <None Include="RelationshipInferrer.inl" />
     <None Include="dia.assetcatalogue.architecture.module.md" />
   </ItemGroup>
   <ItemGroup>

@@ -1,7 +1,5 @@
 #pragma once
 
-#include "DiaCore/Type/TypeDeclarationMacros.h"
-
 namespace Dia
 {
 	namespace AssetCatalogue
@@ -12,24 +10,21 @@ namespace Dia
 		// Built-in taxonomy type stubs
 		//
 		// These structs define the minimal structural schema for the 8 settled asset taxonomy types.
-		// They are registered with DiaCore's TypeSystem so that AssetTypeDescriptor::mTypeDefinition
-		// can point to them.
+		// serialize() free functions are defined in BuiltInAssetTypes.cpp via DIA_SERIALIZE macros.
 		//
 		// Field definitions here are intentional stubs — downstream pipeline/loader specs may extend them.
 		// FolderAsset, TextureAsset, and AudioAsset have no JSON schema (directory/binary); their
-		// AssetTypeDescriptors will carry a nullptr TypeDefinition.
+		// AssetTypeDescriptors will carry a nullptr mDeserializeFn.
 		//---------------------------------------------------------------------------------------------------------
 
 		// Binary file — no JSON schema.
 		struct TextureAsset
 		{
-			DIA_TYPE_DECLARATION;
 		};
 
 		// References a source texture by name.
 		struct SpriteAsset
 		{
-			DIA_TYPE_DECLARATION;
 			char mSourceTexture[64];
 
 			SpriteAsset() { mSourceTexture[0] = '\0'; }
@@ -38,14 +33,12 @@ namespace Dia
 		// Binary file — no JSON schema.
 		struct AudioAsset
 		{
-			DIA_TYPE_DECLARATION;
 		};
 
 		// Open-ended JSON config — no fixed structural fields at this level.
 		// Note: mVersion is a placeholder stub field; real config fields are defined by downstream specs.
 		struct ConfigAsset
 		{
-			DIA_TYPE_DECLARATION;
 			char mVersion[8];
 
 			ConfigAsset() { mVersion[0] = '\0'; }
@@ -54,7 +47,6 @@ namespace Dia
 		// Component composition string (simplified stub — full schema in downstream specs).
 		struct EntityAsset
 		{
-			DIA_TYPE_DECLARATION;
 			char mComponents[512];
 
 			EntityAsset() { mComponents[0] = '\0'; }
@@ -63,7 +55,6 @@ namespace Dia
 		// Stage identity fields. Membership via `contains` relationships (SD-CAT-012), not fields.
 		struct StageAsset
 		{
-			DIA_TYPE_DECLARATION;
 			char mName[64];
 			char mDisplayName[64];
 
@@ -73,7 +64,6 @@ namespace Dia
 		// UI layout reference.
 		struct UIAsset
 		{
-			DIA_TYPE_DECLARATION;
 			char mLayout[64];
 
 			UIAsset() { mLayout[0] = '\0'; }
@@ -82,7 +72,6 @@ namespace Dia
 		// Directory — no JSON schema.
 		struct FolderAsset
 		{
-			DIA_TYPE_DECLARATION;
 		};
 
 		//---------------------------------------------------------------------------------------------------------

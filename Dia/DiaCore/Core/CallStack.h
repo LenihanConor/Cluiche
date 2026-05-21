@@ -1,6 +1,6 @@
 #pragma once
 
-#include "DiaCore/Type/BasicTypeDefines.h"
+#include "DiaCore/Core/BasicTypeDefines.h"
 
 namespace Dia
 {

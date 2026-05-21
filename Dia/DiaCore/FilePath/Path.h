@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include "DiaCore/Strings/String256.h"
 #include "DiaCore/Strings/String512.h"
 #include "DiaCore/CRC/StringCRC.h"

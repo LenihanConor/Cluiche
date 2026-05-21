@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Core">
@@ -27,21 +27,6 @@
     </Filter>
     <Filter Include="CRC\Source">
       <UniqueIdentifier>{f5a3628a-1ba4-40e7-a916-e8450abd5399}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Type">
-      <UniqueIdentifier>{7d1abbc4-5748-4184-a23a-719033b81ad1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Type\Interfaces">
-      <UniqueIdentifier>{5c3bacdc-9d23-41f0-a562-f2411efd461e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Type\Interfaces\Source">
-      <UniqueIdentifier>{312ea2c8-7634-4411-a8aa-5a7e80a0b2da}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Type\Internals">
-      <UniqueIdentifier>{c496659c-6a39-4bb4-bfa1-b898dfa52677}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Type\Internals\Source">
-      <UniqueIdentifier>{bd65c902-3a11-4959-97d6-df230137de1b}</UniqueIdentifier>
     </Filter>
     <Filter Include="Reflect">
       <UniqueIdentifier>{a1b2c3d4-e5f6-7890-abcd-ef1234567890}</UniqueIdentifier>
@@ -213,48 +198,6 @@
     <ClInclude Include="CRC\StripStringCRC.h">
       <Filter>CRC</Filter>
     </ClInclude>
-    <ClInclude Include="Type\BasicTypeDefines.h">
-      <Filter>Type\Interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="Type\TypeDeclarationMacros.h">
-      <Filter>Type\Interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="Type\TypeDefinitionMacros.h">
-      <Filter>Type\Interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="Type\TypeFacade.h">
-      <Filter>Type\Interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="Type\TypeRegistry.h">
-      <Filter>Type\Interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="Type\TypeTextSerializer.h">
-      <Filter>Type\Interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="Type\TypeTraits.h">
-      <Filter>Type\Interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="Type\TypeDefinition.h">
-      <Filter>Type\Internals</Filter>
-    </ClInclude>
-    <ClInclude Include="Type\TypeInstance.h">
-      <Filter>Type\Internals</Filter>
-    </ClInclude>
-    <ClInclude Include="Type\TypeMember.h">
-      <Filter>Type\Internals</Filter>
-    </ClInclude>
-    <ClInclude Include="Type\TypeParameterInput.h">
-      <Filter>Type\Internals</Filter>
-    </ClInclude>
-    <ClInclude Include="Type\TypeVariable.h">
-      <Filter>Type\Internals</Filter>
-    </ClInclude>
-    <ClInclude Include="Type\TypeVariableAttributes.h">
-      <Filter>Type\Internals</Filter>
-    </ClInclude>
-    <ClInclude Include="Type\TypeVariableData.h">
-      <Filter>Type\Internals</Filter>
-    </ClInclude>
     <ClInclude Include="Reflect\Reflect.h">
       <Filter>Reflect</Filter>
     </ClInclude>
@@ -289,9 +232,6 @@
       <Filter>Reflect</Filter>
     </ClInclude>
     <ClInclude Include="Strings\String.h">
-      <Filter>Strings</Filter>
-    </ClInclude>
-    <ClInclude Include="Strings\StringJsonSerializer.h">
       <Filter>Strings</Filter>
     </ClInclude>
     <ClInclude Include="Strings\String1024.h">
@@ -469,9 +409,6 @@
     <ClInclude Include="Json\external\json_tool.h">
       <Filter>Json\External\Source</Filter>
     </ClInclude>
-    <ClInclude Include="Type\TypeJsonSerializer.h">
-      <Filter>Type\Interfaces</Filter>
-    </ClInclude>
     <ClInclude Include="FilePath\PathStore.h">
       <Filter>FilePath</Filter>
     </ClInclude>
@@ -579,36 +516,6 @@
     <ClCompile Include="CRC\StripStringCRC.cpp">
       <Filter>CRC\Source</Filter>
     </ClCompile>
-    <ClCompile Include="Type\TypeFacade.cpp">
-      <Filter>Type\Interfaces\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Type\TypeRegistry.cpp">
-      <Filter>Type\Interfaces\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Type\TypeTextSerializer.cpp">
-      <Filter>Type\Interfaces\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Type\TypeDefinition.cpp">
-      <Filter>Type\Internals\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Type\TypeInstance.cpp">
-      <Filter>Type\Internals\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Type\TypeMember.cpp">
-      <Filter>Type\Internals\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Type\TypeParameterInput.cpp">
-      <Filter>Type\Internals\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Type\TypeVariable.cpp">
-      <Filter>Type\Internals\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Type\TypeVariableAttributes.cpp">
-      <Filter>Type\Internals\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Type\TypeVariableData.cpp">
-      <Filter>Type\Internals\Source</Filter>
-    </ClCompile>
     <ClCompile Include="Containers\HashTables\HashTableHashFunctionData.cpp">
       <Filter>Containers\HashTables\Source</Filter>
     </ClCompile>
@@ -633,9 +540,6 @@
     </ClCompile>
     <ClCompile Include="Json\external\json_value.cpp">
       <Filter>Json\External\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Type\TypeJsonSerializer.cpp">
-      <Filter>Type\Interfaces\Source</Filter>
     </ClCompile>
     <ClCompile Include="Strings\String8.cpp">
       <Filter>Strings\Source</Filter>
@@ -670,9 +574,6 @@
     <ClCompile Include="Strings\StringUtils.cpp">
       <Filter>Strings\Source</Filter>
     </ClCompile>
-    <ClCompile Include="Strings\StringJsonSerializer.cpp">
-      <Filter>Strings\Source</Filter>
-    </ClCompile>
     <ClCompile Include="FilePath\FileLoad.cpp">
       <Filter>FilePath</Filter>
     </ClCompile>
@@ -687,15 +588,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Type\TypeFacade.inl">
-      <Filter>Type\Interfaces\Source</Filter>
-    </None>
-    <None Include="Type\TypeVariable.inl">
-      <Filter>Type\Internals\Source</Filter>
-    </None>
-    <None Include="Type\TypeVariableData.inl">
-      <Filter>Type\Internals\Source</Filter>
-    </None>
     <None Include="Strings\String.inl">
       <Filter>Strings\Source</Filter>
     </None>

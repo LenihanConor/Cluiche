@@ -3,6 +3,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
+#include <cstdint>
 #include <DiaMaths/Vector/Vector2D.h>
 #include <DiaGraphics/Misc/RGBA.h>
 

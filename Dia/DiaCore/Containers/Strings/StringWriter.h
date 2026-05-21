@@ -1,7 +1,7 @@
 #ifndef DIA_STRING_WRITER__
 #define DIA_STRING_WRITER__
 
-#include "DiaCore/Type/BasicTypeDefines.h"
+#include "DiaCore/Core/BasicTypeDefines.h"
 
 namespace Dia
 {

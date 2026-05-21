@@ -1,6 +1,6 @@
 #include "DiaCore/CRC/CRC.h"
 
-#include "DiaCore/Type/BasicTypeDefines.h"
+#include "DiaCore/Core/BasicTypeDefines.h"
 
 #include <string.h>
 #include "limits.h"

@@ -14,8 +14,6 @@
 #include "DiaCore/Reflect/SerializeResult.h"
 #include "DiaCore/Json/external/json/json.h"
 
-// DIA_TYPE_DEFINITION coexistence (test K)
-#include "DiaCore/Type/TypeFacade.h"
 
 using namespace Dia::Reflect;
 using namespace Dia::Maths;
@@ -232,22 +230,3 @@ TEST(DiaMathsSerializer_ADL, SerializeFunctionFoundViaADL) {
     EXPECT_FLOAT_EQ(dst.y, 8.0f);
 }
 
-// =============================================================================
-// K) DIA_TYPE_DEFINITION coexistence
-//    The existing TypeDefinition (old type system) for Vector2D must still be
-//    constructible and queryable after DiaMathsSerializers.h is included.
-//    Including the bridging header must not break the DIA_TYPE_DECLARATION /
-//    DIA_TYPE_DEFINITION registration pair.
-// =============================================================================
-
-TEST(DiaMathsSerializer_Coexistence, TypeDefinitionStillReachableForVector2D) {
-    // GetTypeStatic() lazily creates the TypeDefinition and registers it with
-    // the TypeFacade.  If DiaMathsSerializers.h had somehow broken the
-    // declaration (e.g., a symbol conflict), this would be null or crash.
-    Dia::Core::Types::TypeDefinition* typeDef = Vector2D::GetTypeStatic();
-    ASSERT_NE(typeDef, nullptr);
-
-    // The name stored in the TypeMember is the bare class name (the #className
-    // string passed to the TypeDefinition constructor by DIA_TYPE_DEFINITION).
-    EXPECT_STREQ(typeDef->GetName(), "Vector2D");
-}

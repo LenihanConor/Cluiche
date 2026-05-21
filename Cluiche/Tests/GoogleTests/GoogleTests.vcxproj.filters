@@ -301,15 +301,6 @@
     <ClCompile Include="Core\Type\TestMetaLogic.cpp">
       <Filter>Core\Type</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Type\TestTypeTraits.cpp">
-      <Filter>Core\Type</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Type\TestJsonTypes.cpp">
-      <Filter>Core\Type</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Type\TestTypes.cpp">
-      <Filter>Core\Type</Filter>
-    </ClCompile>
     <!-- Maths -->
     <ClCompile Include="Maths\TestAngle.cpp">
       <Filter>Maths</Filter>

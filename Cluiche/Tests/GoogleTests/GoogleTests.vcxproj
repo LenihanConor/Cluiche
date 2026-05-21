@@ -156,9 +156,6 @@
     <ClCompile Include="Core\Reflect\TestDiaCoreSerializers.cpp" />
     <ClCompile Include="Core\Type\TestEnum.cpp" />
     <ClCompile Include="Core\Type\TestMetaLogic.cpp" />
-    <ClCompile Include="Core\Type\TestTypeTraits.cpp" />
-    <ClCompile Include="Core\Type\TestJsonTypes.cpp" />
-    <ClCompile Include="Core\Type\TestTypes.cpp" />
     <ClCompile Include="Core\Threading\TestMutex.cpp" />
     <ClCompile Include="Core\Threading\TestAtomic.cpp" />
     <ClCompile Include="Core\Threading\TestThreadPool.cpp" />

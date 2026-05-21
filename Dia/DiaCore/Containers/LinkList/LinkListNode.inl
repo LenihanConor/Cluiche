@@ -1,4 +1,4 @@
-#include "DiaCore/Type/BasicTypeDefines.h"
+#include "DiaCore/Core/BasicTypeDefines.h"
 #include "DiaCore/Core/Assert.h"
 
 namespace Dia

@@ -7,7 +7,6 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/FilePath/FilePath.h>
 #include <DiaCore/FilePath/PathStore.h>
-#include <DiaCore/Type/TypeVariableAttributes.h>
 
 // ---------------------------------------------------------------------------
 // Test fixture — registers a path alias so FilePath::Create doesn't assert
@@ -45,7 +44,7 @@ TEST_F(AssetTypeFramework, Register_SingleDescriptor_CountIsOne)
 	desc.mTypeId         = Dia::Core::StringCRC("weapon");
 	desc.mName           = Dia::Core::Containers::String64("Weapon Definition");
 	desc.mFilePattern    = Dia::Core::Containers::String64("*.weapon.json");
-	desc.mTypeDefinition = nullptr;
+	desc.mDeserializeFn = nullptr;
 
 	bool registered = registry.Register(desc);
 
@@ -64,7 +63,7 @@ TEST_F(AssetTypeFramework, Register_DuplicateTypeId_ReturnsFalseCountUnchanged)
 	desc.mTypeId         = Dia::Core::StringCRC("config");
 	desc.mName           = Dia::Core::Containers::String64("Config");
 	desc.mFilePattern    = Dia::Core::Containers::String64("*.config.json");
-	desc.mTypeDefinition = nullptr;
+	desc.mDeserializeFn = nullptr;
 
 	bool first  = registry.Register(desc);
 	EXPECT_TRUE(first);
@@ -86,7 +85,7 @@ TEST_F(AssetTypeFramework, FindByTypeId_Found_ReturnsDescriptor)
 	desc.mTypeId         = Dia::Core::StringCRC("entity");
 	desc.mName           = Dia::Core::Containers::String64("Entity Definition");
 	desc.mFilePattern    = Dia::Core::Containers::String64("*.entity.json");
-	desc.mTypeDefinition = nullptr;
+	desc.mDeserializeFn = nullptr;
 
 	registry.Register(desc);
 
@@ -121,7 +120,7 @@ TEST_F(AssetTypeFramework, FindByFilePath_MatchesConfigPattern)
 	desc.mTypeId         = Dia::Core::StringCRC("config");
 	desc.mName           = Dia::Core::Containers::String64("Config");
 	desc.mFilePattern    = Dia::Core::Containers::String64("*.config.json");
-	desc.mTypeDefinition = nullptr;
+	desc.mDeserializeFn = nullptr;
 
 	registry.Register(desc);
 
@@ -143,7 +142,7 @@ TEST_F(AssetTypeFramework, FindByFilePath_NoMatch_ReturnsNullptr)
 	desc.mTypeId         = Dia::Core::StringCRC("config");
 	desc.mName           = Dia::Core::Containers::String64("Config");
 	desc.mFilePattern    = Dia::Core::Containers::String64("*.config.json");
-	desc.mTypeDefinition = nullptr;
+	desc.mDeserializeFn = nullptr;
 
 	registry.Register(desc);
 

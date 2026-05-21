@@ -138,6 +138,9 @@ private:
             slot = static_cast<Json::Int64>(value);
         } else if constexpr (std::is_same_v<T, unsigned long>) {
             slot = static_cast<Json::UInt64>(value);
+        } else if constexpr (std::is_array_v<T> && std::is_same_v<std::remove_extent_t<T>, char>) {
+            // char[N] — written as a JSON string (C-string convention)
+            slot = value;
         } else if constexpr (std::is_array_v<T>) {
             // C-style static array T[N] — written as a JSON array
             constexpr std::size_t Extent = std::extent_v<T>;
@@ -313,6 +316,16 @@ private:
             value = static_cast<long>(src.asInt64());
         } else if constexpr (std::is_same_v<T, unsigned long>) {
             value = static_cast<unsigned long>(src.asUInt64());
+        } else if constexpr (std::is_array_v<T> && std::is_same_v<std::remove_extent_t<T>, char>) {
+            // char[N] — read from a JSON string (C-string convention)
+            if (src.isString()) {
+                constexpr std::size_t Extent = std::extent_v<T>;
+                const char* str = src.asCString();
+                std::size_t len = 0u;
+                while (str[len] && len < Extent - 1u) ++len;
+                for (std::size_t i = 0u; i < len; ++i) value[i] = str[i];
+                value[len] = '\0';
+            }
         } else if constexpr (std::is_array_v<T>) {
             // C-style static array T[N] — read from a JSON array
             // Tolerant: fewer elements → remaining keep their defaults;
