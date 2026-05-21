@@ -5,20 +5,11 @@
 #include "DiaMaths/Core/Angle.h"
 #include "DiaMaths/Core/Trigonometry.h"
 #include "DiaMaths/Core/FloatMaths.h"
-#include "DiaCore/Type/TypeDefinitionMacros.h"
-//small 
+
 namespace Dia
 {
 	namespace Maths
 	{
-		
- 		DIA_TYPE_DEFINITION( Matrix22 )
-			DIA_TYPE_ADD_VARIABLE( "e00", mElement[0] )
-  			DIA_TYPE_ADD_VARIABLE( "e01", mElement[1] )
- 			DIA_TYPE_ADD_VARIABLE( "e10", mElement[2] )
-  			DIA_TYPE_ADD_VARIABLE( "e11", mElement[2] )
- 		DIA_TYPE_DEFINITION_END()
-
 		const Matrix22 Matrix22::Zero(0.0f, 0.0f, 0.0f, 0.0f);
 		const Matrix22 Matrix22::Identity(1.0f, 0.0f, 0.0f, 1.0f);
 		

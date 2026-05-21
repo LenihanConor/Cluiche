@@ -12,8 +12,6 @@ namespace Dia
 			class String256 : public String<256>
 			{
 			public:
-				DIA_TYPE_DECLARATION;
-
 				String256();																			
 				explicit String256 ( ConstIterator& iter ); 
 				explicit String256 ( ConstReverseIterator& iter ); 

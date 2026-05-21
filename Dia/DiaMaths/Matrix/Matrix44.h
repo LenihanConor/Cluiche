@@ -2,7 +2,6 @@
 
 #include "DiaMaths/Vector/Vector3D.h"
 #include "DiaMaths/Vector/Vector4D.h"
-#include "DiaCore/Type/TypeDeclarationMacros.h"
 
 namespace Dia
 {
@@ -31,8 +30,6 @@ namespace Dia
 		class Matrix44
 		{
 		public:
-			DIA_TYPE_DECLARATION;
-
 			// Construction
 			Matrix44();
 			Matrix44(const Matrix44& other);

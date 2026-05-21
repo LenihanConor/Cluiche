@@ -1,7 +1,6 @@
 #pragma once
 
 #include "DiaMaths/Vector/Vector3D.h"
-#include "DiaCore/Type/TypeDeclarationMacros.h"
 
 namespace Dia
 {
@@ -26,8 +25,6 @@ namespace Dia
 		class Matrix34
 		{
 		public:
-			DIA_TYPE_DECLARATION;
-
 			// Construction
 			Matrix34();                                                          // identity
 			Matrix34(const Matrix34& other);

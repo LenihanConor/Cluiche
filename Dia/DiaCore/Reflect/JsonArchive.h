@@ -194,6 +194,10 @@ public:
 
     const SerializeResult& GetResult() const { return mResult; }
 
+    void AddError(SerializeErrorKind kind, Dia::Core::StringCRC fieldName, const char* msg) {
+        mResult.AddError(kind, fieldName, msg);
+    }
+
     // NamedField
     template<typename T>
     JsonReadArchive& operator&(NamedField<T> field) {

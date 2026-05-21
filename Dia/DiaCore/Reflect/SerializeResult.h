@@ -10,6 +10,8 @@ enum class SerializeErrorKind : uint8_t {
     TypeMismatch,
     CapacityExceeded,
     UnknownPolymorphicType,
+    RangeViolation,
+    BufferOverflow,
 };
 
 struct SerializeError {

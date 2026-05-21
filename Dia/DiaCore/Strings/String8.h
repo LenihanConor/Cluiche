@@ -3,8 +3,6 @@
 
 #include "DiaCore/Strings/String.h"
 
-#include "DiaCore/Type/TypeDeclarationMacros.h"
-
 namespace Dia
 {
 	namespace Core
@@ -14,8 +12,6 @@ namespace Dia
 			class String8 : public String<8>
 			{
 			public:
-				DIA_TYPE_DECLARATION;
-
 				String8();													
 				explicit String8 ( ConstIterator& iter ); 
 				explicit String8 ( ConstReverseIterator& iter ); 

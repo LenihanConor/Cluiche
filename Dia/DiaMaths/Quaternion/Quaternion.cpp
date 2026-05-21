@@ -7,17 +7,9 @@
 #include "DiaMaths/Core/FloatMaths.h"
 #include "DiaMaths/Core/Trigonometry.h"
 #include "DiaCore/Core/Assert.h"
-#include "DiaCore/Type/TypeDefinitionMacros.h"
 #include <math.h>
 
 namespace Dia { namespace Maths {
-
-    DIA_TYPE_DEFINITION(Quaternion)
-        DIA_TYPE_ADD_VARIABLE("x", x)
-        DIA_TYPE_ADD_VARIABLE("y", y)
-        DIA_TYPE_ADD_VARIABLE("z", z)
-        DIA_TYPE_ADD_VARIABLE("w", w)
-    DIA_TYPE_DEFINITION_END()
 
     //-----------------------------------------------------------------------------
     float Quaternion::Magnitude() const

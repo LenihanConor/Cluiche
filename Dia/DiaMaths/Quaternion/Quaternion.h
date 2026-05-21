@@ -1,5 +1,4 @@
 #pragma once
-#include "DiaCore/Type/TypeDeclarationMacros.h"
 
 namespace Dia { namespace Maths {
 
@@ -24,8 +23,6 @@ class Angle;
 class Quaternion
 {
 public:
-    DIA_TYPE_DECLARATION;
-
     Quaternion();                                        // identity (0,0,0,1)
     Quaternion(float x, float y, float z, float w);
     Quaternion(const Quaternion& other);

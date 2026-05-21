@@ -576,3 +576,31 @@ TEST(BinaryArchive_Concept, ReadArchiveSatisfiesConcept) {
     EXPECT_TRUE(ar.IsReading());
     EXPECT_FALSE(ar.IsWriting());
 }
+
+// =============================================================================
+// Overflow detection tests
+// =============================================================================
+
+struct BHugePayload {
+    float mData[20000]; // 80000 bytes > 65536 buffer
+};
+
+DIA_SERIALIZE(BHugePayload, 1)
+    DIA_FIELD(mData)
+DIA_SERIALIZE_END
+
+TEST(BinaryArchive_Overflow, ExceedingBufferSetsOverflowFlag) {
+    BHugePayload src{};
+    BinaryWriteArchive wAr;
+    wAr.WriteVersion(1u);
+    serialize(wAr, src, 1u);
+    EXPECT_TRUE(wAr.HasOverflowed());
+}
+
+TEST(BinaryArchive_Overflow, NormalWriteDoesNotOverflow) {
+    BVec2 src{1.0f, 2.0f};
+    BinaryWriteArchive wAr;
+    wAr.WriteVersion(1u);
+    serialize(wAr, src, 1u);
+    EXPECT_FALSE(wAr.HasOverflowed());
+}

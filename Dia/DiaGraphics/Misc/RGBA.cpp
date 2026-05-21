@@ -4,19 +4,11 @@
 #include "DiaGraphics/Misc/RGBA.h"
 
 #include <DiaMaths/Core/CoreMaths.h>
-#include <DiaCore/Type/TypeDefinitionMacros.h>
 
 namespace Dia
 {
 	namespace Graphics
 	{
-		DIA_TYPE_DEFINITION(RGBA)
-			DIA_TYPE_ADD_VARIABLE("Red", r)
-			DIA_TYPE_ADD_VARIABLE("Green", g)
-			DIA_TYPE_ADD_VARIABLE("Blue", b)
-			DIA_TYPE_ADD_VARIABLE("Alpha", a)
-		DIA_TYPE_DEFINITION_END()
-
 		const RGBA RGBA::Black = RGBA(0, 0, 0, 255);      
 		const RGBA RGBA::White = RGBA(255, 255, 255, 255);
 		const RGBA RGBA::Red = RGBA(255, 0, 0, 255);

@@ -2,6 +2,7 @@
 
 #include "DiaCore/FilePath/FileLoad.h"
 #include "DiaCore/Reflect/JsonArchive.h"
+#include "DiaCore/Reflect/DiaCoreSerializers.h"
 #include "DiaCore/Json/external/json/json.h"
 
 #include <DiaCore/Containers/Strings/StringReader.h>

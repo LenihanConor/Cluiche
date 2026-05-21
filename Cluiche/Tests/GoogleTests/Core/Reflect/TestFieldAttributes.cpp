@@ -161,3 +161,103 @@ TEST(FieldAttributeRegistry, AllAttributeKindsRegisteredAtStaticInit) {
 TEST(FieldAttributeRegistry, RegistryCapacityAtLeast256) {
     EXPECT_GE(FieldAttributeRegistry::kMaxEntries, 256u);
 }
+
+// =============================================================================
+// RangeAttribute enforcement tests
+// =============================================================================
+
+struct ClampedValue {
+    float mSpeed = 50.0f;
+};
+
+DIA_SERIALIZE(ClampedValue, 1)
+    DIA_FIELD_RANGED(mSpeed)
+DIA_SERIALIZE_END
+
+DIA_ATTR_RANGE_CLAMPED(ClampedValue, mSpeed, 0.0f, 100.0f)
+
+struct ErrorOnRange {
+    int mLevel = 5;
+};
+
+DIA_SERIALIZE(ErrorOnRange, 1)
+    DIA_FIELD_RANGED(mLevel)
+DIA_SERIALIZE_END
+
+DIA_ATTR_RANGE(ErrorOnRange, mLevel, 1, 10)
+
+TEST(RangeEnforcement, ValueAboveMax_Clamped) {
+    ClampedValue src;
+    src.mSpeed = 200.0f;
+
+    JsonWriteArchive wAr;
+    serialize(wAr, src, 1u);
+
+    ClampedValue dst;
+    JsonReadArchive rAr(wAr.GetRoot());
+    serialize(rAr, dst, 1u);
+
+    EXPECT_FLOAT_EQ(dst.mSpeed, 100.0f);
+    EXPECT_TRUE(rAr.GetResult().IsOk());
+}
+
+TEST(RangeEnforcement, ValueBelowMin_Clamped) {
+    ClampedValue src;
+    src.mSpeed = -50.0f;
+
+    JsonWriteArchive wAr;
+    serialize(wAr, src, 1u);
+
+    ClampedValue dst;
+    JsonReadArchive rAr(wAr.GetRoot());
+    serialize(rAr, dst, 1u);
+
+    EXPECT_FLOAT_EQ(dst.mSpeed, 0.0f);
+    EXPECT_TRUE(rAr.GetResult().IsOk());
+}
+
+TEST(RangeEnforcement, ValueInRange_Unchanged) {
+    ClampedValue src;
+    src.mSpeed = 50.0f;
+
+    JsonWriteArchive wAr;
+    serialize(wAr, src, 1u);
+
+    ClampedValue dst;
+    JsonReadArchive rAr(wAr.GetRoot());
+    serialize(rAr, dst, 1u);
+
+    EXPECT_FLOAT_EQ(dst.mSpeed, 50.0f);
+    EXPECT_TRUE(rAr.GetResult().IsOk());
+}
+
+TEST(RangeEnforcement, ValueOutOfRange_ErrorMode_ReportsViolation) {
+    ErrorOnRange src;
+    src.mLevel = 20;
+
+    JsonWriteArchive wAr;
+    serialize(wAr, src, 1u);
+
+    ErrorOnRange dst;
+    JsonReadArchive rAr(wAr.GetRoot());
+    serialize(rAr, dst, 1u);
+
+    EXPECT_TRUE(rAr.GetResult().HasErrors());
+    EXPECT_EQ(rAr.GetResult().GetError(0).kind, SerializeErrorKind::RangeViolation);
+    EXPECT_EQ(dst.mLevel, 20); // not clamped — just reported
+}
+
+TEST(RangeEnforcement, ValueInRange_ErrorMode_NoError) {
+    ErrorOnRange src;
+    src.mLevel = 5;
+
+    JsonWriteArchive wAr;
+    serialize(wAr, src, 1u);
+
+    ErrorOnRange dst;
+    JsonReadArchive rAr(wAr.GetRoot());
+    serialize(rAr, dst, 1u);
+
+    EXPECT_TRUE(rAr.GetResult().IsOk());
+    EXPECT_EQ(dst.mLevel, 5);
+}

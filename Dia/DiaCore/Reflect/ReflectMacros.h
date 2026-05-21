@@ -1,6 +1,7 @@
 #pragma once
 #include "DiaCore/Reflect/Archive.h"
 #include "DiaCore/Reflect/PolymorphicRegistry.h"
+#include "DiaCore/Reflect/FieldAttributes.h"
 
 // =============================================================================
 // DiaReflect Macro DSL
@@ -26,7 +27,8 @@
     template<class Archive> \
     void serialize(Archive& _ar_, Type& obj, unsigned _version_ = (Version)) { \
         static_assert(Dia::Reflect::Archive<Archive>, #Type ": Archive type does not satisfy Dia::Reflect::Archive concept"); \
-        (void)_version_;
+        (void)_version_; \
+        static const uint32_t _typeCrc_ = Dia::Core::StringCRC(#Type).Value(); (void)_typeCrc_;
 
 // Close the serialize function
 #define DIA_SERIALIZE_END \
@@ -72,6 +74,11 @@
 // Serialize a required value field (archive will error if missing during read)
 #define DIA_FIELD_REQUIRED(member) \
     _ar_ & Dia::Reflect::named(#member, obj.member).Required();
+
+// Serialize a field with range enforcement (clamp or error based on RangeAttribute registration)
+#define DIA_FIELD_RANGED(member) \
+    _ar_ & Dia::Reflect::named(#member, obj.member); \
+    if (_ar_.IsReading()) { Dia::Reflect::EnforceRange(obj.member, _typeCrc_, Dia::Core::StringCRC(#member).Value(), _ar_); }
 
 // Serialize an owning pointer field (object embedded inline)
 #define DIA_FIELD_OWNED_PTR(member) \

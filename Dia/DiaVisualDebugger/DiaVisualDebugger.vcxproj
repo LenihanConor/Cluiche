@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}</ProjectGuid>
+    <ProjectGuid>{9BDEE3A3-1E06-4AF4-8628-E55B8E0E2E4B}</ProjectGuid>
     <RootNamespace>DiaVisualDebugger</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>

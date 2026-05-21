@@ -8,31 +8,11 @@
 #include "DiaMaths/Core/FloatMaths.h"
 #include "DiaMaths/Core/Trigonometry.h"
 #include "DiaCore/Core/Assert.h"
-#include "DiaCore/Type/TypeDefinitionMacros.h"
 
 namespace Dia
 {
 	namespace Maths
 	{
-		DIA_TYPE_DEFINITION(Matrix44)
-			DIA_TYPE_ADD_VARIABLE("m00", m[0][0])
-			DIA_TYPE_ADD_VARIABLE("m01", m[0][1])
-			DIA_TYPE_ADD_VARIABLE("m02", m[0][2])
-			DIA_TYPE_ADD_VARIABLE("m03", m[0][3])
-			DIA_TYPE_ADD_VARIABLE("m10", m[1][0])
-			DIA_TYPE_ADD_VARIABLE("m11", m[1][1])
-			DIA_TYPE_ADD_VARIABLE("m12", m[1][2])
-			DIA_TYPE_ADD_VARIABLE("m13", m[1][3])
-			DIA_TYPE_ADD_VARIABLE("m20", m[2][0])
-			DIA_TYPE_ADD_VARIABLE("m21", m[2][1])
-			DIA_TYPE_ADD_VARIABLE("m22", m[2][2])
-			DIA_TYPE_ADD_VARIABLE("m23", m[2][3])
-			DIA_TYPE_ADD_VARIABLE("m30", m[3][0])
-			DIA_TYPE_ADD_VARIABLE("m31", m[3][1])
-			DIA_TYPE_ADD_VARIABLE("m32", m[3][2])
-			DIA_TYPE_ADD_VARIABLE("m33", m[3][3])
-		DIA_TYPE_DEFINITION_END()
-
 		//-----------------------------------------------------------------------------
 		// Factory methods
 		//-----------------------------------------------------------------------------

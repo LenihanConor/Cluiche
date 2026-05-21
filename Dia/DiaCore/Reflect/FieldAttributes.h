@@ -5,6 +5,9 @@
 // See docs/specs/systems/dia/diareflect.md
 #include "DiaCore/CRC/StringCRC.h"
 #include "DiaCore/Containers/Arrays/DynamicArrayC.h"
+#include "DiaCore/Reflect/SerializeResult.h"
+#include <cstring>
+#include <type_traits>
 
 namespace Dia::Reflect {
 
@@ -20,7 +23,8 @@ struct FieldAttribute {
 // RequiredAttribute — field must be present in source data
 // =============================================================================
 struct RequiredAttribute : FieldAttribute {
-    const char* GetKind() const override { return "Required"; }
+    static constexpr const char* kKind = "Required";
+    const char* GetKind() const override { return kKind; }
 };
 
 // =============================================================================
@@ -30,6 +34,7 @@ struct RequiredAttribute : FieldAttribute {
 // =============================================================================
 template<typename T>
 struct RangeAttribute : FieldAttribute {
+    static constexpr const char* kKind = "Range";
     T    minValue{};
     T    maxValue{};
     bool clamp = false;
@@ -37,19 +42,20 @@ struct RangeAttribute : FieldAttribute {
     RangeAttribute() = default;
     RangeAttribute(T mn, T mx, bool cl = false) : minValue(mn), maxValue(mx), clamp(cl) {}
 
-    const char* GetKind() const override { return "Range"; }
+    const char* GetKind() const override { return kKind; }
 };
 
 // =============================================================================
 // AssetRefAttribute — marks a field as a reference to an asset of a given type
 // =============================================================================
 struct AssetRefAttribute : FieldAttribute {
+    static constexpr const char* kKind = "AssetRef";
     Dia::Core::StringCRC targetTypeId;
 
     AssetRefAttribute() = default;
     explicit AssetRefAttribute(const char* typeName) : targetTypeId(typeName) {}
 
-    const char* GetKind() const override { return "AssetRef"; }
+    const char* GetKind() const override { return kKind; }
 };
 
 // =============================================================================
@@ -129,16 +135,16 @@ public:
     }
 
     // Find the first attribute of type AttrT for a (type, field) pair.
-    // Uses dynamic_cast — requires RTTI (available in test/tool targets).
-    // Returns nullptr if not found or RTTI is unavailable.
+    // Matches via AttrT::kKind string comparison (no RTTI required).
     template<typename AttrT>
     const AttrT* FindAttribute(uint32_t typeCrc, uint32_t fieldCrc) const {
         for (unsigned int i = 0u; i < mEntries.Size(); ++i) {
             const FieldAttributeList& list = mEntries.At(i);
             if (list.key.typeCrc == typeCrc && list.key.fieldCrc == fieldCrc) {
                 for (unsigned int j = 0u; j < list.count; ++j) {
-                    const AttrT* typed = dynamic_cast<const AttrT*>(list.attrs[j]);
-                    if (typed) return typed;
+                    if (strcmp(list.attrs[j]->GetKind(), AttrT::kKind) == 0) {
+                        return static_cast<const AttrT*>(list.attrs[j]);
+                    }
                 }
                 return nullptr;
             }
@@ -153,6 +159,39 @@ private:
     FieldAttributeRegistry() = default;
     Dia::Core::Containers::DynamicArrayC<FieldAttributeList, kMaxEntries> mEntries;
 };
+
+// =============================================================================
+// EnforceRange — called by DIA_FIELD_RANGED after reading a field value.
+// Looks up RangeAttribute for (typeCrc, fieldCrc). If found:
+//   clamp=true  → clamp value to [min, max]
+//   clamp=false → report RangeViolation error via archive
+// =============================================================================
+template<typename T, typename Archive>
+void EnforceRange(T& value, uint32_t typeCrc, uint32_t fieldCrc, Archive& ar) {
+    if constexpr (std::is_arithmetic_v<T>) {
+        auto* rangeAttr = FieldAttributeRegistry::Instance()
+            .FindAttribute<RangeAttribute<T>>(typeCrc, fieldCrc);
+        if (rangeAttr) {
+            if (value < rangeAttr->minValue) {
+                if (rangeAttr->clamp) {
+                    value = rangeAttr->minValue;
+                } else if constexpr (requires { ar.AddError(SerializeErrorKind{}, Dia::Core::StringCRC{}, ""); }) {
+                    ar.AddError(SerializeErrorKind::RangeViolation,
+                        Dia::Core::StringCRC(""),
+                        "Value below minimum range");
+                }
+            } else if (value > rangeAttr->maxValue) {
+                if (rangeAttr->clamp) {
+                    value = rangeAttr->maxValue;
+                } else if constexpr (requires { ar.AddError(SerializeErrorKind{}, Dia::Core::StringCRC{}, ""); }) {
+                    ar.AddError(SerializeErrorKind::RangeViolation,
+                        Dia::Core::StringCRC(""),
+                        "Value above maximum range");
+                }
+            }
+        }
+    }
+}
 
 } // namespace Dia::Reflect
 
@@ -205,6 +244,22 @@ private:
         } \
     }; \
     static TypeName##_##fieldName##_RangeReg s_##TypeName##_##fieldName##_RangeReg; \
+    }
+
+// DIA_ATTR_RANGE_CLAMPED — register a RangeAttribute<T> with clamp=true
+#define DIA_ATTR_RANGE_CLAMPED(TypeName, fieldName, MinVal, MaxVal) \
+    namespace { \
+    struct TypeName##_##fieldName##_RangeClampReg { \
+        TypeName##_##fieldName##_RangeClampReg() { \
+            using _ElemT_ = std::remove_reference_t<decltype(std::declval<TypeName>().fieldName)>; \
+            static Dia::Reflect::RangeAttribute<_ElemT_> _attr_{(MinVal), (MaxVal), true}; \
+            Dia::Reflect::FieldAttributeRegistry::Instance().Register( \
+                Dia::Core::StringCRC(#TypeName).Value(), \
+                Dia::Core::StringCRC(#fieldName).Value(), \
+                &_attr_); \
+        } \
+    }; \
+    static TypeName##_##fieldName##_RangeClampReg s_##TypeName##_##fieldName##_RangeClampReg; \
     }
 
 // DIA_ATTR_ASSET_REF — register an AssetRefAttribute for (TypeName, fieldName)

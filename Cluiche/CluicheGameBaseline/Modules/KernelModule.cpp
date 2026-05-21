@@ -45,7 +45,6 @@ Dia::ApplicationFlow::StartResult KernelModule::DoStart()
 
     mWindow = renderWindow;
     mCanvas = renderWindow;
-    sCanvas = renderWindow;
     sTextureHandler = renderWindow->GetTextureHandler();
 
     // Wire the JobSystem into TextureHandler for async asset loading
@@ -62,6 +61,11 @@ Dia::ApplicationFlow::StartResult KernelModule::DoStart()
     mInputSourceManager.AddInputSource(&mGamepadManager);
 
     mCanvas->SetActiveContext(false);
+
+    // Publish sCanvas AFTER deactivating the GL context. RenderModule polls this
+    // pointer from its dedicated thread — it must not see a non-null canvas while
+    // the context is still active on MainPU.
+    sCanvas = renderWindow;
 
     // Register input metrics with the global MetricRegistry.
     {

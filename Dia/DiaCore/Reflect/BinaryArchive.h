@@ -30,10 +30,11 @@ class BinaryWriteArchive {
 public:
     static constexpr uint32_t kBufferSize = 65536u;
 
-    BinaryWriteArchive() : mCursor(0u) {}
+    BinaryWriteArchive() : mCursor(0u), mOverflowed(false) {}
 
     bool IsReading() const { return false; }
     bool IsWriting() const { return true; }
+    bool HasOverflowed() const { return mOverflowed; }
 
     // Write the 2-byte version header for the current type blob.
     // Call this before the DIA_SERIALIZE block for the outermost type.
@@ -115,8 +116,9 @@ public:
         if (mCursor + size <= kBufferSize) {
             memcpy(mBuffer + mCursor, data, size);
             mCursor += size;
+        } else {
+            mOverflowed = true;
         }
-        // Overflow: silently truncate (PD-004 — no exceptions)
     }
 
     void WriteU32(uint32_t v) { WriteBytes(&v, 4u); }
@@ -124,6 +126,7 @@ public:
 private:
     uint8_t  mBuffer[kBufferSize];
     uint32_t mCursor;
+    bool     mOverflowed;
 
     void WriteU16(uint16_t v) { WriteBytes(&v, 2u); }
 
@@ -226,6 +229,10 @@ public:
     bool IsWriting() const { return false; }
 
     const SerializeResult& GetResult() const { return mResult; }
+
+    void AddError(SerializeErrorKind kind, Dia::Core::StringCRC fieldName, const char* msg) {
+        mResult.AddError(kind, fieldName, msg);
+    }
 
     // Read the 2-byte version header at the current cursor position.
     // This advances the cursor — call before deserializing fields.
