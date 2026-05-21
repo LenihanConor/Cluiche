@@ -4,6 +4,11 @@
 #include <memory>
 #include <cstdint>
 
+namespace Dia { namespace Observation { namespace Metric {
+    class Counter;
+    class Gauge;
+} } }
+
 namespace Dia
 {
 	namespace Core { class ThreadPool; }
@@ -79,7 +84,7 @@ namespace Dia
 			// True for default-constructed handles or for finished jobs.
 			bool       IsComplete(const JobHandle& h) const;
 
-			// --- Metric accessors (read by JobSystemModule for MetricRegistry) ---
+			// --- Metric accessors ---
 			size_t   GetQueueDepth()     const;
 			int      GetActiveJobCount() const;
 			uint64_t GetSubmittedCount() const;
@@ -88,6 +93,14 @@ namespace Dia
 
 		private:
 			Dia::Core::ThreadPool* mThreadPool;
+
+			// Metrics registered on Initialize(); owned by MetricRegistry.
+			Dia::Observation::Metric::Gauge*   mMetricQueueDepth    = nullptr;
+			Dia::Observation::Metric::Gauge*   mMetricActiveWorkers = nullptr;
+			Dia::Observation::Metric::Counter* mMetricSubmitted     = nullptr;
+			Dia::Observation::Metric::Counter* mMetricCompleted     = nullptr;
+			uint64_t                           mPrevSubmitted       = 0;
+			uint64_t                           mPrevCompleted       = 0;
 		};
 
 	} // namespace Threading

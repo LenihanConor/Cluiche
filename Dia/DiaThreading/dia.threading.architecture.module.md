@@ -13,24 +13,24 @@ parent_module_id: dia
 
 summary: >
   Task-based parallelism extracted from DiaCore. Owns JobSystem and JobHandle.
-  Provides metric accessors (GetQueueDepth, GetSubmittedCount, GetCompletedCount,
-  GetActiveJobCount) for use by JobSystemModule.
+  Registers and updates dia.jobs.* metrics directly via MetricRegistry on
+  Initialize/Submit/completion.
 
 intent: >
-  Isolate the high-level job abstraction from DiaCore so that modules depending
-  on DiaThreading (e.g. CluicheGameBaseline/JobSystemModule) can also depend on
-  DiaObservation without creating a circular dependency.
+  Own the full observability lifecycle for job execution — registration, per-submit
+  increment, per-completion gauge update — so JobSystemModule is a thin lifecycle
+  adapter only.
 
 responsibilities:
   - Provide JobSystem: Submit, Wait, IsComplete, Initialize, Shutdown
   - Provide JobHandle: refcounted per-job completion token
-  - Expose metric accessors: GetQueueDepth, GetSubmittedCount, GetCompletedCount,
-    GetActiveJobCount, GetWorkerCount
+  - Register dia.jobs.{queue_depth,active_workers,submitted,completed} on Initialize
+  - Increment/update metrics at Submit time and job completion time
+  - Null metric pointers on Shutdown
 
 non_responsibilities:
   - Thread, ThreadPool, Mutex, Atomic — remain in DiaCore
   - Priority scheduling, work-stealing, or parent/child fan-out
-  - Metric registration — that is JobSystemModule's responsibility
 
 public_api:
   headers:
@@ -45,7 +45,7 @@ public_api:
 dependencies:
   required:
     - dia.core
-  forbidden:
     - dia.observation
+  forbidden:
     - dia.applicationflow
 ---

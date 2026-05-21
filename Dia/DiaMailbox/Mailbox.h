@@ -5,7 +5,8 @@
 #include <DiaCore/Containers/Handle.h>
 #include <DiaCore/Containers/HandlePool.h>
 #include <DiaCore/Core/Assert.h>
-#include <DiaCore/Core/Log.h>
+#include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Metric/Counter.h>
 #include <DiaMailbox/MailboxTypes.h>
 #include <DiaMailbox/Subscription.h>
 #include <DiaMailbox/IMailboxRouter.h>
@@ -82,6 +83,26 @@ namespace Dia::Mailbox {
         template <class T>
         const SubscriberSet& GetSubscribersForType() const;
 
+        // Cumulative stats for a single registered type.
+        struct TypeStats {
+            uint32_t typeKey      = 0;
+            uint32_t capacity     = 0;
+            uint32_t currentCount = 0;  // live messages in queue right now
+            uint64_t totalSent    = 0;  // successful sends since registration
+            uint64_t totalDropped = 0;  // messages dropped by overflow since registration
+            uint64_t totalDrained = 0;  // messages drained (visited) since registration
+        };
+
+        // Per-type stats for T. Returns a zeroed TypeStats if T is not registered.
+        template <class T>
+        TypeStats GetTypeStats() const;
+
+        // Number of registered types (0..kMaxTypes).
+        uint32_t GetRegisteredTypeCount() const;
+
+        // Number of registered routers (0..kMaxRouters).
+        uint32_t GetRouterCount() const;
+
         // Register a router. Returns false on duplicate ID or full table.
         bool RegisterRouter(IMailboxRouter* router);
 
@@ -134,6 +155,10 @@ namespace Dia::Mailbox {
             uint8_t*      slotBuffer; // heap-allocated flat array [capacity * slotStride]
             DestructFn    destructFn;
             SubscriberSet subscriberList; // subscribers registered for this type
+            // Cumulative observability counters (never reset after registration)
+            uint64_t      totalSent    = 0;
+            uint64_t      totalDropped = 0;
+            uint64_t      totalDrained = 0;
         };
 
         // ------------------------------------------------------------------
@@ -166,6 +191,13 @@ namespace Dia::Mailbox {
         // Warn callback
         // ------------------------------------------------------------------
         void (*mWarnFn)(const char*) = nullptr;
+
+        // ------------------------------------------------------------------
+        // Metrics (registered on construction; owned by MetricRegistry)
+        // ------------------------------------------------------------------
+        Dia::Observation::Metric::Counter* mMetricSent    = nullptr;
+        Dia::Observation::Metric::Counter* mMetricDropped = nullptr;
+        Dia::Observation::Metric::Counter* mMetricDrained = nullptr;
 
         // ------------------------------------------------------------------
         // Private helpers (implemented in Mailbox.cpp)
@@ -240,6 +272,8 @@ namespace Dia::Mailbox {
                 desc->head = (desc->head + 1u) % desc->capacity;
                 --desc->count;
                 ++desc->dropsThisDrain;
+                ++desc->totalDropped;
+                if (mMetricDropped) { mMetricDropped->Inc(); }
             } else {
                 // Assert policy: fire in DEBUG, silently return false in RELEASE
                 DIA_ASSERT(false, "DiaMailbox: queue overflow (Assert policy), type key=0x%08X", key);
@@ -258,6 +292,8 @@ namespace Dia::Mailbox {
         new (slot + desc->tOffset) T(message);
 
         ++desc->count;
+        ++desc->totalSent;
+        if (mMetricSent) { mMetricSent->Inc(); }
         return true;
     }
 
@@ -295,8 +331,10 @@ namespace Dia::Mailbox {
         }
 
         // Advance head past drained messages; preserve any new sends that arrived during drain
-        desc->head   = (desc->head + snapshotCount) % desc->capacity;
-        desc->count -= snapshotCount;
+        desc->head         = (desc->head + snapshotCount) % desc->capacity;
+        desc->count       -= snapshotCount;
+        desc->totalDrained += snapshotCount;
+        if (mMetricDrained) { mMetricDrained->Inc(snapshotCount); }
 
         // Emit drop warning if drops occurred during this drain window
         if (desc->dropsThisDrain > 0) {
@@ -392,6 +430,28 @@ namespace Dia::Mailbox {
         outMatched.RemoveAll();
         router->Resolve(addr, live, outMatched);
         return true;
+    }
+
+    // ======================================================================
+    // GetTypeStats<T> template implementation
+    // ======================================================================
+    template <class T>
+    Mailbox::TypeStats Mailbox::GetTypeStats() const {
+        const uint32_t key = TypeKey<T>();
+        for (uint32_t i = 0; i < mRegistry.Size(); ++i) {
+            const TypedQueueDescriptor* desc = mRegistry[i];
+            if (desc->typeKey == key) {
+                TypeStats s;
+                s.typeKey      = desc->typeKey;
+                s.capacity     = desc->capacity;
+                s.currentCount = desc->count;
+                s.totalSent    = desc->totalSent;
+                s.totalDropped = desc->totalDropped;
+                s.totalDrained = desc->totalDrained;
+                return s;
+            }
+        }
+        return TypeStats{};
     }
 
 } // namespace Dia::Mailbox

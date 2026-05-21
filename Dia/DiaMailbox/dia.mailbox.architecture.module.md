@@ -13,10 +13,13 @@ public_headers:
 dependencies:
   required:
     - dia.core
+    - dia.observation
 responsibilities:
   - Typed deferred message queuing (ring buffers with compile-time capacity)
   - Opaque address routing via pluggable IMailboxRouter
   - Caller-managed subscriptions with generation-tracked handles
+  - Emit DIA_LOG_WARNING for drops, overflows, unregistered sends, and router errors
+  - Register and update dia.mailbox.{sent,dropped,drained} counters via MetricRegistry
 non_responsibilities:
   - Knowledge of entities, components, or any domain concept
   - Thread safety (single-threaded primitive)

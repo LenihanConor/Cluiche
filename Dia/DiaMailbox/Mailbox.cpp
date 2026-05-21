@@ -1,12 +1,16 @@
 #include <DiaMailbox/Mailbox.h>
 #include <DiaMailbox/IMailboxRouter.h>
-#include <DiaCore/Core/Log.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
 
 namespace Dia::Mailbox {
 
     Mailbox::Mailbox()
         : mWarnFn(nullptr)
     {
+        auto& reg      = Dia::Observation::Metric::MetricRegistry::Instance();
+        mMetricSent    = reg.RegisterCounter(Dia::Core::StringCRC("dia.mailbox.sent"));
+        mMetricDropped = reg.RegisterCounter(Dia::Core::StringCRC("dia.mailbox.dropped"));
+        mMetricDrained = reg.RegisterCounter(Dia::Core::StringCRC("dia.mailbox.drained"));
     }
 
     Mailbox::~Mailbox() {
@@ -46,8 +50,16 @@ namespace Dia::Mailbox {
         if (mWarnFn != nullptr) {
             mWarnFn(msg);
         } else {
-            Dia::Core::Log::OutputLine(msg);
+            DIA_LOG_WARNING("Mailbox", "%s", msg);
         }
+    }
+
+    uint32_t Mailbox::GetRegisteredTypeCount() const {
+        return mRegistry.Size();
+    }
+
+    uint32_t Mailbox::GetRouterCount() const {
+        return mRouters.Size();
     }
 
     bool Mailbox::RegisterRouter(IMailboxRouter* router) {
