@@ -8,6 +8,7 @@
 #include <DiaCore/Core/Log.h>
 #include <DiaMailbox/MailboxTypes.h>
 #include <DiaMailbox/Subscription.h>
+#include <DiaMailbox/IMailboxRouter.h>
 
 namespace Dia::Mailbox {
 
@@ -81,6 +82,18 @@ namespace Dia::Mailbox {
         template <class T>
         const SubscriberSet& GetSubscribersForType() const;
 
+        // Register a router. Returns false on duplicate ID or full table.
+        bool RegisterRouter(IMailboxRouter* router);
+
+        // Look up a router by ID. Returns nullptr if not found.
+        IMailboxRouter* GetRouter(Dia::Core::StringCRC routerId);
+
+        // Resolve recipients for a typed message using a router.
+        // Returns false (silent) if routerId is null/zero. Returns false with warning
+        // if router is not registered. Otherwise calls router->Resolve and returns true.
+        template <class T>
+        bool Resolve(const Address& addr, SubscriberSet& outMatched);
+
     private:
 
         // ------------------------------------------------------------------
@@ -137,6 +150,12 @@ namespace Dia::Mailbox {
         // ------------------------------------------------------------------
         static constexpr uint32_t kMaxTypes = 32;
         Dia::Core::Containers::DynamicArrayC<TypedQueueDescriptor*, kMaxTypes> mRegistry;
+
+        // ------------------------------------------------------------------
+        // Router table
+        // ------------------------------------------------------------------
+        static constexpr uint32_t kMaxRouters = 16;
+        Dia::Core::Containers::DynamicArrayC<IMailboxRouter*, kMaxRouters> mRouters;
 
         // ------------------------------------------------------------------
         // Subscription pool
@@ -345,6 +364,34 @@ namespace Dia::Mailbox {
         }
         static const SubscriberSet kEmpty;
         return kEmpty;
+    }
+
+    // ======================================================================
+    // Resolve<T> template implementation
+    // ======================================================================
+    template <class T>
+    bool Mailbox::Resolve(const Address& addr, SubscriberSet& outMatched) {
+        // Null router — valid no-routing use-case; silent false
+        if (addr.routerId == Dia::Core::StringCRC{}) {
+            outMatched.RemoveAll();
+            return false;
+        }
+
+        IMailboxRouter* router = GetRouter(addr.routerId);
+        if (router == nullptr) {
+            char buf[256];
+            sprintf_s(buf, sizeof(buf),
+                "[DiaMailbox] Resolve: no router registered for routerId (key=0x%08X)",
+                addr.routerId.Value());
+            EmitWarning(buf);
+            outMatched.RemoveAll();
+            return false;
+        }
+
+        const SubscriberSet& live = GetSubscribersForType<T>();
+        outMatched.RemoveAll();
+        router->Resolve(addr, live, outMatched);
+        return true;
     }
 
 } // namespace Dia::Mailbox

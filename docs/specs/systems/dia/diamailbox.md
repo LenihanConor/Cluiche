@@ -175,11 +175,11 @@ working buffers. v1 assumption: <64 subscribers per resolution call.
 
 | Feature | Description | Spec | Status |
 |---------|-------------|------|--------|
-| address-and-types | `Address` value type, `SubscriberId`, `SubscriptionHandle`, `SubscriberSet` alias, `OverflowPolicy` enum, public types only | [address-and-types.md](../../features/dia/diamailbox/address-and-types.md) | Approved |
-| typed-queue | `Mailbox::RegisterType`, `Send`, `Drain` — per-type ring buffers with compile-time capacity and overflow policy | [typed-queue.md](../../features/dia/diamailbox/typed-queue.md) | Approved |
-| subscriptions | `Mailbox::Subscribe` / `Unsubscribe`, `SubscriptionHandle` lifetime tied to issuing Mailbox | [subscriptions.md](../../features/dia/diamailbox/subscriptions.md) | Approved |
-| routers | `IMailboxRouter` interface, `RegisterRouter`, `GetRouter`, `Resolve` typed wrapper; `MockRouter` + `MailboxFixture` test utilities | [routers.md](../../features/dia/diamailbox/routers.md) | Approved |
-| module-and-build | `DiaMailbox.vcxproj`, registration in `Cluiche.sln`, `dia.mailbox.architecture.module.md` YAML | [module-and-build.md](../../features/dia/diamailbox/module-and-build.md) | Approved |
+| address-and-types | `Address` value type, `SubscriberId`, `SubscriptionHandle`, `SubscriberSet` alias, `OverflowPolicy` enum, public types only | [address-and-types.md](../../features/dia/diamailbox/address-and-types.md) | Done |
+| typed-queue | `Mailbox::RegisterType`, `Send`, `Drain` — per-type ring buffers with compile-time capacity and overflow policy | [typed-queue.md](../../features/dia/diamailbox/typed-queue.md) | Done |
+| subscriptions | `Mailbox::Subscribe` / `Unsubscribe`, `SubscriptionHandle` lifetime tied to issuing Mailbox | [subscriptions.md](../../features/dia/diamailbox/subscriptions.md) | Done |
+| routers | `IMailboxRouter` interface, `RegisterRouter`, `GetRouter`, `Resolve` typed wrapper; `MockRouter` + `MailboxFixture` test utilities | [routers.md](../../features/dia/diamailbox/routers.md) | Done |
+| module-and-build | `DiaMailbox.vcxproj`, registration in `Cluiche.sln`, `dia.mailbox.architecture.module.md` YAML | [module-and-build.md](../../features/dia/diamailbox/module-and-build.md) | Done |
 
 ## Dependencies on Other Systems
 
@@ -262,6 +262,6 @@ component system. It composes into stage-scoped consumers via ownership, not inh
 
 ## Status
 
-`Approved` — Implementation in progress.
+`Done` — All 5 features implemented and verified (2026-05-21). 49/49 tests GREEN.
 
 **Plan:** [diamailbox.plan.md](diamailbox.plan.md)

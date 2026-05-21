@@ -2,6 +2,9 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <None Include="dia.mailbox.architecture.module.md" />
+    <ClInclude Include="IMailboxRouter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="MailboxTypes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -14,6 +17,12 @@
     <ClInclude Include="Testing\MailboxTestFixture.h">
       <Filter>Testing</Filter>
     </ClInclude>
+    <ClInclude Include="Testing\MockRouter.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\TestMessages.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MailboxTypes.cpp">
@@ -21,6 +30,9 @@
     </ClCompile>
     <ClCompile Include="Mailbox.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Testing\MockRouter.cpp">
+      <Filter>Testing</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

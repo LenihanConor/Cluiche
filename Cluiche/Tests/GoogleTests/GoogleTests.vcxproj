@@ -349,6 +349,7 @@
     <ClCompile Include="DiaMailbox\MailboxTypesTests.cpp" />
     <ClCompile Include="DiaMailbox\TypedQueueTests.cpp" />
     <ClCompile Include="DiaMailbox\SubscriptionTests.cpp" />
+    <ClCompile Include="DiaMailbox\RouterTests.cpp" />
     <!-- DiaObservation -->
     <ClCompile Include="DiaObservation\Log\TestLogLevel.cpp" />
     <ClCompile Include="DiaObservation\Log\TestThreadLogBuffer.cpp" />

@@ -1,4 +1,5 @@
 #include <DiaMailbox/Mailbox.h>
+#include <DiaMailbox/IMailboxRouter.h>
 #include <DiaCore/Core/Log.h>
 
 namespace Dia::Mailbox {
@@ -47,6 +48,36 @@ namespace Dia::Mailbox {
         } else {
             Dia::Core::Log::OutputLine(msg);
         }
+    }
+
+    bool Mailbox::RegisterRouter(IMailboxRouter* router) {
+        if (router == nullptr) { return false; }
+        const Dia::Core::StringCRC routerId = router->GetRouterId();
+
+        // Duplicate check
+        for (uint32_t i = 0; i < mRouters.Size(); ++i) {
+            if (mRouters[i]->GetRouterId() == routerId) { return false; }
+        }
+
+        if (mRouters.IsFull()) {
+            char buf[256];
+            sprintf_s(buf, sizeof(buf),
+                "[DiaMailbox] RegisterRouter: router table full (capacity %u)", kMaxRouters);
+            EmitWarning(buf);
+            return false;
+        }
+
+        mRouters.Add(router);
+        return true;
+    }
+
+    IMailboxRouter* Mailbox::GetRouter(Dia::Core::StringCRC routerId) {
+        for (uint32_t i = 0; i < mRouters.Size(); ++i) {
+            if (mRouters[i]->GetRouterId() == routerId) {
+                return mRouters[i];
+            }
+        }
+        return nullptr;
     }
 
     void Mailbox::Unsubscribe(SubscriptionHandle handle) {

@@ -58,14 +58,18 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="dia.mailbox.architecture.module.md" />
+    <ClInclude Include="IMailboxRouter.h" />
     <ClInclude Include="MailboxTypes.h" />
     <ClInclude Include="Mailbox.h" />
     <ClInclude Include="Subscription.h" />
     <ClInclude Include="Testing\MailboxTestFixture.h" />
+    <ClInclude Include="Testing\MockRouter.h" />
+    <ClInclude Include="Testing\TestMessages.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MailboxTypes.cpp" />
     <ClCompile Include="Mailbox.cpp" />
+    <ClCompile Include="Testing\MockRouter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">

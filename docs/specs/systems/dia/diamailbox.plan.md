@@ -2,7 +2,7 @@
 
 **Spec:** [diamailbox.md](diamailbox.md)
 **Created:** 2026-05-21
-**Updated:** 2026-05-21 (Tasks 1–4 Done)
+**Updated:** 2026-05-21 (All 5 Tasks Done)
 
 ---
 
@@ -31,4 +31,4 @@ DiaMailbox is a generic typed deferred messaging primitive depending only on Dia
 | 2 | address-and-types | [address-and-types.md](../../features/dia/diamailbox/address-and-types.md) | Done | haiku | `MailboxTypes.h` + `MailboxTypes.cpp` + tests. 9/9 GREEN. Note: `Address` is not trivially copyable — `StringCRC` has user-defined copy ctor; AC9 corrected in spec. |
 | 3 | typed-queue | [typed-queue.md](../../features/dia/diamailbox/typed-queue.md) | Done | sonnet | `Mailbox.h/.cpp` ring buffer + overflow + tests. 15/15 GREEN. Note: MSVC macro comma issue fixed with `((...))` parens; `DIA_LOG_WARNING` replaced with `Dia::Core::Log::OutputLine` via warn callback. |
 | 4 | subscriptions | [subscriptions.md](../../features/dia/diamailbox/subscriptions.md) | Done | sonnet | `Subscription.h` + HandlePool wiring + tests. 13/13 GREEN. Note: `SubscriptionHandle` defined in `Mailbox.h` (not Subscription.h) to avoid circular include; stores non-owning pool pointer for generation-aware IsValid(). |
-| 5 | routers | [routers.md](../../features/dia/diamailbox/routers.md) | Planned | sonnet | `IMailboxRouter.h` + `Resolve<T>` + `MockRouter` + `MailboxFixture` + tests. |
+| 5 | routers | [routers.md](../../features/dia/diamailbox/routers.md) | Done | sonnet | `IMailboxRouter.h` + `Resolve<T>` + `MockRouter` + tests. 11 router tests GREEN. 49/49 total. Note: MailboxFixture naming — used existing MailboxTestFixture; no new Testing::MailboxFixture created. |
