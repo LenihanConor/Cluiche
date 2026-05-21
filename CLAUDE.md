@@ -213,6 +213,18 @@ Follow `.claude/skills/debug.md`. One hypothesis, one change. Three failed fixes
 
 Follow `.claude/skills/verify.md`. Every task completion needs a fresh run with quoted output. Never say "should work" or "previously verified." Applies to plan tasks, commits, and subagent DONE reports — not to specs, plans, or docs.
 
+### Observation Opportunity Scan
+
+After every feature implementation, at the Verify/Prove step, scan all files touched by the feature for missed instrumentation opportunities across all 5 DiaObservation pillars:
+
+- **Logs** — new code paths (errors, state transitions, load/unload, connect/disconnect) with no `DIA_LOG_*` call
+- **Traces** — per-frame or lifecycle operations with no `DIA_TRACE_ZONE`
+- **Profiling** — hot loops or frame-boundary work with no `DIA_PROFILE_SCOPE`
+- **Metrics** — quantitative signals (counts, durations, depths) with no `MetricRegistry` registration
+- **Health** — modules or services with observable failure modes and no `IHealthReporter`
+
+Report findings in the task notes as suggestions. They do **not** block the feature being marked Done. They feed future domain instrumentation work.
+
 ### Build and Test Output
 
 When Claude runs `dia run` or `dia pipeline`, report only: pass/fail, failing test names, and error messages. Do not quote full test output. If the user runs tests locally, they see the full output themselves — do not repeat it.

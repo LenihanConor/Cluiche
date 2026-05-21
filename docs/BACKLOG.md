@@ -39,7 +39,7 @@ System specs and the foundation feature are all `Approved`. Each system's child 
 |---|------|------|-------------|
 | 1 | HandlePool\<T\> | [handle-pool.md](specs/features/dia/diacore/handle-pool.md) | **Done** (2026-05-20). Foundation for everything below. |
 | 2 | Remove old IComponent infrastructure | — | **Done** (2026-05-20). `Architecture/Components/` deleted, `SkeletonComponent` + `StateMachineComponent` migrated to plain classes, `TestComponent.cpp` deleted, 4818 tests pass. |
-| 3 | DiaMailbox features (5 features) | [diamailbox.md](specs/systems/dia/diamailbox.md) | System Approved. Need `/spec-feature` for: address-and-types, typed-queue, subscriptions, routers, module-and-build. |
+| 3 | DiaMailbox features (5 features) | [diamailbox.md](specs/systems/dia/diamailbox.md) | System Approved. All 5 feature specs `Approved` (2026-05-21) — ready to implement in order: module-and-build → address-and-types → typed-queue → subscriptions → routers. |
 | 4 | DiaEntity features (11 features) | [diaentity.md](specs/systems/dia/diaentity.md) | System Approved. Need `/spec-feature` in implementation order: foundation, reflection, blueprint-loader, component-deps-and-refs, hierarchy, mailbox-router, query-system, editor-inspection, update-loop, module-and-build (#2 remove-old-icomponent is item #2 above). |
 | 5 | EntityModule adapter (CluicheTest) | TBD | Needs `/spec-feature` under CluicheTest — application-level adapter that owns a Realm and plugs into DiaApplicationFlow v2 stage lifecycle (DoStart loads blueprints, returns kLoading until assets resolve, kReady; stage transition destroys Realm). Lives in CluicheTest, not in DiaEntity. |
 | 6 | PD-003 / AD-005 Supersede amendment | TBD | After DiaEntity ships, amend platform decision PD-003 and app decision AD-005 (both reference the old IComponent model) to Superseded, pointing to DiaEntity as the new authority. Per SD-ENT-021. Housekeeping. |
@@ -53,7 +53,6 @@ System specs and the foundation feature are all `Approved`. Each system's child 
 | Item | Spec | What's needed |
 |------|------|---------------|
 | DiaStateMachineEditor system | TBD | Needs `/spec-system` — editor plugin for state machine visual debugging + design-time editing. Depends on DiaStateMachine ✅, DiaEditor |
-| DiaObservation #8–#13 (profiling + domain instrumentation) | [diaobservation.md](specs/systems/dia/diaobservation.md) | #1–#7 Done. #11 (domain-metric-registration) Done (2026-05-20). Features #8 (profiling infrastructure) and #9 (domain profiling) need `/spec-feature`. Features #10, #12–#13 (domain log/trace/health instrumentation) need `/spec-feature`. |
 
 ---
 
@@ -65,16 +64,17 @@ Replaces previous DiaTestHarness + DiaE2E + Harness Core + Smoke Test Scenario +
 
 | # | Item | Type | Size | Depends on |
 |---|------|------|------|------------|
-| 1 | DiaApplicationFlow — transition-guards | `/spec-feature` on DiaApplicationFlow | S | — |
-| 2 | DiaApplicationFlow — baseline-commands (`quit`, `report` via DiaAPI) | `/spec-feature` on DiaApplicationFlow | XS | — |
-| 3 | DiaRemoteControl system + RemoteControlModule (CluicheGameBaseline) | `/spec-system` (new Dia system) | M | 1, 2 |
-| 4 | DiaOrchestrator (Python tool — supersedes DiaTestHarness; suite mode folds in old "DiaE2E") | `/spec-system` (new external system, Python) | M | 3 |
-| 5 | CluicheTest smoke scenario (Python — rewrite of old smoke-test-scenario.md) | `/spec-feature` | XS | 4 |
+| 1 | DiaApplicationFlow — [transition-guards](specs/features/dia/diaapplicationflow/transition-guards.md) ✅ | Approved — ready to implement | S | — |
+| 2 | DiaApplicationFlow — baseline-commands (`dia.app.quit`, `dia.app.report` via DiaAPI) | `/spec-feature` on DiaApplicationFlow | XS | — |
+| 3 | DiaAutomation system + AutomationModule (CluicheGameBaseline) | `/spec-system` (new Dia system) | M | 1, 2 |
+| 4 | `dia orchestrate` CLI + pytest plugin | `/spec-feature` (on DiaCLI or standalone) | S | 3 |
+| 5 | CluicheTest smoke scenario (pytest) | `/spec-feature` | XS | 4 |
 | 6 | CluicheTest TestStages system (RigidBody2D, EntityTest, … with checkpoints) | `/spec-system` under CluicheTest | M–L | 4 |
-| 7 | CluicheEditor RemoteControlModule wiring + `IEditorPlugin::RegisterCheckpoints` | `/spec-feature` under CluicheEditor | S | 3 |
-| 8 | DiaOrchestrator — metric threshold assertions | `/spec-feature` on DiaOrchestrator | S | 4 |
+| 6b | Extract AutomationModuleBase from game AutomationModule into DiaAutomation | Refactor (evaluate shared base vs duplication from working code) | XS–S | 3 |
+| 7 | CluicheEditor EditorAutomationModule wiring + `IEditorPlugin::RegisterCheckpoints` | `/spec-feature` under CluicheEditor | S | 6b |
+| 8 | Metric threshold assertions (pytest fixture) | `/spec-feature` or implementation | XS | 4 |
 
-Items 1+2 can run in parallel. Items 5–8 can fan out once 4 is done.
+Items 1+2 can run in parallel. Items 5–8 can fan out once 4 is done. Build full stack in order before pivoting to other systems.
 
 ---
 

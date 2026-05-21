@@ -76,6 +76,9 @@
     <Filter Include="DiaMetrics">
       <UniqueIdentifier>{DMET0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaMailbox">
+      <UniqueIdentifier>{DMBL0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
     <Filter Include="DiaObservation">
       <UniqueIdentifier>{DLGR0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
@@ -750,6 +753,10 @@
     </ClCompile>
     <ClCompile Include="DiaMetrics\TestMetricRegistry.cpp">
       <Filter>DiaMetrics</Filter>
+    </ClCompile>
+    <!-- DiaMailbox -->
+    <ClCompile Include="DiaMailbox\MailboxTypesTests.cpp">
+      <Filter>DiaMailbox</Filter>
     </ClCompile>
     <!-- DiaObservation -->
     <ClCompile Include="DiaObservation\Log\TestLogLevel.cpp">
