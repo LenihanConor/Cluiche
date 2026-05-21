@@ -1,7 +1,7 @@
 # Implementation Plan: DiaReflect
 
 **Spec:** [diareflect.md](diareflect.md)
-**Status:** Not Started
+**Status:** In Progress (Phase 3b next)
 **Created:** 2026-05-21
 
 ## Session Notes
@@ -89,20 +89,18 @@
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
 | **Phase 1 — Foundation** | | | | | |
-| 1 | Create `Dia/DiaCore/Reflect/` directory + module doc + vcxproj entries | Build passes | Not Started | haiku | New module within DiaCore |
-| 2 | Archive concept + `NamedField<T>`, `OwnedPtrField<T>`, `RefIdField<T>`, `SerializeResult` | Unit tests: concept check, field wrapper construction | Not Started | sonnet | Core types — TDD |
-| 3 | Macro DSL (`DIA_SERIALIZE`, `DIA_FIELD`, `DIA_FIELD_REQUIRED`, `DIA_FIELD_OWNED_PTR`, `DIA_FIELD_REF_ID`, `DIA_BASE`, `DIA_SERIALIZE_END`) | Unit tests: macro expansion compiles, produces correct function signature | Not Started | sonnet | Thin macros over #2 |
-| 4 | `JsonWriteArchive` + `JsonReadArchive` | Unit tests: round-trip arithmetic, nested struct, missing field keeps default, required field errors | Not Started | sonnet | First usable archives — TDD |
-| 5 | `BinaryWriteArchive` + `BinaryReadArchive` | Unit tests: round-trip, version header, unknown field skip, size correctness | Not Started | sonnet | Second format — TDD |
+| 1 | Create `Dia/DiaCore/Reflect/` directory + module doc + vcxproj entries | Build passes | Done | haiku | Committed 2026-05-21 |
+| 2 | Archive concept + `NamedField<T>`, `OwnedPtrField<T>`, `RefIdField<T>`, `SerializeResult` | 29 tests GREEN | Done | sonnet | Committed 2026-05-21 |
+| 3 | Macro DSL (`DIA_SERIALIZE`, `DIA_FIELD`, `DIA_FIELD_REQUIRED`, `DIA_FIELD_OWNED_PTR`, `DIA_FIELD_REF_ID`, `DIA_BASE`, `DIA_FIELD_NAMED`, `DIA_SERIALIZE_END`) | 23 tests GREEN | Done | sonnet | Committed 2026-05-21 |
+| 4 | `JsonWriteArchive` + `JsonReadArchive` | 27 tests GREEN | Done | sonnet | Committed 2026-05-21 |
+| 5 | `BinaryWriteArchive` + `BinaryReadArchive` | 27 tests GREEN; 106 total GREEN | Done | sonnet | Committed 2026-05-21 |
 | **Phase 2 — Containers & Inheritance** | | | | | |
-| 6 | Static array (`T[N]`) archive specialization | Unit tests: write/read int[4], struct[3], empty array | Not Started | sonnet | `std::is_bounded_array_v` |
-| 7 | `DynamicArrayC<T,N>` archive specialization | Unit tests: write/read varying sizes, empty, full capacity | Not Started | sonnet | |
-| 8 | `HashTableC<K,V,N>` archive specialization | Unit tests: write/read, key ordering in JSON | Not Started | sonnet | |
-| 9 | Inheritance (`DIA_BASE`) integration | Unit tests: derived serializes base fields, independent versioning | Not Started | sonnet | |
-| 10 | Polymorphic registry + `DIA_SERIALIZE_POLYMORPHIC` | Unit tests: register, deserialize by type tag, unknown type returns error | Not Started | opus | Most complex feature |
+| 6 | Static array `T[N]` + `DynamicArrayC<T,N>` archive specializations | 15 tests GREEN | Done | sonnet | HashTableC deferred — JSON key semantics TBD. Committed 2026-05-21 |
+| 7 | `DynamicArrayC<T,N>` archive specialization | Folded into #6 | Done | sonnet | |
+| 8 | Polymorphic registry + `DIA_SERIALIZE_POLYMORPHIC` + `DIA_FIELD_POLY_OWNED_PTR` | 17 tests GREEN; 138 total GREEN | Done | opus | Committed 2026-05-21 |
+| 9 | Inheritance (`DIA_BASE`) integration | Covered in macro + polymorphic tests | Done | — | DIA_BASE macro was part of T3; tested in T8 |
 | **Phase 3 — Attributes & Migration** | | | | | |
-| 11 | Field attributes system (`RequiredAttribute`, `RangeAttribute<T>`, `AssetRefAttribute`) | Unit tests: required fires error, range clamps, asset ref queryable | Not Started | sonnet | |
-| 12 | `DIA_FIELD_ATTR` macro + attribute builder | Unit tests: macro compiles, attributes discoverable at runtime | Not Started | sonnet | |
-| 13 | Migration adapter (`ReflectTypeDefinition<T>`) | Unit tests: adapter exposes DiaReflect type as TypeDefinition, JsonDefinitionLoader can load it | Not Started | opus | Bridge to old system |
-| 14 | Migrate DiaMaths types (Vector2D, Matrix22, etc.) | Existing DiaMaths tests still pass + new round-trip tests | Not Started | sonnet | First real migration |
-| 15 | Documentation + remove DiaCore/Type dead code (when all migrated) | Build passes, no references to old macros | Not Started | haiku | Final cleanup |
+| 10 | Field attributes system (`RequiredAttribute`, `RangeAttribute<T>`, `AssetRefAttribute`) + `DIA_ATTR_*` macros | 12 tests GREEN; 150 total GREEN | Done | sonnet | Committed 2026-05-21 |
+| 11 | Migration adapter (`ReflectTypeDefinition<T>`) | Unit tests: adapter exposes DiaReflect type as TypeDefinition | Not Started | opus | Bridge to old system — deferred |
+| 12 | Migrate DiaMaths types (Vector2D, Matrix22, etc.) | Existing DiaMaths tests still pass + new round-trip tests | Not Started | sonnet | Depends on #11 |
+| 13 | Documentation + remove DiaCore/Type dead code (when all migrated) | Build passes, no references to old macros | Not Started | haiku | Final cleanup — last step |

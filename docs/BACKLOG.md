@@ -50,13 +50,14 @@ System specs and the foundation feature are all `Approved`. Each system's child 
 
 ### DiaReflect (archive-based reflection & serialization)
 
-System spec `Approved`. Eventual replacement for DiaCore/Type. 15 tasks across 3 phases. Research: `docs/research/reflect_serial/summary.md`.
+System spec `Approved`. Phases 1+2+3a shipped (2026-05-21) — 150 tests GREEN. Phase 3b (migration) is the remaining work.
 
-| # | Phase | Description | Size | Depends on |
-|---|-------|-------------|------|------------|
-| 1 | Foundation | Archive concept, macro DSL, JSON archives, binary archives | M | DiaCore |
-| 2 | Containers & Inheritance | Static arrays, DynamicArrayC, HashTableC, DIA_BASE, polymorphic registry | M | Phase 1 |
-| 3 | Attributes & Migration | Field attributes, migration adapter, migrate DiaMaths, remove old Type system | L | Phase 2 |
+| # | Phase | Status | Description |
+|---|-------|--------|-------------|
+| 1 | Foundation | **Done** | Archive concept, macro DSL, JSON + binary archives — 106 tests |
+| 2 | Containers & Polymorphism | **Done** | T[N] + DynamicArrayC specializations, polymorphic registry — 138 tests |
+| 3a | Field Attributes | **Done** | RequiredAttribute, RangeAttribute, AssetRefAttribute, DIA_ATTR_* macros — 150 tests |
+| 3b | Migration | **Next** | ReflectTypeDefinition<T> adapter, migrate DiaMaths types, remove DiaCore/Type macros |
 
 Plan: [specs/systems/dia/diareflect.plan.md](specs/systems/dia/diareflect.plan.md)
 
