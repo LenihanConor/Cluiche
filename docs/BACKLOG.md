@@ -68,6 +68,5 @@ System specs and the foundation feature are all `Approved`. Each system's child 
 |------|-------|
 | DiaAssetRuntime — Hot reload path | Asset Lifecycle Management adds `Failed → Loading` retry but no `Loaded → Loading → Loaded` path. Still need a `ReloadAsset(assetId)` for live iteration (future feature on top of lifecycle management). |
 | `Dia::Core::Blackboard` — general-purpose key-value store | Identified during DiaStateMachine research; useful for AI, animation, gameplay. Needs `/spec-feature` under DiaCore. |
-| DiaAssetRuntime / DiaDebugServer / DiaInput / DiaThreading — metrics | Consolidated into DiaObservation Feature #11 (Domain-Level Metric Registration). See [diaobservation.md](specs/systems/dia/diaobservation.md). DiaThreading extraction still needs its own `/spec-system` but its metrics land in Feature #11 once unblocked. |
+| DiaThreading — `dia.jobs.*` metrics | Deferred from Feature #11 (domain-metric-registration). Blocked on DiaThreading module extraction — needs its own `/spec-system`. Metrics land in Feature #11 once unblocked. |
 | Phase 3d — Physics body serialization | DiaRigidBody2D / DiaSoftBody2D body definitions — DiaAssetCatalogue ✅ now unblocked |
-| DiaDebugServer `ServerStats` struct | `ServerStats` fields are read by `DebugServerHostModule` each tick to populate `MetricRegistry` gauges (`dia.debugserver.connections`, `.subscriptions`, `.tick_ms`, `.messages_sent`). The struct itself is intentional — it is the source feeding the registry, not a hand-rolled metric sink. No action needed. |
