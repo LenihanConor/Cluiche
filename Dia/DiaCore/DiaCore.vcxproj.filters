@@ -43,6 +43,9 @@
     <Filter Include="Type\Internals\Source">
       <UniqueIdentifier>{bd65c902-3a11-4959-97d6-df230137de1b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Reflect">
+      <UniqueIdentifier>{a1b2c3d4-e5f6-7890-abcd-ef1234567890}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Strings">
       <UniqueIdentifier>{596d4694-f233-441d-8fbb-7e6ca63d948e}</UniqueIdentifier>
     </Filter>
@@ -251,6 +254,24 @@
     </ClInclude>
     <ClInclude Include="Type\TypeVariableData.h">
       <Filter>Type\Internals</Filter>
+    </ClInclude>
+    <ClInclude Include="Reflect\Reflect.h">
+      <Filter>Reflect</Filter>
+    </ClInclude>
+    <ClInclude Include="Reflect\Archive.h">
+      <Filter>Reflect</Filter>
+    </ClInclude>
+    <ClInclude Include="Reflect\ReflectMacros.h">
+      <Filter>Reflect</Filter>
+    </ClInclude>
+    <ClInclude Include="Reflect\SerializeResult.h">
+      <Filter>Reflect</Filter>
+    </ClInclude>
+    <ClInclude Include="Reflect\JsonArchive.h">
+      <Filter>Reflect</Filter>
+    </ClInclude>
+    <ClInclude Include="Reflect\BinaryArchive.h">
+      <Filter>Reflect</Filter>
     </ClInclude>
     <ClInclude Include="Strings\String.h">
       <Filter>Strings</Filter>

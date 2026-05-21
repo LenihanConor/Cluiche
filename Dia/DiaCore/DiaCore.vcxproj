@@ -154,6 +154,12 @@
     <ClInclude Include="Type\TypeVariable.h" />
     <ClInclude Include="Type\TypeVariableAttributes.h" />
     <ClInclude Include="Type\TypeVariableData.h" />
+    <ClInclude Include="Reflect\Reflect.h" />
+    <ClInclude Include="Reflect\Archive.h" />
+    <ClInclude Include="Reflect\ReflectMacros.h" />
+    <ClInclude Include="Reflect\SerializeResult.h" />
+    <ClInclude Include="Reflect\JsonArchive.h" />
+    <ClInclude Include="Reflect\BinaryArchive.h" />
     <ClInclude Include="Strings\String.h" />
     <ClInclude Include="Strings\String1024.h" />
     <ClInclude Include="Strings\String128.h" />

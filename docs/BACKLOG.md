@@ -48,6 +48,20 @@ System specs and the foundation feature are all `Approved`. Each system's child 
 
 ## Ready to Build (cont.)
 
+### DiaReflect (archive-based reflection & serialization)
+
+System spec `Approved`. Eventual replacement for DiaCore/Type. 15 tasks across 3 phases. Research: `docs/research/reflect_serial/summary.md`.
+
+| # | Phase | Description | Size | Depends on |
+|---|-------|-------------|------|------------|
+| 1 | Foundation | Archive concept, macro DSL, JSON archives, binary archives | M | DiaCore |
+| 2 | Containers & Inheritance | Static arrays, DynamicArrayC, HashTableC, DIA_BASE, polymorphic registry | M | Phase 1 |
+| 3 | Attributes & Migration | Field attributes, migration adapter, migrate DiaMaths, remove old Type system | L | Phase 2 |
+
+Plan: [specs/systems/dia/diareflect.plan.md](specs/systems/dia/diareflect.plan.md)
+
+---
+
 ## Spec Work Needed (Draft or unset — review/approve before building)
 
 | Item | Spec | What's needed |
@@ -60,22 +74,24 @@ System specs and the foundation feature are all `Approved`. Each system's child 
 
 Architecture redesigned 2026-05-20. Source of truth: **[docs/research/e2e_testing/design-decisions.md](research/e2e_testing/design-decisions.md)**.
 
-Replaces previous DiaTestHarness + DiaE2E + Harness Core + Smoke Test Scenario + DiaAPI quit command items. The old `docs/specs/systems/dia/diatestharness.md` and `docs/specs/features/dia/diatestharness/harness-core.md` will be superseded once new specs are written.
+Replaces previous DiaTestHarness + DiaE2E + Harness Core + Smoke Test Scenario + DiaAPI quit command items. The old `docs/specs/systems/dia/diatestharness.md` and `docs/specs/features/dia/diatestharness/harness-core.md` are superseded.
 
-| # | Item | Type | Size | Depends on |
-|---|------|------|------|------------|
-| 0 | DiaAPI — relax name validation to `[a-z0-9._-]+`; CommandDispatcher routes through `ExecuteCommand()` not direct callback | Implementation (no spec) | XS | — |
-| 1 | DiaApplicationFlow — [transition-guards](specs/features/dia/diaapplicationflow/transition-guards.md) ✅ | Approved — ready to implement | S | — |
-| 2 | DiaApplicationFlow — baseline-commands (`dia.app.quit`, `dia.app.report` via DiaAPI) | `/spec-feature` on DiaApplicationFlow | XS | 0 |
-| 3 | DiaAutomation system + AutomationModule (CluicheGameBaseline) | `/spec-system` (new Dia system) | M | 1, 2 |
-| 4 | `dia orchestrate` CLI + pytest plugin | `/spec-feature` (on DiaCLI or standalone) | S | 3 |
-| 5 | CluicheTest smoke scenario (pytest) | `/spec-feature` | XS | 4 |
-| 6 | CluicheTest TestStages system (RigidBody2D, EntityTest, … with checkpoints) | `/spec-system` under CluicheTest | M–L | 4 |
-| 6b | Extract AutomationModuleBase from game AutomationModule into DiaAutomation | Refactor (evaluate shared base vs duplication from working code) | XS–S | 3 |
-| 7 | CluicheEditor EditorAutomationModule wiring + `IEditorPlugin::RegisterCheckpoints` | `/spec-feature` under CluicheEditor | S | 6b |
-| 8 | Metric threshold assertions (pytest fixture) | `/spec-feature` or implementation | XS | 4 |
+| # | Item | Type | Size | Depends on | Status |
+|---|------|------|------|------------|--------|
+| 0 | DiaAPI — relax name validation to `[a-z0-9._-]+`; add JSON command path | Folded into item #2 | XS | — | Spec'd (part of baseline-commands) |
+| 1 | DiaApplicationFlow — [transition-guards](specs/features/dia/diaapplicationflow/transition-guards.md) | Approved — ready to implement | S | — | **Approved** |
+| 2 | DiaApplicationFlow — [baseline-commands](specs/features/dia/diaapplicationflow/baseline-commands.md) (`dia.app.quit`, `dia.app.report` + DiaAPI JSON path) | Approved — ready to implement | XS | — | **Approved** |
+| 3 | [DiaAutomation](specs/systems/dia/diaautomation.md) system + AutomationModule (CluicheGameBaseline) | Approved — needs `/spec-feature` per feature before impl | M | 1, 2 | **System Approved** |
+| 4 | [dia orchestrate](specs/features/dia/diacli/dia-orchestrate.md) CLI + pytest plugin | Approved — ready to implement | S | 3 | **Approved** |
+| 5 | CluicheTest [smoke scenario](specs/features/cluichetest/cluichetestscenarios/smoke-scenario.md) (pytest) | Approved — ready to implement | XS | 4 | **Approved** |
+| 6 | CluicheTest [TestStages](specs/systems/cluichetest/teststages.md) system (RigidBody2D, EntityTest, … with checkpoints) | System Approved — individual stages need `/spec-feature` | M–L | 4 | **System Approved** |
+| 6b | Extract AutomationModuleBase from game AutomationModule into DiaAutomation | Refactor (evaluate shared base vs duplication from working code) | XS–S | 3 implemented | Deferred — decide from working code |
+| 7 | CluicheEditor EditorAutomationModule wiring + `IEditorPlugin::RegisterCheckpoints` | `/spec-feature` under CluicheEditor | S | 6b | Deferred — after 6b |
+| 8 | [Metric threshold assertions](specs/features/dia/diaautomation/metric-assertions.md) (pytest fixture + `dia.automation.get_metric`) | Approved — ready to implement | XS | 3 | **Approved** |
 
-Items 1+2 can run in parallel. Items 5–8 can fan out once 4 is done. Build full stack in order before pivoting to other systems.
+**Implementation order:** 1 → 2 → 3 (feature specs needed) → 4 → 5+6+8 fan out. Items 6b+7 deferred until working code exists.
+
+Items 1+2 can run in parallel. Items 5, 6 (individual stages), and 8 can fan out once 4 is done.
 
 ---
 

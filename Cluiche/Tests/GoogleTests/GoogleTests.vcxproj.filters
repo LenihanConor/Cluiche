@@ -31,6 +31,9 @@
     <Filter Include="Core\Type">
       <UniqueIdentifier>{F6G7H8I9-6666-7777-8888-999999999999}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Core\Reflect">
+      <UniqueIdentifier>{b2c3d4e5-f6a7-8901-bcde-f12345678901}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Maths">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
     </Filter>
@@ -263,6 +266,18 @@
     </ClCompile>
     <ClCompile Include="Core\Time\TestTimerSystem.cpp">
       <Filter>Core\Time</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Reflect\TestArchive.cpp">
+      <Filter>Core\Reflect</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Reflect\TestMacroDSL.cpp">
+      <Filter>Core\Reflect</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Reflect\TestJsonArchive.cpp">
+      <Filter>Core\Reflect</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Reflect\TestBinaryArchive.cpp">
+      <Filter>Core\Reflect</Filter>
     </ClCompile>
     <!-- Core\Type -->
     <ClCompile Include="Core\Type\TestEnum.cpp">

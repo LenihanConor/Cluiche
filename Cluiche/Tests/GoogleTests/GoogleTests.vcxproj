@@ -145,6 +145,10 @@
     <ClCompile Include="Core\Time\TestTimerExpiry.cpp" />
     <ClCompile Include="Core\Time\TestTimerSystem.cpp" />
     <ClCompile Include="Core\CRC\TestCRC.cpp" />
+    <ClCompile Include="Core\Reflect\TestArchive.cpp" />
+    <ClCompile Include="Core\Reflect\TestMacroDSL.cpp" />
+    <ClCompile Include="Core\Reflect\TestJsonArchive.cpp" />
+    <ClCompile Include="Core\Reflect\TestBinaryArchive.cpp" />
     <ClCompile Include="Core\Type\TestEnum.cpp" />
     <ClCompile Include="Core\Type\TestMetaLogic.cpp" />
     <ClCompile Include="Core\Type\TestTypeTraits.cpp" />
