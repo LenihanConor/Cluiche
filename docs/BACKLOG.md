@@ -12,6 +12,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 | System | Spec | Features | Depends On |
 |--------|------|----------|------------|
+| DiaThreading | [diathreading.md](specs/systems/dia/diathreading.md) ✅ | F1: extract `JobSystem` → `Dia/DiaThreading/`, `Dia::Threading::` namespace, add metric accessors to ThreadPool. F2: register `dia.jobs.*` in `JobSystemModule`. Build F1 then F2. | DiaCore ✅ |
 | DiaGraphics3D | [diagraphics3d.md](specs/systems/dia/diagraphics3d.md) ✅ | `graphics-3d-types` — Camera3D, lights, Mesh3DDrawCommand, Mesh3DFrameData, FrameData3D; new `Dia/DiaGraphics3D/` module; `Dia::Graphics3D::` namespace. Needs system specs for DiaMesh3D/Rig3D/Animation3D/Skinning3D/Scene3D before Phase 2 implements. | DiaMaths (Matrix44), DiaGeometry3D, DiaGraphics ✅ |
 | DiaBgfx3D | [diabgfx3d.md](specs/systems/dia/diabgfx3d.md) ✅ | `3d-renderers` — Canvas3D, MeshRenderer, SkinnedMeshRenderer, ShadowRenderer, MaterialRegistry, MeshGpuCache, 6 shaders; `Dia::Bgfx3D::` namespace; Phase 2 ship gate. Blocked on Phase 1 + DiaScene3D chain. | DiaBgfx (Phase 1), DiaScene3D chain, DiaGraphics3D ✅ |
 | DiaMesh3D | TBD — needs `/spec-system` | `mesh-asset-and-loader` feature already Approved (parent currently `render-backend`); needs own system spec. glTF 2.0 static+skinned mesh loading, `Mesh3DAsset`, `IAssetTypeHandler` plug-in. | DiaMaths, DiaGeometry3D, DiaAssetRuntime |
@@ -68,5 +69,4 @@ System specs and the foundation feature are all `Approved`. Each system's child 
 |------|-------|
 | DiaAssetRuntime — Hot reload path | Asset Lifecycle Management adds `Failed → Loading` retry but no `Loaded → Loading → Loaded` path. Still need a `ReloadAsset(assetId)` for live iteration (future feature on top of lifecycle management). |
 | `Dia::Core::Blackboard` — general-purpose key-value store | Identified during DiaStateMachine research; useful for AI, animation, gameplay. Needs `/spec-feature` under DiaCore. |
-| DiaThreading — `dia.jobs.*` metrics | Deferred from Feature #11 (domain-metric-registration). Blocked on DiaThreading module extraction — needs its own `/spec-system`. Metrics land in Feature #11 once unblocked. |
 | Phase 3d — Physics body serialization | DiaRigidBody2D / DiaSoftBody2D body definitions — DiaAssetCatalogue ✅ now unblocked |
