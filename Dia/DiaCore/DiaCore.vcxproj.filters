@@ -279,6 +279,9 @@
     <ClInclude Include="Reflect\PolymorphicRegistry.h">
       <Filter>Reflect</Filter>
     </ClInclude>
+    <ClInclude Include="Reflect\FieldAttributes.h">
+      <Filter>Reflect</Filter>
+    </ClInclude>
     <ClInclude Include="Strings\String.h">
       <Filter>Strings</Filter>
     </ClInclude>
@@ -672,6 +675,9 @@
     </ClCompile>
     <ClCompile Include="Threading\ThreadPool.cpp">
       <Filter>Threading</Filter>
+    </ClCompile>
+    <ClCompile Include="Reflect\FieldAttributes.cpp">
+      <Filter>Reflect</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -8,3 +8,4 @@
 #include "DiaCore/Reflect/JsonArchive.h"
 #include "DiaCore/Reflect/BinaryArchive.h"
 #include "DiaCore/Reflect/ContainerSpecializations.h"
+#include "DiaCore/Reflect/FieldAttributes.h"

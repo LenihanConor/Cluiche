@@ -151,6 +151,7 @@
     <ClCompile Include="Core\Reflect\TestBinaryArchive.cpp" />
     <ClCompile Include="Core\Reflect\TestContainerSpecializations.cpp" />
     <ClCompile Include="Core\Reflect\TestPolymorphicRegistry.cpp" />
+    <ClCompile Include="Core\Reflect\TestFieldAttributes.cpp" />
     <ClCompile Include="Core\Type\TestEnum.cpp" />
     <ClCompile Include="Core\Type\TestMetaLogic.cpp" />
     <ClCompile Include="Core\Type\TestTypeTraits.cpp" />
