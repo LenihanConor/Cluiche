@@ -8,7 +8,7 @@
 | Application | @docs/specs/applications/dia.md | - |
 | System | @docs/specs/systems/dia/diaobservation.md | **metrics-registry** |
 
-**Status:** `In Progress (partial)` — 2026-05-18. Tasks 1–10, 14–16 Done; Tasks 11–13 Deferred pending DiaObservation Features #1+#2; Tasks 17–21 Deferred (editor wiring, same dependency). Steps 3 (Binding Decisions) and 4 (AI Review Questions) complete and confirmed. **Amended 2026-05-17** — `MetricRegistry`/primitives extracted to standalone `DiaMetrics` module; `MetricsFileSink` stays in `DiaObservation`. **Amended 2026-05-18** — added CluicheEditor metric wiring tasks (17–21).
+**Status:** `Done` — 2026-05-20.
 
 **Plan:** [metrics-registry.plan.md](metrics-registry.plan.md)
 

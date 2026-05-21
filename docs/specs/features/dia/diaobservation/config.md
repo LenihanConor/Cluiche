@@ -221,4 +221,4 @@ All sub-keys are optional. Missing keys use defaults. The block itself is option
 
 ## Status
 
-`Approved` — 2026-05-17. Steps 3 (Binding Decisions) and 4 (AI Review Questions) complete and confirmed.
+`Done` — 2026-05-20.
