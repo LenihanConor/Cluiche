@@ -2,11 +2,40 @@
 #include <stdio.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <DiaCore/Containers/Handle.h>
+#include <DiaCore/Containers/HandlePool.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaCore/Core/Log.h>
 #include <DiaMailbox/MailboxTypes.h>
+#include <DiaMailbox/Subscription.h>
 
 namespace Dia::Mailbox {
+
+    // ======================================================================
+    // SubscriptionHandle
+    // Defined before Mailbox so it can be used as a value parameter.
+    // PRECONDITION: the issuing Mailbox must outlive any SubscriptionHandle it
+    // produces. Calling IsValid() after Mailbox destruction is undefined behaviour.
+    // ======================================================================
+    class SubscriptionHandle {
+    public:
+        SubscriptionHandle() = default;
+
+        bool IsValid() const {
+            if (mPool == nullptr) { return false; }
+            return mPool->IsValid(mHandle);
+        }
+
+    private:
+        friend class Mailbox;
+
+        SubscriptionHandle(const Dia::Core::HandlePool<Subscription, kMaxSubs>* pool,
+                           Dia::Core::Handle<Subscription> handle)
+            : mPool(pool), mHandle(handle) {}
+
+        const Dia::Core::HandlePool<Subscription, kMaxSubs>* mPool   = nullptr;
+        Dia::Core::Handle<Subscription>                      mHandle;
+    };
 
     class Mailbox {
     public:
@@ -37,6 +66,20 @@ namespace Dia::Mailbox {
         // No-op (no warning) if type is not registered.
         template <class T, class Visitor>
         void Drain(const Visitor& visitor);
+
+        // Subscribe subscriber to messages of type T.
+        // Returns an invalid handle if T is not registered, the per-type list is full, or the pool is full.
+        template <class T>
+        SubscriptionHandle Subscribe(SubscriberId subscriber);
+
+        // Unsubscribe using the handle returned by Subscribe.
+        // No-op (no crash) if the handle is stale or default-constructed.
+        void Unsubscribe(SubscriptionHandle handle);
+
+        // Return the set of subscriber IDs registered for type T.
+        // Returns an empty set (no crash) if T is not registered.
+        template <class T>
+        const SubscriberSet& GetSubscribersForType() const;
 
     private:
 
@@ -77,6 +120,7 @@ namespace Dia::Mailbox {
             OverflowPolicy policy;
             uint8_t*      slotBuffer; // heap-allocated flat array [capacity * slotStride]
             DestructFn    destructFn;
+            SubscriberSet subscriberList; // subscribers registered for this type
         };
 
         // ------------------------------------------------------------------
@@ -93,6 +137,11 @@ namespace Dia::Mailbox {
         // ------------------------------------------------------------------
         static constexpr uint32_t kMaxTypes = 32;
         Dia::Core::Containers::DynamicArrayC<TypedQueueDescriptor*, kMaxTypes> mRegistry;
+
+        // ------------------------------------------------------------------
+        // Subscription pool
+        // ------------------------------------------------------------------
+        Dia::Core::HandlePool<Subscription, kMaxSubs> mSubscriptionPool;
 
         // ------------------------------------------------------------------
         // Warn callback
@@ -239,6 +288,63 @@ namespace Dia::Mailbox {
             EmitWarning(buf);
             desc->dropsThisDrain = 0;
         }
+    }
+
+    // ======================================================================
+    // Subscribe<T> template implementation
+    // ======================================================================
+    template <class T>
+    SubscriptionHandle Mailbox::Subscribe(SubscriberId subscriber) {
+        const uint32_t key = TypeKey<T>();
+        TypedQueueDescriptor* desc = FindDescriptor(key);
+
+        if (desc == nullptr) {
+            char buf[256];
+            sprintf_s(buf, sizeof(buf),
+                "[DiaMailbox] Subscribe: type not registered (key=0x%08X)", key);
+            EmitWarning(buf);
+            return SubscriptionHandle();
+        }
+
+        if (desc->subscriberList.IsFull()) {
+            char buf[256];
+            sprintf_s(buf, sizeof(buf),
+                "[DiaMailbox] Subscribe: per-type subscriber list full (capacity 64, key=0x%08X)", key);
+            EmitWarning(buf);
+            return SubscriptionHandle();
+        }
+
+        if (mSubscriptionPool.IsFull()) {
+            char buf[256];
+            sprintf_s(buf, sizeof(buf),
+                "[DiaMailbox] Subscribe: subscription pool full (capacity %u)", kMaxSubs);
+            EmitWarning(buf);
+            return SubscriptionHandle();
+        }
+
+        Dia::Core::Handle<Subscription> handle = mSubscriptionPool.Allocate();
+        Subscription* sub = mSubscriptionPool.Get(handle);
+        sub->subscriberId = subscriber;
+        sub->typeKey      = key;
+
+        desc->subscriberList.Add(subscriber);
+
+        return SubscriptionHandle(&mSubscriptionPool, handle);
+    }
+
+    // ======================================================================
+    // GetSubscribersForType<T> template implementation
+    // ======================================================================
+    template <class T>
+    const SubscriberSet& Mailbox::GetSubscribersForType() const {
+        const uint32_t key = TypeKey<T>();
+        for (uint32_t i = 0; i < mRegistry.Size(); ++i) {
+            if (mRegistry[i]->typeKey == key) {
+                return mRegistry[i]->subscriberList;
+            }
+        }
+        static const SubscriberSet kEmpty;
+        return kEmpty;
     }
 
 } // namespace Dia::Mailbox

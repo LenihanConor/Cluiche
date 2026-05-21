@@ -60,6 +60,7 @@
     <None Include="dia.mailbox.architecture.module.md" />
     <ClInclude Include="MailboxTypes.h" />
     <ClInclude Include="Mailbox.h" />
+    <ClInclude Include="Subscription.h" />
     <ClInclude Include="Testing\MailboxTestFixture.h" />
   </ItemGroup>
   <ItemGroup>

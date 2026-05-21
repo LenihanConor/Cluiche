@@ -8,6 +8,9 @@
     <ClInclude Include="Mailbox.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Subscription.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="Testing\MailboxTestFixture.h">
       <Filter>Testing</Filter>
     </ClInclude>

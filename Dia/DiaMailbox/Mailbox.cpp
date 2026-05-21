@@ -49,4 +49,22 @@ namespace Dia::Mailbox {
         }
     }
 
+    void Mailbox::Unsubscribe(SubscriptionHandle handle) {
+        // Stale or default-constructed handle — no-op.
+        if (!mSubscriptionPool.IsValid(handle.mHandle)) {
+            return;
+        }
+
+        Subscription* sub = mSubscriptionPool.Get(handle.mHandle);
+        if (sub == nullptr) { return; }
+
+        // Remove from the per-type subscriber list.
+        TypedQueueDescriptor* desc = FindDescriptor(sub->typeKey);
+        if (desc != nullptr) {
+            desc->subscriberList.RemoveFirst(sub->subscriberId);
+        }
+
+        mSubscriptionPool.Free(handle.mHandle);
+    }
+
 } // namespace Dia::Mailbox
