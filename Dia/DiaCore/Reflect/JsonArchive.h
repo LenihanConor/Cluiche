@@ -1,6 +1,8 @@
 #pragma once
 #include "DiaCore/Reflect/Archive.h"
 #include "DiaCore/Reflect/SerializeResult.h"
+#include "DiaCore/Reflect/ContainerSpecializations.h"
+#include "DiaCore/Reflect/PolymorphicRegistry.h"
 #include "DiaCore/Json/external/json/json.h"
 
 #include <type_traits>
@@ -56,6 +58,25 @@ public:
             node[field.nameStr] = Json::Value(Json::objectValue);
             PushNode(node[field.nameStr]);
             serialize(*this, *field.ptr, 0u);
+            PopNode();
+        }
+        return *this;
+    }
+
+    // PolyOwnedPtrField — polymorphic owning pointer with type tag
+    template<typename Base>
+    JsonWriteArchive& operator&(PolyOwnedPtrField<Base> field) {
+        Json::Value& node = CurrentNode();
+        if (field.ptr == nullptr) {
+            node[field.nameStr] = Json::Value::null;
+        } else {
+            node[field.nameStr] = Json::Value(Json::objectValue);
+            PushNode(node[field.nameStr]);
+            CurrentNode()["_type"] = field.concreteTypeName;
+            auto* entry = PolymorphicRegistry::Instance().Find(field.concreteTypeCrc);
+            if (entry) {
+                entry->writeJson(field.ptr, *this);
+            }
             PopNode();
         }
         return *this;
@@ -117,6 +138,23 @@ private:
             slot = static_cast<Json::Int64>(value);
         } else if constexpr (std::is_same_v<T, unsigned long>) {
             slot = static_cast<Json::UInt64>(value);
+        } else if constexpr (std::is_array_v<T>) {
+            // C-style static array T[N] — written as a JSON array
+            constexpr std::size_t Extent = std::extent_v<T>;
+            slot = Json::Value(Json::arrayValue);
+            for (std::size_t i = 0; i < Extent; ++i) {
+                Json::Value elemSlot;
+                WriteValue(elemSlot, value[i]);
+                slot.append(elemSlot);
+            }
+        } else if constexpr (IsDynamicArrayC<T>::value) {
+            // DynamicArrayC<E,N> — written as a JSON array (only Size() elements)
+            slot = Json::Value(Json::arrayValue);
+            for (unsigned int i = 0u; i < value.Size(); ++i) {
+                Json::Value elemSlot;
+                WriteValue(elemSlot, value.At(i));
+                slot.append(elemSlot);
+            }
         } else if constexpr (Serializable<T, JsonWriteArchive>) {
             // Nested serializable struct — push a sub-node
             slot = Json::Value(Json::objectValue);
@@ -185,6 +223,34 @@ public:
         return *this;
     }
 
+    // PolyOwnedPtrField — polymorphic owning pointer with type tag
+    template<typename Base>
+    JsonReadArchive& operator&(PolyOwnedPtrField<Base> field) {
+        const Json::Value& node = CurrentNode();
+        if (!node.isMember(field.nameStr) || node[field.nameStr].isNull()) {
+            return *this;
+        }
+        const Json::Value& sub = node[field.nameStr];
+        if (!sub.isMember("_type")) {
+            mResult.AddError(SerializeErrorKind::UnknownPolymorphicType, field.name, "_type key missing");
+            return *this;
+        }
+        const char* typeName = sub["_type"].asCString();
+        Dia::Core::StringCRC crc(typeName);
+        auto* entry = PolymorphicRegistry::Instance().Find(crc.Value());
+        if (!entry) {
+            mResult.AddError(SerializeErrorKind::UnknownPolymorphicType, field.name, typeName);
+            return *this;
+        }
+        if (field.ptr == nullptr) {
+            field.ptr = static_cast<Base*>(entry->factory());
+        }
+        PushNode(sub);
+        entry->readJson(field.ptr, *this);
+        PopNode();
+        return *this;
+    }
+
     // RefIdField — read a primitive ID value
     template<typename T>
     JsonReadArchive& operator&(RefIdField<T> field) {
@@ -244,6 +310,29 @@ private:
             value = static_cast<long>(src.asInt64());
         } else if constexpr (std::is_same_v<T, unsigned long>) {
             value = static_cast<unsigned long>(src.asUInt64());
+        } else if constexpr (std::is_array_v<T>) {
+            // C-style static array T[N] — read from a JSON array
+            // Tolerant: fewer elements → remaining keep their defaults;
+            //            extra elements → silently truncated.
+            constexpr std::size_t Extent = std::extent_v<T>;
+            if (src.isArray()) {
+                std::size_t count = static_cast<std::size_t>(src.size());
+                std::size_t readCount = count < Extent ? count : Extent;
+                for (std::size_t i = 0u; i < readCount; ++i) {
+                    ReadValue(src[static_cast<int>(i)], value[i]);
+                }
+            }
+        } else if constexpr (IsDynamicArrayC<T>::value) {
+            // DynamicArrayC<E,N> — read from a JSON array
+            // Tolerant: excess elements beyond capacity are silently dropped.
+            if (src.isArray()) {
+                value.RemoveAll();
+                for (int i = 0; i < static_cast<int>(src.size()) && !value.IsFull(); ++i) {
+                    typename DynamicArrayCElem<T>::type elem{};
+                    ReadValue(src[i], elem);
+                    value.Add(elem);
+                }
+            }
         } else if constexpr (Serializable<T, JsonReadArchive>) {
             // Nested serializable struct — push a sub-node
             if (src.isObject()) {

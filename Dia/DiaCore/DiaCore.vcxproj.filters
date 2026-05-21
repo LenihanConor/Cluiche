@@ -273,6 +273,12 @@
     <ClInclude Include="Reflect\BinaryArchive.h">
       <Filter>Reflect</Filter>
     </ClInclude>
+    <ClInclude Include="Reflect\ContainerSpecializations.h">
+      <Filter>Reflect</Filter>
+    </ClInclude>
+    <ClInclude Include="Reflect\PolymorphicRegistry.h">
+      <Filter>Reflect</Filter>
+    </ClInclude>
     <ClInclude Include="Strings\String.h">
       <Filter>Strings</Filter>
     </ClInclude>

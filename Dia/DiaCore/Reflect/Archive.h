@@ -7,6 +7,7 @@ namespace Dia::Reflect {
 // Forward declarations
 template<typename T> struct NamedField;
 template<typename T> struct OwnedPtrField;
+template<typename T> struct PolyOwnedPtrField;
 template<typename T> struct RefIdField;
 
 // ---------------------------------------------------------
@@ -52,6 +53,24 @@ struct OwnedPtrField {
 template<typename T>
 OwnedPtrField<T> owned(const char* fieldName, T*& ptr) {
     return OwnedPtrField<T>{ fieldName, Dia::Core::StringCRC(fieldName), ptr };
+}
+
+// ---------------------------------------------------------
+// PolyOwnedPtrField<T> — owning polymorphic pointer field
+// Writes/reads a "_type" tag + concrete fields via PolymorphicRegistry
+// ---------------------------------------------------------
+template<typename Base>
+struct PolyOwnedPtrField {
+    const char*          nameStr;           // raw string — used by JSON archives as key
+    Dia::Core::StringCRC name;             // CRC — used by binary archives
+    Base*&               ptr;
+    uint32_t             concreteTypeCrc;   // for write — identify the concrete type
+    const char*          concreteTypeName;  // for JSON write — human-readable type name
+};
+
+template<typename Base>
+PolyOwnedPtrField<Base> poly_owned(const char* fieldName, Base*& ptr, uint32_t crc, const char* concreteName) {
+    return PolyOwnedPtrField<Base>{ fieldName, Dia::Core::StringCRC(fieldName), ptr, crc, concreteName };
 }
 
 // ---------------------------------------------------------

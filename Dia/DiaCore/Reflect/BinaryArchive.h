@@ -1,6 +1,8 @@
 #pragma once
 #include "DiaCore/Reflect/Archive.h"
 #include "DiaCore/Reflect/SerializeResult.h"
+#include "DiaCore/Reflect/ContainerSpecializations.h"
+#include "DiaCore/Reflect/PolymorphicRegistry.h"
 #include "DiaCore/CRC/StringCRC.h"
 #include "DiaCore/Containers/Arrays/DynamicArrayC.h"
 
@@ -44,7 +46,7 @@ public:
     const uint8_t* GetData() const { return mBuffer; }
     uint32_t       GetSize() const { return mCursor; }
 
-    // NamedField — arithmetic or nested serializable
+    // NamedField — arithmetic, array, DynamicArrayC, or nested serializable
     template<typename T>
     BinaryWriteArchive& operator&(NamedField<T> field) {
         WriteField(field.name.Value(), field.value);
@@ -71,6 +73,35 @@ public:
         return *this;
     }
 
+    // PolyOwnedPtrField — polymorphic owning pointer with type CRC tag
+    // Binary format: [4-byte field CRC][4-byte total size][4-byte concrete type CRC][version(2) + fields]
+    template<typename Base>
+    BinaryWriteArchive& operator&(PolyOwnedPtrField<Base> field) {
+        const uint32_t crc = field.name.Value();
+        if (field.ptr == nullptr) {
+            WriteU32(crc);
+            WriteU32(0u);
+        } else {
+            auto* entry = PolymorphicRegistry::Instance().Find(field.concreteTypeCrc);
+            if (entry) {
+                BinaryWriteArchive subAr;
+                // Write the concrete type CRC as the first 4 bytes of the data payload
+                subAr.WriteU32(field.concreteTypeCrc);
+                // Then version + fields via the registered writeBinary
+                subAr.WriteVersion(0u);
+                entry->writeBinary(field.ptr, subAr);
+                WriteU32(crc);
+                WriteU32(subAr.GetSize());
+                WriteBytes(subAr.GetData(), subAr.GetSize());
+            } else {
+                // Unknown type — write as null (size=0)
+                WriteU32(crc);
+                WriteU32(0u);
+            }
+        }
+        return *this;
+    }
+
     // RefIdField — same wire format as NamedField
     template<typename T>
     BinaryWriteArchive& operator&(RefIdField<T> field) {
@@ -78,10 +109,8 @@ public:
         return *this;
     }
 
-private:
-    uint8_t  mBuffer[kBufferSize];
-    uint32_t mCursor;
-
+    // WriteBytes is public so that WriteRawValue helpers can call it on
+    // a sub-archive instance. (Private WriteBytes would require friendship.)
     void WriteBytes(const void* data, uint32_t size) {
         if (mCursor + size <= kBufferSize) {
             memcpy(mBuffer + mCursor, data, size);
@@ -90,8 +119,13 @@ private:
         // Overflow: silently truncate (PD-004 — no exceptions)
     }
 
-    void WriteU16(uint16_t v) { WriteBytes(&v, 2u); }
     void WriteU32(uint32_t v) { WriteBytes(&v, 4u); }
+
+private:
+    uint8_t  mBuffer[kBufferSize];
+    uint32_t mCursor;
+
+    void WriteU16(uint16_t v) { WriteBytes(&v, 2u); }
 
     // Write a field entry for a plain arithmetic/trivially-copyable value
     template<typename T>
@@ -101,10 +135,55 @@ private:
         WriteBytes(&value, static_cast<uint32_t>(sizeof(T)));
     }
 
-    // Dispatch: arithmetic vs nested serializable
+    // Write a raw element value into subAr (no CRC/size header).
+    // Used for packing array elements contiguously.
+    //   - arithmetic T: raw sizeof(T) bytes
+    //   - serializable T: [4-byte blob-size][version(2)][fields...]
+    //     The 4-byte size prefix lets the reader skip elements of unknown size.
+    template<typename T>
+    void WriteRawValue(BinaryWriteArchive& subAr, const T& value) {
+        if constexpr (std::is_arithmetic_v<T>) {
+            subAr.WriteBytes(&value, static_cast<uint32_t>(sizeof(T)));
+        } else if constexpr (BinarySerializable<T, BinaryWriteArchive>) {
+            BinaryWriteArchive elemAr;
+            elemAr.WriteVersion(0u);
+            T& mutableVal = const_cast<T&>(value);
+            serialize(elemAr, mutableVal, 0u);
+            uint32_t elemSize = elemAr.GetSize();
+            subAr.WriteU32(elemSize);
+            subAr.WriteBytes(elemAr.GetData(), elemSize);
+        }
+        // Unknown element types: silently ignored
+    }
+
+    // Dispatch: array, DynamicArrayC, nested serializable, or arithmetic
     template<typename T>
     void WriteField(uint32_t crc, const T& value) {
-        if constexpr (BinarySerializable<T, BinaryWriteArchive>) {
+        if constexpr (std::is_array_v<T>) {
+            // C-style static array T[N]:
+            // data payload = [4-byte count][raw element bytes...]
+            constexpr uint32_t N = static_cast<uint32_t>(std::extent_v<T>);
+            BinaryWriteArchive subAr;
+            subAr.WriteU32(N);
+            for (uint32_t i = 0u; i < N; ++i) {
+                WriteRawValue(subAr, value[i]);
+            }
+            WriteU32(crc);
+            WriteU32(subAr.GetSize());
+            WriteBytes(subAr.GetData(), subAr.GetSize());
+        } else if constexpr (IsDynamicArrayC<T>::value) {
+            // DynamicArrayC<E,N>:
+            // data payload = [4-byte count][raw element bytes... (count elements)]
+            uint32_t count = value.Size();
+            BinaryWriteArchive subAr;
+            subAr.WriteU32(count);
+            for (uint32_t i = 0u; i < count; ++i) {
+                WriteRawValue(subAr, value.At(i));
+            }
+            WriteU32(crc);
+            WriteU32(subAr.GetSize());
+            WriteBytes(subAr.GetData(), subAr.GetSize());
+        } else if constexpr (BinarySerializable<T, BinaryWriteArchive>) {
             // Nested serializable: measure in sub-archive, embed inline
             BinaryWriteArchive subAr;
             subAr.WriteVersion(0u);
@@ -152,7 +231,7 @@ public:
         return 0u;
     }
 
-    // NamedField — arithmetic or nested serializable
+    // NamedField — arithmetic, array, DynamicArrayC, or nested serializable
     template<typename T>
     BinaryReadArchive& operator&(NamedField<T> field) {
         const uint32_t crc = field.name.Value();
@@ -183,6 +262,40 @@ public:
             subAr.ReadVersion();   // consume the nested version header
             serialize(subAr, *field.ptr, 0u);
         }
+        return *this;
+    }
+
+    // PolyOwnedPtrField — polymorphic owning pointer with type CRC tag
+    // Binary format: [4-byte field CRC][4-byte total size][4-byte concrete type CRC][version(2) + fields]
+    template<typename Base>
+    BinaryReadArchive& operator&(PolyOwnedPtrField<Base> field) {
+        const uint32_t crc = field.name.Value();
+        const FieldIndex* fi = FindField(crc);
+        if (fi == nullptr || fi->dataSize == 0u) {
+            return *this;
+        }
+        // First 4 bytes of data are the concrete type CRC
+        uint32_t offset = fi->dataOffset;
+        uint32_t dataEnd = offset + fi->dataSize;
+        if (offset + 4u > dataEnd) return *this;
+
+        uint32_t concreteTypeCrc = 0u;
+        memcpy(&concreteTypeCrc, mData + offset, 4u);
+        offset += 4u;
+
+        auto* entry = PolymorphicRegistry::Instance().Find(concreteTypeCrc);
+        if (!entry) {
+            mResult.AddError(SerializeErrorKind::UnknownPolymorphicType, field.name, "unknown polymorphic type CRC");
+            return *this;
+        }
+        if (field.ptr == nullptr) {
+            field.ptr = static_cast<Base*>(entry->factory());
+        }
+        // Remaining bytes are [version(2)][fields...]
+        uint32_t remainingSize = dataEnd - offset;
+        BinaryReadArchive subAr(mData + offset, remainingSize);
+        subAr.ReadVersion();
+        entry->readBinary(field.ptr, subAr);
         return *this;
     }
 
@@ -253,10 +366,67 @@ private:
         return nullptr;
     }
 
-    // Dispatch: arithmetic vs nested serializable
+    // Read a raw element from [data+offset .. data+dataEnd).
+    // Mirrors BinaryWriteArchive::WriteRawValue layout.
+    // Returns the new offset (i.e. past the bytes consumed).
+    template<typename T>
+    static uint32_t ReadRawValue(const uint8_t* data, uint32_t offset,
+                                 uint32_t dataEnd, T& value) {
+        if constexpr (std::is_arithmetic_v<T>) {
+            if (offset + static_cast<uint32_t>(sizeof(T)) <= dataEnd) {
+                memcpy(&value, data + offset, sizeof(T));
+                return offset + static_cast<uint32_t>(sizeof(T));
+            }
+            return dataEnd; // exhausted
+        } else if constexpr (BinarySerializable<T, BinaryReadArchive>) {
+            // Read the 4-byte blob-size prefix written by WriteRawValue
+            if (offset + 4u > dataEnd) return dataEnd;
+            uint32_t elemSize = 0u;
+            memcpy(&elemSize, data + offset, 4u);
+            offset += 4u;
+            if (offset + elemSize > dataEnd) return dataEnd;
+            BinaryReadArchive elemAr(data + offset, elemSize);
+            elemAr.ReadVersion();
+            serialize(elemAr, value, 0u);
+            return offset + elemSize;
+        }
+        return dataEnd; // unknown — skip remaining
+    }
+
+    // Dispatch: array, DynamicArrayC, nested serializable, or arithmetic
     template<typename T>
     void ReadField(uint32_t offset, uint32_t dataSize, T& value) {
-        if constexpr (BinarySerializable<T, BinaryReadArchive>) {
+        if constexpr (std::is_array_v<T>) {
+            // C-style static array T[N]:
+            // payload = [4-byte written-count][raw element bytes...]
+            // Tolerant: fewer written elements → remaining keep defaults;
+            //           more written elements than N → silently truncated.
+            constexpr uint32_t N = static_cast<uint32_t>(std::extent_v<T>);
+            uint32_t dataEnd = offset + dataSize;
+            if (offset + 4u > dataEnd) return;
+            uint32_t writtenCount = 0u;
+            memcpy(&writtenCount, mData + offset, 4u);
+            offset += 4u;
+            uint32_t readCount = writtenCount < N ? writtenCount : N;
+            for (uint32_t i = 0u; i < readCount; ++i) {
+                offset = ReadRawValue(mData, offset, dataEnd, value[i]);
+            }
+        } else if constexpr (IsDynamicArrayC<T>::value) {
+            // DynamicArrayC<E,N>:
+            // payload = [4-byte written-count][raw element bytes...]
+            // Tolerant: excess elements beyond capacity silently dropped.
+            uint32_t dataEnd = offset + dataSize;
+            if (offset + 4u > dataEnd) return;
+            uint32_t writtenCount = 0u;
+            memcpy(&writtenCount, mData + offset, 4u);
+            offset += 4u;
+            value.RemoveAll();
+            for (uint32_t i = 0u; i < writtenCount && !value.IsFull(); ++i) {
+                typename DynamicArrayCElem<T>::type elem{};
+                offset = ReadRawValue(mData, offset, dataEnd, elem);
+                value.Add(elem);
+            }
+        } else if constexpr (BinarySerializable<T, BinaryReadArchive>) {
             // Nested: create sub-archive over the field's data bytes
             BinaryReadArchive subAr(mData + offset, dataSize);
             subAr.ReadVersion();   // consume the nested version header
