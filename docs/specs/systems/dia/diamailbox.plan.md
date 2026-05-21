@@ -2,7 +2,7 @@
 
 **Spec:** [diamailbox.md](diamailbox.md)
 **Created:** 2026-05-21
-**Updated:** 2026-05-21 (Tasks 1–2 Done)
+**Updated:** 2026-05-21 (Tasks 1–3 Done)
 
 ---
 
@@ -29,6 +29,6 @@ DiaMailbox is a generic typed deferred messaging primitive depending only on Dia
 |---|---------|------|--------|-------|-------|
 | 1 | module-and-build | [module-and-build.md](../../features/dia/diamailbox/module-and-build.md) | Done | haiku | Empty vcxproj skeleton + sln registration + YAML doc. Must be first. |
 | 2 | address-and-types | [address-and-types.md](../../features/dia/diamailbox/address-and-types.md) | Done | haiku | `MailboxTypes.h` + `MailboxTypes.cpp` + tests. 9/9 GREEN. Note: `Address` is not trivially copyable — `StringCRC` has user-defined copy ctor; AC9 corrected in spec. |
-| 3 | typed-queue | [typed-queue.md](../../features/dia/diamailbox/typed-queue.md) | Planned | sonnet | `Mailbox.h/.cpp` ring buffer + overflow + tests. |
+| 3 | typed-queue | [typed-queue.md](../../features/dia/diamailbox/typed-queue.md) | Done | sonnet | `Mailbox.h/.cpp` ring buffer + overflow + tests. 15/15 GREEN. Note: MSVC macro comma issue fixed with `((...))` parens; `DIA_LOG_WARNING` replaced with `Dia::Core::Log::OutputLine` via warn callback. |
 | 4 | subscriptions | [subscriptions.md](../../features/dia/diamailbox/subscriptions.md) | Planned | sonnet | `Subscription.h/.cpp` + HandlePool wiring + tests. |
 | 5 | routers | [routers.md](../../features/dia/diamailbox/routers.md) | Planned | sonnet | `IMailboxRouter.h` + `Resolve<T>` + `MockRouter` + `MailboxFixture` + tests. |

@@ -5,9 +5,18 @@
     <ClInclude Include="MailboxTypes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Mailbox.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\MailboxTestFixture.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MailboxTypes.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Mailbox.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
