@@ -36,9 +36,14 @@ dependent_modules:
   - dia.core.containers.strings
 
 public_api:
-  headers: []
-  namespaces: []
-  entry_points: []
+  headers:
+    - Containers/Handle.h
+    - Containers/HandlePool.h
+  namespaces:
+    - Dia::Core
+  entry_points:
+    - "Handle<T> — typed index+generation handle value type"
+    - "HandlePool<T, kCapacity> — fixed-capacity generation-tracking object pool"
 
 dependencies:
   required: []

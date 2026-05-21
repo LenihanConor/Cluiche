@@ -114,7 +114,6 @@
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Core\Architecture\TestSingleton.cpp" />
-    <ClCompile Include="Core\Architecture\TestComponent.cpp" />
     <ClCompile Include="Core\Architecture\TestObserver.cpp" />
     <ClCompile Include="Core\Containers\TestArray.cpp" />
     <ClCompile Include="Core\Containers\TestArrayC.cpp" />
@@ -130,6 +129,7 @@
     <ClCompile Include="Core\Containers\TestHashTable.cpp" />
     <ClCompile Include="Core\Containers\TestGraph.cpp" />
     <ClCompile Include="Core\Containers\TestDirectedGraph.cpp" />
+    <ClCompile Include="Core\Containers\TestHandlePool.cpp" />
     <ClCompile Include="Core\Containers\TestContainerStress.cpp" />
     <ClCompile Include="Core\Containers\TestContainerInvariants.cpp" />
     <ClCompile Include="Core\Events\TestDelegate.cpp" />

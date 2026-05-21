@@ -88,26 +88,11 @@
     <Filter Include="Architecture">
       <UniqueIdentifier>{e0d6069c-6f08-4000-884f-53bf622c4955}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Architecture\Components">
-      <UniqueIdentifier>{2cdccfe9-6169-478d-80de-c94d789c8833}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Architecture\Singleton">
       <UniqueIdentifier>{a2488200-c774-43b8-a466-4e028b1cab04}</UniqueIdentifier>
     </Filter>
     <Filter Include="Architecture\Events">
       <UniqueIdentifier>{b3499311-d885-54c9-b577-5f139c2dbc15}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Architecture\Components\Interface">
-      <UniqueIdentifier>{f122460b-a74c-4bd8-839e-3314bddecde0}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Architecture\Components\Interface\Source">
-      <UniqueIdentifier>{a6f5b006-af6b-4a80-93a9-e01be5365f73}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Architecture\Components\Concrete">
-      <UniqueIdentifier>{76c9dc03-ba1e-46cd-a7e7-d6fe704c6e7f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Architecture\Components\Concrete\Source">
-      <UniqueIdentifier>{46d4f6e0-a570-43ac-b834-57a4a5973ed7}</UniqueIdentifier>
     </Filter>
     <Filter Include="Containers\Misc">
       <UniqueIdentifier>{185de9e0-5cde-43a6-9502-fd026771219a}</UniqueIdentifier>
@@ -336,6 +321,12 @@
     <ClInclude Include="Containers\Handle.h">
       <Filter>Containers</Filter>
     </ClInclude>
+    <ClInclude Include="Containers\HandlePool.h">
+      <Filter>Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="Containers\HandlePool.inl">
+      <Filter>Containers</Filter>
+    </ClInclude>
     <ClInclude Include="Containers\BitFlag\BitArray16.h">
       <Filter>Containers\BitFlag</Filter>
     </ClInclude>
@@ -390,27 +381,7 @@
     <ClInclude Include="Architecture\Events\EventDispatcher.h">
       <Filter>Architecture\Events</Filter>
     </ClInclude>
-    <ClInclude Include="Architecture\Components\Interface\ComponentID.h">
-      <Filter>Architecture\Components\Interface</Filter>
-    </ClInclude>
-    <ClInclude Include="Architecture\Components\Interface\IComponent.h">
-      <Filter>Architecture\Components\Interface</Filter>
-    </ClInclude>
-    <ClInclude Include="Architecture\Components\Interface\IComponentFactory.h">
-      <Filter>Architecture\Components\Interface</Filter>
-    </ClInclude>
-    <ClInclude Include="Architecture\Components\Interface\IComponentObject.h">
-      <Filter>Architecture\Components\Interface</Filter>
-    </ClInclude>
-    <ClInclude Include="Architecture\Components\Concrete\DynamicComponentFactory.h">
-      <Filter>Architecture\Components\Concrete</Filter>
-    </ClInclude>
-    <ClInclude Include="Architecture\Components\Concrete\StaticPooledComponentFactory.h">
-      <Filter>Architecture\Components\Concrete</Filter>
-    </ClInclude>
-    <ClInclude Include="Architecture\Components\Concrete\StaticSizedComponentObject.h">
-      <Filter>Architecture\Components\Concrete</Filter>
-    </ClInclude>
+
     <ClInclude Include="Containers\Misc\CircularBufferC.h">
       <Filter>Containers\Misc</Filter>
     </ClInclude>
@@ -611,15 +582,7 @@
     <ClCompile Include="Containers\Strings\StringWriter.cpp">
       <Filter>Containers\Strings\Source</Filter>
     </ClCompile>
-    <ClCompile Include="Architecture\Components\Interface\IComponent.cpp">
-      <Filter>Architecture\Components\Interface\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Architecture\Components\Interface\IComponentFactory.cpp">
-      <Filter>Architecture\Components\Interface\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Architecture\Components\Interface\IComponentObject.cpp">
-      <Filter>Architecture\Components\Interface\Source</Filter>
-    </ClCompile>
+
     <ClCompile Include="Timer\TimeThreadLimiter.cpp">
       <Filter>Timer\Source</Filter>
     </ClCompile>
@@ -787,15 +750,7 @@
     <None Include="Architecture\Singleton\Singleton.inl">
       <Filter>Architecture\Singleton</Filter>
     </None>
-    <None Include="Architecture\Components\Concrete\DynamicComponentFactory.inl">
-      <Filter>Architecture\Components\Concrete\Source</Filter>
-    </None>
-    <None Include="Architecture\Components\Concrete\StaticPooledComponentFactory.inl">
-      <Filter>Architecture\Components\Concrete\Source</Filter>
-    </None>
-    <None Include="Architecture\Components\Concrete\StaticSizedComponentObject.inl">
-      <Filter>Architecture\Components\Concrete\Source</Filter>
-    </None>
+
     <None Include="Containers\Misc\CircularBufferC.inl">
       <Filter>Containers\Misc\source</Filter>
     </None>

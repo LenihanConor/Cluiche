@@ -67,13 +67,7 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Architecture\Components\Concrete\DynamicComponentFactory.h" />
-    <ClInclude Include="Architecture\Components\Concrete\StaticPooledComponentFactory.h" />
-    <ClInclude Include="Architecture\Components\Concrete\StaticSizedComponentObject.h" />
-    <ClInclude Include="Architecture\Components\Interface\ComponentID.h" />
-    <ClInclude Include="Architecture\Components\Interface\IComponent.h" />
-    <ClInclude Include="Architecture\Components\Interface\IComponentFactory.h" />
-    <ClInclude Include="Architecture\Components\Interface\IComponentObject.h" />
+
     <ClInclude Include="Architecture\Factory.h" />
     <ClInclude Include="Architecture\Functor.h" />
     <ClInclude Include="Architecture\Observer.h" />
@@ -183,6 +177,8 @@
     <ClInclude Include="Containers\Arrays\DynamicArrayC.h" />
     <ClInclude Include="Containers\Arrays\ReverseArrayIterator.h" />
     <ClInclude Include="Containers\Handle.h" />
+    <ClInclude Include="Containers\HandlePool.h" />
+    <ClInclude Include="Containers\HandlePool.inl" />
     <ClInclude Include="Containers\BitFlag\BitArray16.h" />
     <ClInclude Include="Containers\BitFlag\BitArray32.h" />
     <ClInclude Include="Containers\BitFlag\BitArray64.h" />
@@ -196,9 +192,7 @@
     <ClInclude Include="Threading\ThreadPool.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Architecture\Components\Interface\IComponent.cpp" />
-    <ClCompile Include="Architecture\Components\Interface\IComponentFactory.cpp" />
-    <ClCompile Include="Architecture\Components\Interface\IComponentObject.cpp" />
+
     <ClCompile Include="Architecture\Observer.cpp" />
     <ClCompile Include="Core\Assert.cpp" />
     <ClCompile Include="Core\CallStack.cpp" />
@@ -252,9 +246,7 @@
     <ClCompile Include="Threading\JobSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Architecture\Components\Concrete\DynamicComponentFactory.inl" />
-    <None Include="Architecture\Components\Concrete\StaticPooledComponentFactory.inl" />
-    <None Include="Architecture\Components\Concrete\StaticSizedComponentObject.inl" />
+
     <None Include="Architecture\Singleton\Singleton.inl" />
     <None Include="Containers\Graphs\DirectedGraph.inl" />
     <None Include="Containers\Graphs\DirectedGraphEdge.inl" />

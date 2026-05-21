@@ -152,9 +152,6 @@
     <ClCompile Include="Core\Architecture\TestSingleton.cpp">
       <Filter>Core\Architecture</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Architecture\TestComponent.cpp">
-      <Filter>Core\Architecture</Filter>
-    </ClCompile>
     <ClCompile Include="Core\Architecture\TestObserver.cpp">
       <Filter>Core\Architecture</Filter>
     </ClCompile>
@@ -196,6 +193,9 @@
       <Filter>Core\Containers</Filter>
     </ClCompile>
     <ClCompile Include="Core\Containers\TestDirectedGraph.cpp">
+      <Filter>Core\Containers</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Containers\TestHandlePool.cpp">
       <Filter>Core\Containers</Filter>
     </ClCompile>
     <ClCompile Include="Core\Containers\TestContainerStress.cpp">

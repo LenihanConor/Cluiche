@@ -231,4 +231,4 @@ No other internal dependencies. No external dependencies beyond what `Handle<T>`
 
 ## Status
 
-`Approved`
+`Done` — 2026-05-20.
