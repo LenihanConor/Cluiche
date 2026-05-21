@@ -1,6 +1,6 @@
 # Test Completeness Registry
 
-**Last Updated:** 2026-05-06 (ManifestImports: added AC5/AC6/AC7/deep-nesting tests; ManifestComposer: AC5 duplicate rejection, depth limit, comments)
+**Last Updated:** 2026-05-21 (DiaMailbox: added 13 boundary + stress tests; 62 total)
 
 Single source of truth for test coverage across all Dia modules. Updated alongside test commits.
 
@@ -16,8 +16,8 @@ Single source of truth for test coverage across all Dia modules. Updated alongsi
 
 | Metric | Count |
 |--------|-------|
-| Test files | 190 |
-| Total tests (TEST + TEST_F + TEST_P) | 3,019 |
+| Test files | 196 |
+| Total tests (TEST + TEST_F + TEST_P) | 3,032 |
 | Death tests (EXPECT_DEATH / ASSERT_DEATH) | 149 |
 | Float assertions (EXPECT_NEAR / EXPECT_FLOAT_EQ) | 1,340+ |
 | Fixtures (TEST_F) | ~504 |
@@ -82,6 +82,21 @@ Gap markers: **ZERO** = no tests, **LOW** = under-tested relative to API surface
 | Type/Types | 11 | TestTypes.cpp | 11 | 0 | 0 | OK |
 
 **Core totals: 34 files, 744 tests** | Gaps: Graph, Observer, FilePath, Allocators (zero); stress tests needed for containers/threading
+
+---
+
+## DiaMailbox
+
+| Component | Tests | Files | Unit | Stress/Boundary | Golden/Regression | Notes |
+|-----------|-------|-------|------|-----------------|-------------------|-------|
+| MailboxTypes (Address, SubscriberId, OverflowPolicy) | 9 | MailboxTypesTests.cpp | 9 | 0 | 0 | GOOD |
+| Mailbox (RegisterType, Send, Drain) | 15 | TypedQueueTests.cpp | 14 | 1 (Assert policy) | 0 | GOOD |
+| Mailbox (Subscribe, Unsubscribe) | 13 | SubscriptionTests.cpp | 13 | 0 | 0 | GOOD |
+| Mailbox (RegisterRouter, GetRouter, Resolve) | 11 | RouterTests.cpp | 11 | 0 | 0 | GOOD |
+| Boundary (registry-full, router-null/full, ring wrap, fence, Resolve no-subs, isolation) | 8 | MailboxBoundaryTests.cpp | 0 | 8 | 0 | GOOD |
+| Stress (large overflow, drop accumulation, 1000 cycles, multi-type interleaved, subscriber fill/drain) | 5 | MailboxStressTests.cpp | 0 | 5 | 0 | GOOD |
+
+**DiaMailbox totals: 6 files, 61 tests** | GOOD — all major paths covered; no golden/determinism tests (N/A for message passing)
 
 ---
 

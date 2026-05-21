@@ -767,6 +767,12 @@
     <ClCompile Include="DiaMailbox\RouterTests.cpp">
       <Filter>DiaMailbox</Filter>
     </ClCompile>
+    <ClCompile Include="DiaMailbox\MailboxBoundaryTests.cpp">
+      <Filter>DiaMailbox</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaMailbox\MailboxStressTests.cpp">
+      <Filter>DiaMailbox</Filter>
+    </ClCompile>
     <!-- DiaObservation -->
     <ClCompile Include="DiaObservation\Log\TestLogLevel.cpp">
       <Filter>DiaObservation\Log</Filter>
