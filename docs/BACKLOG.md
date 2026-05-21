@@ -27,8 +27,6 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | Feature | Spec | System |
 |---------|------|--------|
 | per-app-bin-layout | [per-app-bin-layout.md](specs/features/dia/diapipeline/per-app-bin-layout.md) | DiaPipeline ✅ |
-| Harness Core | [harness-core.md](specs/features/dia/diatestharness/harness-core.md) | DiaTestHarness |
-| Smoke Test Scenario | [smoke-test-scenario.md](specs/features/cluichetest/cluichetestscenarios/smoke-test-scenario.md) | CluicheTestScenarios (depends on Harness Core) |
 
 ---
 
@@ -54,11 +52,29 @@ System specs and the foundation feature are all `Approved`. Each system's child 
 
 | Item | Spec | What's needed |
 |------|------|---------------|
-| DiaAPI quit command | TBD | Needed for DiaTestHarness graceful shutdown. No quit command exists today (exit is UI-driven). Needs `/spec-feature` under DiaAPI |
-| CluicheTest TestStages system | TBD | Needs `/spec-system` under CluicheTest — multi-stage test stages for deep engine validation (DiaRigidBody2D first). Open questions: phase vs level vs own PU; reporting mechanism. Research: `docs/research/e2e_testing/summary.md` |
 | DiaStateMachineEditor system | TBD | Needs `/spec-system` — editor plugin for state machine visual debugging + design-time editing. Depends on DiaStateMachine ✅, DiaEditor |
-| Future DiaE2E system | TBD | Needs `/spec-system` — DiaObservation #1–#7 now Done. Sibling `Cluiche/out/<App>/suites/<id>/` directory, `suite.json` + per-scenario summary + JUnit XML emitter, `dia e2e --suite=<name>` CLI command, scenario subprocess spawning. Research: `docs/research/observ_telemetry/summary.md` "Future: Multi-Scenario E2E Suites". |
 | DiaObservation #8–#13 (profiling + domain instrumentation) | [diaobservation.md](specs/systems/dia/diaobservation.md) | #1–#7 Done. #11 (domain-metric-registration) Done (2026-05-20). Features #8 (profiling infrastructure) and #9 (domain profiling) need `/spec-feature`. Features #10, #12–#13 (domain log/trace/health instrumentation) need `/spec-feature`. |
+
+---
+
+## E2E Orchestration Stack (build in dependency order)
+
+Architecture redesigned 2026-05-20. Source of truth: **[docs/research/e2e_testing/design-decisions.md](research/e2e_testing/design-decisions.md)**.
+
+Replaces previous DiaTestHarness + DiaE2E + Harness Core + Smoke Test Scenario + DiaAPI quit command items. The old `docs/specs/systems/dia/diatestharness.md` and `docs/specs/features/dia/diatestharness/harness-core.md` will be superseded once new specs are written.
+
+| # | Item | Type | Size | Depends on |
+|---|------|------|------|------------|
+| 1 | DiaApplicationFlow — transition-guards | `/spec-feature` on DiaApplicationFlow | S | — |
+| 2 | DiaApplicationFlow — baseline-commands (`quit`, `report` via DiaAPI) | `/spec-feature` on DiaApplicationFlow | XS | — |
+| 3 | DiaRemoteControl system + RemoteControlModule (CluicheGameBaseline) | `/spec-system` (new Dia system) | M | 1, 2 |
+| 4 | DiaOrchestrator (Python tool — supersedes DiaTestHarness; suite mode folds in old "DiaE2E") | `/spec-system` (new external system, Python) | M | 3 |
+| 5 | CluicheTest smoke scenario (Python — rewrite of old smoke-test-scenario.md) | `/spec-feature` | XS | 4 |
+| 6 | CluicheTest TestStages system (RigidBody2D, EntityTest, … with checkpoints) | `/spec-system` under CluicheTest | M–L | 4 |
+| 7 | CluicheEditor RemoteControlModule wiring + `IEditorPlugin::RegisterCheckpoints` | `/spec-feature` under CluicheEditor | S | 3 |
+| 8 | DiaOrchestrator — metric threshold assertions | `/spec-feature` on DiaOrchestrator | S | 4 |
+
+Items 1+2 can run in parallel. Items 5–8 can fan out once 4 is done.
 
 ---
 
