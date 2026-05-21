@@ -12,7 +12,7 @@ language: cpp
 parent_module_id: dia.core
 
 summary: >
-  Groups Architecture submodules: Components, Singleton.
+  Groups Architecture submodules: Singleton.
 
 intent: >
   Provide a clear module boundary and navigation surface for the Architecture area.
@@ -27,7 +27,6 @@ non_responsibilities:
   - Cross-cutting engine orchestration
 
 dependent_modules:
-  - dia.core.architecture.components
   - dia.core.architecture.singleton
 
 public_api:

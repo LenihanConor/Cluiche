@@ -1,7 +1,6 @@
 #pragma once
 
 #include "DiaStateMachine/IStateMachineInspectable.h"
-#include "DiaCore/Architecture/Components/Interface/IComponent.h"
 
 namespace Dia
 {
@@ -15,13 +14,11 @@ namespace Dia
 			kPushdown
 		};
 
-		class StateMachineComponent : public Dia::Core::IComponent
+		class StateMachineComponent
 		{
 		public:
-			COMPONENT_DECLARATION(0x534D0001)
-
 			StateMachineComponent();
-			virtual ~StateMachineComponent();
+			~StateMachineComponent();
 
 			void AttachMachine(IStateMachineInspectable* machine, MachineType type);
 

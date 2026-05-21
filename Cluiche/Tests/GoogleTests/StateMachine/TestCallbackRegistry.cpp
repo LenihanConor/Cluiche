@@ -105,15 +105,6 @@ TEST(StateMachineComponent, DefaultStateIsNone)
     EXPECT_EQ(comp.GetInspectable(), nullptr);
 }
 
-TEST(StateMachineComponent, ComponentIdIsCorrect)
-{
-    EXPECT_EQ(StateMachineComponent::ID, static_cast<Dia::Core::ComponentClassID>(0x534D0001));
-
-    StateMachineComponent comp;
-    EXPECT_TRUE(comp.IsType(0x534D0001));
-    EXPECT_FALSE(comp.IsType(0x00000001));
-    EXPECT_EQ(comp.GetType(), static_cast<Dia::Core::ComponentClassID>(0x534D0001));
-}
 
 TEST(StateMachineComponent, AttachFlatMachineAndGet)
 {

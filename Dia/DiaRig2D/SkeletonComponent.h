@@ -1,6 +1,5 @@
 #pragma once
 
-#include <DiaCore/Architecture/Components/Interface/IComponent.h>
 #include "Skeleton.h"
 #include "Pose.h"
 
@@ -8,13 +7,11 @@ namespace Dia
 {
 	namespace Rig2D
 	{
-		class SkeletonComponent : public Dia::Core::IComponent
+		class SkeletonComponent
 		{
 		public:
-			COMPONENT_DECLARATION(0x52494730)
-
 			explicit SkeletonComponent(const SkeletonDef& def);
-			virtual ~SkeletonComponent() {}
+			~SkeletonComponent() = default;
 
 			const Skeleton&		GetSkeleton() const;
 			Pose&				GetCurrentPose();
