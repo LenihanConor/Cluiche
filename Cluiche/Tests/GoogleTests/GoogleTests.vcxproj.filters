@@ -288,6 +288,12 @@
     <ClCompile Include="Core\Reflect\TestFieldAttributes.cpp">
       <Filter>Core\Reflect</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Reflect\TestDiaMathsSerializers.cpp">
+      <Filter>Core\Reflect</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Reflect\TestDiaCoreSerializers.cpp">
+      <Filter>Core\Reflect</Filter>
+    </ClCompile>
     <!-- Core\Type -->
     <ClCompile Include="Core\Type\TestEnum.cpp">
       <Filter>Core\Type</Filter>

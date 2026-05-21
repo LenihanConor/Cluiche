@@ -282,6 +282,12 @@
     <ClInclude Include="Reflect\FieldAttributes.h">
       <Filter>Reflect</Filter>
     </ClInclude>
+    <ClInclude Include="Reflect\DiaMathsSerializers.h">
+      <Filter>Reflect</Filter>
+    </ClInclude>
+    <ClInclude Include="Reflect\DiaCoreSerializers.h">
+      <Filter>Reflect</Filter>
+    </ClInclude>
     <ClInclude Include="Strings\String.h">
       <Filter>Strings</Filter>
     </ClInclude>

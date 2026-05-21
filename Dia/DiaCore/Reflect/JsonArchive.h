@@ -155,6 +155,9 @@ private:
                 WriteValue(elemSlot, value.At(i));
                 slot.append(elemSlot);
             }
+        } else if constexpr (requires(const T& s) { { s.AsCStr() } -> std::same_as<const char*>; }) {
+            // Dia String type (String<N> and concrete subtypes) — written as a JSON string
+            slot = value.AsCStr();
         } else if constexpr (Serializable<T, JsonWriteArchive>) {
             // Nested serializable struct — push a sub-node
             slot = Json::Value(Json::objectValue);
@@ -332,6 +335,12 @@ private:
                     ReadValue(src[i], elem);
                     value.Add(elem);
                 }
+            }
+        } else if constexpr (requires(const T& s) { { s.AsCStr() } -> std::same_as<const char*>; } &&
+                             requires(const char* p) { T(p); }) {
+            // Dia String type (String<N> and concrete subtypes) — read from JSON string
+            if (src.isString()) {
+                value = T(src.asCString());
             }
         } else if constexpr (Serializable<T, JsonReadArchive>) {
             // Nested serializable struct — push a sub-node

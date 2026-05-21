@@ -31,6 +31,9 @@ namespace Dia
 			const Containers::String32& GetAlias()const { return mAlias; }
 			const Path::String& GetPath()const { return mPath; }
 
+			template<class Archive>
+			friend void serialize(Archive& ar, AliasPathConfigTuple& obj, unsigned version);
+
 		private:
 			Containers::String32 mAlias;   // The path alias identifier
 			Path::String mPath;            // The actual file system path
@@ -59,6 +62,9 @@ namespace Dia
 			const Containers::String32& GetAlias()const { return mAlias; }
 			const Containers::String32& GetBaseAlias()const { return mBaseAlias; }
 			const Path::String& GetPathAppend()const { return mPathAppend; }
+
+			template<class Archive>
+			friend void serialize(Archive& ar, AliasAppendPathConfig& obj, unsigned version);
 
 		private:
 			Containers::String32 mAlias;        // The new alias to create
@@ -89,6 +95,9 @@ namespace Dia
 			const Containers::String32& GetBaseAlias()const { return mBaseAlias; }
 			const Containers::String32& GetFileName()const { return mFileName; }
 			const Path::String& GetPathAppend()const { return mPathAppend; }
+
+			template<class Archive>
+			friend void serialize(Archive& ar, PathStoreConfigFragment& obj, unsigned version);
 
 		private:
 			Containers::String32 mBaseAlias;  // Base alias to resolve fragment location
@@ -135,10 +144,13 @@ namespace Dia
 			const AliasAppendPathArray& GetAliasAppendPathTupleArray()const { return mAliasAppendPathArray; }
 			const PathStoreConfigFragmentArray& GetPathStoreConfigFragmentArray()const { return mPathStoreConfigFragmentArray; }
 
+			template<class Archive>
+			friend void serialize(Archive& ar, PathStoreConfig& obj, unsigned version);
+
 		private:
 			AliasPathTupleArray mAliasPathTupleArray;
 			AliasAppendPathArray mAliasAppendPathArray;
 			PathStoreConfigFragmentArray mPathStoreConfigFragmentArray;
-		}; 
+		};
 	}
 }

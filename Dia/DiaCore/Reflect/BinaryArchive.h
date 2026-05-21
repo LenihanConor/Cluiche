@@ -183,6 +183,14 @@ private:
             WriteU32(crc);
             WriteU32(subAr.GetSize());
             WriteBytes(subAr.GetData(), subAr.GetSize());
+        } else if constexpr (requires(const T& s) { { s.AsCStr() } -> std::same_as<const char*>; }) {
+            // Dia String type — serialize as null-terminated byte sequence
+            // Wire format: [4-byte CRC][4-byte len (includes null terminator)][bytes...]
+            const char* str = value.AsCStr();
+            uint32_t len = static_cast<uint32_t>(strlen(str)) + 1u;  // include null terminator
+            WriteU32(crc);
+            WriteU32(len);
+            WriteBytes(str, len);
         } else if constexpr (BinarySerializable<T, BinaryWriteArchive>) {
             // Nested serializable: measure in sub-archive, embed inline
             BinaryWriteArchive subAr;
@@ -425,6 +433,13 @@ private:
                 typename DynamicArrayCElem<T>::type elem{};
                 offset = ReadRawValue(mData, offset, dataEnd, elem);
                 value.Add(elem);
+            }
+        } else if constexpr (requires(const T& s) { { s.AsCStr() } -> std::same_as<const char*>; } &&
+                             requires(const char* p) { T(p); }) {
+            // Dia String type — dataSize is length including null terminator
+            if (dataSize > 0u) {
+                const char* str = reinterpret_cast<const char*>(mData + offset);
+                value = T(str);
             }
         } else if constexpr (BinarySerializable<T, BinaryReadArchive>) {
             // Nested: create sub-archive over the field's data bytes
