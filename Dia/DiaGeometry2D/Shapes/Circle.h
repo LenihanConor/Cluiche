@@ -90,6 +90,9 @@ namespace Dia
 			int CalculateIntercepts(const Circle& circle, Dia::Maths::Vector2D& intercept1, Dia::Maths::Vector2D& intercept2)const;
 
 		private:
+			template<class Archive>
+			friend void serialize(Archive& ar, Circle& obj, unsigned version);
+
 			Dia::Maths::Vector2D mCenter;
 			float mRadius;
 		};

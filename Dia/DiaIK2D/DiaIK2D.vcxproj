@@ -61,6 +61,7 @@
     <ClInclude Include="IKSolver.h" />
     <ClInclude Include="IIKChainSerializer.h" />
     <ClInclude Include="JsonIKChainSerializer.h" />
+    <ClInclude Include="DiaIK2DSerializers.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="IKSolver.cpp" />

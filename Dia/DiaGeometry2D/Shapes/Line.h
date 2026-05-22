@@ -42,6 +42,9 @@ namespace Dia
 			IntersectionClassify IsIntersecting(const Circle& rhs) const;
 
 		private:
+			template<class Archive>
+			friend void serialize(Archive& ar, Line& obj, unsigned version);
+
 			static const int kNumPts = 2;
 			Dia::Maths::Vector2D mPt[kNumPts];
 		};

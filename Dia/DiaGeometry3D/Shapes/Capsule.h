@@ -30,6 +30,9 @@ namespace Dia::Geometry3D
         bool                 Contains      (const Dia::Maths::Vector3D& point) const;
 
     private:
+        template<class Archive>
+        friend void serialize(Archive& ar, Capsule& obj, unsigned version);
+
         Dia::Maths::Vector3D mStartA;
         Dia::Maths::Vector3D mEndB;
         float                mRadius;

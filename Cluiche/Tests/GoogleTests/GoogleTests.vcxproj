@@ -153,6 +153,7 @@
     <ClCompile Include="Core\Reflect\TestPolymorphicRegistry.cpp" />
     <ClCompile Include="Core\Reflect\TestFieldAttributes.cpp" />
     <ClCompile Include="Core\Reflect\TestDiaMathsSerializers.cpp" />
+    <ClCompile Include="Core\Reflect\TestDiaMathsSerializers2.cpp" />
     <ClCompile Include="Core\Reflect\TestDiaCoreSerializers.cpp" />
     <ClCompile Include="Core\Type\TestEnum.cpp" />
     <ClCompile Include="Core\Type\TestMetaLogic.cpp" />
@@ -300,6 +301,7 @@
       <PreprocessorDefinitions>DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <!-- Geometry3D -->
+    <ClCompile Include="Geometry3D\TestDiaGeometry3DSerializers.cpp" />
     <ClCompile Include="Geometry3D\TestSpatialGrid3DStress.cpp" />
     <ClCompile Include="Geometry3D\TestIntersectionTestsEdge.cpp" />
     <ClCompile Include="Geometry3D\TestSpatialGrid3D.cpp" />
@@ -314,6 +316,7 @@
     <ClCompile Include="Geometry3D\TestPlane3D.cpp" />
     <ClCompile Include="Geometry3D\TestFrustum.cpp" />
     <!-- Geometry2D -->
+    <ClCompile Include="Geometry2D\TestDiaGeometry2DSerializers.cpp" />
     <ClCompile Include="Geometry2D\TestGeometry2DVisualDebuggerStack.cpp" />
     <ClCompile Include="Geometry2D\TestSpatialGridSerializer.cpp" />
     <ClCompile Include="Geometry2D\TestShapePrimitives.cpp" />
@@ -346,6 +349,7 @@
     <ClCompile Include="RigidBody2D\TestRigidBodyDeterminism.cpp" />
     <ClCompile Include="RigidBody2D\TestConservationLaws.cpp" />
     <ClCompile Include="RigidBody2D\TestRigidBody2DVisualDebugger.cpp" />
+    <ClCompile Include="RigidBody2D\TestDiaRigidBody2DSerializers.cpp" />
     <!-- DiaMetrics -->
     <ClCompile Include="DiaMetrics\TestMetricGauge.cpp" />
     <ClCompile Include="DiaMetrics\TestMetricCounter.cpp" />
@@ -404,6 +408,7 @@
     <ClCompile Include="Rig\TestBlendPoses.cpp" />
     <ClCompile Include="Rig\TestSkeletonJson.cpp" />
     <ClCompile Include="Rig\TestSkeletonComponent.cpp" />
+    <ClCompile Include="Rig2D\TestDiaRig2DSerializers.cpp" />
     <ClCompile Include="Rig2D\TestRig2DGolden.cpp" />
     <ClCompile Include="Rig2D\TestRig2DInvariant.cpp" />
     <ClCompile Include="Rig2D\TestRig2DStress.cpp" />
@@ -429,6 +434,7 @@
     <ClCompile Include="IK\TestIKDeterminism.cpp" />
     <ClCompile Include="IK\TestIKIntegration.cpp" />
     <ClCompile Include="IK\TestIK2DVisualDebuggerStack.cpp" />
+    <ClCompile Include="IK\TestDiaIK2DSerializers.cpp" />
     <!-- StateMachine -->
     <ClCompile Include="StateMachine\TestFlatStateMachine.cpp" />
     <ClCompile Include="StateMachine\TestHierarchicalStateMachine.cpp" />
@@ -475,6 +481,7 @@
     <ClCompile Include="Animation2D\TestUtilitiesTests.cpp" />
     <ClCompile Include="Animation2D\IntegrationTests.cpp" />
     <ClCompile Include="Animation2D\TestAnimation2DVisualDebuggerStack.cpp" />
+    <ClCompile Include="Animation2D\TestDiaAnimation2DSerializers.cpp" />
     <!-- DiaVisualDebuggerConsole + DiaImGui -->
     <ClCompile Include="DiaVisualDebugger\TestDiaVisualDebuggerConsole.cpp" />
     <!-- ImGui sources (required by DiaVisualDebuggerConsole.lib) -->

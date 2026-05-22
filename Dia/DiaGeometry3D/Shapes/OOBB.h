@@ -33,6 +33,9 @@ namespace Dia::Geometry3D
         bool                 Contains      (const Dia::Maths::Vector3D& point) const;
 
     private:
+        template<class Archive>
+        friend void serialize(Archive& ar, OOBB& obj, unsigned version);
+
         Dia::Maths::Vector3D   mCenter;
         Dia::Maths::Vector3D   mHalfExtents;
         Dia::Maths::Quaternion mOrientation;

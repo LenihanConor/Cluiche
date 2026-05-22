@@ -8,7 +8,7 @@
 // =============================================================================
 
 #include <gtest/gtest.h>
-#include "DiaCore/Reflect/DiaMathsSerializers.h"
+#include "DiaMaths/DiaMathsSerializers.h"
 #include "DiaCore/Reflect/JsonArchive.h"
 #include "DiaCore/Reflect/BinaryArchive.h"
 #include "DiaCore/Reflect/SerializeResult.h"

@@ -234,6 +234,9 @@ namespace Dia
 			void				LookAt(const Vector3D& target, const Vector3D& up = Vector3D::YAxis());
 
 		private:
+			template<class Archive>
+			friend void serialize(Archive& ar, Transform3D& obj, unsigned version);
+
 			Vector3D			mLocalPosition;
 			Quaternion			mLocalRotation;
 			Vector3D			mLocalScale;

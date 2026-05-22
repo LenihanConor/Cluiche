@@ -36,6 +36,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="DiaRigidBody2DSerializers.h" />
     <ClInclude Include="Bodies\BodyType.h">
       <Filter>Bodies</Filter>
     </ClInclude>

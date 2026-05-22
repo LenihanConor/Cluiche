@@ -67,6 +67,7 @@
     <ClInclude Include="SkeletonComponent.h" />
     <ClInclude Include="Testing\SkeletonBuilders.h" />
     <ClInclude Include="Testing\PoseComparison.h" />
+    <ClInclude Include="DiaRig2DSerializers.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Bone.cpp" />

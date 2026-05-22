@@ -72,6 +72,7 @@
     <ClInclude Include="Spatial\ISpatialStructure3D.h" />
     <ClInclude Include="Spatial\SpatialGrid3D.h" />
     <ClInclude Include="Testing\Geometry3DShapeFactory.h" />
+    <ClInclude Include="DiaGeometry3DSerializers.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Shapes\AABB.cpp" />

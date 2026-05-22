@@ -291,6 +291,9 @@
     <ClCompile Include="Core\Reflect\TestDiaMathsSerializers.cpp">
       <Filter>Core\Reflect</Filter>
     </ClCompile>
+    <ClCompile Include="Core\Reflect\TestDiaMathsSerializers2.cpp">
+      <Filter>Core\Reflect</Filter>
+    </ClCompile>
     <ClCompile Include="Core\Reflect\TestDiaCoreSerializers.cpp">
       <Filter>Core\Reflect</Filter>
     </ClCompile>
@@ -637,6 +640,9 @@
       <Filter>Editor</Filter>
     </ClCompile>
     <!-- Geometry3D -->
+    <ClCompile Include="Geometry3D\TestDiaGeometry3DSerializers.cpp">
+      <Filter>Geometry3D</Filter>
+    </ClCompile>
     <ClCompile Include="Geometry3D\TestSpatialGrid3DStress.cpp">
       <Filter>Geometry3D</Filter>
     </ClCompile>
@@ -677,6 +683,9 @@
       <Filter>Geometry3D</Filter>
     </ClCompile>
     <!-- Geometry2D -->
+    <ClCompile Include="Geometry2D\TestDiaGeometry2DSerializers.cpp">
+      <Filter>Geometry2D</Filter>
+    </ClCompile>
     <ClCompile Include="Geometry2D\TestGeometry2DVisualDebuggerStack.cpp">
       <Filter>Geometry2D</Filter>
     </ClCompile>
@@ -760,6 +769,9 @@
       <Filter>RigidBody2D</Filter>
     </ClCompile>
     <ClCompile Include="RigidBody2D\TestConservationLaws.cpp">
+      <Filter>RigidBody2D</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody2D\TestDiaRigidBody2DSerializers.cpp">
       <Filter>RigidBody2D</Filter>
     </ClCompile>
     <!-- DiaMetrics -->
@@ -906,6 +918,9 @@
       <Filter>SoftBody2D</Filter>
     </ClCompile>
     <!-- Rig2D -->
+    <ClCompile Include="Rig2D\TestDiaRig2DSerializers.cpp">
+      <Filter>Rig2D</Filter>
+    </ClCompile>
     <ClCompile Include="Rig2D\TestRig2DGolden.cpp">
       <Filter>Rig2D</Filter>
     </ClCompile>
@@ -967,6 +982,9 @@
     <ClCompile Include="IK\TestIK2DVisualDebuggerStack.cpp">
       <Filter>IK2D</Filter>
     </ClCompile>
+    <ClCompile Include="IK\TestDiaIK2DSerializers.cpp">
+      <Filter>IK2D</Filter>
+    </ClCompile>
     <!-- StateMachine -->
     <ClCompile Include="StateMachine\TestFlatStateMachine.cpp">
       <Filter>StateMachine</Filter>
@@ -1015,6 +1033,9 @@
       <Filter>Animation2D</Filter>
     </ClCompile>
     <ClCompile Include="Animation2D\IntegrationTests.cpp">
+      <Filter>Animation2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation2D\TestDiaAnimation2DSerializers.cpp">
       <Filter>Animation2D</Filter>
     </ClCompile>
     <!-- DiaAssetRuntime -->

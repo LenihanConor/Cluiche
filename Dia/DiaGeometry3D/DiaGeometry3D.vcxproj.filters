@@ -60,6 +60,7 @@
     <ClInclude Include="Testing\Geometry3DShapeFactory.h">
       <Filter>Testing</Filter>
     </ClInclude>
+    <ClInclude Include="DiaGeometry3DSerializers.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Shapes\AABB.cpp">

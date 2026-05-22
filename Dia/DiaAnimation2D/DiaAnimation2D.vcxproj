@@ -57,6 +57,7 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="DiaAnimation2DSerializers.h" />
     <ClInclude Include="SpringNodeDef.h" />
     <ClInclude Include="SpringChainDef.h" />
     <ClInclude Include="SpringChain.h" />

@@ -21,6 +21,9 @@ namespace Dia
 			Dia::Maths::Vector2D CalculateCenter() const;
 
 		private:
+			template<class Archive>
+			friend void serialize(Archive& ar, ConvexPolygon& obj, unsigned version);
+
 			Dia::Maths::Vector2D mVertices[kMaxVertices];
 			int mVertexCount;
 		};

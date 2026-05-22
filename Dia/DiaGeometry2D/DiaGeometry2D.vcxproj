@@ -84,6 +84,7 @@
     <ClInclude Include="Spatial\ISpatialGridSerializer.h" />
     <ClInclude Include="Spatial\JsonSpatialGridSerializer.h" />
     <ClInclude Include="Random\Random.h" />
+    <ClInclude Include="DiaGeometry2DSerializers.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Shapes\IntersectionClassify.cpp" />

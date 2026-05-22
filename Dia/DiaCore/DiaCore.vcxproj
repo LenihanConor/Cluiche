@@ -149,7 +149,6 @@
     <ClInclude Include="Reflect\ContainerSpecializations.h" />
     <ClInclude Include="Reflect\PolymorphicRegistry.h" />
     <ClInclude Include="Reflect\FieldAttributes.h" />
-    <ClInclude Include="Reflect\DiaMathsSerializers.h" />
     <ClInclude Include="Reflect\DiaCoreSerializers.h" />
     <ClInclude Include="Strings\String.h" />
     <ClInclude Include="Strings\String1024.h" />

@@ -217,6 +217,9 @@ namespace Dia
 			void				LookAt(const Vector2D& target);
 
 		private:
+			template<class Archive>
+			friend void serialize(Archive& ar, Transform2D& obj, unsigned version);
+
 			Vector2D			mLocalPosition;
 			Angle				mLocalRotation;
 			Vector2D			mLocalScale;

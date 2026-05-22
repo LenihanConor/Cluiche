@@ -32,6 +32,7 @@
 // =============================================================================
 
 #include "DiaCore/Reflect/ReflectMacros.h"
+#include "DiaCore/CRC/StringCRC.h"
 #include "DiaCore/Strings/String8.h"
 #include "DiaCore/Strings/String32.h"
 #include "DiaCore/Strings/String64.h"
@@ -42,6 +43,23 @@
 #include "DiaCore/FilePath/PathStoreConfig.h"
 
 namespace Dia::Core {
+
+// -----------------------------------------------------------------------------
+// StringCRC  — serialized as a string (stores original text, max 64 chars).
+//   On write: emits AsChar() as a JSON string.
+//   On read:  reconstructs via operator=(const char*) through a String64 relay.
+// -----------------------------------------------------------------------------
+template<class Archive>
+void serialize(Archive& ar, StringCRC& obj, unsigned /*version*/ = 1u) {
+    Dia::Core::Containers::String64 relay;
+    if (ar.IsWriting()) {
+        relay = obj.AsChar();
+    }
+    ar & Dia::Reflect::named("value", relay);
+    if (ar.IsReading()) {
+        obj = relay.AsCStr();
+    }
+}
 
 // -----------------------------------------------------------------------------
 // AliasPathConfigTuple  — mAlias (String32), mPath (Path::String = String256)

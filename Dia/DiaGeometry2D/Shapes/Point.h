@@ -19,6 +19,9 @@ namespace Dia
 			void SetPosition(const Dia::Maths::Vector2D& position);
 
 		private:
+			template<class Archive>
+			friend void serialize(Archive& ar, Point& obj, unsigned version);
+
 			Dia::Maths::Vector2D mPosition;
 		};
 	}

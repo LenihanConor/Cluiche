@@ -58,6 +58,7 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="DiaRigidBody2DSerializers.h" />
     <ClInclude Include="Bodies\BodyType.h" />
     <ClInclude Include="Bodies\Body2DBase.h" />
     <ClInclude Include="Bodies\PointBody2D.h" />

@@ -82,6 +82,7 @@
     <ClInclude Include="Transform\Transform2D.h" />
     <ClInclude Include="Transform\Transform3D.h" />
     <ClInclude Include="Quaternion\Quaternion.h" />
+    <ClInclude Include="DiaMathsSerializers.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Vector\Vector2D.cpp" />

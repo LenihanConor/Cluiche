@@ -219,5 +219,6 @@
     <ClInclude Include="Testing\ShapeFactory.h">
       <Filter>Testing</Filter>
     </ClInclude>
+    <ClInclude Include="DiaGeometry2DSerializers.h" />
   </ItemGroup>
 </Project>

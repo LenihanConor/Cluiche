@@ -89,6 +89,9 @@ namespace Dia
             static Angle FromRadians(const float radians);
 
         private:
+            template<class Archive>
+            friend void serialize(Archive& ar, Angle& obj, unsigned version);
+
             // Sets the angle value from degrees
             void SetFromDegrees(const float degrees);
 
