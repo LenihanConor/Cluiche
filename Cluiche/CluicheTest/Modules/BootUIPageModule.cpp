@@ -1,7 +1,9 @@
 #include "Modules/BootUIPageModule.h"
+#include "Modules/TestStages/TestResultsRegistry.h"
 
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaApplicationFlow/Application.h>
+#include <DiaApplicationFlow/IApplicationControl.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 
@@ -25,10 +27,11 @@ Dia::ApplicationFlow::StartResult BootUIPageModule::DoStart()
 
     if (!mLoaded)
     {
+        CacheNavigableStages();
         mPage.InitializePage();
         ui->LoadPage(mPage);
         mLoaded = true;
-        DIA_LOG_INFO("Application", "BootUIPageModule loaded bootscreen page");
+        DIA_LOG_INFO("Application", "BootUIPageModule loaded bootscreen page (%u stages)", mNavigableStages.Size());
     }
 
     DIA_LOG_INFO("Application", "BootUIPageModule DoStart exit");
@@ -57,11 +60,51 @@ Dia::ApplicationFlow::StopResult BootUIPageModule::DoStop()
 
 void BootUIPageModule::RequestLaunchLevel(const Dia::Core::Containers::String64& levelName)
 {
-    DIA_LOG_INFO("Application", "BootUIPageModule: Application_LaunchLevel('%s') -> TransitionTo('DummyStage')",
-        levelName.AsCStr());
+    DIA_LOG_INFO("Application", "BootUIPageModule: Application_LaunchLevel('%s') -> TransitionTo('%s')",
+        levelName.AsCStr(), levelName.AsCStr());
 
-    // v2 maps v1's "levelName" to a stage id. Only DummyStage exists today.
-    TransitionTo(Dia::Core::StringCRC("DummyStage"));
+    TransitionTo(Dia::Core::StringCRC(levelName.AsCStr()));
+}
+
+void BootUIPageModule::CacheNavigableStages()
+{
+    mNavigableStages.RemoveAll();
+    GetApplication()->GetStageTransitions(Dia::Core::StringCRC("Boot"), mNavigableStages);
+}
+
+int BootUIPageModule::GetNavigableStageCount()
+{
+    return static_cast<int>(mNavigableStages.Size());
+}
+
+Dia::Core::Containers::String64 BootUIPageModule::GetNavigableStageName(int index)
+{
+    if (index >= 0 && index < static_cast<int>(mNavigableStages.Size()))
+        return Dia::Core::Containers::String64(mNavigableStages[index].AsChar());
+    return Dia::Core::Containers::String64("");
+}
+
+Dia::Core::Containers::String64 BootUIPageModule::GetStageStatus(int index)
+{
+    if (index < 0 || index >= static_cast<int>(mNavigableStages.Size()))
+        return Dia::Core::Containers::String64("-");
+
+    if (!CluicheTest::TestResultsRegistry::IsCreated())
+        return Dia::Core::Containers::String64("-");
+
+    const CluicheTest::StageResult* result =
+        CluicheTest::TestResultsRegistry::GetInstance().GetResult(mNavigableStages[index]);
+    if (!result)
+        return Dia::Core::Containers::String64("-");
+
+    switch (result->state)
+    {
+    case CluicheTest::StageResult::State::kPassed:  return Dia::Core::Containers::String64("passed");
+    case CluicheTest::StageResult::State::kFailed:  return Dia::Core::Containers::String64("failed");
+    case CluicheTest::StageResult::State::kTimeout: return Dia::Core::Containers::String64("timeout");
+    case CluicheTest::StageResult::State::kRunning: return Dia::Core::Containers::String64("running");
+    default:                                        return Dia::Core::Containers::String64("-");
+    }
 }
 
 const Dia::Core::StringCRC BootUIPageModule::kTypeId("BootUIPageModule");

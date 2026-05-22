@@ -2,6 +2,7 @@
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include "Pages/LaunchUIPage.h"
 #include "Modules/UIModule.h"
 
@@ -20,8 +21,11 @@ public:
     static const Dia::Core::StringCRC kTypeId;
     explicit BootUIPageModule(const Dia::Core::StringCRC& instanceId);
 
-    // LaunchUIPageExternalInterface — called from Application_LaunchLevel JS.
+    // LaunchUIPageExternalInterface
     void RequestLaunchLevel(const Dia::Core::Containers::String64& levelName) override;
+    int GetNavigableStageCount() override;
+    Dia::Core::Containers::String64 GetNavigableStageName(int index) override;
+    Dia::Core::Containers::String64 GetStageStatus(int index) override;
 
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
@@ -29,9 +33,13 @@ protected:
     Dia::ApplicationFlow::StopResult DoStop() override;
 
 private:
+    void CacheNavigableStages();
+
     Dia::ApplicationFlow::ModuleRef<UIModule> mUI{this};
     Cluiche::LaunchUIPage mPage{this};
     bool mLoaded = false;
+
+    Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16> mNavigableStages;
 };
 
 } } // namespace Cluiche::AppFlow

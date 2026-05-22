@@ -4,6 +4,7 @@
 #include <DiaApplicationFlow/Manifest/ManifestComposerV2.h>
 #include <DiaApplicationFlow/Manifest/ManifestValidatorV2.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
+#include "Modules/TestStages/TestResultsRegistry.h"
 
 #include <DiaCore/FilePath/PathStore.h>
 #include <DiaCore/FilePath/Path.h>
@@ -122,12 +123,16 @@ int main(int argc, const char* argv[])
         return 1;
     }
 
+    // Create session-scoped test results registry
+    CluicheTest::TestResultsRegistry::Create();
+
     // Create and run application
     Dia::ApplicationFlow::Application app(manifest, registry);
 
     if (!app.Start())
     {
         printf("Application failed to start\n");
+        CluicheTest::TestResultsRegistry::Destroy();
         return 1;
     }
 
@@ -139,5 +144,6 @@ int main(int argc, const char* argv[])
         // MainPU runs inline here. SimPU and RenderPU run on dedicated threads.
     }
 
+    CluicheTest::TestResultsRegistry::Destroy();
     return 0;
 }

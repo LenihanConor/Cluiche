@@ -65,6 +65,10 @@ namespace Dia { namespace ApplicationFlow {
         // begins stopping every active module.
         void RequestShutdown() override;
 
+        // IApplicationControl — read-only stage graph query.
+        void GetStageTransitions(const Dia::Core::StringCRC& stage,
+            Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16>& out) const override;
+
         // IApplicationControl — main-thread-only; register/unregister transition guards.
         bool RegisterTransitionGuard(Module* owner, TransitionGuardFn fn) override;
         void UnregisterTransitionGuards(Module* owner) override;

@@ -16,6 +16,9 @@ namespace Cluiche
 	{
 	public:
 		virtual void RequestLaunchLevel(const Dia::Core::Containers::String64& levelName) = 0;
+		virtual int GetNavigableStageCount() = 0;
+		virtual Dia::Core::Containers::String64 GetNavigableStageName(int index) = 0;
+		virtual Dia::Core::Containers::String64 GetStageStatus(int index) = 0;
 	};
 
 	////////////////////////////////////////////////////
@@ -32,6 +35,9 @@ namespace Cluiche
 		void InitializePage();
 
 		void LaunchLevel(const Dia::UI::BoundMethodArgs& arg);
+		Dia::UI::BoundMethodValue GetStageCount(const Dia::UI::BoundMethodArgs& arg);
+		Dia::UI::BoundMethodValue GetStageName(const Dia::UI::BoundMethodArgs& arg);
+		Dia::UI::BoundMethodValue GetStageStatus(const Dia::UI::BoundMethodArgs& arg);
 
 	private:
 		LaunchUIPage(): mPhaseInterface(nullptr) {}

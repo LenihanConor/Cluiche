@@ -68,6 +68,7 @@ namespace Dia { namespace Automation {
         void ResetHeartbeat();
         void OnDisconnect();
         void TickHeartbeat(float deltaTime);
+        bool IsHeartbeatEnabled() const { return mHeartbeatEnabled; }
 
         // --- Command Registration ---
         // Call once after Application::Start(). Registers dia.automation.* commands

@@ -23,7 +23,9 @@ files = [
   { src = "Cluiche/Assets/CluicheTest/cluichetest.diagame", dest = "$(OutDir)Data/Manifests/" },
   { src = "Cluiche/Assets/CluicheTest/cluichetest.diaobservation", dest = "$(OutDir)Data/Manifests/" },
   { src = "Cluiche/Assets/Stages/DummyStage/Misc/ApplicationFlow/*", dest = "$(OutDir)Data/stages/DummyStage/Misc/ApplicationFlow/" },
-  { src = "Cluiche/Assets/Stages/DummyStage/dummy_stage.diastage", dest = "$(OutDir)Data/stages/DummyStage/" }
+  { src = "Cluiche/Assets/Stages/DummyStage/dummy_stage.diastage", dest = "$(OutDir)Data/stages/DummyStage/" },
+  { src = "Cluiche/Assets/Stages/RigidBody2DStage/Misc/ApplicationFlow/*", dest = "$(OutDir)Data/stages/RigidBody2DStage/Misc/ApplicationFlow/" },
+  { src = "Cluiche/Assets/Stages/RigidBody2DStage/rigidbody2d_stage.diastage", dest = "$(OutDir)Data/stages/RigidBody2DStage/" }
 ]
 
 [targets.cluichetest]
@@ -31,7 +33,7 @@ project = "Cluiche/CluicheTest/CluicheTest.vcxproj"
 stages = ["compile-code", "build-assets", "deploy"]
 app_name = "CluicheTest"
 catalogue_manifest = "Cluiche/Assets/CluicheTest/assets.catalogue.json"
-asset_stages = ["stage.global", "stage.dummy_stage"]
+asset_stages = ["stage.global", "stage.dummy_stage", "stage.rigidbody2d_stage"]
 
 [targets.cluichetest.build_deps]
 protobuf = true
@@ -42,7 +44,8 @@ files = [
   { src = "Dia/DiaUIUltralight/Deploy/*", dest = "$(OutDir)" },
   { src = "Cluiche/Assets/CluicheTest/cluichetest.diagame", dest = "$(OutDir)assets/" },
   { src = "Cluiche/Assets/CluicheTest/cluichetest.diaobservation", dest = "$(OutDir)assets/" },
-  { src = "Cluiche/Assets/Stages/DummyStage/dummy_stage.diastage", dest = "$(OutDir)assets/stages/DummyStage/" }
+  { src = "Cluiche/Assets/Stages/DummyStage/dummy_stage.diastage", dest = "$(OutDir)assets/stages/DummyStage/" },
+  { src = "Cluiche/Assets/Stages/RigidBody2DStage/rigidbody2d_stage.diastage", dest = "$(OutDir)assets/stages/RigidBody2DStage/" }
 ]
 
 [targets.cluicheeditor]

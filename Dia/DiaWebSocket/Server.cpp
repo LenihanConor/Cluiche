@@ -35,7 +35,7 @@ namespace Dia
 			Dia::Core::Containers::DynamicArrayC<Internal::QueuedEvent, 64> mIncomingQueue;
 			Dia::Core::Mutex mIncomingMutex;
 
-			Dia::Core::Containers::DynamicArrayC<Internal::OutgoingMessage, 64> mOutgoingQueue;
+			Dia::Core::Containers::DynamicArrayC<Internal::OutgoingMessage, 512> mOutgoingQueue;
 			Dia::Core::Mutex mOutgoingMutex;
 
 			int FindConnectionId(Internal::ConnectionHdl hdl)

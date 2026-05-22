@@ -1,14 +1,12 @@
 """pytest plugin for DiaAutomation E2E scenarios."""
 import json
-import shutil
 import subprocess
-import sys
 import time
 from pathlib import Path
 
 import pytest
 
-from orchestrator.client import DiaClient
+from client import DiaClient
 
 _APP_EXE_MAP = {
     "cluichetest": "Cluiche/bin/CluicheTest/{config}/x64/CluicheTest.exe",
@@ -31,7 +29,7 @@ def _resolve_exe(app: str, config: str, repo_root: Path) -> Path:
 
 @pytest.fixture(scope="session")
 def app_launcher(request):
-    """Launch the app via 'dia launch', wait for WebSocket readiness.
+    """Launch the app via subprocess, wait for WebSocket readiness.
 
     Graceful quit on teardown; force-kills if app does not exit within 5s.
     Session-scoped so a single process runs all scenarios in the suite.
@@ -123,7 +121,6 @@ def _collect_log_errors(config, plan: dict) -> list:
     if not sessions_dir.exists():
         return []
 
-    # Most recent session directory
     session_dirs = sorted(sessions_dir.iterdir(), key=lambda p: p.name, reverse=True)
     if not session_dirs:
         return []

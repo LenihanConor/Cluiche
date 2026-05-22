@@ -531,6 +531,24 @@ namespace Dia { namespace ApplicationFlow {
     }
 
     //--------------------------------------------------------------------------
+    // GetStageTransitions
+    //--------------------------------------------------------------------------
+
+    void Application::GetStageTransitions(const Dia::Core::StringCRC& stage,
+        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16>& out) const
+    {
+        for (unsigned int i = 0; i < mManifest.stages.Size(); ++i)
+        {
+            if (mManifest.stages[i].name == stage)
+            {
+                for (unsigned int t = 0; t < mManifest.stages[i].transitions.Size() && !out.IsFull(); ++t)
+                    out.Add(mManifest.stages[i].transitions[t]);
+                return;
+            }
+        }
+    }
+
+    //--------------------------------------------------------------------------
     // GetProcessingUnits
     //--------------------------------------------------------------------------
 
@@ -997,6 +1015,38 @@ namespace Dia { namespace ApplicationFlow {
                 return result;
             };
             Dia::API::RegisterCommandJson(reportCmd);
+        }
+        {
+            Dia::API::CommandInfoJson stagesCmd;
+            stagesCmd.name        = Dia::Core::StringCRC("dia.manifest.stages");
+            stagesCmd.description = "List stages navigable from Boot";
+            stagesCmd.category    = Dia::Core::StringCRC("dia.manifest");
+            stagesCmd.owner       = "DiaApplicationFlow";
+            stagesCmd.callback    = [this](const Json::Value&) -> Json::Value {
+                Json::Value result;
+                Json::Value stagesArr(Json::arrayValue);
+
+                const Dia::Core::StringCRC bootId("Boot");
+                for (unsigned int i = 0; i < mManifest.stages.Size(); ++i)
+                {
+                    const StageDeclaration& decl = mManifest.stages[i];
+                    bool reachableFromBoot = false;
+                    for (unsigned int t = 0; t < decl.transitions.Size(); ++t)
+                    {
+                        if (decl.transitions[t] == bootId)
+                        {
+                            reachableFromBoot = true;
+                            break;
+                        }
+                    }
+                    if (reachableFromBoot)
+                        stagesArr.append(decl.name.AsChar());
+                }
+
+                result["stages"] = stagesArr;
+                return result;
+            };
+            Dia::API::RegisterCommandJson(stagesCmd);
         }
     }
 

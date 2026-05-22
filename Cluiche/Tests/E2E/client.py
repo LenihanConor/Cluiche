@@ -69,10 +69,12 @@ class DiaClient:
                 pass
             self._ws = None
 
-    def send_command(self, command: str, params: dict = None) -> dict:
+    def send_command(self, command: str, params: dict = None, timeout: float = 30.0) -> dict:
         """Send a DiaAPI command; return the parsed payload on success.
 
         Raises AutomationError if the response contains success=false.
+        The server broadcasts observation data continuously, so this uses a
+        fast string-level pre-filter before JSON parsing to handle the flood.
         """
         if self._ws is None:
             raise RuntimeError("DiaClient is not connected")
@@ -86,26 +88,42 @@ class DiaClient:
         }
         self._ws.send(json.dumps(request))
 
-        # Read messages until we get the command response.
-        # Server pushes observation metrics/logs continuously — skip them.
-        deadline = time.time() + 15.0
+        deadline = time.time() + timeout
         while time.time() < deadline:
-            raw = self._ws.recv(timeout=10)
+            try:
+                raw = self._ws.recv(timeout=0.5)
+            except (TimeoutError, OSError):
+                continue
+            if "MESSAGE_TYPE_COMMAND_RESPONSE" not in raw:
+                continue
             try:
                 msg = json.loads(raw)
             except json.JSONDecodeError:
                 continue
-            if msg.get("type") == "MESSAGE_TYPE_COMMAND_RESPONSE":
-                resp = msg.get("command_response", {})
-                if not resp.get("success"):
-                    raise AutomationError(resp.get("message", "unknown error"))
-                return resp.get("payload", {})
+            if msg.get("type") != "MESSAGE_TYPE_COMMAND_RESPONSE":
+                continue
+            resp = msg.get("command_response", {})
+            if resp.get("command") != command:
+                continue
+            if not resp.get("success"):
+                raise AutomationError(resp.get("message", "unknown error"))
+            return resp.get("payload", {})
         raise TimeoutError(f"No command response received for '{command}'")
 
     # --- Helpers (thin wrappers over send_command) ---
 
-    def navigate_to(self, target: str) -> dict:
-        return self.send_command("dia.automation.navigate_to", {"target": target})
+    def navigate_to(self, target: str, wait: bool = True, timeout_s: float = 10.0) -> dict:
+        """Navigate to a stage. If wait=True, polls report() until the transition completes."""
+        result = self.send_command("dia.automation.navigate_to", {"target": target})
+        if wait:
+            deadline = time.time() + timeout_s
+            while time.time() < deadline:
+                r = self.report()
+                if r.get("stage") == target:
+                    return result
+                time.sleep(0.2)
+            raise TimeoutError(f"Stage transition to '{target}' did not complete within {timeout_s}s")
+        return result
 
     def quit(self) -> dict:
         try:
@@ -115,6 +133,25 @@ class DiaClient:
 
     def validate(self, checkpoint: str) -> dict:
         return self.send_command("dia.automation.validate", {"checkpoint": checkpoint})
+
+    def poll_checkpoint(self, checkpoint: str, timeout_s: float = 10.0, interval_s: float = 0.5) -> dict:
+        """Poll a checkpoint until it passes or timeout is reached.
+
+        Tolerates 'checkpoint not found' errors (module still starting).
+        """
+        deadline = time.time() + timeout_s
+        last_result = None
+        while time.time() < deadline:
+            try:
+                result = self.validate(checkpoint)
+            except AutomationError:
+                time.sleep(interval_s)
+                continue
+            if result.get("passed"):
+                return result
+            last_result = result
+            time.sleep(interval_s)
+        return last_result or {"passed": False, "message": "timeout"}
 
     def report(self) -> dict:
         return self.send_command("dia.app.report")

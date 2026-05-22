@@ -1,0 +1,9 @@
+{
+    "name": "RigidBody2DStage",
+    "manifest": "stages/RigidBody2DStage/Misc/ApplicationFlow/rigidbody2d_stage.diaapp",
+    "config": {
+        "path_aliases": {
+            "stage_root": "."
+        }
+    }
+}

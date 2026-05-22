@@ -31,6 +31,16 @@
       ]
     },
     {
+      "id": "stage.rigidbody2d_stage",
+      "type": "stage",
+      "source_path": "../Stages/RigidBody2DStage/rigidbody2d_stage.stage.json",
+      "scope": "global",
+      "tags": ["misc"],
+      "references": [
+        { "type": "contains", "target": "manifest.rigidbody2d_stage" }
+      ]
+    },
+    {
       "id": "manifest.cluiche_main",
       "type": "manifest",
       "source_path": "Global/misc/ApplicationFlow/cluiche_main.diaapp",
@@ -104,6 +114,14 @@
       "scope": "stage",
       "stage_name": "DummyStage",
       "tags": ["World"]
+    },
+    {
+      "id": "manifest.rigidbody2d_stage",
+      "type": "manifest",
+      "source_path": "../Stages/RigidBody2DStage/Misc/ApplicationFlow/rigidbody2d_stage.diaapp",
+      "scope": "stage",
+      "stage_name": "RigidBody2DStage",
+      "tags": ["misc/ApplicationFlow"]
     }
   ]
 }
