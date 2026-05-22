@@ -36,6 +36,7 @@ namespace Dia
 				const char* GetDescription() const override { return "Live asset runtime state inspector"; }
 				const char* GetUIPath() const override { return "dia://plugins/assetruntimeeditor/index.html"; }
 				Dia::Editor::LayoutMode GetLayoutMode() const override { return Dia::Editor::LayoutMode::kDockable; }
+				Dia::Editor::EditorToolbarItem GetToolbarItem() const override { Dia::Editor::EditorToolbarItem item = Dia::Editor::IEditorPlugin::GetToolbarItem(); item.pinned = true; return item; }
 
 				void OnLoad(const Dia::Editor::EditorPluginContext& context) override;
 				void OnUnload() override;
