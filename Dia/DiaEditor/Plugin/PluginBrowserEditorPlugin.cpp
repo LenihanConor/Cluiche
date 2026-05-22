@@ -5,6 +5,7 @@
 #include "DiaEditor/Plugin/IPluginLoader.h"
 #include "DiaEditor/UI/WebUIBridge.h"
 
+#include <DiaAPI/CommandRegistry/CommandRegistry.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <string>
@@ -35,6 +36,8 @@ namespace Dia
 						for (unsigned int i = 0; i < registry.GetRegisteredCount(); ++i)
 						{
 							const Dia::Core::StringCRC& typeId = registry.GetRegisteredTypeId(i);
+							if (!registry.IsInScopeFilter(typeId))
+								continue;
 							EditorPluginInfo info = registry.GetFactory(i)->GetPluginInfo();
 
 							Json::Value entry;
@@ -140,6 +143,53 @@ namespace Dia
 					});
 
 				DIA_LOG_INFO("Editor", "PluginBrowserEditorPlugin: Registered request handlers");
+			}
+
+			{
+				Dia::Editor::EditorPluginRegistry& registry = Dia::Editor::EditorPluginRegistry::Instance();
+				for (unsigned int i = 0; i < registry.GetRegisteredCount(); ++i)
+				{
+					const Dia::Core::StringCRC typeId = registry.GetRegisteredTypeId(i);
+					IPluginLoader* loader = mPluginLoader;
+
+					// plugin.load.<typeId>
+					{
+						std::string loadName = std::string("plugin.load.") + typeId.AsChar();
+						Dia::API::CommandInfoJson loadCmd;
+						loadCmd.name = Dia::Core::StringCRC(loadName.c_str());
+						loadCmd.description = "Load plugin";
+						loadCmd.category = Dia::Core::StringCRC("plugin");
+						loadCmd.owner = "PluginBrowser";
+						loadCmd.callback = [loader, typeId](const Json::Value&) -> Json::Value {
+							if (loader != nullptr)
+							{
+								std::string instanceId = std::string(typeId.AsChar()) + "_palette";
+								loader->LoadPlugin(typeId, Dia::Core::StringCRC(instanceId.c_str()));
+							}
+							return Json::Value(Json::objectValue);
+						};
+						Dia::API::RegisterCommandJson(loadCmd);
+					}
+
+					// plugin.unload.<typeId>
+					{
+						std::string unloadName = std::string("plugin.unload.") + typeId.AsChar();
+						Dia::API::CommandInfoJson unloadCmd;
+						unloadCmd.name = Dia::Core::StringCRC(unloadName.c_str());
+						unloadCmd.description = "Unload plugin";
+						unloadCmd.category = Dia::Core::StringCRC("plugin");
+						unloadCmd.owner = "PluginBrowser";
+						unloadCmd.callback = [loader, typeId](const Json::Value&) -> Json::Value {
+							if (loader != nullptr)
+							{
+								loader->UnloadPlugin(typeId);
+							}
+							return Json::Value(Json::objectValue);
+						};
+						Dia::API::RegisterCommandJson(unloadCmd);
+					}
+				}
+				DIA_LOG_INFO("Editor", "PluginBrowserEditorPlugin: Registered plugin load/unload commands");
 			}
 		}
 

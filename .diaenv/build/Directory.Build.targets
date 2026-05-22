@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!--
+    Override the repo-root Directory.Build.targets for all projects under .diaenv/build/.
+    - Skip RestoreExternals (bgfx sub-projects must not re-enter dia_cli env deps)
+    - Switch /Zi to /Z7: embeds debug info in .obj files instead of a shared PDB.
+      This eliminates C1033 PDB contention when /MP compiles many files in parallel.
+      We never debug bgfx internals, so no shared PDB is needed.
+  -->
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+</Project>

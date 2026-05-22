@@ -18,7 +18,7 @@
       Text="DiaEnv: deps.json not found at $(MSBuildThisFileDirectory)deps.json — skipping RestoreExternals. Run `dia env deps` to initialise." />
 
     <Exec
-      Condition="Exists('$(_DepsJson)')"
+      Condition="Exists('$(_DepsJson)') AND !$([System.String]::Copy('$(MSBuildProjectDirectory)').Contains('.diaenv'))"
       Command=".venv\Scripts\python.exe -m dia_cli env deps --quiet"
       ConsoleToMSBuild="true"
       WorkingDirectory="$(_DiaCLIDir)"

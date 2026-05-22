@@ -271,7 +271,7 @@ def run(config: PipelineConfig, target: str, build_config: str, force: bool, rep
         f"/p:Configuration={build_config}",
         f"/p:Platform={platform}",
         f"/p:SolutionDir={solution_dir}",
-        "/m",
+        "/m:2",
         "/v:minimal",
         "/nologo",
     ]
@@ -283,7 +283,7 @@ def run(config: PipelineConfig, target: str, build_config: str, force: bool, rep
     if output:
         output.log(system=system, level="info", message=f"msbuild {project_rel} [{build_config}|{platform}]", stage=stage)
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=1800)
         if output and result.stdout:
             for line in result.stdout.strip().splitlines():
                 stripped = line.strip()
@@ -309,7 +309,7 @@ def run(config: PipelineConfig, target: str, build_config: str, force: bool, rep
             output.step_failed(system=system, stage=stage, step="msbuild", error=err)
         return 1
     except subprocess.TimeoutExpired:
-        err = "msbuild timed out after 10 minutes"
+        err = "msbuild timed out after 30 minutes"
         logger.error(f"compile-code: {err}")
         if output:
             output.step_failed(system=system, stage=stage, step="msbuild", error=err)

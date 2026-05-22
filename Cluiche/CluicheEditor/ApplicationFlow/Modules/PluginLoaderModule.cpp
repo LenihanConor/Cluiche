@@ -76,6 +76,14 @@ namespace Cluiche
 					{
 						LoadManifest(model.GetManifestPath(i));
 					}
+
+					if (manifestCount > 0)
+					{
+						Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, Dia::Editor::EditorPluginRegistry::kMaxManifests> active;
+						for (unsigned int i = 0; i < manifestCount; ++i)
+							active.Add(Dia::Core::StringCRC(model.GetManifestPath(i)));
+						Dia::Editor::EditorPluginRegistry::Instance().SetActiveManifests(active);
+					}
 				}
 				else
 				{
@@ -207,8 +215,8 @@ namespace Cluiche
 			DIA_ASSERT(manifestPath != nullptr, "PluginLoaderModule: manifest path must not be null");
 			DIA_LOG_INFO("Application", "PluginLoaderModule: Loading manifest '%s'", manifestPath);
 
-			struct LoadCtx { PluginLoaderModule* module; };
-			LoadCtx ctx{ this };
+			struct LoadCtx { PluginLoaderModule* module; const char* manifestPath; };
+			LoadCtx ctx{ this, manifestPath };
 
 			Dia::Editor::EditorManifestLoader::Load(manifestPath,
 				[](const Dia::Editor::EditorManifestLoader::PluginEntry& entry, void* userData)
@@ -217,6 +225,9 @@ namespace Cluiche
 					c->module->LoadPlugin(
 						Dia::Core::StringCRC(entry.typeId),
 						Dia::Core::StringCRC(entry.instanceId));
+					Dia::Editor::EditorPluginRegistry::Instance().TagPluginManifest(
+						Dia::Core::StringCRC(entry.typeId),
+						Dia::Core::StringCRC(c->manifestPath));
 				},
 				&ctx);
 		}
@@ -225,7 +236,7 @@ namespace Cluiche
 		{
 			if (IsPluginTypeLoaded(typeId))
 			{
-				DIA_LOG_WARNING("Application", "PluginLoaderModule::LoadPlugin: plugin type already loaded, skipping");
+				DIA_LOG_INFO("Application", "PluginLoaderModule::LoadPlugin: '%s' already loaded, skipping", typeId.AsChar());
 				return;
 			}
 
