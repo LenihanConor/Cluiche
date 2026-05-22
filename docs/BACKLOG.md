@@ -27,22 +27,23 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | Feature | Spec | System |
 |---------|------|--------|
 | per-app-bin-layout | [per-app-bin-layout.md](specs/features/dia/diapipeline/per-app-bin-layout.md) | DiaPipeline ✅ |
+| ~~ToolbarPanelSwitcher~~ | **Done** (2026-05-22) — full-name pills + `⋯ +N` overflow dropdown, `ProjectContextButton` moved right. |
 
 ---
 
 
 ### Entity System Stack (build in dependency order)
 
-System specs and the foundation feature are all `Approved`. Each system's child feature specs are still `Planned/TBD` and need `/spec-feature` before implementation. Strict order: HandlePool → remove old IComponent → DiaMailbox → DiaEntity. Research: `docs/research/entity_system/summary.md`.
+All specs Approved. Ready to implement. Plan: `docs/specs/systems/dia/diaentity.plan.md`.
 
 | # | Item | Spec | What's next |
 |---|------|------|-------------|
-| 1 | HandlePool\<T\> | [handle-pool.md](specs/features/dia/diacore/handle-pool.md) | **Done** (2026-05-20). Foundation for everything below. |
-| 2 | Remove old IComponent infrastructure | — | **Done** (2026-05-20). `Architecture/Components/` deleted, `SkeletonComponent` + `StateMachineComponent` migrated to plain classes, `TestComponent.cpp` deleted, 4818 tests pass. |
-| 3 | DiaMailbox features (5 features) | [diamailbox.md](specs/systems/dia/diamailbox.md) | **Done** (2026-05-21). All 5 features implemented; 62/62 tests GREEN. DIA_LOG_WARNING + dia.mailbox.{sent,dropped,drained} metrics added. |
-| 4 | DiaEntity features (11 features) | [diaentity.md](specs/systems/dia/diaentity.md) | System Approved. Need `/spec-feature` in implementation order: foundation, reflection, blueprint-loader, component-deps-and-refs, hierarchy, mailbox-router, query-system, editor-inspection, update-loop, module-and-build (#2 remove-old-icomponent is item #2 above). |
-| 5 | EntityModule adapter (CluicheTest) | TBD | Needs `/spec-feature` under CluicheTest — application-level adapter that owns a Realm and plugs into DiaApplicationFlow v2 stage lifecycle (DoStart loads blueprints, returns kLoading until assets resolve, kReady; stage transition destroys Realm). Lives in CluicheTest, not in DiaEntity. |
-| 6 | PD-003 / AD-005 Supersede amendment | TBD | After DiaEntity ships, amend platform decision PD-003 and app decision AD-005 (both reference the old IComponent model) to Superseded, pointing to DiaEntity as the new authority. Per SD-ENT-021. Housekeeping. |
+| 1 | HandlePool\<T\> | [handle-pool.md](specs/features/dia/diacore/handle-pool.md) | **Done** (2026-05-20). |
+| 2 | Remove old IComponent infrastructure | — | **Done** (2026-05-20). 4818 tests pass. |
+| 3 | DiaMailbox (5 features) | [diamailbox.md](specs/systems/dia/diamailbox.md) | **Done** (2026-05-21). 62/62 tests GREEN. |
+| 4 | DiaEntity (10 features) | [diaentity.md](specs/systems/dia/diaentity.md) | **All 10 feature specs Approved** (2026-05-21). `Domain` rename from `Realm`. Implementation order: module-and-build → foundation → reflection → blueprint-loader → component-deps-and-refs → hierarchy → mailbox-router → query-system → update-loop → editor-inspection. Plan: [diaentity.plan.md](specs/systems/dia/diaentity.plan.md). |
+| 5 | EntityModule (CluicheTest) | [entity-module.md](specs/features/cluichetest/applicationflow/entity-module.md) | **Approved** (2026-05-21). SimPU module — owns Domain, loads blueprint via AssetService, drives Update+EndOfFrame. Implement after DiaEntity ships. |
+| 6 | PD-003 / AD-005 Supersede amendment | — | **Done** (2026-05-21). Both marked Superseded in platform and app specs. |
 
 ---
 
@@ -63,24 +64,46 @@ System specs and the foundation feature are all `Approved`. Each system's child 
 
 Architecture redesigned 2026-05-20. Source of truth: **[docs/research/e2e_testing/design-decisions.md](research/e2e_testing/design-decisions.md)**.
 
-Replaces previous DiaTestHarness + DiaE2E + Harness Core + Smoke Test Scenario + DiaAPI quit command items. The old `docs/specs/systems/dia/diatestharness.md` and `docs/specs/features/dia/diatestharness/harness-core.md` are superseded.
+### Core Stack (Done)
 
-| # | Item | Type | Size | Depends on | Status |
+| # | Item | Status |
+|---|------|--------|
+| 0 | DiaAPI — JSON command path | **Done** (folded into #2) |
+| 1 | DiaApplicationFlow — [transition-guards](specs/features/dia/diaapplicationflow/transition-guards.md) | **Done** |
+| 2 | DiaApplicationFlow — [baseline-commands](specs/features/dia/diaapplicationflow/baseline-commands.md) | **Done** |
+| 3 | [DiaAutomation](specs/systems/dia/diaautomation.md) system + AutomationModule | **Done** |
+| 4 | [dia orchestrate](specs/features/dia/diacli/dia-orchestrate.md) CLI + pytest plugin | **Done** |
+| 5 | CluicheTest [smoke scenario](specs/features/cluichetest/cluichetestscenarios/smoke-scenario.md) | **Done** — `dia orchestrate` passes end-to-end |
+
+### Ready to Implement
+
+| # | Item | Spec | Size | Depends on | Status |
 |---|------|------|------|------------|--------|
-| 0 | DiaAPI — relax name validation to `[a-z0-9._-]+`; add JSON command path | Folded into item #2 | XS | — | Spec'd (part of baseline-commands) |
-| 1 | DiaApplicationFlow — [transition-guards](specs/features/dia/diaapplicationflow/transition-guards.md) | Done | S | — | **Done** |
-| 2 | DiaApplicationFlow — [baseline-commands](specs/features/dia/diaapplicationflow/baseline-commands.md) (`dia.app.quit`, `dia.app.report` + DiaAPI JSON path) | Done | XS | — | **Done** |
-| 3 | [DiaAutomation](specs/systems/dia/diaautomation.md) system + AutomationModule (CluicheGameBaseline) | Done — all feature specs created + implemented | M | 1, 2 | **Done** |
-| 4 | [dia orchestrate](specs/features/dia/diacli/dia-orchestrate.md) CLI + pytest plugin | Done | S | 3 | **Done** |
-| 5 | CluicheTest [smoke scenario](specs/features/cluichetest/cluichetestscenarios/smoke-scenario.md) (pytest) | Approved — ready to implement | XS | 4 | **Approved** |
-| 6 | CluicheTest [TestStages](specs/systems/cluichetest/teststages.md) system (RigidBody2D, EntityTest, … with checkpoints) | System Approved — individual stages need `/spec-feature` | M–L | 4 | **System Approved** |
-| 6b | Extract AutomationModuleBase from game AutomationModule into DiaAutomation | Refactor (evaluate shared base vs duplication from working code) | XS–S | 3 implemented | Deferred — decide from working code |
-| 7 | CluicheEditor EditorAutomationModule wiring + `IEditorPlugin::RegisterCheckpoints` | `/spec-feature` under CluicheEditor | S | 6b | Deferred — after 6b |
-| 8 | [Metric threshold assertions](specs/features/dia/diaautomation/metric-assertions.md) (pytest fixture + `dia.automation.get_metric`) | Approved — ready to implement | XS | 3 | **Approved** |
+| 8 | [Metric threshold assertions](specs/features/dia/diaautomation/metric-assertions.md) — `dia.automation.get_metric` + pytest `assert_metric` fixture | Approved | XS | 3 | **Approved** |
 
-**Implementation order:** 1 → 2 → 3 (feature specs needed) → 4 → 5+6+8 fan out. Items 6b+7 deferred until working code exists.
+### TestStages — Needs `/spec-feature` per stage
 
-Items 1+2 can run in parallel. Items 5, 6 (individual stages), and 8 can fan out once 4 is done.
+System spec: [teststages.md](specs/systems/cluichetest/teststages.md) (Approved). Pattern: one manifest stage per engine feature, one Module per stage, checkpoints as validation contract. Star topology: Boot → Stage → Boot.
+
+**Candidate stages** (build in any order — independent once pattern established):
+
+| Stage | Engine System | Validates | Checkpoint examples | Needs |
+|-------|--------------|-----------|---------------------|-------|
+| RigidBody2DStage | DiaRigidBody2D | Circle drop + settle detection, collision response | `rigid_body.circle_settled`, `rigid_body.collision_detected` | `/spec-feature` |
+| StateMachineStage | DiaStateMachine | State transitions, guard evaluation, event firing | `state_machine.reached_target`, `state_machine.guard_blocked` | `/spec-feature` |
+| Animation2DStage | DiaAnimation2D + DiaRig2D | Clip playback, pose validation, blend weights | `animation.clip_complete`, `animation.pose_matches` | `/spec-feature` |
+| SoftBody2DStage | DiaSoftBody2D | Rope/cloth stabilization, spring convergence | `soft_body.rope_settled` | `/spec-feature` |
+| GeometryStage | DiaGeometry2D | Intersection tests, spatial queries | `geometry.intersection_correct` | `/spec-feature` |
+| EntityTestStage | DiaEntity | Spawn, query, destroy, component lifecycle | `entity.count_correct`, `entity.hierarchy_valid` | DiaEntity implemented first |
+
+**First stage to build:** RigidBody2DStage — physics is already stable, no other system dependencies, clear pass/fail checkpoint (body settles). Proves the test-stage pattern works.
+
+### Deferred
+
+| # | Item | Notes |
+|---|------|-------|
+| 6b | Extract AutomationModuleBase into DiaAutomation | Evaluate from working code after 2+ apps use it |
+| 7 | CluicheEditor EditorAutomationModule | After 6b |
 
 ---
 
