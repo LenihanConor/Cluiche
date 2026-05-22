@@ -9,9 +9,10 @@
 #include "DiaApplicationFlow/LifecycleEvent.h"
 #include <DiaApplicationFlow/Streams/Event.h>
 #include <DiaCore/Time/TimeAbsolute.h>
-
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaAPI/CommandRegistry/CommandRegistry.h>
+#include <DiaCore/Json/external/json/json.h>
 
 namespace Dia { namespace ApplicationFlow {
 
@@ -156,6 +157,9 @@ namespace Dia { namespace ApplicationFlow {
         }
 
         mStarted = true;
+
+        // --- 3b. Register baseline DiaAPI commands --------------------------
+        RegisterBaselineCommands();
 
         // --- 4. Enter initial stage ------------------------------------------
         if (mManifest.initialStage.Value() != 0)
@@ -921,6 +925,81 @@ namespace Dia { namespace ApplicationFlow {
     }
 
     //--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
+    // RegisterBaselineCommands  (private)
+    //--------------------------------------------------------------------------
+
+    namespace {
+        static const char* ModuleStateToString(ModuleState state)
+        {
+            switch (state)
+            {
+                case ModuleState::kInactive:  return "Inactive";
+                case ModuleState::kStarting:  return "Starting";
+                case ModuleState::kActive:    return "Active";
+                case ModuleState::kStopping:  return "Stopping";
+                case ModuleState::kFailed:    return "Failed";
+            }
+            return "Unknown";
+        }
+    }
+
+    void Application::RegisterBaselineCommands()
+    {
+        {
+            Dia::API::CommandInfoJson quitCmd;
+            quitCmd.name        = Dia::Core::StringCRC("dia.app.quit");
+            quitCmd.description = "Request application shutdown";
+            quitCmd.category    = Dia::Core::StringCRC("dia.app");
+            quitCmd.owner       = "DiaApplicationFlow";
+            quitCmd.callback    = [this](const Json::Value&) -> Json::Value {
+                RequestShutdown();
+                return Json::Value(Json::objectValue);
+            };
+            Dia::API::RegisterCommandJson(quitCmd);
+        }
+        {
+            Dia::API::CommandInfoJson reportCmd;
+            reportCmd.name        = Dia::Core::StringCRC("dia.app.report");
+            reportCmd.description = "Report current application state";
+            reportCmd.category    = Dia::Core::StringCRC("dia.app");
+            reportCmd.owner       = "DiaApplicationFlow";
+            reportCmd.callback    = [this](const Json::Value&) -> Json::Value {
+                Json::Value result;
+                result["stage"] = GetCurrentStage().AsChar();
+
+                // Modules from all PUs
+                Json::Value modulesArr(Json::arrayValue);
+                for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
+                {
+                    const ProcessingUnitDeclaration& puDecl = mManifest.processingUnits[p];
+                    for (unsigned int m = 0; m < puDecl.modules.Size(); ++m)
+                    {
+                        const Module* mod = mProcessingUnits[p]->FindModule(puDecl.modules[m].instanceId);
+                        if (!mod) continue;
+                        Json::Value entry;
+                        entry["instanceId"] = puDecl.modules[m].instanceId.AsChar();
+                        entry["typeId"]     = puDecl.modules[m].typeId.AsChar();
+                        entry["state"]      = ModuleStateToString(mod->GetState());
+                        modulesArr.append(entry);
+                    }
+                }
+                result["modules"] = modulesArr;
+
+                TransitionInfo ti = GetTransitionInfo();
+                Json::Value transition;
+                transition["inProgress"]  = ti.inProgress;
+                transition["fromStage"]   = ti.fromStage.AsChar();
+                transition["toStage"]     = ti.toStage.AsChar();
+                transition["heldByGuards"] = ti.heldByGuards;
+                result["transition"] = transition;
+
+                return result;
+            };
+            Dia::API::RegisterCommandJson(reportCmd);
+        }
+    }
+
     // ModuleIsInStage  (private, static)
     //--------------------------------------------------------------------------
 

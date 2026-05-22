@@ -156,6 +156,11 @@ namespace Dia { namespace ApplicationFlow {
         // Returns true if any module is in kFailed state.
         bool AnyModuleFailed() const;
 
+        // Register dia.app.quit and dia.app.report with DiaAPI.
+        // Called once from Start() after manifest validation, before entering
+        // the initial stage (so commands are available before any module's DoStart).
+        void RegisterBaselineCommands();
+
         // Evaluate all registered guards.  Returns Allow if all return Allow (or
         // there are zero guards); returns Hold if any guard returns Hold.
         // Main-thread-only.  Updates mLastGuardCheckResult.

@@ -13,8 +13,19 @@ namespace Dia
 		Json::Value CommandDispatcher::ExecuteDiaAPICommand(const Dia::Core::StringCRC& commandName,
 		                                                    const Json::Value& argsJson)
 		{
-			Json::Value response;
+			// Try JSON-registered commands first (structured response path).
+			Json::Value jsonResult = Dia::API::ExecuteCommandJson(commandName, argsJson);
+			bool isCommandNotFound = !jsonResult["success"].asBool()
+				&& jsonResult["error"].isString()
+				&& jsonResult["error"].asString() == "command not found";
 
+			if (!isCommandNotFound)
+			{
+				return jsonResult;
+			}
+
+			// Fallback: legacy CLI-style command path.
+			Json::Value response;
 			const Dia::API::CommandInfo* cmdInfo = Dia::API::GetCommand(commandName);
 			if (!cmdInfo)
 			{

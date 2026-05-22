@@ -203,6 +203,7 @@
     <ClCompile Include="Python\TestScriptExecution.cpp" />
     <ClCompile Include="Python\TestIntegration.cpp" />
     <ClCompile Include="CLI\TestCommandRegistry.cpp" />
+    <ClCompile Include="CLI\TestCommandRegistryJson.cpp" />
     <ClCompile Include="CLI\TestArgumentParser.cpp" />
     <ClCompile Include="CLI\TestHelpSystem.cpp" />
     <ClCompile Include="CLI\TestEventSystem.cpp" />
@@ -222,6 +223,7 @@
     <ClCompile Include="ApplicationFlow\TestStreamTypeSerializer.cpp" />
     <ClCompile Include="ApplicationFlow\TestLifecycleEvents.cpp" />
     <ClCompile Include="ApplicationFlow\TestTransitionGuards.cpp" />
+    <ClCompile Include="ApplicationFlow\TestBaselineCommands.cpp" />
     <ClCompile Include="ApplicationFlow\TestApplicationE2E.cpp" />
     <ClCompile Include="UI\TestBoundMethod.cpp" />
     <ClCompile Include="UI\TestUIDataBuffer.cpp" />
