@@ -1,0 +1,8 @@
+{
+    "app": "cluichetest",
+    "port": 9876,
+    "config": "Debug",
+    "scenarios": [
+        "scenarios/cluichetest/boot/test_boot_smoke.py"
+    ]
+}

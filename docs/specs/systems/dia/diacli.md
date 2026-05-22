@@ -120,6 +120,7 @@ result = execute_api_command("validate-assets", args=["--path", "assets/"])
 | diaapi-bridge | Python bridge to C++ DiaAPI commands | Load C++ library, discover commands, execute via Python, graceful fallback | [diaapi-bridge.md](../../features/dia/diacli/diaapi-bridge.md) | 4 days | Done |
 | cli-output | Shared output + observability layer — rich terminal + NDJSON event log | `OutputContext`, streaming terminal format, NDJSON `last-run.ndjson`, `--no-color`, `--quiet`, `--log-json` | [cli-output.md](../../features/dia/diacli/cli-output.md) | 3 days | Done |
 | dia-fix | Automated test-fix loop via aider + local LLM | `dia fix <target>`, Ollama default, `--model` for cloud, `--filter` passthrough, `--max-iterations`, `--dry-run`, env verify/setup checks | [dia-fix.md](../../features/dia/diacli/dia-fix.md) | 3 days | Done |
+| dia-orchestrate | E2E automation CLI + pytest plugin | `dia orchestrate --suite=<app>/<name>`, DiaClient fixture, app_launcher, plan JSON, implicit assert_no_log_errors | [dia-orchestrate.md](../../features/dia/diacli/dia-orchestrate.md) | 5 days | Done |
 
 **Total Effort Estimate:** 15 days
 

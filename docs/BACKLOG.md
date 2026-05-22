@@ -71,7 +71,7 @@ Replaces previous DiaTestHarness + DiaE2E + Harness Core + Smoke Test Scenario +
 | 1 | DiaApplicationFlow — [transition-guards](specs/features/dia/diaapplicationflow/transition-guards.md) | Done | S | — | **Done** |
 | 2 | DiaApplicationFlow — [baseline-commands](specs/features/dia/diaapplicationflow/baseline-commands.md) (`dia.app.quit`, `dia.app.report` + DiaAPI JSON path) | Done | XS | — | **Done** |
 | 3 | [DiaAutomation](specs/systems/dia/diaautomation.md) system + AutomationModule (CluicheGameBaseline) | Done — all feature specs created + implemented | M | 1, 2 | **Done** |
-| 4 | [dia orchestrate](specs/features/dia/diacli/dia-orchestrate.md) CLI + pytest plugin | Approved — ready to implement | S | 3 | **Approved** |
+| 4 | [dia orchestrate](specs/features/dia/diacli/dia-orchestrate.md) CLI + pytest plugin | Done | S | 3 | **Done** |
 | 5 | CluicheTest [smoke scenario](specs/features/cluichetest/cluichetestscenarios/smoke-scenario.md) (pytest) | Approved — ready to implement | XS | 4 | **Approved** |
 | 6 | CluicheTest [TestStages](specs/systems/cluichetest/teststages.md) system (RigidBody2D, EntityTest, … with checkpoints) | System Approved — individual stages need `/spec-feature` | M–L | 4 | **System Approved** |
 | 6b | Extract AutomationModuleBase from game AutomationModule into DiaAutomation | Refactor (evaluate shared base vs duplication from working code) | XS–S | 3 implemented | Deferred — decide from working code |

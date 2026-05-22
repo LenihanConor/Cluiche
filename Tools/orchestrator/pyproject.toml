@@ -1,0 +1,21 @@
+[project]
+name = "dia-orchestrator"
+version = "0.1.0"
+requires-python = ">=3.9"
+dependencies = [
+    "websockets>=12.0",
+    "pytest>=7.0",
+    "click>=8.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest-mock",
+]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.backends.legacy:build"
+
+[tool.pytest.ini_options]
+testpaths = ["scenarios"]
