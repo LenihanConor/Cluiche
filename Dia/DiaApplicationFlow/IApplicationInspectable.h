@@ -40,6 +40,7 @@ namespace Dia { namespace ApplicationFlow {
         Dia::Core::StringCRC                                              toStage;
         Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32>   modulesStarting;
         Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32>   modulesStopping;
+        bool                                                              heldByGuards = false;
     };
 
     class IApplicationInspectable {

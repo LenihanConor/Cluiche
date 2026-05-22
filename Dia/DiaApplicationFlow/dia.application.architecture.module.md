@@ -42,7 +42,8 @@ responsibilities:
     array-order enforcement for declared dependencies (DEPENDENCY_ORDER error)
   - IApplicationInspectable — read-only runtime introspection for debug tools and tests; FindStream(StringCRC) → IStreamStore*
   - IApplicationControl — narrow control interface (TransitionTo, RequestShutdown,
-    GetCurrentStage) exposed to runtime module code via Module::GetApplication()
+    GetCurrentStage, RegisterTransitionGuard, UnregisterTransitionGuards) exposed to
+    runtime module code via Module::GetApplication()
 
 non_responsibilities:
   - Game-specific module implementations (belong in game application)

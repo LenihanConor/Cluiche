@@ -21,6 +21,7 @@ enum class LifecycleEventKind : unsigned int
     kRollbackAttempted         = 3,
     kShutdownRequested         = 4,
     kModuleStateChanged        = 5,
+    kStageTransitionHeldByGuard = 6,
 };
 
 struct LifecycleEvent

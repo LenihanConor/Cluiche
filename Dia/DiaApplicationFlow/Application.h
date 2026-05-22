@@ -16,6 +16,7 @@
 #include <DiaApplicationFlow/IApplicationInspectable.h>
 #include <DiaApplicationFlow/IApplicationControl.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Memory/UniquePtr.h>
 #include <atomic>
 #include <mutex>
@@ -63,6 +64,10 @@ namespace Dia { namespace ApplicationFlow {
         // IApplicationControl — thread-safe; stops all dedicated threads and
         // begins stopping every active module.
         void RequestShutdown() override;
+
+        // IApplicationControl — main-thread-only; register/unregister transition guards.
+        bool RegisterTransitionGuard(Module* owner, TransitionGuardFn fn) override;
+        void UnregisterTransitionGuards(Module* owner) override;
 
         // IApplicationInspectable — returns self (Application implements the interface directly).
         IApplicationInspectable* GetInspectable() { return this; }
@@ -151,6 +156,11 @@ namespace Dia { namespace ApplicationFlow {
         // Returns true if any module is in kFailed state.
         bool AnyModuleFailed() const;
 
+        // Evaluate all registered guards.  Returns Allow if all return Allow (or
+        // there are zero guards); returns Hold if any guard returns Hold.
+        // Main-thread-only.  Updates mLastGuardCheckResult.
+        GuardResult CheckGuards();
+
         // "In stage" predicate: module is in stage S if its stages array
         // contains S or contains StringCRC("all").
         static bool ModuleIsInStage(const ModuleDeclaration& decl,
@@ -209,6 +219,23 @@ namespace Dia { namespace ApplicationFlow {
         static constexpr unsigned int kMaxRollbackAttempts = 3;
         Dia::Core::StringCRC mLastRollbackStage;     // which stage we last rolled back in
         unsigned int         mRollbackAttempts = 0;  // consecutive attempts in that stage
+
+        // Transition guard registry — main-thread-only.
+        struct GuardEntry
+        {
+            Module*           owner;
+            TransitionGuardFn fn;
+        };
+        static constexpr unsigned int kMaxGuards = 8;
+        Dia::Core::Containers::DynamicArrayC<GuardEntry, kMaxGuards> mGuards;
+
+        // True after emitting kStageTransitionHeldByGuard for the current pending
+        // transition.  Reset when the transition is committed or replaced.
+        bool mPendingHeldByGuardEmitted = false;
+
+        // Cached result from the last CheckGuards() call; used by GetTransitionInfo()
+        // to avoid calling guards from an inspectable getter.
+        GuardResult mLastGuardCheckResult = GuardResult::Allow;
     };
 
 }} // namespace Dia::ApplicationFlow

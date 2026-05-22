@@ -221,6 +221,7 @@
     <ClCompile Include="ApplicationFlow\TestStreamTap.cpp" />
     <ClCompile Include="ApplicationFlow\TestStreamTypeSerializer.cpp" />
     <ClCompile Include="ApplicationFlow\TestLifecycleEvents.cpp" />
+    <ClCompile Include="ApplicationFlow\TestTransitionGuards.cpp" />
     <ClCompile Include="ApplicationFlow\TestApplicationE2E.cpp" />
     <ClCompile Include="UI\TestBoundMethod.cpp" />
     <ClCompile Include="UI\TestUIDataBuffer.cpp" />

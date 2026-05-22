@@ -10,8 +10,17 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 #include <DiaCore/CRC/StringCRC.h>
+#include <functional>
 
 namespace Dia { namespace ApplicationFlow {
+
+    class Module;
+
+    enum class GuardResult { Allow, Hold };
+
+    // Guard callback — idempotent, side-effect-free, called from main thread.
+    // Returns Hold to keep the pending transition waiting; Allow to let it proceed.
+    using TransitionGuardFn = std::function<GuardResult()>;
 
     class IApplicationControl {
     public:
@@ -27,6 +36,16 @@ namespace Dia { namespace ApplicationFlow {
 
         // Read-only: which stage is the Application currently in.
         [[nodiscard]] virtual Dia::Core::StringCRC GetCurrentStage() const = 0;
+
+        // Register a transition guard tied to `owner`.  The guard is called each
+        // frame while a transition is pending.  Returns false if registry is full
+        // (kMaxGuards exceeded — asserts in debug).
+        // Main-thread-only.  Call from DoStart; unregister from DoStop or destructor.
+        virtual bool RegisterTransitionGuard(Module* owner, TransitionGuardFn fn) = 0;
+
+        // Remove all guards registered against `owner`.  Idempotent.
+        // Main-thread-only.
+        virtual void UnregisterTransitionGuards(Module* owner) = 0;
     };
 
 }} // namespace Dia::ApplicationFlow

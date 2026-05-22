@@ -353,6 +353,8 @@ namespace Dia { namespace ApplicationFlow {
         }
 
         std::lock_guard<std::mutex> lock(mTransitionMutex);
+        if (mPendingStage != stageId)
+            mPendingHeldByGuardEmitted = false;  // new target — re-arm held-by-guard event
         mPendingStage = stageId;
         mHasPendingTransition.store(true);
     }
@@ -393,6 +395,59 @@ namespace Dia { namespace ApplicationFlow {
         {
             mProcessingUnits[p]->RequestStop();
         }
+    }
+
+    //--------------------------------------------------------------------------
+    // RegisterTransitionGuard
+    //--------------------------------------------------------------------------
+
+    bool Application::RegisterTransitionGuard(Module* owner, TransitionGuardFn fn)
+    {
+        DIA_ASSERT(!mGuards.IsFull(),
+                   "Application::RegisterTransitionGuard — kMaxGuards (%u) exceeded; "
+                   "increase capacity or remove an unused guard",
+                   kMaxGuards);
+        if (mGuards.IsFull())
+            return false;
+
+        GuardEntry entry;
+        entry.owner = owner;
+        entry.fn    = std::move(fn);
+        mGuards.Add(entry);
+        return true;
+    }
+
+    //--------------------------------------------------------------------------
+    // UnregisterTransitionGuards
+    //--------------------------------------------------------------------------
+
+    void Application::UnregisterTransitionGuards(Module* owner)
+    {
+        for (unsigned int i = 0; i < mGuards.Size(); )
+        {
+            if (mGuards[i].owner == owner)
+                mGuards.RemoveAt(i);
+            else
+                ++i;
+        }
+    }
+
+    //--------------------------------------------------------------------------
+    // CheckGuards  (private)
+    //--------------------------------------------------------------------------
+
+    GuardResult Application::CheckGuards()
+    {
+        for (unsigned int i = 0; i < mGuards.Size(); ++i)
+        {
+            if (mGuards[i].fn() == GuardResult::Hold)
+            {
+                mLastGuardCheckResult = GuardResult::Hold;
+                return GuardResult::Hold;
+            }
+        }
+        mLastGuardCheckResult = GuardResult::Allow;
+        return GuardResult::Allow;
     }
 
     //--------------------------------------------------------------------------
@@ -438,6 +493,11 @@ namespace Dia { namespace ApplicationFlow {
             info.fromStage  = mCurrentStage;
             info.toStage    = mPendingStage;
         }
+        // heldByGuards: use cached result from last frame's CheckGuards() call to
+        // avoid calling guard fns from an inspectable getter (AC10).
+        info.heldByGuards = info.inProgress
+                            && !mGuards.IsEmpty()
+                            && mLastGuardCheckResult == GuardResult::Hold;
         // Populate starting/stopping by scanning module states
         for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
         {
@@ -612,20 +672,50 @@ namespace Dia { namespace ApplicationFlow {
 
     void Application::ApplyPendingTransition()
     {
-        // Consume the pending transition under the mutex.
-        Dia::Core::StringCRC newStage;
+        // Peek at the pending stage without consuming, so guards can re-evaluate
+        // next frame if they return Hold.
+        Dia::Core::StringCRC pendingStage;
         {
             std::lock_guard<std::mutex> lock(mTransitionMutex);
             if (!mHasPendingTransition.load())
                 return;
+            pendingStage = mPendingStage;
+        }
+
+        // No-op: already in target stage — consume and clear.
+        if (mCurrentStage == pendingStage)
+        {
+            std::lock_guard<std::mutex> lock(mTransitionMutex);
+            mPendingStage = Dia::Core::StringCRC();
+            mHasPendingTransition.store(false);
+            mPendingHeldByGuardEmitted = false;
+            return;
+        }
+
+        // Guard check — runs on main thread, guards must be idempotent.
+        if (CheckGuards() == GuardResult::Hold)
+        {
+            if (!mPendingHeldByGuardEmitted)
+            {
+                LifecycleEvent ev;
+                ev.kind      = LifecycleEventKind::kStageTransitionHeldByGuard;
+                ev.fromStage = mCurrentStage;
+                ev.toStage   = pendingStage;
+                EmitLifecycleEvent(ev);
+                mPendingHeldByGuardEmitted = true;
+            }
+            return;  // try again next frame
+        }
+
+        // All guards allowed — consume the pending transition.
+        Dia::Core::StringCRC newStage;
+        {
+            std::lock_guard<std::mutex> lock(mTransitionMutex);
             newStage = mPendingStage;
             mPendingStage = Dia::Core::StringCRC();
             mHasPendingTransition.store(false);
+            mPendingHeldByGuardEmitted = false;
         }
-
-        // No-op if already in that stage.
-        if (mCurrentStage == newStage)
-            return;
 
         DIA_LOG_INFO("Application", "Stage transition: '%s' -> '%s'",
                      mCurrentStage.AsChar(), newStage.AsChar());
