@@ -502,6 +502,10 @@ namespace Dia
 				Json::Value result = mCommandDispatcher.ExecuteDiaAPICommand(commandName, payload);
 				resp->set_success(result.get("success", false).asBool());
 				resp->set_message(result.get("message", "").asString());
+				if (result.isMember("data") && result["data"].isObject())
+					Dia::Proto::JsonValueToProtoStruct(result["data"], resp->mutable_payload());
+				else if (result.isMember("error") && result["error"].isString())
+					resp->set_message(result["error"].asString());
 			}
 
 			SendProtoMessage(connId, response);

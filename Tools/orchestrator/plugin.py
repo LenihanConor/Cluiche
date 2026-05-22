@@ -1,12 +1,28 @@
 """pytest plugin for DiaAutomation E2E scenarios."""
 import json
+import shutil
 import subprocess
+import sys
 import time
 from pathlib import Path
 
 import pytest
 
 from orchestrator.client import DiaClient
+
+_APP_EXE_MAP = {
+    "cluichetest": "Cluiche/bin/CluicheTest/{config}/x64/CluicheTest.exe",
+    "cluicheeditor": "Cluiche/bin/CluicheEditor/{config}/x64/CluicheEditor.exe",
+    "googletest": "Cluiche/bin/GoogleTests/{config}/x64/GoogleTests.exe",
+}
+
+
+def _resolve_exe(app: str, config: str, repo_root: Path) -> Path:
+    """Return the absolute path to the app executable."""
+    template = _APP_EXE_MAP.get(app.lower())
+    if not template:
+        raise ValueError(f"Unknown app '{app}'. Known: {list(_APP_EXE_MAP)}")
+    return repo_root / template.format(config=config)
 
 
 # ---------------------------------------------------------------------------
@@ -26,11 +42,23 @@ def app_launcher(request):
         yield None
         return
 
-    cmd = ["dia", "launch", plan["app"], "--config", plan.get("config", "Debug")]
+    repo_root = getattr(request.config, "_dia_repo_root", None)
+    if repo_root is None:
+        raise RuntimeError("app_launcher: _dia_repo_root not set on pytest config")
+
+    app = plan["app"]
+    config = plan.get("config", "Debug")
+    exe = _resolve_exe(app, config, Path(repo_root))
+    if not exe.exists():
+        raise FileNotFoundError(
+            f"Executable not found: {exe}\nBuild first with: dia run {app} --config {config}"
+        )
+
     proc = subprocess.Popen(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        [str(exe)],
+        cwd=str(exe.parent),
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
     )
 
     yield proc

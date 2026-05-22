@@ -1,14 +1,24 @@
-"""Smoke scenario: app boots and responds to basic commands.
+"""Smoke scenario: CluicheTest boots, navigates stages, and exits cleanly.
 
-Item #5 — CluicheTest smoke scenario (spec: docs/specs/features/cluichetest/cluichetestscenarios/smoke-scenario.md).
+Spec: docs/specs/features/cluichetest/cluichetestscenarios/smoke-scenario.md
 """
+import time
 
 
-def test_app_boots_and_reports(dia_client):
-    result = dia_client.report()
-    assert "stage" in result
-    assert len(result.get("modules", [])) > 0
+def test_smoke_journey(dia_client):
+    """Boot -> navigate to DummyStage -> hold stable -> quit via fixture teardown."""
+    # AC2: app is in Boot stage
+    report = dia_client.report()
+    assert report["stage"] == "Boot"
 
+    # AC3: navigate to DummyStage
+    dia_client.navigate_to("DummyStage")
+    report = dia_client.report()
+    assert report["stage"] == "DummyStage"
 
-def test_app_quit(dia_client):
-    dia_client.quit()
+    # AC4: hold stable for 3 seconds — no crash, still in DummyStage
+    time.sleep(3.0)
+    report = dia_client.report()
+    assert report["stage"] == "DummyStage"
+
+    # AC5 / AC6 handled by fixture teardown (quit + assert_no_log_errors)

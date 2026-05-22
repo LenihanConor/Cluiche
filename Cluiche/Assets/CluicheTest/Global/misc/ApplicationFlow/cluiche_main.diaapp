@@ -114,6 +114,14 @@
                     },
                     "reads": [],
                     "writes": []
+                },
+                {
+                    "instance_id": "AutomationModule",
+                    "type_id": "AutomationModule",
+                    "stages": [ "all" ],
+                    "dependencies": [ "ObservationModule", "DebugServerHostModule" ],
+                    "reads": [],
+                    "writes": []
                 }
             ]
         },
