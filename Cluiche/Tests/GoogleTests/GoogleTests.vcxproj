@@ -224,6 +224,7 @@
     <ClCompile Include="ApplicationFlow\TestLifecycleEvents.cpp" />
     <ClCompile Include="ApplicationFlow\TestTransitionGuards.cpp" />
     <ClCompile Include="ApplicationFlow\TestBaselineCommands.cpp" />
+    <ClCompile Include="Automation\TestAutomationService.cpp" />
     <ClCompile Include="ApplicationFlow\TestApplicationE2E.cpp" />
     <ClCompile Include="UI\TestBoundMethod.cpp" />
     <ClCompile Include="UI\TestUIDataBuffer.cpp" />
@@ -638,6 +639,9 @@
     <ProjectReference Include="..\..\..\Dia\DiaAsset\DiaAsset.vcxproj">
       <Project>{43AB4006-91F4-4250-8901-C2B667FDAB21}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaAutomation\DiaAutomation.vcxproj">
+      <Project>{2A3B4C5D-6E7F-8091-A2B3-C4D5E6F70123}</Project>
     </ProjectReference>
   </ItemGroup>
   <!-- Python Test Scripts -->

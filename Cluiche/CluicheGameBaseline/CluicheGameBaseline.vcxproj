@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Modules\AutomationModule.cpp" />
     <ClCompile Include="Modules\AssetServiceModule.cpp" />
     <ClCompile Include="Modules\DebugServerHostModule.cpp" />
     <ClCompile Include="Modules\JobSystemModule.cpp" />
@@ -26,6 +27,7 @@
     <ClCompile Include="Types\UICommand.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Modules\AutomationModule.h" />
     <ClInclude Include="Modules\AssetServiceModule.h" />
     <ClInclude Include="Modules\DebugServerHostModule.h" />
     <ClInclude Include="Modules\JobSystemModule.h" />
@@ -81,6 +83,9 @@
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaDebugServer\DiaDebugServer.vcxproj">
       <Project>{6aafcccb-71d0-4d8d-a6be-081f5e02093d}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaAutomation\DiaAutomation.vcxproj">
+      <Project>{2A3B4C5D-6E7F-8091-A2B3-C4D5E6F70123}</Project>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">

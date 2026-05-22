@@ -22,6 +22,14 @@ enum class LifecycleEventKind : unsigned int
     kShutdownRequested         = 4,
     kModuleStateChanged        = 5,
     kStageTransitionHeldByGuard = 6,
+
+    // Automation events — emitted by AutomationService via EmitLifecycleEvent
+    kAutomationHoldEnabled      = 7,
+    kAutomationHoldReleased     = 8,
+    kAutomationPaused           = 9,
+    kAutomationResumed          = 10,
+    kAutomationDisconnect       = 11,
+    kAutomationHeartbeatTimeout = 12,
 };
 
 struct LifecycleEvent

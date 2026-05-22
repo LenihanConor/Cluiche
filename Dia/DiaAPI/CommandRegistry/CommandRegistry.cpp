@@ -460,8 +460,16 @@ namespace Dia
 			}
 
 			Json::Value data = cmd->callback(params);
-			response["success"] = true;
-			response["data"]    = data;
+			if (data.isObject() && data.isMember("error"))
+			{
+				response["success"] = false;
+				response["error"]   = data["error"];
+			}
+			else
+			{
+				response["success"] = true;
+				response["data"]    = data;
+			}
 			return response;
 		}
 	}

@@ -68,9 +68,9 @@ Replaces previous DiaTestHarness + DiaE2E + Harness Core + Smoke Test Scenario +
 | # | Item | Type | Size | Depends on | Status |
 |---|------|------|------|------------|--------|
 | 0 | DiaAPI — relax name validation to `[a-z0-9._-]+`; add JSON command path | Folded into item #2 | XS | — | Spec'd (part of baseline-commands) |
-| 1 | DiaApplicationFlow — [transition-guards](specs/features/dia/diaapplicationflow/transition-guards.md) | Approved — ready to implement | S | — | **Approved** |
-| 2 | DiaApplicationFlow — [baseline-commands](specs/features/dia/diaapplicationflow/baseline-commands.md) (`dia.app.quit`, `dia.app.report` + DiaAPI JSON path) | Approved — ready to implement | XS | — | **Approved** |
-| 3 | [DiaAutomation](specs/systems/dia/diaautomation.md) system + AutomationModule (CluicheGameBaseline) | Approved — needs `/spec-feature` per feature before impl | M | 1, 2 | **System Approved** |
+| 1 | DiaApplicationFlow — [transition-guards](specs/features/dia/diaapplicationflow/transition-guards.md) | Done | S | — | **Done** |
+| 2 | DiaApplicationFlow — [baseline-commands](specs/features/dia/diaapplicationflow/baseline-commands.md) (`dia.app.quit`, `dia.app.report` + DiaAPI JSON path) | Done | XS | — | **Done** |
+| 3 | [DiaAutomation](specs/systems/dia/diaautomation.md) system + AutomationModule (CluicheGameBaseline) | Done — all feature specs created + implemented | M | 1, 2 | **Done** |
 | 4 | [dia orchestrate](specs/features/dia/diacli/dia-orchestrate.md) CLI + pytest plugin | Approved — ready to implement | S | 3 | **Approved** |
 | 5 | CluicheTest [smoke scenario](specs/features/cluichetest/cluichetestscenarios/smoke-scenario.md) (pytest) | Approved — ready to implement | XS | 4 | **Approved** |
 | 6 | CluicheTest [TestStages](specs/systems/cluichetest/teststages.md) system (RigidBody2D, EntityTest, … with checkpoints) | System Approved — individual stages need `/spec-feature` | M–L | 4 | **System Approved** |
