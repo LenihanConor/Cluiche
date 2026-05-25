@@ -413,12 +413,6 @@ namespace Dia
 		}
 
 		//-------------------------------------------------------------------------------------
-		const sf::Texture* RenderWindow::GetTexture(unsigned int textureId) const
-		{
-			return mTextureHandler.GetTexture(textureId);
-		}
-
-		//-------------------------------------------------------------------------------------
 		TextureHandler* RenderWindow::GetTextureHandler()
 		{
 			return &mTextureHandler;

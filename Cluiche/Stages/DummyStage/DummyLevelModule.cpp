@@ -114,34 +114,34 @@ void DummyLevelModule::DoUpdate(float dt)
         mFrame.RequestDraw(center, dynamic, Dia::Graphics::RGBA::White);
     }
 
-    // Draw debug sprites (mirrors v1 SimRunningPhase). Texture IDs come from
+    // Draw debug sprites (mirrors v1 SimRunningPhase). Textures come from
     // the texture handler on MainPU via static accessor.
     if (Dia::SFML::TextureHandler* tex = KernelModule::GetStaticTextureHandler())
     {
-        unsigned int redId   = tex->GetTextureId(Dia::Core::StringCRC("texture.test_red"));
-        unsigned int blueId  = tex->GetTextureId(Dia::Core::StringCRC("texture.test_blue"));
-        unsigned int greenId = tex->GetTextureId(Dia::Core::StringCRC("texture.test_green"));
+        Dia::Graphics::ITexture* red   = tex->LookupTexture(Dia::Core::StringCRC("texture.test_red"));
+        Dia::Graphics::ITexture* blue  = tex->LookupTexture(Dia::Core::StringCRC("texture.test_blue"));
+        Dia::Graphics::ITexture* green = tex->LookupTexture(Dia::Core::StringCRC("texture.test_green"));
 
-        if (redId != 0)
+        if (red)
         {
-            Dia::Graphics::SpriteDrawCommand redSprite(redId, Dia::Maths::Vector2D(200.0f, 200.0f));
+            Dia::Graphics::SpriteDrawCommand redSprite(red, Dia::Maths::Vector2D(200.0f, 200.0f));
             mFrame.RequestDrawSprite(redSprite);
 
-            Dia::Graphics::SpriteDrawCommand transparentSprite(redId, Dia::Maths::Vector2D(200.0f, 300.0f));
+            Dia::Graphics::SpriteDrawCommand transparentSprite(red, Dia::Maths::Vector2D(200.0f, 300.0f));
             transparentSprite.tint = Dia::Graphics::RGBA(255, 255, 255, 128);
             mFrame.RequestDrawSprite(transparentSprite);
         }
 
-        if (blueId != 0)
+        if (blue)
         {
-            Dia::Graphics::SpriteDrawCommand blueSprite(blueId, Dia::Maths::Vector2D(300.0f, 200.0f));
+            Dia::Graphics::SpriteDrawCommand blueSprite(blue, Dia::Maths::Vector2D(300.0f, 200.0f));
             blueSprite.scale = Dia::Maths::Vector2D(1.5f, 1.5f);
             mFrame.RequestDrawSprite(blueSprite);
         }
 
-        if (greenId != 0)
+        if (green)
         {
-            Dia::Graphics::SpriteDrawCommand greenSprite(greenId, Dia::Maths::Vector2D(400.0f, 200.0f));
+            Dia::Graphics::SpriteDrawCommand greenSprite(green, Dia::Maths::Vector2D(400.0f, 200.0f));
             greenSprite.rotation = 45.0f;
             mFrame.RequestDrawSprite(greenSprite);
         }

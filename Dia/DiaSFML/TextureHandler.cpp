@@ -1,4 +1,5 @@
 #include "DiaSFML/TextureHandler.h"
+#include "DiaSFML/SfmlTexture.h"
 
 #include <DiaCore/Core/Log.h>
 #include <DiaCore/Memory/Memory.h>
@@ -24,7 +25,6 @@ namespace Dia
 		};
 
 		TextureHandler::TextureHandler()
-			: mNextId(1)
 		{}
 
 		TextureHandler::~TextureHandler()
@@ -61,20 +61,11 @@ namespace Dia
 			UnloadAll();
 		}
 
-		unsigned int TextureHandler::GetTextureId(const Dia::Core::StringCRC& assetId) const
+		Dia::Graphics::ITexture* TextureHandler::LookupTexture(const Dia::Core::StringCRC& assetId) const
 		{
 			std::shared_lock<std::shared_mutex> lock(mMutex);
-			auto it = mAssetToTextureId.find(assetId.Value());
-			if (it != mAssetToTextureId.end())
-				return it->second;
-			return 0;
-		}
-
-		const sf::Texture* TextureHandler::GetTexture(unsigned int textureId) const
-		{
-			std::shared_lock<std::shared_mutex> lock(mMutex);
-			auto it = mIdToTexture.find(textureId);
-			if (it != mIdToTexture.end())
+			auto it = mAssetIdToTexture.find(assetId.Value());
+			if (it != mAssetIdToTexture.end())
 				return it->second;
 			return nullptr;
 		}
@@ -82,23 +73,18 @@ namespace Dia
 		unsigned int TextureHandler::GetLoadedCount() const
 		{
 			std::shared_lock<std::shared_mutex> lock(mMutex);
-			return static_cast<unsigned int>(mIdToTexture.size());
+			return static_cast<unsigned int>(mAssetIdToTexture.size());
 		}
 
 		void TextureHandler::Load(const Dia::Core::StringCRC& assetId,
 		                          const Dia::Core::Containers::String512& resolvedPath,
 		                          Dia::AssetRuntime::IAssetLoadCallback* callback)
 		{
-			std::string pathStr(resolvedPath.AsCStr());
-
 			{
-				std::unique_lock<std::shared_mutex> lock(mMutex);
-
-				auto pathIt = mPathToId.find(pathStr);
-				if (pathIt != mPathToId.end())
+				std::shared_lock<std::shared_mutex> lock(mMutex);
+				if (mAssetIdToTexture.find(assetId.Value()) != mAssetIdToTexture.end())
 				{
-					// Cache hit: texture already loaded — register mapping and fire callback synchronously
-					mAssetToTextureId[assetId.Value()] = pathIt->second;
+					// Already loaded — fire callback synchronously
 					lock.unlock();
 					callback->OnLoadComplete(assetId);
 					return;
@@ -106,10 +92,6 @@ namespace Dia
 			}
 
 			// Cache miss: submit async job for disk I/O.
-			// Register in mPendingUploads BEFORE Submit() so the destructor can wait on
-			// any job that is mid-decode when TextureHandler is torn down. The lambda
-			// captures only the shared_ptr — no 'this' — so it is safe even if
-			// TextureHandler is destroyed while the decode is still running.
 			DIA_ASSERT(mJobSystem != nullptr, "TextureHandler::Load called before SetJobSystem");
 
 			auto upload = std::make_shared<PendingUpload>();
@@ -142,7 +124,6 @@ namespace Dia
 
 			for (auto& entry : toProcess)
 			{
-				// Wait() blocks until the job is finished
 				if (entry->job.IsValid())
 				{
 					if (mJobSystem)
@@ -156,34 +137,28 @@ namespace Dia
 					continue;
 				}
 
-				unsigned int textureId = 0;
+				SfmlTexture* sfTex = nullptr;
 				{
 					std::unique_lock<std::shared_mutex> lock(mMutex);
 
-					std::string pathStr(entry->resolvedPath.AsCStr());
-					auto pathIt = mPathToId.find(pathStr);
-					if (pathIt != mPathToId.end() && pathIt->second != 0)
+					// Check if this asset was already registered by a concurrent job
+					auto it = mAssetIdToTexture.find(entry->assetId.Value());
+					if (it != mAssetIdToTexture.end())
 					{
-						// Another job already uploaded this path — reuse existing textureId
-						textureId = pathIt->second;
+						// Already present — nothing to do
 					}
 					else
 					{
-						// Upload decoded image to GPU on the main thread
-						sf::Texture* texture = DIA_NEW(sf::Texture());
-						if (!texture->loadFromImage(entry->image))
+						sfTex = DIA_NEW(SfmlTexture(entry->assetId));
+						if (!sfTex->UploadFromImage(entry->image))
 						{
-							DIA_DELETE(texture);
+							DIA_DELETE(sfTex);
 							lock.unlock();
 							entry->callback->OnLoadFailed(entry->assetId, "failed to upload texture to GPU");
 							continue;
 						}
-						textureId = mNextId++;
-						mPathToId[pathStr] = textureId;
-						mIdToTexture[textureId] = texture;
+						mAssetIdToTexture[entry->assetId.Value()] = sfTex;
 					}
-
-					mAssetToTextureId[entry->assetId.Value()] = textureId;
 				}
 
 				entry->callback->OnLoadComplete(entry->assetId);
@@ -192,50 +167,15 @@ namespace Dia
 
 		void TextureHandler::Unload(const Dia::Core::StringCRC& assetId)
 		{
-			// Detach the asset->texture mapping under mMutex (any thread).
-			// If this was the last reference to the texture, transfer ownership
-			// of the sf::Texture* to the deferred-deletion queue — destruction
-			// must run on the GL-context thread (see ProcessGpuDeletions).
-			sf::Texture* toDelete = nullptr;
+			SfmlTexture* toDelete = nullptr;
 			{
 				std::unique_lock<std::shared_mutex> lock(mMutex);
-				auto it = mAssetToTextureId.find(assetId.Value());
-				if (it == mAssetToTextureId.end())
+				auto it = mAssetIdToTexture.find(assetId.Value());
+				if (it == mAssetIdToTexture.end())
 					return;
 
-				unsigned int textureId = it->second;
-				mAssetToTextureId.erase(it);
-
-				bool stillReferenced = false;
-				for (const auto& pair : mAssetToTextureId)
-				{
-					if (pair.second == textureId)
-					{
-						stillReferenced = true;
-						break;
-					}
-				}
-
-				if (stillReferenced)
-					return;
-
-				auto texIt = mIdToTexture.find(textureId);
-				if (texIt != mIdToTexture.end())
-				{
-					toDelete = texIt->second;
-					mIdToTexture.erase(texIt);
-				}
-
-				// Remove the path→textureId cache so re-loads go through the
-				// full async path rather than getting a dead textureId.
-				for (auto pathIt = mPathToId.begin(); pathIt != mPathToId.end(); ++pathIt)
-				{
-					if (pathIt->second == textureId)
-					{
-						mPathToId.erase(pathIt);
-						break;
-					}
-				}
+				toDelete = it->second;
+				mAssetIdToTexture.erase(it);
 			}
 
 			if (toDelete)
@@ -247,15 +187,12 @@ namespace Dia
 
 		void TextureHandler::ProcessGpuDeletions()
 		{
-			// Caller must own the GL context. Swap-drain so deletes run outside
-			// the lock (sf::Texture destruction can be slow and we don't want to
-			// block Unload callers on the GL thread).
-			std::vector<sf::Texture*> toDelete;
+			std::vector<SfmlTexture*> toDelete;
 			{
 				std::lock_guard<std::mutex> lock(mPendingDeletionsMutex);
 				toDelete.swap(mPendingDeletions);
 			}
-			for (sf::Texture* tex : toDelete)
+			for (SfmlTexture* tex : toDelete)
 			{
 				DIA_DELETE(tex);
 			}
@@ -263,26 +200,21 @@ namespace Dia
 
 		void TextureHandler::UnloadAll()
 		{
-			// Last-chance teardown. Caller (Shutdown) holds the GL context,
-			// so any textures still in the live map plus anything queued for
-			// deletion can be destroyed inline.
 			{
 				std::unique_lock<std::shared_mutex> lock(mMutex);
-				for (auto& entry : mIdToTexture)
+				for (auto& entry : mAssetIdToTexture)
 				{
 					DIA_DELETE(entry.second);
 				}
-				mIdToTexture.clear();
-				mPathToId.clear();
-				mAssetToTextureId.clear();
+				mAssetIdToTexture.clear();
 			}
 
-			std::vector<sf::Texture*> toDelete;
+			std::vector<SfmlTexture*> toDelete;
 			{
 				std::lock_guard<std::mutex> lock(mPendingDeletionsMutex);
 				toDelete.swap(mPendingDeletions);
 			}
-			for (sf::Texture* tex : toDelete)
+			for (SfmlTexture* tex : toDelete)
 			{
 				DIA_DELETE(tex);
 			}

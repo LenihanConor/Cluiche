@@ -49,8 +49,6 @@ namespace Dia
 			virtual void ProcessFrame(const Dia::Graphics::FrameData& nextFrame)override;
 			virtual void EndFrame(const Dia::Graphics::FrameData& nextFrame)override;
 
-			// Texture management
-			const sf::Texture* GetTexture(unsigned int textureId) const;
 			TextureHandler* GetTextureHandler();
 
 			// Inherited from IWindow

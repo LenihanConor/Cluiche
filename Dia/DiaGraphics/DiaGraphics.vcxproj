@@ -102,6 +102,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Testing\MockITexture.h" />
     <ClInclude Include="Testing\MockVisitors.h" />
   </ItemGroup>
   <ItemGroup>

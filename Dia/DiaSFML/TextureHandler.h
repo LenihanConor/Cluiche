@@ -2,6 +2,7 @@
 
 #include <DiaAsset/IAssetTypeHandler.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaGraphics/Assets/ITexture.h>
 #include <DiaThreading/JobSystem.h>
 
 #include <memory>
@@ -20,6 +21,8 @@ namespace Dia
 {
 	namespace SFML
 	{
+		class SfmlTexture;
+
 		// Forward-declared; defined in TextureHandler.cpp (contains sf::Image)
 		struct PendingUpload;
 
@@ -31,8 +34,10 @@ namespace Dia
 
 			void SetJobSystem(Dia::Core::JobSystem* jobSystem);
 
-			unsigned int GetTextureId(const Dia::Core::StringCRC& assetId) const;
-			const sf::Texture* GetTexture(unsigned int textureId) const;
+			// Canonical accessor: returns the ITexture* for the asset, or nullptr if not loaded.
+			// Thread-safe; takes shared lock. Pointer is stable until Unload(assetId).
+			Dia::Graphics::ITexture* LookupTexture(const Dia::Core::StringCRC& assetId) const;
+
 			unsigned int GetLoadedCount() const;
 
 			virtual void Load(const Dia::Core::StringCRC& assetId,
@@ -73,10 +78,7 @@ namespace Dia
 			void UnloadAll();
 
 			mutable std::shared_mutex mMutex;
-			std::unordered_map<unsigned int, unsigned int> mAssetToTextureId;
-			std::unordered_map<std::string, unsigned int> mPathToId;
-			std::unordered_map<unsigned int, sf::Texture*> mIdToTexture;
-			unsigned int mNextId;
+			std::unordered_map<unsigned int /*StringCRC.Value()*/, SfmlTexture*> mAssetIdToTexture;
 
 			std::mutex mPendingUploadsMutex;
 			std::vector<std::shared_ptr<PendingUpload>> mPendingUploads;
@@ -84,7 +86,7 @@ namespace Dia
 			// Deferred GPU-side deletion. Unload() (any thread) appends here.
 			// ProcessGpuDeletions() (GL-context thread only) drains and deletes.
 			std::mutex mPendingDeletionsMutex;
-			std::vector<sf::Texture*> mPendingDeletions;
+			std::vector<SfmlTexture*> mPendingDeletions;
 
 			Dia::Core::JobSystem* mJobSystem = nullptr;
 		};

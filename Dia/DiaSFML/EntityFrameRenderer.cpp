@@ -3,9 +3,12 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "DiaSFML/EntityFrameRenderer.h"
 #include "DiaSFML/TextureHandler.h"
+#include "DiaSFML/SfmlTexture.h"
 #include "DiaGraphics/Frame/EntityFrameData.h"
 #include "DiaGraphics/Frame/SpriteDrawCommand.h"
 #include "DiaSFML/Conversion.h"
+
+#include <DiaCore/Core/Assert.h>
 
 #include <SFML/Graphics/RenderTarget.hpp>
 #include <SFML/Graphics/Sprite.hpp>
@@ -34,7 +37,15 @@ namespace Dia
 			{
 				const Graphics::SpriteDrawCommand& cmd = sprites[i];
 
-				const sf::Texture* texture = mTextureHandler->GetTexture(cmd.textureId);
+				if (!cmd.texture || !cmd.texture->IsReady())
+					continue;
+
+#ifdef _DEBUG
+				DIA_ASSERT(dynamic_cast<const SfmlTexture*>(cmd.texture) != nullptr,
+				           "EntityFrameRenderer: unexpected ITexture implementer — only SfmlTexture is valid here");
+#endif
+				const SfmlTexture* sfTex = static_cast<const SfmlTexture*>(cmd.texture);
+				const sf::Texture* texture = sfTex->GetSfTexture();
 				if (!texture)
 					continue;
 

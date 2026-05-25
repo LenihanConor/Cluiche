@@ -34,6 +34,8 @@ public_api:
     - Dia/DiaSFML/InputSource.h
     - Dia/DiaSFML/RenderWindow.h
     - Dia/DiaSFML/RenderWindowFactory.h
+    - Dia/DiaSFML/SfmlTexture.h
+    - Dia/DiaSFML/TextureHandler.h
   namespaces: []
   entry_points:
     - Color
@@ -48,6 +50,8 @@ public_api:
     - RenderWindow
     - RenderWindowFactory
     - RGBA
+    - SfmlTexture
+    - TextureHandler::LookupTexture
 
 dependencies:
   required:

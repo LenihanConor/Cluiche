@@ -8,6 +8,7 @@
 #include <DiaGraphics/Frame/EntityFrameDataVisitor.h>
 #include <DiaGraphics/Frame/DebugFrameDataVisitor.h>
 #include <DiaGraphics/Misc/RGBA.h>
+#include <DiaGraphics/Testing/MockITexture.h>
 #include <DiaGraphics/Testing/MockVisitors.h>
 #include <DiaMaths/Vector/Vector2D.h>
 
@@ -22,17 +23,18 @@ using namespace Dia::Maths;
 TEST(DiaGraphics_FrameData, SpriteDrawCommand_DefaultConstruction_Sane)
 {
 	SpriteDrawCommand cmd;
-	EXPECT_EQ(cmd.textureId, 0u);
+	EXPECT_EQ(cmd.texture, nullptr);
 	EXPECT_FLOAT_EQ(cmd.rotation, 0.0f);
 	EXPECT_EQ(cmd.layer, 0);
 }
 
-TEST(DiaGraphics_FrameData, SpriteDrawCommand_ConstructWithIdAndPos_StoresValues)
+TEST(DiaGraphics_FrameData, SpriteDrawCommand_ConstructWithTextureAndPos_StoresValues)
 {
+	Testing::MockITexture mock;
 	Vector2D pos(3.5f, -2.0f);
-	SpriteDrawCommand cmd(42u, pos);
+	SpriteDrawCommand cmd(&mock, pos);
 
-	EXPECT_EQ(cmd.textureId, 42u);
+	EXPECT_EQ(cmd.texture, &mock);
 	EXPECT_FLOAT_EQ(cmd.position.x, 3.5f);
 	EXPECT_FLOAT_EQ(cmd.position.y, -2.0f);
 }
@@ -49,27 +51,30 @@ TEST(DiaGraphics_FrameData, EntityFrameData_DefaultConstruction_Empty)
 
 TEST(DiaGraphics_FrameData, EntityFrameData_RequestDrawSprite_IncrementsCount)
 {
+	Testing::MockITexture mock;
 	EntityFrameData efd;
-	efd.RequestDrawSprite(SpriteDrawCommand(1u, Vector2D(0.0f, 0.0f)));
+	efd.RequestDrawSprite(SpriteDrawCommand(&mock, Vector2D(0.0f, 0.0f)));
 	EXPECT_EQ(efd.GetSprites().Size(), 1u);
 }
 
 TEST(DiaGraphics_FrameData, EntityFrameData_MultipleSprites_AllStored)
 {
+	Testing::MockITexture mocks[5];
 	EntityFrameData efd;
 	for (unsigned int i = 0; i < 5; ++i)
-		efd.RequestDrawSprite(SpriteDrawCommand(i, Vector2D(static_cast<float>(i), 0.0f)));
+		efd.RequestDrawSprite(SpriteDrawCommand(&mocks[i], Vector2D(static_cast<float>(i), 0.0f)));
 
 	EXPECT_EQ(efd.GetSprites().Size(), 5u);
 	for (unsigned int i = 0; i < 5; ++i)
-		EXPECT_EQ(efd.GetSprites().At(i).textureId, i);
+		EXPECT_EQ(efd.GetSprites().At(i).texture, &mocks[i]);
 }
 
 TEST(DiaGraphics_FrameData, EntityFrameData_Clear_RemovesAllSprites)
 {
+	Testing::MockITexture m1, m2;
 	EntityFrameData efd;
-	efd.RequestDrawSprite(SpriteDrawCommand(1u, Vector2D(0.0f, 0.0f)));
-	efd.RequestDrawSprite(SpriteDrawCommand(2u, Vector2D(1.0f, 0.0f)));
+	efd.RequestDrawSprite(SpriteDrawCommand(&m1, Vector2D(0.0f, 0.0f)));
+	efd.RequestDrawSprite(SpriteDrawCommand(&m2, Vector2D(1.0f, 0.0f)));
 	EXPECT_EQ(efd.GetSprites().Size(), 2u);
 
 	efd.Clear();
@@ -78,8 +83,9 @@ TEST(DiaGraphics_FrameData, EntityFrameData_Clear_RemovesAllSprites)
 
 TEST(DiaGraphics_FrameData, EntityFrameData_AcceptVisitor_VisitorCalled)
 {
+	Testing::MockITexture mock;
 	EntityFrameData efd;
-	efd.RequestDrawSprite(SpriteDrawCommand(1u, Vector2D(0.0f, 0.0f)));
+	efd.RequestDrawSprite(SpriteDrawCommand(&mock, Vector2D(0.0f, 0.0f)));
 
 	RecordingEntityVisitor visitor;
 	efd.AcceptVisitor(visitor);
@@ -88,13 +94,15 @@ TEST(DiaGraphics_FrameData, EntityFrameData_AcceptVisitor_VisitorCalled)
 
 TEST(DiaGraphics_FrameData, EntityFrameData_ClearThenAdd_SizeCorrect)
 {
+	Testing::MockITexture mocks[10];
+	Testing::MockITexture last;
 	EntityFrameData efd;
 	for (int i = 0; i < 10; ++i)
-		efd.RequestDrawSprite(SpriteDrawCommand(static_cast<unsigned int>(i), Vector2D()));
+		efd.RequestDrawSprite(SpriteDrawCommand(&mocks[i], Vector2D()));
 	efd.Clear();
-	efd.RequestDrawSprite(SpriteDrawCommand(99u, Vector2D()));
+	efd.RequestDrawSprite(SpriteDrawCommand(&last, Vector2D()));
 	EXPECT_EQ(efd.GetSprites().Size(), 1u);
-	EXPECT_EQ(efd.GetSprites().At(0).textureId, 99u);
+	EXPECT_EQ(efd.GetSprites().At(0).texture, &last);
 }
 
 // ===========================================================================
@@ -168,8 +176,9 @@ TEST(DiaGraphics_FrameData, FrameData_DefaultConstruction_Empty)
 
 TEST(DiaGraphics_FrameData, FrameData_Clear_ClearsBothEntityAndDebug)
 {
+	Testing::MockITexture mock;
 	FrameData fd;
-	fd.RequestDrawSprite(SpriteDrawCommand(1u, Vector2D(0.0f, 0.0f)));
+	fd.RequestDrawSprite(SpriteDrawCommand(&mock, Vector2D(0.0f, 0.0f)));
 	fd.RequestDraw(Vector2D(0.0f, 0.0f), 1.0f, RGBA::White);
 
 	fd.Clear();
@@ -183,15 +192,16 @@ TEST(DiaGraphics_FrameData, FrameData_Clear_ClearsBothEntityAndDebug)
 
 TEST(DiaGraphics_FrameData, FrameData_CopyPreservesData)
 {
+	Testing::MockITexture mock;
 	FrameData src;
-	src.RequestDrawSprite(SpriteDrawCommand(7u, Vector2D(1.0f, 2.0f)));
+	src.RequestDrawSprite(SpriteDrawCommand(&mock, Vector2D(1.0f, 2.0f)));
 	src.RequestDraw(Vector2D(3.0f, 4.0f), 5.0f, RGBA::White);
 
 	FrameData dst;
 	dst.Copy(src);
 
 	EXPECT_EQ(dst.GetSprites().Size(), 1u);
-	EXPECT_EQ(dst.GetSprites().At(0).textureId, 7u);
+	EXPECT_EQ(dst.GetSprites().At(0).texture, &mock);
 
 	RecordingDebugVisitor v;
 	static_cast<DebugFrameData&>(dst).AcceptVisitor(v);
@@ -200,14 +210,15 @@ TEST(DiaGraphics_FrameData, FrameData_CopyPreservesData)
 
 TEST(DiaGraphics_FrameData, FrameData_AssignmentPreservesData)
 {
+	Testing::MockITexture mock;
 	FrameData src;
-	src.RequestDrawSprite(SpriteDrawCommand(3u, Vector2D(0.0f, 0.0f)));
+	src.RequestDrawSprite(SpriteDrawCommand(&mock, Vector2D(0.0f, 0.0f)));
 
 	FrameData dst;
 	dst = src;
 
 	EXPECT_EQ(dst.GetSprites().Size(), 1u);
-	EXPECT_EQ(dst.GetSprites().At(0).textureId, 3u);
+	EXPECT_EQ(dst.GetSprites().At(0).texture, &mock);
 }
 
 // ===========================================================================

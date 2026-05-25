@@ -5,18 +5,12 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Strings/String512.h>
 
-TEST(TextureHandlerTest, GetTextureId_UnknownAsset_ReturnsZero)
+TEST(TextureHandlerTest, LookupTexture_UnknownAsset_ReturnsNull)
 {
     Dia::SFML::TextureHandler handler;
 
     Dia::Core::StringCRC assetId("texture.unknown");
-    EXPECT_EQ(handler.GetTextureId(assetId), 0u);
-}
-
-TEST(TextureHandlerTest, GetTexture_InvalidId_ReturnsNull)
-{
-    Dia::SFML::TextureHandler handler;
-    EXPECT_EQ(handler.GetTexture(999), nullptr);
+    EXPECT_EQ(handler.LookupTexture(assetId), nullptr);
 }
 
 TEST(TextureHandlerTest, Unload_UnknownAsset_DoesNotCrash)
