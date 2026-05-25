@@ -58,7 +58,83 @@ namespace Dia::Entity {
         return pool->HasSlot(entity.GetIndex());
     }
 
+    template<class... TComponents>
+    QueryView<TComponents...> Domain::Query() {
+        static_assert(sizeof...(TComponents) > 0, "Domain::Query requires at least one component type");
+
+        Dia::Core::CRC sig = ComputeQuerySignature<TComponents...>();
+
+        // Search for an existing cache entry with this signature.
+        for (uint32_t i = 0; i < mQueryCaches.Size(); ++i) {
+            if (mQueryCaches[i].signatureCRC == sig) {
+                // Found — if dirty, rebuild immediately.
+                if (mQueryCaches[i].dirty) {
+                    RebuildQueryCache(mQueryCaches[i]);
+                    mQueryCaches[i].dirty = false;
+                }
+                QueryView<TComponents...> view;
+                view.SetSource(&mQueryCaches[i].entities, this);
+                return view;
+            }
+        }
+
+        // No existing cache — create a new one if capacity allows.
+        if (mQueryCaches.IsFull()) {
+            DIA_ASSERT(false, "Domain::Query — exceeded kMaxQueryTypes (%u); cannot cache new query signature", kMaxQueryTypes);
+            DIA_LOG_WARNING("DiaEntity", "Domain::Query: exceeded kMaxQueryTypes (%u) — performing uncached live scan", kMaxQueryTypes);
+
+            // Release: perform an uncached live scan.
+            // Uses a static local to avoid heap allocation.  This path is intentionally
+            // slow to encourage reducing the query count.
+            static Dia::Core::Containers::DynamicArrayC<Entity, kMaxEntitiesPerDomain> sTempEntities;
+            sTempEntities.RemoveAll();
+
+            // Use type CRCs via kTypeId (available at template instantiation time).
+            Dia::Core::StringCRC typeCRCs[] = { TComponents::kTypeId... };
+            const uint32_t count = static_cast<uint32_t>(sizeof...(TComponents));
+
+            for (uint32_t entityIdx = 0; entityIdx < kMaxEntitiesPerDomain; ++entityIdx) {
+                uint32_t gen = mEntityPool.GetLiveGeneration(entityIdx);
+                if (gen == 0) continue;
+                bool hasAll = true;
+                for (uint32_t t = 0; t < count; ++t) {
+                    const IComponentPool* pool = FindPool(typeCRCs[t]);
+                    if (pool == nullptr || !pool->HasSlot(entityIdx)) { hasAll = false; break; }
+                }
+                if (hasAll && !sTempEntities.IsFull()) {
+                    sTempEntities.Add(Entity(entityIdx, gen));
+                }
+            }
+
+            QueryView<TComponents...> view;
+            view.SetSource(&sTempEntities, this);
+            return view;
+        }
+
+        // Build a new cache entry.
+        QueryCache newCache;
+        newCache.signatureCRC = sig;
+        newCache.dirty        = false;
+
+        // Store individual type CRCs so InvalidateCachesForType can check membership.
+        Dia::Core::StringCRC typeCRCArr[] = { TComponents::kTypeId... };
+        for (uint32_t i = 0; i < static_cast<uint32_t>(sizeof...(TComponents)); ++i) {
+            newCache.typeCRCs.Add(typeCRCArr[i]);
+        }
+
+        mQueryCaches.Add(newCache);
+        QueryCache& cache = mQueryCaches[mQueryCaches.Size() - 1];
+        RebuildQueryCache(cache);
+
+        QueryView<TComponents...> view;
+        view.SetSource(&cache.entities, this);
+        return view;
+    }
+
 } // namespace Dia::Entity
 
 // EntityRef<T>::Resolve() needs Domain fully defined — pull in after the closing brace.
 #include <DiaEntity/EntityRef.inl>
+
+// QueryView implementation (needs Domain fully defined for GetComponent<T> calls).
+#include <DiaEntity/QueryView.inl>

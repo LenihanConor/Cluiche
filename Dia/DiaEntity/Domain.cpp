@@ -142,6 +142,14 @@ namespace Dia::Entity {
 
     void Domain::EndOfFrame() {
         ApplyMutations();
+
+        // Rebuild all caches marked dirty during ApplyMutations.
+        for (uint32_t i = 0; i < mQueryCaches.Size(); ++i) {
+            if (mQueryCaches[i].dirty) {
+                RebuildQueryCache(mQueryCaches[i]);
+                mQueryCaches[i].dirty = false;
+            }
+        }
     }
 
     IComponentPool* Domain::FindPool(Dia::Core::StringCRC typeId) {
@@ -170,15 +178,21 @@ namespace Dia::Entity {
         for (uint32_t i = 0; i < mMutationQueue.Size(); ++i) {
             if (mMutationQueue[i].kind == MutationKind::AddComponent) {
                 ApplyAddComponent(mMutationQueue[i]);
+                InvalidateCachesForType(mMutationQueue[i].componentTypeId);
             }
         }
         for (uint32_t i = 0; i < mMutationQueue.Size(); ++i) {
             if (mMutationQueue[i].kind == MutationKind::RemoveComponent) {
                 ApplyRemoveComponent(mMutationQueue[i]);
+                InvalidateCachesForType(mMutationQueue[i].componentTypeId);
             }
         }
         for (uint32_t i = 0; i < mMutationQueue.Size(); ++i) {
             if (mMutationQueue[i].kind == MutationKind::DestroyEntity) {
+                // A destroy removes all components — invalidate all caches.
+                for (uint32_t c = 0; c < mQueryCaches.Size(); ++c) {
+                    mQueryCaches[c].dirty = true;
+                }
                 ApplyDestroyEntity(mMutationQueue[i]);
             }
         }
@@ -190,6 +204,48 @@ namespace Dia::Entity {
             mMutationQueue[i].config = Json::Value();
         }
         mMutationQueue.RemoveAll();
+    }
+
+    void Domain::InvalidateCachesForType(Dia::Core::StringCRC typeId) {
+        for (uint32_t i = 0; i < mQueryCaches.Size(); ++i) {
+            QueryCache& cache = mQueryCaches[i];
+            // Walk the type CRC list stored in the cache to check membership.
+            for (uint32_t t = 0; t < cache.typeCRCs.Size(); ++t) {
+                if (cache.typeCRCs[t] == typeId) {
+                    cache.dirty = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    void Domain::RebuildQueryCache(QueryCache& cache) {
+        cache.entities.RemoveAll();
+
+        // Walk every entity index and check whether it has all required component types.
+        for (uint32_t entityIdx = 0; entityIdx < kMaxEntitiesPerDomain; ++entityIdx) {
+            uint32_t gen = mEntityPool.GetLiveGeneration(entityIdx);
+            if (gen == 0) {
+                continue; // entity slot not live
+            }
+
+            // Entity must have all component types in this cache's signature.
+            bool hasAll = true;
+            for (uint32_t t = 0; t < cache.typeCRCs.Size(); ++t) {
+                const IComponentPool* pool = FindPool(cache.typeCRCs[t]);
+                if (pool == nullptr || !pool->HasSlot(entityIdx)) {
+                    hasAll = false;
+                    break;
+                }
+            }
+
+            if (hasAll) {
+                Entity e(entityIdx, gen);
+                if (!cache.entities.IsFull()) {
+                    cache.entities.Add(e);
+                }
+            }
+        }
     }
 
     void Domain::ApplyAddComponent(const MutationOp& op) {

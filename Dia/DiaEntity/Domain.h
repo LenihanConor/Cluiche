@@ -12,6 +12,8 @@
 #include <DiaEntity/IComponent.h>
 #include <DiaEntity/IComponentPool.h>
 #include <DiaEntity/MutationOp.h>
+#include <DiaEntity/QueryCache.h>
+#include <DiaEntity/QueryView.h>
 
 namespace Dia::Entity {
 
@@ -66,6 +68,15 @@ namespace Dia::Entity {
         template<class TComponent>
         bool HasComponent(Entity entity) const;
 
+        // --- Query ---
+
+        // Returns a QueryView of all entities carrying every listed component type.
+        // Cache keyed by combined (sorted-XOR) StringCRC of all type CRCs.
+        // Cache is rebuilt at EndOfFrame when any relevant type was mutated that frame.
+        // kMaxQueryTypes = 64: exceeding → DIA_ASSERT in debug, DIA_LOG_WARNING + live scan in release.
+        template<class... TComponents>
+        QueryView<TComponents...> Query();
+
         // --- Per-frame entry points ---
 
         // Walks DoUpdate-opted components (wired at update-loop task T14; stub here).
@@ -104,6 +115,9 @@ namespace Dia::Entity {
         // Per-realm mailbox.
         Dia::Mailbox::Mailbox mMailbox;
 
+        // Query cache table — one entry per unique query signature.
+        Dia::Core::Containers::DynamicArrayC<QueryCache, kMaxQueryTypes> mQueryCaches;
+
         // Internal helpers.
         IComponentPool*       FindPool(Dia::Core::StringCRC typeId);
         const IComponentPool* FindPool(Dia::Core::StringCRC typeId) const;
@@ -112,6 +126,12 @@ namespace Dia::Entity {
         void ApplyAddComponent(const MutationOp& op);
         void ApplyRemoveComponent(const MutationOp& op);
         void ApplyDestroyEntity(const MutationOp& op);
+
+        // Mark all caches dirty whose signature includes the given component type.
+        void InvalidateCachesForType(Dia::Core::StringCRC typeId);
+
+        // Rebuild a single dirty cache by walking entity indices.
+        void RebuildQueryCache(QueryCache& cache);
     };
 
 } // namespace Dia::Entity

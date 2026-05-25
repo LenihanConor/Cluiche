@@ -71,6 +71,9 @@
     <ClInclude Include="JsonBlueprintLoader.h" />
     <ClInclude Include="EntityRef.h" />
     <ClInclude Include="EntityRef.inl" />
+    <ClInclude Include="QueryCache.h" />
+    <ClInclude Include="QueryView.h" />
+    <ClInclude Include="QueryView.inl" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Domain.cpp" />

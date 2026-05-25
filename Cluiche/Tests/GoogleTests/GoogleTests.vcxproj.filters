@@ -834,6 +834,9 @@
     <ClCompile Include="DiaEntity\EntityRefTests.cpp">
       <Filter>DiaEntity</Filter>
     </ClCompile>
+    <ClCompile Include="DiaEntity\QuerySystemTests.cpp">
+      <Filter>DiaEntity</Filter>
+    </ClCompile>
     <!-- DiaObservation -->
     <ClCompile Include="DiaObservation\Log\TestLogLevel.cpp">
       <Filter>DiaObservation\Log</Filter>
