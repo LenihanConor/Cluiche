@@ -1,6 +1,8 @@
 #include <DiaEntity/Domain.h>
 #include <DiaEntity/ComponentPool.h>
 #include <DiaEntity/ComponentRegistry.h>
+#include <DiaEntity/Messages/EntityDestroyedMessage.h>
+#include <DiaEntity/EntityAddress.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <cstring>
@@ -12,6 +14,8 @@ namespace Dia::Entity {
         , mEntityRouter(*this)
     {
         mMailbox.RegisterRouter(&mEntityRouter);
+        // Register EntityDestroyedMessage so Domain can broadcast it in ApplyDestroyEntity.
+        mMailbox.RegisterType<EntityDestroyedMessage, kMaxEntitiesPerDomain>();
 #ifdef DEBUG
         for (uint32_t i = 0; i < kMaxEntitiesPerDomain; ++i) {
             mDebugNames[i][0] = '\0';
@@ -105,6 +109,17 @@ namespace Dia::Entity {
         }
         mComponentPools.Add(pool);
         return true;
+    }
+
+    Entity Domain::GetAliveEntity(uint32_t index) const {
+        if (index >= kMaxEntitiesPerDomain) {
+            return Entity::Invalid();
+        }
+        uint32_t gen = mEntityPool.GetLiveGeneration(index);
+        if (gen == 0) {
+            return Entity::Invalid();
+        }
+        return Entity(index, gen);
     }
 
     bool Domain::HasComponentByTypeId(Entity entity, Dia::Core::StringCRC typeId) const {
@@ -317,6 +332,14 @@ namespace Dia::Entity {
 
     void Domain::ApplyDestroyEntity(const MutationOp& op) {
         if (!IsAlive(op.entity)) return;
+
+        // Broadcast EntityDestroyedMessage before components are detached so subscribers
+        // can still inspect the entity's state during their drain callbacks.
+        {
+            EntityDestroyedMessage msg;
+            msg.destroyed = op.entity;
+            mMailbox.Send(MakeAllAddress(), msg);
+        }
 
         // Detach and destroy all components on this entity.
         for (uint32_t i = 0; i < mComponentPools.Size(); ++i) {

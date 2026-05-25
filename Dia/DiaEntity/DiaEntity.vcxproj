@@ -76,6 +76,10 @@
     <ClInclude Include="QueryView.inl" />
     <ClInclude Include="EntityAddress.h" />
     <ClInclude Include="EntityRouter.h" />
+    <ClInclude Include="Hierarchy\ParentComponent.h" />
+    <ClInclude Include="Hierarchy\ChildBufferComponent.h" />
+    <ClInclude Include="Hierarchy\Hierarchy.h" />
+    <ClInclude Include="Messages\EntityDestroyedMessage.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Domain.cpp" />
@@ -83,6 +87,9 @@
     <ClCompile Include="JsonBlueprintLoader.cpp" />
     <ClCompile Include="EntityAddress.cpp" />
     <ClCompile Include="EntityRouter.cpp" />
+    <ClCompile Include="Hierarchy\ParentComponent.cpp" />
+    <ClCompile Include="Hierarchy\ChildBufferComponent.cpp" />
+    <ClCompile Include="Hierarchy\Hierarchy.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.entity.architecture.module.md" />

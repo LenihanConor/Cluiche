@@ -15,6 +15,7 @@
 #include <DiaEntity/QueryCache.h>
 #include <DiaEntity/QueryView.h>
 #include <DiaEntity/EntityRouter.h>
+#include <DiaEntity/Messages/EntityDestroyedMessage.h>
 
 namespace Dia::Entity {
 
@@ -102,6 +103,13 @@ namespace Dia::Entity {
         // Register a pre-constructed component pool. Returns false if type already registered
         // or the pool table is full. Takes ownership.
         bool RegisterPool(IComponentPool* pool);
+
+        // --- Entity enumeration ---
+
+        // Reconstructs an Entity handle for slot `index` if the slot is live (generation != 0).
+        // Returns Entity::Invalid() if the slot is not live.
+        // Use to iterate alive entities: for (uint32_t i = 0; i < kMaxEntitiesPerDomain; ++i) { auto e = GetAliveEntity(i); if (e.IsValid()) ... }
+        Entity GetAliveEntity(uint32_t index) const;
 
     private:
         // Entity slot tag type — empty struct used as the HandlePool element.
