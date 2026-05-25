@@ -122,7 +122,7 @@ What the Dia engine deliberately does NOT provide:
 | AD-002 | No STL containers in public APIs | Dia containers (DynamicArrayC, HashTable) ensure consistent memory management and engine integration | All Dia modules | Accepted | Yes |
 | AD-003 | Namespace convention: `Dia::<Module>::` | Clear ownership; prevents naming conflicts | All Dia modules | Accepted | Yes |
 | AD-004 | ProcessingUnit/Phase/Module for application structure | Multi-threaded execution with explicit scheduling; clear lifecycle management | DiaApplicationFlow | Accepted | Yes |
-| AD-005 | Component-based entities (IComponent/IComponentObject) | Composition over inheritance; flexible runtime entity construction | All game-facing modules | Accepted | Yes |
+| AD-005 | Component-based entities (IComponent/IComponentObject) | Composition over inheritance; flexible runtime entity construction | All game-facing modules | Superseded by [diaentity.md](../systems/dia/diaentity.md) | Yes |
 
 **Status values:** `Proposed` · `Accepted` · `Rejected` · `Superseded`
 **Binding:** `Yes` = enforced constraint on all child systems · `No` = guidance only

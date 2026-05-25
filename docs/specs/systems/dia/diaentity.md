@@ -462,7 +462,7 @@ intended implementation order; each feature stacks on the previous.
 
 | ID | Issue | Resolution |
 |----|-------|-----------|
-| C-1 | PD-003 and AD-005 reference the old `IComponent`/`IComponentObject` model | DiaEntity supersedes both. After DiaEntity ships, both decisions need a Superseded amendment that points to this spec as the new authority. SD-ENT-021 captures this requirement. The amendment is a separate document edit and is not part of this spec's implementation; it is a follow-up housekeeping task. **For the purposes of approving this spec:** acknowledged conflict, design proceeds, amendment tracked. |
+| C-1 | PD-003 and AD-005 reference the old `IComponent`/`IComponentObject` model | **Resolved.** Both decisions amended to `Superseded by diaentity.md` in `docs/specs/platform/Cluiche.md` and `docs/specs/applications/dia.md` (2026-05-24, per SD-ENT-021). |
 
 ## AI Review Questions
 
