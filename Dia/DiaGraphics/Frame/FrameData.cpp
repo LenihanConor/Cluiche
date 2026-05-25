@@ -33,6 +33,7 @@ namespace Dia
 			UIFrameData::CopyUIBuffer(rhs);
 
 			// Copy entity frame data (sprites)
+			EntityFrameData::Clear();
 			const Core::Containers::DynamicArrayC<SpriteDrawCommand, 256>& sprites = rhs.GetSprites();
 			for (unsigned int i = 0; i < sprites.Size(); ++i)
 			{

@@ -144,6 +144,20 @@ void AssetServiceModule::DoUpdate(float /*dt*/)
         // Stage changed — unload the old stage (alias + assets), load the new.
         if (mCurrentAppFlowStage.Value() != 0)
         {
+            // Unregister UI handler if UIModule has stopped — its UISystem is
+            // deleted in DoStop, so the registered pointer is stale. Must happen
+            // before RequestStageUnload to avoid DispatchUnload calling through
+            // the dead vptr.
+            if (mUIHandlerRegistered)
+            {
+                UIModule* ui = mUI.Get();
+                if (!ui || !ui->HasStarted())
+                {
+                    mRuntime.UnregisterTypeHandler("ui");
+                    mUIHandlerRegistered = false;
+                }
+            }
+
             // Unregister stage-scoped path aliases.
             UnregisterStageAliases();
 
@@ -423,12 +437,15 @@ void AssetServiceModule::EnsureHandlersRegistered()
     KernelModule* kernel = mKernel.Get();
     UIModule*     ui     = mUI.Get();
 
+    bool justRegistered = false;
+
     if (!mTextureHandlerRegistered && kernel && kernel->GetWindow())
     {
         Dia::SFML::RenderWindow* window =
             static_cast<Dia::SFML::RenderWindow*>(kernel->GetWindow());
         mRuntime.RegisterTypeHandler("texture", window->GetTextureHandler());
         mTextureHandlerRegistered = true;
+        justRegistered = true;
     }
 
     if (!mUIHandlerRegistered && ui && ui->GetUISystem())
@@ -437,9 +454,10 @@ void AssetServiceModule::EnsureHandlersRegistered()
             static_cast<Dia::UI::Ultralight::UISystem*>(ui->GetUISystem());
         mRuntime.RegisterTypeHandler("ui", uiSystem->GetUIHandler());
         mUIHandlerRegistered = true;
+        justRegistered = true;
     }
 
-    if (mTextureHandlerRegistered && mUIHandlerRegistered)
+    if (justRegistered && mTextureHandlerRegistered && mUIHandlerRegistered)
     {
         DIA_LOG_INFO("AssetRuntime",
             "AssetServiceModule: texture + ui type handlers registered");

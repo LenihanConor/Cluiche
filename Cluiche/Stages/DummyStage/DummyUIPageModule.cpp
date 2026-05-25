@@ -2,6 +2,8 @@
 
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
+#include <DiaAPI/CommandRegistry/CommandRegistry.h>
+#include <DiaCore/Json/external/json/json.h>
 
 namespace Cluiche { namespace AppFlow {
 
@@ -55,7 +57,9 @@ Dia::ApplicationFlow::StopResult DummyUIPageModule::DoStop()
 void DummyUIPageModule::RequestExitLevel()
 {
     DIA_LOG_INFO("Application", "DummyUIPageModule: Application_ExitLevel -> TransitionTo('Boot')");
-    TransitionTo(Dia::Core::StringCRC("Boot"));
+    Json::Value params;
+    params["target"] = "Boot";
+    Dia::API::ExecuteCommandJson(Dia::Core::StringCRC("dia.automation.navigate_to"), params);
 }
 
 const Dia::Core::StringCRC DummyUIPageModule::kTypeId("DummyUIPageModule");
