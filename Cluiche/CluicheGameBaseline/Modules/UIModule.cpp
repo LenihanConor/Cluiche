@@ -96,6 +96,11 @@ Dia::ApplicationFlow::StopResult UIModule::DoStop()
         mUISystem = nullptr;
     }
 
+    // Flush an empty buffer so downstream consumers (RenderModule) don't keep
+    // compositing stale pixels from the last active stage.
+    Dia::UI::UIDataBuffer emptyBuffer;
+    mUIBufferOutput.Write(emptyBuffer, Dia::Core::TimeAbsolute::Zero());
+
     DIA_LOG_INFO("Application", "UIModule DoStop exit");
     return Dia::ApplicationFlow::StopResult::kDone;
 }

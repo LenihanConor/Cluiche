@@ -90,6 +90,7 @@ namespace Dia
 			mWidth = 0;
 			mHeight = 0;
 			mBufferSize = 0;
+			mBuffer = nullptr;
 		}
 
 		int UIDataBuffer::GetWidth()const { return mWidth; }

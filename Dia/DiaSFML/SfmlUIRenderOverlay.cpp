@@ -30,8 +30,10 @@ namespace Dia
 			DIA_ASSERT(sf::Shader::isAvailable(), "SfmlUIRenderOverlay: shaders not available on this platform");
 
 			mUIShader = DIA_NEW(sf::Shader());
-			mUIOverlayTexture = DIA_NEW(sf::Texture(sf::Vector2u{ mWindowContext->getSize().x, mWindowContext->getSize().y }));
+			const sf::Vector2u windowSize = mWindowContext->getSize();
+			mUIOverlayTexture = DIA_NEW(sf::Texture(windowSize));
 			DIA_ASSERT(mUIOverlayTexture != nullptr, "Could not create UI overlay texture");
+			mClearPixels.assign(windowSize.x * windowSize.y * 4, 0);
 
 			Dia::Core::FilePath uiShaderFile("root", "global/Presentation/", "ui.frag");
 			Dia::Core::FilePath::ResoledFilePath resolvedUIShaderFile;
@@ -59,10 +61,12 @@ namespace Dia
 		{
 			// Reallocate overlay texture to match new canvas size.
 			DIA_DELETE(mUIOverlayTexture);
-			mUIOverlayTexture = DIA_NEW(sf::Texture(sf::Vector2u{
+			const sf::Vector2u newSize{
 				static_cast<unsigned int>(size.x),
 				static_cast<unsigned int>(size.y)
-			}));
+			};
+			mUIOverlayTexture = DIA_NEW(sf::Texture(newSize));
+			mClearPixels.assign(newSize.x * newSize.y * 4, 0);
 
 			mUIShader->setUniform("uiOverlayTex", *mUIOverlayTexture);
 			mUIShader->setUniform("backBufferTex", mBackBuffer->getTexture());
@@ -84,6 +88,11 @@ namespace Dia
 				static bool debugUIRendertexture = false;
 				if (debugUIRendertexture)
 					bool isSuccessful = mUIOverlayTexture->copyToImage().saveToFile("debugUIRender.png");
+			}
+			else
+			{
+				// No UI active — clear stale texture so previous stage UI doesn't bleed through.
+				mUIOverlayTexture->update(mClearPixels.data());
 			}
 
 			mWindowContext->pushGLStates();

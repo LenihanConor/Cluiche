@@ -5,6 +5,9 @@
 
 #include <DiaUI/IUIRenderOverlay.h>
 
+#include <cstdint>
+#include <vector>
+
 namespace sf
 {
 	class RenderWindow;
@@ -28,10 +31,11 @@ namespace Dia
 			void Composite(const Dia::UI::UIDataBuffer& buffer) override;
 
 		private:
-			sf::RenderWindow*  mWindowContext;    // not owned
-			sf::RenderTexture* mBackBuffer;       // not owned
-			sf::Shader*        mUIShader;         // owned
-			sf::Texture*       mUIOverlayTexture; // owned
+			sf::RenderWindow*         mWindowContext;    // not owned
+			sf::RenderTexture*        mBackBuffer;       // not owned
+			sf::Shader*               mUIShader;         // owned
+			sf::Texture*              mUIOverlayTexture; // owned
+			std::vector<uint8_t>      mClearPixels;      // cached zero buffer for clearing stale UI
 		};
 	}
 }
