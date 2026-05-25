@@ -26,6 +26,9 @@ namespace Dia::Entity {
         virtual void     ClearSlotForEntity(uint32_t entityIndex)      = 0;
 
         virtual Dia::Core::StringCRC GetTypeId() const = 0;
+
+        // Returns the number of component slots currently allocated.
+        virtual uint32_t Size() const = 0;
     };
 
     inline constexpr uint32_t kInvalidPoolSlot = 0xFFFFFFFFu;

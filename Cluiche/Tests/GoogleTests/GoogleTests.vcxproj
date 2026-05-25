@@ -379,6 +379,8 @@
     <ClCompile Include="DiaEntity\EntityRouterTests.cpp" />
     <ClCompile Include="DiaEntity\HierarchyTests.cpp" />
     <ClCompile Include="DiaEntity\EditorInspectionTests.cpp" />
+    <ClCompile Include="DiaEntity\StressTests.cpp" />
+    <ClCompile Include="DiaEntity\IntegrationTests.cpp" />
     <!-- DiaObservation -->
     <ClCompile Include="DiaObservation\Log\TestLogLevel.cpp" />
     <ClCompile Include="DiaObservation\Log\TestThreadLogBuffer.cpp" />

@@ -7,6 +7,9 @@
 #include <DiaCore/Core/Assert.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Metric/Counter.h>
+#include <DiaObservation/Metric/Gauge.h>
+#include <DiaEntity/DomainHealth.h>
 #include <DiaMailbox/Mailbox.h>
 #include <DiaEntity/Entity.h>
 #include <DiaEntity/IComponent.h>
@@ -156,6 +159,15 @@ namespace Dia::Entity {
 
         // Query cache table — one entry per unique query signature.
         Dia::Core::Containers::DynamicArrayC<QueryCache, kMaxQueryTypes> mQueryCaches;
+
+        // Observability — metrics (owned by MetricRegistry).
+        Dia::Observation::Metric::Gauge*   mMetricEntityCount    = nullptr;
+        Dia::Observation::Metric::Gauge*   mMetricComponentCount = nullptr;
+        Dia::Observation::Metric::Counter* mMetricMutations      = nullptr;
+        Dia::Observation::Metric::Counter* mMetricQueryRebuilds  = nullptr;
+
+        // Observability — health reporter.
+        DomainHealth mHealth;
 
         // Internal helpers.
         IComponentPool*       FindPool(Dia::Core::StringCRC typeId);

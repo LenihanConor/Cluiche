@@ -5,6 +5,10 @@
 #include <DiaEntity/EntityAddress.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Health/HealthRegistry.h>
 #include <cstring>
 #include <cstdlib> // strcmp via cstring
 
@@ -23,9 +27,21 @@ namespace Dia::Entity {
             mDebugNameSet[i]  = false;
         }
 #endif
+        // Register metrics.
+        auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
+        mMetricEntityCount    = reg.RegisterGauge(Dia::Core::StringCRC("dia.entity.count"));
+        mMetricComponentCount = reg.RegisterGauge(Dia::Core::StringCRC("dia.entity.components"));
+        mMetricMutations      = reg.RegisterCounter(Dia::Core::StringCRC("dia.entity.mutations"));
+        mMetricQueryRebuilds  = reg.RegisterCounter(Dia::Core::StringCRC("dia.entity.query_rebuilds"));
+
+        // Register health reporter.
+        Dia::Observation::Health::HealthRegistry::Instance().Register(&mHealth);
     }
 
     Domain::~Domain() {
+        // Unregister health reporter.
+        Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mHealth);
+
         // Release all registered component pools.
         for (uint32_t i = 0; i < mComponentPools.Size(); ++i) {
             delete mComponentPools[i];
@@ -131,6 +147,8 @@ namespace Dia::Entity {
     }
 
     void Domain::Update(float dt) {
+        DIA_TRACE_ZONE("Domain::Update", Dia::Observation::Trace::Category::kDiaEntity);
+        DIA_PROFILE_SCOPE("Domain::Update", Dia::Observation::Profile::Category::kDiaEntity);
         // Walk all component pools in registration order.
         // Call DoUpdate only on components whose type has kFlagOverridesDoUpdate set.
         for (uint32_t poolIdx = 0; poolIdx < mComponentPools.Size(); ++poolIdx) {
@@ -166,6 +184,9 @@ namespace Dia::Entity {
     }
 
     void Domain::EndOfFrame() {
+        DIA_TRACE_ZONE("Domain::EndOfFrame", Dia::Observation::Trace::Category::kDiaEntity);
+        DIA_PROFILE_SCOPE("Domain::EndOfFrame", Dia::Observation::Profile::Category::kDiaEntity);
+
         ApplyMutations();
 
         // Rebuild all caches marked dirty during ApplyMutations.
@@ -174,6 +195,22 @@ namespace Dia::Entity {
                 RebuildQueryCache(mQueryCaches[i]);
                 mQueryCaches[i].dirty = false;
             }
+        }
+
+        // Update entity count and component count gauges.
+        if (mMetricEntityCount) {
+            uint32_t count = 0;
+            for (uint32_t i = 0; i < kMaxEntitiesPerDomain; ++i) {
+                if (mEntityPool.GetLiveGeneration(i) != 0) ++count;
+            }
+            mMetricEntityCount->Set(static_cast<double>(count));
+        }
+        if (mMetricComponentCount) {
+            uint32_t total = 0;
+            for (uint32_t i = 0; i < mComponentPools.Size(); ++i) {
+                total += mComponentPools[i]->Size();
+            }
+            mMetricComponentCount->Set(static_cast<double>(total));
         }
     }
 
@@ -196,20 +233,26 @@ namespace Dia::Entity {
     }
 
     void Domain::ApplyMutations() {
+        DIA_TRACE_ZONE("Domain::ApplyMutations", Dia::Observation::Trace::Category::kDiaEntity);
+
         // Process in deterministic order: AddComponent → RemoveComponent → DestroyEntity.
         // This ensures components are visible before any remove in the same frame,
         // and entities are alive for component removal before the slot is freed.
+
+        uint32_t totalOps = 0;
 
         for (uint32_t i = 0; i < mMutationQueue.Size(); ++i) {
             if (mMutationQueue[i].kind == MutationKind::AddComponent) {
                 ApplyAddComponent(mMutationQueue[i]);
                 InvalidateCachesForType(mMutationQueue[i].componentTypeId);
+                ++totalOps;
             }
         }
         for (uint32_t i = 0; i < mMutationQueue.Size(); ++i) {
             if (mMutationQueue[i].kind == MutationKind::RemoveComponent) {
                 ApplyRemoveComponent(mMutationQueue[i]);
                 InvalidateCachesForType(mMutationQueue[i].componentTypeId);
+                ++totalOps;
             }
         }
         for (uint32_t i = 0; i < mMutationQueue.Size(); ++i) {
@@ -219,7 +262,12 @@ namespace Dia::Entity {
                     mQueryCaches[c].dirty = true;
                 }
                 ApplyDestroyEntity(mMutationQueue[i]);
+                ++totalOps;
             }
+        }
+
+        if (mMetricMutations && totalOps > 0) {
+            mMetricMutations->Inc(totalOps);
         }
 
         // Reset Json::Value config fields before RemoveAll to avoid double-destruction.
@@ -245,6 +293,10 @@ namespace Dia::Entity {
     }
 
     void Domain::RebuildQueryCache(QueryCache& cache) {
+        DIA_TRACE_ZONE("Domain::RebuildQueryCache", Dia::Observation::Trace::Category::kDiaEntity);
+        DIA_PROFILE_SCOPE("Domain::RebuildQueryCache", Dia::Observation::Profile::Category::kDiaEntity);
+        if (mMetricQueryRebuilds) mMetricQueryRebuilds->Inc();
+
         cache.entities.RemoveAll();
 
         // Walk every entity index and check whether it has all required component types.
@@ -298,7 +350,10 @@ namespace Dia::Entity {
                 DIA_ASSERT(hasReq,
                     "ApplyAddComponent: required component (CRC %u) not present on entity",
                     desc->requires_[i].Value());
-                if (!hasReq) return;
+                if (!hasReq) {
+                    mHealth.IncrementErrors();
+                    return;
+                }
             }
         }
 
@@ -307,6 +362,7 @@ namespace Dia::Entity {
         IComponent* comp = pool->AllocateRaw(op.entity.GetIndex());
         if (!comp) {
             DIA_LOG_WARNING("DiaEntity", "ApplyAddComponent: component pool full, cannot allocate");
+            mHealth.IncrementWarnings();
             return;
         }
 
@@ -317,6 +373,7 @@ namespace Dia::Entity {
 
         // Notify the component that it has been attached.
         comp->OnAttach(*this, op.entity);
+        DIA_LOG_DEBUG("DiaEntity", "entity %u: attached component (CRC %u)", op.entity.GetIndex(), op.componentTypeId.Value());
     }
 
     void Domain::ApplyRemoveComponent(const MutationOp& op) {
@@ -329,10 +386,12 @@ namespace Dia::Entity {
             comp->OnDetach(*this, op.entity);
         }
         pool->Destroy(op.entity.GetIndex());
+        DIA_LOG_DEBUG("DiaEntity", "entity %u: detached component (CRC %u)", op.entity.GetIndex(), op.componentTypeId.Value());
     }
 
     void Domain::ApplyDestroyEntity(const MutationOp& op) {
         if (!IsAlive(op.entity)) return;
+        DIA_LOG_DEBUG("DiaEntity", "entity %u destroyed", op.entity.GetIndex());
 
         // Broadcast EntityDestroyedMessage before components are detached so subscribers
         // can still inspect the entity's state during their drain callbacks.

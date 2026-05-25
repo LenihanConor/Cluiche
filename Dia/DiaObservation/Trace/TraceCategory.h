@@ -16,6 +16,7 @@ namespace Dia
 			constexpr TraceCategory kDiaStream          = 1u << 2;
 			constexpr TraceCategory kDiaAssetRuntime    = 1u << 3;
 			constexpr TraceCategory kDiaAnimation       = 1u << 4;
+			constexpr TraceCategory kDiaEntity          = 1u << 5;
 			constexpr TraceCategory kAll                = ~0u;
 		}
 	}

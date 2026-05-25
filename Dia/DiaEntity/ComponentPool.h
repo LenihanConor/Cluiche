@@ -103,6 +103,10 @@ namespace Dia::Entity {
             return mPool.Get(h);
         }
 
+        uint32_t Size() const override {
+            return mPool.GetSize();
+        }
+
         template<typename Visitor>
         void ForEach(const Visitor& visitor) {
             mPool.ForEach(visitor);
