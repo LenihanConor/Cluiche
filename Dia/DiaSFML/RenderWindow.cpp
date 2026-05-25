@@ -198,11 +198,6 @@ namespace Dia
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 			mWindowContext->clear();
-
-#ifdef DIA_DEBUG
-			// Begin ImGui frame -- console and other ImGui consumers submit widgets after this
-			Dia::ImGui::NewFrame(1.0f / 60.0f);  // TODO: use actual delta time
-#endif
 		}
 
 		//-------------------------------------------------------------------------------------

@@ -102,6 +102,7 @@ namespace Dia
             ::ImGui::CreateContext();
 
             ImGuiIO& io = ::ImGui::GetIO();
+            io.IniFilename = nullptr;
             io.BackendPlatformName = "dia_sfml3";
             io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;
 

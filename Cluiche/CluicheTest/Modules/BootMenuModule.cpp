@@ -51,6 +51,11 @@ Dia::ApplicationFlow::StartResult BootMenuModule::DoStart()
 
 void BootMenuModule::DoUpdate(float /*dt*/)
 {
+    if (DebugUIModule* debugUI = mDebugUI.Get())
+    {
+        if (!debugUI->IsFrameActive())
+            return;
+    }
     DrawMenu();
 }
 

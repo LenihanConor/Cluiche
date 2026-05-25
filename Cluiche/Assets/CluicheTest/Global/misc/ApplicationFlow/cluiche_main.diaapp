@@ -80,7 +80,7 @@
                 {
                     "instance_id": "UIModule",
                     "type_id": "UIModule",
-                    "stages": [ "all" ],
+                    "stages": [ "DummyStage" ],
                     "dependencies": [ "ObservationModule", "KernelModule" ],
                     "reads": [ "SimToUI" ],
                     "writes": [ "UIToSim" ]
@@ -90,14 +90,6 @@
                     "type_id": "AssetServiceModule",
                     "stages": [ "all" ],
                     "dependencies": [ "ObservationModule", "KernelModule", "UIModule", "JobSystemModule" ],
-                    "reads": [],
-                    "writes": []
-                },
-                {
-                    "instance_id": "BootUIPageModule",
-                    "type_id": "BootUIPageModule",
-                    "stages": [ "Boot" ],
-                    "dependencies": [ "UIModule" ],
                     "reads": [],
                     "writes": []
                 },
@@ -171,10 +163,26 @@
             "dedicated_thread": true,
             "modules": [
                 {
+                    "instance_id": "DebugUI",
+                    "type_id": "DebugUIModule",
+                    "stages": [ "all" ],
+                    "dependencies": [],
+                    "reads": [],
+                    "writes": []
+                },
+                {
+                    "instance_id": "BootMenu",
+                    "type_id": "BootMenuModule",
+                    "stages": [ "Boot" ],
+                    "dependencies": [ "DebugUI" ],
+                    "reads": [],
+                    "writes": []
+                },
+                {
                     "instance_id": "RenderModule",
                     "type_id": "RenderModule",
                     "stages": [ "all" ],
-                    "dependencies": [],
+                    "dependencies": [ "DebugUI" ],
                     "reads": [ "SimToRender" ],
                     "writes": []
                 }
