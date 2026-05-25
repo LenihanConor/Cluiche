@@ -177,6 +177,14 @@ Dia::ApplicationFlow::StopResult DummyLevelModule::DoStop()
 {
     DIA_LOG_INFO("Application", "DummyLevelModule DoStop entry");
     mLoadEntryLogged = false;
+
+    // Write a cleared frame so the FrameStream no longer holds ITexture*
+    // pointers that will be freed when the stage's assets are unloaded.
+    // RenderModule keeps presenting FetchLatest() until it transitions, so
+    // without this flush it would render the stale frame through freed vptrs.
+    mFrame.Clear();
+    mRenderOutput.Write(mFrame, Dia::Core::TimeAbsolute::Zero());
+
     return Dia::ApplicationFlow::StopResult::kDone;
 }
 
