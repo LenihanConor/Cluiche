@@ -1,5 +1,6 @@
 #include <DiaEntity/Domain.h>
 #include <DiaEntity/ComponentPool.h>
+#include <DiaEntity/ComponentRegistry.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <cstring>
@@ -139,13 +140,18 @@ namespace Dia::Entity {
             }
         }
 
+        // Reset Json::Value config fields before RemoveAll to avoid double-destruction.
+        // DynamicArrayC::RemoveAll calls ~T() explicitly, and the member array destructor
+        // also calls ~T() — safe only if the element is trivially destructible or already reset.
+        for (uint32_t i = 0; i < mMutationQueue.Size(); ++i) {
+            mMutationQueue[i].config = Json::Value();
+        }
         mMutationQueue.RemoveAll();
     }
 
     void Domain::ApplyAddComponent(const MutationOp& op) {
-        // Component pool creation and typed construction is wired by the reflection
-        // feature (Task T7) which registers pools and factory functions. For the
-        // foundation, if no pool exists the add is dropped with a warning.
+        if (!IsAlive(op.entity)) return;
+
         IComponentPool* pool = FindPool(op.componentTypeId);
         if (!pool) {
             DIA_LOG_WARNING("DiaEntity", "ApplyAddComponent: no pool registered for component type — call Domain::RegisterPool first");
@@ -155,8 +161,38 @@ namespace Dia::Entity {
             DIA_LOG_WARNING("DiaEntity", "ApplyAddComponent: entity already has this component type");
             return;
         }
-        // Typed construction is handled by the concrete pool subclass (reflection task).
-        // Foundation slot wiring is delegated to the pool.
+
+        // Look up the reflection descriptor to validate REQUIRES and drive JSON load.
+        // If no descriptor is registered the component still attaches (fields keep defaults).
+        const ComponentTypeDesc* desc = ComponentRegistry::Get().Find(op.componentTypeId);
+
+        // Validate REQUIRES — all required components must already be present.
+        if (desc != nullptr) {
+            for (uint16_t i = 0; i < desc->requiresCount; ++i) {
+                const IComponentPool* reqPool = FindPool(desc->requires_[i]);
+                const bool hasReq = (reqPool != nullptr) && reqPool->HasSlot(op.entity.GetIndex());
+                DIA_ASSERT(hasReq,
+                    "ApplyAddComponent: required component (CRC %u) not present on entity",
+                    desc->requires_[i].Value());
+                if (!hasReq) return;
+            }
+        }
+
+        // Allocate and default-construct the component inside the typed pool.
+        // HandlePool::Allocate() calls T's default constructor; AllocateRaw wraps it.
+        IComponent* comp = pool->AllocateRaw(op.entity.GetIndex());
+        if (!comp) {
+            DIA_LOG_WARNING("DiaEntity", "ApplyAddComponent: component pool full, cannot allocate");
+            return;
+        }
+
+        // Load fields from JSON config (overwrites defaults set by the default constructor).
+        if (!op.config.isNull() && desc != nullptr && desc->loadFromJson != nullptr) {
+            desc->loadFromJson(comp, op.config);
+        }
+
+        // Notify the component that it has been attached.
+        comp->OnAttach(*this, op.entity);
     }
 
     void Domain::ApplyRemoveComponent(const MutationOp& op) {

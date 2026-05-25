@@ -14,6 +14,10 @@ namespace Dia::Entity {
         virtual IComponent*       GetRaw(uint32_t entityIndex)       = 0;
         virtual const IComponent* GetRaw(uint32_t entityIndex) const = 0;
 
+        // Allocate a new slot for an entity, default-constructing the component.
+        // Returns nullptr if pool is full or entity already has this component.
+        virtual IComponent* AllocateRaw(uint32_t entityIndex) = 0;
+
         // Calls OnDetach then frees the slot.
         virtual void     Destroy(uint32_t entityIndex)                 = 0;
         virtual bool     HasSlot(uint32_t entityIndex) const           = 0;

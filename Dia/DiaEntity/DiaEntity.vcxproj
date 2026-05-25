@@ -64,9 +64,13 @@
     <ClInclude Include="MutationOp.h" />
     <ClInclude Include="Domain.h" />
     <ClInclude Include="Domain.inl" />
+    <ClInclude Include="ComponentTypeDesc.h" />
+    <ClInclude Include="ComponentRegistry.h" />
+    <ClInclude Include="ComponentMacros.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Domain.cpp" />
+    <ClCompile Include="ComponentRegistry.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.entity.architecture.module.md" />

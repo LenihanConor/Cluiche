@@ -369,6 +369,8 @@
     <ClCompile Include="DiaMailbox\MailboxStressTests.cpp" />
     <!-- DiaEntity -->
     <ClCompile Include="DiaEntity\DomainTests.cpp" />
+    <ClCompile Include="DiaEntity\TestComponent.cpp" />
+    <ClCompile Include="DiaEntity\ReflectionTests.cpp" />
     <!-- DiaObservation -->
     <ClCompile Include="DiaObservation\Log\TestLogLevel.cpp" />
     <ClCompile Include="DiaObservation\Log\TestThreadLogBuffer.cpp" />

@@ -66,6 +66,17 @@ namespace Dia::Entity {
             mEntityToSlot[entityIndex] = SlotHandle::Invalid();
         }
 
+        // --- IComponentPool interface (allocation) ---
+
+        // Allocate and default-construct a component for an entity.
+        // Returns the new IComponent* or nullptr on failure.
+        // HandlePool::Allocate() calls T's default constructor — no separate
+        // placement-new is needed after this call.
+        IComponent* AllocateRaw(uint32_t entityIndex) override {
+            TComponent* ptr = Allocate(entityIndex);
+            return ptr; // implicit upcast to IComponent*
+        }
+
         // --- Typed helpers ---
 
         // Allocate a new component slot for an entity.
