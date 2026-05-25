@@ -11,7 +11,6 @@
       "references": [
         { "type": "contains", "target": "manifest.cluiche_main" },
         { "type": "contains", "target": "shader.ui_frag" },
-        { "type": "contains", "target": "folder.bootstrap_ui" },
         { "type": "contains", "target": "folder.webix_5_2_1" },
         { "type": "contains", "target": "folder.ultralight_resources" }
       ]
@@ -53,13 +52,6 @@
       "source_path": "Global/Presentation/ui.frag",
       "scope": "global",
       "tags": ["Presentation"]
-    },
-    {
-      "id": "folder.bootstrap_ui",
-      "type": "folder",
-      "source_path": "Global/Presentation/UI/BootStrap",
-      "scope": "global",
-      "tags": ["Presentation/UI"]
     },
     {
       "id": "folder.webix_5_2_1",

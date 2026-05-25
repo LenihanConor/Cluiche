@@ -7,9 +7,6 @@
     <Filter Include="ApplicationFlow\Modules">
       <UniqueIdentifier>{3c25b1d8-299a-4a1b-ad3e-fa82cc4b198a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Pages">
-      <UniqueIdentifier>{d7e19b4c-2f31-4a88-9e26-85c4f3a1b872}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
