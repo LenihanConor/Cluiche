@@ -32,18 +32,11 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 ---
 
 
-### Entity System Stack (build in dependency order)
+### Standalone Features (pending implementation)
 
-All specs Approved. Ready to implement. Plan: `docs/specs/systems/dia/diaentity.plan.md`.
-
-| # | Item | Spec | What's next |
-|---|------|------|-------------|
-| 1 | HandlePool\<T\> | [handle-pool.md](specs/features/dia/diacore/handle-pool.md) | **Done** (2026-05-20). |
-| 2 | Remove old IComponent infrastructure | — | **Done** (2026-05-20). 4818 tests pass. |
-| 3 | DiaMailbox (5 features) | [diamailbox.md](specs/systems/dia/diamailbox.md) | **Done** (2026-05-21). 62/62 tests GREEN. |
-| 4 | DiaEntity (10 features) | [diaentity.md](specs/systems/dia/diaentity.md) | **All 10 feature specs Approved** (2026-05-21). `Domain` rename from `Realm`. Implementation order: module-and-build → foundation → reflection → blueprint-loader → component-deps-and-refs → hierarchy → mailbox-router → query-system → update-loop → editor-inspection. Plan: [diaentity.plan.md](specs/systems/dia/diaentity.plan.md). |
-| 5 | EntityModule (CluicheTest) | [entity-module.md](specs/features/cluichetest/applicationflow/entity-module.md) | **Approved** (2026-05-21). SimPU module — owns Domain, loads blueprint via AssetService, drives Update+EndOfFrame. Implement after DiaEntity ships. |
-| 6 | PD-003 / AD-005 Supersede amendment | — | **Done** (2026-05-21). Both marked Superseded in platform and app specs. |
+| Feature | Spec | System | Notes |
+|---------|------|--------|-------|
+| EntityModule (CluicheTest) | [entity-module.md](specs/features/cluichetest/applicationflow/entity-module.md) | CluicheTest | SimPU module — owns Domain, loads blueprint via AssetService, drives Update+EndOfFrame. DiaEntity now shipped. |
 
 ---
 

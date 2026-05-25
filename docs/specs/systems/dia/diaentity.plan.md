@@ -1,7 +1,7 @@
 # Implementation Plan: DiaEntity
 
 **Spec:** [diaentity.md](diaentity.md)
-**Status:** In Progress
+**Status:** Done
 **Created:** 2026-05-21
 
 ## Session Notes
