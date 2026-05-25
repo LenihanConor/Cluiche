@@ -74,12 +74,7 @@ Architecture redesigned 2026-05-20. Source of truth: **[docs/research/e2e_testin
 | 3 | [DiaAutomation](specs/systems/dia/diaautomation.md) system + AutomationModule | **Done** |
 | 4 | [dia orchestrate](specs/features/dia/diacli/dia-orchestrate.md) CLI + pytest plugin | **Done** |
 | 5 | CluicheTest [smoke scenario](specs/features/cluichetest/cluichetestscenarios/smoke-scenario.md) | **Done** — `dia orchestrate` passes end-to-end |
-
-### Ready to Implement
-
-| # | Item | Spec | Size | Depends on | Status |
-|---|------|------|------|------------|--------|
-| 8 | [Metric threshold assertions](specs/features/dia/diaautomation/metric-assertions.md) — `dia.automation.get_metric` + pytest `assert_metric` fixture | Done | XS | 3 | **Done** (2026-05-24) |
+| 8 | [Metric threshold assertions](specs/features/dia/diaautomation/metric-assertions.md) — `dia.automation.get_metric` + pytest `assert_metric` fixture | **Done** (2026-05-24) |
 
 ### TestStages — Needs `/spec-feature` per stage
 
