@@ -8,7 +8,9 @@
 **Research:** @docs/research/render_backend_swap/summary.md
 
 ## Status
-`Approved`
+`Done`
+
+**Plan:** @docs/specs/features/dia/diapipeline/bgfx-shader-cook.plan.md
 
 ## Summary
 

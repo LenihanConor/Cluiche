@@ -3,6 +3,12 @@ default_config = "Debug"
 default_platform = "x64"
 default_target = "googletest"
 
+[bgfx_shaders]
+backends     = ["dx11", "dx12", "vulkan"]
+source_root  = "Dia/DiaBgfx/Shaders"
+output_root  = "Cluiche/out/$(AppName)/shaders"
+shaderc_path = "External/bgfx/tools/shaderc.exe"
+
 [proto]
 proto_dir = "Dia/DiaDebugProtocol/proto"
 output_dir = "Dia/DiaDebugProtocol/proto/generated"
@@ -13,7 +19,8 @@ project = "Cluiche/Tests/GoogleTests/GoogleTests.vcxproj"
 stages = ["compile-code", "deploy"]
 
 [targets.googletest.build_deps]
-protobuf = true
+protobuf      = true
+bgfx_shaders  = false
 
 [targets.googletest.deploy]
 files = [
@@ -36,7 +43,8 @@ catalogue_manifest = "Cluiche/Assets/CluicheTest/assets.catalogue.json"
 asset_stages = ["stage.global", "stage.dummy_stage", "stage.rigidbody2d_stage"]
 
 [targets.cluichetest.build_deps]
-protobuf = true
+protobuf     = true
+bgfx_shaders = true
 
 [targets.cluichetest.deploy]
 files = [

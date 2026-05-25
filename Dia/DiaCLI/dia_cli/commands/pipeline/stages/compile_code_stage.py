@@ -252,6 +252,20 @@ def run(config: PipelineConfig, target: str, build_config: str, force: bool, rep
         if rc != 0:
             return rc
 
+    if target_cfg.build_deps.bgfx_shaders:
+        from ..bgfx_shader_cook import cook_bgfx_shaders
+        rc = cook_bgfx_shaders(
+            cfg=config.bgfx_shaders,
+            app_name=target_cfg.app_name,
+            force=force,
+            repo_root=repo_root,
+            output=output,
+            system=system,
+            stage=stage,
+        )
+        if rc != 0:
+            return rc
+
     msbuild = _find_msbuild(config.global_cfg.msbuild_path)
     if msbuild is None:
         logger.error("msbuild not found — run `dia env verify` to check your VS 2022 installation")
