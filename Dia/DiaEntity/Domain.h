@@ -15,11 +15,12 @@
 #include <DiaEntity/QueryCache.h>
 #include <DiaEntity/QueryView.h>
 #include <DiaEntity/EntityRouter.h>
+#include <DiaEntity/IEntityInspectable.h>
 #include <DiaEntity/Messages/EntityDestroyedMessage.h>
 
 namespace Dia::Entity {
 
-    class Domain {
+    class Domain : public IEntityInspectable {
     public:
         Domain();
         ~Domain();
@@ -90,7 +91,26 @@ namespace Dia::Entity {
         // --- Mailbox access ---
 
         Dia::Mailbox::Mailbox&       GetMailbox()       { return mMailbox; }
-        const Dia::Mailbox::Mailbox& GetMailbox() const { return mMailbox; }
+        const Dia::Mailbox::Mailbox& GetMailbox() const override { return mMailbox; }
+
+        // --- IEntityInspectable overrides (F9: Editor Inspection) ---
+
+        uint32_t GetEntityCount() const override;
+        void     GetAllEntities(
+                     Dia::Core::Containers::DynamicArrayC<Entity, kMaxEntitiesPerDomain>& out) const override;
+        void     GetComponentTypeIds(
+                     Entity entity,
+                     Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32>& out) const override;
+        bool     ReadField(
+                     Entity entity,
+                     Dia::Core::StringCRC componentTypeId,
+                     const char* fieldName,
+                     Json::Value& out) const override;
+        bool     WriteField(
+                     Entity entity,
+                     Dia::Core::StringCRC componentTypeId,
+                     const char* fieldName,
+                     const Json::Value& value) override;
 
         // --- Component type query (used by EntityRouter) ---
 

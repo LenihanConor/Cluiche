@@ -76,6 +76,7 @@
     <ClInclude Include="QueryView.inl" />
     <ClInclude Include="EntityAddress.h" />
     <ClInclude Include="EntityRouter.h" />
+    <ClInclude Include="IEntityInspectable.h" />
     <ClInclude Include="Hierarchy\ParentComponent.h" />
     <ClInclude Include="Hierarchy\ChildBufferComponent.h" />
     <ClInclude Include="Hierarchy\Hierarchy.h" />

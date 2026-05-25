@@ -6,6 +6,7 @@
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <cstring>
+#include <cstdlib> // strcmp via cstring
 
 namespace Dia::Entity {
 
@@ -361,6 +362,135 @@ namespace Dia::Entity {
         // Return the entity slot to the pool.
         Dia::Core::Handle<EntitySlotData> slot(op.entity.GetIndex(), op.entity.GetGeneration());
         mEntityPool.Free(slot);
+    }
+
+    // -------------------------------------------------------------------------
+    // IEntityInspectable — F9: Editor Inspection
+    // -------------------------------------------------------------------------
+
+    uint32_t Domain::GetEntityCount() const {
+        uint32_t count = 0;
+        for (uint32_t i = 0; i < kMaxEntitiesPerDomain; ++i) {
+            if (mEntityPool.GetLiveGeneration(i) != 0) {
+                ++count;
+            }
+        }
+        return count;
+    }
+
+    void Domain::GetAllEntities(
+        Dia::Core::Containers::DynamicArrayC<Entity, kMaxEntitiesPerDomain>& out) const
+    {
+        out.RemoveAll();
+        for (uint32_t i = 0; i < kMaxEntitiesPerDomain; ++i) {
+            uint32_t gen = mEntityPool.GetLiveGeneration(i);
+            if (gen != 0 && !out.IsFull()) {
+                out.Add(Entity(i, gen));
+            }
+        }
+    }
+
+    void Domain::GetComponentTypeIds(
+        Entity entity,
+        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32>& out) const
+    {
+        out.RemoveAll();
+        if (!IsAlive(entity)) return;
+        for (uint32_t i = 0; i < mComponentPools.Size(); ++i) {
+            if (mComponentPools[i]->HasSlot(entity.GetIndex()) && !out.IsFull()) {
+                out.Add(mComponentPools[i]->GetTypeId());
+            }
+        }
+    }
+
+    bool Domain::ReadField(
+        Entity entity,
+        Dia::Core::StringCRC componentTypeId,
+        const char* fieldName,
+        Json::Value& out) const
+    {
+        if (!IsAlive(entity)) {
+            DIA_LOG_WARNING("DiaEntity", "ReadField: entity not alive");
+            return false;
+        }
+        const IComponentPool* pool = FindPool(componentTypeId);
+        if (pool == nullptr || !pool->HasSlot(entity.GetIndex())) {
+            DIA_LOG_WARNING("DiaEntity", "ReadField: component not found on entity");
+            return false;
+        }
+        const ComponentTypeDesc* desc = ComponentRegistry::Get().Find(componentTypeId);
+        if (desc == nullptr || desc->saveToJson == nullptr) {
+            DIA_LOG_WARNING("DiaEntity", "ReadField: no reflection descriptor for component");
+            return false;
+        }
+        const IComponent* comp = pool->GetRaw(entity.GetIndex());
+        Json::Value fullJson;
+        desc->saveToJson(comp, fullJson);
+        if (!fullJson.isMember(fieldName)) {
+            DIA_LOG_WARNING("DiaEntity", "ReadField: field not found in component JSON");
+            return false;
+        }
+        out = fullJson[fieldName];
+        return true;
+    }
+
+    bool Domain::WriteField(
+        Entity entity,
+        Dia::Core::StringCRC componentTypeId,
+        const char* fieldName,
+        const Json::Value& value)
+    {
+        if (!IsAlive(entity)) {
+            DIA_LOG_WARNING("DiaEntity", "WriteField: entity not alive");
+            return false;
+        }
+        IComponentPool* pool = FindPool(componentTypeId);
+        if (pool == nullptr || !pool->HasSlot(entity.GetIndex())) {
+            DIA_LOG_WARNING("DiaEntity", "WriteField: component not found on entity");
+            return false;
+        }
+        const ComponentTypeDesc* desc = ComponentRegistry::Get().Find(componentTypeId);
+        if (desc == nullptr || desc->saveToJson == nullptr || desc->loadFromJson == nullptr) {
+            DIA_LOG_WARNING("DiaEntity", "WriteField: no reflection descriptor for component");
+            return false;
+        }
+
+        // Linear scan to find FieldDesc by name.
+        const FieldDesc* fieldDesc = nullptr;
+        for (uint16_t i = 0; i < desc->fieldCount; ++i) {
+            if (strcmp(desc->fields[i].name, fieldName) == 0) {
+                fieldDesc = &desc->fields[i];
+                break;
+            }
+        }
+        if (fieldDesc == nullptr) {
+            DIA_LOG_WARNING("DiaEntity", "WriteField: field not found in descriptor");
+            return false;
+        }
+
+        // Type check: compare FieldDesc::kind against value type.
+        bool typeOk = false;
+        if (fieldDesc->kind == FieldKind::Primitive) {
+            typeOk = value.isNumeric() || value.isBool();
+        } else if (fieldDesc->kind == FieldKind::StringId) {
+            typeOk = value.isString() || value.isInt() || value.isUInt();
+        } else {
+            // Nested, Math, AssetHandle, EntityRef, Container: accept any value.
+            typeOk = true;
+        }
+        if (!typeOk) {
+            DIA_LOG_WARNING("DiaEntity", "WriteField: type mismatch for field");
+            return false;
+        }
+
+        // Read current state, update one field, write back.
+        // This avoids resetting other fields that are not present in a partial JSON object.
+        IComponent* comp = pool->GetRaw(entity.GetIndex());
+        Json::Value fullJson;
+        desc->saveToJson(comp, fullJson);
+        fullJson[fieldName] = value;
+        desc->loadFromJson(comp, fullJson);
+        return true;
     }
 
 } // namespace Dia::Entity
