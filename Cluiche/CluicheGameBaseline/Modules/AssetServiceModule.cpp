@@ -328,8 +328,20 @@ Dia::Core::StringCRC AssetServiceModule::AssetStageIdFromAppStage(
         char ch = name[c];
         if (ch >= 'A' && ch <= 'Z')
         {
+            // Insert '_' before an uppercase when:
+            //  - preceded by a lowercase (e.g. "yS" in "BodyStage" → "body_stage"), OR
+            //  - preceded by an uppercase that is itself followed by a lowercase (e.g. "DS" in
+            //    "2DStage" → "2d_stage"; but "2D" alone or "2De…" stays "2d").
             if (c > 0)
-                out.Append('_');
+            {
+                char prev = name[c - 1];
+                char next = name[c + 1];
+                bool prevLower = (prev >= 'a' && prev <= 'z');
+                bool prevUpper = (prev >= 'A' && prev <= 'Z');
+                bool nextLower = (next >= 'a' && next <= 'z');
+                if (prevLower || (prevUpper && nextLower))
+                    out.Append('_');
+            }
             out.Append(static_cast<char>(ch + 32));
         }
         else

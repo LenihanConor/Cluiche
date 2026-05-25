@@ -30,13 +30,13 @@
       ]
     },
     {
-      "id": "stage.rigidbody2d_stage",
+      "id": "stage.rigid_body2d_stage",
       "type": "stage",
       "source_path": "../Stages/RigidBody2DStage/rigidbody2d_stage.stage.json",
       "scope": "global",
       "tags": ["misc"],
       "references": [
-        { "type": "contains", "target": "manifest.rigidbody2d_stage" }
+        { "type": "contains", "target": "manifest.rigid_body2d_stage" }
       ]
     },
     {
@@ -108,7 +108,7 @@
       "tags": ["World"]
     },
     {
-      "id": "manifest.rigidbody2d_stage",
+      "id": "manifest.rigid_body2d_stage",
       "type": "manifest",
       "source_path": "../Stages/RigidBody2DStage/Misc/ApplicationFlow/rigidbody2d_stage.diaapp",
       "scope": "stage",
