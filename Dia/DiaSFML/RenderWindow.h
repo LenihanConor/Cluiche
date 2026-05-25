@@ -11,6 +11,7 @@
 #include <DiaWindow/Interface/IWindow.h>
 
 #include "DiaSFML/InputSource.h"
+#include "DiaSFML/SfmlUIRenderOverlay.h"
 #include "DiaSFML/TextureHandler.h"
 
 #ifdef DIA_DEBUG
@@ -22,8 +23,6 @@ namespace sf
 {
 	class RenderWindow;
 	class RenderTexture;
-	class Shader;
-	class Texture;
 }
 
 namespace Dia
@@ -74,12 +73,9 @@ namespace Dia
 			RenderWindow();
 			RenderWindow(const Window::IWindow::Settings& windowSetting, const Graphics::ICanvas::Settings& canvasSettings);
 
-			sf::RenderWindow* mWindowContext;	// Window context used to render too
-			sf::RenderTexture* mBackBuffer;		// Texture we rednder too that will be used to render to final window context
-
-			// UI Variables
-			sf::Shader* mUIShader;				// Shader used to merge the backbuffer and the UI sprite before pushing to window context
-			sf::Texture* mUIOverlayTexture;		//TODO: Replace this with a DIA texture when i create one
+			sf::RenderWindow*    mWindowContext;    // Window context used to render to
+			sf::RenderTexture*   mBackBuffer;       // Offscreen colour target
+			SfmlUIRenderOverlay* mUIRenderOverlay;  // owned; nullptr in default ctor
 
 			// Texture management
 			TextureHandler mTextureHandler;

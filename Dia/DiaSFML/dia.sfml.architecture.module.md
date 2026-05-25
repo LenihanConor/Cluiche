@@ -51,6 +51,7 @@ public_api:
     - RenderWindowFactory
     - RGBA
     - SfmlTexture
+    - SfmlUIRenderOverlay
     - TextureHandler::LookupTexture
 
 dependencies:

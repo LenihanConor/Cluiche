@@ -19,6 +19,7 @@
     <ClCompile Include="RenderWindow.cpp" />
     <ClCompile Include="RenderWindowFactory.cpp" />
     <ClCompile Include="SfmlTexture.cpp" />
+    <ClCompile Include="SfmlUIRenderOverlay.cpp" />
     <ClCompile Include="TextureHandler.cpp" />
     <ClCompile Include="SFMLImGuiBackend.cpp" />
     <!-- ImGui core sources compiled into DiaSFML -->
@@ -37,6 +38,7 @@
     <ClInclude Include="RenderWindow.h" />
     <ClInclude Include="RenderWindowFactory.h" />
     <ClInclude Include="SfmlTexture.h" />
+    <ClInclude Include="SfmlUIRenderOverlay.h" />
     <ClInclude Include="TextureHandler.h" />
     <ClInclude Include="SFMLImGuiBackend.h" />
   </ItemGroup>

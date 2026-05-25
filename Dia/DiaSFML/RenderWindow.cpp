@@ -6,12 +6,12 @@
 #include "DiaSFML/Conversion.h"
 #include "DiaSFML/DebugFrameRendererVisitor.h"
 #include "DiaSFML/EntityFrameRenderer.h"
+#include "DiaSFML/SfmlUIRenderOverlay.h"
 
 #include <DiaGraphics/Frame/FrameData.h>
 #include <DiaGraphics/Frame/DebugFrameDataVisitor.h>
 #include <DiaCore/Memory/Memory.h>
 #include <DiaCore/Strings/stringutils.h>
-#include <DiaCore/FilePath/FilePath.h>
 #include <DiaCore/Core/Log.h>
 
 #include <SFML/Graphics.hpp>
@@ -31,8 +31,7 @@ namespace Dia
 		RenderWindow::RenderWindow()
 			: mWindowContext(nullptr)
 			, mBackBuffer(nullptr)
-			, mUIShader(nullptr)
-			, mUIOverlayTexture(nullptr)
+			, mUIRenderOverlay(nullptr)
 		{
 		}
 
@@ -40,50 +39,31 @@ namespace Dia
 		RenderWindow::RenderWindow(const Window::IWindow::Settings& windowSetting, const Graphics::ICanvas::Settings& canvasSettings)
 			: mWindowContext(nullptr)
 			, mBackBuffer(nullptr)
-			, mUIShader(nullptr)
-			, mUIOverlayTexture(nullptr)
+			, mUIRenderOverlay(nullptr)
 		{
 			// Extract the SF settings for the window
 			wchar_t titleBuffer[1024];
 			Dia::Core::StringToWString(windowSetting.GetTitle().AsCStr(), &titleBuffer[0]);
 			std::wstring titleTempWString(&titleBuffer[0]);
-		
+
 			unsigned int style = windowSetting.GetStyle().GetAllBits();
 
 			sf::VideoMode videoMode({windowSetting.GetDimensions().GetWidth(), windowSetting.GetDimensions().GetHeight()}, windowSetting.GetDimensions().GetBitsPerPixel());
 			sf::ContextSettings context;
-			
-			context.depthBits = canvasSettings.GetDepth();                        //!< Bits of the depth buffer
-			context.stencilBits = canvasSettings.GetStencil();                      //!< Bits of the stencil buffer
-			context.antiAliasingLevel = canvasSettings.GetAntialiasing();                //!< Level of anti-aliasing
-			context.majorVersion = canvasSettings.GetOpenGLMajor();                    //!< Major number of the context version to create
-			context.minorVersion = canvasSettings.GetOpenGLMinor();                    //!< Minor number of the context version to create
+
+			context.depthBits = canvasSettings.GetDepth();
+			context.stencilBits = canvasSettings.GetStencil();
+			context.antiAliasingLevel = canvasSettings.GetAntialiasing();
+			context.majorVersion = canvasSettings.GetOpenGLMajor();
+			context.minorVersion = canvasSettings.GetOpenGLMinor();
 			context.sRgbCapable = false;
 
 			mWindowContext = DIA_NEW(sf::RenderWindow(videoMode, sf::String(titleTempWString), style, sf::State::Windowed, context));
 			mBackBuffer = DIA_NEW(sf::RenderTexture({ windowSetting.GetDimensions().GetWidth(), windowSetting.GetDimensions().GetHeight() }));
-		
+
 			DIA_ASSERT(mBackBuffer != nullptr, "Rendering backbuffer is not allocated");
-			DIA_ASSERT(sf::Shader::isAvailable(), "Shaders are not available on this platform");
 
-			mUIShader = DIA_NEW(sf::Shader());
-			mUIOverlayTexture = DIA_NEW(sf::Texture(sf::Vector2u{ mWindowContext->getSize().x, mWindowContext->getSize().y}));
-			DIA_ASSERT(mUIOverlayTexture != nullptr, "Could not create ui texture");
-
-			//TODO: Replace with a better file load system
-			//TODO: Move this shader to a centralized place
-			Dia::Core::FilePath uiShaderFile("root", "global/Presentation/", "ui.frag");
-			Dia::Core::FilePath::ResoledFilePath resolvedUIShaderFile;
-
-			uiShaderFile.Resolve(resolvedUIShaderFile);
-			bool isLoadedUIShader = mUIShader->loadFromFile(resolvedUIShaderFile.AsCStr(), sf::Shader::Type::Fragment);
-			DIA_ASSERT(isLoadedUIShader, "Could not load ui.frag from %s", resolvedUIShaderFile.AsCStr());
-			if (!isLoadedUIShader)
-				Dia::Core::Log::OutputVaradicLine("[ERROR][Graphics] Failed to load shader: %s", resolvedUIShaderFile.AsCStr());
-
-
-			mUIShader->setUniform("uiOverlayTex", *mUIOverlayTexture);
-			mUIShader->setUniform("backBufferTex", mBackBuffer->getTexture());
+			mUIRenderOverlay = DIA_NEW(SfmlUIRenderOverlay(mWindowContext, mBackBuffer));
 
 			InputSource::SetWindowContext(mWindowContext);
 
@@ -115,14 +95,10 @@ namespace Dia
 
 			mTextureHandler.Shutdown();
 
+			DIA_DELETE(mUIRenderOverlay);
+
 			DIA_ASSERT(mBackBuffer, "mBackBuffer is NULL");
 			DIA_DELETE(mBackBuffer);
-
-			DIA_ASSERT(mUIShader, "mUIShader is NULL");
-			DIA_DELETE(mUIShader);
-
-			DIA_ASSERT(mUIOverlayTexture, "mUIOverlayTexture is NULL");
-			DIA_DELETE(mUIOverlayTexture);
 
 			DIA_ASSERT(mWindowContext, "Window is NULL");
 			DIA_DELETE(mWindowContext);
@@ -175,6 +151,9 @@ namespace Dia
 		void RenderWindow::SetCanvasSize(const Dia::Maths::Vector2D& size)
 		{
 			glViewport(0, 0, static_cast<GLsizei>(size.x), static_cast<GLsizei>(size.y));
+
+			if (mUIRenderOverlay)
+				mUIRenderOverlay->OnCanvasSizeChanged(size);
 		}
 
 		//-------------------------------------------------------------------------------------
@@ -221,29 +200,13 @@ namespace Dia
 		//-------------------------------------------------------------------------------------
 		// Finish the frame
 		void RenderWindow::EndFrame(const Dia::Graphics::FrameData& nextFrame)
-		{			
-			DIA_ASSERT(mUIShader, "mUIShader is NULL");
+		{
 			DIA_ASSERT(mWindowContext, "mWindowContext is NULL");
 
 			if (mWindowContext)
 			{
-				// Push the ui overlay texture to a sprite for rendering
-				sf::Sprite uiSprite(*mUIOverlayTexture);
-				
-				if (nextFrame.GetUIData().GetBufferSize() > 0)
-				{
-					mUIOverlayTexture->update(nextFrame.GetUIData().GetBuffer());
-
-					// TODO This should be part of a debug enu
-					// TODO Hide this behind a real save file
-					static bool debugUIRendertexture = false;
-					if (debugUIRendertexture)
-						bool isSuccessful = mUIOverlayTexture->copyToImage().saveToFile("debugUIRender.png");
-				}
-
-				mWindowContext->pushGLStates();
-				mWindowContext->draw(uiSprite, mUIShader);
-				mWindowContext->popGLStates();
+				if (mUIRenderOverlay)
+					mUIRenderOverlay->Composite(nextFrame.GetUIData());
 
 				mBackBuffer->clear();
 

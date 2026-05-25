@@ -67,6 +67,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BoundMethod.h" />
+    <ClInclude Include="IUIRenderOverlay.h" />
     <ClInclude Include="IPage.h" />
     <ClInclude Include="IUISystem.h" />
     <ClInclude Include="Page.h" />
