@@ -16,12 +16,18 @@
     <ClCompile Include="Modules\BootUIPageModule.cpp">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\EntityModule.cpp">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClCompile>
     <ClCompile Include="Pages\LaunchUIPage.cpp">
       <Filter>Pages</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\BootUIPageModule.h">
+      <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\EntityModule.h">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
     <ClInclude Include="Pages\LaunchUIPage.h">

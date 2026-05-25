@@ -28,6 +28,14 @@
                     "dependencies": [ "TimeServerModule", "InputStreamModule" ],
                     "reads": [ "UIToSim" ],
                     "writes": [ "SimToRender", "SimToUI" ]
+                },
+                {
+                    "instance_id": "EntityModule",
+                    "type_id": "EntityModule",
+                    "stages": [ "DummyStage" ],
+                    "dependencies": [],
+                    "reads": [],
+                    "writes": []
                 }
             ]
         }
