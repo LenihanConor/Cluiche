@@ -109,8 +109,8 @@ void DummyLevelModule::DoUpdate(float dt)
             center.x + std::cos(s_elapsed) * kRadius,
             center.y + std::sin(s_elapsed) * kRadius);
 
-        mFrame.RequestDraw(center,  75.0f, Dia::Graphics::RGBA::White);
-        mFrame.RequestDraw(dynamic, 25.0f, Dia::Graphics::RGBA::Red);
+        mFrame.RequestDraw(center,  37.5f, Dia::Graphics::RGBA::White);
+        mFrame.RequestDraw(dynamic, 12.5f, Dia::Graphics::RGBA::Red);
         mFrame.RequestDraw(center, dynamic, Dia::Graphics::RGBA::White);
     }
 
