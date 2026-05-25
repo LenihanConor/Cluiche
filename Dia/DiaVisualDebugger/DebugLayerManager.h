@@ -152,6 +152,9 @@ namespace Dia
             // Returns StringCRC::kZero if index is out of range.
             Dia::Core::StringCRC GetLayerName(int index) const;
 
+            // Returns the IVisualDebugger at position index (0-based), or nullptr.
+            IVisualDebugger* GetLayer(int index) const;
+
         private:
             struct LayerEntry
             {

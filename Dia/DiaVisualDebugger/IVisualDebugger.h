@@ -8,6 +8,7 @@
 #ifdef DIA_DEBUG
 
 #include <DiaCore/CRC/StringCRC.h>
+#include <atomic>
 
 namespace Dia
 {
@@ -28,6 +29,7 @@ namespace Dia
         // Implementations must provide GetLayerName() and Draw(FrameData&).
         // SetEnabled/IsEnabled have default implementations — override only when
         // more complex enable semantics are needed (e.g. suppress bones when rig layer active).
+        // mEnabled is atomic so SimPU drawers can be toggled safely from MainPU console.
         ////////////////////////////////////////////////////////////////////////////////
         class IVisualDebugger
         {
@@ -40,12 +42,16 @@ namespace Dia
             // Called each frame by DebugLayerManager::Draw() if this layer is enabled.
             virtual void Draw(Dia::Graphics::FrameData& frameData) = 0;
 
-            // Enable/disable this layer. Default implementation stores a bool flag.
-            virtual void SetEnabled(bool enabled) { mEnabled = enabled; }
-            virtual bool IsEnabled() const        { return mEnabled; }
+            // Called each frame by VisualDebuggerConsoleModule to render per-drawer ImGui controls.
+            // Default is a no-op — override to expose sliders, toggles, stats, etc.
+            virtual void DrawImGui() {}
+
+            // Enable/disable this layer. Atomic so MainPU console can toggle SimPU drawers.
+            virtual void SetEnabled(bool enabled) { mEnabled.store(enabled, std::memory_order_relaxed); }
+            virtual bool IsEnabled() const        { return mEnabled.load(std::memory_order_relaxed); }
 
         private:
-            bool mEnabled = true;
+            std::atomic<bool> mEnabled{true};
         };
 
     } // namespace Debug

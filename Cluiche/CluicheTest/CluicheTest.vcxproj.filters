@@ -13,18 +13,12 @@
     <ClCompile Include="Modules\BootMenuModule.cpp">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClCompile>
-    <ClCompile Include="Modules\DebugUIModule.cpp">
-      <Filter>ApplicationFlow\Modules</Filter>
-    </ClCompile>
     <ClCompile Include="Modules\EntityModule.cpp">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\BootMenuModule.h">
-      <Filter>ApplicationFlow\Modules</Filter>
-    </ClInclude>
-    <ClInclude Include="Modules\DebugUIModule.h">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
     <ClInclude Include="Modules\EntityModule.h">

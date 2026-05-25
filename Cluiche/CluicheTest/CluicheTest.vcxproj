@@ -14,7 +14,6 @@
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Modules\BootMenuModule.cpp" />
-    <ClCompile Include="Modules\DebugUIModule.cpp" />
     <ClCompile Include="Modules\EntityModule.cpp" />
     <ClCompile Include="Modules\TestStages\TestResultsRegistry.cpp" />
     <ClCompile Include="Modules\TestStages\RigidBody2DTestModule.cpp" />
@@ -22,7 +21,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\BootMenuModule.h" />
-    <ClInclude Include="Modules\DebugUIModule.h" />
     <ClInclude Include="Modules\EntityModule.h" />
     <ClInclude Include="Modules\TestStages\TestResultsRegistry.h" />
     <ClInclude Include="Modules\TestStages\RigidBody2DTestModule.h" />
@@ -91,6 +89,12 @@
     <ProjectReference Include="..\..\Dia\DiaEntity\DiaEntity.vcxproj">
       <Project>{D9E0F1A2-B3C4-5678-9DEF-012345678903}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaVisualDebuggerConsole\DiaVisualDebuggerConsole.vcxproj">
+      <Project>{07B8C9D0-E1F2-3456-BCDE-678901ABCDE2}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaRigidBody2DVisualDebugger\DiaRigidBody2DVisualDebugger.vcxproj">
+      <Project>{A2B3C4D5-E6F7-8901-BCDE-F01234567891}</Project>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{CEC960D4-B8B3-463B-9F68-716C5C3C4315}</ProjectGuid>
@@ -131,7 +135,7 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(LibOutDir)CluicheGameBaseline.lib;$(LibOutDir)DummyStage.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaSFML.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaAPI.lib;$(LibOutDir)DiaRigidBody2D.lib;$(LibOutDir)DiaGeometry2D.lib;$(LibOutDir)DiaImGui.lib;$(LibOutDir)DiaEntity.lib;sfml-graphics-d.lib;sfml-window-d.lib;sfml-system-d.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(LibOutDir)CluicheGameBaseline.lib;$(LibOutDir)DummyStage.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaSFML.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaAPI.lib;$(LibOutDir)DiaRigidBody2D.lib;$(LibOutDir)DiaGeometry2D.lib;$(LibOutDir)DiaImGui.lib;$(LibOutDir)DiaEntity.lib;$(LibOutDir)DiaVisualDebugger.lib;$(LibOutDir)DiaVisualDebuggerConsole.lib;$(LibOutDir)DiaRigidBody2DVisualDebugger.lib;sfml-graphics-d.lib;sfml-window-d.lib;sfml-system-d.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(RepoRoot)SFML\Current-x64\lib\Debug;$(RepoRoot)Dia\DiaBin\DiaInput;$(RepoRoot)External\SFML\Current-x64\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/WHOLEARCHIVE:DiaDebugServer.lib /WHOLEARCHIVE:CluicheGameBaseline.lib /WHOLEARCHIVE:DummyStage.lib %(AdditionalOptions)</AdditionalOptions>
     </Link>

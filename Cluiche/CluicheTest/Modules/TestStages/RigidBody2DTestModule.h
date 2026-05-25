@@ -8,6 +8,16 @@
 #include "Modules/AutomationModule.h"
 #include "Modules/Physics2DModule.h"
 
+#ifdef DIA_DEBUG
+#include "Modules/VisualDebuggerModule.h"
+#include <DiaRigidBody2DVisualDebugger/PhysicsShapesDrawer.h>
+#include <DiaRigidBody2DVisualDebugger/VelocityArrowsDrawer.h>
+#include <DiaRigidBody2DVisualDebugger/ContactNormalsDrawer.h>
+#include <DiaRigidBody2DVisualDebugger/PhysicsAABBDrawer.h>
+#include <DiaRigidBody2DVisualDebugger/ConstraintLinesDrawer.h>
+#include <memory>
+#endif
+
 namespace Dia::RigidBody2D { class RigidBody2D; }
 
 namespace CluicheTest {
@@ -30,8 +40,17 @@ private:
     bool AreAllBodiesAsleep() const;
     void EmitMetrics();
 
-    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::AutomationModule> mAutomation{this};
-    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::Physics2DModule> mPhysics{this};
+    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::AutomationModule>       mAutomation{this};
+    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::Physics2DModule>         mPhysics{this};
+
+#ifdef DIA_DEBUG
+    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::VisualDebuggerModule>    mVisualDebugger{this};
+    std::unique_ptr<Dia::RigidBody2D::PhysicsShapesDrawer>    mShapesDrawer;
+    std::unique_ptr<Dia::RigidBody2D::VelocityArrowsDrawer>   mVelocityDrawer;
+    std::unique_ptr<Dia::RigidBody2D::ContactNormalsDrawer>   mContactsDrawer;
+    std::unique_ptr<Dia::RigidBody2D::PhysicsAABBDrawer>      mAABBDrawer;
+    std::unique_ptr<Dia::RigidBody2D::ConstraintLinesDrawer>  mConstraintsDrawer;
+#endif
 
     static constexpr unsigned int kCircleCount = 10;
     Dia::RigidBody2D::RigidBody2D* mCircles[kCircleCount] = {};

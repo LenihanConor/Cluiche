@@ -313,6 +313,13 @@ namespace Dia
             return mLayers[static_cast<unsigned int>(index)].debugger->GetLayerName();
         }
 
+        IVisualDebugger* DebugLayerManager::GetLayer(int index) const
+        {
+            if (index < 0 || static_cast<unsigned int>(index) >= mLayers.Size())
+                return nullptr;
+            return mLayers[static_cast<unsigned int>(index)].debugger;
+        }
+
         // --------------------------------------------------------------------
         // Private helpers
         // --------------------------------------------------------------------

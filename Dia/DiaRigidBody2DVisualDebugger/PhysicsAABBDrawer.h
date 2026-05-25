@@ -23,10 +23,14 @@ public:
 
     Dia::Core::StringCRC GetLayerName() const override;
     void Draw(Dia::Graphics::FrameData& frameData) override;
+    void DrawImGui() override;
+
+    bool GetFilled() const { return mFilled; }
 
 private:
     const PhysicsWorld&                  mWorld;
     const Dia::Debug::DebugLayerManager& mManager;
+    bool                                 mFilled = false;
 };
 
 } // namespace Dia::RigidBody2D

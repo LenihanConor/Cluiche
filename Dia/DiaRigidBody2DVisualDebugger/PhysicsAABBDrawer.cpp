@@ -5,6 +5,8 @@
 
 #ifdef DIA_DEBUG
 
+#include <imgui.h>
+
 #include "DiaRigidBody2D/World/PhysicsWorld.h"
 #include "DiaRigidBody2D/WorldShapeUtil.h"
 #include "DiaGraphics/Frame/FrameData.h"
@@ -42,6 +44,11 @@ void PhysicsAABBDrawer::Draw(Dia::Graphics::FrameData& frameData)
             aabb.GetTopRight(),
             Dia::Debug::DebugColourPalette::kWarning);
     }
+}
+
+void PhysicsAABBDrawer::DrawImGui()
+{
+    ImGui::Checkbox("Filled", &mFilled);
 }
 
 } // namespace Dia::RigidBody2D

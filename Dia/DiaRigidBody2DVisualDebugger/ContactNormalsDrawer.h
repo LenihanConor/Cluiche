@@ -24,10 +24,12 @@ public:
 
     Dia::Core::StringCRC GetLayerName() const override;
     void Draw(Dia::Graphics::FrameData& frameData) override;
+    void DrawImGui() override;
 
 private:
     const PhysicsWorld&                  mWorld;
     const Dia::Debug::DebugLayerManager& mManager;
+    float                                mNormalLength = 0.3f;
 };
 
 } // namespace Dia::RigidBody2D

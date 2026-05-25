@@ -32,6 +32,26 @@ Dia::ApplicationFlow::StartResult RigidBody2DTestModule::DoStart()
     SetupScene();
     RegisterCheckpoints();
 
+#ifdef DIA_DEBUG
+    if (auto* vdbg = mVisualDebugger.Get())
+    {
+        auto* world = mPhysics.Get()->GetWorld();
+        auto& mgr = vdbg->GetLayerManager();
+
+        mShapesDrawer     = std::make_unique<Dia::RigidBody2D::PhysicsShapesDrawer>(*world, mgr);
+        mVelocityDrawer   = std::make_unique<Dia::RigidBody2D::VelocityArrowsDrawer>(*world, mgr);
+        mContactsDrawer   = std::make_unique<Dia::RigidBody2D::ContactNormalsDrawer>(*world, mgr);
+        mAABBDrawer       = std::make_unique<Dia::RigidBody2D::PhysicsAABBDrawer>(*world, mgr);
+        mConstraintsDrawer = std::make_unique<Dia::RigidBody2D::ConstraintLinesDrawer>(*world, mgr);
+
+        mgr.Register(mShapesDrawer.get(),      10);
+        mgr.Register(mVelocityDrawer.get(),    11);
+        mgr.Register(mContactsDrawer.get(),    12);
+        mgr.Register(mAABBDrawer.get(),        13);
+        mgr.Register(mConstraintsDrawer.get(), 14);
+    }
+#endif
+
     const Dia::Core::StringCRC checkpoints[] = { Dia::Core::StringCRC("rigid_body.all_settled") };
     TestResultsRegistry::GetInstance().SetRunning(
         Dia::Core::StringCRC("RigidBody2DStage"), kBudgetFrames, checkpoints, 1);
@@ -90,6 +110,18 @@ Dia::ApplicationFlow::StopResult RigidBody2DTestModule::DoStop()
     for (unsigned int i = 0; i < kCircleCount; ++i)
         mCircles[i] = nullptr;
     mGround = nullptr;
+
+#ifdef DIA_DEBUG
+    if (auto* vdbg = mVisualDebugger.Get())
+    {
+        auto& mgr = vdbg->GetLayerManager();
+        if (mShapesDrawer)      { mgr.Unregister(mShapesDrawer->GetLayerName());      mShapesDrawer.reset(); }
+        if (mVelocityDrawer)    { mgr.Unregister(mVelocityDrawer->GetLayerName());    mVelocityDrawer.reset(); }
+        if (mContactsDrawer)    { mgr.Unregister(mContactsDrawer->GetLayerName());    mContactsDrawer.reset(); }
+        if (mAABBDrawer)        { mgr.Unregister(mAABBDrawer->GetLayerName());        mAABBDrawer.reset(); }
+        if (mConstraintsDrawer) { mgr.Unregister(mConstraintsDrawer->GetLayerName()); mConstraintsDrawer.reset(); }
+    }
+#endif
 
     mFrameCount = 0;
     mSettleFrame = 0;

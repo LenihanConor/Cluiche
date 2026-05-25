@@ -16,6 +16,7 @@
 #include "DiaVisualDebugger/DebugColourPalette.h"
 #include "DiaVisualDebugger/DebugLayerNames.h"
 
+#include <imgui.h>
 #include <cmath>
 
 namespace Dia::RigidBody2D
@@ -41,8 +42,9 @@ static Dia::Graphics::RGBA BodyColour(const Body2DBase* body)
     return Dia::Debug::DebugColourPalette::kActive;
 }
 
-static void DrawBody(const Body2DBase* body, Dia::Graphics::FrameData& frameData)
+static void DrawBody(const Body2DBase* body, Dia::Graphics::FrameData& frameData, bool showSleeping)
 {
+    if (!showSleeping && !body->IsAwake()) return;
     const Dia::Geometry2D::Transform* t = body->GetTransform();
     if (!t) return;
 
@@ -101,10 +103,15 @@ void PhysicsShapesDrawer::Draw(Dia::Graphics::FrameData& frameData)
     const auto& rigidBodies = mWorld.GetRigidBodies();
 
     for (unsigned int i = 0; i < pointBodies.Size(); ++i)
-        DrawBody(pointBodies[i], frameData);
+        DrawBody(pointBodies[i], frameData, mShowSleeping);
 
     for (unsigned int i = 0; i < rigidBodies.Size(); ++i)
-        DrawBody(rigidBodies[i], frameData);
+        DrawBody(rigidBodies[i], frameData, mShowSleeping);
+}
+
+void PhysicsShapesDrawer::DrawImGui()
+{
+    ImGui::Checkbox("Show sleeping bodies", &mShowSleeping);
 }
 
 } // namespace Dia::RigidBody2D

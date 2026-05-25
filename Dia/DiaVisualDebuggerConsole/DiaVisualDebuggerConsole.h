@@ -1,17 +1,21 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Filename: DiaVisualDebuggerConsole.h
 // Description: ImGui overlay console for DiaVisualDebugger. Provides:
-//              - Checkbox tree to toggle debug layers
-//              - Metrics bar (primitive count + dropped count)
-//              - DiaAPI command input field
-//              - Log tail (last 64 DiaLogger lines)
+//              - Domain tabs (one per layer name prefix, e.g. "physics", "rig")
+//                  - Collapsible Draw Layers section with enable/disable + DrawImGui() per layer
+//                  - Collapsible Stats section (primitive count, dropped count)
+//              - Global DiaAPI command input below tabs
+//              - Output / Warnings bottom tabs (ring-buffered log tail)
 //              No DiaInput dependency -- caller invokes Toggle().
 //              No DiaSFML dependency -- uses DiaImGui for ImGui access.
-// Feature spec: docs/specs/features/dia/diavisualdebugger/debug-console.md
+// Feature spec: docs/specs/features/cluichetest/teststages/visual-debugger-module.md
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
 #ifdef DIA_DEBUG
+
+#include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
 namespace Dia
 {
@@ -38,6 +42,7 @@ namespace Dia
         {
         public:
             static constexpr int kLogTailCapacity = 64;
+            static constexpr int kMaxDomains      = 16;
 
             DiaVisualDebuggerConsole();
             ~DiaVisualDebuggerConsole();
@@ -53,25 +58,35 @@ namespace Dia
                         const Dia::Graphics::DebugFrameData& debugFrameData);
 
             // ----- Test-only accessors -----
-            int  GetLogCount() const { return mLogCount; }
+            int  GetLogCount() const { return mOutputCount; }
             const char* GetLogLine(int index) const;
 
         private:
-            void RenderLayerTree(DebugLayerManager& manager);
-            void RenderMetricsBar(const Dia::Graphics::DebugFrameData& debugFrameData);
+            void RenderDomainTabs(DebugLayerManager& manager,
+                                  const Dia::Graphics::DebugFrameData& debugFrameData);
+            void RenderLayersSection(DebugLayerManager& manager, const char* domain);
+            void RenderStatsSection(const Dia::Graphics::DebugFrameData& debugFrameData);
             void RenderCommandInput();
-            void RenderLogTail();
+            void RenderBottomTabs();
 
             bool mVisible = false;
 
-            char mLogBuffer[kLogTailCapacity][128];
-            int  mLogHead          = 0;
-            int  mLogCount         = 0;
-            bool mScrollToBottom   = false;
+            // Output tab (all log levels)
+            char mOutputBuffer[kLogTailCapacity][128];
+            int  mOutputHead        = 0;
+            int  mOutputCount       = 0;
+            bool mOutputScrollBottom = false;
+
+            // Warnings tab (warnings + errors only)
+            char mWarningBuffer[kLogTailCapacity][128];
+            int  mWarningHead        = 0;
+            int  mWarningCount       = 0;
+            bool mWarningScrollBottom = false;
 
             char mCommandBuffer[256];
 
-            Dia::Observation::Log::ISink* mSink = nullptr;
+            Dia::Observation::Log::ISink*  mOutputSink  = nullptr;
+            Dia::Observation::Log::ISink*  mWarningSink = nullptr;
             Dia::Observation::Log::Logger* mAttachedLogger = nullptr;
         };
 

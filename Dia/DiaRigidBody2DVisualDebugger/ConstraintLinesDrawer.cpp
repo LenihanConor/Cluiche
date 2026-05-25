@@ -5,6 +5,8 @@
 
 #ifdef DIA_DEBUG
 
+#include <imgui.h>
+
 #include "DiaRigidBody2D/World/PhysicsWorld.h"
 #include "DiaRigidBody2D/Constraints/IConstraint.h"
 #include "DiaGraphics/Frame/FrameData.h"
@@ -37,6 +39,11 @@ void ConstraintLinesDrawer::Draw(Dia::Graphics::FrameData& frameData)
         const Dia::Maths::Vector2D anchorB = c->GetWorldAnchorB();
         frameData.RequestDraw(anchorA, anchorB, Dia::Debug::DebugColourPalette::kGoal);
     }
+}
+
+void ConstraintLinesDrawer::DrawImGui()
+{
+    ImGui::TextDisabled("Constraints: %u", mWorld.GetConstraints().Size());
 }
 
 } // namespace Dia::RigidBody2D

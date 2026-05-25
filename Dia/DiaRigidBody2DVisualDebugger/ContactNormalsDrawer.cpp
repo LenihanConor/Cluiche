@@ -5,6 +5,8 @@
 
 #ifdef DIA_DEBUG
 
+#include <imgui.h>
+
 #include "DiaRigidBody2D/World/PhysicsWorld.h"
 #include "DiaRigidBody2D/Detection/Contact.h"
 #include "DiaGraphics/Frame/FrameData.h"
@@ -15,7 +17,6 @@
 namespace Dia::RigidBody2D
 {
 
-static constexpr float kContactNormalLength = 0.3f;
 
 ContactNormalsDrawer::ContactNormalsDrawer(const PhysicsWorld&                world,
                                            const Dia::Debug::DebugLayerManager& manager)
@@ -39,9 +40,14 @@ void ContactNormalsDrawer::Draw(Dia::Graphics::FrameData& frameData)
         frameData.RequestDrawRay(
             c.point,
             c.normal,
-            kContactNormalLength * scale,
+            mNormalLength * scale,
             Dia::Debug::DebugColourPalette::kError);
     }
+}
+
+void ContactNormalsDrawer::DrawImGui()
+{
+    ImGui::SliderFloat("Normal length", &mNormalLength, 0.05f, 2.0f);
 }
 
 } // namespace Dia::RigidBody2D

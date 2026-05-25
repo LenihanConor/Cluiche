@@ -24,10 +24,14 @@ public:
 
     Dia::Core::StringCRC GetLayerName() const override;
     void Draw(Dia::Graphics::FrameData& frameData) override;
+    void DrawImGui() override;
+
+    bool GetShowSleeping() const { return mShowSleeping; }
 
 private:
     const PhysicsWorld&                  mWorld;
     const Dia::Debug::DebugLayerManager& mManager;
+    bool                                 mShowSleeping = true;
 };
 
 } // namespace Dia::RigidBody2D

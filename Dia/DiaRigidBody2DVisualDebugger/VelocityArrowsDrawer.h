@@ -25,6 +25,7 @@ public:
 
     Dia::Core::StringCRC GetLayerName() const override;
     void Draw(Dia::Graphics::FrameData& frameData) override;
+    void DrawImGui() override;
 
 private:
     const PhysicsWorld&                  mWorld;

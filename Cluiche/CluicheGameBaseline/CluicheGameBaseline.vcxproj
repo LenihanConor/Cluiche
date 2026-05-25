@@ -13,8 +13,9 @@
   <ItemGroup>
     <ClCompile Include="Modules\AutomationModule.cpp" />
     <ClCompile Include="Modules\AssetServiceModule.cpp" />
-    <ClCompile Include="Modules\Debug\VisualDebuggerModule.cpp" />
-    <ClCompile Include="Modules\Debug\VisualDebuggerConsoleModule.cpp" />
+    <ClCompile Include="Modules\VisualDebuggerModule.cpp" />
+    <ClCompile Include="Modules\VisualDebuggerConsoleModule.cpp" />
+    <ClCompile Include="Modules\DebugUIModule.cpp" />
     <ClCompile Include="Modules\DebugServerHostModule.cpp" />
     <ClCompile Include="Modules\JobSystemModule.cpp" />
     <ClCompile Include="Modules\InputStreamModule.cpp" />
@@ -32,8 +33,9 @@
   <ItemGroup>
     <ClInclude Include="Modules\AutomationModule.h" />
     <ClInclude Include="Modules\AssetServiceModule.h" />
-    <ClInclude Include="Modules\Debug\VisualDebuggerModule.h" />
-    <ClInclude Include="Modules\Debug\VisualDebuggerConsoleModule.h" />
+    <ClInclude Include="Modules\VisualDebuggerModule.h" />
+    <ClInclude Include="Modules\VisualDebuggerConsoleModule.h" />
+    <ClInclude Include="Modules\DebugUIModule.h" />
     <ClInclude Include="Modules\DebugServerHostModule.h" />
     <ClInclude Include="Modules\JobSystemModule.h" />
     <ClInclude Include="Modules\InputStreamModule.h" />
@@ -105,6 +107,10 @@
     <ProjectReference Include="..\..\Dia\DiaVisualDebuggerConsole\DiaVisualDebuggerConsole.vcxproj">
       <Project>{07B8C9D0-E1F2-3456-BCDE-678901ABCDE2}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaImGui\DiaImGui.vcxproj">
+      <Project>{F6A7B8C9-D0E1-2345-ABCD-567890ABCDE1}</Project>
+    </ProjectReference>
+
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7b4a5c2e-3f1d-4a8b-9c6e-12d5f8b3a7e1}</ProjectGuid>
