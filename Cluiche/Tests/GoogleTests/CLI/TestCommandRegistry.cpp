@@ -130,7 +130,7 @@ TEST_F(CommandRegistryTest, RegisterInvalidCommandName)
 		EXPECT_FALSE(RegisterCommand(cmd));
 	}
 
-	// Test underscore (should fail)
+	// Test underscore (should succeed)
 	{
 		CommandInfo cmd;
 		cmd.name = Dia::Core::StringCRC("test_command");
@@ -138,7 +138,7 @@ TEST_F(CommandRegistryTest, RegisterInvalidCommandName)
 		cmd.category = Dia::Core::StringCRC("test");
 		cmd.owner = "TestSystem";
 		cmd.callback = TestCallback;
-		EXPECT_FALSE(RegisterCommand(cmd));
+		EXPECT_TRUE(RegisterCommand(cmd));
 	}
 
 	// Test space (should fail)

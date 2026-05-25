@@ -125,8 +125,8 @@ namespace Dia
 				for (const char* p = name; *p != '\0'; ++p)
 				{
 					char c = *p;
-					// Allow lowercase letters, digits, hyphens, and dots
-					if (!((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-' || c == '.'))
+					// Allow lowercase letters, digits, hyphens, dots, and underscores
+					if (!((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-' || c == '.' || c == '_'))
 					{
 						return false;
 					}

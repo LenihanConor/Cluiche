@@ -14,23 +14,19 @@
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Modules\BootMenuModule.cpp" />
-    <ClCompile Include="Modules\BootUIPageModule.cpp" />
     <ClCompile Include="Modules\DebugUIModule.cpp" />
     <ClCompile Include="Modules\EntityModule.cpp" />
     <ClCompile Include="Modules\TestStages\TestResultsRegistry.cpp" />
     <ClCompile Include="Modules\TestStages\RigidBody2DTestModule.cpp" />
     <ClCompile Include="Modules\TestStages\TestStageHUDModule.cpp" />
-    <ClCompile Include="Pages\LaunchUIPage.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\BootMenuModule.h" />
-    <ClInclude Include="Modules\BootUIPageModule.h" />
     <ClInclude Include="Modules\DebugUIModule.h" />
     <ClInclude Include="Modules\EntityModule.h" />
     <ClInclude Include="Modules\TestStages\TestResultsRegistry.h" />
     <ClInclude Include="Modules\TestStages\RigidBody2DTestModule.h" />
     <ClInclude Include="Modules\TestStages\TestStageHUDModule.h" />
-    <ClInclude Include="Pages\LaunchUIPage.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">

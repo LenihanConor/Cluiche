@@ -8,6 +8,7 @@
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaDebugServer/DebugServer.h>
+#include <DiaAPI/CommandRegistry/CommandRegistry.h>
 
 #include <imgui.h>
 
@@ -53,8 +54,21 @@ void BootMenuModule::DoUpdate(float /*dt*/)
 {
     if (DebugUIModule* debugUI = mDebugUI.Get())
     {
-        if (!debugUI->IsFrameActive())
+        const bool frameActive = debugUI->IsFrameActive();
+        if (!frameActive)
+        {
+            if (mFrameWasActive)
+            {
+                DIA_LOG_INFO("Application", "BootMenuModule: frame became inactive");
+                mFrameWasActive = false;
+            }
             return;
+        }
+        if (!mFrameWasActive)
+        {
+            DIA_LOG_INFO("Application", "BootMenuModule: frame became active");
+            mFrameWasActive = true;
+        }
     }
     DrawMenu();
 }
@@ -75,6 +89,13 @@ void BootMenuModule::CacheNavigableStages()
 void BootMenuModule::DrawMenu()
 {
     DIA_TRACE_ZONE("BootMenu.DrawMenu", Dia::Observation::Trace::Category::kDiaApplicationFlow);
+
+    if (mFirstDraw)
+    {
+        DIA_LOG_INFO("Application", "BootMenuModule: first draw (%u stages)", mNavigableStages.Size());
+        mFirstDraw = false;
+    }
+
     ImGui::SetNextWindowPos(ImVec2(50, 50), ImGuiCond_Once);
     ImGui::SetNextWindowSize(ImVec2(960, 640), ImGuiCond_Once);
 
@@ -127,6 +148,8 @@ void BootMenuModule::DrawMenu()
                     ImGuiSelectableFlags_SpanAllColumns))
             {
                 mSelectedIndex = static_cast<int>(i);
+                DIA_LOG_INFO("Application", "BootMenuModule: selected stage[%u] '%s'",
+                             i, mNavigableStages[i].AsChar());
             }
 
             // Status badge
@@ -157,9 +180,19 @@ void BootMenuModule::DrawMenu()
     if (ImGui::Button("Launch") || (canLaunch && ImGui::IsKeyPressed(ImGuiKey_Enter)))
     {
         const Dia::Core::StringCRC& target = mNavigableStages[mSelectedIndex];
-        DIA_LOG_INFO("Application", "BootMenuModule: Launch -> TransitionTo('%s')", target.AsChar());
+        DIA_LOG_INFO("Application", "BootMenuModule: Launch button -> navigate_to('%s')", target.AsChar());
         mLaunchCounter->Inc();
-        TransitionTo(target);
+
+        Json::Value params;
+        params["target"] = target.AsChar();
+        Json::Value result = Dia::API::ExecuteCommandJson(
+            Dia::Core::StringCRC("dia.automation.navigate_to"), params);
+
+        if (!result["success"].asBool())
+        {
+            DIA_LOG_ERROR("Application", "BootMenuModule: navigate_to('%s') failed: %s",
+                          target.AsChar(), result["error"].asCString());
+        }
     }
 
     if (!canLaunch)

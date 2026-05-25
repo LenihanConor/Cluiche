@@ -33,6 +33,8 @@ private:
     Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, kMaxStages> mNavigableStages;
     unsigned int mLoadedBitfield = 0;
     int mSelectedIndex = 0;
+    bool mFirstDraw = true;
+    bool mFrameWasActive = false;
 
     Dia::Observation::Metric::Gauge* mStageCountGauge = nullptr;
     Dia::Observation::Metric::Counter* mLaunchCounter = nullptr;

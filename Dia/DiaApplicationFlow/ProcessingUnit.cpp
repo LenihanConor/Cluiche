@@ -6,6 +6,7 @@
 
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Log/Logger.h>
 #include <DiaObservation/Profile/DiaProfile.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 
@@ -155,6 +156,8 @@ namespace Dia { namespace ApplicationFlow {
     //--------------------------------------------------------------------------
     void ProcessingUnit::operator()()
     {
+        Dia::Observation::Log::Logger::Instance().RegisterThreadBuffer();
+
         DIA_LOG_INFO("Application", "ProcessingUnit '%s' thread starting (%.0fHz)",
                      mInstanceId.AsChar(), static_cast<double>(mFrequencyHz));
 
@@ -191,6 +194,8 @@ namespace Dia { namespace ApplicationFlow {
 
         DIA_LOG_INFO("Application", "ProcessingUnit '%s' thread exiting",
                      mInstanceId.AsChar());
+
+        Dia::Observation::Log::Logger::Instance().UnregisterThreadBuffer();
     }
 
     //--------------------------------------------------------------------------
