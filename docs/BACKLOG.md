@@ -32,12 +32,6 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 ---
 
 
-### Standalone Features (pending implementation)
-
-| Feature | Spec | System | Notes |
-|---------|------|--------|-------|
-| EntityModule (CluicheTest) | [entity-module.md](specs/features/cluichetest/applicationflow/entity-module.md) | CluicheTest | SimPU module — owns Domain, loads blueprint via AssetService, drives Update+EndOfFrame. DiaEntity now shipped. |
-
 ---
 
 ## Ready to Build (cont.)
