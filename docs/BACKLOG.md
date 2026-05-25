@@ -24,10 +24,11 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 ### Standalone Features (system Done, feature Approved)
 
-| Feature | Spec | System |
-|---------|------|--------|
-| per-app-bin-layout | [per-app-bin-layout.md](specs/features/dia/diapipeline/per-app-bin-layout.md) | DiaPipeline ✅ |
-| ~~ToolbarPanelSwitcher~~ | **Done** (2026-05-22) — full-name pills + `⋯ +N` overflow dropdown, `ProjectContextButton` moved right. |
+| Feature | Spec | System | Notes |
+|---------|------|--------|-------|
+| per-app-bin-layout | [per-app-bin-layout.md](specs/features/dia/diapipeline/per-app-bin-layout.md) | DiaPipeline ✅ | |
+| diabgfx-imgui-backend | [imgui-backend.md](specs/features/dia/diabgfx/imgui-backend.md) | RenderBackend (Phase 1) | **Blocked**: requires `External/bgfx/examples/common/imgui/` — run `dia env setup --dep bgfx` with examples flag to stage. `canvas-parity` Done (2026-05-25). |
+| ~~ToolbarPanelSwitcher~~ | **Done** (2026-05-22) — full-name pills + `⋯ +N` overflow dropdown, `ProjectContextButton` moved right. | | |
 
 ---
 
@@ -86,6 +87,28 @@ System spec: [teststages.md](specs/systems/cluichetest/teststages.md) (Approved)
 |---|------|-------|
 | 6b | Extract AutomationModuleBase into DiaAutomation | Evaluate from working code after 2+ apps use it |
 | 7 | CluicheEditor EditorAutomationModule | After 6b |
+
+---
+
+## Static Bug Detection Stack
+
+Research complete: [docs/research/static_cpp_bug/](research/static_cpp_bug/). Bundle A chosen.
+
+### Active (no blockers)
+
+| Item | What's needed | Notes |
+|------|--------------|-------|
+| `sanitizer-configs` | Implement | [sanitizer-configs.md](specs/features/dia/diabugdetection/sanitizer-configs.md) ✅ — `Debug-Asan` + `Debug-Ubsan` configs; `dia run googletest --config Asan\|Ubsan`; `dia check --tool=sanitizer` |
+| `cppcheck-integration` | Implement | [cppcheck-integration.md](specs/features/dia/diabugdetection/cppcheck-integration.md) ✅ — winget install; `dia check`; SARIF output; `.cppcheck-suppressions.xml` |
+| `ci-gate` | Implement after cppcheck-integration | [ci-gate.md](specs/features/dia/diabugdetection/ci-gate.md) ✅ — `dia pipeline --stage static-analysis`; baseline diff; `delta.sarif` |
+| `dia-diagnose-loop` | Implement last (needs findings from above) | [dia-diagnose-loop.md](specs/features/dia/diabugdetection/dia-diagnose-loop.md) ✅ — agentic Claude fix loop; stage on success; revert on stuck |
+
+### Blocked on Linux/CMake migration
+
+| Item | Blocked by | Notes |
+|------|-----------|-------|
+| Clang-Tidy analysis | CMake migration (compile_commands.json) | Full project coverage once CMake is the build system; start with DiaCore module mirror |
+| TSan (ThreadSanitizer) | Linux target (WSL2 CI) | Only reliable race detector for Main/Render/Sim threading model; TSan doesn't run on Windows |
 
 ---
 
