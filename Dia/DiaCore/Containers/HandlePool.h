@@ -37,6 +37,10 @@ namespace Dia
 
 			bool IsValid(Handle<T> handle) const;
 
+			// Returns the generation of a live slot, or 0 if the slot is not live.
+			// Allows reconstructing a valid handle for a given entity index.
+			uint32_t GetLiveGeneration(uint32_t index) const;
+
 			uint32_t GetSize() const;
 			constexpr uint32_t GetCapacity() const { return kCapacity; }
 			bool IsFull() const;

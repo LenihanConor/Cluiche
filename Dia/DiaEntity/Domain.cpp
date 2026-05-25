@@ -106,9 +106,38 @@ namespace Dia::Entity {
     }
 
     void Domain::Update(float dt) {
-        // Update-loop feature (T14) walks DoUpdate-opted components here.
-        // Foundation provides the stub.
-        (void)dt;
+        // Walk all component pools in registration order.
+        // Call DoUpdate only on components whose type has kFlagOverridesDoUpdate set.
+        for (uint32_t poolIdx = 0; poolIdx < mComponentPools.Size(); ++poolIdx) {
+            IComponentPool* pool = mComponentPools[poolIdx];
+
+            // Check if this pool's component type is registered as updatable.
+            const ComponentTypeDesc* desc = ComponentRegistry::Get().Find(pool->GetTypeId());
+            if (desc == nullptr || !(desc->flags & kFlagOverridesDoUpdate)) {
+                continue;
+            }
+
+            // Walk all entity indices and update those that have this component.
+            for (uint32_t entityIdx = 0; entityIdx < kMaxEntitiesPerDomain; ++entityIdx) {
+                if (!pool->HasSlot(entityIdx)) {
+                    continue;
+                }
+
+                // Verify the entity is alive and reconstruct the handle.
+                uint32_t gen = mEntityPool.GetLiveGeneration(entityIdx);
+                if (gen == 0) {
+                    // Slot in pool exists but entity slot is not live (should not happen in normal flow).
+                    continue;
+                }
+                Entity e(entityIdx, gen);
+
+                // Get the component and call its DoUpdate.
+                IComponent* comp = pool->GetRaw(entityIdx);
+                if (comp) {
+                    comp->DoUpdate(*this, e, dt);
+                }
+            }
+        }
     }
 
     void Domain::EndOfFrame() {

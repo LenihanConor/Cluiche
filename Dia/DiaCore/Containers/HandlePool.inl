@@ -115,6 +115,16 @@ namespace Dia
 		}
 
 		template<typename T, uint32_t kCapacity>
+		uint32_t HandlePool<T, kCapacity>::GetLiveGeneration(uint32_t index) const
+		{
+			if (index >= kCapacity)
+				return 0;
+			if (!IsSlotLive(index))
+				return 0;
+			return mGeneration[index];
+		}
+
+		template<typename T, uint32_t kCapacity>
 		uint32_t HandlePool<T, kCapacity>::GetSize() const
 		{
 			return mLiveCount;

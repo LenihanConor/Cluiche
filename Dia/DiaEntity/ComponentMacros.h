@@ -60,6 +60,16 @@ private:
 public: type name = (defaultVal); private:
 
 // =============================================================================
+// DIA_UPDATABLE
+//
+// Place in class body alongside DIA_COMPONENT to opt into Domain::Update ticks.
+// Component must pass ClassName::kIsUpdatable to DIA_COMPONENT_REGISTER's IsUpdatable param,
+// or simply pass `true` to mark the component for DoUpdate calls.
+// =============================================================================
+#define DIA_UPDATABLE \
+public: static constexpr bool kIsUpdatable = true; private:
+
+// =============================================================================
 // REQUIRES(OtherComponent)
 //
 // Documentation-only marker in the class body. Register actual dependencies

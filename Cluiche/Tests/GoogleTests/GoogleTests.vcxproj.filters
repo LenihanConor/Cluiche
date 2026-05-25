@@ -828,6 +828,9 @@
     <ClCompile Include="DiaEntity\BpTransformComponent.cpp">
       <Filter>DiaEntity</Filter>
     </ClCompile>
+    <ClCompile Include="DiaEntity\UpdateLoopTests.cpp">
+      <Filter>DiaEntity</Filter>
+    </ClCompile>
     <!-- DiaObservation -->
     <ClCompile Include="DiaObservation\Log\TestLogLevel.cpp">
       <Filter>DiaObservation\Log</Filter>
