@@ -53,7 +53,7 @@ namespace Dia
 			void ForEach(const Visitor& visitor) const;
 
 		private:
-			alignas(T) unsigned char mStorage[sizeof(T) * kCapacity];
+			alignas(T) unsigned char mStorage[sizeof(T) * kCapacity] = {};
 
 			uint32_t mGeneration[kCapacity];
 			uint32_t mNextFreeSlot[kCapacity];

@@ -15,7 +15,7 @@ enum class SerializeErrorKind : uint8_t {
 };
 
 struct SerializeError {
-    SerializeErrorKind kind;
+    SerializeErrorKind kind = SerializeErrorKind::RequiredFieldMissing;
     Dia::Core::StringCRC fieldName;
     Dia::Core::Containers::String128 message;
 };

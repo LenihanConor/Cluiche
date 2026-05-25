@@ -144,16 +144,16 @@ namespace Dia::Mailbox {
         // TypedQueueDescriptor — one per registered type
         // ------------------------------------------------------------------
         struct TypedQueueDescriptor {
-            uint32_t      typeKey;
-            uint32_t      capacity;
-            uint32_t      slotStride;
-            uint32_t      tOffset;    // byte offset within a slot where T begins
-            uint32_t      head;       // index of oldest slot
-            uint32_t      count;      // number of live slots
-            uint32_t      dropsThisDrain; // drops accumulated since last real drain
-            OverflowPolicy policy;
-            uint8_t*      slotBuffer; // heap-allocated flat array [capacity * slotStride]
-            DestructFn    destructFn;
+            uint32_t      typeKey = 0;
+            uint32_t      capacity = 0;
+            uint32_t      slotStride = 0;
+            uint32_t      tOffset = 0;
+            uint32_t      head = 0;
+            uint32_t      count = 0;
+            uint32_t      dropsThisDrain = 0;
+            OverflowPolicy policy = OverflowPolicy::DropOldest;
+            uint8_t*      slotBuffer = nullptr;
+            DestructFn    destructFn = nullptr;
             SubscriberSet subscriberList; // subscribers registered for this type
             // Cumulative observability counters (never reset after registration)
             uint64_t      totalSent    = 0;

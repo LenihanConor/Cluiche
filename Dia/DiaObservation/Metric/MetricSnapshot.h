@@ -27,22 +27,22 @@ namespace Dia
                     kCounter,
                     kGauge,
                     kHistogram
-                } kind;
+                } kind = Kind::kCounter;
 
                 // Counter
-                uint64_t counterValue;
+                uint64_t counterValue = 0;
 
                 // Gauge
-                double gaugeValue;
+                double gaugeValue = 0.0;
 
                 // Histogram
-                uint64_t     histCount;
-                double       histSum;
-                BucketEntry  buckets[kMaxBucketBounds + 1];
-                unsigned int bucketCount;
-                double       p50;
-                double       p95;
-                double       p99;
+                uint64_t     histCount = 0;
+                double       histSum = 0.0;
+                BucketEntry  buckets[kMaxBucketBounds + 1] = {};
+                unsigned int bucketCount = 0;
+                double       p50 = 0.0;
+                double       p95 = 0.0;
+                double       p99 = 0.0;
             };
 
             struct MetricSnapshot
