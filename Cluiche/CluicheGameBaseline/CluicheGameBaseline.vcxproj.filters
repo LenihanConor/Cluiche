@@ -27,6 +27,9 @@
     <ClCompile Include="Modules\ObservationModule.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\Physics2DModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
     <ClCompile Include="Modules\ProfilerModule.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
@@ -63,6 +66,9 @@
       <Filter>Modules</Filter>
     </ClInclude>
     <ClInclude Include="Modules\ObservationModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\Physics2DModule.h">
       <Filter>Modules</Filter>
     </ClInclude>
     <ClInclude Include="Modules\ProfilerModule.h">

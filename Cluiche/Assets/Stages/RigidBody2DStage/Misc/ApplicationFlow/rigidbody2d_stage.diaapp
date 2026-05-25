@@ -7,10 +7,18 @@
             "dedicated_thread": false,
             "modules": [
                 {
+                    "instance_id": "Physics2DModule",
+                    "type_id": "Physics2DModule",
+                    "stages": [ "RigidBody2DStage" ],
+                    "dependencies": [],
+                    "reads": [],
+                    "writes": []
+                },
+                {
                     "instance_id": "RigidBody2DTestModule",
                     "type_id": "RigidBody2DTestModule",
                     "stages": [ "RigidBody2DStage" ],
-                    "dependencies": [ "AutomationModule" ],
+                    "dependencies": [ "AutomationModule", "Physics2DModule" ],
                     "reads": [],
                     "writes": []
                 }

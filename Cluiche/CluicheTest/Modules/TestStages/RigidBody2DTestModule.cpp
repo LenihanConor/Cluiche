@@ -1,6 +1,7 @@
 #include "Modules/TestStages/RigidBody2DTestModule.h"
 #include "Modules/TestStages/TestResultsRegistry.h"
 
+#include "Modules/Physics2DModule.h"
 #include <DiaRigidBody2D/World/PhysicsWorld.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
@@ -24,6 +25,10 @@ Dia::ApplicationFlow::StartResult RigidBody2DTestModule::DoStart()
     if (!automationModule || !automationModule->GetService())
         return Dia::ApplicationFlow::StartResult::kLoading;
 
+    auto* physicsModule = mPhysics.Get();
+    if (!physicsModule || !physicsModule->GetWorld())
+        return Dia::ApplicationFlow::StartResult::kLoading;
+
     SetupScene();
     RegisterCheckpoints();
 
@@ -34,9 +39,8 @@ Dia::ApplicationFlow::StartResult RigidBody2DTestModule::DoStart()
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void RigidBody2DTestModule::DoUpdate(float deltaTime)
+void RigidBody2DTestModule::DoUpdate(float /*deltaTime*/)
 {
-    mWorld->Update(deltaTime);
     ++mFrameCount;
 
     TestResultsRegistry::GetInstance().SetActiveFrameCount(mFrameCount);
@@ -70,10 +74,16 @@ Dia::ApplicationFlow::StopResult RigidBody2DTestModule::DoStop()
             service->UnregisterCheckpoints(this);
     }
 
-    if (mWorld)
+    auto* world = mPhysics.Get() ? mPhysics.Get()->GetWorld() : nullptr;
+    if (world)
     {
-        delete mWorld;
-        mWorld = nullptr;
+        for (unsigned int i = 0; i < kCircleCount; ++i)
+        {
+            if (mCircles[i])
+                world->RemoveRigidBody(mCircles[i]);
+        }
+        if (mGround)
+            world->RemoveRigidBody(mGround);
     }
 
     for (unsigned int i = 0; i < kCircleCount; ++i)
@@ -90,13 +100,7 @@ Dia::ApplicationFlow::StopResult RigidBody2DTestModule::DoStop()
 
 void RigidBody2DTestModule::SetupScene()
 {
-    Dia::RigidBody2D::WorldDef worldDef;
-    worldDef.gravity = Dia::Maths::Vector2D(0.0f, -9.81f);
-    worldDef.fixedTimestep = 1.0f / 30.0f;
-    worldDef.maxSubSteps = 4;
-    worldDef.broadPhase = nullptr;
-
-    mWorld = new Dia::RigidBody2D::PhysicsWorld(worldDef);
+    auto* world = mPhysics.Get()->GetWorld();
 
     // Ground: static circle at y=-10 with large radius acting as floor
     mGroundTransform.SetLocalPosition(Dia::Maths::Vector2D(3.0f, -10.0f));
@@ -110,7 +114,7 @@ void RigidBody2DTestModule::SetupScene()
     groundDef.mass = 0.0f;
     groundDef.restitution = 0.3f;
     groundDef.friction = 0.5f;
-    mGround = mWorld->AddRigidBody(groundDef);
+    mGround = world->AddRigidBody(groundDef);
 
     // 10 circles: 2 rows of 5, positions at y=5 and y=8
     for (unsigned int i = 0; i < kCircleCount; ++i)
@@ -132,7 +136,7 @@ void RigidBody2DTestModule::SetupScene()
         circleDef.linearDamping = 0.01f;
         circleDef.allowSleeping = true;
 
-        mCircles[i] = mWorld->AddRigidBody(circleDef);
+        mCircles[i] = world->AddRigidBody(circleDef);
     }
 }
 
@@ -162,8 +166,9 @@ bool RigidBody2DTestModule::AreAllBodiesAsleep() const
 
 void RigidBody2DTestModule::EmitMetrics()
 {
+    auto* world = mPhysics.Get()->GetWorld();
     DIA_LOG_INFO("CluicheTest", "RigidBody2DTestModule — settled at frame %u, step_count %d",
-        mSettleFrame, mWorld->GetStepCount());
+        mSettleFrame, world->GetStepCount());
 }
 
 } // namespace CluicheTest

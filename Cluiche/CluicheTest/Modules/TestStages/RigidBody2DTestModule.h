@@ -6,8 +6,9 @@
 #include <DiaGeometry2D/Transform/Transform.h>
 #include <DiaGeometry2D/Shapes/Circle.h>
 #include "Modules/AutomationModule.h"
+#include "Modules/Physics2DModule.h"
 
-namespace Dia::RigidBody2D { class PhysicsWorld; class RigidBody2D; }
+namespace Dia::RigidBody2D { class RigidBody2D; }
 
 namespace CluicheTest {
 
@@ -30,8 +31,7 @@ private:
     void EmitMetrics();
 
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::AutomationModule> mAutomation{this};
-
-    Dia::RigidBody2D::PhysicsWorld* mWorld = nullptr;
+    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::Physics2DModule> mPhysics{this};
 
     static constexpr unsigned int kCircleCount = 10;
     Dia::RigidBody2D::RigidBody2D* mCircles[kCircleCount] = {};
