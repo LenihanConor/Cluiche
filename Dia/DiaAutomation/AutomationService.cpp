@@ -4,6 +4,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include "AutomationService.h"
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Metric/Histogram.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
 #include <DiaCore/Json/external/json/json.h>
@@ -381,6 +383,99 @@ namespace Dia { namespace Automation {
                 data["passed"]      = result.passed;
                 data["message"]     = result.message ? result.message : "";
                 data["duration_ms"] = result.durationMs;
+                return data;
+            };
+            Dia::API::RegisterCommandJson(cmd);
+        }
+        // dia.automation.get_metric
+        {
+            Dia::API::CommandInfoJson cmd;
+            cmd.name        = Dia::Core::StringCRC("dia.automation.get_metric");
+            cmd.description = "Query a live metric value by name";
+            cmd.category    = Dia::Core::StringCRC("dia.automation");
+            cmd.owner       = "DiaAutomation";
+            cmd.callback    = [this](const Json::Value& params) -> Json::Value {
+                ResetHeartbeat();
+                if (!params.isMember("name") || !params["name"].isString())
+                {
+                    Json::Value err;
+                    err["error"] = "missing 'name' parameter";
+                    return err;
+                }
+                const char* name = params["name"].asCString();
+                Dia::Core::StringCRC metricId(name);
+
+                using namespace Dia::Observation::Metric;
+                MetricRegistry& registry = MetricRegistry::Instance();
+
+                Counter*   counter   = registry.FindCounter(metricId);
+                Gauge*     gauge     = registry.FindGauge(metricId);
+                Histogram* histogram = registry.FindHistogram(metricId);
+
+                if (!counter && !gauge && !histogram)
+                {
+                    Json::Value err;
+                    char buf[256];
+                    snprintf(buf, sizeof(buf), "metric not found: '%s'", name);
+                    err["error"] = buf;
+                    return err;
+                }
+
+                Json::Value data;
+                if (counter)
+                {
+                    data["type"]  = "counter";
+                    data["value"] = static_cast<Json::UInt64>(counter->Value());
+                }
+                else if (gauge)
+                {
+                    data["type"]  = "gauge";
+                    data["value"] = gauge->Value();
+                }
+                else
+                {
+                    data["type"] = "histogram";
+
+                    Histogram::Data hdata;
+                    histogram->ReadData(hdata);
+
+                    double mean = (hdata.total > 0)
+                        ? hdata.sum / static_cast<double>(hdata.total)
+                        : 0.0;
+
+                    // Approximate min/max from bucket bounds
+                    double minVal = 0.0;
+                    double maxVal = 0.0;
+                    if (hdata.total > 0 && hdata.bucketCount > 0)
+                    {
+                        for (unsigned int i = 0; i < hdata.bucketCount; ++i)
+                        {
+                            if (hdata.counts[i] > 0)
+                            {
+                                minVal = (i == 0) ? 0.0 : static_cast<double>(hdata.bounds[i - 1]);
+                                break;
+                            }
+                        }
+                        for (unsigned int i = hdata.bucketCount; i > 0; --i)
+                        {
+                            if (hdata.counts[i - 1] > 0)
+                            {
+                                maxVal = static_cast<double>(hdata.bounds[i - 1]);
+                                break;
+                            }
+                        }
+                        if (hdata.counts[hdata.bucketCount] > 0)
+                            maxVal = maxVal > 0.0 ? maxVal * 2.0 : static_cast<double>(hdata.bounds[hdata.bucketCount - 1]) * 2.0;
+                    }
+
+                    Json::Value value;
+                    value["count"] = static_cast<Json::UInt64>(hdata.total);
+                    value["sum"]   = hdata.sum;
+                    value["min"]   = minVal;
+                    value["max"]   = maxVal;
+                    value["mean"]  = mean;
+                    data["value"]  = value;
+                }
                 return data;
             };
             Dia::API::RegisterCommandJson(cmd);

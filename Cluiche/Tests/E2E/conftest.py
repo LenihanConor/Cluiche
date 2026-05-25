@@ -8,4 +8,4 @@ if str(_HERE) not in sys.path:
 
 from plugin import *  # noqa: F401, F403, E402
 from plugin import pytest_runtest_teardown, pytest_configure  # noqa: F401, E402
-from plugin import app_launcher, dia_client  # noqa: F401, E402
+from plugin import app_launcher, dia_client, assert_metric  # noqa: F401, E402

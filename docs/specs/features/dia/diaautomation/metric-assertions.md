@@ -151,10 +151,10 @@ def test_entity_count(dia_client, assert_metric):
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 1 | Register `dia.automation.get_metric` in AutomationService::RegisterCommands() | AC1-AC4 unit tests pass | Todo | sonnet | |
-| 2 | Add `assert_metric` fixture to `Tools/orchestrator/plugin.py` | AC5-AC7 unit tests pass (mocked) | Todo | sonnet | |
-| 3 | Run `dia run googletest`. Verify existing tests pass. | AC9 | Todo | haiku | Verification gate |
-| 4 | Add feature row to `diaautomation.md`. Commit. | Doc only | Todo | haiku | |
+| 1 | Register `dia.automation.get_metric` in AutomationService::RegisterCommands() | AC1-AC4 unit tests pass | Done | sonnet | |
+| 2 | Add `assert_metric` fixture to `Cluiche/Tests/E2E/plugin.py` | AC5-AC7 unit tests pass (mocked) | Done | sonnet | fixture lives in E2E plugin, not Tools/orchestrator |
+| 3 | Run `dia run googletest`. Verify existing tests pass. | AC9 | Done | haiku | 6/6 MetricCommandTest GREEN, 18/18 AutomationServiceTest GREEN |
+| 4 | Add feature row to `diaautomation.md`. Commit. | Doc only | Done | haiku | |
 
 ## Binding Decisions Compliance
 
@@ -182,4 +182,4 @@ None.
 
 ## Status
 
-`Approved` (2026-05-21) — Steps 1–5 complete.
+`Done` (2026-05-24) — Implemented. C++ command in `AutomationService.cpp`; pytest fixture in `plugin.py`; unit tests in `TestMetricCommand.cpp`.

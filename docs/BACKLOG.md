@@ -79,7 +79,7 @@ Architecture redesigned 2026-05-20. Source of truth: **[docs/research/e2e_testin
 
 | # | Item | Spec | Size | Depends on | Status |
 |---|------|------|------|------------|--------|
-| 8 | [Metric threshold assertions](specs/features/dia/diaautomation/metric-assertions.md) — `dia.automation.get_metric` + pytest `assert_metric` fixture | Approved | XS | 3 | **Approved** |
+| 8 | [Metric threshold assertions](specs/features/dia/diaautomation/metric-assertions.md) — `dia.automation.get_metric` + pytest `assert_metric` fixture | Done | XS | 3 | **Done** (2026-05-24) |
 
 ### TestStages — Needs `/spec-feature` per stage
 

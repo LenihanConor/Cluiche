@@ -91,6 +91,36 @@ def dia_client(app_launcher, request):
     client.disconnect()
 
 
+@pytest.fixture
+def assert_metric(dia_client):
+    """Fixture that returns an assertion helper for live metric values.
+
+    Usage: assert_metric("dia.frame.duration_ms", "<", 50)
+    For histogram metrics, "value" defaults to the mean.
+    """
+    def _assert(name: str, op: str, threshold: float):
+        result = dia_client.send_command("dia.automation.get_metric", {"name": name})
+        value = result["value"]
+
+        if isinstance(value, dict):
+            value = value["mean"]
+
+        ops = {
+            "<":  lambda a, b: a < b,
+            ">":  lambda a, b: a > b,
+            "<=": lambda a, b: a <= b,
+            ">=": lambda a, b: a >= b,
+            "==": lambda a, b: a == b,
+            "!=": lambda a, b: a != b,
+        }
+        if op not in ops:
+            pytest.fail(f"Unknown operator: '{op}'")
+        if not ops[op](value, threshold):
+            pytest.fail(f"Metric '{name}' = {value}, expected {op} {threshold}")
+
+    return _assert
+
+
 # ---------------------------------------------------------------------------
 # Implicit log-error assertion
 # ---------------------------------------------------------------------------

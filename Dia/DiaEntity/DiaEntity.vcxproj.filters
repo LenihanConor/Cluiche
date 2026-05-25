@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <None Include="dia.entity.architecture.module.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{A1B2C3D4-E5F6-7890-1234-ABCDEF012345}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{B2C3D4E5-F6A7-8901-2345-BCDEF0123456}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{C3D4E5F6-A7B8-9012-3456-CDEF01234567}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Hierarchy">
+      <UniqueIdentifier>{D4E5F6A7-B8C9-0123-4567-DEF012345678}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Messages">
+      <UniqueIdentifier>{E5F6A7B8-C9D0-1234-5678-EF0123456789}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

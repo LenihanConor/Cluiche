@@ -176,7 +176,7 @@ TickHeartbeat(dt) each frame:
 | Navigation Hold | Transition guard management, EnableNavigationHold/Release, re-arm after transition, `dia.automation.navigate_to` command | [navigation-hold.md](../../features/dia/diaautomation/navigation-hold.md) | Approved |
 | Pause Resume | Pause/resume callback registry, invoke all callbacks, `dia.automation.pause`/`dia.automation.resume` commands | [pause-resume.md](../../features/dia/diaautomation/pause-resume.md) | Approved |
 | CI Safety | Heartbeat monitor (configurable timeout), OnDisconnect handler, auto-release + RequestShutdown on failure | [ci-safety.md](../../features/dia/diaautomation/ci-safety.md) | Approved |
-| Metric Assertions | `dia.automation.get_metric` command + pytest `assert_metric` fixture for live metric threshold checks | [metric-assertions.md](../../features/dia/diaautomation/metric-assertions.md) | Approved |
+| Metric Assertions | `dia.automation.get_metric` command + pytest `assert_metric` fixture for live metric threshold checks | [metric-assertions.md](../../features/dia/diaautomation/metric-assertions.md) | Done |
 
 ## Platform Primitives Used
 

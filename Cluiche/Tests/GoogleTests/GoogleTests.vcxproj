@@ -225,6 +225,7 @@
     <ClCompile Include="ApplicationFlow\TestTransitionGuards.cpp" />
     <ClCompile Include="ApplicationFlow\TestBaselineCommands.cpp" />
     <ClCompile Include="Automation\TestAutomationService.cpp" />
+    <ClCompile Include="Automation\TestMetricCommand.cpp" />
     <ClCompile Include="ApplicationFlow\TestApplicationE2E.cpp" />
     <ClCompile Include="UI\TestBoundMethod.cpp" />
     <ClCompile Include="UI\TestUIDataBuffer.cpp" />

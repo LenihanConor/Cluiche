@@ -151,6 +151,9 @@
     <Filter Include="ApplicationFlow">
       <UniqueIdentifier>{APPFL001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Automation">
+      <UniqueIdentifier>{AUTO0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -1087,6 +1090,13 @@
     </ClCompile>
     <ClCompile Include="DiaVisualDebugger\TestDiaVisualDebuggerConsole.cpp">
       <Filter>DiaVisualDebugger</Filter>
+    </ClCompile>
+    <!-- Automation -->
+    <ClCompile Include="Automation\TestAutomationService.cpp">
+      <Filter>Automation</Filter>
+    </ClCompile>
+    <ClCompile Include="Automation\TestMetricCommand.cpp">
+      <Filter>Automation</Filter>
     </ClCompile>
     <!-- GoogleTest -->
     <ClCompile Include="$(ProjectDir)../../../External/googletest/googletest/src/gtest-all.cc">
