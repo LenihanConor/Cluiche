@@ -126,9 +126,8 @@ Dia::ApplicationFlow::StartResult AssetServiceModule::DoStart()
 
 void AssetServiceModule::DoUpdate(float /*dt*/)
 {
-    // Late binding of the UI type handler if UIModule finished starting
-    // after this module's DoStart.
-    if (!mHandlersRegistered)
+    // Late binding: keep trying until both handlers are registered.
+    if (!mTextureHandlerRegistered || !mUIHandlerRegistered)
         EnsureHandlersRegistered();
 
     // 1. React to app-flow stage transitions by driving AssetRuntime's
