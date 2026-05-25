@@ -87,7 +87,8 @@ private:
     Dia::AssetRuntime::AssetRuntime mRuntime;
     Dia::Core::StringCRC mCurrentLoadStageId;         // AssetRuntime stage id
     Dia::Core::StringCRC mCurrentAppFlowStage;         // last app-flow stage we reacted to
-    bool mHandlersRegistered = false;
+    bool mTextureHandlerRegistered = false;
+    bool mUIHandlerRegistered      = false;
 
     Dia::Core::Containers::DynamicArrayC<PathAliasEntry, 16>  mStageAliases;
     Dia::Core::Containers::DynamicArrayC<StagePathEntry,   8> mStagePathMap;

@@ -421,34 +421,27 @@ void AssetServiceModule::RequestStageUnload(const Dia::Core::StringCRC& stageId)
 
 void AssetServiceModule::EnsureHandlersRegistered()
 {
-    if (mHandlersRegistered)
-        return;
-
     KernelModule* kernel = mKernel.Get();
     UIModule*     ui     = mUI.Get();
 
-    bool textureRegistered = false;
-    bool uiRegistered      = false;
-
-    if (kernel && kernel->GetWindow())
+    if (!mTextureHandlerRegistered && kernel && kernel->GetWindow())
     {
         Dia::SFML::RenderWindow* window =
             static_cast<Dia::SFML::RenderWindow*>(kernel->GetWindow());
         mRuntime.RegisterTypeHandler("texture", window->GetTextureHandler());
-        textureRegistered = true;
+        mTextureHandlerRegistered = true;
     }
 
-    if (ui && ui->GetUISystem())
+    if (!mUIHandlerRegistered && ui && ui->GetUISystem())
     {
         auto* uiSystem =
             static_cast<Dia::UI::Ultralight::UISystem*>(ui->GetUISystem());
         mRuntime.RegisterTypeHandler("ui", uiSystem->GetUIHandler());
-        uiRegistered = true;
+        mUIHandlerRegistered = true;
     }
 
-    if (textureRegistered && uiRegistered)
+    if (mTextureHandlerRegistered && mUIHandlerRegistered)
     {
-        mHandlersRegistered = true;
         DIA_LOG_INFO("AssetRuntime",
             "AssetServiceModule: texture + ui type handlers registered");
     }
