@@ -1,14 +1,27 @@
 #include "Modules/TestStages/TestResultsRegistry.h"
 
+#include <DiaObservation/Log/DiaLog.h>
+
 namespace CluicheTest {
 
 void TestResultsRegistry::SetRunning(const Dia::Core::StringCRC& stageName, unsigned int budgetFrames)
+{
+    SetRunning(stageName, budgetFrames, nullptr, 0);
+}
+
+void TestResultsRegistry::SetRunning(const Dia::Core::StringCRC& stageName,
+                                     unsigned int budgetFrames,
+                                     const Dia::Core::StringCRC* checkpointNames,
+                                     unsigned int checkpointCount)
 {
     std::lock_guard<std::mutex> lock(mMutex);
     StageResult* r = FindOrCreate(stageName);
     r->state = StageResult::State::kRunning;
     r->budgetFrames = budgetFrames;
     r->settleFrame = 0;
+    r->checkpoints.RemoveAll();
+    for (unsigned int i = 0; i < checkpointCount && i < StageResult::kMaxCheckpoints; ++i)
+        r->checkpoints.Add(checkpointNames[i]);
     mActiveStage = stageName;
     mActiveFrame = 0;
 }
@@ -21,6 +34,7 @@ void TestResultsRegistry::SetPassed(const Dia::Core::StringCRC& stageName, unsig
     {
         r->state = StageResult::State::kPassed;
         r->settleFrame = frame;
+        DIA_LOG_INFO("CluicheTest", "Stage '%s' PASSED at frame %u", stageName.AsChar(), frame);
     }
 }
 
@@ -40,7 +54,10 @@ void TestResultsRegistry::SetTimeout(const Dia::Core::StringCRC& stageName)
     std::lock_guard<std::mutex> lock(mMutex);
     StageResult* r = Find(stageName);
     if (r)
+    {
         r->state = StageResult::State::kTimeout;
+        DIA_LOG_INFO("CluicheTest", "Stage '%s' TIMEOUT at frame budget", stageName.AsChar());
+    }
 }
 
 const StageResult* TestResultsRegistry::GetResult(const Dia::Core::StringCRC& stageName) const

@@ -32,8 +32,9 @@ Dia::ApplicationFlow::StartResult RigidBody2DTestModule::DoStart()
     SetupScene();
     RegisterCheckpoints();
 
+    const Dia::Core::StringCRC checkpoints[] = { Dia::Core::StringCRC("rigid_body.all_settled") };
     TestResultsRegistry::GetInstance().SetRunning(
-        Dia::Core::StringCRC("RigidBody2DStage"), kBudgetFrames);
+        Dia::Core::StringCRC("RigidBody2DStage"), kBudgetFrames, checkpoints, 1);
 
     DIA_LOG_INFO("CluicheTest", "RigidBody2DTestModule::DoStart — 10 circles + ground, checkpoint registered");
     return Dia::ApplicationFlow::StartResult::kReady;

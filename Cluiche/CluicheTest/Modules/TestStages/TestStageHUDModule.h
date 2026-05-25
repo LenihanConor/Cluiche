@@ -4,6 +4,7 @@
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include "Modules/AutomationModule.h"
+#include "Modules/DebugUIModule.h"
 
 namespace CluicheTest {
 
@@ -19,7 +20,10 @@ protected:
     Dia::ApplicationFlow::StopResult DoStop() override;
 
 private:
+    void RenderBottomBar();
+
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::AutomationModule> mAutomation{this};
+    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::DebugUIModule>    mDebugUI{this, Dia::Core::StringCRC("DebugUI")};
 };
 
 } // namespace CluicheTest

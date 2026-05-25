@@ -12,16 +12,23 @@ struct StageResult
 {
     enum class State { kNotRun, kRunning, kPassed, kFailed, kTimeout };
 
+    static constexpr unsigned int kMaxCheckpoints = 8;
+
     Dia::Core::StringCRC name;
     State state = State::kNotRun;
     unsigned int settleFrame = 0;
     unsigned int budgetFrames = 0;
+    Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, kMaxCheckpoints> checkpoints;
 };
 
 class TestResultsRegistry : public Dia::Core::Singleton<TestResultsRegistry>
 {
 public:
     void SetRunning(const Dia::Core::StringCRC& stageName, unsigned int budgetFrames);
+    void SetRunning(const Dia::Core::StringCRC& stageName,
+                    unsigned int budgetFrames,
+                    const Dia::Core::StringCRC* checkpointNames,
+                    unsigned int checkpointCount);
     void SetPassed(const Dia::Core::StringCRC& stageName, unsigned int frame);
     void SetFailed(const Dia::Core::StringCRC& stageName, unsigned int frame);
     void SetTimeout(const Dia::Core::StringCRC& stageName);
