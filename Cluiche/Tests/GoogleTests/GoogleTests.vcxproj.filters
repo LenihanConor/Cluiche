@@ -157,6 +157,9 @@
     <Filter Include="Automation">
       <UniqueIdentifier>{AUTO0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="CluicheTest">
+      <UniqueIdentifier>{CLCHT001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -1133,6 +1136,16 @@
     </ClCompile>
     <ClCompile Include="DiaVisualDebugger\TestDiaVisualDebuggerConsole.cpp">
       <Filter>DiaVisualDebugger</Filter>
+    </ClCompile>
+    <!-- CluicheTest -->
+    <ClCompile Include="CluicheTest\TestResultsRegistryTests.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
+    <ClCompile Include="CluicheTest\TestStageHUDTests.cpp">
+      <Filter>CluicheTest</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\CluicheTest\Modules\TestStages\TestResultsRegistry.cpp">
+      <Filter>CluicheTest</Filter>
     </ClCompile>
     <!-- Automation -->
     <ClCompile Include="Automation\TestAutomationService.cpp">

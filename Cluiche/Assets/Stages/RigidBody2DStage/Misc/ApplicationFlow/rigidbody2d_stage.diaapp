@@ -21,6 +21,14 @@
                     "dependencies": [ "AutomationModule", "Physics2DModule" ],
                     "reads": [],
                     "writes": []
+                },
+                {
+                    "instance_id": "TestStageHUDModule",
+                    "type_id": "TestStageHUDModule",
+                    "stages": [ "RigidBody2DStage" ],
+                    "dependencies": [ "DebugUIModule", "AutomationModule" ],
+                    "reads": [],
+                    "writes": []
                 }
             ]
         }

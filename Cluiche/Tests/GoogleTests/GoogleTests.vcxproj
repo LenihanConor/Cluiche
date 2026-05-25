@@ -63,7 +63,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)../../../Dia/;$(ProjectDir)../../../External/googletest/googletest/include/;$(ProjectDir)../../../External/jsoncpp-master/include/;$(ProjectDir)../../../External/pybind11/include/;$(ProjectDir)../../../External/Python311/include/;$(ProjectDir)../../../External/websocketpp;$(ProjectDir)../../../External/asio/asio/include;$(ProjectDir)../../../External/protobuf/Current-x64/include;$(ProjectDir)../../../External/imgui/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)../../../Dia/;$(ProjectDir)../../CluicheTest/;$(ProjectDir)../../../External/googletest/googletest/include/;$(ProjectDir)../../../External/jsoncpp-master/include/;$(ProjectDir)../../../External/pybind11/include/;$(ProjectDir)../../../External/Python311/include/;$(ProjectDir)../../../External/websocketpp;$(ProjectDir)../../../External/asio/asio/include;$(ProjectDir)../../../External/protobuf/Current-x64/include;$(ProjectDir)../../../External/imgui/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>DEBUG;WIN64;_CONSOLE;DIA_DEBUG;ASIO_STANDALONE;_WEBSOCKETPP_CPP11_STL_;_WEBSOCKETPP_CPP11_THREAD_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -88,7 +88,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)../../../Dia/;$(ProjectDir)../../../External/googletest/googletest/include/;$(ProjectDir)../../../External/jsoncpp-master/include/;$(ProjectDir)../../../External/pybind11/include/;$(ProjectDir)../../../External/Python311/include/;$(ProjectDir)../../../External/websocketpp;$(ProjectDir)../../../External/asio/asio/include;$(ProjectDir)../../../External/protobuf/Current-x64/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)../../../Dia/;$(ProjectDir)../../CluicheTest/;$(ProjectDir)../../../External/googletest/googletest/include/;$(ProjectDir)../../../External/jsoncpp-master/include/;$(ProjectDir)../../../External/pybind11/include/;$(ProjectDir)../../../External/Python311/include/;$(ProjectDir)../../../External/websocketpp;$(ProjectDir)../../../External/asio/asio/include;$(ProjectDir)../../../External/protobuf/Current-x64/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NDEBUG;WIN64;_CONSOLE;ASIO_STANDALONE;_WEBSOCKETPP_CPP11_STL_;_WEBSOCKETPP_CPP11_THREAD_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -501,6 +501,10 @@
     <ClCompile Include="Animation2D\IntegrationTests.cpp" />
     <ClCompile Include="Animation2D\TestAnimation2DVisualDebuggerStack.cpp" />
     <ClCompile Include="Animation2D\TestDiaAnimation2DSerializers.cpp" />
+    <!-- CluicheTest -->
+    <ClCompile Include="CluicheTest\TestResultsRegistryTests.cpp" />
+    <ClCompile Include="CluicheTest\TestStageHUDTests.cpp" />
+    <ClCompile Include="..\..\CluicheTest\Modules\TestStages\TestResultsRegistry.cpp" />
     <!-- DiaVisualDebuggerConsole + DiaImGui -->
     <ClCompile Include="DiaVisualDebugger\TestDiaVisualDebuggerConsole.cpp" />
     <!-- ImGui sources (required by DiaVisualDebuggerConsole.lib) -->
