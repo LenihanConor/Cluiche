@@ -74,11 +74,15 @@
     <ClInclude Include="QueryCache.h" />
     <ClInclude Include="QueryView.h" />
     <ClInclude Include="QueryView.inl" />
+    <ClInclude Include="EntityAddress.h" />
+    <ClInclude Include="EntityRouter.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Domain.cpp" />
     <ClCompile Include="ComponentRegistry.cpp" />
     <ClCompile Include="JsonBlueprintLoader.cpp" />
+    <ClCompile Include="EntityAddress.cpp" />
+    <ClCompile Include="EntityRouter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.entity.architecture.module.md" />

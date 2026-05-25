@@ -14,6 +14,7 @@
 #include <DiaEntity/MutationOp.h>
 #include <DiaEntity/QueryCache.h>
 #include <DiaEntity/QueryView.h>
+#include <DiaEntity/EntityRouter.h>
 
 namespace Dia::Entity {
 
@@ -90,6 +91,12 @@ namespace Dia::Entity {
         Dia::Mailbox::Mailbox&       GetMailbox()       { return mMailbox; }
         const Dia::Mailbox::Mailbox& GetMailbox() const { return mMailbox; }
 
+        // --- Component type query (used by EntityRouter) ---
+
+        // Returns true if the given entity is alive and has a component whose type CRC
+        // matches typeId. Delegates to the registered pool table.
+        bool HasComponentByTypeId(Entity entity, Dia::Core::StringCRC typeId) const;
+
         // --- Internal pool registration (called by reflection feature T7) ---
 
         // Register a pre-constructed component pool. Returns false if type already registered
@@ -114,6 +121,10 @@ namespace Dia::Entity {
 
         // Per-realm mailbox.
         Dia::Mailbox::Mailbox mMailbox;
+
+        // Entity address router — registered with mMailbox in Domain constructor.
+        // Must be declared AFTER mMailbox (ctor takes Domain&, dtor safe since Domain outlives it).
+        EntityRouter mEntityRouter;
 
         // Query cache table — one entry per unique query signature.
         Dia::Core::Containers::DynamicArrayC<QueryCache, kMaxQueryTypes> mQueryCaches;

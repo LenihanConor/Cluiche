@@ -9,7 +9,9 @@ namespace Dia::Entity {
 
     Domain::Domain()
         : mMailbox()
+        , mEntityRouter(*this)
     {
+        mMailbox.RegisterRouter(&mEntityRouter);
 #ifdef DEBUG
         for (uint32_t i = 0; i < kMaxEntitiesPerDomain; ++i) {
             mDebugNames[i][0] = '\0';
@@ -103,6 +105,13 @@ namespace Dia::Entity {
         }
         mComponentPools.Add(pool);
         return true;
+    }
+
+    bool Domain::HasComponentByTypeId(Entity entity, Dia::Core::StringCRC typeId) const {
+        if (!IsAlive(entity)) return false;
+        const IComponentPool* pool = FindPool(typeId);
+        if (pool == nullptr) return false;
+        return pool->HasSlot(entity.GetIndex());
     }
 
     void Domain::Update(float dt) {
