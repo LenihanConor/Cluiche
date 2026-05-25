@@ -67,10 +67,13 @@
     <ClInclude Include="ComponentTypeDesc.h" />
     <ClInclude Include="ComponentRegistry.h" />
     <ClInclude Include="ComponentMacros.h" />
+    <ClInclude Include="IBlueprintLoader.h" />
+    <ClInclude Include="JsonBlueprintLoader.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Domain.cpp" />
     <ClCompile Include="ComponentRegistry.cpp" />
+    <ClCompile Include="JsonBlueprintLoader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.entity.architecture.module.md" />

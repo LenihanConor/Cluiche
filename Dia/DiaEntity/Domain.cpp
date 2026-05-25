@@ -47,6 +47,20 @@ namespace Dia::Entity {
         return e;
     }
 
+    void Domain::QueueAddComponentByTypeId(Entity entity, Dia::Core::StringCRC typeId, const Json::Value& config) {
+        DIA_ASSERT(IsAlive(entity), "QueueAddComponentByTypeId: entity is not alive");
+        if (mMutationQueue.IsFull()) {
+            DIA_LOG_WARNING("DiaEntity", "Mutation queue full — dropping QueueAddComponentByTypeId");
+            return;
+        }
+        MutationOp op;
+        op.kind            = MutationKind::AddComponent;
+        op.entity          = entity;
+        op.componentTypeId = typeId;
+        op.config          = config;
+        mMutationQueue.Add(op);
+    }
+
     void Domain::QueueDestroy(Entity entity) {
         DIA_ASSERT(IsAlive(entity), "QueueDestroy: entity is not alive");
         if (mMutationQueue.IsFull()) {

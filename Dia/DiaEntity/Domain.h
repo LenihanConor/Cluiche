@@ -45,6 +45,10 @@ namespace Dia::Entity {
         template<class TComponent>
         void QueueAddComponent(Entity entity, const Json::Value& config);
 
+        // Queue a component add by type ID (non-template version for blueprint loader).
+        // Applied at EndOfFrame.
+        void QueueAddComponentByTypeId(Entity entity, Dia::Core::StringCRC typeId, const Json::Value& config);
+
         // Queue a component remove. Applied at EndOfFrame.
         template<class TComponent>
         void QueueRemoveComponent(Entity entity);

@@ -371,6 +371,8 @@
     <ClCompile Include="DiaEntity\DomainTests.cpp" />
     <ClCompile Include="DiaEntity\TestComponent.cpp" />
     <ClCompile Include="DiaEntity\ReflectionTests.cpp" />
+    <ClCompile Include="DiaEntity\BlueprintLoaderTests.cpp" />
+    <ClCompile Include="DiaEntity\BpTransformComponent.cpp" />
     <!-- DiaObservation -->
     <ClCompile Include="DiaObservation\Log\TestLogLevel.cpp" />
     <ClCompile Include="DiaObservation\Log\TestThreadLogBuffer.cpp" />
