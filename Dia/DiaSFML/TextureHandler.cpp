@@ -7,10 +7,17 @@
 #include <SFML/Graphics/Image.hpp>
 #include <SFML/Graphics/Texture.hpp>
 
+// bgfx path — only included when the bgfx backend is active
+#ifdef DIA_BGFX_ENABLED
+#include <DiaBgfx/Resources/BgfxTextureHandle.h>
+#endif
+
 namespace Dia
 {
 	namespace SFML
 	{
+		bool TextureHandler::sBgfxActive = false;
+
 		// Defined here so sf::Image is only pulled into DiaSFML, not into consumers
 		// of TextureHandler.h that lack SFML in their include paths.
 		struct PendingUpload
@@ -137,27 +144,42 @@ namespace Dia
 					continue;
 				}
 
-				SfmlTexture* sfTex = nullptr;
 				{
 					std::unique_lock<std::shared_mutex> lock(mMutex);
 
 					// Check if this asset was already registered by a concurrent job
 					auto it = mAssetIdToTexture.find(entry->assetId.Value());
-					if (it != mAssetIdToTexture.end())
+					if (it == mAssetIdToTexture.end())
 					{
-						// Already present — nothing to do
-					}
-					else
-					{
-						sfTex = DIA_NEW(SfmlTexture(entry->assetId));
-						if (!sfTex->UploadFromImage(entry->image))
+#ifdef DIA_BGFX_ENABLED
+						if (sBgfxActive)
 						{
-							DIA_DELETE(sfTex);
-							lock.unlock();
-							entry->callback->OnLoadFailed(entry->assetId, "failed to upload texture to GPU");
-							continue;
+							Dia::Bgfx::BgfxTextureHandle* bgfxTex =
+								DIA_NEW(Dia::Bgfx::BgfxTextureHandle(entry->assetId));
+							const sf::Vector2u sz = entry->image.getSize();
+							if (!bgfxTex->UploadFromMemory(
+									entry->image.getPixelsPtr(), sz.x, sz.y))
+							{
+								DIA_DELETE(bgfxTex);
+								lock.unlock();
+								entry->callback->OnLoadFailed(entry->assetId, "bgfx texture upload failed");
+								continue;
+							}
+							mAssetIdToTexture[entry->assetId.Value()] = bgfxTex;
 						}
-						mAssetIdToTexture[entry->assetId.Value()] = sfTex;
+						else
+#endif
+						{
+							SfmlTexture* sfTex = DIA_NEW(SfmlTexture(entry->assetId));
+							if (!sfTex->UploadFromImage(entry->image))
+							{
+								DIA_DELETE(sfTex);
+								lock.unlock();
+								entry->callback->OnLoadFailed(entry->assetId, "failed to upload texture to GPU");
+								continue;
+							}
+							mAssetIdToTexture[entry->assetId.Value()] = sfTex;
+						}
 					}
 				}
 

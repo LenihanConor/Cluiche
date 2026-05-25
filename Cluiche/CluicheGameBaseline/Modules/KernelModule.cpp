@@ -16,6 +16,11 @@
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include "Modules/JobSystemModule.h"
 
+#include <DiaBgfx/Canvas.h>
+#include <DiaWindow/SystemHandle.h>
+
+#include <cstdlib>
+
 namespace Cluiche { namespace AppFlow {
 
 const Dia::Core::StringCRC KernelModule::kTypeId("KernelModule");
@@ -62,10 +67,38 @@ Dia::ApplicationFlow::StartResult KernelModule::DoStart()
 
     mCanvas->SetActiveContext(false);
 
+    // Check BGFX_BACKEND env var — if set, construct Dia::Bgfx::Canvas alongside SFML.
+    // The bgfx canvas is the active canvas; SFML canvas is still alive but not driven.
+    const char* bgfxBackendEnv = std::getenv("BGFX_BACKEND");
+    if (bgfxBackendEnv != nullptr)
+    {
+        DIA_LOG_INFO("Application", "KernelModule: BGFX_BACKEND=%s — constructing Bgfx::Canvas", bgfxBackendEnv);
+
+        Dia::Bgfx::CanvasSettings bgfxSettings;
+        bgfxSettings.initialSize = Dia::Maths::Vector2D(1400.0f, 1000.0f);
+        bgfxSettings.cookedShaderRoot = "Cluiche/out/cluichetest/shaders";
+
+        if (strcmp(bgfxBackendEnv, "dx12") == 0)
+            bgfxSettings.rendererType = Dia::Bgfx::RendererType::Direct3D12;
+        else if (strcmp(bgfxBackendEnv, "vulkan") == 0)
+            bgfxSettings.rendererType = Dia::Bgfx::RendererType::Vulkan;
+        else
+            bgfxSettings.rendererType = Dia::Bgfx::RendererType::Direct3D11;
+
+        mBgfxCanvas = new Dia::Bgfx::Canvas();
+
+        Dia::Window::SystemHandle hwnd = renderWindow->GetSystemHandle();
+        mBgfxCanvas->AttachToNativeWindow(hwnd, bgfxSettings.initialSize);
+        mBgfxCanvas->Initialize(bgfxSettings);
+
+        Dia::SFML::TextureHandler::SetBgfxActive(true);
+        mCanvas = mBgfxCanvas;
+    }
+
     // Publish sCanvas AFTER deactivating the GL context. RenderModule polls this
     // pointer from its dedicated thread — it must not see a non-null canvas while
     // the context is still active on MainPU.
-    sCanvas = renderWindow;
+    sCanvas = mCanvas;
 
     // Register input metrics with the global MetricRegistry.
     {
@@ -127,6 +160,13 @@ Dia::ApplicationFlow::StopResult KernelModule::DoStop()
 
     sCanvas         = nullptr;
     sTextureHandler = nullptr;
+
+    if (mBgfxCanvas != nullptr)
+    {
+        delete mBgfxCanvas;
+        mBgfxCanvas = nullptr;
+    }
+
     mWindowFactory.Destroy(mWindow);
     mWindow  = nullptr;
     mCanvas  = nullptr;

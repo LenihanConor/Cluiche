@@ -8,6 +8,8 @@
 #include <DiaSFML/RenderWindowFactory.h>
 #include "Types/InputEvent.h"
 
+namespace Dia { namespace Bgfx { class Canvas; } }
+
 #include <atomic>
 
 namespace Dia { namespace Observation { namespace Metric {
@@ -66,8 +68,9 @@ private:
     Dia::Input::InputSourceManager mInputSourceManager;
     Dia::Input::ConsoleGamepadManager mGamepadManager;
     Dia::SFML::RenderWindowFactory mWindowFactory;
-    Dia::Window::IWindow*   mWindow = nullptr;
-    Dia::Graphics::ICanvas* mCanvas = nullptr;
+    Dia::Window::IWindow*   mWindow       = nullptr;
+    Dia::Graphics::ICanvas* mCanvas       = nullptr;
+    Dia::Bgfx::Canvas*      mBgfxCanvas   = nullptr;  // non-null when BGFX_BACKEND env var is set
     Dia::Input::EventData   mFrameEvents;
 
     // Metric primitives — owned by MetricRegistry, pointers nulled on DoStop.

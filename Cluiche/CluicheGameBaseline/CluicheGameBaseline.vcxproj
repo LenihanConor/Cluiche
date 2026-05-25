@@ -13,6 +13,8 @@
   <ItemGroup>
     <ClCompile Include="Modules\AutomationModule.cpp" />
     <ClCompile Include="Modules\AssetServiceModule.cpp" />
+    <ClCompile Include="Modules\Debug\VisualDebuggerModule.cpp" />
+    <ClCompile Include="Modules\Debug\VisualDebuggerConsoleModule.cpp" />
     <ClCompile Include="Modules\DebugServerHostModule.cpp" />
     <ClCompile Include="Modules\JobSystemModule.cpp" />
     <ClCompile Include="Modules\InputStreamModule.cpp" />
@@ -30,6 +32,8 @@
   <ItemGroup>
     <ClInclude Include="Modules\AutomationModule.h" />
     <ClInclude Include="Modules\AssetServiceModule.h" />
+    <ClInclude Include="Modules\Debug\VisualDebuggerModule.h" />
+    <ClInclude Include="Modules\Debug\VisualDebuggerConsoleModule.h" />
     <ClInclude Include="Modules\DebugServerHostModule.h" />
     <ClInclude Include="Modules\JobSystemModule.h" />
     <ClInclude Include="Modules\InputStreamModule.h" />
@@ -72,6 +76,9 @@
     <ProjectReference Include="..\..\Dia\DiaSFML\DiaSFML.vcxproj">
       <Project>{d0101596-9011-46af-a16a-69a2bb0cca69}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaBgfx\DiaBgfx.vcxproj">
+      <Project>{A1B2C3D4-E5F6-7890-1234-ABCDEF012345}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaUI\DiaUI.vcxproj">
       <Project>{835ca128-691f-4cea-a0b3-ce6e41c394e7}</Project>
     </ProjectReference>
@@ -91,6 +98,12 @@
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaAutomation\DiaAutomation.vcxproj">
       <Project>{2A3B4C5D-6E7F-8091-A2B3-C4D5E6F70123}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaVisualDebugger\DiaVisualDebugger.vcxproj">
+      <Project>{9BDEE3A3-1E06-4AF4-8628-E55B8E0E2E4B}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaVisualDebuggerConsole\DiaVisualDebuggerConsole.vcxproj">
+      <Project>{07B8C9D0-E1F2-3456-BCDE-678901ABCDE2}</Project>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -118,7 +131,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)../../DIA/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>DEBUG;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DEBUG;DIA_DEBUG;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>

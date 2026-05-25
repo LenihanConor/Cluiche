@@ -50,6 +50,11 @@ namespace Dia
 			// thread owning the GL context (RenderPU). Safe to call every frame.
 			void Tick();
 
+			// When true, Tick() creates BgfxTextureHandle instead of SfmlTexture.
+			// Set once at startup before any Load() calls; not thread-safe to flip mid-run.
+			static void SetBgfxActive(bool active) { sBgfxActive = active; }
+			static bool IsBgfxActive()             { return sBgfxActive; }
+
 			// Drains the deferred-deletion queue, destroying sf::Texture objects.
 			// MUST be called on the thread owning the GL context. Designed to be
 			// invoked once per frame from RenderModule::DoUpdate (post-present)
@@ -89,6 +94,8 @@ namespace Dia
 			std::vector<SfmlTexture*> mPendingDeletions;
 
 			Dia::Core::JobSystem* mJobSystem = nullptr;
+
+			static bool sBgfxActive;
 		};
 	}
 }

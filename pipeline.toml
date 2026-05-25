@@ -3,6 +3,9 @@ default_config = "Debug"
 default_platform = "x64"
 default_target = "googletest"
 
+[bgfx]
+default_backend = "dx11"   # dx11 | dx12 | vulkan
+
 [bgfx_shaders]
 backends     = ["dx11", "dx12", "vulkan"]
 source_root  = "Dia/DiaBgfx/Shaders"

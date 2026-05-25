@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="Canvas.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderers\SpriteRenderer.h">
+      <Filter>Renderers</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderers\DebugRenderer.h">
+      <Filter>Renderers</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderers\UIOverlayRenderer.h">
+      <Filter>Renderers</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\ShaderProgram.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="Resources\BgfxTextureHandle.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
+    <ClCompile Include="Canvas.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderers\SpriteRenderer.cpp">
+      <Filter>Renderers</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderers\DebugRenderer.cpp">
+      <Filter>Renderers</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderers\UIOverlayRenderer.cpp">
+      <Filter>Renderers</Filter>
+    </ClCompile>
+    <ClCompile Include="Resources\ShaderProgram.cpp">
+      <Filter>Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="Resources\BgfxTextureHandle.cpp">
+      <Filter>Resources</Filter>
+    </ClCompile>
+    <None Include="Shaders\varying.def.sc">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\vs_sprite.sc">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\fs_sprite.sc">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\vs_debug.sc">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\fs_debug.sc">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\vs_ui_overlay.sc">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\fs_ui_overlay.sc">
+      <Filter>Shaders</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source">
+      <UniqueIdentifier>{11111111-1111-1111-1111-111111111111}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headers">
+      <UniqueIdentifier>{22222222-2222-2222-2222-222222222222}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Renderers">
+      <UniqueIdentifier>{33333333-3333-3333-3333-333333333333}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources">
+      <UniqueIdentifier>{44444444-4444-4444-4444-444444444444}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{55555555-5555-5555-5555-555555555555}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Imgui">
+      <UniqueIdentifier>{66666666-6666-6666-6666-666666666666}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
