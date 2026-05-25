@@ -69,6 +69,8 @@
     <ClInclude Include="ComponentMacros.h" />
     <ClInclude Include="IBlueprintLoader.h" />
     <ClInclude Include="JsonBlueprintLoader.h" />
+    <ClInclude Include="EntityRef.h" />
+    <ClInclude Include="EntityRef.inl" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Domain.cpp" />

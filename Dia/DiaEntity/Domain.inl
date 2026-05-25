@@ -59,3 +59,6 @@ namespace Dia::Entity {
     }
 
 } // namespace Dia::Entity
+
+// EntityRef<T>::Resolve() needs Domain fully defined — pull in after the closing brace.
+#include <DiaEntity/EntityRef.inl>
