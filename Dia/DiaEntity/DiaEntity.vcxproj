@@ -57,6 +57,18 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Entity.h" />
+    <ClInclude Include="IComponent.h" />
+    <ClInclude Include="IComponentPool.h" />
+    <ClInclude Include="ComponentPool.h" />
+    <ClInclude Include="MutationOp.h" />
+    <ClInclude Include="Domain.h" />
+    <ClInclude Include="Domain.inl" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Domain.cpp" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="dia.entity.architecture.module.md" />
   </ItemGroup>
   <ItemGroup>
