@@ -31,8 +31,10 @@ const mockManifest: ManifestV2 = {
                     typeId: 'Render',
                     stages: ['Main'],
                     dependencies: ['PhysicsModule'],
-                    reads: ['PositionStream'],
-                    writes: ['RenderStream'],
+                    channels: [
+                        { id: 'PositionStream', role: 'reads' as const },
+                        { id: 'RenderStream',   role: 'writes' as const },
+                    ],
                     startTimeoutMs: 1000,
                     stopTimeoutMs: 500,
                 },
@@ -158,67 +160,65 @@ describe('ModuleInspector', () => {
         }));
     });
 
-    it('reads chip renders and × calls RemoveModuleRead', () => {
+    it('reads chip renders and × calls RemoveModuleChannel with role reads', () => {
         render(<ModuleInspector moduleId="RenderModule" puId="MainPU" />);
         expect(screen.getByText('PositionStream')).toBeTruthy();
         fireEvent.click(screen.getByTitle('Remove PositionStream'));
         expect(bridgeRequest).toHaveBeenCalledWith('manifest.applyCommand', expect.objectContaining({
-            commandType: 'RemoveModuleRead',
+            commandType: 'RemoveModuleChannel',
             instanceId: 'RenderModule',
             puId: 'MainPU',
             streamId: 'PositionStream',
+            role: 'reads',
         }));
     });
 
-    it('add-read input calls AddModuleRead', () => {
+    it('add-channel input calls AddModuleChannel', () => {
         render(<ModuleInspector moduleId="RenderModule" puId="MainPU" />);
-        // Reads section: + button is the first stream-id placeholder trigger
-        // Click the first '+' button inside streams-section
-        const streamsSection = screen.getByTestId('streams-section');
-        const plusButtons = streamsSection.querySelectorAll('button');
-        // Find the + button under "Reads" (first one)
-        const readsPlusBtn = Array.from(plusButtons).find(b => b.textContent === '+');
-        fireEvent.click(readsPlusBtn!);
+        fireEvent.click(screen.getByTestId('add-channel-btn'));
 
         const input = screen.getByPlaceholderText('stream id') as HTMLInputElement;
         fireEvent.change(input, { target: { value: 'NewReadStream' } });
         fireEvent.keyDown(input, { key: 'Enter' });
 
         expect(bridgeRequest).toHaveBeenCalledWith('manifest.applyCommand', expect.objectContaining({
-            commandType: 'AddModuleRead',
+            commandType: 'AddModuleChannel',
             instanceId: 'RenderModule',
             streamId: 'NewReadStream',
+            role: 'reads',
         }));
     });
 
-    it('writes chip renders and × calls RemoveModuleWrite', () => {
+    it('writes chip renders and × calls RemoveModuleChannel with role writes', () => {
         render(<ModuleInspector moduleId="RenderModule" puId="MainPU" />);
         expect(screen.getByText('RenderStream')).toBeTruthy();
         fireEvent.click(screen.getByTitle('Remove RenderStream'));
         expect(bridgeRequest).toHaveBeenCalledWith('manifest.applyCommand', expect.objectContaining({
-            commandType: 'RemoveModuleWrite',
+            commandType: 'RemoveModuleChannel',
             instanceId: 'RenderModule',
             puId: 'MainPU',
             streamId: 'RenderStream',
+            role: 'writes',
         }));
     });
 
-    it('add-write input calls AddModuleWrite', () => {
+    it('add-channel form submits AddModuleChannel for writes role', () => {
         render(<ModuleInspector moduleId="RenderModule" puId="MainPU" />);
-        const streamsSection = screen.getByTestId('streams-section');
-        const plusButtons = Array.from(streamsSection.querySelectorAll('button')).filter(b => b.textContent === '+');
-        // Two + buttons: Reads (first), Writes (second)
-        expect(plusButtons.length).toBe(2);
-        fireEvent.click(plusButtons[1]);
+        fireEvent.click(screen.getByTestId('add-channel-btn'));
+
+        // Change role to writes
+        const select = screen.getByTestId('channel-role-select') as HTMLSelectElement;
+        fireEvent.change(select, { target: { value: 'writes' } });
 
         const input = screen.getByPlaceholderText('stream id') as HTMLInputElement;
         fireEvent.change(input, { target: { value: 'NewWriteStream' } });
         fireEvent.keyDown(input, { key: 'Enter' });
 
         expect(bridgeRequest).toHaveBeenCalledWith('manifest.applyCommand', expect.objectContaining({
-            commandType: 'AddModuleWrite',
+            commandType: 'AddModuleChannel',
             instanceId: 'RenderModule',
             streamId: 'NewWriteStream',
+            role: 'writes',
         }));
     });
 });

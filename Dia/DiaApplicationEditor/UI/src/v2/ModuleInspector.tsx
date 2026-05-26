@@ -284,6 +284,7 @@ export const ModuleInspector: React.FC<ModuleInspectorProps> = ({ moduleId, puId
                 {addingChannel ? (
                     <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
                         <select
+                            data-testid="channel-role-select"
                             value={newChannelRole}
                             onChange={e => setNewChannelRole(e.target.value as ChannelRole)}
                             style={{ background: '#2d2d2d', border: '1px solid #444', borderRadius: 3, color: '#eee', padding: '2px 4px', fontSize: 12 }}
@@ -303,7 +304,7 @@ export const ModuleInspector: React.FC<ModuleInspectorProps> = ({ moduleId, puId
                         <button onClick={handleAddChannel} style={{ background: '#444', border: 'none', borderRadius: 3, color: '#eee', cursor: 'pointer', padding: '2px 8px', fontSize: 12 }}>Add</button>
                     </div>
                 ) : (
-                    <button onClick={() => setAddingChannel(true)} style={{ background: 'none', border: '1px solid #444', borderRadius: 3, color: '#888', cursor: 'pointer', padding: '2px 8px', fontSize: 12, marginTop: 4 }}>+</button>
+                    <button data-testid="add-channel-btn" onClick={() => setAddingChannel(true)} style={{ background: 'none', border: '1px solid #444', borderRadius: 3, color: '#888', cursor: 'pointer', padding: '2px 8px', fontSize: 12, marginTop: 4 }}>+</button>
                 )}
             </Section>
 

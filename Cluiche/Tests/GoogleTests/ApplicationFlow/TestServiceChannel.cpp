@@ -470,6 +470,43 @@ TEST(ServiceChannelCommitGate, ConsumerReadsHandleAfterStart)
     while (app.Update(0.016f)) {}
 }
 
+// Stage-scoped provider: when the provider module is only in Boot and the app
+// transitions to Stage2, the ServiceStream must be Reset (IsCommitted -> false).
+TEST(ServiceChannelCommitGate, StageScopedProviderResetsOnTransition)
+{
+    TypeRegistry reg = BuildCommitGateRegistry();
+    ApplicationManifestV3 manifest = BuildCommitGateManifest();
+
+    // Add a second stage — provider is only in Boot, consumer is in both
+    StageDeclaration s2;
+    s2.name = StringCRC("Stage2");
+    manifest.stages[0].transitions.Add(StringCRC("Stage2"));
+    s2.transitions.Add(StringCRC("Boot"));
+    manifest.stages.Add(s2);
+
+    // Provider is Boot-only (already default from BuildCommitGateManifest).
+    // Consumer is in both stages so it persists across transition.
+    manifest.processingUnits[0].modules[1].stages.Add(StringCRC("Stage2"));
+
+    Application app(manifest, reg);
+    ASSERT_TRUE(app.Start());
+    app.Update(0.016f); // DoStart fires, commit gate commits store
+
+    IStreamStore* store = app.FindStream(StringCRC("svc"));
+    ASSERT_NE(store, nullptr);
+    EXPECT_TRUE(store->IsCommitted());
+
+    // Transition to Stage2 — provider module leaves, store should be reset
+    app.TransitionTo(StringCRC("Stage2"));
+    // Drain transition — may take multiple ticks for modules to stop
+    for (int i = 0; i < 10; ++i) app.Update(0.016f);
+
+    EXPECT_FALSE(store->IsCommitted()) << "ServiceStream must be reset when provider leaves stage";
+
+    app.RequestShutdown();
+    while (app.Update(0.016f)) {}
+}
+
 // Reset on stage unload: after transitioning away from the stage that provided
 // the service, the store must be reset (for stage-scoped streams).
 // Note: global-manifest stores are never reset. This test uses a global stream
@@ -486,6 +523,10 @@ TEST(ServiceChannelCommitGate, GlobalStoreRemainsCommittedAfterStageTransition)
     s2.transitions.Add(StringCRC("Boot"));
     manifest.stages.Add(s2);
 
+    // Provider and consumer are active in both stages (global service)
+    manifest.processingUnits[0].modules[0].stages.Add(StringCRC("Stage2"));
+    manifest.processingUnits[0].modules[1].stages.Add(StringCRC("Stage2"));
+
     Application app(manifest, reg);
     ASSERT_TRUE(app.Start());
 
@@ -497,9 +538,9 @@ TEST(ServiceChannelCommitGate, GlobalStoreRemainsCommittedAfterStageTransition)
     auto* typedStore = static_cast<ServiceStreamStore<SC_Service>*>(store);
     EXPECT_TRUE(typedStore->IsCommitted()) << "Should be committed after first Update";
 
-    // Transition to Stage2 — global stream stays committed
+    // Transition to Stage2 — provider stays, stream stays committed
     app.TransitionTo(StringCRC("Stage2"));
-    app.Update(0.016f);  // process transition
+    for (int i = 0; i < 10; ++i) app.Update(0.016f);
 
     EXPECT_TRUE(typedStore->IsCommitted()) << "Global service stream must survive stage transition";
 

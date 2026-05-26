@@ -20,8 +20,7 @@ function makeModule(instanceId: string, stages: string[]): ModuleV2 {
         typeId: instanceId + 'Type',
         stages,
         dependencies: [],
-        reads: [],
-        writes: [],
+        channels: [],
         startTimeoutMs: 1000,
         stopTimeoutMs: 1000,
     };

@@ -12,10 +12,29 @@
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Metric/Counter.h>
+#include <DiaObservation/Metric/Gauge.h>
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
 #include <DiaCore/Json/external/json/json.h>
 
 namespace Dia { namespace ApplicationFlow {
+
+    // File-static stream metrics — lazily initialized on first use.
+    static Observation::Metric::Counter* sServiceStreamCommitCount  = nullptr;
+    static Observation::Metric::Counter* sServiceStreamResetCount   = nullptr;
+    static Observation::Metric::Gauge*   sServiceStreamCommittedGauge = nullptr;
+
+    static void EnsureStreamMetrics()
+    {
+        if (sServiceStreamCommitCount) return;
+        auto& reg = Observation::Metric::MetricRegistry::Instance();
+        sServiceStreamCommitCount    = reg.RegisterCounter(Core::StringCRC("dia.stream.service_commit_count"));
+        sServiceStreamResetCount     = reg.RegisterCounter(Core::StringCRC("dia.stream.service_reset_count"));
+        sServiceStreamCommittedGauge = reg.RegisterGauge(Core::StringCRC("dia.stream.service_committed"));
+    }
 
     //--------------------------------------------------------------------------
     // Constructor / Destructor
@@ -141,6 +160,43 @@ namespace Dia { namespace ApplicationFlow {
             DIA_LOG_ERROR("Application",
                           "Application::Start() — one or more stream connections failed manifest validation");
             return false;
+        }
+
+        // --- 2c. Wire post-tick flush callbacks for EventStreamStores ---------
+        // For each PU, collect the EventStreamStore IDs whose fromPU matches
+        // that PU's instanceId, then register a post-tick lambda that calls
+        // Flush() on each of them.  This gives consumers frame-boundary
+        // isolation: events sent this tick are only visible on the next tick.
+        for (unsigned int p = 0; p < mProcessingUnitCount; ++p)
+        {
+            const Dia::Core::StringCRC& puId = mManifest.processingUnits[p].instanceId;
+            ProcessingUnit* pu = mProcessingUnits[p].Get();
+
+            // Build a fixed-capacity list of EventStreamStore pointers for this PU.
+            // We capture raw pointers — stores are owned by mStreamStores[] which
+            // outlives the PU; the lambda is destroyed when the PU is destroyed.
+            Dia::Core::Containers::DynamicArrayC<IStreamStore*, 16> ownedStores;
+            for (unsigned int si = 0; si < mManifest.streams.Size(); ++si)
+            {
+                const StreamDeclaration& sd = mManifest.streams[si];
+                if (sd.kind != Dia::Core::StringCRC("EventStream"))
+                    continue;
+                if (sd.fromPU != puId)
+                    continue;
+                IStreamStore* store = FindStreamStore(sd.id);
+                if (store && !ownedStores.IsFull())
+                    ownedStores.Add(store);
+            }
+
+            if (ownedStores.IsEmpty())
+                continue;
+
+            // Copy the list into a lambda (fixed-size array avoids heap).
+            // DynamicArrayC is copyable, so the capture works directly.
+            pu->SetPostTickFn([ownedStores]() mutable {
+                for (unsigned int i = 0; i < ownedStores.Size(); ++i)
+                    ownedStores[i]->Flush();
+            });
         }
 
         // --- 3. Start dedicated threads (non-main PUs) -----------------------
@@ -787,6 +843,9 @@ namespace Dia { namespace ApplicationFlow {
 
     void Application::TickTransitionDrain()
     {
+        DIA_PROFILE_SCOPE("app.transition_drain", Observation::Profile::Category::kDiaApplicationFlow);
+        DIA_TRACE_ZONE("app.transition_drain", Observation::Trace::Category::kDiaApplicationFlow);
+
         const Dia::Core::StringCRC oldStage = mCurrentStage;   // still the old stage
         const Dia::Core::StringCRC newStage = mDrainingToStage;
 
@@ -831,6 +890,51 @@ namespace Dia { namespace ApplicationFlow {
             ev.fromStage = oldStage;
             ev.toStage   = newStage;
             EmitLifecycleEvent(ev);
+        }
+
+        // Reset ServiceStreams whose provider module is leaving the stage.
+        {
+            DIA_PROFILE_SCOPE("app.service_stream_reset", Observation::Profile::Category::kDiaApplicationFlow);
+            DIA_TRACE_ZONE("app.service_stream_reset", Observation::Trace::Category::kDiaApplicationFlow);
+            EnsureStreamMetrics();
+
+            static const Dia::Core::StringCRC kProvides("provides");
+            static const Dia::Core::StringCRC kServiceStream("ServiceStream");
+            for (unsigned int i = 0; i < mStreamStoreCount; ++i)
+            {
+                IStreamStore* store = mStreamStores[i].Get();
+                if (store->GetKind() != StreamKind::kService || !store->IsCommitted())
+                    continue;
+
+                const Dia::Core::StringCRC streamId = store->GetId();
+                bool providerLeaving = false;
+
+                for (unsigned int p = 0; p < mManifest.processingUnits.Size() && !providerLeaving; ++p)
+                {
+                    const ProcessingUnitDeclaration& puDecl = mManifest.processingUnits[p];
+                    for (unsigned int m = 0; m < puDecl.modules.Size() && !providerLeaving; ++m)
+                    {
+                        const ModuleDeclaration& modDecl = puDecl.modules[m];
+                        for (unsigned int c = 0; c < modDecl.channels.Size(); ++c)
+                        {
+                            if (modDecl.channels[c].id == streamId && modDecl.channels[c].role == kProvides)
+                            {
+                                if (ModuleIsInStage(modDecl, oldStage) && !ModuleIsInStage(modDecl, newStage))
+                                    providerLeaving = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (providerLeaving)
+                {
+                    DIA_LOG_INFO("Application", "Resetting ServiceStream '%s' — provider leaving stage",
+                                 streamId.AsChar());
+                    store->Reset();
+                    sServiceStreamResetCount->Inc();
+                }
+            }
         }
 
         // Start modules in new stage that are not already started (forward dep order).
@@ -1069,16 +1173,31 @@ namespace Dia { namespace ApplicationFlow {
 
     void Application::CommitReadyServiceStreams()
     {
+        DIA_PROFILE_SCOPE("app.service_commit_gate", Observation::Profile::Category::kDiaApplicationFlow);
+        DIA_TRACE_ZONE("app.service_commit_gate", Observation::Trace::Category::kDiaApplicationFlow);
+
+        EnsureStreamMetrics();
+        unsigned int committedTotal = 0;
+
         for (unsigned int i = 0; i < mStreamStoreCount; ++i)
         {
             IStreamStore* store = mStreamStores[i].Get();
-            if (store->GetKind() == StreamKind::kService
-                && store->IsRegistered()
-                && !store->IsCommitted())
+            if (store->GetKind() != StreamKind::kService)
+                continue;
+
+            if (store->IsRegistered() && !store->IsCommitted())
             {
                 store->Commit();
+                sServiceStreamCommitCount->Inc();
+                DIA_LOG_INFO("Application", "ServiceStream '%s' committed", store->GetId().AsChar());
             }
+
+            if (store->IsCommitted())
+                ++committedTotal;
         }
+
+        if (sServiceStreamCommittedGauge)
+            sServiceStreamCommittedGauge->Set(static_cast<double>(committedTotal));
     }
 
     // ModuleIsInStage  (private, static)

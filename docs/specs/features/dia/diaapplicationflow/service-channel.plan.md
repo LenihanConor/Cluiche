@@ -104,7 +104,7 @@ DynamicArrayC<ChannelBinding, 8> channels;
 | 3 | Implement `ServiceStreamWriter.h` — Connect(), Register(handle) | Tested via store tests | Done | sonnet | Follows EventStreamWriter pattern |
 | 4 | Implement `ServiceStreamReader.h` — Connect(), Get(), IsAvailable() | Tested via store tests | Done | sonnet | |
 | 5 | EventStream frame-batching — add Flush()/ConsumeUpToFlush()/GetFlushSequence() to `EventStreamStore`; parallel batchStamp array per reader | 7/7 tests GREEN `dia run googletest --filter="EventStreamBatch*"` | Done | sonnet | `mCurrentBatchId`+`mFlushSequence` atomics; batchStamps[] parallel array |
-| 6 | Framework flush integration — PU tick end calls Flush() on all EventStreamStores it owns | Integration: mock PU tick produces events, consumer sees batch only after next tick | Not Started | sonnet | Touches ProcessingUnit/Application |
+| 6 | Framework flush integration — PU tick end calls Flush() on all EventStreamStores it owns | Integration: mock PU tick produces events, consumer sees batch only after next tick | Done | sonnet | SetPostTickFn() wired in Application::Start() |
 | 7 | Add `ChannelBinding` struct to `ApplicationManifestV3.h`; replace `reads`/`writes` on `ModuleDeclaration` with `channels` array | Compile | Done | sonnet | Breaking change — all downstream must update |
 | 8 | Update `ApplicationManifestLoaderV2.cpp` — parse `"channels"` array with roles; legacy `reads`/`writes` fallback with warning | Unit test: parse channels JSON; parse legacy with warning | Done | sonnet | |
 | 9 | Update `ManifestValidatorV2` — adapt existing checks to `channels`; add 6 new ServiceStream error codes; fix provider-after-consumer two-pass ordering | 7/7 validator tests GREEN; full suite 5302/5304 (2 pre-existing failures) | Done | opus | Most complex task |
@@ -113,21 +113,21 @@ DynamicArrayC<ChannelBinding, 8> channels;
 | 12 | Create composite payload types — `MainToRenderFrame.h`, `MainToRenderEvent.h` + DIA_STREAM_TYPE registrations + vcxproj entries | Compile | Done | sonnet | New files in CluicheGameBaseline/Types/ |
 | 13 | Write `TestServiceChannel.cpp` — all validator error paths + commit lifecycle + reset on unload | 14/14 tests GREEN `dia run googletest --filter="ServiceChannel*:ServiceStreamStore*:ServiceStreamValidator*"` | Done | sonnet | TDD: 21/21 total across tasks 13+14 |
 | 14 | Write `TestEventStreamBatching.cpp` — flush semantics, cross-tick isolation, deterministic replay | 7/7 tests GREEN `dia run googletest --filter="EventStreamBatch*"` | Done | sonnet | TDD: RED first |
-| 15 | Migrate `KernelModule` — remove sCanvas, sTextureHandler, GetStatic*(); add ServiceStreamWriter<ICanvas>, ServiceStreamWriter<ITextureHandler>; call Register() in DoStart | `dia run cluichetest` boots | Not Started | sonnet | |
-| 16 | Migrate `RenderModule` — ServiceStreamReader<ICanvas>, ServiceStreamReader<ITextureHandler> | `dia run cluichetest` | Not Started | sonnet | |
-| 17 | Migrate `AssetServiceModule` — ServiceStreamReader<ITextureHandler> | `dia run cluichetest` | Not Started | haiku | Single call-site |
-| 18 | Migrate `DummyLevelModule` — ServiceStreamReader<ITextureHandler> | `dia run cluichetest` | Not Started | haiku | Single call-site |
-| 19 | Consolidate EventStreams — merge InputToSim+StageLoad→MainToSimEvent; SimToUI→SimToMainEvent; add MainToRenderEvent; update all producers/consumers | `dia run cluichetest` + `dia run googletest` | Not Started | sonnet | Multiple modules touched |
-| 20 | Consolidate FrameStreams — verify DebugDrawList already in FrameData (Shape B); create MainToRender FrameStream with MainToRenderFrame; migrate Shape C producers/consumers | `dia run cluichetest` | Not Started | sonnet | |
-| 21 | Migrate all `.diaapp` manifests — 8-stream consolidated topology + channels arrays | `dia run cluichetest` + `dia run googletest` | Not Started | sonnet | All manifest files |
-| 22 | Delete legacy `reads`/`writes` fallback from loader | `dia run googletest` | Not Started | haiku | Only after task 21 |
-| 23 | Update `types.ts` — channels + ServiceStream kind + role types | TypeScript compiles | Not Started | sonnet | |
-| 24 | Update `ModuleInspector.tsx` — render channels grouped by role | Visual | Not Started | sonnet | |
-| 25 | Update `StreamsTab.tsx` — ServiceStream kind display | Visual | Not Started | haiku | |
-| 26 | Update `GraphView.tsx` — ServiceStream edges gold/dashed | Visual | Not Started | sonnet | |
-| 27 | Update `ModuleCommands.h/cpp` — AddModuleChannel/RemoveModuleChannel with role parameter | Editor e2e | Not Started | sonnet | |
-| 28 | Update `dia.application.architecture.module.md` — document 3-stream model, roles, commit lifecycle | N/A (docs) | Not Started | haiku | |
-| 29 | Final verification — `dia run googletest` + `dia run cluichetest` + `dia pipeline --target cluicheeditor` | Quoted output | Not Started | haiku | |
+| 15 | Migrate `KernelModule` — remove sCanvas, sTextureHandler, GetStatic*(); add ServiceStreamWriter<ICanvas>, ServiceStreamWriter<ITextureHandler>; call Register() in DoStart | `dia run cluichetest` boots | Done | sonnet | |
+| 16 | Migrate `RenderModule` — ServiceStreamReader<ICanvas>, ServiceStreamReader<ITextureHandler> | `dia run cluichetest` | Done | sonnet | |
+| 17 | Migrate `AssetServiceModule` — ServiceStreamReader<ITextureHandler> | `dia run cluichetest` | Done | haiku | Single call-site |
+| 18 | Migrate `DummyLevelModule` — ServiceStreamReader<ITextureHandler> | `dia run cluichetest` | Done | haiku | Single call-site |
+| 19 | Consolidate EventStreams — merge InputToSim+StageLoad→MainToSimEvent; SimToUI→SimToMainEvent; add MainToRenderEvent; update all producers/consumers | `dia run cluichetest` + `dia run googletest` | Done | sonnet | Multiple modules touched |
+| 20 | Consolidate FrameStreams — verify DebugDrawList already in FrameData (Shape B); create MainToRender FrameStream with MainToRenderFrame; migrate Shape C producers/consumers | `dia run cluichetest` | Done | sonnet | MainStateProducerModule added; TestStageHUDModule reads via stream |
+| 21 | Migrate all `.diaapp` manifests — 8-stream consolidated topology + channels arrays | `dia run cluichetest` + `dia run googletest` | Done | sonnet | cluiche_main, dummy_stage, rigidbody2d_stage, editor.diaapp all migrated |
+| 22 | Delete legacy `reads`/`writes` fallback from loader | `dia run googletest` | Done | haiku | Removed else-branch from ApplicationManifestLoaderV2 |
+| 23 | Update `types.ts` — channels + ServiceStream kind + role types | TypeScript compiles | Done | sonnet | StreamKind, ChannelRole, ChannelBinding; ModuleV2.channels replaces reads/writes |
+| 24 | Update `ModuleInspector.tsx` — render channels grouped by role | Visual | Done | sonnet | Unified Channels section; add-channel form with role <select> |
+| 25 | Update `StreamsTab.tsx` — ServiceStream kind display | Visual | Done | haiku | Kind badge colours; ServiceStream hides To PU / Capacity / MaxReaders |
+| 26 | Update `GraphView.tsx` — ServiceStream edges gold/dashed | Visual | Done | sonnet | Purple dashed stub from provider with arrowhead-service marker |
+| 27 | Update `ModuleCommands.h/cpp` — AddModuleChannel/RemoveModuleChannel with role parameter | Editor e2e | Done | sonnet | AddModuleChannelCommand / RemoveModuleChannelCommand replace 4 Read/Write cmds |
+| 28 | Update `dia.application.architecture.module.md` — document 3-stream model, roles, commit lifecycle | N/A (docs) | Done | haiku | All 3 stream primitives + unified channels[] + ServiceStreamStore/Writer/Reader in public API |
+| 29 | Final verification — `dia run googletest` + `dia run cluichetest` + `dia pipeline --target cluicheeditor` | Quoted output | Done | haiku | 5310/5311 (1 pre-existing VisualDebugger failure); vitest 154/154; pipeline ✓; CluicheTest boots |
 
 ## Dependency Graph
 

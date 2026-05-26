@@ -37,10 +37,25 @@ const TL_COLORS: Record<TLNodeState, string> = {
     red: '#c0392b',
 };
 
+const STREAM_COLORS: Record<string, string> = {
+    EventStream: '#4a9eff',
+    FrameStream: '#e8a838',
+    ServiceStream: '#c8a0e0',
+};
+
+function getStreamColor(kind: string): string {
+    return STREAM_COLORS[kind] ?? '#4a9eff';
+}
+
+function getArrowMarkerId(kind: string): string {
+    if (kind === 'FrameStream') return 'arrowhead-frame';
+    if (kind === 'ServiceStream') return 'arrowhead-service';
+    return 'arrowhead';
+}
+
 function getPULiveState(puId: string, connectionState: string, liveModules: LiveModuleState[]): TLNodeState {
     if (connectionState === 'disconnected') return 'grey';
     if (connectionState === 'connecting') return 'amber';
-    // connected: green if at least one module in this PU is active, grey otherwise
     const puModules = liveModules.filter(m => m.puId === puId);
     if (puModules.length === 0) return 'grey';
     return puModules.some(m => m.isActive) ? 'green' : 'grey';
@@ -70,6 +85,31 @@ function getNodeCenter(pos: Position): Position {
     };
 }
 
+// Returns start (exit from source rect edge) and end (entry to target rect edge)
+// so paths terminate at node boundaries and arrowheads are always visible.
+function getEdgeAnchors(fromPos: Position, toPos: Position): { start: Position; end: Position } {
+    const from = getNodeCenter(fromPos);
+    const to = getNodeCenter(toPos);
+
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const len = Math.sqrt(dx * dx + dy * dy) || 1;
+    const nx = dx / len;
+    const ny = dy / len;
+
+    const hw = NODE_WIDTH / 2;
+    const hh = NODE_HEIGHT / 2;
+    // Scale to reach the rect boundary in direction (nx, ny)
+    const sx = nx !== 0 ? hw / Math.abs(nx) : Infinity;
+    const sy = ny !== 0 ? hh / Math.abs(ny) : Infinity;
+    const scale = Math.min(sx, sy);
+
+    return {
+        start: { x: from.x + nx * scale, y: from.y + ny * scale },
+        end:   { x: to.x   - nx * scale, y: to.y   - ny * scale },
+    };
+}
+
 export const GraphView: React.FC<GraphViewProps> = ({ onStreamLabelClick, onPUSelect }) => {
     const { manifest } = useManifestStoreV2();
     const { connectionState, modules: liveModules } = useLiveStoreV2();
@@ -78,15 +118,12 @@ export const GraphView: React.FC<GraphViewProps> = ({ onStreamLabelClick, onPUSe
     const [dragState, setDragState] = useState<DragState | null>(null);
     const svgRef = useRef<SVGSVGElement>(null);
 
-    // Initialize positions for new PUs
     useEffect(() => {
         if (!manifest?.processingUnits) return;
 
         setPositions((prev) => {
             const newPositions = new Map(prev);
             let hasNew = false;
-
-            // Compute grid positions for all PUs
             const gridPositions = computeGridPositions(manifest.processingUnits);
 
             for (const pu of manifest.processingUnits) {
@@ -108,33 +145,22 @@ export const GraphView: React.FC<GraphViewProps> = ({ onStreamLabelClick, onPUSe
         e.stopPropagation();
         const pos = positions.get(puId);
         if (!pos) return;
-
-        setDragState({
-            puId,
-            startMouse: { x: e.clientX, y: e.clientY },
-            startPos: { x: pos.x, y: pos.y },
-        });
+        setDragState({ puId, startMouse: { x: e.clientX, y: e.clientY }, startPos: { x: pos.x, y: pos.y } });
     }, [positions]);
 
     const handleMouseMove = useCallback((e: React.MouseEvent) => {
         if (!dragState) return;
-
         const dx = e.clientX - dragState.startMouse.x;
         const dy = e.clientY - dragState.startMouse.y;
-
         setPositions((prev) => {
             const next = new Map(prev);
-            next.set(dragState.puId, {
-                x: dragState.startPos.x + dx,
-                y: dragState.startPos.y + dy,
-            });
+            next.set(dragState.puId, { x: dragState.startPos.x + dx, y: dragState.startPos.y + dy });
             return next;
         });
     }, [dragState]);
 
     const handleMouseUp = useCallback(() => {
         if (dragState) {
-            // Check if it was a click (no movement) => select
             const pos = positions.get(dragState.puId);
             if (pos && pos.x === dragState.startPos.x && pos.y === dragState.startPos.y) {
                 setSelected(dragState.puId);
@@ -158,11 +184,11 @@ export const GraphView: React.FC<GraphViewProps> = ({ onStreamLabelClick, onPUSe
         });
     }, []);
 
-    // Group parallel edges (streams sharing the same undirected PU pair) so they can be
-    // fanned out horizontally and have their labels stacked vertically without overlap.
+    // Lane layout for regular (non-service) streams sharing the same undirected PU pair
     const edgeLayout = React.useMemo(() => {
         const groups = new Map<string, StreamV2[]>();
         for (const s of manifest?.streams ?? []) {
+            if (s.kind === 'ServiceStream') continue;
             const key = [s.fromPU, s.toPU].sort().join('::');
             const arr = groups.get(key) ?? [];
             arr.push(s);
@@ -175,41 +201,60 @@ export const GraphView: React.FC<GraphViewProps> = ({ onStreamLabelClick, onPUSe
         return layout;
     }, [manifest?.streams]);
 
+    // Lane layout for ServiceStreams grouped by provider PU (fan them out vertically)
+    const serviceEdgeLanes = React.useMemo(() => {
+        const groups = new Map<string, StreamV2[]>();
+        for (const s of manifest?.streams ?? []) {
+            if (s.kind !== 'ServiceStream') continue;
+            const arr = groups.get(s.fromPU) ?? [];
+            arr.push(s);
+            groups.set(s.fromPU, arr);
+        }
+        const layout = new Map<string, { laneIndex: number; laneCount: number }>();
+        for (const arr of groups.values()) {
+            arr.forEach((s, i) => layout.set(s.id, { laneIndex: i, laneCount: arr.length }));
+        }
+        return layout;
+    }, [manifest?.streams]);
+
     const renderStreamEdge = (stream: StreamV2) => {
         const fromPos = positions.get(stream.fromPU);
         const isService = stream.kind === 'ServiceStream';
+        const color = getStreamColor(stream.kind as string);
 
         if (isService) {
-            // ServiceStream: gold dashed stub extending right from the provider node
             if (!fromPos) return null;
-            const from = getNodeCenter(fromPos);
-            const stubX = from.x + 60;
-            const stubY = from.y + 30;
+            const lane = serviceEdgeLanes.get(stream.id) ?? { laneIndex: 0, laneCount: 1 };
+            const laneOffset = lane.laneIndex - (lane.laneCount - 1) / 2;
+            const SERVICE_LANE_GAP = 22;
+
+            // Stub exits from the right edge, fanned vertically
+            const startX = fromPos.x + NODE_WIDTH;
+            const startY = fromPos.y + NODE_HEIGHT / 2 + laneOffset * SERVICE_LANE_GAP;
+            const endX = startX + 64;
+
             return (
                 <g key={stream.id} data-testid="stream-edge" data-stream-id={stream.id}>
                     <line
-                        x1={from.x}
-                        y1={stubY}
-                        x2={stubX}
-                        y2={stubY}
-                        stroke="#c8a0e0"
+                        x1={startX}
+                        y1={startY}
+                        x2={endX}
+                        y2={startY}
+                        stroke={color}
                         strokeWidth={1.5}
                         strokeDasharray="4 3"
                         markerEnd="url(#arrowhead-service)"
                     />
                     <text
-                        x={stubX + 4}
-                        y={stubY + 4}
-                        fill="#c8a0e0"
+                        x={endX + 4}
+                        y={startY + 4}
+                        fill={color}
                         fontSize={9}
                         textAnchor="start"
                         style={{ cursor: onStreamLabelClick ? 'pointer' : 'default', paintOrder: 'stroke' }}
                         stroke="#1e1e1e"
                         strokeWidth={2}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onStreamLabelClick?.(stream.id);
-                        }}
+                        onClick={(e) => { e.stopPropagation(); onStreamLabelClick?.(stream.id); }}
                     >
                         {stream.id}
                     </text>
@@ -220,46 +265,37 @@ export const GraphView: React.FC<GraphViewProps> = ({ onStreamLabelClick, onPUSe
         const toPos = positions.get(stream.toPU);
         if (!fromPos || !toPos) return null;
 
-        const from = getNodeCenter(fromPos);
-        const to = getNodeCenter(toPos);
-
+        const { start, end } = getEdgeAnchors(fromPos, toPos);
         const lane = edgeLayout.get(stream.id) ?? { laneIndex: 0, laneCount: 1 };
-        // Center lanes around 0; e.g. 3 lanes → offsets [-1, 0, 1]
         const laneOffset = lane.laneIndex - (lane.laneCount - 1) / 2;
-        const FAN_SPACING = 36; // horizontal spread between parallel paths
-        const LABEL_GAP = 14;   // vertical spacing between stacked labels
+        const FAN_SPACING = 36;
+        const LABEL_GAP = 14;
 
-        const midX = (from.x + to.x) / 2 + laneOffset * FAN_SPACING;
-        const midY = (from.y + to.y) / 2;
-
-        // Bezier with control points pulled toward the laned midX so paths arc apart
-        const d = `M ${from.x} ${from.y} C ${midX} ${from.y}, ${midX} ${to.y}, ${to.x} ${to.y}`;
-
-        // Stack labels vertically around midY so multi-edge groups don't collide
+        const midX = (start.x + end.x) / 2 + laneOffset * FAN_SPACING;
+        const midY = (start.y + end.y) / 2;
+        const d = `M ${start.x} ${start.y} C ${midX} ${start.y}, ${midX} ${end.y}, ${end.x} ${end.y}`;
         const labelY = midY - 6 + laneOffset * LABEL_GAP;
+        const arrowId = getArrowMarkerId(stream.kind as string);
 
         return (
             <g key={stream.id} data-testid="stream-edge" data-stream-id={stream.id}>
                 <path
                     d={d}
-                    stroke="#4a9eff"
+                    stroke={color}
                     strokeWidth={1.5}
                     fill="none"
-                    markerEnd="url(#arrowhead)"
+                    markerEnd={`url(#${arrowId})`}
                 />
                 <text
                     x={midX}
                     y={labelY}
-                    fill="#4a9eff"
+                    fill={color}
                     fontSize={10}
                     textAnchor="middle"
                     style={{ cursor: onStreamLabelClick ? 'pointer' : 'default', paintOrder: 'stroke' }}
                     stroke="#1e1e1e"
                     strokeWidth={3}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onStreamLabelClick?.(stream.id);
-                    }}
+                    onClick={(e) => { e.stopPropagation(); onStreamLabelClick?.(stream.id); }}
                 >
                     {stream.id}
                 </text>
@@ -270,7 +306,6 @@ export const GraphView: React.FC<GraphViewProps> = ({ onStreamLabelClick, onPUSe
     const renderPUNode = (pu: ProcessingUnitV2, liveState: TLNodeState = 'grey') => {
         const pos = positions.get(pu.instanceId);
         if (!pos) return null;
-
         const isSelected = selected === pu.instanceId;
 
         return (
@@ -293,48 +328,22 @@ export const GraphView: React.FC<GraphViewProps> = ({ onStreamLabelClick, onPUSe
                     stroke={isSelected ? '#4a9eff' : '#555'}
                     strokeWidth={isSelected ? 2 : 1}
                 />
-                {/* PU instanceId */}
-                <text
-                    x={pos.x + 10}
-                    y={pos.y + 20}
-                    fill="white"
-                    fontSize={12}
-                    fontWeight="bold"
-                >
+                <text x={pos.x + 10} y={pos.y + 20} fill="white" fontSize={12} fontWeight="bold">
                     {pu.instanceId}
                 </text>
-                {/* Frequency and thread info */}
-                <text
-                    x={pos.x + 10}
-                    y={pos.y + 38}
-                    fill="#999"
-                    fontSize={10}
-                >
+                <text x={pos.x + 10} y={pos.y + 38} fill="#999" fontSize={10}>
                     {pu.frequencyHz} Hz &middot; {pu.dedicatedThread ? 'Dedicated' : 'Shared'}
                 </text>
-                {/* Module count */}
-                <text
-                    x={pos.x + 10}
-                    y={pos.y + 54}
-                    fill="#999"
-                    fontSize={10}
-                >
+                <text x={pos.x + 10} y={pos.y + 54} fill="#999" fontSize={10}>
                     {pu.modules.length} module{pu.modules.length !== 1 ? 's' : ''}
                 </text>
-                {/* Traffic light circle at top-right corner */}
-                <circle
-                    cx={pos.x + NODE_WIDTH - 12}
-                    cy={pos.y + 12}
-                    r={4}
-                    fill={TL_COLORS[liveState]}
-                />
+                <circle cx={pos.x + NODE_WIDTH - 12} cy={pos.y + 12} r={4} fill={TL_COLORS[liveState]} />
             </g>
         );
     };
 
     const renderGhostNode = () => {
         const pus = manifest?.processingUnits ?? [];
-        // Place ghost after last PU position
         let ghostPos: Position;
 
         if (pus.length === 0) {
@@ -342,37 +351,24 @@ export const GraphView: React.FC<GraphViewProps> = ({ onStreamLabelClick, onPUSe
         } else {
             const cols = pus.length <= 6 ? 1 : Math.ceil(Math.sqrt(pus.length));
             const nextIndex = pus.length;
-            const col = nextIndex % cols;
-            const row = Math.floor(nextIndex / cols);
             ghostPos = {
-                x: col * COL_SPACING + OFFSET_X,
-                y: row * ROW_SPACING + OFFSET_Y,
+                x: (nextIndex % cols) * COL_SPACING + OFFSET_X,
+                y: Math.floor(nextIndex / cols) * ROW_SPACING + OFFSET_Y,
             };
         }
 
         return (
-            <g
-                data-testid="ghost-node"
-                onClick={handleGhostClick}
-                style={{ cursor: 'pointer' }}
-            >
+            <g data-testid="ghost-node" onClick={handleGhostClick} style={{ cursor: 'pointer' }}>
                 <rect
-                    x={ghostPos.x}
-                    y={ghostPos.y}
-                    width={NODE_WIDTH}
-                    height={NODE_HEIGHT}
-                    fill="none"
-                    rx={6}
-                    stroke="#555"
-                    strokeWidth={1}
-                    strokeDasharray="6 3"
+                    x={ghostPos.x} y={ghostPos.y}
+                    width={NODE_WIDTH} height={NODE_HEIGHT}
+                    fill="none" rx={6}
+                    stroke="#555" strokeWidth={1} strokeDasharray="6 3"
                 />
                 <text
                     x={ghostPos.x + NODE_WIDTH / 2}
                     y={ghostPos.y + NODE_HEIGHT / 2 + 4}
-                    fill="#777"
-                    fontSize={12}
-                    textAnchor="middle"
+                    fill="#777" fontSize={12} textAnchor="middle"
                 >
                     + Add PU
                 </text>
@@ -391,35 +387,19 @@ export const GraphView: React.FC<GraphViewProps> = ({ onStreamLabelClick, onPUSe
             onMouseUp={handleMouseUp}
         >
             <defs>
-                <marker
-                    id="arrowhead"
-                    markerWidth="10"
-                    markerHeight="7"
-                    refX="9"
-                    refY="3.5"
-                    orient="auto"
-                >
+                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
                     <polygon points="0 0, 10 3.5, 0 7" fill="#4a9eff" />
                 </marker>
-                <marker
-                    id="arrowhead-service"
-                    markerWidth="8"
-                    markerHeight="6"
-                    refX="7"
-                    refY="3"
-                    orient="auto"
-                >
+                <marker id="arrowhead-frame" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#e8a838" />
+                </marker>
+                <marker id="arrowhead-service" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
                     <polygon points="0 0, 8 3, 0 6" fill="#c8a0e0" />
                 </marker>
             </defs>
 
-            {/* Stream edges */}
             {manifest?.streams.map((stream) => renderStreamEdge(stream))}
-
-            {/* PU nodes */}
             {manifest?.processingUnits.map((pu) => renderPUNode(pu, getPULiveState(pu.instanceId, connectionState, liveModules)))}
-
-            {/* Ghost node */}
             {renderGhostNode()}
         </svg>
     );
