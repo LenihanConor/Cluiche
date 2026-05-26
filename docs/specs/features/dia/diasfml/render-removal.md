@@ -6,7 +6,7 @@
 **Research:** @docs/research/render_backend_swap/summary.md
 
 ## Status
-`Approved`
+`Done`
 
 ## Summary
 

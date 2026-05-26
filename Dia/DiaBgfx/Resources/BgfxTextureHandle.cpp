@@ -7,6 +7,10 @@
 
 #include <bgfx/bgfx.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_NO_STDIO
+#include <stb_image.h>
+
 namespace Dia
 {
     namespace Bgfx
@@ -64,6 +68,35 @@ namespace Dia
             mSize = Dia::Maths::Vector2D(static_cast<float>(width), static_cast<float>(height));
             mState.store(State::Ready, std::memory_order_release);
             return true;
+        }
+
+        bool BgfxTextureHandle::UploadFromEncodedMemory(const unsigned char* fileBytes,
+                                                         unsigned int byteCount,
+                                                         const char** outFailureReason)
+        {
+            DIA_ASSERT(fileBytes != nullptr && byteCount > 0, "UploadFromEncodedMemory: null/empty input");
+
+            int w = 0, h = 0, channels = 0;
+            unsigned char* pixels = stbi_load_from_memory(
+                fileBytes,
+                static_cast<int>(byteCount),
+                &w, &h, &channels,
+                4);  // force RGBA
+
+            if (pixels == nullptr)
+            {
+                if (outFailureReason) *outFailureReason = "stb_image: failed to decode image";
+                mState.store(State::Failed, std::memory_order_release);
+                return false;
+            }
+
+            bool ok = UploadFromMemory(pixels, static_cast<unsigned int>(w), static_cast<unsigned int>(h));
+            stbi_image_free(pixels);
+
+            if (!ok && outFailureReason)
+                *outFailureReason = "bgfx texture upload failed";
+
+            return ok;
         }
 
         void BgfxTextureHandle::MarkFailed(const char* reason)

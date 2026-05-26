@@ -29,6 +29,12 @@ namespace Dia
             // Called from TextureHandler::Tick on the render thread after image decode.
             // Allocates a bgfx texture and uploads RGBA pixels.
             bool UploadFromMemory(const unsigned char* rgbaPixels, unsigned int width, unsigned int height);
+
+            // Decodes encoded image file bytes (PNG/JPG/etc.) via bimg and uploads to bgfx.
+            // Returns false on decode failure; outFailureReason receives a static string.
+            bool UploadFromEncodedMemory(const unsigned char* fileBytes, unsigned int byteCount,
+                                         const char** outFailureReason = nullptr);
+
             void MarkFailed(const char* reason);
 
             // Renderer-internal accessor — DiaBgfx translation units only.

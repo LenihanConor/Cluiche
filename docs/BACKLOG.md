@@ -28,7 +28,9 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | Feature | Spec | System | Notes |
 |---------|------|--------|-------|
 | per-app-bin-layout | [per-app-bin-layout.md](specs/features/dia/diapipeline/per-app-bin-layout.md) | DiaPipeline ✅ | |
+| service-channel | [service-channel.md](specs/features/dia/diaapplicationflow/service-channel.md) | DiaApplicationFlow ✅ | `ServiceStream<T>` primitive; unified `channels` array replaces `reads`/`writes`; migrates KernelModule statics (sCanvas, sTextureHandler, sRenderContextReleased). [Plan](specs/features/dia/diaapplicationflow/service-channel.plan.md) ready. |
 | ~~diabgfx-imgui-backend~~ | **Done** (2026-05-25) — BgfxImGuiBackend wired; deferred-init on render thread; ImGui input via Win32WndProcChain; both SFML and `BGFX_BACKEND=dx11` paths pass. | | |
+| ~~diasfml-render-removal~~ | **Done** (2026-05-26) — SFML render path deleted; DiaSFML = window+input only; TextureHandler moved to DiaAssetRuntime (stb_image decode via DiaBgfx); bgfx unconditional; imgui core sources moved to DiaBgfx; Phase 1 ship gate (RB-016) closed. | | |
 | ~~ToolbarPanelSwitcher~~ | **Done** (2026-05-22) — full-name pills + `⋯ +N` overflow dropdown, `ProjectContextButton` moved right. | | |
 
 ---
@@ -137,5 +139,5 @@ Spec Approved: [diaarchitecture.md](specs/systems/dia/diaarchitecture.md). All 4
 | DiaAssetRuntime — Hot reload path | Asset Lifecycle Management adds `Failed → Loading` retry but no `Loaded → Loading → Loaded` path. Still need a `ReloadAsset(assetId)` for live iteration (future feature on top of lifecycle management). |
 | `Dia::Core::Blackboard` — general-purpose key-value store | Identified during DiaStateMachine research; useful for AI, animation, gameplay. Needs `/spec-feature` under DiaCore. |
 | DiaSoftBody2D serializers | Body definition types not yet covered — `DiaReflect` ships Phase 4g (`DiaRigidBody2DSerializers.h`) but Phase 4 plan explicitly excludes DiaSoftBody2D. Needs `/spec-feature` or addition to type-coverage plan when SoftBody work resumes. |
-| Cross-PU data flow for debug UI | Static accessors (`GetStaticLayerManager`, `TestResultsRegistry` singleton) hide coupling between PUs. Replace with explicit stream/session-data mechanism — candidates: FrameData extension (per-frame stats), session/stage-data stream (slow-changing config sent once at stage start), or event-based pub/sub. Affects VisualDebuggerConsoleModule ↔ VisualDebuggerModule and TestStageHUDModule ↔ TestResultsRegistry. |
+| Cross-PU data flow for debug UI | **Specced** — [service-channel.md](specs/features/dia/diaapplicationflow/service-channel.md) covers Shape A (KernelModule statics → `ServiceStream<T>`). Shape B (`sLayerManager` → `FrameStream`) and Shape C (`TestResultsRegistry`, `AutomationModule`, `AssetServiceModule` → `EventStream`) are follow-on features tracked in the spec's Coupling Inventory. |
 | RigidBody2DStage visual debug — circles not visible | Stage runs and times out but falling circles are not rendering on screen. Ground (huge circle) draws correctly. Coordinate system (Y-UP renderer, pixel-scale physics) and gravity direction are set but circles still don't appear. Possible issues: circles too small relative to viewport, draw order, or drawer not picking up dynamic bodies. Needs investigation with logging or breakpoints. |

@@ -202,7 +202,7 @@ public:
 | diabgfx-canvas-parity | `DiaBgfx::Canvas` implements `ICanvas` with sprite + debug + UI parity vs DiaSFML; new module `Dia/DiaBgfx/`; D3D11 default backend; six initial `.sc` shaders | [canvas-parity.md](../../features/dia/diabgfx/canvas-parity.md) | Done |
 | diabgfx-imgui-backend | `DiaBgfx::BgfxImGuiBackend` implements `IImGuiBackend`; vendors bgfx upstream's reference imgui renderer; Win32 WndProc chain shim in DiaSFML for input | [imgui-backend.md](../../features/dia/diabgfx/imgui-backend.md) | Approved |
 | diapipeline-shaderc-cook | bgfx `shaderc` integrated as a cook step in DiaPipeline | [bgfx-shader-cook.md](../../features/dia/diapipeline/bgfx-shader-cook.md) | Approved |
-| diasfml-render-removal | Delete render path from DiaSFML; keep `IWindow` + `IInputSource`; move `TextureHandler` to DiaAssetRuntime; **Phase 1 ship gate (RB-016)** | [render-removal.md](../../features/dia/diasfml/render-removal.md) | Approved |
+| diasfml-render-removal | Delete render path from DiaSFML; keep `IWindow` + `IInputSource`; move `TextureHandler` to DiaAssetRuntime; **Phase 1 ship gate (RB-016)** | [render-removal.md](../../features/dia/diasfml/render-removal.md) | Done |
 
 ### Phase 2 — Light 3D (specced now, implemented later)
 

@@ -185,7 +185,7 @@ namespace Dia
 				static_cast<LPARAM>(lParam)));
 		}
 
-		IWindow* Win32WindowFactory::Create(const IWindow::Settings& settings, const Graphics::ICanvas::Settings&)
+		IWindow* Win32WindowFactory::Create(const IWindow::Settings& settings)
 		{
 			Win32Window* window = new Win32Window();
 			window->Initialize(settings);

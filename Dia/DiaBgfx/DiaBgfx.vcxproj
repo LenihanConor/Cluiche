@@ -38,6 +38,10 @@
     <ClCompile Include="$(ProjectDir)..\..\External\imgui\backends\imgui_impl_win32.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)'=='Release'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\..\External\imgui\imgui.cpp" />
+    <ClCompile Include="$(ProjectDir)..\..\External\imgui\imgui_draw.cpp" />
+    <ClCompile Include="$(ProjectDir)..\..\External\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="$(ProjectDir)..\..\External\imgui\imgui_tables.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\varying.def.sc" />
@@ -96,7 +100,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(ProjectDir)../../External/bgfx/include/;$(ProjectDir)../../External/bx/include/;$(ProjectDir)../../External/bimg/include/;$(ProjectDir)../../External/imgui/;$(ProjectDir)../../External/imgui/backends/;$(ProjectDir)../../External/bgfx/examples/common/imgui/;$(ProjectDir)../../External/bgfx/3rdparty/;./../;./;$(ProjectDir)../../DIA/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)../../External/bgfx/include/;$(ProjectDir)../../External/bx/include/;$(ProjectDir)../../External/bimg/include/;$(ProjectDir)../../External/bimg/3rdparty/stb/;$(ProjectDir)../../External/imgui/;$(ProjectDir)../../External/imgui/backends/;$(ProjectDir)../../External/bgfx/examples/common/imgui/;$(ProjectDir)../../External/bgfx/3rdparty/;./../;./;$(ProjectDir)../../DIA/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>DEBUG;WIN32;_DEBUG;DIA_DEBUG;BX_CONFIG_DEBUG=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -123,7 +127,7 @@
       <WarningLevel>Level3</WarningLevel>
       <DisableSpecificWarnings>4275</DisableSpecificWarnings>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <AdditionalIncludeDirectories>$(ProjectDir)../../External/bgfx/include/;$(ProjectDir)../../External/bx/include/;$(ProjectDir)../../External/bimg/include/;$(ProjectDir)../../External/imgui/;$(ProjectDir)../../External/imgui/backends/;$(ProjectDir)../../External/bgfx/examples/common/imgui/;$(ProjectDir)../../External/bgfx/3rdparty/;./../;./;$(ProjectDir)../../DIA/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)../../External/bgfx/include/;$(ProjectDir)../../External/bx/include/;$(ProjectDir)../../External/bimg/include/;$(ProjectDir)../../External/bimg/3rdparty/stb/;$(ProjectDir)../../External/imgui/;$(ProjectDir)../../External/imgui/backends/;$(ProjectDir)../../External/bgfx/examples/common/imgui/;$(ProjectDir)../../External/bgfx/3rdparty/;./../;./;$(ProjectDir)../../DIA/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_MBCS;BX_CONFIG_DEBUG=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>/Zc:__cplusplus /Zc:preprocessor %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>

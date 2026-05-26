@@ -12,59 +12,28 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Conversion.cpp" />
-    <ClCompile Include="DebugFrameRendererVisitor.cpp" />
-    <ClCompile Include="EntityFrameRenderer.cpp" />
     <ClCompile Include="InputSource.cpp" />
-    <ClCompile Include="RenderWindow.cpp" />
-    <ClCompile Include="RenderWindowFactory.cpp" />
-    <ClCompile Include="SfmlTexture.cpp" />
-    <ClCompile Include="SfmlUIRenderOverlay.cpp" />
-    <ClCompile Include="TextureHandler.cpp" />
-    <ClCompile Include="SFMLImGuiBackend.cpp" />
+    <ClCompile Include="Window.cpp" />
+    <ClCompile Include="WindowFactory.cpp" />
     <ClCompile Include="Win32WndProcChain.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)'=='Release'">true</ExcludedFromBuild>
     </ClCompile>
-    <!-- ImGui core sources compiled into DiaSFML -->
-    <ClCompile Include="$(ProjectDir)..\..\External\imgui\imgui.cpp" />
-    <ClCompile Include="$(ProjectDir)..\..\External\imgui\imgui_draw.cpp" />
-    <ClCompile Include="$(ProjectDir)..\..\External\imgui\imgui_widgets.cpp" />
-    <ClCompile Include="$(ProjectDir)..\..\External\imgui\imgui_tables.cpp" />
-    <ClCompile Include="$(ProjectDir)..\..\External\imgui\imgui_demo.cpp" />
-    <ClCompile Include="$(ProjectDir)..\..\External\imgui\backends\imgui_impl_opengl2.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Conversion.h" />
-    <ClInclude Include="DebugFrameRendererVisitor.h" />
-    <ClInclude Include="EntityFrameRenderer.h" />
     <ClInclude Include="InputSource.h" />
-    <ClInclude Include="RenderWindow.h" />
-    <ClInclude Include="RenderWindowFactory.h" />
-    <ClInclude Include="SfmlTexture.h" />
-    <ClInclude Include="SfmlUIRenderOverlay.h" />
-    <ClInclude Include="TextureHandler.h" />
-    <ClInclude Include="SFMLImGuiBackend.h" />
+    <ClInclude Include="Window.h" />
+    <ClInclude Include="WindowFactory.h" />
     <ClInclude Include="Win32WndProcChain.h" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\DiaAsset\DiaAsset.vcxproj">
-      <Project>{43AB4006-91F4-4250-8901-C2B667FDAB21}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
       <Project>{8d41cbe3-c493-428d-95f3-627e56500667}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\DiaThreading\DiaThreading.vcxproj">
-      <Project>{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}</Project>
+    <ProjectReference Include="..\DiaWindow\DiaWindow.vcxproj">
+      <Project>{52178C86-628D-4FE4-AE55-D3485FAEC070}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\DiaGraphics\DiaGraphics.vcxproj">
-      <Project>{1cf9f92b-666e-4b39-9dde-b1cfbef68618}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\DiaMaths\DiaMaths.vcxproj">
-      <Project>{2bba0ad3-d449-4c0e-8c84-acfa8bca456b}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\DiaImGui\DiaImGui.vcxproj">
-      <Project>{F6A7B8C9-D0E1-2345-ABCD-567890ABCDE1}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    <ProjectReference Include="..\DiaInput\DiaInput.vcxproj">
+      <Project>{936FA28F-E171-401F-8185-D2AF48DB4098}</Project>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -91,7 +60,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>C:\GitHub\Cluiche\External\SFML\Current-x64\include;$(ProjectDir)../../External/imgui/;$(ProjectDir)../../External/imgui/backends/;./../;./;$(ProjectDir)../../DIA/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\GitHub\Cluiche\External\SFML\Current-x64\include;./../;./;$(ProjectDir)../../DIA/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>DEBUG;WIN32;_DEBUG;DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -103,7 +72,7 @@
     <Lib>
       <AdditionalDependencies>
       </AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir)DiaMaths.lib;$(OutDir)DiaCore.lib;$(OutDir)DiaWindow.lib;$(OutDir)DiaGraphics.lib;C:\GitHub\Cluiche\External\SFML\Current-x64\lib;opengl32.lib;glu32.lib;sfml-graphics-s-d.lib;sfml-window-s-d.lib;sfml-system-s-d.lib;sfml-main-s-d.lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OutDir)DiaMaths.lib;$(OutDir)DiaCore.lib;$(OutDir)DiaWindow.lib;C:\GitHub\Cluiche\External\SFML\Current-x64\lib;sfml-window-s-d.lib;sfml-system-s-d.lib;sfml-main-s-d.lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
     <Bscmake>
       <PreserveSbr>true</PreserveSbr>
@@ -121,7 +90,7 @@
       <WarningLevel>Level3</WarningLevel>
       <DisableSpecificWarnings>4275</DisableSpecificWarnings>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <AdditionalIncludeDirectories>../../External/SFML/Current-x64/include;$(ProjectDir)../../External/imgui/;$(ProjectDir)../../External/imgui/backends/;./../;./;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../External/SFML/Current-x64/include;./../;./;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;SFML_STATIC;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -132,7 +101,7 @@
     </Link>
     <Lib>
       <AdditionalLibraryDirectories>C:\GitHub\Cluiche\External\SFML\Current-x64\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>sfml-main-s.lib;sfml-graphics-s.lib;sfml-window-s.lib;sfml-system-s.lib</AdditionalDependencies>
+      <AdditionalDependencies>sfml-main-s.lib;sfml-window-s.lib;sfml-system-s.lib</AdditionalDependencies>
     </Lib>
     <ProjectReference>
       <LinkLibraryDependencies>true</LinkLibraryDependencies>

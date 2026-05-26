@@ -7,7 +7,7 @@
 #include <DiaCore/FilePath/Path.h>
 #include <DiaCore/FilePath/PathStore.h>
 #include <DiaCore/Json/external/json/json.h>
-#include <DiaSFML/RenderWindow.h>
+#include <DiaAssetRuntime/Handlers/TextureHandler.h>
 #include <DiaUIUltralight/UltralightUISystem.h>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/IApplicationControl.h>
@@ -225,7 +225,7 @@ void AssetServiceModule::DoUpdate(float /*dt*/)
 
     // 2. Pump main-thread texture upload completions.
     // TextureHandler::Tick() drains decoded images -> GPU upload -> fires callbacks.
-    Dia::SFML::TextureHandler* textureHandler = KernelModule::GetStaticTextureHandler();
+    Dia::AssetRuntime::TextureHandler* textureHandler = KernelModule::GetStaticTextureHandler();
     if (textureHandler)
         textureHandler->Tick();
 
@@ -451,11 +451,9 @@ void AssetServiceModule::EnsureHandlersRegistered()
 
     bool justRegistered = false;
 
-    if (!mTextureHandlerRegistered && kernel && kernel->GetWindow())
+    if (!mTextureHandlerRegistered && kernel && KernelModule::GetStaticTextureHandler())
     {
-        Dia::SFML::RenderWindow* window =
-            static_cast<Dia::SFML::RenderWindow*>(kernel->GetWindow());
-        mRuntime.RegisterTypeHandler("texture", window->GetTextureHandler());
+        mRuntime.RegisterTypeHandler("texture", KernelModule::GetStaticTextureHandler());
         mTextureHandlerRegistered = true;
         justRegistered = true;
     }

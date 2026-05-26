@@ -54,7 +54,7 @@ namespace Dia
 		class Win32WindowFactory : public IWindowFactory
 		{
 		public:
-			IWindow* Create(const IWindow::Settings& windowSettings, const Graphics::ICanvas::Settings& canvasSettings) override;
+			IWindow* Create(const IWindow::Settings& windowSettings) override;
 			void Destroy(IWindow* window) override;
 		};
 	}

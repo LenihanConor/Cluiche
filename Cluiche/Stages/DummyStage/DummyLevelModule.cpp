@@ -6,7 +6,7 @@
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaGraphics/Frame/SpriteDrawCommand.h>
 #include <DiaGraphics/Misc/RGBA.h>
-#include <DiaSFML/TextureHandler.h>
+#include <DiaAssetRuntime/Handlers/TextureHandler.h>
 #include <DiaInput/EKey.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaMaths/Vector/Vector2D.h>
@@ -116,7 +116,7 @@ void DummyLevelModule::DoUpdate(float dt)
 
     // Draw debug sprites (mirrors v1 SimRunningPhase). Textures come from
     // the texture handler on MainPU via static accessor.
-    if (Dia::SFML::TextureHandler* tex = KernelModule::GetStaticTextureHandler())
+    if (Dia::AssetRuntime::TextureHandler* tex = KernelModule::GetStaticTextureHandler())
     {
         Dia::Graphics::ITexture* red   = tex->LookupTexture(Dia::Core::StringCRC("texture.test_red"));
         Dia::Graphics::ITexture* blue  = tex->LookupTexture(Dia::Core::StringCRC("texture.test_blue"));
