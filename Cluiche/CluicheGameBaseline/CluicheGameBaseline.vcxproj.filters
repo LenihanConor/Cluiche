@@ -45,6 +45,12 @@
     <ClCompile Include="Types\InputEvent.cpp">
       <Filter>Types</Filter>
     </ClCompile>
+    <ClCompile Include="Types\MainToRenderEvent.cpp">
+      <Filter>Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Types\MainToRenderFrame.cpp">
+      <Filter>Types</Filter>
+    </ClCompile>
     <ClCompile Include="Types\UICommand.cpp">
       <Filter>Types</Filter>
     </ClCompile>
@@ -84,6 +90,12 @@
       <Filter>Modules</Filter>
     </ClInclude>
     <ClInclude Include="Types\InputEvent.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\MainToRenderEvent.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\MainToRenderFrame.h">
       <Filter>Types</Filter>
     </ClInclude>
     <ClInclude Include="Types\UICommand.h">

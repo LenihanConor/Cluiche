@@ -157,6 +157,11 @@ namespace Dia { namespace ApplicationFlow {
         // Returns true if every module in every PU is kInactive or kFailed.
         bool AllModulesInactive() const;
 
+        // Walk all registered ServiceStreamStores; commit any that are registered
+        // but not yet committed (i.e., provider called Register() and this is
+        // the first frame where all providers are registered).
+        void CommitReadyServiceStreams();
+
         // Returns true if any module is in kFailed state.
         bool AnyModuleFailed() const;
 

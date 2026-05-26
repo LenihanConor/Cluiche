@@ -13,7 +13,7 @@ namespace Dia { namespace ApplicationFlow {
         Dia::Core::StringCRC id;
 
         // v2.1 fields
-        Dia::Core::StringCRC kind;         // "EventStream" or "FrameStream"
+        Dia::Core::StringCRC kind;         // "EventStream", "FrameStream", or "ServiceStream"
         Dia::Core::StringCRC payloadType;  // e.g. "InputEvent" — must match DIA_STREAM_TYPE registration
 
         Dia::Core::StringCRC fromPU;
@@ -29,6 +29,13 @@ namespace Dia { namespace ApplicationFlow {
         unsigned int   blockTimeoutMs  = 100;
     };
 
+    // Describes a module's binding to a stream channel (unified reads/writes/provides/consumes)
+    struct ChannelBinding
+    {
+        Dia::Core::StringCRC id;
+        Dia::Core::StringCRC role;  // "reads", "writes", "provides", "consumes"
+    };
+
     // Describes a single module instance within a processing unit
     struct ModuleDeclaration
     {
@@ -39,8 +46,7 @@ namespace Dia { namespace ApplicationFlow {
         Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16> stages;
 
         Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 8>  dependencies;
-        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 4>  reads;
-        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 4>  writes;
+        Dia::Core::Containers::DynamicArrayC<ChannelBinding, 4>        channels;
 
         // Raw JSON config blob for this module (avoids Json::Value dependency in the header)
         Dia::Core::Containers::String256 configJson;

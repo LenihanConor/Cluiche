@@ -43,10 +43,11 @@ namespace Dia { namespace ApplicationFlow {
         void CheckEmptyStages(const ApplicationManifestV3& manifest);
         void CheckMultiWriterViolations(const ApplicationManifestV3& manifest);
 
-        void CheckStreamReadsWritesBinding(const ApplicationManifestV3& manifest);   // reads/writes reference declared streams
+        void CheckStreamReadsWritesBinding(const ApplicationManifestV3& manifest);   // channels reference declared streams
         void CheckStreamPayloadTypes(const ApplicationManifestV3& manifest);          // payload_type registered
         void CheckStreamOrphanReadersWriters(const ApplicationManifestV3& manifest);  // orphan reader/writer detection
         void CheckReservedPrefixViolations(const ApplicationManifestV3& manifest);    // user $ prefix forbidden
+        void CheckServiceStreamConstraints(const ApplicationManifestV3& manifest);    // ServiceStream provider/consumer rules
 
         // v3 transition rules
         void CheckTransitionTargets(const ApplicationManifestV3& manifest);           // TRANSITION_TARGET_INVALID (E)

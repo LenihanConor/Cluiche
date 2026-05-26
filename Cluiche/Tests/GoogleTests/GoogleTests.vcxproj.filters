@@ -1116,6 +1116,12 @@
     <ClCompile Include="ApplicationFlow\TestStreamTypeSerializer.cpp">
       <Filter>ApplicationFlow</Filter>
     </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestServiceChannel.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
+    <ClCompile Include="ApplicationFlow\TestEventStreamBatching.cpp">
+      <Filter>ApplicationFlow</Filter>
+    </ClCompile>
     <!-- DiaGame -->
     <ClCompile Include="DiaGame\TestJsonDiaGameSerializer.cpp">
       <Filter>DiaGame</Filter>

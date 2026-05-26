@@ -78,6 +78,7 @@
       <AdditionalLibraryDirectories>$(ProjectDir)../../../External/googletest/lib/x64/Debug/;$(ProjectDir)../../../External/SFML/Current-x64/lib/;$(ProjectDir)../../../External/bgfx/lib/Debug/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
+      <StackReserveSize>4194304</StackReserveSize>
     </Link>
     <PostBuildEvent>
       <Command>cd "$(RepoRoot)Dia\DiaCLI" &amp;&amp; ".venv\Scripts\python.exe" -m dia_cli pipeline deploy googletest --config $(Configuration) --out-dir "$(BinRoot)$(MSBuildProjectName)\$(Configuration)\$(Platform)\"</Command>
@@ -105,6 +106,7 @@
       <SubSystem>Console</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <StackReserveSize>4194304</StackReserveSize>
     </Link>
     <PostBuildEvent>
       <Command>cd "$(RepoRoot)Dia\DiaCLI" &amp;&amp; ".venv\Scripts\python.exe" -m dia_cli pipeline deploy googletest --config $(Configuration) --out-dir "$(BinRoot)$(MSBuildProjectName)\$(Configuration)\$(Platform)\"</Command>
@@ -224,6 +226,8 @@
     <ClCompile Include="ApplicationFlow\TestLifecycleEvents.cpp" />
     <ClCompile Include="ApplicationFlow\TestTransitionGuards.cpp" />
     <ClCompile Include="ApplicationFlow\TestBaselineCommands.cpp" />
+    <ClCompile Include="ApplicationFlow\TestServiceChannel.cpp" />
+    <ClCompile Include="ApplicationFlow\TestEventStreamBatching.cpp" />
     <ClCompile Include="Automation\TestAutomationService.cpp" />
     <ClCompile Include="Automation\TestMetricCommand.cpp" />
     <ClCompile Include="ApplicationFlow\TestApplicationE2E.cpp" />

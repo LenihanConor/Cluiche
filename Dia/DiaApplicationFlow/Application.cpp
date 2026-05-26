@@ -8,6 +8,7 @@
 #include "DiaApplicationFlow/IApplicationInspectable.h"
 #include "DiaApplicationFlow/LifecycleEvent.h"
 #include <DiaApplicationFlow/Streams/Event.h>
+#include <DiaApplicationFlow/Streams/IStreamStore.h>
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
@@ -257,6 +258,9 @@ namespace Dia { namespace ApplicationFlow {
         {
             mProcessingUnits[0]->Update(deltaTime);
         }
+
+        // --- Commit gate: make registered ServiceStreams visible to consumers ---
+        CommitReadyServiceStreams();
 
         // --- Error policy: check for failed modules --------------------------
         if (AnyModuleFailed())
@@ -1047,6 +1051,33 @@ namespace Dia { namespace ApplicationFlow {
                 return result;
             };
             Dia::API::RegisterCommandJson(stagesCmd);
+        }
+    }
+
+    //--------------------------------------------------------------------------
+    // CommitReadyServiceStreams  (private)
+    //
+    // Called once per Update() tick after the main PU has processed its frame.
+    // Any ServiceStreamStore that is registered (provider called Register())
+    // but not yet committed is committed here, making it accessible to consumers.
+    //
+    // This implements the "collected-then-committed" gate from the spec:
+    // providers call Register() from DoStart(), and this function commits all
+    // of them as soon as they are registered.  The validator guarantees exactly
+    // one provider per ServiceStream, so "registered = ready to commit".
+    //--------------------------------------------------------------------------
+
+    void Application::CommitReadyServiceStreams()
+    {
+        for (unsigned int i = 0; i < mStreamStoreCount; ++i)
+        {
+            IStreamStore* store = mStreamStores[i].Get();
+            if (store->GetKind() == StreamKind::kService
+                && store->IsRegistered()
+                && !store->IsCommitted())
+            {
+                store->Commit();
+            }
         }
     }
 

@@ -28,6 +28,8 @@
     <ClCompile Include="Modules\TimeServerModule.cpp" />
     <ClCompile Include="Modules\UIModule.cpp" />
     <ClCompile Include="Types\InputEvent.cpp" />
+    <ClCompile Include="Types\MainToRenderEvent.cpp" />
+    <ClCompile Include="Types\MainToRenderFrame.cpp" />
     <ClCompile Include="Types\UICommand.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -48,6 +50,8 @@
     <ClInclude Include="Modules\TimeServerModule.h" />
     <ClInclude Include="Modules\UIModule.h" />
     <ClInclude Include="Types\InputEvent.h" />
+    <ClInclude Include="Types\MainToRenderEvent.h" />
+    <ClInclude Include="Types\MainToRenderFrame.h" />
     <ClInclude Include="Types\UICommand.h" />
   </ItemGroup>
   <ItemGroup>

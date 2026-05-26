@@ -38,6 +38,9 @@
     <ClInclude Include="Streams\StreamReader.h" />
     <ClInclude Include="Streams\EventStreamWriter.h" />
     <ClInclude Include="Streams\EventStreamReader.h" />
+    <ClInclude Include="Streams\ServiceStreamStore.h" />
+    <ClInclude Include="Streams\ServiceStreamWriter.h" />
+    <ClInclude Include="Streams\ServiceStreamReader.h" />
     <ClInclude Include="Streams\StreamTypeRegistry.h" />
     <ClInclude Include="Manifest\ApplicationManifestV3.h" />
     <ClInclude Include="Manifest\ApplicationManifestLoaderV2.h" />

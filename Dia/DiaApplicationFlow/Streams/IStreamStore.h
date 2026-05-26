@@ -5,7 +5,7 @@
 
 namespace Dia { namespace ApplicationFlow {
 
-    enum class StreamKind { kFrame, kEvent };
+    enum class StreamKind { kFrame, kEvent, kService };
 
     using TapCallback = std::function<void(const void* eventBytes, unsigned int eventSize,
                                            const Dia::Core::StringCRC& streamId)>;
@@ -44,6 +44,13 @@ namespace Dia { namespace ApplicationFlow {
 
         // Shutdown notification — unblocks kBlock writers. No-op for FrameStream.
         virtual void NotifyShutdown() {}
+
+        // ServiceStream commit gate — implemented by ServiceStreamStore<T>.
+        // FrameStream and EventStreamStore return false / no-op defaults.
+        virtual bool IsCommitted()  const { return false; }
+        virtual bool IsRegistered() const { return false; }
+        virtual void Commit()             {}
+        virtual void Reset()              {}
     };
 
 }} // namespace Dia::ApplicationFlow

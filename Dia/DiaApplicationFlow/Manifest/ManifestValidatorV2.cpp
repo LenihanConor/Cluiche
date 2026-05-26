@@ -29,6 +29,7 @@ namespace Dia { namespace ApplicationFlow {
         CheckStreamPayloadTypes(manifest);
         CheckStreamOrphanReadersWriters(manifest);
         CheckReservedPrefixViolations(manifest);
+        CheckServiceStreamConstraints(manifest);
         CheckTransitionTargets(manifest);
         CheckAutoAdvanceConsistency(manifest);
         CheckTransitionSelfLoops(manifest);
@@ -396,31 +397,16 @@ namespace Dia { namespace ApplicationFlow {
                     }
                 }
 
-                // Check reads references
-                for (unsigned int r = 0; r < mod.reads.Size(); ++r)
+                // Check channel stream references
+                for (unsigned int c = 0; c < mod.channels.Size(); ++c)
                 {
-                    const Dia::Core::StringCRC& streamId = mod.reads[r];
+                    const Dia::Core::StringCRC& streamId = mod.channels[c].id;
                     if (IsReservedStreamId(streamId))
                         continue;  // reserved streams ($lifecycle, etc.) are always allowed
                     if (!streamExists(streamId))
                     {
                         Dia::Core::Containers::String256 msg;
-                        msg.Format("Module '%s' in PU '%s' reads unknown stream '%s'",
-                            mod.instanceId.AsChar(), pu.instanceId.AsChar(), streamId.AsChar());
-                        AddError("UNKNOWN_STREAM", msg.AsCStr(), mod.instanceId);
-                    }
-                }
-
-                // Check writes references
-                for (unsigned int w = 0; w < mod.writes.Size(); ++w)
-                {
-                    const Dia::Core::StringCRC& streamId = mod.writes[w];
-                    if (IsReservedStreamId(streamId))
-                        continue;  // reserved streams are always allowed
-                    if (!streamExists(streamId))
-                    {
-                        Dia::Core::Containers::String256 msg;
-                        msg.Format("Module '%s' in PU '%s' writes unknown stream '%s'",
+                        msg.Format("Module '%s' in PU '%s' references unknown stream '%s' in channels",
                             mod.instanceId.AsChar(), pu.instanceId.AsChar(), streamId.AsChar());
                         AddError("UNKNOWN_STREAM", msg.AsCStr(), mod.instanceId);
                     }
@@ -510,11 +496,16 @@ namespace Dia { namespace ApplicationFlow {
     //-----------------------------------------------------------------------------
     // CheckOrphanStreams
     //
-    // Warns when a stream has no writers (nothing in writes[]) or no readers
-    // (nothing in reads[]) across all PU modules.
+    // Warns when a stream has no writers/providers or no readers/consumers
+    // across all PU modules.
     //-----------------------------------------------------------------------------
     void ManifestValidatorV2::CheckOrphanStreams(const ApplicationManifestV3& manifest)
     {
+        static const Dia::Core::StringCRC kWrites("writes");
+        static const Dia::Core::StringCRC kProvides("provides");
+        static const Dia::Core::StringCRC kReads("reads");
+        static const Dia::Core::StringCRC kConsumes("consumes");
+
         for (unsigned int si = 0; si < manifest.streams.Size(); ++si)
         {
             const Dia::Core::StringCRC& streamId = manifest.streams[si].id;
@@ -529,19 +520,14 @@ namespace Dia { namespace ApplicationFlow {
                 {
                     const ModuleDeclaration& mod = pu.modules[m];
 
-                    for (unsigned int w = 0; w < mod.writes.Size(); ++w)
+                    for (unsigned int c = 0; c < mod.channels.Size(); ++c)
                     {
-                        if (mod.writes[w] == streamId)
+                        if (mod.channels[c].id == streamId)
                         {
-                            hasWriter = true;
-                        }
-                    }
-
-                    for (unsigned int r = 0; r < mod.reads.Size(); ++r)
-                    {
-                        if (mod.reads[r] == streamId)
-                        {
-                            hasReader = true;
+                            if (mod.channels[c].role == kWrites || mod.channels[c].role == kProvides)
+                                hasWriter = true;
+                            if (mod.channels[c].role == kReads || mod.channels[c].role == kConsumes)
+                                hasReader = true;
                         }
                     }
                 }
@@ -621,15 +607,25 @@ namespace Dia { namespace ApplicationFlow {
     // CheckMultiWriterViolations
     //
     // When a stream has multiWriter=false, at most one module across all PUs
-    // may write to it.
+    // may write to it.  ServiceStream kind is skipped (providers handled by
+    // CheckServiceStreamConstraints).
     //-----------------------------------------------------------------------------
     void ManifestValidatorV2::CheckMultiWriterViolations(const ApplicationManifestV3& manifest)
     {
+        static const Dia::Core::StringCRC kWrites("writes");
+        static const Dia::Core::StringCRC kServiceKind("ServiceStream");
+
         for (unsigned int si = 0; si < manifest.streams.Size(); ++si)
         {
             const StreamDeclaration& stream = manifest.streams[si];
 
             if (stream.multiWriter)
+            {
+                continue;
+            }
+
+            // Skip ServiceStream — provider uniqueness is checked separately
+            if (stream.kind == kServiceKind)
             {
                 continue;
             }
@@ -642,9 +638,9 @@ namespace Dia { namespace ApplicationFlow {
                 for (unsigned int m = 0; m < pu.modules.Size(); ++m)
                 {
                     const ModuleDeclaration& mod = pu.modules[m];
-                    for (unsigned int w = 0; w < mod.writes.Size(); ++w)
+                    for (unsigned int c = 0; c < mod.channels.Size(); ++c)
                     {
-                        if (mod.writes[w] == stream.id)
+                        if (mod.channels[c].id == stream.id && mod.channels[c].role == kWrites)
                         {
                             ++writerCount;
                         }
@@ -771,7 +767,7 @@ namespace Dia { namespace ApplicationFlow {
     // IsReservedStreamId
     //
     // Reserved streams start with '$' (e.g. $lifecycle).  They are allowed in
-    // module reads/writes without a corresponding manifest declaration.
+    // module channels without a corresponding manifest declaration.
     //-----------------------------------------------------------------------------
     /*static*/ bool ManifestValidatorV2::IsReservedStreamId(const Dia::Core::StringCRC& id)
     {
@@ -782,14 +778,25 @@ namespace Dia { namespace ApplicationFlow {
     //-----------------------------------------------------------------------------
     // CheckStreamReadsWritesBinding
     //
-    // For each module in each PU, every entry in reads[] and writes[] must
-    // reference a stream declared in manifest.streams — unless the stream ID
-    // starts with '$', which marks it as a reserved/built-in stream.
+    // For each module in each PU, every channel entry must reference a stream
+    // declared in manifest.streams — unless the stream ID starts with '$',
+    // which marks it as a reserved/built-in stream.
     //
-    // Error codes: UNKNOWN_STREAM_IN_READS, UNKNOWN_STREAM_IN_WRITES
+    // Additionally validates role/kind pairing:
+    //   - reads/writes roles must NOT be used on ServiceStream kind
+    //   - provides/consumes roles must ONLY be used on ServiceStream kind
+    //
+    // Error codes: UNKNOWN_STREAM_IN_READS, UNKNOWN_STREAM_IN_WRITES,
+    //              SERVICE_STREAM_WRONG_ROLE, SERVICE_STREAM_ORPHAN_CONSUMER
     //-----------------------------------------------------------------------------
     void ManifestValidatorV2::CheckStreamReadsWritesBinding(const ApplicationManifestV3& manifest)
     {
+        static const Dia::Core::StringCRC kReads("reads");
+        static const Dia::Core::StringCRC kWrites("writes");
+        static const Dia::Core::StringCRC kProvides("provides");
+        static const Dia::Core::StringCRC kConsumes("consumes");
+        static const Dia::Core::StringCRC kServiceKind("ServiceStream");
+
         // Build flat set of declared stream ids
         Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16> declaredIds;
         for (unsigned int i = 0; i < manifest.streams.Size(); ++i)
@@ -808,6 +815,15 @@ namespace Dia { namespace ApplicationFlow {
             return false;
         };
 
+        auto findStreamKind = [&manifest](const Dia::Core::StringCRC& id) -> Dia::Core::StringCRC {
+            for (unsigned int i = 0; i < manifest.streams.Size(); ++i)
+            {
+                if (manifest.streams[i].id == id)
+                    return manifest.streams[i].kind;
+            }
+            return Dia::Core::StringCRC();
+        };
+
         for (unsigned int p = 0; p < manifest.processingUnits.Size(); ++p)
         {
             const ProcessingUnitDeclaration& pu = manifest.processingUnits[p];
@@ -815,35 +831,57 @@ namespace Dia { namespace ApplicationFlow {
             {
                 const ModuleDeclaration& mod = pu.modules[m];
 
-                for (unsigned int r = 0; r < mod.reads.Size(); ++r)
+                for (unsigned int c = 0; c < mod.channels.Size(); ++c)
                 {
-                    const Dia::Core::StringCRC& streamId = mod.reads[r];
-                    if (IsReservedStreamId(streamId))
+                    const ChannelBinding& ch = mod.channels[c];
+                    if (IsReservedStreamId(ch.id))
                     {
-                        continue;  // reserved streams are always allowed in reads
+                        continue;  // reserved streams are always allowed
                     }
-                    if (!isDeclared(streamId))
+                    if (!isDeclared(ch.id))
                     {
-                        Dia::Core::Containers::String256 msg;
-                        msg.Format("Module '%s' in PU '%s' reads undeclared stream '%s'",
-                            mod.instanceId.AsChar(), pu.instanceId.AsChar(), streamId.AsChar());
-                        AddError("UNKNOWN_STREAM_IN_READS", msg.AsCStr(), mod.instanceId);
-                    }
-                }
-
-                for (unsigned int w = 0; w < mod.writes.Size(); ++w)
-                {
-                    const Dia::Core::StringCRC& streamId = mod.writes[w];
-                    if (IsReservedStreamId(streamId))
-                    {
+                        if (ch.role == kReads)
+                        {
+                            Dia::Core::Containers::String256 msg;
+                            msg.Format("Module '%s' in PU '%s' reads undeclared stream '%s'",
+                                mod.instanceId.AsChar(), pu.instanceId.AsChar(), ch.id.AsChar());
+                            AddError("UNKNOWN_STREAM_IN_READS", msg.AsCStr(), mod.instanceId);
+                        }
+                        else if (ch.role == kWrites)
+                        {
+                            Dia::Core::Containers::String256 msg;
+                            msg.Format("Module '%s' in PU '%s' writes undeclared stream '%s'",
+                                mod.instanceId.AsChar(), pu.instanceId.AsChar(), ch.id.AsChar());
+                            AddError("UNKNOWN_STREAM_IN_WRITES", msg.AsCStr(), mod.instanceId);
+                        }
+                        else
+                        {
+                            Dia::Core::Containers::String256 msg;
+                            msg.Format("Module '%s' in PU '%s' references undeclared stream '%s' (role '%s')",
+                                mod.instanceId.AsChar(), pu.instanceId.AsChar(), ch.id.AsChar(), ch.role.AsChar());
+                            AddError("UNKNOWN_STREAM_IN_READS", msg.AsCStr(), mod.instanceId);
+                        }
                         continue;
                     }
-                    if (!isDeclared(streamId))
+
+                    // Validate role/kind pairing
+                    Dia::Core::StringCRC streamKind = findStreamKind(ch.id);
+                    bool isService = (streamKind == kServiceKind);
+
+                    if ((ch.role == kReads || ch.role == kWrites) && isService)
                     {
                         Dia::Core::Containers::String256 msg;
-                        msg.Format("Module '%s' in PU '%s' writes undeclared stream '%s'",
-                            mod.instanceId.AsChar(), pu.instanceId.AsChar(), streamId.AsChar());
-                        AddError("UNKNOWN_STREAM_IN_WRITES", msg.AsCStr(), mod.instanceId);
+                        msg.Format("Module '%s' uses role '%s' on ServiceStream '%s' — use provides/consumes instead",
+                            mod.instanceId.AsChar(), ch.role.AsChar(), ch.id.AsChar());
+                        AddError("SERVICE_STREAM_WRONG_ROLE", msg.AsCStr(), mod.instanceId);
+                    }
+
+                    if ((ch.role == kProvides || ch.role == kConsumes) && !isService)
+                    {
+                        Dia::Core::Containers::String256 msg;
+                        msg.Format("Module '%s' uses role '%s' on stream '%s' which is not a ServiceStream",
+                            mod.instanceId.AsChar(), ch.role.AsChar(), ch.id.AsChar());
+                        AddError("SERVICE_STREAM_ORPHAN_CONSUMER", msg.AsCStr(), mod.instanceId);
                     }
                 }
             }
@@ -877,7 +915,9 @@ namespace Dia { namespace ApplicationFlow {
     //-----------------------------------------------------------------------------
     // CheckStreamOrphanReadersWriters
     //
-    // For each declared stream, scan all module reads/writes across all PUs.
+    // For each declared stream, scan all module channels across all PUs.
+    // - role="reads"/"consumes" counts as a reader
+    // - role="writes"/"provides" counts as a writer
     // - Stream has readers but no writers → ORPHAN_READER_STREAM (warning)
     // - Stream has writers but no readers → ORPHAN_WRITER_STREAM (warning)
     //   (multiWriter streams still warn — write-only may be intentional logging
@@ -885,6 +925,11 @@ namespace Dia { namespace ApplicationFlow {
     //-----------------------------------------------------------------------------
     void ManifestValidatorV2::CheckStreamOrphanReadersWriters(const ApplicationManifestV3& manifest)
     {
+        static const Dia::Core::StringCRC kReads("reads");
+        static const Dia::Core::StringCRC kWrites("writes");
+        static const Dia::Core::StringCRC kProvides("provides");
+        static const Dia::Core::StringCRC kConsumes("consumes");
+
         for (unsigned int si = 0; si < manifest.streams.Size(); ++si)
         {
             const StreamDeclaration& stream = manifest.streams[si];
@@ -900,19 +945,14 @@ namespace Dia { namespace ApplicationFlow {
                 {
                     const ModuleDeclaration& mod = pu.modules[m];
 
-                    for (unsigned int r = 0; r < mod.reads.Size(); ++r)
+                    for (unsigned int c = 0; c < mod.channels.Size(); ++c)
                     {
-                        if (mod.reads[r] == streamId)
+                        if (mod.channels[c].id == streamId)
                         {
-                            hasReader = true;
-                        }
-                    }
-
-                    for (unsigned int w = 0; w < mod.writes.Size(); ++w)
-                    {
-                        if (mod.writes[w] == streamId)
-                        {
-                            hasWriter = true;
+                            if (mod.channels[c].role == kReads || mod.channels[c].role == kConsumes)
+                                hasReader = true;
+                            if (mod.channels[c].role == kWrites || mod.channels[c].role == kProvides)
+                                hasWriter = true;
                         }
                     }
                 }
@@ -930,6 +970,107 @@ namespace Dia { namespace ApplicationFlow {
                 Dia::Core::Containers::String256 msg;
                 msg.Format("Stream '%s' has writers but no readers", streamId.AsChar());
                 AddWarning("ORPHAN_WRITER_STREAM", msg.AsCStr(), streamId);
+            }
+        }
+    }
+
+    //-----------------------------------------------------------------------------
+    // CheckServiceStreamConstraints
+    //
+    // ServiceStream-specific validation:
+    //   - Exactly one provider per ServiceStream
+    //   - At least one consumer per ServiceStream (orphan provider warning)
+    //   - Consumer PU must not appear before provider PU in config ordering
+    //-----------------------------------------------------------------------------
+    void ManifestValidatorV2::CheckServiceStreamConstraints(const ApplicationManifestV3& manifest)
+    {
+        static const Dia::Core::StringCRC kServiceKind("ServiceStream");
+        static const Dia::Core::StringCRC kProvides("provides");
+        static const Dia::Core::StringCRC kConsumes("consumes");
+
+        for (unsigned int si = 0; si < manifest.streams.Size(); ++si)
+        {
+            const StreamDeclaration& stream = manifest.streams[si];
+            if (stream.kind != kServiceKind)
+                continue;
+
+            // Pass 1: collect provider and consumer PU indices
+            unsigned int providerCount    = 0;
+            unsigned int consumerCount    = 0;
+            Dia::Core::StringCRC providerPU;
+            unsigned int providerPUIndex  = 0xFFFFFFFF;
+
+            // Collect per-consumer PU info for ordering check (pass 2)
+            Dia::Core::Containers::DynamicArrayC<unsigned int, 8> consumerPUIndices;
+            Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 8> consumerPUIds;
+
+            for (unsigned int p = 0; p < manifest.processingUnits.Size(); ++p)
+            {
+                const ProcessingUnitDeclaration& pu = manifest.processingUnits[p];
+                for (unsigned int m = 0; m < pu.modules.Size(); ++m)
+                {
+                    const ModuleDeclaration& mod = pu.modules[m];
+                    for (unsigned int c = 0; c < mod.channels.Size(); ++c)
+                    {
+                        if (mod.channels[c].id != stream.id)
+                            continue;
+                        if (mod.channels[c].role == kProvides)
+                        {
+                            ++providerCount;
+                            providerPU      = pu.instanceId;
+                            providerPUIndex = p;
+                        }
+                        else if (mod.channels[c].role == kConsumes)
+                        {
+                            ++consumerCount;
+                            if (!consumerPUIndices.IsFull())
+                            {
+                                consumerPUIndices.Add(p);
+                                consumerPUIds.Add(pu.instanceId);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Pass 2: ordering check (requires both provider and consumer to be known)
+            if (providerPUIndex != 0xFFFFFFFF)
+            {
+                for (unsigned int ci = 0; ci < consumerPUIndices.Size(); ++ci)
+                {
+                    if (consumerPUIndices[ci] < providerPUIndex)
+                    {
+                        Dia::Core::Containers::String256 msg;
+                        msg.Format("ServiceStream '%s': consumer PU '%s' (index %u) appears before provider PU '%s' (index %u) in config",
+                            stream.id.AsChar(), consumerPUIds[ci].AsChar(), consumerPUIndices[ci],
+                            providerPU.AsChar(), providerPUIndex);
+                        AddError("SERVICE_STREAM_PROVIDER_AFTER_CONSUMER", msg.AsCStr(), stream.id);
+                    }
+                }
+            }
+
+            // kServiceStreamMissingProvider
+            if (providerCount == 0)
+            {
+                Dia::Core::Containers::String256 msg;
+                msg.Format("ServiceStream '%s' has no provider (no module has role=provides)", stream.id.AsChar());
+                AddError("SERVICE_STREAM_MISSING_PROVIDER", msg.AsCStr(), stream.id);
+            }
+
+            // kServiceStreamMultipleProviders
+            if (providerCount > 1)
+            {
+                Dia::Core::Containers::String256 msg;
+                msg.Format("ServiceStream '%s' has %u providers — exactly one provider required", stream.id.AsChar(), providerCount);
+                AddError("SERVICE_STREAM_MULTIPLE_PROVIDERS", msg.AsCStr(), stream.id);
+            }
+
+            // kServiceStreamOrphanProvider
+            if (providerCount == 1 && consumerCount == 0)
+            {
+                Dia::Core::Containers::String256 msg;
+                msg.Format("ServiceStream '%s' has a provider but no consumers", stream.id.AsChar());
+                AddError("SERVICE_STREAM_ORPHAN_PROVIDER", msg.AsCStr(), stream.id);
             }
         }
     }

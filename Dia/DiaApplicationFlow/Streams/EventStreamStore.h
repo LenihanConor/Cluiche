@@ -5,6 +5,7 @@
 #include <atomic>
 #include <chrono>
 #include <cstdint>
+#include <cinttypes>
 
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
@@ -31,6 +32,12 @@ namespace Dia { namespace ApplicationFlow {
 //
 // Overflow behaviour is controlled by the OverflowPolicy set at construction.
 // Default policy: kDropOldest (matches pre-F3 behaviour).
+//
+// Frame-batching (service-channel F5):
+//   Flush() advances mFlushSequence. Each event is stamped with the
+//   mCurrentBatchId at Send() time. ConsumeUpToFlush() only drains events
+//   whose batch stamp is <= mFlushSequence, providing frame-boundary
+//   isolation. The existing Consume() is unchanged (drains all pending).
 // ---------------------------------------------------------------------------
 template<typename T>
 class EventStreamStore : public IStreamStore
@@ -80,7 +87,20 @@ public:
     // Returns SendResult per overflow policy.
     SendResult Send(const Event<T>& event);
 
-    // Reader: drain events from reader[readerIndex] into outEvents (up to N).
+    // Frame-batching: advances the flush sequence, making all events sent
+    // since the last Flush() visible to ConsumeUpToFlush().
+    // Called by the framework at the end of the producer PU's tick.
+    void Flush();
+
+    // Frame-batching: drain only events whose batch stamp is <= the current
+    // flush sequence. Events from the current (not-yet-flushed) batch are held.
+    template<unsigned int N>
+    void ConsumeUpToFlush(int readerIndex, Dia::Core::Containers::DynamicArrayC<Event<T>, N>& outEvents);
+
+    // Returns the current flush sequence (number of Flush() calls made).
+    uint64_t GetFlushSequence() const { return mFlushSequence.load(std::memory_order_acquire); }
+
+    // Reader: drain ALL pending events (ignores flush boundary).
     template<unsigned int N>
     void Consume(int readerIndex, Dia::Core::Containers::DynamicArrayC<Event<T>, N>& outEvents);
 
@@ -97,12 +117,13 @@ public:
 private:
     struct ReaderBuffer
     {
-        Event<T>*    buffer   = nullptr;
-        unsigned int capacity = 0;
-        unsigned int head     = 0;
-        unsigned int tail     = 0;
-        unsigned int count    = 0;
-        bool         active   = false;
+        Event<T>*    buffer       = nullptr;
+        uint64_t*    batchStamps  = nullptr;  // parallel array: batch id for each slot
+        unsigned int capacity     = 0;
+        unsigned int head         = 0;
+        unsigned int tail         = 0;
+        unsigned int count        = 0;
+        bool         active       = false;
     };
 
     struct TapEntry
@@ -125,6 +146,11 @@ private:
     std::condition_variable  mNotFullCv;
     std::atomic<bool>        mShuttingDown{false};
     std::atomic<uint64_t>    mNextSequence{0};
+
+    // Frame-batching: current batch id (incremented on each Flush) and the
+    // last committed flush sequence visible to ConsumeUpToFlush().
+    std::atomic<uint64_t>    mCurrentBatchId{1};   // starts at 1; 0 = pre-first-flush
+    std::atomic<uint64_t>    mFlushSequence{0};    // 0 = no flush yet
 
     ReaderBuffer mReaders[kDefaultMaxReaders];
     int          mReaderCount = 0;
@@ -164,10 +190,15 @@ inline EventStreamStore<T>::~EventStreamStore()
 {
     for (int i = 0; i < static_cast<int>(kDefaultMaxReaders); ++i)
     {
-        if (mReaders[i].active && mReaders[i].buffer != nullptr)
+        if (mReaders[i].buffer != nullptr)
         {
             delete[] mReaders[i].buffer;
             mReaders[i].buffer = nullptr;
+        }
+        if (mReaders[i].batchStamps != nullptr)
+        {
+            delete[] mReaders[i].batchStamps;
+            mReaders[i].batchStamps = nullptr;
         }
     }
 }
@@ -188,12 +219,13 @@ inline int EventStreamStore<T>::RegisterReader()
     {
         if (!mReaders[i].active)
         {
-            mReaders[i].buffer   = new Event<T>[mCapacity];
-            mReaders[i].capacity = mCapacity;
-            mReaders[i].head     = 0;
-            mReaders[i].tail     = 0;
-            mReaders[i].count    = 0;
-            mReaders[i].active   = true;
+            mReaders[i].buffer      = new Event<T>[mCapacity];
+            mReaders[i].batchStamps = new uint64_t[mCapacity]();
+            mReaders[i].capacity    = mCapacity;
+            mReaders[i].head        = 0;
+            mReaders[i].tail        = 0;
+            mReaders[i].count       = 0;
+            mReaders[i].active      = true;
             if (i >= mReaderCount)
                 mReaderCount = i + 1;
             DIA_LOG_INFO("stream", "stream.reader.connected stream_id=%s reader_index=%d", mId.AsChar(), i);
@@ -308,7 +340,8 @@ inline SendResult EventStreamStore<T>::SendInternal(const Event<T>& event)
             }
         }
 
-        rb.buffer[rb.head] = event;
+        rb.buffer[rb.head]      = event;
+        rb.batchStamps[rb.head] = mCurrentBatchId.load(std::memory_order_relaxed);
         rb.head = (rb.head + 1) % rb.capacity;
         ++rb.count;
     }
@@ -357,6 +390,50 @@ inline void EventStreamStore<T>::Consume(int readerIndex,
 
     while (rb.count > 0 && !outEvents.IsFull())
     {
+        outEvents.Add(rb.buffer[rb.tail]);
+        rb.tail = (rb.tail + 1) % rb.capacity;
+        --rb.count;
+    }
+
+    if (mPolicy == OverflowPolicy::kBlock)
+        mNotFullCv.notify_all();
+}
+
+// --- Frame-batching API ------------------------------------------------------
+
+template<typename T>
+inline void EventStreamStore<T>::Flush()
+{
+    // Commit the current batch: advance flush sequence to match current batch id,
+    // then advance current batch id so new events belong to the next batch.
+    const uint64_t committed = mCurrentBatchId.load(std::memory_order_relaxed);
+    mFlushSequence.store(committed, std::memory_order_release);
+    mCurrentBatchId.fetch_add(1, std::memory_order_relaxed);
+    DIA_LOG_DEBUG("stream", "stream.flush stream_id=%s flush_seq=%" PRIu64, mId.AsChar(), committed);
+}
+
+template<typename T>
+template<unsigned int N>
+inline void EventStreamStore<T>::ConsumeUpToFlush(int readerIndex,
+    Dia::Core::Containers::DynamicArrayC<Event<T>, N>& outEvents)
+{
+    DIA_ASSERT(readerIndex >= 0 && readerIndex < mReaderCount,
+        "EventStreamStore::ConsumeUpToFlush — invalid readerIndex %d", readerIndex);
+
+    const uint64_t flushedSeq = mFlushSequence.load(std::memory_order_acquire);
+
+    std::lock_guard<std::mutex> lock(mMutex);
+    ReaderBuffer& rb = mReaders[readerIndex];
+    if (!rb.active)
+        return;
+
+    while (rb.count > 0 && !outEvents.IsFull())
+    {
+        // Peek at the batch stamp of the oldest event
+        const uint64_t stamp = rb.batchStamps[rb.tail];
+        if (stamp > flushedSeq)
+            break;  // event belongs to an unflushed batch — stop here
+
         outEvents.Add(rb.buffer[rb.tail]);
         rb.tail = (rb.tail + 1) % rb.capacity;
         --rb.count;
