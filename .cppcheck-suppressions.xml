@@ -13,4 +13,113 @@
         <id>uninitMemberVar</id>
         <fileName>*/DiaCore/Containers/*</fileName>
     </suppress>
+
+    <!-- -----------------------------------------------------------------------
+         False positives: macros cppcheck cannot expand without full config
+    ----------------------------------------------------------------------- -->
+    <!-- DIA_SERIALIZE / DIA_SERIALIZE_END, DIA_COMPONENT — engine reflection macros -->
+    <suppress>
+        <id>unknownMacro</id>
+    </suppress>
+
+    <!-- -----------------------------------------------------------------------
+         False positives: cppcheck parser limitations
+    ----------------------------------------------------------------------- -->
+    <!-- CallStack.cpp: platform-specific asm/intrinsics trip AST builder -->
+    <suppress>
+        <id>internalAstError</id>
+        <fileName>*/DiaCore/Core/CallStack.cpp</fileName>
+    </suppress>
+    <!-- DiaGeometry2D Circle.cpp: cppcheck syntax error on valid C++ -->
+    <suppress>
+        <id>syntaxError</id>
+        <fileName>*/DiaGeometry2D/Shapes/Circle.cpp</fileName>
+    </suppress>
+    <!-- DiaCLI test: cppcheck syntax error on valid C++ -->
+    <suppress>
+        <id>syntaxError</id>
+        <fileName>*/GoogleTests/DiaCLI/TestDiaCLI.cpp</fileName>
+    </suppress>
+
+    <!-- -----------------------------------------------------------------------
+         Third-party generated files — never analyse
+    ----------------------------------------------------------------------- -->
+    <suppress>
+        <id>preprocessorErrorDirective</id>
+        <fileName>*/DiaDebugProtocol/generated/*</fileName>
+    </suppress>
+    <suppress>
+        <id>preprocessorErrorDirective</id>
+        <fileName>*/DiaDebugProtocol/proto/generated/*</fileName>
+    </suppress>
+
+    <!-- -----------------------------------------------------------------------
+         False positives: lifetime / uninit
+    ----------------------------------------------------------------------- -->
+    <!-- String256::operator=(const char*) copies via memcpy — not a pointer store -->
+    <suppress>
+        <id>invalidLifetime</id>
+        <fileName>*/DiaApplicationFlow/Manifest/ApplicationManifestLoaderV2.cpp</fileName>
+    </suppress>
+    <!-- localtime_s fills the struct tm — cppcheck doesn't model it -->
+    <suppress>
+        <id>uninitvar</id>
+        <fileName>*/DiaEditor/MVC/EditorView.cpp</fileName>
+    </suppress>
+    <suppress>
+        <id>uninitvar</id>
+        <fileName>*/DiaEditor/Sinks/EditorConsoleSink.cpp</fileName>
+    </suppress>
+    <!-- Plain 2D char array filled lazily; no default-init needed -->
+    <suppress>
+        <id>uninitMemberVar</id>
+        <fileName>*/CluicheEditor/ApplicationFlow/Modules/EditorModelModule.cpp</fileName>
+    </suppress>
+    <!-- UISystemImpl::mStagingBuffer set before use in Ultralight integration -->
+    <suppress>
+        <id>uninitMemberVar</id>
+        <fileName>*/DiaUIUltralight/UltralightUISystem.cpp</fileName>
+    </suppress>
+    <!-- malloc null-deref: Ultralight closed-source path, not game-critical -->
+    <suppress>
+        <id>nullPointerOutOfMemory</id>
+        <fileName>*/DiaUIUltralight/UltralightUISystem.cpp</fileName>
+    </suppress>
+
+    <!-- -----------------------------------------------------------------------
+         False positives: intentional patterns in tests
+    ----------------------------------------------------------------------- -->
+    <!-- b || !b is deliberate: comment says "either value is valid" -->
+    <suppress>
+        <id>incorrectLogicOperator</id>
+        <fileName>*/GoogleTests/Python/TestErrorHandling.cpp</fileName>
+    </suppress>
+    <!-- reinterpret_cast on binary WebSocket payload is correct -->
+    <suppress>
+        <id>invalidPointerCast</id>
+        <fileName>*/GoogleTests/WebSocket/TestWebSocketIntegration.cpp</fileName>
+    </suppress>
+    <!-- GoogleTest fixtures are never copied — copy ctor / operator= not needed -->
+    <suppress>
+        <id>noCopyConstructor</id>
+        <fileName>*/GoogleTests/*</fileName>
+    </suppress>
+    <suppress>
+        <id>noOperatorEq</id>
+        <fileName>*/GoogleTests/*</fileName>
+    </suppress>
+
+    <!-- -----------------------------------------------------------------------
+         Performance: low-value suggestions deferred
+    ----------------------------------------------------------------------- -->
+    <!-- substr self-assignment: performance-only, not a correctness issue -->
+    <suppress>
+        <id>uselessCallsSubstr</id>
+        <fileName>*/DiaApplicationEditor/DiaApplicationFlowEditorPlugin.cpp</fileName>
+    </suppress>
+    <!-- try_emplace suggestion in test code only -->
+    <suppress>
+        <id>stlFindInsert</id>
+        <fileName>*/GoogleTests/Core/Threading/TestThreadPool.cpp</fileName>
+    </suppress>
 </suppressions>
