@@ -84,6 +84,7 @@ static RecordingDebugVisitor Inspect(const FrameData& fd)
 // ---------------------------------------------------------------------------
 // Helper: captures all primitives from fd for field-level inspection
 // ---------------------------------------------------------------------------
+namespace {
 struct PrimitiveCapture : public DebugFrameDataVisitor
 {
     static constexpr int kMax = 64;
@@ -96,6 +97,7 @@ struct PrimitiveCapture : public DebugFrameDataVisitor
     }
     void Visit(const DebugFrameData&) const override {}
 };
+} // namespace
 
 static PrimitiveCapture Capture(const FrameData& fd)
 {

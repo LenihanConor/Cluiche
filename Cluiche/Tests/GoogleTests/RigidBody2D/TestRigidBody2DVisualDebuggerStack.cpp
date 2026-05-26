@@ -53,6 +53,7 @@ static RecordingDebugVisitor Inspect(const FrameData& fd)
 }
 
 // Captures all visited primitives (up to N) for inspecting specific ones
+namespace {
 struct PrimitiveCapture : public DebugFrameDataVisitor
 {
     static constexpr int kMax = 256;
@@ -65,6 +66,7 @@ struct PrimitiveCapture : public DebugFrameDataVisitor
     }
     void Visit(const DebugFrameData&) const override {}
 };
+} // namespace
 
 static PrimitiveCapture Capture(const FrameData& fd)
 {
