@@ -28,6 +28,7 @@
     <ClCompile Include="Renderers\UIOverlayRenderer.cpp" />
     <ClCompile Include="Resources\ShaderProgram.cpp" />
     <ClCompile Include="Resources\BgfxTextureHandle.cpp" />
+    <ClCompile Include="StbImageImpl.cpp" />
     <ClCompile Include="Imgui\BgfxImGuiBackend.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)'=='Release'">true</ExcludedFromBuild>
     </ClCompile>

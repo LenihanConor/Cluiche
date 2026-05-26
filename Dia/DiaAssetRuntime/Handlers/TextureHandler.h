@@ -24,6 +24,16 @@ namespace Dia
 
 		// Async texture loader. Worker thread decodes image bytes; Tick() (render thread)
 		// uploads the decoded pixels to bgfx and fires callbacks.
+		//
+		// Thread contract:
+		//   Load()       — any thread
+		//   Unload()     — any thread (destruction deferred to render thread)
+		//   Tick()       — render thread only
+		//   Shutdown()   — render thread only
+		//   LookupTexture() — any thread
+		//
+		// Callbacks (OnLoadComplete/OnLoadFailed) fire on the render thread during Tick().
+		// Callbacks must NOT re-enter Load/Unload for the same assetId.
 		class TextureHandler : public Dia::AssetRuntime::IAssetTypeHandler
 		{
 		public:
@@ -32,8 +42,6 @@ namespace Dia
 
 			void SetJobSystem(Dia::Core::JobSystem* jobSystem);
 
-			// Returns the ITexture* for assetId, or nullptr if not loaded.
-			// Thread-safe. Pointer stable until Unload(assetId).
 			Dia::Graphics::ITexture* LookupTexture(const Dia::Core::StringCRC& assetId) const;
 
 			unsigned int GetLoadedCount() const;
@@ -44,7 +52,7 @@ namespace Dia
 
 			virtual void Unload(const Dia::Core::StringCRC& assetId) override;
 
-			// Drains decoded images -> bgfx GPU upload queue.
+			// Drains decoded images -> bgfx GPU upload + processes deferred deletions.
 			// Must be called on the render thread each frame.
 			void Tick();
 
@@ -54,12 +62,16 @@ namespace Dia
 
 		private:
 			void UnloadAll();
+			void ProcessDeferredDeletions();
 
 			mutable std::shared_mutex mMutex;
 			std::unordered_map<unsigned int, Dia::Bgfx::BgfxTextureHandle*> mAssetIdToTexture;
 
 			std::mutex mPendingUploadsMutex;
 			std::vector<std::shared_ptr<PendingUpload>> mPendingUploads;
+
+			std::mutex mDeferredDeleteMutex;
+			std::vector<Dia::Bgfx::BgfxTextureHandle*> mDeferredDeletes;
 
 			Dia::Core::JobSystem* mJobSystem = nullptr;
 		};

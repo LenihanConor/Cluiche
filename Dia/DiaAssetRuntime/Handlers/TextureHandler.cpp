@@ -100,6 +100,8 @@ namespace Dia
 
 		void TextureHandler::Tick()
 		{
+			ProcessDeferredDeletions();
+
 			std::vector<std::shared_ptr<PendingUpload>> toProcess;
 			{
 				std::lock_guard<std::mutex> lock(mPendingUploadsMutex);
@@ -121,31 +123,40 @@ namespace Dia
 					continue;
 				}
 
+				bool uploaded = false;
+				const char* failReason = nullptr;
 				{
 					std::unique_lock<std::shared_mutex> lock(mMutex);
 
 					auto it = mAssetIdToTexture.find(entry->assetId.Value());
-					if (it == mAssetIdToTexture.end())
+					if (it != mAssetIdToTexture.end())
+					{
+						uploaded = true;
+					}
+					else
 					{
 						Dia::Bgfx::BgfxTextureHandle* tex =
 							DIA_NEW(Dia::Bgfx::BgfxTextureHandle(entry->assetId));
 
-						const char* failReason = nullptr;
 						if (!tex->UploadFromEncodedMemory(
 								entry->fileBytes.data(),
 								static_cast<unsigned int>(entry->fileBytes.size()),
 								&failReason))
 						{
 							DIA_DELETE(tex);
-							lock.unlock();
-							entry->callback->OnLoadFailed(entry->assetId, failReason ? failReason : "texture upload failed");
-							continue;
 						}
-						mAssetIdToTexture[entry->assetId.Value()] = tex;
+						else
+						{
+							mAssetIdToTexture[entry->assetId.Value()] = tex;
+							uploaded = true;
+						}
 					}
 				}
 
-				entry->callback->OnLoadComplete(entry->assetId);
+				if (uploaded)
+					entry->callback->OnLoadComplete(entry->assetId);
+				else
+					entry->callback->OnLoadFailed(entry->assetId, failReason ? failReason : "texture upload failed");
 			}
 		}
 
@@ -160,9 +171,22 @@ namespace Dia
 				toDelete = it->second;
 				mAssetIdToTexture.erase(it);
 			}
-			// bgfx manages GPU resource lifetime internally via bgfx::destroy inside ~BgfxTextureHandle.
-			// No deferred deletion queue needed — destruction is safe from any thread.
-			DIA_DELETE(toDelete);
+
+			std::lock_guard<std::mutex> lock(mDeferredDeleteMutex);
+			mDeferredDeletes.push_back(toDelete);
+		}
+
+		void TextureHandler::ProcessDeferredDeletions()
+		{
+			std::vector<Dia::Bgfx::BgfxTextureHandle*> toDelete;
+			{
+				std::lock_guard<std::mutex> lock(mDeferredDeleteMutex);
+				toDelete.swap(mDeferredDeletes);
+			}
+			for (auto* tex : toDelete)
+			{
+				delete tex;
+			}
 		}
 
 		void TextureHandler::Shutdown()
@@ -180,6 +204,7 @@ namespace Dia
 					entry->job = Dia::Core::JobHandle();
 				}
 			}
+			ProcessDeferredDeletions();
 			UnloadAll();
 		}
 
