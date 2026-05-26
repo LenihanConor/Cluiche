@@ -3,6 +3,7 @@
 #include <DiaGraphics/Frame/FrameData.h>
 #include <DiaGraphics/Frame/EntityFrameData.h>
 #include <DiaGraphics/Frame/DebugFrameData.h>
+#include <DiaGraphics/Frame/UIFrameData.h>
 #include <DiaGraphics/Frame/DebugPrimitive.h>
 #include <DiaGraphics/Frame/SpriteDrawCommand.h>
 #include <DiaGraphics/Frame/EntityFrameDataVisitor.h>
@@ -10,6 +11,7 @@
 #include <DiaGraphics/Misc/RGBA.h>
 #include <DiaGraphics/Testing/MockITexture.h>
 #include <DiaGraphics/Testing/MockVisitors.h>
+#include <DiaUI/UIDataBuffer.h>
 #include <DiaMaths/Vector/Vector2D.h>
 
 using namespace Dia::Graphics;
@@ -573,4 +575,74 @@ TEST(DiaGraphics_DebugPrimitive, FillColourDefault_Triangle2D_IsTransparent)
 	ASSERT_EQ(v.visitCount, 1);
 	EXPECT_EQ(v.lastPrimitive.type, DebugPrimitiveType::Triangle2D);
 	EXPECT_EQ(v.lastPrimitive.triangle2D.fillColour.A(), 0u);
+}
+
+// ===========================================================================
+// UIFrameData tests — regression for stale UI overlay after stage transition
+// ===========================================================================
+
+TEST(DiaGraphics_UIFrameData, DefaultConstruction_BufferEmpty)
+{
+	UIFrameData ufd;
+	EXPECT_EQ(ufd.GetUIData().GetBufferSize(), 0);
+	EXPECT_EQ(ufd.GetUIData().GetBuffer(), nullptr);
+}
+
+TEST(DiaGraphics_UIFrameData, RequestDrawUI_StoresBuffer)
+{
+	unsigned char pixels[16] = {255, 0, 0, 255, 0, 255, 0, 255,
+	                            0, 0, 255, 255, 255, 255, 255, 255};
+	Dia::UI::UIDataBuffer buf(2, 2, pixels, 16);
+
+	UIFrameData ufd;
+	ufd.RequestDrawUI(buf);
+
+	EXPECT_EQ(ufd.GetUIData().GetBufferSize(), 16);
+	EXPECT_NE(ufd.GetUIData().GetBuffer(), nullptr);
+	EXPECT_EQ(ufd.GetUIData().GetWidth(), 2);
+	EXPECT_EQ(ufd.GetUIData().GetHeight(), 2);
+}
+
+TEST(DiaGraphics_UIFrameData, ClearUIBuffer_EmptiesBuffer)
+{
+	unsigned char pixels[4] = {1, 2, 3, 4};
+	Dia::UI::UIDataBuffer buf(1, 1, pixels, 4);
+
+	UIFrameData ufd;
+	ufd.RequestDrawUI(buf);
+	EXPECT_GT(ufd.GetUIData().GetBufferSize(), 0);
+
+	ufd.ClearUIBuffer();
+	EXPECT_EQ(ufd.GetUIData().GetBufferSize(), 0);
+	EXPECT_EQ(ufd.GetUIData().GetBuffer(), nullptr);
+}
+
+TEST(DiaGraphics_UIFrameData, FrameDataClear_ClearsUIBuffer)
+{
+	unsigned char pixels[4] = {1, 2, 3, 4};
+	Dia::UI::UIDataBuffer buf(1, 1, pixels, 4);
+
+	FrameData fd;
+	fd.RequestDrawUI(buf);
+	EXPECT_GT(fd.GetUIData().GetBufferSize(), 0);
+
+	fd.Clear();
+	EXPECT_EQ(fd.GetUIData().GetBufferSize(), 0);
+	EXPECT_EQ(fd.GetUIData().GetBuffer(), nullptr);
+}
+
+TEST(DiaGraphics_UIFrameData, ClearedFrame_UIOverlaySkipsRender)
+{
+	// Simulates the stage-transition scenario: after Clear(), a frame's
+	// UI buffer must have zero size so UIOverlayRenderer skips compositing.
+	// This prevents stale UI from a previous stage persisting on screen.
+	unsigned char pixels[16] = {};
+	Dia::UI::UIDataBuffer buf(2, 2, pixels, 16);
+
+	FrameData fd;
+	fd.RequestDrawUI(buf);
+	fd.Clear();
+
+	const Dia::UI::UIDataBuffer& result = fd.GetUIData();
+	EXPECT_EQ(result.GetBufferSize(), 0);
 }

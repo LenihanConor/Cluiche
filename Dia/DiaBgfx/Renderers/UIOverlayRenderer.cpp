@@ -91,6 +91,9 @@ namespace Dia
             if (!mUiProgram || !mUiProgram->IsValid())
                 return;
 
+            if (buffer.GetBufferSize() <= 0)
+                return;
+
             const uint16_t w = static_cast<uint16_t>(mCanvasSize.X());
             const uint16_t h = static_cast<uint16_t>(mCanvasSize.Y());
             if (w == 0 || h == 0)
@@ -110,20 +113,16 @@ namespace Dia
                 mTextureHandle = tex.idx;
             }
 
-            // Upload fresh pixel data if available
-            if (buffer.GetBufferSize() > 0)
-            {
-                const uint32_t dataSize = static_cast<uint32_t>(buffer.GetBufferSize());
-                const bgfx::Memory* mem = bgfx::copy(buffer.GetBuffer(), dataSize);
-                bgfx::updateTexture2D(
-                    bgfx::TextureHandle{ mTextureHandle },
-                    0, 0,   // layer, mip
-                    0, 0,   // x, y
-                    w, h,
-                    mem,
-                    w * 4u  // pitch
-                );
-            }
+            const uint32_t dataSize = static_cast<uint32_t>(buffer.GetBufferSize());
+            const bgfx::Memory* mem = bgfx::copy(buffer.GetBuffer(), dataSize);
+            bgfx::updateTexture2D(
+                bgfx::TextureHandle{ mTextureHandle },
+                0, 0,   // layer, mip
+                0, 0,   // x, y
+                w, h,
+                mem,
+                w * 4u  // pitch
+            );
 
             // Draw fullscreen quad in view-space
             bgfx::setViewRect(mViewId, 0, 0, w, h);
