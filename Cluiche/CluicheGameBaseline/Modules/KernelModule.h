@@ -41,6 +41,9 @@ public:
     static void SetRenderContextReleased(bool released) { sRenderContextReleased.store(released, std::memory_order_release); }
     static bool IsRenderContextReleased()               { return sRenderContextReleased.load(std::memory_order_acquire); }
 
+    static void SetRenderContextActive(bool active) { sRenderContextActive.store(active, std::memory_order_release); }
+    static bool IsRenderContextActive()             { return sRenderContextActive.load(std::memory_order_acquire); }
+
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
     void DoUpdate(float dt) override;
@@ -52,6 +55,7 @@ private:
     Dia::ApplicationFlow::ServiceStreamWriter<Dia::Graphics::ICanvas>           mCanvasService{this, "KernelCanvas"};
     Dia::ApplicationFlow::ServiceStreamWriter<Dia::AssetRuntime::TextureHandler> mTextureHandlerService{this, "KernelTextureHandler"};
     static std::atomic<bool>                                                     sRenderContextReleased;
+    static std::atomic<bool>                                                     sRenderContextActive;
 
     Dia::Input::InputSourceManager  mInputSourceManager;
     Dia::Input::ConsoleGamepadManager mGamepadManager;

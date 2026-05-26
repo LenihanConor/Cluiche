@@ -36,6 +36,9 @@ Dia::ApplicationFlow::StartResult RenderModule::DoStart()
     // KernelModule deactivates it on the main thread in DoStart so this is safe.
     mCanvas->SetActiveContext(true);
 
+    // Signal to DebugUIModule (same PU) that the render context is ready for ImGui.
+    KernelModule::SetRenderContextActive(true);
+
     // VSync is configured via ICanvas::Settings at initialization time (in KernelModule).
     // No runtime SetVSync API exists on ICanvas; VSyncEnum::kEnable is the default.
 

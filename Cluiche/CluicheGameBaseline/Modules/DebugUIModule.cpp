@@ -1,4 +1,5 @@
 #include "Modules/DebugUIModule.h"
+#include "Modules/KernelModule.h"
 
 #include <DiaImGui/DiaImGuiManager.h>
 #include <DiaObservation/Log/DiaLog.h>
@@ -21,6 +22,9 @@ Dia::ApplicationFlow::StartResult DebugUIModule::DoStart()
     DIA_LOG_INFO("Application", "DebugUIModule DoStart entry");
 
     if (Dia::ImGui::GetManager().GetBackend() == nullptr)
+        return Dia::ApplicationFlow::StartResult::kLoading;
+
+    if (!KernelModule::IsRenderContextActive())
         return Dia::ApplicationFlow::StartResult::kLoading;
 
     Dia::Observation::Health::HealthRegistry::Instance().Register(&mHealth);

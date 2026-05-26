@@ -27,6 +27,7 @@ namespace Cluiche { namespace AppFlow {
 
 const Dia::Core::StringCRC  KernelModule::kTypeId("KernelModule");
 std::atomic<bool>           KernelModule::sRenderContextReleased{false};
+std::atomic<bool>           KernelModule::sRenderContextActive{false};
 
 KernelModule::KernelModule(const Dia::Core::StringCRC& instanceId)
     : Module(instanceId)
