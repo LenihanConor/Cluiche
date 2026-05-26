@@ -30,6 +30,7 @@ namespace Dia { namespace ApplicationFlow { namespace Editor {
         char puId[64]         = {};
         char instanceId[64]   = {};
         char streamId[64]     = {};
+        char role[16]         = {};
         char stagesCSV[256]   = {};
     };
 

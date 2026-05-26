@@ -177,6 +177,46 @@ export const GraphView: React.FC<GraphViewProps> = ({ onStreamLabelClick, onPUSe
 
     const renderStreamEdge = (stream: StreamV2) => {
         const fromPos = positions.get(stream.fromPU);
+        const isService = stream.kind === 'ServiceStream';
+
+        if (isService) {
+            // ServiceStream: gold dashed stub extending right from the provider node
+            if (!fromPos) return null;
+            const from = getNodeCenter(fromPos);
+            const stubX = from.x + 60;
+            const stubY = from.y + 30;
+            return (
+                <g key={stream.id} data-testid="stream-edge" data-stream-id={stream.id}>
+                    <line
+                        x1={from.x}
+                        y1={stubY}
+                        x2={stubX}
+                        y2={stubY}
+                        stroke="#c8a0e0"
+                        strokeWidth={1.5}
+                        strokeDasharray="4 3"
+                        markerEnd="url(#arrowhead-service)"
+                    />
+                    <text
+                        x={stubX + 4}
+                        y={stubY + 4}
+                        fill="#c8a0e0"
+                        fontSize={9}
+                        textAnchor="start"
+                        style={{ cursor: onStreamLabelClick ? 'pointer' : 'default', paintOrder: 'stroke' }}
+                        stroke="#1e1e1e"
+                        strokeWidth={2}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onStreamLabelClick?.(stream.id);
+                        }}
+                    >
+                        {stream.id}
+                    </text>
+                </g>
+            );
+        }
+
         const toPos = positions.get(stream.toPU);
         if (!fromPos || !toPos) return null;
 
@@ -360,6 +400,16 @@ export const GraphView: React.FC<GraphViewProps> = ({ onStreamLabelClick, onPUSe
                     orient="auto"
                 >
                     <polygon points="0 0, 10 3.5, 0 7" fill="#4a9eff" />
+                </marker>
+                <marker
+                    id="arrowhead-service"
+                    markerWidth="8"
+                    markerHeight="6"
+                    refX="7"
+                    refY="3"
+                    orient="auto"
+                >
+                    <polygon points="0 0, 8 3, 0 6" fill="#c8a0e0" />
                 </marker>
             </defs>
 

@@ -146,8 +146,16 @@ TEST(ManifestValidator, UnknownStreamInReads_StreamExists_NoIssue)
     s.manifest.streams.Add(stream);
 
     // ModA reads it, and also writes it so we don't get orphan warnings
-    s.manifest.processingUnits[0].modules[0].reads.Add(StringCRC("InputEvents"));
-    s.manifest.processingUnits[0].modules[0].writes.Add(StringCRC("InputEvents"));
+    {
+        Dia::ApplicationFlow::ChannelBinding chRead;
+        chRead.id   = StringCRC("InputEvents");
+        chRead.role = StringCRC("reads");
+        s.manifest.processingUnits[0].modules[0].channels.Add(chRead);
+        Dia::ApplicationFlow::ChannelBinding chWrite;
+        chWrite.id   = StringCRC("InputEvents");
+        chWrite.role = StringCRC("writes");
+        s.manifest.processingUnits[0].modules[0].channels.Add(chWrite);
+    }
 
     ValidationResult r = ManifestValidator::Validate(s);
     bool found = false;
@@ -166,7 +174,12 @@ TEST(ManifestValidator, UnknownStreamInReads_StreamMissing_HasError)
 {
     ManifestEditorState s = MakeValid();
     // Module reads a stream that doesn't exist
-    s.manifest.processingUnits[0].modules[0].reads.Add(StringCRC("GhostStream"));
+    {
+        Dia::ApplicationFlow::ChannelBinding chBinding;
+        chBinding.id   = StringCRC("GhostStream");
+        chBinding.role = StringCRC("reads");
+        s.manifest.processingUnits[0].modules[0].channels.Add(chBinding);
+    }
 
     ValidationResult r = ManifestValidator::Validate(s);
     bool found = false;
@@ -196,8 +209,16 @@ TEST(ManifestValidator, UnknownStreamInWrites_StreamExists_NoIssue)
     stream.toPU        = StringCRC("MainPU");
     s.manifest.streams.Add(stream);
 
-    s.manifest.processingUnits[0].modules[0].writes.Add(StringCRC("OutputEvents"));
-    s.manifest.processingUnits[0].modules[0].reads.Add(StringCRC("OutputEvents"));
+    {
+        Dia::ApplicationFlow::ChannelBinding chWrite;
+        chWrite.id   = StringCRC("OutputEvents");
+        chWrite.role = StringCRC("writes");
+        s.manifest.processingUnits[0].modules[0].channels.Add(chWrite);
+        Dia::ApplicationFlow::ChannelBinding chRead;
+        chRead.id   = StringCRC("OutputEvents");
+        chRead.role = StringCRC("reads");
+        s.manifest.processingUnits[0].modules[0].channels.Add(chRead);
+    }
 
     ValidationResult r = ManifestValidator::Validate(s);
     bool found = false;
@@ -215,7 +236,12 @@ TEST(ManifestValidator, UnknownStreamInWrites_StreamExists_NoIssue)
 TEST(ManifestValidator, UnknownStreamInWrites_StreamMissing_HasError)
 {
     ManifestEditorState s = MakeValid();
-    s.manifest.processingUnits[0].modules[0].writes.Add(StringCRC("GhostStream"));
+    {
+        Dia::ApplicationFlow::ChannelBinding chBinding;
+        chBinding.id   = StringCRC("GhostStream");
+        chBinding.role = StringCRC("writes");
+        s.manifest.processingUnits[0].modules[0].channels.Add(chBinding);
+    }
 
     ValidationResult r = ManifestValidator::Validate(s);
     bool found = false;
@@ -245,8 +271,16 @@ TEST(ManifestValidator, OrphanReaderStream_HasReader_NoIssue)
     stream.toPU        = StringCRC("MainPU");
     s.manifest.streams.Add(stream);
 
-    s.manifest.processingUnits[0].modules[0].reads.Add(StringCRC("DataStream"));
-    s.manifest.processingUnits[0].modules[0].writes.Add(StringCRC("DataStream"));
+    {
+        Dia::ApplicationFlow::ChannelBinding chRead;
+        chRead.id   = StringCRC("DataStream");
+        chRead.role = StringCRC("reads");
+        s.manifest.processingUnits[0].modules[0].channels.Add(chRead);
+        Dia::ApplicationFlow::ChannelBinding chWrite;
+        chWrite.id   = StringCRC("DataStream");
+        chWrite.role = StringCRC("writes");
+        s.manifest.processingUnits[0].modules[0].channels.Add(chWrite);
+    }
 
     ValidationResult r = ManifestValidator::Validate(s);
     bool found = false;
@@ -271,7 +305,12 @@ TEST(ManifestValidator, OrphanReaderStream_NoReader_HasWarning)
     stream.toPU        = StringCRC("MainPU");
     s.manifest.streams.Add(stream);
     // Nobody reads UnreadStream; give it a writer to isolate the reader orphan
-    s.manifest.processingUnits[0].modules[0].writes.Add(StringCRC("UnreadStream"));
+    {
+        Dia::ApplicationFlow::ChannelBinding chBinding;
+        chBinding.id   = StringCRC("UnreadStream");
+        chBinding.role = StringCRC("writes");
+        s.manifest.processingUnits[0].modules[0].channels.Add(chBinding);
+    }
 
     ValidationResult r = ManifestValidator::Validate(s);
     bool found = false;
@@ -300,8 +339,16 @@ TEST(ManifestValidator, OrphanWriterStream_HasWriter_NoIssue)
     stream.toPU        = StringCRC("MainPU");
     s.manifest.streams.Add(stream);
 
-    s.manifest.processingUnits[0].modules[0].writes.Add(StringCRC("EventBus"));
-    s.manifest.processingUnits[0].modules[0].reads.Add(StringCRC("EventBus"));
+    {
+        Dia::ApplicationFlow::ChannelBinding chWrite;
+        chWrite.id   = StringCRC("EventBus");
+        chWrite.role = StringCRC("writes");
+        s.manifest.processingUnits[0].modules[0].channels.Add(chWrite);
+        Dia::ApplicationFlow::ChannelBinding chRead;
+        chRead.id   = StringCRC("EventBus");
+        chRead.role = StringCRC("reads");
+        s.manifest.processingUnits[0].modules[0].channels.Add(chRead);
+    }
 
     ValidationResult r = ManifestValidator::Validate(s);
     bool found = false;
@@ -326,7 +373,12 @@ TEST(ManifestValidator, OrphanWriterStream_NoWriter_HasWarning)
     stream.toPU        = StringCRC("MainPU");
     s.manifest.streams.Add(stream);
     // Give it a reader to isolate the writer orphan
-    s.manifest.processingUnits[0].modules[0].reads.Add(StringCRC("UnwrittenStream"));
+    {
+        Dia::ApplicationFlow::ChannelBinding chBinding;
+        chBinding.id   = StringCRC("UnwrittenStream");
+        chBinding.role = StringCRC("reads");
+        s.manifest.processingUnits[0].modules[0].channels.Add(chBinding);
+    }
 
     ValidationResult r = ManifestValidator::Validate(s);
     bool found = false;
@@ -354,8 +406,16 @@ TEST(ManifestValidator, PayloadTypeMissing_PayloadSet_NoIssue)
     stream.fromPU      = StringCRC("MainPU");
     stream.toPU        = StringCRC("MainPU");
     s.manifest.streams.Add(stream);
-    s.manifest.processingUnits[0].modules[0].reads.Add(StringCRC("TypableStream"));
-    s.manifest.processingUnits[0].modules[0].writes.Add(StringCRC("TypableStream"));
+    {
+        Dia::ApplicationFlow::ChannelBinding chRead;
+        chRead.id   = StringCRC("TypableStream");
+        chRead.role = StringCRC("reads");
+        s.manifest.processingUnits[0].modules[0].channels.Add(chRead);
+        Dia::ApplicationFlow::ChannelBinding chWrite;
+        chWrite.id   = StringCRC("TypableStream");
+        chWrite.role = StringCRC("writes");
+        s.manifest.processingUnits[0].modules[0].channels.Add(chWrite);
+    }
 
     ValidationResult r = ManifestValidator::Validate(s);
     bool found = false;
@@ -379,8 +439,16 @@ TEST(ManifestValidator, PayloadTypeMissing_EmptyPayload_HasWarning)
     stream.fromPU      = StringCRC("MainPU");
     stream.toPU        = StringCRC("MainPU");
     s.manifest.streams.Add(stream);
-    s.manifest.processingUnits[0].modules[0].reads.Add(StringCRC("UntypedStream"));
-    s.manifest.processingUnits[0].modules[0].writes.Add(StringCRC("UntypedStream"));
+    {
+        Dia::ApplicationFlow::ChannelBinding chRead;
+        chRead.id   = StringCRC("UntypedStream");
+        chRead.role = StringCRC("reads");
+        s.manifest.processingUnits[0].modules[0].channels.Add(chRead);
+        Dia::ApplicationFlow::ChannelBinding chWrite;
+        chWrite.id   = StringCRC("UntypedStream");
+        chWrite.role = StringCRC("writes");
+        s.manifest.processingUnits[0].modules[0].channels.Add(chWrite);
+    }
 
     ValidationResult r = ManifestValidator::Validate(s);
     bool found = false;
@@ -561,8 +629,16 @@ TEST(ManifestValidator, StreamPUInvalid_ValidPURefs_NoIssue)
     stream.fromPU      = StringCRC("MainPU");
     stream.toPU        = StringCRC("MainPU");
     s.manifest.streams.Add(stream);
-    s.manifest.processingUnits[0].modules[0].reads.Add(StringCRC("ConnStream"));
-    s.manifest.processingUnits[0].modules[0].writes.Add(StringCRC("ConnStream"));
+    {
+        Dia::ApplicationFlow::ChannelBinding chRead;
+        chRead.id   = StringCRC("ConnStream");
+        chRead.role = StringCRC("reads");
+        s.manifest.processingUnits[0].modules[0].channels.Add(chRead);
+        Dia::ApplicationFlow::ChannelBinding chWrite;
+        chWrite.id   = StringCRC("ConnStream");
+        chWrite.role = StringCRC("writes");
+        s.manifest.processingUnits[0].modules[0].channels.Add(chWrite);
+    }
 
     ValidationResult r = ManifestValidator::Validate(s);
     bool found = false;
@@ -586,8 +662,16 @@ TEST(ManifestValidator, StreamPUInvalid_UnknownFromPU_HasError)
     stream.fromPU      = StringCRC("GhostPU"); // not in manifest
     stream.toPU        = StringCRC("MainPU");
     s.manifest.streams.Add(stream);
-    s.manifest.processingUnits[0].modules[0].reads.Add(StringCRC("BadStream"));
-    s.manifest.processingUnits[0].modules[0].writes.Add(StringCRC("BadStream"));
+    {
+        Dia::ApplicationFlow::ChannelBinding chRead;
+        chRead.id   = StringCRC("BadStream");
+        chRead.role = StringCRC("reads");
+        s.manifest.processingUnits[0].modules[0].channels.Add(chRead);
+        Dia::ApplicationFlow::ChannelBinding chWrite;
+        chWrite.id   = StringCRC("BadStream");
+        chWrite.role = StringCRC("writes");
+        s.manifest.processingUnits[0].modules[0].channels.Add(chWrite);
+    }
 
     ValidationResult r = ManifestValidator::Validate(s);
     bool found = false;
@@ -627,8 +711,16 @@ TEST(ManifestValidator, StreamSelfLoop_DifferentPUs_NoIssue)
     stream.fromPU      = StringCRC("MainPU");
     stream.toPU        = StringCRC("SecondPU");
     s.manifest.streams.Add(stream);
-    s.manifest.processingUnits[0].modules[0].writes.Add(StringCRC("CrossStream"));
-    s.manifest.processingUnits[1].modules[0].reads.Add(StringCRC("CrossStream"));
+    {
+        Dia::ApplicationFlow::ChannelBinding chWrite;
+        chWrite.id   = StringCRC("CrossStream");
+        chWrite.role = StringCRC("writes");
+        s.manifest.processingUnits[0].modules[0].channels.Add(chWrite);
+        Dia::ApplicationFlow::ChannelBinding chRead;
+        chRead.id   = StringCRC("CrossStream");
+        chRead.role = StringCRC("reads");
+        s.manifest.processingUnits[1].modules[0].channels.Add(chRead);
+    }
 
     ValidationResult r = ManifestValidator::Validate(s);
     bool found = false;
@@ -653,8 +745,16 @@ TEST(ManifestValidator, StreamSelfLoop_SamePU_HasError)
     stream.fromPU      = StringCRC("MainPU");
     stream.toPU        = StringCRC("MainPU"); // self-loop
     s.manifest.streams.Add(stream);
-    s.manifest.processingUnits[0].modules[0].reads.Add(StringCRC("LoopStream"));
-    s.manifest.processingUnits[0].modules[0].writes.Add(StringCRC("LoopStream"));
+    {
+        Dia::ApplicationFlow::ChannelBinding chRead;
+        chRead.id   = StringCRC("LoopStream");
+        chRead.role = StringCRC("reads");
+        s.manifest.processingUnits[0].modules[0].channels.Add(chRead);
+        Dia::ApplicationFlow::ChannelBinding chWrite;
+        chWrite.id   = StringCRC("LoopStream");
+        chWrite.role = StringCRC("writes");
+        s.manifest.processingUnits[0].modules[0].channels.Add(chWrite);
+    }
 
     ValidationResult r = ManifestValidator::Validate(s);
     bool found = false;
@@ -717,7 +817,12 @@ TEST(ManifestValidator, OrphanModule_Targets_Module_AndFix)
 TEST(ManifestValidator, UnknownStreamInReads_Targets_AndFix)
 {
     ManifestEditorState s = MakeValid();
-    s.manifest.processingUnits[0].modules[0].reads.Add(StringCRC("GhostStream"));
+    {
+        Dia::ApplicationFlow::ChannelBinding chBinding;
+        chBinding.id   = StringCRC("GhostStream");
+        chBinding.role = StringCRC("reads");
+        s.manifest.processingUnits[0].modules[0].channels.Add(chBinding);
+    }
 
     ValidationResult r = ManifestValidator::Validate(s);
     const ValidationIssue* iss = FindIssue(r, ValidationRuleId::UnknownStreamInReads);
@@ -726,17 +831,23 @@ TEST(ManifestValidator, UnknownStreamInReads_Targets_AndFix)
     EXPECT_STREQ(iss->targetPuId, "MainPU");
     EXPECT_STREQ(iss->targetModuleId, "ModA");
     EXPECT_STREQ(iss->targetStreamId, "GhostStream");
-    EXPECT_STREQ(iss->suggestedActionLabel, "Remove read");
-    EXPECT_STREQ(iss->suggestedCommand.commandType, "RemoveModuleRead");
+    EXPECT_STREQ(iss->suggestedActionLabel, "Remove channel");
+    EXPECT_STREQ(iss->suggestedCommand.commandType, "RemoveModuleChannel");
     EXPECT_STREQ(iss->suggestedCommand.puId, "MainPU");
     EXPECT_STREQ(iss->suggestedCommand.instanceId, "ModA");
     EXPECT_STREQ(iss->suggestedCommand.streamId, "GhostStream");
+    EXPECT_STREQ(iss->suggestedCommand.role, "reads");
 }
 
 TEST(ManifestValidator, UnknownStreamInWrites_Targets_AndFix)
 {
     ManifestEditorState s = MakeValid();
-    s.manifest.processingUnits[0].modules[0].writes.Add(StringCRC("GhostStream"));
+    {
+        Dia::ApplicationFlow::ChannelBinding chBinding;
+        chBinding.id   = StringCRC("GhostStream");
+        chBinding.role = StringCRC("writes");
+        s.manifest.processingUnits[0].modules[0].channels.Add(chBinding);
+    }
 
     ValidationResult r = ManifestValidator::Validate(s);
     const ValidationIssue* iss = FindIssue(r, ValidationRuleId::UnknownStreamInWrites);
@@ -745,11 +856,12 @@ TEST(ManifestValidator, UnknownStreamInWrites_Targets_AndFix)
     EXPECT_STREQ(iss->targetPuId, "MainPU");
     EXPECT_STREQ(iss->targetModuleId, "ModA");
     EXPECT_STREQ(iss->targetStreamId, "GhostStream");
-    EXPECT_STREQ(iss->suggestedActionLabel, "Remove write");
-    EXPECT_STREQ(iss->suggestedCommand.commandType, "RemoveModuleWrite");
+    EXPECT_STREQ(iss->suggestedActionLabel, "Remove channel");
+    EXPECT_STREQ(iss->suggestedCommand.commandType, "RemoveModuleChannel");
     EXPECT_STREQ(iss->suggestedCommand.puId, "MainPU");
     EXPECT_STREQ(iss->suggestedCommand.instanceId, "ModA");
     EXPECT_STREQ(iss->suggestedCommand.streamId, "GhostStream");
+    EXPECT_STREQ(iss->suggestedCommand.role, "writes");
 }
 
 TEST(ManifestValidator, OrphanReaderStream_Targets_AndFix)
@@ -761,7 +873,12 @@ TEST(ManifestValidator, OrphanReaderStream_Targets_AndFix)
     stream.fromPU      = StringCRC("MainPU");
     stream.toPU        = StringCRC("MainPU");
     s.manifest.streams.Add(stream);
-    s.manifest.processingUnits[0].modules[0].writes.Add(StringCRC("UnreadStream"));
+    {
+        Dia::ApplicationFlow::ChannelBinding chBinding;
+        chBinding.id   = StringCRC("UnreadStream");
+        chBinding.role = StringCRC("writes");
+        s.manifest.processingUnits[0].modules[0].channels.Add(chBinding);
+    }
 
     ValidationResult r = ManifestValidator::Validate(s);
     const ValidationIssue* iss = FindIssue(r, ValidationRuleId::OrphanReaderStream);
@@ -782,7 +899,12 @@ TEST(ManifestValidator, OrphanWriterStream_Targets_AndFix)
     stream.fromPU      = StringCRC("MainPU");
     stream.toPU        = StringCRC("MainPU");
     s.manifest.streams.Add(stream);
-    s.manifest.processingUnits[0].modules[0].reads.Add(StringCRC("UnwrittenStream"));
+    {
+        Dia::ApplicationFlow::ChannelBinding chBinding;
+        chBinding.id   = StringCRC("UnwrittenStream");
+        chBinding.role = StringCRC("reads");
+        s.manifest.processingUnits[0].modules[0].channels.Add(chBinding);
+    }
 
     ValidationResult r = ManifestValidator::Validate(s);
     const ValidationIssue* iss = FindIssue(r, ValidationRuleId::OrphanWriterStream);
@@ -802,8 +924,16 @@ TEST(ManifestValidator, PayloadTypeMissing_Targets_StreamOnly)
     stream.fromPU = StringCRC("MainPU");
     stream.toPU = StringCRC("MainPU");
     s.manifest.streams.Add(stream);
-    s.manifest.processingUnits[0].modules[0].reads.Add(StringCRC("UntypedStream"));
-    s.manifest.processingUnits[0].modules[0].writes.Add(StringCRC("UntypedStream"));
+    {
+        Dia::ApplicationFlow::ChannelBinding chRead;
+        chRead.id   = StringCRC("UntypedStream");
+        chRead.role = StringCRC("reads");
+        s.manifest.processingUnits[0].modules[0].channels.Add(chRead);
+        Dia::ApplicationFlow::ChannelBinding chWrite;
+        chWrite.id   = StringCRC("UntypedStream");
+        chWrite.role = StringCRC("writes");
+        s.manifest.processingUnits[0].modules[0].channels.Add(chWrite);
+    }
 
     ValidationResult r = ManifestValidator::Validate(s);
     const ValidationIssue* iss = FindIssue(r, ValidationRuleId::PayloadTypeMissing);
@@ -883,8 +1013,16 @@ TEST(ManifestValidator, StreamPUInvalid_Targets_Stream)
     stream.fromPU      = StringCRC("GhostPU"); // not in manifest
     stream.toPU        = StringCRC("MainPU");
     s.manifest.streams.Add(stream);
-    s.manifest.processingUnits[0].modules[0].reads.Add(StringCRC("BadStream"));
-    s.manifest.processingUnits[0].modules[0].writes.Add(StringCRC("BadStream"));
+    {
+        Dia::ApplicationFlow::ChannelBinding chRead;
+        chRead.id   = StringCRC("BadStream");
+        chRead.role = StringCRC("reads");
+        s.manifest.processingUnits[0].modules[0].channels.Add(chRead);
+        Dia::ApplicationFlow::ChannelBinding chWrite;
+        chWrite.id   = StringCRC("BadStream");
+        chWrite.role = StringCRC("writes");
+        s.manifest.processingUnits[0].modules[0].channels.Add(chWrite);
+    }
 
     ValidationResult r = ManifestValidator::Validate(s);
     const ValidationIssue* iss = FindIssue(r, ValidationRuleId::StreamPUInvalid);
@@ -904,8 +1042,16 @@ TEST(ManifestValidator, StreamSelfLoop_Targets_Stream)
     stream.fromPU      = StringCRC("MainPU");
     stream.toPU        = StringCRC("MainPU"); // self-loop
     s.manifest.streams.Add(stream);
-    s.manifest.processingUnits[0].modules[0].reads.Add(StringCRC("LoopStream"));
-    s.manifest.processingUnits[0].modules[0].writes.Add(StringCRC("LoopStream"));
+    {
+        Dia::ApplicationFlow::ChannelBinding chRead;
+        chRead.id   = StringCRC("LoopStream");
+        chRead.role = StringCRC("reads");
+        s.manifest.processingUnits[0].modules[0].channels.Add(chRead);
+        Dia::ApplicationFlow::ChannelBinding chWrite;
+        chWrite.id   = StringCRC("LoopStream");
+        chWrite.role = StringCRC("writes");
+        s.manifest.processingUnits[0].modules[0].channels.Add(chWrite);
+    }
 
     ValidationResult r = ManifestValidator::Validate(s);
     const ValidationIssue* iss = FindIssue(r, ValidationRuleId::StreamSelfLoop);

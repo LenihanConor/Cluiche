@@ -1,8 +1,17 @@
 export type OverflowPolicy = 'drop-oldest' | 'drop-newest' | 'block' | 'fail-loud';
 
+export type StreamKind = 'EventStream' | 'FrameStream' | 'ServiceStream';
+
+export type ChannelRole = 'reads' | 'writes' | 'provides' | 'consumes';
+
+export interface ChannelBinding {
+    id: string;
+    role: ChannelRole;
+}
+
 export interface StreamV2 {
     id: string;
-    kind: string;
+    kind: StreamKind;
     payloadType: string;
     fromPU: string;
     toPU: string;
@@ -18,8 +27,7 @@ export interface ModuleV2 {
     typeId: string;
     stages: string[];
     dependencies: string[];
-    reads: string[];
-    writes: string[];
+    channels: ChannelBinding[];
     startTimeoutMs: number;
     stopTimeoutMs: number;
 }

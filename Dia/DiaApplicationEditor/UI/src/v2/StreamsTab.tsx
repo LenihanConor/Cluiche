@@ -9,7 +9,13 @@ function isSystemStream(id: string): boolean {
     return id.startsWith('$');
 }
 
-const KIND_OPTIONS = ['EventStream', 'FrameStream'] as const;
+const KIND_OPTIONS = ['EventStream', 'FrameStream', 'ServiceStream'] as const;
+
+const KIND_BADGE_COLOR: Record<string, string> = {
+    EventStream:   '#5b9bd5',
+    FrameStream:   '#e8a838',
+    ServiceStream: '#c8a0e0',
+};
 const OVERFLOW_OPTIONS: OverflowPolicy[] = ['drop-oldest', 'drop-newest', 'block', 'fail-loud'];
 
 // Engine defaults from EventStreamStore.h. FrameStream uses a fixed 2-slot
@@ -28,8 +34,9 @@ interface StreamDetailInspectorProps {
 
 const StreamDetailInspector: React.FC<StreamDetailInspectorProps> = ({ stream, msgPerSec }) => {
     const readonly = isSystemStream(stream.id);
-    const isEvent = stream.kind === 'EventStream';
-    const isFrame = stream.kind === 'FrameStream';
+    const isEvent   = stream.kind === 'EventStream';
+    const isFrame   = stream.kind === 'FrameStream';
+    const isService = stream.kind === 'ServiceStream';
 
     const sendCommand = (commandType: string, value: unknown) => {
         bridgeRequest('manifest.applyCommand', { commandType, streamId: stream.id, value });
@@ -130,47 +137,58 @@ const StreamDetailInspector: React.FC<StreamDetailInspectorProps> = ({ stream, m
                 />
             </div>
 
-            <div style={rowStyle}>
-                <label style={labelStyle}>To PU</label>
-                <input
-                    style={fieldStyle}
-                    value={stream.toPU}
-                    disabled={readonly}
-                    onChange={(e) => sendCommand('SetStreamToPU', e.target.value)}
-                />
-            </div>
+            {!isService && (
+                <div style={rowStyle}>
+                    <label style={labelStyle}>To PU</label>
+                    <input
+                        style={fieldStyle}
+                        value={stream.toPU}
+                        disabled={readonly}
+                        onChange={(e) => sendCommand('SetStreamToPU', e.target.value)}
+                    />
+                </div>
+            )}
+            {isService && (
+                <div style={{ ...rowStyle, color: '#888', fontSize: 11, fontStyle: 'italic' }}>
+                    ServiceStream — consumers inferred from module channels
+                </div>
+            )}
 
-            <div style={rowStyle}>
-                <label style={labelStyle}>Capacity</label>
-                <input
-                    type="number"
-                    style={fieldStyle}
-                    value={stream.capacity}
-                    disabled={readonly}
-                    onChange={(e) => sendCommand('SetStreamCapacity', Number(e.target.value))}
-                />
-                <span data-testid="stream-capacity-hint" style={hintStyle}>
-                    {isEvent
-                        ? (stream.capacity === 0 ? `0 = engine default (${EVENT_DEFAULT_CAPACITY})` : '')
-                        : 'FrameStream uses a fixed 2-slot buffer'}
-                </span>
-            </div>
+            {!isService && (
+                <div style={rowStyle}>
+                    <label style={labelStyle}>Capacity</label>
+                    <input
+                        type="number"
+                        style={fieldStyle}
+                        value={stream.capacity}
+                        disabled={readonly}
+                        onChange={(e) => sendCommand('SetStreamCapacity', Number(e.target.value))}
+                    />
+                    <span data-testid="stream-capacity-hint" style={hintStyle}>
+                        {isEvent
+                            ? (stream.capacity === 0 ? `0 = engine default (${EVENT_DEFAULT_CAPACITY})` : '')
+                            : 'FrameStream uses a fixed 2-slot buffer'}
+                    </span>
+                </div>
+            )}
 
-            <div style={rowStyle}>
-                <label style={labelStyle}>Max Readers</label>
-                <input
-                    type="number"
-                    style={fieldStyle}
-                    value={stream.maxReaders}
-                    disabled={readonly}
-                    onChange={(e) => sendCommand('SetStreamMaxReaders', Number(e.target.value))}
-                />
-                <span data-testid="stream-max-readers-hint" style={hintStyle}>
-                    {isEvent
-                        ? (stream.maxReaders === 0 ? `0 = engine default (${EVENT_DEFAULT_MAX_READERS})` : '')
-                        : 'FrameStream readers are unbounded'}
-                </span>
-            </div>
+            {!isService && (
+                <div style={rowStyle}>
+                    <label style={labelStyle}>Max Readers</label>
+                    <input
+                        type="number"
+                        style={fieldStyle}
+                        value={stream.maxReaders}
+                        disabled={readonly}
+                        onChange={(e) => sendCommand('SetStreamMaxReaders', Number(e.target.value))}
+                    />
+                    <span data-testid="stream-max-readers-hint" style={hintStyle}>
+                        {isEvent
+                            ? (stream.maxReaders === 0 ? `0 = engine default (${EVENT_DEFAULT_MAX_READERS})` : '')
+                            : 'FrameStream readers are unbounded'}
+                    </span>
+                </div>
+            )}
 
             {isEvent && (
                 <>
@@ -297,7 +315,13 @@ export const StreamsTab: React.FC = () => {
                                         }}
                                     >
                                         <td style={{ padding: '3px 8px', color: '#ccc', fontStyle: sys ? 'italic' : 'normal' }}>{stream.id}</td>
-                                        <td style={{ padding: '3px 8px', color: '#ccc' }}>{stream.kind}</td>
+                                        <td style={{ padding: '3px 8px' }}>
+                                            <span style={{
+                                                color: KIND_BADGE_COLOR[stream.kind] ?? '#ccc',
+                                                fontSize: 11,
+                                                fontWeight: 600,
+                                            }}>{stream.kind}</span>
+                                        </td>
                                         <td style={{ padding: '3px 8px', color: '#ccc' }}>{stream.payloadType}</td>
                                         <td style={{ padding: '3px 8px', color: '#ccc' }}>{stream.fromPU}</td>
                                         <td style={{ padding: '3px 8px', color: '#ccc' }}>{stream.toPU}</td>

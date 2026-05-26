@@ -115,15 +115,15 @@ namespace Dia { namespace Editor {
                     deps.append(mod.dependencies[k].AsChar());
                 mod_j["dependencies"] = deps;
 
-                Json::Value reads(Json::arrayValue);
-                for (unsigned int k = 0; k < mod.reads.Size(); ++k)
-                    reads.append(mod.reads[k].AsChar());
-                mod_j["reads"] = reads;
-
-                Json::Value writes(Json::arrayValue);
-                for (unsigned int k = 0; k < mod.writes.Size(); ++k)
-                    writes.append(mod.writes[k].AsChar());
-                mod_j["writes"] = writes;
+                Json::Value channels(Json::arrayValue);
+                for (unsigned int k = 0; k < mod.channels.Size(); ++k)
+                {
+                    Json::Value ch;
+                    ch["id"]   = mod.channels[k].id.AsChar();
+                    ch["role"] = mod.channels[k].role.AsChar();
+                    channels.append(ch);
+                }
+                mod_j["channels"] = channels;
 
                 modules.append(mod_j);
             }
@@ -570,41 +570,27 @@ namespace Dia { namespace Editor {
             cmd = new SetModuleStopTimeoutCommand(Dia::Core::StringCRC(puId),
                                                   Dia::Core::StringCRC(modStr), v);
         }
-        else if (cmdType == "AddModuleRead")
+        else if (cmdType == "AddModuleChannel")
         {
-            const char* puId    = data.get("puId", "").asCString();
-            const char* modStr  = data.get("instanceId", "").asCString();
-            const char* sStr    = data.get("streamId", "").asCString();
-            cmd = new AddModuleReadCommand(Dia::Core::StringCRC(puId),
-                                           Dia::Core::StringCRC(modStr),
-                                           Dia::Core::StringCRC(sStr));
-        }
-        else if (cmdType == "RemoveModuleRead")
-        {
-            const char* puId    = data.get("puId", "").asCString();
-            const char* modStr  = data.get("instanceId", "").asCString();
-            const char* sStr    = data.get("streamId", "").asCString();
-            cmd = new RemoveModuleReadCommand(Dia::Core::StringCRC(puId),
+            const char* puId   = data.get("puId", "").asCString();
+            const char* modStr = data.get("instanceId", "").asCString();
+            const char* sStr   = data.get("streamId", "").asCString();
+            const char* role   = data.get("role", "reads").asCString();
+            cmd = new AddModuleChannelCommand(Dia::Core::StringCRC(puId),
                                               Dia::Core::StringCRC(modStr),
-                                              Dia::Core::StringCRC(sStr));
+                                              Dia::Core::StringCRC(sStr),
+                                              Dia::Core::StringCRC(role));
         }
-        else if (cmdType == "AddModuleWrite")
+        else if (cmdType == "RemoveModuleChannel")
         {
-            const char* puId    = data.get("puId", "").asCString();
-            const char* modStr  = data.get("instanceId", "").asCString();
-            const char* sStr    = data.get("streamId", "").asCString();
-            cmd = new AddModuleWriteCommand(Dia::Core::StringCRC(puId),
-                                            Dia::Core::StringCRC(modStr),
-                                            Dia::Core::StringCRC(sStr));
-        }
-        else if (cmdType == "RemoveModuleWrite")
-        {
-            const char* puId    = data.get("puId", "").asCString();
-            const char* modStr  = data.get("instanceId", "").asCString();
-            const char* sStr    = data.get("streamId", "").asCString();
-            cmd = new RemoveModuleWriteCommand(Dia::Core::StringCRC(puId),
-                                               Dia::Core::StringCRC(modStr),
-                                               Dia::Core::StringCRC(sStr));
+            const char* puId   = data.get("puId", "").asCString();
+            const char* modStr = data.get("instanceId", "").asCString();
+            const char* sStr   = data.get("streamId", "").asCString();
+            const char* role   = data.get("role", "reads").asCString();
+            cmd = new RemoveModuleChannelCommand(Dia::Core::StringCRC(puId),
+                                                 Dia::Core::StringCRC(modStr),
+                                                 Dia::Core::StringCRC(sStr),
+                                                 Dia::Core::StringCRC(role));
         }
         // ----- Stage commands -----
         else if (cmdType == "AddStage")
@@ -866,9 +852,10 @@ namespace Dia { namespace Editor {
             {
                 Json::Value cmd;
                 cmd["commandType"] = issue.suggestedCommand.commandType;
-                if (issue.suggestedCommand.puId[0])       cmd["puId"]       = issue.suggestedCommand.puId;
-                if (issue.suggestedCommand.instanceId[0]) cmd["instanceId"] = issue.suggestedCommand.instanceId;
-                if (issue.suggestedCommand.streamId[0])   cmd["streamId"]   = issue.suggestedCommand.streamId;
+                if (issue.suggestedCommand.puId[0])        cmd["puId"]        = issue.suggestedCommand.puId;
+                if (issue.suggestedCommand.instanceId[0])  cmd["instanceId"]  = issue.suggestedCommand.instanceId;
+                if (issue.suggestedCommand.streamId[0])    cmd["streamId"]    = issue.suggestedCommand.streamId;
+                if (issue.suggestedCommand.role[0])        cmd["role"]        = issue.suggestedCommand.role;
                 if (issue.suggestedCommand.stagesCSV[0])
                 {
                     Json::Value stages(Json::arrayValue);

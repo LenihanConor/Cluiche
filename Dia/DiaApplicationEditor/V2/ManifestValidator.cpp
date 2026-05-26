@@ -240,48 +240,57 @@ ValidationResult ManifestValidator::Validate(const ManifestEditorState& state)
         {
             const ModuleDeclaration& mod = pu.modules[m];
 
-            for (unsigned int r = 0; r < mod.reads.Size(); ++r)
             {
-                if (!StreamIdExists(manifest, mod.reads[r]))
+                static const StringCRC kReads("reads");
+                static const StringCRC kConsumes("consumes");
+                static const StringCRC kWrites("writes");
+                static const StringCRC kProvides("provides");
+                for (unsigned int c = 0; c < mod.channels.Size(); ++c)
                 {
-                    snprintf(msg, sizeof(msg),
-                             "UNKNOWN_STREAM_IN_READS: module 0x%08X reads stream 0x%08X which is not declared",
-                             mod.instanceId.Value(), mod.reads[r].Value());
-                    if (ValidationIssue* iss = AddIssue(result, ValidationRuleId::UnknownStreamInReads,
-                                                        ValidationSeverity::Error, msg))
-                    {
-                        iss->targetKind = ValidationTargetKind::Module;
-                        SafeCopy(iss->targetPuId, pu.instanceId.AsChar());
-                        SafeCopy(iss->targetModuleId, mod.instanceId.AsChar());
-                        SafeCopy(iss->targetStreamId, mod.reads[r].AsChar());
-                        SafeCopy(iss->suggestedActionLabel, "Remove read");
-                        SafeCopy(iss->suggestedCommand.commandType, "RemoveModuleRead");
-                        SafeCopy(iss->suggestedCommand.puId, pu.instanceId.AsChar());
-                        SafeCopy(iss->suggestedCommand.instanceId, mod.instanceId.AsChar());
-                        SafeCopy(iss->suggestedCommand.streamId, mod.reads[r].AsChar());
-                    }
-                }
-            }
+                    const ChannelBinding& ch = mod.channels[c];
+                    const bool isRead  = (ch.role == kReads  || ch.role == kConsumes);
+                    const bool isWrite = (ch.role == kWrites || ch.role == kProvides);
 
-            for (unsigned int w = 0; w < mod.writes.Size(); ++w)
-            {
-                if (!StreamIdExists(manifest, mod.writes[w]))
-                {
-                    snprintf(msg, sizeof(msg),
-                             "UNKNOWN_STREAM_IN_WRITES: module 0x%08X writes stream 0x%08X which is not declared",
-                             mod.instanceId.Value(), mod.writes[w].Value());
-                    if (ValidationIssue* iss = AddIssue(result, ValidationRuleId::UnknownStreamInWrites,
-                                                        ValidationSeverity::Error, msg))
+                    if (isRead && !StreamIdExists(manifest, ch.id))
                     {
-                        iss->targetKind = ValidationTargetKind::Module;
-                        SafeCopy(iss->targetPuId, pu.instanceId.AsChar());
-                        SafeCopy(iss->targetModuleId, mod.instanceId.AsChar());
-                        SafeCopy(iss->targetStreamId, mod.writes[w].AsChar());
-                        SafeCopy(iss->suggestedActionLabel, "Remove write");
-                        SafeCopy(iss->suggestedCommand.commandType, "RemoveModuleWrite");
-                        SafeCopy(iss->suggestedCommand.puId, pu.instanceId.AsChar());
-                        SafeCopy(iss->suggestedCommand.instanceId, mod.instanceId.AsChar());
-                        SafeCopy(iss->suggestedCommand.streamId, mod.writes[w].AsChar());
+                        snprintf(msg, sizeof(msg),
+                                 "UNKNOWN_STREAM_IN_READS: module 0x%08X reads stream 0x%08X which is not declared",
+                                 mod.instanceId.Value(), ch.id.Value());
+                        if (ValidationIssue* iss = AddIssue(result, ValidationRuleId::UnknownStreamInReads,
+                                                            ValidationSeverity::Error, msg))
+                        {
+                            iss->targetKind = ValidationTargetKind::Module;
+                            SafeCopy(iss->targetPuId, pu.instanceId.AsChar());
+                            SafeCopy(iss->targetModuleId, mod.instanceId.AsChar());
+                            SafeCopy(iss->targetStreamId, ch.id.AsChar());
+                            SafeCopy(iss->suggestedActionLabel, "Remove channel");
+                            SafeCopy(iss->suggestedCommand.commandType, "RemoveModuleChannel");
+                            SafeCopy(iss->suggestedCommand.puId, pu.instanceId.AsChar());
+                            SafeCopy(iss->suggestedCommand.instanceId, mod.instanceId.AsChar());
+                            SafeCopy(iss->suggestedCommand.streamId, ch.id.AsChar());
+                            SafeCopy(iss->suggestedCommand.role, "reads");
+                        }
+                    }
+
+                    if (isWrite && !StreamIdExists(manifest, ch.id))
+                    {
+                        snprintf(msg, sizeof(msg),
+                                 "UNKNOWN_STREAM_IN_WRITES: module 0x%08X writes stream 0x%08X which is not declared",
+                                 mod.instanceId.Value(), ch.id.Value());
+                        if (ValidationIssue* iss = AddIssue(result, ValidationRuleId::UnknownStreamInWrites,
+                                                            ValidationSeverity::Error, msg))
+                        {
+                            iss->targetKind = ValidationTargetKind::Module;
+                            SafeCopy(iss->targetPuId, pu.instanceId.AsChar());
+                            SafeCopy(iss->targetModuleId, mod.instanceId.AsChar());
+                            SafeCopy(iss->targetStreamId, ch.id.AsChar());
+                            SafeCopy(iss->suggestedActionLabel, "Remove channel");
+                            SafeCopy(iss->suggestedCommand.commandType, "RemoveModuleChannel");
+                            SafeCopy(iss->suggestedCommand.puId, pu.instanceId.AsChar());
+                            SafeCopy(iss->suggestedCommand.instanceId, mod.instanceId.AsChar());
+                            SafeCopy(iss->suggestedCommand.streamId, ch.id.AsChar());
+                            SafeCopy(iss->suggestedCommand.role, "writes");
+                        }
                     }
                 }
             }
@@ -305,21 +314,20 @@ ValidationResult ManifestValidator::Validate(const ManifestEditorState& state)
             {
                 const ModuleDeclaration& mod = pu.modules[m];
 
-                for (unsigned int r = 0; r < mod.reads.Size(); ++r)
                 {
-                    if (mod.reads[r] == stream.id)
+                    static const StringCRC kReads("reads");
+                    static const StringCRC kConsumes("consumes");
+                    static const StringCRC kWrites("writes");
+                    static const StringCRC kProvides("provides");
+                    for (unsigned int c = 0; c < mod.channels.Size(); ++c)
                     {
-                        hasReader = true;
-                        break;
-                    }
-                }
-
-                for (unsigned int w = 0; w < mod.writes.Size(); ++w)
-                {
-                    if (mod.writes[w] == stream.id)
-                    {
-                        hasWriter = true;
-                        break;
+                        if (mod.channels[c].id == stream.id)
+                        {
+                            if (mod.channels[c].role == kReads || mod.channels[c].role == kConsumes)
+                                hasReader = true;
+                            if (mod.channels[c].role == kWrites || mod.channels[c].role == kProvides)
+                                hasWriter = true;
+                        }
                     }
                 }
 

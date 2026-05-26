@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useManifestStoreV2 } from './useManifestStoreV2';
 import { bridgeRequest } from './bridge';
 import { TrafficLightDot } from './TrafficLightDot';
+import type { ChannelRole } from './types';
 
 export interface ModuleInspectorProps {
     moduleId: string | null;
@@ -49,11 +50,10 @@ const removeBtn: React.CSSProperties = {
 export const ModuleInspector: React.FC<ModuleInspectorProps> = ({ moduleId, puId }) => {
     const manifest = useManifestStoreV2(s => s.manifest);
     const [addingDep, setAddingDep] = useState(false);
-    const [addingRead, setAddingRead] = useState(false);
-    const [addingWrite, setAddingWrite] = useState(false);
+    const [addingChannel, setAddingChannel] = useState(false);
+    const [newChannelRole, setNewChannelRole] = useState<ChannelRole>('reads');
     const depInputRef = useRef<HTMLInputElement>(null);
-    const readInputRef = useRef<HTMLInputElement>(null);
-    const writeInputRef = useRef<HTMLInputElement>(null);
+    const channelInputRef = useRef<HTMLInputElement>(null);
 
     if (!moduleId || !puId) {
         return (
@@ -136,45 +136,26 @@ export const ModuleInspector: React.FC<ModuleInspectorProps> = ({ moduleId, puId
         });
     };
 
-    const handleAddRead = () => {
-        const val = readInputRef.current?.value.trim();
-        if (!val) { setAddingRead(false); return; }
+    const handleAddChannel = () => {
+        const val = channelInputRef.current?.value.trim();
+        if (!val) { setAddingChannel(false); return; }
         bridgeRequest('manifest.applyCommand', {
-            commandType: 'AddModuleRead',
+            commandType: 'AddModuleChannel',
             instanceId: moduleId,
             puId,
             streamId: val,
+            role: newChannelRole,
         });
-        setAddingRead(false);
+        setAddingChannel(false);
     };
 
-    const handleRemoveRead = (streamId: string) => {
+    const handleRemoveChannel = (streamId: string, role: ChannelRole) => {
         bridgeRequest('manifest.applyCommand', {
-            commandType: 'RemoveModuleRead',
+            commandType: 'RemoveModuleChannel',
             instanceId: moduleId,
             puId,
             streamId,
-        });
-    };
-
-    const handleAddWrite = () => {
-        const val = writeInputRef.current?.value.trim();
-        if (!val) { setAddingWrite(false); return; }
-        bridgeRequest('manifest.applyCommand', {
-            commandType: 'AddModuleWrite',
-            instanceId: moduleId,
-            puId,
-            streamId: val,
-        });
-        setAddingWrite(false);
-    };
-
-    const handleRemoveWrite = (streamId: string) => {
-        bridgeRequest('manifest.applyCommand', {
-            commandType: 'RemoveModuleWrite',
-            instanceId: moduleId,
-            puId,
-            streamId,
+            role,
         });
     };
 
@@ -278,58 +259,52 @@ export const ModuleInspector: React.FC<ModuleInspectorProps> = ({ moduleId, puId
                 )}
             </Section>
 
-            {/* Reads/Writes */}
-            <Section title="Streams" testId="streams-section" defaultOpen={true}>
-                <div style={{ marginBottom: 8 }}>
-                    <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>Reads</div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-                        {mod.reads.map(r => (
-                            <span key={r} style={chipStyle}>
-                                {r}
-                                <button style={removeBtn} onClick={() => handleRemoveRead(r)} title={`Remove ${r}`}>×</button>
-                            </span>
-                        ))}
-                    </div>
-                    {addingRead ? (
-                        <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
-                            <input
-                                ref={readInputRef}
-                                autoFocus
-                                placeholder="stream id"
-                                style={{ background: '#2d2d2d', border: '1px solid #444', borderRadius: 3, color: '#eee', padding: '2px 6px', fontSize: 12, flex: 1 }}
-                                onKeyDown={e => { if (e.key === 'Enter') handleAddRead(); if (e.key === 'Escape') setAddingRead(false); }}
-                            />
-                            <button onClick={handleAddRead} style={{ background: '#444', border: 'none', borderRadius: 3, color: '#eee', cursor: 'pointer', padding: '2px 8px', fontSize: 12 }}>Add</button>
+            {/* Channels */}
+            <Section title="Channels" testId="streams-section" defaultOpen={true}>
+                {(['reads', 'writes', 'provides', 'consumes'] as ChannelRole[]).map(role => {
+                    const bindings = mod.channels.filter(c => c.role === role);
+                    const roleColor: Record<ChannelRole, string> = {
+                        reads: '#5b9bd5', writes: '#e8a838', provides: '#c8a0e0', consumes: '#c8a0e0',
+                    };
+                    if (bindings.length === 0) return null;
+                    return (
+                        <div key={role} style={{ marginBottom: 6 }}>
+                            <div style={{ fontSize: 11, color: '#888', marginBottom: 3, textTransform: 'capitalize' }}>{role}</div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+                                {bindings.map(ch => (
+                                    <span key={ch.id + ':' + ch.role} style={{ ...chipStyle, borderLeft: `3px solid ${roleColor[role]}` }}>
+                                        {ch.id}
+                                        <button style={removeBtn} onClick={() => handleRemoveChannel(ch.id, ch.role as ChannelRole)} title={`Remove ${ch.id}`}>×</button>
+                                    </span>
+                                ))}
+                            </div>
                         </div>
-                    ) : (
-                        <button onClick={() => setAddingRead(true)} style={{ background: 'none', border: '1px solid #444', borderRadius: 3, color: '#888', cursor: 'pointer', padding: '2px 8px', fontSize: 12, marginTop: 4 }}>+</button>
-                    )}
-                </div>
-                <div>
-                    <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>Writes</div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-                        {mod.writes.map(w => (
-                            <span key={w} style={chipStyle}>
-                                {w}
-                                <button style={removeBtn} onClick={() => handleRemoveWrite(w)} title={`Remove ${w}`}>×</button>
-                            </span>
-                        ))}
+                    );
+                })}
+                {addingChannel ? (
+                    <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
+                        <select
+                            value={newChannelRole}
+                            onChange={e => setNewChannelRole(e.target.value as ChannelRole)}
+                            style={{ background: '#2d2d2d', border: '1px solid #444', borderRadius: 3, color: '#eee', padding: '2px 4px', fontSize: 12 }}
+                        >
+                            <option value="reads">reads</option>
+                            <option value="writes">writes</option>
+                            <option value="provides">provides</option>
+                            <option value="consumes">consumes</option>
+                        </select>
+                        <input
+                            ref={channelInputRef}
+                            autoFocus
+                            placeholder="stream id"
+                            style={{ background: '#2d2d2d', border: '1px solid #444', borderRadius: 3, color: '#eee', padding: '2px 6px', fontSize: 12, flex: 1 }}
+                            onKeyDown={e => { if (e.key === 'Enter') handleAddChannel(); if (e.key === 'Escape') setAddingChannel(false); }}
+                        />
+                        <button onClick={handleAddChannel} style={{ background: '#444', border: 'none', borderRadius: 3, color: '#eee', cursor: 'pointer', padding: '2px 8px', fontSize: 12 }}>Add</button>
                     </div>
-                    {addingWrite ? (
-                        <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
-                            <input
-                                ref={writeInputRef}
-                                autoFocus
-                                placeholder="stream id"
-                                style={{ background: '#2d2d2d', border: '1px solid #444', borderRadius: 3, color: '#eee', padding: '2px 6px', fontSize: 12, flex: 1 }}
-                                onKeyDown={e => { if (e.key === 'Enter') handleAddWrite(); if (e.key === 'Escape') setAddingWrite(false); }}
-                            />
-                            <button onClick={handleAddWrite} style={{ background: '#444', border: 'none', borderRadius: 3, color: '#eee', cursor: 'pointer', padding: '2px 8px', fontSize: 12 }}>Add</button>
-                        </div>
-                    ) : (
-                        <button onClick={() => setAddingWrite(true)} style={{ background: 'none', border: '1px solid #444', borderRadius: 3, color: '#888', cursor: 'pointer', padding: '2px 8px', fontSize: 12, marginTop: 4 }}>+</button>
-                    )}
-                </div>
+                ) : (
+                    <button onClick={() => setAddingChannel(true)} style={{ background: 'none', border: '1px solid #444', borderRadius: 3, color: '#888', cursor: 'pointer', padding: '2px 8px', fontSize: 12, marginTop: 4 }}>+</button>
+                )}
             </Section>
 
             {/* Provenance */}
