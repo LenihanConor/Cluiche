@@ -221,44 +221,6 @@ namespace Dia { namespace ApplicationFlow {
                                 }
                             }
                         }
-                        // Legacy fallback: reads/writes arrays (deprecated — migrate to channels)
-                        else
-                        {
-                            if (modJson.isMember("reads") && modJson["reads"].isArray())
-                            {
-                                DIA_LOG_WARNING("ApplicationFlow",
-                                    "Module '%s' uses legacy reads[] — migrate to channels array",
-                                    modJson.isMember("instance_id") ? modJson["instance_id"].asCString() : "?");
-                                const Json::Value& readsArr = modJson["reads"];
-                                for (unsigned int k = 0; k < readsArr.size(); ++k)
-                                {
-                                    if (readsArr[k].isString())
-                                    {
-                                        ChannelBinding binding;
-                                        binding.id   = Dia::Core::StringCRC(readsArr[k].asCString());
-                                        binding.role = Dia::Core::StringCRC("reads");
-                                        mod.channels.Add(binding);
-                                    }
-                                }
-                            }
-                            if (modJson.isMember("writes") && modJson["writes"].isArray())
-                            {
-                                DIA_LOG_WARNING("ApplicationFlow",
-                                    "Module '%s' uses legacy writes[] — migrate to channels array",
-                                    modJson.isMember("instance_id") ? modJson["instance_id"].asCString() : "?");
-                                const Json::Value& writesArr = modJson["writes"];
-                                for (unsigned int k = 0; k < writesArr.size(); ++k)
-                                {
-                                    if (writesArr[k].isString())
-                                    {
-                                        ChannelBinding binding;
-                                        binding.id   = Dia::Core::StringCRC(writesArr[k].asCString());
-                                        binding.role = Dia::Core::StringCRC("writes");
-                                        mod.channels.Add(binding);
-                                    }
-                                }
-                            }
-                        }
 
                         // timeouts
                         mod.startTimeoutMs = modJson.get("start_timeout_ms", 10000.0f).asFloat();
