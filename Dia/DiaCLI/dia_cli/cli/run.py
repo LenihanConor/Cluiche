@@ -5,10 +5,13 @@ from pathlib import Path
 from dia_cli.utils.repo_root import find_repo_root
 
 
+_CONFIG_ALIASES = {"Asan": "Debug-Asan", "Ubsan": "Debug-Ubsan"}
+
+
 @click.command()
 @click.argument("target")
 @click.option("--config", default="Debug", metavar="CONFIG",
-              help="Build configuration: Debug or Release (default: Debug).")
+              help="Build configuration: Debug, Release, Asan, or Ubsan (default: Debug).")
 @click.option("--filter", "filter_pattern", default=None, metavar="PATTERN",
               help="For googletest: pass --gtest_filter=PATTERN.")
 @click.option("--verbose", is_flag=True, default=False,
@@ -27,6 +30,7 @@ def cli(ctx, target, config, filter_pattern, verbose, no_build, build_only, forc
 
     Equivalent to: dia pipeline --target TARGET && dia launch TARGET
     """
+    config = _CONFIG_ALIASES.get(config, config)
     repo_root = find_repo_root(__file__)
 
     if not no_build:

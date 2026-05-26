@@ -64,6 +64,9 @@ def run(
     if run_all or local_llm:
         checks.extend(_check_local_llm())
 
+    if run_all:
+        checks.extend(_check_cppcheck())
+
     pass_count = sum(1 for c in checks if c.status == "pass")
     warn_count = sum(1 for c in checks if c.status == "warn")
     fail_count = sum(1 for c in checks if c.status == "fail")
@@ -170,6 +173,23 @@ def _check_claude(repo_root: Path) -> list:
         results.append(CheckResult("memory symlink", "claude", "fail",
                                    "not configured",
                                    "dia env claude-setup"))
+    return results
+
+
+def _check_cppcheck() -> list:
+    from dia_cli.utils.check_result import CheckResult
+    results = []
+    if shutil.which("cppcheck"):
+        try:
+            r = _sp.run(["cppcheck", "--version"], capture_output=True, text=True, timeout=10)
+            ver = r.stdout.strip() if r.returncode == 0 else "unknown"
+            results.append(CheckResult("Cppcheck", "static-analysis", "pass", ver))
+        except _sp.TimeoutExpired:
+            results.append(CheckResult("Cppcheck", "static-analysis", "warn", "version check timed out"))
+    else:
+        results.append(CheckResult("Cppcheck", "static-analysis", "warn",
+                                   "not installed",
+                                   "dia env setup --toolchain  (or: winget install Cppcheck.Cppcheck)"))
     return results
 
 

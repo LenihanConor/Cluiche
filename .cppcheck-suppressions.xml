@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<suppressions>
+    <!-- C-style casts are used extensively in MSVC/Windows interop code -->
+    <suppress>
+        <id>cstyleCast</id>
+    </suppress>
+    <!-- Custom allocators in DiaCore containers trigger false positives -->
+    <suppress>
+        <id>unusedFunction</id>
+    </suppress>
+    <!-- Engine uses uninitialised-looking patterns in performance-critical paths -->
+    <suppress>
+        <id>uninitMemberVar</id>
+        <fileName>*/DiaCore/Containers/*</fileName>
+    </suppress>
+</suppressions>

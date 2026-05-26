@@ -6,6 +6,8 @@ from pathlib import Path
 from dia_cli.utils.repo_root import find_repo_root
 
 
+_CONFIG_ALIASES = {"Asan": "Debug-Asan", "Ubsan": "Debug-Ubsan"}
+
 _TARGET_EXE_MAP = {
     "googletest": "Cluiche/bin/GoogleTests/{config}/x64/GoogleTests.exe",
     "cluichetest": "Cluiche/bin/CluicheTest/{config}/x64/CluicheTest.exe",
@@ -16,7 +18,7 @@ _TARGET_EXE_MAP = {
 @click.command()
 @click.argument("target")
 @click.option("--config", default="Debug", metavar="CONFIG",
-              help="Build configuration: Debug or Release (default: Debug).")
+              help="Build configuration: Debug, Release, Asan, or Ubsan (default: Debug).")
 @click.option("--filter", "filter_pattern", default=None, metavar="PATTERN",
               help="For googletest: pass --gtest_filter=PATTERN.")
 @click.option("--verbose", is_flag=True, default=False,
@@ -40,6 +42,7 @@ def cli(ctx, target, config, filter_pattern, verbose):
 
 def launch_target(target: str, config: str, filter_pattern: str = None,
                   verbose: bool = False) -> int:
+    config = _CONFIG_ALIASES.get(config, config)
     repo_root = find_repo_root(__file__)
 
     if target not in _TARGET_EXE_MAP:

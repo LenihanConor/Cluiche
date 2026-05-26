@@ -146,6 +146,47 @@ def check_docker() -> list:
     return results
 
 
+def check_msvc_asan() -> CheckResult:
+    """Check if MSVC ASan runtime DLL is available."""
+    import glob as _glob
+    if not _VSWHERE.exists():
+        return CheckResult("MSVC ASan runtime", "toolchain", "warn",
+                           "vswhere not found — cannot locate ASan DLL",
+                           "Install VS 2022 with C++ Desktop workload")
+    rc, out, _ = _run([str(_VSWHERE), "-latest", "-property", "installationPath"])
+    if rc != 0 or not out.strip():
+        return CheckResult("MSVC ASan runtime", "toolchain", "warn",
+                           "VS install path not found")
+    vs_path = out.strip()
+    pattern = str(Path(vs_path) / "VC" / "Tools" / "MSVC" / "*" / "bin" / "Hostx64" / "x64" / "clang_rt.asan_dynamic-x86_64.dll")
+    matches = _glob.glob(pattern)
+    if matches:
+        return CheckResult("MSVC ASan runtime", "toolchain", "pass",
+                           f"found at {Path(matches[0]).parent}")
+    return CheckResult("MSVC ASan runtime", "toolchain", "warn",
+                       "clang_rt.asan_dynamic-x86_64.dll not found — ASan builds may fail at runtime",
+                       "Ensure 'C++ AddressSanitizer' is installed in VS 2022")
+
+
+def check_llvm_clangcl() -> CheckResult:
+    """Check if LLVM/clang-cl is available for UBSan builds."""
+    if shutil.which("clang-cl"):
+        rc, out, _ = _run(["clang-cl", "--version"])
+        ver = out.strip().splitlines()[0] if rc == 0 and out.strip() else "unknown"
+        return CheckResult("LLVM clang-cl", "toolchain", "pass", ver)
+    # Also check if VS ships clang-cl via vswhere
+    if _VSWHERE.exists():
+        rc, out, _ = _run([str(_VSWHERE), "-latest", "-find", r"VC\Tools\Llvm\x64\bin\clang-cl.exe"])
+        if rc == 0 and out.strip():
+            p = out.strip().splitlines()[0]
+            if Path(p).exists():
+                return CheckResult("LLVM clang-cl", "toolchain", "pass",
+                                   f"VS-bundled at {p}")
+    return CheckResult("LLVM clang-cl", "toolchain", "warn",
+                       "clang-cl not found — Debug-Ubsan builds will fail",
+                       "Install 'C++ Clang Compiler for Windows' component in VS 2022, or: winget install LLVM.LLVM")
+
+
 def check_all_toolchain() -> list:
     results = []
     results.extend(check_vs2022())
@@ -154,4 +195,6 @@ def check_all_toolchain() -> list:
     results.append(check_nodejs())
     results.append(check_poetry())
     results.extend(check_docker())
+    results.append(check_msvc_asan())
+    results.append(check_llvm_clangcl())
     return results

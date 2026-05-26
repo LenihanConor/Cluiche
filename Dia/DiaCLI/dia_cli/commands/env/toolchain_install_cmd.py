@@ -52,6 +52,7 @@ def run(repo_root: Optional[Path], force: bool = False) -> int:
             str(vs_installer), "modify",
             "--installPath", "C:/Program Files/Microsoft Visual Studio/2022/Community",
             "--add", "Microsoft.VisualStudio.Workload.NativeDesktop",
+            "--add", "Microsoft.VisualStudio.Component.VC.ASAN",
             "--includeRecommended", "--quiet", "--wait"
         ]
         subprocess.run(vs_cmd)

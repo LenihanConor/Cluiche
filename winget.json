@@ -9,7 +9,9 @@
         { "PackageIdentifier": "Git.Git" },
         { "PackageIdentifier": "GitHub.cli" },
         { "PackageIdentifier": "OpenJS.NodeJS.LTS" },
-        { "PackageIdentifier": "Docker.DockerDesktop" }
+        { "PackageIdentifier": "Docker.DockerDesktop" },
+        { "PackageIdentifier": "Cppcheck.Cppcheck" },
+        { "PackageIdentifier": "LLVM.LLVM" }
       ],
       "SourceDetails": {
         "Argument": "https://cdn.winget.microsoft.com/cache",
