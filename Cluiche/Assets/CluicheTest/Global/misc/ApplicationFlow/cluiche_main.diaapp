@@ -8,9 +8,9 @@
     "initial_stage": "Boot",
     "streams": [
         {
-            "id": "InputToSim",
+            "id": "MainToSim",
             "kind": "EventStream",
-            "payload_type": "InputEvent",
+            "payload_type": "MainToSimEvent",
             "overflow": "drop-oldest",
             "from": "MainPU",
             "to": "SimPU"
@@ -24,9 +24,9 @@
             "multi_writer": true
         },
         {
-            "id": "SimToUI",
+            "id": "SimToMain",
             "kind": "EventStream",
-            "payload_type": "UICommand",
+            "payload_type": "SimToMainEvent",
             "overflow": "drop-oldest",
             "from": "SimPU",
             "to": "MainPU"
@@ -37,6 +37,13 @@
             "payload_type": "UIDataBuffer",
             "from": "MainPU",
             "to": "SimPU"
+        },
+        {
+            "id": "MainToRender",
+            "kind": "FrameStream",
+            "payload_type": "MainToRenderFrame",
+            "from": "MainPU",
+            "to": "RenderPU"
         }
     ],
     "processing_units": [
@@ -75,14 +82,14 @@
                     "stages": [ "all" ],
                     "dependencies": [ "ObservationModule", "JobSystemModule" ],
                     "reads": [],
-                    "writes": [ "InputToSim" ]
+                    "writes": [ "MainToSim" ]
                 },
                 {
                     "instance_id": "UIModule",
                     "type_id": "UIModule",
                     "stages": [ "DummyStage" ],
                     "dependencies": [ "ObservationModule", "KernelModule" ],
-                    "reads": [ "SimToUI" ],
+                    "reads": [ "SimToMain" ],
                     "writes": [ "UIToSim" ]
                 },
                 {
@@ -115,6 +122,14 @@
                     "dependencies": [ "ObservationModule", "DebugServerHostModule" ],
                     "reads": [],
                     "writes": []
+                },
+                {
+                    "instance_id": "MainStateProducerModule",
+                    "type_id": "MainStateProducerModule",
+                    "stages": [ "all" ],
+                    "dependencies": [ "ObservationModule", "AutomationModule" ],
+                    "reads": [],
+                    "writes": [ "MainToRender" ]
                 }
             ]
         },
@@ -136,7 +151,7 @@
                     "type_id": "InputStreamModule",
                     "stages": [ "all" ],
                     "dependencies": [ "TimeServerModule" ],
-                    "reads": [ "InputToSim" ],
+                    "reads": [ "MainToSim" ],
                     "writes": []
                 },
                 {
@@ -175,7 +190,7 @@
                     "type_id": "TestStageHUDModule",
                     "stages": [ "DummyStage", "RigidBody2DStage" ],
                     "dependencies": [ "DebugUI" ],
-                    "reads": [],
+                    "reads": [ "MainToRender" ],
                     "writes": []
                 },
                 {

@@ -1,13 +1,11 @@
 #include "Modules/TestStages/TestStageHUDModule.h"
-#include "Modules/TestStages/TestResultsRegistry.h"
-#include "Modules/AutomationModule.h"
 
+#include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
-#include <DiaAutomation/AutomationService.h>
+#include <DiaAPI/CommandRegistry/CommandRegistry.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
-#include <DiaAPI/CommandRegistry/CommandRegistry.h>
 #include <DiaCore/CRC/StringCRC.h>
 
 #include <imgui.h>
@@ -22,8 +20,6 @@ TestStageHUDModule::TestStageHUDModule(const Dia::Core::StringCRC& instanceId)
 
 Dia::ApplicationFlow::StartResult TestStageHUDModule::DoStart()
 {
-    if (!Cluiche::AppFlow::AutomationModule::GetStatic())
-        return Dia::ApplicationFlow::StartResult::kLoading;
     if (!mDebugUI.Get())
         return Dia::ApplicationFlow::StartResult::kLoading;
 
@@ -37,29 +33,32 @@ void TestStageHUDModule::DoUpdate(float /*dt*/)
     if (!mDebugUI.Get() || !mDebugUI.Get()->IsFrameActive())
         return;
 
-    auto* automationModule = Cluiche::AppFlow::AutomationModule::GetStatic();
-    auto* svc = automationModule ? automationModule->GetService() : nullptr;
-    if (svc && svc->IsHeartbeatEnabled())
+    // Fetch latest MainToRenderFrame from the stream.
+    const Cluiche::AppFlow::MainToRenderFrame* frame = mMainStateInput.FetchLatest();
+    if (!frame)
         return;
 
-    RenderBottomBar();
+    // If automation heartbeat is enabled, skip HUD rendering.
+    if (frame->automationStatus.heartbeatEnabled)
+        return;
+
+    RenderBottomBar(*frame);
 }
 
-void TestStageHUDModule::RenderBottomBar()
+void TestStageHUDModule::RenderBottomBar(const Cluiche::AppFlow::MainToRenderFrame& frame)
 {
-    auto& registry = TestResultsRegistry::GetInstance();
-    const Dia::Core::StringCRC activeStageName = registry.GetActiveStage();
-    const StageResult* result = (activeStageName != Dia::Core::StringCRC())
-        ? registry.GetResult(activeStageName) : nullptr;
+    const Cluiche::AppFlow::StageHUDState& hud = frame.stageHUD;
 
-    if (!result)
+    if (hud.activeStageName.Value() == 0)
         return;
+
+    using HUDState = Cluiche::AppFlow::StageHUDState::StageState;
 
     const ImGuiIO& io = ImGui::GetIO();
     const float barH = 28.0f;
 
-    const bool isPassed  = result->state == StageResult::State::kPassed;
-    const bool isTimeout = result->state == StageResult::State::kTimeout;
+    const bool isPassed  = (hud.stageState == HUDState::kPassed);
+    const bool isTimeout = (hud.stageState == HUDState::kTimeout);
 
     if (isPassed)
         ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.35f, 0.0f, 0.88f));
@@ -80,34 +79,27 @@ void TestStageHUDModule::RenderBottomBar()
     ImGui::PopStyleColor();
 
     // Stage name
-    ImGui::Text("%s", activeStageName.AsChar());
+    ImGui::Text("%s", hud.activeStageName.AsChar());
     ImGui::SameLine();
     ImGui::Text(" | ");
     ImGui::SameLine();
 
     // Checkpoint icons
-    const auto& checkpoints = result->checkpoints;
-    if (checkpoints.Size() == 0)
+    if (hud.checkpointCount == 0)
     {
         ImGui::TextDisabled("(no checkpoints)");
         ImGui::SameLine();
     }
     else
     {
-        for (unsigned int i = 0; i < checkpoints.Size(); ++i)
+        for (unsigned int i = 0; i < hud.checkpointCount && i < Cluiche::AppFlow::StageHUDState::kMaxCheckpoints; ++i)
         {
             if (isPassed)
-            {
-                ImGui::TextColored(ImVec4(0.3f, 1.0f, 0.3f, 1.0f), "%s %s", "\xe2\x9c\x93", checkpoints[i].AsChar());
-            }
+                ImGui::TextColored(ImVec4(0.3f, 1.0f, 0.3f, 1.0f), "%s %s", "\xe2\x9c\x93", hud.checkpoints[i].AsChar());
             else if (isTimeout)
-            {
-                ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f), "%s %s", "\xe2\x9c\x97", checkpoints[i].AsChar());
-            }
+                ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f), "%s %s", "\xe2\x9c\x97", hud.checkpoints[i].AsChar());
             else
-            {
-                ImGui::TextColored(ImVec4(1.0f, 0.75f, 0.0f, 1.0f), "%s %s", "\xe2\x8f\xb3", checkpoints[i].AsChar());
-            }
+                ImGui::TextColored(ImVec4(1.0f, 0.75f, 0.0f, 1.0f), "%s %s", "\xe2\x8f\xb3", hud.checkpoints[i].AsChar());
             ImGui::SameLine();
             ImGui::Text(" | ");
             ImGui::SameLine();
@@ -115,14 +107,14 @@ void TestStageHUDModule::RenderBottomBar()
     }
 
     // Frame counter
-    const unsigned int frame  = registry.GetActiveFrameCount();
-    const unsigned int budget = result->budgetFrames;
+    const unsigned int frame_  = hud.frameCount;
+    const unsigned int budget  = hud.budgetFrames;
     if (isPassed)
-        ImGui::TextColored(ImVec4(0.3f, 1.0f, 0.3f, 1.0f), "PASS  %u/%u", frame, budget);
+        ImGui::TextColored(ImVec4(0.3f, 1.0f, 0.3f, 1.0f), "PASS  %u/%u", frame_, budget);
     else if (isTimeout)
-        ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f), "TIMEOUT  %u/%u", frame, budget);
+        ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f), "TIMEOUT  %u/%u", frame_, budget);
     else
-        ImGui::Text("%u / %u", frame, budget);
+        ImGui::Text("%u / %u", frame_, budget);
 
     // Exit button — far right
     ImGui::SameLine(io.DisplaySize.x - 38.0f);
@@ -132,7 +124,7 @@ void TestStageHUDModule::RenderBottomBar()
     if (ImGui::Button(" X "))
     {
         DIA_LOG_INFO("CluicheTest", "HUD exit clicked — stage '%s' state %d — navigating to Boot",
-            activeStageName.AsChar(), static_cast<int>(result->state));
+            hud.activeStageName.AsChar(), static_cast<int>(hud.stageState));
         Json::Value params;
         params["target"] = "Boot";
         Dia::API::ExecuteCommandJson(Dia::Core::StringCRC("dia.automation.navigate_to"), params);
@@ -145,6 +137,11 @@ void TestStageHUDModule::RenderBottomBar()
 Dia::ApplicationFlow::StopResult TestStageHUDModule::DoStop()
 {
     return Dia::ApplicationFlow::StopResult::kDone;
+}
+
+void TestStageHUDModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
+{
+    mMainStateInput.Connect(app);
 }
 
 } // namespace CluicheTest
