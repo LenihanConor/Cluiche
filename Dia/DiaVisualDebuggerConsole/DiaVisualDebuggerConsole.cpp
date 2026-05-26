@@ -133,10 +133,10 @@ namespace Dia
 
         const char* DiaVisualDebuggerConsole::GetLogLine(int index) const
         {
-            if (index < 0 || index >= mOutputCount)
+            if (index < 0 || index >= mWarningCount)
                 return "";
-            int idx = (mOutputHead - mOutputCount + index + kLogTailCapacity) % kLogTailCapacity;
-            return mOutputBuffer[idx];
+            int idx = (mWarningHead - mWarningCount + index + kLogTailCapacity) % kLogTailCapacity;
+            return mWarningBuffer[idx];
         }
 
         // -----------------------------------------------------------------

@@ -58,7 +58,7 @@ namespace Dia
                         const Dia::Graphics::DebugFrameData& debugFrameData);
 
             // ----- Test-only accessors -----
-            int  GetLogCount() const { return mOutputCount; }
+            int  GetLogCount() const { return mWarningCount; }
             const char* GetLogLine(int index) const;
 
         private:
