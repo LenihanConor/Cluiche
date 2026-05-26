@@ -25,10 +25,8 @@
 
 namespace Cluiche { namespace AppFlow {
 
-const Dia::Core::StringCRC             KernelModule::kTypeId("KernelModule");
-Dia::Graphics::ICanvas*                KernelModule::sCanvas         = nullptr;
-Dia::AssetRuntime::TextureHandler*     KernelModule::sTextureHandler = nullptr;
-std::atomic<bool>                      KernelModule::sRenderContextReleased{false};
+const Dia::Core::StringCRC  KernelModule::kTypeId("KernelModule");
+std::atomic<bool>           KernelModule::sRenderContextReleased{false};
 
 KernelModule::KernelModule(const Dia::Core::StringCRC& instanceId)
     : Module(instanceId)
@@ -51,7 +49,7 @@ Dia::ApplicationFlow::StartResult KernelModule::DoStart()
     auto* jobSystemModule = Cluiche::AppFlow::JobSystemModule::GetStatic();
     DIA_ASSERT(jobSystemModule != nullptr, "TextureHandler requires JobSystemModule to be initialized first");
     mTextureHandler.SetJobSystem(&jobSystemModule->GetJobSystem());
-    sTextureHandler = &mTextureHandler;
+    mTextureHandlerService.Register(mTextureHandler);
 
     sfmlWindow->ListenForInputSources(Dia::Core::BitArray8(
         Dia::SFML::InputSource::ESources::kSystem |
@@ -86,8 +84,8 @@ Dia::ApplicationFlow::StartResult KernelModule::DoStart()
     Dia::ImGui::Init();
 #endif
 
-    // Publish sCanvas AFTER deactivating the context — RenderModule polls from its thread.
-    sCanvas = mCanvas;
+    // Publish canvas AFTER deactivating the context — RenderModule polls from its thread.
+    mCanvasService.Register(*mCanvas);
 
     {
         auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
@@ -139,9 +137,6 @@ Dia::ApplicationFlow::StopResult KernelModule::DoStop()
 
     DIA_LOG_INFO("Application", "KernelModule DoStop entry");
 
-    sCanvas         = nullptr;
-    sTextureHandler = nullptr;
-
 #ifdef DIA_DEBUG
     if (mBgfxImGuiBackend != nullptr)
     {
@@ -171,6 +166,8 @@ Dia::ApplicationFlow::StopResult KernelModule::DoStop()
 void KernelModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 {
     mInputWriter.Connect(app);
+    mCanvasService.Connect(app);
+    mTextureHandlerService.Connect(app);
 }
 
 } } // namespace Cluiche::AppFlow

@@ -9,7 +9,8 @@
 #include <DiaObservation/Health/HealthReporterBase.h>
 #include <atomic>
 
-#include "Modules/KernelModule.h"
+#include <DiaApplicationFlow/Streams/ServiceStreamReader.h>
+#include <DiaAssetRuntime/Handlers/TextureHandler.h>
 #include "Modules/UIModule.h"
 
 namespace Dia { namespace Observation { namespace Metric {
@@ -53,6 +54,7 @@ protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
     void DoUpdate(float dt) override;
     Dia::ApplicationFlow::StopResult DoStop() override;
+    void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 
 private:
     struct PathAliasEntry
@@ -110,8 +112,8 @@ private:
     StageStateEntry  mStageStates[kMaxTrackedStages];
     unsigned int     mStageStateCount = 0;
 
-    Dia::ApplicationFlow::ModuleRef<KernelModule> mKernel{this};
-    Dia::ApplicationFlow::ModuleRef<UIModule>     mUI{this};
+    Dia::ApplicationFlow::ServiceStreamReader<Dia::AssetRuntime::TextureHandler>  mTextureHandlerService{this, "KernelTextureHandler"};
+    Dia::ApplicationFlow::ModuleRef<UIModule>                                      mUI{this};
 
     // Metric primitives — owned by MetricRegistry, pointers nulled on DoStop.
     Dia::Observation::Metric::Gauge*     mMetricAssetsLoaded  = nullptr;

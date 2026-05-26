@@ -225,9 +225,8 @@ void AssetServiceModule::DoUpdate(float /*dt*/)
 
     // 2. Pump main-thread texture upload completions.
     // TextureHandler::Tick() drains decoded images -> GPU upload -> fires callbacks.
-    Dia::AssetRuntime::TextureHandler* textureHandler = KernelModule::GetStaticTextureHandler();
-    if (textureHandler)
-        textureHandler->Tick();
+    if (mTextureHandlerService.IsAvailable())
+        mTextureHandlerService.Get().Tick();
 
     // 3. Recompute terminal states for any kLoading stage.
     for (unsigned int i = 0; i < mStageStateCount; ++i)
@@ -373,6 +372,11 @@ Dia::ApplicationFlow::StopResult AssetServiceModule::DoStop()
     return Dia::ApplicationFlow::StopResult::kDone;
 }
 
+void AssetServiceModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
+{
+    mTextureHandlerService.Connect(app);
+}
+
 bool AssetServiceModule::IsLoadComplete() const
 {
     return mRuntime.IsLoadComplete(Dia::Core::StringCRC("stage.global"));
@@ -446,14 +450,13 @@ void AssetServiceModule::RequestStageUnload(const Dia::Core::StringCRC& stageId)
 
 void AssetServiceModule::EnsureHandlersRegistered()
 {
-    KernelModule* kernel = mKernel.Get();
-    UIModule*     ui     = mUI.Get();
+    UIModule* ui = mUI.Get();
 
     bool justRegistered = false;
 
-    if (!mTextureHandlerRegistered && kernel && KernelModule::GetStaticTextureHandler())
+    if (!mTextureHandlerRegistered && mTextureHandlerService.IsAvailable())
     {
-        mRuntime.RegisterTypeHandler("texture", KernelModule::GetStaticTextureHandler());
+        mRuntime.RegisterTypeHandler("texture", &mTextureHandlerService.Get());
         mTextureHandlerRegistered = true;
         justRegistered = true;
     }

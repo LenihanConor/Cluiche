@@ -2,9 +2,9 @@
 #include <DiaApplicationFlow/Module.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaApplicationFlow/Streams/StreamReader.h>
+#include <DiaApplicationFlow/Streams/ServiceStreamReader.h>
 #include <DiaGraphics/Frame/FrameData.h>
-
-namespace Dia { namespace Graphics { class ICanvas; } }
+#include <DiaGraphics/Interface/ICanvas.h>
 
 namespace Cluiche { namespace AppFlow {
 
@@ -20,8 +20,9 @@ protected:
     void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 
 private:
-    Dia::ApplicationFlow::StreamReader<Dia::Graphics::FrameData> mFrameInput{this, "SimToRender"};
-    Dia::Graphics::ICanvas* mCanvas = nullptr;
+    Dia::ApplicationFlow::StreamReader<Dia::Graphics::FrameData>               mFrameInput{this, "SimToRender"};
+    Dia::ApplicationFlow::ServiceStreamReader<Dia::Graphics::ICanvas>          mCanvasService{this, "KernelCanvas"};
+    Dia::Graphics::ICanvas*  mCanvas = nullptr;
     Dia::Graphics::FrameData mLastFrame;
 };
 

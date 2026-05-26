@@ -1,7 +1,6 @@
 #include "Modules/RenderModule.h"
 #include "Modules/KernelModule.h"
 
-#include <DiaGraphics/Interface/ICanvas.h>
 #include <DiaAssetRuntime/Handlers/TextureHandler.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaApplicationFlow/Application.h>
@@ -18,14 +17,14 @@ RenderModule::RenderModule(const Dia::Core::StringCRC& instanceId)
 Dia::ApplicationFlow::StartResult RenderModule::DoStart()
 {
     // RenderModule runs on the RenderPU dedicated thread, KernelModule runs on
-    // MainPU — their DoStart() calls are concurrent with no cross-PU ordering
-    // guarantee. Wait (return kLoading) until KernelModule has created and
-    // released the canvas.
-    mCanvas = KernelModule::GetStaticCanvas();
-    if (mCanvas == nullptr)
+    // MainPU. Wait (return kLoading) until the KernelCanvas service stream is
+    // committed (framework commits it after KernelModule's DoStart registers it).
+    if (!mCanvasService.IsAvailable())
     {
         return Dia::ApplicationFlow::StartResult::kLoading;
     }
+
+    mCanvas = &mCanvasService.Get();
 
     DIA_LOG_INFO("Application", "RenderModule DoStart: canvas acquired");
 
@@ -81,6 +80,7 @@ Dia::ApplicationFlow::StopResult RenderModule::DoStop()
 void RenderModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 {
     mFrameInput.Connect(app);
+    mCanvasService.Connect(app);
 }
 
 } } // namespace Cluiche::AppFlow

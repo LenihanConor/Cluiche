@@ -2,6 +2,7 @@
 #include <DiaApplicationFlow/Module.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaApplicationFlow/Streams/EventStreamWriter.h>
+#include <DiaApplicationFlow/Streams/ServiceStreamWriter.h>
 #include <DiaInput/InputSourceManager.h>
 #include <DiaInput/EventData.h>
 #include <DiaInput/ConsoleGamepadManager.h>
@@ -37,9 +38,6 @@ public:
 
     const Dia::Input::EventData& GetFrameInputEvents() const { return mFrameEvents; }
 
-    static Dia::Graphics::ICanvas*          GetStaticCanvas()         { return sCanvas; }
-    static Dia::AssetRuntime::TextureHandler* GetStaticTextureHandler() { return sTextureHandler; }
-
     static void SetRenderContextReleased(bool released) { sRenderContextReleased.store(released, std::memory_order_release); }
     static bool IsRenderContextReleased()               { return sRenderContextReleased.load(std::memory_order_acquire); }
 
@@ -50,10 +48,10 @@ protected:
     void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 
 private:
-    Dia::ApplicationFlow::EventStreamWriter<InputEvent> mInputWriter{this, "InputToSim"};
-    static Dia::Graphics::ICanvas*                sCanvas;
-    static Dia::AssetRuntime::TextureHandler*     sTextureHandler;
-    static std::atomic<bool>                      sRenderContextReleased;
+    Dia::ApplicationFlow::EventStreamWriter<InputEvent>                         mInputWriter{this, "InputToSim"};
+    Dia::ApplicationFlow::ServiceStreamWriter<Dia::Graphics::ICanvas>           mCanvasService{this, "KernelCanvas"};
+    Dia::ApplicationFlow::ServiceStreamWriter<Dia::AssetRuntime::TextureHandler> mTextureHandlerService{this, "KernelTextureHandler"};
+    static std::atomic<bool>                                                     sRenderContextReleased;
 
     Dia::Input::InputSourceManager  mInputSourceManager;
     Dia::Input::ConsoleGamepadManager mGamepadManager;

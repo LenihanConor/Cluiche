@@ -1,12 +1,10 @@
 #include "DummyLevelModule.h"
-#include "Modules/KernelModule.h"
 #include "Modules/AssetServiceModule.h"
 
 #include <DiaApplicationFlow/Application.h>
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaGraphics/Frame/SpriteDrawCommand.h>
 #include <DiaGraphics/Misc/RGBA.h>
-#include <DiaAssetRuntime/Handlers/TextureHandler.h>
 #include <DiaInput/EKey.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaMaths/Vector/Vector2D.h>
@@ -114,13 +112,13 @@ void DummyLevelModule::DoUpdate(float dt)
         mFrame.RequestDraw(center, dynamic, Dia::Graphics::RGBA::White);
     }
 
-    // Draw debug sprites (mirrors v1 SimRunningPhase). Textures come from
-    // the texture handler on MainPU via static accessor.
-    if (Dia::AssetRuntime::TextureHandler* tex = KernelModule::GetStaticTextureHandler())
+    // Draw debug sprites. Textures come from the texture handler via service stream.
+    if (mTextureHandlerService.IsAvailable())
     {
-        Dia::Graphics::ITexture* red   = tex->LookupTexture(Dia::Core::StringCRC("texture.test_red"));
-        Dia::Graphics::ITexture* blue  = tex->LookupTexture(Dia::Core::StringCRC("texture.test_blue"));
-        Dia::Graphics::ITexture* green = tex->LookupTexture(Dia::Core::StringCRC("texture.test_green"));
+        Dia::AssetRuntime::TextureHandler& tex = mTextureHandlerService.Get();
+        Dia::Graphics::ITexture* red   = tex.LookupTexture(Dia::Core::StringCRC("texture.test_red"));
+        Dia::Graphics::ITexture* blue  = tex.LookupTexture(Dia::Core::StringCRC("texture.test_blue"));
+        Dia::Graphics::ITexture* green = tex.LookupTexture(Dia::Core::StringCRC("texture.test_green"));
 
         if (red)
         {
@@ -193,6 +191,7 @@ void DummyLevelModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
     mRenderOutput.Connect(app);
     mUIOutput.Connect(app);
     mUIInput.Connect(app);
+    mTextureHandlerService.Connect(app);
 }
 
 } } // namespace Cluiche::AppFlow
