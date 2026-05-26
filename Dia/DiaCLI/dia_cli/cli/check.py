@@ -22,13 +22,20 @@ _SANITIZER_OUTPUT_NAMES = {
               help="Check tool to run: cppcheck (default) or sanitizer.")
 @click.option("--config", default="Asan", metavar="CONFIG",
               help="Sanitizer config: Asan or Ubsan (default: Asan). Only used with --tool=sanitizer.")
-def cli(tool, config):
+@click.option("--accept-baseline", "accept_baseline", is_flag=True, default=False,
+              help="Promote current findings.sarif to baseline.sarif.")
+def cli(tool, config, accept_baseline):
     """Run a code-quality check against the codebase.
 
     With no --tool, runs cppcheck and writes SARIF to Cluiche/out/check/findings.sarif.
     With --tool=sanitizer, builds and runs googletest under ASan or UBSan and
     writes findings to Cluiche/out/check/sanitizer-{asan|ubsan}.txt.
+    With --accept-baseline, promotes findings.sarif to baseline.sarif.
     """
+    if accept_baseline:
+        _accept_baseline()
+        return
+
     if tool is None or tool == "cppcheck":
         _run_cppcheck()
         return
@@ -38,6 +45,32 @@ def cli(tool, config):
     else:
         click.echo(f"ERROR: unknown tool '{tool}'. Known tools: cppcheck, sanitizer", err=True)
         raise SystemExit(2)
+
+
+def _accept_baseline() -> None:
+    repo_root = find_repo_root(__file__)
+    out_dir = repo_root / "Cluiche" / "out" / "check"
+    findings_path = out_dir / "findings.sarif"
+    baseline_path = out_dir / "baseline.sarif"
+
+    if not findings_path.exists():
+        click.echo(
+            "ERROR: findings.sarif not found. Run 'dia check' first to generate it.",
+            err=True,
+        )
+        raise SystemExit(1)
+
+    try:
+        data = json.loads(findings_path.read_text(encoding="utf-8"))
+        runs = data.get("runs", [])
+        finding_count = len(runs[0].get("results", [])) if runs else 0
+    except (json.JSONDecodeError, IndexError):
+        finding_count = 0
+
+    shutil.copy2(str(findings_path), str(baseline_path))
+    click.echo(
+        f"[dia check] Accepted {finding_count} finding(s) as baseline → {baseline_path}"
+    )
 
 
 def _run_cppcheck() -> None:

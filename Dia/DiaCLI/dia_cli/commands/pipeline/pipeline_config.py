@@ -7,7 +7,7 @@ from typing import Optional
 
 import toml
 
-VALID_STAGES = {"compile-code", "build-assets", "deploy"}
+VALID_STAGES = {"compile-code", "build-assets", "deploy", "static-analysis"}
 TOML_FILENAME = "pipeline.toml"
 
 _DEFAULT_BGFX_BACKENDS = ["dx11", "dx12", "vulkan"]

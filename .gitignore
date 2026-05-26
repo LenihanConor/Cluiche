@@ -278,9 +278,16 @@ Dia/DiaInput/Events/remove_clone.py
 
 # Generated non-binary output (PD-009)
 Cluiche/out/
+!Cluiche/out/check/baseline.sarif
+
+# Python bytecode
+*.pyc
+*.pyo
+__pycache__/
 
 # DiaEnv restore sentinels and downloaded JS/CSS deps
 .diaenv/deps/
+.diaenv/shaders/
 External/Alpine/
 External/DaisyUI/
 External/Tailwind/
