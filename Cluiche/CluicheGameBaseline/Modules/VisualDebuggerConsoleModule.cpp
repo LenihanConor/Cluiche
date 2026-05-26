@@ -18,10 +18,12 @@ VisualDebuggerConsoleModule::VisualDebuggerConsoleModule(const Dia::Core::String
 
 Dia::ApplicationFlow::StartResult VisualDebuggerConsoleModule::DoStart()
 {
-    if (!mVisualDebugger.Get())
+    if (!VisualDebuggerModule::GetStaticLayerManager())
         return Dia::ApplicationFlow::StartResult::kLoading;
     if (!mDebugUI.Get())
         return Dia::ApplicationFlow::StartResult::kLoading;
+
+    mConsole.Toggle();
 
     DIA_LOG_INFO("Debug", "VisualDebuggerConsoleModule started");
     return Dia::ApplicationFlow::StartResult::kReady;
@@ -34,14 +36,12 @@ void VisualDebuggerConsoleModule::DoUpdate(float /*dt*/)
     if (!mDebugUI.Get() || !mDebugUI.Get()->IsFrameActive())
         return;
 
-    auto* vdbg = mVisualDebugger.Get();
-    if (!vdbg)
+    auto* mgr = VisualDebuggerModule::GetStaticLayerManager();
+    if (!mgr)
         return;
 
-    // Use a default DebugFrameData for stats — primitives are tracked by the
-    // render path, not accessible here without coupling to RenderModule.
     static Dia::Graphics::DebugFrameData sEmptyFrameData;
-    mConsole.Render(vdbg->GetLayerManager(), sEmptyFrameData);
+    mConsole.Render(*mgr, sEmptyFrameData);
 }
 
 Dia::ApplicationFlow::StopResult VisualDebuggerConsoleModule::DoStop()

@@ -2,6 +2,7 @@
 #include "Modules/TestStages/TestResultsRegistry.h"
 
 #include "Modules/Physics2DModule.h"
+#include "Modules/VisualDebuggerModule.h"
 #include <DiaRigidBody2D/World/PhysicsWorld.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
@@ -32,26 +33,6 @@ Dia::ApplicationFlow::StartResult RigidBody2DTestModule::DoStart()
     SetupScene();
     RegisterCheckpoints();
 
-#ifdef DIA_DEBUG
-    if (auto* vdbg = mVisualDebugger.Get())
-    {
-        auto* world = mPhysics.Get()->GetWorld();
-        auto& mgr = vdbg->GetLayerManager();
-
-        mShapesDrawer     = std::make_unique<Dia::RigidBody2D::PhysicsShapesDrawer>(*world, mgr);
-        mVelocityDrawer   = std::make_unique<Dia::RigidBody2D::VelocityArrowsDrawer>(*world, mgr);
-        mContactsDrawer   = std::make_unique<Dia::RigidBody2D::ContactNormalsDrawer>(*world, mgr);
-        mAABBDrawer       = std::make_unique<Dia::RigidBody2D::PhysicsAABBDrawer>(*world, mgr);
-        mConstraintsDrawer = std::make_unique<Dia::RigidBody2D::ConstraintLinesDrawer>(*world, mgr);
-
-        mgr.Register(mShapesDrawer.get(),      10);
-        mgr.Register(mVelocityDrawer.get(),    11);
-        mgr.Register(mContactsDrawer.get(),    12);
-        mgr.Register(mAABBDrawer.get(),        13);
-        mgr.Register(mConstraintsDrawer.get(), 14);
-    }
-#endif
-
     const Dia::Core::StringCRC checkpoints[] = { Dia::Core::StringCRC("rigid_body.all_settled") };
     TestResultsRegistry::GetInstance().SetRunning(
         Dia::Core::StringCRC("RigidBody2DStage"), kBudgetFrames, checkpoints, 1);
@@ -62,6 +43,28 @@ Dia::ApplicationFlow::StartResult RigidBody2DTestModule::DoStart()
 
 void RigidBody2DTestModule::DoUpdate(float /*deltaTime*/)
 {
+#ifdef DIA_DEBUG
+    if (!mShapesDrawer)
+    {
+        if (auto* mgr = Cluiche::AppFlow::VisualDebuggerModule::GetStaticLayerManager())
+        {
+            auto* world = mPhysics.Get()->GetWorld();
+
+            mShapesDrawer     = std::make_unique<Dia::RigidBody2D::PhysicsShapesDrawer>(*world, *mgr);
+            mVelocityDrawer   = std::make_unique<Dia::RigidBody2D::VelocityArrowsDrawer>(*world, *mgr);
+            mContactsDrawer   = std::make_unique<Dia::RigidBody2D::ContactNormalsDrawer>(*world, *mgr);
+            mAABBDrawer       = std::make_unique<Dia::RigidBody2D::PhysicsAABBDrawer>(*world, *mgr);
+            mConstraintsDrawer = std::make_unique<Dia::RigidBody2D::ConstraintLinesDrawer>(*world, *mgr);
+
+            mgr->Register(mShapesDrawer.get(),      10);
+            mgr->Register(mVelocityDrawer.get(),    11);
+            mgr->Register(mContactsDrawer.get(),    12);
+            mgr->Register(mAABBDrawer.get(),        13);
+            mgr->Register(mConstraintsDrawer.get(), 14);
+        }
+    }
+#endif
+
     ++mFrameCount;
 
     TestResultsRegistry::GetInstance().SetActiveFrameCount(mFrameCount);
@@ -112,14 +115,13 @@ Dia::ApplicationFlow::StopResult RigidBody2DTestModule::DoStop()
     mGround = nullptr;
 
 #ifdef DIA_DEBUG
-    if (auto* vdbg = mVisualDebugger.Get())
+    if (auto* mgr = Cluiche::AppFlow::VisualDebuggerModule::GetStaticLayerManager())
     {
-        auto& mgr = vdbg->GetLayerManager();
-        if (mShapesDrawer)      { mgr.Unregister(mShapesDrawer->GetLayerName());      mShapesDrawer.reset(); }
-        if (mVelocityDrawer)    { mgr.Unregister(mVelocityDrawer->GetLayerName());    mVelocityDrawer.reset(); }
-        if (mContactsDrawer)    { mgr.Unregister(mContactsDrawer->GetLayerName());    mContactsDrawer.reset(); }
-        if (mAABBDrawer)        { mgr.Unregister(mAABBDrawer->GetLayerName());        mAABBDrawer.reset(); }
-        if (mConstraintsDrawer) { mgr.Unregister(mConstraintsDrawer->GetLayerName()); mConstraintsDrawer.reset(); }
+        if (mShapesDrawer)      { mgr->Unregister(mShapesDrawer->GetLayerName());      mShapesDrawer.reset(); }
+        if (mVelocityDrawer)    { mgr->Unregister(mVelocityDrawer->GetLayerName());    mVelocityDrawer.reset(); }
+        if (mContactsDrawer)    { mgr->Unregister(mContactsDrawer->GetLayerName());    mContactsDrawer.reset(); }
+        if (mAABBDrawer)        { mgr->Unregister(mAABBDrawer->GetLayerName());        mAABBDrawer.reset(); }
+        if (mConstraintsDrawer) { mgr->Unregister(mConstraintsDrawer->GetLayerName()); mConstraintsDrawer.reset(); }
     }
 #endif
 
@@ -135,9 +137,12 @@ void RigidBody2DTestModule::SetupScene()
 {
     auto* world = mPhysics.Get()->GetWorld();
 
-    // Ground: static circle at y=-10 with large radius acting as floor
-    mGroundTransform.SetLocalPosition(Dia::Maths::Vector2D(3.0f, -10.0f));
-    mGroundShape = Dia::Geometry2D::Circle(10.0f, Dia::Maths::Vector2D(0.0f, 0.0f));
+    // Renderer uses Y-UP (0=bottom, 1000=top). Gentle gravity so the fall is watchable.
+    world->SetGravity(Dia::Maths::Vector2D(0.0f, -120.0f));
+
+    // Ground: huge static circle far below so its top surface is nearly flat at Y≈200
+    mGroundTransform.SetLocalPosition(Dia::Maths::Vector2D(700.0f, -4800.0f));
+    mGroundShape = Dia::Geometry2D::Circle(5000.0f, Dia::Maths::Vector2D(0.0f, 0.0f));
 
     Dia::RigidBody2D::RigidBodyDef groundDef;
     groundDef.id = Dia::Core::StringCRC("ground");
@@ -149,14 +154,14 @@ void RigidBody2DTestModule::SetupScene()
     groundDef.friction = 0.5f;
     mGround = world->AddRigidBody(groundDef);
 
-    // 10 circles: 2 rows of 5, positions at y=5 and y=8
+    // 10 circles: 2 rows of 5, upper portion of screen (high Y = top in Y-UP)
     for (unsigned int i = 0; i < kCircleCount; ++i)
     {
-        float col = static_cast<float>(i % 5) + 1.0f;
-        float row = (i < 5) ? 5.0f : 8.0f;
+        float col = 400.0f + static_cast<float>(i % 5) * 120.0f;
+        float row = (i < 5) ? 600.0f : 750.0f;
 
         mCircleTransforms[i].SetLocalPosition(Dia::Maths::Vector2D(col, row));
-        mCircleShapes[i] = Dia::Geometry2D::Circle(0.5f, Dia::Maths::Vector2D(0.0f, 0.0f));
+        mCircleShapes[i] = Dia::Geometry2D::Circle(30.0f, Dia::Maths::Vector2D(0.0f, 0.0f));
 
         Dia::RigidBody2D::RigidBodyDef circleDef;
         circleDef.id = Dia::Core::StringCRC("circle");

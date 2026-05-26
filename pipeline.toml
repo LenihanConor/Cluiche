@@ -43,7 +43,7 @@ project = "Cluiche/CluicheTest/CluicheTest.vcxproj"
 stages = ["compile-code", "build-assets", "deploy"]
 app_name = "CluicheTest"
 catalogue_manifest = "Cluiche/Assets/CluicheTest/assets.catalogue.json"
-asset_stages = ["stage.global", "stage.dummy_stage", "stage.rigidbody2d_stage"]
+asset_stages = ["stage.global", "stage.dummy_stage", "stage.rigid_body2d_stage"]
 
 [targets.cluichetest.build_deps]
 protobuf     = true

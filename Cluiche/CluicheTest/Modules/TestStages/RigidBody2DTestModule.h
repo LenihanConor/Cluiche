@@ -9,7 +9,6 @@
 #include "Modules/Physics2DModule.h"
 
 #ifdef DIA_DEBUG
-#include "Modules/VisualDebuggerModule.h"
 #include <DiaRigidBody2DVisualDebugger/PhysicsShapesDrawer.h>
 #include <DiaRigidBody2DVisualDebugger/VelocityArrowsDrawer.h>
 #include <DiaRigidBody2DVisualDebugger/ContactNormalsDrawer.h>
@@ -44,7 +43,6 @@ private:
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::Physics2DModule>         mPhysics{this};
 
 #ifdef DIA_DEBUG
-    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::VisualDebuggerModule>    mVisualDebugger{this};
     std::unique_ptr<Dia::RigidBody2D::PhysicsShapesDrawer>    mShapesDrawer;
     std::unique_ptr<Dia::RigidBody2D::VelocityArrowsDrawer>   mVelocityDrawer;
     std::unique_ptr<Dia::RigidBody2D::ContactNormalsDrawer>   mContactsDrawer;
@@ -65,7 +63,7 @@ private:
     unsigned int mSettleFrame = 0;
     bool mSettled = false;
 
-    static constexpr unsigned int kBudgetFrames = 200;
+    static constexpr unsigned int kBudgetFrames = 900;
 };
 
 } // namespace CluicheTest

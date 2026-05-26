@@ -1,10 +1,7 @@
 #pragma once
 #include <DiaApplicationFlow/Module.h>
-#include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaObservation/Health/HealthReporterBase.h>
-
-namespace Cluiche { namespace AppFlow { class RenderModule; } }
 
 namespace Cluiche { namespace AppFlow {
 
@@ -26,7 +23,6 @@ private:
         Dia::Core::StringCRC GetReporterName() const override { return Dia::Core::StringCRC("DebugUIModule"); }
     };
 
-    Dia::ApplicationFlow::ModuleRef<RenderModule> mRender{this, Dia::Core::StringCRC("RenderModule")};
     bool mFrameActive = false;
     HealthReporter mHealth;
 };

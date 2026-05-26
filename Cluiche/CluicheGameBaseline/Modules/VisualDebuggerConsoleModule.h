@@ -26,8 +26,7 @@ protected:
     Dia::ApplicationFlow::StopResult DoStop() override;
 
 private:
-    Dia::ApplicationFlow::ModuleRef<VisualDebuggerModule> mVisualDebugger{this};
-    Dia::ApplicationFlow::ModuleRef<DebugUIModule>        mDebugUI{this, Dia::Core::StringCRC("DebugUI")};
+    Dia::ApplicationFlow::ModuleRef<DebugUIModule> mDebugUI{this, Dia::Core::StringCRC("DebugUI")};
 
     Dia::Debug::DiaVisualDebuggerConsole mConsole;
 };

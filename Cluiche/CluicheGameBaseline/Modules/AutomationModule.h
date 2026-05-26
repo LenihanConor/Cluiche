@@ -23,6 +23,8 @@ public:
 
     Dia::Automation::AutomationService* GetService() { return mService.Get(); }
 
+    static AutomationModule* GetStatic() { return sInstance; }
+
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
     void DoUpdate(float dt) override;
@@ -30,6 +32,7 @@ protected:
 
 private:
     Dia::Core::UniquePtr<Dia::Automation::AutomationService> mService;
+    static AutomationModule* sInstance;
 };
 
 } } // namespace Cluiche::AppFlow

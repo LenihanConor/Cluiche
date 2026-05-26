@@ -104,7 +104,7 @@ void DummyLevelModule::DoUpdate(float dt)
         static float s_elapsed = 0.0f;
         s_elapsed += dt;
         const float kRadius = 60.0f;
-        Dia::Maths::Vector2D center(100.0f, 100.0f);
+        Dia::Maths::Vector2D center(50.0f, kScreenHeight - 50.0f);
         Dia::Maths::Vector2D dynamic(
             center.x + std::cos(s_elapsed) * kRadius,
             center.y + std::sin(s_elapsed) * kRadius);

@@ -49,6 +49,7 @@ bool RegisterPathAliasesFromDiagame(const char* diagamePath)
         if (*p == '/' || *p == '\\')
             lastSlash = p;
     }
+
     if (lastSlash)
     {
         unsigned int len = static_cast<unsigned int>(lastSlash - diagamePath) + 1; // include the slash

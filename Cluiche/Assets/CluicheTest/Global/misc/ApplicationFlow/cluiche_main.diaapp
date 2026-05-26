@@ -115,14 +115,6 @@
                     "dependencies": [ "ObservationModule", "DebugServerHostModule" ],
                     "reads": [],
                     "writes": []
-                },
-                {
-                    "instance_id": "TestStageHUDModule",
-                    "type_id": "TestStageHUDModule",
-                    "stages": [ "DummyStage", "RigidBody2DStage" ],
-                    "dependencies": [ "AutomationModule" ],
-                    "reads": [],
-                    "writes": []
                 }
             ]
         },
@@ -179,10 +171,26 @@
                     "writes": []
                 },
                 {
+                    "instance_id": "TestStageHUDModule",
+                    "type_id": "TestStageHUDModule",
+                    "stages": [ "DummyStage", "RigidBody2DStage" ],
+                    "dependencies": [ "DebugUI" ],
+                    "reads": [],
+                    "writes": []
+                },
+                {
+                    "instance_id": "VisualDebuggerConsoleModule",
+                    "type_id": "VisualDebuggerConsoleModule",
+                    "stages": [ "RigidBody2DStage" ],
+                    "dependencies": [ "DebugUI" ],
+                    "reads": [],
+                    "writes": []
+                },
+                {
                     "instance_id": "RenderModule",
                     "type_id": "RenderModule",
                     "stages": [ "all" ],
-                    "dependencies": [ "DebugUI" ],
+                    "dependencies": [ "DebugUI", "TestStageHUDModule", "VisualDebuggerConsoleModule" ],
                     "reads": [ "SimToRender" ],
                     "writes": []
                 }

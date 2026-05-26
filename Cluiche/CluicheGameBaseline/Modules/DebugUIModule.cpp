@@ -7,8 +7,6 @@
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
 
-#include "Modules/RenderModule.h"
-
 namespace Cluiche { namespace AppFlow {
 
 const Dia::Core::StringCRC DebugUIModule::kTypeId("DebugUIModule");
@@ -36,12 +34,6 @@ Dia::ApplicationFlow::StartResult DebugUIModule::DoStart()
 
 void DebugUIModule::DoUpdate(float dt)
 {
-    if (mRender.Get() == nullptr)
-    {
-        mFrameActive = false;
-        return;
-    }
-
     Dia::ImGui::NewFrame(dt);
     mFrameActive = true;
 }

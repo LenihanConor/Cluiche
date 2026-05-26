@@ -1,7 +1,9 @@
 #include "Modules/TestStages/TestStageHUDModule.h"
 #include "Modules/TestStages/TestResultsRegistry.h"
+#include "Modules/AutomationModule.h"
 
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
+#include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaAutomation/AutomationService.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
@@ -20,7 +22,7 @@ TestStageHUDModule::TestStageHUDModule(const Dia::Core::StringCRC& instanceId)
 
 Dia::ApplicationFlow::StartResult TestStageHUDModule::DoStart()
 {
-    if (!mAutomation.Get() || !mAutomation.Get()->GetService())
+    if (!Cluiche::AppFlow::AutomationModule::GetStatic())
         return Dia::ApplicationFlow::StartResult::kLoading;
     if (!mDebugUI.Get())
         return Dia::ApplicationFlow::StartResult::kLoading;
@@ -35,7 +37,8 @@ void TestStageHUDModule::DoUpdate(float /*dt*/)
     if (!mDebugUI.Get() || !mDebugUI.Get()->IsFrameActive())
         return;
 
-    auto* svc = mAutomation.Get() ? mAutomation.Get()->GetService() : nullptr;
+    auto* automationModule = Cluiche::AppFlow::AutomationModule::GetStatic();
+    auto* svc = automationModule ? automationModule->GetService() : nullptr;
     if (svc && svc->IsHeartbeatEnabled())
         return;
 
