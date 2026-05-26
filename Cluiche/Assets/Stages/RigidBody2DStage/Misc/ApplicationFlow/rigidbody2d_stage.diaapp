@@ -11,16 +11,14 @@
                     "type_id": "Physics2DModule",
                     "stages": [ "RigidBody2DStage" ],
                     "dependencies": [],
-                    "reads": [],
-                    "writes": []
+                    "channels": []
                 },
                 {
                     "instance_id": "RigidBody2DTestModule",
                     "type_id": "RigidBody2DTestModule",
                     "stages": [ "RigidBody2DStage" ],
                     "dependencies": [ "AutomationModule", "Physics2DModule" ],
-                    "reads": [],
-                    "writes": []
+                    "channels": []
                 }
             ]
         },
@@ -34,8 +32,9 @@
                     "type_id": "VisualDebuggerModule",
                     "stages": [ "RigidBody2DStage" ],
                     "dependencies": [],
-                    "reads": [],
-                    "writes": [ "SimToRender" ]
+                    "channels": [
+                        { "id": "SimToRender", "role": "writes" }
+                    ]
                 }
             ]
         }

@@ -11,8 +11,7 @@
                     "type_id": "DummyUIPageModule",
                     "stages": [ "DummyStage" ],
                     "dependencies": [ "UIModule" ],
-                    "reads": [],
-                    "writes": []
+                    "channels": []
                 }
             ]
         },
@@ -26,16 +25,19 @@
                     "type_id": "DummyLevelModule",
                     "stages": [ "DummyStage" ],
                     "dependencies": [ "TimeServerModule", "InputStreamModule" ],
-                    "reads": [ "UIToSim" ],
-                    "writes": [ "SimToRender", "SimToMain" ]
+                    "channels": [
+                        { "id": "UIToSim",              "role": "reads" },
+                        { "id": "SimToRender",          "role": "writes" },
+                        { "id": "SimToMain",            "role": "writes" },
+                        { "id": "KernelTextureHandler", "role": "consumes" }
+                    ]
                 },
                 {
                     "instance_id": "EntityModule",
                     "type_id": "EntityModule",
                     "stages": [ "DummyStage" ],
                     "dependencies": [],
-                    "reads": [],
-                    "writes": []
+                    "channels": []
                 }
             ]
         }
