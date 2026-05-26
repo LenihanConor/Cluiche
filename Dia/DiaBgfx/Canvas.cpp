@@ -92,6 +92,8 @@ namespace Dia
             , mSize(0.0f, 0.0f)
             , mRendererType(RendererType::Direct3D11)
             , mInitialised(false)
+            , mConfigured(false)
+            , mShaderRoot(nullptr)
             , mSpriteProgram(nullptr)
             , mDebugProgram(nullptr)
             , mUIProgram(nullptr)
@@ -102,19 +104,8 @@ namespace Dia
 
         Canvas::~Canvas()
         {
-            if (mInitialised)
-            {
-                delete mUIOverlayRenderer;  mUIOverlayRenderer = nullptr;
-                delete mDebugRenderer;      mDebugRenderer     = nullptr;
-                delete mSpriteRenderer;     mSpriteRenderer    = nullptr;
-
-                delete mUIProgram;          mUIProgram         = nullptr;
-                delete mDebugProgram;       mDebugProgram      = nullptr;
-                delete mSpriteProgram;      mSpriteProgram     = nullptr;
-
-                bgfx::shutdown();
-                mInitialised = false;
-            }
+            DIA_ASSERT(!mInitialised,
+                "Canvas destroyed while still initialised — call SetActiveContext(false) first");
         }
 
         void Canvas::AttachToNativeWindow(Dia::Window::SystemHandle hwnd,
@@ -128,10 +119,9 @@ namespace Dia
         void Canvas::Initialize(const Dia::Graphics::ICanvas::Settings& settings)
         {
             DIA_ASSERT(mHwnd != nullptr, "Canvas::Initialize — AttachToNativeWindow not called");
-            DIA_ASSERT(!mInitialised, "Canvas::Initialize called twice");
+            DIA_ASSERT(!mConfigured, "Canvas::Initialize called twice");
 
             const CanvasSettings* cs = static_cast<const CanvasSettings*>(&settings);
-            // Use CanvasSettings fields if the caller passed a CanvasSettings; otherwise use defaults
             const RendererType rendererType = cs ? cs->rendererType : RendererType::Direct3D11;
             const Dia::Maths::Vector2D initSize = cs ? cs->initialSize : mSize;
             const char* shaderRoot = cs ? cs->cookedShaderRoot : "Cluiche/out/cluichetest/shaders";
@@ -140,24 +130,40 @@ namespace Dia
                 mSize = initSize;
 
             mRendererType = rendererType;
+            mShaderRoot = shaderRoot;
+            mConfigured = true;
 
-            // --- bgfx::setPlatformData MUST be called before bgfx::init on Windows ---
-            bgfx::PlatformData pd{};
-            pd.nwh = mHwnd;
-            bgfx::setPlatformData(pd);
+            DIA_LOG_INFO("DiaBgfx", "Canvas::Initialize — configured (%s, %.0fx%.0f), deferring bgfx::init to render thread",
+                         BackendSubdir(rendererType), mSize.X(), mSize.Y());
+        }
+
+        void Canvas::DeferredInit()
+        {
+            DIA_ASSERT(mConfigured, "Canvas::DeferredInit — not configured");
+            DIA_ASSERT(!mInitialised, "Canvas::DeferredInit — already initialised");
+
+            DIA_LOG_INFO("DiaBgfx", "Canvas::DeferredInit — starting bgfx::init on render thread (hwnd=%p, %ux%u)",
+                         mHwnd, static_cast<uint32_t>(mSize.X()), static_cast<uint32_t>(mSize.Y()));
 
             bgfx::Init init;
-            init.type         = ToBgfxRendererType(rendererType);
+            init.type         = ToBgfxRendererType(mRendererType);
+            init.platformData.nwh = mHwnd;
             init.resolution.width  = static_cast<uint32_t>(mSize.X());
             init.resolution.height = static_cast<uint32_t>(mSize.Y());
             init.resolution.reset  = BGFX_RESET_VSYNC;
             init.callback = &sCallback;
 
+            DIA_LOG_INFO("DiaBgfx", "Canvas::DeferredInit — calling bgfx::init (type=%d)...",
+                         static_cast<int>(init.type));
+
             if (!bgfx::init(init))
             {
-                DIA_LOG_ERROR("DiaBgfx", "Canvas::Initialize — bgfx::init failed");
+                DIA_LOG_ERROR("DiaBgfx", "Canvas::DeferredInit — bgfx::init failed (renderer type %d)",
+                              static_cast<int>(init.type));
                 return;
             }
+
+            DIA_LOG_INFO("DiaBgfx", "Canvas::DeferredInit — bgfx::init succeeded");
 
             bgfx::setViewClear(kEntityViewId, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH,
                                0x303030FFu, 1.0f, 0);
@@ -165,24 +171,24 @@ namespace Dia
             bgfx::setViewClear(kUIViewId,     BGFX_CLEAR_NONE);
             bgfx::setViewClear(kImGuiViewId,  BGFX_CLEAR_NONE);
 
-            const char* backend = BackendSubdir(rendererType);
+            const char* backend = BackendSubdir(mRendererType);
 
             mSpriteProgram = new ShaderProgram();
-            if (!mSpriteProgram->Load(shaderRoot, backend, "sprite", "sprite"))
+            if (!mSpriteProgram->Load(mShaderRoot, backend, "sprite", "sprite"))
             {
-                DIA_LOG_ERROR("DiaBgfx", "Canvas::Initialize — failed to load sprite shader");
+                DIA_LOG_ERROR("DiaBgfx", "Canvas::DeferredInit — failed to load sprite shader");
             }
 
             mDebugProgram = new ShaderProgram();
-            if (!mDebugProgram->Load(shaderRoot, backend, "debug", "debug"))
+            if (!mDebugProgram->Load(mShaderRoot, backend, "debug", "debug"))
             {
-                DIA_LOG_ERROR("DiaBgfx", "Canvas::Initialize — failed to load debug shader");
+                DIA_LOG_ERROR("DiaBgfx", "Canvas::DeferredInit — failed to load debug shader");
             }
 
             mUIProgram = new ShaderProgram();
-            if (!mUIProgram->Load(shaderRoot, backend, "ui_overlay", "ui_overlay"))
+            if (!mUIProgram->Load(mShaderRoot, backend, "ui_overlay", "ui_overlay"))
             {
-                DIA_LOG_ERROR("DiaBgfx", "Canvas::Initialize — failed to load ui_overlay shader");
+                DIA_LOG_ERROR("DiaBgfx", "Canvas::DeferredInit — failed to load ui_overlay shader");
             }
 
             mSpriteRenderer    = new SpriteRenderer(kEntityViewId, mSpriteProgram);
@@ -192,35 +198,64 @@ namespace Dia
             PropagateCanvasSize();
 
             mInitialised = true;
-            DIA_LOG_INFO("DiaBgfx", "Canvas::Initialize complete (%s, %.0fx%.0f)",
+            DIA_LOG_INFO("DiaBgfx", "Canvas::DeferredInit complete (%s, %.0fx%.0f)",
                          backend, mSize.X(), mSize.Y());
         }
 
         void Canvas::SetCanvasSize(const Dia::Maths::Vector2D& size)
         {
             mSize = size;
+            if (!mInitialised)
+                return;
             const uint32_t w = static_cast<uint32_t>(size.X());
             const uint32_t h = static_cast<uint32_t>(size.Y());
             bgfx::reset(w, h, BGFX_RESET_VSYNC);
             PropagateCanvasSize();
         }
 
-        void Canvas::SetActiveContext(bool /*active*/)
+        void Canvas::SetActiveContext(bool active)
         {
-            // bgfx is multi-threaded internally; no GL context concept.
+            if (active && !mInitialised && mConfigured)
+            {
+                DeferredInit();
+            }
+            else if (!active && mInitialised)
+            {
+                // RenderPU is releasing us. Shut down on this thread (same
+                // thread that called bgfx::init via DeferredInit).
+
+                // ImGui renderer must be destroyed before bgfx::shutdown.
+#ifdef DIA_DEBUG
+                if (Dia::ImGui::GetManager().GetBackend() != nullptr)
+                    Dia::ImGui::Shutdown();
+#endif
+
+                delete mUIOverlayRenderer;  mUIOverlayRenderer = nullptr;
+                delete mDebugRenderer;      mDebugRenderer     = nullptr;
+                delete mSpriteRenderer;     mSpriteRenderer    = nullptr;
+                delete mUIProgram;          mUIProgram         = nullptr;
+                delete mDebugProgram;       mDebugProgram      = nullptr;
+                delete mSpriteProgram;      mSpriteProgram     = nullptr;
+
+                bgfx::shutdown();
+                mInitialised = false;
+            }
         }
 
         void Canvas::StartFrame(const Dia::Graphics::FrameData& /*nextFrame*/)
         {
+            if (!mInitialised)
+            {
+                if (mConfigured)
+                    DeferredInit();
+                if (!mInitialised)
+                    return;
+            }
+
             bgfx::touch(kEntityViewId);
             bgfx::touch(kDebugViewId);
             bgfx::touch(kUIViewId);
             bgfx::touch(kImGuiViewId);
-
-#ifdef DIA_DEBUG
-            if (Dia::ImGui::GetManager().GetBackend() != nullptr)
-                Dia::ImGui::NewFrame(0.0f);
-#endif
         }
 
         void Canvas::ProcessFrame(const Dia::Graphics::FrameData& nextFrame)
@@ -244,6 +279,9 @@ namespace Dia
 
         void Canvas::EndFrame(const Dia::Graphics::FrameData& /*nextFrame*/)
         {
+            if (!mInitialised)
+                return;
+
 #ifdef DIA_DEBUG
             if (Dia::ImGui::GetManager().GetBackend() != nullptr)
                 Dia::ImGui::Render();

@@ -37,6 +37,10 @@ namespace Dia
         // Implements ICanvas using bgfx. Owns three sub-renderers and three
         // ShaderProgram instances. Call AttachToNativeWindow before Initialize.
         // Per RB-004: implements ICanvas only — not IWindow or IInputSource.
+        //
+        // Threading: bgfx requires all API calls from the thread that called
+        // bgfx::init(). Initialize() stores settings; actual bgfx::init() is
+        // deferred to the first StartFrame() call (which runs on RenderPU).
         class Canvas : public Dia::Graphics::ICanvas
         {
         public:
@@ -58,14 +62,19 @@ namespace Dia
             Dia::UI::IUIRenderOverlay* GetUIRenderOverlay();
 
             unsigned short GetImGuiViewId() const { return kImGuiViewId; }
+            bool IsInitialised() const { return mInitialised; }
 
         private:
+            void DeferredInit();
             void PropagateCanvasSize();
 
             Dia::Window::SystemHandle mHwnd;
             Dia::Maths::Vector2D      mSize;
             RendererType              mRendererType;
             bool                      mInitialised;
+            bool                      mConfigured;
+
+            const char*               mShaderRoot;
 
             static constexpr unsigned short kEntityViewId = 0;
             static constexpr unsigned short kDebugViewId  = 1;

@@ -101,7 +101,7 @@ Dia::ApplicationFlow::StartResult KernelModule::DoStart()
 
 #ifdef DIA_DEBUG
         mBgfxImGuiBackend = new Dia::Bgfx::BgfxImGuiBackend();
-        mBgfxImGuiBackend->Configure(mBgfxCanvas->GetImGuiViewId(), hwnd);
+        mBgfxImGuiBackend->Configure(mBgfxCanvas->GetImGuiViewId(), hwnd, mBgfxCanvas);
         Dia::ImGui::SetBackend(mBgfxImGuiBackend);
         Dia::ImGui::Init();
 #endif
@@ -174,9 +174,10 @@ Dia::ApplicationFlow::StopResult KernelModule::DoStop()
     sTextureHandler = nullptr;
 
 #ifdef DIA_DEBUG
+    // ImGui shutdown is handled by Canvas::SetActiveContext(false) on RenderPU,
+    // which runs imguiDestroy() before bgfx::shutdown(). We only delete the object here.
     if (mBgfxImGuiBackend != nullptr)
     {
-        Dia::ImGui::Shutdown();
         delete mBgfxImGuiBackend;
         mBgfxImGuiBackend = nullptr;
     }

@@ -9,6 +9,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
+#include "DiaBgfx/Canvas.h"
 #include "DiaBgfx/Imgui/BgfxImGuiRenderer.h"
 #include <DiaSFML/Win32WndProcChain.h>
 
@@ -25,8 +26,10 @@ namespace Dia
     {
         BgfxImGuiBackend::BgfxImGuiBackend()
             : mHwnd(nullptr)
+            , mCanvas(nullptr)
             , mViewId(255)
             , mInitialised(false)
+            , mRendererCreated(false)
         {}
 
         BgfxImGuiBackend::~BgfxImGuiBackend()
@@ -35,10 +38,11 @@ namespace Dia
                 Shutdown();
         }
 
-        void BgfxImGuiBackend::Configure(unsigned short viewId, Dia::Window::SystemHandle hwnd)
+        void BgfxImGuiBackend::Configure(unsigned short viewId, Dia::Window::SystemHandle hwnd, Canvas* canvas)
         {
             mViewId = viewId;
             mHwnd   = hwnd;
+            mCanvas = canvas;
         }
 
         void BgfxImGuiBackend::Init()
@@ -51,10 +55,10 @@ namespace Dia
 
             ImGui_ImplWin32_Init(reinterpret_cast<HWND>(mHwnd));
 
-            imguiCreate(18.0f);
-
             Dia::SFML::Win32WndProcChain::Install(mHwnd, &BgfxImGuiBackend::WndProcThunk, this);
 
+            // imguiCreate() deferred to first NewFrame — requires bgfx to be initialised,
+            // which happens on RenderPU's thread via Canvas::DeferredInit().
             mInitialised = true;
         }
 
@@ -64,9 +68,10 @@ namespace Dia
                 return;
 
             Dia::SFML::Win32WndProcChain::Uninstall(mHwnd);
-            imguiDestroy();
+            if (mRendererCreated)
+                imguiDestroy();
             ImGui_ImplWin32_Shutdown();
-            // DiaImGuiManager owns the context; do not destroy it here.
+            mRendererCreated = false;
             mInitialised = false;
         }
 
@@ -75,29 +80,30 @@ namespace Dia
             if (!mInitialised)
                 return;
 
+            if (!mCanvas || !mCanvas->IsInitialised())
+                return;
+
+            if (!mRendererCreated)
+            {
+                imguiCreate(18.0f);
+                mRendererCreated = true;
+            }
+
             ImGui_ImplWin32_NewFrame();
 
             ImGuiIO& io = ::ImGui::GetIO();
-            imguiBeginFrame(
-                (int32_t)io.MousePos.x,
-                (int32_t)io.MousePos.y,
-                (io.MouseDown[0] ? 0x01u : 0u) |
-                (io.MouseDown[1] ? 0x02u : 0u) |
-                (io.MouseDown[2] ? 0x04u : 0u),
-                0,          // scroll handled by imgui_impl_win32
+            imguiBeginFrameNoInput(
                 (uint16_t)io.DisplaySize.x,
                 (uint16_t)io.DisplaySize.y,
-                -1,
                 mViewId);
-            // imguiBeginFrame calls ImGui::NewFrame() internally
         }
 
         void BgfxImGuiBackend::Render()
         {
-            if (!mInitialised)
+            if (!mRendererCreated)
                 return;
 
-            imguiEndFrame();  // calls ImGui::Render() + bgfx draw submission
+            imguiEndFrame();
         }
 
         /*static*/ bool BgfxImGuiBackend::WndProcThunk(void* hwnd, unsigned int msg,

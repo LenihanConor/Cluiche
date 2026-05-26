@@ -13,6 +13,8 @@ namespace Dia
 {
     namespace Bgfx
     {
+        class Canvas;
+
         class BgfxImGuiBackend : public Dia::ImGui::IImGuiBackend
         {
         public:
@@ -21,7 +23,8 @@ namespace Dia
 
             // Call before Init. viewId must be the last bgfx view (drawn on top).
             // hwnd is the Win32 window handle (from DiaSFML::Window::GetSystemHandle()).
-            void Configure(unsigned short viewId, Dia::Window::SystemHandle hwnd);
+            // canvas pointer used to defer renderer creation until bgfx is initialised.
+            void Configure(unsigned short viewId, Dia::Window::SystemHandle hwnd, Canvas* canvas);
 
             // IImGuiBackend
             void Init()             override;
@@ -37,8 +40,10 @@ namespace Dia
 
         private:
             Dia::Window::SystemHandle mHwnd;
+            Canvas*                   mCanvas;
             unsigned short            mViewId;
             bool                      mInitialised;
+            bool                      mRendererCreated;
         };
 
     } // namespace Bgfx

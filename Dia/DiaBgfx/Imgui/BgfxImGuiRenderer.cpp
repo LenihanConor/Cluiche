@@ -285,6 +285,21 @@ struct BgfxImGuiContext
         ImGui::NewFrame();
     }
 
+    void beginFrameNoInput(int width, int height, bgfx::ViewId viewId)
+    {
+        m_viewId = viewId;
+
+        ImGuiIO& io = ImGui::GetIO();
+        io.DisplaySize = ImVec2((float)width, (float)height);
+
+        const int64_t now       = bx::getHPCounter();
+        const int64_t frameTime = now - m_last;
+        m_last = now;
+        io.DeltaTime = float(frameTime / double(bx::getHPFrequency()));
+
+        ImGui::NewFrame();
+    }
+
     void endFrame()
     {
         ImGui::Render();
@@ -308,6 +323,11 @@ void imguiBeginFrame(int32_t mx, int32_t my, uint8_t button, int32_t scroll,
                      uint16_t width, uint16_t height, int inputChar, bgfx::ViewId view)
 {
     s_ctx.beginFrame(mx, my, button, scroll, width, height, inputChar, view);
+}
+
+void imguiBeginFrameNoInput(uint16_t width, uint16_t height, bgfx::ViewId view)
+{
+    s_ctx.beginFrameNoInput(width, height, view);
 }
 
 void imguiEndFrame()
