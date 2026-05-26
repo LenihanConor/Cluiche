@@ -19,6 +19,11 @@
 #include <DiaBgfx/Canvas.h>
 #include <DiaWindow/SystemHandle.h>
 
+#ifdef DIA_DEBUG
+#include <DiaBgfx/Imgui/BgfxImGuiBackend.h>
+#include <DiaImGui/DiaImGuiManager.h>
+#endif
+
 #include <cstdlib>
 
 namespace Cluiche { namespace AppFlow {
@@ -93,6 +98,13 @@ Dia::ApplicationFlow::StartResult KernelModule::DoStart()
 
         Dia::SFML::TextureHandler::SetBgfxActive(true);
         mCanvas = mBgfxCanvas;
+
+#ifdef DIA_DEBUG
+        mBgfxImGuiBackend = new Dia::Bgfx::BgfxImGuiBackend();
+        mBgfxImGuiBackend->Configure(mBgfxCanvas->GetImGuiViewId(), hwnd);
+        Dia::ImGui::SetBackend(mBgfxImGuiBackend);
+        Dia::ImGui::Init();
+#endif
     }
 
     // Publish sCanvas AFTER deactivating the GL context. RenderModule polls this
@@ -160,6 +172,15 @@ Dia::ApplicationFlow::StopResult KernelModule::DoStop()
 
     sCanvas         = nullptr;
     sTextureHandler = nullptr;
+
+#ifdef DIA_DEBUG
+    if (mBgfxImGuiBackend != nullptr)
+    {
+        Dia::ImGui::Shutdown();
+        delete mBgfxImGuiBackend;
+        mBgfxImGuiBackend = nullptr;
+    }
+#endif
 
     if (mBgfxCanvas != nullptr)
     {

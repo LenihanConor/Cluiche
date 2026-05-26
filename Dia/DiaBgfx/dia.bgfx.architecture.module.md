@@ -13,8 +13,9 @@ parent_module_id: dia.root
 
 summary: >
   bgfx-based rendering backend implementing ICanvas for sprites, debug primitives,
-  and UI overlay compositing. Provides Canvas, SpriteRenderer, DebugRenderer,
-  UIOverlayRenderer, BgfxTextureHandle, and ShaderProgram.
+  UI overlay compositing, and ImGui debug overlays. Provides Canvas, SpriteRenderer,
+  DebugRenderer, UIOverlayRenderer, BgfxTextureHandle, ShaderProgram, and
+  BgfxImGuiBackend (DIA_DEBUG only).
 
 intent: >
   Provide a renderer-agnostic GPU abstraction built on bgfx, replacing DiaSFML's
@@ -29,7 +30,6 @@ responsibilities:
 
 non_responsibilities:
   - Window creation or input handling (owned by DiaSFML::RenderWindow, then SFML::Window)
-  - ImGui backend (owned by diabgfx-imgui-backend feature / BgfxImGuiBackend)
   - Asset discovery or loading orchestration (owned by DiaSFML::TextureHandler)
   - Phase 2 3D rendering (DiaMesh3D, DiaRig3D, DiaSkinning3D)
 
@@ -52,6 +52,7 @@ public_api:
     - UIOverlayRenderer
     - BgfxTextureHandle
     - ShaderProgram
+    - BgfxImGuiBackend  # DIA_DEBUG only
 
 dependencies:
   required:

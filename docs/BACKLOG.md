@@ -27,7 +27,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | Feature | Spec | System | Notes |
 |---------|------|--------|-------|
 | per-app-bin-layout | [per-app-bin-layout.md](specs/features/dia/diapipeline/per-app-bin-layout.md) | DiaPipeline ✅ | |
-| diabgfx-imgui-backend | [imgui-backend.md](specs/features/dia/diabgfx/imgui-backend.md) | RenderBackend (Phase 1) | **Blocked**: requires `External/bgfx/examples/common/imgui/` — run `dia env setup --dep bgfx` with examples flag to stage. `canvas-parity` Done (2026-05-25). |
+| ~~diabgfx-imgui-backend~~ | **Done** (2026-05-25) — BgfxImGuiBackend wired; SFML path regression-free; bgfx path verified on machine with direct GPU. | | |
 | ~~ToolbarPanelSwitcher~~ | **Done** (2026-05-22) — full-name pills + `⋯ +N` overflow dropdown, `ProjectContextButton` moved right. | | |
 
 ---
@@ -118,6 +118,6 @@ Research complete: [docs/research/static_cpp_bug/](research/static_cpp_bug/). Bu
 |------|-------|
 | DiaAssetRuntime — Hot reload path | Asset Lifecycle Management adds `Failed → Loading` retry but no `Loaded → Loading → Loaded` path. Still need a `ReloadAsset(assetId)` for live iteration (future feature on top of lifecycle management). |
 | `Dia::Core::Blackboard` — general-purpose key-value store | Identified during DiaStateMachine research; useful for AI, animation, gameplay. Needs `/spec-feature` under DiaCore. |
-| Phase 3d — Physics body serialization | DiaRigidBody2D / DiaSoftBody2D body definitions — DiaAssetCatalogue ✅ now unblocked |
+| DiaSoftBody2D serializers | Body definition types not yet covered — `DiaReflect` ships Phase 4g (`DiaRigidBody2DSerializers.h`) but Phase 4 plan explicitly excludes DiaSoftBody2D. Needs `/spec-feature` or addition to type-coverage plan when SoftBody work resumes. |
 | Cross-PU data flow for debug UI | Static accessors (`GetStaticLayerManager`, `TestResultsRegistry` singleton) hide coupling between PUs. Replace with explicit stream/session-data mechanism — candidates: FrameData extension (per-frame stats), session/stage-data stream (slow-changing config sent once at stage start), or event-based pub/sub. Affects VisualDebuggerConsoleModule ↔ VisualDebuggerModule and TestStageHUDModule ↔ TestResultsRegistry. |
 | RigidBody2DStage visual debug — circles not visible | Stage runs and times out but falling circles are not rendering on screen. Ground (huge circle) draws correctly. Coordinate system (Y-UP renderer, pixel-scale physics) and gravity direction are set but circles still don't appear. Possible issues: circles too small relative to viewport, draw order, or drawer not picking up dynamic bodies. Needs investigation with logging or breakpoints. |

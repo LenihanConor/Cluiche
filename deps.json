@@ -153,13 +153,19 @@
         { "from": "include",                                        "to": "External/bgfx/include" },
         { "from": ".build/win64_vs2022/bin/bgfxRelease.lib",        "to": "External/bgfx/lib/Release/bgfx.lib" },
         { "from": ".build/win64_vs2022/bin/bgfxDebug.lib",          "to": "External/bgfx/lib/Debug/bgfx.lib" },
-        { "from": ".build/win64_vs2022/bin/shadercRelease.exe",     "to": "External/bgfx/tools/shaderc.exe" }
+        { "from": ".build/win64_vs2022/bin/shadercRelease.exe",     "to": "External/bgfx/tools/shaderc.exe" },
+        { "from": "examples/common/imgui",                          "to": "External/bgfx/examples/common/imgui" },
+        { "from": "examples/common/nanovg",                         "to": "External/bgfx/examples/common/nanovg" },
+        { "from": "examples/common/bgfx_utils.h",                   "to": "External/bgfx/examples/common/bgfx_utils.h" },
+        { "from": "3rdparty/dear-imgui",                            "to": "External/bgfx/3rdparty/dear-imgui" },
+        { "from": "3rdparty/iconfontheaders",                       "to": "External/bgfx/3rdparty/iconfontheaders" }
       ],
       "depends_on": ["bx", "bimg"],
       "sentinel_inputs": [
         "External/bgfx/lib/Release/bgfx.lib",
         "External/bgfx/lib/Debug/bgfx.lib",
-        "External/bgfx/tools/shaderc.exe"
+        "External/bgfx/tools/shaderc.exe",
+        "External/bgfx/examples/common/imgui/imgui.cpp"
       ]
     }
   ]

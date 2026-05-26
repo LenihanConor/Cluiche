@@ -22,6 +22,9 @@
     <ClCompile Include="SfmlUIRenderOverlay.cpp" />
     <ClCompile Include="TextureHandler.cpp" />
     <ClCompile Include="SFMLImGuiBackend.cpp" />
+    <ClCompile Include="Win32WndProcChain.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)'=='Release'">true</ExcludedFromBuild>
+    </ClCompile>
     <!-- ImGui core sources compiled into DiaSFML -->
     <ClCompile Include="$(ProjectDir)..\..\External\imgui\imgui.cpp" />
     <ClCompile Include="$(ProjectDir)..\..\External\imgui\imgui_draw.cpp" />
@@ -41,6 +44,7 @@
     <ClInclude Include="SfmlUIRenderOverlay.h" />
     <ClInclude Include="TextureHandler.h" />
     <ClInclude Include="SFMLImGuiBackend.h" />
+    <ClInclude Include="Win32WndProcChain.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaAsset\DiaAsset.vcxproj">

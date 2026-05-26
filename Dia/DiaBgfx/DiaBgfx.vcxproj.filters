@@ -19,6 +19,12 @@
     <ClInclude Include="Resources\BgfxTextureHandle.h">
       <Filter>Resources</Filter>
     </ClInclude>
+    <ClInclude Include="Imgui\BgfxImGuiBackend.h">
+      <Filter>Imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Imgui\BgfxImGuiRenderer.h">
+      <Filter>Imgui</Filter>
+    </ClInclude>
     <ClCompile Include="Canvas.cpp">
       <Filter>Source</Filter>
     </ClCompile>
@@ -36,6 +42,15 @@
     </ClCompile>
     <ClCompile Include="Resources\BgfxTextureHandle.cpp">
       <Filter>Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="Imgui\BgfxImGuiBackend.cpp">
+      <Filter>Imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="Imgui\BgfxImGuiRenderer.cpp">
+      <Filter>Imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="$(ProjectDir)..\..\External\imgui\backends\imgui_impl_win32.cpp">
+      <Filter>Imgui</Filter>
     </ClCompile>
     <None Include="Shaders\varying.def.sc">
       <Filter>Shaders</Filter>

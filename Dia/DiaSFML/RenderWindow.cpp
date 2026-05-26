@@ -19,6 +19,7 @@
 
 #ifdef DIA_DEBUG
 #include <DiaImGui/DiaImGuiManager.h>
+#include <cstdlib>
 #endif
 
 #pragma warning( disable : 4800 )
@@ -68,10 +69,18 @@ namespace Dia
 			InputSource::SetWindowContext(mWindowContext);
 
 #ifdef DIA_DEBUG
-			// Initialise ImGui backend and register with global manager
-			mImGuiBackend.SetWindow(mWindowContext);
-			mImGuiBackend.Init();
-			Dia::ImGui::SetBackend(&mImGuiBackend);
+			// Initialise ImGui backend and register with global manager.
+			// Skip when BGFX_BACKEND is set — the bgfx path installs its own
+			// backend (BgfxImGuiBackend) in KernelModule::DoStart and having
+			// both backends initialise simultaneously corrupts the ImGui IO
+			// state (double CreateContext + two platform backends on one context),
+			// which causes an access violation when imguiCreate() runs.
+			if (std::getenv("BGFX_BACKEND") == nullptr)
+			{
+				mImGuiBackend.SetWindow(mWindowContext);
+				mImGuiBackend.Init();
+				Dia::ImGui::SetBackend(&mImGuiBackend);
+			}
 #endif
 		}
 

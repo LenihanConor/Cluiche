@@ -57,6 +57,8 @@ namespace Dia
 
             Dia::UI::IUIRenderOverlay* GetUIRenderOverlay();
 
+            unsigned short GetImGuiViewId() const { return kImGuiViewId; }
+
         private:
             void PropagateCanvasSize();
 
@@ -64,11 +66,11 @@ namespace Dia
             Dia::Maths::Vector2D      mSize;
             RendererType              mRendererType;
             bool                      mInitialised;
-            bool                      mImGuiSuppressed;
 
             static constexpr unsigned short kEntityViewId = 0;
             static constexpr unsigned short kDebugViewId  = 1;
             static constexpr unsigned short kUIViewId     = 2;
+            static constexpr unsigned short kImGuiViewId  = 3;
 
             ShaderProgram*     mSpriteProgram;    // owned
             ShaderProgram*     mDebugProgram;     // owned

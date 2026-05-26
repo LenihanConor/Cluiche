@@ -10,6 +10,10 @@
 
 namespace Dia { namespace Bgfx { class Canvas; } }
 
+#ifdef DIA_DEBUG
+namespace Dia { namespace Bgfx { class BgfxImGuiBackend; } }
+#endif
+
 #include <atomic>
 
 namespace Dia { namespace Observation { namespace Metric {
@@ -72,6 +76,10 @@ private:
     Dia::Graphics::ICanvas* mCanvas       = nullptr;
     Dia::Bgfx::Canvas*      mBgfxCanvas   = nullptr;  // non-null when BGFX_BACKEND env var is set
     Dia::Input::EventData   mFrameEvents;
+
+#ifdef DIA_DEBUG
+    Dia::Bgfx::BgfxImGuiBackend* mBgfxImGuiBackend = nullptr;
+#endif
 
     // Metric primitives — owned by MetricRegistry, pointers nulled on DoStop.
     Dia::Observation::Metric::Gauge*     mMetricInputSources    = nullptr;

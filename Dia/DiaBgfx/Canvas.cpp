@@ -13,6 +13,7 @@
 #include <DiaGraphics/Frame/UIFrameData.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaImGui/DiaImGuiManager.h>
 
 #include <bgfx/bgfx.h>
 #include <bgfx/platform.h>
@@ -91,7 +92,6 @@ namespace Dia
             , mSize(0.0f, 0.0f)
             , mRendererType(RendererType::Direct3D11)
             , mInitialised(false)
-            , mImGuiSuppressed(false)
             , mSpriteProgram(nullptr)
             , mDebugProgram(nullptr)
             , mUIProgram(nullptr)
@@ -163,6 +163,7 @@ namespace Dia
                                0x303030FFu, 1.0f, 0);
             bgfx::setViewClear(kDebugViewId,  BGFX_CLEAR_NONE);
             bgfx::setViewClear(kUIViewId,     BGFX_CLEAR_NONE);
+            bgfx::setViewClear(kImGuiViewId,  BGFX_CLEAR_NONE);
 
             const char* backend = BackendSubdir(rendererType);
 
@@ -190,10 +191,6 @@ namespace Dia
 
             PropagateCanvasSize();
 
-            // Suppress ImGui until diabgfx-imgui-backend lands
-            mImGuiSuppressed = true;
-            DIA_LOG_INFO("DiaBgfx", "ImGui suppressed; bgfx backend pending diabgfx-imgui-backend");
-
             mInitialised = true;
             DIA_LOG_INFO("DiaBgfx", "Canvas::Initialize complete (%s, %.0fx%.0f)",
                          backend, mSize.X(), mSize.Y());
@@ -218,8 +215,12 @@ namespace Dia
             bgfx::touch(kEntityViewId);
             bgfx::touch(kDebugViewId);
             bgfx::touch(kUIViewId);
+            bgfx::touch(kImGuiViewId);
 
-            // ImGui suppressed until diabgfx-imgui-backend feature
+#ifdef DIA_DEBUG
+            if (Dia::ImGui::GetManager().GetBackend() != nullptr)
+                Dia::ImGui::NewFrame(0.0f);
+#endif
         }
 
         void Canvas::ProcessFrame(const Dia::Graphics::FrameData& nextFrame)
@@ -243,7 +244,10 @@ namespace Dia
 
         void Canvas::EndFrame(const Dia::Graphics::FrameData& /*nextFrame*/)
         {
-            // ImGui suppressed until diabgfx-imgui-backend feature
+#ifdef DIA_DEBUG
+            if (Dia::ImGui::GetManager().GetBackend() != nullptr)
+                Dia::ImGui::Render();
+#endif
             bgfx::frame();
         }
 
