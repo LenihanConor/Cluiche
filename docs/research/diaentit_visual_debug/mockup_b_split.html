@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DiaEntityEditor - Option B: Split Panel</title>
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:#13131f; color:#c9c9e0; font-family:'Segoe UI',system-ui,sans-serif; font-size:12px; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+.titlebar { background:#1a1a2e; border-bottom:1px solid #3a3a5a; padding:5px 10px; display:flex; align-items:center; gap:8px; flex-shrink:0; user-select:none; }
+.ldot { width:6px; height:6px; background:#5a9a5a; border-radius:50%; box-shadow:0 0 4px #5a9a5a; animation:pulse 2s infinite; }
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.ttl { font-weight:600; color:#e0e0f8; }
+.tapp { color:#44446a; font-size:11px; }
+.tsub { color:#7070a0; font-size:11px; margin-left:auto; }
+.main { display:flex; flex:1; overflow:hidden; }
+/* LEFT COLUMN */
+.lcol { width:30%; min-width:200px; max-width:340px; background:#1e1e2e; border-right:2px solid #2a2a40; display:flex; flex-direction:column; overflow:hidden; }
+.colhdr { background:#222235; border-bottom:1px solid #33334a; padding:5px 8px; display:flex; align-items:center; gap:5px; flex-shrink:0; }
+.colhdr-ttl { font-size:11px; color:#6060a0; text-transform:uppercase; letter-spacing:.5px; }
+.colhdr-cnt { font-size:10px; color:#44446a; margin-left:auto; }
+.searchrow { background:#1e1e2e; border-bottom:1px solid #2a2a3e; padding:5px 6px; display:flex; flex-direction:column; gap:4px; flex-shrink:0; }
+.srch { background:#1a1a2e; border:1px solid #3a3a5a; border-radius:3px; color:#c9c9e0; padding:4px 7px; font-size:11px; outline:none; width:100%; }
+.srch:focus { border-color:#7c6af7; }
+.srch::placeholder { color:#44446a; }
+.chips { display:flex; gap:3px; flex-wrap:wrap; }
+.chip { background:#222238; border:1px solid #33334a; border-radius:10px; padding:1px 7px; font-size:9.5px; color:#6060a0; cursor:pointer; white-space:nowrap; }
+.chip.active { background:#3d2fa0; border-color:#7c6af7; color:#c9baff; }
+.el { overflow-y:auto; flex:1; }
+.er { display:flex; align-items:center; padding:0 6px 0 0; height:29px; cursor:pointer; border-bottom:1px solid #212130; gap:4px; border-left:2px solid transparent; }
+.er:hover { background:#26263a; }
+.er.sel { background:#3a3a58; border-left-color:#7c6af7; }
+.edepth { display:inline-flex; align-items:center; flex-shrink:0; }
+.dtree { width:12px; height:29px; display:inline-block; position:relative; flex-shrink:0; }
+.dtree::before { content:''; position:absolute; left:5px; top:0; bottom:0; border-left:1px dashed #2a2a40; }
+.ei { color:#44446a; font-family:Consolas,monospace; font-size:9.5px; width:26px; text-align:right; flex-shrink:0; }
+.en { flex:1; font-size:11.5px; color:#b8b8d8; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.er.sel .en { color:#e0d8ff; }
+.tags { display:flex; gap:2px; flex-shrink:0; }
+.tag { font-family:Consolas,monospace; font-size:8.5px; border:1px solid #3a3a5a; border-radius:2px; padding:1px 2px; color:#6060a0; background:#212130; }
+.tag.T { border-color:#3a6a8a; color:#6aa8c8; background:#151e28; }
+.tag.P { border-color:#3a8a4a; color:#6ac47a; background:#15201a; }
+.tag.R { border-color:#8a5a3a; color:#c4906a; background:#201515; }
+.tag.A { border-color:#8a8a3a; color:#c4c46a; background:#201e15; }
+.tag.S { border-color:#6a3a8a; color:#a46ac4; background:#1a1525; }
+.tag.H { border-color:#8a3a3a; color:#c46a6a; background:#201515; }
+.tag.C { border-color:#3a8a8a; color:#6ac4c4; background:#151e1e; }
+/* DIVIDER */
+.divider { width:4px; background:#2a2a40; cursor:col-resize; flex-shrink:0; }
+.divider:hover { background:#7c6af7; }
+/* RIGHT COLUMN */
+.rcol { flex:1; display:flex; flex-direction:column; overflow:hidden; background:#1e1e2e; }
+.ctx-strip { background:#252540; border-bottom:1px solid #3a3a5a; padding:5px 12px; display:flex; align-items:center; gap:8px; flex-shrink:0; min-height:34px; }
+.ctx-name { font-size:13px; color:#e0d8ff; font-weight:600; }
+.ctx-idx { font-family:Consolas,monospace; font-size:10px; color:#6060a0; }
+.ctx-meta { margin-left:auto; display:flex; gap:12px; }
+.ctx-mi { font-size:10px; color:#55557a; }
+.ctx-mi b { color:#9090c0; }
+.nosel { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#2a2a40; gap:6px; }
+.nosel .big { font-size:28px; }
+/* SUB-TABS */
+.stabs { background:#1e1e2e; border-bottom:1px solid #2e2e4a; display:flex; flex-shrink:0; }
+.stab { padding:6px 14px; cursor:pointer; color:#7070a0; border-bottom:2px solid transparent; font-size:11px; transition:color .15s; }
+.stab:hover { color:#a0a0c0; }
+.stab.active { color:#c9baff; border-bottom-color:#7c6af7; }
+.stab .bdg { display:inline-block; background:#33334a; border-radius:8px; padding:1px 5px; font-size:9px; color:#7070a0; margin-left:4px; }
+.stab.active .bdg { background:#3d2fa0; color:#c9baff; }
+.sc { display:none; flex:1; overflow:hidden; flex-direction:column; }
+.sc.active { display:flex; }
+/* INSPECTOR */
+.is { overflow-y:auto; flex:1; padding:6px; }
+.cs { margin-bottom:4px; border:1px solid #2e2e4a; border-radius:4px; overflow:hidden; }
+.ch { background:#252545; padding:5px 10px; display:flex; align-items:center; cursor:pointer; gap:6px; user-select:none; }
+.ch:hover { background:#2e2e52; }
+.chv { color:#5060a0; font-size:9px; transition:transform .15s; width:10px; }
+.cs.open .chv { transform:rotate(90deg); }
+.cname { font-weight:600; color:#b8b0f0; font-size:12px; }
+.ctier { margin-left:auto; background:#1e1e35; border:1px solid #3a3a5a; border-radius:2px; padding:1px 6px; font-size:9.5px; color:#6060a0; font-family:Consolas,monospace; cursor:pointer; }
+.ctier:hover { border-color:#7c6af7; color:#c9baff; }
+.cb { display:none; }
+.cs.open .cb { display:block; }
+.ftbl { width:100%; border-collapse:collapse; }
+.ftbl td { padding:3px 10px; border-bottom:1px solid #1e1e30; vertical-align:middle; }
+.ftbl tr:hover td { background:#252545; }
+.fname { width:150px; color:#8080a8; font-size:11px; }
+.ftype { width:70px; color:#44446a; font-size:10px; font-family:Consolas,monospace; }
+.fval { font-family:Consolas,monospace; font-size:11px; }
+.fnum { color:#90c890; }
+.fvec { color:#70a8e8; }
+.fstr { color:#e8b860; }
+.ftrue { color:#70c470; }
+.ffalse { color:#c47070; }
+.fedit { color:#44446a; cursor:pointer; font-size:11px; padding:1px 4px; border-radius:2px; }
+.fedit:hover { background:#33335a; color:#c0b8f8; }
+/* QUERIES */
+.ql { overflow-y:auto; flex:1; padding:6px; }
+.qcard { margin-bottom:4px; border:1px solid #2e2e4a; border-radius:4px; overflow:hidden; }
+.qhdr { background:#252545; padding:5px 10px; display:flex; align-items:center; cursor:pointer; gap:8px; }
+.qhdr:hover { background:#2e2e52; }
+.qchv { color:#5060a0; font-size:9px; transition:transform .15s; width:10px; }
+.qcard.open .qchv { transform:rotate(90deg); }
+.qsig { font-family:Consolas,monospace; font-size:11px; color:#b8b8e0; flex:1; }
+.qcnt { background:#3d2fa0; border-radius:10px; padding:1px 8px; font-size:10px; color:#c9baff; }
+.qself { background:#1a2a0a; border:1px solid #4a7a1a; border-radius:2px; padding:1px 5px; font-size:9px; color:#8ab84a; }
+.qbody { display:none; padding:8px; background:#1e1e35; }
+.qcard.open .qbody { display:block; }
+.qmems { display:flex; flex-wrap:wrap; gap:3px; }
+.qmchip { background:#222235; border:1px solid #33334a; border-radius:2px; padding:2px 6px; font-size:10px; color:#7070a0; font-family:Consolas,monospace; }
+.qmchip.self { border-color:#7c6af7; color:#c9baff; background:#3d2fa0; }
+/* MAILBOX */
+.mwrap { flex:1; overflow-y:auto; }
+.mtbl { width:100%; border-collapse:collapse; }
+.mtbl th { background:#222235; color:#5a5a80; font-size:10px; text-transform:uppercase; letter-spacing:.4px; padding:4px 8px; text-align:left; border-bottom:1px solid #33334a; position:sticky; top:0; z-index:1; }
+.mtbl td { padding:3px 8px; border-bottom:1px solid #1e1e2e; font-family:Consolas,monospace; font-size:11px; height:28px; vertical-align:middle; }
+.mtbl tr:hover td { background:#252545; }
+.mfr { color:#44446a; }
+.msnd { color:#8080a8; }
+.mself { color:#c9baff; font-weight:600; }
+.madr { color:#6a98b8; }
+.mtdmg { background:#280f00; border:1px solid #6a4010; color:#e8a850; display:inline-block; padding:1px 6px; border-radius:2px; font-size:10px; }
+.mtspwn { background:#0a2000; border:1px solid #1a6020; color:#70c870; display:inline-block; padding:1px 6px; border-radius:2px; font-size:10px; }
+.mtdest { background:#280000; border:1px solid #6a1010; color:#e87070; display:inline-block; padding:1px 6px; border-radius:2px; font-size:10px; }
+.mtstate { background:#10103a; border:1px solid #30308a; color:#b0b0f8; display:inline-block; padding:1px 6px; border-radius:2px; font-size:10px; }
+.mtanim { background:#081828; border:1px solid #18486a; color:#70a8e8; display:inline-block; padding:1px 6px; border-radius:2px; font-size:10px; }
+.mtcoll { background:#082828; border:1px solid #186868; color:#70c8c8; display:inline-block; padding:1px 6px; border-radius:2px; font-size:10px; }
+.mtoth { background:#181818; border:1px solid #383838; color:#686888; display:inline-block; padding:1px 6px; border-radius:2px; font-size:10px; }
+/* WATCH */
+.wtbl { width:100%; border-collapse:collapse; }
+.wtbl th { background:#222235; color:#5a5a80; font-size:10px; text-transform:uppercase; letter-spacing:.4px; padding:4px 8px; text-align:left; border-bottom:1px solid #33334a; position:sticky; top:0; z-index:1; }
+.wtbl td { padding:3px 8px; border-bottom:1px solid #1e1e2e; font-size:11px; height:28px; vertical-align:middle; }
+.wtbl tr:hover td { background:#252545; }
+.went { color:#b0a8e8; }
+.wcomp { color:#7070a0; }
+.wfld { color:#6060a0; font-family:Consolas,monospace; }
+.wval { font-family:Consolas,monospace; color:#90c890; }
+.wup { color:#70c470; font-family:Consolas,monospace; font-size:10px; }
+.wdn { color:#c47070; font-family:Consolas,monospace; font-size:10px; }
+.weq { color:#33334a; font-family:Consolas,monospace; font-size:10px; }
+.wrm { color:#33334a; cursor:pointer; text-align:center; }
+.wrm:hover { color:#c47070; }
+.awrow { display:flex; gap:5px; padding:5px 8px; background:#1e1e2e; border-top:1px solid #2e2e4a; flex-shrink:0; }
+.awsel { background:#181828; border:1px solid #2e2e48; border-radius:3px; color:#a0a0c8; padding:3px 6px; font-size:11px; outline:none; flex:1; cursor:pointer; }
+.awsel:focus { border-color:#7c6af7; }
+.btn-add { background:#3d2fa0; border:1px solid #7c6af7; border-radius:3px; color:#c9baff; padding:3px 10px; font-size:11px; cursor:pointer; }
+.btn-add:hover { background:#4d3fb0; }
+/* toolbar */
+.toolbar { background:#222235; border-bottom:1px solid #2e2e4a; padding:4px 8px; display:flex; align-items:center; gap:5px; flex-shrink:0; }
+.lbl { color:#55557a; font-size:11px; }
+.spacer { flex:1; }
+.tog { padding:2px 7px; background:#222235; border:1px solid #33334a; border-radius:2px; font-size:10px; color:#7070a0; cursor:pointer; }
+.tog.active { background:#3d2fa0; border-color:#7c6af7; color:#c9baff; }
+.btncl { background:#222235; border:1px solid #33334a; border-radius:3px; color:#7070a0; padding:3px 8px; font-size:11px; cursor:pointer; }
+.btncl:hover { background:#2e2e48; }
+/* status */
+.sbar { background:#161622; border-top:1px solid #222232; padding:2px 10px; font-size:10px; color:#33334a; display:flex; gap:14px; flex-shrink:0; }
+.sok { color:#4a8a4a; } .sv { color:#6060a0; } .swn { color:#8a7a2a; }
+::-webkit-scrollbar { width:5px; } ::-webkit-scrollbar-track { background:#151525; }
+::-webkit-scrollbar-thumb { background:#333348; border-radius:3px; }
+::-webkit-scrollbar-thumb:hover { background:#4a4a6a; }
+</style>
+</head>
+<body>
+<div class="titlebar">
+  <div class="ldot"></div>
+  <span class="ttl">DiaEntityEditor</span>
+  <span class="tapp">/ CluicheTest</span>
+  <span class="tsub">frame #4821 &middot; 18 entities &middot; 80.4s</span>
+</div>
+<div class="main">
+  <!-- LEFT -->
+  <div class="lcol" id="lcol">
+    <div class="colhdr">
+      <span class="colhdr-ttl">Entities</span>
+      <span class="colhdr-cnt" id="ecnt">18</span>
+    </div>
+    <div class="searchrow">
+      <input class="srch" type="text" placeholder="filter..." id="esrch">
+      <div class="chips">
+        <div class="chip active" data-f="ALL">All</div>
+        <div class="chip" data-f="T">T</div>
+        <div class="chip" data-f="P">P</div>
+        <div class="chip" data-f="R">R</div>
+        <div class="chip" data-f="A">A</div>
+        <div class="chip" data-f="S">S</div>
+        <div class="chip" data-f="H">H</div>
+      </div>
+    </div>
+    <div class="el" id="el"></div>
+  </div>
+  <div class="divider" id="div"></div>
+  <!-- RIGHT -->
+  <div class="rcol">
+    <div class="ctx-strip" id="ctxstrip">
+      <div class="nosel" id="nosel"><span class="big">&#8592;</span><span style="font-size:11px">Select an entity</span></div>
+      <div id="ctxinfo" style="display:none;width:100%;display:none;align-items:center;gap:8px">
+        <span class="ctx-idx" id="ctxidx">[001]</span>
+        <span class="ctx-name" id="ctxname">Player</span>
+        <span class="tags" id="ctxtags"></span>
+        <div class="ctx-meta">
+          <div class="ctx-mi">depth: <b id="ctxdepth">1</b></div>
+          <div class="ctx-mi">gen: <b id="ctxgen">g1</b></div>
+          <div class="ctx-mi">comps: <b id="ctxcomps">5</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="stabs" id="stabs" style="display:none">
+      <div class="stab active" data-s="fields">Fields <span class="bdg" id="bdgf">5</span></div>
+      <div class="stab" data-s="queries">Queries <span class="bdg" id="bdgq">3</span></div>
+      <div class="stab" data-s="mailbox">Mailbox <span class="bdg" id="bdgm">6</span></div>
+      <div class="stab" data-s="watch">Watch <span class="bdg" id="bdgw">6</span></div>
+    </div>
+    <!-- FIELDS -->
+    <div class="sc active" id="sc-fields">
+      <div class="nosel" id="fnosel"><span class="big">&#8592;</span><span style="font-size:11px">Select an entity</span></div>
+      <div class="is" id="is" style="display:none"></div>
+    </div>
+    <!-- QUERIES -->
+    <div class="sc" id="sc-queries">
+      <div class="nosel" id="qnosel"><span class="big">&#8592;</span><span style="font-size:11px">Select an entity</span></div>
+      <div class="ql" id="ql" style="display:none"></div>
+    </div>
+    <!-- MAILBOX -->
+    <div class="sc" id="sc-mailbox">
+      <div class="toolbar">
+        <input class="srch" type="text" placeholder="filter..." style="width:130px">
+        <div class="tog active" id="selftog">Self only</div>
+        <div class="spacer"></div>
+        <span class="lbl" id="mcnt">15 messages</span>
+        <button class="btncl">Clear</button>
+      </div>
+      <div class="mwrap">
+        <table class="mtbl">
+          <thead><tr>
+            <th style="width:48px">Frame</th>
+            <th style="width:100px">Sender</th>
+            <th style="width:120px">Address</th>
+            <th style="width:130px">Type</th>
+            <th>Payload</th>
+          </tr></thead>
+          <tbody id="mbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <!-- WATCH -->
+    <div class="sc" id="sc-watch">
+      <div style="overflow-y:auto;flex:1">
+        <table class="wtbl">
+          <thead><tr>
+            <th style="width:100px">Entity</th>
+            <th style="width:110px">Component</th>
+            <th style="width:100px">Field</th>
+            <th>Value</th>
+            <th style="width:50px">Delta</th>
+            <th style="width:24px"></th>
+          </tr></thead>
+          <tbody id="wbody"></tbody>
+        </table>
+      </div>
+      <div class="awrow">
+        <select class="awsel" id="awe"><option>Player</option><option>Enemy_01</option><option>Enemy_02</option><option>Camera_Main</option></select>
+        <select class="awsel" id="awc"><option>Transform</option><option>RigidBody2D</option><option>Health</option><option>Animation</option></select>
+        <select class="awsel" id="awf"><option>position</option><option>velocity</option><option>health</option><option>rotation</option></select>
+        <button class="btn-add" id="awbtn">+ Watch</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="sbar">
+  <span class="sok">&#9679; Live</span>
+  <span>Frame <b class="sv">4821</b></span>
+  <span>dt <b class="sv">16.2ms</b></span>
+  <span>Selected: <b class="sv" id="ssel">&#8212;</b></span>
+  <span class="swn">msgs/f: <b>12</b></span>
+  <span>watch: <b class="sv" id="swcnt">6</b></span>
+</div>
+<script>
+const ENTS=[
+  {i:0,g:1,n:'WorldRoot',t:['T'],d:0},
+  {i:1,g:1,n:'Player',t:['T','P','R','A','S'],d:1},
+  {i:2,g:3,n:'Enemy_01',t:['T','P','R','A','H'],d:1},
+  {i:3,g:2,n:'Enemy_02',t:['T','P','R','A','H'],d:1},
+  {i:4,g:1,n:'Enemy_03',t:['T','P','H'],d:1},
+  {i:5,g:7,n:'Projectile_01',t:['T','P'],d:2},
+  {i:6,g:6,n:'Projectile_02',t:['T','P'],d:2},
+  {i:7,g:5,n:'Projectile_03',t:['T','P'],d:2},
+  {i:8,g:1,n:'Camera_Main',t:['T','C'],d:1},
+  {i:9,g:1,n:'GroundPlatform_A',t:['T','R'],d:1},
+  {i:10,g:1,n:'GroundPlatform_B',t:['T','R'],d:1},
+  {i:11,g:1,n:'GroundPlatform_C',t:['T','R'],d:1},
+  {i:12,g:2,n:'Pickup_Coin_01',t:['T','P','C'],d:1},
+  {i:13,g:2,n:'Pickup_Coin_02',t:['T','P','C'],d:1},
+  {i:14,g:1,n:'Spawn_EnemyA',t:['T'],d:0},
+  {i:15,g:1,n:'Spawn_EnemyB',t:['T'],d:0},
+  {i:16,g:1,n:'FX_Explosion_01',t:['T','A'],d:1},
+  {i:17,g:1,n:'FX_Dust_Player',t:['T','A'],d:2}
+];
+const COMPS={
+  T:{name:'Transform',tier:'b',fields:[{n:'position',v:'(12.40, 0.00)',t:'vec',dt:'vec2'},{n:'rotation',v:'0.000',t:'num',dt:'float'},{n:'scale',v:'(1.00, 1.00)',t:'vec',dt:'vec2'},{n:'worldMatrix',v:'mat3x2[...]',t:'str',dt:'mat3x2'}]},
+  P:{name:'RigidBody2D',tier:'b',fields:[{n:'velocity',v:'(-2.10, 0.00)',t:'vec',dt:'vec2'},{n:'mass',v:'1.000',t:'num',dt:'float'},{n:'drag',v:'0.050',t:'num',dt:'float'},{n:'isKinematic',v:'false',t:'bool',dt:'bool'},{n:'isSleeping',v:'false',t:'bool',dt:'bool'}]},
+  R:{name:'Collider2D',tier:'b',fields:[{n:'shape',v:'"AABB"',t:'str',dt:'string'},{n:'size',v:'(1.00, 2.00)',t:'vec',dt:'vec2'},{n:'offset',v:'(0.00,-0.10)',t:'vec',dt:'vec2'},{n:'isTrigger',v:'false',t:'bool',dt:'bool'},{n:'layer',v:'1',t:'num',dt:'int'}]},
+  A:{name:'Animation',tier:'b',fields:[{n:'currentClip',v:'"run"',t:'str',dt:'string'},{n:'frame',v:'7',t:'num',dt:'int'},{n:'speed',v:'1.000',t:'num',dt:'float'},{n:'loop',v:'true',t:'bool',dt:'bool'}]},
+  S:{name:'StateMachine',tier:'b',fields:[{n:'currentState',v:'"Running"',t:'str',dt:'string'},{n:'prevState',v:'"Idle"',t:'str',dt:'string'},{n:'timeInState',v:'1.234',t:'num',dt:'float'},{n:'stateCount',v:'4',t:'num',dt:'int'}]},
+  H:{name:'Health',tier:'b',fields:[{n:'health',v:'80',t:'num',dt:'int'},{n:'maxHealth',v:'100',t:'num',dt:'int'},{n:'isAlive',v:'true',t:'bool',dt:'bool'},{n:'invincible',v:'false',t:'bool',dt:'bool'}]},
+  C:{name:'Collectible',tier:'b',fields:[{n:'value',v:'10',t:'num',dt:'int'},{n:'collected',v:'false',t:'bool',dt:'bool'},{n:'magnetRange',v:'2.500',t:'num',dt:'float'}]}
+};
+const QUERIES=[
+  {sig:'[Transform, RigidBody2D]',count:9,members:['Player','Enemy_01','Enemy_02','Enemy_03','Projectile_01','Projectile_02','Projectile_03','Pickup_Coin_01','Pickup_Coin_02']},
+  {sig:'[Transform, RigidBody2D, Animation]',count:5,members:['Player','Enemy_01','Enemy_02','Enemy_03','FX_Explosion_01']},
+  {sig:'[Transform, Collider2D]',count:7,members:['Player','Enemy_01','Enemy_02','Enemy_03','GroundPlatform_A','GroundPlatform_B','GroundPlatform_C']},
+  {sig:'[Transform, Animation]',count:6,members:['Player','Enemy_01','Enemy_02','Enemy_03','FX_Explosion_01','FX_Dust_Player']},
+  {sig:'[Health]',count:4,members:['Player','Enemy_01','Enemy_02','Enemy_03']},
+  {sig:'[Transform, Collectible]',count:2,members:['Pickup_Coin_01','Pickup_Coin_02']}
+];
+const MSGS=[
+  {f:4821,s:'Player',a:'Enemy_02',ak:'entity',type:'Damage',tc:'mtdmg',p:'dmg=15, src=proj_07',inv:'Player'},
+  {f:4821,s:'Enemy_01',a:'WorldRoot',ak:'entity',type:'SpawnRequest',tc:'mtspwn',p:'prefab="Projectile"',inv:null},
+  {f:4820,s:'StateMachine',a:'Player',ak:'component',type:'StateChange',tc:'mtstate',p:'Idle->Running',inv:'Player'},
+  {f:4820,s:'Collectible',a:'Player',ak:'entity',type:'Collect',tc:'mtcoll',p:'coin value=10',inv:'Player'},
+  {f:4819,s:'Player',a:'Camera_Main',ak:'entity',type:'Follow',tc:'mtoth',p:'target=(12.4,0.0)',inv:'Player'},
+  {f:4818,s:'Health',a:'Enemy_03',ak:'component',type:'Destroy',tc:'mtdest',p:'hp=0',inv:null},
+  {f:4818,s:'WorldRoot',a:'Spawn_EnemyA',ak:'entity',type:'SpawnReady',tc:'mtspwn',p:'idx=4',inv:null},
+  {f:4817,s:'Animation',a:'Player',ak:'component',type:'AnimEnd',tc:'mtanim',p:'clip="run"',inv:'Player'},
+  {f:4816,s:'Projectile_01',a:'Enemy_01',ak:'entity',type:'Damage',tc:'mtdmg',p:'dmg=10',inv:null},
+  {f:4815,s:'Player',a:'Enemy_04',ak:'entity',type:'Damage',tc:'mtdmg',p:'dmg=15',inv:'Player'},
+  {f:4814,s:'StateMachine',a:'Enemy_01',ak:'component',type:'StateChange',tc:'mtstate',p:'patrol->chase',inv:null},
+  {f:4813,s:'WorldRoot',a:'FX_Explosion_01',ak:'entity',type:'SpawnRequest',tc:'mtspwn',p:'pos=(8.0,1.0)',inv:null},
+  {f:4812,s:'Collectible',a:'Pickup_Coin_02',ak:'component',type:'Collect',tc:'mtcoll',p:'coin val=10',inv:null},
+  {f:4811,s:'Animation',a:'Enemy_02',ak:'component',type:'AnimEnd',tc:'mtanim',p:'clip="walk"',inv:null},
+  {f:4810,s:'Player',a:'WorldRoot',ak:'entity',type:'SpawnRequest',tc:'mtspwn',p:'prefab="Bullet"',inv:'Player'}
+];
+let watchItems=[
+  {e:'Player',c:'Transform',f:'position',v:'(12.40, 0.00)',d:'up'},
+  {e:'Player',c:'RigidBody2D',f:'velocity',v:'(-2.10, 0.00)',d:'dn'},
+  {e:'Player',c:'Health',f:'health',v:'80',d:'eq'},
+  {e:'Enemy_01',c:'Health',f:'health',v:'65',d:'dn'},
+  {e:'Enemy_01',c:'StateMachine',f:'currentState',v:'"chase"',d:'up'},
+  {e:'Camera_Main',c:'Transform',f:'position',v:'(12.40, 3.50)',d:'up'}
+];
+let selIdx=null,af='ALL',activeSub='fields',selfOn=true;
+function bEnts(){
+  const list=document.getElementById('el'),cnt=document.getElementById('ecnt');
+  const srch=document.getElementById('esrch').value.toLowerCase();
+  list.innerHTML='';let n=0;
+  ENTS.forEach(e=>{
+    if(srch&&!e.n.toLowerCase().includes(srch))return;
+    if(af!=='ALL'&&!e.t.includes(af))return;
+    n++;
+    const row=document.createElement('div');
+    row.className='er'+(selIdx===e.i?' sel':'');
+    const trees=Array.from({length:e.d},()=>'<span class="dtree"></span>').join('');
+    const tags=e.t.map(x=>'<span class="tag '+x+'">'+x+'</span>').join('');
+    row.innerHTML='<span class="edepth">'+trees+'</span><span class="ei">'+String(e.i).padStart(3,'0')+'</span><span class="en">'+e.n+'</span><span class="tags">'+tags+'</span>';
+    row.addEventListener('click',()=>selEnt(e.i));
+    list.appendChild(row);
+  });
+  cnt.textContent=n;
+}
+function selEnt(idx){
+  selIdx=idx;bEnts();bCtx();
+  document.getElementById('stabs').style.display='flex';
+  document.getElementById('ssel').textContent=ENTS.find(x=>x.i===idx)?.n||'';
+  bActiveSub();
+}
+function bCtx(){
+  if(selIdx===null)return;
+  const e=ENTS.find(x=>x.i===selIdx);
+  document.getElementById('nosel').style.display='none';
+  const ci=document.getElementById('ctxinfo');ci.style.display='flex';
+  document.getElementById('ctxidx').textContent='['+String(e.i).padStart(3,'0')+']';
+  document.getElementById('ctxname').textContent=e.n;
+  document.getElementById('ctxdepth').textContent=e.d;
+  document.getElementById('ctxgen').textContent='g'+e.g;
+  document.getElementById('ctxcomps').textContent=e.t.length;
+  document.getElementById('ctxtags').innerHTML=e.t.map(t=>'<span class="tag '+t+'">'+t+'</span>').join('');
+  document.getElementById('bdgf').textContent=e.t.length;
+  const qm=QUERIES.filter(q=>q.members.includes(e.n));
+  document.getElementById('bdgq').textContent=qm.length;
+  const mm=MSGS.filter(m=>m.inv===e.n);
+  document.getElementById('bdgm').textContent=mm.length;
+}
+function bActiveSub(){
+  if(activeSub==='fields')bFields();
+  else if(activeSub==='queries')bQueryMem();
+  else if(activeSub==='mailbox')bMailbox();
+  else bWatch();
+}
+function bFields(){
+  const ns=document.getElementById('fnosel'),is=document.getElementById('is');
+  if(selIdx===null){ns.style.display='flex';is.style.display='none';return;}
+  ns.style.display='none';is.style.display='block';
+  const e=ENTS.find(x=>x.i===selIdx);
+  is.innerHTML='';
+  e.t.forEach((tag,ti)=>{
+    const comp=COMPS[tag];if(!comp)return;
+    const sec=document.createElement('div');sec.className='cs'+(ti<2?' open':'');
+    const fields=comp.fields.map(f=>{
+      const vc=f.t==='bool'?(f.v==='true'?'ftrue':'ffalse'):'f'+f.t;
+      return '<tr><td class="fname">'+f.n+'</td><td class="ftype">'+f.dt+'</td><td class="fval '+vc+'">'+f.v+'</td><td><span class="fedit">&#9998;</span></td></tr>';
+    }).join('');
+    sec.innerHTML='<div class="ch"><span class="chv">&#9658;</span><span class="cname">'+comp.name+'</span><span class="tag '+tag+'" style="margin-left:4px">'+tag+'</span><span class="ctier">Tier: '+comp.tier+'</span></div><div class="cb"><table class="ftbl">'+fields+'</table></div>';
+    sec.querySelector('.ch').addEventListener('click',()=>sec.classList.toggle('open'));
+    is.appendChild(sec);
+  });
+}
+function bQueryMem(){
+  const ns=document.getElementById('qnosel'),ql=document.getElementById('ql');
+  if(selIdx===null){ns.style.display='flex';ql.style.display='none';return;}
+  ns.style.display='none';ql.style.display='block';
+  const e=ENTS.find(x=>x.i===selIdx);
+  ql.innerHTML='';
+  QUERIES.forEach(q=>{
+    const isMem=q.members.includes(e.n);
+    const card=document.createElement('div');card.className='qcard'+(isMem?' open':'');
+    const sb=isMem?'<span class="qself">&#10003; member</span>':'';
+    const mems=q.members.map(m=>'<span class="qmchip'+(m===e.n?' self':'')+'">'+m+'</span>').join('');
+    card.innerHTML='<div class="qhdr"><span class="qchv">&#9658;</span><span class="qsig">'+q.sig+'</span>'+sb+'<span class="qcnt">'+q.count+'</span></div><div class="qbody"><div style="font-size:10px;color:#33334a;margin-bottom:4px">Members:</div><div class="qmems">'+mems+'</div></div>';
+    card.querySelector('.qhdr').addEventListener('click',()=>card.classList.toggle('open'));
+    ql.appendChild(card);
+  });
+}
+function bMailbox(){
+  const tb=document.getElementById('mbody');tb.innerHTML='';
+  const e=selIdx!==null?ENTS.find(x=>x.i===selIdx):null;
+  const msgs=selfOn&&e?MSGS.filter(m=>m.inv===e.n||m.s===e.n||m.a===e.n):MSGS;
+  document.getElementById('mcnt').textContent=msgs.length+' messages';
+  msgs.forEach(m=>{
+    const isSS=e&&m.s===e.n,isAS=e&&m.a===e.n;
+    const tr=document.createElement('tr');
+    tr.innerHTML='<td class="mfr">'+m.f+'</td><td class="'+(isSS?'mself':'msnd')+'">'+m.s+'</td><td class="madr"><span style="color:#252545;font-size:9px">['+m.ak+']</span> <span class="'+(isAS?'mself':'')+'">'+m.a+'</span></td><td><span class="'+m.tc+'">'+m.type+'</span></td><td style="color:#33334a;font-size:10px">'+m.p+'</td>';
+    tb.appendChild(tr);
+  });
+}
+function bWatch(){
+  const tb=document.getElementById('wbody');tb.innerHTML='';
+  watchItems.forEach((w,i)=>{
+    const dc=w.d==='up'?'wup':w.d==='dn'?'wdn':'weq';
+    const di=w.d==='up'?'&#9650; +0.21':w.d==='dn'?'&#9660; -3.00':'&#8212;';
+    const tr=document.createElement('tr');
+    tr.innerHTML='<td class="went">'+w.e+'</td><td class="wcomp">'+w.c+'</td><td class="wfld">'+w.f+'</td><td class="wval">'+w.v+'</td><td class="'+dc+'">'+di+'</td><td class="wrm" data-i="'+i+'">&#10005;</td>';
+    tr.querySelector('.wrm').addEventListener('click',()=>{watchItems.splice(i,1);bWatch();document.getElementById('swcnt').textContent=watchItems.length;document.getElementById('bdgw').textContent=watchItems.length;});
+    tb.appendChild(tr);
+  });
+}
+document.getElementById('esrch').addEventListener('input',bEnts);
+document.querySelectorAll('.chip[data-f]').forEach(c=>c.addEventListener('click',()=>{
+  document.querySelectorAll('.chip[data-f]').forEach(x=>x.classList.remove('active'));
+  c.classList.add('active');af=c.dataset.f;bEnts();
+}));
+document.querySelectorAll('.stab').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('.stab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.sc').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');activeSub=t.dataset.s;
+  document.getElementById('sc-'+activeSub).classList.add('active');
+  bActiveSub();
+}));
+document.getElementById('selftog').addEventListener('click',function(){
+  selfOn=!selfOn;this.classList.toggle('active',selfOn);bMailbox();
+});
+document.getElementById('awbtn').addEventListener('click',()=>{
+  watchItems.push({e:document.getElementById('awe').value,c:document.getElementById('awc').value,f:document.getElementById('awf').value,v:'&#8212;',d:'eq'});
+  bWatch();document.getElementById('swcnt').textContent=watchItems.length;document.getElementById('bdgw').textContent=watchItems.length;
+});
+// column resize
+(()=>{
+  const dv=document.getElementById('div'),lc=document.getElementById('lcol');
+  let drag=false,sx,sw;
+  dv.addEventListener('mousedown',e=>{drag=true;sx=e.clientX;sw=lc.offsetWidth;document.body.style.cursor='col-resize';document.body.style.userSelect='none';});
+  document.addEventListener('mousemove',e=>{if(!drag)return;const w=Math.max(180,Math.min(400,sw+e.clientX-sx));lc.style.width=w+'px';lc.style.maxWidth=w+'px';});
+  document.addEventListener('mouseup',()=>{drag=false;document.body.style.cursor='';document.body.style.userSelect='';});
+})();
+bEnts();selEnt(1);
+</script>
+</body>
+</html>

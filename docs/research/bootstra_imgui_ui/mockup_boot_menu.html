@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CluicheTest Boot Menu — ImGui Mockup</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    background: #1a1a2e;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 13px;
+    color: #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.imgui-window {
+    background: #2d2d3d;
+    border: 1px solid #4a4a6a;
+    border-radius: 4px;
+    width: 520px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+.imgui-titlebar {
+    background: #3d5a80;
+    padding: 4px 8px;
+    border-radius: 3px 3px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: default;
+}
+
+.imgui-titlebar-text {
+    font-weight: bold;
+    font-size: 12px;
+    color: #ffffff;
+}
+
+.imgui-titlebar-collapse {
+    width: 14px;
+    height: 14px;
+    background: #5a7a9a;
+    border: none;
+    border-radius: 2px;
+    color: #fff;
+    font-size: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.imgui-body {
+    padding: 8px;
+}
+
+.imgui-separator {
+    border: none;
+    border-top: 1px solid #4a4a6a;
+    margin: 6px 0;
+}
+
+.imgui-text {
+    color: #b0b0c0;
+    font-size: 12px;
+    margin-bottom: 4px;
+}
+
+.imgui-text-highlight {
+    color: #7abaff;
+}
+
+.imgui-text-dim {
+    color: #666680;
+    font-size: 11px;
+}
+
+/* Stage table */
+.stage-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 6px 0;
+}
+
+.stage-table th {
+    text-align: left;
+    padding: 3px 6px;
+    color: #8080a0;
+    font-size: 11px;
+    font-weight: normal;
+    border-bottom: 1px solid #3a3a5a;
+}
+
+.stage-table td {
+    padding: 4px 6px;
+    border-bottom: 1px solid #2a2a4a;
+    vertical-align: middle;
+}
+
+.stage-row {
+    cursor: pointer;
+    transition: background 0.1s;
+}
+
+.stage-row:hover {
+    background: #3a3a5a;
+}
+
+.stage-row.selected {
+    background: #3d5a80;
+}
+
+.stage-name {
+    font-weight: bold;
+    color: #e0e0f0;
+}
+
+/* Status badges */
+.status-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 2px;
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.status-passed {
+    background: #1a4a1a;
+    color: #4ae04a;
+    border: 1px solid #2a6a2a;
+}
+
+.status-failed {
+    background: #4a1a1a;
+    color: #e04a4a;
+    border: 1px solid #6a2a2a;
+}
+
+.status-not-run {
+    background: #3a3a3a;
+    color: #808080;
+    border: 1px solid #4a4a4a;
+}
+
+.status-running {
+    background: #4a4a1a;
+    color: #e0e04a;
+    border: 1px solid #6a6a2a;
+    animation: pulse 1.2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+/* Loaded indicator */
+.loaded-yes {
+    color: #4ae04a;
+    font-size: 14px;
+}
+
+.loaded-no {
+    color: #4a4a5a;
+    font-size: 14px;
+}
+
+/* Buttons */
+.imgui-button {
+    background: #3d5a80;
+    border: 1px solid #5a7a9a;
+    color: #ffffff;
+    padding: 4px 16px;
+    border-radius: 3px;
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    margin-right: 4px;
+    transition: background 0.1s;
+}
+
+.imgui-button:hover {
+    background: #4a6a90;
+}
+
+.imgui-button:active {
+    background: #2d4a6a;
+}
+
+.imgui-button-disabled {
+    background: #2a2a3a;
+    border: 1px solid #3a3a4a;
+    color: #606070;
+    cursor: not-allowed;
+}
+
+.button-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 8px;
+}
+
+/* Session info */
+.session-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 6px;
+}
+
+.session-stats {
+    display: flex;
+    gap: 12px;
+}
+
+.stat {
+    font-size: 11px;
+}
+
+.stat-label {
+    color: #666680;
+}
+
+.stat-value {
+    color: #b0b0c0;
+    font-weight: bold;
+}
+
+.stat-value-pass { color: #4ae04a; }
+.stat-value-fail { color: #e04a4a; }
+
+/* Footer */
+.imgui-footer {
+    padding: 4px 8px;
+    border-top: 1px solid #3a3a5a;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.footer-text {
+    font-size: 10px;
+    color: #505060;
+}
+
+/* Automation indicator */
+.automation-badge {
+    display: inline-block;
+    padding: 1px 5px;
+    border-radius: 2px;
+    font-size: 9px;
+    background: #1a3a4a;
+    color: #4abae0;
+    border: 1px solid #2a5a6a;
+    margin-left: 8px;
+}
+</style>
+</head>
+<body>
+
+<div class="imgui-window">
+    <div class="imgui-titlebar">
+        <span class="imgui-titlebar-text">CluicheTest — Bootstrap</span>
+        <button class="imgui-titlebar-collapse">▾</button>
+    </div>
+
+    <div class="imgui-body">
+        <!-- Header info -->
+        <div class="imgui-text">
+            Project: <span class="imgui-text-highlight">CluicheTest v0.1</span>
+            <span class="automation-badge">Automation: Connected</span>
+        </div>
+        <div class="imgui-text-dim">Session started 14:32:07 — 3 stages available</div>
+
+        <hr class="imgui-separator">
+
+        <!-- Stage table -->
+        <table class="stage-table">
+            <thead>
+                <tr>
+                    <th style="width:20px"></th>
+                    <th>Stage</th>
+                    <th style="width:80px">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="stage-row selected">
+                    <td class="loaded-yes">●</td>
+                    <td class="stage-name">DummyStage</td>
+                    <td><span class="status-badge status-passed">PASSED</span></td>
+                </tr>
+                <tr class="stage-row">
+                    <td class="loaded-yes">●</td>
+                    <td class="stage-name">RigidBody2DStage</td>
+                    <td><span class="status-badge status-failed">FAILED</span></td>
+                </tr>
+                <tr class="stage-row">
+                    <td class="loaded-no">○</td>
+                    <td class="stage-name">StateMachineStage</td>
+                    <td><span class="status-badge status-not-run">NOT RUN</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <hr class="imgui-separator">
+
+        <!-- Buttons -->
+        <div class="button-row">
+            <button class="imgui-button">▶ Launch</button>
+        </div>
+
+        <!-- Session stats -->
+        <div class="session-info">
+            <div class="session-stats">
+                <span class="stat"><span class="stat-label">Passed:</span> <span class="stat-value stat-value-pass">1</span></span>
+                <span class="stat"><span class="stat-label">Failed:</span> <span class="stat-value stat-value-fail">1</span></span>
+                <span class="stat"><span class="stat-label">Pending:</span> <span class="stat-value">1</span></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="imgui-footer">
+        <span class="footer-text">ImGui v1.90 | SFMLImGuiBackend | MainPU</span>
+        <span class="footer-text">Enter = Launch</span>
+    </div>
+</div>
+
+</body>
+</html>
