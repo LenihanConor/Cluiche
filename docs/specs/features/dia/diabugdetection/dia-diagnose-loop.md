@@ -1,6 +1,6 @@
 # Feature Spec: dia-diagnose-loop
 
-**Status:** Approved  
+**Status:** Dropped — manual review of delta.sarif preferred over agentic fix loop  
 **Parent System:** @docs/specs/systems/dia/diabugdetection.md  
 **Research:** docs/research/static_cpp_bug/summary.md
 
