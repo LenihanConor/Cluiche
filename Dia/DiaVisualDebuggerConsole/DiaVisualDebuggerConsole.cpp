@@ -150,7 +150,7 @@ namespace Dia
                 return;
 
             ImGui::SetNextWindowSize(ImVec2(520, 460), ImGuiCond_FirstUseEver);
-            if (!ImGui::Begin("Visual Debugger", &mVisible))
+            if (!ImGui::Begin("Game Debug Console", &mVisible))
             {
                 ImGui::End();
                 return;
@@ -208,7 +208,6 @@ namespace Dia
                 }
             }
 
-            // Always show a Stats tab
             if (ImGui::BeginTabBar("##DomainTabs"))
             {
                 for (int d = 0; d < domainCount; ++d)
@@ -216,14 +215,9 @@ namespace Dia
                     if (ImGui::BeginTabItem(domains[d]))
                     {
                         RenderLayersSection(manager, domains[d]);
+                        RenderStatsSection(debugFrameData);
                         ImGui::EndTabItem();
                     }
-                }
-
-                if (ImGui::BeginTabItem("Stats"))
-                {
-                    RenderStatsSection(debugFrameData);
-                    ImGui::EndTabItem();
                 }
 
                 ImGui::EndTabBar();
@@ -237,7 +231,7 @@ namespace Dia
         void DiaVisualDebuggerConsole::RenderLayersSection(
             DebugLayerManager& manager, const char* domain)
         {
-            const bool open = ImGui::CollapsingHeader("Draw Layers",
+            const bool open = ImGui::CollapsingHeader("Visual Debugger",
                 ImGuiTreeNodeFlags_DefaultOpen);
             if (!open)
                 return;
@@ -290,6 +284,9 @@ namespace Dia
         void DiaVisualDebuggerConsole::RenderStatsSection(
             const Dia::Graphics::DebugFrameData& debugFrameData)
         {
+            if (!ImGui::CollapsingHeader("Stats"))
+                return;
+
             ImGui::Text("Primitives: %u / %u",
                 debugFrameData.GetDebugPrimitiveCount(),
                 Dia::Graphics::DebugFrameData::kCapacity);
