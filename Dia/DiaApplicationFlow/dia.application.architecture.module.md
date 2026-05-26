@@ -13,10 +13,10 @@ parent_module_id: dia.root
 
 summary: >
   DiaApplicationFlow — config-driven application framework (v3). Defines Application,
-  Module, ProcessingUnit, TypeRegistry, ModuleRef, stream handles (FrameStream / EventStream),
-  IApplicationInspectable (read-only introspection) and IApplicationControl (narrow control
-  interface exposed to modules). Replaces the v1 Phase-based system; v1 files (ApplicationModule,
-  ApplicationPhase, HotReloadManager) are present but superseded.
+  Module, ProcessingUnit, TypeRegistry, ModuleRef, three stream primitives
+  (ServiceStream / FrameStream / EventStream), IApplicationInspectable (read-only
+  introspection) and IApplicationControl (narrow control interface exposed to modules).
+  Replaces the v1 Phase-based system; v1 files are present but superseded.
 
 intent: >
   Provide a config-driven, stage-based application lifecycle framework where a .diaapp JSON
@@ -32,8 +32,22 @@ responsibilities:
     (boot failure → shutdown; non-boot failure → capped rollback retries, then shutdown)
   - TypeRegistry + DIA_MODULE macro — static-init factory registration
   - ModuleRef<T> — lazy, lifecycle-safe inter-module access within a PU
-  - FrameStreamStore / EventStreamStore — manifest-authoritative inter-PU data channels, created at startup from manifest declarations; IStreamStore tap API: AttachTap(callback) → TapHandle, DetachTap(handle), GetTapCount()
-  - StreamWriter/Reader, EventStreamWriter/Reader — typed module-side handles
+  - Three stream primitives — all manifest-authoritative, declared in .diaapp streams[]:
+    - ServiceStream (once per scope): stable lifecycle handle (e.g. canvas, texture handler)
+      shared from a provider PU to consumer PUs. Collected-then-committed model — all
+      providers Register() during DoStart; framework Commits after all providers in scope
+      have registered; Get() asserts before commit. Roles: provides / consumes.
+    - FrameStream (every tick): composite per-PU-pair latest-wins data transport.
+      One struct per direction (e.g. SimToRender, MainToRender). New features extend the
+      struct, never add streams. Roles: reads / writes.
+    - EventStream (frame-batched): discrete events flushed at producer tick boundary.
+      Consumer gets exactly the previous frame's batch. Roles: reads / writes.
+  - Unified channels[] array on ModuleDeclaration — each entry is {id, role} where role
+    is one of reads / writes / provides / consumes.
+  - ServiceStreamStore / ServiceStreamWriter / ServiceStreamReader — ServiceStream impl.
+  - FrameStreamStore / EventStreamStore — FrameStream and EventStream impl; IStreamStore
+    tap API: AttachTap(callback) → TapHandle, DetachTap(handle), GetTapCount()
+  - StreamWriter/Reader, EventStreamWriter/Reader, ServiceStreamWriter/Reader — typed module handles
   - StreamTypeRegistry — process-static registry mapping C++ type → StringCRC type ID for stream payload type checking
   - ApplicationManifestV3 POD structs — in-memory representation of .diaapp v3 + .diastage files; stages are objects {name, transitions[], auto_advance} (SD-019)
   - ApplicationManifestLoaderV2 — JSON → ApplicationManifestV3 (v3 schema; rejects v2)
@@ -74,6 +88,9 @@ public_api:
     - Dia/DiaApplicationFlow/Streams/StreamReader.h
     - Dia/DiaApplicationFlow/Streams/EventStreamWriter.h
     - Dia/DiaApplicationFlow/Streams/EventStreamReader.h
+    - Dia/DiaApplicationFlow/Streams/ServiceStreamWriter.h
+    - Dia/DiaApplicationFlow/Streams/ServiceStreamReader.h
+    - Dia/DiaApplicationFlow/Streams/ServiceStreamStore.h
   namespaces:
     - Dia::ApplicationFlow
   entry_points:
@@ -95,6 +112,8 @@ public_api:
     - StreamReader<T>
     - EventStreamWriter<T>
     - EventStreamReader<T>
+    - ServiceStreamWriter<T>
+    - ServiceStreamReader<T>
     - IStreamStore (AttachTap / DetachTap / GetTapCount)
     - TapHandle
 
