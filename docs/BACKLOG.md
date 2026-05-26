@@ -19,6 +19,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | DiaAnimation3D | TBD — needs `/spec-system` | `clip-and-player` feature already Approved; needs own system spec. AnimationClip3D, ClipPlayer3D, glTF loader, STEP/LINEAR/CUBICSPLINE, `AnimationComponent3D`. | DiaRig3D |
 | DiaSkinning3D | TBD — needs `/spec-system` | `skinning-palette` feature already Approved; needs own system spec. SkinningManager, per-frame Matrix34 palettes, `skinningPaletteIndex` on draw commands. | DiaAnimation3D, DiaGraphics3D |
 | DiaScene3D | TBD — needs `/spec-system` | `scene-graph` feature already Approved; needs own system spec. Flat-list scene, Transform3D parent chains, frustum culling, `Submit(scene, frameData3D)`. | DiaSkinning3D, DiaGraphics3D, DiaGeometry3D |
+| DiaArchitecture | [diaarchitecture.md](specs/systems/dia/diaarchitecture.md) ✅ | C7 (YAML layer formalisation) → C1 (`dia check --tool=arch`) → C2 (Foundation CMake pilot) → C3 (full layered CMake enforcement). Must be done in order — C1 gates C3. | None |
 
 ---
 
@@ -27,7 +28,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | Feature | Spec | System | Notes |
 |---------|------|--------|-------|
 | per-app-bin-layout | [per-app-bin-layout.md](specs/features/dia/diapipeline/per-app-bin-layout.md) | DiaPipeline ✅ | |
-| ~~diabgfx-imgui-backend~~ | **Done** (2026-05-25) — BgfxImGuiBackend wired; SFML path regression-free; bgfx path verified on machine with direct GPU. | | |
+| ~~diabgfx-imgui-backend~~ | **Done** (2026-05-25) — BgfxImGuiBackend wired; deferred-init on render thread; ImGui input via Win32WndProcChain; both SFML and `BGFX_BACKEND=dx11` paths pass. | | |
 | ~~ToolbarPanelSwitcher~~ | **Done** (2026-05-22) — full-name pills + `⋯ +N` overflow dropdown, `ProjectContextButton` moved right. | | |
 
 ---
@@ -107,8 +108,25 @@ Research complete: [docs/research/static_cpp_bug/](research/static_cpp_bug/). Bu
 
 | Item | Blocked by | Notes |
 |------|-----------|-------|
-| Clang-Tidy analysis | CMake migration (compile_commands.json) | Full project coverage once CMake is the build system; start with DiaCore module mirror |
+| Clang-Tidy analysis | CMake migration (compile_commands.json) | Unblocked by C2 (Foundation CMake pilot) — see DiaArchitecture system below |
 | TSan (ThreadSanitizer) | Linux target (WSL2 CI) | Only reliable race detector for Main/Render/Sim threading model; TSan doesn't run on Windows |
+
+---
+
+## DiaArchitecture — Domain-Oriented Module Structure + CMake Enforcement
+
+Spec Approved: [diaarchitecture.md](specs/systems/dia/diaarchitecture.md). All 4 features Approved — ready to implement.
+
+**Target architecture:** 6-sub-layer Core + 4 domain vertical slices. Each domain owns its core modules and its visual debuggers/editor plugins. CMake `target_link_libraries` enforces the dependency rules currently only documented in YAML.
+
+### Implementation sequence (build in order — each depends on previous)
+
+| Step | Item | What's needed | Notes |
+|------|------|--------------|-------|
+| C7 | YAML layer formalisation | Add `layer:` field to all 55+ module docs | Documents the architecture; prerequisite for C1 |
+| C1 | `dia check --tool=arch` | Python `#include` graph checker vs YAML `dependencies.forbidden` | Surfaces current silent violations before any CMake work |
+| C2 | Foundation CMake pilot | `CMakeLists.txt` for Foundation sub-layer (DiaCore, DiaMaths, DiaGeometry2D/3D, DiaSerializer, DiaObservation) | `.vcxproj` stays; CMake additive; unlocks `compile_commands.json` |
+| C3 | Layered CMake INTERFACE model | Full enforcement — all 55 modules, `cmake --build` replaces msbuild in DiaCLI, PD-006 updated | Requires C1 violations fixed first |
 
 ---
 
