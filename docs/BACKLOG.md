@@ -31,6 +31,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | service-channel | [service-channel.md](specs/features/dia/diaapplicationflow/service-channel.md) | DiaApplicationFlow ✅ | `ServiceStream<T>` primitive; unified `channels` array replaces `reads`/`writes`; migrates KernelModule statics (sCanvas, sTextureHandler, sRenderContextReleased). [Plan](specs/features/dia/diaapplicationflow/service-channel.plan.md) ready. |
 | ~~diabgfx-imgui-backend~~ | **Done** (2026-05-25) — BgfxImGuiBackend wired; deferred-init on render thread; ImGui input via Win32WndProcChain; both SFML and `BGFX_BACKEND=dx11` paths pass. | | |
 | ~~diasfml-render-removal~~ | **Done** (2026-05-26) — SFML render path deleted; DiaSFML = window+input only; TextureHandler moved to DiaAssetRuntime (stb_image decode via DiaBgfx); bgfx unconditional; imgui core sources moved to DiaBgfx; Phase 1 ship gate (RB-016) closed. | | |
+| ~~stale-ui-overlay-fix~~ | **Done** (2026-05-26) — UIOverlayRenderer::Composite early-returns on empty buffer; fixes DummyStage UI persisting into RigidBody2DStage after transition. 5 regression tests added. | | |
 | ~~ToolbarPanelSwitcher~~ | **Done** (2026-05-22) — full-name pills + `⋯ +N` overflow dropdown, `ProjectContextButton` moved right. | | |
 
 ---
