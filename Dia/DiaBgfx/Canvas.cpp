@@ -252,6 +252,14 @@ namespace Dia
                     return;
             }
 
+            const uint16_t w = static_cast<uint16_t>(mSize.X());
+            const uint16_t h = static_cast<uint16_t>(mSize.Y());
+
+            bgfx::setViewRect(kEntityViewId, 0, 0, w, h);
+            bgfx::setViewRect(kDebugViewId,  0, 0, w, h);
+            bgfx::setViewRect(kUIViewId,     0, 0, w, h);
+            bgfx::setViewRect(kImGuiViewId,  0, 0, w, h);
+
             bgfx::touch(kEntityViewId);
             bgfx::touch(kDebugViewId);
             bgfx::touch(kUIViewId);

@@ -32,7 +32,7 @@ private:
     static constexpr unsigned int kMaxStages = 16;
     Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, kMaxStages> mNavigableStages;
     unsigned int mLoadedBitfield = 0;
-    int mSelectedIndex = 0;
+    int mSelectedIndex = -1;
     bool mFirstDraw = true;
     bool mFrameWasActive = false;
 

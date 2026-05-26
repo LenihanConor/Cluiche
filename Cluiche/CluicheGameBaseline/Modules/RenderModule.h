@@ -22,7 +22,7 @@ protected:
 private:
     Dia::ApplicationFlow::StreamReader<Dia::Graphics::FrameData> mFrameInput{this, "SimToRender"};
     Dia::Graphics::ICanvas* mCanvas = nullptr;
-    Dia::Graphics::FrameData mEmptyFrame;
+    Dia::Graphics::FrameData mLastFrame;
 };
 
 } } // namespace Cluiche::AppFlow

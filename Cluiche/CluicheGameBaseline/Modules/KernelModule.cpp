@@ -70,8 +70,6 @@ Dia::ApplicationFlow::StartResult KernelModule::DoStart()
     mInputSourceManager.AddInputSource(renderWindow);
     mInputSourceManager.AddInputSource(&mGamepadManager);
 
-    mCanvas->SetActiveContext(false);
-
     // Check BGFX_BACKEND env var — if set, construct Dia::Bgfx::Canvas alongside SFML.
     // The bgfx canvas is the active canvas; SFML canvas is still alive but not driven.
     const char* bgfxBackendEnv = std::getenv("BGFX_BACKEND");
@@ -79,9 +77,12 @@ Dia::ApplicationFlow::StartResult KernelModule::DoStart()
     {
         DIA_LOG_INFO("Application", "KernelModule: BGFX_BACKEND=%s — constructing Bgfx::Canvas", bgfxBackendEnv);
 
+        // Deactivate SFML's GL context permanently — bgfx owns the window surface.
+        renderWindow->SetActiveContext(false);
+
         Dia::Bgfx::CanvasSettings bgfxSettings;
         bgfxSettings.initialSize = Dia::Maths::Vector2D(1400.0f, 1000.0f);
-        bgfxSettings.cookedShaderRoot = "Cluiche/out/cluichetest/shaders";
+        bgfxSettings.cookedShaderRoot = "shaders";
 
         if (strcmp(bgfxBackendEnv, "dx12") == 0)
             bgfxSettings.rendererType = Dia::Bgfx::RendererType::Direct3D12;
@@ -105,6 +106,11 @@ Dia::ApplicationFlow::StartResult KernelModule::DoStart()
         Dia::ImGui::SetBackend(mBgfxImGuiBackend);
         Dia::ImGui::Init();
 #endif
+    }
+    else
+    {
+        // SFML path: deactivate GL context on MainPU so RenderPU can activate it.
+        mCanvas->SetActiveContext(false);
     }
 
     // Publish sCanvas AFTER deactivating the GL context. RenderModule polls this

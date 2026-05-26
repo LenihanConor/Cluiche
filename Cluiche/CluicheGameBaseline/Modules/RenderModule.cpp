@@ -52,13 +52,10 @@ void RenderModule::DoUpdate(float /*dt*/)
     const Dia::Graphics::FrameData* frame = mFrameInput.FetchLatest();
     if (frame != nullptr)
     {
-        mCanvas->RenderFrame(*frame);
+        mLastFrame = *frame;
     }
-    else
-    {
-        mEmptyFrame.Clear();
-        mCanvas->RenderFrame(mEmptyFrame);
-    }
+
+    mCanvas->RenderFrame(mLastFrame);
 
     // Drain GPU resource deletions queued by Unload() on other threads.
     // RenderPU owns the GL context; this is the only place sf::Texture
