@@ -30,6 +30,8 @@
     <ClCompile Include="Types\InputEvent.cpp" />
     <ClCompile Include="Types\MainToRenderEvent.cpp" />
     <ClCompile Include="Types\MainToRenderFrame.cpp" />
+    <ClCompile Include="Types\MainToSimEvent.cpp" />
+    <ClCompile Include="Types\SimToMainEvent.cpp" />
     <ClCompile Include="Types\UICommand.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -52,6 +54,8 @@
     <ClInclude Include="Types\InputEvent.h" />
     <ClInclude Include="Types\MainToRenderEvent.h" />
     <ClInclude Include="Types\MainToRenderFrame.h" />
+    <ClInclude Include="Types\MainToSimEvent.h" />
+    <ClInclude Include="Types\SimToMainEvent.h" />
     <ClInclude Include="Types\UICommand.h" />
   </ItemGroup>
   <ItemGroup>

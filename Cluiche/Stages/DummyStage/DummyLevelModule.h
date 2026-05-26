@@ -9,7 +9,7 @@
 #include <DiaGraphics/Frame/FrameData.h>
 #include <DiaUI/UIDataBuffer.h>
 #include <DiaAssetRuntime/Handlers/TextureHandler.h>
-#include "Types/UICommand.h"
+#include "Types/SimToMainEvent.h"
 #include "Modules/TimeServerModule.h"
 #include "Modules/InputStreamModule.h"
 
@@ -28,7 +28,7 @@ protected:
 
 private:
     Dia::ApplicationFlow::StreamWriter<Dia::Graphics::FrameData>                          mRenderOutput{this, "SimToRender"};
-    Dia::ApplicationFlow::EventStreamWriter<UICommand>                                     mUIOutput{this, "SimToUI"};
+    Dia::ApplicationFlow::EventStreamWriter<SimToMainEvent>                                mUIOutput{this, "SimToMain"};
     Dia::ApplicationFlow::StreamReader<Dia::UI::UIDataBuffer>                              mUIInput{this, "UIToSim"};
     Dia::ApplicationFlow::ServiceStreamReader<Dia::AssetRuntime::TextureHandler>           mTextureHandlerService{this, "KernelTextureHandler"};
     Dia::ApplicationFlow::ModuleRef<TimeServerModule>                                      mTimeServer{this};

@@ -1,5 +1,6 @@
 #include "DummyLevelModule.h"
 #include "Modules/AssetServiceModule.h"
+#include "Types/UICommand.h"
 
 #include <DiaApplicationFlow/Application.h>
 #include <DiaCore/Time/TimeAbsolute.h>
@@ -155,17 +156,19 @@ void DummyLevelModule::DoUpdate(float dt)
         fps = (delta > 0.0f) ? (1.0f / delta) : 0.0f;
     }
 
-    UICommand fpsCmd;
-    fpsCmd.type  = UICommand::Type::kUpdateValue;
-    fpsCmd.key   = Dia::Core::StringCRC("FPS");
-    fpsCmd.value = fps;
-    (void)mUIOutput.Send(fpsCmd);
+    SimToMainEvent fpsEvt;
+    fpsEvt.kind           = SimToMainEvent::Kind::kUICommand;
+    fpsEvt.uiCommand.type = UICommand::Type::kUpdateValue;
+    fpsEvt.uiCommand.key  = Dia::Core::StringCRC("FPS");
+    fpsEvt.uiCommand.value = fps;
+    (void)mUIOutput.Send(fpsEvt);
 
-    UICommand scoreCmd;
-    scoreCmd.type  = UICommand::Type::kUpdateValue;
-    scoreCmd.key   = Dia::Core::StringCRC("Score");
-    scoreCmd.value = mScore;
-    (void)mUIOutput.Send(scoreCmd);
+    SimToMainEvent scoreEvt;
+    scoreEvt.kind           = SimToMainEvent::Kind::kUICommand;
+    scoreEvt.uiCommand.type = UICommand::Type::kUpdateValue;
+    scoreEvt.uiCommand.key  = Dia::Core::StringCRC("Score");
+    scoreEvt.uiCommand.value = mScore;
+    (void)mUIOutput.Send(scoreEvt);
 
     // Accumulate score to prove the pipeline is live
     mScore += dt;

@@ -5,7 +5,7 @@
 #include <DiaApplicationFlow/Streams/StreamWriter.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaUI/UIDataBuffer.h>
-#include "Types/UICommand.h"
+#include "Types/SimToMainEvent.h"
 #include "Modules/KernelModule.h"
 
 namespace Dia { namespace UI { class IUISystem; class Page; } }
@@ -44,7 +44,7 @@ protected:
     void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 
 private:
-    Dia::ApplicationFlow::EventStreamReader<UICommand> mUICommands{this, "SimToUI"};
+    Dia::ApplicationFlow::EventStreamReader<SimToMainEvent> mUICommands{this, "SimToMain"};
     Dia::ApplicationFlow::StreamWriter<Dia::UI::UIDataBuffer> mUIBufferOutput{this, "UIToSim"};
     Dia::ApplicationFlow::ModuleRef<KernelModule> mKernel{this};
 

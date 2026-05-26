@@ -67,7 +67,7 @@ void UIModule::DoUpdate(float /*dt*/)
     }
 
     // Drain HUD commands from Sim (FPS, Score, etc.).
-    Dia::Core::Containers::DynamicArrayC<Dia::ApplicationFlow::Event<UICommand>, 32> pending;
+    Dia::Core::Containers::DynamicArrayC<Dia::ApplicationFlow::Event<SimToMainEvent>, 32> pending;
     mUICommands.Consume(pending);
 
     mUISystem->Update();

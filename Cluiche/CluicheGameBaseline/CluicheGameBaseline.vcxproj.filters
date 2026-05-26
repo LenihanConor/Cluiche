@@ -51,6 +51,12 @@
     <ClCompile Include="Types\MainToRenderFrame.cpp">
       <Filter>Types</Filter>
     </ClCompile>
+    <ClCompile Include="Types\MainToSimEvent.cpp">
+      <Filter>Types</Filter>
+    </ClCompile>
+    <ClCompile Include="Types\SimToMainEvent.cpp">
+      <Filter>Types</Filter>
+    </ClCompile>
     <ClCompile Include="Types\UICommand.cpp">
       <Filter>Types</Filter>
     </ClCompile>
@@ -96,6 +102,12 @@
       <Filter>Types</Filter>
     </ClInclude>
     <ClInclude Include="Types\MainToRenderFrame.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\MainToSimEvent.h">
+      <Filter>Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Types\SimToMainEvent.h">
       <Filter>Types</Filter>
     </ClInclude>
     <ClInclude Include="Types\UICommand.h">

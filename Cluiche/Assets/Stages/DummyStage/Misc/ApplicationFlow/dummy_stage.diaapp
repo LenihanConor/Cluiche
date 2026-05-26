@@ -27,7 +27,7 @@
                     "stages": [ "DummyStage" ],
                     "dependencies": [ "TimeServerModule", "InputStreamModule" ],
                     "reads": [ "UIToSim" ],
-                    "writes": [ "SimToRender", "SimToUI" ]
+                    "writes": [ "SimToRender", "SimToMain" ]
                 },
                 {
                     "instance_id": "EntityModule",

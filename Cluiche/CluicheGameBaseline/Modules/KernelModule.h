@@ -8,7 +8,7 @@
 #include <DiaInput/ConsoleGamepadManager.h>
 #include <DiaSFML/WindowFactory.h>
 #include <DiaAssetRuntime/Handlers/TextureHandler.h>
-#include "Types/InputEvent.h"
+#include "Types/MainToSimEvent.h"
 
 namespace Dia { namespace Bgfx { class Canvas; } }
 
@@ -48,7 +48,7 @@ protected:
     void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 
 private:
-    Dia::ApplicationFlow::EventStreamWriter<InputEvent>                         mInputWriter{this, "InputToSim"};
+    Dia::ApplicationFlow::EventStreamWriter<MainToSimEvent>                      mInputWriter{this, "MainToSim"};
     Dia::ApplicationFlow::ServiceStreamWriter<Dia::Graphics::ICanvas>           mCanvasService{this, "KernelCanvas"};
     Dia::ApplicationFlow::ServiceStreamWriter<Dia::AssetRuntime::TextureHandler> mTextureHandlerService{this, "KernelTextureHandler"};
     static std::atomic<bool>                                                     sRenderContextReleased;

@@ -31,12 +31,16 @@ void InputStreamModule::DoUpdate(float /*dt*/)
 {
     memcpy(mPreviousKeys, mCurrentKeys, sizeof(mCurrentKeys));
 
-    Dia::Core::Containers::DynamicArrayC<Dia::ApplicationFlow::Event<InputEvent>, 64> events;
+    Dia::Core::Containers::DynamicArrayC<Dia::ApplicationFlow::Event<MainToSimEvent>, 64> events;
     mInput.Consume(events);
 
     for (unsigned int i = 0; i < static_cast<unsigned int>(events.Size()); ++i)
     {
-        const InputEvent& evt = events[i].payload;
+        const MainToSimEvent& envelope = events[i].payload;
+        if (envelope.kind != MainToSimEvent::Kind::kInput)
+            continue;
+
+        const InputEvent& evt = envelope.input;
         if (evt.type == InputEvent::EType::kKeyPressed)
         {
             unsigned int idx = static_cast<unsigned int>(evt.key.code);
