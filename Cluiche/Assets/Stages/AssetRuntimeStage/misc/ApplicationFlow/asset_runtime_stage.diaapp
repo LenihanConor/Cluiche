@@ -2,19 +2,16 @@
     "version": 3,
     "processing_units": [
         {
-            "instance_id": "SimPU",
+            "instance_id": "MainPU",
             "frequency_hz": 30,
-            "dedicated_thread": true,
+            "dedicated_thread": false,
             "modules": [
                 {
                     "instance_id": "AssetRuntimeStageModule",
                     "type_id": "AssetRuntimeStageModule",
                     "stages": [ "AssetRuntimeStage" ],
                     "dependencies": [ "AutomationModule" ],
-                    "channels": [
-                        { "id": "SimToRender", "role": "writes" },
-                        { "id": "KernelTextureHandler", "role": "reads" }
-                    ]
+                    "channels": []
                 }
             ]
         }

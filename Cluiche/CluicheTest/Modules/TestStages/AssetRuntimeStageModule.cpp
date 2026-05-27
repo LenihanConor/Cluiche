@@ -1,14 +1,10 @@
 #include "Modules/TestStages/AssetRuntimeStageModule.h"
 #include "Modules/AssetServiceModule.h"
 
-#include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaAutomation/AutomationService.h>
-#include <DiaGraphics/Frame/SpriteDrawCommand.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
-#include <DiaMaths/Vector/Vector2D.h>
-#include <DiaCore/Time/TimeAbsolute.h>
 
 namespace CluicheTest {
 
@@ -48,14 +44,10 @@ Dia::ApplicationFlow::StartResult AssetRuntimeStageModule::DoStart()
 void AssetRuntimeStageModule::DoUpdate(float /*deltaTime*/)
 {
     ++mFrameCount;
-    mFrame.Clear();
 
     auto* svc = Cluiche::AppFlow::AssetServiceModule::GetStatic();
     if (!svc)
-    {
-        mRenderOutput.Write(mFrame, Dia::Core::TimeAbsolute::Zero());
         return;
-    }
 
     if (!mAllLoaded)
     {
@@ -77,13 +69,10 @@ void AssetRuntimeStageModule::DoUpdate(float /*deltaTime*/)
                                 mFirstEntrySnapshot.allSucceeded);
             }
 
-            DIA_LOG_INFO("CluicheTest", "AssetRuntimeStageModule: all loaded at frame %u (entry %u, loaded=%u)",
-                mFrameCount, mEntryCount, progress.loaded);
+            DIA_LOG_INFO("CluicheTest", "AssetRuntimeStageModule: all loaded at frame %u (entry %u, loaded=%u, total=%u, failed=%u)",
+                mFrameCount, mEntryCount, progress.loaded, progress.total, progress.failed);
         }
     }
-
-    if (mAllLoaded && mTextureHandlerService.IsAvailable())
-        RenderLoadedTextures();
 
     // Metrics
     {
@@ -99,8 +88,6 @@ void AssetRuntimeStageModule::DoUpdate(float /*deltaTime*/)
             mMetricLoadTimeMs->Set(elapsedMs);
         }
     }
-
-    mRenderOutput.Write(mFrame, Dia::Core::TimeAbsolute::Zero());
 }
 
 Dia::ApplicationFlow::StopResult AssetRuntimeStageModule::DoStop()
@@ -113,9 +100,6 @@ Dia::ApplicationFlow::StopResult AssetRuntimeStageModule::DoStop()
             service->UnregisterCheckpoints(this);
     }
 
-    mFrame.Clear();
-    mRenderOutput.Write(mFrame, Dia::Core::TimeAbsolute::Zero());
-
     mAllLoaded   = false;
     mCleanReload = false;
     mFrameCount  = 0;
@@ -124,12 +108,6 @@ Dia::ApplicationFlow::StopResult AssetRuntimeStageModule::DoStop()
 
     DIA_LOG_INFO("CluicheTest", "AssetRuntimeStageModule DoStop exit");
     return Dia::ApplicationFlow::StopResult::kDone;
-}
-
-void AssetRuntimeStageModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
-{
-    mRenderOutput.Connect(app);
-    mTextureHandlerService.Connect(app);
 }
 
 void AssetRuntimeStageModule::RegisterCheckpoints()
@@ -151,34 +129,6 @@ void AssetRuntimeStageModule::RegisterCheckpoints()
                      mCleanReload ? "reload state matches" : "state mismatch after reload",
                      0.0f };
         });
-}
-
-void AssetRuntimeStageModule::RenderLoadedTextures()
-{
-    auto& tex = mTextureHandlerService.Get();
-
-    auto* t1 = tex.LookupTexture(Dia::Core::StringCRC("texture.ar_tex1"));
-    auto* t2 = tex.LookupTexture(Dia::Core::StringCRC("texture.ar_tex2"));
-    auto* t3 = tex.LookupTexture(Dia::Core::StringCRC("texture.ar_tex3"));
-
-    if (t1)
-    {
-        Dia::Graphics::SpriteDrawCommand s(t1, Dia::Maths::Vector2D(580.0f, 80.0f));
-        s.scale = Dia::Maths::Vector2D(100.0f, 100.0f);
-        mFrame.RequestDrawSprite(s);
-    }
-    if (t2)
-    {
-        Dia::Graphics::SpriteDrawCommand s(t2, Dia::Maths::Vector2D(700.0f, 80.0f));
-        s.scale = Dia::Maths::Vector2D(100.0f, 100.0f);
-        mFrame.RequestDrawSprite(s);
-    }
-    if (t3)
-    {
-        Dia::Graphics::SpriteDrawCommand s(t3, Dia::Maths::Vector2D(820.0f, 80.0f));
-        s.scale = Dia::Maths::Vector2D(100.0f, 100.0f);
-        mFrame.RequestDrawSprite(s);
-    }
 }
 
 } // namespace CluicheTest
