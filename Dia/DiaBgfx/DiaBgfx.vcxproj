@@ -28,6 +28,7 @@
     <ClInclude Include="Resources\BgfxTextureHandle.h" />
     <ClInclude Include="Imgui\BgfxImGuiBackend.h" />
     <ClInclude Include="Imgui\BgfxImGuiRenderer.h" />
+    <ClInclude Include="Imgui\Win32WndProcChain.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Canvas.cpp" />
@@ -41,6 +42,9 @@
       <ExcludedFromBuild Condition="'$(Configuration)'=='Release'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="Imgui\BgfxImGuiRenderer.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)'=='Release'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="Imgui\Win32WndProcChain.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)'=='Release'">true</ExcludedFromBuild>
     </ClCompile>
     <!-- imgui_impl_win32 platform layer (DIA_DEBUG only) -->

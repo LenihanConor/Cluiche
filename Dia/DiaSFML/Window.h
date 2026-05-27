@@ -36,7 +36,6 @@ namespace Dia
 			virtual void SetTitle(const Core::Containers::String64& title) override;
 			virtual void SetIcon(unsigned int width, unsigned int height, const unsigned char* pixels) override;
 			virtual void SetVisible(bool visible) override;
-			virtual bool SetActive(bool active = true) const override;
 			virtual void SetMouseCursorVisible(bool visible) override;
 			virtual Dia::Window::SystemHandle GetSystemHandle() const override;
 

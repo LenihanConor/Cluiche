@@ -56,6 +56,7 @@ Dia is the game engine application that provides all shared engine infrastructur
 | DiaBgfx3D | Phase 2 3D rendering layer — `Canvas3D`, `MeshRenderer`, `SkinnedMeshRenderer`, `ShadowRenderer`, `MaterialRegistry`, `MeshGpuCache`, 3D shaders; separate module so 2D-only games never pull in the DiaScene3D chain | [diabgfx3d.md](../systems/dia/diabgfx3d.md) |
 | DiaThreading | Task-based parallelism — `JobSystem`, `JobHandle`; extracted from DiaCore to allow DiaObservation dependency; `dia.jobs.*` metrics via JobSystemModule | [diathreading.md](../systems/dia/diathreading.md) |
 | DiaBugDetection | Static analysis + sanitizer build configs + agentic Claude fix loop — `dia check`, `dia diagnose`, CI gate | [diabugdetection.md](../systems/dia/diabugdetection.md) |
+| DiaArchitecture | Domain-oriented module layer model + CMake enforcement — `layer:` YAML formalisation, `dia check --tool=arch` audit, Foundation CMake pilot, full layered INTERFACE model | [diaarchitecture.md](../systems/dia/diaarchitecture.md) |
 | DiaCore | Foundation library (containers, type system, memory, logging, CRC) | [diacore.md](../systems/dia/diacore.md) |
 | DiaReflect | Archive-based reflection & serialization — macro DSL, JSON/binary archives, versioning, polymorphism; eventual replacement for DiaCore/Type | [diareflect.md](../systems/dia/diareflect.md) |
 | DiaMaths | Math library (vectors, matrices, quaternions, transforms, core math utilities — pure linear algebra only after DiaGeometry2D migration) | [diamaths.md](../systems/dia/diamaths.md) |
@@ -63,6 +64,7 @@ Dia is the game engine application that provides all shared engine infrastructur
 | DiaGraphics3D | 3D rendering type layer — Camera3D, lights, Mesh3DDrawCommand, Mesh3DFrameData, FrameData3D; separate module so 2D-only consumers never pull in Matrix44 | [diagraphics3d.md](../systems/dia/diagraphics3d.md) |
 | DiaWindow | Window management | TBD |
 | DiaInput | Input handling (keyboard, mouse, events) | TBD |
+| DiaSDL | SDL3-backed window + input backend — implements `IWindow` + `IInputSource` for Windows, Linux, Android, iOS; replaces DiaSFML | [replace-diasfml-with-sdl3.md](../features/dia/diasdl/replace-diasfml-with-sdl3.md) |
 | DiaUI | UI system abstraction | TBD |
 
 ## Application-Specific Architecture
@@ -89,7 +91,7 @@ DiaAPI provides extensible command-line tools for asset pipelines and build auto
 
 Dia is the engine - it provides dependencies for other applications rather than consuming them. External dependencies:
 
-- **SFML** (External/SFML) - Graphics, window, multimedia
+- **SDL3** (External/SDL3) - Window management and input (replaces SFML window/input path; git submodule, built via `dia env setup`)
 - **jsoncpp** (External/jsoncpp-master) - JSON parsing
 - **Webix / VisJS** (External/) - Web UI for debugging/visualization
 - **GoogleTest** (External/googletest) - Unit testing framework
@@ -102,7 +104,7 @@ What the Dia engine deliberately does NOT provide:
 - **High-level game features** - No built-in inventory, quest, or gameplay systems
 - **Content creation tools** - No level editors, asset authoring tools (yet - DiaAPI is first step)
 - **Network/multiplayer** - Not yet implemented
-- **Mobile/console platforms** - Windows-only currently
+- **Mobile/console platforms** - Windows-only currently; Android/iOS targeted via DiaSDL (window+input ready; full platform pipeline TBD)
 
 ## Key Users / Personas
 

@@ -147,13 +147,6 @@ namespace Dia
 		}
 
 		//-------------------------------------------------------------------------------------
-		bool Window::SetActive(bool active) const
-		{
-			DIA_ASSERT(mWindowContext, "mWindowContext is NULL");
-			return mWindowContext ? mWindowContext->setActive(active) : false;
-		}
-
-		//-------------------------------------------------------------------------------------
 		void Window::SetMouseCursorVisible(bool visible)
 		{
 			DIA_ASSERT(mWindowContext, "mWindowContext is NULL");

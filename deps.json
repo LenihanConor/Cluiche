@@ -167,6 +167,28 @@
         "External/bgfx/tools/shaderc.exe",
         "External/bgfx/examples/common/imgui/imgui.cpp"
       ]
+    },
+    {
+      "id": "sdl3",
+      "version": "3.x-main",
+      "install_type": "cmake_build",
+      "source": {
+        "local": "External/SDL3"
+      },
+      "cmake_options": [
+        "-DSDL_STATIC=ON",
+        "-DSDL_SHARED=OFF",
+        "-DSDL_TEST_LIBRARY=OFF",
+        "-DSDL_TESTS=OFF"
+      ],
+      "stage": [
+        {"from": "_build/Release/SDL3-static.lib", "to": "External/SDL3/lib/Release/SDL3-static.lib"},
+        {"from": "_build/Debug/Debug/SDL3-static.lib", "to": "External/SDL3/lib/Debug/SDL3-static.lib"}
+      ],
+      "sentinel_inputs": [
+        "External/SDL3/lib/Release/SDL3-static.lib",
+        "External/SDL3/lib/Debug/SDL3-static.lib"
+      ]
     }
   ]
 }

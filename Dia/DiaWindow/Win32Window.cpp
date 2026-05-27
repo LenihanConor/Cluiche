@@ -137,8 +137,6 @@ namespace Dia
 			ShowWindow(static_cast<HWND>(mHwnd), visible ? SW_SHOW : SW_HIDE);
 		}
 
-		bool Win32Window::SetActive(bool) const { return true; }
-
 		void Win32Window::SetMouseCursorVisible(bool visible)
 		{
 			ShowCursor(visible ? TRUE : FALSE);

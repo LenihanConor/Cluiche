@@ -14,3 +14,7 @@
 #   git rm -r External/jsoncpp-master
 #   git submodule add https://github.com/open-source-parsers/jsoncpp.git External/jsoncpp
 #   (the plain-file copy must be removed before it can be re-added as a submodule)
+[submodule "External/SDL3"]
+	path = External/SDL3
+	url = https://github.com/libsdl-org/SDL.git
+	branch = main

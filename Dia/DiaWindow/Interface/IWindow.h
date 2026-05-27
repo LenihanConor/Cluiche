@@ -129,11 +129,6 @@ namespace Dia
 			////////////////////////////////////////////////////////////
 			/// Show or hide the window
 			virtual void SetVisible(bool visible) = 0;
-	
-			////////////////////////////////////////////////////////////
-			/// Activate or deactivate the window as the current target
-			///        for OpenGL rendering
-			virtual bool SetActive(bool active = true) const = 0;
 
 			////////////////////////////////////////////////////////////
 			/// Show or hide the mouse cursor

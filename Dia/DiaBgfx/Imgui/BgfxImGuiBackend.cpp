@@ -11,7 +11,7 @@
 
 #include "DiaBgfx/Canvas.h"
 #include "DiaBgfx/Imgui/BgfxImGuiRenderer.h"
-#include <DiaSFML/Win32WndProcChain.h>
+#include <DiaBgfx/Imgui/Win32WndProcChain.h>
 
 #include <imgui.h>
 #include <backends/imgui_impl_win32.h>
@@ -55,7 +55,7 @@ namespace Dia
 
             ImGui_ImplWin32_Init(reinterpret_cast<HWND>(mHwnd));
 
-            Dia::SFML::Win32WndProcChain::Install(mHwnd, &BgfxImGuiBackend::WndProcThunk, this);
+            Dia::Bgfx::Win32WndProcChain::Install(mHwnd, &BgfxImGuiBackend::WndProcThunk, this);
 
             // imguiCreate() deferred to first NewFrame — requires bgfx to be initialised,
             // which happens on RenderPU's thread via Canvas::DeferredInit().
@@ -67,7 +67,7 @@ namespace Dia
             if (!mInitialised)
                 return;
 
-            Dia::SFML::Win32WndProcChain::Uninstall(mHwnd);
+            Dia::Bgfx::Win32WndProcChain::Uninstall(mHwnd);
             if (mRendererCreated)
                 imguiDestroy();
             ImGui_ImplWin32_Shutdown();
