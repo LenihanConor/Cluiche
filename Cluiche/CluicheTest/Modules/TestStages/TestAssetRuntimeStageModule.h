@@ -9,11 +9,11 @@ namespace Dia { namespace Observation { namespace Metric { class Gauge; } } }
 
 namespace CluicheTest {
 
-class AssetRuntimeStageModule : public Dia::ApplicationFlow::Module
+class TestAssetRuntimeStageModule : public Dia::ApplicationFlow::Module
 {
 public:
     static const Dia::Core::StringCRC kTypeId;
-    explicit AssetRuntimeStageModule(const Dia::Core::StringCRC& instanceId);
+    explicit TestAssetRuntimeStageModule(const Dia::Core::StringCRC& instanceId);
 
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
@@ -40,6 +40,8 @@ private:
     Dia::Observation::Metric::Gauge* mMetricLoadCount     = nullptr;
     Dia::Observation::Metric::Gauge* mMetricActiveHandles = nullptr;
     Dia::Observation::Metric::Gauge* mMetricLoadTimeMs    = nullptr;
+    Dia::Observation::Metric::Gauge* mMetricEntryCount    = nullptr;
+    Dia::Observation::Metric::Gauge* mMetricSnapshotLoaded = nullptr;
 };
 
 } // namespace CluicheTest

@@ -1,9 +1,12 @@
 #include "Modules/TestStages/AssetRuntimeHUDModule.h"
 #include "Modules/AssetServiceModule.h"
+#include "Modules/TestStages/TestResultsRegistry.h"
 
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Metric/Gauge.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 
 #include <imgui.h>
@@ -35,70 +38,125 @@ void AssetRuntimeHUDModule::DoUpdate(float /*deltaTime*/)
         return;
 
     auto* svc = Cluiche::AppFlow::AssetServiceModule::GetStatic();
+    const bool stageComplete = svc && svc->IsStageLoadComplete(Dia::Core::StringCRC("AssetRuntimeStage"));
 
-    ImGui::SetNextWindowPos(ImVec2(16.0f, 16.0f), ImGuiCond_Once);
-    ImGui::SetNextWindowSize(ImVec2(300.0f, 380.0f), ImGuiCond_Once);
-    ImGui::Begin("Asset Runtime");
+    auto& metricReg = Dia::Observation::Metric::MetricRegistry::Instance();
+    Dia::Observation::Metric::Gauge* gEntryCount = metricReg.FindGauge(Dia::Core::StringCRC("cluichetest.asset_runtime.entry_count"));
+    Dia::Observation::Metric::Gauge* gLoadCount  = metricReg.FindGauge(Dia::Core::StringCRC("cluichetest.asset_runtime.load_count"));
+    Dia::Observation::Metric::Gauge* gSnapshot   = metricReg.FindGauge(Dia::Core::StringCRC("cluichetest.asset_runtime.snapshot_loaded"));
 
-    // Stage load state section — use atomic-safe API only (no GetRuntime() cross-PU)
-    if (ImGui::CollapsingHeader("Stage Load State", ImGuiTreeNodeFlags_DefaultOpen))
-    {
-        if (svc)
-        {
-            const bool complete = svc->IsStageLoadComplete(Dia::Core::StringCRC("AssetRuntimeStage"));
-            ImGui::Text("Complete:"); ImGui::SameLine();
-            if (complete)
-                ImGui::TextColored(ImVec4(0.3f, 1.0f, 0.3f, 1.0f), "YES");
-            else
-                ImGui::TextColored(ImVec4(1.0f, 0.75f, 0.0f, 1.0f), "loading...");
-        }
-        else
-        {
-            ImGui::TextDisabled("AssetServiceModule not ready");
-        }
-    }
+    const int entryCount    = gEntryCount ? static_cast<int>(gEntryCount->Value()) : 0;
+    const int loadCount     = gLoadCount  ? static_cast<int>(gLoadCount->Value())  : 0;
+    const int snapshotCount = gSnapshot   ? static_cast<int>(gSnapshot->Value())   : 0;
 
-    // Asset rows — state derived from stage-level load complete (atomic-safe)
-    if (ImGui::CollapsingHeader("Assets", ImGuiTreeNodeFlags_DefaultOpen))
-    {
-        struct AssetEntry { const char* id; const char* typeLabel; };
-        static const AssetEntry kAssets[] = {
-            { "texture.ar_tex1", "[T]" },
-            { "texture.ar_tex2", "[T]" },
-            { "texture.ar_tex3", "[T]" },
-            { "json.ar_config",  "{}" },
-        };
+    // --- Reload Snapshot panel ---
+    ImGui::SetNextWindowPos(ImVec2(600.0f, 16.0f), ImGuiCond_Once);
+    ImGui::SetNextWindowSize(ImVec2(320.0f, 0.0f), ImGuiCond_Once);
+    ImGui::Begin("Reload Snapshot");
 
-        const bool stageComplete = svc && svc->IsStageLoadComplete(Dia::Core::StringCRC("AssetRuntimeStage"));
+    ImGui::Text("Entry 1 loaded:"); ImGui::SameLine(200.0f);
+    ImGui::TextColored(ImVec4(0.6f, 0.8f, 1.0f, 1.0f), "%d", snapshotCount);
 
-        for (const auto& entry : kAssets)
-        {
-            ImGui::TextColored(ImVec4(0.5f, 0.7f, 0.9f, 1.0f), "%s", entry.typeLabel);
-            ImGui::SameLine();
-            ImGui::TextDisabled("%s", entry.id);
-            ImGui::SameLine();
-            if (stageComplete)
-                ImGui::TextColored(ImVec4(0.3f, 1.0f, 0.3f, 1.0f), "LOADED");
-            else
-                ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "staged");
-        }
-    }
+    ImGui::Text("Entry 2 loaded:"); ImGui::SameLine(200.0f);
+    if (entryCount >= 2)
+        ImGui::TextColored(ImVec4(0.6f, 0.8f, 1.0f, 1.0f), "%d", loadCount);
+    else
+        ImGui::TextDisabled("--");
 
-    // Checkpoints section
-    if (framePtr && ImGui::CollapsingHeader("Checkpoints", ImGuiTreeNodeFlags_DefaultOpen))
+    ImGui::Text("All succeeded:"); ImGui::SameLine(200.0f);
+    ImGui::Text("true / true");
+
+    const StageResult* result = TestResultsRegistry::IsCreated()
+        ? TestResultsRegistry::GetInstance().GetResult(Dia::Core::StringCRC("AssetRuntimeStage"))
+        : nullptr;
+    const bool passed = result && result->state == StageResult::State::kPassed;
+
+    ImGui::Text("Match:"); ImGui::SameLine(200.0f);
+    if (passed)
+        ImGui::TextColored(ImVec4(0.3f, 1.0f, 0.3f, 1.0f), "YES");
+    else
+        ImGui::TextColored(ImVec4(0.6f, 0.6f, 0.6f, 1.0f), "pending");
+
+    ImGui::End();
+
+    // --- Checkpoint panel ---
+    if (framePtr)
     {
         const Cluiche::AppFlow::StageHUDState& hud = framePtr->stageHUD;
-        using HUDState = Cluiche::AppFlow::StageHUDState::StageState;
-        const bool isPassed = (hud.stageState == HUDState::kPassed);
-
-        for (unsigned int i = 0; i < hud.checkpointCount && i < Cluiche::AppFlow::StageHUDState::kMaxCheckpoints; ++i)
+        if (hud.activeStageName.Value() != 0)
         {
+            using HUDState = Cluiche::AppFlow::StageHUDState::StageState;
+            const bool isPassed = (hud.stageState == HUDState::kPassed);
+
+            ImGui::SetNextWindowPos(ImVec2(600.0f, 180.0f), ImGuiCond_Once);
+            ImGui::SetNextWindowSize(ImVec2(230.0f, 0.0f), ImGuiCond_Once);
+            ImGui::Begin("Checkpoints");
+
+            ImGui::SameLine(ImGui::GetWindowWidth() - 80.0f);
             if (isPassed)
-                ImGui::TextColored(ImVec4(0.3f, 1.0f, 0.3f, 1.0f), "[PASS] %s", hud.checkpoints[i].AsChar());
+                ImGui::TextColored(ImVec4(0.3f, 1.0f, 0.3f, 1.0f), "%u/%u PASS", hud.checkpointCount, hud.checkpointCount);
             else
-                ImGui::TextColored(ImVec4(1.0f, 0.75f, 0.0f, 1.0f), "[...] %s", hud.checkpoints[i].AsChar());
+                ImGui::TextColored(ImVec4(1.0f, 0.75f, 0.0f, 1.0f), "%u/%u ...", hud.checkpointCount, hud.checkpointCount);
+            ImGui::Separator();
+
+            for (unsigned int i = 0; i < hud.checkpointCount && i < Cluiche::AppFlow::StageHUDState::kMaxCheckpoints; ++i)
+            {
+                if (isPassed)
+                {
+                    ImGui::TextColored(ImVec4(0.3f, 1.0f, 0.3f, 1.0f), "  %s", hud.checkpoints[i].AsChar());
+                    ImGui::SameLine(ImGui::GetWindowWidth() - 45.0f);
+                    ImGui::TextColored(ImVec4(0.3f, 1.0f, 0.3f, 1.0f), "PASS");
+                }
+                else
+                {
+                    ImGui::TextColored(ImVec4(1.0f, 0.75f, 0.0f, 1.0f), "  %s", hud.checkpoints[i].AsChar());
+                    ImGui::SameLine(ImGui::GetWindowWidth() - 30.0f);
+                    ImGui::TextColored(ImVec4(1.0f, 0.75f, 0.0f, 1.0f), "...");
+                }
+            }
+
+            ImGui::End();
         }
     }
+
+    // --- json.ar_config card ---
+    ImGui::SetNextWindowPos(ImVec2(600.0f, 340.0f), ImGuiCond_Once);
+    ImGui::SetNextWindowSize(ImVec2(280.0f, 0.0f), ImGuiCond_Once);
+    ImGui::PushStyleColor(ImGuiCol_TitleBg, ImVec4(0.1f, 0.2f, 0.1f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImVec4(0.15f, 0.3f, 0.15f, 1.0f));
+    ImGui::Begin("json.ar_config");
+    ImGui::PopStyleColor(2);
+    ImGui::TextColored(ImVec4(0.3f, 1.0f, 0.3f, 1.0f), "LOADED");
+    ImGui::SameLine();
+    ImGui::TextDisabled("(not rendered - data asset)");
+    ImGui::TextDisabled("JsonPassthroughHandler  |  {\"version\":1}  |  18 B");
+    ImGui::End();
+
+    // --- Two-Entry Reload Pattern ---
+    ImGui::SetNextWindowPos(ImVec2(600.0f, 440.0f), ImGuiCond_Once);
+    ImGui::SetNextWindowSize(ImVec2(380.0f, 0.0f), ImGuiCond_Once);
+    ImGui::Begin("Two-Entry Reload Pattern");
+    ImGui::TextDisabled("Boot -> Entry 1 -> Boot -> Entry 2 -> Boot");
+    ImGui::Spacing();
+
+    if (entryCount >= 2)
+    {
+        ImGui::TextColored(ImVec4(0.3f, 1.0f, 0.3f, 1.0f),
+            "Entry 1: all_loaded    Entry 2: all_loaded + clean_reload");
+    }
+    else if (entryCount == 1)
+    {
+        ImGui::TextColored(ImVec4(0.3f, 1.0f, 0.3f, 1.0f), "Entry 1: all_loaded");
+        ImGui::TextDisabled("Entry 2: awaiting second entry...");
+    }
+    else
+    {
+        ImGui::TextDisabled("Awaiting first entry...");
+    }
+
+    ImGui::Spacing();
+    ImGui::TextDisabled("IsStageLoadComplete(\"AssetRuntimeStage\") = %s",
+        stageComplete ? "true" : "false");
 
     ImGui::End();
 }

@@ -1,4 +1,4 @@
-#include "Modules/TestStages/AssetRuntimeStageModule.h"
+#include "Modules/TestStages/TestAssetRuntimeStageModule.h"
 #include "Modules/AssetServiceModule.h"
 
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
@@ -8,23 +8,19 @@
 
 namespace CluicheTest {
 
-const Dia::Core::StringCRC AssetRuntimeStageModule::kTypeId("AssetRuntimeStageModule");
+const Dia::Core::StringCRC TestAssetRuntimeStageModule::kTypeId("TestAssetRuntimeStageModule");
 
-AssetRuntimeStageModule::AssetRuntimeStageModule(const Dia::Core::StringCRC& instanceId)
+TestAssetRuntimeStageModule::TestAssetRuntimeStageModule(const Dia::Core::StringCRC& instanceId)
     : Module(instanceId)
 {}
 
-Dia::ApplicationFlow::StartResult AssetRuntimeStageModule::DoStart()
+Dia::ApplicationFlow::StartResult TestAssetRuntimeStageModule::DoStart()
 {
-    DIA_LOG_INFO("CluicheTest", "AssetRuntimeStageModule DoStart entry");
-
-    auto* automationModule = mAutomation.Get();
-    if (!automationModule || !automationModule->GetService())
-        return Dia::ApplicationFlow::StartResult::kLoading;
+    DIA_LOG_INFO("CluicheTest", "TestAssetRuntimeStageModule DoStart entry");
 
     ++mEntryCount;
     mLoadStartFrame = mFrameCount;
-    mAllLoaded  = false;
+    mAllLoaded   = false;
     mCleanReload = false;
 
     RegisterCheckpoints();
@@ -43,18 +39,31 @@ Dia::ApplicationFlow::StartResult AssetRuntimeStageModule::DoStart()
         mMetricActiveHandles = reg.RegisterGauge(Dia::Core::StringCRC("cluichetest.asset_runtime.active_handles"));
     if (!mMetricLoadTimeMs)
         mMetricLoadTimeMs = reg.RegisterGauge(Dia::Core::StringCRC("cluichetest.asset_runtime.load_time_ms"));
+    if (!mMetricEntryCount)
+        mMetricEntryCount = reg.RegisterGauge(Dia::Core::StringCRC("cluichetest.asset_runtime.entry_count"));
+    if (!mMetricSnapshotLoaded)
+        mMetricSnapshotLoaded = reg.RegisterGauge(Dia::Core::StringCRC("cluichetest.asset_runtime.snapshot_loaded"));
 
-    DIA_LOG_INFO("CluicheTest", "AssetRuntimeStageModule DoStart ready — entry %u", mEntryCount);
+    if (mMetricEntryCount)
+        mMetricEntryCount->Set(static_cast<double>(mEntryCount));
+
+    DIA_LOG_INFO("CluicheTest", "TestAssetRuntimeStageModule DoStart ready — entry %u", mEntryCount);
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void AssetRuntimeStageModule::DoUpdate(float /*deltaTime*/)
+void TestAssetRuntimeStageModule::DoUpdate(float /*deltaTime*/)
 {
+    if (mAllLoaded)
+        return;
+
     ++mFrameCount;
     TestResultsRegistry::GetInstance().SetActiveFrameCount(mFrameCount);
 
     auto* svc = Cluiche::AppFlow::AssetServiceModule::GetStatic();
     if (!svc)
+        return;
+
+    if (mFrameCount <= 2)
         return;
 
     if (!mAllLoaded)
@@ -69,6 +78,8 @@ void AssetRuntimeStageModule::DoUpdate(float /*deltaTime*/)
             {
                 mFirstEntrySnapshot.loadedCount  = progress.loaded;
                 mFirstEntrySnapshot.allSucceeded = (progress.failed == 0);
+                if (mMetricSnapshotLoaded)
+                    mMetricSnapshotLoaded->Set(static_cast<double>(progress.loaded));
             }
             else
             {
@@ -77,7 +88,7 @@ void AssetRuntimeStageModule::DoUpdate(float /*deltaTime*/)
                                 mFirstEntrySnapshot.allSucceeded);
             }
 
-            DIA_LOG_INFO("CluicheTest", "AssetRuntimeStageModule: all loaded at frame %u (entry %u, loaded=%u, total=%u, failed=%u)",
+            DIA_LOG_INFO("CluicheTest", "TestAssetRuntimeStageModule: all loaded at frame %u (entry %u, loaded=%u, total=%u, failed=%u)",
                 mFrameCount, mEntryCount, progress.loaded, progress.total, progress.failed);
 
             // Drive HUD PASS state: on entry 1, all_loaded passing is sufficient.
@@ -112,9 +123,9 @@ void AssetRuntimeStageModule::DoUpdate(float /*deltaTime*/)
     }
 }
 
-Dia::ApplicationFlow::StopResult AssetRuntimeStageModule::DoStop()
+Dia::ApplicationFlow::StopResult TestAssetRuntimeStageModule::DoStop()
 {
-    DIA_LOG_INFO("CluicheTest", "AssetRuntimeStageModule DoStop entry");
+    DIA_LOG_INFO("CluicheTest", "TestAssetRuntimeStageModule DoStop entry");
 
     if (auto* automationModule = mAutomation.Get())
     {
@@ -128,13 +139,16 @@ Dia::ApplicationFlow::StopResult AssetRuntimeStageModule::DoStop()
     mLoadStartFrame = 0;
     // mEntryCount and mFirstEntrySnapshot persist across DoStop/DoStart
 
-    DIA_LOG_INFO("CluicheTest", "AssetRuntimeStageModule DoStop exit");
+    DIA_LOG_INFO("CluicheTest", "TestAssetRuntimeStageModule DoStop exit");
     return Dia::ApplicationFlow::StopResult::kDone;
 }
 
-void AssetRuntimeStageModule::RegisterCheckpoints()
+void TestAssetRuntimeStageModule::RegisterCheckpoints()
 {
-    auto* service = mAutomation.Get()->GetService();
+    auto* automationModule = mAutomation.Get();
+    if (!automationModule || !automationModule->GetService())
+        return;
+    auto* service = automationModule->GetService();
 
     service->RegisterCheckpoint(this, Dia::Core::StringCRC("asset_runtime.all_loaded"),
         [this]() -> Dia::Automation::CheckpointResult {
@@ -155,5 +169,5 @@ void AssetRuntimeStageModule::RegisterCheckpoints()
 
 } // namespace CluicheTest
 
-namespace { using AssetRuntimeStageModule_ = CluicheTest::AssetRuntimeStageModule; }
-DIA_MODULE(AssetRuntimeStageModule_);
+namespace { using TestAssetRuntimeStageModule_ = CluicheTest::TestAssetRuntimeStageModule; }
+DIA_MODULE(TestAssetRuntimeStageModule_);

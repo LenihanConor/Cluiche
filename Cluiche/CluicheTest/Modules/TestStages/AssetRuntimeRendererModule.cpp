@@ -32,13 +32,13 @@ void AssetRuntimeRendererModule::DoUpdate(float /*deltaTime*/)
         Dia::Graphics::ITexture* tex3 = tex.LookupTexture(Dia::Core::StringCRC("texture.ar_tex3"));
 
         if (tex1)
-            mFrame.RequestDrawSprite(Dia::Graphics::SpriteDrawCommand(tex1, Dia::Maths::Vector2D(250.0f, 200.0f)));
+            mFrame.RequestDrawSprite(Dia::Graphics::SpriteDrawCommand(tex1, Dia::Maths::Vector2D(600.0f, 150.0f)));
 
         if (tex2)
-            mFrame.RequestDrawSprite(Dia::Graphics::SpriteDrawCommand(tex2, Dia::Maths::Vector2D(350.0f, 200.0f)));
+            mFrame.RequestDrawSprite(Dia::Graphics::SpriteDrawCommand(tex2, Dia::Maths::Vector2D(700.0f, 150.0f)));
 
         if (tex3)
-            mFrame.RequestDrawSprite(Dia::Graphics::SpriteDrawCommand(tex3, Dia::Maths::Vector2D(450.0f, 200.0f)));
+            mFrame.RequestDrawSprite(Dia::Graphics::SpriteDrawCommand(tex3, Dia::Maths::Vector2D(800.0f, 150.0f)));
     }
 
     mRenderOutput.Write(mFrame, Dia::Core::TimeAbsolute::Zero());
