@@ -25,6 +25,12 @@
     <ClCompile Include="Modules\TestStages\AssetRuntimeStageModule.cpp">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\TestStages\AssetRuntimeRendererModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\AssetRuntimeHUDModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
     <ClCompile Include="Modules\TestStages\TestResultsRegistry.cpp">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClCompile>
@@ -43,6 +49,12 @@
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClInclude>
     <ClInclude Include="Modules\TestStages\AssetRuntimeStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\AssetRuntimeRendererModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\AssetRuntimeHUDModule.h">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClInclude>
     <ClInclude Include="Modules\TestStages\TestResultsRegistry.h">

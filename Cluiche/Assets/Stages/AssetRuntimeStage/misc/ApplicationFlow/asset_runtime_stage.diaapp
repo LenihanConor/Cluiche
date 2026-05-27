@@ -21,12 +21,13 @@
             "dedicated_thread": true,
             "modules": [
                 {
-                    "instance_id": "AssetRuntimeVisualDebuggerModule",
-                    "type_id": "VisualDebuggerModule",
+                    "instance_id": "AssetRuntimeRendererModule",
+                    "type_id": "AssetRuntimeRendererModule",
                     "stages": [ "AssetRuntimeStage" ],
                     "dependencies": [],
                     "channels": [
-                        { "id": "SimToRender", "role": "writes" }
+                        { "id": "SimToRender", "role": "writes" },
+                        { "id": "KernelTextureHandler", "role": "consumes" }
                     ]
                 }
             ]

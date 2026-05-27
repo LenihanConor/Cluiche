@@ -217,10 +217,19 @@
                     "channels": []
                 },
                 {
+                    "instance_id": "AssetRuntimeHUDModule",
+                    "type_id": "AssetRuntimeHUDModule",
+                    "stages": [ "AssetRuntimeStage" ],
+                    "dependencies": [ "DebugUI" ],
+                    "channels": [
+                        { "id": "MainToRender", "role": "reads" }
+                    ]
+                },
+                {
                     "instance_id": "RenderModule",
                     "type_id": "RenderModule",
                     "stages": [ "all" ],
-                    "dependencies": [ "DebugUI", "TestStageHUDModule", "VisualDebuggerConsoleModule" ],
+                    "dependencies": [ "DebugUI", "TestStageHUDModule", "VisualDebuggerConsoleModule", "AssetRuntimeHUDModule" ],
                     "channels": [
                         { "id": "SimToRender",        "role": "reads" },
                         { "id": "KernelCanvas",        "role": "consumes" },

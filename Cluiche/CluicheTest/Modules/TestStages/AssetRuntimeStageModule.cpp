@@ -79,6 +79,20 @@ void AssetRuntimeStageModule::DoUpdate(float /*deltaTime*/)
 
             DIA_LOG_INFO("CluicheTest", "AssetRuntimeStageModule: all loaded at frame %u (entry %u, loaded=%u, total=%u, failed=%u)",
                 mFrameCount, mEntryCount, progress.loaded, progress.total, progress.failed);
+
+            // Drive HUD PASS state: on entry 1, all_loaded passing is sufficient.
+            // On entry 2+, require clean_reload as well for full PASS.
+            const bool allCheckpointsPassed = (mEntryCount == 1) ? true : mCleanReload;
+            if (allCheckpointsPassed)
+            {
+                TestResultsRegistry::GetInstance().SetPassed(
+                    Dia::Core::StringCRC("AssetRuntimeStage"), mFrameCount);
+            }
+        }
+        else if (mFrameCount >= 300)
+        {
+            TestResultsRegistry::GetInstance().SetTimeout(
+                Dia::Core::StringCRC("AssetRuntimeStage"));
         }
     }
 
