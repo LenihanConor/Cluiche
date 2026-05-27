@@ -215,7 +215,7 @@ namespace Dia
                     if (ImGui::BeginTabItem(domains[d]))
                     {
                         RenderLayersSection(manager, domains[d]);
-                        RenderStatsSection(debugFrameData);
+                        RenderStatsSection(manager, domains[d], debugFrameData);
                         ImGui::EndTabItem();
                     }
                 }
@@ -264,14 +264,7 @@ namespace Dia
                 }
                 ImGui::SameLine();
 
-                // Layer name as collapsible header for DrawImGui controls
-                if (ImGui::TreeNodeEx(layerStr, ImGuiTreeNodeFlags_None))
-                {
-                    IVisualDebugger* layer = manager.GetLayer(i);
-                    if (layer)
-                        layer->DrawImGui();
-                    ImGui::TreePop();
-                }
+                ImGui::Text("%s", layerStr);
 
                 ImGui::PopID();
             }
@@ -282,6 +275,7 @@ namespace Dia
         // -----------------------------------------------------------------
 
         void DiaVisualDebuggerConsole::RenderStatsSection(
+            DebugLayerManager& manager, const char* domain,
             const Dia::Graphics::DebugFrameData& debugFrameData)
         {
             if (!ImGui::CollapsingHeader("Stats"))
@@ -296,6 +290,26 @@ namespace Dia
                 ImGui::SameLine();
                 ImGui::TextColored(ImVec4(1.0f, 0.2f, 0.2f, 1.0f),
                     "DROPPED: %u", debugFrameData.DroppedCount());
+            }
+
+            const int layerCount = manager.GetLayerCount();
+            const size_t domainLen = strlen(domain);
+            for (int i = 0; i < layerCount; ++i)
+            {
+                Dia::Core::StringCRC name = manager.GetLayerName(i);
+                const char* layerStr = name.AsChar();
+                if (!layerStr) continue;
+
+                if (strncmp(layerStr, domain, domainLen) != 0 ||
+                    (layerStr[domainLen] != '.' && layerStr[domainLen] != '\0'))
+                    continue;
+
+                IVisualDebugger* layer = manager.GetLayer(i);
+                if (layer)
+                {
+                    ImGui::Separator();
+                    layer->DrawImGui();
+                }
             }
         }
 

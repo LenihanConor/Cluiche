@@ -65,7 +65,8 @@ namespace Dia
             void RenderDomainTabs(DebugLayerManager& manager,
                                   const Dia::Graphics::DebugFrameData& debugFrameData);
             void RenderLayersSection(DebugLayerManager& manager, const char* domain);
-            void RenderStatsSection(const Dia::Graphics::DebugFrameData& debugFrameData);
+            void RenderStatsSection(DebugLayerManager& manager, const char* domain,
+                                    const Dia::Graphics::DebugFrameData& debugFrameData);
             void RenderCommandInput();
             void RenderBottomTabs();
 

@@ -77,6 +77,11 @@ namespace Dia
             inline const Dia::Core::StringCRC kGeoContacts    { "geometry.contacts"      };
 
             // ----------------------------------------------------------------
+            // Asset
+            // ----------------------------------------------------------------
+            inline const Dia::Core::StringCRC kAssetRuntime { "asset.runtime" };
+
+            // ----------------------------------------------------------------
             // Animation
             // ----------------------------------------------------------------
             inline const Dia::Core::StringCRC kAnimSpring       { "anim.spring"        };

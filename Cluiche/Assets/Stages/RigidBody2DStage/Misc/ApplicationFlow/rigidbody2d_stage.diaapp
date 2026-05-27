@@ -26,17 +26,7 @@
             "instance_id": "SimPU",
             "frequency_hz": 30,
             "dedicated_thread": true,
-            "modules": [
-                {
-                    "instance_id": "VisualDebuggerModule",
-                    "type_id": "VisualDebuggerModule",
-                    "stages": [ "RigidBody2DStage" ],
-                    "dependencies": [],
-                    "channels": [
-                        { "id": "SimToRender", "role": "writes" }
-                    ]
-                }
-            ]
+            "modules": []
         }
     ]
 }
