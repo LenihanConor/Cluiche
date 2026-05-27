@@ -6,7 +6,7 @@
 #include <DiaInput/InputSourceManager.h>
 #include <DiaInput/EventData.h>
 #include <DiaInput/ConsoleGamepadManager.h>
-#include <DiaSFML/WindowFactory.h>
+#include <DiaSDL/WindowFactory.h>
 #include <DiaAssetRuntime/Handlers/TextureHandler.h>
 #include "Types/MainToSimEvent.h"
 
@@ -59,7 +59,7 @@ private:
 
     Dia::Input::InputSourceManager  mInputSourceManager;
     Dia::Input::ConsoleGamepadManager mGamepadManager;
-    Dia::SFML::WindowFactory        mWindowFactory;
+    Dia::SDL::WindowFactory         mWindowFactory;
     Dia::Window::IWindow*           mWindow       = nullptr;
     Dia::Graphics::ICanvas*         mCanvas       = nullptr;
     Dia::Bgfx::Canvas*              mBgfxCanvas   = nullptr;

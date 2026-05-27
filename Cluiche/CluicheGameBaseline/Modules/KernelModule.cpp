@@ -1,7 +1,7 @@
 #include "Modules/KernelModule.h"
 
-#include <DiaSFML/Window.h>
-#include <DiaSFML/InputSource.h>
+#include <DiaSDL/InputSource.h>
+#include <DiaInput/IInputSource.h>
 #include <DiaGraphics/Interface/ICanvas.h>
 #include <DiaWindow/Interface/IWindow.h>
 #include <DiaInput/EventData.h>
@@ -44,20 +44,21 @@ Dia::ApplicationFlow::StartResult KernelModule::DoStart()
 
     mWindow = mWindowFactory.Create(windowSetting);
 
-    Dia::SFML::Window* sfmlWindow = static_cast<Dia::SFML::Window*>(mWindow);
-
     // Wire the JobSystem into TextureHandler for async asset loading.
     auto* jobSystemModule = Cluiche::AppFlow::JobSystemModule::GetStatic();
     DIA_ASSERT(jobSystemModule != nullptr, "TextureHandler requires JobSystemModule to be initialized first");
     mTextureHandler.SetJobSystem(&jobSystemModule->GetJobSystem());
     mTextureHandlerService.Register(mTextureHandler);
 
-    sfmlWindow->ListenForInputSources(Dia::Core::BitArray8(
-        Dia::SFML::InputSource::ESources::kSystem |
-        Dia::SFML::InputSource::ESources::kKeyboard |
-        Dia::SFML::InputSource::ESources::kMouse));
+    {
+        Dia::Core::BitArray8 inputMask;
+        inputMask.SetBit(Dia::SDL::InputSource::ESourceIndex::kSystem,   true);
+        inputMask.SetBit(Dia::SDL::InputSource::ESourceIndex::kKeyboard, true);
+        inputMask.SetBit(Dia::SDL::InputSource::ESourceIndex::kMouse,    true);
+        static_cast<Dia::Input::IInputSource*>(mWindow)->ListenForInputSources(inputMask);
+    }
 
-    mInputSourceManager.AddInputSource(sfmlWindow);
+    mInputSourceManager.AddInputSource(static_cast<Dia::Input::IInputSource*>(mWindow));
     mInputSourceManager.AddInputSource(&mGamepadManager);
 
     // Construct bgfx Canvas unconditionally — SFML render path is removed.
@@ -68,7 +69,7 @@ Dia::ApplicationFlow::StartResult KernelModule::DoStart()
 
     mBgfxCanvas = new Dia::Bgfx::Canvas();
 
-    Dia::Window::SystemHandle hwnd = sfmlWindow->GetSystemHandle();
+    Dia::Window::SystemHandle hwnd = mWindow->GetSystemHandle();
     mBgfxCanvas->AttachToNativeWindow(hwnd, bgfxSettings.initialSize);
     mBgfxCanvas->Initialize(bgfxSettings);
 
