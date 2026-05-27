@@ -114,7 +114,6 @@ namespace Dia
 
 			// Deserialize via DiaReflect JsonReadArchive
 			Dia::Reflect::JsonReadArchive ar(root);
-			using ::serialize;
 			serialize(ar, result.mValue, 0u);
 
 			// Map DiaReflect errors to LoadError entries

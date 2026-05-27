@@ -560,7 +560,7 @@ TEST(Validation, MultiWriterViolationReportsError)
         mod.startTimeoutMs = 10000.0f;
         mod.stopTimeoutMs  = 5000.0f;
         mod.stages.Add(StringCRC("Boot"));
-        mod.writes.Add(StringCRC("SharedStream"));
+        { ChannelBinding b; b.id = StringCRC("SharedStream"); b.role = StringCRC("writes"); mod.channels.Add(b); }
         pu.modules.Add(mod);
     }
     manifest.processingUnits.Add(pu);

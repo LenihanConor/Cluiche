@@ -182,7 +182,7 @@ TEST(ValidationExtended, UnknownStreamInReadsReportsError)
     ApplicationManifestV3 manifest = BuildValXValidManifest();
 
     // Module reads a stream that doesn't exist in manifest.streams.
-    manifest.processingUnits[0].modules[0].reads.Add(StringCRC("GhostStream"));
+    { ChannelBinding b; b.id = StringCRC("GhostStream"); b.role = StringCRC("reads"); manifest.processingUnits[0].modules[0].channels.Add(b); }
 
     ManifestValidatorV2 validator(reg);
     validator.Validate(manifest);
@@ -203,7 +203,7 @@ TEST(ValidationExtended, UnknownStreamInWritesReportsError)
     ApplicationManifestV3 manifest = BuildValXValidManifest();
 
     // Module writes a stream that doesn't exist in manifest.streams.
-    manifest.processingUnits[0].modules[0].writes.Add(StringCRC("GhostWriteStream"));
+    { ChannelBinding b; b.id = StringCRC("GhostWriteStream"); b.role = StringCRC("writes"); manifest.processingUnits[0].modules[0].channels.Add(b); }
 
     ManifestValidatorV2 validator(reg);
     validator.Validate(manifest);
@@ -222,8 +222,8 @@ TEST(ValidationExtended, ReservedStreamInReadsIsAllowed)
     TypeRegistry reg = BuildValXRegistry();
     ApplicationManifestV3 manifest = BuildValXValidManifest();
 
-    // $lifecycle is a reserved stream — reading it in module reads[] is allowed.
-    manifest.processingUnits[0].modules[0].reads.Add(StringCRC("$lifecycle"));
+    // $lifecycle is a reserved stream — reading it in module channels[] is allowed.
+    { ChannelBinding b; b.id = StringCRC("$lifecycle"); b.role = StringCRC("reads"); manifest.processingUnits[0].modules[0].channels.Add(b); }
 
     ManifestValidatorV2 validator(reg);
     validator.Validate(manifest);
@@ -310,7 +310,7 @@ TEST(ValidationExtended, OrphanReaderStreamReportsWarning)
     manifest.streams.Add(s);
 
     // Module reads but never writes this stream.
-    manifest.processingUnits[0].modules[0].reads.Add(StringCRC("ReaderOnlyStream"));
+    { ChannelBinding b; b.id = StringCRC("ReaderOnlyStream"); b.role = StringCRC("reads"); manifest.processingUnits[0].modules[0].channels.Add(b); }
 
     ManifestValidatorV2 validator(reg);
     validator.Validate(manifest);
@@ -336,7 +336,7 @@ TEST(ValidationExtended, OrphanWriterStreamReportsWarning)
     manifest.streams.Add(s);
 
     // Module writes but never reads this stream.
-    manifest.processingUnits[0].modules[0].writes.Add(StringCRC("WriterOnlyStream"));
+    { ChannelBinding b; b.id = StringCRC("WriterOnlyStream"); b.role = StringCRC("writes"); manifest.processingUnits[0].modules[0].channels.Add(b); }
 
     ManifestValidatorV2 validator(reg);
     validator.Validate(manifest);
@@ -363,8 +363,8 @@ TEST(ValidationExtended, StreamWithBothReaderAndWriterNoOrphanWarning)
     manifest.streams.Add(s);
 
     // Same module reads and writes (single-module sanity test).
-    manifest.processingUnits[0].modules[0].reads.Add(StringCRC("FullStream"));
-    manifest.processingUnits[0].modules[0].writes.Add(StringCRC("FullStream"));
+    { ChannelBinding b; b.id = StringCRC("FullStream"); b.role = StringCRC("reads"); manifest.processingUnits[0].modules[0].channels.Add(b); }
+    { ChannelBinding b; b.id = StringCRC("FullStream"); b.role = StringCRC("writes"); manifest.processingUnits[0].modules[0].channels.Add(b); }
 
     ManifestValidatorV2 validator(reg);
     validator.Validate(manifest);

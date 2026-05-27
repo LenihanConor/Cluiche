@@ -426,7 +426,7 @@ namespace Dia
 
 			//------------------------------------------------------------------------------------
 			template <class Payload>
-			typename Payload&  LinkListC<Payload>::First()
+			Payload&  LinkListC<Payload>::First()
 			{
 				DIA_ASSERT(mRootNode, "No Root");
 
@@ -435,7 +435,7 @@ namespace Dia
 
 			//------------------------------------------------------------------------------------
 			template <class Payload>
-			typename const Payload& LinkListC<Payload>::First() const
+			const Payload& LinkListC<Payload>::First() const
 			{
 				DIA_ASSERT(mRootNode, "No Root");
 
@@ -444,7 +444,7 @@ namespace Dia
 
 			//------------------------------------------------------------------------------------
 			template <class Payload>
-			typename Payload&  LinkListC<Payload>::Last()
+			Payload&  LinkListC<Payload>::Last()
 			{
 				DIA_ASSERT(mRootNode, "No Root");
 
@@ -453,7 +453,7 @@ namespace Dia
 
 			//------------------------------------------------------------------------------------
 			template <class Payload>
-			typename const Payload&  LinkListC<Payload>::Last() const
+			const Payload&  LinkListC<Payload>::Last() const
 			{
 				DIA_ASSERT(mRootNode, "No Root");
 
@@ -462,7 +462,7 @@ namespace Dia
 
 			//------------------------------------------------------------------------------------
 			template <class Payload>
-			typename LinkListNode<Payload>*	 LinkListC<Payload>::Head()
+			LinkListNode<Payload>*	 LinkListC<Payload>::Head()
 			{
 				DIA_ASSERT(mRootNode, "No Root");
 
@@ -471,7 +471,7 @@ namespace Dia
 
 			//------------------------------------------------------------------------------------
 			template <class Payload>
-			typename const LinkListNode<Payload>* LinkListC<Payload>::HeadConst() const
+			const LinkListNode<Payload>* LinkListC<Payload>::HeadConst() const
 			{
 				DIA_ASSERT(mRootNode, "No Root");
 
@@ -480,7 +480,7 @@ namespace Dia
 
 			//------------------------------------------------------------------------------------
 			template <class Payload>
-			typename LinkListNode<Payload>*	LinkListC<Payload>::Tail()
+			LinkListNode<Payload>*	LinkListC<Payload>::Tail()
 			{
 				DIA_ASSERT(mRootNode, "No Root");
 
@@ -489,7 +489,7 @@ namespace Dia
 
 			//------------------------------------------------------------------------------------
 			template <class Payload>
-			typename const LinkListNode<Payload>* LinkListC<Payload>::TailConst() const
+			const LinkListNode<Payload>* LinkListC<Payload>::TailConst() const
 			{
 				DIA_ASSERT(mRootNode, "No Root");
 

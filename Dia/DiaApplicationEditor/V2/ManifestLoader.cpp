@@ -180,23 +180,20 @@ namespace Dia { namespace ApplicationFlow { namespace Editor {
                             }
                         }
 
-                        if (modJson.isMember("reads") && modJson["reads"].isArray())
+                        if (modJson.isMember("channels") && modJson["channels"].isArray())
                         {
-                            const Json::Value& readsArr = modJson["reads"];
-                            for (unsigned int k = 0; k < readsArr.size(); ++k)
+                            const Json::Value& channelsArr = modJson["channels"];
+                            for (unsigned int k = 0; k < channelsArr.size(); ++k)
                             {
-                                if (readsArr[k].isString())
-                                    mod.reads.Add(Dia::Core::StringCRC(readsArr[k].asCString()));
-                            }
-                        }
-
-                        if (modJson.isMember("writes") && modJson["writes"].isArray())
-                        {
-                            const Json::Value& writesArr = modJson["writes"];
-                            for (unsigned int k = 0; k < writesArr.size(); ++k)
-                            {
-                                if (writesArr[k].isString())
-                                    mod.writes.Add(Dia::Core::StringCRC(writesArr[k].asCString()));
+                                const Json::Value& ch = channelsArr[k];
+                                if (ch.isObject() && ch.isMember("id") && ch.isMember("role"))
+                                {
+                                    Dia::ApplicationFlow::ChannelBinding binding;
+                                    binding.id   = Dia::Core::StringCRC(ch["id"].asCString());
+                                    binding.role = Dia::Core::StringCRC(ch["role"].asCString());
+                                    if (!mod.channels.IsFull())
+                                        mod.channels.Add(binding);
+                                }
                             }
                         }
 

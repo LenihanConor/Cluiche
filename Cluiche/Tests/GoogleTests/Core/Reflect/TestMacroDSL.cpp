@@ -176,28 +176,28 @@ static_assert(Dia::Reflect::Archive<RecordingArchiveWithFlags>,
 TEST(MacroDSL_BasicField, TwoFieldsRecorded) {
     RecordingArchive ar;
     Point2D p;
-    serialize(ar, p);
+    serialize(ar, p, 0u);
     EXPECT_EQ(ar.recordedNames.Size(), 2u);
 }
 
 TEST(MacroDSL_BasicField, FirstFieldIsMX) {
     RecordingArchive ar;
     Point2D p;
-    serialize(ar, p);
+    serialize(ar, p, 0u);
     EXPECT_EQ(ar.recordedNames[0], Dia::Core::StringCRC("mX"));
 }
 
 TEST(MacroDSL_BasicField, SecondFieldIsMY) {
     RecordingArchive ar;
     Point2D p;
-    serialize(ar, p);
+    serialize(ar, p, 0u);
     EXPECT_EQ(ar.recordedNames[1], Dia::Core::StringCRC("mY"));
 }
 
 TEST(MacroDSL_BasicField, FieldOrderPreservedMXBeforeMY) {
     RecordingArchive ar;
     Point2D p;
-    serialize(ar, p);
+    serialize(ar, p, 0u);
     EXPECT_EQ(ar.recordedNames[0], Dia::Core::StringCRC("mX"));
     EXPECT_EQ(ar.recordedNames[1], Dia::Core::StringCRC("mY"));
 }
@@ -207,21 +207,21 @@ TEST(MacroDSL_BasicField, FieldOrderPreservedMXBeforeMY) {
 TEST(MacroDSL_RequiredField, OneFieldRecorded) {
     RecordingArchiveWithFlags ar;
     RequiredTest t;
-    serialize(ar, t);
+    serialize(ar, t, 0u);
     EXPECT_EQ(ar.recordedFields.Size(), 1u);
 }
 
 TEST(MacroDSL_RequiredField, RequiredFlagIsTrue) {
     RecordingArchiveWithFlags ar;
     RequiredTest t;
-    serialize(ar, t);
+    serialize(ar, t, 0u);
     EXPECT_TRUE(ar.recordedFields[0].required);
 }
 
 TEST(MacroDSL_RequiredField, FieldNameIsMId) {
     RecordingArchiveWithFlags ar;
     RequiredTest t;
-    serialize(ar, t);
+    serialize(ar, t, 0u);
     EXPECT_EQ(ar.recordedFields[0].name, Dia::Core::StringCRC("mId"));
 }
 
@@ -230,14 +230,14 @@ TEST(MacroDSL_RequiredField, FieldNameIsMId) {
 TEST(MacroDSL_OwnedPtrField, OwnedPtrFieldRecorded) {
     RecordingArchive ar;
     ShapeHolder s;
-    serialize(ar, s);
+    serialize(ar, s, 0u);
     EXPECT_EQ(ar.recordedNames.Size(), 1u);
 }
 
 TEST(MacroDSL_OwnedPtrField, NameIsMShape) {
     RecordingArchive ar;
     ShapeHolder s;
-    serialize(ar, s);
+    serialize(ar, s, 0u);
     EXPECT_EQ(ar.recordedNames[0], Dia::Core::StringCRC("mShape"));
 }
 
@@ -246,14 +246,14 @@ TEST(MacroDSL_OwnedPtrField, NameIsMShape) {
 TEST(MacroDSL_RefIdField, RefIdFieldRecorded) {
     RecordingArchive ar;
     RefHolder r;
-    serialize(ar, r);
+    serialize(ar, r, 0u);
     EXPECT_EQ(ar.recordedNames.Size(), 1u);
 }
 
 TEST(MacroDSL_RefIdField, NameIsMOwnerId) {
     RecordingArchive ar;
     RefHolder r;
-    serialize(ar, r);
+    serialize(ar, r, 0u);
     EXPECT_EQ(ar.recordedNames[0], Dia::Core::StringCRC("mOwnerId"));
 }
 
@@ -262,7 +262,7 @@ TEST(MacroDSL_RefIdField, NameIsMOwnerId) {
 TEST(MacroDSL_FieldNamed, RecordsCustomName) {
     RecordingArchive ar;
     Renamed rn;
-    serialize(ar, rn);
+    serialize(ar, rn, 0u);
     EXPECT_EQ(ar.recordedNames.Size(), 1u);
     EXPECT_EQ(ar.recordedNames[0], Dia::Core::StringCRC("value"));
 }
@@ -270,7 +270,7 @@ TEST(MacroDSL_FieldNamed, RecordsCustomName) {
 TEST(MacroDSL_FieldNamed, DoesNotRecordMemberName) {
     RecordingArchive ar;
     Renamed rn;
-    serialize(ar, rn);
+    serialize(ar, rn, 0u);
     EXPECT_NE(ar.recordedNames[0], Dia::Core::StringCRC("mValue"));
 }
 
@@ -339,7 +339,7 @@ TEST(MacroDSL_MultipleTypes, Point2DAndRequiredTestSerializeIndependently) {
     {
         RecordingArchive ar;
         Point2D p;
-        serialize(ar, p);
+        serialize(ar, p, 0u);
         EXPECT_EQ(ar.recordedNames.Size(), 2u);
         EXPECT_EQ(ar.recordedNames[0], Dia::Core::StringCRC("mX"));
         EXPECT_EQ(ar.recordedNames[1], Dia::Core::StringCRC("mY"));
@@ -349,7 +349,7 @@ TEST(MacroDSL_MultipleTypes, Point2DAndRequiredTestSerializeIndependently) {
     {
         RecordingArchiveWithFlags ar;
         RequiredTest t;
-        serialize(ar, t);
+        serialize(ar, t, 0u);
         EXPECT_EQ(ar.recordedFields.Size(), 1u);
         EXPECT_EQ(ar.recordedFields[0].name, Dia::Core::StringCRC("mId"));
         EXPECT_TRUE(ar.recordedFields[0].required);
@@ -361,7 +361,7 @@ TEST(MacroDSL_MultipleTypes, Point2DAndRequiredTestSerializeIndependently) {
 TEST(MacroDSL_EmptySerialize, ZeroFieldsNocrash) {
     RecordingArchive ar;
     EmptyStruct e;
-    serialize(ar, e);
+    serialize(ar, e, 0u);
     EXPECT_EQ(ar.recordedNames.Size(), 0u);
 }
 
@@ -370,7 +370,7 @@ TEST(MacroDSL_EmptySerialize, ZeroFieldsNocrash) {
 TEST(MacroDSL_BasicField, RegularFieldIsNotRequired) {
     RecordingArchiveWithFlags ar;
     Point2D p;
-    serialize(ar, p);
+    serialize(ar, p, 0u);
     ASSERT_EQ(ar.recordedFields.Size(), 2u);
     EXPECT_FALSE(ar.recordedFields[0].required);
     EXPECT_FALSE(ar.recordedFields[1].required);

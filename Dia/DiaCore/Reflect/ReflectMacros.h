@@ -25,7 +25,7 @@
 // Open the serialize function for Type at given version
 #define DIA_SERIALIZE(Type, Version) \
     template<class Archive> \
-    void serialize(Archive& _ar_, Type& obj, unsigned _version_ = (Version)) { \
+    void serialize(Archive& _ar_, Type& obj, unsigned _version_) { \
         static_assert(Dia::Reflect::Archive<Archive>, #Type ": Archive type does not satisfy Dia::Reflect::Archive concept"); \
         (void)_version_; \
         static const uint32_t _typeCrc_ = Dia::Core::StringCRC(#Type).Value(); (void)_typeCrc_;
@@ -45,7 +45,7 @@
 // (after the TU is fully compiled, so serialize is available).
 #define DIA_SERIALIZE_POLYMORPHIC(ConcreteType, BaseType, Version) \
     template<class Archive> \
-    void serialize(Archive& _ar_, ConcreteType& obj, unsigned _version_ = (Version)); \
+    void serialize(Archive& _ar_, ConcreteType& obj, unsigned _version_); \
     namespace { \
     struct ConcreteType##_PolyRegistrar { \
         ConcreteType##_PolyRegistrar() { \

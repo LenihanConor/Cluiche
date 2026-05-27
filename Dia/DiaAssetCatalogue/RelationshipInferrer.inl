@@ -117,7 +117,6 @@ namespace Dia
 
 			AssetRefScanArchive scanAr(typeCrc, outEdges);
 			// const_cast is safe: AssetRefScanArchive only reads field values, never modifies them
-			using ::serialize;
 			serialize(scanAr, const_cast<T&>(value), 0u);
 		}
 

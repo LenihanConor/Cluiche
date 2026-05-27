@@ -78,14 +78,14 @@ DIA_SERIALIZE_END
 template<typename T>
 Json::Value WriteToJson(T& obj) {
     JsonWriteArchive ar;
-    serialize(ar, obj);
+    serialize(ar, obj, 0u);
     return ar.GetRoot();
 }
 
 template<typename T>
 void ReadFromJson(const Json::Value& root, T& obj) {
     JsonReadArchive ar(root);
-    serialize(ar, obj);
+    serialize(ar, obj, 0u);
 }
 
 // =============================================================================
@@ -273,7 +273,7 @@ TEST(JsonArchive_RequiredField, PresentProducesNoError) {
 
     WithRequiredJson obj;
     JsonReadArchive ar(root);
-    serialize(ar, obj);
+    serialize(ar, obj, 0u);
 
     EXPECT_TRUE(ar.GetResult().IsOk());
     EXPECT_EQ(obj.mId, 99);
@@ -290,7 +290,7 @@ TEST(JsonArchive_RequiredField, MissingProducesError) {
 
     WithRequiredJson obj;
     JsonReadArchive ar(root);
-    serialize(ar, obj);
+    serialize(ar, obj, 0u);
 
     EXPECT_FALSE(ar.GetResult().IsOk());
     EXPECT_EQ(ar.GetResult().ErrorCount(), 1u);
@@ -364,7 +364,7 @@ TEST(JsonArchive_UnknownKey, SilentlyIgnored) {
 
     Vec2Json dst;
     JsonReadArchive ar(root);
-    serialize(ar, dst);
+    serialize(ar, dst, 0u);
 
     EXPECT_TRUE(ar.GetResult().IsOk());
     EXPECT_NEAR(dst.mX, 1.0f, 0.0001f);
@@ -387,7 +387,7 @@ TEST(JsonArchive_EmptyJson, AllFieldsKeepDefaults) {
     dst.mId     = 42;
 
     JsonReadArchive ar(emptyRoot);
-    serialize(ar, dst);
+    serialize(ar, dst, 0u);
 
     EXPECT_TRUE(ar.GetResult().IsOk());
     EXPECT_NEAR(dst.mPos.mX, 1.0f, 0.0001f);
@@ -460,7 +460,7 @@ TEST(JsonArchive_Write, ProducesValidJson) {
     src.mId     = 5;
 
     JsonWriteArchive writeAr;
-    serialize(writeAr, src);
+    serialize(writeAr, src, 0u);
 
     Json::StyledWriter writer;
     std::string jsonStr = writer.write(writeAr.GetRoot());

@@ -8,6 +8,15 @@
     </ClCompile>
   </ItemDefinitionGroup>
 
+  <!-- Debug-Ubsan: prebuilt MSVC-Debug libs (e.g. DiaProtobuf) have _ITERATOR_DEBUG_LEVEL=2
+       but clang_rt.ubsan_standalone_cxx ships with IDL=0. Use /FORCE:MULTIPLE so lld-link
+       accepts the /FAILIFMISMATCH discrepancy without aborting the link. -->
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug-Ubsan'">
+    <Link>
+      <AdditionalOptions>/FORCE:MULTIPLE %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+  </ItemDefinitionGroup>
+
   <!-- ConfigurationType is set by this point; route Application exes to per-app folders -->
   <PropertyGroup Condition="'$(ConfigurationType)'=='Application'">
     <OutDir>$(BinRoot)$(MSBuildProjectName)\$(Configuration)\$(Platform)\</OutDir>

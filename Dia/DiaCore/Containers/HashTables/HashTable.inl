@@ -163,7 +163,7 @@ namespace Dia
 			}
 
 			//----------------------------------------------------------
-			template< class Key, class Payload, class HashFunctor > typename
+			template< class Key, class Payload, class HashFunctor >
 			void HashTable<Key, Payload, HashFunctor >::Add (const Key& key, const Payload& value)
 			{
 				mPayloadNodes.AddDefault();

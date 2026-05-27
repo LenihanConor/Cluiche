@@ -23,14 +23,14 @@ using namespace Dia::Maths;
 template<typename T>
 static Json::Value WriteToJson(T& obj) {
     JsonWriteArchive ar;
-    serialize(ar, obj);
+    serialize(ar, obj, 0u);
     return ar.GetRoot();
 }
 
 template<typename T>
 static void ReadFromJson(const Json::Value& root, T& obj) {
     JsonReadArchive ar(root);
-    serialize(ar, obj);
+    serialize(ar, obj, 0u);
 }
 
 template<typename T>

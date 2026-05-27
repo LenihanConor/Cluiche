@@ -91,19 +91,19 @@ namespace
 	{
 		return WriteTestFileHelper(path, content, strlen(content));
 	}
+
+	DIA_SERIALIZE(NestedInner, 1)
+		DIA_FIELD_REQUIRED(mInnerValue)
+	DIA_SERIALIZE_END
+
+	DIA_SERIALIZE(NestedOuter, 1)
+		DIA_FIELD_REQUIRED(mOuterValue)
+	DIA_SERIALIZE_END
+
+	DIA_SERIALIZE(AssetRefStruct, 1)
+		DIA_FIELD(mReferencedAsset)
+	DIA_SERIALIZE_END
 }
-
-DIA_SERIALIZE(NestedInner, 1)
-	DIA_FIELD_REQUIRED(mInnerValue)
-DIA_SERIALIZE_END
-
-DIA_SERIALIZE(NestedOuter, 1)
-	DIA_FIELD_REQUIRED(mOuterValue)
-DIA_SERIALIZE_END
-
-DIA_SERIALIZE(AssetRefStruct, 1)
-	DIA_FIELD(mReferencedAsset)
-DIA_SERIALIZE_END
 
 DIA_ATTR_ASSET_REF(AssetRefStruct, mReferencedAsset, texture)
 

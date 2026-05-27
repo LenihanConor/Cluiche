@@ -69,18 +69,16 @@ static void SerializeModuleDeclaration(const ModuleDeclaration& module, Json::Va
             depsJson.append(module.dependencies[i].AsChar());
     }
 
-    if (module.reads.Size() > 0)
+    if (module.channels.Size() > 0)
     {
-        Json::Value& readsJson = outJson["reads"] = Json::Value(Json::arrayValue);
-        for (unsigned int i = 0; i < module.reads.Size(); ++i)
-            readsJson.append(module.reads[i].AsChar());
-    }
-
-    if (module.writes.Size() > 0)
-    {
-        Json::Value& writesJson = outJson["writes"] = Json::Value(Json::arrayValue);
-        for (unsigned int i = 0; i < module.writes.Size(); ++i)
-            writesJson.append(module.writes[i].AsChar());
+        Json::Value& channelsJson = outJson["channels"] = Json::Value(Json::arrayValue);
+        for (unsigned int i = 0; i < module.channels.Size(); ++i)
+        {
+            Json::Value ch;
+            ch["id"]   = module.channels[i].id.AsChar();
+            ch["role"] = module.channels[i].role.AsChar();
+            channelsJson.append(ch);
+        }
     }
 
     if (module.configJson.Length() > 0)

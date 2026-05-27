@@ -55,14 +55,14 @@ DIA_SERIALIZE_END
 template<typename T>
 Json::Value WriteToJson(T& obj) {
     JsonWriteArchive ar;
-    serialize(ar, obj);
+    serialize(ar, obj, 0u);
     return ar.GetRoot();
 }
 
 template<typename T>
 void ReadFromJson(const Json::Value& root, T& obj) {
     JsonReadArchive ar(root);
-    serialize(ar, obj);
+    serialize(ar, obj, 0u);
 }
 
 template<typename T>

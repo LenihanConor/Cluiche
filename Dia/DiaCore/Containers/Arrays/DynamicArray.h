@@ -57,7 +57,7 @@ namespace Dia
 				DynamicArray<T>&								Assign ( ConstPointer pData, unsigned int numberElements);
 				DynamicArray<T>&								Assign ( ConstReference data, unsigned int numberElements);
 				DynamicArray<T>&								Assign ( const DynamicArray<T>& rhs );
-				DynamicArray<T>&								Assign ( const DynamicArray<T>& rhs, unsigned int startIndex, unsigned int numberElements = _size );
+				DynamicArray<T>&								Assign ( const DynamicArray<T>& rhs, unsigned int startIndex, unsigned int numberElements );
 				DynamicArray<T>&								Assign ( const ConstIterator& iter );
 				DynamicArray<T>&								Assign ( const ConstReverseIterator& iter );
 				template<class Evaluator> DynamicArray<T>&		Assign ( const ConstIterator& iter, const Evaluator& filter );

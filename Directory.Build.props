@@ -16,6 +16,14 @@
     </ClCompile>
   </ItemDefinitionGroup>
 
+  <!-- Sanitizer configs reuse Debug prebuilt libs (bgfx, etc. have no sanitizer variant) -->
+  <PropertyGroup>
+    <ExternalLibConfig>$(Configuration)</ExternalLibConfig>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)'=='Debug-Asan' Or '$(Configuration)'=='Debug-Ubsan'">
+    <ExternalLibConfig>Debug</ExternalLibConfig>
+  </PropertyGroup>
+
   <!-- Debug-Asan: MSVC AddressSanitizer -->
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug-Asan'">
     <ClCompile>
@@ -30,13 +38,17 @@
   </ItemDefinitionGroup>
 
   <!-- Debug-Ubsan: Clang-cl UndefinedBehaviorSanitizer -->
+  <!-- Point ClangCL at the standalone LLVM install since VS 18 ships no bundled clang-cl -->
   <PropertyGroup Condition="'$(Configuration)'=='Debug-Ubsan'">
     <PlatformToolset>ClangCL</PlatformToolset>
+    <LLVMInstallDir>C:\Program Files\LLVM</LLVMInstallDir>
+    <LLVMToolsVersion>22</LLVMToolsVersion>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug-Ubsan'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <!-- Release CRT: clang_rt.ubsan_standalone_cxx has _ITERATOR_DEBUG_LEVEL=0, not 2 -->
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <AdditionalOptions>-fsanitize=undefined --target=x86_64-pc-windows-msvc %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
