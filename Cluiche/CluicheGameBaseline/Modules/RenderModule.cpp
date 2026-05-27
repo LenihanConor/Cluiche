@@ -32,10 +32,6 @@ Dia::ApplicationFlow::StartResult RenderModule::DoStart()
     // blocks until this flips back to true in our DoStop.
     KernelModule::SetRenderContextReleased(false);
 
-    // Activate the GL context on this (render) thread.
-    // KernelModule deactivates it on the main thread in DoStart so this is safe.
-    mCanvas->SetActiveContext(true);
-
     // Signal to DebugUIModule (same PU) that the render context is ready for ImGui.
     KernelModule::SetRenderContextActive(true);
 
@@ -71,7 +67,6 @@ Dia::ApplicationFlow::StopResult RenderModule::DoStop()
 
     if (mCanvas != nullptr)
     {
-        mCanvas->SetActiveContext(false);
         mCanvas = nullptr;
     }
 

@@ -74,10 +74,6 @@ Dia::ApplicationFlow::StartResult KernelModule::DoStart()
 
     mCanvas = mBgfxCanvas;
 
-    // Deactivate SFML's implicit GL context — bgfx owns the window surface.
-    // RenderModule activates the context on the RenderPU thread.
-    mCanvas->SetActiveContext(false);
-
 #ifdef DIA_DEBUG
     mBgfxImGuiBackend = new Dia::Bgfx::BgfxImGuiBackend();
     mBgfxImGuiBackend->Configure(mBgfxCanvas->GetImGuiViewId(), hwnd, mBgfxCanvas);

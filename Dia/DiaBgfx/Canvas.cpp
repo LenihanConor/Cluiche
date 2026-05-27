@@ -105,7 +105,7 @@ namespace Dia
         Canvas::~Canvas()
         {
             DIA_ASSERT(!mInitialised,
-                "Canvas destroyed while still initialised — call SetActiveContext(false) first");
+                "Canvas destroyed while still initialised — bgfx context should be shut down via DeferredInit before destruction");
         }
 
         void Canvas::AttachToNativeWindow(Dia::Window::SystemHandle hwnd,
@@ -211,35 +211,6 @@ namespace Dia
             const uint32_t h = static_cast<uint32_t>(size.Y());
             bgfx::reset(w, h, BGFX_RESET_VSYNC);
             PropagateCanvasSize();
-        }
-
-        void Canvas::SetActiveContext(bool active)
-        {
-            if (active && !mInitialised && mConfigured)
-            {
-                DeferredInit();
-            }
-            else if (!active && mInitialised)
-            {
-                // RenderPU is releasing us. Shut down on this thread (same
-                // thread that called bgfx::init via DeferredInit).
-
-                // ImGui renderer must be destroyed before bgfx::shutdown.
-#ifdef DIA_DEBUG
-                if (Dia::ImGui::GetManager().GetBackend() != nullptr)
-                    Dia::ImGui::Shutdown();
-#endif
-
-                delete mUIOverlayRenderer;  mUIOverlayRenderer = nullptr;
-                delete mDebugRenderer;      mDebugRenderer     = nullptr;
-                delete mSpriteRenderer;     mSpriteRenderer    = nullptr;
-                delete mUIProgram;          mUIProgram         = nullptr;
-                delete mDebugProgram;       mDebugProgram      = nullptr;
-                delete mSpriteProgram;      mSpriteProgram     = nullptr;
-
-                bgfx::shutdown();
-                mInitialised = false;
-            }
         }
 
         void Canvas::StartFrame(const Dia::Graphics::FrameData& /*nextFrame*/)
