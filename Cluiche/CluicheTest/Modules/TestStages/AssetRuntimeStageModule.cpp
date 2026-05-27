@@ -29,6 +29,13 @@ Dia::ApplicationFlow::StartResult AssetRuntimeStageModule::DoStart()
 
     RegisterCheckpoints();
 
+    const Dia::Core::StringCRC checkpoints[] = {
+        Dia::Core::StringCRC("asset_runtime.all_loaded"),
+        Dia::Core::StringCRC("asset_runtime.clean_reload")
+    };
+    TestResultsRegistry::GetInstance().SetRunning(
+        Dia::Core::StringCRC("AssetRuntimeStage"), 240, checkpoints, 2);
+
     auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
     if (!mMetricLoadCount)
         mMetricLoadCount = reg.RegisterGauge(Dia::Core::StringCRC("cluichetest.asset_runtime.load_count"));
@@ -44,6 +51,7 @@ Dia::ApplicationFlow::StartResult AssetRuntimeStageModule::DoStart()
 void AssetRuntimeStageModule::DoUpdate(float /*deltaTime*/)
 {
     ++mFrameCount;
+    TestResultsRegistry::GetInstance().SetActiveFrameCount(mFrameCount);
 
     auto* svc = Cluiche::AppFlow::AssetServiceModule::GetStatic();
     if (!svc)

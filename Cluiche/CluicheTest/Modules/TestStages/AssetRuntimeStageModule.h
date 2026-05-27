@@ -3,6 +3,7 @@
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include "Modules/AutomationModule.h"
+#include "Modules/TestStages/TestResultsRegistry.h"
 
 namespace Dia { namespace Observation { namespace Metric { class Gauge; } } }
 
