@@ -1,9 +1,10 @@
 {
     "version": 3,
     "stages": [
-        { "name": "Boot",              "transitions": ["DummyStage", "RigidBody2DStage"], "auto_advance": false },
+        { "name": "Boot",              "transitions": ["DummyStage", "RigidBody2DStage", "AssetRuntimeStage"], "auto_advance": false },
         { "name": "DummyStage",        "transitions": ["Boot"],                          "auto_advance": false },
-        { "name": "RigidBody2DStage",  "transitions": ["Boot"],                          "auto_advance": false }
+        { "name": "RigidBody2DStage",  "transitions": ["Boot"],                          "auto_advance": false },
+        { "name": "AssetRuntimeStage", "transitions": ["Boot"],                          "auto_advance": false }
     ],
     "initial_stage": "Boot",
     "streams": [
@@ -202,7 +203,7 @@
                 {
                     "instance_id": "TestStageHUDModule",
                     "type_id": "TestStageHUDModule",
-                    "stages": [ "DummyStage", "RigidBody2DStage" ],
+                    "stages": [ "DummyStage", "RigidBody2DStage", "AssetRuntimeStage" ],
                     "dependencies": [ "DebugUI" ],
                     "channels": [
                         { "id": "MainToRender", "role": "reads" }
