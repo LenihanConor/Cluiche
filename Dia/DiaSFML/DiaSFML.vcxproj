@@ -23,15 +23,13 @@
     <ClCompile Include="InputSource.cpp" />
     <ClCompile Include="Window.cpp" />
     <ClCompile Include="WindowFactory.cpp" />
-    <ClCompile Include="Win32WndProcChain.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)'=='Release'">true</ExcludedFromBuild>
-    </ClCompile>
+
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="InputSource.h" />
     <ClInclude Include="Window.h" />
     <ClInclude Include="WindowFactory.h" />
-    <ClInclude Include="Win32WndProcChain.h" />
+
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">

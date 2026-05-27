@@ -55,7 +55,7 @@ namespace Dia
 			
 			void SetWindowContext(sf::Window* window);
 
-			void ListenForInputSources(Dia::Core::BitArray8 listeningToSource);
+			void ListenForInputSources(Dia::Core::BitArray8 listeningToSource) override;
 
 			virtual void Poll(Dia::Input::EventData& outStream)override;
 

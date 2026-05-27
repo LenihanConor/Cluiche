@@ -25,6 +25,9 @@
     <ClInclude Include="Imgui\BgfxImGuiRenderer.h">
       <Filter>Imgui</Filter>
     </ClInclude>
+    <ClInclude Include="Imgui\Win32WndProcChain.h">
+      <Filter>Imgui</Filter>
+    </ClInclude>
     <ClCompile Include="Canvas.cpp">
       <Filter>Source</Filter>
     </ClCompile>
@@ -47,6 +50,9 @@
       <Filter>Imgui</Filter>
     </ClCompile>
     <ClCompile Include="Imgui\BgfxImGuiRenderer.cpp">
+      <Filter>Imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="Imgui\Win32WndProcChain.cpp">
       <Filter>Imgui</Filter>
     </ClCompile>
     <ClCompile Include="$(ProjectDir)..\..\External\imgui\backends\imgui_impl_win32.cpp">
