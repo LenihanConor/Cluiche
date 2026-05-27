@@ -48,11 +48,20 @@ def run(repo_root: Optional[Path], force: bool = False) -> int:
     print("Installing VS C++ Desktop workload...")
     vs_installer = Path("C:/Program Files (x86)/Microsoft Visual Studio/Installer/vs_installer.exe")
     if vs_installer.exists():
+        # Resolve actual VS install path via vswhere rather than assuming edition/year
+        vswhere = Path("C:/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe")
+        vs_path = "C:/Program Files/Microsoft Visual Studio/2022/Professional"
+        if vswhere.exists():
+            r = subprocess.run([str(vswhere), "-latest", "-property", "installationPath"],
+                               capture_output=True, text=True)
+            if r.returncode == 0 and r.stdout.strip():
+                vs_path = r.stdout.strip()
         vs_cmd = [
             str(vs_installer), "modify",
-            "--installPath", "C:/Program Files/Microsoft Visual Studio/2022/Community",
+            "--installPath", vs_path,
             "--add", "Microsoft.VisualStudio.Workload.NativeDesktop",
             "--add", "Microsoft.VisualStudio.Component.VC.ASAN",
+            "--add", "Microsoft.VisualStudio.Component.VC.Llvm.Clang",
             "--includeRecommended", "--quiet", "--wait"
         ]
         subprocess.run(vs_cmd)

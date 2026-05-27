@@ -9,6 +9,14 @@
       <Configuration>Release</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug-Asan|x64">
+      <Configuration>Debug-Asan</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug-Ubsan|x64">
+      <Configuration>Debug-Ubsan</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{A1B2C3D4-5678-9ABC-DEF0-123456789ABC}</ProjectGuid>
@@ -20,6 +28,15 @@
   <!-- Debug x64 Configuration -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Asan|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>ClangCL</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <!-- Release x64 Configuration -->
@@ -60,7 +77,7 @@
   <!-- Debug Win32 Compiler Settings -->
   <!-- Release Win32 Compiler Settings -->
   <!-- Debug x64 Compiler Settings -->
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64' Or '$(Configuration)|$(Platform)'=='Debug-Asan|x64' Or '$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)../../../Dia/;$(ProjectDir)../../CluicheTest/;$(ProjectDir)../../../External/googletest/googletest/include/;$(ProjectDir)../../../External/jsoncpp-master/include/;$(ProjectDir)../../../External/pybind11/include/;$(ProjectDir)../../../External/Python311/include/;$(ProjectDir)../../../External/websocketpp;$(ProjectDir)../../../External/asio/asio/include;$(ProjectDir)../../../External/protobuf/Current-x64/include;$(ProjectDir)../../../External/imgui/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
