@@ -179,7 +179,9 @@
         "-DSDL_STATIC=ON",
         "-DSDL_SHARED=OFF",
         "-DSDL_TEST_LIBRARY=OFF",
-        "-DSDL_TESTS=OFF"
+        "-DSDL_TESTS=OFF",
+        "-DSDL_DIRECTX=OFF",
+        "-DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON"
       ],
       "stage": [
         {"from": "_build/Release/SDL3-static.lib", "to": "External/SDL3/lib/Release/SDL3-static.lib"},

@@ -7,6 +7,7 @@
 #include <DiaInput/EventData.h>
 #include <DiaInput/ConsoleGamepadManager.h>
 #include <DiaSDL/WindowFactory.h>
+#include <DiaSDL/Window.h>
 #include <DiaAssetRuntime/Handlers/TextureHandler.h>
 #include "Types/MainToSimEvent.h"
 

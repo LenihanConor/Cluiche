@@ -97,32 +97,32 @@ namespace Dia
 			switch (key)
 			{
 			// Letters
-			case SDLK_a: return Dia::Input::EKey::A;
-			case SDLK_b: return Dia::Input::EKey::B;
-			case SDLK_c: return Dia::Input::EKey::C;
-			case SDLK_d: return Dia::Input::EKey::D;
-			case SDLK_e: return Dia::Input::EKey::E;
-			case SDLK_f: return Dia::Input::EKey::F;
-			case SDLK_g: return Dia::Input::EKey::G;
-			case SDLK_h: return Dia::Input::EKey::H;
-			case SDLK_i: return Dia::Input::EKey::I;
-			case SDLK_j: return Dia::Input::EKey::J;
-			case SDLK_k: return Dia::Input::EKey::K;
-			case SDLK_l: return Dia::Input::EKey::L;
-			case SDLK_m: return Dia::Input::EKey::M;
-			case SDLK_n: return Dia::Input::EKey::N;
-			case SDLK_o: return Dia::Input::EKey::O;
-			case SDLK_p: return Dia::Input::EKey::P;
-			case SDLK_q: return Dia::Input::EKey::Q;
-			case SDLK_r: return Dia::Input::EKey::R;
-			case SDLK_s: return Dia::Input::EKey::S;
-			case SDLK_t: return Dia::Input::EKey::T;
-			case SDLK_u: return Dia::Input::EKey::U;
-			case SDLK_v: return Dia::Input::EKey::V;
-			case SDLK_w: return Dia::Input::EKey::W;
-			case SDLK_x: return Dia::Input::EKey::X;
-			case SDLK_y: return Dia::Input::EKey::Y;
-			case SDLK_z: return Dia::Input::EKey::Z;
+			case SDLK_A: return Dia::Input::EKey::A;
+			case SDLK_B: return Dia::Input::EKey::B;
+			case SDLK_C: return Dia::Input::EKey::C;
+			case SDLK_D: return Dia::Input::EKey::D;
+			case SDLK_E: return Dia::Input::EKey::E;
+			case SDLK_F: return Dia::Input::EKey::F;
+			case SDLK_G: return Dia::Input::EKey::G;
+			case SDLK_H: return Dia::Input::EKey::H;
+			case SDLK_I: return Dia::Input::EKey::I;
+			case SDLK_J: return Dia::Input::EKey::J;
+			case SDLK_K: return Dia::Input::EKey::K;
+			case SDLK_L: return Dia::Input::EKey::L;
+			case SDLK_M: return Dia::Input::EKey::M;
+			case SDLK_N: return Dia::Input::EKey::N;
+			case SDLK_O: return Dia::Input::EKey::O;
+			case SDLK_P: return Dia::Input::EKey::P;
+			case SDLK_Q: return Dia::Input::EKey::Q;
+			case SDLK_R: return Dia::Input::EKey::R;
+			case SDLK_S: return Dia::Input::EKey::S;
+			case SDLK_T: return Dia::Input::EKey::T;
+			case SDLK_U: return Dia::Input::EKey::U;
+			case SDLK_V: return Dia::Input::EKey::V;
+			case SDLK_W: return Dia::Input::EKey::W;
+			case SDLK_X: return Dia::Input::EKey::X;
+			case SDLK_Y: return Dia::Input::EKey::Y;
+			case SDLK_Z: return Dia::Input::EKey::Z;
 
 			// Number row
 			case SDLK_0: return Dia::Input::EKey::Num0;

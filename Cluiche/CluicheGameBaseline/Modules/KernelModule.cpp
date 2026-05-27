@@ -55,10 +55,10 @@ Dia::ApplicationFlow::StartResult KernelModule::DoStart()
         inputMask.SetBit(Dia::SDL::InputSource::ESourceIndex::kSystem,   true);
         inputMask.SetBit(Dia::SDL::InputSource::ESourceIndex::kKeyboard, true);
         inputMask.SetBit(Dia::SDL::InputSource::ESourceIndex::kMouse,    true);
-        static_cast<Dia::Input::IInputSource*>(mWindow)->ListenForInputSources(inputMask);
+        static_cast<Dia::SDL::Window*>(mWindow)->ListenForInputSources(inputMask);
     }
 
-    mInputSourceManager.AddInputSource(static_cast<Dia::Input::IInputSource*>(mWindow));
+    mInputSourceManager.AddInputSource(static_cast<Dia::SDL::Window*>(mWindow));
     mInputSourceManager.AddInputSource(&mGamepadManager);
 
     // Construct bgfx Canvas unconditionally — SFML render path is removed.

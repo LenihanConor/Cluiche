@@ -45,41 +45,39 @@ namespace
 
 TEST(DiaSDLEKeyMapping, AlphaKeys)
 {
-    EXPECT_EQ(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_A).AsInt(), Dia::Input::EKey::A.AsInt());
-    EXPECT_EQ(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_Z).AsInt(), Dia::Input::EKey::Z.AsInt());
-    EXPECT_EQ(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_M).AsInt(), Dia::Input::EKey::M.AsInt());
+    EXPECT_TRUE(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_A) == Dia::Input::EKey::A);
+    EXPECT_TRUE(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_Z) == Dia::Input::EKey::Z);
+    EXPECT_TRUE(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_M) == Dia::Input::EKey::M);
 }
 
 TEST(DiaSDLEKeyMapping, NumericKeys)
 {
-    EXPECT_EQ(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_0).AsInt(), Dia::Input::EKey::Num0.AsInt());
-    EXPECT_EQ(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_9).AsInt(), Dia::Input::EKey::Num9.AsInt());
+    EXPECT_TRUE(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_0) == Dia::Input::EKey::Num0);
+    EXPECT_TRUE(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_9) == Dia::Input::EKey::Num9);
 }
 
 TEST(DiaSDLEKeyMapping, SpecialKeys)
 {
-    EXPECT_EQ(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_ESCAPE).AsInt(),    Dia::Input::EKey::Escape.AsInt());
-    EXPECT_EQ(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_RETURN).AsInt(),    Dia::Input::EKey::Return.AsInt());
-    EXPECT_EQ(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_SPACE).AsInt(),     Dia::Input::EKey::Space.AsInt());
-    EXPECT_EQ(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_BACKSPACE).AsInt(), Dia::Input::EKey::BackSpace.AsInt());
-    EXPECT_EQ(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_TAB).AsInt(),       Dia::Input::EKey::Tab.AsInt());
-    EXPECT_EQ(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_LEFT).AsInt(),      Dia::Input::EKey::Left.AsInt());
-    EXPECT_EQ(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_RIGHT).AsInt(),     Dia::Input::EKey::Right.AsInt());
-    EXPECT_EQ(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_UP).AsInt(),        Dia::Input::EKey::Up.AsInt());
-    EXPECT_EQ(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_DOWN).AsInt(),      Dia::Input::EKey::Down.AsInt());
+    EXPECT_TRUE(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_ESCAPE)    == Dia::Input::EKey::Escape);
+    EXPECT_TRUE(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_RETURN)    == Dia::Input::EKey::Return);
+    EXPECT_TRUE(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_SPACE)     == Dia::Input::EKey::Space);
+    EXPECT_TRUE(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_BACKSPACE) == Dia::Input::EKey::BackSpace);
+    EXPECT_TRUE(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_TAB)       == Dia::Input::EKey::Tab);
+    EXPECT_TRUE(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_LEFT)      == Dia::Input::EKey::Left);
+    EXPECT_TRUE(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_RIGHT)     == Dia::Input::EKey::Right);
+    EXPECT_TRUE(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_UP)        == Dia::Input::EKey::Up);
+    EXPECT_TRUE(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_DOWN)      == Dia::Input::EKey::Down);
 }
 
 TEST(DiaSDLEKeyMapping, FunctionKeys)
 {
-    EXPECT_EQ(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_F1).AsInt(),  Dia::Input::EKey::F1.AsInt());
-    EXPECT_EQ(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_F12).AsInt(), Dia::Input::EKey::F12.AsInt());
+    EXPECT_TRUE(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_F1)  == Dia::Input::EKey::F1);
+    EXPECT_TRUE(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_F12) == Dia::Input::EKey::F12);
 }
 
 TEST(DiaSDLEKeyMapping, UnknownKeycode)
 {
-    // An unmapped keycode must return EKey::Unknown
-    EXPECT_EQ(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_UNKNOWN).AsInt(),
-              Dia::Input::EKey::Unknown.AsInt());
+    EXPECT_TRUE(Dia::SDL::InputSource::SDLKeycodeToEKey(SDLK_UNKNOWN) == Dia::Input::EKey::Unknown);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -94,8 +92,8 @@ TEST(DiaSDLEventTranslation, KeyPressed)
     SDL_Event sdl = MakeKeyEvent(SDL_EVENT_KEY_DOWN, SDLK_A);
     Dia::Input::Event out{};
     ASSERT_TRUE(Dia::SDL::InputSource::TranslateSDLEvent(sdl, out));
-    EXPECT_EQ(out.type.AsInt(), Dia::Input::Event::EType::kKeyPressed.AsInt());
-    EXPECT_EQ(out.key.AsKey().AsInt(), Dia::Input::EKey::A.AsInt());
+    EXPECT_TRUE(out.type == Dia::Input::Event::EType::kKeyPressed);
+    EXPECT_TRUE(out.key.AsKey() == Dia::Input::EKey::A);
     EXPECT_FALSE(out.key.shift);
 }
 
@@ -114,7 +112,7 @@ TEST(DiaSDLEventTranslation, KeyReleased)
     SDL_Event sdl = MakeKeyEvent(SDL_EVENT_KEY_UP, SDLK_ESCAPE);
     Dia::Input::Event out{};
     ASSERT_TRUE(Dia::SDL::InputSource::TranslateSDLEvent(sdl, out));
-    EXPECT_EQ(out.type.AsInt(), Dia::Input::Event::EType::kKeyReleased.AsInt());
+    EXPECT_TRUE(out.type == Dia::Input::Event::EType::kKeyReleased);
 }
 
 TEST(DiaSDLEventTranslation, WindowClosed)
@@ -123,7 +121,7 @@ TEST(DiaSDLEventTranslation, WindowClosed)
     sdl.type = SDL_EVENT_QUIT;
     Dia::Input::Event out{};
     ASSERT_TRUE(Dia::SDL::InputSource::TranslateSDLEvent(sdl, out));
-    EXPECT_EQ(out.type.AsInt(), Dia::Input::Event::EType::kClosed.AsInt());
+    EXPECT_TRUE(out.type == Dia::Input::Event::EType::kClosed);
 }
 
 TEST(DiaSDLEventTranslation, WindowResized)
@@ -134,7 +132,7 @@ TEST(DiaSDLEventTranslation, WindowResized)
     sdl.window.data2  = 720;
     Dia::Input::Event out{};
     ASSERT_TRUE(Dia::SDL::InputSource::TranslateSDLEvent(sdl, out));
-    EXPECT_EQ(out.type.AsInt(), Dia::Input::Event::EType::kResized.AsInt());
+    EXPECT_TRUE(out.type == Dia::Input::Event::EType::kResized);
     EXPECT_EQ(out.size.width,  1280u);
     EXPECT_EQ(out.size.height, 720u);
 }
@@ -147,7 +145,7 @@ TEST(DiaSDLEventTranslation, MouseMoved)
     sdl.motion.y  = 200.0f;
     Dia::Input::Event out{};
     ASSERT_TRUE(Dia::SDL::InputSource::TranslateSDLEvent(sdl, out));
-    EXPECT_EQ(out.type.AsInt(), Dia::Input::Event::EType::kMouseMoved.AsInt());
+    EXPECT_TRUE(out.type == Dia::Input::Event::EType::kMouseMoved);
     EXPECT_EQ(out.mouseMove.x, 100);
     EXPECT_EQ(out.mouseMove.y, 200);
 }
@@ -155,13 +153,13 @@ TEST(DiaSDLEventTranslation, MouseMoved)
 TEST(DiaSDLEventTranslation, MouseButtonPressed)
 {
     SDL_Event sdl{};
-    sdl.type         = SDL_EVENT_MOUSE_BUTTON_DOWN;
+    sdl.type          = SDL_EVENT_MOUSE_BUTTON_DOWN;
     sdl.button.button = SDL_BUTTON_LEFT;
-    sdl.button.x     = 50.0f;
-    sdl.button.y     = 75.0f;
+    sdl.button.x      = 50.0f;
+    sdl.button.y      = 75.0f;
     Dia::Input::Event out{};
     ASSERT_TRUE(Dia::SDL::InputSource::TranslateSDLEvent(sdl, out));
-    EXPECT_EQ(out.type.AsInt(), Dia::Input::Event::EType::kMouseButtonPressed.AsInt());
+    EXPECT_TRUE(out.type == Dia::Input::Event::EType::kMouseButtonPressed);
 }
 
 TEST(DiaSDLEventTranslation, MouseButtonReleased)
@@ -171,7 +169,7 @@ TEST(DiaSDLEventTranslation, MouseButtonReleased)
     sdl.button.button = SDL_BUTTON_RIGHT;
     Dia::Input::Event out{};
     ASSERT_TRUE(Dia::SDL::InputSource::TranslateSDLEvent(sdl, out));
-    EXPECT_EQ(out.type.AsInt(), Dia::Input::Event::EType::kMouseButtonReleased.AsInt());
+    EXPECT_TRUE(out.type == Dia::Input::Event::EType::kMouseButtonReleased);
 }
 
 TEST(DiaSDLEventTranslation, JoystickButtonPressed)
@@ -182,7 +180,7 @@ TEST(DiaSDLEventTranslation, JoystickButtonPressed)
     sdl.jbutton.button = 2;
     Dia::Input::Event out{};
     ASSERT_TRUE(Dia::SDL::InputSource::TranslateSDLEvent(sdl, out));
-    EXPECT_EQ(out.type.AsInt(), Dia::Input::Event::EType::kJoystickButtonPressed.AsInt());
+    EXPECT_TRUE(out.type == Dia::Input::Event::EType::kJoystickButtonPressed);
     EXPECT_EQ(out.joystickButton.button, 2u);
 }
 
@@ -194,7 +192,7 @@ TEST(DiaSDLEventTranslation, JoystickButtonReleased)
     sdl.jbutton.button = 3;
     Dia::Input::Event out{};
     ASSERT_TRUE(Dia::SDL::InputSource::TranslateSDLEvent(sdl, out));
-    EXPECT_EQ(out.type.AsInt(), Dia::Input::Event::EType::kJoystickButtonReleased.AsInt());
+    EXPECT_TRUE(out.type == Dia::Input::Event::EType::kJoystickButtonReleased);
 }
 
 TEST(DiaSDLEventTranslation, JoystickAxisMoved)
@@ -206,7 +204,7 @@ TEST(DiaSDLEventTranslation, JoystickAxisMoved)
     sdl.jaxis.value = 16000;
     Dia::Input::Event out{};
     ASSERT_TRUE(Dia::SDL::InputSource::TranslateSDLEvent(sdl, out));
-    EXPECT_EQ(out.type.AsInt(), Dia::Input::Event::EType::kJoystickMoved.AsInt());
+    EXPECT_TRUE(out.type == Dia::Input::Event::EType::kJoystickMoved);
 }
 
 TEST(DiaSDLEventTranslation, JoystickConnected)
@@ -216,7 +214,7 @@ TEST(DiaSDLEventTranslation, JoystickConnected)
     sdl.jdevice.which = 1;
     Dia::Input::Event out{};
     ASSERT_TRUE(Dia::SDL::InputSource::TranslateSDLEvent(sdl, out));
-    EXPECT_EQ(out.type.AsInt(), Dia::Input::Event::EType::kJoystickConnected.AsInt());
+    EXPECT_TRUE(out.type == Dia::Input::Event::EType::kJoystickConnected);
 }
 
 TEST(DiaSDLEventTranslation, JoystickDisconnected)
@@ -226,18 +224,18 @@ TEST(DiaSDLEventTranslation, JoystickDisconnected)
     sdl.jdevice.which = 1;
     Dia::Input::Event out{};
     ASSERT_TRUE(Dia::SDL::InputSource::TranslateSDLEvent(sdl, out));
-    EXPECT_EQ(out.type.AsInt(), Dia::Input::Event::EType::kJoystickDisconnected.AsInt());
+    EXPECT_TRUE(out.type == Dia::Input::Event::EType::kJoystickDisconnected);
 }
 
 TEST(DiaSDLEventTranslation, TextEntered)
 {
     SDL_Event sdl{};
-    sdl.type         = SDL_EVENT_TEXT_INPUT;
-    sdl.text.text[0] = 'H';
-    sdl.text.text[1] = '\0';
+    sdl.type      = SDL_EVENT_TEXT_INPUT;
+    sdl.text.text = "H";   // SDL3: text is const char*
     Dia::Input::Event out{};
     ASSERT_TRUE(Dia::SDL::InputSource::TranslateSDLEvent(sdl, out));
-    EXPECT_EQ(out.type.AsInt(), Dia::Input::Event::EType::kTextEntered.AsInt());
+    EXPECT_TRUE(out.type == Dia::Input::Event::EType::kTextEntered);
+    EXPECT_EQ(out.text.unicode, static_cast<unsigned int>('H'));
 }
 
 TEST(DiaSDLEventTranslation, UnknownEventReturnsFalse)
