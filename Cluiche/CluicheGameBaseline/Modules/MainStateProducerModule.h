@@ -4,12 +4,12 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include "Types/MainToRenderFrame.h"
 
-namespace CluicheTest {
+namespace Cluiche { namespace AppFlow {
 
-// MainStateProducerModule (MainPU, stages: all)
 // Collects HUD + automation state from MainPU singletons each tick and
 // publishes it to the MainToRender FrameStream so RenderPU modules can
 // display it without direct cross-PU static access.
+// Override DoPopulateFrame() to inject app-specific frame data.
 class MainStateProducerModule : public Dia::ApplicationFlow::Module
 {
 public:
@@ -22,9 +22,11 @@ protected:
     Dia::ApplicationFlow::StopResult DoStop() override;
     void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 
+    virtual void DoPopulateFrame(MainToRenderFrame& /*frame*/) {}
+
 private:
-    Dia::ApplicationFlow::StreamWriter<Cluiche::AppFlow::MainToRenderFrame> mFrameOutput{this, "MainToRender"};
-    Cluiche::AppFlow::MainToRenderFrame mLastFrame;
+    Dia::ApplicationFlow::StreamWriter<MainToRenderFrame> mFrameOutput{this, "MainToRender"};
+    MainToRenderFrame mLastFrame;
 };
 
-} // namespace CluicheTest
+} } // namespace Cluiche::AppFlow

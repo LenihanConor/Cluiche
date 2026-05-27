@@ -4,7 +4,7 @@
 #include <DiaEntity/Hierarchy/ChildBufferComponent.h>
 #include <DiaObservation/Log/DiaLog.h>
 
-namespace CluicheTest {
+namespace Cluiche { namespace AppFlow {
 
 const Dia::Core::StringCRC EntityModule::kTypeId("EntityModule");
 
@@ -43,8 +43,8 @@ Dia::ApplicationFlow::StopResult EntityModule::DoStop()
     return Dia::ApplicationFlow::StopResult::kDone;
 }
 
-} // namespace CluicheTest
+} } // namespace Cluiche::AppFlow
 
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
-namespace { using EntityModule_ = CluicheTest::EntityModule; }
+namespace { using EntityModule_ = Cluiche::AppFlow::EntityModule; }
 DIA_MODULE(EntityModule_);

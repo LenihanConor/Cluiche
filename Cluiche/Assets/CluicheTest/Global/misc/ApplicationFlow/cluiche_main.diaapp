@@ -139,7 +139,7 @@
                 },
                 {
                     "instance_id": "MainStateProducerModule",
-                    "type_id": "MainStateProducerModule",
+                    "type_id": "TestMainStateProducerModule",
                     "stages": [ "all" ],
                     "dependencies": [ "ObservationModule", "AutomationModule" ],
                     "channels": [
@@ -178,6 +178,15 @@
                         { "id": "UIToSim",     "role": "reads" },
                         { "id": "SimToRender", "role": "writes" }
                     ]
+                },
+                {
+                    "instance_id": "VisualDebuggerModule",
+                    "type_id": "VisualDebuggerModule",
+                    "stages": [ "RigidBody2DStage", "AssetRuntimeStage" ],
+                    "dependencies": [],
+                    "channels": [
+                        { "id": "SimToRender", "role": "writes" }
+                    ]
                 }
             ]
         },
@@ -212,7 +221,14 @@
                 {
                     "instance_id": "VisualDebuggerConsoleModule",
                     "type_id": "VisualDebuggerConsoleModule",
-                    "stages": [ "RigidBody2DStage" ],
+                    "stages": [ "RigidBody2DStage", "AssetRuntimeStage" ],
+                    "dependencies": [ "DebugUI" ],
+                    "channels": []
+                },
+                {
+                    "instance_id": "AssetRuntimeVisualDebuggerModule",
+                    "type_id": "AssetRuntimeVisualDebuggerModule",
+                    "stages": [ "AssetRuntimeStage" ],
                     "dependencies": [ "DebugUI" ],
                     "channels": []
                 },
@@ -229,7 +245,7 @@
                     "instance_id": "RenderModule",
                     "type_id": "RenderModule",
                     "stages": [ "all" ],
-                    "dependencies": [ "DebugUI", "TestStageHUDModule", "VisualDebuggerConsoleModule", "AssetRuntimeHUDModule" ],
+                    "dependencies": [ "DebugUI", "TestStageHUDModule", "VisualDebuggerConsoleModule", "AssetRuntimeVisualDebuggerModule", "AssetRuntimeHUDModule" ],
                     "channels": [
                         { "id": "SimToRender",        "role": "reads" },
                         { "id": "KernelCanvas",        "role": "consumes" },

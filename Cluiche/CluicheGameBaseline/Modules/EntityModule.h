@@ -4,7 +4,7 @@
 #include <DiaEntity/Domain.h>
 #include <DiaEntity/IEntityInspectable.h>
 
-namespace CluicheTest {
+namespace Cluiche { namespace AppFlow {
 
 class EntityModule : public Dia::ApplicationFlow::Module {
 public:
@@ -23,4 +23,4 @@ private:
     Dia::Entity::Domain mDomain;
 };
 
-} // namespace CluicheTest
+} } // namespace Cluiche::AppFlow

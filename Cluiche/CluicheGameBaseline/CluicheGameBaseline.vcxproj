@@ -20,9 +20,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Modules\AutomationModule.cpp" />
+    <ClCompile Include="Modules\EntityModule.cpp" />
+    <ClCompile Include="Modules\MainStateProducerModule.cpp" />
     <ClCompile Include="Modules\AssetServiceModule.cpp" />
     <ClCompile Include="Modules\VisualDebuggerModule.cpp" />
     <ClCompile Include="Modules\VisualDebuggerConsoleModule.cpp" />
+    <ClCompile Include="Modules\AssetRuntimeVisualDebuggerModule.cpp" />
     <ClCompile Include="Modules\DebugUIModule.cpp" />
     <ClCompile Include="Modules\DebugServerHostModule.cpp" />
     <ClCompile Include="Modules\JobSystemModule.cpp" />
@@ -44,9 +47,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\AutomationModule.h" />
+    <ClInclude Include="Modules\EntityModule.h" />
+    <ClInclude Include="Modules\MainStateProducerModule.h" />
     <ClInclude Include="Modules\AssetServiceModule.h" />
     <ClInclude Include="Modules\VisualDebuggerModule.h" />
     <ClInclude Include="Modules\VisualDebuggerConsoleModule.h" />
+    <ClInclude Include="Modules\AssetRuntimeVisualDebuggerModule.h" />
     <ClInclude Include="Modules\DebugUIModule.h" />
     <ClInclude Include="Modules\DebugServerHostModule.h" />
     <ClInclude Include="Modules\JobSystemModule.h" />
@@ -121,11 +127,17 @@
     <ProjectReference Include="..\..\Dia\DiaVisualDebugger\DiaVisualDebugger.vcxproj">
       <Project>{9BDEE3A3-1E06-4AF4-8628-E55B8E0E2E4B}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaAssetRuntimeVisualDebugger\DiaAssetRuntimeVisualDebugger.vcxproj">
+      <Project>{D3E4F5A6-B7C8-9012-DEFA-234567890ABC}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaVisualDebuggerConsole\DiaVisualDebuggerConsole.vcxproj">
       <Project>{07B8C9D0-E1F2-3456-BCDE-678901ABCDE2}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaImGui\DiaImGui.vcxproj">
       <Project>{F6A7B8C9-D0E1-2345-ABCD-567890ABCDE1}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaEntity\DiaEntity.vcxproj">
+      <Project>{D9E0F1A2-B3C4-5678-9DEF-012345678903}</Project>
     </ProjectReference>
 
   </ItemGroup>

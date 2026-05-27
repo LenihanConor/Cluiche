@@ -22,22 +22,20 @@
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Modules\BootMenuModule.cpp" />
-    <ClCompile Include="Modules\EntityModule.cpp" />
-    <ClCompile Include="Modules\MainStateProducerModule.cpp" />
+    <ClCompile Include="Modules\TestMainStateProducerModule.cpp" />
     <ClCompile Include="Modules\TestStages\TestResultsRegistry.cpp" />
     <ClCompile Include="Modules\TestStages\RigidBody2DTestModule.cpp" />
-    <ClCompile Include="Modules\TestStages\AssetRuntimeStageModule.cpp" />
+    <ClCompile Include="Modules\TestStages\TestAssetRuntimeStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\AssetRuntimeRendererModule.cpp" />
     <ClCompile Include="Modules\TestStages\AssetRuntimeHUDModule.cpp" />
     <ClCompile Include="Modules\TestStages\TestStageHUDModule.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\BootMenuModule.h" />
-    <ClInclude Include="Modules\EntityModule.h" />
-    <ClInclude Include="Modules\MainStateProducerModule.h" />
+    <ClInclude Include="Modules\TestMainStateProducerModule.h" />
     <ClInclude Include="Modules\TestStages\TestResultsRegistry.h" />
     <ClInclude Include="Modules\TestStages\RigidBody2DTestModule.h" />
-    <ClInclude Include="Modules\TestStages\AssetRuntimeStageModule.h" />
+    <ClInclude Include="Modules\TestStages\TestAssetRuntimeStageModule.h" />
     <ClInclude Include="Modules\TestStages\AssetRuntimeRendererModule.h" />
     <ClInclude Include="Modules\TestStages\AssetRuntimeHUDModule.h" />
     <ClInclude Include="Modules\TestStages\TestStageHUDModule.h" />
@@ -87,6 +85,9 @@
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaAssetRuntime\DiaAssetRuntime.vcxproj">
       <Project>{C9D0E1F2-A3B4-5678-9CDE-F01234567890}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaAssetRuntimeVisualDebugger\DiaAssetRuntimeVisualDebugger.vcxproj">
+      <Project>{D3E4F5A6-B7C8-9012-DEFA-234567890ABC}</Project>
     </ProjectReference>
     <ProjectReference Include="..\CluicheGameBaseline\CluicheGameBaseline.vcxproj">
       <Project>{7b4a5c2e-3f1d-4a8b-9c6e-12d5f8b3a7e1}</Project>

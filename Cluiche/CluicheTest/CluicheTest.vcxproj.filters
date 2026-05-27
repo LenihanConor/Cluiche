@@ -16,13 +16,13 @@
     <ClCompile Include="Modules\BootMenuModule.cpp">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClCompile>
-    <ClCompile Include="Modules\EntityModule.cpp">
+    <ClCompile Include="Modules\TestMainStateProducerModule.cpp">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClCompile>
     <ClCompile Include="Modules\TestStages\RigidBody2DTestModule.cpp">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClCompile>
-    <ClCompile Include="Modules\TestStages\AssetRuntimeStageModule.cpp">
+    <ClCompile Include="Modules\TestStages\TestAssetRuntimeStageModule.cpp">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClCompile>
     <ClCompile Include="Modules\TestStages\AssetRuntimeRendererModule.cpp">
@@ -42,13 +42,13 @@
     <ClInclude Include="Modules\BootMenuModule.h">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\EntityModule.h">
+    <ClInclude Include="Modules\TestMainStateProducerModule.h">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClInclude>
     <ClInclude Include="Modules\TestStages\RigidBody2DTestModule.h">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\TestStages\AssetRuntimeStageModule.h">
+    <ClInclude Include="Modules\TestStages\TestAssetRuntimeStageModule.h">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClInclude>
     <ClInclude Include="Modules\TestStages\AssetRuntimeRendererModule.h">
