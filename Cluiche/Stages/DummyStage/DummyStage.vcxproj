@@ -50,9 +50,7 @@
     <ProjectReference Include="..\..\..\Dia\DiaMaths\DiaMaths.vcxproj">
       <Project>{2bba0ad3-d449-4c0e-8c84-acfa8bca456b}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\Dia\DiaSFML\DiaSFML.vcxproj">
-      <Project>{d0101596-9011-46af-a16a-69a2bb0cca69}</Project>
-    </ProjectReference>
+
     <ProjectReference Include="..\..\..\Dia\DiaUI\DiaUI.vcxproj">
       <Project>{835ca128-691f-4cea-a0b3-ce6e41c394e7}</Project>
     </ProjectReference>

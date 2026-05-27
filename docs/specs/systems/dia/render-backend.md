@@ -29,7 +29,7 @@ DiaBgfx::Canvas (Sprite/Debug/UIOverlay/(Phase 2) Mesh3D/SkinnedMesh sub-rendere
     ↓  bgfx::frame()
 GPU (D3D11 / D3D12 / Vulkan via bgfx)
 
-DiaSFML (window + input only) ──► HWND ──► DiaBgfx swapchain
+DiaSDL (window + input only) ──► HWND ──► DiaBgfx swapchain
 ```
 
 **Why bgfx over alternatives:** see `choose.md` — Filament's full PBR pipeline is overkill for the stated "light 3D, no photorealism" target; native D3D11/D3D12 sacrifices multi-backend insurance with no compensating Cluiche benefit; Sokol lacks D3D12/Vulkan and the draw-bucket scaffolding needed for `DebugFrameData` ergonomics.
@@ -48,7 +48,7 @@ DiaSFML (window + input only) ──► HWND ──► DiaBgfx swapchain
 - Refactor `DiaGraphics::ITexture` to use `StringCRC` handles (regression fix from `unsigned int`)
 - Add bgfx acquisition/build/verify to `DiaCLI` (`dia env setup`, `dia env verify`)
 - Add a bgfx `shaderc` cook step to `DiaPipeline`
-- Delete the render path from `DiaSFML`: `DebugFrameRendererVisitor`, `EntityFrameRenderer`, `SFMLImGuiBackend`, `TextureHandler`, `Conversion.h`, `RenderWindow`'s `ICanvas` surface, the UI overlay shader. Keep `IWindow` + `IInputSource`.
+- Delete `DiaSFML` entirely (including render path, `IWindow` impl, and `IInputSource` impl); `IWindow` + `IInputSource` are now owned by `DiaSDL`.
 
 ### Phase 2 — Light 3D (specced now, implemented later)
 
@@ -62,8 +62,8 @@ DiaSFML (window + input only) ──► HWND ──► DiaBgfx swapchain
 
 ## Non-Responsibilities
 
-- **Window creation and management** — owned by `DiaSFML` for now; future SDL migration is a separate research/system
-- **Input handling** — owned by `DiaSFML` / `DiaInput` for now; same future migration
+- **Window creation and management** — owned by `DiaSDL`; SDL migration complete
+- **Input handling** — owned by `DiaSDL` / `DiaInput`; SDL migration complete
 - **PBR rendering, IBL, post-processing, TAA** — explicitly out of scope; this system targets stylized / light 3D, not photorealism
 - **Terrain (`DiaTerrain`)** — Phase 3, deferred
 - **IK in 3D (`DiaIK3D`)** — out of scope; mirrors the deferred 2D feature set
@@ -203,6 +203,7 @@ public:
 | diabgfx-imgui-backend | `DiaBgfx::BgfxImGuiBackend` implements `IImGuiBackend`; vendors bgfx upstream's reference imgui renderer; Win32 WndProc chain shim in DiaSFML for input | [imgui-backend.md](../../features/dia/diabgfx/imgui-backend.md) | Approved |
 | diapipeline-shaderc-cook | bgfx `shaderc` integrated as a cook step in DiaPipeline | [bgfx-shader-cook.md](../../features/dia/diapipeline/bgfx-shader-cook.md) | Approved |
 | diasfml-render-removal | Delete render path from DiaSFML; keep `IWindow` + `IInputSource`; move `TextureHandler` to DiaAssetRuntime; **Phase 1 ship gate (RB-016)** | [render-removal.md](../../features/dia/diasfml/render-removal.md) | Done |
+| replace-diasfml-with-sdl3 | Replace DiaSFML window+input with DiaSDL; delete `Dia/DiaSFML/` entirely | [replace-diasfml-with-sdl3.md](../../features/dia/diasdl/replace-diasfml-with-sdl3.md) | In Progress |
 
 ### Phase 2 — Light 3D (specced now, implemented later)
 
@@ -229,7 +230,7 @@ public:
 - **DiaCore** — `StringCRC`, `DynamicArrayC`, memory utilities
 - **DiaMaths** — `Vector2D`, `Vector3D`, `Matrix44`, transforms (Phase 2)
 - **DiaUI** — extended in Phase 1 with `IRenderOverlay`; consumes that surface from `DiaBgfx`
-- **DiaSFML** — provides the native window handle (`IWindow::GetSystemHandle()`); `IInputSource` unchanged
+- **DiaSDL** — provides the native window handle (`IWindow::GetSystemHandle()`); `IInputSource` unchanged
 - **DiaInput** — `IInputSource` unchanged
 - **DiaImGui** — `IImGuiBackend` interface; `DiaBgfx::BgfxImGuiBackend` implements it
 - **DiaCLI / DiaEnv** — `dia env setup` / `dia env verify` extended for bgfx
@@ -258,7 +259,7 @@ public:
 ## Out of Scope
 
 - Photorealistic rendering (PBR, IBL, TAA, deferred) — Filament-class capability not needed; brief is "light 3D, no photorealism"
-- Window/input migration to SDL — separate future research; SFML keeps `IWindow` + `IInputSource` for both phases of this system
+- Window/input migration to SDL — complete; DiaSDL now owns `IWindow` + `IInputSource`
 - Terrain rendering (`DiaTerrain`) — Phase 3, deferred
 - 3D IK (`DiaIK3D`) — mirrors the deferred 2D scope
 - Cooked binary mesh/anim format — defer; Phase 2 starts with runtime glTF parsing
@@ -328,7 +329,7 @@ public:
 | 6 | Phase 2 module count | Five new modules in Phase 2 (Mesh3D / Rig3D / Animation3D / Skinning3D / Scene3D) plus DiaGraphics extensions plus DiaBgfx 3D renderers — is this too many? | Mirrors the existing 2D family precedent (DiaRig2D / DiaAnimation2D / DiaIK2D). Each has a distinct responsibility — bundling them would conflate skeleton authoring with animation playback with skinning evaluation. The module count is the right grain for testability and module-graph hygiene. |
 | 7 | DiaScene3D necessity | 2D doesn't have a `DiaScene2D` — why does 3D need one? | 2D draws into raw FrameData with no camera; the orthographic projection is implicit. 3D needs Camera + Lights bundled with Renderables coherently for view-dependent culling, light gathering, and shadow-map setup. The asymmetry is justified by the asymmetry between 2D and 3D rendering — 3D cannot be expressed as an unstructured draw-command stream the way 2D can. |
 | 8 | bgfx default backend | RB-012 defers the D3D11 vs D3D12 default decision. Is that risk acceptable? | Yes — both are supported by bgfx; switching is a one-line `bgfx::Init` change. The decision benefits from being made *after* parity work has surfaced any backend-specific concerns (e.g. D3D12 descriptor heap pressure with many UI sprites, or D3D11 driver-thread quirks with multi-swapchain). Capture as an open question on the `diabgfx-canvas-parity` feature spec. |
-| 9 | DiaSFML residual content | After Phase 1, what remains in DiaSFML? | `IWindow` impl (window creation, sizing, title, icon, visibility, system handle), `IInputSource` impl (event polling, keyboard/mouse translation), font/audio loaders if they're still SFML-backed. The `Dia/DiaSFML/dia.sfml.architecture.module.md` is updated to reflect the narrowed scope. Eventual removal of DiaSFML entirely is the SDL migration's job, not this system's. |
+| 9 | DiaSFML residual content | After Phase 1, what remains in DiaSFML? | Nothing — DiaSFML has been deleted entirely. `IWindow` + `IInputSource` are now owned by `DiaSDL`. |
 | 10 | shaderc cook integration | `shaderc` is a per-shader compile step; how does DiaPipeline orchestrate it across multiple bgfx backends? | `shaderc` outputs per-backend binary blobs (one for each enabled bgfx backend). DiaPipeline cooks each `.sc` file once per active backend (D3D11, D3D12, Vulkan, GL) into `Cluiche/out/<App>/shaders/<backend>/<shader>.bin`. At runtime, DiaBgfx selects the matching folder for the active bgfx renderer. Captured as a `diapipeline-shaderc-cook` feature spec acceptance criterion. |
 | 11 | TextureHandle StringCRC migration | If `ITexture` is keyed by StringCRC, what's the source of truth for the StringCRC? Asset name? File path? | Asset catalogue ID — same as every other Dia asset (PD-001). The asset catalogue maps `StringCRC(asset.name)` to file paths; texture loaders use the StringCRC directly. Captured in `diagraphics-texture-handle-stringcrc` feature spec. |
 | 12 | Phase 2 status timing | When Phase 2 specs are written but Phase 1 is `In Progress`, what status do Phase 2 features carry? | `Approved` per RB-003 — the specs are reviewed and locked, but no implementation is in flight. When Phase 1 ships and Phase 2 work begins, individual feature specs flip to `In Progress`. The system spec stays `In Progress` throughout both phases; it only goes `Done` when Phase 2 ships. |

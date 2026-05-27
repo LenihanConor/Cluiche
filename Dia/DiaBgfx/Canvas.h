@@ -47,7 +47,7 @@ namespace Dia
             Canvas();
             ~Canvas() override;
 
-            // Must be called BEFORE Initialize. Caller (DiaSFML::RenderWindow) supplies HWND.
+            // Must be called BEFORE Initialize. Caller supplies the native window handle (HWND on Windows).
             void AttachToNativeWindow(Dia::Window::SystemHandle hwnd,
                                      const Dia::Maths::Vector2D& size);
 

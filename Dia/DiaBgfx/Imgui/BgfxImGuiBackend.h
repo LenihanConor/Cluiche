@@ -22,7 +22,7 @@ namespace Dia
             ~BgfxImGuiBackend() override;
 
             // Call before Init. viewId must be the last bgfx view (drawn on top).
-            // hwnd is the Win32 window handle (from DiaSFML::Window::GetSystemHandle()).
+            // hwnd is the Win32 window handle (from IWindow::GetSystemHandle()).
             // canvas pointer used to defer renderer creation until bgfx is initialised.
             void Configure(unsigned short viewId, Dia::Window::SystemHandle hwnd, Canvas* canvas);
 

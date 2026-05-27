@@ -91,9 +91,7 @@
     <ProjectReference Include="..\..\Dia\DiaMaths\DiaMaths.vcxproj">
       <Project>{2bba0ad3-d449-4c0e-8c84-acfa8bca456b}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\Dia\DiaSFML\DiaSFML.vcxproj">
-      <Project>{d0101596-9011-46af-a16a-69a2bb0cca69}</Project>
-    </ProjectReference>
+
     <ProjectReference Include="..\..\Dia\DiaSDL\DiaSDL.vcxproj">
       <Project>{B1C2D3E4-F5A6-7890-BCDE-F01234567891}</Project>
     </ProjectReference>
