@@ -64,6 +64,11 @@ Dia::ApplicationFlow::StopResult RenderModule::DoStop()
 {
     DIA_LOG_INFO("Application", "RenderModule DoStop entry");
 
+    // Shutdown TextureHandler on the render thread BEFORE bgfx::shutdown —
+    // BgfxTextureHandle destructors call bgfx::destroy() which requires a live context.
+    if (mTextureHandlerService.IsAvailable())
+        mTextureHandlerService.Get().Shutdown();
+
     if (mCanvas != nullptr)
     {
         mCanvas->SetActiveContext(false);
@@ -84,6 +89,7 @@ void RenderModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 {
     mFrameInput.Connect(app);
     mCanvasService.Connect(app);
+    mTextureHandlerService.Connect(app);
 }
 
 } } // namespace Cluiche::AppFlow

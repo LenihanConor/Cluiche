@@ -139,6 +139,15 @@ namespace Dia { namespace ApplicationFlow {
                 entry.module->FrameTick(deltaTime, entry.startTimeoutMs, entry.stopTimeoutMs);
             }
         }
+
+        if (mPostTickFn)
+            mPostTickFn();
+    }
+
+    //--------------------------------------------------------------------------
+    void ProcessingUnit::SetPostTickFn(PostTickFn fn)
+    {
+        mPostTickFn = std::move(fn);
     }
 
     //--------------------------------------------------------------------------

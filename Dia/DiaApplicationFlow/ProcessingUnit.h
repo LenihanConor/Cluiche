@@ -49,6 +49,12 @@ namespace Dia { namespace ApplicationFlow {
         // True iff every module owned by this PU is kInactive or kFailed.
         [[nodiscard]] bool AllModulesSettled() const;
 
+        // Post-tick hook: called by Application once during Start() to register
+        // a callback that flushes EventStreamStores owned by this PU.
+        // The callback is invoked at the end of every Update() call.
+        using PostTickFn = std::function<void()>;
+        void SetPostTickFn(PostTickFn fn);
+
     private:
         static constexpr unsigned int kMaxModules = 32;
 
@@ -74,6 +80,7 @@ namespace Dia { namespace ApplicationFlow {
         unsigned int    mModuleCount = 0;
 
         std::atomic<bool> mStopRequested{false};
+        PostTickFn        mPostTickFn;
     };
 
 }} // namespace Dia::ApplicationFlow

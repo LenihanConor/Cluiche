@@ -45,6 +45,10 @@ namespace Dia { namespace ApplicationFlow {
         // Shutdown notification — unblocks kBlock writers. No-op for FrameStream.
         virtual void NotifyShutdown() {}
 
+        // Frame-batching: flush events produced this tick so consumers see them
+        // on the next tick. Implemented by EventStreamStore; no-op otherwise.
+        virtual void Flush() {}
+
         // ServiceStream commit gate — implemented by ServiceStreamStore<T>.
         // FrameStream and EventStreamStore return false / no-op defaults.
         virtual bool IsCommitted()  const { return false; }

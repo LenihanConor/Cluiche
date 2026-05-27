@@ -193,7 +193,7 @@ namespace Dia { namespace ApplicationFlow {
 
             // Copy the list into a lambda (fixed-size array avoids heap).
             // DynamicArrayC is copyable, so the capture works directly.
-            pu->SetPostTickFn([ownedStores]() mutable {
+            pu->SetPostTickFn([ownedStores]() {
                 for (unsigned int i = 0; i < ownedStores.Size(); ++i)
                     ownedStores[i]->Flush();
             });

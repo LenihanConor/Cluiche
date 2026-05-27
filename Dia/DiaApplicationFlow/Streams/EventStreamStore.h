@@ -90,7 +90,7 @@ public:
     // Frame-batching: advances the flush sequence, making all events sent
     // since the last Flush() visible to ConsumeUpToFlush().
     // Called by the framework at the end of the producer PU's tick.
-    void Flush();
+    void Flush() override;
 
     // Frame-batching: drain only events whose batch stamp is <= the current
     // flush sequence. Events from the current (not-yet-flushed) batch are held.

@@ -5,6 +5,7 @@
 #include <DiaApplicationFlow/Streams/ServiceStreamReader.h>
 #include <DiaGraphics/Frame/FrameData.h>
 #include <DiaGraphics/Interface/ICanvas.h>
+#include <DiaAssetRuntime/Handlers/TextureHandler.h>
 
 namespace Cluiche { namespace AppFlow {
 
@@ -22,6 +23,7 @@ protected:
 private:
     Dia::ApplicationFlow::StreamReader<Dia::Graphics::FrameData>               mFrameInput{this, "SimToRender"};
     Dia::ApplicationFlow::ServiceStreamReader<Dia::Graphics::ICanvas>          mCanvasService{this, "KernelCanvas"};
+    Dia::ApplicationFlow::ServiceStreamReader<Dia::AssetRuntime::TextureHandler> mTextureHandlerService{this, "KernelTextureHandler"};
     Dia::Graphics::ICanvas*  mCanvas = nullptr;
     Dia::Graphics::FrameData mLastFrame;
 };
