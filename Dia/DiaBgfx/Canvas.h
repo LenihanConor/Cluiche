@@ -53,6 +53,7 @@ namespace Dia
 
             // ICanvas
             void Initialize(const Dia::Graphics::ICanvas::Settings& settings) override;
+            void Shutdown() override;
             void SetCanvasSize(const Dia::Maths::Vector2D& size) override;
             void StartFrame(const Dia::Graphics::FrameData& nextFrame) override;
             void ProcessFrame(const Dia::Graphics::FrameData& nextFrame) override;

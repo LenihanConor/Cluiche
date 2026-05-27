@@ -202,6 +202,25 @@ namespace Dia
                          backend, mSize.X(), mSize.Y());
         }
 
+        void Canvas::Shutdown()
+        {
+            if (!mInitialised)
+                return;
+
+            delete mUIOverlayRenderer;  mUIOverlayRenderer = nullptr;
+            delete mDebugRenderer;      mDebugRenderer     = nullptr;
+            delete mSpriteRenderer;     mSpriteRenderer    = nullptr;
+
+            delete mUIProgram;     mUIProgram     = nullptr;
+            delete mDebugProgram;  mDebugProgram  = nullptr;
+            delete mSpriteProgram; mSpriteProgram = nullptr;
+
+            bgfx::shutdown();
+            mInitialised = false;
+
+            DIA_LOG_INFO("DiaBgfx", "Canvas::Shutdown complete");
+        }
+
         void Canvas::SetCanvasSize(const Dia::Maths::Vector2D& size)
         {
             mSize = size;

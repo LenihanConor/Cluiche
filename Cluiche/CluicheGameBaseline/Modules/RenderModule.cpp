@@ -6,6 +6,10 @@
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 
+#ifdef DIA_DEBUG
+#include <DiaImGui/DiaImGuiManager.h>
+#endif
+
 namespace Cluiche { namespace AppFlow {
 
 const Dia::Core::StringCRC RenderModule::kTypeId("RenderModule");
@@ -65,15 +69,23 @@ Dia::ApplicationFlow::StopResult RenderModule::DoStop()
     if (mTextureHandlerService.IsAvailable())
         mTextureHandlerService.Get().Shutdown();
 
+#ifdef DIA_DEBUG
+    // ImGui uses bgfx resources — shut it down before bgfx::shutdown().
+    Dia::ImGui::Shutdown();
+#endif
+
+    // Call bgfx::shutdown() on the render thread (the thread that called bgfx::init).
+    // This clears Canvas::mInitialised so KernelModule::DoStop can safely delete it.
     if (mCanvas != nullptr)
     {
+        mCanvas->Shutdown();
         mCanvas = nullptr;
     }
 
     // Release the cross-PU stop fence. KernelModule::DoStop has been returning
     // kStopping waiting for this — once observed, it tears the window down on
-    // MainPU. Must be the very last thing in DoStop, after the GL context is
-    // released and we no longer touch any window-owned resource.
+    // MainPU. Must be the very last thing in DoStop, after bgfx is shut down and
+    // we no longer touch any window-owned resource.
     KernelModule::SetRenderContextReleased(true);
 
     DIA_LOG_INFO("Application", "RenderModule DoStop exit");
