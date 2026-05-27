@@ -241,6 +241,7 @@ def _build_cef_wrapper(repo_root: Path, build_config: str, output=None, system: 
 def run(config: PipelineConfig, target: str, build_config: str, force: bool, repo_root: Path, output=None, system: str = "pipeline") -> int:
     stage = "compile-code"
     target_cfg = config.targets[target]
+    platform = config.global_cfg.default_platform
 
     if target_cfg.build_deps.protobuf:
         rc = _build_protobuf(config, force, repo_root, output=output, system=system, stage=stage)
@@ -257,6 +258,8 @@ def run(config: PipelineConfig, target: str, build_config: str, force: bool, rep
         rc = cook_bgfx_shaders(
             cfg=config.bgfx_shaders,
             app_name=target_cfg.app_name,
+            build_config=build_config,
+            platform=platform,
             force=force,
             repo_root=repo_root,
             output=output,
@@ -277,7 +280,6 @@ def run(config: PipelineConfig, target: str, build_config: str, force: bool, rep
         logger.error(f"Project not found: {project_path}")
         return 1
 
-    platform = config.global_cfg.default_platform
     solution_dir = str(repo_root / "Cluiche").replace("/", "\\") + "\\"
     cmd = [
         str(msbuild),

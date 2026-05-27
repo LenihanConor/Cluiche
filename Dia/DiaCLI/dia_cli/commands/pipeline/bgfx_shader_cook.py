@@ -56,6 +56,8 @@ def _compute_source_sha(
 def cook_bgfx_shaders(
     cfg: BgfxShadersConfig,
     app_name: str,
+    build_config: str,
+    platform: str,
     force: bool,
     repo_root: Path,
     output=None,
@@ -95,7 +97,12 @@ def cook_bgfx_shaders(
     if output:
         output.step_started(system=system, stage=stage, step="bgfx-shaders")
 
-    output_root_template = cfg.output_root.replace("$(AppName)", app_name)
+    output_root_template = (
+        cfg.output_root
+        .replace("$(AppName)", app_name)
+        .replace("$(Configuration)", build_config)
+        .replace("$(Platform)", platform)
+    )
 
     cooked = 0
     skipped = 0
@@ -124,7 +131,9 @@ def cook_bgfx_shaders(
 
             sentinel_path = repo_root / ".diaenv" / "shaders" / backend / rel_bin.with_suffix(".bin.sentinel")
 
-            if not force and sentinel_path.exists():
+            output_path = repo_root / output_root_template / backend / str(rel_bin)
+
+            if not force and sentinel_path.exists() and output_path.exists():
                 try:
                     sentinel_data = json.loads(sentinel_path.read_text(encoding="utf-8"))
                     if sentinel_data.get("source_sha") == source_sha:
@@ -142,7 +151,6 @@ def cook_bgfx_shaders(
                 except (json.JSONDecodeError, OSError):
                     pass  # corrupt sentinel → re-cook
 
-            output_path = repo_root / output_root_template / backend / str(rel_bin)
             output_path.parent.mkdir(parents=True, exist_ok=True)
 
             bgfx_include = repo_root / "External" / "bgfx" / "src"

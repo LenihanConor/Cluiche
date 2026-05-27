@@ -9,7 +9,7 @@ default_backend = "dx11"   # dx11 | dx12 | vulkan
 [bgfx_shaders]
 backends     = ["dx11", "dx12", "vulkan"]
 source_root  = "Dia/DiaBgfx/Shaders"
-output_root  = "Cluiche/out/$(AppName)/shaders"
+output_root  = "Cluiche/bin/$(AppName)/$(Configuration)/$(Platform)/shaders"
 shaderc_path = "External/bgfx/tools/shaderc.exe"
 
 [proto]
@@ -64,7 +64,6 @@ files = [
   { src = "Cluiche/Assets/Stages/DummyStage/dummy_stage.diastage", dest = "$(OutDir)assets/stages/DummyStage/" },
   { src = "Cluiche/Assets/Stages/RigidBody2DStage/rigidbody2d_stage.diastage", dest = "$(OutDir)assets/stages/RigidBody2DStage/" },
   { src = "Cluiche/Assets/Stages/AssetRuntimeStage/asset_runtime_stage.diastage", dest = "$(OutDir)assets/stages/AssetRuntimeStage/" },
-  { src = "Cluiche/out/CluicheTest/shaders/**/*.bin", dest = "$(OutDir)shaders/" }
 ]
 
 [targets.cluicheeditor]
