@@ -22,6 +22,13 @@ include: conditional
   - Options: `--pass=<name>` for single pass, `--severity=<level>` to filter, `--diff=<range>` for custom diff range
   - Use after completing a feature (all plan tasks done) or before merging to master
 
+## Scaffold Commands
+
+- `/new-cluichetest-stage <StageName>` - Scaffold a new CluicheTest test stage from a PascalCase name
+  - Creates: `.diastage`, `.diaapp`, `Module.h/.cpp`, vcxproj entries, `cluiche_main.diaapp` wiring, `cluichetest.diagame` import, `assets.catalogue.json` entries, `pipeline.toml` registration
+  - Module skeleton placed on MainPU with AutomationModule dependency + one placeholder checkpoint
+  - Runs `dia pipeline --target cluichetest` to verify at the end
+
 ## Test Commands
 
 - `/gen-tests <target>` - Generate comprehensive tests for a Dia module or component
