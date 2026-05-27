@@ -14,6 +14,22 @@
                     "channels": []
                 }
             ]
+        },
+        {
+            "instance_id": "SimPU",
+            "frequency_hz": 30,
+            "dedicated_thread": true,
+            "modules": [
+                {
+                    "instance_id": "AssetRuntimeVisualDebuggerModule",
+                    "type_id": "VisualDebuggerModule",
+                    "stages": [ "AssetRuntimeStage" ],
+                    "dependencies": [],
+                    "channels": [
+                        { "id": "SimToRender", "role": "writes" }
+                    ]
+                }
+            ]
         }
     ]
 }

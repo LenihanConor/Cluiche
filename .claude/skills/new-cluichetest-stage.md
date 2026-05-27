@@ -85,6 +85,22 @@ From `<StageName>` (e.g. `Geometry2D`):
                     "channels": []
                 }
             ]
+        },
+        {
+            "instance_id": "SimPU",
+            "frequency_hz": 30,
+            "dedicated_thread": true,
+            "modules": [
+                {
+                    "instance_id": "VisualDebuggerModule",
+                    "type_id": "VisualDebuggerModule",
+                    "stages": [ "<StageName>" ],
+                    "dependencies": [],
+                    "channels": [
+                        { "id": "SimToRender", "role": "writes" }
+                    ]
+                }
+            ]
         }
     ]
 }
@@ -292,6 +308,7 @@ Tell the user:
 ## Notes
 
 - **Always place test stage modules on MainPU** — AutomationModule lives on MainPU; SimPU modules cannot depend on it
+- **Always include a SimToRender writer on SimPU** — `SimToRender` is a FrameStream `from: SimPU`; without a writer the RenderPU starves and the application freezes (spinner stops). Add `VisualDebuggerModule` on SimPU writing to `SimToRender` in the `.diaapp` — it emits empty frames when there is nothing to draw
 - **The HUD step is mandatory** — without it, there's no way to navigate back to Boot from the stage
 - **pipeline.toml `asset_stages` is mandatory** — without it, the stage has 0 assets in the deployed runtime manifest
 - **Force-copy `cluiche_main.diaapp`** to bin after editing — the pipeline's up-to-date check won't catch it
