@@ -148,6 +148,7 @@ private:
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaAutomation/AutomationService.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include "Modules/TestStages/TestResultsRegistry.h"
 
 namespace CluicheTest {
 
@@ -169,6 +170,10 @@ Dia::ApplicationFlow::StartResult <module_name>::DoStart()
     mCheckpointPassed = false;
     RegisterCheckpoints();
 
+    const Dia::Core::StringCRC checkpoints[] = { Dia::Core::StringCRC("<snake>.passed") };
+    TestResultsRegistry::GetInstance().SetRunning(
+        Dia::Core::StringCRC("<StageName>"), 300, checkpoints, 1);
+
     DIA_LOG_INFO("CluicheTest", "<module_name> DoStart ready");
     return Dia::ApplicationFlow::StartResult::kReady;
 }
@@ -176,6 +181,7 @@ Dia::ApplicationFlow::StartResult <module_name>::DoStart()
 void <module_name>::DoUpdate(float /*deltaTime*/)
 {
     ++mFrameCount;
+    TestResultsRegistry::GetInstance().SetActiveFrameCount(mFrameCount);
     // TODO: implement stage logic
 }
 
@@ -308,6 +314,7 @@ Tell the user:
 ## Notes
 
 - **Always place test stage modules on MainPU** — AutomationModule lives on MainPU; SimPU modules cannot depend on it
+- **Always call `TestResultsRegistry::GetInstance().SetRunning(...)` in DoStart** — the HUD reads `activeStageName` from the registry; if it's zero the entire HUD is suppressed. Pass the stage name, a budget frame count, and the checkpoint name array. Also call `SetActiveFrameCount(mFrameCount)` each DoUpdate tick so the frame counter increments
 - **Always include a SimToRender writer on SimPU** — `SimToRender` is a FrameStream `from: SimPU`; without a writer the RenderPU starves and the application freezes (spinner stops). Add `VisualDebuggerModule` on SimPU writing to `SimToRender` in the `.diaapp` — it emits empty frames when there is nothing to draw
 - **The HUD step is mandatory** — without it, there's no way to navigate back to Boot from the stage
 - **pipeline.toml `asset_stages` is mandatory** — without it, the stage has 0 assets in the deployed runtime manifest
