@@ -1,0 +1,9 @@
+{
+    "name": "AssetRuntimeStage",
+    "manifest": "stages/AssetRuntimeStage/misc/ApplicationFlow/asset_runtime_stage.diaapp",
+    "config": {
+        "path_aliases": {
+            "stage_root": "."
+        }
+    }
+}

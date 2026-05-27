@@ -26,6 +26,7 @@
     <ClCompile Include="Modules\MainStateProducerModule.cpp" />
     <ClCompile Include="Modules\TestStages\TestResultsRegistry.cpp" />
     <ClCompile Include="Modules\TestStages\RigidBody2DTestModule.cpp" />
+    <ClCompile Include="Modules\TestStages\AssetRuntimeStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\TestStageHUDModule.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -34,6 +35,7 @@
     <ClInclude Include="Modules\MainStateProducerModule.h" />
     <ClInclude Include="Modules\TestStages\TestResultsRegistry.h" />
     <ClInclude Include="Modules\TestStages\RigidBody2DTestModule.h" />
+    <ClInclude Include="Modules\TestStages\AssetRuntimeStageModule.h" />
     <ClInclude Include="Modules\TestStages\TestStageHUDModule.h" />
   </ItemGroup>
   <ItemGroup>

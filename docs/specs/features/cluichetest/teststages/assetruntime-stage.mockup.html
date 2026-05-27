@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AssetRuntimeStage — Visual Mockup</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #1a1a2e;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh;
+    font-family: 'Segoe UI', monospace;
+    font-size: 13px; color: #dcdcdc;
+  }
+
+  .viewport {
+    position: relative;
+    width: 960px; height: 600px;
+    background: #0d0d14;
+    border: 1px solid #333;
+    overflow: hidden;
+  }
+
+  .scene-label {
+    position: absolute; top: 8px; left: 8px;
+    color: #444; font-size: 11px; letter-spacing: 0.05em;
+  }
+
+  /* ── HUD bar ─────────────────────────────────────── */
+  .hud-bar {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 28px;
+    background: rgba(0,0,0,0.72);
+    display: flex; align-items: center; padding: 0 10px; gap: 16px;
+    font-size: 11px; border-top: 1px solid #2a2a3a;
+  }
+  .hud-stage  { color: #aaa; }
+  .hud-sep    { color: #333; }
+  .hud-check  { color: #4caf50; }
+  .hud-frames { color: #ddd; }
+  .hud-status { color: #4caf50; font-weight: bold; margin-left: auto; }
+  .hud-exit   { color: #c0392b; font-size: 11px; padding: 1px 7px; border: 1px solid #c0392b; border-radius: 2px; margin-left: 8px; }
+
+  /* ── ImGui window ─────────────────────────────────── */
+  .imgui-window {
+    position: absolute;
+    top: 16px; left: 16px;
+    width: 300px;
+    background: #1e1e2e;
+    border: 1px solid #444;
+    box-shadow: 2px 4px 20px rgba(0,0,0,0.75);
+    display: flex; flex-direction: column;
+  }
+  .imgui-titlebar {
+    background: #3a3a5a;
+    padding: 4px 8px;
+    font-size: 12px; font-weight: 600; color: #ccc;
+    display: flex; justify-content: space-between; align-items: center;
+    flex-shrink: 0;
+  }
+  .imgui-titlebar .close { color: #888; font-size: 10px; }
+
+  .tab-bar {
+    display: flex; background: #161622;
+    border-bottom: 1px solid #333;
+    padding: 0 4px; gap: 1px; flex-shrink: 0;
+  }
+  .tab {
+    padding: 5px 9px; font-size: 11px;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+    white-space: nowrap;
+  }
+  .tab.active { color: #cce4ff; border-bottom: 2px solid #4a90d9; background: #1e1e2e; }
+  .tab:not(.active) { color: #555; }
+
+  .domain-body { padding: 6px 8px; flex-shrink: 0; }
+
+  .collapsible {
+    display: flex; align-items: center; gap: 5px;
+    padding: 3px 2px; border-radius: 2px;
+    font-size: 11px; color: #9090b8;
+  }
+  .arrow { font-size: 9px; color: #aaa; width: 10px; }
+  .section-content { margin: 2px 0 5px 14px; }
+
+  .stat-row {
+    display: flex; justify-content: space-between;
+    font-size: 10px; color: #7a7a9a; padding: 1px 0;
+  }
+  .stat-val { color: #a0c4e8; }
+  .stat-val.ok   { color: #4caf50; }
+  .stat-val.warn { color: #ef9a9a; }
+
+  /* Asset rows in panel */
+  .asset-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 3px 0; border-bottom: 1px solid #1a1a28;
+    font-size: 10px;
+  }
+  .asset-icon { width: 14px; height: 14px; border-radius: 2px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 8px; }
+  .asset-icon.tex  { background: #1a3a5a; color: #4fc3f7; }
+  .asset-icon.json { background: #2a3a1a; color: #a5d6a7; }
+  .asset-id   { color: #8888aa; font-family: monospace; flex: 1; font-size: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .badge {
+    font-size: 9px; padding: 1px 5px; border-radius: 2px; flex-shrink: 0;
+    font-weight: bold; letter-spacing: 0.03em;
+  }
+  .badge.loaded  { background: #1a3a1a; color: #4caf50; }
+  .badge.staged  { background: #2a2a3a; color: #777; }
+
+  .metric-row {
+    display: flex; justify-content: space-between;
+    font-size: 10px; color: #7a7a9a; padding: 2px 0;
+  }
+  .metric-key { font-family: monospace; color: #8888aa; font-size: 9px; }
+  .metric-val { color: #a0c4e8; }
+
+  .snap-row {
+    display: flex; justify-content: space-between;
+    font-size: 10px; color: #7a7a9a; padding: 1px 0;
+  }
+  .snap-match { color: #4caf50; font-weight: bold; }
+
+  .global-sep { border: none; border-top: 1px solid #2a2a40; margin: 0; flex-shrink: 0; }
+  .global-section { padding: 5px 8px; flex-shrink: 0; }
+  .cmd-row { display: flex; align-items: center; gap: 6px; }
+  .cmd-label { font-size: 11px; color: #666; flex-shrink: 0; }
+  .cmd-input {
+    flex: 1; background: #111; border: 1px solid #3a3a52;
+    color: #ddd; font-size: 11px; padding: 2px 5px; height: 20px;
+    font-family: monospace;
+  }
+  .bottom-tab-bar {
+    display: flex; border-bottom: 1px solid #252535; flex-shrink: 0;
+  }
+  .btab { padding: 3px 10px; font-size: 10px; color: #666; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .btab.active { color: #9090c8; border-bottom-color: #5a5a9a; }
+  .repl-output {
+    background: #0e0e18; height: 36px;
+    padding: 4px 8px; font-size: 10px; font-family: monospace;
+  }
+  .repl-cmd  { color: #5a8aaa; }
+  .repl-resp { line-height: 1.5; padding-left: 8px; }
+  .repl-resp.ok { color: #7ab87a; }
+
+  /* ── Checkpoint panel ──────────────────────────────── */
+  .checkpoint-panel {
+    position: absolute;
+    top: 16px; left: 332px;
+    width: 210px;
+    background: #1e1e2e;
+    border: 1px solid #444;
+    box-shadow: 2px 4px 20px rgba(0,0,0,0.75);
+  }
+  .cp-titlebar {
+    background: #2a3a2a;
+    padding: 4px 8px;
+    font-size: 12px; font-weight: 600; color: #8ac88a;
+    display: flex; justify-content: space-between;
+  }
+  .cp-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 8px; font-size: 10px; font-family: monospace;
+    border-bottom: 1px solid #1a1a2a;
+  }
+  .cp-icon { font-size: 12px; }
+  .cp-name { color: #9090b8; flex: 1; font-size: 9px; }
+  .cp-state-pass    { color: #4caf50; font-weight: bold; font-size: 10px; }
+  .cp-state-pending { color: #ffa726; font-weight: bold; font-size: 10px; }
+
+  /* ── World space heading ──────────────────────────── */
+  .world-heading {
+    position: absolute;
+    font-size: 10px; color: #3a3a5a;
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+<div class="viewport">
+  <span class="scene-label">AssetRuntimeStage — MainPU @ 30 Hz — Entry 2/2</span>
+
+  <!-- ════════════════════════════════════════════════════
+       WORLD SPACE — Rendered textures as quads
+       ════════════════════════════════════════════════════ -->
+  <span class="world-heading" style="left:560px; top:28px;">Rendered Textures (bgfx quads via LookupTexture)</span>
+
+  <svg style="position:absolute;left:548px;top:42px;" width="400" height="430">
+
+    <!-- Grid background -->
+    <rect x="0" y="0" width="400" height="390" fill="none" stroke="#1a1a28" stroke-width="1" stroke-dasharray="4 6"/>
+
+    <!-- ── Texture quad 1: texture.ar_tex1 (red 1×1 stretched to 100×100) ── -->
+    <!-- Checkerboard to imply texture fill -->
+    <rect x="20"  y="20" width="100" height="100" fill="#5a1a1a" stroke="#8a3030" stroke-width="1.5"/>
+    <!-- pixel grid (1×1 upscaled) -->
+    <rect x="20"  y="20" width="100" height="100" fill="url(#red_tex)" opacity="0.9"/>
+    <!-- outline glow on loaded -->
+    <rect x="18"  y="18" width="104" height="104" fill="none" stroke="#4caf50" stroke-width="1" opacity="0.5"/>
+    <!-- label below -->
+    <text x="70" y="138" font-size="9" fill="#a0c4e8" text-anchor="middle" font-family="monospace">texture.ar_tex1</text>
+    <text x="70" y="149" font-size="8" fill="#4caf50" text-anchor="middle" font-family="monospace">LOADED</text>
+    <text x="70" y="160" font-size="8" fill="#444" text-anchor="middle" font-family="monospace">LookupTexture() ≠ null</text>
+
+    <!-- ── Texture quad 2: texture.ar_tex2 (green 1×1 stretched to 100×100) ── -->
+    <rect x="150" y="20" width="100" height="100" fill="#1a4a1a" stroke="#2a7a2a" stroke-width="1.5"/>
+    <rect x="148" y="18" width="104" height="104" fill="none" stroke="#4caf50" stroke-width="1" opacity="0.5"/>
+    <text x="200" y="138" font-size="9" fill="#a0c4e8" text-anchor="middle" font-family="monospace">texture.ar_tex2</text>
+    <text x="200" y="149" font-size="8" fill="#4caf50" text-anchor="middle" font-family="monospace">LOADED</text>
+    <text x="200" y="160" font-size="8" fill="#444" text-anchor="middle" font-family="monospace">LookupTexture() ≠ null</text>
+
+    <!-- ── Texture quad 3: texture.ar_tex3 (blue 1×1 stretched to 100×100) ── -->
+    <rect x="280" y="20" width="100" height="100" fill="#1a2a5a" stroke="#2a4a8a" stroke-width="1.5"/>
+    <rect x="278" y="18" width="104" height="104" fill="none" stroke="#4caf50" stroke-width="1" opacity="0.5"/>
+    <text x="330" y="138" font-size="9" fill="#a0c4e8" text-anchor="middle" font-family="monospace">texture.ar_tex3</text>
+    <text x="330" y="149" font-size="8" fill="#4caf50" text-anchor="middle" font-family="monospace">LOADED</text>
+    <text x="330" y="160" font-size="8" fill="#444" text-anchor="middle" font-family="monospace">LookupTexture() ≠ null</text>
+
+    <!-- pixel labels inside quads -->
+    <text x="70"  y="66" font-size="8" fill="rgba(255,120,120,0.6)" text-anchor="middle" font-family="monospace">R:255 G:0 B:0</text>
+    <text x="70"  y="78" font-size="7" fill="rgba(255,120,120,0.4)" text-anchor="middle" font-family="monospace">1×1px stretched</text>
+    <text x="200" y="66" font-size="8" fill="rgba(120,255,120,0.6)" text-anchor="middle" font-family="monospace">R:0 G:255 B:0</text>
+    <text x="200" y="78" font-size="7" fill="rgba(120,255,120,0.4)" text-anchor="middle" font-family="monospace">1×1px stretched</text>
+    <text x="330" y="66" font-size="8" fill="rgba(120,120,255,0.6)" text-anchor="middle" font-family="monospace">R:0 G:0 B:255</text>
+    <text x="330" y="78" font-size="7" fill="rgba(120,120,255,0.4)" text-anchor="middle" font-family="monospace">1×1px stretched</text>
+
+    <!-- ── JSON config — not rendered, shown as a data card ── -->
+    <rect x="20" y="188" width="360" height="52" rx="2" fill="#161820" stroke="#2a3a1a" stroke-width="1"/>
+    <text x="36"  y="206" font-size="9" fill="#a5d6a7" font-family="monospace">json.ar_config</text>
+    <text x="36"  y="219" font-size="9" fill="#4caf50" font-family="monospace">LOADED  (not rendered — data asset)</text>
+    <text x="36"  y="231" font-size="8" fill="#3a5a3a" font-family="monospace">JsonPassthroughHandler  ·  content: {"version":1}  ·  18 B</text>
+
+    <!-- ── Phase flow ── -->
+    <rect x="0" y="262" width="400" height="1" fill="#1e1e2e"/>
+
+    <text x="0" y="280" font-size="9" fill="#3a3a5a" font-family="monospace" letter-spacing="0.06em">TWO-ENTRY RELOAD PATTERN</text>
+
+    <!-- flow nodes -->
+    <!-- Boot (done) -->
+    <rect x="0"   y="290" width="44" height="22" rx="2" fill="none" stroke="#2a4a2a"/>
+    <text x="22"  y="305" font-size="9" fill="#4a6a4a" text-anchor="middle" font-family="monospace">Boot</text>
+    <text x="22"  y="325" font-size="8" fill="#3a3a5a" text-anchor="middle" font-family="monospace">—</text>
+
+    <text x="48"  y="304" font-size="10" fill="#3a3a5a" font-family="monospace">→</text>
+
+    <!-- Entry 1 (done) -->
+    <rect x="56"  y="290" width="82" height="22" rx="2" fill="#1a2a1a" stroke="#2a5a2a"/>
+    <text x="97"  y="305" font-size="9" fill="#4caf50" text-anchor="middle" font-family="monospace">Entry 1</text>
+    <text x="97"  y="325" font-size="7" fill="#3a5a3a" text-anchor="middle" font-family="monospace">all_loaded ✓</text>
+    <text x="97"  y="335" font-size="7" fill="#3a5a3a" text-anchor="middle" font-family="monospace">snapshot saved</text>
+
+    <text x="142" y="304" font-size="10" fill="#3a3a5a" font-family="monospace">→</text>
+
+    <!-- Boot 2 (done) -->
+    <rect x="150" y="290" width="44" height="22" rx="2" fill="none" stroke="#2a4a2a"/>
+    <text x="172" y="305" font-size="9" fill="#4a6a4a" text-anchor="middle" font-family="monospace">Boot</text>
+    <text x="172" y="325" font-size="8" fill="#3a5a3a" text-anchor="middle" font-family="monospace">DoStop</text>
+    <text x="172" y="335" font-size="7" fill="#3a3a5a" text-anchor="middle" font-family="monospace">handles reset</text>
+
+    <text x="198" y="304" font-size="10" fill="#3a3a5a" font-family="monospace">→</text>
+
+    <!-- Entry 2 (ACTIVE) -->
+    <rect x="206" y="286" width="90" height="30" rx="2" fill="#1a2a1a" stroke="#4caf50" stroke-width="1.5"/>
+    <text x="251" y="305" font-size="9" fill="#4caf50" text-anchor="middle" font-family="monospace" font-weight="bold">Entry 2 ◄</text>
+    <text x="251" y="325" font-size="7" fill="#4caf50" text-anchor="middle" font-family="monospace">all_loaded ✓</text>
+    <text x="251" y="335" font-size="7" fill="#4caf50" text-anchor="middle" font-family="monospace">clean_reload ✓</text>
+
+    <text x="300" y="304" font-size="10" fill="#3a3a5a" font-family="monospace">→</text>
+
+    <!-- Boot 3 (pending) -->
+    <rect x="308" y="290" width="44" height="22" rx="2" fill="none" stroke="#252535"/>
+    <text x="330" y="305" font-size="9" fill="#444" text-anchor="middle" font-family="monospace">Boot</text>
+
+    <!-- progress bar -->
+    <rect x="0"   y="352" width="400" height="6" rx="2" fill="#1a1a28"/>
+    <rect x="0"   y="352" width="400" height="6" rx="2" fill="#2a5a2a"/>
+    <text x="200" y="371" font-size="8" fill="#4caf50" text-anchor="middle" font-family="monospace">IsStageLoadComplete("AssetRuntimeStage") = true  ·  4/4  ·  38 ms</text>
+  </svg>
+
+  <!-- ════════════════════════════════════════════════════
+       ImGui DEBUG CONSOLE — top-left
+       ════════════════════════════════════════════════════ -->
+  <div class="imgui-window">
+    <div class="imgui-titlebar">
+      Asset Runtime
+      <span class="close">✕</span>
+    </div>
+
+    <div class="tab-bar">
+      <div class="tab active">Assets</div>
+      <div class="tab">Metrics</div>
+    </div>
+
+    <div class="domain-body">
+
+      <!-- Stage Load State -->
+      <div class="collapsible"><span class="arrow">▼</span> Stage Load State</div>
+      <div class="section-content">
+        <div class="stat-row">Entry: <span class="stat-val">2 / 2</span></div>
+        <div class="stat-row">Progress: <span class="stat-val ok">4 / 4 loaded</span></div>
+        <div class="stat-row">Failed: <span class="stat-val">0</span></div>
+        <div class="stat-row">Load time: <span class="stat-val">38 ms</span></div>
+      </div>
+
+      <!-- Assets -->
+      <div class="collapsible"><span class="arrow">▼</span> Assets</div>
+      <div class="section-content" style="margin-right:-8px;">
+        <div class="asset-row">
+          <div class="asset-icon tex">T</div>
+          <span class="asset-id">texture.ar_tex1</span>
+          <span class="badge loaded">LOADED</span>
+        </div>
+        <div class="asset-row">
+          <div class="asset-icon tex">T</div>
+          <span class="asset-id">texture.ar_tex2</span>
+          <span class="badge loaded">LOADED</span>
+        </div>
+        <div class="asset-row">
+          <div class="asset-icon tex">T</div>
+          <span class="asset-id">texture.ar_tex3</span>
+          <span class="badge loaded">LOADED</span>
+        </div>
+        <div class="asset-row" style="border-bottom:none;">
+          <div class="asset-icon json">{}</div>
+          <span class="asset-id">json.ar_config</span>
+          <span class="badge loaded">LOADED</span>
+        </div>
+      </div>
+
+      <!-- Snapshot Comparison -->
+      <div class="collapsible"><span class="arrow">▼</span> Reload Snapshot</div>
+      <div class="section-content">
+        <div class="snap-row">Entry 1 loaded: <span class="stat-val ok">4</span></div>
+        <div class="snap-row">Entry 2 loaded: <span class="stat-val ok">4</span></div>
+        <div class="snap-row">All succeeded: <span class="stat-val ok">true / true</span></div>
+        <div class="snap-row" style="margin-top:3px;">Match: <span class="snap-match">YES ✓</span></div>
+      </div>
+
+      <!-- Metrics -->
+      <div class="collapsible"><span class="arrow">▼</span> Metrics</div>
+      <div class="section-content">
+        <div class="metric-row"><span class="metric-key">load_count</span> <span class="metric-val">4</span></div>
+        <div class="metric-row"><span class="metric-key">active_handles</span> <span class="metric-val">4</span></div>
+        <div class="metric-row"><span class="metric-key">load_time_ms</span> <span class="metric-val">38.2</span></div>
+      </div>
+
+    </div>
+
+    <hr class="global-sep">
+    <div class="global-section">
+      <div class="cmd-row">
+        <span class="cmd-label">&gt;</span>
+        <input class="cmd-input" type="text" placeholder="enter command…" readonly>
+      </div>
+    </div>
+    <div class="bottom-tab-bar">
+      <div class="btab active">Output</div>
+      <div class="btab">Warnings</div>
+    </div>
+    <div class="repl-output">
+      <div class="repl-cmd">&gt; dia.automation.get_metric asset_runtime.active_handles</div>
+      <div class="repl-resp ok">{ "value": 4 }</div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════
+       CHECKPOINT PANEL
+       ════════════════════════════════════════════════════ -->
+  <div class="checkpoint-panel">
+    <div class="cp-titlebar">
+      Checkpoints <span style="font-size:10px;color:#4caf50;font-weight:normal">2/2 PASS</span>
+    </div>
+    <div class="cp-row">
+      <span class="cp-icon" style="color:#4caf50">✓</span>
+      <span class="cp-name">asset_runtime.all_loaded</span>
+      <span class="cp-state-pass">PASS</span>
+    </div>
+    <div class="cp-row" style="border-bottom:none;">
+      <span class="cp-icon" style="color:#4caf50">✓</span>
+      <span class="cp-name">asset_runtime.clean_reload</span>
+      <span class="cp-state-pass">PASS</span>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════
+       HUD BAR
+       ════════════════════════════════════════════════════ -->
+  <div class="hud-bar">
+    <span class="hud-stage">asset_runtime_stage</span>
+    <span class="hud-sep">|</span>
+    <span class="hud-check">✓ 2/2</span>
+    <span class="hud-sep">|</span>
+    <span class="hud-frames">Entry: 2  Frame: 087</span>
+    <span class="hud-status">PASS</span>
+    <span class="hud-exit">✕</span>
+  </div>
+
+</div>
+</body>
+</html>

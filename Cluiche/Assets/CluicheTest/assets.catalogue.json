@@ -114,6 +114,60 @@
       "scope": "stage",
       "stage_name": "RigidBody2DStage",
       "tags": ["misc/ApplicationFlow"]
+    },
+    {
+      "id": "stage.asset_runtime_stage",
+      "type": "stage",
+      "source_path": "../Stages/AssetRuntimeStage/asset_runtime_stage.diastage",
+      "scope": "global",
+      "tags": ["misc"],
+      "references": [
+        { "type": "contains", "target": "manifest.asset_runtime_stage" },
+        { "type": "contains", "target": "texture.ar_tex1" },
+        { "type": "contains", "target": "texture.ar_tex2" },
+        { "type": "contains", "target": "texture.ar_tex3" },
+        { "type": "contains", "target": "json.ar_config" }
+      ]
+    },
+    {
+      "id": "manifest.asset_runtime_stage",
+      "type": "manifest",
+      "source_path": "../Stages/AssetRuntimeStage/misc/ApplicationFlow/asset_runtime_stage.diaapp",
+      "scope": "stage",
+      "stage_name": "AssetRuntimeStage",
+      "tags": ["misc/ApplicationFlow"]
+    },
+    {
+      "id": "texture.ar_tex1",
+      "type": "texture",
+      "source_path": "../Stages/AssetRuntimeStage/assets/test_ar_tex1.png",
+      "scope": "stage",
+      "stage_name": "AssetRuntimeStage",
+      "tags": ["World"]
+    },
+    {
+      "id": "texture.ar_tex2",
+      "type": "texture",
+      "source_path": "../Stages/AssetRuntimeStage/assets/test_ar_tex2.png",
+      "scope": "stage",
+      "stage_name": "AssetRuntimeStage",
+      "tags": ["World"]
+    },
+    {
+      "id": "texture.ar_tex3",
+      "type": "texture",
+      "source_path": "../Stages/AssetRuntimeStage/assets/test_ar_tex3.png",
+      "scope": "stage",
+      "stage_name": "AssetRuntimeStage",
+      "tags": ["World"]
+    },
+    {
+      "id": "json.ar_config",
+      "type": "json",
+      "source_path": "../Stages/AssetRuntimeStage/assets/test_ar_config.json",
+      "scope": "stage",
+      "stage_name": "AssetRuntimeStage",
+      "tags": ["World"]
     }
   ]
 }

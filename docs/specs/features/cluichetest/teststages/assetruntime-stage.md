@@ -51,6 +51,8 @@ This stage satisfies AC-S1 through AC-S9 as defined in the [Infrastructure spec]
 
 ## Design
 
+**Visual mockup:** [@docs/specs/features/cluichetest/teststages/assetruntime-stage.mockup.html](assetruntime-stage.mockup.html) — open in a browser for visual acceptance gate reference.
+
 ### Two-Phase Validation
 
 The orchestrator drives this stage through two entries to validate the reload:
@@ -197,6 +199,7 @@ def test_asset_concurrent_load_and_clean_reload(dia_client):
 
 | File | Change |
 |------|--------|
+| `docs/specs/features/cluichetest/teststages/assetruntime-stage.mockup.html` | New — visual acceptance gate |
 | `Cluiche/CluicheTest/Modules/TestStages/AssetRuntimeStageModule.h` | New — module header |
 | `Cluiche/CluicheTest/Modules/TestStages/AssetRuntimeStageModule.cpp` | New — module implementation |
 | `Cluiche/CluicheTest/CluicheTest.vcxproj` | Add new source files |
@@ -215,24 +218,27 @@ def test_asset_concurrent_load_and_clean_reload(dia_client):
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 1 | Create AssetRuntimeStageModule (.h/.cpp) | Compiles, module registered | Todo | sonnet | |
-| 2 | Create 4 test asset files (texture, clip, rig, json) | Assets exist and are loadable | Todo | sonnet | Minimal valid content per type |
-| 3 | Implement DoStart: RequestAssets + RegisterCheckpoints | Module requests all 4, returns kLoading until ready | Todo | sonnet | Concurrent requests, no sequential waiting |
-| 4 | Implement DoUpdate: detect all-ready, capture snapshot | `all_loaded` checkpoint passes, snapshot stored | Todo | sonnet | First entry captures, second entry compares |
-| 5 | Implement DoStop: release all handles | Active handle count returns to zero | Todo | haiku | |
-| 6 | Implement clean_reload comparison logic | Second entry validates against first snapshot | Todo | sonnet | Entry counter persists across DoStop/DoStart cycles |
-| 7 | Create stage manifest files (.diastage + .diaapp) | Stage appears in stages list | Todo | haiku | transitions: ["Boot"] |
-| 8 | Add stage import to cluichetest.diagame | Stage navigable from Boot | Todo | haiku | |
-| 9 | Add vcxproj + filters entries | Builds in VS | Todo | haiku | |
-| 10 | Write pytest scenario (two-entry pattern) | Both checkpoints pass + metrics | Todo | sonnet | navigate→load→boot→navigate→reload→verify |
-| 11 | Add scenario to plan JSON | `--list` shows asset_runtime scenario | Todo | haiku | |
-| 12 | Verify: full E2E pass (two-entry round-trip) | Orchestrator green | Todo | sonnet | Requires Infrastructure complete |
+| 0 | Create `assetruntime-stage.mockup.html` — 3 texture quads (red/green/blue) + JSON data card in world space, asset panel, reload snapshot, checkpoint panel, HUD | Visual sign-off before C++ | Done | sonnet | |
+| 1 | Add `JsonPassthroughHandler.h/.cpp` to `Dia/DiaAssetRuntime/Handlers/`; register with prefix `"json"` in `AssetServiceModule::EnsureHandlersRegistered()`; add to `DiaAssetRuntime.vcxproj` | `dia run googletest` passes (no regressions) | Todo | sonnet | Prerequisite for JSON asset in T-2 |
+| 2 | Create 4 test asset files (3×1×1 PNG textures + 1 JSON config) under `Cluiche/Assets/Stages/AssetRuntimeStage/assets/`; register all 4 in `assets.runtime.json` under stage `stage.asset_runtime_stage` | Assets resolve via `runtime.ResolveAssetPath()` | Todo | haiku | Minimal valid content |
+| 3 | Create `AssetRuntimeStageModule.h/.cpp` skeleton — `kTypeId`, `DIA_MODULE` macro, empty stubs | Compiles, module registered | Todo | haiku | |
+| 4 | Implement DoStart: increment `mEntryCount`; register 2 checkpoints; return `kReady` | Checkpoints registered | Todo | sonnet | No explicit RequestStageLoad — AssetServiceModule fires it |
+| 5 | Implement DoUpdate: poll `IsStageLoadComplete`; on ready set `mAllLoaded`, capture/compare snapshot; emit 3 metrics per-frame | `all_loaded` passes entry 1; `clean_reload` passes entry 2 | Todo | sonnet | |
+| 6 | Implement DoStop: reset `mAllLoaded`, `mCleanReload`, `mFrameCount`; do NOT reset `mEntryCount` or snapshot | Second-entry comparison correct | Todo | haiku | |
+| 7 | Render loaded textures: in DoUpdate, after all-loaded, submit one bgfx quad per texture using `TextureHandler::LookupTexture()` | 3 coloured quads visible per mockup | Todo | sonnet | Visual acceptance gate against mockup |
+| 8 | Create `asset_runtime_stage.diastage` + `asset_runtime_stage.diaapp`; add import to `cluichetest.diagame`; add to `assets.catalogue.json` | Stage visible in Boot menu | Todo | haiku | |
+| 9 | Add all new source files to `CluicheTest.vcxproj` + `.vcxproj.filters` | Clean build | Todo | haiku | |
+| 10 | Write pytest scenario `assetruntime/test_asset_lifecycle.py` — two-entry pattern | Both checkpoints pass + metrics | Todo | sonnet | |
+| 11 | Add scenario to `plans/cluichetest/default.json` | `--list` shows scenario | Todo | haiku | |
+| 12 | Verify: full E2E pass (two-entry round-trip); visual check against mockup | Orchestrator green + quads visible | Todo | sonnet | Requires Infrastructure complete |
 
 ## Dependencies
 
-- **Infrastructure spec Tasks 1-6** must be complete before Task 12
-- **DiaAssetRuntime** must support: async handle-based loading for multiple types, handle release API, active-handle count query
-- Test asset files need to conform to their respective loader formats (may be trivial/minimal content)
+- T-1 (JsonPassthroughHandler) must complete before T-2 (JSON asset registration)
+- T-2 and T-3 can run in parallel after T-1
+- T-4, T-5, T-6, T-7 depend on T-3 (sequential — each builds on previous)
+- T-8, T-9, T-10, T-11 can run in parallel after T-7
+- T-12 requires T-8 through T-11 complete, plus **Infrastructure spec Tasks 1-6**
 
 ## Binding Decisions Compliance
 

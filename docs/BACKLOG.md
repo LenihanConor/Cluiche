@@ -83,7 +83,7 @@ System spec: [teststages.md](specs/systems/cluichetest/teststages.md) (Approved)
 | Animation2DStage | DiaAnimation2D + DiaRig2D | Clip playback, pose validation, blend weights | `animation.clip_complete`, `animation.pose_matches` | `/spec-feature` |
 | SoftBody2DStage | DiaSoftBody2D | Rope/cloth stabilization, spring convergence | `soft_body.rope_settled` | `/spec-feature` |
 | GeometryStage | DiaGeometry2D | Intersection tests, spatial queries | `geometry.intersection_correct` | `/spec-feature` |
-| EntityTestStage | DiaEntity | Spawn, query, destroy, component lifecycle | `entity.count_correct`, `entity.hierarchy_valid` | DiaEntity implemented first |
+| EntityTestStage | DiaEntity | Spawn/destroy/hierarchy/query/mailbox/lifecycle; `TransformComponent` + `VisualTestRenderComponent`; 6 checkpoints | `entity.spawn_complete`, `entity.query_correct`, `entity.hierarchy_valid`, `entity.destroy_cascade`, `entity.mailbox_received`, `entity.lifecycle_complete` | [Spec Approved](specs/features/cluichetest/teststages/entity-test-stage.md). Verify `EntityModule` implemented before starting Task 2. |
 
 **First stage to build:** RigidBody2DStage — physics is already stable, no other system dependencies, clear pass/fail checkpoint (body settles). Proves the test-stage pattern works.
 

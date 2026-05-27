@@ -11,6 +11,7 @@
 
 #include <DiaApplicationFlow/Streams/ServiceStreamReader.h>
 #include <DiaAssetRuntime/Handlers/TextureHandler.h>
+#include <DiaAssetRuntime/Handlers/JsonPassthroughHandler.h>
 #include "Modules/UIModule.h"
 
 namespace Dia { namespace Observation { namespace Metric {
@@ -91,6 +92,7 @@ private:
     Dia::Core::StringCRC mCurrentAppFlowStage;         // last app-flow stage we reacted to
     bool mTextureHandlerRegistered = false;
     bool mUIHandlerRegistered      = false;
+    bool mJsonHandlerRegistered    = false;
 
     Dia::Core::Containers::DynamicArrayC<PathAliasEntry, 16>  mStageAliases;
     Dia::Core::Containers::DynamicArrayC<StagePathEntry,   8> mStagePathMap;
@@ -114,6 +116,7 @@ private:
 
     Dia::ApplicationFlow::ServiceStreamReader<Dia::AssetRuntime::TextureHandler>  mTextureHandlerService{this, "KernelTextureHandler"};
     Dia::ApplicationFlow::ModuleRef<UIModule>                                      mUI{this};
+    Dia::AssetRuntime::JsonPassthroughHandler                                      mJsonHandler;
 
     // Metric primitives — owned by MetricRegistry, pointers nulled on DoStop.
     Dia::Observation::Metric::Gauge*     mMetricAssetsLoaded  = nullptr;

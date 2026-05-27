@@ -22,6 +22,10 @@
       {
          "path" : "stages/RigidBody2DStage/rigidbody2d_stage.diastage",
          "type" : "stage"
+      },
+      {
+         "path" : "stages/AssetRuntimeStage/asset_runtime_stage.diastage",
+         "type" : "stage"
       }
    ],
    "name" : "CluicheTest",

@@ -7,6 +7,9 @@
     <Filter Include="ApplicationFlow\Modules">
       <UniqueIdentifier>{3c25b1d8-299a-4a1b-ad3e-fa82cc4b198a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ApplicationFlow\Modules\TestStages">
+      <UniqueIdentifier>{a1b2c3d4-e5f6-7890-abcd-ef1234567890}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -16,6 +19,18 @@
     <ClCompile Include="Modules\EntityModule.cpp">
       <Filter>ApplicationFlow\Modules</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\TestStages\RigidBody2DTestModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\AssetRuntimeStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\TestResultsRegistry.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\TestStageHUDModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Modules\BootMenuModule.h">
@@ -23,6 +38,18 @@
     </ClInclude>
     <ClInclude Include="Modules\EntityModule.h">
       <Filter>ApplicationFlow\Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\RigidBody2DTestModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\AssetRuntimeStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\TestResultsRegistry.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\TestStageHUDModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

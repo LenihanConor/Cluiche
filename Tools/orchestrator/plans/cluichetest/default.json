@@ -1,0 +1,5 @@
+{
+    "scenarios": [
+        "cluichetest/assetruntime/test_asset_lifecycle"
+    ]
+}

@@ -361,6 +361,7 @@ Dia::ApplicationFlow::StopResult AssetServiceModule::DoStop()
     sInstance = nullptr;
     UnregisterStageAliases();
     mRuntime.Reset();
+    mJsonHandlerRegistered = false;
 
     // Null metric pointers — MetricRegistry owns the objects.
     mMetricAssetsLoaded  = nullptr;
@@ -470,10 +471,17 @@ void AssetServiceModule::EnsureHandlersRegistered()
         justRegistered = true;
     }
 
+    if (!mJsonHandlerRegistered)
+    {
+        mRuntime.RegisterTypeHandler("json", &mJsonHandler);
+        mJsonHandlerRegistered = true;
+        justRegistered = true;
+    }
+
     if (justRegistered && mTextureHandlerRegistered && mUIHandlerRegistered)
     {
         DIA_LOG_INFO("AssetRuntime",
-            "AssetServiceModule: texture + ui type handlers registered");
+            "AssetServiceModule: texture + ui + json type handlers registered");
     }
 }
 
