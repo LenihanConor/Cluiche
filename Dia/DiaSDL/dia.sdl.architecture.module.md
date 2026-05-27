@@ -4,7 +4,7 @@ display_name: DiaSDL
 parent: dia
 layer: platform-adapter
 version: "1.0"
-status: in-progress
+status: complete
 
 dependencies:
   required:
