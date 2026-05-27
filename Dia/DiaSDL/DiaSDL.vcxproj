@@ -19,6 +19,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="InputSource.h" />
+    <ClInclude Include="Window.h" />
+    <ClInclude Include="WindowFactory.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="InputSource.cpp" />
+    <ClCompile Include="Window.cpp" />
+    <ClCompile Include="WindowFactory.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
