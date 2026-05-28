@@ -31,17 +31,17 @@ Dia::ApplicationFlow::StartResult Physics2DModule::DoStart()
 {
     DIA_LOG_INFO("Application", "Physics2DModule::DoStart entry");
     mWorld = new Dia::RigidBody2D::PhysicsWorld(mWorldDef);
-
-#ifdef DIA_DEBUG
-    RegisterDrawers();
-#endif
-
     DIA_LOG_INFO("Application", "Physics2DModule::DoStart exit");
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
 void Physics2DModule::DoUpdate(float dt)
 {
+#ifdef DIA_DEBUG
+    if (!mShapesDrawer)
+        RegisterDrawers();
+#endif
+
     mWorld->Update(dt);
 }
 
