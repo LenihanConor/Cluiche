@@ -208,6 +208,7 @@
     <ClCompile Include="Graphics\TestFrameData.cpp" />
     <ClCompile Include="Graphics\TestDebugBudget.cpp" />
     <ClCompile Include="Graphics\TestDebugTextPrimitive.cpp" />
+    <ClCompile Include="DiaBgfx\TestFrameCaptureRingBuffer.cpp" />
     <ClCompile Include="Input\TestInputState.cpp" />
     <ClCompile Include="Input\TestActionMap.cpp" />
     <ClCompile Include="Input\TestActionContext.cpp" />

@@ -13,6 +13,7 @@ namespace Dia
 {
     namespace Bgfx
     {
+        class FrameCaptureRingBuffer;
         class ShaderProgram;
         class SpriteRenderer;
         class DebugRenderer;
@@ -58,6 +59,8 @@ namespace Dia
             void StartFrame(const Dia::Graphics::FrameData& nextFrame) override;
             void ProcessFrame(const Dia::Graphics::FrameData& nextFrame) override;
             void EndFrame(const Dia::Graphics::FrameData& nextFrame) override;
+            Dia::Graphics::FrameCaptureToken RequestFrameCapture() override;
+            Dia::Graphics::FrameCaptureResult PollFrameCapture(const Dia::Graphics::FrameCaptureToken& token) override;
 
             Dia::UI::IUIRenderOverlay* GetUIRenderOverlay();
 
@@ -88,6 +91,8 @@ namespace Dia
             SpriteRenderer*    mSpriteRenderer;   // owned
             DebugRenderer*     mDebugRenderer;    // owned
             UIOverlayRenderer* mUIOverlayRenderer; // owned
+
+            FrameCaptureRingBuffer* mCaptureRingBuffer; // owned
 
             Canvas(const Canvas&) = delete;
             Canvas& operator=(const Canvas&) = delete;

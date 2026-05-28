@@ -163,6 +163,9 @@
     <Filter Include="CluicheTest">
       <UniqueIdentifier>{CLCHT001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaBgfx">
+      <UniqueIdentifier>{DBGFX001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -395,6 +398,10 @@
     </ClCompile>
     <ClCompile Include="Graphics\TestFrameData.cpp">
       <Filter>Graphics</Filter>
+    </ClCompile>
+    <!-- DiaBgfx -->
+    <ClCompile Include="DiaBgfx\TestFrameCaptureRingBuffer.cpp">
+      <Filter>DiaBgfx</Filter>
     </ClCompile>
     <!-- Input -->
     <ClCompile Include="Input\TestInputState.cpp">

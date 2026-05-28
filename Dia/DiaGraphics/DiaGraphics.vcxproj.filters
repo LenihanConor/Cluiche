@@ -42,6 +42,9 @@
     <ClInclude Include="Interface\IRenderTarget.h">
       <Filter>Interface</Filter>
     </ClInclude>
+    <ClInclude Include="Interface\FrameCapture.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
     <ClInclude Include="Misc\RGBA.h">
       <Filter>Misc</Filter>
     </ClInclude>

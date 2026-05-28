@@ -9,6 +9,7 @@
 #include "DiaObservation/Metric/MetricRegistry.h"
 #include "DiaObservation/Health/HealthRegistry.h"
 #include "DiaObservation/Profile/Profiler.h"
+#include "DiaObservation/Capture/CaptureManager.h"
 
 #include "DiaCore/Json/external/json/json.h"
 
@@ -30,6 +31,7 @@ namespace Dia
 			: mStarted(false)
 			, mObservationFileSink(nullptr)
 			, mMetricsFileSink(nullptr)
+			, mCaptureManager(nullptr)
 			, mMetricSnapshotIntervalMs(100)
 			, mMetricSnapshotAccumMs(0.0f)
 			, mEpochOffsetNs(0)
@@ -54,6 +56,10 @@ namespace Dia
 		{
 			if (mStarted)
 				Stop();
+
+			// CaptureManager is deleted in Stop(); guard in case Stop() was never called
+			delete mCaptureManager;
+			mCaptureManager = nullptr;
 
 			delete[] mRetentionRing;
 			mRetentionRing = nullptr;
@@ -192,6 +198,10 @@ namespace Dia
 			sActiveInstance = this;
 			std::set_terminate(&SessionManager::TerminateHandler);
 
+			// Create CaptureManager (canvas wired later via SetCaptureCanvas)
+			mCaptureManager = new Capture::CaptureManager();
+			mCaptureManager->Initialize(nullptr, this);
+
 			mStarted = true;
 			mFrameCount = 0;
 			mErrorCount = 0;
@@ -229,6 +239,9 @@ namespace Dia
 
 		void SessionManager::Tick(float deltaTime)
 		{
+			if (mCaptureManager)
+				mCaptureManager->Tick();
+
 			// Metric snapshot on interval — only emit to file sink when values changed
 			mMetricSnapshotAccumMs += deltaTime * 1000.0f;
 			if (mMetricSnapshotAccumMs >= static_cast<float>(mMetricSnapshotIntervalMs))
@@ -260,6 +273,9 @@ namespace Dia
 				return;
 
 			mStarted = false;
+
+			delete mCaptureManager;
+			mCaptureManager = nullptr;
 
 			// Fire final metric snapshot (notify all registered sinks, not just file sink)
 			{
@@ -318,6 +334,17 @@ namespace Dia
 		void SessionManager::IncrementFrameCount()
 		{
 			++mFrameCount;
+		}
+
+		void SessionManager::SetCaptureCanvas(Dia::Graphics::ICanvas* canvas)
+		{
+			if (mCaptureManager)
+				mCaptureManager->Initialize(canvas, this);
+		}
+
+		Capture::CaptureManager* SessionManager::GetCaptureManager()
+		{
+			return mCaptureManager;
 		}
 
 		void SessionManager::OnRetainableEntry(const Log::LogEntry& entry)

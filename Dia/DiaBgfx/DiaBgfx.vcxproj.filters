@@ -4,6 +4,9 @@
     <ClInclude Include="Canvas.h">
       <Filter>Headers</Filter>
     </ClInclude>
+    <ClInclude Include="Capture\FrameCaptureRingBuffer.h">
+      <Filter>Capture</Filter>
+    </ClInclude>
     <ClInclude Include="Renderers\SpriteRenderer.h">
       <Filter>Renderers</Filter>
     </ClInclude>
@@ -30,6 +33,9 @@
     </ClInclude>
     <ClCompile Include="Canvas.cpp">
       <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="Capture\FrameCaptureRingBuffer.cpp">
+      <Filter>Capture</Filter>
     </ClCompile>
     <ClCompile Include="Renderers\SpriteRenderer.cpp">
       <Filter>Renderers</Filter>
@@ -98,6 +104,9 @@
     </Filter>
     <Filter Include="Imgui">
       <UniqueIdentifier>{66666666-6666-6666-6666-666666666666}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Capture">
+      <UniqueIdentifier>{77777777-7777-7777-7777-777777777777}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

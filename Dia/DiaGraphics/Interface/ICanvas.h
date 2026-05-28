@@ -4,6 +4,7 @@
 #pragma once
 
 #include "DiaGraphics/Frame/FrameData.h"
+#include "DiaGraphics/Interface/FrameCapture.h"
 
 #include <DiaCore/Core/EnumClass.h>
 #include <DiaMaths/Vector/Vector2D.h>
@@ -78,6 +79,16 @@ namespace Dia
 				StartFrame(frame);
 				ProcessFrame(frame);
 				EndFrame(frame);
+			}
+
+			virtual FrameCaptureToken RequestFrameCapture()
+			{
+				return FrameCaptureToken{};
+			}
+
+			virtual FrameCaptureResult PollFrameCapture(const FrameCaptureToken& /*token*/)
+			{
+				return FrameCaptureResult{};
 			}
 		};
 	}

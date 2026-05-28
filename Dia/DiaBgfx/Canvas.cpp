@@ -2,6 +2,7 @@
 // Filename: Canvas.cpp
 ////////////////////////////////////////////////////////////////////////////////
 #include "DiaBgfx/Canvas.h"
+#include "DiaBgfx/Capture/FrameCaptureRingBuffer.h"
 #include "DiaBgfx/Renderers/SpriteRenderer.h"
 #include "DiaBgfx/Renderers/DebugRenderer.h"
 #include "DiaBgfx/Renderers/UIOverlayRenderer.h"
@@ -60,6 +61,8 @@ namespace Dia
         class CallbackHandler : public bgfx::CallbackI
         {
         public:
+            FrameCaptureRingBuffer* mRingBuffer = nullptr;
+
             void fatal(const char* _filePath, uint16_t _line, bgfx::Fatal::Enum _code, const char* _str) override
             {
                 DIA_LOG_ERROR("DiaBgfx", "bgfx fatal [%d] %s (%s:%u)", static_cast<int>(_code), _str, _filePath, _line);
@@ -77,7 +80,14 @@ namespace Dia
             uint32_t cacheReadSize(uint64_t) override { return 0; }
             bool cacheRead(uint64_t, void*, uint32_t) override { return false; }
             void cacheWrite(uint64_t, const void*, uint32_t) override {}
-            void screenShot(const char*, uint32_t, uint32_t, uint32_t, bgfx::TextureFormat::Enum, const void*, uint32_t, bool) override {}
+            void screenShot(const char* filePath, uint32_t width, uint32_t height, uint32_t pitch,
+                            bgfx::TextureFormat::Enum /*format*/, const void* data, uint32_t size, bool yflip) override
+            {
+                if (mRingBuffer == nullptr) return;
+                unsigned int slotIndex = FrameCaptureRingBuffer::DecodeSlotIndex(filePath);
+                if (slotIndex >= FrameCaptureRingBuffer::kDepth) return;
+                mRingBuffer->OnScreenShot(slotIndex, width, height, pitch, data, size, yflip);
+            }
             void captureBegin(uint32_t, uint32_t, uint32_t, bgfx::TextureFormat::Enum, bool) override {}
             void captureEnd() override {}
             void captureFrame(const void*, uint32_t) override {}
@@ -100,6 +110,7 @@ namespace Dia
             , mSpriteRenderer(nullptr)
             , mDebugRenderer(nullptr)
             , mUIOverlayRenderer(nullptr)
+            , mCaptureRingBuffer(nullptr)
         {}
 
         Canvas::~Canvas()
@@ -195,6 +206,9 @@ namespace Dia
             mDebugRenderer     = new DebugRenderer(kDebugViewId, mDebugProgram);
             mUIOverlayRenderer = new UIOverlayRenderer(kUIViewId, mUIProgram);
 
+            mCaptureRingBuffer = new FrameCaptureRingBuffer();
+            sCallback.mRingBuffer = mCaptureRingBuffer;
+
             PropagateCanvasSize();
 
             mInitialised = true;
@@ -214,6 +228,10 @@ namespace Dia
             delete mUIProgram;     mUIProgram     = nullptr;
             delete mDebugProgram;  mDebugProgram  = nullptr;
             delete mSpriteProgram; mSpriteProgram = nullptr;
+
+            sCallback.mRingBuffer = nullptr;
+            delete mCaptureRingBuffer;
+            mCaptureRingBuffer = nullptr;
 
             bgfx::shutdown();
             mInitialised = false;
@@ -290,6 +308,31 @@ namespace Dia
         Dia::UI::IUIRenderOverlay* Canvas::GetUIRenderOverlay()
         {
             return mUIOverlayRenderer;
+        }
+
+        Dia::Graphics::FrameCaptureToken Canvas::RequestFrameCapture()
+        {
+            if (!mInitialised || mCaptureRingBuffer == nullptr)
+                return Dia::Graphics::FrameCaptureToken{};
+
+            Dia::Graphics::FrameCaptureToken token = mCaptureRingBuffer->Claim();
+            if (!token.IsValid())
+            {
+                DIA_LOG_WARNING("DiaBgfx", "Canvas::RequestFrameCapture — ring buffer full, dropping request");
+                return token;
+            }
+
+            char slotPath[32];
+            FrameCaptureRingBuffer::BuildSlotPath(FrameCaptureRingBuffer::SlotFromId(token.id), slotPath, sizeof(slotPath));
+            bgfx::requestScreenShot(BGFX_INVALID_HANDLE, slotPath);
+            return token;
+        }
+
+        Dia::Graphics::FrameCaptureResult Canvas::PollFrameCapture(const Dia::Graphics::FrameCaptureToken& token)
+        {
+            if (mCaptureRingBuffer == nullptr)
+                return Dia::Graphics::FrameCaptureResult{};
+            return mCaptureRingBuffer->Poll(token);
         }
 
         void Canvas::PropagateCanvasSize()

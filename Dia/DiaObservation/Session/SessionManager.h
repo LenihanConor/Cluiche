@@ -9,11 +9,13 @@
 #include <mutex>
 #include <atomic>
 
+namespace Dia { namespace Graphics { class ICanvas; } }
 namespace Dia { namespace Observation { namespace Log { class ObservationFileSink; } } }
 namespace Dia { namespace Observation { namespace Trace { class Tracer; } } }
 namespace Dia { namespace Observation { namespace Metric { class MetricsFileSink; } } }
 namespace Dia { namespace Observation { namespace Health { class HealthRegistry; } } }
 namespace Dia { namespace Observation { namespace Profile { class Profiler; } } }
+namespace Dia { namespace Observation { namespace Capture { class CaptureManager; } } }
 
 namespace Dia
 {
@@ -48,6 +50,9 @@ namespace Dia
 			void IncrementFrameCount();
 			uint64_t GetFrameCount() const { return mFrameCount; }
 
+			void SetCaptureCanvas(Dia::Graphics::ICanvas* canvas);
+			Capture::CaptureManager* GetCaptureManager();
+
 			void OnRetainableEntry(const Log::LogEntry& entry);
 
 			void EmergencyDump();
@@ -64,8 +69,9 @@ namespace Dia
 			char mSessionDir[512];
 			SessionConfig mConfig;
 
-			Log::ObservationFileSink* mObservationFileSink;
-			Metric::MetricsFileSink*  mMetricsFileSink;
+			Log::ObservationFileSink*       mObservationFileSink;
+			Metric::MetricsFileSink*        mMetricsFileSink;
+			Capture::CaptureManager*        mCaptureManager;
 
 			uint32_t mMetricSnapshotIntervalMs;
 			float    mMetricSnapshotAccumMs;

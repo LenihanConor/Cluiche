@@ -28,6 +28,12 @@
     <Filter Include="Profile">
       <UniqueIdentifier>{9b0c1d2e-3f4a-5b6c-7d8e-9f0a1b2c3d4e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Capture">
+      <UniqueIdentifier>{ac1b2c3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Capture\ThirdParty">
+      <UniqueIdentifier>{bc2c3d4e-5f6a-7b8c-9d0e-1f2a3b4c5d6e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Log\Logger.cpp">
@@ -107,6 +113,12 @@
     </ClCompile>
     <ClCompile Include="Profile\ProfileFileSink.cpp">
       <Filter>Profile</Filter>
+    </ClCompile>
+    <ClCompile Include="Capture\ThirdParty\lodepng.cpp">
+      <Filter>Capture\ThirdParty</Filter>
+    </ClCompile>
+    <ClCompile Include="Capture\CaptureManager.cpp">
+      <Filter>Capture</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -246,6 +258,15 @@
     </ClInclude>
     <ClInclude Include="Profile\DiaProfile.h">
       <Filter>Profile</Filter>
+    </ClInclude>
+    <ClInclude Include="Capture\CaptureTypes.h">
+      <Filter>Capture</Filter>
+    </ClInclude>
+    <ClInclude Include="Capture\ThirdParty\lodepng.h">
+      <Filter>Capture\ThirdParty</Filter>
+    </ClInclude>
+    <ClInclude Include="Capture\CaptureManager.h">
+      <Filter>Capture</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

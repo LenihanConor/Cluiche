@@ -204,6 +204,7 @@ public:
 | diapipeline-shaderc-cook | bgfx `shaderc` integrated as a cook step in DiaPipeline | [bgfx-shader-cook.md](../../features/dia/diapipeline/bgfx-shader-cook.md) | Approved |
 | diasfml-render-removal | Delete render path from DiaSFML; keep `IWindow` + `IInputSource`; move `TextureHandler` to DiaAssetRuntime; **Phase 1 ship gate (RB-016)** | [render-removal.md](../../features/dia/diasfml/render-removal.md) | Done |
 | replace-diasfml-with-sdl3 | Replace DiaSFML window+input with DiaSDL; delete `Dia/DiaSFML/` entirely | [replace-diasfml-with-sdl3.md](../../features/dia/diasdl/replace-diasfml-with-sdl3.md) | In Progress |
+| frame-capture-readback | Async GPU framebuffer readback via `ICanvas::RequestFrameCapture` / `PollFrameCapture`; ring buffer in DiaBgfx using `bgfx::requestScreenShot` callback | [frame-capture-readback.md](../../features/dia/diabgfx/frame-capture-readback.md) | Approved |
 
 ### Phase 2 — Light 3D (specced now, implemented later)
 

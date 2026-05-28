@@ -45,6 +45,7 @@
     <ClInclude Include="Interface\IDrawable.h" />
     <ClInclude Include="Interface\IRenderTarget.h" />
     <ClInclude Include="Interface\IView.h" />
+    <ClInclude Include="Interface\FrameCapture.h" />
     <ClInclude Include="Misc\PrimitiveType.h" />
     <ClInclude Include="Misc\RenderStates.h" />
     <ClInclude Include="Misc\RGBA.h" />
