@@ -156,6 +156,18 @@ class DiaClient:
     def report(self) -> dict:
         return self.send_command("dia.app.report")
 
+    def get_metric(self, name: str):
+        """Read a live metric value from MetricRegistry by fully-qualified name.
+
+        Returns the scalar value (int or float) for gauges. For histogram metrics,
+        returns the mean. Raises AutomationError if the metric is not found.
+        """
+        result = self.send_command("dia.automation.get_metric", {"name": name})
+        value = result.get("value")
+        if isinstance(value, dict):
+            return value.get("mean", 0)
+        return value
+
     def pause(self) -> dict:
         return self.send_command("dia.automation.pause")
 

@@ -30,6 +30,11 @@
     <ClCompile Include="Modules\TestStages\AssetRuntimeRendererModule.cpp" />
     <ClCompile Include="Modules\TestStages\AssetRuntimeHUDModule.cpp" />
     <ClCompile Include="Modules\TestStages\TestStageHUDModule.cpp" />
+    <ClCompile Include="Modules\TestStages\Geometry2DTestStageModule.cpp" />
+    <ClCompile Include="Modules\TestStages\Drawers\Geometry2DShapesDrawer.cpp" />
+    <ClCompile Include="Modules\TestStages\Drawers\Geometry2DLabelsDrawer.cpp" />
+    <ClCompile Include="Modules\TestStages\Drawers\Geometry2DIntersectionsDrawer.cpp" />
+    <ClCompile Include="Modules\TestStages\Drawers\Geometry2DAABBDrawer.cpp" />
     <ClCompile Include="Modules\dummy\DummyLevelModule.cpp" />
     <ClCompile Include="Modules\dummy\DummyUIPageModule.cpp" />
     <ClCompile Include="Modules\dummy\DummyUIPage.cpp" />
@@ -44,6 +49,11 @@
     <ClInclude Include="Modules\TestStages\AssetRuntimeRendererModule.h" />
     <ClInclude Include="Modules\TestStages\AssetRuntimeHUDModule.h" />
     <ClInclude Include="Modules\TestStages\TestStageHUDModule.h" />
+    <ClInclude Include="Modules\TestStages\Geometry2DTestStageModule.h" />
+    <ClInclude Include="Modules\TestStages\Drawers\Geometry2DShapesDrawer.h" />
+    <ClInclude Include="Modules\TestStages\Drawers\Geometry2DLabelsDrawer.h" />
+    <ClInclude Include="Modules\TestStages\Drawers\Geometry2DIntersectionsDrawer.h" />
+    <ClInclude Include="Modules\TestStages\Drawers\Geometry2DAABBDrawer.h" />
     <ClInclude Include="Modules\dummy\DummyLevelModule.h" />
     <ClInclude Include="Modules\dummy\DummyUIPageModule.h" />
     <ClInclude Include="Modules\dummy\DummyUIPage.h" />
@@ -115,6 +125,9 @@
     <ProjectReference Include="..\..\Dia\DiaRigidBody2DVisualDebugger\DiaRigidBody2DVisualDebugger.vcxproj">
       <Project>{A2B3C4D5-E6F7-8901-BCDE-F01234567891}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaGeometry2DVisualDebugger\DiaGeometry2DVisualDebugger.vcxproj">
+      <Project>{D4E5F6A7-B8C9-0123-DEF0-234567890123}</Project>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{CEC960D4-B8B3-463B-9F68-716C5C3C4315}</ProjectGuid>
@@ -164,7 +177,7 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(LibOutDir)CluicheGameBaseline.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaAPI.lib;$(LibOutDir)DiaRigidBody2D.lib;$(LibOutDir)DiaGeometry2D.lib;$(LibOutDir)DiaImGui.lib;$(LibOutDir)DiaEntity.lib;$(LibOutDir)DiaVisualDebugger.lib;$(LibOutDir)DiaVisualDebuggerConsole.lib;$(LibOutDir)DiaRigidBody2DVisualDebugger.lib;$(LibOutDir)DiaSDL.lib;SDL3-static.lib;setupapi.lib;winmm.lib;imm32.lib;version.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(LibOutDir)CluicheGameBaseline.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaMaths.lib;$(LibOutDir)DiaGraphics.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaInput.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaUIUltralight.lib;$(LibOutDir)DiaAssetRuntime.lib;$(LibOutDir)DiaDebugServer.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaAPI.lib;$(LibOutDir)DiaRigidBody2D.lib;$(LibOutDir)DiaGeometry2D.lib;$(LibOutDir)DiaImGui.lib;$(LibOutDir)DiaEntity.lib;$(LibOutDir)DiaVisualDebugger.lib;$(LibOutDir)DiaVisualDebuggerConsole.lib;$(LibOutDir)DiaRigidBody2DVisualDebugger.lib;$(LibOutDir)DiaGeometry2DVisualDebugger.lib;$(LibOutDir)DiaSDL.lib;SDL3-static.lib;setupapi.lib;winmm.lib;imm32.lib;version.lib;glu32.lib;opengl32.lib;XINPUT9_1_0.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)..\..\External\SDL3\lib\Debug\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/WHOLEARCHIVE:DiaDebugServer.lib /WHOLEARCHIVE:CluicheGameBaseline.lib %(AdditionalOptions)</AdditionalOptions>
     </Link>

@@ -1,10 +1,35 @@
 {
     "version": 3,
     "stages": [
-        { "name": "Boot",                   "transitions": ["DummyStage", "RigidBody2DTestStage", "AssetRuntimeTestStage"], "auto_advance": false },
-        { "name": "DummyStage",             "transitions": [],                                                               "auto_advance": false },
-        { "name": "RigidBody2DTestStage",   "transitions": [],                                                               "auto_advance": false },
-        { "name": "AssetRuntimeTestStage",  "transitions": [],                                                               "auto_advance": false }
+        {
+            "name": "Boot",
+            "transitions": [
+                "DummyStage",
+                "RigidBody2DTestStage",
+                "AssetRuntimeTestStage"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "DummyStage",
+            "transitions": [],
+            "auto_advance": false
+        },
+        {
+            "name": "RigidBody2DTestStage",
+            "transitions": [],
+            "auto_advance": false
+        },
+        {
+            "name": "AssetRuntimeTestStage",
+            "transitions": [],
+            "auto_advance": false
+        },
+        {
+            "name": "Geometry2DTestStage",
+            "transitions": [],
+            "auto_advance": false
+        }
     ],
     "initial_stage": "Boot",
     "streams": [
@@ -68,59 +93,108 @@
                 {
                     "instance_id": "ObservationModule",
                     "type_id": "ObservationModule",
-                    "stages": [ "all" ],
+                    "stages": [
+                        "all"
+                    ],
                     "dependencies": [],
                     "channels": []
                 },
                 {
                     "instance_id": "ProfilerModule",
                     "type_id": "ProfilerModule",
-                    "stages": [ "all" ],
-                    "dependencies": [ "ObservationModule" ],
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [
+                        "ObservationModule"
+                    ],
                     "channels": []
                 },
                 {
                     "instance_id": "JobSystemModule",
                     "type_id": "JobSystemModule",
-                    "stages": [ "all" ],
-                    "dependencies": [ "ObservationModule" ],
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [
+                        "ObservationModule"
+                    ],
                     "channels": []
                 },
                 {
                     "instance_id": "KernelModule",
                     "type_id": "KernelModule",
-                    "stages": [ "all" ],
-                    "dependencies": [ "ObservationModule", "JobSystemModule" ],
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [
+                        "ObservationModule",
+                        "JobSystemModule"
+                    ],
                     "channels": [
-                        { "id": "MainToSim",           "role": "writes" },
-                        { "id": "KernelCanvas",        "role": "provides" },
-                        { "id": "KernelTextureHandler", "role": "provides" }
+                        {
+                            "id": "MainToSim",
+                            "role": "writes"
+                        },
+                        {
+                            "id": "KernelCanvas",
+                            "role": "provides"
+                        },
+                        {
+                            "id": "KernelTextureHandler",
+                            "role": "provides"
+                        }
                     ]
                 },
                 {
                     "instance_id": "UIModule",
                     "type_id": "UIModule",
-                    "stages": [ "DummyStage" ],
-                    "dependencies": [ "ObservationModule", "KernelModule" ],
+                    "stages": [
+                        "DummyStage"
+                    ],
+                    "dependencies": [
+                        "ObservationModule",
+                        "KernelModule"
+                    ],
                     "channels": [
-                        { "id": "SimToMain", "role": "reads" },
-                        { "id": "UIToSim",   "role": "writes" }
+                        {
+                            "id": "SimToMain",
+                            "role": "reads"
+                        },
+                        {
+                            "id": "UIToSim",
+                            "role": "writes"
+                        }
                     ]
                 },
                 {
                     "instance_id": "AssetServiceModule",
                     "type_id": "AssetServiceModule",
-                    "stages": [ "all" ],
-                    "dependencies": [ "ObservationModule", "KernelModule", "UIModule", "JobSystemModule" ],
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [
+                        "ObservationModule",
+                        "KernelModule",
+                        "UIModule",
+                        "JobSystemModule"
+                    ],
                     "channels": [
-                        { "id": "KernelTextureHandler", "role": "consumes" }
+                        {
+                            "id": "KernelTextureHandler",
+                            "role": "consumes"
+                        }
                     ]
                 },
                 {
                     "instance_id": "DebugServerHostModule",
                     "type_id": "DebugServerHostModule",
-                    "stages": [ "all" ],
-                    "dependencies": [ "ObservationModule" ],
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [
+                        "ObservationModule"
+                    ],
                     "config": {
                         "port": 9002,
                         "auto_start": true,
@@ -133,17 +207,30 @@
                 {
                     "instance_id": "AutomationModule",
                     "type_id": "AutomationModule",
-                    "stages": [ "all" ],
-                    "dependencies": [ "ObservationModule", "DebugServerHostModule" ],
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [
+                        "ObservationModule",
+                        "DebugServerHostModule"
+                    ],
                     "channels": []
                 },
                 {
                     "instance_id": "MainStateProducerModule",
                     "type_id": "TestMainStateProducerModule",
-                    "stages": [ "all" ],
-                    "dependencies": [ "ObservationModule", "AutomationModule" ],
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [
+                        "ObservationModule",
+                        "AutomationModule"
+                    ],
                     "channels": [
-                        { "id": "MainToRender", "role": "writes" }
+                        {
+                            "id": "MainToRender",
+                            "role": "writes"
+                        }
                     ]
                 }
             ]
@@ -156,36 +243,59 @@
                 {
                     "instance_id": "TimeServerModule",
                     "type_id": "TimeServerModule",
-                    "stages": [ "all" ],
+                    "stages": [
+                        "all"
+                    ],
                     "dependencies": [],
                     "channels": []
                 },
                 {
                     "instance_id": "InputStreamModule",
                     "type_id": "InputStreamModule",
-                    "stages": [ "all" ],
-                    "dependencies": [ "TimeServerModule" ],
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [
+                        "TimeServerModule"
+                    ],
                     "channels": [
-                        { "id": "MainToSim", "role": "reads" }
+                        {
+                            "id": "MainToSim",
+                            "role": "reads"
+                        }
                     ]
                 },
                 {
                     "instance_id": "LoadingScreenModule",
                     "type_id": "LoadingScreenModule",
-                    "stages": [ "Boot" ],
+                    "stages": [
+                        "Boot"
+                    ],
                     "dependencies": [],
                     "channels": [
-                        { "id": "UIToSim",     "role": "reads" },
-                        { "id": "SimToRender", "role": "writes" }
+                        {
+                            "id": "UIToSim",
+                            "role": "reads"
+                        },
+                        {
+                            "id": "SimToRender",
+                            "role": "writes"
+                        }
                     ]
                 },
                 {
                     "instance_id": "VisualDebuggerModule",
                     "type_id": "VisualDebuggerModule",
-                    "stages": [ "RigidBody2DTestStage", "AssetRuntimeTestStage" ],
+                    "stages": [
+                        "RigidBody2DTestStage",
+                        "AssetRuntimeTestStage"
+                    ],
                     "dependencies": [],
                     "channels": [
-                        { "id": "SimToRender", "role": "writes" }
+                        {
+                            "id": "SimToRender",
+                            "role": "writes"
+                        }
                     ]
                 }
             ]
@@ -198,58 +308,107 @@
                 {
                     "instance_id": "DebugUI",
                     "type_id": "DebugUIModule",
-                    "stages": [ "all" ],
+                    "stages": [
+                        "all"
+                    ],
                     "dependencies": [],
                     "channels": []
                 },
                 {
                     "instance_id": "BootMenu",
                     "type_id": "BootMenuModule",
-                    "stages": [ "Boot" ],
-                    "dependencies": [ "DebugUI" ],
+                    "stages": [
+                        "Boot"
+                    ],
+                    "dependencies": [
+                        "DebugUI"
+                    ],
                     "channels": []
                 },
                 {
                     "instance_id": "TestStageHUDModule",
                     "type_id": "TestStageHUDModule",
-                    "stages": [ "DummyStage", "RigidBody2DTestStage", "AssetRuntimeTestStage" ],
-                    "dependencies": [ "DebugUI" ],
+                    "stages": [
+                        "DummyStage",
+                        "RigidBody2DTestStage",
+                        "AssetRuntimeTestStage",
+                        "Geometry2DTestStage"
+                    ],
+                    "dependencies": [
+                        "DebugUI"
+                    ],
                     "channels": [
-                        { "id": "MainToRender", "role": "reads" }
+                        {
+                            "id": "MainToRender",
+                            "role": "reads"
+                        }
                     ]
                 },
                 {
                     "instance_id": "VisualDebuggerConsoleModule",
                     "type_id": "VisualDebuggerConsoleModule",
-                    "stages": [ "RigidBody2DTestStage", "AssetRuntimeTestStage" ],
-                    "dependencies": [ "DebugUI" ],
+                    "stages": [
+                        "RigidBody2DTestStage",
+                        "AssetRuntimeTestStage"
+                    ],
+                    "dependencies": [
+                        "DebugUI"
+                    ],
                     "channels": []
                 },
                 {
                     "instance_id": "AssetRuntimeVisualDebuggerModule",
                     "type_id": "AssetRuntimeVisualDebuggerModule",
-                    "stages": [ "AssetRuntimeTestStage" ],
-                    "dependencies": [ "DebugUI" ],
+                    "stages": [
+                        "AssetRuntimeTestStage"
+                    ],
+                    "dependencies": [
+                        "DebugUI"
+                    ],
                     "channels": []
                 },
                 {
                     "instance_id": "AssetRuntimeHUDModule",
                     "type_id": "AssetRuntimeHUDModule",
-                    "stages": [ "AssetRuntimeTestStage" ],
-                    "dependencies": [ "DebugUI" ],
+                    "stages": [
+                        "AssetRuntimeTestStage"
+                    ],
+                    "dependencies": [
+                        "DebugUI"
+                    ],
                     "channels": [
-                        { "id": "MainToRender", "role": "reads" }
+                        {
+                            "id": "MainToRender",
+                            "role": "reads"
+                        }
                     ]
                 },
                 {
                     "instance_id": "RenderModule",
                     "type_id": "RenderModule",
-                    "stages": [ "all" ],
-                    "dependencies": [ "DebugUI", "TestStageHUDModule", "VisualDebuggerConsoleModule", "AssetRuntimeVisualDebuggerModule", "AssetRuntimeHUDModule" ],
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [
+                        "DebugUI",
+                        "TestStageHUDModule",
+                        "VisualDebuggerConsoleModule",
+                        "AssetRuntimeVisualDebuggerModule",
+                        "AssetRuntimeHUDModule"
+                    ],
                     "channels": [
-                        { "id": "SimToRender",        "role": "reads" },
-                        { "id": "KernelCanvas",        "role": "consumes" },
-                        { "id": "KernelTextureHandler", "role": "consumes" }
+                        {
+                            "id": "SimToRender",
+                            "role": "reads"
+                        },
+                        {
+                            "id": "KernelCanvas",
+                            "role": "consumes"
+                        },
+                        {
+                            "id": "KernelTextureHandler",
+                            "role": "consumes"
+                        }
                     ]
                 }
             ]

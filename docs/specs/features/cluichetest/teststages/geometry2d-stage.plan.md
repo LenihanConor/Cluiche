@@ -1,51 +1,42 @@
 # Implementation Plan: Geometry2DStage
 
-## Spec
-@docs/specs/features/cluichetest/teststages/geometry2d-stage.md
+**Spec:** @docs/specs/features/cluichetest/teststages/geometry2d-stage.md
+**Status:** In Progress
 
-## Session Notes — Spec Decisions Summary
+---
 
-**Key constraints from the full spec chain (Platform → App → System → Feature):**
-- All IDs use `StringCRC` — stage `"TestGeometry2D"`, module `"TestGeometry2DStageModule"`, checkpoint `"geometry2d.passed"`, metrics `"shape_count"` / `"intersection_pair_count"` (PD-001)
-- No STL in public module APIs; Dia types throughout (PD-004)
-- Every new `.h/.cpp` must be added to its `.vcxproj` and `.vcxproj.filters` (PD-006)
-- C++20 required (PD-007)
-- Stage scaffolded via `/new-cluichetest-stage TestGeometry2D` — **post-simplification** version (4 touch points, not 8)
-- `TestGeometry2DStageModule` lives on **MainPU** — AutomationModule lives on MainPU; SimPU modules cannot depend on it
-- ~~`VisualDebuggerModule` on SimPU — mandatory to prevent render starvation~~ → **Obsolete after simplification Task #4** (FrameStream auto-flush); still optional for debug draw support
-- `TestResultsRegistry::SetRunning()` **mandatory** in DoStart — HUD reads `activeStageName` from it
-- `TestResultsRegistry::SetActiveFrameCount()` **mandatory** each DoUpdate tick
-- Transitions live in `cluiche_main.diaapp`'s `stages` array — **NOT** in `.diastage`; Boot transitions auto-derived after simplification Task #3
-- ~~`pipeline.toml` must have stage in `asset_stages`~~ → **Obsolete after simplification Tasks #1 + #5** (auto-derived from catalogue + .diagame imports)
-- ~~Force-copy `cluiche_main.diaapp` to bin~~ → **Obsolete after simplification Task #6** (pipeline detects staleness)
+## Key Constraints
+
+- All IDs use `StringCRC` — stage `"Geometry2DTestStage"`, module `"Geometry2DTestStageModule"`, checkpoint `"test.geometry2d.passed"`, metrics `"shape_count"` / `"intersection_pair_count"`
+- No STL in public module APIs; Dia types throughout
+- Every new `.h/.cpp` must be added to its `.vcxproj` and `.vcxproj.filters`
+- Module inherits `TestStageModuleBase` (handles frame counting, timeout, checkpoint lifecycle, HUD integration)
+- Module lives on **MainPU** — no SimPU modules needed (FrameStream auto-flush)
+- Scaffold via `dia scaffold stage Geometry2D --budget 60` (script handles all 9 touch points)
+- Drawers registered with `stageTag` → auto-deregister on stage exit, no manual cleanup
 - Arc/Sector/OORect/Capsule rendered via ConvexPolygon tessellation helpers (8/8/4/12 verts)
-- 5 draw layers, each a separate `IVisualDebugger` class: geo2d.shapes, geo2d.labels, geo2d.intersections, geo2d.spatial_overlay, geo2d.aabbs
-- Drawers registered with `DebugLayerManager::Register()` on first DoUpdate; unregistered in DoStop
 - 6 intersection pairs: Circle/Circle (HIT), Circle/AARect (MISS), AARect/Triangle (HIT), Ray/Circle (HIT), Line/AARect (MISS), Circle/Triangle (MISS)
-- 4 spatial structures: BVH, Quadtree, SpatialGrid, HexGrid — existing drawers available (`BVHDrawer`, `QuadtreeDrawer`, `SpatialGridDrawer`, `HexGridDrawer`)
+- 4 spatial structures: BVH, Quadtree, SpatialGrid, HexGrid
 - Total shape budget: ~40 shapes/frame — well under ShapeDrawer's 128-shape cap
-- Debug Console title is generic **"Debug Console"**; domain tab **"Geometry2D"** active; three collapsible sections: Draw Layers, Geometry Stats, Spatial Stats
-- Checkpoints in a **separate** ImGui panel (shared infra from VisualDebugger module), not inside the console
-- HUD bar matches RigidBody2D pattern: stage name | checkpoint badge | frame counter | PASS | exit button
 
 ---
 
 ## Implementation Patterns
 
-### Task 2 — Scaffold (`/new-cluichetest-stage TestGeometry2D`)
+### Task 2 — Scaffold
 
-> **BLOCKED ON:** `stage-scaffold-simplification.plan.md` (Tasks 1–7). Run this task **after** the simplification lands and the skill is updated. The post-simplification skill reduces touch points from 8→4 and eliminates pipeline.toml edits, force-copy, and mandatory VisualDebuggerModule on SimPU.
+```bash
+dia scaffold stage Geometry2D --budget 60
+```
 
-Post-simplification, the skill generates:
-1. `Assets/Stages/TestGeometry2D/test_geometry2d_stage.diastage`
-2. `Assets/Stages/Geometry2D/misc/ApplicationFlow/geometry2d_stage.diaapp` (no VisualDebuggerModule needed — FrameStream auto-flushes)
-3. `CluicheTest/Modules/TestStages/TestGeometry2DStageModule.h/.cpp` (skeleton)
-4. `CluicheTest.vcxproj` + `.vcxproj.filters` (add module)
-5. `cluiche_main.diaapp` (stage entry + HUD — Boot transitions auto-derived, no force-copy needed)
+Script creates all 9 touch points:
+1. `.diastage` at `Assets/Stages/Geometry2DTestStage/`
+2. `.diaapp` in stage's `Misc/ApplicationFlow/` (MainPU only, no SimPU modules)
+3. `Geometry2DTestStageModule.h/.cpp` skeleton (inherits `TestStageModuleBase`)
+4. `CluicheTest.vcxproj` + `.vcxproj.filters`
+5. `cluiche_main.diaapp` (stage entry + HUD)
 6. `cluichetest.diagame` (import)
 7. `assets.catalogue.json` (stage + manifest entries)
-
-**No longer needed:** `pipeline.toml` edit, `asset_stages` entry, force-copy of `cluiche_main.diaapp` to bin.
 
 After: `dia pipeline --target cluichetest --config Debug` must pass and stage visible in Boot menu.
 
@@ -88,52 +79,73 @@ public:
 
 Drawers live in `Cluiche/CluicheTest/Modules/TestStages/Drawers/` — CluicheTest-side, not Dia-side.
 
-Registration in module (first DoUpdate):
+Registration in `OnUpdate` (first frame, lazy init with stageTag):
 ```cpp
-void TestGeometry2DStageModule::RegisterDrawers()
+#ifdef DIA_DEBUG
+if (!mShapesDrawer)
 {
-    auto* mgr = Cluiche::AppFlow::VisualDebuggerModule::GetStaticLayerManager();
-    mShapesDrawer = std::make_unique<Geometry2DShapesDrawer>(/*...*/);
-    mgr->Register(mShapesDrawer.get(), 20);
-    // ... same for all 5 drawers, priorities 20-24
+    if (auto* mgr = Cluiche::AppFlow::VisualDebuggerModule::GetStaticLayerManager())
+    {
+        const Dia::Core::StringCRC stageTag(GetStageName());
+
+        mShapesDrawer = std::make_unique<Geometry2DShapesDrawer>(/*...*/);
+        mgr->Register(mShapesDrawer.get(), 20, stageTag);
+        // ... same for all 5 drawers, priorities 20-24
+    }
 }
+#endif
 ```
 
-Unregister in DoStop:
-```cpp
-void TestGeometry2DStageModule::UnregisterDrawers()
-{
-    auto* mgr = Cluiche::AppFlow::VisualDebuggerModule::GetStaticLayerManager();
-    if (mShapesDrawer) { mgr->Unregister(mShapesDrawer->GetLayerName()); mShapesDrawer.reset(); }
-    // ... same for all 5
-}
-```
+No manual unregister in `OnStop` — `stageTag` auto-deactivates on stage exit.
 
 ### Task 5 — Module Logic
 
-Fill the skeleton `DoStart`/`DoUpdate`/`DoStop`:
+Module inherits `TestStageModuleBase`. Override the virtuals:
 
-**DoStart:**
-1. `DIA_LOG_INFO` entry
-2. `SetupGallery()` — position 10 shapes at fixed world coordinates matching mockup layout
-3. `SetupIntersectionPairs()` — define 6 pairs, position them in middle band
-4. `SetupSpatialStructures()` — create BVH<Circle>, Quadtree, SpatialGrid, HexGrid; insert ~8 shapes each
-5. `EvaluateIntersections()` — run `IntersectionTests` on 6 pairs, cache bool results
-6. `RegisterCheckpoints()` — register `"geometry2d.passed"` checkpoint
-7. `TestResultsRegistry::SetRunning(...)` — mandatory for HUD
-8. Return `StartResult::kReady`
+```cpp
+class Geometry2DTestStageModule : public TestStageModuleBase
+{
+public:
+    static const Dia::Core::StringCRC kTypeId;
+    explicit Geometry2DTestStageModule(const Dia::Core::StringCRC& instanceId);
 
-**DoUpdate:**
-1. `++mFrameCount; TestResultsRegistry::SetActiveFrameCount(mFrameCount)`
-2. First frame only: `RegisterDrawers()`
-3. First frame only: `mCheckpointPassed = true; TestResultsRegistry::SetPassed(...)`
+protected:
+    Dia::Core::StringCRC GetStageName() const override;       // "Geometry2DTestStage"
+    unsigned int GetBudgetFrames() const override;             // 60
+    const Dia::Core::StringCRC* GetCheckpointNames(unsigned int& outCount) const override;
 
-**DoStop:**
-1. `DIA_LOG_INFO` entry
-2. `UnregisterCheckpoints()` via AutomationService
-3. `UnregisterDrawers()`
-4. Reset counters
-5. Return `StopResult::kDone`
+    void OnStart(Dia::Automation::AutomationService* service) override;
+    void OnUpdate(float deltaTime) override;
+    void OnStop() override;
+    // AreDependenciesReady() — not needed, no external module deps
+
+private:
+    void SetupGallery();
+    void SetupIntersectionPairs();
+    void SetupSpatialStructures();
+    void EvaluateIntersections();
+
+    // Gallery shapes (10 primitives) ...
+    // Spatial structures ...
+    // Drawers (DIA_DEBUG) ...
+    int mShapeCount = 0;
+    int mIntersectionPairCount = 0;
+};
+```
+
+**OnStart(service):**
+1. `SetupGallery()` — position 10 shapes at fixed world coordinates matching mockup layout
+2. `SetupIntersectionPairs()` — define 6 pairs, position them in middle band
+3. `SetupSpatialStructures()` — create BVH<Circle>, Quadtree, SpatialGrid, HexGrid; insert ~8 shapes each
+4. `EvaluateIntersections()` — run `IntersectionTests` on 6 pairs, cache bool results
+5. Register checkpoint via `service->RegisterCheckpoint(...)` with lambda returning cached results
+
+**OnUpdate(deltaTime):**
+1. First frame: register drawers (lazy init, `#ifdef DIA_DEBUG`)
+2. First frame: `ReportPassed()` — static scene, nothing to wait for
+
+**OnStop:**
+1. Reset shape/spatial data (drawers auto-deactivate via stageTag)
 
 ### Task 6 — REPL Commands
 
@@ -147,14 +159,14 @@ registry.Register("dia.geometry2d.intersection_pairs", [this]() { return json wi
 
 ```python
 def test_geometry2d_stage(cluichetest):
-    cluichetest.navigate_to("TestGeometry2D")
-    cluichetest.wait_for_checkpoint("geometry2d.passed", timeout_frames=10)
+    cluichetest.navigate_to("Geometry2DTestStage")
+    cluichetest.wait_for_checkpoint("test.geometry2d.passed", timeout_frames=10)
     assert cluichetest.get_metric("shape_count") > 0
     assert cluichetest.get_metric("intersection_pair_count") == 6
     cluichetest.navigate_to("Boot")
     # Determinism: second run
-    cluichetest.navigate_to("TestGeometry2D")
-    cluichetest.wait_for_checkpoint("geometry2d.passed", timeout_frames=10)
+    cluichetest.navigate_to("Geometry2DTestStage")
+    cluichetest.wait_for_checkpoint("test.geometry2d.passed", timeout_frames=10)
     cluichetest.navigate_to("Boot")
 ```
 
@@ -165,12 +177,12 @@ def test_geometry2d_stage(cluichetest):
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
 | 1 | Create `geometry2d-stage.mockup.html` | Visual sign-off | Done | sonnet | Approved 2026-05-27 |
-| 2 | `/new-cluichetest-stage TestGeometry2D` — scaffold all 8 touch points | `dia pipeline` green; stage in Boot menu | Todo | sonnet | |
-| 3 | Add tessellation helpers to `DiaGeometry2DVisualDebugger`; update vcxproj | Unit tests: vertex count + convexity | Todo | sonnet | Parallel with Task 2 |
-| 4 | Create 5 drawers in `CluicheTest/Modules/TestStages/Drawers/`; update CluicheTest vcxproj | Clean build; drawers register/unregister | Todo | sonnet | After Task 3 |
-| 5 | Implement `TestGeometry2DStageModule` logic (setup + drawers + checkpoint) | Stage loads; checkpoint fires; drawers visible | Todo | sonnet | After Tasks 2 + 4 |
-| 6 | Wire REPL commands | Commands return correct values | Todo | sonnet | After Task 5 |
-| 7 | Write pytest scenario | Orchestrator passes | Todo | sonnet | After Task 5 |
+| 2 | `dia scaffold stage Geometry2D --budget 60` | `dia pipeline` green; stage in Boot menu | Done | haiku | Trivial — script handles all 9 files |
+| 3 | Add tessellation helpers to `DiaGeometry2DVisualDebugger`; update vcxproj | Unit tests: vertex count + convexity | Done | sonnet | Arc/Sector via halfAngle math; OORect via corner pts; Capsule 12-vert loop |
+| 4 | Create 4 drawers in `CluicheTest/Modules/TestStages/Drawers/`; update CluicheTest vcxproj + link | Clean build; drawers compile | Done | sonnet | SpatialOverlayDrawer dropped (spatial drawers are templates); added DiaGeometry2DVisualDebugger to link dependencies |
+| 5 | Implement `Geometry2DTestStageModule` logic (setup + drawers + checkpoint) | Stage loads; checkpoint fires; drawers visible | Done | sonnet | ReportPassed() on first frame; Gauges registered for orchestrator; REPL commands registered |
+| 6 | Wire REPL commands + Gauges | Commands return correct values | Done | sonnet | dia.geometry2d.shape_count + intersection_pairs as REPL; cluichetest.geometry2d.* as Gauges |
+| 7 | Write pytest scenario | Orchestrator passes | Done | sonnet | smoke.py + get_metric() added to DiaClient |
 | 8 | `dia run cluichetest` — visual verify against mockup | All layers toggleable in Debug Console | Todo | sonnet | After Tasks 5 + 6 |
 | 9 | Commit + update spec status → Done | — | Todo | haiku | After Tasks 7 + 8 |
 
