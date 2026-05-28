@@ -38,8 +38,11 @@ Dia::ApplicationFlow::StartResult TestStageModuleBase::DoStart()
 
 void TestStageModuleBase::DoUpdate(float deltaTime)
 {
-    ++mFrameCount;
-    TestResultsRegistry::GetInstance().SetActiveFrameCount(mFrameCount);
+    if (!mResolved)
+    {
+        ++mFrameCount;
+        TestResultsRegistry::GetInstance().SetActiveFrameCount(mFrameCount);
+    }
 
     OnUpdate(deltaTime);
 
