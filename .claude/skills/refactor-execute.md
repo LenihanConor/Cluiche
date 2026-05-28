@@ -111,9 +111,9 @@ For each identified spec:
 3. Rewrite only those sections to reflect the post-phase shape
 4. Do NOT modify:
    - Status field
-   - Traceability table
-   - Binding Decisions compliance table
-   - AI Review Questions
+   - Parent links
+   - Binding Decisions
+   - Open Design Questions
    - Any section not describing architecture/API
 5. Print a summary of what changed:
    ```

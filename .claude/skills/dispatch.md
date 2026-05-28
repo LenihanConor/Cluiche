@@ -22,12 +22,9 @@ When sending a task to a subagent, the prompt MUST include all of these sections
 ## Context
 [2-3 sentences: what project this is, what module we're in, what the overall goal is]
 
-## Spec Decisions Summary
-[One paragraph: the binding decisions and constraints from the spec chain that apply to this task.
- Copy this from the plan's Session Notes if it exists — avoids re-reading the full spec chain.]
-
 ## Spec Excerpt
 [The specific acceptance criteria or task description from the feature spec — copied verbatim, not summarized]
+[Include any binding decisions from the spec that constrain this task]
 
 ## Task
 [Exactly what to implement/change — file paths, function names, expected behavior]
@@ -37,7 +34,6 @@ When sending a task to a subagent, the prompt MUST include all of these sections
 [Inline the relevant current state of files being modified — enough that the subagent doesn't need to explore]
 
 ## Constraints
-- [Platform decisions that apply: PD-001 through PD-007 if relevant]
 - [Module boundaries: what this code can and cannot depend on]
 - [Naming conventions if non-obvious]
 

@@ -9,8 +9,8 @@ include: conditional
 - `/spec-platform` - Create or update the platform spec
 - `/spec-app` - Create a new application spec
 - `/spec-system` - Create a new system spec
-- `/spec-feature` - Create a new feature spec (includes interview + AI review)
-- `/spec-review` - Review any spec and populate AI review questions
+- `/spec-feature` - Create a new feature spec (includes interview + open design questions)
+- `/spec-review` - Review any spec and refresh decisions + open design questions
 - `/spec-trace` - Trace a feature's full lineage up to platform
 
 ## Review Command
