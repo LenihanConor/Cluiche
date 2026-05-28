@@ -19,7 +19,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | DiaAnimation3D | TBD — needs `/spec-system` | `clip-and-player` feature already Approved; needs own system spec. AnimationClip3D, ClipPlayer3D, glTF loader, STEP/LINEAR/CUBICSPLINE, `AnimationComponent3D`. | DiaRig3D |
 | DiaSkinning3D | TBD — needs `/spec-system` | `skinning-palette` feature already Approved; needs own system spec. SkinningManager, per-frame Matrix34 palettes, `skinningPaletteIndex` on draw commands. | DiaAnimation3D, DiaGraphics3D |
 | DiaScene3D | TBD — needs `/spec-system` | `scene-graph` feature already Approved; needs own system spec. Flat-list scene, Transform3D parent chains, frustum culling, `Submit(scene, frameData3D)`. | DiaSkinning3D, DiaGraphics3D, DiaGeometry3D |
-| DiaArchitecture | [diaarchitecture.md](specs/systems/dia/diaarchitecture.md) ✅ | C7 (YAML layer formalisation) → C1 (`dia check --tool=arch`) → C2 (Foundation CMake pilot) → C3 (full layered CMake enforcement). Must be done in order — C1 gates C3. | None |
+| DiaArchitecture | [diaarchitecture.md](specs/systems/dia/diaarchitecture.md) ✅ | C7 → C1 → C2 → C3a (Dia modules, additive) → C3b (Cluiche apps + retirement, deferrable). C3a spec needs update to Draft→Approved; C3b is a new Draft spec. | None |
 
 ---
 
@@ -97,7 +97,7 @@ System spec: [teststages.md](specs/systems/cluichetest/teststages.md) (Approved)
 |---|------|-------|
 | 6b | Extract AutomationModuleBase into DiaAutomation | Evaluate from working code after 2+ apps use it |
 | 7 | CluicheEditor EditorAutomationModule | After 6b |
-| 9 | DiaScreenCapture — frame grab for mock comparison | Capture bgfx framebuffer as PNG after EndFrame(); integrate with DiaObservation SessionManager; enable visual regression against HTML mockups. Must run on render thread (EventStream for capture requests). Needs `/spec-feature`. |
+| 9 | ~~DiaScreenCapture — frame grab for mock comparison~~ | **Specced** — split into two features: [frame-capture-readback](specs/features/dia/diabgfx/frame-capture-readback.md) (ICanvas async readback, DiaBgfx ring buffer) + [captures](specs/features/dia/diaobservation/captures.md) (6th observation pillar, PNG write to session). Both Approved with plans. |
 
 ---
 
@@ -123,7 +123,7 @@ Research complete: [docs/research/static_cpp_bug/](research/static_cpp_bug/). Bu
 
 ## DiaArchitecture — Domain-Oriented Module Structure + CMake Enforcement
 
-Spec Approved: [diaarchitecture.md](specs/systems/dia/diaarchitecture.md). All 4 features Approved — ready to implement.
+Spec Approved: [diaarchitecture.md](specs/systems/dia/diaarchitecture.md). C3 is split into C3a (Dia-only, additive) and C3b (Cluiche apps + retirement). C3b can be deferred — C3a delivers architecture enforcement and full Clang-Tidy coverage.
 
 **Target architecture:** 6-sub-layer Core + 4 domain vertical slices. Each domain owns its core modules and its visual debuggers/editor plugins. CMake `target_link_libraries` enforces the dependency rules currently only documented in YAML.
 
@@ -134,7 +134,8 @@ Spec Approved: [diaarchitecture.md](specs/systems/dia/diaarchitecture.md). All 4
 | C7 | YAML layer formalisation | Add `layer:` field to all 55+ module docs | Documents the architecture; prerequisite for C1 |
 | C1 | `dia check --tool=arch` | Python `#include` graph checker vs YAML `dependencies.forbidden` | Surfaces current silent violations before any CMake work |
 | C2 | Foundation CMake pilot | `CMakeLists.txt` for Foundation sub-layer (DiaCore, DiaMaths, DiaGeometry2D/3D, DiaSerializer, DiaObservation) | `.vcxproj` stays; CMake additive; unlocks `compile_commands.json` |
-| C3 | Layered CMake INTERFACE model | Full enforcement — all 55 modules, `cmake --build` replaces msbuild in DiaCLI, PD-006 updated | Requires C1 violations fixed first |
+| C3a | Dia CMake full | `CMakeLists.txt` for all 55 Dia modules; full INTERFACE aggregates; architecture enforcement live | **Additive** — `.vcxproj` kept, `dia run` unchanged, Cluiche.sln still works |
+| C3b | Cluiche CMake + retirement | `CMakeLists.txt` for 4 Cluiche app projects; `Find*.cmake` for binary SDK externals; DiaCLI switches to `cmake --build`; atomic `.vcxproj` deletion | **Hard part** — external dep wiring (bgfx, CEF, Ultralight, SDL3). Can sit on backlog after C3a. |
 
 ---
 
@@ -144,6 +145,6 @@ Spec Approved: [diaarchitecture.md](specs/systems/dia/diaarchitecture.md). All 4
 |------|-------|
 | DiaAssetRuntime — Hot reload path | Asset Lifecycle Management adds `Failed → Loading` retry but no `Loaded → Loading → Loaded` path. Still need a `ReloadAsset(assetId)` for live iteration (future feature on top of lifecycle management). |
 | `Dia::Core::Blackboard` — general-purpose key-value store | Identified during DiaStateMachine research; useful for AI, animation, gameplay. Needs `/spec-feature` under DiaCore. |
-| DiaSoftBody2D serializers | Body definition types not yet covered — `DiaReflect` ships Phase 4g (`DiaRigidBody2DSerializers.h`) but Phase 4 plan explicitly excludes DiaSoftBody2D. Needs `/spec-feature` or addition to type-coverage plan when SoftBody work resumes. |
+| ~~DiaSoftBody2D serializers~~ | **Done** (2026-05-28) — `DiaSoftBody2DSerializers.h` ships `WorldDef`, `RopeDef`, `ClothDef`. Follows `DiaRigidBody2DSerializers.h` pattern exactly. Non-owning anchor/world pointers skipped (same convention as RigidBody2D). |
 | ~~Cross-PU data flow for debug UI~~ | **Folded into service-channel** — Shapes A+B+C all resolved in one feature (composite per PU-pair + ServiceStream). No follow-on features needed. |
 | RigidBody2DStage visual debug — circles not visible | Stage runs and times out but falling circles are not rendering on screen. Ground (huge circle) draws correctly. Coordinate system (Y-UP renderer, pixel-scale physics) and gravity direction are set but circles still don't appear. Possible issues: circles too small relative to viewport, draw order, or drawer not picking up dynamic bodies. Needs investigation with logging or breakpoints. |

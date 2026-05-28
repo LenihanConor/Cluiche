@@ -80,6 +80,7 @@
     <ClInclude Include="Cloth.h" />
     <ClInclude Include="SoftBodyWorld.h" />
     <ClInclude Include="Constraints\DistanceConstraint.h" />
+    <ClInclude Include="DiaSoftBody2DSerializers.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Rope.cpp" />
