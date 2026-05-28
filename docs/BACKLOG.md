@@ -28,23 +28,12 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | Feature | Spec | System | Notes |
 |---------|------|--------|-------|
 | per-app-bin-layout | [per-app-bin-layout.md](specs/features/dia/diapipeline/per-app-bin-layout.md) | DiaPipeline ✅ | |
+| ~~module-metadata~~ | **Done** (2026-05-28) — `PUAffinity` bitmask; `TypeRegistry` stores `kAllowedPUs`+`kDescription`; `AddModule()` asserts on mismatch; `IApplicationInspectable` extended; 24 modules annotated; 14 tests. | DiaApplicationFlow | |
+| ~~shared-debug-console~~ | **Done** (2026-05-28) — `VisualDebuggerModule` + `VisualDebuggerConsoleModule` always-active; layers persist across transitions with stageTag; per-stage tab bar in console; 7 tests. | DiaVisualDebugger | |
 
 ---
 
 ## Ready to Build (cont.)
-
-### DiaApplicationFlow Features
-
-| Feature | Spec | Notes |
-|---------|------|-------|
-| module-metadata | [module-metadata.md](specs/features/dia/diaapplicationflow/module-metadata.md) | PU affinity bitmask + description field; runtime assert on mismatch. [Plan](specs/features/dia/diaapplicationflow/module-metadata.plan.md) — 9 tasks. |
-
-### DiaVisualDebugger Features
-
-| Feature | Spec | Notes |
-|---------|------|-------|
-| shared-debug-console | [shared-debug-console.md](specs/features/dia/diavisualdebugger/shared-debug-console.md) | Boot-level VisualDebuggerModule; per-stage tabs; layers persist across transitions. [Plan](specs/features/dia/diavisualdebugger/shared-debug-console.plan.md) — 12 tasks. Depends on module-metadata (PU identity). |
-
 
 ---
 
@@ -81,7 +70,8 @@ System spec: [teststages.md](specs/systems/cluichetest/teststages.md) (Approved)
 
 | Stage | Engine System | Validates | Checkpoint examples | Needs |
 |-------|--------------|-----------|---------------------|-------|
-| ~~RigidBody2DStage~~ | **Done** (2026-05-28) — `TestStageModuleBase` extracted; 10 circles settle; pytest scenario passes; `TestStageModuleBase` pattern established for future stages. | | |
+| ~~RigidBody2DTestStage~~ | **Done** (2026-05-28) — `TestStageModuleBase` extracted; stage renamed; 10 circles settle; pytest scenario passes. | | |
+| ~~AssetRuntimeTestStage~~ | **Done** (2026-05-28) — Migrated to `TestStageModuleBase`; stage renamed; multi-entry reload validation. | | |
 | StateMachineStage | DiaStateMachine | State transitions, guard evaluation, event firing | `state_machine.reached_target`, `state_machine.guard_blocked` | `/spec-feature` |
 | Animation2DStage | DiaAnimation2D + DiaRig2D | Clip playback, pose validation, blend weights | `animation.clip_complete`, `animation.pose_matches` | `/spec-feature` |
 | SoftBody2DStage | DiaSoftBody2D | Rope/cloth stabilization, spring convergence | `soft_body.rope_settled` | `/spec-feature` |
@@ -89,7 +79,7 @@ System spec: [teststages.md](specs/systems/cluichetest/teststages.md) (Approved)
 | EntityTestStage | DiaEntity | Spawn/destroy/hierarchy/query/mailbox/lifecycle; `TransformComponent` + `VisualTestRenderComponent`; 6 checkpoints | `entity.spawn_complete`, `entity.query_correct`, `entity.hierarchy_valid`, `entity.destroy_cascade`, `entity.mailbox_received`, `entity.lifecycle_complete` | [Spec Approved](specs/features/cluichetest/teststages/entity-test-stage.md). [Plan ready](specs/features/cluichetest/teststages/entity-test-stage.plan.md) — 9 tasks (T-00 done). Uses `/new-cluichetest-stage` skill. Two-module split: EntityModule (reusable) + EntityTestModule (MainPU, checkpoints). |
 | UIUltralightStage | DiaUIUltralight | Page load, JS↔C++ bridge (4 bound methods inc. round-trip), pixel buffer non-empty, mouse injection, deterministic reload; Alpine.js panel | `ui.page_loaded`, `ui.js_to_cpp_callback_fired`, `ui.round_trip_value_correct`, `ui.pixel_buffer_non_empty`, `ui.mouse_click_handled`, `ui.deterministic_reload` | [Spec Approved](specs/features/cluichetest/teststages/ui-ultralight-stage.md). Mockup done. 10-task plan at implementation start. |
 
-**First stage to build:** RigidBody2DTestStage — **Done** (2026-05-28). Pattern proven; `TestStageModuleBase` extracted. All stages renamed to `<Domain>TestStage` convention.
+**Scaffolding:** `dia scaffold stage <Name> --modules <...>` creates all 9 touch points in one command. `/new-cluichetest-stage` skill infers domain, runs the script, adds domain-specific C++. Domain patterns: Physics, Entity, Asset, Animation, StateMachine, Geometry.
 
 ### Deferred
 
