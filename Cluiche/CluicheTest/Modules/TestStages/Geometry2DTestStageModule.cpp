@@ -143,10 +143,20 @@ void Geometry2DTestStageModule::OnStop()
     mIntersectionPairs.RemoveAll();
     mIntersectionPairCount = 0;
 
-    mShapesDrawer.reset();
-    mLabelsDrawer.reset();
-    mIntersectionsDrawer.reset();
-    mAABBDrawer.reset();
+    if (mShapesDrawer)
+    {
+        if (auto* mgr = Cluiche::AppFlow::VisualDebuggerModule::GetStaticLayerManager())
+        {
+            mgr->Unregister(mShapesDrawer->GetLayerName());
+            mgr->Unregister(mLabelsDrawer->GetLayerName());
+            mgr->Unregister(mIntersectionsDrawer->GetLayerName());
+            mgr->Unregister(mAABBDrawer->GetLayerName());
+        }
+        mShapesDrawer.reset();
+        mLabelsDrawer.reset();
+        mIntersectionsDrawer.reset();
+        mAABBDrawer.reset();
+    }
 #endif
 }
 

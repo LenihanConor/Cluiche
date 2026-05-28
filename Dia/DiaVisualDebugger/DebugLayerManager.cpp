@@ -417,7 +417,7 @@ namespace Dia
         {
             for (unsigned int i = 0; i < mLayers.Size(); ++i)
             {
-                if (mLayers[i].debugger->GetLayerName() == layerName)
+                if (mLayers[i].debugger && mLayers[i].debugger->GetLayerName() == layerName)
                     return static_cast<int>(i);
             }
             return -1;
