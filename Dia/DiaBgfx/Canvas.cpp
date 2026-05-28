@@ -14,6 +14,7 @@
 #include <DiaGraphics/Frame/UIFrameData.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaImGui/DiaImGuiManager.h>
 
 #include <bgfx/bgfx.h>
@@ -84,6 +85,7 @@ namespace Dia
                             bgfx::TextureFormat::Enum /*format*/, const void* data, uint32_t size, bool yflip) override
             {
                 if (mRingBuffer == nullptr) return;
+                DIA_TRACE_ZONE("canvas.screenshot_callback", ::Dia::Observation::Trace::Category::kDiaGraphics);
                 unsigned int slotIndex = FrameCaptureRingBuffer::DecodeSlotIndex(filePath);
                 if (slotIndex >= FrameCaptureRingBuffer::kDepth) return;
                 mRingBuffer->OnScreenShot(slotIndex, width, height, pitch, data, size, yflip);
@@ -312,6 +314,7 @@ namespace Dia
 
         Dia::Graphics::FrameCaptureToken Canvas::RequestFrameCapture()
         {
+            DIA_TRACE_ZONE("canvas.request_capture", ::Dia::Observation::Trace::Category::kDiaGraphics);
             if (!mInitialised || mCaptureRingBuffer == nullptr)
                 return Dia::Graphics::FrameCaptureToken{};
 

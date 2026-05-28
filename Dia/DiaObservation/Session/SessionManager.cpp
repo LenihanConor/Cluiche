@@ -339,7 +339,10 @@ namespace Dia
 		void SessionManager::SetCaptureCanvas(Dia::Graphics::ICanvas* canvas)
 		{
 			if (mCaptureManager)
+			{
 				mCaptureManager->Initialize(canvas, this);
+				DIA_LOG_INFO("Capture", "SessionManager::SetCaptureCanvas — canvas wired, CaptureManager now operational");
+			}
 		}
 
 		Capture::CaptureManager* SessionManager::GetCaptureManager()

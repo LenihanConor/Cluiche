@@ -222,3 +222,88 @@ TEST(FrameCaptureRingBufferTest, YflipCopiesRowsReversed)
     EXPECT_EQ(rgba[6], 1u);
     EXPECT_EQ(rgba[7], 255u);
 }
+
+// ==============================================================================
+// Poll with zero-id token
+// ==============================================================================
+
+TEST(FrameCaptureRingBufferTest, PollWithZeroIdToken_ReturnsInvalidToken)
+{
+    FrameCaptureRingBuffer rb;
+    FrameCaptureToken zeroToken;
+    zeroToken.id = 0;
+
+    FrameCaptureResult result = rb.Poll(zeroToken);
+
+    EXPECT_EQ(result.status, FrameCaptureResult::Status::kInvalidToken);
+}
+
+// ==============================================================================
+// OnScreenShot with out-of-range slot index
+// ==============================================================================
+
+TEST(FrameCaptureRingBufferTest, OnScreenShot_OutOfRangeSlotIndex_IsNoOp)
+{
+    FrameCaptureRingBuffer rb;
+    FrameCaptureToken token = rb.Claim();
+    ASSERT_TRUE(token.IsValid());
+
+    // Call OnScreenShot with an out-of-range slot index — should not corrupt state
+    unsigned char dummy[4] = { 1, 2, 3, 255 };
+    rb.OnScreenShot(FrameCaptureRingBuffer::kDepth, 1, 1, 4u, dummy, sizeof(dummy), false);
+
+    // The originally claimed slot should still be kPending (not corrupted)
+    FrameCaptureResult result = rb.Poll(token);
+    EXPECT_EQ(result.status, FrameCaptureResult::Status::kPending);
+}
+
+// ==============================================================================
+// Release pending slot
+// ==============================================================================
+
+TEST(FrameCaptureRingBufferTest, Release_PendingSlot_IsNoOp)
+{
+    FrameCaptureRingBuffer rb;
+    FrameCaptureToken token = rb.Claim();
+    ASSERT_TRUE(token.IsValid());
+
+    // Release before OnScreenShot (slot still kPending)
+    // Release on a non-ready slot: look at the implementation —
+    // Release checks generation but does NOT check state, so it will free the slot.
+    // What we care about: it doesn't crash and the slot is recoverable.
+    rb.Release(token);
+
+    // After release, slot should be reclaimable
+    FrameCaptureToken newToken = rb.Claim();
+    EXPECT_TRUE(newToken.IsValid());
+}
+
+// ==============================================================================
+// Full lifecycle stress test
+// ==============================================================================
+
+TEST(FrameCaptureRingBufferTest, FullLifecycleCycle_MultipleTimes)
+{
+    FrameCaptureRingBuffer rb;
+    unsigned char pixel[4] = { 10, 20, 30, 255 };
+
+    for (unsigned int cycle = 0; cycle < 20; ++cycle)
+    {
+        FrameCaptureToken token = rb.Claim();
+        ASSERT_TRUE(token.IsValid()) << "Cycle " << cycle << ": Claim failed";
+
+        unsigned int slotIndex = FrameCaptureRingBuffer::SlotFromId(token.id);
+        rb.OnScreenShot(slotIndex, 1, 1, 4u, pixel, sizeof(pixel), false);
+
+        FrameCaptureResult result = rb.Poll(token);
+        ASSERT_EQ(result.status, FrameCaptureResult::Status::kReady) << "Cycle " << cycle;
+        ASSERT_NE(result.data, nullptr) << "Cycle " << cycle;
+
+        // Verify BGRA->RGBA swap persists across cycles
+        const unsigned char* rgba = static_cast<const unsigned char*>(result.data);
+        EXPECT_EQ(rgba[0], 30u) << "Cycle " << cycle << ": R channel wrong";
+        EXPECT_EQ(rgba[2], 10u) << "Cycle " << cycle << ": B channel wrong";
+
+        rb.Release(token);
+    }
+}

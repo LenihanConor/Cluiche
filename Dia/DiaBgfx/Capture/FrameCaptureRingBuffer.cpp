@@ -5,6 +5,8 @@
 
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaObservation/Profile/DiaProfile.h>
 
 #include <cstdlib>   // malloc, free
 #include <cstring>   // memcpy
@@ -166,6 +168,7 @@ void FrameCaptureRingBuffer::OnScreenShot(unsigned int slotIndex,
     const unsigned char* src = static_cast<const unsigned char*>(data);
     unsigned char* dst = slot.pixelData;
 
+    DIA_PROFILE_SCOPE("capture.bgra_to_rgba", ::Dia::Observation::Profile::Category::kDiaGraphics);
     for (unsigned int row = 0; row < height; ++row)
     {
         unsigned int srcRow = yflip ? (height - 1u - row) : row;

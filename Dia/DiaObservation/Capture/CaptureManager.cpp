@@ -8,6 +8,10 @@
 
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Session/SessionManager.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Health/HealthRegistry.h>
 #include <DiaGraphics/Interface/ICanvas.h>
 
 #include <cstdio>
@@ -25,12 +29,18 @@ namespace Dia
                 , mSession(nullptr)
                 , mInFlightCount(0)
                 , mCapturesDirCreated(false)
+                , mCapturesWrittenCounter(nullptr)
+                , mCapturesRejectedCounter(nullptr)
+                , mPngSizeHistogram(nullptr)
+                , mConsecutiveFailures(0)
+                , mHealthReporter(*this)
             {
                 memset(mInFlight, 0, sizeof(mInFlight));
             }
 
             CaptureManager::~CaptureManager()
             {
+                Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mHealthReporter);
             }
 
             void CaptureManager::Initialize(Dia::Graphics::ICanvas* canvas, SessionManager* session)
@@ -40,22 +50,47 @@ namespace Dia
                 mInFlightCount = 0;
                 mCapturesDirCreated = false;
                 memset(mInFlight, 0, sizeof(mInFlight));
+
+                auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
+                mCapturesWrittenCounter  = reg.RegisterCounter(Dia::Core::StringCRC("dia.capture.written"));
+                mCapturesRejectedCounter = reg.RegisterCounter(Dia::Core::StringCRC("dia.capture.rejected"));
+
+                static const float kPngBuckets[] = { 10000.f, 50000.f, 100000.f, 500000.f, 1000000.f };
+                mPngSizeHistogram = reg.RegisterHistogram(
+                    Dia::Core::StringCRC("dia.capture.png_size_bytes"),
+                    kPngBuckets, 5);
+
+                mConsecutiveFailures = 0;
+
+                Dia::Observation::Health::HealthRegistry::Instance().Register(&mHealthReporter);
             }
 
             CaptureRequestStatus CaptureManager::RequestCapture(const CaptureMetadata& metadata)
             {
                 if (mCanvas == nullptr)
+                {
+                    if (mCapturesRejectedCounter) mCapturesRejectedCounter->Inc();
                     return CaptureRequestStatus::kRejected_NoCanvas;
+                }
 
                 if (mSession == nullptr || !mSession->IsStarted())
+                {
+                    if (mCapturesRejectedCounter) mCapturesRejectedCounter->Inc();
                     return CaptureRequestStatus::kRejected_NoSession;
+                }
 
                 if (mInFlightCount >= kMaxInFlight)
+                {
+                    if (mCapturesRejectedCounter) mCapturesRejectedCounter->Inc();
                     return CaptureRequestStatus::kRejected_RingFull;
+                }
 
                 Dia::Graphics::FrameCaptureToken token = mCanvas->RequestFrameCapture();
                 if (!token.IsValid())
+                {
+                    if (mCapturesRejectedCounter) mCapturesRejectedCounter->Inc();
                     return CaptureRequestStatus::kRejected_RingFull;
+                }
 
                 InFlightCapture& slot = mInFlight[mInFlightCount];
                 slot.token           = token;
@@ -69,6 +104,8 @@ namespace Dia
 
             void CaptureManager::Tick()
             {
+                if (mInFlightCount == 0) return;  // skip trace when nothing in flight
+                DIA_TRACE_ZONE("capture.tick", ::Dia::Observation::Trace::Category::kDiaGraphics);
                 for (unsigned int i = 0; i < mInFlightCount; )
                 {
                     Dia::Graphics::FrameCaptureResult result = mCanvas->PollFrameCapture(mInFlight[i].token);
@@ -85,6 +122,7 @@ namespace Dia
                         DIA_LOG_WARNING("Capture", "Frame capture failed for token %u (frame %llu)",
                             mInFlight[i].token.id,
                             static_cast<unsigned long long>(mInFlight[i].frameNumber));
+                        ++mConsecutiveFailures;
                         RemoveSlot(i);
                         break;
 
@@ -92,6 +130,7 @@ namespace Dia
                         DIA_LOG_WARNING("Capture", "Invalid token %u encountered during Tick (frame %llu)",
                             mInFlight[i].token.id,
                             static_cast<unsigned long long>(mInFlight[i].frameNumber));
+                        ++mConsecutiveFailures;
                         RemoveSlot(i);
                         break;
 
@@ -156,6 +195,7 @@ namespace Dia
                 // Encode RGBA8 → PNG via lodepng
                 unsigned char* pngData = nullptr;
                 size_t pngSize = 0;
+                DIA_PROFILE_SCOPE("capture.encode_and_write", ::Dia::Observation::Profile::Category::kDiaGraphics);
                 unsigned encodeErr = lodepng_encode32(
                     &pngData,
                     &pngSize,
@@ -180,6 +220,9 @@ namespace Dia
                     fwrite(pngData, 1, pngSize, f);
                     fclose(f);
                     DIA_LOG_INFO("Capture", "Wrote capture '%s' (%ux%u, %zu bytes)", filename, result.width, result.height, pngSize);
+                    if (mCapturesWrittenCounter) mCapturesWrittenCounter->Inc();
+                    if (mPngSizeHistogram)       mPngSizeHistogram->Observe(static_cast<double>(pngSize));
+                    mConsecutiveFailures = 0;
                 }
                 else
                 {
@@ -247,6 +290,30 @@ namespace Dia
 
                 memset(&mInFlight[last], 0, sizeof(InFlightCapture));
                 --mInFlightCount;
+            }
+
+            Dia::Observation::Health::Health CaptureManager::CaptureHealthReporter::Report() const
+            {
+                Dia::Observation::Health::Health h;
+                h.errors   = 0;
+                h.warnings = 0;
+                h.reason   = Dia::Core::StringCRC{};
+                h.status   = Dia::Observation::Health::HealthStatus::kOK;
+
+                if (mOwner.mCanvas == nullptr)
+                {
+                    h.status = Dia::Observation::Health::HealthStatus::kDegraded;
+                    h.reason = Dia::Core::StringCRC("no_canvas");
+                    ++h.warnings;
+                }
+                else if (mOwner.mConsecutiveFailures >= 3)
+                {
+                    h.status = Dia::Observation::Health::HealthStatus::kFailing;
+                    h.reason = Dia::Core::StringCRC("consecutive_failures");
+                    h.errors = mOwner.mConsecutiveFailures;
+                }
+
+                return h;
             }
         }
     }
