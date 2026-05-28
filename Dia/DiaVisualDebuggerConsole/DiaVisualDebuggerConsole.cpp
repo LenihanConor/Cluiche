@@ -260,6 +260,13 @@ namespace Dia
                 ImGui::SameLine();
                 ImGui::Text("%s", layerStr);
 
+                if (enabled)
+                {
+                    IVisualDebugger* layer = manager.GetLayer(i);
+                    if (layer)
+                        layer->DrawImGui();
+                }
+
                 ImGui::PopID();
             }
         }

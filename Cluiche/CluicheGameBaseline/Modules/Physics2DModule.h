@@ -3,7 +3,22 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaRigidBody2D/World/WorldDef.h>
 
+#ifdef DIA_DEBUG
+#include <memory>
+#endif
+
 namespace Dia::RigidBody2D { class PhysicsWorld; }
+
+#ifdef DIA_DEBUG
+namespace Dia::RigidBody2D
+{
+    class PhysicsShapesDrawer;
+    class VelocityArrowsDrawer;
+    class ContactNormalsDrawer;
+    class PhysicsAABBDrawer;
+    class ConstraintLinesDrawer;
+}
+#endif
 
 namespace Cluiche { namespace AppFlow {
 
@@ -23,6 +38,16 @@ protected:
 private:
     Dia::RigidBody2D::PhysicsWorld* mWorld = nullptr;
     Dia::RigidBody2D::WorldDef mWorldDef;
+
+#ifdef DIA_DEBUG
+    void RegisterDrawers();
+
+    std::unique_ptr<Dia::RigidBody2D::PhysicsShapesDrawer>   mShapesDrawer;
+    std::unique_ptr<Dia::RigidBody2D::VelocityArrowsDrawer>  mVelocityDrawer;
+    std::unique_ptr<Dia::RigidBody2D::ContactNormalsDrawer>  mContactsDrawer;
+    std::unique_ptr<Dia::RigidBody2D::PhysicsAABBDrawer>     mAABBDrawer;
+    std::unique_ptr<Dia::RigidBody2D::ConstraintLinesDrawer> mConstraintsDrawer;
+#endif
 };
 
 } } // namespace Cluiche::AppFlow

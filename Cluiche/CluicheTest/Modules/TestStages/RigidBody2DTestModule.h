@@ -8,15 +8,6 @@
 #include <DiaGeometry2D/Shapes/Circle.h>
 #include "Modules/Physics2DModule.h"
 
-#ifdef DIA_DEBUG
-#include <DiaRigidBody2DVisualDebugger/PhysicsShapesDrawer.h>
-#include <DiaRigidBody2DVisualDebugger/VelocityArrowsDrawer.h>
-#include <DiaRigidBody2DVisualDebugger/ContactNormalsDrawer.h>
-#include <DiaRigidBody2DVisualDebugger/PhysicsAABBDrawer.h>
-#include <DiaRigidBody2DVisualDebugger/ConstraintLinesDrawer.h>
-#include <memory>
-#endif
-
 namespace Dia::RigidBody2D { class RigidBody2D; }
 
 namespace CluicheTest {
@@ -45,14 +36,6 @@ private:
     void EmitMetrics();
 
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::Physics2DModule> mPhysics{this};
-
-#ifdef DIA_DEBUG
-    std::unique_ptr<Dia::RigidBody2D::PhysicsShapesDrawer>    mShapesDrawer;
-    std::unique_ptr<Dia::RigidBody2D::VelocityArrowsDrawer>   mVelocityDrawer;
-    std::unique_ptr<Dia::RigidBody2D::ContactNormalsDrawer>   mContactsDrawer;
-    std::unique_ptr<Dia::RigidBody2D::PhysicsAABBDrawer>      mAABBDrawer;
-    std::unique_ptr<Dia::RigidBody2D::ConstraintLinesDrawer>  mConstraintsDrawer;
-#endif
 
     static constexpr unsigned int kCircleCount = 10;
     Dia::RigidBody2D::RigidBody2D* mCircles[kCircleCount] = {};

@@ -88,6 +88,9 @@
     <ProjectReference Include="..\..\Dia\DiaRigidBody2D\DiaRigidBody2D.vcxproj">
       <Project>{C1D2E3F4-A5B6-7890-CDEF-012345678902}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaRigidBody2DVisualDebugger\DiaRigidBody2DVisualDebugger.vcxproj">
+      <Project>{A2B3C4D5-E6F7-8901-BCDE-F01234567891}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaGraphics\DiaGraphics.vcxproj">
       <Project>{1cf9f92b-666e-4b39-9dde-b1cfbef68618}</Project>
     </ProjectReference>

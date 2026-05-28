@@ -1,6 +1,5 @@
 #include "Modules/TestStages/RigidBody2DTestModule.h"
 
-#include "Modules/VisualDebuggerModule.h"
 #include <DiaRigidBody2D/World/PhysicsWorld.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaAutomation/AutomationService.h>
@@ -51,29 +50,6 @@ void RigidBody2DTestModule::OnStart(Dia::Automation::AutomationService* service)
 
 void RigidBody2DTestModule::OnUpdate(float /*deltaTime*/)
 {
-#ifdef DIA_DEBUG
-    if (!mShapesDrawer)
-    {
-        if (auto* mgr = Cluiche::AppFlow::VisualDebuggerModule::GetStaticLayerManager())
-        {
-            auto* world = mPhysics.Get()->GetWorld();
-
-            mShapesDrawer     = std::make_unique<Dia::RigidBody2D::PhysicsShapesDrawer>(*world, *mgr);
-            mVelocityDrawer   = std::make_unique<Dia::RigidBody2D::VelocityArrowsDrawer>(*world, *mgr);
-            mContactsDrawer   = std::make_unique<Dia::RigidBody2D::ContactNormalsDrawer>(*world, *mgr);
-            mAABBDrawer       = std::make_unique<Dia::RigidBody2D::PhysicsAABBDrawer>(*world, *mgr);
-            mConstraintsDrawer = std::make_unique<Dia::RigidBody2D::ConstraintLinesDrawer>(*world, *mgr);
-
-            const Dia::Core::StringCRC stageTag("RigidBody2DTestStage");
-            mgr->Register(mShapesDrawer.get(),      10, stageTag);
-            mgr->Register(mVelocityDrawer.get(),    11, stageTag);
-            mgr->Register(mContactsDrawer.get(),    12, stageTag);
-            mgr->Register(mAABBDrawer.get(),        13, stageTag);
-            mgr->Register(mConstraintsDrawer.get(), 14, stageTag);
-        }
-    }
-#endif
-
     if (!IsResolved() && AreAllBodiesAsleep())
     {
         mSettleFrame = GetFrameCount();
