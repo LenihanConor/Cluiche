@@ -33,10 +33,14 @@ All 6 touch points that every new test stage requires:
 | 2 | `Cluiche/Assets/Stages/<Name>/misc/ApplicationFlow/<snake>_stage.diaapp` | New app manifest |
 | 3 | `Cluiche/CluicheTest/Modules/TestStages/<Name>StageModule.h/.cpp` | New module skeleton |
 | 4 | `Cluiche/CluicheTest/CluicheTest.vcxproj` + `.vcxproj.filters` | Add source files |
-| 5 | `Cluiche/Assets/CluicheTest/Global/Misc/ApplicationFlow/cluiche_main.diaapp` | Add stage + Boot transition + HUD coverage |
+| 5 | `Cluiche/Assets/CluicheTest/Global/Misc/ApplicationFlow/cluiche_main.diaapp` | Add stage + HUD coverage |
 | 6 | `Cluiche/Assets/CluicheTest/cluichetest.diagame` | Add import |
 | 7 | `Cluiche/Assets/CluicheTest/assets.catalogue.json` | Add stage + manifest entries |
-| 8 | `pipeline.toml` | Add to asset_stages + deploy files |
+
+**Auto-derived (no manual edit required):**
+- Boot menu transitions — derived from `stages[]` at runtime
+- `asset_stages` in pipeline — derived from `assets.catalogue.json` (type=stage, not disabled)
+- Deploy entries for `.diastage` files — derived from `.diagame` imports at pipeline time
 
 ## Instructions for Claude
 
@@ -90,21 +94,13 @@ From `<StageName>` (e.g. `Geometry2D`):
             "instance_id": "SimPU",
             "frequency_hz": 30,
             "dedicated_thread": true,
-            "modules": [
-                {
-                    "instance_id": "VisualDebuggerModule",
-                    "type_id": "VisualDebuggerModule",
-                    "stages": [ "<StageName>" ],
-                    "dependencies": [],
-                    "channels": [
-                        { "id": "SimToRender", "role": "writes" }
-                    ]
-                }
-            ]
+            "modules": []
         }
     ]
 }
 ```
+
+SimPU starts empty. Add modules here only if the stage needs SimPU work (e.g. a renderer writing `SimToRender`). If nothing writes `SimToRender`, the `FrameStreamStore` auto-flushes silently and logs a one-time warning — no freeze.
 
 **Module header** at `Cluiche/CluicheTest/Modules/TestStages/<module_name>.h`:
 ```cpp
@@ -224,17 +220,13 @@ Read `Cluiche/Assets/CluicheTest/Global/Misc/ApplicationFlow/cluiche_main.diaapp
 
 1. Add to `"stages"` array (after the last stage entry):
    ```json
-   { "name": "<StageName>", "transitions": ["Boot"], "auto_advance": false }
+   { "name": "<StageName>", "transitions": [], "auto_advance": false }
    ```
+   `transitions: []` is correct — Boot menu entries are auto-derived at runtime from all other stages in the array.
 
-2. Add `"<StageName>"` to Boot's `"transitions"` array.
+2. Add `"<StageName>"` to `TestStageHUDModule`'s `"stages"` array so the HUD is visible.
 
-3. Add `"<StageName>"` to `TestStageHUDModule`'s `"stages"` array so the HUD is visible.
-
-Then force-copy the file to the deployed bin:
-```
-Cluiche/bin/CluicheTest/Debug/x64/assets/global/misc/ApplicationFlow/cluiche_main.diaapp
-```
+`dia pipeline` will deploy the updated manifest automatically — no manual force-copy needed.
 
 ### Step 4 — Update `cluichetest.diagame`
 
@@ -275,18 +267,7 @@ Add two entries to the `"assets"` array:
 }
 ```
 
-### Step 6 — Update `pipeline.toml`
-
-Read `pipeline.toml`.
-
-1. Add `"<stage_id>"` to `asset_stages` under `[targets.cluichetest]`.
-
-2. Add to `[targets.cluichetest.deploy]` files array:
-   ```toml
-   { src = "Cluiche/Assets/Stages/<StageName>/<diastage_file>", dest = "$(OutDir)assets/stages/<StageName>/" },
-   ```
-
-### Step 7 — Update `.vcxproj` and `.vcxproj.filters`
+### Step 6 — Update `.vcxproj` and `.vcxproj.filters`
 
 **`CluicheTest.vcxproj`** — add inside the existing `<ItemGroup>` for ClCompile and ClInclude:
 ```xml
@@ -296,7 +277,7 @@ Read `pipeline.toml`.
 
 **`CluicheTest.vcxproj.filters`** — add under the `ApplicationFlow\Modules\TestStages` filter (which already exists). If the filter doesn't exist yet, create it with a new GUID.
 
-### Step 8 — Run pipeline to verify
+### Step 7 — Run pipeline to verify
 
 ```
 dia pipeline --target cluichetest --config Debug
@@ -304,7 +285,7 @@ dia pipeline --target cluichetest --config Debug
 
 Expected: pipeline complete, 0 failed. The new stage should appear in the Boot menu.
 
-### Step 9 — Report
+### Step 8 — Report
 
 Tell the user:
 - All files created/modified (list them)
@@ -315,8 +296,17 @@ Tell the user:
 
 - **Always place test stage modules on MainPU** — AutomationModule lives on MainPU; SimPU modules cannot depend on it
 - **Always call `TestResultsRegistry::GetInstance().SetRunning(...)` in DoStart** — the HUD reads `activeStageName` from the registry; if it's zero the entire HUD is suppressed. Pass the stage name, a budget frame count, and the checkpoint name array. Also call `SetActiveFrameCount(mFrameCount)` each DoUpdate tick so the frame counter increments
-- **Always include a SimToRender writer on SimPU** — `SimToRender` is a FrameStream `from: SimPU`; without a writer the RenderPU starves and the application freezes (spinner stops). Add `VisualDebuggerModule` on SimPU writing to `SimToRender` in the `.diaapp` — it emits empty frames when there is nothing to draw
 - **The HUD step is mandatory** — without it, there's no way to navigate back to Boot from the stage
-- **pipeline.toml `asset_stages` is mandatory** — without it, the stage has 0 assets in the deployed runtime manifest
-- **Force-copy `cluiche_main.diaapp`** to bin after editing — the pipeline's up-to-date check won't catch it
 - **Do NOT add a `transitions` field to `.diastage`** — transitions live in `cluiche_main.diaapp`'s `stages` array only
+
+## Simplifications Applied
+
+The following were previously manual touch points, now auto-handled:
+
+- **Boot menu transitions** — `transitions: []` in stages array; runtime derives all other stages automatically
+- **pipeline.toml `asset_stages`** — derived from `assets.catalogue.json` (type=stage, not disabled)
+- **pipeline.toml deploy entries for `.diastage`** — derived from `.diagame` imports at pipeline time
+- **Force-copy `cluiche_main.diaapp`** — included in pipeline.toml deploy files; `dia pipeline` handles it
+- **SimPU `VisualDebuggerModule`** — removed; `FrameStreamStore` auto-flushes with a fire-once warning when no writer is active
+
+See `docs/specs/features/cluichetest/teststages/stage-scaffold-simplification.plan.md` for full history.

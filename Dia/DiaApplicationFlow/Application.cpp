@@ -601,8 +601,21 @@ namespace Dia { namespace ApplicationFlow {
         {
             if (mManifest.stages[i].name == stage)
             {
-                for (unsigned int t = 0; t < mManifest.stages[i].transitions.Size() && !out.IsFull(); ++t)
-                    out.Add(mManifest.stages[i].transitions[t]);
+                if (mManifest.stages[i].transitions.Size() > 0)
+                {
+                    // Explicit transitions declared — return them as-is.
+                    for (unsigned int t = 0; t < mManifest.stages[i].transitions.Size() && !out.IsFull(); ++t)
+                        out.Add(mManifest.stages[i].transitions[t]);
+                }
+                else
+                {
+                    // No transitions declared — auto-derive: every stage except this one.
+                    for (unsigned int s = 0; s < mManifest.stages.Size() && !out.IsFull(); ++s)
+                    {
+                        if (mManifest.stages[s].name != stage)
+                            out.Add(mManifest.stages[s].name);
+                    }
+                }
                 return;
             }
         }

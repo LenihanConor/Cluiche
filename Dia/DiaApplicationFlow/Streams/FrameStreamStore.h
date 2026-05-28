@@ -5,6 +5,7 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaApplicationFlow/Streams/IStreamStore.h>
+#include <DiaApplicationFlow/Streams/FrameStreamDiagnostics.h>
 
 namespace Dia { namespace ApplicationFlow {
 
@@ -53,6 +54,7 @@ private:
     Slot                  mSlots[2];
     std::atomic<int>      mFrontIndex{0};    // readers read mSlots[mFrontIndex]
     mutable std::mutex    mWriteMutex;       // only used when mMultiWriter == true
+    mutable std::atomic<bool> mWarnedNoData{false};  // fire-once warn when FetchLatest returns nullptr
 };
 
 // ---------------------------------------------------------------------------
@@ -73,6 +75,7 @@ inline FrameStreamStore<T>::FrameStreamStore(const Dia::Core::StringCRC& id,
 template<typename T>
 inline void FrameStreamStore<T>::Write(const T& data, const Dia::Core::TimeAbsolute& timestamp)
 {
+    mWarnedNoData.store(false, std::memory_order_relaxed);
     if (mMultiWriter)
     {
         std::lock_guard<std::mutex> lock(mWriteMutex);
@@ -98,7 +101,14 @@ template<typename T>
 inline const T* FrameStreamStore<T>::FetchLatest() const
 {
     int i = mFrontIndex.load(std::memory_order_acquire);
-    return mSlots[i].hasData ? &mSlots[i].data : nullptr;
+    if (mSlots[i].hasData)
+    {
+        mWarnedNoData.store(false, std::memory_order_relaxed);
+        return &mSlots[i].data;
+    }
+    if (!mWarnedNoData.exchange(true, std::memory_order_relaxed))
+        FrameStream_WarnNoData(mId);
+    return nullptr;
 }
 
 template<typename T>

@@ -1,5 +1,6 @@
 """deploy stage: runs ui_builds then copies runtime files per pipeline.toml rules."""
 import glob
+import json
 import shutil
 import subprocess
 from pathlib import Path
@@ -135,6 +136,56 @@ def _is_staged(rules, build_config: str, platform: str, out_dir: Optional[Path],
     return True
 
 
+def _derive_diastage_deploy_rules(deploy_files: list[DeployFile], repo_root: Path) -> list[DeployFile]:
+    """Auto-generate DeployFile rules for .diastage files by reading the .diagame imports.
+
+    Finds the .diagame file in the existing deploy rules, reads its imports, and returns
+    a DeployFile for each import with type "stage" that is not already covered by an
+    explicit rule.
+
+    Import paths in .diagame are relative to the deployed assets root, e.g.:
+      "stages/AssetRuntimeStage/asset_runtime_stage.diastage"
+    maps to:
+      src  = "Cluiche/Assets/Stages/AssetRuntimeStage/asset_runtime_stage.diastage"
+      dest = "$(OutDir)assets/stages/AssetRuntimeStage/"
+    """
+    diagame_src = None
+    for rule in deploy_files:
+        if rule.src.endswith(".diagame"):
+            diagame_src = rule.src
+            break
+    if diagame_src is None:
+        return []
+
+    diagame_path = repo_root / diagame_src
+    if not diagame_path.exists():
+        return []
+
+    try:
+        diagame = json.loads(diagame_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return []
+
+    rules = []
+    for imp in diagame.get("imports", []):
+        if imp.get("type") != "stage":
+            continue
+        # path like "stages/AssetRuntimeStage/asset_runtime_stage.diastage"
+        path = imp.get("path", "")
+        parts = path.split("/")
+        if len(parts) < 3 or not parts[-1].endswith(".diastage"):
+            continue
+        stage_dir = parts[1]          # e.g. "AssetRuntimeStage"
+        diastage_file = parts[-1]     # e.g. "asset_runtime_stage.diastage"
+        src = f"Cluiche/Assets/Stages/{stage_dir}/{diastage_file}"
+        dest = f"$(OutDir)assets/stages/{stage_dir}/"
+        # Only add if not already covered by an explicit rule
+        if not any(r.src == src for r in deploy_files):
+            rules.append(DeployFile(src=src, dest=dest))
+
+    return rules
+
+
 def run(config: PipelineConfig, target: str, build_config: str, force: bool, repo_root: Path, output=None, system: str = "pipeline") -> int:
     """Called by the pipeline runner (uses path_resolver for $(OutDir))."""
     stage = "deploy"
@@ -147,11 +198,14 @@ def run(config: PipelineConfig, target: str, build_config: str, force: bool, rep
         if rc != 0:
             return rc
 
-    if not force and _is_staged(deploy.files, build_config, platform, None, repo_root, app_name):
+    # Auto-derive .diastage deploy rules from .diagame imports
+    all_files = list(deploy.files) + _derive_diastage_deploy_rules(deploy.files, repo_root)
+
+    if not force and _is_staged(all_files, build_config, platform, None, repo_root, app_name):
         logger.info("deploy: already staged (use --force to re-copy)")
         return 0
 
-    return _copy_files(deploy.files, build_config, platform, None, force, repo_root, app_name, output=output, system=system, stage=stage)
+    return _copy_files(all_files, build_config, platform, None, force, repo_root, app_name, output=output, system=system, stage=stage)
 
 
 def run_deploy(

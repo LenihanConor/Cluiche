@@ -1,5 +1,6 @@
 #pragma once
 #include "Modules/MainStateProducerModule.h"
+#include <DiaCore/CRC/StringCRC.h>
 
 namespace CluicheTest {
 
@@ -11,6 +12,9 @@ public:
 
 protected:
     void DoPopulateFrame(Cluiche::AppFlow::MainToRenderFrame& frame) override;
+
+private:
+    Dia::Core::StringCRC mHUDWarnedStage;
 };
 
 } // namespace CluicheTest

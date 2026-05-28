@@ -1,6 +1,7 @@
 """Load asset-pipeline target configuration from pipeline.toml."""
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -50,8 +51,22 @@ def load_asset_target_config(repo_root: Path, target: str) -> AssetTargetConfig:
             f"Target '{target}' in pipeline.toml is missing required field 'catalogue_manifest'"
         )
 
+    catalogue_path = repo_root / catalogue_manifest
+    if catalogue_path.exists():
+        try:
+            catalogue = json.loads(catalogue_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError) as exc:
+            raise AssetConfigError(f"Failed to read catalogue at {catalogue_path}: {exc}") from exc
+        asset_stages = [
+            a["id"]
+            for a in catalogue.get("assets", [])
+            if a.get("type") == "stage" and not a.get("disabled", False)
+        ]
+    else:
+        asset_stages = t.get("asset_stages", [])  # fallback if catalogue missing
+
     return AssetTargetConfig(
         app_name=t.get("app_name", target),
         catalogue_manifest=catalogue_manifest,
-        asset_stages=t.get("asset_stages", []),
+        asset_stages=asset_stages,
     )

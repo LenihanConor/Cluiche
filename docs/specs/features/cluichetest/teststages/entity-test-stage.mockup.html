@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>EntityTestStage — Visual Mockup</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #1a1a2e;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh;
+    font-family: 'Segoe UI', monospace;
+    font-size: 13px; color: #dcdcdc;
+  }
+
+  .viewport {
+    position: relative;
+    width: 960px; height: 600px;
+    background: #0d0d14;
+    border: 1px solid #333;
+    overflow: hidden;
+  }
+
+  .scene-label {
+    position: absolute; top: 8px; left: 8px;
+    color: #444; font-size: 11px; letter-spacing: 0.05em;
+  }
+
+  /* ── Section headings (world space) ─────────────── */
+  .world-heading {
+    position: absolute;
+    font-size: 10px; color: #3a3a5a;
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+
+  /* ── Entity label overlays ───────────────────────── */
+  .ent-lbl {
+    position: absolute;
+    font-size: 9px; color: #5a7aaa;
+    white-space: nowrap;
+    font-family: monospace;
+    text-anchor: middle;
+  }
+
+  /* ── HUD bar ─────────────────────────────────────── */
+  .hud-bar {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 28px;
+    background: rgba(0,0,0,0.72);
+    display: flex; align-items: center; padding: 0 10px; gap: 16px;
+    font-size: 11px; border-top: 1px solid #2a2a3a;
+  }
+  .hud-stage  { color: #aaa; }
+  .hud-sep    { color: #333; }
+  .hud-check  { color: #4caf50; }
+  .hud-check.pending { color: #ffa726; }
+  .hud-frames { color: #ddd; }
+  .hud-status { color: #4caf50; font-weight: bold; margin-left: auto; }
+  .hud-exit   { color: #c0392b; font-size: 11px; padding: 1px 7px; border: 1px solid #c0392b; border-radius: 2px; margin-left: 8px; }
+
+  /* ── ImGui window (top-left) ─────────────────────── */
+  .imgui-window {
+    position: absolute;
+    top: 16px; left: 16px;
+    width: 310px;
+    background: #1e1e2e;
+    border: 1px solid #444;
+    box-shadow: 2px 4px 20px rgba(0,0,0,0.75);
+    display: flex; flex-direction: column;
+  }
+  .imgui-titlebar {
+    background: #3a3a5a;
+    padding: 4px 8px;
+    font-size: 12px; font-weight: 600; color: #ccc;
+    display: flex; justify-content: space-between; align-items: center;
+    flex-shrink: 0;
+  }
+  .imgui-titlebar .close { color: #888; font-size: 10px; }
+
+  /* Domain tab bar */
+  .domain-tab-bar {
+    display: flex; background: #161622;
+    border-bottom: 1px solid #333;
+    padding: 0 4px; gap: 1px; flex-shrink: 0;
+  }
+  .dtab {
+    padding: 5px 9px; font-size: 11px;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+    white-space: nowrap;
+  }
+  .dtab.active { color: #cce4ff; border-bottom: 2px solid #4a90d9; background: #1e1e2e; }
+  .dtab:not(.active) { color: #555; }
+
+  .domain-body { padding: 6px 8px; flex-shrink: 0; }
+
+  /* Collapsibles */
+  .collapsible {
+    display: flex; align-items: center; gap: 5px;
+    padding: 3px 2px; border-radius: 2px;
+    font-size: 11px; color: #9090b8;
+  }
+  .arrow { font-size: 9px; color: #aaa; width: 10px; }
+  .section-content { margin: 2px 0 4px 14px; }
+
+  /* Stats section */
+  .stats-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 2px 8px; margin: 4px 0;
+  }
+  .stat-row { display: flex; justify-content: space-between; font-size: 10px; color: #7a7a9a; }
+  .stat-val { color: #a0c4e8; }
+  .stat-val.warn { color: #ef9a9a; }
+
+  /* Component list */
+  .comp-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 2px 0; font-size: 10px; color: #7a9a7a;
+  }
+  .comp-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .comp-name { color: #88b888; font-family: monospace; }
+  .comp-count { color: #a0c4e8; margin-left: auto; }
+
+  /* Mailbox rows */
+  .mb-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 2px 0; font-size: 10px; color: #7a7a9a;
+  }
+  .mb-key   { color: #9a9aaa; font-family: monospace; }
+  .mb-arrow { color: #555; }
+  .mb-dest  { color: #7a9aaa; font-family: monospace; }
+  .mb-count { margin-left: auto; color: #a0c4e8; }
+
+  /* Lifecycle row */
+  .lc-row {
+    display: flex; justify-content: space-between;
+    font-size: 10px; color: #7a7a9a; padding: 2px 0;
+  }
+  .lc-val { color: #a0c4e8; }
+
+  /* Global section */
+  .global-sep { border: none; border-top: 1px solid #2a2a40; margin: 0; flex-shrink: 0; }
+  .global-section { padding: 5px 8px 0 8px; flex-shrink: 0; }
+  .cmd-row { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+  .cmd-label { font-size: 11px; color: #666; flex-shrink: 0; }
+  .cmd-input {
+    flex: 1; background: #111; border: 1px solid #3a3a52;
+    color: #ddd; font-size: 11px; padding: 2px 5px; height: 20px;
+    font-family: monospace;
+  }
+
+  /* Bottom tabs */
+  .bottom-tab-bar {
+    display: flex; border-bottom: 1px solid #252535;
+    flex-shrink: 0;
+  }
+  .btab { padding: 3px 10px; font-size: 10px; color: #666; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .btab.active { color: #9090c8; border-bottom-color: #5a5a9a; }
+  .repl-output {
+    background: #0e0e18; height: 46px;
+    padding: 4px 8px; font-size: 10px; font-family: monospace;
+  }
+  .repl-cmd  { color: #5a8aaa; }
+  .repl-resp { line-height: 1.5; padding-left: 8px; }
+  .repl-resp.ok   { color: #7ab87a; }
+
+  /* ── Checkpoint panel (separate, right of ImGui) ── */
+  .checkpoint-panel {
+    position: absolute;
+    top: 16px; left: 342px;
+    width: 220px;
+    background: #1e1e2e;
+    border: 1px solid #444;
+    box-shadow: 2px 4px 20px rgba(0,0,0,0.75);
+  }
+  .cp-titlebar {
+    background: #2a3a2a;
+    padding: 4px 8px;
+    font-size: 12px; font-weight: 600; color: #8ac88a;
+    display: flex; justify-content: space-between;
+  }
+  .cp-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 8px; font-size: 10px; font-family: monospace;
+    border-bottom: 1px solid #1a1a2a;
+  }
+  .cp-icon { font-size: 12px; }
+  .cp-name { color: #9090b8; flex: 1; font-size: 9px; }
+  .cp-state-pass    { color: #4caf50; font-weight: bold; font-size: 10px; }
+  .cp-state-pending { color: #ffa726; font-weight: bold; font-size: 10px; }
+</style>
+</head>
+<body>
+<div class="viewport">
+  <span class="scene-label">EntityTestStage — SimPU @ 30 Hz</span>
+
+  <!-- ════════════════════════════════════════════════════
+       WORLD SPACE — Hierarchy Group (left)
+       ════════════════════════════════════════════════════ -->
+  <span class="world-heading" style="left:580px; top:28px;">Hierarchy Group</span>
+
+  <svg style="position:absolute;left:565px;top:40px;" width="170" height="210">
+    <!-- hierarchy lines: parent → children -->
+    <line x1="85" y1="44" x2="30"  y2="120" stroke="#3a5a7a" stroke-width="1" stroke-dasharray="3 2"/>
+    <line x1="85" y1="44" x2="85"  y2="120" stroke="#3a5a7a" stroke-width="1" stroke-dasharray="3 2"/>
+    <line x1="85" y1="44" x2="140" y2="120" stroke="#3a5a7a" stroke-width="1" stroke-dasharray="3 2"/>
+
+    <!-- Parent circle -->
+    <circle cx="85" cy="30" r="18" fill="none" stroke="#4fc3f7" stroke-width="1.8"/>
+    <text x="85" y="34" font-size="9" fill="#4fc3f7" text-anchor="middle" font-family="monospace">Parent</text>
+
+    <!-- Child A -->
+    <circle cx="30" cy="134" r="14" fill="none" stroke="#4fc3f7" stroke-width="1.5"/>
+    <text x="30" y="138" font-size="8" fill="#4fc3f7" text-anchor="middle" font-family="monospace">ChildA</text>
+
+    <!-- Child B -->
+    <circle cx="85" cy="134" r="14" fill="none" stroke="#4fc3f7" stroke-width="1.5"/>
+    <text x="85" y="138" font-size="8" fill="#4fc3f7" text-anchor="middle" font-family="monospace">ChildB</text>
+
+    <!-- Child C -->
+    <circle cx="140" cy="134" r="14" fill="none" stroke="#4fc3f7" stroke-width="1.5"/>
+    <text x="140" y="138" font-size="8" fill="#4fc3f7" text-anchor="middle" font-family="monospace">ChildC</text>
+
+    <!-- ParentComponent / ChildBufferComponent labels -->
+    <text x="85" y="175" font-size="8" fill="#3a5a7a" text-anchor="middle" font-family="monospace">ParentComponent ×3</text>
+    <text x="85" y="187" font-size="8" fill="#3a5a7a" text-anchor="middle" font-family="monospace">ChildBufferComponent ×1</text>
+  </svg>
+
+  <!-- ════════════════════════════════════════════════════
+       WORLD SPACE — Query Targets (centre)
+       ════════════════════════════════════════════════════ -->
+  <span class="world-heading" style="left:755px; top:28px;">Query Targets</span>
+
+  <svg style="position:absolute;left:745px;top:40px;" width="160" height="140">
+    <!-- 2×2 grid of query entities -->
+    <!-- Query0 -->
+    <circle cx="40"  cy="40"  r="16" fill="none" stroke="#66bb6a" stroke-width="1.5"/>
+    <text x="40"  y="44"  font-size="8" fill="#66bb6a" text-anchor="middle" font-family="monospace">Query0</text>
+
+    <!-- Query1 -->
+    <circle cx="115" cy="40"  r="16" fill="none" stroke="#66bb6a" stroke-width="1.5"/>
+    <text x="115" y="44"  font-size="8" fill="#66bb6a" text-anchor="middle" font-family="monospace">Query1</text>
+
+    <!-- Query2 -->
+    <circle cx="40"  cy="110" r="16" fill="none" stroke="#66bb6a" stroke-width="1.5"/>
+    <text x="40"  y="114" font-size="8" fill="#66bb6a" text-anchor="middle" font-family="monospace">Query2</text>
+
+    <!-- Query3 -->
+    <circle cx="115" cy="110" r="16" fill="none" stroke="#66bb6a" stroke-width="1.5"/>
+    <text x="115" y="114" font-size="8" fill="#66bb6a" text-anchor="middle" font-family="monospace">Query3</text>
+
+    <!-- bracket label -->
+    <text x="77" y="138" font-size="8" fill="#3a5a3a" text-anchor="middle" font-family="monospace">Query&lt;Transform,Visual&gt; = 8</text>
+  </svg>
+
+  <!-- ════════════════════════════════════════════════════
+       WORLD SPACE — Doomed Entity (right, faded after frame 1)
+       ════════════════════════════════════════════════════ -->
+  <span class="world-heading" style="left:580px; top:260px;">Doomed (frame 0 only)</span>
+
+  <svg style="position:absolute;left:600px;top:278px;" width="120" height="80">
+    <!-- faded / destroyed circle -->
+    <circle cx="60" cy="36" r="18" fill="none" stroke="#555" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.45"/>
+    <!-- X cross -->
+    <line x1="46" y1="22" x2="74" y2="50" stroke="#ef5350" stroke-width="1.5" opacity="0.55"/>
+    <line x1="74" y1="22" x2="46" y2="50" stroke="#ef5350" stroke-width="1.5" opacity="0.55"/>
+    <text x="60" y="26" font-size="8" fill="#666" text-anchor="middle" font-family="monospace" opacity="0.55">Doomed</text>
+    <text x="60" y="68" font-size="8" fill="#ef5350" text-anchor="middle" font-family="monospace" opacity="0.7">QueueDestroy @ frame 0</text>
+  </svg>
+
+  <!-- ════════════════════════════════════════════════════
+       LEGEND
+       ════════════════════════════════════════════════════ -->
+  <svg style="position:absolute;left:575px;top:380px;" width="370" height="60">
+    <circle cx="12" cy="10" r="7" fill="none" stroke="#4fc3f7" stroke-width="1.5"/>
+    <text x="24" y="14" font-size="9" fill="#4fc3f7" font-family="monospace">Hierarchy (TransformComponent + VisualTestRenderComponent)</text>
+    <circle cx="12" cy="30" r="7" fill="none" stroke="#66bb6a" stroke-width="1.5"/>
+    <text x="24" y="34" font-size="9" fill="#66bb6a" font-family="monospace">Query targets</text>
+    <line x1="5" y1="50" x2="19" y2="50" stroke="#3a5a7a" stroke-width="1" stroke-dasharray="3 2"/>
+    <text x="24" y="54" font-size="9" fill="#3a5a7a" font-family="monospace">ParentComponent link</text>
+  </svg>
+
+  <!-- ════════════════════════════════════════════════════
+       ImGui DEBUG CONSOLE — top-left
+       ════════════════════════════════════════════════════ -->
+  <div class="imgui-window">
+    <div class="imgui-titlebar">
+      Debug Console
+      <span class="close">✕</span>
+    </div>
+
+    <!-- Domain tab bar -->
+    <div class="domain-tab-bar">
+      <div class="dtab active">Entity</div>
+      <div class="dtab">RigidBody2D</div>
+      <div class="dtab">Animation2D</div>
+    </div>
+
+    <!-- Domain body -->
+    <div class="domain-body">
+
+      <!-- ── Collapsible: Domain Stats (open) ── -->
+      <div class="collapsible"><span class="arrow">▼</span> Domain Stats</div>
+      <div class="section-content">
+        <div class="stats-grid">
+          <div class="stat-row">Spawned: <span class="stat-val">9</span></div>
+          <div class="stat-row">Alive: <span class="stat-val">8</span></div>
+          <div class="stat-row">Destroyed: <span class="stat-val warn">1</span></div>
+          <div class="stat-row">Frame: <span class="stat-val">042</span></div>
+        </div>
+        <!-- Component type breakdown -->
+        <div class="comp-row">
+          <div class="comp-dot" style="background:#4fc3f7"></div>
+          <span class="comp-name">TransformComponent</span>
+          <span class="comp-count">×8</span>
+        </div>
+        <div class="comp-row">
+          <div class="comp-dot" style="background:#9575cd"></div>
+          <span class="comp-name">VisualTestRenderComponent</span>
+          <span class="comp-count">×8</span>
+        </div>
+        <div class="comp-row">
+          <div class="comp-dot" style="background:#ffa726"></div>
+          <span class="comp-name">ParentComponent</span>
+          <span class="comp-count">×3</span>
+        </div>
+        <div class="comp-row">
+          <div class="comp-dot" style="background:#ffa726"></div>
+          <span class="comp-name">ChildBufferComponent</span>
+          <span class="comp-count">×1</span>
+        </div>
+      </div>
+
+      <!-- ── Collapsible: Query Results (open) ── -->
+      <div class="collapsible"><span class="arrow">▼</span> Query Results</div>
+      <div class="section-content">
+        <div class="stats-grid">
+          <div class="stat-row" style="grid-column:1/3">
+            Query&lt;Transform, Visual&gt;: <span class="stat-val">8</span>
+          </div>
+          <div class="stat-row" style="grid-column:1/3">
+            Query&lt;ParentComponent&gt;: <span class="stat-val">1</span>
+          </div>
+          <div class="stat-row" style="grid-column:1/3">
+            Query&lt;ChildBufferComponent&gt;: <span class="stat-val">1</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Collapsible: Mailbox (open) ── -->
+      <div class="collapsible"><span class="arrow">▼</span> Mailbox</div>
+      <div class="section-content">
+        <div class="mb-row">
+          <span class="mb-key">entity.ping</span>
+          <span class="mb-arrow">→</span>
+          <span class="mb-dest">All</span>
+          <span class="mb-count">×5 received</span>
+        </div>
+        <div class="stats-grid" style="margin-top:3px">
+          <div class="stat-row">Total msgs: <span class="stat-val">8</span></div>
+          <div class="stat-row">Delivered: <span class="stat-val">8</span></div>
+        </div>
+      </div>
+
+      <!-- ── Collapsible: Lifecycle Counters (open) ── -->
+      <div class="collapsible"><span class="arrow">▼</span> Lifecycle Counters</div>
+      <div class="section-content">
+        <div class="lc-row">OnAttach fired: <span class="lc-val">18</span></div>
+        <div class="lc-row" style="font-size:9px;color:#555;margin-top:1px;">  (9 entities × 2 components)</div>
+        <div class="lc-row">OnDetach fired: <span class="lc-val">2</span></div>
+        <div class="lc-row" style="font-size:9px;color:#555;margin-top:1px;">  (Doomed × 2 components)</div>
+      </div>
+
+    </div><!-- /domain-body -->
+
+    <hr class="global-sep">
+    <div class="global-section">
+      <div class="cmd-row">
+        <span class="cmd-label">&gt;</span>
+        <input class="cmd-input" type="text" placeholder="enter command…" readonly>
+      </div>
+    </div>
+    <div class="bottom-tab-bar">
+      <div class="btab active">Output</div>
+      <div class="btab">Warnings</div>
+    </div>
+    <div class="repl-output">
+      <div class="repl-cmd">&gt; dia.automation.get_metric entity.spawn_count</div>
+      <div class="repl-resp ok">{ "value": 8 }</div>
+    </div>
+  </div><!-- /imgui-window -->
+
+  <!-- ════════════════════════════════════════════════════
+       CHECKPOINT PANEL — right of ImGui console
+       ════════════════════════════════════════════════════ -->
+  <div class="checkpoint-panel">
+    <div class="cp-titlebar">
+      Checkpoints <span style="font-size:10px;color:#4caf50;font-weight:normal">5/6 PASS</span>
+    </div>
+    <div class="cp-row">
+      <span class="cp-icon" style="color:#4caf50">✓</span>
+      <span class="cp-name">entity.spawn_complete</span>
+      <span class="cp-state-pass">PASS</span>
+    </div>
+    <div class="cp-row">
+      <span class="cp-icon" style="color:#4caf50">✓</span>
+      <span class="cp-name">entity.query_correct</span>
+      <span class="cp-state-pass">PASS</span>
+    </div>
+    <div class="cp-row">
+      <span class="cp-icon" style="color:#4caf50">✓</span>
+      <span class="cp-name">entity.hierarchy_valid</span>
+      <span class="cp-state-pass">PASS</span>
+    </div>
+    <div class="cp-row">
+      <span class="cp-icon" style="color:#4caf50">✓</span>
+      <span class="cp-name">entity.destroy_cascade</span>
+      <span class="cp-state-pass">PASS</span>
+    </div>
+    <div class="cp-row">
+      <span class="cp-icon" style="color:#ffa726">○</span>
+      <span class="cp-name">entity.mailbox_received</span>
+      <span class="cp-state-pending">PENDING</span>
+    </div>
+    <div class="cp-row">
+      <span class="cp-icon" style="color:#4caf50">✓</span>
+      <span class="cp-name">entity.lifecycle_complete</span>
+      <span class="cp-state-pass">PASS</span>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════
+       HUD BAR — bottom
+       ════════════════════════════════════════════════════ -->
+  <div class="hud-bar">
+    <span class="hud-stage">entity_test_stage</span>
+    <span class="hud-sep">|</span>
+    <span class="hud-check">✓ 5/6</span>
+    <span class="hud-check pending">○ entity.mailbox_received</span>
+    <span class="hud-sep">|</span>
+    <span class="hud-frames">Frame: 042</span>
+    <span class="hud-status">PASS</span>
+    <span class="hud-exit">✕</span>
+  </div>
+
+</div><!-- /viewport -->
+</body>
+</html>

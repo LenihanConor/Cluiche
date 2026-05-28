@@ -29,6 +29,7 @@
     <ClCompile Include="ProcessingUnit.cpp" />
     <ClCompile Include="TypeRegistry.cpp" />
     <ClCompile Include="Streams\StreamTypeRegistry.cpp" />
+    <ClCompile Include="Streams\FrameStreamDiagnostics.cpp" />
     <ClCompile Include="Metrics\MetricsCollectorModule.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -38,6 +39,7 @@
     <ClInclude Include="LifecycleEvent.h" />
     <ClInclude Include="Streams\IStreamStore.h" />
     <ClInclude Include="Streams\FrameStreamStore.h" />
+    <ClInclude Include="Streams\FrameStreamDiagnostics.h" />
     <ClInclude Include="Streams\EventStreamStore.h" />
     <ClInclude Include="Streams\Event.h" />
     <ClInclude Include="Streams\SendResult.h" />
