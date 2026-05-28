@@ -17,7 +17,7 @@ namespace Dia::Geometry2DVisualDebugger
 template<typename T, unsigned int MaxObjects>
 Dia::Core::StringCRC HexGridDrawer<T, MaxObjects>::GetLayerName() const
 {
-    return Dia::Debug::LayerNames::kGeoSpatialGrid;
+    return Dia::Debug::LayerNames::kGeoHexGrid;
 }
 
 template<typename T, unsigned int MaxObjects>

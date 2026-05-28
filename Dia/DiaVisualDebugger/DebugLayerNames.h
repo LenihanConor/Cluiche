@@ -72,6 +72,7 @@ namespace Dia
             // ----------------------------------------------------------------
             inline const Dia::Core::StringCRC kGeoShapes      { "geometry.shapes"       };
             inline const Dia::Core::StringCRC kGeoSpatialGrid { "geometry.spatial_grid"  };
+            inline const Dia::Core::StringCRC kGeoHexGrid     { "geometry.hexgrid"       };
             inline const Dia::Core::StringCRC kGeoQuadtree    { "geometry.quadtree"      };
             inline const Dia::Core::StringCRC kGeoBVH         { "geometry.bvh"           };
             inline const Dia::Core::StringCRC kGeoContacts    { "geometry.contacts"      };

@@ -20,9 +20,11 @@
 #include <DiaGeometry2D/Spatial/BVH.h>
 #include <DiaGeometry2D/Spatial/Quadtree.h>
 #include <DiaGeometry2D/Spatial/SpatialGrid.h>
+#include <DiaGeometry2D/Spatial/HexGrid.h>
 #include <DiaGeometry2DVisualDebugger/BVHDrawer.h>
 #include <DiaGeometry2DVisualDebugger/QuadtreeDrawer.h>
 #include <DiaGeometry2DVisualDebugger/SpatialGridDrawer.h>
+#include <DiaGeometry2DVisualDebugger/HexGridDrawer.h>
 #include <memory>
 #endif
 
@@ -86,10 +88,12 @@ private:
     std::unique_ptr<Dia::Geometry2D::BVH<SpatialElem, kSpatialMax>>         mBVH;
     std::unique_ptr<Dia::Geometry2D::Quadtree<SpatialElem, kSpatialMax>>    mQuadtree;
     std::unique_ptr<Dia::Geometry2D::SpatialGrid<SpatialElem, kSpatialMax>> mSpatialGrid;
+    std::unique_ptr<Dia::Geometry2D::HexGrid<SpatialElem, kSpatialMax>>     mHexGrid;
 
     std::unique_ptr<Dia::Geometry2DVisualDebugger::BVHDrawer<SpatialElem, kSpatialMax>>         mBVHDrawer;
-    std::unique_ptr<Dia::Geometry2DVisualDebugger::QuadtreeDrawer<SpatialElem, kSpatialMax>>  mQuadtreeDrawer;
+    std::unique_ptr<Dia::Geometry2DVisualDebugger::QuadtreeDrawer<SpatialElem, kSpatialMax>>    mQuadtreeDrawer;
     std::unique_ptr<Dia::Geometry2DVisualDebugger::SpatialGridDrawer<SpatialElem, kSpatialMax>> mSpatialGridDrawer;
+    std::unique_ptr<Dia::Geometry2DVisualDebugger::HexGridDrawer<SpatialElem, kSpatialMax>>     mHexGridDrawer;
 
     std::unique_ptr<Geometry2DShapesDrawer>        mShapesDrawer;
     std::unique_ptr<Geometry2DLabelsDrawer>        mLabelsDrawer;

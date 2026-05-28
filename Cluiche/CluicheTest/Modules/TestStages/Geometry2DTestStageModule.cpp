@@ -127,7 +127,7 @@ void Geometry2DTestStageModule::OnUpdate(float /*deltaTime*/)
                 mCapsule, mConvexPoly, mArc, mSector, *mgr);
             mgr->Register(mAABBDrawer.get(), 23, stageTag);
 
-            // Spatial structure drawers (BVH, Quadtree, SpatialGrid — HexGrid skipped, shares layer name with SpatialGrid)
+            // Spatial structure drawers
             if (mBVH)
             {
                 mBVHDrawer = std::make_unique<Dia::Geometry2DVisualDebugger::BVHDrawer<SpatialElem, kSpatialMax>>(*mBVH, *mgr);
@@ -142,6 +142,11 @@ void Geometry2DTestStageModule::OnUpdate(float /*deltaTime*/)
             {
                 mSpatialGridDrawer = std::make_unique<Dia::Geometry2DVisualDebugger::SpatialGridDrawer<SpatialElem, kSpatialMax>>(*mSpatialGrid, *mgr);
                 mgr->Register(mSpatialGridDrawer.get(), 26, stageTag);
+            }
+            if (mHexGrid)
+            {
+                mHexGridDrawer = std::make_unique<Dia::Geometry2DVisualDebugger::HexGridDrawer<SpatialElem, kSpatialMax>>(*mHexGrid, *mgr);
+                mgr->Register(mHexGridDrawer.get(), 27, stageTag);
             }
         }
     }
@@ -176,6 +181,8 @@ void Geometry2DTestStageModule::OnStop()
                 mgr->Unregister(mQuadtreeDrawer->GetLayerName());
             if (mSpatialGridDrawer)
                 mgr->Unregister(mSpatialGridDrawer->GetLayerName());
+            if (mHexGridDrawer)
+                mgr->Unregister(mHexGridDrawer->GetLayerName());
         }
         mShapesDrawer.reset();
         mLabelsDrawer.reset();
@@ -184,11 +191,13 @@ void Geometry2DTestStageModule::OnStop()
         mBVHDrawer.reset();
         mQuadtreeDrawer.reset();
         mSpatialGridDrawer.reset();
+        mHexGridDrawer.reset();
     }
 
     mBVH.reset();
     mQuadtree.reset();
     mSpatialGrid.reset();
+    mHexGrid.reset();
 #endif
 }
 
@@ -368,8 +377,9 @@ void Geometry2DTestStageModule::SetupIntersectionPairs()
 
 void Geometry2DTestStageModule::SetupSpatialStructures()
 {
-    // Bottom band: 3 structures side by side, x∈[600,1350], y∈[80,380]
-    // BVH, Quadtree, SpatialGrid (HexGrid skipped — shares layer name with SpatialGrid)
+    // Bottom band: 4 structures
+    // BVH, Quadtree, SpatialGrid (right side x∈[600,1350])
+    // HexGrid (bottom-left under console, x∈[50,300])
 
     constexpr float kBoundsW = 220.0f;
     constexpr float kBoundsH = 260.0f;
@@ -378,7 +388,6 @@ void Geometry2DTestStageModule::SetupSpatialStructures()
     constexpr float kGap = 30.0f;
     constexpr float kX0 = 620.0f;
 
-    // Scatter 6 small AARect bounds per structure
     auto makeScatter = [](float baseX, float baseY, float w, float h,
                           Dia::Core::Containers::DynamicArrayC<Dia::Geometry2D::AARect, 8>& out)
     {
@@ -418,7 +427,7 @@ void Geometry2DTestStageModule::SetupSpatialStructures()
         mBVH->Build(entries);
     }
 
-    // --- Quadtree ---
+    // --- Quadtree (with one tiny object to force deeper subdivision) ---
     {
         const float qx = kX0 + kBoundsW + kGap;
         Dia::Geometry2D::Quadtree<SpatialElem, kSpatialMax>::Def def;
@@ -426,13 +435,24 @@ void Geometry2DTestStageModule::SetupSpatialStructures()
             Dia::Maths::Vector2D(qx, kY0),
             Dia::Maths::Vector2D(qx + kBoundsW, kY1));
         def.splitThreshold = 2;
-        def.maxDepth = 4;
+        def.maxDepth = 5;
         mQuadtree = std::make_unique<Dia::Geometry2D::Quadtree<SpatialElem, kSpatialMax>>(def);
 
         Dia::Core::Containers::DynamicArrayC<Dia::Geometry2D::AARect, 8> bounds;
         makeScatter(qx, kY0, kBoundsW, kBoundsH, bounds);
         for (unsigned int i = 0; i < bounds.Size(); ++i)
             mQuadtree->Insert(i, bounds[i]);
+        // Extra tiny object in top-left quadrant to force deeper split
+        const float tinyS = 8.0f;
+        mQuadtree->Insert(10u, Dia::Geometry2D::AARect(
+            Dia::Maths::Vector2D(qx + 15.0f, kY1 - 30.0f),
+            Dia::Maths::Vector2D(qx + 15.0f + tinyS, kY1 - 30.0f + tinyS)));
+        mQuadtree->Insert(11u, Dia::Geometry2D::AARect(
+            Dia::Maths::Vector2D(qx + 25.0f, kY1 - 50.0f),
+            Dia::Maths::Vector2D(qx + 25.0f + tinyS, kY1 - 50.0f + tinyS)));
+        mQuadtree->Insert(12u, Dia::Geometry2D::AARect(
+            Dia::Maths::Vector2D(qx + 10.0f, kY1 - 45.0f),
+            Dia::Maths::Vector2D(qx + 10.0f + tinyS, kY1 - 45.0f + tinyS)));
     }
 
     // --- SpatialGrid ---
@@ -449,6 +469,32 @@ void Geometry2DTestStageModule::SetupSpatialStructures()
         makeScatter(gx, kY0, kBoundsW, kBoundsH, bounds);
         for (unsigned int i = 0; i < bounds.Size(); ++i)
             mSpatialGrid->Insert(i, bounds[i]);
+    }
+
+    // --- HexGrid (bottom-left, under console) ---
+    {
+        constexpr float hx0 = 50.0f, hy0 = 50.0f;
+        constexpr float hW = 450.0f, hH = 300.0f;
+        Dia::Geometry2D::HexGrid<SpatialElem, kSpatialMax>::Def def;
+        def.worldBounds = Dia::Geometry2D::AARect(
+            Dia::Maths::Vector2D(hx0, hy0),
+            Dia::Maths::Vector2D(hx0 + hW, hy0 + hH));
+        def.hexRadius = 28.0f;
+        mHexGrid = std::make_unique<Dia::Geometry2D::HexGrid<SpatialElem, kSpatialMax>>(def);
+
+        constexpr float s = 20.0f;
+        mHexGrid->Insert(0u, Dia::Geometry2D::AARect(
+            Dia::Maths::Vector2D(hx0 + 60.0f, hy0 + 80.0f),
+            Dia::Maths::Vector2D(hx0 + 60.0f + s, hy0 + 80.0f + s)));
+        mHexGrid->Insert(1u, Dia::Geometry2D::AARect(
+            Dia::Maths::Vector2D(hx0 + 180.0f, hy0 + 120.0f),
+            Dia::Maths::Vector2D(hx0 + 180.0f + s, hy0 + 120.0f + s)));
+        mHexGrid->Insert(2u, Dia::Geometry2D::AARect(
+            Dia::Maths::Vector2D(hx0 + 300.0f, hy0 + 60.0f),
+            Dia::Maths::Vector2D(hx0 + 300.0f + s, hy0 + 60.0f + s)));
+        mHexGrid->Insert(3u, Dia::Geometry2D::AARect(
+            Dia::Maths::Vector2D(hx0 + 120.0f, hy0 + 200.0f),
+            Dia::Maths::Vector2D(hx0 + 120.0f + s, hy0 + 200.0f + s)));
     }
 }
 #endif
