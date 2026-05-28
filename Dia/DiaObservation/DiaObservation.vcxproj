@@ -96,6 +96,7 @@
     <ClInclude Include="Testing\HealthFixture.h" />
     <ClInclude Include="Testing\ProfileFixture.h" />
     <ClInclude Include="Capture\CaptureTypes.h" />
+    <ClInclude Include="Capture\DiaCapture.h" />
     <ClInclude Include="Capture\ThirdParty\lodepng.h" />
     <ClInclude Include="Capture\CaptureManager.h" />
   </ItemGroup>

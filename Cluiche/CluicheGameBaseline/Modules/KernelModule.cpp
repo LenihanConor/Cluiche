@@ -8,6 +8,7 @@
 #include <DiaInput/Event.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
+#include <DiaObservation/Session/SessionManager.h>
 #include <DiaObservation/Metric/Gauge.h>
 #include <DiaObservation/Metric/Histogram.h>
 #include <DiaApplicationFlow/Application.h>
@@ -74,6 +75,7 @@ Dia::ApplicationFlow::StartResult KernelModule::DoStart()
     mBgfxCanvas->Initialize(bgfxSettings);
 
     mCanvas = mBgfxCanvas;
+    Dia::Observation::SessionManager::SetActiveCaptureCanvas(mCanvas);
 
 #ifdef DIA_DEBUG
     mBgfxImGuiBackend = new Dia::Bgfx::BgfxImGuiBackend();

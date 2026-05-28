@@ -340,7 +340,7 @@ namespace Dia
 		{
 			if (mCaptureManager)
 			{
-				mCaptureManager->Initialize(canvas, this);
+				mCaptureManager->SetCanvas(canvas);
 				DIA_LOG_INFO("Capture", "SessionManager::SetCaptureCanvas — canvas wired, CaptureManager now operational");
 			}
 		}
@@ -348,6 +348,17 @@ namespace Dia
 		Capture::CaptureManager* SessionManager::GetCaptureManager()
 		{
 			return mCaptureManager;
+		}
+
+		Capture::CaptureManager* SessionManager::GetActiveCaptureManager()
+		{
+			return sActiveInstance ? sActiveInstance->mCaptureManager : nullptr;
+		}
+
+		void SessionManager::SetActiveCaptureCanvas(Dia::Graphics::ICanvas* canvas)
+		{
+			if (sActiveInstance)
+				sActiveInstance->SetCaptureCanvas(canvas);
 		}
 
 		void SessionManager::OnRetainableEntry(const Log::LogEntry& entry)

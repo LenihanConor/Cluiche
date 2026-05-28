@@ -8,6 +8,7 @@
 #include <DiaObservation/Health/HealthReporterBase.h>
 
 #include <cstdint>
+#include <mutex>
 
 namespace Dia { namespace Graphics { class ICanvas; } }
 namespace Dia { namespace Observation { class SessionManager; } }
@@ -26,14 +27,24 @@ namespace Dia
                 ~CaptureManager();
 
                 void Initialize(Dia::Graphics::ICanvas* canvas, SessionManager* session);
-                void Tick();
+                void SetCanvas(Dia::Graphics::ICanvas* canvas);
 
+                // Call from any thread to queue a capture request.
                 CaptureRequestStatus RequestCapture(const CaptureMetadata& metadata);
+
+                // Call from the render thread each frame: issues bgfx::requestScreenShot
+                // for any pending requests, then polls completed captures.
+                void RenderTick();
+
+                // Call from the session tick (main/sim thread): polls completed captures
+                // and writes PNGs. No bgfx calls.
+                void Tick();
 
                 unsigned int GetPendingCount() const;
 
             private:
-                static constexpr unsigned int kMaxInFlight = 4;
+                static constexpr unsigned int kMaxInFlight  = 4;
+                static constexpr unsigned int kMaxPending    = 8;
 
                 struct InFlightCapture
                 {
@@ -58,6 +69,12 @@ namespace Dia
 
                 Dia::Graphics::ICanvas* mCanvas;
                 SessionManager*         mSession;
+
+                // Pending queue: written from any thread, drained on render thread
+                CaptureMetadata         mPending[kMaxPending];
+                unsigned int            mPendingCount;
+                std::mutex              mPendingMutex;
+
                 InFlightCapture         mInFlight[kMaxInFlight];
                 unsigned int            mInFlightCount;
                 bool                    mCapturesDirCreated;

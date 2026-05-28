@@ -1,10 +1,10 @@
 {
     "version": 3,
     "stages": [
-        { "name": "Boot",              "transitions": [], "auto_advance": false },
-        { "name": "DummyStage",        "transitions": ["Boot"],                          "auto_advance": false },
-        { "name": "RigidBody2DStage",  "transitions": ["Boot"],                          "auto_advance": false },
-        { "name": "AssetRuntimeStage", "transitions": ["Boot"],                          "auto_advance": false }
+        { "name": "Boot",                   "transitions": ["DummyStage", "RigidBody2DTestStage", "AssetRuntimeTestStage"], "auto_advance": false },
+        { "name": "DummyStage",             "transitions": [],                                                               "auto_advance": false },
+        { "name": "RigidBody2DTestStage",   "transitions": [],                                                               "auto_advance": false },
+        { "name": "AssetRuntimeTestStage",  "transitions": [],                                                               "auto_advance": false }
     ],
     "initial_stage": "Boot",
     "streams": [
@@ -182,7 +182,7 @@
                 {
                     "instance_id": "VisualDebuggerModule",
                     "type_id": "VisualDebuggerModule",
-                    "stages": [ "RigidBody2DStage", "AssetRuntimeStage" ],
+                    "stages": [ "RigidBody2DTestStage", "AssetRuntimeTestStage" ],
                     "dependencies": [],
                     "channels": [
                         { "id": "SimToRender", "role": "writes" }
@@ -212,7 +212,7 @@
                 {
                     "instance_id": "TestStageHUDModule",
                     "type_id": "TestStageHUDModule",
-                    "stages": [ "DummyStage", "RigidBody2DStage", "AssetRuntimeStage" ],
+                    "stages": [ "DummyStage", "RigidBody2DTestStage", "AssetRuntimeTestStage" ],
                     "dependencies": [ "DebugUI" ],
                     "channels": [
                         { "id": "MainToRender", "role": "reads" }
@@ -221,21 +221,21 @@
                 {
                     "instance_id": "VisualDebuggerConsoleModule",
                     "type_id": "VisualDebuggerConsoleModule",
-                    "stages": [ "RigidBody2DStage", "AssetRuntimeStage" ],
+                    "stages": [ "RigidBody2DTestStage", "AssetRuntimeTestStage" ],
                     "dependencies": [ "DebugUI" ],
                     "channels": []
                 },
                 {
                     "instance_id": "AssetRuntimeVisualDebuggerModule",
                     "type_id": "AssetRuntimeVisualDebuggerModule",
-                    "stages": [ "AssetRuntimeStage" ],
+                    "stages": [ "AssetRuntimeTestStage" ],
                     "dependencies": [ "DebugUI" ],
                     "channels": []
                 },
                 {
                     "instance_id": "AssetRuntimeHUDModule",
                     "type_id": "AssetRuntimeHUDModule",
-                    "stages": [ "AssetRuntimeStage" ],
+                    "stages": [ "AssetRuntimeTestStage" ],
                     "dependencies": [ "DebugUI" ],
                     "channels": [
                         { "id": "MainToRender", "role": "reads" }

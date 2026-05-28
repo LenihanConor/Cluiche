@@ -27,6 +27,7 @@ namespace Dia
             CaptureManager::CaptureManager()
                 : mCanvas(nullptr)
                 , mSession(nullptr)
+                , mPendingCount(0)
                 , mInFlightCount(0)
                 , mCapturesDirCreated(false)
                 , mCapturesWrittenCounter(nullptr)
@@ -35,12 +36,18 @@ namespace Dia
                 , mConsecutiveFailures(0)
                 , mHealthReporter(*this)
             {
+                memset(mPending,  0, sizeof(mPending));
                 memset(mInFlight, 0, sizeof(mInFlight));
             }
 
             CaptureManager::~CaptureManager()
             {
                 Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mHealthReporter);
+            }
+
+            void CaptureManager::SetCanvas(Dia::Graphics::ICanvas* canvas)
+            {
+                mCanvas = canvas;
             }
 
             void CaptureManager::Initialize(Dia::Graphics::ICanvas* canvas, SessionManager* session)
@@ -79,27 +86,53 @@ namespace Dia
                     return CaptureRequestStatus::kRejected_NoSession;
                 }
 
-                if (mInFlightCount >= kMaxInFlight)
+                // Enqueue metadata; RenderTick() issues the bgfx call on the render thread.
+                std::lock_guard<std::mutex> lock(mPendingMutex);
+                if (mPendingCount >= kMaxPending)
                 {
                     if (mCapturesRejectedCounter) mCapturesRejectedCounter->Inc();
                     return CaptureRequestStatus::kRejected_RingFull;
                 }
 
-                Dia::Graphics::FrameCaptureToken token = mCanvas->RequestFrameCapture();
-                if (!token.IsValid())
-                {
-                    if (mCapturesRejectedCounter) mCapturesRejectedCounter->Inc();
-                    return CaptureRequestStatus::kRejected_RingFull;
-                }
-
-                InFlightCapture& slot = mInFlight[mInFlightCount];
-                slot.token           = token;
-                slot.metadata        = metadata;
-                slot.frameNumber     = mSession->GetFrameCount();
-                slot.scenarioStepCrc = mSession->GetCurrentScenarioStep().Value();
-
-                ++mInFlightCount;
+                mPending[mPendingCount++] = metadata;
                 return CaptureRequestStatus::kAccepted;
+            }
+
+            void CaptureManager::RenderTick()
+            {
+                // Drain pending queue — must be called from the render thread (bgfx API thread).
+                unsigned int count = 0;
+                CaptureMetadata local[kMaxPending];
+                {
+                    std::lock_guard<std::mutex> lock(mPendingMutex);
+                    count = mPendingCount;
+                    for (unsigned int i = 0; i < count; ++i)
+                        local[i] = mPending[i];
+                    mPendingCount = 0;
+                }
+
+                for (unsigned int i = 0; i < count; ++i)
+                {
+                    if (mInFlightCount >= kMaxInFlight)
+                    {
+                        if (mCapturesRejectedCounter) mCapturesRejectedCounter->Inc();
+                        continue;
+                    }
+
+                    Dia::Graphics::FrameCaptureToken token = mCanvas->RequestFrameCapture();
+                    if (!token.IsValid())
+                    {
+                        if (mCapturesRejectedCounter) mCapturesRejectedCounter->Inc();
+                        continue;
+                    }
+
+                    InFlightCapture& slot = mInFlight[mInFlightCount];
+                    slot.token           = token;
+                    slot.metadata        = local[i];
+                    slot.frameNumber     = mSession->GetFrameCount();
+                    slot.scenarioStepCrc = mSession->GetCurrentScenarioStep().Value();
+                    ++mInFlightCount;
+                }
             }
 
             void CaptureManager::Tick()

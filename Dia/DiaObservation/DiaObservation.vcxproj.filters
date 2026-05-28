@@ -262,6 +262,9 @@
     <ClInclude Include="Capture\CaptureTypes.h">
       <Filter>Capture</Filter>
     </ClInclude>
+    <ClInclude Include="Capture\DiaCapture.h">
+      <Filter>Capture</Filter>
+    </ClInclude>
     <ClInclude Include="Capture\ThirdParty\lodepng.h">
       <Filter>Capture\ThirdParty</Filter>
     </ClInclude>

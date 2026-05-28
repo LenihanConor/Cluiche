@@ -155,7 +155,7 @@ void AssetRuntimeHUDModule::DoUpdate(float /*deltaTime*/)
     }
 
     ImGui::Spacing();
-    ImGui::TextDisabled("IsStageLoadComplete(\"AssetRuntimeStage\") = %s",
+    ImGui::TextDisabled("IsStageLoadComplete(\"AssetRuntimeTestStage\") = %s",
         stageComplete ? "true" : "false");
 
     ImGui::End();

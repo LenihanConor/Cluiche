@@ -3,6 +3,8 @@
 
 #include <DiaAssetRuntime/Handlers/TextureHandler.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Session/SessionManager.h>
+#include <DiaObservation/Capture/CaptureManager.h>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 
@@ -50,6 +52,10 @@ void RenderModule::DoUpdate(float /*dt*/)
 {
     if (mCanvas == nullptr)
         return;
+
+    // Issue any queued screen captures before the frame render (bgfx API thread required).
+    auto* cm = Dia::Observation::SessionManager::GetActiveCaptureManager();
+    if (cm) cm->RenderTick();
 
     const Dia::Graphics::FrameData* frame = mFrameInput.FetchLatest();
     if (frame != nullptr)

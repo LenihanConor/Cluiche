@@ -144,10 +144,10 @@ def _derive_diastage_deploy_rules(deploy_files: list[DeployFile], repo_root: Pat
     explicit rule.
 
     Import paths in .diagame are relative to the deployed assets root, e.g.:
-      "stages/AssetRuntimeStage/asset_runtime_stage.diastage"
+      "stages/AssetRuntimeTestStage/asset_runtime_stage.diastage"
     maps to:
-      src  = "Cluiche/Assets/Stages/AssetRuntimeStage/asset_runtime_stage.diastage"
-      dest = "$(OutDir)assets/stages/AssetRuntimeStage/"
+      src  = "Cluiche/Assets/Stages/AssetRuntimeTestStage/asset_runtime_stage.diastage"
+      dest = "$(OutDir)assets/stages/AssetRuntimeTestStage/"
     """
     diagame_src = None
     for rule in deploy_files:
@@ -170,12 +170,12 @@ def _derive_diastage_deploy_rules(deploy_files: list[DeployFile], repo_root: Pat
     for imp in diagame.get("imports", []):
         if imp.get("type") != "stage":
             continue
-        # path like "stages/AssetRuntimeStage/asset_runtime_stage.diastage"
+        # path like "stages/AssetRuntimeTestStage/asset_runtime_stage.diastage"
         path = imp.get("path", "")
         parts = path.split("/")
         if len(parts) < 3 or not parts[-1].endswith(".diastage"):
             continue
-        stage_dir = parts[1]          # e.g. "AssetRuntimeStage"
+        stage_dir = parts[1]          # e.g. "AssetRuntimeTestStage"
         diastage_file = parts[-1]     # e.g. "asset_runtime_stage.diastage"
         src = f"Cluiche/Assets/Stages/{stage_dir}/{diastage_file}"
         dest = f"$(OutDir)assets/stages/{stage_dir}/"

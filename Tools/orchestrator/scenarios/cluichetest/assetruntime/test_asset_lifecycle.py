@@ -3,7 +3,7 @@
 
 def test_asset_concurrent_load_and_clean_reload(dia_client):
     # Phase 1: first entry — load 4 assets, verify all_loaded
-    dia_client.navigate_to("AssetRuntimeStage")
+    dia_client.navigate_to("AssetRuntimeTestStage")
     result = dia_client.poll_checkpoint("asset_runtime.all_loaded", timeout_s=5.0)
     assert result["passed"], f"First load failed: {result['message']}"
 
@@ -17,7 +17,7 @@ def test_asset_concurrent_load_and_clean_reload(dia_client):
     dia_client.navigate_to("Boot")
 
     # Phase 2: second entry — reload, verify clean_reload
-    dia_client.navigate_to("AssetRuntimeStage")
+    dia_client.navigate_to("AssetRuntimeTestStage")
     result = dia_client.poll_checkpoint("asset_runtime.all_loaded", timeout_s=5.0)
     assert result["passed"], f"Reload failed: {result['message']}"
 

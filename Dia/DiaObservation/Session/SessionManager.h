@@ -53,6 +53,9 @@ namespace Dia
 			void SetCaptureCanvas(Dia::Graphics::ICanvas* canvas);
 			Capture::CaptureManager* GetCaptureManager();
 
+			static Capture::CaptureManager* GetActiveCaptureManager();
+			static void SetActiveCaptureCanvas(Dia::Graphics::ICanvas* canvas);
+
 			void OnRetainableEntry(const Log::LogEntry& entry);
 
 			void EmergencyDump();

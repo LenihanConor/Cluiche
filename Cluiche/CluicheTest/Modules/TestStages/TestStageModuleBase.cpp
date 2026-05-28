@@ -3,6 +3,7 @@
 
 #include <DiaAutomation/AutomationService.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Capture/DiaCapture.h>
 
 namespace CluicheTest {
 
@@ -71,6 +72,7 @@ void TestStageModuleBase::ReportPassed()
     if (mResolved) return;
     mResolved = true;
     TestResultsRegistry::GetInstance().SetPassed(GetStageName(), mFrameCount);
+    DIA_CAPTURE(GetStageName(), "passed");
 }
 
 void TestStageModuleBase::ReportFailed()
@@ -78,6 +80,7 @@ void TestStageModuleBase::ReportFailed()
     if (mResolved) return;
     mResolved = true;
     TestResultsRegistry::GetInstance().SetFailed(GetStageName(), mFrameCount);
+    DIA_CAPTURE(GetStageName(), "failed");
 }
 
 Dia::Automation::AutomationService* TestStageModuleBase::GetAutomationService()

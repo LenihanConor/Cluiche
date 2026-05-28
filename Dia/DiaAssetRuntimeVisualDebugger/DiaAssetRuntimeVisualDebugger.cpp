@@ -37,7 +37,7 @@ void DiaAssetRuntimeVisualDebugger::DrawImGui()
     ImGui::Separator();
 
     ImGui::Text("Stage:"); ImGui::SameLine(120.0f);
-    ImGui::Text("AssetRuntimeStage");
+    ImGui::Text("AssetRuntimeTestStage");
 
     ImGui::Text("Progress:"); ImGui::SameLine(120.0f);
     if (loadCount > 0)

@@ -7,8 +7,8 @@
             "dedicated_thread": false,
             "modules": [
                 {
-                    "instance_id": "TestAssetRuntimeTestStageModule",
-                    "type_id": "TestAssetRuntimeTestStageModule",
+                    "instance_id": "TestAssetRuntimeStageModule",
+                    "type_id": "TestAssetRuntimeStageModule",
                     "stages": [ "AssetRuntimeTestStage" ],
                     "dependencies": [ "AutomationModule" ],
                     "channels": []
