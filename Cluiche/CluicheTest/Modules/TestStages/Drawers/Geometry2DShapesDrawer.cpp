@@ -13,7 +13,7 @@
 namespace CluicheTest {
 
 static const Dia::Graphics::RGBA kWhite(255, 255, 255, 255);
-static constexpr float               kRayLen = 150.0f;
+static constexpr float               kRayLen = 80.0f;
 
 Geometry2DShapesDrawer::Geometry2DShapesDrawer(
     const Dia::Geometry2D::Circle&        circle,

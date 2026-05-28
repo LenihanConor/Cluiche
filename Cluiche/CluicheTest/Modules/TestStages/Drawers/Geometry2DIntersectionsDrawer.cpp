@@ -10,7 +10,7 @@ namespace CluicheTest {
 
 static const Dia::Graphics::RGBA kHitColour(220, 50, 50, 255);
 static const Dia::Graphics::RGBA kMissColour(50, 200, 50, 255);
-static constexpr float kRayLen = 150.0f;
+static constexpr float kRayLen = 60.0f;
 
 Geometry2DIntersectionsDrawer::Geometry2DIntersectionsDrawer(
     const Dia::Core::Containers::DynamicArrayC<IntersectionPair, kMaxPairs>& pairs,
@@ -67,4 +67,5 @@ void Geometry2DIntersectionsDrawer::Draw(Dia::Graphics::FrameData& frameData)
 } // namespace CluicheTest
 
 #endif // DIA_DEBUG
+
 

@@ -36,30 +36,29 @@ void Geometry2DLabelsDrawer::Draw(Dia::Graphics::FrameData& /*frameData*/)
 
 void Geometry2DLabelsDrawer::DrawImGui()
 {
-    ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always, ImVec2(0, 0));
+    // World→screen: screenX = worldX, screenY = viewportH - worldY (Y-UP to Y-DOWN)
+    const float viewH = ImGui::GetIO().DisplaySize.y;
 
-    ImGui::SetWindowFontScale(mFontScale);
-
-    auto labelAt = [](const char* text, float x, float y)
+    auto labelAt = [viewH](const char* text, float worldX, float worldY)
     {
-        ImVec2 screen = ImGui::GetWindowPos();
-        ImGui::GetWindowDrawList()->AddText(
-            ImVec2(screen.x + x, screen.y + y),
+        const float sx = worldX - 15.0f;
+        const float sy = viewH - worldY - 18.0f;
+        ImGui::GetForegroundDrawList()->AddText(
+            ImVec2(sx, sy),
             IM_COL32(220, 220, 220, 200),
             text);
     };
 
-    // Labels at fixed offsets — positions match SetupGallery() layout in the module.
-    labelAt("Circle",      mCircle.GetCenter().X(),        mCircle.GetCenter().Y()        - mCircle.GetRadius() - 12.0f);
-    labelAt("AARect",      mAARect.CalculateCenter().X(),       mAARect.CalculateCenter().Y()       - 40.0f);
-    labelAt("OORect",      mOORect.CalculateCenter().X(),       mOORect.CalculateCenter().Y()       - 40.0f);
-    labelAt("Line",        mLine.GetPt1().X(),          mLine.GetPt1().Y()          - 12.0f);
-    labelAt("Ray",         mRay.GetOrigin().X(),          mRay.GetOrigin().Y()          - 12.0f);
-    labelAt("Triangle",    mTriangle.GetPt(Dia::Geometry2D::Triangle::kPt0).X(), mTriangle.GetPt(Dia::Geometry2D::Triangle::kPt0).Y() - 12.0f);
-    labelAt("Capsule",     mCapsule.GetPoint1().X(),      mCapsule.GetPoint1().Y()      - 45.0f);
-    labelAt("ConvexPoly",  mConvexPoly.GetVertex(0).X(),  mConvexPoly.GetVertex(0).Y()  - 12.0f);
-    labelAt("Arc",         mArc.GetFocal().X(),           mArc.GetFocal().Y()           - mArc.GetRadius() - 12.0f);
-    labelAt("Sector",      mSector.GetCenter().X(),       mSector.GetCenter().Y()       - mSector.GetRadius() - 12.0f);
+    labelAt("Circle",     mCircle.GetCenter().X(),       mCircle.GetCenter().Y() + mCircle.GetRadius() + 5.0f);
+    labelAt("AARect",     mAARect.CalculateCenter().X(), mAARect.GetTopRight().Y() + 5.0f);
+    labelAt("OORect",     mOORect.CalculateCenter().X(), mOORect.CalculateCenter().Y() + 45.0f);
+    labelAt("Line",       mLine.CalculateCenter().X(),   mLine.GetPt1().Y() + 30.0f);
+    labelAt("Ray",        mRay.GetOrigin().X(),          mRay.GetOrigin().Y() + 30.0f);
+    labelAt("Triangle",   mTriangle.CenterOfGravity().X(), mTriangle.GetPt(Dia::Geometry2D::Triangle::kPt2).Y() + 5.0f);
+    labelAt("Capsule",    mCapsule.GetCenter().X(),      mCapsule.GetPoint2().Y() + 30.0f);
+    labelAt("ConvexPoly", mConvexPoly.CalculateCenter().X(), mConvexPoly.GetVertex(0).Y() + 5.0f);
+    labelAt("Arc",        mArc.GetFocal().X(),           mArc.GetFocal().Y() + mArc.GetRadius() + 5.0f);
+    labelAt("Sector",     mSector.GetCenter().X(),       mSector.GetCenter().Y() + mSector.GetRadius() + 5.0f);
 
     ImGui::SliderFloat("Font scale", &mFontScale, 0.5f, 2.0f);
 }
