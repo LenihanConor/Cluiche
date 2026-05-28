@@ -50,11 +50,23 @@ Dia::ApplicationFlow::StopResult Physics2DModule::DoStop()
     DIA_LOG_INFO("Application", "Physics2DModule::DoStop entry");
 
 #ifdef DIA_DEBUG
-    mShapesDrawer.reset();
-    mVelocityDrawer.reset();
-    mContactsDrawer.reset();
-    mAABBDrawer.reset();
-    mConstraintsDrawer.reset();
+    if (mShapesDrawer)
+    {
+        auto* mgr = VisualDebuggerModule::GetStaticLayerManager();
+        if (mgr)
+        {
+            mgr->Unregister(mShapesDrawer->GetLayerName());
+            mgr->Unregister(mVelocityDrawer->GetLayerName());
+            mgr->Unregister(mContactsDrawer->GetLayerName());
+            mgr->Unregister(mAABBDrawer->GetLayerName());
+            mgr->Unregister(mConstraintsDrawer->GetLayerName());
+        }
+        mShapesDrawer.reset();
+        mVelocityDrawer.reset();
+        mContactsDrawer.reset();
+        mAABBDrawer.reset();
+        mConstraintsDrawer.reset();
+    }
 #endif
 
     delete mWorld;
