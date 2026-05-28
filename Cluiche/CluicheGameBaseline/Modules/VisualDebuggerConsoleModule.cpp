@@ -24,7 +24,8 @@ Dia::ApplicationFlow::StartResult VisualDebuggerConsoleModule::DoStart()
     if (!mDebugUI.Get())
         return Dia::ApplicationFlow::StartResult::kLoading;
 
-    mConsole.Toggle();
+    if (!mConsole.IsVisible())
+        mConsole.Toggle();
 
     DIA_LOG_INFO("Debug", "VisualDebuggerConsoleModule started");
     return Dia::ApplicationFlow::StartResult::kReady;
