@@ -1,7 +1,7 @@
 # Plan: Replace DiaSFML with DiaSDL (Window + Input)
 
 **Spec:** docs/specs/features/dia/diasdl/replace-diasfml-with-sdl3.md
-**Status:** Not started
+**Status:** Done
 
 ## Session Notes
 

@@ -28,20 +28,22 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | Feature | Spec | System | Notes |
 |---------|------|--------|-------|
 | per-app-bin-layout | [per-app-bin-layout.md](specs/features/dia/diapipeline/per-app-bin-layout.md) | DiaPipeline ✅ | |
-| stage-scaffold-simplification | [stage-scaffold-simplification.plan.md](specs/features/cluichetest/teststages/stage-scaffold-simplification.plan.md) | TestStages | Cross-cutting DX pass — 8→4 touch points. FrameStream auto-flush, pipeline auto-derive stages from catalogue + .diagame, Boot auto-transitions, staleness fix. Unblocks TestGeometry2DStage + future stages. 8 tasks. |
-| ~~service-channel~~ | **Done** (2026-05-27) — `ServiceStream<T>` replaces all `GetStatic*()` singletons; EventStream frame-batching; composite FrameStream per PU-pair; 8 consolidated streams; `channels[]` array replaces `reads`/`writes` in manifests; editor UI updated; 5310/5311 GoogleTests pass. | | |
-| replace-diasfml-with-sdl3 | [replace-diasfml-with-sdl3.md](specs/features/dia/diasdl/replace-diasfml-with-sdl3.md) | DiaSDL (new) | Replace DiaSFML with SDL3 window+input backend; enables Windows/Linux/Android/iOS. [Plan](specs/features/dia/diasdl/replace-diasfml-with-sdl3.plan.md) ready — 10 tasks. Start with T-00 (SDL3 submodule) then T-01 (Win32WndProcChain → DiaBgfx/Imgui/ via PowerShell). Key: `ListenForInputSources` moves to `IInputSource` in T-03. |
-| ~~diabgfx-imgui-backend~~ | **Done** (2026-05-25) — BgfxImGuiBackend wired; deferred-init on render thread; ImGui input via Win32WndProcChain; both SFML and `BGFX_BACKEND=dx11` paths pass. | | |
-| ~~diasfml-render-removal~~ | **Done** (2026-05-26) — SFML render path deleted; DiaSFML = window+input only; TextureHandler moved to DiaAssetRuntime (stb_image decode via DiaBgfx); bgfx unconditional; imgui core sources moved to DiaBgfx; Phase 1 ship gate (RB-016) closed. | | |
-| ~~stale-ui-overlay-fix~~ | **Done** (2026-05-26) — UIOverlayRenderer::Composite early-returns on empty buffer; fixes DummyStage UI persisting into RigidBody2DStage after transition. 5 regression tests added. | | |
-| ~~ToolbarPanelSwitcher~~ | **Done** (2026-05-22) — full-name pills + `⋯ +N` overflow dropdown, `ProjectContextButton` moved right. | | |
-
----
-
 
 ---
 
 ## Ready to Build (cont.)
+
+### DiaApplicationFlow Features
+
+| Feature | Spec | Notes |
+|---------|------|-------|
+| module-metadata | [module-metadata.md](specs/features/dia/diaapplicationflow/module-metadata.md) | PU affinity bitmask + description field; runtime assert on mismatch. [Plan](specs/features/dia/diaapplicationflow/module-metadata.plan.md) — 9 tasks. |
+
+### DiaVisualDebugger Features
+
+| Feature | Spec | Notes |
+|---------|------|-------|
+| shared-debug-console | [shared-debug-console.md](specs/features/dia/diavisualdebugger/shared-debug-console.md) | Boot-level VisualDebuggerModule; per-stage tabs; layers persist across transitions. [Plan](specs/features/dia/diavisualdebugger/shared-debug-console.plan.md) — 12 tasks. Depends on module-metadata (PU identity). |
 
 
 ---
@@ -79,15 +81,15 @@ System spec: [teststages.md](specs/systems/cluichetest/teststages.md) (Approved)
 
 | Stage | Engine System | Validates | Checkpoint examples | Needs |
 |-------|--------------|-----------|---------------------|-------|
-| RigidBody2DStage | DiaRigidBody2D | Circle drop + settle detection, collision response | `rigid_body.circle_settled`, `rigid_body.collision_detected` | `/spec-feature` |
+| ~~RigidBody2DStage~~ | **Done** (2026-05-28) — `TestStageModuleBase` extracted; 10 circles settle; pytest scenario passes; `TestStageModuleBase` pattern established for future stages. | | |
 | StateMachineStage | DiaStateMachine | State transitions, guard evaluation, event firing | `state_machine.reached_target`, `state_machine.guard_blocked` | `/spec-feature` |
 | Animation2DStage | DiaAnimation2D + DiaRig2D | Clip playback, pose validation, blend weights | `animation.clip_complete`, `animation.pose_matches` | `/spec-feature` |
 | SoftBody2DStage | DiaSoftBody2D | Rope/cloth stabilization, spring convergence | `soft_body.rope_settled` | `/spec-feature` |
-| TestGeometry2DStage | DiaGeometry2D + DiaGeometry2DVisualDebugger | Gallery of all shape primitives, 6 intersection pair colour-coding, 4 spatial structure overlays, 5 IVisualDebugger drawers | `geometry2d.passed` | [Spec Approved](specs/features/cluichetest/teststages/geometry2d-stage.md). [Plan ready](specs/features/cluichetest/teststages/geometry2d-stage.plan.md) — 9 tasks. Blocked on scaffold simplification (Task 2). [Mockup](specs/features/cluichetest/teststages/geometry2d-stage.mockup.html) approved. |
+| TestGeometry2DStage | DiaGeometry2D + DiaGeometry2DVisualDebugger | Gallery of all shape primitives, 6 intersection pair colour-coding, 4 spatial structure overlays, 5 IVisualDebugger drawers | `geometry2d.passed` | [Spec Approved](specs/features/cluichetest/teststages/geometry2d-stage.md). [Plan ready](specs/features/cluichetest/teststages/geometry2d-stage.plan.md) — 9 tasks. [Mockup](specs/features/cluichetest/teststages/geometry2d-stage.mockup.html) approved. |
 | EntityTestStage | DiaEntity | Spawn/destroy/hierarchy/query/mailbox/lifecycle; `TransformComponent` + `VisualTestRenderComponent`; 6 checkpoints | `entity.spawn_complete`, `entity.query_correct`, `entity.hierarchy_valid`, `entity.destroy_cascade`, `entity.mailbox_received`, `entity.lifecycle_complete` | [Spec Approved](specs/features/cluichetest/teststages/entity-test-stage.md). [Plan ready](specs/features/cluichetest/teststages/entity-test-stage.plan.md) — 9 tasks (T-00 done). Uses `/new-cluichetest-stage` skill. Two-module split: EntityModule (reusable) + EntityTestModule (MainPU, checkpoints). |
 | UIUltralightStage | DiaUIUltralight | Page load, JS↔C++ bridge (4 bound methods inc. round-trip), pixel buffer non-empty, mouse injection, deterministic reload; Alpine.js panel | `ui.page_loaded`, `ui.js_to_cpp_callback_fired`, `ui.round_trip_value_correct`, `ui.pixel_buffer_non_empty`, `ui.mouse_click_handled`, `ui.deterministic_reload` | [Spec Approved](specs/features/cluichetest/teststages/ui-ultralight-stage.md). Mockup done. 10-task plan at implementation start. |
 
-**First stage to build:** RigidBody2DStage — physics is already stable, no other system dependencies, clear pass/fail checkpoint (body settles). Proves the test-stage pattern works.
+**First stage to build:** RigidBody2DTestStage — **Done** (2026-05-28). Pattern proven; `TestStageModuleBase` extracted. All stages renamed to `<Domain>TestStage` convention.
 
 ### Deferred
 
@@ -95,6 +97,7 @@ System spec: [teststages.md](specs/systems/cluichetest/teststages.md) (Approved)
 |---|------|-------|
 | 6b | Extract AutomationModuleBase into DiaAutomation | Evaluate from working code after 2+ apps use it |
 | 7 | CluicheEditor EditorAutomationModule | After 6b |
+| 9 | DiaScreenCapture — frame grab for mock comparison | Capture bgfx framebuffer as PNG after EndFrame(); integrate with DiaObservation SessionManager; enable visual regression against HTML mockups. Must run on render thread (EventStream for capture requests). Needs `/spec-feature`. |
 
 ---
 

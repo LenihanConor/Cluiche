@@ -1,6 +1,7 @@
 # Stage Scaffold Simplification Plan
 
 **Goal:** Reduce new CluicheTest stage creation from 8 manual touch points to ~4, eliminate silent failure modes.
+**Status:** Done
 
 **Spec:** N/A — cross-cutting DX/hardening pass. Updates existing systems, no new feature.
 
@@ -23,7 +24,7 @@ Six agreed changes to reduce fragility of adding new test stages. Key constraint
 | 5 | Pipeline derives asset_stages from catalogue | Remove asset_stages from pipeline.toml cluichetest section → pipeline still builds stage assets | Done | sonnet | config_loader.py reads catalogue JSON, filters type==stage && !disabled; asset_stages removed from pipeline.toml |
 | 6 | Fix pipeline up-to-date check for global manifest | Edit cluiche_main.diaapp → next `dia pipeline` re-deploys it without force-copy | Done | haiku | cluiche_main.diaapp added to pipeline.toml deploy files |
 | 7 | Update /new-cluichetest-stage skill | Skill reflects reduced touch points | Done | haiku | Skill updated with Pending Simplifications section noting completed items |
-| 8 | Add DIA_TRACE_ZONE to FrameStream auto-flush path | Profiler shows when auto-flush fires | Todo | haiku | Deferred — hot path, needs discussion before adding trace overhead |
+| 8 | Add DIA_TRACE_ZONE to FrameStream auto-flush path | Profiler shows when auto-flush fires | Done | haiku | `DIA_TRACE_ZONE("FrameStream.AutoFlush.NoData", kDiaApplicationFlow)` in FrameStreamDiagnostics.cpp; fire-once so overhead is negligible |
 | 9 | Clean up existing stages after all changes land | Existing stages compile and run cleanly with no redundant boilerplate | Done | haiku | All three stage .diaapps already clean — AssetRuntimeStage uses AssetRuntimeRendererModule (writes SimToRender directly), DummyStage uses DummyLevelModule, RigidBody2DStage has empty SimPU modules[]. Skill updated: VisualDebuggerModule removed from template, pipeline.toml steps removed, Boot transitions use `[]`, step numbering corrected |
 
 ## Dependency Order

@@ -194,16 +194,16 @@ def test_rigidbody2d_all_bodies_settle(dia_client):
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 1 | Create RigidBody2DTestModule (.h/.cpp) | Compiles, module registered | Todo | sonnet | Follow pattern from system spec |
-| 2 | Implement DoStart: SetupScene + RegisterCheckpoints | Module starts, checkpoint queryable | Todo | sonnet | 10 circles + ground + checkpoint registration |
-| 3 | Implement DoUpdate: frame counting + settle detection | `all_settled` checkpoint returns true after settle | Todo | sonnet | AreAllBodiesAsleep() check each frame |
-| 4 | Implement DoStop: cleanup | No leaks, checkpoint auto-cleared | Todo | haiku | Release world + bodies |
-| 5 | Create stage manifest files (.diastage + .diaapp) | Manifest loads, stage appears in stages list | Todo | haiku | transitions: ["Boot"] |
-| 6 | Add stage import to cluichetest.diagame | Stage navigable from Boot | Todo | haiku | |
-| 7 | Add vcxproj + filters entries | Builds in VS | Todo | haiku | |
-| 8 | Write pytest scenario | `dia orchestrate` runs, checkpoint validates | Todo | sonnet | poll_checkpoint + metric assertion |
-| 9 | Add scenario to plan JSON | `--list` shows rigidbody2d scenario | Todo | haiku | |
-| 10 | Verify: full E2E pass (Boot → RigidBody2DStage → settle → Boot) | Orchestrator green | Todo | sonnet | Requires Infrastructure Tasks 1-6 complete |
+| 1 | Create RigidBody2DTestModule (.h/.cpp) | Compiles, module registered | Done | sonnet | Follow pattern from system spec |
+| 2 | Implement DoStart: SetupScene + RegisterCheckpoints | Module starts, checkpoint queryable | Done | sonnet | 10 circles + ground + checkpoint registration |
+| 3 | Implement DoUpdate: frame counting + settle detection | `all_settled` checkpoint returns true after settle | Done | sonnet | AreAllBodiesAsleep() check each frame |
+| 4 | Implement DoStop: cleanup | No leaks, checkpoint auto-cleared | Done | haiku | Release world + bodies |
+| 5 | Create stage manifest files (.diastage + .diaapp) | Manifest loads, stage appears in stages list | Done | haiku | transitions: ["Boot"] |
+| 6 | Add stage import to cluichetest.diagame | Stage navigable from Boot | Done | haiku | |
+| 7 | Add vcxproj + filters entries | Builds in VS | Done | haiku | |
+| 8 | Write pytest scenario | `dia orchestrate` runs, checkpoint validates | Done | sonnet | poll_checkpoint + metric assertion |
+| 9 | Add scenario to plan JSON | `--list` shows rigidbody2d scenario | Done | haiku | |
+| 10 | Verify: full E2E pass (Boot → RigidBody2DStage → settle → Boot) | Orchestrator green | Done | sonnet | `TestStageModuleBase` extracted; pattern proven |
 
 ## Dependencies
 
@@ -245,4 +245,4 @@ None.
 
 ## Status
 
-`Approved` — 2026-05-22
+`Done` — 2026-05-28. `TestStageModuleBase` extracted; all 10 tasks complete; pattern proven for future stages.
