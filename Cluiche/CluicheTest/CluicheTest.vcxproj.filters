@@ -10,6 +10,9 @@
     <Filter Include="ApplicationFlow\Modules\TestStages">
       <UniqueIdentifier>{a1b2c3d4-e5f6-7890-abcd-ef1234567890}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ApplicationFlow\Modules\Dummy">
+      <UniqueIdentifier>{b2c3d4e5-f6a7-8901-bcde-ef2345678901}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -31,11 +34,23 @@
     <ClCompile Include="Modules\TestStages\AssetRuntimeHUDModule.cpp">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\TestStages\TestStageModuleBase.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
     <ClCompile Include="Modules\TestStages\TestResultsRegistry.cpp">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClCompile>
     <ClCompile Include="Modules\TestStages\TestStageHUDModule.cpp">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\dummy\DummyLevelModule.cpp">
+      <Filter>ApplicationFlow\Modules\Dummy</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\dummy\DummyUIPageModule.cpp">
+      <Filter>ApplicationFlow\Modules\Dummy</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\dummy\DummyUIPage.cpp">
+      <Filter>ApplicationFlow\Modules\Dummy</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -57,11 +72,23 @@
     <ClInclude Include="Modules\TestStages\AssetRuntimeHUDModule.h">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClInclude>
+    <ClInclude Include="Modules\TestStages\TestStageModuleBase.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
     <ClInclude Include="Modules\TestStages\TestResultsRegistry.h">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClInclude>
     <ClInclude Include="Modules\TestStages\TestStageHUDModule.h">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\dummy\DummyLevelModule.h">
+      <Filter>ApplicationFlow\Modules\Dummy</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\dummy\DummyUIPageModule.h">
+      <Filter>ApplicationFlow\Modules\Dummy</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\dummy\DummyUIPage.h">
+      <Filter>ApplicationFlow\Modules\Dummy</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

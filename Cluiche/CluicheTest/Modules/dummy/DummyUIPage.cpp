@@ -1,4 +1,4 @@
-#include "UI/DummyUIPage.h"
+#include "DummyUIPage.h"
 
 
 namespace Cluiche

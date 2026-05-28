@@ -2,7 +2,7 @@
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
-#include "UI/DummyUIPage.h"
+#include "DummyUIPage.h"
 #include "Modules/UIModule.h"
 
 namespace Cluiche { namespace AppFlow {
