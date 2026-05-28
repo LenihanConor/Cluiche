@@ -178,17 +178,28 @@ DIA_MODULE({mn}_);
 # ---------------------------------------------------------------------------
 
 def _update_cluiche_main_diaapp(path: Path, stage_name: str) -> None:
-    """Add stage entry and add stage_name to TestStageHUDModule's stages list."""
+    """Add stage entry, wire Boot↔stage transitions, and update relevant module stage lists."""
     data = json.loads(path.read_text(encoding="utf-8"))
 
-    # Add to top-level stages array
-    new_stage_entry = {"name": stage_name, "transitions": [], "auto_advance": False}
+    # Add to top-level stages array with back-transition to Boot
+    new_stage_entry = {"name": stage_name, "transitions": ["Boot"], "auto_advance": False}
     data["stages"].append(new_stage_entry)
 
-    # Find TestStageHUDModule in any PU and add stage_name to its stages
+    # Add stage_name to Boot's transitions so it appears in the Boot menu
+    for stage in data.get("stages", []):
+        if stage.get("name") == "Boot":
+            if stage_name not in stage["transitions"]:
+                stage["transitions"].append(stage_name)
+
+    # Update relevant module stage lists in all PUs
+    _STAGE_LIST_MODULES = {
+        "TestStageHUDModule",
+        "VisualDebuggerModule",
+        "VisualDebuggerConsoleModule",
+    }
     for pu in data.get("processing_units", []):
         for mod in pu.get("modules", []):
-            if mod.get("instance_id") == "TestStageHUDModule" or mod.get("type_id") == "TestStageHUDModule":
+            if mod.get("instance_id") in _STAGE_LIST_MODULES or mod.get("type_id") in _STAGE_LIST_MODULES:
                 if stage_name not in mod["stages"]:
                     mod["stages"].append(stage_name)
 

@@ -6,7 +6,8 @@
             "transitions": [
                 "DummyStage",
                 "RigidBody2DTestStage",
-                "AssetRuntimeTestStage"
+                "AssetRuntimeTestStage",
+                "Geometry2DTestStage"
             ],
             "auto_advance": false
         },
@@ -27,7 +28,9 @@
         },
         {
             "name": "Geometry2DTestStage",
-            "transitions": [],
+            "transitions": [
+                "Boot"
+            ],
             "auto_advance": false
         }
     ],
@@ -288,7 +291,8 @@
                     "type_id": "VisualDebuggerModule",
                     "stages": [
                         "RigidBody2DTestStage",
-                        "AssetRuntimeTestStage"
+                        "AssetRuntimeTestStage",
+                        "Geometry2DTestStage"
                     ],
                     "dependencies": [],
                     "channels": [
@@ -349,7 +353,8 @@
                     "type_id": "VisualDebuggerConsoleModule",
                     "stages": [
                         "RigidBody2DTestStage",
-                        "AssetRuntimeTestStage"
+                        "AssetRuntimeTestStage",
+                        "Geometry2DTestStage"
                     ],
                     "dependencies": [
                         "DebugUI"

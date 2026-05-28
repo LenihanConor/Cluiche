@@ -414,6 +414,26 @@ class TestFullRun:
         hud = next(m for m in render_pu["modules"] if m["instance_id"] == "TestStageHUDModule")
         assert "TestEntityTestStage" in hud["stages"]
 
+    def test_main_diaapp_boot_transitions_updated(self, tmp_path):
+        _, repo = self._invoke(tmp_path)
+        p = (
+            repo
+            / "Cluiche/Assets/CluicheTest/Global/misc/ApplicationFlow/cluiche_main.diaapp"
+        )
+        data = json.loads(p.read_text(encoding="utf-8"))
+        boot = next(s for s in data["stages"] if s["name"] == "Boot")
+        assert "TestEntityTestStage" in boot["transitions"]
+
+    def test_main_diaapp_stage_back_transition_to_boot(self, tmp_path):
+        _, repo = self._invoke(tmp_path)
+        p = (
+            repo
+            / "Cluiche/Assets/CluicheTest/Global/misc/ApplicationFlow/cluiche_main.diaapp"
+        )
+        data = json.loads(p.read_text(encoding="utf-8"))
+        new_stage = next(s for s in data["stages"] if s["name"] == "TestEntityTestStage")
+        assert "Boot" in new_stage["transitions"]
+
     # --- diagame updates ---
 
     def test_diagame_import_added(self, tmp_path):
