@@ -1,5 +1,6 @@
 #pragma once
 #include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaApplicationFlow/Streams/StreamReader.h>
 #include <DiaCore/CRC/StringCRC.h>
@@ -12,6 +13,8 @@ class AssetRuntimeHUDModule : public Dia::ApplicationFlow::Module
 {
 public:
     static const Dia::Core::StringCRC kTypeId;
+    static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kRender;
+    static constexpr const char* kDescription = "Asset runtime reload snapshot and metrics HUD";
     explicit AssetRuntimeHUDModule(const Dia::Core::StringCRC& instanceId);
 
 protected:

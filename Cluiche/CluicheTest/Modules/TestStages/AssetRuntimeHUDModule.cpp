@@ -38,7 +38,7 @@ void AssetRuntimeHUDModule::DoUpdate(float /*deltaTime*/)
         return;
 
     auto* svc = Cluiche::AppFlow::AssetServiceModule::GetStatic();
-    const bool stageComplete = svc && svc->IsStageLoadComplete(Dia::Core::StringCRC("AssetRuntimeStage"));
+    const bool stageComplete = svc && svc->IsStageLoadComplete(Dia::Core::StringCRC("AssetRuntimeTestStage"));
 
     auto& metricReg = Dia::Observation::Metric::MetricRegistry::Instance();
     Dia::Observation::Metric::Gauge* gEntryCount = metricReg.FindGauge(Dia::Core::StringCRC("cluichetest.asset_runtime.entry_count"));
@@ -67,7 +67,7 @@ void AssetRuntimeHUDModule::DoUpdate(float /*deltaTime*/)
     ImGui::Text("true / true");
 
     const StageResult* result = TestResultsRegistry::IsCreated()
-        ? TestResultsRegistry::GetInstance().GetResult(Dia::Core::StringCRC("AssetRuntimeStage"))
+        ? TestResultsRegistry::GetInstance().GetResult(Dia::Core::StringCRC("AssetRuntimeTestStage"))
         : nullptr;
     const bool passed = result && result->state == StageResult::State::kPassed;
 

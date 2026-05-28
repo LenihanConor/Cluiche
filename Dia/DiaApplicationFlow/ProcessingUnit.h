@@ -1,5 +1,6 @@
 #pragma once
 #include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Memory/UniquePtr.h>
 #include <atomic>
@@ -24,6 +25,7 @@ namespace Dia { namespace ApplicationFlow {
         [[nodiscard]] const Dia::Core::StringCRC& GetInstanceId() const;
         [[nodiscard]] float GetFrequencyHz() const;
         [[nodiscard]] bool IsDedicatedThread() const;
+        [[nodiscard]] PUAffinity GetAffinity() const { return mAffinity; }
 
         // Module management (called by Application during Start)
         void AddModule(Dia::Core::UniquePtr<Module> module,
@@ -72,6 +74,7 @@ namespace Dia { namespace ApplicationFlow {
         };
 
         Dia::Core::StringCRC mInstanceId;
+        PUAffinity           mAffinity;
         float mFrequencyHz;
         bool mDedicatedThread;
 

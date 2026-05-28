@@ -1,5 +1,6 @@
 #pragma once
 #include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Time/TimeServer.h>
 
@@ -11,6 +12,8 @@ namespace Cluiche { namespace AppFlow {
 class TimeServerModule : public Dia::ApplicationFlow::Module {
 public:
     static const Dia::Core::StringCRC kTypeId;
+    static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kSim;
+    static constexpr const char* kDescription = "Frame timing and delta-time provider";
     explicit TimeServerModule(const Dia::Core::StringCRC& instanceId);
 
     const Dia::Core::TimeServer& GetTimeServer() const { return mTimeServer; }

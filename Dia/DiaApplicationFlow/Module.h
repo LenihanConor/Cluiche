@@ -43,6 +43,7 @@ namespace Dia { namespace ApplicationFlow {
         Module& operator=(const Module&) = delete;
 
         [[nodiscard]] const Dia::Core::StringCRC& GetInstanceId() const;
+        [[nodiscard]] const Dia::Core::StringCRC& GetTypeId() const;
 
         // The PU is a scheduler, not a directory.  The only mutating API it
         // exposes is AddModule, which is private to Application.  Cross-PU
@@ -83,6 +84,7 @@ namespace Dia { namespace ApplicationFlow {
 
         void SetProcessingUnit(ProcessingUnit* pu);
         void SetApplication(Application* app);
+        void SetTypeId(const Dia::Core::StringCRC& typeId);
 
         // Called by Application after creating the $lifecycle writer (F2).
         // Pointer must outlive the module; cleared to nullptr if Application is destroyed first.
@@ -111,6 +113,7 @@ namespace Dia { namespace ApplicationFlow {
         LifecycleReporter        mLifecycleReporter;
 
         Dia::Core::StringCRC     mInstanceId;
+        Dia::Core::StringCRC     mTypeId;
         ProcessingUnit*          mProcessingUnit  = nullptr;
         // Stored as concrete Application* for framework-internal use (e.g.
         // OnConnectStreams needs the full Application&).  Exposed to module

@@ -1,5 +1,6 @@
 #pragma once
 #include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/Streams/StreamWriter.h>
 #include <DiaApplicationFlow/Streams/ServiceStreamReader.h>
 #include <DiaCore/CRC/StringCRC.h>
@@ -12,6 +13,8 @@ class AssetRuntimeRendererModule : public Dia::ApplicationFlow::Module
 {
 public:
     static const Dia::Core::StringCRC kTypeId;
+    static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kSim;
+    static constexpr const char* kDescription = "Renders asset runtime texture previews to SimToRender";
     explicit AssetRuntimeRendererModule(const Dia::Core::StringCRC& instanceId);
 
 protected:

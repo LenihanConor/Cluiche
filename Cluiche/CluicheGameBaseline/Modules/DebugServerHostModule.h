@@ -13,6 +13,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaDebugServer/DebugServer.h>
 #include <DiaDebugServer/IDebugStateProvider.h>
 #include <DiaCore/CRC/StringCRC.h>
@@ -31,6 +32,8 @@ class DebugServerHostModule
 {
 public:
     static const Dia::Core::StringCRC kTypeId;
+    static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kMain;
+    static constexpr const char* kDescription = "WebSocket debug server for editor connection";
 
     explicit DebugServerHostModule(const Dia::Core::StringCRC& instanceId);
     ~DebugServerHostModule() override;

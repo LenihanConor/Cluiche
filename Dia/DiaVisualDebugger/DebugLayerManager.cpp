@@ -25,17 +25,38 @@ namespace Dia
 
         void DebugLayerManager::Register(IVisualDebugger* debugger, int priority)
         {
+            Register(debugger, priority, Dia::Core::StringCRC());
+        }
+
+        void DebugLayerManager::Register(IVisualDebugger* debugger, int priority,
+                                          const Dia::Core::StringCRC& stageTag)
+        {
             DIA_ASSERT(debugger != nullptr, "DebugLayerManager::Register — debugger must not be null");
-            DIA_ASSERT(FindLayerIndex(debugger->GetLayerName()) < 0,
-                       "DebugLayerManager::Register — layer name already registered in dynamic registry");
+
+            // Idempotency: same name + same pointer → just reactivate
+            int existing = FindLayerIndex(debugger->GetLayerName());
+            if (existing >= 0)
+            {
+                if (mLayers[static_cast<unsigned int>(existing)].debugger == debugger)
+                {
+                    mLayers[static_cast<unsigned int>(existing)].active = true;
+                    mLayersDirty = true;
+                    return;
+                }
+                DIA_ASSERT(false, "DebugLayerManager::Register — layer name already registered with different pointer");
+                return;
+            }
+
             DIA_ASSERT(!mFixedRegistry.HasLayer(debugger->GetLayerName()),
                        "DebugLayerManager::Register — layer name already registered in fixed registry");
 
             LayerEntry entry;
-            entry.debugger = debugger;
-            entry.priority = priority;
+            entry.debugger  = debugger;
+            entry.priority  = priority;
+            entry.stageTag  = stageTag;
+            entry.active    = true;
             mLayers.Add(entry);
-            mSortDirty  = true;
+            mSortDirty   = true;
             mLayersDirty = true;
         }
 
@@ -96,6 +117,20 @@ namespace Dia
             return mFixedRegistry.IsLayerEnabled(layerName);
         }
 
+        void DebugLayerManager::SetStageActive(const Dia::Core::StringCRC& stageTag, bool active)
+        {
+            if (stageTag == Dia::Core::StringCRC())
+                return;  // empty tag = global layer, never deactivated
+            for (unsigned int i = 0; i < mLayers.Size(); ++i)
+            {
+                if (mLayers[i].stageTag == stageTag)
+                {
+                    mLayers[i].active = active;
+                    mLayersDirty = true;
+                }
+            }
+        }
+
         // --------------------------------------------------------------------
         // Global debug scale
         // --------------------------------------------------------------------
@@ -135,6 +170,8 @@ namespace Dia
 
             for (unsigned int i = 0; i < mLayers.Size(); ++i)
             {
+                if (!mLayers[i].active)
+                    continue;
                 IVisualDebugger* d = mLayers[i].debugger;
                 if (d->IsEnabled())
                     d->Draw(frameData);
@@ -246,6 +283,8 @@ namespace Dia
                 entry["name"]     = mLayers[i].debugger->GetLayerName().AsChar();
                 entry["enabled"]  = mLayers[i].debugger->IsEnabled();
                 entry["priority"] = mLayers[i].priority;
+                entry["stage"]    = mLayers[i].stageTag.AsChar();   // may be "" for global layers
+                entry["active"]   = mLayers[i].active;
                 layers.append(entry);
             }
             payload["layers"] = layers;
@@ -318,6 +357,39 @@ namespace Dia
             if (index < 0 || static_cast<unsigned int>(index) >= mLayers.Size())
                 return nullptr;
             return mLayers[static_cast<unsigned int>(index)].debugger;
+        }
+
+        Dia::Core::StringCRC DebugLayerManager::GetLayerStageTag(int index) const
+        {
+            if (index < 0 || static_cast<unsigned int>(index) >= mLayers.Size())
+                return Dia::Core::StringCRC::kZero;
+            return mLayers[static_cast<unsigned int>(index)].stageTag;
+        }
+
+        bool DebugLayerManager::IsStageActive(const Dia::Core::StringCRC& stageTag) const
+        {
+            if (stageTag == Dia::Core::StringCRC())
+                return true;
+            for (unsigned int i = 0; i < mLayers.Size(); ++i)
+                if (mLayers[i].stageTag == stageTag && mLayers[i].active)
+                    return true;
+            return false;
+        }
+
+        void DebugLayerManager::GetStageTags(Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16>& out) const
+        {
+            out.RemoveAll();
+            for (unsigned int i = 0; i < mLayers.Size(); ++i)
+            {
+                const auto& tag = mLayers[i].stageTag;
+                if (tag == Dia::Core::StringCRC())
+                    continue;
+                bool found = false;
+                for (unsigned int j = 0; j < out.Size(); ++j)
+                    if (out[j] == tag) { found = true; break; }
+                if (!found)
+                    out.Add(tag);
+            }
         }
 
         // --------------------------------------------------------------------

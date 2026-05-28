@@ -1,11 +1,11 @@
 #pragma once
 
-#include <DiaApplicationFlow/Module.h>
+#include "Modules/TestStages/TestStageModuleBase.h"
 #include <DiaApplicationFlow/ModuleRefV2.h>
+#include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaGeometry2D/Transform/Transform.h>
 #include <DiaGeometry2D/Shapes/Circle.h>
-#include "Modules/AutomationModule.h"
 #include "Modules/Physics2DModule.h"
 
 #ifdef DIA_DEBUG
@@ -21,26 +21,30 @@ namespace Dia::RigidBody2D { class RigidBody2D; }
 
 namespace CluicheTest {
 
-class RigidBody2DTestModule : public Dia::ApplicationFlow::Module
+class RigidBody2DTestModule : public TestStageModuleBase
 {
 public:
     static const Dia::Core::StringCRC kTypeId;
+    static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kMain;
+    static constexpr const char* kDescription = "Validates RigidBody2D: 10 circles settle under gravity";
     explicit RigidBody2DTestModule(const Dia::Core::StringCRC& instanceId);
     ~RigidBody2DTestModule() override;
 
 protected:
-    Dia::ApplicationFlow::StartResult DoStart() override;
-    void DoUpdate(float deltaTime) override;
-    Dia::ApplicationFlow::StopResult DoStop() override;
+    Dia::Core::StringCRC GetStageName() const override;
+    unsigned int GetBudgetFrames() const override { return kBudgetFrames; }
+    const Dia::Core::StringCRC* GetCheckpointNames(unsigned int& outCount) const override;
+    bool AreDependenciesReady() override;
+    void OnStart(Dia::Automation::AutomationService* service) override;
+    void OnUpdate(float deltaTime) override;
+    void OnStop() override;
 
 private:
     void SetupScene();
-    void RegisterCheckpoints();
     bool AreAllBodiesAsleep() const;
     void EmitMetrics();
 
-    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::AutomationModule>       mAutomation{this};
-    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::Physics2DModule>         mPhysics{this};
+    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::Physics2DModule> mPhysics{this};
 
 #ifdef DIA_DEBUG
     std::unique_ptr<Dia::RigidBody2D::PhysicsShapesDrawer>    mShapesDrawer;
@@ -59,9 +63,7 @@ private:
     Dia::Geometry2D::Transform mGroundTransform;
     Dia::Geometry2D::Circle mGroundShape;
 
-    unsigned int mFrameCount = 0;
     unsigned int mSettleFrame = 0;
-    bool mSettled = false;
 
     static constexpr unsigned int kBudgetFrames = 900;
 };

@@ -4,6 +4,7 @@
 
 #include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
+#include <DiaApplicationFlow/IApplicationControl.h>
 #include <DiaGraphics/Frame/DebugFrameData.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
@@ -40,8 +41,12 @@ void VisualDebuggerConsoleModule::DoUpdate(float /*dt*/)
     if (!mgr)
         return;
 
+    Dia::Core::StringCRC currentStage;
+    if (auto* app = GetApplication())
+        currentStage = app->GetCurrentStage();
+
     static Dia::Graphics::DebugFrameData sEmptyFrameData;
-    mConsole.Render(*mgr, sEmptyFrameData);
+    mConsole.Render(*mgr, sEmptyFrameData, currentStage);
 }
 
 Dia::ApplicationFlow::StopResult VisualDebuggerConsoleModule::DoStop()

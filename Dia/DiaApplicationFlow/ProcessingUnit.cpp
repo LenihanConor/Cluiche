@@ -3,6 +3,7 @@
 // DiaApplicationFlow — v2 ProcessingUnit
 ////////////////////////////////////////////////////////////////////////////////
 #include "DiaApplicationFlow/ProcessingUnit.h"
+#include "DiaApplicationFlow/TypeRegistry.h"
 
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
@@ -19,10 +20,17 @@ namespace Dia { namespace ApplicationFlow {
                                    float frequencyHz,
                                    bool dedicatedThread)
         : mInstanceId(instanceId)
+        , mAffinity(PUAffinity::kAny)
         , mFrequencyHz(frequencyHz)
         , mDedicatedThread(dedicatedThread)
         , mModuleCount(0)
     {
+        // Map well-known PU instance IDs to their affinity enum.
+        if      (instanceId == Dia::Core::StringCRC("MainPU"))   mAffinity = PUAffinity::kMain;
+        else if (instanceId == Dia::Core::StringCRC("SimPU"))    mAffinity = PUAffinity::kSim;
+        else if (instanceId == Dia::Core::StringCRC("RenderPU")) mAffinity = PUAffinity::kRender;
+        else                                                      mAffinity = PUAffinity::kAny;
+
         DIA_LOG_INFO("Application", "ProcessingUnit '%s' created (%.0fHz, dedicated=%d)",
                      mInstanceId.AsChar(), static_cast<double>(mFrequencyHz),
                      mDedicatedThread ? 1 : 0);
@@ -59,6 +67,27 @@ namespace Dia { namespace ApplicationFlow {
     {
         DIA_ASSERT(module != nullptr, "ProcessingUnit::AddModule — module must not be null");
         DIA_ASSERT(mModuleCount < kMaxModules, "ProcessingUnit::AddModule — module capacity exceeded");
+
+#ifdef DIA_DEBUG
+        {
+            PUAffinity moduleAffinity = TypeRegistry::Global().GetAllowedPUs(module->GetTypeId());
+            if (moduleAffinity != PUAffinity::kAny &&
+                !HasAffinity(moduleAffinity, mAffinity) &&
+                mAffinity != PUAffinity::kAny)
+            {
+                DIA_ASSERT(false,
+                    "Module '%s' (type '%s') not allowed on PU '%s' — kAllowedPUs mismatch",
+                    module->GetInstanceId().AsChar(),
+                    module->GetTypeId().AsChar(),
+                    GetInstanceId().AsChar());
+                DIA_LOG_ERROR("ApplicationFlow",
+                    "Module '%s' placed on wrong PU '%s' (type '%s')",
+                    module->GetInstanceId().AsChar(),
+                    GetInstanceId().AsChar(),
+                    module->GetTypeId().AsChar());
+            }
+        }
+#endif
 
         ModuleEntry& entry = mModules[mModuleCount];
         entry.module          = std::move(module);

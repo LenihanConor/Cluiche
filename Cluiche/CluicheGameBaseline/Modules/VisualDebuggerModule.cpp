@@ -28,6 +28,20 @@ Dia::ApplicationFlow::StartResult VisualDebuggerModule::DoStart()
 void VisualDebuggerModule::DoUpdate(float /*dt*/)
 {
     DIA_TRACE_ZONE("VisualDebuggerModule.Update", Dia::Observation::Trace::Category::kDiaApplicationFlow);
+
+    auto* app = GetApplication();
+    if (app)
+    {
+        Dia::Core::StringCRC currentStage = app->GetCurrentStage();
+        if (currentStage != mLastKnownStage)
+        {
+            if (!(mLastKnownStage == Dia::Core::StringCRC()))
+                mLayerManager.SetStageActive(mLastKnownStage, false);
+            mLayerManager.SetStageActive(currentStage, true);
+            mLastKnownStage = currentStage;
+        }
+    }
+
     mFrame.Clear();
     mLayerManager.Draw(mFrame);
     mRenderOutput.Write(mFrame, Dia::Core::TimeAbsolute::Zero());
@@ -35,7 +49,7 @@ void VisualDebuggerModule::DoUpdate(float /*dt*/)
 
 Dia::ApplicationFlow::StopResult VisualDebuggerModule::DoStop()
 {
-    sLayerManager = nullptr;
+    mLastKnownStage = Dia::Core::StringCRC();
     mFrame.Clear();
     mRenderOutput.Write(mFrame, Dia::Core::TimeAbsolute::Zero());
     return Dia::ApplicationFlow::StopResult::kDone;

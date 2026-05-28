@@ -25,7 +25,7 @@ Dia::ApplicationFlow::StartResult AssetRuntimeVisualDebuggerModule::DoStart()
     {
         if (auto* mgr = VisualDebuggerModule::GetStaticLayerManager())
         {
-            mgr->Register(&mDebugger, 50);
+            mgr->Register(&mDebugger, 50, Dia::Core::StringCRC("AssetRuntimeTestStage"));
             mRegistered = true;
         }
         else

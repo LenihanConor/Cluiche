@@ -39,6 +39,9 @@
     <ClInclude Include="ModuleRefV2.h" />
     <ClInclude Include="ProcessingUnit.h" />
     <ClInclude Include="RegistrationMacrosV2.h" />
+    <ClInclude Include="PUAffinity.h">
+      <Filter>TypeRegistry</Filter>
+    </ClInclude>
     <ClInclude Include="TypeRegistry.h" />
     <ClInclude Include="DebugDataTypes.h" />
     <ClInclude Include="Manifest\ApplicationManifestV3.h">

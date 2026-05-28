@@ -1,5 +1,6 @@
 #pragma once
 #include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaObservation/Session/SessionManager.h>
 
@@ -10,6 +11,8 @@ namespace Cluiche { namespace AppFlow {
 class ObservationModule : public Dia::ApplicationFlow::Module {
 public:
     static const Dia::Core::StringCRC kTypeId;
+    static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kAny;
+    static constexpr const char* kDescription = "Starts DiaObservation session; available to all PUs";
     explicit ObservationModule(const Dia::Core::StringCRC& instanceId);
     ~ObservationModule();
 

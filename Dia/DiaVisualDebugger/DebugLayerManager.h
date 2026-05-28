@@ -59,6 +59,10 @@ namespace Dia
             // priority: lower value drawn first (underneath); higher value drawn last (on top).
             void Register(IVisualDebugger* debugger, int priority = 0);
 
+            // Register a draw class with a stage tag. Same layer name + same pointer = idempotent
+            // (reactivates the layer). Same name + different pointer = DIA_ASSERT (SD-DBG-006).
+            void Register(IVisualDebugger* debugger, int priority, const Dia::Core::StringCRC& stageTag);
+
             // Unregister a layer by name. No-op if the name is not registered.
             void Unregister(Dia::Core::StringCRC layerName);
 
@@ -93,6 +97,10 @@ namespace Dia
             void EnableLayer (Dia::Core::StringCRC layerName);
             void DisableLayer(Dia::Core::StringCRC layerName);
             bool IsLayerEnabled(Dia::Core::StringCRC layerName) const;
+
+            // Activate or deactivate all layers owned by stageTag.
+            // Layers with an empty stageTag are unaffected.
+            void SetStageActive(const Dia::Core::StringCRC& stageTag, bool active);
 
             // ----------------------------------------------------------------
             // Global debug scale (SD-DBG-005)
@@ -155,11 +163,24 @@ namespace Dia
             // Returns the IVisualDebugger at position index (0-based), or nullptr.
             IVisualDebugger* GetLayer(int index) const;
 
+            // Returns the stage tag for the dynamic layer at position index (0-based).
+            // Returns StringCRC::kZero (empty) if index is out of range or layer is global.
+            Dia::Core::StringCRC GetLayerStageTag(int index) const;
+
+            // Returns true if any layer with this stageTag is currently active.
+            bool IsStageActive(const Dia::Core::StringCRC& stageTag) const;
+
+            // Fills `out` with unique stage tags from all registered layers (excluding empty tag).
+            // Uses DynamicArrayC — caller provides the buffer.
+            void GetStageTags(Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16>& out) const;
+
         private:
             struct LayerEntry
             {
-                IVisualDebugger* debugger = nullptr;
-                int              priority = 0;
+                IVisualDebugger*     debugger = nullptr;
+                int                  priority = 0;
+                Dia::Core::StringCRC stageTag;   // empty = always active (global layer)
+                bool                 active   = true;  // false = skip Draw, show grayed in console
             };
 
             Dia::Core::Containers::DynamicArrayC<LayerEntry, kMaxLayers> mLayers;

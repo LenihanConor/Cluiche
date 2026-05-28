@@ -1,5 +1,6 @@
 #pragma once
 #include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaAssetRuntime/AssetRuntime.h>
 #include <DiaCore/CRC/StringCRC.h>
@@ -34,6 +35,8 @@ class AssetServiceModule : public Dia::ApplicationFlow::Module
 {
 public:
     static const Dia::Core::StringCRC kTypeId;
+    static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kMain;
+    static constexpr const char* kDescription = "Stage-scoped asset loading and handle registry";
     explicit AssetServiceModule(const Dia::Core::StringCRC& instanceId);
 
     void RequestGlobalLoad();

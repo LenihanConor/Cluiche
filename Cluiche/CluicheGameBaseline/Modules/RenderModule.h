@@ -1,5 +1,6 @@
 #pragma once
 #include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaApplicationFlow/Streams/StreamReader.h>
 #include <DiaApplicationFlow/Streams/ServiceStreamReader.h>
@@ -12,6 +13,8 @@ namespace Cluiche { namespace AppFlow {
 class RenderModule : public Dia::ApplicationFlow::Module {
 public:
     static const Dia::Core::StringCRC kTypeId;
+    static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kRender;
+    static constexpr const char* kDescription = "Main renderer — reads SimToRender, drives canvas";
     explicit RenderModule(const Dia::Core::StringCRC& instanceId);
 
 protected:

@@ -1,5 +1,6 @@
 #pragma once
 #include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaObservation/Health/HealthReporterBase.h>
 
@@ -8,6 +9,8 @@ namespace Cluiche { namespace AppFlow {
 class DebugUIModule : public Dia::ApplicationFlow::Module {
 public:
     static const Dia::Core::StringCRC kTypeId;
+    static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kRender;
+    static constexpr const char* kDescription = "ImGui frame begin/end for render-thread debug UI";
     explicit DebugUIModule(const Dia::Core::StringCRC& instanceId);
 
     bool IsFrameActive() const { return mFrameActive; }

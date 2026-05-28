@@ -7,6 +7,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 #include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/Streams/IStreamStore.h>   // StreamKind
 #include <DiaApplicationFlow/Streams/OverflowPolicy.h> // OverflowPolicy
 #include <DiaCore/CRC/StringCRC.h>
@@ -18,6 +19,8 @@ namespace Dia { namespace ApplicationFlow {
         Dia::Core::StringCRC instanceId;
         Dia::Core::StringCRC typeId;
         ModuleState          state;
+        PUAffinity           allowedPUs  = PUAffinity::kAny;
+        const char*          description = nullptr;
     };
 
     struct StreamInfo {

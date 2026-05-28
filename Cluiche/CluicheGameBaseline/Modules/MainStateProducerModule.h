@@ -1,5 +1,6 @@
 #pragma once
 #include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/Streams/StreamWriter.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include "Types/MainToRenderFrame.h"
@@ -14,6 +15,8 @@ class MainStateProducerModule : public Dia::ApplicationFlow::Module
 {
 public:
     static const Dia::Core::StringCRC kTypeId;
+    static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kMain;
+    static constexpr const char* kDescription = "Populates MainToRender frame from game state";
     explicit MainStateProducerModule(const Dia::Core::StringCRC& instanceId);
 
 protected:

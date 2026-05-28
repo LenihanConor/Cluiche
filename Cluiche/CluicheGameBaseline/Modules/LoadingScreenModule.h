@@ -1,5 +1,6 @@
 #pragma once
 #include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaApplicationFlow/Streams/StreamWriter.h>
 #include <DiaApplicationFlow/Streams/StreamReader.h>
@@ -11,6 +12,8 @@ namespace Cluiche { namespace AppFlow {
 class LoadingScreenModule : public Dia::ApplicationFlow::Module {
 public:
     static const Dia::Core::StringCRC kTypeId;
+    static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kSim;
+    static constexpr const char* kDescription = "Boot-stage loading screen renderer";
     explicit LoadingScreenModule(const Dia::Core::StringCRC& instanceId);
 
 protected:

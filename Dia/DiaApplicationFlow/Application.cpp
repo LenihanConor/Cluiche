@@ -650,9 +650,11 @@ namespace Dia { namespace ApplicationFlow {
                 const Module* mod = mProcessingUnits[p]->FindModule(puDecl.modules[m].instanceId);
                 if (!mod) continue;
                 ModuleStateInfo info;
-                info.instanceId = puDecl.modules[m].instanceId;
-                info.typeId     = puDecl.modules[m].typeId;
-                info.state      = mod->GetState();
+                info.instanceId  = puDecl.modules[m].instanceId;
+                info.typeId      = puDecl.modules[m].typeId;
+                info.state       = mod->GetState();
+                info.allowedPUs  = mRegistry.GetAllowedPUs(info.typeId);
+                info.description = mRegistry.GetDescription(info.typeId);
                 out.Add(info);
             }
             break;
@@ -742,6 +744,7 @@ namespace Dia { namespace ApplicationFlow {
                 }
 
                 rawModule->SetApplication(this);
+                rawModule->SetTypeId(modDecl.typeId);
 
                 // Deliver per-module config from the manifest.  Runs once,
                 // before BeginStart, on the main thread.

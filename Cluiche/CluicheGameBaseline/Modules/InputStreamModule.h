@@ -1,5 +1,6 @@
 #pragma once
 #include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaApplicationFlow/Streams/EventStreamReader.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
@@ -12,6 +13,8 @@ namespace Cluiche { namespace AppFlow {
 class InputStreamModule : public Dia::ApplicationFlow::Module {
 public:
     static const Dia::Core::StringCRC kTypeId;
+    static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kSim;
+    static constexpr const char* kDescription = "Reads input events from MainToSim stream";
     explicit InputStreamModule(const Dia::Core::StringCRC& instanceId);
 
     bool IsKeyDown(Dia::Input::EKey key)      const;

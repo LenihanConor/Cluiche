@@ -1,5 +1,6 @@
 #pragma once
 #include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaApplicationFlow/Streams/EventStreamReader.h>
 #include <DiaApplicationFlow/Streams/StreamWriter.h>
@@ -27,6 +28,8 @@ class UIModule : public Dia::ApplicationFlow::Module
 {
 public:
     static const Dia::Core::StringCRC kTypeId;
+    static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kMain;
+    static constexpr const char* kDescription = "Ultralight UI page lifecycle and JS bridge";
     explicit UIModule(const Dia::Core::StringCRC& instanceId);
 
     // Accessors for page-owner modules and for AssetServiceModule (type handler).

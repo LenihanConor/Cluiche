@@ -279,6 +279,7 @@ Active → [DoStop called each frame] → kStopping... → kDone → Inactive
 | Service Channel | `ServiceStream<T>` primitive for stable lifecycle handles crossing PU boundaries; replaces `GetStatic*()` / singleton patterns; unified `channels` array in manifest; includes full coupling inventory and Shape A migration of KernelModule statics | [service-channel.md](../../features/dia/diaapplicationflow/service-channel.md) | Approved |
 | Error Handling | Timeout per module, assert/rollback/shutdown policies, transition failure recovery | [error-handling.md](../../features/dia/diaapplicationflow/error-handling.md) | Done |
 | Inspectable Interface | IApplicationInspectable for debug/editor/test consumers | [inspectable.md](../../features/dia/diaapplicationflow/inspectable.md) | Done |
+| Manifest Heap Modules | Migrate `ProcessingUnitDeclaration.modules` from `DynamicArrayC<ModuleDeclaration, 32>` to heap-allocated `DynamicArray<ModuleDeclaration>` to eliminate ~60 KB stack bloat in `ApplicationManifestV3` | [manifest-heap-modules.md](../../features/dia/diaapplicationflow/manifest-heap-modules.md) | Approved |
 
 ## Platform Primitives Used
 

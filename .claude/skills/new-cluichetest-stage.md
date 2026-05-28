@@ -1,6 +1,6 @@
 ---
 name: new-cluichetest-stage
-description: Scaffold a new CluicheTest test stage — all 6 touch points from a single stage name.
+description: Scaffold a new CluicheTest test stage — infer domain, run dia scaffold stage, add domain-specific C++.
 tags: [scaffold, cluichetest, stage, teststage]
 user_invocable: true
 agent_invocable: false
@@ -8,305 +8,232 @@ agent_invocable: false
 
 # New Test Stage Scaffold
 
-Generates all boilerplate for a new CluicheTest test stage from a single PascalCase stage name.
+Creates all boilerplate for a new CluicheTest test stage. The mechanical scaffold (files, manifests, vcxproj) is handled by `dia scaffold stage`. This skill infers the domain, picks the right modules, runs the script, and then adds domain-specific C++.
 
 ## Usage
 
 ```
-/new-cluichetest-stage <StageName>
+/new-cluichetest-stage <description or domain name>
 ```
 
-Example: `/new-cluichetest-stage Geometry2D`
-
-The stage name must be PascalCase. Derived names are computed automatically:
-- `snake_case`: `geometry2d` → used in file names, asset IDs, stage IDs
-- `stage_id`: `stage.geometry2d_stage`
-- `module_name`: `Geometry2DStageModule`
-
-## What Gets Created
-
-All 6 touch points that every new test stage requires:
-
-| # | File | Change |
-|---|------|--------|
-| 1 | `Cluiche/Assets/Stages/<Name>/asset_<snake>_stage.diastage` | New stage declaration |
-| 2 | `Cluiche/Assets/Stages/<Name>/misc/ApplicationFlow/<snake>_stage.diaapp` | New app manifest |
-| 3 | `Cluiche/CluicheTest/Modules/TestStages/<Name>StageModule.h/.cpp` | New module skeleton |
-| 4 | `Cluiche/CluicheTest/CluicheTest.vcxproj` + `.vcxproj.filters` | Add source files |
-| 5 | `Cluiche/Assets/CluicheTest/Global/Misc/ApplicationFlow/cluiche_main.diaapp` | Add stage + HUD coverage |
-| 6 | `Cluiche/Assets/CluicheTest/cluichetest.diagame` | Add import |
-| 7 | `Cluiche/Assets/CluicheTest/assets.catalogue.json` | Add stage + manifest entries |
-
-**Auto-derived (no manual edit required):**
-- Boot menu transitions — derived from `stages[]` at runtime
-- `asset_stages` in pipeline — derived from `assets.catalogue.json` (type=stage, not disabled)
-- Deploy entries for `.diastage` files — derived from `.diagame` imports at pipeline time
+Examples:
+- `/new-cluichetest-stage RigidBody2D` — physics stage
+- `/new-cluichetest-stage "test entity spawning and hierarchy"` — entity stage
+- `/new-cluichetest-stage Animation2D` — animation stage
 
 ## Instructions for Claude
 
-When this skill is invoked with a stage name:
+### Step 1 — Infer domain and select modules
 
-### Step 1 — Derive names
+From the user's description, identify the domain and select the appropriate pattern from the Domain Patterns section below. Derive the PascalCase name if not already given (e.g. "test entity spawning" → `Entity`).
 
-From `<StageName>` (e.g. `Geometry2D`):
-- `snake` = PascalCase → snake_case, lowercase (e.g. `geometry2d`)
-- `snake_stage` = `<snake>_stage` (e.g. `geometry2d_stage`)
-- `stage_id` = `stage.<snake_stage>` (e.g. `stage.geometry2d_stage`)
-- `module_name` = `<StageName>StageModule` (e.g. `Geometry2DStageModule`)
-- `diastage_file` = `<snake_stage>.diastage`
-- `diaapp_file` = `<snake_stage>.diaapp`
+### Step 2 — Run the scaffold script
 
-### Step 2 — Create stage directory and files
-
-**`.diastage`** at `Cluiche/Assets/Stages/<StageName>/<diastage_file>`:
-```json
-{
-    "name": "<StageName>",
-    "manifest": "stages/<StageName>/misc/ApplicationFlow/<diaapp_file>",
-    "config": {
-        "path_aliases": {
-            "stage_root": "."
-        }
-    }
-}
+```bash
+dia scaffold stage <Name> --modules <ModuleA>,<ModuleB> --budget <frames>
 ```
 
-**`.diaapp`** at `Cluiche/Assets/Stages/<StageName>/misc/ApplicationFlow/<diaapp_file>`:
-```json
-{
-    "version": 3,
-    "processing_units": [
-        {
-            "instance_id": "MainPU",
-            "frequency_hz": 30,
-            "dedicated_thread": false,
-            "modules": [
-                {
-                    "instance_id": "<module_name>",
-                    "type_id": "<module_name>",
-                    "stages": [ "<StageName>" ],
-                    "dependencies": [ "AutomationModule" ],
-                    "channels": []
-                }
-            ]
-        },
-        {
-            "instance_id": "SimPU",
-            "frequency_hz": 30,
-            "dedicated_thread": true,
-            "modules": []
-        }
-    ]
-}
+For a stage with no extra modules beyond AutomationModule:
+```bash
+dia scaffold stage <Name>
 ```
 
-SimPU starts empty. Add modules here only if the stage needs SimPU work (e.g. a renderer writing `SimToRender`). If nothing writes `SimToRender`, the `FrameStreamStore` auto-flushes silently and logs a one-time warning — no freeze.
+The script creates all 9 touch points and prints a summary. If it fails, report the error — do not manually create files.
 
-**Module header** at `Cluiche/CluicheTest/Modules/TestStages/<module_name>.h`:
-```cpp
-#pragma once
-#include <DiaApplicationFlow/Module.h>
-#include <DiaApplicationFlow/ModuleRefV2.h>
-#include <DiaCore/CRC/StringCRC.h>
-#include "Modules/AutomationModule.h"
+### Step 3 — Add domain-specific C++ to the generated module
 
-namespace Dia { namespace Observation { namespace Metric { class Gauge; } } }
+Read the generated `.h` and `.cpp` files. Based on the domain pattern:
 
-namespace CluicheTest {
+1. Add `ModuleRef<T>` members to the header for each domain module
+2. Include domain module headers
+3. Override `AreDependenciesReady()` to check domain dependencies
+4. Implement `OnStart()`: set up the scene, register the checkpoint lambda with correct pass logic
+5. Implement `OnUpdate()`: check the pass condition, call `ReportPassed()`
+6. Update `kDescription` from "TODO: describe..." to a real one-liner
+7. Add `#ifdef DIA_DEBUG` visual debugger setup in `OnUpdate()` if the domain has a visual debugger
 
-class <module_name> : public Dia::ApplicationFlow::Module
-{
-public:
-    static const Dia::Core::StringCRC kTypeId;
-    explicit <module_name>(const Dia::Core::StringCRC& instanceId);
+### Step 4 — Run pipeline to verify
 
-protected:
-    Dia::ApplicationFlow::StartResult DoStart() override;
-    void DoUpdate(float deltaTime) override;
-    Dia::ApplicationFlow::StopResult DoStop() override;
-
-private:
-    void RegisterCheckpoints();
-
-    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::AutomationModule> mAutomation{this};
-
-    unsigned int mFrameCount = 0;
-    bool         mCheckpointPassed = false;
-};
-
-} // namespace CluicheTest
-```
-
-**Module implementation** at `Cluiche/CluicheTest/Modules/TestStages/<module_name>.cpp`:
-```cpp
-#include "Modules/TestStages/<module_name>.h"
-
-#include <DiaApplicationFlow/RegistrationMacrosV2.h>
-#include <DiaAutomation/AutomationService.h>
-#include <DiaObservation/Log/DiaLog.h>
-#include "Modules/TestStages/TestResultsRegistry.h"
-
-namespace CluicheTest {
-
-const Dia::Core::StringCRC <module_name>::kTypeId("<module_name>");
-
-<module_name>::<module_name>(const Dia::Core::StringCRC& instanceId)
-    : Module(instanceId)
-{}
-
-Dia::ApplicationFlow::StartResult <module_name>::DoStart()
-{
-    DIA_LOG_INFO("CluicheTest", "<module_name> DoStart entry");
-
-    auto* automationModule = mAutomation.Get();
-    if (!automationModule || !automationModule->GetService())
-        return Dia::ApplicationFlow::StartResult::kLoading;
-
-    mFrameCount = 0;
-    mCheckpointPassed = false;
-    RegisterCheckpoints();
-
-    const Dia::Core::StringCRC checkpoints[] = { Dia::Core::StringCRC("<snake>.passed") };
-    TestResultsRegistry::GetInstance().SetRunning(
-        Dia::Core::StringCRC("<StageName>"), 300, checkpoints, 1);
-
-    DIA_LOG_INFO("CluicheTest", "<module_name> DoStart ready");
-    return Dia::ApplicationFlow::StartResult::kReady;
-}
-
-void <module_name>::DoUpdate(float /*deltaTime*/)
-{
-    ++mFrameCount;
-    TestResultsRegistry::GetInstance().SetActiveFrameCount(mFrameCount);
-    // TODO: implement stage logic
-}
-
-Dia::ApplicationFlow::StopResult <module_name>::DoStop()
-{
-    DIA_LOG_INFO("CluicheTest", "<module_name> DoStop");
-
-    if (auto* automationModule = mAutomation.Get())
-    {
-        if (auto* service = automationModule->GetService())
-            service->UnregisterCheckpoints(this);
-    }
-
-    mFrameCount = 0;
-    mCheckpointPassed = false;
-    return Dia::ApplicationFlow::StopResult::kDone;
-}
-
-void <module_name>::RegisterCheckpoints()
-{
-    auto* service = mAutomation.Get()->GetService();
-
-    service->RegisterCheckpoint(this, Dia::Core::StringCRC("<snake>.passed"),
-        [this]() -> Dia::Automation::CheckpointResult {
-            return { mCheckpointPassed,
-                     mCheckpointPassed ? "passed" : "pending",
-                     0.0f };
-        });
-}
-
-} // namespace CluicheTest
-
-namespace { using <module_name>_ = CluicheTest::<module_name>; }
-DIA_MODULE(<module_name>_);
-```
-
-### Step 3 — Update `cluiche_main.diaapp`
-
-Read `Cluiche/Assets/CluicheTest/Global/Misc/ApplicationFlow/cluiche_main.diaapp`.
-
-1. Add to `"stages"` array (after the last stage entry):
-   ```json
-   { "name": "<StageName>", "transitions": [], "auto_advance": false }
-   ```
-   `transitions: []` is correct — Boot menu entries are auto-derived at runtime from all other stages in the array.
-
-2. Add `"<StageName>"` to `TestStageHUDModule`'s `"stages"` array so the HUD is visible.
-
-`dia pipeline` will deploy the updated manifest automatically — no manual force-copy needed.
-
-### Step 4 — Update `cluichetest.diagame`
-
-Read `Cluiche/Assets/CluicheTest/cluichetest.diagame`.
-
-Add to `"imports"` array:
-```json
-{
-    "path": "stages/<StageName>/<diastage_file>",
-    "type": "stage"
-}
-```
-
-### Step 5 — Update `assets.catalogue.json`
-
-Read `Cluiche/Assets/CluicheTest/assets.catalogue.json`.
-
-Add two entries to the `"assets"` array:
-
-```json
-{
-  "id": "<stage_id>",
-  "type": "stage",
-  "source_path": "../Stages/<StageName>/<diastage_file>",
-  "scope": "global",
-  "tags": ["misc"],
-  "references": [
-    { "type": "contains", "target": "manifest.<snake_stage>" }
-  ]
-},
-{
-  "id": "manifest.<snake_stage>",
-  "type": "manifest",
-  "source_path": "../Stages/<StageName>/misc/ApplicationFlow/<diaapp_file>",
-  "scope": "stage",
-  "stage_name": "<StageName>",
-  "tags": ["misc/ApplicationFlow"]
-}
-```
-
-### Step 6 — Update `.vcxproj` and `.vcxproj.filters`
-
-**`CluicheTest.vcxproj`** — add inside the existing `<ItemGroup>` for ClCompile and ClInclude:
-```xml
-<ClCompile Include="Modules\TestStages\<module_name>.cpp" />
-<ClInclude Include="Modules\TestStages\<module_name>.h" />
-```
-
-**`CluicheTest.vcxproj.filters`** — add under the `ApplicationFlow\Modules\TestStages` filter (which already exists). If the filter doesn't exist yet, create it with a new GUID.
-
-### Step 7 — Run pipeline to verify
-
-```
+```bash
 dia pipeline --target cluichetest --config Debug
 ```
 
 Expected: pipeline complete, 0 failed. The new stage should appear in the Boot menu.
 
-### Step 8 — Report
+### Step 5 — Report
 
 Tell the user:
-- All files created/modified (list them)
-- Reminder of what to implement next: fill in `DoUpdate` logic and replace the placeholder checkpoint name `<snake>.passed` with a real checkpoint name
-- Pipeline result (pass/fail)
+- All files created/modified (from script output)
+- Domain pattern applied
+- What still needs domain-specific implementation (if any)
+- Pipeline result
+
+---
+
+## Domain Patterns
+
+Use these to determine `--modules`, `--budget`, and the domain-specific C++ to add after scaffolding.
+
+---
+
+### Physics (RigidBody2D)
+
+**Trigger:** stage name contains "RigidBody", "Physics", "collision", "rigid", "body"
+
+**Script call:**
+```bash
+dia scaffold stage <Name> --modules Physics2DModule --budget 900
+```
+
+**Module members to add to header:**
+```cpp
+#include "Modules/Physics2DModule.h"
+// in private:
+Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::Physics2DModule> mPhysics{this};
+```
+
+**AreDependenciesReady:**
+```cpp
+bool AreDependenciesReady() override {
+    auto* p = mPhysics.Get();
+    return p && p->GetWorld();
+}
+```
+
+**OnStart scene setup pattern:** Create rigid bodies (circles, boxes, ground plane) via `mPhysics.Get()->GetWorld()->AddRigidBody(def)`. Register checkpoint that checks a condition on the physics world.
+
+**OnUpdate pass condition pattern:** Check physics body states (e.g. `AreAllBodiesAsleep()`), call `ReportPassed()`.
+
+**Visual debugger (DIA_DEBUG):** Lazily create `PhysicsShapesDrawer`, `VelocityArrowsDrawer`, etc. in `OnUpdate`. Register with stageTag from `GetStageName()`.
+
+```cpp
+#ifdef DIA_DEBUG
+#include <DiaRigidBody2DVisualDebugger/PhysicsShapesDrawer.h>
+// ... other drawers
+#endif
+```
+
+---
+
+### Entity
+
+**Trigger:** stage name contains "Entity", "spawn", "hierarchy", "component", "ECS"
+
+**Script call:**
+```bash
+dia scaffold stage <Name> --modules EntityModule --budget 600
+```
+
+**Module members to add:**
+```cpp
+#include "Modules/EntityModule.h"
+Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::EntityModule> mEntity{this};
+```
+
+**AreDependenciesReady:**
+```cpp
+bool AreDependenciesReady() override {
+    return mEntity.Get() != nullptr;
+}
+```
+
+**OnStart pattern:** Create entities via `mEntity.Get()->GetRealm()`. Set up checkpoints that validate entity state (existence, component values, hierarchy).
+
+**OnUpdate pattern:** Query realm for entities, validate properties, call `ReportPassed()`.
+
+---
+
+### Asset Loading
+
+**Trigger:** stage name contains "Asset", "loading", "texture", "resource"
+
+**Script call:**
+```bash
+dia scaffold stage <Name> --budget 240
+```
+
+(No extra modules — uses `AssetServiceModule::GetStatic()` directly, same pattern as TestAssetRuntimeStageModule.)
+
+**PersistsAcrossEntries:** Override `PersistsAcrossEntries() { return true; }` if testing reload behavior.
+
+**OnUpdate pattern:** Call `AssetServiceModule::GetStatic()->IsStageLoadComplete(GetStageName())`, compare snapshots, call `ReportPassed()`.
+
+---
+
+### Animation
+
+**Trigger:** stage name contains "Animation", "Anim", "clip", "blend", "pose"
+
+**Script call:**
+```bash
+dia scaffold stage <Name> --modules Physics2DModule,EntityModule --budget 600
+```
+
+**AreDependenciesReady:** Check both Physics2DModule and EntityModule.
+
+**OnUpdate pattern:** Validate animation state via entity component queries.
+
+---
+
+### State Machine
+
+**Trigger:** stage name contains "StateMachine", "State", "FSM", "transition"
+
+**Script call:**
+```bash
+dia scaffold stage <Name> --budget 300
+```
+
+**OnStart pattern:** Create a state machine, configure states and transitions, start it.
+
+**OnUpdate pattern:** Drive the state machine, validate it reaches the expected state.
+
+---
+
+### Geometry / Spatial
+
+**Trigger:** stage name contains "Geometry", "spatial", "intersection", "BVH", "quadtree"
+
+**Script call:**
+```bash
+dia scaffold stage <Name> --budget 60
+```
+
+(Short budget — geometry validation is immediate, no simulation needed.)
+
+**OnStart pattern:** Create shapes, run intersection tests, spatial structure queries. Set mPassed = result.
+
+**OnUpdate pattern:** Single-frame check — call `ReportPassed()` immediately if mPassed.
+
+---
+
+### Minimal (no domain)
+
+**Trigger:** No domain matched, or user explicitly wants a bare stage.
+
+**Script call:**
+```bash
+dia scaffold stage <Name>
+```
+
+Implement `OnUpdate()` with a TODO comment only.
+
+---
+
+## Naming Convention
+
+All stages follow `<Domain>TestStage` / `<Domain>TestStageModule`:
+
+| Component | Pattern | Example |
+|-----------|---------|---------|
+| Stage name | `<Domain>TestStage` | `Animation2DTestStage` |
+| Module class | `<Domain>TestStageModule` | `Animation2DTestStageModule` |
+| Checkpoint prefix | `test.<domain>.` | `test.animation2d.passed` |
 
 ## Notes
 
-- **Always place test stage modules on MainPU** — AutomationModule lives on MainPU; SimPU modules cannot depend on it
-- **Always call `TestResultsRegistry::GetInstance().SetRunning(...)` in DoStart** — the HUD reads `activeStageName` from the registry; if it's zero the entire HUD is suppressed. Pass the stage name, a budget frame count, and the checkpoint name array. Also call `SetActiveFrameCount(mFrameCount)` each DoUpdate tick so the frame counter increments
-- **The HUD step is mandatory** — without it, there's no way to navigate back to Boot from the stage
-- **Do NOT add a `transitions` field to `.diastage`** — transitions live in `cluiche_main.diaapp`'s `stages` array only
-
-## Simplifications Applied
-
-The following were previously manual touch points, now auto-handled:
-
-- **Boot menu transitions** — `transitions: []` in stages array; runtime derives all other stages automatically
-- **pipeline.toml `asset_stages`** — derived from `assets.catalogue.json` (type=stage, not disabled)
-- **pipeline.toml deploy entries for `.diastage`** — derived from `.diagame` imports at pipeline time
-- **Force-copy `cluiche_main.diaapp`** — included in pipeline.toml deploy files; `dia pipeline` handles it
-- **SimPU `VisualDebuggerModule`** — removed; `FrameStreamStore` auto-flushes with a fire-once warning when no writer is active
-
-See `docs/specs/features/cluichetest/teststages/stage-scaffold-simplification.plan.md` for full history.
+- **Always place test stage modules on MainPU** — AutomationModule lives there
+- **Call `ReportPassed()` from `OnUpdate`** — base handles timeout via `GetBudgetFrames()`
+- **`AreDependenciesReady()` is the loading gate** — return false until all dependencies are available; base retries each frame
+- **Visual debugger layers must use stageTag** — `mgr->Register(drawer.get(), priority, Dia::Core::StringCRC(GetStageName().AsChar()))` — so they deactivate automatically on stage exit
+- **`PersistsAcrossEntries()`** — override returning true only for stages that compare state across stop/start cycles

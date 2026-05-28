@@ -7,7 +7,6 @@
 #ifdef DIA_DEBUG
 
 #include <DiaVisualDebugger/DebugLayerManager.h>
-#include <DiaVisualDebugger/IVisualDebugger.h>
 #include <DiaGraphics/Frame/DebugFrameData.h>
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
 #include <DiaObservation/Log/Logger.h>
@@ -144,7 +143,8 @@ namespace Dia
         // -----------------------------------------------------------------
 
         void DiaVisualDebuggerConsole::Render(DebugLayerManager& manager,
-                                              const Dia::Graphics::DebugFrameData& debugFrameData)
+                                              const Dia::Graphics::DebugFrameData& /*debugFrameData*/,
+                                              const Dia::Core::StringCRC& currentStageId)
         {
             if (!mVisible)
                 return;
@@ -156,7 +156,7 @@ namespace Dia
                 return;
             }
 
-            RenderDomainTabs(manager, debugFrameData);
+            RenderStageTabs(manager, currentStageId);
             ImGui::Separator();
             RenderCommandInput();
             ImGui::Separator();
@@ -166,56 +166,50 @@ namespace Dia
         }
 
         // -----------------------------------------------------------------
-        // Domain tabs
+        // Stage tabs
         // -----------------------------------------------------------------
 
-        void DiaVisualDebuggerConsole::RenderDomainTabs(
+        void DiaVisualDebuggerConsole::RenderStageTabs(
             DebugLayerManager& manager,
-            const Dia::Graphics::DebugFrameData& debugFrameData)
+            const Dia::Core::StringCRC& currentStageId)
         {
-            // Collect unique domain prefixes from registered layer names.
-            // Domain = everything before the first '.' in the layer name.
-            // e.g. "physics.shapes" -> "physics"
-            char domains[kMaxDomains][32];
-            int  domainCount = 0;
+            // Collect unique stage tags from registered layers.
+            Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16> stageTags;
+            manager.GetStageTags(stageTags);
 
-            const int layerCount = manager.GetLayerCount();
-            for (int i = 0; i < layerCount; ++i)
+            if (ImGui::BeginTabBar("##StageTabs"))
             {
-                const char* name = manager.GetLayerName(i).AsChar();
-                if (!name) continue;
-
-                // Extract prefix up to first '.'
-                char prefix[32] = {};
-                int j = 0;
-                while (name[j] && name[j] != '.' && j < 31)
+                // "Global" tab for layers with no stage tag
+                if (ImGui::BeginTabItem("Global"))
                 {
-                    prefix[j] = name[j];
-                    ++j;
+                    RenderLayerList(manager, Dia::Core::StringCRC(), true /*alwaysActive*/);
+                    ImGui::EndTabItem();
                 }
-                prefix[j] = '\0';
 
-                // Check if already in list
-                bool found = false;
-                for (int d = 0; d < domainCount; ++d)
+                // One tab per stage that has registered layers
+                for (unsigned int i = 0; i < stageTags.Size(); ++i)
                 {
-                    if (strcmp(domains[d], prefix) == 0) { found = true; break; }
-                }
-                if (!found && domainCount < kMaxDomains)
-                {
-                    strncpy_s(domains[domainCount], 32, prefix, 31);
-                    ++domainCount;
-                }
-            }
+                    const Dia::Core::StringCRC& tag = stageTags[i];
+                    bool isActive  = manager.IsStageActive(tag);
+                    bool isCurrent = (tag == currentStageId);
 
-            if (ImGui::BeginTabBar("##DomainTabs"))
-            {
-                for (int d = 0; d < domainCount; ++d)
-                {
-                    if (ImGui::BeginTabItem(domains[d]))
+                    // Gray label for inactive stages
+                    if (!isActive)
+                        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
+
+                    bool open = ImGui::BeginTabItem(
+                        tag.AsChar(),
+                        nullptr,
+                        isCurrent ? ImGuiTabItemFlags_SetSelected : 0);
+
+                    if (!isActive)
+                        ImGui::PopStyleColor();
+
+                    if (open)
                     {
-                        RenderLayersSection(manager, domains[d]);
-                        RenderStatsSection(manager, domains[d], debugFrameData);
+                        if (!isActive)
+                            ImGui::TextDisabled("(stage not active)");
+                        RenderLayerList(manager, tag, isActive);
                         ImGui::EndTabItem();
                     }
                 }
@@ -225,91 +219,48 @@ namespace Dia
         }
 
         // -----------------------------------------------------------------
-        // Layers section (for one domain)
+        // Layer list (for one stage tag)
         // -----------------------------------------------------------------
 
-        void DiaVisualDebuggerConsole::RenderLayersSection(
-            DebugLayerManager& manager, const char* domain)
+        void DiaVisualDebuggerConsole::RenderLayerList(
+            DebugLayerManager& manager,
+            const Dia::Core::StringCRC& stageTag,
+            bool enabled)
         {
-            const bool open = ImGui::CollapsingHeader("Visual Debugger",
-                ImGuiTreeNodeFlags_DefaultOpen);
-            if (!open)
-                return;
-
             const int layerCount = manager.GetLayerCount();
             for (int i = 0; i < layerCount; ++i)
             {
+                // Only show layers whose stageTag matches the requested tag
+                if (manager.GetLayerStageTag(i) != stageTag)
+                    continue;
+
                 Dia::Core::StringCRC name = manager.GetLayerName(i);
                 const char* layerStr = name.AsChar();
-                if (!layerStr) continue;
-
-                // Only show layers that belong to this domain
-                bool inDomain = true;
-                const size_t domainLen = strlen(domain);
-                if (strncmp(layerStr, domain, domainLen) != 0 ||
-                    (layerStr[domainLen] != '.' && layerStr[domainLen] != '\0'))
-                {
-                    inDomain = false;
-                }
-                if (!inDomain)
+                if (!layerStr || layerStr[0] == '\0')
                     continue;
 
                 ImGui::PushID(i);
 
-                bool enabled = manager.IsLayerEnabled(name);
-                if (ImGui::Checkbox("##en", &enabled))
+                bool layerEnabled = manager.IsLayerEnabled(name);
+                if (!enabled)
                 {
-                    if (enabled) manager.EnableLayer(name);
-                    else         manager.DisableLayer(name);
+                    // Stage is inactive — show grayed, non-interactive
+                    ImGui::BeginDisabled(true);
+                    ImGui::Checkbox("##en", &layerEnabled);
+                    ImGui::EndDisabled();
+                }
+                else
+                {
+                    if (ImGui::Checkbox("##en", &layerEnabled))
+                    {
+                        if (layerEnabled) manager.EnableLayer(name);
+                        else              manager.DisableLayer(name);
+                    }
                 }
                 ImGui::SameLine();
-
                 ImGui::Text("%s", layerStr);
 
                 ImGui::PopID();
-            }
-        }
-
-        // -----------------------------------------------------------------
-        // Stats section
-        // -----------------------------------------------------------------
-
-        void DiaVisualDebuggerConsole::RenderStatsSection(
-            DebugLayerManager& manager, const char* domain,
-            const Dia::Graphics::DebugFrameData& debugFrameData)
-        {
-            if (!ImGui::CollapsingHeader("Stats"))
-                return;
-
-            ImGui::Text("Primitives: %u / %u",
-                debugFrameData.GetDebugPrimitiveCount(),
-                Dia::Graphics::DebugFrameData::kCapacity);
-
-            if (debugFrameData.DroppedCount() > 0)
-            {
-                ImGui::SameLine();
-                ImGui::TextColored(ImVec4(1.0f, 0.2f, 0.2f, 1.0f),
-                    "DROPPED: %u", debugFrameData.DroppedCount());
-            }
-
-            const int layerCount = manager.GetLayerCount();
-            const size_t domainLen = strlen(domain);
-            for (int i = 0; i < layerCount; ++i)
-            {
-                Dia::Core::StringCRC name = manager.GetLayerName(i);
-                const char* layerStr = name.AsChar();
-                if (!layerStr) continue;
-
-                if (strncmp(layerStr, domain, domainLen) != 0 ||
-                    (layerStr[domainLen] != '.' && layerStr[domainLen] != '\0'))
-                    continue;
-
-                IVisualDebugger* layer = manager.GetLayer(i);
-                if (layer)
-                {
-                    ImGui::Separator();
-                    layer->DrawImGui();
-                }
             }
         }
 

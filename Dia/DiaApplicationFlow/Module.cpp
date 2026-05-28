@@ -59,6 +59,12 @@ namespace Dia { namespace ApplicationFlow {
     }
 
     //--------------------------------------------------------------------------
+    const Dia::Core::StringCRC& Module::GetTypeId() const
+    {
+        return mTypeId;
+    }
+
+    //--------------------------------------------------------------------------
     ProcessingUnit* Module::GetProcessingUnit() const
     {
         return mProcessingUnit;
@@ -89,6 +95,12 @@ namespace Dia { namespace ApplicationFlow {
     void Module::SetApplication(Application* app)
     {
         mApplication = app;
+    }
+
+    //--------------------------------------------------------------------------
+    void Module::SetTypeId(const Dia::Core::StringCRC& typeId)
+    {
+        mTypeId = typeId;
     }
 
     //--------------------------------------------------------------------------

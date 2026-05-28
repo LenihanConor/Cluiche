@@ -61,6 +61,7 @@
     <ClInclude Include="ModuleRefV2.h" />
     <ClInclude Include="ProcessingUnit.h" />
     <ClInclude Include="RegistrationMacrosV2.h" />
+    <ClInclude Include="PUAffinity.h" />
     <ClInclude Include="TypeRegistry.h" />
     <ClInclude Include="DebugDataTypes.h" />
     <ClInclude Include="Metrics\MetricsCollectorModule.h" />

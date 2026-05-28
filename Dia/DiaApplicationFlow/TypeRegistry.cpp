@@ -19,9 +19,9 @@ namespace Dia { namespace ApplicationFlow {
     }
 
     //--------------------------------------------------------------------------
-    void TypeRegistry::Register(const Dia::Core::StringCRC& typeId, FactoryFn factory)
+    void TypeRegistry::Register(const Dia::Core::StringCRC& typeId, const TypeMetadata& meta)
     {
-        DIA_ASSERT(factory != nullptr, "TypeRegistry::Register — factory cannot be null");
+        DIA_ASSERT(meta.factory != nullptr, "TypeRegistry::Register — factory cannot be null");
 
         if (mFactories.ContainsKey(typeId))
         {
@@ -29,27 +29,53 @@ namespace Dia { namespace ApplicationFlow {
             return;
         }
 
-        mFactories.Add(typeId, factory);
+        mFactories.Add(typeId, meta);
+    }
+
+    //--------------------------------------------------------------------------
+    void TypeRegistry::Register(const Dia::Core::StringCRC& typeId, FactoryFn factory)
+    {
+        TypeMetadata meta;
+        meta.factory = factory;
+        Register(typeId, meta);
     }
 
     //--------------------------------------------------------------------------
     Module* TypeRegistry::Create(const Dia::Core::StringCRC& typeId,
                                   const Dia::Core::StringCRC& instanceId) const
     {
-        const FactoryFn* ppFactory = mFactories.TryGetItemConst(typeId);
-        if (ppFactory == nullptr)
+        const TypeMetadata* pMeta = mFactories.TryGetItemConst(typeId);
+        if (pMeta == nullptr)
         {
             DIA_LOG_ERROR("ApplicationFlow", "Module type '%s' not registered in TypeRegistry", typeId.AsChar());
             return nullptr;
         }
 
-        return (*ppFactory)(instanceId);
+        return pMeta->factory(instanceId);
     }
 
     //--------------------------------------------------------------------------
     bool TypeRegistry::Contains(const Dia::Core::StringCRC& typeId) const
     {
         return mFactories.ContainsKey(typeId);
+    }
+
+    //--------------------------------------------------------------------------
+    PUAffinity TypeRegistry::GetAllowedPUs(const Dia::Core::StringCRC& typeId) const
+    {
+        const TypeMetadata* pMeta = mFactories.TryGetItemConst(typeId);
+        if (pMeta == nullptr)
+            return PUAffinity::kAny;
+        return pMeta->allowedPUs;
+    }
+
+    //--------------------------------------------------------------------------
+    const char* TypeRegistry::GetDescription(const Dia::Core::StringCRC& typeId) const
+    {
+        const TypeMetadata* pMeta = mFactories.TryGetItemConst(typeId);
+        if (pMeta == nullptr)
+            return nullptr;
+        return pMeta->description;
     }
 
 }} // namespace Dia::ApplicationFlow

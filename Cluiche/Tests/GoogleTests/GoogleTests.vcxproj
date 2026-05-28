@@ -245,6 +245,7 @@
     <ClCompile Include="ApplicationFlow\TestBaselineCommands.cpp" />
     <ClCompile Include="ApplicationFlow\TestServiceChannel.cpp" />
     <ClCompile Include="ApplicationFlow\TestEventStreamBatching.cpp" />
+    <ClCompile Include="ApplicationFlow\TestPUAffinity.cpp" />
     <ClCompile Include="Automation\TestAutomationService.cpp" />
     <ClCompile Include="Automation\TestMetricCommand.cpp" />
     <ClCompile Include="ApplicationFlow\TestApplicationE2E.cpp" />
@@ -324,6 +325,9 @@
       <PreprocessorDefinitions>DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <ClCompile Include="DiaVisualDebugger\TestFixedDrawLayer.cpp">
+      <PreprocessorDefinitions>DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\TestDebugLayerManagerStages.cpp">
       <PreprocessorDefinitions>DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <!-- Geometry3D -->
@@ -421,6 +425,7 @@
     <ClCompile Include="DiaObservation\Config\TestObservationConfigLoader.cpp" />
     <ClCompile Include="DiaObservation\Session\TestSessionManagerTick.cpp" />
     <ClCompile Include="DiaObservation\Session\TestSessionManagerRetention.cpp" />
+    <ClCompile Include="DiaObservation\Capture\TestCaptureManager.cpp" />
     <!-- PipelineEditor -->
     <ClCompile Include="PipelineEditor\TestPipelineLogTailer.cpp" />
     <ClCompile Include="PipelineEditor\TestPipelineEditorPluginBridge.cpp" />

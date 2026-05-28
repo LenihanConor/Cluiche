@@ -1,38 +1,35 @@
 #pragma once
-#include <DiaApplicationFlow/Module.h>
-#include <DiaApplicationFlow/ModuleRefV2.h>
+#include "Modules/TestStages/TestStageModuleBase.h"
+#include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaCore/CRC/StringCRC.h>
-#include "Modules/AutomationModule.h"
-#include "Modules/TestStages/TestResultsRegistry.h"
 
 namespace Dia { namespace Observation { namespace Metric { class Gauge; } } }
 
 namespace CluicheTest {
 
-class TestAssetRuntimeStageModule : public Dia::ApplicationFlow::Module
+class TestAssetRuntimeStageModule : public TestStageModuleBase
 {
 public:
     static const Dia::Core::StringCRC kTypeId;
+    static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kMain;
+    static constexpr const char* kDescription = "Validates asset loading, handle lifecycle, and clean reload";
     explicit TestAssetRuntimeStageModule(const Dia::Core::StringCRC& instanceId);
 
 protected:
-    Dia::ApplicationFlow::StartResult DoStart() override;
-    void DoUpdate(float deltaTime) override;
-    Dia::ApplicationFlow::StopResult DoStop() override;
+    Dia::Core::StringCRC GetStageName() const override;
+    unsigned int GetBudgetFrames() const override { return 240; }
+    const Dia::Core::StringCRC* GetCheckpointNames(unsigned int& outCount) const override;
+    bool PersistsAcrossEntries() const override { return true; }
+    void OnStart(Dia::Automation::AutomationService* service) override;
+    void OnUpdate(float deltaTime) override;
 
 private:
-    void RegisterCheckpoints();
-
-    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::AutomationModule> mAutomation{this};
-
     struct LoadSnapshot {
         unsigned int loadedCount = 0;
         bool allSucceeded = false;
     };
 
     LoadSnapshot mFirstEntrySnapshot;
-    unsigned int mEntryCount    = 0;
-    unsigned int mFrameCount    = 0;
     unsigned int mLoadStartFrame = 0;
     bool         mAllLoaded     = false;
     bool         mCleanReload   = false;

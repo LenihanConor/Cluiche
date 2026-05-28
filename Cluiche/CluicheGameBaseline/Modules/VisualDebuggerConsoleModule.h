@@ -3,6 +3,7 @@
 #ifdef DIA_DEBUG
 
 #include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaVisualDebuggerConsole/DiaVisualDebuggerConsole.h>
@@ -15,6 +16,8 @@ class VisualDebuggerConsoleModule : public Dia::ApplicationFlow::Module
 {
 public:
     static const Dia::Core::StringCRC kTypeId;
+    static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kRender;
+    static constexpr const char* kDescription = "ImGui debug console — layer toggles, log tail, DiaAPI input";
     explicit VisualDebuggerConsoleModule(const Dia::Core::StringCRC& instanceId);
 
     void ToggleConsole() { mConsole.Toggle(); }

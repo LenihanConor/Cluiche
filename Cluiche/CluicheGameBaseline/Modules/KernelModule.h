@@ -1,5 +1,6 @@
 #pragma once
 #include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaApplicationFlow/Streams/EventStreamWriter.h>
 #include <DiaApplicationFlow/Streams/ServiceStreamWriter.h>
@@ -32,6 +33,8 @@ namespace Cluiche { namespace AppFlow {
 class KernelModule : public Dia::ApplicationFlow::Module {
 public:
     static const Dia::Core::StringCRC kTypeId;
+    static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kMain;
+    static constexpr const char* kDescription = "Window creation, canvas, and texture handler";
     explicit KernelModule(const Dia::Core::StringCRC& instanceId);
 
     Dia::Graphics::ICanvas* GetCanvas() { return mCanvas; }

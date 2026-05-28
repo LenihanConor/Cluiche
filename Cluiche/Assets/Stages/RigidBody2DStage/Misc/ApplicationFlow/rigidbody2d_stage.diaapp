@@ -9,14 +9,14 @@
                 {
                     "instance_id": "Physics2DModule",
                     "type_id": "Physics2DModule",
-                    "stages": [ "RigidBody2DStage" ],
+                    "stages": [ "RigidBody2DTestStage" ],
                     "dependencies": [],
                     "channels": []
                 },
                 {
                     "instance_id": "RigidBody2DTestModule",
                     "type_id": "RigidBody2DTestModule",
-                    "stages": [ "RigidBody2DStage" ],
+                    "stages": [ "RigidBody2DTestStage" ],
                     "dependencies": [ "AutomationModule", "Physics2DModule" ],
                     "channels": []
                 }

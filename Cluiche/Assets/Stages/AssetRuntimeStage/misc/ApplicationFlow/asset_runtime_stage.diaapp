@@ -7,9 +7,9 @@
             "dedicated_thread": false,
             "modules": [
                 {
-                    "instance_id": "TestAssetRuntimeStageModule",
-                    "type_id": "TestAssetRuntimeStageModule",
-                    "stages": [ "AssetRuntimeStage" ],
+                    "instance_id": "TestAssetRuntimeTestStageModule",
+                    "type_id": "TestAssetRuntimeTestStageModule",
+                    "stages": [ "AssetRuntimeTestStage" ],
                     "dependencies": [ "AutomationModule" ],
                     "channels": []
                 }
@@ -23,7 +23,7 @@
                 {
                     "instance_id": "AssetRuntimeRendererModule",
                     "type_id": "AssetRuntimeRendererModule",
-                    "stages": [ "AssetRuntimeStage" ],
+                    "stages": [ "AssetRuntimeTestStage" ],
                     "dependencies": [],
                     "channels": [
                         { "id": "SimToRender", "role": "writes" },

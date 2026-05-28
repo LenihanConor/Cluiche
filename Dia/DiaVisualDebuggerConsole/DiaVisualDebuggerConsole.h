@@ -54,19 +54,21 @@ namespace Dia
             bool IsVisible() const;
 
             // Call each frame from the render thread, after DiaImGui::NewFrame() has run.
+            // currentStageId: the stage currently active in the application (used to auto-select tab).
             void Render(DebugLayerManager& manager,
-                        const Dia::Graphics::DebugFrameData& debugFrameData);
+                        const Dia::Graphics::DebugFrameData& debugFrameData,
+                        const Dia::Core::StringCRC& currentStageId);
 
             // ----- Test-only accessors -----
             int  GetLogCount() const { return mWarningCount; }
             const char* GetLogLine(int index) const;
 
         private:
-            void RenderDomainTabs(DebugLayerManager& manager,
-                                  const Dia::Graphics::DebugFrameData& debugFrameData);
-            void RenderLayersSection(DebugLayerManager& manager, const char* domain);
-            void RenderStatsSection(DebugLayerManager& manager, const char* domain,
-                                    const Dia::Graphics::DebugFrameData& debugFrameData);
+            void RenderStageTabs(DebugLayerManager& manager,
+                                 const Dia::Core::StringCRC& currentStageId);
+            void RenderLayerList(DebugLayerManager& manager,
+                                 const Dia::Core::StringCRC& stageTag,
+                                 bool enabled);
             void RenderCommandInput();
             void RenderBottomTabs();
 
