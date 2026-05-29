@@ -62,6 +62,13 @@ namespace Dia
             mCanvasSize = size;
         }
 
+        void SpriteRenderer::SetCamera(const Dia::Graphics::Camera2D& camera)
+        {
+            mCamera = camera;
+            DIA_LOG_DEBUG("diabgfx", "SpriteRenderer: camera pos=(%.1f,%.1f) zoom=%.2f",
+                camera.GetPosition().X(), camera.GetPosition().Y(), camera.GetZoom());
+        }
+
         void SpriteRenderer::Draw(const Dia::Graphics::EntityFrameData& sprites)
         {
             const auto& cmds = sprites.GetSprites();
@@ -71,13 +78,19 @@ namespace Dia
             if (!mSpriteProgram || !mSpriteProgram->IsValid())
                 return;
 
-            const uint16_t w = static_cast<uint16_t>(mCanvasSize.X());
-            const uint16_t h = static_cast<uint16_t>(mCanvasSize.Y());
+            const float cw = mCanvasSize.X();
+            const float ch = mCanvasSize.Y();
+            const uint16_t w = static_cast<uint16_t>(cw);
+            const uint16_t h = static_cast<uint16_t>(ch);
 
-            // Ortho projection: (0,0) top-left, (w,h) bottom-right, NDC flip
+            const float zoom  = mCamera.GetZoom() > 0.0f ? mCamera.GetZoom() : 1.0f;
+            const float halfW = (cw * 0.5f) / zoom;
+            const float halfH = (ch * 0.5f) / zoom;
+            const float cx    = mCamera.GetPosition().X();
+            const float cy    = mCamera.GetPosition().Y();
+
             float ortho[16];
-            bx::mtxOrtho(ortho, 0.0f, static_cast<float>(w),
-                         static_cast<float>(h), 0.0f,
+            bx::mtxOrtho(ortho, cx - halfW, cx + halfW, cy + halfH, cy - halfH,
                          0.0f, 1000.0f, 0.0f, bgfx::getCaps()->homogeneousDepth);
             bgfx::setViewTransform(mViewId, nullptr, ortho);
             bgfx::setViewRect(mViewId, 0, 0, w, h);

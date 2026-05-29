@@ -208,6 +208,7 @@
     <ClCompile Include="Graphics\TestFrameData.cpp" />
     <ClCompile Include="Graphics\TestDebugBudget.cpp" />
     <ClCompile Include="Graphics\TestDebugTextPrimitive.cpp" />
+    <ClCompile Include="Graphics\TestCamera2D.cpp" />
     <ClCompile Include="DiaBgfx\TestFrameCaptureRingBuffer.cpp" />
     <ClCompile Include="Input\TestInputState.cpp" />
     <ClCompile Include="Input\TestActionMap.cpp" />
@@ -535,6 +536,7 @@
     <ClCompile Include="..\..\CluicheTest\Modules\TestStages\TestResultsRegistry.cpp" />
     <!-- DiaVisualDebuggerConsole + DiaImGui -->
     <ClCompile Include="DiaVisualDebugger\TestDiaVisualDebuggerConsole.cpp" />
+    <ClCompile Include="DiaVisualDebugger\TestCoord2DDrawers.cpp" />
     <!-- ImGui sources (required by DiaVisualDebuggerConsole.lib) -->
     <!-- Excluded for Debug-Ubsan: DiaBgfx.lib already provides these symbols; lld-link rejects duplicates -->
     <ClCompile Include="$(ProjectDir)../../../External/imgui/imgui.cpp">

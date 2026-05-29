@@ -89,6 +89,18 @@ namespace Dia
             inline const Dia::Core::StringCRC kAnimClipCursor   { "anim.clip_cursor"   };
             inline const Dia::Core::StringCRC kAnimBlendWeights { "anim.blend_weights" };
 
+            // ----------------------------------------------------------------
+            // Coord2D
+            // ----------------------------------------------------------------
+            inline const Dia::Core::StringCRC kCoord2DOrigin { "coord2d.origin" };
+            inline const Dia::Core::StringCRC kCoord2DAxes   { "coord2d.axes"   };
+            inline const Dia::Core::StringCRC kCoord2DGrid   { "coord2d.grid"   };
+            inline const Dia::Core::StringCRC kCoord2DBounds { "coord2d.bounds" };
+            inline const Dia::Core::StringCRC kCoord2DCursor { "coord2d.cursor" };
+
+            // Stage tag used to register all coord2d layers (creates "Coord2D" console tab)
+            inline const Dia::Core::StringCRC kCoord2DStageTag { "Coord2D" };
+
         } // namespace LayerNames
     } // namespace Debug
 } // namespace Dia

@@ -12,6 +12,9 @@
 
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <DiaGraphics/Camera/Camera2D.h>
+#include <DiaGraphics/Camera/ViewportTransform.h>
+#include <DiaMaths/Vector/Vector2D.h>
 #include "IVisualDebugger.h"
 #include "IObjectRenderer.h"
 #include "FixedDrawRegistry.h"
@@ -110,6 +113,12 @@ namespace Dia
             float GetDebugScale() const;
 
             // ----------------------------------------------------------------
+            // Viewport / coordinate transform (used by coord2d overlay layers)
+            // ----------------------------------------------------------------
+            void SetViewport(const Dia::Graphics::Camera2D& camera, const Dia::Maths::Vector2D& windowSize);
+            Dia::Graphics::ViewportTransform GetViewportTransform() const;
+
+            // ----------------------------------------------------------------
             // Picking seam — no-op stubs until scene editor (SD-DBG-008)
             // ----------------------------------------------------------------
             void     SetSelectedEntityId(uint32_t id);
@@ -189,6 +198,10 @@ namespace Dia
             uint32_t mSelectedEntityId    = 0;
             bool     mSortDirty           = false;
             bool     mRegistrationLocked  = false;
+
+            // Viewport state — stored as inputs; ViewportTransform constructed on demand
+            Dia::Graphics::Camera2D      mViewportCamera;
+            Dia::Maths::Vector2D         mViewportWindowSize;
 
             // Broadcast state tracking (debug-editor-panel)
             uint32_t mLastDroppedCount = 0;  // cached from FrameData at end of Draw()

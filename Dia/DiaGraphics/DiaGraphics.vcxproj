@@ -25,6 +25,7 @@
     <ClCompile Include="Frame\FrameData.cpp" />
     <ClCompile Include="Frame\SpriteDrawCommand.cpp" />
     <ClCompile Include="Frame\UIFrameData.cpp" />
+    <ClCompile Include="Camera\ViewportTransform.cpp" />
     <ClCompile Include="Misc\RenderStates.cpp" />
     <ClCompile Include="Misc\RGBA.cpp" />
     <ClCompile Include="Misc\Transform.cpp" />
@@ -33,6 +34,8 @@
   <ItemGroup>
     <ClInclude Include="Assets\IShader.h" />
     <ClInclude Include="Assets\ITexture.h" />
+    <ClInclude Include="Camera\Camera2D.h" />
+    <ClInclude Include="Camera\ViewportTransform.h" />
     <ClInclude Include="Frame\DebugFrameData.h" />
     <ClInclude Include="Frame\DebugPrimitive.h" />
     <ClInclude Include="Frame\DebugFrameDataVisitor.h" />

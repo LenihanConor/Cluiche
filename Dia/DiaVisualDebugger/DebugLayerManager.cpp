@@ -10,6 +10,8 @@
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
 #include <DiaGraphics/Frame/FrameData.h>
 #include <DiaGraphics/Frame/DebugFrameDataVisitor.h>
+#include <DiaGraphics/Camera/Camera2D.h>
+#include <DiaGraphics/Camera/ViewportTransform.h>
 #include <DiaDebugServer/DebugServer.h>
 #include <DiaDebugProtocol/DiaDebugProtocol.h>
 #include <DiaProtobuf/ProtoJsonCodec.h>
@@ -143,6 +145,22 @@ namespace Dia
         float DebugLayerManager::GetDebugScale() const
         {
             return mDebugScale;
+        }
+
+        // --------------------------------------------------------------------
+        // Viewport / coordinate transform
+        // --------------------------------------------------------------------
+
+        void DebugLayerManager::SetViewport(const Dia::Graphics::Camera2D& camera,
+                                             const Dia::Maths::Vector2D& windowSize)
+        {
+            mViewportCamera     = camera;
+            mViewportWindowSize = windowSize;
+        }
+
+        Dia::Graphics::ViewportTransform DebugLayerManager::GetViewportTransform() const
+        {
+            return Dia::Graphics::ViewportTransform(mViewportCamera, mViewportWindowSize);
         }
 
         // --------------------------------------------------------------------

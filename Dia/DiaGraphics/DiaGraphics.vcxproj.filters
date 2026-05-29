@@ -28,8 +28,17 @@
     <ClCompile Include="Frame\SpriteDrawCommand.cpp">
       <Filter>Frame</Filter>
     </ClCompile>
+    <ClCompile Include="Camera\ViewportTransform.cpp">
+      <Filter>Camera</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Camera\Camera2D.h">
+      <Filter>Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera\ViewportTransform.h">
+      <Filter>Camera</Filter>
+    </ClInclude>
     <ClInclude Include="Interface\IView.h">
       <Filter>Interface</Filter>
     </ClInclude>
@@ -94,6 +103,9 @@
   <ItemGroup>
     <Filter Include="Assets">
       <UniqueIdentifier>{a1b2c3d4-e5f6-7890-abcd-ef1234567890}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Camera">
+      <UniqueIdentifier>{C1D2E3F4-0001-0001-0001-000000000020}</UniqueIdentifier>
     </Filter>
     <Filter Include="Frame">
       <UniqueIdentifier>{81bc9439-ca54-4c90-9919-27647de0fff6}</UniqueIdentifier>

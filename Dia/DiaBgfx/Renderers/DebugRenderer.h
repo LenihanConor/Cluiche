@@ -4,6 +4,7 @@
 #pragma once
 
 #include <DiaMaths/Vector/Vector2D.h>
+#include <DiaGraphics/Camera/Camera2D.h>
 
 namespace Dia { namespace Graphics { class DebugFrameData; } }
 
@@ -23,12 +24,14 @@ namespace Dia
             ~DebugRenderer();
 
             void OnCanvasSizeChanged(const Dia::Maths::Vector2D& size);
+            void SetCamera(const Dia::Graphics::Camera2D& camera);
             void Draw(const Dia::Graphics::DebugFrameData& debug);
 
         private:
-            unsigned short       mViewId;
-            ShaderProgram*       mDebugProgram;  // not owned
-            Dia::Maths::Vector2D mCanvasSize;
+            unsigned short           mViewId;
+            ShaderProgram*           mDebugProgram;  // not owned
+            Dia::Maths::Vector2D     mCanvasSize;
+            Dia::Graphics::Camera2D  mCamera;
 
             DebugRenderer(const DebugRenderer&) = delete;
             DebugRenderer& operator=(const DebugRenderer&) = delete;

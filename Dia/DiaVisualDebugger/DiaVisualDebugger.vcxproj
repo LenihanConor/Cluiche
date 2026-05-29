@@ -87,6 +87,11 @@
     <ClInclude Include="Renderers\QuadtreeRenderer.h" />
     <ClInclude Include="Renderers\BVHRenderer.h" />
     <ClInclude Include="Renderers\HexGridRenderer.h" />
+    <ClInclude Include="Coord2D\Coord2DOriginDrawer.h" />
+    <ClInclude Include="Coord2D\Coord2DAxesDrawer.h" />
+    <ClInclude Include="Coord2D\Coord2DGridDrawer.h" />
+    <ClInclude Include="Coord2D\Coord2DBoundsDrawer.h" />
+    <ClInclude Include="Coord2D\Coord2DCursorDrawer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DebugLayerManager.cpp" />
@@ -94,6 +99,11 @@
     <ClCompile Include="DebugLayerPanelPlugin.cpp" />
     <ClCompile Include="FixedPrimitiveBuffer.cpp" />
     <ClCompile Include="FixedDrawRegistry.cpp" />
+    <ClCompile Include="Coord2D\Coord2DOriginDrawer.cpp" />
+    <ClCompile Include="Coord2D\Coord2DAxesDrawer.cpp" />
+    <ClCompile Include="Coord2D\Coord2DGridDrawer.cpp" />
+    <ClCompile Include="Coord2D\Coord2DBoundsDrawer.cpp" />
+    <ClCompile Include="Coord2D\Coord2DCursorDrawer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\dia.debug.architecture.module.md" />

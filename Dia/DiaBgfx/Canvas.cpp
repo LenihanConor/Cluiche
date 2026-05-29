@@ -281,6 +281,12 @@ namespace Dia
             if (!mInitialised)
                 return;
 
+            const Dia::Graphics::Camera2D& cam = nextFrame.GetCamera();
+            if (mSpriteRenderer)
+                mSpriteRenderer->SetCamera(cam);
+            if (mDebugRenderer)
+                mDebugRenderer->SetCamera(cam);
+
             if (mSpriteRenderer)
                 mSpriteRenderer->Draw(static_cast<const Dia::Graphics::EntityFrameData&>(nextFrame));
 

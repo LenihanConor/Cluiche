@@ -251,6 +251,7 @@ struct DebugPrimitiveText2D {
 | debug-editor-panel | CluicheEditor `DebugLayerPanel` plugin — checkbox tree, overflow badge, sub-layer toggles | [debug-editor-panel.md](../../features/dia/diavisualdebugger/debug-editor-panel.md) | Approved |
 | animation2d-visual-debugger-stack | New `DiaAnimation2DVisualDebugger` stack — clip cursors, blend weights, spring state | [animation2d-visual-debugger-stack.md](../../features/dia/diavisualdebugger/animation2d-visual-debugger-stack.md) | Done |
 | fixed-draw-layer | `FixedDrawRegistry`, `IObjectRenderer`, `IFixedPrimitiveBuffer` — render-thread-owned primitive buffers for fixed-topology objects; default renderers for `SpatialGrid`, `Quadtree`, `BVH`, `HexGrid` | [fixed-draw-layer.md](../../features/dia/diavisualdebugger/fixed-draw-layer.md) | Approved |
+| coord2d-debug-overlay | Camera2D + ViewportTransform in DiaGraphics; "Coord2D" console tab with origin/axes/grid/bounds/cursor overlay layers; DiaBgfx renderer integration | [coord2d-debug-overlay.md](../../features/dia/diavisualdebugger/coord2d-debug-overlay.md) | Done |
 
 **Natural build order:** debug-budget → debug-text-primitive → debug-layer-manager → rig2d-visual-debugger-stack → rigidbody2d-visual-debugger-stack → softbody2d-visual-debugger-stack → ik2d-visual-debugger-stack → geometry2d-visual-debugger-stack → debug-console → debug-editor-panel → animation2d-visual-debugger-stack (when unblocked) → fixed-draw-layer (depends on debug-layer-manager)
 

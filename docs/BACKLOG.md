@@ -42,7 +42,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | Item | Spec | What's needed |
 |------|------|---------------|
 | DiaStateMachineEditor system | TBD | Needs `/spec-system` — editor plugin for state machine visual debugging + design-time editing. Depends on DiaStateMachine ✅, DiaEditor |
-| Migrate manifest inner arrays to heap (`DynamicArray`) | TBD | `ApplicationManifestV3` is ~344KB on the stack because `DynamicArrayC` uses fixed inline storage all the way down (`processingUnits[4]` → `modules[32]` → inner arrays). Switching the large inner containers to heap-allocated `DynamicArray` would make the manifest a small value type safe to create anywhere. Needs spec — touches serialization, validator, loader, editor. |
+| Manifest heap modules | [manifest-heap-modules.md](specs/features/dia/diaapplicationflow/manifest-heap-modules.md) | `ApplicationManifestV3` is ~60 KB on the stack due to `DynamicArrayC<ModuleDeclaration,32>` inline storage. Spec written + plan ready. Blocked on `DynamicArrayC`/`DynamicArray` both using `memcpy` — nesting heap-owning containers is unsafe without fixing copy semantics. Options: reduce cap (32→16, 1-line, safe), or allocate the whole manifest on the heap at the call site. Deferred — low urgency. |
 
 ---
 
@@ -72,12 +72,12 @@ System spec: [teststages.md](specs/systems/cluichetest/teststages.md) (Approved)
 |-------|--------------|-----------|---------------------|-------|
 | ~~RigidBody2DTestStage~~ | **Done** (2026-05-28) — `TestStageModuleBase` extracted; stage renamed; 10 circles settle; pytest scenario passes. | | |
 | ~~AssetRuntimeTestStage~~ | **Done** (2026-05-28) — Migrated to `TestStageModuleBase`; stage renamed; multi-entry reload validation. | | |
-| StateMachineStage | DiaStateMachine | State transitions, guard evaluation, event firing | `state_machine.reached_target`, `state_machine.guard_blocked` | `/spec-feature` |
-| Animation2DStage | DiaAnimation2D + DiaRig2D | Clip playback, pose validation, blend weights | `animation.clip_complete`, `animation.pose_matches` | `/spec-feature` |
-| SoftBody2DStage | DiaSoftBody2D | Rope/cloth stabilization, spring convergence | `soft_body.rope_settled` | `/spec-feature` |
-| TestGeometry2DStage | DiaGeometry2D + DiaGeometry2DVisualDebugger | Gallery of all shape primitives, 6 intersection pair colour-coding, 4 spatial structure overlays, 5 IVisualDebugger drawers | `geometry2d.passed` | [Spec Approved](specs/features/cluichetest/teststages/geometry2d-stage.md). [Plan ready](specs/features/cluichetest/teststages/geometry2d-stage.plan.md) — 9 tasks. [Mockup](specs/features/cluichetest/teststages/geometry2d-stage.mockup.html) approved. |
+| StateMachineTestStage | DiaStateMachine | State transitions, guard evaluation, event firing | `state_machine.reached_target`, `state_machine.guard_blocked` | `/spec-feature` |
+| Animation2DTestStage | DiaAnimation2D + DiaRig2D | Clip playback, pose validation, blend weights | `animation.clip_complete`, `animation.pose_matches` | `/spec-feature` |
+| SoftBody2DTestStage | DiaSoftBody2D | Rope/cloth stabilization, spring convergence | `soft_body.rope_settled` | `/spec-feature` |
+| Geometry2DTestStage | DiaGeometry2D + DiaGeometry2DVisualDebugger | Gallery of all shape primitives, 6 intersection pair colour-coding, 4 spatial structure overlays, 5 IVisualDebugger drawers | `geometry2d.passed` | [Spec Approved](specs/features/cluichetest/teststages/geometry2d-stage.md). [Plan ready](specs/features/cluichetest/teststages/geometry2d-stage.plan.md) — 9 tasks. [Mockup](specs/features/cluichetest/teststages/geometry2d-stage.mockup.html) approved. |
 | EntityTestStage | DiaEntity | Spawn/destroy/hierarchy/query/mailbox/lifecycle; `TransformComponent` + `VisualTestRenderComponent`; 6 checkpoints | `entity.spawn_complete`, `entity.query_correct`, `entity.hierarchy_valid`, `entity.destroy_cascade`, `entity.mailbox_received`, `entity.lifecycle_complete` | [Spec Approved](specs/features/cluichetest/teststages/entity-test-stage.md). [Plan ready](specs/features/cluichetest/teststages/entity-test-stage.plan.md) — 9 tasks (T-00 done). Uses `/new-cluichetest-stage` skill. Two-module split: EntityModule (reusable) + EntityTestModule (MainPU, checkpoints). |
-| UIUltralightStage | DiaUIUltralight | Page load, JS↔C++ bridge (4 bound methods inc. round-trip), pixel buffer non-empty, mouse injection, deterministic reload; Alpine.js panel | `ui.page_loaded`, `ui.js_to_cpp_callback_fired`, `ui.round_trip_value_correct`, `ui.pixel_buffer_non_empty`, `ui.mouse_click_handled`, `ui.deterministic_reload` | [Spec Approved](specs/features/cluichetest/teststages/ui-ultralight-stage.md). Mockup done. 10-task plan at implementation start. |
+| UIUltralightTestStage | DiaUIUltralight | Page load, JS↔C++ bridge (4 bound methods inc. round-trip), pixel buffer non-empty, mouse injection, deterministic reload; Alpine.js panel | `ui.page_loaded`, `ui.js_to_cpp_callback_fired`, `ui.round_trip_value_correct`, `ui.pixel_buffer_non_empty`, `ui.mouse_click_handled`, `ui.deterministic_reload` | [Spec Approved](specs/features/cluichetest/teststages/ui-ultralight-stage.md). [Plan ready](specs/features/cluichetest/teststages/ui-ultralight-stage.plan.md) — 10 tasks. |
 
 **Scaffolding:** `dia scaffold stage <Name> --modules <...>` creates all 9 touch points in one command. `/new-cluichetest-stage` skill infers domain, runs the script, adds domain-specific C++. Domain patterns: Physics, Entity, Asset, Animation, StateMachine, Geometry.
 
@@ -133,6 +133,7 @@ Spec Approved: [diaarchitecture.md](specs/systems/dia/diaarchitecture.md). C3 is
 
 | Item | Notes |
 |------|-------|
+| Camera2D controller (pan/zoom/reset) | Application-side input→Camera2D wiring for CluicheTest stages (keyboard pan, scroll zoom, home-key reset). Unblocked once coord2d-debug-overlay ships Camera2D + renderer integration. |
 | DiaAssetRuntime — Hot reload path | Asset Lifecycle Management adds `Failed → Loading` retry but no `Loaded → Loading → Loaded` path. Still need a `ReloadAsset(assetId)` for live iteration (future feature on top of lifecycle management). |
 | `Dia::Core::Blackboard` — general-purpose key-value store | Identified during DiaStateMachine research; useful for AI, animation, gameplay. Needs `/spec-feature` under DiaCore. |
 | ~~DiaSoftBody2D serializers~~ | **Done** (2026-05-28) — `DiaSoftBody2DSerializers.h` ships `WorldDef`, `RopeDef`, `ClothDef`. Follows `DiaRigidBody2DSerializers.h` pattern exactly. Non-owning anchor/world pointers skipped (same convention as RigidBody2D). |

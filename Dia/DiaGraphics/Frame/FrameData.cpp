@@ -25,6 +25,9 @@ namespace Dia
 			DebugFrameData::ClearDebugBuffer();
 			UIFrameData::ClearUIBuffer();
 			EntityFrameData::Clear();
+			mCamera = Camera2D();
+			mWindowSize = Dia::Maths::Vector2D(0.0f, 0.0f);
+			mMousePixel = Dia::Maths::Vector2D(0.0f, 0.0f);
 		}
 
 		void FrameData::Copy(const FrameData& rhs)
@@ -39,6 +42,10 @@ namespace Dia
 			{
 				RequestDrawSprite(sprites[i]);
 			}
+
+			mCamera = rhs.mCamera;
+			mWindowSize = rhs.mWindowSize;
+			mMousePixel = rhs.mMousePixel;
 		}
 	}
 }

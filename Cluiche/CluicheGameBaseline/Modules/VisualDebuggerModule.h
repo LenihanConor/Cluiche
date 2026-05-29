@@ -8,6 +8,16 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaGraphics/Frame/FrameData.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
+#include <memory>
+
+namespace Dia::Debug
+{
+    class Coord2DOriginDrawer;
+    class Coord2DAxesDrawer;
+    class Coord2DGridDrawer;
+    class Coord2DBoundsDrawer;
+    class Coord2DCursorDrawer;
+}
 
 namespace Cluiche { namespace AppFlow {
 
@@ -29,10 +39,22 @@ protected:
     void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 
 private:
+    void RegisterCoord2DDrawers();
+    void UnregisterCoord2DDrawers();
+
     Dia::Debug::DebugLayerManager mLayerManager;
     Dia::ApplicationFlow::StreamWriter<Dia::Graphics::FrameData> mRenderOutput{this, "SimToRender"};
     Dia::Graphics::FrameData mFrame;
     Dia::Core::StringCRC mLastKnownStage;
+
+    Dia::Graphics::Camera2D      mCamera;
+    Dia::Maths::Vector2D         mWindowSize{1400.0f, 1000.0f};
+
+    std::unique_ptr<Dia::Debug::Coord2DOriginDrawer> mCoord2DOriginDrawer;
+    std::unique_ptr<Dia::Debug::Coord2DAxesDrawer>   mCoord2DAxesDrawer;
+    std::unique_ptr<Dia::Debug::Coord2DGridDrawer>   mCoord2DGridDrawer;
+    std::unique_ptr<Dia::Debug::Coord2DBoundsDrawer> mCoord2DBoundsDrawer;
+    std::unique_ptr<Dia::Debug::Coord2DCursorDrawer> mCoord2DCursorDrawer;
 
     static Dia::Debug::DebugLayerManager* sLayerManager;
 };

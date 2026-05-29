@@ -399,6 +399,15 @@
     <ClCompile Include="Graphics\TestFrameData.cpp">
       <Filter>Graphics</Filter>
     </ClCompile>
+    <ClCompile Include="Graphics\TestDebugBudget.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\TestDebugTextPrimitive.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\TestCamera2D.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
     <!-- DiaBgfx -->
     <ClCompile Include="DiaBgfx\TestFrameCaptureRingBuffer.cpp">
       <Filter>DiaBgfx</Filter>
@@ -1157,6 +1166,9 @@
       <Filter>DiaVisualDebugger</Filter>
     </ClCompile>
     <ClCompile Include="DiaVisualDebugger\TestDiaVisualDebuggerConsole.cpp">
+      <Filter>DiaVisualDebugger</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaVisualDebugger\TestCoord2DDrawers.cpp">
       <Filter>DiaVisualDebugger</Filter>
     </ClCompile>
     <ClCompile Include="DiaVisualDebugger\TestFixedDrawLayer.cpp">

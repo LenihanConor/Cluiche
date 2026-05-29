@@ -185,18 +185,20 @@ namespace Dia
             }
         }
 
-        static void EmitText(const Dia::Graphics::DebugPrimitive& p,
-                             float canvasW, float canvasH)
+        static void EmitText(const Dia::Graphics::DebugPrimitiveText2D& t,
+                             float canvasW, float canvasH,
+                             float camX, float camY, float zoom)
         {
-            const auto& t = p.text2D;
             if (t.fontSize <= 0.0f || t.text[0] == '\0')
                 return;
 
             // bgfx debug font is 8x8 characters in screen-space integer coordinates.
-            // Convert world-space position through the ortho projection (no camera transform
-            // in Phase 1) — position is already in screen-space pixels.
-            uint16_t col = static_cast<uint16_t>(bx::clamp(t.position.X(), 0.0f, canvasW) / 8.0f);
-            uint16_t row = static_cast<uint16_t>(bx::clamp(t.position.Y(), 0.0f, canvasH) / 8.0f);
+            // World → Screen conversion (same math as ViewportTransform::WorldToScreen
+            // but inlined here to avoid circular dependency from DiaBgfx → DiaGraphics).
+            float screenX = (t.position.X() - camX) * zoom + canvasW * 0.5f;
+            float screenY = (t.position.Y() - camY) * zoom + canvasH * 0.5f;
+            uint16_t col = static_cast<uint16_t>(bx::clamp(screenX, 0.0f, canvasW) / 8.0f);
+            uint16_t row = static_cast<uint16_t>(bx::clamp(screenY, 0.0f, canvasH) / 8.0f);
 
             uint8_t r = t.colour.R(), g = t.colour.G(), b2 = t.colour.B();
             // Pack a rough 16-colour ANSI code from the dominant channel
@@ -277,10 +279,18 @@ namespace Dia
             mCanvasSize = size;
         }
 
+        void DebugRenderer::SetCamera(const Dia::Graphics::Camera2D& camera)
+        {
+            mCamera = camera;
+            DIA_LOG_DEBUG("diabgfx", "DebugRenderer: camera pos=(%.1f,%.1f) zoom=%.2f",
+                camera.GetPosition().X(), camera.GetPosition().Y(), camera.GetZoom());
+        }
+
         void DebugRenderer::Draw(const Dia::Graphics::DebugFrameData& debug)
         {
-            const uint32_t count = debug.GetDebugPrimitiveCount();
-            if (count == 0)
+            const uint32_t count     = debug.GetDebugPrimitiveCount();
+            const uint32_t textCount = debug.GetTextPrimitiveCount();
+            if (count == 0 && textCount == 0)
                 return;
 
             if (!mDebugProgram || !mDebugProgram->IsValid())
@@ -291,9 +301,15 @@ namespace Dia
             const uint16_t w = static_cast<uint16_t>(cw);
             const uint16_t h = static_cast<uint16_t>(ch);
 
+            const float zoom  = mCamera.GetZoom() > 0.0f ? mCamera.GetZoom() : 1.0f;
+            const float halfW = (cw * 0.5f) / zoom;
+            const float halfH = (ch * 0.5f) / zoom;
+            const float cx    = mCamera.GetPosition().X();
+            const float cy    = mCamera.GetPosition().Y();
+
             float ortho[16];
-            bx::mtxOrtho(ortho, 0.0f, cw, ch, 0.0f, 0.0f, 1000.0f,
-                         0.0f, bgfx::getCaps()->homogeneousDepth);
+            bx::mtxOrtho(ortho, cx - halfW, cx + halfW, cy + halfH, cy - halfH,
+                         0.0f, 1000.0f, 0.0f, bgfx::getCaps()->homogeneousDepth);
             bgfx::setViewTransform(mViewId, nullptr, ortho);
             bgfx::setViewRect(mViewId, 0, 0, w, h);
 
@@ -311,16 +327,18 @@ namespace Dia
                 const Dia::Graphics::DebugPrimitive& p = debug.GetDebugPrimitive(i);
                 switch (p.type)
                 {
-                    case Dia::Graphics::DebugPrimitiveType::Circle2D:   EmitCircle(batch, p);         break;
-                    case Dia::Graphics::DebugPrimitiveType::Line2D:     EmitLine(batch, p);           break;
-                    case Dia::Graphics::DebugPrimitiveType::Point2D:    EmitPoint(batch, p);          break;
-                    case Dia::Graphics::DebugPrimitiveType::Rect2D:     EmitRect(batch, p);           break;
-                    case Dia::Graphics::DebugPrimitiveType::Arc2D:      EmitArc(batch, p);            break;
-                    case Dia::Graphics::DebugPrimitiveType::Ray2D:      EmitRay(batch, p);            break;
-                    case Dia::Graphics::DebugPrimitiveType::Triangle2D: EmitTriangle(batch, p);       break;
-                    case Dia::Graphics::DebugPrimitiveType::Text2D:     EmitText(p, cw, ch);          break;
+                    case Dia::Graphics::DebugPrimitiveType::Circle2D:   EmitCircle(batch, p);   break;
+                    case Dia::Graphics::DebugPrimitiveType::Line2D:     EmitLine(batch, p);     break;
+                    case Dia::Graphics::DebugPrimitiveType::Point2D:    EmitPoint(batch, p);    break;
+                    case Dia::Graphics::DebugPrimitiveType::Rect2D:     EmitRect(batch, p);     break;
+                    case Dia::Graphics::DebugPrimitiveType::Arc2D:      EmitArc(batch, p);      break;
+                    case Dia::Graphics::DebugPrimitiveType::Ray2D:      EmitRay(batch, p);      break;
+                    case Dia::Graphics::DebugPrimitiveType::Triangle2D: EmitTriangle(batch, p); break;
                 }
             }
+
+            for (uint32_t i = 0; i < textCount; ++i)
+                EmitText(debug.GetTextPrimitive(i), cw, ch, cx, cy, zoom);
 
             FlushLines(mViewId, prog, batch.lines);
             FlushTris(mViewId,  prog, batch.tris);
