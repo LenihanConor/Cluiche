@@ -192,13 +192,13 @@ namespace Dia
             if (t.fontSize <= 0.0f || t.text[0] == '\0')
                 return;
 
-            // bgfx debug font is 8x8 characters in screen-space integer coordinates.
+            // bgfx debug font is 8 pixels wide × 16 pixels tall per character cell.
             // World → Screen conversion (same math as ViewportTransform::WorldToScreen
             // but inlined here to avoid circular dependency from DiaBgfx → DiaGraphics).
             float screenX = (t.position.X() - camX) * zoom + canvasW * 0.5f;
             float screenY = (t.position.Y() - camY) * zoom + canvasH * 0.5f;
-            uint16_t col = static_cast<uint16_t>(bx::clamp(screenX, 0.0f, canvasW) / 8.0f);
-            uint16_t row = static_cast<uint16_t>(bx::clamp(screenY, 0.0f, canvasH) / 8.0f);
+            uint16_t col = static_cast<uint16_t>(bx::clamp(screenX, 0.0f, canvasW - 1.0f) / 8.0f);
+            uint16_t row = static_cast<uint16_t>(bx::clamp(screenY, 0.0f, canvasH - 1.0f) / 16.0f);
 
             uint8_t r = t.colour.R(), g = t.colour.G(), b2 = t.colour.B();
             // Pack a rough 16-colour ANSI code from the dominant channel
