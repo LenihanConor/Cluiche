@@ -21,8 +21,7 @@ namespace Dia
 			Rect2D     = 3,
 			Arc2D      = 4,
 			Ray2D      = 5,
-			Triangle2D = 6,
-			Text2D     = 7
+			Triangle2D = 6
 		};
 
 		struct DebugPrimitiveCircle2D
@@ -106,10 +105,8 @@ namespace Dia
 				DebugPrimitiveArc2D      arc2D;
 				DebugPrimitiveRay2D      ray2D;
 				DebugPrimitiveTriangle2D triangle2D;
-				DebugPrimitiveText2D     text2D;
 			};
 
-			// Union members with non-trivial types require explicit constructor/destructor
 			DebugPrimitive() : type(DebugPrimitiveType::Circle2D), entityId(0), circle2D() {}
 			DebugPrimitive(const DebugPrimitive& rhs) { *this = rhs; }
 			DebugPrimitive& operator=(const DebugPrimitive& rhs)
@@ -125,7 +122,6 @@ namespace Dia
 					case DebugPrimitiveType::Arc2D:      arc2D      = rhs.arc2D;      break;
 					case DebugPrimitiveType::Ray2D:      ray2D      = rhs.ray2D;      break;
 					case DebugPrimitiveType::Triangle2D: triangle2D = rhs.triangle2D; break;
-					case DebugPrimitiveType::Text2D:     text2D     = rhs.text2D;     break;
 				}
 				return *this;
 			}

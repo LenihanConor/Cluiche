@@ -24,18 +24,27 @@ namespace Dia
 		{
 			if (mOverCapacityLogged)
 			{
-				DIA_LOG_WARNING("graphics", "DebugFrameData: primitive budget recovered — no drops this frame.");
+				DIA_LOG_WARNING("graphics", "DebugFrameData: geometry budget recovered — no drops this frame.");
 				mOverCapacityLogged = false;
 			}
+			if (mTextOverCapacityLogged)
+			{
+				DIA_LOG_WARNING("graphics", "DebugFrameData: text budget recovered — no drops this frame.");
+				mTextOverCapacityLogged = false;
+			}
 			mDebugPrimitiveBuffer.RemoveAll();
-			mDroppedCount = 0;
+			mTextBuffer.RemoveAll();
+			mDroppedCount     = 0;
+			mTextDroppedCount = 0;
 		}
 
 		//------------------------------------------------------------------------------
 		void DebugFrameData::CopyDebugBuffer(const DebugFrameData& rhs)
 		{
 			mDebugPrimitiveBuffer = rhs.mDebugPrimitiveBuffer;
+			mTextBuffer           = rhs.mTextBuffer;
 			mDroppedCount         = rhs.mDroppedCount;
+			mTextDroppedCount     = rhs.mTextDroppedCount;
 		}
 
 		//------------------------------------------------------------------------------
@@ -142,33 +151,32 @@ namespace Dia
 			RGBA colour)
 		{
 			if (fontSize <= 0.0f) return;
-			if (!CanAdd()) return;
+			if (!CanAddText()) return;
 
-			DebugPrimitive p;
-			p.type               = DebugPrimitiveType::Text2D;
-			p.text2D.position    = position;
-			p.text2D.fontSize    = fontSize;
-			p.text2D.colour      = colour;
+			DebugPrimitiveText2D t;
+			t.position = position;
+			t.fontSize = fontSize;
+			t.colour   = colour;
 
-			// Safe truncating copy — null terminator always at [63]
 			unsigned int i = 0;
 			if (text != nullptr)
 			{
 				for (; i < 63 && text[i] != '\0'; ++i)
-					p.text2D.text[i] = text[i];
+					t.text[i] = text[i];
 			}
-			p.text2D.text[i] = '\0';
+			t.text[i] = '\0';
 
-			mDebugPrimitiveBuffer.Add(p);
+			mTextBuffer.Add(t);
 		}
 
 		//------------------------------------------------------------------------------
 		void DebugFrameData::AcceptVisitor(const DebugFrameDataVisitor& visitor) const
 		{
 			for (unsigned int i = 0; i < mDebugPrimitiveBuffer.Size(); i++)
-			{
 				visitor.Visit(mDebugPrimitiveBuffer[i]);
-			}
+
+			for (unsigned int i = 0; i < mTextBuffer.Size(); i++)
+				visitor.VisitText(mTextBuffer[i]);
 		}
 	}
 }

@@ -24,8 +24,12 @@ namespace Dia
 		class DebugFrameData
 		{
 		public:
-			// Compile-time budget knob — increase here if primitives are dropped (SD-DBG).
-			static constexpr uint32_t kCapacity = 1024u;
+			// Compile-time budget knobs — increase if primitives are dropped (SD-DBG).
+			static constexpr uint32_t kGeometryCapacity = 2048u;
+			static constexpr uint32_t kTextCapacity     = 256u;
+
+			// Legacy alias so call-sites that reference kCapacity still compile.
+			static constexpr uint32_t kCapacity = kGeometryCapacity;
 
 			DebugFrameData();
 			~DebugFrameData();
@@ -92,32 +96,40 @@ namespace Dia
 			// Budget tracking (debug-budget)
 			// ----------------------------------------------------------------
 
-			/// Number of RequestDraw* calls dropped this frame because the buffer was full.
-			uint32_t DroppedCount()   const { return mDroppedCount; }
-			/// True if any primitives were dropped this frame.
-			bool     IsOverCapacity() const { return mDroppedCount > 0; }
+			/// Number of geometry RequestDraw* calls dropped this frame because the buffer was full.
+			uint32_t DroppedCount()       const { return mDroppedCount; }
+			/// True if any geometry primitives were dropped this frame.
+			bool     IsOverCapacity()     const { return mDroppedCount > 0; }
+
+			/// Number of RequestDrawText calls dropped this frame because the text buffer was full.
+			uint32_t DroppedTextCount()   const { return mTextDroppedCount; }
+			/// True if any text primitives were dropped this frame.
+			bool     IsTextOverCapacity() const { return mTextDroppedCount > 0; }
 
 			// ----------------------------------------------------------------
 			// Test / inspection accessors
 			// ----------------------------------------------------------------
 
-			/// Total number of primitives currently stored.
+			/// Total number of geometry primitives currently stored.
 			uint32_t              GetDebugPrimitiveCount()          const { return mDebugPrimitiveBuffer.Size(); }
-			/// Access a stored primitive by index (0-based).
+			/// Access a stored geometry primitive by index (0-based).
 			const DebugPrimitive& GetDebugPrimitive(uint32_t index) const { return mDebugPrimitiveBuffer[index]; }
+
+			/// Total number of text primitives currently stored.
+			uint32_t                    GetTextPrimitiveCount()          const { return mTextBuffer.Size(); }
+			/// Access a stored text primitive by index (0-based).
+			const DebugPrimitiveText2D& GetTextPrimitive(uint32_t index) const { return mTextBuffer[index]; }
 
 			void AcceptVisitor(const DebugFrameDataVisitor& visitor) const;
 
 		private:
-			/// Returns true if space remains; increments mDroppedCount and returns false when full.
-			/// Logs a warning once when the budget is first exceeded, and once again when it recovers.
 			bool CanAdd()
 			{
-				if (mDebugPrimitiveBuffer.Size() >= kCapacity)
+				if (mDebugPrimitiveBuffer.Size() >= kGeometryCapacity)
 				{
 					if (!mOverCapacityLogged)
 					{
-						DIA_LOG_WARNING("graphics", "DebugFrameData: primitive budget exceeded (%u). Draw calls will be dropped.", kCapacity);
+						DIA_LOG_WARNING("graphics", "DebugFrameData: geometry budget exceeded (%u). Draw calls will be dropped.", kGeometryCapacity);
 						mOverCapacityLogged = true;
 					}
 					++mDroppedCount;
@@ -126,9 +138,27 @@ namespace Dia
 				return true;
 			}
 
-			Core::Containers::DynamicArrayC<DebugPrimitive, kCapacity> mDebugPrimitiveBuffer;
-			uint32_t mDroppedCount         = 0;
-			bool     mOverCapacityLogged   = false;
+			bool CanAddText()
+			{
+				if (mTextBuffer.Size() >= kTextCapacity)
+				{
+					if (!mTextOverCapacityLogged)
+					{
+						DIA_LOG_WARNING("graphics", "DebugFrameData: text budget exceeded (%u). Text draw calls will be dropped.", kTextCapacity);
+						mTextOverCapacityLogged = true;
+					}
+					++mTextDroppedCount;
+					return false;
+				}
+				return true;
+			}
+
+			Core::Containers::DynamicArrayC<DebugPrimitive,     kGeometryCapacity> mDebugPrimitiveBuffer;
+			Core::Containers::DynamicArrayC<DebugPrimitiveText2D, kTextCapacity>   mTextBuffer;
+			uint32_t mDroppedCount             = 0;
+			uint32_t mTextDroppedCount         = 0;
+			bool     mOverCapacityLogged       = false;
+			bool     mTextOverCapacityLogged   = false;
 		};
 	}
 }

@@ -80,15 +80,7 @@ static RecordingDebugVisitor Inspect(const FrameData& fd)
 
 static int TextCount(const FrameData& fd)
 {
-    const DebugFrameData& dbg = static_cast<const DebugFrameData&>(fd);
-    int count = 0;
-    const uint32_t total = dbg.GetDebugPrimitiveCount();
-    for (uint32_t i = 0; i < total; ++i)
-    {
-        if (dbg.GetDebugPrimitive(i).type == DebugPrimitiveType::Text2D)
-            ++count;
-    }
-    return count;
+    return static_cast<int>(static_cast<const DebugFrameData&>(fd).GetTextPrimitiveCount());
 }
 
 // ============================================================================
@@ -418,13 +410,11 @@ TEST(BoneLabelsDrawer, Draw_LabelText_MatchesBoneName)
     drawer.Draw(fd);
 
     const DebugFrameData& dbg = static_cast<const DebugFrameData&>(fd);
-    ASSERT_GE(dbg.GetDebugPrimitiveCount(), 1u);
-    const DebugPrimitive& p = dbg.GetDebugPrimitive(0);
-    ASSERT_EQ(p.type, DebugPrimitiveType::Text2D);
+    ASSERT_GE(dbg.GetTextPrimitiveCount(), 1u);
+    const DebugPrimitiveText2D& t = dbg.GetTextPrimitive(0);
 
-    // First bone is "bone_0"
     const char* expected = r.skeleton.GetBone(0).name.AsChar();
-    EXPECT_STREQ(p.text2D.text, expected);
+    EXPECT_STREQ(t.text, expected);
 }
 
 TEST(BoneLabelsDrawer, Draw_LabelOffset_NonZero)
@@ -435,16 +425,14 @@ TEST(BoneLabelsDrawer, Draw_LabelOffset_NonZero)
     FrameData fd;
     drawer.Draw(fd);
 
-    // Label position should differ from the joint position
     const DebugFrameData& dbg = static_cast<const DebugFrameData&>(fd);
-    ASSERT_GE(dbg.GetDebugPrimitiveCount(), 1u);
-    const DebugPrimitive& p = dbg.GetDebugPrimitive(0);
-    ASSERT_EQ(p.type, DebugPrimitiveType::Text2D);
+    ASSERT_GE(dbg.GetTextPrimitiveCount(), 1u);
+    const DebugPrimitiveText2D& t = dbg.GetTextPrimitive(0);
 
     const Dia::Maths::Vector2D& jointPos = r.worldTransforms[0].position;
     EXPECT_FALSE(
-        std::abs(p.text2D.position.x - jointPos.x) < 1e-4f &&
-        std::abs(p.text2D.position.y - jointPos.y) < 1e-4f)
+        std::abs(t.position.x - jointPos.x) < 1e-4f &&
+        std::abs(t.position.y - jointPos.y) < 1e-4f)
         << "Label position should be offset from joint position";
 }
 
@@ -457,10 +445,8 @@ TEST(BoneLabelsDrawer, Draw_Colour_IsActive)
     drawer.Draw(fd);
 
     const DebugFrameData& dbg = static_cast<const DebugFrameData&>(fd);
-    ASSERT_GE(dbg.GetDebugPrimitiveCount(), 1u);
-    const DebugPrimitive& p = dbg.GetDebugPrimitive(0);
-    ASSERT_EQ(p.type, DebugPrimitiveType::Text2D);
-    EXPECT_EQ(p.text2D.colour, DebugColourPalette::kActive);
+    ASSERT_GE(dbg.GetTextPrimitiveCount(), 1u);
+    EXPECT_EQ(dbg.GetTextPrimitive(0).colour, DebugColourPalette::kActive);
 }
 
 TEST(BoneLabelsDrawer, LayerName_IsRigLabels)

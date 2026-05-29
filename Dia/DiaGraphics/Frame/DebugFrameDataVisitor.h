@@ -23,6 +23,7 @@ namespace Dia
 
 			virtual void Visit(const DebugPrimitive& primitive) const = 0;
 			virtual void Visit(const DebugFrameData& frameData) const = 0;
+			virtual void VisitText(const DebugPrimitiveText2D& text) const {}
 		};
 	}
 }
