@@ -2,8 +2,6 @@
 #include "Modules/TestStages/TestResultsRegistry.h"
 
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
-#include <DiaObservation/Log/DiaLog.h>
-
 namespace CluicheTest {
 
 const Dia::Core::StringCRC TestMainStateProducerModule::kTypeId("TestMainStateProducerModule");
@@ -24,14 +22,6 @@ void TestMainStateProducerModule::DoPopulateFrame(Cluiche::AppFlow::MainToRender
 
     frame.stageHUD.activeStageName = activeStageName;
     frame.stageHUD.frameCount      = reg.GetActiveFrameCount();
-
-    // Warn once if this stage hasn't been seen before (may indicate missing HUD config)
-    if (activeStageName.Value() != 0 && activeStageName != mHUDWarnedStage)
-    {
-        DIA_LOG_WARNING("CluicheTest", "Stage '%s' is active — if HUD is not visible, add '%s' to TestStageHUDModule's stages list in cluiche_main.diaapp",
-            activeStageName.AsChar(), activeStageName.AsChar());
-        mHUDWarnedStage = activeStageName;
-    }
 
     if (result)
     {

@@ -16,8 +16,6 @@ public:
 protected:
     void DoPopulateFrame(Cluiche::AppFlow::MainToRenderFrame& frame) override;
 
-private:
-    Dia::Core::StringCRC mHUDWarnedStage;
 };
 
 } // namespace CluicheTest
