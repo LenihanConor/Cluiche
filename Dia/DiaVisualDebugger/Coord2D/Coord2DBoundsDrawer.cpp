@@ -38,27 +38,32 @@ void Coord2DBoundsDrawer::Draw(Dia::Graphics::FrameData& frameData)
     const Dia::Maths::Vector2D& bl = bounds.GetBottomLeft();
     const Dia::Maths::Vector2D& tr = bounds.GetTopRight();
 
-    // Derived corners
-    const Dia::Maths::Vector2D topLeft    (bl.x, tr.y);
-    const Dia::Maths::Vector2D bottomRight(tr.x, bl.y);
+    // Inset labels by 5% so they render on-screen
+    const float insetX = (tr.x - bl.x) * 0.05f;
+    const float insetY = (tr.y - bl.y) * 0.05f;
+
+    const Dia::Maths::Vector2D inBL(bl.x + insetX, bl.y + insetY);
+    const Dia::Maths::Vector2D inTR(tr.x - insetX, tr.y - insetY);
+    const Dia::Maths::Vector2D inTL(bl.x + insetX, tr.y - insetY);
+    const Dia::Maths::Vector2D inBR(tr.x - insetX, bl.y + insetY);
 
     char buf[64];
 
     // Bottom-left
     snprintf(buf, sizeof(buf), "(%.1f, %.1f)", bl.x, bl.y);
-    frameData.RequestDrawText(bl, buf, 11.0f, Dia::Debug::DebugColourPalette::kActive);
+    frameData.RequestDrawText(inBL, buf, 11.0f, Dia::Debug::DebugColourPalette::kActive);
 
     // Top-right
     snprintf(buf, sizeof(buf), "(%.1f, %.1f)", tr.x, tr.y);
-    frameData.RequestDrawText(tr, buf, 11.0f, Dia::Debug::DebugColourPalette::kActive);
+    frameData.RequestDrawText(inTR, buf, 11.0f, Dia::Debug::DebugColourPalette::kActive);
 
     // Top-left
-    snprintf(buf, sizeof(buf), "(%.1f, %.1f)", topLeft.x, topLeft.y);
-    frameData.RequestDrawText(topLeft, buf, 11.0f, Dia::Debug::DebugColourPalette::kActive);
+    snprintf(buf, sizeof(buf), "(%.1f, %.1f)", bl.x, tr.y);
+    frameData.RequestDrawText(inTL, buf, 11.0f, Dia::Debug::DebugColourPalette::kActive);
 
     // Bottom-right
-    snprintf(buf, sizeof(buf), "(%.1f, %.1f)", bottomRight.x, bottomRight.y);
-    frameData.RequestDrawText(bottomRight, buf, 11.0f, Dia::Debug::DebugColourPalette::kActive);
+    snprintf(buf, sizeof(buf), "(%.1f, %.1f)", tr.x, bl.y);
+    frameData.RequestDrawText(inBR, buf, 11.0f, Dia::Debug::DebugColourPalette::kActive);
 }
 
 } // namespace Dia::Debug
