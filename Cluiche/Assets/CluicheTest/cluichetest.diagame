@@ -1,5 +1,12 @@
 {
     "config": {
+        "name": "CluicheTest",
+        "build": "dev-0.1",
+        "window": {
+            "title": "CluicheTest - e2e tests",
+            "width_pct": 90,
+            "height_pct": 90
+        },
         "asset_catalogue": "assets.catalogue.json",
         "observation": "cluichetest.diaobservation",
         "path_aliases": {

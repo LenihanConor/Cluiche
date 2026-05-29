@@ -19,11 +19,13 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="DisplayInfo.h" />
     <ClInclude Include="InputSource.h" />
     <ClInclude Include="Window.h" />
     <ClInclude Include="WindowFactory.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="DisplayInfo.cpp" />
     <ClCompile Include="InputSource.cpp" />
     <ClCompile Include="Window.cpp" />
     <ClCompile Include="WindowFactory.cpp" />

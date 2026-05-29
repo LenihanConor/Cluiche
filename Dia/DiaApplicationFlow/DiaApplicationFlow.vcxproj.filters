@@ -17,6 +17,9 @@
     <ClCompile Include="Module.cpp" />
     <ClCompile Include="ProcessingUnit.cpp" />
     <ClCompile Include="TypeRegistry.cpp" />
+    <ClCompile Include="Manifest\ApplicationManifestV3.cpp">
+      <Filter>Manifest</Filter>
+    </ClCompile>
     <ClCompile Include="Manifest\ApplicationManifestLoaderV2.cpp">
       <Filter>Manifest</Filter>
     </ClCompile>

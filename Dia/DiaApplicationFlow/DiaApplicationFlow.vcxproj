@@ -22,6 +22,7 @@
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="LifecycleEvent.cpp" />
+    <ClCompile Include="Manifest\ApplicationManifestV3.cpp" />
     <ClCompile Include="Manifest\ApplicationManifestLoaderV2.cpp" />
     <ClCompile Include="Manifest\ManifestComposerV2.cpp" />
     <ClCompile Include="Manifest\ManifestValidatorV2.cpp" />

@@ -9,6 +9,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="DisplayInfo.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
     <ClInclude Include="InputSource.h">
       <Filter>Headers</Filter>
     </ClInclude>
@@ -20,6 +23,9 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="DisplayInfo.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
     <ClCompile Include="InputSource.cpp">
       <Filter>Source</Filter>
     </ClCompile>

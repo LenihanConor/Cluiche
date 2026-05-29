@@ -10,65 +10,51 @@
 #include <DiaCore/FilePath/Path.h>
 #include <DiaCore/Json/external/json/json.h>
 
-#include <fstream>
-#include <sstream>
-#include <string>
-
 // Force-link all v2 modules via DIA_MODULE registrations
 // Each module's .cpp registers itself at static init time via DIA_MODULE.
 // As long as those translation units are linked in, no explicit include needed.
 
 namespace {
 
-// Read the .diagame, extract config.path_aliases, and register them in PathStore
-// relative to the .diagame's directory. Must be called before any module that
-// resolves a FilePath (e.g. KernelModule creating a RenderWindow).
-bool RegisterPathAliasesFromDiagame(const char* diagamePath)
+// Compute baseDir from a file path — everything up to and including the last
+// separator, so that ResolveRelative can concatenate directly.
+void ComputeBaseDir(const char* filePath, char* baseDir, unsigned int baseDirSize)
 {
-    std::ifstream file(diagamePath);
-    if (!file.is_open())
-        return false;
-
-    std::ostringstream ss;
-    ss << file.rdbuf();
-    std::string contents = ss.str();
-
-    Json::Value root;
-    Json::Reader reader;
-    if (!reader.parse(contents, root))
-        return false;
-
-    // Compute baseDir = directory containing the .diagame, **including the
-    // trailing slash**. Dia::Core::Path::ResolveRelative concatenates
-    // baseDir + relativePath directly with no separator, so baseDir must
-    // end in '/' for the result to be a valid path.
-    char baseDir[512] = {0};
     const char* lastSlash = nullptr;
-    for (const char* p = diagamePath; *p != '\0'; ++p)
+    for (const char* p = filePath; *p != '\0'; ++p)
     {
         if (*p == '/' || *p == '\\')
             lastSlash = p;
     }
-
     if (lastSlash)
     {
-        unsigned int len = static_cast<unsigned int>(lastSlash - diagamePath) + 1; // include the slash
-        if (len >= sizeof(baseDir)) len = sizeof(baseDir) - 1;
+        unsigned int len = static_cast<unsigned int>(lastSlash - filePath) + 1;
+        if (len >= baseDirSize) len = baseDirSize - 1;
         for (unsigned int i = 0; i < len; ++i)
-            baseDir[i] = diagamePath[i];
+            baseDir[i] = filePath[i];
         baseDir[len] = '\0';
     }
+    else
+    {
+        baseDir[0] = '\0';
+    }
+}
 
-    if (!root.isMember("config") || !root["config"].isObject())
-        return true; // No config — not an error.
+// Register path_aliases from the already-composed manifest's diagameConfig.
+// Must be called before any module that resolves a FilePath.
+void RegisterPathAliases(const Dia::ApplicationFlow::ApplicationManifestV3& manifest,
+                         const char* diagamePath)
+{
+    if (!manifest.diagameConfig) return;
+    const Json::Value& config = *manifest.diagameConfig;
+    if (!config.isMember("path_aliases") || !config["path_aliases"].isObject()) return;
 
-    const Json::Value& config = root["config"];
-    if (!config.isMember("path_aliases") || !config["path_aliases"].isObject())
-        return true;
+    char baseDir[512] = {};
+    ComputeBaseDir(diagamePath, baseDir, sizeof(baseDir));
 
     const Json::Value& aliases = config["path_aliases"];
     Json::Value::Members members = aliases.getMemberNames();
-    for (unsigned int i = 0; i < members.size(); ++i)
+    for (unsigned int i = 0; i < static_cast<unsigned int>(members.size()); ++i)
     {
         const std::string& aliasName = members[i];
         const char* relPath = aliases[aliasName].asCString();
@@ -80,7 +66,6 @@ bool RegisterPathAliasesFromDiagame(const char* diagamePath)
         Dia::Core::Path::String pathStr(resolved.AsCStr());
         Dia::Core::PathStore::RegisterToStore(alias, pathStr);
     }
-    return true;
 }
 
 } // namespace
@@ -89,16 +74,7 @@ int main(int argc, const char* argv[])
 {
     const char* kDiagamePath = "assets/cluichetest.diagame";
 
-    // Register path aliases (config.path_aliases from .diagame) BEFORE any module
-    // starts resolving FilePaths. KernelModule's RenderWindow needs "root" in
-    // particular for shader lookup.
-    if (!RegisterPathAliasesFromDiagame(kDiagamePath))
-    {
-        printf("Failed to register path aliases from .diagame\n");
-        return 1;
-    }
-
-    // Compose manifest from .diagame (resolves imports, merges stages)
+    // Compose manifest from .diagame (resolves imports, merges stages, captures config)
     Dia::ApplicationFlow::ApplicationManifestV3 manifest;
     Dia::ApplicationFlow::ComposeResult composeResult =
         Dia::ApplicationFlow::ManifestComposerV2::Compose(kDiagamePath, manifest);
@@ -108,6 +84,9 @@ int main(int argc, const char* argv[])
         printf("Failed to compose manifest (result: %d)\n", static_cast<int>(composeResult));
         return 1;
     }
+
+    // Register path aliases from diagameConfig BEFORE any module resolves a FilePath.
+    RegisterPathAliases(manifest, kDiagamePath);
 
     // Validate manifest against registered types
     Dia::ApplicationFlow::TypeRegistry& registry = Dia::ApplicationFlow::TypeRegistry::Global();

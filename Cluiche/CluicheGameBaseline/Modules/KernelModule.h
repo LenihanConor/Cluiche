@@ -2,6 +2,7 @@
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/Strings/String64.h>
 #include <DiaApplicationFlow/Streams/EventStreamWriter.h>
 #include <DiaApplicationFlow/Streams/ServiceStreamWriter.h>
 #include <DiaInput/InputSourceManager.h>
@@ -49,6 +50,7 @@ public:
     static bool IsRenderContextActive()             { return sRenderContextActive.load(std::memory_order_acquire); }
 
 protected:
+    void OnConfigure(const char* configJson) override;
     Dia::ApplicationFlow::StartResult DoStart() override;
     void DoUpdate(float dt) override;
     Dia::ApplicationFlow::StopResult DoStop() override;
@@ -60,6 +62,11 @@ private:
     Dia::ApplicationFlow::ServiceStreamWriter<Dia::AssetRuntime::TextureHandler> mTextureHandlerService{this, "KernelTextureHandler"};
     static std::atomic<bool>                                                     sRenderContextReleased;
     static std::atomic<bool>                                                     sRenderContextActive;
+
+    // Window config — populated from .diagame in DoStart, with fallback defaults
+    Dia::Core::Containers::String64 mWindowTitle{"CluicheTest"};
+    unsigned int                    mWindowWidth  = 1400;
+    unsigned int                    mWindowHeight = 1000;
 
     Dia::Input::InputSourceManager  mInputSourceManager;
     Dia::Input::ConsoleGamepadManager mGamepadManager;

@@ -51,22 +51,24 @@ void DebugServerHostModule::OnConfigure(const char* configJson)
         mServer.SetPort(static_cast<uint16_t>(config["port"].asInt()));
     if (config.isMember("auto_start") && config["auto_start"].isBool())
         mServer.EnableAutoStart(config["auto_start"].asBool());
-
-    const char* gameName = config.isMember("game_name") && config["game_name"].isString()
-        ? config["game_name"].asCString() : "";
-    const char* gameBuild = config.isMember("game_build") && config["game_build"].isString()
-        ? config["game_build"].asCString() : "";
-    mServer.SetGameInfo(gameName, gameBuild);
-
     if (config.isMember("diagame_path") && config["diagame_path"].isString())
         mServer.SetDiagamePath(config["diagame_path"].asCString());
-
     if (config.isMember("log_level") && config["log_level"].isString())
         mServer.SetLogSinkLevel(Dia::Observation::Log::LogLevelFromString(config["log_level"].asCString()));
 }
 
 Dia::ApplicationFlow::StartResult DebugServerHostModule::DoStart()
 {
+    // Read game identity from .diagame config
+    if (const Json::Value* diagame = GetApplication()->GetDiagameConfig())
+    {
+        const char* gameName  = diagame->isMember("name")  && (*diagame)["name"].isString()
+            ? (*diagame)["name"].asCString()  : "";
+        const char* gameBuild = diagame->isMember("build") && (*diagame)["build"].isString()
+            ? (*diagame)["build"].asCString() : "";
+        mServer.SetGameInfo(gameName, gameBuild);
+    }
+
     mServer.SetStateProvider(this);
     mServer.Start();
 

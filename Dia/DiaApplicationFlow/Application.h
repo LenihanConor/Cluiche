@@ -8,6 +8,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
+
+namespace Json { class Value; }
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaApplicationFlow/Streams/IStreamStore.h>
@@ -111,6 +113,11 @@ namespace Dia { namespace ApplicationFlow {
         // FindStreamStore: lookup only, no creation. Returns null if not found.
         // Safe to call at any time — mStreamStores is immutable after Start().
         IStreamStore* FindStreamStore(const Dia::Core::StringCRC& id) const;
+
+        // Returns the raw "config" block from the .diagame file, or null if
+        // Compose() was not used or the .diagame had no config block.
+        // Safe to call from any module lifecycle method (DoStart, OnConfigure, etc.).
+        [[nodiscard]] const Json::Value* GetDiagameConfig() const override { return mManifest.diagameConfig; }
 
         // Emit a lifecycle event on the $lifecycle stream.
         // Called internally by Application and Module; not part of the public module API.

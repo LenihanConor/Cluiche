@@ -124,6 +124,13 @@ namespace Dia { namespace ApplicationFlow {
             baseDir[0] = '\0';
         }
 
+        // Capture the full config block from .diagame
+        if (root.isMember("config") && root["config"].isObject())
+        {
+            delete outManifest.diagameConfig;
+            outManifest.diagameConfig = new Json::Value(root["config"]);
+        }
+
         // Validate imports array
         if (!root.isMember("imports") || !root["imports"].isArray())
         {

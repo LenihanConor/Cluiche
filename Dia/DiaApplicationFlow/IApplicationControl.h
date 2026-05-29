@@ -13,6 +13,8 @@
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <functional>
 
+namespace Json { class Value; }
+
 namespace Dia { namespace ApplicationFlow {
 
     class Module;
@@ -51,6 +53,10 @@ namespace Dia { namespace ApplicationFlow {
         // Remove all guards registered against `owner`.  Idempotent.
         // Main-thread-only.
         virtual void UnregisterTransitionGuards(Module* owner) = 0;
+
+        // Read-only: returns the "config" block from the .diagame file.
+        // Null if no .diagame config was present. Safe from any lifecycle method.
+        [[nodiscard]] virtual const Json::Value* GetDiagameConfig() const = 0;
     };
 
 }} // namespace Dia::ApplicationFlow

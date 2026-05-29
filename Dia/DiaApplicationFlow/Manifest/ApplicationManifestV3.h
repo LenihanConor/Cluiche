@@ -5,6 +5,8 @@
 #include <DiaCore/Strings/String256.h>
 #include <DiaApplicationFlow/Streams/OverflowPolicy.h>
 
+namespace Json { class Value; }
+
 namespace Dia { namespace ApplicationFlow {
 
     // Describes a data stream connecting two processing units
@@ -86,6 +88,17 @@ namespace Dia { namespace ApplicationFlow {
 
         Dia::Core::Containers::DynamicArrayC<StreamDeclaration, 16>         streams;
         Dia::Core::Containers::DynamicArrayC<ProcessingUnitDeclaration, 4>  processingUnits;
+
+        // Full "config" block from the .diagame file — heap-allocated, owned here.
+        // Null if no .diagame config was present or Compose was not used.
+        Json::Value* diagameConfig = nullptr;
+
+        ApplicationManifestV3() = default;
+        ~ApplicationManifestV3();
+        ApplicationManifestV3(const ApplicationManifestV3&) = delete;
+        ApplicationManifestV3& operator=(const ApplicationManifestV3&) = delete;
+        ApplicationManifestV3(ApplicationManifestV3&& other) noexcept;
+        ApplicationManifestV3& operator=(ApplicationManifestV3&& other) noexcept;
     };
 
 }} // namespace Dia::ApplicationFlow

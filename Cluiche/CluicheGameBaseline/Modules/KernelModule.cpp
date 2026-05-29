@@ -12,12 +12,16 @@
 #include <DiaObservation/Metric/Gauge.h>
 #include <DiaObservation/Metric/Histogram.h>
 #include <DiaApplicationFlow/Application.h>
+#include <DiaApplicationFlow/IApplicationControl.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include "Modules/JobSystemModule.h"
 
 #include <DiaBgfx/Canvas.h>
 #include <DiaWindow/SystemHandle.h>
+#include <DiaCore/Json/external/json/json.h>
+
+#include <DiaSDL/DisplayInfo.h>
 
 #ifdef DIA_DEBUG
 #include <DiaBgfx/Imgui/BgfxImGuiBackend.h>
@@ -34,13 +38,65 @@ KernelModule::KernelModule(const Dia::Core::StringCRC& instanceId)
     : Module(instanceId)
 {}
 
+void KernelModule::OnConfigure(const char* /*configJson*/)
+{
+    // Window config is read from the .diagame config block in DoStart.
+}
+
+static unsigned int ResolveWindowDimension(const Json::Value& win,
+                                            const char* absKey, const char* pctKey,
+                                            unsigned int fallback,
+                                            unsigned int screenSize)
+{
+    if (win.isMember(absKey) && win[absKey].isInt())
+        return static_cast<unsigned int>(win[absKey].asInt());
+    if (win.isMember(pctKey) && win[pctKey].isInt())
+    {
+        const int pct = win[pctKey].asInt();
+        if (pct > 0 && pct <= 100)
+            return static_cast<unsigned int>(screenSize * pct / 100);
+    }
+    return fallback;
+}
+
 Dia::ApplicationFlow::StartResult KernelModule::DoStart()
 {
     DIA_LOG_INFO("Application", "KernelModule DoStart entry");
 
+    // Read window settings from .diagame config
+    const Json::Value* cfg = GetApplication()->GetDiagameConfig();
+    DIA_LOG_INFO("Application", "KernelModule: diagameConfig %s", cfg ? "found" : "NULL — using hardcoded defaults");
+
+    if (cfg)
+    {
+        const bool hasWindow = cfg->isMember("window") && (*cfg)["window"].isObject();
+        DIA_LOG_INFO("Application", "KernelModule: window block %s", hasWindow ? "found" : "missing");
+
+        if (hasWindow)
+        {
+            const Json::Value& win = (*cfg)["window"];
+
+            unsigned int screenW = 1920, screenH = 1080;
+            Dia::SDL::GetPrimaryDisplaySize(screenW, screenH);
+            DIA_LOG_INFO("Application", "KernelModule: screen size %ux%u", screenW, screenH);
+
+            mWindowWidth  = ResolveWindowDimension(win, "width",  "width_pct",  mWindowWidth,  screenW);
+            mWindowHeight = ResolveWindowDimension(win, "height", "height_pct", mWindowHeight, screenH);
+
+            if (win.isMember("title") && win["title"].isString())
+            {
+                mWindowTitle = Dia::Core::Containers::String64(win["title"].asCString());
+                DIA_LOG_INFO("Application", "KernelModule: title from diagame = '%s'", mWindowTitle.AsCStr());
+            }
+        }
+    }
+
+    DIA_LOG_INFO("Application", "KernelModule: opening window '%s' %ux%u",
+        mWindowTitle.AsCStr(), mWindowWidth, mWindowHeight);
+
     Dia::Window::IWindow::Settings windowSetting(
-        "CluicheTest",
-        Dia::Window::IWindow::Settings::Dimensions(1400, 1000),
+        mWindowTitle,
+        Dia::Window::IWindow::Settings::Dimensions(mWindowWidth, mWindowHeight),
         Dia::Window::IWindow::Settings::Style());
 
     mWindow = mWindowFactory.Create(windowSetting);
@@ -64,7 +120,8 @@ Dia::ApplicationFlow::StartResult KernelModule::DoStart()
 
     // Construct bgfx Canvas unconditionally — SFML render path is removed.
     Dia::Bgfx::CanvasSettings bgfxSettings;
-    bgfxSettings.initialSize = Dia::Maths::Vector2D(1400.0f, 1000.0f);
+    bgfxSettings.initialSize = Dia::Maths::Vector2D(
+        static_cast<float>(mWindowWidth), static_cast<float>(mWindowHeight));
     bgfxSettings.cookedShaderRoot = "shaders";
     bgfxSettings.rendererType = Dia::Bgfx::RendererType::Direct3D11;
 
