@@ -21,6 +21,9 @@ public:
     bool WasKeyPressed(Dia::Input::EKey key)  const;
     bool WasKeyReleased(Dia::Input::EKey key) const;
 
+    int GetMouseX() const { return mMouseX; }
+    int GetMouseY() const { return mMouseY; }
+
 protected:
     Dia::ApplicationFlow::StartResult DoStart()                              override;
     void                              DoUpdate(float dt)                     override;
@@ -35,6 +38,8 @@ private:
 
     bool mCurrentKeys[kMaxKeys];
     bool mPreviousKeys[kMaxKeys];
+    int  mMouseX = 0;
+    int  mMouseY = 0;
 };
 
 } } // namespace Cluiche::AppFlow

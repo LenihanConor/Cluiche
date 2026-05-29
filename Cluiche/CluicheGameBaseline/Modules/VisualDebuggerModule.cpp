@@ -54,6 +54,14 @@ void VisualDebuggerModule::DoUpdate(float /*dt*/)
     mFrame.Clear();
     mFrame.SetCamera(mCamera);
     mFrame.SetWindowSize(mWindowSize);
+
+    if (mInputRef.Get())
+    {
+        mFrame.SetMousePixel(Dia::Maths::Vector2D(
+            static_cast<float>(mInputRef->GetMouseX()),
+            static_cast<float>(mInputRef->GetMouseY())));
+    }
+
     mLayerManager.Draw(mFrame);
     mRenderOutput.Write(mFrame, Dia::Core::TimeAbsolute::Zero());
 }

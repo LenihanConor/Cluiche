@@ -5,9 +5,11 @@
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/Streams/StreamWriter.h>
+#include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaGraphics/Frame/FrameData.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
+#include "Modules/InputStreamModule.h"
 #include <memory>
 
 namespace Dia::Debug
@@ -49,6 +51,8 @@ private:
 
     Dia::Graphics::Camera2D      mCamera;
     Dia::Maths::Vector2D         mWindowSize{1400.0f, 1000.0f};
+
+    Dia::ApplicationFlow::ModuleRef<InputStreamModule> mInputRef{this};
 
     std::unique_ptr<Dia::Debug::Coord2DOriginDrawer> mCoord2DOriginDrawer;
     std::unique_ptr<Dia::Debug::Coord2DAxesDrawer>   mCoord2DAxesDrawer;

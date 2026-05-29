@@ -53,6 +53,11 @@ void InputStreamModule::DoUpdate(float /*dt*/)
             if (idx < kMaxKeys)
                 mCurrentKeys[idx] = false;
         }
+        else if (evt.type == InputEvent::EType::kMouseMoved)
+        {
+            mMouseX = evt.mouseMove.x;
+            mMouseY = evt.mouseMove.y;
+        }
     }
 }
 
