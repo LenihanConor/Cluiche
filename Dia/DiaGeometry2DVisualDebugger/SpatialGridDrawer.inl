@@ -2,12 +2,14 @@
 
 #ifdef DIA_DEBUG
 
+#include <imgui.h>
 #include <DiaGraphics/Frame/FrameData.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaVisualDebugger/DebugColourPalette.h>
 #include <DiaMaths/Vector/Vector2D.h>
 #include <DiaGeometry2D/Shapes/AARect.h>
+#include <cstdio>
 
 namespace Dia::Geometry2DVisualDebugger
 {
@@ -44,8 +46,23 @@ void SpatialGridDrawer<T, MaxObjects>::Draw(Dia::Graphics::FrameData& frameData)
                 Dia::Maths::Vector2D(minX, minY),
                 Dia::Maths::Vector2D(maxX, maxY),
                 colour);
+
+            if (mShowLabels)
+            {
+                char label[16];
+                std::snprintf(label, sizeof(label), "%d,%d", cx, cy);
+                frameData.RequestDrawText(
+                    Dia::Maths::Vector2D(minX + cellSize * 0.1f, minY + cellSize * 0.5f),
+                    label, 10.0f, colour);
+            }
         }
     }
+}
+
+template<typename T, unsigned int MaxObjects>
+void SpatialGridDrawer<T, MaxObjects>::DrawImGui()
+{
+    ImGui::Checkbox("geometry.spatial_grid.coord.labels", &mShowLabels);
 }
 
 } // namespace Dia::Geometry2DVisualDebugger

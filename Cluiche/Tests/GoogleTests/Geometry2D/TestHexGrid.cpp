@@ -16,8 +16,10 @@ using QueryOut   = Dia::Core::Containers::DynamicArrayC<HandleType, kMaxQueryRes
 static Grid::Def MakeWorldDef()
 {
     Grid::Def def;
-    def.worldBounds = AARect(Vector2D(0.0f, 0.0f), Vector2D(100.0f, 100.0f));
-    def.hexRadius   = 5.0f;
+    def.origin   = Vector2D(0.0f, 0.0f);
+    def.colCount = 20;
+    def.rowCount = 20;
+    def.hexRadius = 5.0f;
     return def;
 }
 
@@ -551,8 +553,10 @@ protected:
     void SetUp() override
     {
         SmallHexGrid::Def def;
-        def.worldBounds = AARect(Vector2D(0.0f, 0.0f), Vector2D(100.0f, 100.0f));
-        def.hexRadius   = 5.0f;
+        def.origin   = Vector2D(0.0f, 0.0f);
+        def.colCount = 20;
+        def.rowCount = 20;
+        def.hexRadius = 5.0f;
         grid = new SmallHexGrid(def);
     }
 

@@ -9,7 +9,9 @@
 #include <DiaMaths/Core/MathsDefines.h>
 #include <DiaMaths/Vector/Vector2D.h>
 
+#include <imgui.h>
 #include <cmath>
+#include <cstdio>
 
 namespace Dia::Geometry2DVisualDebugger
 {
@@ -39,8 +41,6 @@ void HexGridDrawer<T, MaxObjects>::Draw(Dia::Graphics::FrameData& frameData)
     };
 
     const float hexRadius = mGrid.GetHexRadius();
-    const int   minQ      = mGrid.GetMinQ();
-    const int   minR      = mGrid.GetMinR();
     const int   colCount  = mGrid.GetColCount();
     const int   rowCount  = mGrid.GetRowCount();
 
@@ -48,7 +48,7 @@ void HexGridDrawer<T, MaxObjects>::Draw(Dia::Graphics::FrameData& frameData)
     {
         for (int q = 0; q < colCount; ++q)
         {
-            const Dia::Geometry2D::HexCoord coord{ minQ + q, minR + r };
+            const Dia::Geometry2D::HexCoord coord{ q, r };
             if (!mGrid.IsValidHex(coord)) continue;
 
             const Dia::Maths::Vector2D center = mGrid.HexToWorld(coord);
@@ -67,8 +67,23 @@ void HexGridDrawer<T, MaxObjects>::Draw(Dia::Graphics::FrameData& frameData)
             {
                 frameData.RequestDraw(corners[k], corners[(k + 1) % 6], colour);
             }
+
+            if (mShowLabels)
+            {
+                char label[16];
+                std::snprintf(label, sizeof(label), "%d,%d", coord.q, coord.r);
+                frameData.RequestDrawText(
+                    Dia::Maths::Vector2D(center.x - hexRadius * 0.35f, center.y),
+                    label, 10.0f, colour);
+            }
         }
     }
+}
+
+template<typename T, unsigned int MaxObjects>
+void HexGridDrawer<T, MaxObjects>::DrawImGui()
+{
+    ImGui::Checkbox("geometry.hexgrid.coord.labels", &mShowLabels);
 }
 
 } // namespace Dia::Geometry2DVisualDebugger

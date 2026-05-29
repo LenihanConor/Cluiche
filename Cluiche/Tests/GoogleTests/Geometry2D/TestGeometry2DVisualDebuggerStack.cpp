@@ -323,8 +323,10 @@ protected:
     void SetUp() override
     {
         HGrid::Def def;
-        def.worldBounds = AARect(Vector2D(0.0f, 0.0f), Vector2D(100.0f, 100.0f));
-        def.hexRadius   = 10.0f;
+        def.origin   = Vector2D(0.0f, 0.0f);
+        def.colCount = 10;
+        def.rowCount = 10;
+        def.hexRadius = 10.0f;
         hgrid = new HGrid(def);
     }
 

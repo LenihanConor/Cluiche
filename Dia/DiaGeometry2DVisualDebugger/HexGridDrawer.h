@@ -39,10 +39,12 @@ public:
 
     Dia::Core::StringCRC GetLayerName() const override;
     void Draw(Dia::Graphics::FrameData& frameData) override;
+    void DrawImGui() override;
 
 private:
     const Dia::Geometry2D::HexGrid<T, MaxObjects>& mGrid;
     const Dia::Debug::DebugLayerManager&           mManager;
+    bool                                           mShowLabels{ false };
 };
 
 } // namespace Dia::Geometry2DVisualDebugger

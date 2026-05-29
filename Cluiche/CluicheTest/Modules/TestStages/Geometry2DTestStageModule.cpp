@@ -207,7 +207,7 @@ void Geometry2DTestStageModule::SetupGallery()
     constexpr float kSpacing = 160.0f;
     constexpr float kRow1Y = 820.0f;
     constexpr float kRow2Y = 700.0f;
-    constexpr float kStartX = 620.0f;
+    constexpr float kStartX = 220.0f;
 
     // Row 1: Circle, AARect, OORect, Line, Ray
     mCircle = Dia::Geometry2D::Circle(45.0f, Dia::Maths::Vector2D(kStartX, kRow1Y));
@@ -471,30 +471,29 @@ void Geometry2DTestStageModule::SetupSpatialStructures()
             mSpatialGrid->Insert(i, bounds[i]);
     }
 
-    // --- HexGrid (bottom-left, under console) ---
+    // --- HexGrid — 5x5 staggered (odd-row-right), hex radius 32 ---
     {
-        constexpr float hx0 = 50.0f, hy0 = 50.0f;
-        constexpr float hW = 450.0f, hH = 300.0f;
+        constexpr float hx0 = 10.0f, hy0 = 50.0f;
         Dia::Geometry2D::HexGrid<SpatialElem, kSpatialMax>::Def def;
-        def.worldBounds = Dia::Geometry2D::AARect(
-            Dia::Maths::Vector2D(hx0, hy0),
-            Dia::Maths::Vector2D(hx0 + hW, hy0 + hH));
-        def.hexRadius = 28.0f;
+        def.origin    = Dia::Maths::Vector2D(hx0, hy0);
+        def.colCount  = 5;
+        def.rowCount  = 5;
+        def.hexRadius = 32.0f;
         mHexGrid = std::make_unique<Dia::Geometry2D::HexGrid<SpatialElem, kSpatialMax>>(def);
 
         constexpr float s = 20.0f;
         mHexGrid->Insert(0u, Dia::Geometry2D::AARect(
-            Dia::Maths::Vector2D(hx0 + 60.0f, hy0 + 80.0f),
-            Dia::Maths::Vector2D(hx0 + 60.0f + s, hy0 + 80.0f + s)));
+            Dia::Maths::Vector2D(hx0 + 40.0f, hy0 + 60.0f),
+            Dia::Maths::Vector2D(hx0 + 40.0f + s, hy0 + 60.0f + s)));
         mHexGrid->Insert(1u, Dia::Geometry2D::AARect(
-            Dia::Maths::Vector2D(hx0 + 180.0f, hy0 + 120.0f),
-            Dia::Maths::Vector2D(hx0 + 180.0f + s, hy0 + 120.0f + s)));
+            Dia::Maths::Vector2D(hx0 + 140.0f, hy0 + 100.0f),
+            Dia::Maths::Vector2D(hx0 + 140.0f + s, hy0 + 100.0f + s)));
         mHexGrid->Insert(2u, Dia::Geometry2D::AARect(
-            Dia::Maths::Vector2D(hx0 + 300.0f, hy0 + 60.0f),
-            Dia::Maths::Vector2D(hx0 + 300.0f + s, hy0 + 60.0f + s)));
+            Dia::Maths::Vector2D(hx0 + 220.0f, hy0 + 60.0f),
+            Dia::Maths::Vector2D(hx0 + 220.0f + s, hy0 + 60.0f + s)));
         mHexGrid->Insert(3u, Dia::Geometry2D::AARect(
-            Dia::Maths::Vector2D(hx0 + 120.0f, hy0 + 200.0f),
-            Dia::Maths::Vector2D(hx0 + 120.0f + s, hy0 + 200.0f + s)));
+            Dia::Maths::Vector2D(hx0 + 80.0f, hy0 + 170.0f),
+            Dia::Maths::Vector2D(hx0 + 80.0f + s, hy0 + 170.0f + s)));
     }
 }
 #endif
