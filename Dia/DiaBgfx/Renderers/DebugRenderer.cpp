@@ -321,6 +321,7 @@ namespace Dia
             batch.points.reserve(count);
 
             bgfx::setDebug(BGFX_DEBUG_TEXT);
+            bgfx::dbgTextClear();
 
             for (uint32_t i = 0; i < count; ++i)
             {
