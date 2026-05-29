@@ -76,19 +76,19 @@ private:
 
     struct Slot
     {
-        T        object;
-        AARect   bounds;
-        uint32_t generation;
-        bool     occupied;
+        T        object     = {};
+        AARect   bounds     = {};
+        uint32_t generation = 0;
+        bool     occupied   = false;
     };
 
     struct QuadNode
     {
-        AARect   bounds;
+        AARect   bounds = {};
         Dia::Core::Containers::DynamicArrayC<uint32_t, kMaxSlotsPerNode> objectSlots;
-        int      children[4]; // -1 = no child
-        int      depth;
-        bool     isLeaf;
+        int      children[4] = {-1, -1, -1, -1}; // -1 = no child
+        int      depth  = 0;
+        bool     isLeaf = false;
     };
 
     Dia::Core::Containers::DynamicArrayC<Slot, MaxObjects> mSlots;

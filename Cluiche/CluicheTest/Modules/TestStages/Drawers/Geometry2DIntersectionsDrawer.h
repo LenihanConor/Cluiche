@@ -19,8 +19,8 @@ struct IntersectionPair
 {
     enum class Kind { CircleCircle, CircleAARect, AARectTriangle, RayCircle, LineAARect, CircleTriangle };
 
-    Kind kind;
-    bool hit;
+    Kind kind = Kind::CircleCircle;
+    bool hit = false;
 
     Dia::Geometry2D::Circle   circleA;
     Dia::Geometry2D::Circle   circleB;

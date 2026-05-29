@@ -373,11 +373,11 @@ void SpatialGrid<T, MaxObjects>::QueryKNearest(
     struct Candidate
     {
         Dia::Core::Handle<T> handle;
-        float                sqDist;
+        float                sqDist = 0.0f;
     };
 
     static constexpr int kMaxCandidates = kMaxQueryResults;
-    Candidate candidates[kMaxCandidates];
+    Candidate candidates[kMaxCandidates] = {};
     int       candidateCount = 0;
 
     // Full world query for candidates

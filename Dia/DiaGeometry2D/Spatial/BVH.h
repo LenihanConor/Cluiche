@@ -36,8 +36,8 @@ class BVH : public ISpatialStructure<T>
 public:
     struct BuildEntry
     {
-        T      object;
-        AARect bounds;
+        T      object = {};
+        AARect bounds = {};
     };
 
     struct Def
@@ -91,11 +91,11 @@ private:
 
     struct BVHNode
     {
-        AARect bounds;
-        int    leftChild;   // -1 = leaf node
-        int    rightChild;
-        int    objectStart; // index into mSortedSlots
-        int    objectCount; // 0 for internal nodes
+        AARect bounds    = {};
+        int    leftChild   = -1; // -1 = leaf node
+        int    rightChild  = -1;
+        int    objectStart = 0;  // index into mSortedSlots
+        int    objectCount = 0;  // 0 for internal nodes
     };
 
     Def     mDef;

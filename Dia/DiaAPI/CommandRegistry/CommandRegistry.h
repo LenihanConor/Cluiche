@@ -134,9 +134,9 @@ namespace Dia
 		struct CommandInfoJson
 		{
 			Dia::Core::StringCRC name;
-			const char* description;
+			const char* description = nullptr;
 			Dia::Core::StringCRC category;
-			const char* owner;
+			const char* owner = nullptr;
 			CommandCallbackJson callback;
 		};
 

@@ -53,8 +53,8 @@ class HexGrid : public ISpatialStructure<T>
 public:
     struct Def
     {
-        AARect worldBounds;
-        float  hexRadius;   // circumradius (center-to-vertex)
+        AARect worldBounds = {};
+        float  hexRadius   = 1.0f; // circumradius (center-to-vertex)
     };
 
     explicit HexGrid(const Def& def);
@@ -100,10 +100,10 @@ public:
 private:
     struct Slot
     {
-        T        object;
-        AARect   bounds;
-        uint32_t generation;
-        bool     occupied;
+        T        object     = {};
+        AARect   bounds     = {};
+        uint32_t generation = 0;
+        bool     occupied   = false;
     };
 
     static constexpr int kMaxCells          = 4096;

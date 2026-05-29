@@ -35,8 +35,8 @@ class SpatialGrid : public ISpatialStructure<T>
 public:
     struct Def
     {
-        AARect worldBounds;
-        float  cellSize;
+        AARect worldBounds = {};
+        float  cellSize    = 1.0f;
     };
 
     explicit SpatialGrid(const Def& def);
@@ -67,10 +67,10 @@ public:
 private:
     struct Slot
     {
-        T        object;
-        AARect   bounds;
-        uint32_t generation;
-        bool     occupied;
+        T        object     = {};
+        AARect   bounds     = {};
+        uint32_t generation = 0;
+        bool     occupied   = false;
     };
 
     static constexpr int kMaxCells          = 4096;

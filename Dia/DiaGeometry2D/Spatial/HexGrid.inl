@@ -406,11 +406,11 @@ void HexGrid<T, MaxObjects>::QueryKNearest(
     struct Candidate
     {
         Dia::Core::Handle<T> handle;
-        float                sqDist;
+        float                sqDist = 0.0f;
     };
 
     static constexpr int kMaxCandidates = kMaxQueryResults;
-    Candidate candidates[kMaxCandidates];
+    Candidate candidates[kMaxCandidates] = {};
     int       candidateCount = 0;
 
     // Expanding ring search outward from the hex containing the point

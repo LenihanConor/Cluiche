@@ -21,6 +21,7 @@ BVH<T, MaxObjects>::BVH(const Def& def)
     , mIsBuilt(false)
     , mObjectCount(0)
 {
+    memset(mSlots, 0, sizeof(mSlots));
     memset(mSortedSlots, 0, sizeof(mSortedSlots));
     for (int i = 0; i < kMaxNodes; ++i)
     {
@@ -179,12 +180,12 @@ void BVH<T, MaxObjects>::QueryKNearest(
     struct Candidate
     {
         Dia::Core::Handle<T> handle;
-        float                sqDist;
+        float                sqDist = 0.0f;
     };
 
     // Use a fixed-size candidate buffer bounded by MaxObjects
     static constexpr int kBVHKNearestMax = static_cast<int>(MaxObjects);
-    Candidate candidates[kBVHKNearestMax];
+    Candidate candidates[kBVHKNearestMax] = {};
     int       candidateCount = 0;
 
     // Walk all objects using per-slot bounds (stored during Build())
