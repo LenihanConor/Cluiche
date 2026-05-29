@@ -266,6 +266,11 @@ External/SFML/
 # ImGui source (restored via DiaEnv deps)
 External/imgui/
 
+# SDL3 local build artifacts (source is tracked, build output is not)
+External/SDL3/_build*/
+External/SDL3/*.log
+External/SDL3/*.bat
+
 
 # Preprocessor output files
 *.i
