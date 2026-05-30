@@ -45,6 +45,8 @@ static Dia::Geometry2D::AARect MakeAABB(float minX, float minY, float maxX, floa
         Dia::Maths::Vector2D(maxX, maxY));
 }
 
+#pragma warning(push)
+#pragma warning(disable: 6262)  // ShapeDrawer::mPending is intentionally stack-allocated
 void Geometry2DAABBDrawer::Draw(Dia::Graphics::FrameData& frameData)
 {
     Dia::Geometry2DVisualDebugger::ShapeDrawer drawer(mManager);
@@ -110,6 +112,7 @@ void Geometry2DAABBDrawer::Draw(Dia::Graphics::FrameData& frameData)
 
     drawer.Draw(frameData);
 }
+#pragma warning(pop)
 
 } // namespace CluicheTest
 

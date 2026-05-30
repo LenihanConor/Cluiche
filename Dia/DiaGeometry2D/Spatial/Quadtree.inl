@@ -246,6 +246,8 @@ void Quadtree<T, MaxObjects>::QueryRay(
 //------------------------------------------------------------------------------
 // QueryKNearest
 //------------------------------------------------------------------------------
+#pragma warning(push)
+#pragma warning(disable: 6262)  // Candidate[kMaxQueryResults] + allHandles is intentional fixed-capacity working set
 template<typename T, unsigned int MaxObjects>
 void Quadtree<T, MaxObjects>::QueryKNearest(
     const Dia::Maths::Vector2D& point,
@@ -302,6 +304,7 @@ void Quadtree<T, MaxObjects>::QueryKNearest(
         out.Add(candidates[i].handle);
     }
 }
+#pragma warning(pop)
 
 //------------------------------------------------------------------------------
 // Resolve

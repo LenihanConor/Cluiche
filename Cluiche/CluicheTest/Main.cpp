@@ -70,6 +70,8 @@ void RegisterPathAliases(const Dia::ApplicationFlow::ApplicationManifestV3& mani
 
 } // namespace
 
+#pragma warning(push)
+#pragma warning(disable: 6262)  // Application + manifest stack frame is large but main() is a one-shot
 int main(int argc, const char* argv[])
 {
     const char* kDiagamePath = "assets/cluichetest.diagame";
@@ -127,3 +129,4 @@ int main(int argc, const char* argv[])
     CluicheTest::TestResultsRegistry::Destroy();
     return 0;
 }
+#pragma warning(pop)

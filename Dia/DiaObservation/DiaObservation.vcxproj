@@ -45,7 +45,9 @@
     <ClCompile Include="Profile\Profiler.cpp" />
     <ClCompile Include="Profile\ProfileScopedZone.cpp" />
     <ClCompile Include="Profile\ProfileFileSink.cpp" />
-    <ClCompile Include="Capture\ThirdParty\lodepng.cpp" />
+    <ClCompile Include="Capture\ThirdParty\lodepng.cpp">
+      <DisableSpecificWarnings>4334;4267</DisableSpecificWarnings>
+    </ClCompile>
     <ClCompile Include="Capture\CaptureManager.cpp" />
   </ItemGroup>
   <ItemGroup>
