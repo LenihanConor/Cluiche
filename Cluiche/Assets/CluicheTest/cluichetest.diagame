@@ -4,8 +4,8 @@
         "build": "dev-0.1",
         "window": {
             "title": "CluicheTest - e2e tests",
-            "width_pct": 90,
-            "height_pct": 90
+            "width_pct": 80,
+            "height_pct": 80
         },
         "asset_catalogue": "assets.catalogue.json",
         "observation": "cluichetest.diaobservation",
