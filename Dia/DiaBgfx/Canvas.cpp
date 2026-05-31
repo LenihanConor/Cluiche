@@ -178,6 +178,8 @@ namespace Dia
 
             DIA_LOG_INFO("DiaBgfx", "Canvas::DeferredInit — bgfx::init succeeded");
 
+            bgfx::setDebug(BGFX_DEBUG_TEXT);
+
             bgfx::setViewClear(kEntityViewId, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH,
                                0x303030FFu, 1.0f, 0);
             bgfx::setViewClear(kDebugViewId,  BGFX_CLEAR_NONE);

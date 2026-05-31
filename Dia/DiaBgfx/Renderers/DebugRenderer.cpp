@@ -334,7 +334,6 @@ namespace Dia
             batch.tris.reserve(count * 4);
             batch.points.reserve(count);
 
-            bgfx::setDebug(BGFX_DEBUG_TEXT);
             bgfx::dbgTextClear();
 
             for (uint32_t i = 0; i < count; ++i)
