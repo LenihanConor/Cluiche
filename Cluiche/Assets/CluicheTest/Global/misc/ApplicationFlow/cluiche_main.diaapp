@@ -85,6 +85,18 @@
             "kind": "ServiceStream",
             "payload_type": "ITextureHandler",
             "from": "MainPU"
+        },
+        {
+            "id": "AssetLoadStatus",
+            "kind": "ServiceStream",
+            "payload_type": "AssetLoadStatus",
+            "from": "MainPU"
+        },
+        {
+            "id": "AutomationService",
+            "kind": "ServiceStream",
+            "payload_type": "AutomationService",
+            "from": "MainPU"
         }
     ],
     "processing_units": [
@@ -186,6 +198,10 @@
                         {
                             "id": "KernelTextureHandler",
                             "role": "consumes"
+                        },
+                        {
+                            "id": "AssetLoadStatus",
+                            "role": "provides"
                         }
                     ]
                 },
@@ -215,7 +231,12 @@
                         "ObservationModule",
                         "DebugServerHostModule"
                     ],
-                    "channels": []
+                    "channels": [
+                        {
+                            "id": "AutomationService",
+                            "role": "provides"
+                        }
+                    ]
                 },
                 {
                     "instance_id": "MainStateProducerModule",
@@ -225,7 +246,8 @@
                     ],
                     "dependencies": [
                         "ObservationModule",
-                        "AutomationModule"
+                        "AutomationModule",
+                        "AssetServiceModule"
                     ],
                     "channels": [
                         {

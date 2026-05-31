@@ -4,9 +4,14 @@
 #include "Modules/AutomationModule.h"
 #include <DiaAutomation/AutomationService.h>
 #include <DiaApplicationFlow/Application.h>
+#include <DiaApplicationFlow/Streams/ServiceStreamWriter.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaObservation/Log/DiaLog.h>
+
+// Full instantiation lives here — header only forward-declares to avoid
+// pulling Application.h into every TU that includes AutomationModule.h.
+template class Dia::ApplicationFlow::ServiceStreamWriter<Dia::Automation::AutomationService>;
 
 namespace Cluiche { namespace AppFlow {
 
@@ -15,10 +20,14 @@ AutomationModule* AutomationModule::sInstance = nullptr;
 
 AutomationModule::AutomationModule(const Dia::Core::StringCRC& instanceId)
     : Module(instanceId)
+    , mAutomationServiceStream(new Dia::ApplicationFlow::ServiceStreamWriter<Dia::Automation::AutomationService>(this, Dia::Core::StringCRC("AutomationService")))
 {
 }
 
-AutomationModule::~AutomationModule() = default;
+AutomationModule::~AutomationModule()
+{
+    delete mAutomationServiceStream;
+}
 
 Dia::ApplicationFlow::StartResult AutomationModule::DoStart()
 {
@@ -32,6 +41,7 @@ Dia::ApplicationFlow::StartResult AutomationModule::DoStart()
     mService->EnableNavigationHold();
 
     sInstance = this;
+    mAutomationServiceStream->Register(*mService);
 
     DIA_LOG_INFO("Automation", "AutomationModule started — hold active, commands registered");
     return Dia::ApplicationFlow::StartResult::kReady;
@@ -49,6 +59,11 @@ Dia::ApplicationFlow::StopResult AutomationModule::DoStop()
     mService.Reset();
     DIA_LOG_INFO("Automation", "AutomationModule stopped");
     return Dia::ApplicationFlow::StopResult::kDone;
+}
+
+void AutomationModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
+{
+    mAutomationServiceStream->Connect(app);
 }
 
 } } // namespace Cluiche::AppFlow

@@ -1,6 +1,6 @@
 #include "Modules/TestStages/TestAssetRuntimeStageModule.h"
-#include "Modules/AssetServiceModule.h"
 
+#include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaAutomation/AutomationService.h>
 #include <DiaObservation/Log/DiaLog.h>
@@ -74,58 +74,55 @@ void TestAssetRuntimeStageModule::OnUpdate(float /*deltaTime*/)
     if (mAllLoaded)
         return;
 
-    auto* svc = Cluiche::AppFlow::AssetServiceModule::GetStatic();
-    if (!svc)
-        return;
-
     if (GetFrameCount() <= 2)
         return;
 
-    if (!mAllLoaded)
+    if (!mAssetLoadStatusStream.IsAvailable())
+        return;
+
+    const Cluiche::AppFlow::AssetLoadStatus& status = mAssetLoadStatusStream.Get();
+    const bool stageComplete =
+        status.stageId == Dia::Core::StringCRC("AssetRuntimeTestStage") &&
+        status.state == Cluiche::AppFlow::AssetLoadStatus::State::kComplete;
+
+    if (stageComplete)
     {
-        if (svc->IsStageLoadComplete(Dia::Core::StringCRC("AssetRuntimeTestStage")))
+        mAllLoaded = true;
+
+        if (GetEntryCount() == 1)
         {
-            mAllLoaded = true;
-            const auto& runtime = svc->GetRuntime();
-            auto progress = runtime.GetLoadProgress(Dia::Core::StringCRC("stage.asset_runtime_test_stage"));
-
-            if (GetEntryCount() == 1)
-            {
-                mFirstEntrySnapshot.loadedCount  = progress.loaded;
-                mFirstEntrySnapshot.allSucceeded = (progress.failed == 0);
-                if (mMetricSnapshotLoaded)
-                    mMetricSnapshotLoaded->Set(static_cast<double>(progress.loaded));
-            }
-            else
-            {
-                mCleanReload = (progress.loaded == mFirstEntrySnapshot.loadedCount &&
-                                progress.failed == 0 &&
-                                mFirstEntrySnapshot.allSucceeded);
-            }
-
-            DIA_LOG_INFO("CluicheTest", "TestAssetRuntimeStageModule: all loaded at frame %u (entry %u, loaded=%u, total=%u, failed=%u)",
-                GetFrameCount(), GetEntryCount(), progress.loaded, progress.total, progress.failed);
-
-            const bool allCheckpointsPassed = (GetEntryCount() == 1) ? true : mCleanReload;
-            if (allCheckpointsPassed)
-                ReportPassed();
+            mFirstEntrySnapshot.loadedCount  = status.loaded;
+            mFirstEntrySnapshot.allSucceeded = (status.failed == 0);
+            if (mMetricSnapshotLoaded)
+                mMetricSnapshotLoaded->Set(static_cast<double>(status.loaded));
         }
-    }
+        else
+        {
+            mCleanReload = (status.loaded == mFirstEntrySnapshot.loadedCount &&
+                            status.failed == 0 &&
+                            mFirstEntrySnapshot.allSucceeded);
+        }
 
-    // Metrics
-    {
-        const auto& runtime = svc->GetRuntime();
-        auto progress = runtime.GetLoadProgress(Dia::Core::StringCRC("stage.asset_runtime_test_stage"));
-        if (mMetricLoadCount)
-            mMetricLoadCount->Set(static_cast<double>(progress.loaded));
-        if (mMetricActiveHandles)
-            mMetricActiveHandles->Set(static_cast<double>(progress.loaded));
-        if (mMetricLoadTimeMs && mAllLoaded)
+        DIA_LOG_INFO("CluicheTest", "TestAssetRuntimeStageModule: all loaded at frame %u (entry %u, loaded=%u, total=%u, failed=%u)",
+            GetFrameCount(), GetEntryCount(), status.loaded, status.total, status.failed);
+
+        if (mMetricLoadCount)     mMetricLoadCount->Set(static_cast<double>(status.loaded));
+        if (mMetricActiveHandles) mMetricActiveHandles->Set(static_cast<double>(status.loaded));
+        if (mMetricLoadTimeMs)
         {
             double elapsedMs = static_cast<double>(GetFrameCount() - mLoadStartFrame) * (1000.0 / 30.0);
             mMetricLoadTimeMs->Set(elapsedMs);
         }
+
+        const bool allCheckpointsPassed = (GetEntryCount() == 1) ? true : mCleanReload;
+        if (allCheckpointsPassed)
+            ReportPassed();
     }
+}
+
+void TestAssetRuntimeStageModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
+{
+    mAssetLoadStatusStream.Connect(app);
 }
 
 } // namespace CluicheTest

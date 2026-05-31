@@ -1,5 +1,4 @@
 #include "Modules/MainStateProducerModule.h"
-#include "Modules/AutomationModule.h"
 
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
@@ -25,10 +24,25 @@ void MainStateProducerModule::DoUpdate(float /*dt*/)
 {
     MainToRenderFrame frame;
 
-    if (auto* am = AutomationModule::GetStatic())
+    if (auto* am = mAutomationRef.Get())
     {
         if (auto* svc = am->GetService())
             frame.automationStatus.heartbeatEnabled = svc->IsHeartbeatEnabled();
+    }
+
+    if (auto* assets = mAssetServiceRef.Get())
+    {
+        frame.assetLoadStatus.stageId = assets->GetCurrentAppFlowStage();
+        const auto raw = assets->GetStageLoadState(frame.assetLoadStatus.stageId);
+        using Raw = AssetServiceModule::StageLoadState;
+        using Out = AssetLoadStatus::State;
+        switch (raw)
+        {
+            case Raw::kLoading:  frame.assetLoadStatus.state = Out::kLoading;  break;
+            case Raw::kComplete: frame.assetLoadStatus.state = Out::kComplete; break;
+            case Raw::kFailed:   frame.assetLoadStatus.state = Out::kFailed;   break;
+            default:             frame.assetLoadStatus.state = Out::kIdle;     break;
+        }
     }
 
     DoPopulateFrame(frame);

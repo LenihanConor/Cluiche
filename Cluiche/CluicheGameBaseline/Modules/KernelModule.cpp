@@ -15,7 +15,6 @@
 #include <DiaApplicationFlow/IApplicationControl.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
-#include "Modules/JobSystemModule.h"
 
 #include <DiaBgfx/Canvas.h>
 #include <DiaWindow/SystemHandle.h>
@@ -107,9 +106,8 @@ Dia::ApplicationFlow::StartResult KernelModule::DoStart()
     mWindow = mWindowFactory.Create(windowSetting);
 
     // Wire the JobSystem into TextureHandler for async asset loading.
-    auto* jobSystemModule = Cluiche::AppFlow::JobSystemModule::GetStatic();
-    DIA_ASSERT(jobSystemModule != nullptr, "TextureHandler requires JobSystemModule to be initialized first");
-    mTextureHandler.SetJobSystem(&jobSystemModule->GetJobSystem());
+    DIA_ASSERT(mJobSystemRef.Get() != nullptr, "TextureHandler requires JobSystemModule to be initialized first");
+    mTextureHandler.SetJobSystem(&mJobSystemRef->GetJobSystem());
     mTextureHandlerService.Register(mTextureHandler);
 
     {

@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <memory>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/Manifest/ManifestComposerV2.h>
@@ -71,13 +72,16 @@ void RegisterPathAliases(const Dia::ApplicationFlow::ApplicationManifestV3& mani
 } // namespace
 
 #pragma warning(push)
-#pragma warning(disable: 6262)  // Application + manifest stack frame is large but main() is a one-shot
+#pragma warning(disable: 6262)  // Application stack frame is large but main() is a one-shot
 int main(int argc, const char* argv[])
 {
     const char* kDiagamePath = "assets/cluichetest.diagame";
 
-    // Compose manifest from .diagame (resolves imports, merges stages, captures config)
-    Dia::ApplicationFlow::ApplicationManifestV3 manifest;
+    // Heap-allocate manifest — the struct grows with module/channel count and
+    // can overflow the default 1MB stack when all stage diaapps are merged.
+    std::unique_ptr<Dia::ApplicationFlow::ApplicationManifestV3> manifestOwner(
+        new Dia::ApplicationFlow::ApplicationManifestV3());
+    Dia::ApplicationFlow::ApplicationManifestV3& manifest = *manifestOwner;
     Dia::ApplicationFlow::ComposeResult composeResult =
         Dia::ApplicationFlow::ManifestComposerV2::Compose(kDiagamePath, manifest);
 

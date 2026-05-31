@@ -2,21 +2,29 @@
 #include "Modules/TestStages/TestResultsRegistry.h"
 
 #include <DiaAutomation/AutomationService.h>
+#include <DiaApplicationFlow/Application.h>
+#include <DiaApplicationFlow/Streams/ServiceStreamReader.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Capture/DiaCapture.h>
+
+// Full instantiation lives here — header only forward-declares.
+template class Dia::ApplicationFlow::ServiceStreamReader<Dia::Automation::AutomationService>;
 
 namespace CluicheTest {
 
 TestStageModuleBase::TestStageModuleBase(const Dia::Core::StringCRC& instanceId)
     : Module(instanceId)
+    , mAutomationServiceStream(new Dia::ApplicationFlow::ServiceStreamReader<Dia::Automation::AutomationService>(this, Dia::Core::StringCRC("AutomationService")))
 {}
 
-TestStageModuleBase::~TestStageModuleBase() = default;
+TestStageModuleBase::~TestStageModuleBase()
+{
+    delete mAutomationServiceStream;
+}
 
 Dia::ApplicationFlow::StartResult TestStageModuleBase::DoStart()
 {
-    auto* automationModule = Cluiche::AppFlow::AutomationModule::GetStatic();
-    if (!automationModule || !automationModule->GetService())
+    if (!mAutomationServiceStream->IsAvailable())
         return Dia::ApplicationFlow::StartResult::kLoading;
 
     if (!AreDependenciesReady())
@@ -31,7 +39,7 @@ Dia::ApplicationFlow::StartResult TestStageModuleBase::DoStart()
     TestResultsRegistry::GetInstance().SetRunning(
         GetStageName(), GetBudgetFrames(), checkpointNames, checkpointCount);
 
-    OnStart(automationModule->GetService());
+    OnStart(&mAutomationServiceStream->Get());
 
     return Dia::ApplicationFlow::StartResult::kReady;
 }
@@ -58,11 +66,8 @@ Dia::ApplicationFlow::StopResult TestStageModuleBase::DoStop()
 {
     OnStop();
 
-    if (auto* automationModule = Cluiche::AppFlow::AutomationModule::GetStatic())
-    {
-        if (auto* service = automationModule->GetService())
-            service->UnregisterCheckpoints(this);
-    }
+    if (mAutomationServiceStream->IsAvailable())
+        mAutomationServiceStream->Get().UnregisterCheckpoints(this);
 
     mFrameCount = 0;
     mResolved = false;
@@ -88,8 +93,12 @@ void TestStageModuleBase::ReportFailed()
 
 Dia::Automation::AutomationService* TestStageModuleBase::GetAutomationService()
 {
-    auto* mod = Cluiche::AppFlow::AutomationModule::GetStatic();
-    return mod ? mod->GetService() : nullptr;
+    return mAutomationServiceStream->IsAvailable() ? &mAutomationServiceStream->Get() : nullptr;
+}
+
+void TestStageModuleBase::OnConnectStreams(Dia::ApplicationFlow::Application& app)
+{
+    mAutomationServiceStream->Connect(app);
 }
 
 } // namespace CluicheTest

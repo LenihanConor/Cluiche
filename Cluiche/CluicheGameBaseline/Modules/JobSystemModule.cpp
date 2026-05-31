@@ -7,8 +7,6 @@ namespace Cluiche { namespace AppFlow {
 
 const Dia::Core::StringCRC JobSystemModule::kTypeId("JobSystemModule");
 
-JobSystemModule* JobSystemModule::sInstance = nullptr;
-
 JobSystemModule::JobSystemModule(const Dia::Core::StringCRC& instanceId)
     : Module(instanceId)
 {
@@ -17,7 +15,6 @@ JobSystemModule::JobSystemModule(const Dia::Core::StringCRC& instanceId)
 Dia::ApplicationFlow::StartResult JobSystemModule::DoStart()
 {
     DIA_LOG_INFO("Application", "JobSystemModule DoStart entry");
-    sInstance = this;
     mJobSystem.Initialize(0);
     DIA_LOG_INFO("Application", "JobSystemModule DoStart ready");
     return Dia::ApplicationFlow::StartResult::kReady;
@@ -31,13 +28,7 @@ Dia::ApplicationFlow::StopResult JobSystemModule::DoStop()
 {
     DIA_LOG_INFO("Application", "JobSystemModule DoStop entry");
     mJobSystem.Shutdown();
-    sInstance = nullptr;
     return Dia::ApplicationFlow::StopResult::kDone;
-}
-
-JobSystemModule* JobSystemModule::GetStatic()
-{
-    return sInstance;
 }
 
 Dia::Threading::JobSystem& JobSystemModule::GetJobSystem()

@@ -13,6 +13,7 @@
 #include <DiaCore/Memory/UniquePtr.h>
 
 namespace Dia { namespace Automation { class AutomationService; } }
+namespace Dia { namespace ApplicationFlow { template<typename T> class ServiceStreamWriter; } }
 
 namespace Cluiche { namespace AppFlow {
 
@@ -26,15 +27,20 @@ public:
 
     Dia::Automation::AutomationService* GetService() { return mService.Get(); }
 
+    // Temporary cross-PU accessor for modules not yet on ServiceStream (TestStageModuleBase).
     static AutomationModule* GetStatic() { return sInstance; }
 
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
     void DoUpdate(float dt) override;
     Dia::ApplicationFlow::StopResult DoStop() override;
+    void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 
 private:
     Dia::Core::UniquePtr<Dia::Automation::AutomationService> mService;
+    // ServiceStreamWriter stored via forward-declared pointer to avoid pulling
+    // Application.h into every TU that includes AutomationModule.h.
+    Dia::ApplicationFlow::ServiceStreamWriter<Dia::Automation::AutomationService>* mAutomationServiceStream = nullptr;
     static AutomationModule* sInstance;
 };
 

@@ -1,5 +1,4 @@
 #include "DummyLevelModule.h"
-#include "Modules/AssetServiceModule.h"
 #include "Types/UICommand.h"
 
 #include <DiaApplicationFlow/Application.h>
@@ -28,26 +27,25 @@ DummyLevelModule::DummyLevelModule(const Dia::Core::StringCRC& instanceId)
 
 Dia::ApplicationFlow::StartResult DummyLevelModule::DoStart()
 {
-    AssetServiceModule* assets = AssetServiceModule::GetStatic();
-
     if (!mLoadEntryLogged)
     {
         DIA_LOG_INFO("Application", "DummyLevelModule DoStart entry — polling for stage load");
         mLoadEntryLogged = true;
     }
 
-    if (!assets)
+    if (!mAssetLoadStatusStream.IsAvailable())
         return Dia::ApplicationFlow::StartResult::kLoading;
 
-    using LoadState = AssetServiceModule::StageLoadState;
-    LoadState state = assets->GetStageLoadState(Dia::Core::StringCRC("DummyStage"));
+    const AssetLoadStatus& status = mAssetLoadStatusStream.Get();
+    if (status.stageId != Dia::Core::StringCRC("DummyStage"))
+        return Dia::ApplicationFlow::StartResult::kLoading;
 
-    if (state == LoadState::kFailed)
+    if (status.state == AssetLoadStatus::State::kFailed)
     {
         DIA_LOG_ERROR("Application", "DummyLevelModule DoStart — stage load failed");
         return Dia::ApplicationFlow::StartResult::kFailed;
     }
-    if (state == LoadState::kComplete)
+    if (status.state == AssetLoadStatus::State::kComplete)
     {
         DIA_LOG_INFO("Application", "DummyLevelModule DoStart ready");
         return Dia::ApplicationFlow::StartResult::kReady;
@@ -195,6 +193,7 @@ void DummyLevelModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
     mUIOutput.Connect(app);
     mUIInput.Connect(app);
     mTextureHandlerService.Connect(app);
+    mAssetLoadStatusStream.Connect(app);
 }
 
 } } // namespace Cluiche::AppFlow

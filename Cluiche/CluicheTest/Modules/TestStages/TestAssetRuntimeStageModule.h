@@ -1,7 +1,9 @@
 #pragma once
 #include "Modules/TestStages/TestStageModuleBase.h"
 #include <DiaApplicationFlow/PUAffinity.h>
+#include <DiaApplicationFlow/Streams/ServiceStreamReader.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include "Types/AssetLoadStatus.h"
 
 namespace Dia { namespace Observation { namespace Metric { class Gauge; } } }
 
@@ -11,7 +13,7 @@ class TestAssetRuntimeStageModule : public TestStageModuleBase
 {
 public:
     static const Dia::Core::StringCRC kTypeId;
-    static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kMain;
+    static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kSim;
     static constexpr const char* kDescription = "Validates asset loading, handle lifecycle, and clean reload";
     explicit TestAssetRuntimeStageModule(const Dia::Core::StringCRC& instanceId);
 
@@ -22,6 +24,7 @@ protected:
     bool PersistsAcrossEntries() const override { return true; }
     void OnStart(Dia::Automation::AutomationService* service) override;
     void OnUpdate(float deltaTime) override;
+    void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 
 private:
     struct LoadSnapshot {
@@ -33,6 +36,8 @@ private:
     unsigned int mLoadStartFrame = 0;
     bool         mAllLoaded     = false;
     bool         mCleanReload   = false;
+
+    Dia::ApplicationFlow::ServiceStreamReader<Cluiche::AppFlow::AssetLoadStatus> mAssetLoadStatusStream{this, "AssetLoadStatus"};
 
     Dia::Observation::Metric::Gauge* mMetricLoadCount     = nullptr;
     Dia::Observation::Metric::Gauge* mMetricActiveHandles = nullptr;

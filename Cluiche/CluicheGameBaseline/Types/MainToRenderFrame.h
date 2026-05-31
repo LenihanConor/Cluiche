@@ -1,5 +1,6 @@
 #pragma once
 #include <DiaCore/CRC/StringCRC.h>
+#include "Types/AssetLoadStatus.h"
 #include <cstdint>
 
 namespace Cluiche { namespace AppFlow {
@@ -40,6 +41,7 @@ struct MainToRenderFrame
 {
     StageHUDState    stageHUD;
     AutomationStatus automationStatus;
+    AssetLoadStatus  assetLoadStatus;
 };
 
 } } // namespace Cluiche::AppFlow

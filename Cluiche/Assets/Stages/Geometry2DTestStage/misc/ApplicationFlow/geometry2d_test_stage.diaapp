@@ -21,7 +21,12 @@
                     "dependencies": [
                         "PickingModule"
                     ],
-                    "channels": []
+                    "channels": [
+                        {
+                            "id": "AutomationService",
+                            "role": "consumes"
+                        }
+                    ]
                 }
             ]
         }

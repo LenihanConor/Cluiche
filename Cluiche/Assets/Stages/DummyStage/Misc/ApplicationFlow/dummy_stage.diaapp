@@ -29,7 +29,8 @@
                         { "id": "UIToSim",              "role": "reads" },
                         { "id": "SimToRender",          "role": "writes" },
                         { "id": "SimToMain",            "role": "writes" },
-                        { "id": "KernelTextureHandler", "role": "consumes" }
+                        { "id": "KernelTextureHandler", "role": "consumes" },
+                        { "id": "AssetLoadStatus",      "role": "consumes" }
                     ]
                 },
                 {

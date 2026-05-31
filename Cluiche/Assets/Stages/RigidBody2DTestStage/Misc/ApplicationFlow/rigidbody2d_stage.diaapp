@@ -18,7 +18,12 @@
                     "type_id": "RigidBody2DTestModule",
                     "stages": [ "RigidBody2DTestStage" ],
                     "dependencies": [ "AutomationModule", "Physics2DModule" ],
-                    "channels": []
+                    "channels": [
+                        {
+                            "id": "AutomationService",
+                            "role": "consumes"
+                        }
+                    ]
                 }
             ]
         },

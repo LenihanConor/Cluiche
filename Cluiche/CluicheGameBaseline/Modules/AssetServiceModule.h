@@ -11,9 +11,11 @@
 #include <atomic>
 
 #include <DiaApplicationFlow/Streams/ServiceStreamReader.h>
+#include <DiaApplicationFlow/Streams/ServiceStreamWriter.h>
 #include <DiaAssetRuntime/Handlers/TextureHandler.h>
 #include <DiaAssetRuntime/Handlers/JsonPassthroughHandler.h>
 #include "Modules/UIModule.h"
+#include "Types/AssetLoadStatus.h"
 
 namespace Dia { namespace Observation { namespace Metric {
     class Gauge;
@@ -45,11 +47,10 @@ public:
 
     bool IsLoadComplete() const;
     const Dia::AssetRuntime::AssetRuntime& GetRuntime() const { return mRuntime; }
+    Dia::Core::StringCRC GetCurrentAppFlowStage() const { return mCurrentAppFlowStage; }
 
     // Per-stage load state (written on MainPU, read atomically from any PU)
     enum class StageLoadState { kIdle, kLoading, kComplete, kFailed };
-
-    static AssetServiceModule* GetStatic();
 
     bool           IsStageLoadComplete(const Dia::Core::StringCRC& stageId) const;
     StageLoadState GetStageLoadState (const Dia::Core::StringCRC& stageId) const;
@@ -88,8 +89,6 @@ private:
     // Const lookup: safe to call from any PU (read-only, no resize).
     const std::atomic<StageLoadState>* FindStateSlot(const Dia::Core::StringCRC& appStageId) const;
 
-    static AssetServiceModule* sInstance;
-
     Dia::AssetRuntime::AssetRuntime mRuntime;
     Dia::Core::StringCRC mCurrentLoadStageId;         // AssetRuntime stage id
     Dia::Core::StringCRC mCurrentAppFlowStage;         // last app-flow stage we reacted to
@@ -118,6 +117,8 @@ private:
     unsigned int     mStageStateCount = 0;
 
     Dia::ApplicationFlow::ServiceStreamReader<Dia::AssetRuntime::TextureHandler>  mTextureHandlerService{this, "KernelTextureHandler"};
+    Dia::ApplicationFlow::ServiceStreamWriter<AssetLoadStatus>                     mAssetLoadStatusService{this, "AssetLoadStatus"};
+    AssetLoadStatus                                                                 mAssetLoadStatus;
     Dia::ApplicationFlow::ModuleRef<UIModule>                                      mUI{this};
     Dia::AssetRuntime::JsonPassthroughHandler                                      mJsonHandler;
 

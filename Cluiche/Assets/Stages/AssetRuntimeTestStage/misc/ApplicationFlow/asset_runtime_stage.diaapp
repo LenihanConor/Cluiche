@@ -5,15 +5,7 @@
             "instance_id": "MainPU",
             "frequency_hz": 30,
             "dedicated_thread": false,
-            "modules": [
-                {
-                    "instance_id": "TestAssetRuntimeStageModule",
-                    "type_id": "TestAssetRuntimeStageModule",
-                    "stages": [ "AssetRuntimeTestStage" ],
-                    "dependencies": [ "AutomationModule" ],
-                    "channels": []
-                }
-            ]
+            "modules": []
         },
         {
             "instance_id": "SimPU",
@@ -21,13 +13,23 @@
             "dedicated_thread": true,
             "modules": [
                 {
+                    "instance_id": "TestAssetRuntimeStageModule",
+                    "type_id": "TestAssetRuntimeStageModule",
+                    "stages": [ "AssetRuntimeTestStage" ],
+                    "dependencies": [],
+                    "channels": [
+                        { "id": "AutomationService", "role": "consumes" },
+                        { "id": "AssetLoadStatus",   "role": "consumes" }
+                    ]
+                },
+                {
                     "instance_id": "AssetRuntimeRendererModule",
                     "type_id": "AssetRuntimeRendererModule",
                     "stages": [ "AssetRuntimeTestStage" ],
                     "dependencies": [],
                     "channels": [
-                        { "id": "SimToRender", "role": "writes" },
-                        { "id": "KernelTextureHandler", "role": "consumes" }
+                        { "id": "SimToRender",        "role": "writes" },
+                        { "id": "KernelTextureHandler","role": "consumes" }
                     ]
                 }
             ]

@@ -48,7 +48,7 @@ namespace Dia { namespace ApplicationFlow {
         Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16> stages;
 
         Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 8>  dependencies;
-        Dia::Core::Containers::DynamicArrayC<ChannelBinding, 4>        channels;
+        Dia::Core::Containers::DynamicArrayC<ChannelBinding, 8>        channels;
 
         // Raw JSON config blob for this module (avoids Json::Value dependency in the header)
         Dia::Core::Containers::String256 configJson;

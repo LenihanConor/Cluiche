@@ -1,5 +1,4 @@
 #include "Modules/TestStages/AssetRuntimeHUDModule.h"
-#include "Modules/AssetServiceModule.h"
 #include "Modules/TestStages/TestResultsRegistry.h"
 
 #include <DiaApplicationFlow/Application.h>
@@ -37,8 +36,9 @@ void AssetRuntimeHUDModule::DoUpdate(float /*deltaTime*/)
     if (framePtr && framePtr->automationStatus.heartbeatEnabled)
         return;
 
-    auto* svc = Cluiche::AppFlow::AssetServiceModule::GetStatic();
-    const bool stageComplete = svc && svc->IsStageLoadComplete(Dia::Core::StringCRC("AssetRuntimeTestStage"));
+    const bool stageComplete = framePtr &&
+        framePtr->assetLoadStatus.stageId == Dia::Core::StringCRC("AssetRuntimeTestStage") &&
+        framePtr->assetLoadStatus.state == Cluiche::AppFlow::AssetLoadStatus::State::kComplete;
 
     auto& metricReg = Dia::Observation::Metric::MetricRegistry::Instance();
     Dia::Observation::Metric::Gauge* gEntryCount = metricReg.FindGauge(Dia::Core::StringCRC("cluichetest.asset_runtime.entry_count"));

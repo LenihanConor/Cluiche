@@ -13,7 +13,6 @@ public:
     static constexpr const char* kDescription = "Thread pool for parallel job dispatch";
     explicit JobSystemModule(const Dia::Core::StringCRC& instanceId);
 
-    static JobSystemModule*          GetStatic();
     Dia::Threading::JobSystem&       GetJobSystem();
     const Dia::Threading::JobSystem& GetJobSystem() const;
 
@@ -23,7 +22,6 @@ protected:
     Dia::ApplicationFlow::StopResult  DoStop()          override;
 
 private:
-    static JobSystemModule*   sInstance;
     Dia::Threading::JobSystem mJobSystem;
 };
 

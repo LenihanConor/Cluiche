@@ -10,6 +10,7 @@
 #include <DiaUI/UIDataBuffer.h>
 #include <DiaAssetRuntime/Handlers/TextureHandler.h>
 #include "Types/SimToMainEvent.h"
+#include "Types/AssetLoadStatus.h"
 #include "Modules/TimeServerModule.h"
 #include "Modules/InputStreamModule.h"
 
@@ -31,6 +32,7 @@ private:
     Dia::ApplicationFlow::EventStreamWriter<SimToMainEvent>                                mUIOutput{this, "SimToMain"};
     Dia::ApplicationFlow::StreamReader<Dia::UI::UIDataBuffer>                              mUIInput{this, "UIToSim"};
     Dia::ApplicationFlow::ServiceStreamReader<Dia::AssetRuntime::TextureHandler>           mTextureHandlerService{this, "KernelTextureHandler"};
+    Dia::ApplicationFlow::ServiceStreamReader<AssetLoadStatus>                             mAssetLoadStatusStream{this, "AssetLoadStatus"};
     Dia::ApplicationFlow::ModuleRef<TimeServerModule>                                      mTimeServer{this};
     Dia::ApplicationFlow::ModuleRef<InputStreamModule>                                     mInput{this};
 

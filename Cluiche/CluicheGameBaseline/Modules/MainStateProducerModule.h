@@ -1,15 +1,17 @@
 #pragma once
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/PUAffinity.h>
+#include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaApplicationFlow/Streams/StreamWriter.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include "Types/MainToRenderFrame.h"
+#include "Modules/AutomationModule.h"
+#include "Modules/AssetServiceModule.h"
 
 namespace Cluiche { namespace AppFlow {
 
-// Collects HUD + automation state from MainPU singletons each tick and
-// publishes it to the MainToRender FrameStream so RenderPU modules can
-// display it without direct cross-PU static access.
+// Collects HUD + automation state from MainPU each tick and publishes it
+// to the MainToRender FrameStream so RenderPU modules can display it.
 // Override DoPopulateFrame() to inject app-specific frame data.
 class MainStateProducerModule : public Dia::ApplicationFlow::Module
 {
@@ -28,6 +30,8 @@ protected:
     virtual void DoPopulateFrame(MainToRenderFrame& /*frame*/) {}
 
 private:
+    Dia::ApplicationFlow::ModuleRef<AutomationModule>   mAutomationRef{this};
+    Dia::ApplicationFlow::ModuleRef<AssetServiceModule> mAssetServiceRef{this};
     Dia::ApplicationFlow::StreamWriter<MainToRenderFrame> mFrameOutput{this, "MainToRender"};
     MainToRenderFrame mLastFrame;
 };

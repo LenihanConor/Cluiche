@@ -1,9 +1,9 @@
 #pragma once
 #include <DiaApplicationFlow/Module.h>
 #include <DiaCore/CRC/StringCRC.h>
-#include "Modules/AutomationModule.h"
 
 namespace Dia { namespace Automation { class AutomationService; } }
+namespace Dia { namespace ApplicationFlow { template<typename T> class ServiceStreamReader; } }
 
 namespace CluicheTest {
 
@@ -36,9 +36,13 @@ protected:
     bool IsResolved() const { return mResolved; }
     Dia::Automation::AutomationService* GetAutomationService();
 
+protected:
+    void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
+
 private:
-    // AutomationModule is on MainPU; accessed cross-PU via static
-    // (ModuleRef only resolves within the same PU)
+    // Heap-allocated to avoid pulling AutomationService.h (and Application.h) into
+    // every TU that includes this header. Constructed in TestStageModuleBase().
+    Dia::ApplicationFlow::ServiceStreamReader<Dia::Automation::AutomationService>* mAutomationServiceStream = nullptr;
     unsigned int mFrameCount = 0;
     unsigned int mEntryCount = 0;
     bool mResolved = false;

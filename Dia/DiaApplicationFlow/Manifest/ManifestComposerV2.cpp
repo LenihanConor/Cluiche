@@ -5,6 +5,7 @@
 #include <DiaCore/Json/external/json/json.h>
 
 #include <fstream>
+#include <memory>
 
 namespace Dia { namespace ApplicationFlow {
 
@@ -230,8 +231,9 @@ namespace Dia { namespace ApplicationFlow {
         char stageManifestPath[kPathBufferSize];
         BuildPath(baseDir, stageRoot["manifest"].asCString(), stageManifestPath, kPathBufferSize);
 
-        // Load stage .diaapp into a temporary manifest
-        ApplicationManifestV3 stageManifest;
+        // Load stage .diaapp into a temporary manifest (heap-allocated — struct is large)
+        std::unique_ptr<ApplicationManifestV3> stageManifestOwner(new ApplicationManifestV3());
+        ApplicationManifestV3& stageManifest = *stageManifestOwner;
         LoadResult loadResult = ApplicationManifestLoaderV2::LoadFromFile(stageManifestPath, stageManifest);
         if (loadResult != LoadResult::kSuccess)
         {

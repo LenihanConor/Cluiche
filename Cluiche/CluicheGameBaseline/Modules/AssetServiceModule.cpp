@@ -70,7 +70,6 @@ namespace {
 namespace Cluiche { namespace AppFlow {
 
 const Dia::Core::StringCRC AssetServiceModule::kTypeId("AssetServiceModule");
-AssetServiceModule* AssetServiceModule::sInstance = nullptr;
 
 AssetServiceModule::AssetServiceModule(const Dia::Core::StringCRC& instanceId)
     : Module(instanceId)
@@ -103,7 +102,9 @@ Dia::ApplicationFlow::StartResult AssetServiceModule::DoStart()
     // Kick off global load.
     RequestGlobalLoad();
 
-    sInstance = this;
+    mAssetLoadStatus.stageId = Dia::Core::StringCRC{};
+    mAssetLoadStatus.state   = AssetLoadStatus::State::kIdle;
+    mAssetLoadStatusService.Register(mAssetLoadStatus);
 
     // Register health reporter.
     Dia::Observation::Health::HealthRegistry::Instance().Register(&mAssetReporter);
@@ -305,6 +306,36 @@ void AssetServiceModule::DoUpdate(float /*dt*/)
             mPrevAssetsFailed = progress.failed;
         }
     }
+
+    // 6. Publish current stage load status via ServiceStream for SimPU consumers.
+    {
+        AssetLoadStatus::State streamState = AssetLoadStatus::State::kIdle;
+        unsigned int loaded = 0, total = 0, failed = 0;
+        if (mCurrentAppFlowStage.Value() != 0)
+        {
+            StageLoadState raw = GetStageLoadState(mCurrentAppFlowStage);
+            switch (raw)
+            {
+                case StageLoadState::kLoading:  streamState = AssetLoadStatus::State::kLoading;  break;
+                case StageLoadState::kComplete:  streamState = AssetLoadStatus::State::kComplete; break;
+                case StageLoadState::kFailed:    streamState = AssetLoadStatus::State::kFailed;   break;
+                default:                         streamState = AssetLoadStatus::State::kIdle;     break;
+            }
+            Dia::Core::StringCRC assetStage = AssetStageIdFromAppStage(mCurrentAppFlowStage);
+            if (assetStage.Value() != 0)
+            {
+                auto progress = mRuntime.GetLoadProgress(assetStage);
+                loaded = progress.loaded;
+                total  = progress.total;
+                failed = progress.failed;
+            }
+        }
+        mAssetLoadStatus.stageId = mCurrentAppFlowStage;
+        mAssetLoadStatus.state   = streamState;
+        mAssetLoadStatus.loaded  = loaded;
+        mAssetLoadStatus.total   = total;
+        mAssetLoadStatus.failed  = failed;
+    }
 }
 
 // Map app-flow stage id (e.g. "DummyStage") to AssetRuntime stage id
@@ -358,7 +389,7 @@ Dia::ApplicationFlow::StopResult AssetServiceModule::DoStop()
     // Unregister health reporter before tearing down state.
     Dia::Observation::Health::HealthRegistry::Instance().Unregister(&mAssetReporter);
 
-    sInstance = nullptr;
+    mAssetLoadStatus = AssetLoadStatus{};
     UnregisterStageAliases();
     mRuntime.Reset();
     mJsonHandlerRegistered = false;
@@ -376,16 +407,12 @@ Dia::ApplicationFlow::StopResult AssetServiceModule::DoStop()
 void AssetServiceModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 {
     mTextureHandlerService.Connect(app);
+    mAssetLoadStatusService.Connect(app);
 }
 
 bool AssetServiceModule::IsLoadComplete() const
 {
     return mRuntime.IsLoadComplete(Dia::Core::StringCRC("stage.global"));
-}
-
-AssetServiceModule* AssetServiceModule::GetStatic()
-{
-    return sInstance;
 }
 
 bool AssetServiceModule::IsStageLoadComplete(const Dia::Core::StringCRC& stageId) const

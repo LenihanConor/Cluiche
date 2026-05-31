@@ -1,6 +1,7 @@
 #pragma once
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/PUAffinity.h>
+#include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Strings/String64.h>
 #include <DiaApplicationFlow/Streams/EventStreamWriter.h>
@@ -12,6 +13,7 @@
 #include <DiaSDL/Window.h>
 #include <DiaAssetRuntime/Handlers/TextureHandler.h>
 #include "Types/MainToSimEvent.h"
+#include "Modules/JobSystemModule.h"
 
 namespace Dia { namespace Bgfx { class Canvas; } }
 
@@ -87,6 +89,7 @@ private:
     Dia::Bgfx::BgfxImGuiBackend* mBgfxImGuiBackend = nullptr;
 #endif
 
+    Dia::ApplicationFlow::ModuleRef<JobSystemModule> mJobSystemRef{this};
     Dia::Observation::Metric::Gauge*     mMetricInputSources    = nullptr;
     Dia::Observation::Metric::Histogram* mMetricEventsPerFrame  = nullptr;
     Dia::Observation::Metric::Gauge*     mMetricActiveGamepads  = nullptr;
