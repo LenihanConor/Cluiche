@@ -1,4 +1,12 @@
-# Feature Spec: cmake-full-enforcement (C3)
+# Feature Spec: cmake-full-enforcement (C3) — SUPERSEDED
+
+> **This spec has been split into two features:**
+> - **C3a:** [cmake-dia-full.md](cmake-dia-full.md) — all 55 Dia modules, additive (`.vcxproj` kept)
+> - **C3b:** [cmake-cluiche-apps.md](cmake-cluiche-apps.md) — Cluiche apps + atomic retirement
+>
+> This file is kept for reference only. Do not implement from it.
+
+---
 
 ## Traceability
 
@@ -8,7 +16,7 @@
 | Application | @docs/specs/applications/dia.md | — |
 | System | @docs/specs/systems/dia/diaarchitecture.md | **cmake-full-enforcement** |
 
-**Status:** `Approved`
+**Status:** `Superseded` (split into C3a + C3b)
 **Research:** docs/research/migrat_cmake/summary.md
 
 ---

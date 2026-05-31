@@ -1,4 +1,4 @@
-# Feature Spec: UIUltralightStage
+# Feature Spec: UIUltralightTestStage
 
 ## Parent System
 @docs/specs/systems/cluichetest/teststages.md
@@ -28,8 +28,8 @@ The UIUltralight system has no E2E coverage — there is no automated way to ver
 | T2 | Scene layout | No world-space geometry. Viewport shows: (1) the Ultralight pixel buffer overlay (Alpine.js panel composited over the game scene), (2) ImGui debug console with UIUltralight domain tab, (3) checkpoint panel. See mockup. |
 | T3 | Acceptance criteria | Shared ACs 1–9 + stage-specific ACs AC-U1 through AC-U9 (see below) |
 | T4 | Metrics | `cluichetest.ui.frames_until_loaded` (frames from DoStart to IsPageLoaded), `cluichetest.ui.round_trip_count` (number of successful round-trips) |
-| T5 | PU assignment | `UIUltralightTestModule` on MainPU (UIModule lives on MainPU; test module depends on it) |
-| T6 | Assets | `ui_ultralight_stage.diastage` + `ui_ultralight_stage.diaapp` manifests; `ui_ultralight_test.html` Alpine.js panel |
+| T5 | PU assignment | `UIUltralightTestStageModule` on MainPU (UIModule lives on MainPU; test module depends on it) |
+| T6 | Assets | `ui_ultralight_test_stage.diastage` + `ui_ultralight_test_stage.diaapp` manifests; `ui_ultralight_test.html` Alpine.js panel |
 | T7 | Unit test gap | UIUltralight has no unit tests that exercise the full JS↔C++ bridge under real Ultralight SDK; all existing coverage is at the C++ interface level only |
 | T8 | Determinism | Deterministic — no simulation, no randomness; page load frame count may vary by ±1 frame but checkpoints are convergence-based not frame-exact |
 | T9 | Frame budget | 300 frames (10s at 30Hz); page expected to load within 10 frames |
@@ -63,7 +63,7 @@ The UIUltralight system has no E2E coverage — there is no automated way to ver
 | AC-U4 | C++ exposes `GetTestValue()` via BoundMethod returning `"dia_test_value_42"`; JS calls it and echoes back via `app.ReportReceivedValue(val)`; C++ verifies the value matches | ImGui console: round-trip match = ✓ | `ui.round_trip_value_correct` checkpoint passes |
 | AC-U5 | After page loads, `FetchUIDataBuffer` returns a buffer whose size > 0 and contains at least one non-zero byte | Pixel buffer indicator shows non-empty | `ui.pixel_buffer_non_empty` checkpoint passes |
 | AC-U6 | `InjectMouseClick(kLeft, x, y)` at the button's screen coordinates triggers `OnButtonClicked` in C++ | ImGui console: InjectMouseClick = handled | `ui.mouse_click_handled` checkpoint passes |
-| AC-U7 | Navigating Boot → UIUltralightStage → Boot → UIUltralightStage produces identical `frames_until_loaded` metric (±1 frame tolerance) | HUD badge shows PASS on both runs | `ui.deterministic_reload` checkpoint passes; orchestrator asserts metric values within tolerance |
+| AC-U7 | Navigating Boot → UIUltralightTestStage → Boot → UIUltralightTestStage produces identical `frames_until_loaded` metric (±1 frame tolerance) | HUD badge shows PASS on both runs | `ui.deterministic_reload` checkpoint passes; orchestrator asserts metric values within tolerance |
 | AC-U8 | `cluichetest.ui.frames_until_loaded` metric emitted; value ≤ 10 | ImGui Metrics section shows value | pytest `assert_metric("cluichetest.ui.frames_until_loaded", "<=", 10)` |
 | AC-U9 | No ERROR-level log entries emitted during the full scenario | Session log clean | pytest implicit log-error assertion (fixture teardown) |
 
@@ -125,13 +125,13 @@ The UIUltralight system has no E2E coverage — there is no automated way to ver
 
 Two C++ files, both in `Cluiche/CluicheTest/Modules/TestStages/`:
 
-**UIUltralightTestModule** (test stage module, MainPU):
+**UIUltralightTestStageModule** (test stage module, MainPU):
 ```cpp
-class UIUltralightTestModule : public Dia::ApplicationFlow::Module
+class UIUltralightTestStageModule : public Dia::ApplicationFlow::Module
 {
 public:
-    static const Dia::Core::StringCRC kTypeId;  // "UIUltralightTestModule"
-    explicit UIUltralightTestModule(const Dia::Core::StringCRC& instanceId);
+    static const Dia::Core::StringCRC kTypeId;  // "UIUltralightTestStageModule"
+    explicit UIUltralightTestStageModule(const Dia::Core::StringCRC& instanceId);
 
 protected:
     StartResult DoStart() override;   // Wait for UIModule → load page → register checkpoints
@@ -200,7 +200,7 @@ private:
 };
 ```
 
-`UIUltralightTestModule` implements `IUIUltralightTestCallbacks` and owns the page.
+`UIUltralightTestStageModule` implements `IUIUltralightTestCallbacks` and owns the page.
 
 ### Alpine Panel
 
@@ -246,43 +246,43 @@ Ongoing:      Emit metrics each frame once loaded
 # Cluiche/Tests/E2E/scenarios/cluichetest/uiultralight/test_ui_ultralight.py
 
 def test_ui_page_loads(dia_client):
-    dia_client.navigate_to("UIUltralightStage")
+    dia_client.navigate_to("UIUltralightTestStage")
     result = dia_client.poll_checkpoint("ui.page_loaded", timeout_s=5.0)
     assert result["passed"], f"Page did not load: {result['message']}"
     dia_client.navigate_to("Boot")
 
 def test_ui_js_callbacks(dia_client):
-    dia_client.navigate_to("UIUltralightStage")
+    dia_client.navigate_to("UIUltralightTestStage")
     result = dia_client.poll_checkpoint("ui.js_to_cpp_callback_fired", timeout_s=5.0)
     assert result["passed"], f"JS callbacks did not fire: {result['message']}"
     dia_client.navigate_to("Boot")
 
 def test_ui_round_trip(dia_client):
-    dia_client.navigate_to("UIUltralightStage")
+    dia_client.navigate_to("UIUltralightTestStage")
     result = dia_client.poll_checkpoint("ui.round_trip_value_correct", timeout_s=5.0)
     assert result["passed"], f"Round-trip value mismatch: {result['message']}"
     dia_client.navigate_to("Boot")
 
 def test_ui_pixel_buffer(dia_client):
-    dia_client.navigate_to("UIUltralightStage")
+    dia_client.navigate_to("UIUltralightTestStage")
     result = dia_client.poll_checkpoint("ui.pixel_buffer_non_empty", timeout_s=5.0)
     assert result["passed"], f"Pixel buffer empty: {result['message']}"
     dia_client.navigate_to("Boot")
 
 def test_ui_mouse_injection(dia_client):
-    dia_client.navigate_to("UIUltralightStage")
+    dia_client.navigate_to("UIUltralightTestStage")
     result = dia_client.poll_checkpoint("ui.mouse_click_handled", timeout_s=5.0)
     assert result["passed"], f"Mouse click not handled: {result['message']}"
     dia_client.navigate_to("Boot")
 
 def test_ui_deterministic_reload(dia_client, assert_metric):
     # Run 1
-    dia_client.navigate_to("UIUltralightStage")
+    dia_client.navigate_to("UIUltralightTestStage")
     dia_client.poll_checkpoint("ui.page_loaded", timeout_s=5.0)
     dia_client.navigate_to("Boot")
 
     # Run 2 — determinism checkpoint passes once module has seen both runs
-    dia_client.navigate_to("UIUltralightStage")
+    dia_client.navigate_to("UIUltralightTestStage")
     result = dia_client.poll_checkpoint("ui.deterministic_reload", timeout_s=10.0)
     assert result["passed"], f"Determinism check failed: {result['message']}"
 
@@ -300,11 +300,11 @@ def test_ui_deterministic_reload(dia_client, assert_metric):
 | `docs/specs/features/cluichetest/teststages/ui-ultralight-stage.mockup.html` | Visual acceptance gate |
 | `docs/specs/features/cluichetest/teststages/ui-ultralight-stage.plan.md` | Implementation plan (created at implementation start) |
 | `docs/specs/systems/cluichetest/teststages.md` | Register feature in Features table |
-| `Cluiche/CluicheTest/Modules/TestStages/UIUltralightTestModule.h/.cpp` | New test stage module |
-| `Cluiche/CluicheTest/Modules/TestStages/UI/UIUltralightTestPage.h/.cpp` | Page shell + callback interface |
-| `Cluiche/Assets/Stages/UIUltralightStage/ui_ultralight_stage.diastage` | Stage metadata |
-| `Cluiche/Assets/Stages/UIUltralightStage/Misc/ApplicationFlow/ui_ultralight_stage.diaapp` | Module wiring |
-| `Cluiche/Assets/Stages/UIUltralightStage/Presentation/UI/ui_ultralight_test.html` | Alpine.js test panel |
+| `Cluiche/CluicheTest/Modules/TestStages/UIUltralightTestStageModule.h/.cpp` | New test stage module |
+| `Cluiche/CluicheTest/Modules/TestStages/UIUltralight/UIUltralightTestPage.h/.cpp` | Page shell + callback interface |
+| `Cluiche/Assets/Stages/UIUltralightTestStage/ui_ultralight_test_stage.diastage` | Stage metadata |
+| `Cluiche/Assets/Stages/UIUltralightTestStage/misc/ApplicationFlow/ui_ultralight_test_stage.diaapp` | Module wiring |
+| `Cluiche/Assets/Stages/UIUltralightTestStage/Presentation/UI/ui_ultralight_test.html` | Alpine.js test panel |
 | `Cluiche/Assets/CluicheTest/assets.catalogue.json` | Register new stage + assets |
 | `Cluiche/CluicheTest/CluicheTest.vcxproj` | Add new module source files |
 | `Cluiche/CluicheTest/CluicheTest.vcxproj.filters` | Add new module filters |
@@ -318,10 +318,10 @@ def test_ui_deterministic_reload(dia_client, assert_metric):
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
 | 1 | Create `ui-ultralight-stage.mockup.html` | Visual sign-off | Done | sonnet | Approved 2026-05-27 |
-| 2 | Create `UIUltralightTestPage.h/.cpp` in `Modules/TestStages/UI/` — page shell, `InitializePage`, all 4 bound methods | Unit test: page binds methods without crash | Todo | sonnet | |
-| 3 | Create `UIUltralightTestModule.h/.cpp` — DoStart/DoUpdate/DoStop, all 6 checkpoints, metrics | Stage loads; all checkpoints reachable | Todo | sonnet | Depends on Task 2 |
+| 2 | Create `UIUltralightTestPage.h/.cpp` in `Modules/TestStages/UIUltralight/` — page shell, `InitializePage`, all 4 bound methods | Unit test: page binds methods without crash | Todo | sonnet | |
+| 3 | Create `UIUltralightTestStageModule.h/.cpp` — DoStart/DoUpdate/DoStop, all 6 checkpoints, metrics | Stage loads; all checkpoints reachable | Todo | sonnet | Depends on Task 2 |
 | 4 | Create `ui_ultralight_test.html` Alpine panel — OnPageReady, OnButtonClicked, GetTestValue round-trip | Open in browser; all 4 bridge calls visible | Todo | sonnet | Depends on Task 2 (bound method names) |
-| 5 | Create `ui_ultralight_stage.diastage` + `ui_ultralight_stage.diaapp` | Manifest validation passes | Todo | haiku | Depends on Task 3 |
+| 5 | Create `ui_ultralight_test_stage.diastage` + `ui_ultralight_test_stage.diaapp` | Manifest validation passes | Todo | haiku | Depends on Task 3 |
 | 6 | Register stage in `assets.catalogue.json` | Stage visible in Boot menu | Todo | haiku | Depends on Task 5 |
 | 7 | Update `CluicheTest.vcxproj` + `.vcxproj.filters` | Clean build | Todo | haiku | Depends on Tasks 2, 3 |
 | 8 | Write pytest scenario `test_ui_ultralight.py` (6 tests); register in `default.json` | Scenario file valid; plan updated | Todo | sonnet | Depends on Task 3 (checkpoint names) |
@@ -345,19 +345,19 @@ def test_ui_deterministic_reload(dia_client, assert_metric):
 
 | ID | Decision | Compliance |
 |----|----------|------------|
-| PD-001 | StringCRC for all entity/component IDs | `kTypeId`, checkpoint names (`"ui.page_loaded"` etc.), stage name `"UIUltralightStage"`, metric names all `StringCRC`. |
+| PD-001 | StringCRC for all entity/component IDs | `kTypeId`, checkpoint names (`"ui.page_loaded"` etc.), stage name `"UIUltralightTestStage"`, metric names all `StringCRC`. |
 | PD-004 | No STL containers in public APIs | Module and page interfaces use Dia types. `BoundMethodArgs` is a Dia container. `mCallbacks` is a raw pointer to an interface, not an STL container. |
 | PD-006 | VS project files are source of truth | Task 7 adds all new source files to `CluicheTest.vcxproj` and `.vcxproj.filters`. |
 | PD-007 | C++20 required | `constexpr StringCRC`, `constexpr const char*` for `kTestValue`, standard C++ features throughout. |
 | PD-009 | Generated output under `Cluiche/out/` | Session logs and metrics in `Cluiche/out/CluicheTest/sessions/`. |
-| PD-010 | `.diagame` root; `.diastage` for stage metadata | `ui_ultralight_stage.diastage` added as a typed stage import; loader resolves manifest via the `.diastage` pointer. |
-| AD-001 | Three PUs (Main/Render/Sim) | `UIUltralightTestModule` lives on MainPU alongside `UIModule`. No structural changes to PU topology. |
+| PD-010 | `.diagame` root; `.diastage` for stage metadata | `ui_ultralight_test_stage.diastage` added as a typed stage import; loader resolves manifest via the `.diastage` pointer. |
+| AD-001 | Three PUs (Main/Render/Sim) | `UIUltralightTestStageModule` lives on MainPU alongside `UIModule`. No structural changes to PU topology. |
 | AD-003 | Entry point in `Main.cpp` | No change; stage hooks into existing app lifecycle via manifest. |
 | AD-005 | App is testbed, not shipped product | Stage exists purely for engine validation; no production constraints apply. |
-| SD-TS-001 | One manifest stage per feature | Exactly one stage: `UIUltralightStage`. |
+| SD-TS-001 | One manifest stage per feature | Exactly one stage: `UIUltralightTestStage`. |
 | SD-TS-002 | Checkpoints registered in DoStart, auto-cleared on stop | All 6 checkpoints registered in `DoStart` via `AutomationService`; auto-cleared via module ownership on stop. |
 | SD-TS-003 | Metrics for threshold assertions | `cluichetest.ui.frames_until_loaded` and `cluichetest.ui.round_trip_count` emitted; pytest asserts `frames_until_loaded <= 10`. |
-| SD-TS-004 | All stages return to Boot | `transitions: ["Boot"]` in `ui_ultralight_stage.diastage`. |
+| SD-TS-004 | All stages return to Boot | `transitions: ["Boot"]` in `ui_ultralight_test_stage.diastage`. |
 | SD-TS-005 | Individual stages are feature specs | This spec IS the feature spec for this stage. |
 
 ---
@@ -372,12 +372,12 @@ None.
 
 | # | Section | Question | Suggested Default | Answer |
 |---|---------|----------|-------------------|--------|
-| Q1 | Design — mouse coordinates | The button's screen coordinates for `InjectMouseClick` must be hardcoded. How should these be determined and kept in sync with the HTML layout? | Hardcode in `UIUltralightTestModule`; document in a comment referencing the Alpine panel layout. Accept ±10px tolerance since the button is large. | **Hardcode in module with a comment referencing the HTML button position. Button occupies the full panel width (~290px) so any x within the panel and y at button row (~120px from panel top) will hit it.** |
+| Q1 | Design — mouse coordinates | The button's screen coordinates for `InjectMouseClick` must be hardcoded. How should these be determined and kept in sync with the HTML layout? | Hardcode in `UIUltralightTestStageModule`; document in a comment referencing the Alpine panel layout. Accept ±10px tolerance since the button is large. | **Hardcode in module with a comment referencing the HTML button position. Button occupies the full panel width (~290px) so any x within the panel and y at button row (~120px from panel top) will hit it.** |
 | Q2 | Design — GetTestValue return type | `GetTestValue` returns a string — does `BoundMethod::CreateBoundMethodWithRetVal` support `BoundMethodValue::kString`? | Yes — `BoundMethodValue` has a `String64` branch; string return is supported. | **Confirmed — `BoundMethodValue` supports `kString` via `String64`. `kTestValue = "dia_test_value_42"` fits within 64 chars.** |
 | Q3 | Design — determinism checkpoint scope | `ui.deterministic_reload` requires state from two separate navigation cycles. Should the module persist run-1 data across stop/start, or should the pytest scenario own the comparison? | Module persists run-1 data (static member or singleton). Simpler for the checkpoint contract. | **Module uses a static member (`mRun1FramesUntilLoaded`) that survives stop/start. Reset only when the second run completes and the checkpoint fires. Pytest scenario navigates twice and polls the checkpoint on run 2.** |
 | Q4 | Design — pixel buffer sampling | Checking all bytes of a 3.5 MB buffer for non-zero is expensive. What is the correct sampling strategy? | Sample a fixed stride (e.g. every 1024 bytes); if any sampled byte is non-zero, pass. | **Sample every 1024 bytes (≈3584 samples for a 1280×720 BGRA buffer). If any sample is non-zero, `mPixelBufferNonEmpty = true`. Cost is negligible at 30Hz.** |
 | Q5 | Design — Alpine vs React | React pipeline exists; should this stage use Alpine or React? | Alpine — panel is self-contained, no build step, testing the bridge not the framework. | **Alpine confirmed. React integration testing is a separate future spec. Alpine keeps the failure signal clean: a bridge failure is always DiaUIUltralight, not a build pipeline issue.** |
-| Q6 | Tasks — PU for test module | `UIUltralightTestModule` depends on `UIModule` which is on MainPU. Must the test module also be on MainPU? | Yes — `ModuleRef` requires same PU as the referenced module. | **Confirmed. Both on MainPU. No structural change to PU topology.** |
+| Q6 | Tasks — PU for test module | `UIUltralightTestStageModule` depends on `UIModule` which is on MainPU. Must the test module also be on MainPU? | Yes — `ModuleRef` requires same PU as the referenced module. | **Confirmed. Both on MainPU. No structural change to PU topology.** |
 
 ---
 

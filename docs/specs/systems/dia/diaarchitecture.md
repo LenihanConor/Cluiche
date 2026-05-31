@@ -17,7 +17,8 @@ DiaArchitecture formalises the domain-oriented module structure for the Dia engi
 1. **Document** the target architecture by adding a `layer:` field to every module's YAML doc (C7)
 2. **Audit** the current codebase for forbidden-dep violations via `dia check --tool=arch` (C1)
 3. **Pilot** CMake for the Foundation sub-layer to prove the pattern and unlock `compile_commands.json` (C2)
-4. **Enforce** the full architecture via CMake `target_link_libraries` across all 55 modules (C3)
+4. **Enforce** the Dia module graph via CMake `target_link_libraries` across all 55 modules — additive, `.vcxproj` kept (C3a)
+5. **Complete** the migration by adding CMake for Cluiche apps, retiring all `.vcxproj` files, and switching DiaCLI to `cmake --build` (C3b)
 
 ---
 
@@ -48,7 +49,7 @@ DiaArchitecture formalises the domain-oriented module structure for the Dia engi
 - Core sub-layers depend only on layers below them — no upward reach
 - Domain `core` tiers depend on Core only — never on other domain cores
 - Domain `tools` tiers may depend on Core/Tooling + their own domain core
-- These rules are enforced at compile time by CMake `target_link_libraries` (after C3)
+- These rules are enforced at compile time by CMake `target_link_libraries` (after C3a)
 
 ---
 
@@ -59,7 +60,8 @@ DiaArchitecture formalises the domain-oriented module structure for the Dia engi
 | C7 | YAML layer formalisation — add `layer:` to all module docs | [layer-formalisation.md](../../features/dia/diaarchitecture/layer-formalisation.md) | Draft | S |
 | C1 | Architecture audit tool — `dia check --tool=arch` | [arch-audit-tool.md](../../features/dia/diaarchitecture/arch-audit-tool.md) | Draft | S |
 | C2 | Foundation CMake pilot — CMakeLists.txt for Foundation sub-layer | [cmake-foundation-pilot.md](../../features/dia/diaarchitecture/cmake-foundation-pilot.md) | Draft | M |
-| C3 | Full layered CMake INTERFACE model — all 55 modules | [cmake-full-enforcement.md](../../features/dia/diaarchitecture/cmake-full-enforcement.md) | Draft | L |
+| C3a | Dia CMake full — CMakeLists.txt for all 55 Dia modules (additive, `.vcxproj` kept) | [cmake-dia-full.md](../../features/dia/diaarchitecture/cmake-dia-full.md) | Draft | L |
+| C3b | Cluiche CMake + retirement — apps, Find wrappers, DiaCLI switch, atomic `.vcxproj` deletion | [cmake-cluiche-apps.md](../../features/dia/diaarchitecture/cmake-cluiche-apps.md) | Draft | M |
 
 ---
 
@@ -69,7 +71,7 @@ DiaArchitecture formalises the domain-oriented module structure for the Dia engi
 - Provide a CI-runnable tool that detects forbidden-dep violations
 - Provide CMake build targets that make forbidden-dep violations compile-time errors
 - Produce `compile_commands.json` (via Ninja preset) for Clang-Tidy and clangd
-- Update PD-006 when CMake becomes the source of truth (C3)
+- Update PD-006 when CMake becomes the source of truth (C3b)
 
 ## Non-Responsibilities
 
@@ -120,7 +122,7 @@ Dia::AI                  # AI domain core (future)
 | Dependency | Why |
 |------------|-----|
 | DiaCLI | `dia check --tool=arch` and `dia run` (post-C3) wired through DiaCLI |
-| All Dia modules | C7 touches every module doc; C3 replaces every `.vcxproj` |
+| All Dia modules | C7 touches every module doc; C3a adds CMakeLists.txt alongside; C3b retires `.vcxproj` |
 | CMake 3.25+ | `CMakePresets.json` v3 requires CMake 3.25 |
 | Ninja | Required for `compile_commands.json` preset |
 
@@ -133,7 +135,7 @@ Dia::AI                  # AI domain core (future)
 | PD-001 — StringCRC for IDs | Platform | `layer:` field values are plain strings in YAML/CMake target names — no runtime StringCRC needed; enforcement is build-time only |
 | PD-004 — No STL in public APIs | Platform | Build system and audit tool are Python/CMake — no C++ public API touches STL |
 | PD-005 — x64 Windows only | Platform | CMakePresets use `"architecture": "x64"`; no cross-compile targets added |
-| PD-006 — VS project files are source of truth | Platform | **Updated by C3**: CMake becomes the new source of truth; PD-006 amended when C3 ships |
+| PD-006 — VS project files are source of truth | Platform | **Updated by C3b**: CMake becomes the new source of truth; PD-006 amended when C3b ships |
 | PD-007 — C++20 required | Platform | `target_compile_features(… cxx_std_20)` replaces `stdcpp20` in `Directory.Build.props`; enforced in CMake root |
 | PD-008 — `Directory.Build.props` owns OutDir/IntDir | Platform | C3 replicates all output path logic in CMake root (`CMAKE_RUNTIME_OUTPUT_DIRECTORY` etc.); `Directory.Build.props` is retired for CMake-managed projects |
 | AD-001 — Module YAML frontmatter | Application | C7 extends YAML schema with `layer:` field; all existing fields preserved |
