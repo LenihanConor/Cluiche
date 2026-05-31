@@ -18,7 +18,13 @@
     <ClCompile Include="Modules\AssetServiceModule.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\CameraModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
     <ClCompile Include="Modules\InputStreamModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\PickingModule.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
     <ClCompile Include="Modules\JobSystemModule.cpp">
@@ -80,7 +86,13 @@
     <ClInclude Include="Modules\AssetServiceModule.h">
       <Filter>Modules</Filter>
     </ClInclude>
+    <ClInclude Include="Modules\CameraModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
     <ClInclude Include="Modules\InputStreamModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\PickingModule.h">
       <Filter>Modules</Filter>
     </ClInclude>
     <ClInclude Include="Modules\JobSystemModule.h">

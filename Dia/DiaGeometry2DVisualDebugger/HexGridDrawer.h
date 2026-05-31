@@ -41,10 +41,19 @@ public:
     void Draw(Dia::Graphics::FrameData& frameData) override;
     void DrawImGui() override;
 
+    // Called by the owning stage module each frame with the externally-owned
+    // selection. Pass nullptr to clear. The pointer is not stored across frames
+    // — caller must pass it again each update.
+    void SetSelection(const Dia::Geometry2D::HexCoord* selected)
+    {
+        mSelected = selected;
+    }
+
 private:
     const Dia::Geometry2D::HexGrid<T, MaxObjects>& mGrid;
     const Dia::Debug::DebugLayerManager&           mManager;
     bool                                           mShowLabels{ false };
+    const Dia::Geometry2D::HexCoord*               mSelected{ nullptr };
 };
 
 } // namespace Dia::Geometry2DVisualDebugger

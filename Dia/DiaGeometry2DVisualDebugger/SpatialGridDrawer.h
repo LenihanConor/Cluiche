@@ -38,10 +38,20 @@ public:
     void Draw(Dia::Graphics::FrameData& frameData) override;
     void DrawImGui() override;
 
+    struct CellCoord { int x; int y; };
+
+    // Called by the owning stage module each frame with the externally-owned
+    // selection. Pass nullptr to clear.
+    void SetSelection(const CellCoord* selected)
+    {
+        mSelected = selected;
+    }
+
 private:
     const Dia::Geometry2D::SpatialGrid<T, MaxObjects>& mGrid;
     const Dia::Debug::DebugLayerManager&               mManager;
     bool                                               mShowLabels{ false };
+    const CellCoord*                                   mSelected{ nullptr };
 };
 
 } // namespace Dia::Geometry2DVisualDebugger

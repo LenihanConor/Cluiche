@@ -15,7 +15,7 @@ TestStageModuleBase::~TestStageModuleBase() = default;
 
 Dia::ApplicationFlow::StartResult TestStageModuleBase::DoStart()
 {
-    auto* automationModule = mAutomation.Get();
+    auto* automationModule = Cluiche::AppFlow::AutomationModule::GetStatic();
     if (!automationModule || !automationModule->GetService())
         return Dia::ApplicationFlow::StartResult::kLoading;
 
@@ -58,7 +58,7 @@ Dia::ApplicationFlow::StopResult TestStageModuleBase::DoStop()
 {
     OnStop();
 
-    if (auto* automationModule = mAutomation.Get())
+    if (auto* automationModule = Cluiche::AppFlow::AutomationModule::GetStatic())
     {
         if (auto* service = automationModule->GetService())
             service->UnregisterCheckpoints(this);
@@ -88,7 +88,7 @@ void TestStageModuleBase::ReportFailed()
 
 Dia::Automation::AutomationService* TestStageModuleBase::GetAutomationService()
 {
-    auto* mod = mAutomation.Get();
+    auto* mod = Cluiche::AppFlow::AutomationModule::GetStatic();
     return mod ? mod->GetService() : nullptr;
 }
 

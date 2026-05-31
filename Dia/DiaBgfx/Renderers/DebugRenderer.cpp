@@ -166,7 +166,21 @@ namespace Dia
             const auto& r = p.ray2D;
             float ex = r.origin.X() + r.direction.X() * r.length;
             float ey = r.origin.Y() + r.direction.Y() * r.length;
-            PushLine(b, r.origin.X(), r.origin.Y(), ex, ey, ToABGR(r.colour));
+            uint32_t abgr = ToABGR(r.colour);
+            PushLine(b, r.origin.X(), r.origin.Y(), ex, ey, abgr);
+
+            // Arrowhead: two short lines angled ±30 degrees back from tip
+            constexpr float kArrowLen = 8.0f;
+            constexpr float kCos30 = 0.866f;
+            constexpr float kSin30 = 0.5f;
+            float dx = -r.direction.X();
+            float dy = -r.direction.Y();
+            float ax1 = ex + kArrowLen * (dx * kCos30 - dy * kSin30);
+            float ay1 = ey + kArrowLen * (dx * kSin30 + dy * kCos30);
+            float ax2 = ex + kArrowLen * (dx * kCos30 + dy * kSin30);
+            float ay2 = ey + kArrowLen * (-dx * kSin30 + dy * kCos30);
+            PushLine(b, ex, ey, ax1, ay1, abgr);
+            PushLine(b, ex, ey, ax2, ay2, abgr);
         }
 
         static void EmitTriangle(DebugBatch& b, const Dia::Graphics::DebugPrimitive& p)

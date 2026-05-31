@@ -29,7 +29,9 @@
     <ClCompile Include="Modules\DebugUIModule.cpp" />
     <ClCompile Include="Modules\DebugServerHostModule.cpp" />
     <ClCompile Include="Modules\JobSystemModule.cpp" />
+    <ClCompile Include="Modules\CameraModule.cpp" />
     <ClCompile Include="Modules\InputStreamModule.cpp" />
+    <ClCompile Include="Modules\PickingModule.cpp" />
     <ClCompile Include="Modules\KernelModule.cpp" />
     <ClCompile Include="Modules\LoadingScreenModule.cpp" />
     <ClCompile Include="Modules\ObservationModule.cpp" />
@@ -56,7 +58,9 @@
     <ClInclude Include="Modules\DebugUIModule.h" />
     <ClInclude Include="Modules\DebugServerHostModule.h" />
     <ClInclude Include="Modules\JobSystemModule.h" />
+    <ClInclude Include="Modules\CameraModule.h" />
     <ClInclude Include="Modules\InputStreamModule.h" />
+    <ClInclude Include="Modules\PickingModule.h" />
     <ClInclude Include="Modules\KernelModule.h" />
     <ClInclude Include="Modules\LoadingScreenModule.h" />
     <ClInclude Include="Modules\ObservationModule.h" />
@@ -93,6 +97,15 @@
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaGraphics\DiaGraphics.vcxproj">
       <Project>{1cf9f92b-666e-4b39-9dde-b1cfbef68618}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaPicking\DiaPicking.vcxproj">
+      <Project>{E1F2A3B4-C5D6-7890-1234-567890ABCDE1}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaGeometry2DPicking\DiaGeometry2DPicking.vcxproj">
+      <Project>{F2A3B4C5-D6E7-8901-2345-678901BCDEF2}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaMailbox\DiaMailbox.vcxproj">
+      <Project>{C4D5E6F7-A8B9-0123-CDEF-456789ABCDEF}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaInput\DiaInput.vcxproj">
       <Project>{936fa28f-e171-401f-8185-d2af48db4098}</Project>

@@ -222,7 +222,7 @@ namespace Dia { namespace ApplicationFlow { namespace Editor {
             }
         }
 
-        state.manifest = loaded;
+        state.manifest = std::move(loaded);
         strncpy_s(state.filePath, sizeof(state.filePath), path, _TRUNCATE);
         state.hasManifest = true;
         state.isDirty = false;

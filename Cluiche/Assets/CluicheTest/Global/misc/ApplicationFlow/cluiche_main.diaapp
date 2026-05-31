@@ -285,6 +285,29 @@
                     ]
                 },
                 {
+                    "instance_id": "CameraModule",
+                    "type_id": "CameraModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [],
+                    "channels": []
+                },
+                {
+                    "instance_id": "PickingModule",
+                    "type_id": "PickingModule",
+                    "stages": [
+                        "RigidBody2DTestStage",
+                        "AssetRuntimeTestStage",
+                        "Geometry2DTestStage"
+                    ],
+                    "dependencies": [
+                        "InputStreamModule",
+                        "CameraModule"
+                    ],
+                    "channels": []
+                },
+                {
                     "instance_id": "VisualDebuggerModule",
                     "type_id": "VisualDebuggerModule",
                     "stages": [
@@ -292,7 +315,9 @@
                         "AssetRuntimeTestStage",
                         "Geometry2DTestStage"
                     ],
-                    "dependencies": [],
+                    "dependencies": [
+                        "CameraModule"
+                    ],
                     "channels": [
                         {
                             "id": "SimToRender",

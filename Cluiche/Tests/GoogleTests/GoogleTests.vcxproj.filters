@@ -124,6 +124,9 @@
     <Filter Include="Geometry2D">
       <UniqueIdentifier>{GEO2D001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Picking">
+      <UniqueIdentifier>{A1B2C3D4-E5F6-7890-ABCD-EF1234567891}</UniqueIdentifier>
+    </Filter>
     <Filter Include="RigidBody2D">
       <UniqueIdentifier>{RB2D0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
@@ -746,6 +749,28 @@
     </ClCompile>
     <ClCompile Include="Geometry2D\TestHexGrid.cpp">
       <Filter>Geometry2D</Filter>
+    </ClCompile>
+    <!-- Picking -->
+    <ClCompile Include="Picking\TestPickingCore.cpp">
+      <Filter>Picking</Filter>
+    </ClCompile>
+    <ClCompile Include="Picking\TestHexGridPickable.cpp">
+      <Filter>Picking</Filter>
+    </ClCompile>
+    <ClCompile Include="Picking\TestSpatialGridPickable.cpp">
+      <Filter>Picking</Filter>
+    </ClCompile>
+    <ClCompile Include="Picking\TestShapePickable.cpp">
+      <Filter>Picking</Filter>
+    </ClCompile>
+    <ClCompile Include="Picking\TestPickingService2D.cpp">
+      <Filter>Picking</Filter>
+    </ClCompile>
+    <ClCompile Include="Picking\TestInputStreamMouseButtons.cpp">
+      <Filter>Picking</Filter>
+    </ClCompile>
+    <ClCompile Include="Picking\TestCameraViewport.cpp">
+      <Filter>Picking</Filter>
     </ClCompile>
     <!-- RigidBody2D -->
     <ClCompile Include="RigidBody2D\TestPhysicsBody.cpp">

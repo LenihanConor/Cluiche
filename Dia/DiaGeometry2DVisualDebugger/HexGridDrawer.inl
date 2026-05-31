@@ -27,6 +27,8 @@ void HexGridDrawer<T, MaxObjects>::Draw(Dia::Graphics::FrameData& frameData)
 {
     if (!IsEnabled()) return;
 
+    static const Dia::Graphics::RGBA kSelectFill(100, 180, 255, 60);
+    static const Dia::Graphics::RGBA kSelectOutline(100, 180, 255, 200);
     const Dia::Graphics::RGBA colour = Dia::Debug::DebugColourPalette::kInactive;
 
     // Pointy-top hexagon corner angles (radians): 30, 90, 150, 210, 270, 330 degrees
@@ -53,7 +55,6 @@ void HexGridDrawer<T, MaxObjects>::Draw(Dia::Graphics::FrameData& frameData)
 
             const Dia::Maths::Vector2D center = mGrid.HexToWorld(coord);
 
-            // Compute 6 corners
             Dia::Maths::Vector2D corners[6];
             for (int k = 0; k < 6; ++k)
             {
@@ -62,10 +63,18 @@ void HexGridDrawer<T, MaxObjects>::Draw(Dia::Graphics::FrameData& frameData)
                     center.y + hexRadius * std::sin(kAngles[k]));
             }
 
-            // Draw 6 edge lines
+            const bool selected = (mSelected != nullptr) && (coord == *mSelected);
+            const Dia::Graphics::RGBA edgeColour = selected ? kSelectOutline : colour;
+
             for (int k = 0; k < 6; ++k)
+                frameData.RequestDraw(corners[k], corners[(k + 1) % 6], edgeColour);
+
+            // Filled triangle fan for selected hex
+            if (selected)
             {
-                frameData.RequestDraw(corners[k], corners[(k + 1) % 6], colour);
+                for (int k = 0; k < 6; ++k)
+                    frameData.RequestDraw(center, corners[k], corners[(k + 1) % 6],
+                        Dia::Graphics::RGBA(0, 0, 0, 0), kSelectFill);
             }
 
             if (mShowLabels)
@@ -83,7 +92,28 @@ void HexGridDrawer<T, MaxObjects>::Draw(Dia::Graphics::FrameData& frameData)
 template<typename T, unsigned int MaxObjects>
 void HexGridDrawer<T, MaxObjects>::DrawImGui()
 {
-    ImGui::Checkbox("geometry.hexgrid.coord.labels", &mShowLabels);
+    ImGui::Checkbox("coord labels", &mShowLabels);
+
+    // Inspector panel — read-only, selection is owned by the stage module
+    if (mSelected != nullptr)
+    {
+        ImGui::Separator();
+        ImGui::Text("hex (%d, %d)", mSelected->q, mSelected->r);
+
+        const Dia::Maths::Vector2D center = mGrid.HexToWorld(*mSelected);
+        const float r = mGrid.GetHexRadius();
+        ImGui::Text("center  (%.1f, %.1f)  r=%.1f", center.x, center.y, r);
+
+        Dia::Core::Containers::DynamicArrayC<
+            Dia::Core::Handle<T>,
+            Dia::Geometry2D::kMaxQueryResults> results;
+        mGrid.QueryHex(*mSelected, results);
+
+        ImGui::Text("objects  %u", results.Size());
+        for (unsigned int i = 0; i < results.Size(); ++i)
+            ImGui::Text("  #%u: idx=%u gen=%u", i,
+                results[i].GetIndex(), results[i].GetGeneration());
+    }
 }
 
 } // namespace Dia::Geometry2DVisualDebugger

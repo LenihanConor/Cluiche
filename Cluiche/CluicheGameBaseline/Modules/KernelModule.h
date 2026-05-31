@@ -49,6 +49,10 @@ public:
     static void SetRenderContextActive(bool active) { sRenderContextActive.store(active, std::memory_order_release); }
     static bool IsRenderContextActive()             { return sRenderContextActive.load(std::memory_order_acquire); }
 
+    // Window size — set once at startup from .diagame, safe to read cross-PU (immutable after DoStart)
+    static unsigned int GetWindowWidth()  { return sWindowWidth.load(std::memory_order_acquire); }
+    static unsigned int GetWindowHeight() { return sWindowHeight.load(std::memory_order_acquire); }
+
 protected:
     void OnConfigure(const char* configJson) override;
     Dia::ApplicationFlow::StartResult DoStart() override;
@@ -60,8 +64,10 @@ private:
     Dia::ApplicationFlow::EventStreamWriter<MainToSimEvent>                      mInputWriter{this, "MainToSim"};
     Dia::ApplicationFlow::ServiceStreamWriter<Dia::Graphics::ICanvas>           mCanvasService{this, "KernelCanvas"};
     Dia::ApplicationFlow::ServiceStreamWriter<Dia::AssetRuntime::TextureHandler> mTextureHandlerService{this, "KernelTextureHandler"};
-    static std::atomic<bool>                                                     sRenderContextReleased;
-    static std::atomic<bool>                                                     sRenderContextActive;
+    static std::atomic<bool>         sRenderContextReleased;
+    static std::atomic<bool>         sRenderContextActive;
+    static std::atomic<unsigned int> sWindowWidth;
+    static std::atomic<unsigned int> sWindowHeight;
 
     // Window config — populated from .diagame in DoStart, with fallback defaults
     Dia::Core::Containers::String64 mWindowTitle{"CluicheTest"};

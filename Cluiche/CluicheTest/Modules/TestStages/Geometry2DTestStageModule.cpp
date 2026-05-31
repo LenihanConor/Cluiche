@@ -6,6 +6,9 @@
 #include "Modules/TestStages/Drawers/Geometry2DAABBDrawer.h"
 #include "Modules/VisualDebuggerModule.h"
 #include <DiaGeometry2D/Shapes/Ray.h>
+#include <DiaPicking/PickEvent.h>
+#include <DiaPicking/PickAddress.h>
+#include <DiaPicking/PickTrigger.h>
 #endif
 
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
@@ -111,7 +114,7 @@ void Geometry2DTestStageModule::OnUpdate(float /*deltaTime*/)
 
             mShapesDrawer = std::make_unique<Geometry2DShapesDrawer>(
                 mCircle, mAARect, mOORect, mLine, mRay, mTriangle,
-                mCapsule, mConvexPoly, mArc, mSector, *mgr);
+                mCapsule, mConvexPoly, mArc, mSector, mSpatialScatter, *mgr);
             mgr->Register(mShapesDrawer.get(), 20, stageTag);
 
             mLabelsDrawer = std::make_unique<Geometry2DLabelsDrawer>(
@@ -148,7 +151,71 @@ void Geometry2DTestStageModule::OnUpdate(float /*deltaTime*/)
                 mHexGridDrawer = std::make_unique<Dia::Geometry2DVisualDebugger::HexGridDrawer<SpatialElem, kSpatialMax>>(*mHexGrid, *mgr);
                 mgr->Register(mHexGridDrawer.get(), 27, stageTag);
             }
+
+            // Register pickables with PickingModule
+            if (auto* picking = mPickingRef.Get())
+            {
+                if (mHexGrid)
+                {
+                    mHexGridPickable = std::make_unique<Dia::Geometry2DPicking::HexGridPickable<SpatialElem, kSpatialMax>>(
+                        *mHexGrid, Dia::Core::StringCRC("geo2d.hexgrid"), 10);
+                    picking->GetService().Register(mHexGridPickable.get());
+                }
+                if (mSpatialGrid)
+                {
+                    mSpatialGridPickable = std::make_unique<Dia::Geometry2DPicking::SpatialGridPickable<SpatialElem, kSpatialMax>>(
+                        *mSpatialGrid, Dia::Core::StringCRC("geo2d.spatialgrid"), 5);
+                    picking->GetService().Register(mSpatialGridPickable.get());
+                }
+
+                mPickSubscriberId.value = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(this));
+                picking->GetRouter().SubscribeToTrigger(Dia::Picking::PickTrigger::kClick, mPickSubscriberId);
+                mPickingRegistered = true;
+            }
         }
+    }
+
+    // Drain click events from PickingModule and update selection
+    if (auto* picking = mPickingRef.Get())
+    {
+        using PickEvent2D = Dia::Picking::PickEvent<Dia::Geometry2DPicking::PickHit2D>;
+        picking->GetMailbox().Drain<PickEvent2D>(
+            [this](const Dia::Mailbox::Address& addr, const PickEvent2D& evt)
+            {
+                if (evt.trigger != Dia::Picking::PickTrigger::kClick) return;
+                if (!evt.hits.HasHit()) { mHasHexSelection = false; mHasSpatialSelection = false; return; }
+
+                const Dia::Geometry2DPicking::PickHit2D& best = evt.hits.Best();
+                if (best.kind == Dia::Geometry2DPicking::PickHit2D::Kind::kHexCell)
+                {
+                    const bool changed = !mHasHexSelection
+                        || mSelectedHex.q != best.hexCell.q
+                        || mSelectedHex.r != best.hexCell.r;
+                    mHasHexSelection     = true;
+                    mSelectedHex         = best.hexCell;
+                    mHasSpatialSelection = false;
+                    if (changed)
+                        DIA_LOG_INFO("picking", "selection changed: hex(%d,%d)", best.hexCell.q, best.hexCell.r);
+                }
+                else if (best.kind == Dia::Geometry2DPicking::PickHit2D::Kind::kSpatialCell)
+                {
+                    const bool changed = !mHasSpatialSelection
+                        || mSelectedCell.x != best.spatialCell.x
+                        || mSelectedCell.y != best.spatialCell.y;
+                    mHasSpatialSelection = true;
+                    mSelectedCell.x      = best.spatialCell.x;
+                    mSelectedCell.y      = best.spatialCell.y;
+                    mHasHexSelection     = false;
+                    if (changed)
+                        DIA_LOG_INFO("picking", "selection changed: cell(%d,%d)", best.spatialCell.x, best.spatialCell.y);
+                }
+            });
+
+        // Push selection to drawers every frame
+        if (mHexGridDrawer)
+            mHexGridDrawer->SetSelection(mHasHexSelection ? &mSelectedHex : nullptr);
+        if (mSpatialGridDrawer)
+            mSpatialGridDrawer->SetSelection(mHasSpatialSelection ? &mSelectedCell : nullptr);
     }
 #endif
 
@@ -165,6 +232,7 @@ void Geometry2DTestStageModule::OnStop()
 #ifdef DIA_DEBUG
     mIntersectionPairs.RemoveAll();
     mIntersectionPairCount = 0;
+    mSpatialScatter.RemoveAll();
 
     if (mShapesDrawer)
     {
@@ -198,16 +266,35 @@ void Geometry2DTestStageModule::OnStop()
     mQuadtree.reset();
     mSpatialGrid.reset();
     mHexGrid.reset();
+
+    // Unregister pickables and unsubscribe
+    if (auto* picking = mPickingRef.Get())
+    {
+        if (mHexGridPickable)
+            picking->GetService().Unregister(mHexGridPickable.get());
+        if (mSpatialGridPickable)
+            picking->GetService().Unregister(mSpatialGridPickable.get());
+        if (mPickingRegistered)
+        {
+            picking->GetRouter().UnsubscribeFromTrigger(Dia::Picking::PickTrigger::kClick, mPickSubscriberId);
+            mPickingRegistered = false;
+        }
+    }
+    mHexGridPickable.reset();
+    mSpatialGridPickable.reset();
+    mHasHexSelection     = false;
+    mHasSpatialSelection = false;
 #endif
 }
 
 void Geometry2DTestStageModule::SetupGallery()
 {
-    // Top band, right of console: 2 rows of 5, x∈[600,1320], row1 y≈820, row2 y≈720
-    constexpr float kSpacing = 160.0f;
-    constexpr float kRow1Y = 820.0f;
-    constexpr float kRow2Y = 700.0f;
-    constexpr float kStartX = 220.0f;
+    // Top band: 2 rows of 5 shapes, centred in visible world [-700,700]x[-500,500]
+    // Y-down on screen: Y=-500 is screen top, Y=500 is screen bottom
+    constexpr float kSpacing = 150.0f;
+    constexpr float kRow1Y = -350.0f;
+    constexpr float kRow2Y = -200.0f;
+    constexpr float kStartX = -300.0f;
 
     // Row 1: Circle, AARect, OORect, Line, Ray
     mCircle = Dia::Geometry2D::Circle(45.0f, Dia::Maths::Vector2D(kStartX, kRow1Y));
@@ -276,9 +363,9 @@ void Geometry2DTestStageModule::SetupGallery()
 #ifdef DIA_DEBUG
 void Geometry2DTestStageModule::SetupIntersectionPairs()
 {
-    // Middle band: y≈510, x from 620 to 1280 (6 pairs, ~110px apart)
-    constexpr float kY = 510.0f;
-    constexpr float kStartX = 640.0f;
+    // Middle band: centred horizontally, Y≈0 (screen middle)
+    constexpr float kY = 0.0f;
+    constexpr float kStartX = -300.0f;
     constexpr float kSpacing = 120.0f;
 
     // Pair 0: Circle/Circle — HIT
@@ -377,33 +464,32 @@ void Geometry2DTestStageModule::SetupIntersectionPairs()
 
 void Geometry2DTestStageModule::SetupSpatialStructures()
 {
-    // Bottom band: 4 structures
-    // BVH, Quadtree, SpatialGrid (right side x∈[600,1350])
-    // HexGrid (bottom-left under console, x∈[50,300])
-
-    constexpr float kBoundsW = 220.0f;
-    constexpr float kBoundsH = 260.0f;
-    constexpr float kY0 = 80.0f;
+    // Bottom band: 4 structures spread horizontally, Y∈[150,400]
+    constexpr float kBoundsW = 200.0f;
+    constexpr float kBoundsH = 200.0f;
+    constexpr float kY0 = 150.0f;
     constexpr float kY1 = kY0 + kBoundsH;
     constexpr float kGap = 30.0f;
-    constexpr float kX0 = 620.0f;
+    constexpr float kX0 = -500.0f;
 
-    auto makeScatter = [](float baseX, float baseY, float w, float h,
+    auto makeScatter = [this](float baseX, float baseY, float w, float h,
                           Dia::Core::Containers::DynamicArrayC<Dia::Geometry2D::AARect, 8>& out)
     {
         constexpr float s = 25.0f;
-        out.Add(Dia::Geometry2D::AARect(Dia::Maths::Vector2D(baseX + w*0.15f, baseY + h*0.2f),
-                                        Dia::Maths::Vector2D(baseX + w*0.15f + s, baseY + h*0.2f + s)));
-        out.Add(Dia::Geometry2D::AARect(Dia::Maths::Vector2D(baseX + w*0.5f,  baseY + h*0.3f),
-                                        Dia::Maths::Vector2D(baseX + w*0.5f + s,  baseY + h*0.3f + s)));
-        out.Add(Dia::Geometry2D::AARect(Dia::Maths::Vector2D(baseX + w*0.7f,  baseY + h*0.6f),
-                                        Dia::Maths::Vector2D(baseX + w*0.7f + s,  baseY + h*0.6f + s)));
-        out.Add(Dia::Geometry2D::AARect(Dia::Maths::Vector2D(baseX + w*0.2f,  baseY + h*0.7f),
-                                        Dia::Maths::Vector2D(baseX + w*0.2f + s,  baseY + h*0.7f + s)));
-        out.Add(Dia::Geometry2D::AARect(Dia::Maths::Vector2D(baseX + w*0.8f,  baseY + h*0.15f),
-                                        Dia::Maths::Vector2D(baseX + w*0.8f + s,  baseY + h*0.15f + s)));
-        out.Add(Dia::Geometry2D::AARect(Dia::Maths::Vector2D(baseX + w*0.4f,  baseY + h*0.8f),
-                                        Dia::Maths::Vector2D(baseX + w*0.4f + s,  baseY + h*0.8f + s)));
+        auto addRect = [&](float fx, float fy)
+        {
+            Dia::Geometry2D::AARect r(Dia::Maths::Vector2D(baseX + w*fx, baseY + h*fy),
+                                      Dia::Maths::Vector2D(baseX + w*fx + s, baseY + h*fy + s));
+            out.Add(r);
+            if (!mSpatialScatter.IsFull())
+                mSpatialScatter.Add(r);
+        };
+        addRect(0.15f, 0.2f);
+        addRect(0.5f,  0.3f);
+        addRect(0.7f,  0.6f);
+        addRect(0.2f,  0.7f);
+        addRect(0.8f,  0.15f);
+        addRect(0.4f,  0.8f);
     };
 
     // --- BVH ---
@@ -473,7 +559,8 @@ void Geometry2DTestStageModule::SetupSpatialStructures()
 
     // --- HexGrid — 5x5 staggered (odd-row-right), hex radius 32 ---
     {
-        constexpr float hx0 = 10.0f, hy0 = 50.0f;
+        const float hx0 = kX0 + (kBoundsW + kGap) * 3;
+        const float hy0 = kY0;
         Dia::Geometry2D::HexGrid<SpatialElem, kSpatialMax>::Def def;
         def.origin    = Dia::Maths::Vector2D(hx0, hy0);
         def.colCount  = 5;
@@ -483,17 +570,17 @@ void Geometry2DTestStageModule::SetupSpatialStructures()
 
         constexpr float s = 20.0f;
         mHexGrid->Insert(0u, Dia::Geometry2D::AARect(
-            Dia::Maths::Vector2D(hx0 + 40.0f, hy0 + 60.0f),
-            Dia::Maths::Vector2D(hx0 + 40.0f + s, hy0 + 60.0f + s)));
+            Dia::Maths::Vector2D(hx0 + 40.0f, hy0 + 40.0f),
+            Dia::Maths::Vector2D(hx0 + 40.0f + s, hy0 + 40.0f + s)));
         mHexGrid->Insert(1u, Dia::Geometry2D::AARect(
-            Dia::Maths::Vector2D(hx0 + 140.0f, hy0 + 100.0f),
-            Dia::Maths::Vector2D(hx0 + 140.0f + s, hy0 + 100.0f + s)));
+            Dia::Maths::Vector2D(hx0 + 100.0f, hy0 + 80.0f),
+            Dia::Maths::Vector2D(hx0 + 100.0f + s, hy0 + 80.0f + s)));
         mHexGrid->Insert(2u, Dia::Geometry2D::AARect(
-            Dia::Maths::Vector2D(hx0 + 220.0f, hy0 + 60.0f),
-            Dia::Maths::Vector2D(hx0 + 220.0f + s, hy0 + 60.0f + s)));
+            Dia::Maths::Vector2D(hx0 + 160.0f, hy0 + 40.0f),
+            Dia::Maths::Vector2D(hx0 + 160.0f + s, hy0 + 40.0f + s)));
         mHexGrid->Insert(3u, Dia::Geometry2D::AARect(
-            Dia::Maths::Vector2D(hx0 + 80.0f, hy0 + 170.0f),
-            Dia::Maths::Vector2D(hx0 + 80.0f + s, hy0 + 170.0f + s)));
+            Dia::Maths::Vector2D(hx0 + 70.0f, hy0 + 130.0f),
+            Dia::Maths::Vector2D(hx0 + 70.0f + s, hy0 + 130.0f + s)));
     }
 }
 #endif

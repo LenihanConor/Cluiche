@@ -21,6 +21,10 @@ public:
     bool WasKeyPressed(Dia::Input::EKey key)  const;
     bool WasKeyReleased(Dia::Input::EKey key) const;
 
+    bool IsMouseButtonDown(int button)      const;
+    bool WasMouseButtonPressed(int button)  const;
+    bool WasMouseButtonReleased(int button) const;
+
     int GetMouseX() const { return mMouseX; }
     int GetMouseY() const { return mMouseY; }
 
@@ -31,13 +35,16 @@ protected:
     void                              OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 
 private:
-    static constexpr unsigned int kMaxKeys = 256;
+    static constexpr unsigned int kMaxKeys         = 256;
+    static constexpr unsigned int kMaxMouseButtons = 8;
 
     Dia::ApplicationFlow::EventStreamReader<MainToSimEvent> mInput{this, "MainToSim"};
     Dia::ApplicationFlow::ModuleRef<TimeServerModule>   mTimeServer{this};
 
     bool mCurrentKeys[kMaxKeys];
     bool mPreviousKeys[kMaxKeys];
+    bool mCurrentMouse[kMaxMouseButtons];
+    bool mPreviousMouse[kMaxMouseButtons];
     int  mMouseX = 0;
     int  mMouseY = 0;
 };

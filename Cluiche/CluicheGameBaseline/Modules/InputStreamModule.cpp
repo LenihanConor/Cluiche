@@ -16,6 +16,8 @@ InputStreamModule::InputStreamModule(const Dia::Core::StringCRC& instanceId)
 {
     memset(mCurrentKeys,  0, sizeof(mCurrentKeys));
     memset(mPreviousKeys, 0, sizeof(mPreviousKeys));
+    memset(mCurrentMouse,  0, sizeof(mCurrentMouse));
+    memset(mPreviousMouse, 0, sizeof(mPreviousMouse));
 }
 
 Dia::ApplicationFlow::StartResult InputStreamModule::DoStart()
@@ -23,13 +25,16 @@ Dia::ApplicationFlow::StartResult InputStreamModule::DoStart()
     DIA_LOG_INFO("Application", "InputStreamModule::DoStart entry");
     memset(mCurrentKeys,  0, sizeof(mCurrentKeys));
     memset(mPreviousKeys, 0, sizeof(mPreviousKeys));
+    memset(mCurrentMouse,  0, sizeof(mCurrentMouse));
+    memset(mPreviousMouse, 0, sizeof(mPreviousMouse));
     DIA_LOG_INFO("Application", "InputStreamModule::DoStart exit");
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
 void InputStreamModule::DoUpdate(float /*dt*/)
 {
-    memcpy(mPreviousKeys, mCurrentKeys, sizeof(mCurrentKeys));
+    memcpy(mPreviousKeys,  mCurrentKeys,  sizeof(mCurrentKeys));
+    memcpy(mPreviousMouse, mCurrentMouse, sizeof(mCurrentMouse));
 
     Dia::Core::Containers::DynamicArrayC<Dia::ApplicationFlow::Event<MainToSimEvent>, 64> events;
     mInput.Consume(events);
@@ -53,6 +58,18 @@ void InputStreamModule::DoUpdate(float /*dt*/)
             if (idx < kMaxKeys)
                 mCurrentKeys[idx] = false;
         }
+        else if (evt.type == InputEvent::EType::kMouseButtonPressed)
+        {
+            int btn = evt.mouseButton.button;
+            if (btn >= 0 && static_cast<unsigned int>(btn) < kMaxMouseButtons)
+                mCurrentMouse[btn] = true;
+        }
+        else if (evt.type == InputEvent::EType::kMouseButtonReleased)
+        {
+            int btn = evt.mouseButton.button;
+            if (btn >= 0 && static_cast<unsigned int>(btn) < kMaxMouseButtons)
+                mCurrentMouse[btn] = false;
+        }
         else if (evt.type == InputEvent::EType::kMouseMoved)
         {
             mMouseX = evt.mouseMove.x;
@@ -66,6 +83,8 @@ Dia::ApplicationFlow::StopResult InputStreamModule::DoStop()
     DIA_LOG_INFO("Application", "InputStreamModule::DoStop entry");
     memset(mCurrentKeys,  0, sizeof(mCurrentKeys));
     memset(mPreviousKeys, 0, sizeof(mPreviousKeys));
+    memset(mCurrentMouse,  0, sizeof(mCurrentMouse));
+    memset(mPreviousMouse, 0, sizeof(mPreviousMouse));
     return Dia::ApplicationFlow::StopResult::kDone;
 }
 
@@ -93,6 +112,24 @@ bool InputStreamModule::WasKeyReleased(Dia::Input::EKey key) const
     unsigned int idx = static_cast<unsigned int>(static_cast<int>(key));
     if (idx >= kMaxKeys) return false;
     return mPreviousKeys[idx] && !mCurrentKeys[idx];
+}
+
+bool InputStreamModule::IsMouseButtonDown(int button) const
+{
+    if (button < 0 || static_cast<unsigned int>(button) >= kMaxMouseButtons) return false;
+    return mCurrentMouse[button];
+}
+
+bool InputStreamModule::WasMouseButtonPressed(int button) const
+{
+    if (button < 0 || static_cast<unsigned int>(button) >= kMaxMouseButtons) return false;
+    return !mPreviousMouse[button] && mCurrentMouse[button];
+}
+
+bool InputStreamModule::WasMouseButtonReleased(int button) const
+{
+    if (button < 0 || static_cast<unsigned int>(button) >= kMaxMouseButtons) return false;
+    return mPreviousMouse[button] && !mCurrentMouse[button];
 }
 
 } } // namespace Cluiche::AppFlow

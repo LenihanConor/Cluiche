@@ -5,6 +5,12 @@
             "instance_id": "MainPU",
             "frequency_hz": 30,
             "dedicated_thread": false,
+            "modules": []
+        },
+        {
+            "instance_id": "SimPU",
+            "frequency_hz": 30,
+            "dedicated_thread": true,
             "modules": [
                 {
                     "instance_id": "Geometry2DTestStageModule",
@@ -13,17 +19,11 @@
                         "Geometry2DTestStage"
                     ],
                     "dependencies": [
-                        "AutomationModule"
+                        "PickingModule"
                     ],
                     "channels": []
                 }
             ]
-        },
-        {
-            "instance_id": "SimPU",
-            "frequency_hz": 30,
-            "dedicated_thread": true,
-            "modules": []
         }
     ]
 }

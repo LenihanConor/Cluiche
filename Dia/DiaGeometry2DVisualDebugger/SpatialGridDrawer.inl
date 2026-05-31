@@ -32,6 +32,8 @@ void SpatialGridDrawer<T, MaxObjects>::Draw(Dia::Graphics::FrameData& frameData)
     const float blX = worldBounds.GetBottomLeft().x;
     const float blY = worldBounds.GetBottomLeft().y;
 
+    static const Dia::Graphics::RGBA kSelectFill(100, 180, 255, 60);
+    static const Dia::Graphics::RGBA kSelectOutline(100, 180, 255, 200);
     const Dia::Graphics::RGBA colour = Dia::Debug::DebugColourPalette::kInactive;
 
     for (int cy = 0; cy < countY; ++cy)
@@ -42,10 +44,25 @@ void SpatialGridDrawer<T, MaxObjects>::Draw(Dia::Graphics::FrameData& frameData)
             const float minY = blY + static_cast<float>(cy)     * cellSize;
             const float maxX = blX + static_cast<float>(cx + 1) * cellSize;
             const float maxY = blY + static_cast<float>(cy + 1) * cellSize;
-            frameData.RequestDrawRect(
-                Dia::Maths::Vector2D(minX, minY),
-                Dia::Maths::Vector2D(maxX, maxY),
-                colour);
+
+            const bool selected = (mSelected != nullptr)
+                               && (cx == mSelected->x)
+                               && (cy == mSelected->y);
+
+            if (selected)
+            {
+                frameData.RequestDrawRect(
+                    Dia::Maths::Vector2D(minX, minY),
+                    Dia::Maths::Vector2D(maxX, maxY),
+                    kSelectOutline, kSelectFill);
+            }
+            else
+            {
+                frameData.RequestDrawRect(
+                    Dia::Maths::Vector2D(minX, minY),
+                    Dia::Maths::Vector2D(maxX, maxY),
+                    colour);
+            }
 
             if (mShowLabels)
             {
@@ -62,7 +79,36 @@ void SpatialGridDrawer<T, MaxObjects>::Draw(Dia::Graphics::FrameData& frameData)
 template<typename T, unsigned int MaxObjects>
 void SpatialGridDrawer<T, MaxObjects>::DrawImGui()
 {
-    ImGui::Checkbox("geometry.spatial_grid.coord.labels", &mShowLabels);
+    ImGui::Checkbox("coord labels", &mShowLabels);
+
+    // Inspector panel — read-only, selection is owned by the stage module
+    if (mSelected != nullptr)
+    {
+        ImGui::Separator();
+        ImGui::Text("cell (%d, %d)", mSelected->x, mSelected->y);
+
+        const float cellSize = mGrid.GetCellSize();
+        const float blX = mGrid.GetWorldBounds().GetBottomLeft().x;
+        const float blY = mGrid.GetWorldBounds().GetBottomLeft().y;
+        const float minX = blX + static_cast<float>(mSelected->x)     * cellSize;
+        const float minY = blY + static_cast<float>(mSelected->y)     * cellSize;
+        const float maxX = blX + static_cast<float>(mSelected->x + 1) * cellSize;
+        const float maxY = blY + static_cast<float>(mSelected->y + 1) * cellSize;
+        ImGui::Text("bounds  [%.0f,%.0f]-[%.0f,%.0f]", minX, minY, maxX, maxY);
+
+        const Dia::Maths::Vector2D cellCentre(
+            (minX + maxX) * 0.5f, (minY + maxY) * 0.5f);
+
+        Dia::Core::Containers::DynamicArrayC<
+            Dia::Core::Handle<T>,
+            Dia::Geometry2D::kMaxQueryResults> results;
+        mGrid.QueryPoint(cellCentre, results);
+
+        ImGui::Text("objects  %u", results.Size());
+        for (unsigned int i = 0; i < results.Size(); ++i)
+            ImGui::Text("  #%u: idx=%u gen=%u", i,
+                results[i].GetIndex(), results[i].GetGeneration());
+    }
 }
 
 } // namespace Dia::Geometry2DVisualDebugger

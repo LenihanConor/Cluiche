@@ -19,13 +19,14 @@ DebugUIModule::DebugUIModule(const Dia::Core::StringCRC& instanceId)
 Dia::ApplicationFlow::StartResult DebugUIModule::DoStart()
 {
     DIA_TRACE_ZONE("DebugUIModule.Start", Dia::Observation::Trace::Category::kDiaApplicationFlow);
-    DIA_LOG_INFO("Application", "DebugUIModule DoStart entry");
 
     if (Dia::ImGui::GetManager().GetBackend() == nullptr)
         return Dia::ApplicationFlow::StartResult::kLoading;
 
     if (!KernelModule::IsRenderContextActive())
         return Dia::ApplicationFlow::StartResult::kLoading;
+
+    DIA_LOG_INFO("Application", "DebugUIModule DoStart entry");
 
     Dia::Observation::Health::HealthRegistry::Instance().Register(&mHealth);
     mHealth.SetOK();

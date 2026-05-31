@@ -88,6 +88,7 @@ System spec: [teststages.md](specs/systems/cluichetest/teststages.md) (Approved)
 | 6b | Extract AutomationModuleBase into DiaAutomation | Evaluate from working code after 2+ apps use it |
 | 7 | CluicheEditor EditorAutomationModule | After 6b |
 | 9 | ~~DiaScreenCapture — frame grab for mock comparison~~ | **Specced** — split into two features: [frame-capture-readback](specs/features/dia/diabgfx/frame-capture-readback.md) (ICanvas async readback, DiaBgfx ring buffer) + [captures](specs/features/dia/diaobservation/captures.md) (6th observation pillar, PNG write to session). Both Approved with plans. |
+| 10 | **Eliminate remaining cross-PU statics** | `AutomationModule::GetStatic()`, `AssetServiceModule` static, `JobSystemModule::GetStatic()`, `VisualDebuggerModule::sLayerManager`. Migrate each to `ModuleRef` (move consumer to same PU) or `ServiceStream` (expose via stream). Policy: no new statics without sign-off. |
 
 ---
 
@@ -139,3 +140,4 @@ Spec Approved: [diaarchitecture.md](specs/systems/dia/diaarchitecture.md). C3 is
 | ~~DiaSoftBody2D serializers~~ | **Done** (2026-05-28) — `DiaSoftBody2DSerializers.h` ships `WorldDef`, `RopeDef`, `ClothDef`. Follows `DiaRigidBody2DSerializers.h` pattern exactly. Non-owning anchor/world pointers skipped (same convention as RigidBody2D). |
 | ~~Cross-PU data flow for debug UI~~ | **Folded into service-channel** — Shapes A+B+C all resolved in one feature (composite per PU-pair + ServiceStream). No follow-on features needed. |
 | RigidBody2DStage visual debug — circles not visible | Stage runs and times out but falling circles are not rendering on screen. Ground (huge circle) draws correctly. Coordinate system (Y-UP renderer, pixel-scale physics) and gravity direction are set but circles still don't appear. Possible issues: circles too small relative to viewport, draw order, or drawer not picking up dynamic bodies. Needs investigation with logging or breakpoints. |
+| Spatial cell inspector | [Spec Approved](specs/features/dia/diavisualdebugger/spatial-cell-inspector.md). SpatialGrid + HexGrid only. Click cell → highlight → ImGui inspector panel. Uses `ImGui::IsMouseClicked` in `DrawImGui()`. Duplicated per-drawer, no shared base. |

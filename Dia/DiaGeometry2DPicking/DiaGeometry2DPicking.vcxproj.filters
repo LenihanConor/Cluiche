@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Adapters">
+      <UniqueIdentifier>{B3C4D5E6-F7A8-9012-3456-789ABCDEF012}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="IPickable2D.h" />
+    <ClInclude Include="PickHit2D.h" />
+    <ClInclude Include="PickingService2D.h" />
+    <ClInclude Include="Adapters\HexGridPickable.h">
+      <Filter>Adapters</Filter>
+    </ClInclude>
+    <ClInclude Include="Adapters\SpatialGridPickable.h">
+      <Filter>Adapters</Filter>
+    </ClInclude>
+    <ClInclude Include="Adapters\ShapePickable.h">
+      <Filter>Adapters</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="PickingService2D.cpp" />
+    <ClCompile Include="Adapters\ShapePickable.cpp">
+      <Filter>Adapters</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

@@ -1,6 +1,5 @@
 #pragma once
 #include <DiaApplicationFlow/Module.h>
-#include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include "Modules/AutomationModule.h"
 
@@ -38,7 +37,8 @@ protected:
     Dia::Automation::AutomationService* GetAutomationService();
 
 private:
-    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::AutomationModule> mAutomation{this};
+    // AutomationModule is on MainPU; accessed cross-PU via static
+    // (ModuleRef only resolves within the same PU)
     unsigned int mFrameCount = 0;
     unsigned int mEntryCount = 0;
     bool mResolved = false;

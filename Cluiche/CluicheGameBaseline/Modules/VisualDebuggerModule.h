@@ -10,6 +10,7 @@
 #include <DiaGraphics/Frame/FrameData.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include "Modules/InputStreamModule.h"
+#include "Modules/CameraModule.h"
 #include <memory>
 
 namespace Dia::Debug
@@ -49,10 +50,8 @@ private:
     Dia::Graphics::FrameData mFrame;
     Dia::Core::StringCRC mLastKnownStage;
 
-    Dia::Graphics::Camera2D      mCamera;
-    Dia::Maths::Vector2D         mWindowSize{1400.0f, 1000.0f};
-
     Dia::ApplicationFlow::ModuleRef<InputStreamModule> mInputRef{this};
+    Dia::ApplicationFlow::ModuleRef<CameraModule>      mCameraRef{this};
 
     std::unique_ptr<Dia::Debug::Coord2DOriginDrawer> mCoord2DOriginDrawer;
     std::unique_ptr<Dia::Debug::Coord2DAxesDrawer>   mCoord2DAxesDrawer;

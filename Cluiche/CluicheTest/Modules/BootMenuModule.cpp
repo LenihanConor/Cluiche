@@ -22,11 +22,11 @@ BootMenuModule::BootMenuModule(const Dia::Core::StringCRC& instanceId)
 
 Dia::ApplicationFlow::StartResult BootMenuModule::DoStart()
 {
-    DIA_LOG_INFO("Application", "BootMenuModule DoStart entry");
-
     DebugUIModule* debugUI = mDebugUI.Get();
     if (debugUI == nullptr)
         return Dia::ApplicationFlow::StartResult::kLoading;
+
+    DIA_LOG_INFO("Application", "BootMenuModule DoStart entry");
 
     CacheNavigableStages();
 

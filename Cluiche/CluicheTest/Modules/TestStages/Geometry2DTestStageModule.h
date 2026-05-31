@@ -25,6 +25,13 @@
 #include <DiaGeometry2DVisualDebugger/QuadtreeDrawer.h>
 #include <DiaGeometry2DVisualDebugger/SpatialGridDrawer.h>
 #include <DiaGeometry2DVisualDebugger/HexGridDrawer.h>
+#include <DiaGeometry2DPicking/Adapters/HexGridPickable.h>
+#include <DiaGeometry2DPicking/Adapters/SpatialGridPickable.h>
+#include <DiaGeometry2DPicking/PickHit2D.h>
+#include <DiaPicking/PickEvent.h>
+#include <DiaMailbox/MailboxTypes.h>
+#include <DiaApplicationFlow/ModuleRefV2.h>
+#include "Modules/PickingModule.h"
 #include <memory>
 #endif
 
@@ -40,7 +47,7 @@ class Geometry2DTestStageModule : public TestStageModuleBase
 {
 public:
     static const Dia::Core::StringCRC kTypeId;
-    static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kMain;
+    static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kSim;
     static constexpr const char* kDescription = "Validates DiaGeometry2D: gallery of all shapes, 6 intersection pairs";
     explicit Geometry2DTestStageModule(const Dia::Core::StringCRC& instanceId);
 
@@ -84,6 +91,8 @@ private:
     // Spatial structures (debug only)
     using SpatialElem = unsigned int;
     static constexpr unsigned int kSpatialMax = 64;
+    static constexpr unsigned int kMaxScatterShapes = 24;
+    Dia::Core::Containers::DynamicArrayC<Dia::Geometry2D::AARect, kMaxScatterShapes> mSpatialScatter;
 
     std::unique_ptr<Dia::Geometry2D::BVH<SpatialElem, kSpatialMax>>         mBVH;
     std::unique_ptr<Dia::Geometry2D::Quadtree<SpatialElem, kSpatialMax>>    mQuadtree;
@@ -99,6 +108,20 @@ private:
     std::unique_ptr<Geometry2DLabelsDrawer>        mLabelsDrawer;
     std::unique_ptr<Geometry2DIntersectionsDrawer> mIntersectionsDrawer;
     std::unique_ptr<Geometry2DAABBDrawer>          mAABBDrawer;
+
+    // Picking — same PU (SimPU), accessed via ModuleRef
+    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::PickingModule> mPickingRef{this};
+    std::unique_ptr<Dia::Geometry2DPicking::HexGridPickable<SpatialElem, kSpatialMax>>     mHexGridPickable;
+    std::unique_ptr<Dia::Geometry2DPicking::SpatialGridPickable<SpatialElem, kSpatialMax>> mSpatialGridPickable;
+    Dia::Mailbox::SubscriberId     mPickSubscriberId{};
+    bool                           mPickingRegistered{ false };
+
+    // Selection state — owned here, passed by pointer to drawers each frame
+    bool                           mHasHexSelection{ false };
+    Dia::Geometry2D::HexCoord      mSelectedHex{ -1, -1 };
+    bool                           mHasSpatialSelection{ false };
+    Dia::Geometry2DVisualDebugger::SpatialGridDrawer<SpatialElem, kSpatialMax>::CellCoord
+                                   mSelectedCell{ -1, -1 };
 #endif
 };
 

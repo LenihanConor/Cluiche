@@ -33,6 +33,8 @@ namespace Cluiche { namespace AppFlow {
 const Dia::Core::StringCRC  KernelModule::kTypeId("KernelModule");
 std::atomic<bool>           KernelModule::sRenderContextReleased{false};
 std::atomic<bool>           KernelModule::sRenderContextActive{false};
+std::atomic<unsigned int>   KernelModule::sWindowWidth{1400};
+std::atomic<unsigned int>   KernelModule::sWindowHeight{1000};
 
 KernelModule::KernelModule(const Dia::Core::StringCRC& instanceId)
     : Module(instanceId)
@@ -90,6 +92,9 @@ Dia::ApplicationFlow::StartResult KernelModule::DoStart()
             }
         }
     }
+
+    sWindowWidth.store(mWindowWidth, std::memory_order_release);
+    sWindowHeight.store(mWindowHeight, std::memory_order_release);
 
     DIA_LOG_INFO("Application", "KernelModule: opening window '%s' %ux%u",
         mWindowTitle.AsCStr(), mWindowWidth, mWindowHeight);
