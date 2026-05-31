@@ -50,28 +50,21 @@ TEST_F(HexGridPickableFixture, GetPriority_MatchesConstructorPriority)
     EXPECT_EQ(pickable->GetPriority(), 5);
 }
 
-TEST_F(HexGridPickableFixture, TryPick_CellCentre_HitsValidCell)
+TEST_F(HexGridPickableFixture, TryPick_CellCentre_ReturnsExactCoord)
 {
-    // WorldToHex(HexToWorld(coord)) is not guaranteed to round-trip exactly —
-    // the hex coordinate math uses floor() which can drift at cell boundaries.
-    // We verify: a point at the world centre of a valid cell produces a hit
-    // with the correct kind and priority, and the returned cell is valid.
-    const Vector2D centre = grid->HexToWorld(HexCoord{0, 0});
-    PickHit2D hit;
-    EXPECT_TRUE(pickable->TryPick(centre, hit));
-    EXPECT_EQ(hit.kind, PickHit2D::Kind::kHexCell);
-    EXPECT_EQ(hit.priority, 5);
-    EXPECT_TRUE(grid->IsValidHex(hit.hexCell));
-}
-
-TEST_F(HexGridPickableFixture, TryPick_AnotherCell_ReturnsValidCell)
-{
-    // Verify that picking the centre of a valid cell returns a valid cell coord.
-    const Vector2D centre = grid->HexToWorld(HexCoord{2, 3});
-    PickHit2D hit;
-    EXPECT_TRUE(pickable->TryPick(centre, hit));
-    EXPECT_EQ(hit.kind, PickHit2D::Kind::kHexCell);
-    EXPECT_TRUE(grid->IsValidHex(hit.hexCell));
+    // WorldToHex(HexToWorld({q,r})) must round-trip exactly for all cells.
+    // Clicking the drawn centre must select that specific cell, not a neighbour.
+    for (int r = 0; r < 5; ++r)
+    {
+        for (int q = 0; q < 5; ++q)
+        {
+            const Vector2D centre = grid->HexToWorld(HexCoord{q, r});
+            PickHit2D hit;
+            EXPECT_TRUE(pickable->TryPick(centre, hit));
+            EXPECT_EQ(hit.hexCell.q, q) << "round-trip failed for q=" << q << " r=" << r;
+            EXPECT_EQ(hit.hexCell.r, r) << "round-trip failed for q=" << q << " r=" << r;
+        }
+    }
 }
 
 TEST_F(HexGridPickableFixture, TryPick_FarOutside_Misses)

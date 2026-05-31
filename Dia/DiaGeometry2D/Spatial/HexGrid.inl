@@ -492,9 +492,11 @@ HexCoord HexGrid<T, MaxObjects>::WorldToHex(const Dia::Maths::Vector2D& worldPos
     const float fr = ly / (mHexHeight * 0.75f);
     const int   r  = static_cast<int>(std::floor(fr + 0.5f));
 
-    // Column offset: odd rows shift centers right by hexWidth/2
+    // Column offset: odd rows shift centers right by hexWidth/2.
+    // HexToWorld centers each column with an additional hexWidth*0.5 offset,
+    // so subtract that too before computing the fractional column.
     const float rowShift = ((r & 1) != 0) ? (mHexWidth * 0.5f) : 0.0f;
-    const float lx = worldPos.x - mOrigin.x - rowShift;
+    const float lx = worldPos.x - mOrigin.x - rowShift - mHexWidth * 0.5f;
     const int   q  = static_cast<int>(std::floor(lx / mHexWidth + 0.5f));
 
     return { q, r };
