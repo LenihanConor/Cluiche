@@ -484,8 +484,9 @@ template<typename T, unsigned int MaxObjects>
 HexCoord HexGrid<T, MaxObjects>::WorldToHex(const Dia::Maths::Vector2D& worldPos) const
 {
     // Pointy-top, odd-row-right offset coordinates.
-    // Row (r) is determined purely by y; column (q) then depends on row parity.
-    const float ly = worldPos.y - mOrigin.y;
+    // HexToWorld places row r's center at: origin.y + r * hexHeight * 0.75 + hexRadius
+    // So invert that: subtract the hexRadius offset before computing the fractional row.
+    const float ly = worldPos.y - mOrigin.y - mHexRadius;
 
     // Fractional row: each row is separated by mHexHeight * 0.75
     const float fr = ly / (mHexHeight * 0.75f);
