@@ -142,9 +142,9 @@ TEST_F(CaptureManagerTest, RequestCapture_SessionNotStarted_ReturnsRejected)
 }
 
 // ---------------------------------------------------------------------------
-// T6-4  Canvas returns invalid token → kRejected_RingFull
+// T6-4  Canvas returns invalid token during RenderTick → item never reaches in-flight
 // ---------------------------------------------------------------------------
-TEST_F(CaptureManagerTest, RequestCapture_InvalidToken_ReturnsRingFull)
+TEST_F(CaptureManagerTest, RequestCapture_InvalidToken_NeverReachesInFlight)
 {
     session.Start(MakeConfig(), MakeMinimalObs());
 
@@ -154,17 +154,19 @@ TEST_F(CaptureManagerTest, RequestCapture_InvalidToken_ReturnsRingFull)
     mgr.Initialize(&canvas, &session);
 
     CaptureRequestStatus status = mgr.RequestCapture(MakeMetadata());
-    EXPECT_EQ(status, CaptureRequestStatus::kRejected_RingFull);
+    EXPECT_EQ(status, CaptureRequestStatus::kAccepted);
+
+    mgr.RenderTick();
+    EXPECT_EQ(mgr.GetPendingCount(), 0u);
 }
 
 // ---------------------------------------------------------------------------
-// T6-5  Happy path → kAccepted + count increments
+// T6-5  Happy path → kAccepted + RenderTick moves to in-flight
 // ---------------------------------------------------------------------------
 TEST_F(CaptureManagerTest, RequestCapture_Accepted_IncrementsCount)
 {
     session.Start(MakeConfig(), MakeMinimalObs());
 
-    // pendingResult defaults to kInvalidToken status — Tick won't complete it
     canvas.pendingResult.status = Dia::Graphics::FrameCaptureResult::Status::kPending;
 
     CaptureManager mgr;
@@ -172,6 +174,8 @@ TEST_F(CaptureManagerTest, RequestCapture_Accepted_IncrementsCount)
 
     CaptureRequestStatus status = mgr.RequestCapture(MakeMetadata());
     EXPECT_EQ(status, CaptureRequestStatus::kAccepted);
+
+    mgr.RenderTick();
     EXPECT_EQ(mgr.GetPendingCount(), 1u);
 }
 
@@ -188,6 +192,7 @@ TEST_F(CaptureManagerTest, Tick_PendingResult_KeepsInFlight)
     mgr.Initialize(&canvas, &session);
 
     mgr.RequestCapture(MakeMetadata());
+    mgr.RenderTick();
     ASSERT_EQ(mgr.GetPendingCount(), 1u);
 
     mgr.Tick();
@@ -207,9 +212,9 @@ TEST_F(CaptureManagerTest, Tick_FailedResult_RemovesFromFlight)
     mgr.Initialize(&canvas, &session);
 
     mgr.RequestCapture(MakeMetadata());
+    mgr.RenderTick();
     ASSERT_EQ(mgr.GetPendingCount(), 1u);
 
-    // Switch poll response to kFailed so next Tick removes the slot
     canvas.returnReady = false;
     canvas.pendingResult.status = Dia::Graphics::FrameCaptureResult::Status::kFailed;
 
@@ -230,6 +235,7 @@ TEST_F(CaptureManagerTest, Tick_InvalidTokenResult_RemovesFromFlight)
     mgr.Initialize(&canvas, &session);
 
     mgr.RequestCapture(MakeMetadata());
+    mgr.RenderTick();
     ASSERT_EQ(mgr.GetPendingCount(), 1u);
 
     canvas.pendingResult.status = Dia::Graphics::FrameCaptureResult::Status::kInvalidToken;
@@ -239,7 +245,7 @@ TEST_F(CaptureManagerTest, Tick_InvalidTokenResult_RemovesFromFlight)
 }
 
 // ---------------------------------------------------------------------------
-// T6  All kMaxInFlight slots filled — 5th RequestCapture returns kRejected_RingFull
+// T6  All kMaxInFlight slots filled — next RenderTick rejects overflow
 // ---------------------------------------------------------------------------
 TEST_F(CaptureManagerTest, RequestCapture_InternalRingFull_ReturnsRejected)
 {
@@ -250,17 +256,21 @@ TEST_F(CaptureManagerTest, RequestCapture_InternalRingFull_ReturnsRejected)
     CaptureManager mgr;
     mgr.Initialize(&canvas, &session);
 
-    // Fill all kMaxInFlight (4) slots
+    // Fill all kMaxInFlight (4) slots via RenderTick
     for (unsigned int i = 0; i < 4; ++i)
     {
         CaptureRequestStatus status = mgr.RequestCapture(MakeMetadata());
         ASSERT_EQ(status, CaptureRequestStatus::kAccepted) << "Slot " << i;
+        mgr.RenderTick();
     }
     ASSERT_EQ(mgr.GetPendingCount(), 4u);
 
-    // 5th request — internal ring full
+    // 5th request is accepted into pending queue but RenderTick drops it
     CaptureRequestStatus overflow = mgr.RequestCapture(MakeMetadata());
-    EXPECT_EQ(overflow, CaptureRequestStatus::kRejected_RingFull);
+    EXPECT_EQ(overflow, CaptureRequestStatus::kAccepted);
+
+    mgr.RenderTick();
+    EXPECT_EQ(mgr.GetPendingCount(), 4u);
 }
 
 // ---------------------------------------------------------------------------
@@ -275,18 +285,18 @@ TEST_F(CaptureManagerTest, MultipleInFlight_OneFailsOneTick_CountCorrect)
     CaptureManager mgr;
     mgr.Initialize(&canvas, &session);
 
-    // Queue 3 captures
+    // Queue 3 captures and flush them to in-flight
     for (unsigned int i = 0; i < 3; ++i)
     {
         CaptureRequestStatus s = mgr.RequestCapture(MakeMetadata());
         ASSERT_EQ(s, CaptureRequestStatus::kAccepted) << "Request " << i;
     }
+    mgr.RenderTick();
     ASSERT_EQ(mgr.GetPendingCount(), 3u);
 
-    // Tick with kFailed — all 3 slots poll kFailed simultaneously (mock returns same result for all)
+    // Tick with kFailed — all 3 slots poll kFailed simultaneously
     canvas.pendingResult.status = Dia::Graphics::FrameCaptureResult::Status::kFailed;
     mgr.Tick();
 
-    // All 3 removed
     EXPECT_EQ(mgr.GetPendingCount(), 0u);
 }
