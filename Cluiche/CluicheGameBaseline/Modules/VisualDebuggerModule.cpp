@@ -105,20 +105,18 @@ void VisualDebuggerModule::RegisterCoord2DDrawers()
 
 void VisualDebuggerModule::UnregisterCoord2DDrawers()
 {
-    if (mCoord2DOriginDrawer)
-    {
-        mLayerManager.Unregister(mCoord2DOriginDrawer->GetLayerName());
-        mLayerManager.Unregister(mCoord2DAxesDrawer->GetLayerName());
-        mLayerManager.Unregister(mCoord2DGridDrawer->GetLayerName());
-        mLayerManager.Unregister(mCoord2DBoundsDrawer->GetLayerName());
-        mLayerManager.Unregister(mCoord2DCursorDrawer->GetLayerName());
-
-        mCoord2DOriginDrawer.reset();
-        mCoord2DAxesDrawer.reset();
-        mCoord2DGridDrawer.reset();
-        mCoord2DBoundsDrawer.reset();
-        mCoord2DCursorDrawer.reset();
-    }
+    // Do NOT call mLayerManager.Unregister() here. At DoStop time, other modules
+    // that registered drawers (e.g. Geometry2DTestStageModule) may already have
+    // freed their drawer objects without unregistering (because ModuleRef returns
+    // nullptr for kStopping targets). Calling Unregister() would iterate mLayers
+    // and call GetLayerName() through those dangling pointers.
+    // Since mLayerManager is owned by this module and is being destroyed, just
+    // reset the coord2d drawer unique_ptrs directly.
+    mCoord2DOriginDrawer.reset();
+    mCoord2DAxesDrawer.reset();
+    mCoord2DGridDrawer.reset();
+    mCoord2DBoundsDrawer.reset();
+    mCoord2DCursorDrawer.reset();
 }
 
 } } // namespace Cluiche::AppFlow

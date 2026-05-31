@@ -51,6 +51,7 @@ Dia::ApplicationFlow::StopResult Physics2DModule::DoStop()
 #ifdef DIA_DEBUG
     if (mShapesDrawer)
     {
+        // Only unregister if VisualDebuggerModule is still active (concurrent stop).
         if (auto* vd = mVisualDebuggerRef.Get())
         {
             auto& mgr = vd->GetLayerManager();

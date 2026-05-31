@@ -236,6 +236,10 @@ void Geometry2DTestStageModule::OnStop()
 
     if (mShapesDrawer)
     {
+        // Only attempt to unregister if VisualDebuggerModule is still active.
+        // On stage exit both modules stop concurrently — if VDM is already kStopping,
+        // ModuleRef returns nullptr and we skip unregistration; VDM destroys its
+        // DebugLayerManager on its own DoStop path.
         if (auto* vd = mVisualDebuggerRef.Get())
         {
             auto& mgr = vd->GetLayerManager();
