@@ -27,9 +27,6 @@ public:
 
     Dia::Automation::AutomationService* GetService() { return mService.Get(); }
 
-    // Temporary cross-PU accessor for modules not yet on ServiceStream (TestStageModuleBase).
-    static AutomationModule* GetStatic() { return sInstance; }
-
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
     void DoUpdate(float dt) override;
@@ -38,10 +35,8 @@ protected:
 
 private:
     Dia::Core::UniquePtr<Dia::Automation::AutomationService> mService;
-    // ServiceStreamWriter stored via forward-declared pointer to avoid pulling
-    // Application.h into every TU that includes AutomationModule.h.
+    // Heap-allocated to avoid pulling Application.h into every TU via AutomationService.h
     Dia::ApplicationFlow::ServiceStreamWriter<Dia::Automation::AutomationService>* mAutomationServiceStream = nullptr;
-    static AutomationModule* sInstance;
 };
 
 } } // namespace Cluiche::AppFlow

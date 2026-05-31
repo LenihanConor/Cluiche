@@ -1,9 +1,11 @@
 #pragma once
 #include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaRigidBody2D/World/WorldDef.h>
 
 #ifdef DIA_DEBUG
+#include "Modules/VisualDebuggerModule.h"
 #include <memory>
 #endif
 
@@ -40,6 +42,8 @@ private:
     Dia::RigidBody2D::WorldDef mWorldDef;
 
 #ifdef DIA_DEBUG
+    Dia::ApplicationFlow::ModuleRef<VisualDebuggerModule> mVisualDebuggerRef{this};
+
     void RegisterDrawers();
 
     std::unique_ptr<Dia::RigidBody2D::PhysicsShapesDrawer>   mShapesDrawer;

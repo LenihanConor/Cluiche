@@ -97,6 +97,12 @@
             "kind": "ServiceStream",
             "payload_type": "AutomationService",
             "from": "MainPU"
+        },
+        {
+            "id": "DebugLayerManager",
+            "kind": "ServiceStream",
+            "payload_type": "DebugLayerManager",
+            "from": "SimPU"
         }
     ],
     "processing_units": [
@@ -344,6 +350,10 @@
                         {
                             "id": "SimToRender",
                             "role": "writes"
+                        },
+                        {
+                            "id": "DebugLayerManager",
+                            "role": "provides"
                         }
                     ]
                 }
@@ -404,7 +414,12 @@
                     "dependencies": [
                         "DebugUI"
                     ],
-                    "channels": []
+                    "channels": [
+                        {
+                            "id": "DebugLayerManager",
+                            "role": "consumes"
+                        }
+                    ]
                 },
                 {
                     "instance_id": "AssetRuntimeVisualDebuggerModule",
@@ -415,7 +430,12 @@
                     "dependencies": [
                         "DebugUI"
                     ],
-                    "channels": []
+                    "channels": [
+                        {
+                            "id": "DebugLayerManager",
+                            "role": "consumes"
+                        }
+                    ]
                 },
                 {
                     "instance_id": "AssetRuntimeHUDModule",

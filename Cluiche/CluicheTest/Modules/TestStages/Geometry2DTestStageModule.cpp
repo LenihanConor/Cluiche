@@ -4,7 +4,6 @@
 #include "Modules/TestStages/Drawers/Geometry2DShapesDrawer.h"
 #include "Modules/TestStages/Drawers/Geometry2DLabelsDrawer.h"
 #include "Modules/TestStages/Drawers/Geometry2DAABBDrawer.h"
-#include "Modules/VisualDebuggerModule.h"
 #include <DiaGeometry2D/Shapes/Ray.h>
 #include <DiaPicking/PickEvent.h>
 #include <DiaPicking/PickAddress.h>
@@ -108,8 +107,9 @@ void Geometry2DTestStageModule::OnUpdate(float /*deltaTime*/)
 #ifdef DIA_DEBUG
     if (!mShapesDrawer)
     {
-        if (auto* mgr = Cluiche::AppFlow::VisualDebuggerModule::GetStaticLayerManager())
+        if (auto* vd = mVisualDebuggerRef.Get())
         {
+            auto* mgr = &vd->GetLayerManager();
             const Dia::Core::StringCRC stageTag("Geometry2D");
 
             mShapesDrawer = std::make_unique<Geometry2DShapesDrawer>(
@@ -236,21 +236,22 @@ void Geometry2DTestStageModule::OnStop()
 
     if (mShapesDrawer)
     {
-        if (auto* mgr = Cluiche::AppFlow::VisualDebuggerModule::GetStaticLayerManager())
+        if (auto* vd = mVisualDebuggerRef.Get())
         {
-            mgr->Unregister(mShapesDrawer->GetLayerName());
-            mgr->Unregister(mLabelsDrawer->GetLayerName());
-            mgr->Unregister(mIntersectionsDrawer->GetLayerName());
-            mgr->Unregister(mAABBDrawer->GetLayerName());
+            auto& mgr = vd->GetLayerManager();
+            mgr.Unregister(mShapesDrawer->GetLayerName());
+            mgr.Unregister(mLabelsDrawer->GetLayerName());
+            mgr.Unregister(mIntersectionsDrawer->GetLayerName());
+            mgr.Unregister(mAABBDrawer->GetLayerName());
 
             if (mBVHDrawer)
-                mgr->Unregister(mBVHDrawer->GetLayerName());
+                mgr.Unregister(mBVHDrawer->GetLayerName());
             if (mQuadtreeDrawer)
-                mgr->Unregister(mQuadtreeDrawer->GetLayerName());
+                mgr.Unregister(mQuadtreeDrawer->GetLayerName());
             if (mSpatialGridDrawer)
-                mgr->Unregister(mSpatialGridDrawer->GetLayerName());
+                mgr.Unregister(mSpatialGridDrawer->GetLayerName());
             if (mHexGridDrawer)
-                mgr->Unregister(mHexGridDrawer->GetLayerName());
+                mgr.Unregister(mHexGridDrawer->GetLayerName());
         }
         mShapesDrawer.reset();
         mLabelsDrawer.reset();

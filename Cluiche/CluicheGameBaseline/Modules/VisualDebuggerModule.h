@@ -5,6 +5,7 @@
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/Streams/StreamWriter.h>
+#include <DiaApplicationFlow/Streams/ServiceStreamWriter.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaGraphics/Frame/FrameData.h>
@@ -33,7 +34,6 @@ public:
     explicit VisualDebuggerModule(const Dia::Core::StringCRC& instanceId);
 
     Dia::Debug::DebugLayerManager& GetLayerManager() { return mLayerManager; }
-    static Dia::Debug::DebugLayerManager* GetStaticLayerManager() { return sLayerManager; }
 
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
@@ -47,6 +47,7 @@ private:
 
     Dia::Debug::DebugLayerManager mLayerManager;
     Dia::ApplicationFlow::StreamWriter<Dia::Graphics::FrameData> mRenderOutput{this, "SimToRender"};
+    Dia::ApplicationFlow::ServiceStreamWriter<Dia::Debug::DebugLayerManager> mLayerManagerService{this, "DebugLayerManager"};
     Dia::Graphics::FrameData mFrame;
     Dia::Core::StringCRC mLastKnownStage;
 
@@ -58,8 +59,6 @@ private:
     std::unique_ptr<Dia::Debug::Coord2DGridDrawer>   mCoord2DGridDrawer;
     std::unique_ptr<Dia::Debug::Coord2DBoundsDrawer> mCoord2DBoundsDrawer;
     std::unique_ptr<Dia::Debug::Coord2DCursorDrawer> mCoord2DCursorDrawer;
-
-    static Dia::Debug::DebugLayerManager* sLayerManager;
 };
 
 } } // namespace Cluiche::AppFlow

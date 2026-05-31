@@ -16,7 +16,6 @@ template class Dia::ApplicationFlow::ServiceStreamWriter<Dia::Automation::Automa
 namespace Cluiche { namespace AppFlow {
 
 const Dia::Core::StringCRC AutomationModule::kTypeId("AutomationModule");
-AutomationModule* AutomationModule::sInstance = nullptr;
 
 AutomationModule::AutomationModule(const Dia::Core::StringCRC& instanceId)
     : Module(instanceId)
@@ -40,7 +39,6 @@ Dia::ApplicationFlow::StartResult AutomationModule::DoStart()
     mService->RegisterCommands();
     mService->EnableNavigationHold();
 
-    sInstance = this;
     mAutomationServiceStream->Register(*mService);
 
     DIA_LOG_INFO("Automation", "AutomationModule started — hold active, commands registered");
@@ -55,7 +53,6 @@ void AutomationModule::DoUpdate(float dt)
 
 Dia::ApplicationFlow::StopResult AutomationModule::DoStop()
 {
-    sInstance = nullptr;
     mService.Reset();
     DIA_LOG_INFO("Automation", "AutomationModule stopped");
     return Dia::ApplicationFlow::StopResult::kDone;

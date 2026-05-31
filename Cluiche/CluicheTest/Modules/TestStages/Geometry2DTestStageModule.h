@@ -32,6 +32,7 @@
 #include <DiaMailbox/MailboxTypes.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include "Modules/PickingModule.h"
+#include "Modules/VisualDebuggerModule.h"
 #include <memory>
 #endif
 
@@ -109,8 +110,9 @@ private:
     std::unique_ptr<Geometry2DIntersectionsDrawer> mIntersectionsDrawer;
     std::unique_ptr<Geometry2DAABBDrawer>          mAABBDrawer;
 
-    // Picking — same PU (SimPU), accessed via ModuleRef
-    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::PickingModule> mPickingRef{this};
+    // Same-PU (SimPU) module refs
+    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::PickingModule>          mPickingRef{this};
+    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::VisualDebuggerModule>   mVisualDebuggerRef{this};
     std::unique_ptr<Dia::Geometry2DPicking::HexGridPickable<SpatialElem, kSpatialMax>>     mHexGridPickable;
     std::unique_ptr<Dia::Geometry2DPicking::SpatialGridPickable<SpatialElem, kSpatialMax>> mSpatialGridPickable;
     Dia::Mailbox::SubscriberId     mPickSubscriberId{};

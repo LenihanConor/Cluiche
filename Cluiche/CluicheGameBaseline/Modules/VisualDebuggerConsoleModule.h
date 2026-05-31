@@ -5,9 +5,10 @@
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
+#include <DiaApplicationFlow/Streams/ServiceStreamReader.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaVisualDebuggerConsole/DiaVisualDebuggerConsole.h>
-#include "Modules/VisualDebuggerModule.h"
 #include "Modules/DebugUIModule.h"
 
 namespace Cluiche { namespace AppFlow {
@@ -27,9 +28,11 @@ protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
     void DoUpdate(float dt) override;
     Dia::ApplicationFlow::StopResult DoStop() override;
+    void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 
 private:
     Dia::ApplicationFlow::ModuleRef<DebugUIModule> mDebugUI{this, Dia::Core::StringCRC("DebugUI")};
+    Dia::ApplicationFlow::ServiceStreamReader<Dia::Debug::DebugLayerManager> mLayerManagerStream{this, "DebugLayerManager"};
 
     Dia::Debug::DiaVisualDebuggerConsole mConsole;
 };

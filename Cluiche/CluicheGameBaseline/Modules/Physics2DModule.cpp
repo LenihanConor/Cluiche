@@ -1,5 +1,4 @@
 #include "Modules/Physics2DModule.h"
-#include "Modules/VisualDebuggerModule.h"
 
 #include <DiaRigidBody2D/World/PhysicsWorld.h>
 #include <DiaObservation/Log/DiaLog.h>
@@ -52,14 +51,14 @@ Dia::ApplicationFlow::StopResult Physics2DModule::DoStop()
 #ifdef DIA_DEBUG
     if (mShapesDrawer)
     {
-        auto* mgr = VisualDebuggerModule::GetStaticLayerManager();
-        if (mgr)
+        if (auto* vd = mVisualDebuggerRef.Get())
         {
-            mgr->Unregister(mShapesDrawer->GetLayerName());
-            mgr->Unregister(mVelocityDrawer->GetLayerName());
-            mgr->Unregister(mContactsDrawer->GetLayerName());
-            mgr->Unregister(mAABBDrawer->GetLayerName());
-            mgr->Unregister(mConstraintsDrawer->GetLayerName());
+            auto& mgr = vd->GetLayerManager();
+            mgr.Unregister(mShapesDrawer->GetLayerName());
+            mgr.Unregister(mVelocityDrawer->GetLayerName());
+            mgr.Unregister(mContactsDrawer->GetLayerName());
+            mgr.Unregister(mAABBDrawer->GetLayerName());
+            mgr.Unregister(mConstraintsDrawer->GetLayerName());
         }
         mShapesDrawer.reset();
         mVelocityDrawer.reset();
@@ -78,23 +77,24 @@ Dia::ApplicationFlow::StopResult Physics2DModule::DoStop()
 #ifdef DIA_DEBUG
 void Physics2DModule::RegisterDrawers()
 {
-    auto* mgr = VisualDebuggerModule::GetStaticLayerManager();
-    if (!mgr)
+    auto* vd = mVisualDebuggerRef.Get();
+    if (!vd)
         return;
 
+    auto& mgr = vd->GetLayerManager();
     const Dia::Core::StringCRC stageTag("RigidBody2D");
 
-    mShapesDrawer      = std::make_unique<Dia::RigidBody2D::PhysicsShapesDrawer>(*mWorld, *mgr);
-    mVelocityDrawer    = std::make_unique<Dia::RigidBody2D::VelocityArrowsDrawer>(*mWorld, *mgr);
-    mContactsDrawer    = std::make_unique<Dia::RigidBody2D::ContactNormalsDrawer>(*mWorld, *mgr);
-    mAABBDrawer        = std::make_unique<Dia::RigidBody2D::PhysicsAABBDrawer>(*mWorld, *mgr);
-    mConstraintsDrawer = std::make_unique<Dia::RigidBody2D::ConstraintLinesDrawer>(*mWorld, *mgr);
+    mShapesDrawer      = std::make_unique<Dia::RigidBody2D::PhysicsShapesDrawer>(*mWorld, mgr);
+    mVelocityDrawer    = std::make_unique<Dia::RigidBody2D::VelocityArrowsDrawer>(*mWorld, mgr);
+    mContactsDrawer    = std::make_unique<Dia::RigidBody2D::ContactNormalsDrawer>(*mWorld, mgr);
+    mAABBDrawer        = std::make_unique<Dia::RigidBody2D::PhysicsAABBDrawer>(*mWorld, mgr);
+    mConstraintsDrawer = std::make_unique<Dia::RigidBody2D::ConstraintLinesDrawer>(*mWorld, mgr);
 
-    mgr->Register(mShapesDrawer.get(),      10, stageTag);
-    mgr->Register(mVelocityDrawer.get(),    11, stageTag);
-    mgr->Register(mContactsDrawer.get(),    12, stageTag);
-    mgr->Register(mAABBDrawer.get(),        13, stageTag);
-    mgr->Register(mConstraintsDrawer.get(), 14, stageTag);
+    mgr.Register(mShapesDrawer.get(),      10, stageTag);
+    mgr.Register(mVelocityDrawer.get(),    11, stageTag);
+    mgr.Register(mContactsDrawer.get(),    12, stageTag);
+    mgr.Register(mAABBDrawer.get(),        13, stageTag);
+    mgr.Register(mConstraintsDrawer.get(), 14, stageTag);
 }
 #endif
 

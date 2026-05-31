@@ -19,7 +19,8 @@
                         "Geometry2DTestStage"
                     ],
                     "dependencies": [
-                        "PickingModule"
+                        "PickingModule",
+                        "VisualDebuggerModule"
                     ],
                     "channels": [
                         {

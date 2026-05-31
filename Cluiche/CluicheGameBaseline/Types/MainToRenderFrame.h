@@ -5,8 +5,7 @@
 
 namespace Cluiche { namespace AppFlow {
 
-// Heartbeat/presence status forwarded from AutomationModule to RenderPU.
-// Replaces direct AutomationModule::GetStatic() cross-PU access.
+// Heartbeat/presence status forwarded from AutomationModule (MainPU) to RenderPU.
 struct AutomationStatus
 {
     bool heartbeatEnabled = false;

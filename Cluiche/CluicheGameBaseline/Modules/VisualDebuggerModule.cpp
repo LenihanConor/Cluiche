@@ -15,8 +15,6 @@
 
 namespace Cluiche { namespace AppFlow {
 
-Dia::Debug::DebugLayerManager* VisualDebuggerModule::sLayerManager = nullptr;
-
 const Dia::Core::StringCRC VisualDebuggerModule::kTypeId("VisualDebuggerModule");
 
 VisualDebuggerModule::VisualDebuggerModule(const Dia::Core::StringCRC& instanceId)
@@ -25,7 +23,7 @@ VisualDebuggerModule::VisualDebuggerModule(const Dia::Core::StringCRC& instanceI
 
 Dia::ApplicationFlow::StartResult VisualDebuggerModule::DoStart()
 {
-    sLayerManager = &mLayerManager;
+    mLayerManagerService.Register(mLayerManager);
     mLayerManager.SetDebugScale(50.0f);
     mLayerManager.RegisterDiaAPICommands();
     RegisterCoord2DDrawers();
@@ -81,6 +79,7 @@ Dia::ApplicationFlow::StopResult VisualDebuggerModule::DoStop()
 void VisualDebuggerModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 {
     mRenderOutput.Connect(app);
+    mLayerManagerService.Connect(app);
 }
 
 void VisualDebuggerModule::RegisterCoord2DDrawers()

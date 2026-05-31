@@ -2,6 +2,7 @@
 
 #ifdef DIA_DEBUG
 
+#include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaApplicationFlow/IApplicationControl.h>
@@ -19,7 +20,7 @@ VisualDebuggerConsoleModule::VisualDebuggerConsoleModule(const Dia::Core::String
 
 Dia::ApplicationFlow::StartResult VisualDebuggerConsoleModule::DoStart()
 {
-    if (!VisualDebuggerModule::GetStaticLayerManager())
+    if (!mLayerManagerStream.IsAvailable())
         return Dia::ApplicationFlow::StartResult::kLoading;
     if (!mDebugUI.Get())
         return Dia::ApplicationFlow::StartResult::kLoading;
@@ -38,8 +39,7 @@ void VisualDebuggerConsoleModule::DoUpdate(float /*dt*/)
     if (!mDebugUI.Get() || !mDebugUI.Get()->IsFrameActive())
         return;
 
-    auto* mgr = VisualDebuggerModule::GetStaticLayerManager();
-    if (!mgr)
+    if (!mLayerManagerStream.IsAvailable())
         return;
 
     Dia::Core::StringCRC currentStage;
@@ -47,13 +47,18 @@ void VisualDebuggerConsoleModule::DoUpdate(float /*dt*/)
         currentStage = app->GetCurrentStage();
 
     static Dia::Graphics::DebugFrameData sEmptyFrameData;
-    mConsole.Render(*mgr, sEmptyFrameData, currentStage);
+    mConsole.Render(mLayerManagerStream.Get(), sEmptyFrameData, currentStage);
 }
 
 Dia::ApplicationFlow::StopResult VisualDebuggerConsoleModule::DoStop()
 {
     DIA_LOG_INFO("Debug", "VisualDebuggerConsoleModule stopped");
     return Dia::ApplicationFlow::StopResult::kDone;
+}
+
+void VisualDebuggerConsoleModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
+{
+    mLayerManagerStream.Connect(app);
 }
 
 } } // namespace Cluiche::AppFlow

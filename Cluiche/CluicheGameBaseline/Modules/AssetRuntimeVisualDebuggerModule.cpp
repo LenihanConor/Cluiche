@@ -2,8 +2,7 @@
 
 #ifdef DIA_DEBUG
 
-#include "Modules/VisualDebuggerModule.h"
-
+#include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaObservation/Log/DiaLog.h>
@@ -23,15 +22,11 @@ Dia::ApplicationFlow::StartResult AssetRuntimeVisualDebuggerModule::DoStart()
 
     if (!mRegistered)
     {
-        if (auto* mgr = VisualDebuggerModule::GetStaticLayerManager())
-        {
-            mgr->Register(&mDebugger, 50, Dia::Core::StringCRC("AssetRuntimeTestStage"));
-            mRegistered = true;
-        }
-        else
-        {
+        if (!mLayerManagerStream.IsAvailable())
             return Dia::ApplicationFlow::StartResult::kLoading;
-        }
+
+        mLayerManagerStream.Get().Register(&mDebugger, 50, Dia::Core::StringCRC("AssetRuntimeTestStage"));
+        mRegistered = true;
     }
 
     return Dia::ApplicationFlow::StartResult::kReady;
@@ -43,14 +38,16 @@ void AssetRuntimeVisualDebuggerModule::DoUpdate(float /*dt*/)
 
 Dia::ApplicationFlow::StopResult AssetRuntimeVisualDebuggerModule::DoStop()
 {
-    if (mRegistered)
-    {
-        if (auto* mgr = VisualDebuggerModule::GetStaticLayerManager())
-            mgr->Unregister(mDebugger.GetLayerName());
-        mRegistered = false;
-    }
+    if (mRegistered && mLayerManagerStream.IsAvailable())
+        mLayerManagerStream.Get().Unregister(mDebugger.GetLayerName());
 
+    mRegistered = false;
     return Dia::ApplicationFlow::StopResult::kDone;
+}
+
+void AssetRuntimeVisualDebuggerModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
+{
+    mLayerManagerStream.Connect(app);
 }
 
 } } // namespace Cluiche::AppFlow
