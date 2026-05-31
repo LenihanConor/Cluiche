@@ -88,7 +88,10 @@ System spec: [teststages.md](specs/systems/cluichetest/teststages.md) (Approved)
 | 6b | Extract AutomationModuleBase into DiaAutomation | Evaluate from working code after 2+ apps use it |
 | 7 | CluicheEditor EditorAutomationModule | After 6b |
 | 9 | ~~DiaScreenCapture — frame grab for mock comparison~~ | **Specced** — split into two features: [frame-capture-readback](specs/features/dia/diabgfx/frame-capture-readback.md) (ICanvas async readback, DiaBgfx ring buffer) + [captures](specs/features/dia/diaobservation/captures.md) (6th observation pillar, PNG write to session). Both Approved with plans. |
-| 10 | **Eliminate remaining cross-PU statics** | `AutomationModule::GetStatic()`, `AssetServiceModule` static, `JobSystemModule::GetStatic()`, `VisualDebuggerModule::sLayerManager`. Migrate each to `ModuleRef` (move consumer to same PU) or `ServiceStream` (expose via stream). Policy: no new statics without sign-off. |
+| 10 | **Eliminate remaining cross-PU statics** | 4 statics → 2 done, 2 planned. See sub-items below. Policy: no new statics without sign-off. |
+| 10a | ~~`JobSystemModule::GetStatic()`~~ | **Done** (2026-05-30) — replaced with `ModuleRef<JobSystemModule>` in `KernelModule`. Same PU (MainPU). |
+| 10b | `AutomationModule::GetStatic()` + `AssetServiceModule::GetStatic()` | Plan ready: [eliminate-asset-service-static.plan.md](plans/eliminate-asset-service-static.plan.md) — 12 tasks. `MainStateProducerModule` already migrated to `ModuleRef` (same PU). Cross-PU consumers (`TestStageModuleBase`) still use `GetStatic()` — ServiceStream replaces it. `TestAssetRuntimeStageModule` moves to SimPU. |
+| 10c | `VisualDebuggerModule::sLayerManager` | Plan ready: [eliminate-visualdebugger-static.plan.md](plans/eliminate-visualdebugger-static.plan.md) — 11 tasks. Phase A: SimPU consumers → ModuleRef. Phase B: RenderPU consumers via EventStream registration + FrameStream metadata. `Physics2DModule` moves to SimPU. |
 
 ---
 
