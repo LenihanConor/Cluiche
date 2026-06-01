@@ -5,6 +5,7 @@
     "scenarios": [
         "scenarios/cluichetest/boot/test_boot_smoke.py",
         "scenarios/cluichetest/test_all_stages.py",
-        "scenarios/cluichetest/uiultralight/test_ui_ultralight.py"
+        "scenarios/cluichetest/uiultralight/test_ui_ultralight.py",
+        "scenarios/cluichetest/softbody2d/test_softbody2d_settle.py"
     ]
 }

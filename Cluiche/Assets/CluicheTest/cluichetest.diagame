@@ -45,6 +45,10 @@
         {
             "path": "stages/EntityTestStage/entity_test_stage.diastage",
             "type": "stage"
+        },
+        {
+            "path": "stages/SoftBody2DTestStage/softbody2d_test_stage.diastage",
+            "type": "stage"
         }
     ],
     "name": "CluicheTest",

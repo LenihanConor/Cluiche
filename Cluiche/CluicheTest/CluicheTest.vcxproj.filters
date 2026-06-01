@@ -50,6 +50,9 @@
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClCompile>
     <ClCompile Include="Modules\TestStages\TestStageHUDModule.cpp">
+    <ClCompile Include="Modules\TestStages\SoftBody2DTestStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
     <ClCompile Include="Modules\TestStages\EntityTestStageModule.cpp">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClCompile>
@@ -125,6 +128,9 @@
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClInclude>
     <ClInclude Include="Modules\TestStages\TestStageHUDModule.h">
+    <ClInclude Include="Modules\TestStages\SoftBody2DTestStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
     <ClInclude Include="Modules\TestStages\EntityTestStageModule.h">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClInclude>

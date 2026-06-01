@@ -340,6 +340,31 @@
             "tags": [
                 "misc/ApplicationFlow"
             ]
+        },
+        {
+            "id": "stage.softbody2d_test_stage",
+            "type": "stage",
+            "source_path": "../Stages/SoftBody2DTestStage/softbody2d_test_stage.diastage",
+            "scope": "global",
+            "tags": [
+                "misc"
+            ],
+            "references": [
+                {
+                    "type": "contains",
+                    "target": "manifest.softbody2d_test_stage"
+                }
+            ]
+        },
+        {
+            "id": "manifest.softbody2d_test_stage",
+            "type": "manifest",
+            "source_path": "../Stages/SoftBody2DTestStage/misc/ApplicationFlow/softbody2d_test_stage.diaapp",
+            "scope": "stage",
+            "stage_name": "SoftBody2DTestStage",
+            "tags": [
+                "misc/ApplicationFlow"
+            ]
         }
     ]
 }

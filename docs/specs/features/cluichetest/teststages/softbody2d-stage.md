@@ -49,6 +49,11 @@ This stage satisfies AC-S1 through AC-S9 as defined in the [Infrastructure spec]
 | AC-SB6 | Stage completes within 400 frames (13.3s at 30Hz) | Orchestrator timeout |
 | AC-SB7 | Repeated runs produce identical settle frame counts ±0 | Determinism (AC-S7) |
 | AC-SB8 | All particles and constraints destroyed in DoStop | No leaks |
+| AC-SB9 | ImGui drawer shows a toggle checkbox enabling/disabling the SoftBody2DTestStage | Visual — checkbox visible; no checkpoint details in ImGui |
+| AC-SB10 | UIUltra panel is persistent (always visible while stage runs) and shows per-checkpoint pass/fail badges (rope_settled ✓, cloth_settled ✓) | Visual against mockup |
+| AC-SB11 | HUD bottom bar shows: stage name \| checkpoint badges \| frame counter \| PASS/FAIL/TIMEOUT status \| ✕ exit button | Visual — matches visual-feedback spec AC-VF1–VF8, AC-VF14–VF15 |
+
+**Visual mockup:** [@docs/specs/features/cluichetest/teststages/softbody2d-stage.mockup.html](softbody2d-stage.mockup.html) — open in a browser for visual acceptance gate reference.
 
 ## Design
 
@@ -91,9 +96,10 @@ static constexpr float kVelocityEpsilon = 0.001f;
 
 bool IsRopeSettled() const
 {
-    for (const auto& particle : mRopeParticles)
+    for (int i = 0; i < mRope->GetParticleCount(); ++i)
     {
-        if (particle.GetVelocity().LengthSquared() > kVelocityEpsilon * kVelocityEpsilon)
+        const auto vel = Dia::SoftBody2D::DeriveVelocity(mRope->GetParticle(i), kFixedDt);
+        if (vel.LengthSquared() > kVelocityEpsilon * kVelocityEpsilon)
             return false;
     }
     return true;
@@ -129,18 +135,13 @@ private:
 
     Dia::ApplicationFlow::ModuleRef<AutomationModule> mAutomation{this};
 
-    // Rope
-    Dia::Core::Containers::DynamicArrayC<Dia::SoftBody2D::Particle, 12> mRopeParticles;
-    Dia::SoftBody2D::ConstraintGroup* mRopeConstraints = nullptr;
-    Dia::RigidBody2D::BodyHandle mRopeAnchorBody;
+    // World (owns all bodies)
+    Dia::SoftBody2D::SoftBodyWorld* mWorld = nullptr;
+    Dia::RigidBody2D::PhysicsWorld* mRBWorld = nullptr; // for rope anchor coupling
 
-    // Cloth
-    Dia::Core::Containers::DynamicArrayC<Dia::SoftBody2D::Particle, 16> mClothParticles;
-    Dia::SoftBody2D::ConstraintGroup* mClothStructural = nullptr;
-    Dia::SoftBody2D::ConstraintGroup* mClothShear = nullptr;
-
-    // Solver
-    Dia::SoftBody2D::Solver* mSolver = nullptr;
+    // Body handles (non-owning — world owns)
+    Dia::SoftBody2D::Rope*  mRope  = nullptr;
+    Dia::SoftBody2D::Cloth* mCloth = nullptr;
 
     // Tracking
     unsigned int mFrameCount = 0;
@@ -150,7 +151,7 @@ private:
     bool mClothSettled = false;
 
     static constexpr float kVelocityEpsilon = 0.001f;
-    static constexpr unsigned int kSolverIterations = 4;
+    static constexpr float kFixedDt = 1.0f / 30.0f;
 };
 
 } // namespace CluicheTest
@@ -178,7 +179,7 @@ void SoftBody2DStageModule::DoUpdate(float deltaTime)
 {
     ++mFrameCount;
 
-    mSolver->Step(deltaTime, kSolverIterations);
+    mWorld->Update(deltaTime);
 
     if (!mRopeSettled && IsRopeSettled())
     {
@@ -246,24 +247,26 @@ def test_softbody2d_rope_and_cloth_settle(dia_client):
 | `Cluiche/Assets/Stages/SoftBody2DStage/softbody2d_stage.diastage` | New — stage declaration |
 | `Cluiche/Assets/CluicheTest/cluichetest.diagame` | Add import for SoftBody2D stage |
 | `Tools/orchestrator/scenarios/cluichetest/softbody2d/test_softbody2d_settle.py` | New — pytest scenario |
+| `Cluiche/Assets/Stages/SoftBody2DStage/Presentation/UI/softbody2d_test.html` | New — UIUltra panel (persistent, checkpoint pass/fail display) |
 | `Tools/orchestrator/plans/cluichetest/default.json` | Add scenario to plan |
 
 ## Tasks
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 1 | Create SoftBody2DStageModule (.h/.cpp) | Compiles, module registered | Todo | sonnet | |
-| 2 | Implement SetupRope: 12 particles + chain constraints + RB anchor | Rope created, anchor coupled | Todo | sonnet | Static RB at (0,6), distance constraints |
-| 3 | Implement SetupCloth: 4x4 grid + structural/shear constraints + corner pins | Cloth created, corners pinned | Todo | sonnet | Structural + shear, 2 pinned particles |
-| 4 | Implement DoUpdate: solver step + settle detection | Both checkpoints eventually pass | Todo | sonnet | Step then check velocities |
-| 5 | Implement DoStop: destroy particles, constraints, solver, anchor body | No leaks | Todo | haiku | |
-| 6 | Register checkpoints + emit metrics | Checkpoints queryable, metrics available after settle | Todo | haiku | |
-| 7 | Create stage manifest files (.diastage + .diaapp) | Stage appears in stages list | Todo | haiku | transitions: ["Boot"] |
-| 8 | Add stage import to cluichetest.diagame | Stage navigable from Boot | Todo | haiku | |
-| 9 | Add vcxproj + filters entries | Builds in VS | Todo | haiku | |
-| 10 | Write pytest scenario | Both checkpoints pass, rope < cloth ordering confirmed | Todo | sonnet | |
-| 11 | Add scenario to plan JSON | `--list` shows softbody2d scenario | Todo | haiku | |
-| 12 | Verify: full E2E pass (Boot → Stage → both settle → Boot) | Orchestrator green | Todo | sonnet | Requires Infrastructure complete |
+| 1 | Scaffold stage via `dia scaffold stage SoftBody2D` | Stage dirs + manifest stubs created | Todo | haiku | Creates .diastage, .diaapp, vcxproj stub |
+| 2 | Create SoftBody2DStageModule (.h/.cpp): DoStart/DoUpdate/DoStop stubs, kTypeId, DIA_MODULE | Compiles, module registered | Todo | sonnet | SimPU; ModuleRef<AutomationModule> |
+| 3 | Implement SetupRope: `SoftBodyWorld::AddRope(RopeDef{...})` — 12 particles, startAnchor = static RB at (0,6) | Rope created, anchor body coupled | Todo | sonnet | Use `RopeDef.startAnchor`; create `PhysicsWorld` + static body for anchor |
+| 4 | Implement SetupCloth: `SoftBodyWorld::AddCloth(ClothDef{...})` — 4x4 grid, `pinTopRow=false`, `PinParticle(0,0)` + `PinParticle(3,0)` | Cloth created, corners pinned | Todo | sonnet | `ClothDef.resX=4, resY=4`; pin top-left + top-right |
+| 5 | Implement DoUpdate: `mWorld->Update(dt)`, settle detection via `DeriveVelocity()` < epsilon | Both checkpoints eventually pass | Todo | sonnet | Use `DeriveVelocity(particle, dt)` helper; emit metrics once cloth settles |
+| 6 | Implement DoStop: `RemoveBody()` + destroy world | No leaks | Todo | haiku | |
+| 7 | Register checkpoints (`soft_body.rope_settled`, `soft_body.cloth_settled`) + metrics | Checkpoints queryable; metrics emitted | Todo | haiku | Registered in DoStart |
+| 8 | Create `softbody2d_test.html` UIUltra panel — persistent, shows checkpoint pass/fail badges | Open in browser — matches mockup | Todo | sonnet | Alpine.js; rope_settled + cloth_settled badges |
+| 9 | Wire UIUltra panel to stage module (load page via UIModule, update checkpoint state) | Panel shows live pass/fail as stage runs | Todo | sonnet | Follows UIUltralight stage pattern |
+| 10 | Add vcxproj + filters entries | Clean build | Todo | haiku | |
+| 11 | Write pytest scenario | Both checkpoints pass, rope_frame < cloth_frame confirmed | Todo | sonnet | |
+| 12 | Add scenario to plan JSON | `--list` shows softbody2d | Todo | haiku | |
+| 13 | Verify: `dia run cluichetest` — visual check against mockup; all checkpoints PASS; orchestrator green | Manual visual gate + no ERROR logs | Todo | sonnet | |
 
 ## Dependencies
 
@@ -302,8 +305,10 @@ None.
 | 3 | Velocity Epsilon | Is 0.001 appropriate for both rope and cloth? | Yes — both use the same units and similar damping. 0.001 m/s is effectively at rest. If cloth oscillates around this threshold, increase damping slightly. The test is about convergence, not threshold tuning. |
 | 4 | Cloth Shear Constraints | Are shear constraints necessary for settling or just visual? | Necessary for stability. Without shear, the grid can collapse into a line (degenerate configuration). Shear constraints maintain the 2D shape and ensure a stable rest pose exists. |
 | 5 | Metrics Timing | Metrics emit when cloth settles (the slower one). What about rope metrics? | `EmitMetrics()` is called once when cloth settles (the last to finish). It emits all 3 metrics at that point — both settle frame counts are already stored. No need for separate emission points. |
-| 6 | Dependencies | Does DiaSoftBody2D exist today with the required API? | Verify before implementation. If the particle/constraint/solver API doesn't exist yet, this stage becomes blocked on DiaSoftBody2D implementation. The spec assumes the API shape — actual names may differ. |
+| 6 | Dependencies | Does DiaSoftBody2D exist today with the required API? | **Confirmed** — `SoftBodyWorld`, `Rope`/`Cloth`/`Particle`, `RopeDef`/`ClothDef`, `DeriveVelocity()` all present. `SoftBodyWorld::Update()` drives the solver. `RopeDef.startAnchor` wires rigid body coupling. `Cloth::PinParticle(x,y)` pins corner particles. No blockers. |
 
 ## Status
 
 `Approved` — 2026-05-22
+
+**Plan:** [softbody2d-stage.plan.md](softbody2d-stage.plan.md)

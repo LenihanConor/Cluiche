@@ -30,6 +30,7 @@
     <ClCompile Include="Modules\TestStages\AssetRuntimeRendererModule.cpp" />
     <ClCompile Include="Modules\TestStages\AssetRuntimeHUDModule.cpp" />
     <ClCompile Include="Modules\TestStages\TestStageHUDModule.cpp" />
+    <ClCompile Include="Modules\TestStages\SoftBody2DTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\EntityTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\Entity\TransformComponent.cpp" />
     <ClCompile Include="Modules\TestStages\Entity\VisualTestRenderComponent.cpp" />
@@ -56,6 +57,7 @@
     <ClInclude Include="Modules\TestStages\AssetRuntimeRendererModule.h" />
     <ClInclude Include="Modules\TestStages\AssetRuntimeHUDModule.h" />
     <ClInclude Include="Modules\TestStages\TestStageHUDModule.h" />
+    <ClInclude Include="Modules\TestStages\SoftBody2DTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\EntityTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\Entity\TransformComponent.h" />
     <ClInclude Include="Modules\TestStages\Entity\VisualTestRenderComponent.h" />
@@ -147,6 +149,12 @@
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaGeometry2DVisualDebugger\DiaGeometry2DVisualDebugger.vcxproj">
       <Project>{D4E5F6A7-B8C9-0123-DEF0-234567890123}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaSoftBody2D\DiaSoftBody2D.vcxproj">
+      <Project>{D2E3F4A5-B6C7-8901-DEFC-112233445566}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaSoftBody2DVisualDebugger\DiaSoftBody2DVisualDebugger.vcxproj">
+      <Project>{B2C3D4E5-F6A7-8901-BCDE-F12345678901}</Project>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
