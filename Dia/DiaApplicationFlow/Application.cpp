@@ -1150,22 +1150,10 @@ namespace Dia { namespace ApplicationFlow {
                 Json::Value result;
                 Json::Value stagesArr(Json::arrayValue);
 
-                const Dia::Core::StringCRC bootId("Boot");
-                for (unsigned int i = 0; i < mManifest.stages.Size(); ++i)
-                {
-                    const StageDeclaration& decl = mManifest.stages[i];
-                    bool reachableFromBoot = false;
-                    for (unsigned int t = 0; t < decl.transitions.Size(); ++t)
-                    {
-                        if (decl.transitions[t] == bootId)
-                        {
-                            reachableFromBoot = true;
-                            break;
-                        }
-                    }
-                    if (reachableFromBoot)
-                        stagesArr.append(decl.name.AsChar());
-                }
+                Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16> targets;
+                GetStageTransitions(Dia::Core::StringCRC("Boot"), targets);
+                for (unsigned int i = 0; i < targets.Size(); ++i)
+                    stagesArr.append(targets[i].AsChar());
 
                 result["stages"] = stagesArr;
                 return result;

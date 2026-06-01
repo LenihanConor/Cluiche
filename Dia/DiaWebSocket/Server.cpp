@@ -192,6 +192,8 @@ namespace Dia
 				Dia::Core::ScopedLock<Dia::Core::Mutex> outLock(mOutgoingMutex);
 				Dia::Core::ScopedLock<Dia::Core::Mutex> connLock(mConnectionsMutex);
 
+				Dia::Core::Containers::DynamicArrayC<int, 16> deadConnections;
+
 				for (unsigned int i = 0; i < mOutgoingQueue.Size(); ++i)
 				{
 					const Internal::OutgoingMessage& msg = mOutgoingQueue.At(i);
@@ -211,9 +213,12 @@ namespace Dia
 									msg.dataLength,
 									opcode);
 							}
-							catch (const std::exception& e)
+							catch (const std::exception&)
 							{
-								DIA_LOG_ERROR("WebSocket", "Server: Send failed: %s", e.what());
+								if (!deadConnections.IsFull())
+								{
+									deadConnections.Add(pair.first);
+								}
 							}
 						}
 					}
@@ -229,15 +234,34 @@ namespace Dia
 									msg.dataLength,
 									opcode);
 							}
-							catch (const std::exception& e)
+							catch (const std::exception&)
 							{
-								DIA_LOG_ERROR("WebSocket", "Server: Send failed: %s", e.what());
+								if (!deadConnections.IsFull())
+								{
+									deadConnections.Add(msg.connectionId);
+								}
 							}
 						}
 					}
 				}
 
 				mOutgoingQueue.RemoveAll();
+
+				for (unsigned int i = 0; i < deadConnections.Size(); ++i)
+				{
+					int connId = deadConnections.At(i);
+					auto it = mConnectionsById.find(connId);
+					if (it != mConnectionsById.end())
+					{
+						try
+						{
+							mConnectionIdByPtr.erase(it->second.lock().get());
+						}
+						catch (...) {}
+						mConnectionsById.erase(it);
+					}
+					DIA_LOG_WARNING("WebSocket", "Server: Removed stale connection %d", connId);
+				}
 			}
 
 			void WorkerThreadMain()

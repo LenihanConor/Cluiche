@@ -387,6 +387,26 @@ namespace Dia { namespace Automation {
             };
             Dia::API::RegisterCommandJson(cmd);
         }
+        // dia.automation.list_checkpoints
+        {
+            Dia::API::CommandInfoJson cmd;
+            cmd.name        = Dia::Core::StringCRC("dia.automation.list_checkpoints");
+            cmd.description = "List all currently registered checkpoint names";
+            cmd.category    = Dia::Core::StringCRC("dia.automation");
+            cmd.owner       = "DiaAutomation";
+            cmd.callback    = [this](const Json::Value&) -> Json::Value {
+                ResetHeartbeat();
+                Json::Value data;
+                Json::Value arr(Json::arrayValue);
+                for (unsigned int i = 0; i < mCheckpoints.Size(); ++i)
+                {
+                    arr.append(mCheckpoints[i].name.AsChar());
+                }
+                data["checkpoints"] = arr;
+                return data;
+            };
+            Dia::API::RegisterCommandJson(cmd);
+        }
         // dia.automation.get_metric
         {
             Dia::API::CommandInfoJson cmd;

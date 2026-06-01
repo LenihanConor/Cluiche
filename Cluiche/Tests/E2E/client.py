@@ -183,6 +183,16 @@ class DiaClient:
             return value.get("mean", 0)
         return value
 
+    def list_stages(self) -> list:
+        """Return the list of stages navigable from Boot."""
+        result = self.send_command("dia.manifest.stages")
+        return result.get("stages", [])
+
+    def list_checkpoints(self) -> list:
+        """Return checkpoint names registered for the current stage."""
+        result = self.send_command("dia.automation.list_checkpoints")
+        return result.get("checkpoints", [])
+
     def pause(self) -> dict:
         return self.send_command("dia.automation.pause")
 
