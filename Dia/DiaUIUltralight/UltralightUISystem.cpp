@@ -302,6 +302,41 @@ namespace Dia
 				}
 
 				// LoadListener
+
+				// Fires before any page scripts run. Install a queuing proxy for `app` so
+				// that calls made from DOMContentLoaded handlers don't throw "app is not
+				// defined". Any void call made before OnDOMReady is queued in app.__q and
+				// replayed once the real C++ bindings are attached.
+				// Return-value calls (GetTestValue etc.) made before OnDOMReady return
+				// undefined — queue them after window.onload if you need the return value.
+				virtual void OnWindowObjectReady(::ultralight::View* caller, uint64_t /*frame_id*/,
+					bool is_main_frame, const ::ultralight::String& /*url*/) override
+				{
+					if (!is_main_frame) return;
+
+					auto jsCtx = caller->LockJSContext();
+					::ultralight::SetJSContext(jsCtx->ctx());
+
+					// Install a Proxy that queues any property access as a callable stub.
+					// Queued entries: { n: methodName, a: argsArray }
+					// OnDOMReady will replace window.app with the real object and drain __q.
+					const char* kProxyScript =
+						"window.app = new Proxy({__q:[]}, {"
+						"  get: function(t,p) {"
+						"    if (p === '__q') return t.__q;"
+						"    return function() {"
+						"      t.__q.push({n:p, a:Array.prototype.slice.call(arguments)});"
+						"      return undefined;"
+						"    };"
+						"  }"
+						"});";
+
+					caller->EvaluateScript(::ultralight::String(kProxyScript));
+				}
+
+				// Fires after DOM is parsed and before window.onload. Replace the queuing
+				// proxy with the real `app` object bound to C++ methods, then replay any
+				// void calls that were queued during DOMContentLoaded.
 				virtual void OnDOMReady(::ultralight::View* caller, uint64_t /*frame_id*/,
 					bool is_main_frame, const ::ultralight::String& /*url*/) override
 				{
@@ -310,11 +345,22 @@ namespace Dia
 					auto jsCtx = caller->LockJSContext();
 					::ultralight::SetJSContext(jsCtx->ctx());
 
-					// Create the global 'app' object and bind all methods
+					// Capture the pending queue before replacing app
 					::ultralight::JSObject global = ::ultralight::JSGlobalObject();
+					::ultralight::JSArray pendingQueue;
+					{
+						::ultralight::JSValue existing = global["app"];
+						if (existing.IsObject())
+						{
+							::ultralight::JSObject existingObj = existing.ToObject();
+							::ultralight::JSValue q = existingObj["__q"];
+							if (q.IsArray())
+								pendingQueue = q.ToArray();
+						}
+					}
 
+					// Build the real app object with all C++ bindings
 					::ultralight::JSObject appObj;
-					// JSPropertyValue doesn't accept JSObject directly — assign via JSObjectRef cast to JSValue
 					global["app"] = ::ultralight::JSValue(static_cast<JSObjectRef>(appObj));
 
 					for (auto& binding : mPendingBindings)
@@ -365,6 +411,39 @@ namespace Dia
 									return ::ultralight::JSValue();
 								}
 							});
+					}
+
+					// Drain the queue: replay any void calls made before bindings were ready.
+					// Return-value calls are skipped (their return was already undefined).
+					unsigned qLen = pendingQueue.length();
+					for (unsigned i = 0; i < qLen; ++i)
+					{
+						::ultralight::JSValue entry = pendingQueue[i];
+						if (!entry.IsObject()) continue;
+						::ultralight::JSObject entryObj = entry.ToObject();
+
+						::ultralight::JSValue nameVal = entryObj["n"];
+						::ultralight::JSValue argsVal = entryObj["a"];
+						if (!nameVal.IsString()) continue;
+
+						::ultralight::String methodNameStr = nameVal.ToString();
+						std::string methodName = methodNameStr.utf8().data();
+						::ultralight::JSValue methodVal = appObj[methodName.c_str()];
+						if (!methodVal.IsObject()) continue;
+
+						// Build JSArgs from the stored array
+						::ultralight::JSArgs callArgs;
+						if (argsVal.IsArray())
+						{
+							::ultralight::JSArray arr = argsVal.ToArray();
+							unsigned aLen = arr.length();
+							for (unsigned j = 0; j < aLen; ++j)
+								callArgs.push_back(arr[j]);
+						}
+
+						// JSFunction (not JSObject) has operator() for invocation
+						::ultralight::JSFunction fn = methodVal;
+						fn(appObj, callArgs);
 					}
 				}
 

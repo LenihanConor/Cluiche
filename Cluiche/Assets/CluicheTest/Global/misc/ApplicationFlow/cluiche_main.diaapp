@@ -314,8 +314,7 @@
                     "instance_id": "LoadingScreenModule",
                     "type_id": "LoadingScreenModule",
                     "stages": [
-                        "Boot",
-                        "UIUltralightTestStage"
+                        "Boot"
                     ],
                     "dependencies": [],
                     "channels": [
@@ -337,6 +336,24 @@
                     ],
                     "dependencies": [],
                     "channels": []
+                },
+                {
+                    "instance_id": "UICompositeModule",
+                    "type_id": "UICompositeModule",
+                    "stages": [
+                        "UIUltralightTestStage"
+                    ],
+                    "dependencies": [],
+                    "channels": [
+                        {
+                            "id": "UIToSim",
+                            "role": "reads"
+                        },
+                        {
+                            "id": "SimToRender",
+                            "role": "writes"
+                        }
+                    ]
                 },
                 {
                     "instance_id": "PickingModule",

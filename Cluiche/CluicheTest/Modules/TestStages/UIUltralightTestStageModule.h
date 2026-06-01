@@ -4,6 +4,7 @@
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/Strings/String64.h>
 #include "Modules/UIModule.h"
 
 namespace Dia { namespace Observation { namespace Metric { class Gauge; } } }
@@ -25,6 +26,9 @@ public:
     void OnPageReady() override;
     void OnButtonClicked() override;
     void ReportReceivedValue(const Dia::UI::BoundMethodArgs& args) override;
+    void OnSliderChanged(const Dia::UI::BoundMethodArgs& args) override;
+    int  GetStatusFlags() override;
+    Dia::Core::Containers::String64 GetLiveMetrics() override;
 
 protected:
     Dia::Core::StringCRC GetStageName() const override;
@@ -50,6 +54,7 @@ private:
 
     unsigned int mFramesUntilLoaded = 0;
     unsigned int mRoundTripCount    = 0;
+    int          mSliderValue       = 50;
 
     // Persists across entries for determinism check
     unsigned int mRun1FramesUntilLoaded = 0;

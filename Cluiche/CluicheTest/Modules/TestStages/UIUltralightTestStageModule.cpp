@@ -6,7 +6,7 @@
 #include <DiaUI/IUISystem.h>
 #include <DiaUI/UIDataBuffer.h>
 #include <DiaInput/EMouseButton.h>
-#include <cstdlib>
+#include <cstdio>
 
 namespace CluicheTest {
 
@@ -55,6 +55,7 @@ void UIUltralightTestStageModule::OnStart(Dia::Automation::AutomationService* se
     mMouseInjected       = false;
     mFramesUntilLoaded   = 0;
     mRoundTripCount      = 0;
+    mSliderValue         = 50;
 
     mPage.InitializePage();
     mUI->LoadPage(mPage);
@@ -211,6 +212,36 @@ void UIUltralightTestStageModule::ReportReceivedValue(const Dia::UI::BoundMethod
             mRoundTripCount++;
         }
     }
+}
+
+void UIUltralightTestStageModule::OnSliderChanged(const Dia::UI::BoundMethodArgs& args)
+{
+    if (args.Size() > 0 && args.At(0).IsDouble())
+        mSliderValue = static_cast<int>(args.At(0).GetDouble());
+    else if (args.Size() > 0 && args.At(0).IsInteger())
+        mSliderValue = args.At(0).GetInteger();
+}
+
+int UIUltralightTestStageModule::GetStatusFlags()
+{
+    int flags = 0;
+    if (mPageLoaded)          flags |= (1 << 0);
+    if (mPageReadyFired)      flags |= (1 << 1);
+    if (mButtonClickedFired)  flags |= (1 << 2);
+    if (mRoundTripCorrect)    flags |= (1 << 3);
+    if (mPixelBufferNonEmpty) flags |= (1 << 4);
+    if (mMouseClickHandled)   flags |= (1 << 5);
+    return flags;
+}
+
+Dia::Core::Containers::String64 UIUltralightTestStageModule::GetLiveMetrics()
+{
+    // Format: "frame=N,load=N,trips=N,slider=N"
+    // String64 is 64 chars — keep values compact.
+    char buf[64];
+    snprintf(buf, sizeof(buf), "frame=%u,load=%u,trips=%u,slider=%d",
+        GetFrameCount(), mFramesUntilLoaded, mRoundTripCount, mSliderValue);
+    return Dia::Core::Containers::String64(buf);
 }
 
 } // namespace CluicheTest

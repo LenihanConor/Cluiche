@@ -4,75 +4,226 @@
 <meta charset="UTF-8" />
 <title>UIUltralight Test</title>
 <style>
+  * { box-sizing: border-box; }
   body {
     margin: 0; padding: 0;
     background: transparent;
     font-family: monospace;
-    font-size: 13px;
+    font-size: 12px;
     color: #e0e0e0;
   }
   #panel {
     position: fixed;
     top: 16px; right: 16px;
-    width: 290px;
-    background: rgba(20,20,30,0.88);
-    border: 1px solid #444;
-    border-radius: 6px;
-    padding: 12px 14px;
-    box-sizing: border-box;
+    width: 300px;
+    background: rgba(14,16,26,0.92);
+    border: 1px solid #3a4060;
+    border-radius: 7px;
+    padding: 12px 14px 14px;
   }
-  h3 { margin: 0 0 8px; font-size: 14px; color: #adf; }
-  .row { margin: 3px 0; }
-  .label { color: #888; }
-  .ok { color: #5f5; }
-  .pending { color: #fa5; }
+  h3 { margin: 0 0 10px; font-size: 13px; color: #88bbff; letter-spacing: 0.04em; }
+  .section { margin-top: 10px; border-top: 1px solid #252840; padding-top: 8px; }
+  .section-title { font-size: 11px; color: #668; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 5px; }
+  .row { margin: 3px 0; display: flex; justify-content: space-between; }
+  .lbl { color: #778; }
+  .ok  { color: #55ee88; }
+  .bad { color: #ee6644; }
+  .dim { color: #556; }
+
+  /* Bridge status button */
   #btn {
     display: block; width: 100%;
-    margin-top: 10px; padding: 7px;
-    background: #335; border: 1px solid #66a;
-    color: #ccf; border-radius: 4px; cursor: pointer;
-    font-family: monospace; font-size: 13px;
+    margin-top: 8px; padding: 6px 8px;
+    background: #1e2240; border: 1px solid #445090;
+    color: #99aaff; border-radius: 4px; cursor: pointer;
+    font-family: monospace; font-size: 12px; text-align: left;
   }
-  #btn.clicked { background: #253; border-color: #5a5; color: #afa; }
-  .section { margin-top: 10px; border-top: 1px solid #333; padding-top: 6px; }
+  #btn.clicked { background: #1a3020; border-color: #448844; color: #66ee88; }
+
+  /* Status table */
+  table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+  td { padding: 2px 0; font-size: 11px; }
+  td:last-child { text-align: right; }
+
+  /* Progress bar */
+  .bar-track {
+    height: 6px; background: #1a1e30; border-radius: 3px; margin-top: 6px; overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%; background: linear-gradient(90deg, #4488ff, #44ffaa);
+    border-radius: 3px; transition: width 0.4s ease;
+  }
+  .bar-label { font-size: 11px; color: #778; margin-top: 3px; text-align: right; }
+
+  /* Slider */
+  #slider {
+    width: 100%; margin-top: 6px; accent-color: #4488ff;
+    cursor: pointer;
+  }
+  .slider-readout { display: flex; justify-content: space-between; margin-top: 2px; }
+
+  /* Live metrics */
+  .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; margin-top: 4px; }
+  .metric-box {
+    background: #0e1020; border: 1px solid #252840; border-radius: 4px;
+    padding: 4px 6px;
+  }
+  .metric-val { font-size: 15px; color: #88ddff; font-weight: bold; }
+  .metric-lbl { font-size: 10px; color: #556; }
 </style>
 </head>
 <body>
 <div id="panel">
   <h3>UIUltralight Test Panel</h3>
-  <div class="row"><span class="label">OnPageReady: </span><span id="status-ready" class="pending">pending</span></div>
-  <button id="btn" onclick="handleButtonClick()">Click me</button>
+
+  <!-- Bridge status -->
+  <div class="section-title">Bridge status</div>
+  <div class="row">
+    <span class="lbl">OnPageReady</span>
+    <span id="s-ready" class="dim">pending</span>
+  </div>
+  <button id="btn" onclick="handleButtonClick()">Click me → OnButtonClicked</button>
+  <div class="row" style="margin-top:6px">
+    <span class="lbl">Round-trip value</span>
+    <span id="s-rt" class="dim">—</span>
+  </div>
+
+  <!-- Live metrics (C++ → JS poll) -->
   <div class="section">
-    <div class="row"><span class="label">Round-trip:</span></div>
-    <div class="row"><span class="label">&nbsp;&nbsp;C++ sent: </span><span id="rt-sent">—</span></div>
-    <div class="row"><span class="label">&nbsp;&nbsp;JS echoed: </span><span id="rt-echo">—</span><span id="rt-ok" class="ok" style="display:none"> ✓</span></div>
+    <div class="section-title">Live metrics</div>
+    <div class="metric-grid">
+      <div class="metric-box">
+        <div class="metric-val" id="m-frame">—</div>
+        <div class="metric-lbl">frame</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-val" id="m-load">—</div>
+        <div class="metric-lbl">load frame</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-val" id="m-trips">—</div>
+        <div class="metric-lbl">round-trips</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-val" id="m-slider">50</div>
+        <div class="metric-lbl">slider</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slider (JS → C++ args) -->
+  <div class="section">
+    <div class="section-title">Slider → C++ args</div>
+    <input type="range" id="slider" min="0" max="100" value="50"
+           oninput="handleSlider(this.value)" />
+    <div class="slider-readout">
+      <span class="lbl">value</span>
+      <span id="slider-val" class="ok">50</span>
+    </div>
+  </div>
+
+  <!-- Checkpoint progress bar -->
+  <div class="section">
+    <div class="section-title">Checkpoints</div>
+    <table id="cp-table"></table>
+    <div class="bar-track">
+      <div class="bar-fill" id="bar" style="width:0%"></div>
+    </div>
+    <div class="bar-label"><span id="bar-text">0 / 6</span></div>
   </div>
 </div>
 
 <script>
+  var CP_NAMES = [
+    'page_loaded', 'page_ready', 'button_clicked',
+    'round_trip', 'pixel_buffer', 'mouse_click'
+  ];
+
+  // Populate checkpoint table rows
+  (function() {
+    var tbl = document.getElementById('cp-table');
+    for (var i = 0; i < CP_NAMES.length; i++) {
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td class="lbl">' + CP_NAMES[i] + '</td>'
+                   + '<td id="cp-' + i + '" class="dim">—</td>';
+      tbl.appendChild(tr);
+    }
+  })();
+
   function handleButtonClick() {
-    document.getElementById('btn').className = 'clicked';
-    document.getElementById('btn').textContent = '✓ OnButtonClicked fired';
+    var btn = document.getElementById('btn');
+    btn.className = 'clicked';
+    btn.textContent = '✓ OnButtonClicked fired';
     app.OnButtonClicked();
   }
 
-  // Use window.onload — 'app' is injected by Ultralight's OnDOMReady which fires
-  // before window.onload, so the bridge is guaranteed to exist here.
-  window.onload = function() {
-    // Signal C++ that the page DOM is ready
-    app.OnPageReady();
-    document.getElementById('status-ready').textContent = 'fired';
-    document.getElementById('status-ready').className = 'ok';
+  function handleSlider(val) {
+    document.getElementById('slider-val').textContent = val;
+    document.getElementById('m-slider').textContent = val;
+    app.OnSliderChanged(parseFloat(val));
+  }
 
-    // Round-trip: ask C++ for the test value and echo it back
-    var val = app.GetTestValue();
-    document.getElementById('rt-sent').textContent = val || '—';
-    document.getElementById('rt-echo').textContent = val || '—';
-    if (val) {
-      document.getElementById('rt-ok').style.display = 'inline';
-      app.ReportReceivedValue(val);
+  function parseMetrics(s) {
+    // "frame=N,load=N,trips=N,slider=N"
+    var out = {};
+    if (!s) return out;
+    s.split(',').forEach(function(part) {
+      var kv = part.split('=');
+      if (kv.length === 2) out[kv[0]] = kv[1];
+    });
+    return out;
+  }
+
+  function updateStatus() {
+    // Status flags bitmask
+    var flags = app.GetStatusFlags();
+    var passed = 0;
+    for (var i = 0; i < 6; i++) {
+      var el = document.getElementById('cp-' + i);
+      if (el) {
+        var on = !!(flags & (1 << i));
+        el.textContent = on ? '✓' : '…';
+        el.className = on ? 'ok' : 'dim';
+        if (on) passed++;
+      }
     }
-  };
+    var pct = Math.round(passed / 6 * 100);
+    document.getElementById('bar').style.width = pct + '%';
+    document.getElementById('bar-text').textContent = passed + ' / 6';
+
+    // Live metrics
+    var raw = app.GetLiveMetrics();
+    var m = parseMetrics(raw);
+    if (m.frame !== undefined)  document.getElementById('m-frame').textContent  = m.frame;
+    if (m.load  !== undefined)  document.getElementById('m-load').textContent   = m.load;
+    if (m.trips !== undefined)  document.getElementById('m-trips').textContent  = m.trips;
+    if (m.slider !== undefined) {
+      document.getElementById('m-slider').textContent = m.slider;
+      document.getElementById('slider-val').textContent = m.slider;
+    }
+  }
+
+  // DOMContentLoaded is safe: the engine installs a queuing proxy for `app`
+  // in OnWindowObjectReady before any page scripts run, so calls made here
+  // are queued and replayed once real C++ bindings attach in OnDOMReady.
+  document.addEventListener('DOMContentLoaded', function() {
+    // Notify C++ the page is ready
+    app.OnPageReady();
+    document.getElementById('s-ready').textContent = 'fired';
+    document.getElementById('s-ready').className = 'ok';
+
+    // Round-trip: ask C++ for the test value, display it, echo it back
+    var val = app.GetTestValue();
+    document.getElementById('s-rt').textContent = val ? (val + ' ✓') : '—';
+    document.getElementById('s-rt').className = val ? 'ok' : 'bad';
+    if (val) app.ReportReceivedValue(val);
+
+    // Poll status and live metrics every second
+    setInterval(updateStatus, 1000);
+
+    // Initial poll immediately
+    updateStatus();
+  });
 </script>
 </body>
 </html>

@@ -34,6 +34,7 @@
     <ClCompile Include="Modules\PickingModule.cpp" />
     <ClCompile Include="Modules\KernelModule.cpp" />
     <ClCompile Include="Modules\LoadingScreenModule.cpp" />
+    <ClCompile Include="Modules\UICompositeModule.cpp" />
     <ClCompile Include="Modules\ObservationModule.cpp" />
     <ClCompile Include="Modules\Physics2DModule.cpp" />
     <ClCompile Include="Modules\ProfilerModule.cpp" />
@@ -63,6 +64,7 @@
     <ClInclude Include="Modules\PickingModule.h" />
     <ClInclude Include="Modules\KernelModule.h" />
     <ClInclude Include="Modules\LoadingScreenModule.h" />
+    <ClInclude Include="Modules\UICompositeModule.h" />
     <ClInclude Include="Modules\ObservationModule.h" />
     <ClInclude Include="Modules\Physics2DModule.h" />
     <ClInclude Include="Modules\ProfilerModule.h" />

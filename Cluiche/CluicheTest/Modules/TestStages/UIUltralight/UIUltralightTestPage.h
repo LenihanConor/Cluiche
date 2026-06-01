@@ -1,5 +1,6 @@
 #pragma once
 #include <DiaUI/Page.h>
+#include <DiaCore/Strings/String64.h>
 
 namespace Dia { namespace UI { struct BoundMethodArgs; class BoundMethodValue; } }
 
@@ -12,6 +13,12 @@ public:
     virtual void OnPageReady() = 0;
     virtual void OnButtonClicked() = 0;
     virtual void ReportReceivedValue(const Dia::UI::BoundMethodArgs& args) = 0;
+    virtual void OnSliderChanged(const Dia::UI::BoundMethodArgs& args) = 0;
+
+    // Polled by JS each second: bitmask of checkpoint states (bit 0=page_loaded … bit 5=deterministic)
+    virtual int  GetStatusFlags() = 0;
+    // Returns "frame=N,load=N,trips=N,slider=N" so JS can display live metrics in one call
+    virtual Dia::Core::Containers::String64 GetLiveMetrics() = 0;
 };
 
 class UIUltralightTestPage : public Dia::UI::Page
@@ -24,11 +31,14 @@ public:
     static constexpr const char* kTestValue = "dia_test_value_42";
 
     Dia::UI::BoundMethodValue GetTestValue(const Dia::UI::BoundMethodArgs& args);
+    Dia::UI::BoundMethodValue GetStatusFlags_JS(const Dia::UI::BoundMethodArgs& args);
+    Dia::UI::BoundMethodValue GetLiveMetrics_JS(const Dia::UI::BoundMethodArgs& args);
 
 private:
     void OnPageReady_JS(const Dia::UI::BoundMethodArgs& args);
     void OnButtonClicked_JS(const Dia::UI::BoundMethodArgs& args);
     void ReportReceivedValue_JS(const Dia::UI::BoundMethodArgs& args);
+    void OnSliderChanged_JS(const Dia::UI::BoundMethodArgs& args);
 
     IUIUltralightTestCallbacks* mCallbacks;
 };

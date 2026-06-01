@@ -36,6 +36,9 @@
     <ClCompile Include="Modules\LoadingScreenModule.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\UICompositeModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
     <ClCompile Include="Modules\ObservationModule.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
@@ -102,6 +105,9 @@
       <Filter>Modules</Filter>
     </ClInclude>
     <ClInclude Include="Modules\LoadingScreenModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\UICompositeModule.h">
       <Filter>Modules</Filter>
     </ClInclude>
     <ClInclude Include="Modules\ObservationModule.h">
