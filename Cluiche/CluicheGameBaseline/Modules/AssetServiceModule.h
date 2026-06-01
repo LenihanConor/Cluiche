@@ -97,7 +97,7 @@ private:
     bool mJsonHandlerRegistered    = false;
 
     Dia::Core::Containers::DynamicArrayC<PathAliasEntry, 16>  mStageAliases;
-    Dia::Core::Containers::DynamicArrayC<StagePathEntry,   8> mStagePathMap;
+    Dia::Core::Containers::DynamicArrayC<StagePathEntry,  16> mStagePathMap;
     Dia::Core::Containers::String512 mDeployRoot;
 
     // Per-stage load state tracking: plain C array avoids DynamicArrayC copy

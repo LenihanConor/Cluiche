@@ -1,0 +1,34 @@
+{
+    "version": 3,
+    "processing_units": [
+        {
+            "instance_id": "MainPU",
+            "frequency_hz": 30,
+            "dedicated_thread": false,
+            "modules": []
+        },
+        {
+            "instance_id": "SimPU",
+            "frequency_hz": 30,
+            "dedicated_thread": true,
+            "modules": [
+                {
+                    "instance_id": "Scene2DTestStageModule",
+                    "type_id": "Scene2DTestStageModule",
+                    "stages": ["Scene2DTestStage"],
+                    "dependencies": ["VisualDebuggerModule"],
+                    "channels": [
+                        {
+                            "id": "AutomationService",
+                            "role": "consumes"
+                        },
+                        {
+                            "id": "RenderToSim",
+                            "role": "reads"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

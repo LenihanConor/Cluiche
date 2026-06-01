@@ -46,6 +46,7 @@
     <ClCompile Include="Modules\TestStages\Drawers\Geometry2DIntersectionsDrawer.cpp" />
     <ClCompile Include="Modules\TestStages\Drawers\Geometry2DAABBDrawer.cpp" />
     <ClCompile Include="Modules\TestStages\Drawers\Animation2DTestDrawer.cpp" />
+    <ClCompile Include="Modules\TestStages\Drawers\Scene2DTestDrawer.cpp" />
     <ClCompile Include="Modules\dummy\DummyLevelModule.cpp" />
     <ClCompile Include="Modules\dummy\DummyUIPageModule.cpp" />
     <ClCompile Include="Modules\dummy\DummyUIPage.cpp" />
@@ -76,6 +77,7 @@
     <ClInclude Include="Modules\TestStages\Drawers\Geometry2DIntersectionsDrawer.h" />
     <ClInclude Include="Modules\TestStages\Drawers\Geometry2DAABBDrawer.h" />
     <ClInclude Include="Modules\TestStages\Drawers\Animation2DTestDrawer.h" />
+    <ClInclude Include="Modules\TestStages\Drawers\Scene2DTestDrawer.h" />
     <ClInclude Include="Modules\dummy\DummyLevelModule.h" />
     <ClInclude Include="Modules\dummy\DummyUIPageModule.h" />
     <ClInclude Include="Modules\dummy\DummyUIPage.h" />

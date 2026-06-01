@@ -118,6 +118,7 @@ Pytest scenarios can assert on metrics via the metric threshold fixture (item #8
 | Geometry2D Stage | Gallery of all shape primitives, intersection pair colour-coding, spatial structure overlays (BVH/Quadtree/SpatialGrid) | @docs/specs/features/cluichetest/teststages/geometry2d-stage.md | Approved |
 | EntityTest Stage | Entity spawn/destroy/hierarchy/query/mailbox/component lifecycle under real PU timing; `TransformComponent` + `VisualTestRenderComponent`; 6 checkpoints | @docs/specs/features/cluichetest/teststages/entity-test-stage.md | Approved |
 | UIUltralight Stage | Page load, JS↔C++ bridge (4 bound methods), pixel buffer non-empty, mouse injection, round-trip value, deterministic reload; 6 checkpoints | @docs/specs/features/cluichetest/teststages/ui-ultralight-stage.md | Approved |
+| Scene2D Stage | Scene load pipeline — .diascene parse, camera/light registry hydration, entity spawn with instance_data, LayerTable resolution; 5 checkpoints | @docs/specs/features/cluichetest/teststages/scene2d-stage.md | Approved |
 
 ## Platform Primitives Used
 
