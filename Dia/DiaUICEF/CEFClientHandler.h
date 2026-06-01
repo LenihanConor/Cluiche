@@ -9,12 +9,13 @@
 #include <include/cef_display_handler.h>
 #include <include/cef_keyboard_handler.h>
 
+#include "CEFRenderHandler.h"
+
 namespace Dia
 {
 	namespace UICEF
 	{
 		class CEFPage;
-		class CEFRenderHandler;
 		class CEFJavaScriptBridge;
 
 		class CEFClientHandler

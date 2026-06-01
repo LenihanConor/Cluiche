@@ -104,8 +104,9 @@ namespace Dia
 			{}
 
 			BoundMethod( MethodPtr methodPtr)
-				:  mMethodPtr(methodPtr)
+				: mName("")
 				, mReturnValueFlag(ReturnValueFlag::kDisabled)
+				, mMethodPtr(methodPtr)
 			{}
 
 			static BoundMethod CreateBoundMethod(const char* name, MethodPtr methodPtr)
@@ -126,14 +127,14 @@ namespace Dia
 		private:
 			BoundMethod(const char* name, MethodPtr methodPtr)
 				: mName(name)
-				, mMethodPtr(methodPtr)
 				, mReturnValueFlag(ReturnValueFlag::kDisabled)
+				, mMethodPtr(methodPtr)
 			{}
 			
 			BoundMethod(const char* name, MethodPtrWithRetVal methodPtr)
 				: mName(name)
-				, mMethodReturnPtr(methodPtr)
 				, mReturnValueFlag(ReturnValueFlag::kEnabled)
+				, mMethodReturnPtr(methodPtr)
 			{}
 
 			Dia::Core::Containers::String32 mName;		// Key value used to find this from the UI
