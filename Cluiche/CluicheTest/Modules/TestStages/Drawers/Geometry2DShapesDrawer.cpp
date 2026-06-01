@@ -4,6 +4,7 @@
 
 #include <DiaGeometry2DVisualDebugger/ShapeDrawer.h>
 #include <DiaGeometry2DVisualDebugger/SectorDrawHelper.h>
+#include <DiaGeometry2D/Shapes/SplineFactory.h>
 #include <DiaGeometry2DVisualDebugger/OORectDrawHelper.h>
 #include <DiaGeometry2DVisualDebugger/CapsuleDrawHelper.h>
 #include <DiaGraphics/Misc/RGBA.h>
@@ -26,12 +27,14 @@ Geometry2DShapesDrawer::Geometry2DShapesDrawer(
     const Dia::Geometry2D::Capsule&       capsule,
     const Dia::Geometry2D::ConvexPolygon& convexPoly,
     const Dia::Geometry2D::Sector&        sector,
+    const Dia::Geometry2D::Spline&        spline,
     const Dia::Core::Containers::DynamicArrayC<Dia::Geometry2D::AARect, 24>& spatialScatter,
     const Dia::Debug::DebugLayerManager&  mgr)
     : mCircle(circle), mAARect(aaRect), mOORect(ooRect)
     , mLine(line), mRay(ray), mTriangle(triangle)
     , mCapsule(capsule), mConvexPoly(convexPoly)
     , mSector(sector)
+    , mSpline(spline)
     , mSpatialScatter(spatialScatter)
     , mManager(mgr)
 {}
@@ -57,6 +60,8 @@ void Geometry2DShapesDrawer::Draw(Dia::Graphics::FrameData& frameData)
     drawer.SubmitConvexPoly(Dia::Geometry2DVisualDebugger::OORectToConvexPolygon(mOORect),    kWhite);
     drawer.SubmitConvexPoly(Dia::Geometry2DVisualDebugger::CapsuleToConvexPolygon(mCapsule),  kWhite);
     drawer.SubmitConvexPoly(Dia::Geometry2DVisualDebugger::SectorToConvexPolygon(mSector),    kWhite);
+
+    drawer.SubmitSpline(mSpline, 32, kWhite);
 
     // Spatial scatter shapes — small filled rects inside BVH/Quadtree/Grid bounds
     static const Dia::Graphics::RGBA kScatterColour(247, 200, 126, 200);

@@ -89,6 +89,8 @@
     <ClInclude Include="Shapes\ConvexPolygon.h" />
     <ClInclude Include="Shapes\Sector.h" />
     <ClInclude Include="Shapes\AnnularSector.h" />
+    <ClInclude Include="Shapes\Spline.h" />
+    <ClInclude Include="Shapes\SplineFactory.h" />
     <ClInclude Include="Intersection\IntersectionTests.h" />
     <ClInclude Include="Transform\Transform.h" />
     <ClInclude Include="Spatial\ISpatialStructure.h" />
@@ -117,6 +119,8 @@
     <ClCompile Include="Shapes\ConvexPolygon.cpp" />
     <ClCompile Include="Shapes\Sector.cpp" />
     <ClCompile Include="Shapes\AnnularSector.cpp" />
+    <ClCompile Include="Shapes\Spline.cpp" />
+    <ClCompile Include="Shapes\SplineFactory.cpp" />
     <ClCompile Include="Intersection\IntersectionTests.cpp" />
     <ClCompile Include="Transform\Transform.cpp" />
     <ClCompile Include="Spatial\SpatialGrid.cpp" />

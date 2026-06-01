@@ -66,6 +66,12 @@
     <ClInclude Include="Shapes\AnnularSector.h">
       <Filter>Shapes</Filter>
     </ClInclude>
+    <ClInclude Include="Shapes\Spline.h">
+      <Filter>Shapes</Filter>
+    </ClInclude>
+    <ClInclude Include="Shapes\SplineFactory.h">
+      <Filter>Shapes</Filter>
+    </ClInclude>
     <ClInclude Include="Intersection\IntersectionTests.h">
       <Filter>Intersection</Filter>
     </ClInclude>
@@ -132,6 +138,12 @@
       <Filter>Shapes</Filter>
     </ClCompile>
     <ClCompile Include="Shapes\AnnularSector.cpp">
+      <Filter>Shapes</Filter>
+    </ClCompile>
+    <ClCompile Include="Shapes\Spline.cpp">
+      <Filter>Shapes</Filter>
+    </ClCompile>
+    <ClCompile Include="Shapes\SplineFactory.cpp">
       <Filter>Shapes</Filter>
     </ClCompile>
     <ClCompile Include="Intersection\IntersectionTests.cpp">

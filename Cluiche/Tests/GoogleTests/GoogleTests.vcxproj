@@ -362,6 +362,7 @@
     <ClCompile Include="Geometry2D\TestBVH.cpp" />
     <ClCompile Include="Geometry2D\TestQuadtree.cpp" />
     <ClCompile Include="Geometry2D\TestHexGrid.cpp" />
+    <ClCompile Include="Geometry2D\TestSpline.cpp" />
     <!-- Picking -->
     <ClCompile Include="Picking\TestPickingCore.cpp" />
     <ClCompile Include="Picking\TestHexGridPickable.cpp" />

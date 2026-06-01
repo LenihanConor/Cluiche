@@ -190,6 +190,7 @@ namespace Dia::Geometry2D {
 | Spatial Grid | Uniform grid; defines `ISpatialStructure<T>` and `Handle<T>` prerequisite. Five query types. | [spatial-grid.md](../../features/dia/diageometry2d/spatial-grid.md) | Approved |
 | Quadtree | Recursive quadrant partitioning for non-uniform object distributions. Dynamic insert/remove. | [quadtree.md](../../features/dia/diageometry2d/quadtree.md) | Approved |
 | BVH | Static bounding volume hierarchy (SAH build). Optimal for fixed geometry. | [bvh.md](../../features/dia/diageometry2d/bvh.md) | Approved |
+| Spline | Parametric curve (BSpline + CatmullRom) via SplineFactory. Fixed control-point array, point/tangent evaluation, visual debugger draw support. | [spline.md](../../features/dia/diageometry2d/spline.md) | Done |
 
 ## Dependencies on Other Systems
 

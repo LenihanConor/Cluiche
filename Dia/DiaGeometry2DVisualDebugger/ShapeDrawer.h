@@ -22,6 +22,7 @@ namespace Dia::Geometry2D
     class Ray;
     class Triangle;
     class ConvexPolygon;
+    class Spline;
 }
 
 namespace Dia::Debug  { class DebugLayerManager; }
@@ -55,6 +56,8 @@ public:
     void SubmitRay       (const Dia::Geometry2D::Ray&           shape, float displayLength, Dia::Graphics::RGBA colour);
     void SubmitTriangle  (const Dia::Geometry2D::Triangle&      shape, Dia::Graphics::RGBA colour);
     void SubmitConvexPoly(const Dia::Geometry2D::ConvexPolygon& shape, Dia::Graphics::RGBA colour);
+    // Tessellates spline into 'segments' line segments. Clamped to available buffer space.
+    void SubmitSpline    (const Dia::Geometry2D::Spline&        spline, int segments, Dia::Graphics::RGBA colour);
 
 private:
     enum class ShapeType

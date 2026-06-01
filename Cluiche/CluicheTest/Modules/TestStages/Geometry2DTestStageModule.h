@@ -12,6 +12,8 @@
 #include <DiaGeometry2D/Shapes/Capsule.h>
 #include <DiaGeometry2D/Shapes/ConvexPolygon.h>
 #include <DiaGeometry2D/Shapes/Sector.h>
+#include <DiaGeometry2D/Shapes/Spline.h>
+#include <DiaGeometry2D/Shapes/SplineFactory.h>
 
 #ifdef DIA_DEBUG
 #include "Modules/TestStages/Drawers/Geometry2DIntersectionsDrawer.h"
@@ -73,6 +75,7 @@ private:
     Dia::Geometry2D::Capsule        mCapsule;
     Dia::Geometry2D::ConvexPolygon  mConvexPoly;
     Dia::Geometry2D::Sector         mSector;
+    Dia::Geometry2D::Spline         mSpline;
 
     int mShapeCount = 0;
 

@@ -13,6 +13,7 @@
 #include <DiaGeometry2D/Shapes/Capsule.h>
 #include <DiaGeometry2D/Shapes/ConvexPolygon.h>
 #include <DiaGeometry2D/Shapes/Sector.h>
+#include <DiaGeometry2D/Shapes/Spline.h>
 
 namespace CluicheTest {
 
@@ -28,7 +29,8 @@ public:
         const Dia::Geometry2D::Triangle&      triangle,
         const Dia::Geometry2D::Capsule&       capsule,
         const Dia::Geometry2D::ConvexPolygon& convexPoly,
-        const Dia::Geometry2D::Sector&        sector);
+        const Dia::Geometry2D::Sector&        sector,
+        const Dia::Geometry2D::Spline&        spline);
 
     Dia::Core::StringCRC GetLayerName() const override;
     void Draw(Dia::Graphics::FrameData& frameData) override;
@@ -44,6 +46,7 @@ private:
     const Dia::Geometry2D::Capsule&       mCapsule;
     const Dia::Geometry2D::ConvexPolygon& mConvexPoly;
     const Dia::Geometry2D::Sector&        mSector;
+    const Dia::Geometry2D::Spline&        mSpline;
     float mFontScale = 1.0f;
 };
 

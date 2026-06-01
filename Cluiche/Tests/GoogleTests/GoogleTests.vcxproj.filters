@@ -750,6 +750,9 @@
     <ClCompile Include="Geometry2D\TestHexGrid.cpp">
       <Filter>Geometry2D</Filter>
     </ClCompile>
+    <ClCompile Include="Geometry2D\TestSpline.cpp">
+      <Filter>Geometry2D</Filter>
+    </ClCompile>
     <!-- Picking -->
     <ClCompile Include="Picking\TestPickingCore.cpp">
       <Filter>Picking</Filter>

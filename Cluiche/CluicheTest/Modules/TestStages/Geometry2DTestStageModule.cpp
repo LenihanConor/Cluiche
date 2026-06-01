@@ -114,12 +114,12 @@ void Geometry2DTestStageModule::OnUpdate(float /*deltaTime*/)
 
             mShapesDrawer = std::make_unique<Geometry2DShapesDrawer>(
                 mCircle, mAARect, mOORect, mLine, mRay, mTriangle,
-                mCapsule, mConvexPoly, mSector, mSpatialScatter, *mgr);
+                mCapsule, mConvexPoly, mSector, mSpline, mSpatialScatter, *mgr);
             mgr->Register(mShapesDrawer.get(), 20, stageTag);
 
             mLabelsDrawer = std::make_unique<Geometry2DLabelsDrawer>(
                 mCircle, mAARect, mOORect, mLine, mRay, mTriangle,
-                mCapsule, mConvexPoly, mSector);
+                mCapsule, mConvexPoly, mSector, mSpline);
             mgr->Register(mLabelsDrawer.get(), 21, stageTag);
 
             mIntersectionsDrawer = std::make_unique<Geometry2DIntersectionsDrawer>(mIntersectionPairs, *mgr);
@@ -356,7 +356,23 @@ void Geometry2DTestStageModule::SetupGallery()
         Dia::Maths::Vector2D(0.0f, 1.0f),
         Dia::Maths::Angle::FromDegrees(60.0f));
 
-    mShapeCount = 9;
+    // Row 3: Spline — CatmullRom S-curve to the right of the intersection pairs
+    // Intersection pairs end around X=345; start this at X=390 to avoid overlap.
+    {
+        constexpr float kRow3Y = -50.0f;
+        constexpr float kSplineStartX = 390.0f;
+        Dia::Maths::Vector2D splinePts[6] = {
+            Dia::Maths::Vector2D(kSplineStartX + 0.0f,   kRow3Y + 40.0f),
+            Dia::Maths::Vector2D(kSplineStartX + 60.0f,  kRow3Y - 40.0f),
+            Dia::Maths::Vector2D(kSplineStartX + 120.0f, kRow3Y + 40.0f),
+            Dia::Maths::Vector2D(kSplineStartX + 180.0f, kRow3Y - 40.0f),
+            Dia::Maths::Vector2D(kSplineStartX + 240.0f, kRow3Y + 40.0f),
+            Dia::Maths::Vector2D(kSplineStartX + 300.0f, kRow3Y - 40.0f),
+        };
+        mSpline = Dia::Geometry2D::SplineFactory::MakeCatmullRom(splinePts, 6);
+    }
+
+    mShapeCount = 10;
 }
 
 #ifdef DIA_DEBUG

@@ -12,6 +12,8 @@
 #include <DiaGeometry2D/Shapes/Ray.h>
 #include <DiaGeometry2D/Shapes/Triangle.h>
 #include <DiaGeometry2D/Shapes/ConvexPolygon.h>
+#include <DiaGeometry2D/Shapes/Spline.h>
+#include <DiaGeometry2D/Shapes/SplineFactory.h>
 #include <DiaGraphics/Frame/FrameData.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
@@ -113,6 +115,36 @@ void ShapeDrawer::SubmitConvexPoly(const Dia::Geometry2D::ConvexPolygon& shape, 
         e.poly.vy[i] = shape.GetVertex(i).y;
     }
     mPending.Add(e);
+}
+
+void ShapeDrawer::SubmitSpline(const Dia::Geometry2D::Spline& spline, int segments, Dia::Graphics::RGBA colour)
+{
+    if (spline.GetControlPointCount() < 4) return;
+    if (segments < 1) segments = 1;
+
+    // Each segment needs one Line entry; clamp so we don't overflow the buffer
+    const int available = static_cast<int>(kMaxShapes) - static_cast<int>(mPending.Size());
+    if (segments > available) segments = available;
+    if (segments < 1) return;
+
+    Dia::Maths::Vector2D prev = spline.Evaluate(0.0f);
+    for (int i = 1; i <= segments; ++i)
+    {
+        const float t = static_cast<float>(i) / static_cast<float>(segments);
+        const Dia::Maths::Vector2D curr = spline.Evaluate(t);
+
+        ShapeEntry e;
+        e.type    = ShapeType::Line;
+        e.colour  = colour;
+        e.line.x1 = prev.x;
+        e.line.y1 = prev.y;
+        e.line.x2 = curr.x;
+        e.line.y2 = curr.y;
+        mPending.Add(e);
+        prev = curr;
+
+        if (mPending.IsFull()) break;
+    }
 }
 
 // ---------------------------------------------------------------------------

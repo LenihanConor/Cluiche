@@ -21,11 +21,13 @@ Geometry2DLabelsDrawer::Geometry2DLabelsDrawer(
     const Dia::Geometry2D::Triangle&      triangle,
     const Dia::Geometry2D::Capsule&       capsule,
     const Dia::Geometry2D::ConvexPolygon& convexPoly,
-    const Dia::Geometry2D::Sector&        sector)
+    const Dia::Geometry2D::Sector&        sector,
+    const Dia::Geometry2D::Spline&        spline)
     : mCircle(circle), mAARect(aaRect), mOORect(ooRect)
     , mLine(line), mRay(ray), mTriangle(triangle)
     , mCapsule(capsule), mConvexPoly(convexPoly)
     , mSector(sector)
+    , mSpline(spline)
 {}
 
 Dia::Core::StringCRC Geometry2DLabelsDrawer::GetLayerName() const
@@ -86,6 +88,12 @@ void Geometry2DLabelsDrawer::Draw(Dia::Graphics::FrameData& frameData)
     frameData.RequestDrawText(
         Dia::Maths::Vector2D(mSector.GetCenter().x, mSector.GetCenter().y + kLabelOffsetY),
         "sector*", fs, kLabelColour);
+
+    // Row 3: Spline — label at midpoint of the curve
+    const Dia::Maths::Vector2D splineMid = mSpline.Evaluate(0.5f);
+    frameData.RequestDrawText(
+        Dia::Maths::Vector2D(splineMid.x, splineMid.y + kLabelOffsetY),
+        "spline", fs, kLabelColour);
 }
 
 void Geometry2DLabelsDrawer::DrawImGui()
