@@ -23,6 +23,7 @@
     <ClCompile Include="Frame\DebugFrameData.cpp" />
     <ClCompile Include="Frame\EntityFrameData.cpp" />
     <ClCompile Include="Frame\FrameData.cpp" />
+    <ClCompile Include="Frame\RenderFence.cpp" />
     <ClCompile Include="Frame\SpriteDrawCommand.cpp" />
     <ClCompile Include="Frame\UIFrameData.cpp" />
     <ClCompile Include="Camera\ViewportTransform.cpp" />
@@ -42,6 +43,7 @@
     <ClInclude Include="Frame\EntityFrameData.h" />
     <ClInclude Include="Frame\EntityFrameDataVisitor.h" />
     <ClInclude Include="Frame\FrameData.h" />
+    <ClInclude Include="Frame\RenderFence.h" />
     <ClInclude Include="Frame\SpriteDrawCommand.h" />
     <ClInclude Include="Frame\UIFrameData.h" />
     <ClInclude Include="Interface\ICanvas.h" />

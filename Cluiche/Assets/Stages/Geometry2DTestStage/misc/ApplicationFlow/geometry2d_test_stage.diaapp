@@ -26,6 +26,10 @@
                         {
                             "id": "AutomationService",
                             "role": "consumes"
+                        },
+                        {
+                            "id": "RenderToSim",
+                            "role": "reads"
                         }
                     ]
                 }

@@ -103,6 +103,13 @@
             "kind": "ServiceStream",
             "payload_type": "DebugLayerManager",
             "from": "SimPU"
+        },
+        {
+            "id": "RenderToSim",
+            "kind": "FrameStream",
+            "payload_type": "RenderFence",
+            "from": "RenderPU",
+            "to": "SimPU"
         }
     ],
     "processing_units": [
@@ -470,6 +477,10 @@
                         {
                             "id": "SimToRender",
                             "role": "reads"
+                        },
+                        {
+                            "id": "RenderToSim",
+                            "role": "writes"
                         },
                         {
                             "id": "KernelCanvas",

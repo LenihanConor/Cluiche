@@ -16,7 +16,7 @@ class RigidBody2DTestModule : public TestStageModuleBase
 {
 public:
     static const Dia::Core::StringCRC kTypeId;
-    static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kMain;
+    static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kSim;
     static constexpr const char* kDescription = "Validates RigidBody2D: 10 circles settle under gravity";
     explicit RigidBody2DTestModule(const Dia::Core::StringCRC& instanceId);
     ~RigidBody2DTestModule() override;

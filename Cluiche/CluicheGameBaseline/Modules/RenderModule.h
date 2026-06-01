@@ -3,8 +3,10 @@
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaApplicationFlow/Streams/StreamReader.h>
+#include <DiaApplicationFlow/Streams/StreamWriter.h>
 #include <DiaApplicationFlow/Streams/ServiceStreamReader.h>
 #include <DiaGraphics/Frame/FrameData.h>
+#include <DiaGraphics/Frame/RenderFence.h>
 #include <DiaGraphics/Interface/ICanvas.h>
 #include <DiaAssetRuntime/Handlers/TextureHandler.h>
 
@@ -25,10 +27,12 @@ protected:
 
 private:
     Dia::ApplicationFlow::StreamReader<Dia::Graphics::FrameData>               mFrameInput{this, "SimToRender"};
+    Dia::ApplicationFlow::StreamWriter<Dia::Graphics::RenderFence>             mFenceOutput{this, "RenderToSim"};
     Dia::ApplicationFlow::ServiceStreamReader<Dia::Graphics::ICanvas>          mCanvasService{this, "KernelCanvas"};
     Dia::ApplicationFlow::ServiceStreamReader<Dia::AssetRuntime::TextureHandler> mTextureHandlerService{this, "KernelTextureHandler"};
     Dia::Graphics::ICanvas*  mCanvas = nullptr;
     Dia::Graphics::FrameData mLastFrame;
+    uint64_t mPresentCount = 0;
 };
 
 } } // namespace Cluiche::AppFlow

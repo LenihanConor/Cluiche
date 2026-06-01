@@ -64,6 +64,10 @@ void RenderModule::DoUpdate(float /*dt*/)
     }
 
     mCanvas->RenderFrame(mLastFrame);
+
+    Dia::Graphics::RenderFence fence;
+    fence.presentedFrame = ++mPresentCount;
+    mFenceOutput.Write(fence, Dia::Core::TimeAbsolute::Zero());
 }
 
 Dia::ApplicationFlow::StopResult RenderModule::DoStop()
@@ -101,6 +105,7 @@ Dia::ApplicationFlow::StopResult RenderModule::DoStop()
 void RenderModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 {
     mFrameInput.Connect(app);
+    mFenceOutput.Connect(app);
     mCanvasService.Connect(app);
     mTextureHandlerService.Connect(app);
 }

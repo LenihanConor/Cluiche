@@ -1,6 +1,9 @@
 #pragma once
 #include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/Streams/StreamReader.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaGraphics/Frame/RenderFence.h>
+#include <cstdint>
 
 namespace Dia { namespace Automation { class AutomationService; } }
 namespace Dia { namespace ApplicationFlow { template<typename T> class ServiceStreamReader; } }
@@ -40,12 +43,21 @@ protected:
     void OnConnectStreams(Dia::ApplicationFlow::Application& app) override;
 
 private:
+    void FireCapture();
+
     // Heap-allocated to avoid pulling AutomationService.h (and Application.h) into
     // every TU that includes this header. Constructed in TestStageModuleBase().
     Dia::ApplicationFlow::ServiceStreamReader<Dia::Automation::AutomationService>* mAutomationServiceStream = nullptr;
+    Dia::ApplicationFlow::StreamReader<Dia::Graphics::RenderFence> mRenderFence{this, "RenderToSim"};
+
     unsigned int mFrameCount = 0;
     unsigned int mEntryCount = 0;
     bool mResolved = false;
+
+    // Deferred capture: set by ReportPassed/Failed, fired once render confirms the frame.
+    bool mAwaitingCapture = false;
+    bool mCaptureWasPassed = false;
+    uint64_t mCaptureFrameTarget = 0;
 };
 
 } // namespace CluicheTest

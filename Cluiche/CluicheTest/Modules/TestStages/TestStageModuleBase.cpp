@@ -33,6 +33,9 @@ Dia::ApplicationFlow::StartResult TestStageModuleBase::DoStart()
     ++mEntryCount;
     mFrameCount = 0;
     mResolved = false;
+    mAwaitingCapture = false;
+    mCaptureWasPassed = false;
+    mCaptureFrameTarget = 0;
 
     unsigned int checkpointCount = 0;
     const auto* checkpointNames = GetCheckpointNames(checkpointCount);
@@ -60,10 +63,29 @@ void TestStageModuleBase::DoUpdate(float deltaTime)
         OnTimeout();
         TestResultsRegistry::GetInstance().SetTimeout(GetStageName());
     }
+
+    // Once logic is resolved, wait for the render thread to confirm it has presented
+    // at least one frame after we requested capture, then fire the actual screenshot.
+    if (mAwaitingCapture)
+    {
+        const Dia::Graphics::RenderFence* fence = mRenderFence.FetchLatest();
+        if (fence != nullptr && fence->presentedFrame >= mCaptureFrameTarget)
+        {
+            FireCapture();
+            mAwaitingCapture = false;
+        }
+    }
 }
 
 Dia::ApplicationFlow::StopResult TestStageModuleBase::DoStop()
 {
+    // Fallback: if stage is force-stopped before the fence arrives, capture what's current.
+    if (mAwaitingCapture)
+    {
+        FireCapture();
+        mAwaitingCapture = false;
+    }
+
     OnStop();
 
     if (mAutomationServiceStream->IsAvailable())
@@ -80,7 +102,13 @@ void TestStageModuleBase::ReportPassed()
     if (mResolved) return;
     mResolved = true;
     TestResultsRegistry::GetInstance().SetPassed(GetStageName(), mFrameCount);
-    DIA_CAPTURE(GetStageName(), "passed");
+
+    // Defer the screenshot until the render thread has presented the frame containing
+    // the test's draw output. Read current fence to know the minimum target.
+    const Dia::Graphics::RenderFence* fence = mRenderFence.FetchLatest();
+    mCaptureFrameTarget = (fence != nullptr ? fence->presentedFrame : 0) + 1;
+    mCaptureWasPassed = true;
+    mAwaitingCapture = true;
 }
 
 void TestStageModuleBase::ReportFailed()
@@ -88,7 +116,19 @@ void TestStageModuleBase::ReportFailed()
     if (mResolved) return;
     mResolved = true;
     TestResultsRegistry::GetInstance().SetFailed(GetStageName(), mFrameCount);
-    DIA_CAPTURE(GetStageName(), "failed");
+
+    const Dia::Graphics::RenderFence* fence = mRenderFence.FetchLatest();
+    mCaptureFrameTarget = (fence != nullptr ? fence->presentedFrame : 0) + 1;
+    mCaptureWasPassed = false;
+    mAwaitingCapture = true;
+}
+
+void TestStageModuleBase::FireCapture()
+{
+    if (mCaptureWasPassed)
+        DIA_CAPTURE(GetStageName(), "passed");
+    else
+        DIA_CAPTURE(GetStageName(), "failed");
 }
 
 Dia::Automation::AutomationService* TestStageModuleBase::GetAutomationService()
@@ -99,6 +139,7 @@ Dia::Automation::AutomationService* TestStageModuleBase::GetAutomationService()
 void TestStageModuleBase::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 {
     mAutomationServiceStream->Connect(app);
+    mRenderFence.Connect(app);
 }
 
 } // namespace CluicheTest

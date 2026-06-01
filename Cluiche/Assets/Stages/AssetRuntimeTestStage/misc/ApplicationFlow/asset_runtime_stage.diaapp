@@ -19,7 +19,8 @@
                     "dependencies": [],
                     "channels": [
                         { "id": "AutomationService", "role": "consumes" },
-                        { "id": "AssetLoadStatus",   "role": "consumes" }
+                        { "id": "AssetLoadStatus",   "role": "consumes" },
+                        { "id": "RenderToSim",       "role": "reads" }
                     ]
                 },
                 {

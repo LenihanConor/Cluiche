@@ -16,6 +16,9 @@
     <ClCompile Include="Frame\FrameData.cpp">
       <Filter>Frame</Filter>
     </ClCompile>
+    <ClCompile Include="Frame\RenderFence.cpp">
+      <Filter>Frame</Filter>
+    </ClCompile>
     <ClCompile Include="Frame\DebugFrameData.cpp">
       <Filter>Frame</Filter>
     </ClCompile>
@@ -76,6 +79,9 @@
       <Filter>Assets</Filter>
     </ClInclude>
     <ClInclude Include="Frame\FrameData.h">
+      <Filter>Frame</Filter>
+    </ClInclude>
+    <ClInclude Include="Frame\RenderFence.h">
       <Filter>Frame</Filter>
     </ClInclude>
     <ClInclude Include="Frame\DebugFrameData.h">
