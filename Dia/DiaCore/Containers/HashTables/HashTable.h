@@ -137,7 +137,7 @@ namespace Dia
 					}
 
 					// Access key
-					const Key& Key() const
+					const Key& GetKey() const
 					{
 						DIA_ASSERT(mTable != nullptr, "Invalid iterator");
 						DIA_ASSERT(mIndex < mTable->Size(), "Iterator out of bounds");
@@ -195,7 +195,7 @@ namespace Dia
 					}
 
 					// Access key
-					const Key& Key() const
+					const Key& GetKey() const
 					{
 						DIA_ASSERT(mTable != nullptr, "Invalid iterator");
 						DIA_ASSERT(mIndex < mTable->Size(), "Iterator out of bounds");
