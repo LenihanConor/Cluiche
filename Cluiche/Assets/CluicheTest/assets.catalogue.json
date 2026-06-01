@@ -390,6 +390,45 @@
             "tags": [
                 "misc/ApplicationFlow"
             ]
+        },
+        {
+            "id": "stage.scene2d_test_stage",
+            "type": "stage",
+            "source_path": "../Stages/Scene2DTestStage/scene2d_test_stage.diastage",
+            "scope": "global",
+            "tags": [
+                "misc"
+            ],
+            "references": [
+                {
+                    "type": "contains",
+                    "target": "manifest.scene2d_test_stage"
+                },
+                {
+                    "type": "contains",
+                    "target": "data.scene2d_test_scene"
+                }
+            ]
+        },
+        {
+            "id": "manifest.scene2d_test_stage",
+            "type": "manifest",
+            "source_path": "../Stages/Scene2DTestStage/misc/ApplicationFlow/scene2d_test_stage.diaapp",
+            "scope": "stage",
+            "stage_name": "Scene2DTestStage",
+            "tags": [
+                "misc/ApplicationFlow"
+            ]
+        },
+        {
+            "id": "data.scene2d_test_scene",
+            "type": "json",
+            "source_path": "../Stages/Scene2DTestStage/test_scene.diascene",
+            "scope": "stage",
+            "stage_name": "Scene2DTestStage",
+            "tags": [
+                "World"
+            ]
         }
     ]
 }

@@ -11,7 +11,8 @@
                 "UIUltralightTestStage",
                 "EntityTestStage",
                 "SoftBody2DTestStage",
-                "Animation2DTestStage"
+                "Animation2DTestStage",
+                "Scene2DTestStage"
             ],
             "auto_advance": false
         },
@@ -60,6 +61,13 @@
         },
         {
             "name": "Animation2DTestStage",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "Scene2DTestStage",
             "transitions": [
                 "Boot"
             ],
@@ -403,7 +411,8 @@
                         "Geometry2DTestStage",
                         "EntityTestStage",
                         "SoftBody2DTestStage",
-                        "Animation2DTestStage"
+                        "Animation2DTestStage",
+                        "Scene2DTestStage"
                     ],
                     "dependencies": [
                         "CameraModule"
@@ -469,7 +478,8 @@
                         "UIUltralightTestStage",
                         "EntityTestStage",
                         "SoftBody2DTestStage",
-                        "Animation2DTestStage"
+                        "Animation2DTestStage",
+                        "Scene2DTestStage"
                     ],
                     "dependencies": [
                         "DebugUI"
@@ -490,7 +500,8 @@
                         "Geometry2DTestStage",
                         "EntityTestStage",
                         "SoftBody2DTestStage",
-                        "Animation2DTestStage"
+                        "Animation2DTestStage",
+                        "Scene2DTestStage"
                     ],
                     "dependencies": [
                         "DebugUI"

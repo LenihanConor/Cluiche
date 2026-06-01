@@ -37,6 +37,7 @@
     <ClCompile Include="Modules\TestStages\Entity\VisualTestRenderComponent.cpp" />
     <ClCompile Include="Modules\TestStages\Entity\PickableCircleComponent.cpp" />
     <ClCompile Include="Modules\TestStages\Geometry2DTestStageModule.cpp" />
+    <ClCompile Include="Modules\TestStages\Scene2DTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\UIUltralightTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\UIUltralight\UIUltralightTestPage.cpp" />
     <ClCompile Include="Modules\TestStages\Drawers\Geometry2DShapesDrawer.cpp" />
@@ -66,6 +67,7 @@
     <ClInclude Include="Modules\TestStages\Entity\VisualTestRenderComponent.h" />
     <ClInclude Include="Modules\TestStages\Entity\PickableCircleComponent.h" />
     <ClInclude Include="Modules\TestStages\Geometry2DTestStageModule.h" />
+    <ClInclude Include="Modules\TestStages\Scene2DTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\UIUltralightTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\UIUltralight\UIUltralightTestPage.h" />
     <ClInclude Include="Modules\TestStages\Drawers\Geometry2DShapesDrawer.h" />
@@ -165,6 +167,9 @@
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaAnimation2D\DiaAnimation2D.vcxproj">
       <Project>{A6B7C8D9-E0F1-2345-ABCD-678901234567}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaScene2D\DiaScene2D.vcxproj">
+      <Project>{D6E7F8A9-B0C1-2345-DEF0-123456789004}</Project>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">

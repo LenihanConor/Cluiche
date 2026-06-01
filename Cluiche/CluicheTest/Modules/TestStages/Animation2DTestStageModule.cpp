@@ -191,18 +191,31 @@ bool Animation2DTestStageModule::VerifyGoldenPose() const
     Dia::Rig2D::BoneTransform rootTransform; // identity
     mPose->ComputeWorldTransforms(*mSkeleton, rootTransform, worldTransforms);
 
-    int wingLIdx = mSkeleton->FindBoneIndex(Dia::Core::StringCRC("Wing_L"));
-    int wingRIdx = mSkeleton->FindBoneIndex(Dia::Core::StringCRC("Wing_R"));
+    int tipLIdx = mSkeleton->FindBoneIndex(Dia::Core::StringCRC("WingTip_L"));
+    int tipRIdx = mSkeleton->FindBoneIndex(Dia::Core::StringCRC("WingTip_R"));
 
-    if (wingLIdx < 0 || wingRIdx < 0)
+    if (tipLIdx < 0 || tipRIdx < 0)
         return false;
 
-    // After flap_down_clip end: wings swept to local Y = -0.6 (world Y = -0.6)
-    float wingLY = worldTransforms[wingLIdx].position.Y();
-    float wingRY = worldTransforms[wingRIdx].position.Y();
+    // After flap_down_clip end, expected WingTip world positions.
+    // Wing_L: world pos (-1.0, -0.6) rot=+0.3. WingTip_L local pos (-0.5, 0.0) rot=+0.2.
+    // TipL world x = -1.0 + cos(0.3)*(-0.5) = -1.4777
+    // TipL world y = -0.6 + sin(0.3)*(-0.5) = -0.7478
+    static constexpr float kTipLX = -1.4777f;
+    static constexpr float kTipLY = -0.7478f;
+    static constexpr float kTipRX =  1.4777f;
+    static constexpr float kTipRY = -0.7478f;
+    static constexpr float kTolerance = 0.005f;
 
-    return std::fabsf(wingLY + 0.6f) < kPoseTolerance
-        && std::fabsf(wingRY + 0.6f) < kPoseTolerance;
+    float tipLX = worldTransforms[tipLIdx].position.X();
+    float tipLY = worldTransforms[tipLIdx].position.Y();
+    float tipRX = worldTransforms[tipRIdx].position.X();
+    float tipRY = worldTransforms[tipRIdx].position.Y();
+
+    return std::fabsf(tipLX - kTipLX) < kTolerance
+        && std::fabsf(tipLY - kTipLY) < kTolerance
+        && std::fabsf(tipRX - kTipRX) < kTolerance
+        && std::fabsf(tipRY - kTipRY) < kTolerance;
 }
 
 void Animation2DTestStageModule::EmitMetrics()

@@ -73,6 +73,9 @@
     <ClCompile Include="Modules\TestStages\Geometry2DTestStageModule.cpp">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\TestStages\Scene2DTestStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
     <ClCompile Include="Modules\TestStages\UIUltralightTestStageModule.cpp">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClCompile>
@@ -155,6 +158,9 @@
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClInclude>
     <ClInclude Include="Modules\TestStages\Geometry2DTestStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\Scene2DTestStageModule.h">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClInclude>
     <ClInclude Include="Modules\TestStages\UIUltralightTestStageModule.h">

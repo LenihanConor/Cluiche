@@ -21,7 +21,7 @@ class Animation2DTestStageModule : public TestStageModuleBase
 public:
     static const Dia::Core::StringCRC kTypeId;
     static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kSim;
-    static constexpr const char* kDescription = "Validates DiaAnimation2D: dragon skeleton, idle → flap_up → flap_down clips, golden wing pose";
+    static constexpr const char* kDescription = "Validates DiaAnimation2D: 7-bone dragon, idle->flap_up->flap_down, hierarchical tip pose";
     explicit Animation2DTestStageModule(const Dia::Core::StringCRC& instanceId);
     ~Animation2DTestStageModule() override;
 

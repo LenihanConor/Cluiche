@@ -74,7 +74,7 @@ namespace Dia { namespace ApplicationFlow {
         Dia::Core::Containers::String256        manifestPath;
 
         // v3 fields: per-stage transition targets and auto-advance flag
-        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 8>  transitions;
+        Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16>  transitions;
         bool                                                            autoAdvance = false;
     };
 
