@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Camera">
+      <UniqueIdentifier>{A1B2C3D4-E5F6-7890-ABCD-EF1234567801}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Registry">
+      <UniqueIdentifier>{B2C3D4E5-F6A7-8901-BCDE-F12345678902}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Behaviour">
+      <UniqueIdentifier>{C3D4E5F6-A7B8-9012-CDEF-123456789003}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{D4E5F6A7-B8C9-0123-DEF0-234567890004}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{E5F6A7B8-C9D0-1234-EF01-345678900005}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Camera2D.h">
+      <Filter>Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="ViewportTransform.h">
+      <Filter>Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Registry\CameraRegistry2D.h">
+      <Filter>Registry</Filter>
+    </ClInclude>
+    <ClInclude Include="Registry\CameraRegistryHealth.h">
+      <Filter>Registry</Filter>
+    </ClInclude>
+    <ClInclude Include="Behaviour\ICameraBehaviour.h">
+      <Filter>Behaviour</Filter>
+    </ClInclude>
+    <ClInclude Include="Behaviour\CameraBehaviourRegistry.h">
+      <Filter>Behaviour</Filter>
+    </ClInclude>
+    <ClInclude Include="Behaviour\FollowBehaviour.h">
+      <Filter>Behaviour</Filter>
+    </ClInclude>
+    <ClInclude Include="Behaviour\SmoothDampBehaviour.h">
+      <Filter>Behaviour</Filter>
+    </ClInclude>
+    <ClInclude Include="Behaviour\DeadzoneBehaviour.h">
+      <Filter>Behaviour</Filter>
+    </ClInclude>
+    <ClInclude Include="Behaviour\BoundsClampBehaviour.h">
+      <Filter>Behaviour</Filter>
+    </ClInclude>
+    <ClInclude Include="Behaviour\ScreenShakeBehaviour.h">
+      <Filter>Behaviour</Filter>
+    </ClInclude>
+    <ClInclude Include="Behaviour\ZoomToFitBehaviour.h">
+      <Filter>Behaviour</Filter>
+    </ClInclude>
+    <ClInclude Include="Behaviour\PanBehaviour.h">
+      <Filter>Behaviour</Filter>
+    </ClInclude>
+    <ClInclude Include="Behaviour\ZoomBehaviour.h">
+      <Filter>Behaviour</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\CameraBuilder.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ViewportTransform.cpp">
+      <Filter>Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="Registry\CameraRegistry2D.cpp">
+      <Filter>Registry</Filter>
+    </ClCompile>
+    <ClCompile Include="Registry\CameraRegistryHealth.cpp">
+      <Filter>Registry</Filter>
+    </ClCompile>
+    <ClCompile Include="Behaviour\CameraBehaviourRegistry.cpp">
+      <Filter>Behaviour</Filter>
+    </ClCompile>
+    <ClCompile Include="Behaviour\FollowBehaviour.cpp">
+      <Filter>Behaviour</Filter>
+    </ClCompile>
+    <ClCompile Include="Behaviour\SmoothDampBehaviour.cpp">
+      <Filter>Behaviour</Filter>
+    </ClCompile>
+    <ClCompile Include="Behaviour\DeadzoneBehaviour.cpp">
+      <Filter>Behaviour</Filter>
+    </ClCompile>
+    <ClCompile Include="Behaviour\BoundsClampBehaviour.cpp">
+      <Filter>Behaviour</Filter>
+    </ClCompile>
+    <ClCompile Include="Behaviour\ScreenShakeBehaviour.cpp">
+      <Filter>Behaviour</Filter>
+    </ClCompile>
+    <ClCompile Include="Behaviour\ZoomToFitBehaviour.cpp">
+      <Filter>Behaviour</Filter>
+    </ClCompile>
+    <ClCompile Include="Behaviour\PanBehaviour.cpp">
+      <Filter>Behaviour</Filter>
+    </ClCompile>
+    <ClCompile Include="Behaviour\ZoomBehaviour.cpp">
+      <Filter>Behaviour</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="dia.camera2d.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+</Project>

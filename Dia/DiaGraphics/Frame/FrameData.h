@@ -5,7 +5,7 @@
 #include "DebugFrameData.h"
 #include "UIFrameData.h"
 #include "EntityFrameData.h"
-#include <DiaGraphics/Camera/Camera2D.h>
+#include <DiaCamera2D/Camera2D.h>
 
 namespace Dia
 {
@@ -25,8 +25,8 @@ namespace Dia
 			void Clear();
 			void Copy(const FrameData& rhs);
 
-			const Camera2D& GetCamera() const { return mCamera; }
-			void SetCamera(const Camera2D& camera) { mCamera = camera; }
+			const Dia::Camera2D::Camera2D& GetCamera() const { return mCamera; }
+			void SetCamera(const Dia::Camera2D::Camera2D& camera) { mCamera = camera; }
 
 			const Dia::Maths::Vector2D& GetWindowSize() const { return mWindowSize; }
 			void SetWindowSize(const Dia::Maths::Vector2D& size) { mWindowSize = size; }
@@ -35,7 +35,7 @@ namespace Dia
 			void SetMousePixel(const Dia::Maths::Vector2D& pixel) { mMousePixel = pixel; }
 
 		private:
-			Camera2D             mCamera;
+			Dia::Camera2D::Camera2D mCamera;
 			Dia::Maths::Vector2D mWindowSize;
 			Dia::Maths::Vector2D mMousePixel;
 		};

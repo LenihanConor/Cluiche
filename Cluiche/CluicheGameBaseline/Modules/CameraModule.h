@@ -1,16 +1,18 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Filename: CameraModule.h
-// Description: Owns the active 2D camera and window size for the SimPU.
-//              Non-debug, all stages. VisualDebuggerModule and PickingModule
-//              both read from this via ModuleRef.
+// Description: Owns the CameraRegistry2D for the SimPU.
+//              Registers a "default" camera on start. Other code uses
+//              GetRegistry() for multi-camera access or GetActiveCamera() /
+//              GetViewportTransform() for the common single-camera case.
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaCore/CRC/StringCRC.h>
-#include <DiaGraphics/Camera/Camera2D.h>
-#include <DiaGraphics/Camera/ViewportTransform.h>
+#include <DiaCamera2D/Camera2D.h>
+#include <DiaCamera2D/ViewportTransform.h>
+#include <DiaCamera2D/Registry/CameraRegistry2D.h>
 #include <DiaMaths/Vector/Vector2D.h>
 
 namespace Cluiche { namespace AppFlow {
@@ -20,16 +22,28 @@ class CameraModule : public Dia::ApplicationFlow::Module
 public:
     static const Dia::Core::StringCRC kTypeId;
     static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kSim;
-    static constexpr const char* kDescription = "Owns the active 2D camera and window size";
+    static constexpr const char* kDescription = "Owns the CameraRegistry2D for the SimPU";
+
+    static constexpr const char* kDefaultCameraId = "default";
 
     explicit CameraModule(const Dia::Core::StringCRC& instanceId);
 
-    const Dia::Graphics::Camera2D&    GetCamera()          const { return mCamera; }
-    const Dia::Maths::Vector2D&       GetWindowSize()      const { return mWindowSize; }
-    Dia::Graphics::ViewportTransform  GetViewportTransform() const;
+    // Registry access (full multi-camera API)
+    Dia::Camera2D::CameraRegistry2D& GetRegistry() { return mRegistry; }
+    const Dia::Camera2D::CameraRegistry2D& GetRegistry() const { return mRegistry; }
 
-    void SetCamera(const Dia::Graphics::Camera2D& cam)       { mCamera = cam; }
-    void SetWindowSize(const Dia::Maths::Vector2D& size)     { mWindowSize = size; }
+    // Convenience: active camera (single-camera common case)
+    const Dia::Camera2D::Camera2D& GetActiveCamera()  const { return mRegistry.GetActive(); }
+    Dia::Camera2D::Camera2D&       GetActiveCamera()        { return mRegistry.GetActive(); }
+
+    // Backward compatibility — delegates to active camera
+    const Dia::Camera2D::Camera2D& GetCamera()    const { return GetActiveCamera(); }
+    void SetCamera(const Dia::Camera2D::Camera2D& cam)  { GetActiveCamera() = cam; }
+
+    const Dia::Maths::Vector2D& GetWindowSize()      const { return mWindowSize; }
+    void SetWindowSize(const Dia::Maths::Vector2D& size)   { mWindowSize = size; }
+
+    Dia::Camera2D::ViewportTransform GetViewportTransform() const;
 
 protected:
     Dia::ApplicationFlow::StartResult DoStart()            override;
@@ -37,8 +51,8 @@ protected:
     Dia::ApplicationFlow::StopResult  DoStop()             override;
 
 private:
-    Dia::Graphics::Camera2D    mCamera;
-    Dia::Maths::Vector2D       mWindowSize{ 1400.0f, 1000.0f };
+    Dia::Camera2D::CameraRegistry2D mRegistry;
+    Dia::Maths::Vector2D            mWindowSize{ 1400.0f, 1000.0f };
 };
 
 } } // namespace Cluiche::AppFlow

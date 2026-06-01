@@ -60,6 +60,9 @@ Dia is the game engine application that provides all shared engine infrastructur
 | DiaCore | Foundation library (containers, type system, memory, logging, CRC) | [diacore.md](../systems/dia/diacore.md) |
 | DiaReflect | Archive-based reflection & serialization — macro DSL, JSON/binary archives, versioning, polymorphism; eventual replacement for DiaCore/Type | [diareflect.md](../systems/dia/diareflect.md) |
 | DiaMaths | Math library (vectors, matrices, quaternions, transforms, core math utilities — pure linear algebra only after DiaGeometry2D migration) | [diamaths.md](../systems/dia/diamaths.md) |
+| DiaCamera2D | 2D camera library — Camera2D type, CameraRegistry2D, ICameraBehaviour interface with factory, 8 engine behaviours (Follow, SmoothDamp, Deadzone, BoundsClamp, ScreenShake, ZoomToFit, Pan, Zoom) | [diacamera2d.md](../systems/dia/diacamera2d.md) |
+| DiaLighting2D | 2D point light library — PointLight2D type, LightRegistry2D, layer-mask affinity, query by layer index | [dialighting2d.md](../systems/dia/dialighting2d.md) |
+| DiaScene2D | 2D scene library — `.diascene` reflected file format, LayerTable, SceneLoader2D (hydrates camera/light registries + spawns entities) | [diascene2d.md](../systems/dia/diascene2d.md) |
 | DiaGraphics | Graphics abstraction layer (ICanvas, FrameData, DebugPrimitive, rendering contracts) | [diagraphics.md](../systems/dia/diagraphics.md) |
 | DiaGraphics3D | 3D rendering type layer — Camera3D, lights, Mesh3DDrawCommand, Mesh3DFrameData, FrameData3D; separate module so 2D-only consumers never pull in Matrix44 | [diagraphics3d.md](../systems/dia/diagraphics3d.md) |
 | DiaWindow | Window management | TBD |

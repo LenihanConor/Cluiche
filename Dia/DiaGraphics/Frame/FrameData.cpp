@@ -25,7 +25,7 @@ namespace Dia
 			DebugFrameData::ClearDebugBuffer();
 			UIFrameData::ClearUIBuffer();
 			EntityFrameData::Clear();
-			mCamera = Camera2D();
+			mCamera = Dia::Camera2D::Camera2D();
 			mWindowSize = Dia::Maths::Vector2D(0.0f, 0.0f);
 			mMousePixel = Dia::Maths::Vector2D(0.0f, 0.0f);
 		}

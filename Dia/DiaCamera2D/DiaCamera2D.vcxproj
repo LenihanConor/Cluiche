@@ -1,7 +1,6 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
-  
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
       <Platform>x64</Platform>
@@ -19,63 +18,29 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="Frame\DebugFrameData.cpp" />
-    <ClCompile Include="Frame\EntityFrameData.cpp" />
-    <ClCompile Include="Frame\FrameData.cpp" />
-    <ClCompile Include="Frame\RenderFence.cpp" />
-    <ClCompile Include="Frame\SpriteDrawCommand.cpp" />
-    <ClCompile Include="Frame\UIFrameData.cpp" />
-    <ClCompile Include="Misc\RenderStates.cpp" />
-    <ClCompile Include="Misc\RGBA.cpp" />
-    <ClCompile Include="Misc\Transform.cpp" />
-    <ClCompile Include="Misc\Vertex.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="Assets\IShader.h" />
-    <ClInclude Include="Assets\ITexture.h" />
-    <ClInclude Include="Frame\DebugFrameData.h" />
-    <ClInclude Include="Frame\DebugPrimitive.h" />
-    <ClInclude Include="Frame\DebugFrameDataVisitor.h" />
-    <ClInclude Include="Frame\EntityFrameData.h" />
-    <ClInclude Include="Frame\EntityFrameDataVisitor.h" />
-    <ClInclude Include="Frame\FrameData.h" />
-    <ClInclude Include="Frame\RenderFence.h" />
-    <ClInclude Include="Frame\SpriteDrawCommand.h" />
-    <ClInclude Include="Frame\UIFrameData.h" />
-    <ClInclude Include="Interface\ICanvas.h" />
-    <ClInclude Include="Interface\IDrawable.h" />
-    <ClInclude Include="Interface\IRenderTarget.h" />
-    <ClInclude Include="Interface\IView.h" />
-    <ClInclude Include="Interface\FrameCapture.h" />
-    <ClInclude Include="Misc\PrimitiveType.h" />
-    <ClInclude Include="Misc\RenderStates.h" />
-    <ClInclude Include="Misc\RGBA.h" />
-    <ClInclude Include="Misc\Transform.h" />
-    <ClInclude Include="Misc\Vertex.h" />
-  </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{1CF9F92B-666E-4B39-9DDE-B1CFBEF68618}</ProjectGuid>
-    <RootNamespace>DiaGraphics</RootNamespace>
+    <ProjectGuid>{B2C3D4E5-F6A7-8901-BCDE-F12345678902}</ProjectGuid>
+    <RootNamespace>DiaCamera2D</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <CharacterSet>MultiByte</CharacterSet>
+    <CharacterSet>Unicode</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <CharacterSet>MultiByte</CharacterSet>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Asan|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <CharacterSet>MultiByte</CharacterSet>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <PlatformToolset>ClangCL</PlatformToolset>
-    <CharacterSet>MultiByte</CharacterSet>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -89,45 +54,70 @@
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>./;./../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>DEBUG;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <WarningLevel>Level3</WarningLevel>
-      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <BrowseInformation>true</BrowseInformation>
     </ClCompile>
-    <Lib>
-      <AdditionalDependencies>
-      </AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir)DiaUI.lib;$(OutDir)DiaMaths.lib;$(OutDir)DiaCore.lib;$(OutDir)DiaGraphics.lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-    </Lib>
     <Bscmake>
       <PreserveSbr>true</PreserveSbr>
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <Optimization>MaxSpeed</Optimization>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>./;./../;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
-    <Link>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <OptimizeReferences>true</OptimizeReferences>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <TargetMachine>MachineX86</TargetMachine>
-    </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Testing\MockITexture.h" />
-    <ClInclude Include="Testing\MockVisitors.h" />
+    <ClInclude Include="Camera2D.h" />
+    <ClInclude Include="ViewportTransform.h" />
+    <ClInclude Include="Registry\CameraRegistry2D.h" />
+    <ClInclude Include="Registry\CameraRegistryHealth.h" />
+    <ClInclude Include="Behaviour\ICameraBehaviour.h" />
+    <ClInclude Include="Behaviour\CameraBehaviourRegistry.h" />
+    <ClInclude Include="Behaviour\FollowBehaviour.h" />
+    <ClInclude Include="Behaviour\SmoothDampBehaviour.h" />
+    <ClInclude Include="Behaviour\DeadzoneBehaviour.h" />
+    <ClInclude Include="Behaviour\BoundsClampBehaviour.h" />
+    <ClInclude Include="Behaviour\ScreenShakeBehaviour.h" />
+    <ClInclude Include="Behaviour\ZoomToFitBehaviour.h" />
+    <ClInclude Include="Behaviour\PanBehaviour.h" />
+    <ClInclude Include="Behaviour\ZoomBehaviour.h" />
+    <ClInclude Include="Testing\CameraBuilder.h" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\DiaCamera2D\DiaCamera2D.vcxproj">
-      <Project>{B2C3D4E5-F6A7-8901-BCDE-F12345678902}</Project>
+    <ClCompile Include="ViewportTransform.cpp" />
+    <ClCompile Include="Registry\CameraRegistry2D.cpp" />
+    <ClCompile Include="Registry\CameraRegistryHealth.cpp" />
+    <ClCompile Include="Behaviour\CameraBehaviourRegistry.cpp" />
+    <ClCompile Include="Behaviour\FollowBehaviour.cpp" />
+    <ClCompile Include="Behaviour\SmoothDampBehaviour.cpp" />
+    <ClCompile Include="Behaviour\DeadzoneBehaviour.cpp" />
+    <ClCompile Include="Behaviour\BoundsClampBehaviour.cpp" />
+    <ClCompile Include="Behaviour\ScreenShakeBehaviour.cpp" />
+    <ClCompile Include="Behaviour\ZoomToFitBehaviour.cpp" />
+    <ClCompile Include="Behaviour\PanBehaviour.cpp" />
+    <ClCompile Include="Behaviour\ZoomBehaviour.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="dia.camera2d.architecture.module.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DiaObservation\DiaObservation.vcxproj">
+      <Project>{5E6F7A8B-C9D0-E1F2-3456-789ABCDE0123}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
+      <Project>{8d41cbe3-c493-428d-95f3-627e56500667}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaMaths\DiaMaths.vcxproj">
+      <Project>{2BBA0AD3-D449-4C0E-8C84-ACFA8BCA456B}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\DiaGeometry2D\DiaGeometry2D.vcxproj">

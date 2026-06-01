@@ -19,6 +19,9 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | DiaAnimation3D | TBD — needs `/spec-system` | `clip-and-player` feature already Approved; needs own system spec. AnimationClip3D, ClipPlayer3D, glTF loader, STEP/LINEAR/CUBICSPLINE, `AnimationComponent3D`. | DiaRig3D |
 | DiaSkinning3D | TBD — needs `/spec-system` | `skinning-palette` feature already Approved; needs own system spec. SkinningManager, per-frame Matrix34 palettes, `skinningPaletteIndex` on draw commands. | DiaAnimation3D, DiaGraphics3D |
 | DiaScene3D | TBD — needs `/spec-system` | `scene-graph` feature already Approved; needs own system spec. Flat-list scene, Transform3D parent chains, frustum culling, `Submit(scene, frameData3D)`. | DiaSkinning3D, DiaGraphics3D, DiaGeometry3D |
+| DiaCamera2D | [diacamera2d.md](specs/systems/dia/diacamera2d.md) ✅ | `camera2d-system` — Camera2D type (migrated from DiaGraphics), CameraRegistry2D, ICameraBehaviour + factory, 8 engine behaviours (Follow, SmoothDamp, Deadzone, BoundsClamp, ScreenShake, ZoomToFit, Pan, Zoom), ViewportTransform. Single feature. | DiaMaths, DiaGeometry2D ✅ |
+| DiaLighting2D | [dialighting2d.md](specs/systems/dia/dialighting2d.md) ✅ | `lighting2d-system` — PointLight2D type, LightRegistry2D, layer-mask storage, query by layer. v1 data model only (no rendering output yet). Single feature. | DiaMaths ✅ |
+| DiaScene2D | [diascene2d.md](specs/systems/dia/diascene2d.md) ✅ | Two features: `scene2d-format` (reflected struct, LayerTable, .diascene schema) + `scene2d-loader` (hydrate camera/light registries, spawn entities, resolve instance_data). | DiaCamera2D, DiaLighting2D, DiaEntity ✅, DiaReflect, DiaGeometry2D ✅ |
 | DiaArchitecture | [diaarchitecture.md](specs/systems/dia/diaarchitecture.md) ✅ | C7 → C1 → C2 → C3a (Dia modules, additive) → C3b (Cluiche apps + retirement, deferrable). C3a spec needs update to Draft→Approved; C3b is a new Draft spec. | None |
 
 ---
@@ -135,6 +138,7 @@ Spec Approved: [diaarchitecture.md](specs/systems/dia/diaarchitecture.md). C3 is
 
 | Item | Notes |
 |------|-------|
+| RenderTechnique asset type | Layer-level rendering policy (blend mode, post-process like bloom/distortion). Layers reference a technique by name; renderer resolves at draw time. Needs `/spec-feature` under DiaGraphics or DiaBgfx once the scene system lands. |
 | Camera2D controller (pan/zoom/reset) | Application-side input→Camera2D wiring for CluicheTest stages (keyboard pan, scroll zoom, home-key reset). Unblocked once coord2d-debug-overlay ships Camera2D + renderer integration. |
 | DiaAssetRuntime — Hot reload path | Asset Lifecycle Management adds `Failed → Loading` retry but no `Loaded → Loading → Loaded` path. Still need a `ReloadAsset(assetId)` for live iteration (future feature on top of lifecycle management). |
 | `Dia::Core::Blackboard` — general-purpose key-value store | Identified during DiaStateMachine research; useful for AI, animation, gameplay. Needs `/spec-feature` under DiaCore. |
