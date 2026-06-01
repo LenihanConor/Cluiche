@@ -3,6 +3,10 @@
 No per-stage scenario files needed. Adding a new stage to CluicheTest automatically
 includes it in the E2E run.
 """
+import json
+import time
+from pathlib import Path
+
 import pytest
 
 from client import AutomationError, DiaClient
@@ -29,19 +33,36 @@ def test_run_all_stages(dia_client, request):
 
     stages = dia_client.list_stages()
     results = {}
+    run_start = time.time()
 
     for stage in stages:
+        t0 = time.time()
         outcome = _run_stage(dia_client, stage, port)
+        outcome["duration_s"] = round(time.time() - t0, 2)
         results[stage] = outcome
 
-    summary = "\n".join(
-        f"  {k}: {v['status']} — {v.get('detail', '')}" for k, v in results.items()
-    )
-    print(f"\n--- Stage Results ({len(stages)} stages) ---\n{summary}")
+    total_s = round(time.time() - run_start, 2)
+
+    # Always print the summary (visible with -s or on failure)
+    summary_lines = []
+    for k, v in results.items():
+        status_icon = "PASS" if v["status"] == "passed" else "FAIL"
+        summary_lines.append(
+            f"  [{status_icon}] {k} ({v['duration_s']}s) — {v.get('detail', '')}"
+        )
+    summary = "\n".join(summary_lines)
+    print(f"\n{'=' * 60}")
+    print(f"  E2E Stage Run: {len(stages)} stages in {total_s}s")
+    print(f"{'=' * 60}")
+    print(summary)
+    print(f"{'=' * 60}\n")
+
+    # Write machine-readable JSON report
+    _write_report(request, results, total_s)
 
     failed = {k: v for k, v in results.items() if v["status"] != "passed"}
     if failed:
-        pytest.fail(f"Stage failures:\n{summary}")
+        pytest.fail(f"Stage failures ({len(failed)}/{len(stages)}):\n{summary}")
 
 
 def _run_stage(dia_client, stage: str, port: int) -> dict:
@@ -117,3 +138,25 @@ def _try_reconnect(dia_client, port: int) -> bool:
         return True
     except Exception:
         return False
+
+
+def _write_report(request, results: dict, total_s: float):
+    """Write a JSON report alongside the session log for CI consumption."""
+    repo_root = getattr(request.config, "_dia_repo_root", None)
+    if not repo_root:
+        return
+
+    report_dir = Path(repo_root) / "Cluiche" / "out" / "e2e_reports"
+    report_dir.mkdir(parents=True, exist_ok=True)
+
+    report = {
+        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "total_duration_s": total_s,
+        "stage_count": len(results),
+        "passed": sum(1 for v in results.values() if v["status"] == "passed"),
+        "failed": sum(1 for v in results.values() if v["status"] != "passed"),
+        "stages": {k: v for k, v in results.items()},
+    }
+
+    report_path = report_dir / f"e2e_{time.strftime('%Y%m%d_%H%M%S')}.json"
+    report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")

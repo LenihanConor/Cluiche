@@ -341,6 +341,26 @@ TEST_F(BaselineCommandsTest, ManifestStages_ReturnsBootTransitions)
     for (int i = 0; i < 100 && app.Update(1.0f / 60.0f); ++i) {}
 }
 
+TEST_F(BaselineCommandsTest, ManifestStages_SingleStageManifest_ReturnsEmpty)
+{
+    // Boot is the only stage — nothing to navigate to
+    TypeRegistry reg = BcBuildRegistry();
+    ApplicationManifestV3 manifest = BcBuildSingleStageManifest();
+    Application app(manifest, reg);
+    ASSERT_TRUE(app.Start());
+    BcPumpUntilSettled(app);
+
+    Json::Value params(Json::objectValue);
+    Json::Value response = Dia::API::ExecuteCommandJson(StringCRC("dia.manifest.stages"), params);
+    ASSERT_TRUE(response["success"].asBool());
+
+    const Json::Value& stages = response["data"]["stages"];
+    EXPECT_EQ(stages.size(), 0u);
+
+    app.RequestShutdown();
+    for (int i = 0; i < 100 && app.Update(1.0f / 60.0f); ++i) {}
+}
+
 TEST_F(BaselineCommandsTest, ManifestStages_NoExplicitTransitions_ReturnsAllOtherStages)
 {
     // When Boot has no explicit transitions, all non-Boot stages are returned

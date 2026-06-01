@@ -69,6 +69,7 @@ def run_orchestration(
 
     pytest_args = [
         "--tb=short",
+        "-s",
         "-p", "no:cacheprovider",
     ]
     pytest_args.extend(scenario_paths)

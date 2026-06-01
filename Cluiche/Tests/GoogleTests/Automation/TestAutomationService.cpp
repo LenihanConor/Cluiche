@@ -340,6 +340,77 @@ TEST_F(AutomationServiceTest, CheckpointRegistry_ListCheckpointsEmpty)
     for (int i = 0; i < 100 && app.Update(1.0f / 60.0f); ++i) {}
 }
 
+// AC — dia.automation.list_checkpoints shrinks after UnregisterCheckpoints
+TEST_F(AutomationServiceTest, CheckpointRegistry_ListCheckpointsAfterUnregister)
+{
+    TypeRegistry reg = AsBuildRegistry();
+    ApplicationManifestV3 manifest = AsAddSingleStageManifest();
+    Application app(manifest, reg);
+    ASSERT_TRUE(app.Start());
+    AsPumpUntilSettled(app);
+
+    Dia::Automation::AutomationService service(app);
+    service.RegisterCommands();
+
+    service.RegisterCheckpoint(nullptr, StringCRC("check_a"),
+        []() -> Dia::Automation::CheckpointResult { return {true, "a", 0.0f}; });
+    service.RegisterCheckpoint(nullptr, StringCRC("check_b"),
+        []() -> Dia::Automation::CheckpointResult { return {true, "b", 0.0f}; });
+
+    // Verify both present
+    Json::Value params(Json::objectValue);
+    Json::Value response = Dia::API::ExecuteCommandJson(StringCRC("dia.automation.list_checkpoints"), params);
+    ASSERT_TRUE(response["success"].asBool());
+    ASSERT_EQ(response["data"]["checkpoints"].size(), 2u);
+
+    // Unregister all (nullptr owner)
+    service.UnregisterCheckpoints(nullptr);
+
+    response = Dia::API::ExecuteCommandJson(StringCRC("dia.automation.list_checkpoints"), params);
+    ASSERT_TRUE(response["success"].asBool());
+    EXPECT_EQ(response["data"]["checkpoints"].size(), 0u);
+
+    app.RequestShutdown();
+    for (int i = 0; i < 100 && app.Update(1.0f / 60.0f); ++i) {}
+}
+
+// AC — dia.automation.list_checkpoints only shows checkpoints for current owner set
+TEST_F(AutomationServiceTest, CheckpointRegistry_ListCheckpointsPartialUnregister)
+{
+    TypeRegistry reg = AsBuildRegistry();
+    ApplicationManifestV3 manifest = AsAddSingleStageManifest();
+    Application app(manifest, reg);
+    ASSERT_TRUE(app.Start());
+    AsPumpUntilSettled(app);
+
+    Dia::Automation::AutomationService service(app);
+    service.RegisterCommands();
+
+    // Register two checkpoints with different owners (use Module* cast as fake ptrs)
+    auto* fakeOwnerA = reinterpret_cast<Dia::ApplicationFlow::Module*>(0x1);
+    auto* fakeOwnerB = reinterpret_cast<Dia::ApplicationFlow::Module*>(0x2);
+
+    service.RegisterCheckpoint(fakeOwnerA, StringCRC("owned_by_a"),
+        []() -> Dia::Automation::CheckpointResult { return {true, "a", 0.0f}; });
+    service.RegisterCheckpoint(fakeOwnerB, StringCRC("owned_by_b"),
+        []() -> Dia::Automation::CheckpointResult { return {true, "b", 0.0f}; });
+
+    Json::Value params(Json::objectValue);
+    Json::Value response = Dia::API::ExecuteCommandJson(StringCRC("dia.automation.list_checkpoints"), params);
+    ASSERT_EQ(response["data"]["checkpoints"].size(), 2u);
+
+    // Unregister only owner A
+    service.UnregisterCheckpoints(fakeOwnerA);
+
+    response = Dia::API::ExecuteCommandJson(StringCRC("dia.automation.list_checkpoints"), params);
+    ASSERT_TRUE(response["success"].asBool());
+    ASSERT_EQ(response["data"]["checkpoints"].size(), 1u);
+    EXPECT_EQ(response["data"]["checkpoints"][0].asString(), std::string("owned_by_b"));
+
+    app.RequestShutdown();
+    for (int i = 0; i < 100 && app.Update(1.0f / 60.0f); ++i) {}
+}
+
 // AC6 — dia.automation.validate command; returns {success:true, data:{passed,message}}
 TEST_F(AutomationServiceTest, CheckpointRegistry_ValidateCommand)
 {
