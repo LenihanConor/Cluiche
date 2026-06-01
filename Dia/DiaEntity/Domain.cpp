@@ -371,8 +371,31 @@ namespace Dia::Entity {
             desc->loadFromJson(comp, op.config);
         }
 
-        // Notify the component that it has been attached.
-        comp->OnAttach(*this, op.entity);
+        // Skip lifecycle hooks for readonly components.
+        if (desc == nullptr || !(desc->flags & kFlagReadOnly)) {
+            comp->OnAttach(*this, op.entity);
+        }
+
+        // Validate single-writer rule: no two updatable components on this entity
+        // may declare writes to the same target.
+        if (desc != nullptr && desc->writesToCount > 0) {
+            for (uint16_t w = 0; w < desc->writesToCount; ++w) {
+                Dia::Core::StringCRC target = desc->writesTo[w];
+                for (uint32_t p = 0; p < mComponentPools.Size(); ++p) {
+                    IComponentPool* otherPool = mComponentPools[p];
+                    if (otherPool->GetTypeId() == op.componentTypeId) continue;
+                    if (!otherPool->HasSlot(op.entity.GetIndex())) continue;
+                    const ComponentTypeDesc* otherDesc = ComponentRegistry::Get().Find(otherPool->GetTypeId());
+                    if (otherDesc == nullptr) continue;
+                    for (uint16_t ow = 0; ow < otherDesc->writesToCount; ++ow) {
+                        DIA_ASSERT(otherDesc->writesTo[ow] != target,
+                            "Single-writer violation: entity %u has two components writing to the same target (CRC %u)",
+                            op.entity.GetIndex(), target.Value());
+                    }
+                }
+            }
+        }
+
         DIA_LOG_DEBUG("DiaEntity", "entity %u: attached component (CRC %u)", op.entity.GetIndex(), op.componentTypeId.Value());
     }
 
@@ -381,8 +404,9 @@ namespace Dia::Entity {
         if (!pool) return;
         if (!pool->HasSlot(op.entity.GetIndex())) return;
 
+        const ComponentTypeDesc* desc = ComponentRegistry::Get().Find(op.componentTypeId);
         IComponent* comp = pool->GetRaw(op.entity.GetIndex());
-        if (comp) {
+        if (comp && (desc == nullptr || !(desc->flags & kFlagReadOnly))) {
             comp->OnDetach(*this, op.entity);
         }
         pool->Destroy(op.entity.GetIndex());
@@ -407,7 +431,10 @@ namespace Dia::Entity {
             if (pool->HasSlot(op.entity.GetIndex())) {
                 IComponent* comp = pool->GetRaw(op.entity.GetIndex());
                 if (comp) {
-                    comp->OnDetach(*this, op.entity);
+                    const ComponentTypeDesc* desc = ComponentRegistry::Get().Find(pool->GetTypeId());
+                    if (desc == nullptr || !(desc->flags & kFlagReadOnly)) {
+                        comp->OnDetach(*this, op.entity);
+                    }
                 }
                 pool->Destroy(op.entity.GetIndex());
             }

@@ -29,6 +29,7 @@ namespace Dia::Entity {
     using SaveToJsonFn   = void (*)(const IComponent* src, Json::Value& outConfig);
 
     inline constexpr uint16_t kFlagOverridesDoUpdate = 1u << 0;
+    inline constexpr uint16_t kFlagReadOnly          = 1u << 1;
 
     struct ComponentTypeDesc {
         Dia::Core::StringCRC typeId;
@@ -43,6 +44,9 @@ namespace Dia::Entity {
 
         const Dia::Core::StringCRC* requires_;
         uint16_t                    requiresCount;
+
+        const Dia::Core::StringCRC* writesTo;
+        uint16_t                    writesToCount;
 
         LoadFromJsonFn loadFromJson;
         SaveToJsonFn   saveToJson;

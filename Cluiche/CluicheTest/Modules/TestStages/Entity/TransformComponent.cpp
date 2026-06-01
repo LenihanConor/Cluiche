@@ -14,8 +14,9 @@ static Dia::Entity::FieldDesc s_TransformComponent_fields[] = {
     DIA_FIELD_ENTRY(float, y, TransformComponent)
 };
 
-DIA_COMPONENT_REGISTER(TransformComponent, "cluichetest.transform", false,
+DIA_COMPONENT_REGISTER(TransformComponent, "cluichetest.transform", false, false,
     s_TransformComponent_fields, DIA_ARRAY_COUNT(s_TransformComponent_fields),
+    nullptr, 0,
     nullptr, 0)
 
 } // namespace CluicheTest

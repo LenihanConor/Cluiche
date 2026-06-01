@@ -49,9 +49,9 @@ DIA_SERIALIZE_END
 
 namespace DiaQueryTest {
 
-    DIA_COMPONENT_REGISTER(QCompA, "qcomp-a", false, nullptr, 0, nullptr, 0)
-    DIA_COMPONENT_REGISTER(QCompB, "qcomp-b", false, nullptr, 0, nullptr, 0)
-    DIA_COMPONENT_REGISTER(QCompC, "qcomp-c", false, nullptr, 0, nullptr, 0)
+    DIA_COMPONENT_REGISTER(QCompA, "qcomp-a", false, false, nullptr, 0, nullptr, 0, nullptr, 0)
+    DIA_COMPONENT_REGISTER(QCompB, "qcomp-b", false, false, nullptr, 0, nullptr, 0, nullptr, 0)
+    DIA_COMPONENT_REGISTER(QCompC, "qcomp-c", false, false, nullptr, 0, nullptr, 0, nullptr, 0)
 
 } // namespace DiaQueryTest
 

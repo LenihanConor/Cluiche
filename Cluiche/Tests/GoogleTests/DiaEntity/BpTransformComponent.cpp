@@ -18,8 +18,9 @@ static Dia::Entity::FieldDesc s_BpTransform_fields[] = {
     DIA_FIELD_ENTRY(float, y, BpTransform)
 };
 
-DIA_COMPONENT_REGISTER(BpTransform, "bp-transform", false,
+DIA_COMPONENT_REGISTER(BpTransform, "bp-transform", false, false,
     s_BpTransform_fields, DIA_ARRAY_COUNT(s_BpTransform_fields),
+    nullptr, 0,
     nullptr, 0)
 
 } // namespace DiaEntityTest
@@ -38,8 +39,9 @@ static Dia::Entity::FieldDesc s_BpHealth_fields[] = {
     DIA_FIELD_ENTRY(int32_t, maxHp, BpHealth)
 };
 
-DIA_COMPONENT_REGISTER(BpHealth, "bp-health", false,
+DIA_COMPONENT_REGISTER(BpHealth, "bp-health", false, false,
     s_BpHealth_fields, DIA_ARRAY_COUNT(s_BpHealth_fields),
+    nullptr, 0,
     nullptr, 0)
 
 } // namespace DiaEntityTest

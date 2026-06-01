@@ -14,8 +14,9 @@ static Dia::Entity::FieldDesc s_VisualTestRenderComponent_fields[] = {
     DIA_FIELD_ENTRY(uint32_t, colour, VisualTestRenderComponent)
 };
 
-DIA_COMPONENT_REGISTER(VisualTestRenderComponent, "cluichetest.visual-test-render", false,
+DIA_COMPONENT_REGISTER(VisualTestRenderComponent, "cluichetest.visual-test-render", false, false,
     s_VisualTestRenderComponent_fields, DIA_ARRAY_COUNT(s_VisualTestRenderComponent_fields),
+    nullptr, 0,
     nullptr, 0)
 
 } // namespace CluicheTest

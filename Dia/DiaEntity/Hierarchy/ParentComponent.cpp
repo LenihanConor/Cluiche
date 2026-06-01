@@ -17,8 +17,9 @@ static Dia::Entity::FieldDesc s_ParentComponent_fields[] = {
     DIA_FIELD_ENTRY(uint32_t, parentGen,   ParentComponent)
 };
 
-DIA_COMPONENT_REGISTER(ParentComponent, "dia.hierarchy.parent", false,
+DIA_COMPONENT_REGISTER(ParentComponent, "dia.hierarchy.parent", false, false,
     s_ParentComponent_fields, DIA_ARRAY_COUNT(s_ParentComponent_fields),
+    nullptr, 0,
     nullptr, 0)
 
 void ParentComponent::OnAttach(Dia::Entity::Domain& domain, Dia::Entity::Entity self) {

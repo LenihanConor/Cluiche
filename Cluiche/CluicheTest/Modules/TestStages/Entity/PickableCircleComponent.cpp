@@ -59,8 +59,9 @@ static Dia::Entity::FieldDesc s_PickableCircleComponent_fields[] = {
     DIA_FIELD_ENTRY(unsigned int, objectIdx, PickableCircleComponent)
 };
 
-DIA_COMPONENT_REGISTER(PickableCircleComponent, "cluichetest.pickable-circle", false,
+DIA_COMPONENT_REGISTER(PickableCircleComponent, "cluichetest.pickable-circle", false, false,
     s_PickableCircleComponent_fields, DIA_ARRAY_COUNT(s_PickableCircleComponent_fields),
+    nullptr, 0,
     nullptr, 0)
 
 } // namespace CluicheTest

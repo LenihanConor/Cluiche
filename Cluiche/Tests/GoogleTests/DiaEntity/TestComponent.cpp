@@ -18,8 +18,9 @@ static Dia::Entity::FieldDesc s_TestComponent_fields[] = {
 // Registration — defines kTypeId, GetDesc(), and triggers ComponentRegistry entry.
 // StringName must match the string passed to DIA_COMPONENT in the header.
 // No REQUIRES, so pass nullptr/0 for requirements.
-DIA_COMPONENT_REGISTER(TestComponent, "test-component", false,
+DIA_COMPONENT_REGISTER(TestComponent, "test-component", false, false,
     s_TestComponent_fields, DIA_ARRAY_COUNT(s_TestComponent_fields),
+    nullptr, 0,
     nullptr, 0)
 
 } // namespace DiaEntityTest

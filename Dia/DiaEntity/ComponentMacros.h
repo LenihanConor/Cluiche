@@ -70,6 +70,25 @@ public: type name = (defaultVal); private:
 public: static constexpr bool kIsUpdatable = true; private:
 
 // =============================================================================
+// DIA_READONLY
+//
+// Place in class body alongside DIA_COMPONENT to mark a component as pure data.
+// Domain skips OnAttach/OnDetach/DoUpdate for readonly components.
+// A readonly component must NOT also be DIA_UPDATABLE.
+// =============================================================================
+#define DIA_READONLY \
+public: static constexpr bool kIsReadOnly = true; private:
+
+// =============================================================================
+// DIA_WRITES(TargetComponent)
+//
+// Place in class body (one per target) to declare cross-component write targets.
+// Domain validates at add-time that no two updatable components on the same entity
+// declare writes to the same target. Self-mutation needs no declaration.
+// =============================================================================
+#define DIA_WRITES(TargetComponent) /* documentation marker — register via DIA_WRITES_ENTRY */
+
+// =============================================================================
 // REQUIRES(OtherComponent)
 //
 // Documentation-only marker in the class body. Register actual dependencies
@@ -113,6 +132,20 @@ public: static constexpr bool kIsUpdatable = true; private:
     OtherComponent::kTypeId,
 
 // =============================================================================
+// DIA_WRITES_ENTRY(TargetComponent)
+//
+// Generates a StringCRC entry in the writes-to array.
+// Use inside a static StringCRC array initialisation block.
+//
+// Example:
+//   static Dia::Core::StringCRC s_MyComp_writes[] = {
+//       DIA_WRITES_ENTRY(TransformComponent)
+//   };
+// =============================================================================
+#define DIA_WRITES_ENTRY(TargetComponent) \
+    TargetComponent::kTypeId,
+
+// =============================================================================
 // DIA_ARRAY_COUNT(arr)
 //
 // Safe compile-time array count. Use to pass fieldCount/requiresCount.
@@ -121,8 +154,9 @@ public: static constexpr bool kIsUpdatable = true; private:
     (static_cast<uint16_t>(sizeof(arr) / sizeof((arr)[0])))
 
 // =============================================================================
-// DIA_COMPONENT_REGISTER(ClassName, StringName, IsUpdatable,
-//                         FieldsPtr, FieldsCount, ReqsPtr, ReqsCount)
+// DIA_COMPONENT_REGISTER(ClassName, StringName, IsUpdatable, IsReadOnly,
+//                         FieldsPtr, FieldsCount, ReqsPtr, ReqsCount,
+//                         WritesPtr, WritesCount)
 //
 // Place in exactly one .cpp per component. Implements:
 //   - Out-of-class definition of kTypeId (using the same StringName passed to
@@ -154,22 +188,32 @@ public: static constexpr bool kIsUpdatable = true; private:
 //       DIA_REQ_ENTRY(TransformComponent)
 //   };
 //
-//   // 4. Register — defines kTypeId, GetDesc(), and auto-registers.
+//   // 4. Define writes-to list (one per DIA_WRITES in the class).
+//   //    For a component that doesn't write other components, pass nullptr, 0.
+//   static Dia::Core::StringCRC s_ComponentFoo_writes[] = {
+//       DIA_WRITES_ENTRY(TransformComponent)
+//   };
+//
+//   // 5. Register — defines kTypeId, GetDesc(), and auto-registers.
 //   //    StringName MUST match the string passed to DIA_COMPONENT in the header.
-//   DIA_COMPONENT_REGISTER(ComponentFoo, "foo-component", false,
+//   DIA_COMPONENT_REGISTER(ComponentFoo, "foo-component", true, false,
 //       s_ComponentFoo_fields, DIA_ARRAY_COUNT(s_ComponentFoo_fields),
-//       nullptr, 0)
+//       s_ComponentFoo_reqs, DIA_ARRAY_COUNT(s_ComponentFoo_reqs),
+//       s_ComponentFoo_writes, DIA_ARRAY_COUNT(s_ComponentFoo_writes))
 //
 // Parameters:
 //   ClassName   : the component class name (no quotes)
 //   StringName  : the type-id string (quoted) — must match DIA_COMPONENT's StringName
 //   IsUpdatable : bool literal — true if the component overrides DoUpdate
+//   IsReadOnly  : bool literal — true if the component is pure data (no hooks)
 //   FieldsPtr   : pointer to FieldDesc array, or nullptr if none
 //   FieldsCount : number of entries (use DIA_ARRAY_COUNT), or 0 if none
 //   ReqsPtr     : pointer to StringCRC array of required type IDs, or nullptr
 //   ReqsCount   : number of entries, or 0 if none
+//   WritesPtr   : pointer to StringCRC array of write-target type IDs, or nullptr
+//   WritesCount : number of entries, or 0 if none
 // =============================================================================
-#define DIA_COMPONENT_REGISTER(ClassName, StringName, IsUpdatable, FieldsPtr, FieldsCount, ReqsPtr, ReqsCount) \
+#define DIA_COMPONENT_REGISTER(ClassName, StringName, IsUpdatable, IsReadOnly, FieldsPtr, FieldsCount, ReqsPtr, ReqsCount, WritesPtr, WritesCount) \
     \
     /* Out-of-class definition of the static kTypeId member.               \
        Must use the same string literal as DIA_COMPONENT(ClassName, StringName, ...) \
@@ -184,13 +228,16 @@ public: static constexpr bool kIsUpdatable = true; private:
             static_cast<uint16_t>(sizeof(ClassName)),                      \
             static_cast<uint16_t>(alignof(ClassName)),                     \
             ClassName::kVersion,                                           \
-            (IsUpdatable)                                                  \
-                ? Dia::Entity::kFlagOverridesDoUpdate                      \
-                : static_cast<uint16_t>(0u),                               \
+            static_cast<uint16_t>(                                         \
+                ((IsUpdatable) ? Dia::Entity::kFlagOverridesDoUpdate : 0u) \
+              | ((IsReadOnly)  ? Dia::Entity::kFlagReadOnly          : 0u) \
+            ),                                                             \
             (FieldsPtr),                                                   \
             (FieldsCount),                                                 \
             (ReqsPtr),                                                     \
             (ReqsCount),                                                   \
+            (WritesPtr),                                                   \
+            (WritesCount),                                                 \
             /* loadFromJson thunk: reads config into a default-constructed component. */ \
             [](Dia::Entity::IComponent* dst, const Json::Value& cfg) {     \
                 Dia::Reflect::JsonReadArchive ar(cfg);                     \

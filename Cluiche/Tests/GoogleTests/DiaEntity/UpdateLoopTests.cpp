@@ -39,7 +39,8 @@ namespace DiaEntityTest {
 
     // Registration with no fields or requirements.
     // Use kIsUpdatable to automatically set the flag.
-    DIA_COMPONENT_REGISTER(UpdatableComp, "updatable-comp", UpdatableComp::kIsUpdatable,
+    DIA_COMPONENT_REGISTER(UpdatableComp, "updatable-comp", UpdatableComp::kIsUpdatable, false,
+        nullptr, 0,
         nullptr, 0,
         nullptr, 0)
 

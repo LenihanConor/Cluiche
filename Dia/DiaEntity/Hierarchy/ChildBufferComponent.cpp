@@ -12,7 +12,8 @@ DIA_SERIALIZE_END
 namespace Dia::Entity::Hierarchy {
 
 // ChildBufferComponent has no fields to register.
-DIA_COMPONENT_REGISTER(ChildBufferComponent, "dia.hierarchy.children", false,
+DIA_COMPONENT_REGISTER(ChildBufferComponent, "dia.hierarchy.children", false, false,
+    nullptr, 0,
     nullptr, 0,
     nullptr, 0)
 
