@@ -3,7 +3,6 @@
 #include <DiaGeometry2D/Shapes/Circle.h>
 #include <DiaGeometry2D/Shapes/AARect.h>
 #include <DiaGeometry2D/Shapes/Line.h>
-#include <DiaGeometry2D/Shapes/Arc.h>
 #include <DiaGeometry2D/Shapes/Capsule.h>
 #include <DiaGeometry2D/Shapes/OORect.h>
 #include <DiaGeometry2D/Shapes/Triangle.h>

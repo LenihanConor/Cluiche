@@ -11,9 +11,9 @@ namespace Dia { namespace Geometry2D { class Sector; class ConvexPolygon; } }
 namespace Dia { namespace Geometry2DVisualDebugger {
 
 // Converts a Sector (pie-slice) into a ConvexPolygon fan: centre vertex first,
-// then 'arcSegments' vertices along the arc, closing back toward the centre edge.
-// Total vertex count = arcSegments + 2 (must not exceed ConvexPolygon::kMaxVertices = 16).
-// 'arcSegments' is clamped so that arcSegments + 2 <= 16.
+// then 'arcSegments' vertices along the arc CW→CCW. Total vertex count =
+// arcSegments + 1 (must not exceed ConvexPolygon::kMaxVertices = 16).
+// 'arcSegments' is clamped so that arcSegments + 1 <= 16.
 Dia::Geometry2D::ConvexPolygon SectorToConvexPolygon(const Dia::Geometry2D::Sector& sector, int arcSegments = 8);
 
 } } // namespace Dia::Geometry2DVisualDebugger

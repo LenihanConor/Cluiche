@@ -6,7 +6,7 @@
 // USAGE:
 //   #include "DiaGeometry2D/DiaGeometry2DSerializers.h"
 //
-// NOTE: Arc and Sector require Angle serialization. Include
+// NOTE: Sector requires Angle serialization. Include
 //   DiaMaths/DiaMathsSerializers.h before this header (or include it
 //   alongside) if Angle round-trips are needed in the same TU.
 //
@@ -25,7 +25,6 @@
 #include "DiaGeometry2D/Shapes/Ray.h"
 #include "DiaGeometry2D/Shapes/Triangle.h"
 #include "DiaGeometry2D/Shapes/Capsule.h"
-#include "DiaGeometry2D/Shapes/Arc.h"
 #include "DiaGeometry2D/Shapes/Sector.h"
 #include "DiaGeometry2D/Shapes/ConvexPolygon.h"
 
@@ -96,16 +95,6 @@ DIA_SERIALIZE(Capsule, 1)
     DIA_FIELD(mPt1)
     DIA_FIELD(mPt2)
     DIA_FIELD(mRadius)
-DIA_SERIALIZE_END
-
-// -----------------------------------------------------------------------------
-// Arc  — private float mRadius; Angle mAngle; Vector2D mFocal, mAxis
-// -----------------------------------------------------------------------------
-DIA_SERIALIZE(Arc, 1)
-    DIA_FIELD(mRadius)
-    DIA_FIELD(mAngle)
-    DIA_FIELD(mFocal)
-    DIA_FIELD(mAxis)
 DIA_SERIALIZE_END
 
 // -----------------------------------------------------------------------------

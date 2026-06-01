@@ -11,7 +11,6 @@
 #include <DiaGeometry2D/Shapes/Triangle.h>
 #include <DiaGeometry2D/Shapes/Capsule.h>
 #include <DiaGeometry2D/Shapes/ConvexPolygon.h>
-#include <DiaGeometry2D/Shapes/Arc.h>
 #include <DiaGeometry2D/Shapes/Sector.h>
 
 #ifdef DIA_DEBUG
@@ -73,7 +72,6 @@ private:
     Dia::Geometry2D::Triangle       mTriangle;
     Dia::Geometry2D::Capsule        mCapsule;
     Dia::Geometry2D::ConvexPolygon  mConvexPoly;
-    Dia::Geometry2D::Arc            mArc;
     Dia::Geometry2D::Sector         mSector;
 
     int mShapeCount = 0;

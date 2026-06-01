@@ -10,7 +10,6 @@
 #include "DiaGeometry2D/Shapes/Capsule.h"
 #include "DiaGeometry2D/Shapes/Line.h"
 #include "DiaGeometry2D/Shapes/AARect.h"
-#include "DiaGeometry2D/Shapes/Arc.h"
 #include "DiaGeometry2D/Shapes/OORect.h"
 #include "DiaGeometry2D/Shapes/Triangle.h"
 
@@ -68,55 +67,6 @@ namespace Dia
 			if (dx * dx + dy * dy <= sqR)
 			{
 				return IntersectionClassify::kPenatrating;
-			}
-
-			return IntersectionClassify::kNoIntersection;
-		}
-
-		//----------------------------------------------------------------------------------------------------
-		IntersectionClassify IntersectionTests::IsIntersecting(const Arc& arc, const Circle& circle)
-		{
-			// Test for A Containment B
-			if (!circle.IsIntersecting(arc.GetFocal()).IsIntersecting())
-			{
-				Dia::Maths::Vector2D tangent1, tangent2, closePt, farPoint;
-				circle.CalculateAxisPointToPoint(arc.GetFocal(), closePt, farPoint);
-				circle.CalculateTangents(arc.GetFocal(), tangent1, tangent2);
-
-				if (arc.IsIntersecting(tangent1).IsContainment() && arc.IsIntersecting(tangent2).IsContainment() && arc.IsIntersecting(farPoint).IsContainment())
-				{
-					return IntersectionClassify::kAContainsB;
-				}
-			}
-
-			Dia::Maths::Vector2D extent1, extent2;
-			extent1 = arc.CalculateExtentPositionClockwise();
-			extent2 = arc.CalculateExtentPositionCounterClockwise();
-
-			if (circle.IsIntersecting(arc.GetFocal()).IsContainment() &&
-				circle.IsIntersecting(extent1).IsContainment() &&
-				circle.IsIntersecting(extent2).IsContainment())
-			{
-				return IntersectionClassify::kBContainsA;
-			}
-
-			float sinOfArc = Dia::Maths::Sin(arc.GetAngle());
-			float cosOfArc = Dia::Maths::Cos(arc.GetAngle());
-
-			Dia::Maths::Vector2D U = arc.GetFocal() - (arc.GetAxis() * (circle.GetRadius() * sinOfArc));
-			Dia::Maths::Vector2D D = circle.GetCenter() - U;
-			float dsqr = D.Dot(D);
-			float e = arc.GetAxis().Dot(D);
-			if ((e > 0) && ((e * e) >= (dsqr * Dia::Maths::Square(cosOfArc))))
-			{
-				D = circle.GetCenter() - arc.GetFocal();
-				dsqr = D.Dot(D);
-				float e2 = -arc.GetAxis().Dot(D);
-
-				if ((e2 > 0) && ((e2 * e2) >= (dsqr * Dia::Maths::Square(sinOfArc))) && (dsqr <= circle.GetSquaredRadius()))
-				{
-					return IntersectionClassify::kPenatrating;
-				}
 			}
 
 			return IntersectionClassify::kNoIntersection;
@@ -369,32 +319,6 @@ namespace Dia
 				{
 					return IntersectionClassify::kPenatrating;
 				}
-			}
-
-			return IntersectionClassify::kNoIntersection;
-		}
-
-		//----------------------------------------------------------------------------------------------------
-		IntersectionClassify IntersectionTests::IsIntersecting(const Dia::Maths::Vector2D& point, const Arc& arc)
-		{
-			Dia::Maths::Vector2D toPoint = point - arc.GetFocal();
-			float sqMag = toPoint.SquareMagnitude();
-
-			// Not within the sphere radius
-			if (sqMag >= (arc.GetRadius() * arc.GetRadius()))
-			{
-				return IntersectionClassify::kNoIntersection;
-			}
-
-			// Test to see if it is within the arc angle
-			toPoint.Normalize();
-			Dia::Maths::Angle angle;
-			arc.GetAxis().GetAngleBetween(toPoint, angle);
-
-			float halfAngle = (arc.GetAngle().AsRadians() / 2.0f);
-			if (angle.AsRadians() < halfAngle)
-			{
-				return IntersectionClassify::kPenatrating;
 			}
 
 			return IntersectionClassify::kNoIntersection;

@@ -21,13 +21,12 @@ Geometry2DAABBDrawer::Geometry2DAABBDrawer(
     const Dia::Geometry2D::Triangle&      triangle,
     const Dia::Geometry2D::Capsule&       capsule,
     const Dia::Geometry2D::ConvexPolygon& convexPoly,
-    const Dia::Geometry2D::Arc&           arc,
     const Dia::Geometry2D::Sector&        sector,
     const Dia::Debug::DebugLayerManager&  mgr)
     : mCircle(circle), mAARect(aaRect), mOORect(ooRect)
     , mLine(line), mRay(ray), mTriangle(triangle)
     , mCapsule(capsule), mConvexPoly(convexPoly)
-    , mArc(arc), mSector(sector)
+    , mSector(sector)
     , mManager(mgr)
 {
     SetEnabled(false); // off by default per spec

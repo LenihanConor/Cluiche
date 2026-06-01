@@ -3,7 +3,7 @@
 // Tests for serialize() free functions defined in DiaGeometry2DSerializers.h.
 //
 // Covers: Point, Circle, AARect, OORect, Line, Ray, Triangle, Capsule,
-//         Arc, Sector, ConvexPolygon
+//         Sector, ConvexPolygon
 // Archives: JSON round-trip, binary round-trip, missing-field tolerance.
 // =============================================================================
 
@@ -259,33 +259,6 @@ TEST(DiaGeometry2DSerializer_Capsule, BinaryRoundTrip) {
 
     EXPECT_FLOAT_EQ(dst.GetRadius(), 0.5f);
     EXPECT_FLOAT_EQ(dst.GetPoint1().x, -1.0f);
-}
-
-// =============================================================================
-// Arc
-// =============================================================================
-
-TEST(DiaGeometry2DSerializer_Arc, JsonRoundTrip) {
-    Arc src(3.0f, Angle::FromDegrees(90.0f), Vector2D(1.0f, 2.0f), Vector2D(1.0f, 0.0f));
-    Json::Value root = WriteToJson(src);
-
-    Arc dst;
-    ReadFromJson(root, dst);
-
-    EXPECT_FLOAT_EQ(dst.GetRadius(), 3.0f);
-    EXPECT_FLOAT_EQ(dst.GetAngle().AsDegrees(), 90.0f);
-    EXPECT_FLOAT_EQ(dst.GetFocal().x, 1.0f);
-    EXPECT_FLOAT_EQ(dst.GetFocal().y, 2.0f);
-    EXPECT_FLOAT_EQ(dst.GetAxis().x, 1.0f);
-}
-
-TEST(DiaGeometry2DSerializer_Arc, BinaryRoundTrip) {
-    Arc src(2.0f, Angle::FromDegrees(45.0f), Vector2D(0.0f, 0.0f), Vector2D(0.0f, 1.0f));
-    Arc dst;
-    WriteAndReadBinary(src, dst);
-
-    EXPECT_FLOAT_EQ(dst.GetRadius(), 2.0f);
-    EXPECT_FLOAT_EQ(dst.GetAngle().AsDegrees(), 45.0f);
 }
 
 // =============================================================================

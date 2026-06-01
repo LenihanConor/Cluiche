@@ -21,12 +21,11 @@ Geometry2DLabelsDrawer::Geometry2DLabelsDrawer(
     const Dia::Geometry2D::Triangle&      triangle,
     const Dia::Geometry2D::Capsule&       capsule,
     const Dia::Geometry2D::ConvexPolygon& convexPoly,
-    const Dia::Geometry2D::Arc&           arc,
     const Dia::Geometry2D::Sector&        sector)
     : mCircle(circle), mAARect(aaRect), mOORect(ooRect)
     , mLine(line), mRay(ray), mTriangle(triangle)
     , mCapsule(capsule), mConvexPoly(convexPoly)
-    , mArc(arc), mSector(sector)
+    , mSector(sector)
 {}
 
 Dia::Core::StringCRC Geometry2DLabelsDrawer::GetLayerName() const
@@ -83,10 +82,6 @@ void Geometry2DLabelsDrawer::Draw(Dia::Graphics::FrameData& frameData)
             Dia::Maths::Vector2D(polyCentre.x, polyCentre.y + kLabelOffsetY),
             "convex_poly", fs, kLabelColour);
     }
-
-    frameData.RequestDrawText(
-        Dia::Maths::Vector2D(mArc.GetFocal().x, mArc.GetFocal().y + kLabelOffsetY),
-        "arc*", fs, kLabelColour);
 
     frameData.RequestDrawText(
         Dia::Maths::Vector2D(mSector.GetCenter().x, mSector.GetCenter().y + kLabelOffsetY),

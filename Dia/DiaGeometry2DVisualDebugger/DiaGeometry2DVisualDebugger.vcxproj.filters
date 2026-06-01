@@ -11,14 +11,12 @@
     <ClInclude Include="QuadtreeDrawer.h" />
     <ClInclude Include="BVHDrawer.h" />
     <ClInclude Include="HexGridDrawer.h" />
-    <ClInclude Include="ArcDrawHelper.h" />
     <ClInclude Include="SectorDrawHelper.h" />
     <ClInclude Include="OORectDrawHelper.h" />
     <ClInclude Include="CapsuleDrawHelper.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ShapeDrawer.cpp" />
-    <ClCompile Include="ArcDrawHelper.cpp" />
     <ClCompile Include="SectorDrawHelper.cpp" />
     <ClCompile Include="OORectDrawHelper.cpp" />
     <ClCompile Include="CapsuleDrawHelper.cpp" />

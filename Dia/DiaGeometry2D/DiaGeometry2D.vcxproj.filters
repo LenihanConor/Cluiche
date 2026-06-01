@@ -33,9 +33,6 @@
     <ClInclude Include="Shapes\AARect.h">
       <Filter>Shapes</Filter>
     </ClInclude>
-    <ClInclude Include="Shapes\Arc.h">
-      <Filter>Shapes</Filter>
-    </ClInclude>
     <ClInclude Include="Shapes\Capsule.h">
       <Filter>Shapes</Filter>
     </ClInclude>
@@ -104,9 +101,6 @@
     <ClCompile Include="Shapes\AARect.cpp">
       <Filter>Shapes</Filter>
     </ClCompile>
-    <ClCompile Include="Shapes\Arc.cpp">
-      <Filter>Shapes</Filter>
-    </ClCompile>
     <ClCompile Include="Shapes\Capsule.cpp">
       <Filter>Shapes</Filter>
     </ClCompile>
@@ -167,9 +161,6 @@
       <Filter>Shapes</Filter>
     </None>
     <None Include="Shapes\AARect.inl">
-      <Filter>Shapes</Filter>
-    </None>
-    <None Include="Shapes\Arc.inl">
       <Filter>Shapes</Filter>
     </None>
     <None Include="Shapes\Capsule.inl">

@@ -16,7 +16,6 @@ namespace Dia
 	{
 		class Circle;
 		class AARect;
-		class Arc;
 		class Capsule;
 		class Line;
 		class OORect;
@@ -36,7 +35,6 @@ namespace Dia
 			// Circle intersection tests
 			static IntersectionClassify IsIntersecting(const Dia::Maths::Vector2D& point, const Circle& circle);
 			static IntersectionClassify IsIntersecting(const AARect& rect, const Circle& circle);
-			static IntersectionClassify IsIntersecting(const Arc& arc, const Circle& circle);
 			static IntersectionClassify IsIntersecting(const Capsule& capsule, const Circle& circle);
 			static IntersectionClassify IsIntersecting(const Circle& circleA, const Circle& circleB);
 			static IntersectionClassify IsIntersecting(const Line& line, const Circle& circle);
@@ -48,9 +46,6 @@ namespace Dia
 			// AARect intersection tests
 			static IntersectionClassify IsIntersecting(const Dia::Maths::Vector2D& point, const AARect& rect);
 			static IntersectionClassify IsIntersecting(const AARect& rect1, const AARect& rect2);
-
-			// Arc intersection test
-			static IntersectionClassify IsIntersecting(const Dia::Maths::Vector2D& point, const Arc& arc);
 
 			// Line intersection tests
 			static IntersectionClassify IsIntersecting(const Dia::Maths::Vector2D& point, const Line& line);

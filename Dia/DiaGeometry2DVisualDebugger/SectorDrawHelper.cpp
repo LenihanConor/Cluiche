@@ -17,11 +17,11 @@ namespace Dia { namespace Geometry2DVisualDebugger {
 
 Dia::Geometry2D::ConvexPolygon SectorToConvexPolygon(const Dia::Geometry2D::Sector& sector, int arcSegments)
 {
-    // Total verts = arcSegments + 2 (centre + arc + closing point back at CW extent).
+    // Total verts = arcSegments + 1 (centre + arc rim).
     // We need at least 1 arc segment (giving a triangle: centre + 2 rim points).
-    const int maxArcSegments = Dia::Geometry2D::ConvexPolygon::kMaxVertices - 2;
+    const int maxArcSegments = Dia::Geometry2D::ConvexPolygon::kMaxVertices - 1;
     DIA_ASSERT(arcSegments >= 1 && arcSegments <= maxArcSegments,
-               "SectorToConvexPolygon: arcSegments must be in [1, 14]");
+               "SectorToConvexPolygon: arcSegments must be in [1, 15]");
 
     const int clamped = (arcSegments < 1) ? 1
                       : (arcSegments > maxArcSegments) ? maxArcSegments
@@ -37,9 +37,10 @@ Dia::Geometry2D::ConvexPolygon SectorToConvexPolygon(const Dia::Geometry2D::Sect
     const float totalRad  = halfAngle.AsRadians() * 2.0f;
     const float stepRad   = (clamped > 1) ? (totalRad / static_cast<float>(clamped - 1)) : 0.0f;
 
-    // Layout: [0] = centre, [1..clamped] = arc rim, [clamped+1] = closing duplicate of arc[0]
-    // But ConvexPolygon is a closed shape already — winding: centre, then arc CW→CCW.
-    const int totalVerts = clamped + 2; // centre + arc verts + close-back vertex
+    // Layout: [0] = centre, [1..clamped] = arc rim CW→CCW.
+    // No explicit close-back vertex: the polygon renderer wraps verts[clamped]→verts[0],
+    // which draws the CCW-extent-to-centre radius line automatically.
+    const int totalVerts = clamped + 1;
     Dia::Maths::Vector2D verts[Dia::Geometry2D::ConvexPolygon::kMaxVertices];
 
     verts[0] = sector.GetCenter();
@@ -51,9 +52,6 @@ Dia::Geometry2D::ConvexPolygon SectorToConvexPolygon(const Dia::Geometry2D::Sect
         const Dia::Maths::Vector2D dir = startDir.AsRotateCounterClockwiseBy(stepAngle);
         verts[1 + i] = sector.GetCenter() + (dir * sector.GetRadius());
     }
-
-    // Close back to the CW extent so the outline is a proper closed polygon.
-    verts[1 + clamped] = verts[1];
 
     return Dia::Geometry2D::ConvexPolygon(verts, totalVerts);
 }

@@ -9,7 +9,6 @@ namespace Dia
 	namespace Geometry2D
 	{
 		class AARect;
-		class Arc;
 		class Capsule;
 		class Line;
 		class OORect;
@@ -34,7 +33,6 @@ namespace Dia
 
 			static Circle CreateFrom(float radius, const Dia::Maths::Vector2D& position);
 			static Circle CreateFrom(const AARect& rect);
-			static Circle CreateFrom(const Arc& arc);
 			static Circle CreateFrom(const Capsule& capsule);
 			static Circle CreateFrom(const Line& line);
 			static Circle CreateFrom(const OORect& rect);
@@ -43,7 +41,6 @@ namespace Dia
 			// Center and radius change
 			void ReContructToInclude(const Dia::Maths::Vector2D& point);
 			void ReContructToInclude(const AARect& rect);
-			void ReContructToInclude(const Arc& arc);
 			void ReContructToInclude(const Capsule& capsule);
 			void ReContructToInclude(const Circle& circle);
 			void ReContructToInclude(const Line& line);
@@ -53,7 +50,6 @@ namespace Dia
 			// Only radius will change
 			void ExpandToInclude(const Dia::Maths::Vector2D& point);
 			void ExpandToInclude(const AARect& rect);
-			void ExpandToInclude(const Arc& arc);
 			void ExpandToInclude(const Capsule& capsule);
 			void ExpandToInclude(const Circle& circle);
 			void ExpandToInclude(const Line& line);
@@ -71,7 +67,6 @@ namespace Dia
 
 			void ClosestPointOnCircleTo(const Dia::Maths::Vector2D& point, Dia::Maths::Vector2D& result)const;
 			void ClosestPointOnCircleTo(const AARect& rect, Dia::Maths::Vector2D& result)const;
-			void ClosestPointOnCircleTo(const Arc& arc, Dia::Maths::Vector2D& result)const;
 			void ClosestPointOnCircleTo(const Capsule& capsule, Dia::Maths::Vector2D& result)const;
 			void ClosestPointOnCircleTo(const Circle& circle, Dia::Maths::Vector2D& result)const;
 			void ClosestPointOnCircleTo(const Line& line, Dia::Maths::Vector2D& result)const;
@@ -80,7 +75,6 @@ namespace Dia
 
 			IntersectionClassify IsIntersecting(const Dia::Maths::Vector2D& point)const;
 			IntersectionClassify IsIntersecting(const AARect& rect)const;
-			IntersectionClassify IsIntersecting(const Arc& arc)const;
 			IntersectionClassify IsIntersecting(const Capsule& capsule)const;
 			IntersectionClassify IsIntersecting(const Circle& circle)const;
 			IntersectionClassify IsIntersecting(const Line& line)const;

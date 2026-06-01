@@ -114,12 +114,12 @@ void Geometry2DTestStageModule::OnUpdate(float /*deltaTime*/)
 
             mShapesDrawer = std::make_unique<Geometry2DShapesDrawer>(
                 mCircle, mAARect, mOORect, mLine, mRay, mTriangle,
-                mCapsule, mConvexPoly, mArc, mSector, mSpatialScatter, *mgr);
+                mCapsule, mConvexPoly, mSector, mSpatialScatter, *mgr);
             mgr->Register(mShapesDrawer.get(), 20, stageTag);
 
             mLabelsDrawer = std::make_unique<Geometry2DLabelsDrawer>(
                 mCircle, mAARect, mOORect, mLine, mRay, mTriangle,
-                mCapsule, mConvexPoly, mArc, mSector);
+                mCapsule, mConvexPoly, mSector);
             mgr->Register(mLabelsDrawer.get(), 21, stageTag);
 
             mIntersectionsDrawer = std::make_unique<Geometry2DIntersectionsDrawer>(mIntersectionPairs, *mgr);
@@ -127,7 +127,7 @@ void Geometry2DTestStageModule::OnUpdate(float /*deltaTime*/)
 
             mAABBDrawer = std::make_unique<Geometry2DAABBDrawer>(
                 mCircle, mAARect, mOORect, mLine, mRay, mTriangle,
-                mCapsule, mConvexPoly, mArc, mSector, *mgr);
+                mCapsule, mConvexPoly, mSector, *mgr);
             mgr->Register(mAABBDrawer.get(), 23, stageTag);
 
             // Spatial structure drawers
@@ -328,7 +328,7 @@ void Geometry2DTestStageModule::SetupGallery()
         Dia::Maths::Vector2D(kStartX + kSpacing * 4, kRow1Y),
         Dia::Maths::Vector2D(1.0f, 0.3f));
 
-    // Row 2: Triangle, Capsule, ConvexPoly, Arc, Sector
+    // Row 2: Triangle, Capsule, ConvexPoly, Sector
     mTriangle = Dia::Geometry2D::Triangle(
         Dia::Maths::Vector2D(kStartX - 35.0f, kRow2Y - 30.0f),
         Dia::Maths::Vector2D(kStartX + 35.0f, kRow2Y - 30.0f),
@@ -350,19 +350,13 @@ void Geometry2DTestStageModule::SetupGallery()
         mConvexPoly = Dia::Geometry2D::ConvexPolygon(verts, 5);
     }
 
-    mArc = Dia::Geometry2D::Arc(
-        38.0f,
-        Dia::Maths::Angle::FromDegrees(120.0f),
-        Dia::Maths::Vector2D(kStartX + kSpacing * 3, kRow2Y),
-        Dia::Maths::Vector2D(0.0f, 1.0f));
-
     mSector = Dia::Geometry2D::Sector(
         Dia::Maths::Vector2D(kStartX + kSpacing * 4, kRow2Y),
         38.0f,
         Dia::Maths::Vector2D(0.0f, 1.0f),
         Dia::Maths::Angle::FromDegrees(60.0f));
 
-    mShapeCount = 10;
+    mShapeCount = 9;
 }
 
 #ifdef DIA_DEBUG

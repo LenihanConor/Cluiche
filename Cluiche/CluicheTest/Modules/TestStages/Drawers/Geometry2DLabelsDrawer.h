@@ -12,7 +12,6 @@
 #include <DiaGeometry2D/Shapes/Triangle.h>
 #include <DiaGeometry2D/Shapes/Capsule.h>
 #include <DiaGeometry2D/Shapes/ConvexPolygon.h>
-#include <DiaGeometry2D/Shapes/Arc.h>
 #include <DiaGeometry2D/Shapes/Sector.h>
 
 namespace CluicheTest {
@@ -29,7 +28,6 @@ public:
         const Dia::Geometry2D::Triangle&      triangle,
         const Dia::Geometry2D::Capsule&       capsule,
         const Dia::Geometry2D::ConvexPolygon& convexPoly,
-        const Dia::Geometry2D::Arc&           arc,
         const Dia::Geometry2D::Sector&        sector);
 
     Dia::Core::StringCRC GetLayerName() const override;
@@ -45,7 +43,6 @@ private:
     const Dia::Geometry2D::Triangle&      mTriangle;
     const Dia::Geometry2D::Capsule&       mCapsule;
     const Dia::Geometry2D::ConvexPolygon& mConvexPoly;
-    const Dia::Geometry2D::Arc&           mArc;
     const Dia::Geometry2D::Sector&        mSector;
     float mFontScale = 1.0f;
 };

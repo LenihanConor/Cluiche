@@ -78,7 +78,6 @@
     <ClInclude Include="Shapes\IntersectionClassify.h" />
     <ClInclude Include="Shapes\ContactResult.h" />
     <ClInclude Include="Shapes\AARect.h" />
-    <ClInclude Include="Shapes\Arc.h" />
     <ClInclude Include="Shapes\Capsule.h" />
     <ClInclude Include="Shapes\Circle.h" />
     <ClInclude Include="Shapes\Line.h" />
@@ -107,7 +106,6 @@
     <ClCompile Include="Shapes\IntersectionClassify.cpp" />
     <ClCompile Include="Shapes\ContactResult.cpp" />
     <ClCompile Include="Shapes\AARect.cpp" />
-    <ClCompile Include="Shapes\Arc.cpp" />
     <ClCompile Include="Shapes\Capsule.cpp" />
     <ClCompile Include="Shapes\Circle.cpp" />
     <ClCompile Include="Shapes\Line.cpp" />
@@ -131,7 +129,6 @@
   <ItemGroup>
     <None Include="Shapes\IntersectionClassify.inl" />
     <None Include="Shapes\AARect.inl" />
-    <None Include="Shapes\Arc.inl" />
     <None Include="Shapes\Capsule.inl" />
     <None Include="Shapes\Circle.inl" />
     <None Include="Shapes\Line.inl" />
