@@ -194,6 +194,9 @@ public:
 
     const SerializeResult& GetResult() const { return mResult; }
 
+    // Access current JSON node — used by types that need raw Json::Value access (e.g. opaque instanceData fields)
+    const Json::Value& CurrentNodePublic() const { return CurrentNode(); }
+
     void AddError(SerializeErrorKind kind, Dia::Core::StringCRC fieldName, const char* msg) {
         mResult.AddError(kind, fieldName, msg);
     }

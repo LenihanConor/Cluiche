@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Scene">
+      <UniqueIdentifier>{A1B2C3D4-E5F6-7890-ABCD-123456789001}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Loader">
+      <UniqueIdentifier>{B2C3D4E5-F6A7-8901-BCDE-234567890002}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{C3D4E5F6-A7B8-9012-CDEF-345678900003}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Scene2D.h">
+      <Filter>Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="DiaScene2DSerializers.h">
+      <Filter>Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="LayerTable.h">
+      <Filter>Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="SceneLoadContext.h">
+      <Filter>Loader</Filter>
+    </ClInclude>
+    <ClInclude Include="SceneLoader2D.h">
+      <Filter>Loader</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="LayerTable.cpp">
+      <Filter>Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="SceneLoader2D.cpp">
+      <Filter>Loader</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="dia.scene2d.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+</Project>

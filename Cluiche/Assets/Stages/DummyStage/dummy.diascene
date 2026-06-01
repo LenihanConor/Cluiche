@@ -1,0 +1,40 @@
+{
+  "scene2d": {
+    "world_bounds": { "mBottomLeft": [0, 0], "mTopRight": [1920, 1080] },
+    "layers": [
+      { "id": {"value": "background"}, "sort_order": -10, "parallax": [0.5, 0.5], "sort_policy": {"value": "insertion"}, "enabled": true },
+      { "id": {"value": "midground"},  "sort_order":   0, "parallax": [1.0, 1.0], "sort_policy": {"value": "insertion"}, "enabled": true },
+      { "id": {"value": "foreground"}, "sort_order":  10, "parallax": [1.0, 1.0], "sort_policy": {"value": "insertion"}, "enabled": true }
+    ],
+    "cameras": [
+      {
+        "id": {"value": "default_cam"},
+        "active": true,
+        "blueprint": {"value": "camera_2d_basic"},
+        "instance_data": { "Camera2D.position": [960.0, 540.0], "Camera2D.zoom": 1.0 }
+      }
+    ],
+    "lights": [
+      {
+        "id": {"value": "ambient"},
+        "enabled": true,
+        "blueprint": {"value": "ambient_light"},
+        "affects_layers": [ {"value": "midground"}, {"value": "foreground"} ],
+        "instance_data": {
+          "PointLight2D.position": [960.0, 540.0],
+          "PointLight2D.radius": 2000.0,
+          "PointLight2D.intensity": 0.5
+        }
+      }
+    ],
+    "entities": [
+      {
+        "id": {"value": "spawn_point"},
+        "name": {"value": "player_spawn"},
+        "blueprint": {"value": "spawn_marker"},
+        "enabled": true,
+        "instance_data": { "Transform2D.position": [960.0, 540.0] }
+      }
+    ]
+  }
+}

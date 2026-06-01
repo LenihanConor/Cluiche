@@ -278,4 +278,6 @@ namespace Dia::Scene2D
 
 ## Status
 
-`Draft` — Ready for review and approval.
+`Done`
+
+**Plan:** [diascene2d.plan.md](diascene2d.plan.md)
