@@ -37,6 +37,10 @@
         {
             "path": "stages/Geometry2DTestStage/geometry2d_test_stage.diastage",
             "type": "stage"
+        },
+        {
+            "path": "stages/UIUltralightTestStage/ui_ultralight_test_stage.diastage",
+            "type": "stage"
         }
     ],
     "name": "CluicheTest",

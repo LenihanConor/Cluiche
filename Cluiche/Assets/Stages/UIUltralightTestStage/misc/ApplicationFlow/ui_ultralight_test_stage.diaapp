@@ -1,0 +1,35 @@
+{
+    "version": 3,
+    "processing_units": [
+        {
+            "instance_id": "MainPU",
+            "frequency_hz": 30,
+            "dedicated_thread": false,
+            "modules": [
+                {
+                    "instance_id": "UIUltralightTestStageModule",
+                    "type_id": "UIUltralightTestStageModule",
+                    "stages": [
+                        "UIUltralightTestStage"
+                    ],
+                    "dependencies": [
+                        "AutomationModule",
+                        "UIModule"
+                    ],
+                    "channels": [
+                        {
+                            "id": "AutomationService",
+                            "role": "consumes"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "instance_id": "SimPU",
+            "frequency_hz": 30,
+            "dedicated_thread": true,
+            "modules": []
+        }
+    ]
+}

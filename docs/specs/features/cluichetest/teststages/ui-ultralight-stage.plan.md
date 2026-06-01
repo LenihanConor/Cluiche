@@ -1,7 +1,7 @@
 # Implementation Plan: UIUltralightTestStage
 
 **Spec:** [ui-ultralight-stage.md](ui-ultralight-stage.md)
-**Status:** Todo
+**Status:** In Progress
 
 ---
 
@@ -154,15 +154,15 @@ private:
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
 | 1 | *(Mockup)* `ui-ultralight-stage.mockup.html` | Visual sign-off | Done | sonnet | Approved 2026-05-27 |
-| 2 | Rename `Assets/Stages/UIUltralightStage/` → `UIUltralightTestStage/`; create `ui_ultralight_test_stage.diastage` + `misc/ApplicationFlow/ui_ultralight_test_stage.diaapp` | Files exist at correct paths; diastage points to diaapp | Todo | haiku | Move existing Alpine samples into the renamed folder |
-| 3 | Create `UIUltralightTestPage.h/.cpp` in `Modules/TestStages/UIUltralight/` — `IUIUltralightTestCallbacks` interface, `InitializePage()`, 4 bound methods (OnPageReady, OnButtonClicked, GetTestValue, ReportReceivedValue) | Build passes; page compiles | Todo | sonnet | |
-| 4 | Create `UIUltralightTestStageModule.h/.cpp` — inherits `TestStageModuleBase`, implements `IUIUltralightTestCallbacks`; DoStart loads page + registers 6 checkpoints; DoUpdate polls page state + injects mouse + emits metrics; `PersistsAcrossEntries()` returns true | Stage loads; all 6 checkpoints reachable | Todo | sonnet | Depends on T-03 |
-| 5 | Create `ui_ultralight_test.html` Alpine panel — `DOMContentLoaded` calls `app.OnPageReady()` + `app.GetTestValue()` → echoes via `app.ReportReceivedValue(val)`; button `@click` calls `app.OnButtonClicked()` | Open in browser; 4 bridge calls visible in console | Todo | sonnet | Depends on T-03 (bound method names) |
-| 6 | Register stage in `cluiche_main.diaapp` (Boot transitions, stage entry, UIModule stages, VisualDebugger stages, HUD stages, Console stages); register in `cluichetest.diagame` (import entry); register in `assets.catalogue.json` (stage + manifest + ui entries) | Stage visible in Boot menu; `dia pipeline` passes | Todo | haiku | Depends on T-02 |
-| 7 | Update `CluicheTest.vcxproj` + `.vcxproj.filters` — add UIUltralightTestStageModule.h/.cpp + UIUltralightTestPage.h/.cpp | Clean build | Todo | haiku | Depends on T-03, T-04 |
-| 8 | Write pytest scenario `test_ui_ultralight.py` (6 tests); register in `default.json` | Scenario file valid; plan updated | Todo | sonnet | Depends on T-04 (checkpoint names) |
-| 9 | `dia run cluichetest` — visual verify against mockup; all 6 checkpoints PASS; no ERROR logs | Manual visual gate | Todo | sonnet | Depends on T-04, T-05, T-06, T-07 |
-| 10 | Commit + update spec status → Done | — | Todo | haiku | Depends on T-08, T-09 |
+| 2 | Rename `Assets/Stages/UIUltralightStage/` → `UIUltralightTestStage/`; create `ui_ultralight_test_stage.diastage` + `misc/ApplicationFlow/ui_ultralight_test_stage.diaapp` | Files exist at correct paths; diastage points to diaapp | Done | haiku | New folder created (UIUltralightStage left unchanged as template); stage_ui alias set |
+| 3 | Create `UIUltralightTestPage.h/.cpp` in `Modules/TestStages/UIUltralight/` — `IUIUltralightTestCallbacks` interface, `InitializePage()`, 4 bound methods (OnPageReady, OnButtonClicked, GetTestValue, ReportReceivedValue) | Build passes; page compiles | Done | sonnet | Uses window.onload (not DOMContentLoaded) — app object injected in OnDOMReady before window.onload |
+| 4 | Create `UIUltralightTestStageModule.h/.cpp` — inherits `TestStageModuleBase`, implements `IUIUltralightTestCallbacks`; DoStart loads page + registers 6 checkpoints; DoUpdate polls page state + injects mouse + emits metrics; `PersistsAcrossEntries()` returns true | Stage loads; all 6 checkpoints reachable | Done | sonnet | Mouse click at (2591,78) for 2752-wide window (80% of 3440); LoadingScreenModule reused on SimPU for UI composite |
+| 5 | Create `ui_ultralight_test.html` vanilla JS panel — `window.onload` calls `app.OnPageReady()` + `app.GetTestValue()` → echoes via `app.ReportReceivedValue(val)`; button `onclick` calls `app.OnButtonClicked()` | Visible in top-right panel; all 4 bridge calls fire | Done | sonnet | Alpine.js dropped (no CDN in Ultralight); plain HTML+CSS+JS |
+| 6 | Register stage in `cluiche_main.diaapp` (Boot transitions, stage entry, UIModule stages, TestStageHUDModule stages, LoadingScreenModule stages); register in `cluichetest.diagame` (import entry); register in `assets.catalogue.json` (stage + manifest + ui entries) | Stage visible in Boot menu | Done | haiku | LoadingScreenModule added to UIUltralightTestStage stages for UI composite on SimPU |
+| 7 | Update `CluicheTest.vcxproj` + `.vcxproj.filters` — add UIUltralightTestStageModule.h/.cpp + UIUltralightTestPage.h/.cpp | Clean build | Done | haiku | Filter group ApplicationFlow\Modules\TestStages\UIUltralight added |
+| 8 | Write pytest scenario `test_ui_ultralight.py` (6 tests); register in `default.json` | Scenario file valid; plan updated | Done | sonnet | |
+| 9 | `dia run cluichetest` — visual verify against mockup; all 6 checkpoints PASS; no ERROR logs | Manual visual gate | Done | sonnet | Visually verified by user — panel visible top-right, all 6 checkpoints green, PASS 1/300 |
+| 10 | Commit + update spec status → Done | — | Todo | haiku | |
 
 ---
 

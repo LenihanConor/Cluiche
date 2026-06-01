@@ -383,4 +383,6 @@ None.
 
 ## Status
 
-`Approved` — 2026-05-27
+`Done` — 2026-06-01
+
+**Plan:** [ui-ultralight-stage.plan.md](ui-ultralight-stage.plan.md)

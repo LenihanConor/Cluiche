@@ -276,6 +276,45 @@
             "tags": [
                 "misc/ApplicationFlow"
             ]
+        },
+        {
+            "id": "stage.ui_ultralight_test_stage",
+            "type": "stage",
+            "source_path": "../Stages/UIUltralightTestStage/ui_ultralight_test_stage.diastage",
+            "scope": "global",
+            "tags": [
+                "misc"
+            ],
+            "references": [
+                {
+                    "type": "contains",
+                    "target": "manifest.ui_ultralight_test_stage"
+                },
+                {
+                    "type": "contains",
+                    "target": "ui.ui_ultralight_test_page"
+                }
+            ]
+        },
+        {
+            "id": "manifest.ui_ultralight_test_stage",
+            "type": "manifest",
+            "source_path": "../Stages/UIUltralightTestStage/misc/ApplicationFlow/ui_ultralight_test_stage.diaapp",
+            "scope": "stage",
+            "stage_name": "UIUltralightTestStage",
+            "tags": [
+                "misc/ApplicationFlow"
+            ]
+        },
+        {
+            "id": "ui.ui_ultralight_test_page",
+            "type": "ui",
+            "source_path": "../Stages/UIUltralightTestStage/Presentation/UI/ui_ultralight_test.html",
+            "scope": "stage",
+            "stage_name": "UIUltralightTestStage",
+            "tags": [
+                "Presentation/UI"
+            ]
         }
     ]
 }

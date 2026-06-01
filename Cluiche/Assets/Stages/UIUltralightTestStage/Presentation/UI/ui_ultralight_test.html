@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>UIUltralight Test</title>
+<style>
+  body {
+    margin: 0; padding: 0;
+    background: transparent;
+    font-family: monospace;
+    font-size: 13px;
+    color: #e0e0e0;
+  }
+  #panel {
+    position: fixed;
+    top: 16px; right: 16px;
+    width: 290px;
+    background: rgba(20,20,30,0.88);
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 12px 14px;
+    box-sizing: border-box;
+  }
+  h3 { margin: 0 0 8px; font-size: 14px; color: #adf; }
+  .row { margin: 3px 0; }
+  .label { color: #888; }
+  .ok { color: #5f5; }
+  .pending { color: #fa5; }
+  #btn {
+    display: block; width: 100%;
+    margin-top: 10px; padding: 7px;
+    background: #335; border: 1px solid #66a;
+    color: #ccf; border-radius: 4px; cursor: pointer;
+    font-family: monospace; font-size: 13px;
+  }
+  #btn.clicked { background: #253; border-color: #5a5; color: #afa; }
+  .section { margin-top: 10px; border-top: 1px solid #333; padding-top: 6px; }
+</style>
+</head>
+<body>
+<div id="panel">
+  <h3>UIUltralight Test Panel</h3>
+  <div class="row"><span class="label">OnPageReady: </span><span id="status-ready" class="pending">pending</span></div>
+  <button id="btn" onclick="handleButtonClick()">Click me</button>
+  <div class="section">
+    <div class="row"><span class="label">Round-trip:</span></div>
+    <div class="row"><span class="label">&nbsp;&nbsp;C++ sent: </span><span id="rt-sent">—</span></div>
+    <div class="row"><span class="label">&nbsp;&nbsp;JS echoed: </span><span id="rt-echo">—</span><span id="rt-ok" class="ok" style="display:none"> ✓</span></div>
+  </div>
+</div>
+
+<script>
+  function handleButtonClick() {
+    document.getElementById('btn').className = 'clicked';
+    document.getElementById('btn').textContent = '✓ OnButtonClicked fired';
+    app.OnButtonClicked();
+  }
+
+  // Use window.onload — 'app' is injected by Ultralight's OnDOMReady which fires
+  // before window.onload, so the bridge is guaranteed to exist here.
+  window.onload = function() {
+    // Signal C++ that the page DOM is ready
+    app.OnPageReady();
+    document.getElementById('status-ready').textContent = 'fired';
+    document.getElementById('status-ready').className = 'ok';
+
+    // Round-trip: ask C++ for the test value and echo it back
+    var val = app.GetTestValue();
+    document.getElementById('rt-sent').textContent = val || '—';
+    document.getElementById('rt-echo').textContent = val || '—';
+    if (val) {
+      document.getElementById('rt-ok').style.display = 'inline';
+      app.ReportReceivedValue(val);
+    }
+  };
+</script>
+</body>
+</html>

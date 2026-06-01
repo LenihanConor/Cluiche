@@ -7,7 +7,8 @@
                 "DummyStage",
                 "RigidBody2DTestStage",
                 "AssetRuntimeTestStage",
-                "Geometry2DTestStage"
+                "Geometry2DTestStage",
+                "UIUltralightTestStage"
             ],
             "auto_advance": false
         },
@@ -28,6 +29,13 @@
         },
         {
             "name": "Geometry2DTestStage",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "UIUltralightTestStage",
             "transitions": [
                 "Boot"
             ],
@@ -178,7 +186,8 @@
                     "instance_id": "UIModule",
                     "type_id": "UIModule",
                     "stages": [
-                        "DummyStage"
+                        "DummyStage",
+                        "UIUltralightTestStage"
                     ],
                     "dependencies": [
                         "ObservationModule",
@@ -305,7 +314,8 @@
                     "instance_id": "LoadingScreenModule",
                     "type_id": "LoadingScreenModule",
                     "stages": [
-                        "Boot"
+                        "Boot",
+                        "UIUltralightTestStage"
                     ],
                     "dependencies": [],
                     "channels": [
@@ -398,7 +408,8 @@
                         "DummyStage",
                         "RigidBody2DTestStage",
                         "AssetRuntimeTestStage",
-                        "Geometry2DTestStage"
+                        "Geometry2DTestStage",
+                        "UIUltralightTestStage"
                     ],
                     "dependencies": [
                         "DebugUI"
