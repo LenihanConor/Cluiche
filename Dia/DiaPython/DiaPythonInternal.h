@@ -5,6 +5,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winvalid-offsetof"
+
 #include <pybind11/pybind11.h>
 #include <pybind11/embed.h>
 #include "ErrorHandling/Error.h"  // For ErrorCode enum
@@ -132,3 +135,5 @@ namespace Dia
 		}
 	}
 }
+
+#pragma GCC diagnostic pop

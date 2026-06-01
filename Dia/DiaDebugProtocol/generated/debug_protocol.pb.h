@@ -5,6 +5,9 @@
 #ifndef GOOGLE_PROTOBUF_INCLUDED_debug_5fprotocol_2eproto_2epb_2eh
 #define GOOGLE_PROTOBUF_INCLUDED_debug_5fprotocol_2eproto_2epb_2eh
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winvalid-offsetof"
+
 #include <limits>
 #include <string>
 #include <type_traits>
@@ -7905,5 +7908,7 @@ inline const EnumDescriptor* GetEnumDescriptor<::dia::debug::MessageType>() {
 // @@protoc_insertion_point(global_scope)
 
 #include "google/protobuf/port_undef.inc"
+
+#pragma GCC diagnostic pop
 
 #endif  // GOOGLE_PROTOBUF_INCLUDED_debug_5fprotocol_2eproto_2epb_2eh

@@ -3,7 +3,11 @@
 #include "DiaCore/Reflect/SerializeResult.h"
 #include "DiaCore/Reflect/ContainerSpecializations.h"
 #include "DiaCore/Reflect/PolymorphicRegistry.h"
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmicrosoft-exception-spec"
 #include "DiaCore/Json/external/json/json.h"
+#pragma GCC diagnostic pop
 
 #include <type_traits>
 #include <concepts>
