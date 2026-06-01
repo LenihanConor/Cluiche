@@ -2,7 +2,7 @@
 #include <DiaUI/Page.h>
 #include <DiaCore/Strings/String64.h>
 
-namespace Dia { namespace UI { struct BoundMethodArgs; class BoundMethodValue; } }
+namespace Dia { namespace UI { class BoundMethodArgs; class BoundMethodValue; } }
 
 namespace CluicheTest {
 
