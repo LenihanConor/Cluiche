@@ -446,3 +446,103 @@ TEST(WebSocketIntegration, ServerStop_ClientHandlesGracefully)
 	client.Disconnect();
 	EXPECT_FALSE(client.IsConnected());
 }
+
+// ==============================================================================
+// Stale Connection Eviction
+// ==============================================================================
+
+TEST(WebSocketIntegration, StaleConnection_EvictedOnSendFailure)
+{
+	// Verify that when a client disconnects abruptly, subsequent broadcasts
+	// don't error-spam — the server evicts the dead connection silently.
+	Server server(9600);
+	server.Start();
+
+	std::atomic<int> connectCount{0};
+	std::atomic<int> disconnectCount{0};
+	server.SetConnectionCallback([&](int connId, bool connected) {
+		if (connected) connectCount++;
+		else disconnectCount++;
+	});
+
+	Client client;
+	client.SetConnectionTimeout(5.0f);
+	client.SetReconnectOnDisconnect(false);
+	client.Connect("ws://127.0.0.1:9600");
+
+	PumpUpdates(server, client, 20);
+	ASSERT_EQ(server.GetConnectionCount(), 1);
+
+	// Force-disconnect client without graceful close
+	client.Disconnect();
+
+	// Server hasn't processed the disconnect yet — broadcast will hit a dead connection.
+	// The server should evict it rather than logging errors every frame.
+	server.BroadcastText("after disconnect 1");
+	server.BroadcastText("after disconnect 2");
+	server.BroadcastText("after disconnect 3");
+
+	// Pump server to process outgoing + detect stale
+	for (int i = 0; i < 50; ++i)
+	{
+		server.Update();
+		ThisThread::SleepMs(10);
+	}
+
+	// Connection should be evicted from the active set
+	EXPECT_EQ(server.GetConnectionCount(), 0);
+
+	server.Stop();
+}
+
+TEST(WebSocketIntegration, StaleConnection_OtherClientsUnaffected)
+{
+	// When one client dies, broadcasts still reach remaining clients.
+	Server server(9601);
+	server.Start();
+
+	Client client1;
+	client1.SetConnectionTimeout(5.0f);
+	client1.SetReconnectOnDisconnect(false);
+	client1.Connect("ws://127.0.0.1:9601");
+
+	Client client2;
+	client2.SetConnectionTimeout(5.0f);
+	client2.SetReconnectOnDisconnect(false);
+
+	std::atomic<int> client2Received{0};
+	client2.SetMessageCallback([&](const Message& msg) {
+		client2Received++;
+	});
+	client2.Connect("ws://127.0.0.1:9601");
+
+	// Wait for both connections to register
+	for (int i = 0; i < 30; ++i)
+	{
+		server.Update();
+		client1.Update();
+		client2.Update();
+		ThisThread::SleepMs(10);
+	}
+	ASSERT_EQ(server.GetConnectionCount(), 2);
+
+	// Kill client1 abruptly
+	client1.Disconnect();
+
+	// Broadcast — should still reach client2
+	server.BroadcastText("still alive");
+
+	for (int i = 0; i < 50; ++i)
+	{
+		server.Update();
+		client2.Update();
+		ThisThread::SleepMs(10);
+	}
+
+	EXPECT_GE(client2Received.load(), 1);
+	// Stale client1 should be evicted
+	EXPECT_LE(server.GetConnectionCount(), 1);
+
+	client2.Disconnect();
+	server.Stop();
+}

@@ -275,6 +275,71 @@ TEST_F(AutomationServiceTest, CheckpointRegistry_RunUnknown)
     for (int i = 0; i < 100 && app.Update(1.0f / 60.0f); ++i) {}
 }
 
+// AC — dia.automation.list_checkpoints returns all registered checkpoint names
+TEST_F(AutomationServiceTest, CheckpointRegistry_ListCheckpointsCommand)
+{
+    TypeRegistry reg = AsBuildRegistry();
+    ApplicationManifestV3 manifest = AsAddSingleStageManifest();
+    Application app(manifest, reg);
+    ASSERT_TRUE(app.Start());
+    AsPumpUntilSettled(app);
+
+    Dia::Automation::AutomationService service(app);
+    service.RegisterCommands();
+
+    service.RegisterCheckpoint(nullptr, StringCRC("alpha"),
+        []() -> Dia::Automation::CheckpointResult { return {true, "a", 0.0f}; });
+    service.RegisterCheckpoint(nullptr, StringCRC("beta"),
+        []() -> Dia::Automation::CheckpointResult { return {false, "b", 0.0f}; });
+
+    Json::Value params(Json::objectValue);
+    Json::Value response = Dia::API::ExecuteCommandJson(StringCRC("dia.automation.list_checkpoints"), params);
+
+    ASSERT_TRUE(response["success"].asBool())
+        << "dia.automation.list_checkpoints failed: " << response.toStyledString();
+
+    const Json::Value& data = response["data"];
+    ASSERT_TRUE(data.isMember("checkpoints"));
+    const Json::Value& arr = data["checkpoints"];
+    ASSERT_EQ(arr.size(), 2u);
+
+    // Verify both names are present (order not guaranteed)
+    std::string name0 = arr[0].asString();
+    std::string name1 = arr[1].asString();
+    bool hasAlpha = (name0 == "alpha" || name1 == "alpha");
+    bool hasBeta  = (name0 == "beta"  || name1 == "beta");
+    EXPECT_TRUE(hasAlpha);
+    EXPECT_TRUE(hasBeta);
+
+    app.RequestShutdown();
+    for (int i = 0; i < 100 && app.Update(1.0f / 60.0f); ++i) {}
+}
+
+// AC — dia.automation.list_checkpoints with no checkpoints returns empty array
+TEST_F(AutomationServiceTest, CheckpointRegistry_ListCheckpointsEmpty)
+{
+    TypeRegistry reg = AsBuildRegistry();
+    ApplicationManifestV3 manifest = AsAddSingleStageManifest();
+    Application app(manifest, reg);
+    ASSERT_TRUE(app.Start());
+    AsPumpUntilSettled(app);
+
+    Dia::Automation::AutomationService service(app);
+    service.RegisterCommands();
+
+    Json::Value params(Json::objectValue);
+    Json::Value response = Dia::API::ExecuteCommandJson(StringCRC("dia.automation.list_checkpoints"), params);
+
+    ASSERT_TRUE(response["success"].asBool());
+
+    const Json::Value& data = response["data"];
+    ASSERT_TRUE(data.isMember("checkpoints"));
+    EXPECT_EQ(data["checkpoints"].size(), 0u);
+
+    app.RequestShutdown();
+    for (int i = 0; i < 100 && app.Update(1.0f / 60.0f); ++i) {}
+}
+
 // AC6 — dia.automation.validate command; returns {success:true, data:{passed,message}}
 TEST_F(AutomationServiceTest, CheckpointRegistry_ValidateCommand)
 {

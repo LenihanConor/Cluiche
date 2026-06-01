@@ -266,3 +266,137 @@ TEST_F(BaselineCommandsTest, AC10_DiaApiAlwaysLinked)
     Dia::API::Shutdown();
     EXPECT_FALSE(Dia::API::IsInitialized());
 }
+
+// ---------------------------------------------------------------------------
+// dia.manifest.stages — returns stages reachable from Boot
+// ---------------------------------------------------------------------------
+
+static ApplicationManifestV3 BcBuildMultiStageManifest()
+{
+    ApplicationManifestV3 manifest;
+    manifest.version = 3;
+
+    StageDeclaration boot;
+    boot.name = StringCRC("Boot");
+    boot.transitions.Add(StringCRC("Game"));
+    boot.transitions.Add(StringCRC("Editor"));
+    manifest.stages.Add(boot);
+
+    StageDeclaration game;
+    game.name = StringCRC("Game");
+    game.transitions.Add(StringCRC("Boot"));
+    manifest.stages.Add(game);
+
+    StageDeclaration editor;
+    editor.name = StringCRC("Editor");
+    manifest.stages.Add(editor);
+
+    manifest.initialStage = StringCRC("Boot");
+
+    ProcessingUnitDeclaration pu;
+    pu.instanceId      = StringCRC("MainPU");
+    pu.frequencyHz     = 60.0f;
+    pu.dedicatedThread = false;
+
+    ModuleDeclaration mod;
+    mod.instanceId     = StringCRC("testMod");
+    mod.typeId         = BC_SimpleModule::kTypeId;
+    mod.startTimeoutMs = 10000.0f;
+    mod.stopTimeoutMs  = 5000.0f;
+    mod.stages.Add(StringCRC("Boot"));
+    mod.stages.Add(StringCRC("Game"));
+    mod.stages.Add(StringCRC("Editor"));
+    pu.modules.Add(mod);
+
+    manifest.processingUnits.Add(pu);
+    return manifest;
+}
+
+TEST_F(BaselineCommandsTest, ManifestStages_ReturnsBootTransitions)
+{
+    TypeRegistry reg = BcBuildRegistry();
+    ApplicationManifestV3 manifest = BcBuildMultiStageManifest();
+    Application app(manifest, reg);
+    ASSERT_TRUE(app.Start());
+    BcPumpUntilSettled(app);
+
+    Json::Value params(Json::objectValue);
+    Json::Value response = Dia::API::ExecuteCommandJson(StringCRC("dia.manifest.stages"), params);
+    ASSERT_TRUE(response["success"].asBool())
+        << "dia.manifest.stages failed: " << response.toStyledString();
+
+    const Json::Value& data = response["data"];
+    ASSERT_TRUE(data.isMember("stages"));
+    const Json::Value& stages = data["stages"];
+    ASSERT_EQ(stages.size(), 2u);
+
+    std::string s0 = stages[0].asString();
+    std::string s1 = stages[1].asString();
+    bool hasGame   = (s0 == "Game" || s1 == "Game");
+    bool hasEditor = (s0 == "Editor" || s1 == "Editor");
+    EXPECT_TRUE(hasGame);
+    EXPECT_TRUE(hasEditor);
+
+    app.RequestShutdown();
+    for (int i = 0; i < 100 && app.Update(1.0f / 60.0f); ++i) {}
+}
+
+TEST_F(BaselineCommandsTest, ManifestStages_NoExplicitTransitions_ReturnsAllOtherStages)
+{
+    // When Boot has no explicit transitions, all non-Boot stages are returned
+    TypeRegistry reg = BcBuildRegistry();
+    ApplicationManifestV3 manifest;
+    manifest.version = 3;
+
+    StageDeclaration boot;
+    boot.name = StringCRC("Boot");
+    manifest.stages.Add(boot);
+
+    StageDeclaration alpha;
+    alpha.name = StringCRC("Alpha");
+    manifest.stages.Add(alpha);
+
+    StageDeclaration beta;
+    beta.name = StringCRC("Beta");
+    manifest.stages.Add(beta);
+
+    manifest.initialStage = StringCRC("Boot");
+
+    ProcessingUnitDeclaration pu;
+    pu.instanceId      = StringCRC("MainPU");
+    pu.frequencyHz     = 60.0f;
+    pu.dedicatedThread = false;
+
+    ModuleDeclaration mod;
+    mod.instanceId     = StringCRC("testMod");
+    mod.typeId         = BC_SimpleModule::kTypeId;
+    mod.startTimeoutMs = 10000.0f;
+    mod.stopTimeoutMs  = 5000.0f;
+    mod.stages.Add(StringCRC("Boot"));
+    mod.stages.Add(StringCRC("Alpha"));
+    mod.stages.Add(StringCRC("Beta"));
+    pu.modules.Add(mod);
+
+    manifest.processingUnits.Add(pu);
+
+    Application app(manifest, reg);
+    ASSERT_TRUE(app.Start());
+    BcPumpUntilSettled(app);
+
+    Json::Value params(Json::objectValue);
+    Json::Value response = Dia::API::ExecuteCommandJson(StringCRC("dia.manifest.stages"), params);
+    ASSERT_TRUE(response["success"].asBool());
+
+    const Json::Value& stages = response["data"]["stages"];
+    ASSERT_EQ(stages.size(), 2u);
+
+    std::string s0 = stages[0].asString();
+    std::string s1 = stages[1].asString();
+    bool hasAlpha = (s0 == "Alpha" || s1 == "Alpha");
+    bool hasBeta  = (s0 == "Beta"  || s1 == "Beta");
+    EXPECT_TRUE(hasAlpha);
+    EXPECT_TRUE(hasBeta);
+
+    app.RequestShutdown();
+    for (int i = 0; i < 100 && app.Update(1.0f / 60.0f); ++i) {}
+}
