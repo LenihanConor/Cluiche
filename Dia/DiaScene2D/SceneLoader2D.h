@@ -6,8 +6,11 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaEntity/Entity.h>
+#include <DiaObservation/Health/HealthReporterBase.h>
 #include <DiaScene2D/LayerTable.h>
 #include <DiaScene2D/SceneLoadContext.h>
+
+namespace Dia { namespace Observation { namespace Metric { class Counter; class Gauge; } } }
 
 namespace Dia
 {
@@ -19,21 +22,22 @@ namespace Dia
         struct SceneLoadErrors
         {
             bool hasErrors = false;
-            // v1: binary flag; detailed per-entry errors deferred
         };
 
         ////////////////////////////////////////////////////////////
         /// \brief Loads a .diascene file and populates target systems.
         ///
-        /// One loader per scene slot — tracks what it registered so
-        /// Unload() can cleanly reverse it.
+        /// Inherits HealthReporterBase — reports kOK after a successful load,
+        /// kFailing on hard errors (parse, missing key, camera validation).
         ///
-        /// Load() is not re-entrant. Call Unload() before re-loading.
+        /// One loader per scene slot. Call Unload() before re-loading.
         ////////////////////////////////////////////////////////////
-        class SceneLoader2D
+        class SceneLoader2D : public Dia::Observation::Health::HealthReporterBase
         {
         public:
             SceneLoader2D();
+
+            Dia::Core::StringCRC GetReporterName() const override;
 
             // Load .diascene file — populates camera registry, light registry, and entity domain.
             // outLayers receives the built LayerTable.
@@ -56,6 +60,13 @@ namespace Dia
             Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 4>    mRegisteredCameras;
             Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 16>   mRegisteredLights;
             Dia::Core::Containers::DynamicArrayC<Dia::Entity::Entity, 256>   mSpawnedEntities;
+
+            // Metrics (owned by MetricRegistry)
+            Dia::Observation::Metric::Counter* mMetricLoadsTotal     = nullptr;
+            Dia::Observation::Metric::Counter* mMetricLoadFailures   = nullptr;
+            Dia::Observation::Metric::Gauge*   mMetricCamerasLoaded  = nullptr;
+            Dia::Observation::Metric::Gauge*   mMetricLightsLoaded   = nullptr;
+            Dia::Observation::Metric::Gauge*   mMetricEntitiesLoaded = nullptr;
         };
 
     } // namespace Scene2D

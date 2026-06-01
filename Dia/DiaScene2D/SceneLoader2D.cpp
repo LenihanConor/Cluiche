@@ -12,6 +12,10 @@
 #include <DiaLighting2D/PointLight2D.h>
 #include <DiaLighting2D/Registry/LightRegistry2D.h>
 #include <DiaEntity/Domain.h>
+#include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaObservation/Profile/DiaProfile.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
 
 #include <cstdio>
 #include <cstring>
@@ -22,6 +26,12 @@ namespace Dia
     {
         SceneLoader2D::SceneLoader2D()
         {
+            auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
+            mMetricLoadsTotal    = reg.RegisterCounter(Dia::Core::StringCRC("dia.scene2d.loads_total"));
+            mMetricLoadFailures  = reg.RegisterCounter(Dia::Core::StringCRC("dia.scene2d.load_failures"));
+            mMetricCamerasLoaded = reg.RegisterGauge  (Dia::Core::StringCRC("dia.scene2d.cameras_loaded"));
+            mMetricLightsLoaded  = reg.RegisterGauge  (Dia::Core::StringCRC("dia.scene2d.lights_loaded"));
+            mMetricEntitiesLoaded= reg.RegisterGauge  (Dia::Core::StringCRC("dia.scene2d.entities_loaded"));
         }
 
         bool SceneLoader2D::Load(const char*       filePath,
@@ -29,14 +39,23 @@ namespace Dia
                                  LayerTable&       outLayers,
                                  SceneLoadErrors*  outErrors)
         {
+            DIA_TRACE_ZONE("scene2d.load", Dia::Observation::Trace::Category::kDiaScene);
+            DIA_PROFILE_SCOPE("scene2d.load", Dia::Observation::Profile::Category::kDiaScene);
+
+            if (mMetricLoadsTotal) mMetricLoadsTotal->Inc();
+
             // --- Parse JSON ---
-            Json::Value   root;
-            Json::Reader  reader;
+            Json::Value  root;
+            Json::Reader reader;
 
             FILE* f = fopen(filePath, "rb");
             if (!f)
             {
+                DIA_LOG_ERROR("DiaScene2D", "SceneLoader2D::Load — cannot open file: %s", filePath);
                 if (outErrors) outErrors->hasErrors = true;
+                if (mMetricLoadFailures) mMetricLoadFailures->Inc();
+                SetFailing(Dia::Core::StringCRC("file_not_found"));
+                IncrementErrors();
                 return false;
             }
             fseek(f, 0, SEEK_END);
@@ -46,7 +65,11 @@ namespace Dia
             if (fileSize <= 0)
             {
                 fclose(f);
+                DIA_LOG_ERROR("DiaScene2D", "SceneLoader2D::Load — empty file: %s", filePath);
                 if (outErrors) outErrors->hasErrors = true;
+                if (mMetricLoadFailures) mMetricLoadFailures->Inc();
+                SetFailing(Dia::Core::StringCRC("empty_file"));
+                IncrementErrors();
                 return false;
             }
 
@@ -58,9 +81,23 @@ namespace Dia
             bool parsed = reader.parse(buf, root, false);
             delete[] buf;
 
-            if (!parsed || !root.isMember("scene2d"))
+            if (!parsed)
             {
+                DIA_LOG_ERROR("DiaScene2D", "SceneLoader2D::Load — JSON parse error in: %s", filePath);
                 if (outErrors) outErrors->hasErrors = true;
+                if (mMetricLoadFailures) mMetricLoadFailures->Inc();
+                SetFailing(Dia::Core::StringCRC("parse_error"));
+                IncrementErrors();
+                return false;
+            }
+
+            if (!root.isMember("scene2d"))
+            {
+                DIA_LOG_ERROR("DiaScene2D", "SceneLoader2D::Load — missing 'scene2d' key in: %s", filePath);
+                if (outErrors) outErrors->hasErrors = true;
+                if (mMetricLoadFailures) mMetricLoadFailures->Inc();
+                SetFailing(Dia::Core::StringCRC("missing_scene2d_key"));
+                IncrementErrors();
                 return false;
             }
 
@@ -71,7 +108,9 @@ namespace Dia
                 serialize(ar, scene, 1u);
                 if (ar.GetResult().HasErrors())
                 {
+                    DIA_LOG_WARNING("DiaScene2D", "SceneLoader2D::Load — partial deserialization errors in: %s", filePath);
                     if (outErrors) outErrors->hasErrors = true;
+                    IncrementWarnings();
                     // Non-fatal: continue with partial data
                 }
             }
@@ -88,7 +127,13 @@ namespace Dia
             }
             if (activeCameraCount != 1)
             {
+                DIA_LOG_ERROR("DiaScene2D",
+                    "SceneLoader2D::Load — expected exactly 1 active camera, found %d in: %s",
+                    activeCameraCount, filePath);
                 if (outErrors) outErrors->hasErrors = true;
+                if (mMetricLoadFailures) mMetricLoadFailures->Inc();
+                SetFailing(Dia::Core::StringCRC("camera_validation_failed"));
+                IncrementErrors();
                 return false;
             }
 
@@ -97,25 +142,25 @@ namespace Dia
             {
                 const CameraEntry& entry = scene.cameras.At(i);
 
-                // v1: construct Camera2D with defaults; apply instanceData patches
                 Dia::Camera2D::Camera2D cam;
 
                 if (entry.instanceData.isObject())
                 {
-                    // Patch Camera2D fields from instanceData "Camera2D.fieldName"
                     for (const auto& key : entry.instanceData.getMemberNames())
                     {
                         const std::string& keyStr = key;
                         if (keyStr.rfind("Camera2D.", 0) == 0)
                         {
-                            const std::string field = keyStr.substr(9);
-                            const Json::Value& val  = entry.instanceData[key];
+                            const std::string  field = keyStr.substr(9);
+                            const Json::Value& val   = entry.instanceData[key];
                             if (field == "position" && val.isArray() && val.size() >= 2)
                                 cam.SetPosition(Dia::Maths::Vector2D(val[0].asFloat(), val[1].asFloat()));
                             else if (field == "zoom" && val.isNumeric())
                                 cam.SetZoom(val.asFloat());
                             else if (field == "rotation" && val.isNumeric())
                                 cam.SetRotation(val.asFloat());
+                            else
+                                DIA_LOG_WARNING("DiaScene2D", "SceneLoader2D — unknown Camera2D instanceData field: %s", field.c_str());
                         }
                     }
                 }
@@ -143,8 +188,8 @@ namespace Dia
                         const std::string& keyStr = key;
                         if (keyStr.rfind("PointLight2D.", 0) == 0)
                         {
-                            const std::string field = keyStr.substr(13);
-                            const Json::Value& val  = entry.instanceData[key];
+                            const std::string  field = keyStr.substr(13);
+                            const Json::Value& val   = entry.instanceData[key];
                             if (field == "position" && val.isArray() && val.size() >= 2)
                                 light.position = Dia::Maths::Vector2D(val[0].asFloat(), val[1].asFloat());
                             else if (field == "radius" && val.isNumeric())
@@ -160,6 +205,8 @@ namespace Dia
                             }
                             else if (field == "enabled" && val.isBool())
                                 light.enabled = val.asBool();
+                            else
+                                DIA_LOG_WARNING("DiaScene2D", "SceneLoader2D — unknown PointLight2D instanceData field: %s", field.c_str());
                         }
                     }
                 }
@@ -169,11 +216,15 @@ namespace Dia
             }
 
             // --- Spawn entities ---
+            unsigned int spawnedCount = 0;
             for (unsigned int i = 0; i < scene.entities.Size(); ++i)
             {
                 const EntityInstance& entry = scene.entities.At(i);
                 if (!entry.enabled)
+                {
+                    DIA_LOG_DEBUG("DiaScene2D", "SceneLoader2D — skipping disabled entity: %s", entry.id.AsChar());
                     continue;
+                }
 
                 const char* debugName = (entry.name.AsChar() && entry.name.AsChar()[0] != '\0')
                                        ? entry.name.AsChar() : nullptr;
@@ -181,20 +232,40 @@ namespace Dia
 
                 if (!entity.IsValid())
                 {
+                    DIA_LOG_WARNING("DiaScene2D", "SceneLoader2D — Domain full, could not spawn entity: %s", entry.id.AsChar());
                     if (outErrors) outErrors->hasErrors = true;
+                    IncrementWarnings();
                     continue;
                 }
 
                 ApplyInstanceData(context.entityDomain, entity, entry.instanceData, outErrors);
                 mSpawnedEntities.Add(entity);
+                ++spawnedCount;
             }
 
             context.entityDomain.EndOfFrame();
+
+            // --- Update metrics ---
+            if (mMetricCamerasLoaded)  mMetricCamerasLoaded->Set(static_cast<double>(mRegisteredCameras.Size()));
+            if (mMetricLightsLoaded)   mMetricLightsLoaded->Set(static_cast<double>(mRegisteredLights.Size()));
+            if (mMetricEntitiesLoaded) mMetricEntitiesLoaded->Set(static_cast<double>(spawnedCount));
+
+            SetOK();
+            DIA_LOG_INFO("DiaScene2D",
+                "SceneLoader2D::Load — loaded '%s': %u cameras, %u lights, %u entities, %u layers",
+                filePath,
+                mRegisteredCameras.Size(),
+                mRegisteredLights.Size(),
+                spawnedCount,
+                outLayers.GetCount());
+
             return true;
         }
 
         void SceneLoader2D::Unload(SceneLoadContext& context)
         {
+            DIA_TRACE_ZONE("scene2d.unload", Dia::Observation::Trace::Category::kDiaScene);
+
             for (unsigned int i = 0; i < mRegisteredCameras.Size(); ++i)
                 context.cameraRegistry.Unregister(mRegisteredCameras.At(i));
             mRegisteredCameras.RemoveAll();
@@ -207,6 +278,12 @@ namespace Dia
                 context.entityDomain.QueueDestroy(mSpawnedEntities.At(i));
             context.entityDomain.EndOfFrame();
             mSpawnedEntities.RemoveAll();
+
+            if (mMetricCamerasLoaded)  mMetricCamerasLoaded->Set(0.0);
+            if (mMetricLightsLoaded)   mMetricLightsLoaded->Set(0.0);
+            if (mMetricEntitiesLoaded) mMetricEntitiesLoaded->Set(0.0);
+
+            DIA_LOG_INFO("DiaScene2D", "SceneLoader2D::Unload — scene unloaded");
         }
 
         void SceneLoader2D::ApplyInstanceData(Dia::Entity::Domain&    domain,
@@ -217,19 +294,23 @@ namespace Dia
             if (!instanceData.isObject())
                 return;
 
-            // instanceData keys are "ComponentType.fieldName" — split and call Domain::WriteField
             for (const auto& key : instanceData.getMemberNames())
             {
                 const char*  keyStr   = key.c_str();
                 const char*  dotPos   = strchr(keyStr, '.');
                 if (!dotPos)
+                {
+                    DIA_LOG_WARNING("DiaScene2D", "SceneLoader2D — instanceData key missing '.': %s", keyStr);
                     continue;
+                }
 
-                // Extract component type ID and field name
                 char compTypeBuf[128] = {};
                 size_t compLen = static_cast<size_t>(dotPos - keyStr);
                 if (compLen >= sizeof(compTypeBuf))
+                {
+                    DIA_LOG_WARNING("DiaScene2D", "SceneLoader2D — instanceData component type name too long: %s", keyStr);
                     continue;
+                }
                 memcpy(compTypeBuf, keyStr, compLen);
 
                 const char* fieldName = dotPos + 1;
@@ -237,9 +318,15 @@ namespace Dia
 
                 if (!domain.WriteField(entity, typeId, fieldName, instanceData[key]))
                 {
+                    DIA_LOG_WARNING("DiaScene2D", "SceneLoader2D — WriteField failed for %s.%s (component may not be registered)", compTypeBuf, fieldName);
                     if (outErrors) outErrors->hasErrors = true;
                 }
             }
+        }
+
+        Dia::Core::StringCRC SceneLoader2D::GetReporterName() const
+        {
+            return Dia::Core::StringCRC("dia.scene2d.loader");
         }
 
     } // namespace Scene2D
