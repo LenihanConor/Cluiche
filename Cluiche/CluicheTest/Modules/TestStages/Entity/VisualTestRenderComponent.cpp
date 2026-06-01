@@ -9,21 +9,6 @@ DIA_SERIALIZE_END
 
 namespace CluicheTest {
 
-int* VisualTestRenderComponent::sAttachCounter = nullptr;
-int* VisualTestRenderComponent::sDetachCounter = nullptr;
-
-void VisualTestRenderComponent::OnAttach(Dia::Entity::Domain& /*domain*/, Dia::Entity::Entity /*self*/)
-{
-    if (sAttachCounter)
-        ++(*sAttachCounter);
-}
-
-void VisualTestRenderComponent::OnDetach(Dia::Entity::Domain& /*domain*/, Dia::Entity::Entity /*self*/)
-{
-    if (sDetachCounter)
-        ++(*sDetachCounter);
-}
-
 static Dia::Entity::FieldDesc s_VisualTestRenderComponent_fields[] = {
     DIA_FIELD_ENTRY(float,    radius, VisualTestRenderComponent)
     DIA_FIELD_ENTRY(uint32_t, colour, VisualTestRenderComponent)

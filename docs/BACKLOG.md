@@ -42,6 +42,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 | Item | Spec | What's needed |
 |------|------|---------------|
+| DiaEntity: component-readonly-flag | [component-readonly-flag.md](specs/features/dia/diaentity/component-readonly-flag.md) | `DIA_READONLY` macro + Domain enforcement (skip hooks). Enshrines SD-ENT-022 (readonly vs behaviour boundary). Enables static-free picking pattern. Draft — needs approval before build. |
 | DiaStateMachineEditor system | TBD | Needs `/spec-system` — editor plugin for state machine visual debugging + design-time editing. Depends on DiaStateMachine ✅, DiaEditor |
 | Manifest heap modules | [manifest-heap-modules.md](specs/features/dia/diaapplicationflow/manifest-heap-modules.md) | `ApplicationManifestV3` is ~60 KB on the stack due to `DynamicArrayC<ModuleDeclaration,32>` inline storage. Spec written + plan ready. Blocked on `DynamicArrayC`/`DynamicArray` both using `memcpy` — nesting heap-owning containers is unsafe without fixing copy semantics. Options: reduce cap (32→16, 1-line, safe), or allocate the whole manifest on the heap at the call site. Deferred — low urgency. |
 
@@ -74,10 +75,10 @@ System spec: [teststages.md](specs/systems/cluichetest/teststages.md) (Approved)
 | ~~RigidBody2DTestStage~~ | **Done** (2026-05-28) — `TestStageModuleBase` extracted; stage renamed; 10 circles settle; pytest scenario passes. | | |
 | ~~AssetRuntimeTestStage~~ | **Done** (2026-05-28) — Migrated to `TestStageModuleBase`; stage renamed; multi-entry reload validation. | | |
 | ~~Geometry2DTestStage~~ | **Done** (2026-05-31) — Gallery of all shape primitives, 6 intersection pair colour-coding, 4 spatial structure overlays, 5 IVisualDebugger drawers. `geometry2d.passed` checkpoint validated. | | |
-| StateMachineTestStage | DiaStateMachine | State transitions, guard evaluation, event firing | `state_machine.reached_target`, `state_machine.guard_blocked` | `/spec-feature` |
-| Animation2DTestStage | DiaAnimation2D + DiaRig2D | Clip playback, pose validation, blend weights | `animation.clip_complete`, `animation.pose_matches` | `/spec-feature` |
-| SoftBody2DTestStage | DiaSoftBody2D | Rope/cloth stabilization, spring convergence | `soft_body.rope_settled` | `/spec-feature` |
+| Animation2DTestStage | DiaAnimation2D + DiaRig2D | Clip playback, pose validation, blend weights | `animation.clip_complete`, `animation.pose_matches` | [Spec Approved](specs/features/cluichetest/teststages/animation2d-test-stage.md). [Plan ready](specs/features/cluichetest/teststages/animation2d-test-stage.plan.md). |
+| ~~SoftBody2DTestStage~~ | **Done** (2026-06-01) — Rope/cloth stabilization, spring convergence; physics tuned for visible oscillation before settle. | | |
 | EntityTestStage | DiaEntity | Spawn/destroy/hierarchy/query/mailbox/lifecycle; `TransformComponent` + `VisualTestRenderComponent`; 6 checkpoints | `entity.spawn_complete`, `entity.query_correct`, `entity.hierarchy_valid`, `entity.destroy_cascade`, `entity.mailbox_received`, `entity.lifecycle_complete` | [Spec Approved](specs/features/cluichetest/teststages/entity-test-stage.md). [Plan ready](specs/features/cluichetest/teststages/entity-test-stage.plan.md) — 9 tasks (T-00 done). Uses `/new-cluichetest-stage` skill. Two-module split: EntityModule (reusable) + EntityTestModule (MainPU, checkpoints). |
+| Scene2DTestStage | DiaScene2D | Scene loading, camera/light hydration, entity spawning, layer rendering | `scene.loaded`, `scene.cameras_hydrated`, `scene.lights_hydrated`, `scene.entities_spawned`, `scene.layers_rendered` | `/spec-feature` |
 | ~~UIUltralightTestStage~~ | **Done** (2026-06-01) — 6 checkpoints; `window.onload` bridge; vanilla JS panel; LoadingScreenModule reused for UI composite on SimPU. | | |
 
 **Scaffolding:** `dia scaffold stage <Name> --modules <...>` creates all 9 touch points in one command. `/new-cluichetest-stage` skill infers domain, runs the script, adds domain-specific C++. Domain patterns: Physics, Entity, Asset, Animation, StateMachine, Geometry.

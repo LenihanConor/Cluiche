@@ -434,6 +434,7 @@ intended implementation order; each feature stacks on the previous.
 | SD-ENT-019 | Namespace is `Dia::Entity::` | Consistent with `Dia::<Module>::` (AD-003). | All | Accepted | Yes |
 | SD-ENT-020 | The old `IComponent` infrastructure is removed before DiaEntity is built | Clean slate. The two existing consumers (SkeletonComponent, StateMachineComponent) are migrated as part of removal — they become DiaEntity components in their own modules. Per research Decision 8. | Migration | Accepted | Yes |
 | SD-ENT-021 | PD-003 / AD-005 require a Superseded amendment once DiaEntity ships | Those decisions reference the old `IComponent` model. They cannot remain Accepted as written. Amendment text is out of scope of this system spec but the requirement is captured here. | Platform / App decisions | Accepted | Yes |
+| SD-ENT-022 | Component service-access rule: readonly vs behaviour | Components must not reach outside the Domain (no statics, no service locators). **Readonly** (`DIA_READONLY`): pure data fields, Domain skips OnAttach/OnDetach/DoUpdate, module queries and drives external systems. **Behaviour** (default): lifecycle hooks + mailbox signals — communicates intent via mailbox, never directly calls external services. Module's manifest `dependencies` is the single source of truth for service availability. | All | Accepted | Yes |
 
 **Status values:** `Proposed` · `Accepted` · `Rejected` · `Superseded`
 **Binding:** `Yes` = enforced constraint on all features in this system · `No` = guidance only

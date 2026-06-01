@@ -131,6 +131,53 @@ namespace Dia::Entity {
         return view;
     }
 
+    // --- Service registry template implementations ---
+
+    // Shared type key — identical signature regardless of which method calls it.
+    template<class T>
+    uint32_t Domain::ServiceTypeKey() {
+        static const uint32_t key = Dia::Core::StringCRC(__FUNCSIG__).Value();
+        return key;
+    }
+
+    template<class T>
+    bool Domain::RegisterService(T* service) {
+        const uint32_t key = ServiceTypeKey<T>();
+        for (uint32_t i = 0; i < mServices.Size(); ++i) {
+            if (mServices[i].typeKey == key) return false;
+        }
+        if (mServices.IsFull()) {
+            DIA_LOG_WARNING("DiaEntity", "Domain::RegisterService — service table full (capacity %u)", kMaxServices);
+            return false;
+        }
+        ServiceEntry entry;
+        entry.typeKey = key;
+        entry.ptr     = static_cast<void*>(service);
+        mServices.Add(entry);
+        return true;
+    }
+
+    template<class T>
+    T* Domain::GetService() const {
+        const uint32_t key = ServiceTypeKey<T>();
+        for (uint32_t i = 0; i < mServices.Size(); ++i) {
+            if (mServices[i].typeKey == key)
+                return static_cast<T*>(mServices[i].ptr);
+        }
+        return nullptr;
+    }
+
+    template<class T>
+    void Domain::UnregisterService() {
+        const uint32_t key = ServiceTypeKey<T>();
+        for (uint32_t i = 0; i < mServices.Size(); ++i) {
+            if (mServices[i].typeKey == key) {
+                mServices.RemoveAt(i);
+                return;
+            }
+        }
+    }
+
 } // namespace Dia::Entity
 
 // EntityRef<T>::Resolve() needs Domain fully defined — pull in after the closing brace.

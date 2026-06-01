@@ -23,9 +23,6 @@ public:
         Dia::Entity::Entity               queryEntities[4],
         Dia::Entity::Entity               doomed,
         const bool&                       doomedDestroyed,
-        const int&                        attachCount,
-        const int&                        detachCount,
-        const int&                        mailboxCount,
         const bool&                       hasSelection,
         const unsigned int&               selectedIdx,
         const Dia::Entity::Entity*        allEntities,
@@ -45,9 +42,6 @@ private:
     Dia::Entity::Entity               mQueryEntities[4];
     Dia::Entity::Entity               mDoomed;
     const bool&                       mDoomedDestroyed;
-    const int&                        mAttachCount;
-    const int&                        mDetachCount;
-    const int&                        mMailboxCount;
     const bool&                       mHasSelection;
     const unsigned int&               mSelectedIdx;
     const Dia::Entity::Entity*        mAllEntities;

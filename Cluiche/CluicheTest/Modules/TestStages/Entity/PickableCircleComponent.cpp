@@ -11,24 +11,22 @@
 
 DIA_SERIALIZE(CluicheTest::PickableCircleComponent, CluicheTest::PickableCircleComponent::kVersion)
     DIA_FIELD(objectIdx)
+    DIA_FIELD(isSelected)
 DIA_SERIALIZE_END
 
 namespace CluicheTest {
 
-#ifdef DIA_DEBUG
-Dia::Geometry2DPicking::PickingService2D* PickableCircleComponent::sPickingService = nullptr;
-#endif
-
 void PickableCircleComponent::OnAttach(Dia::Entity::Domain& domain, Dia::Entity::Entity self)
 {
 #ifdef DIA_DEBUG
-    if (!sPickingService) return;
+    auto* svc = domain.GetService<Dia::Geometry2DPicking::PickingService2D>();
+    if (!svc) return;
 
     auto* tc  = domain.GetComponent<TransformComponent>(self);
     auto* vrc = domain.GetComponent<VisualTestRenderComponent>(self);
     if (!tc || !vrc) return;
 
-    mCircle  = Dia::Geometry2D::Circle(vrc->radius, Dia::Maths::Vector2D(tc->x, tc->y));
+    mCircle = Dia::Geometry2D::Circle(vrc->radius, Dia::Maths::Vector2D(tc->x, tc->y));
     mPickable = std::make_unique<Dia::Geometry2DPicking::ShapePickable>(
         &mCircle,
         Dia::Core::StringCRC("entity.circle"),
@@ -36,18 +34,24 @@ void PickableCircleComponent::OnAttach(Dia::Entity::Domain& domain, Dia::Entity:
         10,
         Dia::Picking::PickLayer::kDefault);
 
-    sPickingService->Register(mPickable.get());
+    svc->Register(mPickable.get());
 #else
     (void)domain; (void)self;
 #endif
 }
 
-void PickableCircleComponent::OnDetach(Dia::Entity::Domain& /*domain*/, Dia::Entity::Entity /*self*/)
+void PickableCircleComponent::OnDetach(Dia::Entity::Domain& domain, Dia::Entity::Entity /*self*/)
 {
 #ifdef DIA_DEBUG
-    if (mPickable && sPickingService)
-        sPickingService->Unregister(mPickable.get());
-    mPickable.reset();
+    if (mPickable)
+    {
+        auto* svc = domain.GetService<Dia::Geometry2DPicking::PickingService2D>();
+        if (svc)
+            svc->Unregister(mPickable.get());
+        mPickable.reset();
+    }
+#else
+    (void)domain;
 #endif
 }
 

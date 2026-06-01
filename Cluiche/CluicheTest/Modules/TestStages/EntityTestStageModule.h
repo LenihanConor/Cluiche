@@ -56,7 +56,7 @@ private:
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::PickingModule>        mPickingRef{this};
     std::unique_ptr<EntityTestDrawer> mDrawer;
 
-    // Selection state — written by picking drain, read by drawer
+    // Selection state — written by pick drain, read by drawer
     bool                       mHasSelection      = false;
     unsigned int               mSelectedIdx       = 0;
     Dia::Mailbox::SubscriberId mPickSubscriberId{};
@@ -71,14 +71,13 @@ private:
     Dia::Entity::Entity mQueryEntities[4];
     Dia::Entity::Entity mDoomedEntity;
 
-    // Flat list of all live entities for indexed picking (built in SetupScene)
+    // Flat list for indexed lookup (picking, drawer)
     Dia::Entity::Entity  mAllEntities[kMaxEntities];
     unsigned int         mEntityCount = 0;
 
-    // Lifecycle counters (injected into component statics before pool registration)
-    int mOnAttachCount        = 0;
-    int mOnDetachCount        = 0;
-    int mMailboxReceiveCount  = 0;
+    // Lifecycle validation — module observes domain state
+    unsigned int mSpawnedEntityCount = 0;
+    int          mMailboxReceiveCount = 0;
 
     // State
     bool mSceneBuilt      = false;

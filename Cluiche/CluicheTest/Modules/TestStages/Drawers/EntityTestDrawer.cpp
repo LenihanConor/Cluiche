@@ -3,6 +3,7 @@
 #include "Modules/TestStages/Drawers/EntityTestDrawer.h"
 #include "Modules/TestStages/Entity/TransformComponent.h"
 #include "Modules/TestStages/Entity/VisualTestRenderComponent.h"
+#include "Modules/TestStages/Entity/PickableCircleComponent.h"
 #include <DiaGeometry2DVisualDebugger/ShapeDrawer.h>
 #include <DiaGeometry2D/Shapes/Circle.h>
 #include <DiaGeometry2D/Shapes/Line.h>
@@ -30,9 +31,6 @@ EntityTestDrawer::EntityTestDrawer(
     Dia::Entity::Entity               queryEntities[4],
     Dia::Entity::Entity               doomed,
     const bool&                       doomedDestroyed,
-    const int&                        attachCount,
-    const int&                        detachCount,
-    const int&                        mailboxCount,
     const bool&                       hasSelection,
     const unsigned int&               selectedIdx,
     const Dia::Entity::Entity*        allEntities,
@@ -45,9 +43,6 @@ EntityTestDrawer::EntityTestDrawer(
     , mChildC(childC)
     , mDoomed(doomed)
     , mDoomedDestroyed(doomedDestroyed)
-    , mAttachCount(attachCount)
-    , mDetachCount(detachCount)
-    , mMailboxCount(mailboxCount)
     , mHasSelection(hasSelection)
     , mSelectedIdx(selectedIdx)
     , mAllEntities(allEntities)
@@ -69,7 +64,7 @@ void EntityTestDrawer::Draw(Dia::Graphics::FrameData& frameData)
 {
     Dia::Geometry2DVisualDebugger::ShapeDrawer drawer(mManager);
 
-    static const Dia::Graphics::RGBA kSelectOutline(255, 255,   0, 255);  // yellow selection ring
+    static const Dia::Graphics::RGBA kSelectOutline(255, 255, 0, 255);
 
     auto submitEntity = [&](Dia::Entity::Entity e, unsigned int idx)
     {
@@ -81,7 +76,7 @@ void EntityTestDrawer::Draw(Dia::Graphics::FrameData& frameData)
         Dia::Geometry2D::Circle circle(vrc->radius, Dia::Maths::Vector2D(tc->x, tc->y));
         drawer.SubmitCircle(circle, ColourFromUint32(vrc->colour));
 
-        // Selection highlight — slightly larger ring
+        // Selection highlight
         if (mHasSelection && mSelectedIdx == idx)
         {
             Dia::Geometry2D::Circle outline(vrc->radius + 4.f, Dia::Maths::Vector2D(tc->x, tc->y));
@@ -89,13 +84,12 @@ void EntityTestDrawer::Draw(Dia::Graphics::FrameData& frameData)
         }
     };
 
-    // Hierarchy group
     submitEntity(mParent,  0);
     submitEntity(mChildA,  1);
     submitEntity(mChildB,  2);
     submitEntity(mChildC,  3);
 
-    // Hierarchy lines: parent → each child
+    // Hierarchy lines
     {
         auto* ptc = mDomain.GetComponent<TransformComponent>(mParent);
         if (ptc)
@@ -113,11 +107,9 @@ void EntityTestDrawer::Draw(Dia::Graphics::FrameData& frameData)
         }
     }
 
-    // Query targets
     for (int i = 0; i < 4; ++i)
         submitEntity(mQueryEntities[i], 4 + static_cast<unsigned int>(i));
 
-    // Doomed entity (grey, only before destroyed)
     if (!mDoomedDestroyed)
         submitEntity(mDoomed, 8);
 
@@ -126,7 +118,6 @@ void EntityTestDrawer::Draw(Dia::Graphics::FrameData& frameData)
 
 void EntityTestDrawer::DrawImGui()
 {
-    // Floating entity inspector panel (separate from console tab)
     ImGui::SetNextWindowPos(ImVec2(10.f, 300.f), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2(260.f, 200.f), ImGuiCond_FirstUseEver);
     ImGui::Begin("Entity Inspector");
@@ -164,6 +155,14 @@ void EntityTestDrawer::DrawImGui()
                 ImGui::Text("VisualTestRenderComponent");
                 ImGui::Text("  radius = %.1f", vrc->radius);
                 ImGui::Text("  colour = #%08X", vrc->colour);
+            }
+
+            auto* pc = mDomain.GetComponent<PickableCircleComponent>(e);
+            if (pc)
+            {
+                ImGui::Text("PickableCircleComponent");
+                ImGui::Text("  objectIdx  = %u", pc->objectIdx);
+                ImGui::Text("  isSelected = %s", pc->isSelected ? "true" : "false");
             }
         }
     }

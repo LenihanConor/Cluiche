@@ -121,6 +121,27 @@ namespace Dia::Entity {
         // matches typeId. Delegates to the registered pool table.
         bool HasComponentByTypeId(Entity entity, Dia::Core::StringCRC typeId) const;
 
+        // --- Service registry (SD-ENT-022) ---
+
+        // Register a service pointer accessible to components via GetService<T>().
+        // Keyed by type (one entry per T). Returns false if table full or already registered.
+        template<class T>
+        bool RegisterService(T* service);
+
+        // Retrieve a registered service. Returns nullptr if not registered.
+        template<class T>
+        T* GetService() const;
+
+        // Remove a previously registered service. No-op if not found.
+        template<class T>
+        void UnregisterService();
+
+    private:
+        template<class T>
+        static uint32_t ServiceTypeKey();
+
+    public:
+
         // --- Internal pool registration (called by reflection feature T7) ---
 
         // Register a pre-constructed component pool. Returns false if type already registered
@@ -168,6 +189,11 @@ namespace Dia::Entity {
 
         // Observability — health reporter.
         DomainHealth mHealth;
+
+        // Service registry — type-erased pointers keyed by type hash.
+        static constexpr uint32_t kMaxServices = 16;
+        struct ServiceEntry { uint32_t typeKey = 0; void* ptr = nullptr; };
+        Dia::Core::Containers::DynamicArrayC<ServiceEntry, kMaxServices> mServices;
 
         // Internal helpers.
         IComponentPool*       FindPool(Dia::Core::StringCRC typeId);
