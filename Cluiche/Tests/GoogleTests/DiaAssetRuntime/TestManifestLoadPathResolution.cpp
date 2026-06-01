@@ -13,6 +13,7 @@
 #include <DiaCore/FilePath/Path.h>
 #include <DiaCore/CRC/StringCRC.h>
 
+#include <memory>
 #include <stdio.h>
 #include <string.h>
 
@@ -423,11 +424,11 @@ TEST_F(ManifestLoadTest, AssetTableCapacity_ExactlyMaxAssets_Succeeds)
     Dia::Core::FilePath fp = MakeFilePath("arun_cap_max.json");
 
     Dia::AssetRuntime::RuntimeManifestLoader loader;
-    Dia::AssetRuntime::RuntimeManifestLoader::AssetTable assetTable;
-    Dia::AssetRuntime::RuntimeManifestLoader::StageTable stageTable;
+    auto assetTable = std::make_unique<Dia::AssetRuntime::RuntimeManifestLoader::AssetTable>();
+    auto stageTable = std::make_unique<Dia::AssetRuntime::RuntimeManifestLoader::StageTable>();
 
-    EXPECT_TRUE(loader.Load(fp, assetTable, stageTable));
-    EXPECT_EQ(assetTable.Size(), kMaxAssets);
+    EXPECT_TRUE(loader.Load(fp, *assetTable, *stageTable));
+    EXPECT_EQ(assetTable->Size(), kMaxAssets);
 }
 
 TEST_F(ManifestLoadTest, AssetTableCapacity_ExceedsMaxAssets_Fails)
@@ -444,8 +445,8 @@ TEST_F(ManifestLoadTest, AssetTableCapacity_ExceedsMaxAssets_Fails)
     Dia::Core::FilePath fp = MakeFilePath("arun_cap_overflow.json");
 
     Dia::AssetRuntime::RuntimeManifestLoader loader;
-    Dia::AssetRuntime::RuntimeManifestLoader::AssetTable assetTable;
-    Dia::AssetRuntime::RuntimeManifestLoader::StageTable stageTable;
+    auto assetTable = std::make_unique<Dia::AssetRuntime::RuntimeManifestLoader::AssetTable>();
+    auto stageTable = std::make_unique<Dia::AssetRuntime::RuntimeManifestLoader::StageTable>();
 
-    EXPECT_FALSE(loader.Load(fp, assetTable, stageTable));
+    EXPECT_FALSE(loader.Load(fp, *assetTable, *stageTable));
 }
