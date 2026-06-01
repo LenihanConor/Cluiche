@@ -13,6 +13,8 @@ public:
     ~EntityModule() override;
 
     Dia::Entity::IEntityInspectable& GetInspectable() { return mDomain; }
+    Dia::Entity::Domain&             GetDomain()      { return mDomain; }
+    bool                             IsReady() const  { return mReady; }
 
 protected:
     Dia::ApplicationFlow::StartResult DoStart()          override;
@@ -21,6 +23,7 @@ protected:
 
 private:
     Dia::Entity::Domain mDomain;
+    bool                mReady = false;
 };
 
 } } // namespace Cluiche::AppFlow

@@ -26,6 +26,7 @@ Dia::ApplicationFlow::StartResult EntityModule::DoStart()
 
     mDomain.EndOfFrame();
 
+    mReady = true;
     DIA_LOG_INFO("Application", "EntityModule::DoStart exit");
     return Dia::ApplicationFlow::StartResult::kReady;
 }
@@ -39,6 +40,7 @@ void EntityModule::DoUpdate(float dt)
 Dia::ApplicationFlow::StopResult EntityModule::DoStop()
 {
     DIA_LOG_INFO("Application", "EntityModule::DoStop entry");
+    mReady = false;
     DIA_LOG_INFO("Application", "EntityModule::DoStop exit");
     return Dia::ApplicationFlow::StopResult::kDone;
 }

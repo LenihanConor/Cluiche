@@ -41,6 +41,10 @@
         {
             "path": "stages/UIUltralightTestStage/ui_ultralight_test_stage.diastage",
             "type": "stage"
+        },
+        {
+            "path": "stages/EntityTestStage/entity_test_stage.diastage",
+            "type": "stage"
         }
     ],
     "name": "CluicheTest",

@@ -8,7 +8,8 @@
                 "RigidBody2DTestStage",
                 "AssetRuntimeTestStage",
                 "Geometry2DTestStage",
-                "UIUltralightTestStage"
+                "UIUltralightTestStage",
+                "EntityTestStage"
             ],
             "auto_advance": false
         },
@@ -36,6 +37,13 @@
         },
         {
             "name": "UIUltralightTestStage",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "EntityTestStage",
             "transitions": [
                 "Boot"
             ],
@@ -361,7 +369,8 @@
                     "stages": [
                         "RigidBody2DTestStage",
                         "AssetRuntimeTestStage",
-                        "Geometry2DTestStage"
+                        "Geometry2DTestStage",
+                        "EntityTestStage"
                     ],
                     "dependencies": [
                         "InputStreamModule",
@@ -375,7 +384,8 @@
                     "stages": [
                         "RigidBody2DTestStage",
                         "AssetRuntimeTestStage",
-                        "Geometry2DTestStage"
+                        "Geometry2DTestStage",
+                        "EntityTestStage"
                     ],
                     "dependencies": [
                         "CameraModule"
@@ -426,7 +436,8 @@
                         "RigidBody2DTestStage",
                         "AssetRuntimeTestStage",
                         "Geometry2DTestStage",
-                        "UIUltralightTestStage"
+                        "UIUltralightTestStage",
+                        "EntityTestStage"
                     ],
                     "dependencies": [
                         "DebugUI"
@@ -444,7 +455,8 @@
                     "stages": [
                         "RigidBody2DTestStage",
                         "AssetRuntimeTestStage",
-                        "Geometry2DTestStage"
+                        "Geometry2DTestStage",
+                        "EntityTestStage"
                     ],
                     "dependencies": [
                         "DebugUI"

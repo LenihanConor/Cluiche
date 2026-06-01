@@ -38,7 +38,9 @@ files = [
   { src = "Cluiche/Assets/Stages/DummyStage/Misc/ApplicationFlow/*", dest = "$(OutDir)Data/stages/DummyStage/Misc/ApplicationFlow/" },
   { src = "Cluiche/Assets/Stages/DummyStage/dummy_stage.diastage", dest = "$(OutDir)Data/stages/DummyStage/" },
   { src = "Cluiche/Assets/Stages/RigidBody2DTestStage/Misc/ApplicationFlow/*", dest = "$(OutDir)Data/stages/RigidBody2DTestStage/Misc/ApplicationFlow/" },
-  { src = "Cluiche/Assets/Stages/RigidBody2DTestStage/rigidbody2d_stage.diastage", dest = "$(OutDir)Data/stages/RigidBody2DTestStage/" }
+  { src = "Cluiche/Assets/Stages/RigidBody2DTestStage/rigidbody2d_stage.diastage", dest = "$(OutDir)Data/stages/RigidBody2DTestStage/" },
+  { src = "Cluiche/Assets/Stages/EntityTestStage/misc/ApplicationFlow/*", dest = "$(OutDir)Data/stages/EntityTestStage/misc/ApplicationFlow/" },
+  { src = "Cluiche/Assets/Stages/EntityTestStage/entity_test_stage.diastage", dest = "$(OutDir)Data/stages/EntityTestStage/" }
 ]
 
 [targets.cluichetest]

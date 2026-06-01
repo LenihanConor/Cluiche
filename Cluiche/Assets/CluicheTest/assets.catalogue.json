@@ -315,6 +315,31 @@
             "tags": [
                 "Presentation/UI"
             ]
+        },
+        {
+            "id": "stage.entity_test_stage",
+            "type": "stage",
+            "source_path": "../Stages/EntityTestStage/entity_test_stage.diastage",
+            "scope": "global",
+            "tags": [
+                "misc"
+            ],
+            "references": [
+                {
+                    "type": "contains",
+                    "target": "manifest.entity_test_stage"
+                }
+            ]
+        },
+        {
+            "id": "manifest.entity_test_stage",
+            "type": "manifest",
+            "source_path": "../Stages/EntityTestStage/misc/ApplicationFlow/entity_test_stage.diaapp",
+            "scope": "stage",
+            "stage_name": "EntityTestStage",
+            "tags": [
+                "misc/ApplicationFlow"
+            ]
         }
     ]
 }
