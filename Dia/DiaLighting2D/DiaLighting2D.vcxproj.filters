@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Light">
+      <UniqueIdentifier>{D6E7F8A9-B0C1-2345-DEF0-123456789004}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Registry">
+      <UniqueIdentifier>{E7F8A9B0-C1D2-3456-EF01-234567890005}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Testing">
+      <UniqueIdentifier>{F8A9B0C1-D2E3-4567-F012-345678900006}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{A9B0C1D2-E3F4-5678-0123-456789000007}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="PointLight2D.h">
+      <Filter>Light</Filter>
+    </ClInclude>
+    <ClInclude Include="Registry\LightRegistry2D.h">
+      <Filter>Registry</Filter>
+    </ClInclude>
+    <ClInclude Include="Testing\LightBuilder.h">
+      <Filter>Testing</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Registry\LightRegistry2D.cpp">
+      <Filter>Registry</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="dia.lighting2d.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+</Project>

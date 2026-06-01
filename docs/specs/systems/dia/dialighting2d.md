@@ -167,4 +167,6 @@ registry.Register(entry.id, light);
 
 ## Status
 
-`Draft` — Ready for review and approval.
+`Approved`
+
+**Plan:** @docs/specs/systems/dia/dialighting2d.plan.md
