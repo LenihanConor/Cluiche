@@ -20,10 +20,11 @@ class DiaClient:
     MESSAGE_TYPE_COMMAND_REQUEST / MESSAGE_TYPE_COMMAND_RESPONSE.
     """
 
-    def __init__(self, host="localhost", port=9876):
+    def __init__(self, host="localhost", port=9002):
         self.host = host
         self.port = port
         self._ws = None
+        self._recv_buffer = []
 
     def connect(self, timeout=60.0):
         """Retry WebSocket connection every 500ms until success or timeout.
@@ -48,7 +49,7 @@ class DiaClient:
         )
 
     def _drain_welcome(self):
-        """Read and discard the initial handshake_response and game_info."""
+        """Read the initial handshake/game_info messages; buffer anything else."""
         for _ in range(5):
             try:
                 raw = self._ws.recv(timeout=2)
@@ -56,6 +57,8 @@ class DiaClient:
                 msg_type = msg.get("type", "")
                 if msg_type in ("MESSAGE_TYPE_HANDSHAKE_RESPONSE", "MESSAGE_TYPE_GAME_INFO"):
                     continue
+                # Not a welcome message — keep it so send_command can see it
+                self._recv_buffer.append(raw)
                 break
             except Exception:
                 break
@@ -90,10 +93,14 @@ class DiaClient:
 
         deadline = time.time() + timeout
         while time.time() < deadline:
-            try:
-                raw = self._ws.recv(timeout=0.5)
-            except (TimeoutError, OSError):
-                continue
+            # Drain buffered messages before blocking on the socket
+            if self._recv_buffer:
+                raw = self._recv_buffer.pop(0)
+            else:
+                try:
+                    raw = self._ws.recv(timeout=0.5)
+                except (TimeoutError, OSError):
+                    continue
             if "MESSAGE_TYPE_COMMAND_RESPONSE" not in raw:
                 continue
             try:
@@ -117,12 +124,17 @@ class DiaClient:
         result = self.send_command("dia.automation.navigate_to", {"target": target})
         if wait:
             deadline = time.time() + timeout_s
+            current_stage = None
             while time.time() < deadline:
                 r = self.report()
-                if r.get("stage") == target:
+                current_stage = r.get("stage")
+                if current_stage == target:
                     return result
                 time.sleep(0.2)
-            raise TimeoutError(f"Stage transition to '{target}' did not complete within {timeout_s}s")
+            raise TimeoutError(
+                f"Stage transition to '{target}' did not complete within {timeout_s}s"
+                f" (still on '{current_stage}')"
+            )
         return result
 
     def quit(self) -> dict:
@@ -137,16 +149,19 @@ class DiaClient:
     def poll_checkpoint(self, checkpoint: str, timeout_s: float = 10.0, interval_s: float = 0.5) -> dict:
         """Poll a checkpoint until it passes or timeout is reached.
 
-        Tolerates 'checkpoint not found' errors (module still starting).
+        Tolerates 'checkpoint not found' errors (module still starting up).
+        Any other AutomationError is a permanent failure and is raised immediately.
         """
         deadline = time.time() + timeout_s
         last_result = None
         while time.time() < deadline:
             try:
                 result = self.validate(checkpoint)
-            except AutomationError:
-                time.sleep(interval_s)
-                continue
+            except AutomationError as e:
+                if "checkpoint not found" in str(e).lower():
+                    time.sleep(interval_s)
+                    continue
+                raise
             if result.get("passed"):
                 return result
             last_result = result
