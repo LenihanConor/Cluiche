@@ -307,7 +307,7 @@ Json::Value obj_value(Json::objectValue); // {}
   /// \note Over-write existing comments. To preserve comments, use #swapPayload().
   Value& operator=(Value other);
   /// Swap everything.
-  void swap(Value& other);
+  void swap(Value& other) noexcept;
   /// Swap values but leave comments and source offsets in place.
   void swapPayload(Value& other);
 

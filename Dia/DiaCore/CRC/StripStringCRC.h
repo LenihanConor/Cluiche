@@ -1,7 +1,7 @@
 #ifndef DIA_STRIP_STRING_CRC_H
 #define DIA_STRIP_STRING_CRC_H
 
-#include "DiaCore/crc/CRC.h"
+#include "DiaCore/CRC/CRC.h"
 
 namespace Dia
 {

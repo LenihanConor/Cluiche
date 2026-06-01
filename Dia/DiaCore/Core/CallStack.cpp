@@ -506,6 +506,8 @@ cleanup:
 						case 9: // SymDia:
 							szSymType = "DIA";
 							break;
+						default:
+							break;
 						}
 					}
 					this->m_parent->OnLoadModule(img, mod, baseAddr, size, result, szSymType, Module.LoadedImageName, fileVersion);

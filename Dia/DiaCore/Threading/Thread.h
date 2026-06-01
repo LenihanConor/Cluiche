@@ -76,7 +76,7 @@ namespace Dia
 				DIA_ASSERT(!mThread.joinable(), "Thread already started");
 
 				mJoinable = true;
-				mThread = std::thread([this, func]() {
+				mThread = std::thread([func]() {
 					// Set thread name for debugging (platform-specific, could be implemented)
 					// SetPlatformThreadName(mName);
 

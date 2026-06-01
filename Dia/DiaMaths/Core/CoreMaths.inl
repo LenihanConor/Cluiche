@@ -59,12 +59,11 @@ namespace Dia
 
 		//returns the minumum of the two numbers
 		//-----------------------------------------------------------------------------
-		template <class T> inline T Max( const T& a, const T& b )	
+		template <class T> inline T Max( const T& a, const T& b )
 		{
-			T x = b;
 			if( a <= b )
 				return b;
-			
+
 			return a;
 		}
 

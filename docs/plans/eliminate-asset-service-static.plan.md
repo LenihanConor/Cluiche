@@ -1,6 +1,6 @@
 **Spec:** Backlog item #10 — Eliminate remaining cross-PU statics
 **Target:** `AssetServiceModule::GetStatic()` / `sInstance`
-**Status:** Not Started
+**Status:** Done
 
 ---
 

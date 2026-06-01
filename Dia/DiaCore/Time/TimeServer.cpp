@@ -14,22 +14,22 @@ namespace Dia
 		TimeServer::TimeServer()
 			: mTime( TimeAbsolute::MinimumTime() )
 			, mTimeStep( TimeRelative::MinimumTime() )
-			, mTimeScale(1.0f)
-			, mTick(0)
 			, mLastTime( TimeAbsolute::Zero() )
 			, mSystemTimeOfNextTick( TimeAbsolute::Zero() )
+			, mTimeScale(1.0f)
 			, mQueuedTimeScale( 0.0f )
+			, mTick(0)
 		{}
 	
 		//------------------------------------------------------------------------------
 		TimeServer::TimeServer( float hz, const TimeAbsolute &timeNow )
 			: mTime( timeNow )
 			, mTimeStep( TimeRelative::CreateFromSeconds(1.0f / hz) )
-			, mTimeScale(1.0f)
-			, mTick(0)
 			, mLastTime( mTime )
 			, mSystemTimeOfNextTick( TimeAbsolute::Zero() )
+			, mTimeScale(1.0f)
 			, mQueuedTimeScale( mTimeScale )
+			, mTick(0)
 		{
 			DIA_ASSERT(mTimeStep > Dia::Core::TimeRelative::Zero(), "step is too small" );	
 		}
@@ -38,11 +38,11 @@ namespace Dia
 		TimeServer::TimeServer(const TimeServer& rhs)
 			: mTime( rhs.mTime )
 			, mTimeStep( rhs.mTimeStep )
-			, mTimeScale( rhs.mTimeScale )
-			, mTick( rhs.mTick )
 			, mLastTime( rhs.mLastTime )
 			, mSystemTimeOfNextTick(rhs.mSystemTimeOfNextTick )
+			, mTimeScale( rhs.mTimeScale )
 			, mQueuedTimeScale( rhs.mQueuedTimeScale )
+			, mTick( rhs.mTick )
 		{}
 
 		//------------------------------------------------------------------------------

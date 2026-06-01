@@ -67,6 +67,7 @@ namespace Dia
 					result.mHalfFloat = Convert (x.i);
 				}
 			}
+			return result;
 		}
 
 		// -----------------------------------------------------------------------------
