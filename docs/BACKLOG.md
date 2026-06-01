@@ -42,7 +42,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 | Item | Spec | What's needed |
 |------|------|---------------|
-| DiaEntity: component-readonly-flag | [component-readonly-flag.md](specs/features/dia/diaentity/component-readonly-flag.md) | `DIA_READONLY` macro + Domain enforcement (skip hooks). Enshrines SD-ENT-022 (readonly vs behaviour boundary). Enables static-free picking pattern. Draft — needs approval before build. |
+| ~~DiaEntity: component-data-flow-contracts~~ | [component-readonly-flag.md](specs/features/dia/diaentity/component-readonly-flag.md) | **Done** (2026-06-01) — `DIA_READONLY` + `DIA_WRITES(Target)` macros, Domain enforcement (skip hooks for readonly, single-writer assert on add/remove). 17 GoogleTests pass. |
 | DiaStateMachineEditor system | TBD | Needs `/spec-system` — editor plugin for state machine visual debugging + design-time editing. Depends on DiaStateMachine ✅, DiaEditor |
 | Manifest heap modules | [manifest-heap-modules.md](specs/features/dia/diaapplicationflow/manifest-heap-modules.md) | `ApplicationManifestV3` is ~60 KB on the stack due to `DynamicArrayC<ModuleDeclaration,32>` inline storage. Spec written + plan ready. Blocked on `DynamicArrayC`/`DynamicArray` both using `memcpy` — nesting heap-owning containers is unsafe without fixing copy semantics. Options: reduce cap (32→16, 1-line, safe), or allocate the whole manifest on the heap at the call site. Deferred — low urgency. |
 
