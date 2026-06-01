@@ -62,7 +62,7 @@ void SoftBody2DTestStageModule::OnStart(Dia::Automation::AutomationService* serv
     Dia::SoftBody2D::WorldDef worldDef;
     worldDef.gravity          = { 0.0f, -120.0f };
     worldDef.fixedTimestep    = kFixedDt;
-    worldDef.solverIterations = 10;
+    worldDef.solverIterations = 3;
     worldDef.rigidBodyWorld   = rbWorld;
     mWorld = new Dia::SoftBody2D::SoftBodyWorld(worldDef);
 
@@ -116,8 +116,9 @@ void SoftBody2DTestStageModule::SetupRope(Dia::RigidBody2D::RigidBody2D* anchorB
 {
     Dia::SoftBody2D::RopeDef ropeDef;
     ropeDef.id            = Dia::Core::StringCRC("softbody_rope");
+    // End offset gives the rope an initial lateral displacement so it swings before settling
     ropeDef.startPoint    = { 400.0f, 600.0f };
-    ropeDef.endPoint      = { 400.0f,  30.0f };
+    ropeDef.endPoint      = { 550.0f,  30.0f };
     ropeDef.particleCount = 12;
     ropeDef.mass          = 1.0f;
     ropeDef.stiffness     = 1.0f;
@@ -129,15 +130,17 @@ void SoftBody2DTestStageModule::SetupCloth()
 {
     Dia::SoftBody2D::ClothDef clothDef;
     clothDef.id                  = Dia::Core::StringCRC("softbody_cloth");
-    clothDef.origin              = { 600.0f, 450.0f };
-    clothDef.width               = 150.0f;
-    clothDef.height              = 150.0f;
+    // Asymmetric origin: cloth hangs from two pinned corners but starts displaced
+    // so it has to swing + fold before reaching rest
+    clothDef.origin              = { 650.0f, 500.0f };
+    clothDef.width               = 200.0f;
+    clothDef.height              = 180.0f;
     clothDef.resX                = 4;
     clothDef.resY                = 4;
     clothDef.mass                = 1.0f;
-    clothDef.structuralStiffness = 1.0f;
-    clothDef.shearStiffness      = 0.8f;
-    clothDef.bendStiffness       = 0.3f;
+    clothDef.structuralStiffness = 0.6f;
+    clothDef.shearStiffness      = 0.3f;
+    clothDef.bendStiffness       = 0.1f;
     mCloth = mWorld->AddCloth(clothDef);
 
     // Pin top-left and top-right corners

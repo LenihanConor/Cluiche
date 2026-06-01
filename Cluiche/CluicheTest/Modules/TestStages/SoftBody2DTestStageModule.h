@@ -81,7 +81,7 @@ private:
 
     static constexpr float        kVelocityEpsilon = 0.001f;
     static constexpr float        kFixedDt         = 1.0f / 30.0f;
-    static constexpr unsigned int kBudgetFrames    = 400;
+    static constexpr unsigned int kBudgetFrames    = 600;
 };
 
 } // namespace CluicheTest
