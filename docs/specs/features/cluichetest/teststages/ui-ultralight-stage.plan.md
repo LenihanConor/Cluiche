@@ -1,7 +1,7 @@
 # Implementation Plan: UIUltralightTestStage
 
 **Spec:** [ui-ultralight-stage.md](ui-ultralight-stage.md)
-**Status:** In Progress
+**Status:** Done
 
 ---
 
@@ -162,7 +162,7 @@ private:
 | 7 | Update `CluicheTest.vcxproj` + `.vcxproj.filters` — add UIUltralightTestStageModule.h/.cpp + UIUltralightTestPage.h/.cpp | Clean build | Done | haiku | Filter group ApplicationFlow\Modules\TestStages\UIUltralight added |
 | 8 | Write pytest scenario `test_ui_ultralight.py` (6 tests); register in `default.json` | Scenario file valid; plan updated | Done | sonnet | |
 | 9 | `dia run cluichetest` — visual verify against mockup; all 6 checkpoints PASS; no ERROR logs | Manual visual gate | Done | sonnet | Visually verified by user — panel visible top-right, all 6 checkpoints green, PASS 1/300 |
-| 10 | Commit + update spec status → Done | — | Todo | haiku | |
+| 10 | Commit + update spec status → Done | — | Done | haiku | Committed 9099b3cd |
 
 ---
 

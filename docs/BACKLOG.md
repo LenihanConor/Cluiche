@@ -28,8 +28,6 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | Feature | Spec | System | Notes |
 |---------|------|--------|-------|
 | per-app-bin-layout | [per-app-bin-layout.md](specs/features/dia/diapipeline/per-app-bin-layout.md) | DiaPipeline ✅ | |
-| ~~module-metadata~~ | **Done** (2026-05-28) — `PUAffinity` bitmask; `TypeRegistry` stores `kAllowedPUs`+`kDescription`; `AddModule()` asserts on mismatch; `IApplicationInspectable` extended; 24 modules annotated; 14 tests. | DiaApplicationFlow | |
-| ~~shared-debug-console~~ | **Done** (2026-05-28) — `VisualDebuggerModule` + `VisualDebuggerConsoleModule` always-active; layers persist across transitions with stageTag; per-stage tab bar in console; 7 tests. | DiaVisualDebugger | |
 
 ---
 
@@ -72,12 +70,12 @@ System spec: [teststages.md](specs/systems/cluichetest/teststages.md) (Approved)
 |-------|--------------|-----------|---------------------|-------|
 | ~~RigidBody2DTestStage~~ | **Done** (2026-05-28) — `TestStageModuleBase` extracted; stage renamed; 10 circles settle; pytest scenario passes. | | |
 | ~~AssetRuntimeTestStage~~ | **Done** (2026-05-28) — Migrated to `TestStageModuleBase`; stage renamed; multi-entry reload validation. | | |
+| ~~Geometry2DTestStage~~ | **Done** (2026-05-31) — Gallery of all shape primitives, 6 intersection pair colour-coding, 4 spatial structure overlays, 5 IVisualDebugger drawers. `geometry2d.passed` checkpoint validated. | | |
 | StateMachineTestStage | DiaStateMachine | State transitions, guard evaluation, event firing | `state_machine.reached_target`, `state_machine.guard_blocked` | `/spec-feature` |
 | Animation2DTestStage | DiaAnimation2D + DiaRig2D | Clip playback, pose validation, blend weights | `animation.clip_complete`, `animation.pose_matches` | `/spec-feature` |
 | SoftBody2DTestStage | DiaSoftBody2D | Rope/cloth stabilization, spring convergence | `soft_body.rope_settled` | `/spec-feature` |
-| Geometry2DTestStage | DiaGeometry2D + DiaGeometry2DVisualDebugger | Gallery of all shape primitives, 6 intersection pair colour-coding, 4 spatial structure overlays, 5 IVisualDebugger drawers | `geometry2d.passed` | [Spec Approved](specs/features/cluichetest/teststages/geometry2d-stage.md). [Plan ready](specs/features/cluichetest/teststages/geometry2d-stage.plan.md) — 9 tasks. [Mockup](specs/features/cluichetest/teststages/geometry2d-stage.mockup.html) approved. |
 | EntityTestStage | DiaEntity | Spawn/destroy/hierarchy/query/mailbox/lifecycle; `TransformComponent` + `VisualTestRenderComponent`; 6 checkpoints | `entity.spawn_complete`, `entity.query_correct`, `entity.hierarchy_valid`, `entity.destroy_cascade`, `entity.mailbox_received`, `entity.lifecycle_complete` | [Spec Approved](specs/features/cluichetest/teststages/entity-test-stage.md). [Plan ready](specs/features/cluichetest/teststages/entity-test-stage.plan.md) — 9 tasks (T-00 done). Uses `/new-cluichetest-stage` skill. Two-module split: EntityModule (reusable) + EntityTestModule (MainPU, checkpoints). |
-| UIUltralightTestStage | DiaUIUltralight | Page load, JS↔C++ bridge (4 bound methods inc. round-trip), pixel buffer non-empty, mouse injection, deterministic reload; Alpine.js panel | `ui.page_loaded`, `ui.js_to_cpp_callback_fired`, `ui.round_trip_value_correct`, `ui.pixel_buffer_non_empty`, `ui.mouse_click_handled`, `ui.deterministic_reload` | [Spec Approved](specs/features/cluichetest/teststages/ui-ultralight-stage.md). [Plan ready](specs/features/cluichetest/teststages/ui-ultralight-stage.plan.md) — 10 tasks. |
+| ~~UIUltralightTestStage~~ | **Done** (2026-06-01) — 6 checkpoints; `window.onload` bridge; vanilla JS panel; LoadingScreenModule reused for UI composite on SimPU. | | |
 
 **Scaffolding:** `dia scaffold stage <Name> --modules <...>` creates all 9 touch points in one command. `/new-cluichetest-stage` skill infers domain, runs the script, adds domain-specific C++. Domain patterns: Physics, Entity, Asset, Animation, StateMachine, Geometry.
 
@@ -88,10 +86,10 @@ System spec: [teststages.md](specs/systems/cluichetest/teststages.md) (Approved)
 | 6b | Extract AutomationModuleBase into DiaAutomation | Evaluate from working code after 2+ apps use it |
 | 7 | CluicheEditor EditorAutomationModule | After 6b |
 | 9 | ~~DiaScreenCapture — frame grab for mock comparison~~ | **Specced** — split into two features: [frame-capture-readback](specs/features/dia/diabgfx/frame-capture-readback.md) (ICanvas async readback, DiaBgfx ring buffer) + [captures](specs/features/dia/diaobservation/captures.md) (6th observation pillar, PNG write to session). Both Approved with plans. |
-| 10 | **Eliminate remaining cross-PU statics** | 4 statics → 2 done, 2 planned. See sub-items below. Policy: no new statics without sign-off. |
+| 10 | ~~**Eliminate remaining cross-PU statics**~~ | **Done** (2026-05-30) — all 4 statics removed. Policy: no new statics without sign-off. |
 | 10a | ~~`JobSystemModule::GetStatic()`~~ | **Done** (2026-05-30) — replaced with `ModuleRef<JobSystemModule>` in `KernelModule`. Same PU (MainPU). |
-| 10b | `AutomationModule::GetStatic()` + `AssetServiceModule::GetStatic()` | Plan ready: [eliminate-asset-service-static.plan.md](plans/eliminate-asset-service-static.plan.md) — 12 tasks. `MainStateProducerModule` already migrated to `ModuleRef` (same PU). Cross-PU consumers (`TestStageModuleBase`) still use `GetStatic()` — ServiceStream replaces it. `TestAssetRuntimeStageModule` moves to SimPU. |
-| 10c | `VisualDebuggerModule::sLayerManager` | Plan ready: [eliminate-visualdebugger-static.plan.md](plans/eliminate-visualdebugger-static.plan.md) — 11 tasks. Phase A: SimPU consumers → ModuleRef. Phase B: RenderPU consumers via EventStream registration + FrameStream metadata. `Physics2DModule` moves to SimPU. |
+| 10b | ~~`AutomationModule::GetStatic()` + `AssetServiceModule::GetStatic()`~~ | **Done** (2026-05-30) — `ServiceStream<AssetLoadStatus>` (Main→Sim), `ServiceStream<AutomationService>` (Main→Sim), `MainToRenderFrame.assetLoadStatus` (Main→Render). `TestStageModuleBase` + `TestAssetRuntimeStageModule` moved to SimPU. |
+| 10c | ~~`VisualDebuggerModule::sLayerManager`~~ | **Done** (2026-05-30) — `ServiceStream<DebugLayerManager>` (Sim→Render). `Physics2DModule` moved MainPU→SimPU; uses `ModuleRef`. `Geometry2DTestStageModule` uses `ModuleRef`. `AssetRuntimeVisualDebuggerModule` + `VisualDebuggerConsoleModule` use `ServiceStreamReader`. Data race eliminated. |
 
 ---
 
@@ -142,5 +140,6 @@ Spec Approved: [diaarchitecture.md](specs/systems/dia/diaarchitecture.md). C3 is
 | `Dia::Core::Blackboard` — general-purpose key-value store | Identified during DiaStateMachine research; useful for AI, animation, gameplay. Needs `/spec-feature` under DiaCore. |
 | ~~DiaSoftBody2D serializers~~ | **Done** (2026-05-28) — `DiaSoftBody2DSerializers.h` ships `WorldDef`, `RopeDef`, `ClothDef`. Follows `DiaRigidBody2DSerializers.h` pattern exactly. Non-owning anchor/world pointers skipped (same convention as RigidBody2D). |
 | ~~Cross-PU data flow for debug UI~~ | **Folded into service-channel** — Shapes A+B+C all resolved in one feature (composite per PU-pair + ServiceStream). No follow-on features needed. |
-| RigidBody2DStage visual debug — circles not visible | Stage runs and times out but falling circles are not rendering on screen. Ground (huge circle) draws correctly. Coordinate system (Y-UP renderer, pixel-scale physics) and gravity direction are set but circles still don't appear. Possible issues: circles too small relative to viewport, draw order, or drawer not picking up dynamic bodies. Needs investigation with logging or breakpoints. |
-| Spatial cell inspector | [Spec Approved](specs/features/dia/diavisualdebugger/spatial-cell-inspector.md). SpatialGrid + HexGrid only. Click cell → highlight → ImGui inspector panel. Uses `ImGui::IsMouseClicked` in `DrawImGui()`. Duplicated per-drawer, no shared base. |
+| RigidBody2DStage test failure | Visual debug rendering fixed (circles now visible). Test itself fails — needs investigation. |
+| ~~Spatial cell inspector~~ | **Done** — `SpatialGridDrawer` + `HexGridDrawer` have selection state, highlight draw, and ImGui inspector. `Geometry2DTestStageModule` owns selection + wires click detection via `SetSelection()`. All ACs met. |
+| ~~Arc/Sector cleanup~~ | **Done** (2026-05-31) — `Arc` deleted (duplicate sector-shaped class); `Sector` kept as the single canonical type. `SectorDrawHelper` rendering fix (duplicate close-back vertex removed). 249 geometry tests pass. |
