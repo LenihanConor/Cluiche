@@ -39,6 +39,10 @@ void RigidBody2DTestModule::OnStart(Dia::Automation::AutomationService* service)
 {
     SetupScene();
 
+    auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
+    if (!mMetricSettleFrame)
+        mMetricSettleFrame = reg.RegisterGauge(Dia::Core::StringCRC("cluichetest.rigid_body.settle_frame"));
+
     service->RegisterCheckpoint(this, Dia::Core::StringCRC("test.rigid_body.all_settled"),
         [this]() -> Dia::Automation::CheckpointResult {
             bool settled = AreAllBodiesAsleep();
@@ -134,6 +138,8 @@ bool RigidBody2DTestModule::AreAllBodiesAsleep() const
 void RigidBody2DTestModule::EmitMetrics()
 {
     auto* world = mPhysics.Get()->GetWorld();
+    if (mMetricSettleFrame)
+        mMetricSettleFrame->Set(static_cast<double>(mSettleFrame));
     DIA_LOG_INFO("CluicheTest", "RigidBody2DTestModule — settled at frame %u, step_count %d",
         mSettleFrame, world->GetStepCount());
 }

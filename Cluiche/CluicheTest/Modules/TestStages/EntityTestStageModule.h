@@ -90,6 +90,10 @@ private:
     bool mDestroyCascade    = false;
     bool mMailboxReceived   = false;
     bool mLifecycleComplete = false;
+
+    // Metrics
+    Dia::Observation::Metric::Gauge* mMetricAliveCount    = nullptr;
+    Dia::Observation::Metric::Gauge* mMetricMailboxCount  = nullptr;
 };
 
 } // namespace CluicheTest

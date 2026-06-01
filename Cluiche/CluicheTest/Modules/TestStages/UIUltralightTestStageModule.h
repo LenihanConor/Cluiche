@@ -18,7 +18,7 @@ class UIUltralightTestStageModule
 public:
     static const Dia::Core::StringCRC kTypeId;
     static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kMain;
-    static constexpr const char* kDescription = "E2E test stage for DiaUIUltralight system";
+    static constexpr const char* kDescription = "Validates DiaUIUltralight: page load, JS-C++ round-trip, pixel buffer, mouse input";
 
     explicit UIUltralightTestStageModule(const Dia::Core::StringCRC& instanceId);
 

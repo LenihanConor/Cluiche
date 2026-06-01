@@ -107,7 +107,7 @@ void Animation2DTestStageModule::OnUpdate(float deltaTime)
                 mCurrentClipIndex, mClipsPlayed, mTotalPlaybackFrames,
                 mAllCompleted, mPoseCorrect,
                 vd->GetLayerManager());
-            vd->GetLayerManager().Register(mDrawer.get(), 20, Dia::Core::StringCRC("Anim2D"));
+            vd->GetLayerManager().Register(mDrawer.get(), 20, Dia::Core::StringCRC("Animation2D"));
         }
     }
 #endif
@@ -221,8 +221,8 @@ bool Animation2DTestStageModule::VerifyGoldenPose() const
 void Animation2DTestStageModule::EmitMetrics()
 {
     auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
-    auto* clipsPlayed = reg.RegisterGauge(Dia::Core::StringCRC("cluichetest.anim2d.clips_played"));
-    auto* totalFrames = reg.RegisterGauge(Dia::Core::StringCRC("cluichetest.anim2d.total_playback_frames"));
+    auto* clipsPlayed = reg.RegisterGauge(Dia::Core::StringCRC("cluichetest.animation2d.clips_played"));
+    auto* totalFrames = reg.RegisterGauge(Dia::Core::StringCRC("cluichetest.animation2d.total_playback_frames"));
 
     if (clipsPlayed) clipsPlayed->Set(static_cast<float>(mClipsPlayed));
     if (totalFrames) totalFrames->Set(static_cast<float>(mTotalPlaybackFrames));

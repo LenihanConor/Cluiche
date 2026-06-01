@@ -48,6 +48,8 @@ private:
 
     unsigned int mSettleFrame = 0;
 
+    Dia::Observation::Metric::Gauge* mMetricSettleFrame = nullptr;
+
     static constexpr unsigned int kBudgetFrames = 900;
 };
 

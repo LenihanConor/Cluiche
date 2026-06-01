@@ -158,13 +158,13 @@ void Geometry2DTestStageModule::OnUpdate(float /*deltaTime*/)
                 if (mHexGrid)
                 {
                     mHexGridPickable = std::make_unique<Dia::Geometry2DPicking::HexGridPickable<SpatialElem, kSpatialMax>>(
-                        *mHexGrid, Dia::Core::StringCRC("geo2d.hexgrid"), 10);
+                        *mHexGrid, Dia::Core::StringCRC("geometry2d.hexgrid"), 10);
                     picking->GetService().Register(mHexGridPickable.get());
                 }
                 if (mSpatialGrid)
                 {
                     mSpatialGridPickable = std::make_unique<Dia::Geometry2DPicking::SpatialGridPickable<SpatialElem, kSpatialMax>>(
-                        *mSpatialGrid, Dia::Core::StringCRC("geo2d.spatialgrid"), 5);
+                        *mSpatialGrid, Dia::Core::StringCRC("geometry2d.spatialgrid"), 5);
                     picking->GetService().Register(mSpatialGridPickable.get());
                 }
 

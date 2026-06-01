@@ -14,7 +14,7 @@ class TestAssetRuntimeStageModule : public TestStageModuleBase
 public:
     static const Dia::Core::StringCRC kTypeId;
     static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kSim;
-    static constexpr const char* kDescription = "Validates asset loading, handle lifecycle, and clean reload";
+    static constexpr const char* kDescription = "Validates DiaAssetRuntime: asset loading, handle lifecycle, clean reload";
     explicit TestAssetRuntimeStageModule(const Dia::Core::StringCRC& instanceId);
 
 protected:

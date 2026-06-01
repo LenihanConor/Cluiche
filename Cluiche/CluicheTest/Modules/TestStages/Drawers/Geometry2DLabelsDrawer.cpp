@@ -32,7 +32,7 @@ Geometry2DLabelsDrawer::Geometry2DLabelsDrawer(
 
 Dia::Core::StringCRC Geometry2DLabelsDrawer::GetLayerName() const
 {
-    return Dia::Core::StringCRC("geo2d.labels");
+    return Dia::Core::StringCRC("geometry2d.labels");
 }
 
 void Geometry2DLabelsDrawer::Draw(Dia::Graphics::FrameData& frameData)

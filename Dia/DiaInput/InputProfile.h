@@ -79,7 +79,7 @@ namespace Dia
 				const auto& bindings = actionMap.GetBindings();
 				for (auto it = bindings.Begin(); it != bindings.End(); ++it)
 				{
-					ActionID action = it.Key();
+					ActionID action = it.GetKey();
 					const auto& bindingList = it.Value();
 
 					for (unsigned int i = 0; i < bindingList.Size(); i++)

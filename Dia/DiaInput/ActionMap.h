@@ -280,7 +280,7 @@ namespace Dia
 				{
 					if (it.Value() > 0.0f)
 					{
-						mActionActivatedCallback.Invoke(it.Key(), it.Value());
+						mActionActivatedCallback.Invoke(it.GetKey(), it.Value());
 					}
 				}
 			}
@@ -319,7 +319,7 @@ namespace Dia
 
 				for (auto it = mBindings.Begin(); it != mBindings.End(); ++it)
 				{
-					ActionID action = it.Key();
+					ActionID action = it.GetKey();
 					const auto& bindings = it.Value();
 
 					for (unsigned int i = 0; i < bindings.Size(); i++)
@@ -340,7 +340,7 @@ namespace Dia
 
 				for (auto it = mBindings.Begin(); it != mBindings.End(); ++it)
 				{
-					ActionID action = it.Key();
+					ActionID action = it.GetKey();
 					const auto& bindings = it.Value();
 
 					for (unsigned int i = 0; i < bindings.Size(); i++)
@@ -361,7 +361,7 @@ namespace Dia
 
 				for (auto it = mBindings.Begin(); it != mBindings.End(); ++it)
 				{
-					ActionID action = it.Key();
+					ActionID action = it.GetKey();
 					const auto& bindings = it.Value();
 
 					for (unsigned int i = 0; i < bindings.Size(); i++)
@@ -381,7 +381,7 @@ namespace Dia
 			{
 				for (auto it = mBindings.Begin(); it != mBindings.End(); ++it)
 				{
-					ActionID action = it.Key();
+					ActionID action = it.GetKey();
 					const auto& bindings = it.Value();
 
 					for (unsigned int i = 0; i < bindings.Size(); i++)
@@ -403,7 +403,7 @@ namespace Dia
 
 				for (auto it = mBindings.Begin(); it != mBindings.End(); ++it)
 				{
-					ActionID action = it.Key();
+					ActionID action = it.GetKey();
 					const auto& bindings = it.Value();
 
 					for (unsigned int i = 0; i < bindings.Size(); i++)

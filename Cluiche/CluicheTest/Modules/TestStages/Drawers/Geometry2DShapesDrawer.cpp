@@ -41,7 +41,7 @@ Geometry2DShapesDrawer::Geometry2DShapesDrawer(
 
 Dia::Core::StringCRC Geometry2DShapesDrawer::GetLayerName() const
 {
-    return Dia::Core::StringCRC("geo2d.shapes");
+    return Dia::Core::StringCRC("geometry2d.shapes");
 }
 
 #pragma warning(push)

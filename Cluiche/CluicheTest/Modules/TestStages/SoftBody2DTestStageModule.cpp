@@ -90,11 +90,11 @@ void SoftBody2DTestStageModule::OnStart(Dia::Automation::AutomationService* serv
     // Register metrics
     auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
     if (!mMetricRopeFrame)
-        mMetricRopeFrame = reg.RegisterGauge(Dia::Core::StringCRC("cluichetest.softbody.rope_settle_frame_count"));
+        mMetricRopeFrame = reg.RegisterGauge(Dia::Core::StringCRC("cluichetest.soft_body.rope_settle_frame_count"));
     if (!mMetricClothFrame)
-        mMetricClothFrame = reg.RegisterGauge(Dia::Core::StringCRC("cluichetest.softbody.cloth_settle_frame_count"));
+        mMetricClothFrame = reg.RegisterGauge(Dia::Core::StringCRC("cluichetest.soft_body.cloth_settle_frame_count"));
     if (!mMetricConstraintIters)
-        mMetricConstraintIters = reg.RegisterGauge(Dia::Core::StringCRC("cluichetest.softbody.constraint_iterations"));
+        mMetricConstraintIters = reg.RegisterGauge(Dia::Core::StringCRC("cluichetest.soft_body.constraint_iterations"));
 
     if (mMetricConstraintIters)
         mMetricConstraintIters->Set(static_cast<double>(worldDef.solverIterations));

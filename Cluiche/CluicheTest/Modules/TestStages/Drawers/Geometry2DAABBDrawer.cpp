@@ -34,7 +34,7 @@ Geometry2DAABBDrawer::Geometry2DAABBDrawer(
 
 Dia::Core::StringCRC Geometry2DAABBDrawer::GetLayerName() const
 {
-    return Dia::Core::StringCRC("geo2d.aabbs");
+    return Dia::Core::StringCRC("geometry2d.aabbs");
 }
 
 static Dia::Geometry2D::AARect MakeAABB(float minX, float minY, float maxX, float maxY)

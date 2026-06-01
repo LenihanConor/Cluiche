@@ -37,7 +37,7 @@ Geometry2DIntersectionsDrawer::Geometry2DIntersectionsDrawer(
 
 Dia::Core::StringCRC Geometry2DIntersectionsDrawer::GetLayerName() const
 {
-    return Dia::Core::StringCRC("geo2d.intersections");
+    return Dia::Core::StringCRC("geometry2d.intersections");
 }
 
 #pragma warning(push)

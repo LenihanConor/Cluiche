@@ -279,13 +279,13 @@ void EntityTestStageModule::OnUpdate(float /*deltaTime*/)
 
     // Emit metrics
     auto& reg = Dia::Observation::Metric::MetricRegistry::Instance();
-    static Dia::Observation::Metric::Gauge* sAliveCount = reg.RegisterGauge(
-        Dia::Core::StringCRC("cluichetest.entity.alive_count"));
-    static Dia::Observation::Metric::Gauge* sMailboxCount = reg.RegisterGauge(
-        Dia::Core::StringCRC("cluichetest.entity.mailbox_count"));
+    if (!mMetricAliveCount)
+        mMetricAliveCount = reg.RegisterGauge(Dia::Core::StringCRC("cluichetest.entity.alive_count"));
+    if (!mMetricMailboxCount)
+        mMetricMailboxCount = reg.RegisterGauge(Dia::Core::StringCRC("cluichetest.entity.mailbox_count"));
 
-    if (sAliveCount) sAliveCount->Set(static_cast<double>(domain.GetEntityCount()));
-    if (sMailboxCount) sMailboxCount->Set(static_cast<double>(mMailboxReceiveCount));
+    if (mMetricAliveCount) mMetricAliveCount->Set(static_cast<double>(domain.GetEntityCount()));
+    if (mMetricMailboxCount) mMetricMailboxCount->Set(static_cast<double>(mMailboxReceiveCount));
 
     // Report pass
     if (AllCheckpointsPassed() && !IsResolved())
@@ -393,6 +393,8 @@ void EntityTestStageModule::OnStop()
     mDestroyCascade    = false;
     mMailboxReceived   = false;
     mLifecycleComplete = false;
+    mMetricAliveCount = nullptr;
+    mMetricMailboxCount = nullptr;
 }
 
 } // namespace CluicheTest

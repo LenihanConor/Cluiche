@@ -19,7 +19,7 @@ UIUltralightTestStageModule::UIUltralightTestStageModule(const Dia::Core::String
 
 Dia::Core::StringCRC UIUltralightTestStageModule::GetStageName() const
 {
-    return Dia::Core::StringCRC("UIUltralightTestStage");
+    return Dia::Core::StringCRC("CluicheTest");
 }
 
 const Dia::Core::StringCRC* UIUltralightTestStageModule::GetCheckpointNames(unsigned int& outCount) const
@@ -44,7 +44,7 @@ bool UIUltralightTestStageModule::AreDependenciesReady()
 
 void UIUltralightTestStageModule::OnStart(Dia::Automation::AutomationService* service)
 {
-    DIA_LOG_INFO("UIUltralightTestStage", "UIUltralightTestStageModule::OnStart (entry %u)", GetEntryCount());
+    DIA_LOG_INFO("CluicheTest", "UIUltralightTestStageModule::OnStart (entry %u)", GetEntryCount());
 
     mPageLoaded          = false;
     mPageReadyFired      = false;
@@ -116,7 +116,7 @@ void UIUltralightTestStageModule::OnUpdate(float /*deltaTime*/)
     {
         mPageLoaded = true;
         mFramesUntilLoaded = GetFrameCount();
-        DIA_LOG_INFO("UIUltralightTestStage", "Page loaded at frame %u", mFramesUntilLoaded);
+        DIA_LOG_INFO("CluicheTest", "Page loaded at frame %u", mFramesUntilLoaded);
         if (mMetricFramesUntilLoaded)
             mMetricFramesUntilLoaded->Set(static_cast<double>(mFramesUntilLoaded));
     }
@@ -179,7 +179,7 @@ void UIUltralightTestStageModule::OnUpdate(float /*deltaTime*/)
 
 void UIUltralightTestStageModule::OnStop()
 {
-    DIA_LOG_INFO("UIUltralightTestStage", "UIUltralightTestStageModule::OnStop");
+    DIA_LOG_INFO("CluicheTest", "UIUltralightTestStageModule::OnStop");
 
     if (auto* ui = mUI.Get())
         ui->UnloadPage();
