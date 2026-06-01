@@ -113,6 +113,7 @@ namespace Dia
 					// Calculate duration
 					auto endTime = std::chrono::high_resolution_clock::now();
 					float duration = std::chrono::duration<float>(endTime - startTime).count();
+					(void)duration;  // TODO: Phase 7 - Use in OnScriptExecuted event
 
 					// Convert Python exception to error code
 					ErrorContext context;
@@ -178,6 +179,7 @@ namespace Dia
 					// Calculate duration
 					auto endTime = std::chrono::high_resolution_clock::now();
 					float duration = std::chrono::duration<float>(endTime - startTime).count();
+					(void)duration;  // TODO: Phase 7 - Use in OnScriptExecuted event
 
 					// Convert Python exception to error code
 					ErrorContext context;

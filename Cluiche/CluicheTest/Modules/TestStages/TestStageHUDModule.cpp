@@ -78,6 +78,15 @@ void TestStageHUDModule::RenderBottomBar(const Cluiche::AppFlow::MainToRenderFra
     ImGui::Begin("##HUDBar", nullptr, kFlags);
     ImGui::PopStyleColor();
 
+    // Spinner while running
+    if (!isPassed && !isTimeout)
+    {
+        static const char* kSpinnerFrames[] = { "|", "/", "-", "\\" };
+        unsigned int spinIdx = (hud.frameCount / 4) % 4;
+        ImGui::TextColored(ImVec4(0.6f, 0.85f, 1.0f, 1.0f), "%s", kSpinnerFrames[spinIdx]);
+        ImGui::SameLine();
+    }
+
     // Stage name
     ImGui::Text("%s", hud.activeStageName.AsChar());
     ImGui::SameLine();

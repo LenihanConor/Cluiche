@@ -14,7 +14,7 @@ namespace Dia
 	{
 		ScopedZone::ScopedZone(const Dia::Core::StringCRC& name, TraceCategory category)
 		{
-			std::memset(&mRecord, 0, sizeof(mRecord));
+			mRecord = SpanRecord{};
 
 			if (!Tracer::Instance().IsStarted())
 				return;
