@@ -60,9 +60,8 @@ namespace Dia { namespace ApplicationFlow {
         static TypeRegistry& Global();
 
     private:
-        // Initial capacity 32 payload slots, 64 hash-table buckets —
-        // matches the module-factory table in v1 ApplicationTypeRegistry.
-        Dia::Core::Containers::HashTable<Dia::Core::StringCRC, TypeMetadata> mFactories{32, 64};
+        // 64 payload slots, 128 hash-table buckets — sized for ~50 modules with headroom.
+        Dia::Core::Containers::HashTable<Dia::Core::StringCRC, TypeMetadata> mFactories{64, 128};
     };
 
     // ---------------------------------------------------------------------------
