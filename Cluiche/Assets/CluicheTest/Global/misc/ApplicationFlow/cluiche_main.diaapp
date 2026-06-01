@@ -10,7 +10,8 @@
                 "Geometry2DTestStage",
                 "UIUltralightTestStage",
                 "EntityTestStage",
-                "SoftBody2DTestStage"
+                "SoftBody2DTestStage",
+                "Animation2DTestStage"
             ],
             "auto_advance": false
         },
@@ -52,6 +53,13 @@
         },
         {
             "name": "SoftBody2DTestStage",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "Animation2DTestStage",
             "transitions": [
                 "Boot"
             ],
@@ -394,7 +402,8 @@
                         "AssetRuntimeTestStage",
                         "Geometry2DTestStage",
                         "EntityTestStage",
-                        "SoftBody2DTestStage"
+                        "SoftBody2DTestStage",
+                        "Animation2DTestStage"
                     ],
                     "dependencies": [
                         "CameraModule"
@@ -417,7 +426,9 @@
                         "RigidBody2DTestStage",
                         "SoftBody2DTestStage"
                     ],
-                    "dependencies": [ "VisualDebuggerModule" ],
+                    "dependencies": [
+                        "VisualDebuggerModule"
+                    ],
                     "channels": []
                 }
             ]
@@ -457,7 +468,8 @@
                         "Geometry2DTestStage",
                         "UIUltralightTestStage",
                         "EntityTestStage",
-                        "SoftBody2DTestStage"
+                        "SoftBody2DTestStage",
+                        "Animation2DTestStage"
                     ],
                     "dependencies": [
                         "DebugUI"
@@ -477,7 +489,8 @@
                         "AssetRuntimeTestStage",
                         "Geometry2DTestStage",
                         "EntityTestStage",
-                        "SoftBody2DTestStage"
+                        "SoftBody2DTestStage",
+                        "Animation2DTestStage"
                     ],
                     "dependencies": [
                         "DebugUI"

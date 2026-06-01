@@ -50,6 +50,9 @@
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClCompile>
     <ClCompile Include="Modules\TestStages\TestStageHUDModule.cpp">
+    <ClCompile Include="Modules\TestStages\Animation2DTestStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
     <ClCompile Include="Modules\TestStages\SoftBody2DTestStageModule.cpp">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClCompile>
@@ -92,6 +95,9 @@
     <ClCompile Include="Modules\TestStages\Drawers\Geometry2DAABBDrawer.cpp">
       <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\TestStages\Drawers\Animation2DTestDrawer.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClCompile>
     <ClCompile Include="Modules\dummy\DummyLevelModule.cpp">
       <Filter>ApplicationFlow\Modules\Dummy</Filter>
     </ClCompile>
@@ -128,6 +134,9 @@
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClInclude>
     <ClInclude Include="Modules\TestStages\TestStageHUDModule.h">
+    <ClInclude Include="Modules\TestStages\Animation2DTestStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
     <ClInclude Include="Modules\TestStages\SoftBody2DTestStageModule.h">
       <Filter>ApplicationFlow\Modules\TestStages</Filter>
     </ClInclude>
@@ -168,6 +177,9 @@
     </ClInclude>
 
     <ClInclude Include="Modules\TestStages\Drawers\Geometry2DAABBDrawer.h">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\Drawers\Animation2DTestDrawer.h">
       <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
     </ClInclude>
     <ClInclude Include="Modules\dummy\DummyLevelModule.h">

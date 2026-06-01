@@ -365,6 +365,31 @@
             "tags": [
                 "misc/ApplicationFlow"
             ]
+        },
+        {
+            "id": "stage.animation2d_test_stage",
+            "type": "stage",
+            "source_path": "../Stages/Animation2DTestStage/animation2d_test_stage.diastage",
+            "scope": "global",
+            "tags": [
+                "misc"
+            ],
+            "references": [
+                {
+                    "type": "contains",
+                    "target": "manifest.animation2d_test_stage"
+                }
+            ]
+        },
+        {
+            "id": "manifest.animation2d_test_stage",
+            "type": "manifest",
+            "source_path": "../Stages/Animation2DTestStage/misc/ApplicationFlow/animation2d_test_stage.diaapp",
+            "scope": "stage",
+            "stage_name": "Animation2DTestStage",
+            "tags": [
+                "misc/ApplicationFlow"
+            ]
         }
     ]
 }

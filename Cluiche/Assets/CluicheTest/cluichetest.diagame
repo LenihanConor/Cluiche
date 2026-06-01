@@ -49,6 +49,10 @@
         {
             "path": "stages/SoftBody2DTestStage/softbody2d_test_stage.diastage",
             "type": "stage"
+        },
+        {
+            "path": "stages/Animation2DTestStage/animation2d_test_stage.diastage",
+            "type": "stage"
         }
     ],
     "name": "CluicheTest",

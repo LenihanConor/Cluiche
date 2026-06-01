@@ -30,6 +30,7 @@
     <ClCompile Include="Modules\TestStages\AssetRuntimeRendererModule.cpp" />
     <ClCompile Include="Modules\TestStages\AssetRuntimeHUDModule.cpp" />
     <ClCompile Include="Modules\TestStages\TestStageHUDModule.cpp" />
+    <ClCompile Include="Modules\TestStages\Animation2DTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\SoftBody2DTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\EntityTestStageModule.cpp" />
     <ClCompile Include="Modules\TestStages\Entity\TransformComponent.cpp" />
@@ -43,6 +44,7 @@
     <ClCompile Include="Modules\TestStages\Drawers\Geometry2DLabelsDrawer.cpp" />
     <ClCompile Include="Modules\TestStages\Drawers\Geometry2DIntersectionsDrawer.cpp" />
     <ClCompile Include="Modules\TestStages\Drawers\Geometry2DAABBDrawer.cpp" />
+    <ClCompile Include="Modules\TestStages\Drawers\Animation2DTestDrawer.cpp" />
     <ClCompile Include="Modules\dummy\DummyLevelModule.cpp" />
     <ClCompile Include="Modules\dummy\DummyUIPageModule.cpp" />
     <ClCompile Include="Modules\dummy\DummyUIPage.cpp" />
@@ -57,6 +59,7 @@
     <ClInclude Include="Modules\TestStages\AssetRuntimeRendererModule.h" />
     <ClInclude Include="Modules\TestStages\AssetRuntimeHUDModule.h" />
     <ClInclude Include="Modules\TestStages\TestStageHUDModule.h" />
+    <ClInclude Include="Modules\TestStages\Animation2DTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\SoftBody2DTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\EntityTestStageModule.h" />
     <ClInclude Include="Modules\TestStages\Entity\TransformComponent.h" />
@@ -70,6 +73,7 @@
     <ClInclude Include="Modules\TestStages\Drawers\Geometry2DLabelsDrawer.h" />
     <ClInclude Include="Modules\TestStages\Drawers\Geometry2DIntersectionsDrawer.h" />
     <ClInclude Include="Modules\TestStages\Drawers\Geometry2DAABBDrawer.h" />
+    <ClInclude Include="Modules\TestStages\Drawers\Animation2DTestDrawer.h" />
     <ClInclude Include="Modules\dummy\DummyLevelModule.h" />
     <ClInclude Include="Modules\dummy\DummyUIPageModule.h" />
     <ClInclude Include="Modules\dummy\DummyUIPage.h" />
@@ -155,6 +159,12 @@
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaSoftBody2DVisualDebugger\DiaSoftBody2DVisualDebugger.vcxproj">
       <Project>{B2C3D4E5-F6A7-8901-BCDE-F12345678901}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaRig2D\DiaRig2D.vcxproj">
+      <Project>{E4F5A6B7-C8D9-0123-ABCD-456789ABCDE0}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaAnimation2D\DiaAnimation2D.vcxproj">
+      <Project>{A6B7C8D9-E0F1-2345-ABCD-678901234567}</Project>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">

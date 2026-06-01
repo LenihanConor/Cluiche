@@ -40,7 +40,11 @@ files = [
   { src = "Cluiche/Assets/Stages/RigidBody2DTestStage/Misc/ApplicationFlow/*", dest = "$(OutDir)Data/stages/RigidBody2DTestStage/Misc/ApplicationFlow/" },
   { src = "Cluiche/Assets/Stages/RigidBody2DTestStage/rigidbody2d_stage.diastage", dest = "$(OutDir)Data/stages/RigidBody2DTestStage/" },
   { src = "Cluiche/Assets/Stages/EntityTestStage/misc/ApplicationFlow/*", dest = "$(OutDir)Data/stages/EntityTestStage/misc/ApplicationFlow/" },
-  { src = "Cluiche/Assets/Stages/EntityTestStage/entity_test_stage.diastage", dest = "$(OutDir)Data/stages/EntityTestStage/" }
+  { src = "Cluiche/Assets/Stages/EntityTestStage/entity_test_stage.diastage", dest = "$(OutDir)Data/stages/EntityTestStage/" },
+  { src = "Cluiche/Assets/Stages/Animation2DTestStage/misc/ApplicationFlow/*", dest = "$(OutDir)Data/stages/Animation2DTestStage/misc/ApplicationFlow/" },
+  { src = "Cluiche/Assets/Stages/Animation2DTestStage/animation2d_test_stage.diastage", dest = "$(OutDir)Data/stages/Animation2DTestStage/" },
+  { src = "Cluiche/Assets/Stages/Animation2DTestStage/skeleton/*", dest = "$(OutDir)Data/stages/Animation2DTestStage/skeleton/" },
+  { src = "Cluiche/Assets/Stages/Animation2DTestStage/clips/*", dest = "$(OutDir)Data/stages/Animation2DTestStage/clips/" }
 ]
 
 [targets.cluichetest]
@@ -63,6 +67,12 @@ files = [
   { src = "Cluiche/Assets/CluicheTest/cluichetest.diagame", dest = "$(OutDir)assets/" },
   { src = "Cluiche/Assets/CluicheTest/cluichetest.diaobservation", dest = "$(OutDir)assets/" },
   { src = "Cluiche/Assets/CluicheTest/Global/misc/ApplicationFlow/cluiche_main.diaapp", dest = "$(OutDir)assets/global/misc/ApplicationFlow/" },
+  { src = "Cluiche/Assets/Stages/Animation2DTestStage/animation2d_test_stage.diastage", dest = "$(OutDir)assets/stages/Animation2DTestStage/" },
+  { src = "Cluiche/Assets/Stages/Animation2DTestStage/misc/ApplicationFlow/animation2d_test_stage.diaapp", dest = "$(OutDir)assets/stages/Animation2DTestStage/misc/ApplicationFlow/" },
+  { src = "Cluiche/Assets/Stages/Animation2DTestStage/skeleton/dragon.diarig", dest = "$(OutDir)assets/stages/Animation2DTestStage/skeleton/" },
+  { src = "Cluiche/Assets/Stages/Animation2DTestStage/clips/idle_clip.diaclip", dest = "$(OutDir)assets/stages/Animation2DTestStage/clips/" },
+  { src = "Cluiche/Assets/Stages/Animation2DTestStage/clips/flap_up_clip.diaclip", dest = "$(OutDir)assets/stages/Animation2DTestStage/clips/" },
+  { src = "Cluiche/Assets/Stages/Animation2DTestStage/clips/flap_down_clip.diaclip", dest = "$(OutDir)assets/stages/Animation2DTestStage/clips/" },
 ]
 
 [targets.cluicheeditor]

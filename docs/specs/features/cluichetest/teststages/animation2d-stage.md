@@ -276,4 +276,4 @@ None.
 
 ## Status
 
-`Approved` — 2026-05-22
+`Done` — 2026-06-01

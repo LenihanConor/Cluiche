@@ -1,0 +1,22 @@
+{
+    "id": { "value": "flap_up_clip" },
+    "duration": 2.0,
+    "tracks": [
+        {
+            "boneId": { "value": "Wing_L" },
+            "rotationOnly": false,
+            "keyframes": [
+                { "time": 0.0, "rotation":  0.0, "position": { "x": -1.0, "y":  0.0 }, "scale": { "x": 1.0, "y": 1.0 } },
+                { "time": 2.0, "rotation": -0.3, "position": { "x": -1.0, "y":  0.8 }, "scale": { "x": 1.0, "y": 1.0 } }
+            ]
+        },
+        {
+            "boneId": { "value": "Wing_R" },
+            "rotationOnly": false,
+            "keyframes": [
+                { "time": 0.0, "rotation":  0.0, "position": { "x":  1.0, "y":  0.0 }, "scale": { "x": 1.0, "y": 1.0 } },
+                { "time": 2.0, "rotation":  0.3, "position": { "x":  1.0, "y":  0.8 }, "scale": { "x": 1.0, "y": 1.0 } }
+            ]
+        }
+    ]
+}
