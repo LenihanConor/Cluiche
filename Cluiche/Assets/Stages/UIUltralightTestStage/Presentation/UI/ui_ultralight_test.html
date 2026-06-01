@@ -12,10 +12,10 @@
     font-size: 12px;
     color: #e0e0e0;
   }
-  #panel {
+
+  /* ── Shared panel chrome ── */
+  .panel {
     position: fixed;
-    top: 16px; right: 16px;
-    width: 300px;
     background: rgba(14,16,26,0.92);
     border: 1px solid #3a4060;
     border-radius: 7px;
@@ -30,7 +30,9 @@
   .bad { color: #ee6644; }
   .dim { color: #556; }
 
-  /* Bridge status button */
+  /* ── Top-right: main panel ── */
+  #panel-main { top: 16px; right: 16px; width: 300px; }
+
   #btn {
     display: block; width: 100%;
     margin-top: 8px; padding: 6px 8px;
@@ -40,43 +42,49 @@
   }
   #btn.clicked { background: #1a3020; border-color: #448844; color: #66ee88; }
 
-  /* Status table */
   table { width: 100%; border-collapse: collapse; margin-top: 4px; }
   td { padding: 2px 0; font-size: 11px; }
   td:last-child { text-align: right; }
 
-  /* Progress bar */
-  .bar-track {
-    height: 6px; background: #1a1e30; border-radius: 3px; margin-top: 6px; overflow: hidden;
-  }
-  .bar-fill {
-    height: 100%; background: linear-gradient(90deg, #4488ff, #44ffaa);
-    border-radius: 3px; transition: width 0.4s ease;
-  }
-  .bar-label { font-size: 11px; color: #778; margin-top: 3px; text-align: right; }
+  .bar-track { height: 6px; background: #1a1e30; border-radius: 3px; margin-top: 6px; overflow: hidden; }
+  .bar-fill   { height: 100%; background: linear-gradient(90deg, #4488ff, #44ffaa); border-radius: 3px; transition: width 0.3s ease; }
+  .bar-label  { font-size: 11px; color: #778; margin-top: 3px; text-align: right; }
 
-  /* Slider */
-  #slider {
-    width: 100%; margin-top: 6px; accent-color: #4488ff;
-    cursor: pointer;
-  }
+  /* Slider — instant visual, throttled C++ call */
+  #slider { width: 100%; margin-top: 6px; accent-color: #4488ff; cursor: pointer; }
   .slider-readout { display: flex; justify-content: space-between; margin-top: 2px; }
 
-  /* Live metrics */
   .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; margin-top: 4px; }
-  .metric-box {
-    background: #0e1020; border: 1px solid #252840; border-radius: 4px;
-    padding: 4px 6px;
+  .metric-box  { background: #0e1020; border: 1px solid #252840; border-radius: 4px; padding: 4px 6px; }
+  .metric-val  { font-size: 15px; color: #88ddff; font-weight: bold; }
+  .metric-lbl  { font-size: 10px; color: #556; }
+
+  /* ── Bottom-left: telemetry panel ── */
+  #panel-telem { bottom: 16px; left: 16px; width: 220px; }
+
+  .status-dot {
+    display: inline-block; width: 9px; height: 9px;
+    border-radius: 50%; margin-right: 6px; vertical-align: middle;
+    background: #334;
   }
-  .metric-val { font-size: 15px; color: #88ddff; font-weight: bold; }
-  .metric-lbl { font-size: 10px; color: #556; }
+  .status-dot.pass { background: #44ee88; box-shadow: 0 0 6px #44ee8899; }
+  .status-dot.fail { background: #ee4433; box-shadow: 0 0 6px #ee443399; }
+
+  .telem-row { display: flex; align-items: center; justify-content: space-between; margin: 4px 0; }
+  .telem-val { font-size: 14px; font-weight: bold; color: #aaddff; min-width: 48px; text-align: right; }
+
+  #raf-fps { font-size: 20px; font-weight: bold; color: #ffdd66; }
+
+  .mini-bar-track { height: 4px; background: #1a1e30; border-radius: 2px; margin-top: 8px; overflow: hidden; }
+  .mini-bar-fill  { height: 100%; background: #4488ff; border-radius: 2px; }
 </style>
 </head>
 <body>
-<div id="panel">
+
+<!-- ── TOP-RIGHT: Bridge + metrics + slider + checkpoints ── -->
+<div id="panel-main" class="panel">
   <h3>UIUltralight Test Panel</h3>
 
-  <!-- Bridge status -->
   <div class="section-title">Bridge status</div>
   <div class="row">
     <span class="lbl">OnPageReady</span>
@@ -88,48 +96,72 @@
     <span id="s-rt" class="dim">—</span>
   </div>
 
-  <!-- Live metrics (C++ → JS poll) -->
   <div class="section">
-    <div class="section-title">Live metrics</div>
+    <div class="section-title">Live metrics  <span style="color:#445;font-size:10px">(C++→JS poll)</span></div>
     <div class="metric-grid">
-      <div class="metric-box">
-        <div class="metric-val" id="m-frame">—</div>
-        <div class="metric-lbl">frame</div>
-      </div>
-      <div class="metric-box">
-        <div class="metric-val" id="m-load">—</div>
-        <div class="metric-lbl">load frame</div>
-      </div>
-      <div class="metric-box">
-        <div class="metric-val" id="m-trips">—</div>
-        <div class="metric-lbl">round-trips</div>
-      </div>
-      <div class="metric-box">
-        <div class="metric-val" id="m-slider">50</div>
-        <div class="metric-lbl">slider</div>
-      </div>
+      <div class="metric-box"><div class="metric-val" id="m-frame">—</div><div class="metric-lbl">frame</div></div>
+      <div class="metric-box"><div class="metric-val" id="m-load">—</div><div class="metric-lbl">load frame</div></div>
+      <div class="metric-box"><div class="metric-val" id="m-trips">—</div><div class="metric-lbl">round-trips</div></div>
+      <div class="metric-box"><div class="metric-val" id="m-slider-box">50</div><div class="metric-lbl">slider (C++)</div></div>
     </div>
   </div>
 
-  <!-- Slider (JS → C++ args) -->
   <div class="section">
-    <div class="section-title">Slider → C++ args</div>
-    <input type="range" id="slider" min="0" max="100" value="50"
-           oninput="handleSlider(this.value)" />
+    <div class="section-title">Slider  <span style="color:#445;font-size:10px">(JS→C++ args)</span></div>
+    <input type="range" id="slider" min="0" max="100" value="50" oninput="handleSlider(this.value)" />
     <div class="slider-readout">
       <span class="lbl">value</span>
       <span id="slider-val" class="ok">50</span>
     </div>
   </div>
 
-  <!-- Checkpoint progress bar -->
   <div class="section">
     <div class="section-title">Checkpoints</div>
     <table id="cp-table"></table>
-    <div class="bar-track">
-      <div class="bar-fill" id="bar" style="width:0%"></div>
-    </div>
+    <div class="bar-track"><div class="bar-fill" id="bar" style="width:0%"></div></div>
     <div class="bar-label"><span id="bar-text">0 / 6</span></div>
+  </div>
+</div>
+
+<!-- ── BOTTOM-LEFT: rAF telemetry panel ── -->
+<div id="panel-telem" class="panel">
+  <h3>Telemetry</h3>
+
+  <div class="section-title">JS frame rate</div>
+  <div style="display:flex; align-items:baseline; gap:6px;">
+    <span id="raf-fps">—</span>
+    <span class="lbl" style="font-size:11px">fps (rAF)</span>
+  </div>
+  <div class="mini-bar-track">
+    <div class="mini-bar-fill" id="fps-bar" style="width:0%"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Stage status</div>
+    <div class="telem-row">
+      <span><span class="status-dot" id="dot-all"></span><span class="lbl">all checkpoints</span></span>
+      <span class="telem-val" id="telem-cp">0/6</span>
+    </div>
+    <div class="telem-row">
+      <span><span class="status-dot" id="dot-bridge"></span><span class="lbl">bridge</span></span>
+      <span id="telem-bridge" class="dim">—</span>
+    </div>
+    <div class="telem-row">
+      <span><span class="status-dot" id="dot-pixel"></span><span class="lbl">pixel buffer</span></span>
+      <span id="telem-pixel" class="dim">—</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">C++ frame</div>
+    <div class="telem-row">
+      <span class="lbl">current</span>
+      <span class="telem-val" id="telem-frame">—</span>
+    </div>
+    <div class="telem-row">
+      <span class="lbl">load at</span>
+      <span class="telem-val" id="telem-load">—</span>
+    </div>
   </div>
 </div>
 
@@ -139,7 +171,6 @@
     'round_trip', 'pixel_buffer', 'mouse_click'
   ];
 
-  // Populate checkpoint table rows
   (function() {
     var tbl = document.getElementById('cp-table');
     for (var i = 0; i < CP_NAMES.length; i++) {
@@ -157,14 +188,22 @@
     app.OnButtonClicked();
   }
 
+  // Slider: update display instantly; throttle C++ call to one per rAF frame.
+  var sliderPending = false;
+  var sliderNext = 50;
   function handleSlider(val) {
+    sliderNext = parseFloat(val);
     document.getElementById('slider-val').textContent = val;
-    document.getElementById('m-slider').textContent = val;
-    app.OnSliderChanged(parseFloat(val));
+    if (!sliderPending) {
+      sliderPending = true;
+      requestAnimationFrame(function() {
+        app.OnSliderChanged(sliderNext);
+        sliderPending = false;
+      });
+    }
   }
 
   function parseMetrics(s) {
-    // "frame=N,load=N,trips=N,slider=N"
     var out = {};
     if (!s) return out;
     s.split(',').forEach(function(part) {
@@ -174,55 +213,83 @@
     return out;
   }
 
+  function setDot(id, state) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.className = 'status-dot' + (state === true ? ' pass' : state === false ? ' fail' : '');
+  }
+
+  var lastFlags = -1;
   function updateStatus() {
-    // Status flags bitmask
     var flags = app.GetStatusFlags();
     var passed = 0;
     for (var i = 0; i < 6; i++) {
+      var on = !!(flags & (1 << i));
       var el = document.getElementById('cp-' + i);
-      if (el) {
-        var on = !!(flags & (1 << i));
-        el.textContent = on ? '✓' : '…';
-        el.className = on ? 'ok' : 'dim';
-        if (on) passed++;
-      }
+      if (el) { el.textContent = on ? '✓' : '…'; el.className = on ? 'ok' : 'dim'; }
+      if (on) passed++;
     }
-    var pct = Math.round(passed / 6 * 100);
-    document.getElementById('bar').style.width = pct + '%';
+    document.getElementById('bar').style.width = Math.round(passed / 6 * 100) + '%';
     document.getElementById('bar-text').textContent = passed + ' / 6';
 
-    // Live metrics
+    // Telemetry panel
+    document.getElementById('telem-cp').textContent = passed + '/6';
+    setDot('dot-all',    passed === 6);
+    setDot('dot-bridge', !!(flags & 0x06));   // bits 1+2: page_ready + button_clicked
+    setDot('dot-pixel',  !!(flags & 0x10));   // bit 4: pixel_buffer
+
+    var bridgeEl   = document.getElementById('telem-bridge');
+    var pixelEl    = document.getElementById('telem-pixel');
+    bridgeEl.textContent = (flags & 0x06) === 0x06 ? 'ok' : 'pending';
+    bridgeEl.className   = (flags & 0x06) === 0x06 ? 'ok'  : 'dim';
+    pixelEl.textContent  = (flags & 0x10) ? 'ok' : 'pending';
+    pixelEl.className    = (flags & 0x10) ? 'ok'  : 'dim';
+
     var raw = app.GetLiveMetrics();
     var m = parseMetrics(raw);
-    if (m.frame !== undefined)  document.getElementById('m-frame').textContent  = m.frame;
-    if (m.load  !== undefined)  document.getElementById('m-load').textContent   = m.load;
-    if (m.trips !== undefined)  document.getElementById('m-trips').textContent  = m.trips;
-    if (m.slider !== undefined) {
-      document.getElementById('m-slider').textContent = m.slider;
-      document.getElementById('slider-val').textContent = m.slider;
+    if (m.frame !== undefined) {
+      document.getElementById('m-frame').textContent    = m.frame;
+      document.getElementById('telem-frame').textContent = m.frame;
     }
+    if (m.load  !== undefined) {
+      document.getElementById('m-load').textContent     = m.load;
+      document.getElementById('telem-load').textContent  = m.load;
+    }
+    if (m.trips !== undefined) document.getElementById('m-trips').textContent = m.trips;
+    // Update slider C++ echo box but NOT the slider handle/label — user owns those
+    if (m.slider !== undefined) document.getElementById('m-slider-box').textContent = m.slider;
   }
 
-  // DOMContentLoaded is safe: the engine installs a queuing proxy for `app`
-  // in OnWindowObjectReady before any page scripts run, so calls made here
-  // are queued and replayed once real C++ bindings attach in OnDOMReady.
+  // rAF loop — drives fps counter in telemetry panel, independent of C++ poll
+  var rafTimes = [];
+  function rafLoop(now) {
+    rafTimes.push(now);
+    // Keep only the last 30 samples (~1s at 30fps)
+    while (rafTimes.length > 30) rafTimes.shift();
+    if (rafTimes.length >= 2) {
+      var elapsed = (rafTimes[rafTimes.length - 1] - rafTimes[0]) / 1000;
+      var fps = Math.round((rafTimes.length - 1) / elapsed);
+      document.getElementById('raf-fps').textContent = fps;
+      // Bar: 60fps = 100%
+      document.getElementById('fps-bar').style.width = Math.min(100, Math.round(fps / 60 * 100)) + '%';
+    }
+    requestAnimationFrame(rafLoop);
+  }
+
   document.addEventListener('DOMContentLoaded', function() {
-    // Notify C++ the page is ready
     app.OnPageReady();
     document.getElementById('s-ready').textContent = 'fired';
     document.getElementById('s-ready').className = 'ok';
 
-    // Round-trip: ask C++ for the test value, display it, echo it back
     var val = app.GetTestValue();
     document.getElementById('s-rt').textContent = val ? (val + ' ✓') : '—';
     document.getElementById('s-rt').className = val ? 'ok' : 'bad';
     if (val) app.ReportReceivedValue(val);
 
-    // Poll status and live metrics every second
     setInterval(updateStatus, 1000);
-
-    // Initial poll immediately
     updateStatus();
+
+    requestAnimationFrame(rafLoop);
   });
 </script>
 </body>
