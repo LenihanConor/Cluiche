@@ -53,6 +53,7 @@ void AutomationModule::DoUpdate(float dt)
 
 Dia::ApplicationFlow::StopResult AutomationModule::DoStop()
 {
+    mAutomationServiceStream->Deregister();
     mService.Reset();
     DIA_LOG_INFO("Automation", "AutomationModule stopped");
     return Dia::ApplicationFlow::StopResult::kDone;

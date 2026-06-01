@@ -33,6 +33,10 @@ public:
     // Asserts that Connect() was called first.
     void Register(T& handle);
 
+    // Called from the owning module's DoStop() before the handle is destroyed.
+    // Clears the committed flag so concurrent consumers' IsAvailable() returns false.
+    void Deregister();
+
     bool IsConnected()  const;
     bool IsRegistered() const;
 
@@ -69,6 +73,13 @@ inline void ServiceStreamWriter<T>::Register(T& handle)
     DIA_ASSERT(mStore != nullptr,
         "ServiceStreamWriter::Register — store is null; call Connect() from OnConnectStreams() first");
     mStore->Register(handle);
+}
+
+template<typename T>
+inline void ServiceStreamWriter<T>::Deregister()
+{
+    if (mStore && mStore->IsRegistered())
+        mStore->Reset();
 }
 
 template<typename T>
