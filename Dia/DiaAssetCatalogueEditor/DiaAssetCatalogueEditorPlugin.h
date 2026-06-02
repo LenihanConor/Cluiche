@@ -67,6 +67,9 @@ namespace Dia
 				static const unsigned int kCurrentPathLength = 512;
 				char mCurrentPath[kCurrentPathLength];
 
+				static const unsigned int kDiagameDirLength = 512;
+				char mDiagameDir[kDiagameDirLength];
+
 				Dia::AssetCatalogue::AssetRegistry             mRegistry;
 				Dia::AssetCatalogue::CatalogueManifestSerializer mSerializer;
 				Dia::AssetCatalogue::AssetTypeRegistry         mTypeRegistry;

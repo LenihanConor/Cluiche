@@ -40,6 +40,19 @@ namespace Dia
 				DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: OnProjectChanged — IsValid=%d diagamePath='%s' assetCataloguePath='%s'",
 					ctx.IsValid() ? 1 : 0, ctx.diagamePath, ctx.assetCataloguePath);
 
+				// Keep mDiagameDir in sync with the current project
+				self->mDiagameDir[0] = '\0';
+				if (ctx.IsValid() && ctx.diagamePath[0] != '\0')
+				{
+					const char* p = ctx.diagamePath;
+					int lastSlash = -1;
+					for (int i = 0; p[i] != '\0'; ++i)
+						if (p[i] == '/' || p[i] == '\\') lastSlash = i;
+					if (lastSlash >= 0)
+						strncpy_s(self->mDiagameDir, self->kDiagameDirLength,
+						          ctx.diagamePath, static_cast<size_t>(lastSlash + 1));
+				}
+
 				if (ctx.IsValid() && ctx.assetCataloguePath[0] != '\0')
 				{
 					char err[256] = {};
@@ -78,6 +91,7 @@ namespace Dia
 
 				strncpy_s(mOutputDir, kOutputDirLength, kDefaultOutputDir, _TRUNCATE);
 				mCurrentPath[0] = '\0';
+				mDiagameDir[0]  = '\0';
 
 				mSessionContext.Load(mOutputDir);
 
@@ -238,11 +252,16 @@ namespace Dia
 						Json::Value dialogData;
 						dialogData["title"] = "Select Folder for Source Path";
 
-						// Pre-seed to manifest directory if one is loaded
-						char dirBuf[512] = {};
-						GetManifestDirectory(dirBuf, sizeof(dirBuf));
-						if (dirBuf[0] != '\0')
-							dialogData["initial_dir"] = dirBuf;
+						// Prefer the .diagame directory; fall back to manifest directory
+						if (mDiagameDir[0] != '\0')
+							dialogData["initial_dir"] = mDiagameDir;
+						else
+						{
+							char dirBuf[512] = {};
+							GetManifestDirectory(dirBuf, sizeof(dirBuf));
+							if (dirBuf[0] != '\0')
+								dialogData["initial_dir"] = dirBuf;
+						}
 
 						if (data.isMember("initial_dir") && data["initial_dir"].isString())
 							dialogData["initial_dir"] = data["initial_dir"].asString();
