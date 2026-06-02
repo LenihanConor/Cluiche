@@ -18,8 +18,8 @@ const setupBridge = () => {
             return Promise.resolve({
                 ok: true,
                 moduleTypes: [
-                    { id: 'AudioModuleType', displayName: 'Audio' },
-                    { id: 'NetworkModuleType', displayName: 'Network' },
+                    { id: 'AudioModuleType', description: 'Manages audio playback and mixing.' },
+                    { id: 'NetworkModuleType', description: 'Handles network connections and packet routing.' },
                 ],
                 puTypes: [],
             });

@@ -8,7 +8,7 @@ export interface PUInspectorProps {
 
 interface ModuleType {
     id: string;
-    displayName?: string;
+    description?: string;
 }
 
 interface TypesGetResult {
@@ -166,12 +166,20 @@ const AddModuleAffordance: React.FC<AddModuleAffordanceProps> = ({ puId, existin
                 >
                     <option value="" disabled>pick a type…</option>
                     {moduleTypes.map(t => (
-                        <option key={t.id} value={t.id}>
-                            {t.displayName ? `${t.id} — ${t.displayName}` : t.id}
+                        <option key={t.id} value={t.id} title={t.description ?? ''}>
+                            {t.id}
                         </option>
                     ))}
                 </select>
             </div>
+            {typeId && moduleTypes.find(t => t.id === typeId)?.description && (
+                <div
+                    data-testid="add-module-type-description"
+                    style={{ color: '#999', fontSize: 11, paddingLeft: 76, fontStyle: 'italic' }}
+                >
+                    {moduleTypes.find(t => t.id === typeId)?.description}
+                </div>
+            )}
             <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', marginTop: 4 }}>
                 <button
                     data-testid="add-module-cancel"

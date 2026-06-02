@@ -906,7 +906,7 @@ namespace Dia { namespace Editor {
         {
             Json::Value t;
             t["id"]          = mt[i].typeId.AsChar();
-            t["displayName"] = mt[i].description;
+            t["description"] = mt[i].description;
             moduleTypes.append(t);
         }
         result["moduleTypes"] = moduleTypes;
@@ -918,7 +918,7 @@ namespace Dia { namespace Editor {
         {
             Json::Value t;
             t["id"]          = pt[i].typeId.AsChar();
-            t["displayName"] = pt[i].description;
+            t["description"] = pt[i].description;
             puTypes.append(t);
         }
         result["puTypes"] = puTypes;
@@ -947,6 +947,9 @@ namespace Dia { namespace Editor {
 
         if (!typesPath.empty())
             mTypeDiscovery.LoadFromFile(typesPath.c_str());
+
+        if (!mTypeDiscovery.IsLoaded())
+            mTypeDiscovery.LoadFromRegistry();
 
         return HandleTypesGet(data);
     }
