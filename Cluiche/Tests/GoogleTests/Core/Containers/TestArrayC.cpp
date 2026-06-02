@@ -359,10 +359,10 @@ TEST(ArrayC, ElementAccess_WorksCorrectlyWithBoundsChecking)
 
 	ArrayC<int, 5> array1(cArray1, 5);
 
-	EXPECT_DEATH({ int temp = array1[-1]; }, "");
-	EXPECT_DEATH({ int temp = array1[6]; }, "");
-	EXPECT_DEATH({ int temp = array1.At(-1); }, "");
-	EXPECT_DEATH({ int temp = array1.At(6); }, "");
+	EXPECT_DEATH({ [[maybe_unused]] int temp = array1[-1]; }, "");
+	EXPECT_DEATH({ [[maybe_unused]] int temp = array1[6]; }, "");
+	EXPECT_DEATH({ [[maybe_unused]] int temp = array1.At(-1); }, "");
+	EXPECT_DEATH({ [[maybe_unused]] int temp = array1.At(6); }, "");
 
 	EXPECT_EQ(array1[0], array1.At(0));
 	EXPECT_EQ(array1[1], array1.At(1));

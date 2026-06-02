@@ -16,7 +16,7 @@ static float Length(const Vector2D& v)
     return std::sqrt(v.x * v.x + v.y * v.y);
 }
 
-static Vector2D MakeControlPoints(float* xs, float* ys, Vector2D* out, int count)
+[[maybe_unused]] static Vector2D MakeControlPoints(float* xs, float* ys, Vector2D* out, int count)
 {
     for (int i = 0; i < count; ++i)
         out[i] = Vector2D(xs[i], ys[i]);

@@ -50,8 +50,8 @@ TEST(HalfVector2D, ElementAccess_WorksCorrectly)
 	EXPECT_DEATH(vector1[-1] = 3.0f, "");
 	EXPECT_DEATH(vector1[2] = 3.0f, "");
 
-	float a = vector1.x.ToFloat();
-	float b = vector1.y.ToFloat();
+	[[maybe_unused]] float a = vector1.x.ToFloat();
+	[[maybe_unused]] float b = vector1.y.ToFloat();
 
 	EXPECT_EQ(vector1.x, 1.0f);
 	EXPECT_EQ(vector1.y, 2.0f);
@@ -298,7 +298,7 @@ TEST(HalfVector2D, Normalization_WorksCorrectly)
 	EXPECT_TRUE(vector7.IsNormal());
 	EXPECT_TRUE(vector8.IsNormal());
 
-	EXPECT_DEATH({ VectorHalf2D vector13(0.0f, 0.0f); VectorHalf2D vector14 = vector13.AsNormal(); }, "");
+	EXPECT_DEATH({ VectorHalf2D vector13(0.0f, 0.0f); [[maybe_unused]] VectorHalf2D vector14 = vector13.AsNormal(); }, "");
 	EXPECT_DEATH({ VectorHalf2D vector15(0.0f, 0.0f); vector15.Normalize(); }, "");
 }
 

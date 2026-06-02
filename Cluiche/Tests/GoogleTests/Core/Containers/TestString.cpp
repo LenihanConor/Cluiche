@@ -177,8 +177,8 @@ TEST(String, ElementAccess_WorksCorrectlyWithBoundsChecking)
 	EXPECT_EQ(str1.Front(), 'H');
 	EXPECT_EQ(str1.Back(), 'o');
 
-	EXPECT_DEATH({ char c = str1[-1]; }, "");
-	EXPECT_DEATH({ char c = str1[50]; }, "");
+	EXPECT_DEATH({ [[maybe_unused]] char c = str1[-1]; }, "");
+	EXPECT_DEATH({ [[maybe_unused]] char c = str1[50]; }, "");
 }
 
 TEST(String, Clear_EmptiesString)

@@ -522,7 +522,7 @@ TEST(DiaGraphics_DebugPrimitive, SelfAssignment_DoesNotCorrupt)
 	p.circle2D.outlineColour = RGBA::Red;
 	p.circle2D.fillColour    = RGBA(0, 0, 0, 0);
 
-	p = p;  // self-assign
+	p = p;  // NOLINT(misc-self-assign-overloaded)
 
 	EXPECT_EQ(p.type, DebugPrimitiveType::Circle2D);
 	EXPECT_FLOAT_EQ(p.circle2D.radius, 7.0f);

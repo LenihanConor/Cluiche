@@ -277,7 +277,9 @@ TEST(Delegate, RemoveDuringInvocation_DoesNotAffectCurrentInvocation)
 {
     Delegate<> delegate;
     int callCount = 0;
-    int id1 = 0, id2 = 0, id3 = 0;
+    [[maybe_unused]] int id1 = 0;
+    int id2 = 0;
+    [[maybe_unused]] int id3 = 0;
 
     // First callback removes second
     id1 = delegate.Add([&]() {

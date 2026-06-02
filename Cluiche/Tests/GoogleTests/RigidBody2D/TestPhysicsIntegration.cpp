@@ -389,7 +389,7 @@ TEST(RigidBody2D_Integration, EventLifecycle_BodyRemoval_NoCrash)
     f.world->GetCollisionEvents().AttachToObserver(&counter);
 
     // Two overlapping bodies
-    RigidBody2D* a = f.MakeRigid(0, 0.0f, 0.0f, 1.0f);
+    [[maybe_unused]] RigidBody2D* a = f.MakeRigid(0, 0.0f, 0.0f, 1.0f);
     RigidBody2D* b = f.MakeRigid(1, 1.0f, 0.0f, 1.0f);
 
     f.Step(1);

@@ -24,7 +24,12 @@ using Dia::Core::StringCRC;
 
 static void WriteFile(const char* filename, const char* content)
 {
-    FILE* f = fopen(filename, "wb");
+    FILE* f = nullptr;
+#ifdef _MSC_VER
+    fopen_s(&f, filename, "wb");
+#else
+    f = fopen(filename, "wb");
+#endif
     if (!f) return;
     fwrite(content, 1, strlen(content), f);
     fclose(f);

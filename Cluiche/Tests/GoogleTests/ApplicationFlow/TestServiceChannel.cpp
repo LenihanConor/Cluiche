@@ -76,7 +76,8 @@ TEST(ServiceStreamStore, DoubleRegisterWithoutResetIsDetected)
     // We verify state: after first Register, IsRegistered() is true.
     // The second Register() call is left to the DIA_ASSERT guard.
     ServiceStreamStore<SC_Handle> store(StringCRC("canvas"), StringCRC("SC_Handle"));
-    SC_Handle h1, h2;
+    SC_Handle h1;
+    [[maybe_unused]] SC_Handle h2;
     store.Register(h1);
     EXPECT_TRUE(store.IsRegistered());
     // Cannot call Register again without triggering assert — just verify flag stays true

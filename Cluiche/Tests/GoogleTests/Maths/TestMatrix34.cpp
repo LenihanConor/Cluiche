@@ -37,7 +37,7 @@ static void ExpectMatrix34Near(const Matrix34& a, const Matrix34& b, float eps =
 	}
 }
 
-static void ExpectMatrix44Near(const Matrix44& a, const Matrix44& b, float eps = kEpsilon)
+[[maybe_unused]] static void ExpectMatrix44Near(const Matrix44& a, const Matrix44& b, float eps = kEpsilon)
 {
 	for (int i = 0; i < 4; ++i)
 	{

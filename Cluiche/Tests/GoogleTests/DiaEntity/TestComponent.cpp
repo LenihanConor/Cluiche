@@ -9,11 +9,16 @@ DIA_SERIALIZE_END
 
 namespace DiaEntityTest {
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winvalid-offsetof"
+
 // Field metadata array — one entry per FIELD declared in the class.
 static Dia::Entity::FieldDesc s_TestComponent_fields[] = {
     DIA_FIELD_ENTRY(float,   speed,     TestComponent)
     DIA_FIELD_ENTRY(int32_t, hitPoints, TestComponent)
 };
+
+#pragma GCC diagnostic pop
 
 // Registration — defines kTypeId, GetDesc(), and triggers ComponentRegistry entry.
 // StringName must match the string passed to DIA_COMPONENT in the header.

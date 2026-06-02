@@ -11,7 +11,7 @@
 using namespace Dia::Maths;
 using namespace Dia::Maths::VectorUtils;
 
-constexpr float kEpsilon = 0.0001f;
+[[maybe_unused]] constexpr float kEpsilon = 0.0001f;
 
 // ==============================================================================
 // Vector2D from Vector3D Conversion Tests

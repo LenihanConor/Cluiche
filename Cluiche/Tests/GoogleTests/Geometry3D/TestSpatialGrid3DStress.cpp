@@ -36,7 +36,7 @@ static Grid::Def MakeTestDef()
 
 // Single-cell grid: 2048 objects, 1 cell (giant cell spanning 10³ world)
 using SingleCellGrid = SpatialGrid3D<int, 2048, 1>;
-static SingleCellGrid::Def MakeSingleCellDef()
+[[maybe_unused]] static SingleCellGrid::Def MakeSingleCellDef()
 {
     SingleCellGrid::Def d;
     d.worldBounds = AABB(Vector3D(0,0,0), Vector3D(10,10,10));

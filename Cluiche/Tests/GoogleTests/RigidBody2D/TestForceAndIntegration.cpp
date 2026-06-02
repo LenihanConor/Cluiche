@@ -18,7 +18,7 @@ static const Vector2D  kZeroGravity(0.0f, 0.0f);
 
 // Helpers
 
-static PointBody2D* MakePointBody(BodyType type, float mass = 1.0f, float linearDamping = 0.0f)
+[[maybe_unused]] static PointBody2D* MakePointBody(BodyType type, float mass = 1.0f, float linearDamping = 0.0f)
 {
     PointBodyDef def;
     def.type          = type;
@@ -27,7 +27,7 @@ static PointBody2D* MakePointBody(BodyType type, float mass = 1.0f, float linear
     return new PointBody2D(def);
 }
 
-static RigidBody2D* MakeRigidBody(BodyType type, float mass = 1.0f,
+[[maybe_unused]] static RigidBody2D* MakeRigidBody(BodyType type, float mass = 1.0f,
                                   float linearDamping = 0.0f, float angularDamping = 0.0f,
                                   float moi = 1.0f)
 {

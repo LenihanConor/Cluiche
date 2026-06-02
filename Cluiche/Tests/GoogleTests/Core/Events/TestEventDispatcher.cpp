@@ -543,7 +543,9 @@ TEST(EventDispatcher, UnsubscribeDuringDispatch_DoesNotAffectCurrentDispatch)
 {
     EventDispatcher dispatcher;
     int callCount = 0;
-    int handler1Id = 0, handler2Id = 0, handler3Id = 0;
+    [[maybe_unused]] int handler1Id = 0;
+    int handler2Id = 0;
+    [[maybe_unused]] int handler3Id = 0;
 
     handler1Id = dispatcher.Subscribe<TestEvent>([&](TestEvent* e) {
         callCount++;

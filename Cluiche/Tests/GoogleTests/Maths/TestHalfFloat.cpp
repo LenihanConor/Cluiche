@@ -117,7 +117,7 @@ TEST(HalfFloat, Round_RoundsToDecimalPlaces)
 {
     HalfFloat a(1.235f);
     HalfFloat b = a.Round(2);
-    float c = b;
+    [[maybe_unused]] float c = b;
 
     EXPECT_EQ(b, 1.25f);
 }

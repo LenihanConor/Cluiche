@@ -131,16 +131,16 @@ TEST(Matrix22, ArrayAccessor_OutOfBounds_Asserts)
     Matrix22 m(1.0f, 2.0f, 3.0f, 4.0f);
 
     EXPECT_DEATH({ m[4] = 3.0f; }, ".*");
-    EXPECT_DEATH({ float a = m[4]; }, ".*");
+    EXPECT_DEATH({ [[maybe_unused]] float a = m[4]; }, ".*");
 }
 
 TEST(Matrix22, Element_OutOfBounds_Asserts)
 {
     Matrix22 m(1.0f, 2.0f, 3.0f, 4.0f);
 
-    EXPECT_DEATH({ float a = m.Element(4); }, ".*");
-    EXPECT_DEATH({ float a = m.Element(4, 0); }, ".*");
-    EXPECT_DEATH({ float a = m.Element(0, 4); }, ".*");
+    EXPECT_DEATH({ [[maybe_unused]] float a = m.Element(4); }, ".*");
+    EXPECT_DEATH({ [[maybe_unused]] float a = m.Element(4, 0); }, ".*");
+    EXPECT_DEATH({ [[maybe_unused]] float a = m.Element(0, 4); }, ".*");
 }
 
 TEST(Matrix22, Element_SingleIndex_ReturnsCorrectValue)
@@ -1062,7 +1062,7 @@ TEST(Matrix22, IsLeftHanded_LeftHandedMatrices_ReturnsTrue)
 TEST(Matrix22, IsRightHanded_LeftHandedMatrices_ReturnsFalse)
 {
     Vector2D v1(1.0f, 0.0f), v3(0.0f, 1.0f);
-    Vector2D v2 = Vector2D(1.0f, 1.0f).AsNormal();
+    [[maybe_unused]] Vector2D v2 = Vector2D(1.0f, 1.0f).AsNormal();
 
     Matrix22 m(v1, v3);
 
