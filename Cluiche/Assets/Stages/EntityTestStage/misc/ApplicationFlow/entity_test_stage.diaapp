@@ -32,6 +32,18 @@
                             "role": "reads"
                         }
                     ]
+                },
+                {
+                    "instance_id": "EntityVisualDebuggerModule",
+                    "type_id": "EntityVisualDebuggerModule",
+                    "stages": [
+                        "EntityTestStage"
+                    ],
+                    "dependencies": [
+                        "EntityModule",
+                        "VisualDebuggerModule",
+                        "PickingModule"
+                    ]
                 }
             ]
         }

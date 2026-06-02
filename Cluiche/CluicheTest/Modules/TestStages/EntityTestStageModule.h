@@ -12,9 +12,6 @@
 #ifdef DIA_DEBUG
 #include "Modules/VisualDebuggerModule.h"
 #include "Modules/PickingModule.h"
-#include <DiaGeometry2DPicking/PickHit2D.h>
-#include <DiaPicking/PickEvent.h>
-#include <DiaMailbox/MailboxTypes.h>
 #include <memory>
 #endif
 
@@ -55,12 +52,6 @@ private:
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::VisualDebuggerModule> mVisualDebuggerRef{this};
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::PickingModule>        mPickingRef{this};
     std::unique_ptr<EntityTestDrawer> mDrawer;
-
-    // Selection state — written by pick drain, read by drawer
-    bool                       mHasSelection      = false;
-    unsigned int               mSelectedIdx       = 0;
-    Dia::Mailbox::SubscriberId mPickSubscriberId{};
-    bool                       mPickingRegistered = false;
 #endif
 
     // Entity handles

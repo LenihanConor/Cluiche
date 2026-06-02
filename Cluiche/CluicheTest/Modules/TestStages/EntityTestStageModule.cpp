@@ -14,7 +14,6 @@
 #ifdef DIA_DEBUG
 #include "Modules/TestStages/Drawers/EntityTestDrawer.h"
 #include <DiaGeometry2DPicking/PickingService2D.h>
-#include <DiaPicking/PickTrigger.h>
 #endif
 
 namespace CluicheTest {
@@ -292,64 +291,17 @@ void EntityTestStageModule::OnUpdate(float /*deltaTime*/)
         ReportPassed();
 
 #ifdef DIA_DEBUG
-    // Lazy-init drawer + subscribe to pick events
+    // Lazy-init shape drawer (circles for VisualTestRenderComponent)
     if (!mDrawer)
     {
-        auto* vd      = mVisualDebuggerRef.Get();
-        auto* picking = mPickingRef.Get();
-        if (vd && picking)
+        auto* vd = mVisualDebuggerRef.Get();
+        if (vd)
         {
             mDrawer = std::make_unique<EntityTestDrawer>(
                 domain, mParentEntity, mChildA, mChildB, mChildC,
                 mQueryEntities, mDoomedEntity, mDoomedDestroyed,
-                mHasSelection, mSelectedIdx, mAllEntities, mEntityCount,
                 vd->GetLayerManager());
             vd->GetLayerManager().Register(mDrawer.get(), 20, Dia::Core::StringCRC("Entity"));
-
-            mPickSubscriberId.value = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(this));
-            picking->GetRouter().SubscribeToTrigger(Dia::Picking::PickTrigger::kClick, mPickSubscriberId);
-            mPickingRegistered = true;
-        }
-    }
-
-    // Drain pick events — update isSelected on PickableCircleComponent directly
-    if (mPickingRegistered)
-    {
-        if (auto* picking = mPickingRef.Get())
-        {
-            using PickEvent2D = Dia::Picking::PickEvent<Dia::Geometry2DPicking::PickHit2D>;
-            picking->GetMailbox().Drain<PickEvent2D>(
-                [this, &domain](const Dia::Mailbox::Address& /*addr*/, const PickEvent2D& evt)
-                {
-                    if (evt.trigger != Dia::Picking::PickTrigger::kClick) return;
-
-                    // Clear previous selection
-                    if (mHasSelection && mSelectedIdx < mEntityCount)
-                    {
-                        auto* prev = domain.GetComponent<PickableCircleComponent>(mAllEntities[mSelectedIdx]);
-                        if (prev) prev->isSelected = false;
-                    }
-
-                    if (!evt.hits.HasHit())
-                    {
-                        mHasSelection = false;
-                        return;
-                    }
-
-                    const auto& best = evt.hits.Best();
-                    if (best.kind == Dia::Geometry2DPicking::PickHit2D::Kind::kObject)
-                    {
-                        mHasSelection = true;
-                        mSelectedIdx  = best.objectIdx;
-
-                        // Set isSelected on the component
-                        if (mSelectedIdx < mEntityCount)
-                        {
-                            auto* pc = domain.GetComponent<PickableCircleComponent>(mAllEntities[mSelectedIdx]);
-                            if (pc) pc->isSelected = true;
-                        }
-                    }
-                });
         }
     }
 #endif
@@ -358,15 +310,6 @@ void EntityTestStageModule::OnUpdate(float /*deltaTime*/)
 void EntityTestStageModule::OnStop()
 {
 #ifdef DIA_DEBUG
-    if (auto* picking = mPickingRef.Get())
-    {
-        if (mPickingRegistered)
-        {
-            picking->GetRouter().UnsubscribeFromTrigger(Dia::Picking::PickTrigger::kClick, mPickSubscriberId);
-            mPickingRegistered = false;
-        }
-    }
-
     if (mDrawer)
     {
         if (auto* vd = mVisualDebuggerRef.Get())
@@ -377,9 +320,6 @@ void EntityTestStageModule::OnStop()
     // Unregister picking service from domain (component OnDetach will no-op if service gone)
     if (auto* em = mEntityModule.Get())
         em->GetDomain().UnregisterService<Dia::Geometry2DPicking::PickingService2D>();
-
-    mHasSelection = false;
-    mSelectedIdx  = 0;
 #endif
 
     // Reset state for possible re-entry

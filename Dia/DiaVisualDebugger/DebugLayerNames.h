@@ -108,6 +108,19 @@ namespace Dia
             // Stage tag used to register all coord2d layers (creates "Coord2D" console tab)
             inline const Dia::Core::StringCRC kCoord2DStageTag { "Coord2D" };
 
+            // ----------------------------------------------------------------
+            // Entity
+            // ----------------------------------------------------------------
+            inline const Dia::Core::StringCRC kEntityLabels    { "entity.labels"    };
+            inline const Dia::Core::StringCRC kEntityHierarchy { "entity.hierarchy" };
+            inline const Dia::Core::StringCRC kEntityHighlight { "entity.highlight" };
+            inline const Dia::Core::StringCRC kEntityPicking   { "entity.picking"   };
+            inline const Dia::Core::StringCRC kEntityStats     { "entity.stats"     };
+            inline const Dia::Core::StringCRC kEntityInspector { "entity.inspector" };
+
+            // Stage tag used to register all entity layers (creates "Entity" console tab)
+            inline const Dia::Core::StringCRC kEntityStageTag { "Entity" };
+
         } // namespace LayerNames
     } // namespace Debug
 } // namespace Dia

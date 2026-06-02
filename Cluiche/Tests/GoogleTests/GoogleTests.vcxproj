@@ -411,6 +411,13 @@
     <ClCompile Include="DiaMailbox\RouterTests.cpp" />
     <ClCompile Include="DiaMailbox\MailboxBoundaryTests.cpp" />
     <ClCompile Include="DiaMailbox\MailboxStressTests.cpp" />
+    <!-- DiaEntityVisualDebugger -->
+    <ClCompile Include="DiaEntityVisualDebugger\TestPosComponent.cpp">
+      <PreprocessorDefinitions>DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="DiaEntityVisualDebugger\TestEntityVisualDebuggerDrawers.cpp">
+      <PreprocessorDefinitions>DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
     <!-- DiaEntity -->
     <ClCompile Include="DiaEntity\DomainTests.cpp" />
     <ClCompile Include="DiaEntity\TestComponent.cpp" />
@@ -597,6 +604,10 @@
     </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaEntity\DiaEntity.vcxproj">
       <Project>{D9E0F1A2-B3C4-5678-9DEF-012345678903}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaEntityVisualDebugger\DiaEntityVisualDebugger.vcxproj">
+      <Project>{B3C4D5E6-F7A8-9012-BCDE-F12345678901}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaGeometry3D\DiaGeometry3D.vcxproj">

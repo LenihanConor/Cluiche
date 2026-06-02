@@ -26,6 +26,7 @@
     <ClCompile Include="Modules\VisualDebuggerModule.cpp" />
     <ClCompile Include="Modules\VisualDebuggerConsoleModule.cpp" />
     <ClCompile Include="Modules\AssetRuntimeVisualDebuggerModule.cpp" />
+    <ClCompile Include="Modules\EntityVisualDebuggerModule.cpp" />
     <ClCompile Include="Modules\DebugUIModule.cpp" />
     <ClCompile Include="Modules\DebugServerHostModule.cpp" />
     <ClCompile Include="Modules\JobSystemModule.cpp" />
@@ -56,6 +57,7 @@
     <ClInclude Include="Modules\VisualDebuggerModule.h" />
     <ClInclude Include="Modules\VisualDebuggerConsoleModule.h" />
     <ClInclude Include="Modules\AssetRuntimeVisualDebuggerModule.h" />
+    <ClInclude Include="Modules\EntityVisualDebuggerModule.h" />
     <ClInclude Include="Modules\DebugUIModule.h" />
     <ClInclude Include="Modules\DebugServerHostModule.h" />
     <ClInclude Include="Modules\JobSystemModule.h" />
@@ -156,6 +158,9 @@
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaEntity\DiaEntity.vcxproj">
       <Project>{D9E0F1A2-B3C4-5678-9DEF-012345678903}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaEntityVisualDebugger\DiaEntityVisualDebugger.vcxproj">
+      <Project>{B3C4D5E6-F7A8-9012-BCDE-F12345678901}</Project>
     </ProjectReference>
 
   </ItemGroup>

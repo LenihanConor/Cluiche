@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Docs">
+      <UniqueIdentifier>{ENTDBG01-A1B2-C3D4-E5F6-789012345678}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="EntityPositionHelper.h" />
+    <ClInclude Include="EntityLabelsDrawer.h" />
+    <ClInclude Include="EntityStatsDrawer.h" />
+    <ClInclude Include="HierarchyLinesDrawer.h" />
+    <ClInclude Include="ComponentFilterHighlightDrawer.h" />
+    <ClInclude Include="EntityPickingDrawer.h" />
+    <ClInclude Include="SelectionInspectorDrawer.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="EntityPositionHelper.cpp" />
+    <ClCompile Include="EntityLabelsDrawer.cpp" />
+    <ClCompile Include="EntityStatsDrawer.cpp" />
+    <ClCompile Include="HierarchyLinesDrawer.cpp" />
+    <ClCompile Include="ComponentFilterHighlightDrawer.cpp" />
+    <ClCompile Include="EntityPickingDrawer.cpp" />
+    <ClCompile Include="SelectionInspectorDrawer.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\dia.entityvisualdebugger.architecture.module.md">
+      <Filter>Docs</Filter>
+    </None>
+  </ItemGroup>
+</Project>

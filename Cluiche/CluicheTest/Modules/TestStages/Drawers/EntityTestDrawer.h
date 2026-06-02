@@ -24,10 +24,6 @@ public:
         Dia::Entity::Entity               queryEntities[4],
         Dia::Entity::Entity               doomed,
         const bool&                       doomedDestroyed,
-        const bool&                       hasSelection,
-        const unsigned int&               selectedIdx,
-        const Dia::Entity::Entity*        allEntities,
-        unsigned int                      entityCount,
         const Dia::Debug::DebugLayerManager& mgr);
 
     Dia::Core::StringCRC GetLayerName() const override;
@@ -43,10 +39,6 @@ private:
     Dia::Entity::Entity               mQueryEntities[4];
     Dia::Entity::Entity               mDoomed;
     const bool&                       mDoomedDestroyed;
-    const bool&                       mHasSelection;
-    const unsigned int&               mSelectedIdx;
-    const Dia::Entity::Entity*        mAllEntities;
-    unsigned int                      mEntityCount;
     const Dia::Debug::DebugLayerManager& mManager;
     Dia::Geometry2DVisualDebugger::ShapeDrawer mDrawer;
 };
