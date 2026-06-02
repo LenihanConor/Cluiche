@@ -157,6 +157,8 @@
     <ClInclude Include="CRC\CRC.h" />
     <ClInclude Include="CRC\StringCRC.h" />
     <ClInclude Include="CRC\StripStringCRC.h" />
+    <ClInclude Include="Metadata\DescriptionRegistry.h" />
+    <ClInclude Include="Metadata\DescribeMacro.h" />
     <ClInclude Include="Reflect\Reflect.h" />
     <ClInclude Include="Reflect\Archive.h" />
     <ClInclude Include="Reflect\ReflectMacros.h" />
@@ -244,6 +246,7 @@
     <ClCompile Include="Containers\Strings\StringWriter.cpp" />
     <ClCompile Include="Threading\ThreadPool.cpp" />
     <ClCompile Include="Reflect\FieldAttributes.cpp" />
+    <ClCompile Include="Metadata\DescriptionRegistry.cpp" />
   </ItemGroup>
   <ItemGroup>
 

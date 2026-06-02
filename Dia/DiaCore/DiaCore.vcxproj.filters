@@ -91,6 +91,9 @@
     <Filter Include="Frame">
       <UniqueIdentifier>{0f1abddd-5815-43db-8cd3-6324be46c66f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Metadata">
+      <UniqueIdentifier>{1a2b3c4d-5e6f-7890-abcd-ef1234567890}</UniqueIdentifier>
+    </Filter>
     <Filter Include="FilePath">
       <UniqueIdentifier>{aacdf484-6764-43dd-9fa4-5a26854fd233}</UniqueIdentifier>
     </Filter>
@@ -697,5 +700,18 @@
     <None Include="LOGGING_SYSTEM_IMPLEMENTATION.md">
       <Filter>Docs</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Metadata\DescriptionRegistry.h">
+      <Filter>Metadata</Filter>
+    </ClInclude>
+    <ClInclude Include="Metadata\DescribeMacro.h">
+      <Filter>Metadata</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Metadata\DescriptionRegistry.cpp">
+      <Filter>Metadata</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
