@@ -614,7 +614,7 @@ TEST(SpinLock, StressTest_ShortCriticalSections)
     std::vector<std::thread> threads;
     for (int i = 0; i < numThreads; ++i)
     {
-        threads.emplace_back([&, i]() {
+        threads.emplace_back([&]() {
             for (int j = 0; j < opsPerThread; ++j)
             {
                 spinLock.Lock();
