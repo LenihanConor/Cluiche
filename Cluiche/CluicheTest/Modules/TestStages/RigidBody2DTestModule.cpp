@@ -4,6 +4,7 @@
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaAutomation/AutomationService.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Metric/MetricRegistry.h>
 
 namespace CluicheTest {
 

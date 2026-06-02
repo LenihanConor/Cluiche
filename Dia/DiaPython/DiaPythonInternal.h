@@ -5,8 +5,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
+#ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Winvalid-offsetof"
+#endif
 
 #include <pybind11/pybind11.h>
 #include <pybind11/embed.h>
@@ -136,4 +138,6 @@ namespace Dia
 	}
 }
 
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
+#endif

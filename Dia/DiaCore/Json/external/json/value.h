@@ -6,8 +6,10 @@
 #ifndef CPPTL_JSON_H_INCLUDED
 #define CPPTL_JSON_H_INCLUDED
 
+#ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmicrosoft-exception-spec"
+#endif
 
 #if !defined(JSON_IS_AMALGAMATION)
 #include "forwards.h"

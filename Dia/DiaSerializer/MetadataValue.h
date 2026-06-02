@@ -25,7 +25,7 @@ namespace Dia
 			union
 			{
 				bool	boolVal;
-				int		intVal;
+				int		intVal  = 0;
 				float	floatVal;
 			};
 

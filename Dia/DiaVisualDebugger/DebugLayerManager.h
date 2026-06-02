@@ -69,6 +69,10 @@ namespace Dia
             // Unregister a layer by name. No-op if the name is not registered.
             void Unregister(Dia::Core::StringCRC layerName);
 
+            // Remove all dynamic layers at once (e.g. on module stop before drawers are freed).
+            // Does not touch the fixed registry.
+            void ClearDynamicLayers();
+
             // ----------------------------------------------------------------
             // Registration (fixed layers)
             // ----------------------------------------------------------------

@@ -69,6 +69,7 @@ void VisualDebuggerModule::DoUpdate(float /*dt*/)
 
 Dia::ApplicationFlow::StopResult VisualDebuggerModule::DoStop()
 {
+    mLayerManager.ClearDynamicLayers();
     UnregisterCoord2DDrawers();
     mLastKnownStage = Dia::Core::StringCRC();
     mFrame.Clear();
@@ -105,13 +106,6 @@ void VisualDebuggerModule::RegisterCoord2DDrawers()
 
 void VisualDebuggerModule::UnregisterCoord2DDrawers()
 {
-    // Do NOT call mLayerManager.Unregister() here. At DoStop time, other modules
-    // that registered drawers (e.g. Geometry2DTestStageModule) may already have
-    // freed their drawer objects without unregistering (because ModuleRef returns
-    // nullptr for kStopping targets). Calling Unregister() would iterate mLayers
-    // and call GetLayerName() through those dangling pointers.
-    // Since mLayerManager is owned by this module and is being destroyed, just
-    // reset the coord2d drawer unique_ptrs directly.
     mCoord2DOriginDrawer.reset();
     mCoord2DAxesDrawer.reset();
     mCoord2DGridDrawer.reset();

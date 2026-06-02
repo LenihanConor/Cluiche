@@ -6,6 +6,7 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaEntity/Domain.h>
 #include <DiaEntity/Entity.h>
+#include <DiaGeometry2DVisualDebugger/ShapeDrawer.h>
 
 namespace Dia::Debug { class DebugLayerManager; }
 
@@ -47,6 +48,7 @@ private:
     const Dia::Entity::Entity*        mAllEntities;
     unsigned int                      mEntityCount;
     const Dia::Debug::DebugLayerManager& mManager;
+    Dia::Geometry2DVisualDebugger::ShapeDrawer mDrawer;
 };
 
 } // namespace CluicheTest

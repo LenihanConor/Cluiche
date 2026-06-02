@@ -48,6 +48,7 @@ EntityTestDrawer::EntityTestDrawer(
     , mAllEntities(allEntities)
     , mEntityCount(entityCount)
     , mManager(mgr)
+    , mDrawer(mgr)
 {
     mQueryEntities[0] = queryEntities[0];
     mQueryEntities[1] = queryEntities[1];
@@ -62,7 +63,7 @@ Dia::Core::StringCRC EntityTestDrawer::GetLayerName() const
 
 void EntityTestDrawer::Draw(Dia::Graphics::FrameData& frameData)
 {
-    Dia::Geometry2DVisualDebugger::ShapeDrawer drawer(mManager);
+    Dia::Geometry2DVisualDebugger::ShapeDrawer& drawer = mDrawer;
 
     static const Dia::Graphics::RGBA kSelectOutline(255, 255, 0, 255);
 

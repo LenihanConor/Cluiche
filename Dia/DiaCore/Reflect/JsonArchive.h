@@ -4,10 +4,14 @@
 #include "DiaCore/Reflect/ContainerSpecializations.h"
 #include "DiaCore/Reflect/PolymorphicRegistry.h"
 
+#ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmicrosoft-exception-spec"
+#endif
 #include "DiaCore/Json/external/json/json.h"
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
+#endif
 
 #include <type_traits>
 #include <concepts>

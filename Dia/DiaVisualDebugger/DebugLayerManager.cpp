@@ -62,6 +62,13 @@ namespace Dia
             mLayersDirty = true;
         }
 
+        void DebugLayerManager::ClearDynamicLayers()
+        {
+            mLayers.RemoveAll();
+            mSortDirty   = true;
+            mLayersDirty = true;
+        }
+
         void DebugLayerManager::Unregister(Dia::Core::StringCRC layerName)
         {
             int index = FindLayerIndex(layerName);
