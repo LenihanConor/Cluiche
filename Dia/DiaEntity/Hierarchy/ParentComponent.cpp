@@ -11,11 +11,16 @@ DIA_SERIALIZE_END
 
 namespace Dia::Entity::Hierarchy {
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winvalid-offsetof"
+
 // Field metadata array — one per FIELD in ParentComponent.
 static Dia::Entity::FieldDesc s_ParentComponent_fields[] = {
     DIA_FIELD_ENTRY(uint32_t, parentIndex, ParentComponent)
     DIA_FIELD_ENTRY(uint32_t, parentGen,   ParentComponent)
 };
+
+#pragma GCC diagnostic pop
 
 DIA_COMPONENT_REGISTER(ParentComponent, "dia.hierarchy.parent", false, false,
     s_ParentComponent_fields, DIA_ARRAY_COUNT(s_ParentComponent_fields),
