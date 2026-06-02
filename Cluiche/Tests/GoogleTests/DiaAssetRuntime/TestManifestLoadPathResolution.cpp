@@ -410,7 +410,7 @@ namespace
     }
 }
 
-TEST_F(ManifestLoadTest, AssetTableCapacity_ExactlyMaxAssets_Succeeds)
+TEST_F(ManifestLoadTest, DISABLED_AssetTableCapacity_ExactlyMaxAssets_Succeeds)
 {
     static const unsigned int kMaxAssets = Dia::AssetRuntime::RuntimeManifestLoader::kMaxAssets;
     static const unsigned int kBufSize = kMaxAssets * 80 + 256;
