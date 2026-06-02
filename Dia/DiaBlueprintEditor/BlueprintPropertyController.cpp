@@ -59,13 +59,13 @@ namespace Dia
 			result["id"] = bp.get("id", "").asString();
 
 			Json::Value componentArray(Json::arrayValue);
-			const Json::Value& components = bp.get("components", Json::Value(Json::arrayValue));
+			Json::Value components = bp.get("components", Json::Value(Json::arrayValue));
 
 			for (unsigned int i = 0; i < components.size(); ++i)
 			{
 				const Json::Value& comp = components[i];
-				const char* typeName = comp.get("type", "").asCString();
-				const Json::Value& fieldValues = comp.get("fields", Json::Value(Json::objectValue));
+				const char* typeName = comp["type"].asCString();
+				Json::Value fieldValues = comp.isMember("fields") ? comp["fields"] : Json::Value(Json::objectValue);
 
 				Json::Value compJson;
 				compJson["type"] = typeName;
@@ -111,8 +111,8 @@ namespace Dia
 			Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 64> present;
 			if (blueprintRoot.isMember(topLevelKey))
 			{
-				const Json::Value& comps = blueprintRoot[topLevelKey].get("components",
-				                                                            Json::Value(Json::arrayValue));
+				Json::Value comps = blueprintRoot[topLevelKey].get("components",
+				                                                    Json::Value(Json::arrayValue));
 				for (unsigned int i = 0; i < comps.size(); ++i)
 					present.Add(Dia::Core::StringCRC(comps[i].get("type", "").asCString()));
 			}
@@ -157,9 +157,23 @@ namespace Dia
 
 			for (unsigned int i = 0; i < reverseRefs.Size(); ++i)
 			{
+				// GetReverseRefs rebuilds StringCRCs from CRC hashes only — AsChar() is empty.
+				// Resolve the display string by scanning the registry by CRC value.
+				const Dia::Core::StringCRC& fromCRC = reverseRefs[i].mTargetAssetId;
+				const char* sceneIdStr = "";
+				for (unsigned int r = 0; r < registry.GetCount(); ++r)
+				{
+					const Dia::AssetCatalogue::AssetRecord& rec = registry.GetRecordByIndex(r);
+					if (rec.mId.Value() == fromCRC.Value())
+					{
+						sceneIdStr = rec.mId.AsChar();
+						break;
+					}
+				}
+
 				Json::Value entry;
-				entry["sceneId"]       = reverseRefs[i].mTargetAssetId.AsChar();
-				entry["instanceCount"] = 1;  // relationship index records one edge per placement
+				entry["sceneId"]       = sceneIdStr;
+				entry["instanceCount"] = 1;
 				usages.append(entry);
 			}
 

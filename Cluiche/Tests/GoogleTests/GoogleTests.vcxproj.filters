@@ -118,6 +118,9 @@
     <Filter Include="DiaApplicationEditor">
       <UniqueIdentifier>{DAPPEDTR-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaBlueprintEditor">
+      <UniqueIdentifier>{DIABPED1-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Geometry3D">
       <UniqueIdentifier>{GEO3D001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
@@ -565,6 +568,16 @@
     </ClCompile>
     <ClCompile Include="Integration\TestPhysicsGeometryIntegration.cpp">
       <Filter>Integration</Filter>
+    </ClCompile>
+    <!-- DiaBlueprintEditor Tests -->
+    <ClCompile Include="DiaBlueprintEditor\TestBlueprintFileHandler.cpp">
+      <Filter>DiaBlueprintEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaBlueprintEditor\TestBlueprintListController.cpp">
+      <Filter>DiaBlueprintEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaBlueprintEditor\TestBlueprintPropertyController.cpp">
+      <Filter>DiaBlueprintEditor</Filter>
     </ClCompile>
     <!-- DiaApplicationEditor V2 Tests -->
     <ClCompile Include="DiaApplicationEditor\TestManifestEditorState.cpp">
