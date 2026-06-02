@@ -204,6 +204,9 @@
       padding: 4px 6px; font-size: 12px; border-radius: 3px;
     }
     .modal .modal-error { color: #f48771; font-size: 11px; margin-bottom: 8px; min-height: 16px; }
+    .id-prefix-row { display: flex; align-items: center; flex: 1; background: #2d2d2d; border: 1px solid #555; border-radius: 3px; overflow: hidden; }
+    .id-prefix { padding: 4px 0 4px 6px; font-size: 12px; color: #6a9955; white-space: nowrap; user-select: none; flex-shrink: 0; }
+    .id-prefix-row input { border: none; background: transparent; flex: 1; padding: 4px 6px 4px 2px; font-size: 12px; color: #d4d4d4; outline: none; min-width: 0; }
     .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
     .modal-footer button {
       background: #3c3c3c; color: #d4d4d4; border: 1px solid #555;
@@ -459,15 +462,18 @@
   <div class="modal">
     <h2>New Asset Record</h2>
     <div class="modal-row">
-      <label>ID <span style="color:#9d9d9d;font-size:10px;">(type.name)</span></label>
-      <div style="flex:1">
-        <input type="text" id="create-id" placeholder="texture.player_ship" oninput="validateCreateId(); updateCreateDefaultSourcePath()" />
-        <div class="validation-note" id="create-id-note"></div>
-      </div>
+      <label>Type</label>
+      <select id="create-type" onchange="updateIdPrefix(); updateCreateDefaultSourcePath()"></select>
     </div>
     <div class="modal-row">
-      <label>Type</label>
-      <select id="create-type" onchange="updateCreateDefaultSourcePath()"></select>
+      <label>Name</label>
+      <div style="flex:1">
+        <div class="id-prefix-row">
+          <span class="id-prefix" id="create-id-prefix">—.</span>
+          <input type="text" id="create-id-name" placeholder="player_ship" oninput="validateCreateId(); updateCreateDefaultSourcePath()" />
+        </div>
+        <div class="validation-note" id="create-id-note"></div>
+      </div>
     </div>
     <div class="modal-row">
       <label>Source Path</label>
@@ -488,8 +494,8 @@
       </select>
     </div>
     <div class="modal-row" id="create-stage-row" style="display:none;">
-      <label>Stage Name</label>
-      <input type="text" id="create-stage" placeholder="stage_name" />
+      <label>Stage</label>
+      <select id="create-stage"></select>
     </div>
     <div class="modal-error" id="create-error"></div>
     <div class="modal-footer">
@@ -964,25 +970,42 @@
           sel.appendChild(o);
         });
       }
+      updateIdPrefix();
       updateCreateDefaultSourcePath();
     });
 
-    document.getElementById('create-id').value = '';
+    document.getElementById('create-id-name').value = '';
+    document.getElementById('create-id-prefix').textContent = '—.';
     var srcPathEl = document.getElementById('create-source-path');
     srcPathEl.value = '';
     srcPathEl.dataset.userEdited = '';
     document.getElementById('create-tags').value = '';
     document.getElementById('create-scope').value = 'global';
     document.getElementById('create-stage-row').style.display = 'none';
-    document.getElementById('create-stage').value = '';
     document.getElementById('create-error').textContent = '';
     document.getElementById('create-id-note').textContent = '';
+
+    // Populate stage dropdown from existing stage records
+    var stageSel = document.getElementById('create-stage');
+    stageSel.innerHTML = '<option value="">— select stage —</option>';
+    allRecords.filter(function(r) { return r.type === 'stage'; }).forEach(function(r) {
+      var o = document.createElement('option');
+      var stageName = r.id.indexOf('.') >= 0 ? r.id.split('.').slice(1).join('.') : r.id;
+      o.value = stageName; o.textContent = stageName;
+      stageSel.appendChild(o);
+    });
+
     openModal('modal-create');
   }
 
   function onCreateScopeChange() {
     var v = document.getElementById('create-scope').value;
     document.getElementById('create-stage-row').style.display = (v === 'stage') ? 'flex' : 'none';
+  }
+
+  function updateIdPrefix() {
+    var typeId = document.getElementById('create-type').value;
+    document.getElementById('create-id-prefix').textContent = (typeId || '—') + '.';
   }
 
   // Extension hints for known blueprint types; falls back to empty.
@@ -999,18 +1022,16 @@
   };
 
   function updateCreateDefaultSourcePath() {
-    var id       = document.getElementById('create-id').value.trim();
-    var typeId   = document.getElementById('create-type').value;
-    var pathEl   = document.getElementById('create-source-path');
+    var name   = document.getElementById('create-id-name').value.trim();
+    var typeId = document.getElementById('create-type').value;
+    var pathEl = document.getElementById('create-source-path');
 
-    // Only overwrite if the user hasn't typed anything custom
     if (pathEl.dataset.userEdited === '1') return;
 
-    if (!id || !typeId) { pathEl.value = ''; return; }
+    if (!name || !typeId) { pathEl.value = ''; return; }
 
-    var namePart = id.indexOf('.') >= 0 ? id.split('.').slice(1).join('.') : id;
-    var ext      = kTypeExtensions[typeId] || ('.' + typeId);
-    pathEl.value = namePart + ext;
+    var ext   = kTypeExtensions[typeId] || ('.' + typeId);
+    pathEl.value = name + ext;
   }
 
   function browseCreateSourcePath() {
@@ -1026,42 +1047,51 @@
     });
   }
 
+  function getCreateFullId() {
+    var typeId = document.getElementById('create-type').value;
+    var name   = document.getElementById('create-id-name').value.trim();
+    return (typeId && name) ? typeId + '.' + name : '';
+  }
+
   function validateCreateId() {
-    var id = document.getElementById('create-id').value;
-    var note = document.getElementById('create-id-note');
-    var re = /^[a-z0-9_-]+\.[a-z0-9_-]+$/;
-    if (!id) { note.textContent = ''; return false; }
-    if (!re.test(id)) {
+    var name  = document.getElementById('create-id-name').value.trim();
+    var typeId = document.getElementById('create-type').value;
+    var note   = document.getElementById('create-id-note');
+    var nameRe = /^[a-z0-9_-]+$/;
+
+    if (!name) { note.textContent = ''; return false; }
+    if (!typeId) {
       note.className = 'validation-note invalid';
-      note.textContent = 'Format: type.name (lowercase, alphanumeric, _ or -)';
+      note.textContent = 'Select a type first';
       return false;
     }
-    var dup = allRecords.some(function(r) { return r.id === id; });
+    if (!nameRe.test(name)) {
+      note.className = 'validation-note invalid';
+      note.textContent = 'Lowercase, alphanumeric, _ or - only';
+      return false;
+    }
+    var fullId = typeId + '.' + name;
+    var dup = allRecords.some(function(r) { return r.id === fullId; });
     if (dup) {
       note.className = 'validation-note invalid';
-      note.textContent = 'ID already exists';
+      note.textContent = 'ID "' + fullId + '" already exists';
       return false;
     }
     note.className = 'validation-note valid';
-    note.textContent = '✓';
+    note.textContent = '✓  ' + fullId;
     return true;
   }
 
   function onCreateRecord() {
     if (!validateCreateId()) {
-      document.getElementById('create-error').textContent = 'Fix ID validation errors first.';
+      document.getElementById('create-error').textContent = 'Fix the name field first.';
       return;
     }
-    var id    = document.getElementById('create-id').value;
+    var id    = getCreateFullId();
     var type  = document.getElementById('create-type').value;
     var scope = document.getElementById('create-scope').value;
     var tags  = document.getElementById('create-tags').value
       .split(',').map(function(t){ return t.trim(); }).filter(Boolean);
-
-    if (!type) {
-      // If no types in registry yet, use the first part of the ID
-      type = id.split('.')[0];
-    }
 
     var payload = {
       id: id,
