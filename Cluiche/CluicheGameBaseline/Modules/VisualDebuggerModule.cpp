@@ -123,5 +123,6 @@ void VisualDebuggerModule::UnregisterCoord2DDrawers()
 
 namespace { using VisualDebuggerModule_ = Cluiche::AppFlow::VisualDebuggerModule; }
 DIA_MODULE(VisualDebuggerModule_);
+DIA_DESCRIBE(VisualDebuggerModule_::kTypeId, "Renders visual debug overlays: coordinate axes, grids, physics shapes, and velocity arrows.");
 
 #endif // DIA_DEBUG

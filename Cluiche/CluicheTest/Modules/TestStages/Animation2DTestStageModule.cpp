@@ -236,3 +236,4 @@ void Animation2DTestStageModule::EmitMetrics()
 
 namespace { using Animation2DTestStageModule_ = CluicheTest::Animation2DTestStageModule; }
 DIA_MODULE(Animation2DTestStageModule_);
+DIA_DESCRIBE(Animation2DTestStageModule_::kTypeId, "Test stage that exercises the 2D animation system with playback and blending scenarios.");

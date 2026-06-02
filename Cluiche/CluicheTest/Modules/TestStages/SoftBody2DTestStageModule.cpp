@@ -240,3 +240,4 @@ void SoftBody2DTestStageModule::EmitMetrics()
 
 namespace { using SoftBody2DTestStageModule_ = CluicheTest::SoftBody2DTestStageModule; }
 DIA_MODULE(SoftBody2DTestStageModule_);
+DIA_DESCRIBE(SoftBody2DTestStageModule_::kTypeId, "Test stage for 2D soft-body physics: deformation, constraints, and cloth simulation.");

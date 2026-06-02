@@ -54,5 +54,6 @@ void AssetRuntimeVisualDebuggerModule::OnConnectStreams(Dia::ApplicationFlow::Ap
 
 namespace { using AssetRuntimeVisualDebuggerModule_ = Cluiche::AppFlow::AssetRuntimeVisualDebuggerModule; }
 DIA_MODULE(AssetRuntimeVisualDebuggerModule_);
+DIA_DESCRIBE(AssetRuntimeVisualDebuggerModule_::kTypeId, "Renders asset runtime debug overlays and live asset state visualization.");
 
 #endif // DIA_DEBUG

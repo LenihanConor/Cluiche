@@ -53,3 +53,4 @@ unsigned int TimeServerModule::GetFrameCount() const
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 namespace { using TimeServerModule_ = Cluiche::AppFlow::TimeServerModule; }
 DIA_MODULE(TimeServerModule_);
+DIA_DESCRIBE(TimeServerModule_::kTypeId, "Initializes the time server and provides authoritative frame-time to all modules.");

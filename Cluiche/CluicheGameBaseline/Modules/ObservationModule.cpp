@@ -124,3 +124,4 @@ const Dia::Core::StringCRC ObservationModule::kTypeId("ObservationModule");
 
 namespace { using ObservationModule_ = Cluiche::AppFlow::ObservationModule; }
 DIA_MODULE(ObservationModule_);
+DIA_DESCRIBE(ObservationModule_::kTypeId, "Initializes the observation system: logging sinks, metrics, traces, and health reporters.");

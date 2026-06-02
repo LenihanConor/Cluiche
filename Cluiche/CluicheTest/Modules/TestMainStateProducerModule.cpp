@@ -50,3 +50,4 @@ void TestMainStateProducerModule::DoPopulateFrame(Cluiche::AppFlow::MainToRender
 
 namespace { using TestMainStateProducerModule_ = CluicheTest::TestMainStateProducerModule; }
 DIA_MODULE(TestMainStateProducerModule_);
+DIA_DESCRIBE(TestMainStateProducerModule_::kTypeId, "Drives CluicheTest top-level state: stage selection, transitions, and test lifecycle.");

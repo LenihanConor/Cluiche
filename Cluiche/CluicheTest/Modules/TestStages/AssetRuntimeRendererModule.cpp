@@ -62,3 +62,4 @@ void AssetRuntimeRendererModule::OnConnectStreams(Dia::ApplicationFlow::Applicat
 
 namespace { using AssetRuntimeRendererModule_ = CluicheTest::AssetRuntimeRendererModule; }
 DIA_MODULE(AssetRuntimeRendererModule_);
+DIA_DESCRIBE(AssetRuntimeRendererModule_::kTypeId, "Renders loaded assets in the asset runtime test stage for visual verification.");

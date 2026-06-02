@@ -137,3 +137,4 @@ bool InputStreamModule::WasMouseButtonReleased(int button) const
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 namespace { using InputStreamModule_ = Cluiche::AppFlow::InputStreamModule; }
 DIA_MODULE(InputStreamModule_);
+DIA_DESCRIBE(InputStreamModule_::kTypeId, "Polls raw input devices and publishes input state to consumers via FrameStream.");

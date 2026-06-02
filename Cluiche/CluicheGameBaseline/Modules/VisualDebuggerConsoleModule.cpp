@@ -65,5 +65,6 @@ void VisualDebuggerConsoleModule::OnConnectStreams(Dia::ApplicationFlow::Applica
 
 namespace { using VisualDebuggerConsoleModule_ = Cluiche::AppFlow::VisualDebuggerConsoleModule; }
 DIA_MODULE(VisualDebuggerConsoleModule_);
+DIA_DESCRIBE(VisualDebuggerConsoleModule_::kTypeId, "Renders the in-game visual debugger console and command interface.");
 
 #endif // DIA_DEBUG

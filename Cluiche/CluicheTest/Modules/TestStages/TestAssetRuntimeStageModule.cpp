@@ -129,3 +129,4 @@ void TestAssetRuntimeStageModule::OnConnectStreams(Dia::ApplicationFlow::Applica
 
 namespace { using TestAssetRuntimeStageModule_ = CluicheTest::TestAssetRuntimeStageModule; }
 DIA_MODULE(TestAssetRuntimeStageModule_);
+DIA_DESCRIBE(TestAssetRuntimeStageModule_::kTypeId, "Test stage for the asset runtime: hot-reload, streaming, and reference-counted asset lifecycle.");

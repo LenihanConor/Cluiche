@@ -56,3 +56,4 @@ Dia::Camera2D::ViewportTransform CameraModule::GetViewportTransform() const
 
 namespace { using CameraModule_ = Cluiche::AppFlow::CameraModule; }
 DIA_MODULE(CameraModule_);
+DIA_DESCRIBE(CameraModule_::kTypeId, "Manages camera state and publishes the active camera transform via FrameStream.");

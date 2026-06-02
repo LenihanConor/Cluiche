@@ -55,6 +55,18 @@ namespace Dia { namespace ApplicationFlow {
         // Returns nullptr if typeId is not found or no description was provided.
         const char* GetDescription(const Dia::Core::StringCRC& typeId) const;
 
+        // Patch a description onto an already-registered type (called by DIA_DESCRIBE).
+        // No-op if typeId is not registered.
+        void SetDescription(const Dia::Core::StringCRC& typeId, const char* description);
+
+        // Iterate all registered types. Callback receives (typeId, metadata).
+        template<typename Fn>
+        void ForEach(Fn&& fn) const
+        {
+            for (auto it = mFactories.Begin(); it != mFactories.End(); ++it)
+                fn(it.GetKey(), it.Value());
+        }
+
         // Meyers singleton — thread-safe in C++11+.
         // Populated by DIA_MODULE static registrations before main() runs.
         static TypeRegistry& Global();

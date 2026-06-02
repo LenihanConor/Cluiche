@@ -401,3 +401,4 @@ void EntityTestStageModule::OnStop()
 
 namespace { using EntityTestStageModule_ = CluicheTest::EntityTestStageModule; }
 DIA_MODULE(EntityTestStageModule_);
+DIA_DESCRIBE(EntityTestStageModule_::kTypeId, "Test stage that exercises entity creation, component attachment, and lifecycle scenarios.");

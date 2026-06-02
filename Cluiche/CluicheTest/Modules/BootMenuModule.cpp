@@ -267,3 +267,4 @@ void BootMenuModule::MarkLoaded(unsigned int index)
 
 namespace { using BootMenuModule_ = Cluiche::AppFlow::BootMenuModule; }
 DIA_MODULE(BootMenuModule_);
+DIA_DESCRIBE(BootMenuModule_::kTypeId, "Displays the CluicheTest boot menu for selecting which test stage to run.");

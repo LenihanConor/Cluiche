@@ -68,3 +68,4 @@ void AutomationModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 
 namespace { using AutomationModule_ = Cluiche::AppFlow::AutomationModule; }
 DIA_MODULE(AutomationModule_);
+DIA_DESCRIBE(AutomationModule_::kTypeId, "Drives automated test sequences and script-based input replay.");

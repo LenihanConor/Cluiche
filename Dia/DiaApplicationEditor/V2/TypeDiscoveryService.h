@@ -32,6 +32,11 @@ namespace Dia
                 // On error (file not found, malformed JSON) the service is cleared silently.
                 void LoadFromFile(const char* typesJsonPath);
 
+                // Load type data directly from the in-process TypeRegistry.
+                // Descriptions come from DIA_DESCRIBE registrations.
+                // Only populates module types; PU types are not in TypeRegistry.
+                void LoadFromRegistry();
+
                 // Reset the service to an empty, unloaded state.
                 void Clear();
 

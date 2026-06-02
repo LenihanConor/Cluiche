@@ -272,3 +272,4 @@ bool Scene2DTestStageModule::ValidateLayers() const
 
 namespace { using Scene2DTestStageModule_ = CluicheTest::Scene2DTestStageModule; }
 DIA_MODULE(Scene2DTestStageModule_);
+DIA_DESCRIBE(Scene2DTestStageModule_::kTypeId, "Test stage for the 2D scene system: loading levels, layers, and entity placement.");

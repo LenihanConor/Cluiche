@@ -119,3 +119,4 @@ const Dia::Core::StringCRC ObservationModule::kTypeId("ObservationModule");
 
 namespace { using ObservationModule_ = Cluiche::Editor::ObservationModule; }
 DIA_MODULE(ObservationModule_);
+DIA_DESCRIBE(ObservationModule_::kTypeId, "Initializes editor observation sinks: logging, metrics, and health reporters for editor diagnostics.");

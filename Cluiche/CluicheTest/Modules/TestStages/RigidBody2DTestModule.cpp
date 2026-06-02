@@ -148,3 +148,4 @@ void RigidBody2DTestModule::EmitMetrics()
 
 namespace { using RigidBody2DTestModule_ = CluicheTest::RigidBody2DTestModule; }
 DIA_MODULE(RigidBody2DTestModule_);
+DIA_DESCRIBE(RigidBody2DTestModule_::kTypeId, "Test stage that exercises 2D rigid-body physics: collisions, forces, and constraints.");

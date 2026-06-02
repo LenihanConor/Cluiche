@@ -604,3 +604,4 @@ void Geometry2DTestStageModule::SetupSpatialStructures()
 
 namespace { using Geometry2DTestStageModule_ = CluicheTest::Geometry2DTestStageModule; }
 DIA_MODULE(Geometry2DTestStageModule_);
+DIA_DESCRIBE(Geometry2DTestStageModule_::kTypeId, "Test stage for 2D geometry operations: intersection, overlap, and shape queries.");

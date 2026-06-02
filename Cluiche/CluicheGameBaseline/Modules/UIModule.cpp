@@ -129,3 +129,4 @@ const Dia::Core::StringCRC UIModule::kTypeId("UIModule");
 
 namespace { using UIModule_ = Cluiche::AppFlow::UIModule; }
 DIA_MODULE(UIModule_);
+DIA_DESCRIBE(UIModule_::kTypeId, "Manages the Ultralight-based UI system: page lifecycle, input routing, and JavaScript bridge.");

@@ -34,3 +34,4 @@ const Dia::Core::StringCRC ProfilerModule::kTypeId("ProfilerModule");
 
 namespace { using ProfilerModule_ = Cluiche::AppFlow::ProfilerModule; }
 DIA_MODULE(ProfilerModule_);
+DIA_DESCRIBE(ProfilerModule_::kTypeId, "Collects and exposes per-frame profiling data for the visual profiler overlay.");

@@ -114,3 +114,4 @@ void RenderModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 
 namespace { using RenderModule_ = Cluiche::AppFlow::RenderModule; }
 DIA_MODULE(RenderModule_);
+DIA_DESCRIBE(RenderModule_::kTypeId, "Submits draw calls each frame using the bgfx canvas; consumes scene and camera FrameStreams.");

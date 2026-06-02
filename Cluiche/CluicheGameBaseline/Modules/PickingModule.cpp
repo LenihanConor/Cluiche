@@ -92,3 +92,4 @@ Dia::ApplicationFlow::StopResult PickingModule::DoStop()
 
 namespace { using PickingModule_ = Cluiche::AppFlow::PickingModule; }
 DIA_MODULE(PickingModule_);
+DIA_DESCRIBE(PickingModule_::kTypeId, "Handles mouse/cursor picking against scene geometry and publishes selection results.");

@@ -78,4 +78,13 @@ namespace Dia { namespace ApplicationFlow {
         return pMeta->description;
     }
 
+    //--------------------------------------------------------------------------
+    void TypeRegistry::SetDescription(const Dia::Core::StringCRC& typeId, const char* description)
+    {
+        TypeMetadata* pMeta = mFactories.TryGetItem(typeId);
+        if (pMeta == nullptr)
+            return;
+        pMeta->description = description;
+    }
+
 }} // namespace Dia::ApplicationFlow

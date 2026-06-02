@@ -237,3 +237,4 @@ void KernelModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 
 namespace { using KernelModule_ = Cluiche::AppFlow::KernelModule; }
 DIA_MODULE(KernelModule_);
+DIA_DESCRIBE(KernelModule_::kTypeId, "Manages the application window, bgfx render context, and main-thread kernel loop.");

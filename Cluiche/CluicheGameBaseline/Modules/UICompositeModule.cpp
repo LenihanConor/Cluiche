@@ -39,3 +39,4 @@ void UICompositeModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 
 namespace { using UICompositeModule_ = Cluiche::AppFlow::UICompositeModule; }
 DIA_MODULE(UICompositeModule_);
+DIA_DESCRIBE(UICompositeModule_::kTypeId, "Composites UI layer outputs into the final render target each frame.");

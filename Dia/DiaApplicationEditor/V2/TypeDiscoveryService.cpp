@@ -3,6 +3,7 @@
 
 #include "DiaApplicationEditor/V2/TypeDiscoveryService.h"
 
+#include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaCore/Json/external/json/json.h>
 
 #include <stdio.h>
@@ -95,6 +96,30 @@ namespace Dia
                         mPUTypes.Add(info);
                     }
                 }
+            }
+
+            // -----------------------------------------------------------------------
+            // LoadFromRegistry
+            // -----------------------------------------------------------------------
+            void TypeDiscoveryService::LoadFromRegistry()
+            {
+                Clear();
+
+                Dia::ApplicationFlow::TypeRegistry::Global().ForEach(
+                    [this](const Dia::Core::StringCRC& typeId,
+                           const Dia::ApplicationFlow::TypeRegistry::TypeMetadata& meta)
+                    {
+                        if (mModuleTypes.Size() >= kMaxModuleTypes)
+                            return;
+
+                        TypeInfo info;
+                        info.typeId = typeId;
+
+                        const char* desc = meta.description ? meta.description : "";
+                        strncpy_s(info.description, sizeof(info.description), desc, _TRUNCATE);
+
+                        mModuleTypes.Add(info);
+                    });
             }
 
             // -----------------------------------------------------------------------

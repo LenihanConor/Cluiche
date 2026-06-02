@@ -157,3 +157,4 @@ void TestStageHUDModule::OnConnectStreams(Dia::ApplicationFlow::Application& app
 
 namespace { using TestStageHUDModule_ = CluicheTest::TestStageHUDModule; }
 DIA_MODULE(TestStageHUDModule_);
+DIA_DESCRIBE(TestStageHUDModule_::kTypeId, "Shared HUD overlay for all CluicheTest stages: shows stage name, controls, and test status.");

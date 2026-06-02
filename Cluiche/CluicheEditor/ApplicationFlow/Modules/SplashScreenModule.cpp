@@ -124,3 +124,4 @@ namespace Cluiche
 
 namespace { using SplashScreenModule_ = Cluiche::Editor::SplashScreenModule; }
 DIA_MODULE(SplashScreenModule_);
+DIA_DESCRIBE(SplashScreenModule_::kTypeId, "Displays the editor splash screen while the application initializes.");

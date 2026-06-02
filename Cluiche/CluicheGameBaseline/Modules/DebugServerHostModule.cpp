@@ -260,3 +260,4 @@ Dia::ApplicationFlow::IStreamStore* DebugServerHostModule::FindStream(
 
 namespace { using DebugServerHostModule_ = Cluiche::AppFlow::DebugServerHostModule; }
 DIA_MODULE(DebugServerHostModule_);
+DIA_DESCRIBE(DebugServerHostModule_::kTypeId, "Hosts the WebSocket debug server that editor and inspector tools connect to.");

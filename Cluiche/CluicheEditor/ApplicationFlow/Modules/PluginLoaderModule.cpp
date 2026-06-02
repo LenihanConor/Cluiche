@@ -349,3 +349,4 @@ namespace Cluiche
 
 namespace { using PluginLoaderModule_ = Cluiche::Editor::PluginLoaderModule; }
 DIA_MODULE(PluginLoaderModule_);
+DIA_DESCRIBE(PluginLoaderModule_::kTypeId, "Discovers and hot-loads editor plugin DLLs, registering their module types at startup.");

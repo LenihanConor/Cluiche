@@ -68,3 +68,4 @@ const Dia::Core::StringCRC DummyUIPageModule::kTypeId("DummyUIPageModule");
 
 namespace { using DummyUIPageModule_ = Cluiche::AppFlow::DummyUIPageModule; }
 DIA_MODULE(DummyUIPageModule_);
+DIA_DESCRIBE(DummyUIPageModule_::kTypeId, "Stub UI page module used as a placeholder during prototype and test stages.");

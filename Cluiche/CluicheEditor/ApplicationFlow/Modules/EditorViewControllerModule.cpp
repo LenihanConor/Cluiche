@@ -45,3 +45,4 @@ namespace Cluiche
 
 namespace { using EditorViewControllerModule_ = Cluiche::Editor::EditorViewControllerModule; }
 DIA_MODULE(EditorViewControllerModule_);
+DIA_DESCRIBE(EditorViewControllerModule_::kTypeId, "Translates user input events into editor commands, bridging view interactions to model mutations.");

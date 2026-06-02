@@ -104,3 +104,4 @@ void Physics2DModule::RegisterDrawers()
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 namespace { using Physics2DModule_ = Cluiche::AppFlow::Physics2DModule; }
 DIA_MODULE(Physics2DModule_);
+DIA_DESCRIBE(Physics2DModule_::kTypeId, "Runs the 2D rigid-body physics simulation and publishes physics results via FrameStream.");

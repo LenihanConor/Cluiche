@@ -32,3 +32,4 @@ namespace Cluiche
 
 namespace { using CommandHistoryModule_ = Cluiche::Editor::CommandHistoryModule; }
 DIA_MODULE(CommandHistoryModule_);
+DIA_DESCRIBE(CommandHistoryModule_::kTypeId, "Maintains the undo/redo command history for editor operations.");

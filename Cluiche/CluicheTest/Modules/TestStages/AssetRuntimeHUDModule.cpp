@@ -175,3 +175,4 @@ void AssetRuntimeHUDModule::OnConnectStreams(Dia::ApplicationFlow::Application& 
 
 namespace { using AssetRuntimeHUDModule_ = CluicheTest::AssetRuntimeHUDModule; }
 DIA_MODULE(AssetRuntimeHUDModule_);
+DIA_DESCRIBE(AssetRuntimeHUDModule_::kTypeId, "HUD overlay for the asset runtime test stage showing load state and asset stats.");

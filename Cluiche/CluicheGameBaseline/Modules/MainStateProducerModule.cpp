@@ -68,3 +68,4 @@ void MainStateProducerModule::OnConnectStreams(Dia::ApplicationFlow::Application
 
 namespace { using MainStateProducerModule_ = Cluiche::AppFlow::MainStateProducerModule; }
 DIA_MODULE(MainStateProducerModule_);
+DIA_DESCRIBE(MainStateProducerModule_::kTypeId, "Produces the main application state frame and drives top-level game logic.");

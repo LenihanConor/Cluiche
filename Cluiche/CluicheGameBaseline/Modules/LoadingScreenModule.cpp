@@ -68,3 +68,4 @@ void LoadingScreenModule::OnConnectStreams(Dia::ApplicationFlow::Application& ap
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 namespace { using LoadingScreenModule_ = Cluiche::AppFlow::LoadingScreenModule; }
 DIA_MODULE(LoadingScreenModule_);
+DIA_DESCRIBE(LoadingScreenModule_::kTypeId, "Displays a loading screen during asset-heavy stage transitions.");

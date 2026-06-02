@@ -56,3 +56,4 @@ Dia::ApplicationFlow::StopResult DebugUIModule::DoStop()
 
 namespace { using DebugUIModule_ = Cluiche::AppFlow::DebugUIModule; }
 DIA_MODULE(DebugUIModule_);
+DIA_DESCRIBE(DebugUIModule_::kTypeId, "Renders in-game debug UI panels via ImGui for development diagnostics.");

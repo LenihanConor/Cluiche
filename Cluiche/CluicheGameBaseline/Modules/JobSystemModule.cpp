@@ -46,3 +46,4 @@ const Dia::Threading::JobSystem& JobSystemModule::GetJobSystem() const
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 namespace { using JobSystemModule_ = Cluiche::AppFlow::JobSystemModule; }
 DIA_MODULE(JobSystemModule_);
+DIA_DESCRIBE(JobSystemModule_::kTypeId, "Initializes and manages the background job system thread pool.");

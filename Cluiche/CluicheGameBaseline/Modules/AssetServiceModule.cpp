@@ -636,3 +636,4 @@ void AssetServiceModule::UnregisterStageAliases()
 
 namespace { using AssetServiceModule_ = Cluiche::AppFlow::AssetServiceModule; }
 DIA_MODULE(AssetServiceModule_);
+DIA_DESCRIBE(AssetServiceModule_::kTypeId, "Owns the asset runtime: loads, caches, and serves assets to consumers via ServiceStream.");

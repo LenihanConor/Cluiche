@@ -50,3 +50,4 @@ Dia::ApplicationFlow::StopResult EntityModule::DoStop()
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 namespace { using EntityModule_ = Cluiche::AppFlow::EntityModule; }
 DIA_MODULE(EntityModule_);
+DIA_DESCRIBE(EntityModule_::kTypeId, "Hosts the entity world: creates, updates, and destroys DiaEntity instances and their components.");

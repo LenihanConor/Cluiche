@@ -151,3 +151,4 @@ namespace Cluiche
 
 namespace { using EditorViewModule_ = Cluiche::Editor::EditorViewModule; }
 DIA_MODULE(EditorViewModule_);
+DIA_DESCRIBE(EditorViewModule_::kTypeId, "Renders the editor UI and manages panel layout via the web-based view layer.");

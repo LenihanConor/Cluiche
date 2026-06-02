@@ -201,3 +201,4 @@ void DummyLevelModule::OnConnectStreams(Dia::ApplicationFlow::Application& app)
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 namespace { using DummyLevelModule_ = Cluiche::AppFlow::DummyLevelModule; }
 DIA_MODULE(DummyLevelModule_);
+DIA_DESCRIBE(DummyLevelModule_::kTypeId, "Stub level module used as a placeholder during prototype and test stages.");

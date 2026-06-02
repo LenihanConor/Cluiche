@@ -248,3 +248,4 @@ Dia::Core::Containers::String64 UIUltralightTestStageModule::GetLiveMetrics()
 
 namespace { using UIUltralightTestStageModule_ = CluicheTest::UIUltralightTestStageModule; }
 DIA_MODULE(UIUltralightTestStageModule_);
+DIA_DESCRIBE(UIUltralightTestStageModule_::kTypeId, "Test stage for the Ultralight UI system: page loading, JS bridge, and layout testing.");

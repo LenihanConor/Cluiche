@@ -359,3 +359,4 @@ namespace Cluiche
 
 namespace { using EditorModelModule_ = Cluiche::Editor::EditorModelModule; }
 DIA_MODULE(EditorModelModule_);
+DIA_DESCRIBE(EditorModelModule_::kTypeId, "Holds the authoritative editor model: selected entities, open documents, and editor state.");
