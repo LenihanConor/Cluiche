@@ -3,6 +3,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <commdlg.h>
+#include <shlobj.h>
 
 #include <string>
 
@@ -102,6 +103,77 @@ namespace Dia
 		Json::Value FileDialogHandler::HandleSaveFileDialog(const Json::Value& data)
 		{
 			return RunDialog(data, true);
+		}
+
+		Json::Value FileDialogHandler::HandleFolderDialog(const Json::Value& data)
+		{
+			Json::Value result;
+
+			char* headless = nullptr;
+			size_t len = 0;
+			_dupenv_s(&headless, &len, "DIA_HEADLESS");
+			bool isHeadless = headless && headless[0] != '\0';
+			free(headless);
+			if (isHeadless)
+			{
+				result["success"] = false;
+				return result;
+			}
+
+			std::string title      = data.get("title",       "Select Folder").asString();
+			std::string initialDir = data.get("initial_dir", "").asString();
+
+			// SHBrowseForFolderA requires COM to be initialised; call CoInitialize defensively.
+			CoInitialize(nullptr);
+
+			char displayName[MAX_PATH] = {};
+			BROWSEINFOA bi = {};
+			bi.hwndOwner      = GetActiveWindow();
+			bi.pszDisplayName = displayName;
+			bi.lpszTitle      = title.c_str();
+			bi.ulFlags        = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE;
+
+			// Set initial selection via callback when initial_dir is provided.
+			struct CallbackData { const char* path; };
+			CallbackData cbData{ initialDir.c_str() };
+
+			if (!initialDir.empty())
+			{
+				bi.lpfn = [](HWND hwnd, UINT msg, LPARAM, LPARAM lp) -> int
+				{
+					if (msg == BFFM_INITIALIZED)
+					{
+						const CallbackData* cd = reinterpret_cast<const CallbackData*>(lp);
+						SendMessageA(hwnd, BFFM_SETSELECTION, TRUE,
+						             reinterpret_cast<LPARAM>(cd->path));
+					}
+					return 0;
+				};
+				bi.lParam = reinterpret_cast<LPARAM>(&cbData);
+			}
+
+			LPITEMIDLIST pidl = SHBrowseForFolderA(&bi);
+			if (pidl)
+			{
+				char folderPath[MAX_PATH] = {};
+				if (SHGetPathFromIDListA(pidl, folderPath))
+				{
+					result["success"] = true;
+					result["path"]    = folderPath;
+				}
+				else
+				{
+					result["success"] = false;
+				}
+				CoTaskMemFree(pidl);
+			}
+			else
+			{
+				result["success"] = false;
+			}
+
+			CoUninitialize();
+			return result;
 		}
 	}
 }

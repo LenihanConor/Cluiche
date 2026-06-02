@@ -819,7 +819,12 @@
   function browseSourcePath() {
     diaRequest('asset_catalogue.browse_source_file', {}).then(function(r) {
       if (!r.success) return;
-      document.getElementById('rec-source-path').value = r.relative_path || r.path;
+      var el       = document.getElementById('rec-source-path');
+      var folder   = r.relative_path || r.path;
+      var current  = el.value.trim();
+      // Keep the filename part if the user already typed one, just update the directory
+      var filename = current ? current.replace(/^.*[/\\]/, '') : '';
+      el.value = filename ? folder + filename : folder;
     });
   }
 
@@ -1011,8 +1016,12 @@
   function browseCreateSourcePath() {
     diaRequest('asset_catalogue.browse_source_file', {}).then(function(r) {
       if (!r.success) return;
-      var pathEl = document.getElementById('create-source-path');
-      pathEl.value = r.relative_path || r.path;
+      var pathEl  = document.getElementById('create-source-path');
+      var folder  = r.relative_path || r.path;
+      var current = pathEl.value.trim();
+      // Preserve any filename already in the field, just update the directory prefix
+      var filename = current ? current.replace(/^.*[/\\]/, '') : '';
+      pathEl.value = filename ? folder + filename : folder;
       pathEl.dataset.userEdited = '1';
     });
   }

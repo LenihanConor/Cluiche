@@ -228,18 +228,15 @@ namespace Dia
 						return result;
 					});
 
-				// browse_source_file — file picker pre-seeded to the manifest directory.
-				// Returns { success, path, relative_path } where relative_path is relative
-				// to the manifest directory (suitable as a source_path value in a record).
+				// browse_source_folder — folder picker pre-seeded to the manifest directory.
+				// Returns { success, path, relative_path } where relative_path is the
+				// chosen folder relative to the manifest (use as a directory prefix for source_path).
 				mBridge->RegisterRequestHandler(
 					Dia::Core::StringCRC("asset_catalogue.browse_source_file"),
 					[this](const Json::Value& data) -> Json::Value
 					{
 						Json::Value dialogData;
-						Json::Value filters(Json::arrayValue);
-						Json::Value fAll; fAll["name"] = "All Files"; fAll["ext"] = "*.*"; filters.append(fAll);
-						dialogData["filters"] = filters;
-						dialogData["title"]   = "Select Source File";
+						dialogData["title"] = "Select Folder for Source Path";
 
 						// Pre-seed to manifest directory if one is loaded
 						char dirBuf[512] = {};
@@ -247,11 +244,10 @@ namespace Dia
 						if (dirBuf[0] != '\0')
 							dialogData["initial_dir"] = dirBuf;
 
-						// Allow caller to hint an initial_dir override
 						if (data.isMember("initial_dir") && data["initial_dir"].isString())
 							dialogData["initial_dir"] = data["initial_dir"].asString();
 
-						Json::Value dialogResult = Dia::Editor::FileDialogHandler::HandleOpenFileDialog(dialogData);
+						Json::Value dialogResult = Dia::Editor::FileDialogHandler::HandleFolderDialog(dialogData);
 						if (!dialogResult.get("success", false).asBool())
 						{
 							Json::Value r; r["success"] = false; return r;
@@ -260,6 +256,13 @@ namespace Dia
 						const char* absPath = dialogResult["path"].asCString();
 						char relBuf[512] = {};
 						MakeRelativeToManifest(absPath, relBuf, sizeof(relBuf));
+
+						// Ensure trailing slash so the UI can append a filename directly
+						unsigned int relLen = static_cast<unsigned int>(strlen(relBuf));
+						if (relLen > 0 && relBuf[relLen - 1] != '/' && relBuf[relLen - 1] != '\\')
+						{
+							if (relLen + 1 < 512) { relBuf[relLen] = '/'; relBuf[relLen + 1] = '\0'; }
+						}
 
 						Json::Value result;
 						result["success"]       = true;
