@@ -250,32 +250,44 @@ namespace Dia
 				{
 					DIA_TRACE_ZONE("scene_editor.get_properties", Dia::Observation::Trace::Category::kNone);
 					Json::Value result;
-					if (!data.isMember("path") || !data["path"].isString()
-					    || !data.isMember("selectionType") || !data.isMember("selectionId"))
+					if (!data.isMember("selectionType") || !data.isMember("selectionId"))
 					{
-						DIA_LOG_WARNING("Editor", "DiaSceneEditorPlugin: get_properties — missing required fields");
+						DIA_LOG_WARNING("Editor", "DiaSceneEditorPlugin: get_properties — missing selectionType or selectionId");
 						result["success"] = false;
-						result["error"]   = "missing path, selectionType, or selectionId";
+						result["error"]   = "missing selectionType or selectionId";
+						return result;
+					}
+					if (mLoadedSceneRoot.isNull())
+					{
+						result["success"] = false;
+						result["error"]   = "no scene loaded";
 						return result;
 					}
 
-					Json::Value sceneRoot;
-					char err[256] = {};
-					if (!mFileHandler.Load(data["path"].asCString(), sceneRoot, err, sizeof(err)))
+					// Derive blueprint base path from the directory containing the scene file
+					char blueprintBasePath[512] = {};
+					if (mLoadedScenePath[0] != '\0')
 					{
-						DIA_LOG_WARNING("Editor",
-							"DiaSceneEditorPlugin: get_properties — load failed for '%s': %s",
-							data["path"].asCString(), err);
-						result["success"] = false;
-						result["error"]   = err[0] ? err : "load failed";
-						return result;
+						strncpy(blueprintBasePath, mLoadedScenePath, sizeof(blueprintBasePath) - 1);
+						for (char* p = blueprintBasePath; *p; ++p)
+							if (*p == '\\') *p = '/';
+						char* lastSlash = nullptr;
+						for (char* p = blueprintBasePath; *p; ++p)
+							if (*p == '/') lastSlash = p;
+						if (lastSlash) *lastSlash = '\0';
 					}
+
+					mHierarchyController.SetSelection(
+						data["selectionType"].asCString(),
+						data["selectionId"].asCString());
 
 					result["success"]    = true;
 					result["properties"] = mPropertyController.BuildPropertyJson(
-						sceneRoot,
+						mLoadedSceneRoot,
 						data["selectionType"].asCString(),
-						data["selectionId"].asCString());
+						data["selectionId"].asCString(),
+						blueprintBasePath);
+					result["selection"]  = mHierarchyController.GetSelectionJson();
 					return result;
 				});
 
