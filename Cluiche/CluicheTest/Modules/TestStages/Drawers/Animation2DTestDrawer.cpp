@@ -1,14 +1,12 @@
 #ifdef DIA_DEBUG
 
 #include "Modules/TestStages/Drawers/Animation2DTestDrawer.h"
-#include <DiaGeometry2DVisualDebugger/ShapeDrawer.h>
-#include <DiaGeometry2D/Shapes/Circle.h>
-#include <DiaGeometry2D/Shapes/Line.h>
-#include <DiaGraphics/Misc/RGBA.h>
+#include <DiaRig2DVisualDebugger/BoneLinesDrawer.h>
+#include <DiaRig2DVisualDebugger/JointCirclesDrawer.h>
+#include <DiaRig2D/BoneTransform.h>
 #include <DiaGraphics/Frame/FrameData.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <imgui.h>
-#include <cmath>
 
 namespace CluicheTest {
 
@@ -42,52 +40,32 @@ Dia::Core::StringCRC Animation2DTestDrawer::GetLayerName() const
 
 void Animation2DTestDrawer::Draw(Dia::Graphics::FrameData& frameData)
 {
-    Dia::Core::Containers::DynamicArrayC<Dia::Rig2D::BoneTransform, Dia::Rig2D::kMaxBones> worldTransforms;
+    // Compute raw world transforms
+    Dia::Core::Containers::DynamicArrayC<Dia::Rig2D::BoneTransform, Dia::Rig2D::kMaxBones> rawTransforms;
     Dia::Rig2D::BoneTransform rootTransform;
-    mPose.ComputeWorldTransforms(mSkeleton, rootTransform, worldTransforms);
+    mPose.ComputeWorldTransforms(mSkeleton, rootTransform, rawTransforms);
 
-    Dia::Geometry2DVisualDebugger::ShapeDrawer drawer(mLayerManager);
-
-    static const Dia::Graphics::RGBA kBoneColour(120, 200, 255, 220);
-    static const Dia::Graphics::RGBA kJointColour(255, 220, 80, 255);
-    static const Dia::Graphics::RGBA kWingColour(80, 220, 120, 200);
-    static const Dia::Graphics::RGBA kRootColour(255, 100, 100, 255);
-
-    int boneCount = mSkeleton.GetBoneCount();
-    for (int i = 0; i < boneCount; ++i)
+    // Re-map into screen-space so engine drawers can draw without knowing the test layout
+    Dia::Core::Containers::DynamicArrayC<Dia::Rig2D::BoneTransform, Dia::Rig2D::kMaxBones> screenTransforms;
+    for (unsigned int i = 0; i < rawTransforms.Size(); ++i)
     {
-        const Dia::Rig2D::BoneTransform& wt = worldTransforms[i];
-        float sx = kOriginX + wt.position.X() * kDisplayScale;
-        float sy = kOriginY - wt.position.Y() * kDisplayScale;
-
-        // Bone line to parent
-        int parentIdx = mSkeleton.GetBone(i).parentIndex;
-        if (parentIdx >= 0)
-        {
-            const Dia::Rig2D::BoneTransform& pt = worldTransforms[parentIdx];
-            float px = kOriginX + pt.position.X() * kDisplayScale;
-            float py = kOriginY - pt.position.Y() * kDisplayScale;
-
-            // Wing bones in green, others in blue
-            Dia::Core::StringCRC boneName = mSkeleton.GetBone(i).name;
-            bool isWing = (boneName == Dia::Core::StringCRC("Wing_L") || boneName == Dia::Core::StringCRC("Wing_R"));
-            Dia::Geometry2D::Line line(Dia::Maths::Vector2D(px, py), Dia::Maths::Vector2D(sx, sy));
-            drawer.SubmitLine(line, isWing ? kWingColour : kBoneColour);
-        }
-
-        // Joint circle
-        bool isRoot = (i == 0);
-        float radius = isRoot ? 10.0f : 6.0f;
-        Dia::Geometry2D::Circle joint(radius, Dia::Maths::Vector2D(sx, sy));
-        drawer.SubmitCircle(joint, isRoot ? kRootColour : kJointColour);
+        Dia::Rig2D::BoneTransform st = rawTransforms[i];
+        st.position = Dia::Maths::Vector2D(
+            kOriginX + rawTransforms[i].position.X() * kDisplayScale,
+            kOriginY - rawTransforms[i].position.Y() * kDisplayScale);
+        screenTransforms.Add(st);
     }
 
-    drawer.Draw(frameData);
+    // Delegate bone lines and joint circles to engine drawers
+    Dia::Rig2D::BoneLinesDrawer    boneLines   (mSkeleton, screenTransforms, mLayerManager);
+    Dia::Rig2D::JointCirclesDrawer jointCircles(mSkeleton, screenTransforms, mLayerManager);
+
+    boneLines.Draw(frameData);
+    jointCircles.Draw(frameData);
 }
 
 void Animation2DTestDrawer::DrawImGui()
 {
-    // Playback state
     ImGui::Text("Clip:   %s", (mCurrentClipIndex >= 0 && mCurrentClipIndex < 3) ? kClipNames[mCurrentClipIndex] : "none");
     ImGui::Text("Played: %u / 3", mClipsPlayed);
     ImGui::Text("Frames: %u / 180", mTotalPlaybackFrames);

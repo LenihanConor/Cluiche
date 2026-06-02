@@ -7,6 +7,7 @@
 #include <DiaRig2D/Skeleton.h>
 #include <DiaRig2D/Pose.h>
 #include <DiaAnimation2D/AnimClipPlayer.h>
+#include <DiaMaths/Vector/Vector2D.h>
 
 namespace Dia::Debug { class DebugLayerManager; }
 

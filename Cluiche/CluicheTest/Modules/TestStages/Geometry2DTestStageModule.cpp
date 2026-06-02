@@ -119,7 +119,7 @@ void Geometry2DTestStageModule::OnUpdate(float /*deltaTime*/)
 
             mLabelsDrawer = std::make_unique<Geometry2DLabelsDrawer>(
                 mCircle, mAARect, mOORect, mLine, mRay, mTriangle,
-                mCapsule, mConvexPoly, mSector, mSpline);
+                mCapsule, mConvexPoly, mSector, mSpline, *mgr);
             mgr->Register(mLabelsDrawer.get(), 21, stageTag);
 
             mIntersectionsDrawer = std::make_unique<Geometry2DIntersectionsDrawer>(mIntersectionPairs, *mgr);

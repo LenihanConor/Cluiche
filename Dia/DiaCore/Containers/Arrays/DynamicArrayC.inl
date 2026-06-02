@@ -131,7 +131,8 @@ namespace Dia
 					x = Capacity();
 				}
 
-				MemoryCopy(mData, &rhs.At(0), sizeof(T)*x);
+				if (x > 0)
+					MemoryCopy(mData, &rhs.At(0), sizeof(T)*x);
 				mSize = x;
 
 				return *this;

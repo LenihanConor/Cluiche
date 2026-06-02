@@ -71,6 +71,8 @@ namespace Dia
             // Geometry
             // ----------------------------------------------------------------
             inline const Dia::Core::StringCRC kGeoShapes      { "geometry.shapes"       };
+            inline const Dia::Core::StringCRC kGeoAABB        { "geometry.aabb"          };
+            inline const Dia::Core::StringCRC kGeoLabels      { "geometry.labels"        };
             inline const Dia::Core::StringCRC kGeoSpatialGrid { "geometry.spatial_grid"  };
             inline const Dia::Core::StringCRC kGeoHexGrid     { "geometry.hexgrid"       };
             inline const Dia::Core::StringCRC kGeoQuadtree    { "geometry.quadtree"      };
@@ -88,6 +90,11 @@ namespace Dia
             inline const Dia::Core::StringCRC kAnimSpring       { "anim.spring"        };
             inline const Dia::Core::StringCRC kAnimClipCursor   { "anim.clip_cursor"   };
             inline const Dia::Core::StringCRC kAnimBlendWeights { "anim.blend_weights" };
+
+            // ----------------------------------------------------------------
+            // Scene2D
+            // ----------------------------------------------------------------
+            inline const Dia::Core::StringCRC kScene2DOverview { "scene2d.overview" };
 
             // ----------------------------------------------------------------
             // Coord2D

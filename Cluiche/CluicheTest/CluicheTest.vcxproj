@@ -173,6 +173,12 @@
     <ProjectReference Include="..\..\Dia\DiaScene2D\DiaScene2D.vcxproj">
       <Project>{D6E7F8A9-B0C1-2345-DEF0-123456789004}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaScene2DVisualDebugger\DiaScene2DVisualDebugger.vcxproj">
+      <Project>{A1B2C3D4-E5F6-7890-ABCD-EF1234567895}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaRig2DVisualDebugger\DiaRig2DVisualDebugger.vcxproj">
+      <Project>{F5A6B7C8-D9E0-1234-BCDE-56789ABCDEF1}</Project>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{CEC960D4-B8B3-463B-9F68-716C5C3C4315}</ProjectGuid>

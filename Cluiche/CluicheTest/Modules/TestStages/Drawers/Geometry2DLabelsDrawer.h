@@ -15,6 +15,8 @@
 #include <DiaGeometry2D/Shapes/Sector.h>
 #include <DiaGeometry2D/Shapes/Spline.h>
 
+namespace Dia::Debug { class DebugLayerManager; }
+
 namespace CluicheTest {
 
 class Geometry2DLabelsDrawer : public Dia::Debug::IVisualDebugger
@@ -30,7 +32,8 @@ public:
         const Dia::Geometry2D::Capsule&       capsule,
         const Dia::Geometry2D::ConvexPolygon& convexPoly,
         const Dia::Geometry2D::Sector&        sector,
-        const Dia::Geometry2D::Spline&        spline);
+        const Dia::Geometry2D::Spline&        spline,
+        const Dia::Debug::DebugLayerManager&  mgr);
 
     Dia::Core::StringCRC GetLayerName() const override;
     void Draw(Dia::Graphics::FrameData& frameData) override;
@@ -47,7 +50,7 @@ private:
     const Dia::Geometry2D::ConvexPolygon& mConvexPoly;
     const Dia::Geometry2D::Sector&        mSector;
     const Dia::Geometry2D::Spline&        mSpline;
-    float mFontScale = 1.0f;
+    const Dia::Debug::DebugLayerManager&  mManager;
 };
 
 } // namespace CluicheTest

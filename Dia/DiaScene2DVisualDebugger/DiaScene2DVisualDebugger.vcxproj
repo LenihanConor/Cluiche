@@ -19,8 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{D4E5F6A7-B8C9-0123-DEF0-234567890123}</ProjectGuid>
-    <RootNamespace>DiaGeometry2DVisualDebugger</RootNamespace>
+    <ProjectGuid>{A1B2C3D4-E5F6-7890-ABCD-EF1234567895}</ProjectGuid>
+    <RootNamespace>DiaScene2DVisualDebugger</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -74,31 +74,13 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="ShapeDrawer.h" />
-    <ClInclude Include="AABBOverlayDrawer.h" />
-    <ClInclude Include="ShapeLabelsDrawer.h" />
-    <ClInclude Include="SpatialGridDrawer.h" />
-    <ClInclude Include="QuadtreeDrawer.h" />
-    <ClInclude Include="BVHDrawer.h" />
-    <ClInclude Include="HexGridDrawer.h" />
-    <ClInclude Include="SectorDrawHelper.h" />
-    <ClInclude Include="OORectDrawHelper.h" />
-    <ClInclude Include="CapsuleDrawHelper.h" />
-    <ClInclude Include="Renderers\SpatialGridRenderer.h" />
-    <ClInclude Include="Renderers\QuadtreeRenderer.h" />
-    <ClInclude Include="Renderers\BVHRenderer.h" />
-    <ClInclude Include="Renderers\HexGridRenderer.h" />
+    <ClInclude Include="SceneOverviewDrawer.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ShapeDrawer.cpp" />
-    <ClCompile Include="AABBOverlayDrawer.cpp" />
-    <ClCompile Include="ShapeLabelsDrawer.cpp" />
-    <ClCompile Include="SectorDrawHelper.cpp" />
-    <ClCompile Include="OORectDrawHelper.cpp" />
-    <ClCompile Include="CapsuleDrawHelper.cpp" />
+    <ClCompile Include="SceneOverviewDrawer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Docs\dia.geometry2dvisualdebugger.architecture.module.md" />
+    <None Include="Docs\dia.scene2dvisualdebugger.architecture.module.md" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
@@ -109,10 +91,6 @@
       <Project>{2BBA0AD3-D449-4C0E-8C84-ACFA8BCA456B}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="..\DiaGeometry2D\DiaGeometry2D.vcxproj">
-      <Project>{A3C4D5E6-F7B8-9012-CDEF-012345678901}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
     <ProjectReference Include="..\DiaGraphics\DiaGraphics.vcxproj">
       <Project>{1CF9F92B-666E-4B39-9DDE-B1CFBEF68618}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
@@ -121,8 +99,24 @@
       <Project>{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
+    <ProjectReference Include="..\DiaGeometry2DVisualDebugger\DiaGeometry2DVisualDebugger.vcxproj">
+      <Project>{D4E5F6A7-B8C9-0123-DEF0-234567890123}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaCamera2D\DiaCamera2D.vcxproj">
+      <Project>{B2C3D4E5-F6A7-8901-BCDE-F12345678902}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaLighting2D\DiaLighting2D.vcxproj">
+      <Project>{C5D6E7F8-A9B0-1234-CDEF-012345678903}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaScene2D\DiaScene2D.vcxproj">
+      <Project>{D6E7F8A9-B0C1-2345-DEF0-123456789004}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets">
+  <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
 </Project>

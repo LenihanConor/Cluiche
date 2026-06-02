@@ -2,14 +2,13 @@
 
 #include "Modules/TestStages/Drawers/Geometry2DLabelsDrawer.h"
 
-#include <imgui.h>
+#include <DiaGeometry2DVisualDebugger/ShapeLabelsDrawer.h>
+#include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaGraphics/Frame/FrameData.h>
-#include <DiaGraphics/Misc/RGBA.h>
+#include <DiaGeometry2D/Shapes/Spline.h>
 
 namespace CluicheTest {
 
-static const Dia::Graphics::RGBA kLabelColour(90, 122, 170, 255);
-static constexpr float kLabelFontSize = 12.0f;
 static constexpr float kLabelOffsetY = 55.0f;
 
 Geometry2DLabelsDrawer::Geometry2DLabelsDrawer(
@@ -22,12 +21,14 @@ Geometry2DLabelsDrawer::Geometry2DLabelsDrawer(
     const Dia::Geometry2D::Capsule&       capsule,
     const Dia::Geometry2D::ConvexPolygon& convexPoly,
     const Dia::Geometry2D::Sector&        sector,
-    const Dia::Geometry2D::Spline&        spline)
+    const Dia::Geometry2D::Spline&        spline,
+    const Dia::Debug::DebugLayerManager&  mgr)
     : mCircle(circle), mAARect(aaRect), mOORect(ooRect)
     , mLine(line), mRay(ray), mTriangle(triangle)
     , mCapsule(capsule), mConvexPoly(convexPoly)
     , mSector(sector)
     , mSpline(spline)
+    , mManager(mgr)
 {}
 
 Dia::Core::StringCRC Geometry2DLabelsDrawer::GetLayerName() const
@@ -37,73 +38,41 @@ Dia::Core::StringCRC Geometry2DLabelsDrawer::GetLayerName() const
 
 void Geometry2DLabelsDrawer::Draw(Dia::Graphics::FrameData& frameData)
 {
-    const float fs = kLabelFontSize * mFontScale;
-
-    // Row 1 labels — positioned below each shape
-    frameData.RequestDrawText(
-        Dia::Maths::Vector2D(mCircle.GetCenter().x, mCircle.GetCenter().y + kLabelOffsetY),
-        "circle", fs, kLabelColour);
+    Dia::Geometry2DVisualDebugger::ShapeLabelsDrawer drawer(mManager);
 
     const auto aaCentre = (mAARect.GetBottomLeft() + mAARect.GetTopRight()) * 0.5f;
-    frameData.RequestDrawText(
-        Dia::Maths::Vector2D(aaCentre.x, aaCentre.y + kLabelOffsetY),
-        "aa_rect", fs, kLabelColour);
-
     const auto ooCentre = (mOORect.GetPt(0) + mOORect.GetPt(1) + mOORect.GetPt(2) + mOORect.GetPt(3)) * 0.25f;
-    frameData.RequestDrawText(
-        Dia::Maths::Vector2D(ooCentre.x, ooCentre.y + kLabelOffsetY),
-        "oo_rect*", fs, kLabelColour);
-
     const auto lineCentre = (mLine.GetPt1() + mLine.GetPt2()) * 0.5f;
-    frameData.RequestDrawText(
-        Dia::Maths::Vector2D(lineCentre.x, lineCentre.y + kLabelOffsetY),
-        "line", fs, kLabelColour);
-
-    frameData.RequestDrawText(
-        Dia::Maths::Vector2D(mRay.GetOrigin().x, mRay.GetOrigin().y + kLabelOffsetY),
-        "ray", fs, kLabelColour);
-
-    // Row 2 labels
     const auto triCentre = (mTriangle.GetPt(Dia::Geometry2D::Triangle::kPt0)
         + mTriangle.GetPt(Dia::Geometry2D::Triangle::kPt1)
         + mTriangle.GetPt(Dia::Geometry2D::Triangle::kPt2)) * (1.0f / 3.0f);
-    frameData.RequestDrawText(
-        Dia::Maths::Vector2D(triCentre.x, triCentre.y + kLabelOffsetY),
-        "triangle", fs, kLabelColour);
 
-    frameData.RequestDrawText(
-        Dia::Maths::Vector2D(mCapsule.GetCenter().x, mCapsule.GetCenter().y + kLabelOffsetY),
-        "capsule*", fs, kLabelColour);
+    Dia::Maths::Vector2D polyCentre(0.0f, 0.0f);
+    for (int i = 0; i < mConvexPoly.GetVertexCount(); ++i)
+        polyCentre = polyCentre + mConvexPoly.GetVertex(i);
+    polyCentre = polyCentre * (1.0f / static_cast<float>(mConvexPoly.GetVertexCount()));
 
-    {
-        Dia::Maths::Vector2D polyCentre(0.0f, 0.0f);
-        for (int i = 0; i < mConvexPoly.GetVertexCount(); ++i)
-            polyCentre = polyCentre + mConvexPoly.GetVertex(i);
-        polyCentre = polyCentre * (1.0f / static_cast<float>(mConvexPoly.GetVertexCount()));
-        frameData.RequestDrawText(
-            Dia::Maths::Vector2D(polyCentre.x, polyCentre.y + kLabelOffsetY),
-            "convex_poly", fs, kLabelColour);
-    }
-
-    frameData.RequestDrawText(
-        Dia::Maths::Vector2D(mSector.GetCenter().x, mSector.GetCenter().y + kLabelOffsetY),
-        "sector*", fs, kLabelColour);
-
-    // Row 3: Spline — label at midpoint of the curve
     const Dia::Maths::Vector2D splineMid = mSpline.Evaluate(0.5f);
-    frameData.RequestDrawText(
-        Dia::Maths::Vector2D(splineMid.x, splineMid.y + kLabelOffsetY),
-        "spline", fs, kLabelColour);
+
+    drawer.SubmitLabel({ mCircle.GetCenter().x,   mCircle.GetCenter().y   + kLabelOffsetY }, "circle");
+    drawer.SubmitLabel({ aaCentre.x,              aaCentre.y              + kLabelOffsetY }, "aa_rect");
+    drawer.SubmitLabel({ ooCentre.x,              ooCentre.y              + kLabelOffsetY }, "oo_rect*");
+    drawer.SubmitLabel({ lineCentre.x,            lineCentre.y            + kLabelOffsetY }, "line");
+    drawer.SubmitLabel({ mRay.GetOrigin().x,      mRay.GetOrigin().y      + kLabelOffsetY }, "ray");
+    drawer.SubmitLabel({ triCentre.x,             triCentre.y             + kLabelOffsetY }, "triangle");
+    drawer.SubmitLabel({ mCapsule.GetCenter().x,  mCapsule.GetCenter().y  + kLabelOffsetY }, "capsule*");
+    drawer.SubmitLabel({ polyCentre.x,            polyCentre.y            + kLabelOffsetY }, "convex_poly");
+    drawer.SubmitLabel({ mSector.GetCenter().x,   mSector.GetCenter().y   + kLabelOffsetY }, "sector*");
+    drawer.SubmitLabel({ splineMid.x,             splineMid.y             + kLabelOffsetY }, "spline");
+
+    drawer.Draw(frameData);
 }
 
 void Geometry2DLabelsDrawer::DrawImGui()
 {
-    ImGui::SliderFloat("Font scale", &mFontScale, 0.5f, 2.0f);
+    // Font scale now lives in the engine ShapeLabelsDrawer's own ImGui panel
 }
 
 } // namespace CluicheTest
 
 #endif // DIA_DEBUG
-
-
-
