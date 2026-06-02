@@ -44,8 +44,9 @@ namespace Dia
 		{
 			DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: OnLoad");
 
-			mBridge       = context.mBridge;
-			mPluginLoader = context.mPluginLoader;
+			mBridge             = context.mBridge;
+			mPluginLoader       = context.mPluginLoader;
+			mLoadedScenePath[0] = '\0';
 
 			RegisterRequestHandlers();
 
@@ -66,6 +67,8 @@ namespace Dia
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.get_stage_list"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.load_stage_scene"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.get_hierarchy"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.get_hierarchy_filtered"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.set_selection"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.get_properties"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.load_scene"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.save_scene"));
@@ -155,10 +158,58 @@ namespace Dia
 					}
 
 					DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: loaded stage scene '%s'", scenePath.c_str());
+					// Cache for filter/selection handlers
+					mLoadedSceneRoot = sceneRoot;
+					strncpy(mLoadedScenePath, scenePath.c_str(), sizeof(mLoadedScenePath) - 1);
+					mLoadedScenePath[sizeof(mLoadedScenePath) - 1] = '\0';
+					mHierarchyController.ClearSelection();
+
 					result["success"]   = true;
 					result["stage"]     = matchedStage;
 					result["scene"]     = sceneRoot;
 					result["hierarchy"] = mHierarchyController.BuildHierarchyJson(sceneRoot);
+					return result;
+				});
+
+			// T5: filter the in-memory hierarchy without reloading from disk
+			mBridge->RegisterRequestHandler(
+				Dia::Core::StringCRC("scene_editor.get_hierarchy_filtered"),
+				[this](const Json::Value& data) -> Json::Value
+				{
+					DIA_TRACE_ZONE("scene_editor.get_hierarchy_filtered", Dia::Observation::Trace::Category::kNone);
+					Json::Value result;
+					if (mLoadedSceneRoot.isNull())
+					{
+						result["success"] = false;
+						result["error"]   = "no scene loaded";
+						return result;
+					}
+					const char* filter = data.isMember("filter") && data["filter"].isString()
+						? data["filter"].asCString() : nullptr;
+					result["success"]   = true;
+					result["hierarchy"] = mHierarchyController.BuildFilteredHierarchyJson(mLoadedSceneRoot, filter);
+					return result;
+				});
+
+			// T5: set selection state; returns updated properties for the selected item
+			mBridge->RegisterRequestHandler(
+				Dia::Core::StringCRC("scene_editor.set_selection"),
+				[this](const Json::Value& data) -> Json::Value
+				{
+					DIA_TRACE_ZONE("scene_editor.set_selection", Dia::Observation::Trace::Category::kNone);
+					Json::Value result;
+					if (!data.isMember("type") || !data.isMember("id"))
+					{
+						mHierarchyController.ClearSelection();
+						result["success"]   = true;
+						result["selection"] = mHierarchyController.GetSelectionJson();
+						return result;
+					}
+					mHierarchyController.SetSelection(
+						data["type"].asCString(),
+						data["id"].asCString());
+					result["success"]   = true;
+					result["selection"] = mHierarchyController.GetSelectionJson();
 					return result;
 				});
 
@@ -256,6 +307,11 @@ namespace Dia
 
 					DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: loaded scene '%s'",
 						data["path"].asCString());
+					mLoadedSceneRoot = sceneRoot;
+					strncpy(mLoadedScenePath, data["path"].asCString(), sizeof(mLoadedScenePath) - 1);
+					mLoadedScenePath[sizeof(mLoadedScenePath) - 1] = '\0';
+					mHierarchyController.ClearSelection();
+
 					result["success"]   = true;
 					result["scene"]     = sceneRoot;
 					result["hierarchy"] = mHierarchyController.BuildHierarchyJson(sceneRoot);

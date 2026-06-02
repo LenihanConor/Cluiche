@@ -42,7 +42,9 @@ namespace Dia
 			PropertyInspectorController mPropertyController;
 			ProjectContextManager       mProjectContextManager;
 
-			Json::Value                 mStageList;   // cached array from last project load
+			Json::Value                 mStageList;             // cached from last project load
+			Json::Value                 mLoadedSceneRoot;       // last successfully loaded .diascene
+			char                        mLoadedScenePath[512];  // path for the loaded scene
 
 			Dia::Editor::WebUIBridge*   mBridge       = nullptr;
 			Dia::Editor::IPluginLoader* mPluginLoader = nullptr;
