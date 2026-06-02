@@ -582,6 +582,9 @@
     <ClCompile Include="DiaBlueprintEditor\TestBlueprintMutator.cpp">
       <Filter>DiaBlueprintEditor</Filter>
     </ClCompile>
+    <ClCompile Include="DiaBlueprintEditor\IntegrationTestBlueprintEditorPlugin.cpp">
+      <Filter>DiaBlueprintEditor</Filter>
+    </ClCompile>
     <!-- DiaApplicationEditor V2 Tests -->
     <ClCompile Include="DiaApplicationEditor\TestManifestEditorState.cpp">
       <Filter>DiaApplicationEditor</Filter>

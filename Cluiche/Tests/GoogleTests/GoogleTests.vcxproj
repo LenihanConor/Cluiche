@@ -281,6 +281,7 @@
     <ClCompile Include="DiaBlueprintEditor\TestBlueprintListController.cpp" />
     <ClCompile Include="DiaBlueprintEditor\TestBlueprintPropertyController.cpp" />
     <ClCompile Include="DiaBlueprintEditor\TestBlueprintMutator.cpp" />
+    <ClCompile Include="DiaBlueprintEditor\IntegrationTestBlueprintEditorPlugin.cpp" />
     <!-- DiaApplicationEditor V2 Tests -->
     <ClCompile Include="DiaApplicationEditor\TestManifestEditorState.cpp" />
     <ClCompile Include="DiaApplicationEditor\TestCommandHistory.cpp" />
