@@ -1,14 +1,631 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Blueprint Editor</title>
   <style>
-    body { margin: 0; background: #1a0a2e; color: #d0c0f0; font-family: monospace; font-size: 13px; }
-    #placeholder { padding: 24px; opacity: 0.5; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Toolbar ─────────────────────────────────────── */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      background: #2d2d2d;
+      border-bottom: 1px solid #3c3c3c;
+      flex-shrink: 0;
+    }
+    .toolbar button {
+      background: #3c3c3c; color: #d4d4d4;
+      border: 1px solid #555; padding: 3px 10px;
+      font-size: 12px; cursor: pointer; border-radius: 3px;
+    }
+    .toolbar button:hover { background: #4c4c4c; }
+    .toolbar button:disabled { opacity: 0.4; cursor: default; }
+    .toolbar .separator { width: 1px; height: 16px; background: #555; margin: 0 4px; }
+    .toolbar .blueprint-path {
+      flex: 1; font-size: 11px; color: #9cdcfe;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .toolbar .dirty-indicator { color: #f48771; font-size: 14px; font-weight: bold; visibility: hidden; }
+    .toolbar .dirty-indicator.dirty { visibility: visible; }
+    .toolbar .status { font-size: 11px; color: #9d9d9d; }
+
+    /* ── Layout ──────────────────────────────────────── */
+    .layout { display: flex; flex: 1; overflow: hidden; }
+
+    .panel {
+      display: flex; flex-direction: column;
+      border-right: 1px solid #3c3c3c; overflow: hidden;
+    }
+    .panel-title {
+      padding: 5px 10px; font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      color: #9cdcfe; background: #252526;
+      border-bottom: 1px solid #3c3c3c; flex-shrink: 0;
+    }
+    .panel-body { flex: 1; overflow: auto; padding: 8px; }
+
+    #panel-list   { width: 240px; min-width: 180px; }
+    #panel-center { flex: 1; border-right: none; }
+    #panel-right  { width: 280px; min-width: 200px; border-right: none; }
+
+    /* ── Blueprint list ──────────────────────────────── */
+    .group-header {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase; color: #9d9d9d;
+      padding: 6px 4px 3px; margin-top: 6px;
+    }
+    .blueprint-item {
+      padding: 4px 8px; font-size: 12px; cursor: pointer;
+      border-radius: 3px; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
+    }
+    .blueprint-item:hover { background: #2a2d2e; }
+    .blueprint-item.selected { background: #094771; color: #fff; }
+    .list-empty { font-size: 11px; color: #555; padding: 8px 4px; }
+
+    /* ── Component accordion ─────────────────────────── */
+    .blueprint-id {
+      font-size: 13px; color: #9cdcfe; font-weight: 600;
+      padding: 8px 4px; border-bottom: 1px solid #3c3c3c; margin-bottom: 8px;
+    }
+    .accordion {
+      border: 1px solid #3c3c3c; border-radius: 3px; margin-bottom: 6px; overflow: hidden;
+    }
+    .accordion-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 6px 10px; background: #252526; cursor: pointer;
+      font-size: 12px; font-weight: 600; user-select: none;
+    }
+    .accordion-header:hover { background: #2a2d2e; }
+    .accordion-header .chevron { font-size: 10px; color: #9d9d9d; transition: transform 0.15s; }
+    .accordion-header.open .chevron { transform: rotate(90deg); }
+    .accordion-body { display: none; padding: 8px 10px; background: #1e1e1e; }
+    .accordion-body.open { display: block; }
+
+    /* ── Field rows ──────────────────────────────────── */
+    .field-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 3px 0; font-size: 11px;
+    }
+    .field-name { color: #9d9d9d; min-width: 100px; flex-shrink: 0; }
+    .field-value { flex: 1; }
+    .field-value input[type="text"],
+    .field-value input[type="number"] {
+      width: 100%; background: #3c3c3c; color: #d4d4d4;
+      border: 1px solid #555; padding: 2px 6px;
+      font-size: 11px; font-family: 'Segoe UI', sans-serif;
+      border-radius: 2px; outline: none;
+    }
+    .field-value input:focus { border-color: #007acc; }
+    .field-value input[type="checkbox"] { cursor: pointer; }
+    .field-required { color: #f48771; font-size: 10px; margin-left: 2px; }
+
+    /* ── Component actions ───────────────────────────── */
+    .comp-actions {
+      display: flex; gap: 6px; margin-top: 8px; justify-content: flex-end;
+    }
+    .comp-actions button {
+      background: #3c3c3c; color: #d4d4d4;
+      border: 1px solid #555; padding: 2px 8px;
+      font-size: 11px; cursor: pointer; border-radius: 2px;
+    }
+    .comp-actions button:hover { background: #4c4c4c; }
+    .comp-actions .btn-remove { color: #f48771; border-color: #6b2e2e; }
+    .comp-actions .btn-remove:hover { background: #4b2020; }
+
+    .add-component-bar {
+      display: flex; gap: 6px; margin-top: 10px; padding-top: 8px;
+      border-top: 1px solid #3c3c3c;
+    }
+    .add-component-bar select {
+      flex: 1; background: #3c3c3c; color: #d4d4d4;
+      border: 1px solid #555; padding: 3px 6px;
+      font-size: 11px; font-family: 'Segoe UI', sans-serif;
+      border-radius: 2px; outline: none;
+    }
+    .add-component-bar button {
+      background: #0078d4; color: #fff;
+      border: none; padding: 3px 10px;
+      font-size: 11px; cursor: pointer; border-radius: 2px;
+    }
+    .add-component-bar button:hover { background: #106ebe; }
+
+    .center-empty {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      color: #555; font-size: 13px;
+    }
+
+    /* ── Usage panel ─────────────────────────────────── */
+    .usage-item {
+      display: flex; justify-content: space-between;
+      padding: 4px 0; font-size: 11px;
+      border-bottom: 1px solid #2d2d2d;
+    }
+    .usage-scene { color: #9cdcfe; }
+    .usage-count { color: #9d9d9d; }
+    .usage-empty { font-size: 11px; color: #555; padding: 4px 0; }
+
+    /* ── Confirmation modal ──────────────────────────── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6); z-index: 100;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #2d2d2d; border: 1px solid #555;
+      border-radius: 4px; padding: 16px; min-width: 300px; max-width: 420px;
+    }
+    .modal h3 { font-size: 13px; color: #d4d4d4; margin-bottom: 10px; }
+    .modal p { font-size: 12px; color: #9d9d9d; margin-bottom: 14px; }
+    .modal-footer { display: flex; gap: 8px; justify-content: flex-end; }
+    .modal-footer button {
+      background: #3c3c3c; color: #d4d4d4;
+      border: 1px solid #555; padding: 4px 12px;
+      font-size: 12px; cursor: pointer; border-radius: 2px;
+    }
+    .modal-footer button:hover { background: #4c4c4c; }
+    .modal-footer .btn-danger { background: #6b2020; border-color: #a02020; color: #f48771; }
+    .modal-footer .btn-danger:hover { background: #8b2020; }
+
+    /* ── Status bar ──────────────────────────────────── */
+    .statusbar {
+      padding: 2px 10px; font-size: 10px; color: #9d9d9d;
+      background: #007acc; flex-shrink: 0;
+    }
   </style>
 </head>
 <body>
-  <div id="placeholder">DiaBlueprintEditor UI — placeholder (T10)</div>
+
+<!-- Toolbar -->
+<div class="toolbar">
+  <button id="btn-save" onclick="onSave()" disabled>Save</button>
+  <span class="dirty-indicator" id="dirty-indicator">●</span>
+  <span class="separator"></span>
+  <span class="blueprint-path" id="blueprint-path">No blueprint selected</span>
+  <span class="status" id="status-msg"></span>
+</div>
+
+<!-- Layout -->
+<div class="layout">
+
+  <!-- Left: blueprint list -->
+  <div class="panel" id="panel-list">
+    <div class="panel-title">Blueprints</div>
+    <div class="panel-body" id="list-body">
+      <div class="list-empty">No blueprints registered.</div>
+    </div>
+  </div>
+
+  <!-- Center: component accordion + fields -->
+  <div class="panel" id="panel-center">
+    <div class="panel-title">Blueprint Properties</div>
+    <div class="panel-body" id="center-body">
+      <div class="center-empty" id="center-empty">Select a blueprint to edit</div>
+      <div id="blueprint-editor" style="display:none">
+        <div class="blueprint-id" id="blueprint-id-label"></div>
+        <div id="components-container"></div>
+        <div class="add-component-bar">
+          <select id="add-component-select"><option value="">— Add component —</option></select>
+          <button onclick="onAddComponent()">Add</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: usage panel -->
+  <div class="panel" id="panel-right">
+    <div class="panel-title">Scene Usage</div>
+    <div class="panel-body" id="usage-body">
+      <div class="usage-empty" id="usage-empty">Select a blueprint to see usage</div>
+      <div id="usage-list"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Status bar -->
+<div class="statusbar" id="statusbar">DiaBlueprintEditor</div>
+
+<!-- Remove component confirmation -->
+<div class="modal-overlay" id="modal-remove">
+  <div class="modal">
+    <h3>Remove Component</h3>
+    <p id="modal-remove-msg">Remove this component from the blueprint?</p>
+    <div class="modal-footer">
+      <button onclick="closeModal('modal-remove')">Cancel</button>
+      <button class="btn-danger" onclick="confirmRemoveComponent()">Remove</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ── State ──────────────────────────────────────────── */
+  var currentPath     = null;
+  var currentAssetId  = null;
+  var currentRoot     = null;   // loaded JSON root from C++
+  var currentTopKey   = null;
+  var isDirty         = false;
+  var pendingRemove   = null;   // component type string pending removal
+
+  /* ── Bridge ─────────────────────────────────────────── */
+  var _reqId = 1;
+  var _pending = {};
+
+  function diaRequest(command, params) {
+    return new Promise(function(resolve) {
+      var id = 'bp' + (_reqId++);
+      _pending[id] = resolve;
+      window.parent.postMessage({
+        __diaFromFrame: true,
+        payload: { type: command, reqId: id, data: params || {} }
+      }, '*');
+    });
+  }
+
+  function diaLog(msg) {
+    window.parent.postMessage({
+      __diaFromFrame: true,
+      payload: { type: 'editor.ui_log', data: { source: 'blueprinteditor', msg: msg } }
+    }, '*');
+  }
+
+  window.addEventListener('message', function(ev) {
+    var d = ev.data;
+    if (d && d.__diaResponse && d.reqId && _pending[d.reqId]) {
+      _pending[d.reqId](d.result || {});
+      delete _pending[d.reqId];
+    }
+    if (d && d.__dia && d.topic) {
+      if (window.DiaEditor_onDataChanged)
+        window.DiaEditor_onDataChanged({ topic: d.topic, data: d.data });
+    }
+  });
+
+  /* ── C++ push events ─────────────────────────────────── */
+  window.DiaEditor_onDataChanged = function(msg) {
+    if (msg.topic === 'blueprint_editor.project_changed') {
+      loadBlueprintList();
+    }
+  };
+
+  /* ── Init ───────────────────────────────────────────── */
+  function init() {
+    loadBlueprintList();
+    setStatus('Ready');
+  }
+
+  // Retry a few times to let OnLoad complete
+  var _initAttempts = 0;
+  function tryInit() {
+    diaRequest('blueprint_editor.get_list', {}).then(function(r) {
+      if (r && r.success !== undefined) {
+        init();
+      } else if (_initAttempts++ < 8) {
+        setTimeout(tryInit, 300);
+      }
+    });
+  }
+  setTimeout(tryInit, 200);
+
+  /* ── Blueprint list ──────────────────────────────────── */
+  function loadBlueprintList() {
+    diaRequest('blueprint_editor.get_list', {}).then(function(r) {
+      renderBlueprintList(r.groups || []);
+    });
+  }
+
+  function renderBlueprintList(groups) {
+    var body = document.getElementById('list-body');
+    body.innerHTML = '';
+
+    var total = 0;
+    groups.forEach(function(g) { total += (g.items || []).length; });
+
+    if (total === 0) {
+      body.innerHTML = '<div class="list-empty">No blueprints registered.<br><br>Open the asset catalogue and register blueprint assets to see them here.</div>';
+      return;
+    }
+
+    groups.forEach(function(g) {
+      var header = document.createElement('div');
+      header.className = 'group-header';
+      header.textContent = g.label;
+      body.appendChild(header);
+
+      (g.items || []).forEach(function(item) {
+        var el = document.createElement('div');
+        el.className = 'blueprint-item';
+        el.dataset.id   = item.id;
+        el.dataset.path = item.path;
+        el.title = item.path;
+        el.textContent = item.label;
+        el.onclick = function() { selectBlueprint(item.id, item.path); };
+        body.appendChild(el);
+      });
+    });
+  }
+
+  /* ── Select and load blueprint ───────────────────────── */
+  function selectBlueprint(assetId, path) {
+    // Update list highlight
+    document.querySelectorAll('.blueprint-item').forEach(function(el) {
+      el.classList.toggle('selected', el.dataset.id === assetId);
+    });
+
+    currentAssetId = assetId;
+    currentPath    = path;
+
+    document.getElementById('blueprint-path').textContent = path;
+    setDirty(false);
+
+    diaRequest('blueprint_editor.load', { path: path }).then(function(r) {
+      if (!r.success) {
+        setStatus('Error: ' + (r.error || 'load failed'), true);
+        return;
+      }
+      renderProperties(r.properties);
+      loadUsage(assetId);
+      loadAvailableComponents(path);
+      setStatus('Loaded: ' + assetId);
+    });
+  }
+
+  /* ── Render component accordion ──────────────────────── */
+  function renderProperties(props) {
+    document.getElementById('center-empty').style.display = 'none';
+    document.getElementById('blueprint-editor').style.display = '';
+
+    document.getElementById('blueprint-id-label').textContent = '⬡ ' + (props.id || '');
+
+    var container = document.getElementById('components-container');
+    container.innerHTML = '';
+
+    (props.components || []).forEach(function(comp) {
+      container.appendChild(buildAccordion(comp));
+    });
+  }
+
+  function buildAccordion(comp) {
+    var wrap = document.createElement('div');
+    wrap.className = 'accordion';
+    wrap.dataset.compType = comp.type;
+
+    var header = document.createElement('div');
+    header.className = 'accordion-header open';
+    header.innerHTML = '<span>' + esc(comp.type) + '</span><span class="chevron">▶</span>';
+    header.onclick = function() {
+      header.classList.toggle('open');
+      body.classList.toggle('open');
+    };
+
+    var body = document.createElement('div');
+    body.className = 'accordion-body open';
+
+    (comp.fields || []).forEach(function(field) {
+      body.appendChild(buildFieldRow(comp.type, field));
+    });
+
+    // Remove button
+    var actions = document.createElement('div');
+    actions.className = 'comp-actions';
+    var removeBtn = document.createElement('button');
+    removeBtn.className = 'btn-remove';
+    removeBtn.textContent = 'Remove';
+    removeBtn.onclick = function() { promptRemoveComponent(comp.type); };
+    actions.appendChild(removeBtn);
+    body.appendChild(actions);
+
+    wrap.appendChild(header);
+    wrap.appendChild(body);
+    return wrap;
+  }
+
+  function buildFieldRow(compType, field) {
+    var row = document.createElement('div');
+    row.className = 'field-row';
+
+    var nameEl = document.createElement('div');
+    nameEl.className = 'field-name';
+    nameEl.textContent = field.name;
+    if (field.required) {
+      var req = document.createElement('span');
+      req.className = 'field-required';
+      req.textContent = '*';
+      nameEl.appendChild(req);
+    }
+
+    var valueEl = document.createElement('div');
+    valueEl.className = 'field-value';
+    valueEl.appendChild(buildFieldInput(compType, field));
+
+    row.appendChild(nameEl);
+    row.appendChild(valueEl);
+    return row;
+  }
+
+  function buildFieldInput(compType, field) {
+    var val = field.value;
+
+    if (field.kind === 'primitive' && typeof val === 'boolean') {
+      var cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = !!val;
+      cb.onchange = function() { onFieldChanged(compType, field.name, cb.checked); };
+      return cb;
+    }
+
+    if (Array.isArray(val)) {
+      var inp = document.createElement('input');
+      inp.type = 'text';
+      inp.value = JSON.stringify(val);
+      inp.onchange = function() {
+        try { onFieldChanged(compType, field.name, JSON.parse(inp.value)); }
+        catch(e) { inp.style.borderColor = '#f48771'; return; }
+        inp.style.borderColor = '';
+      };
+      return inp;
+    }
+
+    if (field.kind === 'primitive' && typeof val === 'number') {
+      var inp = document.createElement('input');
+      inp.type = 'number';
+      inp.value = val !== undefined ? val : 0;
+      inp.step = 'any';
+      inp.onchange = function() { onFieldChanged(compType, field.name, parseFloat(inp.value) || 0); };
+      return inp;
+    }
+
+    // Default: text
+    var inp = document.createElement('input');
+    inp.type = 'text';
+    inp.value = val !== undefined ? String(val) : '';
+    inp.onchange = function() { onFieldChanged(compType, field.name, inp.value); };
+    return inp;
+  }
+
+  /* ── Field change ─────────────────────────────────────── */
+  function onFieldChanged(compType, fieldName, value) {
+    if (!currentPath) return;
+    setDirty(true);
+    diaRequest('blueprint_editor.update_field', {
+      path: currentPath,
+      componentType: compType,
+      fieldName: fieldName,
+      value: value
+    }).then(function(r) {
+      if (!r.success) {
+        setStatus('Save error: ' + (r.error || 'unknown'), true);
+      } else {
+        setDirty(false);
+        setStatus('Saved');
+      }
+    });
+  }
+
+  /* ── Add component ────────────────────────────────────── */
+  function loadAvailableComponents(path) {
+    diaRequest('blueprint_editor.get_available_components', { path: path }).then(function(r) {
+      var sel = document.getElementById('add-component-select');
+      sel.innerHTML = '<option value="">— Add component —</option>';
+      if (r.success && r.components) {
+        r.components.forEach(function(c) {
+          var opt = document.createElement('option');
+          opt.value = c.typeId;
+          opt.textContent = c.label || c.typeId;
+          if (c.description) opt.title = c.description;
+          sel.appendChild(opt);
+        });
+      }
+    });
+  }
+
+  function onAddComponent() {
+    var sel = document.getElementById('add-component-select');
+    var type = sel.value;
+    if (!type || !currentPath) return;
+
+    diaRequest('blueprint_editor.add_component', { path: currentPath, componentType: type }).then(function(r) {
+      if (!r.success) {
+        setStatus('Add failed: ' + (r.error || 'unknown'), true);
+        return;
+      }
+      setStatus('Added ' + type);
+      selectBlueprint(currentAssetId, currentPath);
+    });
+  }
+
+  /* ── Remove component ─────────────────────────────────── */
+  function promptRemoveComponent(compType) {
+    pendingRemove = compType;
+    document.getElementById('modal-remove-msg').textContent =
+      'Remove "' + compType + '" from this blueprint? This will affect all scene instances that reference this blueprint.';
+    openModal('modal-remove');
+  }
+
+  function confirmRemoveComponent() {
+    if (!pendingRemove || !currentPath) { closeModal('modal-remove'); return; }
+    var type = pendingRemove;
+    closeModal('modal-remove');
+    diaRequest('blueprint_editor.remove_component', { path: currentPath, componentType: type }).then(function(r) {
+      if (!r.success) {
+        setStatus('Remove failed: ' + (r.error || 'unknown'), true);
+        return;
+      }
+      setStatus('Removed ' + type);
+      selectBlueprint(currentAssetId, currentPath);
+    });
+  }
+
+  /* ── Save ─────────────────────────────────────────────── */
+  function onSave() {
+    if (!currentPath || !isDirty) return;
+    // Note: update_field auto-saves on each change.
+    // This button is for future explicit save scenarios.
+    setDirty(false);
+    setStatus('Saved');
+  }
+
+  /* ── Usage ────────────────────────────────────────────── */
+  function loadUsage(assetId) {
+    var body = document.getElementById('usage-body');
+    document.getElementById('usage-list').innerHTML = '';
+    document.getElementById('usage-empty').style.display = 'none';
+
+    diaRequest('blueprint_editor.get_usage', { assetId: assetId }).then(function(r) {
+      var usages = (r.usage && r.usage.usages) ? r.usage.usages : [];
+      if (usages.length === 0) {
+        document.getElementById('usage-empty').textContent = 'No scene references found.';
+        document.getElementById('usage-empty').style.display = '';
+        return;
+      }
+      var list = document.getElementById('usage-list');
+      usages.forEach(function(u) {
+        var row = document.createElement('div');
+        row.className = 'usage-item';
+        row.innerHTML = '<span class="usage-scene">' + esc(u.sceneId || '') + '</span>' +
+                        '<span class="usage-count">' + u.instanceCount + ' instance' + (u.instanceCount !== 1 ? 's' : '') + '</span>';
+        list.appendChild(row);
+      });
+    });
+  }
+
+  /* ── Utility ──────────────────────────────────────────── */
+  function setDirty(dirty) {
+    isDirty = dirty;
+    document.getElementById('dirty-indicator').classList.toggle('dirty', dirty);
+    document.getElementById('btn-save').disabled = !dirty;
+  }
+
+  function setStatus(msg, isError) {
+    var el = document.getElementById('status-msg');
+    el.textContent = msg;
+    el.style.color = isError ? '#f48771' : '#4ec9a0';
+  }
+
+  function openModal(id) { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+  function esc(s) {
+    return String(s)
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;');
+  }
+</script>
 </body>
 </html>
