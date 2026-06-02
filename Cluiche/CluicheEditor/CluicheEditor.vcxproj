@@ -32,7 +32,6 @@
     <ClCompile Include="..\..\Dia\DiaAssetRuntimeEditor\DiaAssetRuntimeEditorPlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaApplicationEditor\DiaApplicationFlowEditorPlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaPipelineEditor\PipelineEditorPlugin.cpp" />
-    <ClCompile Include="..\..\Dia\DiaEditor\Plugin\StubEditorPlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaEditor\Plugin\HelloEditorPlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaEditor\Plugin\HomeEditorPlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaEditor\Plugin\OutputConsoleEditorPlugin.cpp" />

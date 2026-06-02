@@ -21,6 +21,9 @@ namespace Dia
 			DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: OnProjectChanged — IsValid=%d diagamePath='%s'",
 				ctx.IsValid() ? 1 : 0, ctx.diagamePath);
 
+			strncpy_s(self->mDiagamePath, sizeof(self->mDiagamePath),
+			          ctx.IsValid() ? ctx.diagamePath : "", _TRUNCATE);
+
 			if (ctx.IsValid())
 			{
 				self->mStageList = self->mProjectContextManager.BuildStageListJson(ctx.diagamePath);
@@ -35,6 +38,7 @@ namespace Dia
 			{
 				Json::Value payload(Json::objectValue);
 				payload["diagamePath"] = ctx.diagamePath;
+				payload["isValid"]     = ctx.IsValid();
 				payload["stages"]      = self->mStageList;
 				self->mBridge->NotifyUIDataChanged("scene_editor.project_changed", payload);
 			}
@@ -64,6 +68,7 @@ namespace Dia
 
 			if (mBridge)
 			{
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.get_project_state"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.get_stage_list"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.load_stage_scene"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.get_hierarchy"));
@@ -109,6 +114,16 @@ namespace Dia
 		{
 			if (!mBridge)
 				return;
+
+			mBridge->RegisterRequestHandler(
+				Dia::Core::StringCRC("scene_editor.get_project_state"),
+				[this](const Json::Value& /*data*/) -> Json::Value
+				{
+					Json::Value r;
+					r["isValid"]     = mDiagamePath[0] != '\0';
+					r["diagamePath"] = mDiagamePath;
+					return r;
+				});
 
 			// T2: return the cached stage list built from the loaded .diagame
 			mBridge->RegisterRequestHandler(

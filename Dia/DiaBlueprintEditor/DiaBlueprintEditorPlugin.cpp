@@ -24,8 +24,16 @@ namespace Dia
 			DIA_LOG_INFO("Editor", "DiaBlueprintEditorPlugin: OnProjectChanged — IsValid=%d diagamePath='%s'",
 				ctx.IsValid() ? 1 : 0, ctx.diagamePath);
 
+			strncpy_s(self->mDiagamePath, self->kDiagamePathLength,
+			          ctx.IsValid() ? ctx.diagamePath : "", _TRUNCATE);
+
 			if (self->mBridge)
-				self->mBridge->NotifyUIDataChanged("blueprint_editor.project_changed", Json::Value(ctx.diagamePath));
+			{
+				Json::Value payload;
+				payload["diagamePath"] = ctx.diagamePath;
+				payload["isValid"]     = ctx.IsValid();
+				self->mBridge->NotifyUIDataChanged("blueprint_editor.project_changed", payload);
+			}
 		}
 
 		void DiaBlueprintEditorPlugin::OnLoad(const Dia::Editor::EditorPluginContext& context)
@@ -54,6 +62,7 @@ namespace Dia
 
 			if (mBridge)
 			{
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("blueprint_editor.get_project_state"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("blueprint_editor.get_list"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("blueprint_editor.load"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("blueprint_editor.save"));
@@ -119,6 +128,16 @@ namespace Dia
 
 		void DiaBlueprintEditorPlugin::RegisterListHandlers()
 		{
+			mBridge->RegisterRequestHandler(
+				Dia::Core::StringCRC("blueprint_editor.get_project_state"),
+				[this](const Json::Value& /*data*/) -> Json::Value
+				{
+					Json::Value r;
+					r["isValid"]     = mDiagamePath[0] != '\0';
+					r["diagamePath"] = mDiagamePath;
+					return r;
+				});
+
 			mBridge->RegisterRequestHandler(
 				Dia::Core::StringCRC("blueprint_editor.get_list"),
 				[this](const Json::Value& /*data*/) -> Json::Value

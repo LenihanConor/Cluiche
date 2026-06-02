@@ -48,6 +48,7 @@ namespace Dia
 			Json::Value                 mStageList;             // cached from last project load
 			Json::Value                 mLoadedSceneRoot;       // last successfully loaded .diascene
 			char                        mLoadedScenePath[512];  // path for the loaded scene
+			char                        mDiagamePath[512] = {}; // last-known .diagame path
 			bool                        mIsDirty = false;       // unsaved edits exist
 
 			Dia::Editor::WebUIBridge*   mBridge       = nullptr;

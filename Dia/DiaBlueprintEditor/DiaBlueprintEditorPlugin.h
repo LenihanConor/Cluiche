@@ -46,6 +46,9 @@ namespace Dia
 
 			Dia::AssetCatalogue::AssetRegistry mRegistry;
 
+			static const unsigned int kDiagamePathLength = 512;
+			char mDiagamePath[kDiagamePathLength] = {};
+
 			Dia::Editor::WebUIBridge*   mBridge       = nullptr;
 			Dia::Editor::IPluginLoader* mPluginLoader = nullptr;
 		};

@@ -14,7 +14,22 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      position: relative;
     }
+
+    .no-project-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(30, 30, 30, 0.92);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 100;
+    }
+    .no-project-overlay .overlay-message { font-size: 14px; color: #f48771; }
+    .no-project-overlay .overlay-hint    { font-size: 11px; color: #888; }
 
     /* ── Toolbar ─────────────────────────────────────── */
     .toolbar {
@@ -242,6 +257,11 @@
   </style>
 </head>
 <body>
+
+<div class="no-project-overlay" id="no-project-overlay">
+  <div class="overlay-message">No project loaded</div>
+  <div class="overlay-hint">Open a .diagame project to use this panel</div>
+</div>
 
 <!-- ── Toolbar ───────────────────────────────────── -->
 <div class="toolbar">
@@ -581,10 +601,18 @@
     }
   });
 
+  /* ── Project overlay ─────────────────────────────── */
+  function updateProjectOverlay(isValid) {
+    var el = document.getElementById('no-project-overlay');
+    if (el) el.style.display = isValid ? 'none' : 'flex';
+  }
+
   /* ── C++ push ─────────────────────────────────────── */
   window.DiaEditor_onDataChanged = function(msg) {
     if (msg.topic !== 'console_entries') diaLog('[AssetCatalogue] DiaEditor_onDataChanged topic=' + msg.topic);
     if (msg.topic === 'assetcatalogue.status') {
+      // status fires when there is no project or no asset_catalogue configured
+      updateProjectOverlay(false);
       var emptyEl = document.getElementById('asset-empty');
       if (emptyEl) {
         emptyEl.textContent = msg.data || 'No catalogue loaded';
@@ -594,6 +622,7 @@
       setManifestPath('');
       setDirty(false);
     } else if (msg.topic === 'assetcatalogue.state') {
+      updateProjectOverlay(true);
       setManifestPath(msg.data.path);
       setDirty(msg.data.dirty);
     } else if (msg.topic === 'assetcatalogue.records') {
@@ -654,10 +683,12 @@
 
   function applyGetState(r) {
     if (r.status) {
+      updateProjectOverlay(false);
       var emptyEl = document.getElementById('asset-empty');
       if (emptyEl) { emptyEl.textContent = r.status; emptyEl.style.color = '#f48771'; emptyEl.style.display = ''; }
       return;
     }
+    updateProjectOverlay(!!(r.path && r.path.length > 0));
     setManifestPath(r.path);
     setDirty(r.dirty);
     if (Array.isArray(r.records) && r.records.length > 0) {

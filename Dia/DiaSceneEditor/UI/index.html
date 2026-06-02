@@ -5,7 +5,10 @@
 <title>DiaSceneEditor</title>
 <style>
 * { box-sizing:border-box; margin:0; padding:0; }
-body { background:#13131f; color:#c9c9e0; font-family:'Segoe UI',system-ui,sans-serif; font-size:12px; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+body { background:#13131f; color:#c9c9e0; font-family:'Segoe UI',system-ui,sans-serif; font-size:12px; height:100vh; display:flex; flex-direction:column; overflow:hidden; position:relative; }
+.no-project-overlay { position:absolute; top:0; left:0; right:0; bottom:0; background:rgba(30,30,30,0.92); display:flex; align-items:center; justify-content:center; flex-direction:column; gap:8px; z-index:100; }
+.no-project-overlay .overlay-message { font-size:14px; color:#f48771; }
+.no-project-overlay .overlay-hint    { font-size:11px; color:#888; }
 
 /* TITLE BAR */
 .titlebar { background:#1a1a2e; border-bottom:1px solid #3a3a5a; padding:5px 10px; display:flex; align-items:center; gap:8px; flex-shrink:0; user-select:none; }
@@ -205,6 +208,11 @@ body { background:#13131f; color:#c9c9e0; font-family:'Segoe UI',system-ui,sans-
 </style>
 </head>
 <body>
+
+<div class="no-project-overlay" id="no-project-overlay">
+  <div class="overlay-message">No project loaded</div>
+  <div class="overlay-hint">Open a .diagame project to use this panel</div>
+</div>
 
 <div class="titlebar">
   <div class="fdot"></div>
@@ -639,9 +647,23 @@ let state = {
 };
 
 // ============================================================
+// PROJECT OVERLAY
+// ============================================================
+function updateProjectOverlay(isValid) {
+  const el = document.getElementById('no-project-overlay');
+  if (el) el.style.display = isValid ? 'none' : 'flex';
+}
+
+// ============================================================
 // INIT
 // ============================================================
 async function init() {
+  // Check project state first — show overlay if no project loaded
+  const projState = await bridgeRequest('get_project_state');
+  if (projState && projState.isValid !== undefined) {
+    updateProjectOverlay(projState.isValid);
+  }
+
   const result = await bridgeRequest('get_stage_list');
   if (!result.success) return;
 
@@ -651,6 +673,8 @@ async function init() {
   // Subscribe to push events
   bridgeOn('dirty_changed', (dirty) => setDirty(dirty));
   bridgeOn('project_changed', (data) => {
+    const isValid = !!(data && data.isValid);
+    updateProjectOverlay(isValid);
     if (data && data.stages) {
       state.stages = data.stages;
       populateStageDropdown(state.stages);
