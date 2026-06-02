@@ -48,7 +48,12 @@ namespace Dia
             Json::Value  root;
             Json::Reader reader;
 
-            FILE* f = fopen(filePath, "rb");
+            FILE* f = nullptr;
+            #ifdef _MSC_VER
+            fopen_s(&f, filePath, "rb");
+            #else
+            f = fopen(filePath, "rb");
+            #endif
             if (!f)
             {
                 DIA_LOG_ERROR("DiaScene2D", "SceneLoader2D::Load — cannot open file: %s", filePath);

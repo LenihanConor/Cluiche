@@ -123,7 +123,7 @@ void DetectTriggerOverlaps(
         auto iterEnd = activePairs.End();
         while (iter != iterEnd)
         {
-            if (!currentPairs.ContainsKey(iter.Key()))
+            if (!currentPairs.ContainsKey(iter.GetKey()))
             {
                 TriggerEvent evt;
                 evt.type    = TriggerEventType::kExit;
@@ -143,7 +143,7 @@ void DetectTriggerOverlaps(
         auto iterEnd = currentPairs.End();
         while (iter != iterEnd)
         {
-            activePairs.Add(iter.Key(), true);
+            activePairs.Add(iter.GetKey(), true);
             ++iter;
         }
     }

@@ -62,7 +62,11 @@ template<size_t N>
 static void SafeCopy(char (&dst)[N], const char* src)
 {
     if (!src) { dst[0] = '\0'; return; }
+    #ifdef _MSC_VER
+    strncpy_s(dst, N, src, N - 1);
+    #else
     strncpy(dst, src, N - 1);
+    #endif
     dst[N - 1] = '\0';
 }
 
@@ -74,7 +78,11 @@ static ValidationIssue* AddIssue(ValidationResult& result, ValidationRuleId rule
     ValidationIssue issue;
     issue.ruleId   = ruleId;
     issue.severity = severity;
+    #ifdef _MSC_VER
+    strncpy_s(issue.message, sizeof(issue.message), message, sizeof(issue.message) - 1);
+    #else
     strncpy(issue.message, message, sizeof(issue.message) - 1);
+    #endif
     issue.message[sizeof(issue.message) - 1] = '\0';
     result.issues.Add(issue);
     return &result.issues[result.issues.Size() - 1];

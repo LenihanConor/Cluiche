@@ -23,7 +23,9 @@
     <ClInclude Include="generated\debug_protocol.pb.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="generated\debug_protocol.pb.cc" />
+    <ClCompile Include="generated\debug_protocol.pb.cc">
+      <DisableSpecificWarnings>-Winvalid-offsetof;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ProtoCompile Include="proto\debug_protocol.proto" />

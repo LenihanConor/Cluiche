@@ -157,8 +157,8 @@ void PhysicsWorld::RemoveTriggerVolume(TriggerVolume2D* trigger)
                 auto iterEnd = mActiveTriggerPairs.End();
                 while (iter != iterEnd)
                 {
-                    if (iter.Key().triggerUid == trigger->GetUniqueId())
-                        keysToRemove.Add(iter.Key());
+                    if (iter.GetKey().triggerUid == trigger->GetUniqueId())
+                        keysToRemove.Add(iter.GetKey());
                     ++iter;
                 }
             }
@@ -244,8 +244,8 @@ void PhysicsWorld::FlushBodyReferences(const Body2DBase* body)
         auto iterEnd = mActivePairs.End();
         while (iter != iterEnd)
         {
-            if (iter.Key().ContainsBody(body))
-                keysToRemove.Add(iter.Key());
+            if (iter.GetKey().ContainsBody(body))
+                keysToRemove.Add(iter.GetKey());
             ++iter;
         }
     }

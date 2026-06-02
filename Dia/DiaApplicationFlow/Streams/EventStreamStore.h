@@ -107,12 +107,12 @@ public:
     bool HasPending(int readerIndex) const;
 
     // Tap API (F4)
-    TapHandle AttachTap(TapCallback cb);
-    void      DetachTap(TapHandle handle);
-    unsigned int GetTapCount() const;
+    TapHandle AttachTap(TapCallback cb) override;
+    void      DetachTap(TapHandle handle) override;
+    unsigned int GetTapCount() const override;
 
     // Shutdown notification — unblocks any kBlock writers waiting on condvar.
-    void NotifyShutdown();
+    void NotifyShutdown() override;
 
 private:
     struct ReaderBuffer
