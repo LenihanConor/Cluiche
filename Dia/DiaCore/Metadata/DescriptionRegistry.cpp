@@ -1,15 +1,17 @@
 #include <DiaCore/Metadata/DescriptionRegistry.h>
+#include <vector>
 
 namespace Dia::Core::Metadata {
 
-DynamicArrayC<DescriptionRegistry::Entry>& DescriptionRegistry::GetRegistry() {
-	static DynamicArrayC<Entry> registry;
-	return registry;
+namespace {
+	std::vector<DescriptionRegistry::Entry>& GetRegistry() {
+		static std::vector<DescriptionRegistry::Entry> registry;
+		return registry;
+	}
 }
 
 void DescriptionRegistry::Register(StringCRC id, const char* description) {
-	auto& registry = GetRegistry();
-	registry.PushBack({id, description});
+	GetRegistry().push_back({id, description});
 }
 
 const char* DescriptionRegistry::Get(StringCRC id) {
@@ -20,10 +22,6 @@ const char* DescriptionRegistry::Get(StringCRC id) {
 		}
 	}
 	return nullptr;
-}
-
-const DynamicArrayC<DescriptionRegistry::Entry>& DescriptionRegistry::GetAll() {
-	return GetRegistry();
 }
 
 }

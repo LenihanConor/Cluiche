@@ -14,10 +14,10 @@ namespace Dia
 			{}
 
 			//------------------------------------------------
-			template <class Payload> 
+			template <class Payload>
 			LinkListNode<Payload>::LinkListNode(const Payload& payload)
-				: mNext(NULL)
-				, mPayload(payload)
+				: mPayload(payload)
+				, mNext(NULL)
 			{}
 
 			//------------------------------------------------
