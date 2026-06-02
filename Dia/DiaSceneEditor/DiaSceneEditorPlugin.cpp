@@ -70,8 +70,11 @@ namespace Dia
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.get_hierarchy_filtered"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.set_selection"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.get_properties"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.get_blueprint_defaults"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.load_scene"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.save_scene"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.mark_dirty"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.get_dirty_state"));
 			}
 
 			mBridge       = nullptr;
@@ -158,16 +161,17 @@ namespace Dia
 					}
 
 					DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: loaded stage scene '%s'", scenePath.c_str());
-					// Cache for filter/selection handlers
 					mLoadedSceneRoot = sceneRoot;
 					strncpy(mLoadedScenePath, scenePath.c_str(), sizeof(mLoadedScenePath) - 1);
 					mLoadedScenePath[sizeof(mLoadedScenePath) - 1] = '\0';
 					mHierarchyController.ClearSelection();
+					mIsDirty = false;
 
 					result["success"]   = true;
 					result["stage"]     = matchedStage;
 					result["scene"]     = sceneRoot;
 					result["hierarchy"] = mHierarchyController.BuildHierarchyJson(sceneRoot);
+					result["dirty"]     = false;
 					return result;
 				});
 
@@ -323,10 +327,12 @@ namespace Dia
 					strncpy(mLoadedScenePath, data["path"].asCString(), sizeof(mLoadedScenePath) - 1);
 					mLoadedScenePath[sizeof(mLoadedScenePath) - 1] = '\0';
 					mHierarchyController.ClearSelection();
+					mIsDirty = false;
 
 					result["success"]   = true;
 					result["scene"]     = sceneRoot;
 					result["hierarchy"] = mHierarchyController.BuildHierarchyJson(sceneRoot);
+					result["dirty"]     = false;
 					return result;
 				});
 
@@ -336,29 +342,116 @@ namespace Dia
 				{
 					DIA_TRACE_ZONE("scene_editor.save_scene", Dia::Observation::Trace::Category::kNone);
 					Json::Value result;
-					if (!data.isMember("path") || !data["path"].isString()
-					    || !data.isMember("scene"))
+
+					// Use mLoadedScenePath if no explicit path provided
+					const char* savePath = mLoadedScenePath;
+					if (data.isMember("path") && data["path"].isString())
+						savePath = data["path"].asCString();
+
+					if (!savePath || savePath[0] == '\0')
 					{
-						DIA_LOG_WARNING("Editor", "DiaSceneEditorPlugin: save_scene — missing path or scene");
+						DIA_LOG_WARNING("Editor", "DiaSceneEditorPlugin: save_scene — no path");
 						result["success"] = false;
-						result["error"]   = "missing path or scene";
+						result["error"]   = "no path";
+						return result;
+					}
+
+					// Accept scene payload or fall back to cached root
+					const Json::Value& sceneToSave = data.isMember("scene")
+						? data["scene"] : mLoadedSceneRoot;
+
+					if (sceneToSave.isNull())
+					{
+						DIA_LOG_WARNING("Editor", "DiaSceneEditorPlugin: save_scene — no scene data");
+						result["success"] = false;
+						result["error"]   = "no scene data";
 						return result;
 					}
 
 					char err[256] = {};
-					if (!mFileHandler.Save(data["path"].asCString(), data["scene"], err, sizeof(err)))
+					if (!mFileHandler.Save(savePath, sceneToSave, err, sizeof(err)))
 					{
 						DIA_LOG_WARNING("Editor",
 							"DiaSceneEditorPlugin: save_scene — failed for '%s': %s",
-							data["path"].asCString(), err);
+							savePath, err);
 						result["success"] = false;
 						result["error"]   = err[0] ? err : "save failed";
 						return result;
 					}
 
-					DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: saved scene '%s'",
-						data["path"].asCString());
+					// Update cache and clear dirty
+					mLoadedSceneRoot = sceneToSave;
+					strncpy(mLoadedScenePath, savePath, sizeof(mLoadedScenePath) - 1);
+					mLoadedScenePath[sizeof(mLoadedScenePath) - 1] = '\0';
+					mIsDirty = false;
+
+					DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: saved scene '%s'", savePath);
 					result["success"] = true;
+					result["dirty"]   = false;
+					return result;
+				});
+
+			// T9: blueprint defaults read-only tab — raw blueprint fields, no instance_data overlay
+			mBridge->RegisterRequestHandler(
+				Dia::Core::StringCRC("scene_editor.get_blueprint_defaults"),
+				[this](const Json::Value& data) -> Json::Value
+				{
+					DIA_TRACE_ZONE("scene_editor.get_blueprint_defaults", Dia::Observation::Trace::Category::kNone);
+					Json::Value result;
+					if (!data.isMember("blueprintId") || !data["blueprintId"].isString()
+					    || !data.isMember("itemType")  || !data["itemType"].isString())
+					{
+						DIA_LOG_WARNING("Editor",
+							"DiaSceneEditorPlugin: get_blueprint_defaults — missing blueprintId or itemType");
+						result["success"] = false;
+						result["error"]   = "missing blueprintId or itemType";
+						return result;
+					}
+
+					char blueprintBasePath[512] = {};
+					if (mLoadedScenePath[0] != '\0')
+					{
+						strncpy(blueprintBasePath, mLoadedScenePath, sizeof(blueprintBasePath) - 1);
+						for (char* p = blueprintBasePath; *p; ++p)
+							if (*p == '\\') *p = '/';
+						char* lastSlash = nullptr;
+						for (char* p = blueprintBasePath; *p; ++p)
+							if (*p == '/') lastSlash = p;
+						if (lastSlash) *lastSlash = '\0';
+					}
+
+					Json::Value defaults = mPropertyController.BuildBlueprintDefaultsJson(
+						data["blueprintId"].asCString(),
+						data["itemType"].asCString(),
+						blueprintBasePath);
+
+					result["success"] = true;
+					result["data"]    = defaults;
+					return result;
+				});
+
+			// T10: mark dirty — called by UI when any field edit occurs
+			mBridge->RegisterRequestHandler(
+				Dia::Core::StringCRC("scene_editor.mark_dirty"),
+				[this](const Json::Value& /*data*/) -> Json::Value
+				{
+					mIsDirty = true;
+					Json::Value result;
+					result["success"] = true;
+					result["dirty"]   = true;
+					if (mBridge)
+						mBridge->NotifyUIDataChanged("scene_editor.dirty_changed", Json::Value(true));
+					return result;
+				});
+
+			// T10: query dirty state
+			mBridge->RegisterRequestHandler(
+				Dia::Core::StringCRC("scene_editor.get_dirty_state"),
+				[this](const Json::Value& /*data*/) -> Json::Value
+				{
+					Json::Value result;
+					result["success"] = true;
+					result["dirty"]   = mIsDirty;
 					return result;
 				});
 		}

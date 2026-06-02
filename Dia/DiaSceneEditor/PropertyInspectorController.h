@@ -25,6 +25,12 @@ namespace Dia
 			                             const char*        selectionId,
 			                             const char*        blueprintBasePath = nullptr) const;
 
+			// Build raw blueprint component list (no instance_data overlay).
+			// Used for the read-only blueprint defaults tab (T9).
+			Json::Value BuildBlueprintDefaultsJson(const char* blueprintId,
+			                                       const char* itemType,
+			                                       const char* blueprintBasePath) const;
+
 		private:
 			// Extract the string value from either a plain string or {"value":"..."} wrapper.
 			static const char* ExtractStr(const Json::Value& val, char* buf, int bufSize);

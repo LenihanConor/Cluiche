@@ -313,5 +313,26 @@ namespace Dia
 
 			return empty;
 		}
+
+		// ── Blueprint defaults (T9) ──────────────────────────────────────────────────
+
+		Json::Value PropertyInspectorController::BuildBlueprintDefaultsJson(
+			const char* blueprintId,
+			const char* itemType,
+			const char* blueprintBasePath) const
+		{
+			DIA_TRACE_ZONE("PropertyInspectorController::BuildBlueprintDefaultsJson", Dia::Observation::Trace::Category::kNone);
+
+			Json::Value result(Json::objectValue);
+			result["blueprintId"] = blueprintId ? blueprintId : "";
+			result["readonly"]    = true;
+
+			Json::Value bpComponents = LoadBlueprintComponents(blueprintId, blueprintBasePath, itemType);
+
+			// Return fields without override overlay — all overridden=false
+			Json::Value empty(Json::objectValue);
+			result["components"] = MergeFields(bpComponents, empty);
+			return result;
+		}
 	}
 }
