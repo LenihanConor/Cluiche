@@ -36,7 +36,6 @@
     <ClInclude Include="Plugin\EditorPluginRegistrationMacros.h">
       <Filter>Plugin</Filter>
     </ClInclude>
-    <ClInclude Include="Plugin\StubEditorPlugin.h" />
     <ClInclude Include="Plugin\HelloEditorPlugin.h" />
     <ClInclude Include="Plugin\HomeEditorPlugin.h" />
     <ClInclude Include="Plugin\EditorPluginContext.h">

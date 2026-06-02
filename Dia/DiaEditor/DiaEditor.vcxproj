@@ -94,7 +94,6 @@
     <ClInclude Include="Plugin\IEditorPlugin.h" />
     <ClInclude Include="Plugin\EditorPluginRegistry.h" />
     <ClInclude Include="Plugin\EditorPluginRegistrationMacros.h" />
-    <ClInclude Include="Plugin\StubEditorPlugin.h" />
     <ClInclude Include="Plugin\HelloEditorPlugin.h" />
     <ClInclude Include="Plugin\HomeEditorPlugin.h" />
     <ClInclude Include="Plugin\EditorPluginContext.h" />
