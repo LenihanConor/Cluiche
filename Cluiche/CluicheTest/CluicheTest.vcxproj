@@ -47,6 +47,8 @@
     <ClCompile Include="Modules\TestStages\Drawers\Geometry2DAABBDrawer.cpp" />
     <ClCompile Include="Modules\TestStages\Drawers\Animation2DTestDrawer.cpp" />
     <ClCompile Include="Modules\TestStages\Drawers\Scene2DTestDrawer.cpp" />
+    <ClCompile Include="Modules\TestStages\IK2DTestStageModule.cpp" />
+    <ClCompile Include="Modules\TestStages\Drawers\IK2DTestDrawer.cpp" />
     <ClCompile Include="Modules\dummy\DummyLevelModule.cpp" />
     <ClCompile Include="Modules\dummy\DummyUIPageModule.cpp" />
     <ClCompile Include="Modules\dummy\DummyUIPage.cpp" />
@@ -78,6 +80,8 @@
     <ClInclude Include="Modules\TestStages\Drawers\Geometry2DAABBDrawer.h" />
     <ClInclude Include="Modules\TestStages\Drawers\Animation2DTestDrawer.h" />
     <ClInclude Include="Modules\TestStages\Drawers\Scene2DTestDrawer.h" />
+    <ClInclude Include="Modules\TestStages\IK2DTestStageModule.h" />
+    <ClInclude Include="Modules\TestStages\Drawers\IK2DTestDrawer.h" />
     <ClInclude Include="Modules\dummy\DummyLevelModule.h" />
     <ClInclude Include="Modules\dummy\DummyUIPageModule.h" />
     <ClInclude Include="Modules\dummy\DummyUIPage.h" />
@@ -178,6 +182,12 @@
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaRig2DVisualDebugger\DiaRig2DVisualDebugger.vcxproj">
       <Project>{F5A6B7C8-D9E0-1234-BCDE-56789ABCDEF1}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaIK2D\DiaIK2D.vcxproj">
+      <Project>{F4A5B6C7-D8E9-0123-FABC-445566778899}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaIK2DVisualDebugger\DiaIK2DVisualDebugger.vcxproj">
+      <Project>{C3D4E5F6-A7B8-9012-CDEF-123456789012}</Project>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">

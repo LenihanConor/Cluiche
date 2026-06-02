@@ -54,28 +54,20 @@ void JointCirclesDrawer::Draw(Dia::Graphics::FrameData& frameData)
         const Bone&          bone = mSkeleton.GetBone(i);
         const BoneTransform& wt   = mWorldTransforms[i];
 
+        // Fixed pixel radii — positions are expected to be pre-scaled to screen space.
         if (bone.parentIndex < 0)
         {
-            // Root
-            frameData.RequestDraw(
-                wt.position,
-                4.0f * scale * mRadiusMultiplier,
+            frameData.RequestDraw(wt.position, 7.0f * mRadiusMultiplier,
                 Dia::Debug::DebugColourPalette::kHealthy);
         }
         else if (isLeaf[i])
         {
-            // Leaf
-            frameData.RequestDraw(
-                wt.position,
-                2.5f * scale * mRadiusMultiplier,
+            frameData.RequestDraw(wt.position, 5.0f * mRadiusMultiplier,
                 Dia::Debug::DebugColourPalette::kWarning);
         }
         else
         {
-            // Mid-chain
-            frameData.RequestDraw(
-                wt.position,
-                2.5f * scale * mRadiusMultiplier,
+            frameData.RequestDraw(wt.position, 5.0f * mRadiusMultiplier,
                 Dia::Debug::DebugColourPalette::kActive);
         }
     }

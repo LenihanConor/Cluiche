@@ -12,7 +12,8 @@
                 "EntityTestStage",
                 "SoftBody2DTestStage",
                 "Animation2DTestStage",
-                "Scene2DTestStage"
+                "Scene2DTestStage",
+                "IK2DTestStage"
             ],
             "auto_advance": false
         },
@@ -68,6 +69,13 @@
         },
         {
             "name": "Scene2DTestStage",
+            "transitions": [
+                "Boot"
+            ],
+            "auto_advance": false
+        },
+        {
+            "name": "IK2DTestStage",
             "transitions": [
                 "Boot"
             ],
@@ -412,7 +420,8 @@
                         "EntityTestStage",
                         "SoftBody2DTestStage",
                         "Animation2DTestStage",
-                        "Scene2DTestStage"
+                        "Scene2DTestStage",
+                        "IK2DTestStage"
                     ],
                     "dependencies": [
                         "CameraModule"
@@ -479,7 +488,8 @@
                         "EntityTestStage",
                         "SoftBody2DTestStage",
                         "Animation2DTestStage",
-                        "Scene2DTestStage"
+                        "Scene2DTestStage",
+                        "IK2DTestStage"
                     ],
                     "dependencies": [
                         "DebugUI"
@@ -501,7 +511,8 @@
                         "EntityTestStage",
                         "SoftBody2DTestStage",
                         "Animation2DTestStage",
-                        "Scene2DTestStage"
+                        "Scene2DTestStage",
+                        "IK2DTestStage"
                     ],
                     "dependencies": [
                         "DebugUI"

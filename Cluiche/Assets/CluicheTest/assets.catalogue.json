@@ -429,6 +429,31 @@
             "tags": [
                 "World"
             ]
+        },
+        {
+            "id": "stage.ik2d_test_stage",
+            "type": "stage",
+            "source_path": "../Stages/IK2DTestStage/ik2d_test_stage.diastage",
+            "scope": "global",
+            "tags": [
+                "misc"
+            ],
+            "references": [
+                {
+                    "type": "contains",
+                    "target": "manifest.ik2d_test_stage"
+                }
+            ]
+        },
+        {
+            "id": "manifest.ik2d_test_stage",
+            "type": "manifest",
+            "source_path": "../Stages/IK2DTestStage/misc/ApplicationFlow/ik2d_test_stage.diaapp",
+            "scope": "stage",
+            "stage_name": "IK2DTestStage",
+            "tags": [
+                "misc/ApplicationFlow"
+            ]
         }
     ]
 }

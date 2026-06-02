@@ -62,8 +62,11 @@ void Scene2DTestDrawer::Draw(Dia::Graphics::FrameData& frameData)
 
 void Scene2DTestDrawer::DrawImGui()
 {
-    // Engine-side ImGui delegated to SceneOverviewDrawer when registered directly;
-    // here we just show the entity count as test-specific info
+    Dia::Scene2DVisualDebugger::SceneOverviewDrawer overview(
+        mCameraRegistry, mLightRegistry, mLayerTable, mManager);
+    overview.DrawImGui();
+
+    ImGui::Separator();
     ImGui::Text("Entities: %u", mDomain.GetEntityCount());
 }
 

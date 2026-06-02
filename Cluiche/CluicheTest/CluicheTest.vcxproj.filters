@@ -104,6 +104,12 @@
     <ClCompile Include="Modules\TestStages\Drawers\Scene2DTestDrawer.cpp">
       <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
     </ClCompile>
+    <ClCompile Include="Modules\TestStages\IK2DTestStageModule.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\TestStages\Drawers\IK2DTestDrawer.cpp">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClCompile>
     <ClCompile Include="Modules\dummy\DummyLevelModule.cpp">
       <Filter>ApplicationFlow\Modules\Dummy</Filter>
     </ClCompile>
@@ -192,6 +198,12 @@
       <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
     </ClInclude>
     <ClInclude Include="Modules\TestStages\Drawers\Scene2DTestDrawer.h">
+      <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\IK2DTestStageModule.h">
+      <Filter>ApplicationFlow\Modules\TestStages</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\TestStages\Drawers\IK2DTestDrawer.h">
       <Filter>ApplicationFlow\Modules\TestStages\Drawers</Filter>
     </ClInclude>
     <ClInclude Include="Modules\dummy\DummyLevelModule.h">

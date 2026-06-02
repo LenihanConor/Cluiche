@@ -50,20 +50,17 @@ void IKChainJointsDrawer::Draw(Dia::Graphics::FrameData& frameData)
 
             if (i == endIdx)
             {
-                // End-effector: green, larger
-                frameData.RequestDraw(pos, 3.5f * scale * mRadiusMultiplier,
+                frameData.RequestDraw(pos, 9.0f * mRadiusMultiplier,
                     Dia::Debug::DebugColourPalette::kHealthy);
             }
             else if (i == startIdx)
             {
-                // Chain root: cyan
-                frameData.RequestDraw(pos, 3.0f * scale * mRadiusMultiplier,
+                frameData.RequestDraw(pos, 7.0f * mRadiusMultiplier,
                     Dia::Debug::DebugColourPalette::kGoal);
             }
             else
             {
-                // Mid-chain: cyan, smaller
-                frameData.RequestDraw(pos, 2.5f * scale * mRadiusMultiplier,
+                frameData.RequestDraw(pos, 5.0f * mRadiusMultiplier,
                     Dia::Debug::DebugColourPalette::kGoal);
             }
         }

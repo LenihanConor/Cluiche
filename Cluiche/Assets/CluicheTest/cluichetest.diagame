@@ -57,6 +57,10 @@
         {
             "path": "stages/Scene2DTestStage/scene2d_test_stage.diastage",
             "type": "stage"
+        },
+        {
+            "path": "stages/IK2DTestStage/ik2d_test_stage.diastage",
+            "type": "stage"
         }
     ],
     "name": "CluicheTest",

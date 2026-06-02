@@ -53,9 +53,9 @@ void IKReachCirclesDrawer::Draw(Dia::Graphics::FrameData& frameData)
 
         if (reachRadius > 0.0f)
         {
-            const Dia::Maths::Vector2D& startPos = worldTransforms[startIdx].position;
+            const Dia::Maths::Vector2D& screenPos = worldTransforms[startIdx].position;
             frameData.RequestDraw(
-                startPos,
+                screenPos,
                 reachRadius * scale,
                 Dia::Debug::DebugColourPalette::kInactive);
         }

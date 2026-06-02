@@ -123,8 +123,15 @@ namespace Dia
 		const Dia::Core::Containers::DynamicArrayC<Dia::Rig2D::BoneTransform, Dia::Rig2D::kMaxBones>&
 		    IKSolver::GetWorldTransforms() const
 		{
-			DIA_ASSERT(mRootTransformSet,
-			           "IKSolver::GetWorldTransforms — SetRootTransform() must be called before drawing");
+			// Not an assert — drawers may run before the first solver tick on the first frame.
+			// World transforms default-constructed to zero (bind pose at origin) until
+			// SetRootTransform is called.
+			if (!mRootTransformSet)
+			{
+				DIA_LOG_WARNING("IK2D",
+				    "IKSolver::GetWorldTransforms called before SetRootTransform — "
+				    "returning default-zero transforms");
+			}
 			return mWorldTransforms;
 		}
 
