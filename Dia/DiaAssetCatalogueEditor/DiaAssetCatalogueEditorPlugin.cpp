@@ -122,6 +122,8 @@ namespace Dia
 				{
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.load_manifest"));
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.browse_open"));
+					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.browse_source_file"));
+					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.get_manifest_dir"));
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.save_manifest"));
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.new_manifest"));
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.bulk_create_records"));
@@ -223,6 +225,60 @@ namespace Dia
 							result["success"] = false;
 							result["error"] = errorBuf[0] ? errorBuf : "load failed";
 						}
+						return result;
+					});
+
+				// browse_source_file — file picker pre-seeded to the manifest directory.
+				// Returns { success, path, relative_path } where relative_path is relative
+				// to the manifest directory (suitable as a source_path value in a record).
+				mBridge->RegisterRequestHandler(
+					Dia::Core::StringCRC("asset_catalogue.browse_source_file"),
+					[this](const Json::Value& data) -> Json::Value
+					{
+						Json::Value dialogData;
+						Json::Value filters(Json::arrayValue);
+						Json::Value fAll; fAll["name"] = "All Files"; fAll["ext"] = "*.*"; filters.append(fAll);
+						dialogData["filters"] = filters;
+						dialogData["title"]   = "Select Source File";
+
+						// Pre-seed to manifest directory if one is loaded
+						char dirBuf[512] = {};
+						GetManifestDirectory(dirBuf, sizeof(dirBuf));
+						if (dirBuf[0] != '\0')
+							dialogData["initial_dir"] = dirBuf;
+
+						// Allow caller to hint an initial_dir override
+						if (data.isMember("initial_dir") && data["initial_dir"].isString())
+							dialogData["initial_dir"] = data["initial_dir"].asString();
+
+						Json::Value dialogResult = Dia::Editor::FileDialogHandler::HandleOpenFileDialog(dialogData);
+						if (!dialogResult.get("success", false).asBool())
+						{
+							Json::Value r; r["success"] = false; return r;
+						}
+
+						const char* absPath = dialogResult["path"].asCString();
+						char relBuf[512] = {};
+						MakeRelativeToManifest(absPath, relBuf, sizeof(relBuf));
+
+						Json::Value result;
+						result["success"]       = true;
+						result["path"]          = absPath;
+						result["relative_path"] = relBuf;
+						return result;
+					});
+
+				// get_manifest_dir — returns the directory of the currently loaded manifest.
+				// Used by the UI to build default source paths for new records.
+				mBridge->RegisterRequestHandler(
+					Dia::Core::StringCRC("asset_catalogue.get_manifest_dir"),
+					[this](const Json::Value& /*data*/) -> Json::Value
+					{
+						Json::Value result;
+						char dirBuf[512] = {};
+						GetManifestDirectory(dirBuf, sizeof(dirBuf));
+						result["success"] = true;
+						result["dir"]     = dirBuf;
 						return result;
 					});
 

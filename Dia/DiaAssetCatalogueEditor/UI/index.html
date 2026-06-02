@@ -461,17 +461,20 @@
     <div class="modal-row">
       <label>ID <span style="color:#9d9d9d;font-size:10px;">(type.name)</span></label>
       <div style="flex:1">
-        <input type="text" id="create-id" placeholder="texture.player_ship" oninput="validateCreateId()" />
+        <input type="text" id="create-id" placeholder="texture.player_ship" oninput="validateCreateId(); updateCreateDefaultSourcePath()" />
         <div class="validation-note" id="create-id-note"></div>
       </div>
     </div>
     <div class="modal-row">
       <label>Type</label>
-      <select id="create-type"></select>
+      <select id="create-type" onchange="updateCreateDefaultSourcePath()"></select>
     </div>
     <div class="modal-row">
       <label>Source Path</label>
-      <input type="text" id="create-source-path" placeholder="assets/textures/player.png" />
+      <div style="display:flex;gap:4px;flex:1">
+        <input type="text" id="create-source-path" placeholder="assets/textures/player.png" style="flex:1" oninput="this.dataset.userEdited='1'" />
+        <button onclick="browseCreateSourcePath()" style="background:#3c3c3c;color:#d4d4d4;border:1px solid #555;padding:3px 8px;font-size:11px;cursor:pointer;border-radius:3px;white-space:nowrap">Browse…</button>
+      </div>
     </div>
     <div class="modal-row">
       <label>Tags</label>
@@ -534,6 +537,7 @@
   var discResults = [];
   var pendingBulkItems = [];
   var pendingDeleteId = null;
+  var manifestDir = '';  // directory of the loaded manifest, for default source paths
 
   /* ── Bridge ──────────────────────────────────────── */
   var _diaReqId = 1;
@@ -612,6 +616,13 @@
   /* ── Toolbar ─────────────────────────────────────── */
   function setManifestPath(path) {
     document.getElementById('manifest-path').textContent = path || 'No manifest loaded';
+    // Keep manifestDir in sync so Browse and default paths work
+    if (path && path.length > 0) {
+      var lastSlash = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+      manifestDir = lastSlash >= 0 ? path.substring(0, lastSlash + 1) : '';
+    } else {
+      manifestDir = '';
+    }
   }
   function setDirty(dirty) {
     var el = document.getElementById('dirty-indicator');
@@ -806,8 +817,10 @@
   }
 
   function browseSourcePath() {
-    var path = prompt('Source path:');
-    if (path) document.getElementById('rec-source-path').value = path;
+    diaRequest('asset_catalogue.browse_source_file', {}).then(function(r) {
+      if (!r.success) return;
+      document.getElementById('rec-source-path').value = r.relative_path || r.path;
+    });
   }
 
   function onSaveRecord() {
@@ -946,10 +959,13 @@
           sel.appendChild(o);
         });
       }
+      updateCreateDefaultSourcePath();
     });
 
     document.getElementById('create-id').value = '';
-    document.getElementById('create-source-path').value = '';
+    var srcPathEl = document.getElementById('create-source-path');
+    srcPathEl.value = '';
+    srcPathEl.dataset.userEdited = '';
     document.getElementById('create-tags').value = '';
     document.getElementById('create-scope').value = 'global';
     document.getElementById('create-stage-row').style.display = 'none';
@@ -962,6 +978,43 @@
   function onCreateScopeChange() {
     var v = document.getElementById('create-scope').value;
     document.getElementById('create-stage-row').style.display = (v === 'stage') ? 'flex' : 'none';
+  }
+
+  // Extension hints for known blueprint types; falls back to empty.
+  var kTypeExtensions = {
+    'diaentity': '.diaentity',
+    'diacamera': '.diacamera',
+    'dialight':  '.dialight',
+    'texture':   '.png',
+    'audio':     '.wav',
+    'config':    '.config.json',
+    'sprite':    '.sprite.json',
+    'ui':        '.ui.json',
+    'stage':     '.stage.json',
+  };
+
+  function updateCreateDefaultSourcePath() {
+    var id       = document.getElementById('create-id').value.trim();
+    var typeId   = document.getElementById('create-type').value;
+    var pathEl   = document.getElementById('create-source-path');
+
+    // Only overwrite if the user hasn't typed anything custom
+    if (pathEl.dataset.userEdited === '1') return;
+
+    if (!id || !typeId) { pathEl.value = ''; return; }
+
+    var namePart = id.indexOf('.') >= 0 ? id.split('.').slice(1).join('.') : id;
+    var ext      = kTypeExtensions[typeId] || ('.' + typeId);
+    pathEl.value = namePart + ext;
+  }
+
+  function browseCreateSourcePath() {
+    diaRequest('asset_catalogue.browse_source_file', {}).then(function(r) {
+      if (!r.success) return;
+      var pathEl = document.getElementById('create-source-path');
+      pathEl.value = r.relative_path || r.path;
+      pathEl.dataset.userEdited = '1';
+    });
   }
 
   function validateCreateId() {
