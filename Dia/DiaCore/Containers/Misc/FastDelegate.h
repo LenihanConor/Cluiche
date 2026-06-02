@@ -3,6 +3,9 @@
 //  Documentation is found at http://www.codeproject.com/cpp/FastDelegate.asp
 //
 //						- Don Clugston, Mar 2004.
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-local-typedef"
 //		Major contributions were made by Jody Hagins.
 // History:
 // 24-Apr-04 1.0  * Submitted to CodeProject. 
@@ -2288,5 +2291,7 @@ namespace fastdelegate {
 #undef FASTDLGT_RETTYPE
 
 } // namespace fastdelegate
+
+#pragma GCC diagnostic pop
 
 #endif
