@@ -99,8 +99,8 @@ namespace Dia
 			Dia::Observation::Metric::Gauge*   mMetricActiveWorkers = nullptr;
 			Dia::Observation::Metric::Counter* mMetricSubmitted     = nullptr;
 			Dia::Observation::Metric::Counter* mMetricCompleted     = nullptr;
-			uint64_t                           mPrevSubmitted       = 0;
-			uint64_t                           mPrevCompleted       = 0;
+			[[maybe_unused]] uint64_t                           mPrevSubmitted       = 0;
+			[[maybe_unused]] uint64_t                           mPrevCompleted       = 0;
 		};
 
 	} // namespace Threading

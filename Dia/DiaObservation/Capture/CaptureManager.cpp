@@ -321,7 +321,7 @@ namespace Dia
                 if (index != last)
                     mInFlight[index] = mInFlight[last];
 
-                memset(&mInFlight[last], 0, sizeof(InFlightCapture));
+                memset(static_cast<void*>(&mInFlight[last]), 0, sizeof(InFlightCapture));
                 --mInFlightCount;
             }
 
