@@ -3,10 +3,12 @@
 #include <DiaEditor/Plugin/IEditorPlugin.h>
 #include <DiaEditor/Project/ProjectContext.h>
 #include <DiaAssetCatalogue/AssetRegistry.h>
+#include <DiaCore/Json/external/json/json.h>
 
 #include "DiaSceneEditor/SceneFileHandler.h"
 #include "DiaSceneEditor/SceneHierarchyController.h"
 #include "DiaSceneEditor/PropertyInspectorController.h"
+#include "DiaSceneEditor/ProjectContextManager.h"
 
 namespace Dia
 {
@@ -35,9 +37,12 @@ namespace Dia
 			static void OnProjectChangedStatic(const Dia::Editor::ProjectContext& ctx, void* ud);
 			void RegisterRequestHandlers();
 
-			SceneFileHandler           mFileHandler;
-			SceneHierarchyController   mHierarchyController;
+			SceneFileHandler            mFileHandler;
+			SceneHierarchyController    mHierarchyController;
 			PropertyInspectorController mPropertyController;
+			ProjectContextManager       mProjectContextManager;
+
+			Json::Value                 mStageList;   // cached array from last project load
 
 			Dia::Editor::WebUIBridge*   mBridge       = nullptr;
 			Dia::Editor::IPluginLoader* mPluginLoader = nullptr;

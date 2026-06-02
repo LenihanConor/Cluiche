@@ -95,12 +95,14 @@
     <ClInclude Include="SceneFileHandler.h" />
     <ClInclude Include="SceneHierarchyController.h" />
     <ClInclude Include="PropertyInspectorController.h" />
+    <ClInclude Include="ProjectContextManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaSceneEditorPlugin.cpp" />
     <ClCompile Include="SceneFileHandler.cpp" />
     <ClCompile Include="SceneHierarchyController.cpp" />
     <ClCompile Include="PropertyInspectorController.cpp" />
+    <ClCompile Include="ProjectContextManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.sceneeditor.architecture.module.md" />
