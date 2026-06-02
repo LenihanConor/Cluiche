@@ -47,7 +47,7 @@ namespace Dia
         private:
             const Skeleton&                                                              mSkeleton;
             const Dia::Core::Containers::DynamicArrayC<BoneTransform, kMaxBones>&       mWorldTransforms;
-            const Dia::Debug::DebugLayerManager&                                         mManager;
+            [[maybe_unused]] const Dia::Debug::DebugLayerManager&                                         mManager;
         };
 
     } // namespace Rig2D

@@ -27,7 +27,7 @@ public:
 
 private:
     const SoftBodyWorld&                 mWorld;
-    const Dia::Debug::DebugLayerManager& mManager;
+    [[maybe_unused]] const Dia::Debug::DebugLayerManager& mManager;
 };
 
 } // namespace Dia::SoftBody2D

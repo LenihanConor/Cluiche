@@ -55,7 +55,7 @@ namespace Dia
 
         private:
             const IKSolver&                      mSolver;
-            const Dia::Rig2D::Skeleton&          mSkeleton;
+            [[maybe_unused]] const Dia::Rig2D::Skeleton&          mSkeleton;
             const Dia::Debug::DebugLayerManager& mManager;
         };
 

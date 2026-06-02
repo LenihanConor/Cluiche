@@ -45,7 +45,7 @@ public:
 
 private:
     const AnimationEvaluator&                                                    mEvaluator;
-    const Dia::Rig2D::Skeleton&                                                  mSkeleton;
+    [[maybe_unused]] const Dia::Rig2D::Skeleton&                                                  mSkeleton;
     const Dia::Core::Containers::DynamicArrayC<Dia::Rig2D::BoneTransform, 128>& mWorldTransforms;
     const Dia::Debug::DebugLayerManager&                                         mManager;
 };

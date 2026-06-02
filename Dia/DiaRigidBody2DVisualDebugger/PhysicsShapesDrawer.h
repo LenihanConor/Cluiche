@@ -30,7 +30,7 @@ public:
 
 private:
     const PhysicsWorld&                  mWorld;
-    const Dia::Debug::DebugLayerManager& mManager;
+    [[maybe_unused]] const Dia::Debug::DebugLayerManager& mManager;
     bool                                 mShowSleeping = true;
 };
 

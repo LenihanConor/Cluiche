@@ -48,9 +48,9 @@ namespace Dia
             void Draw(Dia::Graphics::FrameData& frameData) override;
 
         private:
-            const Skeleton&                                                              mSkeleton;
-            const Dia::Core::Containers::DynamicArrayC<BoneTransform, kMaxBones>&       mWorldTransforms;
-            const Dia::Debug::DebugLayerManager&                                         mManager;
+            [[maybe_unused]] const Skeleton&                                                              mSkeleton;
+            [[maybe_unused]] const Dia::Core::Containers::DynamicArrayC<BoneTransform, kMaxBones>&       mWorldTransforms;
+            [[maybe_unused]] const Dia::Debug::DebugLayerManager&                                         mManager;
         };
 
     } // namespace Rig2D
