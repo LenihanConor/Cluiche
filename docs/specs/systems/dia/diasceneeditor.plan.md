@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/systems/dia/diasceneeditor.md
-**Status:** In Progress
+**Status:** Done
 
 ## Implementation Plan
 
@@ -41,7 +41,7 @@ All dependencies exist:
 | 19 | Add Override: click dimmed field or "+ Add Override" → promote to instance_data with blueprint default value | Click dimmed field → becomes editable override with purple border | Done | sonnet | `AddOverride`, `RemoveOverride`, `UpdateOverride` on SceneMutator. Three handlers. Build: PASSED. |
 | 20 | Scene validation: enforce constraints, display errors/warnings, block save on errors | Duplicate ID → error shown; save disabled until fixed | Done | sonnet | `SceneValidator`: NO_ACTIVE_CAMERA, MULTIPLE_ACTIVE_CAMERAS, NO_LAYERS, DUPLICATE_ID, EMPTY_ID, UNKNOWN_LAYER_REF. `validate` handler. Build: PASSED. |
 | 21 | Scene Properties panel: world_bounds editing + summary + validation results display | Toolbar button opens panel; world bounds editable | Done | sonnet | `get_scene_properties` returns world_bounds + counts + validation report. `set_world_bounds` patches scene2d root. Build: PASSED. |
-| 22 | UI assets: React/HTML for all scene editor panels (hierarchy + properties + dialogs + validation) | UI renders correctly in CluicheEditor CEF panel | Not Started | sonnet | Dark purple theme matching mockup; reuse patterns from DiaAssetCatalogueEditor UI |
+| 22 | UI assets: React/HTML for all scene editor panels (hierarchy + properties + dialogs + validation) | UI renders correctly in CluicheEditor CEF panel | Done | sonnet | 1588-line self-contained HTML/CSS/JS. Dark purple theme copied verbatim from mockup. diaBridge wiring for all 27 handlers + stub fallback for standalone preview. Hierarchy sections, filter, selection, property panel (instance/blueprint tabs), context menu, Change Blueprint dialog, Scene Properties modal, dirty state, status bar. |
 
 ### Implementation Order
 
