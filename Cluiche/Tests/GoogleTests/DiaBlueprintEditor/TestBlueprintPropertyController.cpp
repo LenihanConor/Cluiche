@@ -135,6 +135,86 @@ TEST(BlueprintPropertyController, BuildUsageJson_NoReverseRefs_ReturnsEmptyUsage
 // BuildUsageJson — with a reverse reference
 // ===========================================================================
 
+TEST(BlueprintPropertyController, BuildPropertyJson_CameraBlueprint_UsesCorrectTopKey)
+{
+	BlueprintPropertyController ctrl;
+	Json::Value root;
+	root["camera_blueprint"]["id"]         = "follow_cam";
+	root["camera_blueprint"]["components"] = Json::Value(Json::arrayValue);
+
+	Json::Value result = ctrl.BuildPropertyJson(root, "camera_blueprint");
+
+	EXPECT_EQ(result["id"].asString(), "follow_cam");
+	EXPECT_EQ(result["components"].size(), 0u);
+}
+
+TEST(BlueprintPropertyController, BuildPropertyJson_LightBlueprint_UsesCorrectTopKey)
+{
+	BlueprintPropertyController ctrl;
+	Json::Value root;
+	root["light_blueprint"]["id"]         = "warm_light";
+	root["light_blueprint"]["components"] = Json::Value(Json::arrayValue);
+
+	Json::Value result = ctrl.BuildPropertyJson(root, "light_blueprint");
+
+	EXPECT_EQ(result["id"].asString(), "warm_light");
+}
+
+TEST(BlueprintPropertyController, BuildPropertyJson_ComponentWithNoFields_DoesNotCrash)
+{
+	BlueprintPropertyController ctrl;
+	Json::Value root = MakeEntityRoot();
+	Json::Value comp;
+	comp["type"]   = "EmptyComp";
+	comp["fields"] = Json::Value(Json::objectValue);
+	root["entity_blueprint"]["components"].append(comp);
+
+	Json::Value result = ctrl.BuildPropertyJson(root, "entity_blueprint");
+
+	ASSERT_EQ(result["components"].size(), 1u);
+	EXPECT_EQ(result["components"][0]["fields"].size(), 0u);
+}
+
+TEST(BlueprintPropertyController, BuildUsageJson_MultipleReverseRefs_AllReturned)
+{
+	BlueprintPropertyController ctrl;
+	AssetRegistry registry;
+
+	AssetRecord entity;
+	entity.mId          = StringCRC("diaentity.player");
+	entity.mAssetTypeId = StringCRC("diaentity");
+	entity.mSourcePath  = "Assets/player.diaentity";
+	registry.Register(entity);
+
+	for (int i = 0; i < 3; ++i)
+	{
+		char id[64], path[64];
+		snprintf(id,   sizeof(id),   "diascene.level%02d", i);
+		snprintf(path, sizeof(path), "Assets/level%02d.diascene", i);
+		AssetRecord scene;
+		scene.mId          = StringCRC(id);
+		scene.mAssetTypeId = StringCRC("diascene");
+		scene.mSourcePath  = path;
+		scene.mReferences.Add(RelationshipEdge(StringCRC("uses"), StringCRC("diaentity.player")));
+		registry.Register(scene);
+	}
+
+	Json::Value result = ctrl.BuildUsageJson(StringCRC("diaentity.player"), registry);
+
+	EXPECT_EQ(result["usages"].size(), 3u);
+}
+
+TEST(BlueprintPropertyController, BuildUsageJson_UnknownAssetId_ReturnsEmptyUsages)
+{
+	BlueprintPropertyController ctrl;
+	AssetRegistry registry;
+
+	Json::Value result = ctrl.BuildUsageJson(StringCRC("diaentity.does_not_exist"), registry);
+
+	EXPECT_TRUE(result.isMember("usages"));
+	EXPECT_EQ(result["usages"].size(), 0u);
+}
+
 TEST(BlueprintPropertyController, BuildUsageJson_WithReverseRef_ReturnsScene)
 {
 	BlueprintPropertyController ctrl;

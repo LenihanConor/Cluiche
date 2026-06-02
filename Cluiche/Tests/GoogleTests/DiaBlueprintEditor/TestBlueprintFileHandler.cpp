@@ -169,3 +169,56 @@ TEST(BlueprintFileHandler, Save_EmptyPath_ReturnsFalse)
 	EXPECT_FALSE(handler.Save("", root, err, sizeof(err)));
 	EXPECT_GT(strlen(err), 0u);
 }
+
+TEST(BlueprintFileHandler, Save_NullPath_ReturnsFalse)
+{
+	BlueprintFileHandler handler;
+	Json::Value root;
+	root["entity_blueprint"]["id"] = "x";
+	char err[128] = {};
+	EXPECT_FALSE(handler.Save(nullptr, root, err, sizeof(err)));
+	EXPECT_GT(strlen(err), 0u);
+}
+
+TEST(BlueprintFileHandler, Load_NullErrorOut_DoesNotCrash)
+{
+	BlueprintFileHandler handler;
+	Json::Value root;
+	EXPECT_FALSE(handler.Load("", root, nullptr, 0));
+}
+
+TEST(BlueprintFileHandler, Load_EmptyFile_ReturnsFalse)
+{
+	const char* kPath = "tmp_empty_blueprint.diaentity";
+	WriteTempFile(kPath, "");
+	BlueprintFileHandler handler;
+	Json::Value root;
+	char err[128] = {};
+	bool ok = handler.Load(kPath, root, err, sizeof(err));
+	DeleteTempFile(kPath);
+	EXPECT_FALSE(ok);
+}
+
+TEST(BlueprintFileHandler, TopLevelKey_EmptyString_DefaultsToEntityBlueprint)
+{
+	EXPECT_STREQ(BlueprintFileHandler::TopLevelKeyForExtension(""), "entity_blueprint");
+}
+
+TEST(BlueprintFileHandler, RoundTrip_FieldValuesPreserved)
+{
+	const char* kPath = "tmp_fieldval_roundtrip.diaentity";
+	const char* kJson = R"({"entity_blueprint":{"id":"hero","components":[{"type":"Transform2D","fields":{"rotation":1.5,"position":[3,4]}}]}})";
+	WriteTempFile(kPath, kJson);
+
+	BlueprintFileHandler handler;
+	Json::Value root;
+	char err[128] = {};
+	ASSERT_TRUE(handler.Load(kPath, root, err, sizeof(err)));
+
+	const Json::Value& fields = root["entity_blueprint"]["components"][0]["fields"];
+	EXPECT_DOUBLE_EQ(fields["rotation"].asDouble(), 1.5);
+	EXPECT_EQ(fields["position"][0].asInt(), 3);
+	EXPECT_EQ(fields["position"][1].asInt(), 4);
+
+	DeleteTempFile(kPath);
+}

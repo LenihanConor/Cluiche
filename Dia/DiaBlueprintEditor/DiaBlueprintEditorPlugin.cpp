@@ -1,4 +1,5 @@
 #include "DiaBlueprintEditor/DiaBlueprintEditorPlugin.h"
+#include "DiaBlueprintEditor/BlueprintMutator.h"
 #include <DiaEditor/Plugin/EditorPluginRegistrationMacros.h>
 #include <DiaEditor/Plugin/EditorPluginContext.h>
 #include <DiaEditor/MVC/EditorModel.h>
@@ -284,38 +285,16 @@ namespace Dia
 					const char* ext    = strrchr(data["path"].asCString(), '.');
 					const char* topKey = BlueprintFileHandler::TopLevelKeyForExtension(ext ? ext : "");
 
-					if (!blueprintRoot.isMember(topKey))
+					if (!BlueprintMutator::UpdateField(blueprintRoot, topKey,
+					        data["componentType"].asCString(),
+					        data["fieldName"].asCString(),
+					        data["value"], err, sizeof(err)))
 					{
 						DIA_LOG_WARNING("Editor",
-							"DiaBlueprintEditorPlugin: update_field — top-level key '%s' not found in '%s'",
-							topKey, data["path"].asCString());
+							"DiaBlueprintEditorPlugin: update_field — mutation failed for '%s': %s",
+							data["path"].asCString(), err);
 						result["success"] = false;
-						result["error"]   = "blueprint root key not found";
-						return result;
-					}
-
-					const char* componentType = data["componentType"].asCString();
-					const char* fieldName     = data["fieldName"].asCString();
-					Json::Value& components   = blueprintRoot[topKey]["components"];
-
-					bool found = false;
-					for (unsigned int i = 0; i < components.size(); ++i)
-					{
-						if (components[i]["type"].asString() == componentType)
-						{
-							components[i]["fields"][fieldName] = data["value"];
-							found = true;
-							break;
-						}
-					}
-
-					if (!found)
-					{
-						DIA_LOG_WARNING("Editor",
-							"DiaBlueprintEditorPlugin: update_field — component '%s' not found in '%s'",
-							componentType, data["path"].asCString());
-						result["success"] = false;
-						result["error"]   = "component type not found";
+						result["error"]   = err[0] ? err : "mutation failed";
 						return result;
 					}
 
@@ -364,36 +343,16 @@ namespace Dia
 					const char* ext    = strrchr(data["path"].asCString(), '.');
 					const char* topKey = BlueprintFileHandler::TopLevelKeyForExtension(ext ? ext : "");
 
-					if (!blueprintRoot.isMember(topKey))
+					if (!BlueprintMutator::AddComponent(blueprintRoot, topKey,
+					        data["componentType"].asCString(), err, sizeof(err)))
 					{
 						DIA_LOG_WARNING("Editor",
-							"DiaBlueprintEditorPlugin: add_component — top-level key '%s' not found in '%s'",
-							topKey, data["path"].asCString());
+							"DiaBlueprintEditorPlugin: add_component — mutation failed for '%s': %s",
+							data["path"].asCString(), err);
 						result["success"] = false;
-						result["error"]   = "blueprint root key not found";
+						result["error"]   = err[0] ? err : "mutation failed";
 						return result;
 					}
-
-					const char* componentType = data["componentType"].asCString();
-					Json::Value& components   = blueprintRoot[topKey]["components"];
-
-					for (unsigned int i = 0; i < components.size(); ++i)
-					{
-						if (components[i]["type"].asString() == componentType)
-						{
-							DIA_LOG_WARNING("Editor",
-								"DiaBlueprintEditorPlugin: add_component — type '%s' already present in '%s'",
-								componentType, data["path"].asCString());
-							result["success"] = false;
-							result["error"]   = "component type already present";
-							return result;
-						}
-					}
-
-					Json::Value newComp;
-					newComp["type"]   = componentType;
-					newComp["fields"] = Json::Value(Json::objectValue);
-					components.append(newComp);
 
 					if (!mFileHandler.Save(data["path"].asCString(), blueprintRoot, err, sizeof(err)))
 					{
@@ -407,7 +366,7 @@ namespace Dia
 
 					DIA_LOG_INFO("Editor",
 						"DiaBlueprintEditorPlugin: added component '%s' to '%s'",
-						componentType, data["path"].asCString());
+						data["componentType"].asCString(), data["path"].asCString());
 					result["success"] = true;
 					return result;
 				});
@@ -443,40 +402,16 @@ namespace Dia
 					const char* ext    = strrchr(data["path"].asCString(), '.');
 					const char* topKey = BlueprintFileHandler::TopLevelKeyForExtension(ext ? ext : "");
 
-					if (!blueprintRoot.isMember(topKey))
+					if (!BlueprintMutator::RemoveComponent(blueprintRoot, topKey,
+					        data["componentType"].asCString(), err, sizeof(err)))
 					{
 						DIA_LOG_WARNING("Editor",
-							"DiaBlueprintEditorPlugin: remove_component — top-level key '%s' not found in '%s'",
-							topKey, data["path"].asCString());
+							"DiaBlueprintEditorPlugin: remove_component — mutation failed for '%s': %s",
+							data["path"].asCString(), err);
 						result["success"] = false;
-						result["error"]   = "blueprint root key not found";
+						result["error"]   = err[0] ? err : "mutation failed";
 						return result;
 					}
-
-					const char* componentType = data["componentType"].asCString();
-					Json::Value& components   = blueprintRoot[topKey]["components"];
-					Json::Value  newComponents(Json::arrayValue);
-
-					bool found = false;
-					for (unsigned int i = 0; i < components.size(); ++i)
-					{
-						if (components[i]["type"].asString() == componentType)
-							found = true;
-						else
-							newComponents.append(components[i]);
-					}
-
-					if (!found)
-					{
-						DIA_LOG_WARNING("Editor",
-							"DiaBlueprintEditorPlugin: remove_component — type '%s' not found in '%s'",
-							componentType, data["path"].asCString());
-						result["success"] = false;
-						result["error"]   = "component type not found";
-						return result;
-					}
-
-					blueprintRoot[topKey]["components"] = newComponents;
 
 					if (!mFileHandler.Save(data["path"].asCString(), blueprintRoot, err, sizeof(err)))
 					{
@@ -490,7 +425,7 @@ namespace Dia
 
 					DIA_LOG_INFO("Editor",
 						"DiaBlueprintEditorPlugin: removed component '%s' from '%s'",
-						componentType, data["path"].asCString());
+						data["componentType"].asCString(), data["path"].asCString());
 					result["success"] = true;
 					return result;
 				});

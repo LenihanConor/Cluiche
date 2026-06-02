@@ -95,12 +95,14 @@
     <ClInclude Include="BlueprintFileHandler.h" />
     <ClInclude Include="BlueprintListController.h" />
     <ClInclude Include="BlueprintPropertyController.h" />
+    <ClInclude Include="BlueprintMutator.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaBlueprintEditorPlugin.cpp" />
     <ClCompile Include="BlueprintFileHandler.cpp" />
     <ClCompile Include="BlueprintListController.cpp" />
     <ClCompile Include="BlueprintPropertyController.cpp" />
+    <ClCompile Include="BlueprintMutator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.blueprinteditor.architecture.module.md" />

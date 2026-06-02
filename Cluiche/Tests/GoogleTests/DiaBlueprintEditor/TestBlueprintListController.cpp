@@ -111,6 +111,60 @@ TEST(BlueprintListController, BuildListJson_AllThreeTypes_GroupsInEntityCameraLi
 	EXPECT_EQ(result["groups"][2]["label"].asString(), "Light");
 }
 
+TEST(BlueprintListController, BuildListJson_MultipleItemsInGroup_AllPresent)
+{
+	AssetRegistry registry;
+	for (int i = 0; i < 3; ++i)
+	{
+		char id[64], path[64];
+		snprintf(id,   sizeof(id),   "diaentity.enemy%d", i);
+		snprintf(path, sizeof(path), "Assets/enemy%d.diaentity", i);
+		AssetRecord rec;
+		rec.mId          = StringCRC(id);
+		rec.mAssetTypeId = StringCRC("diaentity");
+		rec.mSourcePath  = path;
+		registry.Register(rec);
+	}
+
+	BlueprintListController ctrl;
+	Json::Value result = ctrl.BuildListJson(registry);
+
+	ASSERT_EQ(result["groups"].size(), 1u);
+	EXPECT_EQ(result["groups"][0]["items"].size(), 3u);
+}
+
+TEST(BlueprintListController, BuildListJson_ItemHasCorrectPath)
+{
+	AssetRegistry registry;
+	AssetRecord rec;
+	rec.mId          = StringCRC("diacamera.follow");
+	rec.mAssetTypeId = StringCRC("diacamera");
+	rec.mSourcePath  = "Assets/Cameras/follow.diacamera";
+	registry.Register(rec);
+
+	BlueprintListController ctrl;
+	Json::Value result = ctrl.BuildListJson(registry);
+
+	ASSERT_EQ(result["groups"].size(), 1u);
+	EXPECT_EQ(result["groups"][0]["items"][0]["path"].asString(), "Assets/Cameras/follow.diacamera");
+}
+
+TEST(BlueprintListController, BuildListJson_GroupHasCorrectTypeId)
+{
+	AssetRegistry registry;
+	AssetRecord rec;
+	rec.mId          = StringCRC("dialight.warm");
+	rec.mAssetTypeId = StringCRC("dialight");
+	rec.mSourcePath  = "Assets/warm.dialight";
+	registry.Register(rec);
+
+	BlueprintListController ctrl;
+	Json::Value result = ctrl.BuildListJson(registry);
+
+	ASSERT_EQ(result["groups"].size(), 1u);
+	EXPECT_EQ(result["groups"][0]["typeId"].asString(), "dialight");
+}
+
 TEST(BlueprintListController, BuildListJson_NonBlueprintAssetsIgnored)
 {
 	AssetRegistry registry;
