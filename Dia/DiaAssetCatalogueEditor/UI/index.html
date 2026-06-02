@@ -924,15 +924,28 @@
 
   /* ── Create Dialog ───────────────────────────────── */
   function openCreateDialog() {
-    // Populate type selector
+    // Populate type selector from registered asset types
     var sel = document.getElementById('create-type');
-    sel.innerHTML = '';
-    var typeSet = {};
-    allRecords.forEach(function(r) { typeSet[r.type] = 1; });
-    Object.keys(typeSet).sort().forEach(function(t) {
-      var o = document.createElement('option');
-      o.value = t; o.textContent = t;
-      sel.appendChild(o);
+    sel.innerHTML = '<option value="">Loading…</option>';
+    diaRequest('asset_catalogue.get_asset_types', {}).then(function(r) {
+      sel.innerHTML = '';
+      var types = (r.success && r.types) ? r.types : [];
+      if (types.length === 0) {
+        // Fallback: scan existing records
+        var typeSet = {};
+        allRecords.forEach(function(rec) { typeSet[rec.type] = rec.type; });
+        Object.keys(typeSet).sort().forEach(function(t) {
+          var o = document.createElement('option');
+          o.value = t; o.textContent = t;
+          sel.appendChild(o);
+        });
+      } else {
+        types.forEach(function(t) {
+          var o = document.createElement('option');
+          o.value = t.typeId; o.textContent = t.name + ' (' + t.typeId + ')';
+          sel.appendChild(o);
+        });
+      }
     });
 
     document.getElementById('create-id').value = '';

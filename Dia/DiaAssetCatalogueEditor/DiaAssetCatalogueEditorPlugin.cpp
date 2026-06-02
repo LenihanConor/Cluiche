@@ -18,6 +18,7 @@
 #include <DiaEditor/MVC/EditorModel.h>
 #include <DiaEditor/MVC/EditorView.h>
 #include <DiaEditor/UI/WebUIBridge.h>
+#include <DiaAssetCatalogue/BuiltInAssetTypes.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaObservation/Log/DiaLog.h>
 
@@ -80,6 +81,8 @@ namespace Dia
 
 				mSessionContext.Load(mOutputDir);
 
+				Dia::AssetCatalogue::RegisterBuiltInAssetTypes(mTypeRegistry);
+
 				RegisterRequestHandlers();
 
 				if (context.mModel != nullptr)
@@ -136,6 +139,7 @@ namespace Dia
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.dry_run_rules"));
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.apply_rules"));
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.query_asset_ids"));
+					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.get_asset_types"));
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.get_state"));
 				}
 
@@ -870,6 +874,44 @@ namespace Dia
 			{
 				if (!mBridge)
 					return;
+
+				// get_asset_types — returns all registered type descriptors for the New dialog dropdown.
+				// AssetTypeRegistry has no GetByIndex; we probe the known built-in IDs in order.
+				mBridge->RegisterRequestHandler(
+					Dia::Core::StringCRC("asset_catalogue.get_asset_types"),
+					[this](const Json::Value& /*data*/) -> Json::Value
+					{
+						static const struct { const char* id; const char* name; } kKnown[] = {
+							{ "texture",   "Texture" },
+							{ "sprite",    "Mesh/Sprite" },
+							{ "audio",     "Audio" },
+							{ "config",    "Config" },
+							{ "entity",    "Entity Definition" },
+							{ "stage",     "Stage" },
+							{ "ui",        "UI Definition" },
+							{ "folder",    "Folder" },
+							{ "diaentity", "Entity Blueprint" },
+							{ "diacamera", "Camera Blueprint" },
+							{ "dialight",  "Light Blueprint" },
+						};
+						static const unsigned int kCount = 11;
+
+						Json::Value result;
+						result["success"] = true;
+						Json::Value types(Json::arrayValue);
+						for (unsigned int i = 0; i < kCount; ++i)
+						{
+							if (mTypeRegistry.FindByTypeId(Dia::Core::StringCRC(kKnown[i].id)) != nullptr)
+							{
+								Json::Value entry;
+								entry["typeId"] = kKnown[i].id;
+								entry["name"]   = kKnown[i].name;
+								types.append(entry);
+							}
+						}
+						result["types"] = types;
+						return result;
+					});
 
 				// register_type_editor — allows other plugins to bind a type to an editor
 				mBridge->RegisterRequestHandler(

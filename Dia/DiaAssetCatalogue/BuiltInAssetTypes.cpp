@@ -151,7 +151,37 @@ namespace Dia
 				desc.mTypeId         = Dia::Core::StringCRC("folder");
 				desc.mName           = Dia::Core::Containers::String64("Folder");
 				desc.mFilePattern    = Dia::Core::Containers::String64("*.folder");
-				desc.mDeserializeFn  = nullptr; // directory — no JSON schema
+				desc.mDeserializeFn  = nullptr;
+				registry.Register(desc);
+			}
+
+			// --- Entity Blueprint ---
+			{
+				AssetTypeDescriptor desc;
+				desc.mTypeId         = Dia::Core::StringCRC("diaentity");
+				desc.mName           = Dia::Core::Containers::String64("Entity Blueprint");
+				desc.mFilePattern    = Dia::Core::Containers::String64("*.diaentity");
+				desc.mDeserializeFn  = nullptr;
+				registry.Register(desc);
+			}
+
+			// --- Camera Blueprint ---
+			{
+				AssetTypeDescriptor desc;
+				desc.mTypeId         = Dia::Core::StringCRC("diacamera");
+				desc.mName           = Dia::Core::Containers::String64("Camera Blueprint");
+				desc.mFilePattern    = Dia::Core::Containers::String64("*.diacamera");
+				desc.mDeserializeFn  = nullptr;
+				registry.Register(desc);
+			}
+
+			// --- Light Blueprint ---
+			{
+				AssetTypeDescriptor desc;
+				desc.mTypeId         = Dia::Core::StringCRC("dialight");
+				desc.mName           = Dia::Core::Containers::String64("Light Blueprint");
+				desc.mFilePattern    = Dia::Core::Containers::String64("*.dialight");
+				desc.mDeserializeFn  = nullptr;
 				registry.Register(desc);
 			}
 		}
