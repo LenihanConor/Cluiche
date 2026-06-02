@@ -9,6 +9,7 @@
 #include "DiaSceneEditor/SceneHierarchyController.h"
 #include "DiaSceneEditor/PropertyInspectorController.h"
 #include "DiaSceneEditor/ProjectContextManager.h"
+#include "DiaSceneEditor/SceneMutator.h"
 
 namespace Dia
 {

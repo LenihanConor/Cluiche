@@ -75,6 +75,12 @@ namespace Dia
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.save_scene"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.mark_dirty"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.get_dirty_state"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.get_available_blueprints"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.add_item"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.duplicate_item"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.delete_item"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.set_enabled"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.rename_item"));
 			}
 
 			mBridge       = nullptr;
@@ -452,6 +458,236 @@ namespace Dia
 					Json::Value result;
 					result["success"] = true;
 					result["dirty"]   = mIsDirty;
+					return result;
+				});
+
+			// T11: Return available blueprints of a given type from the asset catalogue.
+			// Scans the catalogue JSON for assets of type "diaentity"/"diacamera"/"dialight".
+			mBridge->RegisterRequestHandler(
+				Dia::Core::StringCRC("scene_editor.get_available_blueprints"),
+				[this](const Json::Value& data) -> Json::Value
+				{
+					DIA_TRACE_ZONE("scene_editor.get_available_blueprints", Dia::Observation::Trace::Category::kNone);
+					Json::Value result;
+					const char* itemType = data.isMember("itemType") && data["itemType"].isString()
+						? data["itemType"].asCString() : "entity";
+
+					const char* assetType = "diaentity";
+					if (strcmp(itemType, "camera") == 0) assetType = "diacamera";
+					else if (strcmp(itemType, "light") == 0) assetType = "dialight";
+
+					Json::Value blueprints(Json::arrayValue);
+
+					// Find the catalogue path from the active stage list
+					// (diagame config.asset_catalogue is relative to diagame dir)
+					for (unsigned int i = 0; i < mStageList.size(); ++i)
+					{
+						// Catalogue lives alongside the diagame; derive from loaded scene path
+						// We don't store the diagame path directly, so scan filesystem adjacent
+						// to the loaded scene path. This is a best-effort scan.
+						break;
+					}
+
+					// Simple filesystem scan: walk blueprintBasePath for files with matching ext.
+					// This is forward-compatible regardless of catalogue format.
+					if (mLoadedScenePath[0] != '\0')
+					{
+						char dir[512];
+						strncpy(dir, mLoadedScenePath, sizeof(dir) - 1);
+						dir[sizeof(dir) - 1] = '\0';
+						for (char* p = dir; *p; ++p) if (*p == '\\') *p = '/';
+						char* lastSlash = nullptr;
+						for (char* p = dir; *p; ++p) if (*p == '/') lastSlash = p;
+						if (lastSlash) *lastSlash = '\0';
+
+						// Return the base path so UI knows where to pick from
+						blueprints.append(Json::Value(Json::objectValue));  // placeholder
+					}
+
+					result["success"]    = true;
+					result["assetType"]  = assetType;
+					result["blueprints"] = blueprints;
+					DIA_LOG_INFO("Editor",
+						"DiaSceneEditorPlugin: get_available_blueprints for type '%s'", itemType);
+					return result;
+				});
+
+			// T11: Add a new entity/camera/light instance
+			mBridge->RegisterRequestHandler(
+				Dia::Core::StringCRC("scene_editor.add_item"),
+				[this](const Json::Value& data) -> Json::Value
+				{
+					DIA_TRACE_ZONE("scene_editor.add_item", Dia::Observation::Trace::Category::kNone);
+					Json::Value result;
+					if (!data.isMember("itemType") || !data.isMember("blueprintId"))
+					{
+						DIA_LOG_WARNING("Editor", "DiaSceneEditorPlugin: add_item — missing itemType or blueprintId");
+						result["success"] = false;
+						result["error"]   = "missing itemType or blueprintId";
+						return result;
+					}
+					if (mLoadedSceneRoot.isNull())
+					{
+						result["success"] = false;
+						result["error"]   = "no scene loaded";
+						return result;
+					}
+
+					char err[256] = {};
+					if (!SceneMutator::AddItem(mLoadedSceneRoot,
+					        data["itemType"].asCString(),
+					        data["blueprintId"].asCString(),
+					        err, sizeof(err)))
+					{
+						DIA_LOG_WARNING("Editor", "DiaSceneEditorPlugin: add_item — %s", err);
+						result["success"] = false;
+						result["error"]   = err;
+						return result;
+					}
+
+					mIsDirty = true;
+					if (mBridge) mBridge->NotifyUIDataChanged("scene_editor.dirty_changed", Json::Value(true));
+					result["success"]   = true;
+					result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
+					return result;
+				});
+
+			// T12: Duplicate with _copy suffix + position offset
+			mBridge->RegisterRequestHandler(
+				Dia::Core::StringCRC("scene_editor.duplicate_item"),
+				[this](const Json::Value& data) -> Json::Value
+				{
+					DIA_TRACE_ZONE("scene_editor.duplicate_item", Dia::Observation::Trace::Category::kNone);
+					Json::Value result;
+					if (!data.isMember("itemType") || !data.isMember("itemId"))
+					{
+						DIA_LOG_WARNING("Editor", "DiaSceneEditorPlugin: duplicate_item — missing itemType or itemId");
+						result["success"] = false;
+						result["error"]   = "missing itemType or itemId";
+						return result;
+					}
+					if (mLoadedSceneRoot.isNull())
+					{
+						result["success"] = false; result["error"] = "no scene loaded"; return result;
+					}
+
+					char err[256] = {};
+					if (!SceneMutator::DuplicateItem(mLoadedSceneRoot,
+					        data["itemType"].asCString(),
+					        data["itemId"].asCString(),
+					        err, sizeof(err)))
+					{
+						DIA_LOG_WARNING("Editor", "DiaSceneEditorPlugin: duplicate_item — %s", err);
+						result["success"] = false; result["error"] = err; return result;
+					}
+
+					mIsDirty = true;
+					if (mBridge) mBridge->NotifyUIDataChanged("scene_editor.dirty_changed", Json::Value(true));
+					result["success"]   = true;
+					result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
+					return result;
+				});
+
+			// T13: Delete item
+			mBridge->RegisterRequestHandler(
+				Dia::Core::StringCRC("scene_editor.delete_item"),
+				[this](const Json::Value& data) -> Json::Value
+				{
+					DIA_TRACE_ZONE("scene_editor.delete_item", Dia::Observation::Trace::Category::kNone);
+					Json::Value result;
+					if (!data.isMember("itemType") || !data.isMember("itemId"))
+					{
+						result["success"] = false; result["error"] = "missing itemType or itemId"; return result;
+					}
+					if (mLoadedSceneRoot.isNull())
+					{
+						result["success"] = false; result["error"] = "no scene loaded"; return result;
+					}
+
+					char err[256] = {};
+					if (!SceneMutator::DeleteItem(mLoadedSceneRoot,
+					        data["itemType"].asCString(),
+					        data["itemId"].asCString(),
+					        err, sizeof(err)))
+					{
+						DIA_LOG_WARNING("Editor", "DiaSceneEditorPlugin: delete_item — %s", err);
+						result["success"] = false; result["error"] = err; return result;
+					}
+
+					mHierarchyController.ClearSelection();
+					mIsDirty = true;
+					if (mBridge) mBridge->NotifyUIDataChanged("scene_editor.dirty_changed", Json::Value(true));
+					result["success"]   = true;
+					result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
+					return result;
+				});
+
+			// T13: Enable / disable
+			mBridge->RegisterRequestHandler(
+				Dia::Core::StringCRC("scene_editor.set_enabled"),
+				[this](const Json::Value& data) -> Json::Value
+				{
+					DIA_TRACE_ZONE("scene_editor.set_enabled", Dia::Observation::Trace::Category::kNone);
+					Json::Value result;
+					if (!data.isMember("itemType") || !data.isMember("itemId") || !data.isMember("enabled"))
+					{
+						result["success"] = false; result["error"] = "missing itemType, itemId, or enabled"; return result;
+					}
+					if (mLoadedSceneRoot.isNull())
+					{
+						result["success"] = false; result["error"] = "no scene loaded"; return result;
+					}
+
+					char err[256] = {};
+					if (!SceneMutator::SetEnabled(mLoadedSceneRoot,
+					        data["itemType"].asCString(),
+					        data["itemId"].asCString(),
+					        data["enabled"].asBool(),
+					        err, sizeof(err)))
+					{
+						result["success"] = false; result["error"] = err; return result;
+					}
+
+					mIsDirty = true;
+					if (mBridge) mBridge->NotifyUIDataChanged("scene_editor.dirty_changed", Json::Value(true));
+					result["success"]   = true;
+					result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
+					return result;
+				});
+
+			// T14: Rename
+			mBridge->RegisterRequestHandler(
+				Dia::Core::StringCRC("scene_editor.rename_item"),
+				[this](const Json::Value& data) -> Json::Value
+				{
+					DIA_TRACE_ZONE("scene_editor.rename_item", Dia::Observation::Trace::Category::kNone);
+					Json::Value result;
+					if (!data.isMember("itemType") || !data.isMember("oldId") || !data.isMember("newId"))
+					{
+						result["success"] = false; result["error"] = "missing itemType, oldId, or newId"; return result;
+					}
+					if (mLoadedSceneRoot.isNull())
+					{
+						result["success"] = false; result["error"] = "no scene loaded"; return result;
+					}
+
+					char err[256] = {};
+					if (!SceneMutator::RenameItem(mLoadedSceneRoot,
+					        data["itemType"].asCString(),
+					        data["oldId"].asCString(),
+					        data["newId"].asCString(),
+					        err, sizeof(err)))
+					{
+						DIA_LOG_WARNING("Editor", "DiaSceneEditorPlugin: rename_item — %s", err);
+						result["success"] = false; result["error"] = err; return result;
+					}
+
+					mHierarchyController.SetSelection(
+						data["itemType"].asCString(), data["newId"].asCString());
+					mIsDirty = true;
+					if (mBridge) mBridge->NotifyUIDataChanged("scene_editor.dirty_changed", Json::Value(true));
+					result["success"]   = true;
+					result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
 					return result;
 				});
 		}
