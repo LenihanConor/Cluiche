@@ -1,4 +1,4 @@
-# System Spec: DiaEntityEditor
+# System Spec: DiaEntityInspector
 
 **Research:** @docs/research/diaentit_visual_debug/summary.md
 **Mockup:** @docs/research/diaentit_visual_debug/mockup_b_split.html
@@ -8,7 +8,7 @@
 
 ## Purpose
 
-DiaEntityEditor is a CluicheEditor plugin that provides live runtime inspection and field editing of DiaEntity `Domain` state. It connects to a running game via WebSocket, subscribes to the `entity.inspect` data topic, and renders a split-panel UI showing the entity list on the left and a detail pane on the right.
+DiaEntityInspector is a CluicheEditor plugin that provides live runtime inspection and field editing of DiaEntity `Domain` state. It connects to a running game via WebSocket, subscribes to the `entity.inspect` data topic, and renders a split-panel UI showing the entity list on the left and a detail pane on the right.
 
 The editor exposes four tabs in the detail pane:
 - **Fields** — component accordion with live-editable field widgets (Tier b)
@@ -16,13 +16,13 @@ The editor exposes four tabs in the detail pane:
 - **Mailbox** — ring-buffer log of dispatched messages for the selected entity
 - **Watch** — persistent (entity, component, field) triples that survive reconnects
 
-**Location:** `Dia/DiaEntityEditor/` — implements `IEditorPlugin` from DiaEditor framework.
+**Location:** `Dia/DiaEntityInspector/` — implements `IEditorPlugin` from DiaEditor framework.
 
 **UI layout:** Option B split panel — 30% left (persistent entity list + search + filter chips) / 70% right (context strip + sub-tabs). Detailed in mockup_b_split.html.
 
 ## Responsibilities
 
-- Implement `DiaEntityEditorPlugin` — `IEditorPlugin` subclass, entry point for CluicheEditor
+- Implement `DiaEntityInspectorPlugin` — `IEditorPlugin` subclass, entry point for CluicheEditor
 - Implement `EntityInspectorController` — subscribes to `entity.inspect` topic; drives Fields tab
 - Implement `QueryBrowserController` — subscribes to `entity.inspect` topic; drives Queries tab
 - Implement `MailboxMonitorController` — receives mailbox_log entries from the inspect payload; drives Mailbox tab
@@ -37,7 +37,7 @@ The editor exposes four tabs in the detail pane:
 
 - Rendering — UI is React/web served via CEF; this system provides data and command routing only
 - Viewport entity picking — handled by DiaVisualDebugger `debug-entity-picking` feature; this system only consumes the selected entity ID
-- Blueprint authoring — static file editing is DiaEntityBlueprintEditor's domain
+- Blueprint authoring — static file editing belongs in DiaSceneEditor
 - Tier (c) structural edit (add/remove component, create/destroy entity) — deferred; controls rendered but disabled
 
 ## Public Interfaces
@@ -88,10 +88,10 @@ Pushed via `kDataUpdate` with `dataType = kEntityInspect`:
 }
 ```
 
-### EntityInspectSerializer (game side, in DiaEntityEditor)
+### EntityInspectSerializer (game side, in DiaEntityInspector)
 
 ```cpp
-namespace Dia::EntityEditor {
+namespace Dia::EntityInspector {
     // Serializes the current state of a specific entity from a Domain into
     // the entity.inspect JSON payload. Called by the DiaDebugServer topic handler.
     Json::Value SerializeEntityInspect(
@@ -100,11 +100,11 @@ namespace Dia::EntityEditor {
 }
 ```
 
-### DiaEntityEditorPlugin (editor side)
+### DiaEntityInspectorPlugin (editor side)
 
 ```cpp
-namespace Dia::EntityEditor {
-    class DiaEntityEditorPlugin final : public Dia::Editor::IEditorPlugin {
+namespace Dia::EntityInspector {
+    class DiaEntityInspectorPlugin final : public Dia::Editor::IEditorPlugin {
     public:
         const char* GetName() const override;
         const char* GetVersion() const override;
@@ -130,7 +130,7 @@ namespace Dia::EntityEditor {
 |----|----------|-----------|
 | SED-ENT-001 | `entity.inspect` push is hybrid: immediate on selection change, slow poll every 30 frames | Responsive to selection; keeps channel quiet when nothing changes |
 | SED-ENT-002 | Watch list stable reference = entity debug name (string), not entity handle | Handles change across reconnects; names are user-controlled identifiers |
-| SED-ENT-003 | `EntityInspectSerializer` is a free function in DiaEntityEditor, not a method on Domain | Domain stays clean; serialization concern belongs in the editor layer |
+| SED-ENT-003 | `EntityInspectSerializer` is a free function in DiaEntityInspector, not a method on Domain | Domain stays clean; serialization concern belongs in the editor layer |
 | SED-ENT-004 | Tier (c) structural edit controls (add/remove component, create/destroy entity) rendered but disabled in v1 | Signals future capability; avoids user confusion about missing controls |
 | SED-ENT-005 | `entity.write_field` command is DiaAPI-routed; the server calls `IEntityInspectable::WriteField` | Consistent command routing; no parallel write path |
 | SED-ENT-006 | `entity.find_by_name` command returns entity handle (index + gen) for watch list rebind | O(N) scan acceptable for editor use per AI Review Q4 in editor-inspection spec |
@@ -142,20 +142,20 @@ namespace Dia::EntityEditor {
 
 | Feature | Description | Spec | Status |
 |---------|-------------|------|--------|
-| entity-inspector-panel | Plugin scaffold + entity list + component field accordion + Tier (b) live field edit + `entity.inspect` WebSocket topic + `EntityInspectSerializer` | [entity-inspector-panel.md](../../features/dia/diaentityeditor/entity-inspector-panel.md) | Approved |
-| query-browser-tab | Query signatures + result counts + entity membership display in Queries tab | [query-browser-tab.md](../../features/dia/diaentityeditor/query-browser-tab.md) | Approved |
-| mailbox-traffic-monitor | Ring-buffer log of dispatched messages, histogram, pause/snapshot in Mailbox tab | [mailbox-traffic-monitor.md](../../features/dia/diaentityeditor/mailbox-traffic-monitor.md) | Approved |
-| entity-watch-list | Persistent (entity, component, field) triple watch list; stable re-bind on reconnect | [entity-watch-list.md](../../features/dia/diaentityeditor/entity-watch-list.md) | Approved |
+| entity-inspector-panel | Plugin scaffold + entity list + component field accordion + Tier (b) live field edit + `entity.inspect` WebSocket topic + `EntityInspectSerializer` | [entity-inspector-panel.md](../../features/dia/diaentityinspector/entity-inspector-panel.md) | Approved |
+| query-browser-tab | Query signatures + result counts + entity membership display in Queries tab | [query-browser-tab.md](../../features/dia/diaentityinspector/query-browser-tab.md) | Approved |
+| mailbox-traffic-monitor | Ring-buffer log of dispatched messages, histogram, pause/snapshot in Mailbox tab | [mailbox-traffic-monitor.md](../../features/dia/diaentityinspector/mailbox-traffic-monitor.md) | Approved |
+| entity-watch-list | Persistent (entity, component, field) triple watch list; stable re-bind on reconnect | [entity-watch-list.md](../../features/dia/diaentityinspector/entity-watch-list.md) | Approved |
 
 ## Inherited Binding Decisions
 
 | ID | Decision | Compliance |
 |----|----------|------------|
 | PD-001 | StringCRC for all entity/component IDs | All data type constants (`kEntityInspect`, etc.) are `StringCRC`. Component type IDs in the JSON payload carry both CRC value and string name. Compliant. |
-| PD-002 | ProcessingUnit/Phase/Module architecture for app structure | DiaEntityEditor is a pure library (`IEditorPlugin` subclass). No Module/Phase/PU. Application flow lives in CluicheEditor. Compliant with SED-015 (DiaEditor library rule). |
+| PD-002 | ProcessingUnit/Phase/Module architecture for app structure | DiaEntityInspector is a pure library (`IEditorPlugin` subclass). No Module/Phase/PU. Application flow lives in CluicheEditor. Compliant with SED-015 (DiaEditor library rule). |
 | PD-004 | No STL containers in public APIs | `EntityInspectSerializer` returns `Json::Value` (blessed). Controller internals may use STL privately. No STL in the `IEditorPlugin` interface or public headers. Compliant. |
 | PD-005 | x64 only | No 32-bit code paths. Compliant. |
-| PD-006 | Visual Studio project files are source of truth | New `DiaEntityEditor.vcxproj` follows existing project file conventions. Compliant. |
+| PD-006 | Visual Studio project files are source of truth | New `DiaEntityInspector.vcxproj` follows existing project file conventions. Compliant. |
 | PD-007 | C++20 required | All new code compiled under `/std:c++20`. Compliant. |
 | PD-008 | `Directory.Build.props` owns output paths | No per-project output overrides. Compliant. |
 

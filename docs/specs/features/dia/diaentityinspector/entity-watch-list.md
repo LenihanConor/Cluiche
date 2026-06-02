@@ -1,6 +1,6 @@
 # Feature Spec: entity-watch-list
 
-**System:** DiaEntityEditor
+**System:** DiaEntityInspector
 **App:** Dia
 **Status:** Draft
 **Mockup:** @docs/research/diaentit_visual_debug/mockup_b_split.html
@@ -15,7 +15,7 @@ Implement the Watch tab: a persistent, ordered list of (entity debug name, compo
 |---|---|
 | Platform | [Cluiche.md](../../../../platform/Cluiche.md) |
 | Application | [dia.md](../../../applications/dia.md) |
-| System | [diaentityeditor.md](../../systems/dia/diaentityeditor.md) |
+| System | [diaentityinspector.md](../../systems/dia/diaentityinspector.md) |
 | Depends on feature | [entity-inspector-panel.md](entity-inspector-panel.md) |
 | Depends on feature | [editor-inspection.md](../diaentity/editor-inspection.md) |
 
@@ -98,13 +98,13 @@ And reads back the `entity.inspect` payload, extracting only the fields it needs
 
 | File | Change |
 |---|---|
-| `Dia/DiaEntityEditor/EntityWatchListController.h` | New |
-| `Dia/DiaEntityEditor/EntityWatchListController.cpp` | New — watch entry store, reconnect re-bind, per-entity poll, value extraction |
-| `Dia/DiaEntityEditor/DiaEntityEditorPlugin.h` | Modified — add `EntityWatchListController mWatchController` member |
-| `Dia/DiaEntityEditor/DiaEntityEditorPlugin.cpp` | Modified — forward payload + reconnect callback to `mWatchController` |
-| `Dia/DiaEntityEditor/DiaEntityEditor.vcxproj` | Add `EntityWatchListController.h/.cpp` |
-| `Dia/DiaEntityEditor/DiaEntityEditor.vcxproj.filters` | Add `EntityWatchListController.h/.cpp` |
-| `Tests/GoogleTests/DiaEntityEditor/EntityWatchListTests.cpp` | New — add/remove/deduplicate, reconnect re-bind, not-found status, max capacity |
+| `Dia/DiaEntityInspector/EntityWatchListController.h` | New |
+| `Dia/DiaEntityInspector/EntityWatchListController.cpp` | New — watch entry store, reconnect re-bind, per-entity poll, value extraction |
+| `Dia/DiaEntityInspector/DiaEntityInspectorPlugin.h` | Modified — add `EntityWatchListController mWatchController` member |
+| `Dia/DiaEntityInspector/DiaEntityInspectorPlugin.cpp` | Modified — forward payload + reconnect callback to `mWatchController` |
+| `Dia/DiaEntityInspector/DiaEntityInspector.vcxproj` | Add `EntityWatchListController.h/.cpp` |
+| `Dia/DiaEntityInspector/DiaEntityInspector.vcxproj.filters` | Add `EntityWatchListController.h/.cpp` |
+| `Tests/GoogleTests/DiaEntityInspector/EntityWatchListTests.cpp` | New — add/remove/deduplicate, reconnect re-bind, not-found status, max capacity |
 
 ## Binding Decisions Compliance
 
@@ -126,7 +126,7 @@ And reads back the `entity.inspect` payload, extracting only the fields it needs
 |---|---------|----------|--------|
 | 1 | Poll rate for non-selected entities | The watch list polls each watched entity every 30 frames (same slow-poll rate as the selected entity). If 10 entities are watched, this is 10 `entity.inspect_request` messages per 30 frames. Is that acceptable traffic? | 10 requests per 30 frames at 60 FPS = one request every 3 frames = ~20 requests/second total. Each response is ~1–2 KB. ~40 KB/s total — well within WebSocket capacity for a local debug connection. Acceptable for v1. If the watch list grows large, a dedicated `entity.watch_values` topic (game-side aggregated push) is a future optimisation. |
 | 2 | Value extraction from inspect payload | The watch list needs only specific (component, field) pairs from the `entity.inspect` payload. Should the controller parse the full payload or send a filtered request? | Parse the full payload — the inspect payload is small and already structured. Sending a filtered request would require a new protocol message type. Full parse is simpler and sufficient. |
-| 3 | Reconnect callback source | `EntityWatchListController` needs to be notified on reconnect to trigger re-bind. Which object owns the reconnect callback, and how is the controller registered? | `DiaEntityEditorPlugin::OnUpdate` polls `GameConnectionManager`'s connection state each tick. On transition from disconnected → connected, it calls `mWatchController.OnReconnect()`. No separate callback registration mechanism needed — the plugin already has access to both. |
+| 3 | Reconnect callback source | `EntityWatchListController` needs to be notified on reconnect to trigger re-bind. Which object owns the reconnect callback, and how is the controller registered? | `DiaEntityInspectorPlugin::OnUpdate` polls `GameConnectionManager`'s connection state each tick. On transition from disconnected → connected, it calls `mWatchController.OnReconnect()`. No separate callback registration mechanism needed — the plugin already has access to both. |
 | 4 | "Stale" status timing | A row is marked `stale` when "entity not updated this tick." How many missed ticks before a `live` entry becomes `stale`? | After 2 consecutive slow-poll ticks with no response for that entity (i.e. 60 frames / ~1 second), the entry transitions to `stale`. This prevents flicker on a single dropped poll while still alerting the developer that data is no longer flowing. |
 | 5 | Manual add input validation | The manual-add row requires entity name, component name, and field name as free-text strings. What validation happens on "Add"? | On Add: (1) send `entity.find_by_name` — if not found, add entry immediately with Status `not found` (user may have typed it for an entity not yet spawned); (2) if found, send `entity.inspect_request` and validate component + field exist before setting Status `live`. Entry is added to the list immediately regardless of validation outcome — the Status column communicates resolution. |
 

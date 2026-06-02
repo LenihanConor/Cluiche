@@ -1,4 +1,5 @@
 #include "DiaSceneEditor/SceneValidator.h"
+#include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <cstring>
 #include <cstdio>
@@ -198,6 +199,11 @@ namespace Dia
 			CheckDefaultLayerPresent(scene, warnings);
 			CheckUniqueIds(scene, errors);
 			CheckLayerReferences(scene, warnings);
+
+			if (errors.size() > 0)
+				DIA_LOG_WARNING("Editor", "SceneValidator: %u error(s) found", errors.size());
+			if (warnings.size() > 0)
+				DIA_LOG_INFO("Editor", "SceneValidator: %u warning(s) found", warnings.size());
 
 			result["valid"]    = errors.size() == 0;
 			result["errors"]   = errors;

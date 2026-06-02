@@ -298,11 +298,15 @@ namespace Dia
                     "\"frame_number\":%llu,"
                     "\"filename\":\"%s\","
                     "\"tag_crc\":\"%08x\","
+                    "\"tag_name\":\"%.64s\","
+                    "\"context\":\"%.128s\","
                     "\"trigger\":\"%s\","
                     "\"scenario_step_crc\":\"%08x\"}\n",
                     static_cast<unsigned long long>(capture.frameNumber),
                     filename,
                     static_cast<unsigned int>(capture.metadata.tag.Value()),
+                    capture.metadata.tag.AsChar(),
+                    capture.metadata.context,
                     triggerStr,
                     static_cast<unsigned int>(capture.scenarioStepCrc));
 

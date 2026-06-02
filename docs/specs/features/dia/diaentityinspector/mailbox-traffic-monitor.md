@@ -1,6 +1,6 @@
 # Feature Spec: mailbox-traffic-monitor
 
-**System:** DiaEntityEditor
+**System:** DiaEntityInspector
 **App:** Dia
 **Status:** Draft
 **Mockup:** @docs/research/diaentit_visual_debug/mockup_b_split.html
@@ -15,7 +15,7 @@ Populate the `mailbox_log` array in the `entity.inspect` payload by maintaining 
 |---|---|
 | Platform | [Cluiche.md](../../../../platform/Cluiche.md) |
 | Application | [dia.md](../../../applications/dia.md) |
-| System | [diaentityeditor.md](../../systems/dia/diaentityeditor.md) |
+| System | [diaentityinspector.md](../../systems/dia/diaentityinspector.md) |
 | Depends on feature | [entity-inspector-panel.md](entity-inspector-panel.md) |
 | Depends on feature | [editor-inspection.md](../diaentity/editor-inspection.md) |
 | Depends on system | [diamailbox.md](../../systems/dia/diamailbox.md) |
@@ -44,8 +44,8 @@ Populate the `mailbox_log` array in the `entity.inspect` payload by maintaining 
 
 ### MailboxMonitorController (editor side)
 
-- `MailboxMonitorController` class added to `Dia/DiaEntityEditor/`
-- Owned by `DiaEntityEditorPlugin`; receives the `entity.inspect` payload from `EntityInspectorController`
+- `MailboxMonitorController` class added to `Dia/DiaEntityInspector/`
+- Owned by `DiaEntityInspectorPlugin`; receives the `entity.inspect` payload from `EntityInspectorController`
 - Parses `mailbox_log` and maintains an editor-side append buffer (up to 256 entries total, discards oldest on overflow)
 - When "paused", the controller stops updating the display buffer from incoming payloads but continues buffering internally
 - On "snapshot", the controller exports the current display buffer as a JSON file to the local filesystem via a DiaAPI `entity.mailbox_snapshot` command
@@ -116,14 +116,14 @@ uint32_t mFrameCounter   = 0;   // incremented each EndOfFrame()
 | `Dia/DiaEntity/IEntityInspectable.h` | Add `MessageLogEntry` struct + `GetMessageLog` virtual method |
 | `Dia/DiaEntity/Domain.h` | Add `mMessageLog`, `mMessageLogHead`, `mFrameCounter` members; add internal `AppendMessageLog` |
 | `Dia/DiaEntity/Domain.cpp` | Implement ring buffer append in `EndOfFrame()` drain pass; implement `GetMessageLog` |
-| `Dia/DiaEntityEditor/EntityInspectSerializer.cpp` | Modified — fill `mailbox_log` array (previously empty `[]`) |
-| `Dia/DiaEntityEditor/MailboxMonitorController.h` | New |
-| `Dia/DiaEntityEditor/MailboxMonitorController.cpp` | New — includes `entity.mailbox_snapshot` command handler (returns log as response payload) |
-| `Dia/DiaEntityEditor/DiaEntityEditorPlugin.h` | Modified — add `MailboxMonitorController mMailboxController` member |
-| `Dia/DiaEntityEditor/DiaEntityEditorPlugin.cpp` | Modified — forward payload to `mMailboxController` |
-| `Dia/DiaEntityEditor/DiaEntityEditor.vcxproj` | Add `MailboxMonitorController.h/.cpp` |
-| `Dia/DiaEntityEditor/DiaEntityEditor.vcxproj.filters` | Add `MailboxMonitorController.h/.cpp` |
-| `Tests/GoogleTests/DiaEntityEditor/MailboxMonitorTests.cpp` | New — ring buffer fill, entity filter, pause semantics |
+| `Dia/DiaEntityInspector/EntityInspectSerializer.cpp` | Modified — fill `mailbox_log` array (previously empty `[]`) |
+| `Dia/DiaEntityInspector/MailboxMonitorController.h` | New |
+| `Dia/DiaEntityInspector/MailboxMonitorController.cpp` | New — includes `entity.mailbox_snapshot` command handler (returns log as response payload) |
+| `Dia/DiaEntityInspector/DiaEntityInspectorPlugin.h` | Modified — add `MailboxMonitorController mMailboxController` member |
+| `Dia/DiaEntityInspector/DiaEntityInspectorPlugin.cpp` | Modified — forward payload to `mMailboxController` |
+| `Dia/DiaEntityInspector/DiaEntityInspector.vcxproj` | Add `MailboxMonitorController.h/.cpp` |
+| `Dia/DiaEntityInspector/DiaEntityInspector.vcxproj.filters` | Add `MailboxMonitorController.h/.cpp` |
+| `Tests/GoogleTests/DiaEntityInspector/MailboxMonitorTests.cpp` | New — ring buffer fill, entity filter, pause semantics |
 | `Tests/GoogleTests/DiaEntity/MessageLogTests.cpp` | New — ring overflow, frame counter, per-entity filter |
 
 ## Binding Decisions Compliance

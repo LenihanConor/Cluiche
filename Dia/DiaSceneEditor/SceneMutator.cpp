@@ -1,5 +1,6 @@
 #include "DiaSceneEditor/SceneMutator.h"
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Trace/DiaTrace.h>
 #include <cstring>
 #include <cctype>
 #include <cstdio>
@@ -68,6 +69,7 @@ namespace Dia
 		                           const char*  blueprintId,
 		                           char* errBuf, int errBufSize)
 		{
+			DIA_TRACE_ZONE("SceneMutator::AddItem", Dia::Observation::Trace::Category::kNone);
 			const char* arrayKey = ArrayKey(itemType);
 			if (!arrayKey)
 			{
@@ -123,6 +125,7 @@ namespace Dia
 		                                  const char*  itemId,
 		                                  char* errBuf, int errBufSize)
 		{
+			DIA_TRACE_ZONE("SceneMutator::DuplicateItem", Dia::Observation::Trace::Category::kNone);
 			const char* arrayKey = ArrayKey(itemType);
 			if (!arrayKey || !sceneRoot.isMember("scene2d"))
 			{
@@ -201,6 +204,7 @@ namespace Dia
 		                               const char*  itemId,
 		                               char* errBuf, int errBufSize)
 		{
+			DIA_TRACE_ZONE("SceneMutator::DeleteItem", Dia::Observation::Trace::Category::kNone);
 			const char* arrayKey = ArrayKey(itemType);
 			if (!arrayKey || !sceneRoot.isMember("scene2d"))
 			{
@@ -245,6 +249,7 @@ namespace Dia
 		                               bool         enabled,
 		                               char* errBuf, int errBufSize)
 		{
+			DIA_TRACE_ZONE("SceneMutator::SetEnabled", Dia::Observation::Trace::Category::kNone);
 			const char* arrayKey = ArrayKey(itemType);
 			if (!arrayKey || !sceneRoot.isMember("scene2d"))
 			{
@@ -284,6 +289,7 @@ namespace Dia
 		                               const char*  newId,
 		                               char* errBuf, int errBufSize)
 		{
+			DIA_TRACE_ZONE("SceneMutator::RenameItem", Dia::Observation::Trace::Category::kNone);
 			if (!IsValidId(newId))
 			{
 				if (errBuf) snprintf(errBuf, errBufSize,
@@ -340,6 +346,7 @@ namespace Dia
 		    const char*        itemId,
 		    const Json::Value& newBlueprintComponents)
 		{
+			DIA_TRACE_ZONE("SceneMutator::AnalyseChangeBlueprintJson", Dia::Observation::Trace::Category::kNone);
 			Json::Value result(Json::objectValue);
 			Json::Value transferred(Json::arrayValue);
 			Json::Value orphaned(Json::arrayValue);
@@ -410,6 +417,7 @@ namespace Dia
 		                                    const Json::Value& newBlueprintComponents,
 		                                    char* errBuf, int errBufSize)
 		{
+			DIA_TRACE_ZONE("SceneMutator::ChangeBlueprint", Dia::Observation::Trace::Category::kNone);
 			const char* arrayKey = ArrayKey(itemType);
 			if (!arrayKey || !sceneRoot.isMember("scene2d"))
 			{
@@ -465,6 +473,7 @@ namespace Dia
 		                             const char*  layerId,
 		                             char* errBuf, int errBufSize)
 		{
+			DIA_TRACE_ZONE("SceneMutator::AddLayer", Dia::Observation::Trace::Category::kNone);
 			if (!IsValidId(layerId))
 			{
 				if (errBuf) snprintf(errBuf, errBufSize, "invalid layer id '%s'", layerId ? layerId : "");
@@ -511,6 +520,7 @@ namespace Dia
 		                                const char*  layerId,
 		                                char* errBuf, int errBufSize)
 		{
+			DIA_TRACE_ZONE("SceneMutator::DeleteLayer", Dia::Observation::Trace::Category::kNone);
 			if (!sceneRoot.isMember("scene2d"))
 			{
 				if (errBuf) snprintf(errBuf, errBufSize, "scene2d root missing");
@@ -570,6 +580,7 @@ namespace Dia
 		                                 int          newIndex,
 		                                 char* errBuf, int errBufSize)
 		{
+			DIA_TRACE_ZONE("SceneMutator::ReorderLayer", Dia::Observation::Trace::Category::kNone);
 			if (!sceneRoot.isMember("scene2d"))
 			{
 				if (errBuf) snprintf(errBuf, errBufSize, "scene2d root missing");
@@ -616,6 +627,7 @@ namespace Dia
 		                                const Json::Value& fields,
 		                                char* errBuf, int errBufSize)
 		{
+			DIA_TRACE_ZONE("SceneMutator::UpdateLayer", Dia::Observation::Trace::Category::kNone);
 			if (!sceneRoot.isMember("scene2d")) { if (errBuf) snprintf(errBuf, errBufSize, "scene2d root missing"); return false; }
 
 			Json::Value& arr = sceneRoot["scene2d"]["layers"];
@@ -640,6 +652,7 @@ namespace Dia
 		                                    const char*  cameraId,
 		                                    char* errBuf, int errBufSize)
 		{
+			DIA_TRACE_ZONE("SceneMutator::SetCameraActive", Dia::Observation::Trace::Category::kNone);
 			if (!sceneRoot.isMember("scene2d")) { if (errBuf) snprintf(errBuf, errBufSize, "scene2d root missing"); return false; }
 
 			Json::Value& arr = sceneRoot["scene2d"]["cameras"];
@@ -665,6 +678,7 @@ namespace Dia
 		                                          const Json::Value& layerIds,
 		                                          char* errBuf, int errBufSize)
 		{
+			DIA_TRACE_ZONE("SceneMutator::SetLightAffectsLayers", Dia::Observation::Trace::Category::kNone);
 			if (!sceneRoot.isMember("scene2d")) { if (errBuf) snprintf(errBuf, errBufSize, "scene2d root missing"); return false; }
 
 			Json::Value& arr = sceneRoot["scene2d"]["lights"];
@@ -725,6 +739,7 @@ namespace Dia
 		                                const Json::Value& defaultValue,
 		                                char* errBuf, int errBufSize)
 		{
+			DIA_TRACE_ZONE("SceneMutator::AddOverride", Dia::Observation::Trace::Category::kNone);
 			const char* ak = ArrayKey(itemType);
 			if (!ak || !sceneRoot.isMember("scene2d")) { if (errBuf) snprintf(errBuf, errBufSize, "invalid type or scene"); return false; }
 
@@ -745,6 +760,7 @@ namespace Dia
 		                                   const char*  overrideKey,
 		                                   char* errBuf, int errBufSize)
 		{
+			DIA_TRACE_ZONE("SceneMutator::RemoveOverride", Dia::Observation::Trace::Category::kNone);
 			const char* ak = ArrayKey(itemType);
 			if (!ak || !sceneRoot.isMember("scene2d")) { if (errBuf) snprintf(errBuf, errBufSize, "invalid type or scene"); return false; }
 
@@ -765,6 +781,7 @@ namespace Dia
 		                                   const Json::Value& value,
 		                                   char* errBuf, int errBufSize)
 		{
+			DIA_TRACE_ZONE("SceneMutator::UpdateOverride", Dia::Observation::Trace::Category::kNone);
 			const char* ak = ArrayKey(itemType);
 			if (!ak || !sceneRoot.isMember("scene2d")) { if (errBuf) snprintf(errBuf, errBufSize, "invalid type or scene"); return false; }
 

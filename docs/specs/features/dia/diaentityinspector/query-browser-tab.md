@@ -1,6 +1,6 @@
 # Feature Spec: query-browser-tab
 
-**System:** DiaEntityEditor
+**System:** DiaEntityInspector
 **App:** Dia
 **Status:** Draft
 **Mockup:** @docs/research/diaentit_visual_debug/mockup_b_split.html
@@ -15,7 +15,7 @@ Fill in the `queries` array in the `entity.inspect` payload and implement `Query
 |---|---|
 | Platform | [Cluiche.md](../../../../platform/Cluiche.md) |
 | Application | [dia.md](../../../applications/dia.md) |
-| System | [diaentityeditor.md](../../systems/dia/diaentityeditor.md) |
+| System | [diaentityinspector.md](../../systems/dia/diaentityinspector.md) |
 | Depends on feature | [entity-inspector-panel.md](entity-inspector-panel.md) |
 | Depends on feature | [editor-inspection.md](../diaentity/editor-inspection.md) |
 
@@ -38,8 +38,8 @@ Fill in the `queries` array in the `entity.inspect` payload and implement `Query
 
 ### QueryBrowserController (editor side)
 
-- `QueryBrowserController` class added to `Dia/DiaEntityEditor/`
-- Constructed and owned by `DiaEntityEditorPlugin`
+- `QueryBrowserController` class added to `Dia/DiaEntityInspector/`
+- Constructed and owned by `DiaEntityInspectorPlugin`
 - Receives the `entity.inspect` JSON payload (forwarded from `EntityInspectorController`)
 - Parses the `queries` array and exposes it to the Queries tab React component via `WebUIBridge`
 - Does not make any independent WebSocket requests — it consumes the existing payload
@@ -110,14 +110,14 @@ for (uint32_t qi = 0; qi < domain.GetQueryCount(); ++qi) {
 
 | File | Change |
 |---|---|
-| `Dia/DiaEntityEditor/EntityInspectSerializer.cpp` | Modified — fill `queries` array (previously empty `[]`) |
-| `Dia/DiaEntityEditor/QueryBrowserController.h` | New |
-| `Dia/DiaEntityEditor/QueryBrowserController.cpp` | New |
-| `Dia/DiaEntityEditor/DiaEntityEditorPlugin.h` | Modified — add `QueryBrowserController mQueryController` member |
-| `Dia/DiaEntityEditor/DiaEntityEditorPlugin.cpp` | Modified — forward payload to `mQueryController` |
-| `Dia/DiaEntityEditor/DiaEntityEditor.vcxproj` | Add `QueryBrowserController.h/.cpp` |
-| `Dia/DiaEntityEditor/DiaEntityEditor.vcxproj.filters` | Add `QueryBrowserController.h/.cpp` |
-| `Tests/GoogleTests/DiaEntityEditor/QueryBrowserSerializerTests.cpp` | New — membership computation, edge cases |
+| `Dia/DiaEntityInspector/EntityInspectSerializer.cpp` | Modified — fill `queries` array (previously empty `[]`) |
+| `Dia/DiaEntityInspector/QueryBrowserController.h` | New |
+| `Dia/DiaEntityInspector/QueryBrowserController.cpp` | New |
+| `Dia/DiaEntityInspector/DiaEntityInspectorPlugin.h` | Modified — add `QueryBrowserController mQueryController` member |
+| `Dia/DiaEntityInspector/DiaEntityInspectorPlugin.cpp` | Modified — forward payload to `mQueryController` |
+| `Dia/DiaEntityInspector/DiaEntityInspector.vcxproj` | Add `QueryBrowserController.h/.cpp` |
+| `Dia/DiaEntityInspector/DiaEntityInspector.vcxproj.filters` | Add `QueryBrowserController.h/.cpp` |
+| `Tests/GoogleTests/DiaEntityInspector/QueryBrowserSerializerTests.cpp` | New — membership computation, edge cases |
 
 ## Binding Decisions Compliance
 

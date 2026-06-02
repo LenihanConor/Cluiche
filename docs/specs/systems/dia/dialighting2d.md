@@ -3,7 +3,7 @@
 ## Parent Application
 @docs/specs/applications/dia.md
 
-**Status:** `Approved`
+**Status:** `Done`
 
 **Research:** @docs/research/diascene2d/design-decisions.md (section 6)
 
