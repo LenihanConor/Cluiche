@@ -18,7 +18,7 @@ public:
 
 private:
     const Dia::ApplicationFlow::Editor::ManifestEditorState& mState;
-    const bool& mIsLiveConnected;
+    [[maybe_unused]] const bool& mIsLiveConnected;
 };
 
 }} // namespace Dia::Editor
