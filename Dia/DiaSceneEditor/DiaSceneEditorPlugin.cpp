@@ -81,6 +81,20 @@ namespace Dia
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.delete_item"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.set_enabled"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.rename_item"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.analyse_change_blueprint"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.change_blueprint"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.add_layer"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.delete_layer"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.reorder_layer"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.update_layer"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.set_camera_active"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.set_light_affects_layers"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.add_override"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.remove_override"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.update_override"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.validate"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.get_scene_properties"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.set_world_bounds"));
 			}
 
 			mBridge       = nullptr;
@@ -688,6 +702,282 @@ namespace Dia
 					if (mBridge) mBridge->NotifyUIDataChanged("scene_editor.dirty_changed", Json::Value(true));
 					result["success"]   = true;
 					result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
+					return result;
+				});
+
+			// ── T16: Change Blueprint ────────────────────────────────────────────────
+
+			mBridge->RegisterRequestHandler(
+				Dia::Core::StringCRC("scene_editor.analyse_change_blueprint"),
+				[this](const Json::Value& data) -> Json::Value
+				{
+					DIA_TRACE_ZONE("scene_editor.analyse_change_blueprint", Dia::Observation::Trace::Category::kNone);
+					Json::Value result;
+					if (!data.isMember("itemType") || !data.isMember("itemId")
+					    || !data.isMember("newBlueprintComponents"))
+					{
+						result["success"] = false; result["error"] = "missing required fields"; return result;
+					}
+					if (mLoadedSceneRoot.isNull()) { result["success"] = false; result["error"] = "no scene loaded"; return result; }
+
+					result["success"]  = true;
+					result["analysis"] = SceneMutator::AnalyseChangeBlueprintJson(
+						mLoadedSceneRoot,
+						data["itemType"].asCString(),
+						data["itemId"].asCString(),
+						data["newBlueprintComponents"]);
+					return result;
+				});
+
+			mBridge->RegisterRequestHandler(
+				Dia::Core::StringCRC("scene_editor.change_blueprint"),
+				[this](const Json::Value& data) -> Json::Value
+				{
+					DIA_TRACE_ZONE("scene_editor.change_blueprint", Dia::Observation::Trace::Category::kNone);
+					Json::Value result;
+					if (!data.isMember("itemType") || !data.isMember("itemId")
+					    || !data.isMember("newBlueprintId") || !data.isMember("newBlueprintComponents"))
+					{
+						result["success"] = false; result["error"] = "missing required fields"; return result;
+					}
+					if (mLoadedSceneRoot.isNull()) { result["success"] = false; result["error"] = "no scene loaded"; return result; }
+
+					char err[256] = {};
+					if (!SceneMutator::ChangeBlueprint(mLoadedSceneRoot,
+					        data["itemType"].asCString(), data["itemId"].asCString(),
+					        data["newBlueprintId"].asCString(), data["newBlueprintComponents"], err, sizeof(err)))
+					{
+						DIA_LOG_WARNING("Editor", "DiaSceneEditorPlugin: change_blueprint — %s", err);
+						result["success"] = false; result["error"] = err; return result;
+					}
+
+					mIsDirty = true;
+					if (mBridge) mBridge->NotifyUIDataChanged("scene_editor.dirty_changed", Json::Value(true));
+					result["success"]   = true;
+					result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
+					return result;
+				});
+
+			// ── T17: Layer CRUD ──────────────────────────────────────────────────────
+
+			auto layerMutate = [this](const char* op, Json::Value result,
+			                           bool ok, const char* err) -> Json::Value
+			{
+				if (!ok) { result["success"] = false; result["error"] = err; return result; }
+				mIsDirty = true;
+				if (mBridge) mBridge->NotifyUIDataChanged("scene_editor.dirty_changed", Json::Value(true));
+				result["success"]   = true;
+				result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
+				return result;
+			};
+
+			mBridge->RegisterRequestHandler(
+				Dia::Core::StringCRC("scene_editor.add_layer"),
+				[this, layerMutate](const Json::Value& data) -> Json::Value
+				{
+					DIA_TRACE_ZONE("scene_editor.add_layer", Dia::Observation::Trace::Category::kNone);
+					Json::Value r;
+					if (!data.isMember("layerId")) { r["success"]=false; r["error"]="missing layerId"; return r; }
+					if (mLoadedSceneRoot.isNull()) { r["success"]=false; r["error"]="no scene loaded"; return r; }
+					char err[256]={};
+					bool ok = SceneMutator::AddLayer(mLoadedSceneRoot, data["layerId"].asCString(), err, sizeof(err));
+					return layerMutate("add_layer", r, ok, err);
+				});
+
+			mBridge->RegisterRequestHandler(
+				Dia::Core::StringCRC("scene_editor.delete_layer"),
+				[this, layerMutate](const Json::Value& data) -> Json::Value
+				{
+					DIA_TRACE_ZONE("scene_editor.delete_layer", Dia::Observation::Trace::Category::kNone);
+					Json::Value r;
+					if (!data.isMember("layerId")) { r["success"]=false; r["error"]="missing layerId"; return r; }
+					if (mLoadedSceneRoot.isNull()) { r["success"]=false; r["error"]="no scene loaded"; return r; }
+					char err[256]={};
+					bool ok = SceneMutator::DeleteLayer(mLoadedSceneRoot, data["layerId"].asCString(), err, sizeof(err));
+					return layerMutate("delete_layer", r, ok, err);
+				});
+
+			mBridge->RegisterRequestHandler(
+				Dia::Core::StringCRC("scene_editor.reorder_layer"),
+				[this, layerMutate](const Json::Value& data) -> Json::Value
+				{
+					DIA_TRACE_ZONE("scene_editor.reorder_layer", Dia::Observation::Trace::Category::kNone);
+					Json::Value r;
+					if (!data.isMember("layerId") || !data.isMember("newIndex")) { r["success"]=false; r["error"]="missing layerId or newIndex"; return r; }
+					if (mLoadedSceneRoot.isNull()) { r["success"]=false; r["error"]="no scene loaded"; return r; }
+					char err[256]={};
+					bool ok = SceneMutator::ReorderLayer(mLoadedSceneRoot,
+					    data["layerId"].asCString(), data["newIndex"].asInt(), err, sizeof(err));
+					return layerMutate("reorder_layer", r, ok, err);
+				});
+
+			mBridge->RegisterRequestHandler(
+				Dia::Core::StringCRC("scene_editor.update_layer"),
+				[this, layerMutate](const Json::Value& data) -> Json::Value
+				{
+					DIA_TRACE_ZONE("scene_editor.update_layer", Dia::Observation::Trace::Category::kNone);
+					Json::Value r;
+					if (!data.isMember("layerId") || !data.isMember("fields")) { r["success"]=false; r["error"]="missing layerId or fields"; return r; }
+					if (mLoadedSceneRoot.isNull()) { r["success"]=false; r["error"]="no scene loaded"; return r; }
+					char err[256]={};
+					bool ok = SceneMutator::UpdateLayer(mLoadedSceneRoot,
+					    data["layerId"].asCString(), data["fields"], err, sizeof(err));
+					return layerMutate("update_layer", r, ok, err);
+				});
+
+			// ── T18: Camera / Light ──────────────────────────────────────────────────
+
+			mBridge->RegisterRequestHandler(
+				Dia::Core::StringCRC("scene_editor.set_camera_active"),
+				[this](const Json::Value& data) -> Json::Value
+				{
+					DIA_TRACE_ZONE("scene_editor.set_camera_active", Dia::Observation::Trace::Category::kNone);
+					Json::Value result;
+					if (!data.isMember("cameraId")) { result["success"]=false; result["error"]="missing cameraId"; return result; }
+					if (mLoadedSceneRoot.isNull())   { result["success"]=false; result["error"]="no scene loaded"; return result; }
+					char err[256]={};
+					if (!SceneMutator::SetCameraActive(mLoadedSceneRoot, data["cameraId"].asCString(), err, sizeof(err)))
+					{
+						DIA_LOG_WARNING("Editor", "DiaSceneEditorPlugin: set_camera_active — %s", err);
+						result["success"]=false; result["error"]=err; return result;
+					}
+					mIsDirty = true;
+					if (mBridge) mBridge->NotifyUIDataChanged("scene_editor.dirty_changed", Json::Value(true));
+					result["success"]   = true;
+					result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
+					return result;
+				});
+
+			mBridge->RegisterRequestHandler(
+				Dia::Core::StringCRC("scene_editor.set_light_affects_layers"),
+				[this](const Json::Value& data) -> Json::Value
+				{
+					DIA_TRACE_ZONE("scene_editor.set_light_affects_layers", Dia::Observation::Trace::Category::kNone);
+					Json::Value result;
+					if (!data.isMember("lightId") || !data.isMember("layerIds")) { result["success"]=false; result["error"]="missing lightId or layerIds"; return result; }
+					if (mLoadedSceneRoot.isNull()) { result["success"]=false; result["error"]="no scene loaded"; return result; }
+					char err[256]={};
+					if (!SceneMutator::SetLightAffectsLayers(mLoadedSceneRoot,
+					        data["lightId"].asCString(), data["layerIds"], err, sizeof(err)))
+					{
+						result["success"]=false; result["error"]=err; return result;
+					}
+					mIsDirty = true;
+					if (mBridge) mBridge->NotifyUIDataChanged("scene_editor.dirty_changed", Json::Value(true));
+					result["success"]   = true;
+					result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
+					return result;
+				});
+
+			// ── T19: Override management ─────────────────────────────────────────────
+
+			auto overrideMutate = [this](bool ok, const char* err) -> Json::Value
+			{
+				Json::Value r;
+				if (!ok) { r["success"]=false; r["error"]=err; return r; }
+				mIsDirty = true;
+				if (mBridge) mBridge->NotifyUIDataChanged("scene_editor.dirty_changed", Json::Value(true));
+				r["success"] = true;
+				return r;
+			};
+
+			mBridge->RegisterRequestHandler(
+				Dia::Core::StringCRC("scene_editor.add_override"),
+				[this, overrideMutate](const Json::Value& data) -> Json::Value
+				{
+					DIA_TRACE_ZONE("scene_editor.add_override", Dia::Observation::Trace::Category::kNone);
+					if (!data.isMember("itemType")||!data.isMember("itemId")||!data.isMember("overrideKey")||!data.isMember("defaultValue"))
+					{ Json::Value r; r["success"]=false; r["error"]="missing fields"; return r; }
+					if (mLoadedSceneRoot.isNull()) { Json::Value r; r["success"]=false; r["error"]="no scene loaded"; return r; }
+					char err[256]={};
+					bool ok = SceneMutator::AddOverride(mLoadedSceneRoot,
+					    data["itemType"].asCString(), data["itemId"].asCString(),
+					    data["overrideKey"].asCString(), data["defaultValue"], err, sizeof(err));
+					return overrideMutate(ok, err);
+				});
+
+			mBridge->RegisterRequestHandler(
+				Dia::Core::StringCRC("scene_editor.remove_override"),
+				[this, overrideMutate](const Json::Value& data) -> Json::Value
+				{
+					DIA_TRACE_ZONE("scene_editor.remove_override", Dia::Observation::Trace::Category::kNone);
+					if (!data.isMember("itemType")||!data.isMember("itemId")||!data.isMember("overrideKey"))
+					{ Json::Value r; r["success"]=false; r["error"]="missing fields"; return r; }
+					if (mLoadedSceneRoot.isNull()) { Json::Value r; r["success"]=false; r["error"]="no scene loaded"; return r; }
+					char err[256]={};
+					bool ok = SceneMutator::RemoveOverride(mLoadedSceneRoot,
+					    data["itemType"].asCString(), data["itemId"].asCString(),
+					    data["overrideKey"].asCString(), err, sizeof(err));
+					return overrideMutate(ok, err);
+				});
+
+			mBridge->RegisterRequestHandler(
+				Dia::Core::StringCRC("scene_editor.update_override"),
+				[this, overrideMutate](const Json::Value& data) -> Json::Value
+				{
+					DIA_TRACE_ZONE("scene_editor.update_override", Dia::Observation::Trace::Category::kNone);
+					if (!data.isMember("itemType")||!data.isMember("itemId")||!data.isMember("overrideKey")||!data.isMember("value"))
+					{ Json::Value r; r["success"]=false; r["error"]="missing fields"; return r; }
+					if (mLoadedSceneRoot.isNull()) { Json::Value r; r["success"]=false; r["error"]="no scene loaded"; return r; }
+					char err[256]={};
+					bool ok = SceneMutator::UpdateOverride(mLoadedSceneRoot,
+					    data["itemType"].asCString(), data["itemId"].asCString(),
+					    data["overrideKey"].asCString(), data["value"], err, sizeof(err));
+					return overrideMutate(ok, err);
+				});
+
+			// ── T20: Validation ──────────────────────────────────────────────────────
+
+			mBridge->RegisterRequestHandler(
+				Dia::Core::StringCRC("scene_editor.validate"),
+				[this](const Json::Value& /*data*/) -> Json::Value
+				{
+					DIA_TRACE_ZONE("scene_editor.validate", Dia::Observation::Trace::Category::kNone);
+					Json::Value result;
+					if (mLoadedSceneRoot.isNull()) { result["success"]=false; result["error"]="no scene loaded"; return result; }
+					result["success"]    = true;
+					result["validation"] = mValidator.Validate(mLoadedSceneRoot);
+					return result;
+				});
+
+			// ── T21: Scene Properties panel ──────────────────────────────────────────
+
+			mBridge->RegisterRequestHandler(
+				Dia::Core::StringCRC("scene_editor.get_scene_properties"),
+				[this](const Json::Value& /*data*/) -> Json::Value
+				{
+					DIA_TRACE_ZONE("scene_editor.get_scene_properties", Dia::Observation::Trace::Category::kNone);
+					Json::Value result;
+					if (mLoadedSceneRoot.isNull()) { result["success"]=false; result["error"]="no scene loaded"; return result; }
+
+					const Json::Value& scene = mLoadedSceneRoot["scene2d"];
+					Json::Value props(Json::objectValue);
+					props["world_bounds"] = scene.isMember("world_bounds")
+						? scene["world_bounds"] : Json::Value(Json::objectValue);
+					props["layerCount"]   = scene.isMember("layers")   ? (int)scene["layers"].size()   : 0;
+					props["cameraCount"]  = scene.isMember("cameras")  ? (int)scene["cameras"].size()  : 0;
+					props["lightCount"]   = scene.isMember("lights")   ? (int)scene["lights"].size()   : 0;
+					props["entityCount"]  = scene.isMember("entities") ? (int)scene["entities"].size() : 0;
+					props["scenePath"]    = mLoadedScenePath;
+					props["validation"]   = mValidator.Validate(mLoadedSceneRoot);
+
+					result["success"]    = true;
+					result["properties"] = props;
+					return result;
+				});
+
+			mBridge->RegisterRequestHandler(
+				Dia::Core::StringCRC("scene_editor.set_world_bounds"),
+				[this](const Json::Value& data) -> Json::Value
+				{
+					DIA_TRACE_ZONE("scene_editor.set_world_bounds", Dia::Observation::Trace::Category::kNone);
+					Json::Value result;
+					if (!data.isMember("world_bounds")) { result["success"]=false; result["error"]="missing world_bounds"; return result; }
+					if (mLoadedSceneRoot.isNull()) { result["success"]=false; result["error"]="no scene loaded"; return result; }
+					mLoadedSceneRoot["scene2d"]["world_bounds"] = data["world_bounds"];
+					mIsDirty = true;
+					if (mBridge) mBridge->NotifyUIDataChanged("scene_editor.dirty_changed", Json::Value(true));
+					result["success"] = true;
 					return result;
 				});
 		}

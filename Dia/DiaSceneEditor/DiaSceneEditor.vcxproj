@@ -97,6 +97,7 @@
     <ClInclude Include="PropertyInspectorController.h" />
     <ClInclude Include="ProjectContextManager.h" />
     <ClInclude Include="SceneMutator.h" />
+    <ClInclude Include="SceneValidator.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DiaSceneEditorPlugin.cpp" />
@@ -105,6 +106,7 @@
     <ClCompile Include="PropertyInspectorController.cpp" />
     <ClCompile Include="ProjectContextManager.cpp" />
     <ClCompile Include="SceneMutator.cpp" />
+    <ClCompile Include="SceneValidator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.sceneeditor.architecture.module.md" />

@@ -49,6 +49,77 @@ namespace Dia
 			                       const char*  newId,
 			                       char* errBuf, int errBufSize);
 
+			// T16: Analyse blueprint change — compares existing instance_data keys against
+			// the new blueprint's field set.  Returns:
+			//   { transferCount, orphanCount,
+			//     transferred: [...], orphaned: [...] }
+			// Does NOT mutate sceneRoot.
+			static Json::Value AnalyseChangeBlueprintJson(
+			                       const Json::Value& sceneRoot,
+			                       const char*        itemType,
+			                       const char*        itemId,
+			                       const Json::Value& newBlueprintComponents);
+
+			// T16: Apply blueprint change — reassigns blueprint id and transfers/drops
+			// instance_data overrides according to the analysis.
+			static bool ChangeBlueprint(Json::Value& sceneRoot,
+			                            const char*  itemType,
+			                            const char*  itemId,
+			                            const char*  newBlueprintId,
+			                            const Json::Value& newBlueprintComponents,
+			                            char* errBuf, int errBufSize);
+
+			// T17: Layer CRUD — add/delete/reorder/update.
+			static bool AddLayer(Json::Value& sceneRoot,
+			                     const char*  layerId,
+			                     char* errBuf, int errBufSize);
+			static bool DeleteLayer(Json::Value& sceneRoot,
+			                        const char*  layerId,
+			                        char* errBuf, int errBufSize);
+			static bool ReorderLayer(Json::Value& sceneRoot,
+			                         const char*  layerId,
+			                         int          newIndex,
+			                         char* errBuf, int errBufSize);
+			static bool UpdateLayer(Json::Value& sceneRoot,
+			                        const char*  layerId,
+			                        const Json::Value& fields,
+			                        char* errBuf, int errBufSize);
+
+			// T18: Camera active enforcement — sets one camera active, all others inactive.
+			static bool SetCameraActive(Json::Value& sceneRoot,
+			                            const char*  cameraId,
+			                            char* errBuf, int errBufSize);
+
+			// T18: Update light affects_layers list.
+			static bool SetLightAffectsLayers(Json::Value& sceneRoot,
+			                                  const char*  lightId,
+			                                  const Json::Value& layerIds,
+			                                  char* errBuf, int errBufSize);
+
+			// T19: Add override — copy blueprint default into instance_data for a field.
+			// overrideKey is "ComponentType.fieldName"; defaultValue is the blueprint default.
+			static bool AddOverride(Json::Value& sceneRoot,
+			                        const char*  itemType,
+			                        const char*  itemId,
+			                        const char*  overrideKey,
+			                        const Json::Value& defaultValue,
+			                        char* errBuf, int errBufSize);
+
+			// T19: Remove override — delete a key from instance_data.
+			static bool RemoveOverride(Json::Value& sceneRoot,
+			                           const char*  itemType,
+			                           const char*  itemId,
+			                           const char*  overrideKey,
+			                           char* errBuf, int errBufSize);
+
+			// T19: Update an existing override value.
+			static bool UpdateOverride(Json::Value& sceneRoot,
+			                           const char*  itemType,
+			                           const char*  itemId,
+			                           const char*  overrideKey,
+			                           const Json::Value& value,
+			                           char* errBuf, int errBufSize);
+
 		private:
 			static const char* ArrayKey(const char* itemType);
 			static const char* ExtractId(const Json::Value& val, char* buf, int bufSize);

@@ -10,6 +10,7 @@
 #include "DiaSceneEditor/PropertyInspectorController.h"
 #include "DiaSceneEditor/ProjectContextManager.h"
 #include "DiaSceneEditor/SceneMutator.h"
+#include "DiaSceneEditor/SceneValidator.h"
 
 namespace Dia
 {
@@ -39,6 +40,7 @@ namespace Dia
 			void RegisterRequestHandlers();
 
 			SceneFileHandler            mFileHandler;
+			SceneValidator              mValidator;
 			SceneHierarchyController    mHierarchyController;
 			PropertyInspectorController mPropertyController;
 			ProjectContextManager       mProjectContextManager;
