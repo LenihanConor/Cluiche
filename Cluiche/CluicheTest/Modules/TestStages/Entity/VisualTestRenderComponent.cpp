@@ -18,5 +18,6 @@ DIA_COMPONENT_REGISTER(VisualTestRenderComponent, "cluichetest.visual-test-rende
     s_VisualTestRenderComponent_fields, DIA_ARRAY_COUNT(s_VisualTestRenderComponent_fields),
     nullptr, 0,
     nullptr, 0)
+DIA_COMPONENT_DESCRIBE(CluicheTest::VisualTestRenderComponent, "Stores render properties (radius, colour) for circle-based visual representation in the entity test stage.")
 
 } // namespace CluicheTest

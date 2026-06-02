@@ -1,7 +1,7 @@
 #pragma once
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/Streams/StreamTypeRegistry.h>
-#include <DiaCore/Metadata/DescribeMacro.h>
+#include <DiaApplicationFlow/DescribeMacro.h>
 
 // ---------------------------------------------------------------------------
 // DIA_MODULE(ClassName)

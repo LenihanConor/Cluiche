@@ -63,5 +63,6 @@ DIA_COMPONENT_REGISTER(PickableCircleComponent, "cluichetest.pickable-circle", f
     s_PickableCircleComponent_fields, DIA_ARRAY_COUNT(s_PickableCircleComponent_fields),
     nullptr, 0,
     nullptr, 0)
+DIA_COMPONENT_DESCRIBE(CluicheTest::PickableCircleComponent, "Registers a circle shape with the picking service so the entity can be selected in the test stage.")
 
 } // namespace CluicheTest

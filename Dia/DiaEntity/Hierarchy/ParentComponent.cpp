@@ -26,6 +26,7 @@ DIA_COMPONENT_REGISTER(ParentComponent, "dia.hierarchy.parent", false, false,
     s_ParentComponent_fields, DIA_ARRAY_COUNT(s_ParentComponent_fields),
     nullptr, 0,
     nullptr, 0)
+DIA_COMPONENT_DESCRIBE(Dia::Entity::Hierarchy::ParentComponent, "Stores the parent entity handle; links this entity into the scene hierarchy.")
 
 void ParentComponent::OnAttach(Dia::Entity::Domain& domain, Dia::Entity::Entity self) {
     Entity parent(parentIndex, parentGen);

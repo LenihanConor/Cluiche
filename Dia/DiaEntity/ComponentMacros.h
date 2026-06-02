@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/Metadata/DescribeMacro.h>
 #include <DiaCore/Reflect/ReflectMacros.h>
 #include <DiaCore/Reflect/JsonArchive.h>
 #include <DiaEntity/ComponentTypeDesc.h>

@@ -18,5 +18,6 @@ DIA_COMPONENT_REGISTER(TransformComponent, "cluichetest.transform", false, false
     s_TransformComponent_fields, DIA_ARRAY_COUNT(s_TransformComponent_fields),
     nullptr, 0,
     nullptr, 0)
+DIA_COMPONENT_DESCRIBE(CluicheTest::TransformComponent, "Holds 2D world-space position (x, y) for an entity.")
 
 } // namespace CluicheTest

@@ -16,6 +16,7 @@ DIA_COMPONENT_REGISTER(ChildBufferComponent, "dia.hierarchy.children", false, fa
     nullptr, 0,
     nullptr, 0,
     nullptr, 0)
+DIA_COMPONENT_DESCRIBE(Dia::Entity::Hierarchy::ChildBufferComponent, "Stores up to kMaxChildren child entity handles for a parent entity in the hierarchy.")
 
 bool ChildBufferComponent::AddChild(Dia::Entity::Entity child) {
     if (children.IsFull()) {

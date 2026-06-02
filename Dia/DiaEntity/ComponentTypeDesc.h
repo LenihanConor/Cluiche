@@ -50,6 +50,7 @@ namespace Dia::Entity {
 
         LoadFromJsonFn loadFromJson;
         SaveToJsonFn   saveToJson;
+        const char*    description = nullptr;
     };
 
 } // namespace Dia::Entity
