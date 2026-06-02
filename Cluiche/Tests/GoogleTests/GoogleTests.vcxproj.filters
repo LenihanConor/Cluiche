@@ -121,6 +121,9 @@
     <Filter Include="DiaBlueprintEditor">
       <UniqueIdentifier>{DIABPED1-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DiaSceneEditor">
+      <UniqueIdentifier>{DSCEDIT1-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Geometry3D">
       <UniqueIdentifier>{GEO3D001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
@@ -584,6 +587,13 @@
     </ClCompile>
     <ClCompile Include="DiaBlueprintEditor\IntegrationTestBlueprintEditorPlugin.cpp">
       <Filter>DiaBlueprintEditor</Filter>
+    </ClCompile>
+    <!-- DiaSceneEditor Tests -->
+    <ClCompile Include="DiaSceneEditor\TestSceneMutator.cpp">
+      <Filter>DiaSceneEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaSceneEditor\TestSceneValidator.cpp">
+      <Filter>DiaSceneEditor</Filter>
     </ClCompile>
     <!-- DiaApplicationEditor V2 Tests -->
     <ClCompile Include="DiaApplicationEditor\TestManifestEditorState.cpp">
