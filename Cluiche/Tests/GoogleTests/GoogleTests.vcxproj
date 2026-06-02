@@ -398,7 +398,6 @@
     <ClCompile Include="RigidBody2D\TestRigidBodyStress.cpp" />
     <ClCompile Include="RigidBody2D\TestRigidBodyDeterminism.cpp" />
     <ClCompile Include="RigidBody2D\TestConservationLaws.cpp" />
-    <ClCompile Include="RigidBody2D\TestRigidBody2DVisualDebugger.cpp" />
     <ClCompile Include="RigidBody2D\TestDiaRigidBody2DSerializers.cpp" />
     <!-- DiaMetrics -->
     <ClCompile Include="DiaMetrics\TestMetricGauge.cpp" />

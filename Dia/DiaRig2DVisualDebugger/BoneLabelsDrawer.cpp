@@ -9,51 +9,57 @@
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaGraphics/Frame/FrameData.h>
+#include <DiaObservation/Trace/DiaTrace.h>
+#include <imgui.h>
 
 #include <algorithm>
 
-namespace Dia
+namespace Dia::Rig2D
 {
-    namespace Rig2D
+
+BoneLabelsDrawer::BoneLabelsDrawer(
+    const Skeleton& skeleton,
+    const Dia::Core::Containers::DynamicArrayC<BoneTransform, kMaxBones>& worldTransforms,
+    const Dia::Debug::DebugLayerManager& manager)
+    : mSkeleton(skeleton)
+    , mWorldTransforms(worldTransforms)
+    , mManager(manager)
+{
+}
+
+Dia::Core::StringCRC BoneLabelsDrawer::GetLayerName() const
+{
+    return Dia::Debug::LayerNames::kRigLabels;
+}
+
+void BoneLabelsDrawer::Draw(Dia::Graphics::FrameData& frameData)
+{
+    DIA_TRACE_ZONE("rig.labels", ::Dia::Observation::Trace::Category::kDiaGraphics);
+    const float scale     = mManager.GetDebugScale();
+    const float fontSize  = std::min(12.0f * scale * mFontSizeMultiplier, kMaxFontSize);
+    const int   boneCount = mSkeleton.GetBoneCount();
+
+    for (int i = 0; i < boneCount; ++i)
     {
-        BoneLabelsDrawer::BoneLabelsDrawer(
-            const Skeleton& skeleton,
-            const Dia::Core::Containers::DynamicArrayC<BoneTransform, kMaxBones>& worldTransforms,
-            const Dia::Debug::DebugLayerManager& manager)
-            : mSkeleton(skeleton)
-            , mWorldTransforms(worldTransforms)
-            , mManager(manager)
-        {
-        }
+        const Bone&          bone     = mSkeleton.GetBone(i);
+        const BoneTransform& wt       = mWorldTransforms[i];
+        const Dia::Maths::Vector2D labelPos(
+            wt.position.x + 4.0f * scale,
+            wt.position.y - 4.0f * scale);
 
-        Dia::Core::StringCRC BoneLabelsDrawer::GetLayerName() const
-        {
-            return Dia::Debug::LayerNames::kRigLabels;
-        }
+        frameData.RequestDrawText(
+            labelPos,
+            bone.name.AsChar(),
+            fontSize,
+            Dia::Debug::DebugColourPalette::kActive);
+    }
+}
 
-        void BoneLabelsDrawer::Draw(Dia::Graphics::FrameData& frameData)
-        {
-            const float scale     = mManager.GetDebugScale();
-            const float fontSize  = std::min(12.0f * scale, kMaxFontSize);
-            const int   boneCount = mSkeleton.GetBoneCount();
+void BoneLabelsDrawer::DrawImGui()
+{
+    ImGui::SliderFloat("Font size", &mFontSizeMultiplier, 0.5f, 3.0f);
+}
 
-            for (int i = 0; i < boneCount; ++i)
-            {
-                const Bone&          bone     = mSkeleton.GetBone(i);
-                const BoneTransform& wt       = mWorldTransforms[i];
-                const Dia::Maths::Vector2D labelPos(
-                    wt.position.x + 4.0f * scale,
-                    wt.position.y - 4.0f * scale);
-
-                frameData.RequestDrawText(
-                    labelPos,
-                    bone.name.AsChar(),
-                    fontSize,
-                    Dia::Debug::DebugColourPalette::kActive);
-            }
-        }
-
-    } // namespace Rig2D
-} // namespace Dia
+} // namespace Dia::Rig2D
 
 #endif // DIA_DEBUG

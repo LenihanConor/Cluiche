@@ -12,10 +12,12 @@
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaGraphics/Frame/FrameData.h>
 
+#include <DiaObservation/Trace/DiaTrace.h>
+#include <imgui.h>
 #include <algorithm>
 #include <cstdio>
 
-namespace Dia { namespace Animation2D {
+namespace Dia::Animation2D {
 
 AnimClipCursorDrawer::AnimClipCursorDrawer(
     const AnimationEvaluator&                                                    evaluator,
@@ -35,6 +37,7 @@ Dia::Core::StringCRC AnimClipCursorDrawer::GetLayerName() const
 
 void AnimClipCursorDrawer::Draw(Dia::Graphics::FrameData& frameData)
 {
+    DIA_TRACE_ZONE("anim.clip_cursor", ::Dia::Observation::Trace::Category::kDiaGraphics);
     if (mWorldTransforms.Size() == 0) return;
 
     const float scale    = mManager.GetDebugScale();
@@ -48,6 +51,7 @@ void AnimClipCursorDrawer::Draw(Dia::Graphics::FrameData& frameData)
         const Dia::Core::StringCRC id = mEvaluator.GetSourceId(i);
         const AnimClipPlayer* player  = mEvaluator.GetClipPlayer(id);
         if (player == nullptr) continue;  // source is a spring chain
+        if (!mShowStopped && !player->IsPlaying()) continue;
 
         const Dia::Maths::Vector2D labelPos(
             rootPos.x + (-20.0f * scale),
@@ -72,6 +76,11 @@ void AnimClipCursorDrawer::Draw(Dia::Graphics::FrameData& frameData)
     }
 }
 
-} } // namespace Dia::Animation2D
+void AnimClipCursorDrawer::DrawImGui()
+{
+    ImGui::Checkbox("Show stopped clips", &mShowStopped);
+}
+
+} // namespace Dia::Animation2D
 
 #endif // DIA_DEBUG

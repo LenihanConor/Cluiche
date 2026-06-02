@@ -74,7 +74,6 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="DiaRigidBodyVisualDebugger.h" />
     <ClInclude Include="PhysicsShapesDrawer.h" />
     <ClInclude Include="VelocityArrowsDrawer.h" />
     <ClInclude Include="ContactNormalsDrawer.h" />
@@ -82,7 +81,6 @@
     <ClInclude Include="ConstraintLinesDrawer.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DiaRigidBodyVisualDebugger.cpp" />
     <ClCompile Include="PhysicsShapesDrawer.cpp" />
     <ClCompile Include="VelocityArrowsDrawer.cpp" />
     <ClCompile Include="ContactNormalsDrawer.cpp" />

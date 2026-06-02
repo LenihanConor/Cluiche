@@ -24,6 +24,9 @@ public:
 
     Dia::Core::StringCRC GetLayerName() const override;
     void Draw(Dia::Graphics::FrameData& frameData) override;
+    void DrawImGui() override;
+
+    float mRadiusMultiplier = 1.0f;
 
 private:
     const SoftBodyWorld&                 mWorld;

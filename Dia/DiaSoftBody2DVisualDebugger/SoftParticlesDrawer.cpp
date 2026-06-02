@@ -15,6 +15,8 @@
 #include "DiaVisualDebugger/DebugColourPalette.h"
 #include "DiaVisualDebugger/DebugLayerNames.h"
 #include "DiaCore/Core/Assert.h"
+#include <DiaObservation/Trace/DiaTrace.h>
+#include <imgui.h>
 
 namespace Dia::SoftBody2D
 {
@@ -30,7 +32,7 @@ Dia::Core::StringCRC SoftParticlesDrawer::GetLayerName() const
     return Dia::Debug::LayerNames::kSoftParticles;
 }
 
-static void DrawParticlesFromRope(const Rope* rope, float debugScale,
+static void DrawParticlesFromRope(const Rope* rope, float scale,
                                   Dia::Graphics::FrameData& frameData)
 {
     const int count = rope->GetParticleCount();
@@ -40,11 +42,11 @@ static void DrawParticlesFromRope(const Rope* rope, float debugScale,
         const Dia::Graphics::RGBA colour = (p.invMass == 0.0f)
             ? Dia::Debug::DebugColourPalette::kPinned
             : Dia::Debug::DebugColourPalette::kActive;
-        frameData.RequestDraw(p.position, p.radius * debugScale, colour);
+        frameData.RequestDraw(p.position, p.radius * scale, colour);
     }
 }
 
-static void DrawParticlesFromCloth(const Cloth* cloth, float debugScale,
+static void DrawParticlesFromCloth(const Cloth* cloth, float scale,
                                    Dia::Graphics::FrameData& frameData)
 {
     const int resX = cloth->GetResX();
@@ -57,14 +59,15 @@ static void DrawParticlesFromCloth(const Cloth* cloth, float debugScale,
             const Dia::Graphics::RGBA colour = (p.invMass == 0.0f)
                 ? Dia::Debug::DebugColourPalette::kPinned
                 : Dia::Debug::DebugColourPalette::kActive;
-            frameData.RequestDraw(p.position, p.radius * debugScale, colour);
+            frameData.RequestDraw(p.position, p.radius * scale, colour);
         }
     }
 }
 
 void SoftParticlesDrawer::Draw(Dia::Graphics::FrameData& frameData)
 {
-    const float debugScale = mManager.GetDebugScale();
+    DIA_TRACE_ZONE("soft.particles", ::Dia::Observation::Trace::Category::kDiaGraphics);
+    const float debugScale = mManager.GetDebugScale() * mRadiusMultiplier;
     const auto& bodies = mWorld.GetBodies();
 
     for (unsigned int b = 0; b < bodies.Size(); ++b)
@@ -82,6 +85,12 @@ void SoftParticlesDrawer::Draw(Dia::Graphics::FrameData& frameData)
                 break;
         }
     }
+}
+
+void SoftParticlesDrawer::DrawImGui()
+{
+    ImGui::SliderFloat("Radius multiplier", &mRadiusMultiplier, 0.1f, 5.0f);
+    ImGui::TextDisabled("Bodies: %u", mWorld.GetBodies().Size());
 }
 
 } // namespace Dia::SoftBody2D

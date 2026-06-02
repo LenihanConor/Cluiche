@@ -5,6 +5,7 @@
 
 #ifdef DIA_DEBUG
 
+#include <DiaObservation/Trace/DiaTrace.h>
 #include <imgui.h>
 
 #include "DiaRigidBody2D/World/PhysicsWorld.h"
@@ -30,6 +31,7 @@ Dia::Core::StringCRC ConstraintLinesDrawer::GetLayerName() const
 
 void ConstraintLinesDrawer::Draw(Dia::Graphics::FrameData& frameData)
 {
+    DIA_TRACE_ZONE("physics.constraints", ::Dia::Observation::Trace::Category::kDiaGraphics);
     const auto& constraints = mWorld.GetConstraints();
 
     for (unsigned int i = 0; i < constraints.Size(); ++i)

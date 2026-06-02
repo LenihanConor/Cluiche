@@ -16,6 +16,8 @@
 #include "DiaVisualDebugger/DebugColourPalette.h"
 #include "DiaVisualDebugger/DebugLayerNames.h"
 #include "DiaCore/Core/Assert.h"
+#include <DiaObservation/Trace/DiaTrace.h>
+#include <imgui.h>
 
 namespace Dia::SoftBody2D
 {
@@ -83,6 +85,7 @@ static void DrawConstraintsFromCloth(const Cloth* cloth, Dia::Graphics::FrameDat
 
 void SoftConstraintsDrawer::Draw(Dia::Graphics::FrameData& frameData)
 {
+    DIA_TRACE_ZONE("soft.constraints", ::Dia::Observation::Trace::Category::kDiaGraphics);
     const auto& bodies = mWorld.GetBodies();
 
     for (unsigned int b = 0; b < bodies.Size(); ++b)
@@ -100,6 +103,11 @@ void SoftConstraintsDrawer::Draw(Dia::Graphics::FrameData& frameData)
                 break;
         }
     }
+}
+
+void SoftConstraintsDrawer::DrawImGui()
+{
+    ImGui::TextDisabled("Bodies: %u", mWorld.GetBodies().Size());
 }
 
 } // namespace Dia::SoftBody2D

@@ -4,6 +4,8 @@
 
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaObservation/Metric/Gauge.h>
+#include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaVisualDebugger/DebugLayerNames.h>
 #include <imgui.h>
 
 namespace Dia
@@ -13,11 +15,12 @@ namespace Dia
 
 Dia::Core::StringCRC DiaAssetRuntimeVisualDebugger::GetLayerName() const
 {
-    return Dia::Core::StringCRC("asset.runtime");
+    return Dia::Debug::LayerNames::kAssetRuntime;
 }
 
 void DiaAssetRuntimeVisualDebugger::Draw(Dia::Graphics::FrameData& /*frameData*/)
 {
+    DIA_TRACE_ZONE("asset.runtime", ::Dia::Observation::Trace::Category::kDiaGraphics);
 }
 
 void DiaAssetRuntimeVisualDebugger::DrawImGui()

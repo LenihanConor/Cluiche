@@ -5,6 +5,7 @@
 
 #ifdef DIA_DEBUG
 
+#include <DiaObservation/Trace/DiaTrace.h>
 #include <imgui.h>
 
 #include "DiaRigidBody2D/World/PhysicsWorld.h"
@@ -31,6 +32,7 @@ Dia::Core::StringCRC ContactNormalsDrawer::GetLayerName() const
 
 void ContactNormalsDrawer::Draw(Dia::Graphics::FrameData& frameData)
 {
+    DIA_TRACE_ZONE("physics.contacts", ::Dia::Observation::Trace::Category::kDiaGraphics);
     const float scale    = mManager.GetDebugScale();
     const auto& contacts = mWorld.GetLastContacts();
 

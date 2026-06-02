@@ -13,48 +13,42 @@
 #include <DiaRig2D/BoneTransform.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
-namespace Dia
+namespace Dia::Debug { class DebugLayerManager; }
+
+namespace Dia::Rig2D
 {
-    namespace Debug
-    {
-        class DebugLayerManager;
-    }
-}
 
-namespace Dia
+////////////////////////////////////////////////////////////////////////////////
+// JointCirclesDrawer
+//
+// Draws circles at each joint with role-based colouring:
+//   Root bone:      radius 4.0f * scale, colour kHealthy (green)
+//   Leaf bones:     radius 2.5f * scale, colour kWarning (yellow)
+//   Mid-chain:      radius 2.5f * scale, colour kActive  (white)
+//
+// Leaf detection: build a bool[kMaxBones] lookup from parentIndex in one pass.
+// Layer:   LayerNames::kRigJoints
+// Priority: 10
+////////////////////////////////////////////////////////////////////////////////
+class JointCirclesDrawer : public Dia::Debug::IVisualDebugger
 {
-    namespace Rig2D
-    {
-        ////////////////////////////////////////////////////////////////////////////////
-        // JointCirclesDrawer
-        //
-        // Draws circles at each joint with role-based colouring:
-        //   Root bone:      radius 4.0f * scale, colour kHealthy (green)
-        //   Leaf bones:     radius 2.5f * scale, colour kWarning (yellow)
-        //   Mid-chain:      radius 2.5f * scale, colour kActive  (white)
-        //
-        // Leaf detection: build a bool[kMaxBones] lookup from parentIndex in one pass.
-        // Layer:   LayerNames::kRigJoints
-        // Priority: 10
-        ////////////////////////////////////////////////////////////////////////////////
-        class JointCirclesDrawer : public Dia::Debug::IVisualDebugger
-        {
-        public:
-            JointCirclesDrawer(
-                const Skeleton& skeleton,
-                const Dia::Core::Containers::DynamicArrayC<BoneTransform, kMaxBones>& worldTransforms,
-                const Dia::Debug::DebugLayerManager& manager);
+public:
+    JointCirclesDrawer(
+        const Skeleton& skeleton,
+        const Dia::Core::Containers::DynamicArrayC<BoneTransform, kMaxBones>& worldTransforms,
+        const Dia::Debug::DebugLayerManager& manager);
 
-            Dia::Core::StringCRC GetLayerName() const override;
-            void Draw(Dia::Graphics::FrameData& frameData) override;
+    Dia::Core::StringCRC GetLayerName() const override;
+    void Draw(Dia::Graphics::FrameData& frameData) override;
+    void DrawImGui() override;
 
-        private:
-            const Skeleton&                                                              mSkeleton;
-            const Dia::Core::Containers::DynamicArrayC<BoneTransform, kMaxBones>&       mWorldTransforms;
-            const Dia::Debug::DebugLayerManager&                                         mManager;
-        };
+private:
+    float mRadiusMultiplier = 1.0f;
+    const Skeleton&                                                              mSkeleton;
+    const Dia::Core::Containers::DynamicArrayC<BoneTransform, kMaxBones>&       mWorldTransforms;
+    const Dia::Debug::DebugLayerManager&                                         mManager;
+};
 
-    } // namespace Rig2D
-} // namespace Dia
+} // namespace Dia::Rig2D
 
 #endif // DIA_DEBUG

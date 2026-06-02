@@ -7,9 +7,11 @@
 
 #include <imgui.h>
 
+#include <DiaObservation/Trace/DiaTrace.h>
 #include "DiaRigidBody2D/World/PhysicsWorld.h"
 #include "DiaRigidBody2D/WorldShapeUtil.h"
 #include "DiaGraphics/Frame/FrameData.h"
+#include "DiaGraphics/Misc/RGBA.h"
 #include "DiaGeometry2D/Shapes/AARect.h"
 #include "DiaVisualDebugger/DebugLayerManager.h"
 #include "DiaVisualDebugger/DebugColourPalette.h"
@@ -31,6 +33,7 @@ Dia::Core::StringCRC PhysicsAABBDrawer::GetLayerName() const
 
 void PhysicsAABBDrawer::Draw(Dia::Graphics::FrameData& frameData)
 {
+    DIA_TRACE_ZONE("physics.aabb", ::Dia::Observation::Trace::Category::kDiaGraphics);
     const auto& rigidBodies = mWorld.GetRigidBodies();
 
     for (unsigned int i = 0; i < rigidBodies.Size(); ++i)
@@ -39,10 +42,21 @@ void PhysicsAABBDrawer::Draw(Dia::Graphics::FrameData& frameData)
         if (!body->GetTransform()) continue;
 
         const Dia::Geometry2D::AARect aabb = ComputeWorldAABB(body);
-        frameData.RequestDrawRect(
-            aabb.GetBottomLeft(),
-            aabb.GetTopRight(),
-            Dia::Debug::DebugColourPalette::kWarning);
+        if (mFilled)
+        {
+            frameData.RequestDrawRect(
+                aabb.GetBottomLeft(),
+                aabb.GetTopRight(),
+                Dia::Debug::DebugColourPalette::kWarning,
+                Dia::Graphics::RGBA(255, 220, 0, 40));
+        }
+        else
+        {
+            frameData.RequestDrawRect(
+                aabb.GetBottomLeft(),
+                aabb.GetTopRight(),
+                Dia::Debug::DebugColourPalette::kWarning);
+        }
     }
 }
 

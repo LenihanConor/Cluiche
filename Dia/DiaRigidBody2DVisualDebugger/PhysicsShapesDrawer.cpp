@@ -16,6 +16,7 @@
 #include "DiaVisualDebugger/DebugColourPalette.h"
 #include "DiaVisualDebugger/DebugLayerNames.h"
 
+#include <DiaObservation/Trace/DiaTrace.h>
 #include <imgui.h>
 #include <cmath>
 
@@ -99,6 +100,7 @@ Dia::Core::StringCRC PhysicsShapesDrawer::GetLayerName() const
 
 void PhysicsShapesDrawer::Draw(Dia::Graphics::FrameData& frameData)
 {
+    DIA_TRACE_ZONE("physics.shapes", ::Dia::Observation::Trace::Category::kDiaGraphics);
     const auto& pointBodies = mWorld.GetPointBodies();
     const auto& rigidBodies = mWorld.GetRigidBodies();
 

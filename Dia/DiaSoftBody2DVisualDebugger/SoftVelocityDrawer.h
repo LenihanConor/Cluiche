@@ -24,10 +24,12 @@ public:
 
     Dia::Core::StringCRC GetLayerName() const override;
     void Draw(Dia::Graphics::FrameData& frameData) override;
+    void DrawImGui() override;
 
 private:
     const SoftBodyWorld&                 mWorld;
-    [[maybe_unused]] const Dia::Debug::DebugLayerManager& mManager;
+    const Dia::Debug::DebugLayerManager& mManager;
+    float                                mVelocityScale = 1.0f;
 };
 
 } // namespace Dia::SoftBody2D

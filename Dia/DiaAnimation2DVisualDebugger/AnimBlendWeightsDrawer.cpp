@@ -12,10 +12,12 @@
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaGraphics/Frame/FrameData.h>
 
+#include <DiaObservation/Trace/DiaTrace.h>
+#include <imgui.h>
 #include <algorithm>
 #include <cstdio>
 
-namespace Dia { namespace Animation2D {
+namespace Dia::Animation2D {
 
 AnimBlendWeightsDrawer::AnimBlendWeightsDrawer(
     const AnimationEvaluator&                                                    evaluator,
@@ -35,6 +37,7 @@ Dia::Core::StringCRC AnimBlendWeightsDrawer::GetLayerName() const
 
 void AnimBlendWeightsDrawer::Draw(Dia::Graphics::FrameData& frameData)
 {
+    DIA_TRACE_ZONE("anim.blend_weights", ::Dia::Observation::Trace::Category::kDiaGraphics);
     if (mWorldTransforms.Size() == 0) return;
 
     const float scale    = mManager.GetDebugScale();
@@ -58,7 +61,7 @@ void AnimBlendWeightsDrawer::Draw(Dia::Graphics::FrameData& frameData)
         char labelText[64];
         std::snprintf(labelText, sizeof(labelText), "%s w=%.2f p=%d", layerId.AsChar(), weight, priority);
 
-        const Dia::Graphics::RGBA colour = (weight > 0.05f)
+        const Dia::Graphics::RGBA colour = (weight > mWeightThreshold)
             ? Dia::Debug::DebugColourPalette::kActive
             : Dia::Debug::DebugColourPalette::kInactive;
 
@@ -66,6 +69,11 @@ void AnimBlendWeightsDrawer::Draw(Dia::Graphics::FrameData& frameData)
     }
 }
 
-} } // namespace Dia::Animation2D
+void AnimBlendWeightsDrawer::DrawImGui()
+{
+    ImGui::SliderFloat("Weight threshold", &mWeightThreshold, 0.0f, 1.0f);
+}
+
+} // namespace Dia::Animation2D
 
 #endif // DIA_DEBUG

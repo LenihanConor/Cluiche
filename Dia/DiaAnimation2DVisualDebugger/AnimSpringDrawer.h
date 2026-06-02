@@ -13,11 +13,11 @@
 #include <DiaRig2D/BoneTransform.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
-namespace Dia { namespace Animation2D { class AnimationEvaluator; } }
-namespace Dia { namespace Rig2D      { class Skeleton; } }
-namespace Dia { namespace Debug      { class DebugLayerManager; } }
+namespace Dia::Animation2D { class AnimationEvaluator; }
+namespace Dia::Rig2D      { class Skeleton; }
+namespace Dia::Debug      { class DebugLayerManager; }
 
-namespace Dia { namespace Animation2D {
+namespace Dia::Animation2D {
 
 ////////////////////////////////////////////////////////////////////////////////
 // AnimSpringDrawer
@@ -42,14 +42,17 @@ public:
 
     Dia::Core::StringCRC GetLayerName() const override;
     void Draw(Dia::Graphics::FrameData& frameData) override;
+    void DrawImGui() override;
 
 private:
+    float mWarnThreshold  = 0.5f;
+    float mErrorThreshold = 5.0f;
     const AnimationEvaluator&                                                    mEvaluator;
     const Dia::Rig2D::Skeleton&                                                  mSkeleton;
     const Dia::Core::Containers::DynamicArrayC<Dia::Rig2D::BoneTransform, 128>& mWorldTransforms;
     const Dia::Debug::DebugLayerManager&                                         mManager;
 };
 
-} } // namespace Dia::Animation2D
+} // namespace Dia::Animation2D
 
 #endif // DIA_DEBUG

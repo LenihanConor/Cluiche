@@ -5,6 +5,7 @@
 
 #ifdef DIA_DEBUG
 
+#include <DiaObservation/Trace/DiaTrace.h>
 #include <imgui.h>
 
 #include "DiaRigidBody2D/World/PhysicsWorld.h"
@@ -38,6 +39,7 @@ Dia::Core::StringCRC VelocityArrowsDrawer::GetLayerName() const
 
 void VelocityArrowsDrawer::Draw(Dia::Graphics::FrameData& frameData)
 {
+    DIA_TRACE_ZONE("physics.velocity", ::Dia::Observation::Trace::Category::kDiaGraphics);
     const float debugScale = mManager.GetDebugScale();
 
     auto drawArrow = [&](const Body2DBase* body)

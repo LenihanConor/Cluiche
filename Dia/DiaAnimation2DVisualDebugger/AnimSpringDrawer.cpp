@@ -13,9 +13,11 @@
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include <DiaGraphics/Frame/FrameData.h>
 
+#include <DiaObservation/Trace/DiaTrace.h>
+#include <imgui.h>
 #include <cmath>
 
-namespace Dia { namespace Animation2D {
+namespace Dia::Animation2D {
 
 AnimSpringDrawer::AnimSpringDrawer(
     const AnimationEvaluator&                                                    evaluator,
@@ -35,6 +37,7 @@ Dia::Core::StringCRC AnimSpringDrawer::GetLayerName() const
 
 void AnimSpringDrawer::Draw(Dia::Graphics::FrameData& frameData)
 {
+    DIA_TRACE_ZONE("anim.spring", ::Dia::Observation::Trace::Category::kDiaGraphics);
     const float scale = mManager.GetDebugScale();
     const float circleRadius = 3.0f * scale;
     const float gravityRayLength = 3.0f * scale;
@@ -57,9 +60,9 @@ void AnimSpringDrawer::Draw(Dia::Graphics::FrameData& frameData)
             const float                angVel = std::abs(chain->GetNodeAngularVelocity(n));
 
             Dia::Graphics::RGBA colour;
-            if (angVel < 0.5f)
+            if (angVel < mWarnThreshold)
                 colour = Dia::Debug::DebugColourPalette::kHealthy;
-            else if (angVel < 5.0f)
+            else if (angVel < mErrorThreshold)
                 colour = Dia::Debug::DebugColourPalette::kWarning;
             else
                 colour = Dia::Debug::DebugColourPalette::kError;
@@ -88,6 +91,12 @@ void AnimSpringDrawer::Draw(Dia::Graphics::FrameData& frameData)
     }
 }
 
-} } // namespace Dia::Animation2D
+void AnimSpringDrawer::DrawImGui()
+{
+    ImGui::SliderFloat("Warn threshold (rad/s)",  &mWarnThreshold,  0.0f, 10.0f);
+    ImGui::SliderFloat("Error threshold (rad/s)", &mErrorThreshold, 0.0f, 20.0f);
+}
+
+} // namespace Dia::Animation2D
 
 #endif // DIA_DEBUG

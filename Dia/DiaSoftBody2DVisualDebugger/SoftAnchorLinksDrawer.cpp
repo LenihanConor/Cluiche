@@ -15,6 +15,8 @@
 #include "DiaVisualDebugger/DebugColourPalette.h"
 #include "DiaVisualDebugger/DebugLayerNames.h"
 #include "DiaCore/Core/Assert.h"
+#include <DiaObservation/Trace/DiaTrace.h>
+#include <imgui.h>
 
 namespace Dia::SoftBody2D
 {
@@ -32,6 +34,7 @@ Dia::Core::StringCRC SoftAnchorLinksDrawer::GetLayerName() const
 
 void SoftAnchorLinksDrawer::Draw(Dia::Graphics::FrameData& frameData)
 {
+    DIA_TRACE_ZONE("soft.anchors", ::Dia::Observation::Trace::Category::kDiaGraphics);
     const auto& bodies = mWorld.GetBodies();
 
     for (unsigned int b = 0; b < bodies.Size(); ++b)
@@ -71,6 +74,11 @@ void SoftAnchorLinksDrawer::Draw(Dia::Graphics::FrameData& frameData)
             }
         }
     }
+}
+
+void SoftAnchorLinksDrawer::DrawImGui()
+{
+    ImGui::TextDisabled("Anchor links (rope endpoints to rigid bodies)");
 }
 
 } // namespace Dia::SoftBody2D

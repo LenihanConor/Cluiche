@@ -6,6 +6,7 @@
 
 #ifdef DIA_DEBUG
 
+#include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaGeometry2D/Shapes/Circle.h>
 #include <DiaGeometry2D/Shapes/AARect.h>
 #include <DiaGeometry2D/Shapes/Line.h>
@@ -151,17 +152,18 @@ void ShapeDrawer::SubmitSpline(const Dia::Geometry2D::Spline& spline, int segmen
 
 void ShapeDrawer::Draw(Dia::Graphics::FrameData& frameData)
 {
-    // Clear pending at the start so next frame starts fresh
-    const auto pendingCopy = mPending;
-    mPending.RemoveAll();
+    DIA_TRACE_ZONE("geometry.shapes", ::Dia::Observation::Trace::Category::kDiaGraphics);
+    // Swap out the pending buffer so submissions can continue while we draw
+    Dia::Core::Containers::DynamicArrayC<ShapeEntry, kMaxShapes> pending;
+    pending.Swap(mPending);
 
     if (!IsEnabled()) return;
 
     const float scale = mManager.GetDebugScale();
 
-    for (unsigned int i = 0; i < pendingCopy.Size(); ++i)
+    for (unsigned int i = 0; i < pending.Size(); ++i)
     {
-        const ShapeEntry& e = pendingCopy[i];
+        const ShapeEntry& e = pending[i];
         switch (e.type)
         {
             case ShapeType::Circle:

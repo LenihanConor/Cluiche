@@ -11,56 +11,41 @@
 
 #include <DiaVisualDebugger/IVisualDebugger.h>
 
-namespace Dia
+namespace Dia::Debug { class DebugLayerManager; }
+namespace Dia::IK2D  { class IKSolver; }
+namespace Dia::Rig2D { class Skeleton; }
+
+namespace Dia::IK2D
 {
-    namespace Debug
-    {
-        class DebugLayerManager;
-    }
 
-    namespace IK2D
-    {
-        class IKSolver;
-    }
-
-    namespace Rig2D
-    {
-        class Skeleton;
-    }
-}
-
-namespace Dia
+////////////////////////////////////////////////////////////////////////////////
+// IKReachCirclesDrawer
+//
+// For each chain:
+//   reachRadius = sum of bone.length for i in [startIdx, endIdx-1]
+//   If reachRadius > 0: draw outline circle at startBone world position
+//   Colour: kInactive (grey)
+// Layer:    LayerNames::kIKReach
+// Priority: 30
+////////////////////////////////////////////////////////////////////////////////
+class IKReachCirclesDrawer : public Dia::Debug::IVisualDebugger
 {
-    namespace IK2D
-    {
-        ////////////////////////////////////////////////////////////////////////////////
-        // IKReachCirclesDrawer
-        //
-        // For each chain:
-        //   reachRadius = sum of bone.length for i in [startIdx, endIdx-1]
-        //   If reachRadius > 0: draw outline circle at startBone world position
-        //   Colour: kInactive (grey)
-        // Layer:    LayerNames::kIKReach
-        // Priority: 30
-        ////////////////////////////////////////////////////////////////////////////////
-        class IKReachCirclesDrawer : public Dia::Debug::IVisualDebugger
-        {
-        public:
-            IKReachCirclesDrawer(
-                const IKSolver&                      solver,
-                const Dia::Rig2D::Skeleton&          skeleton,
-                const Dia::Debug::DebugLayerManager& manager);
+public:
+    IKReachCirclesDrawer(
+        const IKSolver&                      solver,
+        const Dia::Rig2D::Skeleton&          skeleton,
+        const Dia::Debug::DebugLayerManager& manager);
 
-            Dia::Core::StringCRC GetLayerName() const override;
-            void Draw(Dia::Graphics::FrameData& frameData) override;
+    Dia::Core::StringCRC GetLayerName() const override;
+    void Draw(Dia::Graphics::FrameData& frameData) override;
+    void DrawImGui() override;
 
-        private:
-            const IKSolver&                      mSolver;
-            const Dia::Rig2D::Skeleton&          mSkeleton;
-            const Dia::Debug::DebugLayerManager& mManager;
-        };
+private:
+    const IKSolver&                      mSolver;
+    const Dia::Rig2D::Skeleton&          mSkeleton;
+    const Dia::Debug::DebugLayerManager& mManager;
+};
 
-    } // namespace IK2D
-} // namespace Dia
+} // namespace Dia::IK2D
 
 #endif // DIA_DEBUG

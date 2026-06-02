@@ -11,64 +11,70 @@
 #include <DiaGraphics/Frame/FrameData.h>
 #include <DiaRig2D/Skeleton.h>
 #include <DiaIK2D/IKSolver.h>
+#include <DiaObservation/Trace/DiaTrace.h>
+#include <imgui.h>
 
-namespace Dia
+namespace Dia::IK2D
 {
-    namespace IK2D
+
+IKChainJointsDrawer::IKChainJointsDrawer(
+    const IKSolver&                      solver,
+    const Dia::Rig2D::Skeleton&          skeleton,
+    const Dia::Debug::DebugLayerManager& manager)
+    : mSolver(solver)
+    , mSkeleton(skeleton)
+    , mManager(manager)
+{
+}
+
+Dia::Core::StringCRC IKChainJointsDrawer::GetLayerName() const
+{
+    return Dia::Debug::LayerNames::kIKJoints;
+}
+
+void IKChainJointsDrawer::Draw(Dia::Graphics::FrameData& frameData)
+{
+    DIA_TRACE_ZONE("ik.joints", ::Dia::Observation::Trace::Category::kDiaGraphics);
+    const float scale      = mManager.GetDebugScale();
+    const int   chainCount = mSolver.GetChainCount();
+    const auto& worldTransforms = mSolver.GetWorldTransforms();
+
+    for (int c = 0; c < chainCount; ++c)
     {
-        IKChainJointsDrawer::IKChainJointsDrawer(
-            const IKSolver&                      solver,
-            const Dia::Rig2D::Skeleton&          skeleton,
-            const Dia::Debug::DebugLayerManager& manager)
-            : mSolver(solver)
-            , mSkeleton(skeleton)
-            , mManager(manager)
-        {
-        }
+        const int startIdx = mSolver.GetChainStartBoneIndex(c);
+        const int endIdx   = mSolver.GetChainEndBoneIndex(c);
 
-        Dia::Core::StringCRC IKChainJointsDrawer::GetLayerName() const
+        for (int i = startIdx; i <= endIdx; ++i)
         {
-            return Dia::Debug::LayerNames::kIKJoints;
-        }
+            const Dia::Maths::Vector2D& pos = worldTransforms[i].position;
 
-        void IKChainJointsDrawer::Draw(Dia::Graphics::FrameData& frameData)
-        {
-            const float scale      = mManager.GetDebugScale();
-            const int   chainCount = mSolver.GetChainCount();
-            const auto& worldTransforms = mSolver.GetWorldTransforms();
-
-            for (int c = 0; c < chainCount; ++c)
+            if (i == endIdx)
             {
-                const int startIdx = mSolver.GetChainStartBoneIndex(c);
-                const int endIdx   = mSolver.GetChainEndBoneIndex(c);
-
-                for (int i = startIdx; i <= endIdx; ++i)
-                {
-                    const Dia::Maths::Vector2D& pos = worldTransforms[i].position;
-
-                    if (i == endIdx)
-                    {
-                        // End-effector: green, larger
-                        frameData.RequestDraw(pos, 3.5f * scale,
-                            Dia::Debug::DebugColourPalette::kHealthy);
-                    }
-                    else if (i == startIdx)
-                    {
-                        // Chain root: cyan
-                        frameData.RequestDraw(pos, 3.0f * scale,
-                            Dia::Debug::DebugColourPalette::kGoal);
-                    }
-                    else
-                    {
-                        // Mid-chain: cyan, smaller
-                        frameData.RequestDraw(pos, 2.5f * scale,
-                            Dia::Debug::DebugColourPalette::kGoal);
-                    }
-                }
+                // End-effector: green, larger
+                frameData.RequestDraw(pos, 3.5f * scale * mRadiusMultiplier,
+                    Dia::Debug::DebugColourPalette::kHealthy);
+            }
+            else if (i == startIdx)
+            {
+                // Chain root: cyan
+                frameData.RequestDraw(pos, 3.0f * scale * mRadiusMultiplier,
+                    Dia::Debug::DebugColourPalette::kGoal);
+            }
+            else
+            {
+                // Mid-chain: cyan, smaller
+                frameData.RequestDraw(pos, 2.5f * scale * mRadiusMultiplier,
+                    Dia::Debug::DebugColourPalette::kGoal);
             }
         }
+    }
+}
 
-    } // namespace IK2D
-} // namespace Dia
+void IKChainJointsDrawer::DrawImGui()
+{
+    ImGui::SliderFloat("Radius multiplier", &mRadiusMultiplier, 0.1f, 5.0f);
+}
+
+} // namespace Dia::IK2D
 
 #endif // DIA_DEBUG
