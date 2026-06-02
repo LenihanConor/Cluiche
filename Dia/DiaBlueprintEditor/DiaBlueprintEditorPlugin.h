@@ -38,6 +38,7 @@ namespace Dia
 			void RegisterPropertyHandlers();
 			void RegisterFileHandlers();
 			void RegisterAssetTypeHandlers();
+			void RegisterAssetTypesWithCatalogue();
 
 			BlueprintFileHandler       mFileHandler;
 			BlueprintListController    mListController;

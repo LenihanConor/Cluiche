@@ -3,6 +3,7 @@
 #include <DiaEntity/ComponentTypeDesc.h>
 #include <DiaAssetCatalogue/AssetRecord.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <DiaObservation/Trace/DiaTrace.h>
 #include <cstring>
 
 namespace Dia
@@ -46,6 +47,7 @@ namespace Dia
 			const Json::Value& blueprintRoot,
 			const char* topLevelKey) const
 		{
+			DIA_TRACE_ZONE("blueprint_editor.build_property", Dia::Observation::Trace::Category::kNone);
 			Json::Value result;
 			if (!blueprintRoot.isMember(topLevelKey))
 			{
@@ -102,6 +104,7 @@ namespace Dia
 			const Json::Value& blueprintRoot,
 			const char* topLevelKey) const
 		{
+			DIA_TRACE_ZONE("blueprint_editor.build_available_components", Dia::Observation::Trace::Category::kNone);
 			Json::Value result(Json::arrayValue);
 
 			// Collect component types already in the blueprint

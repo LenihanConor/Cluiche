@@ -1,6 +1,7 @@
 #include "DiaBlueprintEditor/BlueprintListController.h"
 #include <DiaAssetCatalogue/AssetRecord.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <DiaObservation/Trace/DiaTrace.h>
 
 namespace Dia
 {
@@ -28,6 +29,7 @@ namespace Dia
 		Json::Value BlueprintListController::BuildListJson(
 			const Dia::AssetCatalogue::AssetRegistry& registry) const
 		{
+			DIA_TRACE_ZONE("blueprint_editor.build_list", Dia::Observation::Trace::Category::kNone);
 			Json::Value result;
 			result["success"] = true;
 
