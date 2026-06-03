@@ -105,6 +105,19 @@ namespace Dia
 				{
 					context.mModel->OnDiagameProjectChanged(&DiaAssetCatalogueEditorPlugin::OnProjectChangedStatic, this);
 					const Dia::Editor::ProjectContext& proj = context.mModel->GetDiagameProject();
+
+					// Populate mDiagameDir from current project (same logic as OnProjectChangedStatic)
+					if (proj.IsValid() && proj.diagamePath[0] != '\0')
+					{
+						const char* p = proj.diagamePath;
+						int lastSlash = -1;
+						for (int i = 0; p[i] != '\0'; ++i)
+							if (p[i] == '/' || p[i] == '\\') lastSlash = i;
+						if (lastSlash >= 0)
+							strncpy_s(mDiagameDir, kDiagameDirLength,
+							          proj.diagamePath, static_cast<size_t>(lastSlash + 1));
+					}
+
 					DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: OnLoad — checking current project: IsValid=%d diagamePath='%s' assetCataloguePath='%s'",
 						proj.IsValid() ? 1 : 0, proj.diagamePath, proj.assetCataloguePath);
 					if (proj.IsValid() && proj.assetCataloguePath[0] != '\0')
@@ -652,6 +665,18 @@ namespace Dia
 
 						result["success"] = true;
 						PushRegistryState();
+
+						// Auto-save
+						if (mCurrentPath[0] != '\0')
+						{
+							char saveErr[256] = {};
+							if (mLoadHandler.Save(mCurrentPath, mRegistry, mSerializer, mHistory,
+							    saveErr, sizeof(saveErr)))
+								PushDirtyState();
+							else
+								DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: add_relationship — auto-save failed: %s", saveErr);
+						}
+
 						return result;
 					});
 
@@ -677,6 +702,18 @@ namespace Dia
 
 						result["success"] = true;
 						PushRegistryState();
+
+						// Auto-save
+						if (mCurrentPath[0] != '\0')
+						{
+							char saveErr[256] = {};
+							if (mLoadHandler.Save(mCurrentPath, mRegistry, mSerializer, mHistory,
+							    saveErr, sizeof(saveErr)))
+								PushDirtyState();
+							else
+								DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: remove_relationship — auto-save failed: %s", saveErr);
+						}
+
 						return result;
 					});
 
@@ -918,6 +955,18 @@ namespace Dia
 						result["success"]       = true;
 						result["applied_count"] = static_cast<int>(cs.mChanges.Size());
 						PushRegistryState();
+
+						// Auto-save
+						if (mCurrentPath[0] != '\0')
+						{
+							char saveErr[256] = {};
+							if (mLoadHandler.Save(mCurrentPath, mRegistry, mSerializer, mHistory,
+							    saveErr, sizeof(saveErr)))
+								PushDirtyState();
+							else
+								DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: apply_rules — auto-save failed: %s", saveErr);
+						}
+
 						return result;
 					});
 
@@ -1002,16 +1051,15 @@ namespace Dia
 							{ "sprite",    "Mesh/Sprite" },
 							{ "audio",     "Audio" },
 							{ "config",    "Config" },
-							{ "entity",    "Entity Definition" },
+							{ "diaentity", "Entity" },
 							{ "stage",     "Stage" },
 							{ "ui",        "UI Definition" },
 							{ "folder",    "Folder" },
-							{ "diaentity", "Entity Blueprint" },
 							{ "diacamera", "Camera Blueprint" },
 							{ "dialight",  "Light Blueprint" },
 							{ "diascene",  "Scene" },
 						};
-						static const unsigned int kCount = 12;
+						static const unsigned int kCount = 11;
 
 						Json::Value result;
 						result["success"] = true;
@@ -1067,7 +1115,9 @@ namespace Dia
 
 						// Resolve absolute path from diagame directory
 						char absPath[1024] = {};
-						if (mDiagameDir[0] != '\0')
+						bool pathIsAbsolute = (relPath[0] == '/' || relPath[0] == '\\' ||
+						                      (relPath[0] != '\0' && relPath[1] == ':'));
+						if (!pathIsAbsolute && mDiagameDir[0] != '\0')
 							snprintf(absPath, sizeof(absPath), "%s%s", mDiagameDir, relPath);
 						else
 							strncpy_s(absPath, sizeof(absPath), relPath, _TRUNCATE);
@@ -1308,6 +1358,59 @@ namespace Dia
 							return result;
 						}
 
+						// For blueprint types, write a blank file if it doesn't exist yet.
+						if (!rec.mSourcePath.IsEmpty())
+						{
+							const char* typeStr = rec.mAssetTypeId.AsChar();
+							bool isBlueprintType = (strcmp(typeStr, "diaentity") == 0
+							                     || strcmp(typeStr, "diacamera") == 0
+							                     || strcmp(typeStr, "dialight")  == 0);
+							if (isBlueprintType)
+							{
+								char absPath[1024] = {};
+								const char* srcPath = rec.mSourcePath.AsCStr();
+								bool isAbsolute = (srcPath[0] == '/' || srcPath[0] == '\\' ||
+								                   (srcPath[0] != '\0' && srcPath[1] == ':'));
+								if (!isAbsolute && mDiagameDir[0] != '\0')
+									snprintf(absPath, sizeof(absPath), "%s%s", mDiagameDir, srcPath);
+								else
+									strncpy_s(absPath, sizeof(absPath), srcPath, _TRUNCATE);
+
+								DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: create_record — resolved path: diagameDir='%s' sourcePath='%s' absPath='%s'",
+									mDiagameDir, rec.mSourcePath.AsCStr(), absPath);
+
+								FILE* probe = nullptr;
+								if (fopen_s(&probe, absPath, "rb") != 0 || !probe)
+								{
+									// File doesn't exist — write blank blueprint
+									const char* topKey = "entity_blueprint";
+									if (strcmp(typeStr, "diacamera") == 0) topKey = "camera_blueprint";
+									else if (strcmp(typeStr, "dialight") == 0) topKey = "light_blueprint";
+
+									char content[256];
+									snprintf(content, sizeof(content),
+										"{\n    \"%s\": {\n        \"id\": \"%s\",\n        \"components\": []\n    }\n}\n",
+										topKey, rec.mId.AsChar());
+
+									FILE* f = nullptr;
+									if (fopen_s(&f, absPath, "wb") == 0 && f)
+									{
+										fputs(content, f);
+										fclose(f);
+										DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: created blank %s at '%s'", typeStr, absPath);
+									}
+									else
+									{
+										DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: could not write blank %s to '%s'", typeStr, absPath);
+									}
+								}
+								else
+								{
+									fclose(probe);
+								}
+							}
+						}
+
 						// Compute content hash
 						if (!rec.mSourcePath.IsEmpty())
 							rec.mContentHash = mContentHasher.ComputeHash(rec.mSourcePath.AsCStr());
@@ -1318,6 +1421,18 @@ namespace Dia
 						result["success"]      = true;
 						result["content_hash"] = static_cast<Json::UInt>(rec.mContentHash);
 						PushRegistryState();
+
+						// Auto-save manifest after record creation
+						if (mCurrentPath[0] != '\0')
+						{
+							char saveErr[256] = {};
+							if (mLoadHandler.Save(mCurrentPath, mRegistry, mSerializer, mHistory,
+							    saveErr, sizeof(saveErr)))
+								PushDirtyState();
+							else
+								DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: create_record — auto-save failed: %s", saveErr);
+						}
+
 						return result;
 					});
 
@@ -1358,6 +1473,18 @@ namespace Dia
 						result["success"]      = true;
 						result["content_hash"] = static_cast<Json::UInt>(newRec.mContentHash);
 						PushRegistryState();
+
+						// Auto-save manifest after record update
+						if (mCurrentPath[0] != '\0')
+						{
+							char saveErr[256] = {};
+							if (mLoadHandler.Save(mCurrentPath, mRegistry, mSerializer, mHistory,
+							    saveErr, sizeof(saveErr)))
+								PushDirtyState();
+							else
+								DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: update_record — auto-save failed: %s", saveErr);
+						}
+
 						return result;
 					});
 
@@ -1386,6 +1513,18 @@ namespace Dia
 
 						result["success"] = true;
 						PushRegistryState();
+
+						// Auto-save manifest after record deletion
+						if (mCurrentPath[0] != '\0')
+						{
+							char saveErr[256] = {};
+							if (mLoadHandler.Save(mCurrentPath, mRegistry, mSerializer, mHistory,
+							    saveErr, sizeof(saveErr)))
+								PushDirtyState();
+							else
+								DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: delete_record — auto-save failed: %s", saveErr);
+						}
+
 						return result;
 					});
 
@@ -1474,6 +1613,18 @@ namespace Dia
 						result["success"] = true;
 						result["created"] = created;
 						PushRegistryState();
+
+						// Auto-save
+						if (mCurrentPath[0] != '\0')
+						{
+							char saveErr[256] = {};
+							if (mLoadHandler.Save(mCurrentPath, mRegistry, mSerializer, mHistory,
+							    saveErr, sizeof(saveErr)))
+								PushDirtyState();
+							else
+								DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: bulk_create_records — auto-save failed: %s", saveErr);
+						}
+
 						return result;
 					});
 			}

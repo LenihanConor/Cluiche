@@ -265,8 +265,6 @@
 
 <!-- ── Toolbar ───────────────────────────────────── -->
 <div class="toolbar">
-  <button onclick="onSave()">Save</button>
-  <div class="separator"></div>
   <span class="manifest-path" id="manifest-path">No manifest loaded</span>
   <span class="dirty-indicator" id="dirty-indicator">*</span>
 </div>
@@ -329,7 +327,7 @@
           <label>Source Path</label>
           <div class="form-value">
             <div class="source-row">
-              <input type="text" id="rec-source-path" placeholder="relative/path/to/file" />
+              <input type="text" id="rec-source-path" placeholder="relative/path/to/file" oninput="scheduleAutosave()" />
               <button onclick="browseSourcePath()">Browse…</button>
             </div>
           </div>
@@ -337,7 +335,7 @@
         <div class="form-row">
           <label>Status</label>
           <div class="form-value">
-            <select id="rec-status">
+            <select id="rec-status" onchange="scheduleAutosave()">
               <option value="Active">Active</option>
               <option value="Draft">Draft</option>
               <option value="Deprecated">Deprecated</option>
@@ -347,7 +345,7 @@
         <div class="form-row">
           <label>Scope</label>
           <div class="form-value">
-            <select id="rec-scope" onchange="onScopeChange()">
+            <select id="rec-scope" onchange="onScopeChange(); scheduleAutosave()">
               <option value="global">Global</option>
               <option value="stage">Stage</option>
             </select>
@@ -356,7 +354,7 @@
         <div class="form-row stage-row" id="stage-row">
           <label>Stage Name</label>
           <div class="form-value">
-            <input type="text" id="rec-stage" placeholder="stage_name" />
+            <input type="text" id="rec-stage" placeholder="stage_name" oninput="scheduleAutosave()" />
           </div>
         </div>
         <div class="form-row">
@@ -370,8 +368,6 @@
           </div>
         </div>
         <div class="panel-actions" style="margin-top:12px;">
-          <button class="btn-primary" onclick="onSaveRecord()">Save Changes</button>
-          <button onclick="onDiscardRecord()">Discard</button>
           <button onclick="onOpenAsset(selectedId)" id="btn-open-asset" disabled>Open</button>
         </div>
 
@@ -679,14 +675,8 @@
     dirty ? el.classList.add('dirty') : el.classList.remove('dirty');
   }
 
-  function onSave() {
-    diaRequest('asset_catalogue.save_manifest', {}).then(function(r) {
-      if (!r.success) alert('Save failed: ' + r.error);
-    });
-  }
-
   document.addEventListener('keydown', function(e) {
-    if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); onSave(); }
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); }
   });
 
   // On mount: init graph then pull current state from the backend. The plugin may
@@ -853,6 +843,7 @@
   function removeTag(i) {
     editingTags.splice(i, 1);
     renderTags();
+    scheduleAutosave();
   }
 
   function onTagKeyDown(e) {
@@ -862,6 +853,7 @@
       if (v && editingTags.indexOf(v) < 0) {
         editingTags.push(v);
         renderTags();
+        scheduleAutosave();
       } else {
         e.target.value = '';
       }
@@ -880,8 +872,15 @@
     });
   }
 
-  function onSaveRecord() {
+  var _autosaveTimer = null;
+  function scheduleAutosave() {
+    if (_autosaveTimer) clearTimeout(_autosaveTimer);
+    _autosaveTimer = setTimeout(function() { doAutosave(); }, 300);
+  }
+
+  function doAutosave() {
     var id = document.getElementById('rec-id').value;
+    if (!id) return;
     var scope = document.getElementById('rec-scope').value;
     var payload = {
       id: id,
@@ -893,12 +892,8 @@
     if (scope === 'stage') payload.stage = document.getElementById('rec-stage').value;
 
     diaRequest('asset_catalogue.update_record', payload).then(function(r) {
-      if (!r.success) alert('Update failed: ' + r.error);
+      if (!r.success) diaLog('[AssetCatalogue] autosave failed: ' + r.error);
     });
-  }
-
-  function onDiscardRecord() {
-    if (selectedId) selectRecord(selectedId);
   }
 
   function onOpenAsset(id) {

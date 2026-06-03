@@ -314,14 +314,14 @@ protected:
 	}
 };
 
-// All 8 built-in types present after RegisterBuiltInAssetTypes
-TEST_F(AssetTypeFrameworkExhaustive, BuiltIn_All8TypesRegistered)
+// All built-in types present after RegisterBuiltInAssetTypes
+TEST_F(AssetTypeFrameworkExhaustive, BuiltIn_All10TypesRegistered)
 {
 	Dia::AssetCatalogue::AssetTypeRegistry registry;
 	Dia::AssetCatalogue::RegisterBuiltInAssetTypes(registry);
 
-	// 8 original types + 3 blueprint types (diaentity, diacamera, dialight) = 11
-	EXPECT_EQ(registry.GetCount(), 11u);
+	// 7 base types + 3 blueprint types (diaentity, diacamera, dialight) = 10
+	EXPECT_EQ(registry.GetCount(), 10u);
 }
 
 // Verify each built-in type ID string
@@ -330,7 +330,7 @@ TEST_F(AssetTypeFrameworkExhaustive, BuiltIn_EachTypeId_Exists)
 	Dia::AssetCatalogue::AssetTypeRegistry registry;
 	Dia::AssetCatalogue::RegisterBuiltInAssetTypes(registry);
 
-	const char* expectedIds[] = { "texture", "sprite", "audio", "config", "entity", "stage", "ui", "folder" };
+	const char* expectedIds[] = { "texture", "sprite", "audio", "config", "diaentity", "stage", "ui", "folder" };
 	for (int i = 0; i < 8; ++i)
 	{
 		const Dia::AssetCatalogue::AssetTypeDescriptor* desc =
@@ -345,7 +345,7 @@ TEST_F(AssetTypeFrameworkExhaustive, BuiltIn_TypeIds_AreDistinct)
 	Dia::AssetCatalogue::AssetTypeRegistry registry;
 	Dia::AssetCatalogue::RegisterBuiltInAssetTypes(registry);
 
-	const char* ids[] = { "texture", "sprite", "audio", "config", "entity", "stage", "ui", "folder" };
+	const char* ids[] = { "texture", "sprite", "audio", "config", "diaentity", "stage", "ui", "folder" };
 	for (int i = 0; i < 8; ++i)
 	{
 		for (int j = i + 1; j < 8; ++j)

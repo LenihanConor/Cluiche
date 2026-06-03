@@ -106,16 +106,13 @@ namespace Dia
 				registry.Register(desc);
 			}
 
-			// --- Entity ---
+			// --- Entity (blueprint) ---
 			{
 				AssetTypeDescriptor desc;
-				desc.mTypeId         = Dia::Core::StringCRC("entity");
-				desc.mName           = Dia::Core::Containers::String64("Entity Definition");
-				desc.mFilePattern    = Dia::Core::Containers::String64("*.entity.json");
-				desc.mDeserializeFn  = [](const Json::Value& root, void* obj) {
-					Dia::Reflect::JsonReadArchive ar(root);
-					serialize(ar, *static_cast<EntityAsset*>(obj), 1u);
-				};
+				desc.mTypeId         = Dia::Core::StringCRC("diaentity");
+				desc.mName           = Dia::Core::Containers::String64("Entity");
+				desc.mFilePattern    = Dia::Core::Containers::String64("*.diaentity");
+				desc.mDeserializeFn  = nullptr;
 				registry.Register(desc);
 			}
 
@@ -155,15 +152,6 @@ namespace Dia
 				registry.Register(desc);
 			}
 
-			// --- Entity Blueprint ---
-			{
-				AssetTypeDescriptor desc;
-				desc.mTypeId         = Dia::Core::StringCRC("diaentity");
-				desc.mName           = Dia::Core::Containers::String64("Entity Blueprint");
-				desc.mFilePattern    = Dia::Core::Containers::String64("*.diaentity");
-				desc.mDeserializeFn  = nullptr;
-				registry.Register(desc);
-			}
 
 			// --- Camera Blueprint ---
 			{

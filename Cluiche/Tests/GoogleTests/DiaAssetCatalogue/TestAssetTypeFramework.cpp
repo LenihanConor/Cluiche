@@ -172,14 +172,14 @@ TEST_F(AssetTypeFramework, BuiltIn_All8TypesRegistered)
 // ---------------------------------------------------------------------------
 // Test 7: Built-in pattern matching — a .entity.json file returns entity descriptor
 // ---------------------------------------------------------------------------
-TEST_F(AssetTypeFramework, BuiltIn_FindByFilePath_EntityJson_ReturnsEntityDescriptor)
+TEST_F(AssetTypeFramework, BuiltIn_FindByFilePath_DiaEntity_ReturnsEntityDescriptor)
 {
 	Dia::AssetCatalogue::AssetTypeRegistry registry;
 	Dia::AssetCatalogue::RegisterBuiltInAssetTypes(registry);
 
-	Dia::Core::FilePath path = MakePath("hero.entity.json");
+	Dia::Core::FilePath path = MakePath("hero.diaentity");
 	const Dia::AssetCatalogue::AssetTypeDescriptor* found = registry.FindByFilePath(path);
 
 	ASSERT_NE(found, nullptr);
-	EXPECT_EQ(found->mTypeId, Dia::Core::StringCRC("entity"));
+	EXPECT_EQ(found->mTypeId, Dia::Core::StringCRC("diaentity"));
 }
