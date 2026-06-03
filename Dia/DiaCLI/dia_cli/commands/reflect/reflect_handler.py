@@ -129,6 +129,20 @@ def _extract_type_ids(schema: dict[str, Any]) -> set[str]:
     return ids
 
 
+def _extract_descriptions_per_type(schema: dict[str, Any]) -> dict[str, str]:
+    """Return a mapping of type_id → description string for components + modules."""
+    result: dict[str, str] = {}
+    for key in ("components", "modules"):
+        for entry in schema.get(key, []):
+            if not isinstance(entry, dict):
+                continue
+            type_id = str(entry.get("type_id", ""))
+            if not type_id:
+                continue
+            result[type_id] = str(entry.get("description", ""))
+    return result
+
+
 def _extract_fields_per_type(schema: dict[str, Any]) -> dict[str, frozenset[str]]:
     """Return a mapping of type_id → frozenset of field names."""
     result: dict[str, frozenset[str]] = {}
@@ -203,9 +217,17 @@ def _compute_version(
         if prev_f - new_f:
             fields_removed = True
 
+    # Compare descriptions for types present in both
+    prev_descs = _extract_descriptions_per_type(prev_schema)
+    new_descs = _extract_descriptions_per_type(new_schema)
+    desc_changed = any(
+        new_descs.get(t, "") != prev_descs.get(t, "")
+        for t in prev_ids & new_ids
+    )
+
     # Determine change category
     has_removals = bool(removed_ids) or fields_removed
-    has_additions = bool(added_ids) or fields_added
+    has_additions = bool(added_ids) or fields_added or desc_changed
     no_change = not has_removals and not has_additions and not is_breaking
 
     if no_change:

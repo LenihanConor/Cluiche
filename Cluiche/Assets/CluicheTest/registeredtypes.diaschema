@@ -6,6 +6,7 @@
         "x": 0,
         "y": 0
       },
+      "description": "Holds 2D world-space position (x, y) for an entity.",
       "fields": [
         {
           "kind": "primitive",
@@ -24,6 +25,7 @@
         "colour": 0,
         "radius": 0
       },
+      "description": "Stores render properties (radius, colour) for circle-based visual representation in the entity test stage.",
       "fields": [
         {
           "kind": "primitive",
@@ -42,6 +44,7 @@
         "isSelected": false,
         "objectIdx": 0
       },
+      "description": "Registers a circle shape with the picking service so the entity can be selected in the test stage.",
       "fields": [
         {
           "kind": "primitive",
@@ -56,6 +59,7 @@
         "parentGen": 0,
         "parentIndex": 0
       },
+      "description": "Stores the parent entity handle; links this entity into the scene hierarchy.",
       "fields": [
         {
           "kind": "primitive",
@@ -71,6 +75,7 @@
     {
       "debug_name": "ChildBufferComponent",
       "default_values": {},
+      "description": "Stores up to kMaxChildren child entity handles for a parent entity in the hierarchy.",
       "fields": [],
       "type_id": "dia.hierarchy.children"
     }
@@ -276,6 +281,6 @@
   "processing_units": [],
   "version": {
     "major": 1,
-    "minor": 0
+    "minor": 1
   }
 }
