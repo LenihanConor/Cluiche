@@ -219,6 +219,7 @@ TEST_F(BlueprintEditorPluginTest, OnUnload_RemovesAllHandlers)
 	EXPECT_TRUE(Invoke("blueprint_editor.remove_component").isNull());
 	EXPECT_TRUE(Invoke("blueprint_editor.get_available_components").isNull());
 	EXPECT_TRUE(Invoke("blueprint_editor.get_usage").isNull());
+	EXPECT_TRUE(Invoke("blueprint_editor.create_from_template").isNull());
 
 	// Re-load so TearDown's OnUnload doesn't double-unregister
 	EditorPluginContext ctx;
@@ -689,6 +690,143 @@ TEST_F(BlueprintEditorPluginTest, Handler_GetAvailableComponents_ValidFile_Retur
 	// Transform2D is already present so should not appear in available list
 	for (unsigned int i = 0; i < r["components"].size(); ++i)
 		EXPECT_NE(r["components"][i]["typeId"].asString(), "Transform2D");
+}
+
+// ===========================================================================
+// Handler: create_from_template — error paths
+// ===========================================================================
+
+TEST_F(BlueprintEditorPluginTest, OnLoad_HandlerRegistered_CreateFromTemplate)
+{
+	Json::Value r = Invoke("blueprint_editor.create_from_template");
+	EXPECT_FALSE(r.isNull());
+	EXPECT_TRUE(r.isMember("success"));
+}
+
+TEST_F(BlueprintEditorPluginTest, Handler_CreateFromTemplate_MissingParams_ReturnsError)
+{
+	Json::Value r = Invoke("blueprint_editor.create_from_template");
+	EXPECT_FALSE(r["success"].asBool());
+	EXPECT_FALSE(r["error"].asString().empty());
+}
+
+TEST_F(BlueprintEditorPluginTest, Handler_CreateFromTemplate_MissingPath_ReturnsError)
+{
+	Json::Value data;
+	data["instanceId"] = "diaentity.test";
+	Json::Value r = Invoke("blueprint_editor.create_from_template", data);
+	EXPECT_FALSE(r["success"].asBool());
+}
+
+TEST_F(BlueprintEditorPluginTest, Handler_CreateFromTemplate_MissingInstanceId_ReturnsError)
+{
+	Json::Value data;
+	data["path"] = "itmp_create.diaentity";
+	Json::Value r = Invoke("blueprint_editor.create_from_template", data);
+	EXPECT_FALSE(r["success"].asBool());
+}
+
+// ===========================================================================
+// Handler: create_from_template — happy path
+// ===========================================================================
+
+TEST_F(BlueprintEditorPluginTest, Handler_CreateFromTemplate_Entity_CreatesValidFile)
+{
+	const char* kPath = "itmp_create_entity.diaentity";
+	mTempFiles[mTempCount++] = kPath;
+
+	Json::Value data;
+	data["instanceId"] = "diaentity.hero";
+	data["path"]       = kPath;
+	Json::Value r = Invoke("blueprint_editor.create_from_template", data);
+
+	ASSERT_TRUE(r["success"].asBool());
+
+	// Load the created file and verify structure
+	Json::Value loadData;
+	loadData["path"] = kPath;
+	Json::Value loaded = Invoke("blueprint_editor.load", loadData);
+
+	ASSERT_TRUE(loaded["success"].asBool());
+	EXPECT_EQ(loaded["properties"]["id"].asString(), "diaentity.hero");
+	EXPECT_EQ(loaded["properties"]["components"].size(), 0u);
+}
+
+TEST_F(BlueprintEditorPluginTest, Handler_CreateFromTemplate_Camera_UsesCorrectTopKey)
+{
+	const char* kPath = "itmp_create_camera.diacamera";
+	mTempFiles[mTempCount++] = kPath;
+
+	Json::Value data;
+	data["instanceId"] = "diacamera.main";
+	data["path"]       = kPath;
+	Json::Value r = Invoke("blueprint_editor.create_from_template", data);
+
+	ASSERT_TRUE(r["success"].asBool());
+
+	// Verify it loads with the camera top key
+	Json::Value loadData;
+	loadData["path"] = kPath;
+	Json::Value loaded = Invoke("blueprint_editor.load", loadData);
+
+	ASSERT_TRUE(loaded["success"].asBool());
+	EXPECT_EQ(loaded["properties"]["id"].asString(), "diacamera.main");
+}
+
+TEST_F(BlueprintEditorPluginTest, Handler_CreateFromTemplate_Light_UsesCorrectTopKey)
+{
+	const char* kPath = "itmp_create_light.dialight";
+	mTempFiles[mTempCount++] = kPath;
+
+	Json::Value data;
+	data["instanceId"] = "dialight.sun";
+	data["path"]       = kPath;
+	Json::Value r = Invoke("blueprint_editor.create_from_template", data);
+
+	ASSERT_TRUE(r["success"].asBool());
+
+	Json::Value loadData;
+	loadData["path"] = kPath;
+	Json::Value loaded = Invoke("blueprint_editor.load", loadData);
+
+	ASSERT_TRUE(loaded["success"].asBool());
+	EXPECT_EQ(loaded["properties"]["id"].asString(), "dialight.sun");
+}
+
+TEST_F(BlueprintEditorPluginTest, Handler_CreateFromTemplate_CreatedFileIsLoadableAndEditable)
+{
+	const char* kPath = "itmp_create_editable.diaentity";
+	mTempFiles[mTempCount++] = kPath;
+
+	// Create
+	Json::Value createData;
+	createData["instanceId"] = "diaentity.npc";
+	createData["path"]       = kPath;
+	ASSERT_TRUE(Invoke("blueprint_editor.create_from_template", createData)["success"].asBool());
+
+	// Add a component to the created file
+	Json::Value addData;
+	addData["path"]          = kPath;
+	addData["componentType"] = "Transform2D";
+	ASSERT_TRUE(Invoke("blueprint_editor.add_component", addData)["success"].asBool());
+
+	// Verify
+	Json::Value loadData;
+	loadData["path"] = kPath;
+	Json::Value loaded = Invoke("blueprint_editor.load", loadData);
+	ASSERT_TRUE(loaded["success"].asBool());
+	EXPECT_EQ(loaded["properties"]["components"].size(), 1u);
+	EXPECT_EQ(loaded["properties"]["components"][0]["type"].asString(), "Transform2D");
+}
+
+TEST_F(BlueprintEditorPluginTest, Handler_CreateFromTemplate_InvalidDirectory_ReturnsError)
+{
+	Json::Value data;
+	data["instanceId"] = "diaentity.test";
+	data["path"]       = "nonexistent_dir_xyz/sub/file.diaentity";
+	Json::Value r = Invoke("blueprint_editor.create_from_template", data);
+
+	EXPECT_FALSE(r["success"].asBool());
 }
 
 // ===========================================================================

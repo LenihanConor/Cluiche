@@ -352,6 +352,19 @@
   </div>
 </div>
 
+<!-- Navigate failed resolution -->
+<div class="modal-overlay" id="modal-navigate-failed">
+  <div class="modal" style="max-width:480px">
+    <h3 style="color:#f0a030">Blueprint Not Found</h3>
+    <p id="modal-navigate-failed-msg" style="line-height:1.5"></p>
+    <div class="modal-footer">
+      <button onclick="closeModal('modal-navigate-failed')">Dismiss</button>
+      <button class="btn-danger" id="nav-fail-remove-btn" onclick="navFailRemoveEntry()">Remove from Catalogue</button>
+      <button class="btn-add-confirm" id="nav-fail-create-btn" onclick="navFailCreateFile()">Create File</button>
+    </div>
+  </div>
+</div>
+
 <script>
   /* ── State ──────────────────────────────────────────── */
   var currentPath     = null;
@@ -408,6 +421,14 @@
     }
     if (msg.topic === 'asset_catalogue.registry_changed') {
       loadBlueprintList();
+    }
+    if (msg.topic === 'blueprint_editor.navigated') {
+      if (msg.data && msg.data.instanceId && msg.data.sourcePath) {
+        selectBlueprint(msg.data.instanceId, msg.data.sourcePath);
+      }
+    }
+    if (msg.topic === 'blueprint_editor.navigate_failed') {
+      showNavigateFailedModal(msg.data);
     }
   };
 
@@ -898,6 +919,92 @@
       .replace(/</g,'&lt;')
       .replace(/>/g,'&gt;')
       .replace(/"/g,'&quot;');
+  }
+
+  /* ── Navigate failed resolution ─────────────────────── */
+  var navFailContext = null;
+
+  function showNavigateFailedModal(data) {
+    if (!data) return;
+    var instanceId = data.instanceId || '(unknown)';
+    var sourcePath = data.sourcePath || '';
+    var error      = data.error || 'unknown error';
+    var assetType  = data.assetType || 'diaentity';
+
+    // Derive the expected file path from the instanceId
+    // e.g. "diaentity.more" → "more.diaentity" appended to the directory portion of sourcePath
+    var dirPath = sourcePath;
+    if (dirPath && dirPath.charAt(dirPath.length - 1) !== '/' && dirPath.charAt(dirPath.length - 1) !== '\\') {
+      var lastSlash = Math.max(dirPath.lastIndexOf('/'), dirPath.lastIndexOf('\\'));
+      dirPath = lastSlash >= 0 ? dirPath.substring(0, lastSlash + 1) : '';
+    }
+    var shortName = instanceId.indexOf('.') >= 0 ? instanceId.substring(instanceId.indexOf('.') + 1) : instanceId;
+    var expectedPath = dirPath + shortName + '.' + assetType;
+
+    navFailContext = {
+      instanceId: instanceId,
+      sourcePath: sourcePath,
+      expectedPath: expectedPath,
+      assetType: assetType
+    };
+
+    var msg = 'Could not load <code style="background:#1e1e1e;padding:1px 4px;border-radius:3px;font-size:11px;color:#e0c080">' +
+      esc(instanceId) + '</code>.<br><br>' +
+      '<span style="color:#9d9d9d">Path:</span> <code style="font-size:10px;color:#888">' + esc(sourcePath) + '</code><br>' +
+      '<span style="color:#9d9d9d">Error:</span> ' + esc(error) + '<br><br>' +
+      'Would you like to create the missing file at:<br>' +
+      '<code style="font-size:10px;color:#9cdcfe">' + esc(expectedPath) + '</code>';
+
+    document.getElementById('modal-navigate-failed-msg').innerHTML = msg;
+    openModal('modal-navigate-failed');
+  }
+
+  function navFailCreateFile() {
+    if (!navFailContext) { closeModal('modal-navigate-failed'); return; }
+    var ctx = navFailContext;
+    navFailContext = null;
+    closeModal('modal-navigate-failed');
+
+    diaRequest('blueprint_editor.create_from_template', {
+      instanceId: ctx.instanceId,
+      path: ctx.expectedPath
+    }).then(function(r) {
+      if (!r.success) {
+        setStatus('Create failed: ' + (r.error || 'unknown'), true);
+        return;
+      }
+      // Fetch the full catalogue record, update source_path, and save back
+      diaRequest('asset_catalogue.get_record', { id: ctx.instanceId }).then(function(gr) {
+        if (!gr.success || !gr.record) {
+          setStatus('Created file but could not update catalogue path', true);
+          selectBlueprint(ctx.instanceId, ctx.expectedPath);
+          return;
+        }
+        var rec = gr.record;
+        rec.source_path = ctx.expectedPath;
+        diaRequest('asset_catalogue.update_record', rec).then(function() {
+          setStatus('Created ' + ctx.expectedPath.split(/[/\\]/).pop());
+          selectBlueprint(ctx.instanceId, ctx.expectedPath);
+          loadBlueprintList();
+        });
+      });
+    });
+  }
+
+  function navFailRemoveEntry() {
+    if (!navFailContext) { closeModal('modal-navigate-failed'); return; }
+    var ctx = navFailContext;
+    navFailContext = null;
+    closeModal('modal-navigate-failed');
+
+    diaRequest('asset_catalogue.delete_record', { id: ctx.instanceId }).then(function(r) {
+      if (!r.success) {
+        setStatus('Remove failed: ' + (r.error || 'unknown'), true);
+        return;
+      }
+      setStatus('Removed catalogue entry: ' + ctx.instanceId);
+      loadBlueprintList();
+    });
   }
 </script>
 </body>

@@ -117,6 +117,7 @@ namespace Dia
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("blueprint_editor.remove_component"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("blueprint_editor.update_field"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("blueprint_editor.get_usage"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("blueprint_editor.create_from_template"));
 			}
 
 			mBridge       = nullptr;
@@ -162,8 +163,21 @@ namespace Dia
 		    if (loadResult.isNull() || !loadResult.get("success", false).asBool())
 		    {
 		        DIA_LOG_WARNING("Editor", "DiaBlueprintEditorPlugin::OnNavigate: load failed for path '%s'", sourcePath.c_str());
+
+		        Json::Value failData;
+		        failData["instanceId"]  = instanceId.AsChar();
+		        failData["sourcePath"]  = sourcePath;
+		        failData["error"]       = loadResult.isNull() ? "load returned null" : loadResult.get("error", "unknown").asString();
+		        failData["assetType"]   = rec["record"].get("type", "diaentity").asString();
+		        mBridge->NotifyUIDataChanged("blueprint_editor.navigate_failed", failData);
 		        return;
 		    }
+
+		    // Tell the UI to select and display this blueprint
+		    Json::Value navData;
+		    navData["instanceId"] = instanceId.AsChar();
+		    navData["sourcePath"] = sourcePath;
+		    mBridge->NotifyUIDataChanged("blueprint_editor.navigated", navData);
 
 		    DIA_LOG_INFO("Editor", "DiaBlueprintEditorPlugin::OnNavigate: loaded blueprint '%s'", sourcePath.c_str());
 		}
@@ -606,6 +620,48 @@ namespace Dia
 					DIA_LOG_INFO("Editor",
 						"DiaBlueprintEditorPlugin: removed component '%s' from '%s'",
 						data["componentType"].asCString(), data["path"].asCString());
+					result["success"] = true;
+					return result;
+				});
+
+			mBridge->RegisterRequestHandler(
+				Dia::Core::StringCRC("blueprint_editor.create_from_template"),
+				[this](const Json::Value& data) -> Json::Value
+				{
+					Json::Value result;
+					if (!data.isMember("instanceId") || !data["instanceId"].isString()
+					    || !data.isMember("path") || !data["path"].isString())
+					{
+						result["success"] = false;
+						result["error"]   = "missing instanceId or path";
+						return result;
+					}
+
+					const std::string instanceId = data["instanceId"].asString();
+					const std::string path       = data["path"].asString();
+
+					const char* ext    = strrchr(path.c_str(), '.');
+					const char* topKey = BlueprintFileHandler::TopLevelKeyForExtension(ext ? ext : "");
+
+					Json::Value blueprintRoot;
+					Json::Value& inner = blueprintRoot[topKey];
+					inner["id"]         = instanceId;
+					inner["components"] = Json::Value(Json::arrayValue);
+
+					char err[256] = {};
+					if (!mFileHandler.Save(path.c_str(), blueprintRoot, err, sizeof(err)))
+					{
+						DIA_LOG_WARNING("Editor",
+							"DiaBlueprintEditorPlugin: create_from_template — save failed for '%s': %s",
+							path.c_str(), err);
+						result["success"] = false;
+						result["error"]   = err[0] ? err : "save failed";
+						return result;
+					}
+
+					DIA_LOG_INFO("Editor",
+						"DiaBlueprintEditorPlugin: created template file '%s' for '%s'",
+						path.c_str(), instanceId.c_str());
 					result["success"] = true;
 					return result;
 				});
