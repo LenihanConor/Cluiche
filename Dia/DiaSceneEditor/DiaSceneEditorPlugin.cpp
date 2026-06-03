@@ -753,6 +753,40 @@ namespace Dia
 						result["success"] = false; result["error"] = "no scene loaded"; return result;
 					}
 
+					// Extract blueprint ID before deletion so we can remove the relationship after
+					char blueprintIdForRemove[256] = {};
+					if (mSceneCatalogueId[0] != '\0')
+					{
+						const char* arrayKey = nullptr;
+						const char* itemTypeStr = data["itemType"].asCString();
+						if      (strcmp(itemTypeStr, "entity") == 0) arrayKey = "entities";
+						else if (strcmp(itemTypeStr, "camera") == 0) arrayKey = "cameras";
+						else if (strcmp(itemTypeStr, "light")  == 0) arrayKey = "lights";
+
+						if (arrayKey && mLoadedSceneRoot.isMember("scene2d"))
+						{
+							const Json::Value& arr = mLoadedSceneRoot["scene2d"][arrayKey];
+							const char* itemIdStr = data["itemId"].asCString();
+							char idBuf[256];
+							for (unsigned int i = 0; i < arr.size(); ++i)
+							{
+								if (!arr[i].isMember("id")) continue;
+								const Json::Value& idVal = arr[i]["id"];
+								const char* v = idVal.isString() ? idVal.asCString()
+								              : (idVal.isObject() && idVal.isMember("value") ? idVal["value"].asCString() : "");
+								strncpy_s(idBuf, sizeof(idBuf), v, _TRUNCATE);
+								if (strcmp(idBuf, itemIdStr) == 0 && arr[i].isMember("blueprint"))
+								{
+									const Json::Value& bp = arr[i]["blueprint"];
+									const char* bpVal = bp.isString() ? bp.asCString()
+									                  : (bp.isObject() && bp.isMember("value") ? bp["value"].asCString() : "");
+									strncpy_s(blueprintIdForRemove, sizeof(blueprintIdForRemove), bpVal, _TRUNCATE);
+									break;
+								}
+							}
+						}
+					}
+
 					char err[256] = {};
 					if (!SceneMutator::DeleteItem(mLoadedSceneRoot,
 					        data["itemType"].asCString(),
@@ -761,6 +795,16 @@ namespace Dia
 					{
 						DIA_LOG_WARNING("Editor", "DiaSceneEditorPlugin: delete_item — %s", err);
 						result["success"] = false; result["error"] = err; return result;
+					}
+
+					// Remove scene→blueprint relationship from the catalogue
+					if (mBridge && mSceneCatalogueId[0] != '\0' && blueprintIdForRemove[0] != '\0')
+					{
+						Json::Value relReq;
+						relReq["from"] = mSceneCatalogueId;
+						relReq["rel"]  = "uses";
+						relReq["to"]   = blueprintIdForRemove;
+						mBridge->InvokeRequestHandler(Dia::Core::StringCRC("asset_catalogue.remove_relationship"), relReq);
 					}
 
 					mHierarchyController.ClearSelection();
