@@ -226,6 +226,7 @@ body { background:#13131f; color:#c9c9e0; font-family:'Segoe UI',system-ui,sans-
   <select class="toolbar-select" id="stage-select"><option value="">Loading...</option></select>
   <div class="tsep"></div>
   <button class="tbtn" id="btn-save">Save</button>
+  <button class="tbtn accent" id="btn-new-scene" title="Create a new .diascene file via the Asset Catalogue">+ New Scene</button>
   <div class="tsep"></div>
   <button class="tbtn accent" id="btn-add-entity">+ Entity</button>
   <button class="tbtn accent" id="btn-add-camera">+ Camera</button>
@@ -1255,6 +1256,18 @@ document.getElementById('filter-input').addEventListener('input', async e => {
 document.getElementById('btn-save').addEventListener('click', async () => {
   const result = await bridgeRequest('save_scene', {});
   if (result.success) setDirty(false);
+});
+
+document.getElementById('btn-new-scene').addEventListener('click', async () => {
+  let name = prompt('Scene name (e.g. my_scene):');
+  if (!name || !name.trim()) return;
+  name = name.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+  const defaultPath = '../Stages/' + name + '/' + name + '.diascene';
+  const path = prompt('Relative path:', defaultPath);
+  if (!path || !path.trim()) return;
+  const id = 'diascene.' + name;
+  const result = await bridgeRequest('new_scene_shortcut', { id, source_path: path.trim() });
+  if (result && !result.success) alert('New scene failed: ' + (result.error || 'unknown'));
 });
 
 document.getElementById('btn-add-entity').addEventListener('click', () => addItem('entity'));

@@ -148,8 +148,9 @@ No dependency on DiaAssetPipeline, DiaAssetRuntime, DiaWebSocket, or any renderi
 | 6 | Validation Panel | S | Run validate, display per-record errors, click-to-navigate. | [validation-panel.md](../../features/dia/diaassetcatalogueeditor/validation-panel.md) | Done |
 | 7 | Asset Type Editor Routing | S | `AssetTypeEditorRegistry`, open-asset action, OS default fallback. | [asset-type-editor-routing.md](../../features/dia/diaassetcatalogueeditor/asset-type-editor-routing.md) | Done |
 | 8 | Catalogue Rules UI | S-M | UI for the Catalogue Rules Engine (DiaAssetCatalogue Feature 4). Load/save `assets.rules.json`, "Dry Run" preview (shows proposed changeset with conflict warnings), "Apply Rules" action, display results and manual overrides. All business logic (validation, dry-run, conflict detection, evaluation) is in DiaAssetCatalogue — this feature is presentation only. | [catalogue-rules-ui.md](../../features/dia/diaassetcatalogueeditor/catalogue-rules-ui.md) | Done |
+| 9 | New Scene | S | Create a blank `.diascene` file + catalogue record in one action; immediately open in DiaSceneEditor. DiaSceneEditor toolbar shortcut delegates entirely to the catalogue. | [new-scene.md](../../features/dia/diaassetcatalogueeditor/new-scene.md) | Approved |
 
-**Build order:** 1 → 2 → 3 → 4 → 6 → 7 → 8 → 5 (rules engine after relationship editor exists; graph view last)
+**Build order:** 1 → 2 → 3 → 4 → 6 → 7 → 8 → 5 → 9 (rules engine after relationship editor exists; graph view last; new-scene after routing)
 
 ## Design Constraints
 
