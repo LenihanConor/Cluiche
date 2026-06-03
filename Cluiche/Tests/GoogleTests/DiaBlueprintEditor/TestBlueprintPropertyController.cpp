@@ -1,12 +1,9 @@
 #include <gtest/gtest.h>
 #include <DiaBlueprintEditor/BlueprintPropertyController.h>
-#include <DiaAssetCatalogue/AssetRegistry.h>
-#include <DiaAssetCatalogue/AssetRecord.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
 
 using namespace Dia::BlueprintEditor;
-using namespace Dia::AssetCatalogue;
 using namespace Dia::Core;
 
 // Helper: build a minimal entity_blueprint JSON root.
@@ -111,23 +108,22 @@ TEST(BlueprintPropertyController, BuildAvailableComponents_DoesNotIncludeAlready
 }
 
 // ===========================================================================
-// BuildUsageJson — empty registry (no reverse refs)
+// BuildUsageJson — takes pre-fetched refs array from asset_catalogue.get_reverse_refs
 // ===========================================================================
 
-TEST(BlueprintPropertyController, BuildUsageJson_NoReverseRefs_ReturnsEmptyUsages)
+TEST(BlueprintPropertyController, BuildUsageJson_EmptyRefs_ReturnsEmptyUsages)
 {
 	BlueprintPropertyController ctrl;
-	AssetRegistry registry;
-
-	AssetRecord entity;
-	entity.mId          = StringCRC("diaentity.player");
-	entity.mAssetTypeId = StringCRC("diaentity");
-	entity.mSourcePath  = "Assets/player.diaentity";
-	registry.Register(entity);
-
-	Json::Value result = ctrl.BuildUsageJson(StringCRC("diaentity.player"), registry);
-
+	Json::Value emptyRefs(Json::arrayValue);
+	Json::Value result = ctrl.BuildUsageJson(emptyRefs);
 	EXPECT_TRUE(result.isMember("usages"));
+	EXPECT_EQ(result["usages"].size(), 0u);
+}
+
+TEST(BlueprintPropertyController, BuildUsageJson_NullRefs_ReturnsEmptyUsages)
+{
+	BlueprintPropertyController ctrl;
+	Json::Value result = ctrl.BuildUsageJson(Json::Value(Json::nullValue));
 	EXPECT_EQ(result["usages"].size(), 0u);
 }
 
@@ -175,69 +171,34 @@ TEST(BlueprintPropertyController, BuildPropertyJson_ComponentWithNoFields_DoesNo
 	EXPECT_EQ(result["components"][0]["fields"].size(), 0u);
 }
 
-TEST(BlueprintPropertyController, BuildUsageJson_MultipleReverseRefs_AllReturned)
+TEST(BlueprintPropertyController, BuildUsageJson_MultipleRefs_AllReturned)
 {
 	BlueprintPropertyController ctrl;
-	AssetRegistry registry;
-
-	AssetRecord entity;
-	entity.mId          = StringCRC("diaentity.player");
-	entity.mAssetTypeId = StringCRC("diaentity");
-	entity.mSourcePath  = "Assets/player.diaentity";
-	registry.Register(entity);
-
+	Json::Value refs(Json::arrayValue);
 	for (int i = 0; i < 3; ++i)
 	{
-		char id[64], path[64];
-		snprintf(id,   sizeof(id),   "diascene.level%02d", i);
-		snprintf(path, sizeof(path), "Assets/level%02d.diascene", i);
-		AssetRecord scene;
-		scene.mId          = StringCRC(id);
-		scene.mAssetTypeId = StringCRC("diascene");
-		scene.mSourcePath  = path;
-		scene.mReferences.Add(RelationshipEdge(StringCRC("uses"), StringCRC("diaentity.player")));
-		registry.Register(scene);
+		char id[64];
+		snprintf(id, sizeof(id), "diascene.level%02d", i);
+		Json::Value ref;
+		ref["source"] = id;
+		ref["rel"]    = "uses";
+		refs.append(ref);
 	}
 
-	Json::Value result = ctrl.BuildUsageJson(StringCRC("diaentity.player"), registry);
-
+	Json::Value result = ctrl.BuildUsageJson(refs);
 	EXPECT_EQ(result["usages"].size(), 3u);
 }
 
-TEST(BlueprintPropertyController, BuildUsageJson_UnknownAssetId_ReturnsEmptyUsages)
+TEST(BlueprintPropertyController, BuildUsageJson_WithRef_ReturnsSceneId)
 {
 	BlueprintPropertyController ctrl;
-	AssetRegistry registry;
+	Json::Value refs(Json::arrayValue);
+	Json::Value ref;
+	ref["source"] = "diascene.level01";
+	ref["rel"]    = "uses";
+	refs.append(ref);
 
-	Json::Value result = ctrl.BuildUsageJson(StringCRC("diaentity.does_not_exist"), registry);
-
-	EXPECT_TRUE(result.isMember("usages"));
-	EXPECT_EQ(result["usages"].size(), 0u);
-}
-
-TEST(BlueprintPropertyController, BuildUsageJson_WithReverseRef_ReturnsScene)
-{
-	BlueprintPropertyController ctrl;
-	AssetRegistry registry;
-
-	AssetRecord entity;
-	entity.mId          = StringCRC("diaentity.enemy");
-	entity.mAssetTypeId = StringCRC("diaentity");
-	entity.mSourcePath  = "Assets/enemy.diaentity";
-	registry.Register(entity);
-
-	AssetRecord scene;
-	scene.mId          = StringCRC("diascene.level01");
-	scene.mAssetTypeId = StringCRC("diascene");
-	scene.mSourcePath  = "Assets/level01.diascene";
-	// Scene references the entity blueprint
-	RelationshipEdge edge(StringCRC("uses"), StringCRC("diaentity.enemy"));
-	scene.mReferences.Add(edge);
-	registry.Register(scene);
-
-	Json::Value result = ctrl.BuildUsageJson(StringCRC("diaentity.enemy"), registry);
-
-	EXPECT_TRUE(result.isMember("usages"));
+	Json::Value result = ctrl.BuildUsageJson(refs);
 	ASSERT_EQ(result["usages"].size(), 1u);
 	EXPECT_EQ(result["usages"][0]["sceneId"].asString(), "diascene.level01");
 }

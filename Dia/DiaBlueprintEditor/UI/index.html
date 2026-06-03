@@ -41,20 +41,10 @@
       border-bottom: 1px solid #3c3c3c;
       flex-shrink: 0;
     }
-    .toolbar button {
-      background: #3c3c3c; color: #d4d4d4;
-      border: 1px solid #555; padding: 3px 10px;
-      font-size: 12px; cursor: pointer; border-radius: 3px;
-    }
-    .toolbar button:hover { background: #4c4c4c; }
-    .toolbar button:disabled { opacity: 0.4; cursor: default; }
-    .toolbar .separator { width: 1px; height: 16px; background: #555; margin: 0 4px; }
     .toolbar .blueprint-path {
       flex: 1; font-size: 11px; color: #9cdcfe;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-    .toolbar .dirty-indicator { color: #f48771; font-size: 14px; font-weight: bold; visibility: hidden; }
-    .toolbar .dirty-indicator.dirty { visibility: visible; }
     .toolbar .status { font-size: 11px; color: #9d9d9d; }
 
     /* ── Layout ──────────────────────────────────────── */
@@ -77,6 +67,23 @@
     #panel-right  { width: 280px; min-width: 200px; border-right: none; }
 
     /* ── Blueprint list ──────────────────────────────── */
+    .list-toolbar {
+      display: flex; align-items: center; gap: 4px;
+      padding: 4px 8px; border-bottom: 1px solid #3c3c3c;
+      flex-shrink: 0;
+    }
+    .list-toolbar input[type="text"] {
+      flex: 1; background: #3c3c3c; color: #d4d4d4;
+      border: 1px solid #555; padding: 2px 6px;
+      font-size: 11px; border-radius: 2px; outline: none;
+    }
+    .list-toolbar input[type="text"]:focus { border-color: #007acc; }
+    .list-toolbar button {
+      background: none; border: none; color: #9d9d9d;
+      font-size: 13px; cursor: pointer; padding: 2px 4px;
+      border-radius: 2px; line-height: 1;
+    }
+    .list-toolbar button:hover { color: #d4d4d4; background: #3c3c3c; }
     .group-header {
       font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
       text-transform: uppercase; color: #9d9d9d;
@@ -212,9 +219,6 @@
 
 <!-- Toolbar -->
 <div class="toolbar">
-  <button id="btn-save" onclick="onSave()" disabled>Save</button>
-  <span class="dirty-indicator" id="dirty-indicator">●</span>
-  <span class="separator"></span>
   <span class="blueprint-path" id="blueprint-path">No blueprint selected</span>
   <span class="status" id="status-msg"></span>
 </div>
@@ -225,6 +229,10 @@
   <!-- Left: blueprint list -->
   <div class="panel" id="panel-list">
     <div class="panel-title">Blueprints</div>
+    <div class="list-toolbar">
+      <input type="text" id="list-filter" placeholder="Filter…" oninput="onFilterChanged()" />
+      <button title="Refresh" onclick="loadBlueprintList()">↻</button>
+    </div>
     <div class="panel-body" id="list-body">
       <div class="list-empty">No blueprints registered.</div>
     </div>
@@ -276,10 +284,9 @@
   /* ── State ──────────────────────────────────────────── */
   var currentPath     = null;
   var currentAssetId  = null;
-  var currentRoot     = null;   // loaded JSON root from C++
-  var currentTopKey   = null;
-  var isDirty         = false;
   var pendingRemove   = null;   // component type string pending removal
+  var allGroups       = [];     // last fetched groups (for client-side filter)
+  var statusTimer     = null;
 
   /* ── Bridge ─────────────────────────────────────────── */
   var _reqId = 1;
@@ -327,13 +334,15 @@
       updateProjectOverlay(!!(msg.data && msg.data.isValid));
       loadBlueprintList();
     }
+    if (msg.topic === 'asset_catalogue.registry_changed') {
+      loadBlueprintList();
+    }
   };
 
   /* ── Init ───────────────────────────────────────────── */
   function init(isValid) {
     updateProjectOverlay(isValid);
     loadBlueprintList();
-    setStatus('Ready');
   }
 
   // Retry until handlers are registered, then check project state
@@ -352,31 +361,42 @@
   /* ── Blueprint list ──────────────────────────────────── */
   function loadBlueprintList() {
     diaRequest('blueprint_editor.get_list', {}).then(function(r) {
-      renderBlueprintList(r.groups || []);
+      allGroups = r.groups || [];
+      applyFilter();
     });
   }
 
-  function renderBlueprintList(groups) {
+  function onFilterChanged() {
+    applyFilter();
+  }
+
+  function applyFilter() {
+    var filterEl = document.getElementById('list-filter');
+    var query = filterEl ? filterEl.value.toLowerCase() : '';
+    renderBlueprintList(allGroups, query);
+  }
+
+  function renderBlueprintList(groups, query) {
     var body = document.getElementById('list-body');
     body.innerHTML = '';
 
-    var total = 0;
-    groups.forEach(function(g) { total += (g.items || []).length; });
-
-    if (total === 0) {
-      body.innerHTML = '<div class="list-empty">No blueprints registered.<br><br>Open the asset catalogue and register blueprint assets to see them here.</div>';
-      return;
-    }
-
+    var anyVisible = false;
     groups.forEach(function(g) {
+      var items = (g.items || []).filter(function(item) {
+        return !query || item.id.toLowerCase().indexOf(query) !== -1;
+      });
+      if (items.length === 0) return;
+      anyVisible = true;
+
       var header = document.createElement('div');
       header.className = 'group-header';
       header.textContent = g.label;
       body.appendChild(header);
 
-      (g.items || []).forEach(function(item) {
+      items.forEach(function(item) {
         var el = document.createElement('div');
         el.className = 'blueprint-item';
+        if (item.id === currentAssetId) el.classList.add('selected');
         el.dataset.id   = item.id;
         el.dataset.path = item.path;
         el.title = item.path;
@@ -385,11 +405,16 @@
         body.appendChild(el);
       });
     });
+
+    if (!anyVisible) {
+      body.innerHTML = query
+        ? '<div class="list-empty">No matches for "' + esc(query) + '".</div>'
+        : '<div class="list-empty">No blueprints registered.<br><br>Open the asset catalogue and register blueprint assets to see them here.</div>';
+    }
   }
 
   /* ── Select and load blueprint ───────────────────────── */
   function selectBlueprint(assetId, path) {
-    // Update list highlight
     document.querySelectorAll('.blueprint-item').forEach(function(el) {
       el.classList.toggle('selected', el.dataset.id === assetId);
     });
@@ -398,7 +423,6 @@
     currentPath    = path;
 
     document.getElementById('blueprint-path').textContent = path;
-    setDirty(false);
 
     diaRequest('blueprint_editor.load', { path: path }).then(function(r) {
       if (!r.success) {
@@ -408,7 +432,6 @@
       renderProperties(r.properties);
       loadUsage(assetId);
       loadAvailableComponents(path);
-      setStatus('Loaded: ' + assetId);
     });
   }
 
@@ -528,7 +551,6 @@
   /* ── Field change ─────────────────────────────────────── */
   function onFieldChanged(compType, fieldName, value) {
     if (!currentPath) return;
-    setDirty(true);
     diaRequest('blueprint_editor.update_field', {
       path: currentPath,
       componentType: compType,
@@ -538,7 +560,6 @@
       if (!r.success) {
         setStatus('Save error: ' + (r.error || 'unknown'), true);
       } else {
-        setDirty(false);
         setStatus('Saved');
       }
     });
@@ -598,15 +619,6 @@
     });
   }
 
-  /* ── Save ─────────────────────────────────────────────── */
-  function onSave() {
-    if (!currentPath || !isDirty) return;
-    // Note: update_field auto-saves on each change.
-    // This button is for future explicit save scenarios.
-    setDirty(false);
-    setStatus('Saved');
-  }
-
   /* ── Usage ────────────────────────────────────────────── */
   function loadUsage(assetId) {
     var body = document.getElementById('usage-body');
@@ -632,16 +644,12 @@
   }
 
   /* ── Utility ──────────────────────────────────────────── */
-  function setDirty(dirty) {
-    isDirty = dirty;
-    document.getElementById('dirty-indicator').classList.toggle('dirty', dirty);
-    document.getElementById('btn-save').disabled = !dirty;
-  }
-
   function setStatus(msg, isError) {
     var el = document.getElementById('status-msg');
     el.textContent = msg;
     el.style.color = isError ? '#f48771' : '#4ec9a0';
+    if (statusTimer) clearTimeout(statusTimer);
+    statusTimer = setTimeout(function() { el.textContent = ''; }, 3000);
   }
 
   function openModal(id) { document.getElementById(id).classList.add('open'); }

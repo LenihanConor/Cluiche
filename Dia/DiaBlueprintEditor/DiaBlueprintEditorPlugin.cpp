@@ -4,7 +4,6 @@
 #include <DiaEditor/Plugin/EditorPluginContext.h>
 #include <DiaEditor/MVC/EditorModel.h>
 #include <DiaEditor/UI/WebUIBridge.h>
-#include <DiaAssetCatalogue/AssetRecord.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaCore/Json/external/json/json.h>
@@ -79,7 +78,6 @@ namespace Dia
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("blueprint_editor.remove_component"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("blueprint_editor.update_field"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("blueprint_editor.get_usage"));
-				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("blueprint_editor.register_catalogue_asset"));
 			}
 
 			mBridge       = nullptr;
@@ -164,6 +162,25 @@ namespace Dia
 		}
 
 		// ─────────────────────────────────────────────────────────────────────────────────
+		Json::Value DiaBlueprintEditorPlugin::QueryCatalogueByType(const char* typeId) const
+		{
+			if (!mBridge)
+				return Json::Value(Json::arrayValue);
+
+			Json::Value req;
+			req["typeId"] = typeId;
+			Json::Value res = mBridge->InvokeRequestHandler(
+				Dia::Core::StringCRC("asset_catalogue.query_by_type"), req);
+
+			if (res.isNull() || !res.get("success", false).asBool())
+			{
+				DIA_LOG_WARNING("Editor",
+					"DiaBlueprintEditorPlugin: query_by_type failed for typeId='%s'", typeId);
+				return Json::Value(Json::arrayValue);
+			}
+			return res["records"];
+		}
+
 		void DiaBlueprintEditorPlugin::RegisterRequestHandlers()
 		{
 			if (!mBridge)
@@ -172,7 +189,6 @@ namespace Dia
 			RegisterListHandlers();
 			RegisterPropertyHandlers();
 			RegisterFileHandlers();
-			RegisterAssetTypeHandlers();
 		}
 
 		void DiaBlueprintEditorPlugin::RegisterListHandlers()
@@ -192,7 +208,10 @@ namespace Dia
 				[this](const Json::Value& /*data*/) -> Json::Value
 				{
 					DIA_TRACE_ZONE("blueprint_editor.get_list", Dia::Observation::Trace::Category::kNone);
-					return mListController.BuildListJson(mRegistry);
+					return mListController.BuildListJson(
+						QueryCatalogueByType("diaentity"),
+						QueryCatalogueByType("diacamera"),
+						QueryCatalogueByType("dialight"));
 				});
 		}
 
@@ -245,9 +264,18 @@ namespace Dia
 						return result;
 					}
 
-					Dia::Core::StringCRC assetId(data["assetId"].asCString());
+					Json::Value refsReq;
+					refsReq["id"] = data["assetId"].asString();
+					Json::Value refsRes = mBridge->InvokeRequestHandler(
+						Dia::Core::StringCRC("asset_catalogue.get_reverse_refs"), refsReq);
+
+					Json::Value emptyRefs(Json::arrayValue);
+					const Json::Value& refs = (refsRes.isNull() || !refsRes.get("success", false).asBool())
+					                        ? emptyRefs
+					                        : refsRes["refs"];
+
 					result["success"] = true;
-					result["usage"]   = mPropertyController.BuildUsageJson(assetId, mRegistry);
+					result["usage"]   = mPropertyController.BuildUsageJson(refs);
 					return result;
 				});
 		}
@@ -499,48 +527,5 @@ namespace Dia
 				});
 		}
 
-		void DiaBlueprintEditorPlugin::RegisterAssetTypeHandlers()
-		{
-			mBridge->RegisterRequestHandler(
-				Dia::Core::StringCRC("blueprint_editor.register_catalogue_asset"),
-				[this](const Json::Value& data) -> Json::Value
-				{
-					Json::Value result;
-					if (!data.isMember("id") || !data["id"].isString()
-					    || !data.isMember("typeId") || !data["typeId"].isString()
-					    || !data.isMember("sourcePath") || !data["sourcePath"].isString())
-					{
-						DIA_LOG_WARNING("Editor",
-							"DiaBlueprintEditorPlugin: register_catalogue_asset — missing id, typeId, or sourcePath");
-						result["success"] = false;
-						result["error"]   = "missing id, typeId, or sourcePath";
-						return result;
-					}
-
-					Dia::AssetCatalogue::AssetRecord rec;
-					rec.mId          = Dia::Core::StringCRC(data["id"].asCString());
-					rec.mAssetTypeId = Dia::Core::StringCRC(data["typeId"].asCString());
-					rec.mSourcePath  = data["sourcePath"].asCString();
-
-					if (!BlueprintListController::IsBlueprintType(rec.mAssetTypeId))
-					{
-						DIA_LOG_WARNING("Editor",
-							"DiaBlueprintEditorPlugin: register_catalogue_asset — '%s' is not a blueprint type",
-							data["typeId"].asCString());
-						result["success"] = false;
-						result["error"]   = "not a blueprint asset type";
-						return result;
-					}
-
-					mRegistry.Remove(rec.mId);
-					mRegistry.Register(rec);
-
-					DIA_LOG_INFO("Editor",
-						"DiaBlueprintEditorPlugin: registered catalogue asset '%s' (type '%s')",
-						data["id"].asCString(), data["typeId"].asCString());
-					result["success"] = true;
-					return result;
-				});
-		}
 	}
 }

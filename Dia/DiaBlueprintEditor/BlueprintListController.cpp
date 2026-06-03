@@ -1,6 +1,5 @@
 #include "DiaBlueprintEditor/BlueprintListController.h"
-#include <DiaAssetCatalogue/AssetRecord.h>
-#include <DiaCore/Containers/Arrays/DynamicArrayC.h>
+#include <DiaCore/CRC/StringCRC.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 
 namespace Dia
@@ -18,51 +17,43 @@ namespace Dia
 			    || assetTypeId == kLightTypeId;
 		}
 
-		const char* BlueprintListController::LabelForTypeId(const Dia::Core::StringCRC& assetTypeId)
+		Json::Value BlueprintListController::BuildGroup(
+			const char* label, const char* typeId, const Json::Value& records)
 		{
-			if (assetTypeId == kEntityTypeId) return "Entity";
-			if (assetTypeId == kCameraTypeId) return "Camera";
-			if (assetTypeId == kLightTypeId)  return "Light";
-			return "Unknown";
+			Json::Value items(Json::arrayValue);
+			for (unsigned int i = 0; i < records.size(); ++i)
+			{
+				const Json::Value& rec = records[i];
+				Json::Value item;
+				item["id"]    = rec.get("id", "").asString();
+				item["label"] = rec.get("id", "").asString();
+				item["path"]  = rec.get("source_path", "").asString();
+				items.append(item);
+			}
+
+			Json::Value group;
+			group["label"]  = label;
+			group["typeId"] = typeId;
+			group["items"]  = items;
+			return group;
 		}
 
 		Json::Value BlueprintListController::BuildListJson(
-			const Dia::AssetCatalogue::AssetRegistry& registry) const
+			const Json::Value& entityRecords,
+			const Json::Value& cameraRecords,
+			const Json::Value& lightRecords) const
 		{
 			DIA_TRACE_ZONE("blueprint_editor.build_list", Dia::Observation::Trace::Category::kNone);
 			Json::Value result;
 			result["success"] = true;
 
-			// Build one group per blueprint type (preserving order: Entity, Camera, Light)
-			static const Dia::Core::StringCRC kOrder[] = { kEntityTypeId, kCameraTypeId, kLightTypeId };
-			static const unsigned int kOrderCount = 3;
-
 			Json::Value groups(Json::arrayValue);
-
-			for (unsigned int g = 0; g < kOrderCount; ++g)
-			{
-				Dia::Core::Containers::DynamicArrayC<const Dia::AssetCatalogue::AssetRecord*, 64> recs;
-				registry.QueryByType(kOrder[g], recs);
-
-				if (recs.Size() == 0)
-					continue;
-
-				Json::Value group;
-				group["label"] = LabelForTypeId(kOrder[g]);
-				group["typeId"] = kOrder[g].AsChar();
-
-				Json::Value items(Json::arrayValue);
-				for (unsigned int i = 0; i < recs.Size(); ++i)
-				{
-					Json::Value item;
-					item["id"]    = recs[i]->mId.AsChar();
-					item["label"] = recs[i]->mId.AsChar();
-					item["path"]  = recs[i]->mSourcePath.AsCStr();
-					items.append(item);
-				}
-				group["items"] = items;
-				groups.append(group);
-			}
+			if (entityRecords.isArray() && entityRecords.size() > 0)
+				groups.append(BuildGroup("Entity", "diaentity", entityRecords));
+			if (cameraRecords.isArray() && cameraRecords.size() > 0)
+				groups.append(BuildGroup("Camera", "diacamera", cameraRecords));
+			if (lightRecords.isArray() && lightRecords.size() > 0)
+				groups.append(BuildGroup("Light",  "dialight",  lightRecords));
 
 			result["groups"] = groups;
 			return result;

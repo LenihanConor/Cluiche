@@ -2,7 +2,6 @@
 
 #include <DiaEditor/Plugin/IEditorPlugin.h>
 #include <DiaEditor/Project/ProjectContext.h>
-#include <DiaAssetCatalogue/AssetRegistry.h>
 
 #include "DiaBlueprintEditor/BlueprintFileHandler.h"
 #include "DiaBlueprintEditor/BlueprintListController.h"
@@ -38,14 +37,15 @@ namespace Dia
 			void RegisterListHandlers();
 			void RegisterPropertyHandlers();
 			void RegisterFileHandlers();
-			void RegisterAssetTypeHandlers();
 			void RegisterAssetTypesWithCatalogue();
 
-			BlueprintFileHandler       mFileHandler;
-			BlueprintListController    mListController;
-			BlueprintPropertyController mPropertyController;
+			// Query the shared catalogue registry for blueprint assets of a given type.
+			// Returns the "records" array from asset_catalogue.query_by_type, or empty array on failure.
+			Json::Value QueryCatalogueByType(const char* typeId) const;
 
-			Dia::AssetCatalogue::AssetRegistry mRegistry;
+			BlueprintFileHandler        mFileHandler;
+			BlueprintListController     mListController;
+			BlueprintPropertyController mPropertyController;
 
 			static const unsigned int kDiagamePathLength = 512;
 			char mDiagamePath[kDiagamePathLength] = {};

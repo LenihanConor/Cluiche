@@ -1,7 +1,6 @@
 #include "DiaBlueprintEditor/BlueprintPropertyController.h"
 #include <DiaEntity/ComponentRegistry.h>
 #include <DiaEntity/ComponentTypeDesc.h>
-#include <DiaAssetCatalogue/AssetRecord.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <cstring>
@@ -145,36 +144,20 @@ namespace Dia
 			return result;
 		}
 
-		Json::Value BlueprintPropertyController::BuildUsageJson(
-			const Dia::Core::StringCRC& blueprintAssetId,
-			Dia::AssetCatalogue::AssetRegistry& registry) const
+		Json::Value BlueprintPropertyController::BuildUsageJson(const Json::Value& reverseRefs) const
 		{
 			Json::Value result(Json::objectValue);
 			Json::Value usages(Json::arrayValue);
 
-			Dia::Core::Containers::DynamicArrayC<Dia::AssetCatalogue::RelationshipEdge, 16> reverseRefs;
-			registry.GetRelationshipIndex().GetReverseRefs(blueprintAssetId, registry, reverseRefs);
-
-			for (unsigned int i = 0; i < reverseRefs.Size(); ++i)
+			if (reverseRefs.isArray())
 			{
-				// GetReverseRefs rebuilds StringCRCs from CRC hashes only — AsChar() is empty.
-				// Resolve the display string by scanning the registry by CRC value.
-				const Dia::Core::StringCRC& fromCRC = reverseRefs[i].mTargetAssetId;
-				const char* sceneIdStr = "";
-				for (unsigned int r = 0; r < registry.GetCount(); ++r)
+				for (unsigned int i = 0; i < reverseRefs.size(); ++i)
 				{
-					const Dia::AssetCatalogue::AssetRecord& rec = registry.GetRecordByIndex(r);
-					if (rec.mId.Value() == fromCRC.Value())
-					{
-						sceneIdStr = rec.mId.AsChar();
-						break;
-					}
+					Json::Value entry;
+					entry["sceneId"]       = reverseRefs[i].get("source", "").asString();
+					entry["instanceCount"] = 1;
+					usages.append(entry);
 				}
-
-				Json::Value entry;
-				entry["sceneId"]       = sceneIdStr;
-				entry["instanceCount"] = 1;
-				usages.append(entry);
 			}
 
 			result["usages"] = usages;

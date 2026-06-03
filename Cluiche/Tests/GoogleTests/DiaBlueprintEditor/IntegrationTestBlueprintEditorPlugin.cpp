@@ -200,12 +200,7 @@ TEST_F(BlueprintEditorPluginTest, OnLoad_HandlerRegistered_GetUsage)
 	EXPECT_TRUE(r.isMember("success"));
 }
 
-TEST_F(BlueprintEditorPluginTest, OnLoad_HandlerRegistered_RegisterCatalogueAsset)
-{
-	Json::Value r = Invoke("blueprint_editor.register_catalogue_asset");
-	EXPECT_FALSE(r.isNull());
-	EXPECT_TRUE(r.isMember("success"));
-}
+// register_catalogue_asset removed — list is populated by querying asset_catalogue.query_by_type directly
 
 // ===========================================================================
 // Lifecycle — OnUnload removes all handlers
@@ -224,7 +219,6 @@ TEST_F(BlueprintEditorPluginTest, OnUnload_RemovesAllHandlers)
 	EXPECT_TRUE(Invoke("blueprint_editor.remove_component").isNull());
 	EXPECT_TRUE(Invoke("blueprint_editor.get_available_components").isNull());
 	EXPECT_TRUE(Invoke("blueprint_editor.get_usage").isNull());
-	EXPECT_TRUE(Invoke("blueprint_editor.register_catalogue_asset").isNull());
 
 	// Re-load so TearDown's OnUnload doesn't double-unregister
 	EditorPluginContext ctx;
@@ -606,80 +600,49 @@ TEST_F(BlueprintEditorPluginTest, Handler_RemoveComponent_PreservesOtherComponen
 }
 
 // ===========================================================================
-// Handler: register_catalogue_asset → get_list pipeline
+// Handler: get_list — queries asset_catalogue.query_by_type
+// (In unit tests there is no catalogue plugin, so catalogue calls return null.
+//  get_list must still return a valid success response with empty groups.)
 // ===========================================================================
 
-TEST_F(BlueprintEditorPluginTest, Handler_RegisterCatalogueAsset_ThenGetList_ShowsAsset)
+TEST_F(BlueprintEditorPluginTest, Handler_GetList_NoCataloguePlugin_ReturnsSuccessAndNoGroups)
 {
-	Json::Value regData;
-	regData["id"]         = "diaentity.player";
-	regData["typeId"]     = "diaentity";
-	regData["sourcePath"] = "Assets/player.diaentity";
-	ASSERT_TRUE(Invoke("blueprint_editor.register_catalogue_asset", regData)["success"].asBool());
-
-	Json::Value listResult = Invoke("blueprint_editor.get_list");
-	EXPECT_TRUE(listResult["success"].asBool());
-	ASSERT_GE(listResult["groups"].size(), 1u);
-	EXPECT_EQ(listResult["groups"][0]["items"][0]["id"].asString(), "diaentity.player");
-}
-
-TEST_F(BlueprintEditorPluginTest, Handler_RegisterCatalogueAsset_NonBlueprintType_ReturnsError)
-{
-	Json::Value data;
-	data["id"]         = "texture.player";
-	data["typeId"]     = "texture";
-	data["sourcePath"] = "Assets/player.png";
-	Json::Value r = Invoke("blueprint_editor.register_catalogue_asset", data);
-	EXPECT_FALSE(r["success"].asBool());
-}
-
-TEST_F(BlueprintEditorPluginTest, Handler_RegisterCatalogueAsset_MissingFields_ReturnsError)
-{
-	Json::Value data;
-	data["id"] = "diaentity.player";
-	// missing typeId and sourcePath
-	Json::Value r = Invoke("blueprint_editor.register_catalogue_asset", data);
-	EXPECT_FALSE(r["success"].asBool());
-}
-
-TEST_F(BlueprintEditorPluginTest, Handler_RegisterCatalogueAsset_Idempotent)
-{
-	Json::Value data;
-	data["id"]         = "diaentity.player";
-	data["typeId"]     = "diaentity";
-	data["sourcePath"] = "Assets/player.diaentity";
-
-	ASSERT_TRUE(Invoke("blueprint_editor.register_catalogue_asset", data)["success"].asBool());
-	// Second registration should not fail
-	EXPECT_TRUE(Invoke("blueprint_editor.register_catalogue_asset", data)["success"].asBool());
-
-	// Still shows exactly one item
-	Json::Value listResult = Invoke("blueprint_editor.get_list");
-	EXPECT_EQ(listResult["groups"][0]["items"].size(), 1u);
-}
-
-TEST_F(BlueprintEditorPluginTest, Handler_GetList_EmptyRegistry_ReturnsSuccessAndNoGroups)
-{
+	// asset_catalogue.query_by_type not registered → returns null → treated as empty
 	Json::Value r = Invoke("blueprint_editor.get_list");
 	EXPECT_TRUE(r["success"].asBool());
 	EXPECT_EQ(r["groups"].size(), 0u);
 }
 
-TEST_F(BlueprintEditorPluginTest, Handler_GetList_AllThreeTypes_ThreeGroups)
+// Simulate catalogue returning records by registering a stub query_by_type handler
+TEST_F(BlueprintEditorPluginTest, Handler_GetList_WithCatalogueStub_ShowsAssets)
 {
-	auto registerAsset = [&](const char* id, const char* typeId, const char* path)
-	{
-		Json::Value d;
-		d["id"] = id; d["typeId"] = typeId; d["sourcePath"] = path;
-		Invoke("blueprint_editor.register_catalogue_asset", d);
-	};
-	registerAsset("diaentity.hero",   "diaentity", "Assets/hero.diaentity");
-	registerAsset("diacamera.follow", "diacamera", "Assets/follow.diacamera");
-	registerAsset("dialight.warm",    "dialight",  "Assets/warm.dialight");
+	// Register a stub catalogue handler that returns one diaentity record
+	mBridge->RegisterRequestHandler(
+		Dia::Core::StringCRC("asset_catalogue.query_by_type"),
+		[](const Json::Value& data) -> Json::Value
+		{
+			Json::Value result;
+			result["success"] = true;
+			Json::Value records(Json::arrayValue);
+			const std::string typeId = data.get("typeId", "").asString();
+			if (typeId == "diaentity")
+			{
+				Json::Value rec;
+				rec["id"]          = "diaentity.player";
+				rec["source_path"] = "Assets/player.diaentity";
+				records.append(rec);
+			}
+			result["records"] = records;
+			return result;
+		});
 
 	Json::Value r = Invoke("blueprint_editor.get_list");
 	EXPECT_TRUE(r["success"].asBool());
-	EXPECT_EQ(r["groups"].size(), 3u);
+	ASSERT_EQ(r["groups"].size(), 1u);
+	EXPECT_EQ(r["groups"][0]["label"].asString(), "Entity");
+	EXPECT_EQ(r["groups"][0]["items"][0]["id"].asString(), "diaentity.player");
+
+	mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.query_by_type"));
 }
 
 // ===========================================================================
@@ -692,8 +655,9 @@ TEST_F(BlueprintEditorPluginTest, Handler_GetUsage_MissingAssetId_ReturnsError)
 	EXPECT_FALSE(r["success"].asBool());
 }
 
-TEST_F(BlueprintEditorPluginTest, Handler_GetUsage_UnknownAsset_ReturnsEmptyUsages)
+TEST_F(BlueprintEditorPluginTest, Handler_GetUsage_NoCataloguePlugin_ReturnsEmptyUsages)
 {
+	// asset_catalogue.get_reverse_refs not registered → returns null → empty usages
 	Json::Value data;
 	data["assetId"] = "diaentity.nonexistent";
 	Json::Value r = Invoke("blueprint_editor.get_usage", data);

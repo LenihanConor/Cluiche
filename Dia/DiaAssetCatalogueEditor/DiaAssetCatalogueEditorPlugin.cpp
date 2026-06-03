@@ -445,6 +445,7 @@ namespace Dia
 				for (unsigned int i = 0; i < mRegistry.GetCount(); ++i)
 					records.append(RecordToJson(mRegistry.GetRecordByIndex(i)));
 				mBridge->NotifyUIDataChanged("assetcatalogue.records", records);
+				mBridge->NotifyUIDataChanged("asset_catalogue.registry_changed", Json::Value(Json::objectValue));
 				PushDirtyState();
 			}
 

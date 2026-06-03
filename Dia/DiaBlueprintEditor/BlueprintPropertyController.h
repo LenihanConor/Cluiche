@@ -2,7 +2,6 @@
 
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
-#include <DiaAssetCatalogue/AssetRegistry.h>
 
 namespace Dia
 {
@@ -27,10 +26,10 @@ namespace Dia
 			Json::Value BuildAvailableComponentsJson(const Json::Value& blueprintRoot,
 			                                         const char* topLevelKey) const;
 
-			// Build usage JSON from the asset registry.
+			// Build usage JSON by querying the asset catalogue for reverse refs.
+			// reverseRefs is the "refs" array from asset_catalogue.get_reverse_refs.
 			// Returns: { "usages": [ { "sceneId": "...", "instanceCount": N } ] }
-			Json::Value BuildUsageJson(const Dia::Core::StringCRC& blueprintAssetId,
-			                           Dia::AssetCatalogue::AssetRegistry& registry) const;
+			Json::Value BuildUsageJson(const Json::Value& reverseRefs) const;
 
 		private:
 			static Json::Value DescribeField(const Dia::Entity::ComponentTypeDesc& desc,

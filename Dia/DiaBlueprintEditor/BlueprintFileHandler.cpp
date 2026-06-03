@@ -1,5 +1,6 @@
 #include "DiaBlueprintEditor/BlueprintFileHandler.h"
 #include <DiaCore/Json/external/json/json.h>
+#include <DiaObservation/Log/DiaLog.h>
 #include <cstring>
 #include <fstream>
 #include <sstream>
@@ -67,7 +68,14 @@ namespace Dia
 			}
 
 			file << serialized;
-			return file.good();
+			if (file.good())
+			{
+				DIA_LOG_INFO("Editor", "Blueprint saved: '%s'", path);
+				return true;
+			}
+			if (errorOut && errorCapacity > 0)
+				strncpy_s(errorOut, errorCapacity, "write failed", _TRUNCATE);
+			return false;
 		}
 
 		const char* BlueprintFileHandler::TopLevelKeyForExtension(const char* ext)

@@ -2,7 +2,6 @@
 
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
-#include <DiaAssetCatalogue/AssetRegistry.h>
 
 namespace Dia
 {
@@ -13,16 +12,19 @@ namespace Dia
 		class BlueprintListController
 		{
 		public:
-			// Build the grouped list JSON from the registry.
+			// Build the grouped list JSON from per-type record arrays returned by
+			// asset_catalogue.query_by_type. Each array contains {id, source_path} objects.
 			// Returns: { "groups": [ { "label": "Entity", "items": [ { "id": "...", "label": "...", "path": "..." } ] } ] }
-			Json::Value BuildListJson(const Dia::AssetCatalogue::AssetRegistry& registry) const;
+			Json::Value BuildListJson(
+				const Json::Value& entityRecords,
+				const Json::Value& cameraRecords,
+				const Json::Value& lightRecords) const;
 
-			// Returns the IDs of all blueprint assets in the registry that match
-			// any of the known blueprint type IDs (.diaentity / .diacamera / .dialight).
 			static bool IsBlueprintType(const Dia::Core::StringCRC& assetTypeId);
 
 		private:
-			static const char* LabelForTypeId(const Dia::Core::StringCRC& assetTypeId);
+			static Json::Value BuildGroup(const char* label, const char* typeId,
+			                              const Json::Value& records);
 		};
 	}
 }
