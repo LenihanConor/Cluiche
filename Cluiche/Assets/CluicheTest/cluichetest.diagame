@@ -64,5 +64,6 @@
         }
     ],
     "name": "CluicheTest",
-    "version": "0.1"
+    "version": "0.1",
+    "schema": "registeredtypes.diaschema"
 }
