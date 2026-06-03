@@ -156,6 +156,7 @@ void PipelineEditorPlugin::OnProjectChangedStatic(const Dia::Editor::ProjectCont
 		payload["isValid"]     = ctx.IsValid();
 		payload["diagamePath"] = ctx.diagamePath;
 		payload["target"]      = target;
+		payload["diagameName"] = target;   // alias: JS reads diagameName
 		self->mBridge->NotifyUIDataChanged("pipeline.project_changed", payload);
 	}
 }
@@ -321,6 +322,7 @@ void PipelineEditorPlugin::RegisterCommands()
 			result["isValid"]     = mDiagamePath[0] != '\0';
 			result["diagamePath"] = mDiagamePath;
 			result["target"]      = target;
+			result["diagameName"] = target;   // alias: JS reads diagameName
 			return result;
 		});
 

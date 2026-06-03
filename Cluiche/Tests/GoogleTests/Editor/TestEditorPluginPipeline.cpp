@@ -78,7 +78,7 @@ TEST(EditorPluginPipeline, FullPipeline_MultiplePlugins)
 	ASSERT_NE(result.plugins[0], nullptr);
 	ASSERT_NE(result.plugins[1], nullptr);
 	EXPECT_STREQ(result.plugins[0]->GetName(), "Home");
-	EXPECT_STREQ(result.plugins[1]->GetName(), "Hello");
+	EXPECT_STREQ(result.plugins[1]->GetName(), "HelloEditorPlugin");
 
 	delete result.plugins[0];
 	delete result.plugins[1];
