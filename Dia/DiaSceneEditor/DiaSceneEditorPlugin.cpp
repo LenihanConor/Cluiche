@@ -1,6 +1,7 @@
 #include "DiaSceneEditor/DiaSceneEditorPlugin.h"
 #include <DiaEditor/Plugin/EditorPluginRegistrationMacros.h>
 #include <DiaEditor/Plugin/EditorPluginContext.h>
+#include <DiaEditor/Plugin/IPluginLoader.h>
 #include <DiaEditor/MVC/EditorModel.h>
 #include <DiaEditor/UI/WebUIBridge.h>
 #include <DiaObservation/Log/DiaLog.h>
@@ -48,9 +49,10 @@ namespace Dia
 		{
 			DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: OnLoad");
 
-			mBridge             = context.mBridge;
-			mPluginLoader       = context.mPluginLoader;
-			mLoadedScenePath[0] = '\0';
+			mBridge                = context.mBridge;
+			mPluginLoader          = context.mPluginLoader;
+			mLoadedScenePath[0]    = '\0';
+			mSceneCatalogueId[0]   = '\0';
 
 			RegisterRequestHandlers();
 
@@ -162,6 +164,60 @@ namespace Dia
 			DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin::OnNavigate: loaded scene '%s'", sourcePath.c_str());
 		}
 
+		void DiaSceneEditorPlugin::ResolveCatalogueIdForLoadedScene()
+		{
+			mSceneCatalogueId[0] = '\0';
+
+			if (mLoadedScenePath[0] == '\0' || mBridge == nullptr)
+				return;
+
+			Json::Value stateResult = mBridge->InvokeRequestHandler(
+				Dia::Core::StringCRC("asset_catalogue.get_state"),
+				Json::Value(Json::objectValue));
+
+			if (stateResult.isNull() || !stateResult.isMember("records"))
+			{
+				DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: scene '%s' not in catalogue — skipping relationship calls", mLoadedScenePath);
+				return;
+			}
+
+			// Normalise the loaded scene path to forward slashes
+			char normLoaded[512];
+			strncpy_s(normLoaded, sizeof(normLoaded), mLoadedScenePath, _TRUNCATE);
+			for (char* p = normLoaded; *p; ++p)
+				if (*p == '\\') *p = '/';
+
+			const Json::Value& records = stateResult["records"];
+			for (unsigned int i = 0; i < records.size(); ++i)
+			{
+				const Json::Value& rec = records[i];
+				if (rec.get("type", "").asString() != "diascene")
+					continue;
+
+				std::string srcPath = rec.get("source_path", "").asString();
+				for (char& c : srcPath)
+					if (c == '\\') c = '/';
+
+				if (srcPath.empty())
+					continue;
+
+				// Check if the absolute loaded path ends with the relative source_path
+				const size_t loadedLen = strlen(normLoaded);
+				const size_t srcLen    = srcPath.size();
+				if (loadedLen >= srcLen &&
+				    _stricmp(normLoaded + loadedLen - srcLen, srcPath.c_str()) == 0)
+				{
+					const std::string id = rec.get("id", "").asString();
+					strncpy_s(mSceneCatalogueId, sizeof(mSceneCatalogueId), id.c_str(), _TRUNCATE);
+					DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: resolved scene catalogue ID '%s' for path '%s'",
+						mSceneCatalogueId, mLoadedScenePath);
+					return;
+				}
+			}
+
+			DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: scene '%s' not in catalogue — skipping relationship calls", mLoadedScenePath);
+		}
+
 		void DiaSceneEditorPlugin::RegisterRequestHandlers()
 		{
 			if (!mBridge)
@@ -249,10 +305,11 @@ namespace Dia
 
 					DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: loaded stage scene '%s'", scenePath.c_str());
 					mLoadedSceneRoot = sceneRoot;
-					strncpy(mLoadedScenePath, scenePath.c_str(), sizeof(mLoadedScenePath) - 1);
+					strncpy_s(mLoadedScenePath, sizeof(mLoadedScenePath), scenePath.c_str(), _TRUNCATE);
 					mLoadedScenePath[sizeof(mLoadedScenePath) - 1] = '\0';
 					mHierarchyController.ClearSelection();
 					mIsDirty = false;
+					ResolveCatalogueIdForLoadedScene();
 
 					result["success"]   = true;
 					result["stage"]     = matchedStage;
@@ -359,7 +416,7 @@ namespace Dia
 					char blueprintBasePath[512] = {};
 					if (mLoadedScenePath[0] != '\0')
 					{
-						strncpy(blueprintBasePath, mLoadedScenePath, sizeof(blueprintBasePath) - 1);
+						strncpy_s(blueprintBasePath, sizeof(blueprintBasePath), mLoadedScenePath, _TRUNCATE);
 						for (char* p = blueprintBasePath; *p; ++p)
 							if (*p == '\\') *p = '/';
 						char* lastSlash = nullptr;
@@ -411,10 +468,11 @@ namespace Dia
 					DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: loaded scene '%s'",
 						data["path"].asCString());
 					mLoadedSceneRoot = sceneRoot;
-					strncpy(mLoadedScenePath, data["path"].asCString(), sizeof(mLoadedScenePath) - 1);
+					strncpy_s(mLoadedScenePath, sizeof(mLoadedScenePath), data["path"].asCString(), _TRUNCATE);
 					mLoadedScenePath[sizeof(mLoadedScenePath) - 1] = '\0';
 					mHierarchyController.ClearSelection();
 					mIsDirty = false;
+					ResolveCatalogueIdForLoadedScene();
 
 					result["success"]   = true;
 					result["scene"]     = sceneRoot;
@@ -468,7 +526,7 @@ namespace Dia
 
 					// Update cache and clear dirty
 					mLoadedSceneRoot = sceneToSave;
-					strncpy(mLoadedScenePath, savePath, sizeof(mLoadedScenePath) - 1);
+					strncpy_s(mLoadedScenePath, sizeof(mLoadedScenePath), savePath, _TRUNCATE);
 					mLoadedScenePath[sizeof(mLoadedScenePath) - 1] = '\0';
 					mIsDirty = false;
 
@@ -498,7 +556,7 @@ namespace Dia
 					char blueprintBasePath[512] = {};
 					if (mLoadedScenePath[0] != '\0')
 					{
-						strncpy(blueprintBasePath, mLoadedScenePath, sizeof(blueprintBasePath) - 1);
+						strncpy_s(blueprintBasePath, sizeof(blueprintBasePath), mLoadedScenePath, _TRUNCATE);
 						for (char* p = blueprintBasePath; *p; ++p)
 							if (*p == '\\') *p = '/';
 						char* lastSlash = nullptr;
@@ -574,7 +632,7 @@ namespace Dia
 					if (mLoadedScenePath[0] != '\0')
 					{
 						char dir[512];
-						strncpy(dir, mLoadedScenePath, sizeof(dir) - 1);
+						strncpy_s(dir, sizeof(dir), mLoadedScenePath, _TRUNCATE);
 						dir[sizeof(dir) - 1] = '\0';
 						for (char* p = dir; *p; ++p) if (*p == '\\') *p = '/';
 						char* lastSlash = nullptr;

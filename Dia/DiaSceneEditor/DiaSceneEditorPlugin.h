@@ -39,6 +39,7 @@ namespace Dia
 		private:
 			static void OnProjectChangedStatic(const Dia::Editor::ProjectContext& ctx, void* ud);
 			void RegisterRequestHandlers();
+			void ResolveCatalogueIdForLoadedScene();
 
 			SceneFileHandler            mFileHandler;
 			SceneValidator              mValidator;
@@ -51,6 +52,7 @@ namespace Dia
 			char                        mLoadedScenePath[512];  // path for the loaded scene
 			char                        mDiagamePath[512] = {}; // last-known .diagame path
 			bool                        mIsDirty = false;       // unsaved edits exist
+			char                        mSceneCatalogueId[256] = {};
 
 			Dia::Editor::WebUIBridge*   mBridge       = nullptr;
 			Dia::Editor::IPluginLoader* mPluginLoader = nullptr;
