@@ -19,7 +19,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | DiaAnimation3D | TBD — needs `/spec-system` | `clip-and-player` feature already Approved; needs own system spec. AnimationClip3D, ClipPlayer3D, glTF loader, STEP/LINEAR/CUBICSPLINE, `AnimationComponent3D`. | DiaRig3D |
 | DiaSkinning3D | TBD — needs `/spec-system` | `skinning-palette` feature already Approved; needs own system spec. SkinningManager, per-frame Matrix34 palettes, `skinningPaletteIndex` on draw commands. | DiaAnimation3D, DiaGraphics3D |
 | DiaScene3D | TBD — needs `/spec-system` | `scene-graph` feature already Approved; needs own system spec. Flat-list scene, Transform3D parent chains, frustum culling, `Submit(scene, frameData3D)`. | DiaSkinning3D, DiaGraphics3D, DiaGeometry3D |
-| DiaBlueprintEditor | [diablueprinteditor.md](specs/systems/dia/diablueprinteditor.md) ✅ | `blueprint-panel` — Plugin scaffold, blueprint list (grouped by type), component CRUD, field editing, cross-scene usage display, `.diaentity`/`.diacamera`/`.dialight` I/O. [Plan](specs/systems/dia/diablueprinteditor.plan.md) (10 tasks). | DiaEditor, DiaReflect, DiaAssetCatalogue, DiaEntity, DiaCamera2D, DiaLighting2D |
+| ~~DiaBlueprintEditor~~ | ~~[diablueprinteditor.md](specs/systems/dia/diablueprinteditor.md)~~ | **Done** — blueprint list, component CRUD, field editing + code defaults, searchable picker, cascade warnings, cross-scene usage. | — |
 | DiaSceneEditor | [diasceneeditor.md](specs/systems/dia/diasceneeditor.md) ✅ | 6 features: scene-hierarchy-panel, entity-placement-crud, change-blueprint, layer-authoring, camera-light-authoring, scene-validation. Spatial authoring of `.diascene` files. [Plan](specs/systems/dia/diasceneeditor.plan.md) (22 tasks). | DiaScene2D, DiaEditor, DiaReflect, DiaGame, DiaAssetCatalogue, DiaBlueprintEditor (soft) |
 | DiaEntityInspector | [diaentityinspector.md](specs/systems/dia/diaentityinspector.md) ✅ | 4 features: entity-inspector-panel, query-browser-tab, mailbox-traffic-monitor, entity-watch-list. Runtime debug via WebSocket. [Plan](specs/systems/dia/diaentityinspector.plan.md) (18 tasks). | DiaEntity, DiaDebugProtocol, DiaDebugServer, DiaEditor, DiaReflect Phase 3 |
 | ~~DiaScene2D~~ | [diascene2d.md](specs/systems/dia/diascene2d.md) ✅ | **Done** — Scene2D struct, LayerTable, SceneLoader2D (camera/light/entity hydration, instanceData patching, validation). 18 tests pass. | — |
@@ -115,10 +115,9 @@ Spec Approved: [diaarchitecture.md](specs/systems/dia/diaarchitecture.md). C3 is
 | Step | Item | What's needed | Notes |
 |------|------|--------------|-------|
 | C7 | YAML layer formalisation | Add `layer:` field to all 55+ module docs | Documents the architecture; prerequisite for C1 |
-| C1 | `dia check --tool=arch` | Python `#include` graph checker vs YAML `dependencies.forbidden` | Surfaces current silent violations before any CMake work |
-| C2 | Foundation CMake pilot | `CMakeLists.txt` for Foundation sub-layer (DiaCore, DiaMaths, DiaGeometry2D/3D, DiaSerializer, DiaObservation) | `.vcxproj` stays; CMake additive; unlocks `compile_commands.json` |
-| C3a | Dia CMake full | `CMakeLists.txt` for all 55 Dia modules; full INTERFACE aggregates; architecture enforcement live | **Additive** — `.vcxproj` kept, `dia run` unchanged, Cluiche.sln still works |
-| C3b | Cluiche CMake + retirement | `CMakeLists.txt` for 4 Cluiche app projects; `Find*.cmake` for binary SDK externals; DiaCLI switches to `cmake --build`; atomic `.vcxproj` deletion | **Hard part** — external dep wiring (bgfx, CEF, Ultralight, SDL3). Can sit on backlog after C3a. |
+| C1 | `dia check --tool=arch` | Python `#include` graph checker vs YAML `dependencies.forbidden` | CI soft gate (exit 1 = pipeline fails); MSBuild unchanged |
+
+CMake migration (C2, C3a, C3b) dropped — MSBuild/.vcxproj remains the build system. C7 + C1 are the full scope.
 
 ---
 
@@ -126,6 +125,7 @@ Spec Approved: [diaarchitecture.md](specs/systems/dia/diaarchitecture.md). C3 is
 
 | Item | Notes |
 |------|-------|
+| SLN layer sync script | After C7 ships: Python script reads `layer:` from all module YAML docs and rewrites `.sln` solution folders to match (e.g. `Core/Foundation`, `Domain/Physics`). Also add a rule to `dia scaffold module` so new modules are placed in the correct solution folder on creation. Needs `/spec-feature` under DiaCLI. |
 | RenderTechnique asset type | Layer-level rendering policy (blend mode, post-process like bloom/distortion). Layers reference a technique by name; renderer resolves at draw time. Needs `/spec-feature` under DiaGraphics or DiaBgfx once the scene system lands. |
 | Camera2D controller (pan/zoom/reset) | Application-side input→Camera2D wiring for CluicheTest stages (keyboard pan, scroll zoom, home-key reset). Unblocked once coord2d-debug-overlay ships Camera2D + renderer integration. |
 | DiaAssetRuntime — Hot reload path | Asset Lifecycle Management adds `Failed → Loading` retry but no `Loaded → Loading → Loaded` path. Still need a `ReloadAsset(assetId)` for live iteration (future feature on top of lifecycle management). |

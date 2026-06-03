@@ -154,10 +154,10 @@ namespace Dia::BlueprintEditor
 
 | Feature | Description | Spec | Status |
 |---------|-------------|------|--------|
-| blueprint-panel | Plugin scaffold + left panel (blueprint list grouped by type) + right panel (component accordion + field editing) + file I/O | [blueprint-panel.md](../../features/dia/diablueprinteditor/blueprint-panel.md) | Draft |
-| component-crud | Add/remove components from a blueprint; cascade awareness; confirmation with affected instance count | [component-crud.md](../../features/dia/diablueprinteditor/component-crud.md) | Draft |
-| cross-scene-usage | Usage section showing which scenes and instances reference the selected blueprint | [cross-scene-usage.md](../../features/dia/diablueprinteditor/cross-scene-usage.md) | Draft |
-| component-picker-and-defaults | Searchable component picker panel; C++ code defaults surfaced from schema; blueprint-level field overrides | [component-picker-and-defaults.md](../../features/dia/diablueprinteditor/component-picker-and-defaults.md) | Draft |
+| blueprint-panel | Plugin scaffold + left panel (blueprint list grouped by type) + right panel (component accordion + field editing) + file I/O | [blueprint-panel.md](../../features/dia/diablueprinteditor/blueprint-panel.md) | Done |
+| component-crud | Add/remove components from a blueprint; cascade awareness; confirmation with affected instance count | Folded into blueprint-panel + component-picker-and-defaults | Done |
+| cross-scene-usage | Usage section showing which scenes and instances reference the selected blueprint | Folded into blueprint-panel | Done |
+| component-picker-and-defaults | Searchable component picker panel; C++ code defaults surfaced from schema; blueprint-level field overrides | [component-picker-and-defaults.md](../../features/dia/diablueprinteditor/component-picker-and-defaults.md) | Done |
 
 ## Dependencies
 
@@ -186,4 +186,4 @@ namespace Dia::BlueprintEditor
 
 ## Status
 
-`Approved`
+`Done`

@@ -246,6 +246,8 @@
     .modal-footer button:hover { background: #4c4c4c; }
     .modal-footer .btn-danger { background: #6b2020; border-color: #a02020; color: #f48771; }
     .modal-footer .btn-danger:hover { background: #8b2020; }
+    .modal-footer .btn-add-confirm { background: #0078d4; color: #fff; border: none; }
+    .modal-footer .btn-add-confirm:hover { background: #106ebe; }
 
     /* ── Status bar ──────────────────────────────────── */
     .statusbar {
@@ -334,6 +336,18 @@
     <div class="modal-footer">
       <button onclick="closeModal('modal-remove')">Cancel</button>
       <button class="btn-danger" onclick="confirmRemoveComponent()">Remove</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add component cascade confirmation -->
+<div class="modal-overlay" id="modal-add">
+  <div class="modal">
+    <h3>Add Component</h3>
+    <p id="modal-add-msg"></p>
+    <div class="modal-footer">
+      <button onclick="closeModal('modal-add')">Cancel</button>
+      <button class="btn-add-confirm" id="modal-add-confirm-btn" onclick="confirmAddComponent()">Add</button>
     </div>
   </div>
 </div>
@@ -750,14 +764,50 @@
     }
   }
 
+  var pendingAdd = null;  // { type, label } awaiting cascade confirmation
+
   function onPickerAdd() {
     if (pickerFocusIndex < 0 || pickerFocusIndex >= pickerVisible.length) return;
-    var type = pickerVisible[pickerFocusIndex].typeId;
-    if (!type || !currentPath) return;
+    var entry = pickerVisible[pickerFocusIndex];
+    if (!entry || !currentPath || !currentAssetId) return;
+
+    // Fetch usage count first to show cascade warning
+    diaRequest('blueprint_editor.get_usage', { assetId: currentAssetId }).then(function(r) {
+      var usages = (r.usage && r.usage.usages) ? r.usage.usages : [];
+      var total = usages.reduce(function(sum, u) { return sum + (u.instanceCount || 1); }, 0);
+      var scenes = usages.length;
+
+      pendingAdd = { type: entry.typeId, label: entry.label || entry.typeId };
+
+      if (total === 0) {
+        // No instances — confirm immediately without modal
+        closePicker();
+        doAddComponent(pendingAdd.type, pendingAdd.label);
+        pendingAdd = null;
+      } else {
+        var msg = 'Add "' + esc(pendingAdd.label) + '" to this blueprint? ' +
+          'It will be added to ' + total + ' instance' + (total !== 1 ? 's' : '') +
+          ' across ' + scenes + ' scene' + (scenes !== 1 ? 's' : '') + '.';
+        document.getElementById('modal-add-msg').textContent = msg;
+        closePicker();
+        openModal('modal-add');
+      }
+    });
+  }
+
+  function confirmAddComponent() {
+    if (!pendingAdd || !currentPath) { closeModal('modal-add'); return; }
+    var type = pendingAdd.type;
+    var label = pendingAdd.label;
+    pendingAdd = null;
+    closeModal('modal-add');
+    doAddComponent(type, label);
+  }
+
+  function doAddComponent(type, label) {
     diaRequest('blueprint_editor.add_component', { path: currentPath, componentType: type }).then(function(r) {
       if (!r.success) { setStatus('Add failed: ' + (r.error || 'unknown'), true); return; }
-      closePicker();
-      setStatus('Added ' + type);
+      setStatus('Added ' + label);
       selectBlueprint(currentAssetId, currentPath);
     });
   }
@@ -774,9 +824,22 @@
   /* ── Remove component ─────────────────────────────────── */
   function promptRemoveComponent(compType) {
     pendingRemove = compType;
-    document.getElementById('modal-remove-msg').textContent =
-      'Remove "' + compType + '" from this blueprint? This will affect all scene instances that reference this blueprint.';
-    openModal('modal-remove');
+
+    // Fetch usage count to show blast radius
+    diaRequest('blueprint_editor.get_usage', { assetId: currentAssetId }).then(function(r) {
+      var usages = (r.usage && r.usage.usages) ? r.usage.usages : [];
+      var total = usages.reduce(function(sum, u) { return sum + (u.instanceCount || 1); }, 0);
+      var scenes = usages.length;
+
+      var msg = 'Remove "' + compType + '" from this blueprint?';
+      if (total > 0) {
+        msg += ' Orphaned field overrides will be retained on ' +
+          total + ' instance' + (total !== 1 ? 's' : '') +
+          ' across ' + scenes + ' scene' + (scenes !== 1 ? 's' : '') + '.';
+      }
+      document.getElementById('modal-remove-msg').textContent = msg;
+      openModal('modal-remove');
+    });
   }
 
   function confirmRemoveComponent() {

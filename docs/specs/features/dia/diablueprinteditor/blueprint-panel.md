@@ -2,7 +2,7 @@
 
 **System:** DiaBlueprintEditor
 **App:** Dia
-**Status:** Approved
+**Status:** Done
 
 ## Summary
 
