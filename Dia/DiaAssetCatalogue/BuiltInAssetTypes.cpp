@@ -172,6 +172,16 @@ namespace Dia
 				desc.mDeserializeFn  = nullptr;
 				registry.Register(desc);
 			}
+
+			// --- Scene ---
+			{
+				AssetTypeDescriptor desc;
+				desc.mTypeId         = Dia::Core::StringCRC("diascene");
+				desc.mName           = Dia::Core::Containers::String64("Scene");
+				desc.mFilePattern    = Dia::Core::Containers::String64("*.diascene");
+				desc.mDeserializeFn  = nullptr;
+				registry.Register(desc);
+			}
 		}
 
 	} // namespace AssetCatalogue

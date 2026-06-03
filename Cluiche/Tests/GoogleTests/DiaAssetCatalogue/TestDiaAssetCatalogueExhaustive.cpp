@@ -315,13 +315,13 @@ protected:
 };
 
 // All built-in types present after RegisterBuiltInAssetTypes
-TEST_F(AssetTypeFrameworkExhaustive, BuiltIn_All10TypesRegistered)
+TEST_F(AssetTypeFrameworkExhaustive, BuiltIn_All11TypesRegistered)
 {
 	Dia::AssetCatalogue::AssetTypeRegistry registry;
 	Dia::AssetCatalogue::RegisterBuiltInAssetTypes(registry);
 
-	// 7 base types + 3 blueprint types (diaentity, diacamera, dialight) = 10
-	EXPECT_EQ(registry.GetCount(), 10u);
+	// 7 base types + 4 file types (diaentity, diacamera, dialight, diascene) = 11
+	EXPECT_EQ(registry.GetCount(), 11u);
 }
 
 // Verify each built-in type ID string

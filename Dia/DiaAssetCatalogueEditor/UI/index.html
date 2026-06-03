@@ -278,7 +278,6 @@
     <div class="panel-body" style="display:flex;flex-direction:column;">
       <div class="panel-actions">
         <button class="btn-primary" onclick="openCreateDialog()">+ New</button>
-        <button class="btn-primary" onclick="onNewScene()" title="Create a blank .diascene file and open it in DiaSceneEditor">+ Scene</button>
         <button class="btn-danger"  onclick="onDeleteSelected()" id="btn-delete" disabled>Delete</button>
       </div>
       <div class="filter-bar">
@@ -1156,24 +1155,6 @@
   }
 
   /* ── New Scene shortcut ─────────────────────────── */
-  function onNewScene() {
-    var name = prompt('Scene name (e.g. my_scene):');
-    if (!name || !name.trim()) return;
-    name = name.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
-
-    var path = prompt('Relative path (e.g. ../Stages/MyStage/' + name + '.diascene):',
-                      '../Stages/' + name + '/' + name + '.diascene');
-    if (!path || !path.trim()) return;
-    path = path.trim();
-
-    var id = 'diascene.' + name;
-    diaRequest('asset_catalogue.create_scene', { id: id, source_path: path }).then(function(r) {
-      if (!r || !r.success) {
-        alert('Create scene failed: ' + ((r && r.error) || 'unknown error'));
-      }
-    });
-  }
-
   /* ── Delete ──────────────────────────────────────── */
   function onDeleteSelected() {
     if (!selectedId) return;

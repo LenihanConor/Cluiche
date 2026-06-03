@@ -1358,14 +1358,15 @@ namespace Dia
 							return result;
 						}
 
-						// For blueprint types, write a blank file if it doesn't exist yet.
+						// For types with blank-file templates, write the file if it doesn't exist yet.
 						if (!rec.mSourcePath.IsEmpty())
 						{
 							const char* typeStr = rec.mAssetTypeId.AsChar();
-							bool isBlueprintType = (strcmp(typeStr, "diaentity") == 0
-							                     || strcmp(typeStr, "diacamera") == 0
-							                     || strcmp(typeStr, "dialight")  == 0);
-							if (isBlueprintType)
+							bool isFileType = (strcmp(typeStr, "diaentity") == 0
+							                || strcmp(typeStr, "diacamera") == 0
+							                || strcmp(typeStr, "dialight")  == 0
+							                || strcmp(typeStr, "diascene")  == 0);
+							if (isFileType)
 							{
 								char absPath[1024] = {};
 								const char* srcPath = rec.mSourcePath.AsCStr();
@@ -1382,15 +1383,23 @@ namespace Dia
 								FILE* probe = nullptr;
 								if (fopen_s(&probe, absPath, "rb") != 0 || !probe)
 								{
-									// File doesn't exist — write blank blueprint
-									const char* topKey = "entity_blueprint";
-									if (strcmp(typeStr, "diacamera") == 0) topKey = "camera_blueprint";
-									else if (strcmp(typeStr, "dialight") == 0) topKey = "light_blueprint";
+									// File doesn't exist — write blank template
+									char content[512];
+									if (strcmp(typeStr, "diascene") == 0)
+									{
+										snprintf(content, sizeof(content),
+											"{\n    \"version\": 1,\n    \"entities\": [],\n    \"cameras\": [],\n    \"lights\": [],\n    \"layers\": []\n}\n");
+									}
+									else
+									{
+										const char* topKey = "entity_blueprint";
+										if (strcmp(typeStr, "diacamera") == 0) topKey = "camera_blueprint";
+										else if (strcmp(typeStr, "dialight") == 0) topKey = "light_blueprint";
 
-									char content[256];
-									snprintf(content, sizeof(content),
-										"{\n    \"%s\": {\n        \"id\": \"%s\",\n        \"components\": []\n    }\n}\n",
-										topKey, rec.mId.AsChar());
+										snprintf(content, sizeof(content),
+											"{\n    \"%s\": {\n        \"id\": \"%s\",\n        \"components\": []\n    }\n}\n",
+											topKey, rec.mId.AsChar());
+									}
 
 									FILE* f = nullptr;
 									if (fopen_s(&f, absPath, "wb") == 0 && f)
