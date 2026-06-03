@@ -1,7 +1,7 @@
 # Feature Spec: component-picker-and-defaults
 
 **Parent:** @docs/specs/systems/dia/diablueprinteditor.md
-**Status:** Approved
+**Status:** Done
 **Plan:** @docs/specs/features/dia/diablueprinteditor/component-picker-and-defaults.plan.md
 **Mockup:** @docs/mockups/blueprint-editor-v2.html
 
