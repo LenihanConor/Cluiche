@@ -6,6 +6,7 @@
 #include "DiaBlueprintEditor/BlueprintFileHandler.h"
 #include "DiaBlueprintEditor/BlueprintListController.h"
 #include "DiaBlueprintEditor/BlueprintPropertyController.h"
+#include "DiaBlueprintEditor/SchemaReader.h"
 
 namespace Dia
 {
@@ -46,6 +47,7 @@ namespace Dia
 			BlueprintFileHandler        mFileHandler;
 			BlueprintListController     mListController;
 			BlueprintPropertyController mPropertyController;
+			SchemaReader                mSchemaReader;
 
 			static const unsigned int kDiagamePathLength = 512;
 			char mDiagamePath[kDiagamePathLength] = {};

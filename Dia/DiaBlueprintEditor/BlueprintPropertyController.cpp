@@ -1,4 +1,5 @@
 #include "DiaBlueprintEditor/BlueprintPropertyController.h"
+#include "DiaBlueprintEditor/SchemaReader.h"
 #include <DiaEntity/ComponentRegistry.h>
 #include <DiaEntity/ComponentTypeDesc.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
@@ -101,10 +102,19 @@ namespace Dia
 
 		Json::Value BlueprintPropertyController::BuildAvailableComponentsJson(
 			const Json::Value& blueprintRoot,
-			const char* topLevelKey) const
+			const char* topLevelKey,
+			const SchemaReader& schema) const
 		{
 			DIA_TRACE_ZONE("blueprint_editor.build_available_components", Dia::Observation::Trace::Category::kNone);
 			Json::Value result(Json::arrayValue);
+
+			if (!schema.IsLoaded())
+			{
+				Json::Value statusEntry;
+				statusEntry["statusMessage"] = "No schema found \xe2\x80\x94 run `dia reflect`";
+				result.append(statusEntry);
+				return result;
+			}
 
 			// Collect component types already in the blueprint
 			Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 64> present;
@@ -116,15 +126,14 @@ namespace Dia
 					present.Add(Dia::Core::StringCRC(comps[i].get("type", "").asCString()));
 			}
 
-			const Dia::Entity::ComponentRegistry& reg = Dia::Entity::ComponentRegistry::Get();
-			for (uint32_t i = 0; i < reg.GetCount(); ++i)
+			for (unsigned int i = 0; i < schema.GetComponentCount(); ++i)
 			{
-				const Dia::Entity::ComponentTypeDesc& desc = reg.GetByIndex(i);
+				const SchemaComponentEntry& entry = schema.GetComponent(i);
 
 				bool alreadyPresent = false;
 				for (unsigned int j = 0; j < present.Size(); ++j)
 				{
-					if (present[j] == desc.typeId)
+					if (present[j] == entry.typeId)
 					{
 						alreadyPresent = true;
 						break;
@@ -133,12 +142,10 @@ namespace Dia
 				if (alreadyPresent)
 					continue;
 
-				Json::Value entry;
-				entry["typeId"] = desc.typeId.AsChar();
-				entry["label"]  = desc.debugName ? desc.debugName : desc.typeId.AsChar();
-				if (desc.description)
-					entry["description"] = desc.description;
-				result.append(entry);
+				Json::Value compEntry;
+				compEntry["typeId"] = entry.typeId.AsChar();
+				compEntry["label"]  = entry.debugName[0] ? entry.debugName : entry.typeId.AsChar();
+				result.append(compEntry);
 			}
 
 			return result;

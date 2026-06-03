@@ -26,6 +26,45 @@ namespace Dia
 			strncpy_s(self->mDiagamePath, self->kDiagamePathLength,
 			          ctx.IsValid() ? ctx.diagamePath : "", _TRUNCATE);
 
+			// Derive schema path: replace the .diagame filename with registeredtypes.diaschema
+			if (ctx.IsValid() && ctx.diagamePath[0] != '\0')
+			{
+				char schemaPath[512] = {};
+				strncpy_s(schemaPath, sizeof(schemaPath), ctx.diagamePath, _TRUNCATE);
+
+				// Find last slash or backslash
+				char* lastSep = nullptr;
+				for (char* p = schemaPath; *p; ++p)
+				{
+					if (*p == '/' || *p == '\\')
+						lastSep = p;
+				}
+
+				if (lastSep)
+					*(lastSep + 1) = '\0';
+				else
+					schemaPath[0] = '\0'; // no directory part — use current dir
+
+				strncat_s(schemaPath, sizeof(schemaPath), "registeredtypes.diaschema", _TRUNCATE);
+
+				const int prevMajor = self->mSchemaReader.GetVersion().major;
+				self->mSchemaReader.LoadFromFile(schemaPath);
+
+				if (self->mSchemaReader.IsLoaded())
+				{
+					const int newMajor = self->mSchemaReader.GetVersion().major;
+					if (prevMajor != 0 && newMajor != prevMajor)
+					{
+						DIA_LOG_WARNING("Editor",
+							"Blueprint: schema major version changed — blueprint files may reference stale types");
+					}
+				}
+			}
+			else
+			{
+				self->mSchemaReader.Clear();
+			}
+
 			if (self->mBridge)
 			{
 				Json::Value payload;
@@ -246,7 +285,7 @@ namespace Dia
 					const char* ext    = strrchr(data["path"].asCString(), '.');
 					const char* topKey = BlueprintFileHandler::TopLevelKeyForExtension(ext ? ext : "");
 					result["success"]    = true;
-					result["components"] = mPropertyController.BuildAvailableComponentsJson(blueprintRoot, topKey);
+					result["components"] = mPropertyController.BuildAvailableComponentsJson(blueprintRoot, topKey, mSchemaReader);
 					return result;
 				});
 

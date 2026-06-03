@@ -12,6 +12,8 @@ namespace Dia
 
 	namespace BlueprintEditor
 	{
+		class SchemaReader;
+
 		// Right panel: renders component accordion + field editing + cross-scene usage.
 		class BlueprintPropertyController
 		{
@@ -21,10 +23,12 @@ namespace Dia
 			Json::Value BuildPropertyJson(const Json::Value& blueprintRoot,
 			                             const char* topLevelKey) const;
 
-			// Build a JSON array of all registered component types (for Add Component dropdown).
+			// Build a JSON array of available component types (for Add Component dropdown).
 			// Filters out types already present in the blueprint.
+			// If schema is not loaded, returns a status message entry instead.
 			Json::Value BuildAvailableComponentsJson(const Json::Value& blueprintRoot,
-			                                         const char* topLevelKey) const;
+			                                         const char* topLevelKey,
+			                                         const SchemaReader& schema) const;
 
 			// Build usage JSON by querying the asset catalogue for reverse refs.
 			// reverseRefs is the "refs" array from asset_catalogue.get_reverse_refs.
