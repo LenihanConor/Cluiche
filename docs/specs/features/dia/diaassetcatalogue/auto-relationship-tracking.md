@@ -1,5 +1,5 @@
 ---
-status: Approved
+status: Done
 parent: docs/specs/systems/dia/diaassetcatalogue.md
 ---
 

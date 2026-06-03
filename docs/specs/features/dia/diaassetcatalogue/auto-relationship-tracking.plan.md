@@ -1,5 +1,5 @@
 **Spec:** @docs/specs/features/dia/diaassetcatalogue/auto-relationship-tracking.md
-**Status:** Not Started
+**Status:** Done
 
 ## Implementation Patterns
 
@@ -32,9 +32,9 @@ The UI's Validate tab can surface this as a "Reconcile References" button, or it
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 1 | Cache scene catalogue ID on load in DiaSceneEditor | Manual: load scene, check log for resolved ID | Not Started | sonnet | Add `mSceneCatalogueId` member, resolve in load_scene/stage-load handlers |
-| 2 | Call add_relationship in scene_editor.add_item | Unit: add item, verify forward ref appears in catalogue | Not Started | sonnet | After SceneMutator::AddItem succeeds; skip if mSceneCatalogueId empty |
-| 3 | Call remove_relationship in scene_editor.delete_item | Unit: delete item, verify forward ref removed | Not Started | sonnet | After SceneMutator::DeleteItem succeeds |
-| 4 | Call remove+add in scene_editor.change_blueprint | Unit: change blueprint, verify old ref gone + new ref present | Not Started | sonnet | T16 handler already has old/new blueprint IDs |
-| 5 | Implement asset_catalogue.infer_relationships handler | Unit: create scene file with refs, run inferrer, check edges | Not Started | sonnet | New handler on DiaAssetCatalogueEditorPlugin |
-| 6 | Wire inferrer to Validate UI (button or auto-run in validate) | Manual: click button, see summary | Not Started | haiku | Add "Reconcile" button or integrate into onValidate flow |
+| 1 | Cache scene catalogue ID on load in DiaSceneEditor | Manual: load scene, check log for resolved ID | Done | sonnet | Add `mSceneCatalogueId` member, resolve in load_scene/stage-load handlers |
+| 2 | Call add_relationship in scene_editor.add_item | Unit: add item, verify forward ref appears in catalogue | Done | sonnet | After SceneMutator::AddItem succeeds; skip if mSceneCatalogueId empty |
+| 3 | Call remove_relationship in scene_editor.delete_item | Unit: delete item, verify forward ref removed | Done | sonnet | After SceneMutator::DeleteItem succeeds |
+| 4 | Call remove+add in scene_editor.change_blueprint | Unit: change blueprint, verify old ref gone + new ref present | Done | sonnet | T16 handler already has old/new blueprint IDs |
+| 5 | Implement asset_catalogue.infer_relationships handler | Unit: create scene file with refs, run inferrer, check edges | Done | sonnet | New handler on DiaAssetCatalogueEditorPlugin |
+| 6 | Wire inferrer to Validate UI (button or auto-run in validate) | Manual: click button, see summary | Done | haiku | Add "Reconcile" button or integrate into onValidate flow |
