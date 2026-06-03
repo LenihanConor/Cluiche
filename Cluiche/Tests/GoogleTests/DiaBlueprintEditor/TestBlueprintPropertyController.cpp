@@ -1,7 +1,10 @@
 #include <gtest/gtest.h>
 #include <DiaBlueprintEditor/BlueprintPropertyController.h>
+#include <DiaBlueprintEditor/SchemaReader.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
+
+#include <stdio.h>
 
 using namespace Dia::BlueprintEditor;
 using namespace Dia::Core;
@@ -87,7 +90,8 @@ TEST(BlueprintPropertyController, BuildAvailableComponents_MissingTopLevelKey_Re
 {
 	BlueprintPropertyController ctrl;
 	Json::Value root;  // no top-level key
-	Json::Value result = ctrl.BuildAvailableComponentsJson(root, "entity_blueprint");
+	SchemaReader schema;  // not loaded
+	Json::Value result = ctrl.BuildAvailableComponentsJson(root, "entity_blueprint", schema);
 
 	// Should return an array (may or may not be empty depending on registry state,
 	// but must be an array and not crash)
@@ -100,7 +104,8 @@ TEST(BlueprintPropertyController, BuildAvailableComponents_DoesNotIncludeAlready
 	Json::Value root = MakeEntityRoot();
 	root = AddComponent(root, "SomeUnknownComp", "x", 0);
 
-	Json::Value available = ctrl.BuildAvailableComponentsJson(root, "entity_blueprint");
+	SchemaReader schema;  // not loaded
+	Json::Value available = ctrl.BuildAvailableComponentsJson(root, "entity_blueprint", schema);
 
 	// SomeUnknownComp should not appear in available list (it's already present)
 	for (unsigned int i = 0; i < available.size(); ++i)
@@ -201,4 +206,101 @@ TEST(BlueprintPropertyController, BuildUsageJson_WithRef_ReturnsSceneId)
 	Json::Value result = ctrl.BuildUsageJson(refs);
 	ASSERT_EQ(result["usages"].size(), 1u);
 	EXPECT_EQ(result["usages"][0]["sceneId"].asString(), "diascene.level01");
+}
+
+// ===========================================================================
+// BuildAvailableComponentsJson — schema-aware tests
+// ===========================================================================
+
+static void WriteSchemaForBPC(const char* path, const char* content)
+{
+	FILE* f = nullptr;
+	fopen_s(&f, path, "w");
+	if (f) { fputs(content, f); fclose(f); }
+}
+
+static const char* kBPCTestSchemaPath = "TestBPCSchema_temp.diaschema";
+
+static const char* kBPCSingleComponentSchema =
+	"{"
+	"  \"version\": { \"major\": 1, \"minor\": 0 },"
+	"  \"game\": \"cluichetest\","
+	"  \"components\": ["
+	"    { \"type_id\": \"cluichetest.transform\", \"debug_name\": \"TransformComponent\","
+	"      \"fields\": [ {\"name\": \"x\", \"kind\": \"primitive\"} ] }"
+	"  ]"
+	"}";
+
+TEST(BlueprintPropertyController, BuildAvailableComponents_NoSchema_ReturnsStatusMessage)
+{
+	BlueprintPropertyController ctrl;
+	Json::Value root = MakeEntityRoot();
+	SchemaReader schema;  // not loaded
+
+	Json::Value result = ctrl.BuildAvailableComponentsJson(root, "entity_blueprint", schema);
+
+	ASSERT_TRUE(result.isArray());
+	bool foundStatus = false;
+	for (unsigned int i = 0; i < result.size(); ++i)
+	{
+		if (result[i].isMember("statusMessage"))
+		{
+			std::string msg = result[i]["statusMessage"].asString();
+			EXPECT_NE(msg.find("No schema found"), std::string::npos);
+			foundStatus = true;
+			break;
+		}
+	}
+	EXPECT_TRUE(foundStatus) << "Expected a statusMessage entry when schema is not loaded";
+}
+
+TEST(BlueprintPropertyController, BuildAvailableComponents_WithSchema_ReturnsComponents)
+{
+	WriteSchemaForBPC(kBPCTestSchemaPath, kBPCSingleComponentSchema);
+
+	SchemaReader schema;
+	schema.LoadFromFile(kBPCTestSchemaPath);
+	ASSERT_TRUE(schema.IsLoaded());
+
+	BlueprintPropertyController ctrl;
+	Json::Value root = MakeEntityRoot();  // empty blueprint — no components yet
+
+	Json::Value result = ctrl.BuildAvailableComponentsJson(root, "entity_blueprint", schema);
+
+	ASSERT_TRUE(result.isArray());
+	bool found = false;
+	for (unsigned int i = 0; i < result.size(); ++i)
+	{
+		if (result[i]["typeId"].asString() == "cluichetest.transform")
+		{
+			found = true;
+			break;
+		}
+	}
+	EXPECT_TRUE(found) << "Expected cluichetest.transform in available components";
+
+	remove(kBPCTestSchemaPath);
+}
+
+TEST(BlueprintPropertyController, BuildAvailableComponents_SchemaComponent_AlreadyPresent_Filtered)
+{
+	WriteSchemaForBPC(kBPCTestSchemaPath, kBPCSingleComponentSchema);
+
+	SchemaReader schema;
+	schema.LoadFromFile(kBPCTestSchemaPath);
+	ASSERT_TRUE(schema.IsLoaded());
+
+	BlueprintPropertyController ctrl;
+	Json::Value root = MakeEntityRoot();
+	// Add the component that is in the schema
+	root = AddComponent(root, "cluichetest.transform", "x", 0);
+
+	Json::Value result = ctrl.BuildAvailableComponentsJson(root, "entity_blueprint", schema);
+
+	ASSERT_TRUE(result.isArray());
+	for (unsigned int i = 0; i < result.size(); ++i)
+		EXPECT_NE(result[i]["typeId"].asString(), "cluichetest.transform")
+		    << "cluichetest.transform is already in the blueprint and should be filtered out";
+
+	remove(kBPCTestSchemaPath);
 }
