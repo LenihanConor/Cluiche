@@ -595,6 +595,9 @@
     <ClCompile Include="DiaSceneEditor\TestSceneValidator.cpp">
       <Filter>DiaSceneEditor</Filter>
     </ClCompile>
+    <ClCompile Include="DiaSceneEditor\IntegrationTestSceneEditorPlugin.cpp">
+      <Filter>DiaSceneEditor</Filter>
+    </ClCompile>
     <!-- DiaApplicationEditor V2 Tests -->
     <ClCompile Include="DiaApplicationEditor\TestManifestEditorState.cpp">
       <Filter>DiaApplicationEditor</Filter>
@@ -1213,6 +1216,9 @@
     </ClCompile>
     <!-- DiaAssetCatalogueEditor -->
     <ClCompile Include="DiaAssetCatalogueEditor\TestDiaAssetCatalogueEditorExhaustive.cpp">
+      <Filter>DiaAssetCatalogueEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="DiaAssetCatalogueEditor\IntegrationTestAssetCatalogueEditorPlugin.cpp">
       <Filter>DiaAssetCatalogueEditor</Filter>
     </ClCompile>
     <!-- DiaVisualDebugger -->

@@ -119,6 +119,6 @@ it in `OnProjectChangedStatic`.
 
 ## Reference implementation
 
-`Dia/DiaAssetRuntimeEditor/UI/index.html` — `no-connection` variant.
+`Dia/DiaAssetRuntimeInspector/UI/index.html` — `no-connection` variant.
 Class names there are `.disconnect-overlay`, `.message`, `.hint`. New plugins should
 use `.no-project-overlay`, `.overlay-message`, `.overlay-hint` for clarity.
