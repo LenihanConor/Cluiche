@@ -45,7 +45,8 @@ namespace Dia
 
 		Json::Value BlueprintPropertyController::BuildPropertyJson(
 			const Json::Value& blueprintRoot,
-			const char* topLevelKey) const
+			const char* topLevelKey,
+			const SchemaReader& schema) const
 		{
 			DIA_TRACE_ZONE("blueprint_editor.build_property", Dia::Observation::Trace::Category::kNone);
 			Json::Value result;
@@ -92,6 +93,33 @@ namespace Dia
 						fields.append(fieldJson);
 					}
 				}
+
+				// Inject codeDefault from schema for any field whose name has a default value
+				if (schema.IsLoaded())
+				{
+					const Json::Value* defaultValues = nullptr;
+					for (unsigned int s = 0; s < schema.GetComponentCount(); ++s)
+					{
+						if (schema.GetComponent(s).typeId == Dia::Core::StringCRC(typeName))
+						{
+							const Json::Value& dv = schema.GetDefaultValues(s);
+							if (!dv.isNull())
+								defaultValues = &dv;
+							break;
+						}
+					}
+
+					if (defaultValues)
+					{
+						for (unsigned int fi = 0; fi < fields.size(); ++fi)
+						{
+							const char* fname = fields[fi]["name"].asCString();
+							if (fname && defaultValues->isMember(fname))
+								fields[fi]["codeDefault"] = (*defaultValues)[fname];
+						}
+					}
+				}
+
 				compJson["fields"] = fields;
 				componentArray.append(compJson);
 			}

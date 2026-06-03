@@ -350,7 +350,7 @@ namespace Dia
 					const char* ext    = strrchr(data["path"].asCString(), '.');
 					const char* topKey = BlueprintFileHandler::TopLevelKeyForExtension(ext ? ext : "");
 					result["success"]    = true;
-					result["properties"] = mPropertyController.BuildPropertyJson(blueprintRoot, topKey);
+					result["properties"] = mPropertyController.BuildPropertyJson(blueprintRoot, topKey, mSchemaReader);
 					DIA_LOG_INFO("Editor", "DiaBlueprintEditorPlugin: loaded blueprint '%s'",
 						data["path"].asCString());
 					return result;

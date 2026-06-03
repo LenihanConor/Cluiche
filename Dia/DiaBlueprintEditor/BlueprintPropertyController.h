@@ -20,8 +20,10 @@ namespace Dia
 		public:
 			// Build the property panel JSON for a loaded blueprint root.
 			// Returns: { "id": "...", "components": [ { "type": "...", "fields": [...] } ] }
+			// Each field entry gains "codeDefault": <value> when a default is known in the schema.
 			Json::Value BuildPropertyJson(const Json::Value& blueprintRoot,
-			                             const char* topLevelKey) const;
+			                             const char* topLevelKey,
+			                             const SchemaReader& schema) const;
 
 			// Build a JSON array of available component types (for Add Component dropdown).
 			// Filters out types already present in the blueprint.

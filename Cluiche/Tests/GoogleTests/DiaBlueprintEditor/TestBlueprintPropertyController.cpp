@@ -35,8 +35,9 @@ static Json::Value AddComponent(Json::Value root, const char* type,
 TEST(BlueprintPropertyController, BuildPropertyJson_MissingTopLevelKey_ReturnsError)
 {
 	BlueprintPropertyController ctrl;
+	SchemaReader schema;
 	Json::Value root;    // empty — no "entity_blueprint" key
-	Json::Value result = ctrl.BuildPropertyJson(root, "entity_blueprint");
+	Json::Value result = ctrl.BuildPropertyJson(root, "entity_blueprint", schema);
 
 	EXPECT_TRUE(result.isMember("error"));
 }
@@ -44,8 +45,9 @@ TEST(BlueprintPropertyController, BuildPropertyJson_MissingTopLevelKey_ReturnsEr
 TEST(BlueprintPropertyController, BuildPropertyJson_EmptyComponents_ReturnsIdAndEmptyArray)
 {
 	BlueprintPropertyController ctrl;
+	SchemaReader schema;
 	Json::Value root = MakeEntityRoot("hero");
-	Json::Value result = ctrl.BuildPropertyJson(root, "entity_blueprint");
+	Json::Value result = ctrl.BuildPropertyJson(root, "entity_blueprint", schema);
 
 	EXPECT_EQ(result["id"].asString(), "hero");
 	EXPECT_EQ(result["components"].size(), 0u);
@@ -54,10 +56,11 @@ TEST(BlueprintPropertyController, BuildPropertyJson_EmptyComponents_ReturnsIdAnd
 TEST(BlueprintPropertyController, BuildPropertyJson_UnregisteredComponent_ExposesRawFields)
 {
 	BlueprintPropertyController ctrl;
+	SchemaReader schema;
 	Json::Value root = MakeEntityRoot();
 	root = AddComponent(root, "SomeUnknownComp", "max_hp", 100);
 
-	Json::Value result = ctrl.BuildPropertyJson(root, "entity_blueprint");
+	Json::Value result = ctrl.BuildPropertyJson(root, "entity_blueprint", schema);
 
 	ASSERT_EQ(result["components"].size(), 1u);
 	EXPECT_EQ(result["components"][0]["type"].asString(), "SomeUnknownComp");
@@ -71,11 +74,12 @@ TEST(BlueprintPropertyController, BuildPropertyJson_UnregisteredComponent_Expose
 TEST(BlueprintPropertyController, BuildPropertyJson_MultipleComponents_AllPresent)
 {
 	BlueprintPropertyController ctrl;
+	SchemaReader schema;
 	Json::Value root = MakeEntityRoot();
 	root = AddComponent(root, "CompA", "x", 1);
 	root = AddComponent(root, "CompB", "y", 2);
 
-	Json::Value result = ctrl.BuildPropertyJson(root, "entity_blueprint");
+	Json::Value result = ctrl.BuildPropertyJson(root, "entity_blueprint", schema);
 
 	ASSERT_EQ(result["components"].size(), 2u);
 	EXPECT_EQ(result["components"][0]["type"].asString(), "CompA");
@@ -139,11 +143,12 @@ TEST(BlueprintPropertyController, BuildUsageJson_NullRefs_ReturnsEmptyUsages)
 TEST(BlueprintPropertyController, BuildPropertyJson_CameraBlueprint_UsesCorrectTopKey)
 {
 	BlueprintPropertyController ctrl;
+	SchemaReader schema;
 	Json::Value root;
 	root["camera_blueprint"]["id"]         = "follow_cam";
 	root["camera_blueprint"]["components"] = Json::Value(Json::arrayValue);
 
-	Json::Value result = ctrl.BuildPropertyJson(root, "camera_blueprint");
+	Json::Value result = ctrl.BuildPropertyJson(root, "camera_blueprint", schema);
 
 	EXPECT_EQ(result["id"].asString(), "follow_cam");
 	EXPECT_EQ(result["components"].size(), 0u);
@@ -152,11 +157,12 @@ TEST(BlueprintPropertyController, BuildPropertyJson_CameraBlueprint_UsesCorrectT
 TEST(BlueprintPropertyController, BuildPropertyJson_LightBlueprint_UsesCorrectTopKey)
 {
 	BlueprintPropertyController ctrl;
+	SchemaReader schema;
 	Json::Value root;
 	root["light_blueprint"]["id"]         = "warm_light";
 	root["light_blueprint"]["components"] = Json::Value(Json::arrayValue);
 
-	Json::Value result = ctrl.BuildPropertyJson(root, "light_blueprint");
+	Json::Value result = ctrl.BuildPropertyJson(root, "light_blueprint", schema);
 
 	EXPECT_EQ(result["id"].asString(), "warm_light");
 }
@@ -164,13 +170,14 @@ TEST(BlueprintPropertyController, BuildPropertyJson_LightBlueprint_UsesCorrectTo
 TEST(BlueprintPropertyController, BuildPropertyJson_ComponentWithNoFields_DoesNotCrash)
 {
 	BlueprintPropertyController ctrl;
+	SchemaReader schema;
 	Json::Value root = MakeEntityRoot();
 	Json::Value comp;
 	comp["type"]   = "EmptyComp";
 	comp["fields"] = Json::Value(Json::objectValue);
 	root["entity_blueprint"]["components"].append(comp);
 
-	Json::Value result = ctrl.BuildPropertyJson(root, "entity_blueprint");
+	Json::Value result = ctrl.BuildPropertyJson(root, "entity_blueprint", schema);
 
 	ASSERT_EQ(result["components"].size(), 1u);
 	EXPECT_EQ(result["components"][0]["fields"].size(), 0u);
@@ -303,4 +310,61 @@ TEST(BlueprintPropertyController, BuildAvailableComponents_SchemaComponent_Alrea
 		    << "cluichetest.transform is already in the blueprint and should be filtered out";
 
 	remove(kBPCTestSchemaPath);
+}
+
+// ===========================================================================
+// BuildPropertyJson — schema-aware tests (codeDefault injection)
+// ===========================================================================
+
+static const char* kBPCSchemaWithDefaultsPath = "TestBPCSchemaDefaults_temp.diaschema";
+
+static const char* kBPCSchemaWithDefaults =
+	"{"
+	"  \"version\": { \"major\": 1, \"minor\": 0 },"
+	"  \"game\": \"cluichetest\","
+	"  \"components\": ["
+	"    { \"type_id\": \"cluichetest.transform\", \"debug_name\": \"TransformComponent\","
+	"      \"fields\": [ {\"name\": \"x\", \"kind\": \"primitive\"} ],"
+	"      \"default_values\": { \"x\": 42 } }"
+	"  ]"
+	"}";
+
+TEST(BlueprintPropertyController, BuildPropertyJson_WithSchema_FieldHasCodeDefault)
+{
+	WriteSchemaForBPC(kBPCSchemaWithDefaultsPath, kBPCSchemaWithDefaults);
+
+	SchemaReader schema;
+	schema.LoadFromFile(kBPCSchemaWithDefaultsPath);
+	ASSERT_TRUE(schema.IsLoaded());
+
+	BlueprintPropertyController ctrl;
+
+	// Build a blueprint root with a cluichetest.transform component that has field "x"
+	// but no explicit value — uses the raw fallback path since ComponentRegistry is empty
+	Json::Value root = MakeEntityRoot();
+	root = AddComponent(root, "cluichetest.transform", "x", 0);
+
+	Json::Value result = ctrl.BuildPropertyJson(root, "entity_blueprint", schema);
+
+	ASSERT_EQ(result["components"].size(), 1u);
+	const Json::Value& fields = result["components"][0]["fields"];
+	ASSERT_GE(fields.size(), 1u);
+
+	// Find the "x" field and check codeDefault is injected
+	bool foundX = false;
+	for (unsigned int i = 0; i < fields.size(); ++i)
+	{
+		if (fields[i]["name"].asString() == "x")
+		{
+			EXPECT_TRUE(fields[i].isMember("codeDefault"))
+			    << "Field 'x' should have codeDefault injected from schema";
+			EXPECT_EQ(fields[i]["codeDefault"].asInt(), 42)
+			    << "codeDefault for 'x' should be 42";
+			foundX = true;
+			break;
+		}
+	}
+	EXPECT_TRUE(foundX) << "Expected a field named 'x' in result";
+
+	remove(kBPCSchemaWithDefaultsPath);
 }
