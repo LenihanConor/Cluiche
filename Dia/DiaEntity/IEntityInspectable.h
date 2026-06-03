@@ -54,6 +54,20 @@ namespace Dia::Entity {
             const char* fieldName,
             const Json::Value& value) = 0;
 
+        // Query cache introspection — used by EntityInspectSerializer to populate
+        // the queries array in the entity.inspect payload.
+        virtual uint32_t GetQueryCount() const = 0;
+
+        // Fills out with the component type CRCs that form the signature of query at queryIndex.
+        // Clears out before filling. No-op if queryIndex >= GetQueryCount().
+        virtual void GetQuerySignature(
+            uint32_t queryIndex,
+            Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32>& out) const = 0;
+
+        // Returns the number of entities currently matching query at queryIndex.
+        // Returns 0 if queryIndex >= GetQueryCount().
+        virtual uint32_t GetQueryEntityCount(uint32_t queryIndex) const = 0;
+
         // Mailbox access — provides access to the domain's message bus.
         virtual const Dia::Mailbox::Mailbox& GetMailbox() const = 0;
     };

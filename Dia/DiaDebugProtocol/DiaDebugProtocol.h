@@ -14,7 +14,7 @@ namespace Dia
 {
 	namespace DebugProtocol
 	{
-		static constexpr int kProtocolVersion = 1;
+		static constexpr int kProtocolVersion = 2;  // v2: entity.inspect topic added (DiaEntityInspector)
 
 		inline uint64_t GetTimestampNow()
 		{

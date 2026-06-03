@@ -520,6 +520,24 @@ namespace Dia::Entity {
         return true;
     }
 
+    uint32_t Domain::GetQueryCount() const {
+        return mQueryCaches.Size();
+    }
+
+    void Domain::GetQuerySignature(uint32_t queryIndex,
+            Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32>& out) const {
+        out.RemoveAll();
+        if (queryIndex >= mQueryCaches.Size()) return;
+        const QueryCache& qc = mQueryCaches[queryIndex];
+        for (uint32_t i = 0; i < qc.typeCRCs.Size(); ++i)
+            out.Add(qc.typeCRCs[i]);
+    }
+
+    uint32_t Domain::GetQueryEntityCount(uint32_t queryIndex) const {
+        if (queryIndex >= mQueryCaches.Size()) return 0;
+        return mQueryCaches[queryIndex].entities.Size();
+    }
+
     bool Domain::WriteField(
         Entity entity,
         Dia::Core::StringCRC componentTypeId,

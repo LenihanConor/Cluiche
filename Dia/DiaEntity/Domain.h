@@ -114,6 +114,11 @@ namespace Dia::Entity {
                      Dia::Core::StringCRC componentTypeId,
                      const char* fieldName,
                      const Json::Value& value) override;
+        uint32_t GetQueryCount() const override;
+        void     GetQuerySignature(
+                     uint32_t queryIndex,
+                     Dia::Core::Containers::DynamicArrayC<Dia::Core::StringCRC, 32>& out) const override;
+        uint32_t GetQueryEntityCount(uint32_t queryIndex) const override;
 
         // --- Component type query (used by EntityRouter) ---
 

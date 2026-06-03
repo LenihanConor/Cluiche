@@ -1,0 +1,174 @@
+#include "DiaEntityInspector/EntityInspectSerializer.h"
+#include <DiaEntity/IEntityInspectable.h>
+#include <DiaEntity/ComponentTypeDesc.h>
+#include <DiaEntity/ComponentRegistry.h>
+#include <DiaObservation/Trace/DiaTrace.h>
+#include <DiaObservation/Log/DiaLog.h>
+
+namespace Dia::EntityInspector {
+
+static Json::Value SerializeComponents(
+    const Dia::Entity::IEntityInspectable& domain,
+    Dia::Entity::Entity entity)
+{
+    using StringCRC = Dia::Core::StringCRC;
+    using DynamicArrayC = Dia::Core::Containers::DynamicArrayC<StringCRC, 32>;
+
+    DynamicArrayC typeIds;
+    domain.GetComponentTypeIds(entity, typeIds);
+
+    Json::Value components(Json::arrayValue);
+    auto& registry = Dia::Entity::ComponentRegistry::Get();
+
+    for (uint32_t ci = 0; ci < typeIds.Size(); ++ci)
+    {
+        const StringCRC typeId = typeIds[ci];
+        const Dia::Entity::ComponentTypeDesc* desc = registry.Find(typeId);
+
+        Json::Value comp(Json::objectValue);
+        comp["type_id_crc"] = typeId.Value();
+        comp["type_name"]   = desc ? desc->debugName : "unknown";
+
+        Json::Value fields(Json::arrayValue);
+        if (desc)
+        {
+            for (uint16_t fi = 0; fi < desc->fieldCount; ++fi)
+            {
+                const Dia::Entity::FieldDesc& fd = desc->fields[fi];
+                Json::Value fieldJson(Json::objectValue);
+                fieldJson["name"] = fd.name;
+                fieldJson["kind"] = static_cast<int>(fd.kind);
+
+                Json::Value value;
+                if (domain.ReadField(entity, typeId, fd.name, value))
+                    fieldJson["value"] = value;
+                else
+                {
+                    DIA_LOG_WARNING("Editor", "SerializeComponents: ReadField failed for field '%s' on type '%s'",
+                        fd.name, desc->debugName);
+                    fieldJson["value"] = Json::Value(Json::nullValue);
+                }
+
+                fields.append(fieldJson);
+            }
+        }
+        comp["fields"] = fields;
+        components.append(comp);
+    }
+    return components;
+}
+
+static Json::Value SerializeQueries(
+    const Dia::Entity::IEntityInspectable& domain,
+    Dia::Entity::Entity entity)
+{
+    using StringCRC = Dia::Core::StringCRC;
+    using SigArray = Dia::Core::Containers::DynamicArrayC<StringCRC, 32>;
+
+    SigArray entityComponents;
+    domain.GetComponentTypeIds(entity, entityComponents);
+
+    auto& registry = Dia::Entity::ComponentRegistry::Get();
+    const uint32_t queryCount = domain.GetQueryCount();
+
+    Json::Value queries(Json::arrayValue);
+    for (uint32_t qi = 0; qi < queryCount; ++qi)
+    {
+        SigArray signature;
+        domain.GetQuerySignature(qi, signature);
+
+        bool member = true;
+        for (uint32_t si = 0; si < signature.Size(); ++si)
+        {
+            bool found = false;
+            for (uint32_t ci = 0; ci < entityComponents.Size(); ++ci)
+            {
+                if (entityComponents[ci] == signature[si]) { found = true; break; }
+            }
+            if (!found) { member = false; break; }
+        }
+
+        Json::Value sigJson(Json::arrayValue);
+        for (uint32_t si = 0; si < signature.Size(); ++si)
+        {
+            const StringCRC& crc = signature[si];
+            const Dia::Entity::ComponentTypeDesc* desc = registry.Find(crc);
+            Json::Value entry;
+            entry["crc"]  = crc.Value();
+            entry["name"] = desc ? desc->debugName : "";
+            sigJson.append(entry);
+        }
+
+        Json::Value q;
+        q["index"]        = static_cast<int>(qi);
+        q["entity_count"] = static_cast<int>(domain.GetQueryEntityCount(qi));
+        q["member"]       = member;
+        q["signature"]    = sigJson;
+        queries.append(q);
+    }
+    return queries;
+}
+
+Json::Value SerializeEntityInspect(
+    const Dia::Entity::IEntityInspectable& domain,
+    Dia::Entity::Entity entity)
+{
+    DIA_TRACE_ZONE("SerializeEntityInspect", Dia::Observation::Trace::Category::kNone);
+
+    Json::Value result(Json::objectValue);
+
+    if (!entity.IsValid())
+        return result;
+
+    // --- entity section ---
+    Json::Value entityJson;
+    entityJson["index"] = static_cast<int>(entity.GetIndex());
+    entityJson["gen"]   = static_cast<int>(entity.GetGeneration());
+    entityJson["debug_name"] = "";  // filled below in debug builds
+    result["entity"] = entityJson;
+
+    // --- components ---
+    result["components"] = SerializeComponents(domain, entity);
+
+    // --- hierarchy (stub — populated from ParentComponent fields if present) ---
+    Json::Value hierarchy;
+    hierarchy["parent_index"] = -1;
+    hierarchy["parent_gen"]   = 0;
+    hierarchy["child_count"]  = 0;
+    result["hierarchy"] = hierarchy;
+
+    // --- queries ---
+    result["queries"] = SerializeQueries(domain, entity);
+
+    // --- mailbox_log (ring buffer maintained client-side in v1) ---
+    result["mailbox_log"] = Json::Value(Json::arrayValue);
+
+    return result;
+}
+
+Json::Value SerializeEntityList(const Dia::Entity::IEntityInspectable& domain)
+{
+    DIA_TRACE_ZONE("SerializeEntityList", Dia::Observation::Trace::Category::kNone);
+
+    using Entity = Dia::Entity::Entity;
+    using StringCRC = Dia::Core::StringCRC;
+    Dia::Core::Containers::DynamicArrayC<Entity, Dia::Entity::kMaxEntitiesPerDomain> entities;
+    domain.GetAllEntities(entities);
+
+    Json::Value list(Json::arrayValue);
+    for (uint32_t i = 0; i < entities.Size(); ++i)
+    {
+        const Entity& e = entities[i];
+        Dia::Core::Containers::DynamicArrayC<StringCRC, 32> typeIds;
+        domain.GetComponentTypeIds(e, typeIds);
+
+        Json::Value entry;
+        entry["index"]           = static_cast<int>(e.GetIndex());
+        entry["gen"]             = static_cast<int>(e.GetGeneration());
+        entry["component_count"] = static_cast<int>(typeIds.Size());
+        list.append(entry);
+    }
+    return list;
+}
+
+} // namespace Dia::EntityInspector

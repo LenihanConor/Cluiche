@@ -75,6 +75,9 @@
     <ProjectReference Include="..\..\Dia\DiaAssetRuntimeInspector\DiaAssetRuntimeInspector.vcxproj">
       <Project>{e2f3a4b5-c6d7-8901-efab-123456789012}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaEntityInspector\DiaEntityInspector.vcxproj">
+      <Project>{A3B4C5D6-E7F8-9012-ABCD-EF1234567890}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaApplicationEditor\DiaApplicationEditor.vcxproj">
       <Project>{b1c2d3e4-f5a6-7890-bcde-f01234567890}</Project>
     </ProjectReference>
