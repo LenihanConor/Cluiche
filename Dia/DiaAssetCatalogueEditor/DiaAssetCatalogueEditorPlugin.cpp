@@ -25,6 +25,8 @@
 
 #include <cstdio>
 #include <cstring>
+#include <sstream>
+#include <string>
 
 // Output dir for session context per SED-020 / SD-ACE-005.
 // Real path resolved at runtime from RepoRoot; fall back to relative path.
@@ -174,6 +176,7 @@ namespace Dia
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.query_asset_ids"));
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.get_asset_types"));
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.get_state"));
+					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.infer_relationships"));
 				}
 
 				mSessionContext.Save(mOutputDir);
@@ -218,6 +221,7 @@ namespace Dia
 				RegisterValidationHandlers();
 				RegisterAssetTypeEditorHandlers();
 				RegisterRulesHandlers();
+				RegisterInferrerHandlers();
 
 				// Seed built-in type→editor mappings so open_asset works regardless of
 				// plugin load order (DiaBlueprintEditor/DiaSceneEditor may load after us).
@@ -1638,6 +1642,119 @@ namespace Dia
 						return result;
 					});
 			}
+			// inferrer handlers
+			void DiaAssetCatalogueEditorPlugin::RegisterInferrerHandlers()
+			{
+				if (!mBridge)
+					return;
+
+				mBridge->RegisterRequestHandler(
+					Dia::Core::StringCRC("asset_catalogue.infer_relationships"),
+					[this](const Json::Value& /*data*/) -> Json::Value
+					{
+						Json::Value result;
+						int scenesScanned = 0;
+						int edgesAdded    = 0;
+						int edgesSkipped  = 0;
+
+						// Resolve base directory for relative source paths
+						char manifestDir[512] = {};
+						GetManifestDirectory(manifestDir, sizeof(manifestDir));
+						const char* baseDir = (mDiagameDir[0] != '\0') ? mDiagameDir : manifestDir;
+
+						for (unsigned int i = 0; i < mRegistry.GetCount(); ++i)
+						{
+							const Dia::AssetCatalogue::AssetRecord& rec = mRegistry.GetRecordByIndex(i);
+							if (rec.mAssetTypeId != Dia::Core::StringCRC("diascene"))
+								continue;
+							if (rec.mSourcePath.IsEmpty())
+								continue;
+
+							// Resolve absolute path
+							char absPath[1024] = {};
+							const char* srcPath = rec.mSourcePath.AsCStr();
+							bool isAbsolute = (srcPath[0] == '/' || srcPath[0] == '\\' ||
+							                   (srcPath[0] != '\0' && srcPath[1] == ':'));
+							if (!isAbsolute && baseDir[0] != '\0')
+								snprintf(absPath, sizeof(absPath), "%s%s", baseDir, srcPath);
+							else
+								strncpy_s(absPath, sizeof(absPath), srcPath, _TRUNCATE);
+
+							// Parse the .diascene JSON file
+							FILE* f = nullptr;
+							if (fopen_s(&f, absPath, "rb") != 0 || !f)
+							{
+								DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: infer_relationships — cannot open '%s'", absPath);
+								continue;
+							}
+							fseek(f, 0, SEEK_END);
+							long fsize = ftell(f);
+							fseek(f, 0, SEEK_SET);
+							std::string content(static_cast<size_t>(fsize), '\0');
+							fread(&content[0], 1, static_cast<size_t>(fsize), f);
+							fclose(f);
+
+							Json::Value sceneRoot;
+							Json::CharReaderBuilder b;
+							std::string parseErr;
+							std::istringstream ss(content);
+							if (!Json::parseFromStream(b, ss, &sceneRoot, &parseErr))
+							{
+								DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: infer_relationships — parse error in '%s': %s", absPath, parseErr.c_str());
+								continue;
+							}
+							++scenesScanned;
+
+							const Dia::Core::StringCRC sceneId = rec.mId;
+
+							// Helper lambda to process an array of items
+							auto processArray = [&](const char* key)
+							{
+								if (!sceneRoot.isMember("scene2d")) return;
+								const Json::Value& arr = sceneRoot["scene2d"][key];
+								if (!arr.isArray()) return;
+								for (unsigned int j = 0; j < arr.size(); ++j)
+								{
+									if (!arr[j].isMember("blueprint")) continue;
+									const Json::Value& bp = arr[j]["blueprint"];
+									const char* bpId = bp.isString() ? bp.asCString()
+									                 : (bp.isObject() && bp.isMember("value") ? bp["value"].asCString() : "");
+									if (!bpId || bpId[0] == '\0') continue;
+
+									// Only add if the blueprint record exists in the catalogue
+									if (!mRegistry.FindById(Dia::Core::StringCRC(bpId)))
+									{
+										++edgesSkipped;
+										continue;
+									}
+
+									Json::Value addReq;
+									addReq["from"] = sceneId.AsChar();
+									addReq["rel"]  = "uses";
+									addReq["to"]   = bpId;
+									Json::Value addResult = mBridge->InvokeRequestHandler(
+										Dia::Core::StringCRC("asset_catalogue.add_relationship"), addReq);
+
+									if (addResult.get("success", false).asBool())
+										++edgesAdded;
+									else
+										++edgesSkipped;
+								}
+							};
+
+							processArray("entities");
+							processArray("cameras");
+							processArray("lights");
+						}
+
+						result["success"]        = true;
+						result["scenes_scanned"] = scenesScanned;
+						result["edges_added"]    = edgesAdded;
+						result["edges_skipped"]  = edgesSkipped;
+						return result;
+					});
+			}
+
 		}
 	}
 }

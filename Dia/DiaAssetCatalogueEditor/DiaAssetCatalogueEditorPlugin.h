@@ -52,6 +52,7 @@ namespace Dia
 				void RegisterValidationHandlers();
 				void RegisterAssetTypeEditorHandlers();
 				void RegisterRulesHandlers();
+				void RegisterInferrerHandlers();
 				void PushDirtyState();
 				void PushRegistryState();
 				void AutoLoadRules();
