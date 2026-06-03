@@ -90,6 +90,11 @@ namespace Dia { namespace BlueprintEditor {
                 }
             }
 
+            // Parse default_values if present
+            if (comp.isMember("default_values") && comp["default_values"].isObject())
+                entry.defaultValues = comp["default_values"];
+            // else entry.defaultValues remains Json::nullValue (default-constructed)
+
             mComponents.Add(entry);
         }
 
@@ -116,6 +121,11 @@ namespace Dia { namespace BlueprintEditor {
     const SchemaComponentEntry& SchemaReader::GetComponent(unsigned int i) const
     {
         return mComponents[i];
+    }
+
+    const Json::Value& SchemaReader::GetDefaultValues(unsigned int i) const
+    {
+        return mComponents[i].defaultValues;
     }
 
     SchemaReader::Version SchemaReader::GetVersion() const

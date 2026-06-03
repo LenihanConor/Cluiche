@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 #include <DiaBlueprintEditor/SchemaReader.h>
 #include <DiaCore/CRC/StringCRC.h>
+#include <DiaCore/Json/external/json/json.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -47,6 +48,19 @@ static const char* kEmptyComponents =
     "{"
     "  \"version\": { \"major\": 1, \"minor\": 0 },"
     "  \"components\": []"
+    "}";
+
+// Schema where first component has default_values, second does not.
+static const char* kSchemaWithDefaults =
+    "{"
+    "  \"version\": { \"major\": 1, \"minor\": 0 },"
+    "  \"components\": ["
+    "    { \"type_id\": \"cluichetest.transform\", \"debug_name\": \"TransformComponent\","
+    "      \"fields\": [ {\"name\": \"x\", \"kind\": \"primitive\"} ],"
+    "      \"default_values\": { \"x\": 0, \"scale\": 1.0 } },"
+    "    { \"type_id\": \"cluichetest.visual\", \"debug_name\": \"VisualComponent\","
+    "      \"fields\": [] }"
+    "  ]"
     "}";
 
 // ==============================================================================
@@ -208,6 +222,46 @@ TEST(SchemaReader, Clear_AfterLoad_NotLoaded)
     reader.Clear();
     EXPECT_FALSE(reader.IsLoaded());
     EXPECT_EQ(reader.GetComponentCount(), 0u);
+
+    DeleteFile(kTestSchemaPath);
+}
+
+TEST(SchemaReader, LoadFromFile_WithDefaultValues_DefaultValuesPresent)
+{
+    WriteSchemaFile(kTestSchemaPath, kSchemaWithDefaults);
+
+    SchemaReader reader;
+    reader.LoadFromFile(kTestSchemaPath);
+    ASSERT_GE(reader.GetComponentCount(), 1u);
+    const Json::Value& dv = reader.GetDefaultValues(0);
+    EXPECT_FALSE(dv.isNull());
+    EXPECT_TRUE(dv.isMember("x"));
+
+    DeleteFile(kTestSchemaPath);
+}
+
+TEST(SchemaReader, LoadFromFile_WithDefaultValues_ValueCorrect)
+{
+    WriteSchemaFile(kTestSchemaPath, kSchemaWithDefaults);
+
+    SchemaReader reader;
+    reader.LoadFromFile(kTestSchemaPath);
+    ASSERT_GE(reader.GetComponentCount(), 1u);
+    const Json::Value& dv = reader.GetDefaultValues(0);
+    ASSERT_FALSE(dv.isNull());
+    EXPECT_FLOAT_EQ(dv["scale"].asFloat(), 1.0f);
+
+    DeleteFile(kTestSchemaPath);
+}
+
+TEST(SchemaReader, LoadFromFile_NoDefaultValues_IsNull)
+{
+    WriteSchemaFile(kTestSchemaPath, kSchemaWithDefaults);
+
+    SchemaReader reader;
+    reader.LoadFromFile(kTestSchemaPath);
+    ASSERT_GE(reader.GetComponentCount(), 2u);
+    EXPECT_TRUE(reader.GetDefaultValues(1).isNull());
 
     DeleteFile(kTestSchemaPath);
 }
