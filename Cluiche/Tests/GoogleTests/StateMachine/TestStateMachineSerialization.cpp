@@ -175,15 +175,15 @@ TEST(JsonStateMachineSerializer, FlatRoundTrip)
 	EXPECT_EQ(loaded.GetInitialStateId(), Dia::Core::StringCRC("A"));
 
 	EXPECT_EQ(loaded.GetStates()[0].onEnterName, Dia::Core::StringCRC("OnEnterA"));
-	EXPECT_EQ(loaded.GetStates()[0].onEnter, OnEnterA);
+	EXPECT_TRUE(loaded.GetStates()[0].onEnter == OnEnterA);
 	EXPECT_EQ(loaded.GetStates()[0].onExitName,  Dia::Core::StringCRC("OnExitA"));
-	EXPECT_EQ(loaded.GetStates()[0].onExit, OnExitA);
+	EXPECT_TRUE(loaded.GetStates()[0].onExit == OnExitA);
 
 	ASSERT_EQ(loaded.GetTransitions().Size(), 1u);
 	EXPECT_EQ(loaded.GetTransitions()[0].sourceStateId, Dia::Core::StringCRC("A"));
 	EXPECT_EQ(loaded.GetTransitions()[0].targetStateId, Dia::Core::StringCRC("B"));
 	EXPECT_EQ(loaded.GetTransitions()[0].guardName,     Dia::Core::StringCRC("GuardAB"));
-	EXPECT_EQ(loaded.GetTransitions()[0].guard, GuardAB);
+	EXPECT_TRUE(loaded.GetTransitions()[0].guard == GuardAB);
 
 	const MetadataValue* clip = FindMetadata(loaded.GetStateMetadata(0), Dia::Core::StringCRC("clip"));
 	ASSERT_NE(clip, nullptr);
@@ -256,7 +256,7 @@ TEST(JsonStateMachineSerializer, HsmRoundTrip)
 	EXPECT_EQ(states[aIdx].parentId, Dia::Core::StringCRC("Root"));
 	EXPECT_TRUE(states[aIdx].hasHistory);
 	EXPECT_EQ(states[aIdx].onEnterName, Dia::Core::StringCRC("OnEnterA"));
-	EXPECT_EQ(states[aIdx].onEnter, OnEnterA);
+	EXPECT_TRUE(states[aIdx].onEnter == OnEnterA);
 
 	const MetadataValue* priority = FindMetadata(loaded.GetStateMetadata(static_cast<unsigned int>(aIdx)), Dia::Core::StringCRC("priority"));
 	ASSERT_NE(priority, nullptr);
@@ -293,11 +293,11 @@ TEST(JsonStateMachineSerializer, PdaRoundTrip)
 
 	const PushdownStateDef& s = loaded.GetStates()[0];
 	EXPECT_EQ(s.onEnterName,  Dia::Core::StringCRC("OnEnterA"));
-	EXPECT_EQ(s.onEnter, OnEnterA);
+	EXPECT_TRUE(s.onEnter == OnEnterA);
 	EXPECT_EQ(s.onPauseName,  Dia::Core::StringCRC("OnPauseA"));
-	EXPECT_EQ(s.onPause, OnPauseA);
+	EXPECT_TRUE(s.onPause == OnPauseA);
 	EXPECT_EQ(s.onResumeName, Dia::Core::StringCRC("OnResumeA"));
-	EXPECT_EQ(s.onResume, OnResumeA);
+	EXPECT_TRUE(s.onResume == OnResumeA);
 
 	const MetadataValue* depth = FindMetadata(loaded.GetStateMetadata(0), Dia::Core::StringCRC("depth"));
 	ASSERT_NE(depth, nullptr);
@@ -614,7 +614,7 @@ TEST(JsonStateMachineSerializer, SaveToFileAndLoadFromFile_Flat)
 	EXPECT_EQ(loaded.GetStates().Size(), 2u);
 	EXPECT_EQ(loaded.GetInitialStateId(), Dia::Core::StringCRC("Idle"));
 	EXPECT_EQ(loaded.GetStates()[0].onEnterName, Dia::Core::StringCRC("OnEnterA"));
-	EXPECT_EQ(loaded.GetStates()[0].onEnter, OnEnterA);
+	EXPECT_TRUE(loaded.GetStates()[0].onEnter == OnEnterA);
 
 	const MetadataValue* clip = FindMetadata(loaded.GetStateMetadata(0), Dia::Core::StringCRC("clip"));
 	ASSERT_NE(clip, nullptr);
@@ -663,7 +663,7 @@ TEST(JsonStateMachineSerializer, SaveToFileAndLoadFromFile_Pda)
 	ASSERT_TRUE(serializer.LoadFromFile(kTmpPda, loaded, reg));
 
 	EXPECT_EQ(loaded.GetStates().Size(), 1u);
-	EXPECT_EQ(loaded.GetStates()[0].onPause, OnPauseA);
+	EXPECT_TRUE(loaded.GetStates()[0].onPause == OnPauseA);
 
 	remove(kTmpPda);
 }

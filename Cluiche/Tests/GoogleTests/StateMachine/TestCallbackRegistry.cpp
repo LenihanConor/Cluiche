@@ -17,7 +17,7 @@ TEST(CallbackRegistry, RegisterAndFindAction)
     reg.RegisterAction(Dia::Core::StringCRC("run"), SomeAction);
 
     auto fn = reg.FindAction(Dia::Core::StringCRC("run"));
-    EXPECT_EQ(fn, SomeAction);
+    EXPECT_TRUE(fn == SomeAction);
 }
 
 TEST(CallbackRegistry, RegisterAndFindGuard)
@@ -26,7 +26,7 @@ TEST(CallbackRegistry, RegisterAndFindGuard)
     reg.RegisterGuard(Dia::Core::StringCRC("isAlive"), SomeGuard);
 
     auto fn = reg.FindGuard(Dia::Core::StringCRC("isAlive"));
-    EXPECT_EQ(fn, SomeGuard);
+    EXPECT_TRUE(fn == SomeGuard);
 }
 
 TEST(CallbackRegistry, RegisterAndFindUpdate)
@@ -35,7 +35,7 @@ TEST(CallbackRegistry, RegisterAndFindUpdate)
     reg.RegisterUpdate(Dia::Core::StringCRC("tick"), SomeUpdate);
 
     auto fn = reg.FindUpdate(Dia::Core::StringCRC("tick"));
-    EXPECT_EQ(fn, SomeUpdate);
+    EXPECT_TRUE(fn == SomeUpdate);
 }
 
 TEST(CallbackRegistry, FindMissingActionReturnsNullptr)
@@ -90,8 +90,8 @@ TEST(CallbackRegistry, MultipleDistinctRegistrations)
     reg.RegisterAction(Dia::Core::StringCRC("a1"), ActionOne);
     reg.RegisterAction(Dia::Core::StringCRC("a2"), ActionTwo);
 
-    EXPECT_EQ(reg.FindAction(Dia::Core::StringCRC("a1")), ActionOne);
-    EXPECT_EQ(reg.FindAction(Dia::Core::StringCRC("a2")), ActionTwo);
+    EXPECT_TRUE(reg.FindAction(Dia::Core::StringCRC("a1")) == ActionOne);
+    EXPECT_TRUE(reg.FindAction(Dia::Core::StringCRC("a2")) == ActionTwo);
 }
 
 // ----- StateMachineComponent tests -----
@@ -187,7 +187,7 @@ TEST(CallbackRegistry, FinalizeAllowsQueryAfterwards)
     reg.Finalize();
 
     EXPECT_TRUE(reg.IsFinalized());
-    EXPECT_EQ(reg.FindAction(Dia::Core::StringCRC("run")), SomeAction);
+    EXPECT_TRUE(reg.FindAction(Dia::Core::StringCRC("run")) == SomeAction);
     EXPECT_TRUE(reg.HasAction(Dia::Core::StringCRC("run")));
 }
 
