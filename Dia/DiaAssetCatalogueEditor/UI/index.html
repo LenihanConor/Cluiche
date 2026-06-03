@@ -299,15 +299,10 @@
     </div>
   </div>
 
-  <!-- Center: tabs -->
+  <!-- Center: Record Editor -->
   <div class="panel" id="panel-center" style="display:flex;flex-direction:column;">
-    <div class="tabs">
-      <div class="tab active" onclick="showCenterTab('records',this)">Record Editor</div>
-      <div class="tab"        onclick="showCenterTab('discoverer',this)">File Discoverer</div>
-    </div>
-
-    <!-- Tab: Record Editor -->
-    <div class="tab-content active" id="tab-records" style="overflow:auto;">
+    <div class="panel-title">Record Editor</div>
+    <div style="flex:1;overflow:auto;padding:10px;">
       <div class="empty-state" id="record-empty">Select an asset to edit</div>
       <div id="record-form" style="display:none;">
         <div class="form-row">
@@ -398,38 +393,15 @@
         </div>
       </div>
     </div>
-
-    <!-- Tab: File Discoverer
-         Scans a directory for files that are NOT already registered in the catalogue.
-         Use this to bulk-onboard existing assets from disk:
-           1. Enter or Browse to a root folder
-           2. Click Scan — shows unregistered files with suggested type/ID
-           3. Edit type/ID if needed, select files, click Add Selected
-         All selected files are registered as catalogue records in one atomic operation.
-    -->
-    <div class="tab-content" id="tab-discoverer" style="flex-direction:column;">
-      <div class="discoverer-toolbar">
-        <input type="text" id="disc-root-path" placeholder="Root path to scan…" />
-        <button onclick="onDiscoverBrowse()">Browse…</button>
-        <button class="btn-primary" onclick="onDiscover()">Scan</button>
-      </div>
-      <div class="discoverer-results" id="disc-results">
-        <div class="empty-state">Enter a root path and click Scan</div>
-      </div>
-      <div class="discoverer-actions" id="disc-actions" style="display:none;">
-        <button onclick="onAddSelected()">Add Selected</button>
-        <span class="sel-count" id="disc-sel-count">0 selected</span>
-        <button onclick="onSelectAllDisc()" style="background:#3c3c3c;color:#d4d4d4;border:1px solid #555;padding:3px 8px;font-size:11px;cursor:pointer;border-radius:3px;">Select All</button>
-      </div>
-    </div>
   </div>
 
-  <!-- Right: Validation / Rules / Graph -->
+  <!-- Right: Validation / Rules / Graph / File Discoverer -->
   <div class="panel" id="panel-right" style="display:flex;flex-direction:column;">
     <div class="tabs">
       <div class="tab active" onclick="showRightTab('validation',this)">Validation</div>
       <div class="tab"        onclick="showRightTab('rules',this)">Rules</div>
       <div class="tab"        onclick="showRightTab('graph',this)">Graph</div>
+      <div class="tab"        onclick="showRightTab('discoverer',this)">Discoverer</div>
     </div>
     <div class="tab-content active" id="tab-right-validation" style="flex-direction:column;">
       <div style="flex-shrink:0;margin-bottom:8px;">
@@ -474,6 +446,29 @@
       </div>
       <div id="graph-canvas" style="flex:1;position:relative;">
         <div class="empty-state" id="graph-empty">Select an asset to view its relationship graph</div>
+      </div>
+    </div>
+    <!-- Tab: File Discoverer
+         Scans a directory for files that are NOT already registered in the catalogue.
+         Use this to bulk-onboard existing assets from disk:
+           1. Enter or Browse to a root folder
+           2. Click Scan — shows unregistered files with suggested type/ID
+           3. Edit type/ID if needed, select files, click Add Selected
+         All selected files are registered as catalogue records in one atomic operation.
+    -->
+    <div class="tab-content" id="tab-right-discoverer" style="flex-direction:column;">
+      <div class="discoverer-toolbar">
+        <input type="text" id="disc-root-path" placeholder="Root path to scan…" />
+        <button onclick="onDiscoverBrowse()">Browse…</button>
+        <button class="btn-primary" onclick="onDiscover()">Scan</button>
+      </div>
+      <div class="discoverer-results" id="disc-results">
+        <div class="empty-state">Enter a root path and click Scan</div>
+      </div>
+      <div class="discoverer-actions" id="disc-actions" style="display:none;">
+        <button onclick="onAddSelected()">Add Selected</button>
+        <span class="sel-count" id="disc-sel-count">0 selected</span>
+        <button onclick="onSelectAllDisc()" style="background:#3c3c3c;color:#d4d4d4;border:1px solid #555;padding:3px 8px;font-size:11px;cursor:pointer;border-radius:3px;">Select All</button>
       </div>
     </div>
   </div>
@@ -724,13 +719,6 @@
   }
 
   /* ── Tabs ─────────────────────────────────────────── */
-  function showCenterTab(name, el) {
-    document.querySelectorAll('#panel-center .tab').forEach(function(t) { t.classList.remove('active'); });
-    document.querySelectorAll('#panel-center .tab-content').forEach(function(t) { t.classList.remove('active'); });
-    if (el) el.classList.add('active');
-    var content = document.getElementById('tab-' + name);
-    if (content) content.classList.add('active');
-  }
   function showRightTab(name, el) {
     document.querySelectorAll('#panel-right .tab').forEach(function(t) { t.classList.remove('active'); });
     document.querySelectorAll('#panel-right .tab-content').forEach(function(t) { t.classList.remove('active'); });
