@@ -1221,6 +1221,9 @@
     <ClCompile Include="DiaAssetCatalogueEditor\IntegrationTestAssetCatalogueEditorPlugin.cpp">
       <Filter>DiaAssetCatalogueEditor</Filter>
     </ClCompile>
+    <ClCompile Include="DiaAssetCatalogueEditor\IntegrationTestAutoRelationshipTracking.cpp">
+      <Filter>DiaAssetCatalogueEditor</Filter>
+    </ClCompile>
     <!-- DiaVisualDebugger -->
     <ClCompile Include="..\..\..\Dia\DiaVisualDebugger\DebugLayerPanelPlugin.cpp">
       <Filter>DiaVisualDebugger</Filter>
