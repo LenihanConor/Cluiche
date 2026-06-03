@@ -63,7 +63,7 @@
     .panel-body { flex: 1; overflow: auto; padding: 8px; }
 
     #panel-list   { width: 240px; min-width: 180px; }
-    #panel-center { flex: 1; border-right: none; }
+    #panel-center { flex: 1; border-right: none; position: relative; }
     #panel-right  { width: 280px; min-width: 200px; border-right: none; }
 
     /* ── Blueprint list ──────────────────────────────── */
@@ -148,22 +148,61 @@
     .comp-actions .btn-remove { color: #f48771; border-color: #6b2e2e; }
     .comp-actions .btn-remove:hover { background: #4b2020; }
 
-    .add-component-bar {
-      display: flex; gap: 6px; margin-top: 10px; padding-top: 8px;
-      border-top: 1px solid #3c3c3c;
+    /* ── Add component trigger ───────────────────────── */
+    .add-component-trigger {
+      margin-top: 10px; padding-top: 8px; border-top: 1px solid #3c3c3c;
     }
-    .add-component-bar select {
+    .add-component-trigger button {
+      width: 100%; background: #2d2d2d; color: #9d9d9d;
+      border: 1px dashed #3c3c3c; padding: 6px; font-size: 11px;
+      cursor: pointer; border-radius: 3px;
+    }
+    .add-component-trigger button:hover { background: #333; color: #d4d4d4; border-color: #555; }
+
+    /* ── Component picker panel ──────────────────────── */
+    .picker-panel {
+      display: none; position: absolute; z-index: 50;
+      background: #252526; border: 1px solid #555;
+      border-radius: 4px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      bottom: 50px; left: 8px; right: 8px;
+      flex-direction: column; overflow: hidden; max-height: 380px;
+    }
+    .picker-panel.open { display: flex; }
+    .picker-header {
+      padding: 8px 10px; border-bottom: 1px solid #3c3c3c;
+      display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+    }
+    .picker-header input {
       flex: 1; background: #3c3c3c; color: #d4d4d4;
-      border: 1px solid #555; padding: 3px 6px;
-      font-size: 11px; font-family: 'Segoe UI', sans-serif;
-      border-radius: 2px; outline: none;
+      border: 1px solid #555; padding: 4px 8px;
+      font-size: 12px; font-family: inherit; border-radius: 2px; outline: none;
     }
-    .add-component-bar button {
-      background: #0078d4; color: #fff;
-      border: none; padding: 3px 10px;
-      font-size: 11px; cursor: pointer; border-radius: 2px;
+    .picker-header input:focus { border-color: #007acc; }
+    .picker-close {
+      background: none; border: none; color: #9d9d9d;
+      font-size: 14px; cursor: pointer; padding: 2px 4px; border-radius: 2px;
     }
-    .add-component-bar button:hover { background: #106ebe; }
+    .picker-close:hover { color: #d4d4d4; background: #3c3c3c; }
+    .picker-count { padding: 3px 10px; font-size: 10px; color: #555; border-bottom: 1px solid #2a2a2a; flex-shrink: 0; }
+    .picker-list { flex: 1; overflow-y: auto; }
+    .picker-item { padding: 7px 12px; cursor: pointer; border-bottom: 1px solid #2a2a2a; }
+    .picker-item:hover, .picker-item.focused { background: #094771; }
+    .picker-item .pi-name { font-size: 12px; font-weight: 600; color: #d4d4d4; margin-bottom: 1px; }
+    .picker-item.focused .pi-name { color: #fff; }
+    .picker-item .pi-id { font-size: 10px; color: #9d9d9d; font-family: monospace; margin-bottom: 2px; }
+    .picker-item .pi-desc { font-size: 11px; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .picker-item.focused .pi-desc { color: #aaa; }
+    .picker-empty { padding: 16px; text-align: center; font-size: 11px; color: #555; }
+    .picker-footer {
+      padding: 6px 10px; border-top: 1px solid #3c3c3c;
+      display: flex; gap: 6px; justify-content: flex-end; align-items: center; flex-shrink: 0;
+    }
+    .picker-footer .hint { font-size: 10px; color: #555; flex: 1; }
+    .picker-footer .btn-cancel { background: #3c3c3c; color: #d4d4d4; border: 1px solid #555; padding: 3px 10px; font-size: 11px; cursor: pointer; border-radius: 2px; }
+    .picker-footer .btn-cancel:hover { background: #4c4c4c; }
+    .picker-footer .btn-add { background: #0078d4; color: #fff; border: none; padding: 3px 10px; font-size: 11px; cursor: pointer; border-radius: 2px; }
+    .picker-footer .btn-add:hover { background: #106ebe; }
+    .picker-footer .btn-add:disabled { background: #2a4a6a; color: #555; cursor: default; }
 
     .center-empty {
       flex: 1; display: flex; align-items: center; justify-content: center;
@@ -246,9 +285,23 @@
       <div id="blueprint-editor" style="display:none">
         <div class="blueprint-id" id="blueprint-id-label"></div>
         <div id="components-container"></div>
-        <div class="add-component-bar">
-          <select id="add-component-select"><option value="">— Add component —</option></select>
-          <button onclick="onAddComponent()">Add</button>
+        <div class="add-component-trigger">
+          <button id="add-component-btn" onclick="openPicker()">+ Add Component</button>
+        </div>
+        <!-- Component picker (positioned absolute inside #panel-center) -->
+        <div class="picker-panel" id="picker-panel">
+          <div class="picker-header">
+            <input type="text" id="picker-filter" placeholder="Search components…"
+                   oninput="onPickerFilter()" onkeydown="onPickerKey(event)" />
+            <button class="picker-close" onclick="closePicker()">✕</button>
+          </div>
+          <div class="picker-count" id="picker-count"></div>
+          <div class="picker-list" id="picker-list"></div>
+          <div class="picker-footer">
+            <span class="hint">↑↓ navigate · Enter add · Esc cancel</span>
+            <button class="btn-cancel" onclick="closePicker()">Cancel</button>
+            <button class="btn-add" id="picker-add-btn" onclick="onPickerAdd()" disabled>Add</button>
+          </div>
         </div>
       </div>
     </div>
@@ -565,37 +618,120 @@
     });
   }
 
-  /* ── Add component ────────────────────────────────────── */
+  /* ── Component picker state ───────────────────────── */
+  var pickerAllComponents = [];   // full list from get_available_components
+  var pickerVisible       = [];   // filtered subset
+  var pickerFocusIndex    = -1;
+
   function loadAvailableComponents(path) {
     diaRequest('blueprint_editor.get_available_components', { path: path }).then(function(r) {
-      var sel = document.getElementById('add-component-select');
-      sel.innerHTML = '<option value="">— Add component —</option>';
-      if (r.success && r.components) {
+      pickerAllComponents = [];
+      if (r.success && Array.isArray(r.components)) {
         r.components.forEach(function(c) {
-          var opt = document.createElement('option');
-          opt.value = c.typeId;
-          opt.textContent = c.label || c.typeId;
-          if (c.description) opt.title = c.description;
-          sel.appendChild(opt);
+          if (!c.statusMessage) pickerAllComponents.push(c);
         });
       }
     });
   }
 
-  function onAddComponent() {
-    var sel = document.getElementById('add-component-select');
-    var type = sel.value;
-    if (!type || !currentPath) return;
+  function openPicker() {
+    var panel = document.getElementById('picker-panel');
+    panel.classList.add('open');
+    pickerFocusIndex = -1;
+    document.getElementById('picker-filter').value = '';
+    renderPickerList('');
+    document.getElementById('picker-filter').focus();
+  }
 
+  function closePicker() {
+    document.getElementById('picker-panel').classList.remove('open');
+    pickerFocusIndex = -1;
+  }
+
+  function onPickerFilter() {
+    pickerFocusIndex = -1;
+    renderPickerList(document.getElementById('picker-filter').value);
+  }
+
+  function renderPickerList(query) {
+    var q = query.toLowerCase();
+    pickerVisible = pickerAllComponents.filter(function(c) {
+      if (!q) return true;
+      return (c.typeId  || '').toLowerCase().indexOf(q) !== -1 ||
+             (c.label   || '').toLowerCase().indexOf(q) !== -1 ||
+             (c.description || '').toLowerCase().indexOf(q) !== -1;
+    });
+
+    document.getElementById('picker-count').textContent =
+      pickerVisible.length + ' of ' + pickerAllComponents.length + ' components available';
+
+    var list = document.getElementById('picker-list');
+    list.innerHTML = '';
+
+    if (pickerVisible.length === 0) {
+      list.innerHTML = '<div class="picker-empty">No components match "' + esc(query) + '"</div>';
+      document.getElementById('picker-add-btn').disabled = true;
+      return;
+    }
+
+    pickerVisible.forEach(function(c, i) {
+      var el = document.createElement('div');
+      el.className = 'picker-item';
+      el.innerHTML =
+        '<div class="pi-name">' + esc(c.label || c.typeId) + '</div>' +
+        '<div class="pi-id">' + esc(c.typeId) + '</div>' +
+        (c.description ? '<div class="pi-desc">' + esc(c.description) + '</div>' : '');
+      el.onclick = function() { pickerFocusIndex = i; updatePickerFocus(); };
+      el.ondblclick = function() { pickerFocusIndex = i; onPickerAdd(); };
+      list.appendChild(el);
+    });
+
+    document.getElementById('picker-add-btn').disabled = true;
+  }
+
+  function updatePickerFocus() {
+    var items = document.querySelectorAll('.picker-item');
+    items.forEach(function(el, i) { el.classList.toggle('focused', i === pickerFocusIndex); });
+    if (pickerFocusIndex >= 0 && items[pickerFocusIndex])
+      items[pickerFocusIndex].scrollIntoView({ block: 'nearest' });
+    document.getElementById('picker-add-btn').disabled = pickerFocusIndex < 0;
+  }
+
+  function onPickerKey(e) {
+    if (e.key === 'Escape') { e.preventDefault(); closePicker(); return; }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      pickerFocusIndex = Math.min(pickerFocusIndex + 1, pickerVisible.length - 1);
+      updatePickerFocus();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      pickerFocusIndex = Math.max(pickerFocusIndex - 1, 0);
+      updatePickerFocus();
+    } else if (e.key === 'Enter' && pickerFocusIndex >= 0) {
+      onPickerAdd();
+    }
+  }
+
+  function onPickerAdd() {
+    if (pickerFocusIndex < 0 || pickerFocusIndex >= pickerVisible.length) return;
+    var type = pickerVisible[pickerFocusIndex].typeId;
+    if (!type || !currentPath) return;
     diaRequest('blueprint_editor.add_component', { path: currentPath, componentType: type }).then(function(r) {
-      if (!r.success) {
-        setStatus('Add failed: ' + (r.error || 'unknown'), true);
-        return;
-      }
+      if (!r.success) { setStatus('Add failed: ' + (r.error || 'unknown'), true); return; }
+      closePicker();
       setStatus('Added ' + type);
       selectBlueprint(currentAssetId, currentPath);
     });
   }
+
+  document.addEventListener('click', function(e) {
+    var panel = document.getElementById('picker-panel');
+    var btn   = document.getElementById('add-component-btn');
+    if (panel && panel.classList.contains('open') &&
+        !panel.contains(e.target) && e.target !== btn) {
+      closePicker();
+    }
+  });
 
   /* ── Remove component ─────────────────────────────────── */
   function promptRemoveComponent(compType) {
