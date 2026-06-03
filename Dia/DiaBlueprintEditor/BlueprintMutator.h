@@ -37,6 +37,15 @@ namespace Dia
 			                             const char* componentType,
 			                             char* errorOut = nullptr,
 			                             unsigned int errorCapacity = 0);
+
+			// Remove a field key from a component's "fields" object.
+			// No-op (returns true) if component or field not found.
+			static bool ClearField(Json::Value& blueprintRoot,
+			                        const char* topKey,
+			                        const char* componentType,
+			                        const char* fieldName,
+			                        char* errorOut = nullptr,
+			                        unsigned int errorCapacity = 0);
 		};
 	}
 }

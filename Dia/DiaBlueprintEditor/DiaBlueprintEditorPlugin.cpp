@@ -405,6 +405,51 @@ namespace Dia
 						return result;
 					}
 
+					// Handle null value: remove the field from the component
+					if (data["value"].isNull())
+					{
+						Json::Value blueprintRoot;
+						char err[256] = {};
+						if (!mFileHandler.Load(data["path"].asCString(), blueprintRoot, err, sizeof(err)))
+						{
+							DIA_LOG_WARNING("Editor",
+								"DiaBlueprintEditorPlugin: update_field — load failed for '%s': %s",
+								data["path"].asCString(), err);
+							result["success"] = false;
+							result["error"]   = err[0] ? err : "load failed";
+							return result;
+						}
+
+						const char* ext    = strrchr(data["path"].asCString(), '.');
+						const char* topKey = BlueprintFileHandler::TopLevelKeyForExtension(ext ? ext : "");
+
+						if (!BlueprintMutator::ClearField(blueprintRoot, topKey,
+								data["componentType"].asCString(),
+								data["fieldName"].asCString(),
+								err, sizeof(err)))
+						{
+							DIA_LOG_WARNING("Editor",
+								"DiaBlueprintEditorPlugin: update_field — clear field failed for '%s': %s",
+								data["path"].asCString(), err);
+							result["success"] = false;
+							result["error"]   = err[0] ? err : "clear field failed";
+							return result;
+						}
+
+						if (!mFileHandler.Save(data["path"].asCString(), blueprintRoot, err, sizeof(err)))
+						{
+							DIA_LOG_WARNING("Editor",
+								"DiaBlueprintEditorPlugin: update_field — save failed for '%s': %s",
+								data["path"].asCString(), err);
+							result["success"] = false;
+							result["error"]   = err[0] ? err : "save failed";
+							return result;
+						}
+
+						result["success"] = true;
+						return result;
+					}
+
 					Json::Value blueprintRoot;
 					char err[256] = {};
 					if (!mFileHandler.Load(data["path"].asCString(), blueprintRoot, err, sizeof(err)))
