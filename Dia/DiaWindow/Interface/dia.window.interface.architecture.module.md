@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.window.interface
 name: Interface
 owner_team: TBD
-layer: platform
+layer: foundation/platform
 status: active
 maturity: dev
 

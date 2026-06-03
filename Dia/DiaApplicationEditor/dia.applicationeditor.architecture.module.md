@@ -5,6 +5,7 @@ display_name: DiaApplicationEditor
 version: "2.0"
 status: active
 parent_module: dia.editor
+layer: assets/tools
 dependent_modules:
   - dia.applicationflow
   - dia.editor

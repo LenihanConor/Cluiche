@@ -5,7 +5,7 @@ display_name: DiaSceneEditor
 parent: dia.editor
 description: CluicheEditor plugin for authoring .diascene files — entity/camera/light placements, layers, instance_data overrides.
 language: cpp
-layer: editor_plugin
+layer: domain/visual/tools
 
 dependencies:
   - dia.editor

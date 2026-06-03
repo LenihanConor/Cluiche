@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.core.reflect
 name: Reflect
 owner_team: TBD
-layer: platform
+layer: foundation/core
 status: active
 maturity: dev
 

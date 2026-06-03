@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.maths.matrix
 name: Matrix
 owner_team: TBD
-layer: platform
+layer: foundation/maths
 status: active
 maturity: dev
 

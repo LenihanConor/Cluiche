@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.core.filepath
 name: FilePath
 owner_team: TBD
-layer: platform
+layer: foundation/core
 status: active
 maturity: dev
 

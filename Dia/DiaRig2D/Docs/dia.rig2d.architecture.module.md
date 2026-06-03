@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.rig2d
 name: DiaRig2D
 owner_team: TBD
-layer: platform
+layer: domain/animation/core
 status: active
 maturity: dev
 

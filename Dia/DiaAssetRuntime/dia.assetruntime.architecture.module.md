@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.assetruntime
 name: DiaAssetRuntime
 owner_team: TBD
-layer: platform
+layer: assets/core
 status: active
 maturity: dev
 

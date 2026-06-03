@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.geometry2dvisualdebugger
 name: DiaGeometry2DVisualDebugger
 owner_team: TBD
-layer: platform
+layer: domain/visual/tools
 status: active
 maturity: dev
 

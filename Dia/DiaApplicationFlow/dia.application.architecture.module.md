@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.application
 name: Application
 owner_team: TBD
-layer: platform
+layer: foundation/application
 status: active
 maturity: dev
 

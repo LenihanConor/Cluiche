@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.softbody2dvisualdebugger
 name: DiaSoftBody2DVisualDebugger
 owner_team: TBD
-layer: platform
+layer: domain/physics/tools
 status: active
 maturity: dev
 

@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.ik2dvisualdebugger
 name: DiaIK2DVisualDebugger
 owner_team: TBD
-layer: debug
+layer: domain/animation/tools
 status: active
 maturity: dev
 

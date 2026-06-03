@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.lighting2d
 name: Lighting2D
 owner_team: TBD
-layer: platform
+layer: domain/visual/core
 status: active
 maturity: dev
 

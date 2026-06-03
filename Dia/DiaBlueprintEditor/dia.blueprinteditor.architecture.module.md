@@ -5,7 +5,7 @@ display_name: DiaBlueprintEditor
 parent: dia.editor
 description: CluicheEditor plugin for authoring entity, camera, and light blueprint files.
 language: cpp
-layer: editor_plugin
+layer: assets/tools
 
 dependencies:
   - dia.editor

@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.scene2d
 name: Scene2D
 owner_team: TBD
-layer: platform
+layer: domain/visual/core
 status: active
 maturity: dev
 

@@ -3,7 +3,7 @@ schema: dia.module.v1
 id: DiaEntityInspector
 parent: DiaEditor
 type: editor_plugin
-layer: editor
+layer: assets/tools
 dependencies:
   required:
     - DiaEditor

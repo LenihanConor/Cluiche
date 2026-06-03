@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.rigidbody2d
 name: DiaRigidBody2D
 owner_team: TBD
-layer: platform
+layer: domain/physics/core
 status: active
 maturity: dev
 

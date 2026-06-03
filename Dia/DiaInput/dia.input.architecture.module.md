@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.input
 name: Input
 owner_team: TBD
-layer: platform
+layer: foundation/platform
 status: active
 maturity: production
 

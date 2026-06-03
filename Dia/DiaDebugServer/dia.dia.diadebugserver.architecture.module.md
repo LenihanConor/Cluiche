@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.dia.diadebugserver
 name: DiaDebugServer
 owner_team: TBD
-layer: platform
+layer: foundation/services
 status: active
 maturity: dev
 

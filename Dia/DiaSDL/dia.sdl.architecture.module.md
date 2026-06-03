@@ -2,7 +2,7 @@
 module_id: dia.sdl
 display_name: DiaSDL
 parent: dia
-layer: platform-adapter
+layer: foundation/platform
 version: "1.0"
 status: complete
 

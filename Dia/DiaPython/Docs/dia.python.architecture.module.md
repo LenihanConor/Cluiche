@@ -3,7 +3,7 @@ schema: dia.module.v1
 module_id: dia.python
 name: DiaPython
 owner_team: Core
-layer: platform
+layer: foundation/services
 status: active
 maturity: dev
 

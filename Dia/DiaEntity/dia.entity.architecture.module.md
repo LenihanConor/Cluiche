@@ -1,6 +1,7 @@
 ---
 module: dia.entity
 version: 1
+layer: assets/core
 namespace: Dia::Entity
 project: Dia/DiaEntity/DiaEntity.vcxproj
 dependent_modules:

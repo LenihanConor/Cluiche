@@ -6,6 +6,7 @@ parent_module: dia
 type: static_library
 namespace: Dia::Mailbox
 include_root: Dia/DiaMailbox
+layer: foundation/core
 public_headers:
   - Mailbox.h
   - MailboxTypes.h

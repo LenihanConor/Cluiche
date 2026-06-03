@@ -4,7 +4,7 @@ id: dia.geometry3d
 display_name: DiaGeometry3D
 description: 3D geometric primitives, pairwise intersection tests, and spatial acceleration structures for the Dia engine.
 namespace: Dia::Geometry3D
-layer: engine
+layer: foundation/maths
 parent_module: dia
 
 dependent_modules:

@@ -1,6 +1,7 @@
 ---
 schema: dia.module.v1
 id: dia.observation
+layer: foundation/services
 display_name: DiaObservation
 status: active
 maturity: dev

@@ -3,12 +3,13 @@
 **Application:** Dia
 **Research:** docs/research/migrat_cmake/summary.md
 **Status:** `Approved`
+**Plan:** [diaarchitecture.plan.md](diaarchitecture.plan.md)
 
 ---
 
 ## Summary
 
-DiaArchitecture formalises the domain-oriented module structure for the Dia engine and enforces it at build time via CMake. The current 55-module flat MSBuild layout has no compile-time enforcement of the dependency rules documented in `dia.*.architecture.module.md` YAML files — violations are invisible until code review. This system introduces a 6-sub-layer Core + 4-domain architecture, an audit tool that surfaces violations immediately, a CMake Foundation pilot that produces `compile_commands.json`, and a full layered CMake enforcement model that makes forbidden-dep violations impossible to compile.
+DiaArchitecture formalises the domain-oriented module structure for the Dia engine. The current 61-module flat MSBuild layout has no compile-time enforcement of the dependency rules documented in `dia.*.architecture.module.md` YAML files — violations are invisible until code review. This system introduces a numbered-layer architecture with strict dependency ordering, an audit tool that surfaces violations immediately, and module splits that create clean architectural boundaries.
 
 ---
 
@@ -16,40 +17,89 @@ DiaArchitecture formalises the domain-oriented module structure for the Dia engi
 
 1. **Document** the target architecture by adding a `layer:` field to every module's YAML doc (C7)
 2. **Audit** the current codebase for forbidden-dep violations via `dia check --tool=arch` (C1)
-3. **Pilot** CMake for the Foundation sub-layer to prove the pattern and unlock `compile_commands.json` (C2)
-4. **Enforce** the Dia module graph via CMake `target_link_libraries` across all 55 modules — additive, `.vcxproj` kept (C3a)
-5. **Complete** the migration by adding CMake for Cluiche apps, retiring all `.vcxproj` files, and switching DiaCLI to `cmake --build` (C3b)
 
 ---
 
 ## Target Architecture
 
-### Core (6 sub-layers — strict bottom-up, no upward reach)
+### Numbered Layers
 
-| Sub-layer | Modules |
-|-----------|---------|
-| `foundation` | DiaCore, DiaMaths, DiaGeometry2D, DiaGeometry3D, DiaSerializer, DiaObservation |
-| `platform` | DiaWindow, DiaInput, DiaThreading, DiaMailbox |
-| `application` | DiaApplicationFlow, DiaStateMachine |
-| `entity` | DiaEntity |
-| `assets` | DiaAsset, DiaAssetCatalogue, DiaAssetRuntime |
-| `tooling` | DiaEditor, DiaAPI, DiaAutomation, DiaWebSocket, DiaDebugServer, DiaDebugProtocol, DiaVisualDebugger (base/console) |
+```
+Level 3 — Domains (cross-domain forbidden, within-domain OK)
+  Visual    (3.0 core / 3.1 tools) — Rendering, UI, Scene
+  Physics   (3.0 core / 3.1 tools)
+  Animation (3.0 core / 3.1 tools)
+  [Future: AI (3.0 core / 3.1 tools)]
 
-### Domains (vertical slices — `core` + `tools` tiers per domain)
+Level 2 — Assets (2.0 core / 2.1 tools)
 
-| Domain | Core modules | Tools modules |
-|--------|-------------|---------------|
-| `physics` | DiaRigidBody2D, DiaSoftBody2D | DiaRigidBody2DVisualDebugger, DiaSoftBody2DVisualDebugger |
-| `animation` | DiaRig2D, DiaIK2D, DiaAnimation2D, DiaMesh3D, DiaRig3D, DiaAnimation3D, DiaSkinning3D | DiaRig2DVisualDebugger, DiaIK2DVisualDebugger, DiaAnimation2DVisualDebugger |
-| `rendering` | DiaGraphics, DiaGraphics3D, DiaUI, DiaScene3D | DiaBgfx, DiaBgfx3D, DiaSFML, DiaUICEF, DiaUIUltralight, DiaImGui |
-| `ai` | DiaAI, DiaPathfinding *(future)* | DiaAIVisualDebugger *(future)* |
+Level 1 — Foundation
+  Application  (1.2) — DiaApplicationFlow, DiaAutomation, DiaGame
+  Platform     (1.2) — DiaWindow, DiaInput, DiaSDL
+  Maths        (1.1) — DiaMaths, DiaGeometry2D/3D, DiaGeometryBridge, DiaGeometry2DPicking
+  Services     (1.1) — DiaObservation, DiaMetrics, DiaDebugProtocol, DiaWebSocket, DiaAPI,
+                        DiaDebugServer, DiaEditor, DiaDebugDraw, DiaStreams, DiaPython, DiaImGui
+  Core         (1.0) — DiaCore, DiaSerializer, DiaThreading, DiaMailbox, DiaStateMachine,
+                        DiaProtobuf, DiaPicking, DiaFileIO, DiaJson
+```
 
-### Hard rules
+### Hard Rules
 
-- Core sub-layers depend only on layers below them — no upward reach
-- Domain `core` tiers depend on Core only — never on other domain cores
-- Domain `tools` tiers may depend on Core/Tooling + their own domain core
-- These rules are enforced at compile time by CMake `target_link_libraries` (after C3a)
+1. **No upward deps** — a module at level N cannot depend on anything at level N+1 or above
+2. **Sub-levels are ordered** — 1.0 < 1.1 < 1.2; a module can depend on same or lower sub-level
+3. **Same sub-level, different group → forbidden** — Maths (1.1) cannot use Services (1.1) and vice versa
+4. **Same sub-level, same group → allowed** — DiaDebugServer → DiaWebSocket within Services is fine
+5. **Level-3 domains are independent** — Visual, Physics, Animation cannot cross-depend at core tier
+6. **Within-domain deps OK** — DiaBgfx → DiaUI → DiaGraphics all within Visual is fine
+7. **No cross-domain exception** — DiaDebugDraw at Services (1.1) provides abstract debug submission; DiaVisualDebugRenderer in Visual (3.1) provides the concrete rendering. Domain VDs depend only on DiaDebugDraw.
+
+### Level 3 — Domains
+
+| Domain | Core (3.0) | Tools (3.1) |
+|--------|-----------|-------------|
+| **Visual** | DiaGraphics, DiaGraphics3D, DiaBgfx, DiaBgfx3D, DiaUI, DiaUICEF, DiaUIUltralight, DiaScene2D, DiaScene3D, DiaCamera2D, DiaLighting2D | DiaVisualDebugRenderer, DiaVisualDebuggerConsole, DiaScene2DVisualDebugger, DiaSceneEditor, DiaGeometry2DVisualDebugger |
+| **Physics** | DiaRigidBody2D, DiaSoftBody2D | DiaRigidBody2DVisualDebugger, DiaSoftBody2DVisualDebugger |
+| **Animation** | DiaRig2D, DiaIK2D, DiaAnimation2D, DiaRig3D, DiaAnimation3D, DiaSkinning3D | DiaRig2DVisualDebugger, DiaIK2DVisualDebugger, DiaAnimation2DVisualDebugger |
+| **AI** *(future)* | DiaAI, DiaPathfinding | DiaAIVisualDebugger |
+
+### Level 2 — Assets
+
+| Tier | Modules |
+|------|---------|
+| Core (2.0) | DiaEntity, DiaAsset, DiaAssetCatalogue, DiaAssetRuntime, DiaMesh3D |
+| Tools (2.1) | DiaAssetCatalogueEditor, DiaEntityInspector, DiaBlueprintEditor, DiaPipelineEditor, DiaApplicationEditor, DiaAssetRuntimeInspector, DiaEntityVisualDebugger, DiaAssetRuntimeVisualDebugger |
+
+### Level 1 — Foundation
+
+| Sub-level | Group | Modules |
+|-----------|-------|---------|
+| 1.2 | Application | DiaApplicationFlow, DiaAutomation, DiaGame |
+| 1.2 | Platform | DiaWindow, DiaInput, DiaSDL |
+| 1.1 | Maths | DiaMaths, DiaGeometry2D, DiaGeometry3D, DiaGeometryBridge, DiaGeometry2DPicking |
+| 1.1 | Services | DiaObservation, DiaMetrics, DiaDebugProtocol, DiaWebSocket, DiaAPI, DiaDebugServer, DiaEditor, DiaDebugDraw, DiaStreams, DiaPython, DiaImGui |
+| 1.0 | Core | DiaCore, DiaSerializer, DiaThreading, DiaMailbox, DiaStateMachine, DiaProtobuf, DiaPicking, DiaFileIO, DiaJson |
+
+### VS Solution Folders
+
+The `.sln` file uses numbered solution folders to reflect the architecture:
+- `1.0-Core`, `1.1-Maths`, `1.1-Services`, `1.2-Platform`, `1.2-Application`
+- `2.0-Assets`, `2.1-Assets-Tools`
+- `3.0-Visual`, `3.1-Visual-Tools`, `3.0-Physics`, `3.1-Physics-Tools`, `3.0-Animation`, `3.1-Animation-Tools`
+
+---
+
+## Refactoring Actions
+
+These are required to make the layered architecture valid. Each is a separate task within C7 (layer-formalisation).
+
+| # | Action | Type | Detail |
+|---|--------|------|--------|
+| R1 | **DiaFileIO** | Split from DiaCore | Extract FilePath/, AsyncFileLoader, FileWatcher, StreamReader/Writer → new module at 1.0. Computation modules (Maths, Physics, Animation) stop depending on filesystem. |
+| R2 | **DiaJson** | Split from DiaCore | Extract Json/ (jsoncpp wrapper) → new module at 1.0. Computation modules stop depending on JSON parsing. |
+| R3 | **DiaStreams** | Split from DiaApplicationFlow | Extract Streams/ (ServiceStream, FrameStream, EventStream, StreamRegistry) → new module at 1.1 Services. Modules that just publish/subscribe stop depending on the full app lifecycle. |
+| R4 | **TextureHandler → DiaBgfx** | Move | TextureHandler moves from DiaAssetRuntime to DiaBgfx. DiaAssetRuntime keeps abstract IAssetTypeHandler interface; app registers concrete handler at startup. DiaAssetRuntime drops DiaBgfx ProjectReference. |
+| R5 | **DiaDebugServer dep inversion** | Refactor | Remove DiaApplicationFlow ProjectReference from DiaDebugServer. DiaApplicationFlow registers with DiaDebugServer via IDebugStateProvider at startup. |
+| R6 | **DiaDebugDraw split** | Split from DiaVisualDebugger | New DiaDebugDraw at 1.1 Services — abstract shape/line/text submission API. DiaVisualDebugger becomes DiaVisualDebugRenderer at Visual (3.1) — consumes DiaDebugDraw, renders via DiaGraphics. Domain VDs depend only on DiaDebugDraw (1.1). |
 
 ---
 
@@ -57,11 +107,8 @@ DiaArchitecture formalises the domain-oriented module structure for the Dia engi
 
 | # | Feature | Spec | Status | Size |
 |---|---------|------|--------|------|
-| C7 | YAML layer formalisation — add `layer:` to all module docs | [layer-formalisation.md](../../features/dia/diaarchitecture/layer-formalisation.md) | Draft | S |
-| C1 | Architecture audit tool — `dia check --tool=arch` | [arch-audit-tool.md](../../features/dia/diaarchitecture/arch-audit-tool.md) | Draft | S |
-| C2 | Foundation CMake pilot — CMakeLists.txt for Foundation sub-layer | [cmake-foundation-pilot.md](../../features/dia/diaarchitecture/cmake-foundation-pilot.md) | Draft | M |
-| C3a | Dia CMake full — CMakeLists.txt for all 55 Dia modules (additive, `.vcxproj` kept) | [cmake-dia-full.md](../../features/dia/diaarchitecture/cmake-dia-full.md) | Draft | L |
-| C3b | Cluiche CMake + retirement — apps, Find wrappers, DiaCLI switch, atomic `.vcxproj` deletion | [cmake-cluiche-apps.md](../../features/dia/diaarchitecture/cmake-cluiche-apps.md) | Draft | M |
+| C7 | Layer formalisation — assign `layer:` to all modules + refactoring actions | [layer-formalisation.md](../../features/dia/diaarchitecture/layer-formalisation.md) | Approved | M |
+| C1 | Architecture audit tool — `dia check --tool=arch` | [arch-audit-tool.md](../../features/dia/diaarchitecture/arch-audit-tool.md) | Approved | S |
 
 ---
 
@@ -69,16 +116,14 @@ DiaArchitecture formalises the domain-oriented module structure for the Dia engi
 
 - Define and document the canonical layer assignment for every Dia module
 - Provide a CI-runnable tool that detects forbidden-dep violations
-- Provide CMake build targets that make forbidden-dep violations compile-time errors
-- Produce `compile_commands.json` (via Ninja preset) for Clang-Tidy and clangd
-- Update PD-006 when CMake becomes the source of truth (C3b)
 
 ## Non-Responsibilities
 
 - Code generation of new modules (architecture governance only)
-- Refactoring violations found by C1 (those are separate tasks per affected module)
-- Linux/WSL2 CI setup (TSan is unblocked by this system but is a separate spec)
+- CMake migration (dropped — MSBuild/.vcxproj remains the build system)
+- Linux/WSL2 CI setup (TSan remains a separate spec)
 - Clang-Tidy rule configuration (separate DiaBugDetection feature)
+- Physical directory reorganization (modules stay flat under `Dia/`; solution folders provide the visual hierarchy)
 
 ---
 
@@ -86,7 +131,7 @@ DiaArchitecture formalises the domain-oriented module structure for the Dia engi
 
 ### `dia check --tool=arch`  *(C1)*
 ```
-dia check --tool=arch [--module <module-id>] [--fix-report]
+dia check --tool=arch [--module <module-id>] [--summary]
 ```
 - Reads all `dia.*.architecture.module.md` files
 - Parses `#include` directives across all `.cpp`/`.h` files in each module
@@ -94,37 +139,15 @@ dia check --tool=arch [--module <module-id>] [--fix-report]
 - Exit code 0 = clean, 1 = violations found
 - Output: `Cluiche/out/check/arch-violations.txt` + console summary
 
-### CMake targets  *(C2 / C3)*
-```cmake
-Dia::Foundation          # DiaCore + DiaMaths + DiaGeometry2D/3D + DiaSerializer + DiaObservation
-Dia::Platform            # + DiaWindow + DiaInput + DiaThreading + DiaMailbox
-Dia::Application         # + DiaApplicationFlow + DiaStateMachine
-Dia::Entity              # + DiaEntity
-Dia::Assets              # + DiaAsset + DiaAssetCatalogue + DiaAssetRuntime
-Dia::Tooling             # + DiaEditor + DiaAPI + DiaAutomation + ...
-Dia::Physics             # Physics domain core
-Dia::Physics.Tools       # Physics domain tools (visual debuggers)
-Dia::Animation           # Animation domain core
-Dia::Animation.Tools     # Animation domain tools
-Dia::Rendering           # Rendering domain core
-Dia::Rendering.Backends  # DiaBgfx + DiaSFML + backend modules
-Dia::AI                  # AI domain core (future)
-```
-
-### CMakePresets.json presets  *(C2 / C3)*
-- `vs2022` — Visual Studio 17 generator, Debug + Release, for daily dev
-- `ninja-debug` — Ninja generator, Debug, produces `compile_commands.json`
-
 ---
 
 ## Dependencies
 
 | Dependency | Why |
 |------------|-----|
-| DiaCLI | `dia check --tool=arch` and `dia run` (post-C3) wired through DiaCLI |
-| All Dia modules | C7 touches every module doc; C3a adds CMakeLists.txt alongside; C3b retires `.vcxproj` |
-| CMake 3.25+ | `CMakePresets.json` v3 requires CMake 3.25 |
-| Ninja | Required for `compile_commands.json` preset |
+| DiaCLI | `dia check --tool=arch` wired through DiaCLI |
+| All Dia modules | C7 touches every module doc |
+| PyYAML | Already in DiaCLI venv; used by C1 to parse module YAML |
 
 ---
 
@@ -132,26 +155,15 @@ Dia::AI                  # AI domain core (future)
 
 | Decision | Source | How This System Complies |
 |----------|--------|--------------------------|
-| PD-001 — StringCRC for IDs | Platform | `layer:` field values are plain strings in YAML/CMake target names — no runtime StringCRC needed; enforcement is build-time only |
-| PD-004 — No STL in public APIs | Platform | Build system and audit tool are Python/CMake — no C++ public API touches STL |
-| PD-005 — x64 Windows only | Platform | CMakePresets use `"architecture": "x64"`; no cross-compile targets added |
-| PD-006 — VS project files are source of truth | Platform | **Updated by C3b**: CMake becomes the new source of truth; PD-006 amended when C3b ships |
-| PD-007 — C++20 required | Platform | `target_compile_features(… cxx_std_20)` replaces `stdcpp20` in `Directory.Build.props`; enforced in CMake root |
-| PD-008 — `Directory.Build.props` owns OutDir/IntDir | Platform | C3 replicates all output path logic in CMake root (`CMAKE_RUNTIME_OUTPUT_DIRECTORY` etc.); `Directory.Build.props` is retired for CMake-managed projects |
-| AD-001 — Module YAML frontmatter | Application | C7 extends YAML schema with `layer:` field; all existing fields preserved |
-| AD-003 — `Dia::<Module>::` namespaces | Application | CMake `ALIAS` targets use `Dia::` prefix matching existing namespace convention |
+| PD-006 — VS project files are source of truth | Platform | No change — MSBuild/.vcxproj remains the build system; this system is YAML + Python tooling only |
+| AD-001 — Module YAML frontmatter | Application | C7 extends the existing schema with `layer:`; all existing fields preserved |
 
 ---
 
-## AI Review Questions
+## Open Design Questions
 
-| # | Section | Question | Answer |
-|---|---------|----------|--------|
-| 1 | C1 audit tool | How should the tool handle `External/` includes — they are not Dia modules and should not be flagged | Exclude paths under `External/` and system headers from violation detection; only flag includes that resolve to another Dia module directory |
-| 2 | C3 migration | What happens to `Directory.Build.props` when CMake takes over? | CMake root replicates all settings; `Directory.Build.props` is kept but scoped only to any remaining non-CMake projects; retired when all projects are migrated |
-| 3 | C2 pilot | Should `.vcxproj` files for Foundation modules be deleted during the pilot or kept? | Kept — CMake is additive during C2; `.vcxproj` files are only retired in C3 |
-| 4 | C3 VS experience | Will developers lose the `.vcxproj.filters` folder layout they use in VS? | Yes — CMake-generated `.vcxproj.filters` are flat/alphabetical. Mitigation: use VS Open Folder (CMake Tools) as the preferred IDE mode, or add a `source_group` pass to the CMake generator |
-| 5 | C1 violations | What if C1 reveals widespread forbidden-dep violations that block C3? | C1 findings are tracked as a separate fix task before C3 starts; C3 spec has a prerequisite gate: `dia check --tool=arch` must exit 0 |
-| 6 | DiaCLI switch | When does `dia run` stop calling `msbuild` and start calling `cmake --build`? | At C3 completion; until then `dia run` continues using `msbuild`; C3 feature spec gates on DiaCLI update |
-| 7 | Layer assignment | Are the layer assignments in the summary locked, or can they shift during C7? | Locked for the modules in scope; C7 may surface a small number of contested assignments (e.g. DiaStateMachine in `application` vs `entity`) which are flagged as decisions in the C7 spec |
-| 8 | Protobuf codegen | DiaProtobuf has a `.proto` codegen custom build step — how is this handled in CMake? | `protobuf_generate()` CMake helper replaces the MSBuild custom step; wired in DiaProtobuf's CMakeLists.txt during C3 |
+| # | Question | Notes |
+|---|----------|-------|
+| 1 | Should DiaFileIO and DiaJson be split in a single pass or sequentially? | Sequential is safer (DiaJson may depend on DiaFileIO for loading); split DiaFileIO first. |
+| 2 | Does DiaStreams need DiaObservation, or vice versa? | Need to verify — if circular, DiaStreams may need to sit at 1.0 instead of 1.1. |
+| 3 | When DiaDebugDraw is extracted, does the submission buffer live in DiaDebugDraw or DiaVisualDebugRenderer? | Buffer should be in DiaDebugDraw so renderers are pure consumers. |
