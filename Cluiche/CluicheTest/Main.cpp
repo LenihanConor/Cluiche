@@ -2,6 +2,8 @@
 #include <memory>
 #include <iostream>
 #include <string>
+#include <cstdlib>
+#include <cstring>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/PUAffinity.h>
@@ -9,6 +11,7 @@
 #include <DiaApplicationFlow/Manifest/ManifestValidatorV2.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaEntity/ComponentRegistry.h>
+#include <DiaEntity/IComponent.h>
 #include "Modules/TestStages/TestResultsRegistry.h"
 
 #include <DiaCore/FilePath/PathStore.h>
@@ -115,6 +118,66 @@ int DumpSchema()
                 fields.append(field);
             }
             comp["fields"] = fields;
+
+            // default_values: serialise a zero-initialised default instance via saveToJson.
+            Json::Value defaultValuesJson(Json::objectValue);
+            if (desc.saveToJson != nullptr)
+            {
+                // Guard against zero alignment (shouldn't happen, but be safe).
+                const size_t alignment = (desc.alignment > 0)
+                    ? static_cast<size_t>(desc.alignment)
+                    : alignof(std::max_align_t);
+
+                void* buf = _aligned_malloc(static_cast<size_t>(desc.size), alignment);
+                if (buf)
+                {
+                    memset(buf, 0, static_cast<size_t>(desc.size));
+                    const Dia::Entity::IComponent* ptr =
+                        static_cast<const Dia::Entity::IComponent*>(buf);
+                    desc.saveToJson(ptr, defaultValuesJson);
+                    _aligned_free(buf);
+                }
+            }
+            else
+            {
+                fprintf(stderr,
+                    "reflect: WARNING: %s has no saveToJson — default_values will be zero-filled\n",
+                    desc.debugName ? desc.debugName : "unknown");
+
+                for (uint16_t f = 0; f < desc.fieldCount; ++f)
+                {
+                    const Dia::Entity::FieldDesc& fd = desc.fields[f];
+                    const char* fieldName = fd.name ? fd.name : "";
+                    switch (fd.kind)
+                    {
+                    case Dia::Entity::FieldKind::Primitive:
+                        defaultValuesJson[fieldName] = Json::Value(Json::Int(0));
+                        break;
+                    case Dia::Entity::FieldKind::StringId:
+                        defaultValuesJson[fieldName] = Json::Value("");
+                        break;
+                    case Dia::Entity::FieldKind::Math:
+                        defaultValuesJson[fieldName] = Json::Value(Json::Int(0));
+                        break;
+                    case Dia::Entity::FieldKind::AssetHandle:
+                        defaultValuesJson[fieldName] = Json::Value("");
+                        break;
+                    case Dia::Entity::FieldKind::EntityRef:
+                        defaultValuesJson[fieldName] = Json::Value("");
+                        break;
+                    case Dia::Entity::FieldKind::Nested:
+                        defaultValuesJson[fieldName] = Json::Value(Json::objectValue);
+                        break;
+                    case Dia::Entity::FieldKind::Container:
+                        defaultValuesJson[fieldName] = Json::Value(Json::arrayValue);
+                        break;
+                    default:
+                        defaultValuesJson[fieldName] = Json::Value(Json::Int(0));
+                        break;
+                    }
+                }
+            }
+            comp["default_values"] = defaultValuesJson;
 
             components.append(comp);
         }
