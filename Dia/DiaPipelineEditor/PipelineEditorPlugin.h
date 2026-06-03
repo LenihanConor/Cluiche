@@ -1,6 +1,7 @@
 #pragma once
 
 #include <DiaEditor/Plugin/IEditorPlugin.h>
+#include <DiaEditor/Project/ProjectContext.h>
 #include <DiaCore/Architecture/Observer.h>
 
 namespace Dia
@@ -31,6 +32,9 @@ namespace Dia
 			void ObserverNotification(const Dia::Core::ObserverSubject* subject, int message) override;
 
 		private:
+			static void OnProjectChangedStatic(const Dia::Editor::ProjectContext& ctx, void* ud);
+			static void ExtractTarget(const char* diagamePath, char* targetOut, size_t targetSize);
+
 			void PushEventsToUI();
 			void RegisterCommands();
 			void UnregisterCommands();
@@ -43,7 +47,9 @@ namespace Dia
 			bool mLastBuildRunning;
 			int mLastExitCode;
 			char mRepoRoot[512];
-			char mPluginOutputRoot[512];
+
+			static const unsigned int kDiagamePathLength = 512;
+			char mDiagamePath[kDiagamePathLength];
 		};
 	}
 }

@@ -2,6 +2,7 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <cstdio>
 
 namespace Dia
 {
@@ -27,14 +28,19 @@ namespace Dia
 
 			bool IsBuildRunning() const;
 			int GetLastExitCode() const;
+			const char* GetStdoutLogPath() const;
 
 		private:
 			void CleanupProcess();
+			void DrainPipe();
 
 			PipelineLogTailer* mTailer;
 			char mRepoRoot[512];
+			char mStdoutLogPath[1024];
 			HANDLE mProcessHandle;
 			HANDLE mThreadHandle;
+			HANDLE mStdoutReadHandle;
+			FILE* mStdoutFile;
 			bool mBuildRunning;
 			int mLastExitCode;
 		};

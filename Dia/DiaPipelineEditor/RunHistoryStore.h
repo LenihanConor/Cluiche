@@ -10,13 +10,12 @@ namespace Dia
 		class RunHistoryStore
 		{
 		public:
-			static constexpr int kMaxRuns = 10;
-			static constexpr int kMaxArchivedSessions = 5;
+			static constexpr int kMaxRuns = 5;
 
 			RunHistoryStore();
 			~RunHistoryStore();
 
-			void Initialize(const char* pluginRootPath, const char* sessionId);
+			void Initialize();
 			void Shutdown();
 
 			void RecordRun(const RunSummary& summary);
@@ -24,25 +23,9 @@ namespace Dia
 			int GetCount() const;
 			const RunSummary& GetRun(int index) const;
 
-			void LoadFromDisk();
-			void SaveToDisk();
-
 			Json::Value ToJson() const;
 
 		private:
-			void EnsureDirectoryExists();
-			void ArchiveStaleSession();
-			void WriteContext();
-			void PruneSessions();
-			static Json::Value SerializeRun(const RunSummary& run);
-			static RunSummary DeserializeRun(const Json::Value& val);
-
-			char mPluginRoot[512];
-			char mHistoryDir[512];
-			char mHistoryFilePath[512];
-			char mContextFilePath[512];
-			char mSessionsDir[512];
-			char mSessionId[128];
 			RunSummary mRuns[kMaxRuns];
 			int mRunCount;
 		};

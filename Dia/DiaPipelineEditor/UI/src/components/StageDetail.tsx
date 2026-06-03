@@ -12,9 +12,10 @@ const levelColors: Record<string, string> = {
 interface StageDetailProps {
     steps: StepState[];
     logLines: LogLine[];
+    stageDurationMs: number;
 }
 
-export const StageDetail: FC<StageDetailProps> = ({ steps, logLines }) => {
+export const StageDetail: FC<StageDetailProps> = ({ steps, logLines, stageDurationMs }) => {
     const hasContent = steps.length > 0 || logLines.length > 0;
 
     if (!hasContent) {
@@ -25,10 +26,14 @@ export const StageDetail: FC<StageDetailProps> = ({ steps, logLines }) => {
         );
     }
 
+    const stageTotalDurationMs = stageDurationMs > 0
+        ? stageDurationMs
+        : steps.reduce((sum, s) => sum + s.durationMs, 0);
+
     return (
         <div style={{ padding: '0 0 4px 16px' }}>
             {steps.map(step => (
-                <StepRow key={step.name} step={step} />
+                <StepRow key={step.name} step={step} stageTotalDurationMs={stageTotalDurationMs} />
             ))}
             {logLines.map((line, i) => (
                 <div

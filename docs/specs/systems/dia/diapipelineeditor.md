@@ -162,7 +162,7 @@ These decisions from parent platform and application specs are binding constrain
 | ID | Decision | Rationale | Status | Binding |
 |----|----------|-----------|--------|---------|
 | SPE-001 | File polling (not filesystem events) for NDJSON tailing | `ReadDirectoryChangesW` is unreliable for rapid appends; polling at frame rate (~16ms) is simpler, portable across Docker/host, and sufficient for the update rate | Proposed | Yes |
-| SPE-002 | Run history capped at 10 entries, stored as JSON array | Keeps memory and disk footprint small; 10 runs covers a typical work session; stored at `Cluiche/out/CluicheEditor/DiaPipelineEditor/pipeline-history/history.json` per SED-020 | Proposed | Yes |
+| SPE-002 | Run history capped at 5 entries, session-only (no disk persistence) | History is for orientation within the current session; disk persistence added friction with no clear benefit; 5 runs is enough context for a typical iteration loop | Revised by pipeline-build-ux | Yes |
 | SPE-003 | CEF message passing for C++ → JS events (not WebSocket) | Events stay in-process; simpler than standing up a WebSocket channel; consistent with DiaEditor's existing `WebUIBridge::NotifyUIDataChanged` pattern | Proposed | Yes |
 | SPE-004 | Pipeline subprocess launched via DiaAPI command dispatch, not direct `subprocess.run` from JS | Keeps build triggering on the C++ side where process management is robust; JS only sends a command request; follows DiaEditor's CommandDispatcher pattern (SED-007) | Proposed | Yes |
 | SPE-005 | Interrupted run detection via unmatched `Started` events | Matches the contract defined in cli-output spec; no heartbeat or PID-check needed; the tailer compares Started vs Completed/Failed counts after a configurable idle timeout | Proposed | Yes |
@@ -178,8 +178,9 @@ Features within the DiaPipelineEditor system (create with `/spec-feature`):
 | build-trigger | DiaAPI commands to start/cancel pipeline from editor; auto-attach tailer to new run | [build-trigger.md](../../features/dia/diapipelineeditor/build-trigger.md) | 2 days | Done |
 | run-history | Store and browse last 10 pipeline runs with summary data | [run-history.md](../../features/dia/diapipelineeditor/run-history.md) | 2 days | Done |
 | sub-step-visibility | Emit OnStep* events from DiaCLI stage handlers; parse and render in C++ tailer and React UI | [sub-step-visibility.md](../../features/dia/diapipelineeditor/sub-step-visibility.md) | 1 day | Done |
+| pipeline-build-ux | Game-scoped build panel: ghost stages, timing bars, failure inline, stdout capture, Build/Launch split-button | [pipeline-build-ux.md](../../features/dia/diapipelineeditor/pipeline-build-ux.md) | 4 days | Approved |
 
-**Total Effort Estimate:** 13 days
+**Total Effort Estimate:** 17 days
 
 **Recommended Implementation Order:**
 1. ndjson-tailer (3d) — Core data layer; everything depends on parsed events
