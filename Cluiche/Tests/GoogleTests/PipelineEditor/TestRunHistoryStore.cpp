@@ -76,7 +76,7 @@ protected:
 TEST_F(RunHistoryStoreTest, RecordRunStoresRun)
 {
 	RunHistoryStore store;
-	store.Initialize(mTempDir, "s-test-session");
+	store.Initialize();
 
 	RunSummary run = MakeRun("googletest", "Debug", 5, 0, 3000, 1000.0f);
 	store.RecordRun(run);
@@ -93,7 +93,7 @@ TEST_F(RunHistoryStoreTest, RecordRunStoresRun)
 TEST_F(RunHistoryStoreTest, NewestRunIsAtIndex0)
 {
 	RunHistoryStore store;
-	store.Initialize(mTempDir, "s-test-session");
+	store.Initialize();
 
 	store.RecordRun(MakeRun("first", "Debug", 1, 0, 1000, 100.0f));
 	store.RecordRun(MakeRun("second", "Release", 2, 0, 2000, 200.0f));
@@ -103,29 +103,29 @@ TEST_F(RunHistoryStoreTest, NewestRunIsAtIndex0)
 	EXPECT_STREQ(store.GetRun(1).target.AsChar(), "first");
 }
 
-// AC2: cap at 10 entries, oldest evicted
-TEST_F(RunHistoryStoreTest, CapAt10Entries)
+// AC2: cap at 5 entries, oldest evicted
+TEST_F(RunHistoryStoreTest, CapAt5Entries)
 {
 	RunHistoryStore store;
-	store.Initialize(mTempDir, "s-test-session");
+	store.Initialize();
 
-	for (int i = 0; i < 11; ++i)
+	for (int i = 0; i < 6; ++i)
 	{
 		char name[32];
 		snprintf(name, sizeof(name), "run%d", i);
 		store.RecordRun(MakeRun(name, "Debug", i, 0, i * 100, static_cast<float>(i)));
 	}
 
-	EXPECT_EQ(store.GetCount(), 10);
-	EXPECT_STREQ(store.GetRun(0).target.AsChar(), "run10");
-	EXPECT_STREQ(store.GetRun(9).target.AsChar(), "run1");
+	EXPECT_EQ(store.GetCount(), 5);
+	EXPECT_STREQ(store.GetRun(0).target.AsChar(), "run5");
+	EXPECT_STREQ(store.GetRun(4).target.AsChar(), "run1");
 }
 
-// AC3: SaveToDisk writes to expected path
-TEST_F(RunHistoryStoreTest, SaveToDiskCreatesFile)
+// AC3: SaveToDisk — file persistence removed from RunHistoryStore; test disabled
+TEST_F(RunHistoryStoreTest, DISABLED_SaveToDiskCreatesFile)
 {
 	RunHistoryStore store;
-	store.Initialize(mTempDir, "s-test-session");
+	store.Initialize();
 	store.RecordRun(MakeRun("googletest", "Debug", 3, 1, 5000, 1000.0f));
 
 	char historyFile[MAX_PATH];
@@ -135,12 +135,12 @@ TEST_F(RunHistoryStoreTest, SaveToDiskCreatesFile)
 	EXPECT_NE(attrs, INVALID_FILE_ATTRIBUTES);
 }
 
-// AC4: LoadFromDisk restores runs across instances
-TEST_F(RunHistoryStoreTest, LoadFromDiskRestoresRuns)
+// AC4: LoadFromDisk — file persistence removed; test disabled
+TEST_F(RunHistoryStoreTest, DISABLED_LoadFromDiskRestoresRuns)
 {
 	{
 		RunHistoryStore store;
-		store.Initialize(mTempDir, "s-test-session");
+		store.Initialize();
 		store.RecordRun(MakeRun("googletest", "Debug", 3, 1, 5000, 1000.0f));
 		store.RecordRun(MakeRun("cluichetest", "Release", 2, 0, 3000, 2000.0f));
 		store.Shutdown();
@@ -148,7 +148,7 @@ TEST_F(RunHistoryStoreTest, LoadFromDiskRestoresRuns)
 
 	{
 		RunHistoryStore store2;
-		store2.Initialize(mTempDir, "s-test-session");
+		store2.Initialize();
 		EXPECT_EQ(store2.GetCount(), 2);
 		EXPECT_STREQ(store2.GetRun(0).target.AsChar(), "cluichetest");
 		EXPECT_STREQ(store2.GetRun(1).target.AsChar(), "googletest");
@@ -157,8 +157,8 @@ TEST_F(RunHistoryStoreTest, LoadFromDiskRestoresRuns)
 	}
 }
 
-// AC9: corrupt JSON starts fresh
-TEST_F(RunHistoryStoreTest, CorruptJsonStartsFresh)
+// AC9: corrupt JSON — file persistence removed; test disabled
+TEST_F(RunHistoryStoreTest, DISABLED_CorruptJsonStartsFresh)
 {
 	char historyDir[MAX_PATH];
 	snprintf(historyDir, sizeof(historyDir), "%s\\pipeline-history", mTempDir);
@@ -172,12 +172,12 @@ TEST_F(RunHistoryStoreTest, CorruptJsonStartsFresh)
 	if (f) { fputs("not json at all {{[", f); fclose(f); }
 
 	RunHistoryStore store;
-	store.Initialize(mTempDir, "s-test-session");
+	store.Initialize();
 	EXPECT_EQ(store.GetCount(), 0);
 }
 
-// AC10: Initialize creates pipeline-history directory if missing
-TEST_F(RunHistoryStoreTest, InitializeCreatesHistoryDirectory)
+// AC10: directory creation — file persistence removed; test disabled
+TEST_F(RunHistoryStoreTest, DISABLED_InitializeCreatesHistoryDirectory)
 {
 	// pluginRootPath exists (mTempDir), but pipeline-history/ does not yet
 	char historyDir[MAX_PATH];
@@ -189,7 +189,7 @@ TEST_F(RunHistoryStoreTest, InitializeCreatesHistoryDirectory)
 		RemoveDirectoryA(historyDir);
 
 	RunHistoryStore store;
-	store.Initialize(mTempDir, "s-test-session");
+	store.Initialize();
 	store.RecordRun(MakeRun("test", "Debug", 1, 0, 100, 1.0f));
 
 	char historyFile[MAX_PATH];
@@ -203,7 +203,7 @@ TEST_F(RunHistoryStoreTest, InitializeCreatesHistoryDirectory)
 TEST_F(RunHistoryStoreTest, ToJsonReturnsCorrectFormat)
 {
 	RunHistoryStore store;
-	store.Initialize(mTempDir, "s-test-session");
+	store.Initialize();
 	store.RecordRun(MakeRun("googletest", "Debug", 3, 1, 5000, 1000.0f, false));
 	store.RecordRun(MakeRun("cluichetest", "Release", 2, 0, 3000, 2000.0f, true));
 
@@ -219,7 +219,7 @@ TEST_F(RunHistoryStoreTest, ToJsonReturnsCorrectFormat)
 TEST_F(RunHistoryStoreTest, RecordsInterruptedRun)
 {
 	RunHistoryStore store;
-	store.Initialize(mTempDir, "s-test-session");
+	store.Initialize();
 	store.RecordRun(MakeRun("test", "Debug", 1, 0, 500, 100.0f, true));
 
 	EXPECT_TRUE(store.GetRun(0).interrupted);
@@ -229,15 +229,15 @@ TEST_F(RunHistoryStoreTest, RecordsInterruptedRun)
 TEST_F(RunHistoryStoreTest, EmptyStoreReturnsCount0)
 {
 	RunHistoryStore store;
-	store.Initialize(mTempDir, "s-test-session");
+	store.Initialize();
 	EXPECT_EQ(store.GetCount(), 0);
 }
 
-// SED-021: Initialize writes .context.json
-TEST_F(RunHistoryStoreTest, WritesContextJson)
+// SED-021: .context.json — file persistence removed; test disabled
+TEST_F(RunHistoryStoreTest, DISABLED_WritesContextJson)
 {
 	RunHistoryStore store;
-	store.Initialize(mTempDir, "s-20260427-1030");
+	store.Initialize();
 
 	char contextPath[MAX_PATH];
 	snprintf(contextPath, sizeof(contextPath), "%s\\.context.json", mTempDir);
@@ -257,13 +257,13 @@ TEST_F(RunHistoryStoreTest, WritesContextJson)
 	EXPECT_NE(strstr(buf, "s-20260427-1030"), nullptr);
 }
 
-// SED-021: new session archives old session data
-TEST_F(RunHistoryStoreTest, ArchivesStaleSession)
+// SED-021: session archiving — file persistence removed; test disabled
+TEST_F(RunHistoryStoreTest, DISABLED_ArchivesStaleSession)
 {
 	// Session 1: create some history
 	{
 		RunHistoryStore store;
-		store.Initialize(mTempDir, "s-session-old");
+		store.Initialize();
 		store.RecordRun(MakeRun("googletest", "Debug", 5, 0, 3000, 1000.0f));
 		store.Shutdown();
 	}
@@ -271,7 +271,7 @@ TEST_F(RunHistoryStoreTest, ArchivesStaleSession)
 	// Session 2: different ID — should archive session 1
 	{
 		RunHistoryStore store;
-		store.Initialize(mTempDir, "s-session-new");
+		store.Initialize();
 		// Old history should be archived, new store starts fresh
 		EXPECT_EQ(store.GetCount(), 0);
 	}
@@ -290,19 +290,19 @@ TEST_F(RunHistoryStoreTest, ArchivesStaleSession)
 	EXPECT_NE(attrs, INVALID_FILE_ATTRIBUTES);
 }
 
-// SED-021: same session ID does not archive
-TEST_F(RunHistoryStoreTest, SameSessionDoesNotArchive)
+// SED-021: same session persistence — file persistence removed; test disabled
+TEST_F(RunHistoryStoreTest, DISABLED_SameSessionDoesNotArchive)
 {
 	{
 		RunHistoryStore store;
-		store.Initialize(mTempDir, "s-same");
+		store.Initialize();
 		store.RecordRun(MakeRun("googletest", "Debug", 3, 0, 1000, 100.0f));
 		store.Shutdown();
 	}
 
 	{
 		RunHistoryStore store;
-		store.Initialize(mTempDir, "s-same");
+		store.Initialize();
 		// Same session — history should persist, not be archived
 		EXPECT_EQ(store.GetCount(), 1);
 		EXPECT_STREQ(store.GetRun(0).target.AsChar(), "googletest");

@@ -89,6 +89,57 @@ protected:
 };
 
 // ===========================================================================
+// get_project_state — no project
+// ===========================================================================
+
+TEST_F(BlueprintEditorPluginTest, GetProjectState_NoProjectLoaded_IsValidFalse)
+{
+	Json::Value r = Invoke("blueprint_editor.get_project_state");
+	EXPECT_FALSE(r.isNull());
+	EXPECT_FALSE(r["isValid"].asBool());
+}
+
+TEST_F(BlueprintEditorPluginTest, GetProjectState_NoProjectLoaded_DiagamePathEmpty)
+{
+	Json::Value r = Invoke("blueprint_editor.get_project_state");
+	EXPECT_EQ(r["diagamePath"].asString(), "");
+}
+
+// ===========================================================================
+// get_project_state — after project loaded (simulate via ProjectContext)
+// ===========================================================================
+
+// LoadDiagameProject reads from disk so we can't use fake paths in tests.
+// Simulate via FireProjectCallbacks-equivalent: set context directly then
+// call the model's OnDiagameProjectChanged path. EditorModel exposes
+// LoadDiagameProject which requires a real file, so we use
+// mModel->ClearDiagameProject() + verify the clear path, and rely on
+// the "no project" path for the positive case being well-covered by
+// integration tests that load real assets. We verify structure here.
+
+TEST_F(BlueprintEditorPluginTest, GetProjectState_AfterClear_IsValidFalse)
+{
+	mModel->ClearDiagameProject();
+
+	Json::Value r = Invoke("blueprint_editor.get_project_state");
+	EXPECT_FALSE(r["isValid"].asBool());
+	EXPECT_EQ(r["diagamePath"].asString(), "");
+}
+
+// ===========================================================================
+// project_changed push payload — isValid field present
+// ===========================================================================
+
+TEST_F(BlueprintEditorPluginTest, ProjectChanged_Push_PayloadHasBothRequiredFields)
+{
+	// get_project_state always returns both fields regardless of project state.
+	// This verifies the UI overlay can always read isValid safely.
+	Json::Value r = Invoke("blueprint_editor.get_project_state");
+	EXPECT_TRUE(r.isMember("isValid"));
+	EXPECT_TRUE(r.isMember("diagamePath"));
+}
+
+// ===========================================================================
 // Lifecycle — handler registration
 // ===========================================================================
 

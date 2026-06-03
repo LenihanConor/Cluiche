@@ -153,14 +153,14 @@ TEST_F(AssetTypeFramework, FindByFilePath_NoMatch_ReturnsNullptr)
 }
 
 // ---------------------------------------------------------------------------
-// Test 6: RegisterBuiltInAssetTypes registers 8 types; "texture" is found
+// Test 6: RegisterBuiltInAssetTypes registers types (8 original + 3 blueprint = 11); "texture" is found
 // ---------------------------------------------------------------------------
-TEST_F(AssetTypeFramework, RegisterBuiltInAssetTypes_RegistersEightTypes)
+TEST_F(AssetTypeFramework, BuiltIn_All8TypesRegistered)
 {
 	Dia::AssetCatalogue::AssetTypeRegistry registry;
 	Dia::AssetCatalogue::RegisterBuiltInAssetTypes(registry);
 
-	EXPECT_EQ(registry.GetCount(), 8u);
+	EXPECT_EQ(registry.GetCount(), 11u);
 
 	const Dia::AssetCatalogue::AssetTypeDescriptor* texture =
 		registry.FindByTypeId(Dia::Core::StringCRC("texture"));

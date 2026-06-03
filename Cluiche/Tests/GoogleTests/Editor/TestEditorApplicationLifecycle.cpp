@@ -32,7 +32,7 @@ TEST(EditorLibraryLifecycle, ManifestLoaderAndRegistry)
 
     {
         std::ofstream f(manifestPath);
-        f << R"({ "editor": { "enabled": true, "plugins": [{ "type": "StubEditorPlugin", "instance_id": "lifecycle_stub" }] } })";
+        f << R"({ "editor": { "enabled": true, "plugins": [{ "type": "HomeEditorPlugin", "instance_id": "lifecycle_stub" }] } })";
     }
     {
         std::ofstream f(projPath);

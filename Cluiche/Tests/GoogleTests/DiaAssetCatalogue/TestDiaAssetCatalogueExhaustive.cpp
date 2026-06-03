@@ -320,7 +320,8 @@ TEST_F(AssetTypeFrameworkExhaustive, BuiltIn_All8TypesRegistered)
 	Dia::AssetCatalogue::AssetTypeRegistry registry;
 	Dia::AssetCatalogue::RegisterBuiltInAssetTypes(registry);
 
-	EXPECT_EQ(registry.GetCount(), 8u);
+	// 8 original types + 3 blueprint types (diaentity, diacamera, dialight) = 11
+	EXPECT_EQ(registry.GetCount(), 11u);
 }
 
 // Verify each built-in type ID string

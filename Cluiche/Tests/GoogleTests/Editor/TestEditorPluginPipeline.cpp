@@ -67,8 +67,8 @@ TEST(EditorPluginPipeline, FullPipeline_ManifestToOnLoad)
 TEST(EditorPluginPipeline, FullPipeline_MultiplePlugins)
 {
 	WriteManifest(R"({ "editor": { "enabled": true, "plugins": [
-		{ "type": "StubEditorPlugin", "instance_id": "s1" },
-		{ "type": "HelloEditorPlugin", "instance_id": "h1" }
+		{ "type": "HomeEditorPlugin", "instance_id": "h1" },
+		{ "type": "HelloEditorPlugin", "instance_id": "he1" }
 	] } })");
 
 	PipelineResult result = {};
@@ -77,8 +77,8 @@ TEST(EditorPluginPipeline, FullPipeline_MultiplePlugins)
 	ASSERT_EQ(result.count, 2u);
 	ASSERT_NE(result.plugins[0], nullptr);
 	ASSERT_NE(result.plugins[1], nullptr);
-	EXPECT_STREQ(result.plugins[0]->GetName(), "StubEditorPlugin");
-	EXPECT_STREQ(result.plugins[1]->GetName(), "HelloEditorPlugin");
+	EXPECT_STREQ(result.plugins[0]->GetName(), "Home");
+	EXPECT_STREQ(result.plugins[1]->GetName(), "Hello");
 
 	delete result.plugins[0];
 	delete result.plugins[1];

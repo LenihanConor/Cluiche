@@ -1057,7 +1057,10 @@
       "Bash(msbuild.exe Dia/DiaScene2D/DiaScene2D.vcxproj /p:Configuration=Debug /p:Platform=x64 /v:minimal /nologo)",
       "PowerShell(& \"C:/Program Files/Microsoft Visual Studio/2022/Enterprise/MSBuild/Current/Bin/MSBuild.exe\" \"C:/GitHub/Cluiche/Cluiche/CluicheTest/CluicheTest.vcxproj\" /p:Configuration=Debug /p:Platform=x64 /t:Build /v:minimal 2>&1 | Select-Object -Last 10)",
       "PowerShell($msbuild = \\(Get-ChildItem \"C:/Program Files/Microsoft Visual Studio\" -Recurse -Filter \"MSBuild.exe\" -ErrorAction SilentlyContinue | Select-Object -First 1\\).FullName; Write-Host $msbuild)",
-      "Bash(\"/c/Program Files/Microsoft Visual Studio/18/Professional/MSBuild/Current/Bin/amd64/MSBuild.exe\" \"Dia/DiaCore/DiaCore.vcxproj\" /p:Configuration=Debug-Ubsan /p:Platform=x64)"
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/18/Professional/MSBuild/Current/Bin/amd64/MSBuild.exe\" \"Dia/DiaCore/DiaCore.vcxproj\" /p:Configuration=Debug-Ubsan /p:Platform=x64)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\GitHub\\\\Cluiche\\\\Dia\\\\DiaVisualDebugger\" -Recurse -File | Where-Object {$_.Extension -eq \".h\" -or $_.Extension -eq \".cpp\"} | Select-Object -ExpandProperty FullName | Sort-Object)",
+      "PowerShell(Move-Item *)",
+      "Bash(msbuild.exe \"Dia/DiaSceneEditor/DiaSceneEditor.vcxproj\" /p:Configuration=Debug /p:Platform=x64 /v:minimal)"
     ],
     "defaultMode": "auto"
   }
