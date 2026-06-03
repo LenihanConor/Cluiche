@@ -49,7 +49,7 @@ files = [
 
 [targets.cluichetest]
 project = "Cluiche/CluicheTest/CluicheTest.vcxproj"
-stages = ["compile-code", "build-assets", "deploy"]
+stages = ["compile-code", "reflect", "build-assets", "deploy"]
 app_name = "CluicheTest"
 catalogue_manifest = "Cluiche/Assets/CluicheTest/assets.catalogue.json"
 

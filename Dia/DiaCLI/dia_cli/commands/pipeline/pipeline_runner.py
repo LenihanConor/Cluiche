@@ -7,18 +7,20 @@ from loguru import logger
 from .pipeline_config import PipelineConfig, VALID_STAGES
 from .stages import (
     compile_code_stage,
+    reflect_stage,
     asset_build_stage,
     package_stage,
     static_analysis_stage,
 )
 
-_STAGE_ORDER = ["compile-code", "build-assets", "deploy", "static-analysis"]
+_STAGE_ORDER = ["compile-code", "reflect", "build-assets", "deploy", "static-analysis"]
 
 def _get_handler(stage_name):
     return {
         "compile-code": compile_code_stage.run,
+        "reflect":      reflect_stage.run,
         "build-assets": asset_build_stage.run,
-        "deploy": package_stage.run,
+        "deploy":       package_stage.run,
         "static-analysis": static_analysis_stage.run,
     }[stage_name]
 
