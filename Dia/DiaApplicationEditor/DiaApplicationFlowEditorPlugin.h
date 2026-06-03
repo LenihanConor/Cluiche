@@ -34,6 +34,7 @@ namespace Dia { namespace Editor {
         void OnLoad(const EditorPluginContext& context) override;
         void OnUnload() override;
         void OnUpdate(float deltaTime) override;
+        void OnNavigate(const Dia::Core::StringCRC& instanceId) override;
 
     private:
         Json::Value HandleManifestLoad(const Json::Value& data);

@@ -236,7 +236,15 @@ namespace Cluiche
 		{
 			if (IsPluginTypeLoaded(typeId))
 			{
-				DIA_LOG_INFO("Application", "PluginLoaderModule::LoadPlugin: '%s' already loaded, skipping", typeId.AsChar());
+				DIA_LOG_INFO("Application", "PluginLoaderModule::LoadPlugin: '%s' already loaded — calling OnNavigate", typeId.AsChar());
+				for (unsigned int i = 0; i < mLoadedPlugins.Size(); ++i)
+				{
+					if (mLoadedPlugins[i].typeId == typeId)
+					{
+						mLoadedPlugins[i].plugin->OnNavigate(instanceId);
+						break;
+					}
+				}
 				return;
 			}
 
@@ -258,6 +266,7 @@ namespace Cluiche
 			DIA_LOG_INFO("Application", "PluginLoaderModule::LoadPlugin: Created '%s'", plugin->GetName());
 			plugin->OnLoad(mContext);
 			DIA_LOG_INFO("Application", "PluginLoaderModule::LoadPlugin: OnLoad complete for '%s'", plugin->GetName());
+			plugin->OnNavigate(instanceId);
 
 			if (mView != nullptr)
 			{

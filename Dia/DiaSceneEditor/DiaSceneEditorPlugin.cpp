@@ -55,7 +55,17 @@ namespace Dia
 			RegisterRequestHandlers();
 
 			if (context.mModel != nullptr)
+			{
 				context.mModel->OnDiagameProjectChanged(&DiaSceneEditorPlugin::OnProjectChangedStatic, this);
+
+				// Populate state from current project so get_project_state is correct
+				// when the UI polls on init. Do not push — the UI isn't ready yet.
+				const Dia::Editor::ProjectContext& proj = context.mModel->GetDiagameProject();
+				strncpy_s(mDiagamePath, sizeof(mDiagamePath),
+				          proj.IsValid() ? proj.diagamePath : "", _TRUNCATE);
+				if (proj.IsValid())
+					mStageList = mProjectContextManager.BuildStageListJson(proj.diagamePath);
+			}
 			else
 				DIA_LOG_WARNING("Editor", "DiaSceneEditorPlugin: OnLoad — context.mModel is null");
 
@@ -100,6 +110,7 @@ namespace Dia
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.validate"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.get_scene_properties"));
 				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.set_world_bounds"));
+				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("scene_editor.new_scene_shortcut"));
 			}
 
 			mBridge       = nullptr;
@@ -108,6 +119,47 @@ namespace Dia
 
 		void DiaSceneEditorPlugin::OnUpdate(float /*deltaTime*/)
 		{
+		}
+
+		void DiaSceneEditorPlugin::OnNavigate(const Dia::Core::StringCRC& instanceId)
+		{
+			DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin::OnNavigate: instanceId='%s'", instanceId.AsChar());
+
+			if (!mBridge)
+				return;
+
+			// Look up source path via catalogue
+			Json::Value req;
+			req["id"] = instanceId.AsChar();
+			Json::Value rec = mBridge->InvokeRequestHandler(
+				Dia::Core::StringCRC("asset_catalogue.get_record"), req);
+
+			if (rec.isNull() || !rec.get("success", false).asBool())
+			{
+				DIA_LOG_WARNING("Editor", "DiaSceneEditorPlugin::OnNavigate: get_record failed for '%s' — catalogue may not be loaded", instanceId.AsChar());
+				return;
+			}
+
+			const std::string sourcePath = rec["record"].get("source_path", "").asString();
+			if (sourcePath.empty())
+			{
+				DIA_LOG_WARNING("Editor", "DiaSceneEditorPlugin::OnNavigate: no source_path for '%s'", instanceId.AsChar());
+				return;
+			}
+
+			// Load the scene via the registered load_scene handler (payload key is "path")
+			Json::Value loadReq;
+			loadReq["path"] = sourcePath;
+			Json::Value loadResult = mBridge->InvokeRequestHandler(
+				Dia::Core::StringCRC("scene_editor.load_scene"), loadReq);
+
+			if (loadResult.isNull() || !loadResult.get("success", false).asBool())
+			{
+				DIA_LOG_WARNING("Editor", "DiaSceneEditorPlugin::OnNavigate: load_scene failed for '%s'", sourcePath.c_str());
+				return;
+			}
+
+			DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin::OnNavigate: loaded scene '%s'", sourcePath.c_str());
 		}
 
 		void DiaSceneEditorPlugin::RegisterRequestHandlers()
@@ -993,6 +1045,34 @@ namespace Dia
 					mIsDirty = true;
 					if (mBridge) mBridge->NotifyUIDataChanged("scene_editor.dirty_changed", Json::Value(true));
 					result["success"] = true;
+					return result;
+				});
+
+			// new_scene_shortcut — ensure catalogue is loaded, then forward to create_scene
+			mBridge->RegisterRequestHandler(
+				Dia::Core::StringCRC("scene_editor.new_scene_shortcut"),
+				[this](const Json::Value& data) -> Json::Value
+				{
+					DIA_TRACE_ZONE("scene_editor.new_scene_shortcut", Dia::Observation::Trace::Category::kNone);
+					Json::Value result;
+
+					// Ensure AssetCatalogueEditor is loaded — it owns create_scene
+					if (mPluginLoader)
+						mPluginLoader->LoadPlugin(
+							Dia::Core::StringCRC("DiaAssetCatalogueEditor"),
+							Dia::Core::StringCRC("DiaAssetCatalogueEditor"));
+
+					// Forward the create request to the catalogue
+					if (mBridge)
+					{
+						Json::Value fwd = mBridge->InvokeRequestHandler(
+							Dia::Core::StringCRC("asset_catalogue.create_scene"), data);
+						if (!fwd.isNull())
+							return fwd;
+					}
+
+					result["success"] = false;
+					result["error"]   = "Asset Catalogue not available — open the Asset Catalogue panel first";
 					return result;
 				});
 		}

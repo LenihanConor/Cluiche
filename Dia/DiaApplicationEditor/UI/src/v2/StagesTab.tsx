@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useManifestStoreV2 } from './useManifestStoreV2';
 import { useLiveStoreV2 } from './useLiveStoreV2';
 import { bridgeRequest } from './bridge';
@@ -25,14 +25,43 @@ function svgWidth(nodeCount: number): number {
     return PADDING_X * 2 + Math.max(0, nodeCount - 1) * NODE_SPACING;
 }
 
-export const StagesTab: React.FC = () => {
+interface StagesTabProps {
+    navigatedStageId?: string | null;
+}
+
+export const StagesTab: React.FC<StagesTabProps> = ({ navigatedStageId }) => {
     const stages       = useManifestStoreV2(s => s.manifest?.stages ?? []);
     const initialStage = useManifestStoreV2(s => s.manifest?.initialStage ?? '');
     const isLive       = useLiveStoreV2(s => s.connectionState === 'connected');
     const activeStage  = useLiveStoreV2(s => s.activeStage);
 
+    // Track which stage is currently highlighted by navigate_to_stage
+    const [highlightedStage, setHighlightedStage] = useState<string | null>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+
     const transitionTo = (stageName: string) =>
         bridgeRequest('app.transitionTo', { stage: stageName });
+
+    // Scroll to and highlight the navigated stage when C++ pushes navigate_to_stage
+    useEffect(() => {
+        if (!navigatedStageId) return;
+
+        const idx = stages.findIndex(s => s.name === navigatedStageId);
+        if (idx === -1) return;
+
+        // Scroll the container so the target node is centred in view
+        const container = scrollContainerRef.current;
+        if (container) {
+            const nodeCx = PADDING_X + idx * NODE_SPACING;
+            const targetScrollLeft = nodeCx - container.clientWidth / 2;
+            container.scrollTo({ left: Math.max(0, targetScrollLeft), behavior: 'smooth' });
+        }
+
+        // Apply highlight: set the stage, then clear it after the CSS transition completes
+        setHighlightedStage(navigatedStageId);
+        const timer = setTimeout(() => setHighlightedStage(null), 1500);
+        return () => clearTimeout(timer);
+    }, [navigatedStageId, stages]);
 
     if (stages.length === 0) {
         return (
@@ -55,6 +84,7 @@ export const StagesTab: React.FC = () => {
 
     return (
         <div
+            ref={scrollContainerRef}
             data-testid="stages-tab"
             style={{ overflowX: 'auto', padding: 8, height: '100%', boxSizing: 'border-box' }}
         >
@@ -67,11 +97,18 @@ export const StagesTab: React.FC = () => {
                     0%   { r: ${NODE_R + 4}; opacity: 0.6; }
                     100% { r: ${NODE_R + 12}; opacity: 0; }
                 }
+                @keyframes stage-navigate-flash {
+                    0%   { opacity: 1; }
+                    100% { opacity: 0; }
+                }
                 .auto-edge-live {
                     animation: dash-flow 0.8s linear infinite;
                 }
                 .stage-pulse-ring {
                     animation: stage-pulse 1.6s ease-out infinite;
+                }
+                .stage-navigate-ring {
+                    animation: stage-navigate-flash 1.5s ease-out forwards;
                 }
             `}</style>
 
@@ -154,9 +191,10 @@ export const StagesTab: React.FC = () => {
                 {layout.map(({ name, cx, cy }) => {
                     const stage = stageByName.get(name);
                     if (!stage) return null;
-                    const isInitial  = name === initialStage;
-                    const isAutoAdv  = stage.autoAdvance;
-                    const isActive   = isLive && activeStage === name;
+                    const isInitial    = name === initialStage;
+                    const isAutoAdv    = stage.autoAdvance;
+                    const isActive     = isLive && activeStage === name;
+                    const isNavigated  = name === highlightedStage;
 
                     const ringStroke  = isInitial ? '#3cb370' : isAutoAdv ? '#f0a030' : '#555';
                     const ringWidth   = isInitial ? 3 : 2;
@@ -178,6 +216,7 @@ export const StagesTab: React.FC = () => {
                             data-is-initial={isInitial}
                             data-is-auto={isAutoAdv}
                             data-active={isActive}
+                            data-navigated={isNavigated}
                             onClick={isLive && !isActive ? () => transitionTo(name) : undefined}
                             style={{ cursor: isLive && !isActive ? 'pointer' : 'default' }}
                         >
@@ -190,6 +229,16 @@ export const StagesTab: React.FC = () => {
                                     strokeWidth={2}
                                     opacity={0.6}
                                     className="stage-pulse-ring"
+                                />
+                            )}
+                            {isNavigated && (
+                                <circle
+                                    cx={cx} cy={cy}
+                                    r={NODE_R + 8}
+                                    fill="none"
+                                    stroke="#5ab4f5"
+                                    strokeWidth={3}
+                                    className="stage-navigate-ring"
                                 />
                             )}
                             <circle

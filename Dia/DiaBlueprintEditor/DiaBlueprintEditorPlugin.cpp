@@ -46,7 +46,15 @@ namespace Dia
 			RegisterRequestHandlers();
 
 			if (context.mModel != nullptr)
+			{
 				context.mModel->OnDiagameProjectChanged(&DiaBlueprintEditorPlugin::OnProjectChangedStatic, this);
+
+				// Populate state from current project so get_project_state is correct
+				// when the UI polls on init. Do not push — the UI isn't ready yet.
+				const Dia::Editor::ProjectContext& proj = context.mModel->GetDiagameProject();
+				strncpy_s(mDiagamePath, kDiagamePathLength,
+				          proj.IsValid() ? proj.diagamePath : "", _TRUNCATE);
+			}
 			else
 				DIA_LOG_WARNING("Editor", "DiaBlueprintEditorPlugin: OnLoad — context.mModel is null");
 
@@ -80,6 +88,47 @@ namespace Dia
 
 		void DiaBlueprintEditorPlugin::OnUpdate(float /*deltaTime*/)
 		{
+		}
+
+		void DiaBlueprintEditorPlugin::OnNavigate(const Dia::Core::StringCRC& instanceId)
+		{
+		    DIA_LOG_INFO("Editor", "DiaBlueprintEditorPlugin::OnNavigate: instanceId='%s'", instanceId.AsChar());
+
+		    if (!mBridge)
+		        return;
+
+		    // Look up the source path via the catalogue's get_record handler
+		    Json::Value req;
+		    req["id"] = instanceId.AsChar();
+		    Json::Value rec = mBridge->InvokeRequestHandler(
+		        Dia::Core::StringCRC("asset_catalogue.get_record"), req);
+
+		    if (rec.isNull() || !rec.get("success", false).asBool())
+		    {
+		        DIA_LOG_WARNING("Editor", "DiaBlueprintEditorPlugin::OnNavigate: get_record failed for '%s' — catalogue may not be loaded", instanceId.AsChar());
+		        return;
+		    }
+
+		    const std::string sourcePath = rec["record"].get("source_path", "").asString();
+		    if (sourcePath.empty())
+		    {
+		        DIA_LOG_WARNING("Editor", "DiaBlueprintEditorPlugin::OnNavigate: no source_path for '%s'", instanceId.AsChar());
+		        return;
+		    }
+
+		    // Load the blueprint using the existing handler
+		    Json::Value loadReq;
+		    loadReq["path"] = sourcePath;
+		    Json::Value loadResult = mBridge->InvokeRequestHandler(
+		        Dia::Core::StringCRC("blueprint_editor.load"), loadReq);
+
+		    if (loadResult.isNull() || !loadResult.get("success", false).asBool())
+		    {
+		        DIA_LOG_WARNING("Editor", "DiaBlueprintEditorPlugin::OnNavigate: load failed for path '%s'", sourcePath.c_str());
+		        return;
+		    }
+
+		    DIA_LOG_INFO("Editor", "DiaBlueprintEditorPlugin::OnNavigate: loaded blueprint '%s'", sourcePath.c_str());
 		}
 
 		// T2 ──────────────────────────────────────────────────────────────────────────────

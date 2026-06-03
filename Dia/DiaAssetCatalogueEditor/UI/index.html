@@ -280,12 +280,13 @@
     <div class="panel-body" style="display:flex;flex-direction:column;">
       <div class="panel-actions">
         <button class="btn-primary" onclick="openCreateDialog()">+ New</button>
+        <button class="btn-primary" onclick="onNewScene()" title="Create a blank .diascene file and open it in DiaSceneEditor">+ Scene</button>
         <button class="btn-danger"  onclick="onDeleteSelected()" id="btn-delete" disabled>Delete</button>
       </div>
       <div class="filter-bar">
-        <input  id="filter-text"   type="text" placeholder="Filter…" oninput="applyFilters()" />
-        <select id="filter-type"   onchange="applyFilters()"><option value="">All Types</option></select>
-        <input  id="filter-tag"    type="text" placeholder="Tag…"    oninput="applyFilters()" style="flex:0 0 80px" />
+        <input  id="filter-text"   type="text" placeholder="Filter…" oninput="renderAssetList()" />
+        <select id="filter-type"   onchange="renderAssetList()"><option value="">All Types</option></select>
+        <input  id="filter-tag"    type="text" placeholder="Tag…"    oninput="renderAssetList()" style="flex:0 0 80px" />
       </div>
       <div style="flex:1;overflow:auto;">
         <table class="asset-table" id="asset-table">
@@ -645,6 +646,20 @@
       var statusEl = document.getElementById('rules-status');
       statusEl.textContent = '⛔ Auto-load failed: ' + (msg.data.error || 'unknown error');
       statusEl.style.color = '#f48771';
+    } else if (msg.topic === 'asset_catalogue.navigate_to_record') {
+      var navId = msg.data && msg.data.id;
+      if (navId) {
+        document.getElementById('filter-type').value = '';
+        selectedId = navId;
+        renderAssetList();
+        var rows = document.querySelectorAll('#asset-tbody tr');
+        for (var i = 0; i < rows.length; i++) {
+          if (rows[i].classList.contains('selected')) {
+            rows[i].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            break;
+          }
+        }
+      }
     }
   };
 
@@ -1044,6 +1059,7 @@
     'diaentity': '.diaentity',
     'diacamera': '.diacamera',
     'dialight':  '.dialight',
+    'diascene':  '.diascene',
     'texture':   '.png',
     'audio':     '.wav',
     'config':    '.config.json',
@@ -1140,6 +1156,25 @@
       } else {
         closeModal('modal-create');
         selectedId = id;
+      }
+    });
+  }
+
+  /* ── New Scene shortcut ─────────────────────────── */
+  function onNewScene() {
+    var name = prompt('Scene name (e.g. my_scene):');
+    if (!name || !name.trim()) return;
+    name = name.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+
+    var path = prompt('Relative path (e.g. ../Stages/MyStage/' + name + '.diascene):',
+                      '../Stages/' + name + '/' + name + '.diascene');
+    if (!path || !path.trim()) return;
+    path = path.trim();
+
+    var id = 'diascene.' + name;
+    diaRequest('asset_catalogue.create_scene', { id: id, source_path: path }).then(function(r) {
+      if (!r || !r.success) {
+        alert('Create scene failed: ' + ((r && r.error) || 'unknown error'));
       }
     });
   }

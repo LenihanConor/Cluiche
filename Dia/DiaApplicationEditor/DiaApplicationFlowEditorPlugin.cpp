@@ -16,6 +16,7 @@
 #include <DiaApplicationEditor/V2/Commands/StreamCommands.h>
 #include <DiaApplicationFlow/Streams/OverflowPolicy.h>
 #include <string>
+#include <cstring>
 #include <windows.h>
 
 namespace Dia { namespace Editor {
@@ -1171,6 +1172,35 @@ namespace Dia { namespace Editor {
 
         result["ok"] = true;
         return result;
+    }
+
+    void DiaApplicationFlowEditorPlugin::OnNavigate(const Dia::Core::StringCRC& instanceId)
+    {
+        DIA_LOG_INFO("Editor", "DiaApplicationFlowEditorPlugin::OnNavigate: instanceId='%s'", instanceId.AsChar());
+
+        if (!mBridge || !mEditorState.hasManifest)
+        {
+            DIA_LOG_WARNING("Editor", "DiaApplicationFlowEditorPlugin::OnNavigate: no bridge or manifest — ignoring");
+            return;
+        }
+
+        // instanceId is the asset CRC — AsChar() gives back the original string
+        // e.g. "stage.my_stage"; extract the name after the first '.'
+        const char* idStr = instanceId.AsChar();
+        const char* dot = idStr ? strchr(idStr, '.') : nullptr;
+        const char* stageName = dot ? dot + 1 : idStr;
+
+        if (!stageName || stageName[0] == '\0')
+        {
+            DIA_LOG_WARNING("Editor", "DiaApplicationFlowEditorPlugin::OnNavigate: could not extract stage name from '%s'", idStr);
+            return;
+        }
+
+        DIA_LOG_INFO("Editor", "DiaApplicationFlowEditorPlugin::OnNavigate: navigating to stage '%s'", stageName);
+
+        Json::Value payload;
+        payload["stageId"] = stageName;
+        mBridge->NotifyUIDataChanged("app_editor.navigate_to_stage", payload);
     }
 
 }} // namespace Dia::Editor

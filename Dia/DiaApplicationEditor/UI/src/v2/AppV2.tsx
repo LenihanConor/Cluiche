@@ -19,6 +19,7 @@ type Tab = 'stages' | 'graph' | 'presence' | 'streams';
 
 export const AppV2: React.FC = () => {
     const [activeTab, setActiveTab] = useState<Tab>('stages');
+    const [navigatedStageId, setNavigatedStageId] = useState<string | null>(null);
     const selectedPuId = useSelectionStoreV2((s) => s.puId);
     const setPUSelection = useSelectionStoreV2((s) => s.setPU);
 
@@ -78,6 +79,12 @@ export const AppV2: React.FC = () => {
                 case 'live.streamStates':
                     if (Array.isArray(d)) updateStreamStates(d);
                     break;
+                case 'navigate_to_stage':
+                    if (d?.stageId) {
+                        setActiveTab('stages');
+                        setNavigatedStageId(d.stageId);
+                    }
+                    break;
             }
         };
 
@@ -96,7 +103,7 @@ export const AppV2: React.FC = () => {
         };
         window.addEventListener('message', onMessage);
         return () => window.removeEventListener('message', onMessage);
-    }, [applyStateSnapshot, applyUndoResponse, setValidationResult, setConnectionState, setActiveStage, updateModuleStates, updateStreamStates, clearLiveState]);
+    }, [applyStateSnapshot, applyUndoResponse, setValidationResult, setConnectionState, setActiveStage, updateModuleStates, updateStreamStates, clearLiveState, setNavigatedStageId]);
 
     const stages = manifest?.stages?.map(s => s.name) ?? [];
     const isLive = connectionState === 'connected';
@@ -177,7 +184,7 @@ export const AppV2: React.FC = () => {
                         <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
                             {activeTab === 'stages' && (
                                 <div id="stages-tab-content" style={{ height: '100%' }}>
-                                    <StagesTab />
+                                    <StagesTab navigatedStageId={navigatedStageId} />
                                 </div>
                             )}
                             {activeTab === 'graph' && (

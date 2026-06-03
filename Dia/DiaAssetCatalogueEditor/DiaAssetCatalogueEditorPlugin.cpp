@@ -21,7 +21,9 @@
 #include <DiaAssetCatalogue/BuiltInAssetTypes.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaObservation/Log/DiaLog.h>
+#include <DiaObservation/Trace/DiaTrace.h>
 
+#include <cstdio>
 #include <cstring>
 
 // Output dir for session context per SED-020 / SD-ACE-005.
@@ -147,7 +149,9 @@ namespace Dia
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.get_forward_refs"));
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.get_reverse_refs"));
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.validate"));
+					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.get_record"));
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.open_asset"));
+					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.create_scene"));
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.register_type_editor"));
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.browse_rules"));
 					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.load_rules"));
@@ -169,6 +173,27 @@ namespace Dia
 			{
 			}
 
+			void DiaAssetCatalogueEditorPlugin::OnNavigate(const Dia::Core::StringCRC& instanceId)
+			{
+				DIA_TRACE_ZONE("asset_catalogue.navigate_to_record", Dia::Observation::Trace::Category::kNone);
+				DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin::OnNavigate: instanceId='%s'", instanceId.AsChar());
+
+				if (!mBridge)
+					return;
+
+				// Verify the record exists before pushing
+				const Dia::AssetCatalogue::AssetRecord* rec = mRegistry.FindById(instanceId);
+				if (!rec)
+				{
+					DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin::OnNavigate: record '%s' not found in registry", instanceId.AsChar());
+					return;
+				}
+
+				Json::Value payload;
+				payload["id"] = instanceId.AsChar();
+				mBridge->NotifyUIDataChanged("asset_catalogue.navigate_to_record", payload);
+			}
+
 			void DiaAssetCatalogueEditorPlugin::RegisterRequestHandlers()
 			{
 				if (!mBridge)
@@ -180,6 +205,19 @@ namespace Dia
 				RegisterValidationHandlers();
 				RegisterAssetTypeEditorHandlers();
 				RegisterRulesHandlers();
+
+				// Seed built-in type→editor mappings so open_asset works regardless of
+				// plugin load order (DiaBlueprintEditor/DiaSceneEditor may load after us).
+				mTypeEditorRegistry.RegisterTypeEditor(
+					Dia::Core::StringCRC("diaentity"), Dia::Core::StringCRC("DiaBlueprintEditor"));
+				mTypeEditorRegistry.RegisterTypeEditor(
+					Dia::Core::StringCRC("diacamera"), Dia::Core::StringCRC("DiaBlueprintEditor"));
+				mTypeEditorRegistry.RegisterTypeEditor(
+					Dia::Core::StringCRC("dialight"),  Dia::Core::StringCRC("DiaBlueprintEditor"));
+				mTypeEditorRegistry.RegisterTypeEditor(
+					Dia::Core::StringCRC("diascene"),  Dia::Core::StringCRC("DiaSceneEditor"));
+				mTypeEditorRegistry.RegisterTypeEditor(
+					Dia::Core::StringCRC("stage"),     Dia::Core::StringCRC("DiaApplicationEditor"));
 
 				mBridge->RegisterRequestHandler(
 					Dia::Core::StringCRC("asset_catalogue.load_manifest"),
@@ -971,8 +1009,9 @@ namespace Dia
 							{ "diaentity", "Entity Blueprint" },
 							{ "diacamera", "Camera Blueprint" },
 							{ "dialight",  "Light Blueprint" },
+							{ "diascene",  "Scene" },
 						};
-						static const unsigned int kCount = 11;
+						static const unsigned int kCount = 12;
 
 						Json::Value result;
 						result["success"] = true;
@@ -1007,6 +1046,110 @@ namespace Dia
 						Dia::Core::StringCRC editorType(data["editorPluginType"].asCString());
 						mTypeEditorRegistry.RegisterTypeEditor(assetType, editorType);
 						result["success"] = true;
+						return result;
+					});
+
+				// create_scene — write blank .diascene, register record, open in DiaSceneEditor
+				mBridge->RegisterRequestHandler(
+					Dia::Core::StringCRC("asset_catalogue.create_scene"),
+					[this](const Json::Value& data) -> Json::Value
+					{
+						Json::Value result;
+						if (!data.isMember("id") || !data["id"].isString()
+						    || !data.isMember("source_path") || !data["source_path"].isString())
+						{
+							result["success"] = false;
+							result["error"]   = "missing id or source_path";
+							return result;
+						}
+
+						const char* relPath = data["source_path"].asCString();
+
+						// Resolve absolute path from diagame directory
+						char absPath[1024] = {};
+						if (mDiagameDir[0] != '\0')
+							snprintf(absPath, sizeof(absPath), "%s%s", mDiagameDir, relPath);
+						else
+							strncpy_s(absPath, sizeof(absPath), relPath, _TRUNCATE);
+
+						// Write blank .diascene
+						static const char* kBlankScene =
+							"{\n"
+							"    \"version\": 1,\n"
+							"    \"entities\": [],\n"
+							"    \"cameras\": [],\n"
+							"    \"lights\": [],\n"
+							"    \"layers\": []\n"
+							"}\n";
+
+						FILE* f = nullptr;
+						if (fopen_s(&f, absPath, "wb") != 0 || !f)
+						{
+							DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: create_scene — could not write '%s'", absPath);
+							result["success"] = false;
+							result["error"]   = "could not write scene file";
+							return result;
+						}
+						fputs(kBlankScene, f);
+						fclose(f);
+
+						// Register catalogue record via CreateRecordCommand
+						Dia::AssetCatalogue::AssetRecord rec;
+						rec.mId          = Dia::Core::StringCRC(data["id"].asCString());
+						rec.mAssetTypeId = Dia::Core::StringCRC("diascene");
+						rec.mSourcePath  = relPath;
+						rec.mStatus      = Dia::AssetCatalogue::AssetStatus::Active;
+						rec.mScope       = Dia::AssetCatalogue::AssetScope::kGlobal;
+
+						auto* cmd = new Dia::AssetCatalogue::Editor::CreateRecordCommand(mRegistry, rec);
+						mHistory.ExecuteCommand(cmd);
+						PushRegistryState();
+
+						DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: created scene '%s' at '%s'",
+							data["id"].asCString(), absPath);
+
+						// Auto-save manifest
+						if (mCurrentPath[0] != '\0')
+						{
+							char saveErr[256] = {};
+							if (mLoadHandler.Save(mCurrentPath, mRegistry, mSerializer, mHistory,
+							    saveErr, sizeof(saveErr)))
+								PushDirtyState();
+							else
+								DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: create_scene — auto-save failed: %s", saveErr);
+						}
+
+						// Open in DiaSceneEditor via the standard routing
+						Dia::Core::StringCRC assetId(data["id"].asCString());
+						if (mPluginLoader)
+							mPluginLoader->LoadPlugin(Dia::Core::StringCRC("DiaSceneEditor"), assetId);
+
+						result["success"] = true;
+						return result;
+					});
+
+				// get_record — look up a single record by id; used by other plugins for deep-link navigation
+				mBridge->RegisterRequestHandler(
+					Dia::Core::StringCRC("asset_catalogue.get_record"),
+					[this](const Json::Value& data) -> Json::Value
+					{
+						Json::Value result;
+						if (!data.isMember("id") || !data["id"].isString())
+						{
+							result["success"] = false;
+							result["error"]   = "missing id";
+							return result;
+						}
+						Dia::Core::StringCRC assetId(data["id"].asCString());
+						const Dia::AssetCatalogue::AssetRecord* rec = mRegistry.FindById(assetId);
+						if (!rec)
+						{
+							result["success"] = false;
+							result["error"]   = "record not found";
+							return result;
+						}
+						result["success"]     = true;
+						result["record"]      = RecordToJson(*rec);
 						return result;
 					});
 

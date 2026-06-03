@@ -34,6 +34,7 @@ namespace Dia
 			void OnLoad(const Dia::Editor::EditorPluginContext& context) override;
 			void OnUnload() override;
 			void OnUpdate(float deltaTime) override;
+			void OnNavigate(const Dia::Core::StringCRC& instanceId) override;
 
 		private:
 			static void OnProjectChangedStatic(const Dia::Editor::ProjectContext& ctx, void* ud);
