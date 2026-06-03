@@ -921,6 +921,40 @@ namespace Dia
 					}
 					if (mLoadedSceneRoot.isNull()) { result["success"] = false; result["error"] = "no scene loaded"; return result; }
 
+					// Extract old blueprint ID before change so we can remove the old relationship
+					char oldBlueprintId[256] = {};
+					if (mSceneCatalogueId[0] != '\0')
+					{
+						const char* arrayKey = nullptr;
+						const char* itemTypeStr = data["itemType"].asCString();
+						if      (strcmp(itemTypeStr, "entity") == 0) arrayKey = "entities";
+						else if (strcmp(itemTypeStr, "camera") == 0) arrayKey = "cameras";
+						else if (strcmp(itemTypeStr, "light")  == 0) arrayKey = "lights";
+
+						if (arrayKey && mLoadedSceneRoot.isMember("scene2d"))
+						{
+							const Json::Value& arr = mLoadedSceneRoot["scene2d"][arrayKey];
+							const char* itemIdStr = data["itemId"].asCString();
+							char idBuf[256];
+							for (unsigned int i = 0; i < arr.size(); ++i)
+							{
+								if (!arr[i].isMember("id")) continue;
+								const Json::Value& idVal = arr[i]["id"];
+								const char* v = idVal.isString() ? idVal.asCString()
+								              : (idVal.isObject() && idVal.isMember("value") ? idVal["value"].asCString() : "");
+								strncpy_s(idBuf, sizeof(idBuf), v, _TRUNCATE);
+								if (strcmp(idBuf, itemIdStr) == 0 && arr[i].isMember("blueprint"))
+								{
+									const Json::Value& bp = arr[i]["blueprint"];
+									const char* bpVal = bp.isString() ? bp.asCString()
+									                  : (bp.isObject() && bp.isMember("value") ? bp["value"].asCString() : "");
+									strncpy_s(oldBlueprintId, sizeof(oldBlueprintId), bpVal, _TRUNCATE);
+									break;
+								}
+							}
+						}
+					}
+
 					char err[256] = {};
 					if (!SceneMutator::ChangeBlueprint(mLoadedSceneRoot,
 					        data["itemType"].asCString(), data["itemId"].asCString(),
@@ -928,6 +962,24 @@ namespace Dia
 					{
 						DIA_LOG_WARNING("Editor", "DiaSceneEditorPlugin: change_blueprint — %s", err);
 						result["success"] = false; result["error"] = err; return result;
+					}
+
+					// Update catalogue relationships: remove old, add new
+					if (mBridge && mSceneCatalogueId[0] != '\0')
+					{
+						if (oldBlueprintId[0] != '\0')
+						{
+							Json::Value removeReq;
+							removeReq["from"] = mSceneCatalogueId;
+							removeReq["rel"]  = "uses";
+							removeReq["to"]   = oldBlueprintId;
+							mBridge->InvokeRequestHandler(Dia::Core::StringCRC("asset_catalogue.remove_relationship"), removeReq);
+						}
+						Json::Value addReq;
+						addReq["from"] = mSceneCatalogueId;
+						addReq["rel"]  = "uses";
+						addReq["to"]   = data["newBlueprintId"].asString();
+						mBridge->InvokeRequestHandler(Dia::Core::StringCRC("asset_catalogue.add_relationship"), addReq);
 					}
 
 					mIsDirty = true;
