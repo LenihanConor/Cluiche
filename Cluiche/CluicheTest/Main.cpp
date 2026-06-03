@@ -1,10 +1,14 @@
 #include <stdio.h>
 #include <memory>
+#include <iostream>
+#include <string>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
+#include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/Manifest/ManifestComposerV2.h>
 #include <DiaApplicationFlow/Manifest/ManifestValidatorV2.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
+#include <DiaEntity/ComponentRegistry.h>
 #include "Modules/TestStages/TestResultsRegistry.h"
 
 #include <DiaCore/FilePath/PathStore.h>
@@ -16,6 +20,140 @@
 // As long as those translation units are linked in, no explicit include needed.
 
 namespace {
+
+// ---------------------------------------------------------------------------
+// --dump-schema helpers
+// ---------------------------------------------------------------------------
+
+// Convert a FieldKind enum to its lowercase JSON string representation.
+const char* FieldKindToString(Dia::Entity::FieldKind kind)
+{
+    switch (kind)
+    {
+    case Dia::Entity::FieldKind::Primitive:    return "primitive";
+    case Dia::Entity::FieldKind::StringId:     return "string_id";
+    case Dia::Entity::FieldKind::Math:         return "math";
+    case Dia::Entity::FieldKind::AssetHandle:  return "asset_handle";
+    case Dia::Entity::FieldKind::EntityRef:    return "entity_ref";
+    case Dia::Entity::FieldKind::Nested:       return "nested";
+    case Dia::Entity::FieldKind::Container:    return "container";
+    default:                                   return "unknown";
+    }
+}
+
+// Convert a PUAffinity bitmask to a human-readable string tag.
+// Combinations are joined with '|' (e.g. "main|sim").
+std::string PUAffinityToString(Dia::ApplicationFlow::PUAffinity affinity)
+{
+    using Dia::ApplicationFlow::PUAffinity;
+    const uint8_t val = static_cast<uint8_t>(affinity);
+
+    if (val == static_cast<uint8_t>(PUAffinity::kNone)) return "none";
+    if (val == static_cast<uint8_t>(PUAffinity::kAny))  return "any";
+
+    std::string result;
+    auto append = [&](const char* tag) {
+        if (!result.empty()) result += '|';
+        result += tag;
+    };
+
+    if (Dia::ApplicationFlow::HasAffinity(affinity, PUAffinity::kMain))   append("main");
+    if (Dia::ApplicationFlow::HasAffinity(affinity, PUAffinity::kSim))    append("sim");
+    if (Dia::ApplicationFlow::HasAffinity(affinity, PUAffinity::kRender)) append("render");
+
+    return result;
+}
+
+// Walk all registered component/module types and write the schema JSON to stdout.
+// Returns 0 on success.
+int DumpSchema()
+{
+    Json::Value root(Json::objectValue);
+
+    // version
+    Json::Value version(Json::objectValue);
+    version["major"] = 1;
+    version["minor"] = 0;
+    root["version"] = version;
+
+    // game identifier
+    root["game"] = "cluichetest";
+
+    // components — sourced from Dia::Entity::ComponentRegistry
+    Json::Value components(Json::arrayValue);
+    {
+        Dia::Entity::ComponentRegistry& reg = Dia::Entity::ComponentRegistry::Get();
+        const uint32_t count = reg.GetCount();
+        for (uint32_t i = 0; i < count; ++i)
+        {
+            const Dia::Entity::ComponentTypeDesc& desc = reg.GetByIndex(i);
+
+            Json::Value comp(Json::objectValue);
+
+            // type_id: prefer the string stored in the StringCRC; fall back to hex CRC value.
+            const char* typeIdStr = desc.typeId.AsChar();
+            if (typeIdStr && typeIdStr[0] != '\0')
+            {
+                comp["type_id"] = typeIdStr;
+            }
+            else
+            {
+                char hexBuf[20];
+                snprintf(hexBuf, sizeof(hexBuf), "0x%08X", desc.typeId.Value());
+                comp["type_id"] = hexBuf;
+            }
+
+            comp["debug_name"] = desc.debugName ? desc.debugName : "";
+
+            Json::Value fields(Json::arrayValue);
+            for (uint16_t f = 0; f < desc.fieldCount; ++f)
+            {
+                const Dia::Entity::FieldDesc& fd = desc.fields[f];
+                Json::Value field(Json::objectValue);
+                field["name"] = fd.name ? fd.name : "";
+                field["kind"] = FieldKindToString(fd.kind);
+                fields.append(field);
+            }
+            comp["fields"] = fields;
+
+            components.append(comp);
+        }
+    }
+    root["components"] = components;
+
+    // modules — sourced from Dia::ApplicationFlow::TypeRegistry
+    Json::Value modules(Json::arrayValue);
+    {
+        Dia::ApplicationFlow::TypeRegistry& reg = Dia::ApplicationFlow::TypeRegistry::Global();
+        reg.ForEach([&](const Dia::Core::StringCRC& typeId,
+                        const Dia::ApplicationFlow::TypeRegistry::TypeMetadata& meta)
+        {
+            Json::Value mod(Json::objectValue);
+            mod["type_id"]     = typeId.AsChar() ? typeId.AsChar() : "";
+            mod["description"] = meta.description ? meta.description : "";
+            mod["allowed_pus"] = PUAffinityToString(meta.allowedPUs);
+            modules.append(mod);
+        });
+    }
+    root["modules"] = modules;
+
+    // processing_units — PU types are not yet registered in TypeRegistry.
+    // TODO: PU types not yet registered in TypeRegistry; populated by CLI (T2) from manifest.
+    root["processing_units"] = Json::Value(Json::arrayValue);
+
+    // Write indented JSON to stdout.
+    Json::StreamWriterBuilder builder;
+    builder["indentation"] = "  ";
+    std::unique_ptr<Json::StreamWriter> writer(builder.newStreamWriter());
+    writer->write(root, &std::cout);
+    std::cout << std::endl;
+
+    return 0;
+}
+
+// ---------------------------------------------------------------------------
+// Path / manifest helpers
+// ---------------------------------------------------------------------------
 
 // Compute baseDir from a file path — everything up to and including the last
 // separator, so that ResolveRelative can concatenate directly.
@@ -75,6 +213,14 @@ void RegisterPathAliases(const Dia::ApplicationFlow::ApplicationManifestV3& mani
 #pragma warning(disable: 6262)  // Application stack frame is large but main() is a one-shot
 int main(int argc, const char* argv[])
 {
+    // Early-exit: --dump-schema writes registered-types JSON to stdout and exits.
+    // Must run before any manifest loading, path alias setup, or Application creation.
+    for (int i = 1; i < argc; ++i)
+    {
+        if (argv[i] && strcmp(argv[i], "--dump-schema") == 0)
+            return DumpSchema();
+    }
+
     const char* kDiagamePath = "assets/cluichetest.diagame";
 
     // Heap-allocate manifest — the struct grows with module/channel count and
