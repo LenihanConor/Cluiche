@@ -16,8 +16,8 @@ Single source of truth for test coverage across all Dia modules. Updated alongsi
 
 | Metric | Count |
 |--------|-------|
-| Test files | 196 |
-| Total tests (TEST + TEST_F + TEST_P) | 3,032 |
+| Test files | 197 |
+| Total tests (TEST + TEST_F + TEST_P) | 3,043 |
 | Death tests (EXPECT_DEATH / ASSERT_DEATH) | 149 |
 | Float assertions (EXPECT_NEAR / EXPECT_FLOAT_EQ) | 1,340+ |
 | Fixtures (TEST_F) | ~504 |
@@ -460,19 +460,22 @@ Gap markers: **ZERO** = no tests, **LOW** = under-tested relative to API surface
 
 ## DiaAssetCatalogueEditor
 
-| Component | Tests | Files | Unit | Stress/Boundary | Golden/Regression | Notes |
-|-----------|-------|-------|------|-----------------|-------------------|-------|
-| UpdateRecordCommand | 9 | TestDiaAssetCatalogueEditorExhaustive.cpp | 9 | 0 | 0 | OK |
-| ApplyRulesCommand | 7 | TestDiaAssetCatalogueEditorExhaustive.cpp | 7 | 0 | 0 | OK |
-| CatalogueRulesEngine.GetRule | 8 | TestDiaAssetCatalogueEditorExhaustive.cpp | 8 | 0 | 0 | OK |
-| ManualOverrideFlags (AssetRecord) | 9 | TestDiaAssetCatalogueEditorExhaustive.cpp | 9 | 0 | 0 | OK |
-| LoadManifestCommand | ~10 | TestDiaAssetCatalogueEditorExhaustive.cpp | ~10 | 0 | 0 | OK |
-| SaveManifestCommand | ~8 | TestDiaAssetCatalogueEditorExhaustive.cpp | ~8 | 0 | 0 | OK |
-| AddAssetCommand | ~8 | TestDiaAssetCatalogueEditorExhaustive.cpp | ~8 | 0 | 0 | OK |
-| DeleteAssetCommand | ~6 | TestDiaAssetCatalogueEditorExhaustive.cpp | ~6 | 0 | 0 | OK |
-| CommandHistory (undo/redo) | ~8 | TestDiaAssetCatalogueEditorExhaustive.cpp | ~8 | 0 | 0 | OK |
+| Component | Tests | Files | Unit | Stress/Boundary | Golden/Regression | Integration | Notes |
+|-----------|-------|-------|------|-----------------|-------------------|-------------|-------|
+| UpdateRecordCommand | 9 | TestDiaAssetCatalogueEditorExhaustive.cpp | 9 | 0 | 0 | 0 | OK |
+| ApplyRulesCommand | 7 | TestDiaAssetCatalogueEditorExhaustive.cpp | 7 | 0 | 0 | 0 | OK |
+| CatalogueRulesEngine.GetRule | 8 | TestDiaAssetCatalogueEditorExhaustive.cpp | 8 | 0 | 0 | 0 | OK |
+| ManualOverrideFlags (AssetRecord) | 9 | TestDiaAssetCatalogueEditorExhaustive.cpp | 9 | 0 | 0 | 0 | OK |
+| LoadManifestCommand | ~10 | TestDiaAssetCatalogueEditorExhaustive.cpp | ~10 | 0 | 0 | 0 | OK |
+| SaveManifestCommand | ~8 | TestDiaAssetCatalogueEditorExhaustive.cpp | ~8 | 0 | 0 | 0 | OK |
+| AddAssetCommand | ~8 | TestDiaAssetCatalogueEditorExhaustive.cpp | ~8 | 0 | 0 | 0 | OK |
+| DeleteAssetCommand | ~6 | TestDiaAssetCatalogueEditorExhaustive.cpp | ~6 | 0 | 0 | 0 | OK |
+| CommandHistory (undo/redo) | ~8 | TestDiaAssetCatalogueEditorExhaustive.cpp | ~8 | 0 | 0 | 0 | OK |
+| get_asset_types handler | 12 | IntegrationTestAssetCatalogueEditorPlugin.cpp | 0 | 0 | 0 | 12 | GOOD |
+| infer_relationships handler | 7 | IntegrationTestAutoRelationshipTracking.cpp | 0 | 0 | 0 | 7 | GOOD — empty, no-diascene, valid edge, idempotent, unknown bp, multi-type |
+| SceneEditor relationship calls (add/delete/change) | 4 | IntegrationTestAutoRelationshipTracking.cpp | 0 | 0 | 0 | 4 | GOOD — add adds edge, delete removes, change swaps, no-id no-op |
 
-**AssetCatalogueEditor totals: 1 file, ~73 tests** | All 8 features + manual override system covered
+**AssetCatalogueEditor totals: 3 files, ~95 tests** | All 8 features + auto-relationship tracking (11 integration tests) covered
 
 ---
 
