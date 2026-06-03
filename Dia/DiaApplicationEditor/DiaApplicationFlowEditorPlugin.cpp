@@ -935,15 +935,20 @@ namespace Dia { namespace Editor {
         {
             typesPath = data["path"].asString();
         }
-        else if (mEditorState.hasManifest && mEditorState.filePath[0] != '\0')
+        else if (mModel != nullptr)
         {
-            // Derive types.json alongside the loaded manifest
-            typesPath = mEditorState.filePath;
-            const size_t sep = typesPath.find_last_of("\\/");
-            if (sep != std::string::npos)
-                typesPath = typesPath.substr(0, sep + 1) + "types.json";
-            else
-                typesPath = "types.json";
+            // Derive registeredtypes.diaschema from the diagame project path
+            const auto& proj = mModel->GetDiagameProject();
+            if (proj.diagamePath[0] != '\0')
+            {
+                std::string schemaPath = proj.diagamePath;
+                const size_t sep = schemaPath.find_last_of("\\/");
+                if (sep != std::string::npos)
+                    schemaPath = schemaPath.substr(0, sep + 1) + "registeredtypes.diaschema";
+                else
+                    schemaPath = "registeredtypes.diaschema";
+                typesPath = schemaPath;
+            }
         }
 
         if (!typesPath.empty())
