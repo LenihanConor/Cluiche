@@ -684,6 +684,16 @@ namespace Dia
 						return result;
 					}
 
+					// Register scene→blueprint relationship in the catalogue
+					if (mBridge && mSceneCatalogueId[0] != '\0')
+					{
+						Json::Value relReq;
+						relReq["from"] = mSceneCatalogueId;
+						relReq["rel"]  = "uses";
+						relReq["to"]   = data["blueprintId"].asString();
+						mBridge->InvokeRequestHandler(Dia::Core::StringCRC("asset_catalogue.add_relationship"), relReq);
+					}
+
 					mIsDirty = true;
 					if (mBridge) mBridge->NotifyUIDataChanged("scene_editor.dirty_changed", Json::Value(true));
 					result["success"]   = true;
