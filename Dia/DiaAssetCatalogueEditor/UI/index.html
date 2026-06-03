@@ -399,7 +399,14 @@
       </div>
     </div>
 
-    <!-- Tab: File Discoverer -->
+    <!-- Tab: File Discoverer
+         Scans a directory for files that are NOT already registered in the catalogue.
+         Use this to bulk-onboard existing assets from disk:
+           1. Enter or Browse to a root folder
+           2. Click Scan — shows unregistered files with suggested type/ID
+           3. Edit type/ID if needed, select files, click Add Selected
+         All selected files are registered as catalogue records in one atomic operation.
+    -->
     <div class="tab-content" id="tab-discoverer" style="flex-direction:column;">
       <div class="discoverer-toolbar">
         <input type="text" id="disc-root-path" placeholder="Root path to scan…" />
