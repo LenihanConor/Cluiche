@@ -146,7 +146,7 @@ namespace Dia::BlueprintEditor
 | SED-BP-004 | Cross-scene usage shown on property panel | Before editing, user sees which scenes + instances are affected (blast radius) |
 | SED-BP-005 | Adding a component cascades to all instances | New fields appear with defaults on all referencing instances; show count before confirming |
 | SED-BP-006 | Removing a component warns about orphaned overrides | Show count of instances with overrides for that component's fields; don't auto-delete orphans |
-| SED-BP-007 | All field defaults are zero/empty | New blueprints, new components default to zero-values; explicit is better than magic |
+| SED-BP-007 | Field defaults come from C++ constructors, surfaced via schema | `--dump-schema` serialises a default-constructed component instance; editors read these from `registeredtypes.diaschema`; empty `"fields"` in a blueprint means "use code default" |
 | SED-BP-008 | Blueprint creation triggered from DiaAssetCatalogueEditor | Asset catalogue owns "create new asset" flow; blueprint editor owns "edit existing" flow |
 | SED-BP-009 | DiaSceneEditor routes to DiaBlueprintEditor via "Open in Blueprint Editor →" | Clean separation: scene editor handles placements, blueprint editor handles templates |
 
@@ -157,6 +157,7 @@ namespace Dia::BlueprintEditor
 | blueprint-panel | Plugin scaffold + left panel (blueprint list grouped by type) + right panel (component accordion + field editing) + file I/O | [blueprint-panel.md](../../features/dia/diablueprinteditor/blueprint-panel.md) | Draft |
 | component-crud | Add/remove components from a blueprint; cascade awareness; confirmation with affected instance count | [component-crud.md](../../features/dia/diablueprinteditor/component-crud.md) | Draft |
 | cross-scene-usage | Usage section showing which scenes and instances reference the selected blueprint | [cross-scene-usage.md](../../features/dia/diablueprinteditor/cross-scene-usage.md) | Draft |
+| component-picker-and-defaults | Searchable component picker panel; C++ code defaults surfaced from schema; blueprint-level field overrides | [component-picker-and-defaults.md](../../features/dia/diablueprinteditor/component-picker-and-defaults.md) | Draft |
 
 ## Dependencies
 
