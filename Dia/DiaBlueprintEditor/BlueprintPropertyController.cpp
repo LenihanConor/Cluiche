@@ -83,14 +83,42 @@ namespace Dia
 				}
 				else
 				{
-					// No registry entry: expose raw JSON fields as-is
-					for (auto it = fieldValues.begin(); it != fieldValues.end(); ++it)
+					// No registry entry — try schema field list first, then fall back to raw JSON values
+					const SchemaComponentEntry* schemaEntry = nullptr;
+					for (unsigned int s = 0; s < schema.GetComponentCount(); ++s)
 					{
-						Json::Value fieldJson;
-						fieldJson["name"]  = it.name();
-						fieldJson["kind"]  = "primitive";
-						fieldJson["value"] = *it;
-						fields.append(fieldJson);
+						if (schema.GetComponent(s).typeId == Dia::Core::StringCRC(typeName))
+						{
+							schemaEntry = &schema.GetComponent(s);
+							break;
+						}
+					}
+
+					if (schemaEntry && schemaEntry->fields.Size() > 0)
+					{
+						// Use schema field list — shows all fields even when "fields" is empty {}
+						for (unsigned int f = 0; f < schemaEntry->fields.Size(); ++f)
+						{
+							const SchemaFieldEntry& sf = schemaEntry->fields[f];
+							Json::Value fieldJson;
+							fieldJson["name"] = sf.name;
+							fieldJson["kind"] = sf.kind;
+							if (fieldValues.isMember(sf.name))
+								fieldJson["value"] = fieldValues[sf.name];
+							fields.append(fieldJson);
+						}
+					}
+					else
+					{
+						// No schema either — expose raw stored JSON fields as-is
+						for (auto it = fieldValues.begin(); it != fieldValues.end(); ++it)
+						{
+							Json::Value fieldJson;
+							fieldJson["name"]  = it.name();
+							fieldJson["kind"]  = "primitive";
+							fieldJson["value"] = *it;
+							fields.append(fieldJson);
+						}
 					}
 				}
 
@@ -173,6 +201,8 @@ namespace Dia
 				Json::Value compEntry;
 				compEntry["typeId"] = entry.typeId.AsChar();
 				compEntry["label"]  = entry.debugName[0] ? entry.debugName : entry.typeId.AsChar();
+				if (entry.description[0])
+					compEntry["description"] = entry.description;
 				result.append(compEntry);
 			}
 

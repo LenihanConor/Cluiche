@@ -13,6 +13,7 @@ namespace Dia { namespace BlueprintEditor {
     struct SchemaComponentEntry {
         Dia::Core::StringCRC typeId;
         char debugName[128];
+        char description[256];
         Dia::Core::Containers::DynamicArrayC<SchemaFieldEntry, 32> fields;
         Json::Value defaultValues;   // parsed "default_values" object, or nullValue if absent
     };

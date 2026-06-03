@@ -12,6 +12,7 @@
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaEntity/ComponentRegistry.h>
 #include <DiaEntity/IComponent.h>
+#include <DiaCore/Metadata/DescriptionRegistry.h>
 #include "Modules/TestStages/TestResultsRegistry.h"
 
 #include <DiaCore/FilePath/PathStore.h>
@@ -107,6 +108,9 @@ int DumpSchema()
             }
 
             comp["debug_name"] = desc.debugName ? desc.debugName : "";
+
+            const char* compDesc = Dia::Core::Metadata::DescriptionRegistry::Get(desc.typeId);
+            comp["description"] = compDesc ? compDesc : "";
 
             Json::Value fields(Json::arrayValue);
             for (uint16_t f = 0; f < desc.fieldCount; ++f)

@@ -68,6 +68,8 @@ namespace Dia { namespace BlueprintEditor {
             entry.typeId = Dia::Core::StringCRC(comp.get("type_id", "").asCString());
             strncpy_s(entry.debugName, sizeof(entry.debugName),
                       comp.get("debug_name", "").asCString(), _TRUNCATE);
+            strncpy_s(entry.description, sizeof(entry.description),
+                      comp.get("description", "").asCString(), _TRUNCATE);
 
             const Json::Value& fields = comp["fields"];
             if (fields.isArray())
