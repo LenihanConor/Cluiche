@@ -1,7 +1,7 @@
 # Plan: toast-notifications
 
 **Spec:** @docs/specs/features/dia/diaeditor/toast-notifications.md
-**Status:** In Progress
+**Status:** Done
 
 ## Implementation Patterns
 
@@ -31,14 +31,14 @@
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 1 | Create `NotificationService.h` — enum, struct, class with `Push`/`DismissAll`, `kUniqueId` | Compiles | In Progress | sonnet | Header-only API definition |
-| 2 | Create `NotificationService.cpp` — serializes `NotificationRequest` to JSON, calls `NotifyUIDataChanged` | Compiles | Todo | sonnet | Depends on WebUIBridge pointer (set via `Initialize(WebUIBridge*)`) |
-| 3 | Add files to `DiaEditor.vcxproj` + `.vcxproj.filters` (new Notification filter group) | `dia pipeline --target cluicheeditor` builds | Todo | haiku | Mechanical edit |
-| 4 | Register `NotificationService` in CluicheEditor startup — construct, initialize with bridge, register on `PluginServiceLocator` | Compiles | Todo | sonnet | Find CluicheEditor bootstrap code that creates services |
-| 5 | Add `zustand` dependency to CluicheEditor UI `package.json` | `npm install` succeeds | In Progress | haiku | |
-| 6 | Create `useNotifications.ts` — Zustand store: toast queue (max 5 visible), `addToast`, `removeToast`, `dismissAll`, auto-dismiss timers | Unit-testable logic | Todo | sonnet | Default durations: info 4s, success 3s, warning 6s, error manual |
-| 7 | Create `ToastRenderer.tsx` — renders toast stack, dismiss button, hover pauses timer, slide-in/fade-out CSS, aria attributes | Visual in browser | Todo | sonnet | Fixed position bottom-right, z-index above mosaic |
-| 8 | Add `notify()` to `EditorBridge.ts` — accepts `{level, title, message?}`, generates ID, feeds store directly | Call from console works | In Progress | sonnet | Also subscribe to `editor.notification` topic to handle C++ pushes |
-| 9 | Handle `editor.notify` in shell's iframe message listener — iframes can raise toasts via postMessage | iframe plugin can trigger toast | Todo | sonnet | Add case in existing `__diaFromFrame` handler |
-| 10 | Mount `<ToastRenderer />` in `main.tsx` at shell level | Renders in app | Todo | haiku | After DockingManager, before CommandPalette |
-| 11 | Build + manual verify: trigger toast from C++ (e.g. connection fail) and from JS (`notify()` in console) | Visual confirmation | Todo | sonnet | End-to-end smoke test |
+| 1 | Create `NotificationService.h` — enum, struct, class with `Push`/`DismissAll`, `kUniqueId` | Compiles | Done | sonnet | Header-only API definition |
+| 2 | Create `NotificationService.cpp` — serializes `NotificationRequest` to JSON, calls `NotifyUIDataChanged` | Compiles | Done | sonnet | Depends on WebUIBridge pointer (set via `Initialize(WebUIBridge*)`) |
+| 3 | Add files to `DiaEditor.vcxproj` + `.vcxproj.filters` (new Notification filter group) | `dia pipeline --target cluicheeditor` builds | Done | haiku | Mechanical edit |
+| 4 | Register `NotificationService` in CluicheEditor startup — construct, initialize with bridge, register on `PluginServiceLocator` | Compiles | Done | sonnet | In PluginLoaderModule::SetBridge |
+| 5 | Add `zustand` dependency to CluicheEditor UI `package.json` | `npm install` succeeds | Done | haiku | |
+| 6 | Create `useNotifications.ts` — Zustand store: toast queue (max 5 visible), `addToast`, `removeToast`, `dismissAll`, auto-dismiss timers | Unit-testable logic | Done | sonnet | Default durations: info 4s, success 3s, warning 6s, error manual |
+| 7 | Create `ToastRenderer.tsx` — renders toast stack, dismiss button, hover pauses timer, slide-in/fade-out CSS, aria attributes | Visual in browser | Done | sonnet | Fixed position bottom-right, z-index above mosaic |
+| 8 | Add `notify()` to `EditorBridge.ts` — accepts `{level, title, message?}`, generates ID, feeds store directly | Call from console works | Done | sonnet | Also subscribe to `editor.notification` topic to handle C++ pushes |
+| 9 | Handle `editor.notify` in shell's iframe message listener — iframes can raise toasts via postMessage | iframe plugin can trigger toast | Done | sonnet | Add case in existing `__diaFromFrame` handler |
+| 10 | Mount `<ToastRenderer />` in `main.tsx` at shell level | Renders in app | Done | haiku | After DockingManager, before CommandPalette |
+| 11 | Build + manual verify: trigger toast from C++ (e.g. connection fail) and from JS (`notify()` in console) | Visual confirmation | Done | sonnet | `dia pipeline --target cluicheeditor` passes; 5915/5916 tests pass (1 pre-existing flaky WebSocket test) |
