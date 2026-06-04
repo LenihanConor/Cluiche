@@ -147,6 +147,7 @@ namespace Dia
 					DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: OnPluginLoad — GetModel() is null");
 				}
 
+				SeedAssetTemplates();
 				RegisterRequestHandlers();
 
 				DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: Initialized");
@@ -181,6 +182,47 @@ namespace Dia
 				Json::Value payload;
 				payload["id"] = instanceId.AsChar();
 				GetBridge()->NotifyUIDataChanged("asset_catalogue.navigate_to_record", payload);
+			}
+
+			void DiaAssetCatalogueEditorPlugin::SeedAssetTemplates()
+			{
+				static const char* kBlankScene =
+					"{\n"
+					"    \"version\": 1,\n"
+					"    \"entities\": [],\n"
+					"    \"cameras\": [],\n"
+					"    \"lights\": [],\n"
+					"    \"layers\": []\n"
+					"}\n";
+
+				static const char* kBlankEntityTemplate =
+					"{\n"
+					"    \"entity_template\": {\n"
+					"        \"id\": \"\",\n"
+					"        \"components\": []\n"
+					"    }\n"
+					"}\n";
+
+				static const char* kBlankCamera =
+					"{\n"
+					"    \"camera_blueprint\": {\n"
+					"        \"id\": \"\",\n"
+					"        \"components\": []\n"
+					"    }\n"
+					"}\n";
+
+				static const char* kBlankLight =
+					"{\n"
+					"    \"light_blueprint\": {\n"
+					"        \"id\": \"\",\n"
+					"        \"components\": []\n"
+					"    }\n"
+					"}\n";
+
+				mAssetTemplates[Dia::Core::StringCRC("diascene")]           = { kBlankScene,          ".diascene" };
+				mAssetTemplates[Dia::Core::StringCRC("diaentitytemplate")]  = { kBlankEntityTemplate,  ".diaentitytemplate" };
+				mAssetTemplates[Dia::Core::StringCRC("diacamera")]          = { kBlankCamera,          ".diacamera" };
+				mAssetTemplates[Dia::Core::StringCRC("dialight")]           = { kBlankLight,           ".dialight" };
 			}
 
 			void DiaAssetCatalogueEditorPlugin::RegisterRequestHandlers()

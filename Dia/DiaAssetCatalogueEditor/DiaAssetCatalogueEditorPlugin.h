@@ -15,6 +15,8 @@
 #include "DiaAssetCatalogueEditor/Handlers/AssetTypeEditorRegistry.h"
 #include <DiaAssetCatalogue/ContentHasher.h>
 
+#include <unordered_map>
+
 namespace Dia
 {
 	namespace Editor
@@ -40,6 +42,12 @@ namespace Dia
 				void OnProjectChanged(const Dia::Editor::ProjectContext& context) override;
 
 			private:
+				struct AssetTemplate
+				{
+					const char* content;
+					const char* extension;
+				};
+
 				void RegisterRequestHandlers();
 				void RegisterCRUDHandlers();
 				void RegisterDiscovererHandlers();
@@ -48,6 +56,7 @@ namespace Dia
 				void RegisterAssetTypeEditorHandlers();
 				void RegisterRulesHandlers();
 				void RegisterInferrerHandlers();
+				void SeedAssetTemplates();
 				void PushDirtyState();
 				void PushRegistryState();
 				void AutoLoadRules();
@@ -80,6 +89,8 @@ namespace Dia
 
 				AssetTypeEditorRegistry                        mTypeEditorRegistry;
 				Dia::AssetCatalogue::CatalogueRulesEngine      mRulesEngine;
+
+				std::unordered_map<Dia::Core::StringCRC, AssetTemplate> mAssetTemplates;
 			};
 		}
 	}
