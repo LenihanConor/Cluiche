@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DiaApplicationFlowInspector - Mockup</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #1e1e2e;
+    color: #cdd6f4;
+    font-size: 13px;
+    line-height: 1.4;
+    padding: 20px;
+}
+
+.mockup-grid {
+    display: flex;
+    gap: 40px;
+    flex-wrap: wrap;
+}
+
+.panel {
+    width: 360px;
+    height: 720px;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #313244;
+    border-radius: 6px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: #181825;
+    border-bottom: 1px solid #313244;
+}
+
+.panel-title {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #a6adc8;
+}
+
+.section {
+    padding: 10px 12px;
+    border-bottom: 1px solid #313244;
+}
+
+.section-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #6c7086;
+    margin-bottom: 6px;
+}
+
+/* Status */
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+.dot-disconnected { background: #6c7086; }
+.dot-connected { background: #a6e3a1; }
+
+/* Active stage badge */
+.active-stage {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #a6e3a120;
+    border: 1px solid #a6e3a140;
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 12px;
+    color: #a6e3a1;
+    font-weight: 500;
+}
+.active-stage .dot { width: 6px; height: 6px; border-radius: 50%; background: #a6e3a1; }
+
+/* Breadcrumb trail */
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    font-size: 11px;
+    padding: 6px 12px;
+    background: #11111b;
+    border-bottom: 1px solid #313244;
+    overflow-x: auto;
+}
+.breadcrumb-stage {
+    padding: 2px 8px;
+    border-radius: 3px;
+    white-space: nowrap;
+}
+.breadcrumb-stage.past { color: #6c7086; }
+.breadcrumb-stage.current { background: #a6e3a120; color: #a6e3a1; font-weight: 600; }
+.breadcrumb-arrow {
+    color: #45475a;
+    margin: 0 2px;
+    font-size: 10px;
+}
+.breadcrumb-duration {
+    font-size: 9px;
+    color: #45475a;
+    margin: 0 2px;
+}
+
+/* Stage Transition */
+.transition-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+.select-field {
+    flex: 1;
+    background: #313244;
+    border: 1px solid #45475a;
+    border-radius: 4px;
+    padding: 5px 8px;
+    color: #cdd6f4;
+    font-size: 12px;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%236c7086'%3E%3Cpath d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    padding-right: 24px;
+}
+.btn {
+    padding: 5px 12px;
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+}
+.btn-trigger { background: #89b4fa; color: #1e1e2e; font-weight: 600; }
+.btn-trigger:disabled { background: #45475a; color: #6c7086; cursor: not-allowed; }
+.btn-danger { background: #45475a; color: #f38ba8; border: 1px solid #f38ba8; font-size: 11px; }
+
+/* Tabs */
+.tabs {
+    display: flex;
+    border-bottom: 1px solid #313244;
+    background: #181825;
+}
+.tab {
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 500;
+    color: #6c7086;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+}
+.tab.active { color: #89b4fa; border-bottom-color: #89b4fa; }
+
+.panel-content {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.panel-footer {
+    padding: 6px 12px;
+    background: #181825;
+    border-top: 1px solid #313244;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.footer-text { font-size: 11px; color: #6c7086; }
+
+/* Empty state */
+.empty-state {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #6c7086;
+    padding: 24px;
+}
+.empty-state-text { font-size: 12px; line-height: 1.6; }
+
+/* Module cards */
+.module-card {
+    padding: 8px 12px;
+    border-bottom: 1px solid #313244;
+}
+.module-card:last-child { border-bottom: none; }
+
+.module-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.module-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #cdd6f4;
+}
+
+.module-pu {
+    font-size: 10px;
+    color: #6c7086;
+    margin-left: 6px;
+    font-weight: normal;
+}
+
+.module-state-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+.state-running { background: #a6e3a120; color: #a6e3a1; }
+.state-loading { background: #f9e2af20; color: #f9e2af; }
+.state-stopped { background: #6c708620; color: #6c7086; }
+.state-failed  { background: #f38ba820; color: #f38ba8; }
+
+.module-detail {
+    font-size: 11px;
+    color: #6c7086;
+    margin-top: 3px;
+}
+
+.module-detail-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 2px;
+}
+
+.duration-bar-container {
+    flex: 1;
+    height: 4px;
+    background: #313244;
+    border-radius: 2px;
+    max-width: 80px;
+}
+.duration-bar {
+    height: 100%;
+    border-radius: 2px;
+}
+.duration-bar.ok { background: #a6e3a1; }
+.duration-bar.warn { background: #f9e2af; }
+.duration-bar.crit { background: #f38ba8; }
+
+.dep-blocked {
+    font-size: 10px;
+    color: #f9e2af;
+    margin-top: 3px;
+    padding: 2px 6px;
+    background: #f9e2af10;
+    border-radius: 3px;
+    display: inline-block;
+}
+
+.error-msg {
+    font-size: 10px;
+    color: #f38ba8;
+    margin-top: 3px;
+    padding: 3px 6px;
+    background: #f38ba810;
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* Stream bars */
+.stream-row {
+    padding: 6px 12px;
+    border-bottom: 1px solid #313244;
+}
+.stream-row:last-child { border-bottom: none; }
+
+.stream-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+.stream-name { font-size: 12px; font-weight: 500; }
+.stream-stats {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    color: #89b4fa;
+}
+
+.queue-bar-container {
+    height: 6px;
+    background: #313244;
+    border-radius: 3px;
+    width: 100%;
+    position: relative;
+}
+.queue-bar {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s;
+}
+.queue-ok { background: #a6e3a1; }
+.queue-warn { background: #f9e2af; }
+.queue-crit { background: #f38ba8; }
+
+.stream-detail {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 3px;
+    font-size: 10px;
+    color: #6c7086;
+}
+
+.drops-badge {
+    color: #f38ba8;
+    font-weight: 600;
+}
+
+/* PU gauges */
+.pu-gauge {
+    padding: 8px 12px;
+    border-bottom: 1px solid #313244;
+}
+.pu-gauge:last-child { border-bottom: none; }
+
+.pu-gauge-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+.pu-gauge-name { font-size: 12px; font-weight: 500; }
+.pu-gauge-timing {
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.budget-bar-container {
+    height: 8px;
+    background: #313244;
+    border-radius: 4px;
+    width: 100%;
+}
+.budget-bar {
+    height: 100%;
+    border-radius: 4px;
+}
+.budget-ok { background: linear-gradient(90deg, #a6e3a1, #a6e3a1); }
+.budget-warn { background: linear-gradient(90deg, #a6e3a1, #f9e2af); }
+.budget-crit { background: linear-gradient(90deg, #a6e3a1, #f9e2af, #f38ba8); }
+
+.pu-gauge-label {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 2px;
+    font-size: 10px;
+    color: #6c7086;
+}
+
+/* Event log */
+.event-log {
+    font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+    font-size: 11px;
+    line-height: 1.7;
+    padding: 8px 12px;
+    white-space: pre;
+    user-select: text;
+    -webkit-user-select: text;
+    cursor: text;
+    overflow-x: auto;
+}
+
+.event-log .info { color: #a6adc8; }
+.event-log .warn { color: #f9e2af; }
+.event-log .error { color: #f38ba8; }
+.event-log .transition { color: #89b4fa; }
+.event-log .time { color: #45475a; }
+
+.copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    background: #313244;
+    border: 1px solid #45475a;
+    border-radius: 4px;
+    color: #a6adc8;
+    font-size: 10px;
+    padding: 2px 8px;
+    cursor: pointer;
+}
+.copy-btn:hover { background: #45475a; color: #cdd6f4; }
+
+.mock-label {
+    margin-bottom: 8px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+</style>
+</head>
+<body>
+
+<div class="mockup-grid">
+
+<!-- ============================================================
+     STATE: NOT CONNECTED
+     ============================================================ -->
+<div>
+    <div class="mock-label" style="color: #6c7086;">Not Connected</div>
+    <div class="panel" style="height: 400px;">
+        <div class="panel-header">
+            <span class="panel-title">Flow Inspector</span>
+            <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #6c7086;">
+                <span class="status-dot dot-disconnected"></span>
+                offline
+            </span>
+        </div>
+        <div class="empty-state">
+            <div>
+                <div style="font-size: 28px; margin-bottom: 10px; opacity: 0.5;">&#9888;</div>
+                <div class="empty-state-text">
+                    No game connected.<br>
+                    Use the <strong style="color: #cdd6f4;">Game Connection</strong> panel<br>
+                    to connect to a running instance.
+                </div>
+            </div>
+        </div>
+        <div class="panel-footer">
+            <span class="footer-text">Flow Inspector v1.0</span>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     STATE: CONNECTED — Modules View
+     ============================================================ -->
+<div>
+    <div class="mock-label" style="color: #a6e3a1;">Connected — Modules</div>
+    <div class="panel">
+        <div class="panel-header">
+            <span class="panel-title">Flow Inspector</span>
+            <span class="active-stage"><span class="dot"></span> Gameplay</span>
+        </div>
+
+        <!-- Stage path breadcrumb -->
+        <div class="breadcrumb">
+            <span class="breadcrumb-stage past">Boot</span>
+            <span class="breadcrumb-duration">2.1s</span>
+            <span class="breadcrumb-arrow">&#x25B6;</span>
+            <span class="breadcrumb-stage past">Menu</span>
+            <span class="breadcrumb-duration">0.8s</span>
+            <span class="breadcrumb-arrow">&#x25B6;</span>
+            <span class="breadcrumb-stage current">Gameplay</span>
+        </div>
+
+        <!-- Stage Transition -->
+        <div class="section">
+            <div class="section-label">Transition</div>
+            <div class="transition-row">
+                <select class="select-field">
+                    <option value="">Select stage...</option>
+                    <option>Boot</option>
+                    <option>Menu</option>
+                    <option>Gameplay</option>
+                    <option>Shutdown</option>
+                </select>
+                <button class="btn btn-trigger">Trigger</button>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active">Modules</div>
+            <div class="tab">Streams</div>
+            <div class="tab">Timing</div>
+            <div class="tab">Log</div>
+        </div>
+
+        <div class="panel-content">
+            <!-- Module: Running, healthy -->
+            <div class="module-card">
+                <div class="module-card-header">
+                    <span><span class="module-name">RenderModule</span><span class="module-pu">MainPU</span></span>
+                    <span class="module-state-badge state-running">Running</span>
+                </div>
+                <div class="module-detail-row">
+                    <span style="font-size: 10px; color: #6c7086;">in state 14.2s</span>
+                </div>
+            </div>
+
+            <!-- Module: Running, healthy -->
+            <div class="module-card">
+                <div class="module-card-header">
+                    <span><span class="module-name">PhysicsModule</span><span class="module-pu">SimPU</span></span>
+                    <span class="module-state-badge state-running">Running</span>
+                </div>
+                <div class="module-detail-row">
+                    <span style="font-size: 10px; color: #6c7086;">in state 14.0s</span>
+                </div>
+            </div>
+
+            <!-- Module: Loading with dependency blocking -->
+            <div class="module-card">
+                <div class="module-card-header">
+                    <span><span class="module-name">AudioModule</span><span class="module-pu">MainPU</span></span>
+                    <span class="module-state-badge state-loading">Loading</span>
+                </div>
+                <div class="module-detail-row">
+                    <span style="font-size: 10px; color: #f9e2af;">in state 3.4s</span>
+                    <div class="duration-bar-container">
+                        <div class="duration-bar warn" style="width: 68%;"></div>
+                    </div>
+                    <span style="font-size: 10px; color: #6c7086;">/ 5.0s timeout</span>
+                </div>
+                <div class="dep-blocked">&#x23f3; waiting on: AssetLoader (Loading)</div>
+            </div>
+
+            <!-- Module: Stopped (not active this stage) -->
+            <div class="module-card">
+                <div class="module-card-header">
+                    <span><span class="module-name">AIModule</span><span class="module-pu">SimPU</span></span>
+                    <span class="module-state-badge state-stopped">Stopped</span>
+                </div>
+                <div class="module-detail-row">
+                    <span style="font-size: 10px; color: #6c7086;">not active in Gameplay stage</span>
+                </div>
+            </div>
+
+            <!-- Module: Failed -->
+            <div class="module-card">
+                <div class="module-card-header">
+                    <span><span class="module-name">NetworkModule</span><span class="module-pu">SimPU</span></span>
+                    <span class="module-state-badge state-failed">Failed</span>
+                </div>
+                <div class="error-msg">ETIMEDOUT: connect to relay.example.com:443 timed out after 10000ms</div>
+            </div>
+        </div>
+
+        <div class="panel-footer">
+            <span class="footer-text">5 modules &middot; 1 blocked &middot; 1 failed</span>
+            <button class="btn btn-danger">Shutdown</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     STATE: CONNECTED — Streams View
+     ============================================================ -->
+<div>
+    <div class="mock-label" style="color: #a6e3a1;">Connected — Streams</div>
+    <div class="panel">
+        <div class="panel-header">
+            <span class="panel-title">Flow Inspector</span>
+            <span class="active-stage"><span class="dot"></span> Gameplay</span>
+        </div>
+
+        <div class="breadcrumb">
+            <span class="breadcrumb-stage past">Boot</span>
+            <span class="breadcrumb-duration">2.1s</span>
+            <span class="breadcrumb-arrow">&#x25B6;</span>
+            <span class="breadcrumb-stage past">Menu</span>
+            <span class="breadcrumb-duration">0.8s</span>
+            <span class="breadcrumb-arrow">&#x25B6;</span>
+            <span class="breadcrumb-stage current">Gameplay</span>
+        </div>
+
+        <div class="section">
+            <div class="section-label">Transition</div>
+            <div class="transition-row">
+                <select class="select-field">
+                    <option value="">Select stage...</option>
+                    <option>Menu</option>
+                    <option>Shutdown</option>
+                </select>
+                <button class="btn btn-trigger" disabled>Trigger</button>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <div class="tab">Modules</div>
+            <div class="tab active">Streams</div>
+            <div class="tab">Timing</div>
+            <div class="tab">Log</div>
+        </div>
+
+        <div class="panel-content">
+            <!-- Stream: healthy -->
+            <div class="stream-row">
+                <div class="stream-header">
+                    <span class="stream-name">PhysicsEvents</span>
+                    <span class="stream-stats">142 msg/s &middot; 3.2 KB/s</span>
+                </div>
+                <div class="queue-bar-container">
+                    <div class="queue-bar queue-ok" style="width: 23%;"></div>
+                </div>
+                <div class="stream-detail">
+                    <span>queue: 23% (15/64)</span>
+                    <span>0 drops</span>
+                </div>
+            </div>
+
+            <!-- Stream: warning pressure -->
+            <div class="stream-row">
+                <div class="stream-header">
+                    <span class="stream-name">RenderCommands</span>
+                    <span class="stream-stats">30 msg/s &middot; 12.4 KB/s</span>
+                </div>
+                <div class="queue-bar-container">
+                    <div class="queue-bar queue-warn" style="width: 72%;"></div>
+                </div>
+                <div class="stream-detail">
+                    <span>queue: 72% (46/64)</span>
+                    <span>0 drops</span>
+                </div>
+            </div>
+
+            <!-- Stream: critical, dropping -->
+            <div class="stream-row">
+                <div class="stream-header">
+                    <span class="stream-name">InputCommands</span>
+                    <span class="stream-stats">60 msg/s &middot; 0.8 KB/s</span>
+                </div>
+                <div class="queue-bar-container">
+                    <div class="queue-bar queue-crit" style="width: 94%;"></div>
+                </div>
+                <div class="stream-detail">
+                    <span>queue: 94% (30/32)</span>
+                    <span class="drops-badge">3 drops/s</span>
+                </div>
+            </div>
+
+            <!-- Stream: idle -->
+            <div class="stream-row">
+                <div class="stream-header">
+                    <span class="stream-name">AudioEvents</span>
+                    <span class="stream-stats">8 msg/s &middot; 0.1 KB/s</span>
+                </div>
+                <div class="queue-bar-container">
+                    <div class="queue-bar queue-ok" style="width: 6%;"></div>
+                </div>
+                <div class="stream-detail">
+                    <span>queue: 6% (4/64)</span>
+                    <span>0 drops</span>
+                </div>
+            </div>
+
+            <!-- Stream: empty -->
+            <div class="stream-row">
+                <div class="stream-header">
+                    <span class="stream-name">DebugChannel</span>
+                    <span class="stream-stats">0 msg/s &middot; 0 KB/s</span>
+                </div>
+                <div class="queue-bar-container">
+                    <div class="queue-bar queue-ok" style="width: 0%;"></div>
+                </div>
+                <div class="stream-detail">
+                    <span>queue: 0% (0/128)</span>
+                    <span>0 drops</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-footer">
+            <span class="footer-text">5 streams &middot; 1 backpressure &middot; 1 dropping</span>
+            <button class="btn btn-danger">Shutdown</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     STATE: CONNECTED — Timing View
+     ============================================================ -->
+<div>
+    <div class="mock-label" style="color: #a6e3a1;">Connected — Timing</div>
+    <div class="panel" style="height: 520px;">
+        <div class="panel-header">
+            <span class="panel-title">Flow Inspector</span>
+            <span class="active-stage"><span class="dot"></span> Gameplay</span>
+        </div>
+
+        <div class="breadcrumb">
+            <span class="breadcrumb-stage past">Boot</span>
+            <span class="breadcrumb-duration">2.1s</span>
+            <span class="breadcrumb-arrow">&#x25B6;</span>
+            <span class="breadcrumb-stage past">Menu</span>
+            <span class="breadcrumb-duration">0.8s</span>
+            <span class="breadcrumb-arrow">&#x25B6;</span>
+            <span class="breadcrumb-stage current">Gameplay</span>
+        </div>
+
+        <div class="tabs">
+            <div class="tab">Modules</div>
+            <div class="tab">Streams</div>
+            <div class="tab active">Timing</div>
+            <div class="tab">Log</div>
+        </div>
+
+        <div class="panel-content">
+            <div class="section" style="border-bottom: none;">
+                <div class="section-label">Processing Unit Frame Budgets</div>
+            </div>
+
+            <!-- PU: Healthy -->
+            <div class="pu-gauge">
+                <div class="pu-gauge-header">
+                    <span class="pu-gauge-name">MainPU</span>
+                    <span class="pu-gauge-timing" style="color: #a6e3a1;">8.2ms / 16.6ms</span>
+                </div>
+                <div class="budget-bar-container">
+                    <div class="budget-bar budget-ok" style="width: 49%;"></div>
+                </div>
+                <div class="pu-gauge-label">
+                    <span>60 Hz target</span>
+                    <span>49% budget used</span>
+                </div>
+            </div>
+
+            <!-- PU: Warm -->
+            <div class="pu-gauge">
+                <div class="pu-gauge-header">
+                    <span class="pu-gauge-name">SimPU</span>
+                    <span class="pu-gauge-timing" style="color: #f9e2af;">14.2ms / 16.6ms</span>
+                </div>
+                <div class="budget-bar-container">
+                    <div class="budget-bar budget-warn" style="width: 85%;"></div>
+                </div>
+                <div class="pu-gauge-label">
+                    <span>60 Hz target</span>
+                    <span style="color: #f9e2af; font-weight: 600;">85% budget used</span>
+                </div>
+            </div>
+
+            <!-- PU: Over budget -->
+            <div class="pu-gauge">
+                <div class="pu-gauge-header">
+                    <span class="pu-gauge-name">AudioPU</span>
+                    <span class="pu-gauge-timing" style="color: #f38ba8;">38.1ms / 33.3ms</span>
+                </div>
+                <div class="budget-bar-container">
+                    <div class="budget-bar budget-crit" style="width: 100%;"></div>
+                </div>
+                <div class="pu-gauge-label">
+                    <span>30 Hz target</span>
+                    <span style="color: #f38ba8; font-weight: 600;">114% OVER BUDGET</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-footer">
+            <span class="footer-text">3 PUs &middot; 1 over budget</span>
+            <button class="btn btn-danger">Shutdown</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     STATE: CONNECTED — Event Log View
+     ============================================================ -->
+<div>
+    <div class="mock-label" style="color: #a6e3a1;">Connected — Event Log</div>
+    <div class="panel">
+        <div class="panel-header">
+            <span class="panel-title">Flow Inspector</span>
+            <span class="active-stage"><span class="dot"></span> Gameplay</span>
+        </div>
+
+        <div class="breadcrumb">
+            <span class="breadcrumb-stage past">Boot</span>
+            <span class="breadcrumb-duration">2.1s</span>
+            <span class="breadcrumb-arrow">&#x25B6;</span>
+            <span class="breadcrumb-stage past">Menu</span>
+            <span class="breadcrumb-duration">0.8s</span>
+            <span class="breadcrumb-arrow">&#x25B6;</span>
+            <span class="breadcrumb-stage current">Gameplay</span>
+        </div>
+
+        <div class="tabs">
+            <div class="tab">Modules</div>
+            <div class="tab">Streams</div>
+            <div class="tab">Timing</div>
+            <div class="tab active">Log</div>
+        </div>
+
+        <div class="panel-content" style="position: relative;">
+            <button class="copy-btn" title="Copy log to clipboard">Copy</button>
+            <div class="event-log"><span class="time">00:14.2</span> <span class="transition">&#x25B6; Stage transition: Menu &#x2192; Gameplay</span>
+<span class="time">00:14.2</span> <span class="info">&#x25CB; PhysicsModule &#x2192; Loading</span>
+<span class="time">00:14.2</span> <span class="info">&#x25CB; RenderModule &#x2192; Loading</span>
+<span class="time">00:14.2</span> <span class="info">&#x25CB; AudioModule &#x2192; Loading</span>
+<span class="time">00:14.3</span> <span class="info">&#x25CF; RenderModule &#x2192; Running (0.1s)</span>
+<span class="time">00:14.4</span> <span class="info">&#x25CF; PhysicsModule &#x2192; Running (0.2s)</span>
+<span class="time">00:17.6</span> <span class="warn">&#x26A0; AudioModule still Loading (3.4s / 5.0s timeout)</span>
+<span class="time">00:18.1</span> <span class="warn">&#x26A0; InputCommands queue at 94% &#x2014; dropping messages</span>
+<span class="time">00:18.3</span> <span class="error">&#x2716; NetworkModule &#x2192; Failed: ETIMEDOUT relay.example.com:443</span>
+<span class="time">00:19.0</span> <span class="info">&#x25CB; SimPU tick 14.2ms (85% budget)</span>
+<span class="time">00:19.5</span> <span class="warn">&#x26A0; AudioPU tick 38.1ms &#x2014; over budget (114%)</span>
+<span class="time">00:20.0</span> <span class="info">&#x25CF; AudioModule &#x2192; Running (5.8s)</span></div>
+        </div>
+
+        <div class="panel-footer">
+            <span class="footer-text">12 events &middot; 3 warnings &middot; 1 error</span>
+            <button class="btn btn-danger">Shutdown</button>
+        </div>
+    </div>
+</div>
+
+</div><!-- end mockup-grid -->
+
+</body>
+</html>
