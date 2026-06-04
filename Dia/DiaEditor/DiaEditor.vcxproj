@@ -119,6 +119,7 @@
     <ClInclude Include="UI\FileDialogHandler.h" />
     <ClInclude Include="EditorManifestLoader.h" />
     <ClInclude Include="Sinks\EditorConsoleSink.h" />
+    <ClInclude Include="Memory\EditorMemory.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Plugin\EditorPluginRegistry.cpp" />
@@ -135,6 +136,7 @@
     <ClCompile Include="UI\FileDialogHandler.cpp" />
     <ClCompile Include="EditorManifestLoader.cpp" />
     <ClCompile Include="Sinks\EditorConsoleSink.cpp" />
+    <ClCompile Include="Memory\EditorMemory.cpp" />
   </ItemGroup>
 
   <ItemGroup>

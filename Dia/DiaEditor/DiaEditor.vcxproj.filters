@@ -25,6 +25,9 @@
     <Filter Include="Project">
       <UniqueIdentifier>{A8888888-8888-8888-8888-888888888888}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Memory">
+      <UniqueIdentifier>{A9999999-9999-9999-9999-999999999999}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Plugin\IEditorPlugin.h">
@@ -83,6 +86,9 @@
     <ClInclude Include="Sinks\EditorConsoleSink.h">
       <Filter>Sinks</Filter>
     </ClInclude>
+    <ClInclude Include="Memory\EditorMemory.h">
+      <Filter>Memory</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Plugin\EditorPluginRegistry.cpp">
@@ -104,6 +110,9 @@
     <ClCompile Include="EditorManifestLoader.cpp" />
     <ClCompile Include="Sinks\EditorConsoleSink.cpp">
       <Filter>Sinks</Filter>
+    </ClCompile>
+    <ClCompile Include="Memory\EditorMemory.cpp">
+      <Filter>Memory</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
