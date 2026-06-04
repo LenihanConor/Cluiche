@@ -63,17 +63,62 @@ namespace Cluiche
 			LoadBuiltInPlugins();
 			RestoreLayoutPlugins();
 
-			// Load the project (if one was specified on the command line) and any
-			// manifests it references.  The module's mProjectPath is populated by
-			// EditorModelModule::DoStart from GetCommandLineW().
+			// Restore plugins + layout from .memory.json (previous session)
+			static const char* kMemoryPath = "../../../../out/CluicheEditor/.memory.json";
+			Dia::Editor::EditorMemory memory;
+			bool memoryLoaded = memory.Load(kMemoryPath);
+
+			if (memoryLoaded)
+			{
+				DIA_LOG_INFO("Application", "PluginLoaderModule: Restoring %u plugins from memory", memory.GetPluginCount());
+				Dia::Editor::EditorPluginRegistry& registry = Dia::Editor::EditorPluginRegistry::Instance();
+				for (unsigned int i = 0; i < memory.GetPluginCount(); ++i)
+				{
+					const Dia::Editor::MemoryPluginEntry& entry = memory.GetPlugin(i);
+					Dia::Core::StringCRC typeId(entry.typeId);
+					if (!registry.IsPluginRegistered(typeId))
+					{
+						DIA_LOG_WARNING("Application", "PluginLoaderModule: Skipping unregistered plugin '%s' from memory (AC3)", entry.typeId);
+						continue;
+					}
+					if (!IsPluginTypeLoaded(typeId))
+					{
+						Dia::Core::StringCRC instanceId(entry.instanceId);
+						LoadPlugin(typeId, instanceId);
+					}
+				}
+
+				if (mView != nullptr && !memory.GetLayoutTree().isNull())
+				{
+					Dia::Editor::DockingLayout* layout = mView->GetDockingLayout();
+					if (layout != nullptr)
+					{
+						layout->Deserialize(memory.GetLayoutTree());
+						DIA_LOG_INFO("Application", "PluginLoaderModule: Restored layout from memory");
+					}
+				}
+			}
+			else
+			{
+				DIA_LOG_INFO("Application", "PluginLoaderModule: No memory file found, starting fresh");
+			}
+
+			// Load the project (CLI arg takes priority; fall back to memory.last_project)
 			if (modelModule != nullptr)
 			{
 				const char* projectPath = modelModule->GetProjectPath();
-				if (projectPath != nullptr && projectPath[0] != '\0')
+				bool hasCliProject = (projectPath != nullptr && projectPath[0] != '\0');
+				bool hasMemoryProject = (memoryLoaded && memory.GetLastProject() != nullptr && memory.GetLastProject()[0] != '\0');
+
+				const char* effectiveProject = hasCliProject ? projectPath
+				                             : hasMemoryProject ? memory.GetLastProject()
+				                             : nullptr;
+
+				if (effectiveProject != nullptr && effectiveProject[0] != '\0')
 				{
-					DIA_LOG_INFO("Application", "PluginLoaderModule: Loading project '%s'", projectPath);
+					DIA_LOG_INFO("Application", "PluginLoaderModule: Loading project '%s'", effectiveProject);
 					Dia::Editor::EditorModel& model = modelModule->GetModel();
-					model.LoadProject(projectPath);
+					model.LoadProject(effectiveProject);
 
 					unsigned int manifestCount = model.GetManifestCount();
 					for (unsigned int i = 0; i < manifestCount; ++i)
