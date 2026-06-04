@@ -1124,85 +1124,23 @@ namespace Dia
 						return result;
 					});
 
-				// create_scene — write blank .diascene, register record, open in DiaSceneEditor
+				// create_scene — redirects to create_asset; also auto-opens in DiaSceneEditor
 				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.create_scene"),
 					[this](const Json::Value& data) -> Json::Value
 					{
-						Json::Value result;
-						if (!data.isMember("id") || !data["id"].isString()
-						    || !data.isMember("source_path") || !data["source_path"].isString())
+						Json::Value fwd = data;
+						fwd["assetType"] = "diascene";
+						Json::Value r = GetBridge()->InvokeRequestHandler(
+							Dia::Core::StringCRC("asset_catalogue.create_asset"), fwd);
+						if (!r.isNull() && r.get("success", false).asBool())
 						{
-							result["success"] = false;
-							result["error"]   = "missing id or source_path";
-							return result;
+							if (GetPluginLoader())
+								GetPluginLoader()->LoadPlugin(
+									Dia::Core::StringCRC("DiaSceneEditor"),
+									Dia::Core::StringCRC(data["id"].asCString()));
 						}
-
-						const char* relPath = data["source_path"].asCString();
-
-						// Resolve absolute path from diagame directory
-						char absPath[1024] = {};
-						bool pathIsAbsolute = (relPath[0] == '/' || relPath[0] == '\\' ||
-						                      (relPath[0] != '\0' && relPath[1] == ':'));
-						if (!pathIsAbsolute && mDiagameDir[0] != '\0')
-							snprintf(absPath, sizeof(absPath), "%s%s", mDiagameDir, relPath);
-						else
-							strncpy_s(absPath, sizeof(absPath), relPath, _TRUNCATE);
-
-						// Write blank .diascene
-						static const char* kBlankScene =
-							"{\n"
-							"    \"version\": 1,\n"
-							"    \"entities\": [],\n"
-							"    \"cameras\": [],\n"
-							"    \"lights\": [],\n"
-							"    \"layers\": []\n"
-							"}\n";
-
-						FILE* f = nullptr;
-						if (fopen_s(&f, absPath, "wb") != 0 || !f)
-						{
-							DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: create_scene — could not write '%s'", absPath);
-							result["success"] = false;
-							result["error"]   = "could not write scene file";
-							return result;
-						}
-						fputs(kBlankScene, f);
-						fclose(f);
-
-						// Register catalogue record via CreateRecordCommand
-						Dia::AssetCatalogue::AssetRecord rec;
-						rec.mId          = Dia::Core::StringCRC(data["id"].asCString());
-						rec.mAssetTypeId = Dia::Core::StringCRC("diascene");
-						rec.mSourcePath  = relPath;
-						rec.mStatus      = Dia::AssetCatalogue::AssetStatus::Active;
-						rec.mScope       = Dia::AssetCatalogue::AssetScope::kGlobal;
-
-						auto* cmd = new Dia::AssetCatalogue::Editor::CreateRecordCommand(mRegistry, rec);
-						mHistory.ExecuteCommand(cmd);
-						PushRegistryState();
-
-						DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: created scene '%s' at '%s'",
-							data["id"].asCString(), absPath);
-
-						// Auto-save manifest
-						if (mCurrentPath[0] != '\0')
-						{
-							char saveErr[256] = {};
-							if (mLoadHandler.Save(mCurrentPath, mRegistry, mSerializer, mHistory,
-							    saveErr, sizeof(saveErr)))
-								PushDirtyState();
-							else
-								DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: create_scene — auto-save failed: %s", saveErr);
-						}
-
-						// Open in DiaSceneEditor via the standard routing
-						Dia::Core::StringCRC assetId(data["id"].asCString());
-						if (GetPluginLoader())
-							GetPluginLoader()->LoadPlugin(Dia::Core::StringCRC("DiaSceneEditor"), assetId);
-
-						result["success"] = true;
-						return result;
+						return r.isNull() ? MakeErrorResponse("create_asset not available") : r;
 					});
 
 				// create_asset — write a blank asset file from a registered template, register record

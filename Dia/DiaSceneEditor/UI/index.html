@@ -373,6 +373,16 @@
     border-radius: 3px; padding: 6px 10px; font-size: 10px; color: var(--pico-ins-color, #89d185); margin-bottom: 6px;
   }
 
+  /* ── No scene overlay ── */
+  .no-scene-overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--pico-modal-overlay-background-color, rgba(0,0,0,0.6));
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 12px; z-index: 50;
+    border-right: 2px solid var(--pico-muted-border-color, #2d2d2d);
+  }
+  .no-scene-overlay .hint { font-size: 12px; color: var(--pico-muted-color, #808080); }
+
   /* ── Scrollbar ── */
   ::-webkit-scrollbar { width: 5px; }
   ::-webkit-scrollbar-track { background: var(--pico-background-color, #1e1e1e); }
@@ -412,6 +422,10 @@
 
 <div class="main">
   <div class="lcol" id="lcol">
+    <div class="no-scene-overlay" id="no-scene-overlay" style="display:none">
+      <span class="hint">No scene assigned to this stage.</span>
+      <button class="tbtn accent" id="btn-create-scene-cta">+ Create Scene</button>
+    </div>
     <div class="colhdr">
       <span class="colhdr-ttl">Scene Hierarchy</span>
       <span class="colhdr-cnt" id="total-cnt">0</span>
@@ -892,7 +906,11 @@ function populateStageDropdown(stages) {
   stages.forEach(s => {
     const opt = document.createElement('option');
     opt.value = s.stagePath;
-    opt.textContent = s.name;
+    const hasScene = s.scenePath && s.scenePath.length > 0;
+    opt.textContent = hasScene ? s.name : s.name + ' (no scene)';
+    if (!hasScene) {
+      opt.style.color = 'var(--pico-muted-color, #888)';
+    }
     sel.appendChild(opt);
   });
 }
@@ -916,6 +934,8 @@ async function loadStage(stagePath) {
   renderHierarchy();
   renderProperties();
   updateStatusCounts();
+  const overlay = document.getElementById('no-scene-overlay');
+  if (overlay) overlay.style.display = state.currentScene ? 'none' : 'flex';
 }
 
 function updateTitleFile(scenePath) {
@@ -1463,6 +1483,10 @@ document.getElementById('btn-new-scene').addEventListener('click', async () => {
   const id = 'diascene.' + name;
   const result = await bridgeRequest('new_scene_shortcut', { id, source_path: path.trim() });
   if (result && !result.success) alert('New scene failed: ' + (result.error || 'unknown'));
+});
+
+document.getElementById('btn-create-scene-cta').addEventListener('click', () => {
+  document.getElementById('btn-new-scene').click();
 });
 
 document.getElementById('btn-add-entity').addEventListener('click', () => addItem('entity'));

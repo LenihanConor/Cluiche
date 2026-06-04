@@ -1183,24 +1183,45 @@
     var tags  = document.getElementById('create-tags').value
       .split(',').map(function(t){ return t.trim(); }).filter(Boolean);
 
-    var payload = {
-      id: id,
-      type: type,
-      source_path: document.getElementById('create-source-path').value,
-      status: 'Active',
-      scope: scope,
-      tags: tags
-    };
-    if (scope === 'stage') payload.stage = document.getElementById('create-stage').value;
+    var source_path = document.getElementById('create-source-path').value;
 
-    diaRequest('asset_catalogue.create_record', payload).then(function(r) {
-      if (!r.success) {
-        document.getElementById('create-error').textContent = r.error || 'Create failed';
-      } else {
-        closeModal('modal-create');
-        selectedId = id;
-      }
-    });
+    // Types that create a real file — route through create_asset
+    var templateTypes = ['diascene', 'diaentitytemplate', 'diacamera', 'dialight'];
+    var isTemplateType = templateTypes.indexOf(type) !== -1;
+
+    if (isTemplateType) {
+      diaRequest('asset_catalogue.create_asset', {
+        assetType: type,
+        id: id,
+        source_path: source_path
+      }).then(function(r) {
+        if (!r.success) {
+          document.getElementById('create-error').textContent = r.error || 'Create failed';
+        } else {
+          closeModal('modal-create');
+          selectedId = id;
+        }
+      });
+    } else {
+      var payload = {
+        id: id,
+        type: type,
+        source_path: source_path,
+        status: 'Active',
+        scope: scope,
+        tags: tags
+      };
+      if (scope === 'stage') payload.stage = document.getElementById('create-stage').value;
+
+      diaRequest('asset_catalogue.create_record', payload).then(function(r) {
+        if (!r.success) {
+          document.getElementById('create-error').textContent = r.error || 'Create failed';
+        } else {
+          closeModal('modal-create');
+          selectedId = id;
+        }
+      });
+    }
   }
 
   /* ── New Scene shortcut ─────────────────────────── */
