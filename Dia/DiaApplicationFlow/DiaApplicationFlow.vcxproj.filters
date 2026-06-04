@@ -29,9 +29,6 @@
     <ClCompile Include="Manifest\ManifestValidatorV2.cpp">
       <Filter>Manifest</Filter>
     </ClCompile>
-    <ClCompile Include="Streams\StreamTypeRegistry.cpp">
-      <Filter>Streams</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
@@ -62,48 +59,6 @@
     </ClInclude>
     <ClInclude Include="Manifest\TypedImport.h">
       <Filter>Manifest</Filter>
-    </ClInclude>
-    <ClInclude Include="Streams\IStreamStore.h">
-      <Filter>Streams</Filter>
-    </ClInclude>
-    <ClInclude Include="Streams\FrameStreamStore.h">
-      <Filter>Streams</Filter>
-    </ClInclude>
-    <ClInclude Include="Streams\EventStreamStore.h">
-      <Filter>Streams</Filter>
-    </ClInclude>
-    <ClInclude Include="Streams\Event.h">
-      <Filter>Streams</Filter>
-    </ClInclude>
-    <ClInclude Include="Streams\SendResult.h">
-      <Filter>Streams</Filter>
-    </ClInclude>
-    <ClInclude Include="Streams\OverflowPolicy.h">
-      <Filter>Streams</Filter>
-    </ClInclude>
-    <ClInclude Include="Streams\StreamWriter.h">
-      <Filter>Streams</Filter>
-    </ClInclude>
-    <ClInclude Include="Streams\StreamReader.h">
-      <Filter>Streams</Filter>
-    </ClInclude>
-    <ClInclude Include="Streams\EventStreamWriter.h">
-      <Filter>Streams</Filter>
-    </ClInclude>
-    <ClInclude Include="Streams\EventStreamReader.h">
-      <Filter>Streams</Filter>
-    </ClInclude>
-    <ClInclude Include="Streams\ServiceStreamStore.h">
-      <Filter>Streams</Filter>
-    </ClInclude>
-    <ClInclude Include="Streams\ServiceStreamWriter.h">
-      <Filter>Streams</Filter>
-    </ClInclude>
-    <ClInclude Include="Streams\ServiceStreamReader.h">
-      <Filter>Streams</Filter>
-    </ClInclude>
-    <ClInclude Include="Streams\StreamTypeRegistry.h">
-      <Filter>Streams</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -1,9 +1,9 @@
-#include "Modules/DebugServerHostModule.h"
+﻿#include "Modules/DebugServerHostModule.h"
 
 #include <DiaApplicationFlow/IApplicationControl.h>
 #include <DiaApplicationFlow/IApplicationInspectable.h>
-#include <DiaApplicationFlow/Streams/IStreamStore.h>
-#include <DiaApplicationFlow/Streams/StreamTypeRegistry.h>
+#include <DiaStreams/IStreamStore.h>
+#include <DiaStreams/StreamTypeRegistry.h>
 #include <DiaApplicationFlow/LifecycleEvent.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaCore/Json/external/json/json.h>

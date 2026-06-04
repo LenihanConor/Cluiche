@@ -1,8 +1,8 @@
-#include "ApplicationManifestLoaderV2.h"
+﻿#include "ApplicationManifestLoaderV2.h"
 
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaObservation/Log/DiaLog.h>
-#include <DiaApplicationFlow/Streams/OverflowPolicy.h>
+#include <DiaStreams/OverflowPolicy.h>
 
 #include <fstream>
 #include <sstream>

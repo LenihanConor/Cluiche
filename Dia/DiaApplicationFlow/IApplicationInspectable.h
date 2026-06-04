@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////////////
+﻿////////////////////////////////////////////////////////////////////////////////
 // Filename: IApplicationInspectable.h
 // DiaApplicationFlow — read-only introspection interface
 //
@@ -8,8 +8,8 @@
 #pragma once
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/PUAffinity.h>
-#include <DiaApplicationFlow/Streams/IStreamStore.h>   // StreamKind
-#include <DiaApplicationFlow/Streams/OverflowPolicy.h> // OverflowPolicy
+#include <DiaStreams/IStreamStore.h>   // StreamKind
+#include <DiaStreams/OverflowPolicy.h> // OverflowPolicy
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 

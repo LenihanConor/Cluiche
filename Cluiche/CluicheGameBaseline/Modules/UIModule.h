@@ -1,9 +1,9 @@
-#pragma once
+﻿#pragma once
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaCore/CRC/StringCRC.h>
-#include <DiaApplicationFlow/Streams/EventStreamReader.h>
-#include <DiaApplicationFlow/Streams/StreamWriter.h>
+#include <DiaStreams/EventStreamReader.h>
+#include <DiaStreams/StreamWriter.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaUI/UIDataBuffer.h>
 #include "Types/SimToMainEvent.h"

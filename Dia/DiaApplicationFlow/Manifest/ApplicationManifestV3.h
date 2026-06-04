@@ -1,9 +1,9 @@
-#pragma once
+﻿#pragma once
 
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Strings/String256.h>
-#include <DiaApplicationFlow/Streams/OverflowPolicy.h>
+#include <DiaStreams/OverflowPolicy.h>
 
 namespace Json { class Value; }
 

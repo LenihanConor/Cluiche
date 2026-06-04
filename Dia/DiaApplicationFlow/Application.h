@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////////////
+﻿////////////////////////////////////////////////////////////////////////////////
 // Filename: Application.h
 // DiaApplicationFlow — v2 Application
 //
@@ -12,8 +12,8 @@
 namespace Json { class Value; }
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
-#include <DiaApplicationFlow/Streams/IStreamStore.h>
-#include <DiaApplicationFlow/Streams/EventStreamStore.h>
+#include <DiaStreams/IStreamStore.h>
+#include <DiaStreams/EventStreamStore.h>
 #include <DiaApplicationFlow/LifecycleEvent.h>
 #include <DiaApplicationFlow/IApplicationInspectable.h>
 #include <DiaApplicationFlow/IApplicationControl.h>

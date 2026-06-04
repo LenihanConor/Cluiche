@@ -1,6 +1,6 @@
-#pragma once
+﻿#pragma once
 #include <DiaApplicationFlow/TypeRegistry.h>
-#include <DiaApplicationFlow/Streams/StreamTypeRegistry.h>
+#include <DiaStreams/StreamTypeRegistry.h>
 #include <DiaApplicationFlow/DescribeMacro.h>
 
 // ---------------------------------------------------------------------------

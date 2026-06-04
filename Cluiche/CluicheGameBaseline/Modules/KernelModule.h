@@ -1,11 +1,11 @@
-#pragma once
+﻿#pragma once
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Strings/String64.h>
-#include <DiaApplicationFlow/Streams/EventStreamWriter.h>
-#include <DiaApplicationFlow/Streams/ServiceStreamWriter.h>
+#include <DiaStreams/EventStreamWriter.h>
+#include <DiaStreams/ServiceStreamWriter.h>
 #include <DiaInput/InputSourceManager.h>
 #include <DiaInput/EventData.h>
 #include <DiaInput/ConsoleGamepadManager.h>

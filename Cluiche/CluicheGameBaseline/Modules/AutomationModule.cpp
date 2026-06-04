@@ -1,10 +1,10 @@
-////////////////////////////////////////////////////////////////////////////////
+﻿////////////////////////////////////////////////////////////////////////////////
 // Filename: AutomationModule.cpp
 ////////////////////////////////////////////////////////////////////////////////
 #include "Modules/AutomationModule.h"
 #include <DiaAutomation/AutomationService.h>
 #include <DiaApplicationFlow/Application.h>
-#include <DiaApplicationFlow/Streams/ServiceStreamWriter.h>
+#include <DiaStreams/ServiceStreamWriter.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaObservation/Log/DiaLog.h>

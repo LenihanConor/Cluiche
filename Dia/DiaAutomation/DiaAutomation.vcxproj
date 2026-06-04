@@ -95,6 +95,10 @@
     <ProjectReference Include="..\DiaApplicationFlow\DiaApplicationFlow.vcxproj">
       <Project>{DD3D58EF-028B-42CB-B837-0042BA30D96F}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\DiaStreams\DiaStreams.vcxproj">
+      <Project>{d4e5f6a7-b8c9-0123-def0-456789012345}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
     <ProjectReference Include="..\DiaAPI\DiaAPI.vcxproj">
       <Project>{1E7F6E13-50CF-411C-B34C-66D70121DD03}</Project>
     </ProjectReference>

@@ -1,8 +1,8 @@
-#pragma once
+﻿#pragma once
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
-#include <DiaApplicationFlow/Streams/StreamReader.h>
+#include <DiaStreams/StreamReader.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include "Modules/DebugUIModule.h"
 #include "Types/MainToRenderFrame.h"

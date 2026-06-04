@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////////////
+﻿////////////////////////////////////////////////////////////////////////////////
 // TestEventStreamBatching.cpp
 // GoogleTest suite — EventStream frame-batching (flush sequence semantics)
 //
@@ -9,8 +9,8 @@
 // These tests will fail (RED) until task 5 wires in EventStreamStore::Flush().
 ////////////////////////////////////////////////////////////////////////////////
 #include <gtest/gtest.h>
-#include <DiaApplicationFlow/Streams/EventStreamStore.h>
-#include <DiaApplicationFlow/Streams/Event.h>
+#include <DiaStreams/EventStreamStore.h>
+#include <DiaStreams/Event.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 

@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////////////
+﻿////////////////////////////////////////////////////////////////////////////////
 // Filename: TestStreamTap.cpp
 // GoogleTest suite — EventStreamStore Tap API (F4)
 //
@@ -11,10 +11,10 @@
 //   - TapHandle 0 is invalid — DetachTap(0) is a no-op
 ////////////////////////////////////////////////////////////////////////////////
 #include <gtest/gtest.h>
-#include <DiaApplicationFlow/Streams/EventStreamStore.h>
-#include <DiaApplicationFlow/Streams/IStreamStore.h>
-#include <DiaApplicationFlow/Streams/Event.h>
-#include <DiaApplicationFlow/Streams/SendResult.h>
+#include <DiaStreams/EventStreamStore.h>
+#include <DiaStreams/IStreamStore.h>
+#include <DiaStreams/Event.h>
+#include <DiaStreams/SendResult.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <atomic>

@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////////////
+﻿////////////////////////////////////////////////////////////////////////////////
 // TestServiceChannel.cpp
 // GoogleTest suite — ServiceStreamStore commit lifecycle + validator error paths
 //
@@ -12,9 +12,9 @@
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
 #include <DiaApplicationFlow/Manifest/ManifestValidatorV2.h>
-#include <DiaApplicationFlow/Streams/ServiceStreamStore.h>
-#include <DiaApplicationFlow/Streams/ServiceStreamWriter.h>
-#include <DiaApplicationFlow/Streams/ServiceStreamReader.h>
+#include <DiaStreams/ServiceStreamStore.h>
+#include <DiaStreams/ServiceStreamWriter.h>
+#include <DiaStreams/ServiceStreamReader.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 

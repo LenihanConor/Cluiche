@@ -90,6 +90,10 @@
     <ProjectReference Include="..\..\Dia\DiaApplicationFlow\DiaApplicationFlow.vcxproj">
       <Project>{dd3d58ef-028b-42cb-b837-0042ba30d96f}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\Dia\DiaStreams\DiaStreams.vcxproj">
+      <Project>{d4e5f6a7-b8c9-0123-def0-456789012345}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaGame\DiaGame.vcxproj">
       <Project>{A1B2C3D4-E5F6-7890-ABCD-EF0123456789}</Project>
     </ProjectReference>

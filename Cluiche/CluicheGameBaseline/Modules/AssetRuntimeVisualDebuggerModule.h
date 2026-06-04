@@ -1,11 +1,11 @@
-#pragma once
+﻿#pragma once
 
 #ifdef DIA_DEBUG
 
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
-#include <DiaApplicationFlow/Streams/ServiceStreamReader.h>
+#include <DiaStreams/ServiceStreamReader.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaAssetRuntimeVisualDebugger/DiaAssetRuntimeVisualDebugger.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>

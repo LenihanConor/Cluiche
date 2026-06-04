@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////////////
+﻿////////////////////////////////////////////////////////////////////////////////
 // Filename: TestStreamPolicy.cpp
 // GoogleTest suite — EventStreamStore overflow policy tests
 //
@@ -9,10 +9,10 @@
 //   kDropOldest and kDropNewest coverage via direct store (supplement)
 ////////////////////////////////////////////////////////////////////////////////
 #include <gtest/gtest.h>
-#include <DiaApplicationFlow/Streams/EventStreamStore.h>
-#include <DiaApplicationFlow/Streams/Event.h>
-#include <DiaApplicationFlow/Streams/SendResult.h>
-#include <DiaApplicationFlow/Streams/OverflowPolicy.h>
+#include <DiaStreams/EventStreamStore.h>
+#include <DiaStreams/Event.h>
+#include <DiaStreams/SendResult.h>
+#include <DiaStreams/OverflowPolicy.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <thread>

@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////////////
+﻿////////////////////////////////////////////////////////////////////////////////
 // Filename: Application.cpp
 // DiaApplicationFlow — v2 Application
 ////////////////////////////////////////////////////////////////////////////////
@@ -7,8 +7,8 @@
 #include "DiaApplicationFlow/Manifest/ManifestValidatorV2.h"
 #include "DiaApplicationFlow/IApplicationInspectable.h"
 #include "DiaApplicationFlow/LifecycleEvent.h"
-#include <DiaApplicationFlow/Streams/Event.h>
-#include <DiaApplicationFlow/Streams/IStreamStore.h>
+#include <DiaStreams/Event.h>
+#include <DiaStreams/IStreamStore.h>
 #include <DiaCore/Time/TimeAbsolute.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>

@@ -1,9 +1,9 @@
-#include "Modules/InputStreamModule.h"
+﻿#include "Modules/InputStreamModule.h"
 
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaApplicationFlow/Application.h>
-#include <DiaApplicationFlow/Streams/Event.h>
+#include <DiaStreams/Event.h>
 
 #include <cstring>
 

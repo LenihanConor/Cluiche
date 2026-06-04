@@ -1,9 +1,9 @@
-#include "Modules/TestStages/TestStageModuleBase.h"
+﻿#include "Modules/TestStages/TestStageModuleBase.h"
 #include "Modules/TestStages/TestResultsRegistry.h"
 
 #include <DiaAutomation/AutomationService.h>
 #include <DiaApplicationFlow/Application.h>
-#include <DiaApplicationFlow/Streams/ServiceStreamReader.h>
+#include <DiaStreams/ServiceStreamReader.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Capture/DiaCapture.h>
 

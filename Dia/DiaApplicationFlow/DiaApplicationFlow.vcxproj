@@ -29,8 +29,6 @@
     <ClCompile Include="Module.cpp" />
     <ClCompile Include="ProcessingUnit.cpp" />
     <ClCompile Include="TypeRegistry.cpp" />
-    <ClCompile Include="Streams\StreamTypeRegistry.cpp" />
-    <ClCompile Include="Streams\FrameStreamDiagnostics.cpp" />
     <ClCompile Include="Metrics\MetricsCollectorModule.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -38,21 +36,6 @@
     <ClInclude Include="IApplicationInspectable.h" />
     <ClInclude Include="IApplicationControl.h" />
     <ClInclude Include="LifecycleEvent.h" />
-    <ClInclude Include="Streams\IStreamStore.h" />
-    <ClInclude Include="Streams\FrameStreamStore.h" />
-    <ClInclude Include="Streams\FrameStreamDiagnostics.h" />
-    <ClInclude Include="Streams\EventStreamStore.h" />
-    <ClInclude Include="Streams\Event.h" />
-    <ClInclude Include="Streams\SendResult.h" />
-    <ClInclude Include="Streams\OverflowPolicy.h" />
-    <ClInclude Include="Streams\StreamWriter.h" />
-    <ClInclude Include="Streams\StreamReader.h" />
-    <ClInclude Include="Streams\EventStreamWriter.h" />
-    <ClInclude Include="Streams\EventStreamReader.h" />
-    <ClInclude Include="Streams\ServiceStreamStore.h" />
-    <ClInclude Include="Streams\ServiceStreamWriter.h" />
-    <ClInclude Include="Streams\ServiceStreamReader.h" />
-    <ClInclude Include="Streams\StreamTypeRegistry.h" />
     <ClInclude Include="Manifest\ApplicationManifestV3.h" />
     <ClInclude Include="Manifest\ApplicationManifestLoaderV2.h" />
     <ClInclude Include="Manifest\ManifestComposerV2.h" />
@@ -139,6 +122,10 @@
   <ItemGroup>
     <ProjectReference Include="..\DiaJson\DiaJson.vcxproj">
       <Project>{b2c3d4e5-f6a7-8901-bcde-f23456789012}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaStreams\DiaStreams.vcxproj">
+      <Project>{d4e5f6a7-b8c9-0123-def0-456789012345}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\DiaObservation\DiaObservation.vcxproj">

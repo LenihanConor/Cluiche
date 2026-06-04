@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////////////
+﻿////////////////////////////////////////////////////////////////////////////////
 // Filename: TestTransitionGuards.cpp
 // GoogleTest suite — DiaApplicationFlow transition guards
 //
@@ -13,9 +13,9 @@
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/IApplicationInspectable.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
-#include <DiaApplicationFlow/Streams/EventStreamStore.h>
-#include <DiaApplicationFlow/Streams/EventStreamReader.h>
-#include <DiaApplicationFlow/Streams/Event.h>
+#include <DiaStreams/EventStreamStore.h>
+#include <DiaStreams/EventStreamReader.h>
+#include <DiaStreams/Event.h>
 #include <DiaApplicationFlow/LifecycleEvent.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>

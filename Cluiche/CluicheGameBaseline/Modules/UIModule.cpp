@@ -1,8 +1,8 @@
-#include "Modules/UIModule.h"
+﻿#include "Modules/UIModule.h"
 
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaApplicationFlow/Application.h>
-#include <DiaApplicationFlow/Streams/Event.h>
+#include <DiaStreams/Event.h>
 #include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaCore/Core/Assert.h>

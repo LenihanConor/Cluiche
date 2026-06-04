@@ -1,8 +1,8 @@
-#include <gtest/gtest.h>
+﻿#include <gtest/gtest.h>
 #include <DiaDebugServer/DebugServer.h>
 #include <DiaDebugServer/IDebugStateProvider.h>
-#include <DiaApplicationFlow/Streams/EventStreamStore.h>
-#include <DiaApplicationFlow/Streams/OverflowPolicy.h>
+#include <DiaStreams/EventStreamStore.h>
+#include <DiaStreams/OverflowPolicy.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
 // ---------------------------------------------------------------------------

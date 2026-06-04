@@ -1,7 +1,7 @@
-#pragma once
+﻿#pragma once
 #include "Modules/TestStages/TestStageModuleBase.h"
 #include <DiaApplicationFlow/PUAffinity.h>
-#include <DiaApplicationFlow/Streams/ServiceStreamReader.h>
+#include <DiaStreams/ServiceStreamReader.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include "Types/AssetLoadStatus.h"
 

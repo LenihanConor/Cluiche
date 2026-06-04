@@ -42,7 +42,7 @@ All tasks are independent — can be dispatched in parallel.
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| R3 | Split DiaStreams from DiaApplicationFlow | `msbuild DiaStreams.vcxproj` + `msbuild DiaApplicationFlow.vcxproj` succeed; `dia run googletest` passes | Deferred | sonnet | 50+ game module files need include path changes. LifecycleEvent.h ties Streams to Module.h. Tackle after C1 audit tool exists. |
+| R3 | Split DiaStreams from DiaApplicationFlow | `msbuild DiaStreams.vcxproj` + `msbuild DiaApplicationFlow.vcxproj` succeed; `dia run googletest` passes | Deferred | sonnet | 50+ game module files need include path changes (scriptable). DiaDebugServer dep now resolved via IStreamTapTarget — R3 is aspirational cleanup. |
 | R4 | Move TextureHandler to DiaBgfx | `msbuild DiaAssetRuntime.vcxproj` succeeds without DiaBgfx ref; `dia run googletest` passes | Done | sonnet | TextureHandler in DiaBgfx/Handlers/. DiaAssetRuntime drops DiaBgfx dep. AssetServiceModule.cpp updated. 5858 tests pass. |
 | R5 | Invert DiaDebugServer → DiaApplicationFlow dep | `msbuild DiaDebugServer.vcxproj` succeeds without DiaApplicationFlow ref; `dia run googletest` passes | Deferred | sonnet | DebugServer uses LifecycleEvent (concrete type from DiaApplicationFlow core, not just Streams). Needs LifecycleEvent decoupled from Module.h first. Tackle with R3. |
 | R6 | Split DiaDebugDraw from DiaVisualDebugger | `msbuild DiaDebugDraw.vcxproj` + all domain VDs build; `dia run googletest` passes | Done | opus | DiaDebugDraw at foundation/services. 9 domain VDs now depend on DiaDebugDraw, not DiaVisualDebugger. Cross-domain exception eliminated. 5890 tests pass. |

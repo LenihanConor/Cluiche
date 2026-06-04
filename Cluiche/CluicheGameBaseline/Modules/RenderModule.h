@@ -1,10 +1,10 @@
-#pragma once
+﻿#pragma once
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaCore/CRC/StringCRC.h>
-#include <DiaApplicationFlow/Streams/StreamReader.h>
-#include <DiaApplicationFlow/Streams/StreamWriter.h>
-#include <DiaApplicationFlow/Streams/ServiceStreamReader.h>
+#include <DiaStreams/StreamReader.h>
+#include <DiaStreams/StreamWriter.h>
+#include <DiaStreams/ServiceStreamReader.h>
 #include <DiaGraphics/Frame/FrameData.h>
 #include <DiaGraphics/Frame/RenderFence.h>
 #include <DiaGraphics/Interface/ICanvas.h>

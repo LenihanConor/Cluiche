@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 ////////////////////////////////////////////////////////////////////////////////
 // Filename: DebugServerHostModule.h
 //
@@ -14,7 +14,7 @@
 
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/PUAffinity.h>
-#include <DiaApplicationFlow/Streams/IStreamStore.h>
+#include <DiaStreams/IStreamStore.h>
 #include <DiaDebugServer/DebugServer.h>
 #include <DiaDebugServer/IDebugStateProvider.h>
 #include <DiaCore/CRC/StringCRC.h>

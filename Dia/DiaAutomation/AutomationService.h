@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////////////
+﻿////////////////////////////////////////////////////////////////////////////////
 // Filename: AutomationService.h
 // DiaAutomation — capability layer for external application driving
 //
@@ -13,8 +13,8 @@
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/IApplicationControl.h>
 #include <DiaApplicationFlow/LifecycleEvent.h>
-#include <DiaApplicationFlow/Streams/EventStreamStore.h>
-#include <DiaApplicationFlow/Streams/IStreamStore.h>
+#include <DiaStreams/EventStreamStore.h>
+#include <DiaStreams/IStreamStore.h>
 #include <functional>
 
 namespace Dia { namespace Automation {

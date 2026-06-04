@@ -1,5 +1,5 @@
-#include <gtest/gtest.h>
-#include <DiaApplicationFlow/Streams/StreamTypeRegistry.h>
+﻿#include <gtest/gtest.h>
+#include <DiaStreams/StreamTypeRegistry.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 
 struct SerializerTestPayload { int value; };

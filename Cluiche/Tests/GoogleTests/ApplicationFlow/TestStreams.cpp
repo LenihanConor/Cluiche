@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////////////
+﻿////////////////////////////////////////////////////////////////////////////////
 // Filename: TestStreams.cpp
 // GoogleTest suite — DiaApplicationFlow v2 Stream stores and handles
 //
@@ -14,14 +14,14 @@
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/TypeRegistry.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
-#include <DiaApplicationFlow/Streams/FrameStreamStore.h>
-#include <DiaApplicationFlow/Streams/EventStreamStore.h>
-#include <DiaApplicationFlow/Streams/StreamWriter.h>
-#include <DiaApplicationFlow/Streams/StreamReader.h>
-#include <DiaApplicationFlow/Streams/EventStreamWriter.h>
-#include <DiaApplicationFlow/Streams/EventStreamReader.h>
-#include <DiaApplicationFlow/Streams/Event.h>
-#include <DiaApplicationFlow/Streams/SendResult.h>
+#include <DiaStreams/FrameStreamStore.h>
+#include <DiaStreams/EventStreamStore.h>
+#include <DiaStreams/StreamWriter.h>
+#include <DiaStreams/StreamReader.h>
+#include <DiaStreams/EventStreamWriter.h>
+#include <DiaStreams/EventStreamReader.h>
+#include <DiaStreams/Event.h>
+#include <DiaStreams/SendResult.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Time/TimeAbsolute.h>

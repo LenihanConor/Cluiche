@@ -1,9 +1,9 @@
-#pragma once
+﻿#pragma once
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaCore/CRC/StringCRC.h>
-#include <DiaApplicationFlow/Streams/StreamWriter.h>
-#include <DiaApplicationFlow/Streams/StreamReader.h>
+#include <DiaStreams/StreamWriter.h>
+#include <DiaStreams/StreamReader.h>
 #include <DiaGraphics/Frame/FrameData.h>
 #include <DiaUI/UIDataBuffer.h>
 

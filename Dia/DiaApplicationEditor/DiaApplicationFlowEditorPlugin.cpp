@@ -1,4 +1,4 @@
-#include "DiaApplicationEditor/DiaApplicationFlowEditorPlugin.h"
+﻿#include "DiaApplicationEditor/DiaApplicationFlowEditorPlugin.h"
 #include <DiaEditor/Plugin/EditorPluginRegistrationMacros.h>
 #include <DiaEditor/Plugin/EditorPluginContext.h>
 #include <DiaEditor/Plugin/PluginServiceLocator.h>
@@ -14,7 +14,7 @@
 #include <DiaApplicationEditor/V2/Commands/ModuleCommands.h>
 #include <DiaApplicationEditor/V2/Commands/StageCommands.h>
 #include <DiaApplicationEditor/V2/Commands/StreamCommands.h>
-#include <DiaApplicationFlow/Streams/OverflowPolicy.h>
+#include <DiaStreams/OverflowPolicy.h>
 #include <string>
 #include <cstring>
 #include <windows.h>

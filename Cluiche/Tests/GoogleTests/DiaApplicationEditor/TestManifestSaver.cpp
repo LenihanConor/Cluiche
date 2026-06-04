@@ -1,11 +1,11 @@
-// TestManifestSaver.cpp - Unit tests for ManifestSaver
+﻿// TestManifestSaver.cpp - Unit tests for ManifestSaver
 // Suite: ManifestSaver
 
 #include <gtest/gtest.h>
 #include <DiaApplicationEditor/V2/ManifestSaver.h>
 #include <DiaApplicationEditor/V2/ManifestLoader.h>
 #include <DiaApplicationEditor/V2/ManifestEditorState.h>
-#include <DiaApplicationFlow/Streams/OverflowPolicy.h>
+#include <DiaStreams/OverflowPolicy.h>
 
 #include <windows.h>
 #include <cstdio>

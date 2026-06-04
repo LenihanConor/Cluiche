@@ -1,6 +1,6 @@
-#pragma once
+﻿#pragma once
 #include <DiaApplicationFlow/Module.h>
-#include <DiaApplicationFlow/Streams/StreamReader.h>
+#include <DiaStreams/StreamReader.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaGraphics/Frame/RenderFence.h>
 #include <cstdint>

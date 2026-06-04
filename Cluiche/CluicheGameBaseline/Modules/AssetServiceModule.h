@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
@@ -10,8 +10,8 @@
 #include <DiaObservation/Health/HealthReporterBase.h>
 #include <atomic>
 
-#include <DiaApplicationFlow/Streams/ServiceStreamReader.h>
-#include <DiaApplicationFlow/Streams/ServiceStreamWriter.h>
+#include <DiaStreams/ServiceStreamReader.h>
+#include <DiaStreams/ServiceStreamWriter.h>
 #include <DiaAssetRuntime/Handlers/TextureHandler.h>
 #include <DiaAssetRuntime/Handlers/JsonPassthroughHandler.h>
 #include "Modules/UIModule.h"

@@ -1,10 +1,10 @@
-#pragma once
+﻿#pragma once
 #include <DiaApplicationFlow/Module.h>
 #include <DiaCore/CRC/StringCRC.h>
-#include <DiaApplicationFlow/Streams/StreamWriter.h>
-#include <DiaApplicationFlow/Streams/StreamReader.h>
-#include <DiaApplicationFlow/Streams/EventStreamWriter.h>
-#include <DiaApplicationFlow/Streams/ServiceStreamReader.h>
+#include <DiaStreams/StreamWriter.h>
+#include <DiaStreams/StreamReader.h>
+#include <DiaStreams/EventStreamWriter.h>
+#include <DiaStreams/ServiceStreamReader.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaGraphics/Frame/FrameData.h>
 #include <DiaUI/UIDataBuffer.h>
