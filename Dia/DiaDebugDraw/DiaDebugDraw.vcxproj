@@ -19,8 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{C3D4E5F6-A7B8-9012-CDEF-123456789012}</ProjectGuid>
-    <RootNamespace>DiaIK2DVisualDebugger</RootNamespace>
+    <ProjectGuid>{C3D4E5F6-A7B8-9012-CDEF-345678901234}</ProjectGuid>
+    <RootNamespace>DiaDebugDraw</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -52,8 +52,8 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64' Or '$(Configuration)|$(Platform)'=='Debug-Asan|x64' Or '$(Configuration)|$(Platform)'=='Debug-Ubsan|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)../../External/imgui/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>DEBUG;WIN32;_DEBUG;DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)..\..\External\jsoncpp-master\include;$(ProjectDir)..\..\External\protobuf\Current-x64\include;$(ProjectDir)..\..\External\websocketpp;$(ProjectDir)..\..\External\asio\asio\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>DEBUG;WIN32;_DEBUG;DIA_DEBUG;ASIO_STANDALONE;_WEBSOCKETPP_CPP11_STL_;_WEBSOCKETPP_CPP11_THREAD_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <WarningLevel>Level3</WarningLevel>
@@ -66,27 +66,33 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)../../External/imgui/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;DIA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>./;./../;$(ProjectDir)..\..\External\jsoncpp-master\include;$(ProjectDir)..\..\External\protobuf\Current-x64\include;$(ProjectDir)..\..\External\websocketpp;$(ProjectDir)..\..\External\asio\asio\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;DIA_DEBUG;ASIO_STANDALONE;_WEBSOCKETPP_CPP11_STL_;_WEBSOCKETPP_CPP11_THREAD_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="IKChainBonesDrawer.h" />
-    <ClInclude Include="IKChainJointsDrawer.h" />
-    <ClInclude Include="IKChainArrowsDrawer.h" />
-    <ClInclude Include="IKReachCirclesDrawer.h" />
+    <ClInclude Include="..\DiaVisualDebugger\IVisualDebugger.h" />
+    <ClInclude Include="..\DiaVisualDebugger\DebugLayerManager.h" />
+    <ClInclude Include="..\DiaVisualDebugger\DebugColourPalette.h" />
+    <ClInclude Include="..\DiaVisualDebugger\DebugLayerNames.h" />
+    <ClInclude Include="..\DiaVisualDebugger\DebugLayerPanelPlugin.h" />
+    <ClInclude Include="..\DiaVisualDebugger\IObjectRenderer.h" />
+    <ClInclude Include="..\DiaVisualDebugger\IFixedPrimitiveBuffer.h" />
+    <ClInclude Include="..\DiaVisualDebugger\FixedPrimitiveBuffer.h" />
+    <ClInclude Include="..\DiaVisualDebugger\FixedDrawRegistry.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="IKChainBonesDrawer.cpp" />
-    <ClCompile Include="IKChainJointsDrawer.cpp" />
-    <ClCompile Include="IKChainArrowsDrawer.cpp" />
-    <ClCompile Include="IKReachCirclesDrawer.cpp" />
+    <ClCompile Include="..\DiaVisualDebugger\DebugLayerManager.cpp" />
+    <ClCompile Include="..\DiaVisualDebugger\DebugColourPalette.cpp" />
+    <ClCompile Include="..\DiaVisualDebugger\DebugLayerPanelPlugin.cpp" />
+    <ClCompile Include="..\DiaVisualDebugger\FixedPrimitiveBuffer.cpp" />
+    <ClCompile Include="..\DiaVisualDebugger\FixedDrawRegistry.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Docs\dia.ik2dvisualdebugger.architecture.module.md" />
+    <None Include="dia.debugdraw.architecture.module.md" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
@@ -97,24 +103,28 @@
       <Project>{2BBA0AD3-D449-4C0E-8C84-ACFA8BCA456B}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="..\DiaRig2D\DiaRig2D.vcxproj">
-      <Project>{E4F5A6B7-C8D9-0123-ABCD-456789ABCDE0}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="..\DiaIK2D\DiaIK2D.vcxproj">
-      <Project>{F4A5B6C7-D8E9-0123-FABC-445566778899}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
     <ProjectReference Include="..\DiaGraphics\DiaGraphics.vcxproj">
       <Project>{1CF9F92B-666E-4B39-9DDE-B1CFBEF68618}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="..\DiaVisualDebugger\DiaVisualDebugger.vcxproj">
-      <Project>{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}</Project>
+    <ProjectReference Include="..\DiaJson\DiaJson.vcxproj">
+      <Project>{b2c3d4e5-f6a7-8901-bcde-f23456789012}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="..\DiaDebugDraw\DiaDebugDraw.vcxproj">
-      <Project>{c3d4e5f6-a7b8-9012-cdef-345678901234}</Project>
+    <ProjectReference Include="..\DiaAPI\DiaAPI.vcxproj">
+      <Project>{1E7F6E13-50CF-411C-B34C-66D70121DD03}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaDebugProtocol\DiaDebugProtocol.vcxproj">
+      <Project>{E9E22143-02A3-4D92-894D-079E8ABD8BCA}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaDebugServer\DiaDebugServer.vcxproj">
+      <Project>{6AAFCCCB-71D0-4D8D-A6BE-081F5E02093D}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\DiaEditor\DiaEditor.vcxproj">
+      <Project>{F1A2B3C4-D5E6-7890-ABCD-EF1234567890}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>
