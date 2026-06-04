@@ -43,6 +43,8 @@ namespace Dia
 
 		private:
 			bool LoadFile();
+			static bool IsPluginHtmlPath(const std::string& filePath);
+			static std::string InjectThemeLinks(const std::string& html);
 
 			std::string mFilePath;
 			std::vector<unsigned char> mFileData;

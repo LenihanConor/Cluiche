@@ -4,51 +4,51 @@
   <meta charset="UTF-8" />
   <title>Output Console</title>
   <style>
+    /* layout */
     html, body {
-      margin: 0;
-      height: 100%;
-      background: #1e1e1e;
-      color: #d4d4d4;
-      font-family: Consolas, "Courier New", monospace;
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      height: 100%;
+      margin: 0;
+      font-family: var(--pico-font-family-monospace, monospace);
     }
-
     #toolbar {
       display: flex;
       align-items: center;
       gap: 2px;
       padding: 3px 6px;
-      background: #252526;
-      border-bottom: 1px solid #3c3c3c;
       flex-shrink: 0;
       user-select: none;
+      background: var(--pico-card-background-color, #252526);
+      border-bottom: 1px solid var(--pico-border-color, #3c3c3c);
     }
+    .separator {
+      width: 1px;
+      height: 16px;
+      background: var(--pico-border-color, #3c3c3c);
+      margin: 0 4px;
+    }
+    .toolbar-spacer { flex: 1; }
+    #log { flex: 1; overflow: auto; padding: 4px 10px; }
 
+    /* tab buttons */
     .tab {
       padding: 3px 10px;
       font-size: 11px;
       cursor: pointer;
-      color: #999;
+      color: var(--pico-muted-color, #999);
       border: 1px solid transparent;
       border-radius: 3px;
       background: none;
     }
-    .tab:hover { color: #ccc; }
     .tab.active {
-      color: #d4d4d4;
-      background: #37373d;
-      border-color: #3c3c3c;
+      color: var(--pico-color, #d4d4d4);
+      background: var(--pico-form-element-selected-background-color, #37373d);
+      border-color: var(--pico-border-color, #3c3c3c);
     }
 
-    .separator {
-      width: 1px;
-      height: 16px;
-      background: #3c3c3c;
-      margin: 0 4px;
-    }
-
+    /* filter buttons */
     .filter-btn {
       padding: 2px 6px;
       font-size: 10px;
@@ -57,49 +57,32 @@
       border-radius: 3px;
       background: none;
     }
-    .filter-btn:hover { opacity: 0.8; }
     .filter-btn.active { border-color: currentColor; }
-    .filter-btn.f-debug { color: #9cdcfe; }
-    .filter-btn.f-info { color: #d4d4d4; }
+    .filter-btn.f-debug  { color: #9cdcfe; }
+    .filter-btn.f-info   { color: var(--pico-color, #d4d4d4); }
     .filter-btn.f-warning { color: #dcdcaa; }
-    .filter-btn.f-error { color: #f44747; }
+    .filter-btn.f-error  { color: #f44747; }
 
-    .toolbar-spacer { flex: 1; }
-
+    /* action buttons */
     .action-btn {
       padding: 2px 8px;
       font-size: 10px;
       cursor: pointer;
-      color: #999;
+      color: var(--pico-muted-color, #999);
       border: 1px solid transparent;
       border-radius: 3px;
       background: none;
     }
-    .action-btn:hover { color: #ccc; background: #37373d; }
 
-    #log {
-      flex: 1;
-      overflow: auto;
-      padding: 4px 10px;
-    }
-
-    .entry {
-      font-size: 12px;
-      line-height: 1.5;
-      white-space: pre-wrap;
-    }
-    .debug { color: #9cdcfe; }
-    .info { color: #d4d4d4; }
+    /* log entries */
+    .entry { font-size: 12px; line-height: 1.5; white-space: pre-wrap; }
+    .debug   { color: #9cdcfe; }
+    .info    { color: var(--pico-color, #d4d4d4); }
     .warning { color: #dcdcaa; }
-    .error { color: #f44747; }
-    .ts { opacity: 0.5; margin-right: 6px; }
+    .error   { color: #f44747; }
+    .ts  { opacity: 0.5; margin-right: 6px; }
     .src { opacity: 0.4; margin-right: 6px; font-size: 10px; }
-
-    .empty {
-      color: #666;
-      font-size: 12px;
-      padding: 8px 4px;
-    }
+    .empty { color: var(--pico-muted-color, #666); font-size: 12px; padding: 8px 4px; }
   </style>
 </head>
 <body>

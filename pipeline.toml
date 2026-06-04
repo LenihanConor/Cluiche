@@ -100,6 +100,7 @@ files = [
   { src = "Cluiche/CluicheEditor/Data/*",                 dest = "$(OutDir)assets/configs/" },
   { src = "Cluiche/CluicheEditor/UI/dist/*",              dest = "$(OutDir)ui/" },
   { src = "Cluiche/CluicheEditor/UI/dist/assets/*",       dest = "$(OutDir)ui/assets/" },
+  { src = "Cluiche/CluicheEditor/UI/theme/*",             dest = "$(OutDir)theme/" },
   { src = "Dia/DiaEditor/Plugin/Assets/**/*",             dest = "$(OutDir)plugins/" },
   { src = "Dia/DiaApplicationEditor/UI/dist/*",           dest = "$(OutDir)plugins/diaapplicationeditor/" },
   { src = "Dia/DiaApplicationEditor/UI/dist/assets/*",    dest = "$(OutDir)plugins/diaapplicationeditor/assets/" },

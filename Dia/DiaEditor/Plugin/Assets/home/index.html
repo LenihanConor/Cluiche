@@ -4,55 +4,11 @@
   <meta charset="UTF-8" />
   <title>Home</title>
   <style>
-    html, body {
-      margin: 0;
-      height: 100%;
-      font-family: "Segoe UI", system-ui, sans-serif;
-      background: #1e1e1e;
-      color: #d4d4d4;
-    }
-    .wrap {
-      padding: 20px;
-      max-width: 640px;
-    }
-    h1 {
-      font-size: 18px;
-      margin: 0 0 12px 0;
-      color: #569cd6;
-    }
-    h2 {
-      font-size: 13px;
-      margin: 16px 0 6px 0;
-      color: #9cdcfe;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    p, li {
-      font-size: 12px;
-      line-height: 1.5;
-    }
-    code {
-      background: #2d2d30;
-      padding: 1px 4px;
-      border-radius: 2px;
-      font-size: 11px;
-    }
-    ul {
-      margin: 0;
-      padding-left: 18px;
-    }
-    .hint {
-      margin-top: 20px;
-      padding: 10px 12px;
-      background: #252526;
-      border-left: 3px solid #569cd6;
-      font-size: 11px;
-      color: #b0b0b0;
-    }
+    main { padding: 20px; max-width: 640px; }
   </style>
 </head>
 <body>
-  <div class="wrap">
+  <main>
     <h1>Cluiche Editor</h1>
     <p>No project is loaded. Editor panels registered by plugins will appear here
     once a project is opened.</p>
@@ -68,10 +24,10 @@
       <li><code>Ctrl+Shift+P</code> — Command Palette</li>
     </ul>
 
-    <div class="hint">
+    <blockquote>
       This panel is loaded via <code>HomeEditorPlugin</code> through the
       plugin discovery pipeline.
-    </div>
-  </div>
+    </blockquote>
+  </main>
 </body>
 </html>

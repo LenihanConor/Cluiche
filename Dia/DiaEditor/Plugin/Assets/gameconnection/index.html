@@ -4,192 +4,57 @@
   <meta charset="UTF-8" />
   <title>Game Connection</title>
   <style>
-    html, body {
-      margin: 0;
-      height: 100%;
-      font-family: "Segoe UI", system-ui, sans-serif;
-      background: #1e1e1e;
-      color: #d4d4d4;
-      font-size: 12px;
-    }
+    /* layout only */
     .wrap {
       padding: 14px 16px;
       box-sizing: border-box;
       height: 100%;
       overflow: auto;
     }
-    h1 {
-      font-size: 14px;
-      margin: 0 0 10px 0;
-      color: #569cd6;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-    .status {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 10px;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 12px;
-    }
-    .status.disconnected { background: #3a1f1f; color: #f48771; }
-    .status.connecting   { background: #3a3a1f; color: #dcdcaa; }
-    .status.connected    { background: #1f3a22; color: #89d185; }
-    label {
-      display: block;
-      margin-bottom: 4px;
-      color: #9cdcfe;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    input[type="text"] {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 5px 8px;
-      background: #252526;
-      color: #d4d4d4;
-      border: 1px solid #3c3c3c;
-      font-family: Consolas, "Courier New", monospace;
-      font-size: 12px;
-      outline: none;
-    }
-    input[type="text"]:focus { border-color: #569cd6; }
-    button {
-      padding: 5px 14px;
-      background: #0e639c;
-      color: #fff;
-      border: none;
-      cursor: pointer;
-      font-size: 12px;
-      margin-top: 8px;
-    }
-    button:hover { background: #1177bb; }
-    button.secondary { background: #3a3d41; }
-    button.secondary:hover { background: #4a4d51; }
-    button:disabled {
-      background: #2a2d2e;
-      color: #666;
-      cursor: not-allowed;
-    }
-    .err {
-      margin-top: 8px;
-      padding: 6px 10px;
-      background: #3a1f1f;
-      border-left: 3px solid #f48771;
-      color: #f48771;
-      font-size: 11px;
-      white-space: pre-wrap;
-    }
-    .info {
-      background: #252526;
-      border: 1px solid #3c3c3c;
-      padding: 10px 12px;
-      margin-top: 10px;
-    }
-    .info dt {
-      color: #9cdcfe;
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-top: 8px;
-    }
-    .info dt:first-child { margin-top: 0; }
-    .info dd {
-      margin: 2px 0 0 0;
-      font-family: Consolas, "Courier New", monospace;
-      font-size: 12px;
-      color: #d4d4d4;
-    }
-    .heartbeat {
-      margin-top: 10px;
-      font-size: 11px;
-      color: #808080;
-    }
-    .heartbeat .dot {
-      display: inline-block;
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #89d185;
-      margin-right: 5px;
-      vertical-align: 1px;
-    }
     .row { margin-top: 8px; }
     .metrics { margin-top: 14px; }
     .summary-bar {
       display: flex;
       gap: 16px;
-      background: #252526;
-      border: 1px solid #3c3c3c;
       padding: 8px 12px;
       margin-bottom: 10px;
+      background: var(--pico-card-background-color, #252526);
+      border: 1px solid var(--pico-border-color, #3c3c3c);
     }
-    .summary-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-width: 70px;
-    }
-    .summary-label {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #9cdcfe;
-      margin-bottom: 2px;
-    }
-    .summary-value {
-      font-family: Consolas, "Courier New", monospace;
-      font-size: 14px;
-      color: #d4d4d4;
-    }
-    .chart-section {
-      margin-top: 8px;
-    }
-    .chart-title {
-      font-size: 11px;
-      color: #9cdcfe;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 4px;
-    }
+    .summary-item { display: flex; flex-direction: column; align-items: center; min-width: 70px; }
+    .summary-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
+    .summary-value { font-family: var(--pico-font-family-monospace, monospace); font-size: 14px; }
+    .chart-section { margin-top: 8px; }
+    .chart-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
     .chart-canvas {
-      width: 100%;
-      height: 100px;
-      background: #1a1a1a;
-      border: 1px solid #3c3c3c;
-      display: block;
+      width: 100%; height: 100px; display: block;
+      background: var(--pico-background-color, #1e1e1e);
+      border: 1px solid var(--pico-border-color, #3c3c3c);
     }
-    .chart-legend {
-      font-size: 10px;
-      color: #808080;
-      margin-top: 3px;
-    }
-    .chart-legend span {
-      margin-right: 10px;
-    }
-    .chart-legend .swatch {
-      display: inline-block;
-      width: 8px;
-      height: 8px;
-      margin-right: 3px;
-      vertical-align: 1px;
-    }
+    .chart-legend { font-size: 10px; margin-top: 3px; }
+    .chart-legend span { margin-right: 10px; }
+    .chart-legend .swatch { display: inline-block; width: 8px; height: 8px; margin-right: 3px; vertical-align: 1px; }
+    /* connection status badges */
+    .conn-status { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
+    .conn-status.disconnected { background: #3a1f1f; color: #f48771; }
+    .conn-status.connecting   { background: #3a3a1f; color: #dcdcaa; }
+    .conn-status.connected    { background: #1f3a22; color: #89d185; }
+    /* heartbeat dot */
+    .heartbeat { margin-top: 10px; font-size: 11px; }
+    .heartbeat .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #89d185; margin-right: 5px; vertical-align: 1px; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>Game Connection</h1>
-    <div id="status" class="status disconnected">Disconnected</div>
+    <div id="status" class="conn-status disconnected">Disconnected</div>
 
     <!-- disconnected view -->
     <div id="view-disconnected">
       <label for="url">Game URL</label>
       <input id="url" type="text" value="ws://localhost:9002/" autocomplete="off" />
       <button id="btn-connect">Connect</button>
-      <div id="err" class="err" style="display:none"></div>
+      <div id="err" role="alert" style="display:none"></div>
     </div>
 
     <!-- connecting view -->
@@ -200,10 +65,8 @@
 
     <!-- connected view -->
     <div id="view-connected" style="display:none">
-      <div class="row">
-        Connected to <code id="connected-url"></code>
-      </div>
-      <dl class="info">
+      <div class="row">Connected to <code id="connected-url"></code></div>
+      <dl>
         <dt>Name</dt><dd id="info-name">-</dd>
         <dt>Build</dt><dd id="info-build">-</dd>
         <dt>Processing Units</dt><dd id="info-pu-count">-</dd>
@@ -276,7 +139,6 @@
         callCpp(type, null, data);
       }
 
-      // UI elements
       var statusEl   = document.getElementById("status");
       var viewDis    = document.getElementById("view-disconnected");
       var viewCon    = document.getElementById("view-connecting");
@@ -317,7 +179,7 @@
 
       function apply(state) {
         var s = state.state || "disconnected";
-        statusEl.className = "status " + s;
+        statusEl.className = "conn-status " + s;
         statusEl.textContent = s.charAt(0).toUpperCase() + s.slice(1);
 
         viewDis.style.display = (s === "disconnected") ? "block" : "none";
@@ -357,13 +219,11 @@
         heartbeat.textContent = "last heartbeat at " + hh + ":" + mm + ":" + ss;
       }
 
-      // --- Metrics ---
+      // --- Metrics + charts ---
       var MAX_SAMPLES = 60;
-      var PU_COLORS = ["#569cd6", "#89d185", "#dcdcaa", "#f48771", "#c586c0", "#4ec9b0", "#ce9178", "#d7ba7d"];
-      var MEM_COLOR = "#dcdcaa";
-      var fpsData = {};   // { puName: [float] }
-      var memData = [];   // [float]
-      var puOrder = [];   // [puName] in discovery order
+      var fpsData = {};
+      var memData = [];
+      var puOrder = [];
 
       var sumFps    = document.getElementById("sum-fps");
       var sumMem    = document.getElementById("sum-mem");
@@ -371,6 +231,19 @@
       var fpsCanvas = document.getElementById("fps-chart");
       var memCanvas = document.getElementById("mem-chart");
       var fpsLegend = document.getElementById("fps-legend");
+
+      // Read theme colors at render time so re-theming updates charts too
+      function getThemeColors() {
+        var style = getComputedStyle(document.documentElement);
+        var primary = style.getPropertyValue("--pico-primary").trim() || "#0e639c";
+        var accent  = style.getPropertyValue("--pico-ins-color").trim() || "#89d185";
+        var warn    = style.getPropertyValue("--pico-del-color").trim() || "#f44747";
+        return [primary, accent, "#dcdcaa", warn, "#c586c0", "#4ec9b0", "#ce9178", "#d7ba7d"];
+      }
+
+      function getMemColor() {
+        return getComputedStyle(document.documentElement).getPropertyValue("--pico-ins-color").trim() || "#dcdcaa";
+      }
 
       function formatUptime(secs) {
         var m = Math.floor(secs / 60);
@@ -429,7 +302,11 @@
         var range = yMax - yMin;
         if (range <= 0) range = 1;
 
-        ctx.strokeStyle = "#333";
+        var style = getComputedStyle(document.documentElement);
+        var axisColor = style.getPropertyValue("--pico-muted-border-color").trim() || "#333";
+        var labelColor = style.getPropertyValue("--pico-muted-color").trim() || "#666";
+
+        ctx.strokeStyle = axisColor;
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(pad.left, h - pad.bottom);
@@ -437,7 +314,7 @@
         ctx.stroke();
 
         ctx.font = "9px Consolas, monospace";
-        ctx.fillStyle = "#666";
+        ctx.fillStyle = labelColor;
         ctx.textAlign = "right";
         ctx.fillText(Math.round(yMax), pad.left - 4, pad.top + 8);
         ctx.fillText(Math.round(yMin), pad.left - 4, h - pad.bottom);
@@ -459,6 +336,7 @@
       }
 
       function drawFpsChart() {
+        var PU_COLORS = getThemeColors();
         var datasets = [];
         var colors = [];
         var maxFps = 120;
@@ -478,10 +356,11 @@
         for (var i = 0; i < memData.length; i++) {
           if (memData[i] > maxMem) maxMem = memData[i] * 1.1;
         }
-        drawLineChart(memCanvas, [memData], [MEM_COLOR], 0, maxMem);
+        drawLineChart(memCanvas, [memData], [getMemColor()], 0, maxMem);
       }
 
       function updateFpsLegend() {
+        var PU_COLORS = getThemeColors();
         var html = "";
         for (var i = 0; i < puOrder.length; i++) {
           var color = PU_COLORS[i % PU_COLORS.length];
@@ -490,7 +369,6 @@
         fpsLegend.innerHTML = html;
       }
 
-      // Listen for core_metrics topic
       window.addEventListener("message", function (e) {
         var msg = e.data || {};
         if (!msg.__dia) return;
