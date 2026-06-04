@@ -93,6 +93,7 @@
   <ItemGroup>
     <ClInclude Include="Plugin\IEditorPlugin.h" />
     <ClInclude Include="Plugin\EditorPluginBase.h" />
+    <ClInclude Include="Plugin\HandlerTracker.h" />
     <ClInclude Include="Plugin\EditorPluginRegistry.h" />
     <ClInclude Include="Plugin\EditorPluginRegistrationMacros.h" />
     <ClInclude Include="Plugin\HelloEditorPlugin.h" />

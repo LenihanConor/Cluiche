@@ -39,6 +39,9 @@
     <ClInclude Include="Plugin\EditorPluginBase.h">
       <Filter>Plugin</Filter>
     </ClInclude>
+    <ClInclude Include="Plugin\HandlerTracker.h">
+      <Filter>Plugin</Filter>
+    </ClInclude>
     <ClInclude Include="Plugin\EditorPluginRegistry.h">
       <Filter>Plugin</Filter>
     </ClInclude>

@@ -36,6 +36,22 @@ namespace Dia
 
 			void OnNavigate(const Dia::Core::StringCRC& instanceId) override;
 
+			// Testable handler methods — can be called directly with JSON fixtures
+			Json::Value HandleAddItem(const Json::Value& data);
+			Json::Value HandleDeleteItem(const Json::Value& data);
+			Json::Value HandleDuplicateItem(const Json::Value& data);
+			Json::Value HandleRenameItem(const Json::Value& data);
+			Json::Value HandleLoadScene(const Json::Value& data);
+			Json::Value HandleSaveScene(const Json::Value& data);
+			Json::Value HandleValidate(const Json::Value& data);
+
+			// Test support — inject a scene root without file I/O
+			void SetTestScene(const Json::Value& sceneRoot)
+			{
+				mLoadedSceneRoot = sceneRoot;
+				strncpy_s(mLoadedScenePath, sizeof(mLoadedScenePath), "test://scene.diascene", _TRUNCATE);
+			}
+
 		protected:
 			void OnPluginLoad() override;
 			void OnPluginUnload() override;

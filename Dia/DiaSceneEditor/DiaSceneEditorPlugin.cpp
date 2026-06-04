@@ -339,64 +339,11 @@ namespace Dia
 
 			RegisterHandler(
 				Dia::Core::StringCRC("scene_editor.load_scene"),
-				[this](const Json::Value& data) -> Json::Value
-				{
-					DIA_TRACE_ZONE("scene_editor.load_scene", Dia::Observation::Trace::Category::kNone);
-					if (!data.isMember("path") || !data["path"].isString())
-						return MakeErrorResponse("missing path");
-
-					Json::Value sceneRoot;
-					char err[256] = {};
-					if (!mFileHandler.Load(data["path"].asCString(), sceneRoot, err, sizeof(err)))
-						return MakeErrorResponse(err[0] ? err : "load failed");
-
-					DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: loaded scene '%s'", data["path"].asCString());
-					mLoadedSceneRoot = sceneRoot;
-					strncpy_s(mLoadedScenePath, sizeof(mLoadedScenePath), data["path"].asCString(), _TRUNCATE);
-					mHierarchyController.ClearSelection();
-					ClearDirty();
-					ResolveCatalogueIdForLoadedScene();
-
-					Json::Value result;
-					result["success"]   = true;
-					result["scene"]     = sceneRoot;
-					result["hierarchy"] = mHierarchyController.BuildHierarchyJson(sceneRoot);
-					result["dirty"]     = false;
-					return result;
-				});
+				[this](const Json::Value& data) -> Json::Value { return HandleLoadScene(data); });
 
 			RegisterHandler(
 				Dia::Core::StringCRC("scene_editor.save_scene"),
-				[this](const Json::Value& data) -> Json::Value
-				{
-					DIA_TRACE_ZONE("scene_editor.save_scene", Dia::Observation::Trace::Category::kNone);
-					const char* savePath = mLoadedScenePath;
-					if (data.isMember("path") && data["path"].isString())
-						savePath = data["path"].asCString();
-
-					if (!savePath || savePath[0] == '\0')
-						return MakeErrorResponse("no path");
-
-					const Json::Value& sceneToSave = data.isMember("scene")
-						? data["scene"] : mLoadedSceneRoot;
-
-					if (sceneToSave.isNull())
-						return MakeErrorResponse("no scene data");
-
-					char err[256] = {};
-					if (!mFileHandler.Save(savePath, sceneToSave, err, sizeof(err)))
-						return MakeErrorResponse(err[0] ? err : "save failed");
-
-					mLoadedSceneRoot = sceneToSave;
-					strncpy_s(mLoadedScenePath, sizeof(mLoadedScenePath), savePath, _TRUNCATE);
-					ClearDirty();
-
-					DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: saved scene '%s'", savePath);
-					Json::Value result;
-					result["success"] = true;
-					result["dirty"]   = false;
-					return result;
-				});
+				[this](const Json::Value& data) -> Json::Value { return HandleSaveScene(data); });
 
 			RegisterHandler(
 				Dia::Core::StringCRC("scene_editor.get_blueprint_defaults"),
@@ -479,127 +426,15 @@ namespace Dia
 
 			RegisterHandler(
 				Dia::Core::StringCRC("scene_editor.add_item"),
-				[this](const Json::Value& data) -> Json::Value
-				{
-					DIA_TRACE_ZONE("scene_editor.add_item", Dia::Observation::Trace::Category::kNone);
-					if (!data.isMember("itemType") || !data.isMember("blueprintId"))
-						return MakeErrorResponse("missing itemType or blueprintId");
-					if (mLoadedSceneRoot.isNull())
-						return MakeErrorResponse("no scene loaded");
-
-					char err[256] = {};
-					if (!SceneMutator::AddItem(mLoadedSceneRoot,
-					        data["itemType"].asCString(),
-					        data["blueprintId"].asCString(),
-					        err, sizeof(err)))
-						return MakeErrorResponse(err);
-
-					if (GetBridge() && mSceneCatalogueId[0] != '\0')
-					{
-						Json::Value relReq;
-						relReq["from"] = mSceneCatalogueId;
-						relReq["rel"]  = "uses";
-						relReq["to"]   = data["blueprintId"].asString();
-						GetBridge()->InvokeRequestHandler(Dia::Core::StringCRC("asset_catalogue.add_relationship"), relReq);
-					}
-
-					MarkDirty();
-					Json::Value result;
-					result["success"]   = true;
-					result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
-					return result;
-				});
+				[this](const Json::Value& data) -> Json::Value { return HandleAddItem(data); });
 
 			RegisterHandler(
 				Dia::Core::StringCRC("scene_editor.duplicate_item"),
-				[this](const Json::Value& data) -> Json::Value
-				{
-					DIA_TRACE_ZONE("scene_editor.duplicate_item", Dia::Observation::Trace::Category::kNone);
-					if (!data.isMember("itemType") || !data.isMember("itemId"))
-						return MakeErrorResponse("missing itemType or itemId");
-					if (mLoadedSceneRoot.isNull())
-						return MakeErrorResponse("no scene loaded");
-
-					char err[256] = {};
-					if (!SceneMutator::DuplicateItem(mLoadedSceneRoot,
-					        data["itemType"].asCString(),
-					        data["itemId"].asCString(),
-					        err, sizeof(err)))
-						return MakeErrorResponse(err);
-
-					MarkDirty();
-					Json::Value result;
-					result["success"]   = true;
-					result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
-					return result;
-				});
+				[this](const Json::Value& data) -> Json::Value { return HandleDuplicateItem(data); });
 
 			RegisterHandler(
 				Dia::Core::StringCRC("scene_editor.delete_item"),
-				[this](const Json::Value& data) -> Json::Value
-				{
-					DIA_TRACE_ZONE("scene_editor.delete_item", Dia::Observation::Trace::Category::kNone);
-					if (!data.isMember("itemType") || !data.isMember("itemId"))
-						return MakeErrorResponse("missing itemType or itemId");
-					if (mLoadedSceneRoot.isNull())
-						return MakeErrorResponse("no scene loaded");
-
-					char blueprintIdForRemove[256] = {};
-					if (mSceneCatalogueId[0] != '\0')
-					{
-						const char* arrayKey = nullptr;
-						const char* itemTypeStr = data["itemType"].asCString();
-						if      (strcmp(itemTypeStr, "entity") == 0) arrayKey = "entities";
-						else if (strcmp(itemTypeStr, "camera") == 0) arrayKey = "cameras";
-						else if (strcmp(itemTypeStr, "light")  == 0) arrayKey = "lights";
-
-						if (arrayKey && mLoadedSceneRoot.isMember("scene2d"))
-						{
-							const Json::Value& arr = mLoadedSceneRoot["scene2d"][arrayKey];
-							const char* itemIdStr = data["itemId"].asCString();
-							char idBuf[256];
-							for (unsigned int i = 0; i < arr.size(); ++i)
-							{
-								if (!arr[i].isMember("id")) continue;
-								const Json::Value& idVal = arr[i]["id"];
-								const char* v = idVal.isString() ? idVal.asCString()
-								              : (idVal.isObject() && idVal.isMember("value") ? idVal["value"].asCString() : "");
-								strncpy_s(idBuf, sizeof(idBuf), v, _TRUNCATE);
-								if (strcmp(idBuf, itemIdStr) == 0 && arr[i].isMember("blueprint"))
-								{
-									const Json::Value& bp = arr[i]["blueprint"];
-									const char* bpVal = bp.isString() ? bp.asCString()
-									                  : (bp.isObject() && bp.isMember("value") ? bp["value"].asCString() : "");
-									strncpy_s(blueprintIdForRemove, sizeof(blueprintIdForRemove), bpVal, _TRUNCATE);
-									break;
-								}
-							}
-						}
-					}
-
-					char err[256] = {};
-					if (!SceneMutator::DeleteItem(mLoadedSceneRoot,
-					        data["itemType"].asCString(),
-					        data["itemId"].asCString(),
-					        err, sizeof(err)))
-						return MakeErrorResponse(err);
-
-					if (GetBridge() && mSceneCatalogueId[0] != '\0' && blueprintIdForRemove[0] != '\0')
-					{
-						Json::Value relReq;
-						relReq["from"] = mSceneCatalogueId;
-						relReq["rel"]  = "uses";
-						relReq["to"]   = blueprintIdForRemove;
-						GetBridge()->InvokeRequestHandler(Dia::Core::StringCRC("asset_catalogue.remove_relationship"), relReq);
-					}
-
-					mHierarchyController.ClearSelection();
-					MarkDirty();
-					Json::Value result;
-					result["success"]   = true;
-					result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
-					return result;
-				});
+				[this](const Json::Value& data) -> Json::Value { return HandleDeleteItem(data); });
 
 			RegisterHandler(
 				Dia::Core::StringCRC("scene_editor.set_enabled"),
@@ -628,30 +463,7 @@ namespace Dia
 
 			RegisterHandler(
 				Dia::Core::StringCRC("scene_editor.rename_item"),
-				[this](const Json::Value& data) -> Json::Value
-				{
-					DIA_TRACE_ZONE("scene_editor.rename_item", Dia::Observation::Trace::Category::kNone);
-					if (!data.isMember("itemType") || !data.isMember("oldId") || !data.isMember("newId"))
-						return MakeErrorResponse("missing itemType, oldId, or newId");
-					if (mLoadedSceneRoot.isNull())
-						return MakeErrorResponse("no scene loaded");
-
-					char err[256] = {};
-					if (!SceneMutator::RenameItem(mLoadedSceneRoot,
-					        data["itemType"].asCString(),
-					        data["oldId"].asCString(),
-					        data["newId"].asCString(),
-					        err, sizeof(err)))
-						return MakeErrorResponse(err);
-
-					mHierarchyController.SetSelection(
-						data["itemType"].asCString(), data["newId"].asCString());
-					MarkDirty();
-					Json::Value result;
-					result["success"]   = true;
-					result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
-					return result;
-				});
+				[this](const Json::Value& data) -> Json::Value { return HandleRenameItem(data); });
 
 			RegisterHandler(
 				Dia::Core::StringCRC("scene_editor.analyse_change_blueprint"),
@@ -904,15 +716,7 @@ namespace Dia
 
 			RegisterHandler(
 				Dia::Core::StringCRC("scene_editor.validate"),
-				[this](const Json::Value& /*data*/) -> Json::Value
-				{
-					DIA_TRACE_ZONE("scene_editor.validate", Dia::Observation::Trace::Category::kNone);
-					if (mLoadedSceneRoot.isNull()) return MakeErrorResponse("no scene loaded");
-					Json::Value result;
-					result["success"]    = true;
-					result["validation"] = mValidator.Validate(mLoadedSceneRoot);
-					return result;
-				});
+				[this](const Json::Value& data) -> Json::Value { return HandleValidate(data); });
 
 			// ── Scene Properties ─────────────────────────────────────────────────
 
@@ -972,6 +776,220 @@ namespace Dia
 
 					return MakeErrorResponse("Asset Catalogue not available — open the Asset Catalogue panel first");
 				});
+		}
+
+		// ═══════════════════════════════════════════════════════════════════════
+		// Extracted handler methods — testable without bridge/registration
+		// ═══════════════════════════════════════════════════════════════════════
+
+		Json::Value DiaSceneEditorPlugin::HandleAddItem(const Json::Value& data)
+		{
+			DIA_TRACE_ZONE("scene_editor.add_item", Dia::Observation::Trace::Category::kNone);
+			if (!data.isMember("itemType") || !data.isMember("blueprintId"))
+				return MakeErrorResponse("missing itemType or blueprintId");
+			if (mLoadedSceneRoot.isNull())
+				return MakeErrorResponse("no scene loaded");
+
+			char err[256] = {};
+			if (!SceneMutator::AddItem(mLoadedSceneRoot,
+			        data["itemType"].asCString(),
+			        data["blueprintId"].asCString(),
+			        err, sizeof(err)))
+				return MakeErrorResponse(err);
+
+			if (GetBridge() && mSceneCatalogueId[0] != '\0')
+			{
+				Json::Value relReq;
+				relReq["from"] = mSceneCatalogueId;
+				relReq["rel"]  = "uses";
+				relReq["to"]   = data["blueprintId"].asString();
+				GetBridge()->InvokeRequestHandler(Dia::Core::StringCRC("asset_catalogue.add_relationship"), relReq);
+			}
+
+			MarkDirty();
+			Json::Value result;
+			result["success"]   = true;
+			result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
+			return result;
+		}
+
+		Json::Value DiaSceneEditorPlugin::HandleDeleteItem(const Json::Value& data)
+		{
+			DIA_TRACE_ZONE("scene_editor.delete_item", Dia::Observation::Trace::Category::kNone);
+			if (!data.isMember("itemType") || !data.isMember("itemId"))
+				return MakeErrorResponse("missing itemType or itemId");
+			if (mLoadedSceneRoot.isNull())
+				return MakeErrorResponse("no scene loaded");
+
+			char blueprintIdForRemove[256] = {};
+			if (mSceneCatalogueId[0] != '\0')
+			{
+				const char* arrayKey = nullptr;
+				const char* itemTypeStr = data["itemType"].asCString();
+				if      (strcmp(itemTypeStr, "entity") == 0) arrayKey = "entities";
+				else if (strcmp(itemTypeStr, "camera") == 0) arrayKey = "cameras";
+				else if (strcmp(itemTypeStr, "light")  == 0) arrayKey = "lights";
+
+				if (arrayKey && mLoadedSceneRoot.isMember("scene2d"))
+				{
+					const Json::Value& arr = mLoadedSceneRoot["scene2d"][arrayKey];
+					const char* itemIdStr = data["itemId"].asCString();
+					char idBuf[256];
+					for (unsigned int i = 0; i < arr.size(); ++i)
+					{
+						if (!arr[i].isMember("id")) continue;
+						const Json::Value& idVal = arr[i]["id"];
+						const char* v = idVal.isString() ? idVal.asCString()
+						              : (idVal.isObject() && idVal.isMember("value") ? idVal["value"].asCString() : "");
+						strncpy_s(idBuf, sizeof(idBuf), v, _TRUNCATE);
+						if (strcmp(idBuf, itemIdStr) == 0 && arr[i].isMember("blueprint"))
+						{
+							const Json::Value& bp = arr[i]["blueprint"];
+							const char* bpVal = bp.isString() ? bp.asCString()
+							                  : (bp.isObject() && bp.isMember("value") ? bp["value"].asCString() : "");
+							strncpy_s(blueprintIdForRemove, sizeof(blueprintIdForRemove), bpVal, _TRUNCATE);
+							break;
+						}
+					}
+				}
+			}
+
+			char err[256] = {};
+			if (!SceneMutator::DeleteItem(mLoadedSceneRoot,
+			        data["itemType"].asCString(),
+			        data["itemId"].asCString(),
+			        err, sizeof(err)))
+				return MakeErrorResponse(err);
+
+			if (GetBridge() && mSceneCatalogueId[0] != '\0' && blueprintIdForRemove[0] != '\0')
+			{
+				Json::Value relReq;
+				relReq["from"] = mSceneCatalogueId;
+				relReq["rel"]  = "uses";
+				relReq["to"]   = blueprintIdForRemove;
+				GetBridge()->InvokeRequestHandler(Dia::Core::StringCRC("asset_catalogue.remove_relationship"), relReq);
+			}
+
+			mHierarchyController.ClearSelection();
+			MarkDirty();
+			Json::Value result;
+			result["success"]   = true;
+			result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
+			return result;
+		}
+
+		Json::Value DiaSceneEditorPlugin::HandleDuplicateItem(const Json::Value& data)
+		{
+			DIA_TRACE_ZONE("scene_editor.duplicate_item", Dia::Observation::Trace::Category::kNone);
+			if (!data.isMember("itemType") || !data.isMember("itemId"))
+				return MakeErrorResponse("missing itemType or itemId");
+			if (mLoadedSceneRoot.isNull())
+				return MakeErrorResponse("no scene loaded");
+
+			char err[256] = {};
+			if (!SceneMutator::DuplicateItem(mLoadedSceneRoot,
+			        data["itemType"].asCString(),
+			        data["itemId"].asCString(),
+			        err, sizeof(err)))
+				return MakeErrorResponse(err);
+
+			MarkDirty();
+			Json::Value result;
+			result["success"]   = true;
+			result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
+			return result;
+		}
+
+		Json::Value DiaSceneEditorPlugin::HandleRenameItem(const Json::Value& data)
+		{
+			DIA_TRACE_ZONE("scene_editor.rename_item", Dia::Observation::Trace::Category::kNone);
+			if (!data.isMember("itemType") || !data.isMember("oldId") || !data.isMember("newId"))
+				return MakeErrorResponse("missing itemType, oldId, or newId");
+			if (mLoadedSceneRoot.isNull())
+				return MakeErrorResponse("no scene loaded");
+
+			char err[256] = {};
+			if (!SceneMutator::RenameItem(mLoadedSceneRoot,
+			        data["itemType"].asCString(),
+			        data["oldId"].asCString(),
+			        data["newId"].asCString(),
+			        err, sizeof(err)))
+				return MakeErrorResponse(err);
+
+			mHierarchyController.SetSelection(
+				data["itemType"].asCString(), data["newId"].asCString());
+			MarkDirty();
+			Json::Value result;
+			result["success"]   = true;
+			result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
+			return result;
+		}
+
+		Json::Value DiaSceneEditorPlugin::HandleLoadScene(const Json::Value& data)
+		{
+			DIA_TRACE_ZONE("scene_editor.load_scene", Dia::Observation::Trace::Category::kNone);
+			if (!data.isMember("path") || !data["path"].isString())
+				return MakeErrorResponse("missing path");
+
+			Json::Value sceneRoot;
+			char err[256] = {};
+			if (!mFileHandler.Load(data["path"].asCString(), sceneRoot, err, sizeof(err)))
+				return MakeErrorResponse(err[0] ? err : "load failed");
+
+			DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: loaded scene '%s'", data["path"].asCString());
+			mLoadedSceneRoot = sceneRoot;
+			strncpy_s(mLoadedScenePath, sizeof(mLoadedScenePath), data["path"].asCString(), _TRUNCATE);
+			mHierarchyController.ClearSelection();
+			ClearDirty();
+			ResolveCatalogueIdForLoadedScene();
+
+			Json::Value result;
+			result["success"]   = true;
+			result["scene"]     = sceneRoot;
+			result["hierarchy"] = mHierarchyController.BuildHierarchyJson(sceneRoot);
+			result["dirty"]     = false;
+			return result;
+		}
+
+		Json::Value DiaSceneEditorPlugin::HandleSaveScene(const Json::Value& data)
+		{
+			DIA_TRACE_ZONE("scene_editor.save_scene", Dia::Observation::Trace::Category::kNone);
+			const char* savePath = mLoadedScenePath;
+			if (data.isMember("path") && data["path"].isString())
+				savePath = data["path"].asCString();
+
+			if (!savePath || savePath[0] == '\0')
+				return MakeErrorResponse("no path");
+
+			const Json::Value& sceneToSave = data.isMember("scene")
+				? data["scene"] : mLoadedSceneRoot;
+
+			if (sceneToSave.isNull())
+				return MakeErrorResponse("no scene data");
+
+			char err[256] = {};
+			if (!mFileHandler.Save(savePath, sceneToSave, err, sizeof(err)))
+				return MakeErrorResponse(err[0] ? err : "save failed");
+
+			mLoadedSceneRoot = sceneToSave;
+			strncpy_s(mLoadedScenePath, sizeof(mLoadedScenePath), savePath, _TRUNCATE);
+			ClearDirty();
+
+			DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: saved scene '%s'", savePath);
+			Json::Value result;
+			result["success"] = true;
+			result["dirty"]   = false;
+			return result;
+		}
+
+		Json::Value DiaSceneEditorPlugin::HandleValidate(const Json::Value& /*data*/)
+		{
+			DIA_TRACE_ZONE("scene_editor.validate", Dia::Observation::Trace::Category::kNone);
+			if (mLoadedSceneRoot.isNull()) return MakeErrorResponse("no scene loaded");
+			Json::Value result;
+			result["success"]    = true;
+			result["validation"] = mValidator.Validate(mLoadedSceneRoot);
+			return result;
 		}
 	}
 }

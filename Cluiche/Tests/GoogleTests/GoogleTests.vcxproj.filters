@@ -598,6 +598,9 @@
     <ClCompile Include="DiaSceneEditor\TestSceneValidator.cpp">
       <Filter>DiaSceneEditor</Filter>
     </ClCompile>
+    <ClCompile Include="DiaSceneEditor\TestSceneEditorHandlers.cpp">
+      <Filter>DiaSceneEditor</Filter>
+    </ClCompile>
     <ClCompile Include="DiaSceneEditor\IntegrationTestSceneEditorPlugin.cpp">
       <Filter>DiaSceneEditor</Filter>
     </ClCompile>

@@ -287,6 +287,7 @@
     <!-- DiaSceneEditor Tests -->
     <ClCompile Include="DiaSceneEditor\TestSceneMutator.cpp" />
     <ClCompile Include="DiaSceneEditor\TestSceneValidator.cpp" />
+    <ClCompile Include="DiaSceneEditor\TestSceneEditorHandlers.cpp" />
     <ClCompile Include="DiaSceneEditor\IntegrationTestSceneEditorPlugin.cpp" />
     <!-- DiaEntityInspector Tests -->
     <ClCompile Include="DiaEntityInspector\IntegrationTestEntityInspectorPlugin.cpp" />
