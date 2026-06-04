@@ -1477,12 +1477,24 @@ document.getElementById('btn-new-scene').addEventListener('click', async () => {
   let name = prompt('Scene name (e.g. my_scene):');
   if (!name || !name.trim()) return;
   name = name.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
-  const defaultPath = '../Stages/' + name + '/' + name + '.diascene';
-  const path = prompt('Relative path:', defaultPath);
+  const defaultPath = 'Stages/' + name + '/' + name + '.diascene';
+  const path = prompt('Relative path (from .diagame dir):', defaultPath);
   if (!path || !path.trim()) return;
   const id = 'diascene.' + name;
-  const result = await bridgeRequest('new_scene_shortcut', { id, source_path: path.trim() });
-  if (result && !result.success) alert('New scene failed: ' + (result.error || 'unknown'));
+
+  const result = await bridgeRequest('create_asset', { assetType: 'diascene', id, source_path: path.trim() });
+  if (!result || !result.success) {
+    alert('New scene failed: ' + (result && result.error || 'unknown'));
+    return;
+  }
+
+  // Associate to currently-selected stage if one is selected
+  const stagePath = document.getElementById('stage-select').value;
+  if (stagePath && result.absPath) {
+    await bridgeRequest('associate_scene_to_stage', { stagePath, scenePath: result.absPath });
+    // Stage list is rebuilt server-side; auto-select the stage we just updated
+    await loadStage(stagePath);
+  }
 });
 
 document.getElementById('btn-create-scene-cta').addEventListener('click', () => {

@@ -5,6 +5,8 @@
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaCore/Json/external/json/json.h>
+#include <fstream>
+#include <sstream>
 
 using namespace Dia::SceneEditor;
 
@@ -775,6 +777,111 @@ namespace Dia
 					}
 
 					return MakeErrorResponse("Asset Catalogue not available — open the Asset Catalogue panel first");
+				});
+
+			RegisterHandler(
+				Dia::Core::StringCRC("scene_editor.create_asset"),
+				[this](const Json::Value& data) -> Json::Value
+				{
+					DIA_TRACE_ZONE("scene_editor.create_asset", Dia::Observation::Trace::Category::kNone);
+					if (GetPluginLoader())
+						GetPluginLoader()->LoadPlugin(
+							Dia::Core::StringCRC("DiaAssetCatalogueEditor"),
+							Dia::Core::StringCRC("DiaAssetCatalogueEditor"));
+
+					if (GetBridge())
+					{
+						Json::Value fwd = GetBridge()->InvokeRequestHandler(
+							Dia::Core::StringCRC("asset_catalogue.create_asset"), data);
+						if (!fwd.isNull())
+							return fwd;
+					}
+
+					return MakeErrorResponse("Asset Catalogue not available — open the Asset Catalogue panel first");
+				});
+
+			RegisterHandler(
+				Dia::Core::StringCRC("scene_editor.associate_scene_to_stage"),
+				[this](const Json::Value& data) -> Json::Value
+				{
+					DIA_TRACE_ZONE("scene_editor.associate_scene_to_stage", Dia::Observation::Trace::Category::kNone);
+					if (!data.isMember("stagePath") || !data["stagePath"].isString()
+						|| !data.isMember("scenePath") || !data["scenePath"].isString())
+						return MakeErrorResponse("missing stagePath or scenePath");
+
+					const char* stagePath = data["stagePath"].asCString();
+					const char* scenePath = data["scenePath"].asCString();
+
+					// Read the .diastage JSON
+					std::ifstream f(stagePath);
+					if (!f.is_open())
+						return MakeErrorResponse("cannot open .diastage file");
+
+					std::string content((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+					f.close();
+
+					Json::Value stageRoot;
+					Json::CharReaderBuilder b;
+					std::string parseErr;
+					std::istringstream ss(content);
+					if (!Json::parseFromStream(b, ss, &stageRoot, &parseErr))
+						return MakeErrorResponse("failed to parse .diastage");
+
+					// Compute relative scene path from the stage file's directory
+					char stageDir[512] = {};
+					const char* lastSep = nullptr;
+					for (const char* p = stagePath; *p; ++p)
+						if (*p == '/' || *p == '\\') lastSep = p;
+					if (lastSep)
+						strncpy_s(stageDir, sizeof(stageDir), stagePath, static_cast<size_t>(lastSep - stagePath + 1));
+
+					// If scenePath starts with stageDir prefix, make it relative
+					char relScene[512] = {};
+					const size_t stageDirLen = strlen(stageDir);
+					if (stageDirLen > 0 && strncmp(scenePath, stageDir, stageDirLen) == 0)
+						strncpy_s(relScene, sizeof(relScene), scenePath + stageDirLen, _TRUNCATE);
+					else
+						strncpy_s(relScene, sizeof(relScene), scenePath, _TRUNCATE);
+
+					// Normalise backslashes
+					for (char* p = relScene; *p; ++p)
+						if (*p == '\\') *p = '/';
+
+					stageRoot["scene"] = relScene;
+
+					// Write back
+					std::ofstream out(stagePath);
+					if (!out.is_open())
+						return MakeErrorResponse("cannot write .diastage file");
+					Json::StreamWriterBuilder wb;
+					wb["indentCharacter"] = "    ";
+					std::string outStr = Json::writeString(wb, stageRoot);
+					out << outStr;
+					out.close();
+
+					DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: associated scene '%s' to stage '%s'", relScene, stagePath);
+
+					// Rebuild stage list and push to UI
+					if (GetModel())
+					{
+						const Dia::Editor::ProjectContext& proj = GetModel()->GetDiagameProject();
+						if (proj.IsValid())
+						{
+							mStageList = mProjectContextManager.BuildStageListJson(proj.diagamePath);
+							if (GetBridge())
+							{
+								Json::Value payload(Json::objectValue);
+								payload["diagamePath"] = proj.diagamePath;
+								payload["isValid"]     = true;
+								payload["stages"]      = mStageList;
+								GetBridge()->NotifyUIDataChanged("scene_editor.project_changed", payload);
+							}
+						}
+					}
+
+					Json::Value result;
+					result["success"] = true;
+					return result;
 				});
 		}
 
