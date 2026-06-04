@@ -17,9 +17,8 @@ namespace Dia
 			const char* GetName() const override { return "Game Connection"; }
 			const char* GetVersion() const override { return "1.0"; }
 			const char* GetDescription() const override { return "Built-in game connection panel"; }
-			const char* GetUIPath() const override { return "dia://plugins/gameconnection/index.html"; }
-			LayoutMode GetLayoutMode() const override { return LayoutMode::kDockable; }
-			EditorToolbarItem GetToolbarItem() const override { EditorToolbarItem item = IEditorPlugin::GetToolbarItem(); item.pinned = true; return item; }
+			const char* GetUIPath() const override { return ""; }
+			LayoutMode GetLayoutMode() const override { return LayoutMode::kHeadless; }
 
 			void OnLoad(const EditorPluginContext& context) override;
 			void OnUnload() override;

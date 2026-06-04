@@ -11,7 +11,8 @@ namespace Dia
 		enum class LayoutMode
 		{
 			kFullScreen,
-			kDockable
+			kDockable,
+			kHeadless
 		};
 
 		struct EditorPluginInfo

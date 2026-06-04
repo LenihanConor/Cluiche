@@ -65,6 +65,7 @@ namespace Cluiche
 			DIA_LOG_INFO("Application", "PluginLoaderModule: DoStart");
 			LoadBuiltInPlugins();
 			RestoreLayoutPlugins();
+			PruneHeadlessPanels();
 
 			// Restore plugins + layout from .memory.json (previous session)
 			static const char* kMemoryPath = "../../../../out/CluicheEditor/.memory.json";
@@ -208,6 +209,47 @@ namespace Cluiche
 			}
 			mLoadedPlugins.RemoveAll();
 			return Dia::ApplicationFlow::StopResult::kDone;
+		}
+
+		void PluginLoaderModule::PruneHeadlessPanels()
+		{
+			if (mView == nullptr)
+				return;
+
+			Dia::Editor::DockingLayout* layout = mView->GetDockingLayout();
+			if (layout == nullptr)
+				return;
+
+			Dia::Editor::EditorPluginRegistry& registry = Dia::Editor::EditorPluginRegistry::Instance();
+			const unsigned int registryCount = registry.GetRegisteredCount();
+
+			unsigned int p = 0;
+			while (p < layout->GetPanelCount())
+			{
+				const char* panelName = layout->GetPanel(p).name;
+				bool isHeadless = false;
+
+				for (unsigned int r = 0; r < registryCount; ++r)
+				{
+					Dia::Editor::EditorPluginInfo info = registry.GetFactory(r)->GetPluginInfo();
+					if (strcmp(info.name, panelName) == 0)
+					{
+						if (info.layoutMode == Dia::Editor::LayoutMode::kHeadless)
+							isHeadless = true;
+						break;
+					}
+				}
+
+				if (isHeadless)
+				{
+					DIA_LOG_INFO("Application", "PluginLoaderModule::PruneHeadlessPanels: removing stale headless panel '%s'", panelName);
+					layout->RemovePanel(panelName);
+				}
+				else
+				{
+					++p;
+				}
+			}
 		}
 
 		void PluginLoaderModule::LoadBuiltInPlugins()

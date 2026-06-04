@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { EditorBridge, PanelInfo } from "../bridge/EditorBridge";
 import { ProjectContextButton } from "../toolbar/ProjectContextButton";
+import { ConnectionButton } from "../toolbar/ConnectionButton";
 
 interface ToolbarProps {
   panels: PanelInfo[];
@@ -10,7 +11,6 @@ const PILL_GAP = 2;
 const OVERFLOW_BTN_WIDTH = 52;
 
 export function Toolbar({ panels }: ToolbarProps) {
-  const [connectionState, setConnectionState] = useState("disconnected");
   const [visibleCount, setVisibleCount] = useState(panels.length);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -18,19 +18,6 @@ export function Toolbar({ panels }: ToolbarProps) {
   const pillWidthsRef = useRef<number[]>([]);
   const pillRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    EditorBridge.request<{ state?: string }>("game_connection.get_state", {})
-      .then((result) => {
-        if (result?.state) setConnectionState(result.state);
-      })
-      .catch(() => {});
-
-    return EditorBridge.subscribe("game_connection", (data: unknown) => {
-      const d = data as { state?: string } | null;
-      if (d?.state) setConnectionState(d.state);
-    });
-  }, []);
 
   const recompute = useCallback(() => {
     const container = pillZoneRef.current;
@@ -98,16 +85,11 @@ export function Toolbar({ panels }: ToolbarProps) {
     EditorBridge.togglePanelVisibility(name);
   }
 
-  function handleConnectionClick() {
-    EditorBridge.togglePanelVisibility("Game Connection");
-  }
-
   function handleOverflowToggle(name: string) {
     EditorBridge.togglePanelVisibility(name);
     setDropdownOpen(false);
   }
 
-  const isConnected = connectionState === "connected";
   const overflowCount = panels.length - visibleCount;
   const overflowedPanels = panels.slice(visibleCount);
 
@@ -239,40 +221,10 @@ export function Toolbar({ panels }: ToolbarProps) {
         </div>
       )}
 
-      {/* Right side: ProjectContextButton + connection indicator */}
+      {/* Right side: ProjectContextButton + connection button */}
       <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
         <ProjectContextButton />
-        <button
-          onClick={handleConnectionClick}
-          title={
-            isConnected
-              ? "Connected — click to open Game Connection"
-              : "Disconnected — click to open Game Connection"
-          }
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 4,
-            background: "transparent",
-            border: "none",
-            cursor: "pointer",
-            color: "#808080",
-            fontSize: 11,
-            fontFamily: "Segoe UI, system-ui, sans-serif",
-            padding: "2px 6px",
-          }}
-        >
-          <span
-            style={{
-              display: "inline-block",
-              width: 7,
-              height: 7,
-              borderRadius: "50%",
-              background: isConnected ? "#89d185" : "#f48771",
-            }}
-          />
-          {isConnected ? "Connected" : "Disconnected"}
-        </button>
+        <ConnectionButton />
       </div>
     </div>
   );

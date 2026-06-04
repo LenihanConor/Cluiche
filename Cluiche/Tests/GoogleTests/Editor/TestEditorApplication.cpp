@@ -88,7 +88,8 @@ TEST(EditorPluginRegistry, CreateGameConnectionPlugin)
     IEditorPlugin* plugin = EditorPluginRegistry::Instance().CreatePlugin(StringCRC("GameConnectionEditorPlugin"));
     ASSERT_NE(plugin, nullptr);
     EXPECT_STREQ(plugin->GetName(), "Game Connection");
-    EXPECT_STREQ(plugin->GetUIPath(), "dia://plugins/gameconnection/index.html");
+    EXPECT_STREQ(plugin->GetUIPath(), "");
+    EXPECT_EQ(plugin->GetLayoutMode(), LayoutMode::kHeadless);
     delete plugin;
 }
 

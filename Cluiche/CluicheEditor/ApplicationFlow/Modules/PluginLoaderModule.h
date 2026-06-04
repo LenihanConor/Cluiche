@@ -40,6 +40,8 @@ namespace Cluiche
 			Dia::ApplicationFlow::StopResult DoStop() override;
 
 		private:
+			void PruneHeadlessPanels();
+
 			struct LoadedPluginEntry
 			{
 				Dia::Core::StringCRC typeId;

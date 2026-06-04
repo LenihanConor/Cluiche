@@ -130,7 +130,7 @@ window.DiaEditor_onDataChanged = (payload: unknown) => {
     if (listeners) {
       listeners.forEach((fn) => {
         try { fn(env.data); }
-        catch (err) { uiLog("EditorBridge", `topic listener failed: ${env.topic} ${err}`); }
+        catch (err) { console.warn("topic listener failed", env.topic, err); }
       });
     }
 

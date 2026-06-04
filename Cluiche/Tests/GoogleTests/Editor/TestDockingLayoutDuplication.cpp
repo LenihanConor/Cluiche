@@ -23,18 +23,18 @@ TEST(DockingLayout, RegisterPanel_DuplicateAfterOthers)
     EXPECT_EQ(layout.GetPanelCount(), 2u);
 }
 
-TEST(DockingLayout, RegisterPanel_AllFourBuiltins_NoDuplication)
+TEST(DockingLayout, RegisterPanel_AllThreeBuiltins_NoDuplication)
 {
     DockingLayout layout;
-    const char* names[] = { "Home", "Output Console", "Game Connection", "Plugin Browser" };
+    const char* names[] = { "Home", "Output Console", "Plugin Browser" };
     const char* paths[] = {
-        "dia://home", "dia://console", "dia://gameconnection", "dia://pluginbrowser"
+        "dia://home", "dia://console", "dia://pluginbrowser"
     };
 
-    for (int i = 0; i < 4; ++i) layout.RegisterPanel(names[i], paths[i]);
-    for (int i = 0; i < 4; ++i) layout.RegisterPanel(names[i], paths[i]);
+    for (int i = 0; i < 3; ++i) layout.RegisterPanel(names[i], paths[i]);
+    for (int i = 0; i < 3; ++i) layout.RegisterPanel(names[i], paths[i]);
 
-    EXPECT_EQ(layout.GetPanelCount(), 4u);
+    EXPECT_EQ(layout.GetPanelCount(), 3u);
 }
 
 TEST(DockingLayout, RegisterPanel_DuplicateDifferentPath_FirstWins)
