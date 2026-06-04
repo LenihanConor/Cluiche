@@ -12,7 +12,7 @@
 
 #include <DiaStreams/ServiceStreamReader.h>
 #include <DiaStreams/ServiceStreamWriter.h>
-#include <DiaAssetRuntime/Handlers/TextureHandler.h>
+#include <DiaBgfx/Handlers/TextureHandler.h>
 #include <DiaAssetRuntime/Handlers/JsonPassthroughHandler.h>
 #include "Modules/UIModule.h"
 #include "Types/AssetLoadStatus.h"
