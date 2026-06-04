@@ -17,8 +17,7 @@ namespace
 	// Returns the directory portion of path (no trailing separator).
 	static void DirOf(const char* path, char* outDir, int outSize)
 	{
-		strncpy(outDir, path, outSize - 1);
-		outDir[outSize - 1] = '\0';
+		strncpy_s(outDir, outSize, path, _TRUNCATE);
 		char* lastSep = nullptr;
 		for (char* p = outDir; *p; ++p)
 		{
@@ -36,8 +35,7 @@ namespace
 	{
 		if (rel[0] == '/' || rel[0] == '\\' || (rel[1] == ':'))
 		{
-			strncpy(out, rel, outSize - 1);
-			out[outSize - 1] = '\0';
+			strncpy_s(out, outSize, rel, _TRUNCATE);
 		}
 		else
 		{
@@ -152,7 +150,7 @@ namespace Dia
 			Json::Value root;
 			if (!scenePath || scenePath[0] == '\0')
 			{
-				if (errBuf && errBufSize > 0) strncpy(errBuf, "empty scene path", errBufSize - 1);
+				if (errBuf && errBufSize > 0) strncpy_s(errBuf, errBufSize, "empty scene path", _TRUNCATE);
 				return root;
 			}
 			ReadJson(scenePath, root, errBuf, errBufSize);

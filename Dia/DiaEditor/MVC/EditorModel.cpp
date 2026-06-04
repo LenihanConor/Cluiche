@@ -184,6 +184,7 @@ namespace Dia
 
 		bool EditorModel::LoadDiagameProject(const char* diagamePath)
 		{
+			DIA_LOG_INFO("Editor", "EditorModel: LoadDiagameProject called with path='%s'", diagamePath ? diagamePath : "<null>");
 			if (diagamePath == nullptr || diagamePath[0] == '\0')
 			{
 				DIA_LOG_WARNING("Editor", "EditorModel: LoadDiagameProject called with null/empty path");

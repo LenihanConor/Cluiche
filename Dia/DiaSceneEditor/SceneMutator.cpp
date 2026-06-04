@@ -25,14 +25,12 @@ namespace Dia
 		{
 			if (val.isString())
 			{
-				strncpy(buf, val.asCString(), bufSize - 1);
-				buf[bufSize - 1] = '\0';
+				strncpy_s(buf, bufSize, val.asCString(), _TRUNCATE);
 				return buf;
 			}
 			if (val.isObject() && val.isMember("value") && val["value"].isString())
 			{
-				strncpy(buf, val["value"].asCString(), bufSize - 1);
-				buf[bufSize - 1] = '\0';
+				strncpy_s(buf, bufSize, val["value"].asCString(), _TRUNCATE);
 				return buf;
 			}
 			buf[0] = '\0';
@@ -725,7 +723,7 @@ namespace Dia
 					const char* v = idVal.isString() ? idVal.asCString()
 					              : (idVal.isObject() && idVal.isMember("value")
 					                 ? idVal["value"].asCString() : "");
-					strncpy(idBuf, v, sizeof(idBuf) - 1); idBuf[sizeof(idBuf)-1] = '\0';
+					strncpy_s(idBuf, sizeof(idBuf), v, _TRUNCATE);
 					if (strcmp(idBuf, itemId) == 0) return &arr[i];
 				}
 			}

@@ -12,14 +12,12 @@ namespace Dia
 		{
 			if (val.isString())
 			{
-				strncpy(buf, val.asCString(), bufSize - 1);
-				buf[bufSize - 1] = '\0';
+				strncpy_s(buf, bufSize, val.asCString(), _TRUNCATE);
 				return buf;
 			}
 			if (val.isObject() && val.isMember("value") && val["value"].isString())
 			{
-				strncpy(buf, val["value"].asCString(), bufSize - 1);
-				buf[bufSize - 1] = '\0';
+				strncpy_s(buf, bufSize, val["value"].asCString(), _TRUNCATE);
 				return buf;
 			}
 			buf[0] = '\0';
@@ -143,8 +141,7 @@ namespace Dia
 			{
 				if (layers[i].isMember("id"))
 				{
-					strncpy(layerIds[layerCount], ExtractId(layers[i]["id"], buf, sizeof(buf)), 255);
-					layerIds[layerCount][255] = '\0';
+					strncpy_s(layerIds[layerCount], 256, ExtractId(layers[i]["id"], buf, sizeof(buf)), _TRUNCATE);
 					++layerCount;
 				}
 			}

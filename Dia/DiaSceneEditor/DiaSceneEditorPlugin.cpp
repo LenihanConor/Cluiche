@@ -230,6 +230,8 @@ namespace Dia
 					Json::Value r;
 					r["isValid"]     = mDiagamePath[0] != '\0';
 					r["diagamePath"] = mDiagamePath;
+					DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: get_project_state polled — isValid=%d diagamePath='%s'",
+						mDiagamePath[0] != '\0', mDiagamePath);
 					return r;
 				});
 

@@ -368,22 +368,44 @@ const DEMO_STAGES = [
 ];
 
 // ============================================================
-// BRIDGE — real or stub
+// BRIDGE — postMessage to parent frame
 // ============================================================
-function hasBridge() { return typeof diaBridge !== 'undefined'; }
+var _diaReqId = 0;
+var _diaPending = {};
+var _diaTopicListeners = {};
 
-async function bridgeRequest(handler, data) {
-  if (hasBridge()) {
-    return diaBridge.request('scene_editor.' + handler, data || {});
-  }
-  return stubRequest(handler, data || {});
+function hasBridge() { return window.parent && window.parent !== window; }
+
+function bridgeRequest(handler, data) {
+  if (!hasBridge()) return Promise.resolve(stubRequest(handler, data || {}));
+  return new Promise(function(resolve) {
+    var reqId = 'se' + (_diaReqId++);
+    _diaPending[reqId] = resolve;
+    window.parent.postMessage({
+      __diaFromFrame: true,
+      payload: { type: 'scene_editor.' + handler, reqId: reqId, data: data || {} }
+    }, '*');
+  });
 }
 
 function bridgeOn(event, cb) {
-  if (hasBridge()) {
-    diaBridge.on('scene_editor.' + event, cb);
-  }
+  var topic = 'scene_editor.' + event;
+  if (!_diaTopicListeners[topic]) _diaTopicListeners[topic] = [];
+  _diaTopicListeners[topic].push(cb);
 }
+
+window.addEventListener('message', function(ev) {
+  var d = ev.data;
+  if (d && d.__diaResponse && d.reqId && _diaPending[d.reqId]) {
+    _diaPending[d.reqId](d.result || {});
+    delete _diaPending[d.reqId];
+  }
+  if (d && d.__dia && d.topic && _diaTopicListeners[d.topic]) {
+    _diaTopicListeners[d.topic].forEach(function(fn) {
+      try { fn(d.data); } catch(e) { console.warn('bridgeOn error', d.topic, e); }
+    });
+  }
+});
 
 // Stub responses mirror the real handler shapes
 function stubRequest(handler, data) {
@@ -1617,21 +1639,9 @@ function escAttr(s) {
 }
 
 // ============================================================
-// BOOT — retry until diaBridge is injected by CEF (up to 2s)
+// BOOT
 // ============================================================
-(function boot() {
-  let attempts = 0;
-  function tryInit() {
-    if (hasBridge()) {
-      init();
-    } else if (++attempts < 10) {
-      setTimeout(tryInit, 200);
-    } else {
-      init(); // fall through to stubs if CEF never injects
-    }
-  }
-  tryInit();
-})();
+init();
 </script>
 </body>
 </html>

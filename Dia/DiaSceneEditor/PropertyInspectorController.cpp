@@ -44,8 +44,7 @@ namespace
 	// Normalise dir separator to '/' and strip trailing slash.
 	static void NormaliseDir(const char* path, char* out, int outSize)
 	{
-		strncpy(out, path, outSize - 1);
-		out[outSize - 1] = '\0';
+		strncpy_s(out, outSize, path, _TRUNCATE);
 		for (char* p = out; *p; ++p) if (*p == '\\') *p = '/';
 		int len = (int)strlen(out);
 		if (len > 0 && out[len - 1] == '/') out[len - 1] = '\0';
@@ -61,14 +60,12 @@ namespace Dia
 		{
 			if (val.isString())
 			{
-				strncpy(buf, val.asCString(), bufSize - 1);
-				buf[bufSize - 1] = '\0';
+				strncpy_s(buf, bufSize, val.asCString(), _TRUNCATE);
 				return buf;
 			}
 			if (val.isObject() && val.isMember("value") && val["value"].isString())
 			{
-				strncpy(buf, val["value"].asCString(), bufSize - 1);
-				buf[bufSize - 1] = '\0';
+				strncpy_s(buf, bufSize, val["value"].asCString(), _TRUNCATE);
 				return buf;
 			}
 			buf[0] = '\0';

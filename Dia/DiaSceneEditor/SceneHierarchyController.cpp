@@ -31,14 +31,12 @@ namespace Dia
 		{
 			if (val.isString())
 			{
-				strncpy(buf, val.asCString(), bufSize - 1);
-				buf[bufSize - 1] = '\0';
+				strncpy_s(buf, bufSize, val.asCString(), _TRUNCATE);
 				return buf;
 			}
 			if (val.isObject() && val.isMember("value") && val["value"].isString())
 			{
-				strncpy(buf, val["value"].asCString(), bufSize - 1);
-				buf[bufSize - 1] = '\0';
+				strncpy_s(buf, bufSize, val["value"].asCString(), _TRUNCATE);
 				return buf;
 			}
 			buf[0] = '\0';
@@ -135,10 +133,8 @@ namespace Dia
 
 		void SceneHierarchyController::SetSelection(const char* type, const char* id)
 		{
-			strncpy(mSelectionType, type ? type : "", sizeof(mSelectionType) - 1);
-			mSelectionType[sizeof(mSelectionType) - 1] = '\0';
-			strncpy(mSelectionId, id ? id : "", sizeof(mSelectionId) - 1);
-			mSelectionId[sizeof(mSelectionId) - 1] = '\0';
+			strncpy_s(mSelectionType, sizeof(mSelectionType), type ? type : "", _TRUNCATE);
+			strncpy_s(mSelectionId,   sizeof(mSelectionId),   id   ? id   : "", _TRUNCATE);
 		}
 
 		void SceneHierarchyController::ClearSelection()

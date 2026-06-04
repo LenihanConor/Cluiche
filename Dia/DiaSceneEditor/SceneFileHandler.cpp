@@ -12,7 +12,7 @@ namespace Dia
 		{
 			if (!path || path[0] == '\0')
 			{
-				if (errBuf && errBufSize > 0) { strncpy(errBuf, "empty path", errBufSize - 1); errBuf[errBufSize - 1] = '\0'; }
+				if (errBuf && errBufSize > 0) { strncpy_s(errBuf, errBufSize, "empty path", _TRUNCATE); }
 				return false;
 			}
 
@@ -51,7 +51,7 @@ namespace Dia
 		{
 			if (!path || path[0] == '\0')
 			{
-				if (errBuf && errBufSize > 0) { strncpy(errBuf, "empty path", errBufSize - 1); errBuf[errBufSize - 1] = '\0'; }
+				if (errBuf && errBufSize > 0) { strncpy_s(errBuf, errBufSize, "empty path", _TRUNCATE); }
 				return false;
 			}
 

@@ -54,7 +54,20 @@ void DebugServerHostModule::OnConfigure(const char* configJson)
     if (config.isMember("auto_start") && config["auto_start"].isBool())
         mServer.EnableAutoStart(config["auto_start"].asBool());
     if (config.isMember("diagame_path") && config["diagame_path"].isString())
-        mServer.SetDiagamePath(config["diagame_path"].asCString());
+    {
+        const char* rawPath = config["diagame_path"].asCString();
+        char absPath[512] = {};
+        if (GetFullPathNameA(rawPath, sizeof(absPath), absPath, nullptr) > 0)
+        {
+            DIA_LOG_INFO("DebugServer", "DebugServerHostModule: diagame_path raw='%s' resolved='%s'", rawPath, absPath);
+            mServer.SetDiagamePath(absPath);
+        }
+        else
+        {
+            DIA_LOG_WARNING("DebugServer", "DebugServerHostModule: GetFullPathNameA failed for '%s', using raw path", rawPath);
+            mServer.SetDiagamePath(rawPath);
+        }
+    }
     if (config.isMember("log_level") && config["log_level"].isString())
         mServer.SetLogSinkLevel(Dia::Observation::Log::LogLevelFromString(config["log_level"].asCString()));
 }

@@ -470,16 +470,35 @@ namespace Dia
 					if (mEditorContext != nullptr && mManager != nullptr)
 					{
 						IEditorContext* ctx = mEditorContext;
+						DIA_LOG_INFO("Editor", "GameConnectionController: sending get_app_state");
 						mManager->SendCommandWithResponse("get_app_state", Json::Value(Json::objectValue),
 							[ctx](bool success, const Json::Value& result)
 							{
-								if (!success) return;
-								if (!result.isMember("diagame_path") || !result["diagame_path"].isString()) return;
+								if (!success)
+								{
+									DIA_LOG_WARNING("Editor", "GameConnectionController: get_app_state command failed");
+									return;
+								}
+								if (!result.isMember("diagame_path") || !result["diagame_path"].isString())
+								{
+									DIA_LOG_WARNING("Editor", "GameConnectionController: get_app_state missing diagame_path");
+									return;
+								}
 								const char* path = result["diagame_path"].asCString();
-								if (path == nullptr || path[0] == '\0') return;
+								DIA_LOG_INFO("Editor", "GameConnectionController: diagame_path='%s'", path ? path : "<null>");
+								if (path == nullptr || path[0] == '\0')
+								{
+									DIA_LOG_WARNING("Editor", "GameConnectionController: diagame_path empty, project will not load");
+									return;
+								}
 								ctx->LoadDiagameProject(path);
 							}
 						);
+					}
+					else
+					{
+						DIA_LOG_WARNING("Editor", "GameConnectionController: handshake complete but editorContext=%s manager=%s",
+							mEditorContext ? "ok" : "null", mManager ? "ok" : "null");
 					}
 				}
 				break;
