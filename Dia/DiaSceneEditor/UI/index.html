@@ -370,17 +370,17 @@ const DEMO_STAGES = [
 // ============================================================
 // BRIDGE — real or stub
 // ============================================================
-const hasBridge = (typeof diaBridge !== 'undefined');
+function hasBridge() { return typeof diaBridge !== 'undefined'; }
 
 async function bridgeRequest(handler, data) {
-  if (hasBridge) {
+  if (hasBridge()) {
     return diaBridge.request('scene_editor.' + handler, data || {});
   }
   return stubRequest(handler, data || {});
 }
 
 function bridgeOn(event, cb) {
-  if (hasBridge) {
+  if (hasBridge()) {
     diaBridge.on('scene_editor.' + event, cb);
   }
 }
@@ -1617,9 +1617,21 @@ function escAttr(s) {
 }
 
 // ============================================================
-// BOOT
+// BOOT — retry until diaBridge is injected by CEF (up to 2s)
 // ============================================================
-init();
+(function boot() {
+  let attempts = 0;
+  function tryInit() {
+    if (hasBridge()) {
+      init();
+    } else if (++attempts < 10) {
+      setTimeout(tryInit, 200);
+    } else {
+      init(); // fall through to stubs if CEF never injects
+    }
+  }
+  tryInit();
+})();
 </script>
 </body>
 </html>

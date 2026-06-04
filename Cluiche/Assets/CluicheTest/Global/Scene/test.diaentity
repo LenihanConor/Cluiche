@@ -1,0 +1,6 @@
+{
+    "entity_blueprint": {
+        "id": "diaentity.test",
+        "components": []
+    }
+}

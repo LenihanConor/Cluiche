@@ -1,0 +1,20 @@
+{
+	"entity_blueprint" : 
+	{
+		"components" : 
+		[
+			{
+				"fields" : 
+				{
+					"x" : 1
+				},
+				"type" : "cluichetest.transform"
+			},
+			{
+				"fields" : {},
+				"type" : "cluichetest.pickable-circle"
+			}
+		],
+		"id" : "diaentity.argh"
+	}
+}
