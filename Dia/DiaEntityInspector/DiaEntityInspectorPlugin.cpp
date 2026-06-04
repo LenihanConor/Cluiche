@@ -1,7 +1,5 @@
 #include "DiaEntityInspector/DiaEntityInspectorPlugin.h"
 #include <DiaEditor/Plugin/EditorPluginRegistrationMacros.h>
-#include <DiaEditor/Plugin/EditorPluginContext.h>
-#include <DiaEditor/UI/WebUIBridge.h>
 #include <DiaEditor/Plugin/PluginServiceLocator.h>
 #include <DiaEditor/LiveConnection/GameConnectionManager.h>
 #include <DiaCore/CRC/StringCRC.h>
@@ -14,39 +12,29 @@ REGISTER_EDITOR_PLUGIN(DiaEntityInspectorPlugin, "DiaEntityInspector")
 
 namespace Dia::EntityInspector {
 
-void DiaEntityInspectorPlugin::OnLoad(const Dia::Editor::EditorPluginContext& context)
+void DiaEntityInspectorPlugin::OnPluginLoad()
 {
-    DIA_LOG_INFO("Editor", "DiaEntityInspectorPlugin: OnLoad");
+    DIA_LOG_INFO("Editor", "DiaEntityInspectorPlugin: OnPluginLoad");
 
-    mBridge       = context.mBridge;
-    mPluginLoader = context.mPluginLoader;
-
-    if (context.mServices)
-        mManager = context.mServices->GetService<Dia::Editor::GameConnectionManager>();
+    if (GetServices())
+        mManager = GetServices()->GetService<Dia::Editor::GameConnectionManager>();
 
     if (!mManager)
         DIA_LOG_WARNING("Editor", "DiaEntityInspectorPlugin: GameConnectionManager not available");
 
-    RegisterRequestHandlers();
+    RegisterHandler(
+        Dia::Core::StringCRC("entity_inspector.get_connection_state"),
+        [this](const Json::Value& /*data*/) -> Json::Value
+        {
+            Json::Value result;
+            result["connected"] = (mManager != nullptr && mManager->IsConnected());
+            return result;
+        });
 
     if (mManager && mManager->IsConnected())
         HandleConnectionStateChange(true);
 
-    DIA_LOG_INFO("Editor", "DiaEntityInspectorPlugin: OnLoad complete");
-}
-
-void DiaEntityInspectorPlugin::OnUnload()
-{
-    DIA_LOG_INFO("Editor", "DiaEntityInspectorPlugin: OnUnload");
-
-    if (mBridge)
-    {
-        mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("entity_inspector.get_connection_state"));
-    }
-
-    mManager      = nullptr;
-    mBridge       = nullptr;
-    mPluginLoader = nullptr;
+    DIA_LOG_INFO("Editor", "DiaEntityInspectorPlugin: OnPluginLoad complete");
 }
 
 void DiaEntityInspectorPlugin::OnUpdate(float /*deltaTime*/)
@@ -62,28 +50,13 @@ void DiaEntityInspectorPlugin::OnUpdate(float /*deltaTime*/)
     }
 }
 
-void DiaEntityInspectorPlugin::RegisterRequestHandlers()
-{
-    if (!mBridge)
-        return;
-
-    mBridge->RegisterRequestHandler(
-        Dia::Core::StringCRC("entity_inspector.get_connection_state"),
-        [this](const Json::Value& /*data*/) -> Json::Value
-        {
-            Json::Value result;
-            result["connected"] = (mManager != nullptr && mManager->IsConnected());
-            return result;
-        });
-}
-
 void DiaEntityInspectorPlugin::HandleConnectionStateChange(bool connected)
 {
-    if (mBridge)
+    if (GetBridge())
     {
         Json::Value data;
         data["connected"] = connected;
-        mBridge->NotifyUIDataChanged("entity_inspector.connection_state", data);
+        GetBridge()->NotifyUIDataChanged("entity_inspector.connection_state", data);
     }
 
     if (connected)

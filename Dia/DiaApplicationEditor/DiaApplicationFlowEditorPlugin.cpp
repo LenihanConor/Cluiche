@@ -1,4 +1,4 @@
-﻿#include "DiaApplicationEditor/DiaApplicationFlowEditorPlugin.h"
+#include "DiaApplicationEditor/DiaApplicationFlowEditorPlugin.h"
 #include <DiaEditor/Plugin/EditorPluginRegistrationMacros.h>
 #include <DiaEditor/Plugin/EditorPluginContext.h>
 #include <DiaEditor/Plugin/PluginServiceLocator.h>
@@ -159,37 +159,40 @@ namespace Dia { namespace Editor {
     static const Dia::Core::StringCRC kTopicAppModules("app.modules");
     static const Dia::Core::StringCRC kTopicAppStreams("app.streams");
 
-    EditorToolbarItem DiaApplicationFlowEditorPlugin::GetToolbarItem() const
+    DiaApplicationFlowEditorPlugin::DiaApplicationFlowEditorPlugin()
+        : EditorPluginBase({
+            "Application Flow Editor",
+            "2.0",
+            "Visual editor for .diaapp v2 manifests with live runtime inspection",
+            "dia://plugins/diaapplicationeditor/index.html",
+            LayoutMode::kFullScreen,
+            "manifest.dirty",
+            "A",
+            true,
+            true
+        })
     {
-        EditorToolbarItem item;
-        strncpy_s(item.label, sizeof(item.label), "App Flow", _TRUNCATE);
-        item.iconChar[0] = 'A';
-        item.iconChar[1] = '\0';
-        item.pinned = true;
-        return item;
     }
 
-    void DiaApplicationFlowEditorPlugin::OnLoad(const EditorPluginContext& context)
+    void DiaApplicationFlowEditorPlugin::OnPluginLoad()
     {
         DIA_TRACE_ZONE("AppFlowEditorOnLoad", Dia::Observation::Trace::Category::kDiaApplicationFlow);
 
-        mBridge = context.mBridge;
-        mGameConnection = context.mServices ? context.mServices->GetService<GameConnectionManager>() : nullptr;
-        mModel = context.mModel;
+        mGameConnection = GetServices() ? GetServices()->GetService<GameConnectionManager>() : nullptr;
 
         DIA_LOG_INFO("Editor",
-            "DiaApplicationFlowEditorPlugin::OnLoad: bridge=%p gameConnection=%p model=%p",
-            mBridge, mGameConnection, mModel);
+            "DiaApplicationFlowEditorPlugin::OnPluginLoad: bridge=%p gameConnection=%p model=%p",
+            GetBridge(), mGameConnection, GetModel());
 
         mFileWatcher.Start();
 
-        // Read model state and subscribe before registering handlers so that
+        // Read model state before registering handlers so that
         // get_state requests are answered correctly on the first UI poll.
-        if (mModel != nullptr)
+        if (GetModel() != nullptr)
         {
             // Auto-load if a project is already open when plugin loads
-            const auto& proj = mModel->GetDiagameProject();
-            DIA_LOG_INFO("Editor", "AppFlowEditor: OnLoad project check, diagamePath='%s' applicationManifestPath='%s'",
+            const auto& proj = GetModel()->GetDiagameProject();
+            DIA_LOG_INFO("Editor", "AppFlowEditor: OnPluginLoad project check, diagamePath='%s' applicationManifestPath='%s'",
                 proj.diagamePath[0] ? proj.diagamePath : "<empty>",
                 proj.applicationManifestPath[0] ? proj.applicationManifestPath : "<empty>");
             if (proj.applicationManifestPath[0] != '\0')
@@ -199,49 +202,29 @@ namespace Dia { namespace Editor {
                 req["path"] = proj.applicationManifestPath;
                 HandleManifestLoad(req);
             }
-
-            // Subscribe to project changes so the manifest auto-loads when the diagame project changes
-            mModel->OnDiagameProjectChanged(
-                [](const Dia::Editor::ProjectContext& proj, void* ud)
-                {
-                    auto* self = static_cast<DiaApplicationFlowEditorPlugin*>(ud);
-                    DIA_LOG_INFO("Editor", "AppFlowEditor: OnDiagameProjectChanged fired, applicationManifestPath='%s'",
-                        proj.applicationManifestPath[0] ? proj.applicationManifestPath : "<empty>");
-                    if (proj.applicationManifestPath[0] != '\0')
-                    {
-                        Json::Value req;
-                        req["path"] = proj.applicationManifestPath;
-                        // Store path for deferred push — React may not be mounted yet
-                        self->mPendingManifestPath = Dia::Core::Containers::String512(proj.applicationManifestPath);
-                        self->HandleManifestLoad(req);
-                    }
-                }, this);
         }
         else
         {
-            DIA_LOG_WARNING("Editor", "AppFlowEditor: OnLoad — mModel is null, cannot subscribe to project changes");
+            DIA_LOG_WARNING("Editor", "AppFlowEditor: OnPluginLoad — model is null, cannot check project state");
         }
 
-        if (mBridge != nullptr)
-        {
-            mBridge->RegisterRequestHandler(kReqManifestLoad,    [this](const Json::Value& d) { return HandleManifestLoad(d); });
-            mBridge->RegisterRequestHandler(kReqManifestSave,    [this](const Json::Value& d) { return HandleManifestSave(d); });
-            mBridge->RegisterRequestHandler(kReqManifestGetState,[this](const Json::Value& d) { return HandleManifestGetState(d); });
-            mBridge->RegisterRequestHandler(kReqManifestApplyCommand,[this](const Json::Value& d) { return HandleManifestApplyCommand(d); });
-            mBridge->RegisterRequestHandler(kReqHistoryUndo,     [this](const Json::Value& d) { return HandleHistoryUndo(d); });
-            mBridge->RegisterRequestHandler(kReqHistoryRedo,     [this](const Json::Value& d) { return HandleHistoryRedo(d); });
-            mBridge->RegisterRequestHandler(kReqHistoryGetState, [this](const Json::Value& d) { return HandleHistoryGetState(d); });
-            mBridge->RegisterRequestHandler(kReqValidationRun,   [this](const Json::Value& d) { return HandleValidationRun(d); });
-            mBridge->RegisterRequestHandler(kReqTypesGet,        [this](const Json::Value& d) { return HandleTypesGet(d); });
-            mBridge->RegisterRequestHandler(kReqTypesRefresh,    [this](const Json::Value& d) { return HandleTypesRefresh(d); });
-            mBridge->RegisterRequestHandler(kReqRiskCheck,       [this](const Json::Value& d) { return HandleRiskCheck(d); });
-            mBridge->RegisterRequestHandler(kReqRiskConfirm,     [this](const Json::Value& d) { return HandleRiskConfirm(d); });
-            mBridge->RegisterRequestHandler(kReqLiveConnect,     [this](const Json::Value& d) { return HandleLiveConnect(d); });
-            mBridge->RegisterRequestHandler(kReqLiveDisconnect,  [this](const Json::Value& d) { return HandleLiveDisconnect(d); });
-            mBridge->RegisterRequestHandler(kReqLiveGetStatus,   [this](const Json::Value& d) { return HandleLiveGetStatus(d); });
-            mBridge->RegisterRequestHandler(kReqLiveTransitionTo,[this](const Json::Value& d) { return HandleLiveTransitionTo(d); });
-            mBridge->RegisterRequestHandler(kReqLiveShutdown,    [this](const Json::Value& d) { return HandleLiveShutdown(d); });
-        }
+        RegisterHandler(kReqManifestLoad,         [this](const Json::Value& d) { return HandleManifestLoad(d); });
+        RegisterHandler(kReqManifestSave,         [this](const Json::Value& d) { return HandleManifestSave(d); });
+        RegisterHandler(kReqManifestGetState,     [this](const Json::Value& d) { return HandleManifestGetState(d); });
+        RegisterHandler(kReqManifestApplyCommand, [this](const Json::Value& d) { return HandleManifestApplyCommand(d); });
+        RegisterHandler(kReqHistoryUndo,          [this](const Json::Value& d) { return HandleHistoryUndo(d); });
+        RegisterHandler(kReqHistoryRedo,          [this](const Json::Value& d) { return HandleHistoryRedo(d); });
+        RegisterHandler(kReqHistoryGetState,      [this](const Json::Value& d) { return HandleHistoryGetState(d); });
+        RegisterHandler(kReqValidationRun,        [this](const Json::Value& d) { return HandleValidationRun(d); });
+        RegisterHandler(kReqTypesGet,             [this](const Json::Value& d) { return HandleTypesGet(d); });
+        RegisterHandler(kReqTypesRefresh,         [this](const Json::Value& d) { return HandleTypesRefresh(d); });
+        RegisterHandler(kReqRiskCheck,            [this](const Json::Value& d) { return HandleRiskCheck(d); });
+        RegisterHandler(kReqRiskConfirm,          [this](const Json::Value& d) { return HandleRiskConfirm(d); });
+        RegisterHandler(kReqLiveConnect,          [this](const Json::Value& d) { return HandleLiveConnect(d); });
+        RegisterHandler(kReqLiveDisconnect,       [this](const Json::Value& d) { return HandleLiveDisconnect(d); });
+        RegisterHandler(kReqLiveGetStatus,        [this](const Json::Value& d) { return HandleLiveGetStatus(d); });
+        RegisterHandler(kReqLiveTransitionTo,     [this](const Json::Value& d) { return HandleLiveTransitionTo(d); });
+        RegisterHandler(kReqLiveShutdown,         [this](const Json::Value& d) { return HandleLiveShutdown(d); });
 
         // Register metrics
         {
@@ -257,31 +240,9 @@ namespace Dia { namespace Editor {
         DIA_LOG_INFO("Editor", "DiaApplicationFlowEditorPlugin: loaded");
     }
 
-    void DiaApplicationFlowEditorPlugin::OnUnload()
+    void DiaApplicationFlowEditorPlugin::OnPluginUnload()
     {
         mFileWatcher.Stop();
-
-        if (mBridge != nullptr)
-        {
-            mBridge->UnregisterRequestHandler(kReqManifestLoad);
-            mBridge->UnregisterRequestHandler(kReqManifestSave);
-            mBridge->UnregisterRequestHandler(kReqManifestGetState);
-            mBridge->UnregisterRequestHandler(kReqManifestApplyCommand);
-            mBridge->UnregisterRequestHandler(kReqHistoryUndo);
-            mBridge->UnregisterRequestHandler(kReqHistoryRedo);
-            mBridge->UnregisterRequestHandler(kReqHistoryGetState);
-            mBridge->UnregisterRequestHandler(kReqValidationRun);
-            mBridge->UnregisterRequestHandler(kReqTypesGet);
-            mBridge->UnregisterRequestHandler(kReqTypesRefresh);
-            mBridge->UnregisterRequestHandler(kReqRiskCheck);
-            mBridge->UnregisterRequestHandler(kReqRiskConfirm);
-            mBridge->UnregisterRequestHandler(kReqLiveConnect);
-            mBridge->UnregisterRequestHandler(kReqLiveDisconnect);
-            mBridge->UnregisterRequestHandler(kReqLiveGetStatus);
-            mBridge->UnregisterRequestHandler(kReqLiveTransitionTo);
-            mBridge->UnregisterRequestHandler(kReqLiveShutdown);
-            mBridge = nullptr;
-        }
 
         if (mGameConnection != nullptr && mGameConnection->IsConnected())
         {
@@ -300,6 +261,20 @@ namespace Dia { namespace Editor {
         if (mGameConnection != nullptr)
         {
             mGameConnection->Update(deltaTime);
+        }
+    }
+
+    void DiaApplicationFlowEditorPlugin::OnProjectChanged(const ProjectContext& context)
+    {
+        DIA_LOG_INFO("Editor", "AppFlowEditor: OnProjectChanged fired, applicationManifestPath='%s'",
+            context.applicationManifestPath[0] ? context.applicationManifestPath : "<empty>");
+        if (context.applicationManifestPath[0] != '\0')
+        {
+            Json::Value req;
+            req["path"] = context.applicationManifestPath;
+            // Store path for deferred push — React may not be mounted yet
+            mPendingManifestPath = Dia::Core::Containers::String512(context.applicationManifestPath);
+            HandleManifestLoad(req);
         }
     }
 
@@ -351,14 +326,14 @@ namespace Dia { namespace Editor {
             {
                 Json::Value notification;
                 notification["path"] = changedPath;
-                mBridge->NotifyUIDataChanged("manifest.externalChange", notification);
+                GetBridge()->NotifyUIDataChanged("manifest.externalChange", notification);
             }
         });
 
         mCommandHistory.Clear();
         mCommandHistory.SetSavePoint();
 
-        mBridge->NotifyUIDataChanged("manifest.state", BuildManifestStateJson(mEditorState));
+        GetBridge()->NotifyUIDataChanged("manifest.state", BuildManifestStateJson(mEditorState));
 
         result["ok"] = true;
         return result;
@@ -409,7 +384,7 @@ namespace Dia { namespace Editor {
         DIA_LOG_INFO("Editor", "Manifest saved: %s", mEditorState.filePath);
 
         mCommandHistory.SetSavePoint();
-        mBridge->NotifyUIDataChanged("manifest.dirty", Json::Value(false));
+        ClearDirty();
 
         result["ok"] = true;
         return result;
@@ -443,7 +418,7 @@ namespace Dia { namespace Editor {
 
         // Push via event AND return in response so React gets it either way
         const Json::Value stateJson = BuildManifestStateJson(mEditorState);
-        if (mBridge) mBridge->NotifyUIDataChanged("manifest.state", stateJson);
+        if (GetBridge()) GetBridge()->NotifyUIDataChanged("manifest.state", stateJson);
 
         result["ok"]    = true;
         result["state"] = stateJson;
@@ -733,8 +708,13 @@ namespace Dia { namespace Editor {
         mCommandHistory.Execute(cmd, mEditorState);
         mEditorState.isDirty = !mCommandHistory.IsAtSavePoint();
 
-        if (mBridge)
-            mBridge->NotifyUIDataChanged("manifest.state", BuildManifestStateJson(mEditorState));
+        if (mEditorState.isDirty)
+            MarkDirty();
+        else
+            ClearDirty();
+
+        if (GetBridge())
+            GetBridge()->NotifyUIDataChanged("manifest.state", BuildManifestStateJson(mEditorState));
 
         result["ok"]      = true;
         result["canUndo"] = mCommandHistory.CanUndo();
@@ -759,7 +739,12 @@ namespace Dia { namespace Editor {
         mCommandHistory.Undo(mEditorState);
         mEditorState.isDirty = !mCommandHistory.IsAtSavePoint();
 
-        mBridge->NotifyUIDataChanged("manifest.state", BuildManifestStateJson(mEditorState));
+        if (mEditorState.isDirty)
+            MarkDirty();
+        else
+            ClearDirty();
+
+        GetBridge()->NotifyUIDataChanged("manifest.state", BuildManifestStateJson(mEditorState));
 
         result["ok"]      = true;
         result["canUndo"] = mCommandHistory.CanUndo();
@@ -784,7 +769,12 @@ namespace Dia { namespace Editor {
         mCommandHistory.Redo(mEditorState);
         mEditorState.isDirty = !mCommandHistory.IsAtSavePoint();
 
-        mBridge->NotifyUIDataChanged("manifest.state", BuildManifestStateJson(mEditorState));
+        if (mEditorState.isDirty)
+            MarkDirty();
+        else
+            ClearDirty();
+
+        GetBridge()->NotifyUIDataChanged("manifest.state", BuildManifestStateJson(mEditorState));
 
         result["ok"]      = true;
         result["canUndo"] = mCommandHistory.CanUndo();
@@ -893,7 +883,7 @@ namespace Dia { namespace Editor {
         }
         result["issues"] = issues;
 
-        mBridge->NotifyUIDataChanged("validation.result", result);
+        GetBridge()->NotifyUIDataChanged("validation.result", result);
         return result;
     }
 
@@ -937,10 +927,10 @@ namespace Dia { namespace Editor {
         {
             typesPath = data["path"].asString();
         }
-        else if (mModel != nullptr)
+        else if (GetModel() != nullptr)
         {
             // Derive registeredtypes.diaschema from the diagame project path
-            const auto& proj = mModel->GetDiagameProject();
+            const auto& proj = GetModel()->GetDiagameProject();
             if (proj.diagamePath[0] != '\0')
             {
                 std::string schemaPath = proj.diagamePath;
@@ -1044,8 +1034,8 @@ namespace Dia { namespace Editor {
                 status["connected"] = connected;
                 status["host"]      = hostStr;
                 status["port"]      = port;
-                if (mBridge)
-                    mBridge->NotifyUIDataChanged("live.connectionStatus", status);
+                if (GetBridge())
+                    GetBridge()->NotifyUIDataChanged("live.connectionStatus", status);
 
                 if (connected)
                 {
@@ -1062,20 +1052,20 @@ namespace Dia { namespace Editor {
                         if (d.isMember("targetStage"))
                             appState.targetStage = Dia::Core::StringCRC(d["targetStage"].asCString());
                         mLiveStore.UpdateAppState(appState);
-                        if (mBridge)
-                            mBridge->NotifyUIDataChanged("live.state", d);
+                        if (GetBridge())
+                            GetBridge()->NotifyUIDataChanged("live.state", d);
                     });
 
                     mGameConnection->Subscribe(kTopicAppModules, [this](const Json::Value& d)
                     {
-                        if (mBridge)
-                            mBridge->NotifyUIDataChanged("live.modules", d);
+                        if (GetBridge())
+                            GetBridge()->NotifyUIDataChanged("live.modules", d);
                     });
 
                     mGameConnection->Subscribe(kTopicAppStreams, [this](const Json::Value& d)
                     {
-                        if (mBridge)
-                            mBridge->NotifyUIDataChanged("live.streams", d);
+                        if (GetBridge())
+                            GetBridge()->NotifyUIDataChanged("live.streams", d);
                     });
                 }
                 else
@@ -1089,8 +1079,8 @@ namespace Dia { namespace Editor {
                     mGameConnection->Unsubscribe(kTopicAppStreams);
                     mLiveStore.Clear();
 
-                    if (mBridge)
-                        mBridge->NotifyUIDataChanged("live.state", Json::Value());
+                    if (GetBridge())
+                        GetBridge()->NotifyUIDataChanged("live.state", Json::Value());
                 }
             });
 
@@ -1155,8 +1145,8 @@ namespace Dia { namespace Editor {
                 Json::Value notification;
                 notification["success"] = success;
                 notification["result"]  = res;
-                if (mBridge)
-                    mBridge->NotifyUIDataChanged("live.transitionResult", notification);
+                if (GetBridge())
+                    GetBridge()->NotifyUIDataChanged("live.transitionResult", notification);
             });
 
         result["ok"]      = true;
@@ -1185,7 +1175,7 @@ namespace Dia { namespace Editor {
     {
         DIA_LOG_INFO("Editor", "DiaApplicationFlowEditorPlugin::OnNavigate: instanceId='%s'", instanceId.AsChar());
 
-        if (!mBridge || !mEditorState.hasManifest)
+        if (!GetBridge() || !mEditorState.hasManifest)
         {
             DIA_LOG_WARNING("Editor", "DiaApplicationFlowEditorPlugin::OnNavigate: no bridge or manifest — ignoring");
             return;
@@ -1207,7 +1197,7 @@ namespace Dia { namespace Editor {
 
         Json::Value payload;
         payload["stageId"] = stageName;
-        mBridge->NotifyUIDataChanged("app_editor.navigate_to_stage", payload);
+        GetBridge()->NotifyUIDataChanged("app_editor.navigate_to_stage", payload);
     }
 
 }} // namespace Dia::Editor

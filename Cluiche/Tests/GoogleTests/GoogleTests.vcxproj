@@ -275,6 +275,7 @@
     <ClCompile Include="DebugServer\TestDebugServerAppState.cpp" />
     <ClCompile Include="Integration\TestDebugProtocolEndToEnd.cpp" />
     <ClCompile Include="Integration\TestWebUIBridgeDispatch.cpp" />
+    <ClCompile Include="Integration\TestEditorPluginBase.cpp" />
     <ClCompile Include="Integration\TestPhysicsGeometryIntegration.cpp" />
     <!-- DiaBlueprintEditor Tests -->
     <ClCompile Include="DiaBlueprintEditor\TestBlueprintFileHandler.cpp" />

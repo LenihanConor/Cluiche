@@ -4,8 +4,6 @@
 #include "DiaPipelineEditor/RunHistoryStore.h"
 #include "DiaPipelineEditor/Internal/PipelineTargetParser.h"
 #include <DiaEditor/Plugin/EditorPluginRegistrationMacros.h>
-#include <DiaEditor/Plugin/EditorPluginContext.h>
-#include <DiaEditor/MVC/EditorModel.h>
 #include <DiaEditor/UI/WebUIBridge.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
@@ -27,10 +25,20 @@ static const Dia::Core::StringCRC kCmdPipelineLaunch("pipeline.launch");
 static const Dia::Core::StringCRC kCmdPipelineOpenLogsFolder("pipeline.open-logs-folder");
 
 PipelineEditorPlugin::PipelineEditorPlugin()
-	: mTailer(nullptr)
+	: EditorPluginBase({
+		"Pipeline Editor",
+		"1.0.0",
+		"Live pipeline viewer and build trigger",
+		"dia://plugins/diapipelineeditor/index.html",
+		Dia::Editor::LayoutMode::kDockable,
+		nullptr,
+		nullptr,
+		true,
+		true
+	})
+	, mTailer(nullptr)
 	, mBuildManager(nullptr)
 	, mHistoryStore(nullptr)
-	, mBridge(nullptr)
 	, mLastPushedEventIndex(0)
 	, mLastBuildRunning(false)
 	, mLastExitCode(0)
@@ -43,10 +51,8 @@ PipelineEditorPlugin::~PipelineEditorPlugin()
 {
 }
 
-void PipelineEditorPlugin::OnLoad(const Dia::Editor::EditorPluginContext& context)
+void PipelineEditorPlugin::OnPluginLoad()
 {
-	mBridge = context.mBridge;
-
 	// Walk up from exe path to find the repo root (contains pipeline.toml)
 	{
 		char exePath[512];
@@ -80,16 +86,11 @@ void PipelineEditorPlugin::OnLoad(const Dia::Editor::EditorPluginContext& contex
 	mHistoryStore = new RunHistoryStore();
 	mHistoryStore->Initialize();
 
-	if (context.mModel != nullptr)
-		context.mModel->OnDiagameProjectChanged(&PipelineEditorPlugin::OnProjectChangedStatic, this);
-
 	RegisterCommands();
 }
 
-void PipelineEditorPlugin::OnUnload()
+void PipelineEditorPlugin::OnPluginUnload()
 {
-	UnregisterCommands();
-
 	if (mHistoryStore)
 	{
 		mHistoryStore->Shutdown();
@@ -139,14 +140,12 @@ void PipelineEditorPlugin::ExtractTarget(const char* diagamePath, char* targetOu
 	targetOut[written] = '\0';
 }
 
-void PipelineEditorPlugin::OnProjectChangedStatic(const Dia::Editor::ProjectContext& ctx, void* ud)
+void PipelineEditorPlugin::OnProjectChanged(const Dia::Editor::ProjectContext& ctx)
 {
-	auto* self = static_cast<PipelineEditorPlugin*>(ud);
-
-	strncpy_s(self->mDiagamePath, self->kDiagamePathLength,
+	strncpy_s(mDiagamePath, kDiagamePathLength,
 	          ctx.IsValid() ? ctx.diagamePath : "", _TRUNCATE);
 
-	if (self->mBridge)
+	if (GetBridge())
 	{
 		char target[256] = {};
 		if (ctx.IsValid())
@@ -157,7 +156,7 @@ void PipelineEditorPlugin::OnProjectChangedStatic(const Dia::Editor::ProjectCont
 		payload["diagamePath"] = ctx.diagamePath;
 		payload["target"]      = target;
 		payload["diagameName"] = target;   // alias: JS reads diagameName
-		self->mBridge->NotifyUIDataChanged("pipeline.project_changed", payload);
+		GetBridge()->NotifyUIDataChanged("pipeline.project_changed", payload);
 	}
 }
 
@@ -174,7 +173,7 @@ void PipelineEditorPlugin::OnUpdate(float /*deltaTime*/)
 	}
 
 	// Push build running state to UI only when it changes
-	if (mBridge && mBuildManager)
+	if (GetBridge() && mBuildManager)
 	{
 		bool running = mBuildManager->IsBuildRunning();
 		int exitCode = mBuildManager->GetLastExitCode();
@@ -185,7 +184,7 @@ void PipelineEditorPlugin::OnUpdate(float /*deltaTime*/)
 			Json::Value status;
 			status["buildRunning"] = running;
 			status["lastExitCode"] = exitCode;
-			mBridge->NotifyUIDataChanged("pipeline.build-status", status);
+			GetBridge()->NotifyUIDataChanged("pipeline.build-status", status);
 		}
 	}
 }
@@ -202,11 +201,11 @@ void PipelineEditorPlugin::ObserverNotification(const Dia::Core::ObserverSubject
 		if (mHistoryStore && mTailer)
 		{
 			mHistoryStore->RecordRun(mTailer->GetCurrentRunSummary());
-			if (mBridge)
+			if (GetBridge())
 			{
 				Json::Value historyPayload;
 				historyPayload["runs"] = mHistoryStore->ToJson();
-				mBridge->NotifyUIDataChanged("pipeline.history", historyPayload);
+				GetBridge()->NotifyUIDataChanged("pipeline.history", historyPayload);
 			}
 		}
 	}
@@ -216,7 +215,7 @@ void PipelineEditorPlugin::ObserverNotification(const Dia::Core::ObserverSubject
 
 void PipelineEditorPlugin::PushEventsToUI()
 {
-	if (mBridge == nullptr || mTailer == nullptr)
+	if (GetBridge() == nullptr || mTailer == nullptr)
 		return;
 
 	int totalEvents = mTailer->GetEventCount();
@@ -259,15 +258,12 @@ void PipelineEditorPlugin::PushEventsToUI()
 	payload["events"] = eventsArray;
 	payload["summary"] = summary;
 
-	mBridge->NotifyUIDataChanged("pipeline.event", payload);
+	GetBridge()->NotifyUIDataChanged("pipeline.event", payload);
 }
 
 void PipelineEditorPlugin::RegisterCommands()
 {
-	if (mBridge == nullptr)
-		return;
-
-	mBridge->RegisterRequestHandler(kCmdPipelineStart,
+	RegisterHandler(kCmdPipelineStart,
 		[this](const Json::Value& data) -> Json::Value
 		{
 			Json::Value result;
@@ -283,7 +279,7 @@ void PipelineEditorPlugin::RegisterCommands()
 			return result;
 		});
 
-	mBridge->RegisterRequestHandler(kCmdPipelineCancel,
+	RegisterHandler(kCmdPipelineCancel,
 		[this](const Json::Value&) -> Json::Value
 		{
 			mBuildManager->Cancel();
@@ -292,7 +288,7 @@ void PipelineEditorPlugin::RegisterCommands()
 			return result;
 		});
 
-	mBridge->RegisterRequestHandler(kCmdPipelineGetTargets,
+	RegisterHandler(kCmdPipelineGetTargets,
 		[this](const Json::Value&) -> Json::Value
 		{
 			char tomlPath[1024];
@@ -303,7 +299,7 @@ void PipelineEditorPlugin::RegisterCommands()
 			return result;
 		});
 
-	mBridge->RegisterRequestHandler(kCmdPipelineHistory,
+	RegisterHandler(kCmdPipelineHistory,
 		[this](const Json::Value&) -> Json::Value
 		{
 			Json::Value result;
@@ -311,7 +307,7 @@ void PipelineEditorPlugin::RegisterCommands()
 			return result;
 		});
 
-	mBridge->RegisterRequestHandler(kCmdPipelineGetProjectState,
+	RegisterHandler(kCmdPipelineGetProjectState,
 		[this](const Json::Value& /*data*/) -> Json::Value
 		{
 			char target[256] = {};
@@ -326,7 +322,7 @@ void PipelineEditorPlugin::RegisterCommands()
 			return result;
 		});
 
-	mBridge->RegisterRequestHandler(kCmdPipelineGetTargetStages,
+	RegisterHandler(kCmdPipelineGetTargetStages,
 		[this](const Json::Value& /*data*/) -> Json::Value
 		{
 			char target[256] = {};
@@ -341,21 +337,15 @@ void PipelineEditorPlugin::RegisterCommands()
 			return result;
 		});
 
-	mBridge->RegisterRequestHandler(kCmdPipelineLaunch,
+	RegisterHandler(kCmdPipelineLaunch,
 		[this](const Json::Value& /*data*/) -> Json::Value
 		{
-			Json::Value result;
-
 			char target[256] = {};
 			if (mDiagamePath[0] != '\0')
 				ExtractTarget(mDiagamePath, target, sizeof(target));
 
 			if (target[0] == '\0')
-			{
-				result["ok"]    = false;
-				result["error"] = "no diagame project loaded";
-				return result;
-			}
+				return MakeErrorResponse("no diagame project loaded");
 
 			char cmdLine[1024];
 			snprintf(cmdLine, sizeof(cmdLine),
@@ -379,52 +369,28 @@ void PipelineEditorPlugin::RegisterCommands()
 			{
 				char errMsg[128];
 				snprintf(errMsg, sizeof(errMsg), "CreateProcessA failed (error %lu)", GetLastError());
-				result["ok"]    = false;
-				result["error"] = errMsg;
-				return result;
+				return MakeErrorResponse(errMsg);
 			}
 
 			CloseHandle(pi.hProcess);
 			CloseHandle(pi.hThread);
 
-			result["ok"] = true;
-			return result;
+			return MakeSuccessResponse();
 		});
 
-	mBridge->RegisterRequestHandler(kCmdPipelineOpenLogsFolder,
+	RegisterHandler(kCmdPipelineOpenLogsFolder,
 		[this](const Json::Value& /*data*/) -> Json::Value
 		{
 			char dirPath[1024];
 			snprintf(dirPath, sizeof(dirPath), "%s\\Cluiche\\out\\DiaCLI\\logs\\pipeline", mRepoRoot);
 
-			Json::Value result;
 			DWORD attr = GetFileAttributesA(dirPath);
 			if (attr == INVALID_FILE_ATTRIBUTES || !(attr & FILE_ATTRIBUTE_DIRECTORY))
-			{
-				result["ok"] = false;
-				result["error"] = "Log directory does not exist";
-				return result;
-			}
+				return MakeErrorResponse("Log directory does not exist");
 
 			ShellExecuteA(NULL, "explore", dirPath, NULL, NULL, SW_SHOWDEFAULT);
-			result["ok"] = true;
-			return result;
+			return MakeSuccessResponse();
 		});
-}
-
-void PipelineEditorPlugin::UnregisterCommands()
-{
-	if (mBridge == nullptr)
-		return;
-
-	mBridge->UnregisterRequestHandler(kCmdPipelineStart);
-	mBridge->UnregisterRequestHandler(kCmdPipelineCancel);
-	mBridge->UnregisterRequestHandler(kCmdPipelineGetTargets);
-	mBridge->UnregisterRequestHandler(kCmdPipelineHistory);
-	mBridge->UnregisterRequestHandler(kCmdPipelineGetProjectState);
-	mBridge->UnregisterRequestHandler(kCmdPipelineGetTargetStages);
-	mBridge->UnregisterRequestHandler(kCmdPipelineLaunch);
-	mBridge->UnregisterRequestHandler(kCmdPipelineOpenLogsFolder);
 }
 
 REGISTER_EDITOR_PLUGIN(PipelineEditorPlugin, "DiaPipelineEditor")

@@ -38,14 +38,28 @@ namespace Dia
 	{
 		namespace Editor
 		{
-			void DiaAssetCatalogueEditorPlugin::OnProjectChangedStatic(const Dia::Editor::ProjectContext& ctx, void* ud)
+			DiaAssetCatalogueEditorPlugin::DiaAssetCatalogueEditorPlugin()
+				: EditorPluginBase({
+					"DiaAssetCatalogueEditor",
+					"1.0.0",
+					"Author and maintain the asset catalogue manifest",
+					"dia://plugins/assetcatalogue/index.html",
+					Dia::Editor::LayoutMode::kDockable,
+					"assetcatalogue.state",
+					nullptr,
+					true,
+					true
+				})
 			{
-				auto* self = static_cast<DiaAssetCatalogueEditorPlugin*>(ud);
+			}
+
+			void DiaAssetCatalogueEditorPlugin::OnProjectChanged(const Dia::Editor::ProjectContext& ctx)
+			{
 				DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: OnProjectChanged — IsValid=%d diagamePath='%s' assetCataloguePath='%s'",
 					ctx.IsValid() ? 1 : 0, ctx.diagamePath, ctx.assetCataloguePath);
 
 				// Keep mDiagameDir in sync with the current project
-				self->mDiagameDir[0] = '\0';
+				mDiagameDir[0] = '\0';
 				if (ctx.IsValid() && ctx.diagamePath[0] != '\0')
 				{
 					const char* p = ctx.diagamePath;
@@ -53,7 +67,7 @@ namespace Dia
 					for (int i = 0; p[i] != '\0'; ++i)
 						if (p[i] == '/' || p[i] == '\\') lastSlash = i;
 					if (lastSlash >= 0)
-						strncpy_s(self->mDiagameDir, self->kDiagameDirLength,
+						strncpy_s(mDiagameDir, kDiagameDirLength,
 						          ctx.diagamePath, static_cast<size_t>(lastSlash + 1));
 				}
 
@@ -61,17 +75,17 @@ namespace Dia
 				{
 					char err[256] = {};
 					DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: loading catalogue from '%s'", ctx.assetCataloguePath);
-					if (!self->LoadManifestFromPath(ctx.assetCataloguePath, err, sizeof(err)))
+					if (!LoadManifestFromPath(ctx.assetCataloguePath, err, sizeof(err)))
 					{
 						DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: failed to load catalogue '%s': %s",
 							ctx.assetCataloguePath, err);
-						if (self->mBridge)
-							self->mBridge->NotifyUIDataChanged("assetcatalogue.status",
+						if (GetBridge())
+							GetBridge()->NotifyUIDataChanged("assetcatalogue.status",
 								Json::Value(err[0] ? err : "Failed to load catalogue"));
 					}
 					else
 					{
-						DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: catalogue loaded OK, %u records", self->mRegistry.GetCount());
+						DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: catalogue loaded OK, %u records", mRegistry.GetCount());
 					}
 				}
 				else
@@ -79,19 +93,15 @@ namespace Dia
 					if (ctx.IsValid())
 						DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: project '%s' has no asset_catalogue field",
 							ctx.diagamePath);
-					if (self->mBridge)
-						self->mBridge->NotifyUIDataChanged("assetcatalogue.status",
+					if (GetBridge())
+						GetBridge()->NotifyUIDataChanged("assetcatalogue.status",
 							Json::Value(ctx.IsValid() ? "No asset_catalogue configured in .diagame" : "No project loaded"));
 				}
 			}
 
-			void DiaAssetCatalogueEditorPlugin::OnLoad(const Dia::Editor::EditorPluginContext& context)
+			void DiaAssetCatalogueEditorPlugin::OnPluginLoad()
 			{
-				DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: OnLoad");
-
-				mBridge       = context.mBridge;
-				mView         = context.mView;
-				mPluginLoader = context.mPluginLoader;
+				DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: OnPluginLoad");
 
 				strncpy_s(mOutputDir, kOutputDirLength, kDefaultOutputDir, _TRUNCATE);
 				mCurrentPath[0] = '\0';
@@ -101,11 +111,11 @@ namespace Dia
 
 				Dia::AssetCatalogue::RegisterBuiltInAssetTypes(mTypeRegistry);
 
-				if (context.mModel != nullptr)
+				if (GetModel() != nullptr)
 				{
-					const Dia::Editor::ProjectContext& proj = context.mModel->GetDiagameProject();
+					const Dia::Editor::ProjectContext& proj = GetModel()->GetDiagameProject();
 
-					// Populate mDiagameDir from current project (same logic as OnProjectChangedStatic)
+					// Populate mDiagameDir from current project (same logic as OnProjectChanged)
 					if (proj.IsValid() && proj.diagamePath[0] != '\0')
 					{
 						const char* p = proj.diagamePath;
@@ -117,73 +127,36 @@ namespace Dia
 							          proj.diagamePath, static_cast<size_t>(lastSlash + 1));
 					}
 
-					DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: OnLoad — checking current project: IsValid=%d diagamePath='%s' assetCataloguePath='%s'",
+					DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: OnPluginLoad — checking current project: IsValid=%d diagamePath='%s' assetCataloguePath='%s'",
 						proj.IsValid() ? 1 : 0, proj.diagamePath, proj.assetCataloguePath);
 					if (proj.IsValid() && proj.assetCataloguePath[0] != '\0')
 					{
 						char err[256] = {};
-						DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: OnLoad — loading catalogue from '%s'", proj.assetCataloguePath);
+						DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: OnPluginLoad — loading catalogue from '%s'", proj.assetCataloguePath);
 						if (!LoadManifestFromPath(proj.assetCataloguePath, err, sizeof(err)))
-							DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: OnLoad — failed to load catalogue: %s", err);
+							DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: OnPluginLoad — failed to load catalogue: %s", err);
 						else
-							DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: OnLoad — catalogue loaded OK, %u records", mRegistry.GetCount());
+							DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: OnPluginLoad — catalogue loaded OK, %u records", mRegistry.GetCount());
 					}
 					else
 					{
-						DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: OnLoad — no catalogue to load (no project or no asset_catalogue field)");
+						DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: OnPluginLoad — no catalogue to load (no project or no asset_catalogue field)");
 					}
-
-					context.mModel->OnDiagameProjectChanged(&DiaAssetCatalogueEditorPlugin::OnProjectChangedStatic, this);
 				}
 				else
 				{
-					DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: OnLoad — context.mModel is null");
+					DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: OnPluginLoad — GetModel() is null");
 				}
 
 				RegisterRequestHandlers();
 
-
 				DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: Initialized");
 			}
 
-			void DiaAssetCatalogueEditorPlugin::OnUnload()
+			void DiaAssetCatalogueEditorPlugin::OnPluginUnload()
 			{
-				DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: OnUnload");
-
-				if (mBridge)
-				{
-					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.load_manifest"));
-					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.browse_open"));
-					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.browse_source_file"));
-					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.get_manifest_dir"));
-					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.save_manifest"));
-					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.new_manifest"));
-					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.bulk_create_records"));
-					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.discover_files"));
-					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.add_relationship"));
-					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.remove_relationship"));
-					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.get_forward_refs"));
-					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.get_reverse_refs"));
-					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.validate"));
-					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.get_record"));
-					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.open_asset"));
-					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.create_scene"));
-					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.register_type_editor"));
-					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.browse_rules"));
-					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.load_rules"));
-					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.get_rules"));
-					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.dry_run_rules"));
-					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.apply_rules"));
-					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.query_asset_ids"));
-					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.get_asset_types"));
-					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.get_state"));
-					mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("asset_catalogue.infer_relationships"));
-				}
-
+				DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: OnPluginUnload");
 				mSessionContext.Save(mOutputDir);
-				mBridge       = nullptr;
-				mView         = nullptr;
-				mPluginLoader = nullptr;
 			}
 
 			void DiaAssetCatalogueEditorPlugin::OnUpdate(float /*deltaTime*/)
@@ -195,7 +168,7 @@ namespace Dia
 				DIA_TRACE_ZONE("asset_catalogue.navigate_to_record", Dia::Observation::Trace::Category::kNone);
 				DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin::OnNavigate: instanceId='%s'", instanceId.AsChar());
 
-				if (!mBridge)
+				if (!GetBridge())
 					return;
 
 				// Verify the record exists before pushing
@@ -208,12 +181,12 @@ namespace Dia
 
 				Json::Value payload;
 				payload["id"] = instanceId.AsChar();
-				mBridge->NotifyUIDataChanged("asset_catalogue.navigate_to_record", payload);
+				GetBridge()->NotifyUIDataChanged("asset_catalogue.navigate_to_record", payload);
 			}
 
 			void DiaAssetCatalogueEditorPlugin::RegisterRequestHandlers()
 			{
-				if (!mBridge)
+				if (!GetBridge())
 					return;
 
 				RegisterCRUDHandlers();
@@ -237,7 +210,7 @@ namespace Dia
 				mTypeEditorRegistry.RegisterTypeEditor(
 					Dia::Core::StringCRC("stage"),     Dia::Core::StringCRC("DiaApplicationEditor"));
 
-				mBridge->RegisterRequestHandler(
+				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.load_manifest"),
 					[this](const Json::Value& data) -> Json::Value
 					{
@@ -263,7 +236,7 @@ namespace Dia
 						return result;
 					});
 
-				mBridge->RegisterRequestHandler(
+				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.browse_open"),
 					[this](const Json::Value& /*data*/) -> Json::Value
 					{
@@ -301,7 +274,7 @@ namespace Dia
 				// browse_source_folder — folder picker pre-seeded to the manifest directory.
 				// Returns { success, path, relative_path } where relative_path is the
 				// chosen folder relative to the manifest (use as a directory prefix for source_path).
-				mBridge->RegisterRequestHandler(
+				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.browse_source_file"),
 					[this](const Json::Value& data) -> Json::Value
 					{
@@ -348,7 +321,7 @@ namespace Dia
 
 				// get_manifest_dir — returns the directory of the currently loaded manifest.
 				// Used by the UI to build default source paths for new records.
-				mBridge->RegisterRequestHandler(
+				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.get_manifest_dir"),
 					[this](const Json::Value& /*data*/) -> Json::Value
 					{
@@ -360,7 +333,7 @@ namespace Dia
 						return result;
 					});
 
-				mBridge->RegisterRequestHandler(
+				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.save_manifest"),
 					[this](const Json::Value& data) -> Json::Value
 					{
@@ -398,7 +371,7 @@ namespace Dia
 						return result;
 					});
 
-				mBridge->RegisterRequestHandler(
+				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.new_manifest"),
 					[this](const Json::Value& /*data*/) -> Json::Value
 					{
@@ -411,7 +384,7 @@ namespace Dia
 						return result;
 					});
 
-				mBridge->RegisterRequestHandler(
+				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.get_state"),
 					[this](const Json::Value& /*data*/) -> Json::Value
 					{
@@ -434,23 +407,23 @@ namespace Dia
 
 			void DiaAssetCatalogueEditorPlugin::PushDirtyState()
 			{
-				if (!mBridge)
+				if (!GetBridge())
 					return;
 				Json::Value data;
 				data["dirty"] = mLoadHandler.IsDirty(mHistory);
 				data["path"]  = mCurrentPath;
-				mBridge->NotifyUIDataChanged("assetcatalogue.state", data);
+				GetBridge()->NotifyUIDataChanged("assetcatalogue.state", data);
 			}
 
 			void DiaAssetCatalogueEditorPlugin::PushRegistryState()
 			{
-				if (!mBridge)
+				if (!GetBridge())
 					return;
 				Json::Value records(Json::arrayValue);
 				for (unsigned int i = 0; i < mRegistry.GetCount(); ++i)
 					records.append(RecordToJson(mRegistry.GetRecordByIndex(i)));
-				mBridge->NotifyUIDataChanged("assetcatalogue.records", records);
-				mBridge->NotifyUIDataChanged("asset_catalogue.registry_changed", Json::Value(Json::objectValue));
+				GetBridge()->NotifyUIDataChanged("assetcatalogue.records", records);
+				GetBridge()->NotifyUIDataChanged("asset_catalogue.registry_changed", Json::Value(Json::objectValue));
 				PushDirtyState();
 			}
 
@@ -516,12 +489,12 @@ namespace Dia
 					DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: auto-loaded %d rules from %s",
 						mRulesEngine.GetRuleCount(), resolvedPath);
 
-					if (mBridge)
+					if (GetBridge())
 					{
 						Json::Value data;
 						data["rules_path"] = resolvedPath;
 						data["rule_count"] = static_cast<int>(mRulesEngine.GetRuleCount());
-						mBridge->NotifyUIDataChanged("assetcatalogue.rulesLoaded", data);
+						GetBridge()->NotifyUIDataChanged("assetcatalogue.rulesLoaded", data);
 					}
 				}
 				else
@@ -529,12 +502,12 @@ namespace Dia
 					DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: failed to auto-load rules from %s",
 						resolvedPath);
 
-					if (mBridge)
+					if (GetBridge())
 					{
 						Json::Value data;
 						data["rules_path"] = resolvedPath;
 						data["error"] = lr.HasErrors() ? lr.GetFirstError().mMessage.AsCStr() : "load failed";
-						mBridge->NotifyUIDataChanged("assetcatalogue.rulesLoadFailed", data);
+						GetBridge()->NotifyUIDataChanged("assetcatalogue.rulesLoadFailed", data);
 					}
 				}
 			}
@@ -620,11 +593,11 @@ namespace Dia
 			// relationship handlers
 			void DiaAssetCatalogueEditorPlugin::RegisterRelationshipHandlers()
 			{
-				if (!mBridge)
+				if (!GetBridge())
 					return;
 
 				// add_relationship
-				mBridge->RegisterRequestHandler(
+				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.add_relationship"),
 					[this](const Json::Value& data) -> Json::Value
 					{
@@ -687,7 +660,7 @@ namespace Dia
 					});
 
 				// remove_relationship
-				mBridge->RegisterRequestHandler(
+				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.remove_relationship"),
 					[this](const Json::Value& data) -> Json::Value
 					{
@@ -724,7 +697,7 @@ namespace Dia
 					});
 
 				// get_forward_refs (read-only query)
-				mBridge->RegisterRequestHandler(
+				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.get_forward_refs"),
 					[this](const Json::Value& data) -> Json::Value
 					{
@@ -754,7 +727,7 @@ namespace Dia
 					});
 
 				// get_reverse_refs (read-only query)
-				mBridge->RegisterRequestHandler(
+				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.get_reverse_refs"),
 					[this](const Json::Value& data) -> Json::Value
 					{
@@ -787,10 +760,10 @@ namespace Dia
 			// discover_files handler
 			void DiaAssetCatalogueEditorPlugin::RegisterDiscovererHandlers()
 			{
-				if (!mBridge)
+				if (!GetBridge())
 					return;
 
-				mBridge->RegisterRequestHandler(
+				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.discover_files"),
 					[this](const Json::Value& data) -> Json::Value
 					{
@@ -829,11 +802,11 @@ namespace Dia
 			// rules handlers
 			void DiaAssetCatalogueEditorPlugin::RegisterRulesHandlers()
 			{
-				if (!mBridge)
+				if (!GetBridge())
 					return;
 
 				// browse_rules — open file dialog then load
-				mBridge->RegisterRequestHandler(
+				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.browse_rules"),
 					[this](const Json::Value& /*data*/) -> Json::Value
 					{
@@ -878,7 +851,7 @@ namespace Dia
 					});
 
 				// load_rules
-				mBridge->RegisterRequestHandler(
+				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.load_rules"),
 					[this](const Json::Value& data) -> Json::Value
 					{
@@ -905,7 +878,7 @@ namespace Dia
 					});
 
 				// dry_run_rules
-				mBridge->RegisterRequestHandler(
+				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.dry_run_rules"),
 					[this](const Json::Value& /*data*/) -> Json::Value
 					{
@@ -935,7 +908,7 @@ namespace Dia
 					});
 
 				// apply_rules
-				mBridge->RegisterRequestHandler(
+				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.apply_rules"),
 					[this](const Json::Value& data) -> Json::Value
 					{
@@ -977,7 +950,7 @@ namespace Dia
 					});
 
 				// get_rules — returns loaded rules list for UI display
-				mBridge->RegisterRequestHandler(
+				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.get_rules"),
 					[this](const Json::Value& /*data*/) -> Json::Value
 					{
@@ -1000,7 +973,7 @@ namespace Dia
 					});
 
 				// query_asset_ids — returns filtered list of registry IDs for autocomplete
-				mBridge->RegisterRequestHandler(
+				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.query_asset_ids"),
 					[this](const Json::Value& data) -> Json::Value
 					{
@@ -1043,12 +1016,12 @@ namespace Dia
 			// asset type editor routing handlers
 			void DiaAssetCatalogueEditorPlugin::RegisterAssetTypeEditorHandlers()
 			{
-				if (!mBridge)
+				if (!GetBridge())
 					return;
 
 				// get_asset_types — returns all registered type descriptors for the New dialog dropdown.
 				// AssetTypeRegistry has no GetByIndex; we probe the known built-in IDs in order.
-				mBridge->RegisterRequestHandler(
+				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.get_asset_types"),
 					[this](const Json::Value& /*data*/) -> Json::Value
 					{
@@ -1085,7 +1058,7 @@ namespace Dia
 					});
 
 				// register_type_editor — allows other plugins to bind a type to an editor
-				mBridge->RegisterRequestHandler(
+				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.register_type_editor"),
 					[this](const Json::Value& data) -> Json::Value
 					{
@@ -1104,7 +1077,7 @@ namespace Dia
 					});
 
 				// create_scene — write blank .diascene, register record, open in DiaSceneEditor
-				mBridge->RegisterRequestHandler(
+				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.create_scene"),
 					[this](const Json::Value& data) -> Json::Value
 					{
@@ -1177,15 +1150,15 @@ namespace Dia
 
 						// Open in DiaSceneEditor via the standard routing
 						Dia::Core::StringCRC assetId(data["id"].asCString());
-						if (mPluginLoader)
-							mPluginLoader->LoadPlugin(Dia::Core::StringCRC("DiaSceneEditor"), assetId);
+						if (GetPluginLoader())
+							GetPluginLoader()->LoadPlugin(Dia::Core::StringCRC("DiaSceneEditor"), assetId);
 
 						result["success"] = true;
 						return result;
 					});
 
 				// get_record — look up a single record by id; used by other plugins for deep-link navigation
-				mBridge->RegisterRequestHandler(
+				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.get_record"),
 					[this](const Json::Value& data) -> Json::Value
 					{
@@ -1210,7 +1183,7 @@ namespace Dia
 					});
 
 				// open_asset — open in registered editor, or fall back to ShellExecuteExW
-				mBridge->RegisterRequestHandler(
+				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.open_asset"),
 					[this](const Json::Value& data) -> Json::Value
 					{
@@ -1232,9 +1205,9 @@ namespace Dia
 
 						// Check for a registered editor plugin
 						Dia::Core::StringCRC editorPluginType = mTypeEditorRegistry.FindEditorForType(rec->mAssetTypeId);
-						if (editorPluginType != Dia::Core::StringCRC() && mPluginLoader)
+						if (editorPluginType != Dia::Core::StringCRC() && GetPluginLoader())
 						{
-							mPluginLoader->LoadPlugin(editorPluginType, assetId);
+							GetPluginLoader()->LoadPlugin(editorPluginType, assetId);
 							result["success"] = true;
 							result["method"]  = "plugin";
 							return result;
@@ -1270,10 +1243,10 @@ namespace Dia
 			// validate handler
 			void DiaAssetCatalogueEditorPlugin::RegisterValidationHandlers()
 			{
-				if (!mBridge)
+				if (!GetBridge())
 					return;
 
-				mBridge->RegisterRequestHandler(
+				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.validate"),
 					[this](const Json::Value& /*data*/) -> Json::Value
 					{
@@ -1348,10 +1321,10 @@ namespace Dia
 			// CRUD request handlers — appended to RegisterRequestHandlers
 			void DiaAssetCatalogueEditorPlugin::RegisterCRUDHandlers()
 			{
-				if (!mBridge)
+				if (!GetBridge())
 					return;
 
-				mBridge->RegisterRequestHandler(
+				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.create_record"),
 					[this](const Json::Value& data) -> Json::Value
 					{
@@ -1451,7 +1424,7 @@ namespace Dia
 						return result;
 					});
 
-				mBridge->RegisterRequestHandler(
+				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.update_record"),
 					[this](const Json::Value& data) -> Json::Value
 					{
@@ -1503,7 +1476,7 @@ namespace Dia
 						return result;
 					});
 
-				mBridge->RegisterRequestHandler(
+				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.delete_record"),
 					[this](const Json::Value& data) -> Json::Value
 					{
@@ -1543,7 +1516,7 @@ namespace Dia
 						return result;
 					});
 
-				mBridge->RegisterRequestHandler(
+				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.query_by_type"),
 					[this](const Json::Value& data) -> Json::Value
 					{
@@ -1566,7 +1539,7 @@ namespace Dia
 						return result;
 					});
 
-				mBridge->RegisterRequestHandler(
+				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.query_by_tag"),
 					[this](const Json::Value& data) -> Json::Value
 					{
@@ -1590,7 +1563,7 @@ namespace Dia
 					});
 
 				// bulk_create_records — wraps N creates in a single CompoundCommand for atomic undo
-				mBridge->RegisterRequestHandler(
+				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.bulk_create_records"),
 					[this](const Json::Value& data) -> Json::Value
 					{
@@ -1646,10 +1619,10 @@ namespace Dia
 			// inferrer handlers
 			void DiaAssetCatalogueEditorPlugin::RegisterInferrerHandlers()
 			{
-				if (!mBridge)
+				if (!GetBridge())
 					return;
 
-				mBridge->RegisterRequestHandler(
+				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.infer_relationships"),
 					[this](const Json::Value& /*data*/) -> Json::Value
 					{
@@ -1733,7 +1706,7 @@ namespace Dia
 									addReq["from"] = sceneId.AsChar();
 									addReq["rel"]  = "uses";
 									addReq["to"]   = bpId;
-									Json::Value addResult = mBridge->InvokeRequestHandler(
+									Json::Value addResult = GetBridge()->InvokeRequestHandler(
 										Dia::Core::StringCRC("asset_catalogue.add_relationship"), addReq);
 
 									if (addResult.get("success", false).asBool())

@@ -17,13 +17,27 @@ namespace Dia
 {
 	namespace BlueprintEditor
 	{
-		void DiaBlueprintEditorPlugin::OnProjectChangedStatic(const Dia::Editor::ProjectContext& ctx, void* ud)
+		DiaBlueprintEditorPlugin::DiaBlueprintEditorPlugin()
+			: EditorPluginBase({
+				"DiaBlueprintEditor",
+				"1.0.0",
+				"Author entity, camera, and light blueprint files",
+				"dia://plugins/blueprinteditor/index.html",
+				Dia::Editor::LayoutMode::kDockable,
+				nullptr,
+				nullptr,
+				false,
+				true
+			})
 		{
-			auto* self = static_cast<DiaBlueprintEditorPlugin*>(ud);
+		}
+
+		void DiaBlueprintEditorPlugin::OnProjectChanged(const Dia::Editor::ProjectContext& ctx)
+		{
 			DIA_LOG_INFO("Editor", "DiaBlueprintEditorPlugin: OnProjectChanged — IsValid=%d diagamePath='%s'",
 				ctx.IsValid() ? 1 : 0, ctx.diagamePath);
 
-			strncpy_s(self->mDiagamePath, self->kDiagamePathLength,
+			strncpy_s(mDiagamePath, kDiagamePathLength,
 			          ctx.IsValid() ? ctx.diagamePath : "", _TRUNCATE);
 
 			// Derive schema path: replace the .diagame filename with registeredtypes.diaschema
@@ -47,12 +61,12 @@ namespace Dia
 
 				strncat_s(schemaPath, sizeof(schemaPath), "registeredtypes.diaschema", _TRUNCATE);
 
-				const int prevMajor = self->mSchemaReader.GetVersion().major;
-				self->mSchemaReader.LoadFromFile(schemaPath);
+				const int prevMajor = mSchemaReader.GetVersion().major;
+				mSchemaReader.LoadFromFile(schemaPath);
 
-				if (self->mSchemaReader.IsLoaded())
+				if (mSchemaReader.IsLoaded())
 				{
-					const int newMajor = self->mSchemaReader.GetVersion().major;
+					const int newMajor = mSchemaReader.GetVersion().major;
 					if (prevMajor != 0 && newMajor != prevMajor)
 					{
 						DIA_LOG_WARNING("Editor",
@@ -62,64 +76,42 @@ namespace Dia
 			}
 			else
 			{
-				self->mSchemaReader.Clear();
+				mSchemaReader.Clear();
 			}
 
-			if (self->mBridge)
+			if (GetBridge())
 			{
 				Json::Value payload;
 				payload["diagamePath"] = ctx.diagamePath;
 				payload["isValid"]     = ctx.IsValid();
-				self->mBridge->NotifyUIDataChanged("blueprint_editor.project_changed", payload);
+				GetBridge()->NotifyUIDataChanged("blueprint_editor.project_changed", payload);
 			}
 		}
 
-		void DiaBlueprintEditorPlugin::OnLoad(const Dia::Editor::EditorPluginContext& context)
+		void DiaBlueprintEditorPlugin::OnPluginLoad()
 		{
-			DIA_LOG_INFO("Editor", "DiaBlueprintEditorPlugin: OnLoad");
+			DIA_LOG_INFO("Editor", "DiaBlueprintEditorPlugin: OnPluginLoad");
 
-			mBridge       = context.mBridge;
-			mPluginLoader = context.mPluginLoader;
-
-			if (context.mModel != nullptr)
+			if (GetModel() != nullptr)
 			{
-				const Dia::Editor::ProjectContext& proj = context.mModel->GetDiagameProject();
+				const Dia::Editor::ProjectContext& proj = GetModel()->GetDiagameProject();
 				strncpy_s(mDiagamePath, kDiagamePathLength,
 				          proj.IsValid() ? proj.diagamePath : "", _TRUNCATE);
-
-				context.mModel->OnDiagameProjectChanged(&DiaBlueprintEditorPlugin::OnProjectChangedStatic, this);
 			}
 			else
-				DIA_LOG_WARNING("Editor", "DiaBlueprintEditorPlugin: OnLoad — context.mModel is null");
+				DIA_LOG_WARNING("Editor", "DiaBlueprintEditorPlugin: OnPluginLoad — model is null");
 
 			RegisterRequestHandlers();
 
 			// T2: register this plugin as the handler for blueprint asset types in the catalogue.
 			RegisterAssetTypesWithCatalogue();
 
-			DIA_LOG_INFO("Editor", "DiaBlueprintEditorPlugin: OnLoad complete");
+			DIA_LOG_INFO("Editor", "DiaBlueprintEditorPlugin: OnPluginLoad complete");
 		}
 
-		void DiaBlueprintEditorPlugin::OnUnload()
+		void DiaBlueprintEditorPlugin::OnPluginUnload()
 		{
-			DIA_LOG_INFO("Editor", "DiaBlueprintEditorPlugin: OnUnload");
-
-			if (mBridge)
-			{
-				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("blueprint_editor.get_project_state"));
-				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("blueprint_editor.get_list"));
-				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("blueprint_editor.load"));
-				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("blueprint_editor.save"));
-				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("blueprint_editor.get_available_components"));
-				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("blueprint_editor.add_component"));
-				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("blueprint_editor.remove_component"));
-				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("blueprint_editor.update_field"));
-				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("blueprint_editor.get_usage"));
-				mBridge->UnregisterRequestHandler(Dia::Core::StringCRC("blueprint_editor.create_from_template"));
-			}
-
-			mBridge       = nullptr;
-			mPluginLoader = nullptr;
+			DIA_LOG_INFO("Editor", "DiaBlueprintEditorPlugin: OnPluginUnload");
 		}
 
 		void DiaBlueprintEditorPlugin::OnUpdate(float /*deltaTime*/)
@@ -130,13 +122,13 @@ namespace Dia
 		{
 		    DIA_LOG_INFO("Editor", "DiaBlueprintEditorPlugin::OnNavigate: instanceId='%s'", instanceId.AsChar());
 
-		    if (!mBridge)
+		    if (!GetBridge())
 		        return;
 
 		    // Look up the source path via the catalogue's get_record handler
 		    Json::Value req;
 		    req["id"] = instanceId.AsChar();
-		    Json::Value rec = mBridge->InvokeRequestHandler(
+		    Json::Value rec = GetBridge()->InvokeRequestHandler(
 		        Dia::Core::StringCRC("asset_catalogue.get_record"), req);
 
 		    if (rec.isNull() || !rec.get("success", false).asBool())
@@ -155,7 +147,7 @@ namespace Dia
 		    // Load the blueprint using the existing handler
 		    Json::Value loadReq;
 		    loadReq["path"] = sourcePath;
-		    Json::Value loadResult = mBridge->InvokeRequestHandler(
+		    Json::Value loadResult = GetBridge()->InvokeRequestHandler(
 		        Dia::Core::StringCRC("blueprint_editor.load"), loadReq);
 
 		    if (loadResult.isNull() || !loadResult.get("success", false).asBool())
@@ -167,7 +159,7 @@ namespace Dia
 		        failData["sourcePath"]  = sourcePath;
 		        failData["error"]       = loadResult.isNull() ? "load returned null" : loadResult.get("error", "unknown").asString();
 		        failData["assetType"]   = rec["record"].get("type", "diaentity").asString();
-		        mBridge->NotifyUIDataChanged("blueprint_editor.navigate_failed", failData);
+		        GetBridge()->NotifyUIDataChanged("blueprint_editor.navigate_failed", failData);
 		        return;
 		    }
 
@@ -175,7 +167,7 @@ namespace Dia
 		    Json::Value navData;
 		    navData["instanceId"] = instanceId.AsChar();
 		    navData["sourcePath"] = sourcePath;
-		    mBridge->NotifyUIDataChanged("blueprint_editor.navigated", navData);
+		    GetBridge()->NotifyUIDataChanged("blueprint_editor.navigated", navData);
 
 		    DIA_LOG_INFO("Editor", "DiaBlueprintEditorPlugin::OnNavigate: loaded blueprint '%s'", sourcePath.c_str());
 		}
@@ -183,7 +175,7 @@ namespace Dia
 		// T2 ──────────────────────────────────────────────────────────────────────────────
 		void DiaBlueprintEditorPlugin::RegisterAssetTypesWithCatalogue()
 		{
-			if (!mBridge)
+			if (!GetBridge())
 				return;
 
 			static const char* kTypes[] = { "diaentity", "diacamera", "dialight" };
@@ -195,7 +187,7 @@ namespace Dia
 				req["assetType"]       = kTypes[i];
 				req["editorPluginType"] = "DiaBlueprintEditor";
 
-				Json::Value res = mBridge->InvokeRequestHandler(
+				Json::Value res = GetBridge()->InvokeRequestHandler(
 					Dia::Core::StringCRC("asset_catalogue.register_type_editor"), req);
 
 				if (!res.isNull() && res.isMember("success") && !res["success"].asBool())
@@ -215,12 +207,12 @@ namespace Dia
 		// ─────────────────────────────────────────────────────────────────────────────────
 		Json::Value DiaBlueprintEditorPlugin::QueryCatalogueByType(const char* typeId) const
 		{
-			if (!mBridge)
+			if (!GetBridge())
 				return Json::Value(Json::arrayValue);
 
 			Json::Value req;
 			req["typeId"] = typeId;
-			Json::Value res = mBridge->InvokeRequestHandler(
+			Json::Value res = GetBridge()->InvokeRequestHandler(
 				Dia::Core::StringCRC("asset_catalogue.query_by_type"), req);
 
 			if (res.isNull() || !res.get("success", false).asBool())
@@ -234,7 +226,7 @@ namespace Dia
 
 		void DiaBlueprintEditorPlugin::RegisterRequestHandlers()
 		{
-			if (!mBridge)
+			if (!GetBridge())
 				return;
 
 			RegisterListHandlers();
@@ -244,7 +236,7 @@ namespace Dia
 
 		void DiaBlueprintEditorPlugin::RegisterListHandlers()
 		{
-			mBridge->RegisterRequestHandler(
+			RegisterHandler(
 				Dia::Core::StringCRC("blueprint_editor.get_project_state"),
 				[this](const Json::Value& /*data*/) -> Json::Value
 				{
@@ -254,7 +246,7 @@ namespace Dia
 					return r;
 				});
 
-			mBridge->RegisterRequestHandler(
+			RegisterHandler(
 				Dia::Core::StringCRC("blueprint_editor.get_list"),
 				[this](const Json::Value& /*data*/) -> Json::Value
 				{
@@ -268,7 +260,7 @@ namespace Dia
 
 		void DiaBlueprintEditorPlugin::RegisterPropertyHandlers()
 		{
-			mBridge->RegisterRequestHandler(
+			RegisterHandler(
 				Dia::Core::StringCRC("blueprint_editor.get_available_components"),
 				[this](const Json::Value& data) -> Json::Value
 				{
@@ -277,9 +269,7 @@ namespace Dia
 					if (!data.isMember("path") || !data["path"].isString())
 					{
 						DIA_LOG_WARNING("Editor", "DiaBlueprintEditorPlugin: get_available_components — missing path");
-						result["success"] = false;
-						result["error"]   = "missing path";
-						return result;
+						return MakeErrorResponse("missing path");
 					}
 
 					Json::Value blueprintRoot;
@@ -289,9 +279,7 @@ namespace Dia
 						DIA_LOG_WARNING("Editor",
 							"DiaBlueprintEditorPlugin: get_available_components — load failed for '%s': %s",
 							data["path"].asCString(), err);
-						result["success"] = false;
-						result["error"]   = err[0] ? err : "load failed";
-						return result;
+						return MakeErrorResponse(err[0] ? err : "load failed");
 					}
 
 					const char* ext    = strrchr(data["path"].asCString(), '.');
@@ -301,23 +289,20 @@ namespace Dia
 					return result;
 				});
 
-			mBridge->RegisterRequestHandler(
+			RegisterHandler(
 				Dia::Core::StringCRC("blueprint_editor.get_usage"),
 				[this](const Json::Value& data) -> Json::Value
 				{
 					DIA_TRACE_ZONE("blueprint_editor.get_usage", Dia::Observation::Trace::Category::kNone);
-					Json::Value result;
 					if (!data.isMember("assetId") || !data["assetId"].isString())
 					{
 						DIA_LOG_WARNING("Editor", "DiaBlueprintEditorPlugin: get_usage — missing assetId");
-						result["success"] = false;
-						result["error"]   = "missing assetId";
-						return result;
+						return MakeErrorResponse("missing assetId");
 					}
 
 					Json::Value refsReq;
 					refsReq["id"] = data["assetId"].asString();
-					Json::Value refsRes = mBridge->InvokeRequestHandler(
+					Json::Value refsRes = GetBridge()->InvokeRequestHandler(
 						Dia::Core::StringCRC("asset_catalogue.get_reverse_refs"), refsReq);
 
 					Json::Value emptyRefs(Json::arrayValue);
@@ -325,6 +310,7 @@ namespace Dia
 					                        ? emptyRefs
 					                        : refsRes["refs"];
 
+					Json::Value result;
 					result["success"] = true;
 					result["usage"]   = mPropertyController.BuildUsageJson(refs);
 					return result;
@@ -333,18 +319,15 @@ namespace Dia
 
 		void DiaBlueprintEditorPlugin::RegisterFileHandlers()
 		{
-			mBridge->RegisterRequestHandler(
+			RegisterHandler(
 				Dia::Core::StringCRC("blueprint_editor.load"),
 				[this](const Json::Value& data) -> Json::Value
 				{
 					DIA_TRACE_ZONE("blueprint_editor.load", Dia::Observation::Trace::Category::kNone);
-					Json::Value result;
 					if (!data.isMember("path") || !data["path"].isString())
 					{
 						DIA_LOG_WARNING("Editor", "DiaBlueprintEditorPlugin: load — missing path");
-						result["success"] = false;
-						result["error"]   = "missing path";
-						return result;
+						return MakeErrorResponse("missing path");
 					}
 
 					Json::Value blueprintRoot;
@@ -354,13 +337,12 @@ namespace Dia
 						DIA_LOG_WARNING("Editor",
 							"DiaBlueprintEditorPlugin: load — failed for '%s': %s",
 							data["path"].asCString(), err);
-						result["success"] = false;
-						result["error"]   = err[0] ? err : "load failed";
-						return result;
+						return MakeErrorResponse(err[0] ? err : "load failed");
 					}
 
 					const char* ext    = strrchr(data["path"].asCString(), '.');
 					const char* topKey = BlueprintFileHandler::TopLevelKeyForExtension(ext ? ext : "");
+					Json::Value result;
 					result["success"]    = true;
 					result["properties"] = mPropertyController.BuildPropertyJson(blueprintRoot, topKey, mSchemaReader);
 					DIA_LOG_INFO("Editor", "DiaBlueprintEditorPlugin: loaded blueprint '%s'",
@@ -368,19 +350,16 @@ namespace Dia
 					return result;
 				});
 
-			mBridge->RegisterRequestHandler(
+			RegisterHandler(
 				Dia::Core::StringCRC("blueprint_editor.save"),
 				[this](const Json::Value& data) -> Json::Value
 				{
 					DIA_TRACE_ZONE("blueprint_editor.save", Dia::Observation::Trace::Category::kNone);
-					Json::Value result;
 					if (!data.isMember("path") || !data["path"].isString()
 					    || !data.isMember("blueprint"))
 					{
 						DIA_LOG_WARNING("Editor", "DiaBlueprintEditorPlugin: save — missing path or blueprint");
-						result["success"] = false;
-						result["error"]   = "missing path or blueprint";
-						return result;
+						return MakeErrorResponse("missing path or blueprint");
 					}
 
 					char err[256] = {};
@@ -389,32 +368,26 @@ namespace Dia
 						DIA_LOG_WARNING("Editor",
 							"DiaBlueprintEditorPlugin: save — failed for '%s': %s",
 							data["path"].asCString(), err);
-						result["success"] = false;
-						result["error"]   = err[0] ? err : "save failed";
-						return result;
+						return MakeErrorResponse(err[0] ? err : "save failed");
 					}
 
 					DIA_LOG_INFO("Editor", "DiaBlueprintEditorPlugin: saved blueprint '%s'",
 						data["path"].asCString());
-					result["success"] = true;
-					return result;
+					return MakeSuccessResponse();
 				});
 
-			mBridge->RegisterRequestHandler(
+			RegisterHandler(
 				Dia::Core::StringCRC("blueprint_editor.update_field"),
 				[this](const Json::Value& data) -> Json::Value
 				{
 					DIA_TRACE_ZONE("blueprint_editor.update_field", Dia::Observation::Trace::Category::kNone);
-					Json::Value result;
 					if (!data.isMember("path") || !data["path"].isString()
 					    || !data.isMember("componentType") || !data.isMember("fieldName")
 					    || !data.isMember("value"))
 					{
 						DIA_LOG_WARNING("Editor",
 							"DiaBlueprintEditorPlugin: update_field — missing required fields");
-						result["success"] = false;
-						result["error"]   = "missing path, componentType, fieldName, or value";
-						return result;
+						return MakeErrorResponse("missing path, componentType, fieldName, or value");
 					}
 
 					// Handle null value: remove the field from the component
@@ -427,9 +400,7 @@ namespace Dia
 							DIA_LOG_WARNING("Editor",
 								"DiaBlueprintEditorPlugin: update_field — load failed for '%s': %s",
 								data["path"].asCString(), err);
-							result["success"] = false;
-							result["error"]   = err[0] ? err : "load failed";
-							return result;
+							return MakeErrorResponse(err[0] ? err : "load failed");
 						}
 
 						const char* ext    = strrchr(data["path"].asCString(), '.');
@@ -443,9 +414,7 @@ namespace Dia
 							DIA_LOG_WARNING("Editor",
 								"DiaBlueprintEditorPlugin: update_field — clear field failed for '%s': %s",
 								data["path"].asCString(), err);
-							result["success"] = false;
-							result["error"]   = err[0] ? err : "clear field failed";
-							return result;
+							return MakeErrorResponse(err[0] ? err : "clear field failed");
 						}
 
 						if (!mFileHandler.Save(data["path"].asCString(), blueprintRoot, err, sizeof(err)))
@@ -453,13 +422,10 @@ namespace Dia
 							DIA_LOG_WARNING("Editor",
 								"DiaBlueprintEditorPlugin: update_field — save failed for '%s': %s",
 								data["path"].asCString(), err);
-							result["success"] = false;
-							result["error"]   = err[0] ? err : "save failed";
-							return result;
+							return MakeErrorResponse(err[0] ? err : "save failed");
 						}
 
-						result["success"] = true;
-						return result;
+						return MakeSuccessResponse();
 					}
 
 					Json::Value blueprintRoot;
@@ -469,9 +435,7 @@ namespace Dia
 						DIA_LOG_WARNING("Editor",
 							"DiaBlueprintEditorPlugin: update_field — load failed for '%s': %s",
 							data["path"].asCString(), err);
-						result["success"] = false;
-						result["error"]   = err[0] ? err : "load failed";
-						return result;
+						return MakeErrorResponse(err[0] ? err : "load failed");
 					}
 
 					const char* ext    = strrchr(data["path"].asCString(), '.');
@@ -485,9 +449,7 @@ namespace Dia
 						DIA_LOG_WARNING("Editor",
 							"DiaBlueprintEditorPlugin: update_field — mutation failed for '%s': %s",
 							data["path"].asCString(), err);
-						result["success"] = false;
-						result["error"]   = err[0] ? err : "mutation failed";
-						return result;
+						return MakeErrorResponse(err[0] ? err : "mutation failed");
 					}
 
 					if (!mFileHandler.Save(data["path"].asCString(), blueprintRoot, err, sizeof(err)))
@@ -495,29 +457,23 @@ namespace Dia
 						DIA_LOG_WARNING("Editor",
 							"DiaBlueprintEditorPlugin: update_field — save failed for '%s': %s",
 							data["path"].asCString(), err);
-						result["success"] = false;
-						result["error"]   = err[0] ? err : "save failed";
-						return result;
+						return MakeErrorResponse(err[0] ? err : "save failed");
 					}
 
-					result["success"] = true;
-					return result;
+					return MakeSuccessResponse();
 				});
 
-			mBridge->RegisterRequestHandler(
+			RegisterHandler(
 				Dia::Core::StringCRC("blueprint_editor.add_component"),
 				[this](const Json::Value& data) -> Json::Value
 				{
 					DIA_TRACE_ZONE("blueprint_editor.add_component", Dia::Observation::Trace::Category::kNone);
-					Json::Value result;
 					if (!data.isMember("path") || !data["path"].isString()
 					    || !data.isMember("componentType") || !data["componentType"].isString())
 					{
 						DIA_LOG_WARNING("Editor",
 							"DiaBlueprintEditorPlugin: add_component — missing path or componentType");
-						result["success"] = false;
-						result["error"]   = "missing path or componentType";
-						return result;
+						return MakeErrorResponse("missing path or componentType");
 					}
 
 					Json::Value blueprintRoot;
@@ -527,9 +483,7 @@ namespace Dia
 						DIA_LOG_WARNING("Editor",
 							"DiaBlueprintEditorPlugin: add_component — load failed for '%s': %s",
 							data["path"].asCString(), err);
-						result["success"] = false;
-						result["error"]   = err[0] ? err : "load failed";
-						return result;
+						return MakeErrorResponse(err[0] ? err : "load failed");
 					}
 
 					const char* ext    = strrchr(data["path"].asCString(), '.');
@@ -541,9 +495,7 @@ namespace Dia
 						DIA_LOG_WARNING("Editor",
 							"DiaBlueprintEditorPlugin: add_component — mutation failed for '%s': %s",
 							data["path"].asCString(), err);
-						result["success"] = false;
-						result["error"]   = err[0] ? err : "mutation failed";
-						return result;
+						return MakeErrorResponse(err[0] ? err : "mutation failed");
 					}
 
 					if (!mFileHandler.Save(data["path"].asCString(), blueprintRoot, err, sizeof(err)))
@@ -551,32 +503,26 @@ namespace Dia
 						DIA_LOG_WARNING("Editor",
 							"DiaBlueprintEditorPlugin: add_component — save failed for '%s': %s",
 							data["path"].asCString(), err);
-						result["success"] = false;
-						result["error"]   = err[0] ? err : "save failed";
-						return result;
+						return MakeErrorResponse(err[0] ? err : "save failed");
 					}
 
 					DIA_LOG_INFO("Editor",
 						"DiaBlueprintEditorPlugin: added component '%s' to '%s'",
 						data["componentType"].asCString(), data["path"].asCString());
-					result["success"] = true;
-					return result;
+					return MakeSuccessResponse();
 				});
 
-			mBridge->RegisterRequestHandler(
+			RegisterHandler(
 				Dia::Core::StringCRC("blueprint_editor.remove_component"),
 				[this](const Json::Value& data) -> Json::Value
 				{
 					DIA_TRACE_ZONE("blueprint_editor.remove_component", Dia::Observation::Trace::Category::kNone);
-					Json::Value result;
 					if (!data.isMember("path") || !data["path"].isString()
 					    || !data.isMember("componentType") || !data["componentType"].isString())
 					{
 						DIA_LOG_WARNING("Editor",
 							"DiaBlueprintEditorPlugin: remove_component — missing path or componentType");
-						result["success"] = false;
-						result["error"]   = "missing path or componentType";
-						return result;
+						return MakeErrorResponse("missing path or componentType");
 					}
 
 					Json::Value blueprintRoot;
@@ -586,9 +532,7 @@ namespace Dia
 						DIA_LOG_WARNING("Editor",
 							"DiaBlueprintEditorPlugin: remove_component — load failed for '%s': %s",
 							data["path"].asCString(), err);
-						result["success"] = false;
-						result["error"]   = err[0] ? err : "load failed";
-						return result;
+						return MakeErrorResponse(err[0] ? err : "load failed");
 					}
 
 					const char* ext    = strrchr(data["path"].asCString(), '.');
@@ -600,9 +544,7 @@ namespace Dia
 						DIA_LOG_WARNING("Editor",
 							"DiaBlueprintEditorPlugin: remove_component — mutation failed for '%s': %s",
 							data["path"].asCString(), err);
-						result["success"] = false;
-						result["error"]   = err[0] ? err : "mutation failed";
-						return result;
+						return MakeErrorResponse(err[0] ? err : "mutation failed");
 					}
 
 					if (!mFileHandler.Save(data["path"].asCString(), blueprintRoot, err, sizeof(err)))
@@ -610,29 +552,23 @@ namespace Dia
 						DIA_LOG_WARNING("Editor",
 							"DiaBlueprintEditorPlugin: remove_component — save failed for '%s': %s",
 							data["path"].asCString(), err);
-						result["success"] = false;
-						result["error"]   = err[0] ? err : "save failed";
-						return result;
+						return MakeErrorResponse(err[0] ? err : "save failed");
 					}
 
 					DIA_LOG_INFO("Editor",
 						"DiaBlueprintEditorPlugin: removed component '%s' from '%s'",
 						data["componentType"].asCString(), data["path"].asCString());
-					result["success"] = true;
-					return result;
+					return MakeSuccessResponse();
 				});
 
-			mBridge->RegisterRequestHandler(
+			RegisterHandler(
 				Dia::Core::StringCRC("blueprint_editor.create_from_template"),
 				[this](const Json::Value& data) -> Json::Value
 				{
-					Json::Value result;
 					if (!data.isMember("instanceId") || !data["instanceId"].isString()
 					    || !data.isMember("path") || !data["path"].isString())
 					{
-						result["success"] = false;
-						result["error"]   = "missing instanceId or path";
-						return result;
+						return MakeErrorResponse("missing instanceId or path");
 					}
 
 					const std::string instanceId = data["instanceId"].asString();
@@ -652,16 +588,13 @@ namespace Dia
 						DIA_LOG_WARNING("Editor",
 							"DiaBlueprintEditorPlugin: create_from_template — save failed for '%s': %s",
 							path.c_str(), err);
-						result["success"] = false;
-						result["error"]   = err[0] ? err : "save failed";
-						return result;
+						return MakeErrorResponse(err[0] ? err : "save failed");
 					}
 
 					DIA_LOG_INFO("Editor",
 						"DiaBlueprintEditorPlugin: created template file '%s' for '%s'",
 						path.c_str(), instanceId.c_str());
-					result["success"] = true;
-					return result;
+					return MakeSuccessResponse();
 				});
 		}
 

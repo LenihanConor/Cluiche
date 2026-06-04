@@ -569,6 +569,9 @@
     <ClCompile Include="Integration\TestWebUIBridgeDispatch.cpp">
       <Filter>Integration</Filter>
     </ClCompile>
+    <ClCompile Include="Integration\TestEditorPluginBase.cpp">
+      <Filter>Integration</Filter>
+    </ClCompile>
     <ClCompile Include="Integration\TestPhysicsGeometryIntegration.cpp">
       <Filter>Integration</Filter>
     </ClCompile>

@@ -2,12 +2,9 @@
 #include "DiaAssetRuntimeInspector/SharedPluginState.h"
 
 #include <DiaEditor/Plugin/EditorPluginRegistrationMacros.h>
-#include <DiaEditor/Plugin/EditorPluginContext.h>
-#include <DiaEditor/MVC/EditorModel.h>
 #include <DiaEditor/Plugin/PluginServiceLocator.h>
 #include <DiaEditor/LiveConnection/GameConnectionManager.h>
-#include <DiaEditor/MVC/EditorView.h>
-#include <DiaEditor/UI/WebUIBridge.h>
+#include <DiaEditor/MVC/EditorModel.h>
 #include <DiaObservation/Log/DiaLog.h>
 
 #include <cstring>
@@ -20,44 +17,38 @@ namespace Dia
 	{
 		namespace Inspector
 		{
-			void DiaAssetRuntimeInspectorPlugin::OnProjectChangedStatic(const Dia::Editor::ProjectContext& ctx, void* ud)
+			void DiaAssetRuntimeInspectorPlugin::OnProjectChanged(const Dia::Editor::ProjectContext& ctx)
 			{
-				auto* self = static_cast<DiaAssetRuntimeInspectorPlugin*>(ud);
-				strncpy_s(self->mExpectedDiagamePath, sizeof(self->mExpectedDiagamePath),
+				strncpy_s(mExpectedDiagamePath, sizeof(mExpectedDiagamePath),
 				          ctx.IsValid() ? ctx.diagamePath : "", _TRUNCATE);
 			}
 
-			void DiaAssetRuntimeInspectorPlugin::OnLoad(const Dia::Editor::EditorPluginContext& context)
+			void DiaAssetRuntimeInspectorPlugin::OnPluginLoad()
 			{
-				DIA_LOG_INFO("Editor", "DiaAssetRuntimeInspectorPlugin: OnLoad");
+				DIA_LOG_INFO("Editor", "DiaAssetRuntimeInspectorPlugin: OnPluginLoad");
 
-				mBridge = context.mBridge;
-				mView = context.mView;
-				mPluginLoader = context.mPluginLoader;
-
-				if (context.mModel != nullptr)
+				if (GetModel() != nullptr)
 				{
-					context.mModel->OnDiagameProjectChanged(&DiaAssetRuntimeInspectorPlugin::OnProjectChangedStatic, this);
-					const Dia::Editor::ProjectContext& proj = context.mModel->GetDiagameProject();
+					const Dia::Editor::ProjectContext& proj = GetModel()->GetDiagameProject();
 					strncpy_s(mExpectedDiagamePath, sizeof(mExpectedDiagamePath),
 					          proj.IsValid() ? proj.diagamePath : "", _TRUNCATE);
 				}
 
 				mState = std::make_unique<SharedPluginState>();
 
-				if (context.mServices)
-					mManager = context.mServices->GetService<Dia::Editor::GameConnectionManager>();
+				if (GetServices())
+					mManager = GetServices()->GetService<Dia::Editor::GameConnectionManager>();
 
 				if (!mManager)
 					DIA_LOG_WARNING("Editor", "DiaAssetRuntimeInspectorPlugin: GameConnectionManager service not available");
 
 				mSessionContext.Load(kDefaultOutputDir);
 
-				mAssetStateTable.Activate(mBridge, mManager, mState.get());
+				mAssetStateTable.Activate(GetBridge(), mManager, mState.get());
 				mAssetStateTable.SetPollInterval(mSessionContext.GetPollInterval());
-				mStageAssetTree.Activate(mBridge, mManager, mState.get(), &mAssetStateTable);
-				mRefCountInspector.Activate(mBridge, mManager, mState.get(), &mAssetStateTable);
-				mTransitionLog.Activate(mBridge, mManager, mState.get());
+				mStageAssetTree.Activate(GetBridge(), mManager, mState.get(), &mAssetStateTable);
+				mRefCountInspector.Activate(GetBridge(), mManager, mState.get(), &mAssetStateTable);
+				mTransitionLog.Activate(GetBridge(), mManager, mState.get());
 				mTransitionLog.SetMaxEntries(mSessionContext.GetMaxLogEntries());
 
 				if (mSessionContext.GetStateFilter())
@@ -65,7 +56,26 @@ namespace Dia
 				if (mSessionContext.GetIdSearchText())
 					strncpy_s(mCurrentIdSearch, mSessionContext.GetIdSearchText(), _TRUNCATE);
 
-				RegisterRequestHandlers();
+				RegisterHandler(
+					Dia::Core::StringCRC("asset_runtime_inspector.get_connection_state"),
+					[this](const Json::Value& /*data*/) -> Json::Value
+					{
+						Json::Value result;
+						result["connected"] = (mManager != nullptr && mManager->IsConnected());
+						return result;
+					});
+
+				RegisterHandler(
+					Dia::Core::StringCRC("asset_runtime_inspector.update_filters"),
+					[this](const Json::Value& data) -> Json::Value
+					{
+						if (data.isMember("stateFilter") && data["stateFilter"].isString())
+							strncpy_s(mCurrentStateFilter, data["stateFilter"].asCString(), _TRUNCATE);
+						if (data.isMember("idSearch") && data["idSearch"].isString())
+							strncpy_s(mCurrentIdSearch, data["idSearch"].asCString(), _TRUNCATE);
+						return MakeSuccessResponse();
+					});
+
 				PushSavedFiltersToUI();
 
 				if (mManager && mManager->IsConnected())
@@ -76,7 +86,7 @@ namespace Dia
 
 			void DiaAssetRuntimeInspectorPlugin::PushSavedFiltersToUI()
 			{
-				if (!mBridge)
+				if (!GetBridge())
 					return;
 
 				const char* stateFilter = mSessionContext.GetStateFilter();
@@ -87,13 +97,13 @@ namespace Dia
 					Json::Value data;
 					data["stateFilter"] = stateFilter ? stateFilter : "";
 					data["idSearch"] = idSearch ? idSearch : "";
-					mBridge->NotifyUIDataChanged("asset_runtime_inspector.table_filters", data);
+					GetBridge()->NotifyUIDataChanged("asset_runtime_inspector.table_filters", data);
 				}
 			}
 
-			void DiaAssetRuntimeInspectorPlugin::OnUnload()
+			void DiaAssetRuntimeInspectorPlugin::OnPluginUnload()
 			{
-				DIA_LOG_INFO("Editor", "DiaAssetRuntimeInspectorPlugin: OnUnload");
+				DIA_LOG_INFO("Editor", "DiaAssetRuntimeInspectorPlugin: OnPluginUnload");
 
 				mSessionContext.SetPollInterval(mAssetStateTable.GetPollInterval());
 				mSessionContext.SetMaxLogEntries(mTransitionLog.GetMaxEntries());
@@ -107,10 +117,6 @@ namespace Dia
 
 				mState.reset();
 				mManager = nullptr;
-
-				mBridge = nullptr;
-				mView = nullptr;
-				mPluginLoader = nullptr;
 			}
 
 			void DiaAssetRuntimeInspectorPlugin::OnUpdate(float deltaTime)
@@ -136,34 +142,6 @@ namespace Dia
 				return mState.get();
 			}
 
-			void DiaAssetRuntimeInspectorPlugin::RegisterRequestHandlers()
-			{
-				if (!mBridge)
-					return;
-
-				mBridge->RegisterRequestHandler(
-					Dia::Core::StringCRC("asset_runtime_inspector.get_connection_state"),
-					[this](const Json::Value& /*data*/) -> Json::Value
-					{
-						Json::Value result;
-						result["connected"] = (mManager != nullptr && mManager->IsConnected());
-						return result;
-					});
-
-				mBridge->RegisterRequestHandler(
-					Dia::Core::StringCRC("asset_runtime_inspector.update_filters"),
-					[this](const Json::Value& data) -> Json::Value
-					{
-						if (data.isMember("stateFilter") && data["stateFilter"].isString())
-							strncpy_s(mCurrentStateFilter, data["stateFilter"].asCString(), _TRUNCATE);
-						if (data.isMember("idSearch") && data["idSearch"].isString())
-							strncpy_s(mCurrentIdSearch, data["idSearch"].asCString(), _TRUNCATE);
-						Json::Value result;
-						result["success"] = true;
-						return result;
-					});
-			}
-
 			void DiaAssetRuntimeInspectorPlugin::SaveCurrentFilters()
 			{
 				mSessionContext.SetStateFilter(mCurrentStateFilter);
@@ -180,11 +158,11 @@ namespace Dia
 				mRefCountInspector.OnConnectionStateChanged(connected);
 				mTransitionLog.OnConnectionStateChanged(connected);
 
-				if (mBridge)
+				if (GetBridge())
 				{
 					Json::Value data;
 					data["connected"] = connected;
-					mBridge->NotifyUIDataChanged("asset_runtime_inspector.connection_state", data);
+					GetBridge()->NotifyUIDataChanged("asset_runtime_inspector.connection_state", data);
 				}
 
 				if (connected)

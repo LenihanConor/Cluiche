@@ -1,6 +1,6 @@
 #pragma once
 
-#include <DiaEditor/Plugin/IEditorPlugin.h>
+#include <DiaEditor/Plugin/EditorPluginBase.h>
 #include <DiaEditor/Project/ProjectContext.h>
 #include <DiaAssetCatalogue/AssetRegistry.h>
 #include <DiaCore/Json/external/json/json.h>
@@ -14,30 +14,35 @@
 
 namespace Dia
 {
-	namespace Editor
-	{
-		class WebUIBridge;
-		class IPluginLoader;
-	}
-
 	namespace SceneEditor
 	{
-		class DiaSceneEditorPlugin : public Dia::Editor::IEditorPlugin
+		class DiaSceneEditorPlugin : public Dia::Editor::EditorPluginBase
 		{
 		public:
-			const char* GetName()        const override { return "DiaSceneEditor"; }
-			const char* GetVersion()     const override { return "1.0.0"; }
-			const char* GetDescription() const override { return "Author scene files and entity placements"; }
-			const char* GetUIPath()      const override { return "dia://plugins/sceneeditor/index.html"; }
-			Dia::Editor::LayoutMode GetLayoutMode() const override { return Dia::Editor::LayoutMode::kDockable; }
+			DiaSceneEditorPlugin()
+				: EditorPluginBase({
+					"DiaSceneEditor",
+					"1.0.0",
+					"Author scene files and entity placements",
+					"dia://plugins/sceneeditor/index.html",
+					Dia::Editor::LayoutMode::kDockable,
+					"scene_editor.dirty_changed",
+					nullptr,
+					false,
+					true
+				})
+			{
+				mLoadedScenePath[0] = '\0';
+			}
 
-			void OnLoad(const Dia::Editor::EditorPluginContext& context) override;
-			void OnUnload() override;
-			void OnUpdate(float deltaTime) override;
 			void OnNavigate(const Dia::Core::StringCRC& instanceId) override;
 
+		protected:
+			void OnPluginLoad() override;
+			void OnPluginUnload() override;
+			void OnProjectChanged(const Dia::Editor::ProjectContext& ctx) override;
+
 		private:
-			static void OnProjectChangedStatic(const Dia::Editor::ProjectContext& ctx, void* ud);
 			void RegisterRequestHandlers();
 			void ResolveCatalogueIdForLoadedScene();
 
@@ -47,15 +52,11 @@ namespace Dia
 			PropertyInspectorController mPropertyController;
 			ProjectContextManager       mProjectContextManager;
 
-			Json::Value                 mStageList;             // cached from last project load
-			Json::Value                 mLoadedSceneRoot;       // last successfully loaded .diascene
-			char                        mLoadedScenePath[512];  // path for the loaded scene
-			char                        mDiagamePath[512] = {}; // last-known .diagame path
-			bool                        mIsDirty = false;       // unsaved edits exist
+			Json::Value                 mStageList;
+			Json::Value                 mLoadedSceneRoot;
+			char                        mLoadedScenePath[512];
+			char                        mDiagamePath[512] = {};
 			char                        mSceneCatalogueId[256] = {};
-
-			Dia::Editor::WebUIBridge*   mBridge       = nullptr;
-			Dia::Editor::IPluginLoader* mPluginLoader = nullptr;
 		};
 	}
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <DiaEditor/Plugin/IEditorPlugin.h>
+#include <DiaEditor/Plugin/EditorPluginBase.h>
 #include <DiaEditor/Project/ProjectContext.h>
 #include <DiaEditor/Command/CommandHistory.h>
 #include <DiaAssetCatalogue/AssetRegistry.h>
@@ -28,23 +28,18 @@ namespace Dia
 	{
 		namespace Editor
 		{
-			class DiaAssetCatalogueEditorPlugin : public Dia::Editor::IEditorPlugin
+			class DiaAssetCatalogueEditorPlugin : public Dia::Editor::EditorPluginBase
 			{
 			public:
-				const char* GetName() const override { return "DiaAssetCatalogueEditor"; }
-				const char* GetVersion() const override { return "1.0.0"; }
-				const char* GetDescription() const override { return "Author and maintain the asset catalogue manifest"; }
-				const char* GetUIPath() const override { return "dia://plugins/assetcatalogue/index.html"; }
-				Dia::Editor::LayoutMode GetLayoutMode() const override { return Dia::Editor::LayoutMode::kDockable; }
-				Dia::Editor::EditorToolbarItem GetToolbarItem() const override { Dia::Editor::EditorToolbarItem item = Dia::Editor::IEditorPlugin::GetToolbarItem(); item.pinned = true; return item; }
+				DiaAssetCatalogueEditorPlugin();
 
-				void OnLoad(const Dia::Editor::EditorPluginContext& context) override;
-				void OnUnload() override;
+				void OnPluginLoad() override;
+				void OnPluginUnload() override;
 				void OnUpdate(float deltaTime) override;
 				void OnNavigate(const Dia::Core::StringCRC& instanceId) override;
+				void OnProjectChanged(const Dia::Editor::ProjectContext& context) override;
 
 			private:
-				static void OnProjectChangedStatic(const Dia::Editor::ProjectContext& ctx, void* ud);
 				void RegisterRequestHandlers();
 				void RegisterCRUDHandlers();
 				void RegisterDiscovererHandlers();
@@ -84,10 +79,6 @@ namespace Dia
 
 				AssetTypeEditorRegistry                        mTypeEditorRegistry;
 				Dia::AssetCatalogue::CatalogueRulesEngine      mRulesEngine;
-
-				Dia::Editor::WebUIBridge*                      mBridge       = nullptr;
-				Dia::Editor::EditorView*                       mView         = nullptr;
-				Dia::Editor::IPluginLoader*                    mPluginLoader = nullptr;
 			};
 		}
 	}

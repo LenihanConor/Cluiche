@@ -1,6 +1,6 @@
 #pragma once
 
-#include <DiaEditor/Plugin/IEditorPlugin.h>
+#include <DiaEditor/Plugin/EditorPluginBase.h>
 #include <DiaEditor/MVC/EditorModel.h>
 #include <DiaCore/Strings/String512.h>
 #include <DiaCore/FilePath/FileWatcher.h>
@@ -20,21 +20,16 @@ namespace Dia { namespace Editor {
 
 namespace Dia { namespace Editor {
 
-    class DiaApplicationFlowEditorPlugin : public IEditorPlugin
+    class DiaApplicationFlowEditorPlugin : public EditorPluginBase
     {
     public:
-        const char* GetName() const override        { return "Application Flow Editor"; }
-        const char* GetVersion() const override     { return "2.0"; }
-        const char* GetDescription() const override { return "Visual editor for .diaapp v2 manifests with live runtime inspection"; }
-        const char* GetUIPath() const override      { return "dia://plugins/diaapplicationeditor/index.html"; }
-        LayoutMode GetLayoutMode() const override   { return LayoutMode::kFullScreen; }
+        DiaApplicationFlowEditorPlugin();
 
-        EditorToolbarItem GetToolbarItem() const override;
-
-        void OnLoad(const EditorPluginContext& context) override;
-        void OnUnload() override;
+        void OnPluginLoad() override;
+        void OnPluginUnload() override;
         void OnUpdate(float deltaTime) override;
         void OnNavigate(const Dia::Core::StringCRC& instanceId) override;
+        void OnProjectChanged(const ProjectContext& context) override;
 
     private:
         Json::Value HandleManifestLoad(const Json::Value& data);
@@ -55,9 +50,7 @@ namespace Dia { namespace Editor {
         Json::Value HandleLiveTransitionTo(const Json::Value& data);
         Json::Value HandleLiveShutdown(const Json::Value& data);
 
-        WebUIBridge* mBridge = nullptr;
         GameConnectionManager* mGameConnection = nullptr;
-        EditorModel* mModel = nullptr;
 
         Dia::ApplicationFlow::Editor::ManifestEditorState mEditorState;
         Dia::ApplicationFlow::Editor::CommandHistory mCommandHistory;

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <DiaEditor/Plugin/IEditorPlugin.h>
+#include <DiaEditor/Plugin/EditorPluginBase.h>
 #include <DiaEditor/Project/ProjectContext.h>
 
 #include "DiaBlueprintEditor/BlueprintFileHandler.h"
@@ -10,30 +10,22 @@
 
 namespace Dia
 {
-	namespace Editor
-	{
-		class WebUIBridge;
-		class IPluginLoader;
-	}
-
 	namespace BlueprintEditor
 	{
-		class DiaBlueprintEditorPlugin : public Dia::Editor::IEditorPlugin
+		class DiaBlueprintEditorPlugin : public Dia::Editor::EditorPluginBase
 		{
 		public:
-			const char* GetName()        const override { return "DiaBlueprintEditor"; }
-			const char* GetVersion()     const override { return "1.0.0"; }
-			const char* GetDescription() const override { return "Author entity, camera, and light blueprint files"; }
-			const char* GetUIPath()      const override { return "dia://plugins/blueprinteditor/index.html"; }
-			Dia::Editor::LayoutMode GetLayoutMode() const override { return Dia::Editor::LayoutMode::kDockable; }
+			DiaBlueprintEditorPlugin();
 
-			void OnLoad(const Dia::Editor::EditorPluginContext& context) override;
-			void OnUnload() override;
+			void OnPluginLoad() override;
+			void OnPluginUnload() override;
 			void OnUpdate(float deltaTime) override;
 			void OnNavigate(const Dia::Core::StringCRC& instanceId) override;
 
+		protected:
+			void OnProjectChanged(const Dia::Editor::ProjectContext& ctx) override;
+
 		private:
-			static void OnProjectChangedStatic(const Dia::Editor::ProjectContext& ctx, void* ud);
 			void RegisterRequestHandlers();
 			void RegisterListHandlers();
 			void RegisterPropertyHandlers();
@@ -51,9 +43,6 @@ namespace Dia
 
 			static const unsigned int kDiagamePathLength = 512;
 			char mDiagamePath[kDiagamePathLength] = {};
-
-			Dia::Editor::WebUIBridge*   mBridge       = nullptr;
-			Dia::Editor::IPluginLoader* mPluginLoader = nullptr;
 		};
 	}
 }

@@ -1,9 +1,7 @@
 #include "DiaEditor/Plugin/PluginBrowserEditorPlugin.h"
 #include "DiaEditor/Plugin/EditorPluginRegistrationMacros.h"
-#include "DiaEditor/Plugin/EditorPluginContext.h"
 #include "DiaEditor/Plugin/EditorPluginRegistry.h"
 #include "DiaEditor/Plugin/IPluginLoader.h"
-#include "DiaEditor/UI/WebUIBridge.h"
 
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
 #include <DiaCore/Json/external/json/json.h>
@@ -14,145 +12,96 @@ namespace Dia
 {
 	namespace Editor
 	{
-		static const Dia::Core::StringCRC kReqGetAvailable("plugin_browser.get_available");
-		static const Dia::Core::StringCRC kReqLoadPlugin("plugin_browser.load");
-		static const Dia::Core::StringCRC kReqUnloadPlugin("plugin_browser.unload");
-
-		void PluginBrowserEditorPlugin::OnLoad(const EditorPluginContext& context)
+		void PluginBrowserEditorPlugin::OnPluginLoad()
 		{
-			DIA_LOG_INFO("Editor", "PluginBrowserEditorPlugin: OnLoad");
-			mBridge = context.mBridge;
-			mPluginLoader = context.mPluginLoader;
+			DIA_LOG_INFO("Editor", "PluginBrowserEditorPlugin: OnPluginLoad");
 
-			if (mBridge != nullptr)
-			{
-				mBridge->RegisterRequestHandler(kReqGetAvailable,
-					[this](const Json::Value& /*data*/) -> Json::Value
+			RegisterHandler(Dia::Core::StringCRC("plugin_browser.get_available"),
+				[this](const Json::Value& /*data*/) -> Json::Value
+				{
+					Json::Value result;
+					result["plugins"] = Json::arrayValue;
+
+					EditorPluginRegistry& registry = EditorPluginRegistry::Instance();
+					for (unsigned int i = 0; i < registry.GetRegisteredCount(); ++i)
 					{
-						Json::Value result;
-						result["plugins"] = Json::arrayValue;
+						const Dia::Core::StringCRC& typeId = registry.GetRegisteredTypeId(i);
+						if (!registry.IsInScopeFilter(typeId))
+							continue;
+						EditorPluginInfo info = registry.GetFactory(i)->GetPluginInfo();
 
-						EditorPluginRegistry& registry = EditorPluginRegistry::Instance();
-						for (unsigned int i = 0; i < registry.GetRegisteredCount(); ++i)
-						{
-							const Dia::Core::StringCRC& typeId = registry.GetRegisteredTypeId(i);
-							if (!registry.IsInScopeFilter(typeId))
-								continue;
-							EditorPluginInfo info = registry.GetFactory(i)->GetPluginInfo();
+						Json::Value entry;
+						entry["name"] = info.name;
+						entry["version"] = info.version;
+						entry["description"] = info.description;
+						entry["typeId"] = typeId.AsChar();
+						entry["loaded"] = (GetPluginLoader() != nullptr) ? GetPluginLoader()->IsPluginTypeLoaded(typeId) : false;
+						entry["pinned"] = (GetPluginLoader() != nullptr) ? GetPluginLoader()->IsPluginPinned(typeId) : false;
 
-							Json::Value entry;
-							entry["name"] = info.name;
-							entry["version"] = info.version;
-							entry["description"] = info.description;
-							entry["typeId"] = typeId.AsChar();
-							entry["loaded"] = (mPluginLoader != nullptr) ? mPluginLoader->IsPluginTypeLoaded(typeId) : false;
-							entry["pinned"] = (mPluginLoader != nullptr) ? mPluginLoader->IsPluginPinned(typeId) : false;
+						result["plugins"].append(entry);
+					}
 
-							result["plugins"].append(entry);
-						}
+					return result;
+				});
 
-						return result;
-					});
+			RegisterHandler(Dia::Core::StringCRC("plugin_browser.load"),
+				[this](const Json::Value& data) -> Json::Value
+				{
+					const char* typeIdStr = data.isMember("typeId") ? data["typeId"].asCString() : nullptr;
+					if (typeIdStr == nullptr || typeIdStr[0] == '\0')
+						return MakeErrorResponse("typeId is required");
 
-				mBridge->RegisterRequestHandler(kReqLoadPlugin,
-					[this](const Json::Value& data) -> Json::Value
-					{
-						Json::Value result;
+					Dia::Core::StringCRC typeId(typeIdStr);
 
-						const char* typeIdStr = data.isMember("typeId") ? data["typeId"].asCString() : nullptr;
-						if (typeIdStr == nullptr || typeIdStr[0] == '\0')
-						{
-							result["ok"] = false;
-							result["error"] = "typeId is required";
-							return result;
-						}
+					if (GetPluginLoader() == nullptr)
+						return MakeErrorResponse("plugin loader not available");
 
-						Dia::Core::StringCRC typeId(typeIdStr);
+					if (GetPluginLoader()->IsPluginTypeLoaded(typeId))
+						return MakeErrorResponse("plugin is already loaded");
 
-						if (mPluginLoader == nullptr)
-						{
-							result["ok"] = false;
-							result["error"] = "plugin loader not available";
-							return result;
-						}
+					if (!EditorPluginRegistry::Instance().IsPluginRegistered(typeId))
+						return MakeErrorResponse("plugin type not registered");
 
-						if (mPluginLoader->IsPluginTypeLoaded(typeId))
-						{
-							result["ok"] = false;
-							result["error"] = "plugin is already loaded";
-							return result;
-						}
+					Dia::Core::StringCRC instanceId((std::string(typeIdStr) + "_browser").c_str());
+					GetPluginLoader()->LoadPlugin(typeId, instanceId);
 
-						if (!EditorPluginRegistry::Instance().IsPluginRegistered(typeId))
-						{
-							result["ok"] = false;
-							result["error"] = "plugin type not registered";
-							return result;
-						}
+					return MakeSuccessResponse();
+				});
 
-						Dia::Core::StringCRC instanceId((std::string(typeIdStr) + "_browser").c_str());
-						mPluginLoader->LoadPlugin(typeId, instanceId);
+			RegisterHandler(Dia::Core::StringCRC("plugin_browser.unload"),
+				[this](const Json::Value& data) -> Json::Value
+				{
+					const char* typeIdStr = data.isMember("typeId") ? data["typeId"].asCString() : nullptr;
+					if (typeIdStr == nullptr || typeIdStr[0] == '\0')
+						return MakeErrorResponse("typeId is required");
 
-						result["ok"] = true;
-						return result;
-					});
+					Dia::Core::StringCRC typeId(typeIdStr);
 
-				mBridge->RegisterRequestHandler(kReqUnloadPlugin,
-					[this](const Json::Value& data) -> Json::Value
-					{
-						Json::Value result;
+					if (GetPluginLoader() == nullptr)
+						return MakeErrorResponse("plugin loader not available");
 
-						const char* typeIdStr = data.isMember("typeId") ? data["typeId"].asCString() : nullptr;
-						if (typeIdStr == nullptr || typeIdStr[0] == '\0')
-						{
-							result["ok"] = false;
-							result["error"] = "typeId is required";
-							return result;
-						}
+					if (!GetPluginLoader()->IsPluginTypeLoaded(typeId))
+						return MakeErrorResponse("plugin is not loaded");
 
-						Dia::Core::StringCRC typeId(typeIdStr);
+					if (GetPluginLoader()->IsPluginPinned(typeId))
+						return MakeErrorResponse("plugin is pinned and cannot be unloaded");
 
-						if (mPluginLoader == nullptr)
-						{
-							result["ok"] = false;
-							result["error"] = "plugin loader not available";
-							return result;
-						}
+					bool success = GetPluginLoader()->UnloadPlugin(typeId);
+					if (!success)
+						return MakeErrorResponse("failed to unload plugin");
 
-						if (!mPluginLoader->IsPluginTypeLoaded(typeId))
-						{
-							result["ok"] = false;
-							result["error"] = "plugin is not loaded";
-							return result;
-						}
+					return MakeSuccessResponse();
+				});
 
-						if (mPluginLoader->IsPluginPinned(typeId))
-						{
-							result["ok"] = false;
-							result["error"] = "plugin is pinned and cannot be unloaded";
-							return result;
-						}
-
-						bool success = mPluginLoader->UnloadPlugin(typeId);
-						result["ok"] = success;
-						if (!success)
-						{
-							result["error"] = "failed to unload plugin";
-						}
-						return result;
-					});
-
-				DIA_LOG_INFO("Editor", "PluginBrowserEditorPlugin: Registered request handlers");
-			}
+			DIA_LOG_INFO("Editor", "PluginBrowserEditorPlugin: Registered request handlers");
 
 			{
-				Dia::Editor::EditorPluginRegistry& registry = Dia::Editor::EditorPluginRegistry::Instance();
+				EditorPluginRegistry& registry = EditorPluginRegistry::Instance();
+				IPluginLoader* loader = GetPluginLoader();
 				for (unsigned int i = 0; i < registry.GetRegisteredCount(); ++i)
 				{
 					const Dia::Core::StringCRC typeId = registry.GetRegisteredTypeId(i);
-					IPluginLoader* loader = mPluginLoader;
 
-					// plugin.load.<typeId>
 					{
 						std::string loadName = std::string("plugin.load.") + typeId.AsChar();
 						Dia::API::CommandInfoJson loadCmd;
@@ -171,7 +120,6 @@ namespace Dia
 						Dia::API::RegisterCommandJson(loadCmd);
 					}
 
-					// plugin.unload.<typeId>
 					{
 						std::string unloadName = std::string("plugin.unload.") + typeId.AsChar();
 						Dia::API::CommandInfoJson unloadCmd;
@@ -191,22 +139,6 @@ namespace Dia
 				}
 				DIA_LOG_INFO("Editor", "PluginBrowserEditorPlugin: Registered plugin load/unload commands");
 			}
-		}
-
-		void PluginBrowserEditorPlugin::OnUnload()
-		{
-			DIA_LOG_INFO("Editor", "PluginBrowserEditorPlugin: OnUnload");
-			if (mBridge != nullptr)
-			{
-				mBridge->UnregisterRequestHandler(kReqGetAvailable);
-				mBridge->UnregisterRequestHandler(kReqLoadPlugin);
-				mBridge->UnregisterRequestHandler(kReqUnloadPlugin);
-				mBridge = nullptr;
-			}
-		}
-
-		void PluginBrowserEditorPlugin::OnUpdate(float /*deltaTime*/)
-		{
 		}
 	}
 }

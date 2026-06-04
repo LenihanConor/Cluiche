@@ -36,6 +36,9 @@
     <ClInclude Include="Plugin\IEditorPlugin.h">
       <Filter>Plugin</Filter>
     </ClInclude>
+    <ClInclude Include="Plugin\EditorPluginBase.h">
+      <Filter>Plugin</Filter>
+    </ClInclude>
     <ClInclude Include="Plugin\EditorPluginRegistry.h">
       <Filter>Plugin</Filter>
     </ClInclude>
@@ -97,6 +100,9 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Plugin\EditorPluginBase.cpp">
+      <Filter>Plugin</Filter>
+    </ClCompile>
     <ClCompile Include="Plugin\EditorPluginRegistry.cpp">
       <Filter>Plugin</Filter>
     </ClCompile>

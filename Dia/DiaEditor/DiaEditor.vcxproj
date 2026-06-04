@@ -92,6 +92,7 @@
 
   <ItemGroup>
     <ClInclude Include="Plugin\IEditorPlugin.h" />
+    <ClInclude Include="Plugin\EditorPluginBase.h" />
     <ClInclude Include="Plugin\EditorPluginRegistry.h" />
     <ClInclude Include="Plugin\EditorPluginRegistrationMacros.h" />
     <ClInclude Include="Plugin\HelloEditorPlugin.h" />
@@ -123,6 +124,7 @@
     <ClInclude Include="Notification\NotificationService.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Plugin\EditorPluginBase.cpp" />
     <ClCompile Include="Plugin\EditorPluginRegistry.cpp" />
     <ClCompile Include="Command\CompoundCommand.cpp" />
     <ClCompile Include="Command\CommandHistory.cpp" />
