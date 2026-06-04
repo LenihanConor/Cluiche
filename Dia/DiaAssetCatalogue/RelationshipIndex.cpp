@@ -76,15 +76,29 @@ namespace Dia
 
 				const RelEdgePayload& payload = inEdges.At(i)->GetPayloadConst();
 
-				// Reconstruct StringCRC values from CRC hashes. StringCRC::operator== compares
-				// only mCRC, so a CRC-only StringCRC is functionally equivalent for comparisons.
+				// Resolve the "from" CRC back to a full StringCRC via registry. The hash function
+				// and equality operator both use CRC value, so a CRC-only key resolves correctly.
+				Dia::Core::StringCRC fromKey;
+				static_cast<Dia::Core::CRC&>(fromKey) = inEdges.At(i)->GetFrom()->GetPayloadConst().mAssetCRC;
+				const AssetRecord* fromRecord = registry.FindById(fromKey);
+				if (fromRecord == nullptr)
+					continue;
+
+				// Recover the relType string by scanning the source record's forward refs.
+				const Dia::Core::CRC& relTypeCRC = payload.mRelTypeCRC;
 				Dia::Core::StringCRC relType;
-				static_cast<Dia::Core::CRC&>(relType) = payload.mRelTypeCRC;
+				for (unsigned int r = 0; r < fromRecord->mReferences.Size(); ++r)
+				{
+					const RelationshipEdge& ref = fromRecord->mReferences[r];
+					if (ref.mTargetAssetId == assetId &&
+						ref.mRelationshipType.Value() == relTypeCRC.Value())
+					{
+						relType = ref.mRelationshipType;
+						break;
+					}
+				}
 
-				Dia::Core::StringCRC fromId;
-				static_cast<Dia::Core::CRC&>(fromId) = inEdges.At(i)->GetFrom()->GetPayloadConst().mAssetCRC;
-
-				results.Add(RelationshipEdge(relType, fromId));
+				results.Add(RelationshipEdge(relType, fromRecord->mId));
 			}
 		}
 
@@ -107,9 +121,12 @@ namespace Dia
 					if (results.IsFull())
 						break;
 
-					Dia::Core::StringCRC fromId;
-					static_cast<Dia::Core::CRC&>(fromId) = inEdges.At(i)->GetFrom()->GetPayloadConst().mAssetCRC;
-					results.Add(fromId);
+					Dia::Core::StringCRC fromKey;
+					static_cast<Dia::Core::CRC&>(fromKey) = inEdges.At(i)->GetFrom()->GetPayloadConst().mAssetCRC;
+					const AssetRecord* fromRecord = registry.FindById(fromKey);
+					if (fromRecord == nullptr)
+						continue;
+					results.Add(fromRecord->mId);
 				}
 			}
 		}

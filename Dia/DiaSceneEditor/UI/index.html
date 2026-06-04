@@ -575,6 +575,13 @@ function bridgeRequest(handler, data) {
   });
 }
 
+function showToast(level, title, message) {
+  window.parent.postMessage({
+    __diaFromFrame: true,
+    payload: { type: 'editor.notify', data: { level: level, title: title, message: message } }
+  }, '*');
+}
+
 function bridgeOn(event, cb) {
   var topic = 'scene_editor.' + event;
   if (!_diaTopicListeners[topic]) _diaTopicListeners[topic] = [];
@@ -589,7 +596,7 @@ window.addEventListener('message', function(ev) {
   }
   if (d && d.__dia && d.topic && _diaTopicListeners[d.topic]) {
     _diaTopicListeners[d.topic].forEach(function(fn) {
-      try { fn(d.data); } catch(e) { console.warn('bridgeOn error', d.topic, e); }
+      try { fn(d.data); } catch(e) { showToast('warning', 'Scene listener error', d.topic + ': ' + e.message); }
     });
   }
 });
@@ -1484,7 +1491,7 @@ document.getElementById('btn-new-scene').addEventListener('click', async () => {
 
   const result = await bridgeRequest('create_asset', { assetType: 'diascene', id, source_path: path.trim() });
   if (!result || !result.success) {
-    alert('New scene failed: ' + (result && result.error || 'unknown'));
+    showToast('error', 'New scene failed', result && result.error || 'unknown');
     return;
   }
 

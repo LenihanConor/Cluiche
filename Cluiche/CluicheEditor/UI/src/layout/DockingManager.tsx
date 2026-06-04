@@ -101,7 +101,7 @@ export function DockingManager({ onReady }: DockingManagerProps) {
             if (savedTree) {
               const clean = dedupTree(savedTree);
               setLayout(clean);
-              if (clean) EditorBridge.saveLayout({ tree: clean }).catch(() => {});
+              if (clean) EditorBridge.saveLayout({ tree: clean }).catch(() => { EditorBridge.notify({ level: "warning", title: "Failed to save layout" }); });
             } else {
               const visible = list.filter((p) => p.visible).map((p) => p.name);
               setLayout(buildTree(visible));
@@ -153,7 +153,7 @@ export function DockingManager({ onReady }: DockingManagerProps) {
   const handleChange = useCallback(
     (newLayout: MosaicNode<PanelId> | null) => {
       setLayout(newLayout);
-      if (newLayout) EditorBridge.saveLayout({ tree: newLayout }).catch(() => {});
+      if (newLayout) EditorBridge.saveLayout({ tree: newLayout }).catch(() => { EditorBridge.notify({ level: "warning", title: "Failed to save layout" }); });
     },
     []
   );

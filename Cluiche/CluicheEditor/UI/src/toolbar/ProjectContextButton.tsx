@@ -48,12 +48,12 @@ export function ProjectContextButton() {
   const hasProject = project.diagamePath !== "";
 
   function handleOpenPath(path: string) {
-    EditorBridge.request("project.open_path", { path }).catch(() => {});
+    EditorBridge.request("project.open_path", { path }).catch(() => { EditorBridge.notify({ level: "error", title: "Failed to open project" }); });
     setDropdownOpen(false);
   }
 
   function handleClose() {
-    EditorBridge.request("project.close", {}).catch(() => {});
+    EditorBridge.request("project.close", {}).catch(() => { EditorBridge.notify({ level: "error", title: "Failed to close project" }); });
     setDropdownOpen(false);
   }
 
@@ -110,7 +110,7 @@ export function ProjectContextButton() {
           overflow: "hidden",
         }}>
           <DropdownItem label="Open .diagame…" onClick={() => {
-            EditorBridge.request("project.open", {}).catch(() => {});
+            EditorBridge.request("project.open", {}).catch(() => { EditorBridge.notify({ level: "error", title: "Failed to open project dialog" }); });
             setDropdownOpen(false);
           }} />
 

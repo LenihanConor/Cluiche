@@ -56,7 +56,7 @@ export function ConnectionButton() {
         });
         if (r.url) setUrlInput(r.url);
       })
-      .catch(() => {});
+      .catch(() => { EditorBridge.notify({ level: "error", title: "Connection state unavailable" }); });
   }, []);
 
   // Outside-click-to-close
@@ -71,12 +71,12 @@ export function ConnectionButton() {
   }, [dropdownOpen]);
 
   function handleConnect() {
-    EditorBridge.request("game_connection.connect", { url: urlInput }).catch(() => {});
+    EditorBridge.request("game_connection.connect", { url: urlInput }).catch(() => { EditorBridge.notify({ level: "error", title: "Failed to connect" }); });
     setDropdownOpen(false);
   }
 
   function handleDisconnect() {
-    EditorBridge.request("game_connection.disconnect", {}).catch(() => {});
+    EditorBridge.request("game_connection.disconnect", {}).catch(() => { EditorBridge.notify({ level: "error", title: "Failed to disconnect" }); });
     setDropdownOpen(false);
   }
 

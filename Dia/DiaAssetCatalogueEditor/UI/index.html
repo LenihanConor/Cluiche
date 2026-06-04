@@ -940,14 +940,14 @@
   function onOpenInEditor(id) {
     if (!id) return;
     diaRequest('asset_catalogue.open_in_editor', { id: id }).then(function(r) {
-      if (!r.success) console.warn('open_in_editor failed:', r.error);
+      if (!r.success) showToast('error', 'Open in editor failed', r.error);
     });
   }
 
   function onOpenInFile(id) {
     if (!id) return;
     diaRequest('asset_catalogue.open_in_file', { id: id }).then(function(r) {
-      if (!r.success) console.warn('open_in_file failed:', r.error);
+      if (!r.success) showToast('error', 'Open in file failed', r.error);
     });
   }
 
@@ -993,10 +993,10 @@
     if (!selectedId) return;
     var rel    = document.getElementById('rel-add-rel').value.trim();
     var target = document.getElementById('rel-add-target').value.trim();
-    if (!rel || !target) { alert('Enter rel type and target ID.'); return; }
+    if (!rel || !target) { showToast('warning', 'Missing fields', 'Enter relationship type and target ID'); return; }
 
     diaRequest('asset_catalogue.add_relationship', { from: selectedId, rel: rel, to: target }).then(function(r) {
-      if (!r.success) { alert('Add relationship failed: ' + r.error); return; }
+      if (!r.success) { showToast('error', 'Add relationship failed', r.error); return; }
       document.getElementById('rel-add-target').value = '';
       document.getElementById('rel-autocomplete').style.display = 'none';
       loadRelationships(selectedId);
@@ -1030,7 +1030,7 @@
 
   function onRemoveRelationship(from, rel, to) {
     diaRequest('asset_catalogue.remove_relationship', { from: from, rel: rel, to: to }).then(function(r) {
-      if (!r.success) alert('Remove relationship failed: ' + r.error);
+      if (!r.success) showToast('error', 'Remove relationship failed', r.error);
       else loadRelationships(selectedId);
     });
   }
@@ -1243,7 +1243,7 @@
   function onConfirmDelete() {
     if (!pendingDeleteId) return;
     diaRequest('asset_catalogue.delete_record', { id: pendingDeleteId }).then(function(r) {
-      if (!r.success) alert('Delete failed: ' + r.error);
+      if (!r.success) showToast('error', 'Delete failed', r.error);
       else {
         selectedId = null;
         pendingDeleteId = null;
@@ -1316,7 +1316,7 @@
 
   function onBrowseRules() {
     diaRequest('asset_catalogue.browse_rules', {}).then(function(r) {
-      if (!r.success) { if (r.error) alert('Browse rules failed: ' + r.error); return; }
+      if (!r.success) { if (r.error) showToast('error', 'Browse rules failed', r.error); return; }
       var statusEl = document.getElementById('rules-status');
       document.getElementById('rules-path').value = r.path || '';
       statusEl.textContent = '✓ Loaded — ' + r.rule_count + ' rule' + (r.rule_count !== 1 ? 's' : '');
@@ -1332,7 +1332,7 @@
 
   function onLoadRules() {
     var path = document.getElementById('rules-path').value.trim();
-    if (!path) { alert('Enter a rules file path.'); return; }
+    if (!path) { showToast('warning', 'Missing path', 'Enter a rules file path'); return; }
     diaRequest('asset_catalogue.load_rules', { path: path }).then(function(r) {
       var statusEl = document.getElementById('rules-status');
       if (!r.success) {
@@ -1421,7 +1421,7 @@
     msg += '\nThis can be undone.';
     if (!confirm(msg)) return;
     diaRequest('asset_catalogue.apply_rules', { overwrite_manuals: overwriteManuals }).then(function(r) {
-      if (!r.success) { alert('Apply failed: ' + r.error); return; }
+      if (!r.success) { showToast('error', 'Apply rules failed', r.error); return; }
       document.getElementById('rules-list').innerHTML =
         '<div style="color:#4ec9a0;font-size:11px;">✓ Applied ' + r.applied_count + ' change' + (r.applied_count !== 1 ? 's' : '') + '</div>';
     });
@@ -1435,7 +1435,7 @@
 
   function onDiscover() {
     var root = document.getElementById('disc-root-path').value.trim();
-    if (!root) { alert('Enter a root path first.'); return; }
+    if (!root) { showToast('warning', 'Missing path', 'Enter a root path first'); return; }
 
     diaRequest('asset_catalogue.discover_files', { root_path: root }).then(function(r) {
       var resultsEl = document.getElementById('disc-results');
@@ -1497,7 +1497,7 @@
         id:   document.getElementById('disc-id-'   + i).value
       });
     });
-    if (selected.length === 0) { alert('Select at least one file.'); return; }
+    if (selected.length === 0) { showToast('warning', 'No selection', 'Select at least one file'); return; }
 
     // Show bulk-add confirmation
     pendingBulkItems = selected;
@@ -1520,7 +1520,7 @@
       return { id: item.id, type: item.type, source_path: item.path, status: 'Active', scope: 'global', tags: [] };
     });
     diaRequest('asset_catalogue.bulk_create_records', { records: records }).then(function(r) {
-      if (!r.success) alert('Bulk add failed: ' + r.error);
+      if (!r.success) showToast('error', 'Bulk add failed', r.error);
     });
   }
 
@@ -1597,6 +1597,13 @@
     fetchAndAddGraphRefs(id, false);
   }
 
+  function showToast(level, title, message) {
+    window.parent.postMessage({
+      __diaFromFrame: true,
+      payload: { type: 'editor.notify', data: { level: level, title: title, message: message } }
+    }, '*');
+  }
+
   function fetchAndAddGraphRefs(id, isExpand) {
     if (isExpand && graphExpandedNodes[id]) return;
     graphExpandedNodes[id] = true;
@@ -1610,12 +1617,16 @@
           addGraphNode(r.target, isExpand ? 'expanded' : 'forward');
           addGraphEdge(id, r.target, r.rel);
         });
+      } else if (fwd.error) {
+        showToast('warning', 'Graph expand failed', fwd.error);
       }
       if (rev.success) {
         (rev.refs || []).forEach(function(r) {
           addGraphNode(r.source, isExpand ? 'expanded' : 'reverse');
           addGraphEdge(r.source, id, r.rel);
         });
+      } else if (rev.error) {
+        showToast('warning', 'Graph expand failed', rev.error);
       }
       renderGraph();
     });

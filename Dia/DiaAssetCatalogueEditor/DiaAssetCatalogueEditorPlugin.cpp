@@ -750,7 +750,7 @@ namespace Dia
 					[this](const Json::Value& data) -> Json::Value
 					{
 						Json::Value result;
-						if (!data.isMember("id") || !data["id"].isString())
+						if (!data.isMember("id") || !data["id"].isString() || data["id"].asString().empty())
 						{
 							result["success"] = false;
 							result["error"]   = "missing id";
@@ -780,7 +780,7 @@ namespace Dia
 					[this](const Json::Value& data) -> Json::Value
 					{
 						Json::Value result;
-						if (!data.isMember("id") || !data["id"].isString())
+						if (!data.isMember("id") || !data["id"].isString() || data["id"].asString().empty())
 						{
 							result["success"] = false;
 							result["error"]   = "missing id";

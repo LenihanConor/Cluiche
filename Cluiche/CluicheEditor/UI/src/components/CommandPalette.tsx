@@ -18,7 +18,7 @@ export function CommandPalette({ onClose }: Props) {
       .then((result) => {
         setCommands(result?.commands ?? []);
       })
-      .catch(() => {});
+      .catch(() => { EditorBridge.notify({ level: "error", title: "Failed to load commands" }); });
   }, []);
 
   const fuse = new Fuse(commands, { keys: ["label", "id"], threshold: 0.4 });
