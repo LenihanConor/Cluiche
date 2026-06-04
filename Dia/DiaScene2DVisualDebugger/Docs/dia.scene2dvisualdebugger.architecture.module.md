@@ -1,8 +1,9 @@
 ---
 schema: dia.module.v1
-id: scene2dvisualdebugger
-display_name: DiaScene2DVisualDebugger
+module_id: dia.scene2dvisualdebugger
+name: DiaScene2DVisualDebugger
 layer: domain/visual/tools
+path: Dia/DiaScene2DVisualDebugger
 parent: diavisualdebugger
 description: Visual debug drawers for DiaScene2D — cameras, lights, and layer bands.
 dependent_modules:

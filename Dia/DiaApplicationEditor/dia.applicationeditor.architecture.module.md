@@ -1,11 +1,10 @@
 ---
 schema: dia.module.v1
 module_id: dia.applicationeditor
-display_name: DiaApplicationEditor
-version: "2.0"
-status: active
-parent_module: dia.editor
+name: DiaApplicationEditor
 layer: assets/tools
+path: Dia/DiaApplicationEditor
+status: active
 dependent_modules:
   - dia.applicationflow
   - dia.editor

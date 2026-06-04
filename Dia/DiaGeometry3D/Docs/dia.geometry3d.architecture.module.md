@@ -1,11 +1,9 @@
 ---
 schema: dia.module.v1
-id: dia.geometry3d
-display_name: DiaGeometry3D
-description: 3D geometric primitives, pairwise intersection tests, and spatial acceleration structures for the Dia engine.
-namespace: Dia::Geometry3D
+module_id: dia.geometry3d
+name: DiaGeometry3D
 layer: foundation/maths
-parent_module: dia
+path: Dia/DiaGeometry3D
 
 dependent_modules:
   - dia.core

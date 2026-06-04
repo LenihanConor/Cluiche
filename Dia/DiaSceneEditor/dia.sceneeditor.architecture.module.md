@@ -1,11 +1,9 @@
 ---
+schema: dia.module.v1
 module_id: dia.sceneeditor
-version: dia.module.v1
-display_name: DiaSceneEditor
-parent: dia.editor
-description: CluicheEditor plugin for authoring .diascene files — entity/camera/light placements, layers, instance_data overrides.
-language: cpp
+name: DiaSceneEditor
 layer: domain/visual/tools
+path: Dia/DiaSceneEditor
 
 dependencies:
   - dia.editor

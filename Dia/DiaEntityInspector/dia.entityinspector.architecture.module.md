@@ -1,9 +1,9 @@
 ---
 schema: dia.module.v1
-id: DiaEntityInspector
-parent: DiaEditor
-type: editor_plugin
+module_id: dia.entityinspector
+name: DiaEntityInspector
 layer: assets/tools
+path: Dia/DiaEntityInspector
 dependencies:
   required:
     - DiaEditor

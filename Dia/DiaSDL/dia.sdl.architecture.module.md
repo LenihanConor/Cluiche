@@ -1,10 +1,10 @@
 ---
+schema: dia.module.v1
 module_id: dia.sdl
-display_name: DiaSDL
-parent: dia
+name: DiaSDL
 layer: foundation/platform
-version: "1.0"
-status: complete
+path: Dia/DiaSDL
+status: active
 
 dependencies:
   required:

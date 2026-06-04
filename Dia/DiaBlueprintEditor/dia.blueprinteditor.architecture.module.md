@@ -1,11 +1,9 @@
 ---
+schema: dia.module.v1
 module_id: dia.blueprinteditor
-version: dia.module.v1
-display_name: DiaBlueprintEditor
-parent: dia.editor
-description: CluicheEditor plugin for authoring entity, camera, and light blueprint files.
-language: cpp
+name: DiaBlueprintEditor
 layer: assets/tools
+path: Dia/DiaBlueprintEditor
 
 dependencies:
   - dia.editor
