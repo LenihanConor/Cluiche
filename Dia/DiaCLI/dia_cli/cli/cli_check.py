@@ -146,6 +146,31 @@ def arch(module_filter: str, summary_only: bool) -> None:
         raise SystemExit(exit_code)
 
 
+@cli.command("sln-sync")
+@click.option("--dry-run", is_flag=True, default=False,
+              help="Print planned folder assignments without modifying the .sln.")
+def sln_sync(dry_run: bool) -> None:
+    """Rewrite Cluiche.sln solution folders to match numbered layer architecture."""
+    from dia_cli.commands.check.sln_sync import run_sln_sync
+
+    repo_root = find_repo_root(__file__)
+    mode = "[dry-run] " if dry_run else ""
+    click.echo(f"[dia check] {mode}Running SLN layer sync...")
+
+    changes, warnings, exit_code = run_sln_sync(repo_root=repo_root, dry_run=dry_run)
+
+    for w in warnings:
+        click.echo(w)
+    for c in changes:
+        click.echo(f"  {c}")
+
+    if not dry_run and changes and exit_code == 0:
+        click.echo("[dia check] Cluiche.sln updated.")
+
+    if exit_code != 0:
+        raise SystemExit(exit_code)
+
+
 @cli.command("deps")
 @click.option("--fix", is_flag=True, default=False, help="Auto-add missing deps to module.md files.")
 @click.option("--verbose", is_flag=True, default=False, help="Show each module being checked.")

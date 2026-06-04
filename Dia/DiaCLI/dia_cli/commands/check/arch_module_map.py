@@ -95,8 +95,18 @@ def _parse_frontmatter(md_file: Path) -> Optional[dict]:
             in_dependencies = False
             current_list = None
             continue
-        if line.startswith("path:") and not line.startswith("  "):
-            result["path"] = _scalar(line)
+        if re.match(r"(path|include_root):", line) and not line.startswith("  "):
+            val = _scalar(line).rstrip("/")
+            result["path"] = val
+            in_dependencies = False
+            current_list = None
+            continue
+        if re.match(r"project:", line) and not line.startswith("  ") and "path" not in result:
+            # e.g. "project: Dia/DiaEntity/DiaEntity.vcxproj" → "Dia/DiaEntity"
+            val = _scalar(line)
+            parts = val.replace("\\", "/").split("/")
+            if len(parts) >= 2:
+                result["path"] = "/".join(parts[:2])
             in_dependencies = False
             current_list = None
             continue

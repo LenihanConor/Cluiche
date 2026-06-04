@@ -73,9 +73,9 @@ Tasks 13–16 are independent; task 17 depends on all of them.
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 19 | Implement `dia_cli/commands/check/sln_sync.py` — reads `layer:` from all module docs, rewrites .sln solution folders to numbered names | Before/after .sln diff shows correct folders | TODO | sonnet | Folder names: `1.0-Core`, `1.1-Maths`, `1.1-Services`, `1.2-Platform`, `1.2-Application`, `2.0-Assets`, `2.1-Assets-Tools`, `3.0-Visual`, `3.1-Visual-Tools`, `3.0-Physics`, `3.1-Physics-Tools`, `3.0-Animation`, `3.1-Animation-Tools`. GUID regeneration for new folders. vcxproj files unchanged. |
-| 20 | Add `--tool=sln-sync` branch to `dia check`; `--dry-run` mode prints planned changes | `dia check --tool=sln-sync --dry-run` outputs folder assignments | TODO | sonnet | |
-| 21 | Add sln-sync post-step to `dia scaffold module` — auto-run after creating new module | `dia scaffold module DiaCore Foo` → project appears under `1.0-Core` in VS | TODO | sonnet | Reads `layer:` from newly written module doc |
+| 19 | Implement `dia_cli/commands/check/sln_sync.py` — reads `layer:` from all module docs, rewrites .sln solution folders to numbered names | Before/after .sln diff shows correct folders | Done | sonnet | Deterministic GUIDs for new folders. Handles path/include_root/project key aliases. 58 moves + 13 new folders. Idempotent: second run shows "no changes needed". |
+| 20 | Add `dia check sln-sync` subcommand with `--dry-run`; apply writes Cluiche.sln directly | `dia check sln-sync --dry-run` outputs all 58 assignments | Done | sonnet | |
+| 21 | Add sln-sync post-step to `dia scaffold module` — auto-run after creating new module | Runs silently; logs folder updates if any | Done | sonnet | try/except to never block scaffold if sln-sync fails |
 
 **Commit: 19+20 together, then 21.**
 
