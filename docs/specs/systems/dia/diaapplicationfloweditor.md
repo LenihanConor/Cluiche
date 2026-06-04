@@ -14,13 +14,13 @@
 
 ## Purpose
 
-DiaApplicationFlowEditor is a CluicheEditor plugin that provides visual editing of `.diaapp` v2 manifests and live runtime inspection of DiaApplicationFlow state. It replaces the original DiaApplicationEditor which was designed around the Phase-based model.
+DiaApplicationFlowEditor is a CluicheEditor plugin that provides visual editing of `.diaapp` v2 manifests. It replaces the original DiaApplicationEditor which was designed around the Phase-based model.
 
-The editor serves two modes:
-1. **Static Mode** — Load, visualize, edit, validate, and save `.diaapp` manifest files. No running game required.
-2. **Live Mode** — Connect to a running game via WebSocket/DiaAPI. Overlay runtime state (current stage, module states, stream throughput) onto the static view. Trigger transitions and inspect state.
+The editor is **asset-focused** — it loads, visualizes, edits, validates, and saves `.diaapp` manifest files. No running game is required for its core function. A read-only live overlay (active stage highlight, module state dots) is received from the sibling [DiaApplicationFlowInspector](diaapplicationflowinspector.md) plugin via the shared WebUIBridge topic bus.
 
-**Location:** `Dia/DiaApplicationEditor/` — implements IEditorPlugin from DiaEditor framework.
+**Location:** `Dia/DiaApplicationFlowEditor/` — implements IEditorPlugin from DiaEditor framework.
+
+**Sibling:** [DiaApplicationFlowInspector](diaapplicationflowinspector.md) — live runtime inspection (connection lifecycle, stage transitions, module/stream/PU telemetry).
 
 ## Responsibilities
 
@@ -40,14 +40,12 @@ The editor serves two modes:
 - Dirty state tracking and backup on save (.bak)
 - Type discovery from TypeRegistry (available module types for add)
 
-### Live Mode
-- Connect to running game via DiaEditor's GameConnectionManager (WebSocket)
-- Overlay current stage (highlighted in UI) on static graph
-- Show per-module state (running/loading/stopped/failed) badges
-- Show transition progress (which modules are starting/stopping)
-- Trigger `transition_to` command via DiaAPI
-- Query `get_app_state` and `get_active_modules`
-- Block-wait `wait_stage_ready` for automation scripts
+### Live State Overlay (read-only, from Inspector)
+- Receive `live.connectionStatus`, `live.state`, `live.modules`, `live.streams` topics via shared WebUIBridge bus
+- Display active stage highlight in ModulePresenceGrid
+- Display module state traffic-light dots when connected
+- Query `GameConnectionManager::IsConnected()` for risk assessment (via PluginServiceLocator)
+- **Does NOT** own connection lifecycle, subscribe to game topics, or issue commands to the game
 
 ### Integration
 - Implement IEditorPlugin interface (DiaEditor framework)
@@ -73,15 +71,13 @@ namespace Dia::ApplicationFlow::Editor {
 }
 ```
 
-### DiaAPI Commands (consumed from game via WebSocket)
-| Command | Direction | Purpose |
-|---------|-----------|---------|
-| `get_app_state` | Editor → Game | Returns current stage, PU list, transition state |
-| `get_active_modules` | Editor → Game | Returns per-PU module state list |
-| `transition_to` | Editor → Game | Trigger app-wide stage transition |
-| `wait_stage_ready` | Editor → Game | Blocking — responds when transition completes |
-| `get_stream_info` | Editor → Game | Returns stream metadata and throughput |
-| `request_shutdown` | Editor → Game | Trigger graceful shutdown |
+### Live Topics Consumed (read-only, pushed by Inspector plugin)
+| Topic | Data | Purpose |
+|-------|------|---------|
+| `live.connectionStatus` | `{connected, host, port}` | Update connection indicator |
+| `live.state` | `{stage, transitioning, targetStage}` | Highlight active stage in grid |
+| `live.modules` | Module state array | Traffic-light dots in grid |
+| `live.streams` | Stream metrics array | Throughput indicators |
 
 ### Frontend (React Components)
 | Component | Tab | Description |
@@ -112,10 +108,16 @@ namespace Dia::ApplicationFlow::Editor {
 | Undo/Redo | Command pattern for all edits, Ctrl+Z/Y, history display | [undo-redo.md](../../features/dia/diaapplicationfloweditor/undo-redo.md) | Approved |
 | File Conflict Detection | Watch .diaapp file for external changes, prompt reload/overwrite | [file-conflict-detection.md](../../features/dia/diaapplicationfloweditor/file-conflict-detection.md) | Approved |
 | Type Discovery | Query TypeRegistry for available module/PU types, autocomplete in add dialogs | [type-discovery.md](../../features/dia/diaapplicationfloweditor/type-discovery.md) | Approved |
-| Live Connection | WebSocket connect/disconnect, connection status indicator | [live-connection.md](../../features/dia/diaapplicationfloweditor/live-connection.md) | Approved |
-| Live State Overlay | Current stage highlight, module state badges (running/loading/stopped/failed), transition progress | [live-state-overlay.md](../../features/dia/diaapplicationfloweditor/live-state-overlay.md) | Approved |
-| Live Transition Trigger | "Transition To" button/command, stage selector, wait-for-ready feedback | [live-transition-trigger.md](../../features/dia/diaapplicationfloweditor/live-transition-trigger.md) | Approved |
+| Live State Overlay (read-only) | Receive pushed topics from Inspector; highlight active stage, show module state dots | — | Done (existing; trimmed of connect/disconnect) |
 | Risky Change Warnings | Warn when removing modules with dependents, breaking stream connections, etc. | [risky-change-warnings.md](../../features/dia/diaapplicationfloweditor/risky-change-warnings.md) | Approved |
+
+### Moved to DiaApplicationFlowInspector
+
+| Feature | New Location |
+|---------|--------------|
+| Live Connection (connect/disconnect lifecycle) | [diaapplicationflowinspector.md](diaapplicationflowinspector.md) |
+| Live Transition Trigger | [diaapplicationflowinspector.md](diaapplicationflowinspector.md) |
+| Live State Subscription (app.state, app.modules, app.streams) | [diaapplicationflowinspector.md](diaapplicationflowinspector.md) |
 
 ## Platform Primitives Used
 
@@ -141,6 +143,9 @@ namespace Dia::ApplicationFlow::Editor {
 
 ## Out of Scope
 
+- **Game connection lifecycle** — DiaApplicationFlowInspector owns connect/disconnect/subscribe
+- **Stage transition commands** — Inspector sends `transition_to`/`shutdown` to game
+- **Runtime telemetry (timing, backpressure, event log)** — Inspector's domain
 - **Module code editing** — this is a manifest editor, not an IDE
 - **Asset pipeline integration** — asset loading is AssetRuntime's concern
 - **Performance profiling** — separate profiler tool
@@ -203,4 +208,6 @@ namespace Dia::ApplicationFlow::Editor {
 
 ## Status
 
-`Done` — 2026-05-20. Supersedes DiaApplicationEditor v1. Plan: [diaapplicationfloweditor.plan.md](diaapplicationfloweditor.plan.md)
+`In Progress` — Static editing Done (2026-05-20). Live features being extracted to [DiaApplicationFlowInspector](diaapplicationflowinspector.md) (2026-06-03). Supersedes DiaApplicationEditor v1.
+
+**Plan:** [diaapplicationfloweditor.plan.md](diaapplicationfloweditor.plan.md)

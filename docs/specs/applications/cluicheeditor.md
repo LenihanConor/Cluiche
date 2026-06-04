@@ -18,6 +18,12 @@ CluicheEditor manages `.cluicheproj` project files — the top-level project def
 | CluicheEditor ApplicationFlow | Thin application host layer wiring DiaEditor library classes into DiaApplicationFlow v2 (Module subclasses, manifest, bootstrap) | [applicationflow.md](../systems/cluicheeditor/applicationflow.md) |
 | CluicheEditor Plugin Browser | Panel for discovering, loading, and unloading editor plugins; owns the plugin browsing surface, bridge contract, and EditorPluginRegistry query API | [pluginbrowser.md](../systems/cluicheeditor/pluginbrowser.md) |
 
+## Cross-Cutting Features
+
+| Feature | Description | Spec | Status |
+|---------|-------------|------|--------|
+| Plugin Theme System | Shared Pico CSS classless theme with `dia://` scheme delivery and CEF-layer injection for all plugins | [plugin-theme-system.md](../features/cluicheeditor/plugin-theme/plugin-theme-system.md) | Approved |
+
 CluicheEditor owns all application flow: the `Application` bootstrap in `wWinMain` and thin v2 `Module` subclasses that delegate to DiaEditor library classes. DiaEditor has no DiaApplicationFlow dependency — it is a pure library. CluicheEditor is the seam where the library and the framework meet.
 
 **Key Dependencies:**

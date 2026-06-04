@@ -121,6 +121,7 @@ result = execute_api_command("validate-assets", args=["--path", "assets/"])
 | cli-output | Shared output + observability layer — rich terminal + NDJSON event log | `OutputContext`, streaming terminal format, NDJSON `last-run.ndjson`, `--no-color`, `--quiet`, `--log-json` | [cli-output.md](../../features/dia/diacli/cli-output.md) | 3 days | Done |
 | dia-fix | Automated test-fix loop via aider + local LLM | `dia fix <target>`, Ollama default, `--model` for cloud, `--filter` passthrough, `--max-iterations`, `--dry-run`, env verify/setup checks | [dia-fix.md](../../features/dia/diacli/dia-fix.md) | 3 days | Done |
 | dia-orchestrate | E2E automation CLI + pytest plugin | `dia orchestrate --suite=<app>/<name>`, DiaClient fixture, app_launcher, plan JSON, implicit assert_no_log_errors | [dia-orchestrate.md](../../features/dia/diacli/dia-orchestrate.md) | 5 days | Done |
+| registered-types-schema | Build-time reflection schema for editor type discovery | `dia reflect --target`, `registeredtypes.diaschema`, versioned major.minor, components + modules + PUs | [registered-types-schema.md](../../features/dia/diacli/registered-types-schema.md) | 4 days | Approved |
 
 **Total Effort Estimate:** 15 days
 

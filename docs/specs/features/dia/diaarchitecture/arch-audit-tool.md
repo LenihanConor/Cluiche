@@ -20,7 +20,7 @@ Add `dia check --tool=arch` to DiaCLI. The command reads every `dia.*.architectu
 1. **Forbidden deps** — a module includes a header from a module listed in its `dependencies.forbidden`
 2. **Layer ordering violations** — a module at layer N includes a header from a module at layer N+k (upward reach within Core sub-layers, or a domain core reaching into another domain)
 
-This is a prerequisite gate for C3: `dia check --tool=arch` must exit 0 before the full CMake migration begins.
+This is a CI soft gate: `dia check --tool=arch` exits 1 when violations are found, failing the pipeline. CMake migration is out of scope — MSBuild remains the build system.
 
 ---
 
