@@ -40,6 +40,14 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 ---
 
+## In Progress
+
+| System | Spec | What's happening |
+|--------|------|-----------------|
+| DiaApplicationFlowInspector | [diaapplicationflowinspector.md](specs/systems/dia/diaapplicationflowinspector.md) | Spec **Approved** (2026-06-04). Split from Editor — live runtime inspection (timeline, backpressure, frame budget, event log). [Plan](specs/systems/dia/diaapplicationflowinspector.plan.md) (34 tasks). Also renames DiaApplicationEditor → DiaApplicationFlowEditor. |
+
+---
+
 ## Spec Work Needed (Draft or unset — review/approve before building)
 
 | Item | Spec | What's needed |
@@ -128,19 +136,19 @@ All 6 refactoring actions shipped:
 | R5 | DiaDebugServer dep inversion | IStreamTapTarget owned by DebugServer; DiaApplicationFlow dep removed |
 | R6 | DiaDebugDraw split from DiaVisualDebugger | Abstract debug layer at foundation/services; cross-domain exception eliminated |
 
-### Phase 4 — Architecture Audit Tool (C1) — Next
+### Phase 4 — Architecture Audit Tool (C1) ✅ Done (2026-06-04)
 
-| Step | Item | What's needed |
-|------|------|--------------|
-| C1a | `--tool=arch` CLI stub | Add branch to `dia check`, `--module`/`--summary` flags |
-| C1b | YAML module map builder | Read all `dia.*.architecture.module.md`, extract layer/deps |
-| C1c | Include parser | Walk .cpp/.h, resolve `#include` to module_id |
-| C1d | Layer ordering checker | Encode numbered rules, report upward-reach + cross-domain violations |
-| C1e | Wire output + CI | Write violations to `out/check/arch-violations.txt`; exit 1 on violations |
+`dia check arch [--module <id>] [--summary]` — reads all module docs, parses `#include` directives, detects forbidden deps and layer ordering violations. First run: 1975 violations found (expected — domain VDs still depend on `DiaVisualDebugger` rather than `DiaDebugDraw`). Output: `Cluiche/out/check/arch-violations.txt`. CI gate (task 18) deferred until violations are cleaned up.
 
-### Phase 5 — SLN Layer Sync — After C1
+### Phase 5 — SLN Layer Sync ✅ Done (2026-06-04)
 
-Numbered solution folders (1.0-Core, 1.1-Maths, etc.) via `dia check --tool=sln-sync`. Post-step on `dia scaffold module`.
+`dia check sln-sync [--dry-run]` — rewrites `Cluiche.sln` solution folders to numbered names. 13 new folders created, 76 Dia projects assigned. Idempotent. Post-step wired into `dia scaffold module`. Reference: [diaarchitecture.folders.md](specs/systems/dia/diaarchitecture.folders.md).
+
+Also: module docs created for all 18 previously undocumented Dia projects (DiaAPI, DiaAsset, DiaEditor, DiaGame, DiaImGui, DiaPicking, DiaProtobuf, DiaSDL, etc.) — 64/64 vcxprojs now have `layer:` set.
+
+### Next — Violation Cleanup
+
+1975 arch violations to clear (mostly domain VDs including `DiaVisualDebugger` instead of `DiaDebugDraw`). Once clean, add `dia check arch` to CI (task 18).
 
 ---
 
@@ -148,7 +156,6 @@ Numbered solution folders (1.0-Core, 1.1-Maths, etc.) via `dia check --tool=sln-
 
 | Item | Notes |
 |------|-------|
-| SLN layer sync script | Tracked in DiaArchitecture Phase 5 — `dia check --tool=sln-sync` rewrites `.sln` folders to numbered names (1.0-Core, 3.0-Visual, etc.). Post-step on `dia scaffold module`. Unblocked after C1 ships. |
 | RenderTechnique asset type | Layer-level rendering policy (blend mode, post-process like bloom/distortion). Layers reference a technique by name; renderer resolves at draw time. Needs `/spec-feature` under DiaGraphics or DiaBgfx once the scene system lands. |
 | Camera2D controller (pan/zoom/reset) | Application-side input→Camera2D wiring for CluicheTest stages (keyboard pan, scroll zoom, home-key reset). Unblocked once coord2d-debug-overlay ships Camera2D + renderer integration. |
 | DiaAssetRuntime — Hot reload path | Asset Lifecycle Management adds `Failed → Loading` retry but no `Loaded → Loading → Loaded` path. Still need a `ReloadAsset(assetId)` for live iteration (future feature on top of lifecycle management). |
