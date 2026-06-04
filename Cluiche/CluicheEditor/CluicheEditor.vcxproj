@@ -27,7 +27,7 @@
     <ClCompile Include="ApplicationFlow\Modules\EditorViewControllerModule.cpp" />
     <ClCompile Include="ApplicationFlow\Modules\PluginLoaderModule.cpp" />
     <ClCompile Include="..\..\Dia\DiaAssetCatalogueEditor\DiaAssetCatalogueEditorPlugin.cpp" />
-    <ClCompile Include="..\..\Dia\DiaEntityTemplateEditor\DiaEntityTemplateEditorPlugin.cpp" />
+    <ClCompile Include="..\..\Dia\DiaEntityTemplateEditor\DiaBlueprintEditorPlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaSceneEditor\DiaSceneEditorPlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaAssetRuntimeInspector\DiaAssetRuntimeInspectorPlugin.cpp" />
     <ClCompile Include="..\..\Dia\DiaApplicationEditor\DiaApplicationFlowEditorPlugin.cpp" />
@@ -63,13 +63,13 @@
     <ProjectReference Include="..\..\Dia\DiaAssetCatalogueEditor\DiaAssetCatalogueEditor.vcxproj">
       <Project>{d1e2f3a4-b5c6-7890-defa-012345678901}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\Dia\DiaEntityTemplateEditor\DiaEntityTemplateEditor.vcxproj">
+    <ProjectReference Include="..\..\Dia\DiaEntityTemplateEditor\DiaBlueprintEditor.vcxproj">
       <Project>{e3f4a5b6-c7d8-9012-defa-bc1234567890}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaSceneEditor\DiaSceneEditor.vcxproj">
       <Project>{F2A3B4C5-D6E7-8901-BCDE-F0123456789A}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\Dia\diaentitytemplate\diaentitytemplate.vcxproj">
+    <ProjectReference Include="..\..\Dia\DiaEntity\DiaEntity.vcxproj">
       <Project>{d9e0f1a2-b3c4-5678-9def-012345678903}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaAssetRuntimeInspector\DiaAssetRuntimeInspector.vcxproj">
@@ -169,7 +169,7 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
-      <AdditionalDependencies>$(LibOutDir)DiaAssetCatalogueEditor.lib;$(LibOutDir)DiaEntityTemplateEditor.lib;$(LibOutDir)DiaSceneEditor.lib;$(LibOutDir)diaentitytemplate.lib;$(LibOutDir)DiaAssetRuntimeInspector.lib;$(LibOutDir)DiaApplicationEditor.lib;$(LibOutDir)DiaPipelineEditor.lib;$(LibOutDir)DiaEditor.lib;$(LibOutDir)DiaUICEF.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaObservation.lib;libcef.lib;libcef_dll_wrapper.lib;comdlg32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(LibOutDir)DiaAssetCatalogueEditor.lib;$(LibOutDir)DiaEntityTemplateEditor.lib;$(LibOutDir)DiaSceneEditor.lib;$(LibOutDir)DiaEntity.lib;$(LibOutDir)DiaAssetRuntimeInspector.lib;$(LibOutDir)DiaApplicationEditor.lib;$(LibOutDir)DiaPipelineEditor.lib;$(LibOutDir)DiaEditor.lib;$(LibOutDir)DiaUICEF.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaObservation.lib;libcef.lib;libcef_dll_wrapper.lib;comdlg32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(RepoRoot)External/CEF/lib/Debug/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
@@ -194,7 +194,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Windows</SubSystem>
-      <AdditionalDependencies>$(LibOutDir)DiaAssetCatalogueEditor.lib;$(LibOutDir)DiaEntityTemplateEditor.lib;$(LibOutDir)DiaSceneEditor.lib;$(LibOutDir)diaentitytemplate.lib;$(LibOutDir)DiaAssetRuntimeInspector.lib;$(LibOutDir)DiaApplicationEditor.lib;$(LibOutDir)DiaPipelineEditor.lib;$(LibOutDir)DiaEditor.lib;$(LibOutDir)DiaUICEF.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaObservation.lib;libcef.lib;libcef_dll_wrapper.lib;comdlg32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(LibOutDir)DiaAssetCatalogueEditor.lib;$(LibOutDir)DiaEntityTemplateEditor.lib;$(LibOutDir)DiaSceneEditor.lib;$(LibOutDir)DiaEntity.lib;$(LibOutDir)DiaAssetRuntimeInspector.lib;$(LibOutDir)DiaApplicationEditor.lib;$(LibOutDir)DiaPipelineEditor.lib;$(LibOutDir)DiaEditor.lib;$(LibOutDir)DiaUICEF.lib;$(LibOutDir)DiaApplicationFlow.lib;$(LibOutDir)DiaCore.lib;$(LibOutDir)DiaUI.lib;$(LibOutDir)DiaWebSocket.lib;$(LibOutDir)DiaWindow.lib;$(LibOutDir)DiaObservation.lib;libcef.lib;libcef_dll_wrapper.lib;comdlg32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(RepoRoot)External/CEF/lib/Release/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>LIBCMT;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
     </Link>

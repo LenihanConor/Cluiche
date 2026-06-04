@@ -120,7 +120,7 @@
     <ProjectReference Include="..\DiaAssetCatalogue\DiaAssetCatalogue.vcxproj">
       <Project>{A8B9C0D1-E2F3-4567-8901-ABCDEF012345}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\diaentitytemplate\diaentitytemplate.vcxproj">
+    <ProjectReference Include="..\DiaEntity\DiaEntity.vcxproj">
       <Project>{D9E0F1A2-B3C4-5678-9DEF-012345678903}</Project>
     </ProjectReference>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">

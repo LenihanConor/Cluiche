@@ -112,7 +112,7 @@
       <Project>{C5D6E7F8-A9B0-1234-CDEF-012345678903}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="..\diaentitytemplate\diaentitytemplate.vcxproj">
+    <ProjectReference Include="..\DiaEntity\DiaEntity.vcxproj">
       <Project>{D9E0F1A2-B3C4-5678-9DEF-012345678903}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
