@@ -660,6 +660,9 @@
     <ClCompile Include="Editor\TestPluginLoaderDuplication.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
+    <ClCompile Include="Editor\TestPluginLoaderHeadless.cpp">
+      <Filter>Editor</Filter>
+    </ClCompile>
     <ClCompile Include="Editor\TestWebUIBridge.cpp">
       <Filter>Editor</Filter>
     </ClCompile>

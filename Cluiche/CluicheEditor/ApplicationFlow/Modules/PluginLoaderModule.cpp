@@ -224,6 +224,7 @@ namespace Cluiche
 			const unsigned int registryCount = registry.GetRegisteredCount();
 
 			unsigned int p = 0;
+			unsigned int pruned = 0;
 			while (p < layout->GetPanelCount())
 			{
 				const char* panelName = layout->GetPanel(p).name;
@@ -244,12 +245,16 @@ namespace Cluiche
 				{
 					DIA_LOG_INFO("Application", "PluginLoaderModule::PruneHeadlessPanels: removing stale headless panel '%s'", panelName);
 					layout->RemovePanel(panelName);
+					++pruned;
 				}
 				else
 				{
 					++p;
 				}
 			}
+
+			if (pruned > 0)
+				DIA_LOG_INFO("Application", "PluginLoaderModule::PruneHeadlessPanels: pruned %u stale headless panel(s)", pruned);
 		}
 
 		void PluginLoaderModule::LoadBuiltInPlugins()
@@ -409,6 +414,10 @@ namespace Cluiche
 			{
 				mView->RegisterComponent(plugin->GetName(), plugin->GetUIPath());
 				DIA_LOG_INFO("Application", "PluginLoaderModule::LoadPlugin: Registered '%s' at '%s'", plugin->GetName(), plugin->GetUIPath());
+			}
+			else if (plugin->GetLayoutMode() == Dia::Editor::LayoutMode::kHeadless)
+			{
+				DIA_LOG_INFO("Application", "PluginLoaderModule::LoadPlugin: Skipping panel registration for headless plugin '%s'", plugin->GetName());
 			}
 
 			LoadedPluginEntry entry;
