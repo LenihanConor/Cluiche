@@ -106,16 +106,77 @@ TEST_F(BlueprintEditorPluginTest, GetProjectState_NoProjectLoaded_DiagamePathEmp
 }
 
 // ===========================================================================
-// get_project_state — after project loaded (simulate via ProjectContext)
+// Regression: project loaded before OnLoad — get_project_state valid immediately
+//
+// Before the fix, RegisterRequestHandlers() was called before mDiagamePath was
+// populated from the model, so get_project_state returned isValid=false on
+// the first UI poll even when a project was already open.
 // ===========================================================================
 
-// LoadDiagameProject reads from disk so we can't use fake paths in tests.
-// Simulate via FireProjectCallbacks-equivalent: set context directly then
-// call the model's OnDiagameProjectChanged path. EditorModel exposes
-// LoadDiagameProject which requires a real file, so we use
-// mModel->ClearDiagameProject() + verify the clear path, and rely on
-// the "no project" path for the positive case being well-covered by
-// integration tests that load real assets. We verify structure here.
+namespace
+{
+	const char* WriteDiagame(const char* path)
+	{
+		std::ofstream f(path);
+		f << "{\"name\":\"Test\",\"version\":\"1.0\",\"imports\":[],\"config\":{}}\n";
+		return path;
+	}
+}
+
+TEST(BlueprintEditorPluginProjectState, OnLoad_WithPreloadedProject_GetProjectState_IsValidTrue)
+{
+	const char* path = "test_bpeditor_preloaded.diagame";
+	WriteDiagame(path);
+
+	WebUIBridge bridge(nullptr);
+	EditorModel model;
+	model.LoadDiagameProject(path);
+	ASSERT_TRUE(model.GetDiagameProject().IsValid());
+
+	DiaBlueprintEditorPlugin plugin;
+	EditorPluginContext ctx;
+	ctx.mBridge = &bridge;
+	ctx.mModel  = &model;
+	plugin.OnLoad(ctx);
+
+	Json::Value r = bridge.InvokeRequestHandler(StringCRC("blueprint_editor.get_project_state"), Json::Value(Json::objectValue));
+	EXPECT_TRUE(r["isValid"].asBool());
+	EXPECT_STREQ(r["diagamePath"].asCString(), path);
+
+	plugin.OnUnload();
+	std::remove(path);
+}
+
+TEST(BlueprintEditorPluginProjectState, OnLoad_ProjectLoadedAfterOnLoad_GetProjectState_UpdatesViaCallback)
+{
+	const char* path = "test_bpeditor_postload.diagame";
+	WriteDiagame(path);
+
+	WebUIBridge bridge(nullptr);
+	EditorModel model;
+
+	DiaBlueprintEditorPlugin plugin;
+	EditorPluginContext ctx;
+	ctx.mBridge = &bridge;
+	ctx.mModel  = &model;
+	plugin.OnLoad(ctx);
+
+	Json::Value before = bridge.InvokeRequestHandler(StringCRC("blueprint_editor.get_project_state"), Json::Value(Json::objectValue));
+	EXPECT_FALSE(before["isValid"].asBool());
+
+	model.LoadDiagameProject(path);
+
+	Json::Value after = bridge.InvokeRequestHandler(StringCRC("blueprint_editor.get_project_state"), Json::Value(Json::objectValue));
+	EXPECT_TRUE(after["isValid"].asBool());
+	EXPECT_STREQ(after["diagamePath"].asCString(), path);
+
+	plugin.OnUnload();
+	std::remove(path);
+}
+
+// ===========================================================================
+// get_project_state — after project cleared
+// ===========================================================================
 
 TEST_F(BlueprintEditorPluginTest, GetProjectState_AfterClear_IsValidFalse)
 {

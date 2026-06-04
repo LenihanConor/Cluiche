@@ -101,11 +101,8 @@ namespace Dia
 
 				Dia::AssetCatalogue::RegisterBuiltInAssetTypes(mTypeRegistry);
 
-				RegisterRequestHandlers();
-
 				if (context.mModel != nullptr)
 				{
-					context.mModel->OnDiagameProjectChanged(&DiaAssetCatalogueEditorPlugin::OnProjectChangedStatic, this);
 					const Dia::Editor::ProjectContext& proj = context.mModel->GetDiagameProject();
 
 					// Populate mDiagameDir from current project (same logic as OnProjectChangedStatic)
@@ -135,11 +132,15 @@ namespace Dia
 					{
 						DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: OnLoad — no catalogue to load (no project or no asset_catalogue field)");
 					}
+
+					context.mModel->OnDiagameProjectChanged(&DiaAssetCatalogueEditorPlugin::OnProjectChangedStatic, this);
 				}
 				else
 				{
 					DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: OnLoad — context.mModel is null");
 				}
+
+				RegisterRequestHandlers();
 
 
 				DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: Initialized");

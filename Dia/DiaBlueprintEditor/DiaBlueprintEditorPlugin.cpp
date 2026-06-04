@@ -81,20 +81,18 @@ namespace Dia
 			mBridge       = context.mBridge;
 			mPluginLoader = context.mPluginLoader;
 
-			RegisterRequestHandlers();
-
 			if (context.mModel != nullptr)
 			{
-				context.mModel->OnDiagameProjectChanged(&DiaBlueprintEditorPlugin::OnProjectChangedStatic, this);
-
-				// Populate state from current project so get_project_state is correct
-				// when the UI polls on init. Do not push — the UI isn't ready yet.
 				const Dia::Editor::ProjectContext& proj = context.mModel->GetDiagameProject();
 				strncpy_s(mDiagamePath, kDiagamePathLength,
 				          proj.IsValid() ? proj.diagamePath : "", _TRUNCATE);
+
+				context.mModel->OnDiagameProjectChanged(&DiaBlueprintEditorPlugin::OnProjectChangedStatic, this);
 			}
 			else
 				DIA_LOG_WARNING("Editor", "DiaBlueprintEditorPlugin: OnLoad — context.mModel is null");
+
+			RegisterRequestHandlers();
 
 			// T2: register this plugin as the handler for blueprint asset types in the catalogue.
 			RegisterAssetTypesWithCatalogue();

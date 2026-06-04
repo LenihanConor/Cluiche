@@ -10,6 +10,8 @@
 #include <DiaEditor/Plugin/EditorPluginContext.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
+#include <fstream>
+#include <cstdio>
 
 using namespace Dia::SceneEditor;
 using namespace Dia::Editor;
@@ -163,4 +165,81 @@ TEST_F(SceneEditorPluginTest, GetStageList_ReturnsSuccessAndStagesArray)
 	EXPECT_TRUE(r["success"].asBool());
 	// stages is either an array (empty or populated) or null when no project loaded
 	EXPECT_TRUE(r["stages"].isArray() || r["stages"].isNull());
+}
+
+// ===========================================================================
+// Regression: project loaded before OnLoad — get_project_state is valid immediately
+//
+// Before the fix, RegisterRequestHandlers() was called before mDiagamePath was
+// populated from the model. If the UI polled get_project_state before the first
+// OnProjectChanged callback fired, it saw isValid=false and showed the overlay.
+// ===========================================================================
+
+namespace
+{
+	// Write a minimal valid .diagame to disk; caller removes it.
+	const char* WriteDiagame(const char* path)
+	{
+		std::ofstream f(path);
+		f << "{\"name\":\"Test\",\"version\":\"1.0\",\"imports\":[],\"config\":{}}\n";
+		return path;
+	}
+}
+
+TEST(SceneEditorPluginProjectState, OnLoad_WithPreloadedProject_GetProjectState_IsValidTrue)
+{
+	// Simulate the common case: user selects .diagame, THEN opens the Scene Editor panel.
+	// The model already has a valid context when OnLoad is called.
+	const char* path = "test_sceneeditor_preloaded.diagame";
+	WriteDiagame(path);
+
+	WebUIBridge bridge(nullptr);
+	EditorModel model;
+	model.LoadDiagameProject(path);
+	ASSERT_TRUE(model.GetDiagameProject().IsValid());
+
+	DiaSceneEditorPlugin plugin;
+	EditorPluginContext ctx;
+	ctx.mBridge = &bridge;
+	ctx.mModel  = &model;
+
+	plugin.OnLoad(ctx);
+
+	Json::Value r = bridge.InvokeRequestHandler(StringCRC("scene_editor.get_project_state"), Json::Value(Json::objectValue));
+	EXPECT_TRUE(r["isValid"].asBool());
+	EXPECT_STREQ(r["diagamePath"].asCString(), path);
+
+	plugin.OnUnload();
+	std::remove(path);
+}
+
+TEST(SceneEditorPluginProjectState, OnLoad_ProjectLoadedAfterOnLoad_GetProjectState_UpdatesViaCallback)
+{
+	// Complementary case: panel opened first, project loaded after.
+	// The OnProjectChanged callback must update state so a subsequent poll returns valid.
+	const char* path = "test_sceneeditor_postload.diagame";
+	WriteDiagame(path);
+
+	WebUIBridge bridge(nullptr);
+	EditorModel model;
+
+	DiaSceneEditorPlugin plugin;
+	EditorPluginContext ctx;
+	ctx.mBridge = &bridge;
+	ctx.mModel  = &model;
+	plugin.OnLoad(ctx);
+
+	// No project yet — overlay should show.
+	Json::Value before = bridge.InvokeRequestHandler(StringCRC("scene_editor.get_project_state"), Json::Value(Json::objectValue));
+	EXPECT_FALSE(before["isValid"].asBool());
+
+	// Project loaded after OnLoad — callback fires, mDiagamePath updated.
+	model.LoadDiagameProject(path);
+
+	Json::Value after = bridge.InvokeRequestHandler(StringCRC("scene_editor.get_project_state"), Json::Value(Json::objectValue));
+	EXPECT_TRUE(after["isValid"].asBool());
+	EXPECT_STREQ(after["diagamePath"].asCString(), path);
+
+	plugin.OnUnload();
+	std::remove(path);
 }

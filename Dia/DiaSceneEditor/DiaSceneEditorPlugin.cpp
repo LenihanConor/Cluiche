@@ -54,22 +54,22 @@ namespace Dia
 			mLoadedScenePath[0]    = '\0';
 			mSceneCatalogueId[0]   = '\0';
 
-			RegisterRequestHandlers();
-
+			// Populate mDiagamePath and mStageList before registering handlers so that
+			// get_project_state returns valid state immediately when the UI polls on init.
 			if (context.mModel != nullptr)
 			{
-				context.mModel->OnDiagameProjectChanged(&DiaSceneEditorPlugin::OnProjectChangedStatic, this);
-
-				// Populate state from current project so get_project_state is correct
-				// when the UI polls on init. Do not push — the UI isn't ready yet.
 				const Dia::Editor::ProjectContext& proj = context.mModel->GetDiagameProject();
 				strncpy_s(mDiagamePath, sizeof(mDiagamePath),
 				          proj.IsValid() ? proj.diagamePath : "", _TRUNCATE);
 				if (proj.IsValid())
 					mStageList = mProjectContextManager.BuildStageListJson(proj.diagamePath);
+
+				context.mModel->OnDiagameProjectChanged(&DiaSceneEditorPlugin::OnProjectChangedStatic, this);
 			}
 			else
 				DIA_LOG_WARNING("Editor", "DiaSceneEditorPlugin: OnLoad — context.mModel is null");
+
+			RegisterRequestHandlers();
 
 			DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: OnLoad complete");
 		}

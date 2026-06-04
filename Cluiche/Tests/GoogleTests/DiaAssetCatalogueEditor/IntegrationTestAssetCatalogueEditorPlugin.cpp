@@ -164,3 +164,50 @@ TEST_F(AssetCatalogueEditorPluginTest, OnUnload_RemovesGetAssetTypesHandler)
 	ctx.mModel  = mModel;
 	mPlugin.OnLoad(ctx);
 }
+
+// ===========================================================================
+// get_state — handler registered and returns required fields
+// ===========================================================================
+
+TEST_F(AssetCatalogueEditorPluginTest, GetState_HandlerRegistered)
+{
+	Json::Value r = Invoke("asset_catalogue.get_state");
+	EXPECT_FALSE(r.isNull());
+}
+
+TEST_F(AssetCatalogueEditorPluginTest, GetState_NoProjectLoaded_HasRequiredFields)
+{
+	Json::Value r = Invoke("asset_catalogue.get_state");
+	EXPECT_TRUE(r.isMember("success"));
+	EXPECT_TRUE(r.isMember("path"));
+	EXPECT_TRUE(r.isMember("records"));
+	EXPECT_TRUE(r.isMember("dirty"));
+}
+
+TEST_F(AssetCatalogueEditorPluginTest, GetState_NoProjectLoaded_ReturnsSuccessWithEmptyState)
+{
+	Json::Value r = Invoke("asset_catalogue.get_state");
+	EXPECT_TRUE(r["success"].asBool());
+	EXPECT_EQ(r["path"].asString(), "");
+	EXPECT_TRUE(r["records"].isArray());
+	EXPECT_EQ(r["records"].size(), 0u);
+}
+
+TEST_F(AssetCatalogueEditorPluginTest, GetState_NoProjectLoaded_HasStatusHint)
+{
+	// When no catalogue is loaded the plugin returns a status hint for the UI.
+	Json::Value r = Invoke("asset_catalogue.get_state");
+	EXPECT_TRUE(r.isMember("status"));
+	EXPECT_FALSE(r["status"].asString().empty());
+}
+
+TEST_F(AssetCatalogueEditorPluginTest, OnUnload_RemovesGetStateHandler)
+{
+	mPlugin.OnUnload();
+	EXPECT_TRUE(Invoke("asset_catalogue.get_state").isNull());
+	// Re-load so TearDown doesn't double-unregister
+	EditorPluginContext ctx;
+	ctx.mBridge = mBridge;
+	ctx.mModel  = mModel;
+	mPlugin.OnLoad(ctx);
+}

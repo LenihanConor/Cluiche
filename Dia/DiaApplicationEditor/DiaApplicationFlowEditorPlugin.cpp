@@ -181,6 +181,47 @@ namespace Dia { namespace Editor {
             "DiaApplicationFlowEditorPlugin::OnLoad: bridge=%p gameConnection=%p model=%p",
             mBridge, mGameConnection, mModel);
 
+        mFileWatcher.Start();
+
+        // Read model state and subscribe before registering handlers so that
+        // get_state requests are answered correctly on the first UI poll.
+        if (mModel != nullptr)
+        {
+            // Auto-load if a project is already open when plugin loads
+            const auto& proj = mModel->GetDiagameProject();
+            DIA_LOG_INFO("Editor", "AppFlowEditor: OnLoad project check, diagamePath='%s' applicationManifestPath='%s'",
+                proj.diagamePath[0] ? proj.diagamePath : "<empty>",
+                proj.applicationManifestPath[0] ? proj.applicationManifestPath : "<empty>");
+            if (proj.applicationManifestPath[0] != '\0')
+            {
+                mPendingManifestPath = Dia::Core::Containers::String512(proj.applicationManifestPath);
+                Json::Value req;
+                req["path"] = proj.applicationManifestPath;
+                HandleManifestLoad(req);
+            }
+
+            // Subscribe to project changes so the manifest auto-loads when the diagame project changes
+            mModel->OnDiagameProjectChanged(
+                [](const Dia::Editor::ProjectContext& proj, void* ud)
+                {
+                    auto* self = static_cast<DiaApplicationFlowEditorPlugin*>(ud);
+                    DIA_LOG_INFO("Editor", "AppFlowEditor: OnDiagameProjectChanged fired, applicationManifestPath='%s'",
+                        proj.applicationManifestPath[0] ? proj.applicationManifestPath : "<empty>");
+                    if (proj.applicationManifestPath[0] != '\0')
+                    {
+                        Json::Value req;
+                        req["path"] = proj.applicationManifestPath;
+                        // Store path for deferred push — React may not be mounted yet
+                        self->mPendingManifestPath = Dia::Core::Containers::String512(proj.applicationManifestPath);
+                        self->HandleManifestLoad(req);
+                    }
+                }, this);
+        }
+        else
+        {
+            DIA_LOG_WARNING("Editor", "AppFlowEditor: OnLoad — mModel is null, cannot subscribe to project changes");
+        }
+
         if (mBridge != nullptr)
         {
             mBridge->RegisterRequestHandler(kReqManifestLoad,    [this](const Json::Value& d) { return HandleManifestLoad(d); });
@@ -200,45 +241,6 @@ namespace Dia { namespace Editor {
             mBridge->RegisterRequestHandler(kReqLiveGetStatus,   [this](const Json::Value& d) { return HandleLiveGetStatus(d); });
             mBridge->RegisterRequestHandler(kReqLiveTransitionTo,[this](const Json::Value& d) { return HandleLiveTransitionTo(d); });
             mBridge->RegisterRequestHandler(kReqLiveShutdown,    [this](const Json::Value& d) { return HandleLiveShutdown(d); });
-        }
-
-        mFileWatcher.Start();
-
-        // Subscribe to project changes so the manifest auto-loads when the diagame project changes
-        if (mModel != nullptr)
-        {
-            mModel->OnDiagameProjectChanged(
-                [](const Dia::Editor::ProjectContext& proj, void* ud)
-                {
-                    auto* self = static_cast<DiaApplicationFlowEditorPlugin*>(ud);
-                    DIA_LOG_INFO("Editor", "AppFlowEditor: OnDiagameProjectChanged fired, applicationManifestPath='%s'",
-                        proj.applicationManifestPath[0] ? proj.applicationManifestPath : "<empty>");
-                    if (proj.applicationManifestPath[0] != '\0')
-                    {
-                        Json::Value req;
-                        req["path"] = proj.applicationManifestPath;
-                        // Store path for deferred push — React may not be mounted yet
-                        self->mPendingManifestPath = Dia::Core::Containers::String512(proj.applicationManifestPath);
-                        self->HandleManifestLoad(req);
-                    }
-                }, this);
-
-            // Auto-load if a project is already open when plugin loads
-            const auto& proj = mModel->GetDiagameProject();
-            DIA_LOG_INFO("Editor", "AppFlowEditor: OnLoad project check, diagamePath='%s' applicationManifestPath='%s'",
-                proj.diagamePath[0] ? proj.diagamePath : "<empty>",
-                proj.applicationManifestPath[0] ? proj.applicationManifestPath : "<empty>");
-            if (proj.applicationManifestPath[0] != '\0')
-            {
-                mPendingManifestPath = Dia::Core::Containers::String512(proj.applicationManifestPath);
-                Json::Value req;
-                req["path"] = proj.applicationManifestPath;
-                HandleManifestLoad(req);
-            }
-        }
-        else
-        {
-            DIA_LOG_WARNING("Editor", "AppFlowEditor: OnLoad — mModel is null, cannot subscribe to project changes");
         }
 
         // Register metrics

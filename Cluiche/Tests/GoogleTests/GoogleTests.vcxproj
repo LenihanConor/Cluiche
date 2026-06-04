@@ -293,6 +293,7 @@
     <!-- DiaEditorDeepLink Tests -->
     <ClCompile Include="DiaEditorDeepLink\IntegrationTestEditorDeepLink.cpp" />
     <!-- DiaApplicationEditor V2 Tests -->
+    <ClCompile Include="DiaApplicationEditor\IntegrationTestApplicationFlowEditorPlugin.cpp" />
     <ClCompile Include="DiaApplicationEditor\TestManifestEditorState.cpp" />
     <ClCompile Include="DiaApplicationEditor\TestCommandHistory.cpp" />
     <ClCompile Include="DiaApplicationEditor\TestTypeDiscoveryService.cpp" />
