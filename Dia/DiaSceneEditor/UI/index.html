@@ -373,6 +373,15 @@
     border-radius: 3px; padding: 6px 10px; font-size: 10px; color: var(--pico-ins-color, #89d185); margin-bottom: 6px;
   }
 
+  /* ── New-scene form rows ── */
+  .dialog-form-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+  .dialog-form-label { width: 40px; font-size: 11px; color: var(--pico-muted-color, #808080); padding-top: 4px; flex-shrink: 0; }
+  .dialog-form-error {
+    font-size: 10px; color: var(--pico-del-color, #f44747);
+    background: #2a1010; border: 1px solid #f44747; border-radius: 2px;
+    padding: 4px 8px; margin-bottom: 8px; display: none;
+  }
+
   /* ── No scene overlay ── */
   .no-scene-overlay {
     position: absolute; top: 0; left: 0; right: 0; bottom: 0;
@@ -465,6 +474,41 @@
   <div class="ctx-menu-item" data-action="toggle-enable">Enable / Disable</div>
   <div class="ctx-menu-sep"></div>
   <div class="ctx-menu-item danger" data-action="delete">Delete<span class="shortcut">Del</span></div>
+</div>
+
+<!-- NEW SCENE DIALOG -->
+<div class="dialog-overlay" id="new-scene-dialog">
+  <div class="dialog">
+    <div class="dialog-title">New Scene</div>
+    <div class="dialog-form-row">
+      <label class="dialog-form-label">Name</label>
+      <input class="dialog-select" id="new-scene-name" placeholder="my_scene" autocomplete="off" style="margin-bottom:0" />
+    </div>
+    <div class="dialog-form-row">
+      <label class="dialog-form-label">Path</label>
+      <input class="dialog-select" id="new-scene-path" placeholder="Stages/my_scene/my_scene.diascene" autocomplete="off" style="margin-bottom:0" />
+    </div>
+    <div class="dialog-form-row">
+      <label class="dialog-form-label">Tags</label>
+      <input class="dialog-select" id="new-scene-tags" placeholder="tag1, tag2" autocomplete="off" style="margin-bottom:0" />
+    </div>
+    <div class="dialog-form-row">
+      <label class="dialog-form-label">Scope</label>
+      <select class="dialog-select" id="new-scene-scope" style="margin-bottom:0">
+        <option value="global">Global</option>
+        <option value="stage">Stage</option>
+      </select>
+    </div>
+    <div class="dialog-form-row" id="new-scene-stage-row" style="display:none">
+      <label class="dialog-form-label">Stage</label>
+      <select class="dialog-select" id="new-scene-stage" style="margin-bottom:0"></select>
+    </div>
+    <div class="dialog-form-error" id="new-scene-error"></div>
+    <div class="dialog-btns">
+      <button class="dialog-btn cancel" id="new-scene-cancel">Cancel</button>
+      <button class="dialog-btn confirm" id="new-scene-confirm">Create</button>
+    </div>
+  </div>
 </div>
 
 <!-- CHANGE BLUEPRINT DIALOG -->
@@ -1480,26 +1524,73 @@ document.getElementById('btn-save').addEventListener('click', async () => {
   if (result.success) setDirty(false);
 });
 
-document.getElementById('btn-new-scene').addEventListener('click', async () => {
-  let name = prompt('Scene name (e.g. my_scene):');
-  if (!name || !name.trim()) return;
-  name = name.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
-  const defaultPath = 'Stages/' + name + '/' + name + '.diascene';
-  const path = prompt('Relative path (from .diagame dir):', defaultPath);
-  if (!path || !path.trim()) return;
-  const id = 'diascene.' + name;
+document.getElementById('btn-new-scene').addEventListener('click', () => {
+  document.getElementById('new-scene-name').value = '';
+  document.getElementById('new-scene-path').value = '';
+  document.getElementById('new-scene-tags').value = '';
+  document.getElementById('new-scene-scope').value = 'global';
+  document.getElementById('new-scene-stage-row').style.display = 'none';
+  document.getElementById('new-scene-error').style.display = 'none';
+  populateNewSceneStages();
+  document.getElementById('new-scene-dialog').classList.add('show');
+  document.getElementById('new-scene-name').focus();
+});
 
-  const result = await bridgeRequest('create_asset', { assetType: 'diascene', id, source_path: path.trim() });
+document.getElementById('new-scene-name').addEventListener('input', function() {
+  const name = this.value.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+  if (name) {
+    document.getElementById('new-scene-path').value = 'Stages/' + name + '/' + name + '.diascene';
+  }
+});
+
+document.getElementById('new-scene-scope').addEventListener('change', function() {
+  document.getElementById('new-scene-stage-row').style.display = (this.value === 'stage') ? '' : 'none';
+});
+
+async function populateNewSceneStages() {
+  const r = await bridgeRequest('get_stage_list');
+  const sel = document.getElementById('new-scene-stage');
+  sel.innerHTML = '';
+  const stages = (r && r.stages) || [];
+  stages.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.stagePath || s.name || s;
+    opt.textContent = s.name || s.stagePath || s;
+    sel.appendChild(opt);
+  });
+}
+
+document.getElementById('new-scene-cancel').addEventListener('click', () => {
+  document.getElementById('new-scene-dialog').classList.remove('show');
+});
+
+document.getElementById('new-scene-confirm').addEventListener('click', async () => {
+  const name = document.getElementById('new-scene-name').value.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+  const path = document.getElementById('new-scene-path').value.trim();
+  const tags = document.getElementById('new-scene-tags').value.trim();
+  const scope = document.getElementById('new-scene-scope').value;
+  const stage = document.getElementById('new-scene-stage').value;
+  const errEl = document.getElementById('new-scene-error');
+
+  if (!name) { errEl.textContent = 'Name is required.'; errEl.style.display = ''; return; }
+  if (!path) { errEl.textContent = 'Path is required.'; errEl.style.display = ''; return; }
+  errEl.style.display = 'none';
+  document.getElementById('new-scene-dialog').classList.remove('show');
+
+  const id = 'diascene.' + name;
+  const params = { assetType: 'diascene', id, source_path: path };
+  if (tags) params.tags = tags.split(',').map(t => t.trim()).filter(Boolean);
+  if (scope === 'stage' && stage) params.scope = { type: 'stage', stageId: stage };
+
+  const result = await bridgeRequest('create_asset', params);
   if (!result || !result.success) {
     showToast('error', 'New scene failed', result && result.error || 'unknown');
     return;
   }
 
-  // Associate to currently-selected stage if one is selected
   const stagePath = document.getElementById('stage-select').value;
   if (stagePath && result.absPath) {
     await bridgeRequest('associate_scene_to_stage', { stagePath, scenePath: result.absPath });
-    // Stage list is rebuilt server-side; auto-select the stage we just updated
     await loadStage(stagePath);
   }
 });

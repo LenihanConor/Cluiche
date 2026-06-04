@@ -258,6 +258,23 @@
     }
     .modal-footer .btn-add-confirm:hover { background: var(--pico-primary-hover, #1177bb); }
 
+    /* ── New-template form rows ── */
+    .modal-form-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+    .modal-form-label { width: 90px; font-size: 11px; color: var(--pico-muted-color, #808080); padding-top: 4px; flex-shrink: 0; }
+    .modal-form-input {
+      flex: 1;
+      background: var(--pico-form-element-background-color, #252526);
+      color: var(--pico-form-element-color, #d4d4d4);
+      border: 1px solid var(--pico-form-element-border-color, #3c3c3c);
+      padding: 3px 6px; font-size: 11px; border-radius: 2px; outline: none; width: 100%;
+    }
+    .modal-form-input:focus { border-color: var(--pico-form-element-active-border-color, #0e639c); }
+    .modal-form-error {
+      font-size: 10px; color: var(--pico-del-color, #f44747);
+      background: #2a1010; border: 1px solid #f44747; border-radius: 2px;
+      padding: 4px 8px; margin-top: 6px; display: none;
+    }
+
     /* ── Status bar ── */
     .statusbar {
       padding: 2px 10px; font-size: 10px; color: var(--pico-primary-inverse, #ffffff);
@@ -358,6 +375,41 @@
     <div class="modal-footer">
       <button onclick="closeModal('modal-add')">Cancel</button>
       <button class="btn-add-confirm" id="modal-add-confirm-btn" onclick="confirmAddComponent()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Template modal -->
+<div class="modal-overlay" id="modal-new-template">
+  <div class="modal" style="min-width:360px">
+    <h3>New Entity Template</h3>
+    <div class="modal-form-row">
+      <label class="modal-form-label">Name</label>
+      <input class="modal-form-input" id="new-tmpl-name" placeholder="my_entity" autocomplete="off" />
+    </div>
+    <div class="modal-form-row">
+      <label class="modal-form-label">Source Path</label>
+      <input class="modal-form-input" id="new-tmpl-path" placeholder="Global/Scene/my_entity.diaentitytemplate" autocomplete="off" />
+    </div>
+    <div class="modal-form-row">
+      <label class="modal-form-label">Tags</label>
+      <input class="modal-form-input" id="new-tmpl-tags" placeholder="tag1, tag2" autocomplete="off" />
+    </div>
+    <div class="modal-form-row">
+      <label class="modal-form-label">Scope</label>
+      <select class="modal-form-input" id="new-tmpl-scope" onchange="onNewTmplScopeChange()">
+        <option value="global">Global</option>
+        <option value="stage">Stage</option>
+      </select>
+    </div>
+    <div class="modal-form-row" id="new-tmpl-stage-row" style="display:none">
+      <label class="modal-form-label">Stage</label>
+      <select class="modal-form-input" id="new-tmpl-stage"></select>
+    </div>
+    <div class="modal-form-error" id="new-tmpl-error"></div>
+    <div class="modal-footer" style="margin-top:12px">
+      <button onclick="closeModal('modal-new-template')">Cancel</button>
+      <button class="btn-add-confirm" onclick="confirmNewTemplate()">Create</button>
     </div>
   </div>
 </div>
@@ -463,28 +515,82 @@
 
   /* ── New Template button ─────────────────────────────── */
   document.getElementById('btn-new-template').addEventListener('click', function() {
-    var name = prompt('Template name (e.g. my_entity):');
-    if (!name || !name.trim()) return;
-    name = name.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
-    var defaultPath = 'Global/Scene/' + name + '.diaentitytemplate';
-    var path = prompt('Relative path (from .diagame dir):', defaultPath);
-    if (!path || !path.trim()) return;
-    var id = 'diaentitytemplate.' + name;
+    document.getElementById('new-tmpl-name').value = '';
+    document.getElementById('new-tmpl-path').value = '';
+    document.getElementById('new-tmpl-tags').value = '';
+    document.getElementById('new-tmpl-scope').value = 'global';
+    document.getElementById('new-tmpl-stage-row').style.display = 'none';
+    document.getElementById('new-tmpl-error').style.display = 'none';
+    populateNewTmplStages();
+    openModal('modal-new-template');
+    document.getElementById('new-tmpl-name').focus();
+  });
 
-    diaRequest('asset_catalogue.create_asset', {
+  document.getElementById('new-tmpl-name').addEventListener('input', function() {
+    var name = this.value.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+    if (name) {
+      document.getElementById('new-tmpl-path').value = 'Global/Scene/' + name + '.diaentitytemplate';
+    }
+  });
+
+  function onNewTmplScopeChange() {
+    var scope = document.getElementById('new-tmpl-scope').value;
+    document.getElementById('new-tmpl-stage-row').style.display = (scope === 'stage') ? '' : 'none';
+  }
+
+  function populateNewTmplStages() {
+    diaRequest('asset_catalogue.get_stages', {}).then(function(r) {
+      var sel = document.getElementById('new-tmpl-stage');
+      sel.innerHTML = '';
+      var stages = (r && r.stages) || [];
+      stages.forEach(function(s) {
+        var opt = document.createElement('option');
+        opt.value = s.id || s.name || s;
+        opt.textContent = s.name || s.id || s;
+        sel.appendChild(opt);
+      });
+    });
+  }
+
+  function confirmNewTemplate() {
+    var name = document.getElementById('new-tmpl-name').value.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+    var path = document.getElementById('new-tmpl-path').value.trim();
+    var tags = document.getElementById('new-tmpl-tags').value.trim();
+    var scope = document.getElementById('new-tmpl-scope').value;
+    var stage = document.getElementById('new-tmpl-stage').value;
+    var errEl = document.getElementById('new-tmpl-error');
+
+    if (!name) {
+      errEl.textContent = 'Name is required.';
+      errEl.style.display = '';
+      return;
+    }
+    if (!path) {
+      errEl.textContent = 'Path is required.';
+      errEl.style.display = '';
+      return;
+    }
+    errEl.style.display = 'none';
+    closeModal('modal-new-template');
+
+    var id = 'diaentitytemplate.' + name;
+    var params = {
       assetType: 'diaentitytemplate',
       id: id,
-      source_path: path.trim()
-    }).then(function(r) {
+      source_path: path
+    };
+    if (tags) params.tags = tags.split(',').map(function(t) { return t.trim(); }).filter(Boolean);
+    if (scope === 'stage' && stage) params.scope = { type: 'stage', stageId: stage };
+
+    diaRequest('asset_catalogue.create_asset', params).then(function(r) {
       if (!r.success) {
         setStatus('New template failed: ' + (r.error || 'unknown'), true);
         return;
       }
       loadBlueprintList();
-      // Navigate to newly created template
-      selectBlueprint(id, r.absPath || path.trim());
+      selectBlueprint(id, r.absPath || path);
     });
-  });
+  }
 
   /* ── Blueprint list ──────────────────────────────────── */
   function loadBlueprintList() {
