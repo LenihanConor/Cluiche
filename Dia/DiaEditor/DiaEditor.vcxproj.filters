@@ -28,6 +28,9 @@
     <Filter Include="Memory">
       <UniqueIdentifier>{A9999999-9999-9999-9999-999999999999}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Notification">
+      <UniqueIdentifier>{AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEE0001}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Plugin\IEditorPlugin.h">
@@ -89,6 +92,9 @@
     <ClInclude Include="Memory\EditorMemory.h">
       <Filter>Memory</Filter>
     </ClInclude>
+    <ClInclude Include="Notification\NotificationService.h">
+      <Filter>Notification</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Plugin\EditorPluginRegistry.cpp">
@@ -113,6 +119,9 @@
     </ClCompile>
     <ClCompile Include="Memory\EditorMemory.cpp">
       <Filter>Memory</Filter>
+    </ClCompile>
+    <ClCompile Include="Notification\NotificationService.cpp">
+      <Filter>Notification</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

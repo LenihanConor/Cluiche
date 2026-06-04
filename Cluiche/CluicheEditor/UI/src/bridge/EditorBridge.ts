@@ -101,6 +101,19 @@ window.addEventListener("message", (ev: MessageEvent) => {
     iframeReqOrigins.set(p.reqId, ev.source as Window);
   }
 
+  // Iframes raising toasts — handle locally, don't round-trip to C++
+  if (p.type === "editor.notify") {
+    const d = p.data as { level?: string; title?: string; message?: string } | undefined;
+    if (d && d.level && d.title) {
+      EditorBridge.notify({
+        level: d.level as "info" | "success" | "warning" | "error",
+        title: d.title,
+        message: d.message,
+      });
+    }
+    return;
+  }
+
   window.dia.callCpp("DiaEditor_call", JSON.stringify(p));
 });
 
@@ -137,6 +150,10 @@ window.DiaEditor_onDataChanged = (payload: unknown) => {
 export type PanelInfo = { name: string; uiPath: string; visible: boolean };
 export type CommandInfo = { id: string; label: string };
 
+type ToastDispatch = (toast: { id: string; level: string; title: string; message?: string }) => void;
+let _dispatch: ToastDispatch | null = null;
+export function setToastDispatch(fn: ToastDispatch) { _dispatch = fn; }
+
 export const EditorBridge = {
   request: <T>(type: string, data?: object) => sendRequest<T>(type, data),
 
@@ -166,6 +183,11 @@ export const EditorBridge = {
   togglePanelVisibility: (name: string) =>
     sendEvent("toggle_panel_visibility", { name }),
 
+  notify: (opts: { level: "info" | "success" | "warning" | "error"; title: string; message?: string }) => {
+    const id = `n${nextReqId++}`;
+    if (_dispatch) _dispatch({ id, ...opts });
+  },
+
   subscribe: (topic: string, listener: TopicListener) => {
     let set = topicListeners.get(topic);
     if (!set) {
@@ -183,3 +205,16 @@ export const EditorBridge = {
 };
 
 window.CluicheEditor = EditorBridge;
+
+// C++ toasts arrive via this topic
+EditorBridge.subscribe("editor.notification", (data) => {
+  const d = data as { id?: string; level?: string; title?: string; message?: string };
+  if (_dispatch && d.level && d.title) {
+    _dispatch({
+      id: d.id ?? `n${nextReqId++}`,
+      level: d.level as "info" | "success" | "warning" | "error",
+      title: d.title,
+      message: d.message,
+    });
+  }
+});

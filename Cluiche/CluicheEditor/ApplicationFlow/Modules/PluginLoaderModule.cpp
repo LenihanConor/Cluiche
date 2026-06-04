@@ -33,6 +33,9 @@ namespace Cluiche
 		void PluginLoaderModule::SetBridge(Dia::Editor::WebUIBridge* bridge)
 		{
 			mContext.mBridge = bridge;
+			mNotificationService.Initialize(bridge);
+			if (!mServiceLocator.HasService<Dia::Editor::NotificationService>())
+				mServiceLocator.RegisterService(&mNotificationService);
 		}
 
 		Dia::ApplicationFlow::StartResult PluginLoaderModule::DoStart()
@@ -360,7 +363,7 @@ namespace Cluiche
 			DIA_LOG_INFO("Application", "PluginLoaderModule::LoadPlugin: OnLoad complete for '%s'", plugin->GetName());
 			plugin->OnNavigate(instanceId);
 
-			if (mView != nullptr)
+			if (mView != nullptr && plugin->GetLayoutMode() != Dia::Editor::LayoutMode::kHeadless)
 			{
 				mView->RegisterComponent(plugin->GetName(), plugin->GetUIPath());
 				DIA_LOG_INFO("Application", "PluginLoaderModule::LoadPlugin: Registered '%s' at '%s'", plugin->GetName(), plugin->GetUIPath());
@@ -371,7 +374,7 @@ namespace Cluiche
 			entry.plugin = plugin;
 			mLoadedPlugins.Add(entry);
 
-			if (mView != nullptr)
+			if (mView != nullptr && plugin->GetLayoutMode() != Dia::Editor::LayoutMode::kHeadless)
 			{
 				mView->NotifyPanelsChanged();
 			}
@@ -441,6 +444,8 @@ namespace Cluiche
 
 			for (unsigned int i = 0; i < mLoadedPlugins.Size(); ++i)
 			{
+				if (mLoadedPlugins[i].plugin->GetLayoutMode() == Dia::Editor::LayoutMode::kHeadless)
+					continue;
 				mView->RegisterComponent(mLoadedPlugins[i].plugin->GetName(), mLoadedPlugins[i].plugin->GetUIPath());
 				DIA_LOG_INFO("Application", "PluginLoaderModule: Retroactively registered '%s'", mLoadedPlugins[i].plugin->GetName());
 			}

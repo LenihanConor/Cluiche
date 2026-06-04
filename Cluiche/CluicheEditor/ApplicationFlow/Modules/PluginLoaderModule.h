@@ -6,6 +6,7 @@
 #include <DiaEditor/Plugin/EditorPluginContext.h>
 #include <DiaEditor/Plugin/IPluginLoader.h>
 #include <DiaEditor/Plugin/PluginServiceLocator.h>
+#include <DiaEditor/Notification/NotificationService.h>
 
 namespace Dia { namespace Editor { class IEditorPlugin; class EditorView; class WebUIBridge; } }
 
@@ -47,6 +48,7 @@ namespace Cluiche
 
 			Dia::Editor::EditorPluginContext  mContext;
 			Dia::Editor::PluginServiceLocator mServiceLocator;
+			Dia::Editor::NotificationService  mNotificationService;
 			Dia::Editor::EditorView*          mView;
 
 			static const unsigned int kMaxPlugins = 16;
