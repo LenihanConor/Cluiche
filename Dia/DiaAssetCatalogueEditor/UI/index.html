@@ -4,69 +4,60 @@
   <meta charset="UTF-8" />
   <title>Asset Catalogue Editor</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #1e1e1e;
-      color: #d4d4d4;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      position: relative;
+    html, body {
+      height: 100%; overflow: hidden;
+      font-family: var(--pico-font-family, 'Segoe UI', sans-serif);
+      font-size: var(--pico-font-size, 12px);
+      background: var(--pico-background-color, #1e1e1e);
+      color: var(--pico-color, #d4d4d4);
+      display: flex; flex-direction: column; position: relative;
     }
 
+    /* ── Overlay ── */
     .no-project-overlay {
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(30, 30, 30, 0.92);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      gap: 8px;
-      z-index: 100;
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--pico-modal-overlay-background-color, rgba(0,0,0,0.6));
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 8px; z-index: 100;
     }
-    .no-project-overlay .overlay-message { font-size: 14px; color: #f48771; }
-    .no-project-overlay .overlay-hint    { font-size: 11px; color: #888; }
+    .no-project-overlay .overlay-message { font-size: 14px; color: var(--pico-del-color, #f44747); }
+    .no-project-overlay .overlay-hint    { font-size: 11px; color: var(--pico-muted-color, #808080); }
 
-    /* ── Toolbar ─────────────────────────────────────── */
+    /* ── Toolbar ── */
     .toolbar {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 5px 10px;
-      background: #2d2d2d;
-      border-bottom: 1px solid #3c3c3c;
-      flex-shrink: 0;
+      display: flex; align-items: center; gap: 6px; padding: 5px 10px;
+      background: var(--pico-card-background-color, #252526);
+      border-bottom: 1px solid var(--pico-border-color, #3c3c3c); flex-shrink: 0;
     }
     .toolbar button {
-      background: #3c3c3c; color: #d4d4d4;
-      border: 1px solid #555; padding: 3px 10px;
-      font-size: 12px; cursor: pointer; border-radius: 3px;
+      background: var(--pico-secondary, #3a3d41); color: var(--pico-color, #d4d4d4);
+      border: 1px solid var(--pico-border-color, #3c3c3c);
+      padding: 3px 10px; font-size: 12px; cursor: pointer; border-radius: 3px;
     }
-    .toolbar button:hover { background: #4c4c4c; }
-    .toolbar .separator { width: 1px; height: 16px; background: #555; margin: 0 4px; }
+    .toolbar button:hover { background: var(--pico-secondary-hover, #4a4d51); }
+    .toolbar .separator { width: 1px; height: 16px; background: var(--pico-border-color, #3c3c3c); margin: 0 4px; }
     .toolbar .manifest-path {
-      flex: 1; font-size: 11px; color: #9cdcfe;
+      flex: 1; font-size: 11px; color: var(--pico-h2-color, #9cdcfe);
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-    .toolbar .dirty-indicator { color: #f48771; font-size: 14px; font-weight: bold; visibility: hidden; }
+    .toolbar .dirty-indicator { color: var(--pico-del-color, #f44747); font-size: 14px; font-weight: bold; visibility: hidden; }
     .toolbar .dirty-indicator.dirty { visibility: visible; }
 
-    /* ── Layout ──────────────────────────────────────── */
+    /* ── Layout ── */
     .layout { display: flex; flex: 1; overflow: hidden; }
 
     .panel {
       display: flex; flex-direction: column;
-      border-right: 1px solid #3c3c3c; overflow: hidden;
+      border-right: 1px solid var(--pico-border-color, #3c3c3c); overflow: hidden;
     }
     .panel-title {
       padding: 5px 10px; font-size: 11px; font-weight: 600;
       text-transform: uppercase; letter-spacing: 0.05em;
-      color: #9cdcfe; background: #252526;
-      border-bottom: 1px solid #3c3c3c; flex-shrink: 0;
+      color: var(--pico-h2-color, #9cdcfe);
+      background: var(--pico-card-background-color, #252526);
+      border-bottom: 1px solid var(--pico-border-color, #3c3c3c); flex-shrink: 0;
     }
     .panel-body { flex: 1; overflow: auto; padding: 10px; }
 
@@ -74,186 +65,205 @@
     #panel-center      { flex: 1; }
     #panel-right       { width: 320px; min-width: 240px; border-right: none; }
 
-    /* ── Tabs ─────────────────────────────────────────── */
+    /* ── Tabs ── */
     .tabs {
-      display: flex; background: #252526;
-      border-bottom: 1px solid #3c3c3c; flex-shrink: 0;
+      display: flex; background: var(--pico-card-background-color, #252526);
+      border-bottom: 1px solid var(--pico-border-color, #3c3c3c); flex-shrink: 0;
     }
     .tab {
       padding: 5px 14px; font-size: 11px; cursor: pointer;
-      color: #9d9d9d; border-right: 1px solid #3c3c3c; user-select: none;
+      color: var(--pico-muted-color, #808080);
+      border-right: 1px solid var(--pico-border-color, #3c3c3c); user-select: none;
     }
-    .tab.active { color: #d4d4d4; border-bottom: 2px solid #007acc; }
-    .tab:hover { color: #d4d4d4; }
+    .tab.active { color: var(--pico-color, #d4d4d4); border-bottom: 2px solid var(--pico-primary, #0e639c); }
+    .tab:hover { color: var(--pico-color, #d4d4d4); }
 
     .tab-content { display: none; flex: 1; overflow: auto; padding: 10px; flex-direction: column; }
     .tab-content.active { display: flex; }
 
-    /* ── Filter bar ──────────────────────────────────── */
-    .filter-bar {
-      display: flex; gap: 6px; margin-bottom: 8px; flex-shrink: 0;
-    }
+    /* ── Filter bar ── */
+    .filter-bar { display: flex; gap: 6px; margin-bottom: 8px; flex-shrink: 0; }
     .filter-bar input, .filter-bar select {
-      background: #2d2d2d; color: #d4d4d4; border: 1px solid #555;
+      background: var(--pico-form-element-background-color, #252526);
+      color: var(--pico-form-element-color, #d4d4d4);
+      border: 1px solid var(--pico-form-element-border-color, #3c3c3c);
       padding: 3px 6px; font-size: 11px; border-radius: 3px; flex: 1;
     }
     .filter-bar select { flex: 0 0 120px; }
 
-    /* ── Asset table ─────────────────────────────────── */
+    /* ── Asset table ── */
     .asset-table { width: 100%; border-collapse: collapse; font-size: 11px; }
     .asset-table th {
-      background: #2d2d2d; color: #9cdcfe; text-align: left;
-      padding: 4px 8px; border-bottom: 1px solid #3c3c3c; position: sticky; top: 0;
+      background: var(--pico-card-background-color, #252526);
+      color: var(--pico-h2-color, #9cdcfe); text-align: left;
+      padding: 4px 8px; border-bottom: 1px solid var(--pico-border-color, #3c3c3c); position: sticky; top: 0;
     }
-    .asset-table td { padding: 4px 8px; border-bottom: 1px solid #2d2d2d; cursor: pointer; }
-    .asset-table tr:hover td { background: #2a2d2e; }
-    .asset-table tr.selected td { background: #04395e; }
-    .status-badge {
-      display: inline-block; padding: 1px 6px; border-radius: 2px; font-size: 10px; font-weight: 600;
-    }
+    .asset-table td { padding: 4px 8px; border-bottom: 1px solid var(--pico-muted-border-color, #2d2d2d); cursor: pointer; }
+    .asset-table tr:hover td { background: var(--pico-card-background-color, #252526); }
+    .asset-table tr.selected td { background: var(--pico-form-element-selected-background-color, #094771); }
+    /* Status badge colors — content-semantic */
+    .status-badge { display: inline-block; padding: 1px 6px; border-radius: 2px; font-size: 10px; font-weight: 600; }
     .status-Active     { background: #0e4a2f; color: #4ec9a0; }
     .status-Draft      { background: #3a2e00; color: #dcdcaa; }
     .status-Deprecated { background: #4a1e1e; color: #ce9178; }
 
-    /* ── Panel actions bar ───────────────────────────── */
-    .panel-actions {
-      display: flex; gap: 6px; margin-bottom: 8px; flex-shrink: 0;
-    }
+    /* ── Panel actions ── */
+    .panel-actions { display: flex; gap: 6px; margin-bottom: 8px; flex-shrink: 0; }
     .panel-actions button {
-      background: #3c3c3c; color: #d4d4d4; border: 1px solid #555;
+      background: var(--pico-secondary, #3a3d41); color: var(--pico-color, #d4d4d4);
+      border: 1px solid var(--pico-border-color, #3c3c3c);
       padding: 3px 10px; font-size: 11px; cursor: pointer; border-radius: 3px;
     }
-    .panel-actions button:hover { background: #4c4c4c; }
-    .panel-actions button.btn-primary { background: #0078d4; border-color: #0078d4; color: #fff; }
-    .panel-actions button.btn-primary:hover { background: #1081d8; }
-    .panel-actions button.btn-danger  { background: #5c1a1a; border-color: #8b2020; color: #f48771; }
+    .panel-actions button:hover { background: var(--pico-secondary-hover, #4a4d51); }
+    .panel-actions button.btn-primary { background: var(--pico-primary, #0e639c); border-color: var(--pico-primary, #0e639c); color: var(--pico-primary-inverse, #ffffff); }
+    .panel-actions button.btn-primary:hover { background: var(--pico-primary-hover, #1177bb); }
+    .panel-actions button.btn-danger  { background: #5c1a1a; border-color: #8b2020; color: var(--pico-del-color, #f44747); }
     .panel-actions button.btn-danger:hover { background: #6c2a2a; }
 
-    /* ── Record editor form ──────────────────────────── */
+    /* ── Record editor form ── */
     .form-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 10px; flex-shrink: 0; }
-    .form-row label { width: 110px; font-size: 11px; color: #9d9d9d; padding-top: 4px; flex-shrink: 0; }
+    .form-row label { width: 110px; font-size: 11px; color: var(--pico-muted-color, #808080); padding-top: 4px; flex-shrink: 0; }
     .form-row .form-value { flex: 1; }
     .form-row input[type=text], .form-row select, .form-row .source-row input {
-      background: #2d2d2d; color: #d4d4d4; border: 1px solid #555;
+      background: var(--pico-form-element-background-color, #252526);
+      color: var(--pico-form-element-color, #d4d4d4);
+      border: 1px solid var(--pico-form-element-border-color, #3c3c3c);
       padding: 4px 6px; font-size: 12px; border-radius: 3px; width: 100%;
     }
-    .form-row input[readonly] { color: #6a9955; }
+    .form-row input[readonly] { color: var(--pico-ins-color, #89d185); }
     .source-row { display: flex; gap: 4px; }
     .source-row input { flex: 1; }
-    .source-row button { background: #3c3c3c; color: #d4d4d4; border: 1px solid #555; padding: 3px 8px; font-size: 11px; cursor: pointer; border-radius: 3px; white-space: nowrap; }
-    .source-row button:hover { background: #4c4c4c; }
+    .source-row button {
+      background: var(--pico-secondary, #3a3d41); color: var(--pico-color, #d4d4d4);
+      border: 1px solid var(--pico-border-color, #3c3c3c);
+      padding: 3px 8px; font-size: 11px; cursor: pointer; border-radius: 3px; white-space: nowrap;
+    }
+    .source-row button:hover { background: var(--pico-secondary-hover, #4a4d51); }
 
     .chip-list { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
     .chip {
-      background: #264f78; color: #9cdcfe; border-radius: 10px;
+      background: var(--pico-form-element-selected-background-color, #094771);
+      color: var(--pico-h2-color, #9cdcfe); border-radius: 10px;
       padding: 1px 8px; font-size: 11px; display: flex; align-items: center; gap: 4px;
     }
-    .chip .remove { cursor: pointer; color: #9d9d9d; font-size: 10px; }
-    .chip .remove:hover { color: #f48771; }
-    .chip-input { background: transparent; border: none; color: #d4d4d4; font-size: 11px; width: 80px; outline: none; }
+    .chip .remove { cursor: pointer; color: var(--pico-muted-color, #808080); font-size: 10px; }
+    .chip .remove:hover { color: var(--pico-del-color, #f44747); }
+    .chip-input { background: transparent; border: none; color: var(--pico-color, #d4d4d4); font-size: 11px; width: 80px; outline: none; }
 
-    .form-hint { font-size: 10px; color: #6a6a6a; margin-top: 2px; }
+    .form-hint { font-size: 10px; color: var(--pico-muted-color, #808080); margin-top: 2px; }
 
     .stage-row { display: none; }
     .stage-row.visible { display: flex; }
 
-    /* ── Empty / placeholder states ─────────────────── */
+    /* ── Empty / placeholder states ── */
     .empty-state {
       display: flex; align-items: center; justify-content: center;
-      flex: 1; color: #555; font-size: 12px; font-style: italic;
+      flex: 1; color: var(--pico-muted-color, #808080); font-size: 12px; font-style: italic;
     }
 
-    /* ── File Discoverer panel ───────────────────────── */
+    /* ── File Discoverer panel ── */
     .discoverer-toolbar {
       display: flex; gap: 6px; margin-bottom: 8px; flex-shrink: 0; align-items: center;
     }
     .discoverer-toolbar input {
-      flex: 1; background: #2d2d2d; color: #d4d4d4; border: 1px solid #555;
+      flex: 1; background: var(--pico-form-element-background-color, #252526);
+      color: var(--pico-form-element-color, #d4d4d4);
+      border: 1px solid var(--pico-form-element-border-color, #3c3c3c);
       padding: 3px 6px; font-size: 11px; border-radius: 3px;
     }
     .discoverer-toolbar button {
-      background: #3c3c3c; color: #d4d4d4; border: 1px solid #555;
+      background: var(--pico-secondary, #3a3d41); color: var(--pico-color, #d4d4d4);
+      border: 1px solid var(--pico-border-color, #3c3c3c);
       padding: 3px 10px; font-size: 11px; cursor: pointer; border-radius: 3px; white-space: nowrap;
     }
-    .discoverer-toolbar button.btn-primary { background: #0078d4; border-color: #0078d4; color: #fff; }
-    .discoverer-toolbar button:hover { background: #4c4c4c; }
-    .discoverer-toolbar button.btn-primary:hover { background: #1081d8; }
+    .discoverer-toolbar button.btn-primary { background: var(--pico-primary, #0e639c); border-color: var(--pico-primary, #0e639c); color: var(--pico-primary-inverse, #ffffff); }
+    .discoverer-toolbar button:hover { background: var(--pico-secondary-hover, #4a4d51); }
+    .discoverer-toolbar button.btn-primary:hover { background: var(--pico-primary-hover, #1177bb); }
 
     .discoverer-results { flex: 1; overflow: auto; }
     .discoverer-table { width: 100%; border-collapse: collapse; font-size: 11px; }
     .discoverer-table th {
-      background: #2d2d2d; color: #9cdcfe; text-align: left;
-      padding: 4px 8px; border-bottom: 1px solid #3c3c3c; position: sticky; top: 0;
+      background: var(--pico-card-background-color, #252526);
+      color: var(--pico-h2-color, #9cdcfe); text-align: left;
+      padding: 4px 8px; border-bottom: 1px solid var(--pico-border-color, #3c3c3c); position: sticky; top: 0;
     }
-    .discoverer-table td { padding: 3px 6px; border-bottom: 1px solid #2d2d2d; }
+    .discoverer-table td { padding: 3px 6px; border-bottom: 1px solid var(--pico-muted-border-color, #2d2d2d); }
     .discoverer-table input[type=text] {
-      background: #2d2d2d; color: #d4d4d4; border: 1px solid #3c3c3c;
+      background: var(--pico-form-element-background-color, #252526);
+      color: var(--pico-form-element-color, #d4d4d4);
+      border: 1px solid var(--pico-form-element-border-color, #3c3c3c);
       padding: 2px 4px; font-size: 11px; border-radius: 2px; width: 100%;
     }
-    .discoverer-actions {
-      display: flex; gap: 6px; margin-top: 8px; flex-shrink: 0; align-items: center;
-    }
+    .discoverer-actions { display: flex; gap: 6px; margin-top: 8px; flex-shrink: 0; align-items: center; }
     .discoverer-actions button {
-      background: #0078d4; color: #fff; border: 1px solid #0078d4;
+      background: var(--pico-primary, #0e639c); color: var(--pico-primary-inverse, #ffffff);
+      border: 1px solid var(--pico-primary, #0e639c);
       padding: 4px 14px; font-size: 12px; cursor: pointer; border-radius: 3px;
     }
-    .discoverer-actions button:hover { background: #1081d8; }
-    .discoverer-actions .sel-count { font-size: 11px; color: #9d9d9d; }
+    .discoverer-actions button:hover { background: var(--pico-primary-hover, #1177bb); }
+    .discoverer-actions .sel-count { font-size: 11px; color: var(--pico-muted-color, #808080); }
 
-    /* ── Modal dialogs ───────────────────────────────── */
+    /* ── Modal dialogs ── */
     .modal-overlay {
       display: none; position: fixed; inset: 0;
-      background: rgba(0,0,0,0.6); z-index: 100;
-      align-items: center; justify-content: center;
+      background: var(--pico-modal-overlay-background-color, rgba(0,0,0,0.6));
+      z-index: 100; align-items: center; justify-content: center;
     }
     .modal-overlay.open { display: flex; }
     .modal {
-      background: #252526; border: 1px solid #3c3c3c; border-radius: 4px;
-      padding: 20px; min-width: 400px; max-width: 560px; width: 90%;
+      background: var(--pico-card-background-color, #252526);
+      border: 1px solid var(--pico-border-color, #3c3c3c);
+      border-radius: 4px; padding: 20px; min-width: 400px; max-width: 560px; width: 90%;
     }
-    .modal h2 { font-size: 14px; color: #d4d4d4; margin-bottom: 14px; }
+    .modal h2 { font-size: 14px; color: var(--pico-color, #d4d4d4); margin-bottom: 14px; }
     .modal .modal-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
-    .modal .modal-row label { width: 120px; font-size: 11px; color: #9d9d9d; flex-shrink: 0; }
+    .modal .modal-row label { width: 120px; font-size: 11px; color: var(--pico-muted-color, #808080); flex-shrink: 0; }
     .modal .modal-row input, .modal .modal-row select {
-      flex: 1; background: #2d2d2d; color: #d4d4d4; border: 1px solid #555;
+      flex: 1; background: var(--pico-form-element-background-color, #252526);
+      color: var(--pico-form-element-color, #d4d4d4);
+      border: 1px solid var(--pico-form-element-border-color, #3c3c3c);
       padding: 4px 6px; font-size: 12px; border-radius: 3px;
     }
-    .modal .modal-error { color: #f48771; font-size: 11px; margin-bottom: 8px; min-height: 16px; }
-    .id-prefix-row { display: flex; align-items: center; flex: 1; background: #2d2d2d; border: 1px solid #555; border-radius: 3px; overflow: hidden; }
-    .id-prefix { padding: 4px 0 4px 6px; font-size: 12px; color: #6a9955; white-space: nowrap; user-select: none; flex-shrink: 0; }
-    .id-prefix-row input { border: none; background: transparent; flex: 1; padding: 4px 6px 4px 2px; font-size: 12px; color: #d4d4d4; outline: none; min-width: 0; }
+    .modal .modal-error { color: var(--pico-del-color, #f44747); font-size: 11px; margin-bottom: 8px; min-height: 16px; }
+    .id-prefix-row {
+      display: flex; align-items: center; flex: 1;
+      background: var(--pico-form-element-background-color, #252526);
+      border: 1px solid var(--pico-form-element-border-color, #3c3c3c);
+      border-radius: 3px; overflow: hidden;
+    }
+    .id-prefix { padding: 4px 0 4px 6px; font-size: 12px; color: var(--pico-ins-color, #89d185); white-space: nowrap; user-select: none; flex-shrink: 0; }
+    .id-prefix-row input { border: none; background: transparent; flex: 1; padding: 4px 6px 4px 2px; font-size: 12px; color: var(--pico-form-element-color, #d4d4d4); outline: none; min-width: 0; }
     .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
     .modal-footer button {
-      background: #3c3c3c; color: #d4d4d4; border: 1px solid #555;
+      background: var(--pico-secondary, #3a3d41); color: var(--pico-color, #d4d4d4);
+      border: 1px solid var(--pico-border-color, #3c3c3c);
       padding: 5px 16px; font-size: 12px; cursor: pointer; border-radius: 3px;
     }
-    .modal-footer button.btn-primary { background: #0078d4; border-color: #0078d4; color: #fff; }
-    .modal-footer button.btn-danger  { background: #5c1a1a; border-color: #8b2020; color: #f48771; }
-    .modal-footer button:hover { background: #4c4c4c; }
-    .modal-footer button.btn-primary:hover { background: #1081d8; }
+    .modal-footer button.btn-primary { background: var(--pico-primary, #0e639c); border-color: var(--pico-primary, #0e639c); color: var(--pico-primary-inverse, #ffffff); }
+    .modal-footer button.btn-danger  { background: #5c1a1a; border-color: #8b2020; color: var(--pico-del-color, #f44747); }
+    .modal-footer button:hover { background: var(--pico-secondary-hover, #4a4d51); }
+    .modal-footer button.btn-primary:hover { background: var(--pico-primary-hover, #1177bb); }
     .modal-footer button.btn-danger:hover  { background: #6c2a2a; }
 
     .confirm-list {
       max-height: 160px; overflow: auto;
-      background: #1e1e1e; border: 1px solid #3c3c3c;
-      padding: 6px 8px; font-size: 11px; color: #9d9d9d;
+      background: var(--pico-background-color, #1e1e1e);
+      border: 1px solid var(--pico-border-color, #3c3c3c);
+      padding: 6px 8px; font-size: 11px; color: var(--pico-muted-color, #808080);
       border-radius: 3px; margin-bottom: 10px; line-height: 1.6;
     }
 
     .validation-note { font-size: 10px; margin-top: 2px; }
-    .valid   { color: #4ec9a0; }
-    .invalid { color: #f48771; }
+    .valid   { color: var(--pico-ins-color, #89d185); }
+    .invalid { color: var(--pico-del-color, #f44747); }
 
-    /* ── Relationship Graph ──────────────────────────── */
+    /* ── Relationship Graph ── */
     #graph-canvas svg { width: 100%; height: 100%; }
-    .graph-node {
-      cursor: pointer;
-      user-select: none;
-    }
+    .graph-node { cursor: pointer; user-select: none; }
     .graph-node circle { stroke-width: 1.5px; }
-    .graph-node text { font-size: 9px; fill: #d4d4d4; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
-    .graph-edge line { stroke: #555; stroke-width: 1px; }
-    .graph-edge-label { font-size: 8px; fill: #6a6a6a; text-anchor: middle; pointer-events: none; }
+    .graph-node text { font-size: 9px; fill: var(--pico-color, #d4d4d4); text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+    .graph-edge line { stroke: var(--pico-border-color, #3c3c3c); stroke-width: 1px; }
+    .graph-edge-label { font-size: 8px; fill: var(--pico-muted-color, #808080); text-anchor: middle; pointer-events: none; }
   </style>
 </head>
 <body>

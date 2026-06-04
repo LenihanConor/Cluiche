@@ -4,61 +4,56 @@
   <meta charset="UTF-8" />
   <title>Blueprint Editor</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #1e1e1e;
-      color: #d4d4d4;
-      height: 100vh;
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      font-family: var(--pico-font-family, 'Segoe UI', sans-serif);
+      font-size: var(--pico-font-size, 12px);
+      background: var(--pico-background-color, #1e1e1e);
+      color: var(--pico-color, #d4d4d4);
       display: flex;
       flex-direction: column;
-      overflow: hidden;
       position: relative;
     }
 
+    /* ── Overlay ── */
     .no-project-overlay {
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(30, 30, 30, 0.92);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      gap: 8px;
-      z-index: 100;
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--pico-modal-overlay-background-color, rgba(0,0,0,0.6));
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 8px; z-index: 100;
     }
-    .no-project-overlay .overlay-message { font-size: 14px; color: #f48771; }
-    .no-project-overlay .overlay-hint    { font-size: 11px; color: #888; }
+    .no-project-overlay .overlay-message { font-size: 14px; color: var(--pico-del-color, #f44747); }
+    .no-project-overlay .overlay-hint    { font-size: 11px; color: var(--pico-muted-color, #808080); }
 
-    /* ── Toolbar ─────────────────────────────────────── */
+    /* ── Toolbar ── */
     .toolbar {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 5px 10px;
-      background: #2d2d2d;
-      border-bottom: 1px solid #3c3c3c;
+      display: flex; align-items: center; gap: 6px; padding: 5px 10px;
+      background: var(--pico-card-background-color, #252526);
+      border-bottom: 1px solid var(--pico-border-color, #3c3c3c);
       flex-shrink: 0;
     }
     .toolbar .blueprint-path {
-      flex: 1; font-size: 11px; color: #9cdcfe;
+      flex: 1; font-size: 11px; color: var(--pico-h2-color, #9cdcfe);
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-    .toolbar .status { font-size: 11px; color: #9d9d9d; }
+    .toolbar .status { font-size: 11px; color: var(--pico-muted-color, #808080); }
 
-    /* ── Layout ──────────────────────────────────────── */
+    /* ── Layout ── */
     .layout { display: flex; flex: 1; overflow: hidden; }
 
     .panel {
       display: flex; flex-direction: column;
-      border-right: 1px solid #3c3c3c; overflow: hidden;
+      border-right: 1px solid var(--pico-border-color, #3c3c3c); overflow: hidden;
     }
     .panel-title {
       padding: 5px 10px; font-size: 11px; font-weight: 600;
       text-transform: uppercase; letter-spacing: 0.05em;
-      color: #9cdcfe; background: #252526;
-      border-bottom: 1px solid #3c3c3c; flex-shrink: 0;
+      color: var(--pico-h2-color, #9cdcfe);
+      background: var(--pico-card-background-color, #252526);
+      border-bottom: 1px solid var(--pico-border-color, #3c3c3c); flex-shrink: 0;
     }
     .panel-body { flex: 1; overflow: auto; padding: 8px; }
 
@@ -66,193 +61,207 @@
     #panel-center { flex: 1; border-right: none; position: relative; }
     #panel-right  { width: 280px; min-width: 200px; border-right: none; }
 
-    /* ── Blueprint list ──────────────────────────────── */
+    /* ── Blueprint list ── */
     .list-toolbar {
-      display: flex; align-items: center; gap: 4px;
-      padding: 4px 8px; border-bottom: 1px solid #3c3c3c;
-      flex-shrink: 0;
+      display: flex; align-items: center; gap: 4px; padding: 4px 8px;
+      border-bottom: 1px solid var(--pico-border-color, #3c3c3c); flex-shrink: 0;
     }
     .list-toolbar input[type="text"] {
-      flex: 1; background: #3c3c3c; color: #d4d4d4;
-      border: 1px solid #555; padding: 2px 6px;
-      font-size: 11px; border-radius: 2px; outline: none;
+      flex: 1;
+      background: var(--pico-form-element-background-color, #252526);
+      color: var(--pico-form-element-color, #d4d4d4);
+      border: 1px solid var(--pico-form-element-border-color, #3c3c3c);
+      padding: 2px 6px; font-size: 11px; border-radius: 2px; outline: none;
     }
-    .list-toolbar input[type="text"]:focus { border-color: #007acc; }
+    .list-toolbar input[type="text"]:focus { border-color: var(--pico-form-element-active-border-color, #0e639c); }
     .list-toolbar button {
-      background: none; border: none; color: #9d9d9d;
-      font-size: 13px; cursor: pointer; padding: 2px 4px;
-      border-radius: 2px; line-height: 1;
+      background: none; border: none; color: var(--pico-muted-color, #808080);
+      font-size: 13px; cursor: pointer; padding: 2px 4px; border-radius: 2px; line-height: 1;
     }
-    .list-toolbar button:hover { color: #d4d4d4; background: #3c3c3c; }
+    .list-toolbar button:hover { color: var(--pico-color, #d4d4d4); background: var(--pico-card-background-color, #252526); }
     .group-header {
       font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
-      text-transform: uppercase; color: #9d9d9d;
+      text-transform: uppercase; color: var(--pico-muted-color, #808080);
       padding: 6px 4px 3px; margin-top: 6px;
     }
     .blueprint-item {
       padding: 4px 8px; font-size: 12px; cursor: pointer;
-      border-radius: 3px; white-space: nowrap;
-      overflow: hidden; text-overflow: ellipsis;
+      border-radius: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .blueprint-item:hover { background: #2a2d2e; }
-    .blueprint-item.selected { background: #094771; color: #fff; }
-    .list-empty { font-size: 11px; color: #555; padding: 8px 4px; }
+    .blueprint-item:hover { background: var(--pico-card-background-color, #252526); }
+    .blueprint-item.selected { background: var(--pico-form-element-selected-background-color, #094771); color: var(--pico-primary-inverse, #ffffff); }
+    .list-empty { font-size: 11px; color: var(--pico-muted-color, #808080); padding: 8px 4px; }
 
-    /* ── Component accordion ─────────────────────────── */
+    /* ── Component accordion ── */
     .blueprint-id {
-      font-size: 13px; color: #9cdcfe; font-weight: 600;
-      padding: 8px 4px; border-bottom: 1px solid #3c3c3c; margin-bottom: 8px;
+      font-size: 13px; color: var(--pico-h2-color, #9cdcfe); font-weight: 600;
+      padding: 8px 4px; border-bottom: 1px solid var(--pico-border-color, #3c3c3c); margin-bottom: 8px;
     }
     .accordion {
-      border: 1px solid #3c3c3c; border-radius: 3px; margin-bottom: 6px; overflow: hidden;
+      border: 1px solid var(--pico-border-color, #3c3c3c); border-radius: 3px; margin-bottom: 6px; overflow: hidden;
     }
     .accordion-header {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 6px 10px; background: #252526; cursor: pointer;
-      font-size: 12px; font-weight: 600; user-select: none;
+      padding: 6px 10px; background: var(--pico-card-background-color, #252526);
+      cursor: pointer; font-size: 12px; font-weight: 600; user-select: none;
     }
-    .accordion-header:hover { background: #2a2d2e; }
-    .accordion-header .chevron { font-size: 10px; color: #9d9d9d; transition: transform 0.15s; }
+    .accordion-header:hover { background: var(--pico-secondary-hover, #4a4d51); }
+    .accordion-header .chevron { font-size: 10px; color: var(--pico-muted-color, #808080); transition: transform 0.15s; }
     .accordion-header.open .chevron { transform: rotate(90deg); }
-    .accordion-body { display: none; padding: 8px 10px; background: #1e1e1e; }
+    .accordion-body { display: none; padding: 8px 10px; background: var(--pico-background-color, #1e1e1e); }
     .accordion-body.open { display: block; }
 
-    /* ── Field rows ──────────────────────────────────── */
+    /* ── Field rows ── */
     .field-row { padding: 3px 0 1px; font-size: 11px; }
     .field-row-controls { display: flex; align-items: center; gap: 8px; }
-    .field-name { color: #9d9d9d; min-width: 100px; flex-shrink: 0; }
+    .field-name { color: var(--pico-muted-color, #808080); min-width: 100px; flex-shrink: 0; }
     .field-value { flex: 1; }
     .field-value input[type="text"],
     .field-value input[type="number"] {
-      width: 100%; background: #3c3c3c; color: #d4d4d4;
-      border: 1px solid #555; padding: 2px 6px;
-      font-size: 11px; font-family: 'Segoe UI', sans-serif;
+      width: 100%;
+      background: var(--pico-form-element-background-color, #252526);
+      color: var(--pico-form-element-color, #d4d4d4);
+      border: 1px solid var(--pico-form-element-border-color, #3c3c3c);
+      padding: 2px 6px; font-size: 11px;
+      font-family: var(--pico-font-family, 'Segoe UI', sans-serif);
       border-radius: 2px; outline: none;
     }
-    .field-value input:focus { border-color: #007acc; }
+    .field-value input:focus { border-color: var(--pico-form-element-active-border-color, #0e639c); }
     .field-value input[type="checkbox"] { cursor: pointer; }
-    .field-required { color: #f48771; font-size: 10px; margin-left: 2px; }
+    .field-required { color: var(--pico-del-color, #f44747); font-size: 10px; margin-left: 2px; }
 
-    /* ── Field clear button ──────────────────────────── */
+    /* ── Field clear button ── */
     .field-clear {
-      background: none; border: none; color: #555; cursor: pointer;
-      font-size: 11px; padding: 0 3px; line-height: 1; flex-shrink: 0;
+      background: none; border: none; color: var(--pico-muted-color, #808080);
+      cursor: pointer; font-size: 11px; padding: 0 3px; line-height: 1; flex-shrink: 0;
     }
-    .field-clear:hover { color: #f48771; }
+    .field-clear:hover { color: var(--pico-del-color, #f44747); }
 
-    /* ── Component actions ───────────────────────────── */
-    .comp-actions {
-      display: flex; gap: 6px; margin-top: 8px; justify-content: flex-end;
-    }
+    /* ── Component actions ── */
+    .comp-actions { display: flex; gap: 6px; margin-top: 8px; justify-content: flex-end; }
     .comp-actions button {
-      background: #3c3c3c; color: #d4d4d4;
-      border: 1px solid #555; padding: 2px 8px;
-      font-size: 11px; cursor: pointer; border-radius: 2px;
+      background: var(--pico-secondary, #3a3d41); color: var(--pico-color, #d4d4d4);
+      border: 1px solid var(--pico-border-color, #3c3c3c);
+      padding: 2px 8px; font-size: 11px; cursor: pointer; border-radius: 2px;
     }
-    .comp-actions button:hover { background: #4c4c4c; }
-    .comp-actions .btn-remove { color: #f48771; border-color: #6b2e2e; }
+    .comp-actions button:hover { background: var(--pico-secondary-hover, #4a4d51); }
+    .comp-actions .btn-remove { color: var(--pico-del-color, #f44747); border-color: #6b2e2e; }
     .comp-actions .btn-remove:hover { background: #4b2020; }
 
-    /* ── Add component trigger ───────────────────────── */
-    .add-component-trigger {
-      margin-top: 10px; padding-top: 8px; border-top: 1px solid #3c3c3c;
-    }
+    /* ── Add component trigger ── */
+    .add-component-trigger { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--pico-border-color, #3c3c3c); }
     .add-component-trigger button {
-      width: 100%; background: #2d2d2d; color: #9d9d9d;
-      border: 1px dashed #3c3c3c; padding: 6px; font-size: 11px;
+      width: 100%; background: var(--pico-card-background-color, #252526); color: var(--pico-muted-color, #808080);
+      border: 1px dashed var(--pico-border-color, #3c3c3c); padding: 6px; font-size: 11px;
       cursor: pointer; border-radius: 3px;
     }
-    .add-component-trigger button:hover { background: #333; color: #d4d4d4; border-color: #555; }
+    .add-component-trigger button:hover {
+      background: var(--pico-secondary-hover, #4a4d51); color: var(--pico-color, #d4d4d4);
+      border-color: var(--pico-form-element-border-color, #3c3c3c);
+    }
 
-    /* ── Component picker panel ──────────────────────── */
+    /* ── Component picker panel ── */
     .picker-panel {
       display: none; position: absolute; z-index: 50;
-      background: #252526; border: 1px solid #555;
+      background: var(--pico-card-background-color, #252526);
+      border: 1px solid var(--pico-border-color, #3c3c3c);
       border-radius: 4px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
       bottom: 50px; left: 8px; right: 8px;
       flex-direction: column; overflow: hidden; max-height: 380px;
     }
     .picker-panel.open { display: flex; }
     .picker-header {
-      padding: 8px 10px; border-bottom: 1px solid #3c3c3c;
+      padding: 8px 10px; border-bottom: 1px solid var(--pico-border-color, #3c3c3c);
       display: flex; align-items: center; gap: 6px; flex-shrink: 0;
     }
     .picker-header input {
-      flex: 1; background: #3c3c3c; color: #d4d4d4;
-      border: 1px solid #555; padding: 4px 8px;
-      font-size: 12px; font-family: inherit; border-radius: 2px; outline: none;
+      flex: 1;
+      background: var(--pico-form-element-background-color, #252526);
+      color: var(--pico-form-element-color, #d4d4d4);
+      border: 1px solid var(--pico-form-element-border-color, #3c3c3c);
+      padding: 4px 8px; font-size: 12px; font-family: inherit; border-radius: 2px; outline: none;
     }
-    .picker-header input:focus { border-color: #007acc; }
+    .picker-header input:focus { border-color: var(--pico-form-element-active-border-color, #0e639c); }
     .picker-close {
-      background: none; border: none; color: #9d9d9d;
+      background: none; border: none; color: var(--pico-muted-color, #808080);
       font-size: 14px; cursor: pointer; padding: 2px 4px; border-radius: 2px;
     }
-    .picker-close:hover { color: #d4d4d4; background: #3c3c3c; }
-    .picker-count { padding: 3px 10px; font-size: 10px; color: #555; border-bottom: 1px solid #2a2a2a; flex-shrink: 0; }
+    .picker-close:hover { color: var(--pico-color, #d4d4d4); background: var(--pico-card-background-color, #252526); }
+    .picker-count { padding: 3px 10px; font-size: 10px; color: var(--pico-muted-color, #808080); border-bottom: 1px solid var(--pico-muted-border-color, #2d2d2d); flex-shrink: 0; }
     .picker-list { flex: 1; overflow-y: auto; }
-    .picker-item { padding: 7px 12px; cursor: pointer; border-bottom: 1px solid #2a2a2a; }
-    .picker-item:hover, .picker-item.focused { background: #094771; }
-    .picker-item .pi-name { font-size: 12px; font-weight: 600; color: #d4d4d4; margin-bottom: 1px; }
-    .picker-item.focused .pi-name { color: #fff; }
-    .picker-item .pi-id { font-size: 10px; color: #9d9d9d; font-family: monospace; margin-bottom: 2px; }
-    .picker-item .pi-desc { font-size: 11px; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .picker-item.focused .pi-desc { color: #aaa; }
-    .picker-empty { padding: 16px; text-align: center; font-size: 11px; color: #555; }
+    .picker-item { padding: 7px 12px; cursor: pointer; border-bottom: 1px solid var(--pico-muted-border-color, #2d2d2d); }
+    .picker-item:hover, .picker-item.focused { background: var(--pico-form-element-selected-background-color, #094771); }
+    .picker-item .pi-name { font-size: 12px; font-weight: 600; color: var(--pico-color, #d4d4d4); margin-bottom: 1px; }
+    .picker-item.focused .pi-name { color: var(--pico-primary-inverse, #ffffff); }
+    .picker-item .pi-id { font-size: 10px; color: var(--pico-muted-color, #808080); font-family: monospace; margin-bottom: 2px; }
+    .picker-item .pi-desc { font-size: 11px; color: var(--pico-muted-color, #808080); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .picker-empty { padding: 16px; text-align: center; font-size: 11px; color: var(--pico-muted-color, #808080); }
     .picker-footer {
-      padding: 6px 10px; border-top: 1px solid #3c3c3c;
+      padding: 6px 10px; border-top: 1px solid var(--pico-border-color, #3c3c3c);
       display: flex; gap: 6px; justify-content: flex-end; align-items: center; flex-shrink: 0;
     }
-    .picker-footer .hint { font-size: 10px; color: #555; flex: 1; }
-    .picker-footer .btn-cancel { background: #3c3c3c; color: #d4d4d4; border: 1px solid #555; padding: 3px 10px; font-size: 11px; cursor: pointer; border-radius: 2px; }
-    .picker-footer .btn-cancel:hover { background: #4c4c4c; }
-    .picker-footer .btn-add { background: #0078d4; color: #fff; border: none; padding: 3px 10px; font-size: 11px; cursor: pointer; border-radius: 2px; }
-    .picker-footer .btn-add:hover { background: #106ebe; }
-    .picker-footer .btn-add:disabled { background: #2a4a6a; color: #555; cursor: default; }
+    .picker-footer .hint { font-size: 10px; color: var(--pico-muted-color, #808080); flex: 1; }
+    .picker-footer .btn-cancel {
+      background: var(--pico-secondary, #3a3d41); color: var(--pico-color, #d4d4d4);
+      border: 1px solid var(--pico-border-color, #3c3c3c); padding: 3px 10px; font-size: 11px; cursor: pointer; border-radius: 2px;
+    }
+    .picker-footer .btn-cancel:hover { background: var(--pico-secondary-hover, #4a4d51); }
+    .picker-footer .btn-add {
+      background: var(--pico-primary, #0e639c); color: var(--pico-primary-inverse, #ffffff);
+      border: none; padding: 3px 10px; font-size: 11px; cursor: pointer; border-radius: 2px;
+    }
+    .picker-footer .btn-add:hover { background: var(--pico-primary-hover, #1177bb); }
+    .picker-footer .btn-add:disabled {
+      background: var(--pico-form-element-disabled-background-color, #2a2d2e);
+      color: var(--pico-form-element-disabled-color, #666666); cursor: default;
+    }
 
     .center-empty {
       flex: 1; display: flex; align-items: center; justify-content: center;
-      color: #555; font-size: 13px;
+      color: var(--pico-muted-color, #808080); font-size: 13px;
     }
 
-    /* ── Usage panel ─────────────────────────────────── */
+    /* ── Usage panel ── */
     .usage-item {
-      display: flex; justify-content: space-between;
-      padding: 4px 0; font-size: 11px;
-      border-bottom: 1px solid #2d2d2d;
+      display: flex; justify-content: space-between; padding: 4px 0; font-size: 11px;
+      border-bottom: 1px solid var(--pico-muted-border-color, #2d2d2d);
     }
-    .usage-scene { color: #9cdcfe; }
-    .usage-count { color: #9d9d9d; }
-    .usage-empty { font-size: 11px; color: #555; padding: 4px 0; }
+    .usage-scene { color: var(--pico-h2-color, #9cdcfe); }
+    .usage-count { color: var(--pico-muted-color, #808080); }
+    .usage-empty { font-size: 11px; color: var(--pico-muted-color, #808080); padding: 4px 0; }
 
-    /* ── Confirmation modal ──────────────────────────── */
+    /* ── Confirmation modal ── */
     .modal-overlay {
       display: none; position: fixed; inset: 0;
-      background: rgba(0,0,0,0.6); z-index: 100;
-      align-items: center; justify-content: center;
+      background: var(--pico-modal-overlay-background-color, rgba(0,0,0,0.6));
+      z-index: 100; align-items: center; justify-content: center;
     }
     .modal-overlay.open { display: flex; }
     .modal {
-      background: #2d2d2d; border: 1px solid #555;
+      background: var(--pico-card-background-color, #252526);
+      border: 1px solid var(--pico-border-color, #3c3c3c);
       border-radius: 4px; padding: 16px; min-width: 300px; max-width: 420px;
     }
-    .modal h3 { font-size: 13px; color: #d4d4d4; margin-bottom: 10px; }
-    .modal p { font-size: 12px; color: #9d9d9d; margin-bottom: 14px; }
+    .modal h3 { font-size: 13px; color: var(--pico-color, #d4d4d4); margin-bottom: 10px; }
+    .modal p { font-size: 12px; color: var(--pico-muted-color, #808080); margin-bottom: 14px; }
     .modal-footer { display: flex; gap: 8px; justify-content: flex-end; }
     .modal-footer button {
-      background: #3c3c3c; color: #d4d4d4;
-      border: 1px solid #555; padding: 4px 12px;
-      font-size: 12px; cursor: pointer; border-radius: 2px;
+      background: var(--pico-secondary, #3a3d41); color: var(--pico-color, #d4d4d4);
+      border: 1px solid var(--pico-border-color, #3c3c3c);
+      padding: 4px 12px; font-size: 12px; cursor: pointer; border-radius: 2px;
     }
-    .modal-footer button:hover { background: #4c4c4c; }
-    .modal-footer .btn-danger { background: #6b2020; border-color: #a02020; color: #f48771; }
+    .modal-footer button:hover { background: var(--pico-secondary-hover, #4a4d51); }
+    .modal-footer .btn-danger { background: #6b2020; border-color: #a02020; color: var(--pico-del-color, #f44747); }
     .modal-footer .btn-danger:hover { background: #8b2020; }
-    .modal-footer .btn-add-confirm { background: #0078d4; color: #fff; border: none; }
-    .modal-footer .btn-add-confirm:hover { background: #106ebe; }
+    .modal-footer .btn-add-confirm {
+      background: var(--pico-primary, #0e639c); color: var(--pico-primary-inverse, #ffffff); border: none;
+    }
+    .modal-footer .btn-add-confirm:hover { background: var(--pico-primary-hover, #1177bb); }
 
-    /* ── Status bar ──────────────────────────────────── */
+    /* ── Status bar ── */
     .statusbar {
-      padding: 2px 10px; font-size: 10px; color: #9d9d9d;
-      background: #007acc; flex-shrink: 0;
+      padding: 2px 10px; font-size: 10px; color: var(--pico-primary-inverse, #ffffff);
+      background: var(--pico-primary, #0e639c); flex-shrink: 0;
     }
   </style>
 </head>
