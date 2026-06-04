@@ -26,7 +26,7 @@ The existing `.diagame → .diastage → .diaapp` chain handles **configuration*
 | Asset type | Extension | Purpose |
 |---|---|---|
 | Scene | `.diascene` | Spatial content — cameras, lights, layers, entity placements |
-| Entity blueprint | `.diaentity` | Reusable archetype — component composition with defaults |
+| Entity blueprint | `.diaentitytemplatetemplate` | Reusable archetype — component composition with defaults |
 | Texture | `.png` | Visual assets |
 | Shader | `.frag` / `.vert` | Render programs |
 
@@ -101,7 +101,7 @@ Gameplay tuning (gravity, clear_colour, render techniques) lives in stage config
 
 ---
 
-## 3. Entity Blueprint Format (`.diaentity`)
+## 3. Entity Blueprint Format (`.diaentitytemplatetemplate`)
 
 Blueprints are **assets** (peers to textures in the catalogue). Reusable, scoped global or per-stage.
 
@@ -126,7 +126,7 @@ Blueprint defines defaults. Scene instances patch specific fields:
 |---|---|
 | **Blueprint** | Reusable template — what it *is* |
 | **Instance** | Placement + delta from template — where it is, how it differs |
-| **`instance_data`** | Flat `Component.Field: value` patches via DiaEntity reflection |
+| **`instance_data`** | Flat `Component.Field: value` patches via diaentitytemplate reflection |
 
 An instance never adds components the blueprint doesn't have — that's a different blueprint.
 
@@ -152,7 +152,7 @@ An instance never adds components the blueprint doesn't have — that's a differ
 |---|---|---|---|
 | `id` | yes | — | StringCRC, auto-generated, stable identifier |
 | `name` | no | none | Human-friendly, for gameplay/editor reference |
-| `blueprint` | yes | — | StringCRC reference to `.diaentity` asset |
+| `blueprint` | yes | — | StringCRC reference to `.diaentitytemplatetemplate` asset |
 | `enabled` | no | true | Dormant until gameplay activates |
 | `instance_data` | no | none | Flat `Component.Field: value` patches |
 
@@ -329,7 +329,7 @@ DiaScene2D (new)
  ├── Scene2D reflected struct
  ├── SceneLoader2D (populates camera/light registries + spawns entities)
  ├── Layer management (layer table, bitmask resolution)
- └── Dependencies: DiaCamera2D, DiaLighting2D, DiaEntity, DiaReflect, DiaMaths, DiaGeometry2D
+ └── Dependencies: DiaCamera2D, DiaLighting2D, diaentitytemplate, DiaReflect, DiaMaths, DiaGeometry2D
 ```
 
 ### Key independence guarantee
@@ -350,7 +350,7 @@ No `DiaScene` base module. DiaScene2D and DiaScene3D are independent peers:
 DiaScene2D                DiaScene3D (future)
  ├── DiaCamera2D           ├── DiaCamera3D
  ├── DiaLighting2D         ├── DiaLighting3D
- ├── DiaEntity             ├── DiaEntity
+ ├── diaentitytemplate             ├── diaentitytemplate
  ├── DiaReflect            ├── DiaReflect
  ├── DiaMaths              ├── DiaMaths
  └── DiaGeometry2D         └── DiaGeometry3D
@@ -376,7 +376,7 @@ A 3D world with an embedded 2D scene (e.g., arcade cabinet screen) is handled vi
 | 8 | Behaviour factory registry | Generic loader; new behaviours self-register |
 | 9 | No gameplay config in scene | Gravity, clear_colour, render techniques → `.diastage` config |
 | 10 | No name in scene | Identity from catalogue/stage |
-| 11 | `instance_data` not `overrides` | Neutral term; aligned with DiaEntity reflection |
+| 11 | `instance_data` not `overrides` | Neutral term; aligned with diaentitytemplate reflection |
 | 12 | Position is not special-cased | Just `Transform2D.position` in instance_data |
 | 13 | Layers are 2D-specific | 3D uses depth buffer + render passes; no shared concept |
 | 14 | Layer render technique as reference | Keeps scene spatial; render policy lives elsewhere |
@@ -396,7 +396,7 @@ A 3D world with an embedded 2D scene (e.g., arcade cabinet screen) is handled vi
 
 1. **DiaGraphics dependency direction** — DiaGraphics currently owns Camera2D. Moving it to DiaCamera2D means DiaGraphics either depends on DiaCamera2D (for FrameData) or takes a raw view/projection matrix. Which?
 
-2. **`.diaentity` format alignment** — DiaEntity already has a blueprint format (version, entities, references). Does the `.diaentity` asset format match exactly, or is the scene-referenced format a simplified subset?
+2. **`.diaentitytemplatetemplate` format alignment** — diaentitytemplate already has a blueprint format (version, entities, references). Does the `.diaentitytemplatetemplate` asset format match exactly, or is the scene-referenced format a simplified subset?
 
 3. **Default layer** — Engine provides a `"default"` layer. Is this implicit (always exists even if not in the layers array) or must the scene file declare it?
 

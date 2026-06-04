@@ -5,7 +5,7 @@
 
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
-#include <DiaEntity/Entity.h>
+#include <diaentitytemplate/Entity.h>
 #include <DiaObservation/Health/HealthReporterBase.h>
 #include <DiaScene2D/LayerTable.h>
 #include <DiaScene2D/SceneLoadContext.h>

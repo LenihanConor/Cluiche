@@ -1,6 +1,6 @@
 #include "Modules/TestStages/Entity/VisualTestRenderComponent.h"
 #include <DiaCore/Reflect/ReflectMacros.h>
-#include <DiaEntity/Domain.h>
+#include <diaentitytemplate/Domain.h>
 
 DIA_SERIALIZE(CluicheTest::VisualTestRenderComponent, CluicheTest::VisualTestRenderComponent::kVersion)
     DIA_FIELD(radius)

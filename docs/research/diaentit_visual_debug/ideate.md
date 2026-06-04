@@ -1,4 +1,4 @@
-# Research: Ideate — DiaEntity Visual Debugger & Editor Options
+# Research: Ideate — diaentitytemplate Visual Debugger & Editor Options
 
 **Input:** docs/research/diaentit_visual_debug/explore.md
 
@@ -8,7 +8,7 @@
 **Home module/system:** DiaVisualDebugger (DiaVisualDebuggerConsole sibling)
 **Size:** M (1–3 weeks)
 **Description:** An in-process ImGui window guarded by `#ifdef DIA_DEBUG` that renders alongside `DiaVisualDebuggerConsole`. Accepts a pointer to `IEntityInspectable` and renders: entity list, component-fields panel for selected entity driven by `ComponentTypeDesc` reflection, Tier (b) live field edit via `WriteField()` on commit. Selection state shared with `DebugLayerManager::SetSelectedEntityId()`. No WebSocket, no editor process.
-**Primary value:** First live view into Domain entity state with zero infrastructure — fastest path to any DiaEntity debugging. Dropped before evaluation as redundant once Candidate 2 ships.
+**Primary value:** First live view into Domain entity state with zero infrastructure — fastest path to any diaentitytemplate debugging. Dropped before evaluation as redundant once Candidate 2 ships.
 
 ### Candidate 2: CluicheEditor Entity Inspector Panel
 **Home module/system:** New `DiaEntityEditor` plugin (`Dia/DiaEntityEditor/`) implementing `IEditorPlugin`
@@ -32,16 +32,16 @@
 **Home module/system:** DiaEntityEditor — secondary tab
 **Size:** S (≤1 week add-on)
 **Description:** Secondary tab showing all active query descriptors: component-type signature, result set count, entity membership on expand. Click entity row to select. Requires additive extension to `IEntityInspectable`: `GetQueryCount()`, `GetQuerySignature(index)`, `GetQueryEntityCount(index)`.
-**Primary value:** Verify that queries return the right entities — most common DiaEntity debugging task after "does my entity exist."
+**Primary value:** Verify that queries return the right entities — most common diaentitytemplate debugging task after "does my entity exist."
 
 ### Candidate 6: Mailbox Traffic Monitor
 **Home module/system:** DiaEntityEditor — tab/panel
 **Size:** M (1–3 weeks)
-**Description:** Dedicated view showing DiaEntity mailbox activity. C++ side adds a ring buffer to `Domain::EndOfFrame()` recording dispatched messages (sender, address kind, message type CRC, frame number). Editor panel renders message table, aggregate histogram, per-entity filter, pause/snapshot mode.
-**Primary value:** Makes the mailbox — DiaEntity's most complex and least visible subsystem — observable.
+**Description:** Dedicated view showing diaentitytemplate mailbox activity. C++ side adds a ring buffer to `Domain::EndOfFrame()` recording dispatched messages (sender, address kind, message type CRC, frame number). Editor panel renders message table, aggregate histogram, per-entity filter, pause/snapshot mode.
+**Primary value:** Makes the mailbox — diaentitytemplate's most complex and least visible subsystem — observable.
 
 ### Candidate 7: Blueprint JSON Editor Panel (Static)
-**Home module/system:** New `DiaEntityBlueprintEditor` plugin — static editing, no live game required
+**Home module/system:** New `DiaEntityEntityTemplateEditor` plugin — static editing, no live game required
 **Size:** L (1–2 months)
 **Description:** CluicheEditor panel for authoring `.blueprint` JSON files. Loads a blueprint, parses its entity graph, renders as an editable tree with component accordions and per-field type-aware widgets generated from `ComponentTypeDesc` reflection. Validates against registered component schemas in real time. Undo/redo via `CommandHistory`. Requires `export-component-schema` DiaCLI command as prerequisite.
 **Primary value:** Blueprint authoring without run-reload cycles.

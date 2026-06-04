@@ -2,10 +2,10 @@
 
 #include "HierarchyLinesDrawer.h"
 #include "EntityPositionHelper.h"
-#include <DiaEntity/IEntityInspectable.h>
-#include <DiaEntity/Domain.h>
-#include <DiaEntity/Entity.h>
-#include <DiaEntity/Hierarchy/ChildBufferComponent.h>
+#include <diaentitytemplate/IEntityInspectable.h>
+#include <diaentitytemplate/Domain.h>
+#include <diaentitytemplate/Entity.h>
+#include <diaentitytemplate/Hierarchy/ChildBufferComponent.h>
 #include <DiaGraphics/Frame/FrameData.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaVisualDebugger/DebugColourPalette.h>

@@ -1,6 +1,6 @@
 #pragma once
 #include <DiaMailbox/IMailboxRouter.h>
-#include <DiaEntity/EntityAddress.h>
+#include <diaentitytemplate/EntityAddress.h>
 
 namespace Dia::Entity {
 

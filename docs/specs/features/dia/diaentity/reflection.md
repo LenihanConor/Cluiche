@@ -1,12 +1,12 @@
 # Feature Spec: reflection
 
-**System:** DiaEntity
+**System:** diaentitytemplate
 **App:** Dia
 **Status:** Draft
 
 ## Summary
 
-Add compile-time reflection to DiaEntity components via `DIA_COMPONENT` + `FIELD` macros. Every component type declares its serialisable fields and dependency requirements through these macros; the resulting `ComponentTypeDesc` drives JSON load/save (via DiaReflect) and editor inspection. `ComponentRegistry` provides process-global lookup and iteration over all registered component types.
+Add compile-time reflection to diaentitytemplate components via `DIA_COMPONENT` + `FIELD` macros. Every component type declares its serialisable fields and dependency requirements through these macros; the resulting `ComponentTypeDesc` drives JSON load/save (via DiaReflect) and editor inspection. `ComponentRegistry` provides process-global lookup and iteration over all registered component types.
 
 ## Traceability
 
@@ -14,7 +14,7 @@ Add compile-time reflection to DiaEntity components via `DIA_COMPONENT` + `FIELD
 |---|---|
 | Platform | [platform.md](../../../../platform/PLATFORM.md) |
 | Application | [dia.md](../../../applications/dia.md) |
-| System | [diaentity.md](../../systems/dia/diaentity.md) |
+| System | [diaentitytemplate.md](../../systems/dia/diaentitytemplate.md) |
 | Depends on feature | [foundation.md](foundation.md) |
 | Depends on system | [diareflect.md](../../systems/dia/diareflect.md) |
 
@@ -161,12 +161,12 @@ namespace Dia::Entity {
 
 | File | Change |
 |---|---|
-| `Dia/DiaEntity/ComponentTypeDesc.h` | New — `FieldDesc`, `FieldKind`, `ComponentTypeDesc` |
-| `Dia/DiaEntity/ComponentRegistry.h` | New — `ComponentRegistry` class |
-| `Dia/DiaEntity/ComponentRegistry.cpp` | New — singleton implementation |
-| `Dia/DiaEntity/ComponentMacros.h` | New — `DIA_COMPONENT`, `FIELD`, `REQUIRES`, `DIA_COMPONENT_REGISTER` |
-| `Dia/DiaEntity/Domain.cpp` | Modified — `QueueAddComponent` validates `REQUIRES` at attach |
-| `DiaEntity.vcxproj` / `.filters` | Add new files |
+| `Dia/diaentitytemplate/ComponentTypeDesc.h` | New — `FieldDesc`, `FieldKind`, `ComponentTypeDesc` |
+| `Dia/diaentitytemplate/ComponentRegistry.h` | New — `ComponentRegistry` class |
+| `Dia/diaentitytemplate/ComponentRegistry.cpp` | New — singleton implementation |
+| `Dia/diaentitytemplate/ComponentMacros.h` | New — `DIA_COMPONENT`, `FIELD`, `REQUIRES`, `DIA_COMPONENT_REGISTER` |
+| `Dia/diaentitytemplate/Domain.cpp` | Modified — `QueueAddComponent` validates `REQUIRES` at attach |
+| `diaentitytemplate.vcxproj` / `.filters` | Add new files |
 | `Tests/GoogleTests/Entity/ReflectionTests.cpp` | New — macro expansion, registry, JSON round-trip tests |
 
 ## Binding Decisions Compliance
@@ -177,7 +177,7 @@ namespace Dia::Entity {
 | PD-004 | No STL in public APIs | `ComponentRegistry` uses `DynamicArrayC`. `ComponentTypeDesc` uses raw arrays + counts. No STL. Compliant. |
 | PD-007 | C++20 | `DIA_COMPONENT` emits a `DIA_SERIALIZE` block using DiaReflect's C++20 `Archive` concept. Compliant. |
 | SD-ENT-004 | Reflection metadata required for every component | This feature implements the full reflection system. `DIA_COMPONENT` + `FIELD` are mandatory for any type registering with `ComponentRegistry`. Compliant. |
-| SD-ENT-005 | Reflection is component-only, lives inside DiaEntity | `ComponentTypeDesc` and `ComponentRegistry` are in `Dia/DiaEntity/`. DiaReflect is used as a serialization engine only — its `Archive` concept and archives are a dependency, not ownership of the registry. Compliant. |
+| SD-ENT-005 | Reflection is component-only, lives inside diaentitytemplate | `ComponentTypeDesc` and `ComponentRegistry` are in `Dia/diaentitytemplate/`. DiaReflect is used as a serialization engine only — its `Archive` concept and archives are a dependency, not ownership of the registry. Compliant. |
 | SD-ENT-006 | Blueprint format versioned JSON; loader interface-based | `schemaVersion` on `ComponentTypeDesc` enables future migration. Compliant. |
 | SD-ENT-007 | `REQUIRES` hard-validated at attach | `QueueAddComponent` checks `desc.requires_` array against `Domain::HasComponent` for each entry. Missing dep → `DIA_ASSERT` in debug, `DIA_LOG_WARNING` + bail in release. Compliant. |
 | SD-ENT-012 | Structural changes queued at EndOfFrame | `REQUIRES` validation fires at queue time (inside `QueueAddComponent`), not at EndOfFrame — fail-fast before the op enters the queue. Compliant in spirit; failure is caught earlier. |
@@ -191,7 +191,7 @@ namespace Dia::Entity {
 | 3 | `REQUIRES` validation timing | Validation fires inside `QueueAddComponent` before the op enters the mutation queue. If the required component is itself in the queue but not yet applied, validation fails. Is that correct? | Yes. Blueprint loader handles multi-component entities by queuing all attachments in dependency order (required components first). Callers that add components one-by-one must respect ordering. This is documented in the blueprint-loader feature. |
 | 4 | `kMaxComponentTypesPerDomain` | `ComponentRegistry` uses `DynamicArrayC<const ComponentTypeDesc*, kMaxComponentTypesPerDomain>`. What's the cap? | `kMaxComponentTypesPerDomain = 64` (surfaced in foundation AI Q2). If exceeded, `Register` asserts. Sufficient for v1; revisit if real games push past it. |
 | 5 | `DIA_COMPONENT_REGISTER` ODR safety | Function-local static bool pattern — safe across TUs? | Yes. Each `.cpp` that calls `DIA_COMPONENT_REGISTER(Foo)` gets its own function-local static. The registration itself is idempotent (registry checks for duplicate CRCs and asserts). No issues across TUs or shared libs in v1 (single process, static libs only). |
-| 6 | `FieldKind::Nested` rendering | Editor gets `FieldKind::Nested` for structs with `DIA_SERIALIZE`. Does DiaEntity need to expose the nested type's field list for the editor to render sub-fields? | The editor can call `JsonReadArchive`/`JsonWriteArchive` on the nested field as a blob and render it opaquely, or DiaReflect's polymorphic registry can be consulted for richer rendering. V1: treat `Nested` as an opaque JSON sub-object in the editor. Richer sub-field rendering is a future editor feature. |
+| 6 | `FieldKind::Nested` rendering | Editor gets `FieldKind::Nested` for structs with `DIA_SERIALIZE`. Does diaentitytemplate need to expose the nested type's field list for the editor to render sub-fields? | The editor can call `JsonReadArchive`/`JsonWriteArchive` on the nested field as a blob and render it opaquely, or DiaReflect's polymorphic registry can be consulted for richer rendering. V1: treat `Nested` as an opaque JSON sub-object in the editor. Richer sub-field rendering is a future editor feature. |
 | 7 | `saveToJson` on const IComponent* | The thunk signature is `void (*)(const IComponent* src, Json::Value& outConfig)`. `JsonWriteArchive` requires a non-const reference. Does this require a `const_cast`? | Yes — `const_cast<IComponent*>(src)` inside the thunk. The write archive reads from the object; it does not mutate it. The const_cast is safe and isolated to the thunk. Document it with a comment in `ComponentMacros.h`. |
 
 ## Open Questions

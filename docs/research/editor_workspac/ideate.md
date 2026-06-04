@@ -94,7 +94,7 @@ Together these give: plugins you always want (Home, Output) stay pinned; session
 ```json
 {
   "groups": [
-    { "name": "Editor Dev", "plugins": ["OutputConsole", "PluginBrowser", "BlueprintEditor"], "layout": "editor-dev.layout.json" },
+    { "name": "Editor Dev", "plugins": ["OutputConsole", "PluginBrowser", "EntityTemplateEditor"], "layout": "editor-dev.layout.json" },
     { "name": "CoW Build", "plugins": ["SceneEditor", "AssetBrowser", "GameConnection"], "layout": "cow.layout.json" }
   ]
 }

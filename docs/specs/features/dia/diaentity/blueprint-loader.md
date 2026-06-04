@@ -1,6 +1,6 @@
 # Feature Spec: blueprint-loader
 
-**System:** DiaEntity
+**System:** diaentitytemplate
 **App:** Dia
 **Status:** Draft
 
@@ -14,7 +14,7 @@ Provide `IBlueprintLoader` and `JsonBlueprintLoader` to instantiate entity graph
 |---|---|
 | Platform | [platform.md](../../../../platform/PLATFORM.md) |
 | Application | [dia.md](../../../applications/dia.md) |
-| System | [diaentity.md](../../systems/dia/diaentity.md) |
+| System | [diaentitytemplate.md](../../systems/dia/diaentitytemplate.md) |
 | Depends on feature | [foundation.md](foundation.md) |
 | Depends on feature | [reflection.md](reflection.md) |
 | Depends on system | [diareflect.md](../../systems/dia/diareflect.md) |
@@ -24,7 +24,7 @@ Provide `IBlueprintLoader` and `JsonBlueprintLoader` to instantiate entity graph
 - Load a versioned JSON blueprint into a `Domain` without hand-written per-type deserialization
 - Handle forward entity references cleanly via a three-pass strategy
 - Discover asset-trigger fields automatically via `AssetRefAttribute` — no per-type loader code
-- Keep the loader interface-based so a future `UsdBlueprintLoader` can replace it without DiaEntity API churn
+- Keep the loader interface-based so a future `UsdBlueprintLoader` can replace it without diaentitytemplate API churn
 
 ## Acceptance Criteria
 
@@ -122,11 +122,11 @@ After Pass 1, the loader walks each component's `ComponentTypeDesc::fields` arra
 
 | File | Change |
 |---|---|
-| `Dia/DiaEntity/IBlueprintLoader.h` | New — `IBlueprintLoader` interface |
-| `Dia/DiaEntity/JsonBlueprintLoader.h` | New — `JsonBlueprintLoader` declaration |
-| `Dia/DiaEntity/JsonBlueprintLoader.cpp` | New — three-pass implementation |
-| `Dia/DiaEntity/Domain.h` / `.cpp` | Modified — pending-asset counter, `OnAssetLoaded` dispatch |
-| `DiaEntity.vcxproj` / `.filters` | Add new files |
+| `Dia/diaentitytemplate/IBlueprintLoader.h` | New — `IBlueprintLoader` interface |
+| `Dia/diaentitytemplate/JsonBlueprintLoader.h` | New — `JsonBlueprintLoader` declaration |
+| `Dia/diaentitytemplate/JsonBlueprintLoader.cpp` | New — three-pass implementation |
+| `Dia/diaentitytemplate/Domain.h` / `.cpp` | Modified — pending-asset counter, `OnAssetLoaded` dispatch |
+| `diaentitytemplate.vcxproj` / `.filters` | Add new files |
 | `Tests/GoogleTests/Entity/BlueprintLoaderTests.cpp` | New — round-trip tests, ref resolution, version mismatch, unknown type |
 
 ## Binding Decisions Compliance
@@ -151,7 +151,7 @@ After Pass 1, the loader walks each component's `ComponentTypeDesc::fields` arra
 | 2 | Unknown component type | Blueprint references a component type name not in `ComponentRegistry`. | `DIA_ASSERT` in debug. In release: `DIA_LOG_WARNING`, skip that component, continue loading remaining components. Entity is created but incomplete — this mirrors the schema-mismatch policy. |
 | 3 | `EntityNameHandle` array size | `DynamicArrayC<EntityNameHandle, kMaxEntitiesPerDomain>` — 1024 entries on the stack during Load. Is that acceptable? | At ~12 bytes per entry (4 CRC + 8 handle), 1024 entries = ~12KB stack. Acceptable for a load-time call (not per-frame). If this becomes a concern, move to a heap-backed array — but not a v1 concern. |
 | 4 | References block entity/component not found | A `references` entry names an entity or component that doesn't exist in the blueprint. | `DIA_ASSERT` in debug. In release: `DIA_LOG_WARNING` + skip the reference entry. Pass 3 will then catch any resulting null required refs and assert. |
-| 5 | Asset service coupling | Loader calls `AssetService::Request(assetId)`. Is `AssetService` a DiaEntity dependency or passed in? | Passed in as a pointer/interface to `JsonBlueprintLoader`'s constructor — keeps DiaEntity free of a hard `AssetService` dependency. If null (e.g. in unit tests), asset trigger fields are enumerated but no requests are made; `OnAssetLoaded` is never called. |
+| 5 | Asset service coupling | Loader calls `AssetService::Request(assetId)`. Is `AssetService` a diaentitytemplate dependency or passed in? | Passed in as a pointer/interface to `JsonBlueprintLoader`'s constructor — keeps diaentitytemplate free of a hard `AssetService` dependency. If null (e.g. in unit tests), asset trigger fields are enumerated but no requests are made; `OnAssetLoaded` is never called. |
 | 6 | Blueprint local names vs debug names | Entity blueprint keys (e.g. `"player"`) are set as the entity's debug name for convenience. Does this create a runtime dependency on the blueprint key string? | Debug names are debug-build only (`#ifdef`) and stored as a copy in the domain's internal buffer. No runtime dependency. In release the name is discarded entirely. |
 | 7 | Multiple blueprints into one domain | Can `Load` be called multiple times on the same domain? | Yes — each call appends entities. Entity names are blueprint-local and not stored at runtime, so there is no collision risk between blueprints. Callers are responsible for calling `EndOfFrame` between loads if they need prior entities live before the next load. |
 

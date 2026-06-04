@@ -117,4 +117,4 @@ None.
 
 ## Status
 
-`Approved` — 2026-05-19
+`Moved` — 2026-06-04. Connection lifecycle (connect/disconnect button, callbacks, topic subscriptions) moved to [DiaApplicationFlowInspector](../../../systems/dia/diaapplicationflowinspector.md). Editor retains only a read-only connection status indicator — see [connection-status-indicator.md](connection-status-indicator.md).

@@ -1,15 +1,15 @@
-# Research Summary — DiaEntity Visual Debugger & Editor Options
+# Research Summary — diaentitytemplate Visual Debugger & Editor Options
 
 **Session folder:** docs/research/diaentit_visual_debug/
 **Date:** 2026-05-24
 
 ## One-Line Answer
 
-Three system targets covering all seven candidates: two DiaVisualDebugger feature specs (picking + labels), a new DiaEntityEditor system (inspector panel, query browser, mailbox monitor, watch list), and a new DiaEntityBlueprintEditor system (static blueprint authoring) — with a DiaCLI schema export as interim mitigation while the blueprint editor is built.
+Three system targets covering all seven candidates: two DiaVisualDebugger feature specs (picking + labels), a new DiaEntityEditor system (inspector panel, query browser, mailbox monitor, watch list), and a new DiaEntityEntityTemplateEditor system (static blueprint authoring) — with a DiaCLI schema export as interim mitigation while the blueprint editor is built.
 
 ## Journey
 
-1. **Explored:** DiaEntity exposes rich runtime data (entity population, reflected component fields, hierarchy, query caches, mailbox) but none of it is currently visible to a developer. Three partially-built seams already exist across DiaEntity, DiaVisualDebugger, and DiaEditor — the challenge is connecting them, not inventing them.
+1. **Explored:** diaentitytemplate exposes rich runtime data (entity population, reflected component fields, hierarchy, query caches, mailbox) but none of it is currently visible to a developer. Three partially-built seams already exist across diaentitytemplate, DiaVisualDebugger, and DiaEditor — the challenge is connecting them, not inventing them.
 2. **Ideated:** 8 candidates generated (C1 dropped early as redundant to C2) spanning in-game ImGui, editor panels, viewport picking, draw overlays, query browser, mailbox monitor, watch list, and static blueprint authoring. Scopes ranged from S (<=1 week) to L (1-2 months).
 3. **Evaluated:** Scored for sequencing priority rather than elimination. C3 (viewport picking, 4.80) and C4 (overlay, 4.40) scored highest. C2 (editor panel, 3.95) is the canonical long-term surface. C7 (blueprint editor, 2.70) scored lowest but user confirmed all candidates should be specced.
 4. **Chose:** All remaining candidates, organised into three system targets. No candidates discarded.
@@ -28,11 +28,11 @@ Three system targets covering all seven candidates: two DiaVisualDebugger featur
 
 **Home module:** `Dia/DiaEntityEditor/` ✓ System spec Approved
 
-### 3. DiaEntityBlueprintEditor (new system — CluicheEditor plugin)
+### 3. DiaEntityEntityTemplateEditor (new system — CluicheEditor plugin)
 - `export-component-schema` DiaCLI prereq (S)
 - `blueprint-file-editor` (C7, L)
 
-**Home module:** `Dia/DiaEntityBlueprintEditor/`
+**Home module:** `Dia/DiaEntityEntityTemplateEditor/`
 
 ## UI Mockup Decision
 
@@ -69,7 +69,7 @@ Next:
   /spec-feature query-browser-tab         (DiaEntityEditor)
   /spec-feature mailbox-traffic-monitor   (DiaEntityEditor)
   /spec-feature entity-watch-list         (DiaEntityEditor)
-  /spec-system  DiaEntityBlueprintEditor
+  /spec-system  DiaEntityEntityTemplateEditor
 ```
 
 ## References
@@ -80,7 +80,7 @@ Next:
 - docs/research/diaentit_visual_debug/choose.md
 - docs/research/diaentit_visual_debug/mockup_b_split.html
 - docs/research/entity_system/summary.md
-- docs/specs/systems/dia/diaentity.md
+- docs/specs/systems/dia/diaentitytemplate.md
 - docs/specs/systems/dia/diavisualdebugger.md
 - docs/specs/systems/dia/diaeditor.md
 - docs/specs/systems/dia/diaentityeditor.md

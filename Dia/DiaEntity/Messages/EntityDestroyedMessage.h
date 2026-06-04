@@ -1,5 +1,5 @@
 #pragma once
-#include <DiaEntity/Entity.h>
+#include <diaentitytemplate/Entity.h>
 
 namespace Dia::Entity {
 

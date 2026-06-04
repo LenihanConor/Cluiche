@@ -7,7 +7,7 @@ path: Dia/DiaEntityInspector
 dependencies:
   required:
     - DiaEditor
-    - DiaEntity
+    - diaentitytemplate
     - DiaCore
     - DiaObservation
   optional: []
@@ -30,7 +30,7 @@ responsibilities:
 non_responsibilities:
   - Rendering — UI is web-served via CEF; this module provides data only
   - Viewport entity picking — handled by DiaVisualDebugger
-  - Blueprint authoring — handled by DiaBlueprintEditor
+  - Blueprint authoring — handled by DiaEntityTemplateEditor
   - Tier (c) structural edit (add/remove component, create/destroy entity) — deferred
 decisions:
   - entity.inspect push is hybrid: immediate on selection change, slow poll every 30 frames (SED-ENT-001)

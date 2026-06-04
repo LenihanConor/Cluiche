@@ -3,7 +3,7 @@
 #include <DiaCore/CRC/CRC.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
-#include <DiaEntity/Entity.h>
+#include <diaentitytemplate/Entity.h>
 
 namespace Dia::Entity {
 

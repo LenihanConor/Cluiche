@@ -55,7 +55,7 @@ Consumer modules (selection state, tooltip, targeting, drag, etc.)
 - Input reading — owned by DiaInput / InputStreamModule
 - Coordinate transforms (screen → world) — owned by DiaGraphics / ViewportTransform
 - Selection state, highlight rendering, tooltips — owned by consumers
-- Entity queries — owned by `EntityPickSystem` (future DiaEntity integration)
+- Entity queries — owned by `EntityPickSystem` (future diaentitytemplate integration)
 - Gesture lifecycle (drag tracking, double-click) — owned by consumer or future DiaInput gesture system
 
 ---

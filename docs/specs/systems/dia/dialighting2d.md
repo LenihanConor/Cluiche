@@ -125,7 +125,7 @@ registry.Register(entry.id, light);
 - DiaGraphics
 - DiaCamera2D
 - DiaScene2D
-- DiaEntity
+- diaentitytemplate
 - DiaGeometry2D (no spatial queries in v1)
 - DiaApplicationFlow
 - DiaBgfx

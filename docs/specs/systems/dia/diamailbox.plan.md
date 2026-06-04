@@ -18,7 +18,7 @@ DiaMailbox is a generic typed deferred messaging primitive depending only on Dia
 - Type-key derivation must be identical across `typed-queue` and `subscriptions` — share the same `typeKey<T>()` helper.
 - Drop warning: accumulate `dropsThisDrain` counter on `Send`; emit once on `Drain`. Never per-drop.
 - Drain snapshot-tail pattern: snapshot tail before visitor loop to defer Send-during-Drain messages to next pass.
-- `SubscriberSet` capacity 64 is a placeholder — will be revisited when DiaEntity sizes its component count.
+- `SubscriberSet` capacity 64 is a placeholder — will be revisited when diaentitytemplate sizes its component count.
 - Library solution folder GUID: `{2291F464-9B87-42F1-AA90-34FE22DD5F9B}`. DiaCore project GUID: `{8D41CBE3-C493-428D-95F3-627E56500667}`.
 
 ---

@@ -33,5 +33,5 @@ Asset dependencies (e.g. a scene referencing an entity blueprint) are currently 
 
 ## Open Design Questions
 
-1. **Inferrer scope expansion** — When other editors gain cross-asset references (e.g. DiaBlueprintEditor referencing textures), the inferrer will need per-type parsers. Should the inferrer architecture be pluggable from the start, or hardcoded to `.diascene` for v1?
+1. **Inferrer scope expansion** — When other editors gain cross-asset references (e.g. DiaEntityTemplateEditor referencing textures), the inferrer will need per-type parsers. Should the inferrer architecture be pluggable from the start, or hardcoded to `.diascene` for v1?
 2. **Stale edge cleanup** — If an entity is removed from a scene, the editor calls `remove_relationship`. But the inferrer only *adds* missing edges — should it also *remove* edges that no longer exist in the file? (This would make reconciliation bi-directional.)

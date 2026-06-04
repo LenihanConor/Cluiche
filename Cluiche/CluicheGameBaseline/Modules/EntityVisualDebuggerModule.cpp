@@ -13,8 +13,8 @@
 #include <DiaGeometry2DPicking/PickHit2D.h>
 #include <DiaPicking/PickEvent.h>
 #include <DiaPicking/PickTrigger.h>
-#include <DiaEntity/ComponentRegistry.h>
-#include <DiaEntity/ComponentTypeDesc.h>
+#include <diaentitytemplate/ComponentRegistry.h>
+#include <diaentitytemplate/ComponentTypeDesc.h>
 #include "Modules/EntityModule.h"
 #include "Modules/VisualDebuggerModule.h"
 #include "Modules/PickingModule.h"

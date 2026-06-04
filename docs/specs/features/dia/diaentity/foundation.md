@@ -1,12 +1,12 @@
 # Feature Spec: foundation
 
-**System:** DiaEntity
+**System:** diaentitytemplate
 **App:** Dia
 **Status:** Draft
 
 ## Summary
 
-Establish the core runtime primitives of DiaEntity: `Domain` (entity container), `Entity` (generational handle), `IComponent` abstract base, per-type component pools, entity create/destroy lifecycle, component attachment/detachment, and the end-of-frame structural mutation pipeline.
+Establish the core runtime primitives of diaentitytemplate: `Domain` (entity container), `Entity` (generational handle), `IComponent` abstract base, per-type component pools, entity create/destroy lifecycle, component attachment/detachment, and the end-of-frame structural mutation pipeline.
 
 ## Traceability
 
@@ -14,11 +14,11 @@ Establish the core runtime primitives of DiaEntity: `Domain` (entity container),
 |---|---|
 | Platform | [platform.md](../../../../platform/PLATFORM.md) |
 | Application | [dia.md](../../../applications/dia.md) |
-| System | [diaentity.md](../../systems/dia/diaentity.md) |
+| System | [diaentitytemplate.md](../../systems/dia/diaentitytemplate.md) |
 
 ## Goals
 
-- Ship `Domain`, `Entity`, and `IComponent` as a buildable static lib (`DiaEntity.vcxproj`)
+- Ship `Domain`, `Entity`, and `IComponent` as a buildable static lib (`diaentitytemplate.vcxproj`)
 - Provide safe entity creation with generational handles (use-after-free detected via generation mismatch)
 - Provide queued component attachment/detachment applied atomically at `EndOfFrame`
 - Provide synchronous read access (`GetComponent`, `HasComponent`) that is stable between `EndOfFrame` boundaries
@@ -138,16 +138,16 @@ namespace Dia::Entity {
 
 | File | Change |
 |---|---|
-| `Dia/DiaEntity/DiaEntity.vcxproj` | New — static lib project |
-| `Dia/DiaEntity/DiaEntity.vcxproj.filters` | New |
-| `Dia/DiaEntity/Entity.h` | New — `Entity` type alias + capacity constants |
-| `Dia/DiaEntity/IComponent.h` | New — `IComponent` abstract base |
-| `Dia/DiaEntity/Domain.h` | New — `Domain` class declaration |
-| `Dia/DiaEntity/Domain.cpp` | New — `Domain` implementation |
-| `Dia/DiaEntity/Domain.inl` | New — template method definitions |
-| `Dia/DiaEntity/MutationOp.h` | New — `MutationOp` internal struct |
+| `Dia/diaentitytemplate/diaentitytemplate.vcxproj` | New — static lib project |
+| `Dia/diaentitytemplate/diaentitytemplate.vcxproj.filters` | New |
+| `Dia/diaentitytemplate/Entity.h` | New — `Entity` type alias + capacity constants |
+| `Dia/diaentitytemplate/IComponent.h` | New — `IComponent` abstract base |
+| `Dia/diaentitytemplate/Domain.h` | New — `Domain` class declaration |
+| `Dia/diaentitytemplate/Domain.cpp` | New — `Domain` implementation |
+| `Dia/diaentitytemplate/Domain.inl` | New — template method definitions |
+| `Dia/diaentitytemplate/MutationOp.h` | New — `MutationOp` internal struct |
 | `dia.entity.architecture.module.md` | New — YAML module doc |
-| `Cluiche/Cluiche.sln` | Add `DiaEntity` under `Dia` solution folder |
+| `Cluiche/Cluiche.sln` | Add `diaentitytemplate` under `Dia` solution folder |
 | `Tests/GoogleTests/Entity/DomainTests.cpp` | New — foundation unit tests |
 
 ## Binding Decisions Compliance
@@ -158,11 +158,11 @@ namespace Dia::Entity {
 | PD-002 | PU/Phase/Module architecture | `Domain` has no PU/Phase coupling. Application code wraps it in an `EntityModule`. Compliant. |
 | PD-003 | Component-based entities (old IComponent) | Pending Supersede (SD-ENT-021). This feature introduces `Dia::Entity::IComponent` which replaces the old `Dia::Core::IComponent`. Conflict acknowledged; amendment tracked. Compliant in spirit. |
 | PD-004 | No STL in public APIs | All public signatures use `Handle<T>`, `HandlePool<T>`, `StringCRC`, `DynamicArrayC`. `Json::Value` (jsoncpp) is the engine's blessed JSON type. No `std::vector`, `std::string`, etc. Compliant. |
-| PD-005 | x64 only | `DiaEntity.vcxproj` targets x64 exclusively. Compliant. |
-| PD-006 | VS project files are source of truth | `DiaEntity.vcxproj` + `.vcxproj.filters` created and maintained manually. Compliant. |
+| PD-005 | x64 only | `diaentitytemplate.vcxproj` targets x64 exclusively. Compliant. |
+| PD-006 | VS project files are source of truth | `diaentitytemplate.vcxproj` + `.vcxproj.filters` created and maintained manually. Compliant. |
 | PD-007 | C++20 required | Compiled under `/std:c++20`. Uses concepts for `TComponent : IComponent` constraints, `if constexpr` in template dispatch. Compliant. |
-| PD-008 | Directory.Build.props owns toolchain | `DiaEntity.vcxproj` does not override OutDir, IntDir, PlatformToolset, WindowsTargetPlatformVersion, or LanguageStandard. Compliant. |
-| PD-009 | Generated output under `Cluiche/out/<AppName>/` | DiaEntity generates no output artefacts. Compliant. |
+| PD-008 | Directory.Build.props owns toolchain | `diaentitytemplate.vcxproj` does not override OutDir, IntDir, PlatformToolset, WindowsTargetPlatformVersion, or LanguageStandard. Compliant. |
+| PD-009 | Generated output under `Cluiche/out/<AppName>/` | diaentitytemplate generates no output artefacts. Compliant. |
 | PD-010 | `.diagame` / `.diastage` as root files | Domain has no coupling to stage files. Application's EntityModule reads stage manifests and feeds blueprints in. Compliant. |
 | AD-001 | Module YAML frontmatter | `dia.entity.architecture.module.md` created with public API, responsibilities, dependency declarations. Compliant. |
 | AD-002 | No STL in public APIs | Reinforces PD-004. Compliant. |
@@ -179,7 +179,7 @@ namespace Dia::Entity {
 | SD-ENT-017 | Domain is non-copyable, non-movable | Copy constructor and copy assignment deleted. Compliant. |
 | SD-ENT-018 | Single-threaded per domain | No synchronisation primitives. Concurrent mutation is undefined. Compliant. |
 | SD-ENT-019 | Namespace `Dia::Entity::` | Compliant. |
-| SD-ENT-020 | Old IComponent removed before DiaEntity built | Done (2026-05-20). Compliant. |
+| SD-ENT-020 | Old IComponent removed before diaentitytemplate built | Done (2026-05-20). Compliant. |
 
 ## AI Review Questions
 

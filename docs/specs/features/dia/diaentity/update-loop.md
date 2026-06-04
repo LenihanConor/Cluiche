@@ -1,6 +1,6 @@
 # Feature Spec: update-loop
 
-**System:** DiaEntity
+**System:** diaentitytemplate
 **App:** Dia
 **Status:** Draft
 
@@ -14,7 +14,7 @@ Implement `Domain::Update(dt)` — the per-frame tick that walks all DoUpdate-op
 |---|---|
 | Platform | [platform.md](../../../../platform/PLATFORM.md) |
 | Application | [dia.md](../../../applications/dia.md) |
-| System | [diaentity.md](../../systems/dia/diaentity.md) |
+| System | [diaentitytemplate.md](../../systems/dia/diaentitytemplate.md) |
 | Depends on feature | [foundation.md](foundation.md) |
 | Depends on feature | [reflection.md](reflection.md) |
 
@@ -87,9 +87,9 @@ for each ComponentTypeDesc* desc in mComponentRegistry (registration order):
 
 | File | Change |
 |---|---|
-| `Dia/DiaEntity/ComponentMacros.h` | Modified — add `DIA_UPDATABLE` macro |
-| `Dia/DiaEntity/Domain.h` | Modified — add `Update(float dt)` declaration |
-| `Dia/DiaEntity/Domain.cpp` | Modified — implement `Update` walk |
+| `Dia/diaentitytemplate/ComponentMacros.h` | Modified — add `DIA_UPDATABLE` macro |
+| `Dia/diaentitytemplate/Domain.h` | Modified — add `Update(float dt)` declaration |
+| `Dia/diaentitytemplate/Domain.cpp` | Modified — implement `Update` walk |
 | `Tests/GoogleTests/Entity/UpdateLoopTests.cpp` | New |
 
 ## Binding Decisions Compliance

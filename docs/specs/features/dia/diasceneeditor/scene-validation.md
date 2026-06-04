@@ -40,7 +40,7 @@ Real-time validation of scene constraints while editing. Errors and warnings dis
 
 **Warnings (allow save):**
 - No layer with `id: "default"` exists (SceneLoader2D auto-injects one, but explicit is preferred)
-- Entity references a blueprint that has no corresponding `.diaentity` file
+- Entity references a blueprint that has no corresponding `.diaentitytemplatetemplate` file
 - Light's `affects_layers` references a layer ID that doesn't exist in the scene
 - Disabled entities present (may be intentional but worth flagging)
 - Camera with `active: false` and no other camera is active (impossible if enforcement works, but defensive)

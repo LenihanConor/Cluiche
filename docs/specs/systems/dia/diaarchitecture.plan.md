@@ -16,8 +16,8 @@ All tasks are independent — can be dispatched in parallel.
 | 3 | Set `layer: foundation/services` on DiaObservation, DiaMetrics, DiaDebugProtocol, DiaWebSocket, DiaAPI, DiaDebugServer, DiaEditor, DiaPython, DiaImGui | grep confirms value | Done | haiku | 6 files; DiaMetrics/DiaAPI/DiaEditor/DiaImGui have no module.md |
 | 4 | Set `layer: foundation/platform` on DiaWindow, DiaInput, DiaSDL | grep confirms value | Done | haiku | 4 files (incl. DiaWindow/Interface) |
 | 5 | Set `layer: foundation/application` on DiaApplicationFlow, DiaAutomation, DiaGame | grep confirms value | Done | haiku | 2 files; DiaGame has no module.md |
-| 6 | Set `layer: assets/core` on DiaEntity, DiaAsset, DiaAssetCatalogue, DiaAssetRuntime, DiaMesh3D | grep confirms value | Done | haiku | 3 files; DiaAsset/DiaMesh3D have no module.md |
-| 7 | Set `layer: assets/tools` on DiaAssetCatalogueEditor, DiaEntityInspector, DiaBlueprintEditor, DiaPipelineEditor, DiaApplicationEditor, DiaAssetRuntimeInspector, DiaEntityVisualDebugger, DiaAssetRuntimeVisualDebugger | grep confirms value | Done | haiku | 7 files; DiaPipelineEditor/DiaAssetRuntimeVisualDebugger have no module.md |
+| 6 | Set `layer: assets/core` on diaentitytemplate, DiaAsset, DiaAssetCatalogue, DiaAssetRuntime, DiaMesh3D | grep confirms value | Done | haiku | 3 files; DiaAsset/DiaMesh3D have no module.md |
+| 7 | Set `layer: assets/tools` on DiaAssetCatalogueEditor, DiaEntityInspector, DiaEntityTemplateEditor, DiaPipelineEditor, DiaApplicationEditor, DiaAssetRuntimeInspector, DiaEntityVisualDebugger, DiaAssetRuntimeVisualDebugger | grep confirms value | Done | haiku | 7 files; DiaPipelineEditor/DiaAssetRuntimeVisualDebugger have no module.md |
 | 8 | Set `layer: domain/visual/*` on Visual domain modules | grep confirms value | Done | haiku | 13 files; DiaGraphics3D/DiaBgfx3D/DiaScene3D/DiaVisualDebuggerConsole have no module.md |
 | 9 | Set `layer: domain/physics/*` on Physics domain modules | grep confirms value | Done | haiku | 4 files |
 | 10 | Set `layer: domain/animation/*` on Animation domain modules | grep confirms value | Done | haiku | 6 files; DiaRig3D/DiaAnimation3D/DiaSkinning3D have no module.md |

@@ -18,7 +18,7 @@ The Core infrastructure was refined through discussion into six named sub-layers
 | Foundation | DiaCore, DiaMaths, DiaGeometry2D, DiaGeometry3D, DiaSerializer, DiaObservation |
 | Platform | DiaWindow, DiaInput, DiaThreading, DiaMailbox |
 | Application | DiaApplicationFlow, DiaStateMachine |
-| Entity | DiaEntity |
+| Entity | diaentitytemplate |
 | Assets | DiaAsset, DiaAssetCatalogue, DiaAssetRuntime |
 | Tooling | DiaEditor, DiaAPI, DiaAutomation, DiaWebSocket, DiaDebugServer, DiaDebugProtocol, DiaVisualDebugger (base/console) |
 
@@ -54,7 +54,7 @@ Each domain owns a `core/` tier and a `tools/` tier. Domain tools may depend on 
 | DiaSerializer | Foundation | General-purpose; needed below Assets and by configs/manifests |
 | DiaObservation | Foundation | Only depends on DiaCore; `DIA_LOG_*` must be available to all layers |
 | DiaStateMachine | Application | Used by application flow and entities; not entity-specific |
-| DiaEntity | Entity (own sub-layer) | Separated from Application — lifecycle wiring ≠ object model |
+| diaentitytemplate | Entity (own sub-layer) | Separated from Application — lifecycle wiring ≠ object model |
 | Domain visual debuggers | Domain tools tier | Belong with their domain, not in global Tooling |
 
 ## Pre-Spec Commitments

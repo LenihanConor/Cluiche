@@ -1,6 +1,6 @@
 # Feature Spec: query-system
 
-**System:** DiaEntity
+**System:** diaentitytemplate
 **App:** Dia
 **Status:** Draft
 
@@ -14,7 +14,7 @@ Provide `Domain::Query<TComponents...>()` — a signature-keyed cached query tha
 |---|---|
 | Platform | [platform.md](../../../../platform/PLATFORM.md) |
 | Application | [dia.md](../../../applications/dia.md) |
-| System | [diaentity.md](../../systems/dia/diaentity.md) |
+| System | [diaentitytemplate.md](../../systems/dia/diaentitytemplate.md) |
 | Depends on feature | [foundation.md](foundation.md) |
 | Depends on feature | [reflection.md](reflection.md) |
 
@@ -101,13 +101,13 @@ constexpr Dia::Core::StringCRC QuerySignature() {
 
 | File | Change |
 |---|---|
-| `Dia/DiaEntity/QueryView.h` | New — `QueryView<TComponents...>` |
-| `Dia/DiaEntity/QueryView.inl` | New — iterator implementation |
-| `Dia/DiaEntity/QueryCache.h` | New — `QueryCache` internal struct |
-| `Dia/DiaEntity/Domain.h` | Modified — `Query<TComponents...>()`, `mQueryCaches` member |
-| `Dia/DiaEntity/Domain.cpp` | Modified — cache invalidation + rebuild in `EndOfFrame` |
-| `Dia/DiaEntity/Domain.inl` | Modified — `Query<>` template implementation |
-| `DiaEntity.vcxproj` / `.filters` | Add new files |
+| `Dia/diaentitytemplate/QueryView.h` | New — `QueryView<TComponents...>` |
+| `Dia/diaentitytemplate/QueryView.inl` | New — iterator implementation |
+| `Dia/diaentitytemplate/QueryCache.h` | New — `QueryCache` internal struct |
+| `Dia/diaentitytemplate/Domain.h` | Modified — `Query<TComponents...>()`, `mQueryCaches` member |
+| `Dia/diaentitytemplate/Domain.cpp` | Modified — cache invalidation + rebuild in `EndOfFrame` |
+| `Dia/diaentitytemplate/Domain.inl` | Modified — `Query<>` template implementation |
+| `diaentitytemplate.vcxproj` / `.filters` | Add new files |
 | `Tests/GoogleTests/Entity/QuerySystemTests.cpp` | New |
 
 ## Binding Decisions Compliance

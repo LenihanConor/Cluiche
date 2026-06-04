@@ -16,7 +16,7 @@ Implement the `DiaEntityInspectorPlugin` scaffold, the entity list panel, the co
 | Platform | [Cluiche.md](../../../../platform/Cluiche.md) |
 | Application | [dia.md](../../../applications/dia.md) |
 | System | [diaentityinspector.md](../../systems/dia/diaentityinspector.md) |
-| Depends on feature | [editor-inspection.md](../diaentity/editor-inspection.md) |
+| Depends on feature | [editor-inspection.md](../diaentitytemplate/editor-inspection.md) |
 | Depends on feature | [debug-entity-picking.md](../diavisualdebugger/debug-entity-picking.md) |
 | Depends on system | [diadebugprotocol.md](../../systems/dia/diadebugprotocol.md) |
 | Depends on system | [diadebugserver.md](../../systems/dia/diadebugserver.md) |
@@ -64,7 +64,7 @@ Implement the `DiaEntityInspectorPlugin` scaffold, the entity list panel, the co
 - Tier (c) structural controls (Add Component, Remove Component, Destroy Entity) are rendered but disabled and tooltip-labelled "Not available in v1"
 
 ### entity.inspect WebSocket topic
-- `DiaEntity/DebugDataTypes.h` defines `kEntityInspect`, `kEntityInspectRequest`, `kEntityFindByName`, `kEntityWriteField` as `Dia::Core::StringCRC` constants
+- `diaentitytemplate/DebugDataTypes.h` defines `kEntityInspect`, `kEntityInspectRequest`, `kEntityFindByName`, `kEntityWriteField` as `Dia::Core::StringCRC` constants
 - Game side registers a topic handler for `kEntityInspectRequest` in DiaDebugServer
 - On receiving `kEntityInspectRequest` with an entity index+gen, server calls `SerializeEntityInspect` and pushes the result as a `kDataUpdate` with `dataType = kEntityInspect`
 - `entity.write_field` DiaAPI command is registered in the game; on execution it calls `Domain::WriteField` (via `IEntityInspectable`) and returns success/failure
@@ -138,9 +138,9 @@ or
 | `Dia/DiaEntityInspector/EntityInspectorController.cpp` | New |
 | `Dia/DiaEntityInspector/EntityInspectSerializer.h` | New — `SerializeEntityInspect` free function |
 | `Dia/DiaEntityInspector/EntityInspectSerializer.cpp` | New |
-| `Dia/DiaEntity/DebugDataTypes.h` | New — `kEntityInspect`, `kEntityInspectRequest`, `kEntityFindByName`, `kEntityWriteField` constants |
-| `Dia/DiaEntity/DiaEntity.vcxproj` | Add `DebugDataTypes.h` |
-| `Dia/DiaEntity/DiaEntity.vcxproj.filters` | Add `DebugDataTypes.h` |
+| `Dia/diaentitytemplate/DebugDataTypes.h` | New — `kEntityInspect`, `kEntityInspectRequest`, `kEntityFindByName`, `kEntityWriteField` constants |
+| `Dia/diaentitytemplate/diaentitytemplate.vcxproj` | Add `DebugDataTypes.h` |
+| `Dia/diaentitytemplate/diaentitytemplate.vcxproj.filters` | Add `DebugDataTypes.h` |
 | `Dia/DiaDebugProtocol/Protocol.h` | Bump `kProtocolVersion` to 2 |
 | `Cluiche/CluicheTest/EntityModule.cpp` (or equivalent) | Add `GetSelectedEntityId()` poll + `entity.inspect` push |
 | `Cluiche/Cluiche.sln` | Add `DiaEntityInspector.vcxproj` |
@@ -173,7 +173,7 @@ or
 | 4 | `kProtocolVersion` bump migration | Bumping to version 2 will disconnect any editor running protocol v1. Is there a migration path for existing editors, or is this a hard cutover? | Hard cutover. The version bump is the right signal that the handshake payload has changed. Old editors will see `accepted: false` in the handshake response. No backward compatibility wrapper needed. |
 | 5 | Component short tags in entity list rows | Entity list rows show "component short tags (up to 4 tags, 4 chars each)." Where do these tags come from — auto-truncated from type name, or manually registered like EntityLabelsDrawer? | Same as EntityLabelsDrawer: caller-registered via a `RegisterComponentTag(StringCRC typeId, const char* shortTag)` method on `DiaEntityInspectorPlugin` (or a shared tag registry). Auto-truncation causes collisions. Registration happens in CluicheTest wiring. |
 | 6 | Field edit — when does the UI send the command? | Spec says "pressing Enter or defocusing." For a vec2 field with two inputs, does defocusing one sub-input (x) send immediately, or does the command wait until both x and y are confirmed? | Wait until the user leaves the entire field group (all sub-inputs for that field). Defocusing x while tabbing to y does not send. Defocusing the last sub-input (or pressing Enter from any sub-input) sends the full field value. |
-| 7 | `DiaEntityInspector` project dependency on `DiaEntity` | `EntityInspectSerializer` calls `IEntityInspectable` methods — so `DiaEntityInspector.vcxproj` must reference `DiaEntity.vcxproj`. Is this the correct dependency direction? | Yes. `DiaEntityInspector` depends on `DiaEntity` (for `IEntityInspectable` and `Entity` types). `DiaEntity` has no dependency on `DiaEntityInspector`. The direction is correct and acyclic. |
+| 7 | `DiaEntityInspector` project dependency on `diaentitytemplate` | `EntityInspectSerializer` calls `IEntityInspectable` methods — so `DiaEntityInspector.vcxproj` must reference `diaentitytemplate.vcxproj`. Is this the correct dependency direction? | Yes. `DiaEntityInspector` depends on `diaentitytemplate` (for `IEntityInspectable` and `Entity` types). `diaentitytemplate` has no dependency on `DiaEntityInspector`. The direction is correct and acyclic. |
 
 ## Open Questions
 

@@ -7,7 +7,7 @@
 
 ## Summary
 
-Implement the `DiaSceneEditorPlugin` scaffold, the scene hierarchy panel (left panel with collapsible sections for Layers/Cameras/Lights/Entities), search/filter, selection state, and the property inspector panel (right panel) with context-sensitive rendering per item type. Blueprint defaults are shown read-only with a link to DiaBlueprintEditor. This is the foundational feature — all subsequent features (entity CRUD, change-blueprint, layer authoring) build on this scaffold.
+Implement the `DiaSceneEditorPlugin` scaffold, the scene hierarchy panel (left panel with collapsible sections for Layers/Cameras/Lights/Entities), search/filter, selection state, and the property inspector panel (right panel) with context-sensitive rendering per item type. Blueprint defaults are shown read-only with a link to DiaEntityTemplateEditor. This is the foundational feature — all subsequent features (entity CRUD, change-blueprint, layer authoring) build on this scaffold.
 
 ## Traceability
 
@@ -73,7 +73,7 @@ Implement the `DiaSceneEditorPlugin` scaffold, the scene hierarchy panel (left p
 ### Property rendering by type
 
 **Entity (Instance Overrides tab):**
-- Identity section: ID (read-only), Blueprint (link to DiaBlueprintEditor + "Change..." button), Enabled (checkbox)
+- Identity section: ID (read-only), Blueprint (link to DiaEntityTemplateEditor + "Change..." button), Enabled (checkbox)
 - Instance Data section: ALL blueprint fields shown, grouped by component prefix (e.g. "Transform2D", "Health")
   - **Overridden fields:** purple left-border, full-brightness text, editable input
   - **Non-overridden fields (inherited defaults):** no left-border, muted/dimmed styling, non-editable (greyed input with dashed border)
@@ -97,13 +97,13 @@ Implement the `DiaSceneEditorPlugin` scaffold, the scene hierarchy panel (left p
 - Assigned Lights section: informational list of lights that reference this layer
 
 ### Blueprint link and "Open in Blueprint Editor"
-- Clicking the blueprint `→` link on any entity/camera/light opens DiaBlueprintEditor with that blueprint focused
+- Clicking the blueprint `→` link on any entity/camera/light opens DiaEntityTemplateEditor with that blueprint focused
 - This is the only path to editing blueprint defaults from the scene editor — no inline blueprint editing
 
 ### Blueprint Defaults tab (read-only reference)
-- Banner: "Blueprint defaults from {name}.diaentity (read-only)" with "Open in Blueprint Editor →" link
+- Banner: "Blueprint defaults from {name}.diaentitytemplatetemplate (read-only)" with "Open in Blueprint Editor →" link
 - All blueprint fields shown grouped by component, inputs disabled (greyed/dashed styling)
-- Clicking "Open in Blueprint Editor →" opens DiaBlueprintEditor with that blueprint focused
+- Clicking "Open in Blueprint Editor →" opens DiaEntityTemplateEditor with that blueprint focused
 
 ### Status bar
 - Shows: connected `.diagame` name, entity count, camera count, light count, layer count, blueprint count, save state

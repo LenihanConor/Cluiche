@@ -1,7 +1,7 @@
-#include <DiaEntity/JsonBlueprintLoader.h>
-#include <DiaEntity/Domain.h>
-#include <DiaEntity/ComponentRegistry.h>
-#include <DiaEntity/ComponentTypeDesc.h>
+#include <diaentitytemplate/JsonBlueprintLoader.h>
+#include <diaentitytemplate/Domain.h>
+#include <diaentitytemplate/ComponentRegistry.h>
+#include <diaentitytemplate/ComponentTypeDesc.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Core/Assert.h>
@@ -25,13 +25,13 @@ namespace Dia::Entity {
     bool JsonBlueprintLoader::Load(Domain& domain, const Json::Value& blueprint) {
         // Validate schema version.
         if (!blueprint.isMember("version") || !blueprint["version"].isInt()) {
-            DIA_LOG_WARNING("DiaEntity", "JsonBlueprintLoader: missing or non-integer 'version' field");
+            DIA_LOG_WARNING("diaentitytemplate", "JsonBlueprintLoader: missing or non-integer 'version' field");
             return false;
         }
 
         const int version = blueprint["version"].asInt();
         if (version != kBlueprintSchemaVersion) {
-            DIA_LOG_WARNING("DiaEntity",
+            DIA_LOG_WARNING("diaentitytemplate",
                 "JsonBlueprintLoader: blueprint version %d does not match expected %d — aborting",
                 version, kBlueprintSchemaVersion);
             return false;
@@ -67,7 +67,7 @@ namespace Dia::Entity {
         Dia::Core::Containers::DynamicArrayC<EntityNameHandle, kMaxEntitiesPerDomain>& outHandles)
     {
         if (!entities.isObject()) {
-            DIA_LOG_WARNING("DiaEntity", "JsonBlueprintLoader: 'entities' is not an object");
+            DIA_LOG_WARNING("diaentitytemplate", "JsonBlueprintLoader: 'entities' is not an object");
             return false;
         }
 
@@ -75,7 +75,7 @@ namespace Dia::Entity {
             const Json::Value& entityObj = entities[entityName];
 
             if (!entityObj.isObject()) {
-                DIA_LOG_WARNING("DiaEntity",
+                DIA_LOG_WARNING("diaentitytemplate",
                     "JsonBlueprintLoader: entity '%s' value is not an object — skipping",
                     entityName.c_str());
                 continue;
@@ -83,7 +83,7 @@ namespace Dia::Entity {
 
             Entity entity = domain.CreateEntity(entityName.c_str());
             if (!entity.IsValid()) {
-                DIA_LOG_WARNING("DiaEntity",
+                DIA_LOG_WARNING("diaentitytemplate",
                     "JsonBlueprintLoader: entity pool full — could not create entity '%s'",
                     entityName.c_str());
                 return false;
@@ -105,7 +105,7 @@ namespace Dia::Entity {
                     ComponentRegistry::Get().Find(Dia::Core::StringCRC(componentName.c_str()));
 
                 if (desc == nullptr) {
-                    DIA_LOG_WARNING("DiaEntity",
+                    DIA_LOG_WARNING("diaentitytemplate",
                         "JsonBlueprintLoader: unknown component type '%s' — skipping",
                         componentName.c_str());
                     continue;
@@ -165,7 +165,7 @@ namespace Dia::Entity {
             // Warn about any unqueued components (unsatisfied dependencies).
             for (uint32_t i = 0; i < pending.Size(); ++i) {
                 if (!pending[i].queued) {
-                    DIA_LOG_WARNING("DiaEntity",
+                    DIA_LOG_WARNING("diaentitytemplate",
                         "JsonBlueprintLoader: component (CRC %u) on entity '%s' has unsatisfied REQUIRES — skipping",
                         pending[i].typeId.Value(), entityName.c_str());
                 }
@@ -187,7 +187,7 @@ namespace Dia::Entity {
         // EntityRef patching requires F4 (EntityRef<T> field type).
         // For v1 this is a no-op; log a warning if any references are present.
         if (references.isArray() && references.size() > 0) {
-            DIA_LOG_WARNING("DiaEntity",
+            DIA_LOG_WARNING("diaentitytemplate",
                 "JsonBlueprintLoader: 'references' block has %u entries but EntityRef patching "
                 "requires F4 — skipping reference wiring",
                 references.size());

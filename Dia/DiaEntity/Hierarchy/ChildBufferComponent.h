@@ -1,7 +1,7 @@
 #pragma once
-#include <DiaEntity/IComponent.h>
-#include <DiaEntity/ComponentMacros.h>
-#include <DiaEntity/Entity.h>
+#include <diaentitytemplate/IComponent.h>
+#include <diaentitytemplate/ComponentMacros.h>
+#include <diaentitytemplate/Entity.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 
 namespace Dia::Entity::Hierarchy {

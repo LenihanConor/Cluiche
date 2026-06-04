@@ -11,10 +11,10 @@ All dependencies exist:
 - `ProjectContext` with `.diagame` lifecycle hooks — `Dia/DiaEditor/`
 - `Scene2D` struct + `SceneLoader2D` — `Dia/DiaScene2D/`
 - `DiaAssetCatalogue` for blueprint discovery — `Dia/DiaAssetCatalogue/`
-- `ComponentRegistry` + `ComponentTypeDesc` for field introspection — `Dia/DiaEntity/`
+- `ComponentRegistry` + `ComponentTypeDesc` for field introspection — `Dia/diaentitytemplate/`
 - `DiaGame` manifest loader for stage enumeration — `Dia/DiaGame/`
 
-**Blocked on:** DiaBlueprintEditor (T1-T3) should ship first so "Open in Blueprint Editor →" has a target. However, DiaSceneEditor can be built independently — the blueprint link is a soft dependency (disabled until DiaBlueprintEditor exists).
+**Blocked on:** DiaEntityTemplateEditor (T1-T3) should ship first so "Open in Blueprint Editor →" has a target. However, DiaSceneEditor can be built independently — the blueprint link is a soft dependency (disabled until DiaEntityTemplateEditor exists).
 
 ### Tasks
 
@@ -26,7 +26,7 @@ All dependencies exist:
 | 4 | Stage/scene toolbar selectors: dropdowns populated from project context, selecting a stage loads its scene | Switch stage → scene hierarchy updates | Done | sonnet | Backend handlers already in place from T2: `scene_editor.get_stage_list` returns cached mStageList; `scene_editor.load_stage_scene` loads scene + returns hierarchy. No additional work needed. Build: PASSED. |
 | 5 | Scene hierarchy panel: left panel with 4 collapsible sections (Layers/Cameras/Lights/Entities), search filter, selection state | All scene items rendered; filter works; selection highlights | Done | sonnet | `SceneHierarchyController` rewritten: normalises id/name from `{"value":"..."}` wrappers, case-insensitive filter, SetSelection/ClearSelection/GetSelectionJson. `scene_editor.get_hierarchy_filtered` + `scene_editor.set_selection` handlers added. mLoadedSceneRoot cached on load. Build: PASSED. |
 | 6 | Property inspector — Layer: render layer-specific fields (ID, sort_order, parallax, sort_policy, enabled, assigned lights) | Select layer → shows editable properties | Done | sonnet | `BuildLayerProperties` extracts all layer fields + scans lights for `affects_layers` membership. StringCRC `{"value":"..."}` wrappers normalised. Build: PASSED. |
-| 7 | Property inspector — Entity: identity section + all blueprint fields (overridden=editable+purple, non-overridden=dimmed+non-editable) | Select entity → shows instance_data overrides + dimmed defaults | Done | sonnet | `BuildBlueprintProperties` + `LoadBlueprintComponents` + `MergeFields`. ComponentRegistry enriches field kinds; raw JSON fallback if type not registered. Override key `ComponentType.fieldName`. DiaEntity added to vcxproj deps. Build: PASSED. |
+| 7 | Property inspector — Entity: identity section + all blueprint fields (overridden=editable+purple, non-overridden=dimmed+non-editable) | Select entity → shows instance_data overrides + dimmed defaults | Done | sonnet | `BuildBlueprintProperties` + `LoadBlueprintComponents` + `MergeFields`. ComponentRegistry enriches field kinds; raw JSON fallback if type not registered. Override key `ComponentType.fieldName`. diaentitytemplate added to vcxproj deps. Build: PASSED. |
 | 8 | Property inspector — Camera/Light: same as entity + "Active" enforcement (camera) + "Affects Layers" checkboxes (light) | Select camera → shows active toggle; select light → shows layer checkboxes | Done | sonnet | Covered by `BuildBlueprintProperties` — camera: `active` field; light: `affects_layers` array. `get_properties` uses cached mLoadedSceneRoot + derives blueprintBasePath from mLoadedScenePath. Build: PASSED. |
 | 9 | Blueprint defaults tab (read-only): sub-tab showing all blueprint fields disabled, "Open in Blueprint Editor →" link | Tab renders read-only; link click fires editor routing event | Done | sonnet | `BuildBlueprintDefaultsJson` on PropertyInspectorController calls LoadBlueprintComponents + MergeFields with empty instanceData (all overridden=false). `scene_editor.get_blueprint_defaults` handler registered. Build: PASSED. |
 | 10 | Dirty state + save: track edits, show "* Unsaved" indicator, Save button writes `.diascene` | Edit field → dirty flag → Save → file updated → clean | Done | sonnet | `mIsDirty` flag; `scene_editor.mark_dirty` sets it + fires `dirty_changed` notification; `scene_editor.get_dirty_state` queries it; `save_scene` clears dirty, updates mLoadedSceneRoot, accepts path override or uses mLoadedScenePath. Build: PASSED. |
@@ -83,10 +83,10 @@ Phase 5 — UI:
 
 ### Key Patterns to Reuse
 
-- **Plugin scaffold:** Same as DiaBlueprintEditor (T1)
+- **Plugin scaffold:** Same as DiaEntityTemplateEditor (T1)
 - **Project context:** `context.mModel->OnDiagameProjectChanged()` callback pattern
 - **Scene2D struct:** Already defined in `Dia/DiaScene2D/Scene2D.h` — load/save via JsonArchive
-- **Blueprint field lookup:** Load `.diaentity` → get component list → cross-reference with `instance_data` keys
+- **Blueprint field lookup:** Load `.diaentitytemplatetemplate` → get component list → cross-reference with `instance_data` keys
 - **Asset catalogue queries:** `AssetRegistry::FindByType(kDiaEntityAssetType)` for blueprint picker
 
 ### Verification

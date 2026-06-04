@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Blueprint Editor</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      font-family: var(--pico-font-family, 'Segoe UI', sans-serif);
+      font-size: var(--pico-font-size, 12px);
+      background: var(--pico-background-color, #1e1e1e);
+      color: var(--pico-color, #d4d4d4);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* ── Overlay ── */
+    .no-project-overlay {
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--pico-modal-overlay-background-color, rgba(0,0,0,0.6));
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 8px; z-index: 100;
+    }
+    .no-project-overlay .overlay-message { font-size: 14px; color: var(--pico-del-color, #f44747); }
+    .no-project-overlay .overlay-hint    { font-size: 11px; color: var(--pico-muted-color, #808080); }
+
+    /* ── Toolbar ── */
+    .toolbar {
+      display: flex; align-items: center; gap: 6px; padding: 5px 10px;
+      background: var(--pico-card-background-color, #252526);
+      border-bottom: 1px solid var(--pico-border-color, #3c3c3c);
+      flex-shrink: 0;
+    }
+    .toolbar .blueprint-path {
+      flex: 1; font-size: 11px; color: var(--pico-h2-color, #9cdcfe);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .toolbar .status { font-size: 11px; color: var(--pico-muted-color, #808080); }
+
+    /* ── Layout ── */
+    .layout { display: flex; flex: 1; overflow: hidden; }
+
+    .panel {
+      display: flex; flex-direction: column;
+      border-right: 1px solid var(--pico-border-color, #3c3c3c); overflow: hidden;
+    }
+    .panel-title {
+      padding: 5px 10px; font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      color: var(--pico-h2-color, #9cdcfe);
+      background: var(--pico-card-background-color, #252526);
+      border-bottom: 1px solid var(--pico-border-color, #3c3c3c); flex-shrink: 0;
+    }
+    .panel-body { flex: 1; overflow: auto; padding: 8px; }
+
+    #panel-list   { width: 240px; min-width: 180px; }
+    #panel-center { flex: 1; border-right: none; position: relative; }
+    #panel-right  { width: 280px; min-width: 200px; border-right: none; }
+
+    /* ── Blueprint list ── */
+    .list-toolbar {
+      display: flex; align-items: center; gap: 4px; padding: 4px 8px;
+      border-bottom: 1px solid var(--pico-border-color, #3c3c3c); flex-shrink: 0;
+    }
+    .list-toolbar input[type="text"] {
+      flex: 1;
+      background: var(--pico-form-element-background-color, #252526);
+      color: var(--pico-form-element-color, #d4d4d4);
+      border: 1px solid var(--pico-form-element-border-color, #3c3c3c);
+      padding: 2px 6px; font-size: 11px; border-radius: 2px; outline: none;
+    }
+    .list-toolbar input[type="text"]:focus { border-color: var(--pico-form-element-active-border-color, #0e639c); }
+    .list-toolbar button {
+      background: none; border: none; color: var(--pico-muted-color, #808080);
+      font-size: 13px; cursor: pointer; padding: 2px 4px; border-radius: 2px; line-height: 1;
+    }
+    .list-toolbar button:hover { color: var(--pico-color, #d4d4d4); background: var(--pico-card-background-color, #252526); }
+    .group-header {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--pico-muted-color, #808080);
+      padding: 6px 4px 3px; margin-top: 6px;
+    }
+    .blueprint-item {
+      padding: 4px 8px; font-size: 12px; cursor: pointer;
+      border-radius: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .blueprint-item:hover { background: var(--pico-card-background-color, #252526); }
+    .blueprint-item.selected { background: var(--pico-form-element-selected-background-color, #094771); color: var(--pico-primary-inverse, #ffffff); }
+    .list-empty { font-size: 11px; color: var(--pico-muted-color, #808080); padding: 8px 4px; }
+
+    /* ── Component accordion ── */
+    .blueprint-id {
+      font-size: 13px; color: var(--pico-h2-color, #9cdcfe); font-weight: 600;
+      padding: 8px 4px; border-bottom: 1px solid var(--pico-border-color, #3c3c3c); margin-bottom: 8px;
+    }
+    .accordion {
+      border: 1px solid var(--pico-border-color, #3c3c3c); border-radius: 3px; margin-bottom: 6px; overflow: hidden;
+    }
+    .accordion-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 6px 10px; background: var(--pico-card-background-color, #252526);
+      cursor: pointer; font-size: 12px; font-weight: 600; user-select: none;
+    }
+    .accordion-header:hover { background: var(--pico-secondary-hover, #4a4d51); }
+    .accordion-header .chevron { font-size: 10px; color: var(--pico-muted-color, #808080); transition: transform 0.15s; }
+    .accordion-header.open .chevron { transform: rotate(90deg); }
+    .accordion-body { display: none; padding: 8px 10px; background: var(--pico-background-color, #1e1e1e); }
+    .accordion-body.open { display: block; }
+
+    /* ── Field rows ── */
+    .field-row { padding: 3px 0 1px; font-size: 11px; }
+    .field-row-controls { display: flex; align-items: center; gap: 8px; }
+    .field-name { color: var(--pico-muted-color, #808080); min-width: 100px; flex-shrink: 0; }
+    .field-value { flex: 1; }
+    .field-value input[type="text"],
+    .field-value input[type="number"] {
+      width: 100%;
+      background: var(--pico-form-element-background-color, #252526);
+      color: var(--pico-form-element-color, #d4d4d4);
+      border: 1px solid var(--pico-form-element-border-color, #3c3c3c);
+      padding: 2px 6px; font-size: 11px;
+      font-family: var(--pico-font-family, 'Segoe UI', sans-serif);
+      border-radius: 2px; outline: none;
+    }
+    .field-value input:focus { border-color: var(--pico-form-element-active-border-color, #0e639c); }
+    .field-value input[type="checkbox"] { cursor: pointer; }
+    .field-required { color: var(--pico-del-color, #f44747); font-size: 10px; margin-left: 2px; }
+
+    /* ── Field clear button ── */
+    .field-clear {
+      background: none; border: none; color: var(--pico-muted-color, #808080);
+      cursor: pointer; font-size: 11px; padding: 0 3px; line-height: 1; flex-shrink: 0;
+    }
+    .field-clear:hover { color: var(--pico-del-color, #f44747); }
+
+    /* ── Component actions ── */
+    .comp-actions { display: flex; gap: 6px; margin-top: 8px; justify-content: flex-end; }
+    .comp-actions button {
+      background: var(--pico-secondary, #3a3d41); color: var(--pico-color, #d4d4d4);
+      border: 1px solid var(--pico-border-color, #3c3c3c);
+      padding: 2px 8px; font-size: 11px; cursor: pointer; border-radius: 2px;
+    }
+    .comp-actions button:hover { background: var(--pico-secondary-hover, #4a4d51); }
+    .comp-actions .btn-remove { color: var(--pico-del-color, #f44747); border-color: #6b2e2e; }
+    .comp-actions .btn-remove:hover { background: #4b2020; }
+
+    /* ── Add component trigger ── */
+    .add-component-trigger { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--pico-border-color, #3c3c3c); }
+    .add-component-trigger button {
+      width: 100%; background: var(--pico-card-background-color, #252526); color: var(--pico-muted-color, #808080);
+      border: 1px dashed var(--pico-border-color, #3c3c3c); padding: 6px; font-size: 11px;
+      cursor: pointer; border-radius: 3px;
+    }
+    .add-component-trigger button:hover {
+      background: var(--pico-secondary-hover, #4a4d51); color: var(--pico-color, #d4d4d4);
+      border-color: var(--pico-form-element-border-color, #3c3c3c);
+    }
+
+    /* ── Component picker panel ── */
+    .picker-panel {
+      display: none; position: absolute; z-index: 50;
+      background: var(--pico-card-background-color, #252526);
+      border: 1px solid var(--pico-border-color, #3c3c3c);
+      border-radius: 4px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      bottom: 50px; left: 8px; right: 8px;
+      flex-direction: column; overflow: hidden; max-height: 380px;
+    }
+    .picker-panel.open { display: flex; }
+    .picker-header {
+      padding: 8px 10px; border-bottom: 1px solid var(--pico-border-color, #3c3c3c);
+      display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+    }
+    .picker-header input {
+      flex: 1;
+      background: var(--pico-form-element-background-color, #252526);
+      color: var(--pico-form-element-color, #d4d4d4);
+      border: 1px solid var(--pico-form-element-border-color, #3c3c3c);
+      padding: 4px 8px; font-size: 12px; font-family: inherit; border-radius: 2px; outline: none;
+    }
+    .picker-header input:focus { border-color: var(--pico-form-element-active-border-color, #0e639c); }
+    .picker-close {
+      background: none; border: none; color: var(--pico-muted-color, #808080);
+      font-size: 14px; cursor: pointer; padding: 2px 4px; border-radius: 2px;
+    }
+    .picker-close:hover { color: var(--pico-color, #d4d4d4); background: var(--pico-card-background-color, #252526); }
+    .picker-count { padding: 3px 10px; font-size: 10px; color: var(--pico-muted-color, #808080); border-bottom: 1px solid var(--pico-muted-border-color, #2d2d2d); flex-shrink: 0; }
+    .picker-list { flex: 1; overflow-y: auto; }
+    .picker-item { padding: 7px 12px; cursor: pointer; border-bottom: 1px solid var(--pico-muted-border-color, #2d2d2d); }
+    .picker-item:hover, .picker-item.focused { background: var(--pico-form-element-selected-background-color, #094771); }
+    .picker-item .pi-name { font-size: 12px; font-weight: 600; color: var(--pico-color, #d4d4d4); margin-bottom: 1px; }
+    .picker-item.focused .pi-name { color: var(--pico-primary-inverse, #ffffff); }
+    .picker-item .pi-id { font-size: 10px; color: var(--pico-muted-color, #808080); font-family: monospace; margin-bottom: 2px; }
+    .picker-item .pi-desc { font-size: 11px; color: var(--pico-muted-color, #808080); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .picker-empty { padding: 16px; text-align: center; font-size: 11px; color: var(--pico-muted-color, #808080); }
+    .picker-footer {
+      padding: 6px 10px; border-top: 1px solid var(--pico-border-color, #3c3c3c);
+      display: flex; gap: 6px; justify-content: flex-end; align-items: center; flex-shrink: 0;
+    }
+    .picker-footer .hint { font-size: 10px; color: var(--pico-muted-color, #808080); flex: 1; }
+    .picker-footer .btn-cancel {
+      background: var(--pico-secondary, #3a3d41); color: var(--pico-color, #d4d4d4);
+      border: 1px solid var(--pico-border-color, #3c3c3c); padding: 3px 10px; font-size: 11px; cursor: pointer; border-radius: 2px;
+    }
+    .picker-footer .btn-cancel:hover { background: var(--pico-secondary-hover, #4a4d51); }
+    .picker-footer .btn-add {
+      background: var(--pico-primary, #0e639c); color: var(--pico-primary-inverse, #ffffff);
+      border: none; padding: 3px 10px; font-size: 11px; cursor: pointer; border-radius: 2px;
+    }
+    .picker-footer .btn-add:hover { background: var(--pico-primary-hover, #1177bb); }
+    .picker-footer .btn-add:disabled {
+      background: var(--pico-form-element-disabled-background-color, #2a2d2e);
+      color: var(--pico-form-element-disabled-color, #666666); cursor: default;
+    }
+
+    .center-empty {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      color: var(--pico-muted-color, #808080); font-size: 13px;
+    }
+
+    /* ── Usage panel ── */
+    .usage-item {
+      display: flex; justify-content: space-between; padding: 4px 0; font-size: 11px;
+      border-bottom: 1px solid var(--pico-muted-border-color, #2d2d2d);
+    }
+    .usage-scene { color: var(--pico-h2-color, #9cdcfe); }
+    .usage-count { color: var(--pico-muted-color, #808080); }
+    .usage-empty { font-size: 11px; color: var(--pico-muted-color, #808080); padding: 4px 0; }
+
+    /* ── Confirmation modal ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: var(--pico-modal-overlay-background-color, rgba(0,0,0,0.6));
+      z-index: 100; align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--pico-card-background-color, #252526);
+      border: 1px solid var(--pico-border-color, #3c3c3c);
+      border-radius: 4px; padding: 16px; min-width: 300px; max-width: 420px;
+    }
+    .modal h3 { font-size: 13px; color: var(--pico-color, #d4d4d4); margin-bottom: 10px; }
+    .modal p { font-size: 12px; color: var(--pico-muted-color, #808080); margin-bottom: 14px; }
+    .modal-footer { display: flex; gap: 8px; justify-content: flex-end; }
+    .modal-footer button {
+      background: var(--pico-secondary, #3a3d41); color: var(--pico-color, #d4d4d4);
+      border: 1px solid var(--pico-border-color, #3c3c3c);
+      padding: 4px 12px; font-size: 12px; cursor: pointer; border-radius: 2px;
+    }
+    .modal-footer button:hover { background: var(--pico-secondary-hover, #4a4d51); }
+    .modal-footer .btn-danger { background: #6b2020; border-color: #a02020; color: var(--pico-del-color, #f44747); }
+    .modal-footer .btn-danger:hover { background: #8b2020; }
+    .modal-footer .btn-add-confirm {
+      background: var(--pico-primary, #0e639c); color: var(--pico-primary-inverse, #ffffff); border: none;
+    }
+    .modal-footer .btn-add-confirm:hover { background: var(--pico-primary-hover, #1177bb); }
+
+    /* ── Status bar ── */
+    .statusbar {
+      padding: 2px 10px; font-size: 10px; color: var(--pico-primary-inverse, #ffffff);
+      background: var(--pico-primary, #0e639c); flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+<div class="no-project-overlay" id="no-project-overlay">
+  <div class="overlay-message">No project loaded</div>
+  <div class="overlay-hint">Open a .diagame project to use this panel</div>
+</div>
+
+<!-- Toolbar -->
+<div class="toolbar">
+  <span class="blueprint-path" id="blueprint-path">No blueprint selected</span>
+  <span class="status" id="status-msg"></span>
+</div>
+
+<!-- Layout -->
+<div class="layout">
+
+  <!-- Left: blueprint list -->
+  <div class="panel" id="panel-list">
+    <div class="panel-title">Blueprints</div>
+    <div class="list-toolbar">
+      <input type="text" id="list-filter" placeholder="Filter…" oninput="onFilterChanged()" />
+      <button title="Refresh" onclick="loadBlueprintList()">↻</button>
+    </div>
+    <div class="panel-body" id="list-body">
+      <div class="list-empty">No blueprints registered.</div>
+    </div>
+  </div>
+
+  <!-- Center: component accordion + fields -->
+  <div class="panel" id="panel-center">
+    <div class="panel-title">Blueprint Properties</div>
+    <div class="panel-body" id="center-body">
+      <div class="center-empty" id="center-empty">Select a blueprint to edit</div>
+      <div id="blueprint-editor" style="display:none">
+        <div class="blueprint-id" id="blueprint-id-label"></div>
+        <div id="components-container"></div>
+        <div class="add-component-trigger">
+          <button id="add-component-btn" onclick="openPicker()">+ Add Component</button>
+        </div>
+        <!-- Component picker (positioned absolute inside #panel-center) -->
+        <div class="picker-panel" id="picker-panel">
+          <div class="picker-header">
+            <input type="text" id="picker-filter" placeholder="Search components…"
+                   oninput="onPickerFilter()" onkeydown="onPickerKey(event)" />
+            <button class="picker-close" onclick="closePicker()">✕</button>
+          </div>
+          <div class="picker-count" id="picker-count"></div>
+          <div class="picker-list" id="picker-list"></div>
+          <div class="picker-footer">
+            <span class="hint">↑↓ navigate · Enter add · Esc cancel</span>
+            <button class="btn-cancel" onclick="closePicker()">Cancel</button>
+            <button class="btn-add" id="picker-add-btn" onclick="onPickerAdd()" disabled>Add</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: usage panel -->
+  <div class="panel" id="panel-right">
+    <div class="panel-title">Scene Usage</div>
+    <div class="panel-body" id="usage-body">
+      <div class="usage-empty" id="usage-empty">Select a blueprint to see usage</div>
+      <div id="usage-list"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Status bar -->
+<div class="statusbar" id="statusbar">DiaEntityTemplateEditor</div>
+
+<!-- Remove component confirmation -->
+<div class="modal-overlay" id="modal-remove">
+  <div class="modal">
+    <h3>Remove Component</h3>
+    <p id="modal-remove-msg">Remove this component from the blueprint?</p>
+    <div class="modal-footer">
+      <button onclick="closeModal('modal-remove')">Cancel</button>
+      <button class="btn-danger" onclick="confirmRemoveComponent()">Remove</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add component cascade confirmation -->
+<div class="modal-overlay" id="modal-add">
+  <div class="modal">
+    <h3>Add Component</h3>
+    <p id="modal-add-msg"></p>
+    <div class="modal-footer">
+      <button onclick="closeModal('modal-add')">Cancel</button>
+      <button class="btn-add-confirm" id="modal-add-confirm-btn" onclick="confirmAddComponent()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- Navigate failed resolution -->
+<div class="modal-overlay" id="modal-navigate-failed">
+  <div class="modal" style="max-width:480px">
+    <h3 style="color:#f0a030">Blueprint Not Found</h3>
+    <p id="modal-navigate-failed-msg" style="line-height:1.5"></p>
+    <div class="modal-footer">
+      <button onclick="closeModal('modal-navigate-failed')">Dismiss</button>
+      <button class="btn-danger" id="nav-fail-remove-btn" onclick="navFailRemoveEntry()">Remove from Catalogue</button>
+      <button class="btn-add-confirm" id="nav-fail-create-btn" onclick="navFailCreateFile()">Create File</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ── State ──────────────────────────────────────────── */
+  var currentPath     = null;
+  var currentAssetId  = null;
+  var pendingRemove   = null;   // component type string pending removal
+  var allGroups       = [];     // last fetched groups (for client-side filter)
+  var statusTimer     = null;
+
+  /* ── Bridge ─────────────────────────────────────────── */
+  var _reqId = 1;
+  var _pending = {};
+
+  function diaRequest(command, params) {
+    return new Promise(function(resolve) {
+      var id = 'bp' + (_reqId++);
+      _pending[id] = resolve;
+      window.parent.postMessage({
+        __diaFromFrame: true,
+        payload: { type: command, reqId: id, data: params || {} }
+      }, '*');
+    });
+  }
+
+  function diaLog(msg) {
+    window.parent.postMessage({
+      __diaFromFrame: true,
+      payload: { type: 'editor.ui_log', data: { source: 'EntityTemplateEditor', msg: msg } }
+    }, '*');
+  }
+
+  window.addEventListener('message', function(ev) {
+    var d = ev.data;
+    if (d && d.__diaResponse && d.reqId && _pending[d.reqId]) {
+      _pending[d.reqId](d.result || {});
+      delete _pending[d.reqId];
+    }
+    if (d && d.__dia && d.topic) {
+      if (window.DiaEditor_onDataChanged)
+        window.DiaEditor_onDataChanged({ topic: d.topic, data: d.data });
+    }
+  });
+
+  /* ── Project overlay ────────────────────────────────── */
+  function updateProjectOverlay(isValid) {
+    var el = document.getElementById('no-project-overlay');
+    if (el) el.style.display = isValid ? 'none' : 'flex';
+  }
+
+  /* ── C++ push events ─────────────────────────────────── */
+  window.DiaEditor_onDataChanged = function(msg) {
+    if (msg.topic === 'entity_template_editor.project_changed') {
+      updateProjectOverlay(!!(msg.data && msg.data.isValid));
+      loadBlueprintList();
+    }
+    if (msg.topic === 'asset_catalogue.registry_changed') {
+      loadBlueprintList();
+    }
+    if (msg.topic === 'entity_template_editor.navigated') {
+      if (msg.data && msg.data.instanceId && msg.data.sourcePath) {
+        selectBlueprint(msg.data.instanceId, msg.data.sourcePath);
+      }
+    }
+    if (msg.topic === 'entity_template_editor.navigate_failed') {
+      showNavigateFailedModal(msg.data);
+    }
+  };
+
+  /* ── Init ───────────────────────────────────────────── */
+  function init(isValid) {
+    updateProjectOverlay(isValid);
+    loadBlueprintList();
+  }
+
+  // Retry until handlers are registered, then check project state
+  var _initAttempts = 0;
+  function tryInit() {
+    diaRequest('entity_template_editor.get_project_state', {}).then(function(r) {
+      if (r && r.isValid !== undefined) {
+        init(r.isValid);
+      } else if (_initAttempts++ < 8) {
+        setTimeout(tryInit, 300);
+      }
+    });
+  }
+  setTimeout(tryInit, 200);
+
+  /* ── Blueprint list ──────────────────────────────────── */
+  function loadBlueprintList() {
+    diaRequest('entity_template_editor.get_list', {}).then(function(r) {
+      allGroups = r.groups || [];
+      applyFilter();
+    });
+  }
+
+  function onFilterChanged() {
+    applyFilter();
+  }
+
+  function applyFilter() {
+    var filterEl = document.getElementById('list-filter');
+    var query = filterEl ? filterEl.value.toLowerCase() : '';
+    renderBlueprintList(allGroups, query);
+  }
+
+  function renderBlueprintList(groups, query) {
+    var body = document.getElementById('list-body');
+    body.innerHTML = '';
+
+    var anyVisible = false;
+    groups.forEach(function(g) {
+      var items = (g.items || []).filter(function(item) {
+        return !query || item.id.toLowerCase().indexOf(query) !== -1;
+      });
+      if (items.length === 0) return;
+      anyVisible = true;
+
+      var header = document.createElement('div');
+      header.className = 'group-header';
+      header.textContent = g.label;
+      body.appendChild(header);
+
+      items.forEach(function(item) {
+        var el = document.createElement('div');
+        el.className = 'blueprint-item';
+        if (item.id === currentAssetId) el.classList.add('selected');
+        el.dataset.id   = item.id;
+        el.dataset.path = item.path;
+        el.title = item.path;
+        el.textContent = item.label;
+        el.onclick = function() { selectBlueprint(item.id, item.path); };
+        body.appendChild(el);
+      });
+    });
+
+    if (!anyVisible) {
+      body.innerHTML = query
+        ? '<div class="list-empty">No matches for "' + esc(query) + '".</div>'
+        : '<div class="list-empty">No blueprints registered.<br><br>Open the asset catalogue and register blueprint assets to see them here.</div>';
+    }
+  }
+
+  /* ── Select and load blueprint ───────────────────────── */
+  function selectBlueprint(assetId, path) {
+    document.querySelectorAll('.blueprint-item').forEach(function(el) {
+      el.classList.toggle('selected', el.dataset.id === assetId);
+    });
+
+    currentAssetId = assetId;
+    currentPath    = path;
+
+    document.getElementById('blueprint-path').textContent = path;
+
+    diaRequest('entity_template_editor.load', { path: path }).then(function(r) {
+      if (!r.success) {
+        setStatus('Error: ' + (r.error || 'load failed'), true);
+        return;
+      }
+      renderProperties(r.properties);
+      loadUsage(assetId);
+      loadAvailableComponents(path);
+    });
+  }
+
+  /* ── Render component accordion ──────────────────────── */
+  function renderProperties(props) {
+    document.getElementById('center-empty').style.display = 'none';
+    document.getElementById('blueprint-editor').style.display = '';
+
+    document.getElementById('blueprint-id-label').textContent = '⬡ ' + (props.id || '');
+
+    var container = document.getElementById('components-container');
+    container.innerHTML = '';
+
+    (props.components || []).forEach(function(comp) {
+      container.appendChild(buildAccordion(comp));
+    });
+  }
+
+  function buildAccordion(comp) {
+    var wrap = document.createElement('div');
+    wrap.className = 'accordion';
+    wrap.dataset.compType = comp.type;
+
+    var header = document.createElement('div');
+    header.className = 'accordion-header open';
+    header.innerHTML = '<span>' + esc(comp.type) + '</span><span class="chevron">▶</span>';
+    header.onclick = function() {
+      header.classList.toggle('open');
+      body.classList.toggle('open');
+    };
+
+    var body = document.createElement('div');
+    body.className = 'accordion-body open';
+
+    (comp.fields || []).forEach(function(field) {
+      body.appendChild(buildFieldRow(comp.type, field));
+    });
+
+    // Remove button
+    var actions = document.createElement('div');
+    actions.className = 'comp-actions';
+    var removeBtn = document.createElement('button');
+    removeBtn.className = 'btn-remove';
+    removeBtn.textContent = 'Remove';
+    removeBtn.onclick = function() { promptRemoveComponent(comp.type); };
+    actions.appendChild(removeBtn);
+    body.appendChild(actions);
+
+    wrap.appendChild(header);
+    wrap.appendChild(body);
+    return wrap;
+  }
+
+  function buildFieldRow(compType, field) {
+    var row = document.createElement('div');
+    row.className = 'field-row';
+
+    // Name + input controls line
+    var controls = document.createElement('div');
+    controls.className = 'field-row-controls';
+
+    var nameEl = document.createElement('div');
+    nameEl.className = 'field-name';
+    nameEl.textContent = field.name;
+    if (field.required) {
+      var req = document.createElement('span');
+      req.className = 'field-required';
+      req.textContent = '*';
+      nameEl.appendChild(req);
+    }
+    controls.appendChild(nameEl);
+
+    // Input + optional clear button
+    var valueEl = document.createElement('div');
+    valueEl.className = 'field-value';
+    var inp = buildFieldInput(compType, field, valueEl);
+    valueEl.appendChild(inp);
+    controls.appendChild(valueEl);
+
+    row.appendChild(controls);
+
+    return row;
+  }
+
+  function buildFieldInput(compType, field, valueEl) {
+    var hasValue   = field.value !== undefined && field.value !== null;
+    var hasDefault = field.codeDefault !== undefined && field.codeDefault !== null;
+    var isNumeric  = field.kind === 'primitive' && (hasValue ? typeof field.value === 'number' : hasDefault ? typeof field.codeDefault === 'number' : false);
+
+    var inp = document.createElement('input');
+    inp.type = isNumeric ? 'number' : 'text';
+    inp.step = 'any';
+
+    if (hasValue) {
+      inp.value = String(field.value);
+      inp.style.borderColor = '#4ec9a0';
+    } else {
+      inp.value = '';
+      if (hasDefault) inp.placeholder = String(field.codeDefault);
+    }
+
+    // Clear button — shown only when a blueprint override is stored; attached to valueEl
+    var clearBtn = null;
+    if (hasValue) {
+      clearBtn = buildClearButton(compType, field, inp, valueEl);
+    }
+
+    inp.onchange = function() {
+      var raw = inp.value.trim();
+      if (raw === '' || (hasDefault && raw === String(field.codeDefault))) {
+        onFieldChanged(compType, field.name, null);
+        inp.value = '';
+        inp.style.borderColor = '';
+        field.value = undefined;
+        if (clearBtn && clearBtn.parentElement) { clearBtn.parentElement.removeChild(clearBtn); clearBtn = null; }
+      } else {
+        var parsed = (inp.type === 'number') ? (parseFloat(raw) || 0) : raw;
+        onFieldChanged(compType, field.name, parsed);
+        inp.style.borderColor = '#4ec9a0';
+        field.value = parsed;
+        if (!clearBtn) {
+          clearBtn = buildClearButton(compType, field, inp, valueEl);
+          valueEl.appendChild(clearBtn);
+        }
+      }
+    };
+
+    return inp;
+  }
+
+  function buildClearButton(compType, field, inp, valueEl) {
+    var btn = document.createElement('button');
+    btn.className = 'field-clear';
+    btn.title = 'Clear — revert to code default';
+    btn.textContent = '✕';
+    btn.onclick = function() {
+      onFieldChanged(compType, field.name, null);
+      inp.value = '';
+      inp.style.borderColor = '';
+      var hasDefault = field.codeDefault !== undefined && field.codeDefault !== null;
+      inp.placeholder = hasDefault ? String(field.codeDefault) : '';
+      field.value = undefined;
+      if (btn.parentElement) btn.parentElement.removeChild(btn);
+    };
+    // Attach immediately — valueEl is already constructed
+    valueEl.appendChild(btn);
+    return btn;
+  }
+
+  /* ── Field change ─────────────────────────────────────── */
+  function onFieldChanged(compType, fieldName, value) {
+    if (!currentPath) return;
+    diaRequest('entity_template_editor.update_field', {
+      path: currentPath,
+      componentType: compType,
+      fieldName: fieldName,
+      value: value
+    }).then(function(r) {
+      if (!r.success) {
+        setStatus('Save error: ' + (r.error || 'unknown'), true);
+      } else {
+        setStatus('Saved');
+      }
+    });
+  }
+
+  /* ── Component picker state ───────────────────────── */
+  var pickerAllComponents = [];   // full list from get_available_components
+  var pickerVisible       = [];   // filtered subset
+  var pickerFocusIndex    = -1;
+
+  function loadAvailableComponents(path) {
+    diaRequest('entity_template_editor.get_available_components', { path: path }).then(function(r) {
+      pickerAllComponents = [];
+      if (r.success && Array.isArray(r.components)) {
+        r.components.forEach(function(c) {
+          if (!c.statusMessage) pickerAllComponents.push(c);
+        });
+      }
+    });
+  }
+
+  function openPicker() {
+    var panel = document.getElementById('picker-panel');
+    panel.classList.add('open');
+    pickerFocusIndex = -1;
+    document.getElementById('picker-filter').value = '';
+    renderPickerList('');
+    document.getElementById('picker-filter').focus();
+  }
+
+  function closePicker() {
+    document.getElementById('picker-panel').classList.remove('open');
+    pickerFocusIndex = -1;
+  }
+
+  function onPickerFilter() {
+    pickerFocusIndex = -1;
+    renderPickerList(document.getElementById('picker-filter').value);
+  }
+
+  function renderPickerList(query) {
+    var q = query.toLowerCase();
+    pickerVisible = pickerAllComponents.filter(function(c) {
+      if (!q) return true;
+      return (c.typeId  || '').toLowerCase().indexOf(q) !== -1 ||
+             (c.label   || '').toLowerCase().indexOf(q) !== -1 ||
+             (c.description || '').toLowerCase().indexOf(q) !== -1;
+    });
+
+    document.getElementById('picker-count').textContent =
+      pickerVisible.length + ' of ' + pickerAllComponents.length + ' components available';
+
+    var list = document.getElementById('picker-list');
+    list.innerHTML = '';
+
+    if (pickerVisible.length === 0) {
+      list.innerHTML = '<div class="picker-empty">No components match "' + esc(query) + '"</div>';
+      document.getElementById('picker-add-btn').disabled = true;
+      return;
+    }
+
+    pickerVisible.forEach(function(c, i) {
+      var el = document.createElement('div');
+      el.className = 'picker-item';
+      el.innerHTML =
+        '<div class="pi-name">' + esc(c.label || c.typeId) + '</div>' +
+        '<div class="pi-id">' + esc(c.typeId) + '</div>' +
+        (c.description ? '<div class="pi-desc">' + esc(c.description) + '</div>' : '');
+      el.onclick = function() { pickerFocusIndex = i; updatePickerFocus(); };
+      el.ondblclick = function() { pickerFocusIndex = i; onPickerAdd(); };
+      list.appendChild(el);
+    });
+
+    document.getElementById('picker-add-btn').disabled = true;
+  }
+
+  function updatePickerFocus() {
+    var items = document.querySelectorAll('.picker-item');
+    items.forEach(function(el, i) { el.classList.toggle('focused', i === pickerFocusIndex); });
+    if (pickerFocusIndex >= 0 && items[pickerFocusIndex])
+      items[pickerFocusIndex].scrollIntoView({ block: 'nearest' });
+    document.getElementById('picker-add-btn').disabled = pickerFocusIndex < 0;
+  }
+
+  function onPickerKey(e) {
+    if (e.key === 'Escape') { e.preventDefault(); closePicker(); return; }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      pickerFocusIndex = Math.min(pickerFocusIndex + 1, pickerVisible.length - 1);
+      updatePickerFocus();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      pickerFocusIndex = Math.max(pickerFocusIndex - 1, 0);
+      updatePickerFocus();
+    } else if (e.key === 'Enter' && pickerFocusIndex >= 0) {
+      onPickerAdd();
+    }
+  }
+
+  var pendingAdd = null;  // { type, label } awaiting cascade confirmation
+
+  function onPickerAdd() {
+    if (pickerFocusIndex < 0 || pickerFocusIndex >= pickerVisible.length) return;
+    var entry = pickerVisible[pickerFocusIndex];
+    if (!entry || !currentPath || !currentAssetId) return;
+
+    // Fetch usage count first to show cascade warning
+    diaRequest('entity_template_editor.get_usage', { assetId: currentAssetId }).then(function(r) {
+      var usages = (r.usage && r.usage.usages) ? r.usage.usages : [];
+      var total = usages.reduce(function(sum, u) { return sum + (u.instanceCount || 1); }, 0);
+      var scenes = usages.length;
+
+      pendingAdd = { type: entry.typeId, label: entry.label || entry.typeId };
+
+      if (total === 0) {
+        // No instances — confirm immediately without modal
+        closePicker();
+        doAddComponent(pendingAdd.type, pendingAdd.label);
+        pendingAdd = null;
+      } else {
+        var msg = 'Add "' + esc(pendingAdd.label) + '" to this blueprint? ' +
+          'It will be added to ' + total + ' instance' + (total !== 1 ? 's' : '') +
+          ' across ' + scenes + ' scene' + (scenes !== 1 ? 's' : '') + '.';
+        document.getElementById('modal-add-msg').textContent = msg;
+        closePicker();
+        openModal('modal-add');
+      }
+    });
+  }
+
+  function confirmAddComponent() {
+    if (!pendingAdd || !currentPath) { closeModal('modal-add'); return; }
+    var type = pendingAdd.type;
+    var label = pendingAdd.label;
+    pendingAdd = null;
+    closeModal('modal-add');
+    doAddComponent(type, label);
+  }
+
+  function doAddComponent(type, label) {
+    diaRequest('entity_template_editor.add_component', { path: currentPath, componentType: type }).then(function(r) {
+      if (!r.success) { setStatus('Add failed: ' + (r.error || 'unknown'), true); return; }
+      setStatus('Added ' + label);
+      selectBlueprint(currentAssetId, currentPath);
+    });
+  }
+
+  document.addEventListener('click', function(e) {
+    var panel = document.getElementById('picker-panel');
+    var btn   = document.getElementById('add-component-btn');
+    if (panel && panel.classList.contains('open') &&
+        !panel.contains(e.target) && e.target !== btn) {
+      closePicker();
+    }
+  });
+
+  /* ── Remove component ─────────────────────────────────── */
+  function promptRemoveComponent(compType) {
+    pendingRemove = compType;
+
+    // Fetch usage count to show blast radius
+    diaRequest('entity_template_editor.get_usage', { assetId: currentAssetId }).then(function(r) {
+      var usages = (r.usage && r.usage.usages) ? r.usage.usages : [];
+      var total = usages.reduce(function(sum, u) { return sum + (u.instanceCount || 1); }, 0);
+      var scenes = usages.length;
+
+      var msg = 'Remove "' + compType + '" from this blueprint?';
+      if (total > 0) {
+        msg += ' Orphaned field overrides will be retained on ' +
+          total + ' instance' + (total !== 1 ? 's' : '') +
+          ' across ' + scenes + ' scene' + (scenes !== 1 ? 's' : '') + '.';
+      }
+      document.getElementById('modal-remove-msg').textContent = msg;
+      openModal('modal-remove');
+    });
+  }
+
+  function confirmRemoveComponent() {
+    if (!pendingRemove || !currentPath) { closeModal('modal-remove'); return; }
+    var type = pendingRemove;
+    closeModal('modal-remove');
+    diaRequest('entity_template_editor.remove_component', { path: currentPath, componentType: type }).then(function(r) {
+      if (!r.success) {
+        setStatus('Remove failed: ' + (r.error || 'unknown'), true);
+        return;
+      }
+      setStatus('Removed ' + type);
+      selectBlueprint(currentAssetId, currentPath);
+    });
+  }
+
+  /* ── Usage ────────────────────────────────────────────── */
+  function loadUsage(assetId) {
+    var body = document.getElementById('usage-body');
+    document.getElementById('usage-list').innerHTML = '';
+    document.getElementById('usage-empty').style.display = 'none';
+
+    diaRequest('entity_template_editor.get_usage', { assetId: assetId }).then(function(r) {
+      var usages = (r.usage && r.usage.usages) ? r.usage.usages : [];
+      if (usages.length === 0) {
+        document.getElementById('usage-empty').textContent = 'No scene references found.';
+        document.getElementById('usage-empty').style.display = '';
+        return;
+      }
+      var list = document.getElementById('usage-list');
+      usages.forEach(function(u) {
+        var row = document.createElement('div');
+        row.className = 'usage-item';
+        row.innerHTML = '<span class="usage-scene">' + esc(u.sceneId || '') + '</span>' +
+                        '<span class="usage-count">' + u.instanceCount + ' instance' + (u.instanceCount !== 1 ? 's' : '') + '</span>';
+        list.appendChild(row);
+      });
+    });
+  }
+
+  /* ── Utility ──────────────────────────────────────────── */
+  function setStatus(msg, isError) {
+    var el = document.getElementById('status-msg');
+    el.textContent = msg;
+    el.style.color = isError ? '#f48771' : '#4ec9a0';
+    if (statusTimer) clearTimeout(statusTimer);
+    statusTimer = setTimeout(function() { el.textContent = ''; }, 3000);
+  }
+
+  function openModal(id) { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+  function esc(s) {
+    return String(s)
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;');
+  }
+
+  /* ── Navigate failed resolution ─────────────────────── */
+  var navFailContext = null;
+
+  function showNavigateFailedModal(data) {
+    if (!data) return;
+    var instanceId = data.instanceId || '(unknown)';
+    var sourcePath = data.sourcePath || '';
+    var error      = data.error || 'unknown error';
+    var assetType  = data.assetType || 'diaentitytemplate';
+
+    // Derive the expected file path from the instanceId
+    // e.g. "diaentitytemplate.more" → "more.diaentitytemplatetemplate" appended to the directory portion of sourcePath
+    var dirPath = sourcePath;
+    if (dirPath && dirPath.charAt(dirPath.length - 1) !== '/' && dirPath.charAt(dirPath.length - 1) !== '\\') {
+      var lastSlash = Math.max(dirPath.lastIndexOf('/'), dirPath.lastIndexOf('\\'));
+      dirPath = lastSlash >= 0 ? dirPath.substring(0, lastSlash + 1) : '';
+    }
+    var shortName = instanceId.indexOf('.') >= 0 ? instanceId.substring(instanceId.indexOf('.') + 1) : instanceId;
+    var expectedPath = dirPath + shortName + '.' + assetType;
+
+    navFailContext = {
+      instanceId: instanceId,
+      sourcePath: sourcePath,
+      expectedPath: expectedPath,
+      assetType: assetType
+    };
+
+    var msg = 'Could not load <code style="background:#1e1e1e;padding:1px 4px;border-radius:3px;font-size:11px;color:#e0c080">' +
+      esc(instanceId) + '</code>.<br><br>' +
+      '<span style="color:#9d9d9d">Path:</span> <code style="font-size:10px;color:#888">' + esc(sourcePath) + '</code><br>' +
+      '<span style="color:#9d9d9d">Error:</span> ' + esc(error) + '<br><br>' +
+      'Would you like to create the missing file at:<br>' +
+      '<code style="font-size:10px;color:#9cdcfe">' + esc(expectedPath) + '</code>';
+
+    document.getElementById('modal-navigate-failed-msg').innerHTML = msg;
+    openModal('modal-navigate-failed');
+  }
+
+  function navFailCreateFile() {
+    if (!navFailContext) { closeModal('modal-navigate-failed'); return; }
+    var ctx = navFailContext;
+    navFailContext = null;
+    closeModal('modal-navigate-failed');
+
+    diaRequest('entity_template_editor.create_from_template', {
+      instanceId: ctx.instanceId,
+      path: ctx.expectedPath
+    }).then(function(r) {
+      if (!r.success) {
+        setStatus('Create failed: ' + (r.error || 'unknown'), true);
+        return;
+      }
+      // Fetch the full catalogue record, update source_path, and save back
+      diaRequest('asset_catalogue.get_record', { id: ctx.instanceId }).then(function(gr) {
+        if (!gr.success || !gr.record) {
+          setStatus('Created file but could not update catalogue path', true);
+          selectBlueprint(ctx.instanceId, ctx.expectedPath);
+          return;
+        }
+        var rec = gr.record;
+        rec.source_path = ctx.expectedPath;
+        diaRequest('asset_catalogue.update_record', rec).then(function() {
+          setStatus('Created ' + ctx.expectedPath.split(/[/\\]/).pop());
+          selectBlueprint(ctx.instanceId, ctx.expectedPath);
+          loadBlueprintList();
+        });
+      });
+    });
+  }
+
+  function navFailRemoveEntry() {
+    if (!navFailContext) { closeModal('modal-navigate-failed'); return; }
+    var ctx = navFailContext;
+    navFailContext = null;
+    closeModal('modal-navigate-failed');
+
+    diaRequest('asset_catalogue.delete_record', { id: ctx.instanceId }).then(function(r) {
+      if (!r.success) {
+        setStatus('Remove failed: ' + (r.error || 'unknown'), true);
+        return;
+      }
+      setStatus('Removed catalogue entry: ' + ctx.instanceId);
+      loadBlueprintList();
+    });
+  }
+</script>
+</body>
+</html>

@@ -406,7 +406,7 @@ namespace Dia
 					const char* itemType = data.isMember("itemType") && data["itemType"].isString()
 						? data["itemType"].asCString() : "entity";
 
-					const char* assetType = "diaentity";
+					const char* assetType = "diaentitytemplate";
 					if (strcmp(itemType, "camera") == 0) assetType = "diacamera";
 					else if (strcmp(itemType, "light") == 0) assetType = "dialight";
 

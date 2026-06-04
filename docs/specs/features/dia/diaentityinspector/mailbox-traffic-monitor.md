@@ -17,7 +17,7 @@ Populate the `mailbox_log` array in the `entity.inspect` payload by maintaining 
 | Application | [dia.md](../../../applications/dia.md) |
 | System | [diaentityinspector.md](../../systems/dia/diaentityinspector.md) |
 | Depends on feature | [entity-inspector-panel.md](entity-inspector-panel.md) |
-| Depends on feature | [editor-inspection.md](../diaentity/editor-inspection.md) |
+| Depends on feature | [editor-inspection.md](../diaentitytemplate/editor-inspection.md) |
 | Depends on system | [diamailbox.md](../../systems/dia/diamailbox.md) |
 
 ## Goals
@@ -76,7 +76,7 @@ virtual void GetMessageLog(
     Dia::Core::Containers::DynamicArrayC<MessageLogEntry, 64>& out) const = 0;
 ```
 
-This method is added to `IEntityInspectable` in `Dia/DiaEntity/IEntityInspectable.h` and implemented in `Domain`.
+This method is added to `IEntityInspectable` in `Dia/diaentitytemplate/IEntityInspectable.h` and implemented in `Domain`.
 
 ## Data Model
 
@@ -93,7 +93,7 @@ This method is added to `IEntityInspectable` in `Dia/DiaEntity/IEntityInspectabl
 ### EntityMessageLog internal structure (in Domain)
 
 ```cpp
-// Dia/DiaEntity/Domain.h (private)
+// Dia/diaentitytemplate/Domain.h (private)
 struct MessageLogEntry {
     uint32_t frame           = 0;
     uint32_t recipientIndex  = 0;
@@ -113,9 +113,9 @@ uint32_t mFrameCounter   = 0;   // incremented each EndOfFrame()
 |---|---|
 | `Dia/DiaMailbox/Mailbox.h` | Add internal name table (`StringCRC → const char*`); add `DIA_MAILBOX_REGISTER_TYPE` macro |
 | `Dia/DiaMailbox/Mailbox.cpp` | Implement name table lookup |
-| `Dia/DiaEntity/IEntityInspectable.h` | Add `MessageLogEntry` struct + `GetMessageLog` virtual method |
-| `Dia/DiaEntity/Domain.h` | Add `mMessageLog`, `mMessageLogHead`, `mFrameCounter` members; add internal `AppendMessageLog` |
-| `Dia/DiaEntity/Domain.cpp` | Implement ring buffer append in `EndOfFrame()` drain pass; implement `GetMessageLog` |
+| `Dia/diaentitytemplate/IEntityInspectable.h` | Add `MessageLogEntry` struct + `GetMessageLog` virtual method |
+| `Dia/diaentitytemplate/Domain.h` | Add `mMessageLog`, `mMessageLogHead`, `mFrameCounter` members; add internal `AppendMessageLog` |
+| `Dia/diaentitytemplate/Domain.cpp` | Implement ring buffer append in `EndOfFrame()` drain pass; implement `GetMessageLog` |
 | `Dia/DiaEntityInspector/EntityInspectSerializer.cpp` | Modified — fill `mailbox_log` array (previously empty `[]`) |
 | `Dia/DiaEntityInspector/MailboxMonitorController.h` | New |
 | `Dia/DiaEntityInspector/MailboxMonitorController.cpp` | New — includes `entity.mailbox_snapshot` command handler (returns log as response payload) |
@@ -124,7 +124,7 @@ uint32_t mFrameCounter   = 0;   // incremented each EndOfFrame()
 | `Dia/DiaEntityInspector/DiaEntityInspector.vcxproj` | Add `MailboxMonitorController.h/.cpp` |
 | `Dia/DiaEntityInspector/DiaEntityInspector.vcxproj.filters` | Add `MailboxMonitorController.h/.cpp` |
 | `Tests/GoogleTests/DiaEntityInspector/MailboxMonitorTests.cpp` | New — ring buffer fill, entity filter, pause semantics |
-| `Tests/GoogleTests/DiaEntity/MessageLogTests.cpp` | New — ring overflow, frame counter, per-entity filter |
+| `Tests/GoogleTests/diaentitytemplate/MessageLogTests.cpp` | New — ring overflow, frame counter, per-entity filter |
 
 ## Binding Decisions Compliance
 

@@ -3,16 +3,16 @@
 // Uses a real Domain instance (which implements IEntityInspectable) so that
 // no mocking is required. Components are registered using the same
 // DIA_COMPONENT / DIA_SERIALIZE / DIA_COMPONENT_REGISTER pattern as the
-// rest of the DiaEntity test suite.
+// rest of the diaentitytemplate test suite.
 
 #include <gtest/gtest.h>
 #include <DiaEntityInspector/EntityInspectSerializer.h>
-#include <DiaEntity/Domain.h>
-#include <DiaEntity/ComponentPool.h>
-#include <DiaEntity/ComponentTypeDesc.h>
-#include <DiaEntity/ComponentRegistry.h>
-#include <DiaEntity/IComponent.h>
-#include <DiaEntity/ComponentMacros.h>
+#include <diaentitytemplate/Domain.h>
+#include <diaentitytemplate/ComponentPool.h>
+#include <diaentitytemplate/ComponentTypeDesc.h>
+#include <diaentitytemplate/ComponentRegistry.h>
+#include <diaentitytemplate/IComponent.h>
+#include <diaentitytemplate/ComponentMacros.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
 

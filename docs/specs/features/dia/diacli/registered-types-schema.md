@@ -11,7 +11,7 @@ Generate `registeredtypes.diaschema` — a build-time JSON file that captures al
 ## Problem
 
 C++ type registries (`ComponentRegistry`, `TypeRegistry`) are populated via static initialisers at link time. The editor process never links the game binary, so its dropdowns are always empty. This affects:
-- **DiaBlueprintEditor** — "Add Component" dropdown shows nothing
+- **DiaEntityTemplateEditor** — "Add Component" dropdown shows nothing
 - **DiaApplicationFlowEditor** — module/PU type dropdowns already read `types.json` (via `TypeDiscoveryService`) but that file has no generation spec and no versioning
 
 ## Goals
@@ -83,7 +83,7 @@ C++ type registries (`ComponentRegistry`, `TypeRegistry`) are populated via stat
 - Modules and PUs sourced from `Dia::ApplicationFlow::TypeRegistry`
 - Binary exits 0 on success
 
-### AC-6: DiaBlueprintEditor reads schema on project load
+### AC-6: DiaEntityTemplateEditor reads schema on project load
 
 - When `.diagame` loads, blueprint editor reads `registeredtypes.diaschema` from the diagame directory
 - `BuildAvailableComponentsJson` uses schema data instead of `ComponentRegistry::Get()`

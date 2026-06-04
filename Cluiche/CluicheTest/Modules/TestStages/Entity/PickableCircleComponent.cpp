@@ -2,7 +2,7 @@
 #include "Modules/TestStages/Entity/TransformComponent.h"
 #include "Modules/TestStages/Entity/VisualTestRenderComponent.h"
 #include <DiaCore/Reflect/ReflectMacros.h>
-#include <DiaEntity/Domain.h>
+#include <diaentitytemplate/Domain.h>
 
 #ifdef DIA_DEBUG
 #include <DiaGeometry2DPicking/PickingService2D.h>

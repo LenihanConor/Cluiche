@@ -30,7 +30,7 @@ Projects with no module doc (DiaImGui, DiaPicking, DiaGeometry2DPicking, DiaProt
 ## Assets
 
 ### 2.0-Assets
-`DiaAssetCatalogue` `DiaAssetRuntime` `DiaEntity`
+`DiaAssetCatalogue` `DiaAssetRuntime` `diaentitytemplate`
 
 ### 2.1-Assets-Tools
 `DiaAssetCatalogueEditor` `DiaAssetRuntimeInspector` `DiaEntityVisualDebugger`
@@ -87,7 +87,7 @@ These are not Dia library modules and keep their existing folders:
 | CluicheGameBaseline | _Executables |
 | CluicheEditor | _Executables |
 | DiaApplicationEditor | Editors |
-| DiaBlueprintEditor | Editors |
+| DiaEntityTemplateEditor | Editors |
 | DiaPipelineEditor | Editors |
 | DiaSceneEditor | Editors |
 | DiaVisualDebuggerConsole | VisualDebuggers |

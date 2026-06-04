@@ -22,7 +22,7 @@ responsibilities:
 
 non_responsibilities:
   - Game simulation (CluicheTest / CluicheEditor app)
-  - Individual plugin implementations (DiaBlueprintEditor, DiaSceneEditor, etc.)
+  - Individual plugin implementations (DiaEntityTemplateEditor, DiaSceneEditor, etc.)
 
 dependencies:
   required:

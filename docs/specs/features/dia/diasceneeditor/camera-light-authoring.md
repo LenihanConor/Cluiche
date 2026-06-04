@@ -60,7 +60,7 @@ Add, edit, and delete cameras and lights in a `.diascene`. Cameras use the bluep
 
 ### Light Type Badge
 - Hierarchy shows [DIR] for directional lights, [PNT] for point lights
-- Type determined by blueprint name convention or a `type` field in the `.diaentity`
+- Type determined by blueprint name convention or a `type` field in the `.diaentitytemplatetemplate`
 
 ### Delete Camera/Light
 - Same flow as entity delete (confirmation dialog)
@@ -68,7 +68,7 @@ Add, edit, and delete cameras and lights in a `.diascene`. Cameras use the bluep
 
 ### Camera/Light Property Editing
 - Same Instance Overrides / Blueprint Defaults tab pattern as entities
-- Blueprint link opens DiaBlueprintEditor with that blueprint focused
+- Blueprint link opens DiaEntityTemplateEditor with that blueprint focused
 - "+ Add Override..." available for adding specific field overrides
 
 ## Files Touched

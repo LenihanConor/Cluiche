@@ -212,9 +212,9 @@ TEST_F(AutoRelTrackingTest, InferRelationships_NoDiasceneRecords_ScannedZero)
 
 TEST_F(AutoRelTrackingTest, InferRelationships_SceneWithBlueprintRef_AddsEdge)
 {
-	WriteTempSceneFile(kTempScenePath, "diaentity.hero");
+	WriteTempSceneFile(kTempScenePath, "diaentitytemplate.hero");
 	CreateRecord("diascene.test_scene",  "diascene",   kTempScenePath);
-	CreateRecord("diaentity.hero",       "diaentity",  "hero.diaentity");
+	CreateRecord("diaentitytemplate.hero",       "diaentitytemplate",  "hero.diaentitytemplatetemplate");
 
 	Json::Value r = Invoke("asset_catalogue.infer_relationships");
 	ASSERT_FALSE(r.isNull());
@@ -222,7 +222,7 @@ TEST_F(AutoRelTrackingTest, InferRelationships_SceneWithBlueprintRef_AddsEdge)
 	EXPECT_EQ(r["edges_added"].asInt(), 1);
 
 	Json::Value refs = GetForwardRefs("diascene.test_scene");
-	EXPECT_TRUE(HasRef(refs, "uses", "diaentity.hero"));
+	EXPECT_TRUE(HasRef(refs, "uses", "diaentitytemplate.hero"));
 }
 
 // ===========================================================================
@@ -231,9 +231,9 @@ TEST_F(AutoRelTrackingTest, InferRelationships_SceneWithBlueprintRef_AddsEdge)
 
 TEST_F(AutoRelTrackingTest, InferRelationships_Idempotent_NoDuplicateEdge)
 {
-	WriteTempSceneFile(kTempScenePath, "diaentity.hero");
+	WriteTempSceneFile(kTempScenePath, "diaentitytemplate.hero");
 	CreateRecord("diascene.test_scene",  "diascene",   kTempScenePath);
-	CreateRecord("diaentity.hero",       "diaentity",  "hero.diaentity");
+	CreateRecord("diaentitytemplate.hero",       "diaentitytemplate",  "hero.diaentitytemplatetemplate");
 
 	Invoke("asset_catalogue.infer_relationships");
 
@@ -248,7 +248,7 @@ TEST_F(AutoRelTrackingTest, InferRelationships_Idempotent_NoDuplicateEdge)
 	Json::Value refs = GetForwardRefs("diascene.test_scene");
 	int useCount = 0;
 	for (unsigned int i = 0; i < refs.size(); ++i)
-		if (refs[i]["rel"].asString() == "uses" && refs[i]["target"].asString() == "diaentity.hero")
+		if (refs[i]["rel"].asString() == "uses" && refs[i]["target"].asString() == "diaentitytemplate.hero")
 			++useCount;
 	EXPECT_EQ(useCount, 1);
 }
@@ -259,7 +259,7 @@ TEST_F(AutoRelTrackingTest, InferRelationships_Idempotent_NoDuplicateEdge)
 
 TEST_F(AutoRelTrackingTest, InferRelationships_UnknownBlueprint_SkipsEdge)
 {
-	WriteTempSceneFile(kTempScenePath, "diaentity.nonexistent");
+	WriteTempSceneFile(kTempScenePath, "diaentitytemplate.nonexistent");
 	// Only register the scene record — no matching blueprint record
 	CreateRecord("diascene.test_scene", "diascene", kTempScenePath);
 
@@ -276,9 +276,9 @@ TEST_F(AutoRelTrackingTest, InferRelationships_UnknownBlueprint_SkipsEdge)
 
 TEST_F(AutoRelTrackingTest, InferRelationships_MultipleItemTypes_AllEdgesAdded)
 {
-	WriteTempSceneFile(kTempScenePath, "diaentity.hero", "diacamera.main_cam", "dialight.sun");
+	WriteTempSceneFile(kTempScenePath, "diaentitytemplate.hero", "diacamera.main_cam", "dialight.sun");
 	CreateRecord("diascene.test_scene",    "diascene",   kTempScenePath);
-	CreateRecord("diaentity.hero",         "diaentity",  "hero.diaentity");
+	CreateRecord("diaentitytemplate.hero",         "diaentitytemplate",  "hero.diaentitytemplatetemplate");
 	CreateRecord("diacamera.main_cam",     "diacamera",  "main_cam.diacamera");
 	CreateRecord("dialight.sun",           "dialight",   "sun.dialight");
 
@@ -297,7 +297,7 @@ TEST_F(AutoRelTrackingTest, AddItem_WithCatalogueId_AddsForwardRef)
 	// Write a blank scene and create matching catalogue record
 	WriteTempSceneFile(kTempScenePath);
 	CreateRecord("diascene.ar_scene", "diascene",  kTempScenePath);
-	CreateRecord("diaentity.box",     "diaentity", "box.diaentity");
+	CreateRecord("diaentitytemplate.box",     "diaentitytemplate", "box.diaentitytemplatetemplate");
 
 	// Load scene into DiaSceneEditorPlugin (triggers ResolveCatalogueIdForLoadedScene)
 	Json::Value loadReq;
@@ -308,12 +308,12 @@ TEST_F(AutoRelTrackingTest, AddItem_WithCatalogueId_AddsForwardRef)
 	// Add entity — should register a "uses" edge in the catalogue
 	Json::Value addReq;
 	addReq["itemType"]    = "entity";
-	addReq["blueprintId"] = "diaentity.box";
+	addReq["blueprintId"] = "diaentitytemplate.box";
 	Json::Value addResult = Invoke("scene_editor.add_item", addReq);
 	ASSERT_TRUE(addResult["success"].asBool()) << "add_item failed";
 
 	Json::Value refs = GetForwardRefs("diascene.ar_scene");
-	EXPECT_TRUE(HasRef(refs, "uses", "diaentity.box"));
+	EXPECT_TRUE(HasRef(refs, "uses", "diaentitytemplate.box"));
 }
 
 // ===========================================================================
@@ -324,7 +324,7 @@ TEST_F(AutoRelTrackingTest, DeleteItem_AfterAdd_RemovesForwardRef)
 {
 	WriteTempSceneFile(kTempScenePath);
 	CreateRecord("diascene.ar_scene", "diascene",  kTempScenePath);
-	CreateRecord("diaentity.box",     "diaentity", "box.diaentity");
+	CreateRecord("diaentitytemplate.box",     "diaentitytemplate", "box.diaentitytemplatetemplate");
 
 	Json::Value loadReq;
 	loadReq["path"] = kTempScenePath;
@@ -333,18 +333,18 @@ TEST_F(AutoRelTrackingTest, DeleteItem_AfterAdd_RemovesForwardRef)
 	// Add then delete the item
 	Json::Value addReq;
 	addReq["itemType"]    = "entity";
-	addReq["blueprintId"] = "diaentity.box";
+	addReq["blueprintId"] = "diaentitytemplate.box";
 	Invoke("scene_editor.add_item", addReq);
 
-	// SceneMutator generates id as "{blueprintId}_{N}" → "diaentity.box_0"
+	// SceneMutator generates id as "{blueprintId}_{N}" → "diaentitytemplate.box_0"
 	Json::Value delReq;
 	delReq["itemType"] = "entity";
-	delReq["itemId"]   = "diaentity.box_0";
+	delReq["itemId"]   = "diaentitytemplate.box_0";
 	Json::Value delResult = Invoke("scene_editor.delete_item", delReq);
 	ASSERT_TRUE(delResult["success"].asBool()) << "delete_item failed";
 
 	Json::Value refs = GetForwardRefs("diascene.ar_scene");
-	EXPECT_FALSE(HasRef(refs, "uses", "diaentity.box"));
+	EXPECT_FALSE(HasRef(refs, "uses", "diaentitytemplate.box"));
 }
 
 // ===========================================================================
@@ -355,8 +355,8 @@ TEST_F(AutoRelTrackingTest, ChangeBlueprint_UpdatesForwardRef)
 {
 	WriteTempSceneFile(kTempScenePath);
 	CreateRecord("diascene.ar_scene", "diascene",  kTempScenePath);
-	CreateRecord("diaentity.old",     "diaentity", "old.diaentity");
-	CreateRecord("diaentity.new_bp",  "diaentity", "new_bp.diaentity");
+	CreateRecord("diaentitytemplate.old",     "diaentitytemplate", "old.diaentitytemplatetemplate");
+	CreateRecord("diaentitytemplate.new_bp",  "diaentitytemplate", "new_bp.diaentitytemplatetemplate");
 
 	Json::Value loadReq;
 	loadReq["path"] = kTempScenePath;
@@ -365,21 +365,21 @@ TEST_F(AutoRelTrackingTest, ChangeBlueprint_UpdatesForwardRef)
 	// Add entity with old blueprint
 	Json::Value addReq;
 	addReq["itemType"]    = "entity";
-	addReq["blueprintId"] = "diaentity.old";
+	addReq["blueprintId"] = "diaentitytemplate.old";
 	Invoke("scene_editor.add_item", addReq);
 
 	// Change to new blueprint
 	Json::Value changeReq;
 	changeReq["itemType"]             = "entity";
-	changeReq["itemId"]               = "diaentity.old_0";
-	changeReq["newBlueprintId"]       = "diaentity.new_bp";
+	changeReq["itemId"]               = "diaentitytemplate.old_0";
+	changeReq["newBlueprintId"]       = "diaentitytemplate.new_bp";
 	changeReq["newBlueprintComponents"] = Json::Value(Json::arrayValue);
 	Json::Value changeResult = Invoke("scene_editor.change_blueprint", changeReq);
 	ASSERT_TRUE(changeResult["success"].asBool()) << "change_blueprint failed";
 
 	Json::Value refs = GetForwardRefs("diascene.ar_scene");
-	EXPECT_FALSE(HasRef(refs, "uses", "diaentity.old"))   << "old blueprint ref should be removed";
-	EXPECT_TRUE(HasRef(refs,  "uses", "diaentity.new_bp")) << "new blueprint ref should be present";
+	EXPECT_FALSE(HasRef(refs, "uses", "diaentitytemplate.old"))   << "old blueprint ref should be removed";
+	EXPECT_TRUE(HasRef(refs,  "uses", "diaentitytemplate.new_bp")) << "new blueprint ref should be present";
 }
 
 // ===========================================================================
@@ -391,7 +391,7 @@ TEST_F(AutoRelTrackingTest, AddItem_NoCatalogueIdCached_NoRelationship)
 	// Write a scene file but do NOT create a catalogue record for it.
 	// ResolveCatalogueIdForLoadedScene will find no match → mSceneCatalogueId stays empty.
 	WriteTempSceneFile(kTempScenePath);
-	CreateRecord("diaentity.box", "diaentity", "box.diaentity");
+	CreateRecord("diaentitytemplate.box", "diaentitytemplate", "box.diaentitytemplatetemplate");
 
 	Json::Value loadReq;
 	loadReq["path"] = kTempScenePath;
@@ -400,12 +400,12 @@ TEST_F(AutoRelTrackingTest, AddItem_NoCatalogueIdCached_NoRelationship)
 
 	Json::Value addReq;
 	addReq["itemType"]    = "entity";
-	addReq["blueprintId"] = "diaentity.box";
+	addReq["blueprintId"] = "diaentitytemplate.box";
 	Json::Value addResult = Invoke("scene_editor.add_item", addReq);
 	ASSERT_TRUE(addResult["success"].asBool()) << "add_item failed";
 
 	// Since no catalogue ID was resolved, no relationship should have been registered.
 	// get_forward_refs on the blueprint itself should return empty (it is a target, not a source).
-	Json::Value refs = GetForwardRefs("diaentity.box");
+	Json::Value refs = GetForwardRefs("diaentitytemplate.box");
 	EXPECT_EQ(refs.size(), 0u) << "no forward refs should exist when no catalogue ID was resolved";
 }

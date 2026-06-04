@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaMailbox/MailboxTypes.h>
-#include <DiaEntity/Entity.h>
+#include <diaentitytemplate/Entity.h>
 
 namespace Dia::Entity {
 

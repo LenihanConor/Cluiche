@@ -47,7 +47,7 @@ Follows existing `PolymorphicRegistry` / `EditorPluginRegistry` pattern:
 
 ### Behaviour Factory Pattern
 
-Follows DiaEntity's `ComponentRegistry` self-registration:
+Follows diaentitytemplate's `ComponentRegistry` self-registration:
 ```cpp
 // In .cpp file — static init registers the factory
 static bool sRegistered = [] {

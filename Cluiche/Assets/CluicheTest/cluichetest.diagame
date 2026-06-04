@@ -23,43 +23,43 @@
             "type": "manifest"
         },
         {
-            "path": "stages/DummyStage/dummy_stage.diastage",
+            "path": "Stages/DummyStage/dummy_stage.diastage",
             "type": "stage"
         },
         {
-            "path": "stages/RigidBody2DTestStage/rigidbody2d_stage.diastage",
+            "path": "Stages/RigidBody2DTestStage/rigidbody2d_stage.diastage",
             "type": "stage"
         },
         {
-            "path": "stages/AssetRuntimeTestStage/asset_runtime_stage.diastage",
+            "path": "Stages/AssetRuntimeTestStage/asset_runtime_stage.diastage",
             "type": "stage"
         },
         {
-            "path": "stages/Geometry2DTestStage/geometry2d_test_stage.diastage",
+            "path": "Stages/Geometry2DTestStage/geometry2d_test_stage.diastage",
             "type": "stage"
         },
         {
-            "path": "stages/UIUltralightTestStage/ui_ultralight_test_stage.diastage",
+            "path": "Stages/UIUltralightTestStage/ui_ultralight_test_stage.diastage",
             "type": "stage"
         },
         {
-            "path": "stages/EntityTestStage/entity_test_stage.diastage",
+            "path": "Stages/EntityTestStage/entity_test_stage.diastage",
             "type": "stage"
         },
         {
-            "path": "stages/SoftBody2DTestStage/softbody2d_test_stage.diastage",
+            "path": "Stages/SoftBody2DTestStage/softbody2d_test_stage.diastage",
             "type": "stage"
         },
         {
-            "path": "stages/Animation2DTestStage/animation2d_test_stage.diastage",
+            "path": "Stages/Animation2DTestStage/animation2d_test_stage.diastage",
             "type": "stage"
         },
         {
-            "path": "stages/Scene2DTestStage/scene2d_test_stage.diastage",
+            "path": "Stages/Scene2DTestStage/scene2d_test_stage.diastage",
             "type": "stage"
         },
         {
-            "path": "stages/IK2DTestStage/ik2d_test_stage.diastage",
+            "path": "Stages/IK2DTestStage/ik2d_test_stage.diastage",
             "type": "stage"
         }
     ],

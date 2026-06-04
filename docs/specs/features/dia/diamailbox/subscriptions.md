@@ -24,7 +24,7 @@ The generation-tracked `HandlePool<Subscription, kMaxSubs>` owned by `Mailbox` s
 
 ## Solution Overview
 
-`Mailbox` owns a `HandlePool<Subscription, kMaxSubs>` where `kMaxSubs = 256` (placeholder; revisited when DiaEntity sizes its component count). Each slot stores a `Subscription` struct carrying the `SubscriberId` and the `typeKey` (the same compile-time CRC used by `typed-queue` to identify a registered type).
+`Mailbox` owns a `HandlePool<Subscription, kMaxSubs>` where `kMaxSubs = 256` (placeholder; revisited when diaentitytemplate sizes its component count). Each slot stores a `Subscription` struct carrying the `SubscriberId` and the `typeKey` (the same compile-time CRC used by `typed-queue` to identify a registered type).
 
 `Subscribe<T>` acquires a free slot from the pool, writes `{subscriberId, typeKey<T>()}` into it, and returns a `SubscriptionHandle` wrapping the generation-tracked `Handle<Subscription>`. The per-type subscriber list is updated immediately so that `GetSubscribersForType<T>` returns the new subscriber.
 
@@ -71,7 +71,7 @@ namespace Dia::Mailbox {
     };
 
     // Maximum number of live subscriptions per Mailbox instance.
-    // Placeholder — revisit when DiaEntity sizes its component count.
+    // Placeholder — revisit when diaentitytemplate sizes its component count.
     constexpr uint32_t kMaxSubs = 256;
 
     // Caller-held subscription lifetime token.

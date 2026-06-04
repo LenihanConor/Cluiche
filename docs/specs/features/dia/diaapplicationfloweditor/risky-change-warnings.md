@@ -28,6 +28,8 @@ Intercept destructive or high-impact edit commands before execution and warn the
 4. **Cascade summary** — Dialog explicitly lists what will be removed/modified as a consequence (e.g., "Deleting SimPU will also remove: 4 modules, 2 stream connections").
 5. **Bypass not possible** — No "don't show again" option. Every risky action warns. Safety over convenience.
 6. **Undo available** — Dialog mentions "You can undo this action with Ctrl+Z" to reduce friction.
+7. **Connection check via PluginServiceLocator** — `RiskAssessor` queries `GameConnectionManager::IsConnected()` directly, not the Inspector plugin or LiveStateStore. Connection state is framework-level (DAFI-009).
+8. **No Inspector dependency for risk dialog** — RiskyChangeDialog works identically whether Inspector is loaded or not. If connected (per GameConnectionManager), warning severity escalates ("change will affect running game"). If not connected, only structural risks shown.
 
 ## Design
 

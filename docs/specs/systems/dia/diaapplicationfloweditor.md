@@ -108,7 +108,8 @@ namespace Dia::ApplicationFlow::Editor {
 | Undo/Redo | Command pattern for all edits, Ctrl+Z/Y, history display | [undo-redo.md](../../features/dia/diaapplicationfloweditor/undo-redo.md) | Approved |
 | File Conflict Detection | Watch .diaapp file for external changes, prompt reload/overwrite | [file-conflict-detection.md](../../features/dia/diaapplicationfloweditor/file-conflict-detection.md) | Approved |
 | Type Discovery | Query TypeRegistry for available module/PU types, autocomplete in add dialogs | [type-discovery.md](../../features/dia/diaapplicationfloweditor/type-discovery.md) | Approved |
-| Live State Overlay (read-only) | Receive pushed topics from Inspector; highlight active stage, show module state dots | — | Done (existing; trimmed of connect/disconnect) |
+| Live State Overlay (read-only) | Receive pushed topics from Inspector; highlight active stage, show module state dots | [live-state-overlay.md](../../features/dia/diaapplicationfloweditor/live-state-overlay.md) | Approved |
+| Connection Status Indicator | Read-only .tl dot in header — grey (offline) / green+pulse (live). No click action. | [connection-status-indicator.md](../../features/dia/diaapplicationfloweditor/connection-status-indicator.md) | Approved |
 | Risky Change Warnings | Warn when removing modules with dependents, breaking stream connections, etc. | [risky-change-warnings.md](../../features/dia/diaapplicationfloweditor/risky-change-warnings.md) | Approved |
 
 ### Moved to DiaApplicationFlowInspector

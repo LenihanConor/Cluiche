@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
 #include <memory>
-#include <DiaEntity/Domain.h>
-#include <DiaEntity/ComponentPool.h>
-#include <DiaEntity/EntityAddress.h>
-#include <DiaEntity/Hierarchy/ParentComponent.h>
-#include <DiaEntity/Hierarchy/ChildBufferComponent.h>
-#include <DiaEntity/Hierarchy/Hierarchy.h>
+#include <diaentitytemplate/Domain.h>
+#include <diaentitytemplate/ComponentPool.h>
+#include <diaentitytemplate/EntityAddress.h>
+#include <diaentitytemplate/Hierarchy/ParentComponent.h>
+#include <diaentitytemplate/Hierarchy/ChildBufferComponent.h>
+#include <diaentitytemplate/Hierarchy/Hierarchy.h>
 #include "TestComponent.h"
 #include "BpTransformComponent.h"
 

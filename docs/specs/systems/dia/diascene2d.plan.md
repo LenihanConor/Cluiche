@@ -13,11 +13,11 @@ DiaScene2D is the engine library for 2D scene management. It owns the `.diascene
 **Dependencies (all shipped):**
 - DiaCamera2D — `Dia/DiaCamera2D/` (CameraRegistry2D, Camera2D, 8 behaviours, CameraBehaviourRegistry)
 - DiaLighting2D — `Dia/DiaLighting2D/` (LightRegistry2D, PointLight2D)
-- DiaEntity — `Dia/DiaEntity/` (Domain, blueprint loader, ComponentMacros, reflection)
+- diaentitytemplate — `Dia/diaentitytemplate/` (Domain, blueprint loader, ComponentMacros, reflection)
 - DiaCore/Reflect — `Dia/DiaCore/Reflect/` (JsonArchive, DIA_SERIALIZE, JsonDefinitionLoader)
 - DiaGeometry2D — `Dia/DiaGeometry2D/` (AARect for world_bounds)
 
-**Serialization note:** The spec references "DiaReflect" as a dependency. This is `Dia/DiaCore/Reflect/` (JsonReadArchive, JsonWriteArchive, DIA_SERIALIZE macros, SerializeResult). It is production-ready and used by DiaGeometry2D, DiaEntity, DiaAnimation2D etc. No separate DiaReflect module is needed.
+**Serialization note:** The spec references "DiaReflect" as a dependency. This is `Dia/DiaCore/Reflect/` (JsonReadArchive, JsonWriteArchive, DIA_SERIALIZE macros, SerializeResult). It is production-ready and used by DiaGeometry2D, diaentitytemplate, DiaAnimation2D etc. No separate DiaReflect module is needed.
 
 ---
 
@@ -35,7 +35,7 @@ DiaScene2D is the engine library for 2D scene management. It owns the `.diascene
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| T-03 | Create `Dia/DiaScene2D/` directory + `DiaScene2D.vcxproj` + `.vcxproj.filters`; add to `Cluiche.sln`; add project reference from downstream consumers | `msbuild Dia/DiaScene2D/DiaScene2D.vcxproj` succeeds (empty lib) | Done | sonnet | Static lib. References: DiaCamera2D, DiaLighting2D, DiaEntity, DiaCore, DiaMaths, DiaGeometry2D. Use DiaLighting2D.vcxproj as template. |
+| T-03 | Create `Dia/DiaScene2D/` directory + `DiaScene2D.vcxproj` + `.vcxproj.filters`; add to `Cluiche.sln`; add project reference from downstream consumers | `msbuild Dia/DiaScene2D/DiaScene2D.vcxproj` succeeds (empty lib) | Done | sonnet | Static lib. References: DiaCamera2D, DiaLighting2D, diaentitytemplate, DiaCore, DiaMaths, DiaGeometry2D. Use DiaLighting2D.vcxproj as template. |
 | T-04 | Create `dia.scene2d.architecture.module.md` YAML module doc | File exists, valid YAML frontmatter | Done | haiku | Namespace: `Dia::Scene2D::`. Layer: TBD (pending DiaArchitecture C7). |
 
 ---
@@ -56,7 +56,7 @@ DiaScene2D is the engine library for 2D scene management. It owns the `.diascene
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
 | T-09 | Implement `SceneLoadContext.h` — struct holding refs to CameraRegistry2D, LightRegistry2D, Domain | Builds | Done | haiku | Thin struct, no logic. |
-| T-10 | Implement `SceneLoader2D.h/.cpp` — `Load()`: parse JSON via JsonReadArchive, build LayerTable, hydrate cameras into CameraRegistry2D, hydrate lights (resolve affects_layers → bitmask) into LightRegistry2D, spawn entities into Domain via blueprint + instance_data | `dia run googletest --filter="Scene2DLoader*"` passes | Done | opus | Core complexity: camera behaviour factory resolution, instance_data field patching via DiaEntity reflection, error accumulation. This is the most architecturally complex task. |
+| T-10 | Implement `SceneLoader2D.h/.cpp` — `Load()`: parse JSON via JsonReadArchive, build LayerTable, hydrate cameras into CameraRegistry2D, hydrate lights (resolve affects_layers → bitmask) into LightRegistry2D, spawn entities into Domain via blueprint + instance_data | `dia run googletest --filter="Scene2DLoader*"` passes | Done | opus | Core complexity: camera behaviour factory resolution, instance_data field patching via diaentitytemplate reflection, error accumulation. This is the most architecturally complex task. |
 | T-11 | Implement `SceneLoader2D::Unload()` — unregister cameras, unregister lights, destroy spawned entities | Test: load then unload leaves registries empty | Done | sonnet | Track registered IDs in a `DynamicArrayC<StringCRC>` per category for cleanup. |
 | T-12 | Implement validation in `Load()` — exactly one active camera (hard error), layer name resolution warnings, blueprint-not-found errors | Test: invalid scenes produce expected errors | Done | sonnet | Use `SerializeResult`-style error accumulation. Return bool success + error list. |
 | T-13 | GoogleTest: `Scene2DLoaderTests` — load valid .diascene, verify camera registry populated, lights have correct bitmasks, entities spawned with patched fields; unload clears all; validation rejects bad scenes | `dia run googletest --filter="Scene2DLoader*"` passes | Done | sonnet | Needs test `.diascene` fixture files in test data directory. Mock/stub Domain if needed, or use real Domain with test components. |
@@ -110,7 +110,7 @@ Parallelism:
 
 ## Key Design Decisions (from spec + research)
 
-1. **`instance_data` stored as `Json::Value`** in the deserialized struct — resolved lazily by SceneLoader2D at load time, not by the archive. This avoids coupling the reflected struct to DiaEntity's field patching API.
+1. **`instance_data` stored as `Json::Value`** in the deserialized struct — resolved lazily by SceneLoader2D at load time, not by the archive. This avoids coupling the reflected struct to diaentitytemplate's field patching API.
 
 2. **Camera/light hydration uses blueprint + instance_data** — same format as entities but into registries, not ECS. SceneLoader2D resolves the blueprint (catalogue lookup), creates the runtime value (Camera2D / PointLight2D), patches fields via reflection, then registers.
 
@@ -151,7 +151,7 @@ Parallelism:
 
 ## Risks & Open Items
 
-1. **`instance_data` patching** — DiaEntity's `JsonBlueprintLoader` handles `Component.Field: value` for entities. Camera/light patching needs equivalent logic but targets non-entity types (Camera2D, PointLight2D). May need a thin reflection adapter or manual field-by-field application in v1.
+1. **`instance_data` patching** — diaentitytemplate's `JsonBlueprintLoader` handles `Component.Field: value` for entities. Camera/light patching needs equivalent logic but targets non-entity types (Camera2D, PointLight2D). May need a thin reflection adapter or manual field-by-field application in v1.
 
 2. **Blueprint resolution** — SceneLoader2D needs to look up blueprints by StringCRC from the asset catalogue. The exact API path (catalogue → asset → parsed blueprint) should be confirmed when implementing T-10.
 

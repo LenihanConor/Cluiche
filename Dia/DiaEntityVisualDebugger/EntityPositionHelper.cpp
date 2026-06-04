@@ -1,8 +1,8 @@
 #ifdef DIA_DEBUG
 
 #include "EntityPositionHelper.h"
-#include <DiaEntity/IEntityInspectable.h>
-#include <DiaEntity/Entity.h>
+#include <diaentitytemplate/IEntityInspectable.h>
+#include <diaentitytemplate/Entity.h>
 
 namespace Dia::EntityVisualDebugger
 {

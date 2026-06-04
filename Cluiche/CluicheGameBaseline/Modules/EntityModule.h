@@ -1,8 +1,8 @@
 #pragma once
 #include <DiaApplicationFlow/Module.h>
 #include <DiaCore/CRC/StringCRC.h>
-#include <DiaEntity/Domain.h>
-#include <DiaEntity/IEntityInspectable.h>
+#include <diaentitytemplate/Domain.h>
+#include <diaentitytemplate/IEntityInspectable.h>
 
 namespace Cluiche { namespace AppFlow {
 

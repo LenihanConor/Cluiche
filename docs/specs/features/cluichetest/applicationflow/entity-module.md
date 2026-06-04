@@ -15,7 +15,7 @@ Add `EntityModule` to SimPU — a `Dia::ApplicationFlow::Module` that owns a `Do
 | Platform | Cluiche | [Cluiche.md](../../../../platform/Cluiche.md) |
 | Application | CluicheTest | [cluichetest.md](../../../applications/cluichetest.md) |
 | System | CluicheTest Application Flow | [applicationflow.md](../../systems/cluichetest/applicationflow.md) |
-| Depends on system | DiaEntity | [diaentity.md](../../systems/dia/diaentity.md) |
+| Depends on system | diaentitytemplate | [diaentitytemplate.md](../../systems/dia/diaentitytemplate.md) |
 | Depends on system | DiaApplicationFlow | (platform infrastructure) |
 
 ## Goals
@@ -112,7 +112,7 @@ DoStart poll (called each tick while kLoading):
 | PD-002 | PU/Phase/Module architecture | `EntityModule` is a `Dia::ApplicationFlow::Module` in SimPU. Compliant. |
 | PD-004 | No STL in public APIs | `EntityModule` public API uses `StringCRC`, `IEntityInspectable&`. No STL. Compliant. |
 | PD-006 | VS project files are source of truth | `CluicheTest.vcxproj` updated manually. Compliant. |
-| PD-007 | C++20 | No additional C++20 features beyond what DiaEntity already uses. Compliant. |
+| PD-007 | C++20 | No additional C++20 features beyond what diaentitytemplate already uses. Compliant. |
 | PD-010 | `.diastage` declares stage metadata | EntityModule registered in `dummy_stage.diastage`. Compliant. |
 | SD-ENT-002 | Systems own data; components are typed adapters | `EntityModule` owns the `Domain`. System data (physics, rendering) lives in their respective systems. Compliant. |
 | SD-ENT-017 | Domain is non-copyable, non-movable | `mDomain` is a direct member — not copied or moved. Compliant. |

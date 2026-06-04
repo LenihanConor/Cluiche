@@ -28,7 +28,7 @@ The pipeline panel is a generic log viewer bolted onto a terminal workflow. It s
 
 | # | Criterion |
 |---|-----------|
-| AC1 | When no `.diagame` is loaded, panel shows "No project loaded" overlay (matches SceneEditor/BlueprintEditor pattern) |
+| AC1 | When no `.diagame` is loaded, panel shows "No project loaded" overlay (matches SceneEditor/EntityTemplateEditor pattern) |
 | AC2 | When a `.diagame` is loaded, the target name (filename without extension) is shown in the toolbar; no target dropdown |
 | AC3 | Config (Debug/Release) dropdown remains; is the only user-configurable build parameter |
 | AC4 | Before a build starts, all stages for the current target render as grey ghost pills in the correct order, using stage names from `pipeline.toml` |

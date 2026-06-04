@@ -23,7 +23,7 @@ The secondary payoffs (Clang-Tidy via `compile_commands.json`, TSan on Linux/WSL
 |-------|------------------------|------|
 | **Foundation** | DiaCore, DiaMaths, DiaGeometry2D, DiaGeometry3D | None (or each other) |
 | **Platform Primitives** | DiaWindow, DiaInput, DiaThreading, DiaMailbox | Foundation only |
-| **Engine Services** | DiaApplicationFlow, DiaObservation, DiaEntity, DiaAssetCatalogue, DiaAssetRuntime, DiaStateMachine, DiaSerializer, DiaAsset | Foundation + Primitives |
+| **Engine Services** | DiaApplicationFlow, DiaObservation, diaentitytemplate, DiaAssetCatalogue, DiaAssetRuntime, DiaStateMachine, DiaSerializer, DiaAsset | Foundation + Primitives |
 | **Simulation** | DiaRigidBody2D, DiaSoftBody2D, DiaRig2D, DiaIK2D, DiaAnimation2D | Foundation + Services |
 | **Rendering & Integration** | DiaGraphics, DiaBgfx, DiaSFML, DiaUI, DiaUICEF, DiaUIUltralight, DiaImGui, DiaProtobuf | Foundation + Primitives + (some Services) |
 | **Tooling & Debug** | DiaVisualDebugger, DiaVisualDebuggerConsole, DiaEditor, DiaAPI, DiaAutomation, DiaWebSocket, DiaDebugServer, DiaDebugProtocol | All layers above |

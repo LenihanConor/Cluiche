@@ -1,4 +1,4 @@
-# System Spec: DiaBlueprintEditor
+# System Spec: DiaEntityTemplateEditor
 
 **Mockup:** TBD (reuse relevant parts of diasceneeditor.mockup.html Blueprints section)
 
@@ -7,16 +7,16 @@
 
 ## Summary
 
-DiaBlueprintEditor is a CluicheEditor plugin for authoring entity, camera, and light blueprint files (`.diaentity`, `.diacamera`, `.dialight`). It provides component CRUD, field default editing, and cross-scene usage visibility. Blueprints are standalone reusable assets that define the template for scene placements.
+DiaEntityTemplateEditor is a CluicheEditor plugin for authoring entity, camera, and light blueprint files (`.diaentitytemplatetemplate`, `.diacamera`, `.dialight`). It provides component CRUD, field default editing, and cross-scene usage visibility. Blueprints are standalone reusable assets that define the template for scene placements.
 
-DiaBlueprintEditor is opened from the DiaAssetCatalogueEditor (which acts as a file explorer — create assets there, open them here). DiaSceneEditor links to it via "Open in Blueprint Editor →" when users need to edit template defaults rather than instance overrides.
+DiaEntityTemplateEditor is opened from the DiaAssetCatalogueEditor (which acts as a file explorer — create assets there, open them here). DiaSceneEditor links to it via "Open in Blueprint Editor →" when users need to edit template defaults rather than instance overrides.
 
-DiaBlueprintEditor answers: "how do I define what an entity/camera/light IS (its components and default values)?"
+DiaEntityTemplateEditor answers: "how do I define what an entity/camera/light IS (its components and default values)?"
 
 ## Responsibilities
 
 **Owns:**
-- Blueprint file I/O — load and save `.diaentity`, `.diacamera`, `.dialight` files
+- Blueprint file I/O — load and save `.diaentitytemplatetemplate`, `.diacamera`, `.dialight` files
 - Component CRUD — add/remove components from a blueprint; field type metadata from DiaReflect's ComponentTypeRegistry
 - Field default editing — set default values for all component fields; type-aware widgets
 - Cross-scene usage display — show which scenes and instances reference this blueprint (blast radius visibility)
@@ -29,19 +29,19 @@ DiaBlueprintEditor answers: "how do I define what an entity/camera/light IS (its
 - Runtime entity inspection — that is DiaEntityInspector
 - Asset registration/discovery — that is DiaAssetCatalogueEditor (blueprints must be registered there)
 - Component type definition — that is DiaReflect
-- Blueprint file format definition — owned by DiaEntity (`.diaentity`), DiaCamera2D (`.diacamera`), DiaLighting2D (`.dialight`)
+- Blueprint file format definition — owned by diaentitytemplate (`.diaentitytemplatetemplate`), DiaCamera2D (`.diacamera`), DiaLighting2D (`.dialight`)
 
 ## Public Interfaces
 
 ### Plugin Implementation
 
 ```cpp
-namespace Dia::BlueprintEditor
+namespace Dia::EntityTemplateEditor
 {
-    class DiaBlueprintEditorPlugin final : public Dia::Editor::IEditorPlugin
+    class DiaEntityTemplateEditorPlugin final : public Dia::Editor::IEditorPlugin
     {
     public:
-        const char* GetName() const override { return "DiaBlueprintEditor"; }
+        const char* GetName() const override { return "DiaEntityTemplateEditor"; }
         const char* GetVersion() const override { return "1.0.0"; }
         const char* GetDescription() const override {
             return "Author entity, camera, and light blueprint files";
@@ -70,17 +70,17 @@ namespace Dia::BlueprintEditor
 
 - `BlueprintListController` — left panel: lists all registered blueprints from asset catalogue, grouped by type
 - `BlueprintPropertyController` — right panel: component accordion, field editing, usage display
-- `BlueprintFileHandler` — `.diaentity` / `.diacamera` / `.dialight` load/save
+- `BlueprintFileHandler` — `.diaentitytemplatetemplate` / `.diacamera` / `.dialight` load/save
 
 ### Asset Catalogue Integration
 
-- DiaAssetCatalogueEditor registers DiaBlueprintEditor as the handler for `.diaentity`, `.diacamera`, `.dialight` asset types
-- "Open" action on a blueprint asset in the catalogue opens DiaBlueprintEditor with that blueprint selected
-- "New Asset → Entity Blueprint / Camera Blueprint / Light Blueprint" in the catalogue creates the file and opens DiaBlueprintEditor
+- DiaAssetCatalogueEditor registers DiaEntityTemplateEditor as the handler for `.diaentitytemplatetemplate`, `.diacamera`, `.dialight` asset types
+- "Open" action on a blueprint asset in the catalogue opens DiaEntityTemplateEditor with that blueprint selected
+- "New Asset → Entity Blueprint / Camera Blueprint / Light Blueprint" in the catalogue creates the file and opens DiaEntityTemplateEditor
 
 ## File Formats
 
-### .diaentity (entity blueprint — format owned by DiaEntity)
+### .diaentitytemplatetemplate (entity blueprint — format owned by diaentitytemplate)
 
 ```json
 {
@@ -141,23 +141,23 @@ namespace Dia::BlueprintEditor
 | ID | Decision | Rationale |
 |----|----------|-----------|
 | SED-BP-001 | One file per blueprint, stored under asset root | Blueprints are shared across scenes; one file = one source of truth; git-friendly |
-| SED-BP-002 | Separate extensions per type: `.diaentity`, `.diacamera`, `.dialight` | Clear from filename what you're editing; matches owning modules |
+| SED-BP-002 | Separate extensions per type: `.diaentitytemplatetemplate`, `.diacamera`, `.dialight` | Clear from filename what you're editing; matches owning modules |
 | SED-BP-003 | Blueprint discovery via DiaAssetCatalogue | Canonical list of what's available comes from asset registry, not filesystem scan |
 | SED-BP-004 | Cross-scene usage shown on property panel | Before editing, user sees which scenes + instances are affected (blast radius) |
 | SED-BP-005 | Adding a component cascades to all instances | New fields appear with defaults on all referencing instances; show count before confirming |
 | SED-BP-006 | Removing a component warns about orphaned overrides | Show count of instances with overrides for that component's fields; don't auto-delete orphans |
 | SED-BP-007 | Field defaults come from C++ constructors, surfaced via schema | `--dump-schema` serialises a default-constructed component instance; editors read these from `registeredtypes.diaschema`; empty `"fields"` in a blueprint means "use code default" |
 | SED-BP-008 | Blueprint creation triggered from DiaAssetCatalogueEditor | Asset catalogue owns "create new asset" flow; blueprint editor owns "edit existing" flow |
-| SED-BP-009 | DiaSceneEditor routes to DiaBlueprintEditor via "Open in Blueprint Editor →" | Clean separation: scene editor handles placements, blueprint editor handles templates |
+| SED-BP-009 | DiaSceneEditor routes to DiaEntityTemplateEditor via "Open in Blueprint Editor →" | Clean separation: scene editor handles placements, blueprint editor handles templates |
 
 ## Features
 
 | Feature | Description | Spec | Status |
 |---------|-------------|------|--------|
-| blueprint-panel | Plugin scaffold + left panel (blueprint list grouped by type) + right panel (component accordion + field editing) + file I/O | [blueprint-panel.md](../../features/dia/diablueprinteditor/blueprint-panel.md) | Done |
+| blueprint-panel | Plugin scaffold + left panel (blueprint list grouped by type) + right panel (component accordion + field editing) + file I/O | [blueprint-panel.md](../../features/dia/DiaEntityTemplateEditor/blueprint-panel.md) | Done |
 | component-crud | Add/remove components from a blueprint; cascade awareness; confirmation with affected instance count | Folded into blueprint-panel + component-picker-and-defaults | Done |
 | cross-scene-usage | Usage section showing which scenes and instances reference the selected blueprint | Folded into blueprint-panel | Done |
-| component-picker-and-defaults | Searchable component picker panel; C++ code defaults surfaced from schema; blueprint-level field overrides | [component-picker-and-defaults.md](../../features/dia/diablueprinteditor/component-picker-and-defaults.md) | Done |
+| component-picker-and-defaults | Searchable component picker panel; C++ code defaults surfaced from schema; blueprint-level field overrides | [component-picker-and-defaults.md](../../features/dia/DiaEntityTemplateEditor/component-picker-and-defaults.md) | Done |
 
 ## Dependencies
 
@@ -166,7 +166,7 @@ namespace Dia::BlueprintEditor
 | DiaEditor | Provides `IEditorPlugin` framework, `ProjectContext`, `EditorModel`, `OnOpenAsset` routing |
 | DiaReflect | ComponentTypeRegistry for enumerating available component types and field metadata |
 | DiaAssetCatalogue | Provides blueprint discovery; registers this editor as handler for blueprint asset types |
-| DiaEntity | Owns `.diaentity` format |
+| diaentitytemplate | Owns `.diaentitytemplatetemplate` format |
 | DiaCamera2D | Owns `.diacamera` format |
 | DiaLighting2D | Owns `.dialight` format |
 
@@ -177,12 +177,12 @@ namespace Dia::BlueprintEditor
 | PD-001 | StringCRC for all entity/component IDs | Blueprint IDs, component type IDs all use StringCRC. Compliant. |
 | PD-002 | PU/Phase/Module architecture | Pure `IEditorPlugin` subclass. No PU/Phase/Module. Compliant. |
 | PD-004 | No STL containers in public APIs | File I/O uses `Json::Value`. Compliant. |
-| PD-006 | VS project files are source of truth | New `DiaBlueprintEditor.vcxproj`. Compliant. |
+| PD-006 | VS project files are source of truth | New `DiaEntityTemplateEditor.vcxproj`. Compliant. |
 | PD-007 | C++20 required | Compliant. |
 
 ## Open Design Questions
 
-1. **Should DiaBlueprintEditor support editing multiple blueprints simultaneously (tabbed)?** Or always one-at-a-time with a list on the left? V1: one at a time with left panel list.
+1. **Should DiaEntityTemplateEditor support editing multiple blueprints simultaneously (tabbed)?** Or always one-at-a-time with a list on the left? V1: one at a time with left panel list.
 
 ## Status
 

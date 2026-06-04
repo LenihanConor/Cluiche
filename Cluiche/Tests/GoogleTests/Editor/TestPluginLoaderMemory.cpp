@@ -97,7 +97,7 @@ TEST(PluginLoaderMemory, DoStop_BuiltinsExcludedFromSave)
         StringCRC("GameConnectionEditorPlugin"),
         StringCRC("PluginBrowserEditorPlugin"),
         StringCRC("DiaSceneEditor"),
-        StringCRC("DiaBlueprintEditor"),
+        StringCRC("DiaEntityTemplateEditor"),
     };
 
     EditorMemory memory;
@@ -106,7 +106,7 @@ TEST(PluginLoaderMemory, DoStop_BuiltinsExcludedFromSave)
     // Only the 2 non-built-ins should be saved
     EXPECT_EQ(memory.GetPluginCount(), 2u);
     EXPECT_STREQ(memory.GetPlugin(0).typeId, "DiaSceneEditor");
-    EXPECT_STREQ(memory.GetPlugin(1).typeId, "DiaBlueprintEditor");
+    EXPECT_STREQ(memory.GetPlugin(1).typeId, "DiaEntityTemplateEditor");
 }
 
 // DoStop logic: if only built-ins are loaded, nothing is saved
@@ -185,7 +185,7 @@ TEST(PluginLoaderMemory, SaveRestoreRoundTrip)
         const StringCRC loaded[] = {
             StringCRC("HomeEditorPlugin"),
             StringCRC("DiaSceneEditor"),
-            StringCRC("DiaBlueprintEditor"),
+            StringCRC("DiaEntityTemplateEditor"),
         };
 
         EditorMemory memory;
@@ -200,7 +200,7 @@ TEST(PluginLoaderMemory, SaveRestoreRoundTrip)
         EXPECT_TRUE(memory.Load(tmpPath));
         EXPECT_EQ(memory.GetPluginCount(), 2u);
         EXPECT_STREQ(memory.GetPlugin(0).typeId, "DiaSceneEditor");
-        EXPECT_STREQ(memory.GetPlugin(1).typeId, "DiaBlueprintEditor");
+        EXPECT_STREQ(memory.GetPlugin(1).typeId, "DiaEntityTemplateEditor");
         EXPECT_STREQ(memory.GetLastProject(), "C:/Games/Test/test.diagame");
     }
 

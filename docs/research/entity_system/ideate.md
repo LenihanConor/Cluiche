@@ -6,7 +6,7 @@
 
 ### Candidate 1: Handle Registry (Minimal)
 
-**Home module/system:** New `DiaEntity` module in Dia/
+**Home module/system:** New `diaentitytemplate` module in Dia/
 **Size:** S (≤1 week)
 
 **Description:** The simplest possible entity system. An entity is a generational ID. A `World` class (owned by an EntityModule, stage-scoped) maps entity IDs to named typed handles. Each handle is an opaque {system_id, index, generation} tuple. Systems don't know entities exist — gameplay code manually allocates system objects and registers the returned handles with an entity. JSON prefabs list handle types and creation params. Destruction walks the handle map and calls system-specific destroy functions.
@@ -19,7 +19,7 @@ No communication, no querying, no hierarchy. Entities are dumb bags of handles w
 
 ### Candidate 2: Handle Registry + Mailbox Communication
 
-**Home module/system:** New `DiaEntity` module in Dia/
+**Home module/system:** New `diaentitytemplate` module in Dia/
 **Size:** M (1–3 weeks)
 
 **Description:** Builds on Candidate 1 by adding a deferred **mailbox** system for safe inter-entity communication. Each entity has an inbox (a small ring buffer). Messages are {sender_id, message_type (StringCRC), payload_ptr, payload_size}. Messages are delivered end-of-frame — no mid-update mutation. Entities process their inbox at the start of their update. Sending to a dead entity silently drops the message (generational ID check).
@@ -32,7 +32,7 @@ Editor shows message flow: who sent what to whom last frame. Prefabs still JSON.
 
 ### Candidate 3: Component Bindings with Interface Contracts
 
-**Home module/system:** New `DiaEntity` module in Dia/
+**Home module/system:** New `diaentitytemplate` module in Dia/
 **Size:** M (1–3 weeks)
 
 **Description:** Entities hold **component bindings** — typed wrappers around system handles that expose a narrow interface. Example: `PhysicsBinding` wraps a physics body handle and exposes `GetPosition()`, `ApplyForce()`. The binding is the gameplay interface; the system owns the data. Bindings are registered with the entity via StringCRC type IDs.
@@ -73,7 +73,7 @@ Editor already inspects modules via IApplicationInspectable — entities get ins
 
 ### Candidate 6: World + Blueprints (Data-Driven)
 
-**Home module/system:** New `DiaEntity` module in Dia/
+**Home module/system:** New `diaentitytemplate` module in Dia/
 **Size:** M (1–3 weeks)
 
 **Description:** A `World` (stage-scoped, owned by EntityModule) manages entities. Entities are created from **Blueprints** — JSON files that declare a set of named component slots with their system type and config. At runtime, the World reads a blueprint, allocates system objects via registered **SystemAdapters** (one per system: physics adapter, render adapter, etc.), and stores the returned handles.
@@ -86,7 +86,7 @@ SystemAdapters are the only coupling point — they implement `CreateFromConfig(
 
 ### Candidate 7: Signal Graph (Reactive)
 
-**Home module/system:** New `DiaEntity` module in Dia/
+**Home module/system:** New `diaentitytemplate` module in Dia/
 **Size:** L (1–2 months)
 
 **Description:** Entities are nodes in a reactive signal graph. Each entity has **ports** (typed input/output connections). Outputs from one entity connect to inputs of another. When a port value changes, downstream connections update (deferred to end-of-frame for safety). Systems expose their state as output ports (physics body emits position).
@@ -99,7 +99,7 @@ Editor shows the signal graph visually — connections between entities are firs
 
 ### Candidate 8: Handle Registry + Inspector Interface (Editor-First)
 
-**Home module/system:** New `DiaEntity` module in Dia/
+**Home module/system:** New `diaentitytemplate` module in Dia/
 **Size:** M (1–3 weeks)
 
 **Description:** Like Candidate 2 (handle registry + mailbox) but designed **editor-first**. Every entity carries: debug name, prefab source path, creation timestamp, a tag set (StringCRC tags for grouping). All handle bindings are named and typed. The module exposes `IEntityInspectable` — mirrors `IApplicationInspectable` — which the editor polls to display:
@@ -117,7 +117,7 @@ Communication via deferred mailbox (same as Candidate 2). JSON blueprints with n
 
 ### Candidate 9: Slim ECS with Component Queries
 
-**Home module/system:** New `DiaEntity` module in Dia/
+**Home module/system:** New `diaentitytemplate` module in Dia/
 **Size:** M (1–3 weeks)
 
 **Description:** A middle ground between full archetype ECS (Candidate 4) and the handle registry (Candidate 1). Entities are generational IDs. Components are lightweight structs that hold a system handle plus optional cached data. Components stored in per-type sparse arrays. The World supports **queries** — "give me all entities with Physics + Sprite" — returning an iterable view.
@@ -130,7 +130,7 @@ No archetype tables (simpler). No cache optimization (acceptable per priorities)
 
 ### Candidate 10: Entity Table (Spreadsheet Model)
 
-**Home module/system:** New `DiaEntity` module in Dia/
+**Home module/system:** New `diaentitytemplate` module in Dia/
 **Size:** S (≤1 week)
 
 **Description:** Entities are rows in a table. Columns are handle types (Physics, Sprite, FSM, etc.). Each cell is either empty or holds a handle. The table IS the data structure — a 2D array of optional handles indexed by [entity_id][column_type]. Fixed column set per stage (declared in JSON). No dynamic component add/remove at runtime.

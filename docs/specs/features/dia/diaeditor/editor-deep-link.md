@@ -33,11 +33,11 @@ Opening an asset from the catalogue opens the target editor but drops the user a
 - UI scrolls the stage list and highlights the matching stage row
 - If no manifest is loaded, the notification is a no-op (no error)
 
-### DiaBlueprintEditor — blueprint file deep link
+### DiaEntityTemplateEditor — blueprint file deep link
 
-- `OnNavigate` receives the `diaentity`/`diacamera`/`dialight` asset CRC
+- `OnNavigate` receives the `diaentitytemplate`/`diacamera`/`dialight` asset CRC
 - Looks up the source path from the catalogue registry via `InvokeRequestHandler("asset_catalogue.get_record", { id })`
-- If found, calls the existing `blueprint_editor.load` handler internally
+- If found, calls the existing `entity_template_editor.load` handler internally
 - The blueprint file is loaded and the property panel populated, same as if the user had clicked it in the list
 
 ### DiaSceneEditor — scene file deep link
@@ -67,7 +67,7 @@ Opening an asset from the catalogue opens the target editor but drops the user a
 | `Dia/DiaEditor/Plugin/PluginLoader.cpp` (or equivalent framework impl) | Call `OnNavigate(instanceId)` after `OnLoad` on fresh load, and directly on already-loaded plugin |
 | `Dia/DiaApplicationEditor/DiaApplicationFlowEditorPlugin.cpp` | Override `OnNavigate` — push `app_editor.navigate_to_stage` |
 | `Dia/DiaApplicationEditor/UI/index.html` | Handle `app_editor.navigate_to_stage` — scroll + highlight stage row |
-| `Dia/DiaBlueprintEditor/DiaBlueprintEditorPlugin.cpp` | Override `OnNavigate` — look up source path, load blueprint |
+| `Dia/DiaEntityTemplateEditor/DiaEntityTemplateEditorPlugin.cpp` | Override `OnNavigate` — look up source path, load blueprint |
 | `Dia/DiaSceneEditor/DiaSceneEditorPlugin.cpp` | Override `OnNavigate` — look up source path, load scene |
 | `Dia/DiaAssetCatalogueEditor/DiaAssetCatalogueEditorPlugin.cpp` | Override `OnNavigate` — push `asset_catalogue.navigate_to_record` |
 | `Dia/DiaAssetCatalogueEditor/UI/index.html` | Handle `asset_catalogue.navigate_to_record` — scroll + select row |
@@ -85,4 +85,4 @@ Opening an asset from the catalogue opens the target editor but drops the user a
 
 1. **PluginLoader implementation location** — `IPluginLoader` is an interface; the concrete impl lives in CluicheEditor. Does the `OnNavigate` call-after-load live in the concrete `PluginLoader` in CluicheEditor, or should there be a helper in the DiaEditor framework? The concrete impl is the right place — keeps the framework as a pure interface layer.
 
-2. **CRC → string ID round-trip** — `instanceId` is a CRC of the asset ID string (e.g. `StringCRC("stage.my_stage")`). DiaBlueprintEditor and DiaSceneEditor need the source path, which requires looking up the record. If the catalogue plugin is not loaded, the lookup fails silently. Acceptable for v1 — document as a known limitation.
+2. **CRC → string ID round-trip** — `instanceId` is a CRC of the asset ID string (e.g. `StringCRC("stage.my_stage")`). DiaEntityTemplateEditor and DiaSceneEditor need the source path, which requires looking up the record. If the catalogue plugin is not loaded, the lookup fails silently. Acceptable for v1 — document as a known limitation.

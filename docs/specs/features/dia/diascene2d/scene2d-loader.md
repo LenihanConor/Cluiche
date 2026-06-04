@@ -121,6 +121,6 @@ namespace Dia::Scene2D {
 
 ## Open Design Questions
 
-1. **Entity instanceData patching** — v1 applies `instanceData` as best-effort field patches via component reflection. The exact API path through DiaEntity's field descriptor system needs to be confirmed during implementation; the spec says "supported field patching" but if DiaEntity doesn't expose a public field-set-by-name API, v1 may need to skip instanceData for entities and log a warning.
+1. **Entity instanceData patching** — v1 applies `instanceData` as best-effort field patches via component reflection. The exact API path through diaentitytemplate's field descriptor system needs to be confirmed during implementation; the spec says "supported field patching" but if diaentitytemplate doesn't expose a public field-set-by-name API, v1 may need to skip instanceData for entities and log a warning.
 
 2. **Camera blueprint vs programmatic Camera2D** — v1 treats blueprints as camera config presets applied via instanceData only. Full blueprint loading (behaviours, component composition) is deferred to v2 when DiaAssetRuntime integration exists.

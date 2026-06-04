@@ -253,14 +253,14 @@ class TestFullRun:
 
     def test_diastage_created(self, tmp_path):
         _, repo = self._invoke(tmp_path)
-        p = repo / "Cluiche/Assets/Stages/TestEntityTestStage/testentity_test_stage.diastage"
+        p = repo / "Cluiche/Assets/CluicheTest/Stages/TestEntityTestStage/testentity_test_stage.diastage"
         assert p.exists()
 
     def test_diaapp_created(self, tmp_path):
         _, repo = self._invoke(tmp_path)
         p = (
             repo
-            / "Cluiche/Assets/Stages/TestEntityTestStage/misc/ApplicationFlow"
+            / "Cluiche/Assets/CluicheTest/Stages/TestEntityTestStage/misc/ApplicationFlow"
             / "testentity_test_stage.diaapp"
         )
         assert p.exists()
@@ -279,13 +279,13 @@ class TestFullRun:
 
     def test_diastage_name_field(self, tmp_path):
         _, repo = self._invoke(tmp_path)
-        p = repo / "Cluiche/Assets/Stages/TestEntityTestStage/testentity_test_stage.diastage"
+        p = repo / "Cluiche/Assets/CluicheTest/Stages/TestEntityTestStage/testentity_test_stage.diastage"
         data = json.loads(p.read_text(encoding="utf-8"))
         assert data["name"] == "TestEntityTestStage"
 
     def test_diastage_manifest_field(self, tmp_path):
         _, repo = self._invoke(tmp_path)
-        p = repo / "Cluiche/Assets/Stages/TestEntityTestStage/testentity_test_stage.diastage"
+        p = repo / "Cluiche/Assets/CluicheTest/Stages/TestEntityTestStage/testentity_test_stage.diastage"
         data = json.loads(p.read_text(encoding="utf-8"))
         assert "testentity_test_stage.diaapp" in data["manifest"]
 
@@ -295,7 +295,7 @@ class TestFullRun:
         _, repo = self._invoke(tmp_path)
         p = (
             repo
-            / "Cluiche/Assets/Stages/TestEntityTestStage/misc/ApplicationFlow"
+            / "Cluiche/Assets/CluicheTest/Stages/TestEntityTestStage/misc/ApplicationFlow"
             / "testentity_test_stage.diaapp"
         )
         data = json.loads(p.read_text(encoding="utf-8"))
@@ -305,7 +305,7 @@ class TestFullRun:
         _, repo = self._invoke(tmp_path)
         p = (
             repo
-            / "Cluiche/Assets/Stages/TestEntityTestStage/misc/ApplicationFlow"
+            / "Cluiche/Assets/CluicheTest/Stages/TestEntityTestStage/misc/ApplicationFlow"
             / "testentity_test_stage.diaapp"
         )
         data = json.loads(p.read_text(encoding="utf-8"))
@@ -317,7 +317,7 @@ class TestFullRun:
         _, repo = self._invoke(tmp_path)
         p = (
             repo
-            / "Cluiche/Assets/Stages/TestEntityTestStage/misc/ApplicationFlow"
+            / "Cluiche/Assets/CluicheTest/Stages/TestEntityTestStage/misc/ApplicationFlow"
             / "testentity_test_stage.diaapp"
         )
         data = json.loads(p.read_text(encoding="utf-8"))
@@ -329,7 +329,7 @@ class TestFullRun:
         _, repo = self._invoke(tmp_path)
         p = (
             repo
-            / "Cluiche/Assets/Stages/TestEntityTestStage/misc/ApplicationFlow"
+            / "Cluiche/Assets/CluicheTest/Stages/TestEntityTestStage/misc/ApplicationFlow"
             / "testentity_test_stage.diaapp"
         )
         data = json.loads(p.read_text(encoding="utf-8"))
@@ -517,7 +517,7 @@ class TestModulesFlag:
     def _get_main_pu_module(self, repo: Path, stage_name: str, diaapp_file: str) -> dict:
         p = (
             repo
-            / f"Cluiche/Assets/Stages/{stage_name}/misc/ApplicationFlow"
+            / f"Cluiche/Assets/CluicheTest/Stages/{stage_name}/misc/ApplicationFlow"
             / diaapp_file
         )
         data = json.loads(p.read_text(encoding="utf-8"))

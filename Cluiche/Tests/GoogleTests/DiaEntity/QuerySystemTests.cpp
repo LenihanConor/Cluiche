@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
-#include <DiaEntity/Domain.h>
-#include <DiaEntity/Entity.h>
-#include <DiaEntity/IComponent.h>
-#include <DiaEntity/ComponentMacros.h>
-#include <DiaEntity/ComponentPool.h>
-#include <DiaEntity/QueryView.h>
+#include <diaentitytemplate/Domain.h>
+#include <diaentitytemplate/Entity.h>
+#include <diaentitytemplate/IComponent.h>
+#include <diaentitytemplate/ComponentMacros.h>
+#include <diaentitytemplate/ComponentPool.h>
+#include <diaentitytemplate/QueryView.h>
 
 using namespace Dia::Entity;
 

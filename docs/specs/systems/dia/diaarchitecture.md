@@ -66,8 +66,8 @@ Level 1 — Foundation
 
 | Tier | Modules |
 |------|---------|
-| Core (2.0) | DiaEntity, DiaAsset, DiaAssetCatalogue, DiaAssetRuntime, DiaMesh3D |
-| Tools (2.1) | DiaAssetCatalogueEditor, DiaEntityInspector, DiaBlueprintEditor, DiaPipelineEditor, DiaApplicationEditor, DiaAssetRuntimeInspector, DiaEntityVisualDebugger, DiaAssetRuntimeVisualDebugger |
+| Core (2.0) | diaentitytemplate, DiaAsset, DiaAssetCatalogue, DiaAssetRuntime, DiaMesh3D |
+| Tools (2.1) | DiaAssetCatalogueEditor, DiaEntityInspector, DiaEntityTemplateEditor, DiaPipelineEditor, DiaApplicationEditor, DiaAssetRuntimeInspector, DiaEntityVisualDebugger, DiaAssetRuntimeVisualDebugger |
 
 ### Level 1 — Foundation
 

@@ -22,12 +22,12 @@ Same as Phase 1 (see parent plan's "Plugin Migration Pattern"), adapted for comp
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
 | 1 | Migrate `DiaEntityInspector/UI/index.html` — replace ~406 lines of hardcoded CSS with pico vars | `dia run cluicheeditor`; inspector panel renders with correct theme; tabs, fields, watch list styled | Done | sonnet | Purple palette (#13131f) → pico neutral. Domain tag colors (T/P/R/A/S/H/C) and message-type badge colors kept hardcoded (content-semantic). |
-| 2 | Migrate `DiaBlueprintEditor/UI/index.html` — replace ~251 lines of hardcoded CSS with pico vars | `dia run cluicheeditor`; blueprint list, accordion, picker, modals styled correctly | Done | sonnet | All hardcoded grays converted to var(). Status bar background now uses --pico-primary. |
+| 2 | Migrate `DiaEntityTemplateEditor/UI/index.html` — replace ~251 lines of hardcoded CSS with pico vars | `dia run cluicheeditor`; blueprint list, accordion, picker, modals styled correctly | Done | sonnet | All hardcoded grays converted to var(). Status bar background now uses --pico-primary. |
 | 3 | Migrate `DiaAssetCatalogueEditor/UI/index.html` — replace ~251 lines of hardcoded CSS with pico vars | `dia run cluicheeditor`; asset list, detail panel, toolbar styled correctly | Done | sonnet | Status badge colors (Active/Draft/Deprecated) kept hardcoded. Graph node/edge colors driven by asset type — kept hardcoded in JS TYPE_COLORS map. |
 | 4 | Migrate `DiaAssetRuntimeInspector/UI/index.html` — replace ~89 lines of hardcoded CSS with pico vars | `dia run cluicheeditor`; runtime panel renders with theme; connection status dot works | Done | sonnet | Connection dot green kept hardcoded (semantic signal color). |
 | 5 | Migrate `CluicheEditor/UI/src/index.html` — replace mosaic theme overrides with pico vars | Editor shell docking frame uses theme colors; window titles, split lines, toolbar styled | Done | haiku | Mosaic selectors preserved; color values switched to var(). Window title color mapped to --pico-ins-color (green). |
 | 6 | Migrate `DiaPipelineEditor/UI/src/index.html` — replace hardcoded colors with pico vars | Pipeline editor shell renders with theme background/text | Done | haiku | 3 color declarations replaced with var(). |
-| 7 | Visual verification — run editor, open all panels, confirm visual consistency | All editor panels match DiaSceneEditor's new pico-based look; no visual regressions | Not Started | sonnet | Compare against DiaSceneEditor (reference implementation). Check: toolbars, inputs, borders, overlays, selected states, scrollbars. |
+| 7 | Visual verification — run editor, open all panels, confirm visual consistency | All editor panels match DiaSceneEditor's new pico-based look; no visual regressions | Blocked | sonnet | Pre-existing C++ build failure in DiaSceneEditorPlugin.cpp (mPluginLoader private access, 100+ errors). HTML changes are correct; unblocks once C++ is fixed. |
 
 ## Dependencies
 
@@ -49,7 +49,7 @@ Tasks 1-6 are independent — all can run in parallel. Task 7 depends on all oth
 | File | CSS lines | Total lines | Complexity |
 |------|-----------|-------------|------------|
 | DiaEntityInspector | ~406 | 998 | High — tabs, tag badges, field tables, watch list, mailbox |
-| DiaBlueprintEditor | ~251 | 1011 | Medium — accordion, picker panel, modals |
+| DiaEntityTemplateEditor | ~251 | 1011 | Medium — accordion, picker panel, modals |
 | DiaAssetCatalogueEditor | ~251 | 1774 | Medium — asset list, filters, detail panel |
 | DiaAssetRuntimeInspector | ~89 | 226 | Low — simple panel layout with iframe |
 | CluicheEditor shell | ~18 | 31 | Low — mosaic framework overrides only |

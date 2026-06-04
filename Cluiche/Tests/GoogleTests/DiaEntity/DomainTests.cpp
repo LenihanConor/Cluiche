@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include <DiaEntity/Domain.h>
-#include <DiaEntity/Entity.h>
+#include <diaentitytemplate/Domain.h>
+#include <diaentitytemplate/Entity.h>
 
 using namespace Dia::Entity;
 

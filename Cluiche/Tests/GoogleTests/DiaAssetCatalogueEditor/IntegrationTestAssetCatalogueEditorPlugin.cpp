@@ -116,10 +116,10 @@ TEST_F(AssetCatalogueEditorPluginTest, GetAssetTypes_ContainsStage)
 // get_asset_types — blueprint types present (added in editor empty-state work)
 // ===========================================================================
 
-TEST_F(AssetCatalogueEditorPluginTest, GetAssetTypes_ContainsDiaEntity)
+TEST_F(AssetCatalogueEditorPluginTest, GetAssetTypes_Containsdiaentitytemplate)
 {
 	Json::Value types = Invoke("asset_catalogue.get_asset_types")["types"];
-	EXPECT_TRUE(TypePresent(types, "diaentity"));
+	EXPECT_TRUE(TypePresent(types, "diaentitytemplate"));
 }
 
 TEST_F(AssetCatalogueEditorPluginTest, GetAssetTypes_ContainsDiaCamera)

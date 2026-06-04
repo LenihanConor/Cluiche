@@ -68,7 +68,7 @@ class EntityTestStageModule : public TestStageModuleBase
 public:
     static const Dia::Core::StringCRC kTypeId;
     static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kSim;
-    static constexpr const char* kDescription = "Validates DiaEntity: spawn/destroy/hierarchy/query/mailbox/lifecycle";
+    static constexpr const char* kDescription = "Validates diaentitytemplate: spawn/destroy/hierarchy/query/mailbox/lifecycle";
     explicit EntityTestStageModule(const Dia::Core::StringCRC& instanceId);
 
 protected:

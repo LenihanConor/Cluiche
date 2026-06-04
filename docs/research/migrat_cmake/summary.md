@@ -30,7 +30,7 @@ Foundation:   DiaCore, DiaMaths, DiaGeometry2D, DiaGeometry3D,
               DiaSerializer, DiaObservation
 Platform:     DiaWindow, DiaInput, DiaThreading, DiaMailbox
 Application:  DiaApplicationFlow, DiaStateMachine
-Entity:       DiaEntity
+Entity:       diaentitytemplate
 Assets:       DiaAsset, DiaAssetCatalogue, DiaAssetRuntime
 Tooling:      DiaEditor, DiaAPI, DiaAutomation, DiaWebSocket,
               DiaDebugServer, DiaDebugProtocol,

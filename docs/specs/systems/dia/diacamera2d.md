@@ -189,7 +189,7 @@ All behaviours:
 ### Does NOT depend on
 
 - DiaGraphics (Camera2D *moves out* of DiaGraphics into this module)
-- DiaEntity
+- diaentitytemplate
 - DiaScene2D
 - DiaApplicationFlow
 - DiaBgfx

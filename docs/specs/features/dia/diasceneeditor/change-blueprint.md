@@ -33,7 +33,7 @@ Allow reassigning an entity instance to a different blueprint. This is an inhere
 ### Dialog
 - Title: "Change Blueprint"
 - Shows the entity ID being modified
-- Blueprint dropdown: lists all available `.diaentity` files; current blueprint is disabled/greyed out
+- Blueprint dropdown: lists all available `.diaentitytemplatetemplate` files; current blueprint is disabled/greyed out
 - Transfer preview (updates live as dropdown selection changes):
   - **Green:** "N overrides will transfer: field1, field2, ..." — fields that exist in both old and new blueprint
   - **Amber:** "N overrides will be orphaned: field3, field4, ..." — fields that exist only in the old blueprint

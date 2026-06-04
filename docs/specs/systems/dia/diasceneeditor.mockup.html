@@ -318,10 +318,10 @@ const SCENE = {
   ]
 };
 
-// Blueprint definitions (simulated .diaentity files)
+// Blueprint definitions (simulated .diaentitytemplatetemplate files)
 const BLUEPRINTS = {
   'player_entity': {
-    file: 'player_entity.diaentity',
+    file: 'player_entity.diaentitytemplatetemplate',
     fields: {
       'Transform2D.position':[0,0],'Transform2D.rotation':0,'Transform2D.scale':[1,1],
       'Health.max_hp':50,'Health.current_hp':50,'Health.invulnerable':false,
@@ -330,7 +330,7 @@ const BLUEPRINTS = {
     }
   },
   'enemy_patrol': {
-    file: 'enemy_patrol.diaentity',
+    file: 'enemy_patrol.diaentitytemplatetemplate',
     fields: {
       'Transform2D.position':[0,0],'Transform2D.rotation':0,'Transform2D.scale':[1,1],
       'Health.max_hp':30,'Health.current_hp':30,'Health.invulnerable':false,
@@ -339,43 +339,43 @@ const BLUEPRINTS = {
     }
   },
   'coin_pickup': {
-    file: 'coin_pickup.diaentity',
+    file: 'coin_pickup.diaentitytemplatetemplate',
     fields: {
       'Transform2D.position':[0,0],'Transform2D.rotation':0,'Transform2D.scale':[1,1],
       'Collectible.value':10,'Collectible.respawn':false,'Collectible.magnet_range':0
     }
   },
   'platform_moving': {
-    file: 'platform_moving.diaentity',
+    file: 'platform_moving.diaentitytemplatetemplate',
     fields: {
       'Transform2D.position':[0,0],'Transform2D.rotation':0,'Transform2D.scale':[1,1],
       'PlatformMover.speed':1.0,'PlatformMover.loop':true,'PlatformMover.pause_at_ends':0.5
     }
   },
   'checkpoint_flag': {
-    file: 'checkpoint_flag.diaentity',
+    file: 'checkpoint_flag.diaentitytemplatetemplate',
     fields: {
       'Transform2D.position':[0,0],'Transform2D.rotation':0,'Transform2D.scale':[1,1],
       'Checkpoint.activated':false,'Checkpoint.respawn_offset':[0,-32]
     }
   },
   'camera_2d_follow': {
-    file: 'camera_2d_follow.diaentity',
+    file: 'camera_2d_follow.diaentitytemplatetemplate',
     fields: {
       'Camera2D.position':[0,0],'Camera2D.zoom':1.0,'Camera2D.rotation':0,
       'FollowBehaviour.target':'','FollowBehaviour.offset':[0,0],'FollowBehaviour.damping':0.1,'FollowBehaviour.dead_zone':[50,30]
     }
   },
   'camera_2d_static': {
-    file: 'camera_2d_static.diaentity',
+    file: 'camera_2d_static.diaentitytemplatetemplate',
     fields: { 'Camera2D.position':[0,0],'Camera2D.zoom':1.0,'Camera2D.rotation':0 }
   },
   'directional_light': {
-    file: 'directional_light.diaentity',
+    file: 'directional_light.diaentitytemplatetemplate',
     fields: { 'DirectionalLight2D.intensity':1.0,'DirectionalLight2D.direction':[0,-1],'DirectionalLight2D.color':[1,1,0.9] }
   },
   'point_light_warm': {
-    file: 'point_light_warm.diaentity',
+    file: 'point_light_warm.diaentitytemplatetemplate',
     fields: { 'PointLight2D.position':[0,0],'PointLight2D.radius':100,'PointLight2D.intensity':1.0,'PointLight2D.color':[1,0.8,0.5],'PointLight2D.falloff':2.0 }
   }
 };
@@ -388,7 +388,7 @@ function getSceneBlueprints() {
   SCENE.lights.forEach(l => bpNames.add(l.blueprint));
   return [...bpNames].map(name => ({
     id: name,
-    file: BLUEPRINTS[name]?.file || name + '.diaentity',
+    file: BLUEPRINTS[name]?.file || name + '.diaentitytemplatetemplate',
     _type: 'blueprint',
     refCount: [...SCENE.entities, ...SCENE.cameras, ...SCENE.lights].filter(i => i.blueprint === name).length
   }));
@@ -524,7 +524,7 @@ function renderProperties() {
     document.getElementById('ctx-bp').innerHTML = `file: <b>${selected.file}</b>`;
   } else if (selected.blueprint) {
     document.getElementById('ctx-bp').style.display = 'inline';
-    document.getElementById('ctx-bp').innerHTML = `blueprint: <b>${selected.blueprint}.diaentity</b>`;
+    document.getElementById('ctx-bp').innerHTML = `blueprint: <b>${selected.blueprint}.diaentitytemplatetemplate</b>`;
   } else {
     document.getElementById('ctx-bp').style.display = 'none';
   }
@@ -568,7 +568,7 @@ function renderBlueprintReadonlyView() {
   const bp = BLUEPRINTS[selected.blueprint]?.fields || {};
 
   let html = `<div class="bp-banner">
-    Blueprint defaults from <b>${selected.blueprint}.diaentity</b> (read-only here)
+    Blueprint defaults from <b>${selected.blueprint}.diaentitytemplatetemplate</b> (read-only here)
     <span class="bp-open" id="bp-open-link">Open in Blueprints &rarr;</span>
   </div>`;
   html += renderFieldsGrouped(bp, {}, true);
@@ -601,7 +601,7 @@ function renderEntityProps(item) {
   let html = '';
   html += `<div class="prop-section"><div class="prop-section-hdr">Identity</div>`;
   html += propRow('ID', 'string', item.id, false, true);
-  html += propRowLink('Blueprint', item.blueprint + '.diaentity');
+  html += propRowLink('Blueprint', item.blueprint + '.diaentitytemplatetemplate');
   html += propRowCheck('Enabled', item.enabled);
   html += `</div>`;
   html += `<div class="prop-section"><div class="prop-section-hdr">Instance Data Overrides</div>`;
@@ -615,7 +615,7 @@ function renderCameraProps(item) {
   let html = '';
   html += `<div class="prop-section"><div class="prop-section-hdr">Identity</div>`;
   html += propRow('ID', 'string', item.id, false, true);
-  html += propRowLink('Blueprint', item.blueprint + '.diaentity');
+  html += propRowLink('Blueprint', item.blueprint + '.diaentitytemplatetemplate');
   html += propRowCheck('Active', item.active);
   html += `</div>`;
   html += `<div class="prop-section"><div class="prop-section-hdr">Instance Data Overrides</div>`;
@@ -629,7 +629,7 @@ function renderLightProps(item) {
   let html = '';
   html += `<div class="prop-section"><div class="prop-section-hdr">Identity</div>`;
   html += propRow('ID', 'string', item.id, false, true);
-  html += propRowLink('Blueprint', item.blueprint + '.diaentity');
+  html += propRowLink('Blueprint', item.blueprint + '.diaentitytemplatetemplate');
   html += propRowCheck('Enabled', item.enabled);
   html += `</div>`;
   html += `<div class="prop-section"><div class="prop-section-hdr">Affects Layers</div>`;
@@ -882,7 +882,7 @@ function openChangeBlueprintDialog() {
   entityBps.forEach(bp => {
     const opt = document.createElement('option');
     opt.value = bp;
-    opt.textContent = bp + '.diaentity';
+    opt.textContent = bp + '.diaentitytemplatetemplate';
     if (bp === selected.blueprint) opt.disabled = true;
     sel.appendChild(opt);
   });

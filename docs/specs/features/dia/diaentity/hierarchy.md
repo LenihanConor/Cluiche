@@ -1,12 +1,12 @@
 # Feature Spec: hierarchy
 
-**System:** DiaEntity
+**System:** diaentitytemplate
 **App:** Dia
 **Status:** Draft
 
 ## Summary
 
-Add opt-in parent/child hierarchy to DiaEntity via `ParentComponent` and `ChildBufferComponent`. Only entities that participate in hierarchy carry these components — flat entities pay no memory cost. Hierarchy mutations (set parent, destroy subtree) route through the end-of-frame mutation pipeline. `EntityDestroyedMessage` is emitted during the destroy pass so components can react to the loss of a referenced entity.
+Add opt-in parent/child hierarchy to diaentitytemplate via `ParentComponent` and `ChildBufferComponent`. Only entities that participate in hierarchy carry these components — flat entities pay no memory cost. Hierarchy mutations (set parent, destroy subtree) route through the end-of-frame mutation pipeline. `EntityDestroyedMessage` is emitted during the destroy pass so components can react to the loss of a referenced entity.
 
 ## Traceability
 
@@ -14,7 +14,7 @@ Add opt-in parent/child hierarchy to DiaEntity via `ParentComponent` and `ChildB
 |---|---|
 | Platform | [platform.md](../../../../platform/PLATFORM.md) |
 | Application | [dia.md](../../../applications/dia.md) |
-| System | [diaentity.md](../../systems/dia/diaentity.md) |
+| System | [diaentitytemplate.md](../../systems/dia/diaentitytemplate.md) |
 | Depends on feature | [foundation.md](foundation.md) |
 | Depends on feature | [reflection.md](reflection.md) |
 | Depends on feature | [component-deps-and-refs.md](component-deps-and-refs.md) |
@@ -28,7 +28,7 @@ Add opt-in parent/child hierarchy to DiaEntity via `ParentComponent` and `ChildB
 
 ## Acceptance Criteria
 
-- `ParentComponent` and `ChildBufferComponent` are standard DiaEntity components registered via `DIA_COMPONENT`
+- `ParentComponent` and `ChildBufferComponent` are standard diaentitytemplate components registered via `DIA_COMPONENT`
 - Root entities have no `ParentComponent` — `HasComponent<ParentComponent>(entity)` returns false for roots
 - `ChildBufferComponent` stores up to 16 children (`DynamicArrayC<Entity, 16>`)
 - `Hierarchy::QueueSetParent(Domain&, Entity child, Entity parent)` queues a parent change applied at `EndOfFrame`; updates both old parent's `ChildBufferComponent` (remove child) and new parent's (add child)
@@ -104,15 +104,15 @@ void MyComponent::OnDetach(Domain& domain, Entity self) {
 
 | File | Change |
 |---|---|
-| `Dia/DiaEntity/Hierarchy/ParentComponent.h` | New |
-| `Dia/DiaEntity/Hierarchy/ParentComponent.cpp` | New — `DIA_COMPONENT_REGISTER` |
-| `Dia/DiaEntity/Hierarchy/ChildBufferComponent.h` | New |
-| `Dia/DiaEntity/Hierarchy/ChildBufferComponent.cpp` | New — `DIA_COMPONENT_REGISTER` |
-| `Dia/DiaEntity/Hierarchy/Hierarchy.h` | New — `QueueSetParent`, `QueueDestroySubtree` |
-| `Dia/DiaEntity/Hierarchy/Hierarchy.cpp` | New — implementation |
-| `Dia/DiaEntity/Messages/EntityDestroyedMessage.h` | New |
-| `Dia/DiaEntity/Domain.cpp` | Modified — emit `EntityDestroyedMessage` during destroy pass |
-| `DiaEntity.vcxproj` / `.filters` | Add new files |
+| `Dia/diaentitytemplate/Hierarchy/ParentComponent.h` | New |
+| `Dia/diaentitytemplate/Hierarchy/ParentComponent.cpp` | New — `DIA_COMPONENT_REGISTER` |
+| `Dia/diaentitytemplate/Hierarchy/ChildBufferComponent.h` | New |
+| `Dia/diaentitytemplate/Hierarchy/ChildBufferComponent.cpp` | New — `DIA_COMPONENT_REGISTER` |
+| `Dia/diaentitytemplate/Hierarchy/Hierarchy.h` | New — `QueueSetParent`, `QueueDestroySubtree` |
+| `Dia/diaentitytemplate/Hierarchy/Hierarchy.cpp` | New — implementation |
+| `Dia/diaentitytemplate/Messages/EntityDestroyedMessage.h` | New |
+| `Dia/diaentitytemplate/Domain.cpp` | Modified — emit `EntityDestroyedMessage` during destroy pass |
+| `diaentitytemplate.vcxproj` / `.filters` | Add new files |
 | `Tests/GoogleTests/Entity/HierarchyTests.cpp` | New |
 
 ## Binding Decisions Compliance

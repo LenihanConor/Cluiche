@@ -12,12 +12,12 @@ language: cpp
 parent_module_id: dia.entity
 
 summary: >
-  In-game debug visualization for DiaEntity state — world-space labels, hierarchy lines,
+  In-game debug visualization for diaentitytemplate state — world-space labels, hierarchy lines,
   component-filter highlights, entity picking feedback, live field inspection, and domain
   statistics rendered as debug primitives and ImGui panels.
 
 intent: >
-  Bridges DiaEntity (pure ECS logic, no graphics dependency) and DiaVisualDebugger
+  Bridges diaentitytemplate (pure ECS logic, no graphics dependency) and DiaVisualDebugger
   (debug draw infrastructure) without polluting either. Provides spatial debugging
   context that an out-of-game editor cannot — selection in the running viewport,
   hierarchy relationships overlaid on world positions, and live component inspection.

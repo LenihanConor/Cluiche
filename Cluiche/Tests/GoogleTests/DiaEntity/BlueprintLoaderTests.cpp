@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include <DiaEntity/Domain.h>
-#include <DiaEntity/ComponentPool.h>
-#include <DiaEntity/JsonBlueprintLoader.h>
+#include <diaentitytemplate/Domain.h>
+#include <diaentitytemplate/ComponentPool.h>
+#include <diaentitytemplate/JsonBlueprintLoader.h>
 #include "BpTransformComponent.h"
 
 using namespace Dia::Entity;

@@ -1,20 +1,20 @@
-# Implementation Plan: DiaEntity
+# Implementation Plan: diaentitytemplate
 
-**Spec:** [diaentity.md](diaentity.md)
+**Spec:** [diaentitytemplate.md](diaentitytemplate.md)
 **Status:** Done
 **Created:** 2026-05-21
 
 ## Session Notes
 
-**Spec decisions summary:** DiaEntity is a layered ECS where systems own their data (SD-ENT-002). The container is `Domain` (SD-ENT-001), entity handles are generational 64-bit via `Handle<Entity>` (SD-ENT-003). Every component type must declare reflection metadata via `DIA_COMPONENT` + `FIELD` macros (SD-ENT-004); this metadata is component-only and lives inside DiaEntity — it is not a generic reflection module (SD-ENT-005). Structural mutations are queued and applied at `EndOfFrame()` (SD-ENT-012); entity slot allocation is immediate but component attachments are queued (SD-ENT-013). The old `IComponent` infrastructure is removed before DiaEntity is built (SD-ENT-020). Platform constraints: StringCRC for all IDs (PD-001), no STL in public APIs (PD-004), C++20 (PD-007), VS project files are source of truth (PD-006).
+**Spec decisions summary:** diaentitytemplate is a layered ECS where systems own their data (SD-ENT-002). The container is `Domain` (SD-ENT-001), entity handles are generational 64-bit via `Handle<Entity>` (SD-ENT-003). Every component type must declare reflection metadata via `DIA_COMPONENT` + `FIELD` macros (SD-ENT-004); this metadata is component-only and lives inside diaentitytemplate — it is not a generic reflection module (SD-ENT-005). Structural mutations are queued and applied at `EndOfFrame()` (SD-ENT-012); entity slot allocation is immediate but component attachments are queued (SD-ENT-013). The old `IComponent` infrastructure is removed before diaentitytemplate is built (SD-ENT-020). Platform constraints: StringCRC for all IDs (PD-001), no STL in public APIs (PD-004), C++20 (PD-007), VS project files are source of truth (PD-006).
 
 **DiaReflect integration — critical sequencing notes:**
 
-DiaEntity has its own internal reflection system (`DIA_COMPONENT` + `FIELD` macros, `ComponentTypeDesc`, `ComponentRegistry`) that is **separate from DiaReflect**. Per SD-ENT-005, component reflection is scoped to DiaEntity only and lives inside the DiaEntity module. DiaReflect (the general-purpose archive/serialization system) is **not** a dependency of DiaEntity in v1.
+diaentitytemplate has its own internal reflection system (`DIA_COMPONENT` + `FIELD` macros, `ComponentTypeDesc`, `ComponentRegistry`) that is **separate from DiaReflect**. Per SD-ENT-005, component reflection is scoped to diaentitytemplate only and lives inside the diaentitytemplate module. DiaReflect (the general-purpose archive/serialization system) is **not** a dependency of diaentitytemplate in v1.
 
 However, three implementation features have a **dependency coupling to DiaReflect phases**:
 
-| DiaEntity Feature | DiaReflect dependency | DiaReflect status |
+| diaentitytemplate Feature | DiaReflect dependency | DiaReflect status |
 |---|---|---|
 | `blueprint-loader` (F3) — JSON load/save | Phases 1–2 (JsonReadArchive / macro DSL) | ✅ Done (138 tests GREEN) |
 | `editor-inspection` (F9) — live field edit | Phase 3 (Field attributes: `RequiredAttribute`, `RangeAttribute`, `AssetRefAttribute`) | Phase 3a Done (T10); T11–T13 not started |
@@ -29,9 +29,9 @@ However, three implementation features have a **dependency coupling to DiaReflec
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
 | **Pre-work — Cleanup** | | | | | |
-| 1 | Remove old `IComponent` infrastructure (`Dia/DiaCore/Architecture/Components/`), migrate `SkeletonComponent` + `StateMachineComponent` consumers, remove related tests. Per SD-ENT-020. | Build passes; no references to old IComponent in non-DiaEntity code | Done | sonnet | Completed 2026-05-20. `Architecture/Components/` deleted, both components migrated to plain classes, 4818 tests pass. |
+| 1 | Remove old `IComponent` infrastructure (`Dia/DiaCore/Architecture/Components/`), migrate `SkeletonComponent` + `StateMachineComponent` consumers, remove related tests. Per SD-ENT-020. | Build passes; no references to old IComponent in non-diaentitytemplate code | Done | sonnet | Completed 2026-05-20. `Architecture/Components/` deleted, both components migrated to plain classes, 4818 tests pass. |
 | **F10 — Module & Build** | | | | | |
-| 2 | Create `Dia/DiaEntity/` directory, `DiaEntity.vcxproj` + `.vcxproj.filters`, register in `Cluiche.sln` under `Dia` solution folder, create `dia.entity.architecture.module.md` YAML module doc, add dependency edge in `dia_modules.py`. | Build passes (empty lib) | Done | haiku | Completed 2026-05-24. All files created, lib builds. |
+| 2 | Create `Dia/diaentitytemplate/` directory, `diaentitytemplate.vcxproj` + `.vcxproj.filters`, register in `Cluiche.sln` under `Dia` solution folder, create `dia.entity.architecture.module.md` YAML module doc, add dependency edge in `dia_modules.py`. | Build passes (empty lib) | Done | haiku | Completed 2026-05-24. All files created, lib builds. |
 | **F1 — Foundation** | | | | | |
 | 3 | `Entity` type alias (`Handle<class EntityTag>`), entity slot pool (`HandlePool<Entity, kMaxEntitiesPerDomain>`), `Domain` skeleton (non-copyable, non-movable, `CreateEntity`, `IsAlive`, debug name storage in debug builds). | `Domain::CreateEntity` returns valid handle; `IsAlive` returns true; generation rollover test | Done | sonnet | Completed 2026-05-24. 13 foundation tests GREEN. |
 | 4 | `IComponent` abstract base (`OnAttach`, `OnDetach`, `DoUpdate`, `OnAssetLoaded`, `GetTypeId`). `Domain::QueueAddComponent` + `QueueRemoveComponent` + end-of-frame mutation application. `GetComponent`, `HasComponent`. | Component attach/detach lifecycle tests; `GetComponent` returns nullptr before EndOfFrame if queued | Done | sonnet | Completed 2026-05-24. IComponentPool, ComponentPool, MutationOp all shipped. |
@@ -55,8 +55,8 @@ However, three implementation features have a **dependency coupling to DiaReflec
 | **F9 — Editor Inspection** | | | | | |
 | 15 | `IEntityInspectable` implementation on `Domain`. `ReadField` / `WriteField` via reflection (`ComponentTypeDesc` field array, linear scan <20 fields). Mailbox log accessor. Tier (a) read-only + Tier (b) live field edit. `WriteField` type mismatch → `DIA_LOG_WARNING` + return false (no crash). | ReadField round-trip test; WriteField type-mismatch test (returns false, no assert) | Done | sonnet | Completed 2026-05-24. 13 inspection tests GREEN. WriteField uses read-modify-write round-trip via saveToJson/loadFromJson to avoid resetting unrelated fields. |
 | **Verification & Smoke Test** | | | | | |
-| 16 | Integration smoke test: `TestDomainComponent` + small CluicheTest blueprint exercising foundation, reflection, blueprint loading, references, hierarchy, queries, mailbox routing, and inspection. Host in DummyStage. | `dia run googletest --filter="DiaEntity*"` all GREEN; smoke blueprint loads without assert | Skipped | sonnet | Deferred — unit/integration coverage already comprehensive at 94 tests. System/E2E smoke test to be done as a separate initiative when CluicheTest scene scaffolding is ready. |
-| 17 | PD-003 / AD-005 Superseded amendment — edit platform spec and Dia app spec to mark both decisions Superseded, pointing to diaentity.md as the new authority. Per SD-ENT-021. | Spec review: no unresolved conflicts remain | Done | haiku | Completed 2026-05-24. Both specs updated to `Superseded by diaentity.md`. Conflict C-1 in diaentity.md marked Resolved. |
+| 16 | Integration smoke test: `TestDomainComponent` + small CluicheTest blueprint exercising foundation, reflection, blueprint loading, references, hierarchy, queries, mailbox routing, and inspection. Host in DummyStage. | `dia run googletest --filter="diaentitytemplate*"` all GREEN; smoke blueprint loads without assert | Skipped | sonnet | Deferred — unit/integration coverage already comprehensive at 94 tests. System/E2E smoke test to be done as a separate initiative when CluicheTest scene scaffolding is ready. |
+| 17 | PD-003 / AD-005 Superseded amendment — edit platform spec and Dia app spec to mark both decisions Superseded, pointing to diaentitytemplate.md as the new authority. Per SD-ENT-021. | Spec review: no unresolved conflicts remain | Done | haiku | Completed 2026-05-24. Both specs updated to `Superseded by diaentitytemplate.md`. Conflict C-1 in diaentitytemplate.md marked Resolved. |
 
 ## DIA_COMPONENT Macro Contract (to be filled in at Task 6)
 

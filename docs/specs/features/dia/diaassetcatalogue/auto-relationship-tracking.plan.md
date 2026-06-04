@@ -22,7 +22,7 @@ A new request handler `asset_catalogue.infer_relationships` on DiaAssetCatalogue
 1. Resolve the `.diascene` file path
 2. Parse JSON, iterate `scene2d.entities[]`, `scene2d.cameras[]`, `scene2d.lights[]`
 3. Extract `item.blueprint.value` from each
-4. Map blueprint ID to catalogue record ID (prefix with type: `diaentity.`, `diacamera.`, `dialight.` based on array)
+4. Map blueprint ID to catalogue record ID (prefix with type: `diaentitytemplate.`, `diacamera.`, `dialight.` based on array)
 5. Call `add_relationship` for each (idempotent — duplicates rejected)
 6. Return summary: `{ scenes_scanned, edges_added, edges_skipped }`
 

@@ -33,7 +33,7 @@ responsibilities:
 non_responsibilities:
   - Camera runtime behaviour (DiaCamera2D)
   - Light runtime management (DiaLighting2D)
-  - Entity component systems / ECS (DiaEntity)
+  - Entity component systems / ECS (diaentitytemplate)
   - Blueprint asset loading from catalogue (DiaAssetRuntime — v2)
   - Rendering / draw calls (DiaBgfx)
   - Gameplay config: gravity, clear_colour, render techniques (.diastage config)

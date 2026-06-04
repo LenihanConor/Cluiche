@@ -7,7 +7,7 @@
 
 ## Summary
 
-Fill in the `queries` array in the `entity.inspect` payload and implement `QueryBrowserController` to drive the Queries tab. The tab shows all registered queries (their component-type signatures and result counts) and highlights which queries the currently selected entity is a member of — entirely derived from data already available via `IEntityInspectable`. No new DiaEntity API methods are needed.
+Fill in the `queries` array in the `entity.inspect` payload and implement `QueryBrowserController` to drive the Queries tab. The tab shows all registered queries (their component-type signatures and result counts) and highlights which queries the currently selected entity is a member of — entirely derived from data already available via `IEntityInspectable`. No new diaentitytemplate API methods are needed.
 
 ## Traceability
 
@@ -17,7 +17,7 @@ Fill in the `queries` array in the `entity.inspect` payload and implement `Query
 | Application | [dia.md](../../../applications/dia.md) |
 | System | [diaentityinspector.md](../../systems/dia/diaentityinspector.md) |
 | Depends on feature | [entity-inspector-panel.md](entity-inspector-panel.md) |
-| Depends on feature | [editor-inspection.md](../diaentity/editor-inspection.md) |
+| Depends on feature | [editor-inspection.md](../diaentitytemplate/editor-inspection.md) |
 
 ## Goals
 

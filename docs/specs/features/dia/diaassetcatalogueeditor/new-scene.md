@@ -25,7 +25,7 @@ Users have no way to create a new `.diascene` file from within the editor; they 
 - A catalogue record (`id`, `typeId = "diascene"`, `sourcePath`) is created via `CreateRecordCommand` and committed to the registry (undo/redo enabled per SD-ACE-004)
 - `assets.catalogue.json` is saved after record creation
 - The new scene is immediately opened in DiaSceneEditor via `asset_catalogue.open_asset`
-- `diascene` type is seeded in `AssetTypeEditorRegistry` → `DiaSceneEditor` at `OnLoad` (same pattern as `diaentity`/`diacamera`/`dialight` → `DiaBlueprintEditor`)
+- `diascene` type is seeded in `AssetTypeEditorRegistry` → `DiaSceneEditor` at `OnLoad` (same pattern as `diaentitytemplate`/`diacamera`/`dialight` → `DiaEntityTemplateEditor`)
 - `diascene` is added to the `get_asset_types` known-types list with display name `"Scene"`
 
 ### DiaSceneEditor shortcut

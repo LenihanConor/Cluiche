@@ -117,7 +117,7 @@ Module dependency changes validated via `python Tools/dia_modules.py --validate`
 |----|----------|-----------|-------|--------|---------|
 | PD-001 | Use StringCRC for all entity/component IDs | Compile-time hashing provides zero-cost string comparison; prevents typos | Platform-wide | Accepted | Yes |
 | PD-002 | ProcessingUnit/Phase/Module architecture for app structure | Enables multi-threaded execution with explicit scheduling; clear lifecycle management | Platform-wide | Accepted | Yes |
-| PD-003 | Component-based entities (IComponent/IComponentObject) | Composition over inheritance; enables flexible runtime entity construction | Platform-wide | Superseded by [diaentity.md](../systems/dia/diaentity.md) | Yes |
+| PD-003 | Component-based entities (IComponent/IComponentObject) | Composition over inheritance; enables flexible runtime entity construction | Platform-wide | Superseded by [diaentitytemplate.md](../systems/dia/diaentitytemplate.md) | Yes |
 | PD-004 | No STL containers in public APIs | Dia containers (DynamicArrayC, HashTable, LinkList) ensure consistent memory management and integration with engine | Platform-wide | Accepted | Yes |
 | PD-005 | x64 is the only supported build target | 32-bit Win32 configurations were removed; x64 is the sole platform for all projects | Platform-wide | Accepted | Yes |
 | PD-006 | Visual Studio project files are source of truth | MSBuild used for all builds; manual project file maintenance required; `Directory.Build.props` at repo root is the authority for shared build settings above the per-project level | Platform-wide | Accepted | Yes |

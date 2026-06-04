@@ -27,12 +27,12 @@ A scene is **purely spatial content** — what's placed where. It contains no ga
     ↓  SceneLoader2D reads
 DiaCamera2D::CameraRegistry2D  ← cameras hydrated
 DiaLighting2D::LightRegistry2D ← lights hydrated
-DiaEntity::Domain              ← entities spawned from blueprints + instance_data
+diaentitytemplate::Domain              ← entities spawned from blueprints + instance_data
 LayerTable                     ← layer definitions resolved
 ```
 
 **Dependency chain:**
-`DiaScene2D → DiaCamera2D, DiaLighting2D, DiaEntity, DiaReflect, DiaGeometry2D, DiaMaths, DiaCore`
+`DiaScene2D → DiaCamera2D, DiaLighting2D, diaentitytemplate, DiaReflect, DiaGeometry2D, DiaMaths, DiaCore`
 
 ---
 
@@ -52,8 +52,8 @@ LayerTable                     ← layer definitions resolved
 
 - Camera runtime behaviour (DiaCamera2D)
 - Light runtime management (DiaLighting2D)
-- Entity component systems / ECS (DiaEntity)
-- Blueprint definition or component reflection (DiaEntity, DiaReflect)
+- Entity component systems / ECS (diaentitytemplate)
+- Blueprint definition or component reflection (diaentitytemplate, DiaReflect)
 - Rendering / draw calls (DiaBgfx)
 - Gameplay config: gravity, clear_colour, render techniques (`.diastage` config)
 - Scene identity / display name (catalogue asset ID / `.diastage` name)
@@ -85,7 +85,7 @@ namespace Dia::Scene2D
         Dia::Core::StringCRC id;
         bool active = false;
         Dia::Core::StringCRC blueprint;
-        // instance_data applied via DiaEntity reflection (Component.Field → value)
+        // instance_data applied via diaentitytemplate reflection (Component.Field → value)
     };
 
     struct LightEntry
@@ -94,7 +94,7 @@ namespace Dia::Scene2D
         bool enabled = true;
         Dia::Core::StringCRC blueprint;
         Dia::Core::DynamicArrayC<Dia::Core::StringCRC, 32> affectsLayers;
-        // instance_data applied via DiaEntity reflection
+        // instance_data applied via diaentitytemplate reflection
     };
 
     struct EntityInstance
@@ -103,7 +103,7 @@ namespace Dia::Scene2D
         Dia::Core::StringCRC name;  // optional (kEmpty if unset)
         Dia::Core::StringCRC blueprint;
         bool enabled = true;
-        // instance_data applied via DiaEntity reflection
+        // instance_data applied via diaentitytemplate reflection
     };
 
     struct Scene2D
@@ -199,7 +199,7 @@ namespace Dia::Scene2D
 - Serialized via `JsonArchive` (reflected struct, no custom serializer)
 - `world_bounds` optional — zero-area AARect means unbounded
 - Exactly one camera must have `active: true` (validated at load)
-- `instance_data` uses DiaEntity reflection keys: `Component.Field: value`
+- `instance_data` uses diaentitytemplate reflection keys: `Component.Field: value`
 - `render_technique` on layers is optional (no-op until render technique assets exist)
 
 ---
@@ -210,7 +210,7 @@ namespace Dia::Scene2D
 |---|---|
 | DiaCamera2D | CameraRegistry2D, Camera2D, CameraBehaviourRegistry (factory for loading behaviours) |
 | DiaLighting2D | LightRegistry2D, PointLight2D |
-| DiaEntity | Domain (entity spawning), blueprint resolution, instance_data field patching |
+| diaentitytemplate | Domain (entity spawning), blueprint resolution, instance_data field patching |
 | DiaReflect | JsonArchive (Scene2D struct serialization/deserialization) |
 | DiaGeometry2D | AARect (world_bounds) |
 | DiaMaths | Vector2D |
@@ -262,7 +262,7 @@ namespace Dia::Scene2D
 
 5. **No gameplay config in scene** — Gravity, clear_colour, render techniques all in `.diastage` config. Scene is purely spatial.
 
-6. **`instance_data` not `overrides`** — Neutral term, aligned with DiaEntity reflection. Position is `Transform2D.position`, not special-cased.
+6. **`instance_data` not `overrides`** — Neutral term, aligned with diaentitytemplate reflection. Position is `Transform2D.position`, not special-cased.
 
 7. **Layer render technique as reference** — Optional StringCRC pointing to a future render technique asset. No-op until that asset system exists (backlogged).
 

@@ -8,7 +8,7 @@
 
 ## Problem Statement
 
-No runtime validation path exists for DiaScene2D's load pipeline. Unit tests can verify struct serialization in isolation, but cannot confirm that `SceneLoader2D` correctly hydrates `CameraRegistry2D`, `LightRegistry2D`, and `DiaEntity::Domain` from a `.diascene` file under real PU timing. A test stage closes that gap.
+No runtime validation path exists for DiaScene2D's load pipeline. Unit tests can verify struct serialization in isolation, but cannot confirm that `SceneLoader2D` correctly hydrates `CameraRegistry2D`, `LightRegistry2D`, and `diaentitytemplate::Domain` from a `.diascene` file under real PU timing. A test stage closes that gap.
 
 ---
 
@@ -25,7 +25,7 @@ No runtime validation path exists for DiaScene2D's load pipeline. Unit tests can
 | T7 | Unit test gap | DiaScene2D unit tests cover struct serialization roundtrip and LayerTable logic; this stage covers the full load pipeline under real PU timing with real registries |
 | T8 | Determinism | Fully deterministic — static scene, no simulation after load |
 | T9 | Frame budget | One-shot load; negligible per-frame cost after hydration |
-| T10 | Dependencies | DiaScene2D (scene2d-format + scene2d-loader features must be Done), DiaCamera2D, DiaLighting2D, DiaEntity |
+| T10 | Dependencies | DiaScene2D (scene2d-format + scene2d-loader features must be Done), DiaCamera2D, DiaLighting2D, diaentitytemplate |
 
 ---
 

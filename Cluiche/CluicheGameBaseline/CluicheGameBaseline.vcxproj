@@ -160,7 +160,7 @@
     <ProjectReference Include="..\..\Dia\DiaImGui\DiaImGui.vcxproj">
       <Project>{F6A7B8C9-D0E1-2345-ABCD-567890ABCDE1}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\Dia\DiaEntity\DiaEntity.vcxproj">
+    <ProjectReference Include="..\..\Dia\diaentitytemplate\diaentitytemplate.vcxproj">
       <Project>{D9E0F1A2-B3C4-5678-9DEF-012345678903}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\Dia\DiaEntityVisualDebugger\DiaEntityVisualDebugger.vcxproj">

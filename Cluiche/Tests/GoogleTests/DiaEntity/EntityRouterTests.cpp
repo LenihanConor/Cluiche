@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
-#include <DiaEntity/Domain.h>
-#include <DiaEntity/EntityAddress.h>
-#include <DiaEntity/EntityRouter.h>
-#include <DiaEntity/ComponentPool.h>
+#include <diaentitytemplate/Domain.h>
+#include <diaentitytemplate/EntityAddress.h>
+#include <diaentitytemplate/EntityRouter.h>
+#include <diaentitytemplate/ComponentPool.h>
 #include <DiaMailbox/IMailboxRouter.h>
 #include "TestComponent.h"
 

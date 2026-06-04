@@ -1,4 +1,4 @@
-# Research: Choice — DiaEntity Visual Debugger & Editor Options
+# Research: Choice — diaentitytemplate Visual Debugger & Editor Options
 
 **Date:** 2026-05-24
 **Chosen candidate:** All remaining candidates — organised into three system specs
@@ -37,7 +37,7 @@ Build order: C3 first (picking seam), then C4. Combined ≤2 weeks.
 
 Build order: C2 → C5 → C6 → C8.
 
-### System Target 3: DiaEntityBlueprintEditor (new system)
+### System Target 3: DiaEntityEntityTemplateEditor (new system)
 
 | Feature | Candidate | Size |
 |---------|-----------|------|
@@ -73,4 +73,4 @@ This mockup is the visual acceptance gate for all four DiaEntityEditor feature s
 5. `/spec-feature` → `query-browser-tab` inside DiaEntityEditor
 6. `/spec-feature` → `mailbox-traffic-monitor` inside DiaEntityEditor
 7. `/spec-feature` → `entity-watch-list` inside DiaEntityEditor
-8. `/spec-system` → `DiaEntityBlueprintEditor`
+8. `/spec-system` → `DiaEntityEntityTemplateEditor`

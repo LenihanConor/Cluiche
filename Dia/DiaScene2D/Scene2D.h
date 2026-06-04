@@ -30,7 +30,7 @@ namespace Dia
         /// \brief Camera entry in a scene file.
         ///
         /// blueprint + instanceData are resolved at load time by SceneLoader2D.
-        /// instanceData is stored raw so the format layer has no DiaEntity dependency.
+        /// instanceData is stored raw so the format layer has no diaentitytemplate dependency.
         ////////////////////////////////////////////////////////////
         struct CameraEntry
         {

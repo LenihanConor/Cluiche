@@ -11,13 +11,13 @@
 
 **Target parser extension** (`PipelineTargetParser.h`): Add `ParseTargetStages(tomlPath, targetName)` inline function returning `Json::Value` (array of strings). Parses `stages = [...]` line inside `[targets.NAME]` block. Same pattern as existing `ParsePipelineTargets`.
 
-**Project context** (`PipelineEditorPlugin`): Follow the `DiaBlueprintEditorPlugin` pattern exactly — store `mDiagamePath[512]`, update on `OnProjectChanged`, register `pipeline.get-project-state` and `pipeline.get-target-stages` handlers. Target = filename-without-extension from `mDiagamePath`.
+**Project context** (`PipelineEditorPlugin`): Follow the `DiaEntityTemplateEditorPlugin` pattern exactly — store `mDiagamePath[512]`, update on `OnProjectChanged`, register `pipeline.get-project-state` and `pipeline.get-target-stages` handlers. Target = filename-without-extension from `mDiagamePath`.
 
 **RunHistoryStore simplification**: Remove `LoadFromDisk()` call from `Initialize()`. Remove `ArchiveStaleSession()`, `PruneSessions()`, `WriteContext()`, `mSessionsDir`, `mSessionId`, `mContextFilePath`. Change `kMaxRuns = 5`. Keep `SaveToDisk()` for the `Shutdown()` path (harmless to leave) OR strip entirely since history is session-only — strip is cleaner.
 
 ### UI patterns
 
-**No-project overlay**: Same `<div class="no-project-overlay">` pattern as `DiaBlueprintEditor/UI/index.html` — rendered as React component `NoProjectOverlay`, toggled by `state.isProjectLoaded`. Subscribe to `blueprint_editor.project_changed` topic equivalent (`pipeline.project_changed`).
+**No-project overlay**: Same `<div class="no-project-overlay">` pattern as `DiaEntityTemplateEditor/UI/index.html` — rendered as React component `NoProjectOverlay`, toggled by `state.isProjectLoaded`. Subscribe to `entity_template_editor.project_changed` topic equivalent (`pipeline.project_changed`).
 
 **Ghost stages**: `SET_STAGE_MANIFEST` action populates `state.stages` with `status: 'not-started'` entries before any run. `OnRunStarted` merges incoming stages with the manifest list (preserves order, resets status). Ghost pills render in `StageRow` when `status === 'not-started'` with grey colour and `○` icon.
 

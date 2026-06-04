@@ -6,7 +6,7 @@
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaCore/CRC/StringCRC.h>
-#include <DiaEntity/Entity.h>
+#include <diaentitytemplate/Entity.h>
 #include "Modules/EntityModule.h"
 
 #ifdef DIA_DEBUG
@@ -26,7 +26,7 @@ class EntityTestStageModule : public TestStageModuleBase
 public:
     static const Dia::Core::StringCRC kTypeId;
     static constexpr Dia::ApplicationFlow::PUAffinity kAllowedPUs = Dia::ApplicationFlow::PUAffinity::kSim;
-    static constexpr const char* kDescription = "Validates DiaEntity: spawn/destroy/hierarchy/query/mailbox/lifecycle";
+    static constexpr const char* kDescription = "Validates diaentitytemplate: spawn/destroy/hierarchy/query/mailbox/lifecycle";
     explicit EntityTestStageModule(const Dia::Core::StringCRC& instanceId);
     ~EntityTestStageModule() override;
 

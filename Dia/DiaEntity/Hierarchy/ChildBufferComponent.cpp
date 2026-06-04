@@ -1,6 +1,6 @@
-#include <DiaEntity/Hierarchy/ChildBufferComponent.h>
-#include <DiaEntity/Hierarchy/ParentComponent.h>
-#include <DiaEntity/Domain.h>
+#include <diaentitytemplate/Hierarchy/ChildBufferComponent.h>
+#include <diaentitytemplate/Hierarchy/ParentComponent.h>
+#include <diaentitytemplate/Domain.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
 
@@ -24,7 +24,7 @@ bool ChildBufferComponent::AddChild(Dia::Entity::Entity child) {
         DIA_ASSERT(false, "ChildBufferComponent: overflow — more than %u children on one entity",
             kMaxChildren);
 #else
-        DIA_LOG_WARNING("DiaEntity", "ChildBufferComponent: overflow — more than %u children on one entity; ignoring",
+        DIA_LOG_WARNING("diaentitytemplate", "ChildBufferComponent: overflow — more than %u children on one entity; ignoring",
             kMaxChildren);
 #endif
         return false;

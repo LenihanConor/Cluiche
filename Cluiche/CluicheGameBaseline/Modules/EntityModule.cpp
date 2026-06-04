@@ -1,7 +1,7 @@
 #include "Modules/EntityModule.h"
-#include <DiaEntity/ComponentPool.h>
-#include <DiaEntity/Hierarchy/ParentComponent.h>
-#include <DiaEntity/Hierarchy/ChildBufferComponent.h>
+#include <diaentitytemplate/ComponentPool.h>
+#include <diaentitytemplate/Hierarchy/ParentComponent.h>
+#include <diaentitytemplate/Hierarchy/ChildBufferComponent.h>
 #include <DiaObservation/Log/DiaLog.h>
 
 namespace Cluiche { namespace AppFlow {
@@ -50,4 +50,4 @@ Dia::ApplicationFlow::StopResult EntityModule::DoStop()
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 namespace { using EntityModule_ = Cluiche::AppFlow::EntityModule; }
 DIA_MODULE(EntityModule_);
-DIA_DESCRIBE(EntityModule_::kTypeId, "Hosts the entity world: creates, updates, and destroys DiaEntity instances and their components.");
+DIA_DESCRIBE(EntityModule_::kTypeId, "Hosts the entity world: creates, updates, and destroys diaentitytemplate instances and their components.");

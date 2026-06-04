@@ -1,6 +1,6 @@
 # Feature Spec: editor-inspection
 
-**System:** DiaEntity
+**System:** diaentitytemplate
 **App:** Dia
 **Status:** Draft
 
@@ -14,7 +14,7 @@ Implement `IEntityInspectable` on `Domain`, providing the editor with read-only 
 |---|---|
 | Platform | [platform.md](../../../../platform/PLATFORM.md) |
 | Application | [dia.md](../../../applications/dia.md) |
-| System | [diaentity.md](../../systems/dia/diaentity.md) |
+| System | [diaentitytemplate.md](../../systems/dia/diaentitytemplate.md) |
 | Depends on feature | [foundation.md](foundation.md) |
 | Depends on feature | [reflection.md](reflection.md) |
 | Depends on feature | [mailbox-router.md](mailbox-router.md) |
@@ -86,10 +86,10 @@ namespace Dia::Entity {
 
 | File | Change |
 |---|---|
-| `Dia/DiaEntity/IEntityInspectable.h` | New — `IEntityInspectable` interface |
-| `Dia/DiaEntity/Domain.h` | Modified — inherit `IEntityInspectable` |
-| `Dia/DiaEntity/Domain.cpp` | Modified — implement all `IEntityInspectable` methods |
-| `DiaEntity.vcxproj` / `.filters` | Add new files |
+| `Dia/diaentitytemplate/IEntityInspectable.h` | New — `IEntityInspectable` interface |
+| `Dia/diaentitytemplate/Domain.h` | Modified — inherit `IEntityInspectable` |
+| `Dia/diaentitytemplate/Domain.cpp` | Modified — implement all `IEntityInspectable` methods |
+| `diaentitytemplate.vcxproj` / `.filters` | Add new files |
 | `Tests/GoogleTests/Entity/EditorInspectionTests.cpp` | New |
 
 ## Binding Decisions Compliance

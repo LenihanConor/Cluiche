@@ -1,6 +1,6 @@
 # Feature Spec: component-deps-and-refs
 
-**System:** DiaEntity
+**System:** diaentitytemplate
 **App:** Dia
 **Status:** Draft
 
@@ -14,7 +14,7 @@ Define `EntityRef<TComponent>` — the typed cross-entity reference slot used in
 |---|---|
 | Platform | [platform.md](../../../../platform/PLATFORM.md) |
 | Application | [dia.md](../../../applications/dia.md) |
-| System | [diaentity.md](../../systems/dia/diaentity.md) |
+| System | [diaentitytemplate.md](../../systems/dia/diaentitytemplate.md) |
 | Depends on feature | [foundation.md](foundation.md) |
 | Depends on feature | [reflection.md](reflection.md) |
 | Depends on feature | [blueprint-loader.md](blueprint-loader.md) |
@@ -74,9 +74,9 @@ A `DIA_SERIALIZE` block is provided for `EntityRef<T>` using a partial specializ
 
 | File | Change |
 |---|---|
-| `Dia/DiaEntity/EntityRef.h` | New — `ComponentType` concept + `EntityRef<TComponent>` |
-| `Dia/DiaEntity/EntityRef.inl` | New — `Resolve` implementation |
-| `DiaEntity.vcxproj` / `.filters` | Add new files |
+| `Dia/diaentitytemplate/EntityRef.h` | New — `ComponentType` concept + `EntityRef<TComponent>` |
+| `Dia/diaentitytemplate/EntityRef.inl` | New — `Resolve` implementation |
+| `diaentitytemplate.vcxproj` / `.filters` | Add new files |
 | `Tests/GoogleTests/Entity/EntityRefTests.cpp` | New — resolve, invalid handle, cross-domain assert, FIELD round-trip |
 
 ## Binding Decisions Compliance

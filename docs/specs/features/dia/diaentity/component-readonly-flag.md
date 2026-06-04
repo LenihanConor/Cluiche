@@ -1,7 +1,7 @@
 # Feature Spec: Component Data Flow Contracts
 
 ## Parent System
-@docs/specs/systems/dia/diaentity.md
+@docs/specs/systems/dia/diaentitytemplate.md
 
 ## Binding Decisions
 - SD-ENT-022: components must not reach outside the Domain; readonly vs behaviour split

@@ -1,7 +1,7 @@
 // Integration tests for DiaSceneEditorPlugin.
 //
 // Uses a real WebUIBridge(nullptr) + EditorModel — same pattern as
-// IntegrationTestBlueprintEditorPlugin. No mocking required.
+// IntegrationTestEntityTemplateEditorPlugin. No mocking required.
 
 #include <gtest/gtest.h>
 #include <DiaSceneEditor/DiaSceneEditorPlugin.h>

@@ -24,7 +24,7 @@ The system defines the **pattern** — one stage per feature, one module per sta
 
 - **Orchestration logic** — owned by pytest scenarios in `Tools/orchestrator/`
 - **Automation infrastructure** — owned by DiaAutomation
-- **Engine feature implementation** — owned by the respective Dia systems (DiaRigidBody2D, DiaEntity, etc.)
+- **Engine feature implementation** — owned by the respective Dia systems (DiaRigidBody2D, diaentitytemplate, etc.)
 - **General gameplay** — DummyStage handles general testbed behaviour; TestStages are targeted validation
 - **Shared test utilities / base classes** — if a pattern emerges across multiple stages, extract at that point (not up front)
 
@@ -138,7 +138,7 @@ Pytest scenarios can assert on metrics via the metric threshold fixture (item #8
 
 **Per-stage (varies):**
 - **DiaRigidBody2D** — for RigidBody2DStage
-- **DiaEntity** — for EntityTestStage
+- **diaentitytemplate** — for EntityTestStage
 - **DiaAnimation2D** — for Animation2DStage
 - **DiaSoftBody2D** — for SoftBody2DStage
 - (etc.)

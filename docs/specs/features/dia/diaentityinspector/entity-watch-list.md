@@ -17,7 +17,7 @@ Implement the Watch tab: a persistent, ordered list of (entity debug name, compo
 | Application | [dia.md](../../../applications/dia.md) |
 | System | [diaentityinspector.md](../../systems/dia/diaentityinspector.md) |
 | Depends on feature | [entity-inspector-panel.md](entity-inspector-panel.md) |
-| Depends on feature | [editor-inspection.md](../diaentity/editor-inspection.md) |
+| Depends on feature | [editor-inspection.md](../diaentitytemplate/editor-inspection.md) |
 
 ## Goals
 

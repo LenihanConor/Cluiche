@@ -1,6 +1,6 @@
 #pragma once
-#include <DiaEntity/IComponent.h>
-#include <DiaEntity/ComponentMacros.h>
+#include <diaentitytemplate/IComponent.h>
+#include <diaentitytemplate/ComponentMacros.h>
 
 namespace CluicheTest {
 

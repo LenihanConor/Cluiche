@@ -2,11 +2,11 @@
 
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaAutomation/AutomationService.h>
-#include <DiaEntity/ComponentPool.h>
-#include <DiaEntity/Hierarchy/ParentComponent.h>
-#include <DiaEntity/Hierarchy/ChildBufferComponent.h>
-#include <DiaEntity/Hierarchy/Hierarchy.h>
-#include <DiaEntity/EntityAddress.h>
+#include <diaentitytemplate/ComponentPool.h>
+#include <diaentitytemplate/Hierarchy/ParentComponent.h>
+#include <diaentitytemplate/Hierarchy/ChildBufferComponent.h>
+#include <diaentitytemplate/Hierarchy/Hierarchy.h>
+#include <diaentitytemplate/EntityAddress.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaCore/Json/external/json/json.h>

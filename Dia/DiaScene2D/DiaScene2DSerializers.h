@@ -8,7 +8,7 @@
 //
 // NOTE: CameraEntry, LightEntry, EntityInstance store instanceData as raw
 // Json::Value — it is captured verbatim during deserialization and resolved
-// at load time by SceneLoader2D. No DiaEntity dependency at this layer.
+// at load time by SceneLoader2D. No diaentitytemplate dependency at this layer.
 //
 // ADL NOTE:
 //   All serialize() functions are in namespace Dia::Scene2D, matching

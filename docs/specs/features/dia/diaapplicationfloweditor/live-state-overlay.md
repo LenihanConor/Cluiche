@@ -30,67 +30,55 @@ When connected to a running game (Live Connection established), overlay runtime 
 6. **Presence Grid live mode (ED-014)** — Active-stage column shows runtime dots. Inactive columns show outline-green for assigned (config truth). Active column header highlighted.
 7. **Stream throughput** — Stream Inspector shows messages/sec when live (data from `get_stream_info` command).
 8. **Graceful deactivation** — On disconnect, all overlays revert to offline state (grey dots, no highlights) immediately. No stale data shown.
+9. **Topic reception** — Editor receives `live.connectionStatus`, `live.state`, `live.modules`, `live.streams` from the shared WebUIBridge topic bus. It does NOT subscribe to game topics directly.
+10. **No Inspector dependency** — Editor renders correctly (offline mode) whether or not the Inspector plugin is loaded. Missing topics = offline state, not error state.
+11. **Immediate transition** — When `live.connectionStatus` changes from connected→disconnected, all overlays revert to offline within the same render frame. No stale data shown for even one frame.
 
 ## Design
 
-### Data Source
+### Data Source (post-split)
 
-Uses DiaAPI commands via the established WebSocket connection:
-- `get_app_state` → current stage, transition state
-- `get_active_modules` → per-PU module state list (instance_id → state enum)
-- `get_stream_info` → per-stream throughput metrics
+Editor receives data via the shared WebUIBridge topic bus — **not** via direct WebSocket subscriptions:
+- `live.connectionStatus` → {connected, host, port}
+- `live.state` → current stage, transition state
+- `live.modules` → per-PU module state list (instance_id → state enum)
+- `live.streams` → per-stream throughput metrics
 
-### Subscription Model
+These topics are published by the sibling DiaApplicationFlowInspector plugin which owns the connection lifecycle. The Editor is a passive consumer.
 
-On `onConnected`:
-1. Subscribe to `app.state` topic (push updates on stage change / transition start/end)
-2. Subscribe to `app.modules` topic (push updates on module state change)
-3. Subscribe to `app.streams` topic (periodic throughput data)
+### Topic Reception Model
 
-On `onDisconnected` / `onConnectionLost`:
-1. Unsubscribe all topics
-2. Clear all live state
-3. Revert all views to offline rendering
+On topic `live.connectionStatus` received with `connected: true`:
+1. Mark live state active
+2. Begin rendering overlays as subsequent `live.state`/`live.modules`/`live.streams` topics arrive
 
-### Live State Store
+On topic `live.connectionStatus` received with `connected: false` (or no topic received at all):
+1. Clear all live state immediately
+2. Revert all views to offline rendering (same render frame — AC 11)
+3. No error state — grey dots are the default
 
-```cpp
-namespace Dia::ApplicationFlow::Editor {
-    enum class ModuleRuntimeState { Stopped, Loading, Running, Failed };
+### Live State (Editor-side, read-only)
 
-    struct LiveModuleState {
-        Dia::Core::StringCRC moduleId;
-        Dia::Core::StringCRC puId;
-        ModuleRuntimeState state;
-    };
+Post-split, the Editor no longer owns `LiveStateStore` (moved to Inspector). The Editor's TypeScript `useLiveStoreV2` is trimmed to a read-only subscriber:
 
-    struct LiveAppState {
-        Dia::Core::StringCRC currentStage;
-        bool isTransitioning;
-        Dia::Core::StringCRC targetStage;  // valid during transition
-    };
-
-    struct LiveStreamState {
-        Dia::Core::StringCRC streamId;
-        unsigned int messagesPerSec;
-        unsigned int bytesPerSec;
-    };
-
-    class LiveStateStore {
-    public:
-        void UpdateAppState(const LiveAppState& state);
-        void UpdateModuleState(const LiveModuleState& state);
-        void UpdateStreamState(const LiveStreamState& state);
-        void Clear();
-
-        const LiveAppState& GetAppState() const;
-        ModuleRuntimeState GetModuleState(Dia::Core::StringCRC puId,
-                                           Dia::Core::StringCRC moduleId) const;
-        const LiveStreamState* GetStreamState(Dia::Core::StringCRC streamId) const;
-        bool IsActive() const;
-    };
+```typescript
+// useLiveStoreV2.ts (Editor version — trimmed)
+interface LiveStoreState {
+    connectionState: 'disconnected' | 'connected'
+    activeStage: string | null
+    modules: LiveModuleState[]
+    streams: LiveStreamState[]
+    // Setters only — called by topic push handlers in AppV2.tsx
+    setConnectionState(state): void
+    setActiveStage(stage): void
+    updateModuleStates(modules): void
+    updateStreamStates(streams): void
+    clearLiveState(): void
 }
+// NO connect()/disconnect() actions — those live in Inspector
 ```
+
+The C++ plugin receives topics via `WebUIBridge::SubscribeToTopic()` and forwards JSON payloads to the React UI.
 
 ### Frontend Rendering
 

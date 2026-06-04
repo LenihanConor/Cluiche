@@ -24,7 +24,7 @@ export function buildNavigateFailedContext(data: {
     if (!data) return null;
     const instanceId = data.instanceId || '';
     const sourcePath = data.sourcePath || '';
-    const assetType = data.assetType || 'diaentity';
+    const assetType = data.assetType || 'diaentitytemplate';
 
     if (!instanceId) return null;
 

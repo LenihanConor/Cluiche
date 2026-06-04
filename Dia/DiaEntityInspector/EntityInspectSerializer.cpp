@@ -1,7 +1,7 @@
 #include "DiaEntityInspector/EntityInspectSerializer.h"
-#include <DiaEntity/IEntityInspectable.h>
-#include <DiaEntity/ComponentTypeDesc.h>
-#include <DiaEntity/ComponentRegistry.h>
+#include <diaentitytemplate/IEntityInspectable.h>
+#include <diaentitytemplate/ComponentTypeDesc.h>
+#include <diaentitytemplate/ComponentRegistry.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaObservation/Log/DiaLog.h>
 

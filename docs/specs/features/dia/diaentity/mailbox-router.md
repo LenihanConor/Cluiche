@@ -1,12 +1,12 @@
 # Feature Spec: mailbox-router
 
-**System:** DiaEntity
+**System:** diaentitytemplate
 **App:** Dia
 **Status:** Draft
 
 ## Summary
 
-Wire DiaEntity into DiaMailbox by implementing `EntityRouter` — a `IMailboxRouter` that decodes a packed 64-bit address payload into one of four address kinds (Entity, All, ComponentType, Self) and resolves each to the correct subscriber set. Auto-registered with the domain's `Mailbox` on construction.
+Wire diaentitytemplate into DiaMailbox by implementing `EntityRouter` — a `IMailboxRouter` that decodes a packed 64-bit address payload into one of four address kinds (Entity, All, ComponentType, Self) and resolves each to the correct subscriber set. Auto-registered with the domain's `Mailbox` on construction.
 
 ## Traceability
 
@@ -14,7 +14,7 @@ Wire DiaEntity into DiaMailbox by implementing `EntityRouter` — a `IMailboxRou
 |---|---|
 | Platform | [platform.md](../../../../platform/PLATFORM.md) |
 | Application | [dia.md](../../../applications/dia.md) |
-| System | [diaentity.md](../../systems/dia/diaentity.md) |
+| System | [diaentitytemplate.md](../../systems/dia/diaentitytemplate.md) |
 | Depends on feature | [foundation.md](foundation.md) |
 | Depends on feature | [component-deps-and-refs.md](component-deps-and-refs.md) |
 | Depends on system | [diamailbox.md](../../systems/dia/diamailbox.md) |
@@ -120,12 +120,12 @@ namespace Dia::Entity {
 
 | File | Change |
 |---|---|
-| `Dia/DiaEntity/EntityAddress.h` | New — `AddressKind`, address helpers, `kEntityRouterId` |
-| `Dia/DiaEntity/EntityAddress.cpp` | New — helper implementations |
-| `Dia/DiaEntity/EntityRouter.h` | New — `EntityRouter` declaration |
-| `Dia/DiaEntity/EntityRouter.cpp` | New — `Resolve` implementation |
-| `Dia/DiaEntity/Domain.h` / `.cpp` | Modified — add `EntityRouter` member, register in constructor |
-| `DiaEntity.vcxproj` / `.filters` | Add new files |
+| `Dia/diaentitytemplate/EntityAddress.h` | New — `AddressKind`, address helpers, `kEntityRouterId` |
+| `Dia/diaentitytemplate/EntityAddress.cpp` | New — helper implementations |
+| `Dia/diaentitytemplate/EntityRouter.h` | New — `EntityRouter` declaration |
+| `Dia/diaentitytemplate/EntityRouter.cpp` | New — `Resolve` implementation |
+| `Dia/diaentitytemplate/Domain.h` / `.cpp` | Modified — add `EntityRouter` member, register in constructor |
+| `diaentitytemplate.vcxproj` / `.filters` | Add new files |
 | `Tests/GoogleTests/Entity/EntityRouterTests.cpp` | New |
 
 ## Binding Decisions Compliance

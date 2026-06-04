@@ -338,7 +338,7 @@ This registry catalogs all `.architecture.module.md` files that describe modules
 ---
 
 ### dia.entity
-- **Path:** `Dia/DiaEntity/`
+- **Path:** `Dia/diaentitytemplate/`
 - **File:** `dia.entity.architecture.module.md`
 - **Purpose:** Gameplay-level entity system. Provides `Domain` container, generational `Entity` handles, `IComponent` base, per-type component pools, end-of-frame mutation pipeline, reflection macros, blueprint loading, hierarchy, mailbox routing, query system, and editor inspection.
 - **Dependencies:** dia.core, dia.maths, dia.mailbox

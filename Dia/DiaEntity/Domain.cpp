@@ -1,8 +1,8 @@
-#include <DiaEntity/Domain.h>
-#include <DiaEntity/ComponentPool.h>
-#include <DiaEntity/ComponentRegistry.h>
-#include <DiaEntity/Messages/EntityDestroyedMessage.h>
-#include <DiaEntity/EntityAddress.h>
+#include <diaentitytemplate/Domain.h>
+#include <diaentitytemplate/ComponentPool.h>
+#include <diaentitytemplate/ComponentRegistry.h>
+#include <diaentitytemplate/Messages/EntityDestroyedMessage.h>
+#include <diaentitytemplate/EntityAddress.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
@@ -73,7 +73,7 @@ namespace Dia::Entity {
     void Domain::QueueAddComponentByTypeId(Entity entity, Dia::Core::StringCRC typeId, const Json::Value& config) {
         DIA_ASSERT(IsAlive(entity), "QueueAddComponentByTypeId: entity is not alive");
         if (mMutationQueue.IsFull()) {
-            DIA_LOG_WARNING("DiaEntity", "Mutation queue full — dropping QueueAddComponentByTypeId");
+            DIA_LOG_WARNING("diaentitytemplate", "Mutation queue full — dropping QueueAddComponentByTypeId");
             return;
         }
         MutationOp op;
@@ -87,7 +87,7 @@ namespace Dia::Entity {
     void Domain::QueueDestroy(Entity entity) {
         DIA_ASSERT(IsAlive(entity), "QueueDestroy: entity is not alive");
         if (mMutationQueue.IsFull()) {
-            DIA_LOG_WARNING("DiaEntity", "Mutation queue full — dropping QueueDestroy");
+            DIA_LOG_WARNING("diaentitytemplate", "Mutation queue full — dropping QueueDestroy");
             return;
         }
         MutationOp op;
@@ -117,11 +117,11 @@ namespace Dia::Entity {
         DIA_ASSERT(pool != nullptr, "Domain::RegisterPool — pool must not be null");
         if (pool == nullptr) return false;
         if (FindPool(pool->GetTypeId()) != nullptr) {
-            DIA_LOG_WARNING("DiaEntity", "Domain::RegisterPool — pool for type already registered");
+            DIA_LOG_WARNING("diaentitytemplate", "Domain::RegisterPool — pool for type already registered");
             return false;
         }
         if (mComponentPools.IsFull()) {
-            DIA_LOG_WARNING("DiaEntity", "Domain::RegisterPool — component pool table full (capacity %u)", kMaxComponentTypesPerDomain);
+            DIA_LOG_WARNING("diaentitytemplate", "Domain::RegisterPool — component pool table full (capacity %u)", kMaxComponentTypesPerDomain);
             return false;
         }
         mComponentPools.Add(pool);
@@ -147,8 +147,8 @@ namespace Dia::Entity {
     }
 
     void Domain::Update(float dt) {
-        DIA_TRACE_ZONE("Domain::Update", Dia::Observation::Trace::Category::kDiaEntity);
-        DIA_PROFILE_SCOPE("Domain::Update", Dia::Observation::Profile::Category::kDiaEntity);
+        DIA_TRACE_ZONE("Domain::Update", Dia::Observation::Trace::Category::kdiaentitytemplate);
+        DIA_PROFILE_SCOPE("Domain::Update", Dia::Observation::Profile::Category::kdiaentitytemplate);
         // Walk all component pools in registration order.
         // Call DoUpdate only on components whose type has kFlagOverridesDoUpdate set.
         for (uint32_t poolIdx = 0; poolIdx < mComponentPools.Size(); ++poolIdx) {
@@ -184,8 +184,8 @@ namespace Dia::Entity {
     }
 
     void Domain::EndOfFrame() {
-        DIA_TRACE_ZONE("Domain::EndOfFrame", Dia::Observation::Trace::Category::kDiaEntity);
-        DIA_PROFILE_SCOPE("Domain::EndOfFrame", Dia::Observation::Profile::Category::kDiaEntity);
+        DIA_TRACE_ZONE("Domain::EndOfFrame", Dia::Observation::Trace::Category::kdiaentitytemplate);
+        DIA_PROFILE_SCOPE("Domain::EndOfFrame", Dia::Observation::Profile::Category::kdiaentitytemplate);
 
         ApplyMutations();
 
@@ -233,7 +233,7 @@ namespace Dia::Entity {
     }
 
     void Domain::ApplyMutations() {
-        DIA_TRACE_ZONE("Domain::ApplyMutations", Dia::Observation::Trace::Category::kDiaEntity);
+        DIA_TRACE_ZONE("Domain::ApplyMutations", Dia::Observation::Trace::Category::kdiaentitytemplate);
 
         // Process in deterministic order: AddComponent → RemoveComponent → DestroyEntity.
         // This ensures components are visible before any remove in the same frame,
@@ -293,8 +293,8 @@ namespace Dia::Entity {
     }
 
     void Domain::RebuildQueryCache(QueryCache& cache) {
-        DIA_TRACE_ZONE("Domain::RebuildQueryCache", Dia::Observation::Trace::Category::kDiaEntity);
-        DIA_PROFILE_SCOPE("Domain::RebuildQueryCache", Dia::Observation::Profile::Category::kDiaEntity);
+        DIA_TRACE_ZONE("Domain::RebuildQueryCache", Dia::Observation::Trace::Category::kdiaentitytemplate);
+        DIA_PROFILE_SCOPE("Domain::RebuildQueryCache", Dia::Observation::Profile::Category::kdiaentitytemplate);
         if (mMetricQueryRebuilds) mMetricQueryRebuilds->Inc();
 
         cache.entities.RemoveAll();
@@ -330,11 +330,11 @@ namespace Dia::Entity {
 
         IComponentPool* pool = FindPool(op.componentTypeId);
         if (!pool) {
-            DIA_LOG_WARNING("DiaEntity", "ApplyAddComponent: no pool registered for component type — call Domain::RegisterPool first");
+            DIA_LOG_WARNING("diaentitytemplate", "ApplyAddComponent: no pool registered for component type — call Domain::RegisterPool first");
             return;
         }
         if (pool->HasSlot(op.entity.GetIndex())) {
-            DIA_LOG_WARNING("DiaEntity", "ApplyAddComponent: entity already has this component type");
+            DIA_LOG_WARNING("diaentitytemplate", "ApplyAddComponent: entity already has this component type");
             return;
         }
 
@@ -361,7 +361,7 @@ namespace Dia::Entity {
         // HandlePool::Allocate() calls T's default constructor; AllocateRaw wraps it.
         IComponent* comp = pool->AllocateRaw(op.entity.GetIndex());
         if (!comp) {
-            DIA_LOG_WARNING("DiaEntity", "ApplyAddComponent: component pool full, cannot allocate");
+            DIA_LOG_WARNING("diaentitytemplate", "ApplyAddComponent: component pool full, cannot allocate");
             mHealth.IncrementWarnings();
             return;
         }
@@ -396,7 +396,7 @@ namespace Dia::Entity {
             }
         }
 
-        DIA_LOG_DEBUG("DiaEntity", "entity %u: attached component (CRC %u)", op.entity.GetIndex(), op.componentTypeId.Value());
+        DIA_LOG_DEBUG("diaentitytemplate", "entity %u: attached component (CRC %u)", op.entity.GetIndex(), op.componentTypeId.Value());
     }
 
     void Domain::ApplyRemoveComponent(const MutationOp& op) {
@@ -410,12 +410,12 @@ namespace Dia::Entity {
             comp->OnDetach(*this, op.entity);
         }
         pool->Destroy(op.entity.GetIndex());
-        DIA_LOG_DEBUG("DiaEntity", "entity %u: detached component (CRC %u)", op.entity.GetIndex(), op.componentTypeId.Value());
+        DIA_LOG_DEBUG("diaentitytemplate", "entity %u: detached component (CRC %u)", op.entity.GetIndex(), op.componentTypeId.Value());
     }
 
     void Domain::ApplyDestroyEntity(const MutationOp& op) {
         if (!IsAlive(op.entity)) return;
-        DIA_LOG_DEBUG("DiaEntity", "entity %u destroyed", op.entity.GetIndex());
+        DIA_LOG_DEBUG("diaentitytemplate", "entity %u destroyed", op.entity.GetIndex());
 
         // Broadcast EntityDestroyedMessage before components are detached so subscribers
         // can still inspect the entity's state during their drain callbacks.
@@ -496,24 +496,24 @@ namespace Dia::Entity {
         Json::Value& out) const
     {
         if (!IsAlive(entity)) {
-            DIA_LOG_WARNING("DiaEntity", "ReadField: entity not alive");
+            DIA_LOG_WARNING("diaentitytemplate", "ReadField: entity not alive");
             return false;
         }
         const IComponentPool* pool = FindPool(componentTypeId);
         if (pool == nullptr || !pool->HasSlot(entity.GetIndex())) {
-            DIA_LOG_WARNING("DiaEntity", "ReadField: component not found on entity");
+            DIA_LOG_WARNING("diaentitytemplate", "ReadField: component not found on entity");
             return false;
         }
         const ComponentTypeDesc* desc = ComponentRegistry::Get().Find(componentTypeId);
         if (desc == nullptr || desc->saveToJson == nullptr) {
-            DIA_LOG_WARNING("DiaEntity", "ReadField: no reflection descriptor for component");
+            DIA_LOG_WARNING("diaentitytemplate", "ReadField: no reflection descriptor for component");
             return false;
         }
         const IComponent* comp = pool->GetRaw(entity.GetIndex());
         Json::Value fullJson;
         desc->saveToJson(comp, fullJson);
         if (!fullJson.isMember(fieldName)) {
-            DIA_LOG_WARNING("DiaEntity", "ReadField: field not found in component JSON");
+            DIA_LOG_WARNING("diaentitytemplate", "ReadField: field not found in component JSON");
             return false;
         }
         out = fullJson[fieldName];
@@ -545,17 +545,17 @@ namespace Dia::Entity {
         const Json::Value& value)
     {
         if (!IsAlive(entity)) {
-            DIA_LOG_WARNING("DiaEntity", "WriteField: entity not alive");
+            DIA_LOG_WARNING("diaentitytemplate", "WriteField: entity not alive");
             return false;
         }
         IComponentPool* pool = FindPool(componentTypeId);
         if (pool == nullptr || !pool->HasSlot(entity.GetIndex())) {
-            DIA_LOG_WARNING("DiaEntity", "WriteField: component not found on entity");
+            DIA_LOG_WARNING("diaentitytemplate", "WriteField: component not found on entity");
             return false;
         }
         const ComponentTypeDesc* desc = ComponentRegistry::Get().Find(componentTypeId);
         if (desc == nullptr || desc->saveToJson == nullptr || desc->loadFromJson == nullptr) {
-            DIA_LOG_WARNING("DiaEntity", "WriteField: no reflection descriptor for component");
+            DIA_LOG_WARNING("diaentitytemplate", "WriteField: no reflection descriptor for component");
             return false;
         }
 
@@ -568,7 +568,7 @@ namespace Dia::Entity {
             }
         }
         if (fieldDesc == nullptr) {
-            DIA_LOG_WARNING("DiaEntity", "WriteField: field not found in descriptor");
+            DIA_LOG_WARNING("diaentitytemplate", "WriteField: field not found in descriptor");
             return false;
         }
 
@@ -583,7 +583,7 @@ namespace Dia::Entity {
             typeOk = true;
         }
         if (!typeOk) {
-            DIA_LOG_WARNING("DiaEntity", "WriteField: type mismatch for field");
+            DIA_LOG_WARNING("diaentitytemplate", "WriteField: type mismatch for field");
             return false;
         }
 

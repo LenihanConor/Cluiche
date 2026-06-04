@@ -42,7 +42,7 @@ def _derive_names(name: str) -> dict:
 def _diastage_content(n: dict) -> str:
     data = {
         "name": n["stage_name"],
-        "manifest": f"stages/{n['stage_name']}/misc/ApplicationFlow/{n['diaapp_file']}",
+        "manifest": f"Stages/{n['stage_name']}/misc/ApplicationFlow/{n['diaapp_file']}",
         "config": {
             "path_aliases": {
                 "stage_root": "."
@@ -210,7 +210,7 @@ def _update_diagame(path: Path, stage_name: str, diastage_file: str) -> None:
     """Add stage import entry to .diagame imports list."""
     data = json.loads(path.read_text(encoding="utf-8"))
     new_import = {
-        "path": f"stages/{stage_name}/{diastage_file}",
+        "path": f"Stages/{stage_name}/{diastage_file}",
         "type": "stage"
     }
     data["imports"].append(new_import)
@@ -223,7 +223,7 @@ def _update_catalogue(path: Path, n: dict) -> None:
     stage_entry = {
         "id": n["stage_id"],
         "type": "stage",
-        "source_path": f"../Stages/{n['stage_name']}/{n['diastage_file']}",
+        "source_path": f"Stages/{n['stage_name']}/{n['diastage_file']}",
         "scope": "global",
         "tags": ["misc"],
         "references": [
@@ -233,7 +233,7 @@ def _update_catalogue(path: Path, n: dict) -> None:
     manifest_entry = {
         "id": f"manifest.{n['snake_stage']}",
         "type": "manifest",
-        "source_path": f"../Stages/{n['stage_name']}/misc/ApplicationFlow/{n['diaapp_file']}",
+        "source_path": f"Stages/{n['stage_name']}/misc/ApplicationFlow/{n['diaapp_file']}",
         "scope": "stage",
         "stage_name": n["stage_name"],
         "tags": ["misc/ApplicationFlow"]
@@ -326,7 +326,7 @@ def stage(name: str, modules: Optional[str], dry_run: bool, budget: int) -> None
     repo_root = find_repo_root(__file__)
 
     # Define all paths
-    stage_dir = repo_root / "Cluiche" / "Assets" / "Stages" / n["stage_name"]
+    stage_dir = repo_root / "Cluiche" / "Assets" / "CluicheTest" / "Stages" / n["stage_name"]
     diastage_path = stage_dir / n["diastage_file"]
     diaapp_dir = stage_dir / "misc" / "ApplicationFlow"
     diaapp_path = diaapp_dir / n["diaapp_file"]

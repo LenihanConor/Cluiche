@@ -9,7 +9,7 @@
 
 // Plugins under test
 #include <DiaApplicationEditor/DiaApplicationFlowEditorPlugin.h>
-#include <DiaBlueprintEditor/DiaBlueprintEditorPlugin.h>
+#include <DiaEntityTemplateEditor/DiaEntityTemplateEditorPlugin.h>
 #include <DiaSceneEditor/DiaSceneEditorPlugin.h>
 #include <DiaAssetCatalogueEditor/DiaAssetCatalogueEditorPlugin.h>
 
@@ -86,42 +86,42 @@ TEST(AppFlowEditorOnNavigate, OnNavigate_WithBridge_DoesNotCrash)
 }
 
 // ===========================================================================
-// DiaBlueprintEditorPlugin — OnNavigate
+// DiaEntityTemplateEditorPlugin — OnNavigate
 // ===========================================================================
 
 // Test 4: null bridge — OnNavigate early-out, no crash.
-TEST(BlueprintEditorOnNavigate, OnNavigate_NoBridge_DoesNotCrash)
+TEST(EntityTemplateEditorOnNavigate, OnNavigate_NoBridge_DoesNotCrash)
 {
-    Dia::BlueprintEditor::DiaBlueprintEditorPlugin plugin;
+    Dia::EntityTemplateEditor::DiaEntityTemplateEditorPlugin plugin;
     EditorPluginContext ctx = MakeContext(nullptr, nullptr);
     EXPECT_NO_FATAL_FAILURE(plugin.OnLoad(ctx));
-    EXPECT_NO_FATAL_FAILURE(plugin.OnNavigate(StringCRC("diaentity.test")));
+    EXPECT_NO_FATAL_FAILURE(plugin.OnNavigate(StringCRC("diaentitytemplate.test")));
     EXPECT_NO_FATAL_FAILURE(plugin.OnUnload());
 }
 
 // Test 5: bridge set but no catalogue loaded — get_record returns null, no crash.
-TEST(BlueprintEditorOnNavigate, OnNavigate_CatalogueNotLoaded_DoesNotCrash)
+TEST(EntityTemplateEditorOnNavigate, OnNavigate_CatalogueNotLoaded_DoesNotCrash)
 {
     WebUIBridge bridge(nullptr);
     EditorModel model;
-    Dia::BlueprintEditor::DiaBlueprintEditorPlugin plugin;
+    Dia::EntityTemplateEditor::DiaEntityTemplateEditorPlugin plugin;
     EditorPluginContext ctx = MakeContext(&bridge, &model);
     EXPECT_NO_FATAL_FAILURE(plugin.OnLoad(ctx));
     // asset_catalogue.get_record has no handler → returns null → plugin early-outs.
-    EXPECT_NO_FATAL_FAILURE(plugin.OnNavigate(StringCRC("diaentity.test")));
+    EXPECT_NO_FATAL_FAILURE(plugin.OnNavigate(StringCRC("diaentitytemplate.test")));
     EXPECT_NO_FATAL_FAILURE(plugin.OnUnload());
 }
 
 // Test 6: valid bridge + registered blueprint.load handler, get_record still fails
 // (catalogue not loaded) — the call chain exits gracefully.
-TEST(BlueprintEditorOnNavigate, OnNavigate_ValidCall_DoesNotCrash)
+TEST(EntityTemplateEditorOnNavigate, OnNavigate_ValidCall_DoesNotCrash)
 {
     WebUIBridge bridge(nullptr);
     EditorModel model;
-    Dia::BlueprintEditor::DiaBlueprintEditorPlugin plugin;
+    Dia::EntityTemplateEditor::DiaEntityTemplateEditorPlugin plugin;
     EditorPluginContext ctx = MakeContext(&bridge, &model);
     EXPECT_NO_FATAL_FAILURE(plugin.OnLoad(ctx));
-    EXPECT_NO_FATAL_FAILURE(plugin.OnNavigate(StringCRC("diaentity.test")));
+    EXPECT_NO_FATAL_FAILURE(plugin.OnNavigate(StringCRC("diaentitytemplate.test")));
     EXPECT_NO_FATAL_FAILURE(plugin.OnUnload());
 }
 
@@ -162,7 +162,7 @@ TEST(AssetCatalogueEditorOnNavigate, OnNavigate_NoBridge_DoesNotCrash)
     Dia::AssetCatalogue::Editor::DiaAssetCatalogueEditorPlugin plugin;
     EditorPluginContext ctx = MakeContext(nullptr, nullptr);
     EXPECT_NO_FATAL_FAILURE(plugin.OnLoad(ctx));
-    EXPECT_NO_FATAL_FAILURE(plugin.OnNavigate(StringCRC("diaentity.unknown")));
+    EXPECT_NO_FATAL_FAILURE(plugin.OnNavigate(StringCRC("diaentitytemplate.unknown")));
     EXPECT_NO_FATAL_FAILURE(plugin.OnUnload());
 }
 
@@ -175,7 +175,7 @@ TEST(AssetCatalogueEditorOnNavigate, OnNavigate_RecordNotInRegistry_DoesNotCrash
     EditorPluginContext ctx = MakeContext(&bridge, &model);
     EXPECT_NO_FATAL_FAILURE(plugin.OnLoad(ctx));
     // Registry is empty — FindById returns nullptr → plugin logs warning and returns.
-    EXPECT_NO_FATAL_FAILURE(plugin.OnNavigate(StringCRC("diaentity.nonexistent")));
+    EXPECT_NO_FATAL_FAILURE(plugin.OnNavigate(StringCRC("diaentitytemplate.nonexistent")));
     EXPECT_NO_FATAL_FAILURE(plugin.OnUnload());
 }
 
@@ -191,14 +191,14 @@ TEST(AssetCatalogueEditorOnNavigate, OnNavigate_RecordExists_DoesNotCrash)
 
     // Register a record through the asset_catalogue.add_asset handler.
     Json::Value addReq;
-    addReq["id"]         = "diaentity.hero";
-    addReq["typeId"]     = "diaentity";
-    addReq["sourcePath"] = "Assets/hero.diaentity";
+    addReq["id"]         = "diaentitytemplate.hero";
+    addReq["typeId"]     = "diaentitytemplate";
+    addReq["sourcePath"] = "Assets/hero.diaentitytemplatetemplate";
     // The handler may or may not succeed depending on manifest state — we don't
     // assert success here; we only care that OnNavigate doesn't crash regardless.
     bridge.InvokeRequestHandler(StringCRC("asset_catalogue.add_asset"), addReq);
 
-    EXPECT_NO_FATAL_FAILURE(plugin.OnNavigate(StringCRC("diaentity.hero")));
+    EXPECT_NO_FATAL_FAILURE(plugin.OnNavigate(StringCRC("diaentitytemplate.hero")));
     EXPECT_NO_FATAL_FAILURE(plugin.OnUnload());
 }
 

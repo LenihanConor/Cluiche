@@ -29,10 +29,10 @@ The layered design means foundation ships first, then communication, then editor
 - **Entity** = generational ID + debug name (optional) + set of components
 - **Component** = config (per-entity JSON) + asset trigger (config values drive loads) + gameplay interface (API delegating to system via handle) + opt-in DoUpdate
 - **World** = stage-scoped container (entity storage, query cache, mailbox). Standalone library concept (no DiaApplicationFlow dependency).
-- **EntityModule** = application-level adapter that plugs World into DiaApplicationFlow v2 stage lifecycle. Lives in application code, not DiaEntity.
+- **EntityModule** = application-level adapter that plugs World into DiaApplicationFlow v2 stage lifecycle. Lives in application code, not diaentitytemplate.
 - **Systems remain independent** — physics, rendering, animation own their data. Components call systems directly (no SystemAdapter middleman).
 - **Entity prefabs are assets** — loaded by AssetService, parsed into entities, component configs trigger further asset loads.
-- **Old IComponent/IComponentObject/IComponentFactory removed first** (clean slate before building DiaEntity).
+- **Old IComponent/IComponentObject/IComponentFactory removed first** (clean slate before building diaentitytemplate).
 
 ### Decisions Locked
 
@@ -42,11 +42,11 @@ The layered design means foundation ships first, then communication, then editor
 | 2 | Registration | DIA_COMPONENT macro (matches DIA_MODULE) |
 | 3 | Editor interface | IEntityInspectable (polled, matches IApplicationInspectable) |
 | 4 | Component deps | Declared + hard validation at creation |
-| 5 | Module location | New DiaEntity in Dia/ (standalone, no DiaApplicationFlow dep) |
+| 5 | Module location | New diaentitytemplate in Dia/ (standalone, no DiaApplicationFlow dep) |
 | 6 | Component update model | Hybrid opt-in (passive default, DoUpdate opt-in) |
 | 7 | Cross-entity references | Typed reference slots (name + required component type on target, validated at resolve) |
-| 8 | Old IComponent removal | Before building DiaEntity (clean slate) |
-| 9 | Mailbox format | Typed message structs + structured address. Refined during DiaMailbox spec (2026-05-17): the four address kinds (Entity/All/ComponentType/Self) live in DiaEntity's **entity router payload encoding**, not in DiaMailbox itself. DiaMailbox sees opaque `(StringCRC routerId, uint64_t payload)`; the entity router decodes payload into the four kinds. Keeps DiaMailbox a generic primitive. See @docs/specs/systems/dia/diamailbox.md. |
+| 8 | Old IComponent removal | Before building diaentitytemplate (clean slate) |
+| 9 | Mailbox format | Typed message structs + structured address. Refined during DiaMailbox spec (2026-05-17): the four address kinds (Entity/All/ComponentType/Self) live in diaentitytemplate's **entity router payload encoding**, not in DiaMailbox itself. DiaMailbox sees opaque `(StringCRC routerId, uint64_t payload)`; the entity router decodes payload into the four kinds. Keeps DiaMailbox a generic primitive. See @docs/specs/systems/dia/diamailbox.md. |
 | 10 | Query cache invalidation | End-of-frame batch rebuild (mutations collected → single rebuild → mailbox delivery) |
 | 11 | Blueprint schema | Versioned JSON with separate references block |
 | 12 | IEntityInspectable signatures | Defer to spec |
@@ -57,7 +57,7 @@ The layered design means foundation ships first, then communication, then editor
 - Runtime format: JSON blueprints (entity prefabs)
 - USD: concepts adopted (typed entity + applied component bundles), library not taken. Clean path to future USD import via swappable loader interface.
 - Blueprint loader is interface-based (JsonBlueprintLoader now, potential UsdBlueprintLoader later)
-- No format-specific assumptions in DiaEntity public API
+- No format-specific assumptions in diaentitytemplate public API
 
 ### Frame Timing Model
 
@@ -79,15 +79,15 @@ Frame start
 
 ## Extracted Generic Systems
 
-The research identified two generic capabilities that should be spec'd independently of DiaEntity:
+The research identified two generic capabilities that should be spec'd independently of diaentitytemplate:
 
 ### HandlePool<T> — DiaCore addition (not a new module)
 
-Generic freelist + generation bump allocator. Companion to existing `DiaCore/Containers/Handle.h`. Any system that manages pooled objects (physics, render, audio, entities) uses this. DiaEntity's entity storage IS a `HandlePool<Entity>`.
+Generic freelist + generation bump allocator. Companion to existing `DiaCore/Containers/Handle.h`. Any system that manages pooled objects (physics, render, audio, entities) uses this. diaentitytemplate's entity storage IS a `HandlePool<Entity>`.
 
 ### DiaMailbox — New module
 
-Typed deferred messaging with structured addressing. Not entity-specific — any system can use it (module-to-module, editor-to-game, etc.). DiaEntity is one consumer. Depends on DiaCore only.
+Typed deferred messaging with structured addressing. Not entity-specific — any system can use it (module-to-module, editor-to-game, etc.). diaentitytemplate is one consumer. Depends on DiaCore only.
 
 **Dependency chain:**
 ```
@@ -95,7 +95,7 @@ DiaCore (Handle<T> + HandlePool<T>)
   ↑
 DiaMailbox (typed deferred messaging)
   ↑
-DiaEntity (World, components, queries, inspection)
+diaentitytemplate (World, components, queries, inspection)
 ```
 
 ## Addendum — 2026-05-17
@@ -112,7 +112,7 @@ Four points from the doc are worth lifting into our model. Each is captured belo
 
 **Why:** Without reflection, every component needs a hand-written serializer (DiaSerializer is transport, not schema) and a hand-written editor inspector. This compounds badly. The doc makes reflection foundational; we should too.
 
-**Scope discipline:** Lives **inside DiaEntity** as a feature, not a generic engine-wide `DiaReflection`. If a second consumer appears later, lift it then. DiaSerializer remains the transport (MetadataValue, JSON helpers); reflection is the schema layer above it.
+**Scope discipline:** Lives **inside diaentitytemplate** as a feature, not a generic engine-wide `DiaReflection`. If a second consumer appears later, lift it then. DiaSerializer remains the transport (MetadataValue, JSON helpers); reflection is the schema layer above it.
 
 **Impact on feature order:** Reflection is a foundation-adjacent feature, sequenced after the entity/component skeleton but before blueprint loading and inspection (both depend on it).
 
@@ -124,7 +124,7 @@ Four points from the doc are worth lifting into our model. Each is captured belo
 
 **Why:** Attached weapons, particle emitters on characters, scene grouping, transform propagation — all need parent/child. Adding it later means retrofitting the mutation pipeline and reference-resolution rules. Cheaper to commit now.
 
-**Scope discipline:** Parent/child only. No general "relationships" graph (the doc's own non-goal for v1 too). No transform propagation system in DiaEntity itself — that lives in whichever system owns transforms, DiaEntity just provides the hierarchy data.
+**Scope discipline:** Parent/child only. No general "relationships" graph (the doc's own non-goal for v1 too). No transform propagation system in diaentitytemplate itself — that lives in whichever system owns transforms, diaentitytemplate just provides the hierarchy data.
 
 ### Decision 16 — Container rename: `World` → `Realm`
 
@@ -167,4 +167,4 @@ Run /spec-system for each in dependency order:
 
 1. **HandlePool<T>** — small DiaCore feature spec (addition to Containers/)
 2. **DiaMailbox** — system spec (new module)
-3. **DiaEntity** — system spec (new module, depends on above two)
+3. **diaentitytemplate** — system spec (new module, depends on above two)

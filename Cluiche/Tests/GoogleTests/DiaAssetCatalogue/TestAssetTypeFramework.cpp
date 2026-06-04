@@ -177,9 +177,9 @@ TEST_F(AssetTypeFramework, BuiltIn_FindByFilePath_DiaEntity_ReturnsEntityDescrip
 	Dia::AssetCatalogue::AssetTypeRegistry registry;
 	Dia::AssetCatalogue::RegisterBuiltInAssetTypes(registry);
 
-	Dia::Core::FilePath path = MakePath("hero.diaentity");
+	Dia::Core::FilePath path = MakePath("hero.diaentitytemplatetemplate");
 	const Dia::AssetCatalogue::AssetTypeDescriptor* found = registry.FindByFilePath(path);
 
 	ASSERT_NE(found, nullptr);
-	EXPECT_EQ(found->mTypeId, Dia::Core::StringCRC("diaentity"));
+	EXPECT_EQ(found->mTypeId, Dia::Core::StringCRC("diaentitytemplate"));
 }

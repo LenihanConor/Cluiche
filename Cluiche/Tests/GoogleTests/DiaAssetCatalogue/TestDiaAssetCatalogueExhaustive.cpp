@@ -320,7 +320,7 @@ TEST_F(AssetTypeFrameworkExhaustive, BuiltIn_All11TypesRegistered)
 	Dia::AssetCatalogue::AssetTypeRegistry registry;
 	Dia::AssetCatalogue::RegisterBuiltInAssetTypes(registry);
 
-	// 7 base types + 4 file types (diaentity, diacamera, dialight, diascene) = 11
+	// 7 base types + 4 file types (diaentitytemplate, diacamera, dialight, diascene) = 11
 	EXPECT_EQ(registry.GetCount(), 11u);
 }
 
@@ -330,7 +330,7 @@ TEST_F(AssetTypeFrameworkExhaustive, BuiltIn_EachTypeId_Exists)
 	Dia::AssetCatalogue::AssetTypeRegistry registry;
 	Dia::AssetCatalogue::RegisterBuiltInAssetTypes(registry);
 
-	const char* expectedIds[] = { "texture", "sprite", "audio", "config", "diaentity", "stage", "ui", "folder" };
+	const char* expectedIds[] = { "texture", "sprite", "audio", "config", "diaentitytemplate", "stage", "ui", "folder" };
 	for (int i = 0; i < 8; ++i)
 	{
 		const Dia::AssetCatalogue::AssetTypeDescriptor* desc =
@@ -345,7 +345,7 @@ TEST_F(AssetTypeFrameworkExhaustive, BuiltIn_TypeIds_AreDistinct)
 	Dia::AssetCatalogue::AssetTypeRegistry registry;
 	Dia::AssetCatalogue::RegisterBuiltInAssetTypes(registry);
 
-	const char* ids[] = { "texture", "sprite", "audio", "config", "diaentity", "stage", "ui", "folder" };
+	const char* ids[] = { "texture", "sprite", "audio", "config", "diaentitytemplate", "stage", "ui", "folder" };
 	for (int i = 0; i < 8; ++i)
 	{
 		for (int j = i + 1; j < 8; ++j)

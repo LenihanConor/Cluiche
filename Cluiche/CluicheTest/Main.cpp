@@ -10,8 +10,8 @@
 #include <DiaApplicationFlow/Manifest/ManifestComposerV2.h>
 #include <DiaApplicationFlow/Manifest/ManifestValidatorV2.h>
 #include <DiaApplicationFlow/Manifest/ApplicationManifestV3.h>
-#include <DiaEntity/ComponentRegistry.h>
-#include <DiaEntity/IComponent.h>
+#include <diaentitytemplate/ComponentRegistry.h>
+#include <diaentitytemplate/IComponent.h>
 #include <DiaCore/Metadata/DescriptionRegistry.h>
 #include "Modules/TestStages/TestResultsRegistry.h"
 

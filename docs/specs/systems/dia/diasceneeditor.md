@@ -7,7 +7,7 @@
 
 ## Summary
 
-DiaSceneEditor is a CluicheEditor plugin for authoring `.diascene` files — the spatial layout of game levels. It handles entity/camera/light placements, instance_data overrides, and layer configuration. Blueprints are shown as read-only reference; actual blueprint editing is routed to DiaBlueprintEditor.
+DiaSceneEditor is a CluicheEditor plugin for authoring `.diascene` files — the spatial layout of game levels. It handles entity/camera/light placements, instance_data overrides, and layer configuration. Blueprints are shown as read-only reference; actual blueprint editing is routed to DiaEntityTemplateEditor.
 
 DiaSceneEditor is an offline tool — it reads and writes `.diascene` files directly. It does not connect to a running game (that is DiaEntityInspector's role). When opened, it derives available stages/scenes from the connected `.diagame` manifest.
 
@@ -22,7 +22,7 @@ DiaSceneEditor answers: "how do I author the spatial content of my game levels?"
 - Camera placement authoring — add/configure cameras with blueprint + instance overrides; enforce single-active-camera constraint
 - Light placement authoring — add/configure lights with blueprint + instance overrides + `affects_layers` assignment
 - Layer authoring — add/edit/reorder layers (sort_order, parallax, sort_policy, enabled)
-- Blueprint defaults reference — read-only display of inherited blueprint fields on instances; "Open in Blueprint Editor →" link routes to DiaBlueprintEditor
+- Blueprint defaults reference — read-only display of inherited blueprint fields on instances; "Open in Blueprint Editor →" link routes to DiaEntityTemplateEditor
 - Change Blueprint operation — reassign an entity instance to a different blueprint with transfer/orphan analysis of existing overrides
 - Clone (Duplicate) — copy any scene item with offset position and `_copy` suffix
 - Scene file I/O — load `.diascene` from the stage referenced in the `.diagame`; save edits back to the same file
@@ -31,11 +31,11 @@ DiaSceneEditor answers: "how do I author the spatial content of my game levels?"
 - Scene validation — enforce constraints: exactly 1 active camera, default layer present, no duplicate IDs
 
 **Does NOT own:**
-- Blueprint authoring (component CRUD, field defaults) — that is DiaBlueprintEditor
+- Blueprint authoring (component CRUD, field defaults) — that is DiaEntityTemplateEditor
 - 2D spatial viewport — deferred; v1 is list + property panel only (future feature spec)
 - Live game connection — this is an offline authoring tool; runtime inspection is DiaEntityInspector
 - Scene loading/hydration at runtime — that is DiaScene2D's SceneLoader2D
-- Asset creation — new blueprints are created in DiaAssetCatalogueEditor, which routes to DiaBlueprintEditor
+- Asset creation — new blueprints are created in DiaAssetCatalogueEditor, which routes to DiaEntityTemplateEditor
 - Asset pipeline integration — DiaSceneEditor saves files; the pipeline processes them separately
 - Undo/redo system — deferred to v2; v1 relies on save/revert workflow
 - Component type definitions — comes from DiaReflect's ComponentTypeRegistry
@@ -88,7 +88,7 @@ namespace Dia::SceneEditor
     → each stage references a .diascene
       → DiaSceneEditor loads the selected .diascene
         → Scene2D struct (layers, cameras, lights, entities)
-        → Blueprint references resolved to .diaentity files
+        → Blueprint references resolved to .diaentitytemplatetemplate files
 ```
 
 ## File Formats
@@ -114,7 +114,7 @@ namespace Dia::SceneEditor
 }
 ```
 
-### .diaentity (entity blueprint — owned by DiaEntity)
+### .diaentitytemplatetemplate (entity blueprint — owned by diaentitytemplate)
 
 ```json
 {
@@ -175,15 +175,15 @@ namespace Dia::SceneEditor
 | ID | Decision | Rationale |
 |----|----------|-----------|
 | SED-SCN-001 | Stage/scene selection via toolbar dropdown, not file picker | Follows DiaAssetCatalogueEditor pattern — all editors derive content from the connected `.diagame` via Project Context |
-| SED-SCN-002 | Blueprint editing is a SEPARATE editor plugin (DiaBlueprintEditor) | Blueprints are standalone assets shared across scenes; editing them is not a scene concern. Scene editor shows blueprint data as read-only reference with "Open in Blueprint Editor →" link. |
-| SED-SCN-003 | Blueprint defaults shown read-only on instance panel | Scene editor never writes to blueprint files; all blueprint fields on instances are display-only for context. Editing routes to DiaBlueprintEditor. |
+| SED-SCN-002 | Blueprint editing is a SEPARATE editor plugin (DiaEntityTemplateEditor) | Blueprints are standalone assets shared across scenes; editing them is not a scene concern. Scene editor shows blueprint data as read-only reference with "Open in Blueprint Editor →" link. |
+| SED-SCN-003 | Blueprint defaults shown read-only on instance panel | Scene editor never writes to blueprint files; all blueprint fields on instances are display-only for context. Editing routes to DiaEntityTemplateEditor. |
 | SED-SCN-004 | Change Blueprint is lossy — transferring overrides are shown, orphaned overrides are warned | Users must see blast radius before confirming; orphaned overrides are not silently deleted |
 | SED-SCN-005 | No 2D viewport in v1 — list + property panel only | Viewport is high complexity; property-based editing ships value immediately; viewport is a future feature spec |
-| SED-SCN-006 | Blueprint file extensions: `.diaentity` (entities), `.diacamera` (cameras), `.dialight` (lights) | Separate extensions per type — clear from filename what you're editing; matches owning modules (DiaEntity, DiaCamera2D, DiaLighting2D) |
+| SED-SCN-006 | Blueprint file extensions: `.diaentitytemplatetemplate` (entities), `.diacamera` (cameras), `.dialight` (lights) | Separate extensions per type — clear from filename what you're editing; matches owning modules (diaentitytemplate, DiaCamera2D, DiaLighting2D) |
 | SED-SCN-007 | Duplicate offsets position by +50 on both axes | Prevents exact overlap; user adjusts after placement |
 | SED-SCN-008 | Undo/redo deferred to v2 | Reduce v1 scope; save/revert workflow is sufficient for initial authoring |
 | SED-SCN-009 | Blueprints section shows ALL registered blueprints from the asset catalogue, not just scene-referenced | Enables discovery when adding new entities; asset catalogue provides the canonical list of what's available per game |
-| SED-SCN-010 | Blueprint discovery via DiaAssetCatalogue | The "+ Entity/Camera/Light" pickers query the asset catalogue for all registered `.diaentity`/`.diacamera`/`.dialight` files — not a filesystem scan |
+| SED-SCN-010 | Blueprint discovery via DiaAssetCatalogue | The "+ Entity/Camera/Light" pickers query the asset catalogue for all registered `.diaentitytemplatetemplate`/`.diacamera`/`.dialight` files — not a filesystem scan |
 | SED-SCN-011 | Blueprints must pre-exist before placement | "+ Entity" is a picker from existing blueprints; standalone blueprint creation is a separate flow (name + initial components) |
 | SED-SCN-012 | Blueprint panel shows cross-scene usage | When editing a blueprint, the property panel shows which scenes and entity instances reference it — makes blast radius visible |
 | SED-SCN-013 | Adding a component to a blueprint cascades to all instances | New component fields appear with defaults on all referencing instances; existing overrides unaffected. Panel shows affected instance count before confirming. |
@@ -210,8 +210,8 @@ namespace Dia::SceneEditor
 | DiaEditor | Provides `IEditorPlugin` framework, `ProjectContext`, `EditorModel` |
 | DiaReflect | ComponentTypeRegistry for enumerating available component types and field metadata |
 | DiaGame | `.diagame` manifest format; provides stage list to populate toolbar dropdown |
-| DiaAssetCatalogue | Provides discovery of available blueprints (`.diaentity`, `.diacamera`, `.dialight`) via asset registry queries |
-| DiaEntity | Owns `.diaentity` format definition; provides entity/component type system |
+| DiaAssetCatalogue | Provides discovery of available blueprints (`.diaentitytemplatetemplate`, `.diacamera`, `.dialight`) via asset registry queries |
+| diaentitytemplate | Owns `.diaentitytemplatetemplate` format definition; provides entity/component type system |
 | DiaCamera2D | Owns `.diacamera` format definition |
 | DiaLighting2D | Owns `.dialight` format definition |
 
@@ -227,7 +227,7 @@ namespace Dia::SceneEditor
 
 ## Open Design Questions
 
-1. **Should the `.diaentity` format spec live in DiaEntity's system spec or get its own mini-spec?** Format is defined inline here for now; may need promotion to DiaEntity system spec when other tools (CLI schema export, runtime loader, DiaBlueprintEditor) also need to reference it.
+1. **Should the `.diaentitytemplatetemplate` format spec live in diaentitytemplate's system spec or get its own mini-spec?** Format is defined inline here for now; may need promotion to diaentitytemplate system spec when other tools (CLI schema export, runtime loader, DiaEntityTemplateEditor) also need to reference it.
 
 ## Status
 

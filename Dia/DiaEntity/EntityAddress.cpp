@@ -1,4 +1,4 @@
-#include <DiaEntity/EntityAddress.h>
+#include <diaentitytemplate/EntityAddress.h>
 #include <DiaCore/CRC/CRC.h>
 
 namespace Dia::Entity {

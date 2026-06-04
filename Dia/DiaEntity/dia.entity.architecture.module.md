@@ -3,29 +3,29 @@ module: dia.entity
 version: 1
 layer: assets/core
 namespace: Dia::Entity
-project: Dia/DiaEntity/DiaEntity.vcxproj
+project: Dia/diaentitytemplate/diaentitytemplate.vcxproj
 dependent_modules:
   - dia.core
   - dia.maths
   - dia.mailbox
 public_headers:
-  - Dia/DiaEntity/Domain.h
-  - Dia/DiaEntity/Entity.h
-  - Dia/DiaEntity/IComponent.h
-  - Dia/DiaEntity/ComponentTypeDesc.h
-  - Dia/DiaEntity/ComponentRegistry.h
-  - Dia/DiaEntity/ComponentMacros.h
-  - Dia/DiaEntity/EntityRef.h
-  - Dia/DiaEntity/EntityAddress.h
-  - Dia/DiaEntity/EntityRouter.h
-  - Dia/DiaEntity/IBlueprintLoader.h
-  - Dia/DiaEntity/JsonBlueprintLoader.h
-  - Dia/DiaEntity/IEntityInspectable.h
-  - Dia/DiaEntity/QueryView.h
-  - Dia/DiaEntity/Hierarchy/ParentComponent.h
-  - Dia/DiaEntity/Hierarchy/ChildBufferComponent.h
-  - Dia/DiaEntity/Hierarchy/Hierarchy.h
-  - Dia/DiaEntity/Messages/EntityDestroyedMessage.h
+  - Dia/diaentitytemplate/Domain.h
+  - Dia/diaentitytemplate/Entity.h
+  - Dia/diaentitytemplate/IComponent.h
+  - Dia/diaentitytemplate/ComponentTypeDesc.h
+  - Dia/diaentitytemplate/ComponentRegistry.h
+  - Dia/diaentitytemplate/ComponentMacros.h
+  - Dia/diaentitytemplate/EntityRef.h
+  - Dia/diaentitytemplate/EntityAddress.h
+  - Dia/diaentitytemplate/EntityRouter.h
+  - Dia/diaentitytemplate/IBlueprintLoader.h
+  - Dia/diaentitytemplate/JsonBlueprintLoader.h
+  - Dia/diaentitytemplate/IEntityInspectable.h
+  - Dia/diaentitytemplate/QueryView.h
+  - Dia/diaentitytemplate/Hierarchy/ParentComponent.h
+  - Dia/diaentitytemplate/Hierarchy/ChildBufferComponent.h
+  - Dia/diaentitytemplate/Hierarchy/Hierarchy.h
+  - Dia/diaentitytemplate/Messages/EntityDestroyedMessage.h
 responsibilities:
   - Domain (entity container), Entity (generational handle), IComponent abstract base
   - Per-type component pools via HandlePool<T>

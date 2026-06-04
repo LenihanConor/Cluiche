@@ -41,7 +41,7 @@ On close, the framework serializes to `out/CluicheEditor/.memory.json`:
   "layout": { /* react-mosaic tree — same shape DockingLayout already serializes */ },
   "plugins": [
     { "type": "SceneEditorPlugin", "instance_id": "scene_main" },
-    { "type": "BlueprintEditorPlugin", "instance_id": "bp_main" }
+    { "type": "EntityTemplateEditorPlugin", "instance_id": "bp_main" }
   ],
   "last_project": "C:/Games/CoW/cow.diagame"
 }

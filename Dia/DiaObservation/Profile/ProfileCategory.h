@@ -16,7 +16,7 @@ namespace Dia
 			constexpr ProfileCategory kDiaStream          = 1 << 2;
 			constexpr ProfileCategory kDiaAssetRuntime    = 1 << 3;
 			constexpr ProfileCategory kDiaAnimation       = 1 << 4;
-			constexpr ProfileCategory kDiaEntity          = 1 << 5;
+			constexpr ProfileCategory kdiaentitytemplate          = 1 << 5;
 			constexpr ProfileCategory kDiaScene           = 1 << 6;
 			constexpr ProfileCategory kAll                = ~0u;
 		}

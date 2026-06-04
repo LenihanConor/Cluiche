@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include <DiaEntity/Domain.h>
-#include <DiaEntity/ComponentRegistry.h>
-#include <DiaEntity/ComponentPool.h>
+#include <diaentitytemplate/Domain.h>
+#include <diaentitytemplate/ComponentRegistry.h>
+#include <diaentitytemplate/ComponentPool.h>
 #include "TestComponent.h"
 
 using namespace Dia::Entity;

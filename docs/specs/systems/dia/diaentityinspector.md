@@ -8,7 +8,7 @@
 
 ## Purpose
 
-DiaEntityInspector is a CluicheEditor plugin that provides live runtime inspection and field editing of DiaEntity `Domain` state. It connects to a running game via WebSocket, subscribes to the `entity.inspect` data topic, and renders a split-panel UI showing the entity list on the left and a detail pane on the right.
+DiaEntityInspector is a CluicheEditor plugin that provides live runtime inspection and field editing of diaentitytemplate `Domain` state. It connects to a running game via WebSocket, subscribes to the `entity.inspect` data topic, and renders a split-panel UI showing the entity list on the left and a detail pane on the right.
 
 The editor exposes four tabs in the detail pane:
 - **Fields** — component accordion with live-editable field widgets (Tier b)
@@ -28,7 +28,7 @@ The editor exposes four tabs in the detail pane:
 - Implement `MailboxMonitorController` — receives mailbox_log entries from the inspect payload; drives Mailbox tab
 - Implement `EntityWatchListController` — stores persistent watch triples; stable re-bind on reconnect via `entity.find_by_name` command; drives Watch tab
 - Implement `EntityInspectSerializer` — free function that serializes a `Domain`'s `IEntityInspectable` into the `entity.inspect` JSON payload on the game side
-- Register `entity.inspect` data type constant in `DiaEntity/DebugDataTypes.h`
+- Register `entity.inspect` data type constant in `diaentitytemplate/DebugDataTypes.h`
 - Register `entity.find_by_name` and `entity.write_field` DiaAPI commands in the game side
 - Wire CluicheTest EntityModule to poll `DebugLayerManager::GetSelectedEntityId()` each frame and push `entity.inspect` updates when the selection changes
 - Bump `kProtocolVersion` to 2 in DiaDebugProtocol when this system ships
@@ -42,7 +42,7 @@ The editor exposes four tabs in the detail pane:
 
 ## Public Interfaces
 
-### Data Type Constants (new — `Dia/DiaEntity/DebugDataTypes.h`)
+### Data Type Constants (new — `Dia/diaentitytemplate/DebugDataTypes.h`)
 
 ```cpp
 namespace Dia::Entity::DebugDataType {

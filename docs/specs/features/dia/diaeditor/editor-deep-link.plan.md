@@ -29,7 +29,7 @@
 | 2 | Add `asset_catalogue.get_record` handler | Handler returns record by id; returns error for unknown id | Done | haiku | Used by Blueprint + Scene OnNavigate for source path lookup |
 | 3 | PluginLoaderModule: call OnNavigate on fresh load and on already-loaded | OnNavigate called in both paths | Done | haiku | Already-loaded path was previously a silent skip |
 | 4 | DiaApplicationFlowEditorPlugin::OnNavigate | Pushes app_editor.navigate_to_stage; no crash on missing manifest | Done | sonnet | Extracts stage name from instanceId by splitting on '.' |
-| 5 | DiaBlueprintEditorPlugin::OnNavigate | Loads blueprint via get_record + blueprint_editor.load; no crash when catalogue absent | Done | sonnet | Graceful fallback; logs warning |
+| 5 | DiaEntityTemplateEditorPlugin::OnNavigate | Loads blueprint via get_record + entity_template_editor.load; no crash when catalogue absent | Done | sonnet | Graceful fallback; logs warning |
 | 6 | DiaSceneEditorPlugin::OnNavigate | Loads scene via get_record + scene_editor.load_scene; graceful fallback | Done | sonnet | Same pattern as Blueprint |
 | 7 | DiaAssetCatalogueEditorPlugin::OnNavigate | Pushes asset_catalogue.navigate_to_record; no crash for unknown id | Done | sonnet | Verifies record exists before pushing |
 | 8 | DiaApplicationEditor UI: handle navigate_to_stage | Stage scrolls into view and briefly highlights | Done | sonnet | CSS transition fades highlight after 1.5s |

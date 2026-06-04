@@ -1,9 +1,9 @@
 #ifdef DIA_DEBUG
 
 #include "EntityStatsDrawer.h"
-#include <DiaEntity/IEntityInspectable.h>
-#include <DiaEntity/Entity.h>
-#include <DiaEntity/ComponentRegistry.h>
+#include <diaentitytemplate/IEntityInspectable.h>
+#include <diaentitytemplate/Entity.h>
+#include <diaentitytemplate/ComponentRegistry.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaGraphics/Frame/FrameData.h>
 #include <imgui.h>

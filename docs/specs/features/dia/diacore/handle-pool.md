@@ -19,7 +19,7 @@ A fixed-capacity, generation-tracking object pool. `HandlePool<T, kCapacity>` ow
 freed slots bump generation so stale handles fail validation cleanly.
 
 This is the foundation for any system that manages a fixed pool of identity-tracked objects:
-DiaEntity's entity storage IS a `HandlePool<Entity, kMax>`, and downstream systems (physics
+diaentitytemplate's entity storage IS a `HandlePool<Entity, kMax>`, and downstream systems (physics
 bodies, render objects, audio voices, asset slots) can use the same primitive instead of each
 hand-rolling a freelist + generation scheme.
 
@@ -30,9 +30,9 @@ hand-rolling a freelist + generation scheme.
 that issues handles, recycles slots, and validates incoming handles against the live state.
 
 Today, every system that wants safe object identity has to build its own freelist + generation
-machinery. DiaEntity needs this, and the research surfaced it as a generic capability worth
+machinery. diaentitytemplate needs this, and the research surfaced it as a generic capability worth
 extracting (the entity layer should not be the only place freelist-based pools exist). The
-absence of a shared `HandlePool` would mean either (a) DiaEntity ships an entity-specific
+absence of a shared `HandlePool` would mean either (a) diaentitytemplate ships an entity-specific
 allocator that's structurally identical to what physics/render will eventually need, or
 (b) every system reinvents the same 100 lines.
 
@@ -201,7 +201,7 @@ No other internal dependencies. No external dependencies beyond what `Handle<T>`
 |----|----------|------------|
 | PD-001 | StringCRC for all entity/component IDs | **Not applicable.** HandlePool is a generic primitive; identity is `Handle<T>` (index+generation), not a CRC. Consumers that need named IDs map them externally. |
 | PD-002 | ProcessingUnit/Phase/Module architecture | **Not applicable.** Pure data structure, no lifecycle. |
-| PD-003 | Component-based entities | **Not applicable.** Container layer below the entity system. (Note: the new DiaEntity research supersedes the IComponent model PD-003 was written for; HandlePool is the foundation that supports it.) |
+| PD-003 | Component-based entities | **Not applicable.** Container layer below the entity system. (Note: the new diaentitytemplate research supersedes the IComponent model PD-003 was written for; HandlePool is the foundation that supports it.) |
 | PD-004 | No STL containers in public APIs | **Compliant.** Public API uses only `Handle<T>` and POD types. No STL types in any signature. |
 | PD-005 | x64 Windows only | **Compliant.** No platform-specific code. |
 | PD-006 | Visual Studio project files are source of truth | **Compliant.** `DiaCore.vcxproj` updated manually. |
@@ -214,7 +214,7 @@ No other internal dependencies. No external dependencies beyond what `Handle<T>`
 | AD-005 | Component-based entities | **Not applicable.** Container layer; supports the replacement entity system. |
 | SD-CORE-001 | Fixed-capacity containers | **Compliant.** `kCapacity` is a compile-time template parameter; storage is `T[kCapacity]` inline; no heap allocation. |
 | SD-CORE-002 | Header-only via `.h` + `.inl` | **Compliant.** All template implementations in `.inl`. |
-| SD-CORE-003 | StringCRC as canonical ID type | **Not applicable.** HandlePool issues `Handle<T>` (index+generation), which is the appropriate identity for pool slots. Consumers may pair handles with StringCRC names externally (DiaEntity will). |
+| SD-CORE-003 | StringCRC as canonical ID type | **Not applicable.** HandlePool issues `Handle<T>` (index+generation), which is the appropriate identity for pool slots. Consumers may pair handles with StringCRC names externally (diaentitytemplate will). |
 
 ## AI Review Questions
 

@@ -101,7 +101,7 @@ Valid `layer:` values and their permitted dependencies:
 
 | Module | `layer:` value | Notes |
 |--------|---------------|-------|
-| DiaEntity | `assets/core` | ECS: domains, entities, components, hierarchy |
+| diaentitytemplate | `assets/core` | ECS: domains, entities, components, hierarchy |
 | DiaAsset | `assets/core` | Asset type definitions |
 | DiaAssetCatalogue | `assets/core` | Asset manifest/registry |
 | DiaAssetRuntime | `assets/core` | Asset loading/lifecycle (DiaBgfx dep removed) |
@@ -113,7 +113,7 @@ Valid `layer:` values and their permitted dependencies:
 |--------|---------------|-------|
 | DiaAssetCatalogueEditor | `assets/tools` | Asset manifest editor plugin |
 | DiaEntityInspector | `assets/tools` | Entity state inspector plugin |
-| DiaBlueprintEditor | `assets/tools` | Blueprint/template editor plugin |
+| DiaEntityTemplateEditor | `assets/tools` | Blueprint/template editor plugin |
 | DiaPipelineEditor | `assets/tools` | Build pipeline editor plugin |
 | DiaApplicationEditor | `assets/tools` | App config editor plugin |
 | DiaAssetRuntimeInspector | `assets/tools` | Asset loading state inspector |
@@ -215,8 +215,8 @@ Valid `layer:` values and their permitted dependencies:
 | 3 | Set `layer:` on Foundation/Services modules (DiaObservation, DiaMetrics, DiaDebugProtocol, DiaWebSocket, DiaAPI, DiaDebugServer, DiaEditor, DiaPython, DiaImGui) | 9 files → `foundation/services` |
 | 4 | Set `layer:` on Foundation/Platform modules (DiaWindow, DiaInput, DiaSDL) | 3 files → `foundation/platform` |
 | 5 | Set `layer:` on Foundation/Application modules (DiaApplicationFlow, DiaAutomation, DiaGame) | 3 files → `foundation/application` |
-| 6 | Set `layer:` on Assets/Core modules (DiaEntity, DiaAsset, DiaAssetCatalogue, DiaAssetRuntime, DiaMesh3D) | 5 files → `assets/core` |
-| 7 | Set `layer:` on Assets/Tools modules (DiaAssetCatalogueEditor, DiaEntityInspector, DiaBlueprintEditor, DiaPipelineEditor, DiaApplicationEditor, DiaAssetRuntimeInspector, DiaEntityVisualDebugger, DiaAssetRuntimeVisualDebugger) | 8 files → `assets/tools` |
+| 6 | Set `layer:` on Assets/Core modules (diaentitytemplate, DiaAsset, DiaAssetCatalogue, DiaAssetRuntime, DiaMesh3D) | 5 files → `assets/core` |
+| 7 | Set `layer:` on Assets/Tools modules (DiaAssetCatalogueEditor, DiaEntityInspector, DiaEntityTemplateEditor, DiaPipelineEditor, DiaApplicationEditor, DiaAssetRuntimeInspector, DiaEntityVisualDebugger, DiaAssetRuntimeVisualDebugger) | 8 files → `assets/tools` |
 | 8 | Set `layer:` on Visual domain (DiaGraphics, DiaGraphics3D, DiaBgfx, DiaBgfx3D, DiaUI, DiaUICEF, DiaUIUltralight, DiaScene2D, DiaScene3D, DiaCamera2D, DiaLighting2D + tools) | ~16 files |
 | 9 | Set `layer:` on Physics domain (DiaRigidBody2D, DiaSoftBody2D + visual debuggers) | 4 files |
 | 10 | Set `layer:` on Animation domain (DiaRig2D, DiaIK2D, DiaAnimation2D, DiaRig3D, DiaAnimation3D, DiaSkinning3D + visual debuggers) | ~9 files |

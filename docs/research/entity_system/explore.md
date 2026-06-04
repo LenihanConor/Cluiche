@@ -131,7 +131,7 @@ DiaApplicationFlow v2 (approved 2026-05-08) replaces Phases with config-declared
 - How does gameplay code wire entity creation — code-only, JSON prefabs, or both?
 - What does inter-entity communication look like — direct handle lookup, event dispatch, mailbox, or something else?
 - Should entity "components" (handle bindings) declare dependencies ("I need a physics handle") or is that purely gameplay-code responsibility?
-- Old IComponent infrastructure is being removed — does the new system live in DiaCore or a new DiaEntity module?
+- Old IComponent infrastructure is being removed — does the new system live in DiaCore or a new diaentitytemplate module?
 - Is there a need for entity "tags" or "groups" for bulk operations (e.g., "all enemies")?
 - How are entity templates versioned across stage reloads — always recreated from prefab data?
 - How do systems (physics, rendering) communicate destruction back to the entity layer — callback, poll, or generational handle invalidation?

@@ -1,13 +1,13 @@
 #include <gtest/gtest.h>
-#include <DiaEntity/Domain.h>
-#include <DiaEntity/ComponentPool.h>
-#include <DiaEntity/EntityAddress.h>
-#include <DiaEntity/IEntityInspectable.h>
-#include <DiaEntity/JsonBlueprintLoader.h>
-#include <DiaEntity/Hierarchy/ParentComponent.h>
-#include <DiaEntity/Hierarchy/ChildBufferComponent.h>
-#include <DiaEntity/Hierarchy/Hierarchy.h>
-#include <DiaEntity/Messages/EntityDestroyedMessage.h>
+#include <diaentitytemplate/Domain.h>
+#include <diaentitytemplate/ComponentPool.h>
+#include <diaentitytemplate/EntityAddress.h>
+#include <diaentitytemplate/IEntityInspectable.h>
+#include <diaentitytemplate/JsonBlueprintLoader.h>
+#include <diaentitytemplate/Hierarchy/ParentComponent.h>
+#include <diaentitytemplate/Hierarchy/ChildBufferComponent.h>
+#include <diaentitytemplate/Hierarchy/Hierarchy.h>
+#include <diaentitytemplate/Messages/EntityDestroyedMessage.h>
 #include "TestComponent.h"
 #include "BpTransformComponent.h"
 

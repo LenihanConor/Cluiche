@@ -1,15 +1,15 @@
-# Research: Explore — DiaEntity Visual Debugger & Editor Options
+# Research: Explore — diaentitytemplate Visual Debugger & Editor Options
 
 **Session date:** 2026-05-24
 **Folder:** docs/research/diaentit_visual_debug/
 
 ## Problem Space Overview
 
-DiaEntity provides the gameplay-level entity model for the Cluiche platform: generational handles, component pools, mailbox routing, hierarchy, query caches, and reflection metadata via `ComponentTypeDesc`. This data is generated continuously at runtime but is presently invisible to the developer outside of code-level inspection and log output. A visual debugger and editor surface would make entity state observable and — at higher interaction tiers — editable without recompiling or restarting the game.
+diaentitytemplate provides the gameplay-level entity model for the Cluiche platform: generational handles, component pools, mailbox routing, hierarchy, query caches, and reflection metadata via `ComponentTypeDesc`. This data is generated continuously at runtime but is presently invisible to the developer outside of code-level inspection and log output. A visual debugger and editor surface would make entity state observable and — at higher interaction tiers — editable without recompiling or restarting the game.
 
 The need is two-sided. During authoring a developer wants to browse the Domain's entity population, inspect component field values, understand hierarchy relationships, and verify that a blueprint loaded correctly. During debugging a developer wants to observe live state changes frame-by-frame, correlate component values with rendered primitives in the viewport (via the existing `entityId` field on every `DebugPrimitive`), and pick entities by clicking on them in the 2D view. Neither workflow is currently served by any built tool in Cluiche.
 
-The problem space sits at an intersection of three already-built systems — DiaEntity's `IEntityInspectable`, DiaVisualDebugger's entity-picking seam, and DiaEditor's plugin + WebSocket data pipeline — which means the infrastructure to serve this feature exists in fragments and needs to be connected rather than invented. The primary design challenge is deciding what the surface should look like, which interaction tier (read-only, live field edit, or deferred structural edit) to expose first, and how to manage the data volume that a large Domain with many entities and components generates.
+The problem space sits at an intersection of three already-built systems — diaentitytemplate's `IEntityInspectable`, DiaVisualDebugger's entity-picking seam, and DiaEditor's plugin + WebSocket data pipeline — which means the infrastructure to serve this feature exists in fragments and needs to be connected rather than invented. The primary design challenge is deciding what the surface should look like, which interaction tier (read-only, live field edit, or deferred structural edit) to expose first, and how to manage the data volume that a large Domain with many entities and components generates.
 
 ## What Data Exists to Show
 
@@ -109,9 +109,9 @@ The problem space sits at an intersection of three already-built systems — Dia
 
 | Module | Relevance |
 |--------|-----------|
-| DiaEntity / Domain | Primary data source: entity population, component pools, hierarchy, query cache, mailbox |
-| DiaEntity / IEntityInspectable | The inspection API that the debugger will call for read and field-write operations |
-| DiaEntity / ComponentRegistry | Provides the full list of registered component types and their `ComponentTypeDesc` for UI generation |
+| diaentitytemplate / Domain | Primary data source: entity population, component pools, hierarchy, query cache, mailbox |
+| diaentitytemplate / IEntityInspectable | The inspection API that the debugger will call for read and field-write operations |
+| diaentitytemplate / ComponentRegistry | Provides the full list of registered component types and their `ComponentTypeDesc` for UI generation |
 | DiaVisualDebugger / DebugLayerManager | Holds the picking seam (`SetSelectedEntityId`); owns DebugPrimitive stream tagged with `entityId` |
 | DiaEditor / IEditorPlugin | Plugin interface that the entity inspector panel will implement |
 | DiaEditor / GameConnectionManager | Manages the WebSocket connection; the plugin subscribes to the `entity.inspect` topic through this |

@@ -1,4 +1,4 @@
-# Research: Evaluate — DiaEntity Visual Debugger & Editor Options
+# Research: Evaluate — diaentitytemplate Visual Debugger & Editor Options
 
 **Input:** docs/research/diaentit_visual_debug/ideate.md
 
@@ -50,4 +50,4 @@ Two system targets:
 
 **DiaEntityEditor new system (M→S→M→M):** C2 → C5 → C6 → C8 as features in sequence.
 
-**DiaEntityBlueprintEditor new system (separate workstream):** C7 + DiaCLI schema export prerequisite.
+**DiaEntityEntityTemplateEditor new system (separate workstream):** C7 + DiaCLI schema export prerequisite.

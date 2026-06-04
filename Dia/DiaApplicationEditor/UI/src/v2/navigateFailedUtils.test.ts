@@ -4,29 +4,29 @@ import { deriveExpectedPath, buildNavigateFailedContext } from './navigateFailed
 describe('deriveExpectedPath', () => {
     it('handles source_path ending with forward slash (directory)', () => {
         const result = deriveExpectedPath(
-            'diaentity.more',
+            'diaentitytemplate.more',
             'C:\\GitHub\\Cluiche\\Assets\\CluicheTest\\Global\\Scene/',
-            'diaentity'
+            'diaentitytemplate'
         );
-        expect(result).toBe('C:\\GitHub\\Cluiche\\Assets\\CluicheTest\\Global\\Scene/more.diaentity');
+        expect(result).toBe('C:\\GitHub\\Cluiche\\Assets\\CluicheTest\\Global\\Scene/more.diaentitytemplatetemplate');
     });
 
     it('handles source_path ending with backslash (directory)', () => {
         const result = deriveExpectedPath(
-            'diaentity.hero',
+            'diaentitytemplate.hero',
             'C:\\GitHub\\Cluiche\\Assets\\Global\\Scene\\',
-            'diaentity'
+            'diaentitytemplate'
         );
-        expect(result).toBe('C:\\GitHub\\Cluiche\\Assets\\Global\\Scene\\hero.diaentity');
+        expect(result).toBe('C:\\GitHub\\Cluiche\\Assets\\Global\\Scene\\hero.diaentitytemplatetemplate');
     });
 
     it('handles source_path pointing to a file (strips filename, keeps directory)', () => {
         const result = deriveExpectedPath(
-            'diaentity.player',
-            'C:\\GitHub\\Cluiche\\Assets\\Scene/wrong.diaentity',
-            'diaentity'
+            'diaentitytemplate.player',
+            'C:\\GitHub\\Cluiche\\Assets\\Scene/wrong.diaentitytemplatetemplate',
+            'diaentitytemplate'
         );
-        expect(result).toBe('C:\\GitHub\\Cluiche\\Assets\\Scene/player.diaentity');
+        expect(result).toBe('C:\\GitHub\\Cluiche\\Assets\\Scene/player.diaentitytemplatetemplate');
     });
 
     it('handles camera asset type', () => {
@@ -49,38 +49,38 @@ describe('deriveExpectedPath', () => {
 
     it('handles instanceId with multiple dots (uses text after first dot)', () => {
         const result = deriveExpectedPath(
-            'diaentity.level.boss',
+            'diaentitytemplate.level.boss',
             '/assets/entities/',
-            'diaentity'
+            'diaentitytemplate'
         );
-        expect(result).toBe('/assets/entities/level.boss.diaentity');
+        expect(result).toBe('/assets/entities/level.boss.diaentitytemplatetemplate');
     });
 
     it('handles instanceId with no dot prefix', () => {
         const result = deriveExpectedPath(
             'standalone',
             '/assets/',
-            'diaentity'
+            'diaentitytemplate'
         );
-        expect(result).toBe('/assets/standalone.diaentity');
+        expect(result).toBe('/assets/standalone.diaentitytemplatetemplate');
     });
 
     it('handles empty source_path', () => {
         const result = deriveExpectedPath(
-            'diaentity.test',
+            'diaentitytemplate.test',
             '',
-            'diaentity'
+            'diaentitytemplate'
         );
-        expect(result).toBe('test.diaentity');
+        expect(result).toBe('test.diaentitytemplatetemplate');
     });
 
     it('handles source_path with no directory separator', () => {
         const result = deriveExpectedPath(
-            'diaentity.item',
-            'somefile.diaentity',
-            'diaentity'
+            'diaentitytemplate.item',
+            'somefile.diaentitytemplatetemplate',
+            'diaentitytemplate'
         );
-        expect(result).toBe('item.diaentity');
+        expect(result).toBe('item.diaentitytemplatetemplate');
     });
 });
 
@@ -93,38 +93,38 @@ describe('buildNavigateFailedContext', () => {
         const result = buildNavigateFailedContext({
             instanceId: '',
             sourcePath: '/some/path/',
-            assetType: 'diaentity',
+            assetType: 'diaentitytemplate',
         });
         expect(result).toBeNull();
     });
 
     it('builds context with correct expectedPath', () => {
         const result = buildNavigateFailedContext({
-            instanceId: 'diaentity.more',
+            instanceId: 'diaentitytemplate.more',
             sourcePath: 'C:\\GitHub\\Cluiche\\Assets\\Scene/',
             error: 'could not open file',
-            assetType: 'diaentity',
+            assetType: 'diaentitytemplate',
         });
         expect(result).not.toBeNull();
-        expect(result!.instanceId).toBe('diaentity.more');
+        expect(result!.instanceId).toBe('diaentitytemplate.more');
         expect(result!.sourcePath).toBe('C:\\GitHub\\Cluiche\\Assets\\Scene/');
-        expect(result!.expectedPath).toBe('C:\\GitHub\\Cluiche\\Assets\\Scene/more.diaentity');
-        expect(result!.assetType).toBe('diaentity');
+        expect(result!.expectedPath).toBe('C:\\GitHub\\Cluiche\\Assets\\Scene/more.diaentitytemplatetemplate');
+        expect(result!.assetType).toBe('diaentitytemplate');
     });
 
-    it('defaults assetType to diaentity when missing', () => {
+    it('defaults assetType to diaentitytemplate when missing', () => {
         const result = buildNavigateFailedContext({
-            instanceId: 'diaentity.test',
+            instanceId: 'diaentitytemplate.test',
             sourcePath: '/path/',
         });
-        expect(result!.assetType).toBe('diaentity');
+        expect(result!.assetType).toBe('diaentitytemplate');
     });
 
     it('handles missing sourcePath gracefully', () => {
         const result = buildNavigateFailedContext({
-            instanceId: 'diaentity.orphan',
+            instanceId: 'diaentitytemplate.orphan',
         });
         expect(result).not.toBeNull();
-        expect(result!.expectedPath).toBe('orphan.diaentity');
+        expect(result!.expectedPath).toBe('orphan.diaentitytemplatetemplate');
     });
 });

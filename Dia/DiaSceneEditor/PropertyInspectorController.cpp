@@ -1,6 +1,6 @@
 #include "DiaSceneEditor/PropertyInspectorController.h"
-#include <DiaEntity/ComponentRegistry.h>
-#include <DiaEntity/ComponentTypeDesc.h>
+#include <diaentitytemplate/ComponentRegistry.h>
+#include <diaentitytemplate/ComponentTypeDesc.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaCore/CRC/StringCRC.h>
@@ -14,10 +14,10 @@ namespace
 	// Extension for each blueprint item type.
 	static const char* BlueprintExtension(const char* itemType)
 	{
-		if (!itemType) return ".diaentity";
+		if (!itemType) return ".diaentitytemplatetemplate";
 		if (strcmp(itemType, "camera") == 0) return ".diacamera";
 		if (strcmp(itemType, "light")  == 0) return ".dialight";
-		return ".diaentity";
+		return ".diaentitytemplatetemplate";
 	}
 
 	// Top-level JSON key for each blueprint extension.

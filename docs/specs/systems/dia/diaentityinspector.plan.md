@@ -8,19 +8,19 @@
 All dependencies exist:
 - `IEditorPlugin` interface + `REGISTER_EDITOR_PLUGIN` — `Dia/DiaEditor/Plugin/`
 - `WebUIBridge` for C++↔UI — `Dia/DiaEditor/UI/`
-- `IEntityInspectable` interface (Tier a + b) — `Dia/DiaEntity/IEntityInspectable.h`
+- `IEntityInspectable` interface (Tier a + b) — `Dia/diaentitytemplate/IEntityInspectable.h`
 - `DiaDebugServer` WebSocket infrastructure — `Dia/DiaDebugServer/`
 - `DiaDebugProtocol` message types — `Dia/DiaDebugProtocol/`
 - `DiaAPI` command dispatch — `Dia/DiaAPI/`
 - `DebugLayerManager::GetSelectedEntityId()` — `Dia/DiaVisualDebugger/`
-- `ComponentRegistry` + `ComponentTypeDesc` for field introspection — `Dia/DiaEntity/`
+- `ComponentRegistry` + `ComponentTypeDesc` for field introspection — `Dia/diaentitytemplate/`
 
 ### Tasks
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
 | 1 | Plugin scaffold: create `Dia/DiaEntityInspector/` project, `DiaEntityInspectorPlugin` class, register, add to solution | Plugin appears in EditorPluginRegistry; `GetName()` returns "DiaEntityInspector" | Done | sonnet | DiaEntityInspectorPlugin + vcxproj + solution entry; disconnect-overlay wired via GameConnectionManager in OnUpdate; no project dependency |
-| 2 | Debug data type constants: create `Dia/DiaEntity/DebugDataTypes.h` with `kEntityInspect`, `kEntityInspectRequest`, `kEntityFindByName`, `kEntityWriteField` | Constants compile; `StringCRC` values correct | Done | haiku | Dia/DiaEntity/DebugDataTypes.h created |
+| 2 | Debug data type constants: create `Dia/diaentitytemplate/DebugDataTypes.h` with `kEntityInspect`, `kEntityInspectRequest`, `kEntityFindByName`, `kEntityWriteField` | Constants compile; `StringCRC` values correct | Done | haiku | Dia/diaentitytemplate/DebugDataTypes.h created |
 | 3 | Protocol version bump: update `kProtocolVersion` to 2 in `DiaDebugProtocol/Protocol.h` | Handshake rejects version 1 clients | Done | haiku | kProtocolVersion = 2 in DiaDebugProtocol.h |
 | 4 | EntityInspectSerializer: implement `SerializeEntityInspect()` — reads entity state via `IEntityInspectable` and produces JSON payload | Serialize a test entity → JSON matches spec schema (entity, components, hierarchy, queries, mailbox_log) | Done | opus | Free function; components+queries+hierarchy; mailbox_log stubbed as [] (T15 populates client-side) |
 | 5 | `entity.inspect_request` topic handler: register in DiaDebugServer, on receipt call `SerializeEntityInspect` and push result | Send inspect_request → receive entity.inspect data update | Done | sonnet | Registered via QueryRegistry in EntityInspectorModule::RegisterHandlers() |
@@ -72,7 +72,7 @@ Phase 1 through Phase 4 are complete. T19 adds exhaustive tests and observation 
 | `Dia/DiaEntityInspector/MailboxMonitorController.h/cpp` | Mailbox tab logic |
 | `Dia/DiaEntityInspector/EntityWatchListController.h/cpp` | Watch tab logic |
 | `Dia/DiaEntityInspector/EntityInspectSerializer.h/cpp` | Game-side JSON serialization |
-| `Dia/DiaEntity/DebugDataTypes.h` | Data type StringCRC constants |
+| `Dia/diaentitytemplate/DebugDataTypes.h` | Data type StringCRC constants |
 | `Cluiche/CluicheGameBaseline/Modules/EntityInspectorModule.cpp` | Add selected-entity polling + inspect push |
 | `Tests/GoogleTests/DiaEntityInspector/EntityInspectSerializerTests.cpp` | Serializer unit tests |
 | `Cluiche/CluicheEditor/UI/src/plugins/entity-inspector/` | React UI components |

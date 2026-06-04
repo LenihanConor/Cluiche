@@ -5,7 +5,7 @@
 
 ## One-Line Answer
 
-A layered ECS where components are config + asset trigger + gameplay interface into independent systems, with reflection-backed editor inspection, deferred mailbox communication, parent/child hierarchy, and cached queries — all housed in a standalone DiaEntity module.
+A layered ECS where components are config + asset trigger + gameplay interface into independent systems, with reflection-backed editor inspection, deferred mailbox communication, parent/child hierarchy, and cached queries — all housed in a standalone diaentitytemplate module.
 
 ## Journey
 
@@ -17,8 +17,8 @@ A layered ECS where components are config + asset trigger + gameplay interface i
 
 ## Chosen Work Item
 
-**Name:** DiaEntity — Layered ECS with Component Interfaces + Editor-First Inspection
-**Home module:** New `Dia/DiaEntity/` (standalone, no DiaApplicationFlow dependency)
+**Name:** diaentitytemplate — Layered ECS with Component Interfaces + Editor-First Inspection
+**Home module:** New `Dia/diaentitytemplate/` (standalone, no DiaApplicationFlow dependency)
 **Suggested spec type:** System (with multiple feature specs for each layer)
 **Estimated size:** M (1–3 weeks for foundation; reflection, hierarchy, queries, and editor inspection layer on after)
 **Container term:** `Realm` (not `World` — avoids overlap with Stage)
@@ -31,7 +31,7 @@ A layered ECS where components are config + asset trigger + gameplay interface i
 - **Deferred everything:** messages async over one frame, query caches rebuild end-of-frame, references resolve in a pass after creation. Consistency over immediacy.
 - **Editor-first means introspectable data design:** generational IDs, named types (StringCRC), structured addresses, versioned schemas. Not bolted on after.
 - **Old IComponent must die first** — it's philosophically opposed and barely used. Clean slate.
-- **Generic systems extracted:** HandlePool<T> belongs in DiaCore (already has Handle<T>). DiaMailbox is a standalone module (any system can use deferred messaging). DiaEntity depends on both but neither depends on entities.
+- **Generic systems extracted:** HandlePool<T> belongs in DiaCore (already has Handle<T>). DiaMailbox is a standalone module (any system can use deferred messaging). diaentitytemplate depends on both but neither depends on entities.
 
 ## Dependency Chain
 
@@ -40,7 +40,7 @@ DiaCore (Handle<T> exists + HandlePool<T> new)
   ↑
 DiaMailbox (new module — typed deferred messaging, structured addressing)
   ↑
-DiaEntity (new module — World, components, queries, IEntityInspectable)
+diaentitytemplate (new module — World, components, queries, IEntityInspectable)
   ↑
 Application code (EntityModule adapter plugging World into DiaApplicationFlow v2 stages)
 ```

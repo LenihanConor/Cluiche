@@ -28,7 +28,7 @@ TEST(EditorMemory, RoundTripSerializeDeserialize)
 
     EditorMemory save;
     save.AddPlugin("SceneEditorPlugin", "scene_main");
-    save.AddPlugin("BlueprintEditorPlugin", "bp_main");
+    save.AddPlugin("EntityTemplateEditorPlugin", "bp_main");
 
     Json::Value layout;
     layout["type"] = "msaa";
@@ -44,7 +44,7 @@ TEST(EditorMemory, RoundTripSerializeDeserialize)
     EXPECT_EQ(load.GetPluginCount(), 2u);
     EXPECT_STREQ(load.GetPlugin(0).typeId, "SceneEditorPlugin");
     EXPECT_STREQ(load.GetPlugin(0).instanceId, "scene_main");
-    EXPECT_STREQ(load.GetPlugin(1).typeId, "BlueprintEditorPlugin");
+    EXPECT_STREQ(load.GetPlugin(1).typeId, "EntityTemplateEditorPlugin");
     EXPECT_STREQ(load.GetPlugin(1).instanceId, "bp_main");
     EXPECT_STREQ(load.GetLastProject(), "C:/Games/CoW/cow.diagame");
     EXPECT_FALSE(load.GetLayoutTree().isNull());

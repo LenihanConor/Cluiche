@@ -1,4 +1,4 @@
-#include <DiaEntity/ComponentRegistry.h>
+#include <diaentitytemplate/ComponentRegistry.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
 
@@ -11,7 +11,7 @@ namespace Dia::Entity {
 
     bool ComponentRegistry::Register(const ComponentTypeDesc& desc) {
         if (Find(desc.typeId) != nullptr) {
-            DIA_LOG_WARNING("DiaEntity", "ComponentRegistry: duplicate registration for '%s' — ignored", desc.debugName);
+            DIA_LOG_WARNING("diaentitytemplate", "ComponentRegistry: duplicate registration for '%s' — ignored", desc.debugName);
             return false;
         }
         if (mDescs.IsFull()) {

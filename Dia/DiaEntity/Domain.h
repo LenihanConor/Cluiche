@@ -9,17 +9,17 @@
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Metric/Counter.h>
 #include <DiaObservation/Metric/Gauge.h>
-#include <DiaEntity/DomainHealth.h>
+#include <diaentitytemplate/DomainHealth.h>
 #include <DiaMailbox/Mailbox.h>
-#include <DiaEntity/Entity.h>
-#include <DiaEntity/IComponent.h>
-#include <DiaEntity/IComponentPool.h>
-#include <DiaEntity/MutationOp.h>
-#include <DiaEntity/QueryCache.h>
-#include <DiaEntity/QueryView.h>
-#include <DiaEntity/EntityRouter.h>
-#include <DiaEntity/IEntityInspectable.h>
-#include <DiaEntity/Messages/EntityDestroyedMessage.h>
+#include <diaentitytemplate/Entity.h>
+#include <diaentitytemplate/IComponent.h>
+#include <diaentitytemplate/IComponentPool.h>
+#include <diaentitytemplate/MutationOp.h>
+#include <diaentitytemplate/QueryCache.h>
+#include <diaentitytemplate/QueryView.h>
+#include <diaentitytemplate/EntityRouter.h>
+#include <diaentitytemplate/IEntityInspectable.h>
+#include <diaentitytemplate/Messages/EntityDestroyedMessage.h>
 
 namespace Dia::Entity {
 
@@ -218,4 +218,4 @@ namespace Dia::Entity {
 
 } // namespace Dia::Entity
 
-#include <DiaEntity/Domain.inl>
+#include <diaentitytemplate/Domain.inl>

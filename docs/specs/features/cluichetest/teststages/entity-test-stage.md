@@ -11,14 +11,14 @@
 | Application | @docs/specs/applications/cluichetest.md | AD-001, AD-002, AD-003, AD-005 |
 | System | @docs/specs/systems/cluichetest/teststages.md | SD-TS-001, SD-TS-002, SD-TS-003, SD-TS-004, SD-TS-005 |
 | Sibling | @docs/specs/features/cluichetest/teststages/test-stage-infrastructure.md | Inherits Shared ACs 1–9; depends on Boot menu + manifest loader |
-| Depends on | @docs/specs/systems/dia/diaentity.md | SD-ENT-001 through SD-ENT-020 |
+| Depends on | @docs/specs/systems/dia/diaentitytemplate.md | SD-ENT-001 through SD-ENT-020 |
 | Depends on | @docs/specs/features/cluichetest/applicationflow/entity-module.md | EntityModule wiring pattern |
 
 ---
 
 ## Problem Statement
 
-DiaEntity is fully implemented (94 unit tests pass) but has never been exercised under real PU timing in a stage lifecycle. No E2E path exists to validate: entity spawn/destroy across `EndOfFrame` boundaries, hierarchy cascade under real sim timing, query cache correctness after mutations, or mailbox message delivery across frames. This stage provides that validation contract.
+diaentitytemplate is fully implemented (94 unit tests pass) but has never been exercised under real PU timing in a stage lifecycle. No E2E path exists to validate: entity spawn/destroy across `EndOfFrame` boundaries, hierarchy cascade under real sim timing, query cache correctness after mutations, or mailbox message delivery across frames. This stage provides that validation contract.
 
 ---
 
@@ -26,7 +26,7 @@ DiaEntity is fully implemented (94 unit tests pass) but has never been exercised
 
 | # | Question | Answer |
 |---|----------|--------|
-| T1 | Engine feature under test | `DiaEntity` — `Domain`, component lifecycle (`OnAttach`/`OnDetach`), hierarchy (`ParentComponent`/`ChildBufferComponent`), query system, mailbox routing (`EntityRouter`), `DoUpdate` loop |
+| T1 | Engine feature under test | `diaentitytemplate` — `Domain`, component lifecycle (`OnAttach`/`OnDetach`), hierarchy (`ParentComponent`/`ChildBufferComponent`), query system, mailbox routing (`EntityRouter`), `DoUpdate` loop |
 | T2 | Scene layout | Three entity groups: (1) a hierarchy tree (1 parent + 3 children, all with `TransformComponent` + `VisualTestRenderComponent`); (2) 4 standalone query-target entities with both components; (3) 1 "doomed" entity destroyed in `DoUpdate` on frame 1 to validate destroy+cascade. Total: 9 entities at DoStart, 8 after first EndOfFrame. |
 | T3 | Acceptance criteria | Shared ACs 1–9 + stage-specific ACs AC-E1 through AC-E7 (see below) |
 | T4 | Metrics | `entity.spawn_count` (total alive after DoStart), `entity.query_result_count` (entities matching full query), `entity.mailbox_messages_received` (running total of mailbox messages delivered to entities) |
@@ -431,7 +431,7 @@ def test_entity_test_stage_loads(cluichetest):
 | SD-ENT-012 | Structural changes queued at EndOfFrame | Destroy on frame 1 uses `QueueDestroy`; applied at next `EndOfFrame`. |
 | SD-ENT-017 | Domain is non-copyable, non-movable | `mDomain` is a direct member; never copied or moved. |
 | SD-ENT-018 | Single-threaded per realm | `Domain` accessed only from SimPU thread. |
-| SD-ENT-019 | Namespace `Dia::Entity::` | All DiaEntity types used via `Dia::Entity::` namespace. |
+| SD-ENT-019 | Namespace `Dia::Entity::` | All diaentitytemplate types used via `Dia::Entity::` namespace. |
 
 ---
 
@@ -450,7 +450,7 @@ None.
 | Q3 | Design — VisualTestRenderComponent escalation check | Is `VisualTestRenderComponent` test-only or generally useful enough for a Dia module? | **Test-only.** Lives in `CluicheTest/Modules/TestStages/Entity/`. A generic `DebugRenderComponent` would be a Dia-level decision; this is a throwaway test fixture. |
 | Q4 | Design — hierarchy lines | Is `ShapeDrawer::Line` the right primitive for hierarchy relationships, or ImGui drawlist? | **`ShapeDrawer::Line`** — consistent with how other stages use ShapeDrawer for world-space geometry. |
 | Q5 | Tasks — entity.broadcast_ping DiaAPI command | Is a `entity.broadcast_ping` DiaAPI command needed? | **No** — Q2 resolved as automatic broadcast. Orchestrator just polls `entity.mailbox_received`. |
-| Q6 | Tasks — DiaEntity + EntityModule implementation status | Is `DiaEntity` fully built? Is `EntityModule` implemented? | DiaEntity plan is marked Done (T1–T15, T17). `entity-module.md` is `Approved` but implementation not confirmed. Task 2 covers this verification gate. |
+| Q6 | Tasks — diaentitytemplate + EntityModule implementation status | Is `diaentitytemplate` fully built? Is `EntityModule` implemented? | diaentitytemplate plan is marked Done (T1–T15, T17). `entity-module.md` is `Approved` but implementation not confirmed. Task 2 covers this verification gate. |
 
 ---
 

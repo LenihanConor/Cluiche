@@ -1,5 +1,5 @@
-#include <DiaEntity/EntityRouter.h>
-#include <DiaEntity/Domain.h>
+#include <diaentitytemplate/EntityRouter.h>
+#include <diaentitytemplate/Domain.h>
 #include <DiaObservation/Log/DiaLog.h>
 
 namespace Dia::Entity {
@@ -19,7 +19,7 @@ namespace Dia::Entity {
                                      Dia::Mailbox::SubscriberSet& outMatched) {
         if (!mDomain.IsAlive(target)) {
 #ifdef DEBUG
-            DIA_LOG_WARNING("DiaEntity", "EntityRouter::Resolve — entity is not alive (stale address), no-op");
+            DIA_LOG_WARNING("diaentitytemplate", "EntityRouter::Resolve — entity is not alive (stale address), no-op");
 #endif
             return;
         }
@@ -80,7 +80,7 @@ namespace Dia::Entity {
             }
 
             default: {
-                DIA_LOG_WARNING("DiaEntity", "EntityRouter::Resolve — unknown AddressKind, no-op");
+                DIA_LOG_WARNING("diaentitytemplate", "EntityRouter::Resolve — unknown AddressKind, no-op");
                 break;
             }
         }
