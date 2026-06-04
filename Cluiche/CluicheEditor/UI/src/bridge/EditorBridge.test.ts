@@ -262,3 +262,68 @@ describe("EditorBridge – iframe relay", () => {
     expect(callSpy).not.toHaveBeenCalled();
   });
 });
+
+describe("EditorBridge – notify()", () => {
+  it("notify dispatches toast with id, level, title, message", async () => {
+    const { EditorBridge, setToastDispatch } = await import("./EditorBridge");
+    const dispatch = vi.fn();
+    setToastDispatch(dispatch);
+    EditorBridge.notify({ level: "error", title: "Save failed", message: "Disk full" });
+    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({
+      level: "error", title: "Save failed", message: "Disk full",
+    }));
+    expect(dispatch.mock.calls[0][0].id).toMatch(/^n\d+$/);
+  });
+
+  it("notify does not crash when no dispatch is wired", async () => {
+    const { EditorBridge, setToastDispatch } = await import("./EditorBridge");
+    setToastDispatch(null as any); // clear it
+    expect(() => EditorBridge.notify({ level: "info", title: "Hello" })).not.toThrow();
+  });
+});
+
+describe("EditorBridge – editor.notification topic (C++ push)", () => {
+  it("editor.notification topic fires dispatch", async () => {
+    const { EditorBridge, setToastDispatch } = await import("./EditorBridge");
+    const dispatch = vi.fn();
+    setToastDispatch(dispatch);
+    window.DiaEditor_onDataChanged!({
+      topic: "editor.notification",
+      data: { id: "t0", level: "info", title: "Connected", message: "Game connected" },
+    });
+    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({
+      id: "t0", level: "info", title: "Connected", message: "Game connected",
+    }));
+  });
+});
+
+describe("EditorBridge – iframe editor.notify relay", () => {
+  it("iframe editor.notify message triggers dispatch without calling C++", async () => {
+    const { EditorBridge, setToastDispatch } = await import("./EditorBridge");
+    const dispatch = vi.fn();
+    setToastDispatch(dispatch);
+    window.dispatchEvent(new MessageEvent("message", {
+      data: {
+        __diaFromFrame: true,
+        payload: { type: "editor.notify", data: { level: "warning", title: "Low memory" } },
+      },
+    }));
+    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({
+      level: "warning", title: "Low memory",
+    }));
+    expect((window as any).dia.callCpp).not.toHaveBeenCalled();
+  });
+
+  it("iframe editor.notify with missing title is ignored", async () => {
+    const { EditorBridge, setToastDispatch } = await import("./EditorBridge");
+    const dispatch = vi.fn();
+    setToastDispatch(dispatch);
+    window.dispatchEvent(new MessageEvent("message", {
+      data: {
+        __diaFromFrame: true,
+        payload: { type: "editor.notify", data: { level: "info" } }, // no title
+      },
+    }));
+    expect(dispatch).not.toHaveBeenCalled();
+  });
+});
