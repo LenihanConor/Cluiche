@@ -87,3 +87,67 @@ TEST(EditorMemory, LoadPreservesUnknownPlugin)
 
     std::remove(tmpPath);
 }
+
+TEST(EditorMemory, VersionMismatch_ReturnsFalse)
+{
+    const char* tmpPath = "test_editor_memory_version.json";
+    WriteTempFile(tmpPath, "{\"version\":2,\"plugins\":[],\"last_project\":\"\"}");
+
+    EditorMemory mem;
+    EXPECT_FALSE(mem.Load(tmpPath));
+
+    std::remove(tmpPath);
+}
+
+TEST(EditorMemory, SaveToInvalidPath_ReturnsFalse)
+{
+    EditorMemory mem;
+    mem.AddPlugin("SomePlugin", "some_inst");
+    EXPECT_FALSE(mem.Save("Z:/nonexistent_dir_xyz/.memory.json"));
+}
+
+TEST(EditorMemory, ClearPlugins_RemovesAll)
+{
+    EditorMemory mem;
+    mem.AddPlugin("PluginA", "inst_a");
+    mem.AddPlugin("PluginB", "inst_b");
+    mem.AddPlugin("PluginC", "inst_c");
+    EXPECT_EQ(mem.GetPluginCount(), 3u);
+
+    mem.ClearPlugins();
+    EXPECT_EQ(mem.GetPluginCount(), 0u);
+}
+
+TEST(EditorMemory, AddPlugin_AtCapacity_NoOverflow)
+{
+    EditorMemory mem;
+    // Fill to capacity (16)
+    for (unsigned int i = 0; i < 16; ++i)
+    {
+        char typeId[32];
+        snprintf(typeId, sizeof(typeId), "Plugin%02u", i);
+        mem.AddPlugin(typeId, typeId);
+    }
+    EXPECT_EQ(mem.GetPluginCount(), 16u);
+
+    // Adding beyond capacity should be silently ignored
+    mem.AddPlugin("OverflowPlugin", "overflow_inst");
+    EXPECT_EQ(mem.GetPluginCount(), 16u);
+}
+
+TEST(EditorMemory, NullLayoutRoundTrip)
+{
+    const char* tmpPath = "test_editor_memory_null_layout.json";
+
+    EditorMemory save;
+    save.AddPlugin("SomePlugin", "inst");
+    // Do NOT set a layout tree
+    EXPECT_TRUE(save.Save(tmpPath));
+
+    EditorMemory load;
+    EXPECT_TRUE(load.Load(tmpPath));
+    EXPECT_EQ(load.GetPluginCount(), 1u);
+    EXPECT_TRUE(load.GetLayoutTree().isNull());
+
+    std::remove(tmpPath);
+}
