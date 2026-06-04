@@ -1000,29 +1000,18 @@
     navFailContext = null;
     closeModal('modal-navigate-failed');
 
-    diaRequest('entity_template_editor.create_from_template', {
-      instanceId: ctx.instanceId,
-      path: ctx.expectedPath
+    diaRequest('asset_catalogue.create_asset', {
+      assetType: ctx.assetType || 'diaentitytemplate',
+      id: ctx.instanceId,
+      source_path: ctx.expectedPath
     }).then(function(r) {
       if (!r.success) {
         setStatus('Create failed: ' + (r.error || 'unknown'), true);
         return;
       }
-      // Fetch the full catalogue record, update source_path, and save back
-      diaRequest('asset_catalogue.get_record', { id: ctx.instanceId }).then(function(gr) {
-        if (!gr.success || !gr.record) {
-          setStatus('Created file but could not update catalogue path', true);
-          selectBlueprint(ctx.instanceId, ctx.expectedPath);
-          return;
-        }
-        var rec = gr.record;
-        rec.source_path = ctx.expectedPath;
-        diaRequest('asset_catalogue.update_record', rec).then(function() {
-          setStatus('Created ' + ctx.expectedPath.split(/[/\\]/).pop());
-          selectBlueprint(ctx.instanceId, ctx.expectedPath);
-          loadBlueprintList();
-        });
-      });
+      setStatus('Created ' + ctx.expectedPath.split(/[/\\]/).pop());
+      selectBlueprint(ctx.instanceId, r.absPath || ctx.expectedPath);
+      loadBlueprintList();
     });
   }
 
