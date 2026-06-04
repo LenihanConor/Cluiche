@@ -20,7 +20,6 @@ public:
             Dia::Editor::LayoutMode::kDockable,
             nullptr,
             nullptr,
-            false,
             false
         })
     {}

@@ -72,7 +72,7 @@ namespace Dia
 				void* userData;
 			};
 
-			static const unsigned int kMaxCallbacks = 8;
+			static const unsigned int kMaxCallbacks = 16;
 			static const unsigned int kMaxRecent    = 5;
 
 			ProjectContext  mDiagameContext;

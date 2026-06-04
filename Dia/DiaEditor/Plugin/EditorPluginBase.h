@@ -21,7 +21,6 @@ namespace Dia
 			const char* dirtyTopic;
 			const char* iconChar;
 			bool        pinned;
-			bool        subscribesToProjectChanges;
 		};
 
 		class EditorPluginBase : public IEditorPlugin

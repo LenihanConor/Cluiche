@@ -36,7 +36,6 @@ namespace Dia
 						Dia::Editor::LayoutMode::kDockable,
 						nullptr,
 						nullptr,
-						true,
 						true
 					})
 				{}

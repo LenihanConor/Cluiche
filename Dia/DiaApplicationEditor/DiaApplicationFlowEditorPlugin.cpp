@@ -168,7 +168,6 @@ namespace Dia { namespace Editor {
             LayoutMode::kFullScreen,
             "manifest.dirty",
             "A",
-            true,
             true
         })
     {

@@ -28,8 +28,7 @@ namespace Dia
 					Dia::Editor::LayoutMode::kDockable,
 					"scene_editor.dirty_changed",
 					nullptr,
-					false,
-					true
+					false
 				})
 			{
 				mLoadedScenePath[0] = '\0';

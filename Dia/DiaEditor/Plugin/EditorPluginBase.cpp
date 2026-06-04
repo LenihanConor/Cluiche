@@ -52,7 +52,7 @@ namespace Dia
 			mView = context.mView;
 			mProjectPath = context.mProjectPath;
 
-			if (mModel != nullptr && mMeta.subscribesToProjectChanges)
+			if (mModel != nullptr)
 			{
 				mModel->OnDiagameProjectChanged(&EditorPluginBase::ProjectChangedTrampoline, this);
 				mSubscribedToProject = true;

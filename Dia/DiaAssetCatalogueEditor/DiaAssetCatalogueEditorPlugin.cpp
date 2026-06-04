@@ -47,7 +47,6 @@ namespace Dia
 					Dia::Editor::LayoutMode::kDockable,
 					"assetcatalogue.state",
 					nullptr,
-					true,
 					true
 				})
 			{

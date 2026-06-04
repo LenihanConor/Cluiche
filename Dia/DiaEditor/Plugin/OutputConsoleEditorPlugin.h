@@ -18,8 +18,7 @@ namespace Dia
 					LayoutMode::kDockable,
 					nullptr,
 					"C",
-					true,
-					false
+					true
 				})
 			{}
 		};

@@ -72,8 +72,7 @@ public:
             LayoutMode::kDockable,
             "test.dirty_changed",
             nullptr,
-            false,
-            true
+            false
         })
         , mLoadCalled(false)
         , mUnloadCalled(false)
@@ -148,8 +147,7 @@ public:
             LayoutMode::kHeadless,
             nullptr,
             nullptr,
-            false,
-            true
+            false
         })
     {}
 
@@ -502,7 +500,7 @@ TEST_F(EditorPluginBaseTest, GetToolbarItem_CustomIcon)
             "MyPlugin", "1.0", "desc",
             "dia://plugins/my/index.html",
             LayoutMode::kDockable, nullptr,
-            "X", true, false
+            "X", true
         }) {}
     };
 
