@@ -42,7 +42,18 @@ DIA_SERIALIZE(DiaEntityInspectorSerializerTest::InspComp,
 DIA_SERIALIZE_END
 
 namespace DiaEntityInspectorSerializerTest {
-    DIA_COMPONENT_REGISTER(InspComp, "insp-comp", false, false, nullptr, 0, nullptr, 0, nullptr, 0)
+
+static Dia::Entity::FieldDesc s_InspComp_fields[] = {
+    DIA_FIELD_ENTRY(float,   x,  InspComp)
+    DIA_FIELD_ENTRY(float,   y,  InspComp)
+    DIA_FIELD_ENTRY(int32_t, hp, InspComp)
+};
+
+DIA_COMPONENT_REGISTER(InspComp, "insp-comp", false, false,
+    s_InspComp_fields, DIA_ARRAY_COUNT(s_InspComp_fields),
+    nullptr, 0,
+    nullptr, 0)
+
 } // namespace DiaEntityInspectorSerializerTest
 
 // ===========================================================================

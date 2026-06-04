@@ -94,9 +94,6 @@
     <Filter Include="Metadata">
       <UniqueIdentifier>{1a2b3c4d-5e6f-7890-abcd-ef1234567890}</UniqueIdentifier>
     </Filter>
-    <Filter Include="FilePath">
-      <UniqueIdentifier>{aacdf484-6764-43dd-9fa4-5a26854fd233}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Json">
       <UniqueIdentifier>{cdb42dc0-fedf-4724-9e84-449d3348f884}</UniqueIdentifier>
     </Filter>
@@ -373,9 +370,6 @@
     <ClInclude Include="Containers\Misc\FastDelegate.h">
       <Filter>Containers\Misc</Filter>
     </ClInclude>
-    <ClInclude Include="FilePath\FilePath.h">
-      <Filter>FilePath</Filter>
-    </ClInclude>
     <ClInclude Include="Json\external\json\json.h">
       <Filter>Json\External</Filter>
     </ClInclude>
@@ -408,36 +402,6 @@
     </ClInclude>
     <ClInclude Include="Json\external\json_tool.h">
       <Filter>Json\External\Source</Filter>
-    </ClInclude>
-    <ClInclude Include="FilePath\PathStore.h">
-      <Filter>FilePath</Filter>
-    </ClInclude>
-    <ClInclude Include="FilePath\Path.h">
-      <Filter>FilePath</Filter>
-    </ClInclude>
-    <ClInclude Include="FilePath\PathStoreConfig.h">
-      <Filter>FilePath</Filter>
-    </ClInclude>
-    <ClInclude Include="FilePath\FileLoad.h">
-      <Filter>FilePath</Filter>
-    </ClInclude>
-    <ClInclude Include="FilePath\IFileLoad.h">
-      <Filter>FilePath</Filter>
-    </ClInclude>
-    <ClInclude Include="FilePath\SerializedFileLoad.h">
-      <Filter>FilePath</Filter>
-    </ClInclude>
-    <ClInclude Include="FilePath\AsyncFileLoader.h">
-      <Filter>FilePath</Filter>
-    </ClInclude>
-    <ClInclude Include="FilePath\FileWatcher.h">
-      <Filter>FilePath</Filter>
-    </ClInclude>
-    <ClInclude Include="FilePath\StreamReader.h">
-      <Filter>FilePath</Filter>
-    </ClInclude>
-    <ClInclude Include="FilePath\StreamWriter.h">
-      <Filter>FilePath</Filter>
     </ClInclude>
     <ClInclude Include="Architecture\Factory.h">
       <Filter>Architecture</Filter>
@@ -529,9 +493,6 @@
     <ClCompile Include="Timer\TimeThreadLimiter.cpp">
       <Filter>Timer\Source</Filter>
     </ClCompile>
-    <ClCompile Include="FilePath\FilePath.cpp">
-      <Filter>FilePath</Filter>
-    </ClCompile>
     <ClCompile Include="Json\external\json_writer.cpp">
       <Filter>Json\External\Source</Filter>
     </ClCompile>
@@ -562,20 +523,8 @@
     <ClCompile Include="Strings\String1024.cpp">
       <Filter>Strings\Source</Filter>
     </ClCompile>
-    <ClCompile Include="FilePath\PathStore.cpp">
-      <Filter>FilePath</Filter>
-    </ClCompile>
-    <ClCompile Include="FilePath\Path.cpp">
-      <Filter>FilePath</Filter>
-    </ClCompile>
-    <ClCompile Include="FilePath\PathStoreConfig.cpp">
-      <Filter>FilePath</Filter>
-    </ClCompile>
     <ClCompile Include="Strings\StringUtils.cpp">
       <Filter>Strings\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="FilePath\FileLoad.cpp">
-      <Filter>FilePath</Filter>
     </ClCompile>
     <ClCompile Include="Architecture\Observer.cpp">
       <Filter>Architecture</Filter>

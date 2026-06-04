@@ -174,7 +174,7 @@ namespace Dia { namespace Editor {
         DIA_TRACE_ZONE("AppFlowEditorOnLoad", Dia::Observation::Trace::Category::kDiaApplicationFlow);
 
         mBridge = context.mBridge;
-        mGameConnection = context.mServices->GetService<GameConnectionManager>();
+        mGameConnection = context.mServices ? context.mServices->GetService<GameConnectionManager>() : nullptr;
         mModel = context.mModel;
 
         DIA_LOG_INFO("Editor",

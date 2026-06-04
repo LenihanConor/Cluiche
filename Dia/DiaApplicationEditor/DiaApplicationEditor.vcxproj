@@ -142,6 +142,10 @@
     <ProjectReference Include="..\DiaObservation\DiaObservation.vcxproj">
       <Project>{5E6F7A8B-C9D0-E1F2-3456-789ABCDE0123}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\DiaFileIO\DiaFileIO.vcxproj">
+      <Project>{a1b2c3d4-e5f6-7890-abcd-ef1234567890}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
   </ItemGroup>
 
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
