@@ -318,6 +318,7 @@
     <ClCompile Include="Editor\TestDockingLayout.cpp" />
     <ClCompile Include="Editor\TestDockingLayoutDuplication.cpp" />
     <ClCompile Include="Editor\TestPluginLoaderDuplication.cpp" />
+    <ClCompile Include="Editor\TestEditorMemory.cpp" />
     <ClCompile Include="Editor\TestWebUIBridge.cpp" />
     <ClCompile Include="Editor\TestFileDialogHandler.cpp" />
     <ClCompile Include="Editor\TestEditorApplicationLifecycle.cpp" />
