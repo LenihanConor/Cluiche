@@ -257,6 +257,39 @@
     .valid   { color: var(--pico-ins-color, #89d185); }
     .invalid { color: var(--pico-del-color, #f44747); }
 
+    /* ── Inline-extracted layout+color helpers ── */
+    .rel-section { margin-top: 16px; border-top: 1px solid var(--pico-border-color, #3c3c3c); padding-top: 12px; }
+    .rel-section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--pico-h2-color, #9cdcfe); margin-bottom: 8px; letter-spacing: .05em; }
+    .rel-refs-label { font-size: 11px; color: var(--pico-muted-color, #808080); margin-bottom: 4px; }
+    .rel-refs-list { font-size: 11px; margin-bottom: 8px; }
+    .rel-add-row { display: flex; gap: 6px; align-items: center; }
+    .rel-add-select { width: 130px; background: var(--pico-form-element-background-color, #252526); color: var(--pico-form-element-color, #d4d4d4); border: 1px solid var(--pico-form-element-border-color, #3c3c3c); padding: 3px 6px; font-size: 11px; border-radius: 3px; }
+    .rel-add-wrap { flex: 1; position: relative; }
+    .rel-add-input { width: 100%; background: var(--pico-form-element-background-color, #252526); color: var(--pico-form-element-color, #d4d4d4); border: 1px solid var(--pico-form-element-border-color, #3c3c3c); padding: 3px 6px; font-size: 11px; border-radius: 3px; }
+    .rel-autocomplete { display: none; position: absolute; top: 100%; left: 0; right: 0; max-height: 120px; overflow: auto; background: var(--pico-card-background-color, #252526); border: 1px solid var(--pico-border-color, #3c3c3c); border-top: none; z-index: 10; font-size: 11px; }
+    .rel-add-btn { background: var(--pico-secondary, #3a3d41); color: var(--pico-color, #d4d4d4); border: 1px solid var(--pico-border-color, #3c3c3c); padding: 3px 10px; font-size: 11px; cursor: pointer; border-radius: 3px; }
+    .rel-add-btn:hover { background: var(--pico-secondary-hover, #4a4d51); }
+    .inline-btn { background: var(--pico-secondary, #3a3d41); color: var(--pico-color, #d4d4d4); border: 1px solid var(--pico-border-color, #3c3c3c); padding: 3px 10px; font-size: 11px; cursor: pointer; border-radius: 3px; }
+    .inline-btn:hover { background: var(--pico-secondary-hover, #4a4d51); }
+    .inline-btn-primary { background: var(--pico-primary, #0e639c); color: var(--pico-primary-inverse, #ffffff); border: 1px solid var(--pico-primary, #0e639c); padding: 3px 10px; font-size: 11px; cursor: pointer; border-radius: 3px; }
+    .inline-btn-primary:hover { background: var(--pico-primary-hover, #1177bb); }
+    .inline-input { flex: 1; background: var(--pico-form-element-background-color, #252526); color: var(--pico-form-element-color, #d4d4d4); border: 1px solid var(--pico-form-element-border-color, #3c3c3c); padding: 3px 6px; font-size: 11px; border-radius: 3px; }
+    .graph-toolbar { flex-shrink: 0; padding: 6px 8px; display: flex; gap: 6px; align-items: center; border-bottom: 1px solid var(--pico-border-color, #3c3c3c); background: var(--pico-card-background-color, #252526); }
+    .graph-root-label { font-size: 11px; color: var(--pico-h2-color, #9cdcfe); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .graph-legend { flex-shrink: 0; padding: 4px 8px; font-size: 10px; color: var(--pico-muted-color, #808080); border-bottom: 1px solid var(--pico-muted-border-color, #2d2d2d); display: none; }
+    /* Graph legend dot colors are asset-type-semantic — keep hardcoded */
+    .graph-legend .dot-texture { color: #007acc; }
+    .graph-legend .dot-entity  { color: #4ec9a0; }
+    .graph-legend .dot-config  { color: #ce9178; }
+    .graph-legend .dot-stage   { color: #dcdcaa; }
+    .graph-legend .dot-audio   { color: #c586c0; }
+    .graph-legend .dot-other   { color: var(--pico-h2-color, #9cdcfe); }
+    .graph-legend .dot-hint    { color: var(--pico-muted-color, #808080); margin-left: 8px; }
+    .rules-toolbar-row { flex-shrink: 0; margin-bottom: 8px; display: flex; gap: 6px; align-items: center; }
+    .rules-status { flex-shrink: 0; font-size: 11px; margin-bottom: 8px; color: var(--pico-muted-color, #808080); }
+    .rules-actions-row { flex-shrink: 0; margin-bottom: 6px; display: flex; gap: 6px; }
+    .rules-overwrite-label { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--pico-muted-color, #808080); margin-left: 6px; cursor: pointer; }
+
     /* ── Relationship Graph ── */
     #graph-canvas svg { width: 100%; height: 100%; }
     .graph-node { cursor: pointer; user-select: none; }
@@ -376,29 +409,29 @@
         </div>
 
         <!-- Relationship section -->
-        <div style="margin-top:16px;border-top:1px solid #3c3c3c;padding-top:12px;">
-          <div style="font-size:11px;font-weight:600;text-transform:uppercase;color:#9cdcfe;margin-bottom:8px;letter-spacing:.05em;">Relationships</div>
+        <div class="rel-section">
+          <div class="rel-section-title">Relationships</div>
 
           <div style="margin-bottom:8px;">
-            <div style="font-size:11px;color:#9d9d9d;margin-bottom:4px;">Forward refs (this asset references)</div>
-            <div id="rel-forward-list" style="font-size:11px;"></div>
+            <div class="rel-refs-label">Forward refs (this asset references)</div>
+            <div id="rel-forward-list" class="rel-refs-list"></div>
           </div>
 
           <div style="margin-bottom:10px;">
-            <div style="font-size:11px;color:#9d9d9d;margin-bottom:4px;">Reverse refs (references this asset)</div>
-            <div id="rel-reverse-list" style="font-size:11px;"></div>
+            <div class="rel-refs-label">Reverse refs (references this asset)</div>
+            <div id="rel-reverse-list" class="rel-refs-list"></div>
           </div>
 
-          <div style="display:flex;gap:6px;align-items:center;">
-            <select id="rel-add-rel" style="width:130px;background:#2d2d2d;color:#d4d4d4;border:1px solid #555;padding:3px 6px;font-size:11px;border-radius:3px;">
+          <div class="rel-add-row">
+            <select id="rel-add-rel" class="rel-add-select">
               <option value="uses">uses</option>
               <option value="contains">contains</option>
             </select>
-            <div style="flex:1;position:relative;">
-              <input type="text" id="rel-add-target" placeholder="target ID" style="width:100%;background:#2d2d2d;color:#d4d4d4;border:1px solid #555;padding:3px 6px;font-size:11px;border-radius:3px;" oninput="onRelTargetInput()" />
-              <div id="rel-autocomplete" style="display:none;position:absolute;top:100%;left:0;right:0;max-height:120px;overflow:auto;background:#252526;border:1px solid #555;border-top:none;z-index:10;font-size:11px;"></div>
+            <div class="rel-add-wrap">
+              <input type="text" id="rel-add-target" placeholder="target ID" class="rel-add-input" oninput="onRelTargetInput()" />
+              <div id="rel-autocomplete" class="rel-autocomplete"></div>
             </div>
-            <button onclick="onAddRelationship()" style="background:#3c3c3c;color:#d4d4d4;border:1px solid #555;padding:3px 10px;font-size:11px;cursor:pointer;border-radius:3px;">Add</button>
+            <button onclick="onAddRelationship()" class="rel-add-btn">Add</button>
           </div>
         </div>
       </div>
@@ -414,9 +447,9 @@
       <div class="tab"        onclick="showRightTab('discoverer',this)">Discoverer</div>
     </div>
     <div class="tab-content active" id="tab-right-validation" style="flex-direction:column;">
-      <div style="flex-shrink:0;margin-bottom:8px;display:flex;gap:6px;align-items:center;">
-        <button onclick="onValidate()" style="background:#3c3c3c;color:#d4d4d4;border:1px solid #555;padding:4px 14px;font-size:12px;cursor:pointer;border-radius:3px;">Validate</button>
-        <button onclick="onReconcileReferences()" style="background:#3c3c3c;color:#d4d4d4;border:1px solid #555;padding:4px 14px;font-size:12px;cursor:pointer;border-radius:3px;">Reconcile References</button>
+      <div class="rules-toolbar-row">
+        <button onclick="onValidate()" class="inline-btn">Validate</button>
+        <button onclick="onReconcileReferences()" class="inline-btn">Reconcile References</button>
       </div>
       <div id="reconcile-status" style="display:none;flex-shrink:0;margin-bottom:6px;font-size:11px;"></div>
       <div id="val-summary" style="display:none;flex-shrink:0;margin-bottom:8px;font-size:11px;"></div>
@@ -425,16 +458,16 @@
       </div>
     </div>
     <div class="tab-content" id="tab-right-rules" style="flex-direction:column;">
-      <div style="flex-shrink:0;margin-bottom:8px;display:flex;gap:6px;align-items:center;">
-        <input type="text" id="rules-path" placeholder="assets.rules.json" style="flex:1;background:#2d2d2d;color:#d4d4d4;border:1px solid #555;padding:3px 6px;font-size:11px;border-radius:3px;" />
-        <button onclick="onBrowseRules()" style="background:#3c3c3c;color:#d4d4d4;border:1px solid #555;padding:3px 10px;font-size:11px;cursor:pointer;border-radius:3px;">Browse…</button>
-        <button onclick="onLoadRules()" style="background:#3c3c3c;color:#d4d4d4;border:1px solid #555;padding:3px 10px;font-size:11px;cursor:pointer;border-radius:3px;">Load</button>
+      <div class="rules-toolbar-row">
+        <input type="text" id="rules-path" placeholder="assets.rules.json" class="inline-input" />
+        <button onclick="onBrowseRules()" class="inline-btn">Browse…</button>
+        <button onclick="onLoadRules()" class="inline-btn">Load</button>
       </div>
-      <div id="rules-status" style="flex-shrink:0;font-size:11px;margin-bottom:8px;color:#9d9d9d;"></div>
-      <div style="flex-shrink:0;margin-bottom:6px;display:flex;gap:6px;">
-        <button onclick="onDryRun()" id="btn-dry-run" disabled style="background:#3c3c3c;color:#d4d4d4;border:1px solid #555;padding:3px 10px;font-size:11px;cursor:pointer;border-radius:3px;">Dry Run</button>
-        <button onclick="onApplyRules()" id="btn-apply-rules" disabled style="background:#0078d4;color:#fff;border:1px solid #0078d4;padding:3px 10px;font-size:11px;cursor:pointer;border-radius:3px;">Apply</button>
-        <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#9d9d9d;margin-left:6px;cursor:pointer;">
+      <div id="rules-status" class="rules-status"></div>
+      <div class="rules-actions-row">
+        <button onclick="onDryRun()" id="btn-dry-run" disabled class="inline-btn">Dry Run</button>
+        <button onclick="onApplyRules()" id="btn-apply-rules" disabled class="inline-btn-primary">Apply</button>
+        <label class="rules-overwrite-label">
           <input type="checkbox" id="chk-overwrite-manuals" /> Overwrite manual fields
         </label>
       </div>
@@ -443,18 +476,18 @@
       </div>
     </div>
     <div class="tab-content" id="tab-right-graph" style="flex-direction:column;padding:0;">
-      <div id="graph-toolbar" style="flex-shrink:0;padding:6px 8px;display:flex;gap:6px;align-items:center;border-bottom:1px solid #3c3c3c;background:#252526;">
-        <span id="graph-root-label" style="font-size:11px;color:#9cdcfe;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Select an asset</span>
-        <button onclick="onGraphReset()" style="background:#3c3c3c;color:#d4d4d4;border:1px solid #555;padding:2px 8px;font-size:11px;cursor:pointer;border-radius:3px;">Reset</button>
+      <div id="graph-toolbar" class="graph-toolbar">
+        <span id="graph-root-label" class="graph-root-label">Select an asset</span>
+        <button onclick="onGraphReset()" class="inline-btn" style="padding:2px 8px;">Reset</button>
       </div>
-      <div id="graph-legend" style="flex-shrink:0;padding:4px 8px;font-size:10px;color:#6a6a6a;border-bottom:1px solid #2d2d2d;display:none;">
-        <span style="color:#007acc;">● texture</span>
-        <span style="margin-left:8px;color:#4ec9a0;">● entity</span>
-        <span style="margin-left:8px;color:#ce9178;">● config</span>
-        <span style="margin-left:8px;color:#dcdcaa;">● stage</span>
-        <span style="margin-left:8px;color:#c586c0;">● audio</span>
-        <span style="margin-left:8px;color:#9cdcfe;">● other</span>
-        <span style="margin-left:8px;color:#9d9d9d;">root=larger · dblclick to expand</span>
+      <div id="graph-legend" class="graph-legend">
+        <span class="dot-texture">● texture</span>
+        <span class="dot-entity" style="margin-left:8px;">● entity</span>
+        <span class="dot-config" style="margin-left:8px;">● config</span>
+        <span class="dot-stage" style="margin-left:8px;">● stage</span>
+        <span class="dot-audio" style="margin-left:8px;">● audio</span>
+        <span class="dot-other" style="margin-left:8px;">● other</span>
+        <span class="dot-hint">root=larger · dblclick to expand</span>
       </div>
       <div id="graph-canvas" style="flex:1;position:relative;">
         <div class="empty-state" id="graph-empty">Select an asset to view its relationship graph</div>
@@ -480,7 +513,7 @@
       <div class="discoverer-actions" id="disc-actions" style="display:none;">
         <button onclick="onAddSelected()">Add Selected</button>
         <span class="sel-count" id="disc-sel-count">0 selected</span>
-        <button onclick="onSelectAllDisc()" style="background:#3c3c3c;color:#d4d4d4;border:1px solid #555;padding:3px 8px;font-size:11px;cursor:pointer;border-radius:3px;">Select All</button>
+        <button onclick="onSelectAllDisc()" class="inline-btn">Select All</button>
       </div>
     </div>
   </div>
@@ -509,7 +542,7 @@
       <label>Source Path</label>
       <div style="display:flex;gap:4px;flex:1">
         <input type="text" id="create-source-path" placeholder="assets/textures/player.png" style="flex:1" oninput="this.dataset.userEdited='1'" />
-        <button onclick="browseCreateSourcePath()" style="background:#3c3c3c;color:#d4d4d4;border:1px solid #555;padding:3px 8px;font-size:11px;cursor:pointer;border-radius:3px;white-space:nowrap">Browse…</button>
+        <button onclick="browseCreateSourcePath()" class="inline-btn" style="white-space:nowrap">Browse…</button>
       </div>
     </div>
     <div class="modal-row">
@@ -539,7 +572,7 @@
 <div class="modal-overlay" id="modal-delete">
   <div class="modal">
     <h2>Delete Asset Record?</h2>
-    <p style="font-size:12px;color:#9d9d9d;margin-bottom:10px;">
+    <p style="font-size:12px;color:var(--pico-muted-color,#808080);margin-bottom:10px;">
       This will permanently remove the record and all edges attached to it.
     </p>
     <div class="confirm-list" id="delete-info"></div>
@@ -554,7 +587,7 @@
 <div class="modal-overlay" id="modal-bulk">
   <div class="modal">
     <h2>Add Selected Files?</h2>
-    <p style="font-size:12px;color:#9d9d9d;margin-bottom:8px;">
+    <p style="font-size:12px;color:var(--pico-muted-color,#808080);margin-bottom:8px;">
       The following records will be created:
     </p>
     <div class="confirm-list" id="bulk-list"></div>

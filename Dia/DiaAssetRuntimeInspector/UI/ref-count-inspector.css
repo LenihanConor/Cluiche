@@ -1,10 +1,10 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--pico-font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
     font-size: 12px;
-    background: #1e1e1e;
-    color: #d4d4d4;
+    background: var(--pico-background-color, #1e1e1e);
+    color: var(--pico-color, #d4d4d4);
     overflow: hidden;
     height: 100vh;
 }
@@ -13,9 +13,9 @@ body {
 
 .overlay {
     position: absolute; inset: 0;
-    background: rgba(30, 30, 30, 0.85);
+    background: var(--pico-modal-overlay-background-color, rgba(0,0,0,0.6));
     display: flex; align-items: center; justify-content: center;
-    z-index: 100; font-size: 14px; color: #808080;
+    z-index: 100; font-size: 14px; color: var(--pico-muted-color, #808080);
 }
 .overlay.hidden { display: none; }
 .hidden { display: none; }
@@ -23,36 +23,39 @@ body {
 #content { flex: 1; padding: 8px; overflow-y: auto; }
 
 .empty-message, .info-message {
-    color: #808080; font-style: italic; padding: 16px 8px; text-align: center;
+    color: var(--pico-muted-color, #808080); font-style: italic; padding: 16px 8px; text-align: center;
 }
 
 .inspector-header {
     display: flex; align-items: center; gap: 8px;
-    padding-bottom: 8px; border-bottom: 1px solid #3c3c3c; margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--pico-border-color, #3c3c3c);
+    margin-bottom: 8px;
 }
 
 .asset-id { font-size: 14px; font-weight: 600; }
 
+/* State badge colors are content-semantic — keep hardcoded */
 .state-badge {
     display: inline-block; padding: 2px 8px; border-radius: 3px;
     font-size: 10px; font-weight: 600; text-transform: uppercase;
 }
-.state-badge.Loaded { background: #2d5f2d; color: #6ecc6e; }
-.state-badge.Staged { background: #5f5f2d; color: #cccc6e; }
-.state-badge.Null { background: #3c3c3c; color: #999; }
-.state-badge.Loading { background: #2d4f5f; color: #6eaacc; }
-.state-badge.Failed { background: #5f2d2d; color: #cc6e6e; }
+.state-badge.Loaded   { background: #2d5f2d; color: #6ecc6e; }
+.state-badge.Staged   { background: #5f5f2d; color: #cccc6e; }
+.state-badge.Null     { background: var(--pico-secondary, #3a3d41); color: var(--pico-muted-color, #808080); }
+.state-badge.Loading  { background: #2d4f5f; color: #6eaacc; }
+.state-badge.Failed   { background: #5f2d2d; color: #cc6e6e; }
 .state-badge.Unloaded { background: #4a3c2d; color: #cc9e6e; }
 
 .summary-row {
     display: flex; gap: 12px; align-items: center; padding: 6px 0;
 }
-.summary-row .label { color: #999; }
+.summary-row .label { color: var(--pico-muted-color, #808080); }
 
 .section-header {
-    font-weight: 600; margin-top: 12px; margin-bottom: 4px; color: #ccc;
+    font-weight: 600; margin-top: 12px; margin-bottom: 4px; color: var(--pico-color, #d4d4d4);
 }
 
 #stage-refs-list .stage-ref {
-    padding: 3px 8px; border-bottom: 1px solid #2d2d2d;
+    padding: 3px 8px; border-bottom: 1px solid var(--pico-muted-border-color, #2d2d2d);
 }

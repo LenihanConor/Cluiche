@@ -5,10 +5,10 @@
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--pico-font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
     font-size: 12px;
-    background: #1e1e1e;
-    color: #d4d4d4;
+    background: var(--pico-background-color, #1e1e1e);
+    color: var(--pico-color, #d4d4d4);
     overflow: hidden;
     height: 100vh;
 }
@@ -23,13 +23,13 @@ body {
 .overlay {
     position: absolute;
     inset: 0;
-    background: rgba(30, 30, 30, 0.85);
+    background: var(--pico-modal-overlay-background-color, rgba(0,0,0,0.6));
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 100;
     font-size: 14px;
-    color: #808080;
+    color: var(--pico-muted-color, #808080);
 }
 
 .overlay.hidden {
@@ -41,16 +41,16 @@ body {
     align-items: center;
     gap: 8px;
     padding: 6px 8px;
-    background: #252526;
-    border-bottom: 1px solid #3c3c3c;
+    background: var(--pico-card-background-color, #252526);
+    border-bottom: 1px solid var(--pico-border-color, #3c3c3c);
 }
 
 .toolbar select,
 .toolbar input[type="text"],
 .toolbar input[type="number"] {
-    background: #3c3c3c;
-    border: 1px solid #555;
-    color: #d4d4d4;
+    background: var(--pico-form-element-background-color, #252526);
+    border: 1px solid var(--pico-form-element-border-color, #3c3c3c);
+    color: var(--pico-form-element-color, #d4d4d4);
     padding: 3px 6px;
     border-radius: 2px;
     font-size: 11px;
@@ -69,14 +69,14 @@ body {
     display: flex;
     align-items: center;
     gap: 4px;
-    color: #999;
+    color: var(--pico-muted-color, #808080);
     font-size: 11px;
 }
 
 .toolbar button {
-    background: #0e639c;
+    background: var(--pico-primary, #0e639c);
     border: none;
-    color: #fff;
+    color: var(--pico-primary-inverse, #ffffff);
     padding: 4px 10px;
     border-radius: 2px;
     cursor: pointer;
@@ -84,7 +84,7 @@ body {
 }
 
 .toolbar button:hover {
-    background: #1177bb;
+    background: var(--pico-primary-hover, #1177bb);
 }
 
 .table-container {
@@ -106,10 +106,10 @@ thead {
 }
 
 th {
-    background: #333;
+    background: var(--pico-card-background-color, #252526);
     padding: 5px 8px;
     text-align: left;
-    border-bottom: 1px solid #555;
+    border-bottom: 1px solid var(--pico-border-color, #3c3c3c);
     font-weight: 600;
     cursor: pointer;
     user-select: none;
@@ -117,7 +117,7 @@ th {
 }
 
 th.sortable:hover {
-    background: #444;
+    background: var(--pico-secondary-hover, #4a4d51);
 }
 
 th.sort-asc::after {
@@ -130,20 +130,21 @@ th.sort-desc::after {
 
 td {
     padding: 4px 8px;
-    border-bottom: 1px solid #2d2d2d;
+    border-bottom: 1px solid var(--pico-muted-border-color, #2d2d2d);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 tr:hover {
-    background: #2a2d2e;
+    background: var(--pico-card-background-color, #252526);
 }
 
 tr.selected {
-    background: #094771;
+    background: var(--pico-form-element-selected-background-color, #094771);
 }
 
+/* State badge colors are content-semantic — keep hardcoded */
 .state-badge {
     display: inline-block;
     padding: 1px 6px;
@@ -153,41 +154,18 @@ tr.selected {
     text-transform: uppercase;
 }
 
-.state-badge.Loaded {
-    background: #2d5f2d;
-    color: #6ecc6e;
-}
-
-.state-badge.Staged {
-    background: #5f5f2d;
-    color: #cccc6e;
-}
-
-.state-badge.Null {
-    background: #3c3c3c;
-    color: #999;
-}
-
-.state-badge.Loading {
-    background: #2d4f5f;
-    color: #6eaacc;
-}
-
-.state-badge.Failed {
-    background: #5f2d2d;
-    color: #cc6e6e;
-}
-
-.state-badge.Unloaded {
-    background: #4a3c2d;
-    color: #cc9e6e;
-}
+.state-badge.Loaded   { background: #2d5f2d; color: #6ecc6e; }
+.state-badge.Staged   { background: #5f5f2d; color: #cccc6e; }
+.state-badge.Null     { background: var(--pico-secondary, #3a3d41); color: var(--pico-muted-color, #808080); }
+.state-badge.Loading  { background: #2d4f5f; color: #6eaacc; }
+.state-badge.Failed   { background: #5f2d2d; color: #cc6e6e; }
+.state-badge.Unloaded { background: #4a3c2d; color: #cc9e6e; }
 
 .status-bar {
     display: flex;
     justify-content: space-between;
     padding: 4px 8px;
-    background: #007acc;
-    color: #fff;
+    background: var(--pico-primary, #0e639c);
+    color: var(--pico-primary-inverse, #ffffff);
     font-size: 11px;
 }
