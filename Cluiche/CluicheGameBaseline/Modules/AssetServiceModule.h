@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
@@ -12,7 +12,7 @@
 
 #include <DiaStreams/ServiceStreamReader.h>
 #include <DiaStreams/ServiceStreamWriter.h>
-#include <DiaBgfx/Handlers/TextureHandler.h>
+#include <DiaAssetRuntime/Handlers/TextureHandler.h>
 #include <DiaAssetRuntime/Handlers/JsonPassthroughHandler.h>
 #include "Modules/UIModule.h"
 #include "Types/AssetLoadStatus.h"

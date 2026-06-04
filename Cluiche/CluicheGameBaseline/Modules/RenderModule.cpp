@@ -1,7 +1,7 @@
 #include "Modules/RenderModule.h"
 #include "Modules/KernelModule.h"
 
-#include <DiaBgfx/Handlers/TextureHandler.h>
+#include <DiaAssetRuntime/Handlers/TextureHandler.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Session/SessionManager.h>
 #include <DiaObservation/Capture/CaptureManager.h>

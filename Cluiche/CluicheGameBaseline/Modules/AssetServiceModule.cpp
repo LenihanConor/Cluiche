@@ -7,7 +7,7 @@
 #include <DiaCore/FilePath/Path.h>
 #include <DiaCore/FilePath/PathStore.h>
 #include <DiaCore/Json/external/json/json.h>
-#include <DiaBgfx/Handlers/TextureHandler.h>
+#include <DiaAssetRuntime/Handlers/TextureHandler.h>
 #include <DiaUIUltralight/UltralightUISystem.h>
 #include <DiaApplicationFlow/Application.h>
 #include <DiaApplicationFlow/IApplicationControl.h>

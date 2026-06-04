@@ -22,7 +22,6 @@
   <ItemGroup>
     <ClInclude Include="Canvas.h" />
     <ClInclude Include="Capture\FrameCaptureRingBuffer.h" />
-    <ClInclude Include="Handlers\TextureHandler.h" />
     <ClInclude Include="Renderers\SpriteRenderer.h" />
     <ClInclude Include="Renderers\DebugRenderer.h" />
     <ClInclude Include="Renderers\UIOverlayRenderer.h" />
@@ -35,7 +34,6 @@
   <ItemGroup>
     <ClCompile Include="Canvas.cpp" />
     <ClCompile Include="Capture\FrameCaptureRingBuffer.cpp" />
-    <ClCompile Include="Handlers\TextureHandler.cpp" />
     <ClCompile Include="Renderers\SpriteRenderer.cpp" />
     <ClCompile Include="Renderers\DebugRenderer.cpp" />
     <ClCompile Include="Renderers\UIOverlayRenderer.cpp" />

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaApplicationFlow/ModuleRefV2.h>
@@ -11,7 +11,7 @@
 #include <DiaInput/ConsoleGamepadManager.h>
 #include <DiaSDL/WindowFactory.h>
 #include <DiaSDL/Window.h>
-#include <DiaBgfx/Handlers/TextureHandler.h>
+#include <DiaAssetRuntime/Handlers/TextureHandler.h>
 #include "Types/MainToSimEvent.h"
 #include "Modules/JobSystemModule.h"
 

@@ -83,12 +83,14 @@
     <ClInclude Include="RuntimeManifestLoader.h" />
     <ClInclude Include="AssetRuntime.h" />
     <ClInclude Include="Handlers\JsonPassthroughHandler.h" />
+    <ClInclude Include="Handlers\TextureHandler.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AssetRuntimeDebugCommands.cpp" />
     <ClCompile Include="RuntimeManifestLoader.cpp" />
     <ClCompile Include="AssetRuntime.cpp" />
     <ClCompile Include="Handlers\JsonPassthroughHandler.cpp" />
+    <ClCompile Include="Handlers\TextureHandler.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dia.assetruntime.architecture.module.md" />
