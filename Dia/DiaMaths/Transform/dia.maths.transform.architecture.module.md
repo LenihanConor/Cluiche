@@ -35,8 +35,7 @@ dependent_modules:
   - dia.maths.vector
   - dia.maths.matrix
   - dia.maths.quaternion
-  - dia.maths.core
-  - dia.core.type
+  - dia.core.core
 
 public_api:
   headers:

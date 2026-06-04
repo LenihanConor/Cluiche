@@ -33,7 +33,12 @@ non_responsibilities:
   - Asset pipeline loading (DiaAssetCatalogue)
   - Domain-specific serialization formats (.diagame, .diastage)
 
-dependent_modules: []
+dependent_modules:
+  - dia.core.strings
+  - dia.core.containers.arrays
+  - dia.core.json.external.json
+  - dia.core.crc
+  - dia.core.filepath
 
 public_api:
   headers:

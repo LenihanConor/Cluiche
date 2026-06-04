@@ -26,8 +26,7 @@ non_responsibilities:
   - Implementing leaf functionality directly (owned by child modules)
   - Cross-cutting engine orchestration
 
-dependent_modules:
-  - dia.core.json.external.json
+dependent_modules: []
 
 public_api:
   headers:

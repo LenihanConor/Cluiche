@@ -27,6 +27,10 @@ non_responsibilities:
   - Rendering or platform integration concerns (unless this module is explicitly an adapter)
   - High-level orchestration (owned by higher-layer modules)
 
+dependent_modules:
+  - dia.core.containers.arrays
+  - dia.core.core
+
 public_api:
   headers:
     - Dia/DiaCore/Containers/HashTables/HashTable.h

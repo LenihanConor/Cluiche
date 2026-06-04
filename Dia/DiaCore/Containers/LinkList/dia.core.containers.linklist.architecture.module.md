@@ -27,7 +27,8 @@ non_responsibilities:
   - Cross-cutting engine orchestration
 
 dependent_modules:
-  - dia.core.containers.linklist.blah
+  - dia.core.core
+  - dia.core.containers.arrays
 
 public_api:
   headers:

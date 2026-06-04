@@ -27,7 +27,11 @@ non_responsibilities:
   - Cross-cutting engine orchestration
 
 dependent_modules:
-  - dia.core.architecture.singleton
+  - dia.core.containers.arrays
+  - dia.core.crc
+  - dia.core.core
+  - dia.core.time
+  - dia.core.memory
 
 public_api:
   headers:

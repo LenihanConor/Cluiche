@@ -26,7 +26,8 @@ non_responsibilities:
   - Basic random number generation (see DiaMaths::Random)
   - 3D shape random point generation (future DiaGeometry3D::Random)
 
-dependent_modules: []
+dependent_modules:
+  - dia.maths.vector
 
 public_api:
   headers:

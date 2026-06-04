@@ -32,6 +32,11 @@ non_responsibilities:
   - Rendering or platform integration concerns
   - High-level orchestration (owned by higher-layer modules)
 
+dependent_modules:
+  - dia.core.containers.arrays
+  - dia.core.crc
+  - dia.core.core
+
 public_api:
   headers:
     - Dia/DiaCore/Containers/Graphs/DirectedGraph.h

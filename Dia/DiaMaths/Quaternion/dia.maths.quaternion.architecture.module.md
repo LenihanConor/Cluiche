@@ -32,7 +32,7 @@ non_responsibilities:
 dependent_modules:
   - dia.maths.vector
   - dia.maths.matrix
-  - dia.core
+  - dia.core.core
 
 public_api:
   headers:

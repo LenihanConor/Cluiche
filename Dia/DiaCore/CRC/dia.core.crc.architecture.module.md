@@ -27,6 +27,11 @@ non_responsibilities:
   - Rendering or platform integration concerns (unless this module is explicitly an adapter)
   - High-level orchestration (owned by higher-layer modules)
 
+dependent_modules:
+  - dia.core.memory
+  - dia.core.core
+  - dia.core.containers.hashtables
+
 public_api:
   headers:
     - Dia/DiaCore/CRC/CRC.h

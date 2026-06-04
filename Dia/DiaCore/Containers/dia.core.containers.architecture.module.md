@@ -27,13 +27,10 @@ non_responsibilities:
   - Cross-cutting engine orchestration
 
 dependent_modules:
-  - dia.core.containers.arrays
-  - dia.core.containers.bitflag
-  - dia.core.containers.graphs
-  - dia.core.containers.hashtables
-  - dia.core.containers.linklist
-  - dia.core.containers.misc
-  - dia.core.containers.strings
+  - dia.core.memory
+  - dia.core.core
+  - dia.core.strings
+  - dia.core.crc
 
 public_api:
   headers:
