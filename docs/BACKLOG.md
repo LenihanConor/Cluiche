@@ -31,6 +31,8 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | Feature | Spec | System | Notes |
 |---------|------|--------|-------|
 | per-app-bin-layout | [per-app-bin-layout.md](specs/features/dia/diapipeline/per-app-bin-layout.md) | DiaPipeline ✅ | |
+| Editor Memory | [editor-memory.md](specs/features/dia/diaeditor/editor-memory.md) | DiaEditor ✅ | Invisible save/restore of layout, plugins, per-plugin project-scoped state. Size S. |
+| Toast Notifications | [toast-notifications.md](specs/features/dia/diaeditor/toast-notifications.md) | DiaEditor ✅ | Framework-level notification service — plugins push toasts, shell renders uniformly. [Plan](specs/features/dia/diaeditor/toast-notifications.plan.md) (11 tasks). Size S. |
 
 ---
 
@@ -103,20 +105,42 @@ Research complete: [docs/research/static_cpp_bug/](research/static_cpp_bug/). Bu
 
 ---
 
-## DiaArchitecture — Domain-Oriented Module Structure + CMake Enforcement
+## DiaArchitecture — Numbered Layer Architecture
 
-Spec Approved: [diaarchitecture.md](specs/systems/dia/diaarchitecture.md). C3 is split into C3a (Dia-only, additive) and C3b (Cluiche apps + retirement). C3b can be deferred — C3a delivers architecture enforcement and full Clang-Tidy coverage.
+Spec Approved: [diaarchitecture.md](specs/systems/dia/diaarchitecture.md). Plan: [diaarchitecture.plan.md](specs/systems/dia/diaarchitecture.plan.md).
 
-**Target architecture:** 6-sub-layer Core + 4 domain vertical slices. Each domain owns its core modules and its visual debuggers/editor plugins. CMake `target_link_libraries` enforces the dependency rules currently only documented in YAML.
+**Target architecture:** Numbered layers (1.0–3.1) with strict dependency ordering. Sub-levels within Foundation (Core/Maths/Services/Platform/Application), Assets (core/tools), and Domains (Visual/Physics/Animation — core/tools per domain). CMake dropped — MSBuild remains. Enforcement via C1 audit tool.
 
-### Implementation sequence (build in order — each depends on previous)
+### Phase 1 — Layer Fields ✅ Done (2026-06-03)
 
-| Step | Item | What's needed | Notes |
-|------|------|--------------|-------|
-| C7 | YAML layer formalisation | Add `layer:` field to all 55+ module docs | Documents the architecture; prerequisite for C1 |
-| C1 | `dia check --tool=arch` | Python `#include` graph checker vs YAML `dependencies.forbidden` | CI soft gate (exit 1 = pipeline fails); MSBuild unchanged |
+All 76 module docs updated with canonical `layer:` values (foundation/core, foundation/maths, foundation/services, foundation/platform, foundation/application, assets/core, assets/tools, domain/visual/*, domain/physics/*, domain/animation/*).
 
-CMake migration (C2, C3a, C3b) dropped — MSBuild/.vcxproj remains the build system. C7 + C1 are the full scope.
+### Phase 2 + 3 — Refactoring ✅ Done (2026-06-03)
+
+All 6 refactoring actions shipped:
+
+| # | What | Outcome |
+|---|------|---------|
+| R1 | DiaFileIO split from DiaCore | FilePath/ compiles into DiaFileIO.lib |
+| R2 | DiaJson split from DiaCore | jsoncpp compiles into DiaJson.lib |
+| R3 | DiaStreams split from DiaApplicationFlow | Stream types in DiaStreams/, full header relocation |
+| R4 | TextureHandler → DiaBgfx | DiaAssetRuntime drops DiaBgfx dep |
+| R5 | DiaDebugServer dep inversion | IStreamTapTarget owned by DebugServer; DiaApplicationFlow dep removed |
+| R6 | DiaDebugDraw split from DiaVisualDebugger | Abstract debug layer at foundation/services; cross-domain exception eliminated |
+
+### Phase 4 — Architecture Audit Tool (C1) — Next
+
+| Step | Item | What's needed |
+|------|------|--------------|
+| C1a | `--tool=arch` CLI stub | Add branch to `dia check`, `--module`/`--summary` flags |
+| C1b | YAML module map builder | Read all `dia.*.architecture.module.md`, extract layer/deps |
+| C1c | Include parser | Walk .cpp/.h, resolve `#include` to module_id |
+| C1d | Layer ordering checker | Encode numbered rules, report upward-reach + cross-domain violations |
+| C1e | Wire output + CI | Write violations to `out/check/arch-violations.txt`; exit 1 on violations |
+
+### Phase 5 — SLN Layer Sync — After C1
+
+Numbered solution folders (1.0-Core, 1.1-Maths, etc.) via `dia check --tool=sln-sync`. Post-step on `dia scaffold module`.
 
 ---
 
@@ -124,7 +148,7 @@ CMake migration (C2, C3a, C3b) dropped — MSBuild/.vcxproj remains the build sy
 
 | Item | Notes |
 |------|-------|
-| SLN layer sync script | After C7 ships: Python script reads `layer:` from all module YAML docs and rewrites `.sln` solution folders to match (e.g. `Core/Foundation`, `Domain/Physics`). Also add a rule to `dia scaffold module` so new modules are placed in the correct solution folder on creation. Needs `/spec-feature` under DiaCLI. |
+| SLN layer sync script | Tracked in DiaArchitecture Phase 5 — `dia check --tool=sln-sync` rewrites `.sln` folders to numbered names (1.0-Core, 3.0-Visual, etc.). Post-step on `dia scaffold module`. Unblocked after C1 ships. |
 | RenderTechnique asset type | Layer-level rendering policy (blend mode, post-process like bloom/distortion). Layers reference a technique by name; renderer resolves at draw time. Needs `/spec-feature` under DiaGraphics or DiaBgfx once the scene system lands. |
 | Camera2D controller (pan/zoom/reset) | Application-side input→Camera2D wiring for CluicheTest stages (keyboard pan, scroll zoom, home-key reset). Unblocked once coord2d-debug-overlay ships Camera2D + renderer integration. |
 | DiaAssetRuntime — Hot reload path | Asset Lifecycle Management adds `Failed → Loading` retry but no `Loaded → Loading → Loaded` path. Still need a `ReloadAsset(assetId)` for live iteration (future feature on top of lifecycle management). |
