@@ -9,6 +9,7 @@
 #include <DiaEditor/EditorManifestLoader.h>
 #include <DiaEditor/MVC/EditorView.h>
 #include <DiaEditor/Layout/DockingLayout.h>
+#include <DiaEditor/Memory/EditorMemory.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <string>
@@ -107,6 +108,49 @@ namespace Cluiche
 
 		Dia::ApplicationFlow::StopResult PluginLoaderModule::DoStop()
 		{
+			// --- Save editor memory before unloading plugins ---
+			Dia::Editor::EditorMemory memory;
+
+			const Dia::Core::StringCRC kBuiltinHome("HomeEditorPlugin");
+			const Dia::Core::StringCRC kBuiltinOutput("OutputConsoleEditorPlugin");
+			const Dia::Core::StringCRC kBuiltinGameConn("GameConnectionEditorPlugin");
+			const Dia::Core::StringCRC kBuiltinBrowser("PluginBrowserEditorPlugin");
+
+			for (unsigned int i = 0; i < mLoadedPlugins.Size(); ++i)
+			{
+				const Dia::Core::StringCRC& typeId = mLoadedPlugins[i].typeId;
+				if (typeId == kBuiltinHome || typeId == kBuiltinOutput ||
+					typeId == kBuiltinGameConn || typeId == kBuiltinBrowser)
+					continue;
+				memory.AddPlugin(typeId.AsChar(), typeId.AsChar());
+			}
+
+			if (mView != nullptr)
+			{
+				Dia::Editor::DockingLayout* layout = mView->GetDockingLayout();
+				if (layout != nullptr)
+				{
+					Json::Value layoutTree;
+					layout->Serialize(layoutTree);
+					memory.SetLayoutTree(layoutTree);
+				}
+			}
+
+			EditorModelModule* modelModule = mModelRef.Get();
+			if (modelModule != nullptr)
+			{
+				const char* projectPath = modelModule->GetProjectPath();
+				if (projectPath != nullptr && projectPath[0] != '\0')
+					memory.SetLastProject(projectPath);
+			}
+
+			static const char* kMemoryPath = "../../../../out/CluicheEditor/.memory.json";
+			if (memory.Save(kMemoryPath))
+				DIA_LOG_INFO("Application", "PluginLoaderModule: Saved editor memory to '%s'", kMemoryPath);
+			else
+				DIA_LOG_WARNING("Application", "PluginLoaderModule: Failed to save editor memory to '%s'", kMemoryPath);
+
+			// --- Unload plugins ---
 			DIA_LOG_INFO("Application", "PluginLoaderModule: DoStop - unloading %u plugins", mLoadedPlugins.Size());
 			for (int i = static_cast<int>(mLoadedPlugins.Size()) - 1; i >= 0; --i)
 			{
