@@ -11,8 +11,8 @@
 
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
-
-namespace Dia { namespace ApplicationFlow { class IStreamStore; } }
+#include <DiaCore/Json/external/json/json.h>
+#include "DiaDebugServer/IStreamTapTarget.h"
 
 namespace Dia
 {
@@ -54,10 +54,15 @@ namespace Dia
 				const Dia::Core::StringCRC& puId,
 				Dia::Core::Containers::DynamicArrayC<DebugModuleInfo, 64>& out) const = 0;
 
-			// Returns the stream store for the given id, or null.
-			// Used by DebugServer to attach taps at runtime.
-			virtual Dia::ApplicationFlow::IStreamStore* FindStream(
-				const Dia::Core::StringCRC& id) = 0;
+			// Returns a tap target for the given stream id, or null if not found.
+			virtual IStreamTapTarget* FindStream(const Dia::Core::StringCRC& id) = 0;
+
+			// Serialize a stream payload to JSON for broadcast.
+			// Implementations use StreamTypeRegistry::SerializeToJson internally.
+			virtual Json::Value SerializeStreamPayload(
+				const Dia::Core::StringCRC& dataType,
+				const void* bytes,
+				size_t size) = 0;
 		};
 	}
 }

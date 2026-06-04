@@ -1,6 +1,6 @@
 #pragma once
 #include <DiaCore/CRC/StringCRC.h>
-#include <DiaApplicationFlow/Module.h>
+#include <DiaApplicationFlow/ModuleState.h>
 
 namespace Dia { namespace ApplicationFlow {
 

@@ -59,6 +59,7 @@
     <ClInclude Include="Manifest\ManifestValidatorV2.h" />
     <ClInclude Include="Manifest\TypedImport.h" />
     <ClInclude Include="Module.h" />
+    <ClInclude Include="ModuleState.h" />
     <ClInclude Include="ModuleRefV2.h" />
     <ClInclude Include="ProcessingUnit.h" />
     <ClInclude Include="RegistrationMacrosV2.h" />

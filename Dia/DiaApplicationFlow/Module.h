@@ -1,6 +1,7 @@
 #pragma once
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaObservation/Health/HealthReporterBase.h>
+#include <DiaApplicationFlow/ModuleState.h>
 #include <atomic>
 
 // Forward-declare LifecycleEvent to avoid pulling the full header into every
@@ -15,7 +16,6 @@ namespace Dia { namespace ApplicationFlow {
 
     enum class StartResult { kReady, kLoading, kFailed };
     enum class StopResult  { kDone, kStopping };
-    enum class ModuleState { kInactive, kStarting, kActive, kStopping, kFailed };
 
     // Lifecycle resource rule
     // ------------------------

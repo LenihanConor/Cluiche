@@ -23,6 +23,7 @@
 #include "DiaDebugServer/ObservationBridge.h"
 
 #include <cstdint>
+#include <functional>
 
 namespace dia { namespace debug { class DebugMessage; } }
 
@@ -105,6 +106,18 @@ namespace Dia
 			// before destruction.
 			void SetStateProvider(IDebugStateProvider* provider) { mStateProvider = provider; }
 
+			// Push-based stage-transition notification.  The host registers a
+			// callback that fires whenever the $lifecycle stream emits a
+			// kStageTransitionCommitted event.  Called on whatever thread the
+			// stream emits from (typically SimPU).  Pass nullptr to clear.
+			using StageTransitionCallback = std::function<void(Dia::Core::StringCRC fromStage, Dia::Core::StringCRC toStage)>;
+			void SetStageTransitionCallback(StageTransitionCallback cb);
+
+			// Broadcast a stage transition to all subscribed clients.  Intended to
+			// be called from the StageTransitionCallback registered above, or
+			// directly when the host has transition information available.
+			void BroadcastStageTransition(Dia::Core::StringCRC fromStage, Dia::Core::StringCRC toStage);
+
 			// --- Lifecycle ------------------------------------------------------
 
 			// Create the underlying WebSocket server, register handlers, and
@@ -179,7 +192,7 @@ namespace Dia
 
 			ServerStats          mStats;
 			Dia::Core::Containers::DynamicArrayC<ClientTap, 64> mClientTaps;
-			unsigned int                                        mLifecycleTapId;
+			StageTransitionCallback                             mStageTransitionCallback;
 			CommandDispatcher    mCommandDispatcher;
 			QueryRegistry        mQueryRegistry;
 			DebugServerLogSink   mLogSink;

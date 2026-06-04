@@ -1,15 +1,17 @@
 #pragma once
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaApplicationFlow/Streams/OverflowPolicy.h>
+#include <DiaDebugServer/IStreamTapTarget.h>
 #include <functional>
 
 namespace Dia { namespace ApplicationFlow {
 
     enum class StreamKind { kFrame, kEvent, kService };
 
-    using TapCallback = std::function<void(const void* eventBytes, unsigned int eventSize,
-                                           const Dia::Core::StringCRC& streamId)>;
-    struct TapHandle { unsigned int id = 0; };
+    // TapCallback and TapHandle are owned by DiaDebugServer (IStreamTapTarget.h).
+    // Aliases here so existing ApplicationFlow code compiles unchanged.
+    using TapCallback = Dia::DebugServer::TapCallback;
+    using TapHandle   = Dia::DebugServer::TapHandle;
 
     // IStreamStore
     // ---------------------------------------------------------------------------
@@ -22,7 +24,7 @@ namespace Dia { namespace ApplicationFlow {
     // Max 10µs per callback (DIA_ASSERT in Debug). Re-entrance into Send() on
     // the same store DIA_ASSERTs.
     // ---------------------------------------------------------------------------
-    class IStreamStore
+    class IStreamStore : public Dia::DebugServer::IStreamTapTarget
     {
     public:
         virtual ~IStreamStore() = default;

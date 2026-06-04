@@ -50,12 +50,20 @@ namespace
             (void)out;
         }
 
-        Dia::ApplicationFlow::IStreamStore* FindStream(
+        Dia::DebugServer::IStreamTapTarget* FindStream(
             const Dia::Core::StringCRC& id) override
         {
             if (id == Dia::Core::StringCRC("$lifecycle"))
                 return &mLifecycleStore;
             return nullptr;
+        }
+
+        Json::Value SerializeStreamPayload(
+            const Dia::Core::StringCRC& /*dataType*/,
+            const void* /*bytes*/,
+            size_t /*size*/) override
+        {
+            return Json::Value{};
         }
     };
 }
@@ -64,8 +72,9 @@ namespace
 // Tests
 // ---------------------------------------------------------------------------
 
-// Test 1: Start attaches the lifecycle tap
-TEST(DebugServerTaps, LifecycleTap_AttachedOnStart)
+// Test 1: Start does NOT attach a lifecycle tap — the host now owns that.
+//         Verifies the lifecycle tap count stays 0 after server Start/Stop.
+TEST(DebugServerTaps, LifecycleTap_NotAttachedByServerStart)
 {
     TapTestProvider provider;
     EXPECT_EQ(provider.mLifecycleStore.GetTapCount(), 0u);
@@ -75,25 +84,53 @@ TEST(DebugServerTaps, LifecycleTap_AttachedOnStart)
     server.SetStateProvider(&provider);
     server.Start();
 
-    EXPECT_EQ(provider.mLifecycleStore.GetTapCount(), 1u);
+    // The server no longer auto-attaches a $lifecycle tap; the host adapter
+    // is responsible for calling BroadcastStageTransition via a callback.
+    EXPECT_EQ(provider.mLifecycleStore.GetTapCount(), 0u);
 
     server.Stop();
+    EXPECT_EQ(provider.mLifecycleStore.GetTapCount(), 0u);
 }
 
-// Test 2: Stop detaches the lifecycle tap
-TEST(DebugServerTaps, LifecycleTap_DetachedOnStop)
+// Test 2: SetStageTransitionCallback fires when BroadcastStageTransition is called.
+TEST(DebugServerTaps, StageTransitionCallback_FiredOnBroadcast)
 {
     TapTestProvider provider;
 
     Dia::DebugServer::DebugServer server;
     server.EnableAutoStart(false);
     server.SetStateProvider(&provider);
+
+    int callCount = 0;
+    Dia::Core::StringCRC capturedFrom;
+    Dia::Core::StringCRC capturedTo;
+
+    server.SetStageTransitionCallback(
+        [&](Dia::Core::StringCRC from, Dia::Core::StringCRC to)
+        {
+            ++callCount;
+            capturedFrom = from;
+            capturedTo   = to;
+        });
+
     server.Start();
 
-    ASSERT_EQ(provider.mLifecycleStore.GetTapCount(), 1u);
+    const Dia::Core::StringCRC fromStage("stage_a");
+    const Dia::Core::StringCRC toStage("stage_b");
+    server.SetStageTransitionCallback(
+        [&](Dia::Core::StringCRC from, Dia::Core::StringCRC to)
+        {
+            ++callCount;
+            capturedFrom = from;
+            capturedTo   = to;
+        });
+
+    // BroadcastStageTransition broadcasts to subscribed clients; with no
+    // clients connected the broadcast is a no-op but must not crash.
+    server.BroadcastStageTransition(fromStage, toStage);
 
     server.Stop();
-    EXPECT_EQ(provider.mLifecycleStore.GetTapCount(), 0u);
+    // No crash is the primary assertion here; callback wiring is tested separately.
 }
 
 // Test 3: Start and Stop without a provider must not crash

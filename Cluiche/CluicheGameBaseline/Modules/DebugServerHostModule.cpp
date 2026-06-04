@@ -3,6 +3,8 @@
 #include <DiaApplicationFlow/IApplicationControl.h>
 #include <DiaApplicationFlow/IApplicationInspectable.h>
 #include <DiaApplicationFlow/Streams/IStreamStore.h>
+#include <DiaApplicationFlow/Streams/StreamTypeRegistry.h>
+#include <DiaApplicationFlow/LifecycleEvent.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaObservation/Log/LogLevel.h>
@@ -71,6 +73,39 @@ Dia::ApplicationFlow::StartResult DebugServerHostModule::DoStart()
 
     mServer.SetStateProvider(this);
     mServer.Start();
+
+    // Attach $lifecycle tap so stage transitions are forwarded to connected
+    // clients as push events.  The tap lives in the host (which owns
+    // DiaApplicationFlow) so DiaDebugServer itself has no dependency on it.
+    {
+        auto* ctrl = GetApplication();
+        auto* app = dynamic_cast<Dia::ApplicationFlow::IApplicationInspectable*>(ctrl);
+        if (app)
+        {
+            auto* lifecycleStore = app->FindStream(Dia::Core::StringCRC("$lifecycle"));
+            if (lifecycleStore)
+            {
+                auto handle = lifecycleStore->AttachTap(
+                    [this](const void* bytes, unsigned int size,
+                           const Dia::Core::StringCRC& /*streamId*/)
+                    {
+                        if (!bytes || size < sizeof(Dia::ApplicationFlow::LifecycleEvent)) return;
+                        const auto* evt = static_cast<const Dia::ApplicationFlow::LifecycleEvent*>(bytes);
+                        if (evt->kind != Dia::ApplicationFlow::LifecycleEventKind::kStageTransitionCommitted) return;
+                        mServer.BroadcastStageTransition(evt->fromStage, evt->toStage);
+                    });
+                mLifecycleTapId = handle.id;
+                if (mLifecycleTapId == 0)
+                {
+                    DIA_LOG_WARNING("DebugServer", "DebugServerHostModule::DoStart - $lifecycle tap attach failed");
+                }
+            }
+            else
+            {
+                DIA_LOG_WARNING("DebugServer", "DebugServerHostModule::DoStart - $lifecycle stream not found, stage transitions degraded");
+            }
+        }
+    }
 
     // Start observation bridge — epoch offset computed from system/steady clock delta
     auto sysNow = std::chrono::system_clock::now();
@@ -153,6 +188,20 @@ void DebugServerHostModule::QueryMemory()
 
 Dia::ApplicationFlow::StopResult DebugServerHostModule::DoStop()
 {
+    // Detach the $lifecycle tap before stopping the server.
+    if (mLifecycleTapId != 0)
+    {
+        auto* ctrl = GetApplication();
+        auto* app = dynamic_cast<Dia::ApplicationFlow::IApplicationInspectable*>(ctrl);
+        if (app)
+        {
+            auto* lifecycleStore = app->FindStream(Dia::Core::StringCRC("$lifecycle"));
+            if (lifecycleStore)
+                lifecycleStore->DetachTap(Dia::ApplicationFlow::TapHandle{mLifecycleTapId});
+        }
+        mLifecycleTapId = 0;
+    }
+
     mServer.Stop();
 
     // Null metric pointers — MetricRegistry owns the objects.
@@ -247,13 +296,21 @@ void DebugServerHostModule::GetModulesInPU(
     }
 }
 
-Dia::ApplicationFlow::IStreamStore* DebugServerHostModule::FindStream(
+Dia::DebugServer::IStreamTapTarget* DebugServerHostModule::FindStream(
     const Dia::Core::StringCRC& id)
 {
     auto* ctrl = GetApplication();
     auto* app = dynamic_cast<Dia::ApplicationFlow::IApplicationInspectable*>(ctrl);
     if (!app) return nullptr;
     return app->FindStream(id);
+}
+
+Json::Value DebugServerHostModule::SerializeStreamPayload(
+    const Dia::Core::StringCRC& dataType,
+    const void* bytes,
+    size_t size)
+{
+    return Dia::ApplicationFlow::StreamTypeRegistry::SerializeToJson(dataType, bytes, size);
 }
 
 } } // namespace Cluiche::AppFlow

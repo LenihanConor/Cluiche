@@ -38,10 +38,18 @@ struct StubProvider : IDebugStateProvider
 			out.Add(modules[i]);
 	}
 
-	Dia::ApplicationFlow::IStreamStore* FindStream(
+	Dia::DebugServer::IStreamTapTarget* FindStream(
 		const Dia::Core::StringCRC& /*id*/) override
 	{
 		return nullptr;
+	}
+
+	Json::Value SerializeStreamPayload(
+		const Dia::Core::StringCRC& /*dataType*/,
+		const void* /*bytes*/,
+		size_t /*size*/) override
+	{
+		return Json::Value{};
 	}
 };
 

@@ -14,6 +14,7 @@
 
 #include <DiaApplicationFlow/Module.h>
 #include <DiaApplicationFlow/PUAffinity.h>
+#include <DiaApplicationFlow/Streams/IStreamStore.h>
 #include <DiaDebugServer/DebugServer.h>
 #include <DiaDebugServer/IDebugStateProvider.h>
 #include <DiaCore/CRC/StringCRC.h>
@@ -62,8 +63,12 @@ protected:
     void GetModulesInPU(
         const Dia::Core::StringCRC& puId,
         Dia::Core::Containers::DynamicArrayC<Dia::DebugServer::DebugModuleInfo, 64>& out) const override;
-    Dia::ApplicationFlow::IStreamStore* FindStream(
+    Dia::DebugServer::IStreamTapTarget* FindStream(
         const Dia::Core::StringCRC& id) override;
+    Json::Value SerializeStreamPayload(
+        const Dia::Core::StringCRC& dataType,
+        const void* bytes,
+        size_t size) override;
 
 private:
     void QueryMemory();
@@ -86,6 +91,10 @@ private:
     Dia::Observation::Metric::Counter*   mMetricMessagesSent  = nullptr;
     Dia::Observation::Metric::Histogram* mMetricTickMs        = nullptr;
     int                                  mPrevMessagesSent    = 0;
+
+    // Handle for the $lifecycle tap used to forward stage transitions to the
+    // debug server as push notifications.  Attached in DoStart, detached in DoStop.
+    unsigned int                         mLifecycleTapId      = 0;
 };
 
 } } // namespace Cluiche::AppFlow

@@ -1,8 +1,6 @@
 #include "DiaDebugServer/DebugServer.h"
 #include "DiaDebugServer/StateSerializer.h"
-#include <DiaApplicationFlow/Streams/IStreamStore.h>
-#include <DiaApplicationFlow/Streams/StreamTypeRegistry.h>
-#include <DiaApplicationFlow/LifecycleEvent.h>
+#include "DiaDebugServer/IStreamTapTarget.h"
 
 #include <DiaProtobuf/ProtoStructConverter.h>
 #include <DiaWebSocket/Server.h>
@@ -29,7 +27,6 @@ namespace Dia
 			, mStateProvider(nullptr)
 			, mPort(8080)
 			, mAutoStart(true)
-			, mLifecycleTapId(0)
 			, mObservationBridge(nullptr)
 			, mStartTimestamp(0)
 			, mStarted(false)
@@ -59,6 +56,38 @@ namespace Dia
 			else mDiagamePath[0] = '\0';
 		}
 
+		void DebugServer::SetStageTransitionCallback(StageTransitionCallback cb)
+		{
+			mStageTransitionCallback = std::move(cb);
+		}
+
+		void DebugServer::BroadcastStageTransition(Dia::Core::StringCRC fromStage, Dia::Core::StringCRC toStage)
+		{
+			if (!mServer) return;
+
+			const Dia::Core::StringCRC stageTransitionTopic("stage_transition");
+			Json::Value payload = StateSerializer::SerializeStageTransition(
+				fromStage, toStage, Dia::DebugProtocol::GetTimestampNow());
+
+			for (unsigned int i = 0; i < mClientTaps.Size(); ++i)
+			{
+				if (mClientTaps[i].streamId == stageTransitionTopic)
+				{
+					dia::debug::DebugMessage msg;
+					msg.set_type(dia::debug::MESSAGE_TYPE_EVENT);
+					msg.set_timestamp(Dia::DebugProtocol::GetTimestampNow());
+					auto* e = msg.mutable_event();
+					e->set_event_type(stageTransitionTopic.AsChar());
+					Dia::Proto::JsonValueToProtoStruct(payload, e->mutable_payload());
+
+					char jsonBuffer[4096];
+					if (Dia::Proto::ToJson(msg, jsonBuffer, sizeof(jsonBuffer)))
+						mServer->SendText(mClientTaps[i].connId, jsonBuffer);
+					mStats.messagesSentTotal++;
+				}
+			}
+		}
+
 		//---------------------------------------------------------------------
 		// Lifecycle
 		//---------------------------------------------------------------------
@@ -78,54 +107,6 @@ namespace Dia
 			});
 
 			RegisterProtocolCommands();
-
-			// Attach tap on $lifecycle stream so stage transitions arrive via push, not polling.
-			if (mStateProvider)
-			{
-				auto* lifecycleStore = mStateProvider->FindStream(Dia::Core::StringCRC("$lifecycle"));
-				if (lifecycleStore)
-				{
-					mLifecycleTapId = lifecycleStore->AttachTap(
-						[this](const void* bytes, unsigned int size,
-						       const Dia::Core::StringCRC& /*streamId*/)
-						{
-							if (!bytes || size < sizeof(Dia::ApplicationFlow::LifecycleEvent)) return;
-							const auto* evt = static_cast<const Dia::ApplicationFlow::LifecycleEvent*>(bytes);
-							if (evt->kind != Dia::ApplicationFlow::LifecycleEventKind::kStageTransitionCommitted) return;
-
-							const Dia::Core::StringCRC stageTransitionTopic("stage_transition");
-							Json::Value payload = StateSerializer::SerializeStageTransition(
-								evt->fromStage, evt->toStage, Dia::DebugProtocol::GetTimestampNow());
-
-							for (unsigned int i = 0; i < mClientTaps.Size(); ++i)
-							{
-								if (mClientTaps[i].streamId == stageTransitionTopic)
-								{
-									dia::debug::DebugMessage msg;
-									msg.set_type(dia::debug::MESSAGE_TYPE_EVENT);
-									msg.set_timestamp(Dia::DebugProtocol::GetTimestampNow());
-									auto* e = msg.mutable_event();
-									e->set_event_type(stageTransitionTopic.AsChar());
-									Dia::Proto::JsonValueToProtoStruct(payload, e->mutable_payload());
-
-									char jsonBuffer[4096];
-									if (mServer && Dia::Proto::ToJson(msg, jsonBuffer, sizeof(jsonBuffer)))
-										mServer->SendText(mClientTaps[i].connId, jsonBuffer);
-									mStats.messagesSentTotal++;
-								}
-							}
-						}
-					).id;
-					if (mLifecycleTapId == 0)
-					{
-						DIA_LOG_WARNING("DebugServer", "DebugServer::Start - $lifecycle stream found but AttachTap failed");
-					}
-				}
-				else
-				{
-					DIA_LOG_WARNING("DebugServer", "DebugServer::Start - $lifecycle stream not found, stage transitions degraded");
-				}
-			}
 
 			if (mAutoStart)
 				StartServer();
@@ -172,20 +153,13 @@ namespace Dia
 		{
 			if (!mStarted) return;
 
-			// Detach $lifecycle tap
-			if (mStateProvider && mLifecycleTapId != 0)
-			{
-				auto* lifecycleStore = mStateProvider->FindStream(Dia::Core::StringCRC("$lifecycle"));
-				if (lifecycleStore) lifecycleStore->DetachTap(Dia::ApplicationFlow::TapHandle{mLifecycleTapId});
-				mLifecycleTapId = 0;
-			}
 			// Detach all client taps
 			for (unsigned int i = 0; i < mClientTaps.Size(); ++i)
 			{
 				if (mStateProvider)
 				{
 					auto* store = mStateProvider->FindStream(mClientTaps[i].streamId);
-					if (store) store->DetachTap(Dia::ApplicationFlow::TapHandle{mClientTaps[i].tapId});
+					if (store) store->DetachTap(Dia::DebugServer::TapHandle{mClientTaps[i].tapId});
 				}
 			}
 			mClientTaps.RemoveAll();
@@ -275,7 +249,7 @@ namespace Dia
 						if (mStateProvider)
 						{
 							auto* store = mStateProvider->FindStream(mClientTaps[i].streamId);
-							if (store) store->DetachTap(Dia::ApplicationFlow::TapHandle{mClientTaps[i].tapId});
+							if (store) store->DetachTap(Dia::DebugServer::TapHandle{mClientTaps[i].tapId});
 						}
 						mClientTaps.RemoveAt(i);
 					}
@@ -396,7 +370,7 @@ namespace Dia
 					auto cb = [this, connId, dataType](const void* bytes, unsigned int size,
 					                                    const Dia::Core::StringCRC& /*streamId*/)
 					{
-						Json::Value payload = Dia::ApplicationFlow::StreamTypeRegistry::SerializeToJson(
+						Json::Value payload = mStateProvider->SerializeStreamPayload(
 							dataType, bytes, static_cast<size_t>(size));
 
 						dia::debug::DebugMessage updateMsg;
@@ -450,7 +424,7 @@ namespace Dia
 					if (mStateProvider)
 					{
 						auto* store = mStateProvider->FindStream(dataType);
-						if (store) store->DetachTap(Dia::ApplicationFlow::TapHandle{mClientTaps[i].tapId});
+						if (store) store->DetachTap(Dia::DebugServer::TapHandle{mClientTaps[i].tapId});
 					}
 					mClientTaps.RemoveAt(i);
 				}

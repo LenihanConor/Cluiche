@@ -4,6 +4,7 @@
     <ClInclude Include="DebugServer.h" />
     <ClInclude Include="DebugServerLogSink.h" />
     <ClInclude Include="IDebugStateProvider.h" />
+    <ClInclude Include="IStreamTapTarget.h" />
     <ClInclude Include="StateSerializer.h" />
     <ClInclude Include="CommandDispatcher.h" />
     <ClInclude Include="QueryRegistry.h" />
