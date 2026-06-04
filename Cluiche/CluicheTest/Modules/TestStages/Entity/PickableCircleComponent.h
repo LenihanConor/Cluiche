@@ -1,6 +1,6 @@
 #pragma once
-#include <diaentitytemplate/IComponent.h>
-#include <diaentitytemplate/ComponentMacros.h>
+#include <DiaEntity/IComponent.h>
+#include <DiaEntity/ComponentMacros.h>
 
 #ifdef DIA_DEBUG
 #include <DiaGeometry2DPicking/Adapters/ShapePickable.h>

@@ -1,8 +1,8 @@
 #pragma once
 #include <DiaCore/Containers/HandlePool.h>
 #include <DiaCore/Core/Assert.h>
-#include <diaentitytemplate/IComponentPool.h>
-#include <diaentitytemplate/Entity.h>
+#include <DiaEntity/IComponentPool.h>
+#include <DiaEntity/Entity.h>
 
 namespace Dia::Entity {
 

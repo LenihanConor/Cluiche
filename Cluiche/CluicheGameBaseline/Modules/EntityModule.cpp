@@ -1,7 +1,7 @@
 #include "Modules/EntityModule.h"
-#include <diaentitytemplate/ComponentPool.h>
-#include <diaentitytemplate/Hierarchy/ParentComponent.h>
-#include <diaentitytemplate/Hierarchy/ChildBufferComponent.h>
+#include <DiaEntity/ComponentPool.h>
+#include <DiaEntity/Hierarchy/ParentComponent.h>
+#include <DiaEntity/Hierarchy/ChildBufferComponent.h>
 #include <DiaObservation/Log/DiaLog.h>
 
 namespace Cluiche { namespace AppFlow {

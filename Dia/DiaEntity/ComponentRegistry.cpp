@@ -1,4 +1,4 @@
-#include <diaentitytemplate/ComponentRegistry.h>
+#include <DiaEntity/ComponentRegistry.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
 

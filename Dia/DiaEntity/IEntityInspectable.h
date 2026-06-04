@@ -4,7 +4,7 @@
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Json/external/json/json.h>
 #include <DiaMailbox/Mailbox.h>
-#include <diaentitytemplate/Entity.h>
+#include <DiaEntity/Entity.h>
 
 namespace Dia::Entity {
 

@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 // Domain.h pulls in EntityRef.inl transitively (via Domain.inl)
-#include <diaentitytemplate/Domain.h>
-#include <diaentitytemplate/EntityRef.h>
-#include <diaentitytemplate/ComponentPool.h>
+#include <DiaEntity/Domain.h>
+#include <DiaEntity/EntityRef.h>
+#include <DiaEntity/ComponentPool.h>
 #include <DiaCore/Reflect/JsonArchive.h>
 
 // Test components — BpTransform and BpHealth are in DiaEntityTest namespace.

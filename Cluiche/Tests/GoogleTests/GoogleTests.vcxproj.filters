@@ -82,7 +82,7 @@
     <Filter Include="DiaMailbox">
       <UniqueIdentifier>{DMBL0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
-    <Filter Include="diaentitytemplate">
+    <Filter Include="DiaEntity">
       <UniqueIdentifier>{DENT0001-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
     <Filter Include="DiaObservation">
@@ -118,7 +118,7 @@
     <Filter Include="DiaApplicationEditor">
       <UniqueIdentifier>{DAPPEDTR-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
-    <Filter Include="DiaEntityTemplateEditor">
+    <Filter Include="DiaEntityEditor">
       <UniqueIdentifier>{DIABPED1-2345-6789-ABCD-EF0123456789}</UniqueIdentifier>
     </Filter>
     <Filter Include="DiaSceneEditor">
@@ -575,21 +575,21 @@
     <ClCompile Include="Integration\TestPhysicsGeometryIntegration.cpp">
       <Filter>Integration</Filter>
     </ClCompile>
-    <!-- DiaEntityTemplateEditor Tests -->
-    <ClCompile Include="DiaEntityTemplateEditor\TestBlueprintFileHandler.cpp">
-      <Filter>DiaEntityTemplateEditor</Filter>
+    <!-- DiaEntityEditor Tests -->
+    <ClCompile Include="DiaEntityEditor\TestBlueprintFileHandler.cpp">
+      <Filter>DiaEntityEditor</Filter>
     </ClCompile>
-    <ClCompile Include="DiaEntityTemplateEditor\TestBlueprintListController.cpp">
-      <Filter>DiaEntityTemplateEditor</Filter>
+    <ClCompile Include="DiaEntityEditor\TestBlueprintListController.cpp">
+      <Filter>DiaEntityEditor</Filter>
     </ClCompile>
-    <ClCompile Include="DiaEntityTemplateEditor\TestBlueprintPropertyController.cpp">
-      <Filter>DiaEntityTemplateEditor</Filter>
+    <ClCompile Include="DiaEntityEditor\TestBlueprintPropertyController.cpp">
+      <Filter>DiaEntityEditor</Filter>
     </ClCompile>
-    <ClCompile Include="DiaEntityTemplateEditor\TestBlueprintMutator.cpp">
-      <Filter>DiaEntityTemplateEditor</Filter>
+    <ClCompile Include="DiaEntityEditor\TestBlueprintMutator.cpp">
+      <Filter>DiaEntityEditor</Filter>
     </ClCompile>
-    <ClCompile Include="DiaEntityTemplateEditor\IntegrationTestEntityTemplateEditorPlugin.cpp">
-      <Filter>DiaEntityTemplateEditor</Filter>
+    <ClCompile Include="DiaEntityEditor\IntegrationTestBlueprintEditorPlugin.cpp">
+      <Filter>DiaEntityEditor</Filter>
     </ClCompile>
     <!-- DiaSceneEditor Tests -->
     <ClCompile Include="DiaSceneEditor\TestSceneMutator.cpp">
@@ -903,48 +903,48 @@
     <ClCompile Include="DiaMailbox\MailboxStressTests.cpp">
       <Filter>DiaMailbox</Filter>
     </ClCompile>
-    <!-- diaentitytemplate -->
-    <ClCompile Include="diaentitytemplate\DomainTests.cpp">
-      <Filter>diaentitytemplate</Filter>
+    <!-- DiaEntity -->
+    <ClCompile Include="DiaEntity\DomainTests.cpp">
+      <Filter>DiaEntity</Filter>
     </ClCompile>
-    <ClCompile Include="diaentitytemplate\TestComponent.cpp">
-      <Filter>diaentitytemplate</Filter>
+    <ClCompile Include="DiaEntity\TestComponent.cpp">
+      <Filter>DiaEntity</Filter>
     </ClCompile>
-    <ClCompile Include="diaentitytemplate\ReflectionTests.cpp">
-      <Filter>diaentitytemplate</Filter>
+    <ClCompile Include="DiaEntity\ReflectionTests.cpp">
+      <Filter>DiaEntity</Filter>
     </ClCompile>
-    <ClCompile Include="diaentitytemplate\BlueprintLoaderTests.cpp">
-      <Filter>diaentitytemplate</Filter>
+    <ClCompile Include="DiaEntity\BlueprintLoaderTests.cpp">
+      <Filter>DiaEntity</Filter>
     </ClCompile>
-    <ClCompile Include="diaentitytemplate\BpTransformComponent.cpp">
-      <Filter>diaentitytemplate</Filter>
+    <ClCompile Include="DiaEntity\BpTransformComponent.cpp">
+      <Filter>DiaEntity</Filter>
     </ClCompile>
-    <ClCompile Include="diaentitytemplate\UpdateLoopTests.cpp">
-      <Filter>diaentitytemplate</Filter>
+    <ClCompile Include="DiaEntity\UpdateLoopTests.cpp">
+      <Filter>DiaEntity</Filter>
     </ClCompile>
-    <ClCompile Include="diaentitytemplate\EntityRefTests.cpp">
-      <Filter>diaentitytemplate</Filter>
+    <ClCompile Include="DiaEntity\EntityRefTests.cpp">
+      <Filter>DiaEntity</Filter>
     </ClCompile>
-    <ClCompile Include="diaentitytemplate\QuerySystemTests.cpp">
-      <Filter>diaentitytemplate</Filter>
+    <ClCompile Include="DiaEntity\QuerySystemTests.cpp">
+      <Filter>DiaEntity</Filter>
     </ClCompile>
-    <ClCompile Include="diaentitytemplate\EntityRouterTests.cpp">
-      <Filter>diaentitytemplate</Filter>
+    <ClCompile Include="DiaEntity\EntityRouterTests.cpp">
+      <Filter>DiaEntity</Filter>
     </ClCompile>
-    <ClCompile Include="diaentitytemplate\HierarchyTests.cpp">
-      <Filter>diaentitytemplate</Filter>
+    <ClCompile Include="DiaEntity\HierarchyTests.cpp">
+      <Filter>DiaEntity</Filter>
     </ClCompile>
-    <ClCompile Include="diaentitytemplate\EditorInspectionTests.cpp">
-      <Filter>diaentitytemplate</Filter>
+    <ClCompile Include="DiaEntity\EditorInspectionTests.cpp">
+      <Filter>DiaEntity</Filter>
     </ClCompile>
-    <ClCompile Include="diaentitytemplate\StressTests.cpp">
-      <Filter>diaentitytemplate</Filter>
+    <ClCompile Include="DiaEntity\StressTests.cpp">
+      <Filter>DiaEntity</Filter>
     </ClCompile>
-    <ClCompile Include="diaentitytemplate\IntegrationTests.cpp">
-      <Filter>diaentitytemplate</Filter>
+    <ClCompile Include="DiaEntity\IntegrationTests.cpp">
+      <Filter>DiaEntity</Filter>
     </ClCompile>
-    <ClCompile Include="diaentitytemplate\DataFlowContractTests.cpp">
-      <Filter>diaentitytemplate</Filter>
+    <ClCompile Include="DiaEntity\DataFlowContractTests.cpp">
+      <Filter>DiaEntity</Filter>
     </ClCompile>
     <!-- DiaObservation -->
     <ClCompile Include="DiaObservation\Log\TestLogLevel.cpp">

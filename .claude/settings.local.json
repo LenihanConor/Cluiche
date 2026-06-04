@@ -1109,7 +1109,11 @@
       "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;\" + $env:PATH && cd \"C:\\\\GitHub\\\\Cluiche\\\\Cluiche\\\\CluicheEditor\\\\UI\" && & \"C:\\\\Program Files\\\\nodejs\\\\npm.cmd\" run test -- --run src/notifications/useNotifications.test.ts 2>&1)",
       "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;\" + $env:PATH; cd \"C:\\\\GitHub\\\\Cluiche\\\\Cluiche\\\\CluicheEditor\\\\UI\"; & \"C:\\\\Program Files\\\\nodejs\\\\npm.cmd\" run test -- --run src/notifications/useNotifications.test.ts 2>&1)",
       "PowerShell(Get-ChildItem -Path \"C:\\\\GitHub\\\\Cluiche\\\\Dia\\\\DiaSceneEditor\" -Recurse -File | Select-Object -First 50 | ForEach-Object { $_.FullName })",
-      "PowerShell(cd C:\\\\GitHub\\\\Cluiche && powershell -NonInteractive -Command \"& '.\\\\tools\\\\rename-blueprint-to-template.ps1' -apply\")"
+      "PowerShell(cd C:\\\\GitHub\\\\Cluiche && powershell -NonInteractive -Command \"& '.\\\\tools\\\\rename-blueprint-to-template.ps1' -apply\")",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Enterprise/MSBuild/Current/Bin/MSBuild.exe\" Cluiche/Cluiche.sln /p:Configuration=Debug /p:Platform=x64 /t:DiaAssetCatalogueEditor /m /v:minimal)",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/2022/Professional/MSBuild/Current/Bin/MSBuild.exe\" Cluiche/Cluiche.sln /p:Configuration=Debug /p:Platform=x64 /t:DiaAssetCatalogueEditor /m /v:minimal)",
+      "PowerShell(& \"C:\\\\Program Files\\\\Microsoft Visual Studio\\\\2022\\\\Professional\\\\MSBuild\\\\Current\\\\Bin\\\\MSBuild.exe\" \"C:\\\\GitHub\\\\Cluiche\\\\Dia\\\\DiaAssetCatalogueEditor\\\\DiaAssetCatalogueEditor.vcxproj\" /p:Configuration=Debug /p:Platform=x64 /m /v:minimal 2>&1 | Select-Object -Last 10)",
+      "PowerShell(ls \"C:\\\\GitHub\\\\Cluiche\\\\Cluiche\\\\Tests\\\\GoogleTests\\\\\" | Select-Object Name | Where-Object { $_.Name -match \"entity\" -or $_.Name -match \"Entity\" })"
     ],
     "defaultMode": "auto"
   }

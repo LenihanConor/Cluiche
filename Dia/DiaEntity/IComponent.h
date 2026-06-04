@@ -1,6 +1,6 @@
 #pragma once
 #include <DiaCore/CRC/StringCRC.h>
-#include <diaentitytemplate/Entity.h>
+#include <DiaEntity/Entity.h>
 
 namespace Dia::Entity {
 

@@ -1,6 +1,6 @@
 #include "DiaSceneEditor/PropertyInspectorController.h"
-#include <diaentitytemplate/ComponentRegistry.h>
-#include <diaentitytemplate/ComponentTypeDesc.h>
+#include <DiaEntity/ComponentRegistry.h>
+#include <DiaEntity/ComponentTypeDesc.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaCore/CRC/StringCRC.h>

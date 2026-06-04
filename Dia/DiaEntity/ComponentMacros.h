@@ -4,8 +4,8 @@
 #include <DiaCore/Metadata/DescribeMacro.h>
 #include <DiaCore/Reflect/ReflectMacros.h>
 #include <DiaCore/Reflect/JsonArchive.h>
-#include <diaentitytemplate/ComponentTypeDesc.h>
-#include <diaentitytemplate/ComponentRegistry.h>
+#include <DiaEntity/ComponentTypeDesc.h>
+#include <DiaEntity/ComponentRegistry.h>
 
 // =============================================================================
 // Field-kind deduction helpers — add specialisations for new primitive types.

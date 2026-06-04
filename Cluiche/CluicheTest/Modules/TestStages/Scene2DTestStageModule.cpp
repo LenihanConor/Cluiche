@@ -6,7 +6,7 @@
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include <DiaScene2D/SceneLoadContext.h>
-#include <diaentitytemplate/ComponentPool.h>
+#include <DiaEntity/ComponentPool.h>
 #include <chrono>
 
 #ifdef DIA_DEBUG

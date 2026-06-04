@@ -4,8 +4,8 @@
 
 #include <DiaVisualDebugger/IVisualDebugger.h>
 #include <DiaCore/CRC/StringCRC.h>
-#include <diaentitytemplate/Domain.h>
-#include <diaentitytemplate/Entity.h>
+#include <DiaEntity/Domain.h>
+#include <DiaEntity/Entity.h>
 #include <DiaGeometry2DVisualDebugger/ShapeDrawer.h>
 
 namespace Dia::Debug { class DebugLayerManager; }

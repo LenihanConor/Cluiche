@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
-#include <diaentitytemplate/Entity.h>
+#include <DiaEntity/Entity.h>
 
 namespace Dia::Entity {
 

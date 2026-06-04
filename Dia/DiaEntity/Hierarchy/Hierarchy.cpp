@@ -1,7 +1,7 @@
-#include <diaentitytemplate/Hierarchy/Hierarchy.h>
-#include <diaentitytemplate/Hierarchy/ParentComponent.h>
-#include <diaentitytemplate/Hierarchy/ChildBufferComponent.h>
-#include <diaentitytemplate/Domain.h>
+#include <DiaEntity/Hierarchy/Hierarchy.h>
+#include <DiaEntity/Hierarchy/ParentComponent.h>
+#include <DiaEntity/Hierarchy/ChildBufferComponent.h>
+#include <DiaEntity/Domain.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaCore/Json/external/json/json.h>

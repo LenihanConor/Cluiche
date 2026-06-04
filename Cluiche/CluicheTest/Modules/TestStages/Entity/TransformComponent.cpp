@@ -1,6 +1,6 @@
 #include "Modules/TestStages/Entity/TransformComponent.h"
 #include <DiaCore/Reflect/ReflectMacros.h>
-#include <diaentitytemplate/Domain.h>
+#include <DiaEntity/Domain.h>
 
 DIA_SERIALIZE(CluicheTest::TransformComponent, CluicheTest::TransformComponent::kVersion)
     DIA_FIELD(x)

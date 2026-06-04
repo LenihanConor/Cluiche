@@ -1,6 +1,6 @@
 {
     "name": "UIUltralightTestStage",
-    "manifest": "stages/UIUltralightTestStage/misc/ApplicationFlow/ui_ultralight_test_stage.diaapp",
+    "manifest": "Stages/UIUltralightTestStage/misc/ApplicationFlow/ui_ultralight_test_stage.diaapp",
     "config": {
         "path_aliases": {
             "stage_root": ".",

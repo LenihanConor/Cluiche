@@ -1,7 +1,7 @@
-#include <diaentitytemplate/Hierarchy/ParentComponent.h>
-#include <diaentitytemplate/Hierarchy/ChildBufferComponent.h>
-#include <diaentitytemplate/Domain.h>
-#include <diaentitytemplate/ComponentPool.h>
+#include <DiaEntity/Hierarchy/ParentComponent.h>
+#include <DiaEntity/Hierarchy/ChildBufferComponent.h>
+#include <DiaEntity/Domain.h>
+#include <DiaEntity/ComponentPool.h>
 
 // Serialize free function — reads parentIndex and parentGen from JSON config.
 DIA_SERIALIZE(Dia::Entity::Hierarchy::ParentComponent, Dia::Entity::Hierarchy::ParentComponent::kVersion)

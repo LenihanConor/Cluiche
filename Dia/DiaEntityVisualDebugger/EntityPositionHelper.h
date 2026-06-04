@@ -4,7 +4,7 @@
 
 #include <DiaMaths/Vector/Vector2D.h>
 #include <DiaCore/CRC/StringCRC.h>
-#include <diaentitytemplate/Entity.h>
+#include <DiaEntity/Entity.h>
 
 namespace Dia::Entity { class IEntityInspectable; }
 

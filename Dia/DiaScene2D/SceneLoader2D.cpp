@@ -11,7 +11,7 @@
 #include <DiaCamera2D/Registry/CameraRegistry2D.h>
 #include <DiaLighting2D/PointLight2D.h>
 #include <DiaLighting2D/Registry/LightRegistry2D.h>
-#include <diaentitytemplate/Domain.h>
+#include <DiaEntity/Domain.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <DiaObservation/Profile/DiaProfile.h>

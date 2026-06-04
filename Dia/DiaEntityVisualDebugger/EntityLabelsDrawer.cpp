@@ -2,9 +2,9 @@
 
 #include "EntityLabelsDrawer.h"
 #include "EntityPositionHelper.h"
-#include <diaentitytemplate/IEntityInspectable.h>
-#include <diaentitytemplate/Domain.h>
-#include <diaentitytemplate/Entity.h>
+#include <DiaEntity/IEntityInspectable.h>
+#include <DiaEntity/Domain.h>
+#include <DiaEntity/Entity.h>
 #include <DiaGraphics/Frame/FrameData.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaVisualDebugger/DebugColourPalette.h>

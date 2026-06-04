@@ -1,8 +1,8 @@
 #pragma once
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/CRC/StringCRC.h>
-#include <diaentitytemplate/ComponentTypeDesc.h>
-#include <diaentitytemplate/Entity.h>
+#include <DiaEntity/ComponentTypeDesc.h>
+#include <DiaEntity/Entity.h>
 
 namespace Dia::Entity {
 

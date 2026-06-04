@@ -1,7 +1,7 @@
-#include <diaentitytemplate/JsonBlueprintLoader.h>
-#include <diaentitytemplate/Domain.h>
-#include <diaentitytemplate/ComponentRegistry.h>
-#include <diaentitytemplate/ComponentTypeDesc.h>
+#include <DiaEntity/JsonBlueprintLoader.h>
+#include <DiaEntity/Domain.h>
+#include <DiaEntity/ComponentRegistry.h>
+#include <DiaEntity/ComponentTypeDesc.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaCore/Core/Assert.h>

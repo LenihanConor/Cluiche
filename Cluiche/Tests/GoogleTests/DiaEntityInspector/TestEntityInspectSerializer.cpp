@@ -7,12 +7,12 @@
 
 #include <gtest/gtest.h>
 #include <DiaEntityInspector/EntityInspectSerializer.h>
-#include <diaentitytemplate/Domain.h>
-#include <diaentitytemplate/ComponentPool.h>
-#include <diaentitytemplate/ComponentTypeDesc.h>
-#include <diaentitytemplate/ComponentRegistry.h>
-#include <diaentitytemplate/IComponent.h>
-#include <diaentitytemplate/ComponentMacros.h>
+#include <DiaEntity/Domain.h>
+#include <DiaEntity/ComponentPool.h>
+#include <DiaEntity/ComponentTypeDesc.h>
+#include <DiaEntity/ComponentRegistry.h>
+#include <DiaEntity/IComponent.h>
+#include <DiaEntity/ComponentMacros.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaCore/Json/external/json/json.h>
 

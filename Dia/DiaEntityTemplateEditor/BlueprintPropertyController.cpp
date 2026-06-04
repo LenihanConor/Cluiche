@@ -1,7 +1,7 @@
 #include "DiaEntityTemplateEditor/BlueprintPropertyController.h"
 #include "DiaEntityTemplateEditor/SchemaReader.h"
-#include <diaentitytemplate/ComponentRegistry.h>
-#include <diaentitytemplate/ComponentTypeDesc.h>
+#include <DiaEntity/ComponentRegistry.h>
+#include <DiaEntity/ComponentTypeDesc.h>
 #include <DiaCore/Containers/Arrays/DynamicArrayC.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 #include <cstring>

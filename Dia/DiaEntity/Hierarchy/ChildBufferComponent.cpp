@@ -1,6 +1,6 @@
-#include <diaentitytemplate/Hierarchy/ChildBufferComponent.h>
-#include <diaentitytemplate/Hierarchy/ParentComponent.h>
-#include <diaentitytemplate/Domain.h>
+#include <DiaEntity/Hierarchy/ChildBufferComponent.h>
+#include <DiaEntity/Hierarchy/ParentComponent.h>
+#include <DiaEntity/Domain.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
 

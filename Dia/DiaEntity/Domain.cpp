@@ -1,8 +1,8 @@
-#include <diaentitytemplate/Domain.h>
-#include <diaentitytemplate/ComponentPool.h>
-#include <diaentitytemplate/ComponentRegistry.h>
-#include <diaentitytemplate/Messages/EntityDestroyedMessage.h>
-#include <diaentitytemplate/EntityAddress.h>
+#include <DiaEntity/Domain.h>
+#include <DiaEntity/ComponentPool.h>
+#include <DiaEntity/ComponentRegistry.h>
+#include <DiaEntity/Messages/EntityDestroyedMessage.h>
+#include <DiaEntity/EntityAddress.h>
 #include <DiaCore/Core/Assert.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>

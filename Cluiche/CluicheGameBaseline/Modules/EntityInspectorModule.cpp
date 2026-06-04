@@ -4,9 +4,9 @@
 
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaEntityInspector/EntityInspectSerializer.h>
-#include <diaentitytemplate/DebugDataTypes.h>
+#include <DiaEntity/DebugDataTypes.h>
 #include <DiaAPI/CommandRegistry/CommandRegistry.h>
-#include <diaentitytemplate/Domain.h>
+#include <DiaEntity/Domain.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaObservation/Trace/DiaTrace.h>
 

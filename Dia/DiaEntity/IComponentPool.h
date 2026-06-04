@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <DiaCore/CRC/StringCRC.h>
-#include <diaentitytemplate/IComponent.h>
+#include <DiaEntity/IComponent.h>
 
 namespace Dia::Entity {
 

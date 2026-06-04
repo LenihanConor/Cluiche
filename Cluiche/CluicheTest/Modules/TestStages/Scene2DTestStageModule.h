@@ -8,8 +8,8 @@
 #include <DiaScene2D/LayerTable.h>
 #include <DiaCamera2D/Registry/CameraRegistry2D.h>
 #include <DiaLighting2D/Registry/LightRegistry2D.h>
-#include <diaentitytemplate/Domain.h>
-#include <diaentitytemplate/ComponentPool.h>
+#include <DiaEntity/Domain.h>
+#include <DiaEntity/ComponentPool.h>
 
 #ifdef DIA_DEBUG
 #include <DiaApplicationFlow/ModuleRefV2.h>

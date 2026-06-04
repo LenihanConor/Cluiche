@@ -1,6 +1,6 @@
 #include "BpTransformComponent.h"
 #include <DiaCore/Reflect/ReflectMacros.h>
-#include <diaentitytemplate/ComponentMacros.h>
+#include <DiaEntity/ComponentMacros.h>
 
 // ---------------------------------------------------------------------------
 // BpTransform registration

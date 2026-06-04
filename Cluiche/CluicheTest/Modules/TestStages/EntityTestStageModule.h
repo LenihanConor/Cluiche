@@ -6,7 +6,7 @@
 #include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaApplicationFlow/PUAffinity.h>
 #include <DiaCore/CRC/StringCRC.h>
-#include <diaentitytemplate/Entity.h>
+#include <DiaEntity/Entity.h>
 #include "Modules/EntityModule.h"
 
 #ifdef DIA_DEBUG

@@ -91,7 +91,7 @@
   </ItemDefinitionGroup>
 
   <ItemGroup>
-    <ClInclude Include="DiaEntityTemplateEditorPlugin.h" />
+    <ClInclude Include="DiaBlueprintEditorPlugin.h" />
     <ClInclude Include="BlueprintFileHandler.h" />
     <ClInclude Include="BlueprintListController.h" />
     <ClInclude Include="BlueprintPropertyController.h" />
@@ -99,7 +99,7 @@
     <ClInclude Include="SchemaReader.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DiaEntityTemplateEditorPlugin.cpp" />
+    <ClCompile Include="DiaBlueprintEditorPlugin.cpp" />
     <ClCompile Include="BlueprintFileHandler.cpp" />
     <ClCompile Include="BlueprintListController.cpp" />
     <ClCompile Include="BlueprintPropertyController.cpp" />

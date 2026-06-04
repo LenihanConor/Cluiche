@@ -1,11 +1,11 @@
 #ifdef DIA_DEBUG
 
 #include "SelectionInspectorDrawer.h"
-#include <diaentitytemplate/IEntityInspectable.h>
-#include <diaentitytemplate/Domain.h>
-#include <diaentitytemplate/Entity.h>
-#include <diaentitytemplate/ComponentRegistry.h>
-#include <diaentitytemplate/ComponentTypeDesc.h>
+#include <DiaEntity/IEntityInspectable.h>
+#include <DiaEntity/Domain.h>
+#include <DiaEntity/Entity.h>
+#include <DiaEntity/ComponentRegistry.h>
+#include <DiaEntity/ComponentTypeDesc.h>
 #include <DiaGraphics/Frame/FrameData.h>
 #include <DiaVisualDebugger/DebugLayerNames.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>

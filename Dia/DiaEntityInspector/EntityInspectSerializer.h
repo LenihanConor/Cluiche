@@ -1,6 +1,6 @@
 #pragma once
 
-#include <diaentitytemplate/Entity.h>
+#include <DiaEntity/Entity.h>
 #include <DiaCore/Json/external/json/json.h>
 
 namespace Dia::Entity { class IEntityInspectable; }

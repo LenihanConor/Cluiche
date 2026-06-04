@@ -4,7 +4,7 @@
 
 #include <DiaVisualDebugger/IVisualDebugger.h>
 #include <DiaCore/CRC/StringCRC.h>
-#include <diaentitytemplate/Domain.h>
+#include <DiaEntity/Domain.h>
 #include <DiaCamera2D/Registry/CameraRegistry2D.h>
 #include <DiaLighting2D/Registry/LightRegistry2D.h>
 #include <DiaScene2D/LayerTable.h>

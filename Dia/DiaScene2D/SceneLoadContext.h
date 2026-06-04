@@ -5,7 +5,7 @@
 
 #include <DiaCamera2D/Registry/CameraRegistry2D.h>
 #include <DiaLighting2D/Registry/LightRegistry2D.h>
-#include <diaentitytemplate/Domain.h>
+#include <DiaEntity/Domain.h>
 
 namespace Dia
 {

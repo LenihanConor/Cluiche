@@ -1,5 +1,5 @@
-#include <diaentitytemplate/EntityRouter.h>
-#include <diaentitytemplate/Domain.h>
+#include <DiaEntity/EntityRouter.h>
+#include <DiaEntity/Domain.h>
 #include <DiaObservation/Log/DiaLog.h>
 
 namespace Dia::Entity {

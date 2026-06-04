@@ -1,6 +1,6 @@
 {
     "name": "Geometry2DTestStage",
-    "manifest": "stages/Geometry2DTestStage/misc/ApplicationFlow/geometry2d_test_stage.diaapp",
+    "manifest": "Stages/Geometry2DTestStage/misc/ApplicationFlow/geometry2d_test_stage.diaapp",
     "config": {
         "path_aliases": {
             "stage_root": "."

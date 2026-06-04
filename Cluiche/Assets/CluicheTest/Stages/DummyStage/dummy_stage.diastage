@@ -1,6 +1,6 @@
 {
     "name": "DummyStage",
-    "manifest": "stages/DummyStage/misc/ApplicationFlow/dummy_stage.diaapp",
+    "manifest": "Stages/DummyStage/misc/ApplicationFlow/dummy_stage.diaapp",
     "config": {
         "path_aliases": {
             "stage_root": ".",

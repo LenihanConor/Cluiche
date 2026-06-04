@@ -2,8 +2,8 @@
 #include <concepts>
 #include <type_traits>
 #include <cstdint>
-#include <diaentitytemplate/Entity.h>
-#include <diaentitytemplate/IComponent.h>
+#include <DiaEntity/Entity.h>
+#include <DiaEntity/IComponent.h>
 #include <DiaCore/Reflect/Archive.h>
 
 namespace Dia::Entity {
