@@ -17,6 +17,7 @@ namespace Dia
 			WebUIBridge* mBridge;
 			IPluginLoader* mPluginLoader;
 			PluginServiceLocator* mServices;
+			const char* mProjectPath;
 
 			EditorPluginContext()
 				: mModel(nullptr)
@@ -24,6 +25,7 @@ namespace Dia
 				, mBridge(nullptr)
 				, mPluginLoader(nullptr)
 				, mServices(nullptr)
+				, mProjectPath(nullptr)
 			{}
 		};
 	}

@@ -39,7 +39,10 @@ namespace Cluiche
 			EditorModelModule* modelModule = mModelRef.Get();
 			DIA_ASSERT(modelModule != nullptr, "PluginLoaderModule requires EditorModelModule");
 			if (modelModule != nullptr)
+			{
 				mContext.mModel = &modelModule->GetModel();
+				mContext.mProjectPath = modelModule->GetProjectPath();
+			}
 
 			EditorViewModule* viewModule = mViewRef.Get();
 			if (viewModule != nullptr)
