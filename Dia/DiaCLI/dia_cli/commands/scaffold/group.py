@@ -2,6 +2,8 @@
 import click
 
 from .stage_cmd import stage
+from .module_cmd import module
+from .plugin_cmd import plugin
 
 
 @click.group("scaffold")
@@ -10,3 +12,5 @@ def scaffold_group():
 
 
 scaffold_group.add_command(stage)
+scaffold_group.add_command(module)
+scaffold_group.add_command(plugin)
