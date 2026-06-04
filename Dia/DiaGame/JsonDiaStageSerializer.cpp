@@ -32,6 +32,9 @@ namespace Dia
 			outManifest.name = root["name"].asCString();
 			outManifest.manifestPath = root["manifest"].asCString();
 
+			if (root.isMember("scene") && root["scene"].isString())
+				outManifest.scenePath = root["scene"].asCString();
+
 			return Dia::Serializer::SerializeResult::Success();
 		}
 
@@ -40,6 +43,8 @@ namespace Dia
 			Json::Value root(Json::objectValue);
 			root["name"] = manifest.name.AsCStr();
 			root["manifest"] = manifest.manifestPath.AsCStr();
+			if (manifest.scenePath.Length() > 0)
+				root["scene"] = manifest.scenePath.AsCStr();
 
 			Json::StyledWriter writer;
 			std::string output = writer.write(root);

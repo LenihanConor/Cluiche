@@ -13,10 +13,17 @@
             "dedicated_thread": true,
             "modules": [
                 {
+                    "instance_id": "Scene2DModule",
+                    "type_id": "Scene2DModule",
+                    "stages": ["Scene2DTestStage"],
+                    "dependencies": [],
+                    "channels": []
+                },
+                {
                     "instance_id": "Scene2DTestStageModule",
                     "type_id": "Scene2DTestStageModule",
                     "stages": ["Scene2DTestStage"],
-                    "dependencies": ["VisualDebuggerModule"],
+                    "dependencies": ["VisualDebuggerModule", "Scene2DModule"],
                     "channels": [
                         {
                             "id": "AutomationService",

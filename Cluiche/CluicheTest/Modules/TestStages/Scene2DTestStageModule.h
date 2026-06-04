@@ -1,18 +1,13 @@
 #pragma once
 #include "Modules/TestStages/TestStageModuleBase.h"
-#include "Modules/TestStages/Entity/TransformComponent.h"
 #include <DiaApplicationFlow/PUAffinity.h>
+#include <DiaApplicationFlow/ModuleRefV2.h>
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
-#include <DiaScene2D/SceneLoader2D.h>
-#include <DiaScene2D/LayerTable.h>
-#include <DiaCamera2D/Registry/CameraRegistry2D.h>
-#include <DiaLighting2D/Registry/LightRegistry2D.h>
-#include <DiaEntity/Domain.h>
-#include <DiaEntity/ComponentPool.h>
+#include "Modules/Scene2DModule.h"
+#include "Modules/TestStages/Entity/TransformComponent.h"
 
 #ifdef DIA_DEBUG
-#include <DiaApplicationFlow/ModuleRefV2.h>
 #include "Modules/VisualDebuggerModule.h"
 #include <memory>
 #endif
@@ -40,24 +35,16 @@ protected:
     void OnStop() override;
 
 private:
-    void LoadScene();
     bool ValidateCameras() const;
     bool ValidateLights() const;
     bool ValidateEntities() const;
     bool ValidateLayers() const;
 
-    Dia::Scene2D::SceneLoader2D          mSceneLoader;
-    Dia::Scene2D::LayerTable             mLayerTable;
-    Dia::Camera2D::CameraRegistry2D      mCameraRegistry;
-    Dia::Lighting2D::LightRegistry2D     mLightRegistry;
-    Dia::Entity::Domain                  mEntityDomain;
-
-    bool mLoadSucceeded = false;
+    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::Scene2DModule> mSceneRef{this};
 
     // Metrics
     Dia::Observation::Metric::Gauge* mMetricEntityCount = nullptr;
     Dia::Observation::Metric::Gauge* mMetricLayerCount  = nullptr;
-    Dia::Observation::Metric::Gauge* mMetricLoadTimeMs  = nullptr;
 
 #ifdef DIA_DEBUG
     Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::VisualDebuggerModule> mVisualDebuggerRef{this};

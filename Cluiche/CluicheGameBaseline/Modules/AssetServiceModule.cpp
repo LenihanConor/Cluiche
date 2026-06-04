@@ -620,6 +620,24 @@ void AssetServiceModule::RegisterStageAliases(const char* diastagePath)
             "AssetServiceModule: stage alias '%s' -> '%s'",
             entry.mAlias.AsCStr(), entry.mResolvedPath.AsCStr());
     }
+
+    // Register stage_scene alias if the .diastage declares a scene file.
+    if (root.isMember("scene") && root["scene"].isString())
+    {
+        PathAliasEntry entry;
+        entry.mAlias = Dia::Core::Containers::String32("stage_scene");
+        Dia::Core::Path::ResolveRelative(stageDir, root["scene"].asCString(), entry.mResolvedPath);
+
+        mStageAliases.Add(entry);
+
+        Dia::Core::Path::Alias alias("stage_scene");
+        Dia::Core::Path::String pathStr(entry.mResolvedPath.AsCStr());
+        Dia::Core::PathStore::RegisterToStore(alias, pathStr);
+
+        DIA_LOG_INFO("AssetRuntime",
+            "AssetServiceModule: stage alias 'stage_scene' -> '%s'",
+            entry.mResolvedPath.AsCStr());
+    }
 }
 
 void AssetServiceModule::UnregisterStageAliases()

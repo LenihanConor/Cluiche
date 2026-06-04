@@ -37,6 +37,7 @@ namespace Dia
 		{
 			Dia::Core::Containers::String256 name;
 			Dia::Core::Containers::String256 manifestPath;
+			Dia::Core::Containers::String256 scenePath;  // optional; empty if absent
 		};
 	}
 }
