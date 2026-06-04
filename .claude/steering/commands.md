@@ -29,6 +29,28 @@ include: conditional
   - Module skeleton placed on MainPU with AutomationModule dependency + one placeholder checkpoint
   - Runs `dia pipeline --target cluichetest` to verify at the end
 
+## Backlog Command
+
+- `/backlog` - Show the current project backlog in four sections: Ready to Build, Ready to Spec, Blocked, What's Next
+
+## Implementation Commands
+
+- `/implement <spec-path>` - Orchestrate full implementation from approved spec to working code
+  - Creates plan, dispatches subagents per task, verifies, commits each task
+  - Resumes from existing plan if one exists (idempotent re-invocation)
+  - See `.claude/skills/implement.md` for full protocol
+
+## Quality Commands
+
+- `/fixup` - Auto-diagnose and fix common mechanical build/test errors
+  - Pattern-matches: missing includes, wrong signatures, typos, vcxproj gaps, namespace issues
+  - Max 3 passes before escalating to `/debug`
+  - Agent-invocable: fires automatically after subagent build failures
+- `/pre-commit` - Run structural validation checks before committing
+  - Checks: module deps, manifest validity, module docs, vcxproj sync, forbidden patterns
+  - Options: `--scope <path>` to limit to specific directory
+  - Offers auto-fix for mechanical failures (vcxproj, deps)
+
 ## Test Commands
 
 - `/gen-tests <target>` - Generate comprehensive tests for a Dia module or component

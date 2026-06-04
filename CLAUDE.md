@@ -46,6 +46,11 @@ This is a Visual Studio C++ project using MSBuild.
 | `dia run <target>` | Build + run in one step (tests, game, editor). Default choice. |
 | `dia launch <target>` | Run only — skip build (use when already built). |
 | `dia pipeline --target <target>` | Full pipeline: compile-code → build-assets → deploy. Required for editor targets that need UI built and copied. |
+| `dia scaffold module <Parent> <Name>` | Create a new Dia engine module (header, cpp, module.md, vcxproj entries). |
+| `dia scaffold plugin <Name>` | Create a new editor plugin (IEditorPlugin subclass, UI, vcxproj). |
+| `dia scaffold stage <Name>` | Create a new CluicheTest test stage (all 9 touch points). |
+| `dia check deps` | Cross-check module dependency declarations vs actual #includes. |
+| `dia validate manifest` | Validate .diaapp/.diagame/.diastage against schemas. |
 | `dia env setup/verify` | First-time setup or diagnosing missing dependencies. |
 
 ```bash
@@ -58,6 +63,13 @@ dia launch googletest --filter="SomeSuite*"
 dia launch cluichetest
 dia pipeline --target googletest
 dia pipeline --target cluichetest --config Release
+dia scaffold module DiaCore Serializer --layer platform
+dia scaffold plugin SceneInspector --layout dockable
+dia scaffold stage RigidBody2D --modules Physics2DModule --budget 900
+dia check deps
+dia check deps --verbose
+dia validate manifest
+dia validate manifest --path Cluiche/Assets/CluicheTest/cluichetest.diagame
 dia env setup
 dia env verify
 dia test cli
