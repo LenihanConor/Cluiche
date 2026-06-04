@@ -57,6 +57,7 @@ namespace Dia
 
 				static Dia::AssetCatalogue::AssetRecord RecordFromJson(const Json::Value& data);
 				static Json::Value RecordToJson(const Dia::AssetCatalogue::AssetRecord& rec);
+				Json::Value RecordToJsonWithMeta(const Dia::AssetCatalogue::AssetRecord& rec) const;
 
 				static const unsigned int kOutputDirLength = 512;
 				char mOutputDir[kOutputDirLength];

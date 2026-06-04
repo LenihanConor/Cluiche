@@ -405,7 +405,8 @@
           </div>
         </div>
         <div class="panel-actions" style="margin-top:12px;">
-          <button onclick="onOpenAsset(selectedId)" id="btn-open-asset" disabled>Open</button>
+          <button onclick="onOpenInEditor(selectedId)" id="btn-open-in-editor" disabled>Open in Editor</button>
+          <button onclick="onOpenInFile(selectedId)" id="btn-open-in-file" disabled>Open in File</button>
         </div>
 
         <!-- Relationship section -->
@@ -814,7 +815,7 @@
 
     tbody.innerHTML = filtered.map(function(r) {
       var sel = r.id === selectedId ? ' selected' : '';
-      return '<tr class="' + sel + '" onclick="selectRecord(\'' + escHtml(r.id) + '\')" ondblclick="onOpenAsset(\'' + escHtml(r.id) + '\')">' +
+      return '<tr class="' + sel + '" onclick="selectRecord(\'' + escHtml(r.id) + '\')" ondblclick="onOpenInEditor(\'' + escHtml(r.id) + '\')">' +
         '<td>' + escHtml(r.id) + '</td>' +
         '<td>' + escHtml(r.type) + '</td>' +
         '<td><span class="status-badge status-' + escHtml(r.status) + '">' + escHtml(r.status) + '</span></td>' +
@@ -826,10 +827,11 @@
   function selectRecord(id) {
     selectedId = id;
     document.getElementById('btn-delete').disabled = false;
-    document.getElementById('btn-open-asset').disabled = false;
     renderAssetList();
 
     var rec = allRecords.find(function(r) { return r.id === id; });
+    document.getElementById('btn-open-in-editor').disabled = !rec || !rec.has_editor;
+    document.getElementById('btn-open-in-file').disabled   = !rec || !rec.source_path;
     if (!rec) return;
 
     document.getElementById('record-empty').style.display = 'none';
@@ -935,10 +937,17 @@
     });
   }
 
-  function onOpenAsset(id) {
+  function onOpenInEditor(id) {
     if (!id) return;
-    diaRequest('asset_catalogue.open_asset', { id: id }).then(function(r) {
-      if (!r.success) console.warn('open_asset failed:', r.error);
+    diaRequest('asset_catalogue.open_in_editor', { id: id }).then(function(r) {
+      if (!r.success) console.warn('open_in_editor failed:', r.error);
+    });
+  }
+
+  function onOpenInFile(id) {
+    if (!id) return;
+    diaRequest('asset_catalogue.open_in_file', { id: id }).then(function(r) {
+      if (!r.success) console.warn('open_in_file failed:', r.error);
     });
   }
 
@@ -1090,7 +1099,7 @@
 
   // Extension hints for known blueprint types; falls back to empty.
   var kTypeExtensions = {
-    'diaentity': '.diaentity',
+    'diaentitytemplate': '.diaentitytemplate',
     'diacamera': '.diacamera',
     'dialight':  '.dialight',
     'diascene':  '.diascene',

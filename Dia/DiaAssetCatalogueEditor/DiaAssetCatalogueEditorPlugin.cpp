@@ -197,13 +197,13 @@ namespace Dia
 				RegisterInferrerHandlers();
 
 				// Seed built-in type→editor mappings so open_asset works regardless of
-				// plugin load order (DiaBlueprintEditor/DiaSceneEditor may load after us).
+				// plugin load order (DiaEntityTemplateEditor/DiaSceneEditor may load after us).
 				mTypeEditorRegistry.RegisterTypeEditor(
-					Dia::Core::StringCRC("diaentity"), Dia::Core::StringCRC("DiaBlueprintEditor"));
+					Dia::Core::StringCRC("diaentitytemplate"), Dia::Core::StringCRC("DiaEntityTemplateEditor"));
 				mTypeEditorRegistry.RegisterTypeEditor(
-					Dia::Core::StringCRC("diacamera"), Dia::Core::StringCRC("DiaBlueprintEditor"));
+					Dia::Core::StringCRC("diacamera"), Dia::Core::StringCRC("DiaEntityTemplateEditor"));
 				mTypeEditorRegistry.RegisterTypeEditor(
-					Dia::Core::StringCRC("dialight"),  Dia::Core::StringCRC("DiaBlueprintEditor"));
+					Dia::Core::StringCRC("dialight"),  Dia::Core::StringCRC("DiaEntityTemplateEditor"));
 				mTypeEditorRegistry.RegisterTypeEditor(
 					Dia::Core::StringCRC("diascene"),  Dia::Core::StringCRC("DiaSceneEditor"));
 				mTypeEditorRegistry.RegisterTypeEditor(
@@ -394,7 +394,7 @@ namespace Dia
 
 						Json::Value records(Json::arrayValue);
 						for (unsigned int i = 0; i < mRegistry.GetCount(); ++i)
-							records.append(RecordToJson(mRegistry.GetRecordByIndex(i)));
+							records.append(RecordToJsonWithMeta(mRegistry.GetRecordByIndex(i)));
 						result["records"] = records;
 
 						if (mCurrentPath[0] == '\0' && mRegistry.GetCount() == 0)
@@ -420,7 +420,7 @@ namespace Dia
 					return;
 				Json::Value records(Json::arrayValue);
 				for (unsigned int i = 0; i < mRegistry.GetCount(); ++i)
-					records.append(RecordToJson(mRegistry.GetRecordByIndex(i)));
+					records.append(RecordToJsonWithMeta(mRegistry.GetRecordByIndex(i)));
 				GetBridge()->NotifyUIDataChanged("assetcatalogue.records", records);
 				GetBridge()->NotifyUIDataChanged("asset_catalogue.registry_changed", Json::Value(Json::objectValue));
 				PushDirtyState();
@@ -586,6 +586,13 @@ namespace Dia
 					refs.append(edge);
 				}
 				d["references"] = refs;
+				return d;
+			}
+
+			Json::Value DiaAssetCatalogueEditorPlugin::RecordToJsonWithMeta(const Dia::AssetCatalogue::AssetRecord& rec) const
+			{
+				Json::Value d = RecordToJson(rec);
+				d["has_editor"] = (mTypeEditorRegistry.FindEditorForType(rec.mAssetTypeId) != Dia::Core::StringCRC());
 				return d;
 			}
 
@@ -1029,7 +1036,7 @@ namespace Dia
 							{ "sprite",    "Mesh/Sprite" },
 							{ "audio",     "Audio" },
 							{ "config",    "Config" },
-							{ "diaentity", "Entity" },
+							{ "diaentitytemplate", "Entity" },
 							{ "stage",     "Stage" },
 							{ "ui",        "UI Definition" },
 							{ "folder",    "Folder" },
@@ -1177,13 +1184,13 @@ namespace Dia
 							return result;
 						}
 						result["success"]     = true;
-						result["record"]      = RecordToJson(*rec);
+						result["record"]      = RecordToJsonWithMeta(*rec);
 						return result;
 					});
 
-				// open_asset — open in registered editor, or fall back to ShellExecuteExW
+				// open_in_editor — dispatch to registered editor plugin only
 				RegisterHandler(
-					Dia::Core::StringCRC("asset_catalogue.open_asset"),
+					Dia::Core::StringCRC("asset_catalogue.open_in_editor"),
 					[this](const Json::Value& data) -> Json::Value
 					{
 						Json::Value result;
@@ -1201,40 +1208,56 @@ namespace Dia
 							result["error"]   = "record not found";
 							return result;
 						}
-
-						// Check for a registered editor plugin
 						Dia::Core::StringCRC editorPluginType = mTypeEditorRegistry.FindEditorForType(rec->mAssetTypeId);
-						if (editorPluginType != Dia::Core::StringCRC() && GetPluginLoader())
+						if (editorPluginType == Dia::Core::StringCRC() || !GetPluginLoader())
 						{
-							GetPluginLoader()->LoadPlugin(editorPluginType, assetId);
-							result["success"] = true;
-							result["method"]  = "plugin";
+							result["success"] = false;
+							result["error"]   = "no editor registered for this asset type";
 							return result;
 						}
+						GetPluginLoader()->LoadPlugin(editorPluginType, assetId);
+						result["success"] = true;
+						return result;
+					});
 
-						// Fall back to OS shell open
-						if (!rec->mSourcePath.IsEmpty())
+				// open_in_file — open source file with OS default handler
+				RegisterHandler(
+					Dia::Core::StringCRC("asset_catalogue.open_in_file"),
+					[this](const Json::Value& data) -> Json::Value
+					{
+						Json::Value result;
+						if (!data.isMember("id") || !data["id"].isString())
 						{
-							wchar_t wPath[512] = {};
-							MultiByteToWideChar(CP_UTF8, 0, rec->mSourcePath.AsCStr(), -1, wPath, 512);
-
-							SHELLEXECUTEINFOW sei = {};
-							sei.cbSize = sizeof(sei);
-							sei.fMask  = SEE_MASK_DEFAULT;
-							sei.lpVerb = L"open";
-							sei.lpFile = wPath;
-							sei.nShow  = SW_SHOWNORMAL;
-							ShellExecuteExW(&sei);
-
-							result["success"] = true;
-							result["method"]  = "shell";
-						}
-						else
-						{
-							DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: open_asset — no source path and no editor registered for type");
 							result["success"] = false;
-							result["error"]   = "no source path and no registered editor for this type";
+							result["error"]   = "missing id";
+							return result;
 						}
+						Dia::Core::StringCRC assetId(data["id"].asCString());
+						const Dia::AssetCatalogue::AssetRecord* rec = mRegistry.FindById(assetId);
+						if (!rec)
+						{
+							result["success"] = false;
+							result["error"]   = "record not found";
+							return result;
+						}
+						if (rec->mSourcePath.IsEmpty())
+						{
+							result["success"] = false;
+							result["error"]   = "no source path for this record";
+							return result;
+						}
+						wchar_t wPath[512] = {};
+						MultiByteToWideChar(CP_UTF8, 0, rec->mSourcePath.AsCStr(), -1, wPath, 512);
+
+						SHELLEXECUTEINFOW sei = {};
+						sei.cbSize = sizeof(sei);
+						sei.fMask  = SEE_MASK_DEFAULT;
+						sei.lpVerb = L"open";
+						sei.lpFile = wPath;
+						sei.nShow  = SW_SHOWNORMAL;
+						ShellExecuteExW(&sei);
+
+						result["success"] = true;
 						return result;
 					});
 			}
@@ -1340,7 +1363,7 @@ namespace Dia
 						if (!rec.mSourcePath.IsEmpty())
 						{
 							const char* typeStr = rec.mAssetTypeId.AsChar();
-							bool isFileType = (strcmp(typeStr, "diaentity") == 0
+							bool isFileType = (strcmp(typeStr, "diaentitytemplate") == 0
 							                || strcmp(typeStr, "diacamera") == 0
 							                || strcmp(typeStr, "dialight")  == 0
 							                || strcmp(typeStr, "diascene")  == 0);
@@ -1532,7 +1555,7 @@ namespace Dia
 
 						Json::Value arr(Json::arrayValue);
 						for (unsigned int i = 0; i < records.Size(); ++i)
-							arr.append(RecordToJson(*records[i]));
+							arr.append(RecordToJsonWithMeta(*records[i]));
 						result["success"] = true;
 						result["records"] = arr;
 						return result;
@@ -1555,7 +1578,7 @@ namespace Dia
 
 						Json::Value arr(Json::arrayValue);
 						for (unsigned int i = 0; i < records.Size(); ++i)
-							arr.append(RecordToJson(*records[i]));
+							arr.append(RecordToJsonWithMeta(*records[i]));
 						result["success"] = true;
 						result["records"] = arr;
 						return result;
