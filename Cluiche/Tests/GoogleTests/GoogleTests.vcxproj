@@ -637,6 +637,10 @@
       <Project>{C9D0E1F2-A3B4-5678-9CDE-F01234567890}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
+    <ProjectReference Include="..\..\..\Dia\DiaBgfx\DiaBgfx.vcxproj">
+      <Project>{a1b2c3d4-e5f6-7890-1234-abcdef012345}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\Dia\DiaAssetCatalogueEditor\DiaAssetCatalogueEditor.vcxproj">
       <Project>{D1E2F3A4-B5C6-7890-DEFA-012345678901}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>

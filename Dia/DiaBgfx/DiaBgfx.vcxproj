@@ -22,6 +22,7 @@
   <ItemGroup>
     <ClInclude Include="Canvas.h" />
     <ClInclude Include="Capture\FrameCaptureRingBuffer.h" />
+    <ClInclude Include="Handlers\TextureHandler.h" />
     <ClInclude Include="Renderers\SpriteRenderer.h" />
     <ClInclude Include="Renderers\DebugRenderer.h" />
     <ClInclude Include="Renderers\UIOverlayRenderer.h" />
@@ -34,6 +35,7 @@
   <ItemGroup>
     <ClCompile Include="Canvas.cpp" />
     <ClCompile Include="Capture\FrameCaptureRingBuffer.cpp" />
+    <ClCompile Include="Handlers\TextureHandler.cpp" />
     <ClCompile Include="Renderers\SpriteRenderer.cpp" />
     <ClCompile Include="Renderers\DebugRenderer.cpp" />
     <ClCompile Include="Renderers\UIOverlayRenderer.cpp" />
@@ -68,6 +70,9 @@
     <None Include="Shaders\fs_ui_overlay.sc" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\DiaAsset\DiaAsset.vcxproj">
+      <Project>{43AB4006-91F4-4250-8901-C2B667FDAB21}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
       <Project>{8d41cbe3-c493-428d-95f3-627e56500667}</Project>
     </ProjectReference>

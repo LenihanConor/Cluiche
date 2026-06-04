@@ -82,14 +82,12 @@
     <ClInclude Include="RuntimeStageEntry.h" />
     <ClInclude Include="RuntimeManifestLoader.h" />
     <ClInclude Include="AssetRuntime.h" />
-    <ClInclude Include="Handlers\TextureHandler.h" />
     <ClInclude Include="Handlers\JsonPassthroughHandler.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AssetRuntimeDebugCommands.cpp" />
     <ClCompile Include="RuntimeManifestLoader.cpp" />
     <ClCompile Include="AssetRuntime.cpp" />
-    <ClCompile Include="Handlers\TextureHandler.cpp" />
     <ClCompile Include="Handlers\JsonPassthroughHandler.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -118,10 +116,6 @@
     </ProjectReference>
     <ProjectReference Include="..\DiaDebugServer\DiaDebugServer.vcxproj">
       <Project>{6AAFCCCB-71D0-4D8D-A6BE-081F5E02093D}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="..\DiaBgfx\DiaBgfx.vcxproj">
-      <Project>{A1B2C3D4-E5F6-7890-1234-ABCDEF012345}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\DiaThreading\DiaThreading.vcxproj">
