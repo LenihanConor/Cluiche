@@ -51,3 +51,4 @@ dependencies:
   forbidden:
     - dia.maths
     - dia.graphics
+---

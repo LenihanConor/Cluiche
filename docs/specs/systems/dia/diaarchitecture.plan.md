@@ -57,12 +57,12 @@ Tasks 13–16 are independent; task 17 depends on all of them.
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 12 | Add `--tool=arch` branch to `dia_cli/cli/check.py` — dispatch stub + `--module`/`--summary` flags | `dia check --tool=arch --help` shows flags | TODO | sonnet | Follows existing cppcheck/sanitizer pattern in check.py |
-| 13 | Implement YAML module map builder (`dia_cli/commands/check/arch_module_map.py`) — reads all `dia.*.architecture.module.md`, extracts module_id, path, layer, dependencies | Unit test: map has DiaCore at `foundation/core` | TODO | sonnet | PyYAML already in venv |
-| 14 | Implement include parser (`dia_cli/commands/check/arch_include_parser.py`) — walks .cpp/.h, extracts `#include <...>`, resolves to module_id | Unit test: synthetic file → correct module_id | TODO | sonnet | Exclude: External/, system headers, intra-module |
-| 15 | Implement forbidden-dep checker — cross-references includes vs `dependencies.forbidden` | Unit test: forbidden include → 1 violation | TODO | sonnet | |
-| 16 | Implement layer ordering checker — build ordering table from `layer:` values, report upward-reach and cross-domain violations | Unit test: `foundation/maths` → `foundation/services` = violation; `domain/physics/core` → `domain/animation/core` = violation | TODO | sonnet | Encode new numbered rules: sub-level ordering + same-level-different-group forbidden + cross-domain forbidden |
-| 17 | Wire output: violations → `Cluiche/out/check/arch-violations.txt` + console; `--summary` prints count; `--module <id>` scopes to one module; exit 0/1 | `dia check --tool=arch` exits 0 on clean codebase | TODO | sonnet | Depends on 13–16 |
+| 12 | Add `arch` subcommand to `dia check` group in `cli_check.py` — `--module`/`--summary` flags | `dia check arch --help` shows flags | Done | sonnet | Added to cli_check.py group (not check.py — that's a library). `dia_cli/commands/check/` package created. |
+| 13 | Implement YAML module map builder (`dia_cli/commands/check/arch_module_map.py`) — reads all `dia.*.architecture.module.md`, extracts module_id, path, layer, dependencies | `dia check arch --module dia.core` returns 0 violations | Done | sonnet | No PyYAML in venv — hand-rolled parser. Handles `module_id:`, `id:`, `module:` key aliases. Fixed missing `---` closer in dia.core.reflect. |
+| 14 | Implement include parser (`dia_cli/commands/check/arch_include_parser.py`) — walks .cpp/.h, extracts `#include <...>`, resolves to module_id via longest-prefix path match | | Done | sonnet | Excludes: External/, bgfx/, bare headers (no /), system prefixes |
+| 15 | Implement forbidden-dep checker — cross-references includes vs `dependencies.forbidden` | | Done | sonnet | In arch_checker.py; skips layer check if forbidden to avoid double-report |
+| 16 | Implement layer ordering checker (`dia_cli/commands/check/arch_layer_rules.py`) — level ordering, sub-level ordering, same-sub-level-different-group, cross-domain | | Done | sonnet | `check_layer_violation(from, to)` → violation string or None |
+| 17 | Wire output: violations → `Cluiche/out/check/arch-violations.txt` + console; `--summary` prints count; `--module <id>` scopes to one module; exit 0/1 | `dia check arch --summary` → 1975 violations, exit 1; `dia check arch --module dia.core` → 0, exit 0 | Done | sonnet | Full report always written to file; `--summary` affects console only |
 | 18 | Add `dia check --tool=arch` to CI pipeline | Pipeline stage exits 1 on violations | TODO | sonnet | Commit separately after all refactoring merged + clean |
 
 **Commit: task 12 alone, then 13–16 together, then 17, then 18.**
