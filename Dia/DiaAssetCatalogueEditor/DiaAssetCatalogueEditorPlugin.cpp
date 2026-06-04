@@ -1205,6 +1205,86 @@ namespace Dia
 						return result;
 					});
 
+				// create_asset — write a blank asset file from a registered template, register record
+				RegisterHandler(
+					Dia::Core::StringCRC("asset_catalogue.create_asset"),
+					[this](const Json::Value& data) -> Json::Value
+					{
+						Json::Value result;
+						if (!data.isMember("assetType") || !data["assetType"].isString()
+							|| !data.isMember("id") || !data["id"].isString()
+							|| !data.isMember("source_path") || !data["source_path"].isString())
+						{
+							result["success"] = false;
+							result["error"]   = "missing assetType, id, or source_path";
+							return result;
+						}
+
+						const char* assetType = data["assetType"].asCString();
+						Dia::Core::StringCRC assetTypeCRC(assetType);
+						auto it = mAssetTemplates.find(assetTypeCRC);
+						if (it == mAssetTemplates.end())
+						{
+							result["success"] = false;
+							result["error"]   = "unknown assetType";
+							return result;
+						}
+
+						const char* relPath = data["source_path"].asCString();
+
+						// Resolve absolute path from diagame directory
+						char absPath[1024] = {};
+						bool pathIsAbsolute = (relPath[0] == '/' || relPath[0] == '\\'
+							|| (relPath[0] != '\0' && relPath[1] == ':'));
+						if (!pathIsAbsolute && mDiagameDir[0] != '\0')
+							snprintf(absPath, sizeof(absPath), "%s%s", mDiagameDir, relPath);
+						else
+							strncpy_s(absPath, sizeof(absPath), relPath, _TRUNCATE);
+
+						// Write template content to file
+						FILE* f = nullptr;
+						if (fopen_s(&f, absPath, "wb") != 0 || !f)
+						{
+							DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: create_asset — could not write '%s'", absPath);
+							result["success"] = false;
+							result["error"]   = "could not write asset file";
+							return result;
+						}
+						fputs(it->second.content, f);
+						fclose(f);
+
+						// Register catalogue record via CreateRecordCommand
+						Dia::AssetCatalogue::AssetRecord rec;
+						rec.mId          = Dia::Core::StringCRC(data["id"].asCString());
+						rec.mAssetTypeId = assetTypeCRC;
+						rec.mSourcePath  = relPath;
+						rec.mStatus      = Dia::AssetCatalogue::AssetStatus::Active;
+						rec.mScope       = Dia::AssetCatalogue::AssetScope::kGlobal;
+
+						auto* cmd = new Dia::AssetCatalogue::Editor::CreateRecordCommand(mRegistry, rec);
+						mHistory.ExecuteCommand(cmd);
+						PushRegistryState();
+
+						DIA_LOG_INFO("Editor", "DiaAssetCatalogueEditorPlugin: created asset '%s' (type '%s') at '%s'",
+							data["id"].asCString(), assetType, absPath);
+
+						// Auto-save manifest
+						if (mCurrentPath[0] != '\0')
+						{
+							char saveErr[256] = {};
+							if (mLoadHandler.Save(mCurrentPath, mRegistry, mSerializer, mHistory,
+								saveErr, sizeof(saveErr)))
+								PushDirtyState();
+							else
+								DIA_LOG_WARNING("Editor", "DiaAssetCatalogueEditorPlugin: create_asset — auto-save failed: %s", saveErr);
+						}
+
+						result["success"] = true;
+						result["id"]      = data["id"];
+						result["absPath"] = absPath;
+						return result;
+					});
+
 				// get_record — look up a single record by id; used by other plugins for deep-link navigation
 				RegisterHandler(
 					Dia::Core::StringCRC("asset_catalogue.get_record"),
