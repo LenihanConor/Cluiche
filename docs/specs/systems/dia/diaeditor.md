@@ -601,7 +601,7 @@ Features within the DiaEditor system (create with `/spec-feature`):
 | Plugin Service Locator | Type-safe service locator on EditorPluginContext for inter-plugin service sharing | @docs/specs/features/dia/diaeditor/plugin-service-locator.md | Done |
 | Project Context Bar | Shared `.diagame` project context for all plugins — toolbar project button, `IEditorContext::LoadProject`, `OnProjectChanged` callbacks, `--project` CLI arg, live auto-load on connect | @docs/specs/features/dia/diaeditor/project-context-bar.md | Approved |
 | Editor Deep Link | `OnNavigate(instanceId)` on `IEditorPlugin` — framework calls it after `LoadPlugin` so catalogue double-clicks deliver the user to the specific asset in the target editor | @docs/specs/features/dia/diaeditor/editor-deep-link.md | Approved |
-| Editor Memory | Invisible save/restore of layout, loaded plugins, and per-plugin project-scoped state on editor close/open | @docs/specs/features/dia/diaeditor/editor-memory.md | Approved |
+| Editor Memory | Invisible save/restore of layout, loaded plugins, and per-plugin project-scoped state on editor close/open | @docs/specs/features/dia/diaeditor/editor-memory.md | Done |
 | Toast Notifications | Framework-level notification service — plugins push toasts, shell renders them uniformly | @docs/specs/features/dia/diaeditor/toast-notifications.md | Approved |
 
 ## AI Review Questions
