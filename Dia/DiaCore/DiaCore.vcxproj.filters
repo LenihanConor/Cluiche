@@ -493,15 +493,6 @@
     <ClCompile Include="Timer\TimeThreadLimiter.cpp">
       <Filter>Timer\Source</Filter>
     </ClCompile>
-    <ClCompile Include="Json\external\json_writer.cpp">
-      <Filter>Json\External\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Json\external\json_reader.cpp">
-      <Filter>Json\External\Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Json\external\json_value.cpp">
-      <Filter>Json\External\Source</Filter>
-    </ClCompile>
     <ClCompile Include="Strings\String8.cpp">
       <Filter>Strings\Source</Filter>
     </ClCompile>

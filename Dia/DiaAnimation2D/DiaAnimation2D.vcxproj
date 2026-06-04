@@ -130,6 +130,10 @@
       <Project>{8d41cbe3-c493-428d-95f3-627e56500667}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
+    <ProjectReference Include="..\DiaJson\DiaJson.vcxproj">
+      <Project>{b2c3d4e5-f6a7-8901-bcde-f23456789012}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
     <ProjectReference Include="..\DiaMaths\DiaMaths.vcxproj">
       <Project>{2BBA0AD3-D449-4C0E-8C84-ACFA8BCA456B}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>

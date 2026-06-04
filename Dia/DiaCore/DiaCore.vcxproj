@@ -201,9 +201,6 @@
     <ClCompile Include="Core\CallStack.cpp" />
     <ClCompile Include="Core\EnumClass.cpp" />
     <ClCompile Include="Core\Log.cpp" />
-    <ClCompile Include="Json\external\json_reader.cpp" />
-    <ClCompile Include="Json\external\json_value.cpp" />
-    <ClCompile Include="Json\external\json_writer.cpp" />
     <ClCompile Include="Strings\String1024.cpp" />
     <ClCompile Include="Strings\String128.cpp" />
     <ClCompile Include="Strings\String256.cpp" />

@@ -113,6 +113,10 @@
     <ProjectReference Include="..\DiaCore\DiaCore.vcxproj">
       <Project>{8D41CBE3-C493-428D-95F3-627E56500667}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\DiaJson\DiaJson.vcxproj">
+      <Project>{b2c3d4e5-f6a7-8901-bcde-f23456789012}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
     <ProjectReference Include="..\DiaObservation\DiaObservation.vcxproj">
       <Project>{5E6F7A8B-C9D0-E1F2-3456-789ABCDE0123}</Project>
     </ProjectReference>

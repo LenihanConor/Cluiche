@@ -11,17 +11,17 @@ All tasks are independent — can be dispatched in parallel.
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 1 | Set `layer: foundation/core` on DiaCore, DiaSerializer, DiaThreading, DiaMailbox, DiaStateMachine, DiaProtobuf, DiaPicking | grep confirms value | TODO | haiku | 7 module.md files |
-| 2 | Set `layer: foundation/maths` on DiaMaths, DiaGeometry2D, DiaGeometry3D, DiaGeometryBridge, DiaGeometry2DPicking | grep confirms value | TODO | haiku | 5 files |
-| 3 | Set `layer: foundation/services` on DiaObservation, DiaMetrics, DiaDebugProtocol, DiaWebSocket, DiaAPI, DiaDebugServer, DiaEditor, DiaPython, DiaImGui | grep confirms value | TODO | haiku | 9 files |
-| 4 | Set `layer: foundation/platform` on DiaWindow, DiaInput, DiaSDL | grep confirms value | TODO | haiku | 3 files |
-| 5 | Set `layer: foundation/application` on DiaApplicationFlow, DiaAutomation, DiaGame | grep confirms value | TODO | haiku | 3 files |
-| 6 | Set `layer: assets/core` on DiaEntity, DiaAsset, DiaAssetCatalogue, DiaAssetRuntime, DiaMesh3D | grep confirms value | TODO | haiku | 5 files |
-| 7 | Set `layer: assets/tools` on DiaAssetCatalogueEditor, DiaEntityInspector, DiaBlueprintEditor, DiaPipelineEditor, DiaApplicationEditor, DiaAssetRuntimeInspector, DiaEntityVisualDebugger, DiaAssetRuntimeVisualDebugger | grep confirms value | TODO | haiku | 8 files |
-| 8 | Set `layer: domain/visual/*` on DiaGraphics, DiaGraphics3D, DiaBgfx, DiaBgfx3D, DiaUI, DiaUICEF, DiaUIUltralight, DiaScene2D, DiaScene3D, DiaCamera2D, DiaLighting2D (core) + DiaVisualDebugger, DiaVisualDebuggerConsole, DiaScene2DVisualDebugger, DiaSceneEditor, DiaGeometry2DVisualDebugger (tools) | grep confirms value | TODO | haiku | ~16 files |
-| 9 | Set `layer: domain/physics/*` on DiaRigidBody2D, DiaSoftBody2D (core) + DiaRigidBody2DVisualDebugger, DiaSoftBody2DVisualDebugger (tools) | grep confirms value | TODO | haiku | 4 files |
-| 10 | Set `layer: domain/animation/*` on DiaRig2D, DiaIK2D, DiaAnimation2D, DiaRig3D, DiaAnimation3D, DiaSkinning3D (core) + DiaRig2DVisualDebugger, DiaIK2DVisualDebugger, DiaAnimation2DVisualDebugger (tools) | grep confirms value | TODO | haiku | ~9 files |
-| 11 | Verify: grep for module.md files missing `layer:` or with values not in reference table | grep returns empty | TODO | haiku | AC1 + AC2 gate |
+| 1 | Set `layer: foundation/core` on DiaCore, DiaSerializer, DiaThreading, DiaMailbox, DiaStateMachine, DiaProtobuf, DiaPicking | grep confirms value | Done | haiku | 29 DiaCore sub-module docs + 4 siblings |
+| 2 | Set `layer: foundation/maths` on DiaMaths, DiaGeometry2D, DiaGeometry3D, DiaGeometryBridge, DiaGeometry2DPicking | grep confirms value | Done | haiku | 9 files; DiaGeometryBridge/DiaGeometry2DPicking have no module.md |
+| 3 | Set `layer: foundation/services` on DiaObservation, DiaMetrics, DiaDebugProtocol, DiaWebSocket, DiaAPI, DiaDebugServer, DiaEditor, DiaPython, DiaImGui | grep confirms value | Done | haiku | 6 files; DiaMetrics/DiaAPI/DiaEditor/DiaImGui have no module.md |
+| 4 | Set `layer: foundation/platform` on DiaWindow, DiaInput, DiaSDL | grep confirms value | Done | haiku | 4 files (incl. DiaWindow/Interface) |
+| 5 | Set `layer: foundation/application` on DiaApplicationFlow, DiaAutomation, DiaGame | grep confirms value | Done | haiku | 2 files; DiaGame has no module.md |
+| 6 | Set `layer: assets/core` on DiaEntity, DiaAsset, DiaAssetCatalogue, DiaAssetRuntime, DiaMesh3D | grep confirms value | Done | haiku | 3 files; DiaAsset/DiaMesh3D have no module.md |
+| 7 | Set `layer: assets/tools` on DiaAssetCatalogueEditor, DiaEntityInspector, DiaBlueprintEditor, DiaPipelineEditor, DiaApplicationEditor, DiaAssetRuntimeInspector, DiaEntityVisualDebugger, DiaAssetRuntimeVisualDebugger | grep confirms value | Done | haiku | 7 files; DiaPipelineEditor/DiaAssetRuntimeVisualDebugger have no module.md |
+| 8 | Set `layer: domain/visual/*` on Visual domain modules | grep confirms value | Done | haiku | 13 files; DiaGraphics3D/DiaBgfx3D/DiaScene3D/DiaVisualDebuggerConsole have no module.md |
+| 9 | Set `layer: domain/physics/*` on Physics domain modules | grep confirms value | Done | haiku | 4 files |
+| 10 | Set `layer: domain/animation/*` on Animation domain modules | grep confirms value | Done | haiku | 6 files; DiaRig3D/DiaAnimation3D/DiaSkinning3D have no module.md |
+| 11 | Verify: grep for module.md files missing `layer:` or with values not in reference table | grep returns empty | Done | haiku | 76 files updated; all valid; dia.root set to foundation/core |
 
 **Commit after Phase 1 complete.**
 
@@ -31,7 +31,7 @@ All tasks are independent — can be dispatched in parallel.
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| R1 | Split DiaFileIO from DiaCore | `msbuild DiaFileIO.vcxproj` + `msbuild DiaCore.vcxproj` both succeed; `dia run googletest` passes | TODO | sonnet | Create DiaFileIO/ with vcxproj, module.md (`foundation/core`). Move: FilePath/, AsyncFileLoader, FileWatcher, StreamReader/Writer. Add DiaFileIO ProjectReference to DiaCore. Update all modules that use file APIs to reference DiaFileIO. |
+| R1 | Split DiaFileIO from DiaCore | `msbuild DiaFileIO.vcxproj` + `msbuild DiaCore.vcxproj` both succeed; `dia run googletest` passes | Done | sonnet | Files stay in DiaCore/FilePath/; DiaFileIO compiles them. 5 modules updated with explicit dep. 5858 tests pass. |
 | R2 | Split DiaJson from DiaCore | `msbuild DiaJson.vcxproj` + `msbuild DiaCore.vcxproj` both succeed; `dia run googletest` passes | TODO | sonnet | Create DiaJson/ with vcxproj, module.md (`foundation/core`). Move: Json/ directory. DiaJson depends on DiaCore. Modules using JSON add DiaJson ProjectReference. DiaFileIO may depend on DiaJson (verify). |
 
 **Commit after each R-task (R1 then R2).**
