@@ -3,7 +3,6 @@
 #include <DiaApplicationFlow/Module.h>
 #include <DiaEditor/MVC/EditorModel.h>
 #include <DiaEditor/Project/ProjectContext.h>
-#include <DiaObservation/Log/DebugOutputSink.h>
 
 namespace Cluiche
 {
@@ -36,7 +35,6 @@ namespace Cluiche
 			void OnDiagameProjectChanged(const Dia::Editor::ProjectContext& ctx);
 
 			Dia::Editor::EditorModel       mModel;
-			Dia::Observation::Log::DebugOutputSink   mDebugOutputSink;
 
 			static const unsigned int kMaxProjectPathLength = 512;
 			static const unsigned int kMaxRecent = 5;

@@ -529,6 +529,18 @@
   </div>
 </div>
 
+<!-- CONFIRM DIALOG -->
+<div class="dialog-overlay" id="confirm-dialog">
+  <div class="dialog">
+    <div class="dialog-title" id="confirm-dialog-title">Confirm</div>
+    <div class="dialog-body" id="confirm-dialog-body"></div>
+    <div class="dialog-btns">
+      <button class="dialog-btn cancel" id="confirm-dialog-cancel">Cancel</button>
+      <button class="dialog-btn confirm" id="confirm-dialog-ok">OK</button>
+    </div>
+  </div>
+</div>
+
 <!-- ADD ITEM DIALOG -->
 <div class="dialog-overlay" id="add-item-dialog">
   <div class="dialog">
@@ -653,6 +665,26 @@ function showToast(level, title, message) {
     __diaFromFrame: true,
     payload: { type: 'editor.notify', data: { level: level, title: title, message: message } }
   }, '*');
+}
+
+function showConfirm(title, message) {
+  return new Promise(resolve => {
+    document.getElementById('confirm-dialog-title').textContent = title;
+    document.getElementById('confirm-dialog-body').textContent = message;
+    document.getElementById('confirm-dialog').classList.add('show');
+    const okBtn = document.getElementById('confirm-dialog-ok');
+    const cancelBtn = document.getElementById('confirm-dialog-cancel');
+    const finish = (val) => {
+      document.getElementById('confirm-dialog').classList.remove('show');
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      resolve(val);
+    };
+    const onOk = () => finish(true);
+    const onCancel = () => finish(false);
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+  });
 }
 
 function bridgeOn(event, cb) {
@@ -1743,7 +1775,8 @@ async function addItem(itemType) {
   if (entityTemplates.length === 0) {
     const labelMap2 = { entity:'entity template', camera:'camera', light:'light' };
     const typeName = labelMap2[itemType] || itemType;
-    if (!confirm(`No ${typeName} templates found.\n\nCreate default templates?`)) return;
+    const shouldCreate = await showConfirm('No Templates', `No ${typeName} templates found. Create defaults?`);
+    if (!shouldCreate) return;
 
     const created = await createDefaultTemplates(itemType);
     if (!created) return;

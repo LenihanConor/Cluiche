@@ -5,8 +5,6 @@
 
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaObservation/Log/Logger.h>
-#include <DiaObservation/Log/ISink.h>
-#include <DiaObservation/Log/LogLevel.h>
 #include <DiaObservation/Log/DiaLog.h>
 #include <DiaCore/Json/external/json/json.h>
 
@@ -90,61 +88,6 @@ namespace Cluiche
 				}
 			}
 
-			// Apply editor-logger.json (if present): sets default level + per-sink thresholds/channels.
-			void ApplyLoggerConfig(const char* configPath, Dia::Observation::Log::ISink** sinks, unsigned int sinkCount)
-			{
-				if (configPath == nullptr) return;
-
-				std::ifstream file(configPath);
-				if (!file.is_open()) return;
-
-				Json::Value root;
-				Json::Reader reader;
-				if (!reader.parse(file, root)) return;
-
-				Dia::Observation::Log::LogLevel defaultLevel = Dia::Observation::Log::LogLevel::kInfo;
-				if (root.isMember("default_level") && root["default_level"].isString())
-					defaultLevel = Dia::Observation::Log::LogLevelFromString(root["default_level"].asCString());
-
-				if (root.isMember("sinks") && root["sinks"].isArray())
-				{
-					const Json::Value& sinksConfig = root["sinks"];
-					for (Json::ArrayIndex i = 0; i < sinksConfig.size(); ++i)
-					{
-						const Json::Value& sinkConfig = sinksConfig[i];
-						if (!sinkConfig.isMember("name") || !sinkConfig["name"].isString())
-							continue;
-
-						const char* sinkName = sinkConfig["name"].asCString();
-						for (unsigned int s = 0; s < sinkCount; ++s)
-						{
-							if (strcmp(sinks[s]->GetName(), sinkName) != 0) continue;
-
-							if (sinkConfig.isMember("level_threshold") && sinkConfig["level_threshold"].isString())
-								sinks[s]->SetLevelThreshold(Dia::Observation::Log::LogLevelFromString(sinkConfig["level_threshold"].asCString(), defaultLevel));
-							else
-								sinks[s]->SetLevelThreshold(defaultLevel);
-
-							if (sinkConfig.isMember("channels") && sinkConfig["channels"].isArray())
-							{
-								sinks[s]->ClearChannelFilter();
-								const Json::Value& channels = sinkConfig["channels"];
-								for (Json::ArrayIndex c = 0; c < channels.size(); ++c)
-								{
-									if (channels[c].isString())
-										sinks[s]->SetChannelFilter(Dia::Core::StringCRC(channels[c].asCString()), true);
-								}
-							}
-							break;
-						}
-					}
-				}
-				else
-				{
-					for (unsigned int i = 0; i < sinkCount; ++i)
-						sinks[i]->SetLevelThreshold(defaultLevel);
-				}
-			}
 		} // anonymous namespace
 
 		EditorModelModule::EditorModelModule(const Dia::Core::StringCRC& instanceId)
@@ -174,13 +117,6 @@ namespace Cluiche
 
 		Dia::ApplicationFlow::StartResult EditorModelModule::DoStart()
 		{
-			Dia::Observation::Log::Logger& logger = Dia::Observation::Log::Logger::Instance();
-			logger.RegisterThreadBuffer();
-			logger.RegisterSink(&mDebugOutputSink);
-
-			Dia::Observation::Log::ISink* sinks[] = { &mDebugOutputSink };
-			ApplyLoggerConfig("assets/configs/editor-logger.json", sinks, 1);
-
 			ParseCommandLine(mProjectPath, kMaxProjectPathLength, mDiagamePath, kMaxProjectPathLength);
 
 			// Subscribe to game-project changes to maintain editor_state persistence.
@@ -216,9 +152,6 @@ namespace Cluiche
 
 		Dia::ApplicationFlow::StopResult EditorModelModule::DoStop()
 		{
-			Dia::Observation::Log::Logger& logger = Dia::Observation::Log::Logger::Instance();
-			logger.UnregisterSink(&mDebugOutputSink);
-			logger.UnregisterThreadBuffer();
 			mModel.Reset();
 			return Dia::ApplicationFlow::StopResult::kDone;
 		}
