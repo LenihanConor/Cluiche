@@ -1,23 +1,269 @@
 {
-    "scene2d": {
-        "world_bounds": { "min": [0, 0], "max": [1920, 1080] },
-        "layers": [
-            { "id": {"value": "background"}, "sortOrder": -10, "parallax": [0.5, 0.0], "sortPolicy": {"value": "insertion"}, "enabled": true },
-            { "id": {"value": "midground"}, "sortOrder": 0, "parallax": [1.0, 1.0], "sortPolicy": {"value": "insertion"}, "enabled": true },
-            { "id": {"value": "foreground"}, "sortOrder": 10, "parallax": [1.0, 1.0], "sortPolicy": {"value": "insertion"}, "enabled": true }
+  "scene2d" : 
+  {
+    "cameras" : 
+    [
+      {
+        "active" : true,
+        "blueprint" : 
+        {
+          "value" : "camera_2d_static"
+        },
+        "id" : 
+        {
+          "value" : "test_camera"
+        },
+        "instance_data" : 
+        {
+          "Camera2D.position" : 
+          [
+            0,
+            0
+          ]
+        }
+      },
+      {
+        "active" : false,
+        "blueprint" : 
+        {
+          "value" : "diacamera.default_camera"
+        },
+        "enabled" : true,
+        "id" : 
+        {
+          "value" : "mycamera"
+        },
+        "instance_data" : {}
+      }
+    ],
+    "entities" : 
+    [
+      {
+        "blueprint" : 
+        {
+          "value" : "diaentitytemplate.hero"
+        },
+        "id" : 
+        {
+          "value" : "entity_a"
+        },
+        "instance_data" : {}
+      },
+      {
+        "blueprint" : 
+        {
+          "value" : "test_entity"
+        },
+        "id" : 
+        {
+          "value" : "entity_b"
+        },
+        "instance_data" : 
+        {
+          "cluichetest.transform.x" : 600,
+          "cluichetest.transform.y" : 400
+        }
+      },
+      {
+        "blueprint" : 
+        {
+          "value" : "test_entity"
+        },
+        "id" : 
+        {
+          "value" : "entity_c"
+        },
+        "instance_data" : 
+        {
+          "cluichetest.transform.x" : 1000,
+          "cluichetest.transform.y" : 500
+        },
+        "name" : 
+        {
+          "value" : "named_entity"
+        }
+      },
+      {
+        "blueprint" : 
+        {
+          "value" : "test_entity"
+        },
+        "enabled" : false,
+        "id" : 
+        {
+          "value" : "entity_d"
+        },
+        "instance_data" : 
+        {
+          "cluichetest.transform.x" : 1400,
+          "cluichetest.transform.y" : 600
+        }
+      },
+      {
+        "blueprint" : 
+        {
+          "value" : "diaentitytemplate.hero"
+        },
+        "enabled" : true,
+        "id" : 
+        {
+          "value" : "ConorPlayer"
+        },
+        "instance_data" : {}
+      }
+    ],
+    "layers" : 
+    [
+      {
+        "enabled" : true,
+        "id" : 
+        {
+          "value" : "background"
+        },
+        "parallax" : 
+        [
+          0.5,
+          0
         ],
-        "cameras": [
-            { "id": {"value": "test_camera"}, "active": true, "blueprint": {"value": "camera_2d_static"}, "instance_data": { "Camera2D.position": [0, 0] } }
+        "sortOrder" : -10,
+        "sortPolicy" : 
+        {
+          "value" : "insertion"
+        }
+      },
+      {
+        "enabled" : true,
+        "id" : 
+        {
+          "value" : "midground"
+        },
+        "parallax" : 
+        [
+          1,
+          1
         ],
-        "lights": [
-            { "id": {"value": "light_a"}, "blueprint": {"value": "point_light_warm"}, "enabled": true, "instance_data": { "PointLight2D.position": [300, 200] }, "affects_layers": [{"value": "midground"}, {"value": "foreground"}] },
-            { "id": {"value": "light_b"}, "blueprint": {"value": "point_light_cool"}, "enabled": true, "instance_data": { "PointLight2D.position": [1600, 800] }, "affects_layers": [{"value": "foreground"}] }
+        "sortOrder" : 0,
+        "sortPolicy" : 
+        {
+          "value" : "insertion"
+        }
+      },
+      {
+        "enabled" : true,
+        "id" : 
+        {
+          "value" : "foreground"
+        },
+        "parallax" : 
+        [
+          1,
+          1
         ],
-        "entities": [
-            { "id": {"value": "entity_a"}, "blueprint": {"value": "test_entity"}, "instance_data": { "cluichetest.transform.x": 200, "cluichetest.transform.y": 300 } },
-            { "id": {"value": "entity_b"}, "blueprint": {"value": "test_entity"}, "instance_data": { "cluichetest.transform.x": 600, "cluichetest.transform.y": 400 } },
-            { "id": {"value": "entity_c"}, "name": {"value": "named_entity"}, "blueprint": {"value": "test_entity"}, "instance_data": { "cluichetest.transform.x": 1000, "cluichetest.transform.y": 500 } },
-            { "id": {"value": "entity_d"}, "blueprint": {"value": "test_entity"}, "enabled": false, "instance_data": { "cluichetest.transform.x": 1400, "cluichetest.transform.y": 600 } }
-        ]
+        "sortOrder" : 10,
+        "sortPolicy" : 
+        {
+          "value" : "insertion"
+        }
+      },
+      {
+        "enabled" : true,
+        "id" : 
+        {
+          "value" : "layer_1780669152421"
+        },
+        "parallax" : 
+        [
+          1,
+          1
+        ],
+        "sort_order" : 10,
+        "sort_policy" : 
+        {
+          "value" : "insertion"
+        }
+      }
+    ],
+    "lights" : 
+    [
+      {
+        "affects_layers" : 
+        [
+          {
+            "value" : "midground"
+          },
+          {
+            "value" : "foreground"
+          }
+        ],
+        "blueprint" : 
+        {
+          "value" : "point_light_warm"
+        },
+        "enabled" : true,
+        "id" : 
+        {
+          "value" : "light_a"
+        },
+        "instance_data" : 
+        {
+          "PointLight2D.position" : 
+          [
+            300,
+            200
+          ]
+        }
+      },
+      {
+        "affects_layers" : 
+        [
+          {
+            "value" : "foreground"
+          }
+        ],
+        "blueprint" : 
+        {
+          "value" : "point_light_cool"
+        },
+        "enabled" : true,
+        "id" : 
+        {
+          "value" : "light_b"
+        },
+        "instance_data" : 
+        {
+          "PointLight2D.position" : 
+          [
+            1600,
+            800
+          ]
+        }
+      },
+      {
+        "affects_layers" : [],
+        "blueprint" : 
+        {
+          "value" : "dialight.point_light"
+        },
+        "enabled" : true,
+        "id" : 
+        {
+          "value" : "mylight"
+        },
+        "instance_data" : {}
+      }
+    ],
+    "world_bounds" : 
+    {
+      "max" : 
+      [
+        1920,
+        1080
+      ],
+      "min" : 
+      [
+        0,
+        0
+      ]
     }
+  }
 }

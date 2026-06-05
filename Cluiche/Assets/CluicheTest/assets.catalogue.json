@@ -513,6 +513,39 @@
          "status" : "active",
          "tags" : [],
          "type" : "diaentitytemplate"
+      },
+      {
+         "content_hash" : 0,
+         "id" : "diacamera.default_camera",
+         "references" : [],
+         "scope" : "global",
+         "source_path" : "C:/GitHub/Cluiche/Cluiche/Assets/CluicheTest/Stages/Scene2DTestStage/default_camera.diacamera",
+         "stage_name" : "",
+         "status" : "active",
+         "tags" : [],
+         "type" : "diacamera"
+      },
+      {
+         "content_hash" : 0,
+         "id" : "dialight.point_light",
+         "references" : [],
+         "scope" : "global",
+         "source_path" : "C:/GitHub/Cluiche/Cluiche/Assets/CluicheTest/Stages/Scene2DTestStage/point_light.dialight",
+         "stage_name" : "",
+         "status" : "active",
+         "tags" : [],
+         "type" : "dialight"
+      },
+      {
+         "content_hash" : 0,
+         "id" : "dialight.directional_light",
+         "references" : [],
+         "scope" : "global",
+         "source_path" : "C:/GitHub/Cluiche/Cluiche/Assets/CluicheTest/Stages/Scene2DTestStage/directional_light.dialight",
+         "stage_name" : "",
+         "status" : "active",
+         "tags" : [],
+         "type" : "dialight"
       }
    ],
    "rules_path" : "assets.rules.json"
