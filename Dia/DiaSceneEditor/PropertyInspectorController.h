@@ -31,6 +31,12 @@ namespace Dia
 			                                       const char* itemType,
 			                                       const char* blueprintBasePath) const;
 
+			// Load a blueprint JSON file and return its component array.
+			// Returns empty array on failure.
+			Json::Value LoadBlueprintComponents(const char* blueprintId,
+			                                    const char* blueprintBasePath,
+			                                    const char* itemType) const;
+
 		private:
 			// Extract the string value from either a plain string or {"value":"..."} wrapper.
 			static const char* ExtractStr(const Json::Value& val, char* buf, int bufSize);
@@ -43,12 +49,6 @@ namespace Dia
 			Json::Value BuildBlueprintProperties(const Json::Value& item,
 			                                     const char*        itemType,
 			                                     const char*        blueprintBasePath) const;
-
-			// Load a blueprint JSON file and return its component array.
-			// Returns empty array on failure.
-			Json::Value LoadBlueprintComponents(const char* blueprintId,
-			                                    const char* blueprintBasePath,
-			                                    const char* itemType) const;
 
 			// Merge blueprint component fields with instance_data overrides.
 			// Returns array of field objects with { name, value, overridden } per field.
