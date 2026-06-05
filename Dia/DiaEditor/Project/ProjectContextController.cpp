@@ -18,6 +18,7 @@ namespace Dia
 		static const Dia::Core::StringCRC kReqClose("project.close");
 		static const Dia::Core::StringCRC kReqGetRecent("project.get_recent");
 		static const Dia::Core::StringCRC kReqOpen("project.open");
+		static const Dia::Core::StringCRC kReqGetState("project.get_state");
 
 		ProjectContextController::ProjectContextController()
 			: mBridge(nullptr)
@@ -37,6 +38,7 @@ namespace Dia
 			mBridge->RegisterRequestHandler(kReqClose,    [this](const Json::Value& d) { return HandleClose(d); });
 			mBridge->RegisterRequestHandler(kReqGetRecent,[this](const Json::Value& d) { return HandleGetRecent(d); });
 			mBridge->RegisterRequestHandler(kReqOpen,     [this](const Json::Value& d) { return HandleOpen(d); });
+			mBridge->RegisterRequestHandler(kReqGetState, [this](const Json::Value& d) { return HandleGetState(d); });
 
 			mContext->OnDiagameProjectChanged(&ProjectContextController::OnProjectChangedStatic, this);
 
@@ -51,6 +53,7 @@ namespace Dia
 				mBridge->UnregisterRequestHandler(kReqClose);
 				mBridge->UnregisterRequestHandler(kReqGetRecent);
 				mBridge->UnregisterRequestHandler(kReqOpen);
+				mBridge->UnregisterRequestHandler(kReqGetState);
 				mBridge = nullptr;
 			}
 			mContext = nullptr;
@@ -146,6 +149,46 @@ namespace Dia
 
 			result["ok"]   = true;
 			result["path"] = filePath;
+			return result;
+		}
+
+		Json::Value ProjectContextController::HandleGetState(const Json::Value& /*data*/)
+		{
+			Json::Value result;
+			if (mContext == nullptr)
+			{
+				result["name"]        = "";
+				result["diagamePath"] = "";
+				result["source"]      = "manual";
+				return result;
+			}
+
+			const ProjectContext& ctx = mContext->GetDiagameProject();
+			if (ctx.IsValid())
+			{
+				const char* lastSlash = ctx.diagamePath;
+				for (const char* c = ctx.diagamePath; *c; ++c)
+					if (*c == '/' || *c == '\\') lastSlash = c + 1;
+
+				char name[64] = {0};
+				unsigned int i = 0;
+				while (lastSlash[i] && lastSlash[i] != '.' && i < sizeof(name) - 1)
+				{
+					name[i] = lastSlash[i];
+					++i;
+				}
+				name[i] = '\0';
+
+				result["name"]        = name;
+				result["diagamePath"] = ctx.diagamePath;
+				result["source"]      = (ctx.source == ProjectSource::kLive) ? "live" : "manual";
+			}
+			else
+			{
+				result["name"]        = "";
+				result["diagamePath"] = "";
+				result["source"]      = "manual";
+			}
 			return result;
 		}
 

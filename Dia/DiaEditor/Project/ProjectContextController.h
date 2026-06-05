@@ -25,6 +25,7 @@ namespace Dia
 			Json::Value HandleClose(const Json::Value& data);
 			Json::Value HandleGetRecent(const Json::Value& data);
 			Json::Value HandleOpen(const Json::Value& data);
+			Json::Value HandleGetState(const Json::Value& data);
 
 			void PushProjectChanged();
 

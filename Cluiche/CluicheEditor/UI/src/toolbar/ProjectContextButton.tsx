@@ -25,6 +25,18 @@ export function ProjectContextButton() {
         source: d.source === "live" ? "live" : "manual",
       });
     });
+
+    EditorBridge.request<Partial<ProjectState>>("project.get_state", {})
+      .then((d) => {
+        if (!d) return;
+        setProject({
+          name: d.name ?? "",
+          diagamePath: d.diagamePath ?? "",
+          source: d.source === "live" ? "live" : "manual",
+        });
+      })
+      .catch(() => {});
+
     return unsub;
   }, []);
 

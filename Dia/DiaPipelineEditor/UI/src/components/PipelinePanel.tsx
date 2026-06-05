@@ -35,8 +35,8 @@ export const PipelinePanel: FC<PipelinePanelProps> = ({ state, dispatch }) => {
                     gap: 8,
                     zIndex: 100,
                 }}>
-                    <span style={{ color: '#f48771', fontSize: 14, fontWeight: 600 }}>No project loaded</span>
-                    <span style={{ color: '#888', fontSize: 11 }}>Open a .diagame project to use this panel</span>
+                    <span style={{ color: '#888', fontSize: 13 }}>No project loaded</span>
+                    <span style={{ color: '#666', fontSize: 11 }}>Open a .diagame project to use this panel</span>
                 </div>
             )}
             <PipelineToolbar

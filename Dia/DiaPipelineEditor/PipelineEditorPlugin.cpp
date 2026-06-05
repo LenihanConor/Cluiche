@@ -139,6 +139,23 @@ void PipelineEditorPlugin::ExtractTarget(const char* diagamePath, char* targetOu
 	targetOut[written] = '\0';
 }
 
+void PipelineEditorPlugin::OnNavigate(const Dia::Core::StringCRC& /*instanceId*/)
+{
+	if (!GetBridge())
+		return;
+
+	char target[256] = {};
+	if (mDiagamePath[0] != '\0')
+		ExtractTarget(mDiagamePath, target, sizeof(target));
+
+	Json::Value payload;
+	payload["isValid"]     = mDiagamePath[0] != '\0';
+	payload["diagamePath"] = mDiagamePath;
+	payload["target"]      = target;
+	payload["diagameName"] = target;
+	GetBridge()->NotifyUIDataChanged("pipeline.project_changed", payload);
+}
+
 void PipelineEditorPlugin::OnProjectChanged(const Dia::Editor::ProjectContext& ctx)
 {
 	strncpy_s(mDiagamePath, kDiagamePathLength,

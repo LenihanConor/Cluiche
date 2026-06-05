@@ -19,6 +19,7 @@ namespace Dia
 
 			void OnPluginLoad() override;
 			void OnPluginUnload() override;
+			void OnNavigate(const Dia::Core::StringCRC& instanceId) override;
 			void OnUpdate(float deltaTime) override;
 			void OnProjectChanged(const Dia::Editor::ProjectContext& context) override;
 
