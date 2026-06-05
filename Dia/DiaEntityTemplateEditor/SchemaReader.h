@@ -15,7 +15,9 @@ namespace Dia { namespace EntityTemplateEditor {
         char debugName[128];
         char description[256];
         Dia::Core::Containers::DynamicArrayC<SchemaFieldEntry, 32> fields;
-        Json::Value defaultValues;   // parsed "default_values" object, or nullValue if absent
+        // defaultValues intentionally NOT here — Json::Value is non-trivial and
+        // DynamicArrayC uses memcpy internally, which corrupts it. Stored in
+        // SchemaReader::mDefaultValues[] at the matching index.
     };
 
     class SchemaReader {
@@ -41,6 +43,7 @@ namespace Dia { namespace EntityTemplateEditor {
 
     private:
         Dia::Core::Containers::DynamicArrayC<SchemaComponentEntry, kMaxComponents> mComponents;
+        Json::Value mDefaultValues[kMaxComponents];  // parallel array — safe storage for non-trivial type
         Version mVersion;
         bool    mLoaded = false;
     };

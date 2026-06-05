@@ -92,12 +92,15 @@ namespace Dia { namespace EntityTemplateEditor {
                 }
             }
 
-            // Parse default_values if present
-            if (comp.isMember("default_values") && comp["default_values"].isObject())
-                entry.defaultValues = comp["default_values"];
-            // else entry.defaultValues remains Json::nullValue (default-constructed)
-
+            unsigned int idx = mComponents.Size();
             mComponents.Add(entry);
+
+            // Store default_values in the parallel array (Json::Value is non-trivial;
+            // DynamicArrayC uses memcpy so it cannot hold it safely)
+            if (comp.isMember("default_values") && comp["default_values"].isObject())
+                mDefaultValues[idx] = comp["default_values"];
+            else
+                mDefaultValues[idx] = Json::Value();
         }
 
         mLoaded = true;
@@ -105,7 +108,10 @@ namespace Dia { namespace EntityTemplateEditor {
 
     void SchemaReader::Clear()
     {
+        unsigned int count = mComponents.Size();
         mComponents.RemoveAll();
+        for (unsigned int i = 0; i < count; ++i)
+            mDefaultValues[i] = Json::Value();
         mVersion = Version{};
         mLoaded = false;
     }
@@ -127,7 +133,7 @@ namespace Dia { namespace EntityTemplateEditor {
 
     const Json::Value& SchemaReader::GetDefaultValues(unsigned int i) const
     {
-        return mComponents[i].defaultValues;
+        return mDefaultValues[i];
     }
 
     SchemaReader::Version SchemaReader::GetVersion() const
