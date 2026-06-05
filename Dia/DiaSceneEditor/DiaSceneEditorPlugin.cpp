@@ -498,10 +498,13 @@ namespace Dia
 				[this](const Json::Value& data) -> Json::Value
 				{
 					DIA_TRACE_ZONE("scene_editor.analyse_change_blueprint", Dia::Observation::Trace::Category::kNone);
-					if (!data.isMember("itemType") || !data.isMember("itemId") || !data.isMember("newBlueprintComponents"))
+					if (!data.isMember("itemType") || !data.isMember("itemId") || !data.isMember("newBlueprintId"))
 						return MakeErrorResponse("missing required fields");
 					if (mLoadedSceneRoot.isNull())
 						return MakeErrorResponse("no scene loaded");
+
+					Json::Value components = mPropertyController.LoadBlueprintComponents(
+						data["newBlueprintId"].asCString(), mLoadedScenePath, data["itemType"].asCString());
 
 					Json::Value result;
 					result["success"]  = true;
@@ -509,7 +512,7 @@ namespace Dia
 						mLoadedSceneRoot,
 						data["itemType"].asCString(),
 						data["itemId"].asCString(),
-						data["newBlueprintComponents"]);
+						components);
 					return result;
 				});
 
@@ -518,11 +521,13 @@ namespace Dia
 				[this](const Json::Value& data) -> Json::Value
 				{
 					DIA_TRACE_ZONE("scene_editor.change_blueprint", Dia::Observation::Trace::Category::kNone);
-					if (!data.isMember("itemType") || !data.isMember("itemId")
-					    || !data.isMember("newBlueprintId") || !data.isMember("newBlueprintComponents"))
+					if (!data.isMember("itemType") || !data.isMember("itemId") || !data.isMember("newBlueprintId"))
 						return MakeErrorResponse("missing required fields");
 					if (mLoadedSceneRoot.isNull())
 						return MakeErrorResponse("no scene loaded");
+
+					Json::Value newComponents = mPropertyController.LoadBlueprintComponents(
+						data["newBlueprintId"].asCString(), mLoadedScenePath, data["itemType"].asCString());
 
 					char oldBlueprintId[256] = {};
 					if (mSceneCatalogueId[0] != '\0')
@@ -560,7 +565,7 @@ namespace Dia
 					char err[256] = {};
 					if (!SceneMutator::ChangeBlueprint(mLoadedSceneRoot,
 					        data["itemType"].asCString(), data["itemId"].asCString(),
-					        data["newBlueprintId"].asCString(), data["newBlueprintComponents"], err, sizeof(err)))
+					        data["newBlueprintId"].asCString(), newComponents, err, sizeof(err)))
 						return MakeErrorResponse(err);
 
 					if (GetBridge() && mSceneCatalogueId[0] != '\0')

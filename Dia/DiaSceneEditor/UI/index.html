@@ -1193,7 +1193,7 @@ function renderProperties() {
     const bpMissing = data.blueprint_known === false;
     ctxBp.innerHTML = bpMissing
       ? `template: <span class="prop-error" title="Template not found in asset catalogue">&#9888; ${escHtml(data.blueprint)}</span>`
-      : `template: <b><a class="prop-link" id="ctx-bp-link" data-bp="${escHtml(data.blueprint)}">${escHtml(data.blueprint)}.diaentitytemplatetemplate &rarr;</a></b>`;
+      : `template: <b><a class="prop-link" id="ctx-bp-link" data-bp="${escHtml(data.blueprint)}">${escHtml(data.blueprint)} &rarr;</a></b>`;
   } else {
     ctxBp.style.display = 'none';
   }
@@ -1420,7 +1420,7 @@ function propRowBlueprintLink(label, bpId, known) {
   const missing = known === false;
   const linkHtml = missing
     ? `<span class="prop-error" title="Template not found in asset catalogue">&#9888; ${escHtml(bpId)} (not found)</span>`
-    : `<a class="prop-link" id="bp-nav-link" data-bp="${escHtml(bpId)}">${escHtml(bpId)}.diaentitytemplatetemplate &rarr;</a>`;
+    : `<a class="prop-link" id="bp-nav-link" data-bp="${escHtml(bpId)}">${escHtml(bpId)} &rarr;</a>`;
   return `<div class="prop-row">
     <span class="prop-label">${escHtml(label)}</span>
     <span class="prop-type"></span>
@@ -1676,7 +1676,7 @@ async function addItem(itemType) {
   blueprints.forEach(bp => {
     const opt = document.createElement('option');
     opt.value = bp.id;
-    opt.textContent = bp.id + '.diaentitytemplatetemplate';
+    opt.textContent = bp.id;
     sel.appendChild(opt);
   });
 
@@ -1921,7 +1921,7 @@ async function openChangeBlueprintDialog(sel) {
   blueprints.forEach(bp => {
     const opt = document.createElement('option');
     opt.value = bp.id;
-    opt.textContent = bp.id + '.diaentitytemplatetemplate';
+    opt.textContent = bp.id;
     if (bp.id === sel.data.blueprint) opt.disabled = true;
     selectEl.appendChild(opt);
   });
@@ -1944,7 +1944,7 @@ async function updateChangeBlueprintTransfer(sel) {
   const result = await bridgeRequest('analyse_change_blueprint', {
     itemType: sel.type,
     itemId: sel.id,
-    newBlueprintComponents: newBpId
+    newBlueprintId: newBpId
   });
 
   if (!result.success) { transferEl.innerHTML = ''; return; }
@@ -1974,8 +1974,7 @@ document.getElementById('bp-dialog-confirm').addEventListener('click', async () 
   const result = await bridgeRequest('change_blueprint', {
     itemType: state.selected.type,
     itemId: state.selected.id,
-    newBlueprintId: newBpId,
-    newBlueprintComponents: newBpId
+    newBlueprintId: newBpId
   });
 
   if (result.success) {
