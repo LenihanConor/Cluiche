@@ -85,6 +85,7 @@
     background: var(--pico-background-color, #1e1e1e);
     border-right: 2px solid var(--pico-muted-border-color, #2d2d2d);
     display: flex; flex-direction: column; overflow: hidden;
+    position: relative;
   }
   .colhdr {
     background: var(--pico-card-background-color, #252526);
@@ -607,6 +608,15 @@ var _diaTopicListeners = {};
 
 function hasBridge() { return window.parent && window.parent !== window; }
 
+function diaLog(msg) {
+  if (hasBridge()) {
+    window.parent.postMessage({ __diaFromFrame: true,
+      payload: { type: 'editor.ui_log', data: { source: 'sceneeditor', msg: msg } } }, '*');
+  } else {
+    console.log('[SceneEditor] ' + msg);
+  }
+}
+
 function bridgeRequest(handler, data) {
   if (!hasBridge()) return Promise.resolve(stubRequest(handler, data || {}));
   return new Promise(function(resolve) {
@@ -972,7 +982,11 @@ document.getElementById('stage-select').addEventListener('change', async e => {
 
 async function loadStage(stagePath) {
   const result = await bridgeRequest('load_stage_scene', { stagePath });
-  if (!result.success) return;
+  diaLog('loadStage result: success=' + result.success
+    + ' scene=' + (result.scene ? typeof result.scene : 'null/undef')
+    + ' hierarchyKeys=' + (result.hierarchy ? Object.keys(result.hierarchy).join(',') : 'null/undef')
+    + ' layers=' + (result.hierarchy && result.hierarchy.layers ? result.hierarchy.layers.length : '?'));
+  if (!result.success) { diaLog('loadStage: returning early, success=false'); return; }
 
   state.currentStage = result.stage || null;
   state.currentScene = result.scene || null;
@@ -980,11 +994,12 @@ async function loadStage(stagePath) {
   state.selected = null;
   state.blueprintCache = {};
 
-  updateTitleFile(result.scene);
-  setDirty(result.dirty || false);
-  renderHierarchy();
-  renderProperties();
-  updateStatusCounts();
+  diaLog('step:updateTitleFile'); updateTitleFile(result.stage ? result.stage.scenePath : null);
+  diaLog('step:setDirty'); setDirty(result.dirty || false);
+  diaLog('step:renderHierarchy'); renderHierarchy();
+  diaLog('step:renderProperties'); renderProperties();
+  diaLog('step:updateStatusCounts'); updateStatusCounts();
+  diaLog('overlay check: currentScene=' + (state.currentScene ? 'object' : 'null/false'));
   const overlay = document.getElementById('no-scene-overlay');
   if (overlay) overlay.style.display = state.currentScene ? 'none' : 'flex';
 }

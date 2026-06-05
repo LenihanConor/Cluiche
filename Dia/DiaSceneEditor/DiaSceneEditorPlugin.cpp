@@ -202,9 +202,13 @@ namespace Dia
 						return MakeErrorResponse("missing stagePath");
 
 					const char* stagePath = data["stagePath"].asCString();
+					DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: load_stage_scene requested — stagePath='%s' stageListSize=%u",
+						stagePath, mStageList.size());
 					Json::Value matchedStage;
 					for (unsigned int i = 0; i < mStageList.size(); ++i)
 					{
+						DIA_LOG_INFO("Editor", "  mStageList[%u] stagePath='%s'", i,
+							mStageList[i]["stagePath"].asCString());
 						if (mStageList[i]["stagePath"].asString() == stagePath)
 						{
 							matchedStage = mStageList[i];
@@ -213,11 +217,16 @@ namespace Dia
 					}
 
 					if (matchedStage.isNull())
+					{
+						DIA_LOG_WARNING("Editor", "DiaSceneEditorPlugin: stage not found in list for stagePath='%s'", stagePath);
 						return MakeErrorResponse("stage not in project");
+					}
 
 					const std::string scenePath = matchedStage["scenePath"].asString();
+					DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: matched stage — scenePath='%s'", scenePath.c_str());
 					if (scenePath.empty())
 					{
+						DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: stage has no scene assigned");
 						Json::Value result;
 						result["success"]   = true;
 						result["stage"]     = matchedStage;
@@ -229,7 +238,10 @@ namespace Dia
 					char err[256] = {};
 					Json::Value sceneRoot;
 					if (!mFileHandler.Load(scenePath.c_str(), sceneRoot, err, sizeof(err)))
+					{
+						DIA_LOG_WARNING("Editor", "DiaSceneEditorPlugin: failed to load scene '%s': %s", scenePath.c_str(), err);
 						return MakeErrorResponse(err[0] ? err : "scene load failed");
+					}
 
 					DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: loaded stage scene '%s'", scenePath.c_str());
 					mLoadedSceneRoot = sceneRoot;
