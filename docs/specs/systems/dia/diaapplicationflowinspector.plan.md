@@ -124,9 +124,14 @@ Remove live handlers from the Editor. Rename project directory.
 | 14 | Remove `V2/LiveStateStore.h/.cpp` from Editor vcxproj + filters; delete source files from Editor dir | Build succeeds; no orphan files | Not Started | haiku | |
 | 15 | Trim Editor UI `useLiveStoreV2.ts` → read-only subscriber (remove `connect()`/`disconnect()` actions, keep `set*` setters for pushed topics) | `useLiveStoreV2.test.ts` (Editor): setters work; no bridge calls made | Not Started | sonnet | |
 | 16 | Remove `LiveTransitionPanel.tsx`, `LiveConnectionButton.tsx` from Editor UI; remove imports from `AppV2.tsx` | `npm run test` in Editor UI — all pass; no dead imports | Not Started | haiku | |
-| 17 | Rename `Dia/DiaApplicationEditor/` → `Dia/DiaApplicationFlowEditor/`; update vcxproj name, ProjectGuid, include paths, UI dist path, post-build copy target | `msbuild Cluiche.sln` succeeds | Not Started | sonnet | Highest breakage risk — touch sln, dependent vcxproj refs, pipeline targets |
-| 18 | Update external references: CluicheEditor `.diaapp` manifest, DiaCLI pipeline config, `dia.applicationeditor.architecture.module.md` → rename | `dia pipeline --target cluicheeditor` passes end-to-end | Not Started | sonnet | |
-| 19 | Regression: run full Editor GoogleTest suite + Editor UI tests | `dia run googletest --filter="DiaApplicationEditor*"` pass; `npm run test` pass | Not Started | haiku | Gate before proceeding |
+| 17 | Add `ConnectionStatusDot.tsx` to Editor UI — reads `useLiveStoreV2.connectionState`, renders TrafficLightDot (grey=offline, green+pulse=live). Place in AppV2 header. | `ConnectionStatusDot.test.tsx`: grey when disconnected; green+pulse when connected; no click handler | Not Started | sonnet | AC: connection-status-indicator.md. Replaces the old LiveConnectionButton. |
+| 18 | Add Editor-side topic subscription: `WebUIBridge::SubscribeToTopic("live.connectionStatus")` → forward to UI `useLiveStoreV2.setConnectionState` | `IntegrationTestApplicationFlowEditorPlugin`: simulate topic push → store updated; no topic → store stays disconnected | Not Started | sonnet | AC: live-state-overlay.md #9, #10. Editor is passive consumer. |
+| 19 | Verify `RiskAssessor` uses `GameConnectionManager::IsConnected()` (not LiveStateStore) for severity escalation | `TestRiskAssessor`: mock GameConnectionManager.IsConnected()=true → warning includes "affects running game"; false → structural warning only | Not Started | sonnet | AC: risky-change-warnings.md #7, #8. No Inspector dependency. |
+| 20 | Verify Editor renders offline correctly when no `live.connectionStatus` topic received (Inspector not loaded) | `AppV2.test.tsx`: on mount with no topics → ConnectionStatusDot is grey; ModulePresenceGrid shows offline mode; no console errors | Not Started | sonnet | AC: live-state-overlay.md #10, connection-status-indicator.md #4. |
+| 21 | Verify immediate transition: push `live.connectionStatus {connected: false}` → all overlays revert same frame | `useLiveStoreV2.test.ts`: setConnectionState('disconnected') → activeStage=null, modules=[], streams=[]; `ModulePresenceGrid.test.tsx`: connectionState=disconnected → offline mode | Not Started | sonnet | AC: live-state-overlay.md #11, connection-status-indicator.md #5. |
+| 22 | Rename `Dia/DiaApplicationEditor/` → `Dia/DiaApplicationFlowEditor/`; update vcxproj name, ProjectGuid, include paths, UI dist path, post-build copy target | `msbuild Cluiche.sln` succeeds | Not Started | sonnet | Highest breakage risk — touch sln, dependent vcxproj refs, pipeline targets |
+| 23 | Update external references: CluicheEditor `.diaapp` manifest, DiaCLI pipeline config, `dia.applicationeditor.architecture.module.md` → rename | `dia pipeline --target cluicheeditor` passes end-to-end | Not Started | sonnet | |
+| 24 | Regression: run full Editor GoogleTest suite + Editor UI tests | `dia run googletest --filter="DiaApplicationEditor*"` pass; `npm run test` pass | Not Started | haiku | Gate before proceeding |
 
 ## Phase 3 — Inspector UI: Core Views
 
@@ -134,13 +139,13 @@ Build the Inspector's rich debugging UI (from mockup). All components test-first
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 20 | `useInspectorStore.ts` (Zustand) — timeline ring buffer (1024, DAFI-010), module state map (64), stream state map (16), event log (1024), severity filter | `useInspectorStore.test.ts`: push 1025 stages → oldest dropped; module state update/remove; event severity filter; clear on disconnect | Not Started | sonnet | Central store; all components read from this |
-| 21 | `StageBreadcrumb.tsx` — horizontal trail, past stages grey, current green, durations between | `StageBreadcrumb.test.tsx`: 0 stages → empty; 1 stage → current only; 3 stages → arrows + durations; overflow scrolls | Not Started | sonnet | Reads `useInspectorStore.timeline` |
-| 22 | `ModuleLifecycleCard.tsx` — name + PU badge, state badge (Running/Loading/Stopped/Failed), time-in-state, timeout bar (% with color), dep-blocked warning, error message | `ModuleLifecycleCard.test.tsx`: renders each state; timeout bar width matches %; dep-blocked shows dependency name; Failed shows error msg | Not Started | opus | Most complex component — cross-references deps from manifest with live states |
-| 23 | `StreamBackpressureRow.tsx` — name, msg/s + KB/s stats, queue fill bar (green <60%, amber 60-85%, red >85%), drops badge | `StreamBackpressureRow.test.tsx`: bar width = fill%; color thresholds correct; drops badge red and bold when >0; 0 drops → "0 drops" (no badge) | Not Started | sonnet | |
-| 24 | `PUFrameBudgetGauge.tsx` — PU name, timing (ms/target), budget bar (green/amber/red gradient), Hz label, % label | `PUFrameBudgetGauge.test.tsx`: 49% → green + "49% budget used"; 85% → amber; 114% → red + "OVER BUDGET"; Hz from target period | Not Started | sonnet | |
-| 25 | `EventLog.tsx` — monospace, color-coded (info/warn/error/transition), selectable text, Copy button, severity filter dropdown, auto-scroll to bottom | `EventLog.test.tsx`: renders entries; Copy calls clipboard API; filter hides info; auto-scroll on new entry; manual scroll-up disables auto-scroll | Not Started | sonnet | `user-select: text`; ring buffer from store |
-| 26 | Wire `AppInspector.tsx` — 4 tabs (Modules, Streams, Timing, Log), footer summary (counts + Shutdown button), breadcrumb below header | `AppInspector.test.tsx`: tab switch renders correct content; footer shows "N modules · M blocked · K failed"; Shutdown calls `live.shutdown` | Not Started | sonnet | Compose all components |
+| 25 | `useInspectorStore.ts` (Zustand) — timeline ring buffer (1024, DAFI-010), module state map (64), stream state map (16), event log (1024), severity filter | `useInspectorStore.test.ts`: push 1025 stages → oldest dropped; module state update/remove; event severity filter; clear on disconnect | Not Started | sonnet | Central store; all components read from this |
+| 26 | `StageBreadcrumb.tsx` — horizontal trail, past stages grey, current green, durations between | `StageBreadcrumb.test.tsx`: 0 stages → empty; 1 stage → current only; 3 stages → arrows + durations; overflow scrolls | Not Started | sonnet | Reads `useInspectorStore.timeline` |
+| 27 | `ModuleLifecycleCard.tsx` — name + PU badge, state badge (Running/Loading/Stopped/Failed), time-in-state, timeout bar (% with color), dep-blocked warning, error message | `ModuleLifecycleCard.test.tsx`: renders each state; timeout bar width matches %; dep-blocked shows dependency name; Failed shows error msg | Not Started | opus | Most complex component — cross-references deps from manifest with live states |
+| 28 | `StreamBackpressureRow.tsx` — name, msg/s + KB/s stats, queue fill bar (green <60%, amber 60-85%, red >85%), drops badge | `StreamBackpressureRow.test.tsx`: bar width = fill%; color thresholds correct; drops badge red and bold when >0; 0 drops → "0 drops" (no badge) | Not Started | sonnet | |
+| 29 | `PUFrameBudgetGauge.tsx` — PU name, timing (ms/target), budget bar (green/amber/red gradient), Hz label, % label | `PUFrameBudgetGauge.test.tsx`: 49% → green + "49% budget used"; 85% → amber; 114% → red + "OVER BUDGET"; Hz from target period | Not Started | sonnet | |
+| 30 | `EventLog.tsx` — monospace, color-coded (info/warn/error/transition), selectable text, Copy button, severity filter dropdown, auto-scroll to bottom | `EventLog.test.tsx`: renders entries; Copy calls clipboard API; filter hides info; auto-scroll on new entry; manual scroll-up disables auto-scroll | Not Started | sonnet | `user-select: text`; ring buffer from store |
+| 31 | Wire `AppInspector.tsx` — 4 tabs (Modules, Streams, Timing, Log), footer summary (counts + Shutdown button), breadcrumb below header | `AppInspector.test.tsx`: tab switch renders correct content; footer shows "N modules · M blocked · K failed"; Shutdown calls `live.shutdown` | Not Started | sonnet | Compose all components |
 
 ## Phase 4 — Framework Telemetry
 
@@ -148,36 +153,38 @@ Always-on measurement (DAFI-008). Broadcast only when DebugServer has subscriber
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 27 | Register `stream.{id}.current_size` gauge per EventStreamStore; set after every `SendInternal()` call | `TestStreamTelemetry`: create stream cap=8, send 5 → gauge reads 5; consume 3 → gauge reads 2 | Not Started | sonnet | Add to `EventStreamStore` constructor (register) + `SendInternal` (set). ~5 lines. Uses existing `MetricRegistry::Instance()`. |
-| 28 | Add `mDropsTotal` counter to `EventStreamStore`; increment on each overflow (all policies); register as `stream.{id}.drops_total` | `TestStreamDrops`: send cap+1 with DropOldest → counter=1; send cap+2 → counter=2; no overflow → counter=0 | Not Started | sonnet | In overflow switch cases (3 locations). ~5 lines. |
-| 29 | Wrap `ProcessingUnit::Update()` body with QPC; store result in `mLastTickMs` (float); register `pu.{id}.last_tick_ms` gauge; set after tick completes | `TestPUTiming`: create PU, call Update(0.016f), assert `mLastTickMs > 0.0f` and gauge value matches | Not Started | sonnet | ~10 lines. Existing `DIA_PROFILE_SCOPE` already times this; QPC adds authoritative gauge for broadcast. Use `Dia::Core::HighResTimer` if available, else raw QPC. |
-| 30 | Add `DIA_LOG_WARNING` in PU::Update when `mLastTickMs > targetPeriodMs` (over-budget) | `TestPUTiming`: set frequency to 1000Hz (1ms budget), Update with artificial 5ms work → log emitted | Not Started | haiku | Single line: `DIA_LOG_WARNING("pu", "pu.over_budget id=%s tick_ms=%.1f target_ms=%.1f", ...)` |
-| 31 | Include `currentSize`, `dropsTotal`, `lastTickMs` in existing `ObservationBridge::OnSnapshot()` broadcast path (metric snapshots already broadcast gauge/counter values) | `TestInspectorPlugin` (integration): connect mock client, subscribe to `observation.metric`, assert fields present in JSON payload | Not Started | sonnet | Verify no new code needed — registered metrics should auto-appear in snapshot. If not, add to snapshot loop. |
+| 32 | Register `stream.{id}.current_size` gauge per EventStreamStore; set after every `SendInternal()` call | `TestStreamTelemetry`: create stream cap=8, send 5 → gauge reads 5; consume 3 → gauge reads 2 | Not Started | sonnet | Add to `EventStreamStore` constructor (register) + `SendInternal` (set). ~5 lines. Uses existing `MetricRegistry::Instance()`. |
+| 33 | Add `mDropsTotal` counter to `EventStreamStore`; increment on each overflow (all policies); register as `stream.{id}.drops_total` | `TestStreamDrops`: send cap+1 with DropOldest → counter=1; send cap+2 → counter=2; no overflow → counter=0 | Not Started | sonnet | In overflow switch cases (3 locations). ~5 lines. |
+| 34 | Wrap `ProcessingUnit::Update()` body with QPC; store result in `mLastTickMs` (float); register `pu.{id}.last_tick_ms` gauge; set after tick completes | `TestPUTiming`: create PU, call Update(0.016f), assert `mLastTickMs > 0.0f` and gauge value matches | Not Started | sonnet | ~10 lines. Existing `DIA_PROFILE_SCOPE` already times this; QPC adds authoritative gauge for broadcast. Use `Dia::Core::HighResTimer` if available, else raw QPC. |
+| 35 | Add `DIA_LOG_WARNING` in PU::Update when `mLastTickMs > targetPeriodMs` (over-budget) | `TestPUTiming`: set frequency to 1000Hz (1ms budget), Update with artificial 5ms work → log emitted | Not Started | haiku | Single line: `DIA_LOG_WARNING("pu", "pu.over_budget id=%s tick_ms=%.1f target_ms=%.1f", ...)` |
+| 36 | Include `currentSize`, `dropsTotal`, `lastTickMs` in existing `ObservationBridge::OnSnapshot()` broadcast path (metric snapshots already broadcast gauge/counter values) | `TestInspectorPlugin` (integration): connect mock client, subscribe to `observation.metric`, assert fields present in JSON payload | Not Started | sonnet | Verify no new code needed — registered metrics should auto-appear in snapshot. If not, add to snapshot loop. |
 
 ## Phase 5 — Integration & Verification
 
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
-| 32 | Update `dia pipeline --target cluicheeditor` to build Inspector UI (`npm run build`) and deploy `dist/` to `diaapplicationflowinspector/` in output | `dia pipeline --target cluicheeditor` succeeds; `dist/index.html` present in deploy dir | Not Started | sonnet | |
-| 33 | Wire Inspector plugin in CluicheEditor `.diaapp` manifest (register plugin, set UI path) | Editor launches, Inspector panel visible in dock | Not Started | sonnet | |
-| 34 | Regression: full test suite — `dia run googletest` (all), Editor UI tests, Inspector UI tests | Zero failures | Not Started | sonnet | Gate |
-| 35 | Manual verify: Editor opens fullscreen, loads manifest, all editing works (tree, flow, inspector, lifecycle grid, undo) | Quoted output from `dia pipeline --target cluicheeditor` + screenshots if available | Not Started | opus | |
-| 36 | Manual verify: Inspector docks, shows empty state, connects to `dia run cluichetest`, shows live module data in Modules tab | Quoted connection log from Inspector | Not Started | opus | |
-| 37 | Manual verify: Editor ModulePresenceGrid highlights active stage when Inspector connected (pushed `live.state` topic) | Visual confirmation | Not Started | sonnet | |
-| 38 | Manual verify: Streams tab shows backpressure bars, Timing tab shows PU gauges, Log tab shows events | Visual confirmation against mockup | Not Started | sonnet | |
-| 39 | Manual verify: RiskyChangeDialog triggers when removing PU while connected | Dialog appears with warning text | Not Started | sonnet | |
-| 40 | Cleanup: remove old `Dia/DiaApplicationEditor/` directory (if any remnants after rename) | `git status` — no orphan files | Not Started | haiku | |
-| 41 | Create `dia.applicationflowinspector.architecture.module.md` (YAML frontmatter: id, deps, public API, responsibilities) | Doc matches module-metadata-schema.md | Not Started | haiku | |
-| 42 | Update specs: mark DiaApplicationFlowEditor spec `Done`, DiaApplicationFlowInspector spec `Done`, update backlog | Spec status fields correct | Not Started | haiku | |
+| 37 | Update `dia pipeline --target cluicheeditor` to build Inspector UI (`npm run build`) and deploy `dist/` to `diaapplicationflowinspector/` in output | `dia pipeline --target cluicheeditor` succeeds; `dist/index.html` present in deploy dir | Not Started | sonnet | |
+| 38 | Wire Inspector plugin in CluicheEditor `.diaapp` manifest (register plugin, set UI path) | Editor launches, Inspector panel visible in dock | Not Started | sonnet | |
+| 39 | Regression: full test suite — `dia run googletest` (all), Editor UI tests, Inspector UI tests | Zero failures | Not Started | sonnet | Gate |
+| 40 | Manual verify: Editor opens fullscreen, loads manifest, all editing works (tree, flow, inspector, lifecycle grid, undo) | Quoted output from `dia pipeline --target cluicheeditor` + screenshots if available | Not Started | opus | |
+| 41 | Manual verify: Inspector docks, shows empty state, connects to `dia run cluichetest`, shows live module data in Modules tab | Quoted connection log from Inspector | Not Started | opus | |
+| 42 | Manual verify: Editor ConnectionStatusDot is grey when Inspector not connected; green+pulse when connected | Visual confirmation | Not Started | sonnet | Regression AC: connection-status-indicator.md |
+| 43 | Manual verify: Editor ModulePresenceGrid highlights active stage when Inspector connected (pushed `live.state` topic) | Visual confirmation | Not Started | sonnet | |
+| 44 | Manual verify: Streams tab shows backpressure bars, Timing tab shows PU gauges, Log tab shows events | Visual confirmation against mockup | Not Started | sonnet | |
+| 45 | Manual verify: RiskyChangeDialog triggers when removing PU while connected — includes "affects running game" text; same dialog without that text when disconnected | Dialog text matches AC #7/#8 in risky-change-warnings.md | Not Started | sonnet | |
+| 46 | Manual verify: Editor renders correctly with Inspector plugin NOT loaded (offline mode, no errors) | No console errors; grey dot; offline presence grid | Not Started | sonnet | Regression AC: live-state-overlay.md #10 |
+| 47 | Cleanup: remove old `Dia/DiaApplicationEditor/` directory (if any remnants after rename) | `git status` — no orphan files | Not Started | haiku | |
+| 48 | Create `dia.applicationflowinspector.architecture.module.md` (YAML frontmatter: id, deps, public API, responsibilities) | Doc matches module-metadata-schema.md | Not Started | haiku | |
+| 49 | Update specs: mark DiaApplicationFlowEditor spec `Done`, DiaApplicationFlowInspector spec `Done`, update backlog | Spec status fields correct | Not Started | haiku | |
 
 ## Parallelism
 
 ```
-Phase 1 (#1–11) ──────────────────► Phase 2 (#12–19) ──┐
-                                                        ├──► Phase 5 (#32–42)
-Phase 3 (#20–26) starts after #6 ──────────────────────┤
+Phase 1 (#1–11) ──────────────────► Phase 2 (#12–24) ──┐
+                                                        ├──► Phase 5 (#37–49)
+Phase 3 (#25–31) starts after #6 ──────────────────────┤
                                                         │
-Phase 4 (#27–31) independent ──────────────────────────┘
+Phase 4 (#32–36) independent ──────────────────────────┘
 ```
 
 - Phase 1 → Phase 2 is sequential (Phase 2 removes what Phase 1 extracted)
@@ -187,15 +194,17 @@ Phase 4 (#27–31) independent ────────────────�
 
 Within phases:
 - Phase 1: #1→#2→#3→#4→#5 sequential; #6→#7→#8→#9→#10 sequential; #11 after #2
-- Phase 3: #20 first (store), then #21–#25 in parallel, then #26 (wiring)
-- Phase 4: #27→#28 sequential (same file); #29→#30 sequential; #31 after all
+- Phase 2: #12–#16 sequential (removals); #17–#21 sequential (new Editor ACs); #22→#23→#24 sequential (rename + gate)
+- Phase 3: #25 first (store), then #26–#30 in parallel, then #31 (wiring)
+- Phase 4: #32→#33 sequential (same file); #34→#35 sequential; #36 after all
 
 ## Risk Areas
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| Rename `DiaApplicationEditor` → `DiaApplicationFlowEditor` (#17) | Touches vcxproj GUIDs, sln, include paths, DiaCLI. Highest breakage surface. | Run full solution build + pipeline immediately after; regression gate (#19). |
-| `useLiveStoreV2` split (#7, #15) | Editor's read-only version must still react to pushed topics | Existing Editor UI tests validate; add explicit test for "setter without bridge call" |
-| Framework telemetry (#27–29) | Touches ProcessingUnit + EventStreamStore — affects all apps | Minimal changes (~25 lines total); all follow existing MetricRegistry pattern; regression via `dia run googletest` |
-| GameConnectionManager ownership | Inspector needs it from PluginServiceLocator; Editor keeps read-only access | DAFI-009 confirms framework-level; both plugins request same service — no conflict |
+| Rename `DiaApplicationEditor` → `DiaApplicationFlowEditor` (#22) | Touches vcxproj GUIDs, sln, include paths, DiaCLI. Highest breakage surface. | Run full solution build + pipeline immediately after; regression gate (#24). |
+| `useLiveStoreV2` split (#7, #15) | Editor's read-only version must still react to pushed topics | Existing Editor UI tests validate; explicit test for "setter without bridge call" (#15); no-Inspector test (#20) |
+| Editor post-split regression (#17–#21) | Editor must render correctly without Inspector, with no console errors, and respond immediately to connection status changes | Dedicated tests per AC; regression gate (#24) before rename |
+| Framework telemetry (#32–34) | Touches ProcessingUnit + EventStreamStore — affects all apps | Minimal changes (~25 lines total); all follow existing MetricRegistry pattern; regression via `dia run googletest` |
+| GameConnectionManager ownership | Inspector needs it from PluginServiceLocator; Editor keeps read-only access | DAFI-009 confirms framework-level; both plugins request same service — no conflict; explicit test in #19 |
 | Event log memory | 1024 entries × ~200 bytes = ~200KB per Inspector instance | Acceptable for dev tool; ring buffer drops oldest silently |

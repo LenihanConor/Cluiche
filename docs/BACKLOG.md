@@ -22,7 +22,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | DiaSceneEditor | [diasceneeditor.md](specs/systems/dia/diasceneeditor.md) ✅ | 6 features: scene-hierarchy-panel, entity-placement-crud, change-blueprint, layer-authoring, camera-light-authoring, scene-validation. Spatial authoring of `.diascene` files. [Plan](specs/systems/dia/diasceneeditor.plan.md) (22 tasks). | DiaScene2D, DiaEditor, DiaReflect, DiaGame, DiaAssetCatalogue, DiaEntityTemplateEditor (soft) |
 | DiaEntityInspector | [diaentityinspector.md](specs/systems/dia/diaentityinspector.md) ✅ | 4 features: entity-inspector-panel, query-browser-tab, mailbox-traffic-monitor, entity-watch-list. Runtime debug via WebSocket. [Plan](specs/systems/dia/diaentityinspector.plan.md) (18 tasks). | diaentitytemplate, DiaDebugProtocol, DiaDebugServer, DiaEditor, DiaReflect Phase 3 |
 | ~~DiaScene2D~~ | [diascene2d.md](specs/systems/dia/diascene2d.md) ✅ | **Done** — Scene2D struct, LayerTable, SceneLoader2D (camera/light/entity hydration, instanceData patching, validation). 18 tests pass. | — |
-| DiaArchitecture | [diaarchitecture.md](specs/systems/dia/diaarchitecture.md) ✅ | C7 → C1 → C2 → C3a (Dia modules, additive) → C3b (Cluiche apps + retirement, deferrable). C3a spec needs update to Draft→Approved; C3b is a new Draft spec. | None |
+| ~~DiaArchitecture~~ | [diaarchitecture.md](specs/systems/dia/diaarchitecture.md) ✅ | **Done** — Layer fields, refactoring (R1–R6), audit tool (`dia check arch`), SLN sync (`dia check sln-sync`). 1975 violations baselined. | — |
 
 ---
 
@@ -31,8 +31,8 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 | Feature | Spec | System | Notes |
 |---------|------|--------|-------|
 | per-app-bin-layout | [per-app-bin-layout.md](specs/features/dia/diapipeline/per-app-bin-layout.md) | DiaPipeline ✅ | |
-| Editor Memory | [editor-memory.md](specs/features/dia/diaeditor/editor-memory.md) | DiaEditor ✅ | Invisible save/restore of layout, plugins, per-plugin project-scoped state. Size S. |
-| Toast Notifications | [toast-notifications.md](specs/features/dia/diaeditor/toast-notifications.md) | DiaEditor ✅ | Framework-level notification service — plugins push toasts, shell renders uniformly. [Plan](specs/features/dia/diaeditor/toast-notifications.plan.md) (11 tasks). Size S. |
+| ~~Editor Memory~~ | [editor-memory.md](specs/features/dia/diaeditor/editor-memory.md) | DiaEditor ✅ | **Done** — save/restore layout, plugins, per-plugin project-scoped state. |
+| ~~Toast Notifications~~ | [toast-notifications.md](specs/features/dia/diaeditor/toast-notifications.md) | DiaEditor ✅ | **Done** — framework-level notification service; plugins push toasts, shell renders. |
 
 ---
 
@@ -44,7 +44,7 @@ These specs are `Approved` with all features `Approved`. No spec work needed —
 
 | System | Spec | What's happening |
 |--------|------|-----------------|
-| DiaApplicationFlowInspector | [diaapplicationflowinspector.md](specs/systems/dia/diaapplicationflowinspector.md) | Spec **Approved** (2026-06-04). Split from Editor — live runtime inspection (timeline, backpressure, frame budget, event log). [Plan](specs/systems/dia/diaapplicationflowinspector.plan.md) (34 tasks). Also renames DiaApplicationEditor → DiaApplicationFlowEditor. |
+| DiaApplicationFlowInspector | [diaapplicationflowinspector.md](specs/systems/dia/diaapplicationflowinspector.md) | Spec **Approved** (2026-06-04). Split from Editor — live runtime inspection (timeline, backpressure, frame budget, event log). [Plan](specs/systems/dia/diaapplicationflowinspector.plan.md) (49 tasks). Also renames DiaApplicationEditor → DiaApplicationFlowEditor. Includes new Editor-side ACs: connection-status-indicator, live-state-overlay (topic model), risky-change-warnings (no Inspector dep). |
 
 ---
 
@@ -113,42 +113,11 @@ Research complete: [docs/research/static_cpp_bug/](research/static_cpp_bug/). Bu
 
 ---
 
-## DiaArchitecture — Numbered Layer Architecture
+## DiaArchitecture — Done ✅
 
-Spec Approved: [diaarchitecture.md](specs/systems/dia/diaarchitecture.md). Plan: [diaarchitecture.plan.md](specs/systems/dia/diaarchitecture.plan.md).
+Spec: [diaarchitecture.md](specs/systems/dia/diaarchitecture.md). Plan: [diaarchitecture.plan.md](specs/systems/dia/diaarchitecture.plan.md). All phases complete (2026-06-04).
 
-**Target architecture:** Numbered layers (1.0–3.1) with strict dependency ordering. Sub-levels within Foundation (Core/Maths/Services/Platform/Application), Assets (core/tools), and Domains (Visual/Physics/Animation — core/tools per domain). CMake dropped — MSBuild remains. Enforcement via C1 audit tool.
-
-### Phase 1 — Layer Fields ✅ Done (2026-06-03)
-
-All 76 module docs updated with canonical `layer:` values (foundation/core, foundation/maths, foundation/services, foundation/platform, foundation/application, assets/core, assets/tools, domain/visual/*, domain/physics/*, domain/animation/*).
-
-### Phase 2 + 3 — Refactoring ✅ Done (2026-06-03)
-
-All 6 refactoring actions shipped:
-
-| # | What | Outcome |
-|---|------|---------|
-| R1 | DiaFileIO split from DiaCore | FilePath/ compiles into DiaFileIO.lib |
-| R2 | DiaJson split from DiaCore | jsoncpp compiles into DiaJson.lib |
-| R3 | DiaStreams split from DiaApplicationFlow | Stream types in DiaStreams/, full header relocation |
-| R4 | TextureHandler → DiaBgfx | DiaAssetRuntime drops DiaBgfx dep |
-| R5 | DiaDebugServer dep inversion | IStreamTapTarget owned by DebugServer; DiaApplicationFlow dep removed |
-| R6 | DiaDebugDraw split from DiaVisualDebugger | Abstract debug layer at foundation/services; cross-domain exception eliminated |
-
-### Phase 4 — Architecture Audit Tool (C1) ✅ Done (2026-06-04)
-
-`dia check arch [--module <id>] [--summary]` — reads all module docs, parses `#include` directives, detects forbidden deps and layer ordering violations. First run: 1975 violations found (expected — domain VDs still depend on `DiaVisualDebugger` rather than `DiaDebugDraw`). Output: `Cluiche/out/check/arch-violations.txt`. CI gate (task 18) deferred until violations are cleaned up.
-
-### Phase 5 — SLN Layer Sync ✅ Done (2026-06-04)
-
-`dia check sln-sync [--dry-run]` — rewrites `Cluiche.sln` solution folders to numbered names. 13 new folders created, 76 Dia projects assigned. Idempotent. Post-step wired into `dia scaffold module`. Reference: [diaarchitecture.folders.md](specs/systems/dia/diaarchitecture.folders.md).
-
-Also: module docs created for all 18 previously undocumented Dia projects (DiaAPI, DiaAsset, DiaEditor, DiaGame, DiaImGui, DiaPicking, DiaProtobuf, DiaSDL, etc.) — 64/64 vcxprojs now have `layer:` set.
-
-### Next — Violation Cleanup
-
-1975 arch violations to clear (mostly domain VDs including `DiaVisualDebugger` instead of `DiaDebugDraw`). Once clean, add `dia check arch` to CI (task 18).
+Numbered layers (1.0–3.1), 6 refactors (R1–R6), `dia check arch` audit tool, `dia check sln-sync`, 64/64 vcxprojs documented with `layer:` field. CI gate live: `dia check arch` runs in `dia pipeline --stage static-analysis`.
 
 ---
 
