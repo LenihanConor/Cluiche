@@ -88,7 +88,7 @@ namespace Dia::SceneEditor
     → each stage references a .diascene
       → DiaSceneEditor loads the selected .diascene
         → Scene2D struct (layers, cameras, lights, entities)
-        → Blueprint references resolved to .diaentitytemplatetemplate files
+        → Blueprint references resolved to .diaentitytemplate files
 ```
 
 ## File Formats
@@ -114,11 +114,11 @@ namespace Dia::SceneEditor
 }
 ```
 
-### .diaentitytemplatetemplate (entity blueprint — owned by diaentitytemplate)
+### .diaentitytemplate (entity blueprint — owned by diaentitytemplate)
 
 ```json
 {
-  "entity_blueprint": {
+  "entity_template": {
     "id": "player_entity",
     "components": [
       {
@@ -179,7 +179,7 @@ namespace Dia::SceneEditor
 | SED-SCN-003 | No Blueprint Defaults tab — template link replaces it | A dedicated read-only tab added complexity without value. The "Template →" link in the Identity section opens DiaEntityTemplateEditor for the full template view. |
 | SED-SCN-004 | Change Template is lossy — transferring overrides are shown, orphaned overrides are warned | Users must see blast radius before confirming; orphaned overrides are not silently deleted |
 | SED-SCN-005 | No 2D viewport in v1 — list + property panel only | Viewport is high complexity; property-based editing ships value immediately; viewport is a future feature spec |
-| SED-SCN-006 | Blueprint file extensions: `.diaentitytemplatetemplate` (entities), `.diacamera` (cameras), `.dialight` (lights) | Separate extensions per type — clear from filename what you're editing; matches owning modules (diaentitytemplate, DiaCamera2D, DiaLighting2D) |
+| SED-SCN-006 | Blueprint file extensions: `.diaentitytemplate` (entities), `.diacamera` (cameras), `.dialight` (lights) | Separate extensions per type — clear from filename what you're editing; matches owning modules (diaentitytemplate, DiaCamera2D, DiaLighting2D) |
 | SED-SCN-007 | Duplicate offsets position by +50 on both axes | Prevents exact overlap; user adjusts after placement |
 | SED-SCN-008 | Undo/redo deferred to v2 | Reduce v1 scope; save/revert workflow is sufficient for initial authoring |
 | SED-SCN-009 | No Save button — autosave on every mutation | Every add/delete/rename/override change writes immediately; dirty indicator is informational only |
@@ -208,8 +208,8 @@ namespace Dia::SceneEditor
 | DiaEditor | Provides `IEditorPlugin` framework, `ProjectContext`, `EditorModel` |
 | DiaReflect | ComponentTypeRegistry for enumerating available component types and field metadata |
 | DiaGame | `.diagame` manifest format; provides stage list to populate toolbar dropdown |
-| DiaAssetCatalogue | Provides discovery of available blueprints (`.diaentitytemplatetemplate`, `.diacamera`, `.dialight`) via asset registry queries |
-| diaentitytemplate | Owns `.diaentitytemplatetemplate` format definition; provides entity/component type system |
+| DiaAssetCatalogue | Provides discovery of available blueprints (`.diaentitytemplate`, `.diacamera`, `.dialight`) via asset registry queries |
+| diaentitytemplate | Owns `.diaentitytemplate` format definition; provides entity/component type system |
 | DiaCamera2D | Owns `.diacamera` format definition |
 | DiaLighting2D | Owns `.dialight` format definition |
 
@@ -225,7 +225,7 @@ namespace Dia::SceneEditor
 
 ## Open Design Questions
 
-1. **Should the `.diaentitytemplatetemplate` format spec live in diaentitytemplate's system spec or get its own mini-spec?** Format is defined inline here for now; may need promotion to diaentitytemplate system spec when other tools (CLI schema export, runtime loader, DiaEntityTemplateEditor) also need to reference it.
+1. **Should the `.diaentitytemplate` format spec live in diaentitytemplate's system spec or get its own mini-spec?** Format is defined inline here for now; may need promotion to diaentitytemplate system spec when other tools (CLI schema export, runtime loader, DiaEntityTemplateEditor) also need to reference it.
 
 ## Status
 

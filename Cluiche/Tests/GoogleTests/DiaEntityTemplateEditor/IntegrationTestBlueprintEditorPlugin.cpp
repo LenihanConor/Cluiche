@@ -71,12 +71,12 @@ protected:
 	// Minimal entity blueprint JSON.
 	static const char* kEntityJson()
 	{
-		return R"({"entity_blueprint":{"id":"hero","components":[{"type":"Transform2D","fields":{"x":0,"y":0}}]}})";
+		return R"({"entity_template":{"id":"hero","components":[{"type":"Transform2D","fields":{"x":0,"y":0}}]}})";
 	}
 
 	static const char* kEmptyEntityJson()
 	{
-		return R"({"entity_blueprint":{"id":"empty","components":[]}})";
+		return R"({"entity_template":{"id":"empty","components":[]}})";
 	}
 
 	DiaEntityTemplateEditorPlugin  mPlugin;
@@ -328,7 +328,7 @@ TEST_F(EntityTemplateEditorPluginTest, Handler_Load_MissingPath_ReturnsError)
 TEST_F(EntityTemplateEditorPluginTest, Handler_Load_NonexistentFile_ReturnsError)
 {
 	Json::Value data;
-	data["path"] = "nonexistent_xyz.diaentitytemplatetemplate";
+	data["path"] = "nonexistent_xyz.diaentitytemplate";
 	Json::Value r = Invoke("entity_template_editor.load", data);
 	EXPECT_FALSE(r["success"].asBool());
 }
@@ -339,7 +339,7 @@ TEST_F(EntityTemplateEditorPluginTest, Handler_Load_NonexistentFile_ReturnsError
 
 TEST_F(EntityTemplateEditorPluginTest, Handler_Load_ValidFile_ReturnsProperties)
 {
-	const char* kPath = "itmp_load_valid.diaentitytemplatetemplate";
+	const char* kPath = "itmp_load_valid.diaentitytemplate";
 	WriteTempFile(kPath, kEntityJson());
 
 	Json::Value data;
@@ -372,7 +372,7 @@ TEST_F(EntityTemplateEditorPluginTest, Handler_Load_DeterminesTopKeyFromExtensio
 TEST_F(EntityTemplateEditorPluginTest, Handler_Save_MissingPath_ReturnsError)
 {
 	Json::Value data;
-	data["blueprint"]["entity_blueprint"]["id"] = "x";
+	data["blueprint"]["entity_template"]["id"] = "x";
 	Json::Value r = Invoke("entity_template_editor.save", data);
 	EXPECT_FALSE(r["success"].asBool());
 }
@@ -380,7 +380,7 @@ TEST_F(EntityTemplateEditorPluginTest, Handler_Save_MissingPath_ReturnsError)
 TEST_F(EntityTemplateEditorPluginTest, Handler_Save_MissingBlueprint_ReturnsError)
 {
 	Json::Value data;
-	data["path"] = "itmp_save.diaentitytemplatetemplate";
+	data["path"] = "itmp_save.diaentitytemplate";
 	Json::Value r = Invoke("entity_template_editor.save", data);
 	EXPECT_FALSE(r["success"].asBool());
 }
@@ -391,12 +391,12 @@ TEST_F(EntityTemplateEditorPluginTest, Handler_Save_MissingBlueprint_ReturnsErro
 
 TEST_F(EntityTemplateEditorPluginTest, Handler_Save_ValidInput_CreatesFile)
 {
-	const char* kPath = "itmp_save_valid.diaentitytemplatetemplate";
+	const char* kPath = "itmp_save_valid.diaentitytemplate";
 	mTempFiles[mTempCount++] = kPath;
 
 	Json::Value blueprint;
-	blueprint["entity_blueprint"]["id"] = "saved_entity";
-	blueprint["entity_blueprint"]["components"] = Json::Value(Json::arrayValue);
+	blueprint["entity_template"]["id"] = "saved_entity";
+	blueprint["entity_template"]["components"] = Json::Value(Json::arrayValue);
 
 	Json::Value data;
 	data["path"]      = kPath;
@@ -425,7 +425,7 @@ TEST_F(EntityTemplateEditorPluginTest, Handler_UpdateField_MissingParams_Returns
 
 TEST_F(EntityTemplateEditorPluginTest, Handler_UpdateField_ComponentNotFound_ReturnsError)
 {
-	const char* kPath = "itmp_update_notfound.diaentitytemplatetemplate";
+	const char* kPath = "itmp_update_notfound.diaentitytemplate";
 	WriteTempFile(kPath, kEntityJson());
 
 	Json::Value data;
@@ -445,7 +445,7 @@ TEST_F(EntityTemplateEditorPluginTest, Handler_UpdateField_ComponentNotFound_Ret
 
 TEST_F(EntityTemplateEditorPluginTest, Handler_UpdateField_RoundTrip_ValuePersisted)
 {
-	const char* kPath = "itmp_update_roundtrip.diaentitytemplatetemplate";
+	const char* kPath = "itmp_update_roundtrip.diaentitytemplate";
 	WriteTempFile(kPath, kEntityJson());
 
 	Json::Value data;
@@ -479,9 +479,9 @@ TEST_F(EntityTemplateEditorPluginTest, Handler_UpdateField_RoundTrip_ValuePersis
 
 TEST_F(EntityTemplateEditorPluginTest, Handler_UpdateField_StringValue_Persisted)
 {
-	const char* kPath = "itmp_update_string.diaentitytemplatetemplate";
+	const char* kPath = "itmp_update_string.diaentitytemplate";
 	WriteTempFile(kPath,
-		R"({"entity_blueprint":{"id":"e","components":[{"type":"Tag","fields":{"name":"old"}}]}})");
+		R"({"entity_template":{"id":"e","components":[{"type":"Tag","fields":{"name":"old"}}]}})");
 
 	Json::Value data;
 	data["path"]          = kPath;
@@ -521,7 +521,7 @@ TEST_F(EntityTemplateEditorPluginTest, Handler_AddComponent_MissingParams_Return
 
 TEST_F(EntityTemplateEditorPluginTest, Handler_AddComponent_DuplicateType_ReturnsError)
 {
-	const char* kPath = "itmp_add_dup.diaentitytemplatetemplate";
+	const char* kPath = "itmp_add_dup.diaentitytemplate";
 	WriteTempFile(kPath, kEntityJson());  // already has Transform2D
 
 	Json::Value data;
@@ -538,7 +538,7 @@ TEST_F(EntityTemplateEditorPluginTest, Handler_AddComponent_DuplicateType_Return
 
 TEST_F(EntityTemplateEditorPluginTest, Handler_AddComponent_RoundTrip_ComponentPresent)
 {
-	const char* kPath = "itmp_add_roundtrip.diaentitytemplatetemplate";
+	const char* kPath = "itmp_add_roundtrip.diaentitytemplate";
 	WriteTempFile(kPath, kEmptyEntityJson());
 
 	Json::Value data;
@@ -559,7 +559,7 @@ TEST_F(EntityTemplateEditorPluginTest, Handler_AddComponent_RoundTrip_ComponentP
 
 TEST_F(EntityTemplateEditorPluginTest, Handler_AddComponent_PreservesExistingComponents)
 {
-	const char* kPath = "itmp_add_preserve.diaentitytemplatetemplate";
+	const char* kPath = "itmp_add_preserve.diaentitytemplate";
 	WriteTempFile(kPath, kEntityJson());  // has Transform2D
 
 	Json::Value data;
@@ -579,7 +579,7 @@ TEST_F(EntityTemplateEditorPluginTest, Handler_AddComponent_PreservesExistingCom
 
 TEST_F(EntityTemplateEditorPluginTest, Handler_AddComponent_NewComponent_HasEmptyFields)
 {
-	const char* kPath = "itmp_add_emptyfields.diaentitytemplatetemplate";
+	const char* kPath = "itmp_add_emptyfields.diaentitytemplate";
 	WriteTempFile(kPath, kEmptyEntityJson());
 
 	Json::Value data;
@@ -607,7 +607,7 @@ TEST_F(EntityTemplateEditorPluginTest, Handler_RemoveComponent_MissingParams_Ret
 
 TEST_F(EntityTemplateEditorPluginTest, Handler_RemoveComponent_NotFound_ReturnsError)
 {
-	const char* kPath = "itmp_remove_notfound.diaentitytemplatetemplate";
+	const char* kPath = "itmp_remove_notfound.diaentitytemplate";
 	WriteTempFile(kPath, kEntityJson());
 
 	Json::Value data;
@@ -624,7 +624,7 @@ TEST_F(EntityTemplateEditorPluginTest, Handler_RemoveComponent_NotFound_ReturnsE
 
 TEST_F(EntityTemplateEditorPluginTest, Handler_RemoveComponent_RoundTrip_ComponentGone)
 {
-	const char* kPath = "itmp_remove_roundtrip.diaentitytemplatetemplate";
+	const char* kPath = "itmp_remove_roundtrip.diaentitytemplate";
 	WriteTempFile(kPath, kEntityJson());  // has Transform2D
 
 	Json::Value data;
@@ -642,9 +642,9 @@ TEST_F(EntityTemplateEditorPluginTest, Handler_RemoveComponent_RoundTrip_Compone
 
 TEST_F(EntityTemplateEditorPluginTest, Handler_RemoveComponent_PreservesOtherComponents)
 {
-	const char* kPath = "itmp_remove_preserve.diaentitytemplatetemplate";
+	const char* kPath = "itmp_remove_preserve.diaentitytemplate";
 	WriteTempFile(kPath,
-		R"({"entity_blueprint":{"id":"e","components":[{"type":"A","fields":{}},{"type":"B","fields":{}},{"type":"C","fields":{}}]}})");
+		R"({"entity_template":{"id":"e","components":[{"type":"A","fields":{}},{"type":"B","fields":{}},{"type":"C","fields":{}}]}})");
 
 	Json::Value data;
 	data["path"]          = kPath;
@@ -691,7 +691,7 @@ TEST_F(EntityTemplateEditorPluginTest, Handler_GetList_WithCatalogueStub_ShowsAs
 			{
 				Json::Value rec;
 				rec["id"]          = "diaentitytemplate.player";
-				rec["source_path"] = "Assets/player.diaentitytemplatetemplate";
+				rec["source_path"] = "Assets/player.diaentitytemplate";
 				records.append(rec);
 			}
 			result["records"] = records;
@@ -739,7 +739,7 @@ TEST_F(EntityTemplateEditorPluginTest, Handler_GetAvailableComponents_MissingPat
 
 TEST_F(EntityTemplateEditorPluginTest, Handler_GetAvailableComponents_ValidFile_ReturnsArray)
 {
-	const char* kPath = "itmp_avail_comps.diaentitytemplatetemplate";
+	const char* kPath = "itmp_avail_comps.diaentitytemplate";
 	WriteTempFile(kPath, kEntityJson());
 
 	Json::Value data;
@@ -782,7 +782,7 @@ TEST_F(EntityTemplateEditorPluginTest, Handler_CreateFromTemplate_MissingPath_Re
 TEST_F(EntityTemplateEditorPluginTest, Handler_CreateFromTemplate_MissingInstanceId_ReturnsError)
 {
 	Json::Value data;
-	data["path"] = "itmp_create.diaentitytemplatetemplate";
+	data["path"] = "itmp_create.diaentitytemplate";
 	Json::Value r = Invoke("entity_template_editor.create_from_template", data);
 	EXPECT_FALSE(r["success"].asBool());
 }
@@ -793,7 +793,7 @@ TEST_F(EntityTemplateEditorPluginTest, Handler_CreateFromTemplate_MissingInstanc
 
 TEST_F(EntityTemplateEditorPluginTest, Handler_CreateFromTemplate_Entity_CreatesValidFile)
 {
-	const char* kPath = "itmp_create_entity.diaentitytemplatetemplate";
+	const char* kPath = "itmp_create_entity.diaentitytemplate";
 	mTempFiles[mTempCount++] = kPath;
 
 	Json::Value data;
@@ -856,7 +856,7 @@ TEST_F(EntityTemplateEditorPluginTest, Handler_CreateFromTemplate_Light_UsesCorr
 
 TEST_F(EntityTemplateEditorPluginTest, Handler_CreateFromTemplate_CreatedFileIsLoadableAndEditable)
 {
-	const char* kPath = "itmp_create_editable.diaentitytemplatetemplate";
+	const char* kPath = "itmp_create_editable.diaentitytemplate";
 	mTempFiles[mTempCount++] = kPath;
 
 	// Create
@@ -884,7 +884,7 @@ TEST_F(EntityTemplateEditorPluginTest, Handler_CreateFromTemplate_InvalidDirecto
 {
 	Json::Value data;
 	data["instanceId"] = "diaentitytemplate.test";
-	data["path"]       = "nonexistent_dir_xyz/sub/file.diaentitytemplatetemplate";
+	data["path"]       = "nonexistent_dir_xyz/sub/file.diaentitytemplate";
 	Json::Value r = Invoke("entity_template_editor.create_from_template", data);
 
 	EXPECT_FALSE(r["success"].asBool());
@@ -896,7 +896,7 @@ TEST_F(EntityTemplateEditorPluginTest, Handler_CreateFromTemplate_InvalidDirecto
 
 TEST_F(EntityTemplateEditorPluginTest, Compound_AddUpdateRemove_FileStateCorrect)
 {
-	const char* kPath = "itmp_compound.diaentitytemplatetemplate";
+	const char* kPath = "itmp_compound.diaentitytemplate";
 	WriteTempFile(kPath, kEmptyEntityJson());
 
 	// Add

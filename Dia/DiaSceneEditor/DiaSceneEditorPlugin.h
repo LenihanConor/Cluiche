@@ -76,6 +76,7 @@ namespace Dia
 			Json::Value                 mLoadedSceneRoot;
 			char                        mLoadedScenePath[512];
 			char                        mDiagamePath[512] = {};
+			char                        mDiagameDir[512]  = {};
 			char                        mSceneCatalogueId[256] = {};
 		};
 	}

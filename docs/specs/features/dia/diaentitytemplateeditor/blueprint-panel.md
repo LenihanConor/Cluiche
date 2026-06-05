@@ -6,7 +6,7 @@
 
 ## Summary
 
-Implement the DiaEntityTemplateEditorPlugin scaffold, the blueprint list panel (left, grouped by type), and the blueprint property panel (right, component accordion with field editing). This is the foundational feature of DiaEntityTemplateEditor — it establishes file I/O for `.diaentitytemplatetemplate`, `.diacamera`, `.dialight` and the editing workflow for component fields.
+Implement the DiaEntityTemplateEditorPlugin scaffold, the blueprint list panel (left, grouped by type), and the blueprint property panel (right, component accordion with field editing). This is the foundational feature of DiaEntityTemplateEditor — it establishes file I/O for `.diaentitytemplate`, `.diacamera`, `.dialight` and the editing workflow for component fields.
 
 ## Traceability
 
@@ -25,9 +25,9 @@ Implement the DiaEntityTemplateEditorPlugin scaffold, the blueprint list panel (
 ## Acceptance Criteria
 
 ### Blueprint file I/O
-- `EntityTemplateEditorController` loads a `.diaentitytemplatetemplate` file when a blueprint is selected in the Blueprints section
+- `EntityTemplateEditorController` loads a `.diaentitytemplate` file when a blueprint is selected in the Blueprints section
 - File is parsed into an in-memory representation: list of components, each with type name and field key-value pairs
-- Save writes the modified data back to the same `.diaentitytemplatetemplate` file path
+- Save writes the modified data back to the same `.diaentitytemplate` file path
 - Blueprint dirty state tracked independently from scene dirty state (different files)
 - Title bar or status bar indicates which blueprint file is being edited when in blueprint view
 
@@ -35,7 +35,7 @@ Implement the DiaEntityTemplateEditorPlugin scaffold, the blueprint list panel (
 - Right panel shows "Blueprint Identity" section:
   - Name (read-only, derived from file)
   - File path (read-only)
-  - File type badge: `.diaentitytemplatetemplate` / `.diacamera` / `.dialight`
+  - File type badge: `.diaentitytemplate` / `.diacamera` / `.dialight`
 - "Usage" section (cross-scene impact visibility per SED-SCN-012):
   - Lists all scenes that reference this blueprint (derived from asset catalogue relationships)
   - For each scene: shows count of instances using this blueprint
@@ -73,11 +73,11 @@ Implement the DiaEntityTemplateEditorPlugin scaffold, the blueprint list panel (
   - `string` → text input
   - `enum` → dropdown (if DiaReflect provides enum values)
 
-### .diaentitytemplatetemplate file format
+### .diaentitytemplate file format
 
 ```json
 {
-  "entity_blueprint": {
+  "entity_template": {
     "id": "player_entity",
     "components": [
       {
@@ -105,7 +105,7 @@ Implement the DiaEntityTemplateEditorPlugin scaffold, the blueprint list panel (
 | `Dia/DiaEntityTemplateEditor/BlueprintListController.cpp` | New |
 | `Dia/DiaEntityTemplateEditor/BlueprintPropertyController.h` | New |
 | `Dia/DiaEntityTemplateEditor/BlueprintPropertyController.cpp` | New |
-| `Dia/DiaEntityTemplateEditor/BlueprintFileHandler.h` | New — `.diaentitytemplatetemplate` / `.diacamera` / `.dialight` load/save |
+| `Dia/DiaEntityTemplateEditor/BlueprintFileHandler.h` | New — `.diaentitytemplate` / `.diacamera` / `.dialight` load/save |
 | `Dia/DiaEntityTemplateEditor/BlueprintFileHandler.cpp` | New |
 | `Cluiche/Cluiche.sln` | Add `DiaEntityTemplateEditor.vcxproj` |
 
@@ -113,7 +113,7 @@ Implement the DiaEntityTemplateEditorPlugin scaffold, the blueprint list panel (
 
 | Decision | Compliance |
 |---|---|
-| SED-BP-002 | Separate extensions: `.diaentitytemplatetemplate`, `.diacamera`, `.dialight`. Implemented. |
+| SED-BP-002 | Separate extensions: `.diaentitytemplate`, `.diacamera`, `.dialight`. Implemented. |
 | SED-BP-003 | Discovery via DiaAssetCatalogue. List populated from asset registry. |
 | SED-BP-004 | Cross-scene usage shown. Usage section displays scenes + instance counts. |
 | SED-BP-007 | All field defaults zero/empty. New components get zero-value fields. |

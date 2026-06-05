@@ -1205,7 +1205,7 @@ namespace Dia
 							for (const Json::Value& tag : data["tags"])
 							{
 								if (tag.isString() && rec.mTags.Size() < rec.mTags.Capacity())
-									rec.mTags.PushBack(Dia::Core::StringCRC(tag.asCString()));
+									rec.mTags.Add(Dia::Core::StringCRC(tag.asCString()));
 							}
 							if (rec.mTags.Size() > 0)
 								rec.mManualOverrideFlags |= Dia::AssetCatalogue::kManualOverrideTags;

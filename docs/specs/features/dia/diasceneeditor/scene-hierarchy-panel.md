@@ -101,7 +101,7 @@ Implement the `DiaSceneEditorPlugin` scaffold, the scene hierarchy panel (left p
 - This is the only path to editing blueprint defaults from the scene editor — no inline blueprint editing
 
 ### Blueprint Defaults tab (read-only reference)
-- Banner: "Blueprint defaults from {name}.diaentitytemplatetemplate (read-only)" with "Open in Blueprint Editor →" link
+- Banner: "Blueprint defaults from {name}.diaentitytemplate (read-only)" with "Open in Blueprint Editor →" link
 - All blueprint fields shown grouped by component, inputs disabled (greyed/dashed styling)
 - Clicking "Open in Blueprint Editor →" opens DiaEntityTemplateEditor with that blueprint focused
 

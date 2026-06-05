@@ -1073,7 +1073,7 @@
     var assetType  = data.assetType || 'diaentitytemplate';
 
     // Derive the expected file path from the instanceId
-    // e.g. "diaentitytemplate.more" → "more.diaentitytemplatetemplate" appended to the directory portion of sourcePath
+    // e.g. "diaentitytemplate.more" → "more.diaentitytemplate" appended to the directory portion of sourcePath
     var dirPath = sourcePath;
     if (dirPath && dirPath.charAt(dirPath.length - 1) !== '/' && dirPath.charAt(dirPath.length - 1) !== '\\') {
       var lastSlash = Math.max(dirPath.lastIndexOf('/'), dirPath.lastIndexOf('\\'));

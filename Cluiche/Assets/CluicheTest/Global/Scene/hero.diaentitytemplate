@@ -1,0 +1,17 @@
+{
+	"entity_template" : 
+	{
+		"components" : 
+		[
+			{
+				"fields" : {},
+				"type" : "cluichetest.transform"
+			},
+			{
+				"fields" : {},
+				"type" : "cluichetest.pickable-circle"
+			}
+		],
+		"id" : ""
+	}
+}

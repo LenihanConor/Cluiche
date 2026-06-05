@@ -493,22 +493,22 @@
          "type" : "manifest"
       },
       {
-         "content_hash" : 672568281,
-         "id" : "diaentitytemplate.argh",
+         "content_hash" : 0,
+         "id" : "diaentitytemplate.hero",
          "references" : [],
          "scope" : "global",
-         "source_path" : "C:\\GitHub\\Cluiche\\Cluiche\\Assets\\CluicheTest\\Global\\Scene/argh.diaentitytemplatetemplate",
+         "source_path" : "Global/Scene/hero.diaentitytemplate",
          "stage_name" : "",
          "status" : "active",
          "tags" : [],
          "type" : "diaentitytemplate"
       },
       {
-         "content_hash" : 2626122733,
-         "id" : "diaentitytemplate.test",
+         "content_hash" : 0,
+         "id" : "diaentitytemplate.stinker",
          "references" : [],
          "scope" : "global",
-         "source_path" : "C:\\GitHub\\Cluiche\\Cluiche\\Assets\\CluicheTest\\Global\\Scene/test.diaentitytemplatetemplate",
+         "source_path" : "Global/Scene/stinker.diaentitytemplate",
          "stage_name" : "",
          "status" : "active",
          "tags" : [],

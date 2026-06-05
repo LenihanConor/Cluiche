@@ -17,8 +17,8 @@ All dependencies exist:
 | # | Task | Test | Status | Model | Notes |
 |---|------|------|--------|-------|-------|
 | 1 | Plugin scaffold: create `Dia/DiaEntityTemplateEditor/` project, `DiaEntityTemplateEditorPlugin` class, register with `REGISTER_EDITOR_PLUGIN`, add to solution | Plugin appears in EditorPluginRegistry; `GetName()` returns "DiaEntityTemplateEditor" | Done | sonnet | All 4 source files + vcxproj + vcxproj.filters + module doc created; added to Cluiche.sln (Editors folder, GUID E3F4A5B6); wired into CluicheEditor vcxproj (ClCompile + ProjectReference + lib); pipeline.toml deploy rule added; `EntityTemplateEditor/` plugin dir deployed. Build: PASSED. |
-| 2 | Asset type registration: register `.diaentitytemplatetemplate`, `.diacamera`, `.dialight` with `AssetTypeEditorRegistry` so "Open" from asset catalogue routes here | Opening a `.diaentitytemplatetemplate` asset in catalogue opens DiaEntityTemplateEditor | Not Started | sonnet | Use `asset_catalogue.register_type_editor` pattern from DiaAssetCatalogueEditor |
-| 3 | Blueprint file handler: implement `BlueprintFileHandler` — load/save `.diaentitytemplatetemplate`/`.diacamera`/`.dialight` JSON files | Round-trip: load → save → diff shows no change | Done | sonnet | `BlueprintFileHandler::Load/Save` implemented with `Json::CharReaderBuilder` + `Json::StreamWriterBuilder`; `TopLevelKeyForExtension` maps ext→root key. Covered by T1 commit. |
+| 2 | Asset type registration: register `.diaentitytemplate`, `.diacamera`, `.dialight` with `AssetTypeEditorRegistry` so "Open" from asset catalogue routes here | Opening a `.diaentitytemplate` asset in catalogue opens DiaEntityTemplateEditor | Not Started | sonnet | Use `asset_catalogue.register_type_editor` pattern from DiaAssetCatalogueEditor |
+| 3 | Blueprint file handler: implement `BlueprintFileHandler` — load/save `.diaentitytemplate`/`.diacamera`/`.dialight` JSON files | Round-trip: load → save → diff shows no change | Done | sonnet | `BlueprintFileHandler::Load/Save` implemented with `Json::CharReaderBuilder` + `Json::StreamWriterBuilder`; `TopLevelKeyForExtension` maps ext→root key. Covered by T1 commit. |
 | 4 | Blueprint list controller: left panel — query DiaAssetCatalogue for all registered blueprint assets, group by type (Entity/Camera/Light), render list | List shows all registered blueprints; selecting one loads it | Done | sonnet | `BlueprintListController::BuildListJson` queries registry by type (diaentitytemplate/diacamera/dialight), returns grouped JSON. `entity_template_editor.get_list` handler registered. Covered by T1 commit. |
 | 5 | Blueprint property controller: right panel — render component accordion with fields from loaded blueprint | Selecting a blueprint shows identity + components + fields | Done | sonnet | `BlueprintPropertyController::BuildPropertyJson` enriches fields with `ComponentRegistry` metadata; falls back to raw JSON if type not registered. `entity_template_editor.load` handler registered. Covered by T1 commit. |
 | 6 | Field editing: type-aware inputs (bool/int/float/vec2/string), dirty tracking, save back to file | Edit a field → save → reload shows new value | Done | sonnet | `entity_template_editor.update_field` handler patches field in-memory then saves. Field kind exposed as string for UI widget mapping. Covered by T1 commit. |
@@ -47,7 +47,7 @@ T1-T3 are sequential (each depends on previous). T4-T6 are sequential. T7 can ru
 | `Dia/DiaEntityTemplateEditor/DiaEntityTemplateEditorPlugin.cpp` | Registration + lifecycle |
 | `Dia/DiaEntityTemplateEditor/BlueprintListController.h/cpp` | Left panel logic |
 | `Dia/DiaEntityTemplateEditor/BlueprintPropertyController.h/cpp` | Right panel logic |
-| `Dia/DiaEntityTemplateEditor/BlueprintFileHandler.h/cpp` | .diaentitytemplatetemplate/.diacamera/.dialight I/O |
+| `Dia/DiaEntityTemplateEditor/BlueprintFileHandler.h/cpp` | .diaentitytemplate/.diacamera/.dialight I/O |
 | `Dia/DiaEntityTemplateEditor/CrossSceneUsageQuery.h/cpp` | Asset catalogue relationship query |
 | `Cluiche/CluicheEditor/UI/src/plugins/blueprint-editor/` | React UI components |
 
@@ -62,7 +62,7 @@ T1-T3 are sequential (each depends on previous). T4-T6 are sequential. T7 can ru
 ### Verification
 
 - `dia run cluicheeditor` → DiaEntityTemplateEditor plugin loads without errors
-- Create a test `.diaentitytemplatetemplate` file → open from asset catalogue → editor shows components/fields
+- Create a test `.diaentitytemplate` file → open from asset catalogue → editor shows components/fields
 - Edit a field → save → reload → value persisted
 - Add/remove component → save → file format correct
 - Cross-scene usage shows correct scene references

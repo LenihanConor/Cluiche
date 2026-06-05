@@ -58,6 +58,6 @@ T1-T4 are the generation pipeline (sequential). T5-T7 are the consumption side (
 ## Verification
 
 - `dia reflect --target cluichetest` generates `Cluiche/Assets/CluicheTest/registeredtypes.diaschema`
-- Open CluicheEditor → load `cluichetest.diagame` → Blueprint Editor → select `blargh.diaentitytemplatetemplate` → "Add Component" dropdown shows all 3 CluicheTest components
+- Open CluicheEditor → load `cluichetest.diagame` → Blueprint Editor → select `blargh.diaentitytemplate` → "Add Component" dropdown shows all 3 CluicheTest components
 - DiaApplicationFlowEditor module dropdown still works
 - `dia validate manifest` passes

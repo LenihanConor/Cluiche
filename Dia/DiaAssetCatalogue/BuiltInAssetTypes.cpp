@@ -111,7 +111,7 @@ namespace Dia
 				AssetTypeDescriptor desc;
 				desc.mTypeId         = Dia::Core::StringCRC("diaentitytemplate");
 				desc.mName           = Dia::Core::Containers::String64("Entity");
-				desc.mFilePattern    = Dia::Core::Containers::String64("*.diaentitytemplatetemplate");
+				desc.mFilePattern    = Dia::Core::Containers::String64("*.diaentitytemplate");
 				desc.mDeserializeFn  = nullptr;
 				registry.Register(desc);
 			}

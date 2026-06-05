@@ -7,7 +7,7 @@
 
 ## Summary
 
-DiaEntityTemplateEditor is a CluicheEditor plugin for authoring entity, camera, and light blueprint files (`.diaentitytemplatetemplate`, `.diacamera`, `.dialight`). It provides component CRUD, field default editing, and cross-scene usage visibility. Blueprints are standalone reusable assets that define the template for scene placements.
+DiaEntityTemplateEditor is a CluicheEditor plugin for authoring entity, camera, and light blueprint files (`.diaentitytemplate`, `.diacamera`, `.dialight`). It provides component CRUD, field default editing, and cross-scene usage visibility. Blueprints are standalone reusable assets that define the template for scene placements.
 
 DiaEntityTemplateEditor is opened from the DiaAssetCatalogueEditor (which acts as a file explorer — create assets there, open them here). DiaSceneEditor links to it via "Open in Blueprint Editor →" when users need to edit template defaults rather than instance overrides.
 
@@ -16,7 +16,7 @@ DiaEntityTemplateEditor answers: "how do I define what an entity/camera/light IS
 ## Responsibilities
 
 **Owns:**
-- Blueprint file I/O — load and save `.diaentitytemplatetemplate`, `.diacamera`, `.dialight` files
+- Blueprint file I/O — load and save `.diaentitytemplate`, `.diacamera`, `.dialight` files
 - Component CRUD — add/remove components from a blueprint; field type metadata from DiaReflect's ComponentTypeRegistry
 - Field default editing — set default values for all component fields; type-aware widgets
 - Cross-scene usage display — show which scenes and instances reference this blueprint (blast radius visibility)
@@ -29,7 +29,7 @@ DiaEntityTemplateEditor answers: "how do I define what an entity/camera/light IS
 - Runtime entity inspection — that is DiaEntityInspector
 - Asset registration/discovery — that is DiaAssetCatalogueEditor (blueprints must be registered there)
 - Component type definition — that is DiaReflect
-- Blueprint file format definition — owned by diaentitytemplate (`.diaentitytemplatetemplate`), DiaCamera2D (`.diacamera`), DiaLighting2D (`.dialight`)
+- Blueprint file format definition — owned by diaentitytemplate (`.diaentitytemplate`), DiaCamera2D (`.diacamera`), DiaLighting2D (`.dialight`)
 
 ## Public Interfaces
 
@@ -70,21 +70,21 @@ namespace Dia::EntityTemplateEditor
 
 - `BlueprintListController` — left panel: lists all registered blueprints from asset catalogue, grouped by type
 - `BlueprintPropertyController` — right panel: component accordion, field editing, usage display
-- `BlueprintFileHandler` — `.diaentitytemplatetemplate` / `.diacamera` / `.dialight` load/save
+- `BlueprintFileHandler` — `.diaentitytemplate` / `.diacamera` / `.dialight` load/save
 
 ### Asset Catalogue Integration
 
-- DiaAssetCatalogueEditor registers DiaEntityTemplateEditor as the handler for `.diaentitytemplatetemplate`, `.diacamera`, `.dialight` asset types
+- DiaAssetCatalogueEditor registers DiaEntityTemplateEditor as the handler for `.diaentitytemplate`, `.diacamera`, `.dialight` asset types
 - "Open" action on a blueprint asset in the catalogue opens DiaEntityTemplateEditor with that blueprint selected
 - "New Asset → Entity Blueprint / Camera Blueprint / Light Blueprint" in the catalogue creates the file and opens DiaEntityTemplateEditor
 
 ## File Formats
 
-### .diaentitytemplatetemplate (entity blueprint — format owned by diaentitytemplate)
+### .diaentitytemplate (entity blueprint — format owned by diaentitytemplate)
 
 ```json
 {
-  "entity_blueprint": {
+  "entity_template": {
     "id": "player_entity",
     "components": [
       {
@@ -141,7 +141,7 @@ namespace Dia::EntityTemplateEditor
 | ID | Decision | Rationale |
 |----|----------|-----------|
 | SED-BP-001 | One file per blueprint, stored under asset root | Blueprints are shared across scenes; one file = one source of truth; git-friendly |
-| SED-BP-002 | Separate extensions per type: `.diaentitytemplatetemplate`, `.diacamera`, `.dialight` | Clear from filename what you're editing; matches owning modules |
+| SED-BP-002 | Separate extensions per type: `.diaentitytemplate`, `.diacamera`, `.dialight` | Clear from filename what you're editing; matches owning modules |
 | SED-BP-003 | Blueprint discovery via DiaAssetCatalogue | Canonical list of what's available comes from asset registry, not filesystem scan |
 | SED-BP-004 | Cross-scene usage shown on property panel | Before editing, user sees which scenes + instances are affected (blast radius) |
 | SED-BP-005 | Adding a component cascades to all instances | New fields appear with defaults on all referencing instances; show count before confirming |
@@ -166,7 +166,7 @@ namespace Dia::EntityTemplateEditor
 | DiaEditor | Provides `IEditorPlugin` framework, `ProjectContext`, `EditorModel`, `OnOpenAsset` routing |
 | DiaReflect | ComponentTypeRegistry for enumerating available component types and field metadata |
 | DiaAssetCatalogue | Provides blueprint discovery; registers this editor as handler for blueprint asset types |
-| diaentitytemplate | Owns `.diaentitytemplatetemplate` format |
+| diaentitytemplate | Owns `.diaentitytemplate` format |
 | DiaCamera2D | Owns `.diacamera` format |
 | DiaLighting2D | Owns `.dialight` format |
 

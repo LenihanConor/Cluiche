@@ -36,13 +36,18 @@ namespace Dia
 			// Returns the "records" array from asset_catalogue.query_by_type, or empty array on failure.
 			Json::Value QueryCatalogueByType(const char* typeId) const;
 
+			// Resolve a relative source_path to an absolute path using mDiagameDir.
+			void ResolvePath(const char* relPath, char* absOut, unsigned int absCapacity) const;
+
 			BlueprintFileHandler        mFileHandler;
 			BlueprintListController     mListController;
 			BlueprintPropertyController mPropertyController;
 			SchemaReader                mSchemaReader;
 
 			static const unsigned int kDiagamePathLength = 512;
+			static const unsigned int kDiagameDirLength  = 512;
 			char mDiagamePath[kDiagamePathLength] = {};
+			char mDiagameDir[kDiagameDirLength]   = {};
 		};
 	}
 }

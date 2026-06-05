@@ -42,6 +42,6 @@ Stage scope filter requires scene→blueprint relationship data that doesn't exi
 ### Verification
 
 - `dia pipeline --target cluicheeditor` → open editor → load `.diagame` → Blueprint Editor shows blargh in Entity group
-- Add a new `.diaentitytemplatetemplate` in asset catalogue → Blueprint Editor list updates automatically
+- Add a new `.diaentitytemplate` in asset catalogue → Blueprint Editor list updates automatically
 - Type in filter → list narrows; clear → list restores
 - Select blargh → components/fields appear → edit a field → "Saved" appears briefly → no Save button

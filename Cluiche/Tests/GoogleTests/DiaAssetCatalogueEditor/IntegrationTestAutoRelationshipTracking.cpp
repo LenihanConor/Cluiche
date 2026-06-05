@@ -214,7 +214,7 @@ TEST_F(AutoRelTrackingTest, InferRelationships_SceneWithBlueprintRef_AddsEdge)
 {
 	WriteTempSceneFile(kTempScenePath, "diaentitytemplate.hero");
 	CreateRecord("diascene.test_scene",  "diascene",   kTempScenePath);
-	CreateRecord("diaentitytemplate.hero",       "diaentitytemplate",  "hero.diaentitytemplatetemplate");
+	CreateRecord("diaentitytemplate.hero",       "diaentitytemplate",  "hero.diaentitytemplate");
 
 	Json::Value r = Invoke("asset_catalogue.infer_relationships");
 	ASSERT_FALSE(r.isNull());
@@ -233,7 +233,7 @@ TEST_F(AutoRelTrackingTest, InferRelationships_Idempotent_NoDuplicateEdge)
 {
 	WriteTempSceneFile(kTempScenePath, "diaentitytemplate.hero");
 	CreateRecord("diascene.test_scene",  "diascene",   kTempScenePath);
-	CreateRecord("diaentitytemplate.hero",       "diaentitytemplate",  "hero.diaentitytemplatetemplate");
+	CreateRecord("diaentitytemplate.hero",       "diaentitytemplate",  "hero.diaentitytemplate");
 
 	Invoke("asset_catalogue.infer_relationships");
 
@@ -278,7 +278,7 @@ TEST_F(AutoRelTrackingTest, InferRelationships_MultipleItemTypes_AllEdgesAdded)
 {
 	WriteTempSceneFile(kTempScenePath, "diaentitytemplate.hero", "diacamera.main_cam", "dialight.sun");
 	CreateRecord("diascene.test_scene",    "diascene",   kTempScenePath);
-	CreateRecord("diaentitytemplate.hero",         "diaentitytemplate",  "hero.diaentitytemplatetemplate");
+	CreateRecord("diaentitytemplate.hero",         "diaentitytemplate",  "hero.diaentitytemplate");
 	CreateRecord("diacamera.main_cam",     "diacamera",  "main_cam.diacamera");
 	CreateRecord("dialight.sun",           "dialight",   "sun.dialight");
 
@@ -297,7 +297,7 @@ TEST_F(AutoRelTrackingTest, AddItem_WithCatalogueId_AddsForwardRef)
 	// Write a blank scene and create matching catalogue record
 	WriteTempSceneFile(kTempScenePath);
 	CreateRecord("diascene.ar_scene", "diascene",  kTempScenePath);
-	CreateRecord("diaentitytemplate.box",     "diaentitytemplate", "box.diaentitytemplatetemplate");
+	CreateRecord("diaentitytemplate.box",     "diaentitytemplate", "box.diaentitytemplate");
 
 	// Load scene into DiaSceneEditorPlugin (triggers ResolveCatalogueIdForLoadedScene)
 	Json::Value loadReq;
@@ -324,7 +324,7 @@ TEST_F(AutoRelTrackingTest, DeleteItem_AfterAdd_RemovesForwardRef)
 {
 	WriteTempSceneFile(kTempScenePath);
 	CreateRecord("diascene.ar_scene", "diascene",  kTempScenePath);
-	CreateRecord("diaentitytemplate.box",     "diaentitytemplate", "box.diaentitytemplatetemplate");
+	CreateRecord("diaentitytemplate.box",     "diaentitytemplate", "box.diaentitytemplate");
 
 	Json::Value loadReq;
 	loadReq["path"] = kTempScenePath;
@@ -355,8 +355,8 @@ TEST_F(AutoRelTrackingTest, ChangeBlueprint_UpdatesForwardRef)
 {
 	WriteTempSceneFile(kTempScenePath);
 	CreateRecord("diascene.ar_scene", "diascene",  kTempScenePath);
-	CreateRecord("diaentitytemplate.old",     "diaentitytemplate", "old.diaentitytemplatetemplate");
-	CreateRecord("diaentitytemplate.new_bp",  "diaentitytemplate", "new_bp.diaentitytemplatetemplate");
+	CreateRecord("diaentitytemplate.old",     "diaentitytemplate", "old.diaentitytemplate");
+	CreateRecord("diaentitytemplate.new_bp",  "diaentitytemplate", "new_bp.diaentitytemplate");
 
 	Json::Value loadReq;
 	loadReq["path"] = kTempScenePath;
@@ -391,7 +391,7 @@ TEST_F(AutoRelTrackingTest, AddItem_NoCatalogueIdCached_NoRelationship)
 	// Write a scene file but do NOT create a catalogue record for it.
 	// ResolveCatalogueIdForLoadedScene will find no match → mSceneCatalogueId stays empty.
 	WriteTempSceneFile(kTempScenePath);
-	CreateRecord("diaentitytemplate.box", "diaentitytemplate", "box.diaentitytemplatetemplate");
+	CreateRecord("diaentitytemplate.box", "diaentitytemplate", "box.diaentitytemplate");
 
 	Json::Value loadReq;
 	loadReq["path"] = kTempScenePath;

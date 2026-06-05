@@ -70,7 +70,7 @@ TEST(BlueprintListController, BuildListJson_AllEmpty_ReturnsSuccessWithNoGroups)
 TEST(BlueprintListController, BuildListJson_OneEntityAsset_ReturnsSingleEntityGroup)
 {
 	const char* ids[]   = { "diaentitytemplate.player" };
-	const char* paths[] = { "Assets/player.diaentitytemplatetemplate" };
+	const char* paths[] = { "Assets/player.diaentitytemplate" };
 	Json::Value entities = MakeRecords(ids, paths, 1);
 
 	BlueprintListController ctrl;
@@ -90,7 +90,7 @@ TEST(BlueprintListController, BuildListJson_OneEntityAsset_ReturnsSingleEntityGr
 TEST(BlueprintListController, BuildListJson_AllThreeTypes_GroupsInEntityCameraLightOrder)
 {
 	const char* eIds[]  = { "diaentitytemplate.enemy" };
-	const char* ePaths[] = { "Assets/enemy.diaentitytemplatetemplate" };
+	const char* ePaths[] = { "Assets/enemy.diaentitytemplate" };
 	const char* cIds[]  = { "diacamera.follow" };
 	const char* cPaths[] = { "Assets/follow.diacamera" };
 	const char* lIds[]  = { "dialight.warm" };
@@ -112,7 +112,7 @@ TEST(BlueprintListController, BuildListJson_AllThreeTypes_GroupsInEntityCameraLi
 TEST(BlueprintListController, BuildListJson_MultipleItemsInGroup_AllPresent)
 {
 	const char* ids[]   = { "diaentitytemplate.a", "diaentitytemplate.b", "diaentitytemplate.c" };
-	const char* paths[] = { "a.diaentitytemplatetemplate", "b.diaentitytemplatetemplate", "c.diaentitytemplatetemplate" };
+	const char* paths[] = { "a.diaentitytemplate", "b.diaentitytemplate", "c.diaentitytemplate" };
 	Json::Value entities = MakeRecords(ids, paths, 3);
 
 	BlueprintListController ctrl;

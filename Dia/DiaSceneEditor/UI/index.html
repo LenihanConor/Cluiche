@@ -594,15 +594,15 @@ const DEMO_SCENE = {
 };
 
 const DEMO_ENTITY_TEMPLATES = {
-  'player_entity':  { file:'player_entity.diaentitytemplatetemplate',   fields:{'Transform2D.position':[0,0],'Transform2D.rotation':0,'Transform2D.scale':[1,1],'Health.max_hp':50,'Health.current_hp':50,'Health.invulnerable':false,'RigidBody2D.mass':1.0,'RigidBody2D.drag':0.05,'RigidBody2D.gravity_scale':1.0,'Collider2D.shape':'AABB','Collider2D.size':[32,64],'Collider2D.offset':[0,0]} },
-  'enemy_patrol':   { file:'enemy_patrol.diaentitytemplatetemplate',    fields:{'Transform2D.position':[0,0],'Transform2D.rotation':0,'Transform2D.scale':[1,1],'Health.max_hp':30,'Health.current_hp':30,'Health.invulnerable':false,'PatrolBehaviour.speed':2.0,'PatrolBehaviour.range':200,'PatrolBehaviour.pause_time':1.0,'RigidBody2D.mass':1.0,'RigidBody2D.drag':0.05,'RigidBody2D.gravity_scale':1.0} },
-  'coin_pickup':    { file:'coin_pickup.diaentitytemplatetemplate',     fields:{'Transform2D.position':[0,0],'Transform2D.rotation':0,'Transform2D.scale':[1,1],'Collectible.value':10,'Collectible.respawn':false,'Collectible.magnet_range':0} },
-  'platform_moving':{ file:'platform_moving.diaentitytemplatetemplate', fields:{'Transform2D.position':[0,0],'Transform2D.rotation':0,'Transform2D.scale':[1,1],'PlatformMover.speed':1.0,'PlatformMover.loop':true,'PlatformMover.pause_at_ends':0.5} },
-  'checkpoint_flag':{ file:'checkpoint_flag.diaentitytemplatetemplate', fields:{'Transform2D.position':[0,0],'Transform2D.rotation':0,'Transform2D.scale':[1,1],'Checkpoint.activated':false,'Checkpoint.respawn_offset':[0,-32]} },
-  'camera_2d_follow':{ file:'camera_2d_follow.diaentitytemplatetemplate',fields:{'Camera2D.position':[0,0],'Camera2D.zoom':1.0,'Camera2D.rotation':0,'FollowBehaviour.target':'','FollowBehaviour.offset':[0,0],'FollowBehaviour.damping':0.1,'FollowBehaviour.dead_zone':[50,30]} },
-  'camera_2d_static':{ file:'camera_2d_static.diaentitytemplatetemplate',fields:{'Camera2D.position':[0,0],'Camera2D.zoom':1.0,'Camera2D.rotation':0} },
-  'directional_light':{ file:'directional_light.diaentitytemplatetemplate',fields:{'DirectionalLight2D.intensity':1.0,'DirectionalLight2D.direction':[0,-1],'DirectionalLight2D.color':[1,1,0.9]} },
-  'point_light_warm': { file:'point_light_warm.diaentitytemplatetemplate', fields:{'PointLight2D.position':[0,0],'PointLight2D.radius':100,'PointLight2D.intensity':1.0,'PointLight2D.color':[1,0.8,0.5],'PointLight2D.falloff':2.0} }
+  'player_entity':  { file:'player_entity.diaentitytemplate',   fields:{'Transform2D.position':[0,0],'Transform2D.rotation':0,'Transform2D.scale':[1,1],'Health.max_hp':50,'Health.current_hp':50,'Health.invulnerable':false,'RigidBody2D.mass':1.0,'RigidBody2D.drag':0.05,'RigidBody2D.gravity_scale':1.0,'Collider2D.shape':'AABB','Collider2D.size':[32,64],'Collider2D.offset':[0,0]} },
+  'enemy_patrol':   { file:'enemy_patrol.diaentitytemplate',    fields:{'Transform2D.position':[0,0],'Transform2D.rotation':0,'Transform2D.scale':[1,1],'Health.max_hp':30,'Health.current_hp':30,'Health.invulnerable':false,'PatrolBehaviour.speed':2.0,'PatrolBehaviour.range':200,'PatrolBehaviour.pause_time':1.0,'RigidBody2D.mass':1.0,'RigidBody2D.drag':0.05,'RigidBody2D.gravity_scale':1.0} },
+  'coin_pickup':    { file:'coin_pickup.diaentitytemplate',     fields:{'Transform2D.position':[0,0],'Transform2D.rotation':0,'Transform2D.scale':[1,1],'Collectible.value':10,'Collectible.respawn':false,'Collectible.magnet_range':0} },
+  'platform_moving':{ file:'platform_moving.diaentitytemplate', fields:{'Transform2D.position':[0,0],'Transform2D.rotation':0,'Transform2D.scale':[1,1],'PlatformMover.speed':1.0,'PlatformMover.loop':true,'PlatformMover.pause_at_ends':0.5} },
+  'checkpoint_flag':{ file:'checkpoint_flag.diaentitytemplate', fields:{'Transform2D.position':[0,0],'Transform2D.rotation':0,'Transform2D.scale':[1,1],'Checkpoint.activated':false,'Checkpoint.respawn_offset':[0,-32]} },
+  'camera_2d_follow':{ file:'camera_2d_follow.diaentitytemplate',fields:{'Camera2D.position':[0,0],'Camera2D.zoom':1.0,'Camera2D.rotation':0,'FollowBehaviour.target':'','FollowBehaviour.offset':[0,0],'FollowBehaviour.damping':0.1,'FollowBehaviour.dead_zone':[50,30]} },
+  'camera_2d_static':{ file:'camera_2d_static.diaentitytemplate',fields:{'Camera2D.position':[0,0],'Camera2D.zoom':1.0,'Camera2D.rotation':0} },
+  'directional_light':{ file:'directional_light.diaentitytemplate',fields:{'DirectionalLight2D.intensity':1.0,'DirectionalLight2D.direction':[0,-1],'DirectionalLight2D.color':[1,1,0.9]} },
+  'point_light_warm': { file:'point_light_warm.diaentitytemplate', fields:{'PointLight2D.position':[0,0],'PointLight2D.radius':100,'PointLight2D.intensity':1.0,'PointLight2D.color':[1,0.8,0.5],'PointLight2D.falloff':2.0} }
 };
 
 const DEMO_STAGES = [
@@ -1313,7 +1313,7 @@ async function renderEntityTemplateTab(data) {
     state.entityTemplateCache[entityTemplateId] = bpFields;
   }
 
-  const bpFile = (DEMO_ENTITY_TEMPLATES[entityTemplateId] && DEMO_ENTITY_TEMPLATES[entityTemplateId].file) || (entityTemplateId + '.diaentitytemplatetemplate');
+  const bpFile = (DEMO_ENTITY_TEMPLATES[entityTemplateId] && DEMO_ENTITY_TEMPLATES[entityTemplateId].file) || (entityTemplateId + '.diaentitytemplate');
   let html = `<div class="entity-template-banner">
     Blueprint defaults from <b>${escHtml(bpFile)}</b> (read-only)
     <span class="entity-template-open">Open in Blueprint Editor &rarr;</span>

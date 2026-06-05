@@ -7,7 +7,7 @@
 
 ## Summary
 
-Replace the `<select>` Add Component dropdown with a searchable picker panel, and surface component field default values (from C++ constructors via the schema) alongside blueprint-level overrides that persist to the `.diaentitytemplatetemplate` file.
+Replace the `<select>` Add Component dropdown with a searchable picker panel, and surface component field default values (from C++ constructors via the schema) alongside blueprint-level overrides that persist to the `.diaentitytemplate` file.
 
 ## Problem
 
@@ -17,7 +17,7 @@ The current `<select>` dropdown doesn't scale beyond ~5 components, has no descr
 
 - Component picker that scales to 100+ components with search, keyboard nav, and per-component descriptions
 - Code defaults (C++ constructor values) visible in field rows as placeholders and hint text
-- Blueprint defaults — per-field overrides stored in the `.diaentitytemplatetemplate` file — editable in the property panel
+- Blueprint defaults — per-field overrides stored in the `.diaentitytemplate` file — editable in the property panel
 - Clear visual distinction between "using code default", "has blueprint override", and "has no default known"
 - `--dump-schema` exports code defaults so the editor has them without linking the game binary
 
@@ -60,13 +60,13 @@ The current `<select>` dropdown doesn't scale beyond ~5 components, has no descr
 ### AC-3: Field rows show code defaults
 
 - For each field in the property panel:
-  - If the field has no value in the `.diaentitytemplatetemplate` file AND a code default is known: the input is empty, the code default is shown as `placeholder` text (grey), and a hint line reads `"code default: <value> · leave blank to keep"`
+  - If the field has no value in the `.diaentitytemplate` file AND a code default is known: the input is empty, the code default is shown as `placeholder` text (grey), and a hint line reads `"code default: <value> · leave blank to keep"`
   - If the field has no value AND no code default is known: input is empty, no placeholder, hint reads `"no default"`
 - The value shown in the input is always the stored blueprint value — never the code default
 
 ### AC-4: Blueprint defaults (overrides)
 
-- Editing a field and committing a value stores it in the `"fields"` object of the `.diaentitytemplatetemplate` component entry and saves the file
+- Editing a field and committing a value stores it in the `"fields"` object of the `.diaentitytemplate` component entry and saves the file
 - An input with a stored blueprint value is styled with a green border (`#4ec9a0`)
 - The hint line beneath it reads: `"blueprint default · code: <value>  [clear]"`
 - Clicking **clear** removes the field from the `"fields"` object, saves the file, and reverts the input to the code-default placeholder state
@@ -88,14 +88,14 @@ The current `<select>` dropdown doesn't scale beyond ~5 components, has no descr
 ```
 Code default (C++ constructor, from schema)
     ↓ overridden by
-Blueprint default (stored in .diaentitytemplatetemplate fields object)
+Blueprint default (stored in .diaentitytemplate fields object)
     ↓ overridden by
 Instance override (per-placement in .diascene — out of scope for this feature)
 ```
 
 ## File Format Change
 
-No format change — the existing `.diaentitytemplatetemplate` `"fields"` object already stores explicit values. The change is behavioural: empty `"fields"` now means "use code default" rather than "undefined".
+No format change — the existing `.diaentitytemplate` `"fields"` object already stores explicit values. The change is behavioural: empty `"fields"` now means "use code default" rather than "undefined".
 
 The schema file (`registeredtypes.diaschema`) gains `"default_values"` per component (AC-2).
 

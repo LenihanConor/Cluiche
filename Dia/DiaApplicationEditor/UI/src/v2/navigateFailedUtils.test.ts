@@ -8,7 +8,7 @@ describe('deriveExpectedPath', () => {
             'C:\\GitHub\\Cluiche\\Assets\\CluicheTest\\Global\\Scene/',
             'diaentitytemplate'
         );
-        expect(result).toBe('C:\\GitHub\\Cluiche\\Assets\\CluicheTest\\Global\\Scene/more.diaentitytemplatetemplate');
+        expect(result).toBe('C:\\GitHub\\Cluiche\\Assets\\CluicheTest\\Global\\Scene/more.diaentitytemplate');
     });
 
     it('handles source_path ending with backslash (directory)', () => {
@@ -17,16 +17,16 @@ describe('deriveExpectedPath', () => {
             'C:\\GitHub\\Cluiche\\Assets\\Global\\Scene\\',
             'diaentitytemplate'
         );
-        expect(result).toBe('C:\\GitHub\\Cluiche\\Assets\\Global\\Scene\\hero.diaentitytemplatetemplate');
+        expect(result).toBe('C:\\GitHub\\Cluiche\\Assets\\Global\\Scene\\hero.diaentitytemplate');
     });
 
     it('handles source_path pointing to a file (strips filename, keeps directory)', () => {
         const result = deriveExpectedPath(
             'diaentitytemplate.player',
-            'C:\\GitHub\\Cluiche\\Assets\\Scene/wrong.diaentitytemplatetemplate',
+            'C:\\GitHub\\Cluiche\\Assets\\Scene/wrong.diaentitytemplate',
             'diaentitytemplate'
         );
-        expect(result).toBe('C:\\GitHub\\Cluiche\\Assets\\Scene/player.diaentitytemplatetemplate');
+        expect(result).toBe('C:\\GitHub\\Cluiche\\Assets\\Scene/player.diaentitytemplate');
     });
 
     it('handles camera asset type', () => {
@@ -53,7 +53,7 @@ describe('deriveExpectedPath', () => {
             '/assets/entities/',
             'diaentitytemplate'
         );
-        expect(result).toBe('/assets/entities/level.boss.diaentitytemplatetemplate');
+        expect(result).toBe('/assets/entities/level.boss.diaentitytemplate');
     });
 
     it('handles instanceId with no dot prefix', () => {
@@ -62,7 +62,7 @@ describe('deriveExpectedPath', () => {
             '/assets/',
             'diaentitytemplate'
         );
-        expect(result).toBe('/assets/standalone.diaentitytemplatetemplate');
+        expect(result).toBe('/assets/standalone.diaentitytemplate');
     });
 
     it('handles empty source_path', () => {
@@ -71,16 +71,16 @@ describe('deriveExpectedPath', () => {
             '',
             'diaentitytemplate'
         );
-        expect(result).toBe('test.diaentitytemplatetemplate');
+        expect(result).toBe('test.diaentitytemplate');
     });
 
     it('handles source_path with no directory separator', () => {
         const result = deriveExpectedPath(
             'diaentitytemplate.item',
-            'somefile.diaentitytemplatetemplate',
+            'somefile.diaentitytemplate',
             'diaentitytemplate'
         );
-        expect(result).toBe('item.diaentitytemplatetemplate');
+        expect(result).toBe('item.diaentitytemplate');
     });
 });
 
@@ -108,7 +108,7 @@ describe('buildNavigateFailedContext', () => {
         expect(result).not.toBeNull();
         expect(result!.instanceId).toBe('diaentitytemplate.more');
         expect(result!.sourcePath).toBe('C:\\GitHub\\Cluiche\\Assets\\Scene/');
-        expect(result!.expectedPath).toBe('C:\\GitHub\\Cluiche\\Assets\\Scene/more.diaentitytemplatetemplate');
+        expect(result!.expectedPath).toBe('C:\\GitHub\\Cluiche\\Assets\\Scene/more.diaentitytemplate');
         expect(result!.assetType).toBe('diaentitytemplate');
     });
 
@@ -125,6 +125,6 @@ describe('buildNavigateFailedContext', () => {
             instanceId: 'diaentitytemplate.orphan',
         });
         expect(result).not.toBeNull();
-        expect(result!.expectedPath).toBe('orphan.diaentitytemplatetemplate');
+        expect(result!.expectedPath).toBe('orphan.diaentitytemplate');
     });
 });

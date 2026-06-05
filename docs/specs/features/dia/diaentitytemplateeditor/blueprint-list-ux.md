@@ -23,7 +23,7 @@ Fix the blueprint list population bug and improve the list UX: blueprints appear
 
 - When DiaEntityTemplateEditor initialises and a valid `.diagame` is loaded, `get_list` queries the DiaAssetCatalogue's shared registry (via `asset_catalogue.query_by_type`) for `diaentitytemplate`, `diacamera`, `dialight`
 - The private `mRegistry` + `register_catalogue_asset` handler are removed — single source of truth is the catalogue
-- `blargh.diaentitytemplatetemplate` (and any other registered assets) appear in the left panel without manual intervention
+- `blargh.diaentitytemplate` (and any other registered assets) appear in the left panel without manual intervention
 
 ### AC-2: Auto-refresh on catalogue change
 

@@ -80,11 +80,11 @@ namespace Dia
 
 		const char* BlueprintFileHandler::TopLevelKeyForExtension(const char* ext)
 		{
-			if (!ext) return "entity_blueprint";
-			if (strcmp(ext, ".diaentitytemplatetemplate") == 0) return "entity_blueprint";
+			if (!ext) return "entity_template";
+			if (strcmp(ext, ".diaentitytemplate") == 0) return "entity_template";
 			if (strcmp(ext, ".diacamera") == 0) return "camera_blueprint";
 			if (strcmp(ext, ".dialight")  == 0) return "light_blueprint";
-			return "entity_blueprint";
+			return "entity_template";
 		}
 	}
 }

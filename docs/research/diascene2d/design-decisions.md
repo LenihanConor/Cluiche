@@ -26,7 +26,7 @@ The existing `.diagame → .diastage → .diaapp` chain handles **configuration*
 | Asset type | Extension | Purpose |
 |---|---|---|
 | Scene | `.diascene` | Spatial content — cameras, lights, layers, entity placements |
-| Entity blueprint | `.diaentitytemplatetemplate` | Reusable archetype — component composition with defaults |
+| Entity blueprint | `.diaentitytemplate` | Reusable archetype — component composition with defaults |
 | Texture | `.png` | Visual assets |
 | Shader | `.frag` / `.vert` | Render programs |
 
@@ -101,7 +101,7 @@ Gameplay tuning (gravity, clear_colour, render techniques) lives in stage config
 
 ---
 
-## 3. Entity Blueprint Format (`.diaentitytemplatetemplate`)
+## 3. Entity Blueprint Format (`.diaentitytemplate`)
 
 Blueprints are **assets** (peers to textures in the catalogue). Reusable, scoped global or per-stage.
 
@@ -152,7 +152,7 @@ An instance never adds components the blueprint doesn't have — that's a differ
 |---|---|---|---|
 | `id` | yes | — | StringCRC, auto-generated, stable identifier |
 | `name` | no | none | Human-friendly, for gameplay/editor reference |
-| `blueprint` | yes | — | StringCRC reference to `.diaentitytemplatetemplate` asset |
+| `blueprint` | yes | — | StringCRC reference to `.diaentitytemplate` asset |
 | `enabled` | no | true | Dormant until gameplay activates |
 | `instance_data` | no | none | Flat `Component.Field: value` patches |
 
@@ -396,7 +396,7 @@ A 3D world with an embedded 2D scene (e.g., arcade cabinet screen) is handled vi
 
 1. **DiaGraphics dependency direction** — DiaGraphics currently owns Camera2D. Moving it to DiaCamera2D means DiaGraphics either depends on DiaCamera2D (for FrameData) or takes a raw view/projection matrix. Which?
 
-2. **`.diaentitytemplatetemplate` format alignment** — diaentitytemplate already has a blueprint format (version, entities, references). Does the `.diaentitytemplatetemplate` asset format match exactly, or is the scene-referenced format a simplified subset?
+2. **`.diaentitytemplate` format alignment** — diaentitytemplate already has a blueprint format (version, entities, references). Does the `.diaentitytemplate` asset format match exactly, or is the scene-referenced format a simplified subset?
 
 3. **Default layer** — Engine provides a `"default"` layer. Is this implicit (always exists even if not in the layers array) or must the scene file declare it?
 

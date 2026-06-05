@@ -7,7 +7,7 @@
 
 ## Summary
 
-Add, duplicate, delete, enable/disable, and rename entity instances in a `.diascene`. When adding a new entity, the user selects a blueprint (`.diaentitytemplatetemplate`); the new placement starts with empty `instance_data` (inheriting all defaults from the blueprint). Duplicate clones an existing entity with a position offset. Context menu provides all operations.
+Add, duplicate, delete, enable/disable, and rename entity instances in a `.diascene`. When adding a new entity, the user selects a blueprint (`.diaentitytemplate`); the new placement starts with empty `instance_data` (inheriting all defaults from the blueprint). Duplicate clones an existing entity with a position offset. Context menu provides all operations.
 
 ## Traceability
 
@@ -27,7 +27,7 @@ Add, duplicate, delete, enable/disable, and rename entity instances in a `.diasc
 
 ### Add Entity
 - Toolbar "+ Entity" button opens a blueprint picker dropdown
-- Dropdown lists all registered `.diaentitytemplatetemplate` files from the DiaAssetCatalogue (per SED-SCN-010)
+- Dropdown lists all registered `.diaentitytemplate` files from the DiaAssetCatalogue (per SED-SCN-010)
 - Only blueprints registered in the asset catalogue for the current game are shown (not from other games)
 - Blueprint must pre-exist — no inline creation (per SED-SCN-011)
 - Selecting a blueprint creates a new entity placement:

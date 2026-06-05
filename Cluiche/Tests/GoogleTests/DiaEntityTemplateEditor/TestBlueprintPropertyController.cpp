@@ -9,12 +9,12 @@
 using namespace Dia::EntityTemplateEditor;
 using namespace Dia::Core;
 
-// Helper: build a minimal entity_blueprint JSON root.
+// Helper: build a minimal entity_template JSON root.
 static Json::Value MakeEntityRoot(const char* id = "test_entity")
 {
 	Json::Value root;
-	root["entity_blueprint"]["id"] = id;
-	root["entity_blueprint"]["components"] = Json::Value(Json::arrayValue);
+	root["entity_template"]["id"] = id;
+	root["entity_template"]["components"] = Json::Value(Json::arrayValue);
 	return root;
 }
 
@@ -24,7 +24,7 @@ static Json::Value AddComponent(Json::Value root, const char* type,
 	Json::Value comp;
 	comp["type"]          = type;
 	comp["fields"][field] = value;
-	root["entity_blueprint"]["components"].append(comp);
+	root["entity_template"]["components"].append(comp);
 	return root;
 }
 
@@ -36,8 +36,8 @@ TEST(BlueprintPropertyController, BuildPropertyJson_MissingTopLevelKey_ReturnsEr
 {
 	BlueprintPropertyController ctrl;
 	SchemaReader schema;
-	Json::Value root;    // empty — no "entity_blueprint" key
-	Json::Value result = ctrl.BuildPropertyJson(root, "entity_blueprint", schema);
+	Json::Value root;    // empty — no "entity_template" key
+	Json::Value result = ctrl.BuildPropertyJson(root, "entity_template", schema);
 
 	EXPECT_TRUE(result.isMember("error"));
 }
@@ -47,7 +47,7 @@ TEST(BlueprintPropertyController, BuildPropertyJson_EmptyComponents_ReturnsIdAnd
 	BlueprintPropertyController ctrl;
 	SchemaReader schema;
 	Json::Value root = MakeEntityRoot("hero");
-	Json::Value result = ctrl.BuildPropertyJson(root, "entity_blueprint", schema);
+	Json::Value result = ctrl.BuildPropertyJson(root, "entity_template", schema);
 
 	EXPECT_EQ(result["id"].asString(), "hero");
 	EXPECT_EQ(result["components"].size(), 0u);
@@ -60,7 +60,7 @@ TEST(BlueprintPropertyController, BuildPropertyJson_UnregisteredComponent_Expose
 	Json::Value root = MakeEntityRoot();
 	root = AddComponent(root, "SomeUnknownComp", "max_hp", 100);
 
-	Json::Value result = ctrl.BuildPropertyJson(root, "entity_blueprint", schema);
+	Json::Value result = ctrl.BuildPropertyJson(root, "entity_template", schema);
 
 	ASSERT_EQ(result["components"].size(), 1u);
 	EXPECT_EQ(result["components"][0]["type"].asString(), "SomeUnknownComp");
@@ -79,7 +79,7 @@ TEST(BlueprintPropertyController, BuildPropertyJson_MultipleComponents_AllPresen
 	root = AddComponent(root, "CompA", "x", 1);
 	root = AddComponent(root, "CompB", "y", 2);
 
-	Json::Value result = ctrl.BuildPropertyJson(root, "entity_blueprint", schema);
+	Json::Value result = ctrl.BuildPropertyJson(root, "entity_template", schema);
 
 	ASSERT_EQ(result["components"].size(), 2u);
 	EXPECT_EQ(result["components"][0]["type"].asString(), "CompA");
@@ -95,7 +95,7 @@ TEST(BlueprintPropertyController, BuildAvailableComponents_MissingTopLevelKey_Re
 	BlueprintPropertyController ctrl;
 	Json::Value root;  // no top-level key
 	SchemaReader schema;  // not loaded
-	Json::Value result = ctrl.BuildAvailableComponentsJson(root, "entity_blueprint", schema);
+	Json::Value result = ctrl.BuildAvailableComponentsJson(root, "entity_template", schema);
 
 	// Should return an array (may or may not be empty depending on registry state,
 	// but must be an array and not crash)
@@ -109,7 +109,7 @@ TEST(BlueprintPropertyController, BuildAvailableComponents_DoesNotIncludeAlready
 	root = AddComponent(root, "SomeUnknownComp", "x", 0);
 
 	SchemaReader schema;  // not loaded
-	Json::Value available = ctrl.BuildAvailableComponentsJson(root, "entity_blueprint", schema);
+	Json::Value available = ctrl.BuildAvailableComponentsJson(root, "entity_template", schema);
 
 	// SomeUnknownComp should not appear in available list (it's already present)
 	for (unsigned int i = 0; i < available.size(); ++i)
@@ -175,9 +175,9 @@ TEST(BlueprintPropertyController, BuildPropertyJson_ComponentWithNoFields_DoesNo
 	Json::Value comp;
 	comp["type"]   = "EmptyComp";
 	comp["fields"] = Json::Value(Json::objectValue);
-	root["entity_blueprint"]["components"].append(comp);
+	root["entity_template"]["components"].append(comp);
 
-	Json::Value result = ctrl.BuildPropertyJson(root, "entity_blueprint", schema);
+	Json::Value result = ctrl.BuildPropertyJson(root, "entity_template", schema);
 
 	ASSERT_EQ(result["components"].size(), 1u);
 	EXPECT_EQ(result["components"][0]["fields"].size(), 0u);
@@ -244,7 +244,7 @@ TEST(BlueprintPropertyController, BuildAvailableComponents_NoSchema_ReturnsStatu
 	Json::Value root = MakeEntityRoot();
 	SchemaReader schema;  // not loaded
 
-	Json::Value result = ctrl.BuildAvailableComponentsJson(root, "entity_blueprint", schema);
+	Json::Value result = ctrl.BuildAvailableComponentsJson(root, "entity_template", schema);
 
 	ASSERT_TRUE(result.isArray());
 	bool foundStatus = false;
@@ -272,7 +272,7 @@ TEST(BlueprintPropertyController, BuildAvailableComponents_WithSchema_ReturnsCom
 	BlueprintPropertyController ctrl;
 	Json::Value root = MakeEntityRoot();  // empty blueprint — no components yet
 
-	Json::Value result = ctrl.BuildAvailableComponentsJson(root, "entity_blueprint", schema);
+	Json::Value result = ctrl.BuildAvailableComponentsJson(root, "entity_template", schema);
 
 	ASSERT_TRUE(result.isArray());
 	bool found = false;
@@ -302,7 +302,7 @@ TEST(BlueprintPropertyController, BuildAvailableComponents_SchemaComponent_Alrea
 	// Add the component that is in the schema
 	root = AddComponent(root, "cluichetest.transform", "x", 0);
 
-	Json::Value result = ctrl.BuildAvailableComponentsJson(root, "entity_blueprint", schema);
+	Json::Value result = ctrl.BuildAvailableComponentsJson(root, "entity_template", schema);
 
 	ASSERT_TRUE(result.isArray());
 	for (unsigned int i = 0; i < result.size(); ++i)
@@ -344,7 +344,7 @@ TEST(BlueprintPropertyController, BuildPropertyJson_WithSchema_FieldHasCodeDefau
 	Json::Value root = MakeEntityRoot();
 	root = AddComponent(root, "cluichetest.transform", "x", 0);
 
-	Json::Value result = ctrl.BuildPropertyJson(root, "entity_blueprint", schema);
+	Json::Value result = ctrl.BuildPropertyJson(root, "entity_template", schema);
 
 	ASSERT_EQ(result["components"].size(), 1u);
 	const Json::Value& fields = result["components"][0]["fields"];

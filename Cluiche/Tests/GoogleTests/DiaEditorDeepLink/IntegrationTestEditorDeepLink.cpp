@@ -193,7 +193,7 @@ TEST(AssetCatalogueEditorOnNavigate, OnNavigate_RecordExists_DoesNotCrash)
     Json::Value addReq;
     addReq["id"]         = "diaentitytemplate.hero";
     addReq["typeId"]     = "diaentitytemplate";
-    addReq["sourcePath"] = "Assets/hero.diaentitytemplatetemplate";
+    addReq["sourcePath"] = "Assets/hero.diaentitytemplate";
     // The handler may or may not succeed depending on manifest state — we don't
     // assert success here; we only care that OnNavigate doesn't crash regardless.
     bridge.InvokeRequestHandler(StringCRC("asset_catalogue.add_asset"), addReq);

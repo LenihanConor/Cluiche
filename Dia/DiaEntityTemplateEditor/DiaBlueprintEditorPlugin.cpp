@@ -31,6 +31,20 @@ namespace Dia
 		{
 		}
 
+		void DiaEntityTemplateEditorPlugin::ResolvePath(const char* relPath, char* absOut, unsigned int absCapacity) const
+		{
+			if (!relPath || relPath[0] == '\0') { if (absOut && absCapacity > 0) absOut[0] = '\0'; return; }
+
+			// Already absolute
+			bool isAbsolute = (relPath[0] == '/' || relPath[0] == '\\' || (relPath[1] == ':'));
+			if (isAbsolute || mDiagameDir[0] == '\0')
+			{
+				strncpy_s(absOut, absCapacity, relPath, _TRUNCATE);
+				return;
+			}
+			_snprintf_s(absOut, absCapacity, _TRUNCATE, "%s%s", mDiagameDir, relPath);
+		}
+
 		void DiaEntityTemplateEditorPlugin::OnProjectChanged(const Dia::Editor::ProjectContext& ctx)
 		{
 			DIA_LOG_INFO("Editor", "DiaEntityTemplateEditorPlugin: OnProjectChanged — IsValid=%d diagamePath='%s'",
@@ -38,6 +52,17 @@ namespace Dia
 
 			strncpy_s(mDiagamePath, kDiagamePathLength,
 			          ctx.IsValid() ? ctx.diagamePath : "", _TRUNCATE);
+
+			mDiagameDir[0] = '\0';
+			if (ctx.IsValid() && ctx.diagamePath[0] != '\0')
+			{
+				strncpy_s(mDiagameDir, kDiagameDirLength, ctx.diagamePath, _TRUNCATE);
+				char* lastSep = nullptr;
+				for (char* p = mDiagameDir; *p; ++p)
+					if (*p == '/' || *p == '\\') lastSep = p;
+				if (lastSep) *(lastSep + 1) = '\0';
+				else mDiagameDir[0] = '\0';
+			}
 
 			// Derive schema path: replace the .diagame filename with registeredtypes.diaschema
 			if (ctx.IsValid() && ctx.diagamePath[0] != '\0')
@@ -271,9 +296,11 @@ namespace Dia
 						return MakeErrorResponse("missing path");
 					}
 
+					char resolvedPath[512] = {};
+					ResolvePath(data["path"].asCString(), resolvedPath, sizeof(resolvedPath));
 					Json::Value blueprintRoot;
 					char err[256] = {};
-					if (!mFileHandler.Load(data["path"].asCString(), blueprintRoot, err, sizeof(err)))
+					if (!mFileHandler.Load(resolvedPath, blueprintRoot, err, sizeof(err)))
 					{
 						DIA_LOG_WARNING("Editor",
 							"DiaEntityTemplateEditorPlugin: get_available_components — load failed for '%s': %s",
@@ -281,7 +308,7 @@ namespace Dia
 						return MakeErrorResponse(err[0] ? err : "load failed");
 					}
 
-					const char* ext    = strrchr(data["path"].asCString(), '.');
+					const char* ext    = strrchr(resolvedPath, '.');
 					const char* topKey = BlueprintFileHandler::TopLevelKeyForExtension(ext ? ext : "");
 					result["success"]    = true;
 					result["components"] = mPropertyController.BuildAvailableComponentsJson(blueprintRoot, topKey, mSchemaReader);
@@ -329,9 +356,11 @@ namespace Dia
 						return MakeErrorResponse("missing path");
 					}
 
+					char resolvedPath[512] = {};
+					ResolvePath(data["path"].asCString(), resolvedPath, sizeof(resolvedPath));
 					Json::Value blueprintRoot;
 					char err[256] = {};
-					if (!mFileHandler.Load(data["path"].asCString(), blueprintRoot, err, sizeof(err)))
+					if (!mFileHandler.Load(resolvedPath, blueprintRoot, err, sizeof(err)))
 					{
 						DIA_LOG_WARNING("Editor",
 							"DiaEntityTemplateEditorPlugin: load — failed for '%s': %s",
@@ -339,7 +368,7 @@ namespace Dia
 						return MakeErrorResponse(err[0] ? err : "load failed");
 					}
 
-					const char* ext    = strrchr(data["path"].asCString(), '.');
+					const char* ext    = strrchr(resolvedPath, '.');
 					const char* topKey = BlueprintFileHandler::TopLevelKeyForExtension(ext ? ext : "");
 					Json::Value result;
 					result["success"]    = true;
@@ -361,8 +390,10 @@ namespace Dia
 						return MakeErrorResponse("missing path or blueprint");
 					}
 
+					char resolvedPath[512] = {};
+					ResolvePath(data["path"].asCString(), resolvedPath, sizeof(resolvedPath));
 					char err[256] = {};
-					if (!mFileHandler.Save(data["path"].asCString(), data["blueprint"], err, sizeof(err)))
+					if (!mFileHandler.Save(resolvedPath, data["blueprint"], err, sizeof(err)))
 					{
 						DIA_LOG_WARNING("Editor",
 							"DiaEntityTemplateEditorPlugin: save — failed for '%s': %s",
@@ -392,9 +423,11 @@ namespace Dia
 					// Handle null value: remove the field from the component
 					if (data["value"].isNull())
 					{
+						char resolvedPath[512] = {};
+						ResolvePath(data["path"].asCString(), resolvedPath, sizeof(resolvedPath));
 						Json::Value blueprintRoot;
 						char err[256] = {};
-						if (!mFileHandler.Load(data["path"].asCString(), blueprintRoot, err, sizeof(err)))
+						if (!mFileHandler.Load(resolvedPath, blueprintRoot, err, sizeof(err)))
 						{
 							DIA_LOG_WARNING("Editor",
 								"DiaEntityTemplateEditorPlugin: update_field — load failed for '%s': %s",
@@ -402,7 +435,7 @@ namespace Dia
 							return MakeErrorResponse(err[0] ? err : "load failed");
 						}
 
-						const char* ext    = strrchr(data["path"].asCString(), '.');
+						const char* ext    = strrchr(resolvedPath, '.');
 						const char* topKey = BlueprintFileHandler::TopLevelKeyForExtension(ext ? ext : "");
 
 						if (!BlueprintMutator::ClearField(blueprintRoot, topKey,
@@ -416,7 +449,7 @@ namespace Dia
 							return MakeErrorResponse(err[0] ? err : "clear field failed");
 						}
 
-						if (!mFileHandler.Save(data["path"].asCString(), blueprintRoot, err, sizeof(err)))
+						if (!mFileHandler.Save(resolvedPath, blueprintRoot, err, sizeof(err)))
 						{
 							DIA_LOG_WARNING("Editor",
 								"DiaEntityTemplateEditorPlugin: update_field — save failed for '%s': %s",
@@ -427,9 +460,11 @@ namespace Dia
 						return MakeSuccessResponse();
 					}
 
+					char resolvedPath[512] = {};
+					ResolvePath(data["path"].asCString(), resolvedPath, sizeof(resolvedPath));
 					Json::Value blueprintRoot;
 					char err[256] = {};
-					if (!mFileHandler.Load(data["path"].asCString(), blueprintRoot, err, sizeof(err)))
+					if (!mFileHandler.Load(resolvedPath, blueprintRoot, err, sizeof(err)))
 					{
 						DIA_LOG_WARNING("Editor",
 							"DiaEntityTemplateEditorPlugin: update_field — load failed for '%s': %s",
@@ -437,7 +472,7 @@ namespace Dia
 						return MakeErrorResponse(err[0] ? err : "load failed");
 					}
 
-					const char* ext    = strrchr(data["path"].asCString(), '.');
+					const char* ext    = strrchr(resolvedPath, '.');
 					const char* topKey = BlueprintFileHandler::TopLevelKeyForExtension(ext ? ext : "");
 
 					if (!BlueprintMutator::UpdateField(blueprintRoot, topKey,
@@ -451,7 +486,7 @@ namespace Dia
 						return MakeErrorResponse(err[0] ? err : "mutation failed");
 					}
 
-					if (!mFileHandler.Save(data["path"].asCString(), blueprintRoot, err, sizeof(err)))
+					if (!mFileHandler.Save(resolvedPath, blueprintRoot, err, sizeof(err)))
 					{
 						DIA_LOG_WARNING("Editor",
 							"DiaEntityTemplateEditorPlugin: update_field — save failed for '%s': %s",
@@ -475,9 +510,11 @@ namespace Dia
 						return MakeErrorResponse("missing path or componentType");
 					}
 
+					char resolvedPath[512] = {};
+					ResolvePath(data["path"].asCString(), resolvedPath, sizeof(resolvedPath));
 					Json::Value blueprintRoot;
 					char err[256] = {};
-					if (!mFileHandler.Load(data["path"].asCString(), blueprintRoot, err, sizeof(err)))
+					if (!mFileHandler.Load(resolvedPath, blueprintRoot, err, sizeof(err)))
 					{
 						DIA_LOG_WARNING("Editor",
 							"DiaEntityTemplateEditorPlugin: add_component — load failed for '%s': %s",
@@ -485,7 +522,7 @@ namespace Dia
 						return MakeErrorResponse(err[0] ? err : "load failed");
 					}
 
-					const char* ext    = strrchr(data["path"].asCString(), '.');
+					const char* ext    = strrchr(resolvedPath, '.');
 					const char* topKey = BlueprintFileHandler::TopLevelKeyForExtension(ext ? ext : "");
 
 					if (!BlueprintMutator::AddComponent(blueprintRoot, topKey,
@@ -497,7 +534,7 @@ namespace Dia
 						return MakeErrorResponse(err[0] ? err : "mutation failed");
 					}
 
-					if (!mFileHandler.Save(data["path"].asCString(), blueprintRoot, err, sizeof(err)))
+					if (!mFileHandler.Save(resolvedPath, blueprintRoot, err, sizeof(err)))
 					{
 						DIA_LOG_WARNING("Editor",
 							"DiaEntityTemplateEditorPlugin: add_component — save failed for '%s': %s",
@@ -524,9 +561,11 @@ namespace Dia
 						return MakeErrorResponse("missing path or componentType");
 					}
 
+					char resolvedPath[512] = {};
+					ResolvePath(data["path"].asCString(), resolvedPath, sizeof(resolvedPath));
 					Json::Value blueprintRoot;
 					char err[256] = {};
-					if (!mFileHandler.Load(data["path"].asCString(), blueprintRoot, err, sizeof(err)))
+					if (!mFileHandler.Load(resolvedPath, blueprintRoot, err, sizeof(err)))
 					{
 						DIA_LOG_WARNING("Editor",
 							"DiaEntityTemplateEditorPlugin: remove_component — load failed for '%s': %s",
@@ -534,7 +573,7 @@ namespace Dia
 						return MakeErrorResponse(err[0] ? err : "load failed");
 					}
 
-					const char* ext    = strrchr(data["path"].asCString(), '.');
+					const char* ext    = strrchr(resolvedPath, '.');
 					const char* topKey = BlueprintFileHandler::TopLevelKeyForExtension(ext ? ext : "");
 
 					if (!BlueprintMutator::RemoveComponent(blueprintRoot, topKey,
@@ -546,7 +585,7 @@ namespace Dia
 						return MakeErrorResponse(err[0] ? err : "mutation failed");
 					}
 
-					if (!mFileHandler.Save(data["path"].asCString(), blueprintRoot, err, sizeof(err)))
+					if (!mFileHandler.Save(resolvedPath, blueprintRoot, err, sizeof(err)))
 					{
 						DIA_LOG_WARNING("Editor",
 							"DiaEntityTemplateEditorPlugin: remove_component — save failed for '%s': %s",
@@ -571,9 +610,11 @@ namespace Dia
 					}
 
 					const std::string instanceId = data["instanceId"].asString();
-					const std::string path       = data["path"].asString();
+					const std::string path = data["path"].asString();
+					char resolvedPath[512] = {};
+					ResolvePath(path.c_str(), resolvedPath, sizeof(resolvedPath));
 
-					const char* ext    = strrchr(path.c_str(), '.');
+					const char* ext    = strrchr(resolvedPath, '.');
 					const char* topKey = BlueprintFileHandler::TopLevelKeyForExtension(ext ? ext : "");
 
 					Json::Value blueprintRoot;
@@ -582,7 +623,7 @@ namespace Dia
 					inner["components"] = Json::Value(Json::arrayValue);
 
 					char err[256] = {};
-					if (!mFileHandler.Save(path.c_str(), blueprintRoot, err, sizeof(err)))
+					if (!mFileHandler.Save(resolvedPath, blueprintRoot, err, sizeof(err)))
 					{
 						DIA_LOG_WARNING("Editor",
 							"DiaEntityTemplateEditorPlugin: create_from_template — save failed for '%s': %s",

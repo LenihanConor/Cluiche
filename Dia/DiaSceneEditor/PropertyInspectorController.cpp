@@ -14,19 +14,19 @@ namespace
 	// Extension for each blueprint item type.
 	static const char* BlueprintExtension(const char* itemType)
 	{
-		if (!itemType) return ".diaentitytemplatetemplate";
+		if (!itemType) return ".diaentitytemplate";
 		if (strcmp(itemType, "camera") == 0) return ".diacamera";
 		if (strcmp(itemType, "light")  == 0) return ".dialight";
-		return ".diaentitytemplatetemplate";
+		return ".diaentitytemplate";
 	}
 
 	// Top-level JSON key for each blueprint extension.
 	static const char* TopKeyForType(const char* itemType)
 	{
-		if (!itemType) return "entity_blueprint";
+		if (!itemType) return "entity_template";
 		if (strcmp(itemType, "camera") == 0) return "camera_blueprint";
 		if (strcmp(itemType, "light")  == 0) return "light_blueprint";
-		return "entity_blueprint";
+		return "entity_template";
 	}
 
 	static bool ReadJson(const char* path, Json::Value& out)
@@ -132,8 +132,13 @@ namespace Dia
 			char dir[512];
 			NormaliseDir(entityTemplateBasePath, dir, sizeof(dir));
 
+			// Strip type prefix (e.g. "diaentitytemplate.hero" -> "hero")
+			const char* shortName = entityTemplateId;
+			const char* lastDot = strrchr(entityTemplateId, '.');
+			if (lastDot && lastDot != entityTemplateId) shortName = lastDot + 1;
+
 			char path[768];
-			snprintf(path, sizeof(path), "%s/%s%s", dir, entityTemplateId, BlueprintExtension(itemType));
+			snprintf(path, sizeof(path), "%s/%s%s", dir, shortName, BlueprintExtension(itemType));
 
 			Json::Value root;
 			if (!ReadJson(path, root))

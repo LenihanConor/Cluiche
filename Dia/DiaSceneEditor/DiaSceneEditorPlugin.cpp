@@ -7,6 +7,7 @@
 #include <DiaCore/Json/external/json/json.h>
 #include <fstream>
 #include <sstream>
+#include <string>
 
 using namespace Dia::SceneEditor;
 
@@ -23,6 +24,17 @@ namespace Dia
 
 			strncpy_s(mDiagamePath, sizeof(mDiagamePath),
 			          ctx.IsValid() ? ctx.diagamePath : "", _TRUNCATE);
+
+			mDiagameDir[0] = '\0';
+			if (ctx.IsValid() && ctx.diagamePath[0] != '\0')
+			{
+				strncpy_s(mDiagameDir, sizeof(mDiagameDir), ctx.diagamePath, _TRUNCATE);
+				char* lastSep = nullptr;
+				for (char* p = mDiagameDir; *p; ++p)
+					if (*p == '/' || *p == '\\') lastSep = p;
+				if (lastSep) *(lastSep + 1) = '\0';
+				else mDiagameDir[0] = '\0';
+			}
 
 			if (ctx.IsValid())
 			{
@@ -192,8 +204,13 @@ namespace Dia
 				if (rec.get("type", "").asString() != assetType)
 					continue;
 
-				// Match if catalogue id ends with ".<templateName>"
 				std::string id = rec.get("id", "").asString();
+
+				// Exact match (handles full catalogue IDs like "diaentitytemplate.hero")
+				if (_stricmp(id.c_str(), templateName) == 0)
+					return rec;
+
+				// Match if catalogue id ends with ".<templateName>"
 				if (id.size() >= suffix.size() &&
 				    _stricmp(id.c_str() + id.size() - suffix.size(), suffix.c_str()) == 0)
 					return rec;
@@ -383,7 +400,6 @@ namespace Dia
 					auto extractBlueprintName = [&](const char* arrayKey) {
 						if (!scene.isMember(arrayKey)) return;
 						const Json::Value& arr = scene[arrayKey];
-						char idBuf[256];
 						for (unsigned int i = 0; i < arr.size(); ++i)
 						{
 							if (!arr[i].isMember("id")) continue;
@@ -415,7 +431,16 @@ namespace Dia
 							for (char& c : srcPath) if (c == '\\') c = '/';
 							size_t lastSlash = srcPath.rfind('/');
 							std::string dir = (lastSlash != std::string::npos) ? srcPath.substr(0, lastSlash) : ".";
-							strncpy_s(entityTemplateBasePath, sizeof(entityTemplateBasePath), dir.c_str(), _TRUNCATE);
+
+							// Prepend diagame dir if relative
+							bool isAbs = (!dir.empty() && (dir[0] == '/' || (dir.size() > 1 && dir[1] == ':')));
+							if (!isAbs && mDiagameDir[0] != '\0')
+							{
+								std::string full = std::string(mDiagameDir) + dir;
+								strncpy_s(entityTemplateBasePath, sizeof(entityTemplateBasePath), full.c_str(), _TRUNCATE);
+							}
+							else
+								strncpy_s(entityTemplateBasePath, sizeof(entityTemplateBasePath), dir.c_str(), _TRUNCATE);
 						}
 					}
 
@@ -464,7 +489,27 @@ namespace Dia
 						return MakeErrorResponse("missing entityTemplateId or itemType");
 
 					char entityTemplateBasePath[512] = {};
-					if (mLoadedScenePath[0] != '\0')
+					{
+						const char* etId = data["entityTemplateId"].asCString();
+						const char* iType = data["itemType"].asCString();
+						Json::Value catRec = ResolveTemplateCatalogueRecord(etId, iType);
+						if (!catRec.isNull())
+						{
+							std::string srcPath = catRec.get("source_path", "").asString();
+							for (char& c : srcPath) if (c == '\\') c = '/';
+							size_t ls = srcPath.rfind('/');
+							std::string dir = (ls != std::string::npos) ? srcPath.substr(0, ls) : ".";
+							bool isAbs = (!dir.empty() && (dir[0] == '/' || (dir.size() > 1 && dir[1] == ':')));
+							if (!isAbs && mDiagameDir[0] != '\0')
+							{
+								std::string full = std::string(mDiagameDir) + dir;
+								strncpy_s(entityTemplateBasePath, sizeof(entityTemplateBasePath), full.c_str(), _TRUNCATE);
+							}
+							else
+								strncpy_s(entityTemplateBasePath, sizeof(entityTemplateBasePath), dir.c_str(), _TRUNCATE);
+						}
+					}
+					if (entityTemplateBasePath[0] == '\0' && mLoadedScenePath[0] != '\0')
 					{
 						strncpy_s(entityTemplateBasePath, sizeof(entityTemplateBasePath), mLoadedScenePath, _TRUNCATE);
 						for (char* p = entityTemplateBasePath; *p; ++p)

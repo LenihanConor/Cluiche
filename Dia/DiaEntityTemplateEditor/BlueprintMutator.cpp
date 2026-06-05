@@ -21,7 +21,7 @@ namespace Dia
 		{
 			if (!blueprintRoot.isMember(topKey))
 			{
-				SetError(errorOut, errorCapacity, "blueprint root key not found");
+				SetError(errorOut, errorCapacity, "template root key not found");
 				return false;
 			}
 
@@ -47,7 +47,7 @@ namespace Dia
 		{
 			if (!blueprintRoot.isMember(topKey))
 			{
-				SetError(errorOut, errorCapacity, "blueprint root key not found");
+				SetError(errorOut, errorCapacity, "template root key not found");
 				return false;
 			}
 
@@ -76,7 +76,7 @@ namespace Dia
 		{
 			if (!blueprintRoot.isMember(topKey))
 			{
-				SetError(errorOut, errorCapacity, "blueprint root key not found");
+				SetError(errorOut, errorCapacity, "template root key not found");
 				return false;
 			}
 
@@ -111,7 +111,7 @@ namespace Dia
 		{
 			if (!blueprintRoot.isMember(topKey))
 			{
-				SetError(errorOut, errorCapacity, "blueprint root key not found");
+				SetError(errorOut, errorCapacity, "template root key not found");
 				return false;
 			}
 

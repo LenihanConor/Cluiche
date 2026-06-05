@@ -24,7 +24,7 @@ public_api:
     - DiaEntityTemplateEditorPlugin (registered via REGISTER_EDITOR_PLUGIN)
 
 responsibilities:
-  - Blueprint file I/O (.diaentitytemplatetemplatetemplate / .diacamera / .dialight)
+  - Blueprint file I/O (.diaentitytemplate / .diacamera / .dialight)
   - Component CRUD (add/remove from blueprint)
   - Field default editing (type-aware via ComponentRegistry)
   - Blueprint list panel (grouped by type from asset catalogue)

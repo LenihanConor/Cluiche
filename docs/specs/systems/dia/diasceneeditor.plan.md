@@ -86,7 +86,7 @@ Phase 5 — UI:
 - **Plugin scaffold:** Same as DiaEntityTemplateEditor (T1)
 - **Project context:** `context.mModel->OnDiagameProjectChanged()` callback pattern
 - **Scene2D struct:** Already defined in `Dia/DiaScene2D/Scene2D.h` — load/save via JsonArchive
-- **Blueprint field lookup:** Load `.diaentitytemplatetemplate` → get component list → cross-reference with `instance_data` keys
+- **Blueprint field lookup:** Load `.diaentitytemplate` → get component list → cross-reference with `instance_data` keys
 - **Asset catalogue queries:** `AssetRegistry::FindByType(kDiaEntityAssetType)` for blueprint picker
 
 ### Verification
