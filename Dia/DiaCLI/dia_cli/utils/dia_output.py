@@ -173,6 +173,10 @@ class OutputContext:
             return 0
         return int((time.time() - start) * 1000)
 
+    def log_path_for(self, system: str) -> Path:
+        """Return the NDJSON log path for the given system name."""
+        return self._log_path(system)
+
     def _log_path(self, system: str) -> Path:
         if self._log_json_override:
             return self._log_json_override
