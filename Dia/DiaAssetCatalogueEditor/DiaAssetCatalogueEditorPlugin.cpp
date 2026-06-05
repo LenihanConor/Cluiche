@@ -1038,7 +1038,8 @@ namespace Dia
 						if (data.isMember("typeId") && data["typeId"].isString())
 							filterType = Dia::Core::StringCRC(data["typeId"].asCString());
 
-						static const unsigned int kMaxAutocompleteResults = 10;
+						const unsigned int maxResults = data.isMember("limit") && data["limit"].isUInt()
+							? data["limit"].asUInt() : 10u;
 						Json::Value ids(Json::arrayValue);
 						for (unsigned int i = 0; i < mRegistry.GetCount(); ++i)
 						{
@@ -1052,7 +1053,7 @@ namespace Dia
 								continue;
 
 							ids.append(idStr);
-							if (ids.size() >= kMaxAutocompleteResults)
+							if (ids.size() >= maxResults)
 								break;
 						}
 						result["success"] = true;

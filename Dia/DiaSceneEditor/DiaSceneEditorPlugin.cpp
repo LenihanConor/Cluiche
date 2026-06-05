@@ -425,16 +425,30 @@ namespace Dia
 					else if (strcmp(itemType, "light") == 0) assetType = "dialight";
 
 					Json::Value blueprints(Json::arrayValue);
-					if (mLoadedScenePath[0] != '\0')
+					if (GetBridge())
 					{
-						blueprints.append(Json::Value(Json::objectValue));
+						Json::Value query;
+						query["typeId"] = assetType;
+						query["limit"]  = 50;
+						Json::Value qResult = GetBridge()->InvokeRequestHandler(
+							Dia::Core::StringCRC("asset_catalogue.query_asset_ids"), query);
+						if (qResult.isMember("ids") && qResult["ids"].isArray())
+						{
+							for (unsigned int i = 0; i < qResult["ids"].size(); ++i)
+							{
+								Json::Value entry(Json::objectValue);
+								entry["id"] = qResult["ids"][i];
+								blueprints.append(entry);
+							}
+						}
 					}
 
 					Json::Value result;
 					result["success"]    = true;
 					result["assetType"]  = assetType;
 					result["blueprints"] = blueprints;
-					DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: get_available_blueprints for type '%s'", itemType);
+					DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: get_available_blueprints type='%s' count=%u",
+						itemType, blueprints.size());
 					return result;
 				});
 
@@ -810,6 +824,23 @@ namespace Dia
 					}
 
 					return MakeErrorResponse("Asset Catalogue not available — open the Asset Catalogue panel first");
+				});
+
+			RegisterHandler(
+				Dia::Core::StringCRC("scene_editor.open_template"),
+				[this](const Json::Value& data) -> Json::Value
+				{
+					DIA_TRACE_ZONE("scene_editor.open_template", Dia::Observation::Trace::Category::kNone);
+					if (!data.isMember("blueprintId") || !data["blueprintId"].isString())
+						return MakeErrorResponse("missing blueprintId");
+
+					const Dia::Core::StringCRC templateEditorType("DiaEntityTemplateEditor");
+					const Dia::Core::StringCRC blueprintId(data["blueprintId"].asCString());
+					if (GetPluginLoader())
+						GetPluginLoader()->LoadPlugin(templateEditorType, blueprintId);
+
+					DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: open_template '%s'", data["blueprintId"].asCString());
+					return MakeSuccessResponse();
 				});
 
 			RegisterHandler(

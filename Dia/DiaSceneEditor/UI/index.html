@@ -418,7 +418,6 @@
   <span class="toolbar-label">Stage:</span>
   <select class="toolbar-select" id="stage-select"><option value="">Loading...</option></select>
   <div class="tsep"></div>
-  <button class="tbtn" id="btn-save">Save</button>
   <button class="tbtn accent" id="btn-new-scene" title="Create a new .diascene file via the Asset Catalogue">+ New Scene</button>
   <div class="tsep"></div>
   <button class="tbtn accent" id="btn-add-entity">+ Entity</button>
@@ -456,7 +455,6 @@
     </div>
     <div class="stabs" id="stabs" style="display:none">
       <div class="stab active" data-tab="instance">Instance Overrides</div>
-      <div class="stab" data-tab="blueprint">Blueprint Defaults</div>
     </div>
     <div class="nosel" id="nosel">
       <span class="big">&#8592;</span>
@@ -523,6 +521,19 @@
     <div class="dialog-btns">
       <button class="dialog-btn cancel" id="bp-dialog-cancel">Cancel</button>
       <button class="dialog-btn confirm" id="bp-dialog-confirm">Change Blueprint</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD ITEM DIALOG -->
+<div class="dialog-overlay" id="add-item-dialog">
+  <div class="dialog">
+    <div class="dialog-title" id="add-item-dialog-title">Add Item</div>
+    <div class="dialog-body">Select a template:</div>
+    <select class="dialog-select" id="add-item-select"></select>
+    <div class="dialog-btns">
+      <button class="dialog-btn cancel" id="add-item-cancel">Cancel</button>
+      <button class="dialog-btn confirm" id="add-item-confirm">Add</button>
     </div>
   </div>
 </div>
@@ -1178,7 +1189,7 @@ function renderProperties() {
   const ctxBp = document.getElementById('ctx-bp');
   if (data && data.blueprint) {
     ctxBp.style.display = 'inline';
-    ctxBp.innerHTML = `blueprint: <b>${escHtml(data.blueprint)}.diaentitytemplatetemplate</b>`;
+    ctxBp.innerHTML = `template: <b><a class="prop-link" id="ctx-bp-link" data-bp="${escHtml(data.blueprint)}">${escHtml(data.blueprint)}.diaentitytemplatetemplate &rarr;</a></b>`;
   } else {
     ctxBp.style.display = 'none';
   }
@@ -1405,7 +1416,7 @@ function propRowBlueprintLink(label, bpId) {
   return `<div class="prop-row">
     <span class="prop-label">${escHtml(label)}</span>
     <span class="prop-type"></span>
-    <span class="prop-value"><a class="prop-link" id="bp-nav-link">${escHtml(bpId)}.diaentitytemplatetemplate &rarr;</a></span>
+    <span class="prop-value"><a class="prop-link" id="bp-nav-link" data-bp="${escHtml(bpId)}">${escHtml(bpId)}.diaentitytemplatetemplate &rarr;</a></span>
     <button class="add-btn" id="btn-change-bp" style="margin-left:6px;font-size:9px">Change...</button>
   </div>`;
 }
@@ -1434,11 +1445,11 @@ function handlePropsClick(e) {
     return;
   }
 
-  // Blueprint link → navigate to blueprint tab
+  // Template link → open in DiaEntityTemplateEditor
   const bpLink = e.target.closest('#bp-nav-link');
-  if (bpLink && state.selected && state.selected.data && state.selected.data.blueprint) {
-    state.activeTab = 'blueprint';
-    renderProperties();
+  if (bpLink) {
+    const bpId = bpLink.dataset.bp;
+    if (bpId) bridgeRequest('open_template', { blueprintId: bpId });
     return;
   }
 
@@ -1534,9 +1545,12 @@ document.getElementById('filter-input').addEventListener('input', async e => {
 // ============================================================
 // TOOLBAR ACTIONS
 // ============================================================
-document.getElementById('btn-save').addEventListener('click', async () => {
-  const result = await bridgeRequest('save_scene', {});
-  if (result.success) setDirty(false);
+document.getElementById('ctx-bp').addEventListener('click', e => {
+  const link = e.target.closest('#ctx-bp-link');
+  if (link) {
+    const bpId = link.dataset.bp;
+    if (bpId) bridgeRequest('open_template', { blueprintId: bpId });
+  }
 });
 
 document.getElementById('btn-new-scene').addEventListener('click', () => {
@@ -1620,20 +1634,70 @@ document.getElementById('btn-add-light').addEventListener('click',  () => addIte
 document.getElementById('btn-add-layer').addEventListener('click',  () => addItem('layer'));
 
 async function addItem(itemType) {
-  // Get available blueprints for this type
-  const bpResult = await bridgeRequest('get_available_blueprints', { itemType });
-  let blueprintId = null;
-  if (bpResult.success && bpResult.blueprints && bpResult.blueprints.length > 0) {
-    blueprintId = bpResult.blueprints[0].id;
+  if (itemType === 'layer') {
+    // Layers have no template — add directly with a generated id
+    const layerId = 'layer_' + Date.now();
+    const result = await bridgeRequest('add_layer', { layerId, sortOrder: 0, parallax: [1,1], sortPolicy: 'insertion' });
+    if (result.success) {
+      state.hierarchy = result.hierarchy;
+      renderHierarchy();
+      updateStatusCounts();
+    } else {
+      showToast('error', 'Add Layer Failed', result.error || 'Unknown error');
+    }
+    return;
   }
 
-  const result = await bridgeRequest('add_item', { itemType, blueprintId });
-  if (result.success) {
-    state.hierarchy = result.hierarchy;
-    renderHierarchy();
-    await markDirty();
-    updateStatusCounts();
+  // Entity / Camera / Light — need a template selection
+  const bpResult = await bridgeRequest('get_available_blueprints', { itemType });
+  if (!bpResult.success) {
+    showToast('error', 'Cannot Add Item', bpResult.error || 'Failed to fetch templates');
+    return;
   }
+  const blueprints = bpResult.blueprints || [];
+  if (blueprints.length === 0) {
+    showToast('warning', 'No Templates', 'No templates found for type "' + itemType + '". Create one in the Asset Catalogue first.');
+    return;
+  }
+
+  // Populate and show the add-item dialog
+  const labelMap = { entity:'Entity', camera:'Camera', light:'Light' };
+  document.getElementById('add-item-dialog-title').textContent = 'Add ' + (labelMap[itemType] || itemType);
+  const sel = document.getElementById('add-item-select');
+  sel.innerHTML = '';
+  blueprints.forEach(bp => {
+    const opt = document.createElement('option');
+    opt.value = bp.id;
+    opt.textContent = bp.id + '.diaentitytemplatetemplate';
+    sel.appendChild(opt);
+  });
+
+  document.getElementById('add-item-dialog').classList.add('show');
+
+  await new Promise(resolve => {
+    const confirm = document.getElementById('add-item-confirm');
+    const cancel  = document.getElementById('add-item-cancel');
+    const finish = (blueprintId) => {
+      document.getElementById('add-item-dialog').classList.remove('show');
+      confirm.removeEventListener('click', onConfirm);
+      cancel.removeEventListener('click',  onCancel);
+      resolve(blueprintId);
+    };
+    const onConfirm = () => finish(document.getElementById('add-item-select').value);
+    const onCancel  = () => finish(null);
+    confirm.addEventListener('click', onConfirm);
+    cancel.addEventListener('click',  onCancel);
+  }).then(async blueprintId => {
+    if (!blueprintId) return;
+    const result = await bridgeRequest('add_item', { itemType, blueprintId });
+    if (result.success) {
+      state.hierarchy = result.hierarchy;
+      renderHierarchy();
+      updateStatusCounts();
+    } else {
+      showToast('error', 'Add Failed', result.error || 'Unknown error');
+    }
+  });
 }
 
 // ============================================================
