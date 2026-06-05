@@ -975,8 +975,8 @@ namespace Dia
 					DIA_TRACE_ZONE("scene_editor.new_scene_shortcut", Dia::Observation::Trace::Category::kNone);
 					if (GetPluginLoader())
 						GetPluginLoader()->LoadPlugin(
-							Dia::Core::StringCRC("DiaAssetCatalogueEditor"),
-							Dia::Core::StringCRC("DiaAssetCatalogueEditor"));
+							Dia::Core::StringCRC("DiaAssetCatalogueEditorPlugin"),
+							Dia::Core::StringCRC("DiaAssetCatalogueEditorPlugin"));
 
 					if (GetBridge())
 					{
@@ -996,8 +996,8 @@ namespace Dia
 					DIA_TRACE_ZONE("scene_editor.create_asset", Dia::Observation::Trace::Category::kNone);
 					if (GetPluginLoader())
 						GetPluginLoader()->LoadPlugin(
-							Dia::Core::StringCRC("DiaAssetCatalogueEditor"),
-							Dia::Core::StringCRC("DiaAssetCatalogueEditor"));
+							Dia::Core::StringCRC("DiaAssetCatalogueEditorPlugin"),
+							Dia::Core::StringCRC("DiaAssetCatalogueEditorPlugin"));
 
 					if (GetBridge())
 					{
