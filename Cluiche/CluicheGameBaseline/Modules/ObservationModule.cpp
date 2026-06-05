@@ -24,11 +24,15 @@ ObservationModule::ObservationModule(const Dia::Core::StringCRC& instanceId)
 {
     std::memset(mOwnedSinks, 0, sizeof(mOwnedSinks));
 
+    // Under the VS debugger, stdout is also captured to the Output window, so registering
+    // both DebugOutputSink and StdOutSink would double every line. Use one or the other.
+    if (IsDebuggerPresent())
     {
         Dia::Observation::Log::DebugOutputSink* sink = new Dia::Observation::Log::DebugOutputSink();
         sink->SetLevelThreshold(Dia::Observation::Log::LogLevel::kInfo);
         mOwnedSinks[mOwnedSinkCount++] = sink;
     }
+    else
     {
         Dia::Observation::Log::StdOutSink* sink = new Dia::Observation::Log::StdOutSink();
         sink->SetLevelThreshold(Dia::Observation::Log::LogLevel::kInfo);
