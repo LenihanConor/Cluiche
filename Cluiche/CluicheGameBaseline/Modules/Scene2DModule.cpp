@@ -1,5 +1,6 @@
 #include "Modules/Scene2DModule.h"
 
+#include <DiaApplicationFlow/ProcessingUnit.h>
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
 #include <DiaCore/FilePath/Path.h>
 #include <DiaCore/FilePath/PathStore.h>
@@ -25,9 +26,23 @@ Dia::ApplicationFlow::StartResult Scene2DModule::DoStart()
         return Dia::ApplicationFlow::StartResult::kFailed;
     }
 
+    auto* entityModule = mEntityRef.Get();
+    auto* cameraModule = mCameraRef.Get();
+    auto* lightModule  = mLightRef.Get();
+
+    if (!entityModule || !cameraModule || !lightModule)
+    {
+        DIA_LOG_ERROR("Application", "Scene2DModule: required sibling module not available (EntityModule, Camera2DModule, or Light2DModule)");
+        return Dia::ApplicationFlow::StartResult::kFailed;
+    }
+
     const char* scenePath = Dia::Core::PathStore::ResolvePathToCString(sceneAlias);
 
-    Dia::Scene2D::SceneLoadContext context{ mCameraRegistry, mLightRegistry, mEntityDomain };
+    Dia::Scene2D::SceneLoadContext context{
+        cameraModule->GetRegistry(),
+        lightModule->GetRegistry(),
+        entityModule->GetDomain()
+    };
     Dia::Scene2D::SceneLoadErrors errors;
 
     mLoaded = mSceneLoader.Load(scenePath, context, mLayerTable, &errors);
@@ -46,11 +61,21 @@ Dia::ApplicationFlow::StopResult Scene2DModule::DoStop()
 {
     DIA_LOG_INFO("Application", "Scene2DModule::DoStop");
 
-    Dia::Scene2D::SceneLoadContext context{ mCameraRegistry, mLightRegistry, mEntityDomain };
-    mSceneLoader.Unload(context);
-    mEntityDomain.EndOfFrame();
-    mLoaded = false;
+    auto* entityModule = mEntityRef.Get();
+    auto* cameraModule = mCameraRef.Get();
+    auto* lightModule  = mLightRef.Get();
 
+    if (entityModule && cameraModule && lightModule)
+    {
+        Dia::Scene2D::SceneLoadContext context{
+            cameraModule->GetRegistry(),
+            lightModule->GetRegistry(),
+            entityModule->GetDomain()
+        };
+        mSceneLoader.Unload(context);
+    }
+
+    mLoaded = false;
     return Dia::ApplicationFlow::StopResult::kDone;
 }
 
@@ -58,4 +83,4 @@ Dia::ApplicationFlow::StopResult Scene2DModule::DoStop()
 
 namespace { using Scene2DModule_ = Cluiche::AppFlow::Scene2DModule; }
 DIA_MODULE(Scene2DModule_);
-DIA_DESCRIBE(Scene2DModule_::kTypeId, "Loads and owns a .diascene for the active stage; exposes registries and domain to sibling modules.");
+DIA_DESCRIBE(Scene2DModule_::kTypeId, "Loads a .diascene into sibling module registries; owns only LayerTable and loader state.");

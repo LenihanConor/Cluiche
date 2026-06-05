@@ -248,6 +248,9 @@ namespace Dia
 
 			// Load blueprint component definitions
 			Json::Value bpComponents = LoadBlueprintComponents(blueprintId, blueprintBasePath, itemType);
+			result["blueprint_known"] = blueprintId[0] != '\0'
+				? !bpComponents.empty()
+				: true;
 
 			// Merge with instance_data overrides
 			Json::Value instanceData = item.isMember("instance_data")

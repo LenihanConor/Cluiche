@@ -13,7 +13,8 @@ public:
     ~EntityModule() override;
 
     Dia::Entity::IEntityInspectable& GetInspectable() { return mDomain; }
-    Dia::Entity::Domain&             GetDomain()      { return mDomain; }
+    Dia::Entity::Domain&             GetDomain()       { return mDomain; }
+    const Dia::Entity::Domain&       GetDomain() const { return mDomain; }
     bool                             IsReady() const  { return mReady; }
 
 protected:

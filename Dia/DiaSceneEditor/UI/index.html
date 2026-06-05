@@ -223,6 +223,7 @@
   .prop-link { color: var(--pico-primary, #0e639c); cursor: pointer; font-size: 11px; text-decoration: none; }
   .prop-link:hover { text-decoration: underline; color: var(--pico-primary-hover, #1177bb); }
   .prop-link.disabled-link { color: var(--pico-muted-color, #808080); cursor: default; pointer-events: none; }
+  .prop-error { color: var(--pico-del-color, #f44747); font-size: 11px; }
 
   /* ── Component group ── */
   .comp-group { margin-bottom: 6px; border: 1px solid var(--pico-border-color, #3c3c3c); border-radius: 4px; overflow: hidden; }
@@ -1189,7 +1190,10 @@ function renderProperties() {
   const ctxBp = document.getElementById('ctx-bp');
   if (data && data.blueprint) {
     ctxBp.style.display = 'inline';
-    ctxBp.innerHTML = `template: <b><a class="prop-link" id="ctx-bp-link" data-bp="${escHtml(data.blueprint)}">${escHtml(data.blueprint)}.diaentitytemplatetemplate &rarr;</a></b>`;
+    const bpMissing = data.blueprint_known === false;
+    ctxBp.innerHTML = bpMissing
+      ? `template: <span class="prop-error" title="Template not found in asset catalogue">&#9888; ${escHtml(data.blueprint)}</span>`
+      : `template: <b><a class="prop-link" id="ctx-bp-link" data-bp="${escHtml(data.blueprint)}">${escHtml(data.blueprint)}.diaentitytemplatetemplate &rarr;</a></b>`;
   } else {
     ctxBp.style.display = 'none';
   }
@@ -1225,7 +1229,7 @@ function renderInstanceTab(type, data) {
 function renderEntityInstance(data) {
   let html = buildSection('Identity', [
     propRow('ID', 'string', data.id, false, true),
-    propRowBlueprintLink('Blueprint', data.blueprint),
+    propRowBlueprintLink('Template', data.blueprint, data.blueprint_known),
     propRowCheck('Enabled', data.enabled !== false)
   ]);
 
@@ -1240,7 +1244,7 @@ function renderEntityInstance(data) {
 function renderCameraInstance(data) {
   let html = buildSection('Identity', [
     propRow('ID', 'string', data.id, false, true),
-    propRowBlueprintLink('Blueprint', data.blueprint),
+    propRowBlueprintLink('Template', data.blueprint, data.blueprint_known),
     propRowCheck('Active', data.active === true)
   ]);
   const bpFields = (DEMO_BLUEPRINTS[data.blueprint] || { fields:{} }).fields;
@@ -1254,7 +1258,7 @@ function renderCameraInstance(data) {
 function renderLightInstance(data) {
   let html = buildSection('Identity', [
     propRow('ID', 'string', data.id, false, true),
-    propRowBlueprintLink('Blueprint', data.blueprint),
+    propRowBlueprintLink('Template', data.blueprint, data.blueprint_known),
     propRowCheck('Enabled', data.enabled !== false)
   ]);
 
@@ -1412,12 +1416,16 @@ function propRowCheck(label, checked) {
   </div>`;
 }
 
-function propRowBlueprintLink(label, bpId) {
+function propRowBlueprintLink(label, bpId, known) {
+  const missing = known === false;
+  const linkHtml = missing
+    ? `<span class="prop-error" title="Template not found in asset catalogue">&#9888; ${escHtml(bpId)} (not found)</span>`
+    : `<a class="prop-link" id="bp-nav-link" data-bp="${escHtml(bpId)}">${escHtml(bpId)}.diaentitytemplatetemplate &rarr;</a>`;
   return `<div class="prop-row">
     <span class="prop-label">${escHtml(label)}</span>
     <span class="prop-type"></span>
-    <span class="prop-value"><a class="prop-link" id="bp-nav-link" data-bp="${escHtml(bpId)}">${escHtml(bpId)}.diaentitytemplatetemplate &rarr;</a></span>
-    <button class="add-btn" id="btn-change-bp" style="margin-left:6px;font-size:9px">Change...</button>
+    <span class="prop-value">${linkHtml}</span>
+    <button class="tbtn" id="btn-change-bp" style="margin-left:6px;font-size:9px;padding:2px 6px">Change Template</button>
   </div>`;
 }
 
