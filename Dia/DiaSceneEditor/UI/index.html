@@ -1659,8 +1659,38 @@ document.getElementById('btn-add-layer').addEventListener('click',  () => addIte
 
 async function addItem(itemType) {
   if (itemType === 'layer') {
-    // Layers have no template — add directly with a generated id
-    const layerId = 'layer_' + Date.now();
+    // Show dialog with just the name field
+    document.getElementById('add-item-dialog-title').textContent = 'Add Layer';
+    const nameInput = document.getElementById('add-item-name');
+    const templateLabel = document.querySelector('#add-item-dialog .dialog-body label[for="add-item-select"]');
+    const sel = document.getElementById('add-item-select');
+    nameInput.value = 'layer_' + Date.now();
+    nameInput.dataset.userEdited = '';
+    templateLabel.style.display = 'none';
+    sel.style.display = 'none';
+
+    document.getElementById('add-item-dialog').classList.add('show');
+    nameInput.focus();
+    nameInput.select();
+
+    const layerId = await new Promise(resolve => {
+      const confirm = document.getElementById('add-item-confirm');
+      const cancel  = document.getElementById('add-item-cancel');
+      const finish = (val) => {
+        document.getElementById('add-item-dialog').classList.remove('show');
+        templateLabel.style.display = '';
+        sel.style.display = '';
+        confirm.removeEventListener('click', onConfirm);
+        cancel.removeEventListener('click',  onCancel);
+        resolve(val);
+      };
+      const onConfirm = () => finish(nameInput.value.trim() || ('layer_' + Date.now()));
+      const onCancel  = () => finish(null);
+      confirm.addEventListener('click', onConfirm);
+      cancel.addEventListener('click',  onCancel);
+    });
+
+    if (!layerId) return;
     const result = await bridgeRequest('add_layer', { layerId, sortOrder: 0, parallax: [1,1], sortPolicy: 'insertion' });
     if (result.success) {
       state.hierarchy = result.hierarchy;
