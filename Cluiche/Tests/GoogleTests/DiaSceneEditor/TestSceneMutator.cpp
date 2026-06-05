@@ -413,6 +413,48 @@ TEST(SceneMutator_SetLightAffectsLayers, WrapsIds)
 	EXPECT_EQ(al[1]["value"].asString(), "fg");
 }
 
+TEST(SceneMutator_SetLightType, SetsDIR)
+{
+	Json::Value scene = MakeMinimalScene();
+	AddLight(scene, "sun");
+	char err[256] = {};
+	EXPECT_TRUE(SceneMutator::SetLightType(scene, "sun", "DIR", err, sizeof(err)));
+	EXPECT_STREQ(scene["scene2d"]["lights"][0]["type"].asCString(), "DIR");
+}
+
+TEST(SceneMutator_SetLightType, SetsPNT)
+{
+	Json::Value scene = MakeMinimalScene();
+	AddLight(scene, "torch");
+	char err[256] = {};
+	EXPECT_TRUE(SceneMutator::SetLightType(scene, "torch", "PNT", err, sizeof(err)));
+	EXPECT_STREQ(scene["scene2d"]["lights"][0]["type"].asCString(), "PNT");
+}
+
+TEST(SceneMutator_SetLightType, RejectsInvalidType)
+{
+	Json::Value scene = MakeMinimalScene();
+	AddLight(scene, "lamp");
+	char err[256] = {};
+	EXPECT_FALSE(SceneMutator::SetLightType(scene, "lamp", "SPOT", err, sizeof(err)));
+	EXPECT_GT(strlen(err), 0u);
+}
+
+TEST(SceneMutator_SetLightType, NotFound)
+{
+	Json::Value scene = MakeMinimalScene();
+	char err[256] = {};
+	EXPECT_FALSE(SceneMutator::SetLightType(scene, "missing", "PNT", err, sizeof(err)));
+}
+
+TEST(SceneMutator_AddItem, NewLightHasPNTTypeByDefault)
+{
+	Json::Value scene = MakeMinimalScene();
+	char err[256] = {};
+	EXPECT_TRUE(SceneMutator::AddItem(scene, "light", "light_bp", err, sizeof(err)));
+	EXPECT_STREQ(scene["scene2d"]["lights"][0]["type"].asCString(), "PNT");
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // Override Management
 // ═══════════════════════════════════════════════════════════════════════════
