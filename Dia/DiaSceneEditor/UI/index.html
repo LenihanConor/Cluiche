@@ -1657,6 +1657,37 @@ document.getElementById('btn-add-camera').addEventListener('click', () => addIte
 document.getElementById('btn-add-light').addEventListener('click',  () => addItem('light'));
 document.getElementById('btn-add-layer').addEventListener('click',  () => addItem('layer'));
 
+async function createDefaultTemplates(itemType) {
+  const scenePath = state.currentStage ? state.currentStage.scenePath : null;
+  if (!scenePath) {
+    showToast('error', 'No Scene', 'Load a scene first.');
+    return false;
+  }
+  const sceneDir = scenePath.replace(/[/\\][^/\\]*$/, '');
+
+  const defaults = {
+    camera: [{ name: 'default_camera', ext: '.diacamera', type: 'diacamera' }],
+    light: [
+      { name: 'point_light', ext: '.dialight', type: 'dialight' },
+      { name: 'directional_light', ext: '.dialight', type: 'dialight' }
+    ],
+    entity: [{ name: 'default_entity', ext: '.diaentitytemplate', type: 'diaentitytemplate' }]
+  };
+
+  const templates = defaults[itemType] || [];
+  for (const tmpl of templates) {
+    const id = tmpl.type + '.' + tmpl.name;
+    const source_path = sceneDir + '/' + tmpl.name + tmpl.ext;
+    const result = await bridgeRequest('create_asset', { assetType: tmpl.type, id, source_path });
+    if (!result || !result.success) {
+      showToast('error', 'Create Failed', 'Could not create ' + tmpl.name + ': ' + (result && result.error || 'unknown'));
+      return false;
+    }
+  }
+  showToast('success', 'Templates Created', 'Default templates created successfully.');
+  return true;
+}
+
 async function addItem(itemType) {
   if (itemType === 'layer') {
     // Show dialog with just the name field
@@ -1708,10 +1739,21 @@ async function addItem(itemType) {
     showToast('error', 'Cannot Add Item', bpResult.error || 'Failed to fetch templates');
     return;
   }
-  const entityTemplates = bpResult.entityTemplates || [];
+  let entityTemplates = bpResult.entityTemplates || [];
   if (entityTemplates.length === 0) {
-    showToast('warning', 'No Templates', 'No templates found for type "' + itemType + '". Create one in the Asset Catalogue first.');
-    return;
+    const labelMap2 = { entity:'entity template', camera:'camera', light:'light' };
+    const typeName = labelMap2[itemType] || itemType;
+    if (!confirm(`No ${typeName} templates found.\n\nCreate default templates?`)) return;
+
+    const created = await createDefaultTemplates(itemType);
+    if (!created) return;
+
+    const retry = await bridgeRequest('get_available_entity_templates', { itemType });
+    entityTemplates = (retry.success && retry.entityTemplates) || [];
+    if (entityTemplates.length === 0) {
+      showToast('error', 'Create Failed', 'Default templates were created but could not be loaded.');
+      return;
+    }
   }
 
   // Populate and show the add-item dialog
