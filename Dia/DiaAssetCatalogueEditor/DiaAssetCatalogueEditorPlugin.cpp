@@ -1200,6 +1200,17 @@ namespace Dia
 						rec.mStatus      = Dia::AssetCatalogue::AssetStatus::Active;
 						rec.mScope       = Dia::AssetCatalogue::AssetScope::kGlobal;
 
+						if (data.isMember("tags") && data["tags"].isArray())
+						{
+							for (const Json::Value& tag : data["tags"])
+							{
+								if (tag.isString() && rec.mTags.Size() < rec.mTags.Capacity())
+									rec.mTags.PushBack(Dia::Core::StringCRC(tag.asCString()));
+							}
+							if (rec.mTags.Size() > 0)
+								rec.mManualOverrideFlags |= Dia::AssetCatalogue::kManualOverrideTags;
+						}
+
 						auto* cmd = new Dia::AssetCatalogue::Editor::CreateRecordCommand(mRegistry, rec);
 						mHistory.ExecuteCommand(cmd);
 						PushRegistryState();
@@ -1454,7 +1465,7 @@ namespace Dia
 									}
 									else
 									{
-										const char* topKey = "entity_blueprint";
+										const char* topKey = "entity_template";
 										if (strcmp(typeStr, "diacamera") == 0) topKey = "camera_blueprint";
 										else if (strcmp(typeStr, "dialight") == 0) topKey = "light_blueprint";
 
