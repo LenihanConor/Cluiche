@@ -65,7 +65,8 @@ namespace Dia
 		bool SceneMutator::AddItem(Json::Value& sceneRoot,
 		                           const char*  itemType,
 		                           const char*  entityTemplateId,
-		                           char* errBuf, int errBufSize)
+		                           char* errBuf, int errBufSize,
+		                           const char*  itemId)
 		{
 			DIA_TRACE_ZONE("SceneMutator::AddItem", Dia::Observation::Trace::Category::kNone);
 			const char* arrayKey = ArrayKey(itemType);
@@ -83,12 +84,28 @@ namespace Dia
 			Json::Value& arr = sceneRoot["scene2d"][arrayKey];
 			if (!arr.isArray()) arr = Json::Value(Json::arrayValue);
 
-			// Generate unique id: entityTemplateId_0, entityTemplateId_1, ...
 			char newId[512];
-			for (int n = 0; n < 10000; ++n)
+			if (itemId && itemId[0] != '\0')
 			{
-				snprintf(newId, sizeof(newId), "%s_%d", entityTemplateId ? entityTemplateId : "item", n);
-				if (!IdExists(arr, newId)) break;
+				if (!IsValidId(itemId))
+				{
+					if (errBuf) snprintf(errBuf, errBufSize, "invalid id: must be alphanumeric/underscore");
+					return false;
+				}
+				if (IdExists(arr, itemId))
+				{
+					if (errBuf) snprintf(errBuf, errBufSize, "duplicate id: '%s' already exists", itemId);
+					return false;
+				}
+				strncpy_s(newId, sizeof(newId), itemId, _TRUNCATE);
+			}
+			else
+			{
+				for (int n = 0; n < 10000; ++n)
+				{
+					snprintf(newId, sizeof(newId), "%s_%d", entityTemplateId ? entityTemplateId : "item", n);
+					if (!IdExists(arr, newId)) break;
+				}
 			}
 
 			Json::Value item(Json::objectValue);

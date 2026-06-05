@@ -26,17 +26,19 @@ Add, duplicate, delete, enable/disable, and rename entity instances in a `.diasc
 ## Acceptance Criteria
 
 ### Add Entity
-- Toolbar "+ Entity" button opens a blueprint picker dropdown
-- Dropdown lists all registered `.diaentitytemplate` files from the DiaAssetCatalogue (per SED-SCN-010)
-- Only blueprints registered in the asset catalogue for the current game are shown (not from other games)
-- Blueprint must pre-exist — no inline creation (per SED-SCN-011)
-- Selecting a blueprint creates a new entity placement:
-  - `id`: auto-generated as `{blueprint_name}_{N}` where N is next sequential number
-  - `blueprint`: the selected blueprint name
+- Toolbar "+ Entity" button opens a small dialog/form with two fields:
+  - **Name** — text input for the entity ID (alphanumeric + underscore); pre-filled with `{template_name}_{N}` once template is selected
+  - **Template** — dropdown listing all registered `.diaentitytemplate` files from the DiaAssetCatalogue (per SED-SCN-010)
+- Only templates registered in the asset catalogue for the current game are shown (not from other games)
+- Template must pre-exist — no inline creation (per SED-SCN-011)
+- Validation: name must be non-empty, no duplicate IDs in the entities section, alphanumeric + underscore only
+- On confirm (Enter or "Add" button), creates a new entity placement:
+  - `id`: the user-provided name
+  - `blueprint`: the selected template catalogue ID
   - `enabled`: true
-  - `instance_data`: empty object `{}` (inherits all zero/empty defaults from blueprint per SED-SCN-015)
+  - `instance_data`: empty object `{}` (inherits all zero/empty defaults from template per SED-SCN-015)
 - New entity appears at end of Entities section, auto-selected
-- Scene is marked dirty
+- Same form pattern applies to "+ Camera" and "+ Light" (name + template)
 
 ### Duplicate (Clone)
 - Right-click context menu → "Duplicate" (or Ctrl+D)

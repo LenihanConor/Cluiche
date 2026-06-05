@@ -308,7 +308,7 @@ TEST_F(AutoRelTrackingTest, AddItem_WithCatalogueId_AddsForwardRef)
 	// Add entity — should register a "uses" edge in the catalogue
 	Json::Value addReq;
 	addReq["itemType"]    = "entity";
-	addReq["blueprintId"] = "diaentitytemplate.box";
+	addReq["entityTemplateId"] = "diaentitytemplate.box";
 	Json::Value addResult = Invoke("scene_editor.add_item", addReq);
 	ASSERT_TRUE(addResult["success"].asBool()) << "add_item failed";
 
@@ -333,10 +333,10 @@ TEST_F(AutoRelTrackingTest, DeleteItem_AfterAdd_RemovesForwardRef)
 	// Add then delete the item
 	Json::Value addReq;
 	addReq["itemType"]    = "entity";
-	addReq["blueprintId"] = "diaentitytemplate.box";
+	addReq["entityTemplateId"] = "diaentitytemplate.box";
 	Invoke("scene_editor.add_item", addReq);
 
-	// SceneMutator generates id as "{blueprintId}_{N}" → "diaentitytemplate.box_0"
+	// SceneMutator generates id as "{entityTemplateId}_{N}" → "diaentitytemplate.box_0"
 	Json::Value delReq;
 	delReq["itemType"] = "entity";
 	delReq["itemId"]   = "diaentitytemplate.box_0";
@@ -365,17 +365,17 @@ TEST_F(AutoRelTrackingTest, ChangeBlueprint_UpdatesForwardRef)
 	// Add entity with old blueprint
 	Json::Value addReq;
 	addReq["itemType"]    = "entity";
-	addReq["blueprintId"] = "diaentitytemplate.old";
+	addReq["entityTemplateId"] = "diaentitytemplate.old";
 	Invoke("scene_editor.add_item", addReq);
 
-	// Change to new blueprint
+	// Change to new entity template
 	Json::Value changeReq;
 	changeReq["itemType"]             = "entity";
 	changeReq["itemId"]               = "diaentitytemplate.old_0";
-	changeReq["newBlueprintId"]       = "diaentitytemplate.new_bp";
-	changeReq["newBlueprintComponents"] = Json::Value(Json::arrayValue);
-	Json::Value changeResult = Invoke("scene_editor.change_blueprint", changeReq);
-	ASSERT_TRUE(changeResult["success"].asBool()) << "change_blueprint failed";
+	changeReq["newEntityTemplateId"]  = "diaentitytemplate.new_bp";
+	changeReq["newEntityTemplateComponents"] = Json::Value(Json::arrayValue);
+	Json::Value changeResult = Invoke("scene_editor.change_entity_template", changeReq);
+	ASSERT_TRUE(changeResult["success"].asBool()) << "change_entity_template failed";
 
 	Json::Value refs = GetForwardRefs("diascene.ar_scene");
 	EXPECT_FALSE(HasRef(refs, "uses", "diaentitytemplate.old"))   << "old blueprint ref should be removed";
@@ -400,7 +400,7 @@ TEST_F(AutoRelTrackingTest, AddItem_NoCatalogueIdCached_NoRelationship)
 
 	Json::Value addReq;
 	addReq["itemType"]    = "entity";
-	addReq["blueprintId"] = "diaentitytemplate.box";
+	addReq["entityTemplateId"] = "diaentitytemplate.box";
 	Json::Value addResult = Invoke("scene_editor.add_item", addReq);
 	ASSERT_TRUE(addResult["success"].asBool()) << "add_item failed";
 

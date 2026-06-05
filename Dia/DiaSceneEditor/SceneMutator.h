@@ -15,11 +15,12 @@ namespace Dia
 			// T11: Append a new item to the given section array.
 			// itemType: "entity" | "camera" | "light"
 			// entityTemplateId: the entity template asset id (will be stored as {"value":"..."})
-			// Auto-generates id as "{entityTemplateId}_{N}" where N avoids collisions.
+			// itemId: if non-null/non-empty, used as the item id; otherwise auto-generates "{entityTemplateId}_{N}".
 			static bool AddItem(Json::Value& sceneRoot,
 			                    const char*  itemType,
 			                    const char*  entityTemplateId,
-			                    char* errBuf, int errBufSize);
+			                    char* errBuf, int errBufSize,
+			                    const char*  itemId = nullptr);
 
 			// T12: Deep copy an item; new id = "{oldId}_copy" (suffix _copy2, _copy3 if taken).
 			// Offsets instance_data Transform2D.position by +50 on both axes if present.

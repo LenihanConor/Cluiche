@@ -535,10 +535,10 @@ namespace Dia
 				Dia::Core::StringCRC("scene_editor.mark_dirty"),
 				[this](const Json::Value& /*data*/) -> Json::Value
 				{
-					MarkDirty();
+					AutoSave();
 					Json::Value result;
 					result["success"] = true;
-					result["dirty"]   = true;
+					result["dirty"]   = false;
 					return result;
 				});
 
@@ -622,7 +622,7 @@ namespace Dia
 					        err, sizeof(err)))
 						return MakeErrorResponse(err);
 
-					MarkDirty();
+					AutoSave();
 					Json::Value result;
 					result["success"]   = true;
 					result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
@@ -725,7 +725,7 @@ namespace Dia
 						GetBridge()->InvokeRequestHandler(Dia::Core::StringCRC("asset_catalogue.add_relationship"), addReq);
 					}
 
-					MarkDirty();
+					AutoSave();
 					Json::Value result;
 					result["success"]   = true;
 					result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
@@ -737,7 +737,7 @@ namespace Dia
 			auto layerMutate = [this](bool ok, const char* err) -> Json::Value
 			{
 				if (!ok) return MakeErrorResponse(err);
-				MarkDirty();
+				AutoSave();
 				Json::Value result;
 				result["success"]   = true;
 				result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
@@ -806,7 +806,7 @@ namespace Dia
 					char err[256]={};
 					if (!SceneMutator::SetCameraActive(mLoadedSceneRoot, data["cameraId"].asCString(), err, sizeof(err)))
 						return MakeErrorResponse(err);
-					MarkDirty();
+					AutoSave();
 					Json::Value result;
 					result["success"]   = true;
 					result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
@@ -824,7 +824,7 @@ namespace Dia
 					if (!SceneMutator::SetLightAffectsLayers(mLoadedSceneRoot,
 					        data["lightId"].asCString(), data["layerIds"], err, sizeof(err)))
 						return MakeErrorResponse(err);
-					MarkDirty();
+					AutoSave();
 					Json::Value result;
 					result["success"]   = true;
 					result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
@@ -836,7 +836,7 @@ namespace Dia
 			auto overrideMutate = [this](bool ok, const char* err) -> Json::Value
 			{
 				if (!ok) return MakeErrorResponse(err);
-				MarkDirty();
+				AutoSave();
 				return MakeSuccessResponse();
 			};
 
@@ -925,7 +925,7 @@ namespace Dia
 					if (!data.isMember("world_bounds")) return MakeErrorResponse("missing world_bounds");
 					if (mLoadedSceneRoot.isNull()) return MakeErrorResponse("no scene loaded");
 					mLoadedSceneRoot["scene2d"]["world_bounds"] = data["world_bounds"];
-					MarkDirty();
+					AutoSave();
 					return MakeSuccessResponse();
 				});
 
@@ -1095,11 +1095,15 @@ namespace Dia
 			if (mLoadedSceneRoot.isNull())
 				return MakeErrorResponse("no scene loaded");
 
+			const char* userItemId = (data.isMember("id") && data["id"].isString())
+				? data["id"].asCString() : nullptr;
+
 			char err[256] = {};
 			if (!SceneMutator::AddItem(mLoadedSceneRoot,
 			        data["itemType"].asCString(),
 			        data["entityTemplateId"].asCString(),
-			        err, sizeof(err)))
+			        err, sizeof(err),
+			        userItemId))
 				return MakeErrorResponse(err);
 
 			if (GetBridge() && mSceneCatalogueId[0] != '\0')
@@ -1111,7 +1115,7 @@ namespace Dia
 				GetBridge()->InvokeRequestHandler(Dia::Core::StringCRC("asset_catalogue.add_relationship"), relReq);
 			}
 
-			MarkDirty();
+			AutoSave();
 			Json::Value result;
 			result["success"]   = true;
 			result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
@@ -1176,7 +1180,7 @@ namespace Dia
 			}
 
 			mHierarchyController.ClearSelection();
-			MarkDirty();
+			AutoSave();
 			Json::Value result;
 			result["success"]   = true;
 			result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
@@ -1198,7 +1202,7 @@ namespace Dia
 			        err, sizeof(err)))
 				return MakeErrorResponse(err);
 
-			MarkDirty();
+			AutoSave();
 			Json::Value result;
 			result["success"]   = true;
 			result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
@@ -1223,7 +1227,7 @@ namespace Dia
 
 			mHierarchyController.SetSelection(
 				data["itemType"].asCString(), data["newId"].asCString());
-			MarkDirty();
+			AutoSave();
 			Json::Value result;
 			result["success"]   = true;
 			result["hierarchy"] = mHierarchyController.BuildHierarchyJson(mLoadedSceneRoot);
@@ -1285,6 +1289,23 @@ namespace Dia
 			result["success"] = true;
 			result["dirty"]   = false;
 			return result;
+		}
+
+		void DiaSceneEditorPlugin::AutoSave()
+		{
+			if (mLoadedScenePath[0] == '\0' || mLoadedSceneRoot.isNull())
+				return;
+
+			char err[256] = {};
+			if (mFileHandler.Save(mLoadedScenePath, mLoadedSceneRoot, err, sizeof(err)))
+			{
+				ClearDirty();
+			}
+			else
+			{
+				DIA_LOG_ERROR("Editor", "DiaSceneEditorPlugin: autosave failed for '%s': %s",
+					mLoadedScenePath, err[0] ? err : "unknown error");
+			}
 		}
 
 		Json::Value DiaSceneEditorPlugin::HandleValidate(const Json::Value& /*data*/)

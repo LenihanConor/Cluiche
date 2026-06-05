@@ -60,6 +60,7 @@ namespace Dia
 		private:
 			void RegisterRequestHandlers();
 			void ResolveCatalogueIdForLoadedScene();
+			void AutoSave();
 
 			// Given a bare template name from a .diascene (e.g. "test_entity"), find the
 			// matching catalogue record by suffix-matching the catalogue id or source_path stem.

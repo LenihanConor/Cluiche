@@ -96,7 +96,7 @@ TEST_F(SceneEditorHandlerTest, AddItem_ValidData_ReturnsSuccessAndHierarchy)
 
 	Json::Value data;
 	data["itemType"]    = "entity";
-	data["blueprintId"] = "bp_hero";
+	data["entityTemplateId"] = "bp_hero";
 
 	Json::Value result = mPlugin.HandleAddItem(data);
 	EXPECT_TRUE(result["success"].asBool());
@@ -108,7 +108,7 @@ TEST_F(SceneEditorHandlerTest, AddItem_NoSceneLoaded_ReturnsError)
 	// No SetTestScene called — no scene loaded
 	Json::Value data;
 	data["itemType"]    = "entity";
-	data["blueprintId"] = "bp_hero";
+	data["entityTemplateId"] = "bp_hero";
 
 	Json::Value result = mPlugin.HandleAddItem(data);
 	EXPECT_TRUE(result.isMember("error"));
@@ -120,7 +120,7 @@ TEST_F(SceneEditorHandlerTest, AddItem_MissingItemType_ReturnsError)
 	LoadMinimalScene();
 
 	Json::Value data;
-	data["blueprintId"] = "bp_hero";
+	data["entityTemplateId"] = "bp_hero";
 	// missing "itemType"
 
 	Json::Value result = mPlugin.HandleAddItem(data);
@@ -128,13 +128,13 @@ TEST_F(SceneEditorHandlerTest, AddItem_MissingItemType_ReturnsError)
 	EXPECT_FALSE(result.get("success", false).asBool());
 }
 
-TEST_F(SceneEditorHandlerTest, AddItem_MissingBlueprintId_ReturnsError)
+TEST_F(SceneEditorHandlerTest, AddItem_MissingEntityTemplateId_ReturnsError)
 {
 	LoadMinimalScene();
 
 	Json::Value data;
 	data["itemType"] = "entity";
-	// missing "blueprintId"
+	// missing "entityTemplateId"
 
 	Json::Value result = mPlugin.HandleAddItem(data);
 	EXPECT_TRUE(result.isMember("error"));
