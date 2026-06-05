@@ -22,10 +22,10 @@ DiaSceneEditor answers: "how do I author the spatial content of my game levels?"
 - Camera placement authoring — add/configure cameras with blueprint + instance overrides; enforce single-active-camera constraint
 - Light placement authoring — add/configure lights with blueprint + instance overrides + `affects_layers` assignment
 - Layer authoring — add/edit/reorder layers (sort_order, parallax, sort_policy, enabled)
-- Blueprint defaults reference — read-only display of inherited blueprint fields on instances; "Open in Blueprint Editor →" link routes to DiaEntityTemplateEditor
-- Change Blueprint operation — reassign an entity instance to a different blueprint with transfer/orphan analysis of existing overrides
+- Template reference — "Template" link on each entity/camera/light routes directly to DiaEntityTemplateEditor; no separate Blueprint Defaults tab
+- Change Template operation — reassign an entity instance to a different template with transfer/orphan analysis of existing overrides
 - Clone (Duplicate) — copy any scene item with offset position and `_copy` suffix
-- Scene file I/O — load `.diascene` from the stage referenced in the `.diagame`; save edits back to the same file
+- Scene file I/O — load `.diascene` from the stage referenced in the `.diagame`; autosave on every mutation (no explicit Save button)
 - Dirty state tracking — visual indicator when unsaved changes exist
 - Stage/Scene selector — toolbar dropdowns populated from the connected `.diagame` manifest (not a file picker)
 - Scene validation — enforce constraints: exactly 1 active camera, default layer present, no duplicate IDs
@@ -175,18 +175,16 @@ namespace Dia::SceneEditor
 | ID | Decision | Rationale |
 |----|----------|-----------|
 | SED-SCN-001 | Stage/scene selection via toolbar dropdown, not file picker | Follows DiaAssetCatalogueEditor pattern — all editors derive content from the connected `.diagame` via Project Context |
-| SED-SCN-002 | Blueprint editing is a SEPARATE editor plugin (DiaEntityTemplateEditor) | Blueprints are standalone assets shared across scenes; editing them is not a scene concern. Scene editor shows blueprint data as read-only reference with "Open in Blueprint Editor →" link. |
-| SED-SCN-003 | Blueprint defaults shown read-only on instance panel | Scene editor never writes to blueprint files; all blueprint fields on instances are display-only for context. Editing routes to DiaEntityTemplateEditor. |
-| SED-SCN-004 | Change Blueprint is lossy — transferring overrides are shown, orphaned overrides are warned | Users must see blast radius before confirming; orphaned overrides are not silently deleted |
+| SED-SCN-002 | Template editing is a SEPARATE editor plugin (DiaEntityTemplateEditor) | Templates are standalone assets shared across scenes; editing them is not a scene concern. Scene editor shows a "Template →" link that opens DiaEntityTemplateEditor directly. No Blueprint Defaults tab — the link is the navigation mechanism. |
+| SED-SCN-003 | No Blueprint Defaults tab — template link replaces it | A dedicated read-only tab added complexity without value. The "Template →" link in the Identity section opens DiaEntityTemplateEditor for the full template view. |
+| SED-SCN-004 | Change Template is lossy — transferring overrides are shown, orphaned overrides are warned | Users must see blast radius before confirming; orphaned overrides are not silently deleted |
 | SED-SCN-005 | No 2D viewport in v1 — list + property panel only | Viewport is high complexity; property-based editing ships value immediately; viewport is a future feature spec |
 | SED-SCN-006 | Blueprint file extensions: `.diaentitytemplatetemplate` (entities), `.diacamera` (cameras), `.dialight` (lights) | Separate extensions per type — clear from filename what you're editing; matches owning modules (diaentitytemplate, DiaCamera2D, DiaLighting2D) |
 | SED-SCN-007 | Duplicate offsets position by +50 on both axes | Prevents exact overlap; user adjusts after placement |
 | SED-SCN-008 | Undo/redo deferred to v2 | Reduce v1 scope; save/revert workflow is sufficient for initial authoring |
-| SED-SCN-009 | Blueprints section shows ALL registered blueprints from the asset catalogue, not just scene-referenced | Enables discovery when adding new entities; asset catalogue provides the canonical list of what's available per game |
-| SED-SCN-010 | Blueprint discovery via DiaAssetCatalogue | The "+ Entity/Camera/Light" pickers query the asset catalogue for all registered `.diaentitytemplatetemplate`/`.diacamera`/`.dialight` files — not a filesystem scan |
-| SED-SCN-011 | Blueprints must pre-exist before placement | "+ Entity" is a picker from existing blueprints; standalone blueprint creation is a separate flow (name + initial components) |
-| SED-SCN-012 | Blueprint panel shows cross-scene usage | When editing a blueprint, the property panel shows which scenes and entity instances reference it — makes blast radius visible |
-| SED-SCN-013 | Adding a component to a blueprint cascades to all instances | New component fields appear with defaults on all referencing instances; existing overrides unaffected. Panel shows affected instance count before confirming. |
+| SED-SCN-009 | No Save button — autosave on every mutation | Every add/delete/rename/override change writes immediately; dirty indicator is informational only |
+| SED-SCN-010 | Template discovery via asset_catalogue.query_asset_ids | The "+ Entity/Camera/Light" pickers call `scene_editor.get_available_blueprints` which queries the asset catalogue with typeId filter; not a filesystem scan |
+| SED-SCN-011 | Templates must pre-exist before placement | "+ Entity" shows a picker from existing templates; standalone template creation is a separate flow in DiaEntityTemplateEditor via the Asset Catalogue |
 | SED-SCN-014 | Instance panel shows all blueprint fields (non-overridden fields dimmed and non-editable) | Gives full context without requiring tab-switch; only overridden fields have purple left-border and are editable; non-overridden fields have muted styling |
 | SED-SCN-015 | All field defaults are zero/empty | New blueprints, new components, new overrides all default to zero-values unless explicitly set |
 | SED-SCN-016 | Project disconnect loses unsaved changes | Same behaviour as all other editor plugins — no special handling |
@@ -197,7 +195,7 @@ namespace Dia::SceneEditor
 |---------|-------------|------|--------|
 | scene-hierarchy-panel | Plugin scaffold + left panel with collapsible sections (Layers/Cameras/Lights/Entities) + search/filter + selection + property panel + blueprint read-only reference | [scene-hierarchy-panel.md](../../features/dia/diasceneeditor/scene-hierarchy-panel.md) | Draft |
 | entity-placement-crud | Add/duplicate/delete entity instances; assign blueprint on creation; edit instance_data overrides; context menu | [entity-placement-crud.md](../../features/dia/diasceneeditor/entity-placement-crud.md) | Draft |
-| change-blueprint | Reassign entity blueprint with transfer analysis and orphan warning dialog | [change-blueprint.md](../../features/dia/diasceneeditor/change-blueprint.md) | Draft |
+| change-blueprint | Reassign entity template with transfer analysis and orphan warning dialog | [change-blueprint.md](../../features/dia/diasceneeditor/change-blueprint.md) | Draft |
 | layer-authoring | Add/edit/reorder/delete layers; parallax, sort_order, enabled, sort_policy | [layer-authoring.md](../../features/dia/diasceneeditor/layer-authoring.md) | Draft |
 | camera-light-authoring | Add/edit/delete cameras and lights; active camera enforcement; affects_layers checkboxes | [camera-light-authoring.md](../../features/dia/diasceneeditor/camera-light-authoring.md) | Draft |
 | scene-validation | Enforce single active camera, default layer present, unique IDs; display validation panel | [scene-validation.md](../../features/dia/diasceneeditor/scene-validation.md) | Draft |
