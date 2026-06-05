@@ -37,6 +37,7 @@ export const PipelineToolbar: FC<PipelineToolbarProps> = ({
     const [selectedConfig, setSelectedConfig] = useState('Debug');
     const [force, setForce] = useState(false);
     const [splitOpen, setSplitOpen] = useState(false);
+    const [buildMode, setBuildMode] = useState<'build' | 'buildAndLaunch'>('build');
     const splitRef = useRef<HTMLDivElement>(null);
 
     // Build-status listener
@@ -73,14 +74,17 @@ export const PipelineToolbar: FC<PipelineToolbarProps> = ({
 
     const handleBuild = useCallback(() => {
         if (buildDisabled) return;
-        request('pipeline.start', { config: selectedConfig, target: diagameName, force });
-    }, [request, selectedConfig, diagameName, force, buildDisabled]);
+        if (buildMode === 'buildAndLaunch') {
+            request('pipeline.start', { config: selectedConfig, target: diagameName, force, launchAfter: true });
+        } else {
+            request('pipeline.start', { config: selectedConfig, target: diagameName, force });
+        }
+    }, [request, selectedConfig, diagameName, force, buildDisabled, buildMode]);
 
-    const handleBuildAndLaunch = useCallback(() => {
-        if (buildDisabled) return;
+    const selectBuildAndLaunch = useCallback(() => {
+        setBuildMode('buildAndLaunch');
         setSplitOpen(false);
-        request('pipeline.start', { config: selectedConfig, target: diagameName, force, launchAfter: true });
-    }, [request, selectedConfig, diagameName, force, buildDisabled]);
+    }, []);
 
     const handleCancel = useCallback(() => {
         request('pipeline.cancel');
@@ -183,11 +187,11 @@ export const PipelineToolbar: FC<PipelineToolbarProps> = ({
                 ) : (
                     /* Build/Launch split-button */
                     <div ref={splitRef} style={{ position: 'relative', display: 'flex' }}>
-                        {/* Left: Build */}
+                        {/* Left: Build / Build & Launch */}
                         <button
                             onClick={handleBuild}
                             disabled={buildDisabled}
-                            title="Build"
+                            title={buildMode === 'buildAndLaunch' ? 'Build & Launch' : 'Build'}
                             style={{
                                 background: '#2a6', color: '#fff', border: 'none',
                                 borderRight: '1px solid rgba(0,0,0,0.3)',
@@ -197,7 +201,7 @@ export const PipelineToolbar: FC<PipelineToolbarProps> = ({
                                 opacity: buildDisabled ? 0.5 : 1,
                             }}
                         >
-                            ▶ Build
+                            {buildMode === 'buildAndLaunch' ? '▶ Build & Launch' : '▶ Build'}
                         </button>
                         {/* Right: dropdown arrow */}
                         <button
@@ -229,7 +233,7 @@ export const PipelineToolbar: FC<PipelineToolbarProps> = ({
                                 boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
                             }}>
                                 <button
-                                    onClick={handleBuildAndLaunch}
+                                    onClick={selectBuildAndLaunch}
                                     style={{
                                         display: 'block',
                                         width: '100%',
