@@ -122,23 +122,23 @@ namespace Dia
 		// ── Blueprint overlay (T7/T8) ────────────────────────────────────────────────
 
 		Json::Value PropertyInspectorController::LoadBlueprintComponents(
-			const char* blueprintId,
-			const char* blueprintBasePath,
+			const char* entityTemplateId,
+			const char* entityTemplateBasePath,
 			const char* itemType) const
 		{
-			if (!blueprintId || blueprintId[0] == '\0' || !blueprintBasePath || blueprintBasePath[0] == '\0')
+			if (!entityTemplateId || entityTemplateId[0] == '\0' || !entityTemplateBasePath || entityTemplateBasePath[0] == '\0')
 				return Json::Value(Json::arrayValue);
 
 			char dir[512];
-			NormaliseDir(blueprintBasePath, dir, sizeof(dir));
+			NormaliseDir(entityTemplateBasePath, dir, sizeof(dir));
 
 			char path[768];
-			snprintf(path, sizeof(path), "%s/%s%s", dir, blueprintId, BlueprintExtension(itemType));
+			snprintf(path, sizeof(path), "%s/%s%s", dir, entityTemplateId, BlueprintExtension(itemType));
 
 			Json::Value root;
 			if (!ReadJson(path, root))
 			{
-				DIA_LOG_WARNING("Editor", "PropertyInspectorController: cannot load blueprint '%s'", path);
+				DIA_LOG_WARNING("Editor", "PropertyInspectorController: cannot load entity template '%s'", path);
 				return Json::Value(Json::arrayValue);
 			}
 
@@ -150,14 +150,14 @@ namespace Dia
 		}
 
 		Json::Value PropertyInspectorController::MergeFields(
-			const Json::Value& blueprintComponents,
+			const Json::Value& entityTemplateComponents,
 			const Json::Value& instanceData) const
 		{
 			Json::Value result(Json::arrayValue);
 
-			for (unsigned int ci = 0; ci < blueprintComponents.size(); ++ci)
+			for (unsigned int ci = 0; ci < entityTemplateComponents.size(); ++ci)
 			{
-				const Json::Value& comp    = blueprintComponents[ci];
+				const Json::Value& comp    = entityTemplateComponents[ci];
 				const char*        typeName = comp.isMember("type") ? comp["type"].asCString() : "";
 				Json::Value        fieldValues = comp.isMember("fields")
 					? comp["fields"] : Json::Value(Json::objectValue);
@@ -171,7 +171,7 @@ namespace Dia
 
 				Json::Value fields(Json::arrayValue);
 
-				auto buildField = [&](const char* name, const Json::Value& blueprintVal)
+				auto buildField = [&](const char* name, const Json::Value& entityTemplateVal)
 				{
 					// Override key in instance_data is "ComponentType.fieldName"
 					char overrideKey[384];
@@ -181,7 +181,7 @@ namespace Dia
 					Json::Value fieldJson(Json::objectValue);
 					fieldJson["name"]       = name;
 					fieldJson["overridden"] = overridden;
-					fieldJson["value"]      = overridden ? instanceData[overrideKey] : blueprintVal;
+					fieldJson["value"]      = overridden ? instanceData[overrideKey] : entityTemplateVal;
 
 					if (desc)
 					{
@@ -232,7 +232,7 @@ namespace Dia
 		Json::Value PropertyInspectorController::BuildBlueprintProperties(
 			const Json::Value& item,
 			const char*        itemType,
-			const char*        blueprintBasePath) const
+			const char*        entityTemplateBasePath) const
 		{
 			Json::Value result(Json::objectValue);
 			result["selectionType"] = itemType;
@@ -240,22 +240,22 @@ namespace Dia
 			char idBuf[256];
 			result["id"] = ExtractStr(item.isMember("id") ? item["id"] : Json::Value(""), idBuf, sizeof(idBuf));
 
-			char bpBuf[256];
-			const char* blueprintId = ExtractStr(
-				item.isMember("blueprint") ? item["blueprint"] : Json::Value(""), bpBuf, sizeof(bpBuf));
-			result["blueprint"] = blueprintId;
+			char etBuf[256];
+			const char* entityTemplateId = ExtractStr(
+				item.isMember("blueprint") ? item["blueprint"] : Json::Value(""), etBuf, sizeof(etBuf));
+			result["entityTemplate"] = entityTemplateId;
 			result["enabled"]   = item.isMember("enabled") ? item["enabled"] : Json::Value(true);
 
-			// Load blueprint component definitions
-			Json::Value bpComponents = LoadBlueprintComponents(blueprintId, blueprintBasePath, itemType);
-			result["blueprint_known"] = blueprintId[0] != '\0'
-				? !bpComponents.empty()
+			// Load entity template component definitions
+			Json::Value etComponents = LoadBlueprintComponents(entityTemplateId, entityTemplateBasePath, itemType);
+			result["entityTemplate_known"] = entityTemplateId[0] != '\0'
+				? !etComponents.empty()
 				: true;
 
 			// Merge with instance_data overrides
 			Json::Value instanceData = item.isMember("instance_data")
 				? item["instance_data"] : Json::Value(Json::objectValue);
-			result["components"] = MergeFields(bpComponents, instanceData);
+			result["components"] = MergeFields(etComponents, instanceData);
 
 			// Camera-specific: active flag (T8)
 			if (strcmp(itemType, "camera") == 0)
@@ -275,7 +275,7 @@ namespace Dia
 			const Json::Value& sceneRoot,
 			const char*        selectionType,
 			const char*        selectionId,
-			const char*        blueprintBasePath) const
+			const char*        entityTemplateBasePath) const
 		{
 			DIA_TRACE_ZONE("PropertyInspectorController::BuildPropertyJson", Dia::Observation::Trace::Category::kNone);
 
@@ -308,7 +308,7 @@ namespace Dia
 				if (strcmp(selectionType, "layer") == 0)
 					return BuildLayerProperties(item, scene);
 
-				return BuildBlueprintProperties(item, selectionType, blueprintBasePath);
+				return BuildBlueprintProperties(item, selectionType, entityTemplateBasePath);
 			}
 
 			return empty;
@@ -317,21 +317,21 @@ namespace Dia
 		// ── Blueprint defaults (T9) ──────────────────────────────────────────────────
 
 		Json::Value PropertyInspectorController::BuildBlueprintDefaultsJson(
-			const char* blueprintId,
+			const char* entityTemplateId,
 			const char* itemType,
-			const char* blueprintBasePath) const
+			const char* entityTemplateBasePath) const
 		{
 			DIA_TRACE_ZONE("PropertyInspectorController::BuildBlueprintDefaultsJson", Dia::Observation::Trace::Category::kNone);
 
 			Json::Value result(Json::objectValue);
-			result["blueprintId"] = blueprintId ? blueprintId : "";
+			result["entityTemplateId"] = entityTemplateId ? entityTemplateId : "";
 			result["readonly"]    = true;
 
-			Json::Value bpComponents = LoadBlueprintComponents(blueprintId, blueprintBasePath, itemType);
+			Json::Value etComponents = LoadBlueprintComponents(entityTemplateId, entityTemplateBasePath, itemType);
 
 			// Return fields without override overlay — all overridden=false
 			Json::Value empty(Json::objectValue);
-			result["components"] = MergeFields(bpComponents, empty);
+			result["components"] = MergeFields(etComponents, empty);
 			return result;
 		}
 	}

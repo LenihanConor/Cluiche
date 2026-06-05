@@ -18,23 +18,23 @@ namespace Dia
 			// sceneRoot    — the full parsed .diascene Json::Value
 			// selectionType — "layer" | "entity" | "camera" | "light"
 			// selectionId   — the id string of the selected item
-			// blueprintBasePath — directory used to resolve relative blueprint file paths
-			//                     (typically the directory containing the .diascene file)
+			// entityTemplateBasePath — directory used to resolve relative blueprint file paths
+			//                         (typically the directory containing the .diascene file)
 			Json::Value BuildPropertyJson(const Json::Value& sceneRoot,
 			                             const char*        selectionType,
 			                             const char*        selectionId,
-			                             const char*        blueprintBasePath = nullptr) const;
+			                             const char*        entityTemplateBasePath = nullptr) const;
 
 			// Build raw blueprint component list (no instance_data overlay).
 			// Used for the read-only blueprint defaults tab (T9).
-			Json::Value BuildBlueprintDefaultsJson(const char* blueprintId,
+			Json::Value BuildBlueprintDefaultsJson(const char* entityTemplateId,
 			                                       const char* itemType,
-			                                       const char* blueprintBasePath) const;
+			                                       const char* entityTemplateBasePath) const;
 
 			// Load a blueprint JSON file and return its component array.
 			// Returns empty array on failure.
-			Json::Value LoadBlueprintComponents(const char* blueprintId,
-			                                    const char* blueprintBasePath,
+			Json::Value LoadBlueprintComponents(const char* entityTemplateId,
+			                                    const char* entityTemplateBasePath,
 			                                    const char* itemType) const;
 
 		private:
@@ -48,11 +48,11 @@ namespace Dia
 			// Build entity/camera/light properties with blueprint field overlay.
 			Json::Value BuildBlueprintProperties(const Json::Value& item,
 			                                     const char*        itemType,
-			                                     const char*        blueprintBasePath) const;
+			                                     const char*        entityTemplateBasePath) const;
 
 			// Merge blueprint component fields with instance_data overrides.
 			// Returns array of field objects with { name, value, overridden } per field.
-			Json::Value MergeFields(const Json::Value& blueprintComponents,
+			Json::Value MergeFields(const Json::Value& entityTemplateComponents,
 			                        const Json::Value& instanceData) const;
 		};
 	}

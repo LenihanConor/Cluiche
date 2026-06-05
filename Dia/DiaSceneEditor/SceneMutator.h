@@ -14,11 +14,11 @@ namespace Dia
 		public:
 			// T11: Append a new item to the given section array.
 			// itemType: "entity" | "camera" | "light"
-			// blueprintId: the blueprint asset id (will be stored as {"value":"..."})
-			// Auto-generates id as "{blueprintId}_{N}" where N avoids collisions.
+			// entityTemplateId: the entity template asset id (will be stored as {"value":"..."})
+			// Auto-generates id as "{entityTemplateId}_{N}" where N avoids collisions.
 			static bool AddItem(Json::Value& sceneRoot,
 			                    const char*  itemType,
-			                    const char*  blueprintId,
+			                    const char*  entityTemplateId,
 			                    char* errBuf, int errBufSize);
 
 			// T12: Deep copy an item; new id = "{oldId}_copy" (suffix _copy2, _copy3 if taken).
@@ -50,7 +50,7 @@ namespace Dia
 			                       char* errBuf, int errBufSize);
 
 			// T16: Analyse blueprint change — compares existing instance_data keys against
-			// the new blueprint's field set.  Returns:
+			// the new entity template's field set.  Returns:
 			//   { transferCount, orphanCount,
 			//     transferred: [...], orphaned: [...] }
 			// Does NOT mutate sceneRoot.
@@ -58,15 +58,15 @@ namespace Dia
 			                       const Json::Value& sceneRoot,
 			                       const char*        itemType,
 			                       const char*        itemId,
-			                       const Json::Value& newBlueprintComponents);
+			                       const Json::Value& newEntityTemplateComponents);
 
-			// T16: Apply blueprint change — reassigns blueprint id and transfers/drops
+			// T16: Apply blueprint change — reassigns entity template id and transfers/drops
 			// instance_data overrides according to the analysis.
 			static bool ChangeBlueprint(Json::Value& sceneRoot,
 			                            const char*  itemType,
 			                            const char*  itemId,
-			                            const char*  newBlueprintId,
-			                            const Json::Value& newBlueprintComponents,
+			                            const char*  newEntityTemplateId,
+			                            const Json::Value& newEntityTemplateComponents,
 			                            char* errBuf, int errBufSize);
 
 			// T17: Layer CRUD — add/delete/reorder/update.

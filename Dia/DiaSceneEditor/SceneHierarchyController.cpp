@@ -86,11 +86,11 @@ namespace Dia
 				entry["type"]    = sectionType;
 				entry["enabled"] = enabled;
 
-				// Preserve blueprint for cameras/lights/entities
+				// Preserve entity template for cameras/lights/entities
 				if (item.isMember("blueprint"))
 				{
-					char bpBuf[256];
-					entry["blueprint"] = ExtractId(item["blueprint"], bpBuf, sizeof(bpBuf));
+					char etBuf[256];
+					entry["entityTemplate"] = ExtractId(item["blueprint"], etBuf, sizeof(etBuf));
 				}
 
 				// Active flag for cameras

@@ -165,6 +165,53 @@ namespace Dia
 			DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: scene '%s' not in catalogue — skipping relationship calls", mLoadedScenePath);
 		}
 
+		Json::Value DiaSceneEditorPlugin::ResolveTemplateCatalogueRecord(const char* templateName, const char* itemType) const
+		{
+			if (!templateName || templateName[0] == '\0' || !GetBridge())
+				return Json::Value(Json::nullValue);
+
+			// Determine the expected asset type from itemType
+			const char* assetType = "diaentitytemplate";
+			if (itemType && strcmp(itemType, "camera") == 0) assetType = "diacamera";
+			else if (itemType && strcmp(itemType, "light") == 0) assetType = "dialight";
+
+			Json::Value stateResult = GetBridge()->InvokeRequestHandler(
+				Dia::Core::StringCRC("asset_catalogue.get_state"),
+				Json::Value(Json::objectValue));
+
+			if (stateResult.isNull() || !stateResult.isMember("records"))
+				return Json::Value(Json::nullValue);
+
+			// Build suffix to match: ".<templateName>"
+			std::string suffix = std::string(".") + templateName;
+
+			const Json::Value& records = stateResult["records"];
+			for (unsigned int i = 0; i < records.size(); ++i)
+			{
+				const Json::Value& rec = records[i];
+				if (rec.get("type", "").asString() != assetType)
+					continue;
+
+				// Match if catalogue id ends with ".<templateName>"
+				std::string id = rec.get("id", "").asString();
+				if (id.size() >= suffix.size() &&
+				    _stricmp(id.c_str() + id.size() - suffix.size(), suffix.c_str()) == 0)
+					return rec;
+
+				// Also match if source_path stem equals templateName
+				std::string src = rec.get("source_path", "").asString();
+				// Extract stem: last path component without extension
+				size_t lastSep = src.find_last_of("/\\");
+				std::string stem = (lastSep != std::string::npos) ? src.substr(lastSep + 1) : src;
+				size_t dot = stem.rfind('.');
+				if (dot != std::string::npos) stem = stem.substr(0, dot);
+				if (_stricmp(stem.c_str(), templateName) == 0)
+					return rec;
+			}
+
+			return Json::Value(Json::nullValue);
+		}
+
 		void DiaSceneEditorPlugin::RegisterRequestHandlers()
 		{
 			if (!GetBridge())
@@ -324,14 +371,62 @@ namespace Dia
 					if (mLoadedSceneRoot.isNull())
 						return MakeErrorResponse("no scene loaded");
 
-					char blueprintBasePath[512] = {};
-					if (mLoadedScenePath[0] != '\0')
+					// Resolve template base path from catalogue if possible, fall back to scene dir
+					char entityTemplateBasePath[512] = {};
+					const char* selType = data["selectionType"].asCString();
+					const char* selId   = data["selectionId"].asCString();
+
+					// Find the blueprint name for this item from the loaded scene
+					const char* templateName = nullptr;
+					char templateNameBuf[256] = {};
+					const Json::Value& scene = mLoadedSceneRoot.isMember("scene2d") ? mLoadedSceneRoot["scene2d"] : Json::Value::null;
+					auto extractBlueprintName = [&](const char* arrayKey) {
+						if (!scene.isMember(arrayKey)) return;
+						const Json::Value& arr = scene[arrayKey];
+						char idBuf[256];
+						for (unsigned int i = 0; i < arr.size(); ++i)
+						{
+							if (!arr[i].isMember("id")) continue;
+							const Json::Value& idVal = arr[i]["id"];
+							const char* v = idVal.isString() ? idVal.asCString()
+							              : (idVal.isObject() && idVal.isMember("value") ? idVal["value"].asCString() : "");
+							if (strcmp(v, selId) == 0 && arr[i].isMember("blueprint"))
+							{
+								const Json::Value& bp = arr[i]["blueprint"];
+								const char* bpVal = bp.isString() ? bp.asCString()
+								                  : (bp.isObject() && bp.isMember("value") ? bp["value"].asCString() : "");
+								strncpy_s(templateNameBuf, sizeof(templateNameBuf), bpVal, _TRUNCATE);
+								templateName = templateNameBuf;
+								break;
+							}
+						}
+					};
+
+					if      (strcmp(selType, "entity") == 0) extractBlueprintName("entities");
+					else if (strcmp(selType, "camera") == 0) extractBlueprintName("cameras");
+					else if (strcmp(selType, "light")  == 0) extractBlueprintName("lights");
+
+					if (templateName && templateName[0] != '\0')
 					{
-						strncpy_s(blueprintBasePath, sizeof(blueprintBasePath), mLoadedScenePath, _TRUNCATE);
-						for (char* p = blueprintBasePath; *p; ++p)
+						Json::Value catRec = ResolveTemplateCatalogueRecord(templateName, selType);
+						if (!catRec.isNull())
+						{
+							std::string srcPath = catRec.get("source_path", "").asString();
+							for (char& c : srcPath) if (c == '\\') c = '/';
+							size_t lastSlash = srcPath.rfind('/');
+							std::string dir = (lastSlash != std::string::npos) ? srcPath.substr(0, lastSlash) : ".";
+							strncpy_s(entityTemplateBasePath, sizeof(entityTemplateBasePath), dir.c_str(), _TRUNCATE);
+						}
+					}
+
+					// Fall back to scene file directory
+					if (entityTemplateBasePath[0] == '\0' && mLoadedScenePath[0] != '\0')
+					{
+						strncpy_s(entityTemplateBasePath, sizeof(entityTemplateBasePath), mLoadedScenePath, _TRUNCATE);
+						for (char* p = entityTemplateBasePath; *p; ++p)
 							if (*p == '\\') *p = '/';
 						char* lastSlash = nullptr;
-						for (char* p = blueprintBasePath; *p; ++p)
+						for (char* p = entityTemplateBasePath; *p; ++p)
 							if (*p == '/') lastSlash = p;
 						if (lastSlash) *lastSlash = '\0';
 					}
@@ -346,7 +441,7 @@ namespace Dia
 						mLoadedSceneRoot,
 						data["selectionType"].asCString(),
 						data["selectionId"].asCString(),
-						blueprintBasePath);
+						entityTemplateBasePath);
 					result["selection"]  = mHierarchyController.GetSelectionJson();
 					return result;
 				});
@@ -360,30 +455,30 @@ namespace Dia
 				[this](const Json::Value& data) -> Json::Value { return HandleSaveScene(data); });
 
 			RegisterHandler(
-				Dia::Core::StringCRC("scene_editor.get_blueprint_defaults"),
+				Dia::Core::StringCRC("scene_editor.get_entity_template_defaults"),
 				[this](const Json::Value& data) -> Json::Value
 				{
-					DIA_TRACE_ZONE("scene_editor.get_blueprint_defaults", Dia::Observation::Trace::Category::kNone);
-					if (!data.isMember("blueprintId") || !data["blueprintId"].isString()
+					DIA_TRACE_ZONE("scene_editor.get_entity_template_defaults", Dia::Observation::Trace::Category::kNone);
+					if (!data.isMember("entityTemplateId") || !data["entityTemplateId"].isString()
 					    || !data.isMember("itemType")  || !data["itemType"].isString())
-						return MakeErrorResponse("missing blueprintId or itemType");
+						return MakeErrorResponse("missing entityTemplateId or itemType");
 
-					char blueprintBasePath[512] = {};
+					char entityTemplateBasePath[512] = {};
 					if (mLoadedScenePath[0] != '\0')
 					{
-						strncpy_s(blueprintBasePath, sizeof(blueprintBasePath), mLoadedScenePath, _TRUNCATE);
-						for (char* p = blueprintBasePath; *p; ++p)
+						strncpy_s(entityTemplateBasePath, sizeof(entityTemplateBasePath), mLoadedScenePath, _TRUNCATE);
+						for (char* p = entityTemplateBasePath; *p; ++p)
 							if (*p == '\\') *p = '/';
 						char* lastSlash = nullptr;
-						for (char* p = blueprintBasePath; *p; ++p)
+						for (char* p = entityTemplateBasePath; *p; ++p)
 							if (*p == '/') lastSlash = p;
 						if (lastSlash) *lastSlash = '\0';
 					}
 
 					Json::Value defaults = mPropertyController.BuildBlueprintDefaultsJson(
-						data["blueprintId"].asCString(),
+						data["entityTemplateId"].asCString(),
 						data["itemType"].asCString(),
-						blueprintBasePath);
+						entityTemplateBasePath);
 
 					Json::Value result;
 					result["success"] = true;
@@ -413,10 +508,10 @@ namespace Dia
 				});
 
 			RegisterHandler(
-				Dia::Core::StringCRC("scene_editor.get_available_blueprints"),
+				Dia::Core::StringCRC("scene_editor.get_available_entity_templates"),
 				[this](const Json::Value& data) -> Json::Value
 				{
-					DIA_TRACE_ZONE("scene_editor.get_available_blueprints", Dia::Observation::Trace::Category::kNone);
+					DIA_TRACE_ZONE("scene_editor.get_available_entity_templates", Dia::Observation::Trace::Category::kNone);
 					const char* itemType = data.isMember("itemType") && data["itemType"].isString()
 						? data["itemType"].asCString() : "entity";
 
@@ -424,7 +519,7 @@ namespace Dia
 					if (strcmp(itemType, "camera") == 0) assetType = "diacamera";
 					else if (strcmp(itemType, "light") == 0) assetType = "dialight";
 
-					Json::Value blueprints(Json::arrayValue);
+					Json::Value entityTemplates(Json::arrayValue);
 					if (GetBridge())
 					{
 						Json::Value query;
@@ -438,17 +533,17 @@ namespace Dia
 							{
 								Json::Value entry(Json::objectValue);
 								entry["id"] = qResult["ids"][i];
-								blueprints.append(entry);
+								entityTemplates.append(entry);
 							}
 						}
 					}
 
 					Json::Value result;
-					result["success"]    = true;
-					result["assetType"]  = assetType;
-					result["blueprints"] = blueprints;
-					DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: get_available_blueprints type='%s' count=%u",
-						itemType, blueprints.size());
+					result["success"]         = true;
+					result["assetType"]       = assetType;
+					result["entityTemplates"] = entityTemplates;
+					DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: get_available_entity_templates type='%s' count=%u",
+						itemType, entityTemplates.size());
 					return result;
 				});
 
@@ -494,17 +589,17 @@ namespace Dia
 				[this](const Json::Value& data) -> Json::Value { return HandleRenameItem(data); });
 
 			RegisterHandler(
-				Dia::Core::StringCRC("scene_editor.analyse_change_blueprint"),
+				Dia::Core::StringCRC("scene_editor.analyse_change_entity_template"),
 				[this](const Json::Value& data) -> Json::Value
 				{
-					DIA_TRACE_ZONE("scene_editor.analyse_change_blueprint", Dia::Observation::Trace::Category::kNone);
-					if (!data.isMember("itemType") || !data.isMember("itemId") || !data.isMember("newBlueprintId"))
+					DIA_TRACE_ZONE("scene_editor.analyse_change_entity_template", Dia::Observation::Trace::Category::kNone);
+					if (!data.isMember("itemType") || !data.isMember("itemId") || !data.isMember("newEntityTemplateId"))
 						return MakeErrorResponse("missing required fields");
 					if (mLoadedSceneRoot.isNull())
 						return MakeErrorResponse("no scene loaded");
 
 					Json::Value components = mPropertyController.LoadBlueprintComponents(
-						data["newBlueprintId"].asCString(), mLoadedScenePath, data["itemType"].asCString());
+						data["newEntityTemplateId"].asCString(), mLoadedScenePath, data["itemType"].asCString());
 
 					Json::Value result;
 					result["success"]  = true;
@@ -517,19 +612,19 @@ namespace Dia
 				});
 
 			RegisterHandler(
-				Dia::Core::StringCRC("scene_editor.change_blueprint"),
+				Dia::Core::StringCRC("scene_editor.change_entity_template"),
 				[this](const Json::Value& data) -> Json::Value
 				{
-					DIA_TRACE_ZONE("scene_editor.change_blueprint", Dia::Observation::Trace::Category::kNone);
-					if (!data.isMember("itemType") || !data.isMember("itemId") || !data.isMember("newBlueprintId"))
+					DIA_TRACE_ZONE("scene_editor.change_entity_template", Dia::Observation::Trace::Category::kNone);
+					if (!data.isMember("itemType") || !data.isMember("itemId") || !data.isMember("newEntityTemplateId"))
 						return MakeErrorResponse("missing required fields");
 					if (mLoadedSceneRoot.isNull())
 						return MakeErrorResponse("no scene loaded");
 
 					Json::Value newComponents = mPropertyController.LoadBlueprintComponents(
-						data["newBlueprintId"].asCString(), mLoadedScenePath, data["itemType"].asCString());
+						data["newEntityTemplateId"].asCString(), mLoadedScenePath, data["itemType"].asCString());
 
-					char oldBlueprintId[256] = {};
+					char oldEntityTemplateId[256] = {};
 					if (mSceneCatalogueId[0] != '\0')
 					{
 						const char* arrayKey = nullptr;
@@ -553,9 +648,9 @@ namespace Dia
 								if (strcmp(idBuf, itemIdStr) == 0 && arr[i].isMember("blueprint"))
 								{
 									const Json::Value& bp = arr[i]["blueprint"];
-									const char* bpVal = bp.isString() ? bp.asCString()
+									const char* etBuf = bp.isString() ? bp.asCString()
 									                  : (bp.isObject() && bp.isMember("value") ? bp["value"].asCString() : "");
-									strncpy_s(oldBlueprintId, sizeof(oldBlueprintId), bpVal, _TRUNCATE);
+									strncpy_s(oldEntityTemplateId, sizeof(oldEntityTemplateId), etBuf, _TRUNCATE);
 									break;
 								}
 							}
@@ -565,23 +660,23 @@ namespace Dia
 					char err[256] = {};
 					if (!SceneMutator::ChangeBlueprint(mLoadedSceneRoot,
 					        data["itemType"].asCString(), data["itemId"].asCString(),
-					        data["newBlueprintId"].asCString(), newComponents, err, sizeof(err)))
+					        data["newEntityTemplateId"].asCString(), newComponents, err, sizeof(err)))
 						return MakeErrorResponse(err);
 
 					if (GetBridge() && mSceneCatalogueId[0] != '\0')
 					{
-						if (oldBlueprintId[0] != '\0')
+						if (oldEntityTemplateId[0] != '\0')
 						{
 							Json::Value removeReq;
 							removeReq["from"] = mSceneCatalogueId;
 							removeReq["rel"]  = "uses";
-							removeReq["to"]   = oldBlueprintId;
+							removeReq["to"]   = oldEntityTemplateId;
 							GetBridge()->InvokeRequestHandler(Dia::Core::StringCRC("asset_catalogue.remove_relationship"), removeReq);
 						}
 						Json::Value addReq;
 						addReq["from"] = mSceneCatalogueId;
 						addReq["rel"]  = "uses";
-						addReq["to"]   = data["newBlueprintId"].asString();
+						addReq["to"]   = data["newEntityTemplateId"].asString();
 						GetBridge()->InvokeRequestHandler(Dia::Core::StringCRC("asset_catalogue.add_relationship"), addReq);
 					}
 
@@ -832,19 +927,29 @@ namespace Dia
 				});
 
 			RegisterHandler(
-				Dia::Core::StringCRC("scene_editor.open_template"),
+				Dia::Core::StringCRC("scene_editor.open_entity_template"),
 				[this](const Json::Value& data) -> Json::Value
 				{
-					DIA_TRACE_ZONE("scene_editor.open_template", Dia::Observation::Trace::Category::kNone);
-					if (!data.isMember("blueprintId") || !data["blueprintId"].isString())
-						return MakeErrorResponse("missing blueprintId");
+					DIA_TRACE_ZONE("scene_editor.open_entity_template", Dia::Observation::Trace::Category::kNone);
+					if (!data.isMember("entityTemplateId") || !data["entityTemplateId"].isString())
+						return MakeErrorResponse("missing entityTemplateId");
+
+					const char* bareName = data["entityTemplateId"].asCString();
+					const char* itemType = data.isMember("itemType") ? data["itemType"].asCString() : "entity";
+
+					// Resolve bare template name to catalogue id
+					std::string catalogueId = bareName;
+					Json::Value catRec = ResolveTemplateCatalogueRecord(bareName, itemType);
+					if (!catRec.isNull())
+						catalogueId = catRec.get("id", bareName).asString();
 
 					const Dia::Core::StringCRC templateEditorType("DiaEntityTemplateEditor");
-					const Dia::Core::StringCRC blueprintId(data["blueprintId"].asCString());
+					const Dia::Core::StringCRC resolvedId(catalogueId.c_str());
 					if (GetPluginLoader())
-						GetPluginLoader()->LoadPlugin(templateEditorType, blueprintId);
+						GetPluginLoader()->LoadPlugin(templateEditorType, resolvedId);
 
-					DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: open_template '%s'", data["blueprintId"].asCString());
+					DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin: open_entity_template '%s' -> catalogueId='%s'",
+						bareName, catalogueId.c_str());
 					return MakeSuccessResponse();
 				});
 
@@ -940,15 +1045,15 @@ namespace Dia
 		Json::Value DiaSceneEditorPlugin::HandleAddItem(const Json::Value& data)
 		{
 			DIA_TRACE_ZONE("scene_editor.add_item", Dia::Observation::Trace::Category::kNone);
-			if (!data.isMember("itemType") || !data.isMember("blueprintId"))
-				return MakeErrorResponse("missing itemType or blueprintId");
+			if (!data.isMember("itemType") || !data.isMember("entityTemplateId"))
+				return MakeErrorResponse("missing itemType or entityTemplateId");
 			if (mLoadedSceneRoot.isNull())
 				return MakeErrorResponse("no scene loaded");
 
 			char err[256] = {};
 			if (!SceneMutator::AddItem(mLoadedSceneRoot,
 			        data["itemType"].asCString(),
-			        data["blueprintId"].asCString(),
+			        data["entityTemplateId"].asCString(),
 			        err, sizeof(err)))
 				return MakeErrorResponse(err);
 
@@ -957,7 +1062,7 @@ namespace Dia
 				Json::Value relReq;
 				relReq["from"] = mSceneCatalogueId;
 				relReq["rel"]  = "uses";
-				relReq["to"]   = data["blueprintId"].asString();
+				relReq["to"]   = data["entityTemplateId"].asString();
 				GetBridge()->InvokeRequestHandler(Dia::Core::StringCRC("asset_catalogue.add_relationship"), relReq);
 			}
 
@@ -976,7 +1081,7 @@ namespace Dia
 			if (mLoadedSceneRoot.isNull())
 				return MakeErrorResponse("no scene loaded");
 
-			char blueprintIdForRemove[256] = {};
+			char entityTemplateIdForRemove[256] = {};
 			if (mSceneCatalogueId[0] != '\0')
 			{
 				const char* arrayKey = nullptr;
@@ -1000,9 +1105,9 @@ namespace Dia
 						if (strcmp(idBuf, itemIdStr) == 0 && arr[i].isMember("blueprint"))
 						{
 							const Json::Value& bp = arr[i]["blueprint"];
-							const char* bpVal = bp.isString() ? bp.asCString()
+							const char* etBuf = bp.isString() ? bp.asCString()
 							                  : (bp.isObject() && bp.isMember("value") ? bp["value"].asCString() : "");
-							strncpy_s(blueprintIdForRemove, sizeof(blueprintIdForRemove), bpVal, _TRUNCATE);
+							strncpy_s(entityTemplateIdForRemove, sizeof(entityTemplateIdForRemove), etBuf, _TRUNCATE);
 							break;
 						}
 					}
@@ -1016,12 +1121,12 @@ namespace Dia
 			        err, sizeof(err)))
 				return MakeErrorResponse(err);
 
-			if (GetBridge() && mSceneCatalogueId[0] != '\0' && blueprintIdForRemove[0] != '\0')
+			if (GetBridge() && mSceneCatalogueId[0] != '\0' && entityTemplateIdForRemove[0] != '\0')
 			{
 				Json::Value relReq;
 				relReq["from"] = mSceneCatalogueId;
 				relReq["rel"]  = "uses";
-				relReq["to"]   = blueprintIdForRemove;
+				relReq["to"]   = entityTemplateIdForRemove;
 				GetBridge()->InvokeRequestHandler(Dia::Core::StringCRC("asset_catalogue.remove_relationship"), relReq);
 			}
 

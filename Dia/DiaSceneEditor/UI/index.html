@@ -178,8 +178,8 @@
   }
   .ctx-icon { font-family: var(--pico-font-family-monospace, monospace); font-size: 9px; border: 1px solid var(--pico-border-color, #3c3c3c); border-radius: 2px; padding: 1px 3px; }
   .ctx-name { font-size: 13px; color: var(--pico-color, #d4d4d4); font-weight: 600; }
-  .ctx-bp { margin-left: auto; font-size: 11px; color: var(--pico-muted-color, #808080); }
-  .ctx-bp b { color: var(--pico-h2-color, #9cdcfe); }
+  .ctx-entity-template { margin-left: auto; font-size: 11px; color: var(--pico-muted-color, #808080); }
+  .ctx-entity-template b { color: var(--pico-h2-color, #9cdcfe); }
 
   /* ── No selection ── */
   .nosel { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--pico-muted-border-color, #2d2d2d); gap: 6px; }
@@ -202,7 +202,7 @@
   }
   .prop-row { display: flex; align-items: center; padding: 3px 0; min-height: 26px; border-left: 2px solid transparent; padding-left: 8px; }
   .prop-row.override { border-left-color: var(--pico-primary, #0e639c); }
-  .prop-row.bp-default { border-left-color: var(--pico-form-element-valid-border-color, #89d185); }
+  .prop-row.entity-template-default { border-left-color: var(--pico-form-element-valid-border-color, #89d185); }
   .prop-label { width: 140px; font-size: 11px; color: var(--pico-muted-color, #808080); flex-shrink: 0; }
   .prop-type { width: 50px; font-size: 10px; color: var(--pico-muted-color, #808080); font-family: var(--pico-font-family-monospace, monospace); flex-shrink: 0; }
   .prop-value { flex: 1; font-family: var(--pico-font-family-monospace, monospace); font-size: 11px; }
@@ -242,16 +242,16 @@
   .layer-check { display: flex; align-items: center; gap: 6px; padding: 2px 8px; }
   .layer-check label { font-size: 11px; color: var(--pico-muted-color, #808080); cursor: pointer; }
 
-  /* ── Blueprint banner ── */
-  .bp-banner {
+  /* ── Entity template banner ── */
+  .entity-template-banner {
     background: var(--pico-code-background-color, #2d2d30);
     border: 1px solid var(--pico-border-color, #3c3c3c);
     border-radius: 4px; padding: 8px 12px; margin-bottom: 8px;
     font-size: 11px; color: var(--pico-muted-color, #808080);
     display: flex; align-items: center; gap: 8px;
   }
-  .bp-banner b { color: var(--pico-h2-color, #9cdcfe); }
-  .bp-banner .bp-open { color: var(--pico-muted-color, #808080); cursor: default; margin-left: auto; font-size: 10px; opacity: 0.5; }
+  .entity-template-banner b { color: var(--pico-h2-color, #9cdcfe); }
+  .entity-template-banner .entity-template-open { color: var(--pico-muted-color, #808080); cursor: default; margin-left: auto; font-size: 10px; opacity: 0.5; }
 
   /* ── Add override ── */
   .add-override { display: flex; align-items: center; gap: 4px; padding: 6px 8px; }
@@ -452,7 +452,7 @@
     <div class="ctx-strip" id="ctx-strip" style="display:none">
       <span class="ctx-icon" id="ctx-icon">E</span>
       <span class="ctx-name" id="ctx-name"></span>
-      <span class="ctx-bp" id="ctx-bp"></span>
+      <span class="ctx-entity-template" id="ctx-entity-template"></span>
     </div>
     <div class="stabs" id="stabs" style="display:none">
       <div class="stab active" data-tab="instance">Instance Overrides</div>
@@ -470,7 +470,7 @@
   <div class="ctx-menu-item" data-action="duplicate">Duplicate<span class="shortcut">Ctrl+D</span></div>
   <div class="ctx-menu-item" data-action="rename">Rename<span class="shortcut">F2</span></div>
   <div class="ctx-menu-sep"></div>
-  <div class="ctx-menu-item" data-action="change-bp" id="ctx-change-bp">Change Blueprint...</div>
+  <div class="ctx-menu-item" data-action="change-entity-template" id="ctx-entity-template">Change Blueprint...</div>
   <div class="ctx-menu-item" data-action="toggle-enable">Enable / Disable</div>
   <div class="ctx-menu-sep"></div>
   <div class="ctx-menu-item danger" data-action="delete">Delete<span class="shortcut">Del</span></div>
@@ -511,17 +511,17 @@
   </div>
 </div>
 
-<!-- CHANGE BLUEPRINT DIALOG -->
-<div class="dialog-overlay" id="bp-dialog">
+<!-- CHANGE ENTITY TEMPLATE DIALOG -->
+<div class="dialog-overlay" id="entity-template-dialog">
   <div class="dialog">
-    <div class="dialog-title">Change Blueprint</div>
-    <div class="dialog-body">Select a new blueprint for <b id="bp-dialog-entity"></b>:</div>
-    <select class="dialog-select" id="bp-dialog-select"></select>
-    <div class="dialog-transfer" id="bp-dialog-transfer"></div>
+    <div class="dialog-title">Change Template</div>
+    <div class="dialog-body">Select a new blueprint for <b id="entity-template-dialog-entity"></b>:</div>
+    <select class="dialog-select" id="entity-template-dialog-select"></select>
+    <div class="dialog-transfer" id="entity-template-dialog-transfer"></div>
     <div class="dialog-warn">This operation is lossy. Overrides for fields that don't exist in the new blueprint will be orphaned.</div>
     <div class="dialog-btns">
-      <button class="dialog-btn cancel" id="bp-dialog-cancel">Cancel</button>
-      <button class="dialog-btn confirm" id="bp-dialog-confirm">Change Blueprint</button>
+      <button class="dialog-btn cancel" id="entity-template-dialog-cancel">Cancel</button>
+      <button class="dialog-btn confirm" id="entity-template-dialog-confirm">Change Blueprint</button>
     </div>
   </div>
 </div>
@@ -593,7 +593,7 @@ const DEMO_SCENE = {
   ]
 };
 
-const DEMO_BLUEPRINTS = {
+const DEMO_ENTITY_TEMPLATES = {
   'player_entity':  { file:'player_entity.diaentitytemplatetemplate',   fields:{'Transform2D.position':[0,0],'Transform2D.rotation':0,'Transform2D.scale':[1,1],'Health.max_hp':50,'Health.current_hp':50,'Health.invulnerable':false,'RigidBody2D.mass':1.0,'RigidBody2D.drag':0.05,'RigidBody2D.gravity_scale':1.0,'Collider2D.shape':'AABB','Collider2D.size':[32,64],'Collider2D.offset':[0,0]} },
   'enemy_patrol':   { file:'enemy_patrol.diaentitytemplatetemplate',    fields:{'Transform2D.position':[0,0],'Transform2D.rotation':0,'Transform2D.scale':[1,1],'Health.max_hp':30,'Health.current_hp':30,'Health.invulnerable':false,'PatrolBehaviour.speed':2.0,'PatrolBehaviour.range':200,'PatrolBehaviour.pause_time':1.0,'RigidBody2D.mass':1.0,'RigidBody2D.drag':0.05,'RigidBody2D.gravity_scale':1.0} },
   'coin_pickup':    { file:'coin_pickup.diaentitytemplatetemplate',     fields:{'Transform2D.position':[0,0],'Transform2D.rotation':0,'Transform2D.scale':[1,1],'Collectible.value':10,'Collectible.respawn':false,'Collectible.magnet_range':0} },
@@ -703,8 +703,8 @@ function stubRequest(handler, data) {
       return { success:true, properties: props, selection: { type: data.selectionType, id: data.selectionId } };
     }
 
-    case 'get_blueprint_defaults': {
-      const bp = DEMO_BLUEPRINTS[data.blueprintId];
+    case 'get_entity_template_defaults': {
+      const bp = DEMO_ENTITY_TEMPLATES[data.entityTemplateId];
       return { success:true, data: bp ? bp.fields : {} };
     }
 
@@ -716,7 +716,7 @@ function stubRequest(handler, data) {
 
     case 'add_item': {
       const newId = data.itemType + '_new_' + Date.now();
-      const item = makeNewItem(data.itemType, data.blueprintId, newId);
+      const item = makeNewItem(data.itemType, data.entityTemplateId, newId);
       addItemToScene(data.itemType, item);
       return { success:true, hierarchy: buildDemoHierarchy() };
     }
@@ -755,30 +755,30 @@ function stubRequest(handler, data) {
       return { success:true, hierarchy: buildDemoHierarchy() };
     }
 
-    case 'get_available_blueprints': {
-      const allBps = Object.keys(DEMO_BLUEPRINTS);
+    case 'get_available_entity_templates': {
+      const allBps = Object.keys(DEMO_ENTITY_TEMPLATES);
       let filtered;
       if (data.itemType === 'camera') filtered = allBps.filter(k => k.startsWith('camera_'));
       else if (data.itemType === 'light') filtered = allBps.filter(k => k.startsWith('directional_') || k.startsWith('point_light'));
       else filtered = allBps.filter(k => !k.startsWith('camera_') && !k.startsWith('directional_') && !k.startsWith('point_light'));
-      return { success:true, assetType: data.itemType, blueprints: filtered.map(k => ({ id:k, file: DEMO_BLUEPRINTS[k].file })) };
+      return { success:true, assetType: data.itemType, entityTemplates: filtered.map(k => ({ id:k, file: DEMO_ENTITY_TEMPLATES[k].file })) };
     }
 
-    case 'change_blueprint': {
+    case 'change_entity_template': {
       const item = findItemInScene(data.itemType, data.itemId);
       if (item) {
-        const newFields = DEMO_BLUEPRINTS[data.newBlueprintId]?.fields || {};
+        const newFields = DEMO_ENTITY_TEMPLATES[data.newEntityTemplateId]?.fields || {};
         const surviving = {};
         Object.keys(item.instance_data || {}).forEach(k => { if (k in newFields) surviving[k] = item.instance_data[k]; });
-        item.blueprint = data.newBlueprintId;
+        item.blueprint = data.newEntityTemplateId;
         item.instance_data = surviving;
       }
       return { success:true, hierarchy: buildDemoHierarchy() };
     }
 
-    case 'analyse_change_blueprint': {
+    case 'analyse_change_entity_template': {
       const item = findItemInScene(data.itemType, data.itemId);
-      const newFields = DEMO_BLUEPRINTS[data.newBlueprintComponents]?.fields || {};
+      const newFields = DEMO_ENTITY_TEMPLATES[data.newEntityTemplateComponents]?.fields || {};
       const overrides = (item && item.instance_data) ? Object.keys(item.instance_data) : [];
       const transferring = overrides.filter(k => k in newFields);
       const orphaned = overrides.filter(k => !(k in newFields));
@@ -901,15 +901,15 @@ function deleteItemFromScene(type, id) {
   }
 }
 
-function makeNewItem(type, blueprintId, id) {
-  const bp = blueprintId || defaultBlueprintForType(type);
+function makeNewItem(type, entityTemplateId, id) {
+  const bp = entityTemplateId || defaultEntityTemplateForType(type);
   if (type === 'layer') return { id, sort_order:0, parallax:[1,1], sort_policy:'insertion', enabled:true };
   if (type === 'camera') return { id, active:false, blueprint:bp, instance_data:{} };
   if (type === 'light')  return { id, blueprint:bp, enabled:true, type:'PNT', instance_data:{}, affects_layers:[] };
   return { id, blueprint:bp, enabled:true, instance_data:{} };
 }
 
-function defaultBlueprintForType(type) {
+function defaultEntityTemplateForType(type) {
   if (type === 'camera') return 'camera_2d_static';
   if (type === 'light')  return 'point_light_warm';
   return 'player_entity';
@@ -926,7 +926,7 @@ let state = {
   selected: null,   // { type, id, data }
   activeTab: 'instance',
   isDirty: false,
-  blueprintCache: {} // blueprintId -> fields
+  entityTemplateCache: {} // entityTemplateId -> fields
 };
 
 // ============================================================
@@ -1004,7 +1004,7 @@ async function loadStage(stagePath) {
   state.currentScene = result.scene || null;
   state.hierarchy = result.hierarchy || { layers:[], cameras:[], lights:[], entities:[] };
   state.selected = null;
-  state.blueprintCache = {};
+  state.entityTemplateCache = {};
 
   diaLog('step:updateTitleFile'); updateTitleFile(result.stage ? result.stage.scenePath : null);
   diaLog('step:setDirty'); setDirty(result.dirty || false);
@@ -1119,7 +1119,7 @@ function buildItemRow(item) {
     const typeLower = (item.type || 'pnt').toLowerCase();
     badge = `<span class="item-badge ${typeLower}">${item.type || 'PNT'}</span>`;
   } else if (item._type === 'entity') {
-    meta = item.blueprint || '';
+    meta = item.entityTemplate || '';
   }
 
   row.innerHTML = `
@@ -1187,26 +1187,26 @@ function renderProperties() {
   document.getElementById('ctx-icon').textContent = iconMap[type] || 'E';
   document.getElementById('ctx-name').textContent = id;
 
-  const ctxBp = document.getElementById('ctx-bp');
-  if (data && data.blueprint) {
-    ctxBp.style.display = 'inline';
-    const bpMissing = data.blueprint_known === false;
-    ctxBp.innerHTML = bpMissing
-      ? `template: <span class="prop-error" title="Template not found in asset catalogue">&#9888; ${escHtml(data.blueprint)}</span>`
-      : `template: <b><a class="prop-link" id="ctx-bp-link" data-bp="${escHtml(data.blueprint)}">${escHtml(data.blueprint)} &rarr;</a></b>`;
+  const ctxEntityTemplate = document.getElementById('ctx-entity-template');
+  if (data && data.entityTemplate) {
+    ctxEntityTemplate.style.display = 'inline';
+    const etMissing = data.entityTemplate_known === false;
+    ctxEntityTemplate.innerHTML = etMissing
+      ? `template: <span class="prop-error" title="Template not found in asset catalogue">&#9888; ${escHtml(data.entityTemplate)}</span>`
+      : `template: <b><a class="prop-link" id="ctx-entity-template-link" data-template="${escHtml(data.entityTemplate)}">${escHtml(data.entityTemplate)} &rarr;</a></b>`;
   } else {
-    ctxBp.style.display = 'none';
+    ctxEntityTemplate.style.display = 'none';
   }
 
-  // Sub-tabs: show for entity/camera/light that have a blueprint
-  const hasBlueprintTabs = (type !== 'layer') && data && data.blueprint;
-  stabs.style.display = hasBlueprintTabs ? 'flex' : 'none';
-  if (hasBlueprintTabs) {
+  // Sub-tabs: show for entity/camera/light that have an entity template
+  const hasEntityTemplateTabs = (type !== 'layer') && data && data.entityTemplate;
+  stabs.style.display = hasEntityTemplateTabs ? 'flex' : 'none';
+  if (hasEntityTemplateTabs) {
     stabs.querySelectorAll('.stab').forEach(t => t.classList.toggle('active', t.dataset.tab === state.activeTab));
   }
 
-  if (state.activeTab === 'blueprint' && hasBlueprintTabs) {
-    renderBlueprintTab(data);
+  if (state.activeTab === 'blueprint' && hasEntityTemplateTabs) {
+    renderEntityTemplateTab(data);
   } else {
     renderInstanceTab(type, data);
   }
@@ -1229,11 +1229,11 @@ function renderInstanceTab(type, data) {
 function renderEntityInstance(data) {
   let html = buildSection('Identity', [
     propRow('ID', 'string', data.id, false, true),
-    propRowBlueprintLink('Template', data.blueprint, data.blueprint_known),
+    propRowEntityTemplateLink('Template', data.entityTemplate, data.entityTemplate_known),
     propRowCheck('Enabled', data.enabled !== false)
   ]);
 
-  const bpFields = (DEMO_BLUEPRINTS[data.blueprint] || { fields:{} }).fields;
+  const bpFields = (DEMO_ENTITY_TEMPLATES[data.entityTemplate] || { fields:{} }).fields;
   html += buildSection('Instance Data Overrides',
     [ renderFieldsGrouped(data.instance_data || {}, data.instance_data || {}, bpFields, false) ]
   );
@@ -1244,10 +1244,10 @@ function renderEntityInstance(data) {
 function renderCameraInstance(data) {
   let html = buildSection('Identity', [
     propRow('ID', 'string', data.id, false, true),
-    propRowBlueprintLink('Template', data.blueprint, data.blueprint_known),
+    propRowEntityTemplateLink('Template', data.entityTemplate, data.entityTemplate_known),
     propRowCheck('Active', data.active === true)
   ]);
-  const bpFields = (DEMO_BLUEPRINTS[data.blueprint] || { fields:{} }).fields;
+  const bpFields = (DEMO_ENTITY_TEMPLATES[data.entityTemplate] || { fields:{} }).fields;
   html += buildSection('Instance Data Overrides',
     [ renderFieldsGrouped(data.instance_data || {}, data.instance_data || {}, bpFields, false) ]
   );
@@ -1258,7 +1258,7 @@ function renderCameraInstance(data) {
 function renderLightInstance(data) {
   let html = buildSection('Identity', [
     propRow('ID', 'string', data.id, false, true),
-    propRowBlueprintLink('Template', data.blueprint, data.blueprint_known),
+    propRowEntityTemplateLink('Template', data.entityTemplate, data.entityTemplate_known),
     propRowCheck('Enabled', data.enabled !== false)
   ]);
 
@@ -1270,7 +1270,7 @@ function renderLightInstance(data) {
   }).join('');
   html += `<div class="prop-section"><div class="prop-section-hdr">Affects Layers</div>${layerChecks}</div>`;
 
-  const bpFields = (DEMO_BLUEPRINTS[data.blueprint] || { fields:{} }).fields;
+  const bpFields = (DEMO_ENTITY_TEMPLATES[data.entityTemplate] || { fields:{} }).fields;
   html += buildSection('Instance Data Overrides',
     [ renderFieldsGrouped(data.instance_data || {}, data.instance_data || {}, bpFields, false) ]
   );
@@ -1301,22 +1301,22 @@ function renderLayerInstance(data) {
   return html;
 }
 
-async function renderBlueprintTab(data) {
+async function renderEntityTemplateTab(data) {
   const props = document.getElementById('props');
-  const bpId = data.blueprint;
+  const entityTemplateId = data.entityTemplate;
 
-  // Fetch blueprint defaults (cached)
-  let bpFields = state.blueprintCache[bpId];
+  // Fetch entity template defaults (cached)
+  let bpFields = state.entityTemplateCache[entityTemplateId];
   if (!bpFields) {
-    const result = await bridgeRequest('get_blueprint_defaults', { blueprintId: bpId, itemType: state.selected.type });
+    const result = await bridgeRequest('get_entity_template_defaults', { entityTemplateId: entityTemplateId, itemType: state.selected.type });
     bpFields = result.success ? result.data : {};
-    state.blueprintCache[bpId] = bpFields;
+    state.entityTemplateCache[entityTemplateId] = bpFields;
   }
 
-  const bpFile = (DEMO_BLUEPRINTS[bpId] && DEMO_BLUEPRINTS[bpId].file) || (bpId + '.diaentitytemplatetemplate');
-  let html = `<div class="bp-banner">
+  const bpFile = (DEMO_ENTITY_TEMPLATES[entityTemplateId] && DEMO_ENTITY_TEMPLATES[entityTemplateId].file) || (entityTemplateId + '.diaentitytemplatetemplate');
+  let html = `<div class="entity-template-banner">
     Blueprint defaults from <b>${escHtml(bpFile)}</b> (read-only)
-    <span class="bp-open">Open in Blueprint Editor &rarr;</span>
+    <span class="entity-template-open">Open in Blueprint Editor &rarr;</span>
   </div>`;
   html += renderFieldsGrouped(bpFields, {}, {}, true);
 
@@ -1416,16 +1416,16 @@ function propRowCheck(label, checked) {
   </div>`;
 }
 
-function propRowBlueprintLink(label, bpId, known) {
+function propRowEntityTemplateLink(label, entityTemplateId, known) {
   const missing = known === false;
   const linkHtml = missing
-    ? `<span class="prop-error" title="Template not found in asset catalogue">&#9888; ${escHtml(bpId)} (not found)</span>`
-    : `<a class="prop-link" id="bp-nav-link" data-bp="${escHtml(bpId)}">${escHtml(bpId)} &rarr;</a>`;
+    ? `<span class="prop-error" title="Template not found in asset catalogue">&#9888; ${escHtml(entityTemplateId)} (not found)</span>`
+    : `<a class="prop-link" id="entity-template-nav-link" data-template="${escHtml(entityTemplateId)}">${escHtml(entityTemplateId)} &rarr;</a>`;
   return `<div class="prop-row">
     <span class="prop-label">${escHtml(label)}</span>
     <span class="prop-type"></span>
     <span class="prop-value">${linkHtml}</span>
-    <button class="tbtn" id="btn-change-bp" style="margin-left:6px;font-size:9px;padding:2px 6px">Change Template</button>
+    <button class="tbtn" id="btn-change-entity-template" style="margin-left:6px;font-size:9px;padding:2px 6px">Change Template</button>
   </div>`;
 }
 
@@ -1454,17 +1454,18 @@ function handlePropsClick(e) {
   }
 
   // Template link → open in DiaEntityTemplateEditor
-  const bpLink = e.target.closest('#bp-nav-link');
+  const bpLink = e.target.closest('#entity-template-nav-link');
   if (bpLink) {
-    const bpId = bpLink.dataset.bp;
-    if (bpId) bridgeRequest('open_template', { blueprintId: bpId });
+    const entityTemplateId = bpLink.dataset.template;
+    const itemType = state.selected ? state.selected.type : 'entity';
+    if (entityTemplateId) bridgeRequest('open_entity_template', { entityTemplateId, itemType });
     return;
   }
 
-  // Change blueprint button
-  const changeBpBtn = e.target.closest('#btn-change-bp');
+  // Change entity template button
+  const changeBpBtn = e.target.closest('#btn-change-entity-template');
   if (changeBpBtn && state.selected) {
-    openChangeBlueprintDialog(state.selected);
+    openChangeEntityTemplateDialog(state.selected);
     return;
   }
 
@@ -1481,7 +1482,7 @@ function handlePropsClick(e) {
     // Minimal: prompt for field name
     const key = window.prompt('Field key to override (e.g. Transform2D.position):');
     if (key && state.selected) {
-      const bpFields = (DEMO_BLUEPRINTS[state.selected.data && state.selected.data.blueprint] || { fields:{} }).fields;
+      const bpFields = (DEMO_ENTITY_TEMPLATES[state.selected.data && state.selected.data.entityTemplate] || { fields:{} }).fields;
       const defaultVal = bpFields[key] !== undefined ? bpFields[key] : '';
       promoteOverride(key, null, defaultVal);
     }
@@ -1491,7 +1492,7 @@ function handlePropsClick(e) {
 async function promoteOverride(key, rowEl, defaultValue) {
   if (!state.selected) return;
   const { type, id, data } = state.selected;
-  const bpFields = (DEMO_BLUEPRINTS[data.blueprint] || { fields:{} }).fields;
+  const bpFields = (DEMO_ENTITY_TEMPLATES[data.entityTemplate] || { fields:{} }).fields;
   const def = defaultValue !== undefined ? defaultValue : (bpFields[key] !== undefined ? bpFields[key] : '');
 
   await bridgeRequest('add_override', { itemType: type, itemId: id, overrideKey: key, defaultValue: def });
@@ -1553,11 +1554,12 @@ document.getElementById('filter-input').addEventListener('input', async e => {
 // ============================================================
 // TOOLBAR ACTIONS
 // ============================================================
-document.getElementById('ctx-bp').addEventListener('click', e => {
-  const link = e.target.closest('#ctx-bp-link');
+document.getElementById('ctx-entity-template').addEventListener('click', e => {
+  const link = e.target.closest('#ctx-entity-template-link');
   if (link) {
-    const bpId = link.dataset.bp;
-    if (bpId) bridgeRequest('open_template', { blueprintId: bpId });
+    const entityTemplateId = link.dataset.template;
+    const itemType = state.selected ? state.selected.type : 'entity';
+    if (entityTemplateId) bridgeRequest('open_entity_template', { entityTemplateId, itemType });
   }
 });
 
@@ -1657,13 +1659,13 @@ async function addItem(itemType) {
   }
 
   // Entity / Camera / Light — need a template selection
-  const bpResult = await bridgeRequest('get_available_blueprints', { itemType });
+  const bpResult = await bridgeRequest('get_available_entity_templates', { itemType });
   if (!bpResult.success) {
     showToast('error', 'Cannot Add Item', bpResult.error || 'Failed to fetch templates');
     return;
   }
-  const blueprints = bpResult.blueprints || [];
-  if (blueprints.length === 0) {
+  const entityTemplates = bpResult.entityTemplates || [];
+  if (entityTemplates.length === 0) {
     showToast('warning', 'No Templates', 'No templates found for type "' + itemType + '". Create one in the Asset Catalogue first.');
     return;
   }
@@ -1673,7 +1675,7 @@ async function addItem(itemType) {
   document.getElementById('add-item-dialog-title').textContent = 'Add ' + (labelMap[itemType] || itemType);
   const sel = document.getElementById('add-item-select');
   sel.innerHTML = '';
-  blueprints.forEach(bp => {
+  entityTemplates.forEach(bp => {
     const opt = document.createElement('option');
     opt.value = bp.id;
     opt.textContent = bp.id;
@@ -1685,19 +1687,19 @@ async function addItem(itemType) {
   await new Promise(resolve => {
     const confirm = document.getElementById('add-item-confirm');
     const cancel  = document.getElementById('add-item-cancel');
-    const finish = (blueprintId) => {
+    const finish = (entityTemplateId) => {
       document.getElementById('add-item-dialog').classList.remove('show');
       confirm.removeEventListener('click', onConfirm);
       cancel.removeEventListener('click',  onCancel);
-      resolve(blueprintId);
+      resolve(entityTemplateId);
     };
     const onConfirm = () => finish(document.getElementById('add-item-select').value);
     const onCancel  = () => finish(null);
     confirm.addEventListener('click', onConfirm);
     cancel.addEventListener('click',  onCancel);
-  }).then(async blueprintId => {
-    if (!blueprintId) return;
-    const result = await bridgeRequest('add_item', { itemType, blueprintId });
+  }).then(async entityTemplateId => {
+    if (!entityTemplateId) return;
+    const result = await bridgeRequest('add_item', { itemType, entityTemplateId });
     if (result.success) {
       state.hierarchy = result.hierarchy;
       renderHierarchy();
@@ -1790,8 +1792,8 @@ function onContextMenu(e, item) {
   e.stopPropagation();
   ctxTarget = item;
 
-  // Show/hide Change Blueprint only for entity/camera/light with blueprints
-  const changeBpItem = document.getElementById('ctx-change-bp');
+  // Show/hide Change Entity Template only for entity/camera/light with blueprints
+  const changeBpItem = document.getElementById('ctx-entity-template');
   changeBpItem.style.display = (item._type !== 'layer') ? '' : 'none';
 
   ctxMenuEl.style.left = e.clientX + 'px';
@@ -1853,10 +1855,10 @@ async function handleContextAction(action, item) {
   } else if (action === 'rename') {
     startRename(item);
 
-  } else if (action === 'change-bp') {
+  } else if (action === 'change-entity-template') {
     // Select the item first so the dialog has context
     await onSelectItem(item._type, item.id, item);
-    openChangeBlueprintDialog(state.selected);
+    openChangeEntityTemplateDialog(state.selected);
   }
 }
 
@@ -1905,46 +1907,46 @@ function startRename(item) {
 }
 
 // ============================================================
-// CHANGE BLUEPRINT DIALOG
+// CHANGE ENTITY TEMPLATE DIALOG
 // ============================================================
-async function openChangeBlueprintDialog(sel) {
-  if (!sel || !sel.data || !sel.data.blueprint) return;
+async function openChangeEntityTemplateDialog(sel) {
+  if (!sel || !sel.data || !sel.data.entityTemplate) return;
 
-  document.getElementById('bp-dialog-entity').textContent = sel.id;
+  document.getElementById('entity-template-dialog-entity').textContent = sel.id;
 
-  // Fetch available blueprints
-  const bpResult = await bridgeRequest('get_available_blueprints', { itemType: sel.type });
-  const blueprints = bpResult.success ? bpResult.blueprints : [];
+  // Fetch available entity templates
+  const bpResult = await bridgeRequest('get_available_entity_templates', { itemType: sel.type });
+  const entityTemplates = bpResult.success ? bpResult.entityTemplates : [];
 
-  const selectEl = document.getElementById('bp-dialog-select');
+  const selectEl = document.getElementById('entity-template-dialog-select');
   selectEl.innerHTML = '';
-  blueprints.forEach(bp => {
+  entityTemplates.forEach(bp => {
     const opt = document.createElement('option');
     opt.value = bp.id;
     opt.textContent = bp.id;
-    if (bp.id === sel.data.blueprint) opt.disabled = true;
+    if (bp.id === sel.data.entityTemplate) opt.disabled = true;
     selectEl.appendChild(opt);
   });
-  const firstAvailable = blueprints.find(b => b.id !== sel.data.blueprint);
+  const firstAvailable = entityTemplates.find(b => b.id !== sel.data.entityTemplate);
   if (firstAvailable) selectEl.value = firstAvailable.id;
 
-  updateChangeBlueprintTransfer(sel);
-  document.getElementById('bp-dialog').classList.add('show');
+  updateChangeEntityTemplateTransfer(sel);
+  document.getElementById('entity-template-dialog').classList.add('show');
 }
 
-document.getElementById('bp-dialog-select').addEventListener('change', () => {
-  if (state.selected) updateChangeBlueprintTransfer(state.selected);
+document.getElementById('entity-template-dialog-select').addEventListener('change', () => {
+  if (state.selected) updateChangeEntityTemplateTransfer(state.selected);
 });
 
-async function updateChangeBlueprintTransfer(sel) {
-  const newBpId = document.getElementById('bp-dialog-select').value;
-  const transferEl = document.getElementById('bp-dialog-transfer');
+async function updateChangeEntityTemplateTransfer(sel) {
+  const newBpId = document.getElementById('entity-template-dialog-select').value;
+  const transferEl = document.getElementById('entity-template-dialog-transfer');
   if (!newBpId || !sel) { transferEl.innerHTML = ''; return; }
 
-  const result = await bridgeRequest('analyse_change_blueprint', {
+  const result = await bridgeRequest('analyse_change_entity_template', {
     itemType: sel.type,
     itemId: sel.id,
-    newBlueprintId: newBpId
+    newEntityTemplateId: newBpId
   });
 
   if (!result.success) { transferEl.innerHTML = ''; return; }
@@ -1963,18 +1965,18 @@ async function updateChangeBlueprintTransfer(sel) {
   transferEl.innerHTML = html;
 }
 
-document.getElementById('bp-dialog-cancel').addEventListener('click', () => {
-  document.getElementById('bp-dialog').classList.remove('show');
+document.getElementById('entity-template-dialog-cancel').addEventListener('click', () => {
+  document.getElementById('entity-template-dialog').classList.remove('show');
 });
 
-document.getElementById('bp-dialog-confirm').addEventListener('click', async () => {
-  const newBpId = document.getElementById('bp-dialog-select').value;
+document.getElementById('entity-template-dialog-confirm').addEventListener('click', async () => {
+  const newBpId = document.getElementById('entity-template-dialog-select').value;
   if (!newBpId || !state.selected) return;
 
-  const result = await bridgeRequest('change_blueprint', {
+  const result = await bridgeRequest('change_entity_template', {
     itemType: state.selected.type,
     itemId: state.selected.id,
-    newBlueprintId: newBpId
+    newEntityTemplateId: newBpId
   });
 
   if (result.success) {
@@ -1988,7 +1990,7 @@ document.getElementById('bp-dialog-confirm').addEventListener('click', async () 
     await markDirty();
     updateStatusCounts();
   }
-  document.getElementById('bp-dialog').classList.remove('show');
+  document.getElementById('entity-template-dialog').classList.remove('show');
 });
 
 // ============================================================

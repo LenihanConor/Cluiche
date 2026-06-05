@@ -64,7 +64,7 @@ namespace Dia
 
 		bool SceneMutator::AddItem(Json::Value& sceneRoot,
 		                           const char*  itemType,
-		                           const char*  blueprintId,
+		                           const char*  entityTemplateId,
 		                           char* errBuf, int errBufSize)
 		{
 			DIA_TRACE_ZONE("SceneMutator::AddItem", Dia::Observation::Trace::Category::kNone);
@@ -83,11 +83,11 @@ namespace Dia
 			Json::Value& arr = sceneRoot["scene2d"][arrayKey];
 			if (!arr.isArray()) arr = Json::Value(Json::arrayValue);
 
-			// Generate unique id: blueprintId_0, blueprintId_1, ...
+			// Generate unique id: entityTemplateId_0, entityTemplateId_1, ...
 			char newId[512];
 			for (int n = 0; n < 10000; ++n)
 			{
-				snprintf(newId, sizeof(newId), "%s_%d", blueprintId ? blueprintId : "item", n);
+				snprintf(newId, sizeof(newId), "%s_%d", entityTemplateId ? entityTemplateId : "item", n);
 				if (!IdExists(arr, newId)) break;
 			}
 
@@ -95,7 +95,7 @@ namespace Dia
 			item["id"]            = Json::Value(Json::objectValue);
 			item["id"]["value"]   = newId;
 			item["blueprint"]     = Json::Value(Json::objectValue);
-			item["blueprint"]["value"] = blueprintId ? blueprintId : "";
+			item["blueprint"]["value"] = entityTemplateId ? entityTemplateId : "";
 			item["enabled"]       = true;
 			item["instance_data"] = Json::Value(Json::objectValue);
 
@@ -112,7 +112,7 @@ namespace Dia
 
 			arr.append(item);
 			DIA_LOG_INFO("Editor", "SceneMutator: added %s '%s' (blueprint '%s')",
-				itemType, newId, blueprintId ? blueprintId : "");
+				itemType, newId, entityTemplateId ? entityTemplateId : "");
 			return true;
 		}
 
@@ -342,7 +342,7 @@ namespace Dia
 		    const Json::Value& sceneRoot,
 		    const char*        itemType,
 		    const char*        itemId,
-		    const Json::Value& newBlueprintComponents)
+		    const Json::Value& newEntityTemplateComponents)
 		{
 			DIA_TRACE_ZONE("SceneMutator::AnalyseChangeBlueprintJson", Dia::Observation::Trace::Category::kNone);
 			Json::Value result(Json::objectValue);
@@ -364,16 +364,16 @@ namespace Dia
 				Json::Value instanceData = arr[i].isMember("instance_data")
 					? arr[i]["instance_data"] : Json::Value(Json::objectValue);
 
-				// Build set of valid override keys from new blueprint
+				// Build set of valid override keys from new entity template
 				// key format: "ComponentType.fieldName"
 				for (auto it = instanceData.begin(); it != instanceData.end(); ++it)
 				{
 					const std::string& key = it.name();
-					bool inNewBlueprint = false;
+					bool inNewEntityTemplate = false;
 
-					for (unsigned int ci = 0; ci < newBlueprintComponents.size(); ++ci)
+					for (unsigned int ci = 0; ci < newEntityTemplateComponents.size(); ++ci)
 					{
-						const Json::Value& comp = newBlueprintComponents[ci];
+						const Json::Value& comp = newEntityTemplateComponents[ci];
 						if (!comp.isMember("type")) continue;
 						std::string prefix = comp["type"].asString() + ".";
 						if (key.substr(0, prefix.size()) == prefix)
@@ -385,16 +385,16 @@ namespace Dia
 								const Json::Value& fields = comp["fields"];
 								for (auto fi = fields.begin(); fi != fields.end(); ++fi)
 								{
-									if (fi.name() == fieldName) { inNewBlueprint = true; break; }
+									if (fi.name() == fieldName) { inNewEntityTemplate = true; break; }
 								}
 							}
-							else { inNewBlueprint = true; }  // no field list — assume valid
+							else { inNewEntityTemplate = true; }  // no field list — assume valid
 							break;
 						}
 					}
 
-					if (inNewBlueprint) transferred.append(key);
-					else                orphaned.append(key);
+					if (inNewEntityTemplate) transferred.append(key);
+					else                     orphaned.append(key);
 				}
 				break;
 			}
@@ -411,8 +411,8 @@ namespace Dia
 		bool SceneMutator::ChangeBlueprint(Json::Value& sceneRoot,
 		                                    const char*  itemType,
 		                                    const char*  itemId,
-		                                    const char*  newBlueprintId,
-		                                    const Json::Value& newBlueprintComponents,
+		                                    const char*  newEntityTemplateId,
+		                                    const Json::Value& newEntityTemplateComponents,
 		                                    char* errBuf, int errBufSize)
 		{
 			DIA_TRACE_ZONE("SceneMutator::ChangeBlueprint", Dia::Observation::Trace::Category::kNone);
@@ -433,7 +433,7 @@ namespace Dia
 
 				// Build transferred instance_data (drop orphans)
 				Json::Value analysis = AnalyseChangeBlueprintJson(
-					sceneRoot, itemType, itemId, newBlueprintComponents);
+					sceneRoot, itemType, itemId, newEntityTemplateComponents);
 
 				Json::Value oldInstanceData = arr[i].isMember("instance_data")
 					? arr[i]["instance_data"] : Json::Value(Json::objectValue);
@@ -448,15 +448,15 @@ namespace Dia
 
 				// Update blueprint id
 				if (arr[i]["blueprint"].isObject())
-					arr[i]["blueprint"]["value"] = newBlueprintId ? newBlueprintId : "";
+					arr[i]["blueprint"]["value"] = newEntityTemplateId ? newEntityTemplateId : "";
 				else
-					arr[i]["blueprint"] = newBlueprintId ? newBlueprintId : "";
+					arr[i]["blueprint"] = newEntityTemplateId ? newEntityTemplateId : "";
 
 				arr[i]["instance_data"] = newInstanceData;
 
 				DIA_LOG_INFO("Editor", "SceneMutator: changed blueprint of %s '%s' → '%s' "
 				             "(transferred=%u orphaned=%u)",
-				             itemType, itemId, newBlueprintId ? newBlueprintId : "",
+				             itemType, itemId, newEntityTemplateId ? newEntityTemplateId : "",
 				             transferred.size(), analysis["orphaned"].size());
 				return true;
 			}

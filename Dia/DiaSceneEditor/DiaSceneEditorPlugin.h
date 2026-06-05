@@ -61,6 +61,11 @@ namespace Dia
 			void RegisterRequestHandlers();
 			void ResolveCatalogueIdForLoadedScene();
 
+			// Given a bare template name from a .diascene (e.g. "test_entity"), find the
+			// matching catalogue record by suffix-matching the catalogue id or source_path stem.
+			// Returns the record JSON on success (contains "id" and "source_path"), null on failure.
+			Json::Value ResolveTemplateCatalogueRecord(const char* templateName, const char* itemType) const;
+
 			SceneFileHandler            mFileHandler;
 			SceneValidator              mValidator;
 			SceneHierarchyController    mHierarchyController;
