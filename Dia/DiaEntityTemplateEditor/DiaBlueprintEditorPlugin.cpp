@@ -144,6 +144,9 @@ namespace Dia
 
 		void DiaEntityTemplateEditorPlugin::OnNavigate(const Dia::Core::StringCRC& instanceId)
 		{
+		    if (instanceId == Dia::Core::StringCRC::kZero)
+		        return;
+
 		    DIA_LOG_INFO("Editor", "DiaEntityTemplateEditorPlugin::OnNavigate: instanceId='%s'", instanceId.AsChar());
 
 		    if (!GetBridge())

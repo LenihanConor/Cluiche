@@ -325,8 +325,7 @@ namespace Cluiche
 							DIA_LOG_INFO("Application",
 								"PluginLoaderModule::RestoreLayoutPlugins: panel '%s' matched typeId='%s', loading",
 								panelName, typeId.AsChar());
-							Dia::Core::StringCRC instanceId((std::string(panelName) + "_layout").c_str());
-							LoadPlugin(typeId, instanceId);
+							LoadPlugin(typeId, Dia::Core::StringCRC::kZero);
 						}
 						matched = true;
 						break;

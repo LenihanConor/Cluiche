@@ -88,6 +88,9 @@ namespace Dia
 
 		void DiaSceneEditorPlugin::OnNavigate(const Dia::Core::StringCRC& instanceId)
 		{
+			if (instanceId == Dia::Core::StringCRC::kZero)
+				return;
+
 			DIA_LOG_INFO("Editor", "DiaSceneEditorPlugin::OnNavigate: instanceId='%s'", instanceId.AsChar());
 
 			if (!GetBridge())
