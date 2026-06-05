@@ -30,9 +30,19 @@ Dia::ApplicationFlow::StartResult Scene2DModule::DoStart()
     auto* cameraModule = mCameraRef.Get();
     auto* lightModule  = mLightRef.Get();
 
-    if (!entityModule || !cameraModule || !lightModule)
+    if (!entityModule)
     {
-        DIA_LOG_ERROR("Application", "Scene2DModule: required sibling module not available (EntityModule, Camera2DModule, or Light2DModule)");
+        DIA_LOG_ERROR("Application", "Scene2DModule: EntityModule not available — declare it as a dependency in the stage .diaapp");
+        return Dia::ApplicationFlow::StartResult::kFailed;
+    }
+    if (!cameraModule)
+    {
+        DIA_LOG_ERROR("Application", "Scene2DModule: Camera2DModule not available — declare it as a dependency in the stage .diaapp");
+        return Dia::ApplicationFlow::StartResult::kFailed;
+    }
+    if (!lightModule)
+    {
+        DIA_LOG_ERROR("Application", "Scene2DModule: Light2DModule not available — declare it as a dependency in the stage .diaapp");
         return Dia::ApplicationFlow::StartResult::kFailed;
     }
 

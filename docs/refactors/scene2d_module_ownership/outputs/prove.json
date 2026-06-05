@@ -1,0 +1,83 @@
+{
+  "command": "prove",
+  "status": "ok",
+  "data": {
+    "claims": [
+      {
+        "claim": "A1: Scene2DTestStage passes all 5 checkpoints",
+        "assessment": "partial",
+        "evidence_for": [
+          "All 5 checkpoint lambdas present and read from correct ModuleRefs",
+          "ValidateCameras: GetCount()==2 && Has('test_camera') — correct for default+scene camera",
+          "Manifest dependency order ensures EntityModule/Camera2DModule/Light2DModule start before Scene2DModule"
+        ],
+        "missing_evidence": ["Live run output from dia run cluichetest"]
+      },
+      {
+        "claim": "A2: All existing GoogleTests pass",
+        "assessment": "partial",
+        "evidence_for": [
+          "No GoogleTest files include CameraModule.h",
+          "TestCameraViewport.cpp uses engine types directly, not via module — unaffected",
+          "registeredtypes.diaschema now has Camera2DModule, Light2DModule, Scene2DModule"
+        ],
+        "missing_evidence": ["Live run output from dia run googletest"]
+      },
+      {
+        "claim": "A3: Only one Entity::Domain instance in SimPU (EntityModule)",
+        "assessment": "supported",
+        "evidence_for": [
+          "Entity::Domain member only in EntityModule.h — grep returns 1 file",
+          "Scene2DModule.h and .cpp have no Entity::Domain include or member"
+        ],
+        "missing_evidence": []
+      },
+      {
+        "claim": "A4: Only one CameraRegistry2D instance in SimPU (Camera2DModule)",
+        "assessment": "supported",
+        "evidence_for": [
+          "CameraRegistry2D member only in Camera2DModule.h/cpp — grep returns exactly those 2 files",
+          "Scene2DModule has no CameraRegistry2D include or member"
+        ],
+        "missing_evidence": []
+      },
+      {
+        "claim": "A5: Only one LightRegistry2D instance in SimPU (Light2DModule)",
+        "assessment": "supported",
+        "evidence_for": [
+          "LightRegistry2D member only in Light2DModule.h/cpp — grep returns exactly those 2 files",
+          "Scene2DModule has no LightRegistry2D include or member"
+        ],
+        "missing_evidence": []
+      },
+      {
+        "claim": "A6: Scene-loaded cameras visible to PickingModule/VisualDebuggerModule via Camera2DModule",
+        "assessment": "supported",
+        "evidence_for": [
+          "VisualDebuggerModule.h:55 — ModuleRef<Camera2DModule> mCameraRef",
+          "PickingModule.h:55 — ModuleRef<Camera2DModule> mCameraRef",
+          "Scene2DModule loads into Camera2DModule::GetRegistry() — same registry both modules read"
+        ],
+        "missing_evidence": []
+      },
+      {
+        "claim": "A7: Scene2DModule has no include for Domain.h, CameraRegistry2D.h, or LightRegistry2D.h",
+        "assessment": "supported",
+        "evidence_for": [
+          "Grep of DiaEntity/Domain|CameraRegistry2D|LightRegistry2D in Scene2DModule.h → no matches",
+          "Grep of same pattern in Scene2DModule.cpp → no matches"
+        ],
+        "missing_evidence": []
+      },
+      {
+        "claim": "A8: CameraModule name does not appear in code or manifests",
+        "assessment": "supported",
+        "evidence_for": [
+          "Grep of CameraModule across all live source extensions → only refactor history files match",
+          "All specs updated: diacamera2d.md, dia.camera2d.architecture.module.md, geometry2d-picking.md, geometry2d-picking.plan.md, diacamera2d.plan.md"
+        ],
+        "missing_evidence": []
+      }
+    ]
+  }
+}

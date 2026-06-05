@@ -30,7 +30,7 @@ responsibilities:
   - Ship 8 engine behaviours: Follow, SmoothDamp, Deadzone, BoundsClamp, ScreenShake, ZoomToFit, Pan, Zoom
 
 non_responsibilities:
-  - PU/Module integration (application-side CameraModule)
+  - PU/Module integration (application-side Camera2DModule)
   - Input handling or input→behaviour wiring (application-side)
   - Scene file loading (DiaScene2D)
   - 3D cameras (future DiaCamera3D)

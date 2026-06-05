@@ -66,7 +66,7 @@ Camera2D.h and ViewportTransform.h/cpp move physically. DiaGraphics gets a depen
 
 ### Retrofit Pattern
 
-CameraModule evolves from:
+Camera2DModule evolves from:
 ```cpp
 Camera2D mCamera;                    // single camera
 GetCamera() → Camera2D&
@@ -131,6 +131,6 @@ Dependent modules (PickingModule, VisualDebuggerModule) change from `mCameraRef-
 | T-12 | Edge case + stress tests | 68 tests pass | Done | sonnet | |
 | T-13 | Behaviour composition + determinism tests | Pass | Done | sonnet | |
 | T-14 | Observability instrumentation (logs, traces, profile, metrics, health) | DiaObservation dependency added | Done | sonnet | Health reporter implements IHealthReporter directly (not HealthReporterBase — it has its own Report() impl) |
-| T-15 | Retrofit CameraModule to own CameraRegistry2D | CameraModule registers "default" camera on start | Done | sonnet | |
+| T-15 | Retrofit Camera2DModule to own CameraRegistry2D | Camera2DModule registers "default" camera on start | Done | sonnet | |
 | T-16 | Retrofit PickingModule + VisualDebuggerModule | GetCamera() → GetActiveCamera() | Done | sonnet | Forwarding alias means DiaGraphics consumers compile unchanged |
 | T-17 | Verify all CluicheTest stages | `dia run googletest` 5577 tests pass | Done | opus | CluicheTest launched (visual confirmation pending) |

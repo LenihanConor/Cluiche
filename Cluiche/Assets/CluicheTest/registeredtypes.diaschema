@@ -183,6 +183,11 @@
       "type_id": "ProfilerModule"
     },
     {
+      "allowed_pus": "sim",
+      "description": "Loads a .diascene into sibling module registries; owns only LayerTable and loader state.",
+      "type_id": "Scene2DModule"
+    },
+    {
       "allowed_pus": "any",
       "description": "Runs the 2D rigid-body physics simulation and publishes physics results via FrameStream.",
       "type_id": "Physics2DModule"
@@ -219,8 +224,13 @@
     },
     {
       "allowed_pus": "sim",
-      "description": "Manages camera state and publishes the active camera transform via FrameStream.",
-      "type_id": "CameraModule"
+      "description": "Owns the LightRegistry2D for the SimPU.",
+      "type_id": "Light2DModule"
+    },
+    {
+      "allowed_pus": "sim",
+      "description": "Owns the CameraRegistry2D for the SimPU; drives UpdateAll and viewport sync.",
+      "type_id": "Camera2DModule"
     },
     {
       "allowed_pus": "main",
@@ -269,7 +279,7 @@
     },
     {
       "allowed_pus": "any",
-      "description": "Hosts the entity world: creates, updates, and destroys DiaEntity instances and their components.",
+      "description": "Hosts the entity world: creates, updates, and destroys diaentitytemplate instances and their components.",
       "type_id": "EntityModule"
     },
     {
@@ -281,6 +291,6 @@
   "processing_units": [],
   "version": {
     "major": 1,
-    "minor": 1
+    "minor": 2
   }
 }

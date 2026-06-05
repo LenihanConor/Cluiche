@@ -18,7 +18,10 @@
     <ClCompile Include="Modules\AssetServiceModule.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
-    <ClCompile Include="Modules\CameraModule.cpp">
+    <ClCompile Include="Modules\Camera2DModule.cpp">
+      <Filter>Modules</Filter>
+    </ClCompile>
+    <ClCompile Include="Modules\Light2DModule.cpp">
       <Filter>Modules</Filter>
     </ClCompile>
     <ClCompile Include="Modules\InputStreamModule.cpp">
@@ -95,7 +98,10 @@
     <ClInclude Include="Modules\AssetServiceModule.h">
       <Filter>Modules</Filter>
     </ClInclude>
-    <ClInclude Include="Modules\CameraModule.h">
+    <ClInclude Include="Modules\Camera2DModule.h">
+      <Filter>Modules</Filter>
+    </ClInclude>
+    <ClInclude Include="Modules\Light2DModule.h">
       <Filter>Modules</Filter>
     </ClInclude>
     <ClInclude Include="Modules\InputStreamModule.h">

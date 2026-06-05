@@ -39,6 +39,8 @@ Add `Scene2DModule` to `CluicheGameBaseline`. It owns the scene-loading lifecycl
 
 ### Scene2DModule public interface
 
+Scene2DModule is a pure loader/unloader. It owns only `LayerTable` and `SceneLoader2D`; cameras, lights, and entities live in their dedicated sibling modules.
+
 ```cpp
 class Scene2DModule : public Dia::ApplicationFlow::Module
 {
@@ -48,42 +50,50 @@ public:
 
     explicit Scene2DModule(const Dia::Core::StringCRC& instanceId);
 
-    const Dia::Camera2D::CameraRegistry2D&  GetCameraRegistry() const;
-    const Dia::Lighting2D::LightRegistry2D& GetLightRegistry()  const;
-    const Dia::Scene2D::LayerTable&         GetLayerTable()     const;
-    const Dia::Entity::Domain&              GetEntityDomain()   const;
-    bool                                    IsLoaded()          const;
+    const Dia::Scene2D::LayerTable& GetLayerTable() const;
+    bool                            IsLoaded()      const;
 
 protected:
     Dia::ApplicationFlow::StartResult DoStart() override;
     Dia::ApplicationFlow::StopResult  DoStop()  override;
 
 private:
-    Dia::Scene2D::SceneLoader2D         mSceneLoader;
-    Dia::Scene2D::LayerTable            mLayerTable;
-    Dia::Camera2D::CameraRegistry2D     mCameraRegistry;
-    Dia::Lighting2D::LightRegistry2D    mLightRegistry;
-    Dia::Entity::Domain                 mEntityDomain;
-    bool                                mLoaded = false;
+    Dia::Scene2D::SceneLoader2D mSceneLoader;
+    Dia::Scene2D::LayerTable    mLayerTable;
+    bool                        mLoaded = false;
+
+    // Sibling modules that own the registries/domain scene content loads into
+    Dia::ApplicationFlow::ModuleRef<EntityModule>   mEntityRef{this};
+    Dia::ApplicationFlow::ModuleRef<Camera2DModule> mCameraRef{this};
+    Dia::ApplicationFlow::ModuleRef<Light2DModule>  mLightRef{this};
 };
 ```
+
+### Module ownership table
+
+| Module | Owns | Drives |
+|--------|------|--------|
+| `EntityModule` | `Entity::Domain` | `Update(dt)`, `EndOfFrame()` |
+| `Camera2DModule` | `CameraRegistry2D` | `UpdateAll(dt)`, viewport sync |
+| `Light2DModule` | `LightRegistry2D` | (no-op update; future: animate lights) |
+| `Scene2DModule` | `LayerTable`, `SceneLoader2D` | Load/unload scene content into the above three |
 
 ### Scene2DTestStageModule after refactor
 
 ```cpp
 class Scene2DTestStageModule : public TestStageModuleBase
 {
-    // Only checkpoint/validation logic remains.
-    // No mSceneLoader, mLayerTable, mCameraRegistry, mLightRegistry, mEntityDomain.
-    Dia::ApplicationFlow::ModuleRef<Scene2DModule> mSceneRef{this};
+    // Checkpoint/validation logic only.
+    Dia::ApplicationFlow::ModuleRef<Scene2DModule>   mSceneRef{this};   // IsLoaded(), GetLayerTable()
+    Dia::ApplicationFlow::ModuleRef<EntityModule>    mEntityRef{this};  // entity validation
+    Dia::ApplicationFlow::ModuleRef<Camera2DModule>  mCameraRef{this};  // camera validation
+    Dia::ApplicationFlow::ModuleRef<Light2DModule>   mLightRef{this};   // light validation
 };
 ```
 
-Validators read from `mSceneRef.Get()->GetCameraRegistry()` etc.
-
 ### .diaapp wiring
 
-`Scene2DModule` added to `SimPU` in `scene2d_test_stage.diaapp` before `Scene2DTestStageModule`, with `Scene2DModule` listed as a dependency of `Scene2DTestStageModule`.
+`Scene2DModule` depends on `EntityModule`, `Camera2DModule`, and `Light2DModule` to guarantee they start first. `Camera2DModule` and `Light2DModule` are declared in the global manifest (`stages: all`). `EntityModule` is declared in the stage-local manifest for `Scene2DTestStage`.
 
 ---
 

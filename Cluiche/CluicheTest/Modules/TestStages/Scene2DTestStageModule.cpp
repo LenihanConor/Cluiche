@@ -48,13 +48,15 @@ void Scene2DTestStageModule::OnStart(Dia::Automation::AutomationService* service
     if (!mMetricLayerCount)
         mMetricLayerCount = reg.RegisterGauge(Dia::Core::StringCRC("cluichetest.scene2d.layer_count"));
 
-    auto* scene = mSceneRef.Get();
-    if (scene && scene->IsLoaded())
+    auto* scene    = mSceneRef.Get();
+    auto* entities = mEntityRef.Get();
+
+    if (scene && scene->IsLoaded() && entities)
     {
         // Register TransformComponent pool and apply test positions.
         // This is test-specific setup — the generic Scene2DModule has no knowledge
         // of TransformComponent; the test stage owns this post-load wiring.
-        auto& domain = scene->GetEntityDomain();
+        auto& domain = entities->GetDomain();
         domain.RegisterPool(new Dia::Entity::ComponentPool<TransformComponent>(
             TransformComponent::kTypeId));
 
@@ -133,16 +135,20 @@ void Scene2DTestStageModule::OnUpdate(float /*deltaTime*/)
     {
         if (auto* vd = mVisualDebuggerRef.Get())
         {
-            auto* scene = mSceneRef.Get();
-            if (scene && scene->IsLoaded())
+            auto* scene    = mSceneRef.Get();
+            auto* entities = mEntityRef.Get();
+            auto* cameras  = mCameraRef.Get();
+            auto* lights   = mLightRef.Get();
+
+            if (scene && scene->IsLoaded() && entities && cameras && lights)
             {
                 auto& mgr = vd->GetLayerManager();
                 const Dia::Core::StringCRC stageTag("Scene2D");
 
                 mDrawer = std::make_unique<Scene2DTestDrawer>(
-                    scene->GetEntityDomain(),
-                    scene->GetCameraRegistry(),
-                    scene->GetLightRegistry(),
+                    entities->GetDomain(),
+                    cameras->GetRegistry(),
+                    lights->GetRegistry(),
                     scene->GetLayerTable(),
                     mgr);
                 mgr.Register(mDrawer.get(), 20, stageTag);
@@ -180,11 +186,14 @@ void Scene2DTestStageModule::OnStop()
 
 bool Scene2DTestStageModule::ValidateCameras() const
 {
+    auto* cameras = mCameraRef.Get();
+    if (!cameras) return false;
     auto* scene = mSceneRef.Get();
-    if (!scene || !scene->IsLoaded())
-        return false;
-    const auto& reg = scene->GetCameraRegistry();
-    if (reg.GetCount() != 1)
+    if (!scene || !scene->IsLoaded()) return false;
+
+    const auto& reg = cameras->GetRegistry();
+    // Registry contains Camera2DModule's default camera plus test_camera loaded from scene.
+    if (reg.GetCount() != 2)
         return false;
     if (!reg.Has(Dia::Core::StringCRC("test_camera")))
         return false;
@@ -193,10 +202,12 @@ bool Scene2DTestStageModule::ValidateCameras() const
 
 bool Scene2DTestStageModule::ValidateLights() const
 {
+    auto* lights = mLightRef.Get();
+    if (!lights) return false;
     auto* scene = mSceneRef.Get();
-    if (!scene || !scene->IsLoaded())
-        return false;
-    const auto& reg = scene->GetLightRegistry();
+    if (!scene || !scene->IsLoaded()) return false;
+
+    const auto& reg = lights->GetRegistry();
     if (reg.GetCount() != 2)
         return false;
     if (!reg.Has(Dia::Core::StringCRC("light_a")))
@@ -208,10 +219,12 @@ bool Scene2DTestStageModule::ValidateLights() const
 
 bool Scene2DTestStageModule::ValidateEntities() const
 {
+    auto* entities = mEntityRef.Get();
+    if (!entities) return false;
     auto* scene = mSceneRef.Get();
-    if (!scene || !scene->IsLoaded())
-        return false;
-    const auto& domain = scene->GetEntityDomain();
+    if (!scene || !scene->IsLoaded()) return false;
+
+    const auto& domain = entities->GetDomain();
     if (domain.GetEntityCount() != 3)
         return false;
 

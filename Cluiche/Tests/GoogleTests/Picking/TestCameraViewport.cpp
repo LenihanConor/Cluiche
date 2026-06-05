@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Filename: TestCameraViewport.cpp
-// Tests: ViewportTransform screen<->world conversion used by CameraModule.
-//        CameraModule is a thin wrapper — this validates the underlying transform.
+// Tests: ViewportTransform screen<->world conversion used by Camera2DModule.
+//        Camera2DModule is a thin wrapper — this validates the underlying transform.
 // AC11
 ////////////////////////////////////////////////////////////////////////////////
 #include <gtest/gtest.h>
@@ -65,7 +65,7 @@ TEST_F(ViewportFixture, CameraOffset_ShiftsMapping)
 
 TEST_F(ViewportFixture, ViewportTransform_NonDebug_Constructible)
 {
-    // AC11: ViewportTransform (and hence CameraModule) must work in non-debug builds.
+    // AC11: ViewportTransform (and hence Camera2DModule) must work in non-debug builds.
     // This test has no DIA_DEBUG dependency — verify it compiles and runs in Release.
     Camera2D releaseCam;
     Vector2D releaseSize(1400.0f, 1000.0f);

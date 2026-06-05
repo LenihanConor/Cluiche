@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
-// Filename: CameraModule.cpp
+// Filename: Camera2DModule.cpp
 ////////////////////////////////////////////////////////////////////////////////
-#include "Modules/CameraModule.h"
+#include "Modules/Camera2DModule.h"
 #include "Modules/KernelModule.h"
 
 #include <DiaApplicationFlow/RegistrationMacrosV2.h>
@@ -9,13 +9,13 @@
 
 namespace Cluiche { namespace AppFlow {
 
-const Dia::Core::StringCRC CameraModule::kTypeId("CameraModule");
+const Dia::Core::StringCRC Camera2DModule::kTypeId("Camera2DModule");
 
-CameraModule::CameraModule(const Dia::Core::StringCRC& instanceId)
+Camera2DModule::Camera2DModule(const Dia::Core::StringCRC& instanceId)
     : Module(instanceId)
 {}
 
-Dia::ApplicationFlow::StartResult CameraModule::DoStart()
+Dia::ApplicationFlow::StartResult Camera2DModule::DoStart()
 {
     const unsigned int w = KernelModule::GetWindowWidth();
     const unsigned int h = KernelModule::GetWindowHeight();
@@ -26,11 +26,11 @@ Dia::ApplicationFlow::StartResult CameraModule::DoStart()
     mRegistry.Register(Dia::Core::StringCRC(kDefaultCameraId), Dia::Camera2D::Camera2D{});
     mRegistry.SetActive(Dia::Core::StringCRC(kDefaultCameraId));
 
-    DIA_LOG_INFO("Application", "CameraModule::DoStart — window %.0fx%.0f", mWindowSize.x, mWindowSize.y);
+    DIA_LOG_INFO("Application", "Camera2DModule::DoStart — window %.0fx%.0f", mWindowSize.x, mWindowSize.y);
     return Dia::ApplicationFlow::StartResult::kReady;
 }
 
-void CameraModule::DoUpdate(float dt)
+void Camera2DModule::DoUpdate(float dt)
 {
     // Sync window size from KernelModule's atomic (set once at startup, immutable after)
     const unsigned int w = KernelModule::GetWindowWidth();
@@ -41,19 +41,19 @@ void CameraModule::DoUpdate(float dt)
     mRegistry.UpdateAll(dt);
 }
 
-Dia::ApplicationFlow::StopResult CameraModule::DoStop()
+Dia::ApplicationFlow::StopResult Camera2DModule::DoStop()
 {
     mRegistry.Unregister(Dia::Core::StringCRC(kDefaultCameraId));
     return Dia::ApplicationFlow::StopResult::kDone;
 }
 
-Dia::Camera2D::ViewportTransform CameraModule::GetViewportTransform() const
+Dia::Camera2D::ViewportTransform Camera2DModule::GetViewportTransform() const
 {
     return Dia::Camera2D::ViewportTransform(mRegistry.GetActive(), mWindowSize);
 }
 
 } } // namespace Cluiche::AppFlow
 
-namespace { using CameraModule_ = Cluiche::AppFlow::CameraModule; }
-DIA_MODULE(CameraModule_);
-DIA_DESCRIBE(CameraModule_::kTypeId, "Manages camera state and publishes the active camera transform via FrameStream.");
+namespace { using Camera2DModule_ = Cluiche::AppFlow::Camera2DModule; }
+DIA_MODULE(Camera2DModule_);
+DIA_DESCRIBE(Camera2DModule_::kTypeId, "Owns the CameraRegistry2D for the SimPU; drives UpdateAll and viewport sync.");

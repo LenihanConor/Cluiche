@@ -1,0 +1,67 @@
+{
+  "command": "execute",
+  "status": "ok",
+  "data": {
+    "phases_completed": [1, 2, 3, 4],
+    "phases": [
+      {
+        "phase": 1,
+        "phase_name": "Rename CameraModule -> Camera2DModule",
+        "files_edited": [
+          "Cluiche/CluicheGameBaseline/Modules/Camera2DModule.h (new)",
+          "Cluiche/CluicheGameBaseline/Modules/Camera2DModule.cpp (new)",
+          "Cluiche/CluicheGameBaseline/Modules/CameraModule.h (deleted)",
+          "Cluiche/CluicheGameBaseline/Modules/CameraModule.cpp (deleted)",
+          "Cluiche/CluicheGameBaseline/Modules/VisualDebuggerModule.h",
+          "Cluiche/CluicheGameBaseline/Modules/PickingModule.h",
+          "Cluiche/CluicheGameBaseline/CluicheGameBaseline.vcxproj",
+          "Cluiche/CluicheGameBaseline/CluicheGameBaseline.vcxproj.filters",
+          "Cluiche/Assets/CluicheTest/Global/Misc/ApplicationFlow/cluiche_main.diaapp",
+          "Cluiche/Tests/GoogleTests/Picking/TestCameraViewport.cpp"
+        ],
+        "manual_review_hotspots": [],
+        "specs_updated": []
+      },
+      {
+        "phase": 2,
+        "phase_name": "Create Light2DModule",
+        "files_edited": [
+          "Cluiche/CluicheGameBaseline/Modules/Light2DModule.h (new)",
+          "Cluiche/CluicheGameBaseline/Modules/Light2DModule.cpp (new)",
+          "Cluiche/CluicheGameBaseline/CluicheGameBaseline.vcxproj",
+          "Cluiche/CluicheGameBaseline/CluicheGameBaseline.vcxproj.filters",
+          "Cluiche/Assets/CluicheTest/Global/Misc/ApplicationFlow/cluiche_main.diaapp",
+          "Cluiche/Assets/CluicheTest/Stages/Scene2DTestStage/misc/ApplicationFlow/scene2d_test_stage.diaapp"
+        ],
+        "manual_review_hotspots": [],
+        "specs_updated": []
+      },
+      {
+        "phase": 3,
+        "phase_name": "Rewire Scene2DModule",
+        "files_edited": [
+          "Cluiche/CluicheGameBaseline/Modules/Scene2DModule.h",
+          "Cluiche/CluicheGameBaseline/Modules/Scene2DModule.cpp"
+        ],
+        "manual_review_hotspots": [],
+        "specs_updated": []
+      },
+      {
+        "phase": 4,
+        "phase_name": "Update consumers",
+        "files_edited": [
+          "Cluiche/CluicheTest/Modules/TestStages/Scene2DTestStageModule.h",
+          "Cluiche/CluicheTest/Modules/TestStages/Scene2DTestStageModule.cpp",
+          "docs/specs/features/cluichegamebaseline/scene2d-module.md"
+        ],
+        "manual_review_hotspots": [],
+        "specs_updated": [
+          {
+            "spec_file": "docs/specs/features/cluichegamebaseline/scene2d-module.md",
+            "sections_changed": ["Design — Scene2DModule public interface, module ownership table, Scene2DTestStageModule after refactor, .diaapp wiring"]
+          }
+        ]
+      }
+    ]
+  }
+}

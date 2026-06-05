@@ -11,7 +11,7 @@
 #include <DiaGraphics/Frame/FrameData.h>
 #include <DiaVisualDebugger/DebugLayerManager.h>
 #include "Modules/InputStreamModule.h"
-#include "Modules/CameraModule.h"
+#include "Modules/Camera2DModule.h"
 #include <memory>
 
 namespace Dia::Debug
@@ -52,7 +52,7 @@ private:
     Dia::Core::StringCRC mLastKnownStage;
 
     Dia::ApplicationFlow::ModuleRef<InputStreamModule> mInputRef{this};
-    Dia::ApplicationFlow::ModuleRef<CameraModule>      mCameraRef{this};
+    Dia::ApplicationFlow::ModuleRef<Camera2DModule>    mCameraRef{this};
 
     std::unique_ptr<Dia::Debug::Coord2DOriginDrawer> mCoord2DOriginDrawer;
     std::unique_ptr<Dia::Debug::Coord2DAxesDrawer>   mCoord2DAxesDrawer;

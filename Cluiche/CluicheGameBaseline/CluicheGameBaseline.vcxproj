@@ -30,7 +30,8 @@
     <ClCompile Include="Modules\DebugUIModule.cpp" />
     <ClCompile Include="Modules\DebugServerHostModule.cpp" />
     <ClCompile Include="Modules\JobSystemModule.cpp" />
-    <ClCompile Include="Modules\CameraModule.cpp" />
+    <ClCompile Include="Modules\Camera2DModule.cpp" />
+    <ClCompile Include="Modules\Light2DModule.cpp" />
     <ClCompile Include="Modules\InputStreamModule.cpp" />
     <ClCompile Include="Modules\PickingModule.cpp" />
     <ClCompile Include="Modules\KernelModule.cpp" />
@@ -62,7 +63,8 @@
     <ClInclude Include="Modules\DebugUIModule.h" />
     <ClInclude Include="Modules\DebugServerHostModule.h" />
     <ClInclude Include="Modules\JobSystemModule.h" />
-    <ClInclude Include="Modules\CameraModule.h" />
+    <ClInclude Include="Modules\Camera2DModule.h" />
+    <ClInclude Include="Modules\Light2DModule.h" />
     <ClInclude Include="Modules\InputStreamModule.h" />
     <ClInclude Include="Modules\PickingModule.h" />
     <ClInclude Include="Modules\KernelModule.h" />

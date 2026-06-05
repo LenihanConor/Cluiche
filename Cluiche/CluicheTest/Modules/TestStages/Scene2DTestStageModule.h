@@ -5,6 +5,9 @@
 #include <DiaCore/CRC/StringCRC.h>
 #include <DiaObservation/Metric/MetricRegistry.h>
 #include "Modules/Scene2DModule.h"
+#include "Modules/EntityModule.h"
+#include "Modules/Camera2DModule.h"
+#include "Modules/Light2DModule.h"
 #include "Modules/TestStages/Entity/TransformComponent.h"
 
 #ifdef DIA_DEBUG
@@ -40,7 +43,10 @@ private:
     bool ValidateEntities() const;
     bool ValidateLayers() const;
 
-    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::Scene2DModule> mSceneRef{this};
+    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::Scene2DModule>   mSceneRef{this};
+    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::EntityModule>    mEntityRef{this};
+    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::Camera2DModule>  mCameraRef{this};
+    Dia::ApplicationFlow::ModuleRef<Cluiche::AppFlow::Light2DModule>   mLightRef{this};
 
     // Metrics
     Dia::Observation::Metric::Gauge* mMetricEntityCount = nullptr;

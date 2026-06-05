@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Filename: PickingModule.h
 // Description: SimPU module that orchestrates 2D picking. Reads input from
-//              InputStreamModule, transforms screen→world via CameraModule,
+//              InputStreamModule, transforms screen→world via Camera2DModule,
 //              queries PickingService2D, and sends PickEvent<PickHit2D> via
 //              DiaMailbox on each trigger (click, hover, right-click).
 //
@@ -20,7 +20,7 @@
 #include <DiaGeometry2DPicking/PickingService2D.h>
 #include <DiaGeometry2DPicking/PickHit2D.h>
 #include "Modules/InputStreamModule.h"
-#include "Modules/CameraModule.h"
+#include "Modules/Camera2DModule.h"
 
 namespace Cluiche { namespace AppFlow {
 
@@ -52,7 +52,7 @@ private:
     Dia::Picking::PickRouter                 mRouter;
 
     Dia::ApplicationFlow::ModuleRef<InputStreamModule> mInputRef{this};
-    Dia::ApplicationFlow::ModuleRef<CameraModule>      mCameraRef{this};
+    Dia::ApplicationFlow::ModuleRef<Camera2DModule>    mCameraRef{this};
 };
 
 } } // namespace Cluiche::AppFlow

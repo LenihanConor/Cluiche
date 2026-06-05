@@ -369,8 +369,17 @@
                     ]
                 },
                 {
-                    "instance_id": "CameraModule",
-                    "type_id": "CameraModule",
+                    "instance_id": "Camera2DModule",
+                    "type_id": "Camera2DModule",
+                    "stages": [
+                        "all"
+                    ],
+                    "dependencies": [],
+                    "channels": []
+                },
+                {
+                    "instance_id": "Light2DModule",
+                    "type_id": "Light2DModule",
                     "stages": [
                         "all"
                     ],
@@ -406,7 +415,7 @@
                     ],
                     "dependencies": [
                         "InputStreamModule",
-                        "CameraModule"
+                        "Camera2DModule"
                     ],
                     "channels": []
                 },
@@ -424,7 +433,7 @@
                         "IK2DTestStage"
                     ],
                     "dependencies": [
-                        "CameraModule"
+                        "Camera2DModule"
                     ],
                     "channels": [
                         {

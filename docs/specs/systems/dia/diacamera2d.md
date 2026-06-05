@@ -13,7 +13,7 @@
 
 DiaCamera2D is the engine library for 2D camera management. It owns the Camera2D value type, a named camera registry, the camera behaviour interface with self-registering factory, and a set of engine-provided behaviours (Follow, SmoothDamp, Deadzone, BoundsClamp, ScreenShake, ZoomToFit, Pan, Zoom).
 
-The system is a **library** — it has no knowledge of ProcessingUnits or Modules. Application-side code (e.g., `CameraModule` in CluicheGameBaseline) owns the registry instance, ticks it per frame, and exposes it to other modules.
+The system is a **library** — it has no knowledge of ProcessingUnits or Modules. Application-side code (e.g., `Camera2DModule` in CluicheGameBaseline) owns the registry instance, ticks it per frame, and exposes it to other modules.
 
 ### Key design principle
 
@@ -22,7 +22,7 @@ The registry is usable without any scene file or DiaScene2D dependency. Code can
 ```
 DiaCamera2D (engine library)
     ↑ used by
-CameraModule (application-side PU module — owns registry, calls UpdateAll)
+Camera2DModule (application-side PU module — owns registry, calls UpdateAll)
     ↑ used by
 DiaScene2D SceneLoader (optional — populates registry from file)
 ```
@@ -46,7 +46,7 @@ DiaScene2D SceneLoader (optional — populates registry from file)
 
 ## Non-Responsibilities
 
-- PU/Module integration (application-side CameraModule)
+- PU/Module integration (application-side Camera2DModule)
 - Input handling or input→behaviour wiring (application-side)
 - Scene file loading (DiaScene2D)
 - 3D cameras (future DiaCamera3D — independent peer, not child)

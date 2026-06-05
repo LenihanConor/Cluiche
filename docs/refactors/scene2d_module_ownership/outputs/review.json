@@ -1,0 +1,58 @@
+{
+  "command": "review",
+  "status": "ok",
+  "data": {
+    "findings": [
+      {
+        "severity": "high",
+        "title": "registeredtypes.diaschema still lists CameraModule",
+        "evidence": [
+          "Cluiche/Assets/CluicheTest/registeredtypes.diaschema:223 — type_id: CameraModule"
+        ],
+        "fix": "Rename entry to Camera2DModule; add Light2DModule and Scene2DModule entries."
+      },
+      {
+        "severity": "high",
+        "title": "ValidateCameras count check silently weakened",
+        "evidence": [
+          "Scene2DTestStageModule.cpp ValidateCameras() — old: GetCount()==1, new: Has('test_camera') only",
+          "Camera2DModule registers 'default' on DoStart; scene adds 'test_camera' — count is now 2"
+        ],
+        "fix": "Change check to reg.GetCount() == 2 && reg.Has(StringCRC('test_camera'))"
+      },
+      {
+        "severity": "medium",
+        "title": "diacamera2d.md and dia.camera2d.architecture.module.md reference CameraModule",
+        "evidence": [
+          "docs/specs/systems/dia/diacamera2d.md:16,25,49",
+          "Dia/DiaCamera2D/dia.camera2d.architecture.module.md:33"
+        ],
+        "fix": "Replace CameraModule with Camera2DModule in both files."
+      },
+      {
+        "severity": "medium",
+        "title": "geometry2d-picking.md spec references CameraModule throughout",
+        "evidence": [
+          "docs/specs/features/dia/diapicking/geometry2d-picking.md:32,54,185,217,221"
+        ],
+        "fix": "Replace CameraModule with Camera2DModule in spec body."
+      },
+      {
+        "severity": "medium",
+        "title": "geometry2d-picking.plan.md and diacamera2d.plan.md likely contain CameraModule references",
+        "evidence": [
+          "Both files appeared in CameraModule grep results"
+        ],
+        "fix": "Read and update plan files."
+      },
+      {
+        "severity": "low",
+        "title": "Scene2DTestStageModule manifest deps don't list EntityModule/Camera2DModule/Light2DModule explicitly",
+        "evidence": [
+          "scene2d_test_stage.diaapp Scene2DTestStageModule dependencies: [VisualDebuggerModule, Scene2DModule]"
+        ],
+        "fix": "Optional: add explicit deps for the modules it directly reads via ModuleRef."
+      }
+    ]
+  }
+}

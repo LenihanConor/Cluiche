@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
-// Filename: CameraModule.h
+// Filename: Camera2DModule.h
 // Description: Owns the CameraRegistry2D for the SimPU.
 //              Registers a "default" camera on start. Other code uses
 //              GetRegistry() for multi-camera access or GetActiveCamera() /
@@ -17,7 +17,7 @@
 
 namespace Cluiche { namespace AppFlow {
 
-class CameraModule : public Dia::ApplicationFlow::Module
+class Camera2DModule : public Dia::ApplicationFlow::Module
 {
 public:
     static const Dia::Core::StringCRC kTypeId;
@@ -26,7 +26,7 @@ public:
 
     static constexpr const char* kDefaultCameraId = "default";
 
-    explicit CameraModule(const Dia::Core::StringCRC& instanceId);
+    explicit Camera2DModule(const Dia::Core::StringCRC& instanceId);
 
     // Registry access (full multi-camera API)
     Dia::Camera2D::CameraRegistry2D& GetRegistry() { return mRegistry; }
@@ -36,7 +36,7 @@ public:
     const Dia::Camera2D::Camera2D& GetActiveCamera()  const { return mRegistry.GetActive(); }
     Dia::Camera2D::Camera2D&       GetActiveCamera()        { return mRegistry.GetActive(); }
 
-    // Backward compatibility — delegates to active camera
+    // Delegates to active camera
     const Dia::Camera2D::Camera2D& GetCamera()    const { return GetActiveCamera(); }
     void SetCamera(const Dia::Camera2D::Camera2D& cam)  { GetActiveCamera() = cam; }
 

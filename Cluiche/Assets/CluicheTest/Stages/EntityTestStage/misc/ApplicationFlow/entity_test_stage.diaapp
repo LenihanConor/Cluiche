@@ -43,7 +43,8 @@
                         "EntityModule",
                         "VisualDebuggerModule",
                         "PickingModule"
-                    ]
+                    ],
+                    "channels": []
                 }
             ]
         }

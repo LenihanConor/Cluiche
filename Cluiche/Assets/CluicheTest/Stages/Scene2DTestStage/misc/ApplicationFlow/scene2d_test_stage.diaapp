@@ -16,7 +16,7 @@
                     "instance_id": "Scene2DModule",
                     "type_id": "Scene2DModule",
                     "stages": ["Scene2DTestStage"],
-                    "dependencies": [],
+                    "dependencies": ["EntityModule", "Camera2DModule", "Light2DModule"],
                     "channels": []
                 },
                 {

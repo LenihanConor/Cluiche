@@ -36,7 +36,7 @@
                 {
                     "instance_id": "EntityModule",
                     "type_id": "EntityModule",
-                    "stages": [ "DummyStage", "EntityTestStage" ],
+                    "stages": [ "DummyStage", "EntityTestStage", "Scene2DTestStage" ],
                     "dependencies": [],
                     "channels": []
                 }

@@ -7,7 +7,7 @@
             { "id": {"value": "foreground"}, "sortOrder": 10, "parallax": [1.0, 1.0], "sortPolicy": {"value": "insertion"}, "enabled": true }
         ],
         "cameras": [
-            { "id": {"value": "test_camera"}, "active": true, "blueprint": {"value": "camera_2d_static"}, "instance_data": { "Camera2D.position": [960, 540] } }
+            { "id": {"value": "test_camera"}, "active": true, "blueprint": {"value": "camera_2d_static"}, "instance_data": { "Camera2D.position": [0, 0] } }
         ],
         "lights": [
             { "id": {"value": "light_a"}, "blueprint": {"value": "point_light_warm"}, "enabled": true, "instance_data": { "PointLight2D.position": [300, 200] }, "affects_layers": [{"value": "midground"}, {"value": "foreground"}] },

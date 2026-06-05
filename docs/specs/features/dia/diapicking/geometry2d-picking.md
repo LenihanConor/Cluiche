@@ -29,7 +29,7 @@ Introduce `DiaPicking` — the picking protocol layer:
 9. **`PickAddress`** — helper to build DiaMailbox addresses for picking
 
 At the application layer (CluicheGameBaseline):
-10. **`CameraModule`** — non-debug owner of Camera2D + window size (extracted from VisualDebuggerModule)
+10. **`Camera2DModule`** — non-debug owner of Camera2D + window size (extracted from VisualDebuggerModule)
 11. **`InputStreamModule` extended** — mouse button state (pressed/released/down)
 12. **`PickingModule`** — thin orchestrator: reads input, transforms screen→world, queries service, sends PickEvent via DiaMailbox
 
@@ -51,7 +51,7 @@ Consumers (test stages, future game modules) register pickables on start, subscr
 | AC8 | Layer mask filtering excludes pickables whose layer doesn't match | Unit test |
 | AC9 | `PickEvent` sent via DiaMailbox is received by all subscribers to that trigger | Unit test |
 | AC10 | `InputStreamModule` exposes `WasMouseButtonPressed`, `IsMouseButtonDown`, `WasMouseButtonReleased` | Unit test |
-| AC11 | `CameraModule` provides `GetViewportTransform()` in non-debug builds | Build check (Release) |
+| AC11 | `Camera2DModule` provides `GetViewportTransform()` in non-debug builds | Build check (Release) |
 | AC12 | `PickingModule` sends `PickEvent<PickHit2D>` to DiaMailbox on left-click | Integration test |
 | AC13 | `Geometry2DTestStageModule` drains click events, stores `mSelectedHex`, passes to drawer | Visual verification |
 | AC14 | `HexGridDrawer` no longer owns selection state or reads ImGui input | Code review |
@@ -182,7 +182,7 @@ PickingModule (CluicheGameBaseline)
 | 3 | Implement `HexGridPickable` adapter | Dia |
 | 4 | Implement `SpatialGridPickable` adapter | Dia |
 | 5 | Implement `ShapePickable` adapter (Circle, AARect, ConvexPolygon) | Dia |
-| 6 | Extract `CameraModule` from `VisualDebuggerModule` | CluicheGameBaseline |
+| 6 | Extract `Camera2DModule` from `VisualDebuggerModule` | CluicheGameBaseline |
 | 7 | Extend `InputStreamModule` with mouse button state | CluicheGameBaseline |
 | 8 | Create `PickingModule` (DiaMailbox integration, orchestration) | CluicheGameBaseline |
 | 9 | Refactor `Geometry2DTestStageModule` — subscribe to pick events, register pickables, drain + react | CluicheTest |
@@ -214,8 +214,8 @@ PickingModule (CluicheGameBaseline)
 
 2. **Hover performance** — Linear scan at max 64 pickables is acceptable. Revisit if count exceeds 64.
 
-3. **Module ordering via manifest dependencies** — `PickingModule` declares `"dependencies": ["InputStreamModule", "CameraModule"]` in the manifest. Topological update order within SimPU enforced by the framework.
+3. **Module ordering via manifest dependencies** — `PickingModule` declares `"dependencies": ["InputStreamModule", "Camera2DModule"]` in the manifest. Topological update order within SimPU enforced by the framework.
 
 4. **Transport via DiaMailbox, not custom latch** — Pick events are messages, not state snapshots. DiaMailbox provides routed delivery, subscriber lifecycle, and future extensibility (e.g. routing by layer or entity). Avoids inventing a parallel not-quite-mailbox.
 
-5. **CameraModule extracts viewport ownership** — Camera2D + window size move from `VisualDebuggerModule` (debug-only) to a new non-debug `CameraModule`. Both `VisualDebuggerModule` and `PickingModule` consume it via `ModuleRef`. Picking works in Release.
+5. **Camera2DModule extracts viewport ownership** — Camera2D + window size move from `VisualDebuggerModule` (debug-only) to a new non-debug `Camera2DModule`. Both `VisualDebuggerModule` and `PickingModule` consume it via `ModuleRef`. Picking works in Release.

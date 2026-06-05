@@ -114,17 +114,17 @@ PickResult<PickHit2D> Pick(const Vector2D& worldPos, PickLayerMask mask) const {
 
 ---
 
-### CameraModule Extraction (Task 6)
+### Camera2DModule Extraction (Task 6)
 
 **Problem:** `VisualDebuggerModule` owns Camera2D + windowSize and is `#ifdef DIA_DEBUG`. Picking is a game mechanic that must work in Release.
 
-**Solution:** New `CameraModule` in CluicheGameBaseline (SimPU, all stages, non-debug).
+**Solution:** New `Camera2DModule` in CluicheGameBaseline (SimPU, all stages, non-debug).
 
-**File:** `Cluiche/CluicheGameBaseline/Modules/CameraModule.h/.cpp`
+**File:** `Cluiche/CluicheGameBaseline/Modules/Camera2DModule.h/.cpp`
 
 **Pattern:**
 ```cpp
-class CameraModule : public Module {
+class Camera2DModule : public Module {
     Dia::Graphics::Camera2D mCamera;
     Dia::Maths::Vector2D    mWindowSize{1400.0f, 1000.0f};
 public:
@@ -136,9 +136,9 @@ public:
 };
 ```
 
-**VisualDebuggerModule refactor:** Remove camera/windowSize members. Add `ModuleRef<CameraModule>`. Read camera from it in `DoUpdate()`.
+**VisualDebuggerModule refactor:** Remove camera/windowSize members. Add `ModuleRef<Camera2DModule>`. Read camera from it in `DoUpdate()`.
 
-**Manifest:** `CameraModule` added to SimPU with `stages: ["all"]`, no dependencies. `VisualDebuggerModule` adds `"CameraModule"` to its dependencies.
+**Manifest:** `Camera2DModule` added to SimPU with `stages: ["all"]`, no dependencies. `VisualDebuggerModule` adds `"Camera2DModule"` to its dependencies.
 
 ---
 
@@ -169,7 +169,7 @@ class PickingModule : public Module {
     Dia::Picking::PickRouter mPickRouter;
 
     ModuleRef<InputStreamModule> mInputRef{this};
-    ModuleRef<CameraModule> mCameraRef{this};
+    ModuleRef<Camera2DModule> mCameraRef{this};
 
     StartResult DoStart() override {
         mMailbox.RegisterType<Dia::Picking::PickEvent<PickHit2D>, 4>();
@@ -235,8 +235,8 @@ Same pattern for `SpatialGridDrawer`.
 
 ```json
 {
-    "instance_id": "CameraModule",
-    "type_id": "CameraModule",
+    "instance_id": "Camera2DModule",
+    "type_id": "Camera2DModule",
     "stages": ["all"],
     "dependencies": [],
     "channels": []
@@ -245,12 +245,12 @@ Same pattern for `SpatialGridDrawer`.
     "instance_id": "PickingModule",
     "type_id": "PickingModule",
     "stages": ["RigidBody2DTestStage", "Geometry2DTestStage"],
-    "dependencies": ["InputStreamModule", "CameraModule"],
+    "dependencies": ["InputStreamModule", "Camera2DModule"],
     "channels": []
 }
 ```
 
-Update `VisualDebuggerModule` to add `"CameraModule"` to its dependencies.
+Update `VisualDebuggerModule` to add `"Camera2DModule"` to its dependencies.
 
 ---
 
@@ -265,7 +265,7 @@ Update `VisualDebuggerModule` to add `"CameraModule"` to its dependencies.
 | 3 | Implement `HexGridPickable` adapter | Build clean | Done | sonnet | Template .h/.inl, wraps WorldToHex + IsValidHex |
 | 4 | Implement `SpatialGridPickable` adapter | Build clean | Done | sonnet | Template .h/.inl, wraps cell math |
 | 5 | Implement `ShapePickable` adapter | Build clean | Done | sonnet | Non-template, point-in-shape dispatch |
-| 6 | Extract `CameraModule` from `VisualDebuggerModule` | Build clean | Done | sonnet | Non-debug, all stages; VDM reads from CameraModule via ModuleRef |
+| 6 | Extract `Camera2DModule` from `VisualDebuggerModule` | Build clean | Done | sonnet | Non-debug, all stages; VDM reads from Camera2DModule via ModuleRef |
 | 7 | Extend `InputStreamModule` — mouse button state | Build clean | Done | haiku | WasMouseButtonPressed/IsDown/Released |
 
 ### Phase 2 — Exhaustive Testing
@@ -293,7 +293,7 @@ Update `VisualDebuggerModule` to add `"CameraModule"` to its dependencies.
 | # | Task | Test | Status | Model | Notes |
 |---|---|---|---|---|---|
 | 19 | Wire `Geometry2DTestStageModule` — register pickables, subscribe to kClick, drain + store selection, pass to drawers | AC13 | Done | sonnet | PickingModule::GetStatic() cross-PU pattern; HexGrid + SpatialGrid pickables registered |
-| 20 | `dia run cluichetest` — PickingModule starts, CameraModule starts, logs confirm | AC12, AC14, AC15 | Done | sonnet | `dia cluichetest: PASSED`; PickingModule started log confirmed |
+| 20 | `dia run cluichetest` — PickingModule starts, Camera2DModule starts, logs confirm | AC12, AC14, AC15 | Done | sonnet | `dia cluichetest: PASSED`; PickingModule started log confirmed |
 
 ### Phase 5 — Observability
 
@@ -312,7 +312,7 @@ Update `VisualDebuggerModule` to add `"CameraModule"` to its dependencies.
 Phase 1:  1 ──► 2 ──► 3 ┐
                     ├──► 4 ├──► Phase 2
                     └──► 5 ┘
-          6 (independent — CameraModule)
+          6 (independent — Camera2DModule)
           7 (independent — InputStreamModule)
 
 Phase 2:  8–16 (parallel within phase)
