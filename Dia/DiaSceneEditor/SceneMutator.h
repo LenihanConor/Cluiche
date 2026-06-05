@@ -97,6 +97,12 @@ namespace Dia
 			                                  const Json::Value& layerIds,
 			                                  char* errBuf, int errBufSize);
 
+			// T18: Set light type ("DIR" or "PNT").
+			static bool SetLightType(Json::Value& sceneRoot,
+			                         const char*  lightId,
+			                         const char*  type,
+			                         char* errBuf, int errBufSize);
+
 			// T19: Add override — copy blueprint default into instance_data for a field.
 			// overrideKey is "ComponentType.fieldName"; defaultValue is the blueprint default.
 			static bool AddOverride(Json::Value& sceneRoot,

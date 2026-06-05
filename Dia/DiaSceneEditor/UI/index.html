@@ -254,7 +254,29 @@
     display: flex; align-items: center; gap: 8px;
   }
   .entity-template-banner b { color: var(--pico-h2-color, #9cdcfe); }
-  .entity-template-banner .entity-template-open { color: var(--pico-muted-color, #808080); cursor: default; margin-left: auto; font-size: 10px; opacity: 0.5; }
+  .entity-template-banner .entity-template-open { color: var(--pico-primary, #0e639c); cursor: pointer; margin-left: auto; font-size: 10px; opacity: 1; }
+  .entity-template-banner .entity-template-open:hover { text-decoration: underline; }
+
+  /* ── Layer reorder buttons ── */
+  .layer-reorder-btn {
+    font-size: 8px; color: var(--pico-muted-color, #808080); cursor: pointer;
+    padding: 0 2px; flex-shrink: 0; line-height: 1; display: none;
+  }
+  .item:hover .layer-reorder-btn { display: inline; }
+  .layer-reorder-btn:hover { color: var(--pico-primary, #0e639c); }
+  .layer-reorder-btn.disabled { opacity: 0.3; pointer-events: none; }
+
+  /* ── Filter pills ── */
+  .filter-pills { display: flex; gap: 3px; padding-top: 5px; }
+  .fpill {
+    background: var(--pico-secondary, #3a3d41);
+    border: 1px solid var(--pico-border-color, #3c3c3c);
+    border-radius: 10px; color: var(--pico-muted-color, #808080);
+    padding: 1px 7px; font-size: 10px; cursor: pointer; user-select: none; white-space: nowrap;
+  }
+  .fpill:hover { border-color: var(--pico-primary, #0e639c); color: var(--pico-color, #d4d4d4); }
+  .fpill.off { opacity: 0.35; }
+  .sec.section-hidden { display: none; }
 
   /* ── Add override ── */
   .add-override { display: flex; align-items: center; gap: 4px; padding: 6px 8px; }
@@ -445,6 +467,12 @@
     </div>
     <div class="searchrow">
       <input class="srch" type="text" placeholder="filter..." id="filter-input">
+      <div class="filter-pills">
+        <span class="fpill" data-section="layers" title="Toggle Layers">L</span>
+        <span class="fpill" data-section="cameras" title="Toggle Cameras">C</span>
+        <span class="fpill" data-section="lights" title="Toggle Lights">Li</span>
+        <span class="fpill" data-section="entities" title="Toggle Entities">E</span>
+      </div>
     </div>
     <div class="hier" id="hier"></div>
   </div>
@@ -537,6 +565,19 @@
     <div class="dialog-btns">
       <button class="dialog-btn cancel" id="confirm-dialog-cancel">Cancel</button>
       <button class="dialog-btn confirm" id="confirm-dialog-ok">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD OVERRIDE DIALOG -->
+<div class="dialog-overlay" id="add-override-dialog">
+  <div class="dialog">
+    <div class="dialog-title">Add Override</div>
+    <div class="dialog-body">Select a blueprint field to add as an instance override:</div>
+    <select class="dialog-select" id="add-override-select"></select>
+    <div class="dialog-btns">
+      <button class="dialog-btn cancel" id="add-override-cancel">Cancel</button>
+      <button class="dialog-btn confirm" id="add-override-confirm">Add Override</button>
     </div>
   </div>
 </div>
@@ -965,8 +1006,14 @@ let state = {
   selected: null,   // { type, id, data }
   activeTab: 'instance',
   isDirty: false,
-  entityTemplateCache: {} // entityTemplateId -> fields
+  entityTemplateCache: {}, // entityTemplateId -> fields
+  sectionVisible: { layers:true, cameras:true, lights:true, entities:true }
 };
+// Restore pill state from localStorage
+try {
+  const saved = localStorage.getItem('sceneeditor_section_visible');
+  if (saved) state.sectionVisible = { ...state.sectionVisible, ...JSON.parse(saved) };
+} catch(e) {}
 
 // ============================================================
 // PROJECT OVERLAY
@@ -1108,7 +1155,9 @@ function renderHierarchy() {
     totalCount += sec.items.length;
 
     const secEl = document.createElement('div');
-    secEl.className = 'sec open';
+    const isHidden = state.sectionVisible[sec.key] === false;
+    secEl.className = 'sec open' + (isHidden ? ' section-hidden' : '');
+    secEl.dataset.section = sec.key;
     secEl.innerHTML = `
       <div class="sec-hdr">
         <span class="sec-chv">&#9654;</span>
@@ -1151,8 +1200,15 @@ function buildItemRow(item) {
   let meta = '';
   let badge = '';
   let warning = '';
+  let reorderBtns = '';
   if (item._type === 'layer') {
     meta = `sort:${item.sort_order}`;
+    const layers = state.hierarchy.layers || [];
+    const layerIdx = layers.findIndex(l => l.id === item.id);
+    const atTop    = layerIdx === 0;
+    const atBottom = layerIdx === layers.length - 1;
+    reorderBtns = `<span class="layer-reorder-btn${atTop ? ' disabled' : ''}" data-dir="up" data-id="${escAttr(item.id)}" title="Move up">&#9650;</span>`
+                + `<span class="layer-reorder-btn${atBottom ? ' disabled' : ''}" data-dir="down" data-id="${escAttr(item.id)}" title="Move down">&#9660;</span>`;
   } else if (item._type === 'camera') {
     badge = item.active ? '<span class="item-badge active">ACTIVE</span>' : '';
   } else if (item._type === 'light') {
@@ -1173,12 +1229,37 @@ function buildItemRow(item) {
     ${meta ? `<span class="item-meta">${escHtml(meta)}</span>` : ''}
     ${badge}
     ${warning}
+    ${reorderBtns}
   `;
 
-  row.addEventListener('click', () => onSelectItem(item._type, item.id, item));
+  row.addEventListener('click', e => {
+    const reorderBtn = e.target.closest('.layer-reorder-btn');
+    if (reorderBtn) {
+      e.stopPropagation();
+      if (!reorderBtn.classList.contains('disabled')) {
+        reorderLayer(reorderBtn.dataset.id, reorderBtn.dataset.dir);
+      }
+      return;
+    }
+    onSelectItem(item._type, item.id, item);
+  });
   row.addEventListener('contextmenu', e => onContextMenu(e, item));
 
   return row;
+}
+
+async function reorderLayer(layerId, direction) {
+  const layers = state.hierarchy.layers || [];
+  const idx = layers.findIndex(l => l.id === layerId);
+  if (idx < 0) return;
+  const newIndex = direction === 'up' ? idx - 1 : idx + 1;
+  if (newIndex < 0 || newIndex >= layers.length) return;
+  const result = await bridgeRequest('reorder_layer', { layerId, newIndex });
+  if (result.success) {
+    state.hierarchy = result.hierarchy;
+    renderHierarchy();
+    updateStatusCounts();
+  }
 }
 
 // ============================================================
@@ -1302,10 +1383,20 @@ function renderCameraInstance(data) {
 }
 
 function renderLightInstance(data) {
+  const curType = data.lightType || data.type || 'PNT';
+  const typeSelect = `<div class="prop-row">
+    <span class="prop-label">Type</span>
+    <span class="prop-type">enum</span>
+    <select class="prop-input" id="light-type-select" style="padding:1px 4px;height:auto;">
+      <option value="PNT"${curType === 'PNT' ? ' selected' : ''}>PNT — Point</option>
+      <option value="DIR"${curType === 'DIR' ? ' selected' : ''}>DIR — Directional</option>
+    </select>
+  </div>`;
   let html = buildSection('Identity', [
     propRow('ID', 'string', data.id, false, true),
     propRowEntityTemplateLink('Template', data.entityTemplate, data.entityTemplate_known),
-    propRowCheck('Enabled', data.enabled !== false)
+    propRowCheck('Enabled', data.enabled !== false),
+    typeSelect
   ]);
 
   // Affects layers checkboxes
@@ -1367,7 +1458,13 @@ async function renderEntityTemplateTab(data) {
   html += renderFieldsGrouped(bpFields, {}, {}, true);
 
   props.innerHTML = html;
-  // "Open in Blueprint Editor" is disabled (grayed out) per spec — no handler attached
+  const openLink = props.querySelector('.entity-template-open');
+  if (openLink) {
+    openLink.addEventListener('click', () => {
+      const itemType = state.selected ? state.selected.type : 'entity';
+      bridgeRequest('open_entity_template', { entityTemplateId: entityTemplateId, itemType });
+    });
+  }
 }
 
 // ============================================================
@@ -1525,15 +1622,68 @@ function handlePropsClick(e) {
 
   // Add override button
   if (e.target.closest('[data-action="add-override"]')) {
-    // Minimal: prompt for field name
-    const key = window.prompt('Field key to override (e.g. Transform2D.position):');
-    if (key && state.selected) {
-      const bpFields = (DEMO_ENTITY_TEMPLATES[state.selected.data && state.selected.data.entityTemplate] || { fields:{} }).fields;
-      const defaultVal = bpFields[key] !== undefined ? bpFields[key] : '';
-      promoteOverride(key, null, defaultVal);
-    }
+    openAddOverrideDialog();
   }
 }
+
+function openAddOverrideDialog() {
+  if (!state.selected) return;
+  const data = state.selected.data || {};
+
+  // Collect all blueprint fields from the backend-returned components (kind + value)
+  const components = data.components || [];
+  const instanceData = data.instance_data || {};
+  const unoverridden = [];
+  components.forEach(comp => {
+    const typeName = comp.type || comp.name || '';
+    const fields = Array.isArray(comp.fields) ? comp.fields : Object.entries(comp.fields || {}).map(([n, v]) => ({name:n, value:v, overridden:false}));
+    fields.forEach(f => {
+      const key = typeName + '.' + (f.name || f.key);
+      if (!f.overridden && !(key in instanceData)) {
+        unoverridden.push({ key, value: f.value });
+      }
+    });
+  });
+
+  // Fallback: use DEMO data when no real components available
+  if (unoverridden.length === 0 && data.entityTemplate) {
+    const bpFields = (DEMO_ENTITY_TEMPLATES[data.entityTemplate] || { fields:{} }).fields;
+    Object.entries(bpFields).forEach(([key, value]) => {
+      if (!(key in (data.instance_data || {}))) unoverridden.push({ key, value });
+    });
+  }
+
+  if (unoverridden.length === 0) {
+    showToast('info', 'No Fields', 'All blueprint fields are already overridden.');
+    return;
+  }
+
+  const sel = document.getElementById('add-override-select');
+  sel.innerHTML = '';
+  unoverridden.forEach(f => {
+    const opt = document.createElement('option');
+    opt.value = f.key;
+    opt.textContent = f.key;
+    opt.dataset.defaultVal = JSON.stringify(f.value);
+    sel.appendChild(opt);
+  });
+
+  document.getElementById('add-override-dialog').classList.add('show');
+}
+
+document.getElementById('add-override-cancel').addEventListener('click', () => {
+  document.getElementById('add-override-dialog').classList.remove('show');
+});
+
+document.getElementById('add-override-confirm').addEventListener('click', () => {
+  const sel = document.getElementById('add-override-select');
+  const key = sel.value;
+  if (!key) return;
+  let defaultVal = '';
+  try { defaultVal = JSON.parse(sel.options[sel.selectedIndex].dataset.defaultVal); } catch(e) {}
+  document.getElementById('add-override-dialog').classList.remove('show');
+  promoteOverride(key, null, defaultVal);
+});
 
 async function promoteOverride(key, rowEl, defaultValue) {
   if (!state.selected) return;
@@ -1553,6 +1703,19 @@ async function promoteOverride(key, rowEl, defaultValue) {
 async function handlePropsChange(e) {
   if (!state.selected) return;
   const input = e.target;
+
+  // Light type selector
+  if (input.id === 'light-type-select' && state.selected.type === 'light') {
+    const lightId = state.selected.id;
+    const type = input.value;
+    const result = await bridgeRequest('set_light_type', { lightId, type });
+    if (result.success) {
+      state.hierarchy = result.hierarchy;
+      if (state.selected.data) state.selected.data.lightType = type;
+      renderHierarchy();
+    }
+    return;
+  }
 
   // Affects layers checkbox
   if (input.dataset.layer !== undefined) {
@@ -1596,6 +1759,23 @@ document.getElementById('filter-input').addEventListener('input', async e => {
     updateStatusCounts();
   }
 });
+
+// Filter pills — sync initial state then handle clicks
+(function initPills() {
+  document.querySelectorAll('.fpill').forEach(pill => {
+    const sec = pill.dataset.section;
+    if (state.sectionVisible[sec] === false) pill.classList.add('off');
+    pill.addEventListener('click', () => {
+      const visible = state.sectionVisible[sec] !== false;
+      state.sectionVisible[sec] = !visible;
+      pill.classList.toggle('off', !state.sectionVisible[sec]);
+      try { localStorage.setItem('sceneeditor_section_visible', JSON.stringify(state.sectionVisible)); } catch(e) {}
+      // Toggle section visibility in the already-rendered hierarchy
+      const secEl = document.querySelector(`.sec[data-section="${sec}"]`);
+      if (secEl) secEl.classList.toggle('section-hidden', !state.sectionVisible[sec]);
+    });
+  });
+})();
 
 // ============================================================
 // TOOLBAR ACTIONS

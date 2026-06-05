@@ -870,6 +870,23 @@ namespace Dia
 					return result;
 				});
 
+			RegisterHandler(
+				Dia::Core::StringCRC("scene_editor.set_light_type"),
+				[this](const Json::Value& data) -> Json::Value
+				{
+					DIA_TRACE_ZONE("scene_editor.set_light_type", Dia::Observation::Trace::Category::kNone);
+					if (!data.isMember("lightId") || !data.isMember("type")) return MakeErrorResponse("missing lightId or type");
+					if (mLoadedSceneRoot.isNull()) return MakeErrorResponse("no scene loaded");
+					char err[256]={};
+					if (!SceneMutator::SetLightType(mLoadedSceneRoot, data["lightId"].asCString(), data["type"].asCString(), err, sizeof(err)))
+						return MakeErrorResponse(err);
+					AutoSave();
+					Json::Value result;
+					result["success"]   = true;
+					result["hierarchy"] = BuildEnrichedHierarchy(mLoadedSceneRoot);
+					return result;
+				});
+
 			// ── Override management ──────────────────────────────────────────────
 
 			auto overrideMutate = [this](bool ok, const char* err) -> Json::Value

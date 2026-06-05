@@ -97,6 +97,10 @@ namespace Dia
 				if (item.isMember("active") && item["active"].isBool())
 					entry["active"] = item["active"].asBool();
 
+				// Type for lights (DIR/PNT)
+				if (item.isMember("type") && item["type"].isString())
+					entry["type"] = item["type"].asString();
+
 				result.append(entry);
 			}
 			return result;

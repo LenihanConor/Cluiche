@@ -66,5 +66,5 @@ Real-time validation of scene constraints while editing. Warnings displayed as i
 |---|------|--------|
 | 1 | Backend: SceneValidator returns per-item diagnostics (item type + id + severity + message) | Todo |
 | 2 | Backend: Wire validation into every mutation response (include `diagnostics[]` alongside `hierarchy`) | Todo |
-| 3 | UI: Render inline warning/error icons in hierarchy rows | Todo |
+| 3 | UI: Render inline warning/error icons in hierarchy rows | Partial — template-unknown warnings (amber ⚠ icon) ship via `entityTemplate_known` enrichment; full rule-driven icons (errors for duplicate IDs, limits, etc.) require Tasks 1+2 |
 | 4 | UI: "Needs Attention" toggle button with badge count + filtered view | Todo |

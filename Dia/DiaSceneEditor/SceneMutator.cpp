@@ -121,10 +121,11 @@ namespace Dia
 			{
 				item["active"] = (arr.size() == 0);
 			}
-			// Light default: affects all layers
+			// Light default: affects all layers, type PNT
 			if (strcmp(itemType, "light") == 0)
 			{
 				item["affects_layers"] = Json::Value(Json::arrayValue);
+				item["type"] = "PNT";
 			}
 
 			arr.append(item);
@@ -717,6 +718,37 @@ namespace Dia
 				}
 				arr[i]["affects_layers"] = wrapped;
 				DIA_LOG_INFO("Editor", "SceneMutator: updated affects_layers for light '%s'", lightId);
+				return true;
+			}
+
+			if (errBuf) snprintf(errBuf, errBufSize, "light '%s' not found", lightId);
+			return false;
+		}
+
+		bool SceneMutator::SetLightType(Json::Value& sceneRoot,
+		                                 const char*  lightId,
+		                                 const char*  type,
+		                                 char* errBuf, int errBufSize)
+		{
+			DIA_TRACE_ZONE("SceneMutator::SetLightType", Dia::Observation::Trace::Category::kNone);
+			if (!sceneRoot.isMember("scene2d")) { if (errBuf) snprintf(errBuf, errBufSize, "scene2d root missing"); return false; }
+			if (!type || (strcmp(type, "DIR") != 0 && strcmp(type, "PNT") != 0))
+			{
+				if (errBuf) snprintf(errBuf, errBufSize, "type must be DIR or PNT");
+				return false;
+			}
+
+			Json::Value& arr = sceneRoot["scene2d"]["lights"];
+			if (!arr.isArray()) { if (errBuf) snprintf(errBuf, errBufSize, "no lights array"); return false; }
+
+			char idBuf[256];
+			for (unsigned int i = 0; i < arr.size(); ++i)
+			{
+				if (!arr[i].isMember("id") ||
+				    strcmp(ExtractId(arr[i]["id"], idBuf, sizeof(idBuf)), lightId) != 0) continue;
+
+				arr[i]["type"] = type;
+				DIA_LOG_INFO("Editor", "SceneMutator: set light '%s' type to '%s'", lightId, type);
 				return true;
 			}
 

@@ -266,10 +266,14 @@ namespace Dia
 			if (strcmp(itemType, "camera") == 0)
 				result["active"] = item.isMember("active") ? item["active"] : Json::Value(false);
 
-			// Light-specific: affects_layers (T8)
+			// Light-specific: affects_layers and type (T8)
 			if (strcmp(itemType, "light") == 0)
+			{
 				result["affects_layers"] = item.isMember("affects_layers")
 					? item["affects_layers"] : Json::Value(Json::arrayValue);
+				result["lightType"] = item.isMember("type")
+					? Json::Value(item["type"].asCString()) : Json::Value("PNT");
+			}
 
 			return result;
 		}
