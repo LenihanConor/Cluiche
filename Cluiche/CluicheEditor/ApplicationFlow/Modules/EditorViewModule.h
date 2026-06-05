@@ -39,6 +39,7 @@ namespace Cluiche
 			Dia::Editor::EditorConsoleSink   mConsoleSink;
 			Dia::Window::IWindow*            mWindow;
 			Dia::UI::IUISystem*              mUISystem;
+			bool                             mRestoreMaximized;
 
 			Dia::ApplicationFlow::ModuleRef<EditorModelModule>          mModelRef;
 			Dia::ApplicationFlow::ModuleRef<EditorViewControllerModule> mControllerRef;

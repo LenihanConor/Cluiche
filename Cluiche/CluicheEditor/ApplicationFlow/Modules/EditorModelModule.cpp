@@ -190,6 +190,18 @@ namespace Cluiche
 					}
 				}
 			}
+
+			// Load window state.
+			const Json::Value& window = state["window"];
+			if (window.isObject())
+			{
+				mWindowState.x = window.get("x", 0).asInt();
+				mWindowState.y = window.get("y", 0).asInt();
+				mWindowState.width = window.get("width", 1280).asInt();
+				mWindowState.height = window.get("height", 720).asInt();
+				mWindowState.maximized = window.get("maximized", false).asBool();
+				mWindowState.hasStoredState = true;
+			}
 		}
 
 		void EditorModelModule::WriteEditorState()
@@ -226,6 +238,17 @@ namespace Cluiche
 			for (unsigned int i = 0; i < mRecentCount; ++i)
 				recentArr.append(mRecentProjects[i]);
 			state["recent_projects"] = recentArr;
+
+			if (mWindowState.hasStoredState)
+			{
+				Json::Value window(Json::objectValue);
+				window["x"] = mWindowState.x;
+				window["y"] = mWindowState.y;
+				window["width"] = mWindowState.width;
+				window["height"] = mWindowState.height;
+				window["maximized"] = mWindowState.maximized;
+				state["window"] = window;
+			}
 
 			root["editor_state"] = state;
 
@@ -274,6 +297,17 @@ namespace Cluiche
 				ptrs[i] = mRecentProjects[i];
 			mModel.SetRecentProjects(ptrs, mRecentCount);
 
+			WriteEditorState();
+		}
+
+		void EditorModelModule::SaveWindowState(int x, int y, int width, int height, bool maximized)
+		{
+			mWindowState.x = x;
+			mWindowState.y = y;
+			mWindowState.width = width;
+			mWindowState.height = height;
+			mWindowState.maximized = maximized;
+			mWindowState.hasStoredState = true;
 			WriteEditorState();
 		}
 

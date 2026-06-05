@@ -29,6 +29,7 @@ namespace Cluiche
 			: Dia::ApplicationFlow::Module(instanceId)
 			, mWindow(nullptr)
 			, mUISystem(nullptr)
+			, mRestoreMaximized(false)
 			, mModelRef(this, EditorModelModule::kTypeId)
 			, mControllerRef(this, EditorViewControllerModule::kTypeId)
 			, mSplashRef(this, SplashScreenModule::kTypeId)
@@ -47,7 +48,11 @@ namespace Cluiche
 			Dia::Editor::EditorModel* model = (modelModule != nullptr) ? &modelModule->GetModel() : nullptr;
 			Dia::Editor::EditorViewController* controller = (controllerModule != nullptr) ? &controllerModule->GetController() : nullptr;
 
-			Dia::Window::IWindow::Settings::Dimensions dims(1280, 720);
+			const WindowState& ws = modelModule->GetWindowState();
+			unsigned int startWidth = ws.hasStoredState ? static_cast<unsigned int>(ws.width) : 1280u;
+			unsigned int startHeight = ws.hasStoredState ? static_cast<unsigned int>(ws.height) : 720u;
+
+			Dia::Window::IWindow::Settings::Dimensions dims(startWidth, startHeight);
 			Dia::Window::IWindow::Settings::Style style;
 			Dia::Core::Containers::String64 title("Cluiche Editor");
 			Dia::Window::IWindow::Settings settings(title, dims, style);
@@ -59,8 +64,25 @@ namespace Cluiche
 			};
 			mWindow = Dia::Window::CreateNativeWindow(settings, onClose);
 
-			// Keep editor window hidden until the React shell signals it is ready
-			ShowWindow(static_cast<HWND>(mWindow->GetSystemHandle()), SW_HIDE);
+			if (ws.hasStoredState)
+			{
+				HWND hwnd = static_cast<HWND>(mWindow->GetSystemHandle());
+				WINDOWPLACEMENT wp = {};
+				wp.length = sizeof(WINDOWPLACEMENT);
+				GetWindowPlacement(hwnd, &wp);
+				wp.rcNormalPosition.left   = ws.x;
+				wp.rcNormalPosition.top    = ws.y;
+				wp.rcNormalPosition.right  = ws.x + ws.width;
+				wp.rcNormalPosition.bottom = ws.y + ws.height;
+				wp.showCmd = SW_HIDE;
+				SetWindowPlacement(hwnd, &wp);
+				mRestoreMaximized = ws.maximized;
+			}
+			else
+			{
+				// Keep editor window hidden until the React shell signals it is ready
+				ShowWindow(static_cast<HWND>(mWindow->GetSystemHandle()), SW_HIDE);
+			}
 
 			Dia::UICEF::EditorUISystemConfig uiConfig;
 			uiConfig.subprocessPath    = "CluicheEditor.exe";
@@ -85,13 +107,15 @@ namespace Cluiche
 			// and reveal the editor window.
 			Dia::Window::IWindow* win = mWindow;
 			SplashScreenModule* splashModule = mSplashRef.Get();
+			bool restoreMax = mRestoreMaximized;
 			mView.GetWebUIBridge()->RegisterEventHandler(
 				Dia::Core::StringCRC("shell_ready"),
-				[splashModule, win](const Json::Value&)
+				[splashModule, win, restoreMax](const Json::Value&)
 				{
 					if (splashModule)
 						splashModule->Dismiss();
-					ShowWindow(static_cast<HWND>(win->GetSystemHandle()), SW_SHOW);
+					ShowWindow(static_cast<HWND>(win->GetSystemHandle()),
+						restoreMax ? SW_SHOWMAXIMIZED : SW_SHOW);
 				});
 
 			Dia::Window::SetNativeResizeCallback(mWindow, [win](int w, int h)
@@ -124,6 +148,22 @@ namespace Cluiche
 
 		Dia::ApplicationFlow::StopResult EditorViewModule::DoStop()
 		{
+			// Persist window geometry before tearing down.
+			if (mWindow)
+			{
+				HWND hwnd = static_cast<HWND>(mWindow->GetSystemHandle());
+				bool maximized = (IsZoomed(hwnd) != 0);
+
+				WINDOWPLACEMENT wp = {};
+				wp.length = sizeof(WINDOWPLACEMENT);
+				GetWindowPlacement(hwnd, &wp);
+				RECT rc = wp.rcNormalPosition;
+
+				EditorModelModule* modelModule = mModelRef.Get();
+				if (modelModule)
+					modelModule->SaveWindowState(rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, maximized);
+			}
+
 			// Unregister console sink
 			Dia::Observation::Log::Logger::Instance().UnregisterSink(&mConsoleSink);
 			mConsoleSink.SetBridge(nullptr);

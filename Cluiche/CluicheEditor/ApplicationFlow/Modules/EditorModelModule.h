@@ -8,6 +8,16 @@ namespace Cluiche
 {
 	namespace Editor
 	{
+		struct WindowState
+		{
+			int x = 0;
+			int y = 0;
+			int width = 1280;
+			int height = 720;
+			bool maximized = false;
+			bool hasStoredState = false;
+		};
+
 		class EditorModelModule : public Dia::ApplicationFlow::Module
 		{
 		public:
@@ -23,6 +33,9 @@ namespace Cluiche
 
 			unsigned int GetRecentProjectCount() const;
 			const char* GetRecentProject(unsigned int index) const;
+
+			const WindowState& GetWindowState() const { return mWindowState; }
+			void SaveWindowState(int x, int y, int width, int height, bool maximized);
 
 		protected:
 			Dia::ApplicationFlow::StartResult DoStart() override;
@@ -46,6 +59,8 @@ namespace Cluiche
 
 			char mRecentProjects[kMaxRecent][kMaxProjectPathLength];
 			unsigned int mRecentCount;
+
+			WindowState mWindowState;
 		};
 	}
 }
